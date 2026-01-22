@@ -192,6 +192,7 @@ SHARD_ADAPT_EVERY = int(os.environ.get("TP6_SHARD_ADAPT_EVERY", "50"))
 SHARD_ADAPT_GRAD = float(os.environ.get("TP6_SHARD_ADAPT_GRAD", "10.0"))
 SHARD_ADAPT_DWELL = float(os.environ.get("TP6_SHARD_ADAPT_DWELL", "40.0"))
 SHARD_MIN_PER_SHARD = int(os.environ.get("TP6_SHARD_MIN_PER_SHARD", "1"))
+TRACTION_ENABLED = bool(int(os.environ.get("TP6_TRACTION_LOG", "0")))
 PTR_UPDATE_GOV_VEL_HIGH = getattr(CFG, "ptr_update_gov_vel_high", 0.5)
 LIVE_TRACE_PATH = CFG.live_trace_path
 RUN_MODE = CFG.run_mode
@@ -2000,6 +2001,8 @@ def train_wallclock(model, loader, dataset_name, model_name, num_classes, wall_c
                 else:
                     outputs, move_pen = model(inputs)
                 local_shard_size = SHARD_SIZE
+                shard_count = None
+                traction = None
                 if SHARD_ENABLED and SHARD_ADAPT and SHARD_ADAPT_EVERY > 0 and (step % SHARD_ADAPT_EVERY == 0):
                     batch_sz = outputs.shape[0]
                     # Build valid shard counts (divisors) to avoid remainders.
@@ -2025,6 +2028,15 @@ def train_wallclock(model, loader, dataset_name, model_name, num_classes, wall_c
                     shard_count = min(valid_counts, key=lambda c: abs(c - target_shards)) if valid_counts else 1
                     shard_count = max(1, shard_count)
                     local_shard_size = max(1, batch_sz // shard_count)
+                    if TRACTION_ENABLED:
+                        # Simple traction: focus vs flip/tension ratio.
+                        flip_val = getattr(model, "ptr_flip_rate", None)
+                        try:
+                            flip_val = float(flip_val) if flip_val is not None else 0.0
+                        except Exception:
+                            flip_val = 0.0
+                        denom = max(1e-6, flip_val + tension_val)
+                        traction = (focus * SHARD_ADAPT_DWELL) / denom
                 if SHARD_ENABLED and local_shard_size > 0 and outputs.shape[0] > local_shard_size:
                     # Sub-culture partitioning: split batch into shards, mean losses.
                     loss_parts = []
@@ -2109,10 +2121,12 @@ def train_wallclock(model, loader, dataset_name, model_name, num_classes, wall_c
             if heartbeat_due:
                 last_heartbeat = now
                 elapsed = now - start
+                model.debug_shard_info = None
                 raw_delta = getattr(model, "ptr_delta_raw_mean", None)
                 ground_speed = getattr(model, "ground_speed", None)
                 ground_speed_ema = getattr(model, "ground_speed_ema", None)
                 ground_speed_limit = getattr(model, "ground_speed_limit", None)
+                shard_info = getattr(model, "debug_shard_info", None)
                 xray_text = ""
                 if xray_enabled and isinstance(locals().get("xray"), dict):
                     parts = []
@@ -2136,6 +2150,11 @@ def train_wallclock(model, loader, dataset_name, model_name, num_classes, wall_c
                 ground_speed_limit_text = (
                     f", g_L={float(ground_speed_limit):.3f}" if ground_speed_limit is not None else ""
                 )
+                shard_text = ""
+                if shard_info:
+                    shard_text = f", shard={shard_info.get('count', '-')}/{shard_info.get('size', '-')}"
+                    if TRACTION_ENABLED and "traction" in shard_info:
+                        shard_text += f", traction={shard_info['traction']:.2f}"
                 ptr_stats = []
                 for label, val, fmt in [
                     ("flip", getattr(model, "ptr_flip_rate", None), "{:.3f}"),
@@ -2157,7 +2176,7 @@ def train_wallclock(model, loader, dataset_name, model_name, num_classes, wall_c
                 log(
                     f"{dataset_name} | {model_name} | step {step:04d} | loss {loss.item():.4f} | "
                     f"t={elapsed:.1f}s | ctrl(inertia={model.ptr_inertia:.2f}, deadzone={model.ptr_deadzone:.2f}, walk={model.ptr_walk_prob:.2f}, cadence={model.ptr_update_every}, scale={getattr(model, 'update_scale', UPDATE_SCALE):.3f}, cap={agc_cap:.3f}"
-                    f"{raw_delta_text}{ground_speed_text}{ground_speed_ema_text}{ground_speed_limit_text}{ptr_text})"
+                    f"{raw_delta_text}{ground_speed_text}{ground_speed_ema_text}{ground_speed_limit_text}{shard_text}{ptr_text})"
                     + xray_text
                     + (f" | panic={panic_status}" if panic_reflex is not None else "")
                 )
