@@ -1937,6 +1937,11 @@ def train_wallclock(model, loader, dataset_name, model_name, num_classes, wall_c
         model.ptr_update_auto = False
     else:
         model.ptr_update_auto = PTR_UPDATE_AUTO
+    # Reset adaptive scales to env defaults to avoid carrying prior runs.
+    model.update_scale = UPDATE_SCALE
+    model.agc_scale_max = AGC_SCALE_MAX
+    model.agc_scale_cap = AGC_SCALE_MAX
+
     start = time.time()
     end_time = start + wall_clock if wall_clock > 0 else float("inf")
     last_heartbeat = start
