@@ -2037,6 +2037,9 @@ def train_wallclock(model, loader, dataset_name, model_name, num_classes, wall_c
                             flip_val = 0.0
                         denom = max(1e-6, flip_val + tension_val)
                         traction = (focus * SHARD_ADAPT_DWELL) / denom
+                    model.debug_shard_info = {"count": shard_count, "size": local_shard_size}
+                    if traction is not None:
+                        model.debug_shard_info["traction"] = traction
                 if SHARD_ENABLED and local_shard_size > 0 and outputs.shape[0] > local_shard_size:
                     # Sub-culture partitioning: split batch into shards, mean losses.
                     loss_parts = []
