@@ -179,6 +179,9 @@ INERTIA_MIN = CFG.ptr_inertia_min
 INERTIA_MAX = CFG.ptr_inertia_max
 INERTIA_VEL_FULL = CFG.ptr_inertia_vel_full
 INERTIA_EMA = CFG.ptr_inertia_ema
+# Optional dwell-driven inertia (kinetic tempering)
+DWELL_INERTIA_ENABLED = bool(int(os.environ.get("TP6_DWELL_INERTIA", "0")))
+DWELL_INERTIA_THRESH = float(os.environ.get("TP6_DWELL_INERTIA_THRESH", "50.0"))
 PTR_UPDATE_GOV_VEL_HIGH = getattr(CFG, "ptr_update_gov_vel_high", 0.5)
 LIVE_TRACE_PATH = CFG.live_trace_path
 RUN_MODE = CFG.run_mode
@@ -557,17 +560,33 @@ def apply_update_agc(model, grad_norm, raw_delta=None):
 def apply_inertia_auto(model, ptr_velocity, panic_active=False):
     if not INERTIA_AUTO or panic_active:
         return
-    if ptr_velocity is None:
-        return
-    if INERTIA_VEL_FULL <= 0:
-        return
-    try:
-        velocity = float(ptr_velocity)
-    except (TypeError, ValueError):
-        return
-    velocity = max(0.0, velocity)
-    ratio = min(1.0, velocity / INERTIA_VEL_FULL)
-    target = INERTIA_MIN + ratio * (INERTIA_MAX - INERTIA_MIN)
+    # Dwell-driven kinetic tempering: glue when dwell is high, agile when low.
+    if DWELL_INERTIA_ENABLED:
+        dwell = getattr(model, "ptr_mean_dwell", None)
+        max_dwell = getattr(model, "ptr_max_dwell", dwell)
+        try:
+            dwell = float(dwell) if dwell is not None else 0.0
+            max_dwell = float(max_dwell) if max_dwell is not None else dwell
+        except (TypeError, ValueError):
+            dwell, max_dwell = 0.0, 0.0
+        dwell_metric = max(dwell, max_dwell)
+        if DWELL_INERTIA_THRESH > 0:
+            weight = max(0.0, min(1.0, dwell_metric / DWELL_INERTIA_THRESH))
+            target = INERTIA_MIN + weight * (INERTIA_MAX - INERTIA_MIN)
+        else:
+            target = INERTIA_MAX
+    else:
+        if ptr_velocity is None:
+            return
+        if INERTIA_VEL_FULL <= 0:
+            return
+        try:
+            velocity = float(ptr_velocity)
+        except (TypeError, ValueError):
+            return
+        velocity = max(0.0, velocity)
+        ratio = min(1.0, velocity / INERTIA_VEL_FULL)
+        target = INERTIA_MIN + ratio * (INERTIA_MAX - INERTIA_MIN)
     ema = float(getattr(model, "ptr_inertia_ema", model.ptr_inertia))
     ema = INERTIA_EMA * ema + (1.0 - INERTIA_EMA) * target
     ema = max(INERTIA_MIN, min(INERTIA_MAX, ema))
