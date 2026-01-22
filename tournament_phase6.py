@@ -2124,7 +2124,6 @@ def train_wallclock(model, loader, dataset_name, model_name, num_classes, wall_c
             if heartbeat_due:
                 last_heartbeat = now
                 elapsed = now - start
-                model.debug_shard_info = None
                 raw_delta = getattr(model, "ptr_delta_raw_mean", None)
                 ground_speed = getattr(model, "ground_speed", None)
                 ground_speed_ema = getattr(model, "ground_speed_ema", None)
