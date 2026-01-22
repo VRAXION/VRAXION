@@ -2,6 +2,68 @@
 layout: default
 ---
 
+<style>
+  :root {
+    color-scheme: dark;
+  }
+  body {
+    background: #0b1020;
+    color: #e5e7eb;
+  }
+  .page-header {
+    background: linear-gradient(135deg, #0f172a, #111827);
+    border-bottom: 1px solid #1f2937;
+  }
+  .project-name, .project-tagline {
+    color: #f1f5f9;
+  }
+  .btn {
+    background: #2563eb;
+    border: 1px solid #1d4ed8;
+    color: #f8fafc;
+  }
+  .btn:hover {
+    background: #1d4ed8;
+    border-color: #1e3a8a;
+  }
+  .main-content {
+    background: #0b1020;
+    color: #e5e7eb;
+  }
+  .main-content h1, .main-content h2, .main-content h3, .main-content h4 {
+    color: #f8fafc;
+  }
+  .main-content a {
+    color: #93c5fd;
+  }
+  .main-content a:hover {
+    color: #bfdbfe;
+  }
+  .main-content code {
+    background: #111827;
+    color: #f8fafc;
+    border: 1px solid #1f2937;
+  }
+  .main-content pre {
+    background: #0f172a;
+    border: 1px solid #1f2937;
+    color: #e5e7eb;
+  }
+  details {
+    background: #0f172a;
+    border: 1px solid #1f2937;
+    border-radius: 8px;
+    padding: 12px 16px;
+  }
+  summary {
+    color: #e5e7eb;
+    cursor: pointer;
+  }
+  hr {
+    border-color: #1f2937;
+  }
+</style>
+
 <p align="center">
   <img src="assets/banner-dark.svg" alt="PRIME C‑19 banner" width="100%">
 </p>
