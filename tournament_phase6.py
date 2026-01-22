@@ -514,7 +514,8 @@ def apply_update_agc(model, grad_norm, raw_delta=None, step: int | None = None):
         warmup_cap = base_cap * max(SCALE_WARMUP_INIT, warmup_factor)
         cap = min(cap, max(AGC_SCALE_MIN, warmup_cap))
 
-    scale = float(getattr(model, "update_scale", UPDATE_SCALE))
+    scale_in = float(getattr(model, "update_scale", UPDATE_SCALE))
+    scale = scale_in
     if AGC_ENABLED and grad_norm is not None and math.isfinite(grad_norm):
         if grad_norm < AGC_GRAD_LOW:
             scale *= AGC_SCALE_UP
@@ -522,6 +523,15 @@ def apply_update_agc(model, grad_norm, raw_delta=None, step: int | None = None):
             scale *= AGC_SCALE_DOWN
     # Allow true feathering: only clamp to the cap, keep a tiny floor to avoid zero.
     scale = max(1e-6, min(cap, scale))
+    if step is not None and step == 0:
+        dbg = {
+            "scale_in": scale_in,
+            "scale_out": scale,
+            "agc_scale_min": AGC_SCALE_MIN,
+            "cap": cap,
+            "base_cap": base_cap,
+        }
+        log(f"[debug_scale_step0] {dbg}")
 
     # Use the strongest dwell signal we have for gating (captures brief locks).
     dwell_metric = max(current_dwell, max_dwell)
