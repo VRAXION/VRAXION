@@ -2,6 +2,7 @@
 
 This repository is a noncommercial research snapshot. It omits run instructions and experimental details.
 
+- Live site (GitHub Pages): https://kenessy.github.io/VRAXION/
 - License: PolyForm Noncommercial 1.0.0. See `LICENSE`, `NOTICE`, `COMMERCIAL_LICENSE.md`.
 - Commercial use: contact `kenessy.dani@gmail.com`.
 - Trademark: VRAXION™ — mark filing is intended; no registration granted yet.
