@@ -1938,7 +1938,8 @@ def train_wallclock(model, loader, dataset_name, model_name, num_classes, wall_c
     else:
         model.ptr_update_auto = PTR_UPDATE_AUTO
     # Reset adaptive scales to env defaults to avoid carrying prior runs.
-    model.update_scale = UPDATE_SCALE
+    init_scale = float(os.environ.get("TP6_SCALE_INIT", UPDATE_SCALE))
+    model.update_scale = init_scale
     model.agc_scale_max = AGC_SCALE_MAX
     model.agc_scale_cap = AGC_SCALE_MAX
 
