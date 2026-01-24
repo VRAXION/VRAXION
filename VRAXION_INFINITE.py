@@ -71,8 +71,8 @@ def autotune_batch_size() -> None:
 
 def bootstrap_env():
     # Hardcode env to avoid shell-quoting failures.
-    os.environ["TP6_RESUME"] = "0"
-    os.environ["TP6_CKPT"] = "checkpoints/expert_infinite/expert_inf.pt"
+    os.environ["TP6_RESUME"] = "1"
+    os.environ["TP6_CKPT"] = "checkpoints/expert_infinite/expert_inf_last_good.pt"
     os.environ["VAR_LOGGING_PATH"] = "logs/expert_infinite.log"
     os.environ["TP6_EXPERT_HEADS"] = "16"
     os.environ["TP6_PRECISION"] = "bf16"
@@ -109,7 +109,7 @@ def bootstrap_env():
     os.environ["TP6_TRACTION_LOG"] = "1"
     os.environ["TP6_STATE_DECAY"] = "1.0"
     os.environ["TP6_AGC_PLATEAU_WINDOW"] = "0"
-    os.environ["TP6_GRAD_CLIP"] = "0"
+    os.environ["TP6_GRAD_CLIP"] = "1.0"
     os.environ["TP6_XRAY"] = "0"
     os.environ["TP6_SAVE_EVERY_STEPS"] = "100"
 

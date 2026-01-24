@@ -2139,10 +2139,14 @@ def train_wallclock(model, loader, dataset_name, model_name, num_classes, wall_c
                     dwell_val = float(dwell_val)
                 except Exception:
                     dwell_val = 0.0
+                if not math.isfinite(dwell_val):
+                    dwell_val = 0.0
                 tension_val = grad_norm if "grad_norm" in locals() else 0.0
                 try:
                     tension_val = float(tension_val)
                 except Exception:
+                    tension_val = 0.0
+                if not math.isfinite(tension_val):
                     tension_val = 0.0
 
                 # Maintain dynamic dwell/grad references for scale-free VASC.
@@ -2172,7 +2176,13 @@ def train_wallclock(model, loader, dataset_name, model_name, num_classes, wall_c
                         except Exception:
                             flip_val = 0.0
                         denom = max(1e-6, flip_val + tension_val)
+                        if not math.isfinite(denom):
+                            denom = 1e-6
                         traction = dwell_val / denom
+                        if not math.isfinite(traction):
+                            traction = 0.0
+                        else:
+                            traction = max(0.0, min(100.0, traction))
                     active_experts = None
                     if EXPERT_HEADS > 1:
                         last_ptr = getattr(model, "last_ptr_int", None)
@@ -2202,22 +2212,42 @@ def train_wallclock(model, loader, dataset_name, model_name, num_classes, wall_c
                     loss = torch.stack(loss_parts).mean() + LAMBDA_MOVE * move_pen
                 else:
                     loss = criterion(outputs, targets) + LAMBDA_MOVE * move_pen
+            loss_value = float(loss.item())
+            if not math.isfinite(loss_value):
+                log(f"{dataset_name} | {model_name} | non-finite loss at step {step}, skipping update")
+                optimizer.zero_grad(set_to_none=True)
+                scaler.update()
+                continue
             scaler.scale(loss).backward()
             if USE_AMP and scaler.is_enabled():
                 scaler.unscale_(optimizer)
+            bad_grad = False
             if hasattr(model, "theta_ptr_reduced"):
                 with torch.no_grad():
                     grad = model.theta_ptr_reduced.grad
                     grad_norm = float(grad.norm().item()) if grad is not None else 0.0
-            if GRAD_CLIP > 0.0:
+                    if not math.isfinite(grad_norm):
+                        bad_grad = True
+                        grad_norm = 0.0
+            if GRAD_CLIP > 0.0 and not bad_grad:
                 torch.nn.utils.clip_grad_norm_(model.parameters(), GRAD_CLIP)
             raw_delta = getattr(model, "ptr_delta_raw_mean", None)
+            if raw_delta is not None:
+                try:
+                    raw_delta_val = float(raw_delta)
+                except Exception:
+                    raw_delta_val = None
+                if raw_delta_val is None or not math.isfinite(raw_delta_val):
+                    raw_delta = None
             scale_after_agc = apply_update_agc(
                 model, grad_norm if hasattr(model, "theta_ptr_reduced") else None, raw_delta, step=step
             )
             if scale_after_agc is not None:
                 model.update_scale = scale_after_agc
-            scaler.step(optimizer)
+            if bad_grad:
+                log(f"{dataset_name} | {model_name} | non-finite grad_norm at step {step}, skipping optimizer step")
+            else:
+                scaler.step(optimizer)
             scaler.update()
 
             # Force small kernels to complete and keep the watchdog happy; clear cache frequently.
@@ -2226,7 +2256,6 @@ def train_wallclock(model, loader, dataset_name, model_name, num_classes, wall_c
                 if step % 10 == 0:
                     torch.cuda.empty_cache()
 
-            loss_value = float(loss.item())
             losses.append(loss_value)
             if AGC_PLATEAU_WINDOW > 0 and len(losses) >= AGC_PLATEAU_WINDOW and step >= AGC_PLATEAU_MIN_STEPS:
                 recent = losses[-AGC_PLATEAU_WINDOW:]
@@ -2625,23 +2654,43 @@ def train_steps(model, loader, steps, dataset_name, model_name):
         with amp_autocast():
             outputs, move_pen = model(inputs)
             loss = criterion(outputs, targets) + LAMBDA_MOVE * move_pen
+        loss_value = float(loss.item())
+        if not math.isfinite(loss_value):
+            log(f"{dataset_name} | {model_name} | non-finite loss at step {step}, skipping update")
+            optimizer.zero_grad(set_to_none=True)
+            scaler.update()
+            continue
         scaler.scale(loss).backward()
         if USE_AMP and scaler.is_enabled():
             scaler.unscale_(optimizer)
+        bad_grad = False
         grad_norm_step = 0.0
         if hasattr(model, "theta_ptr_reduced"):
             with torch.no_grad():
                 grad = model.theta_ptr_reduced.grad
                 grad_norm_step = float(grad.norm().item()) if grad is not None else 0.0
-        if GRAD_CLIP > 0.0:
+                if not math.isfinite(grad_norm_step):
+                    bad_grad = True
+                    grad_norm_step = 0.0
+        if GRAD_CLIP > 0.0 and not bad_grad:
             torch.nn.utils.clip_grad_norm_(model.parameters(), GRAD_CLIP)
         raw_delta = getattr(model, "ptr_delta_raw_mean", None)
+        if raw_delta is not None:
+            try:
+                raw_delta_val = float(raw_delta)
+            except Exception:
+                raw_delta_val = None
+            if raw_delta_val is None or not math.isfinite(raw_delta_val):
+                raw_delta = None
         scale_after_agc = apply_update_agc(
             model, grad_norm_step if hasattr(model, "theta_ptr_reduced") else None, raw_delta, step=step
         )
         if scale_after_agc is not None:
             model.update_scale = scale_after_agc
-        scaler.step(optimizer)
+        if bad_grad:
+            log(f"{dataset_name} | {model_name} | non-finite grad_norm at step {step}, skipping optimizer step")
+        else:
+            scaler.step(optimizer)
         scaler.update()
 
         if DEVICE == "cuda" and not DISABLE_SYNC:
