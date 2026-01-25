@@ -148,6 +148,20 @@ EVAL_EVERY_STEPS = int(os.environ.get("TP6_EVAL_EVERY_STEPS", "0"))
 EVAL_AT_CHECKPOINT = os.environ.get("TP6_EVAL_AT_CHECKPOINT", "1") == "1"
 VCOG_ID_TARGET = float(os.environ.get("TP6_VCOG_ID_TARGET", "0.25"))
 VCOG_SIGMA_FLOOR = float(os.environ.get("TP6_VCOG_SIGMA_FLOOR", "1e-4"))
+VCOG_PRG_FROM_ACC = os.environ.get("TP6_VCOG_PRG_FROM_ACC", "0") == "1"
+VCOG_PRG_ACC_TARGET = float(os.environ.get("TP6_VCOG_PRG_ACC_TARGET", "1.0"))
+RATCHET_ENABLED = os.environ.get("TP6_INERTIA_RATCHET", "0") == "1"
+RATCHET_ACC_MIN = float(os.environ.get("TP6_RATCHET_ACC_MIN", "0.98"))
+RATCHET_STREAK = int(os.environ.get("TP6_RATCHET_STREAK", "2"))
+RATCHET_BASE = float(os.environ.get("TP6_RATCHET_BASE", "0.5"))
+RATCHET_SCALE = float(os.environ.get("TP6_RATCHET_SCALE", "0.98"))
+INERTIA_SIGNAL_ENABLED = os.environ.get("TP6_INERTIA_SIGNAL", "0") == "1"
+INERTIA_SIGNAL_ACC_MIN = float(os.environ.get("TP6_INERTIA_SIGNAL_ACC_MIN", "0.98"))
+INERTIA_SIGNAL_STREAK = int(os.environ.get("TP6_INERTIA_SIGNAL_STREAK", "2"))
+INERTIA_SIGNAL_TARGET = float(os.environ.get("TP6_INERTIA_SIGNAL_TARGET", "0.95"))
+INERTIA_SIGNAL_FLOOR = float(os.environ.get("TP6_INERTIA_SIGNAL_FLOOR", "0.5"))
+INERTIA_SIGNAL_REWARD = float(os.environ.get("TP6_INERTIA_SIGNAL_REWARD", "0.1"))
+INERTIA_SIGNAL_PAIN = float(os.environ.get("TP6_INERTIA_SIGNAL_PAIN", "0.05"))
 PRECISION = CFG.precision
 DTYPE = CFG.dtype
 USE_AMP = CFG.use_amp
@@ -188,6 +202,7 @@ class VCogGovernor:
     def update(self, telemetry):
         search = float(telemetry.get("search", 0.0))
         loss = float(telemetry.get("loss", 0.0))
+        eval_acc = telemetry.get("eval_acc")
         if self.search_ema is None:
             self.search_ema = search
         else:
@@ -200,6 +215,7 @@ class VCogGovernor:
         self.loss_var = self.beta * self.loss_var + (1.0 - self.beta) * (loss - self.loss_ema) ** 2
 
         inertia = float(telemetry.get("inertia", 0.0))
+        epi = float(telemetry.get("epi", 0.0))
         walk = float(telemetry.get("walk", 0.0))
         focus = float(telemetry.get("focus", 0.0))
         grip = max(0.0, min(1.0, inertia * (1.0 - walk) * focus))
@@ -216,10 +232,18 @@ class VCogGovernor:
 
         loss_std = max(math.sqrt(abs(self.loss_var)), self.sigma_floor)
         ident = 1.0 / (1.0 + self.loss_ema * (1.0 + loss_std))
-        prg = max(0.0, min(1.0, ident / max(self.id_target, 1e-6))) * 100.0
+        prg = None
+        if eval_acc is not None:
+            try:
+                acc_val = float(eval_acc)
+                prg = max(0.0, min(100.0, acc_val * 100.0))
+            except Exception:
+                prg = None
+        if prg is None:
+            prg = max(0.0, min(1.0, ident / max(self.id_target, 1e-6))) * 100.0
 
         header = (
-            f"V_COG[PRGRS:{prg:.1f}% LOCKS:{lk:.2f} FLOWS:{fl:.2f} "
+            f"V_COG[PRGRS:{prg:.1f}% EPI:{epi:.2f} LOCKS:{lk:.2f} FLOWS:{fl:.2f} "
             f"SNAPS:{sn:.2f} IDENT:{ident:.3f}]"
         )
         return header
@@ -436,6 +460,7 @@ def _checkpoint_payload(model, optimizer, scaler, step: int, losses: List[float]
         "update_scale": getattr(model, "update_scale", UPDATE_SCALE),
         "ptr_inertia": getattr(model, "ptr_inertia", PTR_INERTIA),
         "ptr_inertia_ema": getattr(model, "ptr_inertia_ema", getattr(model, "ptr_inertia", PTR_INERTIA)),
+        "ptr_inertia_floor": getattr(model, "ptr_inertia_floor", 0.0),
         "agc_scale_max": getattr(model, "agc_scale_max", AGC_SCALE_MAX),
         "ground_speed_ema": getattr(model, "ground_speed_ema", None),
         "ground_speed_limit": getattr(model, "ground_speed_limit", None),
@@ -523,6 +548,15 @@ class AbsoluteHallway(nn.Module):
         # Pointer control (modifiable at runtime)
         self.ptr_inertia = PTR_INERTIA
         self.ptr_inertia_ema = self.ptr_inertia
+        # Inertia floor for post-snap stability (ratchet mode).
+        self.ptr_inertia_floor = 0.0
+        self.ptr_inertia_dyn_pre = None
+        self.ptr_inertia_dyn = None
+        self.ptr_inertia_dyn_tensor = None
+        self.ptr_inertia_reward_ready = False
+        self.ptr_inertia_reward_acc = None
+        self.ptr_inertia_reward_streak = 0
+        self.ptr_inertia_epi = 0.0
         self.ptr_deadzone = PTR_DEADZONE
         self.ptr_deadzone_tau = PTR_DEADZONE_TAU
         self.ptr_walk_prob = PTR_WALK_PROB
@@ -985,9 +1019,19 @@ class AbsoluteHallway(nn.Module):
                 inertia_use = torch.clamp(inertia_use, 0.0, 0.99)
                 deadzone_use = torch.clamp(deadzone_use, min=0.0)
                 walk_use = torch.clamp(walk_use, 0.0, 1.0)
-                ctrl_inertia_mean = float(inertia_use.mean().item())
+                ctrl_inertia_tensor_pre = inertia_use.mean()
+                ctrl_inertia_pre = float(ctrl_inertia_tensor_pre.item())
+                inertia_floor = float(getattr(self, "ptr_inertia_floor", 0.0) or 0.0)
+                if inertia_floor > 0.0:
+                    inertia_floor = min(inertia_floor, 0.99)
+                    inertia_use = torch.clamp(inertia_use, min=inertia_floor)
+                ctrl_inertia_tensor = inertia_use.mean()
+                ctrl_inertia_mean = float(ctrl_inertia_tensor.item())
                 ctrl_deadzone_mean = float(deadzone_use.mean().item())
                 ctrl_walk_mean = float(walk_use.mean().item())
+                self.ptr_inertia_dyn_pre = ctrl_inertia_pre
+                self.ptr_inertia_dyn = ctrl_inertia_mean
+                self.ptr_inertia_dyn_tensor = ctrl_inertia_tensor
 
                 theta_ptr, theta_gate = self._gather_params(ptr_float)  # base idx for params
                 jump_logits = self.jump_score(upd).squeeze(1) + theta_gate
@@ -1771,6 +1815,11 @@ def train_wallclock(model, loader, dataset_name, model_name, num_classes, wall_c
     ptr_steps = 0
     panic_reflex = None
     panic_status = ""
+    vcog = VCogGovernor(id_target=VCOG_ID_TARGET, sigma_floor=VCOG_SIGMA_FLOOR)
+    model.last_eval_acc = None
+    ratchet_streak = 0
+    inertia_signal_streak = 0
+    ratchet_allowed = RATCHET_ENABLED and not INERTIA_SIGNAL_ENABLED
     if PANIC_ENABLED:
         panic_reflex = PanicReflex(
             ema_beta=PANIC_BETA,
@@ -1847,6 +1896,8 @@ def train_wallclock(model, loader, dataset_name, model_name, num_classes, wall_c
             model.ptr_inertia = float(ckpt["ptr_inertia"])
         if "ptr_inertia_ema" in ckpt:
             model.ptr_inertia_ema = float(ckpt["ptr_inertia_ema"])
+        if "ptr_inertia_floor" in ckpt:
+            model.ptr_inertia_floor = float(ckpt["ptr_inertia_floor"])
         if "agc_scale_max" in ckpt:
             model.agc_scale_max = float(ckpt["agc_scale_max"])
         if "ground_speed_ema" in ckpt:
@@ -1973,7 +2024,27 @@ def train_wallclock(model, loader, dataset_name, model_name, num_classes, wall_c
                     loss = torch.stack(loss_parts).mean() + LAMBDA_MOVE * move_pen
                 else:
                     loss = criterion(outputs, targets) + LAMBDA_MOVE * move_pen
+                if INERTIA_SIGNAL_ENABLED:
+                    acc_val = getattr(model, "ptr_inertia_reward_acc", None)
+                    acc_weight = 0.0
+                    if acc_val is not None:
+                        acc_weight = (float(acc_val) - INERTIA_SIGNAL_ACC_MIN) / max(1e-6, 1.0 - INERTIA_SIGNAL_ACC_MIN)
+                        acc_weight = max(0.0, min(1.0, acc_weight))
+                    acc_weight_sq = acc_weight * acc_weight
+                    model.ptr_inertia_epi = acc_weight_sq
+                    if getattr(model, "ptr_inertia_reward_ready", False):
+                        inertia_dyn = getattr(model, "ptr_inertia_dyn_tensor", None)
+                        if inertia_dyn is not None:
+                            target = inertia_dyn.new_tensor(INERTIA_SIGNAL_TARGET)
+                            floor = inertia_dyn.new_tensor(INERTIA_SIGNAL_FLOOR)
+                            reward_term = torch.clamp(target - inertia_dyn, min=0.0)
+                            pain_term = torch.clamp(floor - inertia_dyn, min=0.0)
+                            loss = loss + acc_weight_sq * (
+                                (INERTIA_SIGNAL_REWARD * reward_term) + (INERTIA_SIGNAL_PAIN * (pain_term ** 2))
+                            )
             scaler.scale(loss).backward()
+            if hasattr(model, "ptr_inertia_dyn_tensor"):
+                model.ptr_inertia_dyn_tensor = None
             if USE_AMP and scaler.is_enabled():
                 scaler.unscale_(optimizer)
             if hasattr(model, "theta_ptr_reduced"):
@@ -2109,19 +2180,30 @@ def train_wallclock(model, loader, dataset_name, model_name, num_classes, wall_c
                         search_val = max(0.0, min(1.0, float(model.ptr_walk_prob)))
                     except Exception:
                         search_val = 0.0
+                eval_acc_val = getattr(model, "last_eval_acc", None)
+                if eval_acc_val is None:
+                    eval_acc_val = getattr(model, "ptr_inertia_reward_acc", None)
                 vcog_header = vcog.update({
                     "loss": loss.item(),
+                    "eval_acc": eval_acc_val,
                     "search": search_val,
                     "focus": float(focus_val) if focus_val is not None else 0.0,
                     "inertia": float(model.ptr_inertia),
+                    "epi": float(getattr(model, "ptr_inertia_epi", 0.0) or 0.0),
                     "walk": float(model.ptr_walk_prob),
                     "delta": float(getattr(model, "ptr_delta_abs_mean", 0.0) or 0.0),
                     "delta_raw": float(getattr(model, "ptr_delta_raw_mean", 0.0) or 0.0),
                 })
                 agc_cap = getattr(model, "agc_scale_cap", getattr(model, "agc_scale_max", AGC_SCALE_MAX))
                 active_experts = shard_info.get("active_experts") if shard_info else None
+                inr_pre = getattr(model, "ptr_inertia_dyn_pre", None)
+                inr_post = getattr(model, "ptr_inertia_dyn", None)
+                inr_floor = float(getattr(model, "ptr_inertia_floor", 0.0) or 0.0)
+                if inr_pre is None or inr_post is None:
+                    inr_pre = float(model.ptr_inertia)
+                    inr_post = float(model.ptr_inertia)
                 raw_compact = (
-                    f"RAW[SCA:{float(scale_log):.3f} INR:{model.ptr_inertia:.2f} "
+                    f"RAW[SCA:{float(scale_log):.3f} INR:{inr_pre:.2f}->{inr_post:.2f}/F:{inr_floor:.2f} "
                     f"DZN:{model.ptr_deadzone:.2f} WLK:{model.ptr_walk_prob:.2f} "
                     f"CAD:{model.ptr_update_every} EXP:{active_experts if active_experts is not None else EXPERT_HEADS}]"
                 )
@@ -2196,16 +2278,75 @@ def train_wallclock(model, loader, dataset_name, model_name, num_classes, wall_c
             ignore_max_steps = os.environ.get("TP6_IGNORE_MAX_STEPS") == "1"
             if (not ignore_max_steps) and MAX_STEPS > 0 and step >= MAX_STEPS:
                 break
+            eval_stats = None
             eval_due = (
                 EVAL_EVERY_STEPS > 0
                 and eval_loader is not None
                 and step % EVAL_EVERY_STEPS == 0
             )
             if eval_due:
-                eval_model(model, eval_loader, dataset_name, model_name)
+                eval_stats = eval_model(model, eval_loader, dataset_name, model_name)
+                if eval_stats is not None:
+                    acc = eval_stats.get("eval_acc")
+                    if acc is not None:
+                        model.last_eval_acc = float(acc)
+                if ratchet_allowed and eval_stats is not None:
+                    acc = eval_stats.get("eval_acc")
+                    if acc is not None:
+                        if acc >= RATCHET_ACC_MIN:
+                            ratchet_streak += 1
+                        else:
+                            ratchet_streak = 0
+                        if ratchet_streak >= RATCHET_STREAK:
+                            new_floor = max(RATCHET_BASE, float(acc) * RATCHET_SCALE)
+                            if new_floor > getattr(model, "ptr_inertia_floor", 0.0):
+                                model.ptr_inertia_floor = new_floor
+                                log(
+                                    f"Ratchet inertia floor -> {model.ptr_inertia_floor:.2f} "
+                                    f"(acc={acc:.4f}, streak={ratchet_streak})"
+                                )
+                if INERTIA_SIGNAL_ENABLED and eval_stats is not None:
+                    acc = eval_stats.get("eval_acc")
+                    if acc is not None:
+                        if acc >= INERTIA_SIGNAL_ACC_MIN:
+                            inertia_signal_streak += 1
+                        else:
+                            inertia_signal_streak = 0
+                        model.ptr_inertia_reward_ready = inertia_signal_streak >= INERTIA_SIGNAL_STREAK
+                        model.ptr_inertia_reward_acc = float(acc)
+                        model.ptr_inertia_reward_streak = inertia_signal_streak
             if SAVE_EVERY_STEPS > 0 and step % SAVE_EVERY_STEPS == 0:
                 if EVAL_AT_CHECKPOINT and (not eval_due) and eval_loader is not None:
-                    eval_model(model, eval_loader, dataset_name, model_name)
+                    eval_stats = eval_model(model, eval_loader, dataset_name, model_name)
+                    if eval_stats is not None:
+                        acc = eval_stats.get("eval_acc")
+                        if acc is not None:
+                            model.last_eval_acc = float(acc)
+                    if ratchet_allowed and eval_stats is not None:
+                        acc = eval_stats.get("eval_acc")
+                        if acc is not None:
+                            if acc >= RATCHET_ACC_MIN:
+                                ratchet_streak += 1
+                            else:
+                                ratchet_streak = 0
+                            if ratchet_streak >= RATCHET_STREAK:
+                                new_floor = max(RATCHET_BASE, float(acc) * RATCHET_SCALE)
+                                if new_floor > getattr(model, "ptr_inertia_floor", 0.0):
+                                    model.ptr_inertia_floor = new_floor
+                                    log(
+                                        f"Ratchet inertia floor -> {model.ptr_inertia_floor:.2f} "
+                                        f"(acc={acc:.4f}, streak={ratchet_streak})"
+                                    )
+                    if INERTIA_SIGNAL_ENABLED and eval_stats is not None:
+                        acc = eval_stats.get("eval_acc")
+                        if acc is not None:
+                            if acc >= INERTIA_SIGNAL_ACC_MIN:
+                                inertia_signal_streak += 1
+                            else:
+                                inertia_signal_streak = 0
+                            model.ptr_inertia_reward_ready = inertia_signal_streak >= INERTIA_SIGNAL_STREAK
+                            model.ptr_inertia_reward_acc = float(acc)
+                            model.ptr_inertia_reward_streak = inertia_signal_streak
                 loss_value = losses[-1] if losses else None
                 raw_delta = getattr(model, "ptr_delta_raw_mean", None)
                 raw_delta_value = float(raw_delta) if raw_delta is not None else None
@@ -2323,6 +2464,10 @@ def eval_model(model, loader, dataset_name, model_name):
     tei = None
     if mi_bits is not None and ptr_flip_rate is not None:
         tei = acc * mi_bits * (1.0 - ptr_flip_rate)
+    try:
+        model.last_eval_acc = float(acc)
+    except Exception:
+        model.last_eval_acc = None
     log(f"{dataset_name} | {model_name} | eval_loss {avg_loss:.4f} | eval_acc {acc:.4f} | eval_n {total_seen}")
     return {
         "eval_loss": avg_loss,
@@ -2390,6 +2535,7 @@ def train_steps(model, loader, steps, dataset_name, model_name):
         model.ptr_update_auto = False
     else:
         model.ptr_update_auto = PTR_UPDATE_AUTO
+    inertia_signal_streak = 0
     while step < steps:
         try:
             inputs, targets = next(it)
@@ -2405,7 +2551,27 @@ def train_steps(model, loader, steps, dataset_name, model_name):
         with amp_autocast():
             outputs, move_pen = model(inputs)
             loss = criterion(outputs, targets) + LAMBDA_MOVE * move_pen
+            if INERTIA_SIGNAL_ENABLED:
+                acc_val = getattr(model, "ptr_inertia_reward_acc", None)
+                acc_weight = 0.0
+                if acc_val is not None:
+                    acc_weight = (float(acc_val) - INERTIA_SIGNAL_ACC_MIN) / max(1e-6, 1.0 - INERTIA_SIGNAL_ACC_MIN)
+                    acc_weight = max(0.0, min(1.0, acc_weight))
+                acc_weight_sq = acc_weight * acc_weight
+                model.ptr_inertia_epi = acc_weight_sq
+                if getattr(model, "ptr_inertia_reward_ready", False):
+                    inertia_dyn = getattr(model, "ptr_inertia_dyn_tensor", None)
+                    if inertia_dyn is not None:
+                        target = inertia_dyn.new_tensor(INERTIA_SIGNAL_TARGET)
+                        floor = inertia_dyn.new_tensor(INERTIA_SIGNAL_FLOOR)
+                        reward_term = torch.clamp(target - inertia_dyn, min=0.0)
+                        pain_term = torch.clamp(floor - inertia_dyn, min=0.0)
+                        loss = loss + acc_weight_sq * (
+                            (INERTIA_SIGNAL_REWARD * reward_term) + (INERTIA_SIGNAL_PAIN * (pain_term ** 2))
+                        )
         scaler.scale(loss).backward()
+        if hasattr(model, "ptr_inertia_dyn_tensor"):
+            model.ptr_inertia_dyn_tensor = None
         if USE_AMP and scaler.is_enabled():
             scaler.unscale_(optimizer)
         grad_norm_step = 0.0
@@ -2489,18 +2655,29 @@ def train_steps(model, loader, steps, dataset_name, model_name):
                         search_val = max(0.0, min(1.0, float(model.ptr_walk_prob)))
                     except Exception:
                         search_val = 0.0
+                eval_acc_val = getattr(model, "last_eval_acc", None)
+                if eval_acc_val is None:
+                    eval_acc_val = getattr(model, "ptr_inertia_reward_acc", None)
                 vcog_header = vcog.update({
                     "loss": loss.item(),
+                    "eval_acc": eval_acc_val,
                     "search": search_val,
                     "focus": float(focus_val) if focus_val is not None else 0.0,
                     "inertia": float(model.ptr_inertia),
+                    "epi": float(getattr(model, "ptr_inertia_epi", 0.0) or 0.0),
                     "walk": float(model.ptr_walk_prob),
                     "delta": float(getattr(model, "ptr_delta_abs_mean", 0.0) or 0.0),
                     "delta_raw": float(getattr(model, "ptr_delta_raw_mean", 0.0) or 0.0),
                 })
                 active_experts = shard_info.get("active_experts") if shard_info else None
+                inr_pre = getattr(model, "ptr_inertia_dyn_pre", None)
+                inr_post = getattr(model, "ptr_inertia_dyn", None)
+                inr_floor = float(getattr(model, "ptr_inertia_floor", 0.0) or 0.0)
+                if inr_pre is None or inr_post is None:
+                    inr_pre = float(model.ptr_inertia)
+                    inr_post = float(model.ptr_inertia)
                 raw_compact = (
-                    f"RAW[SCA:{float(scale_log):.3f} INR:{model.ptr_inertia:.2f} "
+                    f"RAW[SCA:{float(scale_log):.3f} INR:{inr_pre:.2f}->{inr_post:.2f}/F:{inr_floor:.2f} "
                     f"DZN:{model.ptr_deadzone:.2f} WLK:{model.ptr_walk_prob:.2f} "
                     f"CAD:{model.ptr_update_every} EXP:{active_experts if active_experts is not None else EXPERT_HEADS}]"
                 )
