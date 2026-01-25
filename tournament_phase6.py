@@ -150,6 +150,7 @@ VCOG_ID_TARGET = float(os.environ.get("TP6_VCOG_ID_TARGET", "0.25"))
 VCOG_SIGMA_FLOOR = float(os.environ.get("TP6_VCOG_SIGMA_FLOOR", "1e-4"))
 VCOG_PRG_FROM_ACC = os.environ.get("TP6_VCOG_PRG_FROM_ACC", "0") == "1"
 VCOG_PRG_ACC_TARGET = float(os.environ.get("TP6_VCOG_PRG_ACC_TARGET", "1.0"))
+LOSS_EMA_BETA = float(os.environ.get("TP6_LOSS_EMA_BETA", "0.95"))
 RATCHET_ENABLED = os.environ.get("TP6_INERTIA_RATCHET", "0") == "1"
 RATCHET_ACC_MIN = float(os.environ.get("TP6_RATCHET_ACC_MIN", "0.98"))
 RATCHET_STREAK = int(os.environ.get("TP6_RATCHET_STREAK", "2"))
@@ -162,6 +163,12 @@ INERTIA_SIGNAL_TARGET = float(os.environ.get("TP6_INERTIA_SIGNAL_TARGET", "0.95"
 INERTIA_SIGNAL_FLOOR = float(os.environ.get("TP6_INERTIA_SIGNAL_FLOOR", "0.5"))
 INERTIA_SIGNAL_REWARD = float(os.environ.get("TP6_INERTIA_SIGNAL_REWARD", "0.1"))
 INERTIA_SIGNAL_PAIN = float(os.environ.get("TP6_INERTIA_SIGNAL_PAIN", "0.05"))
+MITOSIS_ENABLED = os.environ.get("TP6_MITOSIS", "0") == "1"
+MITOSIS_STALL_WINDOW = int(os.environ.get("TP6_MITOSIS_STALL_WINDOW", "100"))
+MITOSIS_STALL_DELTA = float(os.environ.get("TP6_MITOSIS_STALL_DELTA", "0.005"))
+MITOSIS_IMBALANCE = float(os.environ.get("TP6_MITOSIS_IMBALANCE", "0.5"))
+MITOSIS_EXIT_CODE = int(os.environ.get("TP6_MITOSIS_EXIT_CODE", "86"))
+MITOSIS_CKPT_PATH = os.environ.get("TP6_MITOSIS_CKPT", "")
 PRECISION = CFG.precision
 DTYPE = CFG.dtype
 USE_AMP = CFG.use_amp
@@ -464,6 +471,8 @@ def _checkpoint_payload(model, optimizer, scaler, step: int, losses: List[float]
         "agc_scale_max": getattr(model, "agc_scale_max", AGC_SCALE_MAX),
         "ground_speed_ema": getattr(model, "ground_speed_ema", None),
         "ground_speed_limit": getattr(model, "ground_speed_limit", None),
+        "num_experts": getattr(getattr(model, "head", None), "num_experts", EXPERT_HEADS),
+        "param_names": [name for name, _ in model.named_parameters()],
     }
 
 
@@ -631,6 +640,10 @@ class AbsoluteHallway(nn.Module):
         else:
             self.register_parameter("phase_embed", None)
         self.head = LocationExpertRouter(slot_dim, num_classes, num_experts=EXPERT_HEADS)
+        # Router map: decouple address -> expert from modulo routing.
+        map_len = max(1, int(self.ring_range))
+        router_init = torch.arange(map_len, dtype=torch.long) % self.head.num_experts
+        self.register_buffer("router_map", router_init)
         # Learnable ring context scale (sigmoid-bounded) to avoid hard-coded mixing; init is configurable.
         c0 = max(1e-3, min(0.999, context_scale_init))
         logit = math.log(c0 / (1.0 - c0))
@@ -703,6 +716,41 @@ class AbsoluteHallway(nn.Module):
             core = math.pi * (sgn * h + (self.c19_rho * h * h))
             return torch.where(u >= l, u - l, torch.where(u <= -l, u + l, core))
         return x
+
+    def _map_expert_ids(self, ptr_int: torch.Tensor) -> torch.Tensor:
+        if not hasattr(self, "router_map") or self.router_map.numel() == 0:
+            return ptr_int
+        router_map = self.router_map
+        if router_map.device != ptr_int.device:
+            router_map = router_map.to(ptr_int.device)
+        idx = ptr_int.clamp(0, router_map.numel() - 1)
+        expert_ids = router_map[idx].to(torch.long)
+        # Guard against stale maps if expert count changed.
+        if expert_ids.numel() and expert_ids.max() >= self.head.num_experts:
+            expert_ids = expert_ids % self.head.num_experts
+        return expert_ids
+
+    def _update_expert_stats(self, expert_ids: torch.Tensor | None) -> None:
+        self.ptr_expert_ids = None
+        self.ptr_expert_counts = None
+        self.ptr_expert_active = 0
+        self.ptr_expert_max_share = None
+        self.ptr_expert_entropy = None
+        if expert_ids is None or self.head.num_experts <= 1:
+            return
+        counts = torch.bincount(expert_ids, minlength=self.head.num_experts).float()
+        total = counts.sum().clamp(min=1.0)
+        probs = counts / total
+        max_share = (counts.max() / total).item()
+        active = int((counts > 0).sum().item())
+        entropy = 0.0
+        if self.head.num_experts > 1:
+            entropy = float(-(probs * torch.log(probs + 1e-12)).sum().item() / math.log(self.head.num_experts))
+        self.ptr_expert_ids = expert_ids.detach().cpu()
+        self.ptr_expert_counts = counts.detach().cpu()
+        self.ptr_expert_active = active
+        self.ptr_expert_max_share = float(max_share)
+        self.ptr_expert_entropy = float(entropy)
 
     def _gather_params(self, ptr):
         # ptr: [B] float or long, map to reduced indices with linear interpolation.
@@ -1216,7 +1264,8 @@ class AbsoluteHallway(nn.Module):
             if fused.dtype != h.dtype:
                 fused = fused.to(h.dtype)
             read_vec = fused + h
-            logits = self.head(read_vec, ptr_int)
+            expert_ids = self._map_expert_ids(ptr_int)
+            logits = self.head(read_vec, expert_ids)
             nan_guard("logits_step", logits, t)
             if satiety_enabled:
                 probs = torch.softmax(logits, dim=1)
@@ -1243,7 +1292,8 @@ class AbsoluteHallway(nn.Module):
         if fused.dtype != h.dtype:
             fused = fused.to(h.dtype)
         read_vec = fused + h
-        logits = self.head(read_vec, ptr_int)
+        expert_ids = self._map_expert_ids(ptr_int)
+        logits = self.head(read_vec, expert_ids)
         nan_guard("logits_final", logits, T)
 
         self.pointer_hist = hist.detach().cpu()
@@ -1253,6 +1303,7 @@ class AbsoluteHallway(nn.Module):
         last_bins = last_bins.clamp(0, self.pointer_hist_bins - 1).detach().cpu()
         self.last_ptr_bins = last_bins
         self.last_ptr_int = ptr_int.detach().cpu()
+        self._update_expert_stats(expert_ids)
         # Pointer dynamics summary
         denom = max(1, total_active_steps)
         self.ptr_flip_rate = float(flip_count.sum().item()) / denom
@@ -1818,6 +1869,7 @@ def train_wallclock(model, loader, dataset_name, model_name, num_classes, wall_c
     vcog = VCogGovernor(id_target=VCOG_ID_TARGET, sigma_floor=VCOG_SIGMA_FLOOR)
     model.last_eval_acc = None
     ratchet_streak = 0
+    mitosis_acc_history = []
     inertia_signal_streak = 0
     ratchet_allowed = RATCHET_ENABLED and not INERTIA_SIGNAL_ENABLED
     if PANIC_ENABLED:
@@ -1872,18 +1924,25 @@ def train_wallclock(model, loader, dataset_name, model_name, num_classes, wall_c
         ckpt = torch.load(resume_path, map_location=DEVICE)
         try:
             model.load_state_dict(ckpt["model"])
-        except RuntimeError:
-            if MOBIUS_ENABLED:
-                log("MOBIUS enabled: retrying load_state_dict(strict=False) due to key mismatch")
+        except RuntimeError as exc:
+            exc_text = str(exc)
+            allow_relaxed = MOBIUS_ENABLED or "router_map" in exc_text
+            if allow_relaxed:
+                log("Retrying load_state_dict(strict=False) due to key mismatch")
                 missing, unexpected = model.load_state_dict(ckpt["model"], strict=False)
                 if missing:
-                    log(f"MOBIUS load missing keys: {missing}")
+                    log(f"Load missing keys: {missing}")
                 if unexpected:
-                    log(f"MOBIUS load unexpected keys: {unexpected}")
+                    log(f"Load unexpected keys: {unexpected}")
             else:
                 raise
-        if MOBIUS_ENABLED:
-            log("MOBIUS enabled: skipping optimizer/scaler load for clean restart")
+        ckpt_experts = ckpt.get("num_experts")
+        experts_mismatch = ckpt_experts is not None and int(ckpt_experts) != EXPERT_HEADS
+        if MOBIUS_ENABLED or experts_mismatch:
+            if experts_mismatch:
+                log(f"Expert count mismatch (ckpt={ckpt_experts}, env={EXPERT_HEADS}); skipping optimizer load")
+            else:
+                log("MOBIUS enabled: skipping optimizer/scaler load for clean restart")
         else:
             optimizer.load_state_dict(ckpt["optim"])
             if ckpt.get("scaler") and USE_AMP:
@@ -1996,13 +2055,33 @@ def train_wallclock(model, loader, dataset_name, model_name, num_classes, wall_c
                         denom = max(1e-6, flip_val + tension_val)
                         traction = dwell_val / denom
                     active_experts = None
+                    expert_imbalance = None
+                    expert_entropy = None
                     if EXPERT_HEADS > 1:
-                        last_ptr = getattr(model, "last_ptr_int", None)
-                        if last_ptr is not None:
-                            try:
-                                active_experts = int(torch.unique(last_ptr.to(torch.long) % EXPERT_HEADS).numel())
-                            except Exception:
-                                active_experts = None
+                        active_experts = getattr(model, "ptr_expert_active", None)
+                        expert_imbalance = getattr(model, "ptr_expert_max_share", None)
+                        expert_entropy = getattr(model, "ptr_expert_entropy", None)
+                        if active_experts is None:
+                            last_ptr = getattr(model, "last_ptr_int", None)
+                            router_map = getattr(model, "router_map", None)
+                            if last_ptr is not None:
+                                try:
+                                    last_ptr = last_ptr.to(torch.long)
+                                    if router_map is not None and router_map.numel() > 0:
+                                        mapped = router_map.detach().cpu()
+                                        mapped_ids = mapped[last_ptr.clamp(0, mapped.numel() - 1)]
+                                        active_experts = int(torch.unique(mapped_ids).numel())
+                                        counts = torch.bincount(mapped_ids, minlength=EXPERT_HEADS).float()
+                                        total = counts.sum().clamp(min=1.0)
+                                        expert_imbalance = float((counts.max() / total).item())
+                                        expert_entropy = float(
+                                            (-(counts / total) * torch.log((counts / total) + 1e-12)).sum().item()
+                                            / math.log(EXPERT_HEADS)
+                                        )
+                                    else:
+                                        active_experts = int(torch.unique(last_ptr % EXPERT_HEADS).numel())
+                                except Exception:
+                                    active_experts = None
                     model.debug_shard_info = {
                         "count": shard_count,
                         "size": local_shard_size,
@@ -2014,6 +2093,10 @@ def train_wallclock(model, loader, dataset_name, model_name, num_classes, wall_c
                         model.debug_shard_info["traction"] = traction
                     if active_experts is not None:
                         model.debug_shard_info["active_experts"] = active_experts
+                    if expert_imbalance is not None:
+                        model.debug_shard_info["expert_imbalance"] = expert_imbalance
+                    if expert_entropy is not None:
+                        model.debug_shard_info["expert_entropy"] = expert_entropy
                 if SHARD_ENABLED and local_shard_size > 0 and outputs.shape[0] > local_shard_size:
                     # Sub-culture partitioning: split batch into shards, mean losses.
                     loss_parts = []
@@ -2025,23 +2108,17 @@ def train_wallclock(model, loader, dataset_name, model_name, num_classes, wall_c
                 else:
                     loss = criterion(outputs, targets) + LAMBDA_MOVE * move_pen
                 if INERTIA_SIGNAL_ENABLED:
-                    acc_val = getattr(model, "ptr_inertia_reward_acc", None)
-                    acc_weight = 0.0
-                    if acc_val is not None:
-                        acc_weight = (float(acc_val) - INERTIA_SIGNAL_ACC_MIN) / max(1e-6, 1.0 - INERTIA_SIGNAL_ACC_MIN)
-                        acc_weight = max(0.0, min(1.0, acc_weight))
-                    acc_weight_sq = acc_weight * acc_weight
-                    model.ptr_inertia_epi = acc_weight_sq
-                    if getattr(model, "ptr_inertia_reward_ready", False):
-                        inertia_dyn = getattr(model, "ptr_inertia_dyn_tensor", None)
-                        if inertia_dyn is not None:
-                            target = inertia_dyn.new_tensor(INERTIA_SIGNAL_TARGET)
-                            floor = inertia_dyn.new_tensor(INERTIA_SIGNAL_FLOOR)
-                            reward_term = torch.clamp(target - inertia_dyn, min=0.0)
-                            pain_term = torch.clamp(floor - inertia_dyn, min=0.0)
-                            loss = loss + acc_weight_sq * (
-                                (INERTIA_SIGNAL_REWARD * reward_term) + (INERTIA_SIGNAL_PAIN * (pain_term ** 2))
-                            )
+                    loss_val = float(loss.item())
+                    loss_ema = getattr(model, "loss_ema", None)
+                    if loss_ema is None:
+                        loss_ema = loss_val
+                    else:
+                        loss_ema = LOSS_EMA_BETA * loss_ema + (1.0 - LOSS_EMA_BETA) * loss_val
+                    model.loss_ema = loss_ema
+                    confidence = 1.0 / (1.0 + loss_ema)
+                    epi = confidence * confidence
+                    model.ptr_inertia_epi = epi
+                    loss = loss + INERTIA_SIGNAL_REWARD * epi * (1.0 - model.ptr_inertia)
             scaler.scale(loss).backward()
             if hasattr(model, "ptr_inertia_dyn_tensor"):
                 model.ptr_inertia_dyn_tensor = None
@@ -2169,8 +2246,12 @@ def train_wallclock(model, loader, dataset_name, model_name, num_classes, wall_c
                         shard_text += f", focus={shard_info['focus']:.2f}"
                     if "tension" in shard_info:
                         shard_text += f", tension={shard_info['tension']:.2f}"
-                    if "active_experts" in shard_info:
-                        shard_text += f", experts={shard_info['active_experts']}"
+                if shard_info and "active_experts" in shard_info:
+                    shard_text += f", experts={shard_info['active_experts']}"
+                if shard_info and "expert_imbalance" in shard_info:
+                    shard_text += f", imb={float(shard_info['expert_imbalance']):.2f}"
+                if shard_info and "expert_entropy" in shard_info:
+                    shard_text += f", ent={float(shard_info['expert_entropy']):.2f}"
                 focus_val = shard_info.get("focus") if shard_info else None
                 tension_val = shard_info.get("tension") if shard_info else None
                 if focus_val is not None:
@@ -2196,6 +2277,16 @@ def train_wallclock(model, loader, dataset_name, model_name, num_classes, wall_c
                 })
                 agc_cap = getattr(model, "agc_scale_cap", getattr(model, "agc_scale_max", AGC_SCALE_MAX))
                 active_experts = shard_info.get("active_experts") if shard_info else None
+                if active_experts is None:
+                    active_experts = getattr(model, "ptr_expert_active", None)
+                expert_imbalance = shard_info.get("expert_imbalance") if shard_info else None
+                expert_entropy = shard_info.get("expert_entropy") if shard_info else None
+                if active_experts is None:
+                    active_experts = getattr(model, "ptr_expert_active", None)
+                if expert_imbalance is None:
+                    expert_imbalance = getattr(model, "ptr_expert_max_share", None)
+                if expert_entropy is None:
+                    expert_entropy = getattr(model, "ptr_expert_entropy", None)
                 inr_pre = getattr(model, "ptr_inertia_dyn_pre", None)
                 inr_post = getattr(model, "ptr_inertia_dyn", None)
                 inr_floor = float(getattr(model, "ptr_inertia_floor", 0.0) or 0.0)
@@ -2233,6 +2324,9 @@ def train_wallclock(model, loader, dataset_name, model_name, num_classes, wall_c
                         trace["ptr_delta_abs_mean"] = getattr(model, "ptr_delta_abs_mean", None)
                         trace["ptr_delta_raw_mean"] = getattr(model, "ptr_delta_raw_mean", None)
                         trace["ptr_inertia"] = model.ptr_inertia
+                        trace["ptr_expert_active"] = getattr(model, "ptr_expert_active", None)
+                        trace["ptr_expert_max_share"] = getattr(model, "ptr_expert_max_share", None)
+                        trace["ptr_expert_entropy"] = getattr(model, "ptr_expert_entropy", None)
                         trace["ptr_deadzone"] = model.ptr_deadzone
                         trace["ptr_walk_prob"] = model.ptr_walk_prob
                         trace["update_scale"] = getattr(model, "update_scale", UPDATE_SCALE)
@@ -2315,6 +2409,73 @@ def train_wallclock(model, loader, dataset_name, model_name, num_classes, wall_c
                         model.ptr_inertia_reward_ready = inertia_signal_streak >= INERTIA_SIGNAL_STREAK
                         model.ptr_inertia_reward_acc = float(acc)
                         model.ptr_inertia_reward_streak = inertia_signal_streak
+                        if model.ptr_inertia_reward_ready:
+                            target_floor = max(
+                                INERTIA_SIGNAL_FLOOR,
+                                min(INERTIA_SIGNAL_TARGET, 0.99),
+                            )
+                            if target_floor > getattr(model, "ptr_inertia_floor", 0.0):
+                                model.ptr_inertia_floor = target_floor
+                                log(f"Inertia signal floor -> {model.ptr_inertia_floor:.2f} (acc={acc:.4f})")
+                if MITOSIS_ENABLED and eval_stats is not None:
+                    acc = eval_stats.get("eval_acc")
+                    if acc is not None:
+                        acc = float(acc)
+                        mitosis_acc_history.append(acc)
+                        if len(mitosis_acc_history) > MITOSIS_STALL_WINDOW:
+                            mitosis_acc_history.pop(0)
+                        if len(mitosis_acc_history) >= MITOSIS_STALL_WINDOW:
+                            slope = mitosis_acc_history[-1] - mitosis_acc_history[0]
+                            imbalance = eval_stats.get("mitosis_expert_imbalance")
+                            if imbalance is None:
+                                imbalance = getattr(model, "ptr_expert_max_share", None)
+                            if imbalance is None:
+                                shard_info = getattr(model, "debug_shard_info", None)
+                                if shard_info is not None:
+                                    imbalance = shard_info.get("expert_imbalance")
+                            parent_expert = eval_stats.get("mitosis_parent_expert")
+                            hot_addresses = eval_stats.get("mitosis_hot_addresses")
+                            if (
+                                imbalance is not None
+                                and acc < 0.99
+                                and slope < MITOSIS_STALL_DELTA
+                                and float(imbalance) > MITOSIS_IMBALANCE
+                            ):
+                                ckpt_path = MITOSIS_CKPT_PATH or CHECKPOINT_PATH
+                                ckpt_dir = os.path.dirname(ckpt_path)
+                                if ckpt_dir:
+                                    os.makedirs(ckpt_dir, exist_ok=True)
+                                payload = _checkpoint_payload(model, optimizer, scaler, step, losses)
+                                payload["mitosis"] = {
+                                    "acc": acc,
+                                    "slope": slope,
+                                    "imbalance": float(imbalance),
+                                    "window": MITOSIS_STALL_WINDOW,
+                                    "parent_expert": parent_expert,
+                                    "hot_addresses": hot_addresses,
+                                }
+                                payload["num_experts"] = getattr(model.head, "num_experts", EXPERT_HEADS)
+                                torch.save(payload, ckpt_path)
+                                meta = {
+                                    "checkpoint": ckpt_path,
+                                    "acc": acc,
+                                    "slope": slope,
+                                    "imbalance": float(imbalance),
+                                    "window": MITOSIS_STALL_WINDOW,
+                                    "parent_expert": parent_expert,
+                                    "hot_addresses": hot_addresses,
+                                }
+                                meta_path = os.path.splitext(ckpt_path)[0] + "_meta.json"
+                                try:
+                                    with open(meta_path, "w", encoding="utf-8") as f:
+                                        json.dump(meta, f, indent=2)
+                                except Exception as e:
+                                    log(f"mitosis meta write failed: {e}")
+                                log(
+                                    f"MITOSIS requested: acc={acc:.4f} slope={slope:.4f} "
+                                    f"imb={float(imbalance):.3f} -> {ckpt_path}"
+                                )
+                                raise SystemExit(MITOSIS_EXIT_CODE)
             if SAVE_EVERY_STEPS > 0 and step % SAVE_EVERY_STEPS == 0:
                 if EVAL_AT_CHECKPOINT and (not eval_due) and eval_loader is not None:
                     eval_stats = eval_model(model, eval_loader, dataset_name, model_name)
@@ -2347,6 +2508,14 @@ def train_wallclock(model, loader, dataset_name, model_name, num_classes, wall_c
                             model.ptr_inertia_reward_ready = inertia_signal_streak >= INERTIA_SIGNAL_STREAK
                             model.ptr_inertia_reward_acc = float(acc)
                             model.ptr_inertia_reward_streak = inertia_signal_streak
+                            if model.ptr_inertia_reward_ready:
+                                target_floor = max(
+                                    INERTIA_SIGNAL_FLOOR,
+                                    min(INERTIA_SIGNAL_TARGET, 0.99),
+                                )
+                                if target_floor > getattr(model, "ptr_inertia_floor", 0.0):
+                                    model.ptr_inertia_floor = target_floor
+                                    log(f"Inertia signal floor -> {model.ptr_inertia_floor:.2f} (acc={acc:.4f})")
                 loss_value = losses[-1] if losses else None
                 raw_delta = getattr(model, "ptr_delta_raw_mean", None)
                 raw_delta_value = float(raw_delta) if raw_delta is not None else None
@@ -2410,6 +2579,11 @@ def eval_model(model, loader, dataset_name, model_name):
         elif hasattr(model.head, "single") and model.head.single is not None:
             model.head.out_features = model.head.single.out_features
     criterion = nn.CrossEntropyLoss()
+    collect_mitosis = MITOSIS_ENABLED
+    addr_loss_sum = None
+    addr_count = None
+    expert_counts = None
+    ring_len = int(getattr(model, "ring_range", getattr(model, "ring_len", 0)) or 0)
     total_loss = 0.0
     total_correct = 0
     total_seen = 0
@@ -2427,10 +2601,30 @@ def eval_model(model, loader, dataset_name, model_name):
             with amp_autocast():
                 outputs, _ = model(inputs)
                 loss = criterion(outputs, targets)
+                if collect_mitosis:
+                    loss_vec = F.cross_entropy(outputs, targets, reduction="none")
             total_loss += loss.item() * inputs.size(0)
             preds = outputs.argmax(dim=1)
             total_correct += (preds == targets).sum().item()
             total_seen += inputs.size(0)
+            if collect_mitosis and ring_len > 0:
+                addr = getattr(model, "last_ptr_int", None)
+                router_map = getattr(model, "router_map", None)
+                if addr is not None:
+                    addr = addr.to(torch.long).cpu()
+                    loss_cpu = loss_vec.detach().cpu().to(torch.float32)
+                    if addr_loss_sum is None:
+                        addr_loss_sum = torch.zeros(ring_len, dtype=torch.float32)
+                        addr_count = torch.zeros(ring_len, dtype=torch.float32)
+                    addr_loss_sum += torch.bincount(addr, weights=loss_cpu, minlength=ring_len)[:ring_len]
+                    addr_count += torch.bincount(addr, minlength=ring_len)[:ring_len]
+                    if router_map is not None and router_map.numel() > 0:
+                        mapped = router_map.detach().cpu()
+                        mapped_ids = mapped[addr.clamp(0, mapped.numel() - 1)]
+                        num_experts = int(getattr(model.head, "num_experts", 1))
+                        if expert_counts is None:
+                            expert_counts = torch.zeros(num_experts, dtype=torch.float32)
+                        expert_counts += torch.bincount(mapped_ids, minlength=num_experts).float()[:num_experts]
             if hasattr(model, "last_ptr_bins"):
                 bins = model.last_ptr_bins.to(torch.long)
                 labels = targets.detach().cpu().to(torch.long)
@@ -2468,6 +2662,26 @@ def eval_model(model, loader, dataset_name, model_name):
         model.last_eval_acc = float(acc)
     except Exception:
         model.last_eval_acc = None
+    mitosis_parent = None
+    mitosis_hot = None
+    mitosis_imbalance = None
+    if collect_mitosis and expert_counts is not None and addr_loss_sum is not None:
+        total = expert_counts.sum().item()
+        if total > 0:
+            shares = expert_counts / total
+            mitosis_parent = int(torch.argmax(shares).item())
+            mitosis_imbalance = float(shares[mitosis_parent].item())
+            router_map = getattr(model, "router_map", None)
+            if router_map is not None and router_map.numel() > 0:
+                loss_mean = addr_loss_sum / addr_count.clamp(min=1.0)
+                router_cpu = router_map.detach().cpu()
+                parent_mask = router_cpu == mitosis_parent
+                addr_idx = torch.nonzero(parent_mask, as_tuple=False).view(-1)
+                if addr_idx.numel() > 0:
+                    parent_losses = loss_mean[addr_idx]
+                    top_k = min(5, parent_losses.numel())
+                    top_vals, top_idx = torch.topk(parent_losses, k=top_k, largest=True)
+                    mitosis_hot = [int(addr_idx[i].item()) for i in top_idx]
     log(f"{dataset_name} | {model_name} | eval_loss {avg_loss:.4f} | eval_acc {acc:.4f} | eval_n {total_seen}")
     return {
         "eval_loss": avg_loss,
@@ -2477,6 +2691,9 @@ def eval_model(model, loader, dataset_name, model_name):
         "eval_mi_bits_shuffled": mi_bits_shuffle,
         "eval_ptr_flip_rate": ptr_flip_rate,
         "eval_tei": tei,
+        "mitosis_parent_expert": mitosis_parent,
+        "mitosis_hot_addresses": mitosis_hot,
+        "mitosis_expert_imbalance": mitosis_imbalance,
     }
 
 
@@ -2536,6 +2753,7 @@ def train_steps(model, loader, steps, dataset_name, model_name):
     else:
         model.ptr_update_auto = PTR_UPDATE_AUTO
     inertia_signal_streak = 0
+    mitosis_acc_history = []
     while step < steps:
         try:
             inputs, targets = next(it)
@@ -2552,23 +2770,17 @@ def train_steps(model, loader, steps, dataset_name, model_name):
             outputs, move_pen = model(inputs)
             loss = criterion(outputs, targets) + LAMBDA_MOVE * move_pen
             if INERTIA_SIGNAL_ENABLED:
-                acc_val = getattr(model, "ptr_inertia_reward_acc", None)
-                acc_weight = 0.0
-                if acc_val is not None:
-                    acc_weight = (float(acc_val) - INERTIA_SIGNAL_ACC_MIN) / max(1e-6, 1.0 - INERTIA_SIGNAL_ACC_MIN)
-                    acc_weight = max(0.0, min(1.0, acc_weight))
-                acc_weight_sq = acc_weight * acc_weight
-                model.ptr_inertia_epi = acc_weight_sq
-                if getattr(model, "ptr_inertia_reward_ready", False):
-                    inertia_dyn = getattr(model, "ptr_inertia_dyn_tensor", None)
-                    if inertia_dyn is not None:
-                        target = inertia_dyn.new_tensor(INERTIA_SIGNAL_TARGET)
-                        floor = inertia_dyn.new_tensor(INERTIA_SIGNAL_FLOOR)
-                        reward_term = torch.clamp(target - inertia_dyn, min=0.0)
-                        pain_term = torch.clamp(floor - inertia_dyn, min=0.0)
-                        loss = loss + acc_weight_sq * (
-                            (INERTIA_SIGNAL_REWARD * reward_term) + (INERTIA_SIGNAL_PAIN * (pain_term ** 2))
-                        )
+                loss_val = float(loss.item())
+                loss_ema = getattr(model, "loss_ema", None)
+                if loss_ema is None:
+                    loss_ema = loss_val
+                else:
+                    loss_ema = LOSS_EMA_BETA * loss_ema + (1.0 - LOSS_EMA_BETA) * loss_val
+                model.loss_ema = loss_ema
+                confidence = 1.0 / (1.0 + loss_ema)
+                epi = confidence * confidence
+                model.ptr_inertia_epi = epi
+                loss = loss + INERTIA_SIGNAL_REWARD * epi * (1.0 - model.ptr_inertia)
         scaler.scale(loss).backward()
         if hasattr(model, "ptr_inertia_dyn_tensor"):
             model.ptr_inertia_dyn_tensor = None

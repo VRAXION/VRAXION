@@ -1,5 +1,5 @@
-# run_tier2_8_3_signal_tuned.ps1
-# Tier 2.8.x: reward/pain inertia signal (ratchet disabled) - tuned strength
+# run_tier2_9_signal_floor.ps1
+# Tier 2.9: 16-key assoc_clean with signal-floor (f64 CPU)
 $root = "S:\AI\mirror\VRAXION"
 Set-Location $root
 
@@ -19,7 +19,7 @@ $env:MKL_NUM_THREADS = "24"
 $env:TP6_SYNTH = "1"
 $env:TP6_SYNTH_MODE = "assoc_clean"
 $env:TP6_SYNTH_LEN = "16"
-$env:TP6_ASSOC_KEYS = "4"
+$env:TP6_ASSOC_KEYS = "16"
 $env:TP6_ASSOC_PAIRS = "1"
 $env:TP6_OFFLINE_ONLY = "1"
 
@@ -28,20 +28,19 @@ $env:TP6_RING_LEN = "32"
 $env:TP6_EXPERT_HEADS = "16"
 
 # Eval + checkpoint cadence
-$env:TP6_EVAL_EVERY_STEPS = "1"
+$env:TP6_EVAL_EVERY_STEPS = "10"
 $env:TP6_EVAL_AT_CHECKPOINT = "0"
 $env:TP6_SAVE_EVERY_STEPS = "50"
-$env:TP6_MAX_STEPS = "300"
+$env:TP6_MAX_STEPS = "1000"
 $env:TP6_VCOG_PRG_FROM_ACC = "1"
 $env:TP6_VCOG_PRG_ACC_TARGET = "1.0"
 
 # Checkpoint + log paths
-$env:TP6_RESUME = "1"
-$env:TP6_CKPT = "checkpoints/sanity_tier2_8_3_signal/ckpt.pt"
-$env:VAR_LOGGING_PATH = "logs/sanity_tier2_8_3_signal_floor.log"
+$env:TP6_RESUME = "0"
+$env:TP6_CKPT = "checkpoints/sanity_tier2_9_signal/ckpt.pt"
+$env:VAR_LOGGING_PATH = "logs/sanity_tier2_9_signal_floor.log"
 
-# Replace ratchet with reward/pain signal (tuned)
-$env:TP6_INERTIA_RATCHET = "0"
+# Signal-floor logic (success-gated clamp)
 $env:TP6_INERTIA_SIGNAL = "1"
 $env:TP6_INERTIA_SIGNAL_ACC_MIN = "0.95"
 $env:TP6_INERTIA_SIGNAL_STREAK = "1"
@@ -50,9 +49,13 @@ $env:TP6_INERTIA_SIGNAL_FLOOR = "0.70"
 $env:TP6_INERTIA_SIGNAL_REWARD = "0.65"
 $env:TP6_INERTIA_SIGNAL_PAIN = "0.00"
 $env:TP6_LOSS_EMA_BETA = "0.95"
+
 # Backup ratchet only at 100% eval_acc.
 $env:TP6_INERTIA_RATCHET = "1"
 $env:TP6_RATCHET_ACC_MIN = "1.0"
 $env:TP6_RATCHET_STREAK = "2"
+
+New-Item -ItemType Directory -Force -Path "checkpoints/sanity_tier2_9_signal" | Out-Null
+New-Item -ItemType Directory -Force -Path "logs" | Out-Null
 
 python tournament_phase6.py
