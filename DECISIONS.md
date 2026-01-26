@@ -33,3 +33,9 @@ checkpoints and "tenured" experts. Adjust only by training a new model variant.
 - **`vault_dim`: 64**
 - Rationale: empirical vault sweep showed lowest mean loss at `vault_dim=64`
   for `slot_dim=576`. Ratio 0.5 consistently reduced jitter.
+
+### 5) Precision Split
+- **Weights / model dtype:** **fp32**
+- **Pointer dtype:** **fp64**
+- Rationale: fp32 weights are ~2.2× faster on Ryzen 3900X while keeping fp64
+  pointer stability.

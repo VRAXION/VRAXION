@@ -6,10 +6,10 @@ WORK_DIR = os.path.dirname(os.path.abspath(__file__))
 
 
 def configure_env():
-    # Force CPU + fp64
+    # Force CPU + fp32 weights + fp64 pointers
     os.environ["VAR_COMPUTE_DEVICE"] = "cpu"
     os.environ["CUDA_VISIBLE_DEVICES"] = ""
-    os.environ["TP6_PRECISION"] = "fp64"
+    os.environ["TP6_PRECISION"] = "fp32"
     os.environ["TP6_PTR_DTYPE"] = "fp64"
 
     # Threading

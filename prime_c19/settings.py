@@ -322,7 +322,7 @@ def load_settings() -> Settings:
     use_amp = device == "cuda" and precision in {"fp16", "bf16", "amp"}
     if precision == "fp64":
         use_amp = False
-    ptr_dtype_name = _env_str("TP6_PTR_DTYPE", "fp32").lower()
+    ptr_dtype_name = _env_str("TP6_PTR_DTYPE", "fp64").lower()
     ptr_dtype_map: Dict[str, torch.dtype] = {
         "fp64": torch.float64,
         "fp32": torch.float32,

@@ -2189,6 +2189,26 @@ def get_seq_mnist_loader():
                 return torch.stack(xs, dim=0), torch.tensor(ys, dtype=torch.long)
 
             return _SynthDataset(), collate
+        if synth_mode == "boundary_stream":
+            x_path = os.environ.get("TP6_BOUNDARY_X", os.path.join(ROOT, "data", "stm_boundary_x.npy"))
+            y_path = os.environ.get("TP6_BOUNDARY_Y", os.path.join(ROOT, "data", "stm_boundary_y.npy"))
+            x = torch.from_numpy(np.load(x_path)).float()
+            y = torch.from_numpy(np.load(y_path)).long()
+            seq_len = x.size(1)
+            SYNTH_META.update({"boundary_stream": True, "synth_len": seq_len, "rows": int(x.size(0))})
+            y_max = int(y.max().item()) if y.numel() else -1
+            num_classes = max(256, y_max + 1)
+            log(f"[synth] mode=boundary_stream rows={int(x.size(0))} len={seq_len} y_max={y_max} x={x_path} y={y_path}")
+            ds, collate = _wrap_dataset(x, y)
+            loader = DataLoader(
+                ds,
+                batch_size=BATCH_SIZE,
+                shuffle=False,
+                num_workers=0,
+                pin_memory=False,
+                collate_fn=collate,
+            )
+            return loader, num_classes, collate
         if synth_mode == "assoc_clean":
             pairs = max(1, int(ASSOC_PAIRS))
             keys = max(2, int(ASSOC_KEYS))
