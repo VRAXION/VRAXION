@@ -16,6 +16,13 @@ summaries/
 TRASH/
 review_pack/
 review_pack.zip
+proofs/
+
+# Local scripts / experiments
+run_*.ps1
+tail_*.ps1
+IGNITE_*.ps1
+*.zip
 
 # Checkpoints / binaries
 checkpoints/
