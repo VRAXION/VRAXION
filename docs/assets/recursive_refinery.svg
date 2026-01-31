@@ -1,0 +1,274 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="1200" height="360" viewBox="0 0 1200 360" fill="none"
+     xmlns="http://www.w3.org/2000/svg"
+     role="img" aria-labelledby="title desc">
+  <title id="title">Recursive Signal Refinery</title>
+  <desc id="desc">A loop-core diagram that refines high-entropy input streams into stabilized output streams via iterative resonance cleaning and verification.</desc>
+
+  <defs>
+    <!-- ======================================================================
+         FILTERS & GRADIENTS
+         ====================================================================== -->
+    <filter id="neon_cyan" x="-100%" y="-100%" width="300%" height="300%">
+      <feGaussianBlur stdDeviation="3" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+
+    <filter id="neon_magenta" x="-100%" y="-100%" width="300%" height="300%">
+      <feGaussianBlur stdDeviation="3" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+
+    <!-- Fade mask for scrolling streams (keeps edges soft) -->
+    <linearGradient id="fade_mask_grad" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="white" stop-opacity="0"/>
+      <stop offset="8%" stop-color="white" stop-opacity="1"/>
+      <stop offset="92%" stop-color="white" stop-opacity="1"/>
+      <stop offset="100%" stop-color="white" stop-opacity="0"/>
+    </linearGradient>
+
+    <!-- IMPORTANT: y starts negative so text ascenders + jitter aren't clipped -->
+    <mask id="stream_mask" maskUnits="userSpaceOnUse" maskContentUnits="userSpaceOnUse" x="0" y="-60" width="450" height="160">
+      <rect x="0" y="-60" width="450" height="160" fill="url(#fade_mask_grad)"/>
+    </mask>
+
+    <!-- Stream gradients -->
+    <linearGradient id="grad_input" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#FF00FF" stop-opacity="0.35"/>
+      <stop offset="100%" stop-color="#FF00FF" stop-opacity="1"/>
+    </linearGradient>
+
+    <linearGradient id="grad_output" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#00F0FF" stop-opacity="0.35"/>
+      <stop offset="100%" stop-color="#00F0FF" stop-opacity="1"/>
+    </linearGradient>
+
+    <!-- ======================================================================
+         REUSABLE UNITS
+         ====================================================================== -->
+    <g id="input_data_chunk">
+      <text x="0" y="0"
+            font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', monospace"
+            font-size="14" font-weight="700" fill="url(#grad_input)" letter-spacing="8" opacity="0.92">10110100</text>
+    </g>
+
+    <g id="input_signal_chunk">
+      <polyline points="0,0 20,0 20,30 40,30 40,0 60,0 80,0 80,30 100,30 100,0 120,0 120,30 140,30 160,30 160,0"
+                fill="none" stroke="url(#grad_input)" stroke-width="2" opacity="0.85"/>
+      <polyline points="0,0 5,3 10,-3 15,3 20,29 25,33 30,27 35,31 40,-1 45,2 50,-2 55,3 60,-2 65,2 70,-1 75,29 80,33 85,27 90,-1 95,2 100,0 105,28 110,32 115,29 120,31 125,28 130,32 135,29 140,30 145,27 150,33 155,29 160,30 160,0"
+                fill="none" stroke="#FF00FF" stroke-width="1" opacity="0.38"/>
+    </g>
+
+    <g id="output_data_chunk">
+      <text x="0" y="0"
+            font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', monospace"
+            font-size="14" font-weight="700" fill="url(#grad_output)" letter-spacing="8" opacity="0.92">10101010</text>
+    </g>
+
+    <g id="output_signal_chunk">
+      <path d="M 0 15 Q 10 0, 20 15 T 40 15 T 60 15 T 80 15 T 100 15 T 120 15 T 140 15 T 160 15"
+            fill="none" stroke="url(#grad_output)" stroke-width="2" opacity="0.92"/>
+    </g>
+  </defs>
+
+  <!-- ======================================================================
+       BASE LAYER
+       ====================================================================== -->
+  <rect width="1200" height="360" rx="8" fill="#0d1117"/>
+  <rect x="0.5" y="0.5" width="1199" height="359" rx="8" stroke="#30363d" stroke-width="1"/>
+
+  <!-- Alignment grid -->
+  <line x1="0" y1="180" x2="1200" y2="180" stroke="#30363d" stroke-width="1" stroke-dasharray="4 4" opacity="0.45"/>
+  <line x1="600" y1="0" x2="600" y2="360" stroke="#30363d" stroke-width="1" stroke-dasharray="4 4" opacity="0.45"/>
+
+  <!-- Header -->
+  <text x="40" y="40"
+        font-family="system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif"
+        font-size="14" font-weight="800" fill="#A0AEC0" letter-spacing="2">
+    RECURSIVE SIGNAL REFINERY // V41
+  </text>
+  <text x="40" y="60"
+        font-family="system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif"
+        font-size="12" font-weight="600" fill="#718096">
+    CONTINUOUS STREAM PROCESSING ARCHITECTURE
+  </text>
+
+  <!-- ======================================================================
+       CENTER CORE (3-gear loop)
+       ====================================================================== -->
+  <g transform="translate(600, 180)">
+    <!-- Structural connections -->
+    <path d="M -65 50 L 0 -60 M 65 50 L 0 -60 M -65 50 L 65 50"
+          stroke="#E2E8F0" stroke-width="1" stroke-dasharray="2 4" opacity="0.28"/>
+
+    <!-- TOP GEAR (neutral core) -->
+    <g transform="translate(0, -60)">
+      <g>
+        <circle r="58" fill="none" stroke="#2D3748" stroke-width="2" stroke-dasharray="10 6"/>
+        <circle r="45" fill="none" stroke="#E2E8F0" stroke-width="1" opacity="0.45"/>
+        <circle r="20" fill="#0d1117" stroke="#E2E8F0" stroke-width="2"/>
+        <path d="M -45 0 L 45 0 M 0 -45 L 0 45" stroke="#2D3748" stroke-width="1" opacity="0.5"/>
+        <circle r="4" fill="#E2E8F0"/>
+        <animateTransform attributeName="transform" type="rotate"
+                          from="360 0 0" to="0 0 0" dur="8s" repeatCount="indefinite"/>
+      </g>
+      <circle r="50" fill="none" stroke="#00F0FF" stroke-width="2" filter="url(#neon_cyan)" opacity="0.55"/>
+    </g>
+
+    <!-- BOTTOM LEFT GEAR (input manifold) -->
+    <g transform="translate(-65, 50)">
+      <g>
+        <circle r="58" fill="none" stroke="#2D3748" stroke-width="2" stroke-dasharray="10 6"/>
+        <circle r="45" fill="none" stroke="#E2E8F0" stroke-width="1" opacity="0.45"/>
+        <circle r="20" fill="#0d1117" stroke="#E2E8F0" stroke-width="2"/>
+        <path d="M -45 0 L 45 0 M 0 -45 L 0 45" stroke="#2D3748" stroke-width="1" opacity="0.5"/>
+        <circle r="4" fill="#E2E8F0"/>
+        <animateTransform attributeName="transform" type="rotate"
+                          from="0 0 0" to="360 0 0" dur="8s" repeatCount="indefinite"/>
+      </g>
+      <circle r="50" fill="none" stroke="#FF00FF" stroke-width="2" filter="url(#neon_magenta)" opacity="0.95"/>
+    </g>
+
+    <!-- BOTTOM RIGHT GEAR (output manifold) -->
+    <g transform="translate(65, 50)">
+      <g>
+        <circle r="58" fill="none" stroke="#2D3748" stroke-width="2" stroke-dasharray="10 6"/>
+        <circle r="45" fill="none" stroke="#E2E8F0" stroke-width="1" opacity="0.45"/>
+        <circle r="20" fill="#0d1117" stroke="#E2E8F0" stroke-width="2"/>
+        <path d="M -45 0 L 45 0 M 0 -45 L 0 45" stroke="#2D3748" stroke-width="1" opacity="0.5"/>
+        <circle r="4" fill="#E2E8F0"/>
+        <animateTransform attributeName="transform" type="rotate"
+                          from="0 0 0" to="360 0 0" dur="8s" repeatCount="indefinite"/>
+      </g>
+      <circle r="50" fill="none" stroke="#00F0FF" stroke-width="2" filter="url(#neon_cyan)" opacity="0.95"/>
+    </g>
+  </g>
+
+  <!-- ======================================================================
+       LEFT FLANK (INPUT)
+       ====================================================================== -->
+  <g transform="translate(40, 180)">
+    <path d="M 0 -80 L 450 -80 L 480 -40" fill="none" stroke="#30363d" stroke-width="1"/>
+    <path d="M 0 80 L 450 80 L 480 40" fill="none" stroke="#30363d" stroke-width="1"/>
+
+    <!-- Top stream: bits -->
+    <g transform="translate(0, -60)" mask="url(#stream_mask)">
+      <g>
+        <use href="#input_data_chunk" x="-160"/>
+        <use href="#input_data_chunk" x="0"/>
+        <use href="#input_data_chunk" x="160"/>
+        <use href="#input_data_chunk" x="320"/>
+        <use href="#input_data_chunk" x="480"/>
+        <animateTransform attributeName="transform" type="translate" from="-160 0" to="0 0" dur="2s" repeatCount="indefinite"/>
+      </g>
+      <line x1="0" y1="5" x2="450" y2="5" stroke="#FF00FF" stroke-width="1" opacity="0.18"/>
+      <line x1="0" y1="-15" x2="450" y2="-15" stroke="#FF00FF" stroke-width="1" opacity="0.18"/>
+    </g>
+
+    <!-- Bottom stream: erratic signal -->
+    <g transform="translate(0, 60)" mask="url(#stream_mask)">
+      <g>
+        <use href="#input_signal_chunk" x="-160"/>
+        <use href="#input_signal_chunk" x="0"/>
+        <use href="#input_signal_chunk" x="160"/>
+        <use href="#input_signal_chunk" x="320"/>
+        <use href="#input_signal_chunk" x="480"/>
+        <animateTransform attributeName="transform" type="translate" from="-160 0" to="0 0" dur="2s" repeatCount="indefinite"/>
+      </g>
+      <line x1="0" y1="35" x2="450" y2="35" stroke="#FF00FF" stroke-width="1" opacity="0.18"/>
+      <line x1="0" y1="-5" x2="450" y2="-5" stroke="#FF00FF" stroke-width="1" opacity="0.18"/>
+    </g>
+  </g>
+
+  <!-- ======================================================================
+       RIGHT FLANK (OUTPUT)
+       ====================================================================== -->
+  <g transform="translate(710, 180)">
+    <path d="M 0 -40 L 40 -80 L 450 -80" fill="none" stroke="#30363d" stroke-width="1" opacity="0.85"/>
+    <path d="M 0 40 L 40 80 L 450 80" fill="none" stroke="#30363d" stroke-width="1" opacity="0.85"/>
+
+    <!-- Top stream: bits -->
+    <g transform="translate(0, -60)" mask="url(#stream_mask)">
+      <g>
+        <use href="#output_data_chunk" x="-160"/>
+        <use href="#output_data_chunk" x="0"/>
+        <use href="#output_data_chunk" x="160"/>
+        <use href="#output_data_chunk" x="320"/>
+        <use href="#output_data_chunk" x="480"/>
+        <animateTransform attributeName="transform" type="translate" from="-160 0" to="0 0" dur="2s" repeatCount="indefinite"/>
+      </g>
+      <line x1="0" y1="5" x2="450" y2="5" stroke="#00F0FF" stroke-width="1" opacity="0.18"/>
+    </g>
+
+    <!-- Bottom stream: clean waveform -->
+    <g transform="translate(0, 60)" mask="url(#stream_mask)">
+      <g>
+        <use href="#output_signal_chunk" x="-160"/>
+        <use href="#output_signal_chunk" x="0"/>
+        <use href="#output_signal_chunk" x="160"/>
+        <use href="#output_signal_chunk" x="320"/>
+        <use href="#output_signal_chunk" x="480"/>
+        <animateTransform attributeName="transform" type="translate" from="-160 0" to="0 0" dur="2s" repeatCount="indefinite"/>
+      </g>
+      <line x1="0" y1="15" x2="450" y2="15" stroke="#00F0FF" stroke-width="1" opacity="0.18"/>
+    </g>
+  </g>
+
+  <!-- ======================================================================
+       ANNOTATIONS
+       ====================================================================== -->
+  <g>
+    <!-- Top annotation: points to the core gear -->
+    <g transform="translate(600, 44)">
+      <circle cx="0" cy="0" r="2" fill="#E2E8F0"/>
+      <text x="0" y="-14" text-anchor="middle"
+            font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', monospace"
+            font-size="11" fill="#FFFFFF" font-weight="800" letter-spacing="1">
+        LATENT RESONANCE CLEANING
+      </text>
+      <text x="0" y="2" text-anchor="middle"
+            font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', monospace"
+            font-size="9" fill="#A0AEC0">
+        ITERATIVE DENOISING / SELF-CHECK
+      </text>
+      <line x1="0" y1="10" x2="0" y2="44" stroke="#E2E8F0" stroke-width="1"/>
+      <line x1="0" y1="44" x2="0" y2="78" stroke="#E2E8F0" stroke-width="1" stroke-dasharray="2 2" opacity="0.55"/>
+    </g>
+
+    <!-- Left annotation -->
+    <g transform="translate(250, 280)">
+      <polyline points="0,0 0,-20 20,-40" fill="none" stroke="#FF00FF" stroke-width="1" opacity="0.65"/>
+      <text x="0" y="15" text-anchor="middle"
+            font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', monospace"
+            font-size="11" fill="#FF00FF" font-weight="800" letter-spacing="1">
+        HIGH-ENTROPY INPUT
+      </text>
+      <text x="0" y="28" text-anchor="middle"
+            font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', monospace"
+            font-size="9" fill="#A0AEC0">
+        ENTROPY: HIGH / VARIANCE: HIGH
+      </text>
+    </g>
+
+    <!-- Right annotation -->
+    <g transform="translate(950, 280)">
+      <polyline points="0,0 0,-20 -20,-40" fill="none" stroke="#00F0FF" stroke-width="1" opacity="0.65"/>
+      <text x="0" y="15" text-anchor="middle"
+            font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', monospace"
+            font-size="11" fill="#00F0FF" font-weight="800" letter-spacing="1">
+        RECTIFIED INFERENCE
+      </text>
+      <text x="0" y="28" text-anchor="middle"
+            font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', monospace"
+            font-size="9" fill="#A0AEC0">
+        VARIANCE: REDUCED / STABILITY: HIGHER
+      </text>
+    </g>
+  </g>
+</svg>
