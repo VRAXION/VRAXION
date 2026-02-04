@@ -295,8 +295,8 @@ class LinearClient:
               project { name }
               labels(first: 100) { nodes { name } }
               attachments(first: 50) { nodes { title url } }
-              blockedBy(first: 50) { nodes { identifier title } }
-              blocks(first: 50) { nodes { identifier title } }
+              relations(first: 50) { nodes { type relatedIssue { identifier title } } }
+              inverseRelations(first: 50) { nodes { type issue { identifier title } } }
             }
             pageInfo { hasNextPage endCursor }
           }
@@ -311,6 +311,26 @@ class LinearClient:
             nodes = conn.get("nodes", []) or []
             for n in nodes:
                 proj = (n.get("project") or {}).get("name") or ""
+                blocks_pairs: set[tuple[str, str]] = set()
+                for rel in ((n.get("relations") or {}).get("nodes", []) or []):
+                    if str(rel.get("type") or "").lower() != "blocks":
+                        continue
+                    ri = rel.get("relatedIssue") or {}
+                    ident = str(ri.get("identifier") or "")
+                    if not ident:
+                        continue
+                    blocks_pairs.add((ident, str(ri.get("title") or "")))
+
+                blocked_by_pairs: set[tuple[str, str]] = set()
+                for rel in ((n.get("inverseRelations") or {}).get("nodes", []) or []):
+                    if str(rel.get("type") or "").lower() != "blocks":
+                        continue
+                    src = rel.get("issue") or {}
+                    ident = str(src.get("identifier") or "")
+                    if not ident:
+                        continue
+                    blocked_by_pairs.add((ident, str(src.get("title") or "")))
+
                 out.append(
                     LinearIssue(
                         internal_id=str(n.get("id")),
@@ -329,12 +349,12 @@ class LinearClient:
                             for a in ((n.get("attachments") or {}).get("nodes", []) or [])
                         ),
                         blocked_by=tuple(
-                            LinearRelation(identifier=str(r.get("identifier")), title=str(r.get("title")))
-                            for r in ((n.get("blockedBy") or {}).get("nodes", []) or [])
+                            LinearRelation(identifier=ident, title=title)
+                            for ident, title in sorted(blocked_by_pairs, key=lambda x: (x[0], x[1]))
                         ),
                         blocks=tuple(
-                            LinearRelation(identifier=str(r.get("identifier")), title=str(r.get("title")))
-                            for r in ((n.get("blocks") or {}).get("nodes", []) or [])
+                            LinearRelation(identifier=ident, title=title)
+                            for ident, title in sorted(blocks_pairs, key=lambda x: (x[0], x[1]))
                         ),
                     )
                 )
