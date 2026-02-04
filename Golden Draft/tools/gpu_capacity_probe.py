@@ -409,6 +409,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         "heartbeat_stall_threshold_s": None,
         "heartbeat_last_progress_age_s": None,
         "step_time_mode": None,
+        "runtime_exception_msg": None,
     }
 
     write_lock = threading.Lock()
@@ -485,11 +486,20 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         device = _resolve_device(torch)
         metrics["device"] = device
 
-        weight_dtype = _torch_dtype_from_precision(torch, args.precision)
+        # "precision" is treated as compute precision (autocast dtype) for the probe run.
+        # Keep weights in fp32 to match typical training behavior (stable Adam + GradScaler on fp16).
+        compute_dtype = _torch_dtype_from_precision(torch, args.precision)
+        param_dtype = torch.float32
         ptr_dtype = _torch_dtype_from_ptr_dtype(torch, str(canon["ant_spec"]["ptr_dtype"]))
 
         # Init-time hook: must be set before model construction.
         absolute_hallway.EXPERT_HEADS = int(args.out_dim)
+
+        # Make state_loop_samples a real knob: AbsoluteHallway only uses it when STATE_LOOP_METRICS is enabled.
+        # Enable it iff the workload requests it, and set globals before model construction.
+        state_loop_samples = int(canon["colony_spec"]["state_loop_samples"])
+        absolute_hallway.STATE_LOOP_METRICS = bool(state_loop_samples > 0)
+        absolute_hallway.STATE_LOOP_SAMPLES = int(max(0, state_loop_samples))
 
         model = AbsoluteHallway(
             input_dim=1,
@@ -500,32 +510,27 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         model.train(True)
         model.to(device=device)
 
-        # Cast weights (best-effort; some dtypes may fail on CPU).
-        try:
-            model.to(dtype=weight_dtype)
-        except Exception:
-            # Keep default dtype if casting fails, but be explicit in failure reasons.
-            metrics["stability_pass"] = False
-            metrics["fail_reasons"].append("weight_cast_failed")
+        # Keep weights in fp32 (stable optimizer math). If this fails, there's no meaningful probe to run.
+        model.to(dtype=param_dtype)
 
         # Forward-time hook: pointer dtype consulted in forward.
         absolute_hallway.PTR_DTYPE = ptr_dtype
 
         model.ptr_update_every = int(canon["colony_spec"]["ptr_update_every"])
-        model.state_loop_samples = int(canon["colony_spec"]["state_loop_samples"])
+        model.state_loop_samples = int(max(0, state_loop_samples))
 
         opt = torch.optim.Adam(model.parameters(), lr=1e-3)
 
         B = int(canon["colony_spec"]["batch_size"])
         synth_len = int(canon["colony_spec"]["synth_len"])
-        x = torch.randn(B, synth_len, 1, device=device, dtype=weight_dtype)
+        x = torch.randn(B, synth_len, 1, device=device, dtype=param_dtype)
         y = torch.randint(0, 256, (B,), device=device, dtype=torch.long)
 
         use_cuda = device == "cuda"
 
         autocast_ctx = nullcontext()
         if use_cuda and int(args.amp) == 1:
-            autocast_ctx = torch.autocast(device_type="cuda", enabled=True, dtype=weight_dtype)
+            autocast_ctx = torch.autocast(device_type="cuda", enabled=True, dtype=compute_dtype)
 
         scaler = None
         if use_cuda and int(args.amp) == 1 and args.precision == "fp16":
@@ -536,7 +541,8 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
             with autocast_ctx:
                 out = model(x)
                 logits = out[0] if isinstance(out, (tuple, list)) else out
-                loss = F.cross_entropy(logits, y)
+                # Force fp32 loss math for stability under autocast.
+                loss = F.cross_entropy(logits.float(), y)
             if scaler is not None:
                 scaler.scale(loss).backward()
                 scaler.step(opt)
@@ -698,6 +704,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         msg = f"{type(exc).__name__}: {exc}"
         metrics["stability_pass"] = False
         metrics["fail_reasons"].append("runtime_exception")
+        metrics["runtime_exception_msg"] = msg
 
         # Heuristic OOM classification.
         low = msg.lower()
