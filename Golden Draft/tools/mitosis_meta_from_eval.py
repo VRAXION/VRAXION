@@ -37,8 +37,6 @@ def _bootstrap_paths() -> None:
             candls.append(envval)
 
     candls.append(str(reproo / "Golden Code"))
-    candls.append(r"S:\AI\Golden Code")
-    candls.append(r"S:/AI/Golden Code")
 
     for candpt in candls:
         try:
@@ -258,70 +256,6 @@ def _collect_ptr_hist_counts(
     return counts
 
 
-def _collect_loss_mean_by_address(
-    *,
-    state: Mapping[str, Any],
-    router_map_len: int,
-    num_experts: int,
-    ptr_samples: int = 4096,
-    batch_size: int = 64,
-    seq_len: int = 16,
-) -> tuple[list[float], list[int]]:
-    """Collect a deterministic per-address mean loss via a small CPU probe pass."""
-
-    import torch
-    import torch.nn.functional as F
-    from vraxion.instnct import absolute_hallway
-    from vraxion.instnct.absolute_hallway import AbsoluteHallway
-
-    absolute_hallway.EXPERT_HEADS = int(num_experts)
-
-    input_dim = _infer_input_dim(state)
-    slot_dim = _infer_slot_dim(state)
-    num_classes = _infer_num_classes(state)
-    ring_len = int(router_map_len)
-
-    model = AbsoluteHallway(
-        input_dim=int(input_dim),
-        num_classes=int(num_classes),
-        ring_len=int(ring_len),
-        slot_dim=int(slot_dim),
-    ).cpu()
-    model.eval()
-
-    filtered: dict[str, Any] = {k: v for k, v in state.items() if isinstance(k, str) and not k.startswith("head.")}
-    try:
-        model.load_state_dict(filtered, strict=False)
-    except Exception:
-        pass
-
-    torch.manual_seed(1337)
-
-    total_batches = int(math.ceil(int(ptr_samples) / max(1, int(batch_size))))
-    L = int(router_map_len)
-    loss_sum = torch.zeros((L,), dtype=torch.float64)
-    loss_cnt = torch.zeros((L,), dtype=torch.float64)
-
-    with torch.no_grad():
-        for _ in range(total_batches):
-            x = torch.randn(int(batch_size), int(seq_len), int(input_dim), dtype=torch.float32)
-            y = torch.randint(low=0, high=max(1, int(num_classes)), size=(int(batch_size),), dtype=torch.long)
-            logits, _move_penalty = model(x)
-            per = F.cross_entropy(logits, y, reduction="none").to(torch.float64)
-
-            ptr = getattr(model, "last_ptr_int", None)
-            if ptr is None or not hasattr(ptr, "numel"):
-                raise RuntimeError("model did not expose last_ptr_int; cannot build loss-by-address")
-            vals = ptr.view(-1).to(torch.int64).clamp(min=0, max=L - 1)
-
-            loss_sum += torch.bincount(vals, weights=per, minlength=L).to(torch.float64)
-            loss_cnt += torch.bincount(vals, minlength=L).to(torch.float64)
-
-    mean = (loss_sum / loss_cnt.clamp(min=1.0)).tolist()
-    cnt = loss_cnt.to(torch.int64).tolist()
-    return [float(v) for v in mean], [int(v) for v in cnt]
-
-
 def _parse_args(argv: Sequence[str] | None) -> argparse.Namespace:
     p = argparse.ArgumentParser(description="Generate arc-safe mitosis_meta.json from a checkpoint.")
     p.add_argument("--checkpoint", required=True, help="Input checkpoint (.pt) or modular checkpoint directory")
@@ -340,6 +274,9 @@ def main(argv: Sequence[str] | None = None) -> int:
     outpth = Path(os.path.expanduser(args.output)).resolve()
 
     try:
+        if args.address_policy != "ptr_hist_arc":
+            raise NotImplementedError("topk_loss is deferred (requires loss-by-address telemetry); use ptr_hist_arc")
+
         payload = _load_checkpoint_payload(ckppth)
         state = _extract_model_state(payload)
 
@@ -359,16 +296,8 @@ def main(argv: Sequence[str] | None = None) -> int:
         if num_experts <= 0:
             raise ValueError("could not infer num_experts from checkpoint")
 
-        # Determine pointer visit counts (and optional loss stats) per address.
+        # Determine pointer visit counts per address.
         counts_by_address = _collect_ptr_hist_counts(state=state, router_map_len=L, num_experts=num_experts)
-        loss_mean_by_address = None
-        loss_cnt_by_address = None
-        if args.address_policy == "topk_loss":
-            loss_mean_by_address, loss_cnt_by_address = _collect_loss_mean_by_address(
-                state=state,
-                router_map_len=L,
-                num_experts=num_experts,
-            )
 
         # Determine parent expert.
         if int(num_experts) == 1:
@@ -388,26 +317,12 @@ def main(argv: Sequence[str] | None = None) -> int:
 
         arc_start, arc_score = best_circular_window_start(masked_counts, arc_len)
 
-        if args.address_policy == "ptr_hist_arc":
-            hot_addresses = parent_only_addresses_in_arc(
-                router_cpu.tolist(),
-                parent=parent_expert,
-                start=arc_start,
-                length=arc_len,
-            )
-        else:
-            assert loss_mean_by_address is not None
-            assert loss_cnt_by_address is not None
-            # Parent-only, deterministic: sort by (loss desc, addr asc).
-            candidates = []
-            for addr, mean in enumerate(loss_mean_by_address):
-                if int(router_cpu[addr]) != int(parent_expert):
-                    continue
-                if int(loss_cnt_by_address[addr]) <= 0:
-                    continue
-                candidates.append((float(mean), int(addr)))
-            candidates.sort(key=lambda t: (-t[0], t[1]))
-            hot_addresses = [addr for _mean, addr in candidates[: max(0, int(args.top_k))]]
+        hot_addresses = parent_only_addresses_in_arc(
+            router_cpu.tolist(),
+            parent=parent_expert,
+            start=arc_start,
+            length=arc_len,
+        )
 
         dropped = int(arc_len) - int(len(parent_only_addresses_in_arc(router_cpu.tolist(), parent=parent_expert, start=arc_start, length=arc_len)))
 

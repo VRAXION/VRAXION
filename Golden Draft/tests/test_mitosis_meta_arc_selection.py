@@ -9,11 +9,16 @@ import conftest  # noqa: F401  (import side-effect: sys.path bootstrap)
 from tools.mitosis_meta_from_eval import (
     best_circular_window_start,
     expert_counts_from_router_map,
+    main as meta_main,
     parent_only_addresses_in_arc,
 )
 
 
 class MitosisMetaArcSelectionTests(unittest.TestCase):
+    def test_topk_loss_policy_is_deferred(self) -> None:
+        rc = meta_main(["--checkpoint", "nonexistent.pt", "--output", "out.json", "--address-policy", "topk_loss"])
+        self.assertEqual(rc, 2)
+
     def test_best_circular_window_tie_breaks_lowest_start(self) -> None:
         # Two equal maxima at starts 0 and 2; choose 0.
         start, total = best_circular_window_start([5, 0, 5, 0], window=1)
@@ -46,4 +51,3 @@ class MitosisMetaArcSelectionTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
-
