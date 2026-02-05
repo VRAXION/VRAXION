@@ -84,6 +84,13 @@ def parse_bool(
     return default, msg
 
 
+def env_is_one(env: Mapping[str, str], key: str) -> bool:
+    """Return True iff env[key] is exactly the string "1" (after stripping)."""
+
+    raw = env.get(key)
+    return raw is not None and raw.strip() == "1"
+
+
 def env_bool(
     env: Mapping[str, str],
     key: str,

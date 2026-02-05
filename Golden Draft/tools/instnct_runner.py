@@ -358,7 +358,7 @@ def default_context() -> InstnctRunnerContext:
     from vraxion.instnct.absolute_hallway import AbsoluteHallway
     from vraxion.instnct.seed import _maybe_override_expert_heads, set_seed
 
-    from . import instnct_data, instnct_eval, instnct_train_steps, instnct_train_wallclock
+    from . import env_utils, instnct_data, instnct_eval, instnct_train_steps, instnct_train_wallclock
 
     cfg = load_settings()
     absolute_hallway.EXPERT_HEADS = int(seed_mod.EXPERT_HEADS)
@@ -375,7 +375,7 @@ def default_context() -> InstnctRunnerContext:
         log=infra.log,
         synth_mode=str(getattr(cfg, "synth_mode", "")),
         mi_shuffle=bool(getattr(cfg, "mi_shuffle", False)),
-        mitosis_enabled=bool(getattr(cfg, "mitosis_enabled", False)),
+        mitosis_enabled=env_utils.env_is_one(os.environ, "VRX_MITOSIS"),
     )
 
     evo_cfg = EvolutionConfig(
