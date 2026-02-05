@@ -1,0 +1,154 @@
+./
+|-- .github/
+|   |-- ISSUE_TEMPLATE/
+|   |   `-- public_update.md
+|   `-- pull_request_template.md
+|-- docs/
+|   |-- assets/
+|   |   |-- At_a_glance.svg
+|   |   |-- auto_annealing.svg
+|   |   |-- cache_ram_hdd.svg
+|   |   |-- cadence_knee.svg
+|   |   |-- gpu_ch1_pipeline.svg
+|   |   |-- recursive_refinery.svg
+|   |   |-- vraxion_logo.svg
+|   |   `-- vraxion_phases.svg
+|   |-- .nojekyll
+|   |-- _config.yml
+|   |-- app.js
+|   |-- index.html
+|   |-- index_prev.md
+|   |-- input_flow.svg
+|   `-- styles.css
+|-- Golden Code/
+|   `-- vraxion/
+|       |-- instnct/
+|       |   |-- __init__.py
+|       |   |-- absolute_hallway.py
+|       |   |-- agc.py
+|       |   |-- brainstem.py
+|       |   |-- cadence.py
+|       |   |-- controls.py
+|       |   |-- experts.py
+|       |   |-- inertia_auto.py
+|       |   |-- infra.py
+|       |   |-- modular_checkpoint.py
+|       |   |-- panic.py
+|       |   |-- seed.py
+|       |   |-- settings.py
+|       |   |-- sharding.py
+|       |   |-- thermo.py
+|       |   `-- vcog.py
+|       |-- __init__.py
+|       `-- settings.py
+|-- Golden Draft/
+|   |-- benchmarks/
+|   |   |-- boot_synth_assoc_byte/
+|   |   |-- boot_synth_markov0/
+|   |   `-- boot_tiny_shakespeare/
+|   |-- contracts/
+|   |   |-- instnct_controls_golden_expected.json
+|   |   `-- instnct_settings_golden_expected.json
+|   |-- docs/
+|   |   |-- audit/
+|   |   |   `-- tree_depth6.txt
+|   |   |-- gpu/
+|   |   |   |-- env_lock_v1.md
+|   |   |   |-- objective_contract_v1.md
+|   |   |   |-- vram_breakdown_v1.md
+|   |   |   `-- workload_schema_v1.md
+|   |   |-- linear/
+|   |   |   `-- README.md
+|   |   |-- ops/
+|   |   |   `-- github_analytics_forensics_v1.md
+|   |   `-- ideas.md
+|   |-- tests/
+|   |   |-- conftest.py
+|   |   |-- test_absolute_hallway.py
+|   |   |-- test_cadence_governor.py
+|   |   |-- test_checkpoint_tools.py
+|   |   |-- test_controls_extra.py
+|   |   |-- test_env_utils.py
+|   |   |-- test_expert_routing.py
+|   |   |-- test_experts_hash.py
+|   |   |-- test_gpu_capacity_probe.py
+|   |   |-- test_gpu_env_dump.py
+|   |   |-- test_instnct_data.py
+|   |   |-- test_instnct_entrypoint.py
+|   |   |-- test_instnct_eval.py
+|   |   |-- test_instnct_evolution.py
+|   |   |-- test_instnct_seed_modular_override.py
+|   |   |-- test_instnct_train_steps.py
+|   |   |-- test_instnct_train_wallclock.py
+|   |   |-- test_linear_labels_catalog.py
+|   |   |-- test_live_dashboard_parse.py
+|   |   |-- test_modular_checkpoint.py
+|   |   |-- test_run_db.py
+|   |   |-- test_run_db_cmd_passthrough.py
+|   |   |-- test_settings_env_overrides.py
+|   |   |-- test_sharding_additional.py
+|   |   |-- test_thermostat.py
+|   |   |-- test_vcog_parse.py
+|   |   |-- test_vra60_watchdog_clock.py
+|   |   |-- test_vraxion_mitosis_split.py
+|   |   |-- test_vrx_sync_block.py
+|   |   `-- test_workload_id.py
+|   |-- tools/
+|   |   |-- _scratch/
+|   |   |   |-- check_latest_vraxion_log.py
+|   |   |   |-- launch_results_dashboard.py
+|   |   |   |-- print_report_summary.py
+|   |   |   |-- results_audit.py
+|   |   |   `-- run_transistor_sweep.py
+|   |   |-- __init__.py
+|   |   |-- _checkpoint_io.py
+|   |   |-- auto_wake_protocol.md
+|   |   |-- datapoint_2seed_runner.py
+|   |   |-- env_utils.py
+|   |   |-- eval_ckpt_assoc_byte.py
+|   |   |-- eval_only.py
+|   |   |-- ghost_wake.ps1
+|   |   |-- gpu_capacity_probe.py
+|   |   |-- gpu_capacity_probe_stub.py
+|   |   |-- gpu_env_dump.py
+|   |   |-- instnct_data.py
+|   |   |-- instnct_entrypoint.py
+|   |   |-- instnct_eval.py
+|   |   |-- instnct_evolution.py
+|   |   |-- instnct_runner.py
+|   |   |-- instnct_seed.py
+|   |   |-- instnct_train_steps.py
+|   |   |-- instnct_train_wallclock.py
+|   |   |-- linear_labels_catalog.py
+|   |   |-- live_dashboard.py
+|   |   |-- log_headers.py
+|   |   |-- modularize_checkpoint.py
+|   |   |-- parse_vcog.py
+|   |   |-- run_db.py
+|   |   |-- run_db_query.py
+|   |   |-- sweep_assoc_repulsion.py
+|   |   |-- vault_pack.py
+|   |   |-- vcog_parse.py
+|   |   |-- verify_golden_instnct_controls.py
+|   |   |-- verify_golden_instnct_experts_tools.py
+|   |   |-- verify_golden_instnct_settings.py
+|   |   |-- vraxion_lab_supervisor.py
+|   |   |-- vraxion_prune_merge.py
+|   |   |-- vrx_sync_linear_projects.py
+|   |   `-- workload_id.py
+|   |-- workloads/
+|   |   |-- od1_real_v1.json
+|   |   |-- od1_small_v1.json
+|   |   `-- od1_stress_v1.json
+|   |-- VRAXION_INFINITE.py
+|   |-- vraxion_mitosis_split.py
+|   `-- vraxion_run.py
+|-- .gitattributes
+|-- .gitignore
+|-- .vrx_sync_state.json
+|-- CITATION.cff
+|-- COMMERCIAL_LICENSE.md
+|-- LICENSE
+|-- NOTICE
+|-- README.md
+`-- VERSION.json
