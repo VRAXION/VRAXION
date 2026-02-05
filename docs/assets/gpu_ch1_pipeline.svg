@@ -1,0 +1,137 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="1200" height="360" viewBox="0 0 1200 360" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">GPU Chapter #1 pipeline (ChanWidth=1 / OD1 first)</title>
+  <desc id="desc">Two-row pipeline diagram for GPU capacity guardrails: env lock, objective contract, workload schema, probe harness, VRAM breakdown, capacity model, sweep matrix, profile promotion, final guide, and epic limiter.</desc>
+
+  <defs>
+    <pattern id="circuit_grid" x="0" y="0" width="40" height="40" patternUnits="userSpaceOnUse">
+      <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#1A2130" stroke-width="1"/>
+    </pattern>
+
+    <marker id="arrow_head" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#A0AEC0"/>
+    </marker>
+
+    <filter id="glow_magenta" x="-100%" y="-100%" width="300%" height="300%">
+      <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1200" height="360" rx="10" fill="#0d1117"/>
+  <rect width="1200" height="360" fill="url(#circuit_grid)" opacity="0.16"/>
+  <rect x="0.5" y="0.5" width="1199" height="359" rx="10" stroke="#30363d" stroke-width="1"/>
+
+  <!-- Header -->
+  <text x="28" y="30" font-family="system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif" font-weight="800" font-size="14" fill="#E2E8F0">
+    GPU Chapter #1 pipeline (ChanWidth=1 / OD1 first)
+  </text>
+  <text x="28" y="52" font-family="system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif" font-size="11" fill="#A0AEC0">
+    The goal is guardrails + reproducibility before broad sweeps: contracts → workload IDs → probe artifacts → VRAM/throughput modeling.
+  </text>
+  <line x1="28" y1="66" x2="1172" y2="66" stroke="#1A2130" stroke-width="1" stroke-dasharray="4 4"/>
+
+  <!-- Step box helper (manual layout) -->
+  <!-- Row 1 -->
+  <g transform="translate(28, 92)">
+    <g>
+      <rect x="0" y="0" width="220" height="72" rx="10" fill="#0b1220" stroke="#30363d"/>
+      <text x="14" y="22" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', monospace" font-size="10" fill="#FF00FF" opacity="0.9">VRA-29</text>
+      <text x="14" y="44" font-family="system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif" font-weight="800" font-size="13" fill="#E2E8F0">Env Lock</text>
+      <text x="14" y="62" font-family="system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif" font-size="10" fill="#A0AEC0">OS/driver/CUDA/torch baseline</text>
+    </g>
+
+    <g transform="translate(244, 0)">
+      <rect x="0" y="0" width="220" height="72" rx="10" fill="#0b1220" stroke="#30363d"/>
+      <text x="14" y="22" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', monospace" font-size="10" fill="#FF00FF" opacity="0.9">VRA-30</text>
+      <text x="14" y="44" font-family="system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif" font-weight="800" font-size="13" fill="#E2E8F0">Objective Contract</text>
+      <text x="14" y="62" font-family="system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif" font-size="10" fill="#A0AEC0">metrics + stability gates</text>
+    </g>
+
+    <g transform="translate(488, 0)">
+      <rect x="0" y="0" width="220" height="72" rx="10" fill="#0b1220" stroke="#30363d"/>
+      <text x="14" y="22" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', monospace" font-size="10" fill="#FF00FF" opacity="0.9">VRA-31</text>
+      <text x="14" y="44" font-family="system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif" font-weight="800" font-size="13" fill="#E2E8F0">Workload Schema</text>
+      <text x="14" y="62" font-family="system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif" font-size="10" fill="#A0AEC0">AntSpec + ColonySpec + ID</text>
+    </g>
+
+    <g transform="translate(732, 0)">
+      <rect x="0" y="0" width="220" height="72" rx="10" fill="#0b1220" stroke="#30363d"/>
+      <text x="14" y="22" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', monospace" font-size="10" fill="#FF00FF" opacity="0.9">VRA-32</text>
+      <text x="14" y="44" font-family="system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif" font-weight="800" font-size="13" fill="#E2E8F0">Probe Harness</text>
+      <text x="14" y="62" font-family="system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif" font-size="10" fill="#A0AEC0">RunDB artifacts + VRAM peaks</text>
+    </g>
+
+    <g transform="translate(956, 0)">
+      <rect x="0" y="0" width="216" height="72" rx="10" fill="#0b1220" stroke="#30363d"/>
+      <text x="14" y="22" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', monospace" font-size="10" fill="#FF00FF" opacity="0.9">VRA-34</text>
+      <text x="14" y="44" font-family="system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif" font-weight="800" font-size="13" fill="#E2E8F0">VRAM Breakdown</text>
+      <text x="14" y="62" font-family="system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif" font-size="10" fill="#A0AEC0">terms + validation vs probe</text>
+    </g>
+
+    <!-- Arrows row 1 -->
+    <line x1="220" y1="36" x2="244" y2="36" stroke="#A0AEC0" stroke-width="2" marker-end="url(#arrow_head)"/>
+    <line x1="464" y1="36" x2="488" y2="36" stroke="#A0AEC0" stroke-width="2" marker-end="url(#arrow_head)"/>
+    <line x1="708" y1="36" x2="732" y2="36" stroke="#A0AEC0" stroke-width="2" marker-end="url(#arrow_head)"/>
+    <line x1="952" y1="36" x2="956" y2="36" stroke="#A0AEC0" stroke-width="2" marker-end="url(#arrow_head)"/>
+  </g>
+
+  <!-- Row 2 -->
+  <g transform="translate(28, 208)">
+    <g>
+      <rect x="0" y="0" width="220" height="72" rx="10" fill="#0b1220" stroke="#30363d"/>
+      <text x="14" y="22" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', monospace" font-size="10" fill="#FF00FF" opacity="0.9">VRA-35</text>
+      <text x="14" y="44" font-family="system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif" font-weight="800" font-size="13" fill="#E2E8F0">Capacity Model</text>
+      <text x="14" y="62" font-family="system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif" font-size="10" fill="#A0AEC0">safe-start + max batch estimate</text>
+    </g>
+
+    <g transform="translate(244, 0)">
+      <rect x="0" y="0" width="220" height="72" rx="10" fill="#0b1220" stroke="#30363d"/>
+      <text x="14" y="22" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', monospace" font-size="10" fill="#FF00FF" opacity="0.9">VRA-36</text>
+      <text x="14" y="44" font-family="system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif" font-weight="800" font-size="13" fill="#E2E8F0">OD1 Sweep Matrix</text>
+      <text x="14" y="62" font-family="system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif" font-size="10" fill="#A0AEC0">envelope table (workloads × tiers)</text>
+    </g>
+
+    <g transform="translate(488, 0)">
+      <rect x="0" y="0" width="220" height="72" rx="10" fill="#0b1220" stroke="#30363d"/>
+      <text x="14" y="22" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', monospace" font-size="10" fill="#FF00FF" opacity="0.9">VRA-38</text>
+      <text x="14" y="44" font-family="system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif" font-weight="800" font-size="13" fill="#E2E8F0">Profile Promotion</text>
+      <text x="14" y="62" font-family="system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif" font-size="10" fill="#A0AEC0">named presets + repro commands</text>
+    </g>
+
+    <g transform="translate(732, 0)">
+      <rect x="0" y="0" width="220" height="72" rx="10" fill="#0b1220" stroke="#30363d"/>
+      <text x="14" y="22" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', monospace" font-size="10" fill="#FF00FF" opacity="0.9">VRA-39</text>
+      <text x="14" y="44" font-family="system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif" font-weight="800" font-size="13" fill="#E2E8F0">Final Guide</text>
+      <text x="14" y="62" font-family="system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif" font-size="10" fill="#A0AEC0">how to run + interpret + share</text>
+    </g>
+
+    <g transform="translate(956, 0)">
+      <rect x="0" y="0" width="216" height="72" rx="10" fill="#0b1220" stroke="#30363d"/>
+      <text x="14" y="22" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', monospace" font-size="10" fill="#FF00FF" opacity="0.9">VRA-28</text>
+      <text x="14" y="44" font-family="system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif" font-weight="800" font-size="13" fill="#E2E8F0">Epic Limiter</text>
+      <text x="14" y="62" font-family="system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif" font-size="10" fill="#A0AEC0">capacity map + limiter policy</text>
+    </g>
+
+    <!-- Arrows row 2 -->
+    <line x1="220" y1="36" x2="244" y2="36" stroke="#A0AEC0" stroke-width="2" marker-end="url(#arrow_head)"/>
+    <line x1="464" y1="36" x2="488" y2="36" stroke="#A0AEC0" stroke-width="2" marker-end="url(#arrow_head)"/>
+    <line x1="708" y1="36" x2="732" y2="36" stroke="#A0AEC0" stroke-width="2" marker-end="url(#arrow_head)"/>
+    <line x1="952" y1="36" x2="956" y2="36" stroke="#A0AEC0" stroke-width="2" marker-end="url(#arrow_head)"/>
+
+    <!-- Connector: end of row1 down to start of row2 -->
+    <path d="M 1120 -44 C 1150 -44 1150 0 1120 0" stroke="#A0AEC0" stroke-width="2" fill="none" marker-end="url(#arrow_head)"/>
+    <text x="1062" y="-56" font-family="system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif" font-size="10" fill="#A0AEC0">
+      next: predict → sweep → publish
+    </text>
+  </g>
+
+  <!-- Footer -->
+  <text x="28" y="332" font-family="system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif" font-size="10" fill="#8B949E">
+    Tip: keep the public surface consolidated; proofs of progress are merged PRs + tagged releases.
+  </text>
+</svg>
