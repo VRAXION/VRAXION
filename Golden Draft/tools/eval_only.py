@@ -133,7 +133,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         from vraxion.instnct import modular_checkpoint as mckpt
         from vraxion.settings import load_settings
 
-        from tools import instnct_data, instnct_eval
+        from tools import env_utils, instnct_data, instnct_eval
     except Exception as exc:
         _eprint(f"[eval_only] ERROR: missing required dependency: {exc}")
         if argobj.debug:
@@ -265,7 +265,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
             log=infra.log,
             synth_mode=str(getattr(cfg, "synth_mode", "")),
             mi_shuffle=bool(getattr(cfg, "mi_shuffle", False)),
-            mitosis_enabled=bool(getattr(cfg, "mitosis_enabled", False)),
+            mitosis_enabled=env_utils.env_is_one(os.environ, "VRX_MITOSIS"),
         )
 
         model.eval()
@@ -283,4 +283,3 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-
