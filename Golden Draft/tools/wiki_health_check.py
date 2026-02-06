@@ -70,6 +70,72 @@ def _find_banned_strings(md_files: list[Path], banned: list[str]) -> list[Findin
     return findings
 
 
+def _check_home_locked(wiki_root: Path) -> list[Finding]:
+    home = wiki_root / "Home.md"
+    if not home.exists():
+        # Case-insensitive fallback (defensive on non-Windows runners)
+        matches = [p for p in _iter_md_files(wiki_root) if p.name.lower() == "home.md"]
+        if matches:
+            home = matches[0]
+        else:
+            return [
+                Finding(
+                    kind="home_lock",
+                    file=str(wiki_root),
+                    line=1,
+                    message="Missing Home.md in wiki root",
+                )
+            ]
+
+    text = _read_text(home)
+    lines = [ln.strip() for ln in text.splitlines()]
+
+    required_sentinel = "HOME_LOCKED_V2"
+    required_headings = [
+        "## TLDR",
+        "## Non-negotiables",
+        "## Reader map",
+        "## Evidence contract (how we prove progress)",
+        "## Scaling contract (Resolution over reshuffling)",
+        "## Navigation (everything)",
+    ]
+
+    findings: list[Finding] = []
+
+    if required_sentinel not in text:
+        findings.append(
+            Finding(
+                kind="home_lock",
+                file=str(home),
+                line=1,
+                message=f'Missing sentinel "{required_sentinel}"',
+            )
+        )
+
+    for h in required_headings:
+        if h not in lines:
+            findings.append(
+                Finding(
+                    kind="home_lock",
+                    file=str(home),
+                    line=1,
+                    message=f'Missing required heading "{h}"',
+                )
+            )
+
+    if "Epistemic boundary" not in text:
+        findings.append(
+            Finding(
+                kind="home_lock",
+                file=str(home),
+                line=1,
+                message='Missing required substring "Epistemic boundary"',
+            )
+        )
+
+    return findings
+
+
 SVG_URL_RE = re.compile(r"https?://[^\s<>\"\)]*\.svg(?:\?[^\s<>\"\)]*)?")
 
 
@@ -243,6 +309,7 @@ def main(argv: list[str]) -> int:
             return 2
 
         findings = _find_banned_strings(md_files, banned)
+        home_findings = _check_home_locked(wiki_root)
 
         svg_urls = _extract_svg_urls(md_files)
         svg_failures: list[str] = []
@@ -266,6 +333,12 @@ def main(argv: list[str]) -> int:
         for f in findings:
             print(f"- {f.file}:{f.line}: {f.message}")
 
+    if home_findings:
+        ok = False
+        print("\nHOME LOCK VIOLATIONS:")
+        for f in home_findings:
+            print(f"- {f.file}:{f.line}: {f.message}")
+
     if missing_wikilinks:
         ok = False
         print("\nBROKEN [[...]] WIKI LINKS:")
@@ -281,6 +354,7 @@ def main(argv: list[str]) -> int:
     print("\nSUMMARY:")
     print(f"- markdown_files: {len(md_files)}")
     print(f"- banned_findings: {len(findings)}")
+    print(f"- home_lock_violations: {len(home_findings)}")
     print(f"- svg_urls: {len(svg_urls)} (failures: {len(svg_failures)})")
     print(f"- broken_wikilinks: {len(missing_wikilinks)}")
     print(f"- elapsed_s: {elapsed:.2f}")
@@ -290,4 +364,3 @@ def main(argv: list[str]) -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main(sys.argv[1:]))
-
