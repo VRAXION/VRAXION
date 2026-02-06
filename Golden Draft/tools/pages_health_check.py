@@ -39,6 +39,7 @@ class _HeadTagParser(HTMLParser):
         super().__init__()
         self.metas: dict[str, str] = {}
         self.links: list[dict[str, str]] = []
+        self.img_srcs: list[str] = []
 
     def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
         tag = tag.lower()
@@ -53,6 +54,10 @@ class _HeadTagParser(HTMLParser):
         elif tag == "link":
             # Keep all link tags; we will filter later.
             self.links.append(attrs_dict)
+        elif tag == "img":
+            src = attrs_dict.get("src", "").strip()
+            if src:
+                self.img_srcs.append(src)
 
 
 def _read_text(path: Path) -> str:
@@ -167,6 +172,29 @@ def main(argv: list[str]) -> int:
                     kind="missing_asset",
                     file=str(docs_index),
                     message=f'OG image asset missing: content="{og_image}" -> {p}',
+                )
+            )
+
+    # Badge assets referenced in the body must exist under docs/.
+    for src in parser.img_srcs:
+        if "assets/badges/" not in src:
+            continue
+        p = _docs_asset_path(repo_root, src)
+        if p is None:
+            issues.append(
+                Issue(
+                    kind="missing_asset",
+                    file=str(docs_index),
+                    message=f'Unresolvable badge src="{src}" (expected local docs asset)',
+                )
+            )
+            continue
+        if not p.exists():
+            issues.append(
+                Issue(
+                    kind="missing_asset",
+                    file=str(docs_index),
+                    message=f'Badge asset missing: src="{src}" -> {p}',
                 )
             )
 

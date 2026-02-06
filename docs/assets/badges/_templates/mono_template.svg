@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="{{WIDTH}}" height="24" viewBox="0 0 {{WIDTH}} 24" fill="none"
+     xmlns="http://www.w3.org/2000/svg"
+     role="img" aria-labelledby="vrx_badge_{{ID}}_title vrx_badge_{{ID}}_desc">
+  <title id="vrx_badge_{{ID}}_title">{{TEXT}}</title>
+  <desc id="vrx_badge_{{ID}}_desc">VRAXION label: {{TEXT}}</desc>
+
+  <rect x="0.5" y="0.5" width="{{WIDTH_MINUS1}}" height="23" rx="6" fill="#0d1117" stroke="#30363d"/>
+  <rect x="2" y="2" width="4" height="20" rx="3" fill="#A0AEC0" opacity="0.55"/>
+
+  <text x="12" y="16"
+        font-family="'Segoe UI', system-ui, -apple-system, sans-serif"
+        font-size="11" font-weight="850" letter-spacing="0.6"
+        fill="#E2E8F0">{{TEXT}}</text>
+</svg>
+

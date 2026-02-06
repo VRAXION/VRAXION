@@ -331,6 +331,8 @@ def main(argv: list[str]) -> int:
         "github.com/Kenessy/VRAXION",
         "kenessy.github.io/VRAXION",
         "github.com/users/Kenessy/projects/4",
+        "shields.io/",
+        "zenodo.org/badge/",
     ]
 
     started = time.time()

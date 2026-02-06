@@ -63,3 +63,7 @@ jobs:
       - name: Pages health check
         run: |
           python "Golden Draft/tools/pages_health_check.py"
+
+      - name: Badges health check
+        run: |
+          python "Golden Draft/tools/badges_health_check.py"

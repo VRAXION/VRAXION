@@ -458,6 +458,17 @@ body {
   border-color: var(--blue);
 }
 
+/* --- BADGE ROW --- */
+.badge-row {
+  margin: 10px 0 8px 0;
+}
+
+.badge-row img {
+  height: 22px;
+  margin-right: 6px;
+  vertical-align: middle;
+}
+
 /* --- DATA CARDS (REUSABLE) --- */
 .data-grid {
   display: grid;
