@@ -34,6 +34,7 @@ class BadgeSpec:
     text: str
     accent: str
     kind: str  # "badge" | "chip"
+    icon: str | None = None
 
 
 def _escape_xml_text(s: str) -> str:
@@ -47,18 +48,63 @@ def _escape_xml_text(s: str) -> str:
 
 
 def _measure_badge_width(label: str) -> int:
-    # A pragmatic estimate that reads well across GitHub/Wiki/PAGES renders.
-    # left padding starts after the optional rail; label starts at x=14.
-    base = 14 + 12
-    per_char = 7.0
+    # Icon + label badges: [left pad + icon chip + gap + text + right pad]
+    base = 35
+    per_char = 6.7
     spacing = 0.6
     n = len(label)
     w = base + (n * per_char) + (max(0, n - 1) * spacing)
-    return max(44, int(math.ceil(w)))
+    return max(58, int(math.ceil(w)))
 
 
 def _measure_chip_width(_label: str) -> int:
     return 44
+
+
+def _default_icon(badge_id: str, text: str) -> str:
+    icon_map = {
+        "canonical": "C",
+        "locked": "L",
+        "protocol": "P",
+        "policy": "P",
+        "spec": "S",
+        "guide": "G",
+        "note": "N",
+        "status": "S",
+        "roadmap": "R",
+        "releases": "R",
+        "draft": "D",
+        "wip": "W",
+        "experimental": "X",
+        "legacy": "L",
+        "deprecated": "D",
+        "evidence_required": "E",
+        "reproducible": "R",
+        "telemetry": "T",
+        "fail_gates": "F",
+        "engineering": "E",
+        "research": "R",
+        "gpu": "G",
+        "scaling": "S",
+        "wiki": "W",
+        "pages": "P",
+        "doi_10_5281_zenodo_18332532": "D",
+        "noncommercial": "N",
+        "hypothesis": "H",
+        "supported": "S",
+        "confirmed": "C",
+        "law": "L",
+        "disproven": "D",
+        "in_progress": "I",
+        "blocked": "B",
+        "parked": "P",
+    }
+    if badge_id in icon_map:
+        return icon_map[badge_id]
+    stripped = "".join(ch for ch in text if ch.isalnum())
+    if stripped:
+        return stripped[0].upper()
+    return "•"
 
 
 def _render_svg(template: str, spec: BadgeSpec) -> str:
@@ -66,21 +112,30 @@ def _render_svg(template: str, spec: BadgeSpec) -> str:
 
     if spec.kind == "chip":
         w = _measure_chip_width(label)
-        rail_block = ""
+        icon_block = ""
         text_anchor = "middle"
         text_x = f"{w/2:g}"
-        letter_spacing = "0.7"
+        letter_spacing = "0.55"
         font_weight = "900"
+        text_size = "10.8"
     else:
         w = _measure_badge_width(label)
-        rail_block = (
-            f'<rect x="2" y="2" width="5" height="20" rx="2" '
-            f'fill="{spec.accent}" fill-opacity="0.90"/>'
+        icon = _escape_xml_text(spec.icon or _default_icon(spec.badge_id, spec.text))
+        icon_block = (
+            f'<g>'
+            f'<rect x="4" y="3" width="18" height="18" rx="4" fill="{spec.accent}" fill-opacity="0.88"/>'
+            f'<rect x="4" y="3" width="18" height="18" rx="4" fill="#FFFFFF" fill-opacity="0.10"/>'
+            f'<rect x="4.5" y="3.5" width="17" height="17" rx="3.5" stroke="#FFFFFF" stroke-opacity="0.20"/>'
+            f'<text x="13" y="16" text-anchor="middle" '
+            f'font-family="\'Segoe UI\', system-ui, -apple-system, sans-serif" '
+            f'font-size="10.5" font-weight="900" letter-spacing="0.2" fill="#F8FAFC">{icon}</text>'
+            f'</g>'
         )
         text_anchor = "start"
-        text_x = "14"
-        letter_spacing = "0.7"
+        text_x = "28"
+        letter_spacing = "0.62"
         font_weight = "900"
+        text_size = "10.8"
 
     values: dict[str, str] = {
         "W": str(w),
@@ -89,11 +144,12 @@ def _render_svg(template: str, spec: BadgeSpec) -> str:
         "ID": spec.badge_id,
         "LABEL": label,
         "ACCENT": spec.accent,
-        "RAIL_BLOCK": rail_block,
+        "ICON_BLOCK": icon_block,
         "TEXT_X": text_x,
         "TEXT_ANCHOR": text_anchor,
         "LETTER_SPACING": letter_spacing,
         "FONT_WEIGHT": font_weight,
+        "TEXT_SIZE": text_size,
     }
 
     missing: set[str] = set()
@@ -128,6 +184,8 @@ def _load_manifest(path: Path) -> list[BadgeSpec]:
         text = str(b.get("text", "")).strip()
         accent = str(b.get("accent", "")).strip()
         kind = str(b.get("kind", "")).strip().lower()
+        icon_raw = b.get("icon")
+        icon = None if icon_raw is None else str(icon_raw).strip()
 
         if not badge_id or (not re.fullmatch(r"[a-z0-9_]+", badge_id)):
             raise RuntimeError(f"badges_v2.json: invalid id: {badge_id!r}")
@@ -139,9 +197,11 @@ def _load_manifest(path: Path) -> list[BadgeSpec]:
             raise RuntimeError(f"badges_v2.json: invalid accent for id {badge_id}: {accent!r}")
         if kind not in ("badge", "chip"):
             raise RuntimeError(f"badges_v2.json: invalid kind for id {badge_id}: {kind!r}")
+        if icon is not None and len(icon) > 2:
+            raise RuntimeError(f"badges_v2.json: icon too long for id {badge_id}: {icon!r}")
 
         seen.add(badge_id)
-        specs.append(BadgeSpec(badge_id=badge_id, text=text, accent=accent, kind=kind))
+        specs.append(BadgeSpec(badge_id=badge_id, text=text, accent=accent, kind=kind, icon=icon or None))
 
     return specs
 
@@ -253,4 +313,3 @@ def main(argv: list[str]) -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main(sys.argv[1:]))
-
