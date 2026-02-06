@@ -877,6 +877,11 @@ def train_wallclock(model, loader, dataset_name, model_name, num_classes, wall_c
     stop_early = False
     xray_enabled = os.getenv("VRX_XRAY", "0") == "1"
     while time.time() <= end_time:
+        # Enforce hard step cap at the outer loop boundary too; otherwise an
+        # inner-loop break can still re-enter the next epoch and overshoot.
+        ignore_max_steps = os.environ.get("VRX_IGNORE_MAX_STEPS") == "1"
+        if (not ignore_max_steps) and MAX_STEPS > 0 and step >= MAX_STEPS:
+            break
         for batch in loader:
             if time.time() > end_time:
                 break
@@ -1762,7 +1767,7 @@ def train_wallclock(model, loader, dataset_name, model_name, num_classes, wall_c
                         log(f"Checkpoint saved @ step {step} -> {CHECKPOINT_PATH}")
                 else:
                     log(f"Checkpoint not updated (non-finite metrics) @ step {step}")
-        # No early break; continue looping until externally stopped.
+        # Loop exits by wall clock or MAX_STEPS gate above.
     # end while
 
     slope = compute_slope(losses)
