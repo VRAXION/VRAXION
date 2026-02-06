@@ -706,6 +706,22 @@ def _load_state(repo_root: Path) -> dict[str, dict[str, str]]:
     return {}
 
 
+def _load_state_synced_at(repo_root: Path) -> Optional[str]:
+    path = repo_root / STATE_FILE
+    if not path.exists():
+        return None
+    try:
+        obj = json.loads(path.read_text(encoding="utf-8"))
+    except Exception:
+        return None
+    if not isinstance(obj, dict):
+        return None
+    val = obj.get("syncedAt")
+    if not val:
+        return None
+    return str(val)
+
+
 def _write_state(repo_root: Path, prev: dict[str, dict[str, str]], issues: Sequence[LinearIssue]) -> None:
     path = repo_root / STATE_FILE
     out: dict[str, dict[str, str]] = dict(prev)
@@ -721,7 +737,6 @@ def _write_state(repo_root: Path, prev: dict[str, dict[str, str]], issues: Seque
 def cmd_sync(args: argparse.Namespace) -> int:
     owner = args.owner
     repo_root = _repo_root()
-    version_str = _load_version_str(repo_root)
 
     _ensure_gh_projects_commands()
     _ensure_projects(owner)  # gate
@@ -742,8 +757,17 @@ def cmd_sync(args: argparse.Namespace) -> int:
             msg.append(f"- {k}: " + ", ".join(str(it.get('id')) for it in lst))
         raise SyncError("\n".join(msg))
 
-    since_dt: Optional[_dt.datetime] = _parse_iso_dt(args.since) if getattr(args, "since", None) else None
     prev_state = _load_state(repo_root)
+    since_dt: Optional[_dt.datetime] = _parse_iso_dt(args.since) if getattr(args, "since", None) else None
+    if since_dt is None and not getattr(args, "full", False):
+        # Rate-limit safety: default to incremental sync when local state is present.
+        # The user can override via --since or --full.
+        synced_at = _load_state_synced_at(repo_root)
+        if synced_at:
+            try:
+                since_dt = _parse_iso_dt(synced_at)
+            except SyncError:
+                since_dt = None
 
     projects = tuple(args.projects.split(",")) if args.projects else DEFAULT_PROJECTS
     projects = tuple(p.strip() for p in projects if p.strip())
@@ -758,9 +782,14 @@ def cmd_sync(args: argparse.Namespace) -> int:
         issues = client.list_team_issues(DEFAULT_TEAM_NAME, limit=args.limit)
 
     in_scope = [i for i in issues if i.project in projects]
+    total_in_projects = len(in_scope)
     if since_dt is not None:
         filtered: list[LinearIssue] = []
         for it in in_scope:
+            # Always include missing mirrors so first-run repairs don't require --full.
+            if not mirrors.get(it.identifier):
+                filtered.append(it)
+                continue
             if not it.updated_at:
                 continue
             try:
@@ -948,25 +977,9 @@ def cmd_sync(args: argparse.Namespace) -> int:
                     ]
                 )
 
-        # Build version (optional; only if merged PR evidence exists).
-        if "VRX Build Version" in fields and has_pr:
-            _run_checked(
-                [
-                    "gh",
-                    "project",
-                    "item-edit",
-                    "--id",
-                    item_id,
-                    "--project-id",
-                    priv_id,
-                    "--field-id",
-                    str(fields["VRX Build Version"]["id"]),
-                    "--text",
-                    version_str,
-                ]
-            )
-
-    print(f"Sync summary (projects={projects}): {len(in_scope)} issues in scope.")
+    since_note = since_dt.isoformat() if since_dt is not None else "none"
+    print(f"Sync summary (projects={projects}): {len(in_scope)} issue(s) selected (of {total_in_projects}).")
+    print(f"- since: {since_note} (full={bool(getattr(args, 'full', False))})")
     print(f"- creates: {planned_creates}")
     print(f"- updates: {planned_updates}")
     if done_transitions:
@@ -1149,6 +1162,7 @@ def _build_parser() -> argparse.ArgumentParser:
     ps.add_argument("--limit", type=int, default=500)
     ps.add_argument("--projects", default=",".join(DEFAULT_PROJECTS), help="Comma-separated Linear project names")
     ps.add_argument("--since", default=None, help="ISO timestamp filter for Linear updatedAt (also used for reporting when no state)")
+    ps.add_argument("--full", action="store_true", help="Ignore local state and consider all issues in scope")
     ps.add_argument("--linear-export", default=None, help="Fallback JSON export (first-run only)")
     ps.set_defaults(func=cmd_sync)
 
