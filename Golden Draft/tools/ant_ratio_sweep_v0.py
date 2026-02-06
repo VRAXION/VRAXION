@@ -220,6 +220,9 @@ def _run_capability_train(
             "VRX_RESUME": "0",
             "VRX_CKPT": str(ckpt_path),
             "VRX_SAVE_LAST_GOOD": "1",
+            # Keep both names: modern runner consumes SAVE_EVERY_STEPS, while
+            # older paths may still inspect SAVE_EVERY.
+            "VRX_SAVE_EVERY_STEPS": str(int(save_every)),
             "VRX_SAVE_EVERY": str(int(save_every)),
             "VRX_SAVE_HISTORY": "0",
         }
