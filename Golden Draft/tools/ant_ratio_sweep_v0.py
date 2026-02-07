@@ -303,10 +303,13 @@ def _run_capability_eval(
         rc = int(cp.returncode)
     except subprocess.TimeoutExpired as exc:
         raise SweepError(f"capability eval timeout after {int(timeout_s)}s (run_root={run_root})") from exc
-    if int(rc) != 0:
-        raise SweepError(f"capability eval rc={rc} (run_root={run_root})")
 
     rep = run_root / "report.json"
+    # Artifact-truth: if report.json exists, keep it even if the subprocess rc is nonzero.
+    if rep.exists():
+        return rep
+    if int(rc) != 0:
+        raise SweepError(f"capability eval rc={rc} (run_root={run_root})")
     if not rep.exists():
         raise SweepError(f"missing report.json after eval: {rep}")
     return rep
@@ -338,6 +341,18 @@ def _parse_args(argv: Optional[Sequence[str]]) -> argparse.Namespace:
     ap.add_argument("--probe-force-device", default="", help="Optional VRX_FORCE_DEVICE override passed to probe.")
     # Capability track
     ap.add_argument("--cap-device", default="cuda", choices=["cpu", "cuda"])
+    ap.add_argument(
+        "--cap-eval-device",
+        default=None,
+        choices=["cpu", "cuda"],
+        help="Device for capability eval (default: cap-device).",
+    )
+    ap.add_argument(
+        "--cap-eval-fallback-device",
+        default=None,
+        choices=["cpu", "cuda"],
+        help="Optional fallback device for capability eval if the first attempt fails.",
+    )
     ap.add_argument("--cap-precision", default="fp32")
     ap.add_argument("--cap-seed", type=int, default=123)
     ap.add_argument("--cap-ptr-dtype", default="fp64")
@@ -393,6 +408,41 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     csv_rows: List[Dict[str, Any]] = []
 
     failures: List[Dict[str, Any]] = []
+
+    cap_eval_device = str(args.cap_eval_device or args.cap_device)
+    cap_eval_fallback_device = str(args.cap_eval_fallback_device) if args.cap_eval_fallback_device else ""
+    if cap_eval_fallback_device and cap_eval_fallback_device == cap_eval_device:
+        cap_eval_fallback_device = ""
+
+    def _flush_outputs() -> None:
+        _write_csv(summary_csv, csv_rows)
+
+        packets: List[Dict[str, Any]] = []
+        if packets_jsonl.exists():
+            for ln in packets_jsonl.read_text(encoding="utf-8", errors="replace").splitlines():
+                s = ln.strip()
+                if not s:
+                    continue
+                packets.append(json.loads(s))
+
+        html = build_html(packets=packets, title="VRAXION Ant Ratio Frontier v0")
+        html_out.write_text(html, encoding="utf-8")
+
+        meta = {
+            "schema_version": "ant_ratio_sweep_v0",
+            "generated_utc": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+            "out_root": str(out_root),
+            "batch_targets": str(Path(args.batch_targets).resolve()),
+            "token_budget": int(args.token_budget),
+            "seq_len": int(args.seq_len),
+            "min_steps": int(args.min_steps),
+            "max_steps": int(args.max_steps),
+            "cap_device": str(args.cap_device),
+            "cap_eval_device": str(cap_eval_device),
+            "cap_eval_fallback_device": str(cap_eval_fallback_device),
+        }
+        (out_root / "sweep_meta.json").write_text(_stable_json(meta), encoding="utf-8")
+        (out_root / "sweep_failures.json").write_text(_stable_json({"failures": failures}), encoding="utf-8")
 
     for r in rows:
         if not isinstance(r, dict):
@@ -460,17 +510,34 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
                 save_every=int(save_every),
                 timeout_s=int(args.cap_train_timeout_s),
             )
-            _run_capability_eval(
-                repo_root=repo_root,
-                run_root=assoc_dir,
-                checkpoint=ckpt,
-                eval_samples=int(args.cap_eval_samples),
-                batch_size=int(batch),
-                device=str(args.cap_device),
-                eval_seed_offset=int(args.cap_eval_seed_offset),
-                force_disjoint=bool(args.cap_force_disjoint),
-                timeout_s=int(args.cap_eval_timeout_s),
-            )
+            used_eval_device = cap_eval_device
+            try:
+                _run_capability_eval(
+                    repo_root=repo_root,
+                    run_root=assoc_dir,
+                    checkpoint=ckpt,
+                    eval_samples=int(args.cap_eval_samples),
+                    batch_size=int(batch),
+                    device=str(cap_eval_device),
+                    eval_seed_offset=int(args.cap_eval_seed_offset),
+                    force_disjoint=bool(args.cap_force_disjoint),
+                    timeout_s=int(args.cap_eval_timeout_s),
+                )
+            except Exception:
+                if not cap_eval_fallback_device:
+                    raise
+                used_eval_device = cap_eval_fallback_device
+                _run_capability_eval(
+                    repo_root=repo_root,
+                    run_root=assoc_dir,
+                    checkpoint=ckpt,
+                    eval_samples=int(args.cap_eval_samples),
+                    batch_size=int(batch),
+                    device=str(cap_eval_fallback_device),
+                    eval_seed_offset=int(args.cap_eval_seed_offset),
+                    force_disjoint=bool(args.cap_force_disjoint),
+                    timeout_s=int(args.cap_eval_timeout_s),
+                )
 
             # 3) Join into packet and append.
             pkt = build_packet(
@@ -482,6 +549,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
             )
             pkt["cap_train_rc"] = int(cap_train_rc)
             pkt["cap_train_nonzero_rc"] = bool(int(cap_train_rc) != 0)
+            pkt["cap_eval_device"] = str(used_eval_device)
             with packets_jsonl.open("a", encoding="utf-8") as f:
                 f.write(json.dumps(pkt, sort_keys=True, ensure_ascii=True) + "\n")
 
@@ -513,6 +581,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
                     "steps": int(steps),
                     "cap_train_rc": int(cap_train_rc),
                     "cap_train_nonzero_rc": bool(int(cap_train_rc) != 0),
+                    "cap_eval_device": str(used_eval_device),
                     "probe_pass": bool(_is_probe_pass(probe_metrics)),
                     "vram_ratio_reserved": vram_ratio,
                     "vram_target_abs_error": target_abs_error,
@@ -541,6 +610,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
                     "steps": "",
                     "cap_train_rc": "",
                     "cap_train_nonzero_rc": "",
+                    "cap_eval_device": "",
                     "probe_pass": "",
                     "vram_ratio_reserved": "",
                     "vram_target_abs_error": "",
@@ -553,31 +623,15 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
                     "assoc_run_root": "",
                 }
             )
+        finally:
+            # Make partial results durable (useful if the sweep is interrupted).
+            try:
+                _flush_outputs()
+            except Exception as exc:
+                print(f"[vra78][warn] flush failed: {type(exc).__name__}: {exc}")
 
-    _write_csv(summary_csv, csv_rows)
-    packets = []
-    if packets_jsonl.exists():
-        for ln in packets_jsonl.read_text(encoding="utf-8", errors="replace").splitlines():
-            s = ln.strip()
-            if not s:
-                continue
-            packets.append(json.loads(s))
-
-    html = build_html(packets=packets, title="VRAXION Ant Ratio Frontier v0")
-    html_out.write_text(html, encoding="utf-8")
-
-    meta = {
-        "schema_version": "ant_ratio_sweep_v0",
-        "generated_utc": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-        "out_root": str(out_root),
-        "batch_targets": str(Path(args.batch_targets).resolve()),
-        "token_budget": int(args.token_budget),
-        "seq_len": int(args.seq_len),
-        "min_steps": int(args.min_steps),
-        "max_steps": int(args.max_steps),
-    }
-    (out_root / "sweep_meta.json").write_text(_stable_json(meta), encoding="utf-8")
-    (out_root / "sweep_failures.json").write_text(_stable_json({"failures": failures}), encoding="utf-8")
+    # Final flush + friendly output pointers.
+    _flush_outputs()
 
     print(f"[vra78] packets: {packets_jsonl}")
     print(f"[vra78] csv: {summary_csv}")
