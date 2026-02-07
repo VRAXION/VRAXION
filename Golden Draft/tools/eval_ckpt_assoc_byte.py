@@ -19,6 +19,7 @@ import platform
 import re
 import subprocess
 import sys
+import threading
 import time
 from pathlib import Path
 from typing import Any, Dict, Optional, Tuple
@@ -255,6 +256,25 @@ def _build_absolute_hallway(shape: Dict[str, Any]):
     )
 
 
+def _start_eval_heartbeat(log_fn: Any, heartbeat_s: int) -> Tuple[threading.Event, threading.Thread]:
+    interval_s = max(1, int(heartbeat_s))
+    stop = threading.Event()
+    started = time.time()
+
+    def _loop() -> None:
+        pulse_idx = 0
+        while not stop.wait(0 if pulse_idx == 0 else interval_s):
+            elapsed = int(max(0.0, time.time() - started))
+            log_fn(
+                f"[eval_ckpt][heartbeat] stage=eval elapsed_s={elapsed} interval_s={interval_s} pulse={pulse_idx + 1}"
+            )
+            pulse_idx += 1
+
+    th = threading.Thread(target=_loop, name="eval-heartbeat", daemon=True)
+    th.start()
+    return stop, th
+
+
 def _parse_args(argv: Optional[list[str]] = None) -> argparse.Namespace:
     p = argparse.ArgumentParser()
     p.add_argument("--run-root", type=str, required=True)
@@ -263,6 +283,7 @@ def _parse_args(argv: Optional[list[str]] = None) -> argparse.Namespace:
     p.add_argument("--batch-size", type=int, default=32)
     p.add_argument("--eval-seed-offset", type=int, default=1000003)
     p.add_argument("--device", type=str, default="cpu", choices=["cpu", "cuda"])
+    p.add_argument("--heartbeat-s", type=int, default=60)
     p.add_argument("--prismn-id-scale", type=float, default=0.02, help="Must match training if it was overridden.")
     p.add_argument(
         "--force-eval-disjoint",
@@ -430,9 +451,14 @@ def main(argv: Optional[list[str]] = None) -> int:
         mi_shuffle=False,
         mitosis_enabled=False,
     )
-    eval_sum = instnct_eval.eval_model(
-        model, eval_loader, "synth_assoc_byte", str(model_kind), deps=eval_deps
-    )
+    hb_stop, hb_thread = _start_eval_heartbeat(infra.log, int(args.heartbeat_s))
+    try:
+        eval_sum = instnct_eval.eval_model(
+            model, eval_loader, "synth_assoc_byte", str(model_kind), deps=eval_deps
+        )
+    finally:
+        hb_stop.set()
+        hb_thread.join(timeout=1.0)
 
     losses = [float(x) for x in (ck.get("losses") or [])] if isinstance(ck.get("losses"), list) else []
     debug_last = _last_debug_from_log(log_txt)

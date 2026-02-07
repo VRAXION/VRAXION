@@ -44,6 +44,24 @@ def _load_json(path: Path) -> dict[str, Any]:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
+def _tail_contains(path: Path, needle: str, max_bytes: int = 1_000_000) -> bool:
+    if not path.exists():
+        return False
+    data: bytes
+    with path.open("rb") as f:
+        try:
+            f.seek(0, os.SEEK_END)
+            size = f.tell()
+            if size > int(max_bytes):
+                f.seek(size - int(max_bytes), os.SEEK_SET)
+            else:
+                f.seek(0, os.SEEK_SET)
+            data = f.read()
+        except OSError:
+            data = f.read()
+    return str(needle) in data.decode("utf-8", errors="replace")
+
+
 def _is_probe_pass(metrics: Dict[str, Any]) -> bool:
     return bool(
         metrics.get("stability_pass") is True
@@ -241,23 +259,32 @@ def _run_capability_train(
     )
 
     cmd = [sys.executable, "-u", str(repo_root / "Golden Draft" / "vraxion_run.py")]
+    def _first_checkpoint() -> Optional[Path]:
+        if ckpt_path.exists():
+            return ckpt_path
+        for name in ("checkpoint_last_good.pt", "checkpoint.pt"):
+            cand = run_root / name
+            if cand.exists():
+                return cand
+        return None
+
     try:
         cp = subprocess.run(cmd, cwd=str(repo_root), env=env, timeout=max(1, int(timeout_s)))
         rc = int(cp.returncode)
     except subprocess.TimeoutExpired as exc:
+        recovered = _first_checkpoint()
+        # Artifact-truth: if timeout happens after checkpoint materialization,
+        # continue and surface timeout via nonzero rc for ranking/debug.
+        if recovered is not None:
+            return recovered, 124
         raise SweepError(f"capability train timeout after {int(timeout_s)}s (run_root={run_root})") from exc
 
     # Artifact-truth: treat an existing checkpoint as success even if the
     # subprocess return code is nonzero (some Windows paths surface -1 / 255
     # despite writing a valid checkpoint).
-    if ckpt_path.exists():
-        return ckpt_path, rc
-
-    # Fallbacks used by other tooling.
-    for name in ("checkpoint_last_good.pt", "checkpoint.pt"):
-        cand = run_root / name
-        if cand.exists():
-            return cand, rc
+    recovered = _first_checkpoint()
+    if recovered is not None:
+        return recovered, rc
 
     # No checkpoint means we cannot proceed, regardless of rc.
     raise SweepError(f"checkpoint not found under run_root={run_root} (rc={rc})")
@@ -274,7 +301,8 @@ def _run_capability_eval(
     eval_seed_offset: int,
     force_disjoint: bool,
     timeout_s: int,
-) -> Path:
+    heartbeat_s: int,
+) -> Tuple[Path, bool]:
     tool = repo_root / "Golden Draft" / "tools" / "eval_ckpt_assoc_byte.py"
     if not tool.exists():
         raise SweepError(f"capability eval tool missing: {tool}")
@@ -294,25 +322,31 @@ def _run_capability_eval(
         str(device),
         "--eval-seed-offset",
         str(int(eval_seed_offset)),
+        "--heartbeat-s",
+        str(max(1, int(heartbeat_s))),
     ]
     if force_disjoint:
         cmd.append("--force-eval-disjoint")
 
     try:
-        cp = subprocess.run(cmd, cwd=str(repo_root), timeout=max(1, int(timeout_s)))
+        timeout: Optional[int]
+        timeout = None if int(timeout_s) <= 0 else max(1, int(timeout_s))
+        cp = subprocess.run(cmd, cwd=str(repo_root), timeout=timeout)
         rc = int(cp.returncode)
     except subprocess.TimeoutExpired as exc:
         raise SweepError(f"capability eval timeout after {int(timeout_s)}s (run_root={run_root})") from exc
 
     rep = run_root / "report.json"
+    eval_log = run_root / "vraxion_eval.log"
+    heartbeat_seen = _tail_contains(eval_log, "[eval_ckpt][heartbeat]")
     # Artifact-truth: if report.json exists, keep it even if the subprocess rc is nonzero.
     if rep.exists():
-        return rep
+        return rep, heartbeat_seen
     if int(rc) != 0:
         raise SweepError(f"capability eval rc={rc} (run_root={run_root})")
     if not rep.exists():
         raise SweepError(f"missing report.json after eval: {rep}")
-    return rep
+    return rep, heartbeat_seen
 
 
 def _write_csv(path: Path, rows: List[Dict[str, Any]]) -> None:
@@ -369,6 +403,9 @@ def _parse_args(argv: Optional[Sequence[str]]) -> argparse.Namespace:
     ap.add_argument("--probe-timeout-s", type=int, default=900)
     ap.add_argument("--cap-train-timeout-s", type=int, default=900)
     ap.add_argument("--cap-eval-timeout-s", type=int, default=900)
+    ap.add_argument("--cap-eval-heartbeat-s", type=int, default=60)
+    ap.add_argument("--cap-eval-retry-once", type=int, default=1, choices=[0, 1])
+    ap.add_argument("--flush-every-config", type=int, default=1, choices=[0, 1])
     # Fairness
     ap.add_argument("--seq-len", type=int, default=256, help="Accounting seq_len used for token budget computation.")
     ap.add_argument("--token-budget", type=int, default=1_000_000, help="Fixed token budget for capability runs.")
@@ -440,6 +477,9 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
             "cap_device": str(args.cap_device),
             "cap_eval_device": str(cap_eval_device),
             "cap_eval_fallback_device": str(cap_eval_fallback_device),
+            "heartbeat_s": int(args.cap_eval_heartbeat_s),
+            "eval_timeout_mode": "disabled" if int(args.cap_eval_timeout_s) <= 0 else "fixed",
+            "flush_every_config": bool(int(args.flush_every_config)),
         }
         (out_root / "sweep_meta.json").write_text(_stable_json(meta), encoding="utf-8")
         (out_root / "sweep_failures.json").write_text(_stable_json({"failures": failures}), encoding="utf-8")
@@ -511,33 +551,48 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
                 timeout_s=int(args.cap_train_timeout_s),
             )
             used_eval_device = cap_eval_device
-            try:
-                _run_capability_eval(
+            eval_heartbeat_seen = False
+            attempt_eval_count = 0
+
+            def _run_eval_once(device_name: str) -> None:
+                nonlocal eval_heartbeat_seen, attempt_eval_count
+                attempt_eval_count += 1
+                _, hb_seen = _run_capability_eval(
                     repo_root=repo_root,
                     run_root=assoc_dir,
                     checkpoint=ckpt,
                     eval_samples=int(args.cap_eval_samples),
                     batch_size=int(batch),
-                    device=str(cap_eval_device),
+                    device=str(device_name),
                     eval_seed_offset=int(args.cap_eval_seed_offset),
                     force_disjoint=bool(args.cap_force_disjoint),
                     timeout_s=int(args.cap_eval_timeout_s),
+                    heartbeat_s=int(args.cap_eval_heartbeat_s),
                 )
-            except Exception:
-                if not cap_eval_fallback_device:
-                    raise
-                used_eval_device = cap_eval_fallback_device
-                _run_capability_eval(
-                    repo_root=repo_root,
-                    run_root=assoc_dir,
-                    checkpoint=ckpt,
-                    eval_samples=int(args.cap_eval_samples),
-                    batch_size=int(batch),
-                    device=str(cap_eval_fallback_device),
-                    eval_seed_offset=int(args.cap_eval_seed_offset),
-                    force_disjoint=bool(args.cap_force_disjoint),
-                    timeout_s=int(args.cap_eval_timeout_s),
-                )
+                eval_heartbeat_seen = bool(eval_heartbeat_seen or hb_seen)
+
+            eval_exc: Optional[Exception] = None
+            eval_done = False
+            for dev_name in [cap_eval_device] + ([cap_eval_fallback_device] if cap_eval_fallback_device else []):
+                used_eval_device = str(dev_name)
+                try:
+                    _run_eval_once(str(dev_name))
+                    eval_done = True
+                    break
+                except Exception as exc:
+                    eval_exc = exc
+                    may_retry = bool(int(args.cap_eval_retry_once)) and assoc_dir.exists() and "missing report.json" in str(exc)
+                    if may_retry:
+                        try:
+                            _run_eval_once(str(dev_name))
+                            eval_done = True
+                            break
+                        except Exception as retry_exc:
+                            eval_exc = retry_exc
+            if not eval_done:
+                if eval_exc is not None:
+                    raise eval_exc
+                raise SweepError(f"capability eval failed without exception (run_root={assoc_dir})")
 
             # 3) Join into packet and append.
             pkt = build_packet(
@@ -582,6 +637,8 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
                     "cap_train_rc": int(cap_train_rc),
                     "cap_train_nonzero_rc": bool(int(cap_train_rc) != 0),
                     "cap_eval_device": str(used_eval_device),
+                    "eval_heartbeat_seen": bool(eval_heartbeat_seen),
+                    "attempt_eval_count": int(attempt_eval_count),
                     "probe_pass": bool(_is_probe_pass(probe_metrics)),
                     "vram_ratio_reserved": vram_ratio,
                     "vram_target_abs_error": target_abs_error,
@@ -611,6 +668,8 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
                     "cap_train_rc": "",
                     "cap_train_nonzero_rc": "",
                     "cap_eval_device": "",
+                    "eval_heartbeat_seen": "",
+                    "attempt_eval_count": "",
                     "probe_pass": "",
                     "vram_ratio_reserved": "",
                     "vram_target_abs_error": "",
@@ -625,10 +684,11 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
             )
         finally:
             # Make partial results durable (useful if the sweep is interrupted).
-            try:
-                _flush_outputs()
-            except Exception as exc:
-                print(f"[vra78][warn] flush failed: {type(exc).__name__}: {exc}")
+            if bool(int(args.flush_every_config)):
+                try:
+                    _flush_outputs()
+                except Exception as exc:
+                    print(f"[vra78][warn] flush failed: {type(exc).__name__}: {exc}")
 
     # Final flush + friendly output pointers.
     _flush_outputs()
