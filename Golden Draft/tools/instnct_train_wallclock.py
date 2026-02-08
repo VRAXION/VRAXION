@@ -323,13 +323,30 @@ def eval_model(model, eval_loader, dataset_name: str, model_name: str):
     model.eval()
     correct = 0
     total = 0
+    try:
+        device = next(model.parameters()).device
+    except StopIteration:
+        device = torch.device("cpu")
     with torch.no_grad():
         for batch in eval_loader:
             inputs, targets = batch
-            outputs = model(inputs)[0] if isinstance(model(inputs), tuple) else model(inputs)
-            preds = outputs.argmax(dim=1)
-            correct += int((preds == targets).sum().item())
-            total += int(targets.numel())
+            try:
+                if isinstance(inputs, torch.Tensor):
+                    inputs = inputs.to(device=device, non_blocking=True)
+                if isinstance(targets, torch.Tensor):
+                    targets = targets.to(device=device, non_blocking=True)
+
+                out = model(inputs)
+                outputs = out[0] if isinstance(out, tuple) else out
+                preds = outputs.argmax(dim=1)
+                correct += int((preds == targets).sum().item())
+                total += int(targets.numel())
+            except Exception as exc:
+                # Eval should never take down a long-running saturation run.
+                log(f"[eval] ERROR: {type(exc).__name__}: {exc}")
+                if model_was_training:
+                    model.train()
+                return {"eval_acc": None, "eval_error": f"{type(exc).__name__}: {exc}"}
     if model_was_training:
         model.train()
     if total <= 0:
@@ -1770,6 +1787,60 @@ def train_wallclock(model, loader, dataset_name, model_name, num_classes, wall_c
         # Loop exits by wall clock or MAX_STEPS gate above.
     # end while
 
+    # If we exit exactly due to MAX_STEPS, we break *before* the periodic
+    # checkpoint section runs. Save a final checkpoint here so the last step
+    # is observable for postmortem eval/catch-up tooling.
+    try:
+        ignore_max_steps = os.environ.get("VRX_IGNORE_MAX_STEPS") == "1"
+        hit_max_steps = (not ignore_max_steps) and MAX_STEPS > 0 and step >= MAX_STEPS
+    except Exception:
+        hit_max_steps = False
+    if hit_max_steps and SAVE_EVERY_STEPS > 0 and step % SAVE_EVERY_STEPS == 0:
+        loss_value = losses[-1] if losses else None
+        raw_delta = getattr(model, "ptr_delta_raw_mean", None)
+        raw_delta_value = float(raw_delta) if raw_delta is not None else None
+        grad_value = None
+        is_finite = _checkpoint_is_finite(loss_value, grad_value, raw_delta_value)
+        ckpt = _checkpoint_payload(model, optimizer, scaler, step, losses)
+        ckpt["meta"] = {
+            "loss": loss_value,
+            "grad_norm": grad_value,
+            "raw_delta": raw_delta_value,
+            "nonfinite": not is_finite,
+            "final_save": True,
+        }
+        step_path, bad_path, last_good_path = _checkpoint_paths(CHECKPOINT_PATH, step)
+        save_monolithic = (not MODULAR_SAVE) or (MODULAR_SAVE_MODE == "dual")
+        if save_monolithic and SAVE_HISTORY:
+            torch.save(ckpt, step_path)
+            log(f"Final checkpoint saved @ step {step} -> {step_path}")
+            if (not is_finite) and SAVE_BAD:
+                torch.save(ckpt, bad_path)
+                log(f"Final non-finite checkpoint saved @ step {step} -> {bad_path}")
+        if is_finite:
+            if MODULAR_SAVE:
+                modular_dir = _resolve_modular_dir(MODULAR_DIR, ROOT, CHECKPOINT_PATH)
+                _save_modular_checkpoint(
+                    model,
+                    optimizer,
+                    scaler,
+                    step,
+                    losses,
+                    modular_dir,
+                    TENURE_CONTRIB_THRESH,
+                    TENURE_PROBATION_STEPS,
+                    ttl_steps=TENURE_TTL_STEPS,
+                    gc_enabled=TENURE_GC,
+                )
+                log(f"Final modular checkpoint saved @ step {step} -> {modular_dir}")
+            if save_monolithic:
+                torch.save(ckpt, CHECKPOINT_PATH)
+                if SAVE_LAST_GOOD:
+                    torch.save(ckpt, last_good_path)
+                log(f"Final checkpoint saved @ step {step} -> {CHECKPOINT_PATH}")
+        else:
+            log(f"Final checkpoint not updated (non-finite metrics) @ step {step}")
+
     slope = compute_slope(losses)
     log(f"{dataset_name} | {model_name} | slope {slope:.6f} over {len(losses)} steps")
     ptr_flip_rate = (ptr_flip_sum / ptr_steps) if ptr_steps else None
@@ -1793,4 +1864,3 @@ def train_wallclock(model, loader, dataset_name, model_name, num_classes, wall_c
         "state_loop_max_dwell": getattr(model, "state_loop_max_dwell", None),
         "state_loop_mean_dwell": getattr(model, "state_loop_mean_dwell", None),
     }
-

@@ -20,10 +20,151 @@ from typing import Any, Optional, Tuple
 
 import torch
 import torch.nn as nn
+from torch.nn import functional as F
 
 
 StateMap = Mapping[str, Any]
 MetaMap = MutableMapping[str, Any]
+
+
+def _parse_capacity_split_env() -> Optional[list[float]]:
+    """Parse VRX_EXPERT_CAPACITY_SPLIT into positive floats.
+
+    Format:
+      VRX_EXPERT_CAPACITY_SPLIT="0.55,0.34,0.11"
+
+    Returns None when unset/invalid.
+    """
+
+    raw = os.environ.get("VRX_EXPERT_CAPACITY_SPLIT", "").strip()
+    if not raw:
+        return None
+    try:
+        vals = [float(p.strip()) for p in raw.split(",") if p.strip()]
+    except Exception:
+        return None
+    if not vals or any((not torch.isfinite(torch.tensor(v)) or float(v) <= 0.0) for v in vals):
+        return None
+    total = float(sum(vals))
+    if total <= 0.0:
+        return None
+    return [float(v) / total for v in vals]
+
+
+def _capacity_total_mult() -> float:
+    raw = os.environ.get("VRX_EXPERT_CAPACITY_TOTAL_MULT", "").strip()
+    if not raw:
+        return 1.0
+    try:
+        val = float(raw)
+    except Exception:
+        return 1.0
+    if not torch.isfinite(torch.tensor(val)) or val <= 0.0:
+        return 1.0
+    return float(val)
+
+
+def _capacity_min_hidden() -> int:
+    raw = os.environ.get("VRX_EXPERT_CAPACITY_MIN_HIDDEN", "").strip()
+    if not raw:
+        return 8
+    try:
+        val = int(float(raw))
+    except Exception:
+        return 8
+    return max(1, int(val))
+
+
+def _parse_capacity_hidden_dims_env(num_experts: int) -> Optional[list[int]]:
+    """Parse explicit hidden dims for adapter experts.
+
+    Format:
+      VRX_EXPERT_CAPACITY_HIDDEN_DIMS="950,588,190"
+    """
+
+    raw = os.environ.get("VRX_EXPERT_CAPACITY_HIDDEN_DIMS", "").strip()
+    if not raw:
+        return None
+    try:
+        vals = [int(float(p.strip())) for p in raw.split(",") if p.strip()]
+    except Exception:
+        return None
+    if len(vals) != int(num_experts):
+        return None
+    if any(int(v) <= 0 for v in vals):
+        return None
+    return [int(v) for v in vals]
+
+
+def _allocate_hidden_dims(
+    *,
+    d_model: int,
+    num_experts: int,
+    split: list[float],
+    total_mult: float,
+    min_hidden: int,
+) -> Optional[list[int]]:
+    """Allocate per-expert hidden sizes that preserve total capacity budget.
+
+    Baseline budget is `num_experts * d_model`, optionally scaled by
+    VRX_EXPERT_CAPACITY_TOTAL_MULT. Hidden dims are integer-allocated by split.
+    """
+
+    if len(split) != int(num_experts):
+        return None
+    if int(d_model) <= 0 or int(num_experts) <= 0:
+        return None
+    base_total = int(round(float(num_experts * d_model) * float(total_mult)))
+    base_total = max(int(min_hidden * num_experts), base_total)
+
+    targets = [float(base_total) * float(w) for w in split]
+    dims = [max(int(min_hidden), int(t)) for t in targets]
+    cur = int(sum(dims))
+
+    # Distribute residual to match exact target sum.
+    if cur < base_total:
+        frac = sorted(
+            [(targets[i] - float(int(targets[i])), i) for i in range(len(targets))],
+            reverse=True,
+        )
+        k = 0
+        while cur < base_total:
+            dims[frac[k % len(frac)][1]] += 1
+            cur += 1
+            k += 1
+    elif cur > base_total:
+        frac = sorted(
+            [(targets[i] - float(int(targets[i])), i) for i in range(len(targets))],
+            reverse=False,
+        )
+        k = 0
+        while cur > base_total and k < 10_000:
+            idx = frac[k % len(frac)][1]
+            if dims[idx] > int(min_hidden):
+                dims[idx] -= 1
+                cur -= 1
+            k += 1
+    return dims
+
+
+class AdapterExpert(nn.Module):
+    """Small adapter expert: shared-width -> hidden -> logits."""
+
+    def __init__(self, d_model: int, vocab_size: int, hidden_dim: int) -> None:
+        super().__init__()
+        self.hidden_dim = int(max(1, hidden_dim))
+        self.down = nn.Linear(int(d_model), self.hidden_dim)
+        self.up = nn.Linear(self.hidden_dim, int(vocab_size))
+        self.reset_parameters()
+
+    def reset_parameters(self) -> None:
+        nn.init.xavier_uniform_(self.down.weight)
+        nn.init.zeros_(self.down.bias)
+        nn.init.xavier_uniform_(self.up.weight)
+        nn.init.zeros_(self.up.bias)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        return self.up(F.silu(self.down(x)))
 
 
 def _hash_state_dict(state: Optional[StateMap]) -> Optional[str]:
@@ -156,15 +297,35 @@ class LocationExpertRouter(nn.Module):
         self.num_experts = max(1, int(num_experts))
         self.in_features = int(d_model)
         self.out_features = int(vocab_size)
+        self.capacity_mode = "linear"
+        self.capacity_hidden_dims: Optional[list[int]] = None
 
         if self.num_experts == 1:
             self.single: Optional[nn.Linear] = nn.Linear(d_model, vocab_size)
             self.experts: Optional[nn.ModuleList] = None
         else:
             self.single = None
-            self.experts = nn.ModuleList(
-                [nn.Linear(d_model, vocab_size) for _ in range(self.num_experts)]
-            )
+            hidden_dims = _parse_capacity_hidden_dims_env(self.num_experts)
+            if hidden_dims is None:
+                split = _parse_capacity_split_env()
+                if split is not None and len(split) == self.num_experts:
+                    hidden_dims = _allocate_hidden_dims(
+                        d_model=self.in_features,
+                        num_experts=self.num_experts,
+                        split=split,
+                        total_mult=_capacity_total_mult(),
+                        min_hidden=_capacity_min_hidden(),
+                    )
+            if hidden_dims is not None:
+                self.experts = nn.ModuleList(
+                    [AdapterExpert(d_model, vocab_size, h) for h in hidden_dims]
+                )
+                self.capacity_mode = "adapter"
+                self.capacity_hidden_dims = [int(h) for h in hidden_dims]
+            else:
+                self.experts = nn.ModuleList(
+                    [nn.Linear(d_model, vocab_size) for _ in range(self.num_experts)]
+                )
 
     def reset_parameters(self) -> None:
         """Reset weights using Xavier init (behavior-preserving)."""
@@ -182,7 +343,10 @@ class LocationExpertRouter(nn.Module):
         if explst is None:
             return
         for expsix in explst:
-            init6x(expsix)
+            if isinstance(expsix, nn.Linear):
+                init6x(expsix)
+            elif hasattr(expsix, "reset_parameters"):
+                expsix.reset_parameters()
 
     def _maybe_restore_expert(self, expidx: int, expert: nn.Module) -> None:
         """Restore an offloaded expert from disk if hibernation is enabled."""
@@ -225,8 +389,9 @@ class LocationExpertRouter(nn.Module):
         else:
             expidx = pointer_addresses.to(torch.long, non_blocking=True) % self.num_experts
 
-        outdty = explst[0].weight.dtype
-        outten = torch.zeros(x.shape[0], explst[0].out_features, device=x.device, dtype=outdty)
+        first_par = next(explst[0].parameters())
+        outdty = first_par.dtype
+        outten = torch.zeros(x.shape[0], int(self.out_features), device=x.device, dtype=outdty)
 
         for idxsix, expsix in enumerate(explst):
             # Behavior-preserving: restoration is attempted regardless of routing.
