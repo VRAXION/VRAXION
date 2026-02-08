@@ -401,7 +401,12 @@ def main(argv: list[str]) -> int:
                     continue
                 ok, info = _http_check(url, timeout_s=args.timeout_sec)
                 if not ok:
-                    svg_failures.append(f"{info}: {url}")
+                    # GitHub Pages URLs may reference content from unmerged PRs;
+                    # treat 404s on Pages as warnings, not hard failures.
+                    if "vraxion.github.io/" in url and "404" in info:
+                        print(f"WARNING (pages 404, may be in-flight): {url}")
+                    else:
+                        svg_failures.append(f"{info}: {url}")
 
         milestone_svg_violations: list[str] = []
         milestone_source = ""
