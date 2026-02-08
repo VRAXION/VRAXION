@@ -31,6 +31,23 @@ def _parse_args() -> argparse.Namespace:
     ap.add_argument("--ring-len", type=int, required=True)
     ap.add_argument("--slot-dim", type=int, required=True)
     ap.add_argument("--expert-heads", type=int, default=1)
+    ap.add_argument(
+        "--expert-capacity-split",
+        default="",
+        help="Optional comma split for non-equal expert capacity (e.g. 0.55,0.34,0.11).",
+    )
+    ap.add_argument(
+        "--expert-capacity-total-mult",
+        type=float,
+        default=1.0,
+        help="Optional total expert-capacity multiplier (default 1.0).",
+    )
+    ap.add_argument(
+        "--expert-capacity-min-hidden",
+        type=int,
+        default=8,
+        help="Minimum per-expert hidden adapter size when split is active.",
+    )
     ap.add_argument("--batch-size", type=int, required=True)
 
     # Stop conditions. Convention:
@@ -41,6 +58,8 @@ def _parse_args() -> argparse.Namespace:
 
     # Evidence cadence.
     ap.add_argument("--save-every-steps", type=int, default=100)
+    ap.add_argument("--eval-every-steps", type=int, default=0)
+    ap.add_argument("--eval-at-checkpoint", type=int, default=0, choices=[0, 1])
     ap.add_argument("--save-last-good", type=int, default=1, choices=[0, 1])
     ap.add_argument("--save-history", type=int, default=0, choices=[0, 1])
 
@@ -86,11 +105,18 @@ def main() -> int:
             "VRX_RING_LEN": str(int(args.ring_len)),
             "VRX_SLOT_DIM": str(int(args.slot_dim)),
             "VRX_EXPERT_HEADS": str(int(args.expert_heads)),
+            "VRX_EXPERT_CAPACITY_TOTAL_MULT": str(float(args.expert_capacity_total_mult)),
+            "VRX_EXPERT_CAPACITY_MIN_HIDDEN": str(int(args.expert_capacity_min_hidden)),
             "VRX_BATCH_SIZE": str(int(args.batch_size)),
             "VRX_MAX_STEPS": str(int(args.max_steps)),
             "VRX_IGNORE_MAX_STEPS": "1" if int(args.ignore_max_steps) else "0",
             "VRX_IGNORE_WALL_CLOCK": "1" if int(args.ignore_wall_clock) else "0",
+            # Keep both names: wallclock trainer reads SAVE_EVERY_STEPS while
+            # settings still maps from VRX_SAVE_EVERY.
+            "VRX_SAVE_EVERY": str(int(args.save_every_steps)),
             "VRX_SAVE_EVERY_STEPS": str(int(args.save_every_steps)),
+            "VRX_EVAL_EVERY_STEPS": str(int(args.eval_every_steps)),
+            "VRX_EVAL_AT_CHECKPOINT": "1" if int(args.eval_at_checkpoint) else "0",
             "VRX_EVAL_SAMPLES": str(int(args.eval_samples)),
             "VRX_SAVE_LAST_GOOD": "1" if int(args.save_last_good) else "0",
             "VRX_SAVE_HISTORY": "1" if int(args.save_history) else "0",
@@ -98,6 +124,8 @@ def main() -> int:
             "VRX_RESUME": "1" if int(args.resume) else "0",
         }
     )
+    if str(args.expert_capacity_split).strip():
+        env["VRX_EXPERT_CAPACITY_SPLIT"] = str(args.expert_capacity_split).strip()
 
     cmd = [sys.executable, "-u", str(RUNNER)]
     cp = subprocess.run(cmd, cwd=str(REPO_ROOT), env=env)
@@ -106,4 +134,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-

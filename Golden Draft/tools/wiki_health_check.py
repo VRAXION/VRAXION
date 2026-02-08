@@ -393,7 +393,10 @@ def main(argv: list[str]) -> int:
         svg_failures: list[str] = []
         if svg_urls:
             for url in svg_urls:
-                if (not args.allow_non_raw_svg) and ("raw.githubusercontent.com/VRAXION/VRAXION/" not in url):
+                if (not args.allow_non_raw_svg) and (
+                    "raw.githubusercontent.com/VRAXION/VRAXION/" not in url
+                    and "vraxion.github.io/VRAXION/" not in url
+                ):
                     svg_failures.append(f"non_raw_svg: {url}")
                     continue
                 ok, info = _http_check(url, timeout_s=args.timeout_sec)

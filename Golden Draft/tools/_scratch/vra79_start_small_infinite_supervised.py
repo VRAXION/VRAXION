@@ -68,7 +68,11 @@ def main() -> int:
 
     creationflags = 0
     if os.name == "nt":
-        creationflags = subprocess.DETACHED_PROCESS | subprocess.CREATE_NEW_PROCESS_GROUP
+        creationflags = (
+            subprocess.DETACHED_PROCESS
+            | subprocess.CREATE_NEW_PROCESS_GROUP
+            | int(getattr(subprocess, "CREATE_NO_WINDOW", 0))
+        )
 
     with launch_log.open("a", encoding="utf-8") as logh:
         proc = subprocess.Popen(

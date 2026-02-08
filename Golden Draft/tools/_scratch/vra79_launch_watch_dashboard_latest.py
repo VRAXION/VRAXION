@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import json
+import argparse
 import socket
 import subprocess
 import sys
@@ -26,21 +27,35 @@ def _pick_port(start: int = 8501, end: int = 8510) -> int:
     raise RuntimeError("No free port found in 8501..8510")
 
 
-def _latest_run_root() -> Path:
-    if not RUNS_ROOT.exists():
-        raise FileNotFoundError(f"Missing runs root: {RUNS_ROOT}")
-    candidates = [path for path in RUNS_ROOT.iterdir() if path.is_dir()]
+def _latest_run_root(runs_root: Path) -> Path:
+    if not runs_root.exists():
+        raise FileNotFoundError(f"Missing runs root: {runs_root}")
+    candidates = [path for path in runs_root.iterdir() if path.is_dir()]
     if not candidates:
-        raise RuntimeError(f"No run dirs found under: {RUNS_ROOT}")
+        raise RuntimeError(f"No run dirs found under: {runs_root}")
     candidates.sort(key=lambda path: path.name, reverse=True)
     return candidates[0]
 
 
+def _parse_args() -> argparse.Namespace:
+    ap = argparse.ArgumentParser(description="Launch live dashboard for a VRA run.")
+    ap.add_argument("--run-root", default="", help="Optional explicit run_root.")
+    ap.add_argument("--runs-root", default=str(RUNS_ROOT), help="Root dir to pick latest run from.")
+    ap.add_argument("--refresh", type=int, default=2)
+    ap.add_argument("--max-rows", type=int, default=5000)
+    return ap.parse_args()
+
+
 def main() -> int:
+    args = _parse_args()
     if not DASHBOARD_SCRIPT.exists():
         raise FileNotFoundError(f"Missing dashboard script: {DASHBOARD_SCRIPT}")
 
-    run_root = _latest_run_root()
+    if str(args.run_root).strip():
+        run_root = Path(str(args.run_root)).resolve()
+    else:
+        runs_root = Path(str(args.runs_root)).resolve()
+        run_root = _latest_run_root(runs_root)
     # Prefer the run's own log file (always produced by VAR_LOGGING_PATH),
     # fall back to supervisor-captured stdout if needed.
     preferred_log = run_root / r"train\vraxion.log"
@@ -54,6 +69,8 @@ def main() -> int:
 
     port = _pick_port()
     url = f"http://localhost:{port}"
+    eval_stream_path = run_root / "eval_stream.jsonl"
+    eval_status_path = run_root / "eval_catchup_status.json"
     cmd = [
         sys.executable,
         "-m",
@@ -65,15 +82,23 @@ def main() -> int:
         "--",
         "--log",
         str(log_path),
+        "--eval-stream",
+        str(eval_stream_path),
+        "--eval-status",
+        str(eval_status_path),
         "--refresh",
-        "2",
+        str(int(args.refresh)),
         "--max-rows",
-        "5000",
+        str(int(args.max_rows)),
     ]
 
     creationflags = 0
     if sys.platform.startswith("win"):
-        creationflags = subprocess.DETACHED_PROCESS | subprocess.CREATE_NEW_PROCESS_GROUP
+        creationflags = (
+            subprocess.DETACHED_PROCESS
+            | subprocess.CREATE_NEW_PROCESS_GROUP
+            | int(getattr(subprocess, "CREATE_NO_WINDOW", 0))
+        )
 
     proc = subprocess.Popen(
         cmd,

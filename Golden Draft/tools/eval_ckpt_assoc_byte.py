@@ -105,6 +105,7 @@ def _infer_absolute_hallway_from_state(state: Dict[str, Any]) -> Dict[str, Any]:
     # head: LocationExpertRouter
     num_classes = None
     expert_heads = None
+    expert_capacity_hidden_dims: Optional[list[int]] = None
 
     w_single = state.get("head.single.weight")
     if torch.is_tensor(w_single) and w_single.dim() == 2:
@@ -113,6 +114,8 @@ def _infer_absolute_hallway_from_state(state: Dict[str, Any]) -> Dict[str, Any]:
     else:
         max_idx = -1
         w0 = None
+        w0_up = None
+        down_hidden: Dict[int, int] = {}
         for k in state.keys():
             if not isinstance(k, str) or not k.startswith("head.experts."):
                 continue
@@ -124,21 +127,35 @@ def _infer_absolute_hallway_from_state(state: Dict[str, Any]) -> Dict[str, Any]:
             except Exception:
                 continue
             max_idx = max(max_idx, idx)
-            if idx == 0 and k.endswith(".weight"):
-                w0 = state.get(k)
+            ten = state.get(k)
+            if idx == 0 and len(parts) == 4 and parts[3] == "weight":
+                w0 = ten
+            if idx == 0 and len(parts) >= 5 and parts[3] == "up" and parts[4] == "weight":
+                w0_up = ten
+            if len(parts) >= 5 and parts[3] == "down" and parts[4] == "weight" and torch.is_tensor(ten):
+                if ten.dim() == 2:
+                    down_hidden[idx] = int(ten.shape[0])
         if torch.is_tensor(w0) and w0 is not None and w0.dim() == 2:
             num_classes = int(w0.shape[0])
             expert_heads = max_idx + 1
+        elif torch.is_tensor(w0_up) and w0_up is not None and w0_up.dim() == 2:
+            num_classes = int(w0_up.shape[0])
+            expert_heads = max_idx + 1
+            if expert_heads > 0 and len(down_hidden) == int(expert_heads):
+                expert_capacity_hidden_dims = [int(down_hidden[i]) for i in range(int(expert_heads))]
 
     if num_classes is None or expert_heads is None:
         raise RuntimeError("AbsoluteHallway checkpoint missing head weights (single or experts.*)")
 
-    return {
+    out = {
         "ring_len": int(ring_len),
         "slot_dim": int(slot_dim),
         "num_classes": int(num_classes),
         "expert_heads": int(expert_heads),
     }
+    if expert_capacity_hidden_dims is not None:
+        out["expert_capacity_hidden_dims"] = [int(x) for x in expert_capacity_hidden_dims]
+    return out
 
 
 def _infer_prismion_from_state(state: Dict[str, Any]) -> Dict[str, Any]:
@@ -378,6 +395,11 @@ def main(argv: Optional[list[str]] = None) -> int:
 
     if model_kind == "absolute_hallway":
         _env_set("VRX_EXPERT_HEADS", str(int(shape["expert_heads"])))
+        if isinstance(shape.get("expert_capacity_hidden_dims"), list) and shape["expert_capacity_hidden_dims"]:
+            _env_set(
+                "VRX_EXPERT_CAPACITY_HIDDEN_DIMS",
+                ",".join(str(int(x)) for x in shape["expert_capacity_hidden_dims"]),
+            )
     else:
         _env_set("VRX_MODEL", "prismion_hallway_bank")
         _env_set("VRX_PRISMN_N", str(int(shape["prismn_n"])))
@@ -475,6 +497,7 @@ def main(argv: Optional[list[str]] = None) -> int:
             "model": str(model_kind),
             "ring_len": int(shape["ring_len"]),
             "slot_dim": int(shape["slot_dim"]),
+            "expert_capacity_hidden_dims": shape.get("expert_capacity_hidden_dims"),
             "batch_size": int(args.batch_size),
             "seq_len": int(synth["seq_len"]),
             "max_samples": int(os.environ["VRX_MAX_SAMPLES"]),
