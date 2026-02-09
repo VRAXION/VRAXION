@@ -11,6 +11,7 @@ Volume weighting is now baked into _prismion_apply_fibonacci().
 Usage:
     python "S:/AI/Golden Draft/tools/probe11_fib_volume_weight.py"
     python "S:/AI/Golden Draft/tools/probe11_fib_volume_weight.py" --steps 5000 --device cuda
+    python "S:/AI/Golden Draft/tools/probe11_fib_volume_weight.py" --no-dashboard
 """
 from __future__ import annotations
 
@@ -18,8 +19,11 @@ import argparse
 import json
 import math
 import os
+import socket
+import subprocess
 import sys
 import time
+import webbrowser
 from collections import deque
 from pathlib import Path
 
@@ -56,6 +60,109 @@ os.environ.update({
 })
 
 from vraxion.platinum.hallway import AbsoluteHallway  # noqa: E402
+
+
+# ---------------------------------------------------------------------------
+# Dashboard auto-launcher
+# ---------------------------------------------------------------------------
+_DASHBOARD_PORT_START = 8511
+
+
+def _is_port_open(port: int) -> bool:
+    """Check if a TCP port is already listening on localhost."""
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    try:
+        s.settimeout(0.3)
+        return s.connect_ex(("127.0.0.1", port)) == 0
+    finally:
+        s.close()
+
+
+def _find_free_port(start: int = _DASHBOARD_PORT_START, scan: int = 20) -> int:
+    """Return *start* if free, otherwise scan upward. Raises if all taken."""
+    for offset in range(scan):
+        if not _is_port_open(start + offset):
+            return start + offset
+    raise RuntimeError(f"No free port in {start}..{start + scan - 1}")
+
+
+def _launch_dashboard(telemetry_path: str, port: int | None = None) -> int | None:
+    """Launch probe11_dashboard.py in a detached Streamlit process.
+
+    Returns the port number on success, or None on failure (non-fatal).
+    """
+    try:
+        import importlib
+        importlib.import_module("streamlit")
+    except ImportError:
+        print("[probe11] WARNING: streamlit not installed -- skipping dashboard")
+        return None
+
+    dashboard_script = Path(__file__).resolve().parent / "probe11_dashboard.py"
+    if not dashboard_script.exists():
+        print(f"[probe11] WARNING: dashboard not found at {dashboard_script}")
+        return None
+
+    if port is None:
+        try:
+            port = _find_free_port()
+        except RuntimeError as exc:
+            print(f"[probe11] WARNING: {exc} -- skipping dashboard")
+            return None
+
+    if _is_port_open(port):
+        url = f"http://localhost:{port}"
+        print(f"[probe11] Dashboard already running on {url}")
+        webbrowser.open(url)
+        return port
+
+    # Log file for the dashboard process.
+    repo_root = Path(__file__).resolve().parents[2]
+    log_dir = repo_root / "bench_vault" / "_tmp"
+    log_dir.mkdir(parents=True, exist_ok=True)
+    ts = time.strftime("%Y%m%d_%H%M%S")
+    log_path = log_dir / f"probe11_dash_{port}_{ts}.log"
+
+    cmd = [
+        sys.executable,
+        "-m", "streamlit", "run",
+        str(dashboard_script),
+        "--server.port", str(port),
+        "--server.headless", "true",
+        "--browser.gatherUsageStats", "false",
+    ]
+
+    env = os.environ.copy()
+    env["PROBE11_TELEMETRY"] = str(Path(telemetry_path).resolve())
+
+    creationflags = 0
+    if os.name == "nt":
+        creationflags = (
+            int(getattr(subprocess, "DETACHED_PROCESS", 0))
+            | int(getattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 0))
+        )
+
+    try:
+        with log_path.open("w", encoding="utf-8") as lf:
+            subprocess.Popen(
+                cmd,
+                env=env,
+                cwd=str(repo_root),
+                stdout=lf,
+                stderr=subprocess.STDOUT,
+                creationflags=creationflags,
+            )
+    except Exception as exc:
+        print(f"[probe11] WARNING: failed to launch dashboard: {exc}")
+        return None
+
+    url = f"http://localhost:{port}"
+    print(f"[probe11] Dashboard launching on {url}")
+    print(f"[probe11] Dashboard log: {log_path}")
+
+    time.sleep(1.5)
+    webbrowser.open(url)
+    return port
 
 
 # ---------------------------------------------------------------------------
@@ -163,6 +270,8 @@ def main():
     parser.add_argument("--log-every", type=int, default=10)
     parser.add_argument("--telemetry", type=str, default="probe11_telemetry.jsonl",
                         help="JSONL telemetry output path")
+    parser.add_argument("--no-dashboard", action="store_true",
+                        help="Disable automatic Streamlit dashboard launch")
     args = parser.parse_args()
 
     torch.manual_seed(args.seed)
@@ -205,6 +314,14 @@ def main():
 
     telemetry_path = Path(args.telemetry)
     telemetry_fh = open(telemetry_path, "w", encoding="utf-8")
+
+    # Auto-launch dashboard.
+    if not args.no_dashboard:
+        dash_port = _launch_dashboard(str(telemetry_path))
+        if dash_port:
+            print(f"[probe11] Live dashboard: http://localhost:{dash_port}")
+    else:
+        print("[probe11] Dashboard disabled (--no-dashboard)")
 
     print(f"[probe11] Starting {args.steps} steps | batch={args.batch_size} | "
           f"seq_len={args.seq_len} | lr={args.lr} | device={device}")
