@@ -378,12 +378,15 @@ def main():
         if ckpt_path.exists():
             ckpt = safe_torch_load(ckpt_path, map_location=device)
             model.load_state_dict(ckpt["model"])
-            # Optimizer state may not match if freeze config changed — load best-effort.
-            try:
-                optimizer.load_state_dict(ckpt["optimizer"])
-            except (ValueError, KeyError) as exc:
-                print(f"[probe11] WARNING: optimizer state mismatch (freeze config changed?): {exc}")
-                print(f"[probe11] Continuing with fresh optimizer for unfrozen params")
+            # Skip optimizer restore if freeze config changed (param count mismatch).
+            if frozen_ant_indices:
+                print(f"[probe11] Freeze config active — using fresh optimizer for unfrozen params")
+            else:
+                try:
+                    optimizer.load_state_dict(ckpt["optimizer"])
+                except (ValueError, KeyError, RuntimeError) as exc:
+                    print(f"[probe11] WARNING: optimizer state mismatch: {exc}")
+                    print(f"[probe11] Continuing with fresh optimizer")
             start_step = ckpt.get("step", 0) + 1
             best_acc = ckpt.get("acc_ma100", 0.0)
             print(f"[probe11] Resumed from {ckpt_path} at step {start_step}, best_acc={best_acc:.4f}")
