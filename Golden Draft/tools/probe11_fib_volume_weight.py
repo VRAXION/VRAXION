@@ -292,6 +292,9 @@ def main():
                         help="Path to checkpoint to resume from")
     parser.add_argument("--no-sync", action="store_true",
                         help="Disable auto git sync to nightly branch")
+    parser.add_argument("--freeze-ants", type=str, default=None,
+                        help="Comma-separated ant indices to freeze (still vote, no gradients). "
+                             "E.g. --freeze-ants 0 freezes ant[0], --freeze-ants 0,1 freezes both.")
     args = parser.parse_args()
 
     # Set active ants env var BEFORE model construction.
@@ -335,6 +338,29 @@ def main():
             frozen = "FROZEN" if i >= active else "ACTIVE"
             print(f"  ant[{i}]: ring_len={rl}, weight={w:.4f}, params={params:,} [{frozen}]")
 
+    # Freeze specific ants (still participate in forward pass, no gradients).
+    frozen_ant_indices = set()
+    if args.freeze_ants:
+        frozen_ant_indices = {int(x.strip()) for x in args.freeze_ants.split(",")}
+        if model.prismion_swarm:
+            for idx in frozen_ant_indices:
+                if idx < len(model.prismion_swarm):
+                    for p in model.prismion_swarm[idx].parameters():
+                        p.requires_grad = False
+                    # Also freeze the corresponding head.
+                    if model.prismion_swarm_heads and idx < len(model.prismion_swarm_heads):
+                        for p in model.prismion_swarm_heads[idx].parameters():
+                            p.requires_grad = False
+                    print(f"[probe11] ant[{idx}] FROZEN (votes but no gradients)")
+                else:
+                    print(f"[probe11] WARNING: ant[{idx}] does not exist, skipping freeze")
+        frozen_params = sum(
+            sum(p.numel() for p in model.prismion_swarm[i].parameters())
+            for i in frozen_ant_indices if i < len(model.prismion_swarm)
+        )
+        trainable_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
+        print(f"[probe11] Frozen params: {frozen_params:,} | Trainable params: {trainable_params:,}")
+
     optimizer = torch.optim.Adam(
         (p for p in model.parameters() if p.requires_grad), lr=args.lr
     )
@@ -352,7 +378,12 @@ def main():
         if ckpt_path.exists():
             ckpt = safe_torch_load(ckpt_path, map_location=device)
             model.load_state_dict(ckpt["model"])
-            optimizer.load_state_dict(ckpt["optimizer"])
+            # Optimizer state may not match if freeze config changed — load best-effort.
+            try:
+                optimizer.load_state_dict(ckpt["optimizer"])
+            except (ValueError, KeyError) as exc:
+                print(f"[probe11] WARNING: optimizer state mismatch (freeze config changed?): {exc}")
+                print(f"[probe11] Continuing with fresh optimizer for unfrozen params")
             start_step = ckpt.get("step", 0) + 1
             best_acc = ckpt.get("acc_ma100", 0.0)
             print(f"[probe11] Resumed from {ckpt_path} at step {start_step}, best_acc={best_acc:.4f}")
