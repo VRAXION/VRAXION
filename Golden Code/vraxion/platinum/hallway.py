@@ -596,6 +596,20 @@ class AbsoluteHallway(nn.Module):
                           f"frac={spec['fraction']:.4f}, "
                           f"params={spec['param_count']:,}")
 
+                # Freeze inactive ants so optimizer ignores them.
+                active = self.prismion_fib_active_ants
+                if active >= 0:
+                    for i, ant in enumerate(self.prismion_swarm):
+                        frozen = i >= active
+                        for p in ant.parameters():
+                            p.requires_grad = not frozen
+                        if i < len(self.prismion_swarm_heads):
+                            for p in self.prismion_swarm_heads[i].parameters():
+                                p.requires_grad = not frozen
+                    n_frozen = max(0, len(self.prismion_swarm) - active)
+                    print(f"[FibSwarm] Active ants: {min(active, len(self.prismion_swarm))}/{len(self.prismion_swarm)} "
+                          f"({n_frozen} frozen)")
+
         # Pure fast/slow filters operate in think_dim (optionally projected).
         # The legacy learned "think GRU" path is removed; keep an attribute
         # placeholder for compatibility with older tooling that may introspect it.
@@ -970,19 +984,21 @@ class AbsoluteHallway(nn.Module):
         for i in range(N):
             ant = self.prismion_swarm[i]
             head = self.prismion_swarm_heads[i]
-            msg_i, st_i = ant.step(chrom, fib_prism_states[i], active_mask)
-            new_states[i] = st_i
-            feedback_msgs.append(msg_i)
             if i < active_ants:
+                msg_i, st_i = ant.step(chrom, fib_prism_states[i], active_mask)
+                new_states[i] = st_i
+                feedback_msgs.append(msg_i)
                 w_i = ring_lens[i] / total_ring_len
                 swarm_logits = swarm_logits + w_i * head(msg_i.to(head.weight.dtype)).to(swarm_logits.dtype)
+            else:
+                new_states[i] = fib_prism_states[i]  # pass through unchanged
 
         # Volume-weighted feedback from active ants only.
-        if active_ants > 0:
+        if active_ants > 0 and feedback_msgs:
             weights = [ring_lens[j] / total_ring_len for j in range(active_ants)]
-            feedback = sum(w * msg for w, msg in zip(weights, feedback_msgs[:active_ants]))
+            feedback = sum(w * msg for w, msg in zip(weights, feedback_msgs))
         else:
-            feedback = torch.zeros_like(feedback_msgs[0])
+            feedback = torch.zeros(B, int(self.think_dim), device=chrom.device, dtype=chrom.dtype)
 
         return feedback, new_states, swarm_logits
 

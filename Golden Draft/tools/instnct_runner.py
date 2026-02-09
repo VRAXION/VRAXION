@@ -18,7 +18,12 @@ train/eval functions.
 from __future__ import annotations
 
 import os
+import socket
+import subprocess
+import sys
+import webbrowser
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any, Callable, Dict, Mapping, Optional, Tuple
 
 import torch
@@ -195,12 +200,81 @@ def _build_mnist_eval_loader(ctx: InstnctRunnerContext, mnist_loader: Any, mnist
         return mnist_eval_loader, eval_size, eval_label
 
 
+def _launch_live_dashboard(log_path: str, port_start: int = 8501) -> Optional[int]:
+    """Auto-launch the live_dashboard.py Streamlit process. Returns port or None."""
+    try:
+        import importlib
+        importlib.import_module("streamlit")
+    except ImportError:
+        return None
+
+    dashboard_script = Path(__file__).resolve().parent / "live_dashboard.py"
+    if not dashboard_script.exists():
+        return None
+
+    # Find free port.
+    port = port_start
+    for offset in range(20):
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        try:
+            s.settimeout(0.3)
+            if s.connect_ex(("127.0.0.1", port + offset)) != 0:
+                port = port + offset
+                break
+        finally:
+            s.close()
+    else:
+        return None
+
+    # Check if already running on that port.
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    try:
+        s.settimeout(0.3)
+        if s.connect_ex(("127.0.0.1", port)) == 0:
+            webbrowser.open(f"http://localhost:{port}")
+            return port
+    finally:
+        s.close()
+
+    repo_root = Path(__file__).resolve().parents[1]
+    cmd = [
+        sys.executable, "-m", "streamlit", "run",
+        str(dashboard_script),
+        "--", "--log", str(log_path),
+        "--server.port", str(port),
+        "--server.headless", "true",
+        "--browser.gatherUsageStats", "false",
+    ]
+
+    creationflags = 0
+    if os.name == "nt":
+        creationflags = (
+            int(getattr(subprocess, "DETACHED_PROCESS", 0))
+            | int(getattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 0))
+        )
+
+    try:
+        subprocess.Popen(
+            cmd, cwd=str(repo_root),
+            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+            creationflags=creationflags,
+        )
+    except Exception:
+        return None
+
+    import time as _time
+    _time.sleep(1.5)
+    webbrowser.open(f"http://localhost:{port}")
+    return port
+
+
 def main(*, ctx: Optional[InstnctRunnerContext] = None) -> None:
     """Entry point used by Golden Draft runner scripts.
 
     Environment variables (strict "1" parsing where applicable):
     - VRX_SYNTH: if "1", bypass MNIST and run synthetic loop
     - VRX_SYNTH_ONCE: if "1" with VRX_SYNTH=1, run one iteration and exit
+    - VRX_NO_DASHBOARD: if "1", skip auto-launching the live dashboard
     """
 
     if ctx is None:
@@ -224,6 +298,15 @@ def main(*, ctx: Optional[InstnctRunnerContext] = None) -> None:
         pass
 
     ctx.log(f"INSTNCT start | device={ctx.device} | offline_only={ctx.offline_only}")
+
+    # Auto-launch live dashboard.
+    if os.environ.get("VRX_NO_DASHBOARD") != "1":
+        log_path = os.path.join(ctx.root, "logs", "current", "vraxion.log")
+        dash_port = _launch_live_dashboard(log_path)
+        if dash_port:
+            ctx.log(f"Live dashboard: http://localhost:{dash_port}")
+        else:
+            ctx.log("Dashboard: streamlit not available or port busy")
 
     summary = []
 

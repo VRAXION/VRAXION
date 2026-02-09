@@ -46,47 +46,66 @@ def live_view():
 
     max_step = int(df["step"].max())
 
+    # Active/total ant counts.
+    active_ants = int(df["active_ants"].iloc[-1]) if "active_ants" in df.columns else None
+    total_ants = int(df["total_ants"].iloc[-1]) if "total_ants" in df.columns else None
+    ant_label = f" | active ants: {active_ants}/{total_ants}" if active_ants is not None else ""
+
     # Header metrics.
-    st.markdown(f"### Probe 11 -- Fibonacci Volume Weight | step {max_step}")
+    st.markdown(f"### Probe 11 -- Fibonacci Volume Weight | step {max_step}{ant_label}")
 
     col1, col2, col3, col4 = st.columns(4)
     col1.metric("Step", f"{max_step}")
     col2.metric("Loss", f"{df['loss'].iloc[-1]:.4f}")
     col3.metric("Acc (MA100)", f"{df['acc_ma100'].iloc[-1]:.3f}")
-    if "gnorm_ratio" in df.columns:
+    if "gnorm_ratio" in df.columns and df["gnorm_ratio"].notna().any():
         col4.metric("Gnorm ratio (big/small)", f"{df['gnorm_ratio'].iloc[-1]:.1f}x")
+    elif active_ants is not None:
+        col4.metric("Active Ants", f"{active_ants}/{total_ants}")
 
-    # ---- Loss + Accuracy ----
-    st.subheader("Loss & Accuracy")
-    c1, c2 = st.columns(2)
-    with c1:
-        st.line_chart(df.set_index("step")[["loss"]], height=300)
-    with c2:
-        acc_cols = ["acc_ma100"]
-        if "acc" in df.columns:
-            acc_cols.insert(0, "acc")
-        st.line_chart(df.set_index("step")[acc_cols], height=300)
+    # ---- Loss ----
+    st.subheader("Loss")
+    st.line_chart(df.set_index("step")[["loss"]], height=300)
+
+    # ---- Accuracy (MA100, MA50, MA10 side by side) ----
+    st.subheader("Accuracy")
+    acc_chart_cols = []
+    if "acc_ma100" in df.columns:
+        acc_chart_cols.append(("MA100", "acc_ma100"))
+    if "acc_ma50" in df.columns:
+        acc_chart_cols.append(("MA50", "acc_ma50"))
+    if "acc_ma10" in df.columns:
+        acc_chart_cols.append(("MA10", "acc_ma10"))
+    if acc_chart_cols:
+        cols = st.columns(len(acc_chart_cols))
+        for col, (label, key) in zip(cols, acc_chart_cols):
+            with col:
+                val = df[key].iloc[-1]
+                st.metric(label, f"{val:.3f}")
+                st.line_chart(df.set_index("step")[[key]], height=250)
 
     # ---- Per-ant gradient norms ----
     if "gnorms" in df.columns:
         st.subheader("Per-Ant Gradient Norms")
-        gnorm_df = pd.DataFrame(df["gnorms"].tolist(), index=df["step"])
-        n_ants = gnorm_df.shape[1]
-        gnorm_df.columns = [f"ant[{i}]" for i in range(n_ants)]
-        st.line_chart(gnorm_df, height=350)
+        gnorm_expand = pd.DataFrame(df["gnorms"].tolist())
+        n_ants = gnorm_expand.shape[1]
+        gnorm_expand.columns = [f"Ant {i}" for i in range(n_ants)]
+        gnorm_expand["step"] = df["step"].values
+        st.line_chart(gnorm_expand.set_index("step"), height=350)
 
-    # ---- Gnorm ratio ----
-    if "gnorm_ratio" in df.columns:
+    # ---- Gnorm ratio (only meaningful with 2+ active ants) ----
+    if "gnorm_ratio" in df.columns and df["gnorm_ratio"].notna().any() and (active_ants is None or active_ants >= 2):
         st.subheader("Gnorm Ratio (ant[0] / ant[-1])")
         st.line_chart(df.set_index("step")[["gnorm_ratio"]], height=250)
 
     # ---- Per-ant message norms ----
     if "msg_norms" in df.columns:
         st.subheader("Per-Ant Message Norms")
-        msg_df = pd.DataFrame(df["msg_norms"].tolist(), index=df["step"])
-        n_ants = msg_df.shape[1]
-        msg_df.columns = [f"ant[{i}]" for i in range(n_ants)]
-        st.line_chart(msg_df, height=300)
+        msg_expand = pd.DataFrame(df["msg_norms"].tolist())
+        n_ants = msg_expand.shape[1]
+        msg_expand.columns = [f"Ant {i}" for i in range(n_ants)]
+        msg_expand["step"] = df["step"].values
+        st.line_chart(msg_expand.set_index("step"), height=300)
 
     # ---- Swarm logit norm ----
     if "swarm_logit_norm" in df.columns:
@@ -109,11 +128,12 @@ def live_view():
     if max_step > 0:
         last_loss = df["loss"].iloc[-1]
         last_acc = df["acc_ma100"].iloc[-1]
-        if "gnorm_ratio" in df.columns:
-            ratio = df["gnorm_ratio"].iloc[-1]
-            st.info(f"Running -- step {max_step} | loss {last_loss:.4f} | acc {last_acc:.3f} | gnorm ratio {ratio:.1f}x")
-        else:
-            st.info(f"Running -- step {max_step} | loss {last_loss:.4f} | acc {last_acc:.3f}")
+        status = f"Running -- step {max_step} | loss {last_loss:.4f} | acc {last_acc:.3f}"
+        if active_ants is not None:
+            status += f" | ants {active_ants}/{total_ants}"
+        if "gnorm_ratio" in df.columns and df["gnorm_ratio"].notna().any():
+            status += f" | gnorm ratio {df['gnorm_ratio'].iloc[-1]:.1f}x"
+        st.info(status)
 
 
 live_view()

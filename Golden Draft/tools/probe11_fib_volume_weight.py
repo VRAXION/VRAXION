@@ -40,9 +40,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "Golden Code"))
 os.environ.update({
     "VRX_PRISMION": "1",
     "VRX_PRISMION_FIBONACCI": "1",
-    "VRX_PRISMION_FIB_BUDGET_MB": "2",
+    "VRX_PRISMION_FIB_BUDGET_MB": "1.2",
     "VRX_PRISMION_FIB_MIN_RING": "4",
-    "VRX_PRISMION_FIB_MAX_ANTS": "8",
+    "VRX_PRISMION_FIB_MAX_ANTS": "16",
     "VRX_THINK_RING": "1",
     "VRX_THINK_RING_MODE": "replace",
     "VRX_THINK_RING_DUAL": "1",
@@ -60,6 +60,7 @@ os.environ.update({
 })
 
 from vraxion.platinum.hallway import AbsoluteHallway  # noqa: E402
+from _checkpoint_io import atomic_torch_save, safe_torch_load  # noqa: E402
 
 
 # ---------------------------------------------------------------------------
@@ -210,12 +211,16 @@ def make_harmonic_xor_batch(
 # ---------------------------------------------------------------------------
 # Per-ant gradient norm tracker
 # ---------------------------------------------------------------------------
-def compute_per_ant_gnorms(model: AbsoluteHallway) -> list[float]:
-    """Compute gradient L2 norm for each ant's parameters."""
+def compute_per_ant_gnorms(model: AbsoluteHallway, active_ants: int | None = None) -> list[float]:
+    """Compute gradient L2 norm for each active ant's parameters."""
     if model.prismion_swarm is None:
         return []
+    n = len(model.prismion_swarm)
+    if active_ants is not None and active_ants >= 0:
+        n = min(active_ants, n)
     gnorms = []
-    for ant in model.prismion_swarm:
+    for i in range(n):
+        ant = model.prismion_swarm[i]
         total = 0.0
         for p in ant.parameters():
             if p.grad is not None:
@@ -223,7 +228,8 @@ def compute_per_ant_gnorms(model: AbsoluteHallway) -> list[float]:
         gnorms.append(math.sqrt(total))
     # Also include head gradients.
     if model.prismion_swarm_heads is not None:
-        for i, head in enumerate(model.prismion_swarm_heads):
+        for i in range(min(n, len(model.prismion_swarm_heads))):
+            head = model.prismion_swarm_heads[i]
             head_gnorm_sq = 0.0
             for p in head.parameters():
                 if p.grad is not None:
@@ -241,13 +247,17 @@ def compute_per_ant_votes(
     chrom: torch.Tensor,
     fib_prism_states: list,
     active_mask: torch.Tensor,
+    active_ants: int | None = None,
 ) -> list[torch.Tensor]:
-    """Run each ant independently and return per-ant logits."""
+    """Run each active ant independently and return per-ant logits."""
     if model.prismion_swarm is None:
         return []
+    n = len(model.prismion_swarm)
+    if active_ants is not None and active_ants >= 0:
+        n = min(active_ants, n)
     votes = []
     with torch.no_grad():
-        for i in range(len(model.prismion_swarm)):
+        for i in range(n):
             ant = model.prismion_swarm[i]
             head = model.prismion_swarm_heads[i]
             msg_i, _ = ant.step(chrom, fib_prism_states[i], active_mask)
@@ -272,7 +282,20 @@ def main():
                         help="JSONL telemetry output path")
     parser.add_argument("--no-dashboard", action="store_true",
                         help="Disable automatic Streamlit dashboard launch")
+    parser.add_argument("--active-ants", type=int, default=1,
+                        help="Number of active ants (0=none, -1=all, default=1)")
+    parser.add_argument("--checkpoint-every", type=int, default=10,
+                        help="Save checkpoint every N steps (default=10)")
+    parser.add_argument("--checkpoint-dir", type=str, default="logs/probe/checkpoints",
+                        help="Directory for checkpoint files")
+    parser.add_argument("--resume", type=str, default=None,
+                        help="Path to checkpoint to resume from")
+    parser.add_argument("--no-sync", action="store_true",
+                        help="Disable auto git sync to nightly branch")
     args = parser.parse_args()
+
+    # Set active ants env var BEFORE model construction.
+    os.environ["VRX_PRISMION_FIB_ACTIVE_ANTS"] = str(args.active_ants)
 
     torch.manual_seed(args.seed)
     device = args.device
@@ -294,26 +317,67 @@ def main():
     ).to(device)
 
     # Report swarm config.
-    n_ants = len(model.prismion_swarm) if model.prismion_swarm else 0
-    print(f"[probe11] Fibonacci swarm active: {model.prismion_fib_active}, ants: {n_ants}")
+    n_ants_total = len(model.prismion_swarm) if model.prismion_swarm else 0
+    active = int(model.prismion_fib_active_ants)
+    if active < 0:
+        active = n_ants_total
+    else:
+        active = min(active, n_ants_total)
+    n_ants = active  # only track active ants
+    print(f"[probe11] Fibonacci swarm: {active}/{n_ants_total} ants active")
     if model.prismion_swarm:
         ring_lens = [int(ant.ring_len) for ant in model.prismion_swarm]
-        total_rl = sum(ring_lens)
-        weights = [rl / total_rl for rl in ring_lens]
-        for i, (ant, rl, w) in enumerate(zip(model.prismion_swarm, ring_lens, weights)):
+        total_rl = sum(ring_lens[:active]) if active > 0 else 1
+        for i, ant in enumerate(model.prismion_swarm):
+            rl = ring_lens[i]
+            w = rl / total_rl if i < active else 0.0
             params = sum(p.numel() for p in ant.parameters())
-            print(f"  ant[{i}]: ring_len={rl}, weight={w:.4f}, params={params:,}")
+            frozen = "FROZEN" if i >= active else "ACTIVE"
+            print(f"  ant[{i}]: ring_len={rl}, weight={w:.4f}, params={params:,} [{frozen}]")
 
-    optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
+    optimizer = torch.optim.Adam(
+        (p for p in model.parameters() if p.requires_grad), lr=args.lr
+    )
     criterion = nn.CrossEntropyLoss()
 
-    # Rolling accuracy tracker (window=100).
+    # Checkpoint directory.
+    ckpt_dir = Path(args.checkpoint_dir)
+    ckpt_dir.mkdir(parents=True, exist_ok=True)
+    best_acc = 0.0
+    start_step = 1
+
+    # Resume from checkpoint.
+    if args.resume:
+        ckpt_path = Path(args.resume)
+        if ckpt_path.exists():
+            ckpt = safe_torch_load(ckpt_path, map_location=device)
+            model.load_state_dict(ckpt["model"])
+            optimizer.load_state_dict(ckpt["optimizer"])
+            start_step = ckpt.get("step", 0) + 1
+            best_acc = ckpt.get("acc_ma100", 0.0)
+            print(f"[probe11] Resumed from {ckpt_path} at step {start_step}, best_acc={best_acc:.4f}")
+        else:
+            print(f"[probe11] WARNING: checkpoint not found at {ckpt_path}, starting fresh")
+
+    # Auto-sync setup.
+    _git_sync = None
+    if not args.no_sync:
+        try:
+            from _git_sync import auto_sync_nightly
+            _git_sync = auto_sync_nightly
+        except ImportError:
+            print("[probe11] WARNING: _git_sync not available, auto-sync disabled")
+
+    # Rolling accuracy trackers.
     acc_window = deque(maxlen=100)
-    slow_acc_windows = [deque(maxlen=100) for _ in range(n_ants)]
-    fast_acc_windows = [deque(maxlen=100) for _ in range(n_ants)]
+    acc_window_50 = deque(maxlen=50)
+    acc_window_10 = deque(maxlen=10)
+    slow_acc_windows = [deque(maxlen=100) for _ in range(active)]
+    fast_acc_windows = [deque(maxlen=100) for _ in range(active)]
 
     telemetry_path = Path(args.telemetry)
-    telemetry_fh = open(telemetry_path, "w", encoding="utf-8")
+    telemetry_mode = "a" if args.resume else "w"
+    telemetry_fh = open(telemetry_path, telemetry_mode, encoding="utf-8")
 
     # Auto-launch dashboard.
     if not args.no_dashboard:
@@ -323,15 +387,16 @@ def main():
     else:
         print("[probe11] Dashboard disabled (--no-dashboard)")
 
-    print(f"[probe11] Starting {args.steps} steps | batch={args.batch_size} | "
+    print(f"[probe11] Starting {args.steps} steps (from {start_step}) | batch={args.batch_size} | "
           f"seq_len={args.seq_len} | lr={args.lr} | device={device}")
     print(f"[probe11] Telemetry -> {telemetry_path.resolve()}")
+    print(f"[probe11] Checkpoints -> {ckpt_dir.resolve()} (every {args.checkpoint_every} steps)")
     print("-" * 100)
 
     t0 = time.time()
     model.train()
 
-    for step in range(1, args.steps + 1):
+    for step in range(start_step, args.steps + 1):
         x, labels, slow_labels, fast_labels = make_harmonic_xor_batch(
             args.batch_size, args.seq_len, device=device,
         )
@@ -342,7 +407,7 @@ def main():
         loss.backward()
 
         # Per-ant gradient norms (after backward, before optimizer step).
-        gnorms = compute_per_ant_gnorms(model)
+        gnorms = compute_per_ant_gnorms(model, active_ants=active)
 
         optimizer.step()
 
@@ -350,6 +415,8 @@ def main():
         pred = logits.argmax(dim=1)
         correct = (pred == labels).float().mean().item()
         acc_window.append(correct)
+        acc_window_50.append(correct)
+        acc_window_10.append(correct)
 
         # Per-ant slow/fast accuracy.
         per_ant_slow_acc = []
@@ -365,20 +432,24 @@ def main():
             "loss": round(loss.item(), 6),
             "acc": round(correct, 4),
             "acc_ma100": round(sum(acc_window) / len(acc_window), 4),
+            "acc_ma50": round(sum(acc_window_50) / len(acc_window_50), 4),
+            "acc_ma10": round(sum(acc_window_10) / len(acc_window_10), 4),
+            "active_ants": active,
+            "total_ants": n_ants_total,
             "gnorms": [round(g, 4) for g in gnorms],
         }
 
-        # Add swarm telemetry from model.
+        # Add swarm telemetry from model (sliced to active only).
         if hasattr(model, "fib_swarm_weights") and model.fib_swarm_weights is not None:
-            record["weights"] = [round(w, 4) for w in model.fib_swarm_weights]
+            record["weights"] = [round(w, 4) for w in model.fib_swarm_weights[:active]]
         if hasattr(model, "fib_swarm_ring_lens") and model.fib_swarm_ring_lens is not None:
-            record["ring_lens"] = model.fib_swarm_ring_lens
+            record["ring_lens"] = model.fib_swarm_ring_lens[:active]
         if hasattr(model, "fib_swarm_logit_norm") and model.fib_swarm_logit_norm is not None:
             record["swarm_logit_norm"] = round(model.fib_swarm_logit_norm, 4)
         if hasattr(model, "fib_swarm_msg_norms") and model.fib_swarm_msg_norms is not None:
-            record["msg_norms"] = [round(n, 4) for n in model.fib_swarm_msg_norms]
+            record["msg_norms"] = [round(n, 4) for n in model.fib_swarm_msg_norms[:active]]
 
-        # Gnorm ratio (biggest / smallest).
+        # Gnorm ratio (biggest / smallest) — only meaningful with 2+ active ants.
         if len(gnorms) >= 2 and gnorms[-1] > 1e-12:
             record["gnorm_ratio"] = round(gnorms[0] / max(gnorms[-1], 1e-12), 2)
 
@@ -399,6 +470,39 @@ def main():
 
         telemetry_fh.flush()
 
+        # Checkpoint saving.
+        if args.checkpoint_every > 0 and step % args.checkpoint_every == 0:
+            ckpt_payload = {
+                "model": model.state_dict(),
+                "optimizer": optimizer.state_dict(),
+                "step": step,
+                "loss": record["loss"],
+                "acc_ma100": record["acc_ma100"],
+                "acc_ma50": record["acc_ma50"],
+                "acc_ma10": record["acc_ma10"],
+            }
+            step_path = ckpt_dir / f"probe11_step_{step:05d}.pt"
+            atomic_torch_save(ckpt_payload, step_path)
+
+            # Best model tracking.
+            if record["acc_ma100"] > best_acc:
+                best_acc = record["acc_ma100"]
+                atomic_torch_save(ckpt_payload, ckpt_dir / "best.pt")
+                print(f"[probe11] New best MA100={best_acc:.4f} saved at step {step}")
+
+            # Latest checkpoint (overwritten each time).
+            atomic_torch_save(ckpt_payload, ckpt_dir / "latest.pt")
+
+            # Auto-sync to nightly.
+            if _git_sync is not None:
+                try:
+                    _git_sync(
+                        message=f"[auto] probe11 step {step}: MA100={record['acc_ma100']:.4f}",
+                        paths=[str(telemetry_path)],
+                    )
+                except Exception as exc:
+                    print(f"[probe11] WARNING: auto-sync failed: {exc}")
+
     telemetry_fh.close()
     elapsed = time.time() - t0
     print("-" * 100)
@@ -409,6 +513,7 @@ def main():
         if len(gnorms) >= 2:
             print(f"[probe11] Final gnorm ratio (ant[0]/ant[-1]): {gnorms[0] / max(gnorms[-1], 1e-12):.2f}x")
     print(f"[probe11] Telemetry saved to {telemetry_path.resolve()}")
+    print(f"[probe11] Checkpoints in {ckpt_dir.resolve()} (best MA100={best_acc:.4f})")
 
 
 if __name__ == "__main__":

@@ -1188,6 +1188,15 @@ def train_steps(model: torch.nn.Module, loader: Any, steps: int, dataset_name: s
                     log(f"Checkpoint saved @ step {step} -> {CHECKPOINT_PATH}")
             else:
                 log(f"Checkpoint not updated (non-finite metrics) @ step {step}")
+            # Auto-sync telemetry to nightly.
+            try:
+                from ._git_sync import auto_sync_nightly
+                auto_sync_nightly(
+                    message=f"[auto] {model_name} step {step}: loss={loss_value}",
+                    paths=[CHECKPOINT_PATH],
+                )
+            except Exception:
+                pass  # Non-fatal: never block training.
     slope = compute_slope(losses)
     ptr_flip_rate = (ptr_flip_sum / ptr_steps) if ptr_steps else None
     ptr_mean_dwell = (ptr_mean_dwell_sum / ptr_steps) if ptr_steps else None
