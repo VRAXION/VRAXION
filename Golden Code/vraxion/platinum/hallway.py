@@ -981,6 +981,7 @@ class AbsoluteHallway(nn.Module):
         ring_lens = [float(self.prismion_swarm[j].ring_len) for j in range(N)]
         total_ring_len = sum(ring_lens[:active_ants]) if active_ants > 0 else 1.0
 
+        per_ant_logits = []
         for i in range(N):
             ant = self.prismion_swarm[i]
             head = self.prismion_swarm_heads[i]
@@ -989,9 +990,12 @@ class AbsoluteHallway(nn.Module):
                 new_states[i] = st_i
                 feedback_msgs.append(msg_i)
                 w_i = ring_lens[i] / total_ring_len
-                swarm_logits = swarm_logits + w_i * head(msg_i.to(head.weight.dtype)).to(swarm_logits.dtype)
+                logits_i = head(msg_i.to(head.weight.dtype)).to(swarm_logits.dtype)
+                per_ant_logits.append(logits_i)
+                swarm_logits = swarm_logits + w_i * logits_i
             else:
                 new_states[i] = fib_prism_states[i]  # pass through unchanged
+        self._last_per_ant_logits = per_ant_logits
 
         # Volume-weighted feedback from active ants only.
         if active_ants > 0 and feedback_msgs:

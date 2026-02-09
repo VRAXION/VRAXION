@@ -406,8 +406,10 @@ def main():
     acc_window = deque(maxlen=100)
     acc_window_50 = deque(maxlen=50)
     acc_window_10 = deque(maxlen=10)
-    slow_acc_windows = [deque(maxlen=100) for _ in range(active)]
-    fast_acc_windows = [deque(maxlen=100) for _ in range(active)]
+    # Per-ant rolling accuracy (MA100 / MA50 / MA10).
+    ant_acc_100 = [deque(maxlen=100) for _ in range(active)]
+    ant_acc_50 = [deque(maxlen=50) for _ in range(active)]
+    ant_acc_10 = [deque(maxlen=10) for _ in range(active)]
 
     telemetry_path = Path(args.telemetry)
     telemetry_mode = "a" if args.resume else "w"
@@ -452,13 +454,18 @@ def main():
         acc_window_50.append(correct)
         acc_window_10.append(correct)
 
-        # Per-ant slow/fast accuracy.
-        per_ant_slow_acc = []
-        per_ant_fast_acc = []
-        if n_ants > 0 and hasattr(model, '_last_fib_prism_states'):
-            # We can't easily get per-ant votes post-step without re-running.
-            # Use the swarm's telemetry instead. For now, track overall only.
-            pass
+        # Per-ant accuracy (each ant's independent prediction vs labels).
+        per_ant_accs = []
+        if n_ants > 0 and hasattr(model, '_last_per_ant_logits') and model._last_per_ant_logits:
+            with torch.no_grad():
+                for idx, ant_logits in enumerate(model._last_per_ant_logits):
+                    ant_pred = ant_logits.argmax(dim=1)
+                    ant_correct = (ant_pred == labels).float().mean().item()
+                    per_ant_accs.append(ant_correct)
+                    if idx < len(ant_acc_100):
+                        ant_acc_100[idx].append(ant_correct)
+                        ant_acc_50[idx].append(ant_correct)
+                        ant_acc_10[idx].append(ant_correct)
 
         # Build telemetry record.
         record = {
@@ -482,6 +489,25 @@ def main():
             record["swarm_logit_norm"] = round(model.fib_swarm_logit_norm, 4)
         if hasattr(model, "fib_swarm_msg_norms") and model.fib_swarm_msg_norms is not None:
             record["msg_norms"] = [round(n, 4) for n in model.fib_swarm_msg_norms[:active]]
+
+        # Per-ant accuracy (raw + rolling averages).
+        if per_ant_accs:
+            record["ant_accs"] = [round(a, 4) for a in per_ant_accs]
+            record["ant_accs_ma100"] = [
+                round(sum(ant_acc_100[i]) / len(ant_acc_100[i]), 4)
+                if ant_acc_100[i] else 0.0
+                for i in range(len(per_ant_accs))
+            ]
+            record["ant_accs_ma50"] = [
+                round(sum(ant_acc_50[i]) / len(ant_acc_50[i]), 4)
+                if ant_acc_50[i] else 0.0
+                for i in range(len(per_ant_accs))
+            ]
+            record["ant_accs_ma10"] = [
+                round(sum(ant_acc_10[i]) / len(ant_acc_10[i]), 4)
+                if ant_acc_10[i] else 0.0
+                for i in range(len(per_ant_accs))
+            ]
 
         # Gnorm ratio (biggest / smallest) — only meaningful with 2+ active ants.
         if len(gnorms) >= 2 and gnorms[-1] > 1e-12:
