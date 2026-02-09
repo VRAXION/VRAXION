@@ -1,4 +1,4 @@
-"""Behavior locks for :class:`vraxion.instnct.absolute_hallway.AbsoluteHallway`."""
+"""Behavior locks for :class:`vraxion.platinum.hallway.AbsoluteHallway`."""
 
 from __future__ import annotations
 
@@ -8,7 +8,7 @@ import torch
 
 import conftest  # noqa: F401  (import side-effect: sys.path bootstrap)
 
-from vraxion.instnct.absolute_hallway import AbsoluteHallway
+from vraxion.platinum.hallway import AbsoluteHallway
 
 
 class AbsoluteHallwayTests(unittest.TestCase):

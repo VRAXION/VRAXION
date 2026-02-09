@@ -25,3 +25,16 @@ reports/
 
 # Local Linear export snapshots (first-run fallback; do not commit)
 .vrx_sync_*export*.json
+
+# Checkpoint binaries
+*.pt
+
+# Windows NUL artifacts
+NUL
+nul
+
+# Wiki submodule
+VRAXION.wiki/
+
+# Telemetry / probe output
+*.jsonl

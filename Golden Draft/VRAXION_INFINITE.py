@@ -86,7 +86,7 @@ def build_env(
 
     _setenv(envmap, "VRX_RESUME", "1", respekt)
     _setenv(envmap, "VRX_CKPT", ckpt_path, respekt)
-    _setenv(envmap, "VRX_SAVE_EVERY_STEPS", "50", respekt)
+    _setenv(envmap, "VRX_SAVE_EVERY", "10", respekt)
     _setenv(envmap, "VRX_EVAL_EVERY_STEPS", "10", respekt)
     _setenv(envmap, "VRX_EVAL_AT_CHECKPOINT", "0", respekt)
 

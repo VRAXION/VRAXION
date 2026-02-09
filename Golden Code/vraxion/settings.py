@@ -449,7 +449,7 @@ def load_settings() -> Settings:
 
     # ---- Checkpoint / saving ----
     checkpoint_path = _env_str("VRX_CKPT", os.path.join(root, "checkpoint.pt"))
-    save_every_steps = _env_int("VRX_SAVE_EVERY", 100)
+    save_every_steps = _env_int("VRX_SAVE_EVERY", 10)
     save_history = _env_flag("VRX_SAVE_HISTORY", True)
     save_last_good = _env_flag("VRX_SAVE_LAST_GOOD", True)
     save_bad = _env_flag("VRX_SAVE_BAD", True)
