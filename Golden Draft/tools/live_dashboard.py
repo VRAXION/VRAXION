@@ -26,7 +26,7 @@ from typing import Any, Dict, Iterable, List, Optional, Sequence
 
 
 REFLOAT = r"[-+]?\d+(?:\.\d+)?(?:[eE][-+]?\d+)?"
-RESTEP = re.compile(rf"step\s+(?P<step>\d+)\s+\|\s+loss\s+(?P<loss>{REFLOAT})\s+\|(?P<tail>.*)")
+RESTEP = re.compile(rf"step\s+(?P<step>\d+)(?:/\d+)?\s+\|\s+loss\s+(?P<loss>{REFLOAT})\s+\|(?P<tail>.*)")
 REGRAD = re.compile(rf"grad_norm\(theta_ptr\)=(?P<grad>{REFLOAT})")
 RERAW = re.compile(rf"raw_delta=(?P<raw_delta>{REFLOAT})")
 RERD = re.compile(rf"\bRD:(?P<raw_delta>{REFLOAT})\b")
