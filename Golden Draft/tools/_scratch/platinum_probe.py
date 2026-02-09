@@ -662,6 +662,182 @@ def probe_6_precision_shot():
 
 
 # =========================================================================
+# Probe 8 — Ring ON vs Ring OFF (think ring toggle)
+# =========================================================================
+def probe_8_ring_onoff():
+    """500-step ring ON vs OFF on streaming infinite-assoc.
+
+    Tests whether the think ring (fast/slow EMA filters) contributes at all.
+    Ring ON  = VRX_THINK_RING=1 (the EMA filters drive h_new)
+    Ring OFF = VRX_THINK_RING=0 (minimal recurrence: h_new = act(inp + h))
+    Both use scale=1.0 (platinum default).
+
+    If ON ~ OFF: the ring filters aren't being utilized — swarm won't help.
+    If ON >> OFF: ring works, proceed to swarm test.
+    """
+    import random as _random
+    t0 = time.time()
+
+    STEPS = 500
+    LR = 1e-3
+    LOG_EVERY = 50
+    BATCH_SIZE = 16
+    SEQ_LEN = 24
+    N_KEYS = 26
+    N_PAIRS = 4
+    NUM_CLASSES = 2
+
+    def _generate_batch(step_seed):
+        """Generate one batch of fresh assoc data, deterministic per seed."""
+        rng = _random.Random(step_seed)
+        x = torch.zeros((BATCH_SIZE, SEQ_LEN, 1), dtype=torch.float32)
+        y = torch.zeros((BATCH_SIZE,), dtype=torch.long)
+
+        for b in range(BATCH_SIZE):
+            keys = rng.sample(range(N_KEYS), N_PAIRS)
+            vals = [rng.randint(0, 1) for _ in range(N_PAIRS)]
+
+            available = list(range(0, SEQ_LEN - 1))
+            rng.shuffle(available)
+            positions = []
+            used = set()
+            for pos in available:
+                if pos in used or (pos + 1) in used or (pos + 1) == SEQ_LEN - 1:
+                    continue
+                used.add(pos)
+                used.add(pos + 1)
+                positions.append(pos)
+                if len(positions) >= N_PAIRS:
+                    break
+
+            for i, pos in enumerate(positions):
+                key_token = float(2 + keys[i])
+                val_token = -1.0 if vals[i] == 0 else -2.0
+                x[b, pos, 0] = key_token
+                x[b, pos + 1, 0] = val_token
+
+            q_idx = rng.randint(0, N_PAIRS - 1)
+            x[b, -1, 0] = float(2 + keys[q_idx])
+            y[b] = vals[q_idx]
+
+        return x, y
+
+    def _make_model_with_ring(ring_on: bool):
+        """Instantiate platinum model with think ring toggled."""
+        # Must set env BEFORE import/construction since __init__ reads it.
+        os.environ["VRX_THINK_RING"] = "1" if ring_on else "0"
+        # Force re-import to pick up env change.
+        from vraxion.platinum.hallway import AbsoluteHallway as PlatinumHallway
+        model = PlatinumHallway(**MODEL_KW)
+        # Restore default for other probes.
+        os.environ["VRX_THINK_RING"] = "1"
+        return model
+
+    def _train_run(ring_on: bool, label: str, seed: int = 42):
+        """Train on streaming fresh data. Returns (losses, accs)."""
+        torch.manual_seed(seed)
+        _random.seed(seed)
+        model = _make_model_with_ring(ring_on)
+        model.update_scale = 1.0
+        model.train()
+
+        n_params = sum(p.numel() for p in model.parameters())
+        print(f"    [{label}] params={n_params:,}  think_enabled={model.think_enabled}")
+
+        optimizer = torch.optim.Adam(model.parameters(), lr=LR)
+
+        losses = []
+        accs = []
+        for step in range(1, STEPS + 1):
+            x_batch, y_batch = _generate_batch(step_seed=step * 1000 + 7)
+
+            optimizer.zero_grad()
+            out = model(x_batch)
+            logits = out[0]
+            loss = F.cross_entropy(logits, y_batch)
+            loss.backward()
+            optimizer.step()
+
+            with torch.no_grad():
+                preds = logits.argmax(dim=1)
+                acc = (preds == y_batch).float().mean().item()
+
+            losses.append(loss.item())
+            accs.append(acc)
+
+            if step % LOG_EVERY == 0:
+                w = losses[-LOG_EVERY:]
+                w_acc = accs[-LOG_EVERY:]
+                print(f"    [{label}] step {step:3d}  "
+                      f"loss={sum(w)/len(w):.4f}  acc={sum(w_acc)/len(w_acc):.3f}")
+
+        return losses, accs
+
+    # ── Reproducibility check ────────────────────────────────────────────
+    print("\n  === Reproducibility check (ring ON, seed=42, x2) ===")
+    print("  Run R1...")
+    losses_r1, _ = _train_run(True, "repro-R1", seed=42)
+    print("  Run R2...")
+    losses_r2, _ = _train_run(True, "repro-R2", seed=42)
+
+    repro_ok = abs(losses_r1[-1] - losses_r2[-1]) < 1e-6
+    print(f"  R1 final loss={losses_r1[-1]:.6f}  R2={losses_r2[-1]:.6f}  match={repro_ok}")
+    if not repro_ok:
+        dt = time.time() - t0
+        return f"FAIL  reproducibility check failed ({dt:.1f}s)"
+
+    # ── Main comparison ──────────────────────────────────────────────────
+    print(f"\n  === Task: {N_KEYS} keys, {N_PAIRS} pairs/seq, "
+          f"seq_len={SEQ_LEN}, streaming (fresh each step) ===")
+    print("\n  === Model A: Ring ON (VRX_THINK_RING=1) ===")
+    losses_a, accs_a = _train_run(True, "A ring=ON", seed=42)
+
+    print("\n  === Model B: Ring OFF (VRX_THINK_RING=0) ===")
+    losses_b, accs_b = _train_run(False, "B ring=OFF", seed=42)
+
+    # ── Curve comparison ─────────────────────────────────────────────────
+    print(f"\n  === Step-by-step comparison ({LOG_EVERY}-step avg) ===")
+    print(f"  {'step':>5s}  {'ON_loss':>7s}  {'ON_acc':>6s}  {'OFF_loss':>8s}  {'OFF_acc':>7s}  {'delta':>7s}")
+    for s in range(LOG_EVERY, STEPS + 1, LOG_EVERY):
+        wa = accs_a[s-LOG_EVERY:s]
+        wb = accs_b[s-LOG_EVERY:s]
+        la = losses_a[s-LOG_EVERY:s]
+        lb = losses_b[s-LOG_EVERY:s]
+        d = sum(wa)/len(wa) - sum(wb)/len(wb)
+        print(f"  {s:5d}  {sum(la)/len(la):7.4f}  {sum(wa)/len(wa):6.3f}  "
+              f"{sum(lb)/len(lb):8.4f}  {sum(wb)/len(wb):7.3f}  {d:+7.3f}")
+
+    # ── Verdict ──────────────────────────────────────────────────────────
+    final_n = 50
+    avg_acc_a = sum(accs_a[-final_n:]) / final_n
+    avg_acc_b = sum(accs_b[-final_n:]) / final_n
+    avg_loss_a = sum(losses_a[-final_n:]) / final_n
+    avg_loss_b = sum(losses_b[-final_n:]) / final_n
+    delta = avg_acc_a - avg_acc_b
+    dt = time.time() - t0
+
+    above_chance_a = avg_acc_a - 0.5
+    above_chance_b = avg_acc_b - 0.5
+
+    if delta > 0.05:
+        verdict = f"ON >> OFF by {delta*100:.1f}pp: think ring IS utilized — proceed to swarm"
+    elif delta < -0.05:
+        verdict = f"OFF >> ON by {-delta*100:.1f}pp: think ring hurts — investigate architecture"
+    else:
+        verdict = "ON ~ OFF (within 5pp): think ring not utilized — swarm won't help"
+
+    return (
+        f"{verdict}\n"
+        f"        A (ring ON):  loss={avg_loss_a:.4f}  acc={avg_acc_a:.3f}  "
+        f"(+{above_chance_a*100:.1f}pp above chance)\n"
+        f"        B (ring OFF): loss={avg_loss_b:.4f}  acc={avg_acc_b:.3f}  "
+        f"(+{above_chance_b*100:.1f}pp above chance)\n"
+        f"        delta_acc={delta:+.3f} ({delta*100:+.1f}pp)\n"
+        f"        repro_check=PASS  streaming=YES  keys={N_KEYS}  steps={STEPS}  ({dt:.1f}s)"
+    )
+
+
+# =========================================================================
 # Runner
 # =========================================================================
 if __name__ == "__main__":
@@ -673,10 +849,13 @@ if __name__ == "__main__":
         probe_5_agc_bug_test,
         probe_6_precision_shot,
         probe_7_infinite_assoc,
+        probe_8_ring_onoff,
     ]
 
     # Selective run flags.
-    if "--probe7" in sys.argv:
+    if "--probe8" in sys.argv:
+        probes = [probe_8_ring_onoff]
+    elif "--probe7" in sys.argv:
         probes = [probe_7_infinite_assoc]
     elif "--probe6" in sys.argv:
         probes = [probe_6_precision_shot]

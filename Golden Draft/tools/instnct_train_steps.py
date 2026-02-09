@@ -723,6 +723,10 @@ def train_steps(model: torch.nn.Module, loader: Any, steps: int, dataset_name: s
         model.ptr_update_auto = PTR_UPDATE_AUTO
     inertia_signal_streak = 0
     mitosis_acc_history = []
+    _ant_acc_str = ""
+    _ant_route_str = ""
+    _ant_ent_val = ""
+    _ant_active_val = ""
     while step < steps:
         try:
             inputs, targets = next(it)
@@ -753,6 +757,35 @@ def train_steps(model: torch.nn.Module, loader: Any, steps: int, dataset_name: s
                 head = getattr(model, "head", None)
                 num_experts = getattr(head, "num_experts", EXPERT_HEADS) if head is not None else EXPERT_HEADS
                 _update_expert_usage(model, num_experts, step)
+                # Per-ant accuracy for dashboard telemetry
+                _ant_acc_str = ""
+                _ant_route_str = ""
+                _ant_ent_val = ""
+                _ant_active_val = ""
+                if hasattr(model, "ptr_expert_ids") and model.ptr_expert_ids is not None:
+                    with torch.no_grad():
+                        _preds = outputs.argmax(dim=1)
+                        _correct = (_preds == targets).float()
+                        _eids = model.ptr_expert_ids.to(targets.device)
+                        _ant_accs = []
+                        _ant_routes = []
+                        for _ei in range(num_experts):
+                            _mask = (_eids == _ei)
+                            _cnt = int(_mask.sum().item())
+                            _ant_routes.append(_cnt)
+                            _ant_accs.append(
+                                _correct[_mask].mean().item() if _cnt > 0 else 0.0
+                            )
+                        _ant_acc_str = " ant_acc=" + ",".join(
+                            f"{a:.4f}" for a in _ant_accs)
+                        _ant_route_str = " ant_route=" + ",".join(
+                            str(r) for r in _ant_routes)
+                        _ent = getattr(model, "ptr_expert_entropy", None)
+                        _act = getattr(model, "ptr_expert_active", None)
+                        if _ent is not None:
+                            _ant_ent_val = f" ant_ent={float(_ent):.4f}"
+                        if _act is not None:
+                            _ant_active_val = f" ant_active={int(_act)}"
             if EXPERT_BUDGET > 0 and EXPERT_HEADS > 1:
                 active_experts = getattr(model, "ptr_expert_active", None)
                 if active_experts is not None:
@@ -1020,6 +1053,7 @@ def train_steps(model: torch.nn.Module, loader: Any, steps: int, dataset_name: s
                     f"t={elapsed:.1f}s | {vcog_header}{meta_text} {raw_compact}"
                     + (f" | panic={panic_status}" if panic_reflex is not None else "")
                     + debug_payload
+                    + _ant_acc_str + _ant_route_str + _ant_ent_val + _ant_active_val
                 )
             if train_trace_enabled:
                 pointer_entropy = None
