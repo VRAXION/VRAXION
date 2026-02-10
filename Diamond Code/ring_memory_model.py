@@ -210,7 +210,8 @@ class RingMemoryModel(nn.Module):
         pointer_position = torch.empty(B, device=x.device).uniform_(0, self.num_memory_positions)
 
         # Möbius holonomy state (±1) - tracks which "side" of the Möbius strip
-        holonomy_state = torch.ones(B, device=x.device, dtype=x.dtype)
+        # Initialize randomly so different samples explore both sides
+        holonomy_state = torch.randint(0, 2, (B,), device=x.device, dtype=x.dtype) * 2.0 - 1.0  # Random ±1
 
         debug_info = {
             "pointer_trajectory": [],
