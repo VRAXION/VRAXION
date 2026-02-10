@@ -87,7 +87,7 @@ def main():
 
             # Train step
             optimizer.zero_grad()
-            logits, aux_loss, routing_info = model(x_train)
+            logits, aux_loss, routing_info = model(x_train, return_debug=True)
             loss = torch.nn.functional.cross_entropy(logits, y_train) + aux_loss
             loss.backward()
             optimizer.step()
@@ -105,7 +105,7 @@ def main():
             if step % 50 == 0:
                 model.eval()
                 with torch.no_grad():
-                    eval_logits, _, eval_routing = model(x_eval)
+                    eval_logits, _, eval_routing = model(x_eval, return_debug=True)
                     eval_acc = (eval_logits.argmax(dim=1) == y_eval).float().mean().item()
                     eval_jump_rate = eval_routing['jump_decisions'].float().mean().item()
                 model.train()
