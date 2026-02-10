@@ -49,6 +49,7 @@ class RingMemoryModel(nn.Module):
         attention_radius: int = 2,
         attention_temperature: float = 8.0,
         activation: str = "tanh",
+        mobius: bool = False,  # Enable Möbius helix for 2x effective memory
     ):
         super().__init__()
 
@@ -60,6 +61,11 @@ class RingMemoryModel(nn.Module):
         self.attention_radius = attention_radius
         self.attention_temperature = attention_temperature
         self.activation_name = activation
+        self.mobius = mobius
+
+        # Möbius helix: doubles effective ring size via phase embeddings
+        self.mobius_scale = 2 if mobius else 1
+        self.ring_range = int(num_memory_positions * self.mobius_scale)
 
         # Input embedding
         self.input_projection = nn.Linear(input_size, embedding_dim)
@@ -84,6 +90,15 @@ class RingMemoryModel(nn.Module):
 
         # Output
         self.output_head = nn.Linear(embedding_dim, num_outputs)
+
+        # Möbius phase embeddings (cos/sin components for phase modulation)
+        if mobius and embedding_dim > 1:
+            self.phase_embed = nn.ParameterList([
+                nn.Parameter(torch.randn(embedding_dim) * 0.1),  # cos component
+                nn.Parameter(torch.randn(embedding_dim) * 0.1),  # sin component
+            ])
+        else:
+            self.phase_embed = None
 
         # Debug stats (optional telemetry)
         self.register_buffer("_debug_step", torch.tensor(0))
@@ -218,6 +233,13 @@ class RingMemoryModel(nn.Module):
 
             # Weighted sum
             context_read = (weights.unsqueeze(-1) * neighborhood).sum(dim=1)  # [B, dim]
+
+            # Möbius helix: phase modulation based on pointer position
+            if self.mobius and self.phase_embed is not None:
+                theta = (pointer_position / float(self.num_memory_positions)) * math.pi
+                phase_cos = torch.cos(theta).unsqueeze(1)  # [B, 1]
+                phase_sin = torch.sin(theta).unsqueeze(1)  # [B, 1]
+                context_read = context_read + phase_cos * self.phase_embed[0] + phase_sin * self.phase_embed[1]
 
             # 3. Context injection
             context_scale = torch.sigmoid(self.context_strength)

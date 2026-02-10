@@ -33,13 +33,14 @@ def main():
     print(f"Model: {num_positions}x{embedding_dim}D")
     print()
 
-    # Create model
+    # Create model with Möbius helix (2x effective memory)
     torch.manual_seed(42)
     model = RingMemoryModel(
         input_size=1,
         num_outputs=2,
         num_memory_positions=num_positions,
         embedding_dim=embedding_dim,
+        mobius=True,  # Enable Möbius helix for doubled memory capacity
     )
 
     total_params = sum(p.numel() for p in model.parameters())
