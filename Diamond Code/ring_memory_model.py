@@ -209,10 +209,14 @@ class RingMemoryModel(nn.Module):
         # Initialize pointer deterministically (respects torch.manual_seed)
         pointer_position = torch.empty(B, device=x.device).uniform_(0, self.num_memory_positions)
 
+        # Möbius holonomy state (±1) - tracks which "side" of the Möbius strip
+        holonomy_state = torch.ones(B, device=x.device, dtype=x.dtype)
+
         debug_info = {
             "pointer_trajectory": [],
             "attention_entropy": [],
-            "jump_decisions": []
+            "jump_decisions": [],
+            "holonomy_trajectory": []  # Track holonomy flips for visualization
         } if return_debug else None
 
         # Process sequence
@@ -234,12 +238,16 @@ class RingMemoryModel(nn.Module):
             # Weighted sum
             context_read = (weights.unsqueeze(-1) * neighborhood).sum(dim=1)  # [B, dim]
 
-            # Möbius helix: phase modulation based on pointer position
+            # Möbius helix: TRUE continuous spiral with Z₂ holonomy
             if self.mobius and self.phase_embed is not None:
-                theta = (pointer_position / float(self.num_memory_positions)) * math.pi
+                # Full 2π rotation (not just π for true continuous spiral)
+                theta = (pointer_position / float(self.num_memory_positions)) * (2.0 * math.pi)
                 phase_cos = torch.cos(theta).unsqueeze(1)  # [B, 1]
                 phase_sin = torch.sin(theta).unsqueeze(1)  # [B, 1]
-                context_read = context_read + phase_cos * self.phase_embed[0] + phase_sin * self.phase_embed[1]
+                # Multiply by holonomy state (±1) for seam-free double-cover
+                context_read = context_read + holonomy_state.unsqueeze(1) * (
+                    phase_cos * self.phase_embed[0] + phase_sin * self.phase_embed[1]
+                )
 
             # 3. Context injection
             context_scale = torch.sigmoid(self.context_strength)
@@ -259,6 +267,9 @@ class RingMemoryModel(nn.Module):
             memory_ring = memory_ring.scatter_add(1, indices_exp, contribution)
 
             # 6. Pointer update - HARD DISCRETE JUMPS (Emergent Routing)
+            # Save old position for Möbius wrap detection
+            old_pointer_position = pointer_position.clone()
+
             # Current position (integer index)
             current_pos = pointer_position.long().clamp(0, self.num_memory_positions - 1)
 
@@ -279,10 +290,18 @@ class RingMemoryModel(nn.Module):
                 walk_position     # WALK to next position
             )
 
+            # Möbius holonomy: flip state when pointer wraps around ring
+            if self.mobius:
+                # Detect wrap: position crosses from high (near num_positions-1) to low (near 0)
+                wrapped = (pointer_position < 1.0) & (old_pointer_position >= self.num_memory_positions - 1.0)
+                # Flip holonomy state (±1 → ∓1) on wrap
+                holonomy_state = torch.where(wrapped, -holonomy_state, holonomy_state)
+
             # Debug recording
             if return_debug:
                 debug_info["pointer_trajectory"].append(pointer_position.detach().cpu())
                 debug_info["jump_decisions"].append(should_jump.detach().cpu())
+                debug_info["holonomy_trajectory"].append(holonomy_state.detach().cpu())
                 entropy = -(weights * torch.log(weights + 1e-9)).sum(dim=1).mean()
                 debug_info["attention_entropy"].append(entropy.item())
 
