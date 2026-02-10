@@ -96,7 +96,8 @@ def main():
             train_acc = (logits.argmax(dim=1) == y_train).float().mean().item()
 
             # Extract jump gate activation rate
-            jump_decisions = routing_info['jump_decisions']  # [batch, seq_len]
+            # jump_decisions is a list of [batch] tensors (one per timestep)
+            jump_decisions = torch.stack(routing_info['jump_decisions'])  # [seq_len, batch]
             jump_gate_rate = jump_decisions.float().mean().item()
 
             step_time = time.time() - step_start
@@ -107,7 +108,8 @@ def main():
                 with torch.no_grad():
                     eval_logits, _, eval_routing = model(x_eval, return_debug=True)
                     eval_acc = (eval_logits.argmax(dim=1) == y_eval).float().mean().item()
-                    eval_jump_rate = eval_routing['jump_decisions'].float().mean().item()
+                    eval_jump_decisions = torch.stack(eval_routing['jump_decisions'])
+                    eval_jump_rate = eval_jump_decisions.float().mean().item()
                 model.train()
 
                 if eval_acc > best_eval_acc:

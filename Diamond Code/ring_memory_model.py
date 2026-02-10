@@ -194,7 +194,11 @@ class RingMemoryModel(nn.Module):
         # Initialize pointer deterministically (respects torch.manual_seed)
         pointer_position = torch.empty(B, device=x.device).uniform_(0, self.num_memory_positions)
 
-        debug_info = {"pointer_trajectory": [], "attention_entropy": []} if return_debug else None
+        debug_info = {
+            "pointer_trajectory": [],
+            "attention_entropy": [],
+            "jump_decisions": []
+        } if return_debug else None
 
         # Process sequence
         for t in range(T):
@@ -256,6 +260,7 @@ class RingMemoryModel(nn.Module):
             # Debug recording
             if return_debug:
                 debug_info["pointer_trajectory"].append(pointer_position.detach().cpu())
+                debug_info["jump_decisions"].append(should_jump.detach().cpu())
                 entropy = -(weights * torch.log(weights + 1e-9)).sum(dim=1).mean()
                 debug_info["attention_entropy"].append(entropy.item())
 
