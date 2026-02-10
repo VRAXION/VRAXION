@@ -19,7 +19,7 @@ def quick_test(
     num_pairs=1,
     seq_len=32,
     num_positions=64,
-    embedding_dim=256,
+    embedding_dim=64,  # Test minimal working model (516 params)
     steps=1000,
     eval_freq=100,
     seed=42
