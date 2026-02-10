@@ -87,7 +87,7 @@ def main():
 
             # Train step
             optimizer.zero_grad()
-            logits, aux_loss, _ = model(x_train)
+            logits, aux_loss, routing_info = model(x_train)
             loss = torch.nn.functional.cross_entropy(logits, y_train) + aux_loss
             loss.backward()
             optimizer.step()
@@ -95,14 +95,19 @@ def main():
             # Training accuracy
             train_acc = (logits.argmax(dim=1) == y_train).float().mean().item()
 
+            # Extract jump gate activation rate
+            jump_decisions = routing_info['jump_decisions']  # [batch, seq_len]
+            jump_gate_rate = jump_decisions.float().mean().item()
+
             step_time = time.time() - step_start
 
             # Eval every 50 steps
             if step % 50 == 0:
                 model.eval()
                 with torch.no_grad():
-                    eval_logits, _, _ = model(x_eval)
+                    eval_logits, _, eval_routing = model(x_eval)
                     eval_acc = (eval_logits.argmax(dim=1) == y_eval).float().mean().item()
+                    eval_jump_rate = eval_routing['jump_decisions'].float().mean().item()
                 model.train()
 
                 if eval_acc > best_eval_acc:
@@ -110,8 +115,9 @@ def main():
 
                 # Dashboard-compatible log format
                 log(f"step {step} | loss {loss.item():.6f} | "
-                    f"acc={eval_acc:.4f} | train_acc={train_acc:.4f} | "
-                    f"best={best_eval_acc:.4f} | s_per_step={step_time:.3f}")
+                    f"acc={eval_acc:.4f} | jump_gate={eval_jump_rate:.2f} | "
+                    f"train_acc={train_acc:.4f} | best={best_eval_acc:.4f} | "
+                    f"s_per_step={step_time:.3f}")
 
             step += 1
 
