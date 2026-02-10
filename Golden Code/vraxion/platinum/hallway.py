@@ -215,6 +215,7 @@ class AbsoluteHallway(nn.Module):
     ) -> None:
         super().__init__()
 
+        self.fib_input_dim = int(input_dim)
         self.ring_len = int(ring_len)
         self.slot_dim = int(slot_dim)
         self.num_classes = int(num_classes)
@@ -533,7 +534,8 @@ class AbsoluteHallway(nn.Module):
         self.prismion_fib_active = False
 
         if self.think_enabled and self.prismion_enabled and self.prismion_fibonacci:
-            fib_in_dim = 2 * int(self.think_dim)
+            # Independent engines: each ant receives raw input, not backbone chrom.
+            fib_in_dim = int(self.fib_input_dim)
 
             # Determine total param budget for the swarm.
             budget_mb = float(self.prismion_fib_budget_mb)
@@ -551,6 +553,7 @@ class AbsoluteHallway(nn.Module):
                 total_params=total_budget,
                 think_dim=int(self.think_dim),
                 vocab_size=int(self.num_classes),
+                in_dim=fib_in_dim,
                 min_ring_len=int(self.prismion_fib_min_ring),
                 max_ants=int(self.prismion_fib_max_ants),
             )
@@ -580,6 +583,7 @@ class AbsoluteHallway(nn.Module):
                 self.prismion_swarm_heads = heads
                 self.prismion_swarm_configs = list(ant_specs)
                 self.prismion_fib_active = True
+                self.prismion_fib_in_dim = fib_in_dim
 
                 total_swarm_params = sum(
                     sum(p.numel() for p in ant.parameters())
@@ -947,14 +951,18 @@ class AbsoluteHallway(nn.Module):
 
     def _prismion_apply_fibonacci(
         self,
-        chrom: torch.Tensor,
+        xt: torch.Tensor,
         fib_prism_states: list,
         active_mask: torch.Tensor,
     ) -> Tuple[torch.Tensor, list, torch.Tensor]:
         """Apply the Fibonacci halving Prismion swarm for one step.
 
-        Each satellite ant is a heterogeneous Prismion with its own ring_len/slot_dim.
-        Each ant produces independent logits via its own classification head.
+        Each satellite ant is an independent engine receiving raw input (not
+        backbone chrom).  Each ant produces independent logits via its own
+        classification head.
+
+        Args:
+          xt: [B, input_dim] raw input for this timestep.
 
         Returns:
           - feedback: [B, think_dim] mean feedback for h-path stability
@@ -965,44 +973,56 @@ class AbsoluteHallway(nn.Module):
         assert self.prismion_swarm_heads is not None
 
         N = len(self.prismion_swarm)
-        B = int(chrom.size(0))
-        swarm_logits = torch.zeros(B, int(self.num_classes), device=chrom.device, dtype=chrom.dtype)
+        B = int(xt.size(0))
+        swarm_logits = torch.zeros(B, int(self.num_classes), device=xt.device, dtype=xt.dtype)
         feedback_msgs: list[torch.Tensor] = []
         new_states = list(fib_prism_states)
 
-        # Ant-nulling: only first active_ants contribute logits/feedback.
-        active_ants = int(self.prismion_fib_active_ants)
-        if active_ants < 0:
-            active_ants = N  # all active (default)
-        else:
-            active_ants = min(active_ants, N)
+        # Build the set of ant indices that should run this step.
+        # Priority: active_set (explicit) > solo_ant > active_ants (first-N).
+        active_set: set | None = getattr(self, 'prismion_fib_active_set', None)
+        solo: int | None = getattr(self, 'prismion_fib_solo_ant', None)
 
-        # Volume weighting: bigger ring -> louder voice.
+        if active_set is not None:
+            run_set = active_set
+        elif solo is not None:
+            run_set = {solo}
+        else:
+            active_ants = int(self.prismion_fib_active_ants)
+            if active_ants < 0:
+                active_ants = N
+            else:
+                active_ants = min(active_ants, N)
+            run_set = set(range(active_ants))
+
+        # Volume weighting: bigger ring -> louder voice within active set.
         ring_lens = [float(self.prismion_swarm[j].ring_len) for j in range(N)]
-        total_ring_len = sum(ring_lens[:active_ants]) if active_ants > 0 else 1.0
+        total_ring_len = sum(ring_lens[j] for j in run_set) if run_set else 1.0
 
         per_ant_logits = []
+        active_indices: list[int] = []
         for i in range(N):
+            if i not in run_set:
+                new_states[i] = fib_prism_states[i]  # pass through unchanged
+                continue
             ant = self.prismion_swarm[i]
             head = self.prismion_swarm_heads[i]
-            if i < active_ants:
-                msg_i, st_i = ant.step(chrom, fib_prism_states[i], active_mask)
-                new_states[i] = st_i
-                feedback_msgs.append(msg_i)
-                w_i = ring_lens[i] / total_ring_len
-                logits_i = head(msg_i.to(head.weight.dtype)).to(swarm_logits.dtype)
-                per_ant_logits.append(logits_i)
-                swarm_logits = swarm_logits + w_i * logits_i
-            else:
-                new_states[i] = fib_prism_states[i]  # pass through unchanged
+            msg_i, st_i = ant.step(xt, fib_prism_states[i], active_mask)
+            new_states[i] = st_i
+            feedback_msgs.append(msg_i)
+            active_indices.append(i)
+            w_i = ring_lens[i] / total_ring_len
+            logits_i = head(msg_i.to(head.weight.dtype)).to(swarm_logits.dtype)
+            per_ant_logits.append(logits_i)
+            swarm_logits = swarm_logits + w_i * logits_i
         self._last_per_ant_logits = per_ant_logits
 
         # Volume-weighted feedback from active ants only.
-        if active_ants > 0 and feedback_msgs:
-            weights = [ring_lens[j] / total_ring_len for j in range(active_ants)]
+        if feedback_msgs:
+            weights = [ring_lens[j] / total_ring_len for j in active_indices]
             feedback = sum(w * msg for w, msg in zip(weights, feedback_msgs))
         else:
-            feedback = torch.zeros(B, int(self.think_dim), device=chrom.device, dtype=chrom.dtype)
+            feedback = torch.zeros(B, int(self.think_dim), device=xt.device, dtype=xt.dtype)
 
         return feedback, new_states, swarm_logits
 
@@ -1459,17 +1479,19 @@ class AbsoluteHallway(nn.Module):
                         chrom = torch.cat([think_slow * slow_share, think_fast * fast_share], dim=1)
                         assert self.prismion_core is not None and prism_states is not None
                         think_delta_small, prism_states = self._prismion_apply(chrom, prism_states, active_mask)
-                        # Fibonacci swarm (dual-channel path).
+                        # Fibonacci swarm (dual-channel path) — ants receive raw input.
                         if fib_active and fib_prism_states is not None:
+                            xt_raw = x[:, t, :]
                             fib_feedback, fib_prism_states, fib_swarm_logits = self._prismion_apply_fibonacci(
-                                chrom, fib_prism_states, active_mask)
+                                xt_raw, fib_prism_states, active_mask)
                             think_delta_small = think_delta_small + fib_feedback
                     elif fib_active and fib_prism_states is not None:
                         slow_share = float(mix)
                         fast_share = 1.0 - float(mix)
                         chrom = torch.cat([think_slow * slow_share, think_fast * fast_share], dim=1)
+                        xt_raw = x[:, t, :]
                         fib_feedback, fib_prism_states, fib_swarm_logits = self._prismion_apply_fibonacci(
-                            chrom, fib_prism_states, active_mask)
+                            xt_raw, fib_prism_states, active_mask)
                         think_delta_small = (mix * think_slow) + ((1.0 - mix) * think_fast) + fib_feedback
                     else:
                         think_delta_small = (mix * think_slow) + ((1.0 - mix) * think_fast)
@@ -1482,15 +1504,16 @@ class AbsoluteHallway(nn.Module):
                         chrom = torch.cat([think_slow, think_slow], dim=1)
                         assert self.prismion_core is not None and prism_states is not None
                         think_delta_small, prism_states = self._prismion_apply(chrom, prism_states, active_mask)
-                        # Fibonacci swarm (single-channel path).
+                        # Fibonacci swarm (single-channel path) — ants receive raw input.
                         if fib_active and fib_prism_states is not None:
+                            xt_raw = x[:, t, :]
                             fib_feedback, fib_prism_states, fib_swarm_logits = self._prismion_apply_fibonacci(
-                                chrom, fib_prism_states, active_mask)
+                                xt_raw, fib_prism_states, active_mask)
                             think_delta_small = think_delta_small + fib_feedback
                     elif fib_active and fib_prism_states is not None:
-                        chrom = torch.cat([think_slow, think_slow], dim=1)
+                        xt_raw = x[:, t, :]
                         fib_feedback, fib_prism_states, fib_swarm_logits = self._prismion_apply_fibonacci(
-                            chrom, fib_prism_states, active_mask)
+                            xt_raw, fib_prism_states, active_mask)
                         think_delta_small = think_slow + fib_feedback
                     else:
                         think_delta_small = think_slow
@@ -1912,34 +1935,37 @@ class AbsoluteHallway(nn.Module):
                 fused = fused.to(h.dtype)
 
             read_vec = fused + h
-            expert_ids = self._map_expert_ids(ptr_int)
-            logits_step = self.head(read_vec, expert_ids)
-            nan_guard("logits_step", logits_step, t)
 
-            if satiety_enabled:
-                probs = torch.softmax(logits_step, dim=1)
-                confident = probs.max(dim=1).values > float(SATIETY_THRESH)
-                satiety_exited = satiety_exited | confident
+            # Backbone head: only produces logits when swarm is NOT active.
+            # When fib_active, the swarm is the sole predictor.
+            if not fib_active:
+                expert_ids = self._map_expert_ids(ptr_int)
+                logits_step = self.head(read_vec, expert_ids)
+                nan_guard("logits_step", logits_step, t)
 
-            # Final readout for return value: by default, read current ptr bin.
-            if self.soft_readout:
-                logits = logits_step
-            else:
-                gather_idx2 = ptr_int.clamp(0, ring_range - 1).unsqueeze(1).unsqueeze(2)  # [B,1,1]
-                gather_idx2_exp = gather_idx2.expand(-1, 1, self.slot_dim)
-                fused2 = state.gather(1, gather_idx2_exp).squeeze(1)
-                if fused2.dtype != h.dtype:
-                    fused2 = fused2.to(h.dtype)
-                read_vec2 = fused2 + h
-                logits = self.head(read_vec2, expert_ids)
-                nan_guard("logits_final_step", logits, t)
+                if satiety_enabled:
+                    probs = torch.softmax(logits_step, dim=1)
+                    confident = probs.max(dim=1).values > float(SATIETY_THRESH)
+                    satiety_exited = satiety_exited | confident
 
-        # Fibonacci swarm logit combination.
+                # Final readout for return value: by default, read current ptr bin.
+                if self.soft_readout:
+                    logits = logits_step
+                else:
+                    gather_idx2 = ptr_int.clamp(0, ring_range - 1).unsqueeze(1).unsqueeze(2)  # [B,1,1]
+                    gather_idx2_exp = gather_idx2.expand(-1, 1, self.slot_dim)
+                    fused2 = state.gather(1, gather_idx2_exp).squeeze(1)
+                    if fused2.dtype != h.dtype:
+                        fused2 = fused2.to(h.dtype)
+                    read_vec2 = fused2 + h
+                    logits = self.head(read_vec2, expert_ids)
+                    nan_guard("logits_final_step", logits, t)
+
+        # Fibonacci swarm: swarm is the sole predictor, backbone head bypassed.
         if fib_active and fib_swarm_logits is not None:
-            main_w = float(getattr(self, "main_logit_weight", 1.0))
             if fib_swarm_logits.dtype != logits.dtype:
                 fib_swarm_logits = fib_swarm_logits.to(logits.dtype)
-            logits = main_w * logits + fib_swarm_logits
+            logits = fib_swarm_logits
 
         # ---------------------------------
         # End loop: finalize telemetry

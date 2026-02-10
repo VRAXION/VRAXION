@@ -1,8 +1,15 @@
 """Probe 11 — Fibonacci Swarm with Volume Weighting.
 
-Harmonic XOR task: x[t] = sin(t, F=1) + sin(t, F=7), label = XOR(sign_slow, sign_fast).
-Tests whether volume-weighted ants (bigger ring → louder voice) produce
-frequency separation: big ants learn the slow signal, small ants learn the fast.
+Three task modes:
+  harmonic_xor  — x[t] has 4 pre-decomposed features (sin/cos slow+fast),
+                  binary XOR label.  Good for verifying swarm plumbing.
+  byte_waveform — x[t] is a single raw scalar (mixed waveform + noise),
+                  4-class quadrant label.  Closer to real VRAXION byte-level
+                  training (input_dim=1).  Harder — forces the model to learn
+                  frequency decomposition from scratch.
+  byte_recall   — byte I/O pipeline: key-value pairs encoded as byte tokens,
+                  model must recall which value was paired with a queried key.
+                  val_range classes (default 100, chance=1%).  Hardest.
 
 Previous probe (probe10) used harmonic weighting (weight = i+1) which caused
 17x gradient imbalance — smallest ant dominated, biggest starved to 0.2 accuracy.
@@ -10,7 +17,8 @@ Volume weighting is now baked into _prismion_apply_fibonacci().
 
 Usage:
     python "S:/AI/Golden Draft/tools/probe11_fib_volume_weight.py"
-    python "S:/AI/Golden Draft/tools/probe11_fib_volume_weight.py" --steps 5000 --device cuda
+    python "S:/AI/Golden Draft/tools/probe11_fib_volume_weight.py" --task byte_waveform --device cuda
+    python "S:/AI/Golden Draft/tools/probe11_fib_volume_weight.py" --task byte_recall --val-range 16
     python "S:/AI/Golden Draft/tools/probe11_fib_volume_weight.py" --no-dashboard
 """
 from __future__ import annotations
@@ -19,6 +27,7 @@ import argparse
 import json
 import math
 import os
+import random
 import socket
 import subprocess
 import sys
@@ -37,10 +46,13 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "Golden Code"))
 
 # Set env BEFORE importing the model (settings are env-driven, loaded once).
+# Budget calibrated to 0.5 MB → ~4.2 s/step on CPU (7 ants, 127K params)
+# Override externally with VRX_PRISMION_FIB_BUDGET_MB before launch.
+_budget_mb = os.environ.get("VRX_PRISMION_FIB_BUDGET_MB", "0.5")
 os.environ.update({
     "VRX_PRISMION": "1",
     "VRX_PRISMION_FIBONACCI": "1",
-    "VRX_PRISMION_FIB_BUDGET_MB": "1.2",
+    "VRX_PRISMION_FIB_BUDGET_MB": _budget_mb,
     "VRX_PRISMION_FIB_MIN_RING": "4",
     "VRX_PRISMION_FIB_MAX_ANTS": "16",
     "VRX_THINK_RING": "1",
@@ -209,6 +221,146 @@ def make_harmonic_xor_batch(
 
 
 # ---------------------------------------------------------------------------
+# Byte Waveform data generator (harder, input_dim=1, 4-class)
+# ---------------------------------------------------------------------------
+def make_byte_waveform_batch(
+    batch_size: int,
+    seq_len: int,
+    f_slow: float = 1.0,
+    f_fast: float = 7.0,
+    noise_std: float = 0.1,
+    device: str = "cpu",
+) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
+    """Generate a batch of raw mixed-waveform sequences (single scalar input).
+
+    x[t] = sin(2pi * f_slow * t) + sin(2pi * f_fast * t) + noise
+
+    The model must decompose the mixed signal into slow and fast components
+    from a single scalar per timestep — no pre-decomposed features.
+
+    Label = quadrant of (slow_sign, fast_sign) at the last timestep:
+      class 0: slow > 0, fast > 0   (+,+)
+      class 1: slow > 0, fast <= 0  (+,-)
+      class 2: slow <= 0, fast > 0  (-,+)
+      class 3: slow <= 0, fast <= 0 (-,-)
+
+    Returns: (x, labels, slow_labels, fast_labels)
+      x: [B, seq_len, 1]   (single scalar per timestep)
+      labels: [B] quadrant label in {0, 1, 2, 3}
+      slow_labels: [B] binary slow sign (0 or 1)
+      fast_labels: [B] binary fast sign (0 or 1)
+    """
+    phase_slow = torch.rand(batch_size, 1, device=device) * 2 * math.pi
+    phase_fast = torch.rand(batch_size, 1, device=device) * 2 * math.pi
+
+    t = torch.linspace(0, 1, seq_len, device=device).unsqueeze(0)  # [1, T]
+
+    slow_sin = torch.sin(2 * math.pi * f_slow * t + phase_slow)  # [B, T]
+    fast_sin = torch.sin(2 * math.pi * f_fast * t + phase_fast)  # [B, T]
+
+    # Raw mixed signal — single scalar per timestep.
+    mixed = slow_sin + fast_sin  # [B, T]
+    x = mixed.unsqueeze(-1)      # [B, T, 1]
+
+    # Add noise.
+    if noise_std > 0:
+        x = x + noise_std * torch.randn_like(x)
+
+    # Labels from last timestep: 4-class quadrant.
+    slow_pos = (slow_sin[:, -1] > 0).long()  # [B], 0 or 1
+    fast_pos = (fast_sin[:, -1] > 0).long()  # [B], 0 or 1
+    labels = slow_pos * 2 + fast_pos          # [B], in {0, 1, 2, 3}
+
+    return x, labels, slow_pos, fast_pos
+
+
+# ---------------------------------------------------------------------------
+# Byte Recall data generator (byte I/O pipeline, val_range classes)
+# ---------------------------------------------------------------------------
+def make_byte_recall_batch(
+    batch_size: int,
+    seq_len: int,
+    num_keys: int = 4,
+    num_pairs: int = 3,
+    val_range: int = 8,
+    device: str = "cpu",
+) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
+    """Generate byte-encoded key-value recall sequences.
+
+    Byte I/O pipeline test: raw byte tokens in, classification out.
+
+    Each sequence is a stream of byte values (0-255, normalized to [0,1]):
+      - Padding:    byte 0
+      - Key bytes:  128 + key_id   (range [128, 128+num_keys))
+      - Value bytes: 1 + val       (range [1, val_range])
+      - Query byte: last position, repeats a key byte
+
+    Label = the value (0..val_range-1) paired with the queried key.
+
+    Returns: (x, labels, query_keys, labels)
+      x:          [B, seq_len, 1]  (byte tokens normalized to [0,1])
+      labels:     [B]              class in {0, ..., val_range-1}
+      query_keys: [B]              which key_id was queried (telemetry)
+      labels:     [B]              (duplicate, keeps 4-tuple compat)
+    """
+    assert num_pairs <= num_keys, (
+        f"num_pairs={num_pairs} > num_keys={num_keys}: unique key_ids impossible"
+    )
+    assert val_range <= 127, (
+        f"val_range={val_range} > 127: value bytes would overlap key byte range [128,255]"
+    )
+    assert 128 + num_keys <= 256, (
+        f"num_keys={num_keys}: key bytes would exceed byte range [0,255]"
+    )
+    min_len = num_pairs * 2 + 1
+    assert seq_len >= min_len, (
+        f"seq_len={seq_len} too short for {num_pairs} pairs (need >= {min_len})"
+    )
+
+    x = torch.zeros(batch_size, seq_len, 1, device=device)
+    labels = torch.zeros(batch_size, dtype=torch.long, device=device)
+    query_keys = torch.zeros(batch_size, dtype=torch.long, device=device)
+
+    max_start = seq_len - 2  # pairs occupy (cand, cand+1); query at seq_len-1
+
+    for b in range(batch_size):
+        # Unique key_ids per sample — prevents ambiguous queries.
+        key_ids = random.sample(range(num_keys), num_pairs)
+
+        # Find non-overlapping pair positions via greedy scan.
+        occupied = set()
+        pair_specs = []
+        starts = list(range(0, max_start))
+        random.shuffle(starts)
+        for cand in starts:
+            if cand in occupied or (cand + 1) in occupied:
+                continue
+            occupied.add(cand)
+            occupied.add(cand + 1)
+            kid = key_ids[len(pair_specs)]
+            val = random.randint(0, val_range - 1)
+            x[b, cand, 0] = (128 + kid) / 255.0
+            x[b, cand + 1, 0] = (1 + val) / 255.0
+            pair_specs.append((kid, val))
+            if len(pair_specs) >= num_pairs:
+                break
+
+        assert len(pair_specs) == num_pairs, (
+            f"Placement failed: placed {len(pair_specs)}/{num_pairs} "
+            f"(seq_len={seq_len}, increase seq_len or reduce num_pairs)"
+        )
+
+        # Query: pick a random placed key, put at last position.
+        q_idx = random.randrange(num_pairs)
+        q_kid, q_val = pair_specs[q_idx]
+        x[b, -1, 0] = (128 + q_kid) / 255.0
+        labels[b] = q_val
+        query_keys[b] = q_kid
+
+    return x, labels, query_keys, labels
+
+
+# ---------------------------------------------------------------------------
 # Per-ant gradient norm tracker
 # ---------------------------------------------------------------------------
 def compute_per_ant_gnorms(model: AbsoluteHallway, active_ants: int | None = None) -> list[float]:
@@ -295,10 +447,46 @@ def main():
     parser.add_argument("--freeze-ants", type=str, default=None,
                         help="Comma-separated ant indices to freeze (still vote, no gradients). "
                              "E.g. --freeze-ants 0 freezes ant[0], --freeze-ants 0,1 freezes both.")
+    parser.add_argument("--solo-ant", type=int, default=None,
+                        help="Activate ONLY this ant index (forward + backward). All others "
+                             "completely inactive — no forward, no logits, no grad. "
+                             "E.g. --solo-ant 7 trains only ant[7] (the smallest).")
+    parser.add_argument("--active-ant-list", type=str, default=None,
+                        help="Comma-separated ant indices to activate (forward pass + voting). "
+                             "Use with --freeze-ants to control which learn vs just vote. "
+                             "E.g. --active-ant-list 5,6,7 --freeze-ants 6,7 activates 3 ants, "
+                             "only ant[5] gets gradients.")
+    parser.add_argument("--freeze-backbone", action="store_true",
+                        help="Freeze ALL backbone params (input_proj, pointer heads, think ring, etc.). "
+                             "Only swarm ant + swarm head params are trainable.")
+    parser.add_argument("--task", type=str, default="harmonic_xor",
+                        choices=["harmonic_xor", "byte_waveform", "byte_recall"],
+                        help="Task type: 'harmonic_xor' (4D, 2-class, easy), "
+                             "'byte_waveform' (1D scalar, 4-class, harder), or "
+                             "'byte_recall' (byte I/O pipeline, val-range classes, hardest). "
+                             "Default: harmonic_xor")
+    parser.add_argument("--noise-std", type=float, default=0.1,
+                        help="Gaussian noise std for byte_waveform task (default: 0.1)")
+    parser.add_argument("--val-range", type=int, default=100,
+                        help="Number of distinct values (= classes) for byte_recall (default: 100)")
+    parser.add_argument("--num-keys", type=int, default=4,
+                        help="Number of distinct keys for byte_recall (default: 4)")
+    parser.add_argument("--num-pairs", type=int, default=3,
+                        help="Key-value pairs per sequence for byte_recall (default: 3)")
+    parser.add_argument("--fp32", action="store_true",
+                        help="Use float32 precision instead of default float64")
     args = parser.parse_args()
 
-    # Set active ants env var BEFORE model construction.
-    os.environ["VRX_PRISMION_FIB_ACTIVE_ANTS"] = str(args.active_ants)
+    # Determine which ants to construct and activate.
+    # Priority: active-ant-list > solo-ant > active-ants (first-N default).
+    if args.active_ant_list is not None or args.solo_ant is not None:
+        os.environ["VRX_PRISMION_FIB_ACTIVE_ANTS"] = "-1"  # construct all
+    else:
+        os.environ["VRX_PRISMION_FIB_ACTIVE_ANTS"] = str(args.active_ants)
+
+    if not args.fp32:
+        torch.set_default_dtype(torch.float64)
+        print("[probe11] Using float64 precision")
 
     torch.manual_seed(args.seed)
     device = args.device
@@ -306,9 +494,16 @@ def main():
         print("[probe11] CUDA not available, falling back to CPU")
         device = "cpu"
 
-    # Build model.
-    input_dim = 4  # sin_slow, cos_slow, sin_fast, cos_fast
-    num_classes = 2  # binary XOR
+    # Build model — dimensions depend on task.
+    if args.task == "byte_waveform":
+        input_dim = 1   # single scalar per timestep (raw mixed waveform)
+        num_classes = 4  # quadrant: (slow_sign, fast_sign) → 4 classes
+    elif args.task == "byte_recall":
+        input_dim = 1   # single byte token per timestep
+        num_classes = args.val_range  # one class per distinct value
+    else:
+        input_dim = 4   # sin_slow, cos_slow, sin_fast, cos_fast
+        num_classes = 2  # binary XOR
     model = AbsoluteHallway(
         input_dim=input_dim,
         num_classes=num_classes,
@@ -319,47 +514,100 @@ def main():
         gauss_tau=2.0,
     ).to(device)
 
-    # Report swarm config.
+    # ---------------------------------------------------------------------------
+    # Determine active set, frozen set, and per-ant status.
+    # ---------------------------------------------------------------------------
     n_ants_total = len(model.prismion_swarm) if model.prismion_swarm else 0
-    active = int(model.prismion_fib_active_ants)
-    if active < 0:
-        active = n_ants_total
-    else:
-        active = min(active, n_ants_total)
-    n_ants = active  # only track active ants
-    print(f"[probe11] Fibonacci swarm: {active}/{n_ants_total} ants active")
-    if model.prismion_swarm:
-        ring_lens = [int(ant.ring_len) for ant in model.prismion_swarm]
-        total_rl = sum(ring_lens[:active]) if active > 0 else 1
-        for i, ant in enumerate(model.prismion_swarm):
-            rl = ring_lens[i]
-            w = rl / total_rl if i < active else 0.0
-            params = sum(p.numel() for p in ant.parameters())
-            frozen = "FROZEN" if i >= active else "ACTIVE"
-            print(f"  ant[{i}]: ring_len={rl}, weight={w:.4f}, params={params:,} [{frozen}]")
 
-    # Freeze specific ants (still participate in forward pass, no gradients).
+    # Build active_set: which ants run forward pass.
+    # Priority: active-ant-list > solo-ant > active-ants (first-N).
+    if args.active_ant_list is not None:
+        active_set = {int(x.strip()) for x in args.active_ant_list.split(",")}
+        active_set = {i for i in active_set if i < n_ants_total}
+    elif args.solo_ant is not None:
+        if args.solo_ant >= n_ants_total:
+            print(f"[probe11] ERROR: --solo-ant {args.solo_ant} invalid (swarm has {n_ants_total} ants)")
+            sys.exit(1)
+        active_set = {args.solo_ant}
+    else:
+        active = int(model.prismion_fib_active_ants)
+        if active < 0:
+            active = n_ants_total
+        else:
+            active = min(active, n_ants_total)
+        active_set = set(range(active))
+
+    # Build frozen set: active ants that vote but don't get gradients.
     frozen_ant_indices = set()
     if args.freeze_ants:
         frozen_ant_indices = {int(x.strip()) for x in args.freeze_ants.split(",")}
+        frozen_ant_indices = {i for i in frozen_ant_indices if i in active_set}
+
+    # learning_set = active but not frozen.
+    learning_set = active_set - frozen_ant_indices
+    n_ants = len(active_set)
+
+    # Set model attributes for forward pass.
+    if args.active_ant_list is not None or args.solo_ant is not None:
+        model.prismion_fib_active_set = active_set
+    if args.solo_ant is not None:
+        model.prismion_fib_solo_ant = args.solo_ant
+
+    # Apply freeze/inactive to parameters.
+    if model.prismion_swarm:
+        for i in range(n_ants_total):
+            should_learn = (i in learning_set)
+            for p in model.prismion_swarm[i].parameters():
+                p.requires_grad = should_learn
+            if model.prismion_swarm_heads and i < len(model.prismion_swarm_heads):
+                for p in model.prismion_swarm_heads[i].parameters():
+                    p.requires_grad = should_learn
+
+    # Auto-freeze backbone head: swarm is the sole predictor, backbone head is bypassed.
+    if getattr(model, "prismion_fib_active", False):
+        head_params = sum(p.numel() for p in model.head.parameters())
+        for p in model.head.parameters():
+            p.requires_grad = False
+        print(f"[probe11] Backbone head FROZEN ({head_params:,} params) — swarm is sole predictor")
+
+    # Optional: freeze ALL backbone params (only swarm ants are trainable).
+    if args.freeze_backbone:
+        swarm_param_ids = set()
         if model.prismion_swarm:
-            for idx in frozen_ant_indices:
-                if idx < len(model.prismion_swarm):
-                    for p in model.prismion_swarm[idx].parameters():
-                        p.requires_grad = False
-                    # Also freeze the corresponding head.
-                    if model.prismion_swarm_heads and idx < len(model.prismion_swarm_heads):
-                        for p in model.prismion_swarm_heads[idx].parameters():
-                            p.requires_grad = False
-                    print(f"[probe11] ant[{idx}] FROZEN (votes but no gradients)")
-                else:
-                    print(f"[probe11] WARNING: ant[{idx}] does not exist, skipping freeze")
-        frozen_params = sum(
-            sum(p.numel() for p in model.prismion_swarm[i].parameters())
-            for i in frozen_ant_indices if i < len(model.prismion_swarm)
-        )
-        trainable_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
-        print(f"[probe11] Frozen params: {frozen_params:,} | Trainable params: {trainable_params:,}")
+            for ant in model.prismion_swarm:
+                for p in ant.parameters():
+                    swarm_param_ids.add(id(p))
+        if model.prismion_swarm_heads:
+            for sh in model.prismion_swarm_heads:
+                for p in sh.parameters():
+                    swarm_param_ids.add(id(p))
+        backbone_frozen = 0
+        for p in model.parameters():
+            if id(p) not in swarm_param_ids:
+                p.requires_grad = False
+                backbone_frozen += p.numel()
+        print(f"[probe11] Backbone FROZEN ({backbone_frozen:,} params) — pure swarm experiment")
+
+    # Report swarm config.
+    mode_str = "SOLO" if args.solo_ant is not None else "ACTIVE-LIST" if args.active_ant_list else "DEFAULT"
+    print(f"[probe11] Fibonacci swarm: {len(active_set)} active, "
+          f"{len(frozen_ant_indices)} frozen, {len(learning_set)} learning "
+          f"({n_ants_total} total) [{mode_str}]")
+    if model.prismion_swarm:
+        ring_lens = [int(ant.ring_len) for ant in model.prismion_swarm]
+        total_rl = sum(ring_lens[i] for i in active_set) if active_set else 1
+        for i, ant in enumerate(model.prismion_swarm):
+            rl = ring_lens[i]
+            params = sum(p.numel() for p in ant.parameters())
+            if i in learning_set:
+                status, w = "LEARNING", rl / total_rl
+            elif i in frozen_ant_indices:
+                status, w = "FROZEN", rl / total_rl
+            else:
+                status, w = "INACTIVE", 0.0
+            print(f"  ant[{i}]: ring_len={rl}, weight={w:.4f}, params={params:,} [{status}]")
+    trainable_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
+    print(f"[probe11] Trainable params: {trainable_params:,}")
 
     optimizer = torch.optim.Adam(
         (p for p in model.parameters() if p.requires_grad), lr=args.lr
@@ -378,9 +626,11 @@ def main():
         if ckpt_path.exists():
             ckpt = safe_torch_load(ckpt_path, map_location=device)
             model.load_state_dict(ckpt["model"])
-            # Skip optimizer restore if freeze config changed (param count mismatch).
-            if frozen_ant_indices:
-                print(f"[probe11] Freeze config active — using fresh optimizer for unfrozen params")
+            # Skip optimizer restore if ant config changed (param count mismatch).
+            has_custom_config = (frozen_ant_indices or args.solo_ant is not None
+                                or args.active_ant_list is not None)
+            if has_custom_config:
+                print(f"[probe11] Custom ant config — using fresh optimizer for trainable params")
             else:
                 try:
                     optimizer.load_state_dict(ckpt["optimizer"])
@@ -407,9 +657,10 @@ def main():
     acc_window_50 = deque(maxlen=50)
     acc_window_10 = deque(maxlen=10)
     # Per-ant rolling accuracy (MA100 / MA50 / MA10).
-    ant_acc_100 = [deque(maxlen=100) for _ in range(active)]
-    ant_acc_50 = [deque(maxlen=50) for _ in range(active)]
-    ant_acc_10 = [deque(maxlen=10) for _ in range(active)]
+    # Sized for active set (per-ant logits only include active ants).
+    ant_acc_100 = [deque(maxlen=100) for _ in range(n_ants)]
+    ant_acc_50 = [deque(maxlen=50) for _ in range(n_ants)]
+    ant_acc_10 = [deque(maxlen=10) for _ in range(n_ants)]
 
     telemetry_path = Path(args.telemetry)
     telemetry_mode = "a" if args.resume else "w"
@@ -423,8 +674,18 @@ def main():
     else:
         print("[probe11] Dashboard disabled (--no-dashboard)")
 
-    print(f"[probe11] Starting {args.steps} steps (from {start_step}) | batch={args.batch_size} | "
-          f"seq_len={args.seq_len} | lr={args.lr} | device={device}")
+    task_info = f"task={args.task}"
+    if args.task == "byte_waveform":
+        task_info += f" (input_dim=1, classes=4, noise={args.noise_std})"
+    elif args.task == "byte_recall":
+        chance = 100.0 / args.val_range
+        task_info += (f" (input_dim=1, classes={args.val_range}, "
+                      f"keys={args.num_keys}, pairs={args.num_pairs}, "
+                      f"chance={chance:.1f}%)")
+    else:
+        task_info += " (input_dim=4, classes=2)"
+    print(f"[probe11] Starting {args.steps} steps (from {start_step}) | {task_info} | "
+          f"batch={args.batch_size} | seq_len={args.seq_len} | lr={args.lr} | device={device}")
     print(f"[probe11] Telemetry -> {telemetry_path.resolve()}")
     print(f"[probe11] Checkpoints -> {ckpt_dir.resolve()} (every {args.checkpoint_every} steps)")
     print("-" * 100)
@@ -433,9 +694,20 @@ def main():
     model.train()
 
     for step in range(start_step, args.steps + 1):
-        x, labels, slow_labels, fast_labels = make_harmonic_xor_batch(
-            args.batch_size, args.seq_len, device=device,
-        )
+        if args.task == "byte_waveform":
+            x, labels, slow_labels, fast_labels = make_byte_waveform_batch(
+                args.batch_size, args.seq_len, noise_std=args.noise_std, device=device,
+            )
+        elif args.task == "byte_recall":
+            x, labels, slow_labels, fast_labels = make_byte_recall_batch(
+                args.batch_size, args.seq_len,
+                num_keys=args.num_keys, num_pairs=args.num_pairs,
+                val_range=args.val_range, device=device,
+            )
+        else:
+            x, labels, slow_labels, fast_labels = make_harmonic_xor_batch(
+                args.batch_size, args.seq_len, device=device,
+            )
 
         optimizer.zero_grad()
         logits, move_penalty = model(x)
@@ -443,13 +715,17 @@ def main():
         loss.backward()
 
         # Per-ant gradient norms (after backward, before optimizer step).
-        gnorms = compute_per_ant_gnorms(model, active_ants=active)
+        # Compute for ALL ants — inactive ones will show gnorm=0.
+        gnorms = compute_per_ant_gnorms(model, active_ants=n_ants_total)
 
         optimizer.step()
 
         # Overall accuracy.
         pred = logits.argmax(dim=1)
         correct = (pred == labels).float().mean().item()
+        # Prediction distribution (mode collapse detection).
+        pred_np = pred.cpu().tolist()
+        unique_preds = len(set(pred_np))
         acc_window.append(correct)
         acc_window_50.append(correct)
         acc_window_10.append(correct)
@@ -470,25 +746,38 @@ def main():
         # Build telemetry record.
         record = {
             "step": step,
+            "task": args.task,
             "loss": round(loss.item(), 6),
             "acc": round(correct, 4),
             "acc_ma100": round(sum(acc_window) / len(acc_window), 4),
             "acc_ma50": round(sum(acc_window_50) / len(acc_window_50), 4),
             "acc_ma10": round(sum(acc_window_10) / len(acc_window_10), 4),
-            "active_ants": active,
+            "active_ants": len(active_set),
             "total_ants": n_ants_total,
             "gnorms": [round(g, 4) for g in gnorms],
+            "active_set": sorted(active_set),
+            "unique_preds": unique_preds,
+            "num_classes_possible": num_classes,
         }
+        if args.task == "byte_recall":
+            record["val_range"] = args.val_range
+            record["num_keys"] = args.num_keys
+            record["num_pairs"] = args.num_pairs
+            record["chance_pct"] = round(100.0 / args.val_range, 2)
+        if args.solo_ant is not None:
+            record["solo_ant"] = args.solo_ant
+        if frozen_ant_indices:
+            record["frozen_ants"] = sorted(frozen_ant_indices)
 
-        # Add swarm telemetry from model (sliced to active only).
+        # Add swarm telemetry from model (all ants for visibility).
         if hasattr(model, "fib_swarm_weights") and model.fib_swarm_weights is not None:
-            record["weights"] = [round(w, 4) for w in model.fib_swarm_weights[:active]]
+            record["weights"] = [round(w, 4) for w in model.fib_swarm_weights[:n_ants_total]]
         if hasattr(model, "fib_swarm_ring_lens") and model.fib_swarm_ring_lens is not None:
-            record["ring_lens"] = model.fib_swarm_ring_lens[:active]
+            record["ring_lens"] = model.fib_swarm_ring_lens[:n_ants_total]
         if hasattr(model, "fib_swarm_logit_norm") and model.fib_swarm_logit_norm is not None:
             record["swarm_logit_norm"] = round(model.fib_swarm_logit_norm, 4)
         if hasattr(model, "fib_swarm_msg_norms") and model.fib_swarm_msg_norms is not None:
-            record["msg_norms"] = [round(n, 4) for n in model.fib_swarm_msg_norms[:active]]
+            record["msg_norms"] = [round(n, 4) for n in model.fib_swarm_msg_norms[:n_ants_total]]
 
         # Per-ant accuracy (raw + rolling averages).
         if per_ant_accs:
@@ -524,6 +813,7 @@ def main():
             print(
                 f"step {step:5d} | loss {loss.item():.4f} | "
                 f"acc {correct:.2f} (ma={record['acc_ma100']:.3f}) | "
+                f"uniq={unique_preds}/{num_classes} | "
                 f"{gnorm_str} | {ratio_str} | "
                 f"{steps_per_sec:.1f} step/s"
             )

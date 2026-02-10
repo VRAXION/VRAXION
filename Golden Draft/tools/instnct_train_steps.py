@@ -45,6 +45,53 @@ except Exception:  # pragma: no cover
         # Keep logs ASCII-only.
         print(str(msg))
 
+
+# Dashboard log writer (for live_dashboard.py compatibility)
+_dashboard_log_path = None
+
+def _set_dashboard_log(path: str) -> None:
+    """Set dashboard log file path for live telemetry."""
+    global _dashboard_log_path
+    _dashboard_log_path = path
+    # Clear existing log
+    if path:
+        import os
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        with open(path, 'w') as f:
+            f.write("")
+
+def _write_dashboard_log(step: int, loss: float, acc: float, acc_ma: float,
+                         gnorm: float, s_per_step: float, model: Any) -> None:
+    """Write dashboard-compatible log line."""
+    if not _dashboard_log_path:
+        return
+
+    # Extract pointer telemetry
+    flip_rate = getattr(model, 'ptr_flip_rate', 0.0) or 0.0
+    orbit = getattr(model, 'ptr_orbit', 0.0) or 0.0
+    residual = getattr(model, 'ptr_residual_mean', 0.0) or 0.0
+    anchor_clicks = getattr(model, 'ptr_anchor_clicks', 0) or 0
+    inertia = getattr(model, 'ptr_inertia', 0.0) or 0.0
+    deadzone = getattr(model, 'ptr_deadzone', 0.0) or 0.0
+    walk_prob = getattr(model, 'ptr_walk_prob', 0.0) or 0.0
+
+    # Dashboard format: step N | loss X.XXXXXX | acc=X.XXXX acc_ma=X.XXXX gnorm=X.XXX ...
+    log_line = (
+        f"step {step} | loss {loss:.6f} | "
+        f"acc={acc:.4f} acc_ma={acc_ma:.4f} "
+        f"gnorm={gnorm:.3f} "
+        f"s_per_step={s_per_step:.3f} "
+        f"flip_rate={flip_rate:.4f} orbit={orbit:.1f} residual={residual:.4f} anchor_clicks={anchor_clicks} "
+        f"inertia={inertia:.3f} deadzone={deadzone:.4f} walk={walk_prob:.3f} "
+        f"agc={'ON' if gnorm > 0 else 'OFF'} shard=0/0"
+    )
+
+    try:
+        with open(_dashboard_log_path, 'a') as f:
+            f.write(log_line + "\n")
+    except Exception:
+        pass  # Don't crash training if dashboard log fails
+
     def compute_slope(losses: list) -> Optional[float]:
         # Simple, stable slope estimate as a fallback.
         if not losses or len(losses) < 2:
@@ -583,22 +630,12 @@ def train_steps(model: torch.nn.Module, loader: Any, steps: int, dataset_name: s
     AGC_ENABLED = bool(_get_setting(settings, "agc_enabled", True))
     AGC_GRAD_LOW = float(_get_setting(settings, "agc_grad_low", 1.0))
     AGC_GRAD_HIGH = float(_get_setting(settings, "agc_grad_high", 5.0))
-    AGC_SCALE_UP = float(os.environ.get("VRX_SCALE_UP", str(getattr(settings, "agc_scale_up", 1.05))))
-    AGC_SCALE_DOWN = float(os.environ.get("VRX_SCALE_DOWN", str(getattr(settings, "agc_scale_down", 0.5))))
-    AGC_SCALE_MIN = float(os.environ.get("VRX_SCALE_MIN", str(_get_setting(settings, "agc_scale_min", 0.0005))))
-    AGC_SCALE_MAX = float(os.environ.get("VRX_SCALE_MAX", str(_get_setting(settings, "agc_scale_max", 1.0))))
-    SCALE_WARMUP_STEPS = int(os.environ.get("VRX_SCALE_WARMUP_STEPS", "0"))
-    SCALE_WARMUP_INIT = float(os.environ.get("VRX_SCALE_WARMUP_INIT", str(UPDATE_SCALE)))
+
+    # AGC now uses stateless gradient normalization (no warmup, no accumulation)
     AGC_PARAMS = AGCParams(
         enabled=AGC_ENABLED,
         grad_low=AGC_GRAD_LOW,
         grad_high=AGC_GRAD_HIGH,
-        scale_up=AGC_SCALE_UP,
-        scale_down=AGC_SCALE_DOWN,
-        scale_min=AGC_SCALE_MIN,
-        scale_max_default=AGC_SCALE_MAX,
-        warmup_steps=SCALE_WARMUP_STEPS,
-        warmup_init=SCALE_WARMUP_INIT,
     )
 
     INERTIA_AUTO = bool(_get_setting(settings, "ptr_inertia_auto", False))
@@ -671,6 +708,9 @@ def train_steps(model: torch.nn.Module, loader: Any, steps: int, dataset_name: s
     flip_ema = None
     panic_reflex = None
     panic_status = ""
+    batch_losses = None
+    batch_targets = None
+    batch_hashes = None
     vcog = VCogGovernor(id_target=VCOG_ID_TARGET, sigma_floor=VCOG_SIGMA_FLOOR)
     expert_last_used = []
     last_hibernate_step = -1
@@ -727,6 +767,17 @@ def train_steps(model: torch.nn.Module, loader: Any, steps: int, dataset_name: s
     _ant_route_str = ""
     _ant_ent_val = ""
     _ant_active_val = ""
+
+    # Initialize dashboard log for live telemetry
+    dashboard_log = os.environ.get('VRX_DASHBOARD_LOG', '')
+    if dashboard_log:
+        _set_dashboard_log(dashboard_log)
+
+    # Track accuracy and timing for dashboard
+    acc_history = []
+    acc_ma = 0.0
+    step_start_time = time.time()
+
     while step < steps:
         try:
             inputs, targets = next(it)
@@ -742,6 +793,17 @@ def train_steps(model: torch.nn.Module, loader: Any, steps: int, dataset_name: s
         with amp_autocast():
             outputs, move_pen = model(inputs)
             loss = criterion(outputs, targets) + LAMBDA_MOVE * move_pen
+
+            # Capture per-sequence loss for root cause analysis
+            if train_trace_enabled:
+                with torch.no_grad():
+                    criterion_unreduced = nn.CrossEntropyLoss(reduction='none')
+                    batch_losses = criterion_unreduced(outputs, targets).cpu().tolist()
+                    batch_targets = targets.cpu().tolist()
+                    # Hash inputs for deduplication (first 3 tokens)
+                    batch_hashes = [hash(tuple(inputs[i, :min(3, inputs.size(1)), 0].cpu().tolist()))
+                                   for i in range(inputs.size(0))]
+
             if METABOLIC_HUNGER:
                 head = getattr(model, "head", None)
                 num_experts = getattr(head, "num_experts", EXPERT_HEADS) if head is not None else EXPERT_HEADS
@@ -840,19 +902,35 @@ def train_steps(model: torch.nn.Module, loader: Any, steps: int, dataset_name: s
             model.ptr_inertia_dyn_tensor = None
         if USE_AMP and scaler.is_enabled():
             scaler.unscale_(optimizer)
-        grad_norm_step = 0.0
-        if hasattr(model, "theta_ptr_reduced"):
+
+        # Compute full model gradient norm (not just theta_ptr)
+        total_grad_norm = 0.0
+        with torch.no_grad():
+            for p in model.parameters():
+                if p.grad is not None:
+                    param_norm = p.grad.data.norm(2).item()
+                    total_grad_norm += param_norm ** 2
+            total_grad_norm = total_grad_norm ** 0.5
+
+        grad_norm_step = total_grad_norm
+
+        # AGC: Normalize gradients to target range BEFORE optimizer sees them
+        raw_delta = getattr(model, "ptr_delta_raw_mean", None)
+        agc_scale = apply_update_agc(
+            model, grad_norm_step, AGC_PARAMS, raw_delta=raw_delta, step=step, log_fn=log
+        )
+
+        # Apply AGC normalization to ALL gradients
+        if agc_scale != 1.0:
             with torch.no_grad():
-                grad = model.theta_ptr_reduced.grad
-                grad_norm_step = float(grad.norm().item()) if grad is not None else 0.0
+                for p in model.parameters():
+                    if p.grad is not None:
+                        p.grad.data.mul_(agc_scale)
+
+        # Optional hard clip (after AGC normalization)
         if GRAD_CLIP > 0.0:
             torch.nn.utils.clip_grad_norm_(model.parameters(), GRAD_CLIP)
-        raw_delta = getattr(model, "ptr_delta_raw_mean", None)
-        scale_after_agc = apply_update_agc(
-                model, grad_norm_step if hasattr(model, "theta_ptr_reduced") else None, AGC_PARAMS, raw_delta=raw_delta, step=step, log_fn=log
-            )
-        if scale_after_agc is not None:
-            model.update_scale = scale_after_agc
+
         scaler.step(optimizer)
         scaler.update()
 
@@ -911,9 +989,9 @@ def train_steps(model: torch.nn.Module, loader: Any, steps: int, dataset_name: s
         heartbeat_due = (step % HEARTBEAT_STEPS == 0) or (
             HEARTBEAT_SECS > 0.0 and (now - last_heartbeat) >= HEARTBEAT_SECS
         )
-        if heartbeat_due and hasattr(model, "theta_ptr_reduced"):
+        if heartbeat_due:
             grad_norm = grad_norm_step
-            log(f"{dataset_name} | {model_name} | grad_norm(theta_ptr)={grad_norm:.4e}")
+            log(f"{dataset_name} | {model_name} | grad_norm(total)={grad_norm:.4e}")
             if heartbeat_due:
                 last_heartbeat = now
                 elapsed = now - start
@@ -1073,6 +1151,9 @@ def train_steps(model: torch.nn.Module, loader: Any, steps: int, dataset_name: s
                     "steps_total": steps,
                     "loss": float(loss.item()),
                     "grad_norm_theta_ptr": grad_norm,
+                    "batch_losses": batch_losses if 'batch_losses' in locals() else None,
+                    "batch_targets": batch_targets if 'batch_targets' in locals() else None,
+                    "batch_hashes": batch_hashes if 'batch_hashes' in locals() else None,
                     "ctrl": {
                         "inertia": float(model.ptr_inertia),
                         "deadzone": float(model.ptr_deadzone),
@@ -1133,6 +1214,30 @@ def train_steps(model: torch.nn.Module, loader: Any, steps: int, dataset_name: s
             ptr_delta_abs_sum += float(model.ptr_delta_abs_mean)
         if hasattr(model, "ptr_max_dwell"):
             ptr_max_dwell = max(ptr_max_dwell, int(model.ptr_max_dwell))
+
+        # Write dashboard log before deleting outputs
+        if dashboard_log and 'outputs' in locals():
+            with torch.no_grad():
+                preds = outputs.argmax(dim=1)
+                batch_acc = (preds == targets).float().mean().item()
+                acc_history.append(batch_acc)
+                acc_ma = sum(acc_history[-100:]) / min(len(acc_history), 100)
+
+                # Step timing
+                current_time = time.time()
+                step_time = current_time - step_start_time
+                step_start_time = current_time
+
+                _write_dashboard_log(
+                    step=step,
+                    loss=losses[-1] if losses else 0.0,
+                    acc=batch_acc,
+                    acc_ma=acc_ma,
+                    gnorm=grad_norm_step,
+                    s_per_step=step_time,
+                    model=model
+                )
+
         del outputs, loss
         step += 1
         if SAVE_EVERY_STEPS > 0 and step % SAVE_EVERY_STEPS == 0:
@@ -1201,9 +1306,14 @@ def train_steps(model: torch.nn.Module, loader: Any, steps: int, dataset_name: s
     ptr_flip_rate = (ptr_flip_sum / ptr_steps) if ptr_steps else None
     ptr_mean_dwell = (ptr_mean_dwell_sum / ptr_steps) if ptr_steps else None
     ptr_delta_abs_mean = (ptr_delta_abs_sum / ptr_steps) if ptr_steps else None
+    # Compute final accuracy (last 100 steps moving average)
+    final_acc = sum(acc_history[-100:]) / len(acc_history[-100:]) if acc_history else 0.0
+
     return {
         "loss_slope": slope,
+        "loss": losses[-1] if losses else 0.0,
         "steps": steps,
+        "final_accuracy": final_acc,
         "pointer_hist": pointer_hist_sum.tolist() if pointer_hist_sum is not None else None,
         "satiety_exits": satiety_exits,
         "ptr_flip_rate": ptr_flip_rate,

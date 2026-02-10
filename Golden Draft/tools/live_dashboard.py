@@ -38,6 +38,21 @@ REANT_ROUTE = re.compile(r"ant_route=(?P<ant_route>[\d,]+)")
 REANT_ENT = re.compile(rf"ant_ent=(?P<ant_ent>{REFLOAT})")
 REANT_ACTIVE = re.compile(r"ant_active=(?P<ant_active>\d+)")
 
+# Additional telemetry fields (2026-02-10 comprehensive telemetry redesign)
+RE_TIMING = re.compile(rf"s_per_step=(?P<s_per_step>{REFLOAT})")
+RE_ACC_MA = re.compile(rf"acc_ma=(?P<acc_ma>{REFLOAT})")
+RE_GNORM_FULL = re.compile(rf"gnorm=(?P<gnorm>{REFLOAT})")
+RE_PANIC = re.compile(r"panic=(?P<panic>\w+)")
+RE_SCALE = re.compile(rf"scale=(?P<scale>{REFLOAT})")
+RE_INERTIA = re.compile(rf"inertia=(?P<inertia>{REFLOAT})")
+RE_DEADZONE = re.compile(rf"deadzone=(?P<deadzone>{REFLOAT})")
+RE_WALK = re.compile(rf"walk=(?P<walk>{REFLOAT})")
+RE_FLIP_RATE = re.compile(rf"flip_rate=(?P<flip_rate>{REFLOAT})")
+RE_ORBIT = re.compile(rf"orbit=(?P<orbit>{REFLOAT})")
+RE_RESIDUAL = re.compile(rf"residual=(?P<residual>{REFLOAT})")
+RE_ANCHOR_CLICKS = re.compile(r"anchor_clicks=(?P<anchor_clicks>\d+)")
+RE_AGC_STATUS = re.compile(r"agc=(?P<agc_status>\w+)")
+
 
 def _eprint(msg: str) -> None:
     print(msg, file=sys.stderr, flush=True)
@@ -94,6 +109,21 @@ def parse_log_lines(lines: Iterable[str]) -> List[Dict[str, Any]]:
         ant_ent_mat = REANT_ENT.search(tail)
         ant_active_mat = REANT_ACTIVE.search(tail)
 
+        # Additional telemetry fields
+        timing_mat = RE_TIMING.search(tail)
+        acc_ma_mat = RE_ACC_MA.search(tail)
+        gnorm_mat = RE_GNORM_FULL.search(tail)
+        panic_mat = RE_PANIC.search(tail)
+        scale_mat = RE_SCALE.search(tail)
+        inertia_mat = RE_INERTIA.search(tail)
+        deadzone_mat = RE_DEADZONE.search(tail)
+        walk_mat = RE_WALK.search(tail)
+        flip_rate_mat = RE_FLIP_RATE.search(tail)
+        orbit_mat = RE_ORBIT.search(tail)
+        residual_mat = RE_RESIDUAL.search(tail)
+        anchor_clicks_mat = RE_ANCHOR_CLICKS.search(tail)
+        agc_status_mat = RE_AGC_STATUS.search(tail)
+
         # For legacy step lines without explicit shard metadata.
         if shard_count is None:
             shard_count = 0.0
@@ -115,6 +145,20 @@ def parse_log_lines(lines: Iterable[str]) -> List[Dict[str, Any]]:
             "ant_route": ant_route_mat.group("ant_route") if ant_route_mat else None,
             "ant_ent": _tryflt(ant_ent_mat.group("ant_ent")) if ant_ent_mat else None,
             "ant_active": int(ant_active_mat.group("ant_active")) if ant_active_mat else None,
+            # Additional telemetry fields
+            "s_per_step": _tryflt(timing_mat.group("s_per_step")) if timing_mat else None,
+            "acc_ma": _tryflt(acc_ma_mat.group("acc_ma")) if acc_ma_mat else None,
+            "gnorm": _tryflt(gnorm_mat.group("gnorm")) if gnorm_mat else None,
+            "panic": panic_mat.group("panic") if panic_mat else None,
+            "scale": _tryflt(scale_mat.group("scale")) if scale_mat else None,
+            "inertia": _tryflt(inertia_mat.group("inertia")) if inertia_mat else None,
+            "deadzone": _tryflt(deadzone_mat.group("deadzone")) if deadzone_mat else None,
+            "walk": _tryflt(walk_mat.group("walk")) if walk_mat else None,
+            "flip_rate": _tryflt(flip_rate_mat.group("flip_rate")) if flip_rate_mat else None,
+            "orbit": _tryflt(orbit_mat.group("orbit")) if orbit_mat else None,
+            "residual": _tryflt(residual_mat.group("residual")) if residual_mat else None,
+            "anchor_clicks": int(anchor_clicks_mat.group("anchor_clicks")) if anchor_clicks_mat else None,
+            "agc_status": agc_status_mat.group("agc_status") if agc_status_mat else None,
         }
         rows6x.append(rowdat)
 
@@ -308,7 +352,18 @@ def parse_log(log_path: str):
         dfobj6 = dfobj6.drop_duplicates(subset=["step"]).sort_values("step")
 
     # Derived metric used by the dashboard.
-    dfobj6["tension"] = dfobj6["grad_norm"] * dfobj6["raw_delta"] / 100.0
+    # Use new telemetry field names (gnorm, s_per_step) if available, fallback to legacy (grad_norm, raw_delta)
+    if "gnorm" in dfobj6.columns and dfobj6["gnorm"].notna().any():
+        grad_col = "gnorm"
+    else:
+        grad_col = "grad_norm"
+
+    if "s_per_step" in dfobj6.columns and dfobj6["s_per_step"].notna().any():
+        time_col = "s_per_step"
+    else:
+        time_col = "raw_delta"
+
+    dfobj6["tension"] = dfobj6[grad_col] * dfobj6[time_col] / 100.0
 
     # Clip outliers for plotting readability.
     capval = dfobj6["tension"].quantile(0.99)
@@ -372,6 +427,21 @@ def main(argv: Optional[Sequence[str]] = None) -> None:
         stmod6 = _req_st()
     except Exception:
         return
+
+    @stmod6.cache_resource
+    def _open_browser_once() -> None:
+        """Open browser exactly once per Streamlit session (survives hot-reload)."""
+        import webbrowser
+        import time
+        import os
+
+        # Only open in dev mode (not headless)
+        if not os.environ.get("STREAMLIT_SERVER_HEADLESS"):
+            time.sleep(1.5)  # Wait for server ready
+            webbrowser.open("http://localhost:8501")
+
+    # Auto-open browser once per session
+    _open_browser_once()
 
     stmod6.set_page_config(page_title="VRAXION Live Dashboard", layout="wide")
     stmod6.title("VRAXION Live Dashboard")
@@ -508,8 +578,12 @@ def main(argv: Optional[Sequence[str]] = None) -> None:
     try:
         # Recompute derived metric for plotting readability.
         if not dfobj6.empty:
-            if "grad_norm" in dfobj6.columns and "raw_delta" in dfobj6.columns:
-                dfobj6["tension"] = dfobj6["grad_norm"] * dfobj6["raw_delta"] / 100.0
+            # Calculate tension using new telemetry fields (gnorm, s_per_step) or legacy fields
+            grad_col = "gnorm" if ("gnorm" in dfobj6.columns and dfobj6["gnorm"].notna().any()) else "grad_norm"
+            time_col = "s_per_step" if ("s_per_step" in dfobj6.columns and dfobj6["s_per_step"].notna().any()) else "raw_delta"
+
+            if grad_col in dfobj6.columns and time_col in dfobj6.columns:
+                dfobj6["tension"] = dfobj6[grad_col] * dfobj6[time_col] / 100.0
                 capval = dfobj6["tension"].quantile(0.99)
                 dfobj6["tension"] = dfobj6["tension"].clip(upper=capval)
     except Exception as exc:
@@ -906,174 +980,253 @@ def main(argv: Optional[Sequence[str]] = None) -> None:
                             stmod6.caption(
                                 "D: Accuracy data not available yet.")
 
-                    # ── Ant Swarm Telemetry Row (E-H) ─────────────
-                    # Detect how many ant columns exist
-                    _ant_acc_cols = sorted(
-                        [c for c in surf_df.columns if c.startswith("ant_") and c.endswith("_acc")])
-                    _ant_route_cols = sorted(
-                        [c for c in surf_df.columns if c.startswith("ant_") and c.endswith("_route")])
-                    _has_ant_ent = "ant_ent" in surf_df.columns and surf_df["ant_ent"].notna().any()
-                    _has_ant_active = "ant_active" in surf_df.columns and surf_df["ant_active"].notna().any()
+                    # ── ARCHIVED: 3D Ant Swarm Telemetry (E-H plots) ─────────────
+                    # This section has been archived to tools/_backup/ant_telemetry_backup.py.txt
+                    # as part of the comprehensive telemetry redesign (2026-02-10).
+                    # See backup file to restore if needed.
+                    pass
 
-                    if len(_ant_acc_cols) > 1:
-                        stmod6.markdown("---")
-                        stmod6.markdown(
-                            "**Ant Swarm Telemetry** — per-expert routing visualization  "
-                            "*(rotate E to side view along ant_id axis for coherence waveform)*")
+                # ============================================================
+                # Frequency Analysis — periodic structure in loss dynamics
+                # ============================================================
+                if len(dfobj6) >= 200:
+                    stmod6.markdown("---")
+                    stmod6.markdown("**Frequency Analysis** — periodic structure in loss dynamics")
 
-                        _n_ants_vis = len(_ant_acc_cols)
-                        _ant_ids = list(range(_n_ants_vis))
-                        cam_ant_side = {"eye": {"x": 2.5, "y": 0.1, "z": 0.8}}
+                    try:
+                        from scipy import signal
+                        import numpy as np
 
-                        sE, sF, sG, sH = stmod6.columns(4)
+                        # Prepare data (subsample to 300 points for performance)
+                        freq_df = dfobj6[["step", "loss"]].dropna().copy()
+                        if len(freq_df) > 300:
+                            stride = max(1, len(freq_df) // 300)
+                            freq_df = freq_df.iloc[::stride].reset_index(drop=True)
 
-                        # ── E: Per-Ant Accuracy Surface ───────────
-                        with sE:
-                            z_e = []
-                            for _ai in range(_n_ants_vis):
-                                col = f"ant_{_ai}_acc"
-                                z_e.append(surf_df[col].fillna(0.0).values.tolist())
-                            fig_e = pltgo6x.Figure(data=[pltgo6x.Surface(
-                                x=step_arr.tolist(),
-                                y=_ant_ids,
-                                z=z_e,
-                                colorscale=_cs_vrx,
-                                reversescale=True,
-                                showscale=False,
-                                opacity=0.92,
-                            )])
-                            fig_e.update_layout(
-                                title="E: Ant Accuracy Swarm",
-                                scene={
-                                    "xaxis": {"title": "Step"},
-                                    "yaxis": {"title": "Ant ID"},
-                                    "zaxis": {"title": "Accuracy"},
-                                    "bgcolor": "rgba(0,0,0,0)",
-                                },
-                                scene_camera=cam_ant_side,
-                                margin=_surf_margin,
-                                height=380,
-                                paper_bgcolor="rgba(0,0,0,0)",
-                                plot_bgcolor="rgba(0,0,0,0)",
-                            )
-                            stmod6.plotly_chart(fig_e,
-                                                width="stretch")
+                        step_arr = freq_df["step"].values
+                        loss_arr = freq_df["loss"].values
+                        loss_detrended = signal.detrend(loss_arr)  # Remove linear trend for FFT
 
-                        # ── F: Per-Ant Routing Distribution ───────
-                        with sF:
-                            if len(_ant_route_cols) > 1:
-                                z_f = []
-                                for _ai in range(_n_ants_vis):
-                                    col = f"ant_{_ai}_route"
-                                    if col in surf_df.columns:
-                                        z_f.append(surf_df[col].fillna(0.0).values.tolist())
+                        # Semantic colorscale matching existing plots
+                        _cs_vrx = [
+                            [0.00, "#ff00ff"],  # bright fuchsia
+                            [0.30, "#8b1a8b"],  # deep magenta
+                            [0.50, "#2d1b4e"],  # dark purple midpoint
+                            [0.70, "#1b4d5e"],  # dark teal
+                            [1.00, "#00e5ff"],  # bright cyan
+                        ]
+                        cam_surf = {"eye": {"x": 1.45, "y": 1.45, "z": 0.95}}
+                        _surf_margin = {"l": 5, "r": 5, "t": 35, "b": 5}
+
+                        sI, sJ, sK, sL = stmod6.columns(4)
+
+                        # I: Loss Periodogram (3D Surface)
+                        # Sliding window FFT to show which frequencies dominate at different phases
+                        with sI:
+                            window_size = min(100, len(loss_detrended) // 3)
+                            stride_freq = max(10, window_size // 10)
+                            if window_size >= 50:
+                                freqs_list = []
+                                power_list = []
+                                time_list = []
+
+                                for i in range(0, len(loss_detrended) - window_size, stride_freq):
+                                    window = loss_detrended[i:i+window_size]
+                                    freqs, power = signal.periodogram(window, fs=1.0)
+                                    # Keep only meaningful frequencies (0.01 to 0.5 cycles/step)
+                                    mask = (freqs >= 0.01) & (freqs <= 0.5)
+                                    freqs_list.append(freqs[mask])
+                                    power_list.append(power[mask])
+                                    time_list.append(step_arr[i + window_size // 2])
+
+                                if len(time_list) > 0:
+                                    # Create meshgrid for 3D surface
+                                    freq_grid = freqs_list[0]
+                                    time_grid = np.array(time_list)
+                                    power_grid = np.array([p for p in power_list])
+
+                                    fig_i = pltgo6x.Figure(data=[pltgo6x.Surface(
+                                        x=time_grid,
+                                        y=freq_grid,
+                                        z=power_grid.T,
+                                        colorscale=_cs_vrx,
+                                        showscale=False
+                                    )])
+                                    fig_i.update_layout(
+                                        title="I: Periodogram",
+                                        scene=dict(
+                                            xaxis_title="Step",
+                                            yaxis_title="Freq (cycles/step)",
+                                            zaxis_title="Power",
+                                            camera=cam_surf
+                                        ),
+                                        margin=_surf_margin,
+                                        paper_bgcolor="rgba(0,0,0,0)",
+                                        plot_bgcolor="rgba(0,0,0,0)",
+                                    )
+                                    sI.plotly_chart(fig_i, use_container_width=True)
+                                else:
+                                    sI.caption("I: Not enough data for periodogram")
+                            else:
+                                sI.caption("I: Need ≥50 points for periodogram")
+
+                        # J: Autocorrelation Heatmap (3D Surface)
+                        # Shows repeating patterns at different time offsets
+                        with sJ:
+                            max_lag = min(50, len(loss_detrended) // 4)
+                            window_ac = min(100, len(loss_detrended) // 3)
+                            stride_ac = max(10, window_ac // 10)
+
+                            if window_ac >= 50 and max_lag >= 10:
+                                acorr_list = []
+                                time_ac_list = []
+                                lags = np.arange(1, max_lag + 1)
+
+                                for i in range(0, len(loss_detrended) - window_ac, stride_ac):
+                                    window = loss_detrended[i:i+window_ac]
+                                    acorr = np.correlate(window, window, mode='full')
+                                    acorr = acorr[len(acorr)//2:]
+                                    acorr = acorr / acorr[0]  # Normalize
+                                    acorr_list.append(acorr[1:max_lag+1])
+                                    time_ac_list.append(step_arr[i + window_ac // 2])
+
+                                if len(time_ac_list) > 0:
+                                    acorr_grid = np.array(acorr_list)
+                                    time_ac_grid = np.array(time_ac_list)
+
+                                    fig_j = pltgo6x.Figure(data=[pltgo6x.Surface(
+                                        x=time_ac_grid,
+                                        y=lags,
+                                        z=acorr_grid.T,
+                                        colorscale=_cs_vrx,
+                                        showscale=False
+                                    )])
+                                    fig_j.update_layout(
+                                        title="J: Autocorrelation",
+                                        scene=dict(
+                                            xaxis_title="Step",
+                                            yaxis_title="Lag (steps)",
+                                            zaxis_title="Correlation",
+                                            camera=cam_surf
+                                        ),
+                                        margin=_surf_margin,
+                                        paper_bgcolor="rgba(0,0,0,0)",
+                                        plot_bgcolor="rgba(0,0,0,0)",
+                                    )
+                                    sJ.plotly_chart(fig_j, use_container_width=True)
+                                else:
+                                    sJ.caption("J: Not enough data for autocorrelation")
+                            else:
+                                sJ.caption("J: Need ≥50 points for autocorrelation")
+
+                        # K: Peak Spacing Histogram (3D Bar Chart)
+                        # Shows distribution of distances between consecutive loss peaks
+                        with sK:
+                            peaks, _ = signal.find_peaks(loss_detrended)
+                            if len(peaks) >= 5:
+                                spacings = np.diff(peaks)
+                                # Bin into early/mid/late training
+                                n_bins = min(3, len(step_arr) // 100 + 1)
+                                time_bins = np.array_split(range(len(loss_detrended)), n_bins)
+
+                                hist_data = []
+                                bin_labels = []
+                                spacing_range = range(1, int(max(spacings)) + 1) if len(spacings) > 0 else range(1, 10)
+
+                                for bin_idx, time_bin in enumerate(time_bins):
+                                    bin_peaks = peaks[(peaks >= time_bin[0]) & (peaks < time_bin[-1])]
+                                    if len(bin_peaks) >= 2:
+                                        bin_spacings = np.diff(bin_peaks)
+                                        counts, edges = np.histogram(bin_spacings, bins=spacing_range)
+                                        hist_data.append(counts)
+                                        bin_labels.append(f"Phase {bin_idx+1}")
                                     else:
-                                        z_f.append([0.0] * len(surf_df))
-                                # Normalize to routing share per step
-                                import numpy as _np_ant
-                                z_f_arr = _np_ant.array(z_f, dtype=float)
-                                row_sums = z_f_arr.sum(axis=0, keepdims=True)
-                                row_sums = _np_ant.where(row_sums > 0, row_sums, 1.0)
-                                z_f_share = (z_f_arr / row_sums).tolist()
-                                fig_f = pltgo6x.Figure(data=[pltgo6x.Surface(
-                                    x=step_arr.tolist(),
-                                    y=_ant_ids,
-                                    z=z_f_share,
-                                    colorscale=_cs_vrx,
-                                    showscale=False,
-                                    opacity=0.92,
-                                )])
-                                fig_f.update_layout(
-                                    title="F: Ant Routing Share",
-                                    scene={
-                                        "xaxis": {"title": "Step"},
-                                        "yaxis": {"title": "Ant ID"},
-                                        "zaxis": {"title": "Share"},
-                                        "bgcolor": "rgba(0,0,0,0)",
-                                    },
-                                    scene_camera=cam_ant_side,
-                                    margin=_surf_margin,
-                                    height=380,
-                                    paper_bgcolor="rgba(0,0,0,0)",
-                                    plot_bgcolor="rgba(0,0,0,0)",
-                                )
-                                stmod6.plotly_chart(fig_f,
-                                                    width="stretch")
-                            else:
-                                stmod6.caption(
-                                    "F: Routing data not available yet.")
+                                        hist_data.append(np.zeros(len(spacing_range)-1))
+                                        bin_labels.append(f"Phase {bin_idx+1}")
 
-                        # ── G: Routing Entropy Trace ──────────────
-                        with sG:
-                            if _has_ant_ent:
-                                _ent_df = surf_df[["step", "ant_ent"]].dropna()
-                                fig_g = pltgo6x.Figure()
-                                fig_g.add_trace(pltgo6x.Scatter3d(
-                                    x=_ent_df["step"].values.tolist(),
-                                    y=[_n_ants_vis / 2.0] * len(_ent_df),
-                                    z=_ent_df["ant_ent"].values.tolist(),
-                                    mode="lines",
-                                    name="Routing entropy",
-                                    line={"color": "#ffeb3b", "width": 4},
-                                ))
-                                fig_g.update_layout(
-                                    title="G: Routing Entropy",
-                                    scene={
-                                        "xaxis": {"title": "Step"},
-                                        "yaxis": {"title": "Ant ID"},
-                                        "zaxis": {"title": "Entropy",
-                                                   "range": [0, 1]},
-                                        "bgcolor": "rgba(0,0,0,0)",
-                                    },
-                                    scene_camera=cam_ant_side,
-                                    margin=_surf_margin,
-                                    height=380,
-                                    paper_bgcolor="rgba(0,0,0,0)",
-                                    plot_bgcolor="rgba(0,0,0,0)",
-                                )
-                                stmod6.plotly_chart(fig_g,
-                                                    width="stretch")
-                            else:
-                                stmod6.caption(
-                                    "G: Entropy data not available yet.")
+                                if len(hist_data) > 0:
+                                    hist_array = np.array(hist_data)
+                                    x_grid, y_grid = np.meshgrid(bin_labels, list(spacing_range)[:-1])
 
-                        # ── H: Active Ant Count ───────────────────
-                        with sH:
-                            if _has_ant_active:
-                                _act_df = surf_df[["step", "ant_active"]].dropna()
-                                fig_h = pltgo6x.Figure()
-                                fig_h.add_trace(pltgo6x.Scatter3d(
-                                    x=_act_df["step"].values.tolist(),
-                                    y=[0] * len(_act_df),
-                                    z=_act_df["ant_active"].values.tolist(),
-                                    mode="lines",
-                                    name="Active ants",
-                                    line={"color": "#00ff00", "width": 4},
-                                ))
-                                fig_h.update_layout(
-                                    title="H: Active Ant Count",
-                                    scene={
-                                        "xaxis": {"title": "Step"},
-                                        "yaxis": {"title": "Ant ID"},
-                                        "zaxis": {"title": "Count",
-                                                   "range": [0, _n_ants_vis]},
-                                        "bgcolor": "rgba(0,0,0,0)",
-                                    },
-                                    scene_camera=cam_ant_side,
+                                    fig_k = pltgo6x.Figure(data=[pltgo6x.Surface(
+                                        x=np.arange(len(bin_labels)),
+                                        y=list(spacing_range)[:-1],
+                                        z=hist_array.T,
+                                        colorscale=_cs_vrx,
+                                        showscale=False
+                                    )])
+                                    fig_k.update_layout(
+                                        title="K: Peak Spacing",
+                                        scene=dict(
+                                            xaxis_title="Training Phase",
+                                            yaxis_title="Spacing (steps)",
+                                            zaxis_title="Count",
+                                            camera=cam_surf
+                                        ),
+                                        margin=_surf_margin,
+                                        paper_bgcolor="rgba(0,0,0,0)",
+                                        plot_bgcolor="rgba(0,0,0,0)",
+                                    )
+                                    sK.plotly_chart(fig_k, use_container_width=True)
+                                else:
+                                    sK.caption("K: Not enough peaks found")
+                            else:
+                                sK.caption("K: Need ≥5 peaks for histogram")
+
+                        # L: Oscillation Envelope (3D Line Surface)
+                        # Separates smooth trend from high-frequency noise
+                        with sL:
+                            if len(loss_arr) >= 50:
+                                # Butterworth lowpass filter
+                                nyquist = 0.5  # Nyquist frequency (sampling is 1 step)
+                                cutoff = 0.05  # Cutoff at 0.05 cycles/step (20-step period)
+                                order = 2
+                                b, a = signal.butter(order, cutoff / nyquist, btype='low')
+                                trend = signal.filtfilt(b, a, loss_arr)
+                                oscillation = loss_arr - trend
+
+                                # Create 3D surface with 3 traces
+                                traces = []
+                                colors = ["#ff00ff", "#2d1b4e", "#00e5ff"]
+                                names = ["Raw Loss", "Trend", "Oscillation"]
+                                data_arrays = [loss_arr, trend, oscillation]
+
+                                for idx, (data, color, name) in enumerate(zip(data_arrays, colors, names)):
+                                    traces.append(pltgo6x.Scatter3d(
+                                        x=step_arr,
+                                        y=np.full_like(step_arr, idx),
+                                        z=data,
+                                        mode='lines',
+                                        line=dict(color=color, width=2),
+                                        name=name
+                                    ))
+
+                                fig_l = pltgo6x.Figure(data=traces)
+                                fig_l.update_layout(
+                                    title="L: Oscillation Envelope",
+                                    scene=dict(
+                                        xaxis_title="Step",
+                                        yaxis_title="Signal Type",
+                                        zaxis_title="Value",
+                                        camera=cam_surf,
+                                        yaxis=dict(
+                                            tickmode='array',
+                                            tickvals=[0, 1, 2],
+                                            ticktext=names
+                                        )
+                                    ),
                                     margin=_surf_margin,
-                                    height=380,
                                     paper_bgcolor="rgba(0,0,0,0)",
                                     plot_bgcolor="rgba(0,0,0,0)",
                                 )
-                                stmod6.plotly_chart(fig_h,
-                                                    width="stretch")
+                                sL.plotly_chart(fig_l, use_container_width=True)
                             else:
-                                stmod6.caption(
-                                    "H: Active count data not available yet.")
-                    else:
-                        stmod6.caption(
-                            "Single-expert mode \u2014 ant swarm telemetry "
-                            "requires VRX_EXPERT_HEADS > 1")
+                                sL.caption("L: Need ≥50 points for envelope")
+
+                    except ImportError:
+                        stmod6.caption("⚠ Frequency analysis requires scipy. Install: pip install scipy")
+                    except Exception as e:
+                        stmod6.caption(f"⚠ Frequency analysis error: {e}")
 
                 if not has_eval_line:
                     stmod6.caption("Eval line appears once eval_acc points exist.")
@@ -1277,365 +1430,328 @@ def main(argv: Optional[Sequence[str]] = None) -> None:
     else:
         stmod6.caption("Plotly not installed; showing table only.")
 
-    # ── Ant telemetry panel (probe JSONL) ──────────────────────────────────
-    ant_telem_path = str(logpth).replace(".log", "_ant_telemetry.jsonl")
-    ant_rows = _read_jsonl_tail(ant_telem_path, max_lines=5000)
-    if ant_rows:
-        with stmod6.expander("Ant Swarm Telemetry", expanded=True):
-            # Discover ant count from first row with ants.
-            n_ants_telem = 0
-            for row in ant_rows:
-                if "ants" in row and isinstance(row["ants"], list):
-                    n_ants_telem = len(row["ants"])
-                    break
+    # ============================================================
+    # Comprehensive Training Telemetry (2026-02-10 redesign)
+    # ============================================================
+    if len(dfobj6) >= 1:  # Show as soon as we have data
+        stmod6.markdown("---")
+        stmod6.markdown("**Comprehensive Telemetry** — complete training state view")
 
-            if n_ants_telem > 0:
-                # Build per-ant time series (shared by both tabs).
-                ant_series = {f"ant{i}_{k}": [] for i in range(n_ants_telem)
-                              for k in ["gnorm", "xor", "slow", "fast", "rvar",
-                                        "r_xor", "r_slow", "r_fast"]}
-                ant_series["step"] = []
-                ant_series["acc"] = []
-                ant_series["loss"] = []
-                ant_series["r_combined_xor"] = []
+        # Helper function: Tier 1 - Summary Lines
+        def _render_summary_lines(df):
+            """Render compact summary lines for recent steps."""
+            n_lines = min(50, len(df))
+            if n_lines == 0:
+                stmod6.caption("No data yet.")
+                return
 
-                for row in ant_rows:
-                    ants = row.get("ants")
-                    if not ants or len(ants) != n_ants_telem:
-                        continue
-                    ant_series["step"].append(int(row.get("step", 0)))
-                    ant_series["acc"].append(float(row.get("acc", 0.0)))
-                    ant_series["loss"].append(float(row.get("loss", 0.0)))
-                    rolling = row.get("rolling") or {}
-                    ant_series["r_combined_xor"].append(
-                        float(rolling.get("combined_xor", 0.0)))
-                    for i, ad in enumerate(ants):
-                        for k in ["gnorm", "xor", "slow", "fast", "rvar"]:
-                            ant_series[f"ant{i}_{k}"].append(float(ad.get(k, 0.0)))
-                        for k in ["r_xor", "r_slow", "r_fast"]:
-                            ant_series[f"ant{i}_{k}"].append(float(ad.get(k, 0.0)))
+            recent = df.tail(n_lines).copy()
 
-                if not ant_series["step"]:
-                    stmod6.caption("No ant data rows parsed yet.")
+            # Compute deltas
+            recent['loss_delta'] = recent['loss'].diff()
+            recent['loss_mean'] = recent['loss'].rolling(window=20, min_periods=1).mean()
+            recent['loss_std'] = recent['loss'].rolling(window=20, min_periods=1).std()
+
+            # Compute gradient EMA if available
+            if 'gnorm' in recent.columns and recent['gnorm'].notna().any():
+                recent['gnorm_ema'] = recent['gnorm'].ewm(span=20, adjust=False).mean()
+            else:
+                recent['gnorm_ema'] = None
+
+            lines = []
+            for idx, row in recent.iterrows():
+                step = int(row['step'])
+                loss = row['loss']
+                loss_delta = row.get('loss_delta', 0.0) or 0.0
+
+                # Loss change indicator
+                if abs(loss_delta) < 0.001:
+                    delta_sym = "="
+                elif loss_delta > 0:
+                    delta_sym = "↑"
                 else:
-                    adf = pd.DataFrame(ant_series)
+                    delta_sym = "↓"
 
-                    # Ring sizes for labels (used by both tabs).
-                    ring_labels = []
-                    for row in ant_rows:
-                        if "ants" in row and isinstance(row["ants"], list):
-                            ring_labels = [f"ant{i} (ring={a.get('ring', '?')})"
-                                           for i, a in enumerate(row["ants"])]
-                            break
+                # Color code based on deviation
+                loss_mean = row.get('loss_mean', loss)
+                loss_std = row.get('loss_std', 0.1) or 0.1
+                deviation = abs(loss - loss_mean) / loss_std if loss_std > 0 else 0
 
-                    # Detect active vs frozen ants: an ant is active if its
-                    # gnorm was ever > 0 in the last 20 rows.
-                    active_ants = set()
-                    for row in ant_rows[-20:]:
-                        ants = row.get("ants") or []
-                        for i, ad in enumerate(ants):
-                            if float(ad.get("gnorm", 0.0)) > 0.0:
-                                active_ants.add(i)
-                    has_staged = len(active_ants) < n_ants_telem
+                if deviation > 2.0:
+                    color = "🔴"  # Red - spike
+                elif deviation > 1.0:
+                    color = "🟡"  # Yellow - warning
+                else:
+                    color = "🟢"  # Green - normal
 
-                    # Staged training banner.
-                    if has_staged:
-                        def _ring_tag(idx):
-                            if idx < len(ring_labels):
-                                parts = ring_labels[idx].split("=")
-                                return parts[1].rstrip(")") if len(parts) > 1 else "?"
-                            return "?"
-                        active_list = ", ".join(
-                            f"ant[{i}] (ring={_ring_tag(i)})"
-                            for i in sorted(active_ants))
-                        frozen_count = n_ants_telem - len(active_ants)
-                        stmod6.info(
-                            f"**Staged training:** {len(active_ants)} active, "
-                            f"{frozen_count} frozen  |  Active: {active_list}")
+                # Build line
+                acc = row.get('acc', 0.0) or 0.0
+                gnorm = row.get('gnorm', 0.0) or 0.0
+                gnorm_ema = row.get('gnorm_ema', gnorm)
+                scale = row.get('scale', 1.0) or 1.0
+                inertia = row.get('inertia', 0.0) or 0.0
+                deadzone = row.get('deadzone', 0.0) or 0.0
+                flip_rate = row.get('flip_rate', 0.0) or 0.0
+                orbit = row.get('orbit', 0.0) or 0.0
+                agc_status = row.get('agc_status', 'N/A') or 'N/A'
 
-                    # ── TABS ──────────────────────────────────────────────
-                    tab_term, tab_charts = stmod6.tabs(["Terminal", "Charts"])
+                # Format flags
+                flags = []
+                if agc_status and agc_status != 'N/A' and agc_status.upper() != 'OFF':
+                    flags.append(f"⚠AGC:{agc_status}")
+                panic = row.get('panic')
+                if panic and panic != 'None' and panic != 'False':
+                    flags.append("⚠PANIC")
 
-                    # ════════════════════════════════════════════════════════
-                    # TAB 1: Terminal (default) — monospace text output
-                    # ════════════════════════════════════════════════════════
-                    with tab_term:
-                        term_lines_n = int(stmod6.slider(
-                            "Tail lines", min_value=10, max_value=200,
-                            value=40, step=10, key="term_tail"))
+                flag_str = " ".join(flags) if flags else ""
 
-                        # Build terminal text from the last N rows.
-                        tail_rows = ant_rows[-term_lines_n:]
-                        term_lines = []
-                        for row in tail_rows:
-                            ants = row.get("ants")
-                            if not ants or len(ants) != n_ants_telem:
-                                continue
-                            s = int(row.get("step", 0))
-                            lo = row.get("loss", 0.0)
-                            ac = row.get("acc", 0.0)
-                            spd = row.get("s_per_step", 0.0)
-                            hdr = (f"step {s:>5d} | loss {lo:.4f} | "
-                                   f"acc {ac:.3f} | {spd:.2f} s/step")
-                            term_lines.append(hdr)
+                line = (
+                    f"{color} {step:05d} | "
+                    f"L:{loss:.4f}{delta_sym} | "
+                    f"A:{acc*100:5.1f}% | "
+                    f"G:{gnorm:.2f}→{gnorm_ema:.2f} | "
+                    f"S:{scale:.2f} I:{inertia:.2f} D:{deadzone:.3f} | "
+                    f"F:{flip_rate:.2f} O:{orbit:.1f} | "
+                    f"{flag_str}"
+                )
+                lines.append(line)
 
-                            for i, ad in enumerate(ants):
-                                is_frozen = has_staged and i not in active_ants
-                                if is_frozen:
-                                    continue  # Skip frozen ants in terminal
-                                ring = ad.get("ring", "?")
-                                gn = ad.get("gnorm", 0.0)
-                                vt = ad.get("vote", -1)
-                                xr = ad.get("xor", 0.0)
-                                sl = ad.get("slow", 0.0)
-                                ft = ad.get("fast", 0.0)
-                                rv = ad.get("rvar", 0.0)
-                                tag = " *" if i in active_ants and has_staged else ""
-                                aline = (f"  ant[{i}] ring={str(ring):>4s}"
-                                         f"  gnorm={gn:>7.3f}"
-                                         f"  vote={vt}"
-                                         f"  xor={xr:.3f}"
-                                         f"  slow={sl:.3f}"
-                                         f"  fast={ft:.3f}"
-                                         f"  rvar={rv:.4f}{tag}")
-                                # Append rolling if present.
-                                r_xor = ad.get("r_xor")
-                                if r_xor is not None:
-                                    r_sl = ad.get("r_slow", 0.0)
-                                    r_ft = ad.get("r_fast", 0.0)
-                                    aline += (f"  | R: xor={r_xor:.3f}"
-                                              f" slow={r_sl:.3f}"
-                                              f" fast={r_ft:.3f}")
-                                term_lines.append(aline)
+            summary_text = "\n".join(lines)
+            stmod6.code(summary_text, language=None)
 
-                            # Rolling combined line.
-                            rl = row.get("rolling")
-                            if rl:
-                                n_win = rl.get("n", 0)
-                                rc_xor = rl.get("combined_xor", 0.0)
-                                term_lines.append(
-                                    f"  rolling (n={n_win}): "
-                                    f"combined_xor={rc_xor:.4f}")
-                            term_lines.append("")  # blank separator
+        # Helper function: Tier 2 - Event Detection
+        def _detect_events(df):
+            """Detect anomalies and events in training."""
+            if len(df) < 20:
+                return []
 
-                        terminal_text = "\n".join(term_lines)
-                        stmod6.code(terminal_text, language=None)
+            events = []
 
-                    # ════════════════════════════════════════════════════════
-                    # TAB 2: Charts — all plotly graphs
-                    # ════════════════════════════════════════════════════════
-                    with tab_charts:
-                        smooth_w = int(stmod6.slider(
-                            "Smoothing window (MA)",
-                            min_value=1, max_value=200, value=25, step=5,
-                            key="ant_smooth_w"))
+            # Compute rolling statistics
+            df = df.copy()
+            df['loss_ma'] = df['loss'].rolling(window=20, min_periods=1).mean()
+            df['loss_std'] = df['loss'].rolling(window=20, min_periods=1).std()
 
-                        pltgo_mod = _opt_mod("plotly.graph_objects")
-                        if pltgo_mod is not None:
-                            # Cyan (big ring, slow) → Magenta (small ring, fast)
-                            # Darker for bigger ants, brighter for smaller ants
-                            def _ant_colors(n):
-                                if n <= 1:
-                                    return ["#ff00ff"]
-                                out = []
-                                for i in range(n):
-                                    t = i / max(1, n - 1)  # 0=biggest ring, 1=smallest
-                                    # Cyan dark → Cyan bright → Magenta bright
-                                    if t < 0.5:
-                                        # Dark cyan to bright cyan
-                                        s = t * 2  # 0→1
-                                        r = int(0 + s * 30)
-                                        g = int(80 + s * 175)
-                                        b = int(120 + s * 135)
-                                    else:
-                                        # Bright cyan to bright magenta
-                                        s = (t - 0.5) * 2  # 0→1
-                                        r = int(30 + s * 225)
-                                        g = int(255 - s * 205)
-                                        b = int(255 - s * 50)
-                                    out.append(f"#{r:02x}{g:02x}{b:02x}")
-                                return out
-                            colors = _ant_colors(n_ants_telem)
+            if 'gnorm' in df.columns:
+                df['gnorm_ema'] = df['gnorm'].ewm(span=20, adjust=False).mean()
 
-                            def _add_smoothed(fig, x_col, y_col, label, color,
-                                              window, frozen=False):
-                                if frozen:
-                                    # Frozen ants: very faint, thin, no raw trace.
-                                    smoothed = adf[y_col].rolling(
-                                        window=window, min_periods=1).mean()
-                                    fig.add_trace(pltgo_mod.Scatter(
-                                        x=adf[x_col], y=smoothed,
-                                        name=label + " (frozen)", mode="lines",
-                                        line={"color": "#555555", "width": 1,
-                                              "dash": "dot"},
-                                        opacity=0.2, showlegend=False))
-                                    return
-                                fig.add_trace(pltgo_mod.Scatter(
-                                    x=adf[x_col], y=adf[y_col],
-                                    name=label + " raw", mode="lines",
-                                    line={"color": color, "width": 1},
-                                    opacity=0.15, showlegend=False))
-                                smoothed = adf[y_col].rolling(
-                                    window=window, min_periods=1).mean()
-                                fig.add_trace(pltgo_mod.Scatter(
-                                    x=adf[x_col], y=smoothed,
-                                    name=label, mode="lines",
-                                    line={"color": color, "width": 3}))
+            if 'acc' in df.columns:
+                df['acc_ma'] = df['acc'].rolling(window=20, min_periods=1).mean()
 
-                            # 1. Gradient norm (skip frozen — they're always 0).
-                            fig_gnorm = pltgo_mod.Figure()
-                            for i in range(n_ants_telem):
-                                if has_staged and i not in active_ants:
-                                    continue  # Don't even draw flat-zero lines
-                                lbl = ring_labels[i] if i < len(ring_labels) else f"ant{i}"
-                                _add_smoothed(fig_gnorm, "step", f"ant{i}_gnorm",
-                                              lbl, colors[i % len(colors)], smooth_w)
-                            fig_gnorm.update_layout(
-                                title=f"Per-Ant Gradient Norm (MA {smooth_w})"
-                                      + (" — active only" if has_staged else ""),
-                                xaxis_title="Step", yaxis_title="Grad Norm",
-                                legend={"orientation": "h", "y": 1.02, "x": 0.01},
-                                margin={"l": 50, "r": 20, "t": 50, "b": 40})
-                            stmod6.plotly_chart(fig_gnorm, width="stretch")
+            # Scan for events
+            for idx, row in df.iterrows():
+                step = int(row['step'])
 
-                            # 2. SLOW / FAST side by side.
-                            c_slow, c_fast = stmod6.columns(2)
-                            with c_slow:
-                                fig_slow = pltgo_mod.Figure()
-                                for i in range(n_ants_telem):
-                                    lbl = ring_labels[i] if i < len(ring_labels) else f"ant{i}"
-                                    is_frozen = has_staged and i not in active_ants
-                                    _add_smoothed(fig_slow, "step", f"ant{i}_slow",
-                                                  lbl, colors[i % len(colors)], smooth_w,
-                                                  frozen=is_frozen)
-                                fig_slow.add_hline(y=0.5, line_dash="dot",
-                                                   line_color="gray", opacity=0.5)
-                                fig_slow.update_layout(
-                                    title=f"SLOW component (MA {smooth_w})",
-                                    xaxis_title="Step", yaxis_title="Acc (slow)",
-                                    yaxis_range=[0, 1],
-                                    legend={"orientation": "h", "y": 1.02, "x": 0.01},
-                                    margin={"l": 50, "r": 20, "t": 50, "b": 40})
-                                stmod6.plotly_chart(fig_slow, width="stretch")
+                # Loss spike detection
+                if row.get('loss_std', 0) and row['loss_std'] > 0:
+                    deviation = (row['loss'] - row['loss_ma']) / row['loss_std']
+                    if deviation > 2.0:
+                        events.append({
+                            'step': step,
+                            'type': 'LOSS_SPIKE',
+                            'severity': deviation,
+                            'details': {
+                                'loss': row['loss'],
+                                'loss_ma': row['loss_ma'],
+                                'deviation_sigma': deviation
+                            }
+                        })
 
-                            with c_fast:
-                                fig_fast = pltgo_mod.Figure()
-                                for i in range(n_ants_telem):
-                                    lbl = ring_labels[i] if i < len(ring_labels) else f"ant{i}"
-                                    is_frozen = has_staged and i not in active_ants
-                                    _add_smoothed(fig_fast, "step", f"ant{i}_fast",
-                                                  lbl, colors[i % len(colors)], smooth_w,
-                                                  frozen=is_frozen)
-                                fig_fast.add_hline(y=0.5, line_dash="dot",
-                                                   line_color="gray", opacity=0.5)
-                                fig_fast.update_layout(
-                                    title=f"FAST component (MA {smooth_w})",
-                                    xaxis_title="Step", yaxis_title="Acc (fast)",
-                                    yaxis_range=[0, 1],
-                                    legend={"orientation": "h", "y": 1.02, "x": 0.01},
-                                    margin={"l": 50, "r": 20, "t": 50, "b": 40})
-                                stmod6.plotly_chart(fig_fast, width="stretch")
+                # Gradient spike detection
+                if 'gnorm' in row and 'gnorm_ema' in row:
+                    gnorm = row.get('gnorm', 0) or 0
+                    gnorm_ema = row.get('gnorm_ema', 1) or 1
+                    if gnorm > 3 * gnorm_ema and gnorm > 1.0:
+                        events.append({
+                            'step': step,
+                            'type': 'GRADIENT_SPIKE',
+                            'severity': gnorm / gnorm_ema,
+                            'details': {
+                                'gnorm': gnorm,
+                                'gnorm_ema': gnorm_ema,
+                                'multiplier': gnorm / gnorm_ema
+                            }
+                        })
 
-                            # 3. XOR combined.
-                            fig_xor = pltgo_mod.Figure()
-                            for i in range(n_ants_telem):
-                                lbl = ring_labels[i] if i < len(ring_labels) else f"ant{i}"
-                                is_frozen = has_staged and i not in active_ants
-                                _add_smoothed(fig_xor, "step", f"ant{i}_xor",
-                                              lbl, colors[i % len(colors)], smooth_w,
-                                              frozen=is_frozen)
-                            fig_xor.add_hline(y=0.5, line_dash="dot",
-                                              line_color="gray", opacity=0.5)
-                            fig_xor.update_layout(
-                                title=f"XOR combined (MA {smooth_w})",
-                                xaxis_title="Step", yaxis_title="Acc (XOR)",
-                                yaxis_range=[0, 1],
-                                legend={"orientation": "h", "y": 1.02, "x": 0.01},
-                                margin={"l": 50, "r": 20, "t": 50, "b": 40})
-                            stmod6.plotly_chart(fig_xor, width="stretch")
+                # Accuracy drop detection
+                if 'acc' in row and 'acc_ma' in row:
+                    acc = row.get('acc', 0) or 0
+                    acc_ma = row.get('acc_ma', 0) or 0
+                    if acc_ma > 0.1 and acc < acc_ma - 0.10:
+                        events.append({
+                            'step': step,
+                            'type': 'ACCURACY_DROP',
+                            'severity': acc_ma - acc,
+                            'details': {
+                                'acc': acc,
+                                'acc_ma': acc_ma,
+                                'drop': acc_ma - acc
+                            }
+                        })
 
-                            # 4. Rolling accuracy (clean lines).
-                            has_rolling = any(
-                                v != 0.0 for v in adf.get("r_combined_xor", []))
-                            if has_rolling:
-                                stmod6.markdown("---")
-                                stmod6.markdown(
-                                    "**Rolling Accuracy** (1600-sample window) "
-                                    "-- no smoothing needed, the buffer IS the filter")
+                # Pointer freeze detection
+                if 'flip_rate' in row:
+                    flip_rate = row.get('flip_rate', 0) or 0
+                    if flip_rate < 0.01 and step > 100:
+                        # Check if it's been frozen for a while
+                        recent = df[df['step'].between(step - 10, step)]
+                        if 'flip_rate' in recent.columns:
+                            avg_flip = recent['flip_rate'].mean()
+                            if avg_flip < 0.01:
+                                events.append({
+                                    'step': step,
+                                    'type': 'POINTER_FREEZE',
+                                    'severity': 10,  # Duration
+                                    'details': {
+                                        'flip_rate': flip_rate,
+                                        'avg_flip_10': avg_flip
+                                    }
+                                })
 
-                                fig_rcomb = pltgo_mod.Figure()
-                                fig_rcomb.add_trace(pltgo_mod.Scatter(
-                                    x=adf["step"], y=adf["r_combined_xor"],
-                                    name="Combined XOR", mode="lines",
-                                    line={"color": "#e879f9", "width": 3}))
-                                fig_rcomb.add_hline(y=0.5, line_dash="dot",
-                                                    line_color="gray", opacity=0.5)
-                                fig_rcomb.update_layout(
-                                    title="Combined Rolling XOR Accuracy",
-                                    xaxis_title="Step", yaxis_title="Accuracy",
-                                    yaxis_range=[0, 1],
-                                    margin={"l": 50, "r": 20, "t": 50, "b": 40})
-                                stmod6.plotly_chart(fig_rcomb, width="stretch")
+            return events
 
-                                rc_slow, rc_fast = stmod6.columns(2)
-                                with rc_slow:
-                                    fig_rslow = pltgo_mod.Figure()
-                                    for i in range(n_ants_telem):
-                                        lbl = ring_labels[i] if i < len(ring_labels) else f"ant{i}"
-                                        fig_rslow.add_trace(pltgo_mod.Scatter(
-                                            x=adf["step"], y=adf[f"ant{i}_r_slow"],
-                                            name=lbl, mode="lines",
-                                            line={"color": colors[i % len(colors)], "width": 2}))
-                                    fig_rslow.add_hline(y=0.5, line_dash="dot",
-                                                        line_color="gray", opacity=0.5)
-                                    fig_rslow.update_layout(
-                                        title="Rolling SLOW (per-ant)",
-                                        xaxis_title="Step", yaxis_title="Acc (slow)",
-                                        yaxis_range=[0, 1],
-                                        legend={"orientation": "h", "y": 1.02, "x": 0.01},
-                                        margin={"l": 50, "r": 20, "t": 50, "b": 40})
-                                    stmod6.plotly_chart(fig_rslow, width="stretch")
+        # Helper function: Tier 2 - Render Event Log
+        def _render_event_log(events, df):
+            """Render event cards with context."""
+            if not events:
+                stmod6.caption("No anomalies detected in current data.")
+                return
 
-                                with rc_fast:
-                                    fig_rfast = pltgo_mod.Figure()
-                                    for i in range(n_ants_telem):
-                                        lbl = ring_labels[i] if i < len(ring_labels) else f"ant{i}"
-                                        fig_rfast.add_trace(pltgo_mod.Scatter(
-                                            x=adf["step"], y=adf[f"ant{i}_r_fast"],
-                                            name=lbl, mode="lines",
-                                            line={"color": colors[i % len(colors)], "width": 2}))
-                                    fig_rfast.add_hline(y=0.5, line_dash="dot",
-                                                        line_color="gray", opacity=0.5)
-                                    fig_rfast.update_layout(
-                                        title="Rolling FAST (per-ant)",
-                                        xaxis_title="Step", yaxis_title="Acc (fast)",
-                                        yaxis_range=[0, 1],
-                                        legend={"orientation": "h", "y": 1.02, "x": 0.01},
-                                        margin={"l": 50, "r": 20, "t": 50, "b": 40})
-                                    stmod6.plotly_chart(fig_rfast, width="stretch")
+            for evt in events[-20:]:  # Show last 20 events
+                step = evt['step']
+                evt_type = evt['type']
+                severity = evt['severity']
+                details = evt['details']
 
-                                fig_rxor = pltgo_mod.Figure()
-                                for i in range(n_ants_telem):
-                                    lbl = ring_labels[i] if i < len(ring_labels) else f"ant{i}"
-                                    fig_rxor.add_trace(pltgo_mod.Scatter(
-                                        x=adf["step"], y=adf[f"ant{i}_r_xor"],
-                                        name=lbl, mode="lines",
-                                        line={"color": colors[i % len(colors)], "width": 2}))
-                                fig_rxor.add_hline(y=0.5, line_dash="dot",
-                                                   line_color="gray", opacity=0.5)
-                                fig_rxor.update_layout(
-                                    title="Rolling XOR (per-ant)",
-                                    xaxis_title="Step", yaxis_title="Acc (XOR)",
-                                    yaxis_range=[0, 1],
-                                    legend={"orientation": "h", "y": 1.02, "x": 0.01},
-                                    margin={"l": 50, "r": 20, "t": 50, "b": 40})
-                                stmod6.plotly_chart(fig_rxor, width="stretch")
+                # Color code by type
+                if evt_type == 'LOSS_SPIKE':
+                    icon = "📈"
+                    color = "red"
+                    desc = f"Loss spike: {details['loss']:.4f} (baseline: {details['loss_ma']:.4f}, {details['deviation_sigma']:.1f}σ)"
+                elif evt_type == 'GRADIENT_SPIKE':
+                    icon = "⚡"
+                    color = "orange"
+                    desc = f"Gradient spike: {details['gnorm']:.2f} ({details['multiplier']:.1f}x over EMA {details['gnorm_ema']:.2f})"
+                elif evt_type == 'ACCURACY_DROP':
+                    icon = "📉"
+                    color = "yellow"
+                    desc = f"Accuracy drop: {details['acc']:.2%} (baseline: {details['acc_ma']:.2%}, drop: {details['drop']:.2%})"
+                elif evt_type == 'POINTER_FREEZE':
+                    icon = "❄️"
+                    color = "blue"
+                    desc = f"Pointer frozen: flip_rate={details['flip_rate']:.3f}"
+                else:
+                    icon = "⚠️"
+                    color = "gray"
+                    desc = f"Event type: {evt_type}"
 
-                            pass  # 3D mesh removed; surfaces are below main loss chart
-                        else:
-                            stmod6.caption("Plotly not available for ant charts.")
-    else:
-        stmod6.caption(f"No ant telemetry found at: {ant_telem_path}")
+                stmod6.markdown(f"**{icon} [{evt_type} @ step {step}]**")
+                stmod6.caption(desc)
+                stmod6.divider()
+
+        # Helper function: Tier 3 - Deep Telemetry
+        def _render_deep_telemetry(df):
+            """Render full state dump for selected step."""
+            if df.empty:
+                stmod6.caption("No data available.")
+                return
+
+            # Step selector
+            step_options = df['step'].tolist()
+            selected_step = stmod6.selectbox(
+                "Select step to inspect:",
+                options=step_options,
+                index=len(step_options) - 1 if step_options else 0,
+                key="deep_telem_step"
+            )
+
+            row = df[df['step'] == selected_step].iloc[0]
+
+            # Build full state dump
+            dump_sections = []
+
+            # === LOSS SECTION ===
+            dump_sections.append("=== LOSS ===")
+            dump_sections.append(f"  total:       {row.get('loss', 0):.6f}")
+            if 'acc' in row:
+                dump_sections.append(f"  accuracy:    {row.get('acc', 0):.4f}")
+            if 'acc_ma' in row:
+                dump_sections.append(f"  acc_ma:      {row.get('acc_ma', 0):.4f}")
+            dump_sections.append("")
+
+            # === GRADIENTS SECTION ===
+            dump_sections.append("=== GRADIENTS ===")
+            if 'gnorm' in row and row.get('gnorm') is not None:
+                dump_sections.append(f"  gnorm:       {row.get('gnorm', 0):.3f}")
+            if 'grad_norm' in row and row.get('grad_norm') is not None:
+                dump_sections.append(f"  theta_ptr:   {row.get('grad_norm', 0):.3f}")
+            if 'scale' in row and row.get('scale') is not None:
+                dump_sections.append(f"  AGC scale:   {row.get('scale', 1.0):.3f}")
+            if 'agc_status' in row and row.get('agc_status') is not None:
+                dump_sections.append(f"  AGC status:  {row.get('agc_status', 'N/A')}")
+            dump_sections.append("")
+
+            # === POINTER STATE SECTION ===
+            dump_sections.append("=== POINTER STATE ===")
+            if 'flip_rate' in row and row.get('flip_rate') is not None:
+                dump_sections.append(f"  flip_rate:   {row.get('flip_rate', 0):.4f}")
+            if 'orbit' in row and row.get('orbit') is not None:
+                dump_sections.append(f"  orbit:       {row.get('orbit', 0):.2f}")
+            if 'residual' in row and row.get('residual') is not None:
+                dump_sections.append(f"  residual:    {row.get('residual', 0):.4f}")
+            if 'anchor_clicks' in row and row.get('anchor_clicks') is not None:
+                dump_sections.append(f"  clicks:      {row.get('anchor_clicks', 0)}")
+            dump_sections.append("")
+
+            # === CONTROL STATE SECTION ===
+            dump_sections.append("=== CONTROL ===")
+            if 'scale' in row and row.get('scale') is not None:
+                dump_sections.append(f"  update_scale: {row.get('scale', 1.0):.3f}")
+            if 'inertia' in row and row.get('inertia') is not None:
+                dump_sections.append(f"  inertia:      {row.get('inertia', 0):.3f}")
+            if 'deadzone' in row and row.get('deadzone') is not None:
+                dump_sections.append(f"  deadzone:     {row.get('deadzone', 0):.4f}")
+            if 'walk' in row and row.get('walk') is not None:
+                dump_sections.append(f"  walk_prob:    {row.get('walk', 0):.3f}")
+            if 'panic' in row and row.get('panic') is not None:
+                dump_sections.append(f"  panic:        {row.get('panic', 'None')}")
+            dump_sections.append("")
+
+            # === TIMING SECTION ===
+            dump_sections.append("=== TIMING ===")
+            if 's_per_step' in row:
+                dump_sections.append(f"  s_per_step:  {row.get('s_per_step', 0):.3f}s")
+            dump_sections.append("")
+
+            dump_text = "\n".join(dump_sections)
+            stmod6.code(dump_text, language=None)
+
+        # Render three tiers
+        with stmod6.expander("📊 Tier 1: Summary View (Last 50 Steps)", expanded=True):
+            _render_summary_lines(dfobj6)
+
+        events = _detect_events(dfobj6)
+        with stmod6.expander(f"⚡ Tier 2: Event Log ({len(events)} anomalies detected)", expanded=bool(events)):
+            _render_event_log(events, dfobj6)
+
+        with stmod6.expander("🔬 Tier 3: Deep Telemetry (Step-by-Step State Dump)", expanded=False):
+            _render_deep_telemetry(dfobj6)
+
+    # ── ARCHIVED: Ant telemetry panel (probe JSONL) ──────────────────────────────────
+    # This section has been archived to tools/_backup/ant_telemetry_backup.py.txt
+    # as part of the comprehensive telemetry redesign (2026-02-10).
+    # See backup file to restore if needed.
+    if False:  # ARCHIVED - Code preserved in backup file
+        pass  # Full implementation in tools/_backup/ant_telemetry_backup.py.txt
+        """
+        # Original ant telemetry panel code (359 lines) archived
+        # Restore from backup if needed
+        ant_telem_path = str(logpth).replace(".log", "_ant_telemetry.jsonl")
+        ant_rows = _read_jsonl_tail(ant_telem_path, max_lines=5000)
+        # ... (see backup for full code)
+        """
+        n_ants_telem = 0  # Stub to prevent reference errors
+        # END ARCHIVED ANT TELEMETRY SECTION
 
     # ── Clear display button ────────────────────────────────────────────────
     stmod6.divider()

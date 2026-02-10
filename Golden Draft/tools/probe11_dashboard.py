@@ -21,6 +21,19 @@ st.set_page_config(page_title="Probe 11 -- Fib Volume Weight", layout="wide")
 TELEMETRY_DEFAULT = os.path.join(os.path.dirname(__file__), "..", "probe11_telemetry.jsonl")
 TELEMETRY_PATH = os.environ.get("PROBE11_TELEMETRY", TELEMETRY_DEFAULT)
 
+
+@st.cache_resource
+def _open_browser_once() -> None:
+    """Open browser exactly once per Streamlit session (survives hot-reload)."""
+    import webbrowser
+    import time
+    import os
+
+    # Only open in dev mode (not headless)
+    if not os.environ.get("STREAMLIT_SERVER_HEADLESS"):
+        time.sleep(1.5)  # Wait for server ready
+        webbrowser.open("http://localhost:8511")  # Note: port 8511
+
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
@@ -147,6 +160,9 @@ def load_telemetry(path: str, tail_n: int = 2000) -> pd.DataFrame:
 
 @st.fragment(run_every=3)
 def live_view() -> None:
+    # Auto-open browser once per session
+    _open_browser_once()
+
     df = load_telemetry(TELEMETRY_PATH)
     if df.empty:
         st.warning(f"Waiting for telemetry at: {TELEMETRY_PATH}")
@@ -155,6 +171,16 @@ def live_view() -> None:
     max_step = int(df["step"].max())
     active_ants = int(df["active_ants"].iloc[-1]) if "active_ants" in df.columns else None
     total_ants = int(df["total_ants"].iloc[-1]) if "total_ants" in df.columns else None
+    solo_ant = int(df["solo_ant"].iloc[-1]) if "solo_ant" in df.columns and df["solo_ant"].notna().iloc[-1] else None
+
+    # Read explicit active_set and frozen_ants from telemetry (new format).
+    telem_active_set: set | None = None
+    telem_frozen_set: set | None = None
+    last = df.iloc[-1]
+    if "active_set" in df.columns and isinstance(last.get("active_set"), list):
+        telem_active_set = set(last["active_set"])
+    if "frozen_ants" in df.columns and isinstance(last.get("frozen_ants"), list):
+        telem_frozen_set = set(last["frozen_ants"])
 
     # Determine ant count from gnorms array
     n_ants = 0
@@ -163,7 +189,8 @@ def live_view() -> None:
     ring_lens = df["ring_lens"].iloc[-1] if "ring_lens" in df.columns else []
     weights = df["weights"].iloc[-1] if "weights" in df.columns else []
     colors = _ant_colors(n_ants)
-    frozen_set = _detect_frozen(df, n_ants)
+    # Use telemetry frozen set if available, otherwise detect from gnorms.
+    frozen_set = telem_frozen_set if telem_frozen_set is not None else _detect_frozen(df, n_ants)
     has_staged = len(frozen_set) > 0
 
     # ==================================================================
@@ -181,26 +208,60 @@ def live_view() -> None:
     elif active_ants is not None:
         col4.metric("Active Ants", f"{active_ants}/{total_ants}")
 
+    # Helper: determine per-ant status string
+    def _ant_status(i: int) -> str:
+        if solo_ant is not None:
+            return "SOLO" if i == solo_ant else "INACTIVE"
+        # Use explicit active_set from telemetry when available.
+        if telem_active_set is not None:
+            if i not in telem_active_set:
+                return "INACTIVE"
+            if i in frozen_set:
+                return "FROZEN"
+            return "LEARNING"
+        # Fallback: first-N logic.
+        if i >= (active_ants or n_ants):
+            return "INACTIVE"
+        if i in frozen_set:
+            return "FROZEN"
+        return "LEARNING"
+
     # Ant status badges
     if n_ants > 0:
         badges: list[str] = []
         for i in range(n_ants):
             rl = ring_lens[i] if i < len(ring_lens) else "?"
-            if i >= (active_ants or n_ants):
+            status = _ant_status(i)
+            if status == "INACTIVE":
                 badges.append(f'<span style="color:#666;padding:2px 8px;border:1px solid #444;'
                               f'border-radius:4px;margin-right:6px;">ant[{i}] ring={rl} INACTIVE</span>')
-            elif i in frozen_set:
+            elif status == "FROZEN":
                 badges.append(f'<span style="color:#9ca3af;background:#1f2937;padding:2px 8px;'
                               f'border:1px solid #4b5563;border-radius:4px;margin-right:6px;">'
                               f'&#10052; ant[{i}] ring={rl} FROZEN</span>')
-            else:
+            elif status == "SOLO":
+                badges.append(f'<span style="color:#f59e0b;background:#451a03;padding:2px 8px;'
+                              f'border:1px solid #92400e;border-radius:4px;margin-right:6px;">'
+                              f'&#9733; ant[{i}] ring={rl} SOLO</span>')
+            else:  # LEARNING
                 badges.append(f'<span style="color:#22c55e;background:#052e16;padding:2px 8px;'
                               f'border:1px solid #166534;border-radius:4px;margin-right:6px;">'
                               f'&#9679; ant[{i}] ring={rl} LEARNING</span>')
         st.markdown(" ".join(badges), unsafe_allow_html=True)
 
-    # Staged training banner
-    if has_staged:
+    # Training mode banner
+    if solo_ant is not None:
+        solo_rl = ring_lens[solo_ant] if solo_ant < len(ring_lens) else "?"
+        st.info(f"Solo mode: ant[{solo_ant}] (ring={solo_rl}) training alone -- "
+                f"all other ants inactive (small-first activation)")
+    elif telem_active_set is not None and len(telem_active_set) < n_ants:
+        active_names = ", ".join(f"ant[{i}]" for i in sorted(telem_active_set))
+        frozen_names = ", ".join(f"ant[{i}]" for i in sorted(frozen_set)) if frozen_set else "none"
+        learning = sorted(telem_active_set - frozen_set)
+        learning_names = ", ".join(f"ant[{i}]" for i in learning) if learning else "none"
+        st.info(f"Staged activation: {active_names} active | "
+                f"{frozen_names} frozen | {learning_names} learning")
+    elif has_staged:
         frozen_names = ", ".join(f"ant[{i}]" for i in sorted(frozen_set))
         active_names = ", ".join(
             f"ant[{i}]" for i in range(active_ants or n_ants) if i not in frozen_set
@@ -217,6 +278,9 @@ def live_view() -> None:
 
     # Accuracy trio
     st.subheader("Accuracy")
+    if solo_ant is not None:
+        st.caption("Ensemble accuracy (main model + swarm combined). "
+                   "See Per-Ant Accuracy below for solo ant's own performance.")
     acc_cols_map = [("MA100", "acc_ma100", "#22d3ee"), ("MA50", "acc_ma50", "#a78bfa"),
                     ("MA10", "acc_ma10", "#facc15")]
     acc_present = [(label, key, c) for label, key, c in acc_cols_map if key in df.columns]
@@ -282,6 +346,10 @@ def live_view() -> None:
                 msg_cols.append(cname)
 
         # -- Per-Ant Accuracy (3 charts: MA100 / MA50 / MA10, all ants as lines) --
+        # NOTE: ant_accs arrays only contain entries for ACTIVE ants (not all ants).
+        # Map array index -> real ant index using telem_active_set.
+        active_ant_indices = sorted(telem_active_set) if telem_active_set else list(range(n_ants))
+
         if has_ant_ma and ant_ma_fields:
             ma_chart_map = [
                 ("Per-Ant Accuracy (MA100)", "ant_accs_ma100"),
@@ -294,11 +362,17 @@ def live_view() -> None:
                 col_names = ant_ma_fields[field_key]
                 fig_aa = go.Figure()
                 for i, cname in enumerate(col_names):
-                    rl = ring_lens[i] if i < len(ring_lens) else "?"
-                    lbl = f"ant[{i}] ring={rl}"
-                    is_frozen = i in frozen_set
+                    real_idx = active_ant_indices[i] if i < len(active_ant_indices) else i
+                    rl = ring_lens[real_idx] if real_idx < len(ring_lens) else "?"
+                    lbl = f"ant[{real_idx}] ring={rl}"
+                    is_frozen = real_idx in frozen_set
+                    status = _ant_status(real_idx)
+                    if status == "SOLO":
+                        lbl += " (solo)"
+                    elif status == "FROZEN":
+                        lbl += " (frozen)"
                     _add_smoothed(fig_aa, df_acc, "step", cname, lbl,
-                                  colors[i % len(colors)], window=10, frozen=is_frozen)
+                                  colors[real_idx % len(colors)], window=10, frozen=is_frozen)
                 fig_aa.add_hline(y=0.5, line_dash="dot", line_color="gray", opacity=0.3)
                 fig_aa.update_layout(
                     title=title, xaxis_title="Step", yaxis_title="Accuracy",
@@ -311,7 +385,14 @@ def live_view() -> None:
             fig_gn = go.Figure()
             for i, cname in enumerate(gnorm_cols):
                 rl = ring_lens[i] if i < len(ring_lens) else "?"
+                status = _ant_status(i)
                 lbl = f"ant[{i}] ring={rl}"
+                if status == "SOLO":
+                    lbl += " (solo)"
+                elif status == "FROZEN":
+                    lbl += " (frozen)"
+                elif status == "INACTIVE":
+                    lbl += " (off)"
                 is_frozen = i in frozen_set
                 _add_smoothed(fig_gn, df, "step", cname, lbl,
                               colors[i % len(colors)], frozen=is_frozen)
@@ -327,7 +408,14 @@ def live_view() -> None:
             fig_msg = go.Figure()
             for i, cname in enumerate(msg_cols):
                 rl = ring_lens[i] if i < len(ring_lens) else "?"
+                status = _ant_status(i)
                 lbl = f"ant[{i}] ring={rl}"
+                if status == "SOLO":
+                    lbl += " (solo)"
+                elif status == "FROZEN":
+                    lbl += " (frozen)"
+                elif status == "INACTIVE":
+                    lbl += " (off)"
                 is_frozen = i in frozen_set
                 _add_smoothed(fig_msg, df, "step", cname, lbl,
                               colors[i % len(colors)], frozen=is_frozen)
@@ -370,13 +458,17 @@ def live_view() -> None:
             opacities = []
             text_labels = []
             for i in range(len(weights)):
-                c = colors[i % len(colors)] if i not in frozen_set else "#555555"
-                bar_colors.append(c)
-                opacities.append(0.3 if i in frozen_set else 1.0)
+                status = _ant_status(i)
                 rl = ring_lens[i] if i < len(ring_lens) else "?"
-                status = "FROZEN" if i in frozen_set else "LEARNING"
-                if i >= (active_ants or n_ants):
-                    status = "INACTIVE"
+                if status in ("INACTIVE", "FROZEN"):
+                    bar_colors.append("#555555")
+                    opacities.append(0.3)
+                elif status == "SOLO":
+                    bar_colors.append("#f59e0b")
+                    opacities.append(1.0)
+                else:
+                    bar_colors.append(colors[i % len(colors)])
+                    opacities.append(1.0)
                 text_labels.append(f"ring={rl}<br>{status}")
             fig_w.add_trace(go.Bar(
                 x=[f"ant[{i}]" for i in range(len(weights))],
@@ -408,12 +500,7 @@ def live_view() -> None:
                 if i < len(gn_last):
                     latest_g = gn_last[i]
             # Status
-            if i >= (active_ants or n_ants):
-                status = "INACTIVE"
-            elif i in frozen_set:
-                status = "FROZEN"
-            else:
-                status = "LEARNING"
+            status = _ant_status(i)
             config_rows.append({
                 "Ant": f"ant[{i}]",
                 "Ring Len": rl,
@@ -429,7 +516,10 @@ def live_view() -> None:
         last_loss = df["loss"].iloc[-1]
         last_acc = df["acc_ma100"].iloc[-1]
         parts = [f"step {max_step}", f"loss {last_loss:.4f}", f"acc {last_acc:.1%}"]
-        if active_ants is not None:
+        if solo_ant is not None:
+            solo_rl = ring_lens[solo_ant] if solo_ant < len(ring_lens) else "?"
+            parts.append(f"SOLO ant[{solo_ant}] ring={solo_rl} ({total_ants} total)")
+        elif active_ants is not None:
             n_frozen = len(frozen_set)
             n_learning = (active_ants or 0) - n_frozen
             parts.append(f"ants {active_ants}/{total_ants} ({n_learning} learning, {n_frozen} frozen)")

@@ -1,0 +1,125 @@
+[FibSwarm] Created 7 satellite ants (297,463 params, budget=300,000)
+  ant[0]: ring_len=1071, slot_dim=2142, frac=0.5000, params=149,995
+  ant[1]: ring_len=535, slot_dim=1070, frac=0.2500, params=74,955
+  ant[2]: ring_len=267, slot_dim=534, frac=0.1250, params=37,435
+  ant[3]: ring_len=133, slot_dim=267, frac=0.0625, params=18,744
+  ant[4]: ring_len=66, slot_dim=133, frac=0.0312, params=9,364
+  ant[5]: ring_len=33, slot_dim=66, frac=0.0156, params=4,675
+  ant[6]: ring_len=16, slot_dim=32, frac=0.0078, params=2,295
+[probe11] Fibonacci swarm: 1 active, 0 frozen, 1 learning (7 total) [SOLO]
+  ant[0]: ring_len=1071, weight=0.0000, params=149,961 [INACTIVE]
+  ant[1]: ring_len=535, weight=0.0000, params=74,921 [INACTIVE]
+  ant[2]: ring_len=267, weight=0.0000, params=37,401 [INACTIVE]
+  ant[3]: ring_len=133, weight=0.0000, params=18,710 [INACTIVE]
+  ant[4]: ring_len=66, weight=0.0000, params=9,330 [INACTIVE]
+  ant[5]: ring_len=33, weight=0.0000, params=4,641 [INACTIVE]
+  ant[6]: ring_len=16, weight=1.0000, params=2,261 [LEARNING]
+[probe11] Trainable params: 5,741
+[probe11] Dashboard disabled (--no-dashboard)
+[probe11] Starting 2500 steps (from 1) | batch=16 | seq_len=64 | lr=0.001 | device=cuda
+[probe11] Telemetry -> S:\AI\work\VRAXION_DEV\Golden Draft\probe11_telemetry.jsonl
+[probe11] Checkpoints -> S:\AI\work\VRAXION_DEV\Golden Draft\logs\probe\checkpoints (every 10 steps)
+----------------------------------------------------------------------------------------------------
+step     1 | loss 9.4119 | acc 0.50 (ma=0.500) | ant0_gn=0.00 | ant1_gn=0.00 | ant2_gn=0.00 | ant3_gn=0.00 | ant4_gn=0.00 | ant5_gn=0.00 | ant6_gn=120.66 | ratio=0.0x | 0.3 step/s
+step    10 | loss 2.1330 | acc 0.62 (ma=0.550) | ant0_gn=0.00 | ant1_gn=0.00 | ant2_gn=0.00 | ant3_gn=0.00 | ant4_gn=0.00 | ant5_gn=0.00 | ant6_gn=53.16 | ratio=0.0x | 0.3 step/s
+[probe11] New best MA100=0.5500 saved at step 10
+step    20 | loss 2.2915 | acc 0.62 (ma=0.581) | ant0_gn=0.00 | ant1_gn=0.00 | ant2_gn=0.00 | ant3_gn=0.00 | ant4_gn=0.00 | ant5_gn=0.00 | ant6_gn=133.25 | ratio=0.0x | 0.3 step/s
+[probe11] New best MA100=0.5813 saved at step 20
+step    30 | loss 4.0112 | acc 0.69 (ma=0.590) | ant0_gn=0.00 | ant1_gn=0.00 | ant2_gn=0.00 | ant3_gn=0.00 | ant4_gn=0.00 | ant5_gn=0.00 | ant6_gn=539.24 | ratio=0.0x | 0.3 step/s
+[probe11] New best MA100=0.5896 saved at step 30
+step    40 | loss 1.9992 | acc 0.69 (ma=0.595) | ant0_gn=0.00 | ant1_gn=0.00 | ant2_gn=0.00 | ant3_gn=0.00 | ant4_gn=0.00 | ant5_gn=0.00 | ant6_gn=42.77 | ratio=0.0x | 0.3 step/s
+[probe11] New best MA100=0.5953 saved at step 40
+step    50 | loss 0.6892 | acc 0.81 (ma=0.606) | ant0_gn=0.00 | ant1_gn=0.00 | ant2_gn=0.00 | ant3_gn=0.00 | ant4_gn=0.00 | ant5_gn=0.00 | ant6_gn=332.09 | ratio=0.0x | 0.3 step/s
+[probe11] New best MA100=0.6062 saved at step 50
+step    60 | loss 1.6896 | acc 0.75 (ma=0.636) | ant0_gn=0.00 | ant1_gn=0.00 | ant2_gn=0.00 | ant3_gn=0.00 | ant4_gn=0.00 | ant5_gn=0.00 | ant6_gn=64.81 | ratio=0.0x | 0.3 step/s
+[probe11] New best MA100=0.6365 saved at step 60
+step    70 | loss 1.3347 | acc 0.88 (ma=0.649) | ant0_gn=0.00 | ant1_gn=0.00 | ant2_gn=0.00 | ant3_gn=0.00 | ant4_gn=0.00 | ant5_gn=0.00 | ant6_gn=12.13 | ratio=0.0x | 0.3 step/s
+[probe11] New best MA100=0.6491 saved at step 70
+step    80 | loss 1.1052 | acc 0.88 (ma=0.669) | ant0_gn=0.00 | ant1_gn=0.00 | ant2_gn=0.00 | ant3_gn=0.00 | ant4_gn=0.00 | ant5_gn=0.00 | ant6_gn=72.48 | ratio=0.0x | 0.3 step/s
+[probe11] New best MA100=0.6695 saved at step 80
+step    90 | loss 2.3352 | acc 0.69 (ma=0.684) | ant0_gn=0.00 | ant1_gn=0.00 | ant2_gn=0.00 | ant3_gn=0.00 | ant4_gn=0.00 | ant5_gn=0.00 | ant6_gn=153.04 | ratio=0.0x | 0.3 step/s
+[probe11] New best MA100=0.6840 saved at step 90
+step   100 | loss 0.7820 | acc 0.69 (ma=0.696) | ant0_gn=0.00 | ant1_gn=0.00 | ant2_gn=0.00 | ant3_gn=0.00 | ant4_gn=0.00 | ant5_gn=0.00 | ant6_gn=58.53 | ratio=0.0x | 0.3 step/s
+[probe11] New best MA100=0.6956 saved at step 100
+step   110 | loss 1.0194 | acc 0.75 (ma=0.721) | ant0_gn=0.00 | ant1_gn=0.00 | ant2_gn=0.00 | ant3_gn=0.00 | ant4_gn=0.00 | ant5_gn=0.00 | ant6_gn=59.28 | ratio=0.0x | 0.3 step/s
+[probe11] New best MA100=0.7206 saved at step 110
+step   120 | loss 0.8228 | acc 0.75 (ma=0.742) | ant0_gn=0.00 | ant1_gn=0.00 | ant2_gn=0.00 | ant3_gn=0.00 | ant4_gn=0.00 | ant5_gn=0.00 | ant6_gn=307.09 | ratio=0.0x | 0.3 step/s
+[probe11] New best MA100=0.7419 saved at step 120
+step   130 | loss 0.3690 | acc 0.94 (ma=0.757) | ant0_gn=0.00 | ant1_gn=0.00 | ant2_gn=0.00 | ant3_gn=0.00 | ant4_gn=0.00 | ant5_gn=0.00 | ant6_gn=18.36 | ratio=0.0x | 0.3 step/s
+[probe11] New best MA100=0.7569 saved at step 130
+step   140 | loss 1.1729 | acc 0.81 (ma=0.778) | ant0_gn=0.00 | ant1_gn=0.00 | ant2_gn=0.00 | ant3_gn=0.00 | ant4_gn=0.00 | ant5_gn=0.00 | ant6_gn=32.51 | ratio=0.0x | 0.3 step/s
+[probe11] New best MA100=0.7781 saved at step 140
+step   150 | loss 0.8573 | acc 0.88 (ma=0.797) | ant0_gn=0.00 | ant1_gn=0.00 | ant2_gn=0.00 | ant3_gn=0.00 | ant4_gn=0.00 | ant5_gn=0.00 | ant6_gn=32.37 | ratio=0.0x | 0.3 step/s
+[probe11] New best MA100=0.7969 saved at step 150
+step   160 | loss 5.4728 | acc 0.62 (ma=0.798) | ant0_gn=0.00 | ant1_gn=0.00 | ant2_gn=0.00 | ant3_gn=0.00 | ant4_gn=0.00 | ant5_gn=0.00 | ant6_gn=182.02 | ratio=0.0x | 0.3 step/s
+[probe11] New best MA100=0.7981 saved at step 160
+step   170 | loss 0.3055 | acc 0.88 (ma=0.812) | ant0_gn=0.00 | ant1_gn=0.00 | ant2_gn=0.00 | ant3_gn=0.00 | ant4_gn=0.00 | ant5_gn=0.00 | ant6_gn=14.57 | ratio=0.0x | 0.3 step/s
+[probe11] New best MA100=0.8125 saved at step 170
+step   180 | loss 1.6397 | acc 0.81 (ma=0.817) | ant0_gn=0.00 | ant1_gn=0.00 | ant2_gn=0.00 | ant3_gn=0.00 | ant4_gn=0.00 | ant5_gn=0.00 | ant6_gn=17.12 | ratio=0.0x | 0.3 step/s
+[probe11] New best MA100=0.8169 saved at step 180
+step   190 | loss 0.6225 | acc 0.81 (ma=0.818) | ant0_gn=0.00 | ant1_gn=0.00 | ant2_gn=0.00 | ant3_gn=0.00 | ant4_gn=0.00 | ant5_gn=0.00 | ant6_gn=89.87 | ratio=0.0x | 0.3 step/s
+[probe11] New best MA100=0.8175 saved at step 190
+step   200 | loss 0.2881 | acc 0.88 (ma=0.818) | ant0_gn=0.00 | ant1_gn=0.00 | ant2_gn=0.00 | ant3_gn=0.00 | ant4_gn=0.00 | ant5_gn=0.00 | ant6_gn=22.84 | ratio=0.0x | 0.3 step/s
+step   210 | loss 1.0719 | acc 0.69 (ma=0.813) | ant0_gn=0.00 | ant1_gn=0.00 | ant2_gn=0.00 | ant3_gn=0.00 | ant4_gn=0.00 | ant5_gn=0.00 | ant6_gn=52.39 | ratio=0.0x | 0.3 step/s
+step   220 | loss 0.1305 | acc 0.94 (ma=0.812) | ant0_gn=0.00 | ant1_gn=0.00 | ant2_gn=0.00 | ant3_gn=0.00 | ant4_gn=0.00 | ant5_gn=0.00 | ant6_gn=2.97 | ratio=0.0x | 0.3 step/s
+step   230 | loss 3.0648 | acc 0.75 (ma=0.819) | ant0_gn=0.00 | ant1_gn=0.00 | ant2_gn=0.00 | ant3_gn=0.00 | ant4_gn=0.00 | ant5_gn=0.00 | ant6_gn=287.69 | ratio=0.0x | 0.3 step/s
+[probe11] New best MA100=0.8194 saved at step 230
+step   240 | loss 0.5251 | acc 0.75 (ma=0.826) | ant0_gn=0.00 | ant1_gn=0.00 | ant2_gn=0.00 | ant3_gn=0.00 | ant4_gn=0.00 | ant5_gn=0.00 | ant6_gn=48.75 | ratio=0.0x | 0.3 step/s
+[probe11] New best MA100=0.8263 saved at step 240
+step   250 | loss 0.1404 | acc 0.94 (ma=0.831) | ant0_gn=0.00 | ant1_gn=0.00 | ant2_gn=0.00 | ant3_gn=0.00 | ant4_gn=0.00 | ant5_gn=0.00 | ant6_gn=10.59 | ratio=0.0x | 0.3 step/s
+[probe11] New best MA100=0.8306 saved at step 250
+step   260 | loss 1.1717 | acc 0.81 (ma=0.829) | ant0_gn=0.00 | ant1_gn=0.00 | ant2_gn=0.00 | ant3_gn=0.00 | ant4_gn=0.00 | ant5_gn=0.00 | ant6_gn=18.63 | ratio=0.0x | 0.3 step/s
+step   270 | loss 0.2267 | acc 0.88 (ma=0.834) | ant0_gn=0.00 | ant1_gn=0.00 | ant2_gn=0.00 | ant3_gn=0.00 | ant4_gn=0.00 | ant5_gn=0.00 | ant6_gn=11.76 | ratio=0.0x | 0.3 step/s
+[probe11] New best MA100=0.8337 saved at step 270
+step   280 | loss 0.3651 | acc 0.88 (ma=0.830) | ant0_gn=0.00 | ant1_gn=0.00 | ant2_gn=0.00 | ant3_gn=0.00 | ant4_gn=0.00 | ant5_gn=0.00 | ant6_gn=12.13 | ratio=0.0x | 0.3 step/s
+step   290 | loss 0.6458 | acc 0.94 (ma=0.834) | ant0_gn=0.00 | ant1_gn=0.00 | ant2_gn=0.00 | ant3_gn=0.00 | ant4_gn=0.00 | ant5_gn=0.00 | ant6_gn=32.64 | ratio=0.0x | 0.3 step/s
+[probe11] New best MA100=0.8344 saved at step 290
+step   300 | loss 0.4307 | acc 0.81 (ma=0.840) | ant0_gn=0.00 | ant1_gn=0.00 | ant2_gn=0.00 | ant3_gn=0.00 | ant4_gn=0.00 | ant5_gn=0.00 | ant6_gn=37.66 | ratio=0.0x | 0.3 step/s
+[probe11] New best MA100=0.8400 saved at step 300
+step   310 | loss 0.7835 | acc 0.75 (ma=0.851) | ant0_gn=0.00 | ant1_gn=0.00 | ant2_gn=0.00 | ant3_gn=0.00 | ant4_gn=0.00 | ant5_gn=0.00 | ant6_gn=31.50 | ratio=0.0x | 0.3 step/s
+[probe11] New best MA100=0.8512 saved at step 310
+step   320 | loss 0.0232 | acc 1.00 (ma=0.858) | ant0_gn=0.00 | ant1_gn=0.00 | ant2_gn=0.00 | ant3_gn=0.00 | ant4_gn=0.00 | ant5_gn=0.00 | ant6_gn=1.60 | ratio=0.0x | 0.3 step/s
+[probe11] New best MA100=0.8581 saved at step 320
+step   330 | loss 0.2380 | acc 0.88 (ma=0.866) | ant0_gn=0.00 | ant1_gn=0.00 | ant2_gn=0.00 | ant3_gn=0.00 | ant4_gn=0.00 | ant5_gn=0.00 | ant6_gn=34.19 | ratio=0.0x | 0.3 step/s
+[probe11] New best MA100=0.8656 saved at step 330
+step   340 | loss 1.1110 | acc 0.62 (ma=0.857) | ant0_gn=0.00 | ant1_gn=0.00 | ant2_gn=0.00 | ant3_gn=0.00 | ant4_gn=0.00 | ant5_gn=0.00 | ant6_gn=98.98 | ratio=0.0x | 0.3 step/s
+step   350 | loss 0.8022 | acc 0.94 (ma=0.858) | ant0_gn=0.00 | ant1_gn=0.00 | ant2_gn=0.00 | ant3_gn=0.00 | ant4_gn=0.00 | ant5_gn=0.00 | ant6_gn=297.28 | ratio=0.0x | 0.3 step/s
+step   360 | loss 0.5537 | acc 0.94 (ma=0.865) | ant0_gn=0.00 | ant1_gn=0.00 | ant2_gn=0.00 | ant3_gn=0.00 | ant4_gn=0.00 | ant5_gn=0.00 | ant6_gn=0.84 | ratio=0.0x | 0.3 step/s
+step   370 | loss 2.4359 | acc 0.69 (ma=0.856) | ant0_gn=0.00 | ant1_gn=0.00 | ant2_gn=0.00 | ant3_gn=0.00 | ant4_gn=0.00 | ant5_gn=0.00 | ant6_gn=90.24 | ratio=0.0x | 0.3 step/s
+step   380 | loss 1.6481 | acc 0.75 (ma=0.854) | ant0_gn=0.00 | ant1_gn=0.00 | ant2_gn=0.00 | ant3_gn=0.00 | ant4_gn=0.00 | ant5_gn=0.00 | ant6_gn=24.88 | ratio=0.0x | 0.3 step/s
+step   390 | loss 0.4491 | acc 0.88 (ma=0.854) | ant0_gn=0.00 | ant1_gn=0.00 | ant2_gn=0.00 | ant3_gn=0.00 | ant4_gn=0.00 | ant5_gn=0.00 | ant6_gn=73.27 | ratio=0.0x | 0.3 step/s
+step   400 | loss 0.9206 | acc 0.88 (ma=0.855) | ant0_gn=0.00 | ant1_gn=0.00 | ant2_gn=0.00 | ant3_gn=0.00 | ant4_gn=0.00 | ant5_gn=0.00 | ant6_gn=43.16 | ratio=0.0x | 0.3 step/s
+step   410 | loss 0.3500 | acc 0.88 (ma=0.851) | ant0_gn=0.00 | ant1_gn=0.00 | ant2_gn=0.00 | ant3_gn=0.00 | ant4_gn=0.00 | ant5_gn=0.00 | ant6_gn=14.84 | ratio=0.0x | 0.3 step/s
+step   420 | loss 0.5007 | acc 0.94 (ma=0.851) | ant0_gn=0.00 | ant1_gn=0.00 | ant2_gn=0.00 | ant3_gn=0.00 | ant4_gn=0.00 | ant5_gn=0.00 | ant6_gn=68.59 | ratio=0.0x | 0.3 step/s
+step   430 | loss 0.3690 | acc 0.88 (ma=0.844) | ant0_gn=0.00 | ant1_gn=0.00 | ant2_gn=0.00 | ant3_gn=0.00 | ant4_gn=0.00 | ant5_gn=0.00 | ant6_gn=7.61 | ratio=0.0x | 0.3 step/s
+step   440 | loss 0.1055 | acc 1.00 (ma=0.848) | ant0_gn=0.00 | ant1_gn=0.00 | ant2_gn=0.00 | ant3_gn=0.00 | ant4_gn=0.00 | ant5_gn=0.00 | ant6_gn=56.67 | ratio=0.0x | 0.3 step/s
+step   450 | loss 0.9932 | acc 0.75 (ma=0.840) | ant0_gn=0.00 | ant1_gn=0.00 | ant2_gn=0.00 | ant3_gn=0.00 | ant4_gn=0.00 | ant5_gn=0.00 | ant6_gn=56.48 | ratio=0.0x | 0.3 step/s
+step   460 | loss 0.6401 | acc 0.81 (ma=0.845) | ant0_gn=0.00 | ant1_gn=0.00 | ant2_gn=0.00 | ant3_gn=0.00 | ant4_gn=0.00 | ant5_gn=0.00 | ant6_gn=42.22 | ratio=0.0x | 0.3 step/s
+step   470 | loss 0.3668 | acc 0.88 (ma=0.848) | ant0_gn=0.00 | ant1_gn=0.00 | ant2_gn=0.00 | ant3_gn=0.00 | ant4_gn=0.00 | ant5_gn=0.00 | ant6_gn=9.06 | ratio=0.0x | 0.3 step/s
+step   480 | loss 0.3025 | acc 0.88 (ma=0.848) | ant0_gn=0.00 | ant1_gn=0.00 | ant2_gn=0.00 | ant3_gn=0.00 | ant4_gn=0.00 | ant5_gn=0.00 | ant6_gn=17.59 | ratio=0.0x | 0.3 step/s
+step   490 | loss 0.4434 | acc 0.75 (ma=0.847) | ant0_gn=0.00 | ant1_gn=0.00 | ant2_gn=0.00 | ant3_gn=0.00 | ant4_gn=0.00 | ant5_gn=0.00 | ant6_gn=24.85 | ratio=0.0x | 0.3 step/s
+step   500 | loss 0.5301 | acc 0.75 (ma=0.839) | ant0_gn=0.00 | ant1_gn=0.00 | ant2_gn=0.00 | ant3_gn=0.00 | ant4_gn=0.00 | ant5_gn=0.00 | ant6_gn=14.09 | ratio=0.0x | 0.3 step/s
+step   510 | loss 0.6865 | acc 0.81 (ma=0.836) | ant0_gn=0.00 | ant1_gn=0.00 | ant2_gn=0.00 | ant3_gn=0.00 | ant4_gn=0.00 | ant5_gn=0.00 | ant6_gn=90.82 | ratio=0.0x | 0.3 step/s
+step   520 | loss 0.7502 | acc 0.62 (ma=0.822) | ant0_gn=0.00 | ant1_gn=0.00 | ant2_gn=0.00 | ant3_gn=0.00 | ant4_gn=0.00 | ant5_gn=0.00 | ant6_gn=26.12 | ratio=0.0x | 0.3 step/s
+step   530 | loss 1.2697 | acc 0.69 (ma=0.817) | ant0_gn=0.00 | ant1_gn=0.00 | ant2_gn=0.00 | ant3_gn=0.00 | ant4_gn=0.00 | ant5_gn=0.00 | ant6_gn=24.69 | ratio=0.0x | 0.3 step/s
+step   540 | loss 0.6561 | acc 0.75 (ma=0.808) | ant0_gn=0.00 | ant1_gn=0.00 | ant2_gn=0.00 | ant3_gn=0.00 | ant4_gn=0.00 | ant5_gn=0.00 | ant6_gn=54.04 | ratio=0.0x | 0.3 step/s
+step   550 | loss 1.5468 | acc 0.69 (ma=0.802) | ant0_gn=0.00 | ant1_gn=0.00 | ant2_gn=0.00 | ant3_gn=0.00 | ant4_gn=0.00 | ant5_gn=0.00 | ant6_gn=50.71 | ratio=0.0x | 0.3 step/s
+step   560 | loss 0.3139 | acc 0.88 (ma=0.789) | ant0_gn=0.00 | ant1_gn=0.00 | ant2_gn=0.00 | ant3_gn=0.00 | ant4_gn=0.00 | ant5_gn=0.00 | ant6_gn=5.23 | ratio=0.0x | 0.3 step/s
+step   570 | loss 0.7092 | acc 0.75 (ma=0.787) | ant0_gn=0.00 | ant1_gn=0.00 | ant2_gn=0.00 | ant3_gn=0.00 | ant4_gn=0.00 | ant5_gn=0.00 | ant6_gn=26.42 | ratio=0.0x | 0.3 step/s
+step   580 | loss 0.6759 | acc 0.81 (ma=0.792) | ant0_gn=0.00 | ant1_gn=0.00 | ant2_gn=0.00 | ant3_gn=0.00 | ant4_gn=0.00 | ant5_gn=0.00 | ant6_gn=11.78 | ratio=0.0x | 0.3 step/s
+step   590 | loss 0.2947 | acc 0.94 (ma=0.796) | ant0_gn=0.00 | ant1_gn=0.00 | ant2_gn=0.00 | ant3_gn=0.00 | ant4_gn=0.00 | ant5_gn=0.00 | ant6_gn=16.00 | ratio=0.0x | 0.3 step/s
+step   600 | loss 1.2356 | acc 0.81 (ma=0.802) | ant0_gn=0.00 | ant1_gn=0.00 | ant2_gn=0.00 | ant3_gn=0.00 | ant4_gn=0.00 | ant5_gn=0.00 | ant6_gn=59.38 | ratio=0.0x | 0.3 step/s
+step   610 | loss 0.3112 | acc 0.81 (ma=0.801) | ant0_gn=0.00 | ant1_gn=0.00 | ant2_gn=0.00 | ant3_gn=0.00 | ant4_gn=0.00 | ant5_gn=0.00 | ant6_gn=16.68 | ratio=0.0x | 0.3 step/s
+step   620 | loss 0.6412 | acc 0.88 (ma=0.813) | ant0_gn=0.00 | ant1_gn=0.00 | ant2_gn=0.00 | ant3_gn=0.00 | ant4_gn=0.00 | ant5_gn=0.00 | ant6_gn=27.38 | ratio=0.0x | 0.3 step/s
+step   630 | loss 0.0133 | acc 1.00 (ma=0.816) | ant0_gn=0.00 | ant1_gn=0.00 | ant2_gn=0.00 | ant3_gn=0.00 | ant4_gn=0.00 | ant5_gn=0.00 | ant6_gn=0.94 | ratio=0.0x | 0.3 step/s
+step   640 | loss 0.4451 | acc 0.94 (ma=0.830) | ant0_gn=0.00 | ant1_gn=0.00 | ant2_gn=0.00 | ant3_gn=0.00 | ant4_gn=0.00 | ant5_gn=0.00 | ant6_gn=26.72 | ratio=0.0x | 0.3 step/s
+step   650 | loss 0.3054 | acc 0.81 (ma=0.835) | ant0_gn=0.00 | ant1_gn=0.00 | ant2_gn=0.00 | ant3_gn=0.00 | ant4_gn=0.00 | ant5_gn=0.00 | ant6_gn=28.05 | ratio=0.0x | 0.3 step/s
+step   660 | loss 0.4959 | acc 0.88 (ma=0.843) | ant0_gn=0.00 | ant1_gn=0.00 | ant2_gn=0.00 | ant3_gn=0.00 | ant4_gn=0.00 | ant5_gn=0.00 | ant6_gn=96.84 | ratio=0.0x | 0.3 step/s
+step   670 | loss 0.1756 | acc 0.94 (ma=0.848) | ant0_gn=0.00 | ant1_gn=0.00 | ant2_gn=0.00 | ant3_gn=0.00 | ant4_gn=0.00 | ant5_gn=0.00 | ant6_gn=2.15 | ratio=0.0x | 0.3 step/s
+step   680 | loss 0.1747 | acc 0.88 (ma=0.848) | ant0_gn=0.00 | ant1_gn=0.00 | ant2_gn=0.00 | ant3_gn=0.00 | ant4_gn=0.00 | ant5_gn=0.00 | ant6_gn=7.16 | ratio=0.0x | 0.3 step/s
+step   690 | loss 0.0770 | acc 0.94 (ma=0.848) | ant0_gn=0.00 | ant1_gn=0.00 | ant2_gn=0.00 | ant3_gn=0.00 | ant4_gn=0.00 | ant5_gn=0.00 | ant6_gn=0.98 | ratio=0.0x | 0.3 step/s
+step   700 | loss 0.3126 | acc 0.94 (ma=0.854) | ant0_gn=0.00 | ant1_gn=0.00 | ant2_gn=0.00 | ant3_gn=0.00 | ant4_gn=0.00 | ant5_gn=0.00 | ant6_gn=7.27 | ratio=0.0x | 0.3 step/s
+step   710 | loss 1.1479 | acc 0.75 (ma=0.861) | ant0_gn=0.00 | ant1_gn=0.00 | ant2_gn=0.00 | ant3_gn=0.00 | ant4_gn=0.00 | ant5_gn=0.00 | ant6_gn=932.68 | ratio=0.0x | 0.3 step/s
+step   720 | loss 0.3060 | acc 0.88 (ma=0.866) | ant0_gn=0.00 | ant1_gn=0.00 | ant2_gn=0.00 | ant3_gn=0.00 | ant4_gn=0.00 | ant5_gn=0.00 | ant6_gn=36.42 | ratio=0.0x | 0.3 step/s
+[probe11] New best MA100=0.8662 saved at step 720
+step   730 | loss 0.1361 | acc 1.00 (ma=0.875) | ant0_gn=0.00 | ant1_gn=0.00 | ant2_gn=0.00 | ant3_gn=0.00 | ant4_gn=0.00 | ant5_gn=0.00 | ant6_gn=22.37 | ratio=0.0x | 0.3 step/s
