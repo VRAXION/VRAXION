@@ -20,7 +20,7 @@ from assoc_clean_data import generate_assoc_clean
 def main():
     # Model config
     num_positions = 16
-    embedding_dim = 32
+    embedding_dim = 64
 
     print("=" * 70)
     print("SMALL MODEL TRAINING - Dashboard Mode")
