@@ -18,8 +18,8 @@ from assoc_clean_data import generate_assoc_clean
 
 def main():
     # TASK CONFIG - EDIT THESE TO TEST DIFFERENT DIFFICULTIES
-    num_keys = 4      # Change: 2 (easy), 4, 8, 16 (hard)
-    num_pairs = 1     # Change: 1 (easy), 2, 3, 5 (hard)
+    num_keys = 2      # Change: 2 (easy), 4, 8, 16 (hard)
+    num_pairs = 2     # Change: 1 (easy), 2, 3, 5 (hard)
     seq_len = 32      # Change: 32 (easy), 64, 96, 128 (hard)
 
     # MODEL CONFIG - Keep at minimal working size
