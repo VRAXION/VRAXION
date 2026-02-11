@@ -75,7 +75,7 @@ class SwarmByteRingModel(nn.Module):
       - pointer_position (runtime state)
       - hidden_state (runtime state)
 
-    Output: Mean of all being outputs (simple ensemble averaging)
+    Output: Combined being outputs (mean or ring-attention gated)
     """
 
     def __init__(
@@ -86,6 +86,7 @@ class SwarmByteRingModel(nn.Module):
         depth: int = 2,
         attention_radius: int = 2,
         attention_temperature: float = 8.0,
+        combiner_mode: str = 'mean',
     ):
         super().__init__()
 
@@ -95,6 +96,7 @@ class SwarmByteRingModel(nn.Module):
         self.attention_radius = attention_radius
         self.attention_temperature = attention_temperature
         self.depth = depth
+        self.combiner_mode = combiner_mode
 
         # SHARED COMPONENTS (all beings use these)
         if embedding_dim > 8:
@@ -119,6 +121,11 @@ class SwarmByteRingModel(nn.Module):
             BeingParameters(num_memory_positions, embedding_dim, being_id=i)
             for i in range(num_beings)
         ])
+
+        # RING-ATTENTION COMBINER (Option A: zero new parameters)
+        # Learnable temperature for softmax sharpness
+        if combiner_mode == 'ring_attention':
+            self.gate_temperature = nn.Parameter(torch.tensor(1.0))
 
     def _gaussian_attention_weights(
         self,
@@ -149,6 +156,75 @@ class SwarmByteRingModel(nn.Module):
         probs = torch.sigmoid(logits)
         hard = (probs > 0.5).float()
         return hard - probs.detach() + probs
+
+    def _ring_attention_combine(self, being_stack, hidden_states, memory_ring):
+        """
+        Ring-attention combiner: use ring memory as query to weight beings.
+
+        The ring has seen what all beings wrote. Its summary acts as a
+        "judge" -- dot product with each being's hidden state measures
+        alignment. High alignment = this being's output fits the context.
+
+        Args:
+            being_stack:   [num_beings, B, 8] raw logits from all beings
+            hidden_states: [num_beings, B, D] per-being hidden states
+            memory_ring:   [B, M, D] shared ring memory
+
+        Returns:
+            combined: [B, 8] weighted combination (on probability level)
+            gate_weights: [B, num_beings] the attention weights (for logging)
+        """
+        # Ring summary = mean across all positions
+        r = memory_ring.mean(dim=1)  # [B, D]
+
+        # h: [num_beings, B, D] -> transpose to [B, num_beings, D]
+        h = hidden_states.permute(1, 0, 2)  # [B, num_beings, D]
+
+        # Dot product attention (parameter-free)
+        # Scale by sqrt(D) for stable softmax, then apply learnable temperature
+        scale = math.sqrt(self.embedding_dim)
+        scores = (h * r.unsqueeze(1)).sum(dim=-1) / scale  # [B, num_beings]
+        scores = scores * self.gate_temperature
+
+        # Softmax gate weights
+        gate_weights = torch.softmax(scores, dim=-1)  # [B, num_beings]
+
+        # Combine at PROBABILITY level (GPT Pro's advice: probabilities, not logits)
+        probs = torch.sigmoid(being_stack)  # [num_beings, B, 8]
+        # probs: [num_beings, B, 8], gate: [B, num_beings]
+        # Rearrange: probs -> [B, num_beings, 8], gate -> [B, num_beings, 1]
+        probs_t = probs.permute(1, 0, 2)  # [B, num_beings, 8]
+        w = gate_weights.unsqueeze(-1)  # [B, num_beings, 1]
+        p_combined = (w * probs_t).sum(dim=1)  # [B, 8]
+
+        # Convert back to logit space for loss compatibility
+        # logit = log(p / (1-p)), clamp to avoid inf
+        p_combined = p_combined.clamp(1e-6, 1.0 - 1e-6)
+        combined = torch.log(p_combined / (1.0 - p_combined))  # [B, 8]
+
+        return combined, gate_weights
+
+    def gate_entropy_loss(self, gate_weights):
+        """
+        Entropy regularizer to prevent gate collapse.
+
+        Encourages the gate to USE all beings, not always pick one.
+        H(w) = -sum(w * log(w)). Maximize entropy = minimize -H.
+
+        Args:
+            gate_weights: [B, num_beings] softmax weights
+
+        Returns:
+            neg_entropy: scalar, add to loss (lower = more entropy = better)
+        """
+        # Per-sample entropy, mean across batch
+        log_w = torch.log(gate_weights + 1e-8)
+        entropy = -(gate_weights * log_w).sum(dim=-1)  # [B]
+        # We want to MAXIMIZE entropy, so return negative
+        # Max entropy = log(num_beings), normalize to [0, 1]
+        max_entropy = math.log(self.num_beings)
+        neg_entropy = 1.0 - entropy.mean() / max_entropy
+        return neg_entropy
 
     def forward(self, x: torch.Tensor, return_stats: bool = False, return_being_outputs: bool = False):
         """
@@ -190,14 +266,17 @@ class SwarmByteRingModel(nn.Module):
                 'hidden_state': torch.zeros(B, self.embedding_dim, device=x.device, dtype=x.dtype),
             })
 
-        # Track outputs per being (for ensemble averaging)
+        # Track outputs per being (for ensemble averaging and per-being stats)
         outputs_per_being = [[] for _ in range(self.num_beings)]
+        combined_outputs_per_t = []  # Store combined output per timestep
+        gate_weights_for_entropy = []  # For entropy regularizer (with grad)
 
         # Track metrics (if requested)
         if return_stats:
             jump_counts_per_being = [[] for _ in range(self.num_beings)]
             pointer_positions_log = []
             output_disagreements = []
+            gate_weights_log = []
 
         # TIMESTEP LOOP
         for t in range(T):
@@ -210,6 +289,7 @@ class SwarmByteRingModel(nn.Module):
 
             # 2. Each being processes independently
             being_outputs_t = []
+            hidden_states_t = []
             pointer_positions_t = []
 
             for being_idx in range(self.num_beings):
@@ -285,19 +365,32 @@ class SwarmByteRingModel(nn.Module):
 
                 being_outputs_t.append(output_bits)
                 outputs_per_being[being_idx].append(output_bits)
+                hidden_states_t.append(state['hidden_state'].clone())
 
             # 3. Aggregate outputs across beings
             being_stack = torch.stack(being_outputs_t)  # [num_beings, B, 8]
 
-            if self.training:
-                # TRAINING: Soft voting (average) for gradient flow
-                mean_output_t = being_stack.mean(dim=0)
+            if self.combiner_mode == 'ring_attention':
+                h_stack = torch.stack(hidden_states_t)  # [num_beings, B, D]
+                mean_output_t, gate_w = self._ring_attention_combine(
+                    being_stack, h_stack, memory_ring
+                )
+                gate_weights_for_entropy.append(gate_w)  # keep grad for entropy loss
+                if return_stats:
+                    gate_weights_log.append(gate_w.detach())
             else:
-                # EVAL: Hard voting (majority wins)
-                being_binary = (being_stack > 0.0).float()
-                vote_sum = being_binary.sum(dim=0)
-                majority_threshold = self.num_beings / 2.0
-                mean_output_t = (vote_sum > majority_threshold).float() * 2.0 - 1.0  # Back to logits
+                if self.training:
+                    # TRAINING: Soft voting (average) for gradient flow
+                    mean_output_t = being_stack.mean(dim=0)
+                else:
+                    # EVAL: Hard voting (majority wins)
+                    being_binary = (being_stack > 0.0).float()
+                    vote_sum = being_binary.sum(dim=0)
+                    majority_threshold = self.num_beings / 2.0
+                    mean_output_t = (vote_sum > majority_threshold).float() * 2.0 - 1.0
+
+            # Store combined output for this timestep
+            combined_outputs_per_t.append(mean_output_t)
 
             # Track ensemble diversity (if stats requested)
             if return_stats:
@@ -307,25 +400,17 @@ class SwarmByteRingModel(nn.Module):
                 disagreement = being_outputs_stacked.std(dim=0).mean().item()  # scalar
                 output_disagreements.append(disagreement)
 
-        # 4. Stack outputs across timesteps
-        # outputs_per_being[i] is list of T tensors of shape [B, 8]
-        # Stack to [T, B, 8] then transpose to [B, T, 8]
-        final_outputs = []
-        for t in range(T):
-            t_outputs = [outputs_per_being[being_idx][t] for being_idx in range(self.num_beings)]
-            t_stack = torch.stack(t_outputs)  # [num_beings, B, 8]
+        # 4. Stack combined outputs across timesteps -> [B, T, 8]
+        output = torch.stack(combined_outputs_per_t, dim=1)
 
-            if self.training:
-                # TRAINING: Soft voting (average) for gradients
-                mean_output = t_stack.mean(dim=0)
-            else:
-                # EVAL: Hard voting (majority)
-                t_binary = (t_stack > 0.0).float()
-                t_vote_sum = t_binary.sum(dim=0)
-                mean_output = (t_vote_sum > self.num_beings / 2.0).float() * 2.0 - 1.0
-            final_outputs.append(mean_output)
-
-        output = torch.stack(final_outputs, dim=1)
+        # Compute gate entropy loss (ring_attention only, for regularizer)
+        if self.combiner_mode == 'ring_attention' and gate_weights_for_entropy:
+            all_gw = torch.stack(gate_weights_for_entropy)  # [T, B, num_beings]
+            self._last_entropy_loss = self.gate_entropy_loss(
+                all_gw.reshape(-1, self.num_beings)  # [T*B, num_beings]
+            )
+        else:
+            self._last_entropy_loss = torch.tensor(0.0)
 
         # 5. Return with optional stats
         if return_stats:
@@ -373,6 +458,20 @@ class SwarmByteRingModel(nn.Module):
                 'jump_rates_per_being': jump_rates_per_being,
                 'pointer_positions_all': all_pointer_positions,
             }
+
+            # Gate stats (ring-attention only)
+            if self.combiner_mode == 'ring_attention' and gate_weights_log:
+                # gate_weights_log: list of [B, num_beings] tensors
+                all_gates = torch.stack(gate_weights_log)  # [T, B, num_beings]
+                avg_gate = all_gates.mean(dim=(0, 1))  # [num_beings]
+                stats['gate_weights'] = avg_gate.tolist()
+                # Gate entropy (0 = collapsed, 1 = uniform)
+                log_g = torch.log(all_gates + 1e-8)
+                entropy = -(all_gates * log_g).sum(dim=-1).mean()
+                max_ent = math.log(self.num_beings)
+                stats['gate_entropy'] = float(entropy.item() / max_ent)
+                # Gate temperature
+                stats['gate_temperature'] = float(self.gate_temperature.item())
 
             # Add per-being outputs if requested
             if return_being_outputs:

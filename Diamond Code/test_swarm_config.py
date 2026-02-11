@@ -160,6 +160,24 @@ def oracle_best_of_n_accuracy(being_outputs, target, position):
     return oracle_correct / B
 
 
+def bit_oracle_accuracy(being_outputs, target, position):
+    """
+    Bit-oracle: for each bit, did ANY being get it right?
+    Upper bound for what a perfect bit-level selector could achieve.
+    If bit_oracle >> ensemble, combiner is the bottleneck.
+    """
+    being_outputs_at_pos = being_outputs[:, position, :, :]  # [num_beings, B, 8]
+    target_at_pos = target[:, position, :]  # [B, 8]
+
+    being_binary = (being_outputs_at_pos > 0.0).float()  # [num_beings, B, 8]
+    target_binary = (target_at_pos > 0.0).float()  # [B, 8]
+
+    correct_per_being = (being_binary == target_binary.unsqueeze(0))  # [num_beings, B, 8]
+    any_correct = correct_per_being.any(dim=0)  # [B, 8]
+
+    return any_correct.float().mean().item()
+
+
 def compute_specialization(being_outputs, target, op_indices, position):
     """
     Compute specialization score: std of per-being per-operation accuracies.
@@ -230,11 +248,17 @@ def save_checkpoint(model, optimizer, step, best_acc, checkpoint_dir, is_best=Fa
 
 def load_checkpoint(checkpoint_path, model, optimizer=None):
     """Load training checkpoint."""
-    checkpoint = torch.load(checkpoint_path)
-    model.load_state_dict(checkpoint['model_state_dict'])
+    checkpoint = torch.load(checkpoint_path, weights_only=False)
+    missing, unexpected = model.load_state_dict(checkpoint['model_state_dict'], strict=False)
+    if missing:
+        print(f"  [LOAD] New params (initialized fresh): {missing}")
+    if unexpected:
+        print(f"  [LOAD] Unexpected params (ignored): {unexpected}")
 
-    if optimizer is not None:
+    if optimizer is not None and not missing and not unexpected:
         optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+    elif optimizer is not None:
+        print(f"  [LOAD] Skipping optimizer state (model architecture changed)")
 
     step = checkpoint['step']
     best_acc = checkpoint.get('best_accuracy', 0.0)
@@ -254,6 +278,12 @@ def main():
     parser.add_argument('--checkpoint_dir', type=str, default='checkpoints/swarm', help='Directory to save checkpoints')
     parser.add_argument('--checkpoint_every', type=int, default=1000, help='Save checkpoint every N steps (default: 1000)')
     parser.add_argument('--resume', type=str, default=None, help='Resume from checkpoint file')
+    parser.add_argument('--combiner', type=str, default='mean', choices=['mean', 'ring_attention'],
+                        help='Combiner mode: mean (baseline) or ring_attention (gated)')
+    parser.add_argument('--entropy_weight', type=float, default=0.01,
+                        help='Weight for gate entropy regularizer (ring_attention only, default: 0.01)')
+    parser.add_argument('--freeze_gate_steps', type=int, default=0,
+                        help='Freeze being params for N steps, train only gate (ring_attention warm start)')
     args = parser.parse_args()
 
     embedding_dim = args.embedding
@@ -269,6 +299,10 @@ def main():
     print(f"  Embedding: {embedding_dim}D")
     print(f"  Depth: {depth} layers")
     print(f"  Num beings: {num_beings}")
+    print(f"  Combiner: {args.combiner}")
+    if args.combiner == 'ring_attention':
+        print(f"  Entropy weight: {args.entropy_weight}")
+        print(f"  Freeze gate steps: {args.freeze_gate_steps}")
     print(f"  Steps: {num_steps:,}")
     print("="*70)
     print()
@@ -280,6 +314,7 @@ def main():
         embedding_dim=embedding_dim,
         num_beings=num_beings,
         depth=depth,
+        combiner_mode=args.combiner,
     )
 
     total_params = sum(p.numel() for p in model.parameters())
@@ -322,7 +357,8 @@ def main():
     log_dir = Path(__file__).parent / "logs" / "swarm"
     log_dir.mkdir(parents=True, exist_ok=True)
 
-    config_name = f"{num_beings}beings_{embedding_dim}d_{depth}layers"
+    combiner_tag = f"_{args.combiner}" if args.combiner != 'mean' else ""
+    config_name = f"{num_beings}beings_{embedding_dim}d_{depth}layers{combiner_tag}"
     log_path = log_dir / f"{config_name}.log"
     if log_path.exists():
         log_path.unlink()
@@ -350,10 +386,25 @@ def main():
                 seed=42 + step + 1000000
             )
 
+            # Freeze-gate warmup: freeze being params, train only gate
+            if args.combiner == 'ring_attention' and args.freeze_gate_steps > 0:
+                in_freeze = (step - start_step) < args.freeze_gate_steps
+                for name, param in model.named_parameters():
+                    if name == 'gate_temperature':
+                        param.requires_grad = True  # Always train gate temp
+                    else:
+                        param.requires_grad = not in_freeze
+
             # Train step
             optimizer.zero_grad()
             output = model(x_train)
             loss = nn.functional.binary_cross_entropy_with_logits(output, y_train)
+
+            # Gate entropy regularizer (ring_attention only)
+            if args.combiner == 'ring_attention' and args.entropy_weight > 0:
+                entropy_loss = model._last_entropy_loss
+                loss = loss + args.entropy_weight * entropy_loss
+
             loss.backward()
             optimizer.step()
 
@@ -386,7 +437,17 @@ def main():
                     best_individual = max(being_accs) if being_accs else 0.0
                     ensemble_benefit = overall_acc - best_individual
                     oracle_acc = oracle_best_of_n_accuracy(being_outputs, y_eval, 2)
+                    bit_oracle_acc = bit_oracle_accuracy(being_outputs, y_eval, 2)
                     specialization = compute_specialization(being_outputs, y_eval, ops_eval, 2)
+
+                    # Gate stats (ring_attention only)
+                    gate_weights_str = ""
+                    gate_entropy_val = 0.0
+                    gate_temp_val = 1.0
+                    if 'gate_weights' in eval_stats:
+                        gate_weights_str = " ".join([f"w{i}={w:.3f}" for i, w in enumerate(eval_stats['gate_weights'])])
+                        gate_entropy_val = eval_stats.get('gate_entropy', 0.0)
+                        gate_temp_val = eval_stats.get('gate_temperature', 1.0)
 
                     # Accuracy breakdown
                     bit_acc = bit_accuracy_at_position(eval_output, y_eval, 2)
@@ -427,7 +488,7 @@ def main():
                     log_line += f"being_{i}={being_acc:.4f} "
 
                 log_line += (
-                    f"oracle={oracle_acc:.4f} ensemble_benefit={ensemble_benefit:+.4f} | "
+                    f"oracle={oracle_acc:.4f} bit_oracle={bit_oracle_acc:.4f} ensemble_benefit={ensemble_benefit:+.4f} | "
                     f"circular_spread={circular_spread:.4f} coverage={coverage:.4f} clustering={clustering:.4f} | "
                 )
 
@@ -435,7 +496,13 @@ def main():
                 for i, jump_rate_i in enumerate(jump_rates):
                     log_line += f"jump_{i}={jump_rate_i:.4f} "
 
-                log_line += f"specialization={specialization:.4f} | s_per_step={step_time:.3f}\n"
+                log_line += f"specialization={specialization:.4f}"
+
+                # Gate stats (ring_attention only)
+                if gate_weights_str:
+                    log_line += f" | {gate_weights_str} gate_entropy={gate_entropy_val:.3f} gate_temp={gate_temp_val:.3f}"
+
+                log_line += f" | s_per_step={step_time:.3f}\n"
 
                 log_file.write(log_line)
                 log_file.flush()
@@ -444,13 +511,14 @@ def main():
                 if step % 500 == 0:
                     elapsed = time.time() - start_time
                     being_str = " ".join([f"b{i}={ba*100:4.0f}%" for i, ba in enumerate(being_accs)])
+                    gate_str = f" | gate=[{gate_weights_str}] ent={gate_entropy_val:.2f}" if gate_weights_str else ""
                     print(
                         f"step {step:5d} | loss {loss.item():.6f} | "
                         f"overall={overall_acc*100:5.1f}% | "
                         f"add={op_accs['add']*100:4.0f}% and={op_accs['and']*100:4.0f}% "
                         f"or={op_accs['or']*100:4.0f}% xor={op_accs['xor']*100:4.0f}% | "
-                        f"{being_str} oracle={oracle_acc*100:4.0f}% | "
-                        f"circ_spread={circular_spread:4.1f} cluster={clustering*100:3.0f}% | "
+                        f"{being_str} oracle={oracle_acc*100:4.0f}% bit_orc={bit_oracle_acc*100:4.0f}% | "
+                        f"circ_spread={circular_spread:4.1f}{gate_str} | "
                         f"time={elapsed:.1f}s"
                     )
 
