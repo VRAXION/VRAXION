@@ -18,6 +18,7 @@ def generate_receptive_masks(
     num_bits: int = 8,
     bits_per_being: int = 4,
     min_coverage: int = 2,
+    max_coverage: int = 0,
     seed: int = 42,
 ) -> torch.Tensor:
     """
@@ -31,6 +32,7 @@ def generate_receptive_masks(
         num_bits: Total input/output bits (default 8).
         bits_per_being: How many bits each being sees.
         min_coverage: Every bit must be covered by at least this many beings.
+        max_coverage: No bit covered by more than this many beings (0 = auto).
         seed: Random seed for reproducibility.
 
     Returns:
@@ -79,6 +81,27 @@ def generate_receptive_masks(
             # No excess to swap, just add (being gets bits_per_being + 1)
             masks[being_fix, bit_fix] = 1.0
 
+    # Phase 2: Drain over-covered bits for balanced coverage
+    max_cov = max_coverage if max_coverage > 0 else (num_beings * bits_per_being // num_bits + 1)
+    for _ in range(1000):
+        coverage = masks.sum(dim=0)
+        over = (coverage > max_cov).nonzero(as_tuple=True)[0]
+        if len(over) == 0:
+            break
+        bit_drain = over[0].item()
+        covering = (masks[:, bit_drain] > 0.5).nonzero(as_tuple=True)[0]
+        if len(covering) == 0:
+            break
+        being_drain = covering[torch.randint(len(covering), (1,), generator=gen).item()].item()
+        under = (coverage < max_cov).nonzero(as_tuple=True)[0]
+        candidates = [u.item() for u in under if masks[being_drain, u.item()] < 0.5]
+        if candidates:
+            add_bit = candidates[torch.randint(len(candidates), (1,), generator=gen).item()]
+            masks[being_drain, bit_drain] = 0.0
+            masks[being_drain, add_bit] = 1.0
+        else:
+            break
+
     # Final check
     coverage = masks.sum(dim=0)
     if (coverage < min_coverage).any():
@@ -109,6 +132,7 @@ class BeingParameters(nn.Module):
 
         # Jump gate: decides whether to jump or walk
         self.jump_gate = nn.Linear(embedding_dim, 1)
+        nn.init.constant_(self.jump_gate.bias, 0.5)  # Start jumping (prevents dead gate)
 
         # Context strength: how much to weight memory reads
         self.context_strength = nn.Parameter(torch.tensor(0.2))
@@ -171,6 +195,7 @@ class SwarmByteRingModel(nn.Module):
         attention_radius: int = 2,
         attention_temperature: float = 8.0,
         combiner_mode: str = 'mean',
+        num_bits: int = 8,
         bits_per_being: int = 0,
         min_coverage: int = 2,
         mask_seed: int = 42,
@@ -180,6 +205,7 @@ class SwarmByteRingModel(nn.Module):
         self.embedding_dim = embedding_dim
         self.num_memory_positions = num_memory_positions
         self.num_beings = num_beings
+        self.num_bits = num_bits
         self.attention_radius = attention_radius
         self.attention_temperature = attention_temperature
         self.depth = depth
@@ -188,9 +214,9 @@ class SwarmByteRingModel(nn.Module):
         self.min_coverage = min_coverage
 
         # SHARED COMPONENTS (all beings use these)
-        if embedding_dim > 8:
-            self.input_proj = nn.Linear(8, embedding_dim)
-            self.output_proj = nn.Linear(embedding_dim, 8)
+        if embedding_dim > num_bits:
+            self.input_proj = nn.Linear(num_bits, embedding_dim)
+            self.output_proj = nn.Linear(embedding_dim, num_bits)
         else:
             self.input_proj = None
             self.output_proj = None
@@ -208,12 +234,12 @@ class SwarmByteRingModel(nn.Module):
         if bits_per_being > 0:
             masks = generate_receptive_masks(
                 num_beings=num_beings,
-                num_bits=8,
+                num_bits=num_bits,
                 bits_per_being=bits_per_being,
                 min_coverage=min_coverage,
                 seed=mask_seed,
             )
-            self.register_buffer('receptive_masks', masks)  # [num_beings, 8]
+            self.register_buffer('receptive_masks', masks)  # [num_beings, num_bits]
         else:
             self.register_buffer('receptive_masks', None)
 
@@ -663,94 +689,83 @@ if __name__ == "__main__":
     print("=" * 70)
     print()
 
-    # Test different swarm sizes
-    for num_beings in [2, 4, 10]:
-        print(f"Testing {num_beings}-being swarm:")
-        print()
-
-        # Create model
+    # Test 1: Backward compat (N=8)
+    for num_beings in [2, 4]:
+        print(f"Testing {num_beings}-being swarm (N=8, backward compat):")
         model = SwarmByteRingModel(
-            num_memory_positions=64,
-            embedding_dim=64,
-            num_beings=num_beings,
-            depth=2,
+            num_memory_positions=64, embedding_dim=64,
+            num_beings=num_beings, depth=2, num_bits=8,
         )
-
         total_params = sum(p.numel() for p in model.parameters())
-        print(f"  Total parameters: {total_params:,}")
+        print(f"  Params: {total_params:,}")
 
-        # Forward pass
-        batch_size = 4
-        seq_len = 16
-        x = torch.randint(0, 2, (batch_size, seq_len, 8)).float()
-
+        x = torch.randint(0, 2, (4, 16, 8)).float()
         output, stats = model(x, return_stats=True)
-        print(f"  Output shape: {output.shape}")
-        assert output.shape == (batch_size, seq_len, 8)
-        print(f"  Jump gate: {stats['jump_gate']:.4f}")
-        print(f"  Pointer spread: {stats['pointer_spread']:.4f}")
-        print(f"  Output disagreement: {stats['output_disagreement']:.4f}")
-        print("  OK Shape correct")
-        print()
+        assert output.shape == (4, 16, 8), f"Expected (4,16,8), got {output.shape}"
 
-        # Gradient flow
         model.zero_grad()
-        target = torch.randint(0, 2, (batch_size, seq_len, 8)).float()
+        target = torch.randint(0, 2, (4, 16, 8)).float()
         loss = nn.functional.binary_cross_entropy_with_logits(output, target)
         loss.backward()
-
         has_grads = sum(1 for p in model.parameters() if p.grad is not None and p.grad.abs().sum() > 0)
-        total_params_count = sum(1 for _ in model.parameters())
-        print(f"  Parameters with gradients: {has_grads}/{total_params_count}")
-        print("  OK Gradients flow")
+        print(f"  Grads: {has_grads}/{sum(1 for _ in model.parameters())}  OK")
         print()
 
-    # Test masked receptive fields
+    # Test 2: N=64, K=8, 16 beings (standardized architecture)
     print("-" * 70)
-    print("Testing MASKED receptive fields (10 beings, 4 bits each):")
+    print("Testing N=64 architecture (16 beings, K=8, D=64):")
     print()
 
-    model_masked = SwarmByteRingModel(
-        num_memory_positions=64,
-        embedding_dim=32,
-        num_beings=10,
-        depth=2,
-        combiner_mode='masked',
-        bits_per_being=4,
-        min_coverage=2,
+    model_64 = SwarmByteRingModel(
+        num_memory_positions=64, embedding_dim=64,
+        num_beings=16, depth=2, num_bits=64,
+        combiner_mode='masked', bits_per_being=8, min_coverage=2,
     )
 
-    total_params_m = sum(p.numel() for p in model_masked.parameters())
-    print(f"  Total parameters: {total_params_m:,}")
+    total_params_64 = sum(p.numel() for p in model_64.parameters())
+    print(f"  Params: {total_params_64:,}")
 
-    masks = model_masked.receptive_masks
+    masks = model_64.receptive_masks
     print(f"  Masks shape: {masks.shape}")
-    for i in range(min(5, masks.size(0))):
-        bits = [j for j in range(8) if masks[i, j] > 0.5]
-        print(f"    Being {i}: bits {bits}")
     coverage = masks.sum(dim=0)
-    print(f"  Coverage per bit: {coverage.int().tolist()}")
+    print(f"  Coverage: min={int(coverage.min())}, max={int(coverage.max())}, "
+          f"mean={coverage.mean():.1f}")
 
-    x = torch.randint(0, 2, (4, 16, 8)).float()
-    output_m, stats_m = model_masked(x, return_stats=True)
-    print(f"  Output shape: {output_m.shape}")
-    assert output_m.shape == (4, 16, 8)
-    print(f"  Min bit coverage: {stats_m['min_bit_coverage']}")
-    print(f"  Mask diversity: {stats_m['mask_diversity']:.3f}")
+    # Check jump gate init
+    for i, being in enumerate(model_64.beings):
+        bias_val = being.jump_gate.bias.item()
+        if i == 0:
+            print(f"  Jump gate bias (being 0): {bias_val:.2f} (should be 0.5)")
+        assert abs(bias_val - 0.5) < 0.01, f"Being {i} jump gate bias = {bias_val}"
+
+    x = torch.randint(0, 2, (4, 16, 64)).float()
+    output_64, stats_64 = model_64(x, return_stats=True)
+    print(f"  Output shape: {output_64.shape}")
+    assert output_64.shape == (4, 16, 64), f"Expected (4,16,64), got {output_64.shape}"
+    print(f"  Min bit coverage: {stats_64['min_bit_coverage']}")
+    print(f"  Max bit coverage: {stats_64['max_bit_coverage']}")
+    print(f"  Mask diversity: {stats_64['mask_diversity']:.3f}")
+
+    # Check all beings jump at init
+    jump_rates = stats_64['jump_rates_per_being']
+    dead_jumps = [i for i, r in enumerate(jump_rates) if r < 0.01]
+    if dead_jumps:
+        print(f"  WARNING: Dead jump gates at beings {dead_jumps}")
+    else:
+        print(f"  All {len(jump_rates)} beings jumping (min={min(jump_rates):.3f})")
 
     # Gradient flow
-    model_masked.zero_grad()
-    target = torch.randint(0, 2, (4, 16, 8)).float()
-    loss = nn.functional.binary_cross_entropy_with_logits(output_m, target)
+    model_64.zero_grad()
+    target = torch.randint(0, 2, (4, 16, 64)).float()
+    loss = nn.functional.binary_cross_entropy_with_logits(output_64, target)
     loss.backward()
-    has_grads = sum(1 for p in model_masked.parameters() if p.grad is not None and p.grad.abs().sum() > 0)
-    total_p = sum(1 for _ in model_masked.parameters())
-    print(f"  Parameters with gradients: {has_grads}/{total_p}")
-    print("  OK Masked mode works!")
+    has_grads = sum(1 for p in model_64.parameters() if p.grad is not None and p.grad.abs().sum() > 0)
+    total_p = sum(1 for _ in model_64.parameters())
+    print(f"  Grads: {has_grads}/{total_p}  OK")
     print()
 
     print("=" * 70)
-    print("Swarm model ready!")
-    print(f"Key innovation: N beings sharing ONE ring memory")
-    print(f"NEW: Random receptive fields force mechanical specialization")
+    print("All tests passed!")
+    print(f"N=8 backward compat: OK")
+    print(f"N=64 standardized:   OK ({total_params_64:,} params)")
     print("=" * 70)

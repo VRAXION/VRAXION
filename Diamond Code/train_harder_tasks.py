@@ -8,6 +8,7 @@ Watch real-time on dashboard to see where it breaks!
 import torch
 import sys
 import time
+import random
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
@@ -20,7 +21,7 @@ def main():
     # TASK CONFIG - EDIT THESE TO TEST DIFFERENT DIFFICULTIES
     num_keys = 2      # Change: 2 (easy), 4, 8, 16 (hard)
     num_pairs = 2     # Change: 1 (easy), 2, 3, 5 (hard)
-    seq_len = 32      # Change: 32 (easy), 64, 96, 128 (hard)
+    seq_len = 32      # Change: 32 (easy), 64, 96, 128 (hard) - Back to baseline for debugging
 
     # MODEL CONFIG - Keep at minimal working size
     num_positions = 64
@@ -92,7 +93,7 @@ def main():
 
             # Train step
             optimizer.zero_grad()
-            logits, aux_loss, routing_info = model(x_train, return_debug=True)
+            logits, aux_loss, _ = model(x_train)  # Discard routing_info during training
             loss = torch.nn.functional.cross_entropy(logits, y_train) + aux_loss
             loss.backward()
             optimizer.step()
@@ -100,28 +101,49 @@ def main():
             # Training accuracy
             train_acc = (logits.argmax(dim=1) == y_train).float().mean().item()
 
-            # Extract jump gate activation rate
-            jump_decisions = torch.stack(routing_info['jump_decisions'])
-            jump_gate_rate = jump_decisions.float().mean().item()
-
             step_time = time.time() - step_start
 
-            # Eval every 50 steps
-            if step % 50 == 0:
+            # Eval every 10 steps (increased frequency to capture oscillations)
+            if step % 10 == 0:
                 model.eval()
                 with torch.no_grad():
                     eval_logits, _, eval_routing = model(x_eval, return_debug=True)
                     eval_acc = (eval_logits.argmax(dim=1) == y_eval).float().mean().item()
+
+                    # Jump gate stats
                     eval_jump_decisions = torch.stack(eval_routing['jump_decisions'])
                     eval_jump_rate = eval_jump_decisions.float().mean().item()
+
+                    # Holonomy distribution
+                    eval_holonomy_traj = torch.stack(eval_routing['holonomy_trajectory'])  # [T, B]
+                    holonomy_pct = (eval_holonomy_traj == 1.0).float().mean().item()
+
+                    # MÖBIUS DIAGNOSTICS
+                    # Pointer position stats (detect synchronization)
+                    eval_pointer_traj = torch.stack(eval_routing['pointer_trajectory'])  # [T, B]
+                    ptr_mean = eval_pointer_traj.mean().item()
+                    ptr_std = eval_pointer_traj.std().item()
+                    ptr_min = eval_pointer_traj.min().item()
+                    ptr_max = eval_pointer_traj.max().item()
+
+                    # Wrap events (count position jumps from high to low)
+                    ptr_diffs = eval_pointer_traj[1:] - eval_pointer_traj[:-1]
+                    wrap_events = (ptr_diffs < -num_positions * 0.5).sum().item()  # Big negative jump = wrap
+
+                    # Phase coverage (how much of 0-64 range is used)
+                    ptr_range = ptr_max - ptr_min
+                    coverage_pct = ptr_range / num_positions
+
                 model.train()
 
                 if eval_acc > best_eval_acc:
                     best_eval_acc = eval_acc
 
-                # Dashboard-compatible log format
+                # Dashboard-compatible log format with Möbius diagnostics
                 log(f"step {step} | loss {loss.item():.6f} | "
                     f"acc={eval_acc:.4f} | jump_gate={eval_jump_rate:.2f} | "
+                    f"holonomy_pct={holonomy_pct:.3f} | "
+                    f"ptr_std={ptr_std:.2f} | wraps={wrap_events} | coverage={coverage_pct:.3f} | "
                     f"train_acc={train_acc:.4f} | best={best_eval_acc:.4f} | "
                     f"s_per_step={step_time:.3f}")
 

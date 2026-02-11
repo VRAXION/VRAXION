@@ -7,7 +7,10 @@ Usage:
 Logs everything (loss, accuracy, jump gates, swarm metrics) for dashboard viewing.
 """
 
+import os
 import torch
+# Use 90% of CPU cores for training
+torch.set_num_threads(max(1, int(os.cpu_count() * 0.9)))
 import torch.nn as nn
 import sys
 import time
@@ -23,25 +26,27 @@ from swarm_model import SwarmByteRingModel
 from byte_data import byte_accuracy, bit_accuracy
 
 
-def int_to_bits(x):
-    """Convert integer to 8-bit tensor."""
+def int_to_bits(x, num_bits=8):
+    """Convert integer to num_bits-wide bit tensor."""
     bits = []
-    for i in range(8):
+    for i in range(num_bits):
         bits.append((x >> i) & 1)
     return torch.tensor(bits, dtype=torch.float32)
 
 
-def generate_multitask_batch(n_samples, seq_len=16, max_value=100, seed=None):
+def generate_multitask_batch(n_samples, seq_len=16, max_value=100, seed=None, num_bits=8):
     """Generate batch with mixed operations."""
     if seed is not None:
         random.seed(seed)
         torch.manual_seed(seed)
 
+    max_val = min(max_value, 2 ** num_bits - 1)
+
     op_codes = {
-        'add': int_to_bits(1 << 0),
-        'and': int_to_bits(1 << 1),
-        'or':  int_to_bits(1 << 2),
-        'xor': int_to_bits(1 << 3),
+        'add': int_to_bits(1 << 0, num_bits),
+        'and': int_to_bits(1 << 1, num_bits),
+        'or':  int_to_bits(1 << 2, num_bits),
+        'xor': int_to_bits(1 << 3, num_bits),
     }
 
     x_batch = []
@@ -53,11 +58,11 @@ def generate_multitask_batch(n_samples, seq_len=16, max_value=100, seed=None):
         op_idx = {'add': 0, 'and': 1, 'or': 2, 'xor': 3}[op_name]
         op_indices.append(op_idx)
 
-        a = random.randint(0, max_value)
-        b = random.randint(0, max_value)
+        a = random.randint(0, max_val)
+        b = random.randint(0, max_val)
 
         if op_name == 'add':
-            result = (a + b) % 256
+            result = (a + b) % (2 ** num_bits)
         elif op_name == 'and':
             result = a & b
         elif op_name == 'or':
@@ -65,15 +70,15 @@ def generate_multitask_batch(n_samples, seq_len=16, max_value=100, seed=None):
         else:
             result = a ^ b
 
-        x_seq = torch.zeros(seq_len, 8)
-        x_seq[0, :] = int_to_bits(a)
-        x_seq[1, :] = int_to_bits(b)
+        x_seq = torch.zeros(seq_len, num_bits)
+        x_seq[0, :] = int_to_bits(a, num_bits)
+        x_seq[1, :] = int_to_bits(b, num_bits)
         x_seq[2, :] = op_codes[op_name]
 
-        y_seq = torch.zeros(seq_len, 8)
-        y_seq[0, :] = int_to_bits(a)
-        y_seq[1, :] = int_to_bits(b)
-        y_seq[2, :] = int_to_bits(result)
+        y_seq = torch.zeros(seq_len, num_bits)
+        y_seq[0, :] = int_to_bits(a, num_bits)
+        y_seq[1, :] = int_to_bits(b, num_bits)
+        y_seq[2, :] = int_to_bits(result, num_bits)
 
         x_batch.append(x_seq)
         y_batch.append(y_seq)
@@ -117,7 +122,7 @@ def bit_accuracy_at_position(output, target, position):
 
 
 def per_bit_accuracy_at_position(output, target, position):
-    """Calculate accuracy for each of the 8 bit positions independently."""
+    """Calculate accuracy for each bit position independently."""
     pred_bits = (output[:, position, :] > 0.5).float()
     target_bits = target[:, position, :]
     per_bit = (pred_bits == target_bits).float().mean(dim=0)  # [8]
@@ -240,6 +245,7 @@ def save_checkpoint(model, optimizer, step, best_acc, checkpoint_dir, is_best=Fa
         'model_state_dict': model.state_dict(),
         'optimizer_state_dict': optimizer.state_dict(),
         'best_accuracy': best_acc,
+        'num_bits': getattr(model, 'num_bits', 8),
         'bits_per_being': getattr(model, 'bits_per_being', 0),
         'min_coverage': getattr(model, 'min_coverage', 0),
     }
@@ -294,8 +300,10 @@ def main():
                         help='Weight for gate entropy regularizer (ring_attention only, default: 0.01)')
     parser.add_argument('--freeze_gate_steps', type=int, default=0,
                         help='Freeze being params for N steps, train only gate (ring_attention warm start)')
+    parser.add_argument('--num_bits', type=int, default=8,
+                        help='Input/output bit width (default: 8, use 64 for 8-byte mode)')
     parser.add_argument('--bits_per_being', type=int, default=0,
-                        help='Bits per being receptive field (0=all bits, 4=half). Auto-enables masked combiner.')
+                        help='Bits per being receptive field (0=all bits). Auto-enables masked combiner.')
     parser.add_argument('--min_coverage', type=int, default=2,
                         help='Minimum number of beings covering each bit (default: 2)')
     parser.add_argument('--mask_seed', type=int, default=42,
@@ -310,12 +318,14 @@ def main():
     depth = args.depth
     num_beings = args.num_beings
     num_steps = args.steps
+    num_bits = args.num_bits
 
     print("="*70)
     print("SWARM CONFIG TEST: Multi-Task Benchmark")
     print("="*70)
     print()
     print(f"Configuration:")
+    print(f"  Num bits: {num_bits}")
     print(f"  Embedding: {embedding_dim}D")
     print(f"  Depth: {depth} layers")
     print(f"  Num beings: {num_beings}")
@@ -338,6 +348,7 @@ def main():
         embedding_dim=embedding_dim,
         num_beings=num_beings,
         depth=depth,
+        num_bits=num_bits,
         combiner_mode=args.combiner,
         bits_per_being=args.bits_per_being,
         min_coverage=args.min_coverage,
@@ -351,19 +362,22 @@ def main():
     if args.bits_per_being > 0 and model.receptive_masks is not None:
         masks = model.receptive_masks
         print(f"\nReceptive Field Masks ({args.bits_per_being} bits per being):")
-        for i in range(num_beings):
-            bits = [j for j in range(8) if masks[i, j] > 0.5]
-            print(f"  Being {i}: bits {bits}")
+        if num_beings <= 20:
+            for i in range(num_beings):
+                bits = [j for j in range(num_bits) if masks[i, j] > 0.5]
+                print(f"  Being {i}: bits {bits}")
+        else:
+            print(f"  ({num_beings} beings, too many to list)")
         cov = masks.sum(dim=0)
-        print(f"  Coverage per bit: {cov.int().tolist()}")
-        print(f"  Min coverage: {int(cov.min().item())}, Max: {int(cov.max().item())}")
+        print(f"  Coverage: min={int(cov.min().item())}, max={int(cov.max().item())}, "
+              f"mean={cov.mean():.1f}")
 
     print()
 
     # Training setup
     seq_len = 16
     batch_size = 32
-    max_value = 100
+    max_value = 2 ** num_bits - 1  # Full bit range (all bits exercised)
     eval_interval = 50
 
     optimizer = torch.optim.AdamW(model.parameters(), lr=0.001, weight_decay=0.01)
@@ -381,7 +395,7 @@ def main():
         for op_idx in range(4):
             x, y, ops = generate_multitask_batch(
                 n_samples=1, seq_len=seq_len, max_value=max_value,
-                seed=9999 + op_seed * 4 + op_idx
+                seed=9999 + op_seed * 4 + op_idx, num_bits=num_bits,
             )
             eval_batches.append((x, y, ops))
 
@@ -398,7 +412,8 @@ def main():
 
     combiner_tag = f"_{args.combiner}" if args.combiner not in ('mean', 'masked') else ""
     rf_tag = f"_rf{args.bits_per_being}" if args.bits_per_being > 0 else ""
-    config_name = f"{num_beings}beings_{embedding_dim}d_{depth}layers{combiner_tag}{rf_tag}"
+    bits_tag = f"_{num_bits}bit" if num_bits != 8 else ""
+    config_name = f"{num_beings}beings_{embedding_dim}d_{depth}layers{bits_tag}{combiner_tag}{rf_tag}"
     log_path = log_dir / f"{config_name}.log"
     if log_path.exists():
         log_path.unlink()
@@ -423,7 +438,7 @@ def main():
             # Generate training batch
             x_train, y_train, _ = generate_multitask_batch(
                 n_samples=batch_size, seq_len=seq_len, max_value=max_value,
-                seed=42 + step + 1000000
+                seed=42 + step + 1000000, num_bits=num_bits,
             )
 
             # Freeze-gate warmup: freeze being params, train only gate

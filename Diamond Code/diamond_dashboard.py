@@ -771,55 +771,83 @@ with col2:
 # Per-Bit Accuracy (Receptive Field Analysis)
 # ============================================================================
 
-bit_cols = [f'bit{i}' for i in range(8)]
-if not df.empty and any(col in df.columns for col in bit_cols):
+bit_cols = sorted(
+    [c for c in df.columns if c.startswith('bit') and c[3:].isdigit()],
+    key=lambda c: int(c[3:])
+) if not df.empty else []
+if bit_cols:
     st.markdown("---")
-    st.subheader("🔬 Per-Bit Accuracy (Receptive Field View)")
+    n_bits = len(bit_cols)
+    st.subheader(f"Per-Bit Accuracy ({n_bits} bits)")
 
     col1, col2 = st.columns(2)
 
     with col1:
-        # Per-bit accuracy over time (line chart)
         fig = go.Figure()
-        colors_8 = ['#00D9FF', '#FF6B9D', '#B19CD9', '#FFD700',
-                     '#7DFF8C', '#FFB000', '#FF4444', '#44FFFF']
-        for i in range(8):
-            col_name = f'bit{i}'
-            if col_name in df.columns:
+        if n_bits <= 16:
+            # Line chart for small bit counts
+            colors_cycle = ['#00D9FF', '#FF6B9D', '#B19CD9', '#FFD700',
+                            '#7DFF8C', '#FFB000', '#FF4444', '#44FFFF',
+                            '#FF69B4', '#00FF7F', '#DDA0DD', '#F0E68C',
+                            '#87CEEB', '#FFA07A', '#98FB98', '#D8BFD8']
+            for idx, col_name in enumerate(bit_cols):
                 fig.add_trace(go.Scatter(
                     x=df['step'], y=df[col_name],
-                    mode='lines', name=f'Bit {i}',
-                    line=dict(color=colors_8[i], width=2)
+                    mode='lines', name=col_name,
+                    line=dict(color=colors_cycle[idx % len(colors_cycle)], width=2)
                 ))
+        else:
+            # Heatmap for large bit counts (N=64)
+            import numpy as np
+            step_sample = df['step'].values[::max(1, len(df)//100)]
+            bit_matrix = []
+            for col_name in bit_cols:
+                bit_matrix.append(df[col_name].values[::max(1, len(df)//100)])
+            bit_matrix = np.array(bit_matrix)
+            fig = go.Figure(data=go.Heatmap(
+                z=bit_matrix, x=step_sample,
+                y=[f'bit{i}' for i in range(n_bits)],
+                colorscale='Viridis', zmin=0, zmax=1,
+                colorbar_title='Accuracy'
+            ))
 
         fig.update_layout(
             title="Per-Bit Accuracy Over Time",
             xaxis_title="Step",
-            yaxis_title="Accuracy",
-            yaxis=dict(range=[0, 1.05]),
+            yaxis_title="Accuracy" if n_bits <= 16 else "Bit",
+            yaxis=dict(range=[0, 1.05]) if n_bits <= 16 else {},
             template="plotly_dark",
-            height=350,
-            hovermode='x unified',
-            legend=dict(x=1.02, y=1)
+            height=350 if n_bits <= 16 else 500,
+            hovermode='x unified' if n_bits <= 16 else 'closest',
+            legend=dict(x=1.02, y=1) if n_bits <= 16 else {}
         )
         st.plotly_chart(fig, use_container_width=True)
-        st.caption("💡 Staggered improvement = beings specializing on different bits. Uniform = no specialization.")
 
     with col2:
         # Latest per-bit accuracy bar chart
         if not df.empty:
             latest = df.iloc[-1]
-            bit_accs = [latest.get(f'bit{i}', 0.0) for i in range(8)]
+            bit_accs = [latest.get(c, 0.0) for c in bit_cols]
 
-            fig = go.Figure(data=[
-                go.Bar(
-                    x=[f'Bit {i}' for i in range(8)],
-                    y=bit_accs,
-                    marker_color=colors_8[:8],
-                    text=[f'{a:.1%}' for a in bit_accs],
-                    textposition='outside'
-                )
-            ])
+            if n_bits <= 16:
+                fig = go.Figure(data=[
+                    go.Bar(
+                        x=[f'Bit {i}' for i in range(n_bits)],
+                        y=bit_accs,
+                        marker_color=[colors_cycle[i % len(colors_cycle)] for i in range(n_bits)],
+                        text=[f'{a:.1%}' for a in bit_accs],
+                        textposition='outside'
+                    )
+                ])
+            else:
+                # Compact bar for 64 bits
+                fig = go.Figure(data=[
+                    go.Bar(
+                        x=list(range(n_bits)),
+                        y=bit_accs,
+                        marker_color='#00D9FF',
+                    )
+                ])
             fig.update_layout(
                 title=f"Per-Bit Accuracy (Step {int(latest['step'])})",
                 yaxis=dict(range=[0, 1.1], title="Accuracy"),

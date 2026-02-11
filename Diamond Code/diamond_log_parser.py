@@ -57,7 +57,7 @@ RE_BIT_ORACLE = re.compile(r"bit_oracle=(?P<bit_oracle>[-+]?\d+(?:\.\d+)?)")
 # Per-bit accuracy (receptive field diagnostics)
 RE_BIT_POSITIONS = {
     f'bit{i}': re.compile(rf"bit{i}=(?P<bit{i}>[-+]?\d+(?:\.\d+)?)")
-    for i in range(8)
+    for i in range(64)
 }
 
 # Mask diagnostics (receptive field mode)
