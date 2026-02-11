@@ -13,15 +13,93 @@ from typing import Tuple, Dict
 import math
 
 
+def generate_receptive_masks(
+    num_beings: int,
+    num_bits: int = 8,
+    bits_per_being: int = 4,
+    min_coverage: int = 2,
+    seed: int = 42,
+) -> torch.Tensor:
+    """
+    Generate random binary masks ensuring every bit has min_coverage beings.
+
+    Each being gets a random subset of bits as its receptive field.
+    Coverage repair ensures no bit is left uncovered.
+
+    Args:
+        num_beings: Number of beings in the swarm.
+        num_bits: Total input/output bits (default 8).
+        bits_per_being: How many bits each being sees.
+        min_coverage: Every bit must be covered by at least this many beings.
+        seed: Random seed for reproducibility.
+
+    Returns:
+        masks: [num_beings, num_bits] binary tensor (1 = being reads/writes this bit).
+    """
+    total_slots = num_beings * bits_per_being
+    required_slots = num_bits * min_coverage
+    if total_slots < required_slots:
+        raise ValueError(
+            f"Cannot satisfy min_coverage={min_coverage}: "
+            f"{num_beings} beings x {bits_per_being} bits = {total_slots} slots, "
+            f"but need {num_bits} x {min_coverage} = {required_slots}"
+        )
+
+    gen = torch.Generator()
+    gen.manual_seed(seed)
+
+    masks = torch.zeros(num_beings, num_bits)
+    for i in range(num_beings):
+        perm = torch.randperm(num_bits, generator=gen)[:bits_per_being]
+        masks[i, perm] = 1.0
+
+    # Coverage repair: ensure every bit has >= min_coverage beings
+    for _ in range(1000):
+        coverage = masks.sum(dim=0)  # [num_bits]
+        under = (coverage < min_coverage).nonzero(as_tuple=True)[0]
+        if len(under) == 0:
+            break
+        # Pick an under-covered bit
+        bit_fix = under[0].item()
+        # Find beings that DON'T cover this bit
+        uncovering = (masks[:, bit_fix] < 0.5).nonzero(as_tuple=True)[0]
+        if len(uncovering) == 0:
+            break
+        # Pick a random uncovering being
+        being_fix = uncovering[torch.randint(len(uncovering), (1,), generator=gen).item()].item()
+        # Find this being's bits that have excess coverage (> min_coverage)
+        being_bits = (masks[being_fix] > 0.5).nonzero(as_tuple=True)[0]
+        excess = [b.item() for b in being_bits if coverage[b.item()] > min_coverage]
+        if excess:
+            # Swap: remove an excess bit, add the under-covered bit
+            drop = excess[torch.randint(len(excess), (1,), generator=gen).item()]
+            masks[being_fix, drop] = 0.0
+            masks[being_fix, bit_fix] = 1.0
+        else:
+            # No excess to swap, just add (being gets bits_per_being + 1)
+            masks[being_fix, bit_fix] = 1.0
+
+    # Final check
+    coverage = masks.sum(dim=0)
+    if (coverage < min_coverage).any():
+        raise RuntimeError(
+            f"Coverage repair failed. Coverage: {coverage.int().tolist()}"
+        )
+
+    return masks
+
+
 class BeingParameters(nn.Module):
     """
     Per-being parameters (pointer destinations, jump gate, context strength).
     Each being in the swarm has its own instance of these.
 
-    NEW: Phase embedding based on golden ratio (φ) for non-interfering specialization.
+    Phase embedding based on golden ratio (φ) for non-interfering specialization.
+    Optional input_mask for receptive field restriction.
     """
 
-    def __init__(self, num_memory_positions: int, embedding_dim: int, being_id: int = 0):
+    def __init__(self, num_memory_positions: int, embedding_dim: int,
+                 being_id: int = 0, input_mask: torch.Tensor = None):
         super().__init__()
 
         # Learned jump destinations for each memory position
@@ -55,6 +133,12 @@ class BeingParameters(nn.Module):
             torch.tensor(phase_embedding, dtype=torch.float32)
         )
 
+        # Receptive field mask: which bits this being reads/writes
+        if input_mask is not None:
+            self.register_buffer('input_mask', input_mask.clone())
+        else:
+            self.register_buffer('input_mask', None)
+
         # Store being ID for reference
         self.being_id = being_id
 
@@ -87,6 +171,9 @@ class SwarmByteRingModel(nn.Module):
         attention_radius: int = 2,
         attention_temperature: float = 8.0,
         combiner_mode: str = 'mean',
+        bits_per_being: int = 0,
+        min_coverage: int = 2,
+        mask_seed: int = 42,
     ):
         super().__init__()
 
@@ -97,6 +184,8 @@ class SwarmByteRingModel(nn.Module):
         self.attention_temperature = attention_temperature
         self.depth = depth
         self.combiner_mode = combiner_mode
+        self.bits_per_being = bits_per_being
+        self.min_coverage = min_coverage
 
         # SHARED COMPONENTS (all beings use these)
         if embedding_dim > 8:
@@ -115,10 +204,26 @@ class SwarmByteRingModel(nn.Module):
         else:
             self.processing_layers = None
 
+        # RECEPTIVE FIELD MASKS (if bits_per_being > 0)
+        if bits_per_being > 0:
+            masks = generate_receptive_masks(
+                num_beings=num_beings,
+                num_bits=8,
+                bits_per_being=bits_per_being,
+                min_coverage=min_coverage,
+                seed=mask_seed,
+            )
+            self.register_buffer('receptive_masks', masks)  # [num_beings, 8]
+        else:
+            self.register_buffer('receptive_masks', None)
+
         # PER-BEING COMPONENTS (each being has its own)
-        # Pass being_id for golden ratio phase embeddings
+        # Pass being_id for golden ratio phase embeddings + optional input mask
         self.beings = nn.ModuleList([
-            BeingParameters(num_memory_positions, embedding_dim, being_id=i)
+            BeingParameters(
+                num_memory_positions, embedding_dim, being_id=i,
+                input_mask=self.receptive_masks[i] if self.receptive_masks is not None else None,
+            )
             for i in range(num_beings)
         ])
 
@@ -226,6 +331,40 @@ class SwarmByteRingModel(nn.Module):
         neg_entropy = 1.0 - entropy.mean() / max_entropy
         return neg_entropy
 
+    def _masked_combine(self, being_stack: torch.Tensor, training: bool) -> torch.Tensor:
+        """
+        Masked combiner: per-bit confidence-weighted aggregation from covering beings only.
+
+        For each output bit, only beings whose receptive mask includes that bit contribute.
+        Weights are proportional to confidence (distance from 0.5 in probability space).
+
+        Args:
+            being_stack: [num_beings, B, 8] raw logits from all beings.
+            training: If True, soft weighting. If False, pick most confident.
+
+        Returns:
+            combined: [B, 8] in logit space.
+        """
+        masks = self.receptive_masks  # [N, 8]
+        probs = torch.sigmoid(being_stack)  # [N, B, 8]
+        confidence = (probs - 0.5).abs() * 2.0  # [N, B, 8] range [0, 1]
+        mask_exp = masks.unsqueeze(1)  # [N, 1, 8]
+
+        if training:
+            # Soft: confidence-weighted average, masked to covering beings
+            weights = confidence * mask_exp  # [N, B, 8]
+            weights = weights / (weights.sum(dim=0, keepdim=True) + 1e-8)
+            p_combined = (weights * probs).sum(dim=0)  # [B, 8]
+        else:
+            # Hard: pick most confident covering being per bit
+            conf_masked = confidence.clone()
+            conf_masked[mask_exp.expand_as(conf_masked) < 0.5] = -1.0
+            best_idx = conf_masked.argmax(dim=0)  # [B, 8]
+            p_combined = probs.gather(0, best_idx.unsqueeze(0)).squeeze(0)  # [B, 8]
+
+        p_combined = p_combined.clamp(1e-6, 1.0 - 1e-6)
+        return torch.log(p_combined / (1.0 - p_combined))  # logit space
+
     def forward(self, x: torch.Tensor, return_stats: bool = False, return_being_outputs: bool = False):
         """
         Forward pass with N beings sharing one ring.
@@ -305,8 +444,17 @@ class SwarmByteRingModel(nn.Module):
                 context_read = (weights.unsqueeze(-1) * neighborhood).sum(dim=1)
                 context_scale = torch.sigmoid(being.context_strength)
 
-                # 2b. Combine input + context
-                combined_input = input_vec + context_scale * context_read
+                # 2b. Combine input + context (with optional receptive field masking)
+                if being.input_mask is not None:
+                    # Mask input bits: zero out bits this being can't see
+                    masked_bits = input_bits * being.input_mask.unsqueeze(0)  # [B, 8]
+                    if self.input_proj is not None:
+                        being_input_vec = self.input_proj(masked_bits)
+                    else:
+                        being_input_vec = masked_bits
+                else:
+                    being_input_vec = input_vec  # No mask: use shared projection
+                combined_input = being_input_vec + context_scale * context_read
 
                 # 2b.1. Add golden ratio phase embedding (forces specialization)
                 # Expand phase_embedding from [16] to [B, 16] or [B, embedding_dim]
@@ -370,7 +518,9 @@ class SwarmByteRingModel(nn.Module):
             # 3. Aggregate outputs across beings
             being_stack = torch.stack(being_outputs_t)  # [num_beings, B, 8]
 
-            if self.combiner_mode == 'ring_attention':
+            if self.combiner_mode == 'masked' and self.receptive_masks is not None:
+                mean_output_t = self._masked_combine(being_stack, self.training)
+            elif self.combiner_mode == 'ring_attention':
                 h_stack = torch.stack(hidden_states_t)  # [num_beings, B, D]
                 mean_output_t, gate_w = self._ring_attention_combine(
                     being_stack, h_stack, memory_ring
@@ -459,6 +609,24 @@ class SwarmByteRingModel(nn.Module):
                 'pointer_positions_all': all_pointer_positions,
             }
 
+            # Receptive field mask stats
+            if self.receptive_masks is not None:
+                masks = self.receptive_masks  # [num_beings, 8]
+                bit_cov = masks.sum(dim=0)  # [8]
+                stats['bit_coverage'] = bit_cov.int().tolist()
+                stats['min_bit_coverage'] = int(bit_cov.min().item())
+                stats['max_bit_coverage'] = int(bit_cov.max().item())
+                stats['avg_bit_coverage'] = float(bit_cov.float().mean().item())
+                # Mask diversity: avg pairwise Hamming distance
+                N = masks.size(0)
+                ham_sum = 0.0
+                ham_count = 0
+                for i in range(N):
+                    for j in range(i + 1, N):
+                        ham_sum += (masks[i] != masks[j]).float().sum().item()
+                        ham_count += 1
+                stats['mask_diversity'] = ham_sum / ham_count if ham_count > 0 else 0.0
+
             # Gate stats (ring-attention only)
             if self.combiner_mode == 'ring_attention' and gate_weights_log:
                 # gate_weights_log: list of [B, num_beings] tensors
@@ -537,8 +705,52 @@ if __name__ == "__main__":
         print("  OK Gradients flow")
         print()
 
+    # Test masked receptive fields
+    print("-" * 70)
+    print("Testing MASKED receptive fields (10 beings, 4 bits each):")
+    print()
+
+    model_masked = SwarmByteRingModel(
+        num_memory_positions=64,
+        embedding_dim=32,
+        num_beings=10,
+        depth=2,
+        combiner_mode='masked',
+        bits_per_being=4,
+        min_coverage=2,
+    )
+
+    total_params_m = sum(p.numel() for p in model_masked.parameters())
+    print(f"  Total parameters: {total_params_m:,}")
+
+    masks = model_masked.receptive_masks
+    print(f"  Masks shape: {masks.shape}")
+    for i in range(min(5, masks.size(0))):
+        bits = [j for j in range(8) if masks[i, j] > 0.5]
+        print(f"    Being {i}: bits {bits}")
+    coverage = masks.sum(dim=0)
+    print(f"  Coverage per bit: {coverage.int().tolist()}")
+
+    x = torch.randint(0, 2, (4, 16, 8)).float()
+    output_m, stats_m = model_masked(x, return_stats=True)
+    print(f"  Output shape: {output_m.shape}")
+    assert output_m.shape == (4, 16, 8)
+    print(f"  Min bit coverage: {stats_m['min_bit_coverage']}")
+    print(f"  Mask diversity: {stats_m['mask_diversity']:.3f}")
+
+    # Gradient flow
+    model_masked.zero_grad()
+    target = torch.randint(0, 2, (4, 16, 8)).float()
+    loss = nn.functional.binary_cross_entropy_with_logits(output_m, target)
+    loss.backward()
+    has_grads = sum(1 for p in model_masked.parameters() if p.grad is not None and p.grad.abs().sum() > 0)
+    total_p = sum(1 for _ in model_masked.parameters())
+    print(f"  Parameters with gradients: {has_grads}/{total_p}")
+    print("  OK Masked mode works!")
+    print()
+
     print("=" * 70)
     print("Swarm model ready!")
     print(f"Key innovation: N beings sharing ONE ring memory")
-    print(f"Hypothesis: Spatial diversity + ensemble effects > single strong learner")
+    print(f"NEW: Random receptive fields force mechanical specialization")
     print("=" * 70)

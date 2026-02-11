@@ -116,6 +116,14 @@ def bit_accuracy_at_position(output, target, position):
     return bit_matches.mean().item()
 
 
+def per_bit_accuracy_at_position(output, target, position):
+    """Calculate accuracy for each of the 8 bit positions independently."""
+    pred_bits = (output[:, position, :] > 0.5).float()
+    target_bits = target[:, position, :]
+    per_bit = (pred_bits == target_bits).float().mean(dim=0)  # [8]
+    return per_bit.tolist()
+
+
 def hamming_distance_at_position(output, target, position):
     """Calculate mean Hamming distance (# bit errors per byte)."""
     pred_bits = (output[:, position, :] > 0.5).float()
@@ -232,6 +240,8 @@ def save_checkpoint(model, optimizer, step, best_acc, checkpoint_dir, is_best=Fa
         'model_state_dict': model.state_dict(),
         'optimizer_state_dict': optimizer.state_dict(),
         'best_accuracy': best_acc,
+        'bits_per_being': getattr(model, 'bits_per_being', 0),
+        'min_coverage': getattr(model, 'min_coverage', 0),
     }
 
     # Save regular checkpoint
@@ -278,13 +288,23 @@ def main():
     parser.add_argument('--checkpoint_dir', type=str, default='checkpoints/swarm', help='Directory to save checkpoints')
     parser.add_argument('--checkpoint_every', type=int, default=1000, help='Save checkpoint every N steps (default: 1000)')
     parser.add_argument('--resume', type=str, default=None, help='Resume from checkpoint file')
-    parser.add_argument('--combiner', type=str, default='mean', choices=['mean', 'ring_attention'],
-                        help='Combiner mode: mean (baseline) or ring_attention (gated)')
+    parser.add_argument('--combiner', type=str, default='mean', choices=['mean', 'ring_attention', 'masked'],
+                        help='Combiner mode: mean | ring_attention | masked (with receptive fields)')
     parser.add_argument('--entropy_weight', type=float, default=0.01,
                         help='Weight for gate entropy regularizer (ring_attention only, default: 0.01)')
     parser.add_argument('--freeze_gate_steps', type=int, default=0,
                         help='Freeze being params for N steps, train only gate (ring_attention warm start)')
+    parser.add_argument('--bits_per_being', type=int, default=0,
+                        help='Bits per being receptive field (0=all bits, 4=half). Auto-enables masked combiner.')
+    parser.add_argument('--min_coverage', type=int, default=2,
+                        help='Minimum number of beings covering each bit (default: 2)')
+    parser.add_argument('--mask_seed', type=int, default=42,
+                        help='Random seed for receptive field mask generation')
     args = parser.parse_args()
+
+    # Auto-switch combiner to 'masked' if bits_per_being specified
+    if args.bits_per_being > 0 and args.combiner == 'mean':
+        args.combiner = 'masked'
 
     embedding_dim = args.embedding
     depth = args.depth
@@ -303,6 +323,10 @@ def main():
     if args.combiner == 'ring_attention':
         print(f"  Entropy weight: {args.entropy_weight}")
         print(f"  Freeze gate steps: {args.freeze_gate_steps}")
+    if args.bits_per_being > 0:
+        print(f"  Bits per being: {args.bits_per_being}")
+        print(f"  Min coverage: {args.min_coverage}")
+        print(f"  Mask seed: {args.mask_seed}")
     print(f"  Steps: {num_steps:,}")
     print("="*70)
     print()
@@ -315,10 +339,25 @@ def main():
         num_beings=num_beings,
         depth=depth,
         combiner_mode=args.combiner,
+        bits_per_being=args.bits_per_being,
+        min_coverage=args.min_coverage,
+        mask_seed=args.mask_seed,
     )
 
     total_params = sum(p.numel() for p in model.parameters())
     print(f"Model parameters: {total_params:,}")
+
+    # Print receptive field masks
+    if args.bits_per_being > 0 and model.receptive_masks is not None:
+        masks = model.receptive_masks
+        print(f"\nReceptive Field Masks ({args.bits_per_being} bits per being):")
+        for i in range(num_beings):
+            bits = [j for j in range(8) if masks[i, j] > 0.5]
+            print(f"  Being {i}: bits {bits}")
+        cov = masks.sum(dim=0)
+        print(f"  Coverage per bit: {cov.int().tolist()}")
+        print(f"  Min coverage: {int(cov.min().item())}, Max: {int(cov.max().item())}")
+
     print()
 
     # Training setup
@@ -357,8 +396,9 @@ def main():
     log_dir = Path(__file__).parent / "logs" / "swarm"
     log_dir.mkdir(parents=True, exist_ok=True)
 
-    combiner_tag = f"_{args.combiner}" if args.combiner != 'mean' else ""
-    config_name = f"{num_beings}beings_{embedding_dim}d_{depth}layers{combiner_tag}"
+    combiner_tag = f"_{args.combiner}" if args.combiner not in ('mean', 'masked') else ""
+    rf_tag = f"_rf{args.bits_per_being}" if args.bits_per_being > 0 else ""
+    config_name = f"{num_beings}beings_{embedding_dim}d_{depth}layers{combiner_tag}{rf_tag}"
     log_path = log_dir / f"{config_name}.log"
     if log_path.exists():
         log_path.unlink()
@@ -454,6 +494,16 @@ def main():
                     byte_match = byte_match_accuracy(eval_output, y_eval, 2)
                     hamming = hamming_distance_at_position(eval_output, y_eval, 2)
 
+                    # Per-bit accuracy (for receptive field analysis)
+                    per_bit_accs = per_bit_accuracy_at_position(eval_output, y_eval, 2)
+
+                    # Mask stats
+                    mask_stats = {}
+                    if 'min_bit_coverage' in eval_stats:
+                        mask_stats['min_cov'] = eval_stats['min_bit_coverage']
+                        mask_stats['max_cov'] = eval_stats['max_bit_coverage']
+                        mask_stats['mask_div'] = eval_stats['mask_diversity']
+
                     # Spatial metrics
                     pointer_positions = eval_stats['pointer_positions_all']
                     coverage = len(set(pointer_positions)) / 64.0
@@ -498,6 +548,14 @@ def main():
 
                 log_line += f"specialization={specialization:.4f}"
 
+                # Per-bit accuracy
+                per_bit_str = " ".join([f"bit{i}={a:.4f}" for i, a in enumerate(per_bit_accs)])
+                log_line += f" | {per_bit_str}"
+
+                # Mask stats (masked combiner only)
+                if mask_stats:
+                    log_line += f" | min_cov={mask_stats['min_cov']} max_cov={mask_stats['max_cov']} mask_div={mask_stats['mask_div']:.4f}"
+
                 # Gate stats (ring_attention only)
                 if gate_weights_str:
                     log_line += f" | {gate_weights_str} gate_entropy={gate_entropy_val:.3f} gate_temp={gate_temp_val:.3f}"
@@ -510,15 +568,23 @@ def main():
                 # Console every 500 steps (ENHANCED)
                 if step % 500 == 0:
                     elapsed = time.time() - start_time
-                    being_str = " ".join([f"b{i}={ba*100:4.0f}%" for i, ba in enumerate(being_accs)])
+                    # Compact being display (max 5 shown, else summary)
+                    if num_beings <= 5:
+                        being_str = " ".join([f"b{i}={ba*100:4.0f}%" for i, ba in enumerate(being_accs)])
+                    else:
+                        best_b = max(being_accs)
+                        worst_b = min(being_accs)
+                        avg_b = sum(being_accs) / len(being_accs)
+                        being_str = f"best={best_b*100:4.0f}% avg={avg_b*100:4.0f}% worst={worst_b*100:4.0f}%"
                     gate_str = f" | gate=[{gate_weights_str}] ent={gate_entropy_val:.2f}" if gate_weights_str else ""
+                    mask_str = f" | rf={args.bits_per_being}b" if args.bits_per_being > 0 else ""
                     print(
                         f"step {step:5d} | loss {loss.item():.6f} | "
                         f"overall={overall_acc*100:5.1f}% | "
                         f"add={op_accs['add']*100:4.0f}% and={op_accs['and']*100:4.0f}% "
                         f"or={op_accs['or']*100:4.0f}% xor={op_accs['xor']*100:4.0f}% | "
                         f"{being_str} oracle={oracle_acc*100:4.0f}% bit_orc={bit_oracle_acc*100:4.0f}% | "
-                        f"circ_spread={circular_spread:4.1f}{gate_str} | "
+                        f"spec={specialization:.3f} ens_ben={ensemble_benefit:+.2f}{gate_str}{mask_str} | "
                         f"time={elapsed:.1f}s"
                     )
 

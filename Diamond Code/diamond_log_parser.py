@@ -42,24 +42,39 @@ RE_GRAD_OTHER = re.compile(r"grad_o=(?P<grad_other>[-+]?\d+(?:\.\d+)?(?:[eE][-+]
 RE_POINTER_SPREAD = re.compile(r"pointer_spread=(?P<pointer_spread>[-+]?\d+(?:\.\d+)?)")
 RE_OUTPUT_DISAGREEMENT = re.compile(r"output_disagreement=(?P<output_disagreement>[-+]?\d+(?:\.\d+)?)")
 
-# Enhanced swarm metrics
-RE_BEING_0 = re.compile(r"being_0=(?P<being_0>[-+]?\d+(?:\.\d+)?)")
-RE_BEING_1 = re.compile(r"being_1=(?P<being_1>[-+]?\d+(?:\.\d+)?)")
-RE_BEING_2 = re.compile(r"being_2=(?P<being_2>[-+]?\d+(?:\.\d+)?)")
-RE_BEING_3 = re.compile(r"being_3=(?P<being_3>[-+]?\d+(?:\.\d+)?)")
+# Enhanced swarm metrics (static)
 RE_ORACLE = re.compile(r"oracle=(?P<oracle>[-+]?\d+(?:\.\d+)?)")
 RE_ENSEMBLE_BENEFIT = re.compile(r"ensemble_benefit=(?P<ensemble_benefit>[-+]?\d+(?:\.\d+)?)")
 RE_CIRCULAR_SPREAD = re.compile(r"circular_spread=(?P<circular_spread>[-+]?\d+(?:\.\d+)?)")
 RE_COVERAGE = re.compile(r"coverage=(?P<coverage>[-+]?\d+(?:\.\d+)?)")
 RE_CLUSTERING = re.compile(r"clustering=(?P<clustering>[-+]?\d+(?:\.\d+)?)")
 RE_SPECIALIZATION = re.compile(r"specialization=(?P<specialization>[-+]?\d+(?:\.\d+)?)")
-RE_JUMP_0 = re.compile(r"jump_0=(?P<jump_0>[-+]?\d+(?:\.\d+)?)")
-RE_JUMP_1 = re.compile(r"jump_1=(?P<jump_1>[-+]?\d+(?:\.\d+)?)")
-RE_JUMP_2 = re.compile(r"jump_2=(?P<jump_2>[-+]?\d+(?:\.\d+)?)")
-RE_JUMP_3 = re.compile(r"jump_3=(?P<jump_3>[-+]?\d+(?:\.\d+)?)")
 RE_BIT_ACC = re.compile(r"bit_acc=(?P<bit_acc>[-+]?\d+(?:\.\d+)?)")
 RE_BYTE_MATCH = re.compile(r"byte_match=(?P<byte_match>[-+]?\d+(?:\.\d+)?)")
 RE_HAMMING = re.compile(r"hamming=(?P<hamming>[-+]?\d+(?:\.\d+)?)")
+RE_BIT_ORACLE = re.compile(r"bit_oracle=(?P<bit_oracle>[-+]?\d+(?:\.\d+)?)")
+
+# Per-bit accuracy (receptive field diagnostics)
+RE_BIT_POSITIONS = {
+    f'bit{i}': re.compile(rf"bit{i}=(?P<bit{i}>[-+]?\d+(?:\.\d+)?)")
+    for i in range(8)
+}
+
+# Mask diagnostics (receptive field mode)
+RE_MIN_COV = re.compile(r"min_cov=(?P<min_cov>\d+)")
+RE_MAX_COV = re.compile(r"max_cov=(?P<max_cov>\d+)")
+RE_MASK_DIV = re.compile(r"mask_div=(?P<mask_div>[-+]?\d+(?:\.\d+)?)")
+
+# Dynamic being/jump patterns (support up to 50 beings)
+_FLOAT_PAT = r"[-+]?\d+(?:\.\d+)?"
+RE_BEING_N = {
+    f'being_{i}': re.compile(rf"being_{i}=(?P<being_{i}>{_FLOAT_PAT})")
+    for i in range(50)
+}
+RE_JUMP_N = {
+    f'jump_{i}': re.compile(rf"jump_{i}=(?P<jump_{i}>{_FLOAT_PAT})")
+    for i in range(50)
+}
 
 
 # ============================================================================
@@ -166,29 +181,50 @@ def parse_log_line(line: str) -> Optional[Dict[str, float]]:
         if m:
             row['output_disagreement'] = float(m.group('output_disagreement'))
 
-        # Enhanced swarm metrics
+        # Enhanced swarm metrics (static patterns)
         for metric, regex in [
-            ('being_0', RE_BEING_0),
-            ('being_1', RE_BEING_1),
-            ('being_2', RE_BEING_2),
-            ('being_3', RE_BEING_3),
             ('oracle', RE_ORACLE),
             ('ensemble_benefit', RE_ENSEMBLE_BENEFIT),
             ('circular_spread', RE_CIRCULAR_SPREAD),
             ('coverage', RE_COVERAGE),
             ('clustering', RE_CLUSTERING),
             ('specialization', RE_SPECIALIZATION),
-            ('jump_0', RE_JUMP_0),
-            ('jump_1', RE_JUMP_1),
-            ('jump_2', RE_JUMP_2),
-            ('jump_3', RE_JUMP_3),
             ('bit_acc', RE_BIT_ACC),
             ('byte_match', RE_BYTE_MATCH),
             ('hamming', RE_HAMMING),
+            ('bit_oracle', RE_BIT_ORACLE),
         ]:
             m = regex.search(tail)
             if m:
                 row[metric] = float(m.group(metric))
+
+        # Dynamic being_N and jump_N patterns (up to 50 beings)
+        for metric, regex in RE_BEING_N.items():
+            m = regex.search(tail)
+            if m:
+                row[metric] = float(m.group(metric))
+
+        for metric, regex in RE_JUMP_N.items():
+            m = regex.search(tail)
+            if m:
+                row[metric] = float(m.group(metric))
+
+        # Per-bit accuracy (bit0..bit7)
+        for metric, regex in RE_BIT_POSITIONS.items():
+            m = regex.search(tail)
+            if m:
+                row[metric] = float(m.group(metric))
+
+        # Mask diagnostics
+        m = RE_MIN_COV.search(tail)
+        if m:
+            row['min_cov'] = int(m.group('min_cov'))
+        m = RE_MAX_COV.search(tail)
+        if m:
+            row['max_cov'] = int(m.group('max_cov'))
+        m = RE_MASK_DIV.search(tail)
+        if m:
+            row['mask_div'] = float(m.group('mask_div'))
 
     return row
 

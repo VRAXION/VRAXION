@@ -122,6 +122,9 @@ st.sidebar.markdown("---")
 if st.sidebar.button("🔄 Refresh Now"):
     st.rerun()
 
+# Mask coverage stats (shown after data loads, populated below)
+_sidebar_mask_placeholder = st.sidebar.empty()
+
 
 # ============================================================================
 # Auto-Refresh
@@ -165,10 +168,26 @@ else:
 
 st.title("💎 Diamond Code - Real-Time Training Dashboard")
 
+# Populate mask sidebar stats
+if not df.empty and 'min_cov' in df.columns:
+    latest = df.iloc[-1]
+    with _sidebar_mask_placeholder.container():
+        st.markdown("---")
+        st.markdown("**Receptive Field Stats**")
+        st.metric("Min Bit Coverage", f"{int(latest.get('min_cov', 0))}")
+        st.metric("Max Bit Coverage", f"{int(latest.get('max_cov', 0))}")
+        st.metric("Mask Diversity", f"{latest.get('mask_div', 0):.3f}")
+
 if not df.empty:
     latest_step = df['step'].max()
     latest_loss = df.loc[df['step'] == latest_step, 'loss'].values[0]
-    latest_acc = df.loc[df['step'] == latest_step, 'acc'].values[0] if 'acc' in df.columns else 0.0
+    # Use 'acc' or fall back to 'bit_acc' (swarm logs use overall= which maps to bit_acc)
+    if 'acc' in df.columns:
+        latest_acc = df.loc[df['step'] == latest_step, 'acc'].values[0]
+    elif 'bit_acc' in df.columns:
+        latest_acc = df.loc[df['step'] == latest_step, 'bit_acc'].values[0]
+    else:
+        latest_acc = 0.0
 
     col1, col2, col3 = st.columns(3)
     col1.metric("Step", f"{latest_step:,}")
@@ -587,8 +606,15 @@ if any(col in df.columns for col in ['circular_spread', 'pointer_spread', 'cover
 
 st.markdown("---")
 
-if 'being_0' in df.columns and 'being_1' in df.columns:
-    st.subheader("👥 Per-Being Performance")
+# Detect beings dynamically
+being_cols = sorted(
+    [c for c in df.columns if c.startswith('being_') and c[6:].isdigit()],
+    key=lambda c: int(c.split('_')[1])
+)
+
+if len(being_cols) >= 2:
+    num_beings_detected = len(being_cols)
+    st.subheader(f"👥 Per-Being Performance ({num_beings_detected} beings)")
 
     col1, col2 = st.columns(2)
 
@@ -596,45 +622,36 @@ if 'being_0' in df.columns and 'being_1' in df.columns:
         # Individual accuracies + ensemble
         fig = go.Figure()
 
-        fig.add_trace(go.Scatter(
-            x=df['step'], y=df['being_0'],
-            mode='lines', name='Being 0',
-            line=dict(color='#00D9FF', width=2)
-        ))
+        # Color palette for many beings
+        being_colors = px.colors.qualitative.Set3[:num_beings_detected] if num_beings_detected > 4 else [
+            '#00D9FF', '#FF6B9D', '#B19CD9', '#FFD700'
+        ]
 
-        fig.add_trace(go.Scatter(
-            x=df['step'], y=df['being_1'],
-            mode='lines', name='Being 1',
-            line=dict(color='#FF6B9D', width=2)
-        ))
+        # For large swarms (>6), show as thin transparent lines with mean highlighted
+        line_width = 1 if num_beings_detected > 6 else 2
+        line_opacity = 0.4 if num_beings_detected > 6 else 1.0
 
-        # Add being_2, being_3 if present (for larger swarms)
-        if 'being_2' in df.columns:
+        for i, col_name in enumerate(being_cols):
             fig.add_trace(go.Scatter(
-                x=df['step'], y=df['being_2'],
-                mode='lines', name='Being 2',
-                line=dict(color='#B19CD9', width=2)
+                x=df['step'], y=df[col_name],
+                mode='lines', name=f'Being {i}',
+                line=dict(color=being_colors[i % len(being_colors)], width=line_width),
+                opacity=line_opacity,
+                showlegend=(num_beings_detected <= 10),
             ))
 
-        if 'being_3' in df.columns:
-            fig.add_trace(go.Scatter(
-                x=df['step'], y=df['being_3'],
-                mode='lines', name='Being 3',
-                line=dict(color='#FFD700', width=2)
-            ))
-
-        if 'acc' in df.columns:  # Ensemble accuracy
-            fig.add_trace(go.Scatter(
-                x=df['step'], y=df['acc'],
-                mode='lines', name='Ensemble (mean)',
-                line=dict(color='#FFFFFF', width=3, dash='dot')
-            ))
-
-        if 'oracle' in df.columns:  # Oracle best-of-N
+        if 'oracle' in df.columns:
             fig.add_trace(go.Scatter(
                 x=df['step'], y=df['oracle'],
                 mode='lines', name='Oracle (best-of-N)',
                 line=dict(color='#00FF00', width=2, dash='dash')
+            ))
+
+        if 'bit_oracle' in df.columns:
+            fig.add_trace(go.Scatter(
+                x=df['step'], y=df['bit_oracle'],
+                mode='lines', name='Bit Oracle (ceiling)',
+                line=dict(color='#FFFF00', width=2, dash='dot')
             ))
 
         fig.update_layout(
@@ -642,12 +659,12 @@ if 'being_0' in df.columns and 'being_1' in df.columns:
             xaxis_title="Step",
             yaxis_title="Accuracy",
             template="plotly_dark",
-            height=300,
+            height=350,
             hovermode='x unified',
-            legend=dict(x=0.01, y=0.99)
+            legend=dict(x=1.02, y=1)
         )
         st.plotly_chart(fig, use_container_width=True)
-        st.caption("💡 If oracle >> ensemble → combiner bottleneck. If ensemble < max(individuals) → averaging hurts.")
+        st.caption("💡 If oracle >> ensemble = combiner bottleneck. Bit oracle = ceiling for any bit-level combiner.")
 
     with col2:
         # Ensemble benefit over time
@@ -715,51 +732,102 @@ with col1:
         st.caption("💡 High = beings specialize (being₀→OR, being₁→AND), Low = redundant")
 
 with col2:
-    if 'jump_0' in df.columns and 'jump_1' in df.columns:
+    # Dynamic jump rate detection
+    jump_cols = sorted(
+        [c for c in df.columns if c.startswith('jump_') and c[5:].isdigit()],
+        key=lambda c: int(c.split('_')[1])
+    )
+
+    if len(jump_cols) >= 2:
         fig = go.Figure()
 
-        fig.add_trace(go.Scatter(
-            x=df['step'],
-            y=df['jump_0'],
-            mode='lines',
-            name='Being 0 Jump Rate',
-            line=dict(color='#00D9FF', width=2)
-        ))
+        jump_colors = px.colors.qualitative.Set3[:len(jump_cols)] if len(jump_cols) > 4 else [
+            '#00D9FF', '#FF6B9D', '#B19CD9', '#FFD700'
+        ]
+        jline_width = 1 if len(jump_cols) > 6 else 2
 
-        fig.add_trace(go.Scatter(
-            x=df['step'],
-            y=df['jump_1'],
-            mode='lines',
-            name='Being 1 Jump Rate',
-            line=dict(color='#FF6B9D', width=2)
-        ))
-
-        # Add more beings if present
-        if 'jump_2' in df.columns:
+        for i, col_name in enumerate(jump_cols):
             fig.add_trace(go.Scatter(
-                x=df['step'], y=df['jump_2'],
-                mode='lines', name='Being 2 Jump Rate',
-                line=dict(color='#B19CD9', width=2)
-            ))
-
-        if 'jump_3' in df.columns:
-            fig.add_trace(go.Scatter(
-                x=df['step'], y=df['jump_3'],
-                mode='lines', name='Being 3 Jump Rate',
-                line=dict(color='#FFD700', width=2)
+                x=df['step'], y=df[col_name],
+                mode='lines', name=f'Being {i} Jump',
+                line=dict(color=jump_colors[i % len(jump_colors)], width=jline_width),
+                showlegend=(len(jump_cols) <= 10),
             ))
 
         fig.update_layout(
-            title="Per-Being Jump Rates (Routing Strategy)",
+            title=f"Per-Being Jump Rates ({len(jump_cols)} beings)",
             xaxis_title="Step",
             yaxis_title="Jump Rate",
             template="plotly_dark",
             height=300,
             hovermode='x unified',
-            legend=dict(x=0.01, y=0.99)
+            legend=dict(x=1.02, y=1)
         )
         st.plotly_chart(fig, use_container_width=True)
         st.caption("💡 Different rates = strategy specialization (explorer vs exploiter)")
+
+
+# ============================================================================
+# Per-Bit Accuracy (Receptive Field Analysis)
+# ============================================================================
+
+bit_cols = [f'bit{i}' for i in range(8)]
+if not df.empty and any(col in df.columns for col in bit_cols):
+    st.markdown("---")
+    st.subheader("🔬 Per-Bit Accuracy (Receptive Field View)")
+
+    col1, col2 = st.columns(2)
+
+    with col1:
+        # Per-bit accuracy over time (line chart)
+        fig = go.Figure()
+        colors_8 = ['#00D9FF', '#FF6B9D', '#B19CD9', '#FFD700',
+                     '#7DFF8C', '#FFB000', '#FF4444', '#44FFFF']
+        for i in range(8):
+            col_name = f'bit{i}'
+            if col_name in df.columns:
+                fig.add_trace(go.Scatter(
+                    x=df['step'], y=df[col_name],
+                    mode='lines', name=f'Bit {i}',
+                    line=dict(color=colors_8[i], width=2)
+                ))
+
+        fig.update_layout(
+            title="Per-Bit Accuracy Over Time",
+            xaxis_title="Step",
+            yaxis_title="Accuracy",
+            yaxis=dict(range=[0, 1.05]),
+            template="plotly_dark",
+            height=350,
+            hovermode='x unified',
+            legend=dict(x=1.02, y=1)
+        )
+        st.plotly_chart(fig, use_container_width=True)
+        st.caption("💡 Staggered improvement = beings specializing on different bits. Uniform = no specialization.")
+
+    with col2:
+        # Latest per-bit accuracy bar chart
+        if not df.empty:
+            latest = df.iloc[-1]
+            bit_accs = [latest.get(f'bit{i}', 0.0) for i in range(8)]
+
+            fig = go.Figure(data=[
+                go.Bar(
+                    x=[f'Bit {i}' for i in range(8)],
+                    y=bit_accs,
+                    marker_color=colors_8[:8],
+                    text=[f'{a:.1%}' for a in bit_accs],
+                    textposition='outside'
+                )
+            ])
+            fig.update_layout(
+                title=f"Per-Bit Accuracy (Step {int(latest['step'])})",
+                yaxis=dict(range=[0, 1.1], title="Accuracy"),
+                template="plotly_dark",
+                height=350,
+            )
+            st.plotly_chart(fig, use_container_width=True)
+            st.caption("💡 Uneven bars = some bits harder (MSBs for ADD carry). Even = good coverage.")
 
 
 # ============================================================================
