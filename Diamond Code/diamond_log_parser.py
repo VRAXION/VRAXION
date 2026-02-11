@@ -25,6 +25,10 @@ RESTEP = re.compile(
 # Diamond-specific metrics
 RE_ACC = re.compile(r"acc=(?P<acc>[-+]?\d+(?:\.\d+)?)")
 RE_JUMP_GATE = re.compile(r"jump_gate=(?P<jump_gate>[-+]?\d+(?:\.\d+)?)")
+RE_HOLONOMY_PCT = re.compile(r"holonomy_pct=(?P<holonomy_pct>[-+]?\d+(?:\.\d+)?)")
+RE_PTR_STD = re.compile(r"ptr_std=(?P<ptr_std>[-+]?\d+(?:\.\d+)?)")
+RE_WRAPS = re.compile(r"wraps=(?P<wraps>\d+)")
+RE_COVERAGE = re.compile(r"coverage=(?P<coverage>[-+]?\d+(?:\.\d+)?)")
 RE_CYCLES = re.compile(r"cyc=(?P<cycles>\d+)")
 RE_SELF_LOOPS = re.compile(r"sl=(?P<self_loops>\d+)")
 RE_ATT_ENT = re.compile(r"att_ent=(?P<att_ent>[-+]?\d+(?:\.\d+)?)")
@@ -72,6 +76,24 @@ def parse_log_line(line: str) -> Optional[Dict[str, float]]:
         m = RE_JUMP_GATE.search(tail)
         if m:
             row['jump_gate'] = float(m.group('jump_gate'))
+
+        # Holonomy distribution
+        m = RE_HOLONOMY_PCT.search(tail)
+        if m:
+            row['holonomy_pct'] = float(m.group('holonomy_pct'))
+
+        # Möbius diagnostics
+        m = RE_PTR_STD.search(tail)
+        if m:
+            row['ptr_std'] = float(m.group('ptr_std'))
+
+        m = RE_WRAPS.search(tail)
+        if m:
+            row['wraps'] = int(m.group('wraps'))
+
+        m = RE_COVERAGE.search(tail)
+        if m:
+            row['coverage'] = float(m.group('coverage'))
 
         # Cycles
         m = RE_CYCLES.search(tail)

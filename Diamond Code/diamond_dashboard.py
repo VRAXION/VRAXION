@@ -280,11 +280,171 @@ if not df.empty and 'jump_gate' in df.columns:
         st.plotly_chart(fig, use_container_width=True)
 
     with col2:
-        # Placeholder for future panels (cycles, self-loops)
-        st.info("🔄 Cycle Count (Phase 3)\n\n🔁 Self-Loop Count (Phase 3)\n\nThese panels will be added in Phase 3 of development.")
+        # Holonomy Distribution vs Accuracy
+        if 'holonomy_pct' in df.columns and 'acc' in df.columns:
+            fig_hol = go.Figure()
+
+            # Holonomy distribution (% of samples with holonomy=+1)
+            fig_hol.add_trace(
+                go.Scatter(
+                    x=df['step'],
+                    y=df['holonomy_pct'] * 100,  # Convert to percentage
+                    mode='lines',
+                    name='% Holonomy +1',
+                    line=dict(color='#00D9FF', width=2),
+                    yaxis='y1'
+                )
+            )
+
+            # Accuracy overlay (secondary y-axis)
+            fig_hol.add_trace(
+                go.Scatter(
+                    x=df['step'],
+                    y=df['acc'] * 100,  # Convert to percentage
+                    mode='lines',
+                    name='Accuracy',
+                    line=dict(color='#FFB000', width=2, dash='dot'),
+                    yaxis='y2'
+                )
+            )
+
+            fig_hol.update_layout(
+                title="Holonomy Distribution vs Accuracy",
+                xaxis=dict(title="Step"),
+                yaxis=dict(
+                    title=dict(text="Holonomy % (+1)", font=dict(color='#00D9FF')),
+                    tickfont=dict(color='#00D9FF'),
+                    range=[0, 100]
+                ),
+                yaxis2=dict(
+                    title=dict(text="Accuracy", font=dict(color='#FFB000')),
+                    tickfont=dict(color='#FFB000'),
+                    overlaying='y',
+                    side='right',
+                    range=[0, 100]
+                ),
+                hovermode='x unified',
+                height=300,
+                template='plotly_dark',
+                showlegend=True,
+                legend=dict(x=0.01, y=0.99)
+            )
+
+            st.plotly_chart(fig_hol, use_container_width=True)
+        else:
+            st.info("🧬 Holonomy Distribution\n\nWaiting for holonomy_pct data from TRUE Möbius training...")
 
 else:
     st.info("No data available for Jump Gate Activation chart")
+
+
+# ============================================================================
+# Row 3: Möbius Diagnostics
+# ============================================================================
+
+if not df.empty and 'ptr_std' in df.columns:
+    st.subheader("🔬 Möbius Helix Diagnostics")
+
+    col1, col2 = st.columns(2)
+
+    with col1:
+        # Pointer Synchronization (ptr_std)
+        fig_sync = go.Figure()
+
+        fig_sync.add_trace(
+            go.Scatter(
+                x=df['step'],
+                y=df['ptr_std'],
+                mode='lines',
+                name='Pointer Position StdDev',
+                line=dict(color='#FF6B9D', width=2),
+                fill='tozeroy',
+                fillcolor='rgba(255, 107, 157, 0.2)'
+            )
+        )
+
+        # Add reference line for high synchronization
+        fig_sync.add_hline(
+            y=5.0,
+            line_dash="dash",
+            line_color="orange",
+            annotation_text="Low (synchronized)",
+            annotation_position="right"
+        )
+
+        fig_sync.update_layout(
+            title="Pointer Position Variance (Synchronization Detector)",
+            xaxis=dict(title="Step"),
+            yaxis=dict(title="Std Dev (positions)"),
+            hovermode='x',
+            height=300,
+            template='plotly_dark',
+            showlegend=False
+        )
+
+        st.plotly_chart(fig_sync, use_container_width=True)
+
+        st.caption("⚠️ Low variance = pointers synchronized → potential oscillations")
+
+    with col2:
+        # Memory Coverage and Wraps
+        if 'coverage' in df.columns and 'wraps' in df.columns:
+            fig_mem = go.Figure()
+
+            # Coverage (secondary y-axis)
+            fig_mem.add_trace(
+                go.Scatter(
+                    x=df['step'],
+                    y=df['coverage'] * 100,  # Convert to percentage
+                    mode='lines',
+                    name='Memory Coverage',
+                    line=dict(color='#7DFF8C', width=2),
+                    yaxis='y2'
+                )
+            )
+
+            # Wrap events (primary y-axis)
+            fig_mem.add_trace(
+                go.Scatter(
+                    x=df['step'],
+                    y=df['wraps'],
+                    mode='markers+lines',
+                    name='Wrap Events',
+                    line=dict(color='#FFD700', width=1),
+                    marker=dict(size=4),
+                    yaxis='y1'
+                )
+            )
+
+            fig_mem.update_layout(
+                title="Memory Coverage & Wrap Events",
+                xaxis=dict(title="Step"),
+                yaxis=dict(
+                    title=dict(text="Wrap Events", font=dict(color='#FFD700')),
+                    tickfont=dict(color='#FFD700')
+                ),
+                yaxis2=dict(
+                    title=dict(text="Coverage %", font=dict(color='#7DFF8C')),
+                    tickfont=dict(color='#7DFF8C'),
+                    overlaying='y',
+                    side='right',
+                    range=[0, 100]
+                ),
+                hovermode='x unified',
+                height=300,
+                template='plotly_dark',
+                showlegend=True,
+                legend=dict(x=0.01, y=0.99)
+            )
+
+            st.plotly_chart(fig_mem, use_container_width=True)
+
+            st.caption("💡 Coverage = range of positions used / total positions (64)")
+        else:
+            st.info("Waiting for coverage and wrap data...")
+
+else:
+    st.info("No Möbius diagnostic data available yet")
 
 
 # ============================================================================
