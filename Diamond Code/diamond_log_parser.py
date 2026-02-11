@@ -38,6 +38,29 @@ RE_TIMING = re.compile(r"s_per_step=(?P<s_per_step>[-+]?\d+(?:\.\d+)?)")
 RE_GRAD_JUMP = re.compile(r"grad_j=(?P<grad_jump>[-+]?\d+(?:\.\d+)?(?:[eE][-+]?\d+)?)")
 RE_GRAD_OTHER = re.compile(r"grad_o=(?P<grad_other>[-+]?\d+(?:\.\d+)?(?:[eE][-+]?\d+)?)")
 
+# Swarm metrics (basic)
+RE_POINTER_SPREAD = re.compile(r"pointer_spread=(?P<pointer_spread>[-+]?\d+(?:\.\d+)?)")
+RE_OUTPUT_DISAGREEMENT = re.compile(r"output_disagreement=(?P<output_disagreement>[-+]?\d+(?:\.\d+)?)")
+
+# Enhanced swarm metrics
+RE_BEING_0 = re.compile(r"being_0=(?P<being_0>[-+]?\d+(?:\.\d+)?)")
+RE_BEING_1 = re.compile(r"being_1=(?P<being_1>[-+]?\d+(?:\.\d+)?)")
+RE_BEING_2 = re.compile(r"being_2=(?P<being_2>[-+]?\d+(?:\.\d+)?)")
+RE_BEING_3 = re.compile(r"being_3=(?P<being_3>[-+]?\d+(?:\.\d+)?)")
+RE_ORACLE = re.compile(r"oracle=(?P<oracle>[-+]?\d+(?:\.\d+)?)")
+RE_ENSEMBLE_BENEFIT = re.compile(r"ensemble_benefit=(?P<ensemble_benefit>[-+]?\d+(?:\.\d+)?)")
+RE_CIRCULAR_SPREAD = re.compile(r"circular_spread=(?P<circular_spread>[-+]?\d+(?:\.\d+)?)")
+RE_COVERAGE = re.compile(r"coverage=(?P<coverage>[-+]?\d+(?:\.\d+)?)")
+RE_CLUSTERING = re.compile(r"clustering=(?P<clustering>[-+]?\d+(?:\.\d+)?)")
+RE_SPECIALIZATION = re.compile(r"specialization=(?P<specialization>[-+]?\d+(?:\.\d+)?)")
+RE_JUMP_0 = re.compile(r"jump_0=(?P<jump_0>[-+]?\d+(?:\.\d+)?)")
+RE_JUMP_1 = re.compile(r"jump_1=(?P<jump_1>[-+]?\d+(?:\.\d+)?)")
+RE_JUMP_2 = re.compile(r"jump_2=(?P<jump_2>[-+]?\d+(?:\.\d+)?)")
+RE_JUMP_3 = re.compile(r"jump_3=(?P<jump_3>[-+]?\d+(?:\.\d+)?)")
+RE_BIT_ACC = re.compile(r"bit_acc=(?P<bit_acc>[-+]?\d+(?:\.\d+)?)")
+RE_BYTE_MATCH = re.compile(r"byte_match=(?P<byte_match>[-+]?\d+(?:\.\d+)?)")
+RE_HAMMING = re.compile(r"hamming=(?P<hamming>[-+]?\d+(?:\.\d+)?)")
+
 
 # ============================================================================
 # Parsing Functions
@@ -133,6 +156,39 @@ def parse_log_line(line: str) -> Optional[Dict[str, float]]:
         m = RE_GRAD_OTHER.search(tail)
         if m:
             row['grad_other'] = float(m.group('grad_other'))
+
+        # Swarm metrics (basic)
+        m = RE_POINTER_SPREAD.search(tail)
+        if m:
+            row['pointer_spread'] = float(m.group('pointer_spread'))
+
+        m = RE_OUTPUT_DISAGREEMENT.search(tail)
+        if m:
+            row['output_disagreement'] = float(m.group('output_disagreement'))
+
+        # Enhanced swarm metrics
+        for metric, regex in [
+            ('being_0', RE_BEING_0),
+            ('being_1', RE_BEING_1),
+            ('being_2', RE_BEING_2),
+            ('being_3', RE_BEING_3),
+            ('oracle', RE_ORACLE),
+            ('ensemble_benefit', RE_ENSEMBLE_BENEFIT),
+            ('circular_spread', RE_CIRCULAR_SPREAD),
+            ('coverage', RE_COVERAGE),
+            ('clustering', RE_CLUSTERING),
+            ('specialization', RE_SPECIALIZATION),
+            ('jump_0', RE_JUMP_0),
+            ('jump_1', RE_JUMP_1),
+            ('jump_2', RE_JUMP_2),
+            ('jump_3', RE_JUMP_3),
+            ('bit_acc', RE_BIT_ACC),
+            ('byte_match', RE_BYTE_MATCH),
+            ('hamming', RE_HAMMING),
+        ]:
+            m = regex.search(tail)
+            if m:
+                row[metric] = float(m.group(metric))
 
     return row
 

@@ -448,6 +448,417 @@ else:
 
 
 # ============================================================================
+# Swarm Diagnostics (ENHANCED)
+# ============================================================================
+
+st.markdown("---")
+
+if any(col in df.columns for col in ['circular_spread', 'pointer_spread', 'coverage', 'clustering', 'being_0', 'being_1']):
+    st.subheader("🐝 Swarm Diagnostics")
+
+    col1, col2 = st.columns(2)
+
+    with col1:
+        # Circular Pointer Spread (FIXED metric)
+        if 'circular_spread' in df.columns:
+            fig = go.Figure()
+
+            # Add threshold lines
+            fig.add_hline(y=16, line_dash="dash", line_color="green",
+                          annotation_text="Good (opposite on ring)", annotation_position="right")
+            fig.add_hline(y=8, line_dash="dash", line_color="orange",
+                          annotation_text="Weak diversity", annotation_position="right")
+
+            fig.add_trace(go.Scatter(
+                x=df['step'], y=df['circular_spread'],
+                fill='tozeroy', name='Circular Spread',
+                line=dict(color='#00D9FF', width=2),
+                fillcolor='rgba(0, 217, 255, 0.2)'
+            ))
+
+            fig.update_layout(
+                title="Circular Pointer Spread (Spatial Diversity)",
+                xaxis_title="Step",
+                yaxis_title="Mean Circular Distance",
+                template="plotly_dark",
+                height=300,
+                hovermode='x unified'
+            )
+            st.plotly_chart(fig, use_container_width=True)
+            st.caption("💡 Good ≥16 (opposite), Bad <8 (co-located)")
+        elif 'pointer_spread' in df.columns:
+            # Fallback to old metric (for backward compat)
+            fig = go.Figure()
+            fig.add_trace(go.Scatter(
+                x=df['step'], y=df['pointer_spread'],
+                fill='tozeroy', name='Pointer Spread (old)',
+                line=dict(color='#00D9FF', width=2),
+                fillcolor='rgba(0, 217, 255, 0.2)'
+            ))
+            fig.update_layout(
+                title="Pointer Spread (old metric - linear std)",
+                xaxis_title="Step",
+                yaxis_title="Std of Pointer Positions",
+                template="plotly_dark",
+                height=300,
+                hovermode='x unified'
+            )
+            st.plotly_chart(fig, use_container_width=True)
+            st.caption("⚠️ Old metric (linear std) - upgrade to circular_spread")
+        else:
+            st.info("Waiting for spatial diversity data...")
+
+    with col2:
+        # Coverage & Clustering
+        if 'coverage' in df.columns and 'clustering' in df.columns:
+            fig = go.Figure()
+
+            # Coverage (primary y-axis)
+            fig.add_trace(go.Scatter(
+                x=df['step'],
+                y=df['coverage'] * 100,
+                mode='lines',
+                name='Coverage %',
+                line=dict(color='#7DFF8C', width=2),
+                yaxis='y1'
+            ))
+
+            # Clustering (secondary y-axis)
+            fig.add_trace(go.Scatter(
+                x=df['step'],
+                y=df['clustering'] * 100,
+                mode='lines',
+                name='Clustering %',
+                line=dict(color='#FF6B9D', width=2, dash='dot'),
+                yaxis='y2'
+            ))
+
+            fig.update_layout(
+                title="Memory Coverage vs Clustering",
+                xaxis=dict(title="Step"),
+                yaxis=dict(
+                    title=dict(text="Coverage %", font=dict(color='#7DFF8C')),
+                    tickfont=dict(color='#7DFF8C'),
+                    range=[0, 100]
+                ),
+                yaxis2=dict(
+                    title=dict(text="Clustering %", font=dict(color='#FF6B9D')),
+                    tickfont=dict(color='#FF6B9D'),
+                    overlaying='y',
+                    side='right',
+                    range=[0, 100]
+                ),
+                hovermode='x unified',
+                height=300,
+                template='plotly_dark',
+                showlegend=True,
+                legend=dict(x=0.01, y=0.99)
+            )
+            st.plotly_chart(fig, use_container_width=True)
+            st.caption("💡 Low clustering (<30%) = distributed, High (>80%) = synchronized")
+        elif 'output_disagreement' in df.columns:
+            # Fallback to old chart
+            fig = go.Figure()
+            fig.add_trace(go.Scatter(
+                x=df['step'],
+                y=df['output_disagreement'],
+                fill='tozeroy',
+                name='Output Disagreement',
+                line=dict(color='#FF6B9D', width=2),
+                fillcolor='rgba(255, 107, 157, 0.2)'
+            ))
+            fig.update_layout(
+                title="Output Disagreement (Ensemble Diversity)",
+                xaxis_title="Step",
+                yaxis_title="Std of Being Outputs",
+                template="plotly_dark",
+                height=300,
+                hovermode='x unified'
+            )
+            st.plotly_chart(fig, use_container_width=True)
+            st.caption("💡 High early, decreasing = healthy ensemble learning")
+        else:
+            st.info("Waiting for coverage/clustering data...")
+
+
+# ============================================================================
+# Per-Being Performance (NEW)
+# ============================================================================
+
+st.markdown("---")
+
+if 'being_0' in df.columns and 'being_1' in df.columns:
+    st.subheader("👥 Per-Being Performance")
+
+    col1, col2 = st.columns(2)
+
+    with col1:
+        # Individual accuracies + ensemble
+        fig = go.Figure()
+
+        fig.add_trace(go.Scatter(
+            x=df['step'], y=df['being_0'],
+            mode='lines', name='Being 0',
+            line=dict(color='#00D9FF', width=2)
+        ))
+
+        fig.add_trace(go.Scatter(
+            x=df['step'], y=df['being_1'],
+            mode='lines', name='Being 1',
+            line=dict(color='#FF6B9D', width=2)
+        ))
+
+        # Add being_2, being_3 if present (for larger swarms)
+        if 'being_2' in df.columns:
+            fig.add_trace(go.Scatter(
+                x=df['step'], y=df['being_2'],
+                mode='lines', name='Being 2',
+                line=dict(color='#B19CD9', width=2)
+            ))
+
+        if 'being_3' in df.columns:
+            fig.add_trace(go.Scatter(
+                x=df['step'], y=df['being_3'],
+                mode='lines', name='Being 3',
+                line=dict(color='#FFD700', width=2)
+            ))
+
+        if 'acc' in df.columns:  # Ensemble accuracy
+            fig.add_trace(go.Scatter(
+                x=df['step'], y=df['acc'],
+                mode='lines', name='Ensemble (mean)',
+                line=dict(color='#FFFFFF', width=3, dash='dot')
+            ))
+
+        if 'oracle' in df.columns:  # Oracle best-of-N
+            fig.add_trace(go.Scatter(
+                x=df['step'], y=df['oracle'],
+                mode='lines', name='Oracle (best-of-N)',
+                line=dict(color='#00FF00', width=2, dash='dash')
+            ))
+
+        fig.update_layout(
+            title="Individual vs Ensemble Accuracy",
+            xaxis_title="Step",
+            yaxis_title="Accuracy",
+            template="plotly_dark",
+            height=300,
+            hovermode='x unified',
+            legend=dict(x=0.01, y=0.99)
+        )
+        st.plotly_chart(fig, use_container_width=True)
+        st.caption("💡 If oracle >> ensemble → combiner bottleneck. If ensemble < max(individuals) → averaging hurts.")
+
+    with col2:
+        # Ensemble benefit over time
+        if 'ensemble_benefit' in df.columns:
+            fig = go.Figure()
+
+            # Color negative benefits differently
+            colors = ['green' if b >= 0 else 'red' for b in df['ensemble_benefit']]
+
+            fig.add_trace(go.Scatter(
+                x=df['step'],
+                y=df['ensemble_benefit'],
+                mode='lines+markers',
+                name='Ensemble Benefit',
+                line=dict(color='#FFD700', width=2),
+                marker=dict(size=4, color=colors)
+            ))
+
+            fig.add_hline(y=0, line_dash="solid", line_color="white", line_width=1)
+
+            fig.update_layout(
+                title="Ensemble Benefit (ensemble - max_individual)",
+                xaxis_title="Step",
+                yaxis_title="Benefit",
+                template="plotly_dark",
+                height=300,
+                hovermode='x unified'
+            )
+            st.plotly_chart(fig, use_container_width=True)
+            st.caption("💡 Positive = averaging helps, Negative = best individual better, Zero = redundant")
+        else:
+            st.info("Waiting for ensemble_benefit data...")
+
+
+# ============================================================================
+# Specialization & Routing (NEW)
+# ============================================================================
+
+st.markdown("---")
+
+col1, col2 = st.columns(2)
+
+with col1:
+    if 'specialization' in df.columns:
+        fig = go.Figure()
+
+        fig.add_trace(go.Scatter(
+            x=df['step'],
+            y=df['specialization'],
+            fill='tozeroy',
+            name='Specialization Score',
+            line=dict(color='#B19CD9', width=2),
+            fillcolor='rgba(177, 156, 217, 0.2)'
+        ))
+
+        fig.update_layout(
+            title="Specialization Score (std of per-being per-op acc)",
+            xaxis_title="Step",
+            yaxis_title="Specialization",
+            template="plotly_dark",
+            height=300,
+            hovermode='x unified'
+        )
+        st.plotly_chart(fig, use_container_width=True)
+        st.caption("💡 High = beings specialize (being₀→OR, being₁→AND), Low = redundant")
+
+with col2:
+    if 'jump_0' in df.columns and 'jump_1' in df.columns:
+        fig = go.Figure()
+
+        fig.add_trace(go.Scatter(
+            x=df['step'],
+            y=df['jump_0'],
+            mode='lines',
+            name='Being 0 Jump Rate',
+            line=dict(color='#00D9FF', width=2)
+        ))
+
+        fig.add_trace(go.Scatter(
+            x=df['step'],
+            y=df['jump_1'],
+            mode='lines',
+            name='Being 1 Jump Rate',
+            line=dict(color='#FF6B9D', width=2)
+        ))
+
+        # Add more beings if present
+        if 'jump_2' in df.columns:
+            fig.add_trace(go.Scatter(
+                x=df['step'], y=df['jump_2'],
+                mode='lines', name='Being 2 Jump Rate',
+                line=dict(color='#B19CD9', width=2)
+            ))
+
+        if 'jump_3' in df.columns:
+            fig.add_trace(go.Scatter(
+                x=df['step'], y=df['jump_3'],
+                mode='lines', name='Being 3 Jump Rate',
+                line=dict(color='#FFD700', width=2)
+            ))
+
+        fig.update_layout(
+            title="Per-Being Jump Rates (Routing Strategy)",
+            xaxis_title="Step",
+            yaxis_title="Jump Rate",
+            template="plotly_dark",
+            height=300,
+            hovermode='x unified',
+            legend=dict(x=0.01, y=0.99)
+        )
+        st.plotly_chart(fig, use_container_width=True)
+        st.caption("💡 Different rates = strategy specialization (explorer vs exploiter)")
+
+
+# ============================================================================
+# Raw Log Viewer (NEW)
+# ============================================================================
+
+st.markdown("---")
+
+with st.expander("📋 Raw Logs - Full Training Log Viewer", expanded=False):
+    if not df.empty:
+        # View mode selector
+        view_mode = st.radio(
+            "View Mode",
+            ["Tail (Last N)", "Full Log", "Search"],
+            horizontal=True
+        )
+
+        # Reconstruct raw log lines from parsed rows
+        def format_log_line(row):
+            """Reconstruct log line from parsed row dict."""
+            # Start with step and loss
+            line = f"step {int(row['step'])} | loss {row['loss']:.6f}"
+
+            # Add optional metrics in order
+            metrics_order = [
+                'overall', 'bit_acc', 'byte_match', 'hamming',
+                'add', 'and', 'or', 'xor',
+                'being_0', 'being_1', 'being_2', 'being_3',
+                'oracle', 'ensemble_benefit',
+                'circular_spread', 'coverage', 'clustering',
+                'jump_0', 'jump_1', 'jump_2', 'jump_3',
+                'specialization', 's_per_step'
+            ]
+
+            for metric in metrics_order:
+                if metric in row and row[metric] is not None:
+                    if metric in ['ensemble_benefit']:
+                        line += f" {metric}={row[metric]:+.4f}"
+                    elif metric in ['s_per_step']:
+                        line += f" {metric}={row[metric]:.3f}"
+                    else:
+                        line += f" {metric}={row[metric]:.4f}"
+
+            return line
+
+        # Generate raw log text based on mode
+        if view_mode == "Tail (Last N)":
+            n_lines = st.slider("Number of lines", 10, 500, 50, step=10)
+            lines = [format_log_line(row) for row in st.session_state.parsed_rows[-n_lines:]]
+            log_text = "\n".join(lines)
+            st.code(log_text, language="text")
+            st.info(f"Showing last {len(lines)} lines of {len(st.session_state.parsed_rows)} total")
+
+        elif view_mode == "Full Log":
+            # Warning for large logs
+            if len(st.session_state.parsed_rows) > 1000:
+                st.warning(f"⚠️ Large log ({len(st.session_state.parsed_rows)} lines). This may be slow. Consider using Tail mode.")
+                if not st.checkbox("Show anyway (may be slow)"):
+                    st.stop()
+
+            lines = [format_log_line(row) for row in st.session_state.parsed_rows]
+            log_text = "\n".join(lines)
+            st.code(log_text, language="text")
+            st.info(f"Showing all {len(lines)} lines")
+
+        elif view_mode == "Search":
+            search_term = st.text_input("Search pattern (case-insensitive)")
+            if search_term:
+                matching_lines = []
+                for row in st.session_state.parsed_rows:
+                    line = format_log_line(row)
+                    if search_term.lower() in line.lower():
+                        matching_lines.append(line)
+
+                if matching_lines:
+                    log_text = "\n".join(matching_lines)
+                    st.code(log_text, language="text")
+                    st.info(f"Found {len(matching_lines)} matching lines")
+                else:
+                    st.warning("No matches found")
+            else:
+                st.info("Enter a search term to filter logs")
+
+        # Download button
+        if st.session_state.parsed_rows:
+            all_lines = [format_log_line(row) for row in st.session_state.parsed_rows]
+            download_text = "\n".join(all_lines)
+            st.download_button(
+                label="📥 Download Full Log",
+                data=download_text,
+                file_name=f"swarm_training_{int(df['step'].max())}_steps.log",
+                mime="text/plain",
+                use_container_width=True
+            )
+    else:
+        st.info("No log data available yet")
+
+
+# ============================================================================
 # Footer
 # ============================================================================
 
