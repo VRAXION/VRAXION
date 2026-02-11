@@ -1,0 +1,15 @@
+# Output logs from experimental runs
+*_output.txt
+
+# Stray log files
+logsdiamondprobe_live.log
+
+# Python
+__pycache__/
+*.pyc
+
+# Checkpoints (commit selectively)
+*.pt
+
+# Large log files (commit selectively)
+logs/swarm/*.log
