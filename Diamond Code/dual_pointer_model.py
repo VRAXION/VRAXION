@@ -107,15 +107,17 @@ class DualPointerByteRingModel(nn.Module):
         hard = (probs > 0.5).float()
         return hard - probs.detach() + probs
 
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
+    def forward(self, x: torch.Tensor, return_stats: bool = False):
         """
         Forward pass with DUAL pointers.
 
         Args:
             x: [B, T, 8] byte sequence
+            return_stats: If True, return (output, stats) with jump gate stats
 
         Returns:
             output: [B, T, 8] predicted sequence
+            stats: Dict with jump_gate activation rate (if return_stats=True)
         """
         B, T, _ = x.shape
 
@@ -138,6 +140,7 @@ class DualPointerByteRingModel(nn.Module):
             )
 
         outputs = []
+        jump_counts = [] if return_stats else None
 
         for t in range(T):
             # 1. Read input
@@ -200,6 +203,10 @@ class DualPointerByteRingModel(nn.Module):
             walk_position1 = (pointer1_position + 1.0) % self.num_memory_positions
             pointer1_position = torch.where(should_jump1 > 0.5, jump_target1, walk_position1)
 
+            # Track jump gate activation (if stats requested)
+            if return_stats:
+                jump_counts.append(should_jump1.mean().item())
+
             # Update pointer2 (only if dual mode)
             if self.use_dual_pointers:
                 current_pos2 = pointer2_position.long().clamp(0, self.num_memory_positions - 1)
@@ -217,7 +224,15 @@ class DualPointerByteRingModel(nn.Module):
 
             outputs.append(output_bits)
 
-        return torch.stack(outputs, dim=1)
+        # Return output with optional stats
+        output = torch.stack(outputs, dim=1)
+        if return_stats:
+            stats = {
+                'jump_gate': sum(jump_counts) / len(jump_counts) if jump_counts else 0.5
+            }
+            return output, stats
+        else:
+            return output
 
 
 if __name__ == "__main__":
