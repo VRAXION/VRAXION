@@ -53,12 +53,16 @@ RE_BIT_ACC = re.compile(r"bit_acc=(?P<bit_acc>[-+]?\d+(?:\.\d+)?)")
 RE_BYTE_MATCH = re.compile(r"byte_match=(?P<byte_match>[-+]?\d+(?:\.\d+)?)")
 RE_HAMMING = re.compile(r"hamming=(?P<hamming>[-+]?\d+(?:\.\d+)?)")
 RE_BIT_ORACLE = re.compile(r"bit_oracle=(?P<bit_oracle>[-+]?\d+(?:\.\d+)?)")
+RE_TRAIN_BACC = re.compile(r"train_bacc=(?P<train_bacc>[-+]?\d+(?:\.\d+)?)")
 
-# Per-bit accuracy (receptive field diagnostics)
+# Per-bit accuracy (receptive field diagnostics) - up to 256 bits
 RE_BIT_POSITIONS = {
     f'bit{i}': re.compile(rf"bit{i}=(?P<bit{i}>[-+]?\d+(?:\.\d+)?)")
-    for i in range(64)
+    for i in range(256)
 }
+
+# Masks header line (written at start of log)
+RE_MASKS_LINE = re.compile(r"^masks\s*\|")
 
 # Mask diagnostics (receptive field mode)
 RE_MIN_COV = re.compile(r"min_cov=(?P<min_cov>\d+)")
@@ -92,14 +96,20 @@ def parse_log_line(line: str) -> Optional[Dict[str, float]]:
         Dict with parsed metrics, or None if line doesn't match format
     """
     # Try to match core step/loss pattern
-    match = RESTEP.match(line.strip())
+    stripped = line.strip()
+    is_eval = False
+    if stripped.startswith('EVAL | '):
+        stripped = stripped[7:]  # Remove "EVAL | " prefix
+        is_eval = True
+    match = RESTEP.match(stripped)
     if not match:
         return None
 
     # Extract step and loss
     row = {
         'step': int(match.group('step')),
-        'loss': float(match.group('loss'))
+        'loss': float(match.group('loss')),
+        'is_eval': 1.0 if is_eval else 0.0,
     }
 
     # Extract optional tail metrics
@@ -181,6 +191,11 @@ def parse_log_line(line: str) -> Optional[Dict[str, float]]:
         if m:
             row['output_disagreement'] = float(m.group('output_disagreement'))
 
+        # Pulse eval (GPU, every step)
+        m = RE_TRAIN_BACC.search(tail)
+        if m:
+            row['train_bacc'] = float(m.group('train_bacc'))
+
         # Enhanced swarm metrics (static patterns)
         for metric, regex in [
             ('oracle', RE_ORACLE),
@@ -227,6 +242,35 @@ def parse_log_line(line: str) -> Optional[Dict[str, float]]:
             row['mask_div'] = float(m.group('mask_div'))
 
     return row
+
+
+def parse_masks_line(line: str) -> Optional[Dict[str, list]]:
+    """
+    Parse a masks header line into a dict of being -> bit indices.
+
+    Format: masks | num_bits=256 | being_0=1,2,4,7,... | being_1=2,5,6,...
+
+    Returns:
+        Dict with 'num_bits' and 'being_N' keys mapping to lists of bit indices,
+        or None if line doesn't match.
+    """
+    if not RE_MASKS_LINE.match(line.strip()):
+        return None
+
+    result = {}
+    parts = line.strip().split('|')
+    for part in parts[1:]:  # skip "masks" prefix
+        part = part.strip()
+        if '=' not in part:
+            continue
+        key, val = part.split('=', 1)
+        key = key.strip()
+        val = val.strip()
+        if key == 'num_bits':
+            result['num_bits'] = int(val)
+        elif key.startswith('being_'):
+            result[key] = [int(x) for x in val.split(',') if x.strip()]
+    return result
 
 
 def parse_log_lines(lines: List[str]) -> List[Dict[str, float]]:
@@ -291,6 +335,46 @@ def read_and_parse_log(path: str, last_pos: int = 0) -> Tuple[List[Dict], int]:
     new_lines, new_pos = read_new_lines(path, last_pos)
     rows = parse_log_lines(new_lines)
     return rows, new_pos
+
+
+def read_masks_from_log(path: str) -> Optional[Dict[str, list]]:
+    """
+    Read the masks header line from the beginning of a log file.
+
+    Returns:
+        Dict with 'num_bits' and 'being_N' keys, or None if no masks found.
+    """
+    if not os.path.exists(path):
+        return None
+    try:
+        with open(path, 'r', encoding='utf-8', errors='replace') as f:
+            for line in f:
+                result = parse_masks_line(line)
+                if result is not None:
+                    return result
+                # Only check first few lines (masks should be at the start)
+                if line.strip().startswith('step'):
+                    break
+        return None
+    except Exception:
+        return None
+
+
+def read_masks_from_json(path: str) -> Optional[Dict[str, list]]:
+    """
+    Read masks from a companion JSON file.
+
+    Returns:
+        Dict with 'num_bits' and 'being_N' keys, or None if not found.
+    """
+    import json
+    if not os.path.exists(path):
+        return None
+    try:
+        with open(path, 'r') as f:
+            return json.load(f)
+    except Exception:
+        return None
 
 
 # ============================================================================

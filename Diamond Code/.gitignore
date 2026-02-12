@@ -1,15 +1,22 @@
 # Output logs from experimental runs
 *_output.txt
+diag_output.txt
 
-# Stray log files
-logsdiamondprobe_live.log
+# All runtime logs (generated, not source)
+logs/
+
+# Generated data
+data/
 
 # Python
 __pycache__/
 *.pyc
 
-# Checkpoints (commit selectively)
+# Checkpoints
 *.pt
 
-# Large log files (commit selectively)
-logs/swarm/*.log
+# Generated images
+*.png
+
+# Windows artifacts
+nul
