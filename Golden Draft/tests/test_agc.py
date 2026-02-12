@@ -113,5 +113,22 @@ class TestAGC(unittest.TestCase):
         self.assertEqual(model.update_scale, model.debug_scale_out)
 
 
+    def test_disabled_agc_preserves_scale_during_warmup(self) -> None:
+        """AGC OFF must not override update_scale during warmup steps."""
+        model = DummyModel(update_scale=0.5)
+        params = _default_params(enabled=False, warmup_init=0.001, warmup_steps=10, scale_min=0.01)
+        # Step 0 — previously would force scale to warmup_init (0.001)
+        result = apply_update_agc(model, grad_norm=0.05, params=params, step=0)
+        self.assertAlmostEqual(result, 0.5, places=6)
+        # Mid-warmup — previously would clamp to warmup floor
+        model2 = DummyModel(update_scale=0.5)
+        result2 = apply_update_agc(model2, grad_norm=0.05, params=params, step=5)
+        self.assertAlmostEqual(result2, 0.5, places=6)
+        # Post-warmup — scale must still be preserved
+        model3 = DummyModel(update_scale=0.5)
+        result3 = apply_update_agc(model3, grad_norm=0.05, params=params, step=10)
+        self.assertAlmostEqual(result3, 0.5, places=6)
+
+
 if __name__ == "__main__":
     unittest.main()

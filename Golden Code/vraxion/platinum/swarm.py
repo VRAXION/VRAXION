@@ -26,6 +26,7 @@ def fibonacci_halving_budget(
     think_dim: int,
     vocab_size: int,
     *,
+    in_dim: int | None = None,
     min_ring_len: int = 4,
     max_ants: int = 8,
 ) -> list:
@@ -33,8 +34,13 @@ def fibonacci_halving_budget(
 
     Each satellite ant gets a fraction ``0.5^(i+1)`` of the total budget.
     Returns a list of dicts with keys: ring_len, slot_dim, fraction, param_count.
+
+    Args:
+        in_dim: input dimension for the ants. If None, defaults to 2*think_dim
+                (legacy chrom-fed behavior).
     """
-    in_dim = 2 * think_dim
+    if in_dim is None:
+        in_dim = 2 * think_dim
     head_cost = think_dim * vocab_size + vocab_size
     small_const = 4 + 1 + think_dim
 

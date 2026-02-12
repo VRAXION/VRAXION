@@ -87,16 +87,18 @@ def apply_update_agc(
     scaval = float(getattr(model, "update_scale", flrval))
     if (not math.isfinite(scaval)) or scaval <= 0:
         scaval = flrval
-    if step is not None and step == 0:
-        scaval = flrval
 
-    if params.enabled and grad_norm is not None and math.isfinite(float(grad_norm)):
-        if grad_norm < params.grad_low:
-            scaval *= params.scale_up
-        elif grad_norm > params.grad_high:
-            scaval *= params.scale_down
-
-    scaval = _clamp(scaval, flrval, capval)
+    if params.enabled:
+        if step is not None and step == 0:
+            scaval = flrval
+        if grad_norm is not None and math.isfinite(float(grad_norm)):
+            if grad_norm < params.grad_low:
+                scaval *= params.scale_up
+            elif grad_norm > params.grad_high:
+                scaval *= params.scale_down
+        scaval = _clamp(scaval, flrval, capval)
+    else:
+        scaval = _clamp(scaval, params.scale_min, capval)
     model.agc_scale_cap = capval
     model.update_scale = scaval
     model.debug_scale_out = scaval

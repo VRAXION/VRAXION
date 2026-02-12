@@ -1,0 +1,22 @@
+# Output logs from experimental runs
+*_output.txt
+diag_output.txt
+
+# All runtime logs (generated, not source)
+logs/
+
+# Generated data
+data/
+
+# Python
+__pycache__/
+*.pyc
+
+# Checkpoints
+*.pt
+
+# Generated images
+*.png
+
+# Windows artifacts
+nul

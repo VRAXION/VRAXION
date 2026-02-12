@@ -1,70 +1,169 @@
-"""AGC Live Probe — true no-AGC test at full update scale.
+"""AGC Live Test Probe - Dashboard-compatible training run
 
-Modes (set PROBE_MODE env var):
-  fullscale  (default) : AGC OFF + VRX_SCALE_MIN=1.0  — the real test
-  agc_on               : AGC ON, defaults             — Part C control
-  locked_low           : AGC OFF, VRX_SCALE_MIN=0.01  — Part C agc-off (confounded)
-
-Run:  python tools/_scratch/agc_live_probe.py
-Stop: Ctrl-C any time; heartbeat prints every 10 steps to stderr.
+Runs a simple training loop on assoc_clean with AGC enabled,
+writing dashboard-compatible logs to visualize gradient normalization.
 """
-from __future__ import annotations
 
-import os
 import sys
+import os
+import time
+from pathlib import Path
 
-# --- Mode selection (before any vraxion imports) ---
-MODE = os.environ.get("PROBE_MODE", "fullscale").strip().lower()
+# Add Golden Code to path
+sys.path.insert(0, "S:/AI/Golden Code")
 
-# Common env for all modes
-_COMMON = {
-    "VRX_SYNTH": "1",
-    "VRX_SYNTH_ONCE": "1",
-    "VRX_SYNTH_MODE": "assoc_clean",
-    "VRX_MAX_STEPS": "2000",
-    "VRX_RING_LEN": "64",
-    "VRX_SLOT_DIM": "32",
-    "VAR_COMPUTE_DEVICE": "cpu",
-    "VRX_HEARTBEAT_STEPS": "10",
-    "VRX_MODULAR_SAVE": "0",
-    "VRX_NAN_GUARD": "0",
-    "VRX_DISABLE_SYNC": "1",
-}
+import torch
+import torch.nn as nn
+import torch.optim as optim
 
-_MODES = {
-    "fullscale":  {"VRX_AGC_ENABLED": "0", "VRX_SCALE_MIN": "1.0"},
-    "agc_on":     {"VRX_AGC_ENABLED": "1"},
-    "locked_low": {"VRX_AGC_ENABLED": "0", "VRX_SCALE_MIN": "0.01"},
-}
+from vraxion.instnct.agc import AGCParams, apply_update_agc
+from vraxion.instnct.absolute_hallway import AbsoluteHallway
 
-if MODE not in _MODES:
-    print(f"Unknown PROBE_MODE={MODE!r}. Choose: {', '.join(_MODES)}", file=sys.stderr)
-    sys.exit(1)
+# Simple synthetic task: learn to echo input
+def generate_batch(batch_size=16, seq_len=10):
+    """Generate simple associative memory task"""
+    # Random sequences
+    keys = torch.randint(0, 10, (batch_size, seq_len))
+    values = torch.randint(0, 10, (batch_size, seq_len))
 
-for k, v in {**_COMMON, **_MODES[MODE]}.items():
-    os.environ[k] = v
+    # Targets: echo the value at a random key position
+    targets = torch.zeros(batch_size, dtype=torch.long)
+    for i in range(batch_size):
+        key_pos = torch.randint(0, seq_len, (1,)).item()
+        targets[i] = values[i, key_pos]
 
-# --- Path bootstrap (match gpu_learning_campaign pattern) ---
-_DRAFTR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-sys.path.insert(0, _DRAFTR)
-for c in [os.path.join(os.path.dirname(_DRAFTR), "Golden Code"), r"S:\AI\Golden Code"]:
-    if os.path.isdir(c) and c not in sys.path:
-        sys.path.insert(0, c)
-        break
+    # One-hot encode
+    inputs = torch.cat([
+        torch.nn.functional.one_hot(keys, 10).float(),
+        torch.nn.functional.one_hot(values, 10).float()
+    ], dim=-1)  # [batch, seq, 20]
 
-import torch  # noqa: E402
-from vraxion.instnct.absolute_hallway import AbsoluteHallway  # noqa: E402
-from tools import instnct_train_steps, instnct_data  # noqa: E402
+    return inputs, targets
 
-# Do NOT silence log — heartbeat prints naturally to stderr
 
-print(f"[agc_live_probe] mode={MODE}  env overrides: {_MODES[MODE]}", file=sys.stderr)
+def main():
+    print("=" * 60)
+    print("AGC Live Probe - Training with Dashboard Feed")
+    print("=" * 60)
+    print()
+    print("Dashboard: http://localhost:8501")
+    print("Log file:  logs/probe/probe_live.log")
+    print()
 
-loader, num_classes, collate = instnct_data.get_seq_mnist_loader()
-model = AbsoluteHallway(input_dim=1, num_classes=num_classes, ring_len=64, slot_dim=32)
-print(f"[agc_live_probe] model ready  classes={num_classes}  starting 2000 steps...", file=sys.stderr)
+    # Setup
+    device = "cpu"
+    log_path = Path("S:/AI/work/VRAXION_DEV/Golden Draft/logs/probe/probe_live.log")
+    log_path.parent.mkdir(parents=True, exist_ok=True)
 
-result = instnct_train_steps.train_steps(model, loader, 2000, "assoc_clean", "absolute_hallway")
+    # Clear log file
+    log_path.write_text("")
 
-print(f"[agc_live_probe] DONE  loss_slope={result.get('loss_slope')}  "
-      f"final_scale={getattr(model, 'update_scale', '?')}", file=sys.stderr)
+    # Model
+    model = AbsoluteHallway(
+        input_dim=20,
+        num_classes=10,
+        ring_len=64,
+        slot_dim=64,
+    ).to(device)
+
+    # Optimizer
+    optimizer = optim.Adam(model.parameters(), lr=1e-3)
+
+    # AGC
+    agc_params = AGCParams(enabled=True, grad_low=1.0, grad_high=5.0)
+
+    # Loss
+    criterion = nn.CrossEntropyLoss()
+
+    # Training loop
+    num_steps = 100
+    start_time = time.time()
+
+    print(f"Training for {num_steps} steps with AGC enabled...")
+    print(f"AGC range: [{agc_params.grad_low}, {agc_params.grad_high}]")
+    print()
+
+    for step in range(1, num_steps + 1):
+        # Generate batch
+        inputs, targets = generate_batch(batch_size=16, seq_len=10)
+        inputs = inputs.to(device)
+        targets = targets.to(device)
+
+        # Forward
+        optimizer.zero_grad()
+        logits, move_penalty = model(inputs)
+
+        # logits is [B, num_classes]
+        loss = criterion(logits, targets)
+
+        # Backward
+        loss.backward()
+
+        # Compute full model gradient norm BEFORE AGC
+        total_grad_norm = 0.0
+        with torch.no_grad():
+            for p in model.parameters():
+                if p.grad is not None:
+                    param_norm = p.grad.data.norm(2).item()
+                    total_grad_norm += param_norm ** 2
+            total_grad_norm = total_grad_norm ** 0.5
+
+        # AGC: Normalize gradients
+        agc_scale = apply_update_agc(
+            model, total_grad_norm, agc_params,
+            step=step, log_fn=lambda msg: None  # Suppress AGC logs for now
+        )
+
+        # Apply normalization to gradients
+        if agc_scale != 1.0:
+            with torch.no_grad():
+                for p in model.parameters():
+                    if p.grad is not None:
+                        p.grad.data.mul_(agc_scale)
+
+        # Compute gradient norm AFTER AGC (for logging)
+        normalized_grad_norm = total_grad_norm * agc_scale
+
+        # Optimizer step
+        optimizer.step()
+
+        # Compute accuracy
+        with torch.no_grad():
+            preds = logits.argmax(dim=-1)
+            acc = (preds == targets).float().mean().item()
+
+        # Timing
+        elapsed = time.time() - start_time
+        s_per_step = elapsed / step
+
+        # Dashboard-compatible log line
+        # Format: step N | loss X.XXXXXX | acc=X.XXXX RD:X.XXXX traction=X.XXXX shard=0/0
+        log_line = f"step {step} | loss {loss.item():.6f} | acc={acc:.4f} RD:{s_per_step:.4f} traction={acc:.4f} shard=0/0 | grad_raw={total_grad_norm:.2f} grad_norm={normalized_grad_norm:.2f} agc_scale={agc_scale:.4f}\n"
+
+        # Write to log file (append)
+        with log_path.open("a") as f:
+            f.write(log_line)
+
+        # Console output every 10 steps
+        if step % 10 == 0 or step == 1:
+            agc_status = "SCALED" if agc_scale != 1.0 else "OK"
+            print(f"step {step:3d} | loss {loss.item():.4f} | acc {acc:.4f} | "
+                  f"grad_raw {total_grad_norm:6.2f} -> {normalized_grad_norm:5.2f} [{agc_status}] | "
+                  f"{s_per_step:.3f}s/step")
+
+            # Log AGC action if it triggered
+            if agc_scale < 1.0:
+                print(f"         | AGC scaled DOWN by {agc_scale:.4f} (grad too high)")
+            elif agc_scale > 1.0:
+                print(f"         | AGC scaled UP by {agc_scale:.4f} (grad too low)")
+
+    print()
+    print("=" * 60)
+    print(f"Training complete: {num_steps} steps in {elapsed:.1f}s ({s_per_step:.3f}s/step)")
+    print(f"Log written to: {log_path}")
+    print(f"Dashboard: http://localhost:8501")
+    print("=" * 60)
+
+
+if __name__ == "__main__":
+    main()

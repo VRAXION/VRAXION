@@ -128,5 +128,34 @@ class InstnctDataTests(unittest.TestCase):
             self.assertTrue(torch.equal(yb1, yb2))
 
 
+    def test_assoc_clean_deterministic_across_calls(self) -> None:
+        """Two calls with same seed must produce identical datasets."""
+        self._set_clean_env()
+        with conftest.temporary_env(
+            VAR_RUN_SEED="42",
+            VRX_BATCH_SIZE="4",
+            VRX_MAX_SAMPLES="16",
+            VRX_SYNTH="1",
+            VRX_SYNTH_MODE="assoc_clean",
+            VRX_SYNTH_LEN="16",
+            VRX_ASSOC_KEYS="4",
+            VRX_ASSOC_PAIRS="2",
+        ):
+            import tools.instnct_data as D
+
+            with tempfile.TemporaryDirectory() as td:
+                old_log = infra.LOG_PATH
+                infra.LOG_PATH = os.path.join(td, "vraxion.log")
+                try:
+                    loader1, _, _ = D.get_seq_mnist_loader()
+                    x1, y1 = next(iter(loader1))
+                    loader2, _, _ = D.get_seq_mnist_loader()
+                    x2, y2 = next(iter(loader2))
+                finally:
+                    infra.LOG_PATH = old_log
+        self.assertTrue(torch.equal(x1, x2))
+        self.assertTrue(torch.equal(y1, y2))
+
+
 if __name__ == "__main__":
     unittest.main()

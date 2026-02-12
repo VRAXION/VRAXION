@@ -159,6 +159,8 @@ def get_seq_mnist_loader(
     DATA_DIR = str(cfg.data_dir)
     OFFLINE_ONLY = bool(cfg.offline_only)
     SEED = int(cfg.seed)
+    random.seed(SEED)
+    torch.manual_seed(SEED)
     MAX_SAMPLES = int(max_samples) if max_samples is not None else int(cfg.max_samples)
     BATCH_SIZE = int(batch_size) if batch_size is not None else int(cfg.batch_size)
     SYNTH_LEN = int(cfg.synth_len)
@@ -821,6 +823,7 @@ def get_seq_mnist_loader(
 def build_synth_pair_loaders(*, batch_size: Optional[int] = None) -> Tuple[Any, Any, Callable[..., Any]]:
     cfg = load_settings()
     SEED = int(cfg.seed)
+    random.seed(SEED)
     MAX_SAMPLES = int(cfg.max_samples)
     SYNTH_LEN = int(cfg.synth_len)
     SYNTH_SHUFFLE = bool(cfg.synth_shuffle)
