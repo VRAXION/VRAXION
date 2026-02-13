@@ -494,6 +494,12 @@ def main():
                         help='Use Fibonacci-halving K schedule (heterogeneous receptive fields)')
     parser.add_argument('--combinatorial', action='store_true',
                         help='Combinatorial mask placement (greedy pair-diversity, uniform K)')
+    parser.add_argument('--use_lcx', action='store_true', default=True,
+                        help='Use LCX (per-slot scratchpad) instead of legacy GEM (default: True)')
+    parser.add_argument('--no_lcx', action='store_false', dest='use_lcx',
+                        help='Disable LCX, fall back to legacy GEM')
+    parser.add_argument('--slots_per_being', type=int, default=1,
+                        help='LCX slots each being can write (-1 = all slots / giant ant, 1 = flowchart spec, K = K phi-stride slots)')
     parser.add_argument('--text', type=str, default=None,
                         help='Path to text file for byte-level language modeling (overrides math tasks)')
     parser.add_argument('--think_ticks', type=int, default=0,
@@ -562,7 +568,7 @@ def main():
 
     # Fibonacci auto-mode: determine beings from input size
     if args.fibonacci:
-        fib_k = fibonacci_split(num_bits, min_k=4)
+        fib_k = fibonacci_split(num_bits, min_k=2)
         octave_size = len(fib_k)
         if args.num_beings > octave_size:
             # User wants more beings: repeat octaves to fill
@@ -621,7 +627,12 @@ def main():
     print(f"  Capacity fibonacci: {args.capacity_fibonacci}" +
           (f" (max_H={args.max_hidden}, min_H={args.min_hidden})" if args.capacity_fibonacci else ""))
     print(f"  Full view: {args.full_view}")
-    print(f"  GEM: {num_bits} cells (golden ratio EMA, phi^-1=0.618)")
+    if args.use_lcx:
+        spb = args.slots_per_being
+        spb_desc = "ALL (global write)" if spb == -1 else f"{spb} per being"
+        print(f"  LCX: {num_bits}×{num_bits} = {num_bits**2} cells, slots_per_being={spb} ({spb_desc})")
+    else:
+        print(f"  GEM: {num_bits} cells (golden ratio EMA, phi^-1=0.618)")
     print(f"  Batch size: {args.batch_size}")
     print(f"  Grad accum: {args.grad_accum} (effective batch={args.batch_size * args.grad_accum})")
     print(f"  Active beings: {args.active_beings}")
@@ -678,6 +689,8 @@ def main():
         max_hidden=args.max_hidden,
         min_hidden=args.min_hidden,
         full_view=args.full_view,
+        use_lcx=args.use_lcx,
+        slots_per_being=args.slots_per_being,
     )
 
     # Print temporal fibonacci tick schedule
@@ -754,6 +767,7 @@ def main():
         'temporal_fibonacci': args.temporal_fibonacci,
         'capacity_fibonacci': args.capacity_fibonacci,
         'full_view': args.full_view,
+        'use_lcx': args.use_lcx,
         'max_hidden': args.max_hidden,
         'min_hidden': args.min_hidden,
         'memory_size': memory_size,
@@ -835,8 +849,11 @@ def main():
             print(f"Warning: current.log locked by another process, overwriting")
 
     # InfluxDB metrics writer (no-op if INFLUX_TOKEN not set)
+    # Always write as "current" — Grafana is hardcoded to read this.
+    # Old data is flushed so only the current run is visible.
     influx_writer.init()
-    influx_run_id = config_name
+    influx_writer.flush_bucket()
+    influx_run_id = "current"
 
     print(f"Log: {log_path}")
     print(f"Live: {current_log_path} (dashboard reads this)")
@@ -875,6 +892,12 @@ def main():
             for _mi in range(model.num_beings):
                 _mask_dict[_mi] = model.receptive_masks[_mi].nonzero(as_tuple=True)[0].tolist()
             influx_writer.log_masks(influx_run_id, _mask_dict, num_bits)
+            # Render mask matrix PNG for Grafana
+            try:
+                import frame_renderer
+                frame_renderer.render_mask_matrix(_mask_dict, num_bits)
+            except Exception:
+                pass
 
         # Write default controls.json for live tuning
         controls_path = str(Path(args.controls_path))
@@ -885,6 +908,10 @@ def main():
         print(f"Controls: {controls_path}")
 
         controls = read_controls(controls_path)
+
+        # Capture initial LCX for drift tracking
+        _lcx_initial = model.lcx.detach().cpu().tolist() if model.lcx is not None else None
+        _gem_initial = model.gem.detach().cpu().tolist() if model.gem is not None else None
 
         for step in range(start_step, num_steps):
             step_start = time.time()
@@ -918,6 +945,9 @@ def main():
                         param.requires_grad = True  # Always train gate temp
                     else:
                         param.requires_grad = not in_freeze
+
+            # Capture LCX before forward pass (for before/after visualization)
+            _lcx_before = model.lcx.detach().cpu().tolist() if model.lcx is not None else None
 
             # Train step
             output, train_stats = model(x_train, return_stats=True, return_being_outputs=True)
@@ -1018,7 +1048,8 @@ def main():
                 ensemble_benefit=metrics['ensemble_benefit'],
                 coverage=metrics['coverage'], clustering=metrics['clustering'],
                 circular_spread=metrics['circular_spread'], s_per_step=step_time,
-                n_bits=num_bits)
+                n_bits=num_bits,
+                gate_entropy=stats_cpu.get('gate_entropy', 0))
             coverage_per_bit = model.receptive_masks.sum(dim=0) if model.receptive_masks is not None else None
             for bi in range(num_beings):
                 bits_i = model.receptive_masks[bi].nonzero(as_tuple=True)[0] if model.receptive_masks is not None else []
@@ -1030,7 +1061,8 @@ def main():
                     masked_acc=metrics['being_masked_accs'][bi],
                     jump_rate=metrics['jump_rates'][bi] if bi < len(metrics['jump_rates']) else 0,
                     k_bits=k if model.receptive_masks is not None else num_bits,
-                    unique_bits=uniq, redundant_bits=k - uniq)
+                    unique_bits=uniq, redundant_bits=k - uniq,
+                    ctx_scale=stats_cpu.get('diag_ctx_scales', [0]*num_beings)[bi])
             influx_writer.log_bits(influx_run_id, step, metrics['per_bit_accs'])
             # Per-ant-per-bit accuracy for correlation panels
             if _masks is not None:
@@ -1043,8 +1075,49 @@ def main():
                         _ab_accs = {b: (_ab_pred[:, b] == _ab_tgt[:, b]).float().mean().item() for b in _ab_bits}
                         influx_writer.log_ant_bit_acc(influx_run_id, step, _abi, _ab_accs)
 
-            # GEM 💎 logging (persistent embedding state)
-            if hasattr(model, 'gem'):
+            # Frame snapshots for Grafana (input/output — always, independent of memory type)
+            _input_frame = x_train[0, :num_bits, :].detach().cpu().tolist()    # [num_bits, num_bits] = 8x8 square
+            _output_frame = output[0, :num_bits, :].detach().cpu().tolist()    # [num_bits, num_bits] = 8x8 square
+            influx_writer.log_frame_snapshot(influx_run_id, step, 'input', [v for row in _input_frame for v in row])
+            influx_writer.log_frame_snapshot(influx_run_id, step, 'output', [v for row in _output_frame for v in row])
+
+            # Memory logging (LCX or GEM)
+            if model.lcx is not None:
+                _lcx_vals = model.lcx.detach().cpu()
+                _nb = model.num_bits
+                _lcx_norm = _lcx_vals.norm().item()
+                lcx_line = f"  LCX norm={_lcx_norm:.4f} ({_nb}x{_nb}={_nb**2} cells)"
+                log_file.write(lcx_line + "\n")
+                current_file.write(lcx_line + "\n")
+                influx_writer.log_lcx(influx_run_id, step, _lcx_vals.tolist(), _nb)
+                influx_writer.log_frame_snapshot(influx_run_id, step, 'lcx_state', _lcx_vals.tolist())
+                # Drift = current - initial (how far each cell moved from start)
+                if _lcx_initial is not None:
+                    import torch as _t
+                    _drift = (_lcx_vals - _t.tensor(_lcx_initial)).tolist()
+                    influx_writer.log_frame_snapshot(influx_run_id, step, 'lcx_drift', _drift)
+                # Log full matrix history to disk (every step, append JSONL)
+                import json as _json
+                _matrix_log_path = os.path.join(os.path.dirname(log_path), 'matrix_history.jsonl')
+                _matrix_entry = {
+                    'step': step, 'num_bits': _nb,
+                    'input': _input_frame,
+                    'output': _output_frame,
+                    'lcx_before': _lcx_before if _lcx_before is not None else _lcx_vals.tolist(),
+                    'lcx_after': _lcx_vals.tolist(),
+                    'lcx_norm': _lcx_norm,
+                }
+                with open(_matrix_log_path, 'a') as _mf:
+                    _mf.write(_json.dumps(_matrix_entry) + '\n')
+                # Write JSON sidecar (latest state for dashboard)
+                _lcx_sidecar = {
+                    'step': step, 'num_bits': _nb, 'side': _nb,
+                    'values': _lcx_vals.tolist(),
+                }
+                _sidecar_path = os.path.join(os.path.dirname(log_path), 'lcx_latest.json')
+                with open(_sidecar_path, 'w') as _sf:
+                    _json.dump(_lcx_sidecar, _sf)
+            elif model.gem is not None:
                 _gem_vals = model.gem.detach().cpu().tolist()
                 influx_writer.log_gem(influx_run_id, step, _gem_vals)
                 _gem_norm = sum(v**2 for v in _gem_vals) ** 0.5
@@ -1052,18 +1125,32 @@ def main():
                 gem_line = f"  GEM[{_gem_str}] norm={_gem_norm:.4f}"
                 log_file.write(gem_line + "\n")
                 current_file.write(gem_line + "\n")
+                # Expand GEM 1D → 8×8 grid (each row = one GEM cell, all cols same value)
+                _gem_grid = []
+                for _gv in _gem_vals:
+                    _gem_grid.extend([_gv] * num_bits)
+                influx_writer.log_frame_snapshot(influx_run_id, step, 'lcx_state', _gem_grid, side=num_bits)
+                influx_writer.log_lcx(influx_run_id, step, _gem_grid, num_bits)
+                # GEM drift (current - initial)
+                if _gem_initial is not None:
+                    _gem_drift_grid = []
+                    for _gc, _gi in zip(_gem_vals, _gem_initial):
+                        _gem_drift_grid.extend([_gc - _gi] * num_bits)
+                    influx_writer.log_frame_snapshot(influx_run_id, step, 'lcx_drift', _gem_drift_grid, side=num_bits)
 
             # Console output periodically
             if step % 500 == 0 or step == start_step:
                 elapsed = time.time() - start_time
-                _gem_summary = ""
-                if hasattr(model, 'gem'):
+                _mem_summary = ""
+                if model.lcx is not None:
+                    _mem_summary = f" | LCX norm={_lcx_norm:.4f}"
+                elif model.gem is not None:
                     _gn = model.gem.detach().norm().item()
-                    _gem_summary = f" | GEM_norm={_gn:.4f}"
+                    _mem_summary = f" | GEM_norm={_gn:.4f}"
                 print(
                     f"step {step:5d} | loss {train_loss:.6f} | "
                     f"bit_acc={metrics['bit_acc']:.4f} oracle={metrics['oracle_acc']:.4f} | "
-                    f"time={elapsed:.1f}s{_gem_summary}"
+                    f"time={elapsed:.1f}s{_mem_summary}"
                 )
 
             log_file.flush()
@@ -1166,7 +1253,21 @@ def main():
     final_step = num_steps - 1 if not args.resume else start_step + (num_steps - start_step)
     save_checkpoint(model, optimizer, final_step, 0.0, args.checkpoint_dir, config=arch_config)
 
-    # Flush InfluxDB metrics
+    # Archive current run to git-tracked directory, then close InfluxDB
+    import datetime
+    _archive_ts = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+    _archive_dir = Path(__file__).parent / "archive" / f"{_archive_ts}_{config_name}"
+    _harvest = influx_writer.harvest_run(str(_archive_dir), config_name=config_name)
+    if _harvest:
+        # Copy the log file into the archive too
+        import shutil
+        try:
+            shutil.copy2(str(log_path), str(_archive_dir / "training.log"))
+        except Exception:
+            pass
+        print(f"Archived run -> {_archive_dir.name}/")
+        print(f"  {_harvest['total_steps']} steps, loss={_harvest['final_loss']:.6f}, bit_acc={_harvest['final_bit_acc']:.4f}")
+
     influx_writer.close()
 
 

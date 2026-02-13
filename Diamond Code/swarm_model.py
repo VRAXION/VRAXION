@@ -370,6 +370,38 @@ def generate_combinatorial_masks(
     return masks
 
 
+def generate_phi_stride_assignments(num_ants: int, grid_size: int = 64,
+                                     slots_per_ant: int = 1) -> torch.Tensor:
+    """Assign each ant to slots_per_ant pixels via golden ratio stride.
+
+    The golden angle ensures maximum spread: each new ant lands in
+    the largest remaining gap, like sunflower seed packing.
+    Collisions are resolved by advancing to the next phi-stride position.
+
+    Args:
+        num_ants: Number of ants (beings) to assign.
+        grid_size: Total pixels in the grid (default 64 for 8x8).
+        slots_per_ant: How many LCX slots each ant can write.
+
+    Returns:
+        Tensor of shape [num_ants, slots_per_ant] with pixel indices.
+    """
+    PHI = (1 + math.sqrt(5)) / 2
+    total_slots = num_ants * slots_per_ant
+    assert total_slots <= grid_size, \
+        f"Cannot assign {total_slots} unique slots in grid of {grid_size}"
+    used = set()
+    positions = []
+    i = 0
+    while len(positions) < total_slots:
+        pos = int((i * PHI * grid_size) % grid_size)
+        if pos not in used:
+            used.add(pos)
+            positions.append(pos)
+        i += 1
+    return torch.tensor(positions, dtype=torch.long).view(num_ants, slots_per_ant)
+
+
 class BeingParameters(nn.Module):
     """
     Per-being parameters (pointer destinations, jump gate, context strength).
@@ -468,6 +500,8 @@ class SwarmByteRingModel(nn.Module):
         max_hidden: int = 4096,
         min_hidden: int = 128,
         full_view: bool = False,
+        use_lcx: bool = False,
+        slots_per_being: int = 1,
     ):
         super().__init__()
 
@@ -482,6 +516,7 @@ class SwarmByteRingModel(nn.Module):
         self.think_ticks = think_ticks
         self.full_view = full_view
         self.combinatorial = combinatorial
+        self.use_lcx = use_lcx
         self._pair_coverage_frac = None
 
         if combinatorial and capacity_fibonacci:
@@ -497,8 +532,11 @@ class SwarmByteRingModel(nn.Module):
         self.min_coverage = min_coverage
 
         # SHARED COMPONENTS (all beings use these)
+        # LCX v3: input is broadcast 8x8 + LCX 8x8 (element-wise addition) = 64 values
+        # GEM: input bits + GEM = num_bits * 2
+        _input_width = (num_bits * num_bits) if use_lcx else num_bits * 2
         if embedding_dim > num_bits:
-            self.input_proj = nn.Linear(num_bits * 2, embedding_dim)  # *2 for [input + GEM]
+            self.input_proj = nn.Linear(_input_width, embedding_dim)
             self.output_proj = nn.Linear(embedding_dim, num_bits)
         else:
             self.input_proj = None
@@ -551,21 +589,41 @@ class SwarmByteRingModel(nn.Module):
         # HETEROGENEOUS MODE: per-being input/output projections
         # Each being gets its own K→D input and D→K output projection.
         # Big ants have bigger K = more input info. All share D for ring compat.
+        # Defaults (overridden below if heterogeneous or capacity_fibonacci)
+        self.being_input_projs = None
+        self.being_output_projs = None
         self.heterogeneous = self.receptive_masks is not None and bits_per_being > 0
         if self.heterogeneous:
-            self.being_input_projs = nn.ModuleList()
-            self.being_output_projs = nn.ModuleList()
-            for i in range(num_beings):
-                if self.full_view:
-                    self.being_input_projs.append(nn.Linear(num_bits * 2, embedding_dim))  # *2 for [input + GEM]
-                    self.being_output_projs.append(nn.Linear(embedding_dim, num_bits))
-                else:
-                    k_i = int(self.receptive_masks[i].sum().item())
-                    self.being_input_projs.append(nn.Linear(k_i + num_bits, embedding_dim))  # +num_bits for GEM
-                    self.being_output_projs.append(nn.Linear(embedding_dim, k_i))
-            # Shared projections not used in heterogeneous mode
-            self.input_proj = None
-            self.output_proj = None
+            if use_lcx:
+                # LCX v3: all ants get uniform 64-wide input (broadcast+add),
+                # so we use the SHARED input_proj. Only need per-being OUTPUT projs.
+                self.being_input_projs = None
+                self.being_output_projs = nn.ModuleList()
+                for i in range(num_beings):
+                    if self.full_view:
+                        self.being_output_projs.append(nn.Linear(embedding_dim, num_bits))
+                    else:
+                        k_i = int(self.receptive_masks[i].sum().item())
+                        self.being_output_projs.append(nn.Linear(embedding_dim, k_i))
+                # Keep shared input_proj (created above), disable shared output_proj
+                self.output_proj = None
+            else:
+                # GEM path: per-being input AND output projections (variable width)
+                self.being_input_projs = nn.ModuleList()
+                self.being_output_projs = nn.ModuleList()
+                for i in range(num_beings):
+                    if self.full_view:
+                        _fw = num_bits * 2
+                        self.being_input_projs.append(nn.Linear(_fw, embedding_dim))
+                        self.being_output_projs.append(nn.Linear(embedding_dim, num_bits))
+                    else:
+                        k_i = int(self.receptive_masks[i].sum().item())
+                        _pw = k_i + num_bits
+                        self.being_input_projs.append(nn.Linear(_pw, embedding_dim))
+                        self.being_output_projs.append(nn.Linear(embedding_dim, k_i))
+                # Shared projections not used in GEM heterogeneous mode
+                self.input_proj = None
+                self.output_proj = None
 
         # TEMPORAL FIBONACCI TICK SCHEDULING
         self.temporal_fibonacci = temporal_fibonacci
@@ -590,7 +648,7 @@ class SwarmByteRingModel(nn.Module):
             assert self.heterogeneous, (
                 "capacity_fibonacci requires fibonacci=True with bits_per_being > 0"
             )
-            k_values = fibonacci_k_schedule(num_beings, num_bits, min_k=4)
+            k_values = fibonacci_k_schedule(num_beings, num_bits, min_k=2)
             self.hidden_dims = fibonacci_hidden_dims(k_values, max_hidden, min_hidden)
 
             # Ring bridge projections: D <-> H_i
@@ -602,17 +660,39 @@ class SwarmByteRingModel(nn.Module):
             ])
 
             # Override being input/output projs: K_i <-> H_i (was K_i <-> D)
-            self.being_input_projs = nn.ModuleList()
-            self.being_output_projs = nn.ModuleList()
-            for i in range(num_beings):
-                h_i = self.hidden_dims[i]
-                if self.full_view:
-                    self.being_input_projs.append(nn.Linear(num_bits * 2, h_i))  # *2 for [input + GEM]
-                    self.being_output_projs.append(nn.Linear(h_i, num_bits))
-                else:
-                    k_i = int(self.receptive_masks[i].sum().item())
-                    self.being_input_projs.append(nn.Linear(k_i + num_bits, h_i))  # +num_bits for GEM
-                    self.being_output_projs.append(nn.Linear(h_i, k_i))
+            if use_lcx:
+                # LCX v3: shared input proj (lcx_size → D), then per-being D → H_i bridge
+                self.input_proj = nn.Linear(num_bits * num_bits, embedding_dim)
+                self.being_input_projs = nn.ModuleList([
+                    nn.Linear(embedding_dim, h_i) for h_i in self.hidden_dims
+                ])
+                self.being_output_projs = nn.ModuleList()
+                for i in range(num_beings):
+                    h_i = self.hidden_dims[i]
+                    if self.full_view:
+                        self.being_output_projs.append(nn.Linear(h_i, num_bits))
+                    else:
+                        k_i = int(self.receptive_masks[i].sum().item())
+                        self.being_output_projs.append(nn.Linear(h_i, k_i))
+            else:
+                self.being_input_projs = nn.ModuleList()
+                self.being_output_projs = nn.ModuleList()
+                for i in range(num_beings):
+                    h_i = self.hidden_dims[i]
+                    if self.full_view:
+                        _fw = num_bits * 2
+                        self.being_input_projs.append(nn.Linear(_fw, h_i))
+                        self.being_output_projs.append(nn.Linear(h_i, num_bits))
+                    else:
+                        k_i = int(self.receptive_masks[i].sum().item())
+                        _pw = k_i + num_bits
+                        self.being_input_projs.append(nn.Linear(_pw, h_i))
+                        self.being_output_projs.append(nn.Linear(h_i, k_i))
+
+            # Per-being LayerNorm (hidden dims differ from embedding_dim)
+            self.being_state_norms = nn.ModuleList([
+                nn.LayerNorm(h_i) for h_i in self.hidden_dims
+            ])
 
             # Per-being processing layers (can't share, dims differ)
             if depth > 1:
@@ -631,6 +711,7 @@ class SwarmByteRingModel(nn.Module):
             self.ring_read_projs = None
             self.ring_write_projs = None
             self.being_processing_layers = None
+            self.being_state_norms = None
 
         # PER-BEING COMPONENTS (each being has its own)
         # Pass being_id for golden ratio phase embeddings + optional input mask
@@ -657,12 +738,40 @@ class SwarmByteRingModel(nn.Module):
         else:
             self.combiner_gate = None
 
-        # GLOBAL EMBEDDING MATRIX (GEM) 💎: persistent dynamic embedding
-        # 1:1 mapped to input bits. Updated each step via golden ratio EMA.
-        # Not a parameter (not trained by optimizer) — updated at runtime.
-        self.register_buffer('gem', torch.zeros(num_bits))
-        self.gem_write_head = nn.Linear(embedding_dim, num_bits)
-        self._phi_inv = 0.6180339887  # 1/φ — golden ratio inverse
+        # MEMORY SYSTEM: LCX (grayscale 2D scratchpad) or GEM (legacy 1-channel EMA)
+        if use_lcx:
+            # LCX v3: num_bits × num_bits grayscale image (flat buffer)
+            # Input = broadcast(8 bits → 8x8) + LCX(8x8), element-wise addition
+            lcx_size = num_bits * num_bits
+            self.register_buffer('lcx', torch.zeros(lcx_size))
+            self.register_buffer('gem', None)
+            self.lcx_size = lcx_size
+            self.lcx_propose = nn.Linear(embedding_dim, lcx_size)   # softsign Δ
+            self.lcx_gate = nn.Linear(embedding_dim, lcx_size)      # sigmoid G
+            nn.init.constant_(self.lcx_gate.bias, -0.486)           # logit(0.382) ≈ phi init
+            self.gem_write_head = None
+            self._phi_inv = None
+            # Phi-stride pixel assignments: per-slot ownership (VRA-88)
+            # slots_per_being: 1=flowchart (one slot each), -1=global write (giant ant),
+            #                  K=K phi-stride slots per being
+            self.slots_per_being = slots_per_being
+            if slots_per_being == -1 or slots_per_being >= lcx_size:
+                # Global write: being writes to ALL LCX slots
+                self.register_buffer('pixel_assignments', None)
+            else:
+                self.register_buffer(
+                    'pixel_assignments',
+                    generate_phi_stride_assignments(num_beings, lcx_size, slots_per_being),
+                )
+        else:
+            # GEM: legacy 1-channel golden ratio EMA
+            self.register_buffer('gem', torch.zeros(num_bits))
+            self.register_buffer('lcx', None)
+            self.lcx_size = 0
+            self.gem_write_head = nn.Linear(embedding_dim, num_bits)
+            self._phi_inv = 0.6180339887  # 1/φ — golden ratio inverse
+            self.lcx_propose = None
+            self.lcx_gate = None
 
         # VECTORIZED PATH PRECOMPUTATION (combinatorial mode only)
         # Pre-stack per-being index tensors so _forward_vectorized() can
@@ -863,8 +972,12 @@ class SwarmByteRingModel(nn.Module):
         dtype = x.dtype
 
         # -- Gather per-being parameters (fresh each call for gradient flow) --
-        inp_w = torch.stack([p.weight for p in self.being_input_projs])   # [N, D, K]
-        inp_b = torch.stack([p.bias for p in self.being_input_projs])     # [N, D]
+        if self.being_input_projs is not None:
+            inp_w = torch.stack([p.weight for p in self.being_input_projs])   # [N, D, K]
+            inp_b = torch.stack([p.bias for p in self.being_input_projs])     # [N, D]
+        else:
+            inp_w = None  # LCX v3: uses shared input_proj
+            inp_b = None
         out_w = torch.stack([p.weight for p in self.being_output_projs])  # [N, K_out, D]
         out_b = torch.stack([p.bias for p in self.being_output_projs])    # [N, K_out]
         jg_w = torch.stack([b.jump_gate.weight for b in self.beings]).squeeze(1)  # [N, D]
@@ -916,8 +1029,6 @@ class SwarmByteRingModel(nn.Module):
         # ===================== TIMESTEP LOOP =====================
         for t in range(T):
             input_bits = x[:, t, :]  # [B, num_bits]
-            # GEM 💎: concatenate persistent embedding for vectorized path
-            _gem_exp_v = self.gem.unsqueeze(0).expand(B, -1)  # [B, num_bits]
 
             # -- Temporal fibonacci dormancy mask --
             if self.tick_periods is not None:
@@ -927,17 +1038,28 @@ class SwarmByteRingModel(nn.Module):
             step_active = active_mask & tick_active  # [N]
             step_mask = step_active.float().reshape(N, 1, 1)  # [N, 1, 1]
 
-            # 1. Gather visible bits & project (with GEM concatenated)
-            if self.full_view:
-                input_with_gem = torch.cat([input_bits, _gem_exp_v], dim=-1)  # [B, num_bits*2]
-                being_input = torch.einsum('bk,ndk->bnd', input_with_gem, inp_w) + inp_b
+            # 1. Gather visible bits & project (with memory)
+            if self.lcx is not None:
+                # LCX v3: per-ant masked broadcast+add → shared projection
+                per_being = []
+                for n_idx in range(N):
+                    vis_mask = vis_indices[n_idx]  # [K]
+                    vis_bits = input_bits[:, vis_mask]  # [B, K]
+                    combined = self._read_with_lcx(vis_bits, mask=vis_mask)  # [B, lcx_size]
+                    proj = self.input_proj(combined)  # [B, D]
+                    per_being.append(proj)
+                being_input = torch.stack(per_being, dim=0)  # [N, B, D]
             else:
-                visible = input_bits[:, vis_indices]  # [B, N, K]
-                # Expand GEM for each being: [B, N, num_bits]
-                _gem_being = _gem_exp_v.unsqueeze(1).expand(-1, N, -1)
-                visible_with_gem = torch.cat([visible, _gem_being], dim=-1)  # [B, N, K+num_bits]
-                being_input = torch.einsum('bnk,ndk->bnd', visible_with_gem, inp_w) + inp_b
-            being_input = being_input.permute(1, 0, 2)  # [N, B, D]
+                _gem_exp_v = self.gem.unsqueeze(0).expand(B, -1)  # [B, num_bits]
+                if self.full_view:
+                    input_with_gem = torch.cat([input_bits, _gem_exp_v], dim=-1)  # [B, num_bits*2]
+                    being_input = torch.einsum('bk,ndk->bnd', input_with_gem, inp_w) + inp_b
+                else:
+                    visible = input_bits[:, vis_indices]  # [B, N, K]
+                    _gem_being = _gem_exp_v.unsqueeze(1).expand(-1, N, -1)
+                    visible_with_gem = torch.cat([visible, _gem_being], dim=-1)  # [B, N, K+num_bits]
+                    being_input = torch.einsum('bnk,ndk->bnd', visible_with_gem, inp_w) + inp_b
+                being_input = being_input.permute(1, 0, 2)  # [N, B, D]
 
             # 2. Batched ring read (all beings read SAME ring state)
             flat_ptrs = pointer_positions.reshape(-1)  # [N*B]
@@ -966,10 +1088,38 @@ class SwarmByteRingModel(nn.Module):
             # Apply dormancy: keep old state for dormant/null beings
             hidden_states = torch.where(step_mask.bool(), state_update, hidden_states)
 
-            # GEM 💎 WRITE (vectorized): average across beings and batch
-            _gem_sig_v = torch.nn.functional.softsign(self.gem_write_head(state_update))  # [N, B, num_bits]
-            _gem_upd_v = _gem_sig_v.mean(dim=0).mean(dim=0)  # average N,B → [num_bits]
-            self.gem = self._phi_inv * self.gem.detach() + (1.0 - self._phi_inv) * _gem_upd_v
+            # MEMORY WRITE (vectorized): per-slot ownership (VRA-88)
+            if self.lcx is not None and self.pixel_assignments is not None:
+                slots = self.pixel_assignments                          # [N, K]
+                delta = torch.nn.functional.softsign(self.lcx_propose(state_update))  # [N, B, lcx_size]
+                gate_soft = torch.sigmoid(self.lcx_gate(state_update))                # [N, B, lcx_size]
+                gate = gate_soft * (gate_soft > 0.382).float()  # threshold: write only with confidence
+                delta_b = delta.mean(dim=1)                             # [N, lcx_size]
+                gate_b = gate.mean(dim=1)                               # [N, lcx_size]
+                # Gather each being's assigned K slots
+                N_active, K = slots.shape
+                arange_n = torch.arange(N_active, device=delta.device).unsqueeze(1).expand(-1, K)
+                delta_at_slots = delta_b[arange_n, slots]               # [N, K]
+                gate_at_slots = gate_b[arange_n, slots]                 # [N, K]
+                # Flatten for scatter: [N*K] unique slots (phi-stride guarantees no overlap)
+                flat_slots = slots.reshape(-1)                          # [N*K]
+                flat_delta = delta_at_slots.reshape(-1)                 # [N*K]
+                flat_gate = gate_at_slots.reshape(-1)                   # [N*K]
+                old_lcx = self.lcx.detach()
+                old_at_slots = old_lcx[flat_slots]                      # [N*K]
+                new_at_slots = (1.0 - flat_gate) * old_at_slots + flat_gate * flat_delta
+                self.lcx = old_lcx.scatter(0, flat_slots, new_at_slots)
+            elif self.lcx is not None:
+                # Legacy global write (backwards compat when pixel_assignments missing)
+                delta = torch.nn.functional.softsign(self.lcx_propose(state_update))  # [N, B, lcx_size]
+                gate = torch.sigmoid(self.lcx_gate(state_update))                      # [N, B, lcx_size]
+                delta_avg = delta.mean(dim=0).mean(dim=0)  # [lcx_size]
+                gate_avg = gate.mean(dim=0).mean(dim=0)    # [lcx_size]
+                self.lcx = (1.0 - gate_avg) * self.lcx.detach() + gate_avg * delta_avg
+            else:
+                _gem_sig_v = torch.nn.functional.softsign(self.gem_write_head(state_update))  # [N, B, num_bits]
+                _gem_upd_v = _gem_sig_v.mean(dim=0).mean(dim=0)  # average N,B → [num_bits]
+                self.gem = self._phi_inv * self.gem.detach() + (1.0 - self._phi_inv) * _gem_upd_v
 
             if return_stats:
                 diag_hidden_abs.append(hidden_states.abs().mean().item())
@@ -1232,6 +1382,37 @@ class SwarmByteRingModel(nn.Module):
 
         return output, stats
 
+    def _read_with_lcx(self, input_bits, mask=None):
+        """Element-wise addition: broadcast(input) + LCX.
+
+        LCX v3: broadcast each input bit across its row to form an 8x8 grid,
+        then add element-wise to the LCX 8x8 grid. Spatial binding: bit i
+        lives in row i of the combined matrix.
+
+        Args:
+            input_bits: [B, num_bits] full input, or [B, K_i] if masked
+            mask: optional index tensor [K_i] mapping masked bits to positions.
+                  If provided, unseen bit rows get 0 + LCX (LCX only).
+
+        Returns: [B, lcx_size] combined = input_8x8 + LCX_8x8 (flattened)
+        """
+        B = input_bits.size(0)
+        nb = self.num_bits
+
+        # Build full-width input (unseen bits = 0)
+        if mask is not None:
+            full_input = torch.zeros(B, nb, device=input_bits.device, dtype=input_bits.dtype)
+            full_input[:, mask] = input_bits
+        else:
+            full_input = input_bits  # [B, num_bits]
+
+        # Broadcast: each bit fills its row → [B, 8, 8] → [B, 64]
+        input_grid = full_input.unsqueeze(-1).expand(-1, -1, nb).reshape(B, -1)
+
+        # Element-wise addition with LCX
+        lcx_expanded = self.lcx.unsqueeze(0).expand(B, -1)  # [B, lcx_size]
+        return input_grid + lcx_expanded  # [B, lcx_size]
+
     def forward(self, x: torch.Tensor, return_stats: bool = False, return_being_outputs: bool = False):
         """
         Forward pass with N beings sharing one ring.
@@ -1251,9 +1432,11 @@ class SwarmByteRingModel(nn.Module):
                 - jump_rates_per_being: List of jump rates per being
                 - pointer_positions_all: List of all pointer positions (for coverage)
         """
-        # GEM 💎: detach from previous step's computation graph
-        # Preserves values but drops grad_fn so optimizer.step() doesn't invalidate
-        self.gem = self.gem.detach()
+        # Detach memory from previous step's computation graph
+        if self.lcx is not None:
+            self.lcx = self.lcx.detach()
+        elif self.gem is not None:
+            self.gem = self.gem.detach()
 
         # Dispatch to vectorized path for combinatorial mode
         if self.combinatorial and hasattr(self, '_vec_vis_indices'):
@@ -1296,13 +1479,17 @@ class SwarmByteRingModel(nn.Module):
         for t in range(T):
             # 1. Shared input projection (all beings see same input)
             input_bits = x[:, t, :]
-            # GEM 💎: concatenate persistent embedding alongside raw input
-            gem_expanded = self.gem.unsqueeze(0).expand(input_bits.size(0), -1)  # [B, num_bits]
-            input_bits_with_gem = torch.cat([input_bits, gem_expanded], dim=-1)  # [B, num_bits*2]
-            if self.input_proj is not None:
-                input_vec = self.input_proj(input_bits_with_gem)
+            # Memory: LCX v3 broadcast+add or GEM concatenate
+            if self.lcx is not None:
+                # LCX v3: full input broadcast+add (no mask for shared path)
+                input_with_mem = self._read_with_lcx(input_bits)  # [B, lcx_size=64]
             else:
-                input_vec = input_bits_with_gem
+                gem_expanded = self.gem.unsqueeze(0).expand(input_bits.size(0), -1)  # [B, num_bits]
+                input_with_mem = torch.cat([input_bits, gem_expanded], dim=-1)  # [B, num_bits*2]
+            if self.input_proj is not None:
+                input_vec = self.input_proj(input_with_mem)
+            else:
+                input_vec = input_with_mem
 
             # 2. Each being processes independently
             being_outputs_t = []
@@ -1363,23 +1550,35 @@ class SwarmByteRingModel(nn.Module):
                     context_read = self.ring_read_projs[being_idx](context_read)
 
                 # 2b. Combine input + context (with optional receptive field masking)
-                if self.full_view:
-                    # FULL VIEW: all bits projected through per-being bottleneck
-                    being_input_vec = self.being_input_projs[being_idx](input_bits_with_gem)  # [B, num_bits*2] → [B, H_i]
-                elif self.heterogeneous:
-                    # HETEROGENEOUS: extract visible bits + full GEM, use per-being projection
-                    vis_idx = self.receptive_masks[being_idx].nonzero(as_tuple=True)[0]
-                    visible_bits = input_bits[:, vis_idx]  # [B, K_i]
-                    visible_with_gem = torch.cat([visible_bits, gem_expanded], dim=-1)  # [B, K_i + num_bits]
-                    being_input_vec = self.being_input_projs[being_idx](visible_with_gem)  # [B, D]
-                elif being.input_mask is not None:
-                    # Homogeneous with masks: zero out non-visible bits + GEM
-                    masked_bits = input_bits * being.input_mask.unsqueeze(0)  # [B, 8]
-                    masked_with_gem = torch.cat([masked_bits, gem_expanded], dim=-1)  # [B, num_bits*2]
-                    if self.input_proj is not None:
-                        being_input_vec = self.input_proj(masked_with_gem)
+                if self.lcx is not None:
+                    # LCX v3: broadcast+add with per-ant mask → shared projection
+                    if self.heterogeneous and not self.full_view:
+                        vis_idx = self.receptive_masks[being_idx].nonzero(as_tuple=True)[0]
+                        vis_bits = input_bits[:, vis_idx]
+                        combined_lcx = self._read_with_lcx(vis_bits, mask=vis_idx)  # [B, 64]
+                    elif being.input_mask is not None:
+                        masked_bits = input_bits * being.input_mask.unsqueeze(0)
+                        combined_lcx = self._read_with_lcx(masked_bits)  # [B, 64]
                     else:
-                        being_input_vec = masked_with_gem
+                        combined_lcx = input_with_mem  # already computed above [B, 64]
+                    being_input_vec = self.input_proj(combined_lcx) if self.input_proj is not None else combined_lcx
+                    # Bridge D → H_i for capacity_fibonacci compatibility
+                    if self.being_input_projs is not None:
+                        being_input_vec = self.being_input_projs[being_idx](being_input_vec)
+                elif self.full_view:
+                    being_input_vec = self.being_input_projs[being_idx](input_with_mem)
+                elif self.heterogeneous:
+                    vis_idx = self.receptive_masks[being_idx].nonzero(as_tuple=True)[0]
+                    visible_bits = input_bits[:, vis_idx]
+                    visible_with_mem = torch.cat([visible_bits, gem_expanded], dim=-1)
+                    being_input_vec = self.being_input_projs[being_idx](visible_with_mem)
+                elif being.input_mask is not None:
+                    masked_bits = input_bits * being.input_mask.unsqueeze(0)
+                    masked_with_mem = torch.cat([masked_bits, gem_expanded], dim=-1)
+                    if self.input_proj is not None:
+                        being_input_vec = self.input_proj(masked_with_mem)
+                    else:
+                        being_input_vec = masked_with_mem
                 else:
                     being_input_vec = input_vec  # No mask: use shared projection
                 combined_input = being_input_vec + context_scale * context_read
@@ -1403,7 +1602,8 @@ class SwarmByteRingModel(nn.Module):
                 combined_input = combined_input + 0.1 * phase_bias
 
                 # 2c. State update (LayerNorm prevents tanh saturation)
-                state_update = torch.tanh(self.state_norm(combined_input + state['hidden_state']))
+                _norm = self.being_state_norms[being_idx] if self.being_state_norms is not None else self.state_norm
+                state_update = torch.tanh(_norm(combined_input + state['hidden_state']))
 
                 # Additional processing layers (with residual connections)
                 if self.being_processing_layers is not None:
@@ -1415,18 +1615,39 @@ class SwarmByteRingModel(nn.Module):
 
                 state['hidden_state'] = state_update
 
-                # GEM 💎 WRITE: golden ratio EMA update from this being's hidden state
-                _gem_signal = torch.nn.functional.softsign(self.gem_write_head(state_update))  # [B, num_bits]
-                _gem_update = _gem_signal.mean(dim=0)  # average across batch → [num_bits]
-                self.gem = self._phi_inv * self.gem.detach() + (1.0 - self._phi_inv) * _gem_update
-
-                # 2d. Write to SHARED ring (scatter_add accumulation)
-                # Gradient flows through ring writes for collaborative learning.
-                # CAPACITY FIBONACCI: project H_i -> D before ring write
+                # CAPACITY FIBONACCI: project H_i -> D for memory writes
                 if self.ring_write_projs is not None:
                     write_vec = self.ring_write_projs[being_idx](state_update)
                 else:
                     write_vec = state_update
+
+                # MEMORY WRITE (sequential): per-slot ownership (VRA-88)
+                if self.lcx is not None and self.pixel_assignments is not None:
+                    slots = self.pixel_assignments[being_idx]  # [K] this being's pixel(s)
+                    delta = torch.nn.functional.softsign(self.lcx_propose(write_vec))  # [B, lcx_size]
+                    gate_soft = torch.sigmoid(self.lcx_gate(write_vec))                # [B, lcx_size]
+                    gate = gate_soft * (gate_soft > 0.382).float()  # threshold: write only with confidence
+                    delta_at_slots = delta[:, slots].mean(dim=0)    # [K] batch-mean per slot
+                    gate_at_slots = gate[:, slots].mean(dim=0)      # [K]
+                    old_at_slots = self.lcx[slots].detach()         # [K]
+                    new_at_slots = (1.0 - gate_at_slots) * old_at_slots + gate_at_slots * delta_at_slots
+                    # Non-inplace scatter: returns new tensor, preserves gradient
+                    old_lcx = self.lcx.detach()
+                    self.lcx = old_lcx.scatter(0, slots, new_at_slots)
+                elif self.lcx is not None:
+                    # Legacy global write (backwards compat when pixel_assignments missing)
+                    delta = torch.nn.functional.softsign(self.lcx_propose(write_vec))  # [B, lcx_size]
+                    gate = torch.sigmoid(self.lcx_gate(write_vec))                      # [B, lcx_size]
+                    delta_avg = delta.mean(dim=0)   # [lcx_size]
+                    gate_avg = gate.mean(dim=0)     # [lcx_size]
+                    self.lcx = (1.0 - gate_avg) * self.lcx.detach() + gate_avg * delta_avg
+                else:
+                    _gem_signal = torch.nn.functional.softsign(self.gem_write_head(write_vec))  # [B, num_bits]
+                    _gem_update = _gem_signal.mean(dim=0)  # average across batch → [num_bits]
+                    self.gem = self._phi_inv * self.gem.detach() + (1.0 - self._phi_inv) * _gem_update
+
+                # 2d. Write to SHARED ring (scatter_add accumulation)
+                # Gradient flows through ring writes for collaborative learning.
                 update_broadcast = write_vec.unsqueeze(1).expand(-1, weights.size(1), -1)
                 contribution = weights.unsqueeze(-1) * update_broadcast
                 memory_ring = memory_ring.scatter_add(1, indices_exp, contribution)
@@ -1516,7 +1737,8 @@ class SwarmByteRingModel(nn.Module):
                         combined_input = combined_input + 0.1 * phase_bias
 
                         # State update (LayerNorm prevents tanh saturation)
-                        state_update = torch.tanh(self.state_norm(combined_input + state['hidden_state']))
+                        _norm_tt = self.being_state_norms[being_idx] if self.being_state_norms is not None else self.state_norm
+                        state_update = torch.tanh(_norm_tt(combined_input + state['hidden_state']))
                         if self.being_processing_layers is not None:
                             for layer in self.being_processing_layers[being_idx]:
                                 state_update = state_update + torch.nn.functional.softsign(layer(state_update))
