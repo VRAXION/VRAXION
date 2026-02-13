@@ -155,7 +155,21 @@ if _traindat_files:
 
 # Per-being state controls (null/active/frozen)
 _being_states_from_ctrl = st.session_state.get('ctrl_being_states', {})
-_NUM_BEINGS = 7  # TODO: read from log header if available
+
+# Auto-detect number of beings from masks header in log
+def _detect_num_beings(log_path):
+    """Read first line of log to detect 'being_N' entries in masks header."""
+    try:
+        with open(log_path, 'r') as f:
+            first_line = f.readline()
+        if first_line.startswith('masks'):
+            import re
+            return len(re.findall(r'being_\d+', first_line))
+    except Exception:
+        pass
+    return max(len(_being_states_from_ctrl), 3)  # fallback
+
+_NUM_BEINGS = _detect_num_beings(args.log)
 
 st.sidebar.markdown("---")
 st.sidebar.markdown("**Being States**")
@@ -580,37 +594,25 @@ def dashboard_content():
         col1, col2 = st.columns(2)
 
         with col1:
-            if n_bits > 16:
-                # Heatmap for many bits
-                step_sample = df_eval['step'].values[::max(1, len(df_eval)//100)]
-                bit_matrix = np.array([
-                    df_eval[cn].values[::max(1, len(df_eval)//100)] for cn in bit_cols
-                ])
-                avg_row = bit_matrix.mean(axis=0, keepdims=True)
-                bit_matrix = np.vstack([avg_row, bit_matrix])
-                fig = go.Figure(data=go.Heatmap(
-                    z=bit_matrix, x=step_sample,
-                    y=['AVG'] + [f'bit{i}' for i in range(n_bits)],
-                    colorscale='Viridis', zmin=0, zmax=1,
-                    colorbar_title='Accuracy'
-                ))
-            else:
-                fig = go.Figure()
-                colors_16 = ['#00D9FF', '#FF6B9D', '#B19CD9', '#FFD700',
-                             '#7DFF8C', '#FFB000', '#FF4444', '#44FFFF',
-                             '#FF69B4', '#00FF7F', '#DDA0DD', '#F0E68C',
-                             '#87CEEB', '#FFA07A', '#98FB98', '#D8BFD8']
-                for idx, cn in enumerate(bit_cols):
-                    fig.add_trace(go.Scatter(
-                        x=df_eval['step'], y=df_eval[cn], mode='lines', name=cn,
-                        line=dict(color=colors_16[idx % 16], width=2)
-                    ))
+            # Viridis heatmap with AVG row — works for any bit count
+            step_sample = df_eval['step'].values[::max(1, len(df_eval)//100)]
+            bit_matrix = np.array([
+                df_eval[cn].values[::max(1, len(df_eval)//100)] for cn in bit_cols
+            ])
+            avg_row = bit_matrix.mean(axis=0, keepdims=True)
+            bit_matrix = np.vstack([avg_row, bit_matrix])
+            fig = go.Figure(data=go.Heatmap(
+                z=bit_matrix, x=step_sample,
+                y=['AVG'] + [f'bit{i}' for i in range(n_bits)],
+                colorscale='Viridis', zmin=0, zmax=1,
+                colorbar_title='Accuracy'
+            ))
 
             fig.update_layout(
-                title="Per-Bit Accuracy Over Time", xaxis_title="Step",
-                template="plotly_dark",
-                height=350 if n_bits <= 16 else 450,
-                hovermode='x unified' if n_bits <= 16 else 'closest',
+                title="Per-Bit Accuracy Over Time (Viridis)", xaxis_title="Step",
+                yaxis_title="Bit", template="plotly_dark",
+                height=max(300, 40 * (n_bits + 1) + 80),
+                hovermode='closest',
                 margin=dict(t=40)
             )
             st.plotly_chart(fig, use_container_width=True)
@@ -803,6 +805,35 @@ def dashboard_content():
                         bit_all_owners[b].append(idx)
                         if bit_owner[b] == -1 or being_sizes[idx] < being_sizes.get(bit_owner[b], 999):
                             bit_owner[b] = idx
+
+            # Ant sizes bar chart
+            if num_beings >= 2:
+                ant_labels = [f"B{i}" for i in range(num_beings)]
+                ant_k = [being_sizes.get(i, 0) for i in range(num_beings)]
+                ant_colors = [being_palette[i % len(being_palette)] for i in range(num_beings)]
+                # Get per-being masked accuracy from latest row
+                ant_accs = []
+                for i in range(num_beings):
+                    mcol = f'masked_{i}'
+                    if not df_eval.empty and mcol in df_eval.columns:
+                        ant_accs.append(df_eval.iloc[-1].get(mcol, 0))
+                    else:
+                        ant_accs.append(0)
+                ant_hover = [
+                    f"B{i}<br>K={ant_k[i]} bits<br>Masked Acc: {ant_accs[i]:.1%}"
+                    for i in range(num_beings)
+                ]
+                fig_ant = go.Figure(data=[go.Bar(
+                    x=ant_labels, y=ant_k, marker_color=ant_colors,
+                    text=[str(k) for k in ant_k], textposition='auto',
+                    hovertext=ant_hover, hoverinfo='text',
+                )])
+                fig_ant.update_layout(
+                    title="Ant Sizes (K = bits owned)",
+                    yaxis=dict(title="Bits (K)"),
+                    template="plotly_dark", height=250, margin=dict(t=40, b=30),
+                )
+                st.plotly_chart(fig_ant, use_container_width=True)
 
             c1, c2 = st.columns(2)
 

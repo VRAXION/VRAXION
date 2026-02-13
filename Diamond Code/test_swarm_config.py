@@ -26,6 +26,7 @@ from swarm_model import SwarmByteRingModel, fibonacci_split
 from byte_data import byte_accuracy, bit_accuracy
 from traindat_loader import TraindatLoader
 from live_controls import read_controls, apply_controls, write_default_controls, _set_being_grad
+import influx_writer
 
 
 def int_to_bits(x, num_bits=8):
@@ -620,6 +621,7 @@ def main():
     print(f"  Capacity fibonacci: {args.capacity_fibonacci}" +
           (f" (max_H={args.max_hidden}, min_H={args.min_hidden})" if args.capacity_fibonacci else ""))
     print(f"  Full view: {args.full_view}")
+    print(f"  GEM: {num_bits} cells (golden ratio EMA, phi^-1=0.618)")
     print(f"  Batch size: {args.batch_size}")
     print(f"  Grad accum: {args.grad_accum} (effective batch={args.batch_size * args.grad_accum})")
     print(f"  Active beings: {args.active_beings}")
@@ -832,10 +834,14 @@ def main():
         except PermissionError:
             print(f"Warning: current.log locked by another process, overwriting")
 
+    # InfluxDB metrics writer (no-op if INFLUX_TOKEN not set)
+    influx_writer.init()
+    influx_run_id = config_name
+
     print(f"Log: {log_path}")
     print(f"Live: {current_log_path} (dashboard reads this)")
     print()
-    print("Dashboard: http://localhost:8501")
+    print("Dashboard: http://localhost:8501 (Streamlit) | http://localhost:3000 (Grafana)")
     print(f"  Launch: python -m streamlit run diamond_dashboard.py -- --log logs/swarm/current.log")
     print("="*70)
     print()
@@ -864,6 +870,11 @@ def main():
             masks_json_path = log_dir / "current_masks.json"
             with open(masks_json_path, 'w') as mf:
                 json.dump(masks_json, mf)
+            # Log mask assignments to InfluxDB for correlation panels
+            _mask_dict = {}
+            for _mi in range(model.num_beings):
+                _mask_dict[_mi] = model.receptive_masks[_mi].nonzero(as_tuple=True)[0].tolist()
+            influx_writer.log_masks(influx_run_id, _mask_dict, num_bits)
 
         # Write default controls.json for live tuning
         controls_path = str(Path(args.controls_path))
@@ -999,13 +1010,60 @@ def main():
             log_file.write(log_line + "\n")
             current_file.write(log_line + "\n")
 
+            # InfluxDB metrics (non-blocking, no-op if not configured)
+            influx_writer.log_step(
+                influx_run_id, step, train_loss,
+                bit_acc=metrics['bit_acc'], byte_match=metrics['byte_match'],
+                oracle=metrics['oracle_acc'], bit_oracle=metrics['bit_oracle_acc'],
+                ensemble_benefit=metrics['ensemble_benefit'],
+                coverage=metrics['coverage'], clustering=metrics['clustering'],
+                circular_spread=metrics['circular_spread'], s_per_step=step_time,
+                n_bits=num_bits)
+            coverage_per_bit = model.receptive_masks.sum(dim=0) if model.receptive_masks is not None else None
+            for bi in range(num_beings):
+                bits_i = model.receptive_masks[bi].nonzero(as_tuple=True)[0] if model.receptive_masks is not None else []
+                k = len(bits_i)
+                uniq = int((coverage_per_bit[bits_i] == 1).sum().item()) if coverage_per_bit is not None and k > 0 else 0
+                influx_writer.log_being(
+                    influx_run_id, step, bi,
+                    accuracy=metrics['being_accs'][bi],
+                    masked_acc=metrics['being_masked_accs'][bi],
+                    jump_rate=metrics['jump_rates'][bi] if bi < len(metrics['jump_rates']) else 0,
+                    k_bits=k if model.receptive_masks is not None else num_bits,
+                    unique_bits=uniq, redundant_bits=k - uniq)
+            influx_writer.log_bits(influx_run_id, step, metrics['per_bit_accs'])
+            # Per-ant-per-bit accuracy for correlation panels
+            if _masks is not None:
+                _ab_pos = min(2, output_cpu.size(1) - 1)
+                for _abi in range(num_beings):
+                    _ab_bits = _masks[_abi].nonzero(as_tuple=True)[0].tolist()
+                    if _ab_bits:
+                        _ab_pred = (stats_cpu['being_outputs'][_abi][_ab_pos] > 0.0).float()
+                        _ab_tgt = y_cpu[:, _ab_pos, :]
+                        _ab_accs = {b: (_ab_pred[:, b] == _ab_tgt[:, b]).float().mean().item() for b in _ab_bits}
+                        influx_writer.log_ant_bit_acc(influx_run_id, step, _abi, _ab_accs)
+
+            # GEM 💎 logging (persistent embedding state)
+            if hasattr(model, 'gem'):
+                _gem_vals = model.gem.detach().cpu().tolist()
+                influx_writer.log_gem(influx_run_id, step, _gem_vals)
+                _gem_norm = sum(v**2 for v in _gem_vals) ** 0.5
+                _gem_str = " ".join(f"{v:+.3f}" for v in _gem_vals)
+                gem_line = f"  GEM[{_gem_str}] norm={_gem_norm:.4f}"
+                log_file.write(gem_line + "\n")
+                current_file.write(gem_line + "\n")
+
             # Console output periodically
             if step % 500 == 0 or step == start_step:
                 elapsed = time.time() - start_time
+                _gem_summary = ""
+                if hasattr(model, 'gem'):
+                    _gn = model.gem.detach().norm().item()
+                    _gem_summary = f" | GEM_norm={_gn:.4f}"
                 print(
                     f"step {step:5d} | loss {train_loss:.6f} | "
                     f"bit_acc={metrics['bit_acc']:.4f} oracle={metrics['oracle_acc']:.4f} | "
-                    f"time={elapsed:.1f}s"
+                    f"time={elapsed:.1f}s{_gem_summary}"
                 )
 
             log_file.flush()
@@ -1074,6 +1132,18 @@ def main():
                 current_file.write(eval_line + "\n")
                 log_file.flush()
                 current_file.flush()
+
+                # InfluxDB eval metrics
+                influx_writer.log_step(
+                    influx_run_id, step, eval_metrics_accum['eval_loss'],
+                    bit_acc=eval_metrics_accum['bit_acc'], byte_match=eval_metrics_accum['byte_match'],
+                    oracle=eval_metrics_accum['oracle_acc'], bit_oracle=eval_metrics_accum['bit_oracle_acc'],
+                    ensemble_benefit=eval_metrics_accum['ensemble_benefit'],
+                    coverage=eval_metrics_accum['coverage'], clustering=eval_metrics_accum['clustering'],
+                    circular_spread=eval_metrics_accum['circular_spread'], is_eval=True,
+                    n_bits=num_bits)
+                influx_writer.log_bits(influx_run_id, step, eval_metrics_accum['per_bit_accs'])
+
                 model.train()
 
             # Save checkpoint periodically (frequency is live-controllable)
@@ -1095,6 +1165,9 @@ def main():
     # Save final checkpoint
     final_step = num_steps - 1 if not args.resume else start_step + (num_steps - start_step)
     save_checkpoint(model, optimizer, final_step, 0.0, args.checkpoint_dir, config=arch_config)
+
+    # Flush InfluxDB metrics
+    influx_writer.close()
 
 
 if __name__ == "__main__":

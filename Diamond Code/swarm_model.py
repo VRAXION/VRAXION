@@ -498,7 +498,7 @@ class SwarmByteRingModel(nn.Module):
 
         # SHARED COMPONENTS (all beings use these)
         if embedding_dim > num_bits:
-            self.input_proj = nn.Linear(num_bits, embedding_dim)
+            self.input_proj = nn.Linear(num_bits * 2, embedding_dim)  # *2 for [input + GEM]
             self.output_proj = nn.Linear(embedding_dim, num_bits)
         else:
             self.input_proj = None
@@ -557,11 +557,11 @@ class SwarmByteRingModel(nn.Module):
             self.being_output_projs = nn.ModuleList()
             for i in range(num_beings):
                 if self.full_view:
-                    self.being_input_projs.append(nn.Linear(num_bits, embedding_dim))
+                    self.being_input_projs.append(nn.Linear(num_bits * 2, embedding_dim))  # *2 for [input + GEM]
                     self.being_output_projs.append(nn.Linear(embedding_dim, num_bits))
                 else:
                     k_i = int(self.receptive_masks[i].sum().item())
-                    self.being_input_projs.append(nn.Linear(k_i, embedding_dim))
+                    self.being_input_projs.append(nn.Linear(k_i + num_bits, embedding_dim))  # +num_bits for GEM
                     self.being_output_projs.append(nn.Linear(embedding_dim, k_i))
             # Shared projections not used in heterogeneous mode
             self.input_proj = None
@@ -607,11 +607,11 @@ class SwarmByteRingModel(nn.Module):
             for i in range(num_beings):
                 h_i = self.hidden_dims[i]
                 if self.full_view:
-                    self.being_input_projs.append(nn.Linear(num_bits, h_i))
+                    self.being_input_projs.append(nn.Linear(num_bits * 2, h_i))  # *2 for [input + GEM]
                     self.being_output_projs.append(nn.Linear(h_i, num_bits))
                 else:
                     k_i = int(self.receptive_masks[i].sum().item())
-                    self.being_input_projs.append(nn.Linear(k_i, h_i))
+                    self.being_input_projs.append(nn.Linear(k_i + num_bits, h_i))  # +num_bits for GEM
                     self.being_output_projs.append(nn.Linear(h_i, k_i))
 
             # Per-being processing layers (can't share, dims differ)
@@ -656,6 +656,13 @@ class SwarmByteRingModel(nn.Module):
             self.combiner_gate = nn.Parameter(torch.zeros(num_beings, num_bits))
         else:
             self.combiner_gate = None
+
+        # GLOBAL EMBEDDING MATRIX (GEM) 💎: persistent dynamic embedding
+        # 1:1 mapped to input bits. Updated each step via golden ratio EMA.
+        # Not a parameter (not trained by optimizer) — updated at runtime.
+        self.register_buffer('gem', torch.zeros(num_bits))
+        self.gem_write_head = nn.Linear(embedding_dim, num_bits)
+        self._phi_inv = 0.6180339887  # 1/φ — golden ratio inverse
 
         # VECTORIZED PATH PRECOMPUTATION (combinatorial mode only)
         # Pre-stack per-being index tensors so _forward_vectorized() can
@@ -909,6 +916,8 @@ class SwarmByteRingModel(nn.Module):
         # ===================== TIMESTEP LOOP =====================
         for t in range(T):
             input_bits = x[:, t, :]  # [B, num_bits]
+            # GEM 💎: concatenate persistent embedding for vectorized path
+            _gem_exp_v = self.gem.unsqueeze(0).expand(B, -1)  # [B, num_bits]
 
             # -- Temporal fibonacci dormancy mask --
             if self.tick_periods is not None:
@@ -918,12 +927,16 @@ class SwarmByteRingModel(nn.Module):
             step_active = active_mask & tick_active  # [N]
             step_mask = step_active.float().reshape(N, 1, 1)  # [N, 1, 1]
 
-            # 1. Gather visible bits & project
+            # 1. Gather visible bits & project (with GEM concatenated)
             if self.full_view:
-                being_input = torch.einsum('bk,ndk->bnd', input_bits, inp_w) + inp_b
+                input_with_gem = torch.cat([input_bits, _gem_exp_v], dim=-1)  # [B, num_bits*2]
+                being_input = torch.einsum('bk,ndk->bnd', input_with_gem, inp_w) + inp_b
             else:
                 visible = input_bits[:, vis_indices]  # [B, N, K]
-                being_input = torch.einsum('bnk,ndk->bnd', visible, inp_w) + inp_b
+                # Expand GEM for each being: [B, N, num_bits]
+                _gem_being = _gem_exp_v.unsqueeze(1).expand(-1, N, -1)
+                visible_with_gem = torch.cat([visible, _gem_being], dim=-1)  # [B, N, K+num_bits]
+                being_input = torch.einsum('bnk,ndk->bnd', visible_with_gem, inp_w) + inp_b
             being_input = being_input.permute(1, 0, 2)  # [N, B, D]
 
             # 2. Batched ring read (all beings read SAME ring state)
@@ -948,10 +961,15 @@ class SwarmByteRingModel(nn.Module):
             state_update = torch.tanh(self.state_norm(combined + hidden_states))
             if self.processing_layers is not None:
                 for layer in self.processing_layers:
-                    state_update = state_update + torch.nn.functional.gelu(layer(state_update))
+                    state_update = state_update + torch.nn.functional.softsign(layer(state_update))
 
             # Apply dormancy: keep old state for dormant/null beings
             hidden_states = torch.where(step_mask.bool(), state_update, hidden_states)
+
+            # GEM 💎 WRITE (vectorized): average across beings and batch
+            _gem_sig_v = torch.nn.functional.softsign(self.gem_write_head(state_update))  # [N, B, num_bits]
+            _gem_upd_v = _gem_sig_v.mean(dim=0).mean(dim=0)  # average N,B → [num_bits]
+            self.gem = self._phi_inv * self.gem.detach() + (1.0 - self._phi_inv) * _gem_upd_v
 
             if return_stats:
                 diag_hidden_abs.append(hidden_states.abs().mean().item())
@@ -1047,7 +1065,7 @@ class SwarmByteRingModel(nn.Module):
                     su_tt = torch.tanh(self.state_norm(comb_tt + hidden_states))
                     if self.processing_layers is not None:
                         for layer in self.processing_layers:
-                            su_tt = su_tt + torch.nn.functional.gelu(layer(su_tt))
+                            su_tt = su_tt + torch.nn.functional.softsign(layer(su_tt))
                     hidden_states = torch.where(tt_mask.bool(), su_tt, hidden_states)
 
                     # Ring write
@@ -1233,6 +1251,10 @@ class SwarmByteRingModel(nn.Module):
                 - jump_rates_per_being: List of jump rates per being
                 - pointer_positions_all: List of all pointer positions (for coverage)
         """
+        # GEM 💎: detach from previous step's computation graph
+        # Preserves values but drops grad_fn so optimizer.step() doesn't invalidate
+        self.gem = self.gem.detach()
+
         # Dispatch to vectorized path for combinatorial mode
         if self.combinatorial and hasattr(self, '_vec_vis_indices'):
             return self._forward_vectorized(x, return_stats, return_being_outputs)
@@ -1274,10 +1296,13 @@ class SwarmByteRingModel(nn.Module):
         for t in range(T):
             # 1. Shared input projection (all beings see same input)
             input_bits = x[:, t, :]
+            # GEM 💎: concatenate persistent embedding alongside raw input
+            gem_expanded = self.gem.unsqueeze(0).expand(input_bits.size(0), -1)  # [B, num_bits]
+            input_bits_with_gem = torch.cat([input_bits, gem_expanded], dim=-1)  # [B, num_bits*2]
             if self.input_proj is not None:
-                input_vec = self.input_proj(input_bits)
+                input_vec = self.input_proj(input_bits_with_gem)
             else:
-                input_vec = input_bits
+                input_vec = input_bits_with_gem
 
             # 2. Each being processes independently
             being_outputs_t = []
@@ -1340,19 +1365,21 @@ class SwarmByteRingModel(nn.Module):
                 # 2b. Combine input + context (with optional receptive field masking)
                 if self.full_view:
                     # FULL VIEW: all bits projected through per-being bottleneck
-                    being_input_vec = self.being_input_projs[being_idx](input_bits)  # [B, num_bits] → [B, H_i]
+                    being_input_vec = self.being_input_projs[being_idx](input_bits_with_gem)  # [B, num_bits*2] → [B, H_i]
                 elif self.heterogeneous:
-                    # HETEROGENEOUS: extract visible bits, use per-being projection
+                    # HETEROGENEOUS: extract visible bits + full GEM, use per-being projection
                     vis_idx = self.receptive_masks[being_idx].nonzero(as_tuple=True)[0]
                     visible_bits = input_bits[:, vis_idx]  # [B, K_i]
-                    being_input_vec = self.being_input_projs[being_idx](visible_bits)  # [B, D]
+                    visible_with_gem = torch.cat([visible_bits, gem_expanded], dim=-1)  # [B, K_i + num_bits]
+                    being_input_vec = self.being_input_projs[being_idx](visible_with_gem)  # [B, D]
                 elif being.input_mask is not None:
-                    # Homogeneous with masks: zero out non-visible bits
+                    # Homogeneous with masks: zero out non-visible bits + GEM
                     masked_bits = input_bits * being.input_mask.unsqueeze(0)  # [B, 8]
+                    masked_with_gem = torch.cat([masked_bits, gem_expanded], dim=-1)  # [B, num_bits*2]
                     if self.input_proj is not None:
-                        being_input_vec = self.input_proj(masked_bits)
+                        being_input_vec = self.input_proj(masked_with_gem)
                     else:
-                        being_input_vec = masked_bits
+                        being_input_vec = masked_with_gem
                 else:
                     being_input_vec = input_vec  # No mask: use shared projection
                 combined_input = being_input_vec + context_scale * context_read
@@ -1381,12 +1408,17 @@ class SwarmByteRingModel(nn.Module):
                 # Additional processing layers (with residual connections)
                 if self.being_processing_layers is not None:
                     for layer in self.being_processing_layers[being_idx]:
-                        state_update = state_update + torch.nn.functional.gelu(layer(state_update))
+                        state_update = state_update + torch.nn.functional.softsign(layer(state_update))
                 elif self.processing_layers is not None:
                     for layer in self.processing_layers:
-                        state_update = state_update + torch.nn.functional.gelu(layer(state_update))
+                        state_update = state_update + torch.nn.functional.softsign(layer(state_update))
 
                 state['hidden_state'] = state_update
+
+                # GEM 💎 WRITE: golden ratio EMA update from this being's hidden state
+                _gem_signal = torch.nn.functional.softsign(self.gem_write_head(state_update))  # [B, num_bits]
+                _gem_update = _gem_signal.mean(dim=0)  # average across batch → [num_bits]
+                self.gem = self._phi_inv * self.gem.detach() + (1.0 - self._phi_inv) * _gem_update
 
                 # 2d. Write to SHARED ring (scatter_add accumulation)
                 # Gradient flows through ring writes for collaborative learning.
@@ -1487,10 +1519,10 @@ class SwarmByteRingModel(nn.Module):
                         state_update = torch.tanh(self.state_norm(combined_input + state['hidden_state']))
                         if self.being_processing_layers is not None:
                             for layer in self.being_processing_layers[being_idx]:
-                                state_update = state_update + torch.nn.functional.gelu(layer(state_update))
+                                state_update = state_update + torch.nn.functional.softsign(layer(state_update))
                         elif self.processing_layers is not None:
                             for layer in self.processing_layers:
-                                state_update = state_update + torch.nn.functional.gelu(layer(state_update))
+                                state_update = state_update + torch.nn.functional.softsign(layer(state_update))
                         state['hidden_state'] = state_update
 
                         # Write to ring
