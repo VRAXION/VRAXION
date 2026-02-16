@@ -1086,6 +1086,7 @@ class SwarmByteRingModel(nn.Module):
             self._lcx_write_gate_accum = []
             self._lcx_read_weights_accum = []
             self._lcx_zoom_gate_accum = []
+            self._lcx_score_margin_accum = []
 
         # Rebuild bucket indices for bucketed LCX search (once per forward pass)
         if self._lcx_hash_mode:
@@ -1612,6 +1613,14 @@ class SwarmByteRingModel(nn.Module):
                 ).mean()
             else:
                 self._lcx_zoom_gate_aux_loss = torch.tensor(0.0, device=output.device)
+            # Score margin telemetry (not a loss — pure diagnostic)
+            _sm_acc = getattr(self, '_lcx_score_margin_accum', [])
+            if _sm_acc:
+                self._last_score_margin = sum(m for m, _ in _sm_acc) / len(_sm_acc)
+                self._last_score_top1 = sum(t for _, t in _sm_acc) / len(_sm_acc)
+            else:
+                self._last_score_margin = 0.0
+                self._last_score_top1 = 0.0
         else:
             self._lcx_write_gate_aux_loss = torch.tensor(0.0, device=output.device)
             self._lcx_read_attn_aux_loss = torch.tensor(0.0, device=output.device)
@@ -2013,6 +2022,19 @@ class SwarmByteRingModel(nn.Module):
             if not hasattr(self, '_lcx_read_weights_accum'):
                 self._lcx_read_weights_accum = []
             self._lcx_read_weights_accum.append(weights)
+            # Score margin diagnostic (pure telemetry, no gradient)
+            with torch.no_grad():
+                _n_cand = scores.shape[-1]
+                if _n_cand > eff_k:
+                    _kp1 = scores.topk(eff_k + 1, dim=-1).values  # [B, K+1]
+                    _margin = _kp1[:, -2] - _kp1[:, -1]           # last winner - first loser
+                else:
+                    _margin = torch.zeros(1, device=scores.device)
+                if not hasattr(self, '_lcx_score_margin_accum'):
+                    self._lcx_score_margin_accum = []
+                self._lcx_score_margin_accum.append(
+                    (_margin.mean().item(), topk_scores[:, 0].mean().item())
+                )
 
         if squeeze:
             context = context.squeeze(0)
@@ -2116,6 +2138,7 @@ class SwarmByteRingModel(nn.Module):
             self._lcx_write_gate_accum = []
             self._lcx_read_weights_accum = []
             self._lcx_zoom_gate_accum = []
+            self._lcx_score_margin_accum = []
 
         # Rebuild bucket indices for bucketed LCX search (once per forward pass)
         if self._lcx_hash_mode:
@@ -2592,6 +2615,14 @@ class SwarmByteRingModel(nn.Module):
                 ).mean()
             else:
                 self._lcx_zoom_gate_aux_loss = torch.tensor(0.0, device=x.device)
+            # Score margin telemetry (not a loss — pure diagnostic)
+            _sm_acc = getattr(self, '_lcx_score_margin_accum', [])
+            if _sm_acc:
+                self._last_score_margin = sum(m for m, _ in _sm_acc) / len(_sm_acc)
+                self._last_score_top1 = sum(t for _, t in _sm_acc) / len(_sm_acc)
+            else:
+                self._last_score_margin = 0.0
+                self._last_score_top1 = 0.0
         else:
             self._lcx_write_gate_aux_loss = torch.tensor(0.0, device=x.device)
             self._lcx_read_attn_aux_loss = torch.tensor(0.0, device=x.device)

@@ -376,7 +376,7 @@ def log_lcx_level_norms(run_id, step, level_norms, num_levels, zoom_gate=None,
                     p = p.field(_rk, int(heat_stats[_rk]))
         # Entropy metrics
         for _hl in range(num_levels):
-            for _mk in ('entropy_pct', 'eff_slots', 'active_slots', 'total_slots', 'val_diversity', 'top1_mass', 'participation_ratio', 'top6_mass', 'active_pct', 'part_ratio_pct'):
+            for _mk in ('entropy_pct', 'eff_slots', 'active_slots', 'total_slots', 'val_diversity', 'top1_mass', 'participation_ratio', 'top6_mass', 'active_pct', 'part_ratio_pct', 'score_margin', 'score_top1'):
                 _ek = f'L{_hl}_{_mk}'
                 if _ek in heat_stats:
                     p = p.field(_ek, float(heat_stats[_ek]))

@@ -1556,6 +1556,13 @@ def main():
                                 _diag_mask = 1.0 - torch.eye(_ns, device=_sim.device)
                                 _avg_sim = (_sim * _diag_mask).sum() / (_ns * (_ns - 1))
                                 _heat_stats[f'L{_hvlvl}_val_diversity'] = round((1.0 - _avg_sim.item()) * 100, 1)
+                            # Score margin: routing quality diagnostic
+                            _sm = getattr(model, '_last_score_margin', None)
+                            if _sm is not None:
+                                _heat_stats[f'L{_hvlvl}_score_margin'] = round(_sm, 4)
+                            _st1 = getattr(model, '_last_score_top1', None)
+                            if _st1 is not None:
+                                _heat_stats[f'L{_hvlvl}_score_top1'] = round(_st1, 4)
                 lcx_line = f"  LCX-ZOOM {_max_active + 1}/{model._lcx_num_levels}lvl(alloc={_alloc_lvls}) [{_norms_str}] heat[{_heat_str}]"
                 log_file.write(lcx_line + "\n")
                 current_file.write(lcx_line + "\n")

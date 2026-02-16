@@ -65,7 +65,7 @@ python -u test_swarm_config.py ^
     --controls_every 1 ^
     --effort Alpha ^
     --start_lcx_off ^
-    --resume "checkpoints/goldilocks_v4/checkpoint_step_5000.pt"
+    --resume "checkpoints/goldilocks_v4/checkpoint_latest.pt"
 
 REM Kill control panel when training ends
 taskkill /F /FI "WINDOWTITLE eq CTRL_PANEL" >nul 2>&1
