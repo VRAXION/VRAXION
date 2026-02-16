@@ -1,5 +1,7 @@
 {
-  "major": 2,
-  "minor": 10,
-  "build": 581
+  "major": 3,
+  "minor": 0,
+  "build": 0,
+  "label": "diamond-research",
+  "note": "Diamond Code: Hash LCX memory, progressive training, Grafana observability. Research/engineering release."
 }

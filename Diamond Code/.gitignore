@@ -1,6 +1,5 @@
 # Output logs from experimental runs
 *_output.txt
-diag_output.txt
 
 # All runtime logs (generated, not source)
 logs/
@@ -12,11 +11,26 @@ data/
 __pycache__/
 *.pyc
 
-# Checkpoints
+# Checkpoints (4-6 GB each)
 *.pt
+*.pth
+*.ckpt
+checkpoints/
 
 # Generated images
 *.png
 
 # Windows artifacts
 nul
+
+# Secrets
+.influx_token
+
+# Archive (dead-end exploration scripts)
+archive/
+
+# Scratch probes
+tools/_scratch/
+
+# Live server state
+live/

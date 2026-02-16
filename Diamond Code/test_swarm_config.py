@@ -7,6 +7,7 @@ Usage:
 Logs everything (loss, accuracy, jump gates, swarm metrics) for dashboard viewing.
 """
 
+import math
 import os
 import torch
 # Use 90% of CPU cores for training
@@ -95,8 +96,34 @@ def generate_text_batch(corpus: bytes, n_samples: int, seq_len: int = 16, num_bi
     return x, y
 
 
-def generate_multitask_batch(n_samples, seq_len=16, max_value=100, seed=None, num_bits=8, task='mixed'):
-    """Generate batch with mixed operations (or single op if task != 'mixed')."""
+# Effort-level ranges: maps effort code -> (min_tt, max_tt)
+# Gaps at 3 and 7 create clean separation between effort bands.
+EFFORT_RANGES = {
+    0: (0, 2),    # fast: 0-2 think ticks
+    1: (4, 6),    # medium: 4-6 think ticks
+    2: (8, 10),   # slow/deliberate: 8-10 think ticks
+}
+
+
+def sample_effort(seed_val=None):
+    """Sample effort level and think_ticks from effort ranges.
+    Returns (effort_level, think_ticks)."""
+    if seed_val is not None:
+        random.seed(seed_val)
+    effort = random.choice([0, 1, 2])
+    lo, hi = EFFORT_RANGES[effort]
+    tt = random.randint(lo, hi)
+    return effort, tt
+
+
+def generate_multitask_batch(n_samples, seq_len=16, max_value=100, seed=None, num_bits=8, task='mixed',
+                             effort_level=None):
+    """Generate batch with mixed operations (or single op if task != 'mixed').
+
+    Args:
+        effort_level: If not None, encode effort (0=fast, 1=medium, 2=slow) in bits 4-5
+                      of position 2 (op_code position). Bits 0-3 = operation, bits 4-5 = effort.
+    """
     if seed is not None:
         random.seed(seed)
         torch.manual_seed(seed)
@@ -135,6 +162,11 @@ def generate_multitask_batch(n_samples, seq_len=16, max_value=100, seed=None, nu
         x_seq[0, :] = int_to_bits(a, num_bits)
         x_seq[1, :] = int_to_bits(b, num_bits)
         x_seq[2, :] = op_codes[op_name]
+
+        # Encode effort level in spare bits 4-5 of position 2
+        if effort_level is not None and num_bits >= 6:
+            x_seq[2, 4] = float(effort_level & 1)       # bit 4
+            x_seq[2, 5] = float((effort_level >> 1) & 1) # bit 5
 
         y_seq = torch.zeros(seq_len, num_bits)
         y_seq[0, :] = int_to_bits(a, num_bits)
@@ -307,6 +339,11 @@ def evaluate_metrics(output, stats, y, train_loss, num_beings, num_bits, n_contr
     hamming = hamming_distance_at_position(output, y, eval_pos)
     per_bit_accs = per_bit_accuracy_at_position(output, y, eval_pos)
 
+    # All-position average bit accuracy (reveals learning across ALL positions,
+    # not just position 2 which may be random for some tasks like echo)
+    T = output.size(1)
+    avg_bit_acc = sum(bit_accuracy_at_position(output, y, p) for p in range(T)) / T
+
     # Per-being metrics
     being_outputs = stats['being_outputs']
     being_accs = []
@@ -357,6 +394,7 @@ def evaluate_metrics(output, stats, y, train_loss, num_beings, num_bits, n_contr
 
     return {
         'eval_loss': train_loss, 'overall_acc': overall_acc, 'bit_acc': bit_acc,
+        'avg_bit_acc': avg_bit_acc,
         'byte_match': byte_match, 'hamming': hamming, 'per_bit_accs': per_bit_accs,
         'being_accs': being_accs, 'being_masked_accs': being_masked_accs,
         'oracle_acc': oracle_acc, 'bit_oracle_acc': bit_oracle_acc,
@@ -372,6 +410,7 @@ def format_metrics_line(step, train_loss, step_time, metrics):
     line = (
         f"step {step} | loss {train_loss:.6f} | "
         f"overall={m['overall_acc']:.4f} bit_acc={m['bit_acc']:.4f} "
+        f"avg_bit_acc={m.get('avg_bit_acc', 0):.4f} "
         f"byte_match={m['byte_match']:.4f} hamming={m['hamming']:.4f} | "
     )
     for i, ba in enumerate(m['being_accs']):
@@ -409,8 +448,13 @@ def format_metrics_line(step, train_loss, step_time, metrics):
     return line
 
 
-def save_checkpoint(model, optimizer, step, best_acc, checkpoint_dir, is_best=False, config=None):
-    """Save training checkpoint with architecture config for CPU eval worker."""
+def save_checkpoint(model, optimizer, step, best_acc, checkpoint_dir, is_best=False, config=None,
+                    milestone_every=5000):
+    """Save training checkpoint with architecture config for CPU eval worker.
+
+    Always overwrites checkpoint_latest.pt (rolling save).
+    Every milestone_every steps, also saves a permanent checkpoint_step_N.pt.
+    """
     Path(checkpoint_dir).mkdir(parents=True, exist_ok=True)
 
     checkpoint = {
@@ -427,10 +471,16 @@ def save_checkpoint(model, optimizer, step, best_acc, checkpoint_dir, is_best=Fa
     if hasattr(model, 'being_states'):
         checkpoint['being_states'] = model.being_states.copy()
 
-    # Save regular checkpoint
-    checkpoint_path = Path(checkpoint_dir) / f'checkpoint_step_{step}.pt'
-    torch.save(checkpoint, checkpoint_path)
-    print(f"  [SAVE] Checkpoint saved: {checkpoint_path}")
+    # Always overwrite latest (rolling save)
+    latest_path = Path(checkpoint_dir) / 'checkpoint_latest.pt'
+    torch.save(checkpoint, latest_path)
+    print(f"  [SAVE] Checkpoint saved: {latest_path} (step {step})")
+
+    # Permanent milestone at every milestone_every steps
+    if step > 0 and step % milestone_every == 0:
+        milestone_path = Path(checkpoint_dir) / f'checkpoint_step_{step}.pt'
+        torch.save(checkpoint, milestone_path)
+        print(f"  [MILESTONE] Permanent checkpoint: {milestone_path}")
 
     # Save best model separately
     if is_best:
@@ -442,7 +492,66 @@ def save_checkpoint(model, optimizer, step, best_acc, checkpoint_dir, is_best=Fa
 def load_checkpoint(checkpoint_path, model, optimizer=None):
     """Load training checkpoint."""
     checkpoint = torch.load(checkpoint_path, weights_only=False)
-    missing, unexpected = model.load_state_dict(checkpoint['model_state_dict'], strict=False)
+    # RGB LCX migration: old [lcx_size] -> new [3, lcx_size]
+    if 'lcx' in checkpoint['model_state_dict']:
+        old_lcx = checkpoint['model_state_dict']['lcx']
+        if old_lcx is not None and old_lcx.dim() == 1 and model.lcx is not None and model.lcx.dim() == 2:
+            print(f"  [LOAD] Migrating LCX: [{old_lcx.shape[0]}] -> [3, {old_lcx.shape[0]}] (old -> R, G/B = 0)")
+            new_lcx = torch.zeros_like(model.lcx)
+            new_lcx[0] = old_lcx
+            checkpoint['model_state_dict']['lcx'] = new_lcx
+
+    # Hash LCX migration: drop dense LCX params when switching to hash mode (and vice versa)
+    sd = checkpoint['model_state_dict']
+    if model._lcx_hash_mode:
+        # Model is hash mode — remove dense LCX keys that would cause shape mismatch
+        for key in ['lcx', 'lcx_propose.weight', 'lcx_propose.bias', 'lcx_gate.weight', 'lcx_gate.bias']:
+            if key in sd:
+                print(f"  [LOAD] Dropping dense LCX param '{key}' (switched to hash mode)")
+                del sd[key]
+        # Remove old input_proj if shape doesn't match (dense used num_bits², hash uses num_bits)
+        if 'input_proj.weight' in sd and model.input_proj is not None:
+            if sd['input_proj.weight'].shape != model.input_proj.weight.shape:
+                print(f"  [LOAD] Dropping input_proj (shape mismatch: {sd['input_proj.weight'].shape} vs {model.input_proj.weight.shape})")
+                del sd['input_proj.weight']
+                if 'input_proj.bias' in sd:
+                    del sd['input_proj.bias']
+        # Zoom LCX migration: old 3-channel [3, S, D] -> per-level buffers (reinit)
+        if 'lcx_keys' in sd and sd['lcx_keys'].dim() == 3:
+            print(f"  [LOAD] Migrating 3-channel LCX -> zoom levels (reinit)")
+            for key in list(sd.keys()):
+                if key.startswith('lcx_keys') or key.startswith('lcx_values'):
+                    del sd[key]
+        # Zoom LCX migration: old single-buffer lcx_keys [S, D] -> per-level (reinit)
+        elif 'lcx_keys' in sd and sd['lcx_keys'].dim() == 2:
+            print(f"  [LOAD] Migrating single-buffer LCX -> zoom levels (reinit)")
+            for key in list(sd.keys()):
+                if key == 'lcx_keys' or key == 'lcx_values':
+                    del sd[key]
+        # Flat LCX migration: drop per-level buffers with mismatched shapes (slot count or key_dim changed)
+        for key in list(sd.keys()):
+            if key.startswith(('lcx_keys_', 'lcx_values_')):
+                model_buf = getattr(model, key, None)
+                if model_buf is not None and sd[key].shape != model_buf.shape:
+                    print(f"  [LOAD] Dropping LCX buffer '{key}' (shape: {sd[key].shape} vs {model_buf.shape})")
+                    del sd[key]
+        # Drop lcx_route_query if key_dim changed
+        if 'lcx_route_query.weight' in sd and model.lcx_route_query is not None:
+            if sd['lcx_route_query.weight'].shape != model.lcx_route_query.weight.shape:
+                print(f"  [LOAD] Dropping lcx_route_query (key_dim changed)")
+                del sd['lcx_route_query.weight']
+                if 'lcx_route_query.bias' in sd:
+                    del sd['lcx_route_query.bias']
+    elif not model._lcx_hash_mode and model.lcx is not None:
+        # Model is dense mode — remove hash LCX keys if present
+        for key in list(sd.keys()):
+            if key.startswith('lcx_keys') or key.startswith('lcx_values') or \
+               key in ['lcx_route_query.weight', 'lcx_route_query.bias',
+                        'lcx_write_gate.weight', 'lcx_write_gate.bias']:
+                print(f"  [LOAD] Dropping hash LCX param '{key}' (switched to dense mode)")
+                del sd[key]
+
+    missing, unexpected = model.load_state_dict(sd, strict=False)
     if missing:
         print(f"  [LOAD] New params (initialized fresh): {missing}")
     if unexpected:
@@ -500,10 +609,25 @@ def main():
                         help='Disable LCX, fall back to legacy GEM')
     parser.add_argument('--slots_per_being', type=int, default=1,
                         help='LCX slots each being can write (-1 = all slots / giant ant, 1 = flowchart spec, K = K phi-stride slots)')
+    parser.add_argument('--lcx_mode', type=str, default='dense', choices=['dense', 'hash'],
+                        help='LCX memory mode: dense (legacy pixel grid) or hash (sparse content-addressed slots)')
+    parser.add_argument('--lcx_num_slots', type=int, default=618,
+                        help='Base memory slots for hash LCX (golden ratio: 618, scales 10x per level)')
+    parser.add_argument('--lcx_key_dim', type=int, default=618,
+                        help='Routing key dimension for hash LCX (default: 618, matches L0 slot count)')
+    parser.add_argument('--lcx_top_k', type=int, default=4,
+                        help='Number of slots to read/write per step in hash LCX (default: 4)')
+    parser.add_argument('--lcx_num_levels', type=int, default=3,
+                        help='Number of zoom levels for hash LCX (default: 3)')
+    parser.add_argument('--lcx_level_slots', type=str, default=None,
+                        help='Comma-separated slot counts per level, e.g. "256,1024,4096"')
     parser.add_argument('--text', type=str, default=None,
                         help='Path to text file for byte-level language modeling (overrides math tasks)')
     parser.add_argument('--think_ticks', type=int, default=0,
                         help='Extra ring ticks without input (beings read each other, then output). 0=reflex mode.')
+    parser.add_argument('--effort_mode', action='store_true',
+                        help='Enable effort-level training: randomly sample think_ticks from 3 ranges '
+                             '(fast=0-1, medium=2-4, slow=6-12) and encode effort in input bits 4-5')
     parser.add_argument('--temporal_fibonacci', action='store_true',
                         help='Enable temporal Fibonacci tick scheduling (beings fire at Fibonacci-spaced intervals)')
     parser.add_argument('--capacity_fibonacci', action='store_true',
@@ -518,12 +642,18 @@ def main():
                         help='Device: auto | cpu | cuda (default: auto-detect GPU)')
     parser.add_argument('--compile', action='store_true',
                         help='torch.compile() the model for fused GPU kernels')
+    parser.add_argument('--amp', action='store_true',
+                        help='BF16 mixed precision (halves activation VRAM, uses tensor cores)')
     parser.add_argument('--batch_size', type=int, default=32,
                         help='Training batch size (default: 32)')
     parser.add_argument('--seq_len', type=int, default=16,
                         help='Sequence length / positions per sample (default: 16)')
-    parser.add_argument('--lr', type=float, default=0.001,
-                        help='Learning rate (default: 0.001)')
+    parser.add_argument('--lr', type=float, default=0.0003,
+                        help='Learning rate (default: 0.0003)')
+    parser.add_argument('--warmup_steps', type=int, default=100,
+                        help='LR warmup steps (linear ramp from 0 to lr, default: 100)')
+    parser.add_argument('--lr_min', type=float, default=1e-5,
+                        help='Minimum LR for cosine decay (default: 1e-5)')
     parser.add_argument('--memory_size', type=int, default=0,
                         help='Ring memory positions (default: 0 = match embedding dim)')
     parser.add_argument('--jump_bias', type=float, default=0.5,
@@ -540,6 +670,14 @@ def main():
                         help='Comma-separated being indices to train (e.g. "6" or "5,6"). "all" trains everything.')
     parser.add_argument('--grad_accum', type=int, default=1,
                         help='Gradient accumulation steps (default: 1, no accumulation)')
+    parser.add_argument('--attention_radius', type=int, default=2,
+                        help='Gaussian attention radius for ring memory (default: 2)')
+    parser.add_argument('--start_lcx_off', action='store_true',
+                        help='Start with LCX disabled in controls (INFANT stage). '
+                             'Model is still built with LCX buffers for later activation.')
+    parser.add_argument('--effort', type=str, default='Beta',
+                        help='Starting effort tier: Alpha/Beta/Gamma/Delta/Epsilon/Zeta (default: Beta). '
+                             'Auto-sets think_ticks, use_lcx, batch_size from tier definition.')
     parser.add_argument('--task', type=str, default='mixed',
                         choices=['mixed', 'xor', 'add', 'and', 'or'],
                         help='Which operation to train on (default: mixed = all ops)')
@@ -627,10 +765,13 @@ def main():
     print(f"  Capacity fibonacci: {args.capacity_fibonacci}" +
           (f" (max_H={args.max_hidden}, min_H={args.min_hidden})" if args.capacity_fibonacci else ""))
     print(f"  Full view: {args.full_view}")
-    if args.use_lcx:
+    if args.use_lcx and args.lcx_mode == 'hash':
+        print(f"  LCX: HASH mode ({args.lcx_num_slots} slots × {embedding_dim}d, "
+              f"key_dim={args.lcx_key_dim}, top_k={args.lcx_top_k})")
+    elif args.use_lcx:
         spb = args.slots_per_being
         spb_desc = "ALL (global write)" if spb == -1 else f"{spb} per being"
-        print(f"  LCX: {num_bits}×{num_bits} = {num_bits**2} cells, slots_per_being={spb} ({spb_desc})")
+        print(f"  LCX: DENSE mode ({num_bits}×{num_bits} = {num_bits**2} cells, slots_per_being={spb} ({spb_desc}))")
     else:
         print(f"  GEM: {num_bits} cells (golden ratio EMA, phi^-1=0.618)")
     print(f"  Batch size: {args.batch_size}")
@@ -691,6 +832,13 @@ def main():
         full_view=args.full_view,
         use_lcx=args.use_lcx,
         slots_per_being=args.slots_per_being,
+        lcx_mode=args.lcx_mode,
+        lcx_num_slots=args.lcx_num_slots,
+        lcx_key_dim=args.lcx_key_dim,
+        lcx_top_k=args.lcx_top_k,
+        lcx_num_levels=args.lcx_num_levels,
+        lcx_level_slots=[int(x) for x in args.lcx_level_slots.split(',')] if args.lcx_level_slots else None,
+        attention_radius=args.attention_radius,
     )
 
     # Print temporal fibonacci tick schedule
@@ -768,11 +916,19 @@ def main():
         'capacity_fibonacci': args.capacity_fibonacci,
         'full_view': args.full_view,
         'use_lcx': args.use_lcx,
+        'lcx_mode': args.lcx_mode,
+        'lcx_num_slots': args.lcx_num_slots,
+        'lcx_key_dim': args.lcx_key_dim,
+        'lcx_top_k': args.lcx_top_k,
         'max_hidden': args.max_hidden,
         'min_hidden': args.min_hidden,
         'memory_size': memory_size,
         'seq_len': args.seq_len,
         'data_dir': args.data_dir,
+        'effort_mode': args.effort_mode,
+        'attention_radius': args.attention_radius,
+        'lcx_num_levels': args.lcx_num_levels,
+        'lcx_level_slots': args.lcx_level_slots,
     }
 
     # Set initial being states from CLI
@@ -799,6 +955,28 @@ def main():
         filter(lambda p: p.requires_grad, model.parameters()),
         lr=args.lr, weight_decay=0.01
     )
+
+    # LR schedule: linear warmup then cosine decay
+    _base_lr = args.lr
+    _warmup_steps = args.warmup_steps
+    _lr_min = args.lr_min
+    _lr_schedule_active = True  # disabled if user overrides LR via live controls
+
+    def _get_scheduled_lr(step):
+        """Warmup + cosine decay. Returns LR for this step."""
+        if step < _warmup_steps:
+            return _base_lr * (step + 1) / _warmup_steps
+        progress = (step - _warmup_steps) / max(num_steps - _warmup_steps, 1)
+        return _lr_min + 0.5 * (_base_lr - _lr_min) * (1.0 + math.cos(math.pi * progress))
+
+    print(f"LR schedule: warmup {_warmup_steps} steps -> cosine decay to {_lr_min:.1e}")
+
+    # AMP mixed precision — GradScaler only needed for FP16 (BF16 has FP32 exponent range)
+    _use_scaler = args.amp and device.type == 'cuda' and getattr(args, 'amp_dtype', 'bfloat16') == 'float16'
+    amp_scaler = torch.amp.GradScaler('cuda') if _use_scaler else None
+    if args.amp:
+        _dtype_str = getattr(args, 'amp_dtype', 'bfloat16')
+        print(f"AMP: {_dtype_str} mixed precision enabled" + (" (GradScaler active)" if amp_scaler else ""))
 
     # Load checkpoint if resuming
     start_step = 0
@@ -902,12 +1080,21 @@ def main():
         # Write default controls.json for live tuning
         controls_path = str(Path(args.controls_path))
         initial_weights = traindat_loader.weights if traindat_loader else {}
+        # Effort tier determines initial tt/lcx/batch — --start_lcx_off overrides to Alpha
+        _effort = "Alpha" if args.start_lcx_off else args.effort
         write_default_controls(controls_path, args.lr, initial_weights,
                                think_ticks=args.think_ticks, checkpoint_every=args.checkpoint_every,
-                               eval_every=args.eval_every)
+                               eval_every=args.eval_every, batch_size=batch_size,
+                               use_lcx=args.use_lcx, stage="INFANT",
+                               effort=_effort)
         print(f"Controls: {controls_path}")
 
         controls = read_controls(controls_path)
+        # Apply controls BEFORE first forward pass (fixes race: model constructed
+        # with _lcx_hash_mode=True, but --start_lcx_off needs it False from step 0)
+        optimizer, _init_changes = apply_controls(controls, optimizer, traindat_loader, model)
+        if _init_changes:
+            print(f"  [CTRL init] {_init_changes}")
 
         # Capture initial LCX for drift tracking
         _lcx_initial = model.lcx.detach().cpu().tolist() if model.lcx is not None else None
@@ -915,6 +1102,25 @@ def main():
 
         for step in range(start_step, num_steps):
             step_start = time.time()
+
+            # Effort-level: read effort_lock from controls (backward compat with effort_mode)
+            _effort_lock = controls.get('effort_lock', None)
+            if _effort_lock is None:
+                _effort_mode = controls.get('effort_mode', args.effort_mode)
+                _effort_lock = 'random' if _effort_mode else 'fast'
+            _effort_level = None
+            _lock_map = {'fast': 0, 'medium': 1, 'slow': 2}
+            if _effort_lock == 'random':
+                _effort_level, _effort_tt = sample_effort(seed_val=42 + step + 2000000)
+                model.think_ticks = _effort_tt
+                model.effort_level = _effort_level
+            elif _effort_lock in _lock_map:
+                model.effort_level = _lock_map[_effort_lock]
+                _effort_level = model.effort_level
+                lo, hi = EFFORT_RANGES[model.effort_level]
+                model.think_ticks = random.randint(lo, hi)
+            else:
+                model.effort_level = 0
 
             # Generate training batch
             if traindat_loader:
@@ -931,6 +1137,7 @@ def main():
                 x_train, y_train, _ = generate_multitask_batch(
                     n_samples=batch_size, seq_len=seq_len, max_value=max_value,
                     seed=42 + step + 1000000, num_bits=num_bits, task=args.task,
+                    effort_level=_effort_level,
                 )
 
             # Move training data to device
@@ -949,77 +1156,187 @@ def main():
             # Capture LCX before forward pass (for before/after visualization)
             _lcx_before = model.lcx.detach().cpu().tolist() if model.lcx is not None else None
 
-            # Train step
-            output, train_stats = model(x_train, return_stats=True, return_being_outputs=True)
-            # Position-weighted loss: upweight the actual task (position 2)
-            # Without this, position 2 is only 6.25% of total gradient (1/16)
-            # while trivial copy/zero positions consume 93.75%.
-            per_pos_loss = nn.functional.binary_cross_entropy_with_logits(
-                output, y_train, reduction='none'
-            ).mean(dim=(0, 2))  # [T] — mean over batch and bits, per position
-            pos_weights = torch.ones(output.size(1), device=output.device)
-            task_pos = min(2, output.size(1) - 1)
-            pos_weights[task_pos] = 10.0
-            loss = (per_pos_loss * pos_weights).sum() / pos_weights.sum()
+            # Train step — autocast for AMP regardless of GradScaler
+            _amp_ctx_used = args.amp and device.type == 'cuda'
+            _amp_ctx = torch.amp.autocast('cuda', dtype=torch.bfloat16) if _amp_ctx_used else None
 
-            # Gate entropy regularizer (ring_attention only)
-            if args.combiner == 'ring_attention' and args.entropy_weight > 0:
-                entropy_loss = model._last_entropy_loss
-                loss = loss + args.entropy_weight * entropy_loss
+            if _amp_ctx_used:
+                with torch.amp.autocast('cuda', dtype=torch.bfloat16):
+                    output, train_stats = model(x_train, return_stats=True, return_being_outputs=True)
+                    # Uniform position weighting: all positions contribute equally.
+                    # For traindat (echo/not/shift), predictable positions provide
+                    # gradient signal while random positions average to zero gradient.
+                    loss = nn.functional.binary_cross_entropy_with_logits(output, y_train)
+                    if args.combiner == 'ring_attention' and args.entropy_weight > 0:
+                        entropy_loss = model._last_entropy_loss
+                        loss = loss + args.entropy_weight * entropy_loss
+            else:
+                output, train_stats = model(x_train, return_stats=True, return_being_outputs=True)
+                # Uniform position weighting: all positions contribute equally.
+                # For traindat (echo/not/shift), predictable positions provide
+                # gradient signal while random positions average to zero gradient.
+                loss = nn.functional.binary_cross_entropy_with_logits(output, y_train)
+                # Gate entropy regularizer (ring_attention only)
+                if args.combiner == 'ring_attention' and args.entropy_weight > 0:
+                    entropy_loss = model._last_entropy_loss
+                    loss = loss + args.entropy_weight * entropy_loss
+
+            # LCX auxiliary losses for gradient flow (write gate + read attention + zoom gate)
+            # fp32 cast prevents bf16 precision loss when adding small aux to larger main loss
+            if getattr(model, '_lcx_hash_mode', False):
+                _lcx_aux_coeff = 0.1
+                _wg_aux = getattr(model, '_lcx_write_gate_aux_loss', None)
+                if _wg_aux is not None and _wg_aux.requires_grad:
+                    loss = loss.float() + _lcx_aux_coeff * _wg_aux.float()
+                _ra_aux = getattr(model, '_lcx_read_attn_aux_loss', None)
+                if _ra_aux is not None and _ra_aux.requires_grad:
+                    loss = loss.float() + _lcx_aux_coeff * _ra_aux.float()
+                _zg_aux = getattr(model, '_lcx_zoom_gate_aux_loss', None)
+                if _zg_aux is not None and _zg_aux.requires_grad:
+                    loss = loss.float() + _lcx_aux_coeff * _zg_aux.float()
 
             # Gradient accumulation
             scaled_loss = loss / args.grad_accum
-            scaled_loss.backward()
+            if amp_scaler:
+                amp_scaler.scale(scaled_loss).backward()
+            else:
+                scaled_loss.backward()
 
-            # ---- DIAGNOSTICS (must run BEFORE zero_grad!) ----
-            diag = args.diagnostic
-            if diag != 'none' and step % 100 == 0:
-                diag_parts = []
-                # Test 2: Gradient flow
-                if diag in ('gradient', 'all'):
-                    bp = model.beings[0]  # first being's params
-                    inp_g = model.being_input_projs[0].weight.grad
-                    out_g = model.being_output_projs[0].weight.grad
-                    inp_gn = inp_g.norm().item() if inp_g is not None else 0.0
-                    out_gn = out_g.norm().item() if out_g is not None else 0.0
-                    diag_parts.append(f"grad_inp={inp_gn:.6f} grad_out={out_gn:.6f}")
-                    if model.processing_layers is not None:
-                        for li, layer in enumerate(model.processing_layers):
-                            lg = layer.weight.grad
-                            lgn = lg.norm().item() if lg is not None else 0.0
-                            diag_parts.append(f"proc{li}={lgn:.6f}")
-                    jg = bp.jump_gate.weight.grad
-                    diag_parts.append(f"jump_gate={jg.norm().item():.6f}" if jg is not None else "jump_gate=0")
-                # Test 3: Hidden state saturation
-                if diag in ('saturation', 'all'):
-                    h_abs = train_stats.get('diag_hidden_abs', [])
-                    h_max = train_stats.get('diag_hidden_max', [])
-                    for ti, (ha, hm) in enumerate(zip(h_abs, h_max)):
-                        diag_parts.append(f"t{ti}_h_abs={ha:.4f}_max={hm:.4f}")
-                # Test 4: ctx_scale and ring reads
-                if diag in ('ring', 'all'):
-                    ctx_s = train_stats.get('diag_ctx_scales', [])
-                    rr = train_stats.get('diag_ring_read_norm', [])
-                    diag_parts.append(f"ctx_scales=[{','.join(f'{c:.4f}' for c in ctx_s)}]")
-                    for ti, rn in enumerate(rr):
-                        diag_parts.append(f"t{ti}_ring_norm={rn:.4f}")
-                if diag_parts:
-                    diag_line = f"  [DIAG step {step}] " + " | ".join(diag_parts)
-                    print(diag_line)
-                    log_file.write(diag_line + "\n")
-                    current_file.write(diag_line + "\n")
+            # ---- GRADIENT FLOW DIAGNOSTICS (every 10 steps, before zero_grad) ----
+            _lcx_grad_cache = None  # populated inside GRAD block, read by LCX logging
+            if step % 10 == 0:
+                gd_parts = []
+                # input_proj gradient
+                _ip_g = model.input_proj.weight.grad if model.input_proj is not None else None
+                gd_parts.append(f"inp={_ip_g.norm().item():.4e}" if _ip_g is not None else "inp=None")
+                # output_proj gradient
+                _op_g = model.output_proj.weight.grad if model.output_proj is not None else None
+                gd_parts.append(f"out={_op_g.norm().item():.4e}" if _op_g is not None else "out=None")
+                # processing layers (show first, middle, last)
+                if model.processing_layers is not None and len(model.processing_layers) > 0:
+                    _pl = model.processing_layers
+                    _pl_norms = []
+                    for _li, _layer in enumerate(_pl):
+                        _lg = _layer.weight.grad
+                        _pl_norms.append(_lg.norm().item() if _lg is not None else 0.0)
+                    # Show first, mid, last layer grad norms + ratio first/last
+                    _first, _mid, _last = _pl_norms[0], _pl_norms[len(_pl_norms)//2], _pl_norms[-1]
+                    _ratio = _first / _last if _last > 1e-12 else float('inf')
+                    gd_parts.append(f"depth[0]={_first:.4e} [{len(_pl_norms)//2}]={_mid:.4e} [{len(_pl_norms)-1}]={_last:.4e} ratio={_ratio:.1f}")
+                # being-specific (jump_gate, context_strength)
+                if len(model.beings) > 0:
+                    _bp = model.beings[0]
+                    _jg = _bp.jump_gate.weight.grad if hasattr(_bp, 'jump_gate') and _bp.jump_gate.weight.grad is not None else None
+                    gd_parts.append(f"jump={_jg.norm().item():.4e}" if _jg is not None else "jump=None")
+                    _cs = _bp.context_strength.grad if hasattr(_bp, 'context_strength') and _bp.context_strength.grad is not None else None
+                    gd_parts.append(f"ctx_str={_cs.norm().item():.4e}" if _cs is not None else "ctx_str=None")
+                # LCX gradient norms
+                _lcx_rq = getattr(model, 'lcx_route_query', None)
+                _lcx_rq_g = _lcx_rq.weight.grad if _lcx_rq is not None and _lcx_rq.weight.grad is not None else None
+                _lcx_rq_val = _lcx_rq_g.norm().item() if _lcx_rq_g is not None else 0.0
+                gd_parts.append(f"lcx_rq={_lcx_rq_val:.4e}")
+                _lcx_wg = getattr(model, 'lcx_write_gate', None)
+                _lcx_wg_g = _lcx_wg.weight.grad if _lcx_wg is not None and _lcx_wg.weight.grad is not None else None
+                _lcx_wg_val = _lcx_wg_g.norm().item() if _lcx_wg_g is not None else 0.0
+                gd_parts.append(f"lcx_wg={_lcx_wg_val:.4e}")
+                _zg = getattr(model, 'zoom_gate', None)
+                _zg_g = _zg.weight.grad if _zg is not None and hasattr(_zg, 'weight') and _zg.weight.grad is not None else None
+                _zg_val = _zg_g.norm().item() if _zg_g is not None else 0.0
+                gd_parts.append(f"zg={_zg_val:.4e}")
+                # Stash LCX grads for InfluxDB (used in LCX logging section below)
+                _lcx_grad_cache = {'lcx_rq': _lcx_rq_val, 'lcx_wg': _lcx_wg_val, 'zg': _zg_val}
+                # Total grad norm (all params)
+                _total_gn = 0.0
+                _n_params = 0
+                for _p in model.parameters():
+                    if _p.grad is not None:
+                        _total_gn += _p.grad.norm().item() ** 2
+                        _n_params += 1
+                _total_gn = _total_gn ** 0.5
+                gd_parts.append(f"total={_total_gn:.4e}({_n_params}p)")
+                diag_line = f"  [GRAD step {step}] {' | '.join(gd_parts)}"
+                print(diag_line)
+                log_file.write(diag_line + "\n")
+                current_file.write(diag_line + "\n")
 
             # Optimizer step + zero_grad (AFTER diagnostics so .grad is readable)
             if (step + 1) % args.grad_accum == 0 or step == num_steps - 1:
-                optimizer.step()
+                if amp_scaler:
+                    amp_scaler.unscale_(optimizer)
+
+                # AGC: Adaptive Gradient Control (two-sided band normalizer)
+                # Ported from VRAXION agc.py — normalizes gradients to [agc_low, agc_high]
+                # Scales DOWN spikes, scales UP weak gradients (fights collapse)
+                _agc_on = controls.get('agc_enabled', True)
+                _agc_lo = float(controls.get('agc_low', 1.0))
+                _agc_hi = float(controls.get('agc_high', 5.0))
+                _agc_scale = 1.0
+                _agc_norm = 0.0
+                if _agc_on:
+                    for _p in model.parameters():
+                        if _p.grad is not None:
+                            _agc_norm += _p.grad.data.norm(2).item() ** 2
+                    _agc_norm = _agc_norm ** 0.5
+                    if _agc_norm > _agc_hi:
+                        _agc_scale = _agc_hi / _agc_norm
+                    elif _agc_norm > 0 and _agc_norm < _agc_lo:
+                        _agc_scale = _agc_lo / _agc_norm
+                    if _agc_scale != 1.0:
+                        with torch.no_grad():
+                            for _p in model.parameters():
+                                if _p.grad is not None:
+                                    _p.grad.data.mul_(_agc_scale)
+                        if step % 10 == 0:
+                            _dir = "DOWN" if _agc_scale < 1.0 else "UP"
+                            _agc_msg = f"  [AGC] norm={_agc_norm:.2f} -> scale {_dir} {_agc_scale:.4f} (band [{_agc_lo}, {_agc_hi}])"
+                            print(_agc_msg)
+                            log_file.write(_agc_msg + "\n")
+                            current_file.write(_agc_msg + "\n")
+
+                # Hard clip as emergency backstop (at AGC high band)
+                _clip_max = _agc_hi if _agc_on else 1.0
+                torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=_clip_max)
+                if amp_scaler:
+                    amp_scaler.step(optimizer)
+                    amp_scaler.update()
+                else:
+                    optimizer.step()
                 optimizer.zero_grad()
 
             # Live controls polling
             if step % args.controls_every == 0:
                 controls = read_controls(controls_path)
+                # Snapshot controls LR to detect user clicks (not scheduler drift)
+                _ctrl_lr_now = controls.get('lr')
                 optimizer, changes = apply_controls(controls, optimizer, traindat_loader, model)
+                # Detect deliberate user LR change via control panel
+                if _ctrl_lr_now is not None and abs(_ctrl_lr_now - _base_lr) > 1e-10:
+                    if _lr_schedule_active:
+                        _lr_schedule_active = False
+                        _base_lr = _ctrl_lr_now
+                        print(f"  [LR] Manual override to {_ctrl_lr_now:.6f}, auto schedule disabled")
+                # Live batch_size override
+                if controls.get('batch_size') is not None:
+                    new_bs = int(controls['batch_size'])
+                    if new_bs != batch_size:
+                        print(f"  [CTRL] batch_size: {batch_size} -> {new_bs}")
+                        batch_size = new_bs
+                # Handle resize_lcx command from control panel
+                _resize_target = controls.pop('_resize_lcx', None)
+                if _resize_target and hasattr(model, 'resize_lcx'):
+                    print(f"  [CTRL] resize_lcx -> {int(_resize_target):,} slots")
+                    model.resize_lcx(int(_resize_target))
+                    # Clear command from controls.json so it doesn't fire again
+                    with open(controls_path, 'w') as _cf:
+                        json.dump(controls, _cf, indent=2)
                 if changes:
                     print(f"  [CTRL] {changes}")
+
+            # Apply LR schedule (warmup + cosine decay) — overrides controls LR when active
+            if _lr_schedule_active:
+                _scheduled_lr = _get_scheduled_lr(step)
+                for _pg in optimizer.param_groups:
+                    _pg['lr'] = _scheduled_lr
 
             step_time = time.time() - step_start
             train_loss = loss.item()
@@ -1036,7 +1353,9 @@ def main():
             _n_cont = sum(1 for s in model.being_states.values() if s != 'null')
             _masks = model.receptive_masks.detach().cpu() if model.receptive_masks is not None else None
             metrics = evaluate_metrics(output_cpu, stats_cpu, y_cpu, train_loss, num_beings, num_bits, _n_cont, receptive_masks=_masks)
+            _current_lr = optimizer.param_groups[0]['lr']
             log_line = format_metrics_line(step, train_loss, step_time, metrics)
+            log_line += f" | lr={_current_lr:.2e}"
             log_file.write(log_line + "\n")
             current_file.write(log_line + "\n")
 
@@ -1049,7 +1368,14 @@ def main():
                 coverage=metrics['coverage'], clustering=metrics['clustering'],
                 circular_spread=metrics['circular_spread'], s_per_step=step_time,
                 n_bits=num_bits,
-                gate_entropy=stats_cpu.get('gate_entropy', 0))
+                gate_entropy=stats_cpu.get('gate_entropy', 0),
+                effort_level=_effort_level if _effort_level is not None else -1,
+                think_ticks=model.think_ticks,
+                batch_size=batch_size,
+                use_lcx=1 if getattr(model, '_lcx_hash_mode', False) else 0,
+                effort_name=getattr(model, '_current_effort_name', ''),
+                current_stage=getattr(model, '_current_stage', 'UNKNOWN'),
+                agc_norm=_agc_norm, agc_scale=_agc_scale)
             coverage_per_bit = model.receptive_masks.sum(dim=0) if model.receptive_masks is not None else None
             for bi in range(num_beings):
                 bits_i = model.receptive_masks[bi].nonzero(as_tuple=True)[0] if model.receptive_masks is not None else []
@@ -1063,80 +1389,254 @@ def main():
                     k_bits=k if model.receptive_masks is not None else num_bits,
                     unique_bits=uniq, redundant_bits=k - uniq,
                     ctx_scale=stats_cpu.get('diag_ctx_scales', [0]*num_beings)[bi])
-            influx_writer.log_bits(influx_run_id, step, metrics['per_bit_accs'])
-            # Per-ant-per-bit accuracy for correlation panels
-            if _masks is not None:
-                _ab_pos = min(2, output_cpu.size(1) - 1)
-                for _abi in range(num_beings):
-                    _ab_bits = _masks[_abi].nonzero(as_tuple=True)[0].tolist()
-                    if _ab_bits:
-                        _ab_pred = (stats_cpu['being_outputs'][_abi][_ab_pos] > 0.0).float()
-                        _ab_tgt = y_cpu[:, _ab_pos, :]
-                        _ab_accs = {b: (_ab_pred[:, b] == _ab_tgt[:, b]).float().mean().item() for b in _ab_bits}
-                        influx_writer.log_ant_bit_acc(influx_run_id, step, _abi, _ab_accs)
+            # Heavy per-bit/per-frame InfluxDB writes disabled — were causing ~82K writes/step
+            # log_bits, log_ant_bit_acc, log_frame_snapshot all disabled for disk I/O
+            # Per-bit accuracy still logged to the text log file above
 
-            # Frame snapshots for Grafana (input/output — always, independent of memory type)
-            _input_frame = x_train[0, :num_bits, :].detach().cpu().tolist()    # [num_bits, num_bits] = 8x8 square
-            _output_frame = output[0, :num_bits, :].detach().cpu().tolist()    # [num_bits, num_bits] = 8x8 square
-            influx_writer.log_frame_snapshot(influx_run_id, step, 'input', [v for row in _input_frame for v in row])
-            influx_writer.log_frame_snapshot(influx_run_id, step, 'output', [v for row in _output_frame for v in row])
+            # Write frame snapshot sidecar (tiny JSON, dashboard reads it for live images)
+            import json as _json_frame
+            _frame_sidecar = {
+                'step': step,
+                'num_bits': num_bits,
+                'seq_len': output_cpu.shape[1] if output_cpu.dim() > 1 else 1,
+                'per_bit_accs': metrics['per_bit_accs'],
+                'bit_acc': metrics['bit_acc'],
+                'byte_match': metrics['byte_match'],
+                'bit_bar': metrics.get('bit_bar', ''),
+            }
+            # Add first sample's input/output/prediction (1 × seq × bits)
+            try:
+                _x_sample = x_train[0].detach().cpu().tolist()  # [seq, bits]
+                _y_sample = y_cpu[0].tolist()  # [bits]
+                _pred_prob = torch.sigmoid(output_cpu[0])  # logits → probabilities [0,1]
+                _pred_sample = (_pred_prob > 0.5).float().tolist()  # thresholded
+                _pred_raw = _pred_prob.tolist()  # probabilities for dashboard
+                _frame_sidecar['input_sample'] = _x_sample
+                _frame_sidecar['target_sample'] = _y_sample
+                _frame_sidecar['pred_sample'] = _pred_sample
+                _frame_sidecar['pred_raw'] = _pred_raw
+            except Exception:
+                pass
+            _frame_path = os.path.join(os.path.dirname(log_path), 'frame_latest.json')
+            with open(_frame_path, 'w') as _ff:
+                _json_frame.dump(_frame_sidecar, _ff)
 
             # Memory logging (LCX or GEM)
-            if model.lcx is not None:
-                _lcx_vals = model.lcx.detach().cpu()
-                _nb = model.num_bits
-                _lcx_norm = _lcx_vals.norm().item()
-                lcx_line = f"  LCX norm={_lcx_norm:.4f} ({_nb}x{_nb}={_nb**2} cells)"
+            if getattr(model, '_lcx_num_levels', 0) > 0 and not model._lcx_hash_mode:
+                # LCX OFF (INFANT stage) — compact one-liner
+                _stage = getattr(model, '_current_stage', 'INFANT')
+                lcx_line = f"  LCX: OFF ({_stage})"
                 log_file.write(lcx_line + "\n")
                 current_file.write(lcx_line + "\n")
-                influx_writer.log_lcx(influx_run_id, step, _lcx_vals.tolist(), _nb)
-                influx_writer.log_frame_snapshot(influx_run_id, step, 'lcx_state', _lcx_vals.tolist())
-                # Drift = current - initial (how far each cell moved from start)
-                if _lcx_initial is not None:
-                    import torch as _t
-                    _drift = (_lcx_vals - _t.tensor(_lcx_initial)).tolist()
-                    influx_writer.log_frame_snapshot(influx_run_id, step, 'lcx_drift', _drift)
-                # Log full matrix history to disk (every step, append JSONL)
+            elif getattr(model, '_lcx_num_levels', 0) > 0 and model._lcx_hash_mode and model.think_ticks < 1:
+                # LCX ON but tt=0 — writes only, no readback
+                lcx_line = "  LCX: standby (tt=0, writes only)"
+                log_file.write(lcx_line + "\n")
+                current_file.write(lcx_line + "\n")
+            elif model._lcx_hash_mode:
+                # Zoom LCX active: full per-level display
                 import json as _json
-                _matrix_log_path = os.path.join(os.path.dirname(log_path), 'matrix_history.jsonl')
-                _matrix_entry = {
-                    'step': step, 'num_bits': _nb,
-                    'input': _input_frame,
-                    'output': _output_frame,
-                    'lcx_before': _lcx_before if _lcx_before is not None else _lcx_vals.tolist(),
-                    'lcx_after': _lcx_vals.tolist(),
-                    'lcx_norm': _lcx_norm,
-                }
-                with open(_matrix_log_path, 'a') as _mf:
-                    _mf.write(_json.dumps(_matrix_entry) + '\n')
-                # Write JSON sidecar (latest state for dashboard)
+                _level_norms_str_parts = []
+                _level_data = {}
+                _influx_level_norms = {}
+                _influx_level_used = {}
+                _influx_level_total = {}
+                _influx_slot_norms = {}
+                # Level cap: tick N unlocks level N+1. Max active = think_ticks.
+                _max_active = min(model.think_ticks, model._lcx_num_levels - 1)
+                import math as _math
+                for _lvl in range(_max_active + 1):
+                    _keys, _vals = model._lcx_level_bufs(_lvl)
+                    _norms = _vals.detach().cpu().norm(dim=-1)  # [S_lvl]
+                    _used = int((_norms > 0).sum().item())
+                    _total = int(_norms.shape[0])
+                    _cols = _math.ceil(_total ** 0.5)
+                    _rows = _math.ceil(_total / _cols) if _cols > 0 else 1
+                    _side = _cols  # legacy compat
+                    _norm_sum = _norms.sum().item()
+                    _level_norms_str_parts.append(f"L{_lvl}={_norm_sum:.3f}({_used})")
+                    _level_data[f'L{_lvl}'] = _norms.tolist()
+                    _key_norms = _keys.detach().cpu().norm(dim=-1)  # [S_lvl]
+                    _level_data[f'L{_lvl}_keys'] = _key_norms.tolist()
+                    _level_data[f'L{_lvl}_used'] = _used
+                    _level_data[f'L{_lvl}_total'] = _total
+                    _level_data[f'L{_lvl}_side'] = _side
+                    _level_data[f'L{_lvl}_cols'] = _cols
+                    _level_data[f'L{_lvl}_rows'] = _rows
+                    _influx_level_norms[_lvl] = _norm_sum
+                    _influx_level_used[_lvl] = _used
+                    _influx_level_total[_lvl] = _total
+                    if _total <= 64:  # skip large levels — heatmap reads from sidecar
+                        _influx_slot_norms[_lvl] = _level_data[f'L{_lvl}']
+                _norms_str = ' '.join(_level_norms_str_parts)
+                # Heat stats (hot-bin tracking for sparse subdivision)
+                _heat_stats = model.lcx_heat_stats() if hasattr(model, 'lcx_heat_stats') else {}
+                _alloc_lvls = _heat_stats.get('allocated_levels', '?')
+                _heat_parts = []
+                for _hlvl in range(_max_active + 1):
+                    _hk = f'L{_hlvl}_hot_slots'
+                    _tk = f'L{_hlvl}_total_slots'
+                    if _hk in _heat_stats:
+                        _vk = f'L{_hlvl}_valid_slots'
+                        _valid = _heat_stats.get(_vk, '?')
+                        _heat_parts.append(f"L{_hlvl}:{_heat_stats[_hk]}/{_heat_stats[_tk]}(v={_valid})")
+                _heat_str = ' '.join(_heat_parts) if _heat_parts else ''
+                # Bin heat + valid for strip visualization (128 bins per level)
+                _STRIP_BINS = 128
+                for _hvlvl in range(_max_active + 1):
+                    _h_raw = getattr(model, f'lcx_heat_{_hvlvl}', None)
+                    _v_raw = getattr(model, f'lcx_valid_{_hvlvl}', None)
+                    if _h_raw is not None and _hvlvl in model._lcx_allocated_levels:
+                        _h_cpu = _h_raw.cpu().float()
+                        _level_data[f'L{_hvlvl}_heat_raw'] = _h_cpu.int().tolist()
+                        _n_slots = _h_cpu.shape[0]
+                        if _n_slots <= _STRIP_BINS:
+                            _level_data[f'L{_hvlvl}_heat_bins'] = _h_cpu.int().tolist()
+                        else:
+                            _hbins = []
+                            for _bi in range(_STRIP_BINS):
+                                _s = (_bi * _n_slots) // _STRIP_BINS
+                                _e = ((_bi + 1) * _n_slots) // _STRIP_BINS
+                                _hbins.append(int(_h_cpu[_s:_e].max().item()))
+                            _level_data[f'L{_hvlvl}_heat_bins'] = _hbins
+                    if _v_raw is not None and _hvlvl in model._lcx_allocated_levels:
+                        _v_cpu = _v_raw.cpu()
+                        _n_slots = _v_cpu.shape[0]
+                        if _n_slots <= _STRIP_BINS:
+                            _level_data[f'L{_hvlvl}_valid_bins'] = _v_cpu.int().tolist()
+                        else:
+                            _vbins = []
+                            for _bi in range(_STRIP_BINS):
+                                _s = (_bi * _n_slots) // _STRIP_BINS
+                                _e = ((_bi + 1) * _n_slots) // _STRIP_BINS
+                                _vbins.append(int(_v_cpu[_s:_e].sum().item()))
+                            _level_data[f'L{_hvlvl}_valid_bins'] = _vbins
+                    # Spatial rank bins: max-pool downsample for native Grafana table
+                    if _h_raw is not None and _hvlvl in model._lcx_allocated_levels:
+                        _raw_h = _level_data.get(f'L{_hvlvl}_heat_raw', [])
+                        if _raw_h:
+                            _N_RANK = 100
+                            import math as _mlog
+                            for _ri in range(_N_RANK):
+                                _s = (_ri * len(_raw_h)) // _N_RANK
+                                _e = ((_ri + 1) * len(_raw_h)) // _N_RANK
+                                _bin_max = max(_raw_h[_s:_e]) if _e > _s else 0
+                                _heat_stats[f'L{_hvlvl}_rk{_ri:02d}'] = round(_mlog.log2(max(_bin_max, 0) + 1), 2)
+                        # Entropy metrics for memory utilization
+                        _raw_list = _level_data.get(f'L{_hvlvl}_heat_raw', [])
+                        _total_h = sum(_raw_list)
+                        if _total_h > 0:
+                            import math as _m
+                            _n_total = len(_raw_list)
+                            _n_active = sum(1 for _hv in _raw_list if _hv > 0)
+                            _probs = [_hv / _total_h for _hv in _raw_list if _hv > 0]
+                            _entropy = -sum(_p * _m.log2(_p) for _p in _probs)
+                            _max_ent = _m.log2(_n_total) if _n_total > 1 else 1.0
+                            _heat_stats[f'L{_hvlvl}_entropy_pct'] = round(_entropy / _max_ent * 100, 1)
+                            _heat_stats[f'L{_hvlvl}_eff_slots'] = round(2 ** _entropy, 1)
+                            _heat_stats[f'L{_hvlvl}_active_slots'] = _n_active
+                            _heat_stats[f'L{_hvlvl}_total_slots'] = _n_total
+                            # GPT Pro metrics: Top-1 mass, Participation Ratio, Top-6 mass
+                            _heat_stats[f'L{_hvlvl}_top1_mass'] = round(max(_probs) * 100, 1)
+                            _heat_stats[f'L{_hvlvl}_participation_ratio'] = round(1.0 / sum(_p * _p for _p in _probs), 1)
+                            _top6 = sorted(_probs, reverse=True)[:6]
+                            _heat_stats[f'L{_hvlvl}_top6_mass'] = round(sum(_top6) * 100, 1)
+                            # Percentage metrics for level-agnostic dashboard template
+                            _heat_stats[f'L{_hvlvl}_active_pct'] = round(_n_active / _n_total * 100, 1)
+                            _heat_stats[f'L{_hvlvl}_part_ratio_pct'] = round((1.0 / sum(_p * _p for _p in _probs)) / _n_total * 100, 1)
+                            # Value diversity: cosine dissimilarity of stored vectors
+                            _vals = getattr(model, f'lcx_values_{_hvlvl}', None)
+                            if _vals is not None and _n_active > 1:
+                                _active_mask = _h_raw > 0
+                                _active_vals = _vals[_active_mask]
+                                _vnorms = _active_vals.norm(dim=1, keepdim=True).clamp(min=1e-8)
+                                _normed = _active_vals / _vnorms
+                                _sim = _normed @ _normed.T
+                                _ns = _sim.size(0)
+                                _diag_mask = 1.0 - torch.eye(_ns, device=_sim.device)
+                                _avg_sim = (_sim * _diag_mask).sum() / (_ns * (_ns - 1))
+                                _heat_stats[f'L{_hvlvl}_val_diversity'] = round((1.0 - _avg_sim.item()) * 100, 1)
+                lcx_line = f"  LCX-ZOOM {_max_active + 1}/{model._lcx_num_levels}lvl(alloc={_alloc_lvls}) [{_norms_str}] heat[{_heat_str}]"
+                log_file.write(lcx_line + "\n")
+                current_file.write(lcx_line + "\n")
+                _grad_kw = {}
+                if _lcx_grad_cache is not None:
+                    _grad_kw['lcx_route_grad'] = _lcx_grad_cache['lcx_rq']
+                    _grad_kw['lcx_write_grad'] = _lcx_grad_cache['lcx_wg']
+                    _grad_kw['zoom_gate_grad'] = _lcx_grad_cache['zg']
+                _grad_kw['write_differentiable'] = True  # write gate aux loss provides gradient
+                _grad_kw['current_stage'] = getattr(model, '_current_stage', 'UNKNOWN')
+                _wg_aux = getattr(model, '_lcx_write_gate_aux_loss', None)
+                _grad_kw['lcx_write_aux_loss'] = _wg_aux.item() if _wg_aux is not None else 0.0
+                _ra_aux = getattr(model, '_lcx_read_attn_aux_loss', None)
+                _grad_kw['lcx_read_aux_loss'] = _ra_aux.item() if _ra_aux is not None else 0.0
+                influx_writer.log_lcx_level_norms(
+                    influx_run_id, step,
+                    _influx_level_norms,
+                    model._lcx_num_levels,
+                    getattr(model, '_last_zoom_gate', None),
+                    level_used=_influx_level_used,
+                    level_total=_influx_level_total,
+                    max_active_level=_max_active,
+                    slot_norms=_influx_slot_norms,
+                    heat_stats=_heat_stats,
+                    **_grad_kw,
+                )
+                # Write JSON sidecar every step (control panel + dashboard read this)
+                _zg_val = getattr(model, '_last_zoom_gate', None)
                 _lcx_sidecar = {
-                    'step': step, 'num_bits': _nb, 'side': _nb,
-                    'values': _lcx_vals.tolist(),
+                    'step': step,
+                    'lcx_mode': 'hash',
+                    'num_levels': model._lcx_num_levels,
+                    'max_active_level': _max_active,
+                    'level_slots': model._lcx_level_slots,
+                    'total_slots': sum(model._lcx_level_slots),
+                    'zoom_gate': _zg_val,
+                    **_level_data,
                 }
                 _sidecar_path = os.path.join(os.path.dirname(log_path), 'lcx_latest.json')
                 with open(_sidecar_path, 'w') as _sf:
                     _json.dump(_lcx_sidecar, _sf)
+            elif model.lcx is not None:
+                _lcx_vals = model.lcx.detach().cpu()  # [3, lcx_size]
+                _nb = model.num_bits
+                _lcx_norm = _lcx_vals.norm().item()
+                _ch_names = ['R', 'G', 'B']
+                _ch_norms = ' '.join(f"{_ch_names[i]}={_lcx_vals[i].norm().item():.3f}" for i in range(3))
+                lcx_line = f"  LCX norm={_lcx_norm:.4f} ({_nb}x{_nb}x3 RGB) [{_ch_norms}] effort={model.effort_level}"
+                log_file.write(lcx_line + "\n")
+                current_file.write(lcx_line + "\n")
+                # Only send scalar channel norms to InfluxDB (not the 16K-point grids)
+                influx_writer.log_lcx_channel_norms(
+                    influx_run_id, step,
+                    _lcx_vals[0].norm().item(),
+                    _lcx_vals[1].norm().item(),
+                    _lcx_vals[2].norm().item(),
+                    model.effort_level,
+                )
+                # Drift frame snapshots disabled — 16K InfluxDB writes per step
+                # Matrix history disabled — was writing ~10MB/step, hammering disk I/O
+                # Use lcx_filmstrip.py post-hoc if needed
+                import json as _json
+                # Write JSON sidecar every step (control panel + dashboard read this)
+                if True:
+                    _lcx_sidecar = {
+                        'step': step, 'num_bits': _nb, 'side': _nb,
+                        'R': _lcx_vals[0].tolist(),
+                        'G': _lcx_vals[1].tolist(),
+                        'B': _lcx_vals[2].tolist(),
+                        'effort_level': model.effort_level,
+                    }
+                    _sidecar_path = os.path.join(os.path.dirname(log_path), 'lcx_latest.json')
+                    with open(_sidecar_path, 'w') as _sf:
+                        _json.dump(_lcx_sidecar, _sf)
             elif model.gem is not None:
                 _gem_vals = model.gem.detach().cpu().tolist()
-                influx_writer.log_gem(influx_run_id, step, _gem_vals)
                 _gem_norm = sum(v**2 for v in _gem_vals) ** 0.5
                 _gem_str = " ".join(f"{v:+.3f}" for v in _gem_vals)
                 gem_line = f"  GEM[{_gem_str}] norm={_gem_norm:.4f}"
                 log_file.write(gem_line + "\n")
                 current_file.write(gem_line + "\n")
-                # Expand GEM 1D → 8×8 grid (each row = one GEM cell, all cols same value)
-                _gem_grid = []
-                for _gv in _gem_vals:
-                    _gem_grid.extend([_gv] * num_bits)
-                influx_writer.log_frame_snapshot(influx_run_id, step, 'lcx_state', _gem_grid, side=num_bits)
-                influx_writer.log_lcx(influx_run_id, step, _gem_grid, num_bits)
-                # GEM drift (current - initial)
-                if _gem_initial is not None:
-                    _gem_drift_grid = []
-                    for _gc, _gi in zip(_gem_vals, _gem_initial):
-                        _gem_drift_grid.extend([_gc - _gi] * num_bits)
-                    influx_writer.log_frame_snapshot(influx_run_id, step, 'lcx_drift', _gem_drift_grid, side=num_bits)
 
             # Console output periodically
             if step % 500 == 0 or step == start_step:
@@ -1160,6 +1660,7 @@ def main():
             eval_every = controls.get('eval_every') or args.eval_every
             if step > 0 and step % eval_every == 0:
                 model.eval()
+                model._eval_skip_think = True
                 eval_metrics_accum = None
                 n_eval = controls.get('eval_samples') or args.eval_samples
                 with torch.no_grad():
@@ -1175,9 +1676,11 @@ def main():
                                 num_bits=num_bits, seed=7777 + step * 100 + ei,
                             )
                         else:
+                            # Eval uses same effort level as current training step
                             x_ev, y_ev, _ = generate_multitask_batch(
                                 n_samples=batch_size, seq_len=seq_len, max_value=max_value,
                                 seed=7777 + step * 100 + ei, num_bits=num_bits, task=args.task,
+                                effort_level=_effort_level,
                             )
                         x_ev = x_ev.to(device, non_blocking=True)
                         y_ev = y_ev.to(device, non_blocking=True)
@@ -1192,7 +1695,7 @@ def main():
                         if eval_metrics_accum is None:
                             eval_metrics_accum = {k: v for k, v in em.items()}
                         else:
-                            for k in ['eval_loss', 'overall_acc', 'bit_acc', 'byte_match', 'hamming',
+                            for k in ['eval_loss', 'overall_acc', 'bit_acc', 'avg_bit_acc', 'byte_match', 'hamming',
                                        'oracle_acc', 'bit_oracle_acc', 'ensemble_benefit',
                                        'circular_spread', 'coverage', 'clustering']:
                                 eval_metrics_accum[k] += em[k]
@@ -1205,7 +1708,7 @@ def main():
                             for i in range(len(eval_metrics_accum['jump_rates'])):
                                 eval_metrics_accum['jump_rates'][i] += em['jump_rates'][i]
                 # Average
-                for k in ['eval_loss', 'overall_acc', 'bit_acc', 'byte_match', 'hamming',
+                for k in ['eval_loss', 'overall_acc', 'bit_acc', 'avg_bit_acc', 'byte_match', 'hamming',
                            'oracle_acc', 'bit_oracle_acc', 'ensemble_benefit',
                            'circular_spread', 'coverage', 'clustering']:
                     eval_metrics_accum[k] /= n_eval
@@ -1228,9 +1731,14 @@ def main():
                     ensemble_benefit=eval_metrics_accum['ensemble_benefit'],
                     coverage=eval_metrics_accum['coverage'], clustering=eval_metrics_accum['clustering'],
                     circular_spread=eval_metrics_accum['circular_spread'], is_eval=True,
-                    n_bits=num_bits)
+                    n_bits=num_bits,
+                    batch_size=batch_size,
+                    use_lcx=1 if getattr(model, '_lcx_hash_mode', False) else 0,
+                    effort_name=getattr(model, '_current_effort_name', ''),
+                    current_stage=getattr(model, '_current_stage', 'UNKNOWN'))
                 influx_writer.log_bits(influx_run_id, step, eval_metrics_accum['per_bit_accs'])
 
+                model._eval_skip_think = False
                 model.train()
 
             # Save checkpoint periodically (frequency is live-controllable)

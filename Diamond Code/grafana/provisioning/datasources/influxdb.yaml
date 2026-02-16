@@ -1,0 +1,13 @@
+apiVersion: 1
+datasources:
+  - name: InfluxDB-Diamond
+    type: influxdb
+    access: proxy
+    url: http://localhost:8086
+    jsonData:
+      version: Flux
+      organization: vraxion
+      defaultBucket: diamond
+    secureJsonData:
+      token: "4pLGaFBIx4mO41CEAt7hMZ02ggi1KJvrWT4RqPZBErhTJ7NV-oUc2_9hPe17qmvCbhUZq6aGklvft-E5U2ihyQ=="
+    isDefault: true

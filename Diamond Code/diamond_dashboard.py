@@ -117,6 +117,9 @@ def _load_controls_into_session():
     st.session_state.ctrl_ckpt = ctrl.get('checkpoint_every', 50)
     st.session_state.ctrl_weights = ctrl.get('data_weights', {})
     st.session_state.ctrl_being_states = ctrl.get('being_states', {})
+    st.session_state.ctrl_effort = ctrl.get('effort_lock', 'fast')
+    st.session_state.ctrl_effort_tier = ctrl.get('effort', 'Beta')
+    st.session_state.ctrl_effort_tiers = ctrl.get('effort_tiers', {})
     st.session_state.ctrl_loaded = True
 
 if 'ctrl_loaded' not in st.session_state:
@@ -124,6 +127,23 @@ if 'ctrl_loaded' not in st.session_state:
 
 st.sidebar.markdown("---")
 st.sidebar.subheader("Live Controls")
+
+# Effort tier selector (Greek alphabet)
+_tier_names = ['Alpha', 'Beta', 'Gamma', 'Delta', 'Epsilon', 'Zeta']
+_tier_labels = {
+    'Alpha': 'Alpha (Reflex) tt=0 lcx=OFF',
+    'Beta': 'Beta (Recall) tt=1 lcx=ON',
+    'Gamma': 'Gamma (Reason) tt=2 batch=16',
+    'Delta': 'Delta (Depth) tt=4 batch=8',
+    'Epsilon': 'Epsilon (Emerge) tt=8 batch=4',
+    'Zeta': 'Zeta (Zenith) tt=16 batch=2',
+}
+_current_tier = st.session_state.get('ctrl_effort_tier', 'Beta')
+_tier_idx = _tier_names.index(_current_tier) if _current_tier in _tier_names else 1
+ctrl_effort_tier = st.sidebar.selectbox(
+    "Effort Tier", _tier_names, index=_tier_idx,
+    format_func=lambda t: _tier_labels.get(t, t), key="wgt_effort_tier"
+)
 
 ctrl_lr = st.sidebar.number_input(
     "Learning Rate", min_value=0.000001, max_value=0.1,
@@ -138,6 +158,9 @@ ctrl_ckpt = st.sidebar.number_input(
     "Checkpoint Every", min_value=10, max_value=5000,
     value=st.session_state.ctrl_ckpt, step=10, key="wgt_ckpt"
 )
+_effort_options = ['fast', 'medium', 'slow']
+_effort_idx = _effort_options.index(st.session_state.ctrl_effort) if st.session_state.ctrl_effort in _effort_options else 0
+ctrl_effort = st.sidebar.radio("Effort Lock", _effort_options, index=_effort_idx, key="wgt_effort", horizontal=True)
 
 # Data source checkboxes (scan traindat directory)
 _traindat_dir = Path(__file__).parent / "data" / "traindat"
@@ -212,19 +235,29 @@ _ctrl_col1, _ctrl_col2 = st.sidebar.columns(2)
 with _ctrl_col1:
     if st.button("Apply", key="ctrl_apply", width='stretch'):
         _final_being_states = _compute_being_states()
-        new_controls = {
+        # Read existing controls to preserve effort_tiers and other fields
+        try:
+            with open(_controls_path, 'r') as f:
+                _existing = json.load(f)
+        except Exception:
+            _existing = {}
+        new_controls = dict(_existing)
+        new_controls.update({
             "lr": ctrl_lr,
             "think_ticks": int(ctrl_tt),
             "checkpoint_every": int(ctrl_ckpt),
+            "effort_lock": ctrl_effort,
+            "effort": ctrl_effort_tier,
             "being_states": _final_being_states,
             "data_weights": ctrl_weight_values if _traindat_files else {},
-        }
+        })
         try:
             _tmp_path = _controls_path + '.tmp'
             with open(_tmp_path, 'w') as f:
                 json.dump(new_controls, f, indent=2)
             os.replace(_tmp_path, _controls_path)
             st.session_state.ctrl_being_states = _final_being_states
+            st.session_state.ctrl_effort_tier = ctrl_effort_tier
             st.sidebar.success("Applied!")
         except Exception as e:
             st.sidebar.error(f"Write failed: {e}")
@@ -309,12 +342,19 @@ def dashboard_content():
             if not oracle_rows.empty:
                 latest_oracle = oracle_rows.iloc[-1]['oracle']
 
-        c1, c2, c3, c4, c5 = st.columns(5)
+        # Read current effort tier from controls.json for header display
+        _hdr_effort = st.session_state.get('ctrl_effort_tier', '?')
+        _hdr_tiers = st.session_state.get('ctrl_effort_tiers', {})
+        _hdr_tier_info = _hdr_tiers.get(_hdr_effort, {})
+        _hdr_effort_label = f"{_hdr_effort} ({_hdr_tier_info.get('name', '?')})" if _hdr_tier_info else _hdr_effort
+
+        c1, c2, c3, c4, c5, c6 = st.columns(6)
         c1.metric("Step", f"{latest_step:,}")
         c2.metric("Loss", f"{latest_loss:.4f}")
         c3.metric("Bit Acc", f"{latest_acc*100:.1f}%" if latest_acc > 0 else "N/A")
         c4.metric("Oracle", f"{latest_oracle*100:.1f}%" if latest_oracle > 0 else "N/A")
         c5.metric("Log Lines", f"{len(df):,}")
+        c6.metric("Effort", _hdr_effort_label)
     else:
         st.info("Waiting for training data...")
 
@@ -937,6 +977,236 @@ def dashboard_content():
                 lines.append(line)
             st.code("\n".join(lines), language="text")
             st.caption(f"Showing {len(lines)} of {len(st.session_state.parsed_rows)} total lines")
+
+    # ------------------------------------------------------------------
+    # ------------------------------------------------------------------
+    # Live Frame Viewer (reads frame_latest.json sidecar)
+    # ------------------------------------------------------------------
+    _frame_path = os.path.join(os.path.dirname(args.log), 'frame_latest.json')
+    if os.path.exists(_frame_path):
+        with st.expander("Live Frame Viewer", expanded=True):
+            try:
+                with open(_frame_path, 'r') as _ff:
+                    _frame = json.load(_ff)
+                _fstep = _frame.get('step', '?')
+                _nbits = _frame.get('num_bits', 8)
+                _ba = _frame.get('bit_acc', 0)
+                _bm = _frame.get('byte_match', 0)
+                _bar = _frame.get('bit_bar', '')
+
+                st.markdown(f"**Step {_fstep}** | bit_acc={_ba:.1%} | byte_match={_bm:.1%} | `{_bar}`")
+
+                # Per-bit accuracy as colored blocks (wide bar, 80px per bit)
+                _per_bit = _frame.get('per_bit_accs', [])
+                if _per_bit:
+                    _bw = 80   # width per bit block
+                    _bh = 60   # height of bar
+                    _gap = 2   # gap between blocks
+                    _bar_w = len(_per_bit) * _bw + (len(_per_bit) - 1) * _gap
+                    _img = np.zeros((_bh, _bar_w, 3), dtype=np.uint8)
+                    for i, acc in enumerate(_per_bit):
+                        g = int(min(acc, 1.0) * 255)
+                        r = int(min(1.0 - acc, 1.0) * 255)
+                        x0 = i * (_bw + _gap)
+                        _img[:, x0:x0+_bw, 0] = r
+                        _img[:, x0:x0+_bw, 1] = g
+                    # Label bits with numbers (burn into top-left of each block)
+                    _bit_labels = ''.join([f"b{i}" for i in range(_nbits)])
+                    st.image(_img, caption="Per-Bit Accuracy: " + " | ".join(
+                        [f"b{i}={acc:.0%}" for i, acc in enumerate(_per_bit)]),
+                        use_container_width=True)
+
+                # Grid images: INPUT, TARGET, PREDICTION DIFF
+                _input_sample = _frame.get('input_sample')
+                _target = _frame.get('target_sample')
+                _pred_raw = _frame.get('pred_raw')
+
+                if _input_sample and _target:
+                    # Ensure 2D arrays [seq_len, num_bits]
+                    _in_arr = np.array(_input_sample, dtype=np.float32)
+                    _t_arr = np.array(_target, dtype=np.float32)
+                    if _in_arr.ndim == 1:
+                        _in_arr = _in_arr.reshape(1, -1)
+                    if _t_arr.ndim == 1:
+                        _t_arr = _t_arr.reshape(1, -1)
+
+                    _rows, _cols = _in_arr.shape  # seq_len, num_bits
+                    # Scale to ~400px tall, ~320px wide minimum
+                    _h = max(4, 400 // max(_rows, 1))  # pixels per row
+                    _w = max(20, 320 // max(_cols, 1))  # pixels per col (wide cells for few bits)
+
+                    def _make_grid(arr, h, w, color_fn=None):
+                        """Build an RGB image from a 2D [rows, cols] float array."""
+                        rows, cols = arr.shape
+                        gap = 1  # 1px grid lines
+                        img_h = rows * h + (rows - 1) * gap
+                        img_w = cols * w + (cols - 1) * gap
+                        img = np.full((img_h, img_w, 3), 30, dtype=np.uint8)  # dark grid lines
+                        for r in range(rows):
+                            for c in range(cols):
+                                y0 = r * (h + gap)
+                                x0 = c * (w + gap)
+                                if color_fn:
+                                    rgb = color_fn(arr[r, c], r, c)
+                                else:
+                                    v = int(np.clip(arr[r, c], 0, 1) * 255)
+                                    rgb = (v, v, v)
+                                img[y0:y0+h, x0:x0+w, 0] = rgb[0]
+                                img[y0:y0+h, x0:x0+w, 1] = rgb[1]
+                                img[y0:y0+h, x0:x0+w, 2] = rgb[2]
+                        return img
+
+                    c1, c2, c3 = st.columns(3)
+
+                    with c1:
+                        # INPUT: white=1, dark blue=0
+                        def _in_color(v, r, c):
+                            v = np.clip(v, 0, 1)
+                            return (int(v * 40), int(v * 120), int(v * 255))  # blue tint for 1s
+                        _in_img = _make_grid(_in_arr, _h, _w, _in_color)
+                        st.image(_in_img, caption=f"INPUT [{_rows}x{_cols}]", use_container_width=True)
+
+                    with c2:
+                        # TARGET: white=1, dark=0
+                        def _tgt_color(v, r, c):
+                            v = np.clip(v, 0, 1)
+                            return (int(v * 255), int(v * 200), int(v * 80))  # amber tint for 1s
+                        _tgt_img = _make_grid(_t_arr, _h, _w, _tgt_color)
+                        st.image(_tgt_img, caption=f"TARGET [{_t_arr.shape[0]}x{_t_arr.shape[1]}]", use_container_width=True)
+
+                    with c3:
+                        # PREDICTION DIFF: green=correct, red=wrong, brightness=confidence
+                        if _pred_raw:
+                            _p_arr = np.array(_pred_raw, dtype=np.float32)
+                            if _p_arr.ndim == 1:
+                                _p_arr = _p_arr.reshape(1, -1)
+                            # If values look like logits (outside [0,1]), apply sigmoid
+                            if np.any(_p_arr > 1.5) or np.any(_p_arr < -0.5):
+                                _p_arr = 1.0 / (1.0 + np.exp(-np.clip(_p_arr, -50, 50)))
+                            _p_binary = (_p_arr > 0.5).astype(np.float32)
+                            # Broadcast target to match prediction shape
+                            _t_cmp = _t_arr
+                            if _t_cmp.shape[0] == 1 and _p_arr.shape[0] > 1:
+                                _t_cmp = np.repeat(_t_cmp, _p_arr.shape[0], axis=0)
+                            elif _t_cmp.shape[0] != _p_arr.shape[0]:
+                                _t_cmp = _t_cmp[:_p_arr.shape[0]]
+
+                            def _diff_color(v, r, c):
+                                prob = np.clip(_p_arr[r, c], 0, 1)
+                                target = _t_cmp[r, c]
+                                pred = 1.0 if prob > 0.5 else 0.0
+                                correct = (pred == target)
+                                conf = abs(prob - 0.5) * 2  # 0=uncertain, 1=confident
+                                bright = int(80 + conf * 175)  # always visible, brighter = confident
+                                if correct:
+                                    return (0, bright, 0)  # green
+                                else:
+                                    return (bright, 0, 0)  # red
+                            _diff_img = _make_grid(_p_arr, _h, _w, _diff_color)
+                            st.image(_diff_img, caption=f"PREDICTION [{_p_arr.shape[0]}x{_p_arr.shape[1]}]", use_container_width=True)
+            except Exception as e:
+                st.warning(f"Frame read error: {e}")
+
+    # LCX Scratchpad Image (reads lcx_latest.json sidecar)
+    # ------------------------------------------------------------------
+    _lcx_path = os.path.join(os.path.dirname(args.log), 'lcx_latest.json')
+    if os.path.exists(_lcx_path):
+        with st.expander("LCX Scratchpad", expanded=True):
+            try:
+                with open(_lcx_path, 'r') as _lf:
+                    _lcx = json.load(_lf)
+                _nb = _lcx.get('side', _lcx.get('num_bits', 8))
+                _is_hash = _lcx.get('lcx_mode') == 'hash'
+
+                if _lcx.get('num_levels'):
+                    # Zoom LCX: per-level heatmaps
+                    _n_levels = _lcx['num_levels']
+                    _level_colors = [(0, 255, 255), (0, 200, 0), (255, 200, 0), (255, 128, 0), (255, 0, 0), (200, 0, 255)]
+                    _zg = _lcx.get('zoom_gate')
+                    _zg_str = f"{_zg:.3f}" if _zg is not None else "N/A"
+                    st.markdown(f"**Zoom LCX** | Step {_lcx['step']} | Levels: {_n_levels} | Zoom gate: {_zg_str}")
+
+                    _cols = st.columns(min(_n_levels, 5))
+                    for _lvl in range(_n_levels):
+                        with _cols[min(_lvl, len(_cols) - 1)]:
+                            _norms = np.array(_lcx[f'L{_lvl}']).astype(float)
+                            import math as _math
+                            _n = len(_norms)
+                            _cols_v = _lcx.get(f'L{_lvl}_cols', _math.ceil(_n ** 0.5) if _n > 0 else 1)
+                            _rows_v = _lcx.get(f'L{_lvl}_rows', _math.ceil(_n / _cols_v) if _cols_v > 0 else 1)
+                            _used = _lcx.get(f'L{_lvl}_used', 0)
+                            _total = _lcx.get(f'L{_lvl}_total', _n)
+                            _max_val = max(_norms.max(), 0.001)
+                            _padded = np.zeros(_cols_v * _rows_v)
+                            _padded[:_n] = _norms[:_n]
+                            _brightness = np.clip(_padded / _max_val * 255, 0, 255).astype(np.uint8)
+                            _cr, _cg, _cb = _level_colors[min(_lvl, len(_level_colors) - 1)]
+                            _img = np.stack([
+                                _brightness * _cr // 255,
+                                _brightness * _cg // 255,
+                                _brightness * _cb // 255
+                            ], axis=-1).reshape(_rows_v, _cols_v, 3)
+                            _scale = max(1, 64 // max(_cols_v, _rows_v))
+                            st.image(np.repeat(np.repeat(_img, _scale, axis=0), _scale, axis=1),
+                                     caption=f"L{_lvl} {_cols_v}x{_rows_v} ({_used}/{_total})")
+
+                elif _is_hash and 'R' in _lcx:
+                    # Legacy hash LCX with R/G/B effort channels
+                    _r_raw = np.array(_lcx['R']).astype(float)
+                    _g_raw = np.array(_lcx['G']).astype(float)
+                    _b_raw = np.array(_lcx['B']).astype(float)
+                    _max_all = max(_r_raw.max(), _g_raw.max(), _b_raw.max(), 0.001)
+                    _r = np.clip(_r_raw / _max_all * 255, 0, 255).astype(np.uint8)
+                    _g = np.clip(_g_raw / _max_all * 255, 0, 255).astype(np.uint8)
+                    _b = np.clip(_b_raw / _max_all * 255, 0, 255).astype(np.uint8)
+                    _effort = _lcx.get('effort_level', 0)
+                    _ch_name = ['RED (fast)', 'GREEN (medium)', 'BLUE (slow)'][_effort]
+                    st.markdown(f"**Writing:** {_ch_name} [HASH] | Step {_lcx['step']}")
+                    _scale = 32
+                    col_r, col_g, col_b, col_rgb = st.columns(4)
+                    with col_r:
+                        _r_img = np.stack([_r, np.zeros_like(_r), np.zeros_like(_r)], axis=-1).reshape(_nb, _nb, 3)
+                        st.image(np.repeat(np.repeat(_r_img, _scale, axis=0), _scale, axis=1),
+                                 caption=f"R norm={_r_raw.sum():.2f}")
+                    with col_g:
+                        _g_img = np.stack([np.zeros_like(_g), _g, np.zeros_like(_g)], axis=-1).reshape(_nb, _nb, 3)
+                        st.image(np.repeat(np.repeat(_g_img, _scale, axis=0), _scale, axis=1),
+                                 caption=f"G norm={_g_raw.sum():.2f}")
+                    with col_b:
+                        _b_img = np.stack([np.zeros_like(_b), np.zeros_like(_b), _b], axis=-1).reshape(_nb, _nb, 3)
+                        st.image(np.repeat(np.repeat(_b_img, _scale, axis=0), _scale, axis=1),
+                                 caption=f"B norm={_b_raw.sum():.2f}")
+                    with col_rgb:
+                        _img = np.stack([_r, _g, _b], axis=-1).reshape(_nb, _nb, 3)
+                        st.image(np.repeat(np.repeat(_img, _scale, axis=0), _scale, axis=1),
+                                 caption="RGB combined")
+
+                elif 'R' in _lcx:
+                    # Dense LCX: map [-1, +1] -> [0, 255]
+                    _r = np.clip((np.array(_lcx['R']) + 1) * 127.5, 0, 255).astype(np.uint8)
+                    _g = np.clip((np.array(_lcx['G']) + 1) * 127.5, 0, 255).astype(np.uint8)
+                    _b = np.clip((np.array(_lcx['B']) + 1) * 127.5, 0, 255).astype(np.uint8)
+                    _effort = _lcx.get('effort_level', 0)
+                    _ch_name = ['RED (fast)', 'GREEN (medium)', 'BLUE (slow)'][_effort]
+                    st.markdown(f"**Writing:** {_ch_name} | Step {_lcx['step']}")
+                    _scale = 32
+                    col_r, col_g, col_b, col_rgb = st.columns(4)
+                    with col_r:
+                        _r_img = np.stack([_r, np.zeros_like(_r), np.zeros_like(_r)], axis=-1).reshape(_nb, _nb, 3)
+                        st.image(np.repeat(np.repeat(_r_img, _scale, axis=0), _scale, axis=1), caption="R")
+                    with col_g:
+                        _g_img = np.stack([np.zeros_like(_g), _g, np.zeros_like(_g)], axis=-1).reshape(_nb, _nb, 3)
+                        st.image(np.repeat(np.repeat(_g_img, _scale, axis=0), _scale, axis=1), caption="G")
+                    with col_b:
+                        _b_img = np.stack([np.zeros_like(_b), np.zeros_like(_b), _b], axis=-1).reshape(_nb, _nb, 3)
+                        st.image(np.repeat(np.repeat(_b_img, _scale, axis=0), _scale, axis=1), caption="B")
+                    with col_rgb:
+                        _img = np.stack([_r, _g, _b], axis=-1).reshape(_nb, _nb, 3)
+                        st.image(np.repeat(np.repeat(_img, _scale, axis=0), _scale, axis=1), caption="RGB")
+                else:
+                    st.warning("Unknown LCX sidecar format")
+            except Exception as e:
+                st.warning(f"LCX sidecar read error: {e}")
 
     # ------------------------------------------------------------------
     # Debug
