@@ -1,0 +1,5306 @@
+{
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 0,
+        "datasource": {
+          "type": "influxdb",
+          "uid": "efd1xv51o3vuob"
+        },
+        "enable": true,
+        "hide": false,
+        "iconColor": "#FF9830",
+        "name": "Control Changes",
+        "target": {
+          "refId": "Anno",
+          "query": "from(bucket: \"diamond\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"control_change\")\n  |> filter(fn: (r) => r._field == \"description\")\n  |> keep(columns: [\"_time\", \"_value\", \"key\"])"
+        },
+        "textColumn": "_value",
+        "tagsColumn": "key",
+        "type": "tags"
+      }
+    ]
+  },
+  "editable": true,
+  "graphTooltip": 1,
+  "liveNow": true,
+  "panels": [
+    {
+      "id": 1,
+      "title": "Step",
+      "description": "Current training step for the active run.",
+      "type": "stat",
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 3,
+        "h": 4
+      },
+      "datasource": {
+        "type": "influxdb",
+        "uid": "efd1xv51o3vuob"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "query": "from(bucket: \"diamond\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"training_step\")\n  |> filter(fn: (r) => r.run_id == \"${run_id}\")\n  |> filter(fn: (r) => r.is_eval == \"false\")\n  |> filter(fn: (r) => r._field == \"step\")\n  |> group(columns: [\"_field\"])\n  |> last()\n  |> keep(columns: [\"_time\", \"_value\"])"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "fixedColor": "#28d3e2",
+            "mode": "fixed"
+          },
+          "decimals": 0,
+          "noValue": "Idle",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#28d3e2",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "colorMode": "none",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "textMode": "value",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        }
+      }
+    },
+    {
+      "id": 117,
+      "title": "Stage",
+      "type": "stat",
+      "description": "Current training stage.\nAlpha=Reflex(tt=0) Beta=Recall(tt=1) Gamma=Reason(tt=2) Delta=Depth(tt=4) Epsilon=Emergence(tt=8) Zeta=Zenith(tt=16)",
+      "gridPos": {
+        "x": 3,
+        "y": 0,
+        "w": 2,
+        "h": 4
+      },
+      "datasource": {
+        "type": "influxdb",
+        "uid": "efd1xv51o3vuob"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "query": "from(bucket: \"diamond\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"training_step\")\n  |> filter(fn: (r) => r.run_id == \"${run_id}\")\n  |> filter(fn: (r) => r.is_eval == \"false\")\n  |> filter(fn: (r) => r._field == \"think_ticks\")\n  |> group(columns: [\"_field\"])\n  |> last()\n  |> keep(columns: [\"_time\", \"_value\"])"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "noValue": "Idle",
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "0": {
+                  "text": "Alpha",
+                  "color": "#64C8FF",
+                  "index": 0
+                }
+              }
+            },
+            {
+              "type": "value",
+              "options": {
+                "1": {
+                  "text": "Beta",
+                  "color": "#CA64E4",
+                  "index": 1
+                }
+              }
+            },
+            {
+              "type": "value",
+              "options": {
+                "2": {
+                  "text": "Gamma",
+                  "color": "#73BF69",
+                  "index": 2
+                }
+              }
+            },
+            {
+              "type": "value",
+              "options": {
+                "4": {
+                  "text": "Delta",
+                  "color": "#FF9830",
+                  "index": 3
+                }
+              }
+            },
+            {
+              "type": "value",
+              "options": {
+                "8": {
+                  "text": "Epsilon",
+                  "color": "#FF5555",
+                  "index": 4
+                }
+              }
+            },
+            {
+              "type": "value",
+              "options": {
+                "16": {
+                  "text": "Zeta",
+                  "color": "#FFD700",
+                  "index": 5
+                }
+              }
+            }
+          ],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#64C8FF",
+                "value": null
+              },
+              {
+                "color": "#CA64E4",
+                "value": 1
+              },
+              {
+                "color": "#73BF69",
+                "value": 2
+              },
+              {
+                "color": "#FF9830",
+                "value": 4
+              },
+              {
+                "color": "#FF5555",
+                "value": 8
+              },
+              {
+                "color": "#FFD700",
+                "value": 16
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "textMode": "value",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        }
+      }
+    },
+    {
+      "id": 5,
+      "title": "Byte Match",
+      "description": "Byte-level accuracy: ALL 8 bits in a byte must be correct.\n\nThis is the strictest accuracy metric. 0% means no bytes fully correct yet.\nWhen this climbs, the model is going from 'close' to 'exact'.\n\n50% = half the bytes perfect. 100% = every byte nailed.",
+      "type": "stat",
+      "gridPos": {
+        "x": 5,
+        "y": 0,
+        "w": 3,
+        "h": 4
+      },
+      "datasource": {
+        "type": "influxdb",
+        "uid": "efd1xv51o3vuob"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "query": "from(bucket: \"diamond\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"training_step\")\n  |> filter(fn: (r) => r.run_id == \"${run_id}\")\n  |> filter(fn: (r) => r.is_eval == \"false\")\n  |> filter(fn: (r) => r._field == \"byte_match\")\n  |> group(columns: [\"_field\"])\n  |> aggregateWindow(every: v.windowPeriod, fn: last, createEmpty: false)"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "decimals": 1,
+          "noValue": "Idle",
+          "color": {
+            "fixedColor": "#5794F2",
+            "mode": "fixed"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#5794F2",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "colorMode": "none",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "textMode": "value",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        }
+      }
+    },
+    {
+      "id": 6,
+      "title": "Speed",
+      "description": "Training speed in steps/sec. Sparkline shows speed variation over time.",
+      "type": "stat",
+      "gridPos": {
+        "x": 8,
+        "y": 0,
+        "w": 4,
+        "h": 4
+      },
+      "datasource": {
+        "type": "influxdb",
+        "uid": "efd1xv51o3vuob"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "query": "from(bucket: \"diamond\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"training_step\")\n  |> filter(fn: (r) => r.run_id == \"${run_id}\")\n  |> filter(fn: (r) => r.is_eval == \"false\")\n  |> filter(fn: (r) => r._field == \"s_per_step\")\n  |> group(columns: [\"_field\"])\n  |> aggregateWindow(every: v.windowPeriod, fn: last, createEmpty: false)\n  |> map(fn: (r) => ({r with _value: 1.0 / r._value}))\n  |> keep(columns: [\"_time\", \"_value\"])"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "decimals": 2,
+          "unit": "suffix: st/s",
+          "noValue": "Idle",
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#fa3858",
+                "value": null
+              },
+              {
+                "color": "#ff6d3b",
+                "value": 0.05
+              },
+              {
+                "color": "#ffb038",
+                "value": 0.2
+              },
+              {
+                "color": "#c8de52",
+                "value": 0.4
+              },
+              {
+                "color": "#73bf69",
+                "value": 0.7
+              },
+              {
+                "color": "#37872d",
+                "value": 1.0
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "colorMode": "none",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "textMode": "value",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        }
+      }
+    },
+    {
+      "id": 2,
+      "title": "Loss",
+      "description": "Training loss (cross-entropy) for the active run.\n\nSparkline shows loss trajectory Ă˘â‚¬â€ť downward slope = learning, flat = plateau.\n\nLower is better. Typical range: 0.7 (random) down to <0.1 (mastered).",
+      "type": "stat",
+      "gridPos": {
+        "x": 12,
+        "y": 0,
+        "w": 4,
+        "h": 4
+      },
+      "datasource": {
+        "type": "influxdb",
+        "uid": "efd1xv51o3vuob"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "query": "from(bucket: \"diamond\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"training_step\")\n  |> filter(fn: (r) => r.run_id == \"${run_id}\")\n  |> filter(fn: (r) => r.is_eval == \"false\")\n  |> filter(fn: (r) => r._field == \"loss\")\n  |> group(columns: [\"_field\"])\n  |> aggregateWindow(every: v.windowPeriod, fn: last, createEmpty: false)"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "decimals": 4,
+          "noValue": "Idle",
+          "color": {
+            "fixedColor": "#ca64e4",
+            "mode": "fixed"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#ca64e4",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "colorMode": "none",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "textMode": "value",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        }
+      }
+    },
+    {
+      "id": 3,
+      "title": "Accuracy",
+      "description": "Bit-level accuracy (bit_acc) for the active run.\n\nSparkline shows accuracy trajectory Ă˘â‚¬â€ť upward slope = improving, flat = plateau.\n\n50% = random guessing. 100% = perfect prediction.",
+      "type": "stat",
+      "gridPos": {
+        "x": 16,
+        "y": 0,
+        "w": 4,
+        "h": 4
+      },
+      "datasource": {
+        "type": "influxdb",
+        "uid": "efd1xv51o3vuob"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "query": "from(bucket: \"diamond\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"training_step\")\n  |> filter(fn: (r) => r.run_id == \"${run_id}\")\n  |> filter(fn: (r) => r.is_eval == \"false\")\n  |> filter(fn: (r) => r._field == \"bit_acc\")\n  |> group(columns: [\"_field\"])\n  |> aggregateWindow(every: v.windowPeriod, fn: last, createEmpty: false)"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "decimals": 1,
+          "noValue": "Idle",
+          "color": {
+            "fixedColor": "#73bf69",
+            "mode": "fixed"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#73bf69",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "colorMode": "none",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "textMode": "value",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        }
+      }
+    },
+    {
+      "id": 4,
+      "title": "Eval Acc",
+      "description": "Evaluation accuracy (bit_acc on held-out eval batch).\n\nThis is the honest score Ă˘â‚¬â€ť measures generalization, not memorization.\nCompare with training Accuracy to spot overfitting (train >> eval = bad).\n\n50% = random guessing. 100% = perfect generalization.",
+      "type": "stat",
+      "gridPos": {
+        "x": 20,
+        "y": 0,
+        "w": 4,
+        "h": 4
+      },
+      "datasource": {
+        "type": "influxdb",
+        "uid": "efd1xv51o3vuob"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "query": "from(bucket: \"diamond\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"training_step\")\n  |> filter(fn: (r) => r.run_id == \"${run_id}\")\n  |> filter(fn: (r) => r.is_eval == \"true\")\n  |> filter(fn: (r) => r._field == \"bit_acc\")\n  |> group(columns: [\"_field\"])\n  |> aggregateWindow(every: v.windowPeriod, fn: last, createEmpty: false)"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "decimals": 1,
+          "noValue": "Idle",
+          "color": {
+            "fixedColor": "#ff9830",
+            "mode": "fixed"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#ff9830",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "colorMode": "none",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "textMode": "value",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        }
+      }
+    },
+    {
+      "id": 10,
+      "title": "Training Overview",
+      "type": "timeseries",
+      "gridPos": {
+        "x": 0,
+        "y": 4,
+        "w": 14,
+        "h": 10
+      },
+      "datasource": {
+        "type": "influxdb",
+        "uid": "efd1xv51o3vuob"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "query": "from(bucket: \"diamond\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"training_step\")\n  |> filter(fn: (r) => r.run_id == \"${run_id}\")\n  |> filter(fn: (r) => r.is_eval == \"false\")\n  |> filter(fn: (r) => r._field == \"loss\")\n  |> group(columns: [\"_field\"])\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> keep(columns: [\"_time\", \"_value\", \"_field\"])"
+        },
+        {
+          "refId": "B",
+          "query": "from(bucket: \"diamond\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"training_step\")\n  |> filter(fn: (r) => r.run_id == \"${run_id}\")\n  |> filter(fn: (r) => r.is_eval == \"true\")\n  |> filter(fn: (r) => r._field == \"loss\")\n  |> group(columns: [\"_field\"])\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> keep(columns: [\"_time\", \"_value\", \"_field\"])"
+        },
+        {
+          "refId": "C",
+          "query": "from(bucket: \"diamond\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"training_step\")\n  |> filter(fn: (r) => r.run_id == \"${run_id}\")\n  |> filter(fn: (r) => r.is_eval == \"false\")\n  |> filter(fn: (r) => r._field == \"bit_acc\")\n  |> group(columns: [\"_field\"])\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> keep(columns: [\"_time\", \"_value\", \"_field\"])"
+        },
+        {
+          "refId": "D",
+          "query": "from(bucket: \"diamond\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"training_step\")\n  |> filter(fn: (r) => r.run_id == \"${run_id}\")\n  |> filter(fn: (r) => r.is_eval == \"false\")\n  |> filter(fn: (r) => r._field == \"oracle\")\n  |> group(columns: [\"_field\"])\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> keep(columns: [\"_time\", \"_value\", \"_field\"])"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 10,
+            "axisPlacement": "auto",
+            "spanNulls": false,
+            "drawStyle": "line",
+            "lineInterpolation": "smooth",
+            "showPoints": "never"
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byFrameRefID",
+              "options": "A"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Train Loss"
+              },
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "#fa3858",
+                  "mode": "fixed"
+                }
+              },
+              {
+                "id": "custom.axisPlacement",
+                "value": "left"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byFrameRefID",
+              "options": "B"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Eval Loss"
+              },
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "#e432a0",
+                  "mode": "fixed"
+                }
+              },
+              {
+                "id": "custom.axisPlacement",
+                "value": "left"
+              },
+              {
+                "id": "custom.lineStyle",
+                "value": {
+                  "fill": "dot"
+                }
+              },
+              {
+                "id": "custom.lineWidth",
+                "value": 2
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byFrameRefID",
+              "options": "C"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Bit Accuracy"
+              },
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "#28d3e2",
+                  "mode": "fixed"
+                }
+              },
+              {
+                "id": "custom.axisPlacement",
+                "value": "right"
+              },
+              {
+                "id": "unit",
+                "value": "percentunit"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byFrameRefID",
+              "options": "D"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Oracle"
+              },
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "#9e88f0",
+                  "mode": "fixed"
+                }
+              },
+              {
+                "id": "custom.axisPlacement",
+                "value": "right"
+              },
+              {
+                "id": "custom.lineStyle",
+                "value": {
+                  "fill": "dash"
+                }
+              },
+              {
+                "id": "custom.lineWidth",
+                "value": 1
+              },
+              {
+                "id": "unit",
+                "value": "percentunit"
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        },
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "calcs": []
+        }
+      }
+    },
+    {
+      "id": 152,
+      "title": "Training Controls",
+      "type": "volkovlabs-form-panel",
+      "gridPos": {
+        "x": 14,
+        "y": 4,
+        "w": 10,
+        "h": 6
+      },
+      "options": {
+        "initial": {
+          "method": "GET",
+          "url": "http://localhost:7777/api/controls",
+          "contentType": "application/json"
+        },
+        "update": {
+          "method": "POST",
+          "url": "http://localhost:7777/api/set",
+          "contentType": "application/json",
+          "payloadMode": "custom",
+          "customCode": "return Object.entries(payload).map(([key, value]) => ({\n  url: 'http://localhost:7777/api/set',\n  method: 'POST',\n  headers: {'Content-Type': 'application/json'},\n  body: JSON.stringify({key, value})\n}));"
+        },
+        "resetAction": {
+          "mode": "initial"
+        },
+        "layout": {
+          "variant": "single",
+          "orientation": "vertical",
+          "padding": 5
+        },
+        "elements": [
+          {
+            "type": "slider",
+            "id": "batch_size",
+            "title": "Batch Size",
+            "min": 1,
+            "max": 64,
+            "step": 1,
+            "value": 10
+          },
+          {
+            "type": "slider",
+            "id": "think_ticks",
+            "title": "Think Ticks",
+            "min": 0,
+            "max": 16,
+            "step": 1,
+            "value": 0
+          },
+          {
+            "type": "radio",
+            "id": "use_lcx",
+            "title": "LCX Memory",
+            "options": [
+              {
+                "label": "ON",
+                "value": true
+              },
+              {
+                "label": "OFF",
+                "value": false
+              }
+            ],
+            "value": false
+          },
+          {
+            "type": "select",
+            "id": "effort",
+            "title": "Effort Tier",
+            "options": [
+              {
+                "label": "Alpha (Reflex)",
+                "value": "Alpha"
+              },
+              {
+                "label": "Beta (Recall)",
+                "value": "Beta"
+              },
+              {
+                "label": "Gamma (Reason)",
+                "value": "Gamma"
+              },
+              {
+                "label": "Delta (Depth)",
+                "value": "Delta"
+              },
+              {
+                "label": "Epsilon (Emergence)",
+                "value": "Epsilon"
+              },
+              {
+                "label": "Zeta (Zenith)",
+                "value": "Zeta"
+              }
+            ],
+            "value": "Alpha"
+          },
+          {
+            "type": "number",
+            "id": "lr",
+            "title": "Learning Rate",
+            "min": 1e-05,
+            "max": 0.01,
+            "step": 1e-05,
+            "value": 0.0003
+          },
+          {
+            "type": "number",
+            "id": "checkpoint_every",
+            "title": "Checkpoint Every N Steps",
+            "min": 10,
+            "max": 50000,
+            "step": 10,
+            "value": 500
+          },
+          {
+            "type": "number",
+            "id": "eval_every",
+            "title": "Eval Every N Steps",
+            "min": 1,
+            "max": 1000,
+            "step": 1,
+            "value": 5
+          }
+        ],
+        "buttonGroup": {
+          "orientation": "center",
+          "size": "md"
+        },
+        "submit": {
+          "variant": "primary",
+          "text": "Apply",
+          "icon": "check"
+        },
+        "reset": {
+          "variant": "secondary",
+          "text": "Reset",
+          "icon": "times"
+        }
+      }
+    },
+    {
+      "id": 153,
+      "title": "Phase Control",
+      "type": "canvas",
+      "gridPos": {
+        "x": 14,
+        "y": 10,
+        "w": 10,
+        "h": 4
+      },
+      "options": {
+        "inlineEditing": false,
+        "showAdvancedTypes": true,
+        "root": {
+          "elements": [
+            {
+              "type": "button",
+              "name": "advance_phase",
+              "config": {
+                "text": {
+                  "fixed": "Advance Phase >>"
+                },
+                "style": {
+                  "variant": "primary"
+                },
+                "api": {
+                  "endpoint": "http://localhost:7777/api/advance_stage",
+                  "method": "POST",
+                  "contentType": "application/json"
+                }
+              },
+              "placement": {
+                "top": 10,
+                "left": 10,
+                "width": 200,
+                "height": 40
+              },
+              "background": {
+                "color": {
+                  "fixed": "transparent"
+                }
+              }
+            },
+            {
+              "type": "button",
+              "name": "resize_lcx",
+              "config": {
+                "text": {
+                  "fixed": "Resize LCX (next tier)"
+                },
+                "style": {
+                  "variant": "secondary"
+                },
+                "api": {
+                  "endpoint": "http://localhost:7777/api/advance_stage",
+                  "method": "POST",
+                  "contentType": "application/json"
+                }
+              },
+              "placement": {
+                "top": 60,
+                "left": 10,
+                "width": 200,
+                "height": 40
+              },
+              "background": {
+                "color": {
+                  "fixed": "transparent"
+                }
+              }
+            }
+          ],
+          "name": "phase_controls",
+          "type": "frame"
+        }
+      }
+    },
+    {
+      "id": 126,
+      "type": "row",
+      "title": "LTCM (Long Term Consensus Matrix)",
+      "collapsed": false,
+      "gridPos": {
+        "x": 0,
+        "y": 14,
+        "w": 24,
+        "h": 1
+      },
+      "panels": []
+    },
+    {
+      "id": 123,
+      "title": "Slots %",
+      "type": "stat",
+      "description": "% of 256 slots written at least once",
+      "gridPos": {
+        "x": 0,
+        "y": 15,
+        "w": 4,
+        "h": 2
+      },
+      "datasource": {
+        "type": "influxdb",
+        "uid": "efd1xv51o3vuob"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "efd1xv51o3vuob"
+          },
+          "query": "from(bucket: \"diamond\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"lcx_levels\")\n  |> filter(fn: (r) => r.run_id == \"${run_id}\")\n  |> filter(fn: (r) => r._field == \"L0_active_pct\")\n  |> aggregateWindow(every: v.windowPeriod, fn: last, createEmpty: false)",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "decimals": 1,
+          "min": 0,
+          "max": 100,
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#ff4444",
+                "value": null
+              },
+              {
+                "color": "#ff8800",
+                "value": 2
+              },
+              {
+                "color": "#ffcc00",
+                "value": 5
+              },
+              {
+                "color": "#44bb44",
+                "value": 30
+              }
+            ]
+          }
+        }
+      },
+      "options": {
+        "colorMode": "background",
+        "graphMode": "area",
+        "textMode": "value",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        }
+      }
+    },
+    {
+      "id": 122,
+      "title": "Part. Ratio %",
+      "type": "stat",
+      "description": "Effective equal-weight slots as % of total (1/Σp²/N)",
+      "gridPos": {
+        "x": 4,
+        "y": 15,
+        "w": 4,
+        "h": 2
+      },
+      "datasource": {
+        "type": "influxdb",
+        "uid": "efd1xv51o3vuob"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "efd1xv51o3vuob"
+          },
+          "query": "from(bucket: \"diamond\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"lcx_levels\")\n  |> filter(fn: (r) => r.run_id == \"${run_id}\")\n  |> filter(fn: (r) => r._field == \"L0_part_ratio_pct\")\n  |> aggregateWindow(every: v.windowPeriod, fn: last, createEmpty: false)",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "decimals": 1,
+          "min": 0,
+          "max": 100,
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#ff4444",
+                "value": null
+              },
+              {
+                "color": "#ff8800",
+                "value": 2
+              },
+              {
+                "color": "#ffcc00",
+                "value": 10
+              },
+              {
+                "color": "#44bb44",
+                "value": 50
+              }
+            ]
+          }
+        }
+      },
+      "options": {
+        "colorMode": "background",
+        "graphMode": "area",
+        "textMode": "value",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        }
+      }
+    },
+    {
+      "id": 119,
+      "title": "Entropy %",
+      "type": "stat",
+      "description": "Shannon entropy of write distribution, normalized",
+      "gridPos": {
+        "x": 8,
+        "y": 15,
+        "w": 4,
+        "h": 2
+      },
+      "datasource": {
+        "type": "influxdb",
+        "uid": "efd1xv51o3vuob"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "efd1xv51o3vuob"
+          },
+          "query": "from(bucket: \"diamond\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"lcx_levels\")\n  |> filter(fn: (r) => r.run_id == \"${run_id}\")\n  |> filter(fn: (r) => r._field == \"L0_entropy_pct\")\n  |> aggregateWindow(every: v.windowPeriod, fn: last, createEmpty: false)",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "decimals": 1,
+          "min": 0,
+          "max": 100,
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#ff4444",
+                "value": null
+              },
+              {
+                "color": "#ff8800",
+                "value": 20
+              },
+              {
+                "color": "#ffcc00",
+                "value": 40
+              },
+              {
+                "color": "#44bb44",
+                "value": 70
+              }
+            ]
+          }
+        }
+      },
+      "options": {
+        "colorMode": "background",
+        "graphMode": "area",
+        "textMode": "value",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        }
+      }
+    },
+    {
+      "id": 121,
+      "title": "Val Diversity",
+      "type": "stat",
+      "description": "Mean pairwise cosine dissimilarity of stored vectors",
+      "gridPos": {
+        "x": 12,
+        "y": 15,
+        "w": 4,
+        "h": 2
+      },
+      "datasource": {
+        "type": "influxdb",
+        "uid": "efd1xv51o3vuob"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "efd1xv51o3vuob"
+          },
+          "query": "from(bucket: \"diamond\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"lcx_levels\")\n  |> filter(fn: (r) => r.run_id == \"${run_id}\")\n  |> filter(fn: (r) => r._field == \"L0_val_diversity\")\n  |> aggregateWindow(every: v.windowPeriod, fn: last, createEmpty: false)",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "decimals": 1,
+          "min": 0,
+          "max": 100,
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#ff4444",
+                "value": null
+              },
+              {
+                "color": "#ff8800",
+                "value": 30
+              },
+              {
+                "color": "#ffcc00",
+                "value": 60
+              },
+              {
+                "color": "#44bb44",
+                "value": 80
+              }
+            ]
+          }
+        }
+      },
+      "options": {
+        "colorMode": "background",
+        "graphMode": "area",
+        "textMode": "value",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        }
+      }
+    },
+    {
+      "id": 120,
+      "title": "Top-1 Mass",
+      "type": "stat",
+      "description": "Write share of the single hottest slot (lower = healthier)",
+      "gridPos": {
+        "x": 16,
+        "y": 15,
+        "w": 4,
+        "h": 2
+      },
+      "datasource": {
+        "type": "influxdb",
+        "uid": "efd1xv51o3vuob"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "efd1xv51o3vuob"
+          },
+          "query": "from(bucket: \"diamond\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"lcx_levels\")\n  |> filter(fn: (r) => r.run_id == \"${run_id}\")\n  |> filter(fn: (r) => r._field == \"L0_top1_mass\")\n  |> aggregateWindow(every: v.windowPeriod, fn: last, createEmpty: false)",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "decimals": 1,
+          "min": 0,
+          "max": 100,
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#44bb44",
+                "value": null
+              },
+              {
+                "color": "#ffcc00",
+                "value": 5
+              },
+              {
+                "color": "#ff8800",
+                "value": 15
+              },
+              {
+                "color": "#ff4444",
+                "value": 30
+              }
+            ]
+          }
+        }
+      },
+      "options": {
+        "colorMode": "background",
+        "graphMode": "area",
+        "textMode": "value",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        }
+      }
+    },
+    {
+      "id": 124,
+      "title": "Top-6 Mass",
+      "type": "stat",
+      "description": "Write share in top 6 slots (lower = more spread)",
+      "gridPos": {
+        "x": 20,
+        "y": 15,
+        "w": 4,
+        "h": 2
+      },
+      "datasource": {
+        "type": "influxdb",
+        "uid": "efd1xv51o3vuob"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "efd1xv51o3vuob"
+          },
+          "query": "from(bucket: \"diamond\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"lcx_levels\")\n  |> filter(fn: (r) => r.run_id == \"${run_id}\")\n  |> filter(fn: (r) => r._field == \"L0_top6_mass\")\n  |> aggregateWindow(every: v.windowPeriod, fn: last, createEmpty: false)",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "decimals": 1,
+          "min": 0,
+          "max": 100,
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#44bb44",
+                "value": null
+              },
+              {
+                "color": "#ffcc00",
+                "value": 50
+              },
+              {
+                "color": "#ff8800",
+                "value": 70
+              },
+              {
+                "color": "#ff4444",
+                "value": 90
+              }
+            ]
+          }
+        }
+      },
+      "options": {
+        "colorMode": "background",
+        "graphMode": "area",
+        "textMode": "value",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        }
+      }
+    },
+    {
+      "id": 101,
+      "title": "LCX Utilization",
+      "type": "bargauge",
+      "description": "Per-level slot utilization Ă˘â‚¬â€ť percentage of slots that have been written to (hot_slots).",
+      "gridPos": {
+        "x": 0,
+        "y": 17,
+        "w": 8,
+        "h": 3
+      },
+      "datasource": {
+        "type": "influxdb",
+        "uid": "efd1xv51o3vuob"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "query": "from(bucket: \"diamond\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"lcx_levels\")\n  |> filter(fn: (r) => r.run_id == \"${run_id}\")\n  |> filter(fn: (r) => r._field =~ /^L\\d+_hot_slots$/)\n  |> last()\n  |> group()\n  |> keep(columns: [\"_time\", \"_value\", \"_field\"])"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "percentage",
+            "steps": [
+              {
+                "color": "#73BF69",
+                "value": null
+              },
+              {
+                "color": "#FF9830",
+                "value": 50
+              },
+              {
+                "color": "#F2495C",
+                "value": 90
+              }
+            ]
+          },
+          "min": 0,
+          "decimals": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "orientation": "horizontal",
+        "displayMode": "gradient",
+        "showUnfilled": true,
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        }
+      }
+    },
+    {
+      "id": 91,
+      "title": "Grad Alive",
+      "type": "stat",
+      "description": "Latest lcx_route_grad value. Green = gradients flowing, Red = dead (zero).",
+      "gridPos": {
+        "x": 8,
+        "y": 17,
+        "w": 8,
+        "h": 3
+      },
+      "datasource": {
+        "type": "influxdb",
+        "uid": "efd1xv51o3vuob"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "query": "from(bucket: \"diamond\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"lcx_levels\")\n  |> filter(fn: (r) => r.run_id == \"${run_id}\")\n  |> filter(fn: (r) => r._field == \"lcx_route_grad\")\n  |> last()\n  |> keep(columns: [\"_time\", \"_value\", \"_field\"])"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "green",
+                "value": 1e-10
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "textMode": "value",
+        "justifyMode": "center",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        }
+      }
+    },
+    {
+      "id": 92,
+      "title": "Write Mode",
+      "type": "stat",
+      "description": "Whether LCX writes are differentiable (DIFF) or detached (DETACH).",
+      "gridPos": {
+        "x": 16,
+        "y": 17,
+        "w": 8,
+        "h": 3
+      },
+      "datasource": {
+        "type": "influxdb",
+        "uid": "efd1xv51o3vuob"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "query": "from(bucket: \"diamond\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"lcx_levels\")\n  |> filter(fn: (r) => r.run_id == \"${run_id}\")\n  |> filter(fn: (r) => r._field == \"write_differentiable\")\n  |> last()\n  |> keep(columns: [\"_time\", \"_value\", \"_field\"])"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "0": {
+                  "text": "DETACH",
+                  "color": "red",
+                  "index": 0
+                },
+                "1": {
+                  "text": "DIFF",
+                  "color": "green",
+                  "index": 1
+                }
+              }
+            }
+          ],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "green",
+                "value": 1
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "textMode": "value",
+        "justifyMode": "center",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        }
+      }
+    },
+    {
+      "id": 156,
+      "title": "Score Margin (routing quality)",
+      "description": "Top-K routing decisiveness. Margin = cosine gap between last winner (slot K) and first loser (slot K+1). High margin = meaningful routing, near-zero = arbitrary selection.",
+      "type": "timeseries",
+      "gridPos": {
+        "x": 10,
+        "y": 20,
+        "w": 8,
+        "h": 12
+      },
+      "datasource": {
+        "type": "influxdb",
+        "uid": "efd1xv51o3vuob"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "query": "from(bucket: \"diamond\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"lcx_levels\")\n  |> filter(fn: (r) => r.run_id == \"${run_id}\")\n  |> filter(fn: (r) => r._field == \"L0_score_margin\")\n  |> group(columns: [\"_field\"])\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)"
+        },
+        {
+          "refId": "B",
+          "query": "from(bucket: \"diamond\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"lcx_levels\")\n  |> filter(fn: (r) => r.run_id == \"${run_id}\")\n  |> filter(fn: (r) => r._field == \"L0_score_top1\")\n  |> group(columns: [\"_field\"])\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 15,
+            "spanNulls": false,
+            "axisSoftMin": 0,
+            "axisSoftMax": 0.5,
+            "pointSize": 4,
+            "showPoints": "auto"
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "L0_score_margin"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Score Margin (sK - sK+1)"
+              },
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "green",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "L0_score_top1"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Best Match Score (s1)"
+              },
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "#28d3e2",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        },
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "calcs": [
+            "lastNotNull",
+            "mean"
+          ]
+        }
+      }
+    },
+    {
+      "id": 129,
+      "title": "Write Heat (10×10)",
+      "type": "table",
+      "gridPos": {
+        "x": 0,
+        "y": 20,
+        "w": 10,
+        "h": 12
+      },
+      "datasource": {
+        "type": "influxdb",
+        "uid": "efd1xv51o3vuob"
+      },
+      "options": {
+        "showHeader": false,
+        "cellHeight": "sm",
+        "footer": {
+          "show": false,
+          "reducer": [
+            "sum"
+          ]
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#0a0a1a",
+                "value": null
+              },
+              {
+                "color": "#0c0a1e",
+                "value": 0.15
+              },
+              {
+                "color": "#0e0a23",
+                "value": 0.3
+              },
+              {
+                "color": "#100b28",
+                "value": 0.45
+              },
+              {
+                "color": "#120b2d",
+                "value": 0.61
+              },
+              {
+                "color": "#140c32",
+                "value": 0.76
+              },
+              {
+                "color": "#170d38",
+                "value": 0.91
+              },
+              {
+                "color": "#1a0f3e",
+                "value": 1.06
+              },
+              {
+                "color": "#1d1044",
+                "value": 1.21
+              },
+              {
+                "color": "#20124a",
+                "value": 1.36
+              },
+              {
+                "color": "#231450",
+                "value": 1.52
+              },
+              {
+                "color": "#261455",
+                "value": 1.67
+              },
+              {
+                "color": "#29145a",
+                "value": 1.82
+              },
+              {
+                "color": "#2c155f",
+                "value": 1.97
+              },
+              {
+                "color": "#2f1564",
+                "value": 2.12
+              },
+              {
+                "color": "#321669",
+                "value": 2.27
+              },
+              {
+                "color": "#36166e",
+                "value": 2.42
+              },
+              {
+                "color": "#3a1773",
+                "value": 2.58
+              },
+              {
+                "color": "#3e1778",
+                "value": 2.73
+              },
+              {
+                "color": "#42187d",
+                "value": 2.88
+              },
+              {
+                "color": "#461982",
+                "value": 3.03
+              },
+              {
+                "color": "#4a1984",
+                "value": 3.18
+              },
+              {
+                "color": "#4e1986",
+                "value": 3.33
+              },
+              {
+                "color": "#521a88",
+                "value": 3.48
+              },
+              {
+                "color": "#561a8a",
+                "value": 3.64
+              },
+              {
+                "color": "#5a1b8c",
+                "value": 3.79
+              },
+              {
+                "color": "#5e1b8f",
+                "value": 3.94
+              },
+              {
+                "color": "#611b92",
+                "value": 4.09
+              },
+              {
+                "color": "#641b95",
+                "value": 4.24
+              },
+              {
+                "color": "#671b98",
+                "value": 4.39
+              },
+              {
+                "color": "#6b1b99",
+                "value": 4.55
+              },
+              {
+                "color": "#6e1b97",
+                "value": 4.7
+              },
+              {
+                "color": "#721c95",
+                "value": 4.85
+              },
+              {
+                "color": "#761d94",
+                "value": 5.0
+              },
+              {
+                "color": "#7a1d92",
+                "value": 5.15
+              },
+              {
+                "color": "#7e1e90",
+                "value": 5.3
+              },
+              {
+                "color": "#821f8e",
+                "value": 5.45
+              },
+              {
+                "color": "#86208c",
+                "value": 5.61
+              },
+              {
+                "color": "#8a218a",
+                "value": 5.76
+              },
+              {
+                "color": "#8e2288",
+                "value": 5.91
+              },
+              {
+                "color": "#922385",
+                "value": 6.06
+              },
+              {
+                "color": "#962483",
+                "value": 6.21
+              },
+              {
+                "color": "#9a2680",
+                "value": 6.36
+              },
+              {
+                "color": "#9e277e",
+                "value": 6.52
+              },
+              {
+                "color": "#a2297b",
+                "value": 6.67
+              },
+              {
+                "color": "#a62b7a",
+                "value": 6.82
+              },
+              {
+                "color": "#a92d7a",
+                "value": 6.97
+              },
+              {
+                "color": "#ac2f7a",
+                "value": 7.12
+              },
+              {
+                "color": "#b0327a",
+                "value": 7.27
+              },
+              {
+                "color": "#b3347a",
+                "value": 7.42
+              },
+              {
+                "color": "#b63778",
+                "value": 7.58
+              },
+              {
+                "color": "#b93976",
+                "value": 7.73
+              },
+              {
+                "color": "#bc3b73",
+                "value": 7.88
+              },
+              {
+                "color": "#be3d71",
+                "value": 8.03
+              },
+              {
+                "color": "#c13f6f",
+                "value": 8.18
+              },
+              {
+                "color": "#c4426c",
+                "value": 8.33
+              },
+              {
+                "color": "#c74569",
+                "value": 8.48
+              },
+              {
+                "color": "#ca4866",
+                "value": 8.64
+              },
+              {
+                "color": "#cd4b63",
+                "value": 8.79
+              },
+              {
+                "color": "#d04e60",
+                "value": 8.94
+              },
+              {
+                "color": "#d3525c",
+                "value": 9.09
+              },
+              {
+                "color": "#d55659",
+                "value": 9.24
+              },
+              {
+                "color": "#d85a56",
+                "value": 9.39
+              },
+              {
+                "color": "#da5e52",
+                "value": 9.55
+              },
+              {
+                "color": "#dd624f",
+                "value": 9.7
+              },
+              {
+                "color": "#df664d",
+                "value": 9.85
+              },
+              {
+                "color": "#e1694d",
+                "value": 10.0
+              },
+              {
+                "color": "#e36d4c",
+                "value": 10.15
+              },
+              {
+                "color": "#e5714b",
+                "value": 10.3
+              },
+              {
+                "color": "#e7744b",
+                "value": 10.45
+              },
+              {
+                "color": "#e97948",
+                "value": 10.61
+              },
+              {
+                "color": "#ea7d45",
+                "value": 10.76
+              },
+              {
+                "color": "#ec8242",
+                "value": 10.91
+              },
+              {
+                "color": "#ed863f",
+                "value": 11.06
+              },
+              {
+                "color": "#ef8a3c",
+                "value": 11.21
+              },
+              {
+                "color": "#f08f38",
+                "value": 11.36
+              },
+              {
+                "color": "#f19434",
+                "value": 11.52
+              },
+              {
+                "color": "#f29930",
+                "value": 11.67
+              },
+              {
+                "color": "#f39e2c",
+                "value": 11.82
+              },
+              {
+                "color": "#f4a328",
+                "value": 11.97
+              },
+              {
+                "color": "#f5a925",
+                "value": 12.12
+              },
+              {
+                "color": "#f5ae22",
+                "value": 12.27
+              },
+              {
+                "color": "#f5b31e",
+                "value": 12.42
+              },
+              {
+                "color": "#f5b81b",
+                "value": 12.58
+              },
+              {
+                "color": "#f5bd18",
+                "value": 12.73
+              },
+              {
+                "color": "#f5c119",
+                "value": 12.88
+              },
+              {
+                "color": "#f6c51a",
+                "value": 13.03
+              },
+              {
+                "color": "#f6c91b",
+                "value": 13.18
+              },
+              {
+                "color": "#f7cd1c",
+                "value": 13.33
+              },
+              {
+                "color": "#f7d11d",
+                "value": 13.48
+              },
+              {
+                "color": "#f8d527",
+                "value": 13.64
+              },
+              {
+                "color": "#f8d931",
+                "value": 13.79
+              },
+              {
+                "color": "#f9dd3b",
+                "value": 13.94
+              },
+              {
+                "color": "#f9e145",
+                "value": 14.09
+              },
+              {
+                "color": "#f9e54f",
+                "value": 14.24
+              },
+              {
+                "color": "#faea71",
+                "value": 14.39
+              },
+              {
+                "color": "#fbef94",
+                "value": 14.55
+              },
+              {
+                "color": "#fcf4b8",
+                "value": 14.7
+              },
+              {
+                "color": "#fdf9db",
+                "value": 14.85
+              },
+              {
+                "color": "#ffffff",
+                "value": 15.0
+              }
+            ]
+          },
+          "custom": {
+            "cellOptions": {
+              "type": "color-background",
+              "mode": "basic"
+            },
+            "align": "center",
+            "inspect": false,
+            "filterable": false
+          }
+        },
+        "overrides": []
+      },
+      "transparent": false,
+      "targets": [
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "efd1xv51o3vuob"
+          },
+          "query": "import \"strings\"\n\nfrom(bucket: \"diamond\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"lcx_levels\")\n  |> filter(fn: (r) => r.run_id == \"${run_id}\")\n  |> filter(fn: (r) => r._field =~ /^L0_rk\\d{2}$/)\n  |> last()\n  |> group()\n  |> map(fn: (r) => ({\n      _value: r._value,\n      row: strings.substring(v: r._field, start: 5, end: 6),\n      col: \"c\" + strings.substring(v: r._field, start: 6, end: 7)\n  }))\n  |> pivot(rowKey: [\"row\"], columnKey: [\"col\"], valueColumn: \"_value\")\n  |> sort(columns: [\"row\"])\n  |> drop(columns: [\"row\"])",
+          "refId": "A"
+        }
+      ],
+      "description": "Write frequency per slot (10×10 downsample of 618 slots). Values = log2(writes + 1). Diamond colormap 0–15."
+    },
+    {
+      "id": 130,
+      "title": "Value Norms",
+      "type": "text",
+      "gridPos": {
+        "x": 18,
+        "y": 20,
+        "w": 3,
+        "h": 12
+      },
+      "options": {
+        "mode": "html",
+        "content": "<div style=\"text-align:center;display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;overflow:hidden\"><img src=\"http://localhost:7777/api/lcx_L0.png?_=${__to}\" style=\"max-width:100%;max-height:calc(100% - 18px);image-rendering:pixelated;border:1px solid #333;object-fit:contain\" /><div style=\"color:#888;font-size:10px;margin-top:2px;flex-shrink:0\">value L2-norms · viridis · bright = written</div></div>"
+      },
+      "description": "25×25 grid of L0 stored value magnitudes (618 slots, 7 empty). Bright = large vector norm. Viridis colormap. Updates each training step via control_panel.py :7777.",
+      "transparent": true
+    },
+    {
+      "id": 149,
+      "title": "Key Norms",
+      "type": "text",
+      "gridPos": {
+        "x": 21,
+        "y": 20,
+        "w": 3,
+        "h": 12
+      },
+      "options": {
+        "mode": "html",
+        "content": "<div style=\"text-align:center;display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;overflow:hidden\"><img src=\"http://localhost:7777/api/lcx_L0_keys.png?_=${__to}\" style=\"max-width:100%;max-height:calc(100% - 18px);image-rendering:pixelated;border:1px solid #333;object-fit:contain\" /><div style=\"color:#888;font-size:10px;margin-top:2px;flex-shrink:0\">key L2-norms · viridis · bright = written</div></div>"
+      },
+      "description": "25×25 grid of L0 stored key magnitudes (618 slots). Bright = large key norm. If hot slots have disproportionately large key norms, retrieval is biased toward them (rich-get-richer). Viridis colormap.",
+      "transparent": true
+    },
+    {
+      "id": 116,
+      "title": "LCX Heat Strip (write concentration)",
+      "type": "text",
+      "description": "Per-level write heat distribution. Top strip: viridis heatmap (dark=cold, yellow=hot, log2 scaled). Bottom strip: valid coverage (green=written, dark=empty).",
+      "gridPos": {
+        "x": 0,
+        "y": 32,
+        "w": 12,
+        "h": 6
+      },
+      "options": {
+        "mode": "html",
+        "content": "<div style=\"text-align:center\"><img src=\"http://localhost:7777/api/lcx_heat_strip.png?_=${__to}\" style=\"width:100%;max-width:640px;image-rendering:pixelated;border:1px solid #333\" /><div style=\"color:#aaa;font-size:11px\">Heat: viridis (log2) | Valid: green = written</div></div>"
+      }
+    },
+    {
+      "id": 90,
+      "title": "LCX Gradient Flow",
+      "type": "timeseries",
+      "description": "Gradient norms for LCX routing, write gate, and zoom gate. Log scale Ă˘â‚¬â€ť watch for zeros (dead gradients).",
+      "gridPos": {
+        "x": 12,
+        "y": 32,
+        "w": 12,
+        "h": 8
+      },
+      "datasource": {
+        "type": "influxdb",
+        "uid": "efd1xv51o3vuob"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "query": "from(bucket: \"diamond\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"lcx_levels\")\n  |> filter(fn: (r) => r.run_id == \"${run_id}\")\n  |> filter(fn: (r) => r._field == \"lcx_route_grad\" or r._field == \"lcx_write_grad\" or r._field == \"zoom_gate_grad\")\n  |> group(columns: [\"_field\"])\n  |> keep(columns: [\"_time\", \"_value\", \"_field\"])"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "fixed"
+          },
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 10,
+            "pointSize": 3,
+            "showPoints": "never",
+            "scaleDistribution": {
+              "type": "log",
+              "log": 10
+            }
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "lcx_route_grad"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#5794F2"
+                }
+              },
+              {
+                "id": "displayName",
+                "value": "Route Grad"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "lcx_write_grad"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#73BF69"
+                }
+              },
+              {
+                "id": "displayName",
+                "value": "Write Grad"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "zoom_gate_grad"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#FF9830"
+                }
+              },
+              {
+                "id": "displayName",
+                "value": "Zoom Grad"
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      }
+    },
+    {
+      "id": 102,
+      "title": "Hot Slots Over Time",
+      "type": "timeseries",
+      "description": "Number of written-to (hot) slots per LCX level over training. Shows how memory utilization grows.",
+      "gridPos": {
+        "x": 0,
+        "y": 40,
+        "w": 12,
+        "h": 8
+      },
+      "datasource": {
+        "type": "influxdb",
+        "uid": "efd1xv51o3vuob"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "query": "from(bucket: \"diamond\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"lcx_levels\")\n  |> filter(fn: (r) => r.run_id == \"${run_id}\")\n  |> filter(fn: (r) => r._field =~ /^L\\d+_hot_slots$/)\n  |> group(columns: [\"_field\"])\n  |> keep(columns: [\"_time\", \"_value\", \"_field\"])"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 10,
+            "pointSize": 3,
+            "showPoints": "auto"
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "L0_hot_slots"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "#5794F2",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "L1_hot_slots"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "#73BF69",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "L2_hot_slots"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "#FF9830",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      }
+    },
+    {
+      "id": 103,
+      "title": "Max Heat",
+      "type": "timeseries",
+      "description": "Maximum write count per LCX level over time. High values indicate concentrated writes to a few slots.",
+      "gridPos": {
+        "x": 12,
+        "y": 40,
+        "w": 12,
+        "h": 8
+      },
+      "datasource": {
+        "type": "influxdb",
+        "uid": "efd1xv51o3vuob"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "query": "from(bucket: \"diamond\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"lcx_levels\")\n  |> filter(fn: (r) => r.run_id == \"${run_id}\")\n  |> filter(fn: (r) => r._field =~ /^L\\d+_max_heat$/)\n  |> group(columns: [\"_field\"])\n  |> keep(columns: [\"_time\", \"_value\", \"_field\"])"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 10,
+            "pointSize": 3,
+            "showPoints": "auto",
+            "scaleDistribution": {
+              "type": "log",
+              "log": 2
+            }
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "L0_max_heat"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "#5794F2",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "L1_max_heat"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "#73BF69",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "L2_max_heat"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "#FF9830",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      }
+    },
+    {
+      "id": 158,
+      "title": "Beings & Swarm",
+      "type": "row",
+      "collapsed": false,
+      "gridPos": {
+        "x": 0,
+        "y": 48,
+        "w": 24,
+        "h": 1
+      },
+      "panels": []
+    },
+    {
+      "id": 20,
+      "title": "Beings",
+      "type": "stat",
+      "gridPos": {
+        "x": 0,
+        "y": 49,
+        "w": 3,
+        "h": 6
+      },
+      "datasource": {
+        "type": "influxdb",
+        "uid": "efd1xv51o3vuob"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "query": "from(bucket: \"diamond\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"being_metric\")\n  |> filter(fn: (r) => r.run_id == \"${run_id}\")\n  |> filter(fn: (r) => r._field == \"k_bits\")\n  |> last()\n  |> group()\n  |> count()\n  |> keep(columns: [\"_value\"])"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "fixedColor": "#9e88f0",
+            "mode": "fixed"
+          },
+          "thresholds": {
+            "steps": [
+              {
+                "color": "#9e88f0",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "textMode": "value",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        }
+      }
+    },
+    {
+      "id": 21,
+      "title": "Biomass (K bits)",
+      "type": "piechart",
+      "gridPos": {
+        "x": 3,
+        "y": 49,
+        "w": 6,
+        "h": 6
+      },
+      "datasource": {
+        "type": "influxdb",
+        "uid": "efd1xv51o3vuob"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "query": "from(bucket: \"diamond\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"being_metric\")\n  |> filter(fn: (r) => r.run_id == \"${run_id}\")\n  |> filter(fn: (r) => r._field == \"k_bits\")\n  |> last()\n  |> map(fn: (r) => ({r with _field: \"A#\" + r.being_id}))\n  |> keep(columns: [\"_time\", \"_value\", \"_field\"])"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "pieType": "donut",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        },
+        "legend": {
+          "displayMode": "table",
+          "placement": "right",
+          "values": [
+            "value",
+            "percent"
+          ]
+        }
+      }
+    },
+    {
+      "id": 22,
+      "title": "Unique",
+      "type": "bargauge",
+      "gridPos": {
+        "x": 9,
+        "y": 49,
+        "w": 3,
+        "h": 6
+      },
+      "datasource": {
+        "type": "influxdb",
+        "uid": "efd1xv51o3vuob"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "query": "from(bucket: \"diamond\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"being_metric\")\n  |> filter(fn: (r) => r.run_id == \"${run_id}\")\n  |> filter(fn: (r) => r._field == \"unique_bits\")\n  |> last()\n  |> map(fn: (r) => ({r with _field: \"A#\" + r.being_id}))\n  |> keep(columns: [\"_time\", \"_value\", \"_field\"])"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "fixedColor": "#28d3e2",
+            "mode": "fixed"
+          },
+          "min": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "orientation": "vertical",
+        "displayMode": "lcd",
+        "showUnfilled": true,
+        "valueMode": "text",
+        "sizing": "auto"
+      }
+    },
+    {
+      "id": 57,
+      "title": "Shared",
+      "type": "bargauge",
+      "gridPos": {
+        "x": 12,
+        "y": 49,
+        "w": 2,
+        "h": 6
+      },
+      "datasource": {
+        "type": "influxdb",
+        "uid": "efd1xv51o3vuob"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "query": "from(bucket: \"diamond\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"being_metric\")\n  |> filter(fn: (r) => r.run_id == \"${run_id}\")\n  |> filter(fn: (r) => r._field == \"redundant_bits\")\n  |> last()\n  |> map(fn: (r) => ({r with _field: \"A#\" + r.being_id}))\n  |> keep(columns: [\"_time\", \"_value\", \"_field\"])"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "fixedColor": "#ca64e4",
+            "mode": "fixed"
+          },
+          "min": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "orientation": "vertical",
+        "displayMode": "lcd",
+        "showUnfilled": true,
+        "valueMode": "text",
+        "sizing": "auto"
+      }
+    },
+    {
+      "id": 25,
+      "title": "n_bits",
+      "type": "stat",
+      "gridPos": {
+        "x": 14,
+        "y": 49,
+        "w": 2,
+        "h": 6
+      },
+      "datasource": {
+        "type": "influxdb",
+        "uid": "efd1xv51o3vuob"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "query": "from(bucket: \"diamond\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"bit_accuracy\")\n  |> filter(fn: (r) => r.run_id == \"${run_id}\")\n  |> filter(fn: (r) => r._field == \"accuracy\")\n  |> last()\n  |> group()\n  |> count()\n  |> keep(columns: [\"_value\"])"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "fixedColor": "#28d3e2",
+            "mode": "fixed"
+          },
+          "thresholds": {
+            "steps": [
+              {
+                "color": "#28d3e2",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "textMode": "value",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        }
+      }
+    },
+    {
+      "id": 23,
+      "title": "Coverage",
+      "type": "gauge",
+      "gridPos": {
+        "x": 16,
+        "y": 49,
+        "w": 4,
+        "h": 6
+      },
+      "datasource": {
+        "type": "influxdb",
+        "uid": "efd1xv51o3vuob"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "query": "from(bucket: \"diamond\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"training_step\")\n  |> filter(fn: (r) => r.run_id == \"${run_id}\")\n  |> filter(fn: (r) => r.is_eval == \"false\")\n  |> filter(fn: (r) => r._field == \"coverage\")\n  |> group(columns: [\"_field\"])\n  |> last()\n  |> keep(columns: [\"_time\", \"_value\", \"_field\"])"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "min": 0,
+          "max": 1,
+          "unit": "percentunit",
+          "decimals": 0,
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#0a0767",
+                "value": null
+              },
+              {
+                "color": "#3238a9",
+                "value": 0.25
+              },
+              {
+                "color": "#28d3e2",
+                "value": 0.5
+              },
+              {
+                "color": "#ca64e4",
+                "value": 0.75
+              },
+              {
+                "color": "#fa3858",
+                "value": 0.9
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "showThresholdMarkers": true,
+        "showThresholdLabels": false,
+        "orientation": "auto",
+        "sizing": "auto"
+      }
+    },
+    {
+      "id": 24,
+      "title": "Ensemble Benefit",
+      "type": "stat",
+      "gridPos": {
+        "x": 20,
+        "y": 49,
+        "w": 4,
+        "h": 6
+      },
+      "datasource": {
+        "type": "influxdb",
+        "uid": "efd1xv51o3vuob"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "query": "from(bucket: \"diamond\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"training_step\")\n  |> filter(fn: (r) => r.run_id == \"${run_id}\")\n  |> filter(fn: (r) => r.is_eval == \"false\")\n  |> filter(fn: (r) => r._field == \"ensemble_benefit\")\n  |> group(columns: [\"_field\"])\n  |> last()\n  |> keep(columns: [\"_time\", \"_value\", \"_field\"])"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "decimals": 1,
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#0a0767",
+                "value": null
+              },
+              {
+                "color": "#3238a9",
+                "value": 0.02
+              },
+              {
+                "color": "#28d3e2",
+                "value": 0.05
+              },
+              {
+                "color": "#ca64e4",
+                "value": 0.1
+              },
+              {
+                "color": "#fa3858",
+                "value": 0.2
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "textMode": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        }
+      }
+    },
+    {
+      "id": 159,
+      "title": "Ant/Bit Intelligence",
+      "type": "row",
+      "collapsed": false,
+      "gridPos": {
+        "x": 0,
+        "y": 55,
+        "w": 24,
+        "h": 1
+      },
+      "panels": []
+    },
+    {
+      "id": 53,
+      "title": "Bit Oracle",
+      "type": "bargauge",
+      "gridPos": {
+        "x": 0,
+        "y": 56,
+        "w": 3,
+        "h": 6
+      },
+      "datasource": {
+        "type": "influxdb",
+        "uid": "efd1xv51o3vuob"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "query": "from(bucket: \"diamond\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"training_step\")\n  |> filter(fn: (r) => r.run_id == \"${run_id}\")\n  |> filter(fn: (r) => r.is_eval == \"false\")\n  |> filter(fn: (r) => r._field == \"bit_oracle\")\n  |> group(columns: [\"_field\"])\n  |> last()\n  |> keep(columns: [\"_time\", \"_value\", \"_field\"])"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "min": 0,
+          "max": 1,
+          "unit": "percentunit",
+          "decimals": 1,
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#0a0767",
+                "value": null
+              },
+              {
+                "color": "#3238a9",
+                "value": 0.25
+              },
+              {
+                "color": "#28d3e2",
+                "value": 0.5
+              },
+              {
+                "color": "#ca64e4",
+                "value": 0.75
+              },
+              {
+                "color": "#fa3858",
+                "value": 0.9
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "orientation": "vertical",
+        "displayMode": "lcd",
+        "showUnfilled": true,
+        "valueMode": "text",
+        "sizing": "auto"
+      }
+    },
+    {
+      "id": 54,
+      "title": "Clustering",
+      "type": "bargauge",
+      "gridPos": {
+        "x": 3,
+        "y": 56,
+        "w": 3,
+        "h": 6
+      },
+      "datasource": {
+        "type": "influxdb",
+        "uid": "efd1xv51o3vuob"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "query": "from(bucket: \"diamond\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"training_step\")\n  |> filter(fn: (r) => r.run_id == \"${run_id}\")\n  |> filter(fn: (r) => r.is_eval == \"false\")\n  |> filter(fn: (r) => r._field == \"clustering\")\n  |> group(columns: [\"_field\"])\n  |> last()\n  |> keep(columns: [\"_time\", \"_value\", \"_field\"])"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "min": 0,
+          "max": 1,
+          "decimals": 2,
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#fa3858",
+                "value": null
+              },
+              {
+                "color": "#ca64e4",
+                "value": 0.15
+              },
+              {
+                "color": "#28d3e2",
+                "value": 0.3
+              },
+              {
+                "color": "#3238a9",
+                "value": 0.5
+              },
+              {
+                "color": "#0a0767",
+                "value": 0.7
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "orientation": "vertical",
+        "displayMode": "lcd",
+        "showUnfilled": true,
+        "valueMode": "text",
+        "sizing": "auto"
+      }
+    },
+    {
+      "id": 55,
+      "title": "Spread",
+      "type": "bargauge",
+      "gridPos": {
+        "x": 6,
+        "y": 56,
+        "w": 3,
+        "h": 6
+      },
+      "datasource": {
+        "type": "influxdb",
+        "uid": "efd1xv51o3vuob"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "query": "from(bucket: \"diamond\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"training_step\")\n  |> filter(fn: (r) => r.run_id == \"${run_id}\")\n  |> filter(fn: (r) => r.is_eval == \"false\")\n  |> filter(fn: (r) => r._field == \"circular_spread\")\n  |> group(columns: [\"_field\"])\n  |> last()\n  |> keep(columns: [\"_time\", \"_value\", \"_field\"])"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "min": 0,
+          "max": 32,
+          "decimals": 1,
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#0a0767",
+                "value": null
+              },
+              {
+                "color": "#3238a9",
+                "value": 5
+              },
+              {
+                "color": "#28d3e2",
+                "value": 10
+              },
+              {
+                "color": "#ca64e4",
+                "value": 18
+              },
+              {
+                "color": "#fa3858",
+                "value": 25
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "orientation": "vertical",
+        "displayMode": "lcd",
+        "showUnfilled": true,
+        "valueMode": "text",
+        "sizing": "auto"
+      }
+    },
+    {
+      "id": 56,
+      "title": "Ring Health",
+      "type": "timeseries",
+      "gridPos": {
+        "x": 9,
+        "y": 56,
+        "w": 13,
+        "h": 6
+      },
+      "datasource": {
+        "type": "influxdb",
+        "uid": "efd1xv51o3vuob"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "query": "from(bucket: \"diamond\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"training_step\")\n  |> filter(fn: (r) => r.run_id == \"${run_id}\")\n  |> filter(fn: (r) => r.is_eval == \"false\")\n  |> filter(fn: (r) => r._field == \"bit_oracle\")\n  |> group(columns: [\"_field\"])\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> keep(columns: [\"_time\", \"_value\", \"_field\"])"
+        },
+        {
+          "refId": "B",
+          "query": "from(bucket: \"diamond\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"training_step\")\n  |> filter(fn: (r) => r.run_id == \"${run_id}\")\n  |> filter(fn: (r) => r.is_eval == \"false\")\n  |> filter(fn: (r) => r._field == \"clustering\")\n  |> group(columns: [\"_field\"])\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> keep(columns: [\"_time\", \"_value\", \"_field\"])"
+        },
+        {
+          "refId": "C",
+          "query": "from(bucket: \"diamond\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"training_step\")\n  |> filter(fn: (r) => r.run_id == \"${run_id}\")\n  |> filter(fn: (r) => r.is_eval == \"false\")\n  |> filter(fn: (r) => r._field == \"circular_spread\")\n  |> group(columns: [\"_field\"])\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> keep(columns: [\"_time\", \"_value\", \"_field\"])"
+        },
+        {
+          "refId": "D",
+          "query": "from(bucket: \"diamond\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"training_step\")\n  |> filter(fn: (r) => r.run_id == \"${run_id}\")\n  |> filter(fn: (r) => r.is_eval == \"false\")\n  |> filter(fn: (r) => r._field == \"gate_entropy\")\n  |> group(columns: [\"_field\"])\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> keep(columns: [\"_time\", \"_value\", \"_field\"])"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 10,
+            "axisPlacement": "auto",
+            "spanNulls": false,
+            "drawStyle": "line",
+            "lineInterpolation": "smooth",
+            "showPoints": "never"
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byFrameRefID",
+              "options": "A"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Bit Oracle"
+              },
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "#ca64e4",
+                  "mode": "fixed"
+                }
+              },
+              {
+                "id": "custom.axisPlacement",
+                "value": "right"
+              },
+              {
+                "id": "custom.lineStyle",
+                "value": {
+                  "fill": "dash"
+                }
+              },
+              {
+                "id": "custom.lineWidth",
+                "value": 1
+              },
+              {
+                "id": "unit",
+                "value": "percentunit"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byFrameRefID",
+              "options": "B"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Clustering"
+              },
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "#fa3858",
+                  "mode": "fixed"
+                }
+              },
+              {
+                "id": "custom.axisPlacement",
+                "value": "left"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byFrameRefID",
+              "options": "C"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Circular Spread"
+              },
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "#28d3e2",
+                  "mode": "fixed"
+                }
+              },
+              {
+                "id": "custom.axisPlacement",
+                "value": "left"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byFrameRefID",
+              "options": "D"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Gate Entropy"
+              },
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "#9e88f0",
+                  "mode": "fixed"
+                }
+              },
+              {
+                "id": "custom.axisPlacement",
+                "value": "right"
+              },
+              {
+                "id": "custom.lineStyle",
+                "value": {
+                  "fill": "dash",
+                  "dash": [
+                    5,
+                    5
+                  ]
+                }
+              },
+              {
+                "id": "custom.lineWidth",
+                "value": 1
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        },
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "calcs": []
+        }
+      }
+    },
+    {
+      "id": 58,
+      "title": "Ctx",
+      "type": "bargauge",
+      "gridPos": {
+        "x": 22,
+        "y": 56,
+        "w": 2,
+        "h": 6
+      },
+      "datasource": {
+        "type": "influxdb",
+        "uid": "efd1xv51o3vuob"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "query": "from(bucket: \"diamond\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"being_metric\")\n  |> filter(fn: (r) => r.run_id == \"${run_id}\")\n  |> filter(fn: (r) => r._field == \"ctx_scale\")\n  |> last()\n  |> map(fn: (r) => ({r with _field: \"A#\" + r.being_id}))\n  |> keep(columns: [\"_time\", \"_value\", \"_field\"])"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "min": 0,
+          "max": 1,
+          "unit": "percentunit",
+          "decimals": 2,
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#0a0767",
+                "value": null
+              },
+              {
+                "color": "#3238a9",
+                "value": 0.1
+              },
+              {
+                "color": "#28d3e2",
+                "value": 0.25
+              },
+              {
+                "color": "#ca64e4",
+                "value": 0.5
+              },
+              {
+                "color": "#fa3858",
+                "value": 0.8
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "orientation": "vertical",
+        "displayMode": "lcd",
+        "showUnfilled": true,
+        "valueMode": "text",
+        "sizing": "auto"
+      }
+    },
+    {
+      "id": 46,
+      "title": "Ant Accuracy  |  Deep Blue=Anti-learned  Cyan=Chance(50%)  Orchid=Learning  Fuchsia=Mastered",
+      "type": "state-timeline",
+      "description": "Per-ant masked accuracy (rolling avg). State-timeline with 13-step Coolors palette.",
+      "gridPos": {
+        "x": 0,
+        "y": 62,
+        "w": 24,
+        "h": 10
+      },
+      "datasource": {
+        "type": "influxdb",
+        "uid": "efd1xv51o3vuob"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "maxDataPoints": 40000,
+          "query": "from(bucket: \"diamond\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"being_metric\")\n  |> filter(fn: (r) => r.run_id == \"${run_id}\")\n  |> filter(fn: (r) => r._field == \"masked_acc\")\n  |> map(fn: (r) => ({r with _field: \"A#\" + r.being_id}))\n  |> keep(columns: [\"_time\", \"_value\", \"_field\"])\n  |> group(columns: [\"_field\"])\n  |> sort(columns: [\"_time\"])\n  |> movingAverage(n: 5)\n  |> map(fn: (r) => ({r with _value: if r._value < 0.05 then \"Void\" else if r._value < 0.12 then \"Abyss\" else if r._value < 0.22 then \"Deep Twilight\" else if r._value < 0.32 then \"Twilight\" else if r._value < 0.42 then \"Persian Blue\" else if r._value < 0.52 then \"Strong Cyan\" else if r._value < 0.62 then \"Soft Periwinkle\" else if r._value < 0.72 then \"Orchid Mist\" else if r._value < 0.82 then \"Vivid Orchid\" else if r._value < 0.89 then \"Deep Rose\" else if r._value < 0.94 then \"Rose\" else if r._value < 0.98 then \"Bright Rose\" else \"Hot Fuchsia\"}))"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "fixed"
+          },
+          "custom": {
+            "fillOpacity": 80,
+            "lineWidth": 0
+          },
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "Void": {
+                  "color": "#030225",
+                  "index": 0
+                },
+                "Abyss": {
+                  "color": "#060440",
+                  "index": 1
+                },
+                "Deep Twilight": {
+                  "color": "#0a0767",
+                  "index": 2
+                },
+                "Twilight": {
+                  "color": "#1e2088",
+                  "index": 3
+                },
+                "Persian Blue": {
+                  "color": "#3238a9",
+                  "index": 4
+                },
+                "Strong Cyan": {
+                  "color": "#28d3e2",
+                  "index": 5
+                },
+                "Soft Periwinkle": {
+                  "color": "#9e88f0",
+                  "index": 6
+                },
+                "Orchid Mist": {
+                  "color": "#ca64e4",
+                  "index": 7
+                },
+                "Vivid Orchid": {
+                  "color": "#dc31bf",
+                  "index": 8
+                },
+                "Deep Rose": {
+                  "color": "#e432a0",
+                  "index": 9
+                },
+                "Rose": {
+                  "color": "#eb348c",
+                  "index": 10
+                },
+                "Bright Rose": {
+                  "color": "#f33470",
+                  "index": 11
+                },
+                "Hot Fuchsia": {
+                  "color": "#fa3858",
+                  "index": 12
+                }
+              }
+            }
+          ]
+        },
+        "overrides": []
+      },
+      "options": {
+        "showValue": "never",
+        "mergeValues": true,
+        "alignValue": "left",
+        "rowHeight": 0.9,
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "single"
+        }
+      }
+    },
+    {
+      "id": 43,
+      "title": "Jump Gates  |  Deep Blue=Walker  Cyan=Balanced  Orchid=Mixed  Fuchsia=Jumper",
+      "type": "state-timeline",
+      "description": "Per-ant jump probability (sigmoid output). State-timeline with 13-step Coolors palette.",
+      "gridPos": {
+        "x": 0,
+        "y": 72,
+        "w": 24,
+        "h": 10
+      },
+      "datasource": {
+        "type": "influxdb",
+        "uid": "efd1xv51o3vuob"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "maxDataPoints": 40000,
+          "query": "from(bucket: \"diamond\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"being_metric\")\n  |> filter(fn: (r) => r.run_id == \"${run_id}\")\n  |> filter(fn: (r) => r._field == \"jump_rate\")\n  |> map(fn: (r) => ({r with _field: \"A#\" + r.being_id}))\n  |> keep(columns: [\"_time\", \"_value\", \"_field\"])\n  |> group(columns: [\"_field\"])\n  |> sort(columns: [\"_time\"])\n  |> movingAverage(n: 5)\n  |> map(fn: (r) => ({r with _value: if r._value < 0.05 then \"Void\" else if r._value < 0.12 then \"Abyss\" else if r._value < 0.22 then \"Deep Twilight\" else if r._value < 0.32 then \"Twilight\" else if r._value < 0.42 then \"Persian Blue\" else if r._value < 0.52 then \"Strong Cyan\" else if r._value < 0.62 then \"Soft Periwinkle\" else if r._value < 0.72 then \"Orchid Mist\" else if r._value < 0.82 then \"Vivid Orchid\" else if r._value < 0.89 then \"Deep Rose\" else if r._value < 0.94 then \"Rose\" else if r._value < 0.98 then \"Bright Rose\" else \"Hot Fuchsia\"}))"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "fixed"
+          },
+          "custom": {
+            "fillOpacity": 80,
+            "lineWidth": 0
+          },
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "Void": {
+                  "color": "#030225",
+                  "index": 0
+                },
+                "Abyss": {
+                  "color": "#060440",
+                  "index": 1
+                },
+                "Deep Twilight": {
+                  "color": "#0a0767",
+                  "index": 2
+                },
+                "Twilight": {
+                  "color": "#1e2088",
+                  "index": 3
+                },
+                "Persian Blue": {
+                  "color": "#3238a9",
+                  "index": 4
+                },
+                "Strong Cyan": {
+                  "color": "#28d3e2",
+                  "index": 5
+                },
+                "Soft Periwinkle": {
+                  "color": "#9e88f0",
+                  "index": 6
+                },
+                "Orchid Mist": {
+                  "color": "#ca64e4",
+                  "index": 7
+                },
+                "Vivid Orchid": {
+                  "color": "#dc31bf",
+                  "index": 8
+                },
+                "Deep Rose": {
+                  "color": "#e432a0",
+                  "index": 9
+                },
+                "Rose": {
+                  "color": "#eb348c",
+                  "index": 10
+                },
+                "Bright Rose": {
+                  "color": "#f33470",
+                  "index": 11
+                },
+                "Hot Fuchsia": {
+                  "color": "#fa3858",
+                  "index": 12
+                }
+              }
+            }
+          ]
+        },
+        "overrides": []
+      },
+      "options": {
+        "showValue": "never",
+        "mergeValues": true,
+        "alignValue": "left",
+        "rowHeight": 0.9,
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "single"
+        }
+      }
+    },
+    {
+      "id": 32,
+      "title": "Ant IQ (avg 5)",
+      "type": "bargauge",
+      "gridPos": {
+        "x": 0,
+        "y": 82,
+        "w": 6,
+        "h": 6
+      },
+      "datasource": {
+        "type": "influxdb",
+        "uid": "efd1xv51o3vuob"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "query": "from(bucket: \"diamond\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"being_metric\")\n  |> filter(fn: (r) => r.run_id == \"${run_id}\")\n  |> filter(fn: (r) => r._field == \"masked_acc\")\n  |> map(fn: (r) => ({_time: r._time, _value: r._value, _field: \"A#\" + r.being_id}))\n  |> group(columns: [\"_field\"])\n  |> tail(n: 5)\n  |> mean()\n  |> group()\n  |> map(fn: (r) => ({_time: now(), _value: r._value, _field: r._field}))\n  |> pivot(rowKey: [\"_time\"], columnKey: [\"_field\"], valueColumn: \"_value\")\n  |> drop(columns: [\"_time\"])"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "min": 0,
+          "max": 1,
+          "unit": "percentunit",
+          "decimals": 1,
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#0a0767",
+                "value": null
+              },
+              {
+                "color": "#3238a9",
+                "value": 0.25
+              },
+              {
+                "color": "#28d3e2",
+                "value": 0.5
+              },
+              {
+                "color": "#ca64e4",
+                "value": 0.75
+              },
+              {
+                "color": "#fa3858",
+                "value": 0.9
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "orientation": "vertical",
+        "displayMode": "lcd",
+        "showUnfilled": true,
+        "valueMode": "text",
+        "sizing": "auto"
+      }
+    },
+    {
+      "id": 34,
+      "title": "Ant IQ+ (avg 50)",
+      "type": "bargauge",
+      "gridPos": {
+        "x": 6,
+        "y": 82,
+        "w": 6,
+        "h": 6
+      },
+      "datasource": {
+        "type": "influxdb",
+        "uid": "efd1xv51o3vuob"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "query": "from(bucket: \"diamond\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"being_metric\")\n  |> filter(fn: (r) => r.run_id == \"${run_id}\")\n  |> filter(fn: (r) => r._field == \"masked_acc\")\n  |> map(fn: (r) => ({_time: r._time, _value: r._value, _field: \"A#\" + r.being_id}))\n  |> group(columns: [\"_field\"])\n  |> tail(n: 50)\n  |> mean()\n  |> group()\n  |> map(fn: (r) => ({_time: now(), _value: r._value, _field: r._field}))\n  |> pivot(rowKey: [\"_time\"], columnKey: [\"_field\"], valueColumn: \"_value\")\n  |> drop(columns: [\"_time\"])"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "min": 0,
+          "max": 1,
+          "unit": "percentunit",
+          "decimals": 1,
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#0a0767",
+                "value": null
+              },
+              {
+                "color": "#3238a9",
+                "value": 0.25
+              },
+              {
+                "color": "#28d3e2",
+                "value": 0.5
+              },
+              {
+                "color": "#ca64e4",
+                "value": 0.75
+              },
+              {
+                "color": "#fa3858",
+                "value": 0.9
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "orientation": "vertical",
+        "displayMode": "lcd",
+        "showUnfilled": true,
+        "valueMode": "text",
+        "sizing": "auto"
+      }
+    },
+    {
+      "id": 33,
+      "title": "Bit IQ (avg 5)",
+      "type": "bargauge",
+      "gridPos": {
+        "x": 12,
+        "y": 82,
+        "w": 6,
+        "h": 6
+      },
+      "datasource": {
+        "type": "influxdb",
+        "uid": "efd1xv51o3vuob"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "query": "from(bucket: \"diamond\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"bit_accuracy\")\n  |> filter(fn: (r) => r.run_id == \"${run_id}\")\n  |> filter(fn: (r) => r._field == \"accuracy\")\n  |> map(fn: (r) => ({_time: r._time, _value: r._value, _field: \"Bit \" + r.bit_index}))\n  |> group(columns: [\"_field\"])\n  |> tail(n: 5)\n  |> mean()\n  |> group()\n  |> map(fn: (r) => ({_time: now(), _value: r._value, _field: r._field}))\n  |> pivot(rowKey: [\"_time\"], columnKey: [\"_field\"], valueColumn: \"_value\")\n  |> drop(columns: [\"_time\"])"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "min": 0,
+          "max": 1,
+          "unit": "percentunit",
+          "decimals": 1,
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#0a0767",
+                "value": null
+              },
+              {
+                "color": "#3238a9",
+                "value": 0.25
+              },
+              {
+                "color": "#28d3e2",
+                "value": 0.5
+              },
+              {
+                "color": "#ca64e4",
+                "value": 0.75
+              },
+              {
+                "color": "#fa3858",
+                "value": 0.9
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "orientation": "vertical",
+        "displayMode": "lcd",
+        "showUnfilled": true,
+        "valueMode": "text",
+        "sizing": "auto"
+      }
+    },
+    {
+      "id": 35,
+      "title": "Bit IQ+ (avg 50)",
+      "type": "bargauge",
+      "gridPos": {
+        "x": 18,
+        "y": 82,
+        "w": 6,
+        "h": 6
+      },
+      "datasource": {
+        "type": "influxdb",
+        "uid": "efd1xv51o3vuob"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "query": "from(bucket: \"diamond\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"bit_accuracy\")\n  |> filter(fn: (r) => r.run_id == \"${run_id}\")\n  |> filter(fn: (r) => r._field == \"accuracy\")\n  |> map(fn: (r) => ({_time: r._time, _value: r._value, _field: \"Bit \" + r.bit_index}))\n  |> group(columns: [\"_field\"])\n  |> tail(n: 50)\n  |> mean()\n  |> group()\n  |> map(fn: (r) => ({_time: now(), _value: r._value, _field: r._field}))\n  |> pivot(rowKey: [\"_time\"], columnKey: [\"_field\"], valueColumn: \"_value\")\n  |> drop(columns: [\"_time\"])"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "min": 0,
+          "max": 1,
+          "unit": "percentunit",
+          "decimals": 1,
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#0a0767",
+                "value": null
+              },
+              {
+                "color": "#3238a9",
+                "value": 0.25
+              },
+              {
+                "color": "#28d3e2",
+                "value": 0.5
+              },
+              {
+                "color": "#ca64e4",
+                "value": 0.75
+              },
+              {
+                "color": "#fa3858",
+                "value": 0.9
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "orientation": "vertical",
+        "displayMode": "lcd",
+        "showUnfilled": true,
+        "valueMode": "text",
+        "sizing": "auto"
+      }
+    },
+    {
+      "id": 45,
+      "title": "Bit Accuracy (over time)",
+      "type": "timeseries",
+      "gridPos": {
+        "x": 0,
+        "y": 88,
+        "w": 24,
+        "h": 10
+      },
+      "datasource": {
+        "type": "influxdb",
+        "uid": "efd1xv51o3vuob"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "query": "from(bucket: \"diamond\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"training_step\")\n  |> filter(fn: (r) => r.run_id == \"${run_id}\")\n  |> filter(fn: (r) => r.is_eval == \"false\")\n  |> filter(fn: (r) => r._field == \"bit_acc\")\n  |> group(columns: [\"_field\"])\n  |> keep(columns: [\"_time\", \"_value\", \"_field\"])\n  |> sort(columns: [\"_time\"])"
+        },
+        {
+          "refId": "B",
+          "query": "from(bucket: \"diamond\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"training_step\")\n  |> filter(fn: (r) => r.run_id == \"${run_id}\")\n  |> filter(fn: (r) => r.is_eval == \"false\")\n  |> filter(fn: (r) => r._field == \"bit_oracle\")\n  |> group(columns: [\"_field\"])\n  |> keep(columns: [\"_time\", \"_value\", \"_field\"])\n  |> sort(columns: [\"_time\"])"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "min": 0,
+          "max": 1,
+          "unit": "percentunit",
+          "decimals": 1,
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "fillOpacity": 10,
+            "gradientMode": "scheme",
+            "pointSize": 2,
+            "showPoints": "never",
+            "spanNulls": true,
+            "axisSoftMin": 0,
+            "axisSoftMax": 1,
+            "thresholdsStyle": {
+              "mode": "dashed"
+            },
+            "axisGridShow": true
+          },
+          "thresholds": {
+            "mode": "percentage",
+            "steps": [
+              {
+                "color": "#0a0767",
+                "value": null
+              },
+              {
+                "color": "#3238a9",
+                "value": 25
+              },
+              {
+                "color": "#28d3e2",
+                "value": 50
+              },
+              {
+                "color": "#ca64e4",
+                "value": 75
+              },
+              {
+                "color": "#fa3858",
+                "value": 90
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "bit_acc"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Bit Accuracy"
+              },
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#28d3e2"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "bit_oracle"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Bit Oracle"
+              },
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#ca64e4"
+                }
+              },
+              {
+                "id": "custom.lineStyle",
+                "value": {
+                  "fill": "dash",
+                  "dash": [
+                    10,
+                    10
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        },
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      }
+    },
+    {
+      "id": 154,
+      "type": "row",
+      "title": "Controls",
+      "collapsed": false,
+      "gridPos": {
+        "x": 0,
+        "y": 98,
+        "w": 24,
+        "h": 1
+      }
+    },
+    {
+      "id": 71,
+      "title": "Effort Level & Think Ticks",
+      "type": "timeseries",
+      "gridPos": {
+        "x": 0,
+        "y": 99,
+        "w": 24,
+        "h": 6
+      },
+      "datasource": {
+        "type": "influxdb",
+        "uid": "efd1xv51o3vuob"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "query": "from(bucket: \"diamond\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"training_step\")\n  |> filter(fn: (r) => r.run_id == \"${run_id}\")\n  |> filter(fn: (r) => r.is_eval == \"false\")\n  |> filter(fn: (r) => r._field == \"effort_level\")\n  |> group(columns: [\"_field\"])\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> keep(columns: [\"_time\", \"_value\", \"_field\"])"
+        },
+        {
+          "refId": "B",
+          "query": "from(bucket: \"diamond\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"training_step\")\n  |> filter(fn: (r) => r.run_id == \"${run_id}\")\n  |> filter(fn: (r) => r.is_eval == \"false\")\n  |> filter(fn: (r) => r._field == \"think_ticks\")\n  |> group(columns: [\"_field\"])\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> keep(columns: [\"_time\", \"_value\", \"_field\"])"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 20,
+            "axisPlacement": "auto",
+            "spanNulls": false,
+            "drawStyle": "line",
+            "lineInterpolation": "stepAfter",
+            "showPoints": "never",
+            "stacking": {
+              "mode": "none"
+            }
+          },
+          "min": 0
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "effort_level"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Effort (0=Fast 1=Med 2=Slow)"
+              },
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#FF9830"
+                }
+              },
+              {
+                "id": "custom.axisLabel",
+                "value": "Effort Level"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "think_ticks"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Think Ticks"
+              },
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#73BF69"
+                }
+              },
+              {
+                "id": "custom.axisSoftMax",
+                "value": 12
+              },
+              {
+                "id": "custom.axisPlacement",
+                "value": "right"
+              },
+              {
+                "id": "custom.axisLabel",
+                "value": "Think Ticks"
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        },
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "calcs": []
+        }
+      }
+    },
+    {
+      "id": 155,
+      "title": "Data Mix",
+      "type": "text",
+      "transparent": true,
+      "gridPos": {
+        "x": 0,
+        "y": 105,
+        "w": 10,
+        "h": 10
+      },
+      "options": {
+        "mode": "html",
+        "content": "<iframe src=\"http://localhost:7777/data_mix\" style=\"width:100%;height:520px;border:none;border-radius:4px;background:#181b1f\" frameborder=\"0\"></iframe>"
+      }
+    },
+    {
+      "id": 60,
+      "title": "Live Controls (LR & Think Ticks)",
+      "type": "timeseries",
+      "gridPos": {
+        "x": 10,
+        "y": 105,
+        "w": 7,
+        "h": 10
+      },
+      "datasource": {
+        "type": "influxdb",
+        "uid": "efd1xv51o3vuob"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "query": "from(bucket: \"diamond\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"control_value\")\n  |> filter(fn: (r) => r.key == \"lr\")\n  |> filter(fn: (r) => r._field == \"value\")"
+        },
+        {
+          "refId": "B",
+          "query": "from(bucket: \"diamond\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"control_value\")\n  |> filter(fn: (r) => r.key == \"think_ticks\")\n  |> filter(fn: (r) => r._field == \"value\")"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "lineWidth": 2,
+            "staircase": true,
+            "fillOpacity": 10
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byFrameRefID",
+              "options": "A"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Learning Rate"
+              },
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "#FF9830",
+                  "mode": "fixed"
+                }
+              },
+              {
+                "id": "custom.axisPlacement",
+                "value": "left"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byFrameRefID",
+              "options": "B"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Think Ticks"
+              },
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "#00D9FF",
+                  "mode": "fixed"
+                }
+              },
+              {
+                "id": "custom.axisPlacement",
+                "value": "right"
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi"
+        },
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      }
+    },
+    {
+      "id": 61,
+      "title": "Control Change Log",
+      "type": "table",
+      "gridPos": {
+        "x": 17,
+        "y": 105,
+        "w": 7,
+        "h": 10
+      },
+      "datasource": {
+        "type": "influxdb",
+        "uid": "efd1xv51o3vuob"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "query": "from(bucket: \"diamond\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"control_change\")\n  |> filter(fn: (r) => r._field == \"description\")\n  |> keep(columns: [\"_time\", \"_value\", \"key\"])\n  |> sort(columns: [\"_time\"], desc: true)\n  |> rename(columns: {_value: \"change\", key: \"control\"})"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "left"
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "_time"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 200
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "control"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 120
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm",
+        "footer": {
+          "show": false
+        }
+      }
+    },
+    {
+      "id": 70,
+      "title": "Effort Level",
+      "type": "stat",
+      "description": "Current effort level: 0=FAST(R), 1=MEDIUM(G), 2=SLOW(B)",
+      "gridPos": {
+        "x": 0,
+        "y": 115,
+        "w": 6,
+        "h": 3
+      },
+      "datasource": {
+        "type": "influxdb",
+        "uid": "efd1xv51o3vuob"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "query": "from(bucket: \"diamond\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"lcx_rgb\")\n  |> filter(fn: (r) => r._field == \"effort_level\")\n  |> last()"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "0": {
+                  "text": "FAST",
+                  "color": "#FF4444",
+                  "index": 0
+                },
+                "1": {
+                  "text": "MEDIUM",
+                  "color": "#44FF44",
+                  "index": 1
+                },
+                "2": {
+                  "text": "SLOW",
+                  "color": "#4488FF",
+                  "index": 2
+                }
+              }
+            }
+          ],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#FF4444",
+                "value": null
+              },
+              {
+                "color": "#44FF44",
+                "value": 1
+              },
+              {
+                "color": "#4488FF",
+                "value": 2
+              }
+            ]
+          },
+          "color": {
+            "mode": "thresholds"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "colorMode": "background",
+        "graphMode": "none",
+        "textMode": "auto",
+        "orientation": "auto"
+      }
+    },
+    {
+      "id": 160,
+      "title": "Data Tables",
+      "type": "row",
+      "collapsed": true,
+      "gridPos": {
+        "x": 0,
+        "y": 118,
+        "w": 24,
+        "h": 1
+      },
+      "panels": [
+        {
+          "id": 40,
+          "title": "Input (avg 50)  |  Twilight=Neg  Periwinkle=Zero  Fuchsia=Pos",
+          "type": "table",
+          "description": "Latest input frame averaged over last 50 steps. 8x8 spatial grid.",
+          "gridPos": {
+            "x": 0,
+            "y": 119,
+            "w": 8,
+            "h": 14
+          },
+          "datasource": {
+            "type": "influxdb",
+            "uid": "efd1xv51o3vuob"
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "query": "from(bucket: \"diamond\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"frame_snapshot\")\n  |> filter(fn: (r) => r.run_id == \"${run_id}\")\n  |> filter(fn: (r) => r.frame_type == \"input\")\n  |> filter(fn: (r) => r._field == \"value\")\n  |> tail(n: 50)\n  |> mean()\n  |> map(fn: (r) => ({_value: r._value, _field: \"C\" + r.col, row: \"R\" + r.row}))\n  |> group()\n  |> pivot(rowKey: [\"row\"], columnKey: [\"_field\"], valueColumn: \"_value\")"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "decimals": 2,
+              "custom": {
+                "cellOptions": {
+                  "type": "color-background"
+                },
+                "align": "center",
+                "width": 55
+              },
+              "color": {
+                "mode": "thresholds"
+              },
+              "min": -1,
+              "max": 1,
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "#030225",
+                    "value": null
+                  },
+                  {
+                    "color": "#060440",
+                    "value": -0.9
+                  },
+                  {
+                    "color": "#0a0767",
+                    "value": -0.76
+                  },
+                  {
+                    "color": "#1e2088",
+                    "value": -0.56
+                  },
+                  {
+                    "color": "#3238a9",
+                    "value": -0.36
+                  },
+                  {
+                    "color": "#28d3e2",
+                    "value": -0.16
+                  },
+                  {
+                    "color": "#9e88f0",
+                    "value": -0.04
+                  },
+                  {
+                    "color": "#ca64e4",
+                    "value": 0.04
+                  },
+                  {
+                    "color": "#dc31bf",
+                    "value": 0.16
+                  },
+                  {
+                    "color": "#e432a0",
+                    "value": 0.36
+                  },
+                  {
+                    "color": "#eb348c",
+                    "value": 0.56
+                  },
+                  {
+                    "color": "#f33470",
+                    "value": 0.76
+                  },
+                  {
+                    "color": "#fa3858",
+                    "value": 0.9
+                  }
+                ]
+              }
+            },
+            "overrides": [
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "row"
+                },
+                "properties": [
+                  {
+                    "id": "custom.width",
+                    "value": 35
+                  }
+                ]
+              }
+            ]
+          },
+          "options": {
+            "showHeader": true,
+            "cellHeight": "sm",
+            "footer": {
+              "show": false
+            }
+          }
+        },
+        {
+          "id": 51,
+          "title": "Bit Masks  |  Twilight=Off  Cyan=Assigned",
+          "type": "table",
+          "description": "Receptive field mask: which ant owns which bit. Same mask for input reading and output writing.",
+          "gridPos": {
+            "x": 8,
+            "y": 119,
+            "w": 8,
+            "h": 14
+          },
+          "datasource": {
+            "type": "influxdb",
+            "uid": "efd1xv51o3vuob"
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "query": "import \"strings\"\n\nfrom(bucket: \"diamond\")\n  |> range(start: -365d)\n  |> filter(fn: (r) => r._measurement == \"mask_assignment\")\n  |> filter(fn: (r) => r.run_id == \"${run_id}\")\n  |> filter(fn: (r) => r._field == \"assigned\")\n  |> last()\n  |> map(fn: (r) => ({_value: r._value, _field: \"B\" + r.bit_index, being: if strings.strlen(v: r.being_id) < 2 then \"A#0\" + r.being_id else \"A#\" + r.being_id}))\n  |> group()\n  |> pivot(rowKey: [\"being\"], columnKey: [\"_field\"], valueColumn: \"_value\")\n  |> sort(columns: [\"being\"])\n  |> drop(columns: [\"_time\"])"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "custom": {
+                "cellOptions": {
+                  "type": "color-background"
+                },
+                "align": "center",
+                "width": 40
+              },
+              "color": {
+                "mode": "thresholds"
+              },
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "#0a0767",
+                    "value": null
+                  },
+                  {
+                    "color": "#28d3e2",
+                    "value": 1
+                  }
+                ]
+              }
+            },
+            "overrides": [
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "being"
+                },
+                "properties": [
+                  {
+                    "id": "custom.width",
+                    "value": 35
+                  }
+                ]
+              }
+            ]
+          },
+          "options": {
+            "showHeader": true,
+            "cellHeight": "sm",
+            "footer": {
+              "show": false
+            }
+          }
+        },
+        {
+          "id": 52,
+          "title": "Output (avg 50)  |  Twilight=Neg  Periwinkle=Zero  Fuchsia=Pos",
+          "type": "table",
+          "description": "Latest output frame averaged over last 50 steps. 8x8 spatial grid.",
+          "gridPos": {
+            "x": 16,
+            "y": 119,
+            "w": 8,
+            "h": 14
+          },
+          "datasource": {
+            "type": "influxdb",
+            "uid": "efd1xv51o3vuob"
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "query": "from(bucket: \"diamond\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"frame_snapshot\")\n  |> filter(fn: (r) => r.run_id == \"${run_id}\")\n  |> filter(fn: (r) => r.frame_type == \"output\")\n  |> filter(fn: (r) => r._field == \"value\")\n  |> tail(n: 50)\n  |> mean()\n  |> map(fn: (r) => ({_value: r._value, _field: \"C\" + r.col, row: \"R\" + r.row}))\n  |> group()\n  |> pivot(rowKey: [\"row\"], columnKey: [\"_field\"], valueColumn: \"_value\")"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "decimals": 2,
+              "custom": {
+                "cellOptions": {
+                  "type": "color-background"
+                },
+                "align": "center",
+                "width": 55
+              },
+              "color": {
+                "mode": "thresholds"
+              },
+              "min": -1,
+              "max": 1,
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "#030225",
+                    "value": null
+                  },
+                  {
+                    "color": "#060440",
+                    "value": -0.9
+                  },
+                  {
+                    "color": "#0a0767",
+                    "value": -0.76
+                  },
+                  {
+                    "color": "#1e2088",
+                    "value": -0.56
+                  },
+                  {
+                    "color": "#3238a9",
+                    "value": -0.36
+                  },
+                  {
+                    "color": "#28d3e2",
+                    "value": -0.16
+                  },
+                  {
+                    "color": "#9e88f0",
+                    "value": -0.04
+                  },
+                  {
+                    "color": "#ca64e4",
+                    "value": 0.04
+                  },
+                  {
+                    "color": "#dc31bf",
+                    "value": 0.16
+                  },
+                  {
+                    "color": "#e432a0",
+                    "value": 0.36
+                  },
+                  {
+                    "color": "#eb348c",
+                    "value": 0.56
+                  },
+                  {
+                    "color": "#f33470",
+                    "value": 0.76
+                  },
+                  {
+                    "color": "#fa3858",
+                    "value": 0.9
+                  }
+                ]
+              }
+            },
+            "overrides": [
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "row"
+                },
+                "properties": [
+                  {
+                    "id": "custom.width",
+                    "value": 35
+                  }
+                ]
+              }
+            ]
+          },
+          "options": {
+            "showHeader": true,
+            "cellHeight": "sm",
+            "footer": {
+              "show": false
+            }
+          }
+        },
+        {
+          "id": 48,
+          "title": "Memory State (avg 50)  |  Twilight=Neg  Periwinkle=Zero  Fuchsia=Pos",
+          "type": "table",
+          "description": "Memory state snapshot averaged over last 50 steps. LCX=8x8 matrix, GEM=8 cells expanded to 8x8.",
+          "gridPos": {
+            "x": 0,
+            "y": 133,
+            "w": 8,
+            "h": 10
+          },
+          "datasource": {
+            "type": "influxdb",
+            "uid": "efd1xv51o3vuob"
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "query": "from(bucket: \"diamond\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"frame_snapshot\")\n  |> filter(fn: (r) => r.run_id == \"${run_id}\")\n  |> filter(fn: (r) => r.frame_type == \"lcx_state\")\n  |> filter(fn: (r) => r._field == \"value\")\n  |> tail(n: 50)\n  |> mean()\n  |> map(fn: (r) => ({_value: r._value, _field: \"C\" + r.col, row: \"R\" + r.row}))\n  |> group()\n  |> pivot(rowKey: [\"row\"], columnKey: [\"_field\"], valueColumn: \"_value\")"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "decimals": 2,
+              "custom": {
+                "cellOptions": {
+                  "type": "color-background"
+                },
+                "align": "center",
+                "width": 55
+              },
+              "color": {
+                "mode": "thresholds"
+              },
+              "min": -1,
+              "max": 1,
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "#030225",
+                    "value": null
+                  },
+                  {
+                    "color": "#060440",
+                    "value": -0.9
+                  },
+                  {
+                    "color": "#0a0767",
+                    "value": -0.76
+                  },
+                  {
+                    "color": "#1e2088",
+                    "value": -0.56
+                  },
+                  {
+                    "color": "#3238a9",
+                    "value": -0.36
+                  },
+                  {
+                    "color": "#28d3e2",
+                    "value": -0.16
+                  },
+                  {
+                    "color": "#9e88f0",
+                    "value": -0.04
+                  },
+                  {
+                    "color": "#ca64e4",
+                    "value": 0.04
+                  },
+                  {
+                    "color": "#dc31bf",
+                    "value": 0.16
+                  },
+                  {
+                    "color": "#e432a0",
+                    "value": 0.36
+                  },
+                  {
+                    "color": "#eb348c",
+                    "value": 0.56
+                  },
+                  {
+                    "color": "#f33470",
+                    "value": 0.76
+                  },
+                  {
+                    "color": "#fa3858",
+                    "value": 0.9
+                  }
+                ]
+              }
+            },
+            "overrides": [
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "row"
+                },
+                "properties": [
+                  {
+                    "id": "custom.width",
+                    "value": 35
+                  }
+                ]
+              }
+            ]
+          },
+          "options": {
+            "showHeader": true,
+            "cellHeight": "sm",
+            "footer": {
+              "show": false
+            },
+            "frameIndex": -1
+          }
+        },
+        {
+          "id": 49,
+          "title": "LCX Drift (avg 50)  |  Twilight=Neg  Periwinkle=Zero  Fuchsia=Pos",
+          "type": "table",
+          "description": "Memory drift from initial state averaged over last 50 steps. Shows how far each cell moved since start.",
+          "gridPos": {
+            "x": 8,
+            "y": 133,
+            "w": 8,
+            "h": 10
+          },
+          "datasource": {
+            "type": "influxdb",
+            "uid": "efd1xv51o3vuob"
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "query": "from(bucket: \"diamond\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"frame_snapshot\")\n  |> filter(fn: (r) => r.run_id == \"${run_id}\")\n  |> filter(fn: (r) => r.frame_type == \"lcx_drift\")\n  |> filter(fn: (r) => r._field == \"value\")\n  |> tail(n: 50)\n  |> mean()\n  |> map(fn: (r) => ({_value: r._value, _field: \"C\" + r.col, row: \"R\" + r.row}))\n  |> group()\n  |> pivot(rowKey: [\"row\"], columnKey: [\"_field\"], valueColumn: \"_value\")"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "decimals": 2,
+              "custom": {
+                "cellOptions": {
+                  "type": "color-background"
+                },
+                "align": "center",
+                "width": 55
+              },
+              "color": {
+                "mode": "thresholds"
+              },
+              "min": -1,
+              "max": 1,
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "#030225",
+                    "value": null
+                  },
+                  {
+                    "color": "#060440",
+                    "value": -0.9
+                  },
+                  {
+                    "color": "#0a0767",
+                    "value": -0.76
+                  },
+                  {
+                    "color": "#1e2088",
+                    "value": -0.56
+                  },
+                  {
+                    "color": "#3238a9",
+                    "value": -0.36
+                  },
+                  {
+                    "color": "#28d3e2",
+                    "value": -0.16
+                  },
+                  {
+                    "color": "#9e88f0",
+                    "value": -0.04
+                  },
+                  {
+                    "color": "#ca64e4",
+                    "value": 0.04
+                  },
+                  {
+                    "color": "#dc31bf",
+                    "value": 0.16
+                  },
+                  {
+                    "color": "#e432a0",
+                    "value": 0.36
+                  },
+                  {
+                    "color": "#eb348c",
+                    "value": 0.56
+                  },
+                  {
+                    "color": "#f33470",
+                    "value": 0.76
+                  },
+                  {
+                    "color": "#fa3858",
+                    "value": 0.9
+                  }
+                ]
+              }
+            },
+            "overrides": [
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "row"
+                },
+                "properties": [
+                  {
+                    "id": "custom.width",
+                    "value": 35
+                  }
+                ]
+              }
+            ]
+          },
+          "options": {
+            "showHeader": true,
+            "cellHeight": "sm",
+            "footer": {
+              "show": false
+            }
+          }
+        },
+        {
+          "id": 50,
+          "title": "LCX Delta (50)  |  Twilight=Down  Periwinkle=Still  Fuchsia=Up",
+          "type": "table",
+          "description": "Net change per memory cell over last 50 steps. Red=moved positive, blue=moved negative, grey=stable.",
+          "gridPos": {
+            "x": 16,
+            "y": 133,
+            "w": 8,
+            "h": 10
+          },
+          "datasource": {
+            "type": "influxdb",
+            "uid": "efd1xv51o3vuob"
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "query": "from(bucket: \"diamond\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"frame_snapshot\")\n  |> filter(fn: (r) => r.run_id == \"${run_id}\")\n  |> filter(fn: (r) => r.frame_type == \"lcx_state\")\n  |> filter(fn: (r) => r._field == \"value\")\n  |> tail(n: 50)\n  |> difference()\n  |> sum()\n  |> map(fn: (r) => ({_value: r._value, _field: \"C\" + r.col, row: \"R\" + r.row}))\n  |> group()\n  |> pivot(rowKey: [\"row\"], columnKey: [\"_field\"], valueColumn: \"_value\")"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "decimals": 3,
+              "custom": {
+                "cellOptions": {
+                  "type": "color-background"
+                },
+                "align": "center",
+                "width": 55
+              },
+              "color": {
+                "mode": "thresholds"
+              },
+              "min": -0.5,
+              "max": 0.5,
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "#030225",
+                    "value": null
+                  },
+                  {
+                    "color": "#060440",
+                    "value": -0.45
+                  },
+                  {
+                    "color": "#0a0767",
+                    "value": -0.38
+                  },
+                  {
+                    "color": "#1e2088",
+                    "value": -0.28
+                  },
+                  {
+                    "color": "#3238a9",
+                    "value": -0.18
+                  },
+                  {
+                    "color": "#28d3e2",
+                    "value": -0.08
+                  },
+                  {
+                    "color": "#9e88f0",
+                    "value": -0.02
+                  },
+                  {
+                    "color": "#ca64e4",
+                    "value": 0.02
+                  },
+                  {
+                    "color": "#dc31bf",
+                    "value": 0.08
+                  },
+                  {
+                    "color": "#e432a0",
+                    "value": 0.18
+                  },
+                  {
+                    "color": "#eb348c",
+                    "value": 0.28
+                  },
+                  {
+                    "color": "#f33470",
+                    "value": 0.38
+                  },
+                  {
+                    "color": "#fa3858",
+                    "value": 0.45
+                  }
+                ]
+              }
+            },
+            "overrides": [
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "row"
+                },
+                "properties": [
+                  {
+                    "id": "custom.width",
+                    "value": 35
+                  }
+                ]
+              }
+            ]
+          },
+          "options": {
+            "showHeader": true,
+            "cellHeight": "sm",
+            "footer": {
+              "show": false
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": 161,
+      "title": "Channel Analysis / Debug",
+      "type": "row",
+      "collapsed": true,
+      "gridPos": {
+        "x": 0,
+        "y": 119,
+        "w": 24,
+        "h": 1
+      },
+      "panels": [
+        {
+          "id": 157,
+          "title": "LCX RGB Channel Norms",
+          "type": "timeseries",
+          "description": "Per-channel LCX norms over time. R=fast effort, G=medium effort, B=slow effort.",
+          "gridPos": {
+            "x": 0,
+            "y": 120,
+            "w": 24,
+            "h": 8
+          },
+          "datasource": {
+            "type": "influxdb",
+            "uid": "efd1xv51o3vuob"
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "query": "from(bucket: \"diamond\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"lcx_rgb\")\n  |> filter(fn: (r) => r.run_id == \"${run_id}\")\n  |> filter(fn: (r) => r._field == \"r_norm\" or r._field == \"g_norm\" or r._field == \"b_norm\")\n  |> keep(columns: [\"_time\", \"_value\", \"_field\"])\n  |> group(columns: [\"_field\"])"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "fixed"
+              },
+              "custom": {
+                "lineWidth": 2,
+                "fillOpacity": 10,
+                "pointSize": 3,
+                "showPoints": "never"
+              }
+            },
+            "overrides": [
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "r_norm"
+                },
+                "properties": [
+                  {
+                    "id": "color",
+                    "value": {
+                      "mode": "fixed",
+                      "fixedColor": "#FF4444"
+                    }
+                  },
+                  {
+                    "id": "displayName",
+                    "value": "R (fast)"
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "g_norm"
+                },
+                "properties": [
+                  {
+                    "id": "color",
+                    "value": {
+                      "mode": "fixed",
+                      "fixedColor": "#44FF44"
+                    }
+                  },
+                  {
+                    "id": "displayName",
+                    "value": "G (medium)"
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "b_norm"
+                },
+                "properties": [
+                  {
+                    "id": "color",
+                    "value": {
+                      "mode": "fixed",
+                      "fixedColor": "#4488FF"
+                    }
+                  },
+                  {
+                    "id": "displayName",
+                    "value": "B (slow)"
+                  }
+                ]
+              }
+            ]
+          },
+          "options": {
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom"
+            },
+            "tooltip": {
+              "mode": "multi"
+            }
+          }
+        },
+        {
+          "id": 47,
+          "title": "Memory Scratchpad  |  Deep Blue=Negative  Periwinkle=Neutral  Fuchsia=Positive",
+          "type": "state-timeline",
+          "description": "Memory cell values over time (8x8 grid). Coolors palette: Deep Twilight=strongly negative, Soft Periwinkle=near zero, Hot Fuchsia=strongly positive.",
+          "gridPos": {
+            "x": 0,
+            "y": 128,
+            "w": 24,
+            "h": 12
+          },
+          "datasource": {
+            "type": "influxdb",
+            "uid": "efd1xv51o3vuob"
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "maxDataPoints": 40000,
+              "query": "from(bucket: \"diamond\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"lcx_cell\")\n  |> filter(fn: (r) => r.run_id == \"${run_id}\")\n  |> filter(fn: (r) => r._field == \"value\")\n  |> map(fn: (r) => ({r with _field: \"R\" + r.row + \"C\" + r.col}))\n  |> keep(columns: [\"_time\", \"_value\", \"_field\"])\n  |> group(columns: [\"_field\"])\n  |> sort(columns: [\"_time\"])\n  |> movingAverage(n: 5)\n  |> map(fn: (r) => ({r with _value: if r._value < -0.90 then \"Void\" else if r._value < -0.76 then \"Abyss\" else if r._value < -0.56 then \"Deep Twilight\" else if r._value < -0.36 then \"Twilight\" else if r._value < -0.16 then \"Persian Blue\" else if r._value < -0.04 then \"Strong Cyan\" else if r._value < 0.04 then \"Soft Periwinkle\" else if r._value < 0.16 then \"Orchid Mist\" else if r._value < 0.36 then \"Vivid Orchid\" else if r._value < 0.56 then \"Deep Rose\" else if r._value < 0.76 then \"Rose\" else if r._value < 0.90 then \"Bright Rose\" else \"Hot Fuchsia\"}))"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "fixed"
+              },
+              "custom": {
+                "fillOpacity": 80,
+                "lineWidth": 0
+              },
+              "mappings": [
+                {
+                  "type": "value",
+                  "options": {
+                    "Void": {
+                      "color": "#030225",
+                      "index": 0
+                    },
+                    "Abyss": {
+                      "color": "#060440",
+                      "index": 1
+                    },
+                    "Deep Twilight": {
+                      "color": "#0a0767",
+                      "index": 2
+                    },
+                    "Twilight": {
+                      "color": "#1e2088",
+                      "index": 3
+                    },
+                    "Persian Blue": {
+                      "color": "#3238a9",
+                      "index": 4
+                    },
+                    "Strong Cyan": {
+                      "color": "#28d3e2",
+                      "index": 5
+                    },
+                    "Soft Periwinkle": {
+                      "color": "#9e88f0",
+                      "index": 6
+                    },
+                    "Orchid Mist": {
+                      "color": "#ca64e4",
+                      "index": 7
+                    },
+                    "Vivid Orchid": {
+                      "color": "#dc31bf",
+                      "index": 8
+                    },
+                    "Deep Rose": {
+                      "color": "#e432a0",
+                      "index": 9
+                    },
+                    "Rose": {
+                      "color": "#eb348c",
+                      "index": 10
+                    },
+                    "Bright Rose": {
+                      "color": "#f33470",
+                      "index": 11
+                    },
+                    "Hot Fuchsia": {
+                      "color": "#fa3858",
+                      "index": 12
+                    }
+                  }
+                }
+              ]
+            },
+            "overrides": []
+          },
+          "options": {
+            "showValue": "never",
+            "mergeValues": true,
+            "alignValue": "left",
+            "rowHeight": 0.9,
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom"
+            },
+            "tooltip": {
+              "mode": "single"
+            }
+          }
+        },
+        {
+          "id": 41,
+          "title": "Ant-Bit Accuracy  |  Deep Blue=Anti-learned  Cyan=Chance(50%)  Orchid=Learning  Fuchsia=Mastered",
+          "type": "state-timeline",
+          "description": "Per ant-bit prediction accuracy (moving avg 50). Each row = one ant-bit pair. Blue: wrong. Green: 50/50 frontier. Red: correct.",
+          "gridPos": {
+            "x": 0,
+            "y": 140,
+            "w": 24,
+            "h": 12
+          },
+          "datasource": {
+            "type": "influxdb",
+            "uid": "efd1xv51o3vuob"
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "maxDataPoints": 40000,
+              "query": "from(bucket: \"diamond\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"ant_bit_accuracy\")\n  |> filter(fn: (r) => r.run_id == \"${run_id}\")\n  |> filter(fn: (r) => r._field == \"accuracy\")\n  |> map(fn: (r) => ({r with _field: \"A\" + r.being_id + \" B\" + r.bit_index}))\n  |> keep(columns: [\"_time\", \"_value\", \"_field\"])\n  |> group(columns: [\"_field\"])\n  |> sort(columns: [\"_time\"])\n  |> movingAverage(n: 5)\n  |> map(fn: (r) => ({r with _value: if r._value < 0.05 then \"Void\" else if r._value < 0.12 then \"Abyss\" else if r._value < 0.22 then \"Deep Twilight\" else if r._value < 0.32 then \"Twilight\" else if r._value < 0.42 then \"Persian Blue\" else if r._value < 0.52 then \"Strong Cyan\" else if r._value < 0.62 then \"Soft Periwinkle\" else if r._value < 0.72 then \"Orchid Mist\" else if r._value < 0.82 then \"Vivid Orchid\" else if r._value < 0.89 then \"Deep Rose\" else if r._value < 0.94 then \"Rose\" else if r._value < 0.98 then \"Bright Rose\" else \"Hot Fuchsia\"}))"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "fixed"
+              },
+              "custom": {
+                "fillOpacity": 80,
+                "lineWidth": 0
+              },
+              "mappings": [
+                {
+                  "type": "value",
+                  "options": {
+                    "Void": {
+                      "color": "#030225",
+                      "index": 0
+                    },
+                    "Abyss": {
+                      "color": "#060440",
+                      "index": 1
+                    },
+                    "Deep Twilight": {
+                      "color": "#0a0767",
+                      "index": 2
+                    },
+                    "Twilight": {
+                      "color": "#1e2088",
+                      "index": 3
+                    },
+                    "Persian Blue": {
+                      "color": "#3238a9",
+                      "index": 4
+                    },
+                    "Strong Cyan": {
+                      "color": "#28d3e2",
+                      "index": 5
+                    },
+                    "Soft Periwinkle": {
+                      "color": "#9e88f0",
+                      "index": 6
+                    },
+                    "Orchid Mist": {
+                      "color": "#ca64e4",
+                      "index": 7
+                    },
+                    "Vivid Orchid": {
+                      "color": "#dc31bf",
+                      "index": 8
+                    },
+                    "Deep Rose": {
+                      "color": "#e432a0",
+                      "index": 9
+                    },
+                    "Rose": {
+                      "color": "#eb348c",
+                      "index": 10
+                    },
+                    "Bright Rose": {
+                      "color": "#f33470",
+                      "index": 11
+                    },
+                    "Hot Fuchsia": {
+                      "color": "#fa3858",
+                      "index": 12
+                    }
+                  }
+                }
+              ]
+            },
+            "overrides": []
+          },
+          "options": {
+            "showValue": "never",
+            "mergeValues": true,
+            "alignValue": "left",
+            "rowHeight": 0.9,
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom"
+            },
+            "tooltip": {
+              "mode": "single"
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "refresh": "5s",
+  "schemaVersion": 39,
+  "tags": [
+    "diamond",
+    "training",
+    "vraxion"
+  ],
+  "templating": {
+    "list": [
+      {
+        "current": {},
+        "datasource": {
+          "type": "influxdb",
+          "uid": "efd1xv51o3vuob"
+        },
+        "definition": "import \"influxdata/influxdb/schema\"\nschema.tagValues(bucket: \"diamond\", tag: \"run_id\")",
+        "description": "Training run ID",
+        "includeAll": false,
+        "label": "Run",
+        "multi": false,
+        "name": "run_id",
+        "options": [],
+        "query": "import \"influxdata/influxdb/schema\"\nschema.tagValues(bucket: \"diamond\", tag: \"run_id\")",
+        "refresh": 2,
+        "sort": 2,
+        "type": "query"
+      }
+    ]
+  },
+  "time": {
+    "from": "now-1h",
+    "to": "now"
+  },
+  "timepicker": {},
+  "timezone": "",
+  "title": "Diamond Main",
+  "uid": "diamond-main-v1",
+  "version": 101
+}

@@ -5,18 +5,27 @@ Reads logs/swarm/controls.json every N steps. If the file doesn't exist
 or has parse errors, uses defaults silently.
 
 Edit controls.json while training runs to adjust LR, data mixing, think ticks,
-and per-being states (null/active/frozen).
+batch size, LCX on/off, and per-being states (null/active/frozen).
+
+Effort tier system (Greek alphabet):
+    To change tier, edit controls.json: {"effort": "Gamma"}
+    apply_controls() auto-sets tt, batch, use_lcx from the tier definition.
 
 Format:
     {
         "lr": 0.0001,
-        "think_ticks": 0,
+        "effort": "Beta",
         "being_states": {"0": "null", "6": "active"},
-        "data_weights": {
-            "shakespeare.traindat": 3.0,
-            "xor.traindat": 1.0
-        }
+        "data_weights": {"gold_origin_echo.traindat": 1.0}
     }
+
+Effort tiers:
+    Alpha(Reflex):    tt=0,  batch=10, lcx=OFF  (pure feedforward)
+    Beta(Recall):     tt=1,  batch=10, lcx=ON   (first memory, L0)
+    Gamma(Reason):    tt=2,  batch=5,  lcx=ON   (pattern matching, L0+L1)
+    Delta(Depth):     tt=4,  batch=3,  lcx=ON   (multi-step, L0-L2)
+    Epsilon(Emerge):  tt=8,  batch=2,  lcx=ON   (structure discovery, L0-L3)
+    Zeta(Zenith):     tt=16, batch=1,  lcx=ON   (full depth, L0-L4)
 """
 
 import json
@@ -28,30 +37,103 @@ import torch
 import torch.nn as nn
 
 
+# Greek alphabet effort tiers — canonical definition.
+# To advance: edit controls.json {"effort": "Gamma"} and apply_controls() does the rest.
+DEFAULT_EFFORT_TIERS = {
+    "Alpha":   {"tt": 0,  "lcx": False, "batch": 10, "name": "Reflex"},
+    "Beta":    {"tt": 1,  "lcx": True,  "batch": 10, "name": "Recall"},
+    "Gamma":   {"tt": 2,  "lcx": True,  "batch": 5,  "name": "Reason"},
+    "Delta":   {"tt": 4,  "lcx": True,  "batch": 3,  "name": "Depth"},
+    "Epsilon": {"tt": 8,  "lcx": True,  "batch": 2,  "name": "Emergence"},
+    "Zeta":    {"tt": 16, "lcx": True,  "batch": 1,  "name": "Zenith"},
+}
+
+VALID_EFFORTS = set(DEFAULT_EFFORT_TIERS.keys())
+
+
 DEFAULT_CONTROLS = {
     "lr": None,
     "think_ticks": None,
+    "batch_size": None,
+    "use_lcx": None,
+    "stage": None,
+    "effort": None,
+    "effort_name": None,
     "checkpoint_every": None,
     "eval_every": None,
     "eval_samples": None,
     "temporal_fibonacci": None,
+    "effort_mode": None,
+    "effort_tiers": None,
     "being_states": None,
     "data_weights": {},
+    "agc_enabled": True,
+    "agc_low": 0.5,
+    "agc_high": 1.0,
 }
 
 
 def write_default_controls(path: str, lr: float, data_weights: Dict[str, float],
                            think_ticks: int = 0, checkpoint_every: int = 50,
-                           eval_every: int = 10):
-    """Write initial controls.json at training start. Preserves existing file."""
-    if os.path.exists(path):
-        return  # Preserve user edits
+                           eval_every: int = 10, batch_size: int = 32,
+                           use_lcx: bool = True, stage: str = "INFANT",
+                           effort: str = "Beta"):
+    """Write initial controls.json at training start.
+
+    If controls.json already exists, PRESERVE existing data_weights and eval_every
+    (user may have configured these via the control panel). Other fields are
+    overwritten from run args to ensure effort tier consistency.
+    """
+    # Preserve user-configured data_weights from existing controls.json
+    existing_data_weights = None
+    existing_eval_every = None
+    if Path(path).exists():
+        try:
+            with open(path, 'r') as f:
+                existing = json.load(f)
+            if 'data_weights' in existing and isinstance(existing['data_weights'], dict):
+                existing_data_weights = existing['data_weights']
+            if 'eval_every' in existing:
+                existing_eval_every = existing['eval_every']
+        except Exception:
+            pass
+
+    # Look up effort tier — override tt/lcx/batch from tier definition
+    tier = DEFAULT_EFFORT_TIERS.get(effort)
+    if tier:
+        think_ticks = tier["tt"]
+        use_lcx = tier["lcx"]
+        batch_size = tier["batch"]
+        effort_name = tier["name"]
+        stage = effort.upper()
+    else:
+        effort_name = ""
+
+    # Use existing data_weights if available, otherwise use loader defaults.
+    # Also merge any NEW files from loader that aren't in the existing config.
+    if existing_data_weights is not None:
+        merged_weights = dict(existing_data_weights)
+        for k, v in data_weights.items():
+            if k not in merged_weights:
+                merged_weights[k] = 0  # new files default to OFF
+        data_weights = merged_weights
+
     controls = {
         "lr": lr,
         "think_ticks": think_ticks,
+        "batch_size": batch_size,
+        "use_lcx": use_lcx,
+        "stage": stage,
+        "effort": effort,
+        "effort_name": effort_name,
+        "effort_lock": "off",
         "checkpoint_every": checkpoint_every,
-        "eval_every": eval_every,
+        "eval_every": existing_eval_every if existing_eval_every is not None else eval_every,
         "data_weights": data_weights,
+        "effort_tiers": DEFAULT_EFFORT_TIERS,
+        "agc_enabled": True,
+        "agc_low": 0.5,
+        "agc_high": 1.0,
     }
     Path(path).parent.mkdir(parents=True, exist_ok=True)
     with open(path, 'w') as f:
@@ -78,12 +160,34 @@ def read_controls(path: str) -> Dict[str, Any]:
                 result['lr'] = float(data['lr'])
             if 'think_ticks' in data and isinstance(data['think_ticks'], int):
                 result['think_ticks'] = int(data['think_ticks'])
+            if 'batch_size' in data and isinstance(data['batch_size'], int):
+                result['batch_size'] = int(data['batch_size'])
+            if 'use_lcx' in data and isinstance(data['use_lcx'], bool):
+                result['use_lcx'] = data['use_lcx']
+            if 'stage' in data and isinstance(data['stage'], str):
+                result['stage'] = data['stage']
             if 'checkpoint_every' in data and isinstance(data['checkpoint_every'], int):
                 result['checkpoint_every'] = int(data['checkpoint_every'])
             if 'eval_samples' in data and isinstance(data['eval_samples'], int):
                 result['eval_samples'] = int(data['eval_samples'])
+            if 'eval_every' in data and isinstance(data['eval_every'], int):
+                result['eval_every'] = int(data['eval_every'])
             if 'temporal_fibonacci' in data and isinstance(data['temporal_fibonacci'], bool):
                 result['temporal_fibonacci'] = data['temporal_fibonacci']
+            if 'effort_mode' in data:
+                _em = data['effort_mode']
+                if isinstance(_em, bool) or _em in ('auto', 'off', None):
+                    result['effort_mode'] = _em
+            if 'effort' in data and isinstance(data['effort'], str):
+                if data['effort'] in VALID_EFFORTS:
+                    result['effort'] = data['effort']
+            if 'effort_name' in data and isinstance(data['effort_name'], str):
+                result['effort_name'] = data['effort_name']
+            if 'effort_tiers' in data and isinstance(data['effort_tiers'], dict):
+                result['effort_tiers'] = data['effort_tiers']
+            if 'effort_lock' in data and isinstance(data['effort_lock'], str):
+                if data['effort_lock'] in ('off', 'random', 'fast', 'medium', 'slow'):
+                    result['effort_lock'] = data['effort_lock']
             if 'being_states' in data and isinstance(data['being_states'], dict):
                 result['being_states'] = {
                     k: v for k, v in data['being_states'].items()
@@ -94,6 +198,12 @@ def read_controls(path: str) -> Dict[str, Any]:
                     k: float(v) for k, v in data['data_weights'].items()
                     if isinstance(v, (int, float))
                 }
+            if 'agc_enabled' in data and isinstance(data['agc_enabled'], bool):
+                result['agc_enabled'] = data['agc_enabled']
+            if 'agc_low' in data and isinstance(data['agc_low'], (int, float)):
+                result['agc_low'] = float(data['agc_low'])
+            if 'agc_high' in data and isinstance(data['agc_high'], (int, float)):
+                result['agc_high'] = float(data['agc_high'])
         return result
     except Exception:
         return dict(DEFAULT_CONTROLS)
@@ -106,8 +216,31 @@ def apply_controls(controls: Dict[str, Any], optimizer, loader=None, model=None)
 
     Safe to call every N steps. Only applies non-None values.
     The optimizer may be rebuilt if being states change.
+
+    Effort tier auto-application: when 'effort' field changes (e.g. "Beta" -> "Gamma"),
+    the tier's tt/lcx/batch are applied automatically. Edit one field, get all three.
     """
     changes = []
+
+    # --- Effort tier auto-application (must run BEFORE individual field checks) ---
+    if controls.get('effort') is not None and model is not None:
+        new_effort = controls['effort']
+        old_effort = getattr(model, '_current_effort', None)
+        if old_effort != new_effort and new_effort in VALID_EFFORTS:
+            tiers = controls.get('effort_tiers') or DEFAULT_EFFORT_TIERS
+            tier = tiers.get(new_effort)
+            if tier:
+                old_name = getattr(model, '_current_effort_name', '?')
+                new_name = tier.get('name', new_effort)
+                # Override the individual controls with tier values
+                controls['think_ticks'] = tier['tt']
+                controls['use_lcx'] = tier['lcx']
+                controls['batch_size'] = tier['batch']
+                controls['stage'] = new_effort.upper()
+                controls['effort_name'] = new_name
+                model._current_effort = new_effort
+                model._current_effort_name = new_name
+                changes.append(f"EFFORT: {old_effort}({old_name}) -> {new_effort}({new_name})")
 
     if controls.get('lr') is not None:
         current_lr = optimizer.param_groups[0]['lr']
@@ -123,6 +256,30 @@ def apply_controls(controls: Dict[str, Any], optimizer, loader=None, model=None)
         if current_tt != new_tt:
             model.think_ticks = new_tt
             changes.append(f"think_ticks: {current_tt} -> {new_tt}")
+
+    # LCX on/off toggle (sets _lcx_hash_mode which gates all LCX operations)
+    if controls.get('use_lcx') is not None and model is not None:
+        new_lcx = bool(controls['use_lcx'])
+        old_lcx = getattr(model, '_lcx_hash_mode', False)
+        if old_lcx != new_lcx:
+            model._lcx_hash_mode = new_lcx
+            changes.append(f"use_lcx: {old_lcx} -> {new_lcx}")
+
+    # Stage name (informational, logged to InfluxDB)
+    if controls.get('stage') is not None and model is not None:
+        new_stage = controls['stage']
+        old_stage = getattr(model, '_current_stage', None)
+        if old_stage != new_stage:
+            model._current_stage = new_stage
+            changes.append(f"stage: {old_stage} -> {new_stage}")
+
+    # Zoom LCX effort controls
+    if controls.get('effort_mode') is not None and model is not None:
+        model._effort_auto = (controls['effort_mode'] == 'auto')
+    if controls.get('allowed_levels') is not None and model is not None:
+        model._allowed_levels = controls['allowed_levels']
+    if controls.get('max_zoom_level') is not None and model is not None:
+        model._allowed_levels = list(range(controls['max_zoom_level'] + 1))
 
     if controls.get('temporal_fibonacci') is not None and model is not None:
         enabled = controls['temporal_fibonacci']
@@ -203,8 +360,9 @@ def _set_being_grad(model, idx: int, enabled: bool):
     for p in model.beings[idx].parameters():
         p.requires_grad_(enabled)
     for proj_list in [model.being_input_projs, model.being_output_projs]:
-        for p in proj_list[idx].parameters():
-            p.requires_grad_(enabled)
+        if proj_list is not None:
+            for p in proj_list[idx].parameters():
+                p.requires_grad_(enabled)
     if getattr(model, 'capacity_fibonacci', False) and getattr(model, 'ring_read_projs', None):
         for proj_list in [model.ring_read_projs, model.ring_write_projs]:
             for p in proj_list[idx].parameters():

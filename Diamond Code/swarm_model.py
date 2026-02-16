@@ -13,6 +13,19 @@ from typing import Tuple, Dict
 import math
 
 
+# Jump gate sigmoid temperature: >1 softens gradient at saturation.
+# At tau=1 (normal): sigmoid(4)=0.98, gradient=0.02
+# At tau=2: sigmoid(4/2)=0.88, gradient=0.105 (5x better gradient flow)
+JUMP_SIGMOID_TAU = 2.0
+
+# Exclusive effort weights: each effort level owns one LCX channel only
+EFFORT_WEIGHTS = torch.tensor([
+    [1.0, 0.0, 0.0],  # effort=0 (fast):   R only
+    [0.0, 1.0, 0.0],  # effort=1 (medium): G only
+    [0.0, 0.0, 1.0],  # effort=2 (slow):   B only
+])
+
+
 def fibonacci_split(num_bits: int, min_k: int = 4) -> list:
     """
     Auto-determine beings and K values from Fibonacci halving.
@@ -370,6 +383,38 @@ def generate_combinatorial_masks(
     return masks
 
 
+def generate_phi_stride_assignments(num_ants: int, grid_size: int = 64,
+                                     slots_per_ant: int = 1) -> torch.Tensor:
+    """Assign each ant to slots_per_ant pixels via golden ratio stride.
+
+    The golden angle ensures maximum spread: each new ant lands in
+    the largest remaining gap, like sunflower seed packing.
+    Collisions are resolved by advancing to the next phi-stride position.
+
+    Args:
+        num_ants: Number of ants (beings) to assign.
+        grid_size: Total pixels in the grid (default 64 for 8x8).
+        slots_per_ant: How many LCX slots each ant can write.
+
+    Returns:
+        Tensor of shape [num_ants, slots_per_ant] with pixel indices.
+    """
+    PHI = (1 + math.sqrt(5)) / 2
+    total_slots = num_ants * slots_per_ant
+    assert total_slots <= grid_size, \
+        f"Cannot assign {total_slots} unique slots in grid of {grid_size}"
+    used = set()
+    positions = []
+    i = 0
+    while len(positions) < total_slots:
+        pos = int((i * PHI * grid_size) % grid_size)
+        if pos not in used:
+            used.add(pos)
+            positions.append(pos)
+        i += 1
+    return torch.tensor(positions, dtype=torch.long).view(num_ants, slots_per_ant)
+
+
 class BeingParameters(nn.Module):
     """
     Per-being parameters (pointer destinations, jump gate, context strength).
@@ -468,6 +513,14 @@ class SwarmByteRingModel(nn.Module):
         max_hidden: int = 4096,
         min_hidden: int = 128,
         full_view: bool = False,
+        use_lcx: bool = False,
+        slots_per_being: int = 1,
+        lcx_mode: str = "dense",
+        lcx_num_slots: int = 256,
+        lcx_key_dim: int = 64,
+        lcx_top_k: int = 4,
+        lcx_num_levels: int = 3,
+        lcx_level_slots: list = None,
     ):
         super().__init__()
 
@@ -482,6 +535,16 @@ class SwarmByteRingModel(nn.Module):
         self.think_ticks = think_ticks
         self.full_view = full_view
         self.combinatorial = combinatorial
+        self.use_lcx = use_lcx
+        self.effort_level = 0  # RGB LCX channel: 0=R(fast), 1=G(medium), 2=B(slow) — dense LCX only
+        self._lcx_hash_mode = (use_lcx and lcx_mode == "hash")
+        self.lcx_mode = lcx_mode
+        self.lcx_num_slots = lcx_num_slots
+        self.lcx_key_dim = lcx_key_dim
+        self.lcx_top_k = lcx_top_k
+        self._lcx_num_levels = lcx_num_levels if (use_lcx and lcx_mode == "hash") else 0
+        self._lcx_level_slots = lcx_level_slots or ([int(lcx_num_slots * (10 ** i)) for i in range(lcx_num_levels)] if (use_lcx and lcx_mode == "hash") else [])
+        # Level cap: tick N unlocks level N+1. Max active = think_ticks.
         self._pair_coverage_frac = None
 
         if combinatorial and capacity_fibonacci:
@@ -497,21 +560,34 @@ class SwarmByteRingModel(nn.Module):
         self.min_coverage = min_coverage
 
         # SHARED COMPONENTS (all beings use these)
-        if embedding_dim > num_bits:
-            self.input_proj = nn.Linear(num_bits, embedding_dim)
-            self.output_proj = nn.Linear(embedding_dim, num_bits)
+        # Dense LCX: input is broadcast 8x8 + LCX 8x8 (element-wise addition) = 64 values
+        # Hash LCX: input bits only (LCX added in embedding space after projection)
+        # GEM: input bits + GEM = num_bits * 2
+        if use_lcx and lcx_mode == "hash":
+            _input_width = num_bits  # hash LCX: raw bits only, LCX added post-projection
+        elif use_lcx:
+            _input_width = num_bits * num_bits  # dense LCX: broadcast grid
         else:
-            self.input_proj = None
-            self.output_proj = None
+            _input_width = num_bits * 2  # GEM: bits + GEM
+        # Always create projections: input_width rarely equals embedding_dim,
+        # and ring memory is [B, M, embedding_dim] so combined_input must match.
+        self.input_proj = nn.Linear(_input_width, embedding_dim)
+        self.output_proj = nn.Linear(embedding_dim, num_bits)
 
         # Multi-layer processing (if depth > 1)
+        # Pre-LN + GELU residual blocks (standard transformer pattern)
         if depth > 1:
             self.processing_layers = nn.ModuleList([
                 nn.Linear(embedding_dim, embedding_dim)
                 for _ in range(depth - 1)
             ])
+            self.processing_norms = nn.ModuleList([
+                nn.LayerNorm(embedding_dim)
+                for _ in range(depth - 1)
+            ])
         else:
             self.processing_layers = None
+            self.processing_norms = None
 
         # LayerNorm before inter-timestep tanh to prevent saturation
         self.state_norm = nn.LayerNorm(embedding_dim)
@@ -551,21 +627,41 @@ class SwarmByteRingModel(nn.Module):
         # HETEROGENEOUS MODE: per-being input/output projections
         # Each being gets its own K→D input and D→K output projection.
         # Big ants have bigger K = more input info. All share D for ring compat.
+        # Defaults (overridden below if heterogeneous or capacity_fibonacci)
+        self.being_input_projs = None
+        self.being_output_projs = None
         self.heterogeneous = self.receptive_masks is not None and bits_per_being > 0
         if self.heterogeneous:
-            self.being_input_projs = nn.ModuleList()
-            self.being_output_projs = nn.ModuleList()
-            for i in range(num_beings):
-                if self.full_view:
-                    self.being_input_projs.append(nn.Linear(num_bits, embedding_dim))
-                    self.being_output_projs.append(nn.Linear(embedding_dim, num_bits))
-                else:
-                    k_i = int(self.receptive_masks[i].sum().item())
-                    self.being_input_projs.append(nn.Linear(k_i, embedding_dim))
-                    self.being_output_projs.append(nn.Linear(embedding_dim, k_i))
-            # Shared projections not used in heterogeneous mode
-            self.input_proj = None
-            self.output_proj = None
+            if use_lcx:
+                # LCX v3: all ants get uniform 64-wide input (broadcast+add),
+                # so we use the SHARED input_proj. Only need per-being OUTPUT projs.
+                self.being_input_projs = None
+                self.being_output_projs = nn.ModuleList()
+                for i in range(num_beings):
+                    if self.full_view:
+                        self.being_output_projs.append(nn.Linear(embedding_dim, num_bits))
+                    else:
+                        k_i = int(self.receptive_masks[i].sum().item())
+                        self.being_output_projs.append(nn.Linear(embedding_dim, k_i))
+                # Keep shared input_proj (created above), disable shared output_proj
+                self.output_proj = None
+            else:
+                # GEM path: per-being input AND output projections (variable width)
+                self.being_input_projs = nn.ModuleList()
+                self.being_output_projs = nn.ModuleList()
+                for i in range(num_beings):
+                    if self.full_view:
+                        _fw = num_bits * 2
+                        self.being_input_projs.append(nn.Linear(_fw, embedding_dim))
+                        self.being_output_projs.append(nn.Linear(embedding_dim, num_bits))
+                    else:
+                        k_i = int(self.receptive_masks[i].sum().item())
+                        _pw = k_i + num_bits
+                        self.being_input_projs.append(nn.Linear(_pw, embedding_dim))
+                        self.being_output_projs.append(nn.Linear(embedding_dim, k_i))
+                # Shared projections not used in GEM heterogeneous mode
+                self.input_proj = None
+                self.output_proj = None
 
         # TEMPORAL FIBONACCI TICK SCHEDULING
         self.temporal_fibonacci = temporal_fibonacci
@@ -590,7 +686,7 @@ class SwarmByteRingModel(nn.Module):
             assert self.heterogeneous, (
                 "capacity_fibonacci requires fibonacci=True with bits_per_being > 0"
             )
-            k_values = fibonacci_k_schedule(num_beings, num_bits, min_k=4)
+            k_values = fibonacci_k_schedule(num_beings, num_bits, min_k=2)
             self.hidden_dims = fibonacci_hidden_dims(k_values, max_hidden, min_hidden)
 
             # Ring bridge projections: D <-> H_i
@@ -602,35 +698,68 @@ class SwarmByteRingModel(nn.Module):
             ])
 
             # Override being input/output projs: K_i <-> H_i (was K_i <-> D)
-            self.being_input_projs = nn.ModuleList()
-            self.being_output_projs = nn.ModuleList()
-            for i in range(num_beings):
-                h_i = self.hidden_dims[i]
-                if self.full_view:
-                    self.being_input_projs.append(nn.Linear(num_bits, h_i))
-                    self.being_output_projs.append(nn.Linear(h_i, num_bits))
-                else:
-                    k_i = int(self.receptive_masks[i].sum().item())
-                    self.being_input_projs.append(nn.Linear(k_i, h_i))
-                    self.being_output_projs.append(nn.Linear(h_i, k_i))
+            if use_lcx and lcx_mode != 'hash':
+                # Dense LCX v3: shared input proj (lcx_size → D), then per-being D → H_i bridge
+                # Hash LCX uses num_bits-wide input (already set), not num_bits²
+                self.input_proj = nn.Linear(num_bits * num_bits, embedding_dim)
+                self.being_input_projs = nn.ModuleList([
+                    nn.Linear(embedding_dim, h_i) for h_i in self.hidden_dims
+                ])
+                self.being_output_projs = nn.ModuleList()
+                for i in range(num_beings):
+                    h_i = self.hidden_dims[i]
+                    if self.full_view:
+                        self.being_output_projs.append(nn.Linear(h_i, num_bits))
+                    else:
+                        k_i = int(self.receptive_masks[i].sum().item())
+                        self.being_output_projs.append(nn.Linear(h_i, k_i))
+            else:
+                self.being_input_projs = nn.ModuleList()
+                self.being_output_projs = nn.ModuleList()
+                for i in range(num_beings):
+                    h_i = self.hidden_dims[i]
+                    if self.full_view:
+                        _fw = num_bits * 2
+                        self.being_input_projs.append(nn.Linear(_fw, h_i))
+                        self.being_output_projs.append(nn.Linear(h_i, num_bits))
+                    else:
+                        k_i = int(self.receptive_masks[i].sum().item())
+                        _pw = k_i + num_bits
+                        self.being_input_projs.append(nn.Linear(_pw, h_i))
+                        self.being_output_projs.append(nn.Linear(h_i, k_i))
+
+            # Per-being LayerNorm (hidden dims differ from embedding_dim)
+            self.being_state_norms = nn.ModuleList([
+                nn.LayerNorm(h_i) for h_i in self.hidden_dims
+            ])
 
             # Per-being processing layers (can't share, dims differ)
+            # Pre-LN + GELU residual blocks per being
             if depth > 1:
                 self.being_processing_layers = nn.ModuleList()
+                self.being_processing_norms = nn.ModuleList()
                 for i in range(num_beings):
                     h_i = self.hidden_dims[i]
                     layers = nn.ModuleList([
                         nn.Linear(h_i, h_i) for _ in range(depth - 1)
                     ])
+                    norms = nn.ModuleList([
+                        nn.LayerNorm(h_i) for _ in range(depth - 1)
+                    ])
                     self.being_processing_layers.append(layers)
+                    self.being_processing_norms.append(norms)
                 self.processing_layers = None  # Disable shared layers
+                self.processing_norms = None
             else:
                 self.being_processing_layers = None
+                self.being_processing_norms = None
         else:
             self.hidden_dims = [embedding_dim] * num_beings
             self.ring_read_projs = None
             self.ring_write_projs = None
             self.being_processing_layers = None
+            self.being_processing_norms = None
+            self.being_state_norms = None
 
         # PER-BEING COMPONENTS (each being has its own)
         # Pass being_id for golden ratio phase embeddings + optional input mask
@@ -656,6 +785,109 @@ class SwarmByteRingModel(nn.Module):
             self.combiner_gate = nn.Parameter(torch.zeros(num_beings, num_bits))
         else:
             self.combiner_gate = None
+
+        # MEMORY SYSTEM: LCX (grayscale 2D scratchpad) or GEM (legacy 1-channel EMA)
+        if use_lcx and lcx_mode == "hash":
+            # FLAT GOLDEN RATIO LCX: independent per-level buffers, flat cosine search.
+            # Slot counts follow phi × 10^n: [618, 6180, 61800, ...].
+            # Each level is searched independently — no parent-child, no quadtree.
+            # Read: flat cosine similarity → top-K → softmax weighted sum.
+            # Write: same routing → EMA blend at top-K slots.
+            # Lazy allocation: only L0 is allocated at init (always needed for per-timestep read/write).
+            # Higher levels (L1, L2, ...) are allocated on first access during think ticks.
+            # This saves ~1.7 GB VRAM at Beta (L2 idle until Gamma).
+            self._lcx_allocated_levels = set()
+            for _lvl in range(self._lcx_num_levels):
+                _n = self._lcx_level_slots[_lvl] if _lvl < len(self._lcx_level_slots) else self._lcx_level_slots[-1]
+                if _lvl == 0:
+                    _k = torch.randn(_n, lcx_key_dim)
+                    _k = torch.nn.functional.normalize(_k, dim=-1)
+                    self.register_buffer(f'lcx_keys_{_lvl}', _k)
+                    self.register_buffer(f'lcx_values_{_lvl}', torch.randn(_n, embedding_dim) * 0.01)
+                    self.register_buffer(f'lcx_heat_{_lvl}', torch.zeros(_n, dtype=torch.int16))
+                    self.register_buffer(f'lcx_valid_{_lvl}', torch.zeros(_n, dtype=torch.bool))
+                    self._lcx_allocated_levels.add(_lvl)
+                else:
+                    # Lazy: register as None, allocate on first access
+                    self.register_buffer(f'lcx_keys_{_lvl}', None)
+                    self.register_buffer(f'lcx_values_{_lvl}', None)
+                    self.register_buffer(f'lcx_heat_{_lvl}', None)
+                    self.register_buffer(f'lcx_valid_{_lvl}', None)
+            # Initialize hash planes for L0 bucketed search (if large enough)
+            _n0 = self._lcx_level_slots[0] if self._lcx_level_slots else 0
+            if _n0 >= self._LCX_MIN_SLOTS_FOR_BUCKETING:
+                self._lcx_init_hash_planes(0, _n0, _k.device, _k.dtype)
+            # Temperature per level: higher at coarse (wider exploration), lower at fine
+            self._lcx_route_temps = [2.0 / (1.0 + _lvl) for _lvl in range(self._lcx_num_levels)]
+            self._lcx_total_slots = sum(self._lcx_level_slots)
+            self.lcx_route_query = nn.Linear(embedding_dim, lcx_key_dim)
+            self.lcx_write_gate = nn.Linear(embedding_dim, 1)
+            nn.init.constant_(self.lcx_write_gate.bias, 0.0)  # balanced init (sigmoid=0.5)
+            # Zoom gate: auto-effort (model decides "need more detail?")
+            self.zoom_gate = nn.Linear(embedding_dim, 1)
+            nn.init.constant_(self.zoom_gate.bias, -2.0)  # start conservative (sigmoid(-2)≈0.12)
+            # Think token: learned "I'm thinking" signal for think ticks
+            self.think_token = nn.Parameter(torch.randn(embedding_dim) * 0.02)
+            # Stubs for dense LCX layers (not used in hash mode)
+            self.register_buffer('lcx', None)
+            self.register_buffer('gem', None)
+            self.lcx_propose = None
+            self.lcx_gate = None
+            self.gem_write_head = None
+            self._phi_inv = None
+            self.slots_per_being = -1
+            self.register_buffer('pixel_assignments', None)
+        elif use_lcx:
+            # Dense LCX: num_bits × num_bits grayscale image (flat buffer)
+            # Input = broadcast(8 bits → 8x8) + LCX(8x8), element-wise addition
+            lcx_size = num_bits * num_bits
+            self.register_buffer('lcx', torch.zeros(3, lcx_size))  # RGB: 3 effort-depth channels
+            self.register_buffer('gem', None)
+            self.lcx_propose = nn.Linear(embedding_dim, lcx_size)   # softsign Δ
+            self.lcx_gate = nn.Linear(embedding_dim, lcx_size)      # sigmoid G
+            nn.init.constant_(self.lcx_gate.bias, -0.486)           # logit(0.382) ≈ phi init
+            self.gem_write_head = None
+            self._phi_inv = None
+            # Think token (also useful in dense mode)
+            self.think_token = nn.Parameter(torch.randn(embedding_dim) * 0.02)
+            # Hash LCX stubs (not used in dense mode)
+            self.lcx_route_query = None
+            self.lcx_write_gate = None
+            self.register_buffer('lcx_keys', None)
+            self.register_buffer('lcx_values', None)
+            # Phi-stride pixel assignments: per-slot ownership (VRA-88)
+            # slots_per_being: 1=flowchart (one slot each), -1=global write (giant ant),
+            #                  K=K phi-stride slots per being
+            self.slots_per_being = slots_per_being
+            if slots_per_being == -1 or slots_per_being >= lcx_size or num_beings == 1:
+                # Global write: being writes to ALL LCX slots (auto for single-being)
+                self.register_buffer('pixel_assignments', None)
+            else:
+                self.register_buffer(
+                    'pixel_assignments',
+                    generate_phi_stride_assignments(num_beings, lcx_size, slots_per_being),
+                )
+        else:
+            # GEM: legacy 1-channel golden ratio EMA
+            self.register_buffer('gem', torch.zeros(num_bits))
+            self.register_buffer('lcx', None)
+            self.gem_write_head = nn.Linear(embedding_dim, num_bits)
+            self._phi_inv = 0.6180339887  # 1/φ — golden ratio inverse
+            self.lcx_propose = None
+            self.lcx_gate = None
+            self.lcx_route_query = None
+            self.lcx_write_gate = None
+            self.register_buffer('lcx_keys', None)
+            self.register_buffer('lcx_values', None)
+            self.think_token = None
+
+        # Initialize attributes that may be set externally by live_controls / training loop
+        # (avoids getattr fallbacks and makes the contract explicit)
+        self._effort_auto = False
+        self._allowed_levels = None
+        self._eval_skip_think = False
+        self._current_stage = 'INFANT'
+        self._last_zoom_gate = 0.0
 
         # VECTORIZED PATH PRECOMPUTATION (combinatorial mode only)
         # Pre-stack per-being index tensors so _forward_vectorized() can
@@ -702,12 +934,6 @@ class SwarmByteRingModel(nn.Module):
         weights = torch.softmax(logits, dim=1)
 
         return indices, weights
-
-    def _hard_gate(self, logits: torch.Tensor) -> torch.Tensor:
-        """Straight-Through Estimator for hard binary decisions."""
-        probs = torch.sigmoid(logits)
-        hard = (probs > 0.5).float()
-        return hard - probs.detach() + probs
 
     def _ring_attention_combine(self, being_stack, hidden_states_list, memory_ring):
         """
@@ -855,9 +1081,24 @@ class SwarmByteRingModel(nn.Module):
         device = x.device
         dtype = x.dtype
 
+        # Clear LCX auxiliary loss accumulators for this forward pass
+        if self.training and self._lcx_hash_mode:
+            self._lcx_write_gate_accum = []
+            self._lcx_read_weights_accum = []
+            self._lcx_zoom_gate_accum = []
+            self._lcx_score_margin_accum = []
+
+        # Rebuild bucket indices for bucketed LCX search (once per forward pass)
+        if self._lcx_hash_mode:
+            self._lcx_rebuild_all_bucket_indices()
+
         # -- Gather per-being parameters (fresh each call for gradient flow) --
-        inp_w = torch.stack([p.weight for p in self.being_input_projs])   # [N, D, K]
-        inp_b = torch.stack([p.bias for p in self.being_input_projs])     # [N, D]
+        if self.being_input_projs is not None:
+            inp_w = torch.stack([p.weight for p in self.being_input_projs])   # [N, D, K]
+            inp_b = torch.stack([p.bias for p in self.being_input_projs])     # [N, D]
+        else:
+            inp_w = None  # LCX v3: uses shared input_proj
+            inp_b = None
         out_w = torch.stack([p.weight for p in self.being_output_projs])  # [N, K_out, D]
         out_b = torch.stack([p.bias for p in self.being_output_projs])    # [N, K_out]
         jg_w = torch.stack([b.jump_gate.weight for b in self.beings]).squeeze(1)  # [N, D]
@@ -918,13 +1159,57 @@ class SwarmByteRingModel(nn.Module):
             step_active = active_mask & tick_active  # [N]
             step_mask = step_active.float().reshape(N, 1, 1)  # [N, 1, 1]
 
-            # 1. Gather visible bits & project
-            if self.full_view:
-                being_input = torch.einsum('bk,ndk->bnd', input_bits, inp_w) + inp_b
+            # 1. Gather visible bits & project (with memory)
+            if self._lcx_hash_mode:
+                # Hash LCX: project raw bits, add LCX context in embedding space
+                per_being = []
+                for n_idx in range(N):
+                    vis_mask = vis_indices[n_idx]  # [K]
+                    vis_bits = input_bits[:, vis_mask]  # [B, K]
+                    # Pad to full num_bits width for input_proj
+                    full_bits = torch.zeros(B, self.num_bits, device=device, dtype=dtype)
+                    full_bits[:, vis_mask] = vis_bits
+                    proj = self.input_proj(full_bits)  # [B, D]
+                    per_being.append(proj)
+                being_input = torch.stack(per_being, dim=0)  # [N, B, D]
+                # Add hash LCX context (same context for all beings — shared scratchpad)
+                # Read once, broadcast to all N beings
+                # NOTE: queries with mean of per-being masked inputs (differs from sequential
+                # path which queries with full input per-being — equivalent for num_beings=1)
+                lcx_ctx = self._lcx_flat_read(being_input.mean(dim=0), level=0)  # [B, D]
+                being_input = being_input + lcx_ctx.unsqueeze(0)  # [N, B, D]
+            elif self.lcx is not None:
+                # Dense LCX: per-ant masked broadcast+add → shared projection
+                per_being = []
+                for n_idx in range(N):
+                    vis_mask = vis_indices[n_idx]  # [K]
+                    vis_bits = input_bits[:, vis_mask]  # [B, K]
+                    combined = self._read_with_lcx(vis_bits, mask=vis_mask)  # [B, lcx_size]
+                    proj = self.input_proj(combined)  # [B, D]
+                    per_being.append(proj)
+                being_input = torch.stack(per_being, dim=0)  # [N, B, D]
+            elif self.gem is not None:
+                _gem_exp_v = self.gem.unsqueeze(0).expand(B, -1)  # [B, num_bits]
+                if self.full_view:
+                    input_with_gem = torch.cat([input_bits, _gem_exp_v], dim=-1)  # [B, num_bits*2]
+                    being_input = torch.einsum('bk,ndk->bnd', input_with_gem, inp_w) + inp_b
+                else:
+                    visible = input_bits[:, vis_indices]  # [B, N, K]
+                    _gem_being = _gem_exp_v.unsqueeze(1).expand(-1, N, -1)
+                    visible_with_gem = torch.cat([visible, _gem_being], dim=-1)  # [B, N, K+num_bits]
+                    being_input = torch.einsum('bnk,ndk->bnd', visible_with_gem, inp_w) + inp_b
+                being_input = being_input.permute(1, 0, 2)  # [N, B, D]
             else:
-                visible = input_bits[:, vis_indices]  # [B, N, K]
-                being_input = torch.einsum('bnk,ndk->bnd', visible, inp_w) + inp_b
-            being_input = being_input.permute(1, 0, 2)  # [N, B, D]
+                # No memory active (INFANT mode: hash-mode model with LCX disabled)
+                per_being = []
+                for n_idx in range(N):
+                    vis_mask = vis_indices[n_idx]  # [K]
+                    vis_bits = input_bits[:, vis_mask]  # [B, K]
+                    full_bits = torch.zeros(B, self.num_bits, device=device, dtype=dtype)
+                    full_bits[:, vis_mask] = vis_bits
+                    proj = self.input_proj(full_bits)  # [B, D]
+                    per_being.append(proj)
+                being_input = torch.stack(per_being, dim=0)  # [N, B, D]
 
             # 2. Batched ring read (all beings read SAME ring state)
             flat_ptrs = pointer_positions.reshape(-1)  # [N*B]
@@ -944,14 +1229,63 @@ class SwarmByteRingModel(nn.Module):
             # 3. Combine: input + scaled context + phase bias
             combined = being_input + ctx_scales * context_reads + 0.1 * phase_bias
 
-            # 4. State update (LayerNorm prevents tanh saturation)
-            state_update = torch.tanh(self.state_norm(combined + hidden_states))
+            # 4. State update (phi EMA — norm hidden only, input path clean)
+            state_update = 0.618 * self.state_norm(hidden_states) + 0.382 * combined
             if self.processing_layers is not None:
-                for layer in self.processing_layers:
-                    state_update = state_update + torch.nn.functional.gelu(layer(state_update))
+                for norm, layer in zip(self.processing_norms, self.processing_layers):
+                    state_update = state_update + torch.nn.functional.gelu(layer(norm(state_update)))
 
             # Apply dormancy: keep old state for dormant/null beings
             hidden_states = torch.where(step_mask.bool(), state_update, hidden_states)
+
+            # MEMORY WRITE (vectorized): per-slot ownership (VRA-88)
+            if self._lcx_hash_mode:
+                # Hash LCX write: route state_update to top-k slots
+                # Average across beings for a single write per step
+                # NOTE: sequential path writes per-being (equivalent for num_beings=1)
+                write_state = hidden_states.mean(dim=0)    # [B, D]
+                write_content = state_update.mean(dim=0)   # [B, D]
+                self._lcx_flat_write(write_state, write_content, level=0)
+            elif self.lcx is not None and self.pixel_assignments is not None:
+                slots = self.pixel_assignments                          # [N, K]
+                delta = torch.nn.functional.softsign(self.lcx_propose(state_update))  # [N, B, lcx_size]
+                gate = torch.sigmoid(self.lcx_gate(state_update))                     # [N, B, lcx_size]
+                delta_b = delta.mean(dim=1)                             # [N, lcx_size]
+                gate_b = gate.mean(dim=1)                               # [N, lcx_size]
+                # Gather each being's assigned K slots
+                N_active, K = slots.shape
+                arange_n = torch.arange(N_active, device=delta.device).unsqueeze(1).expand(-1, K)
+                delta_at_slots = delta_b[arange_n, slots]               # [N, K]
+                gate_at_slots = gate_b[arange_n, slots]                 # [N, K]
+                # Flatten for scatter: [N*K] unique slots (phi-stride guarantees no overlap)
+                flat_slots = slots.reshape(-1)                          # [N*K]
+                flat_delta = delta_at_slots.reshape(-1)                 # [N*K]
+                flat_gate = gate_at_slots.reshape(-1)                   # [N*K]
+                w = EFFORT_WEIGHTS[self.effort_level].to(self.lcx.device)  # [3]
+                new_lcx = self.lcx.detach().clone()
+                for c in range(3):
+                    old_c = self.lcx[c].detach()
+                    old_at_slots = old_c[flat_slots]
+                    new_at_slots = (1.0 - flat_gate * w[c]) * old_at_slots + flat_gate * w[c] * flat_delta
+                    new_lcx[c] = old_c.scatter(0, flat_slots, new_at_slots)
+                self.lcx = new_lcx.clamp(-1.0, 1.0)
+            elif self.lcx is not None:
+                # Legacy global write (backwards compat when pixel_assignments missing)
+                delta = torch.nn.functional.softsign(self.lcx_propose(state_update))  # [N, B, lcx_size]
+                gate = torch.sigmoid(self.lcx_gate(state_update))                      # [N, B, lcx_size]
+                delta_avg = delta.mean(dim=0).mean(dim=0)  # [lcx_size]
+                gate_avg = gate.mean(dim=0).mean(dim=0)    # [lcx_size]
+                w = EFFORT_WEIGHTS[self.effort_level].to(self.lcx.device)  # [3]
+                new_lcx = self.lcx.detach().clone()
+                for c in range(3):
+                    old_c = self.lcx[c].detach()
+                    new_lcx[c] = (1.0 - gate_avg * w[c]) * old_c + gate_avg * w[c] * delta_avg
+                self.lcx = new_lcx.clamp(-1.0, 1.0)
+            elif self.gem_write_head is not None and self.gem is not None:
+                _gem_sig_v = torch.nn.functional.softsign(self.gem_write_head(state_update))  # [N, B, num_bits]
+                _gem_upd_v = _gem_sig_v.mean(dim=0).mean(dim=0)  # average N,B → [num_bits]
+                self.gem = self._phi_inv * self.gem.detach() + (1.0 - self._phi_inv) * _gem_upd_v
+            # else: no memory write (INFANT mode: hash-mode model with LCX disabled)
 
             if return_stats:
                 diag_hidden_abs.append(hidden_states.abs().mean().item())
@@ -980,7 +1314,7 @@ class SwarmByteRingModel(nn.Module):
             jump_logits = (
                 (hidden_states * jg_w.unsqueeze(1)).sum(-1) + jg_b.unsqueeze(1)
             )  # [N, B]
-            jump_prob = torch.sigmoid(jump_logits)  # [N, B] — continuous, differentiable
+            jump_prob = torch.sigmoid(jump_logits / JUMP_SIGMOID_TAU)  # [N, B] — tempered sigmoid for gradient flow
             walk_pos = (pointer_positions + 1.0) % M
             new_ptrs = jump_prob * jump_targets + (1.0 - jump_prob) * walk_pos
             pointer_positions = torch.where(step_active.unsqueeze(1), new_ptrs, pointer_positions)
@@ -1020,8 +1354,9 @@ class SwarmByteRingModel(nn.Module):
                 pointer_positions_log.append(ptr_t)
 
             # -------- THINK TICKS --------
-            if self.think_ticks > 0:
-                for _tt in range(self.think_ticks):
+            _eff_think_ticks = 0 if (not self.training and getattr(self, '_eval_skip_think', False)) else self.think_ticks
+            if _eff_think_ticks > 0:
+                for _tt in range(_eff_think_ticks):
                     if self.tick_periods is not None:
                         global_tick = t * (1 + self.think_ticks) + 1 + _tt
                         tt_active = (global_tick % self.tick_periods) == 0
@@ -1042,13 +1377,48 @@ class SwarmByteRingModel(nn.Module):
                     nbr_tt = mem_tt.gather(2, idxg_tt)
                     ctx_tt = (wgt_tt.unsqueeze(-1) * nbr_tt).sum(dim=2)  # [N, B, D]
 
-                    # No input — context + phase only
+                    # No input — context + phase + think token
                     comb_tt = ctx_scales * ctx_tt + 0.1 * phase_bias
-                    su_tt = torch.tanh(self.state_norm(comb_tt + hidden_states))
+                    if self.think_token is not None:
+                        comb_tt = comb_tt + self.think_token  # "I'm thinking" signal
+                    su_tt = 0.618 * self.state_norm(hidden_states) + 0.382 * comb_tt
                     if self.processing_layers is not None:
-                        for layer in self.processing_layers:
-                            su_tt = su_tt + torch.nn.functional.gelu(layer(su_tt))
+                        for norm, layer in zip(self.processing_norms, self.processing_layers):
+                            su_tt = su_tt + torch.nn.functional.gelu(layer(norm(su_tt)))
                     hidden_states = torch.where(tt_mask.bool(), su_tt, hidden_states)
+
+                    # Flat LCX read/write during think ticks
+                    # Each tick reads the next level up, clamped to top level.
+                    # tt=0 → L1, tt=1 → L2, ..., tt>=top → re-read top (iterative retrieval).
+                    if self._lcx_hash_mode:
+                        _lcx_level = min(_tt + 1, self._lcx_num_levels - 1)
+                        _do_lcx = self._lcx_num_levels > 0
+                        if _do_lcx:
+                            _allowed = getattr(self, '_allowed_levels', None)
+                            if _allowed is not None and _lcx_level not in _allowed:
+                                _do_lcx = False
+                        if _do_lcx:
+                            _query = hidden_states.mean(dim=0)
+                            lcx_tt_ctx = self._lcx_flat_read(_query, level=_lcx_level)
+                            # zoom_gate: L2-normalize input to bound pre-activation, fp32 for gradient precision
+                            with torch.amp.autocast('cuda', enabled=False):
+                                _q32 = torch.nn.functional.normalize(_query.float(), dim=-1)
+                                zg = torch.sigmoid(self.zoom_gate(_q32))  # [B, 1] fp32
+                            lcx_tt_ctx = lcx_tt_ctx * zg
+                            self._last_zoom_gate = zg.mean().item()
+                            # Stash zoom_gate output for anti-saturation aux loss
+                            if self.training:
+                                if not hasattr(self, '_lcx_zoom_gate_accum'):
+                                    self._lcx_zoom_gate_accum = []
+                                self._lcx_zoom_gate_accum.append(zg)
+                            # Early-stop during eval only
+                            if not self.training and zg.max().item() < 0.1:
+                                break
+                            hidden_states = hidden_states + lcx_tt_ctx.unsqueeze(0) * tt_mask
+                            # Write at this level
+                            _wv = hidden_states.mean(dim=0)
+                            _wk = su_tt.mean(dim=0)
+                            self._lcx_flat_write(_wv, _wk, level=_lcx_level)
 
                     # Ring write
                     wc_tt = (
@@ -1067,6 +1437,11 @@ class SwarmByteRingModel(nn.Module):
                     wp_tt = (pointer_positions + 1.0) % M
                     np_tt = jp_tt * jt_tt + (1.0 - jp_tt) * wp_tt
                     pointer_positions = torch.where(tt_step.unsqueeze(1), np_tt, pointer_positions)
+
+                    # Detach between think ticks (VRAM fix): only last tick gets gradient
+                    if _tt < _eff_think_ticks - 1:
+                        hidden_states = hidden_states.detach()
+                        memory_ring = memory_ring.detach()
 
                 # Regenerate outputs after think ticks
                 if self.full_view:
@@ -1212,7 +1587,520 @@ class SwarmByteRingModel(nn.Module):
                 all_bo.append(torch.stack(outputs_per_being[n]))
             stats['being_outputs'] = torch.stack(all_bo)  # [N, T, B, num_bits]
 
+        # LCX auxiliary losses for gradient flow
+        if self.training and self._lcx_hash_mode:
+            _wg_acc = getattr(self, '_lcx_write_gate_accum', [])
+            if _wg_acc:
+                _all_gates = torch.cat([g.reshape(-1) for g in _wg_acc])
+                self._lcx_write_gate_aux_loss = -torch.log(_all_gates.mean() + 1e-8)
+            else:
+                self._lcx_write_gate_aux_loss = torch.tensor(0.0, device=output.device)
+            _rw_acc = getattr(self, '_lcx_read_weights_accum', [])
+            if _rw_acc:
+                _all_w = torch.cat([w.reshape(-1, w.shape[-1]) for w in _rw_acc], dim=0)
+                self._lcx_read_attn_aux_loss = -torch.log(_all_w + 1e-8).mean()
+            else:
+                self._lcx_read_attn_aux_loss = torch.tensor(0.0, device=output.device)
+            # Zoom gate anti-saturation: binary entropy loss keeps gate alive
+            # Maximized at zg=0.5, zero at zg=0 or zg=1.  Negated → minimize → push toward 0.5.
+            _zg_acc = getattr(self, '_lcx_zoom_gate_accum', [])
+            if _zg_acc:
+                _all_zg = torch.cat([z.reshape(-1) for z in _zg_acc])
+                _zg_clamped = _all_zg.clamp(1e-6, 1.0 - 1e-6)
+                self._lcx_zoom_gate_aux_loss = -(
+                    _zg_clamped * torch.log(_zg_clamped) +
+                    (1 - _zg_clamped) * torch.log(1 - _zg_clamped)
+                ).mean()
+            else:
+                self._lcx_zoom_gate_aux_loss = torch.tensor(0.0, device=output.device)
+            # Score margin telemetry (not a loss — pure diagnostic)
+            _sm_acc = getattr(self, '_lcx_score_margin_accum', [])
+            if _sm_acc:
+                self._last_score_margin = sum(m for m, _ in _sm_acc) / len(_sm_acc)
+                self._last_score_top1 = sum(t for _, t in _sm_acc) / len(_sm_acc)
+            else:
+                self._last_score_margin = 0.0
+                self._last_score_top1 = 0.0
+        else:
+            self._lcx_write_gate_aux_loss = torch.tensor(0.0, device=output.device)
+            self._lcx_read_attn_aux_loss = torch.tensor(0.0, device=output.device)
+            self._lcx_zoom_gate_aux_loss = torch.tensor(0.0, device=output.device)
+
+        # Detach LCX buffers — gradient highway is within-step only
+        # Per-level buffers: writes are in-place with no_grad, safety net.
+        # Skip unallocated levels (lazy allocation — they are None).
+        if self._lcx_hash_mode:
+            _alloc = getattr(self, '_lcx_allocated_levels', set(range(self._lcx_num_levels)))
+            for _lvl in range(self._lcx_num_levels):
+                if _lvl not in _alloc:
+                    continue
+                _k, _v = self._lcx_level_bufs(_lvl)
+                if _v.requires_grad:
+                    setattr(self, f'lcx_values_{_lvl}', _v.detach())
+                if _k.requires_grad:
+                    setattr(self, f'lcx_keys_{_lvl}', _k.detach())
+
         return output, stats
+
+    def _read_with_lcx(self, input_bits, mask=None):
+        """Element-wise addition: broadcast(input) + LCX.
+
+        LCX v3: broadcast each input bit across its row to form an 8x8 grid,
+        then add element-wise to the LCX 8x8 grid. Spatial binding: bit i
+        lives in row i of the combined matrix.
+
+        Args:
+            input_bits: [B, num_bits] full input, or [B, K_i] if masked
+            mask: optional index tensor [K_i] mapping masked bits to positions.
+                  If provided, unseen bit rows get 0 + LCX (LCX only).
+
+        Returns: [B, lcx_size] combined = input_8x8 + LCX_8x8 (flattened)
+        """
+        B = input_bits.size(0)
+        nb = self.num_bits
+
+        # Build full-width input (unseen bits = 0)
+        if mask is not None:
+            full_input = torch.zeros(B, nb, device=input_bits.device, dtype=input_bits.dtype)
+            full_input[:, mask] = input_bits
+        else:
+            full_input = input_bits  # [B, num_bits]
+
+        # Broadcast: each bit fills its row → [B, 8, 8] → [B, 64]
+        input_grid = full_input.unsqueeze(-1).expand(-1, -1, nb).reshape(B, -1)
+
+        # Weighted blend of ALL 3 RGB channels (golden-ratio weights by effort level)
+        w = EFFORT_WEIGHTS[self.effort_level].to(self.lcx.device)  # [3]
+        active_lcx = (self.lcx * w.view(3, 1)).sum(dim=0)          # [lcx_size]
+        lcx_expanded = active_lcx.unsqueeze(0).expand(B, -1)      # [B, lcx_size]
+        return input_grid + lcx_expanded  # [B, lcx_size]
+
+    def _lcx_level_bufs(self, level: int):
+        """Return (keys, values) for a given zoom level.
+        Lazy-allocates the level if not yet on GPU."""
+        level = min(level, self._lcx_num_levels - 1)
+        if hasattr(self, '_lcx_allocated_levels') and level not in self._lcx_allocated_levels:
+            self._allocate_lcx_level(level)
+        return getattr(self, f'lcx_keys_{level}'), getattr(self, f'lcx_values_{level}')
+
+    # --- Bucketed LCX search infrastructure ---
+
+    _LCX_TARGET_BUCKET_SIZE = 512   # aim for ~512 slots per bucket
+    _LCX_MIN_SLOTS_FOR_BUCKETING = 1024  # don't bucket tiny levels
+
+    def _lcx_compute_bucket(self, vec: torch.Tensor, level: int) -> torch.Tensor:
+        """SimHash: project onto random planes, convert sign bits to bucket ID.
+        vec: [..., key_dim] -> [...] int64 bucket IDs."""
+        planes = getattr(self, f'_lcx_hash_planes_{level}', None)
+        if planes is None:
+            return torch.zeros(vec.shape[:-1], dtype=torch.long, device=vec.device)
+        bits = (vec @ planes > 0).long()                       # [..., num_bits]
+        powers = getattr(self, f'_lcx_hash_powers_{level}')    # [num_bits]
+        return (bits * powers).sum(dim=-1)                      # [...]
+
+    def _lcx_build_bucket_index(self, level: int):
+        """Build padded bucket index from current keys. Called once per forward pass."""
+        keys = getattr(self, f'lcx_keys_{level}', None)
+        if keys is None:
+            return
+        _n = keys.shape[0]
+        if _n < self._LCX_MIN_SLOTS_FOR_BUCKETING:
+            # Small level: no bucketing, set flag
+            setattr(self, f'_lcx_bucketed_{level}', False)
+            return
+
+        # Ensure hash planes exist (created at allocation, but needed for L0 init too)
+        if not hasattr(self, f'_lcx_hash_planes_{level}') or getattr(self, f'_lcx_hash_planes_{level}', None) is None:
+            self._lcx_init_hash_planes(level, _n, keys.device, keys.dtype)
+
+        num_buckets = getattr(self, f'_lcx_num_buckets_{level}')
+        bucket_ids = self._lcx_compute_bucket(keys, level)         # [S]
+
+        # Build padded index: [num_buckets, max_bucket_size]
+        counts = torch.zeros(num_buckets, dtype=torch.long, device=keys.device)
+        for b_id in range(num_buckets):
+            counts[b_id] = (bucket_ids == b_id).sum()
+        max_bucket_size = int(counts.max().item())
+        if max_bucket_size == 0:
+            max_bucket_size = 1  # edge case: empty buckets
+
+        bucket_index = torch.zeros(num_buckets, max_bucket_size,
+                                   dtype=torch.long, device=keys.device)
+        fill_pos = torch.zeros(num_buckets, dtype=torch.long, device=keys.device)
+        # Vectorized scatter: sort slots by bucket
+        sorted_buckets, sort_order = bucket_ids.sort()
+        for i in range(num_buckets):
+            mask = sorted_buckets == i
+            indices = sort_order[mask]
+            cnt = indices.shape[0]
+            if cnt > 0:
+                bucket_index[i, :cnt] = indices
+
+        setattr(self, f'_lcx_bucket_ids_{level}', bucket_ids)
+        setattr(self, f'_lcx_bucket_index_{level}', bucket_index)
+        setattr(self, f'_lcx_bucket_counts_{level}', counts)
+        setattr(self, f'_lcx_max_bucket_size_{level}', max_bucket_size)
+        setattr(self, f'_lcx_bucketed_{level}', True)
+
+    def _lcx_init_hash_planes(self, level: int, num_slots: int, device, dtype):
+        """Create SimHash random projection planes for a level."""
+        num_buckets = max(1, num_slots // self._LCX_TARGET_BUCKET_SIZE)
+        num_hash_bits = max(1, int(math.ceil(math.log2(num_buckets)))) if num_buckets > 1 else 1
+        num_buckets = 2 ** num_hash_bits  # round up to power of 2
+
+        planes = torch.randn(self.lcx_key_dim, num_hash_bits, device=device, dtype=dtype)
+        planes = torch.nn.functional.normalize(planes, dim=0)
+        powers = (2 ** torch.arange(num_hash_bits, device=device)).long()
+
+        # register_buffer so planes/powers survive .to(device) calls
+        self.register_buffer(f'_lcx_hash_planes_{level}', planes, persistent=False)
+        self.register_buffer(f'_lcx_hash_powers_{level}', powers, persistent=False)
+        setattr(self, f'_lcx_num_buckets_{level}', num_buckets)
+        print(f"  [LCX] L{level} bucketed search: {num_slots} slots / {num_buckets} buckets "
+              f"= ~{num_slots // num_buckets} slots/bucket ({num_hash_bits}-bit SimHash)", flush=True)
+
+    def _lcx_rebuild_all_bucket_indices(self):
+        """Rebuild bucket indices for all allocated levels. Call once per forward pass."""
+        if not hasattr(self, '_lcx_allocated_levels'):
+            return
+        for lvl in self._lcx_allocated_levels:
+            self._lcx_build_bucket_index(lvl)
+
+    def _allocate_lcx_level(self, level: int):
+        """Lazy-allocate an LCX level's buffers on GPU. Called on first access."""
+        if level in self._lcx_allocated_levels:
+            return
+        _n = self._lcx_level_slots[level] if level < len(self._lcx_level_slots) else self._lcx_level_slots[-1]
+        device = self.lcx_keys_0.device
+        dtype = self.lcx_keys_0.dtype
+
+        _k = torch.randn(_n, self.lcx_key_dim, device=device, dtype=dtype)
+        _k = torch.nn.functional.normalize(_k, dim=-1)
+        setattr(self, f'lcx_keys_{level}', _k)
+        setattr(self, f'lcx_values_{level}',
+                torch.randn(_n, self.embedding_dim, device=device, dtype=dtype) * 0.01)
+        setattr(self, f'lcx_heat_{level}',
+                torch.zeros(_n, dtype=torch.int16, device=device))
+        setattr(self, f'lcx_valid_{level}',
+                torch.zeros(_n, dtype=torch.bool, device=device))
+        self._lcx_allocated_levels.add(level)
+
+        _mb = _n * (self.lcx_key_dim + self.embedding_dim) * 4 / 1024 / 1024
+        print(f"  [LCX] Lazy-allocated L{level}: {_n} slots ({_mb:.0f} MB)", flush=True)
+
+        # Initialize hash planes + bucket index for bucketed search
+        if _n >= self._LCX_MIN_SLOTS_FOR_BUCKETING:
+            self._lcx_init_hash_planes(level, _n, device, dtype)
+            self._lcx_build_bucket_index(level)
+
+    def resize_lcx(self, new_slots: int):
+        """Resize LCX to a single level with new_slots slots, preserving memories.
+
+        Handles all cases:
+        - Growing 1 level (copy old, pad with empty)
+        - Shrinking 1 level (keep hottest slots)
+        - Merging N levels → 1 level (concatenate all, then resize)
+
+        Memories are preserved (hottest-first if shrinking).
+        Hash planes and bucket indices are rebuilt for the new size.
+        Model weights (lcx_route_query, zoom_gate, etc.) are untouched.
+
+        Call during training when hitting a plateau:
+            model.resize_lcx(200_000)  # grow from 100K to 200K
+        """
+        if not self._lcx_hash_mode:
+            print("  [LCX] resize_lcx: LCX hash mode not active, nothing to do.")
+            return
+
+        device = self.lcx_keys_0.device
+        dtype = self.lcx_keys_0.dtype
+
+        # ── 1. Gather all existing slots from all allocated levels ──
+        all_keys, all_values, all_heat, all_valid = [], [], [], []
+        old_levels = sorted(self._lcx_allocated_levels)
+
+        for lvl in old_levels:
+            k = getattr(self, f'lcx_keys_{lvl}', None)
+            if k is None:
+                continue
+            all_keys.append(k.detach())
+            all_values.append(getattr(self, f'lcx_values_{lvl}').detach())
+            all_heat.append(getattr(self, f'lcx_heat_{lvl}').detach())
+            all_valid.append(getattr(self, f'lcx_valid_{lvl}').detach())
+
+        if all_keys:
+            merged_keys = torch.cat(all_keys, dim=0)
+            merged_values = torch.cat(all_values, dim=0)
+            merged_heat = torch.cat(all_heat, dim=0)
+            merged_valid = torch.cat(all_valid, dim=0)
+            old_total = merged_keys.shape[0]
+        else:
+            old_total = 0
+
+        # ── 2. If shrinking, keep hottest slots first ──
+        if old_total > new_slots:
+            _, sort_idx = merged_heat.sort(descending=True)
+            merged_keys = merged_keys[sort_idx[:new_slots]]
+            merged_values = merged_values[sort_idx[:new_slots]]
+            merged_heat = merged_heat[sort_idx[:new_slots]]
+            merged_valid = merged_valid[sort_idx[:new_slots]]
+            kept = new_slots
+        else:
+            kept = old_total
+
+        # ── 3. Create new buffers ──
+        new_keys = torch.randn(new_slots, self.lcx_key_dim, device=device, dtype=dtype)
+        new_keys = torch.nn.functional.normalize(new_keys, dim=-1)
+        new_values = torch.zeros(new_slots, self.embedding_dim, device=device, dtype=dtype)
+        new_heat = torch.zeros(new_slots, dtype=torch.int16, device=device)
+        new_valid = torch.zeros(new_slots, dtype=torch.bool, device=device)
+
+        # ── 4. Copy preserved slots into the front ──
+        if kept > 0:
+            new_keys[:kept] = merged_keys[:kept]
+            new_values[:kept] = merged_values[:kept]
+            new_heat[:kept] = merged_heat[:kept]
+            new_valid[:kept] = merged_valid[:kept]
+
+        # ── 5. Clean up old levels (L1+) ──
+        for lvl in old_levels:
+            if lvl == 0:
+                continue
+            # Remove registered buffers for this level
+            for suffix in ['keys', 'values', 'heat', 'valid']:
+                name = f'lcx_{suffix}_{lvl}'
+                if name in self._buffers:
+                    del self._buffers[name]
+                elif hasattr(self, name):
+                    delattr(self, name)
+            # Remove hash/bucket state
+            for prefix in ['_lcx_hash_planes_', '_lcx_hash_powers_',
+                           '_lcx_num_buckets_', '_lcx_bucket_ids_',
+                           '_lcx_bucket_index_', '_lcx_bucket_counts_',
+                           '_lcx_max_bucket_size_', '_lcx_bucketed_']:
+                name = f'{prefix}{lvl}'
+                if name in self._buffers:
+                    del self._buffers[name]
+                elif hasattr(self, name):
+                    delattr(self, name)
+
+        # ── 6. Clean up old L0 hash/bucket state ──
+        for prefix in ['_lcx_hash_planes_', '_lcx_hash_powers_',
+                       '_lcx_num_buckets_', '_lcx_bucket_ids_',
+                       '_lcx_bucket_index_', '_lcx_bucket_counts_',
+                       '_lcx_max_bucket_size_', '_lcx_bucketed_']:
+            name = f'{prefix}0'
+            if name in self._buffers:
+                del self._buffers[name]
+            elif hasattr(self, name):
+                delattr(self, name)
+
+        # ── 7. Install new L0 buffers ──
+        # register_buffer updates existing buffer if name already registered
+        self.register_buffer('lcx_keys_0', new_keys)
+        self.register_buffer('lcx_values_0', new_values)
+        self.register_buffer('lcx_heat_0', new_heat)
+        self.register_buffer('lcx_valid_0', new_valid)
+
+        # ── 8. Update model config ──
+        self._lcx_num_levels = 1
+        self._lcx_level_slots = [new_slots]
+        self._lcx_total_slots = new_slots
+        self._lcx_allocated_levels = {0}
+        self._lcx_route_temps = [2.0]
+
+        # ── 9. Re-init hash planes + bucket index ──
+        if new_slots >= self._LCX_MIN_SLOTS_FOR_BUCKETING:
+            self._lcx_init_hash_planes(0, new_slots, device, dtype)
+            self._lcx_build_bucket_index(0)
+
+        # Free old tensors
+        del all_keys, all_values, all_heat, all_valid
+        if old_total > 0:
+            del merged_keys, merged_values, merged_heat, merged_valid
+
+        _mb = new_slots * (self.lcx_key_dim + self.embedding_dim) * 4 / 1024 / 1024
+        print(f"  [LCX] Resized: {old_total:,} slots ({len(old_levels)} levels) "
+              f"-> {new_slots:,} slots (1 level, {_mb:.0f} MB)")
+        print(f"  [LCX] Preserved {kept:,}/{old_total:,} memories "
+              f"({new_slots - kept:,} new empty slots)")
+
+    def lcx_heat_stats(self):
+        """Return per-level heat statistics for logging/telemetry."""
+        stats = {}
+        if not hasattr(self, '_lcx_allocated_levels'):
+            return stats
+        for lvl in range(self._lcx_num_levels):
+            heat = getattr(self, f'lcx_heat_{lvl}', None)
+            if heat is not None and lvl in self._lcx_allocated_levels:
+                h = heat.float()
+                stats[f'L{lvl}_hot_slots'] = int((h > 0).sum().item())
+                stats[f'L{lvl}_total_slots'] = heat.shape[0]
+                stats[f'L{lvl}_max_heat'] = int(h.max().item())
+                stats[f'L{lvl}_mean_heat'] = float(h.mean().item())
+            valid = getattr(self, f'lcx_valid_{lvl}', None)
+            if valid is not None and lvl in self._lcx_allocated_levels:
+                stats[f'L{lvl}_valid_slots'] = int(valid.sum().item())
+        stats['allocated_levels'] = len(self._lcx_allocated_levels)
+        return stats
+
+    # --- Flat LCX read/write ---
+
+    def _lcx_flat_read(self, state: torch.Tensor, level: int) -> torch.Tensor:
+        """Bucketed cosine similarity read at a single level.
+        SimHash query → bucket → search within bucket → topk → softmax weighted sum.
+        For small levels (<1024 slots), falls back to full search."""
+        squeeze = state.dim() == 1
+        if squeeze:
+            state = state.unsqueeze(0)
+        B = state.shape[0]
+        k = self.lcx_top_k
+
+        query = self.lcx_route_query(state)                              # [B, key_dim]
+        query = torch.nn.functional.normalize(query, dim=-1)
+
+        keys, values = self._lcx_level_bufs(level)
+        valid = getattr(self, f'lcx_valid_{level}', None)
+        temp = self._lcx_route_temps[min(level, len(self._lcx_route_temps) - 1)]
+
+        is_bucketed = getattr(self, f'_lcx_bucketed_{level}', False)
+
+        if not is_bucketed:
+            # --- Original full search (small levels) ---
+            scores = query @ keys.detach().clone().T                     # [B, S]
+            if valid is not None and valid.any() and not valid.all():
+                scores = scores.masked_fill(~valid.unsqueeze(0), float('-inf'))
+            if temp != 1.0:
+                scores = scores / temp
+            eff_k = min(k, scores.shape[-1])
+            topk_scores, topk_idx = scores.topk(eff_k, dim=-1)          # [B, K]
+            weights = torch.nn.functional.softmax(topk_scores, dim=-1)   # [B, K]
+            topk_values = values.detach()[topk_idx]                      # [B, K, D]
+        else:
+            # --- Bucketed search (large levels) ---
+            bucket_index = getattr(self, f'_lcx_bucket_index_{level}')   # [num_buckets, max_bkt]
+            bucket_counts = getattr(self, f'_lcx_bucket_counts_{level}') # [num_buckets]
+            max_bkt = getattr(self, f'_lcx_max_bucket_size_{level}')
+
+            query_bucket = self._lcx_compute_bucket(query, level)        # [B]
+            # Gather the slot indices for each query's bucket
+            sel_indices = bucket_index[query_bucket]                     # [B, max_bkt]
+            sel_counts = bucket_counts[query_bucket]                     # [B]
+
+            # Gather keys for the selected slots only
+            flat_idx = sel_indices.clamp(min=0)                          # safe index for empty padding
+            sel_keys = keys.detach()[flat_idx]                           # [B, max_bkt, key_dim]
+
+            # Batched cosine similarity within bucket
+            scores = torch.bmm(query.unsqueeze(1),
+                               sel_keys.transpose(1, 2)).squeeze(1)     # [B, max_bkt]
+
+            # Mask padding positions
+            range_idx = torch.arange(max_bkt, device=scores.device).unsqueeze(0)  # [1, max_bkt]
+            pad_mask = range_idx >= sel_counts.unsqueeze(1)              # [B, max_bkt]
+            scores = scores.masked_fill(pad_mask, float('-inf'))
+
+            # Mask invalid (unwritten) slots
+            if valid is not None and valid.any() and not valid.all():
+                sel_valid = valid[flat_idx]                              # [B, max_bkt]
+                scores = scores.masked_fill(~sel_valid, float('-inf'))
+
+            if temp != 1.0:
+                scores = scores / temp
+
+            eff_k = min(k, max_bkt)
+            topk_scores, topk_local = scores.topk(eff_k, dim=-1)        # [B, K]
+            # Map local bucket indices back to global slot indices
+            topk_idx = flat_idx.gather(1, topk_local)                    # [B, K]
+            weights = torch.nn.functional.softmax(topk_scores, dim=-1)   # [B, K]
+            topk_values = values.detach()[topk_idx]                      # [B, K, D]
+
+        context = (weights.unsqueeze(-1) * topk_values).sum(dim=1)       # [B, D]
+
+        # Stash read weights for auxiliary entropy loss
+        if self.training:
+            if not hasattr(self, '_lcx_read_weights_accum'):
+                self._lcx_read_weights_accum = []
+            self._lcx_read_weights_accum.append(weights)
+            # Score margin diagnostic (pure telemetry, no gradient)
+            with torch.no_grad():
+                _n_cand = scores.shape[-1]
+                if _n_cand > eff_k:
+                    _kp1 = scores.topk(eff_k + 1, dim=-1).values  # [B, K+1]
+                    _margin = _kp1[:, -2] - _kp1[:, -1]           # last winner - first loser
+                else:
+                    _margin = torch.zeros(1, device=scores.device)
+                if not hasattr(self, '_lcx_score_margin_accum'):
+                    self._lcx_score_margin_accum = []
+                self._lcx_score_margin_accum.append(
+                    (_margin.mean().item(), topk_scores[:, 0].mean().item())
+                )
+
+        if squeeze:
+            context = context.squeeze(0)
+        return context
+
+    def _lcx_flat_write(self, state: torch.Tensor,
+                        write_content: torch.Tensor, level: int):
+        """Flat cosine route → EMA write at a single level.
+        Anti-rut: random slot write (no quadtree siblings)."""
+        squeeze = state.dim() == 1
+        if squeeze:
+            state = state.unsqueeze(0)
+            write_content = write_content.unsqueeze(0)
+        B = state.shape[0]
+        k = self.lcx_top_k
+
+        # Write gate WITH gradient for auxiliary loss
+        # L2-normalize input to bound pre-activation (hidden magnitudes grow unbounded), fp32
+        with torch.amp.autocast('cuda', enabled=False):
+            _wc_norm = torch.nn.functional.normalize(write_content.float(), dim=-1)
+            gate_for_aux = torch.sigmoid(self.lcx_write_gate(_wc_norm))  # [B, 1] fp32
+        if self.training:
+            if not hasattr(self, '_lcx_write_gate_accum'):
+                self._lcx_write_gate_accum = []
+            self._lcx_write_gate_accum.append(gate_for_aux)
+
+        with torch.no_grad():
+            query = self.lcx_route_query(state)
+            query = torch.nn.functional.normalize(query, dim=-1)
+
+            keys, values = self._lcx_level_bufs(level)
+            scores = query @ keys.T                                      # [B, S]
+            eff_k = min(k, scores.shape[-1])
+            topk_scores, topk_idx = scores.topk(eff_k, dim=-1)          # [B, K]
+
+            # EMA write at this level
+            weights = torch.nn.functional.softmax(topk_scores, dim=-1)
+            gate = gate_for_aux.detach()  # detached for buffer write (no grad through EMA)
+            # Asymmetric nudge: slower at deeper levels to preserve diversity
+            nudge_rate = 0.005 if level > 0 else 0.01
+
+            # Heat counter + valid mask for hot-bin tracking
+            heat = getattr(self, f'lcx_heat_{level}', None)
+            valid = getattr(self, f'lcx_valid_{level}', None)
+
+            for b in range(B):
+                for j in range(topk_idx.shape[1]):
+                    idx = topk_idx[b, j].item()
+                    w = weights[b, j] * gate[b, 0]
+                    values[idx] = (1.0 - w) * values[idx] + w * write_content[b]
+                    keys[idx] = torch.nn.functional.normalize(
+                        (1.0 - nudge_rate) * keys[idx] + nudge_rate * query[b],
+                        dim=-1)
+                    if heat is not None:
+                        heat[idx] = min(heat[idx] + 1, 32767)  # int16 cap
+                    if valid is not None:
+                        valid[idx] = True
+
+            # Anti-rut: write weakly to a random slot (flat — no siblings)
+            num_slots = keys.shape[0]
+            rand_idx = torch.randint(num_slots, (B,), device=keys.device)
+            for b in range(B):
+                ri = rand_idx[b].item()
+                values[ri] = 0.99 * values[ri] + 0.01 * write_content[b]
+                if valid is not None:
+                    valid[ri] = True
 
     def forward(self, x: torch.Tensor, return_stats: bool = False, return_being_outputs: bool = False):
         """
@@ -1233,11 +2121,28 @@ class SwarmByteRingModel(nn.Module):
                 - jump_rates_per_being: List of jump rates per being
                 - pointer_positions_all: List of all pointer positions (for coverage)
         """
+        # Detach memory from previous step's computation graph
+        if self.lcx is not None:
+            self.lcx = self.lcx.detach()
+        elif self.gem is not None:
+            self.gem = self.gem.detach()
+
         # Dispatch to vectorized path for combinatorial mode
         if self.combinatorial and hasattr(self, '_vec_vis_indices'):
             return self._forward_vectorized(x, return_stats, return_being_outputs)
 
         B, T, _ = x.shape
+
+        # Clear LCX auxiliary loss accumulators for this forward pass
+        if self.training and self._lcx_hash_mode:
+            self._lcx_write_gate_accum = []
+            self._lcx_read_weights_accum = []
+            self._lcx_zoom_gate_accum = []
+            self._lcx_score_margin_accum = []
+
+        # Rebuild bucket indices for bucketed LCX search (once per forward pass)
+        if self._lcx_hash_mode:
+            self._lcx_rebuild_all_bucket_indices()
 
         # SHARED ring memory (all beings write here)
         memory_ring = torch.zeros(
@@ -1274,10 +2179,23 @@ class SwarmByteRingModel(nn.Module):
         for t in range(T):
             # 1. Shared input projection (all beings see same input)
             input_bits = x[:, t, :]
-            if self.input_proj is not None:
-                input_vec = self.input_proj(input_bits)
+            # Memory: Hash LCX (embedding space) or Dense LCX (input space) or GEM
+            if self._lcx_hash_mode:
+                # Hash LCX: raw bits only (LCX context added per-being in step 2b)
+                input_with_mem = input_bits  # [B, num_bits]
+            elif self.lcx is not None:
+                # Dense LCX: full input broadcast+add (no mask for shared path)
+                input_with_mem = self._read_with_lcx(input_bits)  # [B, lcx_size=64]
+            elif self.gem is not None:
+                gem_expanded = self.gem.unsqueeze(0).expand(input_bits.size(0), -1)  # [B, num_bits]
+                input_with_mem = torch.cat([input_bits, gem_expanded], dim=-1)  # [B, num_bits*2]
             else:
-                input_vec = input_bits
+                # No memory active (INFANT mode: hash-mode model with LCX disabled)
+                input_with_mem = input_bits  # [B, num_bits]
+            if self.input_proj is not None:
+                input_vec = self.input_proj(input_with_mem)
+            else:
+                input_vec = input_with_mem
 
             # 2. Each being processes independently
             being_outputs_t = []
@@ -1338,21 +2256,40 @@ class SwarmByteRingModel(nn.Module):
                     context_read = self.ring_read_projs[being_idx](context_read)
 
                 # 2b. Combine input + context (with optional receptive field masking)
-                if self.full_view:
-                    # FULL VIEW: all bits projected through per-being bottleneck
-                    being_input_vec = self.being_input_projs[being_idx](input_bits)  # [B, num_bits] → [B, H_i]
-                elif self.heterogeneous:
-                    # HETEROGENEOUS: extract visible bits, use per-being projection
-                    vis_idx = self.receptive_masks[being_idx].nonzero(as_tuple=True)[0]
-                    visible_bits = input_bits[:, vis_idx]  # [B, K_i]
-                    being_input_vec = self.being_input_projs[being_idx](visible_bits)  # [B, D]
-                elif being.input_mask is not None:
-                    # Homogeneous with masks: zero out non-visible bits
-                    masked_bits = input_bits * being.input_mask.unsqueeze(0)  # [B, 8]
-                    if self.input_proj is not None:
-                        being_input_vec = self.input_proj(masked_bits)
+                if self._lcx_hash_mode:
+                    # Hash LCX: project raw bits, add LCX context in embedding space
+                    being_input_vec = self.input_proj(input_bits)  # [B, D]
+                    lcx_ctx = self._lcx_flat_read(being_input_vec, level=0)  # [B, D]
+                    being_input_vec = being_input_vec + lcx_ctx
+                elif self.lcx is not None:
+                    # Dense LCX: broadcast+add with per-ant mask → shared projection
+                    if self.heterogeneous and not self.full_view:
+                        vis_idx = self.receptive_masks[being_idx].nonzero(as_tuple=True)[0]
+                        vis_bits = input_bits[:, vis_idx]
+                        combined_lcx = self._read_with_lcx(vis_bits, mask=vis_idx)  # [B, 64]
+                    elif being.input_mask is not None:
+                        masked_bits = input_bits * being.input_mask.unsqueeze(0)
+                        combined_lcx = self._read_with_lcx(masked_bits)  # [B, 64]
                     else:
-                        being_input_vec = masked_bits
+                        combined_lcx = input_with_mem  # already computed above [B, 64]
+                    being_input_vec = self.input_proj(combined_lcx) if self.input_proj is not None else combined_lcx
+                    # Bridge D → H_i for capacity_fibonacci compatibility
+                    if self.being_input_projs is not None:
+                        being_input_vec = self.being_input_projs[being_idx](being_input_vec)
+                elif self.full_view:
+                    being_input_vec = self.being_input_projs[being_idx](input_with_mem)
+                elif self.heterogeneous:
+                    vis_idx = self.receptive_masks[being_idx].nonzero(as_tuple=True)[0]
+                    visible_bits = input_bits[:, vis_idx]
+                    visible_with_mem = torch.cat([visible_bits, gem_expanded], dim=-1)
+                    being_input_vec = self.being_input_projs[being_idx](visible_with_mem)
+                elif being.input_mask is not None:
+                    masked_bits = input_bits * being.input_mask.unsqueeze(0)
+                    masked_with_mem = torch.cat([masked_bits, gem_expanded], dim=-1)
+                    if self.input_proj is not None:
+                        being_input_vec = self.input_proj(masked_with_mem)
+                    else:
+                        being_input_vec = masked_with_mem
                 else:
                     being_input_vec = input_vec  # No mask: use shared projection
                 combined_input = being_input_vec + context_scale * context_read
@@ -1375,26 +2312,64 @@ class SwarmByteRingModel(nn.Module):
                 # Add phase bias (small scale to not dominate)
                 combined_input = combined_input + 0.1 * phase_bias
 
-                # 2c. State update (LayerNorm prevents tanh saturation)
-                state_update = torch.tanh(self.state_norm(combined_input + state['hidden_state']))
+                # 2c. State update (phi EMA — norm hidden only, input path clean)
+                _norm = self.being_state_norms[being_idx] if self.being_state_norms is not None else self.state_norm
+                state_update = 0.618 * _norm(state['hidden_state']) + 0.382 * combined_input
 
-                # Additional processing layers (with residual connections)
+                # Additional processing layers (Pre-LN + GELU residual)
                 if self.being_processing_layers is not None:
-                    for layer in self.being_processing_layers[being_idx]:
-                        state_update = state_update + torch.nn.functional.gelu(layer(state_update))
+                    for norm, layer in zip(self.being_processing_norms[being_idx], self.being_processing_layers[being_idx]):
+                        state_update = state_update + torch.nn.functional.gelu(layer(norm(state_update)))
                 elif self.processing_layers is not None:
-                    for layer in self.processing_layers:
-                        state_update = state_update + torch.nn.functional.gelu(layer(state_update))
+                    for norm, layer in zip(self.processing_norms, self.processing_layers):
+                        state_update = state_update + torch.nn.functional.gelu(layer(norm(state_update)))
 
                 state['hidden_state'] = state_update
 
-                # 2d. Write to SHARED ring (scatter_add accumulation)
-                # Gradient flows through ring writes for collaborative learning.
-                # CAPACITY FIBONACCI: project H_i -> D before ring write
+                # CAPACITY FIBONACCI: project H_i -> D for memory writes
                 if self.ring_write_projs is not None:
                     write_vec = self.ring_write_projs[being_idx](state_update)
                 else:
                     write_vec = state_update
+
+                # MEMORY WRITE (sequential): per-slot ownership (VRA-88)
+                if self._lcx_hash_mode:
+                    # Hash LCX write: route state to top-k slots
+                    self._lcx_flat_write(state['hidden_state'], write_vec, level=0)
+                elif self.lcx is not None and self.pixel_assignments is not None:
+                    slots = self.pixel_assignments[being_idx]  # [K] this being's pixel(s)
+                    delta = torch.nn.functional.softsign(self.lcx_propose(write_vec))  # [B, lcx_size]
+                    gate = torch.sigmoid(self.lcx_gate(write_vec))                     # [B, lcx_size]
+                    delta_at_slots = delta[:, slots].mean(dim=0)    # [K] batch-mean per slot
+                    gate_at_slots = gate[:, slots].mean(dim=0)      # [K]
+                    w = EFFORT_WEIGHTS[self.effort_level].to(self.lcx.device)  # [3]
+                    new_lcx = self.lcx.detach().clone()
+                    for c in range(3):
+                        old_c = self.lcx[c].detach()
+                        old_at_slots = old_c[slots]
+                        new_at_slots = (1.0 - gate_at_slots * w[c]) * old_at_slots + gate_at_slots * w[c] * delta_at_slots
+                        new_lcx[c] = old_c.scatter(0, slots, new_at_slots)
+                    self.lcx = new_lcx.clamp(-1.0, 1.0)
+                elif self.lcx is not None:
+                    # Legacy global write (backwards compat when pixel_assignments missing)
+                    delta = torch.nn.functional.softsign(self.lcx_propose(write_vec))  # [B, lcx_size]
+                    gate = torch.sigmoid(self.lcx_gate(write_vec))                      # [B, lcx_size]
+                    delta_avg = delta.mean(dim=0)   # [lcx_size]
+                    gate_avg = gate.mean(dim=0)     # [lcx_size]
+                    w = EFFORT_WEIGHTS[self.effort_level].to(self.lcx.device)  # [3]
+                    new_lcx = self.lcx.detach().clone()
+                    for c in range(3):
+                        old_c = self.lcx[c].detach()
+                        new_lcx[c] = (1.0 - gate_avg * w[c]) * old_c + gate_avg * w[c] * delta_avg
+                    self.lcx = new_lcx.clamp(-1.0, 1.0)
+                elif self.gem_write_head is not None and self.gem is not None:
+                    _gem_signal = torch.nn.functional.softsign(self.gem_write_head(write_vec))  # [B, num_bits]
+                    _gem_update = _gem_signal.mean(dim=0)  # average across batch → [num_bits]
+                    self.gem = self._phi_inv * self.gem.detach() + (1.0 - self._phi_inv) * _gem_update
+                # else: no memory write (INFANT mode: hash-mode model with LCX disabled)
+
+                # 2d. Write to SHARED ring (scatter_add accumulation)
+                # Gradient flows through ring writes for collaborative learning.
                 update_broadcast = write_vec.unsqueeze(1).expand(-1, weights.size(1), -1)
                 contribution = weights.unsqueeze(-1) * update_broadcast
                 memory_ring = memory_ring.scatter_add(1, indices_exp, contribution)
@@ -1403,7 +2378,7 @@ class SwarmByteRingModel(nn.Module):
                 current_pos = state['pointer_position'].long().clamp(0, self.num_memory_positions - 1)
                 jump_target = being.pointer_destinations[current_pos].float().clamp(0, self.num_memory_positions - 1)
                 jump_logits = being.jump_gate(state_update).squeeze(-1)
-                jump_prob = torch.sigmoid(jump_logits)
+                jump_prob = torch.sigmoid(jump_logits / JUMP_SIGMOID_TAU)
                 walk_position = (state['pointer_position'] + 1.0) % self.num_memory_positions
                 state['pointer_position'] = jump_prob * jump_target + (1.0 - jump_prob) * walk_position
 
@@ -1436,8 +2411,9 @@ class SwarmByteRingModel(nn.Module):
 
             # 2g. THINK TICKS: extra ring rounds without input injection
             #     Beings read what others wrote, process, write back. No new input.
-            if self.think_ticks > 0:
-                for _tt in range(self.think_ticks):
+            _eff_think_ticks = 0 if (not self.training and getattr(self, '_eval_skip_think', False)) else self.think_ticks
+            if _eff_think_ticks > 0:
+                for _tt in range(_eff_think_ticks):
                     for being_idx in range(self.num_beings):
                         being = self.beings[being_idx]
                         state = being_states[being_idx]
@@ -1465,7 +2441,7 @@ class SwarmByteRingModel(nn.Module):
                         if self.ring_read_projs is not None:
                             context_read = self.ring_read_projs[being_idx](context_read)
 
-                        # No input -- only ring context + hidden state
+                        # No input -- only ring context + hidden state + think token
                         combined_input = context_scale * context_read
 
                         # Phase embedding (identity signal)
@@ -1482,16 +2458,49 @@ class SwarmByteRingModel(nn.Module):
                             else:
                                 phase_bias = phase_16d[:, :h_i_tt]
                         combined_input = combined_input + 0.1 * phase_bias
+                        if self.think_token is not None:
+                            combined_input = combined_input + self.think_token[:h_i_tt]  # "I'm thinking" signal
 
-                        # State update (LayerNorm prevents tanh saturation)
-                        state_update = torch.tanh(self.state_norm(combined_input + state['hidden_state']))
+                        # State update (phi EMA — norm hidden only, input path clean)
+                        # Matches vectorized path: single EMA + direct assign (no double blend)
+                        _norm_tt = self.being_state_norms[being_idx] if self.being_state_norms is not None else self.state_norm
+                        state_update = 0.618 * _norm_tt(state['hidden_state']) + 0.382 * combined_input
                         if self.being_processing_layers is not None:
-                            for layer in self.being_processing_layers[being_idx]:
-                                state_update = state_update + torch.nn.functional.gelu(layer(state_update))
+                            for norm, layer in zip(self.being_processing_norms[being_idx], self.being_processing_layers[being_idx]):
+                                state_update = state_update + torch.nn.functional.gelu(layer(norm(state_update)))
                         elif self.processing_layers is not None:
-                            for layer in self.processing_layers:
-                                state_update = state_update + torch.nn.functional.gelu(layer(state_update))
+                            for norm, layer in zip(self.processing_norms, self.processing_layers):
+                                state_update = state_update + torch.nn.functional.gelu(layer(norm(state_update)))
                         state['hidden_state'] = state_update
+
+                        # Flat LCX read/write during think tick
+                        # Each tick reads the next level up, clamped to top level.
+                        # tt=0 → L1, tt=1 → L2, ..., tt>=top → re-read top (iterative retrieval).
+                        if self._lcx_hash_mode:
+                            _lcx_level = min(_tt + 1, self._lcx_num_levels - 1)
+                            _do_lcx = self._lcx_num_levels > 0
+                            if _do_lcx:
+                                _allowed = getattr(self, '_allowed_levels', None)
+                                if _allowed is not None and _lcx_level not in _allowed:
+                                    _do_lcx = False
+                            if _do_lcx:
+                                _query = state['hidden_state']
+                                lcx_tt_ctx = self._lcx_flat_read(_query, level=_lcx_level)
+                                # zoom_gate: L2-normalize input to bound pre-activation, fp32
+                                with torch.amp.autocast('cuda', enabled=False):
+                                    _q32 = torch.nn.functional.normalize(_query.float(), dim=-1)
+                                    zg = torch.sigmoid(self.zoom_gate(_q32))
+                                lcx_tt_ctx = lcx_tt_ctx * zg
+                                self._last_zoom_gate = zg.mean().item()
+                                # Stash zoom_gate output for anti-saturation aux loss
+                                if self.training:
+                                    if not hasattr(self, '_lcx_zoom_gate_accum'):
+                                        self._lcx_zoom_gate_accum = []
+                                    self._lcx_zoom_gate_accum.append(zg)
+                                state['hidden_state'] = state['hidden_state'] + lcx_tt_ctx
+                                # Write at this level
+                                self._lcx_flat_write(state['hidden_state'], state_update,
+                                                     level=_lcx_level)
 
                         # Write to ring
                         if self.ring_write_projs is not None:
@@ -1506,9 +2515,15 @@ class SwarmByteRingModel(nn.Module):
                         current_pos = state['pointer_position'].long().clamp(0, self.num_memory_positions - 1)
                         jump_target = being.pointer_destinations[current_pos].float().clamp(0, self.num_memory_positions - 1)
                         jump_logits = being.jump_gate(state_update).squeeze(-1)
-                        jump_prob = torch.sigmoid(jump_logits)
+                        jump_prob = torch.sigmoid(jump_logits / JUMP_SIGMOID_TAU)
                         walk_position = (state['pointer_position'] + 1.0) % self.num_memory_positions
                         state['pointer_position'] = jump_prob * jump_target + (1.0 - jump_prob) * walk_position
+
+                    # Detach between think ticks (VRAM fix): only last tick gets gradient
+                    if _tt < _eff_think_ticks - 1:
+                        for being_idx in range(self.num_beings):
+                            being_states[being_idx]['hidden_state'] = being_states[being_idx]['hidden_state'].detach()
+                        memory_ring = memory_ring.detach()
 
                 # Regenerate outputs from post-thinking hidden states
                 being_outputs_t = []
@@ -1574,6 +2589,58 @@ class SwarmByteRingModel(nn.Module):
                 being_outputs_stacked = torch.stack(being_outputs_t)  # [num_beings, B, 8]
                 disagreement = being_outputs_stacked.std(dim=0).mean().item()  # scalar
                 output_disagreements.append(disagreement)
+
+        # LCX auxiliary losses for gradient flow
+        if self.training and self._lcx_hash_mode:
+            _wg_acc = getattr(self, '_lcx_write_gate_accum', [])
+            if _wg_acc:
+                _all_gates = torch.cat([g.reshape(-1) for g in _wg_acc])
+                self._lcx_write_gate_aux_loss = -torch.log(_all_gates.mean() + 1e-8)
+            else:
+                self._lcx_write_gate_aux_loss = torch.tensor(0.0, device=x.device)
+            _rw_acc = getattr(self, '_lcx_read_weights_accum', [])
+            if _rw_acc:
+                _all_w = torch.cat([w.reshape(-1, w.shape[-1]) for w in _rw_acc], dim=0)
+                self._lcx_read_attn_aux_loss = -torch.log(_all_w + 1e-8).mean()
+            else:
+                self._lcx_read_attn_aux_loss = torch.tensor(0.0, device=x.device)
+            # Zoom gate anti-saturation aux loss
+            _zg_acc = getattr(self, '_lcx_zoom_gate_accum', [])
+            if _zg_acc:
+                _all_zg = torch.cat([z.reshape(-1) for z in _zg_acc])
+                _zg_clamped = _all_zg.clamp(1e-6, 1.0 - 1e-6)
+                self._lcx_zoom_gate_aux_loss = -(
+                    _zg_clamped * torch.log(_zg_clamped) +
+                    (1 - _zg_clamped) * torch.log(1 - _zg_clamped)
+                ).mean()
+            else:
+                self._lcx_zoom_gate_aux_loss = torch.tensor(0.0, device=x.device)
+            # Score margin telemetry (not a loss — pure diagnostic)
+            _sm_acc = getattr(self, '_lcx_score_margin_accum', [])
+            if _sm_acc:
+                self._last_score_margin = sum(m for m, _ in _sm_acc) / len(_sm_acc)
+                self._last_score_top1 = sum(t for _, t in _sm_acc) / len(_sm_acc)
+            else:
+                self._last_score_margin = 0.0
+                self._last_score_top1 = 0.0
+        else:
+            self._lcx_write_gate_aux_loss = torch.tensor(0.0, device=x.device)
+            self._lcx_read_attn_aux_loss = torch.tensor(0.0, device=x.device)
+            self._lcx_zoom_gate_aux_loss = torch.tensor(0.0, device=x.device)
+
+        # 3h. Detach LCX buffers — gradient highway is within-step only
+        # Per-level buffers: writes are in-place with no_grad, safety net.
+        # Skip unallocated levels (lazy allocation — they are None).
+        if self._lcx_hash_mode:
+            _alloc = getattr(self, '_lcx_allocated_levels', set(range(self._lcx_num_levels)))
+            for _lvl in range(self._lcx_num_levels):
+                if _lvl not in _alloc:
+                    continue
+                _k, _v = self._lcx_level_bufs(_lvl)
+                if _v.requires_grad:
+                    setattr(self, f'lcx_values_{_lvl}', _v.detach())
+                if _k.requires_grad:
+                    setattr(self, f'lcx_keys_{_lvl}', _k.detach())
 
         # 4. Stack combined outputs across timesteps -> [B, T, 8]
         output = torch.stack(combined_outputs_per_t, dim=1)
@@ -1849,9 +2916,120 @@ if __name__ == "__main__":
     print(f"  Shape: {out_tf.shape}  activation_ratio: {stats_tf.get('activation_ratio', 'N/A')}")
     print()
 
+    # ---- HASH LCX TESTS ----
+    print("-" * 70)
+    print("Testing HASH LCX (256 slots, top-4, 64-d keys):")
+    print()
+
+    # Test 1: Single being with zoom hash LCX (sequential path)
+    model_hash = SwarmByteRingModel(
+        num_memory_positions=64, embedding_dim=64,
+        num_beings=1, depth=2, num_bits=8,
+        use_lcx=True, lcx_mode="hash", lcx_num_slots=32, lcx_key_dim=16, lcx_top_k=4,
+        lcx_num_levels=3, lcx_level_slots=[32, 128, 512],
+    )
+    assert model_hash._lcx_hash_mode, "Hash mode flag should be True"
+    # Per-level flat buffers: exact slot counts, no grid rounding
+    assert hasattr(model_hash, 'lcx_keys_0'), "Per-level lcx_keys_0 should exist"
+    assert model_hash.lcx_keys_0.shape == (32, 16), f"L0 keys shape: {model_hash.lcx_keys_0.shape}"
+    assert model_hash.lcx_keys_2.shape == (512, 16), f"L2 keys shape: {model_hash.lcx_keys_2.shape}"
+    assert model_hash.lcx_values_0.shape == (32, 64), f"L0 values shape: {model_hash.lcx_values_0.shape}"
+    assert model_hash._lcx_level_slots == [32, 128, 512], f"Level slots: {model_hash._lcx_level_slots}"
+    assert model_hash.lcx_propose is None, "Dense lcx_propose should be None in hash mode"
+    assert model_hash.think_token is not None, "think_token should exist"
+    assert hasattr(model_hash, 'zoom_gate'), "zoom_gate should exist"
+
+    hash_params = sum(p.numel() for p in model_hash.parameters())
+    print(f"  Zoom Hash LCX params: {hash_params:,} ({model_hash._lcx_num_levels} levels)")
+
+    # Forward pass
+    x_hash = torch.randint(0, 2, (2, 4, 8)).float()
+    out_hash = model_hash(x_hash)
+    assert out_hash.shape == (2, 4, 8), f"Hash LCX: Expected (2,4,8), got {out_hash.shape}"
+    print(f"  Forward shape: {out_hash.shape}  OK")
+
+    # Check L0 got written (values should differ from init after forward pass)
+    _, vals_L0 = model_hash._lcx_level_bufs(0)
+    l0_count = vals_L0.shape[0]
+    nonzero_slots = (vals_L0.abs().sum(dim=-1) > 0.011).sum().item()  # > init noise (0.01 scale)
+    print(f"  L0 slots with data: {nonzero_slots}/{l0_count}")
+    assert nonzero_slots > 0, "At least one L0 slot should have been written"
+
+    # Gradient flow
+    model_hash.zero_grad()
+    target_hash = torch.randint(0, 2, (2, 4, 8)).float()
+    loss_hash = nn.functional.binary_cross_entropy_with_logits(out_hash, target_hash)
+    loss_hash.backward()
+    grads_hash = sum(1 for p in model_hash.parameters() if p.grad is not None and p.grad.abs().sum() > 0)
+    total_hash = sum(1 for _ in model_hash.parameters())
+    print(f"  Grads: {grads_hash}/{total_hash}  OK")
+
+    # Test 2: Hash LCX with think ticks (verify detach + think token)
+    print()
+    print("  Testing hash LCX + think_ticks=2:")
+    model_hash_tt = SwarmByteRingModel(
+        num_memory_positions=64, embedding_dim=64,
+        num_beings=1, depth=2, num_bits=8,
+        use_lcx=True, lcx_mode="hash", lcx_num_slots=32, lcx_key_dim=16, lcx_top_k=4,
+        think_ticks=2,
+    )
+    x_hash_tt = torch.randint(0, 2, (2, 4, 8)).float()
+    out_hash_tt = model_hash_tt(x_hash_tt)
+    assert out_hash_tt.shape == (2, 4, 8), f"Hash+TT: Expected (2,4,8), got {out_hash_tt.shape}"
+    model_hash_tt.zero_grad()
+    loss_hash_tt = nn.functional.binary_cross_entropy_with_logits(out_hash_tt, torch.randint(0, 2, (2, 4, 8)).float())
+    loss_hash_tt.backward()
+    # Verify think_token got gradient
+    assert model_hash_tt.think_token.grad is not None, "think_token should have gradient"
+    assert model_hash_tt.think_token.grad.abs().sum() > 0, "think_token gradient should be non-zero"
+    print(f"  Shape: {out_hash_tt.shape}  think_token grad norm: {model_hash_tt.think_token.grad.norm():.4f}  OK")
+
+    # Test 3: Hash LCX vectorized path (combinatorial + multi-being)
+    print()
+    print("  Testing zoom hash LCX vectorized (8 beings, combinatorial):")
+    model_hash_vec = SwarmByteRingModel(
+        num_memory_positions=64, embedding_dim=64,
+        num_beings=8, depth=2, num_bits=64,
+        combiner_mode='masked', combinatorial=True,
+        use_lcx=True, lcx_mode="hash", lcx_num_slots=64, lcx_key_dim=16, lcx_top_k=4,
+        lcx_num_levels=2, lcx_level_slots=[64, 256],
+    )
+    hash_vec_params = sum(p.numel() for p in model_hash_vec.parameters())
+    print(f"  Params: {hash_vec_params:,}")
+    x_hash_vec = torch.randint(0, 2, (2, 8, 64)).float()
+    out_hash_vec = model_hash_vec(x_hash_vec)
+    assert out_hash_vec.shape == (2, 8, 64), f"Hash vec: Expected (2,8,64), got {out_hash_vec.shape}"
+    model_hash_vec.zero_grad()
+    loss_hash_vec = nn.functional.binary_cross_entropy_with_logits(out_hash_vec, torch.randint(0, 2, (2, 8, 64)).float())
+    loss_hash_vec.backward()
+    grads_hash_vec = sum(1 for p in model_hash_vec.parameters() if p.grad is not None and p.grad.abs().sum() > 0)
+    print(f"  Shape: {out_hash_vec.shape}  Grads: {grads_hash_vec}/{sum(1 for _ in model_hash_vec.parameters())}  OK")
+
+    # Test 4: Dense LCX still works (regression check)
+    print()
+    print("  Testing dense LCX (regression check):")
+    model_dense = SwarmByteRingModel(
+        num_memory_positions=64, embedding_dim=64,
+        num_beings=1, depth=2, num_bits=8,
+        use_lcx=True, lcx_mode="dense",
+    )
+    assert not model_dense._lcx_hash_mode, "Dense mode should not set hash flag"
+    assert model_dense.lcx is not None, "Dense lcx buffer should exist"
+    x_dense = torch.randint(0, 2, (2, 4, 8)).float()
+    out_dense = model_dense(x_dense)
+    assert out_dense.shape == (2, 4, 8)
+    model_dense.zero_grad()
+    loss_dense = nn.functional.binary_cross_entropy_with_logits(out_dense, torch.randint(0, 2, (2, 4, 8)).float())
+    loss_dense.backward()
+    print(f"  Shape: {out_dense.shape}  Grads OK")
+    print()
+
     print("=" * 70)
     print("All tests passed!")
     print(f"N=8 backward compat:      OK")
     print(f"N=64 standardized:        OK ({total_params_64:,} params)")
     print(f"N=64 combinatorial (vec): OK ({total_params_comb:,} params)")
+    print(f"Flat LCX (sequential):    OK ({hash_params:,} params)")
+    print(f"Flat LCX (vectorized):    OK ({hash_vec_params:,} params)")
+    print(f"Dense LCX (regression):   OK")
     print("=" * 70)

@@ -1,221 +1,88 @@
-# Diamond Code: Ring Memory Model
+# Diamond Code v3 — SwarmByteRingModel
 
-**Clean, tested reference implementation** of the ring-based pointer memory architecture.
-
-## Status
-
-⚠️ **Pre-verification** - Tests must pass before this is considered Diamond quality.
+**Research implementation** of a swarm-based neural memory architecture with hash-bucketed long-term consensus memory (LCX/LTCM).
 
 ## Architecture
 
-**Ring Memory Model** - A neural memory system using:
-- **Circular buffer** (ring) for addressable memory
-- **Soft pointer** (differentiable position) for read/write addressing
-- **Gaussian attention** for smooth neighborhood reads
-- **Scatter-add writes** for distributed updates
-- **Hard discrete jumps** with emergent content-based routing
+**SwarmByteRingModel** — 424M parameters (D=6180, depth=12)
 
-### Core Components
+- **Ring Memory**: Circular buffer with soft pointer addressing and content-based jump routing
+- **LCX (Long-term Consensus Matrix)**: 2000 hash-bucketed memory slots with SimHash retrieval
+  - Single HD level, expandable via `resize_lcx()` during training
+  - ~512 slots searched per query regardless of total size
+- **Swarm**: Multi-being ensemble (currently 1 being, expandable)
+- **Progressive Training**: 6 effort tiers from Alpha (pure brain) to Zeta (deep contemplation)
+- **Golden Ratio Fractal Stack**: D=6180, key_dim=618, top_k=6, ring=62
 
-```python
-Memory Ring:    [batch, num_positions, embedding_dim]
-Pointer:        [batch] (float, differentiable)
-Hidden State:   [batch, embedding_dim]
-```
+### Progressive Training Tiers
 
-### Forward Pass Flow
+| Tier | Think Ticks | LCX | Batch | Name |
+|------|-------------|-----|-------|------|
+| Alpha | 0 | OFF | 10 | Reflex |
+| Beta | 1 | ON | 10 | Recall |
+| Gamma | 2 | ON | 5 | Reason |
+| Delta | 4 | ON | 3 | Depth |
+| Epsilon | 8 | ON | 2 | Emergence |
+| Zeta | 16 | ON | 1 | Zenith |
 
-1. **Input Projection**: Embed input tokens
-2. **Ring Read**: Gaussian attention around pointer position
-3. **Context Injection**: Mix read context with input
-4. **State Update**: Recurrent update (activation + residual)
-5. **Ring Write**: Scatter-add updates to neighborhood
-6. **Pointer Update**: Hard discrete jump or walk (content-based routing)
-7. **Output**: Classify from hidden state
+## Key Files
 
-## Files
+| File | Description |
+|------|-------------|
+| `swarm_model.py` | Core model (3000+ lines) |
+| `test_swarm_config.py` | Training loop & evaluation |
+| `influx_writer.py` | InfluxDB telemetry writer |
+| `live_controls.py` | Live Grafana control interface |
+| `run_goldilocks.bat` | Training launcher |
+| `tools/control_panel.py` | HTTP control panel for Grafana |
+| `tools/checkpoint_autopsy.py` | Checkpoint forensics |
+| `tools/lcx_forensics.py` | LCX memory analysis |
 
-- `ring_memory_model.py` - Core model implementation
-- `test_ring_memory.py` - 13 adversarial tests
-- `debug_utils.py` - Debugging and visualization tools
-- `README.md` - This file
+## Observability Stack
+
+- **Grafana** (`:3000`): Primary dashboard with LTCM visualization, routing metrics, training controls
+- **InfluxDB** (`:8086`): Time-series metrics storage (bucket: `diamond`)
+- **Control Panel** (`:7777`): HTTP bridge for bidirectional Grafana controls
+- **Streamlit** (`:8501`): Legacy dashboard
+
+### Dashboard Sections
+
+1. **Top Bar** — Step counter, loss, accuracy, eval metrics
+2. **Main Training** — Training overview chart + live controls form
+3. **LTCM** — Memory utilization, write heat, slot dynamics, Score Margin routing quality
+4. **Beings & Swarm** — Ensemble metrics (for multi-being experiments)
+5. **Ant/Bit Intelligence** — Per-bit accuracy, jump gates, IQ metrics
+6. **Controls** — Data mix, effort timeseries, control change log
+7. **Data Tables** — Input/output/memory state tables (collapsed)
+8. **Channel Analysis / Debug** — RGB channel norms, scratchpad (collapsed)
 
 ## Quick Start
 
-### Basic Usage
-
-```python
-import torch
-from ring_memory_model import RingMemoryModel
-
-# Create model
-model = RingMemoryModel(
-    input_size=1,
-    num_outputs=10,
-    num_memory_positions=64,
-    embedding_dim=64,
-)
-
-# Forward pass
-x = torch.randn(4, 16, 1)  # [batch=4, seq=16, input=1]
-logits, aux_loss, debug_info = model(x, return_debug=True)
-
-print(f"Output shape: {logits.shape}")  # [4, 10]
-```
-
-### Training Example
-
-```python
-# Generate simple COPY task data
-x = torch.randint(0, 10, (100, 16, 1)).float()
-y = x[:, -1, 0].long()  # Predict last token
-
-# Train
-optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
-
-for step in range(100):
-    logits, aux_loss, _ = model(x)
-    loss = torch.nn.functional.cross_entropy(logits, y) + aux_loss
-
-    optimizer.zero_grad()
-    loss.backward()
-    optimizer.step()
-
-    if step % 10 == 0:
-        acc = (logits.argmax(dim=1) == y).float().mean()
-        print(f"Step {step}: loss={loss.item():.4f}, acc={acc.item()*100:.1f}%")
-```
-
-### Debug Mode
-
-```python
-from debug_utils import visualize_pointer_trajectory, print_model_summary
-
-# Model summary
-print_model_summary(model)
-
-# Forward with debug
-logits, aux_loss, debug = model(x, return_debug=True)
-
-# Visualize pointer movement
-visualize_pointer_trajectory(debug, save_path="pointer_trace.png")
-```
-
-## Parameters
-
-### Model Config
-
-- `input_size` - Input dimension (e.g., 1 for scalar)
-- `num_outputs` - Number of output classes
-- `num_memory_positions` - Ring buffer size (64, 128, 256)
-- `embedding_dim` - Feature dimension per position (64, 128, 256)
-- `attention_radius` - Neighborhood size (2 = ±2 neighbors)
-- `attention_temperature` - Softmax temperature (8.0 = soft, 0.1 = sharp)
-- `activation` - Non-linearity ('tanh', 'relu', 'silu')
-
-## Testing
-
-### Run All Tests
-
 ```bash
-cd "S:/AI/work/VRAXION_DEV/Diamond Code"
-python test_ring_memory.py
+# Generate training data
+python generate_traindat_suite.py
+
+# Launch training
+run_goldilocks.bat
+
+# Launch Grafana (if not running as service)
+grafana/start_grafana.bat
+
+# Dashboard at http://localhost:3000
 ```
 
-Or with pytest:
+## Environment
 
-```bash
-pytest test_ring_memory.py -v
-```
+- GPU: NVIDIA RTX 4070 Ti SUPER (16 GB VRAM)
+- Python 3.11, PyTorch with CUDA, bfloat16 mixed precision
+- InfluxDB 2.x, Grafana 11.x
 
-### Test Suite
+## Documentation
 
-1. ✓ Initialization
-2. ✓ Forward pass smoke test
-3. ✓ Output shapes
-4. ✓ No NaN/Inf values
-5. ✓ Gradient flow
-6. ✓ Pointer wrapping
-7. ✓ Attention weights sum to 1
-8. ✓ Circular distance
-9. ✓ Adversarial: all zeros
-10. ✓ Adversarial: all same
-11. ✓ Adversarial: huge batch
-12. ✓ Determinism
-13. ✓ Learning test (memorize 1 sample)
-
-## Success Criteria
-
-Before committing to Diamond Code:
-
-1. ✓ All 13 unit tests pass
-2. ✓ Model memorizes 1 sample in <100 steps
-3. ✓ Model learns COPY task >90% in <100 steps
-4. ✓ No unlearning over 500 steps
-5. ✓ Pointer trajectory converges
-6. ✓ Code is clear and self-documenting
-7. ✓ No environment variables (all hardcoded)
-
-**Only THEN** is this Diamond quality.
-
-## Design Principles
-
-### What's Included (Core Only)
-
-- Ring memory buffer
-- Soft pointer with per-position learned jump destinations
-- Content-based jump gate (data decides when to jump)
-- Hard discrete jumps using Straight-Through Estimator (STE)
-- Gaussian attention for reads
-- Scatter-add for writes
-- LayerNorm for multi-dim embeddings
-
-### What's NOT Included (Stripped Out)
-
-- Environment variable parsing
-- Optional features (vault, sensory, prismion)
-- Mobius phase embedding
-- Think ring filters
-- Satiety early-exit
-- BOS/EOS special handling
-- Telemetry hooks
-- Advanced diagnostics
-
-**Philosophy**: Minimal, tested, working. No optional features.
-
-## Comparison to AbsoluteHallway
-
-### Renamed Components
-
-| AbsoluteHallway | RingMemoryModel | Meaning |
-|-----------------|-----------------|---------|
-| `ring_len` | `num_memory_positions` | Buffer size |
-| `slot_dim` | `embedding_dim` | Feature dimensions |
-| `gauss_k` | `attention_radius` | Neighborhood size |
-| `gauss_tau` | `attention_temperature` | Softmax temp |
-| `theta_ptr` | `jump_destinations` | Per-position jump targets |
-| `theta_gate` | `jump_gate` | Content-based jump decision |
-| `state` | `memory_ring` | Ring buffer state |
-| `h` | `hidden_state` | Hidden state vector |
-| `ptr_float` | `pointer_position` | Pointer location |
-
-### Simplified Forward
-
-**AbsoluteHallway**: Complex pointer dynamics with soft blending
-**RingMemoryModel**: Hard discrete jumps with emergent routing
-
-Both use ring memory, but RingMemoryModel uses a cleaner routing mechanism.
-
-## Next Steps
-
-1. Run tests: `python test_ring_memory.py`
-2. Verify all 13 tests pass
-3. Test on COPY task (>90% accuracy)
-4. Test stability (no unlearning over 500 steps)
-5. Compare to Golden Code on same tasks
-6. Identify specific differences causing instability
+- **Architecture**: [Diamond Code v3 Architecture](https://github.com/VRAXION/VRAXION/wiki/Diamond-Code-v3-Architecture) (wiki)
+- **Session Logs**: [Feb 14-16 Sprint](https://github.com/VRAXION/VRAXION/wiki/Session-Log-Feb-14-16-2026) (wiki)
+- **Theory**: [Theory of Thought](https://github.com/VRAXION/VRAXION/wiki/Theory-of-Thought) (wiki)
 
 ---
 
-Created: 2026-02-10
-Version: 1.0 (Pre-verification)
+Version: v3.0.001 (2026-02-16)
