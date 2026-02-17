@@ -70,6 +70,14 @@ DEFAULT_CONTROLS = {
     "agc_enabled": True,
     "agc_low": 0.5,
     "agc_high": 1.0,
+    # Dreaming phase defaults
+    "dream_enabled": False,
+    "dream_frequency": 10,
+    "dream_steps": 3,
+    "dream_think_ticks": 2,
+    "dream_mode": "consolidation",
+    "dream_binarize": True,
+    "dream_lr_scale": 0.1,
 }
 
 
@@ -134,6 +142,14 @@ def write_default_controls(path: str, lr: float, data_weights: Dict[str, float],
         "agc_enabled": True,
         "agc_low": 0.5,
         "agc_high": 1.0,
+        # Dreaming phase (disabled by default — turn on via controls.json or Grafana)
+        "dream_enabled": False,
+        "dream_frequency": 10,
+        "dream_steps": 3,
+        "dream_think_ticks": 2,
+        "dream_mode": "consolidation",
+        "dream_binarize": True,
+        "dream_lr_scale": 0.1,
     }
     Path(path).parent.mkdir(parents=True, exist_ok=True)
     with open(path, 'w') as f:
@@ -208,6 +224,22 @@ def read_controls(path: str) -> Dict[str, Any]:
                 result['agc_low'] = float(data['agc_low'])
             if 'agc_high' in data and isinstance(data['agc_high'], (int, float)):
                 result['agc_high'] = float(data['agc_high'])
+            # Dreaming phase controls
+            if 'dream_enabled' in data and isinstance(data['dream_enabled'], bool):
+                result['dream_enabled'] = data['dream_enabled']
+            if 'dream_frequency' in data and isinstance(data['dream_frequency'], int):
+                result['dream_frequency'] = max(1, int(data['dream_frequency']))
+            if 'dream_steps' in data and isinstance(data['dream_steps'], int):
+                result['dream_steps'] = max(1, min(20, int(data['dream_steps'])))
+            if 'dream_think_ticks' in data and isinstance(data['dream_think_ticks'], int):
+                result['dream_think_ticks'] = max(0, int(data['dream_think_ticks']))
+            if 'dream_mode' in data and isinstance(data['dream_mode'], str):
+                if data['dream_mode'] in ('consolidation', 'rehearsal'):
+                    result['dream_mode'] = data['dream_mode']
+            if 'dream_binarize' in data and isinstance(data['dream_binarize'], bool):
+                result['dream_binarize'] = data['dream_binarize']
+            if 'dream_lr_scale' in data and isinstance(data['dream_lr_scale'], (int, float)):
+                result['dream_lr_scale'] = float(max(0.001, min(1.0, data['dream_lr_scale'])))
         return result
     except Exception:
         return dict(DEFAULT_CONTROLS)

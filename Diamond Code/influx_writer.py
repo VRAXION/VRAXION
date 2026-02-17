@@ -169,6 +169,30 @@ def log_step(run_id, step, loss, bit_acc=0, byte_match=0, oracle=0,
     _write_api.write(bucket=_bucket, record=p)
 
 
+def log_dream(run_id, step, dream_step, dream_mode="consolidation",
+              dream_loss=0, dream_bit_acc=0, dream_lcx_norm=0,
+              dream_zoom_gate=0, dream_step_time=0, dream_think_ticks=0,
+              dream_binarized=False, dream_score_margin=0):
+    """Log one dream step. Non-blocking."""
+    if not _write_api:
+        return
+    p = (Point("dream_step")
+         .tag("run_id", run_id)
+         .tag("dream_mode", dream_mode)
+         .field("step", int(step))
+         .field("dream_step", int(dream_step))
+         .field("dream_loss", float(dream_loss))
+         .field("dream_bit_acc", float(dream_bit_acc))
+         .field("dream_lcx_norm", float(dream_lcx_norm))
+         .field("dream_zoom_gate", float(dream_zoom_gate))
+         .field("dream_step_time", float(dream_step_time))
+         .field("dream_think_ticks", int(dream_think_ticks))
+         .field("dream_binarized", 1 if dream_binarized else 0)
+         .field("dream_score_margin", float(dream_score_margin))
+         .time(time.time_ns(), WritePrecision.NS))
+    _write_api.write(bucket=_bucket, record=p)
+
+
 def log_being(run_id, step, being_id, accuracy=0, masked_acc=0,
               jump_rate=0, k_bits=0, unique_bits=0, redundant_bits=0,
               ctx_scale=0):

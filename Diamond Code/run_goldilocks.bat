@@ -65,8 +65,7 @@ python -u test_swarm_config.py ^
     --lr_min 1e-5 ^
     --controls_every 1 ^
     --effort Beta ^
-    REM --resume "checkpoints/goldilocks_v4/checkpoint_latest.pt"
-    REM ^ Gray code encoding: fresh start from step 0 (binary checkpoint archived)
+    --resume "checkpoints/goldilocks_v4/checkpoint_latest.pt"
 
 REM Kill control panel when training ends
 taskkill /F /FI "WINDOWTITLE eq CTRL_PANEL" >nul 2>&1
