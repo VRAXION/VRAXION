@@ -198,6 +198,10 @@ def read_controls(path: str) -> Dict[str, Any]:
                     k: float(v) for k, v in data['data_weights'].items()
                     if isinstance(v, (int, float))
                 }
+            if 'data_sequential' in data and isinstance(data['data_sequential'], bool):
+                result['data_sequential'] = data['data_sequential']
+            if 'data_seq_steps' in data and isinstance(data['data_seq_steps'], (int, float)):
+                result['data_seq_steps'] = int(data['data_seq_steps'])
             if 'agc_enabled' in data and isinstance(data['agc_enabled'], bool):
                 result['agc_enabled'] = data['agc_enabled']
             if 'agc_low' in data and isinstance(data['agc_low'], (int, float)):
@@ -305,6 +309,16 @@ def apply_controls(controls: Dict[str, Any], optimizer, loader=None, model=None)
 
     if controls.get('data_weights') and loader is not None:
         loader.update_weights(controls['data_weights'])
+
+    # Sequential dataset cycling
+    if loader is not None and hasattr(loader, 'set_sequential'):
+        seq_enabled = controls.get('data_sequential', False)
+        seq_steps = controls.get('data_seq_steps', 100)
+        if seq_enabled != getattr(loader, '_sequential', False) or \
+           seq_steps != getattr(loader, '_seq_steps', 100):
+            loader.set_sequential(seq_enabled, seq_steps)
+            mode = f"SEQ({seq_steps} steps/dataset)" if seq_enabled else "RANDOM"
+            changes.append(f"data_mode: {mode}")
 
     return optimizer, ", ".join(changes) if changes else ""
 

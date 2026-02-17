@@ -53,6 +53,7 @@ python -u test_swarm_config.py ^
     --lcx_level_slots "2000" ^
     --lcx_key_dim 618 ^
     --lcx_top_k 6 ^
+    --num_pointers 1 ^
     --amp ^
     --data_dir "data/traindat/" ^
     --checkpoint_dir "checkpoints/goldilocks_v4" ^
@@ -63,9 +64,9 @@ python -u test_swarm_config.py ^
     --warmup_steps 100 ^
     --lr_min 1e-5 ^
     --controls_every 1 ^
-    --effort Alpha ^
-    --start_lcx_off ^
-    --resume "checkpoints/goldilocks_v4/checkpoint_latest.pt"
+    --effort Beta ^
+    REM --resume "checkpoints/goldilocks_v4/checkpoint_latest.pt"
+    REM ^ Gray code encoding: fresh start from step 0 (binary checkpoint archived)
 
 REM Kill control panel when training ends
 taskkill /F /FI "WINDOWTITLE eq CTRL_PANEL" >nul 2>&1

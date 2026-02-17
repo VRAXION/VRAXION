@@ -341,7 +341,7 @@
     {
       "id": 2,
       "title": "Loss",
-      "description": "Training loss (cross-entropy) for the active run.\n\nSparkline shows loss trajectory Ă˘â‚¬â€ť downward slope = learning, flat = plateau.\n\nLower is better. Typical range: 0.7 (random) down to <0.1 (mastered).",
+      "description": "Training loss (cross-entropy) for the active run.\n\nSparkline shows loss trajectory \u0102\u02d8\u00e2\u201a\u00ac\u00e2\u20ac\u0165 downward slope = learning, flat = plateau.\n\nLower is better. Typical range: 0.7 (random) down to <0.1 (mastered).",
       "type": "stat",
       "gridPos": {
         "x": 12,
@@ -394,7 +394,7 @@
     {
       "id": 3,
       "title": "Accuracy",
-      "description": "Bit-level accuracy (bit_acc) for the active run.\n\nSparkline shows accuracy trajectory Ă˘â‚¬â€ť upward slope = improving, flat = plateau.\n\n50% = random guessing. 100% = perfect prediction.",
+      "description": "Bit-level accuracy (bit_acc) for the active run.\n\nSparkline shows accuracy trajectory \u0102\u02d8\u00e2\u201a\u00ac\u00e2\u20ac\u0165 upward slope = improving, flat = plateau.\n\n50% = random guessing. 100% = perfect prediction.",
       "type": "stat",
       "gridPos": {
         "x": 16,
@@ -448,7 +448,7 @@
     {
       "id": 4,
       "title": "Eval Acc",
-      "description": "Evaluation accuracy (bit_acc on held-out eval batch).\n\nThis is the honest score Ă˘â‚¬â€ť measures generalization, not memorization.\nCompare with training Accuracy to spot overfitting (train >> eval = bad).\n\n50% = random guessing. 100% = perfect generalization.",
+      "description": "Evaluation accuracy (bit_acc on held-out eval batch).\n\nThis is the honest score \u0102\u02d8\u00e2\u201a\u00ac\u00e2\u20ac\u0165 measures generalization, not memorization.\nCompare with training Accuracy to spot overfitting (train >> eval = bad).\n\n50% = random guessing. 100% = perfect generalization.",
       "type": "stat",
       "gridPos": {
         "x": 20,
@@ -912,14 +912,14 @@
     },
     {
       "id": 123,
-      "title": "Slots %",
-      "type": "stat",
-      "description": "% of 256 slots written at least once",
+      "title": "Active Slots %",
+      "type": "timeseries",
+      "description": "% of LCX memory slots written at least once (log scale). At 2000 total slots, 1% = 20 active slots. Rising = model exploring more memory. Log scale reveals small changes in the low range.",
       "gridPos": {
         "x": 0,
         "y": 15,
         "w": 4,
-        "h": 2
+        "h": 4
       },
       "datasource": {
         "type": "influxdb",
@@ -927,56 +927,49 @@
       },
       "targets": [
         {
-          "datasource": {
-            "type": "influxdb",
-            "uid": "efd1xv51o3vuob"
-          },
-          "query": "from(bucket: \"diamond\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"lcx_levels\")\n  |> filter(fn: (r) => r.run_id == \"${run_id}\")\n  |> filter(fn: (r) => r._field == \"L0_active_pct\")\n  |> aggregateWindow(every: v.windowPeriod, fn: last, createEmpty: false)",
-          "refId": "A"
+          "refId": "A",
+          "query": "from(bucket: \"diamond\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"lcx_levels\")\n  |> filter(fn: (r) => r.run_id == \"${run_id}\")\n  |> filter(fn: (r) => r._field == \"L0_active_pct\")\n  |> group(columns: [\"_field\"])\n  |> aggregateWindow(every: v.windowPeriod, fn: last, createEmpty: false)"
         }
       ],
       "fieldConfig": {
         "defaults": {
           "unit": "percent",
           "decimals": 1,
-          "min": 0,
-          "max": 100,
           "color": {
-            "mode": "thresholds"
+            "fixedColor": "#ff9830",
+            "mode": "fixed"
           },
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "#ff4444",
-                "value": null
-              },
-              {
-                "color": "#ff8800",
-                "value": 2
-              },
-              {
-                "color": "#ffcc00",
-                "value": 5
-              },
-              {
-                "color": "#44bb44",
-                "value": 30
-              }
-            ]
-          }
-        }
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 15,
+            "spanNulls": false,
+            "drawStyle": "line",
+            "lineInterpolation": "smooth",
+            "showPoints": "never",
+            "scaleDistribution": {
+              "type": "log",
+              "log": 2
+            },
+            "axisBorderShow": false,
+            "axisLabel": "",
+            "hideFrom": {
+              "tooltip": false,
+              "viz": false,
+              "legend": false
+            }
+          },
+          "displayName": "Active Slots %"
+        },
+        "overrides": []
       },
       "options": {
-        "colorMode": "background",
-        "graphMode": "area",
-        "textMode": "value",
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": "",
-          "values": false
+        "tooltip": {
+          "mode": "single"
+        },
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "calcs": ["lastNotNull"]
         }
       }
     },
@@ -984,7 +977,7 @@
       "id": 122,
       "title": "Part. Ratio %",
       "type": "stat",
-      "description": "Effective equal-weight slots as % of total (1/Σp²/N)",
+      "description": "Effective equal-weight slots as % of total (1/\u03a3p\u00b2/N)",
       "gridPos": {
         "x": 4,
         "y": 15,
@@ -1268,7 +1261,7 @@
       "gridPos": {
         "x": 20,
         "y": 15,
-        "w": 4,
+        "w": 2,
         "h": 2
       },
       "datasource": {
@@ -1334,10 +1327,10 @@
       "id": 101,
       "title": "LCX Utilization",
       "type": "bargauge",
-      "description": "Per-level slot utilization Ă˘â‚¬â€ť percentage of slots that have been written to (hot_slots).",
+      "description": "Per-level slot utilization \u0102\u02d8\u00e2\u201a\u00ac\u00e2\u20ac\u0165 percentage of slots that have been written to (hot_slots).",
       "gridPos": {
         "x": 0,
-        "y": 17,
+        "y": 19,
         "w": 8,
         "h": 3
       },
@@ -1396,7 +1389,7 @@
       "description": "Latest lcx_route_grad value. Green = gradients flowing, Red = dead (zero).",
       "gridPos": {
         "x": 8,
-        "y": 17,
+        "y": 19,
         "w": 8,
         "h": 3
       },
@@ -1450,7 +1443,7 @@
       "description": "Whether LCX writes are differentiable (DIFF) or detached (DETACH).",
       "gridPos": {
         "x": 16,
-        "y": 17,
+        "y": 19,
         "w": 8,
         "h": 3
       },
@@ -1521,7 +1514,7 @@
       "type": "timeseries",
       "gridPos": {
         "x": 10,
-        "y": 20,
+        "y": 22,
         "w": 8,
         "h": 12
       },
@@ -1612,11 +1605,11 @@
     },
     {
       "id": 129,
-      "title": "Write Heat (10×10)",
+      "title": "Write Heat (10\u00d710)",
       "type": "table",
       "gridPos": {
         "x": 0,
-        "y": 20,
+        "y": 22,
         "w": 10,
         "h": 12
       },
@@ -2067,7 +2060,7 @@
           "refId": "A"
         }
       ],
-      "description": "Write frequency per slot (10×10 downsample of 618 slots). Values = log2(writes + 1). Diamond colormap 0–15."
+      "description": "Write frequency per slot (10\u00d710 downsample of 618 slots). Values = log2(writes + 1). Diamond colormap 0\u201315."
     },
     {
       "id": 130,
@@ -2075,15 +2068,15 @@
       "type": "text",
       "gridPos": {
         "x": 18,
-        "y": 20,
+        "y": 22,
         "w": 3,
         "h": 12
       },
       "options": {
         "mode": "html",
-        "content": "<div style=\"text-align:center;display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;overflow:hidden\"><img src=\"http://localhost:7777/api/lcx_L0.png?_=${__to}\" style=\"max-width:100%;max-height:calc(100% - 18px);image-rendering:pixelated;border:1px solid #333;object-fit:contain\" /><div style=\"color:#888;font-size:10px;margin-top:2px;flex-shrink:0\">value L2-norms · viridis · bright = written</div></div>"
+        "content": "<div style=\"text-align:center;display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;overflow:hidden\"><img src=\"http://localhost:7777/api/lcx_L0.png?_=${__to}\" style=\"max-width:100%;max-height:calc(100% - 18px);image-rendering:pixelated;border:1px solid #333;object-fit:contain\" /><div style=\"color:#888;font-size:10px;margin-top:2px;flex-shrink:0\">value L2-norms \u00b7 viridis \u00b7 bright = written</div></div>"
       },
-      "description": "25×25 grid of L0 stored value magnitudes (618 slots, 7 empty). Bright = large vector norm. Viridis colormap. Updates each training step via control_panel.py :7777.",
+      "description": "25\u00d725 grid of L0 stored value magnitudes (618 slots, 7 empty). Bright = large vector norm. Viridis colormap. Updates each training step via control_panel.py :7777.",
       "transparent": true
     },
     {
@@ -2092,15 +2085,15 @@
       "type": "text",
       "gridPos": {
         "x": 21,
-        "y": 20,
+        "y": 22,
         "w": 3,
         "h": 12
       },
       "options": {
         "mode": "html",
-        "content": "<div style=\"text-align:center;display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;overflow:hidden\"><img src=\"http://localhost:7777/api/lcx_L0_keys.png?_=${__to}\" style=\"max-width:100%;max-height:calc(100% - 18px);image-rendering:pixelated;border:1px solid #333;object-fit:contain\" /><div style=\"color:#888;font-size:10px;margin-top:2px;flex-shrink:0\">key L2-norms · viridis · bright = written</div></div>"
+        "content": "<div style=\"text-align:center;display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;overflow:hidden\"><img src=\"http://localhost:7777/api/lcx_L0_keys.png?_=${__to}\" style=\"max-width:100%;max-height:calc(100% - 18px);image-rendering:pixelated;border:1px solid #333;object-fit:contain\" /><div style=\"color:#888;font-size:10px;margin-top:2px;flex-shrink:0\">key L2-norms \u00b7 viridis \u00b7 bright = written</div></div>"
       },
-      "description": "25×25 grid of L0 stored key magnitudes (618 slots). Bright = large key norm. If hot slots have disproportionately large key norms, retrieval is biased toward them (rich-get-richer). Viridis colormap.",
+      "description": "25\u00d725 grid of L0 stored key magnitudes (618 slots). Bright = large key norm. If hot slots have disproportionately large key norms, retrieval is biased toward them (rich-get-richer). Viridis colormap.",
       "transparent": true
     },
     {
@@ -2110,7 +2103,7 @@
       "description": "Per-level write heat distribution. Top strip: viridis heatmap (dark=cold, yellow=hot, log2 scaled). Bottom strip: valid coverage (green=written, dark=empty).",
       "gridPos": {
         "x": 0,
-        "y": 32,
+        "y": 34,
         "w": 12,
         "h": 6
       },
@@ -2123,10 +2116,10 @@
       "id": 90,
       "title": "LCX Gradient Flow",
       "type": "timeseries",
-      "description": "Gradient norms for LCX routing, write gate, and zoom gate. Log scale Ă˘â‚¬â€ť watch for zeros (dead gradients).",
+      "description": "Gradient norms for LCX routing, write gate, and zoom gate. Log scale \u0102\u02d8\u00e2\u201a\u00ac\u00e2\u20ac\u0165 watch for zeros (dead gradients).",
       "gridPos": {
         "x": 12,
-        "y": 32,
+        "y": 34,
         "w": 12,
         "h": 8
       },
@@ -2233,7 +2226,7 @@
       "description": "Number of written-to (hot) slots per LCX level over training. Shows how memory utilization grows.",
       "gridPos": {
         "x": 0,
-        "y": 40,
+        "y": 42,
         "w": 12,
         "h": 8
       },
@@ -2324,7 +2317,7 @@
       "description": "Maximum write count per LCX level over time. High values indicate concentrated writes to a few slots.",
       "gridPos": {
         "x": 12,
-        "y": 40,
+        "y": 42,
         "w": 12,
         "h": 8
       },
@@ -2419,7 +2412,7 @@
       "collapsed": false,
       "gridPos": {
         "x": 0,
-        "y": 48,
+        "y": 50,
         "w": 24,
         "h": 1
       },
@@ -2431,7 +2424,7 @@
       "type": "stat",
       "gridPos": {
         "x": 0,
-        "y": 49,
+        "y": 51,
         "w": 3,
         "h": 6
       },
@@ -2480,7 +2473,7 @@
       "type": "piechart",
       "gridPos": {
         "x": 3,
-        "y": 49,
+        "y": 51,
         "w": 6,
         "h": 6
       },
@@ -2529,7 +2522,7 @@
       "type": "bargauge",
       "gridPos": {
         "x": 9,
-        "y": 49,
+        "y": 51,
         "w": 3,
         "h": 6
       },
@@ -2572,7 +2565,7 @@
       "type": "bargauge",
       "gridPos": {
         "x": 12,
-        "y": 49,
+        "y": 51,
         "w": 2,
         "h": 6
       },
@@ -2615,7 +2608,7 @@
       "type": "stat",
       "gridPos": {
         "x": 14,
-        "y": 49,
+        "y": 51,
         "w": 2,
         "h": 6
       },
@@ -2664,7 +2657,7 @@
       "type": "gauge",
       "gridPos": {
         "x": 16,
-        "y": 49,
+        "y": 51,
         "w": 4,
         "h": 6
       },
@@ -2733,7 +2726,7 @@
       "type": "stat",
       "gridPos": {
         "x": 20,
-        "y": 49,
+        "y": 51,
         "w": 4,
         "h": 6
       },
@@ -2801,7 +2794,7 @@
       "collapsed": false,
       "gridPos": {
         "x": 0,
-        "y": 55,
+        "y": 57,
         "w": 24,
         "h": 1
       },
@@ -2813,7 +2806,7 @@
       "type": "bargauge",
       "gridPos": {
         "x": 0,
-        "y": 56,
+        "y": 58,
         "w": 3,
         "h": 6
       },
@@ -2883,7 +2876,7 @@
       "type": "bargauge",
       "gridPos": {
         "x": 3,
-        "y": 56,
+        "y": 58,
         "w": 3,
         "h": 6
       },
@@ -2952,7 +2945,7 @@
       "type": "bargauge",
       "gridPos": {
         "x": 6,
-        "y": 56,
+        "y": 58,
         "w": 3,
         "h": 6
       },
@@ -3021,7 +3014,7 @@
       "type": "timeseries",
       "gridPos": {
         "x": 9,
-        "y": 56,
+        "y": 58,
         "w": 13,
         "h": 6
       },
@@ -3200,7 +3193,7 @@
       "type": "bargauge",
       "gridPos": {
         "x": 22,
-        "y": 56,
+        "y": 58,
         "w": 2,
         "h": 6
       },
@@ -3271,7 +3264,7 @@
       "description": "Per-ant masked accuracy (rolling avg). State-timeline with 13-step Coolors palette.",
       "gridPos": {
         "x": 0,
-        "y": 62,
+        "y": 64,
         "w": 24,
         "h": 10
       },
@@ -3378,7 +3371,7 @@
       "description": "Per-ant jump probability (sigmoid output). State-timeline with 13-step Coolors palette.",
       "gridPos": {
         "x": 0,
-        "y": 72,
+        "y": 74,
         "w": 24,
         "h": 10
       },
@@ -3484,7 +3477,7 @@
       "type": "bargauge",
       "gridPos": {
         "x": 0,
-        "y": 82,
+        "y": 84,
         "w": 6,
         "h": 6
       },
@@ -3554,7 +3547,7 @@
       "type": "bargauge",
       "gridPos": {
         "x": 6,
-        "y": 82,
+        "y": 84,
         "w": 6,
         "h": 6
       },
@@ -3624,7 +3617,7 @@
       "type": "bargauge",
       "gridPos": {
         "x": 12,
-        "y": 82,
+        "y": 84,
         "w": 6,
         "h": 6
       },
@@ -3694,7 +3687,7 @@
       "type": "bargauge",
       "gridPos": {
         "x": 18,
-        "y": 82,
+        "y": 84,
         "w": 6,
         "h": 6
       },
@@ -3764,7 +3757,7 @@
       "type": "timeseries",
       "gridPos": {
         "x": 0,
-        "y": 88,
+        "y": 90,
         "w": 24,
         "h": 10
       },
@@ -3901,7 +3894,7 @@
       "collapsed": false,
       "gridPos": {
         "x": 0,
-        "y": 98,
+        "y": 100,
         "w": 24,
         "h": 1
       }
@@ -3912,7 +3905,7 @@
       "type": "timeseries",
       "gridPos": {
         "x": 0,
-        "y": 99,
+        "y": 101,
         "w": 24,
         "h": 6
       },
@@ -4022,7 +4015,7 @@
       "transparent": true,
       "gridPos": {
         "x": 0,
-        "y": 105,
+        "y": 107,
         "w": 10,
         "h": 10
       },
@@ -4037,7 +4030,7 @@
       "type": "timeseries",
       "gridPos": {
         "x": 10,
-        "y": 105,
+        "y": 107,
         "w": 7,
         "h": 10
       },
@@ -4128,7 +4121,7 @@
       "type": "table",
       "gridPos": {
         "x": 17,
-        "y": 105,
+        "y": 107,
         "w": 7,
         "h": 10
       },
@@ -4190,7 +4183,7 @@
       "description": "Current effort level: 0=FAST(R), 1=MEDIUM(G), 2=SLOW(B)",
       "gridPos": {
         "x": 0,
-        "y": 115,
+        "y": 117,
         "w": 6,
         "h": 3
       },
@@ -4270,7 +4263,7 @@
       "collapsed": true,
       "gridPos": {
         "x": 0,
-        "y": 118,
+        "y": 120,
         "w": 24,
         "h": 1
       },
@@ -4940,7 +4933,7 @@
       "collapsed": true,
       "gridPos": {
         "x": 0,
-        "y": 119,
+        "y": 121,
         "w": 24,
         "h": 1
       },

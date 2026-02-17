@@ -25,7 +25,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 
 from swarm_model import SwarmByteRingModel, fibonacci_split
 from byte_data import byte_accuracy, bit_accuracy
-from traindat_loader import TraindatLoader
+from traindat_loader import TraindatLoader, GRAY_ENCODE, gray_scalar_to_byte
 from live_controls import read_controls, apply_controls, write_default_controls, _set_being_grad
 import influx_writer
 
@@ -179,11 +179,28 @@ def generate_multitask_batch(n_samples, seq_len=16, max_value=100, seed=None, nu
     return torch.stack(x_batch), torch.stack(y_batch), torch.tensor(op_indices)
 
 
+# --- Gray code decode helpers ---
+_GRAY_ENCODE_TENSOR = torch.tensor(GRAY_ENCODE, dtype=torch.long)
+
+
+def _output_to_bytes(output_slice):
+    """Convert model logits [..., num_bits] to predicted byte values [..., num_bits]."""
+    probs = torch.sigmoid(output_slice)
+    positions = torch.round(probs * 256.0 - 0.5).clamp(0, 255).long()
+    return _GRAY_ENCODE_TENSOR[positions]
+
+
+def _target_to_bytes(target_slice):
+    """Convert Gray scalar targets [..., num_bits] to byte values [..., num_bits]."""
+    positions = torch.round(target_slice * 256.0 - 0.5).clamp(0, 255).long()
+    return _GRAY_ENCODE_TENSOR[positions]
+
+
 def position_accuracy(output, target, position):
-    """Calculate byte accuracy at specific position."""
-    pred_bits = (output[:, position, :] > 0.0).float()
-    matches = (pred_bits == target[:, position, :]).all(dim=-1).float()
-    return matches.mean().item()
+    """All channels decoded to correct byte value."""
+    pred_bytes = _output_to_bytes(output[:, position, :])
+    tgt_bytes = _target_to_bytes(target[:, position, :])
+    return (pred_bytes == tgt_bytes).all(dim=-1).float().mean().item()
 
 
 def per_operation_accuracy(output, target, op_indices):
@@ -201,86 +218,73 @@ def per_operation_accuracy(output, target, op_indices):
 
 
 def byte_match_accuracy(output, target, position):
-    """Calculate exact byte match accuracy (all 8 bits correct)."""
-    pred_bits = (output[:, position, :] > 0.0).float()
-    matches = (pred_bits == target[:, position, :]).all(dim=-1).float()
-    return matches.mean().item()
+    """All channels decoded to correct byte value (same as position_accuracy)."""
+    return position_accuracy(output, target, position)
 
 
 def bit_accuracy_at_position(output, target, position):
-    """Calculate per-bit accuracy (may be misleading for imbalanced ops)."""
-    pred_bits = (output[:, position, :] > 0.0).float()
-    bit_matches = (pred_bits == target[:, position, :]).float()
-    return bit_matches.mean().item()
+    """Per-channel byte accuracy (fraction of channels with correct byte)."""
+    pred_bytes = _output_to_bytes(output[:, position, :])
+    tgt_bytes = _target_to_bytes(target[:, position, :])
+    return (pred_bytes == tgt_bytes).float().mean().item()
 
 
 def per_bit_accuracy_at_position(output, target, position):
-    """Calculate accuracy for each bit position independently."""
-    pred_bits = (output[:, position, :] > 0.0).float()
-    target_bits = target[:, position, :]
-    per_bit = (pred_bits == target_bits).float().mean(dim=0)  # [8]
-    return per_bit.tolist()
+    """Per-channel byte accuracy (list of num_bits values)."""
+    pred_bytes = _output_to_bytes(output[:, position, :])
+    tgt_bytes = _target_to_bytes(target[:, position, :])
+    per_ch = (pred_bytes == tgt_bytes).float().mean(dim=0)
+    return per_ch.tolist()
 
 
 def hamming_distance_at_position(output, target, position):
-    """Calculate mean Hamming distance (# bit errors per byte)."""
-    pred_bits = (output[:, position, :] > 0.0).float()
-    bit_errors = (pred_bits != target[:, position, :]).float()
-    mean_errors = bit_errors.sum(dim=-1).mean().item()
-    return mean_errors
+    """Mean Gray distance (0-255 scale)."""
+    pred_bytes = _output_to_bytes(output[:, position, :])
+    tgt_bytes = _target_to_bytes(target[:, position, :])
+    return (pred_bytes - tgt_bytes).abs().float().mean().item()
 
 
 def oracle_best_of_n_accuracy(being_outputs, target, position):
     """
     Oracle accuracy: best-of-N selection per sample.
-    Upper bound on ensemble potential.
+    Upper bound on ensemble potential. Uses Gray code byte decoding.
 
     Args:
         being_outputs: [num_beings, T, B, 8] ALL timestep outputs from each being
-        target: [B, T, 8] ground truth
+        target: [B, T, 8] ground truth (Gray scalars)
         position: timestep position to evaluate
 
     Returns:
         Oracle accuracy (best being per sample)
     """
-    # Extract position slice: [num_beings, B, 8]
-    being_outputs_at_pos = being_outputs[:, position, :, :]
+    being_outputs_at_pos = being_outputs[:, position, :, :]  # [num_beings, B, 8]
+    tgt_bytes = _target_to_bytes(target[:, position, :])  # [B, 8]
 
     num_beings = being_outputs_at_pos.size(0)
     B = being_outputs_at_pos.size(1)
 
-    # For each sample, find which being got it right
     oracle_correct = 0
     for b in range(B):
-        # Check each being's prediction for this sample
-        any_correct = False
         for being_idx in range(num_beings):
-            pred_bits = (being_outputs_at_pos[being_idx, b, :] > 0.0).float()  # [8]
-            is_correct = (pred_bits == target[b, position, :]).all().item()
-            if is_correct:
-                any_correct = True
+            pred_bytes = _output_to_bytes(being_outputs_at_pos[being_idx, b:b+1, :])
+            if (pred_bytes[0] == tgt_bytes[b]).all().item():
+                oracle_correct += 1
                 break
-        if any_correct:
-            oracle_correct += 1
-
     return oracle_correct / B
 
 
 def bit_oracle_accuracy(being_outputs, target, position):
     """
-    Bit-oracle: for each bit, did ANY being get it right?
-    Upper bound for what a perfect bit-level selector could achieve.
-    If bit_oracle >> ensemble, combiner is the bottleneck.
+    Channel-oracle: for each channel, did ANY being decode the correct byte?
+    Upper bound for what a perfect channel-level selector could achieve.
     """
-    being_outputs_at_pos = being_outputs[:, position, :, :]  # [num_beings, B, 8]
-    target_at_pos = target[:, position, :]  # [B, 8]
+    being_at_pos = being_outputs[:, position, :, :]  # [num_beings, B, 8]
+    tgt_bytes = _target_to_bytes(target[:, position, :])  # [B, 8]
 
-    being_binary = (being_outputs_at_pos > 0.0).float()  # [num_beings, B, 8]
-    target_binary = (target_at_pos > 0.0).float()  # [B, 8]
-
-    correct_per_being = (being_binary == target_binary.unsqueeze(0))  # [num_beings, B, 8]
-    any_correct = correct_per_being.any(dim=0)  # [B, 8]
-
+    any_correct = torch.zeros(tgt_bytes.shape, dtype=torch.bool)
+    for i in range(being_at_pos.size(0)):
+        pred_bytes = _output_to_bytes(being_at_pos[i])
+        any_correct |= (pred_bytes == tgt_bytes)
     return any_correct.float().mean().item()
 
 
@@ -312,11 +316,11 @@ def compute_specialization(being_outputs, target, op_indices, position):
         mask = (op_indices == op_idx)
         if mask.sum() > 0:
             for being_idx in range(num_beings):
-                # Compute accuracy for this being on this operation
                 being_output = being_outputs_at_pos[being_idx][mask]  # [masked_B, 8]
                 op_target = target[mask]  # [masked_B, T, 8]
-                pred_bits = (being_output > 0.0).float()  # [masked_B, 8]
-                matches = (pred_bits == op_target[:, position, :]).all(dim=-1).float()
+                pred_bytes = _output_to_bytes(being_output)
+                tgt_bytes = _target_to_bytes(op_target[:, position, :])
+                matches = (pred_bytes == tgt_bytes).all(dim=-1).float()
                 being_accs_matrix[op_idx][being_idx] = matches.mean().item()
 
     # Compute std across beings for each operation
@@ -353,14 +357,14 @@ def evaluate_metrics(output, stats, y, train_loss, num_beings, num_bits, n_contr
         being_acc = position_accuracy(being_output_transposed, y, eval_pos)
         being_accs.append(being_acc)
 
-        # Mask-aware accuracy: only evaluate covered bits
+        # Mask-aware accuracy: only evaluate covered channels
         if receptive_masks is not None and i < len(receptive_masks):
             mask = receptive_masks[i]  # [num_bits]
             covered = mask.bool()
             if covered.any():
-                pred = (being_outputs[i][eval_pos] > 0.0).float()  # [B, num_bits]
-                tgt = y[:, eval_pos, :]  # [B, num_bits]
-                masked_acc = (pred[:, covered] == tgt[:, covered]).float().mean().item()
+                pred_bytes = _output_to_bytes(being_outputs[i][eval_pos])  # [B, num_bits]
+                tgt_bytes = _target_to_bytes(y[:, eval_pos, :])  # [B, num_bits]
+                masked_acc = (pred_bytes[:, covered] == tgt_bytes[:, covered]).float().mean().item()
             else:
                 masked_acc = 0.0
             being_masked_accs.append(masked_acc)
@@ -672,6 +676,8 @@ def main():
                         help='Gradient accumulation steps (default: 1, no accumulation)')
     parser.add_argument('--attention_radius', type=int, default=2,
                         help='Gaussian attention radius for ring memory (default: 2)')
+    parser.add_argument('--num_pointers', type=int, default=1,
+                        help='Number of ring pointers per being (default: 1, use 2 for dual coverage)')
     parser.add_argument('--start_lcx_off', action='store_true',
                         help='Start with LCX disabled in controls (INFANT stage). '
                              'Model is still built with LCX buffers for later activation.')
@@ -839,6 +845,7 @@ def main():
         lcx_num_levels=args.lcx_num_levels,
         lcx_level_slots=[int(x) for x in args.lcx_level_slots.split(',')] if args.lcx_level_slots else None,
         attention_radius=args.attention_radius,
+        num_pointers=args.num_pointers,
     )
 
     # Print temporal fibonacci tick schedule
@@ -880,6 +887,9 @@ def main():
 
     total_params = sum(p.numel() for p in model.parameters())
     print(f"Model parameters: {total_params:,}")
+    if args.num_pointers > 1:
+        mode = "competitive attention" if args.num_pointers >= 3 else "averaging"
+        print(f"  Ring pointers: {args.num_pointers} per being ({mode})")
 
     # Print receptive field masks
     if args.bits_per_being > 0 and model.receptive_masks is not None:
@@ -1134,10 +1144,9 @@ def main():
                     num_bits=num_bits, seed=42 + step + 1000000,
                 )
             else:
-                x_train, y_train, _ = generate_multitask_batch(
-                    n_samples=batch_size, seq_len=seq_len, max_value=max_value,
-                    seed=42 + step + 1000000, num_bits=num_bits, task=args.task,
-                    effort_level=_effort_level,
+                raise NotImplementedError(
+                    "Multitask binary encoding incompatible with Gray code scalar metrics. "
+                    "Use --data_dir for traindat mode."
                 )
 
             # Move training data to device
@@ -1228,6 +1237,12 @@ def main():
                     _bp = model.beings[0]
                     _jg = _bp.jump_gate.weight.grad if hasattr(_bp, 'jump_gate') and _bp.jump_gate.weight.grad is not None else None
                     gd_parts.append(f"jump={_jg.norm().item():.4e}" if _jg is not None else "jump=None")
+                    if hasattr(_bp, 'jump_gate_b'):
+                        _jg_b = _bp.jump_gate_b.weight.grad if _bp.jump_gate_b.weight.grad is not None else None
+                        gd_parts.append(f"jump_b={_jg_b.norm().item():.4e}" if _jg_b is not None else "jump_b=None")
+                    if hasattr(_bp, 'jump_gate_c'):
+                        _jg_c = _bp.jump_gate_c.weight.grad if _bp.jump_gate_c.weight.grad is not None else None
+                        gd_parts.append(f"jump_c={_jg_c.norm().item():.4e}" if _jg_c is not None else "jump_c=None")
                     _cs = _bp.context_strength.grad if hasattr(_bp, 'context_strength') and _bp.context_strength.grad is not None else None
                     gd_parts.append(f"ctx_str={_cs.norm().item():.4e}" if _cs is not None else "ctx_str=None")
                 # LCX gradient norms
@@ -1404,13 +1419,14 @@ def main():
                 'byte_match': metrics['byte_match'],
                 'bit_bar': metrics.get('bit_bar', ''),
             }
-            # Add first sample's input/output/prediction (1 × seq × bits)
+            # Add first sample's input/output/prediction (1 × seq × channels)
             try:
-                _x_sample = x_train[0].detach().cpu().tolist()  # [seq, bits]
-                _y_sample = y_cpu[0].tolist()  # [bits]
-                _pred_prob = torch.sigmoid(output_cpu[0])  # logits → probabilities [0,1]
-                _pred_sample = (_pred_prob > 0.5).float().tolist()  # thresholded
-                _pred_raw = _pred_prob.tolist()  # probabilities for dashboard
+                _x_sample = x_train[0].detach().cpu().tolist()  # [seq, num_bits] Gray scalars
+                _y_sample = y_cpu[0].tolist()  # [seq, num_bits] Gray scalars
+                _pred_prob = torch.sigmoid(output_cpu[0])  # logits → (0,1) scalars
+                _pred_raw = _pred_prob.tolist()  # continuous predictions for dashboard
+                _pred_bytes = _output_to_bytes(output_cpu[0:1]).squeeze(0)  # [seq, 8] decoded bytes
+                _pred_sample = _pred_bytes.tolist()  # decoded byte values
                 _frame_sidecar['input_sample'] = _x_sample
                 _frame_sidecar['target_sample'] = _y_sample
                 _frame_sidecar['pred_sample'] = _pred_sample
@@ -1683,11 +1699,9 @@ def main():
                                 num_bits=num_bits, seed=7777 + step * 100 + ei,
                             )
                         else:
-                            # Eval uses same effort level as current training step
-                            x_ev, y_ev, _ = generate_multitask_batch(
-                                n_samples=batch_size, seq_len=seq_len, max_value=max_value,
-                                seed=7777 + step * 100 + ei, num_bits=num_bits, task=args.task,
-                                effort_level=_effort_level,
+                            raise NotImplementedError(
+                                "Multitask binary encoding incompatible with Gray code scalar metrics. "
+                                "Use --data_dir for traindat mode."
                             )
                         x_ev = x_ev.to(device, non_blocking=True)
                         y_ev = y_ev.to(device, non_blocking=True)

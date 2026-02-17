@@ -26,6 +26,21 @@ EFFORT_WEIGHTS = torch.tensor([
 ])
 
 
+def c19_activation(x, rho=4.0):
+    """C19 periodic parabolic wave activation (probe-validated: +4.2% vs GELU).
+    Piecewise parabolic arcs with alternating sign, linear tails beyond 6*pi."""
+    l = 6.0 * math.pi
+    inv_pi = 1.0 / math.pi
+    scaled = x * inv_pi
+    n = torch.floor(scaled)
+    t = scaled - n
+    h = t * (1.0 - t)
+    is_even = torch.remainder(n, 2.0) < 1.0
+    sgn = torch.where(is_even, torch.ones_like(x), -torch.ones_like(x))
+    core = math.pi * (sgn * h + (rho * h * h))
+    return torch.where(x >= l, x - l, torch.where(x <= -l, x + l, core))
+
+
 def fibonacci_split(num_bits: int, min_k: int = 4) -> list:
     """
     Auto-determine beings and K values from Fibonacci halving.
@@ -426,21 +441,38 @@ class BeingParameters(nn.Module):
 
     def __init__(self, num_memory_positions: int, embedding_dim: int,
                  being_id: int = 0, input_mask: torch.Tensor = None,
-                 hidden_dim: int = None):
+                 hidden_dim: int = None, num_pointers: int = 1):
         super().__init__()
         hdim = hidden_dim if hidden_dim is not None else embedding_dim
         self.hidden_dim = hdim
+        self.num_pointers = num_pointers
 
-        # Learned jump destinations for each memory position
+        # Learned jump destinations for each memory position (Pointer A)
         self.pointer_destinations = nn.Parameter(
             torch.rand(num_memory_positions) * num_memory_positions
         )
 
-        # Jump gate: decides whether to jump or walk
+        # Jump gate: decides whether to jump or walk (Pointer A — explorer bias)
         self.jump_gate = nn.Linear(hdim, 1)
         nn.init.constant_(self.jump_gate.bias, 0.5)  # Start jumping (prevents dead gate)
 
-        # Context strength: how much to weight memory reads
+        # Pointer B: independent destinations + jump gate (walker bias)
+        if num_pointers >= 2:
+            self.pointer_destinations_b = nn.Parameter(
+                torch.rand(num_memory_positions) * num_memory_positions
+            )
+            self.jump_gate_b = nn.Linear(hdim, 1)
+            nn.init.constant_(self.jump_gate_b.bias, -0.5)  # Walker bias (symmetry break)
+
+        # Pointer C: independent destinations + jump gate (neutral bias)
+        if num_pointers >= 3:
+            self.pointer_destinations_c = nn.Parameter(
+                torch.rand(num_memory_positions) * num_memory_positions
+            )
+            self.jump_gate_c = nn.Linear(hdim, 1)
+            nn.init.constant_(self.jump_gate_c.bias, 0.0)  # Neutral (symmetry break)
+
+        # Context strength: how much to weight memory reads (shared between pointers)
         self.context_strength = nn.Parameter(torch.tensor(0.2))
 
         # GOLDEN RATIO PHASE EMBEDDING (fixed, not trainable)
@@ -521,6 +553,7 @@ class SwarmByteRingModel(nn.Module):
         lcx_top_k: int = 4,
         lcx_num_levels: int = 3,
         lcx_level_slots: list = None,
+        num_pointers: int = 1,
     ):
         super().__init__()
 
@@ -536,6 +569,7 @@ class SwarmByteRingModel(nn.Module):
         self.full_view = full_view
         self.combinatorial = combinatorial
         self.use_lcx = use_lcx
+        self.num_pointers = num_pointers
         self.effort_level = 0  # RGB LCX channel: 0=R(fast), 1=G(medium), 2=B(slow) — dense LCX only
         self._lcx_hash_mode = (use_lcx and lcx_mode == "hash")
         self.lcx_mode = lcx_mode
@@ -575,7 +609,7 @@ class SwarmByteRingModel(nn.Module):
         self.output_proj = nn.Linear(embedding_dim, num_bits)
 
         # Multi-layer processing (if depth > 1)
-        # Pre-LN + GELU residual blocks (standard transformer pattern)
+        # Pre-LN + C19 residual blocks (standard transformer pattern)
         if depth > 1:
             self.processing_layers = nn.ModuleList([
                 nn.Linear(embedding_dim, embedding_dim)
@@ -734,7 +768,7 @@ class SwarmByteRingModel(nn.Module):
             ])
 
             # Per-being processing layers (can't share, dims differ)
-            # Pre-LN + GELU residual blocks per being
+            # Pre-LN + C19 residual blocks per being
             if depth > 1:
                 self.being_processing_layers = nn.ModuleList()
                 self.being_processing_norms = nn.ModuleList()
@@ -768,6 +802,7 @@ class SwarmByteRingModel(nn.Module):
                 num_memory_positions, embedding_dim, being_id=i,
                 input_mask=self.receptive_masks[i] if self.receptive_masks is not None else None,
                 hidden_dim=self.hidden_dims[i] if capacity_fibonacci else None,
+                num_pointers=num_pointers,
             )
             for i in range(num_beings)
         ])
@@ -825,7 +860,15 @@ class SwarmByteRingModel(nn.Module):
             nn.init.constant_(self.lcx_write_gate.bias, 0.0)  # balanced init (sigmoid=0.5)
             # Zoom gate: auto-effort (model decides "need more detail?")
             self.zoom_gate = nn.Linear(embedding_dim, 1)
-            nn.init.constant_(self.zoom_gate.bias, -2.0)  # start conservative (sigmoid(-2)≈0.12)
+            nn.init.constant_(self.zoom_gate.bias, 0.0)  # balanced init (sigmoid(0)=0.5) — probe: gate rises to 0.6, model adapts
+            # LCX read bottleneck: D → D//10 → C19 → D//10 → C19 → D
+            # Translates raw LCX read vectors into hidden-compatible representations.
+            _bn_dim = max(1, embedding_dim // 10)  # 618 at D=6180
+            self.lcx_bn_layers = nn.ModuleList([
+                nn.Linear(embedding_dim, _bn_dim),
+                nn.Linear(_bn_dim, _bn_dim),
+                nn.Linear(_bn_dim, embedding_dim),
+            ])
             # Think token: learned "I'm thinking" signal for think ticks
             self.think_token = nn.Parameter(torch.randn(embedding_dim) * 0.02)
             # Stubs for dense LCX layers (not used in hash mode)
@@ -853,6 +896,7 @@ class SwarmByteRingModel(nn.Module):
             # Hash LCX stubs (not used in dense mode)
             self.lcx_route_query = None
             self.lcx_write_gate = None
+            self.lcx_bn_layers = None
             self.register_buffer('lcx_keys', None)
             self.register_buffer('lcx_values', None)
             # Phi-stride pixel assignments: per-slot ownership (VRA-88)
@@ -877,6 +921,7 @@ class SwarmByteRingModel(nn.Module):
             self.lcx_gate = None
             self.lcx_route_query = None
             self.lcx_write_gate = None
+            self.lcx_bn_layers = None
             self.register_buffer('lcx_keys', None)
             self.register_buffer('lcx_values', None)
             self.think_token = None
@@ -1104,6 +1149,14 @@ class SwarmByteRingModel(nn.Module):
         jg_w = torch.stack([b.jump_gate.weight for b in self.beings]).squeeze(1)  # [N, D]
         jg_b = torch.stack([b.jump_gate.bias for b in self.beings]).squeeze(1)    # [N]
         all_dests = torch.stack([b.pointer_destinations for b in self.beings])     # [N, M]
+        if self.num_pointers >= 2:
+            jg_w_b = torch.stack([b.jump_gate_b.weight for b in self.beings]).squeeze(1)  # [N, D]
+            jg_b_b = torch.stack([b.jump_gate_b.bias for b in self.beings]).squeeze(1)    # [N]
+            all_dests_b = torch.stack([b.pointer_destinations_b for b in self.beings])     # [N, M]
+        if self.num_pointers >= 3:
+            jg_w_c = torch.stack([b.jump_gate_c.weight for b in self.beings]).squeeze(1)  # [N, D]
+            jg_b_c = torch.stack([b.jump_gate_c.bias for b in self.beings]).squeeze(1)    # [N]
+            all_dests_c = torch.stack([b.pointer_destinations_c for b in self.beings])     # [N, M]
         ctx_scales = torch.sigmoid(
             torch.stack([b.context_strength for b in self.beings])
         ).reshape(N, 1, 1)  # [N, 1, 1]
@@ -1124,7 +1177,34 @@ class SwarmByteRingModel(nn.Module):
         for n in range(N):
             lo = n * M / N
             hi = (n + 1) * M / N
-            pointer_positions[n].uniform_(lo, hi)
+            if self.num_pointers >= 3:
+                third = (hi - lo) / 3
+                pointer_positions[n].uniform_(lo, lo + third)
+            elif self.num_pointers >= 2:
+                mid = (lo + hi) / 2
+                pointer_positions[n].uniform_(lo, mid)
+            else:
+                pointer_positions[n].uniform_(lo, hi)
+
+        if self.num_pointers >= 2:
+            pointer_positions_b = torch.empty(N, B, device=device, dtype=dtype)
+            for n in range(N):
+                lo = n * M / N
+                hi = (n + 1) * M / N
+                if self.num_pointers >= 3:
+                    third = (hi - lo) / 3
+                    pointer_positions_b[n].uniform_(lo + third, lo + 2 * third)
+                else:
+                    mid = (lo + hi) / 2
+                    pointer_positions_b[n].uniform_(mid, hi)
+
+        if self.num_pointers >= 3:
+            pointer_positions_c = torch.empty(N, B, device=device, dtype=dtype)
+            for n in range(N):
+                lo = n * M / N
+                hi = (n + 1) * M / N
+                third = (hi - lo) / 3
+                pointer_positions_c[n].uniform_(lo + 2 * third, hi)
 
         hidden_states = torch.zeros(N, B, D, device=device, dtype=dtype)
 
@@ -1177,7 +1257,7 @@ class SwarmByteRingModel(nn.Module):
                 # NOTE: queries with mean of per-being masked inputs (differs from sequential
                 # path which queries with full input per-being — equivalent for num_beings=1)
                 lcx_ctx = self._lcx_flat_read(being_input.mean(dim=0), level=0)  # [B, D]
-                being_input = being_input + lcx_ctx.unsqueeze(0)  # [N, B, D]
+                being_input = being_input + self._lcx_bottleneck(lcx_ctx).unsqueeze(0)  # [N, B, D]
             elif self.lcx is not None:
                 # Dense LCX: per-ant masked broadcast+add → shared projection
                 per_being = []
@@ -1212,16 +1292,46 @@ class SwarmByteRingModel(nn.Module):
                 being_input = torch.stack(per_being, dim=0)  # [N, B, D]
 
             # 2. Batched ring read (all beings read SAME ring state)
-            flat_ptrs = pointer_positions.reshape(-1)  # [N*B]
-            indices, weights = self._gaussian_attention_weights(flat_ptrs, M)
-            W = indices.size(1)  # 2*attention_radius + 1
-            indices = indices.reshape(N, B, W)
-            weights = weights.reshape(N, B, W)
+            flat_ptrs_a = pointer_positions.reshape(-1)  # [N*B]
+            indices_a, weights_a = self._gaussian_attention_weights(flat_ptrs_a, M)
+            W = indices_a.size(1)  # 2*attention_radius + 1
+            indices_a = indices_a.reshape(N, B, W)
+            weights_a = weights_a.reshape(N, B, W)
 
             mem_exp = memory_ring.unsqueeze(0).expand(N, -1, -1, -1)  # [N, B, M, D]
-            idx_gather = indices.unsqueeze(-1).expand(-1, -1, -1, D)  # [N, B, W, D]
-            neighborhood = mem_exp.gather(2, idx_gather)  # [N, B, W, D]
-            context_reads = (weights.unsqueeze(-1) * neighborhood).sum(dim=2)  # [N, B, D]
+            idx_gather_a = indices_a.unsqueeze(-1).expand(-1, -1, -1, D)  # [N, B, W, D]
+            neighborhood_a = mem_exp.gather(2, idx_gather_a)  # [N, B, W, D]
+            context_reads_a = (weights_a.unsqueeze(-1) * neighborhood_a).sum(dim=2)  # [N, B, D]
+
+            if self.num_pointers >= 2:
+                flat_ptrs_b = pointer_positions_b.reshape(-1)
+                indices_b, weights_b = self._gaussian_attention_weights(flat_ptrs_b, M)
+                indices_b = indices_b.reshape(N, B, W)
+                weights_b = weights_b.reshape(N, B, W)
+                idx_gather_b = indices_b.unsqueeze(-1).expand(-1, -1, -1, D)
+                neighborhood_b = mem_exp.gather(2, idx_gather_b)
+                context_reads_b = (weights_b.unsqueeze(-1) * neighborhood_b).sum(dim=2)
+
+            if self.num_pointers >= 3:
+                flat_ptrs_c = pointer_positions_c.reshape(-1)
+                indices_c, weights_c = self._gaussian_attention_weights(flat_ptrs_c, M)
+                indices_c = indices_c.reshape(N, B, W)
+                weights_c = weights_c.reshape(N, B, W)
+                idx_gather_c = indices_c.unsqueeze(-1).expand(-1, -1, -1, D)
+                neighborhood_c = mem_exp.gather(2, idx_gather_c)
+                context_reads_c = (weights_c.unsqueeze(-1) * neighborhood_c).sum(dim=2)
+
+            if self.num_pointers >= 3:
+                # Competitive attention: score each read against hidden state, softmax-select
+                reads_stack = torch.stack([context_reads_a, context_reads_b, context_reads_c], dim=2)  # [N, B, 3, D]
+                attn_scores = (hidden_states.unsqueeze(2) * reads_stack).sum(dim=-1)  # [N, B, 3]
+                attn_scores = attn_scores / (D ** 0.5)
+                attn_weights = 0.25 * torch.softmax(attn_scores, dim=-1) + 0.25  # [N, B, 3] min 25% per pointer
+                context_reads = (attn_weights.unsqueeze(-1) * reads_stack).sum(dim=2)  # [N, B, D]
+            elif self.num_pointers >= 2:
+                context_reads = 0.5 * (context_reads_a + context_reads_b)
+            else:
+                context_reads = context_reads_a
 
             if return_stats:
                 diag_ring_read_norm.append(context_reads.norm().item())
@@ -1233,7 +1343,7 @@ class SwarmByteRingModel(nn.Module):
             state_update = 0.618 * self.state_norm(hidden_states) + 0.382 * combined
             if self.processing_layers is not None:
                 for norm, layer in zip(self.processing_norms, self.processing_layers):
-                    state_update = state_update + torch.nn.functional.gelu(layer(norm(state_update)))
+                    state_update = state_update + c19_activation(layer(norm(state_update)))
 
             # Apply dormancy: keep old state for dormant/null beings
             hidden_states = torch.where(step_mask.bool(), state_update, hidden_states)
@@ -1291,33 +1401,89 @@ class SwarmByteRingModel(nn.Module):
                 diag_hidden_abs.append(hidden_states.abs().mean().item())
                 diag_hidden_max.append(hidden_states.abs().max().item())
 
-            # 5. Ring write (all active beings simultaneously via single scatter_add)
-            write_contrib = (
+            # 5. Ring write — Pointer A (all active beings simultaneously via single scatter_add)
+            write_contrib_a = (
                 hidden_states.unsqueeze(2).expand(-1, -1, W, -1)
-                * weights.unsqueeze(-1)
+                * weights_a.unsqueeze(-1)
                 * step_mask.unsqueeze(2)  # zero out dormant writes
             )  # [N, B, W, D]
 
             # Flatten beings into scatter dimension: [B, N*W, D]
-            idx_scatter = (
-                indices.permute(1, 0, 2)
+            idx_scatter_a = (
+                indices_a.permute(1, 0, 2)
                 .reshape(B, -1)
                 .unsqueeze(-1)
                 .expand(-1, -1, D)
             )  # [B, N*W, D]
-            contribs_flat = write_contrib.permute(1, 0, 2, 3).reshape(B, -1, D)
-            memory_ring = memory_ring.scatter_add(1, idx_scatter, contribs_flat)
+            contribs_flat_a = write_contrib_a.permute(1, 0, 2, 3).reshape(B, -1, D)
+            memory_ring = memory_ring.scatter_add(1, idx_scatter_a, contribs_flat_a)
 
-            # 6. Pointer update (jump or walk) — soft blend for gradient flow
-            current_pos = pointer_positions.long().clamp(0, M - 1)  # [N, B]
-            jump_targets = all_dests.gather(1, current_pos).float().clamp(0, M - 1)  # [N, B]
-            jump_logits = (
+            if self.num_pointers >= 2:
+                # Ring write — Pointer B
+                write_contrib_b = (
+                    hidden_states.unsqueeze(2).expand(-1, -1, W, -1)
+                    * weights_b.unsqueeze(-1)
+                    * step_mask.unsqueeze(2)
+                )
+                idx_scatter_b = (
+                    indices_b.permute(1, 0, 2)
+                    .reshape(B, -1)
+                    .unsqueeze(-1)
+                    .expand(-1, -1, D)
+                )
+                contribs_flat_b = write_contrib_b.permute(1, 0, 2, 3).reshape(B, -1, D)
+                memory_ring = memory_ring.scatter_add(1, idx_scatter_b, contribs_flat_b)
+
+            if self.num_pointers >= 3:
+                # Ring write — Pointer C
+                write_contrib_c = (
+                    hidden_states.unsqueeze(2).expand(-1, -1, W, -1)
+                    * weights_c.unsqueeze(-1)
+                    * step_mask.unsqueeze(2)
+                )
+                idx_scatter_c = (
+                    indices_c.permute(1, 0, 2)
+                    .reshape(B, -1)
+                    .unsqueeze(-1)
+                    .expand(-1, -1, D)
+                )
+                contribs_flat_c = write_contrib_c.permute(1, 0, 2, 3).reshape(B, -1, D)
+                memory_ring = memory_ring.scatter_add(1, idx_scatter_c, contribs_flat_c)
+
+            # 6. Pointer A update (jump or walk) — soft blend for gradient flow
+            current_pos_a = pointer_positions.long().clamp(0, M - 1)  # [N, B]
+            jump_targets_a = all_dests.gather(1, current_pos_a).float().clamp(0, M - 1)  # [N, B]
+            jump_logits_a = (
                 (hidden_states * jg_w.unsqueeze(1)).sum(-1) + jg_b.unsqueeze(1)
             )  # [N, B]
-            jump_prob = torch.sigmoid(jump_logits / JUMP_SIGMOID_TAU)  # [N, B] — tempered sigmoid for gradient flow
-            walk_pos = (pointer_positions + 1.0) % M
-            new_ptrs = jump_prob * jump_targets + (1.0 - jump_prob) * walk_pos
-            pointer_positions = torch.where(step_active.unsqueeze(1), new_ptrs, pointer_positions)
+            jump_prob_a = torch.sigmoid(jump_logits_a / JUMP_SIGMOID_TAU)
+            walk_pos_a = (pointer_positions + 1.0) % M
+            new_ptrs_a = jump_prob_a * jump_targets_a + (1.0 - jump_prob_a) * walk_pos_a
+            pointer_positions = torch.where(step_active.unsqueeze(1), new_ptrs_a, pointer_positions)
+
+            if self.num_pointers >= 2:
+                # Pointer B update (independent walker)
+                current_pos_b = pointer_positions_b.long().clamp(0, M - 1)
+                jump_targets_b = all_dests_b.gather(1, current_pos_b).float().clamp(0, M - 1)
+                jump_logits_b = (
+                    (hidden_states * jg_w_b.unsqueeze(1)).sum(-1) + jg_b_b.unsqueeze(1)
+                )
+                jump_prob_b = torch.sigmoid(jump_logits_b / JUMP_SIGMOID_TAU)
+                walk_pos_b = (pointer_positions_b + 1.0) % M
+                new_ptrs_b = jump_prob_b * jump_targets_b + (1.0 - jump_prob_b) * walk_pos_b
+                pointer_positions_b = torch.where(step_active.unsqueeze(1), new_ptrs_b, pointer_positions_b)
+
+            if self.num_pointers >= 3:
+                # Pointer C update (neutral)
+                current_pos_c = pointer_positions_c.long().clamp(0, M - 1)
+                jump_targets_c = all_dests_c.gather(1, current_pos_c).float().clamp(0, M - 1)
+                jump_logits_c = (
+                    (hidden_states * jg_w_c.unsqueeze(1)).sum(-1) + jg_b_c.unsqueeze(1)
+                )
+                jump_prob_c = torch.sigmoid(jump_logits_c / JUMP_SIGMOID_TAU)
+                walk_pos_c = (pointer_positions_c + 1.0) % M
+                new_ptrs_c = jump_prob_c * jump_targets_c + (1.0 - jump_prob_c) * walk_pos_c
+                pointer_positions_c = torch.where(step_active.unsqueeze(1), new_ptrs_c, pointer_positions_c)
 
             # 7. Output projection
             if self.full_view:
@@ -1345,12 +1511,28 @@ class SwarmByteRingModel(nn.Module):
                 for n in range(N):
                     if not active_mask[n] or not tick_active[n]:
                         jump_counts_per_being[n].append(-1.0)
+                    elif self.num_pointers >= 3:
+                        avg_jp = (jump_prob_a[n].mean().item() + jump_prob_b[n].mean().item() + jump_prob_c[n].mean().item()) / 3.0
+                        jump_counts_per_being[n].append(avg_jp)
+                    elif self.num_pointers >= 2:
+                        avg_jp = 0.5 * (jump_prob_a[n].mean().item() + jump_prob_b[n].mean().item())
+                        jump_counts_per_being[n].append(avg_jp)
                     else:
-                        jump_counts_per_being[n].append(jump_prob[n].mean().item())
+                        jump_counts_per_being[n].append(jump_prob_a[n].mean().item())
                 ptr_t = [
                     pointer_positions[n].mean().item()
                     for n in range(N) if self._is_contributing(n)
                 ]
+                if self.num_pointers >= 2:
+                    ptr_t.extend([
+                        pointer_positions_b[n].mean().item()
+                        for n in range(N) if self._is_contributing(n)
+                    ])
+                if self.num_pointers >= 3:
+                    ptr_t.extend([
+                        pointer_positions_c[n].mean().item()
+                        for n in range(N) if self._is_contributing(n)
+                    ])
                 pointer_positions_log.append(ptr_t)
 
             # -------- THINK TICKS --------
@@ -1365,17 +1547,48 @@ class SwarmByteRingModel(nn.Module):
                         tt_step = active_mask
                     tt_mask = tt_step.float().reshape(N, 1, 1)
 
-                    # Ring read
-                    flat_p = pointer_positions.reshape(-1)
-                    idx_tt, wgt_tt = self._gaussian_attention_weights(flat_p, M)
-                    W_tt = idx_tt.size(1)
-                    idx_tt = idx_tt.reshape(N, B, W_tt)
-                    wgt_tt = wgt_tt.reshape(N, B, W_tt)
+                    # Ring read — Pointer A
+                    flat_p_a = pointer_positions.reshape(-1)
+                    idx_tt_a, wgt_tt_a = self._gaussian_attention_weights(flat_p_a, M)
+                    W_tt = idx_tt_a.size(1)
+                    idx_tt_a = idx_tt_a.reshape(N, B, W_tt)
+                    wgt_tt_a = wgt_tt_a.reshape(N, B, W_tt)
 
                     mem_tt = memory_ring.unsqueeze(0).expand(N, -1, -1, -1)
-                    idxg_tt = idx_tt.unsqueeze(-1).expand(-1, -1, -1, D)
-                    nbr_tt = mem_tt.gather(2, idxg_tt)
-                    ctx_tt = (wgt_tt.unsqueeze(-1) * nbr_tt).sum(dim=2)  # [N, B, D]
+                    idxg_tt_a = idx_tt_a.unsqueeze(-1).expand(-1, -1, -1, D)
+                    nbr_tt_a = mem_tt.gather(2, idxg_tt_a)
+                    ctx_tt_a = (wgt_tt_a.unsqueeze(-1) * nbr_tt_a).sum(dim=2)  # [N, B, D]
+
+                    if self.num_pointers >= 2:
+                        # Ring read — Pointer B
+                        flat_p_b = pointer_positions_b.reshape(-1)
+                        idx_tt_b, wgt_tt_b = self._gaussian_attention_weights(flat_p_b, M)
+                        idx_tt_b = idx_tt_b.reshape(N, B, W_tt)
+                        wgt_tt_b = wgt_tt_b.reshape(N, B, W_tt)
+                        idxg_tt_b = idx_tt_b.unsqueeze(-1).expand(-1, -1, -1, D)
+                        nbr_tt_b = mem_tt.gather(2, idxg_tt_b)
+                        ctx_tt_b = (wgt_tt_b.unsqueeze(-1) * nbr_tt_b).sum(dim=2)
+
+                    if self.num_pointers >= 3:
+                        # Ring read — Pointer C
+                        flat_p_c = pointer_positions_c.reshape(-1)
+                        idx_tt_c, wgt_tt_c = self._gaussian_attention_weights(flat_p_c, M)
+                        idx_tt_c = idx_tt_c.reshape(N, B, W_tt)
+                        wgt_tt_c = wgt_tt_c.reshape(N, B, W_tt)
+                        idxg_tt_c = idx_tt_c.unsqueeze(-1).expand(-1, -1, -1, D)
+                        nbr_tt_c = mem_tt.gather(2, idxg_tt_c)
+                        ctx_tt_c = (wgt_tt_c.unsqueeze(-1) * nbr_tt_c).sum(dim=2)
+
+                    if self.num_pointers >= 3:
+                        # Competitive attention: score each read against hidden state
+                        reads_tt = torch.stack([ctx_tt_a, ctx_tt_b, ctx_tt_c], dim=2)  # [N, B, 3, D]
+                        attn_s_tt = (hidden_states.unsqueeze(2) * reads_tt).sum(dim=-1) / (D ** 0.5)
+                        attn_w_tt = 0.25 * torch.softmax(attn_s_tt, dim=-1) + 0.25  # [N, B, 3] min 25% per pointer
+                        ctx_tt = (attn_w_tt.unsqueeze(-1) * reads_tt).sum(dim=2)
+                    elif self.num_pointers >= 2:
+                        ctx_tt = 0.5 * (ctx_tt_a + ctx_tt_b)
+                    else:
+                        ctx_tt = ctx_tt_a
 
                     # No input — context + phase + think token
                     comb_tt = ctx_scales * ctx_tt + 0.1 * phase_bias
@@ -1384,7 +1597,7 @@ class SwarmByteRingModel(nn.Module):
                     su_tt = 0.618 * self.state_norm(hidden_states) + 0.382 * comb_tt
                     if self.processing_layers is not None:
                         for norm, layer in zip(self.processing_norms, self.processing_layers):
-                            su_tt = su_tt + torch.nn.functional.gelu(layer(norm(su_tt)))
+                            su_tt = su_tt + c19_activation(layer(norm(su_tt)))
                     hidden_states = torch.where(tt_mask.bool(), su_tt, hidden_states)
 
                     # Flat LCX read/write during think ticks
@@ -1400,6 +1613,7 @@ class SwarmByteRingModel(nn.Module):
                         if _do_lcx:
                             _query = hidden_states.mean(dim=0)
                             lcx_tt_ctx = self._lcx_flat_read(_query, level=_lcx_level)
+                            lcx_tt_ctx = self._lcx_bottleneck(lcx_tt_ctx)
                             # zoom_gate: L2-normalize input to bound pre-activation, fp32 for gradient precision
                             with torch.amp.autocast('cuda', enabled=False):
                                 _q32 = torch.nn.functional.normalize(_query.float(), dim=-1)
@@ -1420,23 +1634,63 @@ class SwarmByteRingModel(nn.Module):
                             _wk = su_tt.mean(dim=0)
                             self._lcx_flat_write(_wv, _wk, level=_lcx_level)
 
-                    # Ring write
-                    wc_tt = (
+                    # Ring write — Pointer A
+                    wc_tt_a = (
                         hidden_states.unsqueeze(2).expand(-1, -1, W_tt, -1)
-                        * wgt_tt.unsqueeze(-1) * tt_mask.unsqueeze(2)
+                        * wgt_tt_a.unsqueeze(-1) * tt_mask.unsqueeze(2)
                     )
-                    ids_tt = idx_tt.permute(1, 0, 2).reshape(B, -1).unsqueeze(-1).expand(-1, -1, D)
-                    cfs_tt = wc_tt.permute(1, 0, 2, 3).reshape(B, -1, D)
-                    memory_ring = memory_ring.scatter_add(1, ids_tt, cfs_tt)
+                    ids_tt_a = idx_tt_a.permute(1, 0, 2).reshape(B, -1).unsqueeze(-1).expand(-1, -1, D)
+                    cfs_tt_a = wc_tt_a.permute(1, 0, 2, 3).reshape(B, -1, D)
+                    memory_ring = memory_ring.scatter_add(1, ids_tt_a, cfs_tt_a)
 
-                    # Pointer update — soft blend for gradient flow
-                    cp_tt = pointer_positions.long().clamp(0, M - 1)
-                    jt_tt = all_dests.gather(1, cp_tt).float().clamp(0, M - 1)
-                    jl_tt = (hidden_states * jg_w.unsqueeze(1)).sum(-1) + jg_b.unsqueeze(1)
-                    jp_tt = torch.sigmoid(jl_tt)
-                    wp_tt = (pointer_positions + 1.0) % M
-                    np_tt = jp_tt * jt_tt + (1.0 - jp_tt) * wp_tt
-                    pointer_positions = torch.where(tt_step.unsqueeze(1), np_tt, pointer_positions)
+                    if self.num_pointers >= 2:
+                        # Ring write — Pointer B
+                        wc_tt_b = (
+                            hidden_states.unsqueeze(2).expand(-1, -1, W_tt, -1)
+                            * wgt_tt_b.unsqueeze(-1) * tt_mask.unsqueeze(2)
+                        )
+                        ids_tt_b = idx_tt_b.permute(1, 0, 2).reshape(B, -1).unsqueeze(-1).expand(-1, -1, D)
+                        cfs_tt_b = wc_tt_b.permute(1, 0, 2, 3).reshape(B, -1, D)
+                        memory_ring = memory_ring.scatter_add(1, ids_tt_b, cfs_tt_b)
+
+                    if self.num_pointers >= 3:
+                        # Ring write — Pointer C
+                        wc_tt_c = (
+                            hidden_states.unsqueeze(2).expand(-1, -1, W_tt, -1)
+                            * wgt_tt_c.unsqueeze(-1) * tt_mask.unsqueeze(2)
+                        )
+                        ids_tt_c = idx_tt_c.permute(1, 0, 2).reshape(B, -1).unsqueeze(-1).expand(-1, -1, D)
+                        cfs_tt_c = wc_tt_c.permute(1, 0, 2, 3).reshape(B, -1, D)
+                        memory_ring = memory_ring.scatter_add(1, ids_tt_c, cfs_tt_c)
+
+                    # Pointer A update — soft blend for gradient flow
+                    cp_tt_a = pointer_positions.long().clamp(0, M - 1)
+                    jt_tt_a = all_dests.gather(1, cp_tt_a).float().clamp(0, M - 1)
+                    jl_tt_a = (hidden_states * jg_w.unsqueeze(1)).sum(-1) + jg_b.unsqueeze(1)
+                    jp_tt_a = torch.sigmoid(jl_tt_a / JUMP_SIGMOID_TAU)
+                    wp_tt_a = (pointer_positions + 1.0) % M
+                    np_tt_a = jp_tt_a * jt_tt_a + (1.0 - jp_tt_a) * wp_tt_a
+                    pointer_positions = torch.where(tt_step.unsqueeze(1), np_tt_a, pointer_positions)
+
+                    if self.num_pointers >= 2:
+                        # Pointer B update (independent walker)
+                        cp_tt_b = pointer_positions_b.long().clamp(0, M - 1)
+                        jt_tt_b = all_dests_b.gather(1, cp_tt_b).float().clamp(0, M - 1)
+                        jl_tt_b = (hidden_states * jg_w_b.unsqueeze(1)).sum(-1) + jg_b_b.unsqueeze(1)
+                        jp_tt_b = torch.sigmoid(jl_tt_b / JUMP_SIGMOID_TAU)
+                        wp_tt_b = (pointer_positions_b + 1.0) % M
+                        np_tt_b = jp_tt_b * jt_tt_b + (1.0 - jp_tt_b) * wp_tt_b
+                        pointer_positions_b = torch.where(tt_step.unsqueeze(1), np_tt_b, pointer_positions_b)
+
+                    if self.num_pointers >= 3:
+                        # Pointer C update (neutral)
+                        cp_tt_c = pointer_positions_c.long().clamp(0, M - 1)
+                        jt_tt_c = all_dests_c.gather(1, cp_tt_c).float().clamp(0, M - 1)
+                        jl_tt_c = (hidden_states * jg_w_c.unsqueeze(1)).sum(-1) + jg_b_c.unsqueeze(1)
+                        jp_tt_c = torch.sigmoid(jl_tt_c / JUMP_SIGMOID_TAU)
+                        wp_tt_c = (pointer_positions_c + 1.0) % M
+                        np_tt_c = jp_tt_c * jt_tt_c + (1.0 - jp_tt_c) * wp_tt_c
+                        pointer_positions_c = torch.where(tt_step.unsqueeze(1), np_tt_c, pointer_positions_c)
 
                     # Detach between think ticks (VRAM fix): only last tick gets gradient
                     if _tt < _eff_think_ticks - 1:
@@ -1944,6 +2198,18 @@ class SwarmByteRingModel(nn.Module):
         stats['allocated_levels'] = len(self._lcx_allocated_levels)
         return stats
 
+    # --- LCX bottleneck projection ---
+
+    def _lcx_bottleneck(self, x: torch.Tensor) -> torch.Tensor:
+        """Translate LCX read from memory-space to brain-space: D→618→C19→618→C19→D."""
+        if self.lcx_bn_layers is None:
+            return x
+        for i, layer in enumerate(self.lcx_bn_layers):
+            x = layer(x)
+            if i < len(self.lcx_bn_layers) - 1:
+                x = c19_activation(x)
+        return x
+
     # --- Flat LCX read/write ---
 
     def _lcx_flat_read(self, state: torch.Tensor, level: int) -> torch.Tensor:
@@ -2156,12 +2422,34 @@ class SwarmByteRingModel(nn.Module):
             # Spatial offset initialization: spread beings across ring
             offset_start = being_idx * self.num_memory_positions / self.num_beings
             offset_end = (being_idx + 1) * self.num_memory_positions / self.num_beings
-            pointer_init = torch.empty(B, device=x.device).uniform_(offset_start, offset_end)
+            seg_len = offset_end - offset_start
+            # Pointer A: first third (or half/full depending on num_pointers)
+            if self.num_pointers >= 3:
+                third = seg_len / 3
+                pointer_init_a = torch.empty(B, device=x.device).uniform_(offset_start, offset_start + third)
+            elif self.num_pointers >= 2:
+                mid = offset_start + seg_len / 2
+                pointer_init_a = torch.empty(B, device=x.device).uniform_(offset_start, mid)
+            else:
+                pointer_init_a = torch.empty(B, device=x.device).uniform_(offset_start, offset_end)
 
-            being_states.append({
-                'pointer_position': pointer_init,
+            state_dict = {
+                'pointer_position': pointer_init_a,
                 'hidden_state': torch.zeros(B, self.hidden_dims[being_idx], device=x.device, dtype=x.dtype),
-            })
+            }
+            # Pointer B: second segment
+            if self.num_pointers >= 2:
+                if self.num_pointers >= 3:
+                    state_dict['pointer_position_b'] = torch.empty(B, device=x.device).uniform_(
+                        offset_start + third, offset_start + 2 * third)
+                else:
+                    state_dict['pointer_position_b'] = torch.empty(B, device=x.device).uniform_(mid, offset_end)
+            # Pointer C: last third
+            if self.num_pointers >= 3:
+                state_dict['pointer_position_c'] = torch.empty(B, device=x.device).uniform_(
+                    offset_start + 2 * third, offset_end)
+
+            being_states.append(state_dict)
 
         # Track outputs per being (for ensemble averaging and per-being stats)
         outputs_per_being = [[] for _ in range(self.num_beings)]
@@ -2221,7 +2509,7 @@ class SwarmByteRingModel(nn.Module):
                 # TEMPORAL FIBONACCI: skip dormant beings
                 if self.tick_periods is not None and t % self.tick_periods[being_idx].item() != 0:
                     # Dormant: produce stale output from current hidden state
-                    if self.full_view:
+                    if self.full_view and self.being_output_projs is not None:
                         output_bits = self.being_output_projs[being_idx](state['hidden_state'])
                     elif self.heterogeneous:
                         vis_idx = self.receptive_masks[being_idx].nonzero(as_tuple=True)[0]
@@ -2242,13 +2530,45 @@ class SwarmByteRingModel(nn.Module):
                             pointer_positions_t.append(state['pointer_position'].mean().item())
                     continue
 
-                # 2a. Read from being's pointer position
-                indices, weights = self._gaussian_attention_weights(
+                # 2a. Read from being's pointer position(s)
+                indices_a, weights_a = self._gaussian_attention_weights(
                     state['pointer_position'], self.num_memory_positions
                 )
-                indices_exp = indices.unsqueeze(-1).expand(-1, -1, self.embedding_dim)
-                neighborhood = memory_ring.gather(1, indices_exp)
-                context_read = (weights.unsqueeze(-1) * neighborhood).sum(dim=1)
+                indices_exp_a = indices_a.unsqueeze(-1).expand(-1, -1, self.embedding_dim)
+                neighborhood_a = memory_ring.gather(1, indices_exp_a)
+                context_read_a = (weights_a.unsqueeze(-1) * neighborhood_a).sum(dim=1)
+
+                if self.num_pointers >= 2:
+                    # Pointer B: independent read from second position
+                    indices_b, weights_b = self._gaussian_attention_weights(
+                        state['pointer_position_b'], self.num_memory_positions
+                    )
+                    indices_exp_b = indices_b.unsqueeze(-1).expand(-1, -1, self.embedding_dim)
+                    neighborhood_b = memory_ring.gather(1, indices_exp_b)
+                    context_read_b = (weights_b.unsqueeze(-1) * neighborhood_b).sum(dim=1)
+
+                if self.num_pointers >= 3:
+                    # Pointer C: independent read from third position
+                    indices_c, weights_c = self._gaussian_attention_weights(
+                        state['pointer_position_c'], self.num_memory_positions
+                    )
+                    indices_exp_c = indices_c.unsqueeze(-1).expand(-1, -1, self.embedding_dim)
+                    neighborhood_c = memory_ring.gather(1, indices_exp_c)
+                    context_read_c = (weights_c.unsqueeze(-1) * neighborhood_c).sum(dim=1)
+
+                if self.num_pointers >= 3:
+                    # Competitive attention: score each read against hidden state, softmax-select
+                    _D = self.embedding_dim
+                    reads_stack = torch.stack([context_read_a, context_read_b, context_read_c], dim=1)  # [B, 3, D]
+                    attn_scores = (state['hidden_state'].unsqueeze(1) * reads_stack).sum(dim=-1)  # [B, 3]
+                    attn_scores = attn_scores / (_D ** 0.5)
+                    attn_weights = 0.25 * torch.softmax(attn_scores, dim=-1) + 0.25  # [B, 3] min 25% per pointer
+                    context_read = (attn_weights.unsqueeze(-1) * reads_stack).sum(dim=1)  # [B, D]
+                elif self.num_pointers >= 2:
+                    context_read = 0.5 * (context_read_a + context_read_b)
+                else:
+                    context_read = context_read_a
+
                 context_scale = torch.sigmoid(being.context_strength)
 
                 # CAPACITY FIBONACCI: project ring context D -> H_i
@@ -2260,7 +2580,7 @@ class SwarmByteRingModel(nn.Module):
                     # Hash LCX: project raw bits, add LCX context in embedding space
                     being_input_vec = self.input_proj(input_bits)  # [B, D]
                     lcx_ctx = self._lcx_flat_read(being_input_vec, level=0)  # [B, D]
-                    being_input_vec = being_input_vec + lcx_ctx
+                    being_input_vec = being_input_vec + self._lcx_bottleneck(lcx_ctx)
                 elif self.lcx is not None:
                     # Dense LCX: broadcast+add with per-ant mask → shared projection
                     if self.heterogeneous and not self.full_view:
@@ -2276,7 +2596,7 @@ class SwarmByteRingModel(nn.Module):
                     # Bridge D → H_i for capacity_fibonacci compatibility
                     if self.being_input_projs is not None:
                         being_input_vec = self.being_input_projs[being_idx](being_input_vec)
-                elif self.full_view:
+                elif self.full_view and self.being_input_projs is not None:
                     being_input_vec = self.being_input_projs[being_idx](input_with_mem)
                 elif self.heterogeneous:
                     vis_idx = self.receptive_masks[being_idx].nonzero(as_tuple=True)[0]
@@ -2316,13 +2636,13 @@ class SwarmByteRingModel(nn.Module):
                 _norm = self.being_state_norms[being_idx] if self.being_state_norms is not None else self.state_norm
                 state_update = 0.618 * _norm(state['hidden_state']) + 0.382 * combined_input
 
-                # Additional processing layers (Pre-LN + GELU residual)
+                # Additional processing layers (Pre-LN + C19 residual)
                 if self.being_processing_layers is not None:
                     for norm, layer in zip(self.being_processing_norms[being_idx], self.being_processing_layers[being_idx]):
-                        state_update = state_update + torch.nn.functional.gelu(layer(norm(state_update)))
+                        state_update = state_update + c19_activation(layer(norm(state_update)))
                 elif self.processing_layers is not None:
                     for norm, layer in zip(self.processing_norms, self.processing_layers):
-                        state_update = state_update + torch.nn.functional.gelu(layer(norm(state_update)))
+                        state_update = state_update + c19_activation(layer(norm(state_update)))
 
                 state['hidden_state'] = state_update
 
@@ -2370,26 +2690,69 @@ class SwarmByteRingModel(nn.Module):
 
                 # 2d. Write to SHARED ring (scatter_add accumulation)
                 # Gradient flows through ring writes for collaborative learning.
-                update_broadcast = write_vec.unsqueeze(1).expand(-1, weights.size(1), -1)
-                contribution = weights.unsqueeze(-1) * update_broadcast
-                memory_ring = memory_ring.scatter_add(1, indices_exp, contribution)
+                # Pointer A write
+                update_broadcast_a = write_vec.unsqueeze(1).expand(-1, weights_a.size(1), -1)
+                contribution_a = weights_a.unsqueeze(-1) * update_broadcast_a
+                memory_ring = memory_ring.scatter_add(1, indices_exp_a, contribution_a)
 
-                # 2e. Update pointer (jump or walk) — soft blend for gradient flow
-                current_pos = state['pointer_position'].long().clamp(0, self.num_memory_positions - 1)
-                jump_target = being.pointer_destinations[current_pos].float().clamp(0, self.num_memory_positions - 1)
-                jump_logits = being.jump_gate(state_update).squeeze(-1)
-                jump_prob = torch.sigmoid(jump_logits / JUMP_SIGMOID_TAU)
-                walk_position = (state['pointer_position'] + 1.0) % self.num_memory_positions
-                state['pointer_position'] = jump_prob * jump_target + (1.0 - jump_prob) * walk_position
+                if self.num_pointers >= 2:
+                    # Pointer B write (same write_vec, different neighborhood)
+                    update_broadcast_b = write_vec.unsqueeze(1).expand(-1, weights_b.size(1), -1)
+                    contribution_b = weights_b.unsqueeze(-1) * update_broadcast_b
+                    memory_ring = memory_ring.scatter_add(1, indices_exp_b, contribution_b)
+
+                if self.num_pointers >= 3:
+                    # Pointer C write (same write_vec, different neighborhood)
+                    update_broadcast_c = write_vec.unsqueeze(1).expand(-1, weights_c.size(1), -1)
+                    contribution_c = weights_c.unsqueeze(-1) * update_broadcast_c
+                    memory_ring = memory_ring.scatter_add(1, indices_exp_c, contribution_c)
+
+                # 2e. Update pointer A (jump or walk) — soft blend for gradient flow
+                current_pos_a = state['pointer_position'].long().clamp(0, self.num_memory_positions - 1)
+                jump_target_a = being.pointer_destinations[current_pos_a].float().clamp(0, self.num_memory_positions - 1)
+                jump_logits_a = being.jump_gate(state_update).squeeze(-1)
+                jump_prob_a = torch.sigmoid(jump_logits_a / JUMP_SIGMOID_TAU)
+                walk_position_a = (state['pointer_position'] + 1.0) % self.num_memory_positions
+                state['pointer_position'] = jump_prob_a * jump_target_a + (1.0 - jump_prob_a) * walk_position_a
+
+                if self.num_pointers >= 2:
+                    # Update pointer B (independent jump/walk with walker bias)
+                    current_pos_b = state['pointer_position_b'].long().clamp(0, self.num_memory_positions - 1)
+                    jump_target_b = being.pointer_destinations_b[current_pos_b].float().clamp(0, self.num_memory_positions - 1)
+                    jump_logits_b = being.jump_gate_b(state_update).squeeze(-1)
+                    jump_prob_b = torch.sigmoid(jump_logits_b / JUMP_SIGMOID_TAU)
+                    walk_position_b = (state['pointer_position_b'] + 1.0) % self.num_memory_positions
+                    state['pointer_position_b'] = jump_prob_b * jump_target_b + (1.0 - jump_prob_b) * walk_position_b
+
+                if self.num_pointers >= 3:
+                    # Update pointer C (neutral bias)
+                    current_pos_c = state['pointer_position_c'].long().clamp(0, self.num_memory_positions - 1)
+                    jump_target_c = being.pointer_destinations_c[current_pos_c].float().clamp(0, self.num_memory_positions - 1)
+                    jump_logits_c = being.jump_gate_c(state_update).squeeze(-1)
+                    jump_prob_c = torch.sigmoid(jump_logits_c / JUMP_SIGMOID_TAU)
+                    walk_position_c = (state['pointer_position_c'] + 1.0) % self.num_memory_positions
+                    state['pointer_position_c'] = jump_prob_c * jump_target_c + (1.0 - jump_prob_c) * walk_position_c
 
                 # Track jump activation (if stats requested)
                 if return_stats:
-                    jump_counts_per_being[being_idx].append(jump_prob.mean().item())
-                    pointer_positions_t.append(state['pointer_position'].mean().item())
+                    if self.num_pointers >= 3:
+                        avg_jump = (jump_prob_a.mean().item() + jump_prob_b.mean().item() + jump_prob_c.mean().item()) / 3.0
+                        jump_counts_per_being[being_idx].append(avg_jump)
+                        pointer_positions_t.append(state['pointer_position'].mean().item())
+                        pointer_positions_t.append(state['pointer_position_b'].mean().item())
+                        pointer_positions_t.append(state['pointer_position_c'].mean().item())
+                    elif self.num_pointers >= 2:
+                        avg_jump = 0.5 * (jump_prob_a.mean().item() + jump_prob_b.mean().item())
+                        jump_counts_per_being[being_idx].append(avg_jump)
+                        pointer_positions_t.append(state['pointer_position'].mean().item())
+                        pointer_positions_t.append(state['pointer_position_b'].mean().item())
+                    else:
+                        jump_counts_per_being[being_idx].append(jump_prob_a.mean().item())
+                        pointer_positions_t.append(state['pointer_position'].mean().item())
 
                 # 2f. Generate output
-                if self.full_view:
-                    # FULL VIEW: project H_i → all bits
+                if self.full_view and self.being_output_projs is not None:
+                    # FULL VIEW with per-being output: project H_i → all bits
                     output_bits = self.being_output_projs[being_idx](state['hidden_state'])  # [B, H_i] → [B, num_bits]
                 elif self.heterogeneous:
                     # Per-being output: D → K_i visible bits, placed into full vector
@@ -2428,13 +2791,44 @@ class SwarmByteRingModel(nn.Module):
                             if global_tick % self.tick_periods[being_idx].item() != 0:
                                 continue
 
-                        # Read from ring
-                        indices, weights = self._gaussian_attention_weights(
+                        # Read from ring (Pointer A)
+                        indices_a, weights_a = self._gaussian_attention_weights(
                             state['pointer_position'], self.num_memory_positions
                         )
-                        indices_exp = indices.unsqueeze(-1).expand(-1, -1, self.embedding_dim)
-                        neighborhood = memory_ring.gather(1, indices_exp)
-                        context_read = (weights.unsqueeze(-1) * neighborhood).sum(dim=1)
+                        indices_exp_a = indices_a.unsqueeze(-1).expand(-1, -1, self.embedding_dim)
+                        neighborhood_a = memory_ring.gather(1, indices_exp_a)
+                        context_read_a = (weights_a.unsqueeze(-1) * neighborhood_a).sum(dim=1)
+
+                        if self.num_pointers >= 2:
+                            # Pointer B read
+                            indices_b, weights_b = self._gaussian_attention_weights(
+                                state['pointer_position_b'], self.num_memory_positions
+                            )
+                            indices_exp_b = indices_b.unsqueeze(-1).expand(-1, -1, self.embedding_dim)
+                            neighborhood_b = memory_ring.gather(1, indices_exp_b)
+                            context_read_b = (weights_b.unsqueeze(-1) * neighborhood_b).sum(dim=1)
+
+                        if self.num_pointers >= 3:
+                            # Pointer C read
+                            indices_c, weights_c = self._gaussian_attention_weights(
+                                state['pointer_position_c'], self.num_memory_positions
+                            )
+                            indices_exp_c = indices_c.unsqueeze(-1).expand(-1, -1, self.embedding_dim)
+                            neighborhood_c = memory_ring.gather(1, indices_exp_c)
+                            context_read_c = (weights_c.unsqueeze(-1) * neighborhood_c).sum(dim=1)
+
+                        if self.num_pointers >= 3:
+                            # Competitive attention: score each read against hidden state
+                            _D = self.embedding_dim
+                            reads_stack = torch.stack([context_read_a, context_read_b, context_read_c], dim=1)  # [B, 3, D]
+                            attn_scores = (state['hidden_state'].unsqueeze(1) * reads_stack).sum(dim=-1) / (_D ** 0.5)
+                            attn_weights = 0.25 * torch.softmax(attn_scores, dim=-1) + 0.25  # [B, 3] min 25% per pointer
+                            context_read = (attn_weights.unsqueeze(-1) * reads_stack).sum(dim=1)
+                        elif self.num_pointers >= 2:
+                            context_read = 0.5 * (context_read_a + context_read_b)
+                        else:
+                            context_read = context_read_a
+
                         context_scale = torch.sigmoid(being.context_strength)
 
                         # CAPACITY FIBONACCI: project ring context D -> H_i
@@ -2467,10 +2861,10 @@ class SwarmByteRingModel(nn.Module):
                         state_update = 0.618 * _norm_tt(state['hidden_state']) + 0.382 * combined_input
                         if self.being_processing_layers is not None:
                             for norm, layer in zip(self.being_processing_norms[being_idx], self.being_processing_layers[being_idx]):
-                                state_update = state_update + torch.nn.functional.gelu(layer(norm(state_update)))
+                                state_update = state_update + c19_activation(layer(norm(state_update)))
                         elif self.processing_layers is not None:
                             for norm, layer in zip(self.processing_norms, self.processing_layers):
-                                state_update = state_update + torch.nn.functional.gelu(layer(norm(state_update)))
+                                state_update = state_update + c19_activation(layer(norm(state_update)))
                         state['hidden_state'] = state_update
 
                         # Flat LCX read/write during think tick
@@ -2486,6 +2880,7 @@ class SwarmByteRingModel(nn.Module):
                             if _do_lcx:
                                 _query = state['hidden_state']
                                 lcx_tt_ctx = self._lcx_flat_read(_query, level=_lcx_level)
+                                lcx_tt_ctx = self._lcx_bottleneck(lcx_tt_ctx)
                                 # zoom_gate: L2-normalize input to bound pre-activation, fp32
                                 with torch.amp.autocast('cuda', enabled=False):
                                     _q32 = torch.nn.functional.normalize(_query.float(), dim=-1)
@@ -2502,22 +2897,52 @@ class SwarmByteRingModel(nn.Module):
                                 self._lcx_flat_write(state['hidden_state'], state_update,
                                                      level=_lcx_level)
 
-                        # Write to ring
+                        # Write to ring (Pointer A)
                         if self.ring_write_projs is not None:
                             write_vec = self.ring_write_projs[being_idx](state_update)
                         else:
                             write_vec = state_update
-                        update_broadcast = write_vec.unsqueeze(1).expand(-1, weights.size(1), -1)
-                        contribution = weights.unsqueeze(-1) * update_broadcast
-                        memory_ring = memory_ring.scatter_add(1, indices_exp, contribution)
+                        update_broadcast_a = write_vec.unsqueeze(1).expand(-1, weights_a.size(1), -1)
+                        contribution_a = weights_a.unsqueeze(-1) * update_broadcast_a
+                        memory_ring = memory_ring.scatter_add(1, indices_exp_a, contribution_a)
 
-                        # Move pointer — soft blend for gradient flow
-                        current_pos = state['pointer_position'].long().clamp(0, self.num_memory_positions - 1)
-                        jump_target = being.pointer_destinations[current_pos].float().clamp(0, self.num_memory_positions - 1)
-                        jump_logits = being.jump_gate(state_update).squeeze(-1)
-                        jump_prob = torch.sigmoid(jump_logits / JUMP_SIGMOID_TAU)
-                        walk_position = (state['pointer_position'] + 1.0) % self.num_memory_positions
-                        state['pointer_position'] = jump_prob * jump_target + (1.0 - jump_prob) * walk_position
+                        if self.num_pointers >= 2:
+                            # Pointer B write (same write_vec, different neighborhood)
+                            update_broadcast_b = write_vec.unsqueeze(1).expand(-1, weights_b.size(1), -1)
+                            contribution_b = weights_b.unsqueeze(-1) * update_broadcast_b
+                            memory_ring = memory_ring.scatter_add(1, indices_exp_b, contribution_b)
+
+                        if self.num_pointers >= 3:
+                            # Pointer C write (same write_vec, different neighborhood)
+                            update_broadcast_c = write_vec.unsqueeze(1).expand(-1, weights_c.size(1), -1)
+                            contribution_c = weights_c.unsqueeze(-1) * update_broadcast_c
+                            memory_ring = memory_ring.scatter_add(1, indices_exp_c, contribution_c)
+
+                        # Move pointer A — soft blend for gradient flow
+                        current_pos_a = state['pointer_position'].long().clamp(0, self.num_memory_positions - 1)
+                        jump_target_a = being.pointer_destinations[current_pos_a].float().clamp(0, self.num_memory_positions - 1)
+                        jump_logits_a = being.jump_gate(state_update).squeeze(-1)
+                        jump_prob_a = torch.sigmoid(jump_logits_a / JUMP_SIGMOID_TAU)
+                        walk_position_a = (state['pointer_position'] + 1.0) % self.num_memory_positions
+                        state['pointer_position'] = jump_prob_a * jump_target_a + (1.0 - jump_prob_a) * walk_position_a
+
+                        if self.num_pointers >= 2:
+                            # Move pointer B (independent walker)
+                            current_pos_b = state['pointer_position_b'].long().clamp(0, self.num_memory_positions - 1)
+                            jump_target_b = being.pointer_destinations_b[current_pos_b].float().clamp(0, self.num_memory_positions - 1)
+                            jump_logits_b = being.jump_gate_b(state_update).squeeze(-1)
+                            jump_prob_b = torch.sigmoid(jump_logits_b / JUMP_SIGMOID_TAU)
+                            walk_position_b = (state['pointer_position_b'] + 1.0) % self.num_memory_positions
+                            state['pointer_position_b'] = jump_prob_b * jump_target_b + (1.0 - jump_prob_b) * walk_position_b
+
+                        if self.num_pointers >= 3:
+                            # Move pointer C (neutral)
+                            current_pos_c = state['pointer_position_c'].long().clamp(0, self.num_memory_positions - 1)
+                            jump_target_c = being.pointer_destinations_c[current_pos_c].float().clamp(0, self.num_memory_positions - 1)
+                            jump_logits_c = being.jump_gate_c(state_update).squeeze(-1)
+                            jump_prob_c = torch.sigmoid(jump_logits_c / JUMP_SIGMOID_TAU)
+                            walk_position_c = (state['pointer_position_c'] + 1.0) % self.num_memory_positions
+                            state['pointer_position_c'] = jump_prob_c * jump_target_c + (1.0 - jump_prob_c) * walk_position_c
 
                     # Detach between think ticks (VRAM fix): only last tick gets gradient
                     if _tt < _eff_think_ticks - 1:
@@ -2538,7 +2963,7 @@ class SwarmByteRingModel(nn.Module):
                         hidden_states_t.append(state['hidden_state'].clone())
                         continue
 
-                    if self.full_view:
+                    if self.full_view and self.being_output_projs is not None:
                         output_bits = self.being_output_projs[being_idx](state['hidden_state'])
                     elif self.heterogeneous:
                         vis_idx = self.receptive_masks[being_idx].nonzero(as_tuple=True)[0]
@@ -2914,6 +3339,65 @@ if __name__ == "__main__":
     out_tf, stats_tf = model_tf(x_tf, return_stats=True)
     assert out_tf.shape == (2, 8, 64)
     print(f"  Shape: {out_tf.shape}  activation_ratio: {stats_tf.get('activation_ratio', 'N/A')}")
+    print()
+
+    # ---- TRIPLE POINTER COMPETITIVE ATTENTION TEST ----
+    print("-" * 70)
+    print("Testing TRIPLE RING POINTERS with competitive attention (num_pointers=3):")
+    print()
+
+    # Sequential path (num_beings=1)
+    model_dp = SwarmByteRingModel(
+        num_memory_positions=64, embedding_dim=64,
+        num_beings=1, depth=2, num_bits=8, num_pointers=3,
+        think_ticks=1,
+    )
+    total_params_dp = sum(p.numel() for p in model_dp.parameters())
+    print(f"  Params: {total_params_dp:,}")
+    assert hasattr(model_dp.beings[0], 'pointer_destinations_b'), "pointer_destinations_b missing"
+    assert hasattr(model_dp.beings[0], 'jump_gate_b'), "jump_gate_b missing"
+    assert hasattr(model_dp.beings[0], 'pointer_destinations_c'), "pointer_destinations_c missing"
+    assert hasattr(model_dp.beings[0], 'jump_gate_c'), "jump_gate_c missing"
+    print(f"  Pointer A bias: {model_dp.beings[0].jump_gate.bias.item():.2f}")
+    print(f"  Pointer B bias: {model_dp.beings[0].jump_gate_b.bias.item():.2f}")
+    print(f"  Pointer C bias: {model_dp.beings[0].jump_gate_c.bias.item():.2f}")
+
+    x_dp = torch.randint(0, 2, (4, 16, 8)).float()
+    output_dp, stats_dp = model_dp(x_dp, return_stats=True)
+    assert output_dp.shape == (4, 16, 8), f"Expected (4,16,8), got {output_dp.shape}"
+    print(f"  Output: {output_dp.shape}  OK")
+    print(f"  Jump gate (avg): {stats_dp['jump_gate']:.3f}")
+    print(f"  Positions logged: {len(stats_dp['pointer_positions_all'])}")
+
+    model_dp.zero_grad()
+    target_dp = torch.randint(0, 2, (4, 16, 8)).float()
+    loss_dp = nn.functional.binary_cross_entropy_with_logits(output_dp, target_dp)
+    loss_dp.backward()
+    jgb_grad = model_dp.beings[0].jump_gate_b.weight.grad
+    assert jgb_grad is not None and jgb_grad.abs().sum() > 0, "Pointer B jump_gate must receive gradients"
+    jgc_grad = model_dp.beings[0].jump_gate_c.weight.grad
+    assert jgc_grad is not None and jgc_grad.abs().sum() > 0, "Pointer C jump_gate must receive gradients"
+    print(f"  Pointer B jump_gate grad norm: {jgb_grad.norm().item():.4e}  OK")
+    print(f"  Pointer C jump_gate grad norm: {jgc_grad.norm().item():.4e}  OK")
+
+    # Vectorized path (combinatorial=True)
+    model_dp_v = SwarmByteRingModel(
+        num_memory_positions=64, embedding_dim=64,
+        num_beings=4, depth=2, num_bits=64,
+        combiner_mode='masked', combinatorial=True,
+        num_pointers=3, think_ticks=1,
+    )
+    x_dp_v = torch.randint(0, 2, (2, 8, 64)).float()
+    out_dp_v, stats_dp_v = model_dp_v(x_dp_v, return_stats=True)
+    assert out_dp_v.shape == (2, 8, 64)
+    model_dp_v.zero_grad()
+    loss_dp_v = nn.functional.binary_cross_entropy_with_logits(out_dp_v, torch.randint(0, 2, (2, 8, 64)).float())
+    loss_dp_v.backward()
+    jgb_grad_v = model_dp_v.beings[0].jump_gate_b.weight.grad
+    assert jgb_grad_v is not None and jgb_grad_v.abs().sum() > 0
+    jgc_grad_v = model_dp_v.beings[0].jump_gate_c.weight.grad
+    assert jgc_grad_v is not None and jgc_grad_v.abs().sum() > 0
+    print(f"  Vectorized path: {out_dp_v.shape}  Grads B+C OK")
     print()
 
     # ---- HASH LCX TESTS ----
