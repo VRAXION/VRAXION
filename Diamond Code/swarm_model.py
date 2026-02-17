@@ -869,6 +869,10 @@ class SwarmByteRingModel(nn.Module):
                 nn.Linear(_bn_dim, _bn_dim),
                 nn.Linear(_bn_dim, embedding_dim),
             ])
+            # Orthogonal init for bottleneck (probe: +0.8% vs kaiming, preserves norms through C19)
+            for _bn_layer in self.lcx_bn_layers:
+                nn.init.orthogonal_(_bn_layer.weight)
+                nn.init.zeros_(_bn_layer.bias)
             # Think token: learned "I'm thinking" signal for think ticks
             self.think_token = nn.Parameter(torch.randn(embedding_dim) * 0.02)
             # Stubs for dense LCX layers (not used in hash mode)
