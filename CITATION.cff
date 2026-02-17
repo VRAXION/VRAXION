@@ -1,8 +1,8 @@
 cff-version: 1.2.0
 message: "If you use this software, please cite it as below."
 title: "VRAXION"
-version: "2.10.578"
-date-released: "2026-02-06"
+version: "3.2.001"
+date-released: "2026-02-17"
 type: software
 authors:
   - family-names: Kenessy
@@ -12,3 +12,7 @@ keywords:
   - ai
   - manifold
   - research
+  - consciousness
+  - recursive-verification
+  - swarm
+  - lcx-memory
