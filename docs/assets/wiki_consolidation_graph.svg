@@ -1,0 +1,548 @@
+<svg width="1600" height="1200" viewBox="0 0 1600 1200" fill="none"
+     xmlns="http://www.w3.org/2000/svg"
+     role="img" aria-labelledby="cg_title cg_desc">
+  <title id="cg_title">VRAXION Wiki — Consolidation Graph</title>
+  <desc id="cg_desc">
+    Full tree of the wiki consolidation plan: 34 original pages consolidating
+    bottom-up into ~9 authoritative hubs across 5 waves.
+  </desc>
+
+  <defs>
+    <pattern id="cg_grid" x="0" y="0" width="40" height="40" patternUnits="userSpaceOnUse">
+      <path d="M40 0 L0 0 0 40" fill="none" stroke="#1A2130" stroke-width="1"/>
+    </pattern>
+    <linearGradient id="cg_panel" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#0b1426" stop-opacity="0.94"/>
+      <stop offset="100%" stop-color="#0b1220" stop-opacity="1"/>
+    </linearGradient>
+    <linearGradient id="cg_hub" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#111827" stop-opacity="0.95"/>
+      <stop offset="100%" stop-color="#0d1117" stop-opacity="0.98"/>
+    </linearGradient>
+    <filter id="gl_c" x="-50%" y="-50%" width="200%" height="200%" color-interpolation-filters="sRGB">
+      <feGaussianBlur stdDeviation="3" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <filter id="gl_g" x="-50%" y="-50%" width="200%" height="200%" color-interpolation-filters="sRGB">
+      <feGaussianBlur stdDeviation="3" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <filter id="gl_a" x="-50%" y="-50%" width="200%" height="200%" color-interpolation-filters="sRGB">
+      <feGaussianBlur stdDeviation="2.5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <filter id="gl_m" x="-50%" y="-50%" width="200%" height="200%" color-interpolation-filters="sRGB">
+      <feGaussianBlur stdDeviation="3" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <filter id="gl_y" x="-50%" y="-50%" width="200%" height="200%" color-interpolation-filters="sRGB">
+      <feGaussianBlur stdDeviation="2.5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <marker id="ar_c" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+      <path d="M0,0 L8,3 L0,6" fill="none" stroke="#00F0FF" stroke-width="1.2"/>
+    </marker>
+    <marker id="ar_g" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+      <path d="M0,0 L8,3 L0,6" fill="none" stroke="#22C55E" stroke-width="1.2"/>
+    </marker>
+    <marker id="ar_a" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+      <path d="M0,0 L8,3 L0,6" fill="none" stroke="#F59E0B" stroke-width="1.2"/>
+    </marker>
+    <marker id="ar_m" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+      <path d="M0,0 L8,3 L0,6" fill="none" stroke="#FF00FF" stroke-width="1.2"/>
+    </marker>
+    <marker id="ar_y" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+      <path d="M0,0 L8,3 L0,6" fill="none" stroke="#EAB308" stroke-width="1.2"/>
+    </marker>
+  </defs>
+
+  <!-- BACKGROUND -->
+  <rect width="1600" height="1200" rx="10" fill="#0d1117"/>
+  <rect width="1600" height="1200" fill="url(#cg_grid)" opacity="0.18"/>
+  <rect x="0.5" y="0.5" width="1599" height="1199" rx="10" fill="none" stroke="#30363d"/>
+
+  <!-- TITLE BAR -->
+  <text x="32" y="36" font-family="'Segoe UI',system-ui,sans-serif" font-weight="800" font-size="20" fill="#E2E8F0" letter-spacing="1.2">VRAXION WIKI · CONSOLIDATION GRAPH</text>
+  <text x="32" y="60" font-family="'Segoe UI',system-ui,sans-serif" font-size="13" fill="#A0AEC0">Bottom-up tree: how 34 pages collapse into ~9 authoritative hubs. Each node is a wiki page.</text>
+  <g transform="translate(1050,25)">
+    <rect width="90" height="22" rx="4" fill="#22C55E" opacity="0.15"/>
+    <text x="45" y="15" text-anchor="middle" font-family="'Segoe UI',system-ui,sans-serif" font-size="11" font-weight="600" fill="#22C55E">WAVE 1 ✓</text>
+  </g>
+  <g transform="translate(1150,25)">
+    <rect width="120" height="22" rx="4" fill="#F59E0B" opacity="0.15"/>
+    <text x="60" y="15" text-anchor="middle" font-family="'Segoe UI',system-ui,sans-serif" font-size="11" font-weight="600" fill="#F59E0B">29 PAGES NOW</text>
+  </g>
+  <g transform="translate(1280,25)">
+    <rect width="100" height="22" rx="4" fill="#00F0FF" opacity="0.15"/>
+    <text x="50" y="15" text-anchor="middle" font-family="'Segoe UI',system-ui,sans-serif" font-size="11" font-weight="600" fill="#00F0FF">TARGET ~9</text>
+  </g>
+  <line x1="32" y1="76" x2="1568" y2="76" stroke="#1A2130" stroke-width="1" stroke-dasharray="4 6" opacity="0.85"/>
+
+  <!-- HOME NODE -->
+  <g transform="translate(800,150)">
+    <circle r="44" fill="none" stroke="#00F0FF" stroke-width="2.5" opacity="0.2"/>
+    <circle r="44" fill="none" stroke="#00F0FF" stroke-width="2" stroke-dasharray="12 22" opacity="0.5" filter="url(#gl_c)">
+      <animateTransform attributeName="transform" type="rotate" from="0 0 0" to="360 0 0" dur="20s" repeatCount="indefinite"/>
+    </circle>
+    <circle r="34" fill="#0d1117" stroke="#00F0FF" stroke-width="2.4" filter="url(#gl_c)" opacity="0.95"/>
+    <circle r="12" fill="#00F0FF" opacity="0.08"/>
+    <text y="2" text-anchor="middle" font-family="'Segoe UI',system-ui,sans-serif" font-weight="800" font-size="15" fill="#00F0FF" filter="url(#gl_c)">HOME</text>
+  </g>
+
+  <!-- Navigation micro-nodes -->
+  <g transform="translate(700,130)" opacity="0.6">
+    <rect x="-34" y="-10" width="68" height="20" rx="4" fill="#111827" stroke="#4B5563" stroke-width="1"/>
+    <text x="0" y="4" text-anchor="middle" font-family="'Segoe UI',system-ui,sans-serif" font-size="9" fill="#94A3B8">_Sidebar ✓</text>
+  </g>
+  <g transform="translate(900,130)" opacity="0.6">
+    <rect x="-32" y="-10" width="64" height="20" rx="4" fill="#111827" stroke="#4B5563" stroke-width="1"/>
+    <text x="0" y="4" text-anchor="middle" font-family="'Segoe UI',system-ui,sans-serif" font-size="9" fill="#94A3B8">_Footer ✓</text>
+  </g>
+
+  <!-- HOME → HUB CONNECTIONS -->
+  <g opacity="0.4">
+    <line x1="770" y1="180" x2="170" y2="254" stroke="#00F0FF" stroke-width="1.8" stroke-dasharray="6 4" marker-end="url(#ar_c)"/>
+    <line x1="785" y1="185" x2="450" y2="254" stroke="#22C55E" stroke-width="1.8" stroke-dasharray="6 4" marker-end="url(#ar_g)"/>
+    <line x1="800" y1="194" x2="720" y2="254" stroke="#F59E0B" stroke-width="1.8" stroke-dasharray="6 4" marker-end="url(#ar_a)"/>
+    <line x1="815" y1="185" x2="990" y2="254" stroke="#FF00FF" stroke-width="1.8" stroke-dasharray="6 4" marker-end="url(#ar_m)"/>
+    <line x1="830" y1="180" x2="1240" y2="254" stroke="#EAB308" stroke-width="1.8" stroke-dasharray="6 4" marker-end="url(#ar_y)"/>
+  </g>
+
+  <!-- COLUMN TRUNK LINES (hub → leaves) -->
+  <g opacity="0.15">
+    <line x1="170" y1="306" x2="170" y2="536" stroke="#00F0FF" stroke-width="1.5"/>
+    <line x1="450" y1="306" x2="450" y2="674" stroke="#22C55E" stroke-width="1.5"/>
+    <line x1="720" y1="306" x2="720" y2="536" stroke="#F59E0B" stroke-width="1.5"/>
+    <line x1="990" y1="306" x2="990" y2="582" stroke="#FF00FF" stroke-width="1.5"/>
+    <line x1="1240" y1="306" x2="1240" y2="536" stroke="#EAB308" stroke-width="1.5"/>
+  </g>
+
+  <!-- ==================== HUB ROW ==================== -->
+
+  <!-- Architecture Hub (cyan) -->
+  <g transform="translate(170,280)">
+    <rect x="-120" y="-26" width="240" height="52" rx="10" fill="url(#cg_hub)" stroke="#00F0FF" stroke-width="1.6" opacity="0.95"/>
+    <rect x="-120" y="-26" width="240" height="4" rx="2" fill="#00F0FF" opacity="0.5"/>
+    <text x="0" y="-2" text-anchor="middle" font-family="'Segoe UI',system-ui,sans-serif" font-size="10" font-weight="700" fill="#00F0FF" letter-spacing="0.8" filter="url(#gl_c)">ARCHITECTURE</text>
+    <text x="0" y="14" text-anchor="middle" font-family="'Segoe UI',system-ui,sans-serif" font-size="10" fill="#94A3B8">Diamond Code v3</text>
+  </g>
+
+  <!-- Evidence Hub (green) -->
+  <g transform="translate(450,280)">
+    <rect x="-120" y="-26" width="240" height="52" rx="10" fill="url(#cg_hub)" stroke="#22C55E" stroke-width="1.6" opacity="0.95"/>
+    <rect x="-120" y="-26" width="240" height="4" rx="2" fill="#22C55E" opacity="0.5"/>
+    <text x="0" y="-2" text-anchor="middle" font-family="'Segoe UI',system-ui,sans-serif" font-size="10" font-weight="700" fill="#22C55E" letter-spacing="0.8" filter="url(#gl_g)">EVIDENCE &amp; FINDINGS</text>
+    <text x="0" y="14" text-anchor="middle" font-family="'Segoe UI',system-ui,sans-serif" font-size="10" fill="#94A3B8">Proven Findings</text>
+  </g>
+
+  <!-- Engineering Hub (amber, dashed = not created) -->
+  <g transform="translate(720,280)">
+    <rect x="-120" y="-26" width="240" height="52" rx="10" fill="url(#cg_hub)" stroke="#F59E0B" stroke-width="1.6" stroke-dasharray="8 4" opacity="0.8"/>
+    <rect x="-120" y="-26" width="240" height="4" rx="2" fill="#F59E0B" opacity="0.3"/>
+    <text x="0" y="-2" text-anchor="middle" font-family="'Segoe UI',system-ui,sans-serif" font-size="10" font-weight="700" fill="#F59E0B" letter-spacing="0.8" filter="url(#gl_a)">ENGINEERING</text>
+    <text x="0" y="14" text-anchor="middle" font-family="'Segoe UI',system-ui,sans-serif" font-size="9" fill="#F59E0B" opacity="0.6" font-style="italic">planned — Wave 2</text>
+  </g>
+
+  <!-- Governance Hub (magenta, COMPLETE) -->
+  <g transform="translate(990,280)">
+    <rect x="-120" y="-26" width="240" height="52" rx="10" fill="url(#cg_hub)" stroke="#FF00FF" stroke-width="1.6" opacity="0.95"/>
+    <rect x="-120" y="-26" width="240" height="4" rx="2" fill="#FF00FF" opacity="0.5"/>
+    <rect x="-120" y="-26" width="240" height="52" rx="10" fill="none" stroke="#22C55E" stroke-width="1" opacity="0.4" filter="url(#gl_g)"/>
+    <text x="-10" y="-2" text-anchor="middle" font-family="'Segoe UI',system-ui,sans-serif" font-size="10" font-weight="700" fill="#FF00FF" letter-spacing="0.8" filter="url(#gl_m)">GOVERNANCE</text>
+    <circle cx="70" cy="-4" r="8" fill="#22C55E" opacity="0.2"/>
+    <text x="70" y="0" text-anchor="middle" font-family="'Segoe UI',system-ui,sans-serif" font-size="10" font-weight="700" fill="#22C55E">✓</text>
+    <text x="0" y="14" text-anchor="middle" font-family="'Segoe UI',system-ui,sans-serif" font-size="10" fill="#94A3B8">Hub complete (Wave 1)</text>
+  </g>
+
+  <!-- Roadmap Hub (gold) -->
+  <g transform="translate(1240,280)">
+    <rect x="-120" y="-26" width="240" height="52" rx="10" fill="url(#cg_hub)" stroke="#EAB308" stroke-width="1.6" opacity="0.95"/>
+    <rect x="-120" y="-26" width="240" height="4" rx="2" fill="#EAB308" opacity="0.5"/>
+    <text x="0" y="-2" text-anchor="middle" font-family="'Segoe UI',system-ui,sans-serif" font-size="10" font-weight="700" fill="#EAB308" letter-spacing="0.8" filter="url(#gl_y)">ROADMAP &amp; STATUS</text>
+    <text x="0" y="14" text-anchor="middle" font-family="'Segoe UI',system-ui,sans-serif" font-size="10" fill="#94A3B8">Ch11 Roadmap</text>
+  </g>
+
+  <!-- REFERENCE PANEL (right side) -->
+  <g transform="translate(1480,390)">
+    <rect x="-85" y="-30" width="170" height="170" rx="10" fill="url(#cg_hub)" stroke="#64748B" stroke-width="1.2" opacity="0.85"/>
+    <rect x="-85" y="-30" width="170" height="4" rx="2" fill="#64748B" opacity="0.4"/>
+    <text x="0" y="-10" text-anchor="middle" font-family="'Segoe UI',system-ui,sans-serif" font-size="10" font-weight="700" fill="#64748B" letter-spacing="0.8">REFERENCE</text>
+    <g transform="translate(0,22)">
+      <circle cx="-60" cy="0" r="4" fill="#22C55E" opacity="0.7"/>
+      <text x="-48" y="4" font-family="'Segoe UI',system-ui,sans-serif" font-size="11" fill="#CBD5E1">Glossary</text>
+      <text x="62" y="4" font-family="'Segoe UI',system-ui,sans-serif" font-size="8" fill="#22C55E">✓ W1</text>
+    </g>
+    <g transform="translate(0,54)">
+      <circle cx="-60" cy="0" r="4" fill="#22C55E" opacity="0.7"/>
+      <text x="-48" y="4" font-family="'Segoe UI',system-ui,sans-serif" font-size="11" fill="#CBD5E1">Legacy Vault</text>
+      <text x="62" y="4" font-family="'Segoe UI',system-ui,sans-serif" font-size="8" fill="#22C55E">✓ W1</text>
+    </g>
+    <g transform="translate(0,86)">
+      <circle cx="-60" cy="0" r="4" fill="#00F0FF" opacity="0.5"/>
+      <text x="-48" y="4" font-family="'Segoe UI',system-ui,sans-serif" font-size="11" fill="#94A3B8" font-style="italic">Wiki Graph</text>
+      <text x="62" y="4" font-family="'Segoe UI',system-ui,sans-serif" font-size="8" fill="#64748B">META</text>
+    </g>
+    <text x="0" y="120" text-anchor="middle" font-family="'Segoe UI',system-ui,sans-serif" font-size="9" fill="#4B5563">Standalone pages</text>
+  </g>
+
+  <!-- ==================== LEAF NODES ==================== -->
+
+  <!-- === ARCHITECTURE LEAVES === -->
+  <!-- Ch01 Vision & Scope (PENDING, W5) -->
+  <g transform="translate(170,380)">
+    <rect x="-110" y="-18" width="220" height="36" rx="6" fill="#111827" stroke="#6B7280" stroke-width="1" opacity="0.8"/>
+    <circle cx="-92" cy="0" r="5" fill="#6B7280" opacity="0.5"/>
+    <text x="-92" y="4" text-anchor="middle" font-family="'Segoe UI',system-ui,sans-serif" font-size="8" fill="#CBD5E1">·</text>
+    <text x="-78" y="4" font-family="'Segoe UI',system-ui,sans-serif" font-size="11" fill="#94A3B8">Ch01 — Vision &amp; Scope</text>
+    <rect x="76" y="-9" width="26" height="18" rx="4" fill="#6B7280" opacity="0.2"/>
+    <text x="89" y="4" text-anchor="middle" font-family="'Segoe UI',system-ui,sans-serif" font-size="8" font-weight="600" fill="#6B7280">W5</text>
+  </g>
+  <!-- Scaling Protocol v1 (PENDING, W5) -->
+  <g transform="translate(170,426)">
+    <rect x="-110" y="-18" width="220" height="36" rx="6" fill="#111827" stroke="#6B7280" stroke-width="1" opacity="0.8"/>
+    <circle cx="-92" cy="0" r="5" fill="#6B7280" opacity="0.5"/>
+    <text x="-92" y="4" text-anchor="middle" font-family="'Segoe UI',system-ui,sans-serif" font-size="8" fill="#CBD5E1">·</text>
+    <text x="-78" y="4" font-family="'Segoe UI',system-ui,sans-serif" font-size="11" fill="#94A3B8">Scaling Protocol v1</text>
+    <rect x="76" y="-9" width="26" height="18" rx="4" fill="#6B7280" opacity="0.2"/>
+    <text x="89" y="4" text-anchor="middle" font-family="'Segoe UI',system-ui,sans-serif" font-size="8" font-weight="600" fill="#6B7280">W5</text>
+  </g>
+  <!-- Ch02 Architecture Overview (ARCHIVED, W1) -->
+  <g transform="translate(170,472)" opacity="0.5">
+    <rect x="-110" y="-18" width="220" height="36" rx="6" fill="#111827" stroke="#374151" stroke-width="1"/>
+    <circle cx="-92" cy="0" r="5" fill="#22C55E" opacity="0.6"/>
+    <text x="-92" y="3.5" text-anchor="middle" font-family="'Segoe UI',system-ui,sans-serif" font-size="9" font-weight="700" fill="#fff">✓</text>
+    <text x="-78" y="4" font-family="'Segoe UI',system-ui,sans-serif" font-size="11" fill="#6B7280">Ch02 — Arch Overview</text>
+    <line x1="-78" y1="1" x2="68" y2="1" stroke="#4B5563" stroke-width="1"/>
+    <rect x="76" y="-9" width="26" height="18" rx="4" fill="#22C55E" opacity="0.15"/>
+    <text x="89" y="4" text-anchor="middle" font-family="'Segoe UI',system-ui,sans-serif" font-size="8" font-weight="600" fill="#22C55E">W1</text>
+  </g>
+  <!-- Ch03 Static Keyspace (ARCHIVED, W1) -->
+  <g transform="translate(170,518)" opacity="0.5">
+    <rect x="-110" y="-18" width="220" height="36" rx="6" fill="#111827" stroke="#374151" stroke-width="1"/>
+    <circle cx="-92" cy="0" r="5" fill="#22C55E" opacity="0.6"/>
+    <text x="-92" y="3.5" text-anchor="middle" font-family="'Segoe UI',system-ui,sans-serif" font-size="9" font-weight="700" fill="#fff">✓</text>
+    <text x="-78" y="4" font-family="'Segoe UI',system-ui,sans-serif" font-size="11" fill="#6B7280">Ch03 — Static Keyspace</text>
+    <line x1="-78" y1="1" x2="72" y2="1" stroke="#4B5563" stroke-width="1"/>
+    <rect x="76" y="-9" width="26" height="18" rx="4" fill="#22C55E" opacity="0.15"/>
+    <text x="89" y="4" text-anchor="middle" font-family="'Segoe UI',system-ui,sans-serif" font-size="8" font-weight="600" fill="#22C55E">W1</text>
+  </g>
+
+  <!-- === EVIDENCE LEAVES === -->
+  <!-- Theory of Thought (BLOCKED, W3) -->
+  <g transform="translate(450,380)">
+    <rect x="-110" y="-18" width="220" height="36" rx="6" fill="#111827" stroke="#EF4444" stroke-width="1" opacity="0.85"/>
+    <circle cx="-92" cy="0" r="5" fill="#EF4444" opacity="0.6"/>
+    <text x="-92" y="4" text-anchor="middle" font-family="'Segoe UI',system-ui,sans-serif" font-size="9" font-weight="700" fill="#fff">!</text>
+    <text x="-78" y="4" font-family="'Segoe UI',system-ui,sans-serif" font-size="11" fill="#FCA5A5">Theory of Thought</text>
+    <rect x="76" y="-9" width="26" height="18" rx="4" fill="#FB923C" opacity="0.2"/>
+    <text x="89" y="4" text-anchor="middle" font-family="'Segoe UI',system-ui,sans-serif" font-size="8" font-weight="600" fill="#FB923C">W3</text>
+  </g>
+  <!-- Hypotheses (BLOCKED, W3) -->
+  <g transform="translate(450,426)">
+    <rect x="-110" y="-18" width="220" height="36" rx="6" fill="#111827" stroke="#EF4444" stroke-width="1" opacity="0.85"/>
+    <circle cx="-92" cy="0" r="5" fill="#EF4444" opacity="0.6"/>
+    <text x="-92" y="4" text-anchor="middle" font-family="'Segoe UI',system-ui,sans-serif" font-size="9" font-weight="700" fill="#fff">!</text>
+    <text x="-78" y="4" font-family="'Segoe UI',system-ui,sans-serif" font-size="11" fill="#FCA5A5">Hypotheses</text>
+    <rect x="76" y="-9" width="26" height="18" rx="4" fill="#FB923C" opacity="0.2"/>
+    <text x="89" y="4" text-anchor="middle" font-family="'Segoe UI',system-ui,sans-serif" font-size="8" font-weight="600" fill="#FB923C">W3</text>
+  </g>
+  <!-- RI: VRA-43 Deep Web (DISTILL, W3) -->
+  <g transform="translate(450,472)">
+    <rect x="-110" y="-18" width="220" height="36" rx="6" fill="#111827" stroke="#FB923C" stroke-width="1" opacity="0.8"/>
+    <circle cx="-92" cy="0" r="5" fill="#FB923C" opacity="0.6"/>
+    <text x="-92" y="4" text-anchor="middle" font-family="'Segoe UI',system-ui,sans-serif" font-size="10" fill="#fff">◇</text>
+    <text x="-78" y="4" font-family="'Segoe UI',system-ui,sans-serif" font-size="11" fill="#CBD5E1">RI: VRA-43 Deep Web</text>
+    <rect x="76" y="-9" width="26" height="18" rx="4" fill="#FB923C" opacity="0.2"/>
+    <text x="89" y="4" text-anchor="middle" font-family="'Segoe UI',system-ui,sans-serif" font-size="8" font-weight="600" fill="#FB923C">W3</text>
+  </g>
+  <!-- RI: Swarm Scaling (DISTILL, W3) -->
+  <g transform="translate(450,518)">
+    <rect x="-110" y="-18" width="220" height="36" rx="6" fill="#111827" stroke="#FB923C" stroke-width="1" opacity="0.8"/>
+    <circle cx="-92" cy="0" r="5" fill="#FB923C" opacity="0.6"/>
+    <text x="-92" y="4" text-anchor="middle" font-family="'Segoe UI',system-ui,sans-serif" font-size="10" fill="#fff">◇</text>
+    <text x="-78" y="4" font-family="'Segoe UI',system-ui,sans-serif" font-size="11" fill="#CBD5E1">RI: Swarm Scaling</text>
+    <rect x="76" y="-9" width="26" height="18" rx="4" fill="#FB923C" opacity="0.2"/>
+    <text x="89" y="4" text-anchor="middle" font-family="'Segoe UI',system-ui,sans-serif" font-size="8" font-weight="600" fill="#FB923C">W3</text>
+  </g>
+  <!-- RI: Swarm Bus PM (DISTILL, W3) -->
+  <g transform="translate(450,564)">
+    <rect x="-110" y="-18" width="220" height="36" rx="6" fill="#111827" stroke="#FB923C" stroke-width="1" opacity="0.8"/>
+    <circle cx="-92" cy="0" r="5" fill="#FB923C" opacity="0.6"/>
+    <text x="-92" y="4" text-anchor="middle" font-family="'Segoe UI',system-ui,sans-serif" font-size="10" fill="#fff">◇</text>
+    <text x="-78" y="4" font-family="'Segoe UI',system-ui,sans-serif" font-size="11" fill="#CBD5E1">RI: Swarm Bus PM</text>
+    <rect x="76" y="-9" width="26" height="18" rx="4" fill="#FB923C" opacity="0.2"/>
+    <text x="89" y="4" text-anchor="middle" font-family="'Segoe UI',system-ui,sans-serif" font-size="8" font-weight="600" fill="#FB923C">W3</text>
+  </g>
+  <!-- DC Sprint 2026-02-11 (DISTILL, W3) -->
+  <g transform="translate(450,610)">
+    <rect x="-110" y="-18" width="220" height="36" rx="6" fill="#111827" stroke="#FB923C" stroke-width="1" opacity="0.8"/>
+    <circle cx="-92" cy="0" r="5" fill="#FB923C" opacity="0.6"/>
+    <text x="-92" y="4" text-anchor="middle" font-family="'Segoe UI',system-ui,sans-serif" font-size="10" fill="#fff">◇</text>
+    <text x="-78" y="4" font-family="'Segoe UI',system-ui,sans-serif" font-size="11" fill="#CBD5E1">DC Sprint 2026-02-11</text>
+    <rect x="76" y="-9" width="26" height="18" rx="4" fill="#FB923C" opacity="0.2"/>
+    <text x="89" y="4" text-anchor="middle" font-family="'Segoe UI',system-ui,sans-serif" font-size="8" font-weight="600" fill="#FB923C">W3</text>
+  </g>
+  <!-- Ant Ratio VRA-78 (DISTILL, W3) -->
+  <g transform="translate(450,656)">
+    <rect x="-110" y="-18" width="220" height="36" rx="6" fill="#111827" stroke="#FB923C" stroke-width="1" opacity="0.8"/>
+    <circle cx="-92" cy="0" r="5" fill="#FB923C" opacity="0.6"/>
+    <text x="-92" y="4" text-anchor="middle" font-family="'Segoe UI',system-ui,sans-serif" font-size="10" fill="#fff">◇</text>
+    <text x="-78" y="4" font-family="'Segoe UI',system-ui,sans-serif" font-size="11" fill="#CBD5E1">Ant Ratio (VRA-78)</text>
+    <rect x="76" y="-9" width="26" height="18" rx="4" fill="#FB923C" opacity="0.2"/>
+    <text x="89" y="4" text-anchor="middle" font-family="'Segoe UI',system-ui,sans-serif" font-size="8" font-weight="600" fill="#FB923C">W3</text>
+  </g>
+
+  <!-- === ENGINEERING LEAVES === -->
+  <!-- GPU Ch01 Guardrails (READY, W2) -->
+  <g transform="translate(720,380)">
+    <rect x="-110" y="-18" width="220" height="36" rx="6" fill="#111827" stroke="#F59E0B" stroke-width="1.2" opacity="0.9"/>
+    <circle cx="-92" cy="0" r="5" fill="#F59E0B" opacity="0.7"/>
+    <text x="-92" y="4" text-anchor="middle" font-family="'Segoe UI',system-ui,sans-serif" font-size="9" font-weight="700" fill="#fff">★</text>
+    <text x="-78" y="4" font-family="'Segoe UI',system-ui,sans-serif" font-size="11" fill="#E2E8F0">GPU Ch01 — Guardrails</text>
+    <rect x="76" y="-9" width="26" height="18" rx="4" fill="#F59E0B" opacity="0.2"/>
+    <text x="89" y="4" text-anchor="middle" font-family="'Segoe UI',system-ui,sans-serif" font-size="8" font-weight="600" fill="#F59E0B">W2</text>
+  </g>
+  <!-- Ch09 Evaluation (READY, W2) -->
+  <g transform="translate(720,426)">
+    <rect x="-110" y="-18" width="220" height="36" rx="6" fill="#111827" stroke="#F59E0B" stroke-width="1.2" opacity="0.9"/>
+    <circle cx="-92" cy="0" r="5" fill="#F59E0B" opacity="0.7"/>
+    <text x="-92" y="4" text-anchor="middle" font-family="'Segoe UI',system-ui,sans-serif" font-size="9" font-weight="700" fill="#fff">★</text>
+    <text x="-78" y="4" font-family="'Segoe UI',system-ui,sans-serif" font-size="11" fill="#E2E8F0">Ch09 — Evaluation</text>
+    <rect x="76" y="-9" width="26" height="18" rx="4" fill="#F59E0B" opacity="0.2"/>
+    <text x="89" y="4" text-anchor="middle" font-family="'Segoe UI',system-ui,sans-serif" font-size="8" font-weight="600" fill="#F59E0B">W2</text>
+  </g>
+  <!-- Ch10 Failure Modes (READY, W2) -->
+  <g transform="translate(720,472)">
+    <rect x="-110" y="-18" width="220" height="36" rx="6" fill="#111827" stroke="#F59E0B" stroke-width="1.2" opacity="0.9"/>
+    <circle cx="-92" cy="0" r="5" fill="#F59E0B" opacity="0.7"/>
+    <text x="-92" y="4" text-anchor="middle" font-family="'Segoe UI',system-ui,sans-serif" font-size="9" font-weight="700" fill="#fff">★</text>
+    <text x="-78" y="4" font-family="'Segoe UI',system-ui,sans-serif" font-size="11" fill="#E2E8F0">Ch10 — Failure Modes</text>
+    <rect x="76" y="-9" width="26" height="18" rx="4" fill="#F59E0B" opacity="0.2"/>
+    <text x="89" y="4" text-anchor="middle" font-family="'Segoe UI',system-ui,sans-serif" font-size="8" font-weight="600" fill="#F59E0B">W2</text>
+  </g>
+  <!-- Ch08 Telemetry (READY legacy, W2) -->
+  <g transform="translate(720,518)">
+    <rect x="-110" y="-18" width="220" height="36" rx="6" fill="#111827" stroke="#F59E0B" stroke-width="1" opacity="0.7"/>
+    <circle cx="-92" cy="0" r="5" fill="#F59E0B" opacity="0.4"/>
+    <text x="-92" y="4" text-anchor="middle" font-family="'Segoe UI',system-ui,sans-serif" font-size="9" font-weight="700" fill="#fff">★</text>
+    <text x="-78" y="4" font-family="'Segoe UI',system-ui,sans-serif" font-size="11" fill="#94A3B8">Ch08 — Telemetry</text>
+    <text x="56" y="4" font-family="'Segoe UI',system-ui,sans-serif" font-size="8" fill="#6B7280" font-style="italic">legacy</text>
+    <rect x="76" y="-9" width="26" height="18" rx="4" fill="#F59E0B" opacity="0.2"/>
+    <text x="89" y="4" text-anchor="middle" font-family="'Segoe UI',system-ui,sans-serif" font-size="8" font-weight="600" fill="#F59E0B">W2</text>
+  </g>
+
+  <!-- === GOVERNANCE LEAVES (ghost/merged) === -->
+  <!-- Wiki Policy (MERGED, W1) -->
+  <g transform="translate(990,380)" opacity="0.4">
+    <rect x="-110" y="-18" width="220" height="36" rx="6" fill="#111827" stroke="#374151" stroke-width="1"/>
+    <circle cx="-92" cy="0" r="5" fill="#22C55E" opacity="0.7"/>
+    <text x="-92" y="3.5" text-anchor="middle" font-family="'Segoe UI',system-ui,sans-serif" font-size="9" font-weight="700" fill="#fff">✓</text>
+    <text x="-78" y="4" font-family="'Segoe UI',system-ui,sans-serif" font-size="11" fill="#6B7280">Wiki Policy</text>
+    <line x1="-78" y1="1" x2="30" y2="1" stroke="#4B5563" stroke-width="1"/>
+    <rect x="76" y="-9" width="26" height="18" rx="4" fill="#22C55E" opacity="0.15"/>
+    <text x="89" y="4" text-anchor="middle" font-family="'Segoe UI',system-ui,sans-serif" font-size="8" font-weight="600" fill="#22C55E">W1</text>
+  </g>
+  <!-- Versioning (MERGED, W1) -->
+  <g transform="translate(990,426)" opacity="0.4">
+    <rect x="-110" y="-18" width="220" height="36" rx="6" fill="#111827" stroke="#374151" stroke-width="1"/>
+    <circle cx="-92" cy="0" r="5" fill="#22C55E" opacity="0.7"/>
+    <text x="-92" y="3.5" text-anchor="middle" font-family="'Segoe UI',system-ui,sans-serif" font-size="9" font-weight="700" fill="#fff">✓</text>
+    <text x="-78" y="4" font-family="'Segoe UI',system-ui,sans-serif" font-size="11" fill="#6B7280">Versioning</text>
+    <line x1="-78" y1="1" x2="8" y2="1" stroke="#4B5563" stroke-width="1"/>
+    <rect x="76" y="-9" width="26" height="18" rx="4" fill="#22C55E" opacity="0.15"/>
+    <text x="89" y="4" text-anchor="middle" font-family="'Segoe UI',system-ui,sans-serif" font-size="8" font-weight="600" fill="#22C55E">W1</text>
+  </g>
+  <!-- Provenance / IP (MERGED, W1) -->
+  <g transform="translate(990,472)" opacity="0.4">
+    <rect x="-110" y="-18" width="220" height="36" rx="6" fill="#111827" stroke="#374151" stroke-width="1"/>
+    <circle cx="-92" cy="0" r="5" fill="#22C55E" opacity="0.7"/>
+    <text x="-92" y="3.5" text-anchor="middle" font-family="'Segoe UI',system-ui,sans-serif" font-size="9" font-weight="700" fill="#fff">✓</text>
+    <text x="-78" y="4" font-family="'Segoe UI',system-ui,sans-serif" font-size="11" fill="#6B7280">Provenance / IP SOP</text>
+    <line x1="-78" y1="1" x2="52" y2="1" stroke="#4B5563" stroke-width="1"/>
+    <rect x="76" y="-9" width="26" height="18" rx="4" fill="#22C55E" opacity="0.15"/>
+    <text x="89" y="4" text-anchor="middle" font-family="'Segoe UI',system-ui,sans-serif" font-size="8" font-weight="600" fill="#22C55E">W1</text>
+  </g>
+  <!-- Wiki Templates (MERGED, W1) -->
+  <g transform="translate(990,518)" opacity="0.4">
+    <rect x="-110" y="-18" width="220" height="36" rx="6" fill="#111827" stroke="#374151" stroke-width="1"/>
+    <circle cx="-92" cy="0" r="5" fill="#22C55E" opacity="0.7"/>
+    <text x="-92" y="3.5" text-anchor="middle" font-family="'Segoe UI',system-ui,sans-serif" font-size="9" font-weight="700" fill="#fff">✓</text>
+    <text x="-78" y="4" font-family="'Segoe UI',system-ui,sans-serif" font-size="11" fill="#6B7280">Wiki Templates</text>
+    <line x1="-78" y1="1" x2="28" y2="1" stroke="#4B5563" stroke-width="1"/>
+    <rect x="76" y="-9" width="26" height="18" rx="4" fill="#22C55E" opacity="0.15"/>
+    <text x="89" y="4" text-anchor="middle" font-family="'Segoe UI',system-ui,sans-serif" font-size="8" font-weight="600" fill="#22C55E">W1</text>
+  </g>
+  <!-- Wiki Consolidation (MERGED, W1) -->
+  <g transform="translate(990,564)" opacity="0.4">
+    <rect x="-110" y="-18" width="220" height="36" rx="6" fill="#111827" stroke="#374151" stroke-width="1"/>
+    <circle cx="-92" cy="0" r="5" fill="#22C55E" opacity="0.7"/>
+    <text x="-92" y="3.5" text-anchor="middle" font-family="'Segoe UI',system-ui,sans-serif" font-size="9" font-weight="700" fill="#fff">✓</text>
+    <text x="-78" y="4" font-family="'Segoe UI',system-ui,sans-serif" font-size="11" fill="#6B7280">Wiki Consolidation</text>
+    <line x1="-78" y1="1" x2="48" y2="1" stroke="#4B5563" stroke-width="1"/>
+    <rect x="76" y="-9" width="26" height="18" rx="4" fill="#22C55E" opacity="0.15"/>
+    <text x="89" y="4" text-anchor="middle" font-family="'Segoe UI',system-ui,sans-serif" font-size="8" font-weight="600" fill="#22C55E">W1</text>
+  </g>
+
+  <!-- === ROADMAP LEAVES === -->
+  <!-- Release Notes (PENDING, W4) -->
+  <g transform="translate(1240,380)">
+    <rect x="-110" y="-18" width="220" height="36" rx="6" fill="#111827" stroke="#6B7280" stroke-width="1" opacity="0.8"/>
+    <circle cx="-92" cy="0" r="5" fill="#6B7280" opacity="0.5"/>
+    <text x="-92" y="4" text-anchor="middle" font-family="'Segoe UI',system-ui,sans-serif" font-size="8" fill="#CBD5E1">·</text>
+    <text x="-78" y="4" font-family="'Segoe UI',system-ui,sans-serif" font-size="11" fill="#94A3B8">Release Notes</text>
+    <rect x="76" y="-9" width="26" height="18" rx="4" fill="#6B7280" opacity="0.2"/>
+    <text x="89" y="4" text-anchor="middle" font-family="'Segoe UI',system-ui,sans-serif" font-size="8" font-weight="600" fill="#6B7280">W4</text>
+  </g>
+  <!-- Session Log Feb Sprint (PENDING, W4) -->
+  <g transform="translate(1240,426)">
+    <rect x="-110" y="-18" width="220" height="36" rx="6" fill="#111827" stroke="#6B7280" stroke-width="1" opacity="0.8"/>
+    <circle cx="-92" cy="0" r="5" fill="#6B7280" opacity="0.5"/>
+    <text x="-92" y="4" text-anchor="middle" font-family="'Segoe UI',system-ui,sans-serif" font-size="8" fill="#CBD5E1">·</text>
+    <text x="-78" y="4" font-family="'Segoe UI',system-ui,sans-serif" font-size="11" fill="#94A3B8">Session Log Feb Sprint</text>
+    <rect x="76" y="-9" width="26" height="18" rx="4" fill="#6B7280" opacity="0.2"/>
+    <text x="89" y="4" text-anchor="middle" font-family="'Segoe UI',system-ui,sans-serif" font-size="8" font-weight="600" fill="#6B7280">W4</text>
+  </g>
+  <!-- Session Log Feb 14-16 (PENDING, W4) -->
+  <g transform="translate(1240,472)">
+    <rect x="-110" y="-18" width="220" height="36" rx="6" fill="#111827" stroke="#6B7280" stroke-width="1" opacity="0.8"/>
+    <circle cx="-92" cy="0" r="5" fill="#6B7280" opacity="0.5"/>
+    <text x="-92" y="4" text-anchor="middle" font-family="'Segoe UI',system-ui,sans-serif" font-size="8" fill="#CBD5E1">·</text>
+    <text x="-78" y="4" font-family="'Segoe UI',system-ui,sans-serif" font-size="11" fill="#94A3B8">Session Log Feb 14-16</text>
+    <rect x="76" y="-9" width="26" height="18" rx="4" fill="#6B7280" opacity="0.2"/>
+    <text x="89" y="4" text-anchor="middle" font-family="'Segoe UI',system-ui,sans-serif" font-size="8" font-weight="600" fill="#6B7280">W4</text>
+  </g>
+  <!-- Session Log Feb 17 (ACTIVE/LIVE, W4) -->
+  <g transform="translate(1240,518)">
+    <rect x="-110" y="-18" width="220" height="36" rx="6" fill="#111827" stroke="#EAB308" stroke-width="1.2" opacity="0.9"/>
+    <circle cx="-92" cy="0" r="5" fill="#EAB308" opacity="0.7">
+      <animate attributeName="opacity" values="0.4;0.9;0.4" dur="2s" repeatCount="indefinite"/>
+    </circle>
+    <text x="-78" y="4" font-family="'Segoe UI',system-ui,sans-serif" font-size="11" fill="#EAB308">Session Log Feb 17</text>
+    <text x="54" y="4" font-family="'Segoe UI',system-ui,sans-serif" font-size="8" fill="#EAB308" opacity="0.6" font-style="italic">live</text>
+    <rect x="76" y="-9" width="26" height="18" rx="4" fill="#6B7280" opacity="0.2"/>
+    <text x="89" y="4" text-anchor="middle" font-family="'Segoe UI',system-ui,sans-serif" font-size="8" font-weight="600" fill="#6B7280">W4</text>
+  </g>
+
+  <!-- ==================== ANNOTATIONS ==================== -->
+  <g transform="translate(990,610)">
+    <rect x="-80" y="-12" width="160" height="24" rx="5" fill="#22C55E" fill-opacity="0.08" stroke="#22C55E" stroke-width="0.8" stroke-opacity="0.3"/>
+    <text x="0" y="4" text-anchor="middle" font-family="'Segoe UI',system-ui,sans-serif" font-size="10" font-weight="600" fill="#22C55E" opacity="0.8">Wave 1 ✓ — 5 → 1 hub</text>
+  </g>
+  <g transform="translate(720,570)">
+    <rect x="-82" y="-12" width="164" height="24" rx="5" fill="#F59E0B" fill-opacity="0.08" stroke="#F59E0B" stroke-width="0.8" stroke-opacity="0.3"/>
+    <text x="0" y="4" text-anchor="middle" font-family="'Segoe UI',system-ui,sans-serif" font-size="10" font-weight="600" fill="#F59E0B" opacity="0.8">Wave 2 next — no blockers</text>
+  </g>
+  <g transform="translate(450,706)">
+    <rect x="-90" y="-12" width="180" height="24" rx="5" fill="#EF4444" fill-opacity="0.06" stroke="#EF4444" stroke-width="0.8" stroke-opacity="0.25"/>
+    <text x="0" y="4" text-anchor="middle" font-family="'Segoe UI',system-ui,sans-serif" font-size="10" font-weight="600" fill="#FB923C" opacity="0.8">Wave 3 — 7 pages, 2 blocked</text>
+  </g>
+
+  <!-- ==================== WAVE TIMELINE ==================== -->
+  <g transform="translate(0,790)">
+    <line x1="32" y1="0" x2="1568" y2="0" stroke="#1A2130" stroke-width="1" stroke-dasharray="4 6" opacity="0.85"/>
+    <text x="32" y="30" font-family="'Segoe UI',system-ui,sans-serif" font-size="12" font-weight="700" fill="#A0AEC0" letter-spacing="1">CONSOLIDATION TIMELINE</text>
+    <!-- Track line -->
+    <line x1="140" y1="70" x2="1460" y2="70" stroke="#243041" stroke-width="2"/>
+    <!-- Done segment W1→W2 -->
+    <line x1="244" y1="70" x2="523" y2="70" stroke="#22C55E" stroke-width="2" opacity="0.5"/>
+
+    <!-- W1 COMPLETE -->
+    <g transform="translate(230,70)">
+      <circle r="14" fill="#22C55E" opacity="0.15" filter="url(#gl_g)"/>
+      <circle r="10" fill="#0d1117" stroke="#22C55E" stroke-width="2"/>
+      <text y="3.5" text-anchor="middle" font-family="'Segoe UI',system-ui,sans-serif" font-size="8" font-weight="700" fill="#22C55E">✓</text>
+      <text y="-22" text-anchor="middle" font-family="'Segoe UI',system-ui,sans-serif" font-size="11" font-weight="700" fill="#22C55E">WAVE 1</text>
+      <text y="30" text-anchor="middle" font-family="'Segoe UI',system-ui,sans-serif" font-size="9" fill="#94A3B8">Governance hub</text>
+      <text y="42" text-anchor="middle" font-family="'Segoe UI',system-ui,sans-serif" font-size="9" fill="#6B7280">+ Glossary + archive</text>
+      <text y="58" text-anchor="middle" font-family="'Segoe UI',system-ui,sans-serif" font-size="10" font-weight="700" fill="#22C55E">COMPLETE</text>
+    </g>
+    <!-- W2 NEXT -->
+    <g transform="translate(536,70)">
+      <circle r="14" fill="#F59E0B" opacity="0.1">
+        <animate attributeName="opacity" values="0.05;0.18;0.05" dur="2s" repeatCount="indefinite"/>
+      </circle>
+      <circle r="10" fill="#0d1117" stroke="#F59E0B" stroke-width="2"/>
+      <text y="3.5" text-anchor="middle" font-family="'Segoe UI',system-ui,sans-serif" font-size="8" font-weight="700" fill="#F59E0B">→</text>
+      <text y="-22" text-anchor="middle" font-family="'Segoe UI',system-ui,sans-serif" font-size="11" font-weight="700" fill="#F59E0B">WAVE 2</text>
+      <text y="30" text-anchor="middle" font-family="'Segoe UI',system-ui,sans-serif" font-size="9" fill="#94A3B8">Engineering hub</text>
+      <text y="42" text-anchor="middle" font-family="'Segoe UI',system-ui,sans-serif" font-size="9" fill="#6B7280">4 pages → 1 hub</text>
+      <text y="58" text-anchor="middle" font-family="'Segoe UI',system-ui,sans-serif" font-size="10" font-weight="700" fill="#F59E0B">NEXT</text>
+    </g>
+    <!-- W3 -->
+    <g transform="translate(842,70)">
+      <circle r="10" fill="#0d1117" stroke="#6B7280" stroke-width="1.5"/>
+      <text y="3" text-anchor="middle" font-family="'Segoe UI',system-ui,sans-serif" font-size="8" fill="#6B7280">3</text>
+      <text y="-22" text-anchor="middle" font-family="'Segoe UI',system-ui,sans-serif" font-size="11" font-weight="600" fill="#6B7280">WAVE 3</text>
+      <text y="30" text-anchor="middle" font-family="'Segoe UI',system-ui,sans-serif" font-size="9" fill="#94A3B8">Evidence distill</text>
+      <text y="42" text-anchor="middle" font-family="'Segoe UI',system-ui,sans-serif" font-size="9" fill="#6B7280">7 pages, 2 blocked</text>
+    </g>
+    <!-- W4 -->
+    <g transform="translate(1148,70)">
+      <circle r="10" fill="#0d1117" stroke="#6B7280" stroke-width="1.5"/>
+      <text y="3" text-anchor="middle" font-family="'Segoe UI',system-ui,sans-serif" font-size="8" fill="#6B7280">4</text>
+      <text y="-22" text-anchor="middle" font-family="'Segoe UI',system-ui,sans-serif" font-size="11" font-weight="600" fill="#6B7280">WAVE 4</text>
+      <text y="30" text-anchor="middle" font-family="'Segoe UI',system-ui,sans-serif" font-size="9" fill="#94A3B8">Roadmap compress</text>
+      <text y="42" text-anchor="middle" font-family="'Segoe UI',system-ui,sans-serif" font-size="9" fill="#6B7280">4 pages + logs</text>
+    </g>
+    <!-- W5 -->
+    <g transform="translate(1454,70)">
+      <circle r="10" fill="#0d1117" stroke="#6B7280" stroke-width="1.5"/>
+      <text y="3" text-anchor="middle" font-family="'Segoe UI',system-ui,sans-serif" font-size="8" fill="#6B7280">5</text>
+      <text y="-22" text-anchor="middle" font-family="'Segoe UI',system-ui,sans-serif" font-size="11" font-weight="600" fill="#6B7280">WAVE 5</text>
+      <text y="30" text-anchor="middle" font-family="'Segoe UI',system-ui,sans-serif" font-size="9" fill="#94A3B8">Final assembly</text>
+      <text y="42" text-anchor="middle" font-family="'Segoe UI',system-ui,sans-serif" font-size="9" fill="#6B7280">Home + SVG regen</text>
+    </g>
+  </g>
+
+  <!-- ==================== PROGRESS BAR ==================== -->
+  <g transform="translate(0,960)">
+    <line x1="32" y1="0" x2="1568" y2="0" stroke="#1A2130" stroke-width="1" stroke-dasharray="4 6" opacity="0.85"/>
+    <text x="32" y="28" font-family="'Segoe UI',system-ui,sans-serif" font-size="12" font-weight="700" fill="#A0AEC0" letter-spacing="1">PAGE COUNT</text>
+    <rect x="200" y="14" width="800" height="20" rx="4" fill="#1E293B"/>
+    <rect x="200" y="14" width="160" height="20" rx="4" fill="#22C55E" opacity="0.6"/>
+    <rect x="200" y="14" width="160" height="10" rx="4" fill="#22C55E" opacity="0.15"/>
+    <line x1="360" y1="14" x2="360" y2="34" stroke="#22C55E" stroke-width="2" opacity="0.8" filter="url(#gl_g)"/>
+    <text x="200" y="8" font-family="'Segoe UI',system-ui,sans-serif" font-size="11" font-weight="700" fill="#E2E8F0">34</text>
+    <text x="200" y="50" font-family="'Segoe UI',system-ui,sans-serif" font-size="9" fill="#6B7280">original</text>
+    <text x="360" y="8" font-family="'Segoe UI',system-ui,sans-serif" font-size="11" font-weight="700" fill="#22C55E">29</text>
+    <text x="360" y="50" font-family="'Segoe UI',system-ui,sans-serif" font-size="9" fill="#6B7280">current</text>
+    <text x="1000" y="8" font-family="'Segoe UI',system-ui,sans-serif" font-size="11" font-weight="700" fill="#00F0FF">~9</text>
+    <text x="1000" y="50" font-family="'Segoe UI',system-ui,sans-serif" font-size="9" fill="#6B7280">target</text>
+    <text x="1080" y="30" font-family="'Segoe UI',system-ui,sans-serif" font-size="13" font-weight="700" fill="#A0AEC0">20% complete</text>
+  </g>
+
+  <!-- ==================== LEGEND ==================== -->
+  <g transform="translate(32,1040)">
+    <line x1="0" y1="0" x2="1536" y2="0" stroke="#1A2130" stroke-width="1" stroke-dasharray="4 6" opacity="0.85"/>
+    <rect x="0" y="12" width="1100" height="80" rx="8" fill="url(#cg_panel)" stroke="#243041" stroke-width="1" opacity="0.8"/>
+    <text x="16" y="32" font-family="'Segoe UI',system-ui,sans-serif" font-size="10" font-weight="700" fill="#6B7280" letter-spacing="1">LEGEND</text>
+    <!-- Status row -->
+    <circle cx="22" cy="52" r="5" fill="#22C55E" opacity="0.7"/>
+    <text x="22" y="55" text-anchor="middle" font-family="'Segoe UI',system-ui,sans-serif" font-size="8" font-weight="700" fill="#fff">✓</text>
+    <text x="36" y="56" font-family="'Segoe UI',system-ui,sans-serif" font-size="10" fill="#94A3B8">Done / Merged</text>
+    <circle cx="152" cy="52" r="5" fill="#F59E0B" opacity="0.7"/>
+    <text x="152" y="55.5" text-anchor="middle" font-family="'Segoe UI',system-ui,sans-serif" font-size="8" font-weight="700" fill="#fff">★</text>
+    <text x="166" y="56" font-family="'Segoe UI',system-ui,sans-serif" font-size="10" fill="#94A3B8">Ready (next)</text>
+    <circle cx="272" cy="52" r="5" fill="#EF4444" opacity="0.7"/>
+    <text x="272" y="55.5" text-anchor="middle" font-family="'Segoe UI',system-ui,sans-serif" font-size="8" font-weight="700" fill="#fff">!</text>
+    <text x="286" y="56" font-family="'Segoe UI',system-ui,sans-serif" font-size="10" fill="#94A3B8">Blocked</text>
+    <circle cx="362" cy="52" r="5" fill="#FB923C" opacity="0.7"/>
+    <text x="362" y="55" text-anchor="middle" font-family="'Segoe UI',system-ui,sans-serif" font-size="10" fill="#fff">◇</text>
+    <text x="376" y="56" font-family="'Segoe UI',system-ui,sans-serif" font-size="10" fill="#94A3B8">Needs distillation</text>
+    <circle cx="502" cy="52" r="5" fill="#6B7280" opacity="0.5"/>
+    <text x="502" y="55" text-anchor="middle" font-family="'Segoe UI',system-ui,sans-serif" font-size="8" fill="#CBD5E1">·</text>
+    <text x="516" y="56" font-family="'Segoe UI',system-ui,sans-serif" font-size="10" fill="#94A3B8">Pending</text>
+    <!-- Hub row -->
+    <text x="16" y="78" font-family="'Segoe UI',system-ui,sans-serif" font-size="10" font-weight="700" fill="#6B7280" letter-spacing="0.5">HUBS:</text>
+    <rect x="60" y="68" width="10" height="10" rx="2" fill="#00F0FF" opacity="0.7"/>
+    <text x="76" y="78" font-family="'Segoe UI',system-ui,sans-serif" font-size="10" fill="#94A3B8">Architecture</text>
+    <rect x="166" y="68" width="10" height="10" rx="2" fill="#22C55E" opacity="0.7"/>
+    <text x="182" y="78" font-family="'Segoe UI',system-ui,sans-serif" font-size="10" fill="#94A3B8">Evidence</text>
+    <rect x="252" y="68" width="10" height="10" rx="2" fill="#F59E0B" opacity="0.7"/>
+    <text x="268" y="78" font-family="'Segoe UI',system-ui,sans-serif" font-size="10" fill="#94A3B8">Engineering</text>
+    <rect x="358" y="68" width="10" height="10" rx="2" fill="#FF00FF" opacity="0.7"/>
+    <text x="374" y="78" font-family="'Segoe UI',system-ui,sans-serif" font-size="10" fill="#94A3B8">Governance</text>
+    <rect x="462" y="68" width="10" height="10" rx="2" fill="#EAB308" opacity="0.7"/>
+    <text x="478" y="78" font-family="'Segoe UI',system-ui,sans-serif" font-size="10" fill="#94A3B8">Roadmap</text>
+    <text x="560" y="78" font-family="'Segoe UI',system-ui,sans-serif" font-size="9" fill="#4B5563">| solid = active | dashed = planned | green overlay = complete</text>
+  </g>
+
+  <!-- STATS + CREDIT -->
+  <text x="32" y="1155" font-family="'Segoe UI',system-ui,sans-serif" font-size="11" fill="#4B5563">34 original pages · 29 current · 5 merged · 2 archived · Target ~9 · Feb 2026</text>
+  <text x="1568" y="1185" text-anchor="end" font-family="'Segoe UI',system-ui,-apple-system,sans-serif" font-size="12" fill="#A0AEC0" opacity="0.75">Made by Daniel Kenessy</text>
+</svg>
