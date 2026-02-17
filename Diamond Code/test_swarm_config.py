@@ -1347,6 +1347,162 @@ def main():
                 if changes:
                     print(f"  [CTRL] {changes}")
 
+            # ========== DREAMING PHASE ==========
+            _dream_on = controls.get('dream_enabled', False)
+            _dream_freq = controls.get('dream_frequency', 10)
+            if _dream_on and step > 0 and step % _dream_freq == 0:
+                _dream_n = controls.get('dream_steps', 3)
+                _dream_tt = controls.get('dream_think_ticks', 2)
+                _dream_mode = controls.get('dream_mode', 'consolidation')
+                _dream_binarize = controls.get('dream_binarize', True)
+                _dream_lr_scale = controls.get('dream_lr_scale', 0.1)
+                _dream_start = time.time()
+
+                _dream_hdr = (f"  [DREAM step {step}] mode={_dream_mode} "
+                              f"steps={_dream_n} tt={_dream_tt} binarize={_dream_binarize}")
+                print(_dream_hdr)
+                log_file.write(_dream_hdr + "\n")
+                current_file.write(_dream_hdr + "\n")
+
+                # Save waking state
+                _waking_tt = model.think_ticks
+                model.think_ticks = _dream_tt
+                _dream_y_cpu = y_train.detach().cpu()
+
+                # Prepare dream input from waking output
+                _dream_input = output.detach()
+                if _dream_binarize:
+                    _dream_input = (torch.sigmoid(_dream_input) > 0.5).float()
+                else:
+                    _dream_input = torch.sigmoid(_dream_input)
+
+                # Scale LR for rehearsal mode
+                _waking_lr = optimizer.param_groups[0]['lr']
+                if _dream_mode == 'rehearsal':
+                    for _pg in optimizer.param_groups:
+                        _pg['lr'] = _waking_lr * _dream_lr_scale
+
+                for _di in range(_dream_n):
+                    _d_t0 = time.time()
+
+                    if _dream_mode == 'consolidation':
+                        # NO gradient — pure LCX memory reorganization
+                        with torch.no_grad():
+                            _d_out, _d_stats = model(_dream_input, return_stats=True)
+                            _d_loss_val = nn.functional.binary_cross_entropy_with_logits(
+                                _d_out, y_train).item()
+                    else:
+                        # REHEARSAL — gradient through dream pass, scaled LR
+                        _d_amp = args.amp and device.type == 'cuda'
+                        if _d_amp:
+                            with torch.amp.autocast('cuda', dtype=torch.bfloat16):
+                                _d_out, _d_stats = model(_dream_input, return_stats=True)
+                                _d_loss = nn.functional.binary_cross_entropy_with_logits(
+                                    _d_out, y_train)
+                        else:
+                            _d_out, _d_stats = model(_dream_input, return_stats=True)
+                            _d_loss = nn.functional.binary_cross_entropy_with_logits(
+                                _d_out, y_train)
+                        _d_loss_val = _d_loss.item()
+                        _d_loss.backward()
+                        # AGC for dream gradients (same band as waking)
+                        _d_agc_on = controls.get('agc_enabled', True)
+                        _d_agc_lo = float(controls.get('agc_low', 1.0))
+                        _d_agc_hi = float(controls.get('agc_high', 5.0))
+                        if _d_agc_on:
+                            _d_gn = 0.0
+                            for _p in model.parameters():
+                                if _p.grad is not None:
+                                    _d_gn += _p.grad.data.norm(2).item() ** 2
+                            _d_gn = _d_gn ** 0.5
+                            _d_agc_s = 1.0
+                            if _d_gn > _d_agc_hi:
+                                _d_agc_s = _d_agc_hi / _d_gn
+                            elif _d_gn > 0 and _d_gn < _d_agc_lo:
+                                _d_agc_s = _d_agc_lo / _d_gn
+                            if _d_agc_s != 1.0:
+                                with torch.no_grad():
+                                    for _p in model.parameters():
+                                        if _p.grad is not None:
+                                            _p.grad.data.mul_(_d_agc_s)
+                            torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=_d_agc_hi)
+                        optimizer.step()
+                        optimizer.zero_grad()
+
+                    # Chain: this dream's output -> next dream's input
+                    _dream_input = _d_out.detach()
+                    if _dream_binarize:
+                        _dream_input = (torch.sigmoid(_dream_input) > 0.5).float()
+                    else:
+                        _dream_input = torch.sigmoid(_dream_input)
+
+                    _d_elapsed = time.time() - _d_t0
+
+                    # Timeout guard
+                    if _d_elapsed > 30:
+                        _d_tmsg = f"  [DREAM TIMEOUT] step took {_d_elapsed:.0f}s, aborting"
+                        print(_d_tmsg)
+                        log_file.write(_d_tmsg + "\n")
+                        current_file.write(_d_tmsg + "\n")
+                        break
+
+                    # Dream metrics
+                    with torch.no_grad():
+                        _d_out_cpu = _d_out.detach().cpu()
+                        _d_pos = min(2, _d_out_cpu.size(1) - 1)
+                        _d_bit_acc = bit_accuracy_at_position(_d_out_cpu, _dream_y_cpu, _d_pos)
+                    _d_zg = getattr(model, '_last_zoom_gate', 0.0)
+                    if isinstance(_d_zg, torch.Tensor):
+                        _d_zg = _d_zg.item()
+                    _d_sm = 0.0
+                    # Extract score margin from stats if available
+                    if _d_stats and 'score_margin' in _d_stats:
+                        _d_sm = float(_d_stats['score_margin'])
+
+                    # LCX norm
+                    _d_lcx_norm = 0.0
+                    if getattr(model, '_lcx_hash_mode', False):
+                        _d_alloc = getattr(model, '_lcx_allocated_levels', set())
+                        for _dlvl in _d_alloc:
+                            _dk, _dv = model._lcx_level_bufs(_dlvl)
+                            _d_lcx_norm += _dv.detach().norm().item()
+
+                    _d_line = (f"  [DREAM {_di+1}/{_dream_n}] "
+                               f"loss={_d_loss_val:.6f} bit_acc={_d_bit_acc:.4f} "
+                               f"lcx_norm={_d_lcx_norm:.1f} zg={_d_zg:.4f} "
+                               f"sm={_d_sm:.4f} time={_d_elapsed:.3f}s")
+                    print(_d_line)
+                    log_file.write(_d_line + "\n")
+                    current_file.write(_d_line + "\n")
+
+                    influx_writer.log_dream(
+                        influx_run_id, step, _di,
+                        dream_mode=_dream_mode,
+                        dream_loss=_d_loss_val,
+                        dream_bit_acc=_d_bit_acc,
+                        dream_lcx_norm=_d_lcx_norm,
+                        dream_zoom_gate=_d_zg,
+                        dream_step_time=_d_elapsed,
+                        dream_think_ticks=_dream_tt,
+                        dream_binarized=_dream_binarize,
+                        dream_score_margin=_d_sm,
+                    )
+
+                # Restore waking state
+                model.think_ticks = _waking_tt
+                if _dream_mode == 'rehearsal':
+                    for _pg in optimizer.param_groups:
+                        _pg['lr'] = _waking_lr
+
+                _dream_total = time.time() - _dream_start
+                _dream_ftr = f"  [DREAM DONE] total={_dream_total:.1f}s ({_dream_n} steps)"
+                print(_dream_ftr)
+                log_file.write(_dream_ftr + "\n")
+                current_file.write(_dream_ftr + "\n")
+                log_file.flush()
+                current_file.flush()
+            # ========== END DREAMING PHASE ==========
+
             # Apply LR schedule (warmup + cosine decay) — overrides controls LR when active
             if _lr_schedule_active:
                 _scheduled_lr = _get_scheduled_lr(step)

@@ -1,47 +1,47 @@
-# VRAXION Golden Targets
+# VRAXION
 
-[![RESEARCH](docs/assets/badges/v2/research.svg)](https://github.com/VRAXION/VRAXION/wiki/Hypotheses) [![NONCOMMERCIAL](docs/assets/badges/v2/noncommercial.svg)](LICENSE) [![DOI 10.5281/zenodo.18332532](docs/assets/badges/v2/doi_10_5281_zenodo_18332532.svg)](https://doi.org/10.5281/zenodo.18332532) [![WIKI](docs/assets/badges/v2/wiki.svg)](https://github.com/VRAXION/VRAXION/wiki) [![CANONICAL](docs/assets/badges/v2/canonical.svg)](https://github.com/VRAXION/VRAXION/wiki/Wiki-Policy---Wiki-Is-Canonical-(v1))
+[![RESEARCH](docs/assets/badges/v2/research.svg)](https://github.com/VRAXION/VRAXION/wiki/Hypotheses) [![NONCOMMERCIAL](docs/assets/badges/v2/noncommercial.svg)](LICENSE) [![DOI 10.5281/zenodo.18332532](docs/assets/badges/v2/doi_10_5281_zenodo_18332532.svg)](https://doi.org/10.5281/zenodo.18332532) [![WIKI](docs/assets/badges/v2/wiki.svg)](https://github.com/VRAXION/VRAXION/wiki) [![CANONICAL](docs/assets/badges/v2/canonical.svg)](https://github.com/VRAXION/VRAXION/wiki/Governance)
 
 VRAXION is a research codebase centered on **repeatable internal mechanisms** (loops/recurrence) and **instrumented evaluation** (so performance claims come with artifacts, not vibes).
 
-This repo root contains two curated targets:
+## Diamond Code
 
-- `Golden Code/`: end-user ("DVD") runtime library code only.
-  - Primary package: `Golden Code/vraxion/`
-- `Golden Draft/`: production-quality, non-DVD code (tools, tests, harness, contracts).
+The active codebase lives in `Diamond Code/`. Key files:
+
+| File | Purpose |
+|------|---------|
+| `swarm_model.py` | SwarmByteRingModel (424M params, hash LCX, C19 activation, bottleneck projection) |
+| `test_swarm_config.py` | Training loop (Goldilocks Ant v4 config, progressive schedule, dreaming phase) |
+| `run_goldilocks.bat` | Launch script |
+| `influx_writer.py` | InfluxDB telemetry (Grafana dashboards) |
+| `live_controls.py` | Live-tunable training controls via controls.json |
+| `byte_data.py` | Data loading and metrics |
+| `traindat_loader.py` | Dataset interface (Gray code encoding) |
 
 ## Status
 
-Research preview. Expect iteration and occasional breaking changes. Current status lives in the Roadmap and Releases.
+Research preview (v3.2.001). Current status lives in the [Roadmap](https://github.com/VRAXION/VRAXION/wiki/Chapter-11---Roadmap) and [Releases](https://github.com/VRAXION/VRAXION/releases).
 
 ## Where to look
 
-- Pages (landing): https://vraxion.github.io/VRAXION/
-- Wiki (deep dives): https://github.com/VRAXION/VRAXION/wiki
-- Quickstart (local dev): `Golden Draft/docs/ops/quickstart_v1.md`
-- Reproducibility checklist: `Golden Draft/docs/ops/reproducibility_v1.md`
-- GPU objective/stability contract: `Golden Draft/docs/gpu/objective_contract_v1.md`
-- Roadmap (public): https://github.com/orgs/VRAXION/projects/4
-- Releases (public proof): https://github.com/VRAXION/VRAXION/releases
+- **Pages (landing):** https://vraxion.github.io/VRAXION/
+- **Wiki (deep dives):** https://github.com/VRAXION/VRAXION/wiki
+- **Roadmap (public):** https://github.com/orgs/VRAXION/projects/4
+- **Releases (public proof):** https://github.com/VRAXION/VRAXION/releases
 
-## Quickstart (safe commands)
+## Quickstart
 
-CPU tests (recommended first command):
+Compile check (safe, no GPU):
 
 ```powershell
-python -m unittest discover -s "Golden Draft/tests" -v
+python -m compileall "Diamond Code"
 ```
 
-Probe harness help (safe; does not run a benchmark):
+Launch training (requires RTX 4070 Ti SUPER or equivalent):
 
 ```powershell
-python "Golden Draft/tools/gpu_capacity_probe.py" --help
-```
-
-Sanity compile gate:
-
-```powershell
-python -m compileall "Golden Code" "Golden Draft"
+cd "Diamond Code"
+run_goldilocks.bat
 ```
 
 ## Versioning (MAJOR.MINOR.BUILD)
@@ -51,8 +51,6 @@ VRAXION uses a simple cadence tracker stored in `VERSION.json`:
 - `BUILD` increments on every merged "ticket completion" PR (fast/beta cadence).
 - `MINOR` increments only for curated public updates (BUILD unchanged).
 - `MAJOR` increments only for lifetime milestones (MINOR resets to 0; BUILD unchanged).
-
-This does not replace the historical release tag `v1.0.0`.
 
 ## Naming conventions
 

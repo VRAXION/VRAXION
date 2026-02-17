@@ -1,0 +1,452 @@
+<svg width="1200" height="740" viewBox="0 0 1200 740" fill="none"
+     xmlns="http://www.w3.org/2000/svg"
+     role="img" aria-labelledby="title desc">
+  <title id="title">VRAXION Wiki — Node Map</title>
+  <desc id="desc">
+    Visual map of wiki page connections showing six clusters: Core Theory,
+    Evidence Pipeline, Engineering, Governance, Dynamic Surfaces, and Workbench.
+    HOME sits at the center hub linking to all clusters.
+  </desc>
+
+  <defs>
+    <!-- Background circuit grid (matches At_a_glance.svg) -->
+    <pattern id="wn_grid" x="0" y="0" width="40" height="40" patternUnits="userSpaceOnUse">
+      <path d="M40 0 L0 0 0 40" fill="none" stroke="#1A2130" stroke-width="1"/>
+    </pattern>
+
+    <!-- Panel fill -->
+    <linearGradient id="wn_panel" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#0b1426" stop-opacity="0.94"/>
+      <stop offset="100%" stop-color="#0b1220" stop-opacity="1"/>
+    </linearGradient>
+
+    <!-- Glows -->
+    <filter id="wn_glow_c" x="-50%" y="-50%" width="200%" height="200%" color-interpolation-filters="sRGB">
+      <feGaussianBlur stdDeviation="3" result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <filter id="wn_glow_m" x="-50%" y="-50%" width="200%" height="200%" color-interpolation-filters="sRGB">
+      <feGaussianBlur stdDeviation="3" result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <filter id="wn_glow_g" x="-50%" y="-50%" width="200%" height="200%" color-interpolation-filters="sRGB">
+      <feGaussianBlur stdDeviation="2.5" result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <filter id="wn_glow_a" x="-50%" y="-50%" width="200%" height="200%" color-interpolation-filters="sRGB">
+      <feGaussianBlur stdDeviation="2.5" result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <filter id="wn_glow_y" x="-50%" y="-50%" width="200%" height="200%" color-interpolation-filters="sRGB">
+      <feGaussianBlur stdDeviation="2.5" result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+
+    <!-- Arrow markers -->
+    <marker id="wn_arr_c" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+      <path d="M0,0 L8,3 L0,6" fill="none" stroke="#00F0FF" stroke-width="1.2"/>
+    </marker>
+    <marker id="wn_arr_g" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+      <path d="M0,0 L8,3 L0,6" fill="none" stroke="#22C55E" stroke-width="1.2"/>
+    </marker>
+    <marker id="wn_arr_m" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+      <path d="M0,0 L8,3 L0,6" fill="none" stroke="#FF00FF" stroke-width="1.2"/>
+    </marker>
+    <marker id="wn_arr_a" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+      <path d="M0,0 L8,3 L0,6" fill="none" stroke="#F59E0B" stroke-width="1.2"/>
+    </marker>
+    <marker id="wn_arr_y" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+      <path d="M0,0 L8,3 L0,6" fill="none" stroke="#EAB308" stroke-width="1.2"/>
+    </marker>
+    <marker id="wn_arr_gr" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+      <path d="M0,0 L8,3 L0,6" fill="none" stroke="#6B7280" stroke-width="1.2"/>
+    </marker>
+    <marker id="wn_arr_dim" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+      <path d="M0,0 L8,3 L0,6" fill="none" stroke="#374151" stroke-width="1.2"/>
+    </marker>
+  </defs>
+
+  <!-- ===================== BACKGROUND ===================== -->
+  <rect width="1200" height="740" rx="10" fill="#0d1117"/>
+  <rect width="1200" height="740" fill="url(#wn_grid)" opacity="0.22"/>
+  <rect x="0.5" y="0.5" width="1199" height="739" rx="10" stroke="#30363d"/>
+
+  <!-- ===================== HEADER ===================== -->
+  <text x="28" y="34"
+        font-family="'Segoe UI', system-ui, -apple-system, sans-serif"
+        font-weight="800" font-size="18"
+        fill="#E2E8F0" letter-spacing="1.1">
+    VRAXION WIKI · NODE MAP
+  </text>
+  <text x="28" y="56"
+        font-family="'Segoe UI', system-ui, -apple-system, sans-serif"
+        font-size="13" fill="#A0AEC0">
+    Page structure and cluster connections. Each node is a wiki page; colors denote knowledge maturity.
+  </text>
+  <line x1="28" y1="72" x2="1172" y2="72"
+        stroke="#1A2130" stroke-width="1" stroke-dasharray="4 6" opacity="0.85"/>
+
+  <!-- ===================== CONNECTION LINES (behind everything) ===================== -->
+  <g opacity="0.45">
+    <!-- Home → Core Theory -->
+    <line x1="600" y1="355" x2="600" y2="228" stroke="#00F0FF" stroke-width="1.8"
+          stroke-dasharray="6 4" marker-end="url(#wn_arr_c)"/>
+    <!-- Home → Evidence Pipeline -->
+    <line x1="635" y1="370" x2="888" y2="320" stroke="#22C55E" stroke-width="1.8"
+          stroke-dasharray="6 4" marker-end="url(#wn_arr_g)"/>
+    <!-- Home → Engineering -->
+    <line x1="600" y1="405" x2="600" y2="530" stroke="#F59E0B" stroke-width="1.8"
+          stroke-dasharray="6 4" marker-end="url(#wn_arr_a)"/>
+    <!-- Home → Governance -->
+    <line x1="565" y1="370" x2="312" y2="320" stroke="#FF00FF" stroke-width="1.8"
+          stroke-dasharray="6 4" marker-end="url(#wn_arr_m)"/>
+    <!-- Home → Dynamic Surfaces -->
+    <line x1="630" y1="350" x2="888" y2="150" stroke="#EAB308" stroke-width="1.8"
+          stroke-dasharray="6 4" marker-end="url(#wn_arr_y)"/>
+    <!-- Home → Workbench -->
+    <line x1="575" y1="395" x2="312" y2="510" stroke="#6B7280" stroke-width="1.8"
+          stroke-dasharray="6 4" marker-end="url(#wn_arr_gr)"/>
+    <!-- Home → Legacy -->
+    <line x1="575" y1="355" x2="312" y2="165" stroke="#374151" stroke-width="1.4"
+          stroke-dasharray="4 6" marker-end="url(#wn_arr_dim)"/>
+  </g>
+
+  <!-- ===================== HOME (center hub) ===================== -->
+  <g transform="translate(600,380)">
+    <!-- Outer ring -->
+    <circle r="42" fill="none" stroke="#00F0FF" stroke-width="2.5" opacity="0.25"/>
+    <circle r="42" fill="none" stroke="#00F0FF" stroke-width="2"
+            stroke-dasharray="12 22" opacity="0.6" filter="url(#wn_glow_c)">
+      <animateTransform attributeName="transform" type="rotate"
+                        from="0 0 0" to="360 0 0" dur="20s" repeatCount="indefinite"/>
+    </circle>
+    <!-- Core -->
+    <circle r="32" fill="#0d1117" stroke="#00F0FF" stroke-width="2.4"
+            filter="url(#wn_glow_c)" opacity="0.95"/>
+    <circle r="10" fill="#00F0FF" opacity="0.12"/>
+    <text y="1" text-anchor="middle"
+          font-family="'Segoe UI', system-ui, sans-serif"
+          font-weight="800" font-size="14" fill="#00F0FF"
+          filter="url(#wn_glow_c)">HOME</text>
+  </g>
+
+  <!-- ===================== CLUSTER 1: CORE THEORY (cyan, top center) ===================== -->
+  <g>
+    <rect x="430" y="96" width="340" height="130" rx="12"
+          fill="url(#wn_panel)" stroke="#00F0FF" stroke-width="1.4" opacity="0.9"/>
+    <!-- Accent stripe -->
+    <rect x="430" y="96" width="340" height="4" rx="2" fill="#00F0FF" opacity="0.6"/>
+
+    <text x="450" y="122"
+          font-family="'Segoe UI', system-ui, sans-serif"
+          font-size="11" font-weight="700" fill="#00F0FF" letter-spacing="1.2"
+          filter="url(#wn_glow_c)">CORE THEORY</text>
+
+    <circle cx="454" cy="146" r="4" fill="#00F0FF" opacity="0.7"/>
+    <text x="466" y="150"
+          font-family="'Segoe UI', system-ui, sans-serif"
+          font-size="12.5" fill="#CBD5E1">Ch01 — Vision &amp; Scope</text>
+
+    <circle cx="454" cy="170" r="4" fill="#00F0FF" opacity="0.7"/>
+    <text x="466" y="174"
+          font-family="'Segoe UI', system-ui, sans-serif"
+          font-size="12.5" fill="#E2E8F0" font-weight="600">Diamond Code v3 Architecture</text>
+
+    <circle cx="454" cy="194" r="4" fill="#00F0FF" opacity="0.7"/>
+    <text x="466" y="198"
+          font-family="'Segoe UI', system-ui, sans-serif"
+          font-size="12.5" fill="#CBD5E1">Ch12 — Glossary</text>
+  </g>
+
+  <!-- ===================== CLUSTER 2: EVIDENCE PIPELINE (green, right) ===================== -->
+  <g>
+    <rect x="890" y="240" width="280" height="170" rx="12"
+          fill="url(#wn_panel)" stroke="#22C55E" stroke-width="1.4" opacity="0.9"/>
+    <rect x="890" y="240" width="280" height="4" rx="2" fill="#22C55E" opacity="0.6"/>
+
+    <text x="910" y="266"
+          font-family="'Segoe UI', system-ui, sans-serif"
+          font-size="11" font-weight="700" fill="#22C55E" letter-spacing="1.2"
+          filter="url(#wn_glow_g)">EVIDENCE PIPELINE</text>
+
+    <circle cx="914" cy="292" r="4" fill="#22C55E" opacity="0.7"/>
+    <text x="926" y="296"
+          font-family="'Segoe UI', system-ui, sans-serif"
+          font-size="12.5" fill="#CBD5E1">Hypotheses</text>
+
+    <circle cx="914" cy="316" r="4" fill="#22C55E" opacity="0.7"/>
+    <text x="926" y="320"
+          font-family="'Segoe UI', system-ui, sans-serif"
+          font-size="12.5" fill="#CBD5E1">Theory of Thought</text>
+
+    <circle cx="914" cy="340" r="4" fill="#22C55E" opacity="0.7"/>
+    <text x="926" y="344"
+          font-family="'Segoe UI', system-ui, sans-serif"
+          font-size="12.5" fill="#E2E8F0" font-weight="600">Proven Findings</text>
+
+    <!-- Promotion arrows inside cluster -->
+    <line x1="1000" y1="300" x2="1000" y2="310" stroke="#22C55E" stroke-width="1.2" opacity="0.5"/>
+    <line x1="1000" y1="324" x2="1000" y2="334" stroke="#22C55E" stroke-width="1.2" opacity="0.5"/>
+
+    <!-- Promotion label -->
+    <text x="1012" y="330"
+          font-family="'Segoe UI', system-ui, sans-serif"
+          font-size="9" fill="#22C55E" opacity="0.7">promote</text>
+
+    <!-- Stage badges -->
+    <rect x="1088" y="284" width="68" height="16" rx="3" fill="#22C55E" opacity="0.12"/>
+    <text x="1122" y="295" text-anchor="middle"
+          font-family="'Segoe UI', system-ui, sans-serif"
+          font-size="9" fill="#22C55E" font-weight="600">WILD</text>
+
+    <rect x="1088" y="332" width="68" height="16" rx="3" fill="#22C55E" opacity="0.12"/>
+    <text x="1122" y="343" text-anchor="middle"
+          font-family="'Segoe UI', system-ui, sans-serif"
+          font-size="9" fill="#22C55E" font-weight="600">THEORY</text>
+
+    <!-- Animated pulse on promotion path -->
+    <circle cx="1000" cy="316" r="2" fill="#22C55E" opacity="0.8">
+      <animate attributeName="cy" values="300;340" dur="2s" repeatCount="indefinite"/>
+      <animate attributeName="opacity" values="0.9;0.2" dur="2s" repeatCount="indefinite"/>
+    </circle>
+  </g>
+
+  <!-- ===================== CLUSTER 3: ENGINEERING (amber, bottom center) ===================== -->
+  <g>
+    <rect x="390" y="538" width="420" height="130" rx="12"
+          fill="url(#wn_panel)" stroke="#F59E0B" stroke-width="1.4" opacity="0.9"/>
+    <rect x="390" y="538" width="420" height="4" rx="2" fill="#F59E0B" opacity="0.6"/>
+
+    <text x="410" y="564"
+          font-family="'Segoe UI', system-ui, sans-serif"
+          font-size="11" font-weight="700" fill="#F59E0B" letter-spacing="1.2"
+          filter="url(#wn_glow_a)">ENGINEERING</text>
+
+    <circle cx="414" cy="588" r="4" fill="#F59E0B" opacity="0.7"/>
+    <text x="426" y="592"
+          font-family="'Segoe UI', system-ui, sans-serif"
+          font-size="12.5" fill="#CBD5E1">GPU Ch01 — Capacity Guardrails</text>
+
+    <circle cx="414" cy="612" r="4" fill="#F59E0B" opacity="0.7"/>
+    <text x="426" y="616"
+          font-family="'Segoe UI', system-ui, sans-serif"
+          font-size="12.5" fill="#CBD5E1">Ch09 — Evaluation Doctrine</text>
+
+    <circle cx="414" cy="636" r="4" fill="#F59E0B" opacity="0.7"/>
+    <text x="426" y="640"
+          font-family="'Segoe UI', system-ui, sans-serif"
+          font-size="12.5" fill="#CBD5E1">Ch10 — Failure Modes</text>
+
+    <circle cx="640" cy="588" r="4" fill="#F59E0B" opacity="0.7"/>
+    <text x="652" y="592"
+          font-family="'Segoe UI', system-ui, sans-serif"
+          font-size="12.5" fill="#CBD5E1">Ch08 — Telemetry</text>
+    <text x="762" y="592"
+          font-family="'Segoe UI', system-ui, sans-serif"
+          font-size="9" fill="#6B7280" font-style="italic">legacy</text>
+  </g>
+
+  <!-- ===================== CLUSTER 4: GOVERNANCE (magenta, left) ===================== -->
+  <g>
+    <rect x="30" y="240" width="280" height="170" rx="12"
+          fill="url(#wn_panel)" stroke="#FF00FF" stroke-width="1.4" opacity="0.9"/>
+    <rect x="30" y="240" width="280" height="4" rx="2" fill="#FF00FF" opacity="0.6"/>
+
+    <text x="50" y="266"
+          font-family="'Segoe UI', system-ui, sans-serif"
+          font-size="11" font-weight="700" fill="#FF00FF" letter-spacing="1.2"
+          filter="url(#wn_glow_m)">GOVERNANCE</text>
+
+    <circle cx="54" cy="292" r="4" fill="#FF00FF" opacity="0.7"/>
+    <text x="66" y="296"
+          font-family="'Segoe UI', system-ui, sans-serif"
+          font-size="12.5" fill="#CBD5E1">Wiki Policy (canonical)</text>
+
+    <circle cx="54" cy="316" r="4" fill="#FF00FF" opacity="0.7"/>
+    <text x="66" y="320"
+          font-family="'Segoe UI', system-ui, sans-serif"
+          font-size="12.5" fill="#CBD5E1">Scaling Protocol</text>
+
+    <circle cx="54" cy="340" r="4" fill="#FF00FF" opacity="0.7"/>
+    <text x="66" y="344"
+          font-family="'Segoe UI', system-ui, sans-serif"
+          font-size="12.5" fill="#CBD5E1">Versioning</text>
+
+    <circle cx="54" cy="364" r="4" fill="#FF00FF" opacity="0.7"/>
+    <text x="66" y="368"
+          font-family="'Segoe UI', system-ui, sans-serif"
+          font-size="12.5" fill="#CBD5E1">Provenance / IP SOP</text>
+
+    <circle cx="54" cy="388" r="4" fill="#FF00FF" opacity="0.7"/>
+    <text x="66" y="392"
+          font-family="'Segoe UI', system-ui, sans-serif"
+          font-size="12.5" fill="#CBD5E1">Wiki Consolidation</text>
+  </g>
+
+  <!-- ===================== CLUSTER 5: DYNAMIC SURFACES (gold, top right) ===================== -->
+  <g>
+    <rect x="890" y="86" width="280" height="140" rx="12"
+          fill="url(#wn_panel)" stroke="#EAB308" stroke-width="1.4" opacity="0.9"/>
+    <rect x="890" y="86" width="280" height="4" rx="2" fill="#EAB308" opacity="0.6"/>
+
+    <text x="910" y="112"
+          font-family="'Segoe UI', system-ui, sans-serif"
+          font-size="11" font-weight="700" fill="#EAB308" letter-spacing="1.2"
+          filter="url(#wn_glow_y)">DYNAMIC SURFACES</text>
+
+    <circle cx="914" cy="136" r="4" fill="#EAB308" opacity="0.7"/>
+    <text x="926" y="140"
+          font-family="'Segoe UI', system-ui, sans-serif"
+          font-size="12.5" fill="#CBD5E1">Ch11 — Roadmap</text>
+
+    <circle cx="914" cy="160" r="4" fill="#EAB308" opacity="0.7"/>
+    <text x="926" y="164"
+          font-family="'Segoe UI', system-ui, sans-serif"
+          font-size="12.5" fill="#CBD5E1">Release Notes</text>
+
+    <circle cx="914" cy="184" r="4" fill="#EAB308" opacity="0.7"/>
+    <text x="926" y="188"
+          font-family="'Segoe UI', system-ui, sans-serif"
+          font-size="12.5" fill="#CBD5E1">Session Logs (3)</text>
+
+    <!-- Pulse indicator (live) -->
+    <circle cx="1152" cy="112" r="4" fill="#EAB308" opacity="0.8">
+      <animate attributeName="opacity" values="0.3;0.9;0.3" dur="2.4s" repeatCount="indefinite"/>
+    </circle>
+    <text x="1140" y="116"
+          font-family="'Segoe UI', system-ui, sans-serif"
+          font-size="9" fill="#EAB308" opacity="0.6" text-anchor="end">LIVE</text>
+  </g>
+
+  <!-- ===================== CLUSTER 6: WORKBENCH (gray, bottom left) ===================== -->
+  <g>
+    <rect x="30" y="460" width="280" height="120" rx="12"
+          fill="url(#wn_panel)" stroke="#6B7280" stroke-width="1.4" opacity="0.9"/>
+    <rect x="30" y="460" width="280" height="4" rx="2" fill="#6B7280" opacity="0.5"/>
+
+    <text x="50" y="486"
+          font-family="'Segoe UI', system-ui, sans-serif"
+          font-size="11" font-weight="700" fill="#6B7280" letter-spacing="1.2">WORKBENCH</text>
+
+    <circle cx="54" cy="510" r="4" fill="#6B7280" opacity="0.7"/>
+    <text x="66" y="514"
+          font-family="'Segoe UI', system-ui, sans-serif"
+          font-size="12.5" fill="#94A3B8">Consolidation Queue</text>
+
+    <circle cx="54" cy="534" r="4" fill="#6B7280" opacity="0.7"/>
+    <text x="66" y="538"
+          font-family="'Segoe UI', system-ui, sans-serif"
+          font-size="12.5" fill="#94A3B8">Templates</text>
+
+    <circle cx="54" cy="558" r="4" fill="#6B7280" opacity="0.7"/>
+    <text x="66" y="562"
+          font-family="'Segoe UI', system-ui, sans-serif"
+          font-size="12.5" fill="#94A3B8">Ant Ratio Frontier (VRA-78)</text>
+  </g>
+
+  <!-- ===================== CLUSTER 7: LEGACY (dim, top left) ===================== -->
+  <g opacity="0.55">
+    <rect x="30" y="96" width="280" height="130" rx="12"
+          fill="url(#wn_panel)" stroke="#374151" stroke-width="1.2"/>
+    <rect x="30" y="96" width="280" height="4" rx="2" fill="#374151" opacity="0.5"/>
+
+    <text x="50" y="122"
+          font-family="'Segoe UI', system-ui, sans-serif"
+          font-size="11" font-weight="700" fill="#374151" letter-spacing="1.2">LEGACY</text>
+
+    <circle cx="54" cy="146" r="4" fill="#374151" opacity="0.7"/>
+    <text x="66" y="150"
+          font-family="'Segoe UI', system-ui, sans-serif"
+          font-size="12.5" fill="#6B7280">Ch02 — Architecture Overview</text>
+    <text x="258" y="150"
+          font-family="'Segoe UI', system-ui, sans-serif"
+          font-size="9" fill="#4B5563" font-style="italic">superseded</text>
+
+    <circle cx="54" cy="170" r="4" fill="#374151" opacity="0.7"/>
+    <text x="66" y="174"
+          font-family="'Segoe UI', system-ui, sans-serif"
+          font-size="12.5" fill="#6B7280">Ch03 — Static Keyspace</text>
+    <text x="258" y="174"
+          font-family="'Segoe UI', system-ui, sans-serif"
+          font-size="9" fill="#4B5563" font-style="italic">superseded</text>
+
+    <circle cx="54" cy="194" r="4" fill="#374151" opacity="0.7"/>
+    <text x="66" y="198"
+          font-family="'Segoe UI', system-ui, sans-serif"
+          font-size="12.5" fill="#6B7280">Ch13 — Legacy Vault</text>
+  </g>
+
+  <!-- ===================== INTER-CLUSTER CONNECTIONS ===================== -->
+  <!-- Evidence → Core Theory (Proven Findings inform Diamond Code v3) -->
+  <g opacity="0.3">
+    <line x1="890" y1="270" x2="770" y2="200" stroke="#22C55E" stroke-width="1"
+          stroke-dasharray="3 5"/>
+  </g>
+
+  <!-- Legacy superseded-by → Core Theory -->
+  <g opacity="0.2">
+    <line x1="310" y1="150" x2="430" y2="170" stroke="#374151" stroke-width="1"
+          stroke-dasharray="2 4"/>
+  </g>
+
+  <!-- ===================== LEGEND ===================== -->
+  <g transform="translate(30, 640)">
+    <rect x="0" y="0" width="360" height="80" rx="8"
+          fill="url(#wn_panel)" stroke="#243041" stroke-width="1" opacity="0.8"/>
+
+    <text x="14" y="20"
+          font-family="'Segoe UI', system-ui, sans-serif"
+          font-size="10" font-weight="700" fill="#6B7280" letter-spacing="1">LEGEND</text>
+
+    <!-- Row 1 -->
+    <circle cx="22" cy="38" r="4" fill="#00F0FF" opacity="0.8"/>
+    <text x="34" y="42"
+          font-family="'Segoe UI', system-ui, sans-serif"
+          font-size="10" fill="#94A3B8">Theory (stable)</text>
+
+    <circle cx="142" cy="38" r="4" fill="#22C55E" opacity="0.8"/>
+    <text x="154" y="42"
+          font-family="'Segoe UI', system-ui, sans-serif"
+          font-size="10" fill="#94A3B8">Evidence</text>
+
+    <circle cx="232" cy="38" r="4" fill="#FF00FF" opacity="0.8"/>
+    <text x="244" y="42"
+          font-family="'Segoe UI', system-ui, sans-serif"
+          font-size="10" fill="#94A3B8">Governance</text>
+
+    <!-- Row 2 -->
+    <circle cx="22" cy="58" r="4" fill="#F59E0B" opacity="0.8"/>
+    <text x="34" y="62"
+          font-family="'Segoe UI', system-ui, sans-serif"
+          font-size="10" fill="#94A3B8">Engineering</text>
+
+    <circle cx="142" cy="58" r="4" fill="#EAB308" opacity="0.8"/>
+    <text x="154" y="62"
+          font-family="'Segoe UI', system-ui, sans-serif"
+          font-size="10" fill="#94A3B8">Dynamic (live)</text>
+
+    <circle cx="232" cy="58" r="4" fill="#6B7280" opacity="0.8"/>
+    <text x="244" y="62"
+          font-family="'Segoe UI', system-ui, sans-serif"
+          font-size="10" fill="#94A3B8">Workbench</text>
+
+    <circle cx="322" cy="58" r="4" fill="#374151" opacity="0.6"/>
+    <text x="334" y="62"
+          font-family="'Segoe UI', system-ui, sans-serif"
+          font-size="10" fill="#6B7280">Legacy</text>
+  </g>
+
+  <!-- ===================== PAGE COUNT ===================== -->
+  <text x="480" y="710"
+        font-family="'Segoe UI', system-ui, sans-serif"
+        font-size="11" fill="#4B5563">
+    33 pages · 7 clusters · Feb 2026
+  </text>
+
+  <!-- ===================== CREDIT ===================== -->
+  <text x="1172" y="730" text-anchor="end"
+        font-family="'Segoe UI', system-ui, -apple-system, sans-serif"
+        font-size="12" fill="#A0AEC0" opacity="0.75">
+    Made by Daniel Kenessy
+  </text>
+</svg>

@@ -10,7 +10,7 @@ on:
     - cron: "0 9 * * *"
 
 jobs:
-  cpu-tests:
+  compile-check:
     runs-on: windows-latest
     steps:
       - name: Checkout
@@ -28,26 +28,7 @@ jobs:
 
       - name: Compile (sanity)
         run: |
-          python -m compileall "Golden Code" "Golden Draft"
-
-      - name: Unit tests
-        run: |
-          python -m unittest discover -s "Golden Draft/tests" -v
-
-  wiki-health:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-
-      - name: Wiki health check
-        run: |
-          python "Golden Draft/tools/wiki_health_check.py"
+          python -m compileall "Diamond Code"
 
   docs-health:
     runs-on: ubuntu-latest
@@ -62,12 +43,12 @@ jobs:
 
       - name: Pages health check
         run: |
-          python "Golden Draft/tools/pages_health_check.py"
+          python "tools/pages_health_check.py"
 
       - name: Badges health check
         run: |
-          python "Golden Draft/tools/badges_health_check.py"
+          python "tools/badges_health_check.py"
 
       - name: Badge generation check (v2)
         run: |
-          python "Golden Draft/tools/generate_badges_v2.py" --check-only
+          python "tools/generate_badges_v2.py" --check-only
