@@ -38,3 +38,6 @@ VRAXION.wiki/
 
 # Telemetry / probe output
 *.jsonl
+
+# Log files
+*.log

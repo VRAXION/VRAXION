@@ -1,7 +1,7 @@
 {
   "major": 3,
-  "minor": 0,
-  "build": 0,
-  "label": "diamond-research",
-  "note": "Diamond Code: Hash LCX memory, progressive training, Grafana observability. Research/engineering release."
+  "minor": 2,
+  "build": 1,
+  "label": "diamond-consolidated",
+  "note": "Diamond Code consolidated. C19 activation, LCX bottleneck, dreaming phase. Golden Code/Draft archived."
 }
