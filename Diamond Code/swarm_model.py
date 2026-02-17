@@ -860,7 +860,7 @@ class SwarmByteRingModel(nn.Module):
             nn.init.constant_(self.lcx_write_gate.bias, 0.0)  # balanced init (sigmoid=0.5)
             # Zoom gate: auto-effort (model decides "need more detail?")
             self.zoom_gate = nn.Linear(embedding_dim, 1)
-            nn.init.constant_(self.zoom_gate.bias, -2.0)  # start conservative (sigmoid(-2)≈0.12)
+            nn.init.constant_(self.zoom_gate.bias, 0.0)  # balanced init (sigmoid(0)=0.5) — probe: gate rises to 0.6, model adapts
             # LCX read bottleneck: D → D//10 → C19 → D//10 → C19 → D
             # Translates raw LCX read vectors into hidden-compatible representations.
             _bn_dim = max(1, embedding_dim // 10)  # 618 at D=6180

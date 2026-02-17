@@ -53,7 +53,7 @@ python -u test_swarm_config.py ^
     --lcx_level_slots "2000" ^
     --lcx_key_dim 618 ^
     --lcx_top_k 6 ^
-    --num_pointers 3 ^
+    --num_pointers 1 ^
     --amp ^
     --data_dir "data/traindat/" ^
     --checkpoint_dir "checkpoints/goldilocks_v4" ^
