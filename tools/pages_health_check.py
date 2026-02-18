@@ -107,7 +107,7 @@ def _docs_asset_path(repo_root: Path, href_or_url: str) -> Path | None:
 
 
 def main(argv: list[str]) -> int:
-    repo_root = Path(__file__).resolve().parents[2]
+    repo_root = Path(__file__).resolve().parents[1]
     readme = repo_root / "README.md"
     docs_index = repo_root / "docs" / "index.html"
 
