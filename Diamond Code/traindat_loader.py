@@ -76,23 +76,27 @@ def generate_batch_binary_bits(
             f"seq_len={seq_len}, bytes_per_pos={bytes_per_pos} (need >= {chunk_bytes})"
         )
 
-    x = torch.zeros(n_samples, seq_len, num_bits)
-    y = torch.zeros(n_samples, seq_len, num_bits)
+    # Vectorized: gather all chunks into numpy array, unpack bits in bulk
+    corpus_arr = np.frombuffer(corpus, dtype=np.uint8)
+    starts = np.array([random.randint(0, max_start) for _ in range(n_samples)])
 
-    for i in range(n_samples):
-        start = random.randint(0, max_start)
-        chunk = corpus[start:start + chunk_bytes]
+    # Build offset array: [0, 1, ..., chunk_bytes-1] for each sample
+    offsets = np.arange(chunk_bytes)
+    # indices[i, j] = starts[i] + j  -> shape [n_samples, chunk_bytes]
+    indices = starts[:, None] + offsets[None, :]
+    # Gather all bytes: [n_samples, chunk_bytes]
+    all_bytes = corpus_arr[indices]
 
-        for t in range(seq_len):
-            base_x = t * bytes_per_pos
-            base_y = (t + 1) * bytes_per_pos
-            for byte_idx in range(bytes_per_pos):
-                bx = chunk[base_x + byte_idx]
-                by = chunk[base_y + byte_idx]
-                bit_offset = byte_idx * 8
-                for b in range(8):
-                    x[i, t, bit_offset + 7 - b] = float((bx >> b) & 1)
-                    y[i, t, bit_offset + 7 - b] = float((by >> b) & 1)
+    # Reshape to [n_samples, seq_len+1, bytes_per_pos]
+    all_bytes = all_bytes.reshape(n_samples, seq_len + 1, bytes_per_pos)
+
+    # Unpack bits: numpy unpackbits along last axis, MSB first
+    # [n_samples, seq_len+1, bytes_per_pos] -> [n_samples, seq_len+1, num_bits]
+    all_bits = np.unpackbits(all_bytes, axis=2).astype(np.float32)
+
+    # Input = positions [0:seq_len], target = positions [1:seq_len+1]
+    x = torch.from_numpy(all_bits[:, :seq_len, :].copy())
+    y = torch.from_numpy(all_bits[:, 1:seq_len + 1, :].copy())
 
     return x, y
 

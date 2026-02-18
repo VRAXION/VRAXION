@@ -6,7 +6,7 @@ REM ================================================================
 REM
 REM  D=618  depth=62  ring=6  seq=6  bits=6184  beings=1
 REM  LCX: single L0, hash-bucketed, key_dim=61, top_k=6
-REM  CPU fp64 training, ~1.7s/step at batch=10
+REM  CPU fp64 training, ~10s/step at batch=10 (loop overhead)
 REM  Deploy: 31.2M params, 59.5MB fp16, ~0.7 GB RAM
 REM
 REM  Golden Ratio Fractal Stack:
@@ -53,6 +53,7 @@ python -u test_swarm_config.py ^
     --fp64 ^
     --device cpu ^
     --data_dir "data/traindat/" ^
+    --data_weights "{\"copy_echo256.traindat\":1,\"constant256.traindat\":0,\"add256.traindat\":0,\"count256.traindat\":0,\"delay_echo256.traindat\":0,\"denoise256.traindat\":0,\"echo256.traindat\":0,\"fib256.traindat\":0,\"gold_origin_echo.traindat\":0,\"not256.traindat\":0,\"shift256.traindat\":0}" ^
     --checkpoint_dir "checkpoints/nano_golden" ^
     --checkpoint_every 25 ^
     --eval_every 5 ^

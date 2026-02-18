@@ -529,7 +529,7 @@ class SwarmByteRingModel(nn.Module):
         num_memory_positions: int = 64,
         embedding_dim: int = 64,
         num_beings: int = 2,
-        depth: int = 2,
+        depth: 'int | list' = 2,
         attention_radius: int = 2,
         attention_temperature: float = 8.0,
         combiner_mode: str = 'mean',
@@ -539,7 +539,7 @@ class SwarmByteRingModel(nn.Module):
         mask_seed: int = 42,
         fibonacci: bool = False,
         combinatorial: bool = False,
-        think_ticks: int = 0,
+        think_ticks: 'int | list' = 0,
         temporal_fibonacci: bool = False,
         capacity_fibonacci: bool = False,
         max_hidden: int = 4096,
@@ -554,18 +554,35 @@ class SwarmByteRingModel(nn.Module):
         lcx_num_levels: int = 3,
         lcx_level_slots: list = None,
         num_pointers: int = 1,
+        byte_token_mode: bool = False,
+        being_modes: 'list | None' = None,
     ):
         super().__init__()
 
+        self.byte_token_mode = byte_token_mode
         self.embedding_dim = embedding_dim
         self.num_memory_positions = num_memory_positions
         self.num_beings = num_beings
         self.num_bits = num_bits
         self.attention_radius = attention_radius
         self.attention_temperature = attention_temperature
-        self.depth = depth
+        # Per-being depth: expand int to list, validate list length
+        if isinstance(depth, int):
+            self.depth_per_being = [depth] * num_beings
+        else:
+            assert len(depth) == num_beings, \
+                f"depth list length {len(depth)} != num_beings {num_beings}"
+            self.depth_per_being = list(depth)
+        self.depth = max(self.depth_per_being)  # backward compat
         self.combiner_mode = combiner_mode
-        self.think_ticks = think_ticks
+        # Per-being think_ticks: expand int to list, validate list length
+        if isinstance(think_ticks, int):
+            self.think_ticks_per_being = [think_ticks] * num_beings
+        else:
+            assert len(think_ticks) == num_beings, \
+                f"think_ticks list length {len(think_ticks)} != num_beings {num_beings}"
+            self.think_ticks_per_being = list(think_ticks)
+        self.think_ticks = max(self.think_ticks_per_being)  # backward compat
         self.full_view = full_view
         self.combinatorial = combinatorial
         self.use_lcx = use_lcx
@@ -603,21 +620,45 @@ class SwarmByteRingModel(nn.Module):
             _input_width = num_bits * num_bits  # dense LCX: broadcast grid
         else:
             _input_width = num_bits * 2  # GEM: bits + GEM
-        # Always create projections: input_width rarely equals embedding_dim,
-        # and ring memory is [B, M, embedding_dim] so combined_input must match.
-        self.input_proj = nn.Linear(_input_width, embedding_dim)
-        self.output_proj = nn.Linear(embedding_dim, num_bits)
+        # BYTE TOKEN MODE: discrete byte embedding + C19 bottleneck encoder/decoder
+        # Replaces input_proj/output_proj with learned byte-level encoding.
+        # Each byte (0-255) gets its own embedding vector — lossless by construction.
+        # Output is 256-class classification (CrossEntropyLoss).
+        if byte_token_mode:
+            _bn = max(8, embedding_dim // 10)  # bottleneck dim (10:1 ratio)
+            self._byte_bn_dim = _bn
+            self._output_dim = 256
+            # Encoder: Embedding(256, bn) → Lin → C19 → Lin → C19 → Lin → D
+            self.byte_embed = nn.Embedding(256, _bn)
+            self.byte_enc1 = nn.Linear(_bn, _bn)
+            self.byte_enc2 = nn.Linear(_bn, embedding_dim)
+            # Decoder: D → Lin → C19 → Lin → C19 → Lin → 256 logits
+            self.byte_dec1 = nn.Linear(embedding_dim, _bn)
+            self.byte_dec2 = nn.Linear(_bn, _bn)
+            self.byte_dec3 = nn.Linear(_bn, 256)
+            # Orthogonal init (lever 7)
+            for layer in [self.byte_enc1, self.byte_enc2, self.byte_dec1, self.byte_dec2, self.byte_dec3]:
+                nn.init.orthogonal_(layer.weight)
+            self.input_proj = None
+            self.output_proj = None
+        else:
+            self._output_dim = num_bits
+            # Standard projections
+            self.input_proj = nn.Linear(_input_width, embedding_dim)
+            self.output_proj = nn.Linear(embedding_dim, num_bits)
 
         # Multi-layer processing (if depth > 1)
         # Pre-LN + C19 residual blocks (standard transformer pattern)
-        if depth > 1:
+        _all_same_depth = len(set(self.depth_per_being)) == 1
+        if _all_same_depth and self.depth > 1:
+            # Shared processing layers (all beings same depth)
             self.processing_layers = nn.ModuleList([
                 nn.Linear(embedding_dim, embedding_dim)
-                for _ in range(depth - 1)
+                for _ in range(self.depth - 1)
             ])
             self.processing_norms = nn.ModuleList([
                 nn.LayerNorm(embedding_dim)
-                for _ in range(depth - 1)
+                for _ in range(self.depth - 1)
             ])
         else:
             self.processing_layers = None
@@ -714,6 +755,16 @@ class SwarmByteRingModel(nn.Module):
         # Per-being state: 'null' (skip/no influence), 'active' (training), 'frozen' (learned but locked)
         self.being_states = {i: 'active' for i in range(num_beings)}  # default: all active
 
+        # Being modes: 'thinker' (full gradient) or 'scanner' (no_grad, writes only)
+        if being_modes is None:
+            self.being_modes = ['thinker'] * num_beings
+        else:
+            assert len(being_modes) == num_beings, \
+                f"being_modes length {len(being_modes)} != num_beings {num_beings}"
+            assert all(m in ('thinker', 'scanner') for m in being_modes), \
+                f"Invalid being_mode(s): {being_modes}. Must be 'thinker' or 'scanner'."
+            self.being_modes = list(being_modes)
+
         # CAPACITY FIBONACCI: per-being hidden dimensions
         self.capacity_fibonacci = capacity_fibonacci
         if capacity_fibonacci:
@@ -791,9 +842,25 @@ class SwarmByteRingModel(nn.Module):
             self.hidden_dims = [embedding_dim] * num_beings
             self.ring_read_projs = None
             self.ring_write_projs = None
-            self.being_processing_layers = None
-            self.being_processing_norms = None
             self.being_state_norms = None
+            # Heterogeneous depth: per-being processing layers (same D, different depth)
+            if not _all_same_depth:
+                self.being_processing_layers = nn.ModuleList()
+                self.being_processing_norms = nn.ModuleList()
+                for i in range(num_beings):
+                    d_i = self.depth_per_being[i]
+                    n_layers = max(0, d_i - 1)
+                    layers = nn.ModuleList([
+                        nn.Linear(embedding_dim, embedding_dim) for _ in range(n_layers)
+                    ])
+                    norms = nn.ModuleList([
+                        nn.LayerNorm(embedding_dim) for _ in range(n_layers)
+                    ])
+                    self.being_processing_layers.append(layers)
+                    self.being_processing_norms.append(norms)
+            else:
+                self.being_processing_layers = None
+                self.being_processing_norms = None
 
         # PER-BEING COMPONENTS (each being has its own)
         # Pass being_id for golden ratio phase embeddings + optional input mask
@@ -1543,12 +1610,17 @@ class SwarmByteRingModel(nn.Module):
             _eff_think_ticks = 0 if (not self.training and getattr(self, '_eval_skip_think', False)) else self.think_ticks
             if _eff_think_ticks > 0:
                 for _tt in range(_eff_think_ticks):
+                    # Per-being think tick quota masking
+                    _tt_limit = torch.tensor(self.think_ticks_per_being, device=device)  # [N]
+                    tt_being_active = (_tt < _tt_limit)  # [N] bool
+
                     if self.tick_periods is not None:
-                        global_tick = t * (1 + self.think_ticks) + 1 + _tt
+                        _tt_per = torch.tensor(self.think_ticks_per_being, device=device)
+                        global_tick = t * (1 + _tt_per) + 1 + _tt  # [N] tensor
                         tt_active = (global_tick % self.tick_periods) == 0
-                        tt_step = active_mask & tt_active
+                        tt_step = active_mask & tt_active & tt_being_active
                     else:
-                        tt_step = active_mask
+                        tt_step = active_mask & tt_being_active
                     tt_mask = tt_step.float().reshape(N, 1, 1)
 
                     # Ring read — Pointer A
@@ -1618,10 +1690,11 @@ class SwarmByteRingModel(nn.Module):
                             _query = hidden_states.mean(dim=0)
                             lcx_tt_ctx = self._lcx_flat_read(_query, level=_lcx_level)
                             lcx_tt_ctx = self._lcx_bottleneck(lcx_tt_ctx)
-                            # zoom_gate: L2-normalize input to bound pre-activation, fp32 for gradient precision
+                            # zoom_gate: L2-normalize input to bound pre-activation
                             with torch.amp.autocast('cuda', enabled=False):
-                                _q32 = torch.nn.functional.normalize(_query.float(), dim=-1)
-                                zg = torch.sigmoid(self.zoom_gate(_q32))  # [B, 1] fp32
+                                _zg_dtype = self.zoom_gate.weight.dtype
+                                _q32 = torch.nn.functional.normalize(_query.to(_zg_dtype), dim=-1)
+                                zg = torch.sigmoid(self.zoom_gate(_q32))
                             lcx_tt_ctx = lcx_tt_ctx * zg
                             self._last_zoom_gate = zg.mean().item()
                             # Stash zoom_gate output for anti-saturation aux loss
@@ -2214,6 +2287,24 @@ class SwarmByteRingModel(nn.Module):
                 x = c19_activation(x)
         return x
 
+    # --- Byte token encode/decode ---
+
+    def _byte_encode(self, byte_ids: torch.Tensor) -> torch.Tensor:
+        """Byte token (0-255) → D-dimensional vector via C19 bottleneck.
+        Input: [B] Long tensor of byte values.
+        Output: [B, D] float tensor."""
+        emb = self.byte_embed(byte_ids)                 # [B, bn]
+        h = c19_activation(self.byte_enc1(emb))         # [B, bn]
+        return self.byte_enc2(h)                        # [B, D]
+
+    def _byte_decode(self, hidden: torch.Tensor) -> torch.Tensor:
+        """D-dimensional hidden → 256 byte logits via C19 bottleneck.
+        Input: [B, D] float tensor.
+        Output: [B, 256] logits (raw, no softmax)."""
+        h = c19_activation(self.byte_dec1(hidden))      # [B, bn]
+        h = c19_activation(self.byte_dec2(h))           # [B, bn]
+        return self.byte_dec3(h)                        # [B, 256]
+
     # --- Flat LCX read/write ---
 
     def _lcx_flat_read(self, state: torch.Tensor, level: int) -> torch.Tensor:
@@ -2324,8 +2415,9 @@ class SwarmByteRingModel(nn.Module):
         # Write gate WITH gradient for auxiliary loss
         # L2-normalize input to bound pre-activation (hidden magnitudes grow unbounded), fp32
         with torch.amp.autocast('cuda', enabled=False):
-            _wc_norm = torch.nn.functional.normalize(write_content.float(), dim=-1)
-            gate_for_aux = torch.sigmoid(self.lcx_write_gate(_wc_norm))  # [B, 1] fp32
+            _wg_dtype = self.lcx_write_gate.weight.dtype  # fp32 on GPU, fp64 if model.double()
+            _wc_norm = torch.nn.functional.normalize(write_content.to(_wg_dtype), dim=-1)
+            gate_for_aux = torch.sigmoid(self.lcx_write_gate(_wc_norm))  # [B, 1]
         if self.training:
             if not hasattr(self, '_lcx_write_gate_accum'):
                 self._lcx_write_gate_accum = []
@@ -2401,7 +2493,12 @@ class SwarmByteRingModel(nn.Module):
         if self.combinatorial and hasattr(self, '_vec_vis_indices'):
             return self._forward_vectorized(x, return_stats, return_being_outputs)
 
-        B, T, _ = x.shape
+        if self.byte_token_mode:
+            B, T = x.shape  # x is [B, T] Long tensor of byte values
+            _float_dtype = next(self.parameters()).dtype  # match model dtype (fp32 or fp64)
+        else:
+            B, T, _ = x.shape  # x is [B, T, num_bits] float tensor
+            _float_dtype = x.dtype  # inherit float32/float64 from input
 
         # Clear LCX auxiliary loss accumulators for this forward pass
         if self.training and self._lcx_hash_mode:
@@ -2417,7 +2514,7 @@ class SwarmByteRingModel(nn.Module):
         # SHARED ring memory (all beings write here)
         memory_ring = torch.zeros(
             B, self.num_memory_positions, self.embedding_dim,
-            device=x.device, dtype=x.dtype
+            device=x.device, dtype=_float_dtype
         )
 
         # PER-BEING state initialization
@@ -2439,7 +2536,7 @@ class SwarmByteRingModel(nn.Module):
 
             state_dict = {
                 'pointer_position': pointer_init_a,
-                'hidden_state': torch.zeros(B, self.hidden_dims[being_idx], device=x.device, dtype=x.dtype),
+                'hidden_state': torch.zeros(B, self.hidden_dims[being_idx], device=x.device, dtype=_float_dtype),
             }
             # Pointer B: second segment
             if self.num_pointers >= 2:
@@ -2467,12 +2564,166 @@ class SwarmByteRingModel(nn.Module):
             output_disagreements = []
             gate_weights_log = []
 
-        # TIMESTEP LOOP
+        # ─── TWO-PHASE FORWARD: Scanner Pre-Sweep ───
+        _scanner_idxs = [i for i, m in enumerate(self.being_modes) if m == 'scanner']
+        _thinker_idxs = [i for i, m in enumerate(self.being_modes) if m == 'thinker']
+        _has_phase_split = len(_scanner_idxs) > 0 and len(_thinker_idxs) > 0
+        _active_beings = _thinker_idxs if _has_phase_split else list(range(self.num_beings))
+
+        if _has_phase_split:
+            assert self._lcx_hash_mode, \
+                "Two-phase forward (scanner+thinker) requires hash LCX mode"
+            with torch.no_grad():
+                for _ts in range(T):
+                    # Input for this timestep
+                    if self.byte_token_mode:
+                        _s_bytes = x[:, _ts]
+                    else:
+                        _s_bits = x[:, _ts, :]
+
+                    for being_idx in _scanner_idxs:
+                        being = self.beings[being_idx]
+                        state = being_states[being_idx]
+
+                        if self.being_states.get(being_idx, 'null') == 'null':
+                            continue
+                        if self.tick_periods is not None and _ts % self.tick_periods[being_idx].item() != 0:
+                            continue
+
+                        # Ring read (Pointer A)
+                        indices_a, weights_a = self._gaussian_attention_weights(
+                            state['pointer_position'], self.num_memory_positions)
+                        indices_exp_a = indices_a.unsqueeze(-1).expand(-1, -1, self.embedding_dim)
+                        neighborhood_a = memory_ring.gather(1, indices_exp_a)
+                        context_read_a = (weights_a.unsqueeze(-1) * neighborhood_a).sum(dim=1)
+
+                        if self.num_pointers >= 2:
+                            indices_b, weights_b = self._gaussian_attention_weights(
+                                state['pointer_position_b'], self.num_memory_positions)
+                            indices_exp_b = indices_b.unsqueeze(-1).expand(-1, -1, self.embedding_dim)
+                            neighborhood_b = memory_ring.gather(1, indices_exp_b)
+                            context_read_b = (weights_b.unsqueeze(-1) * neighborhood_b).sum(dim=1)
+
+                        if self.num_pointers >= 3:
+                            indices_c, weights_c = self._gaussian_attention_weights(
+                                state['pointer_position_c'], self.num_memory_positions)
+                            indices_exp_c = indices_c.unsqueeze(-1).expand(-1, -1, self.embedding_dim)
+                            neighborhood_c = memory_ring.gather(1, indices_exp_c)
+                            context_read_c = (weights_c.unsqueeze(-1) * neighborhood_c).sum(dim=1)
+
+                        # Combine pointer reads
+                        if self.num_pointers >= 3:
+                            _D = self.embedding_dim
+                            reads_stack = torch.stack([context_read_a, context_read_b, context_read_c], dim=1)
+                            attn_scores = (state['hidden_state'].unsqueeze(1) * reads_stack).sum(dim=-1) / (_D ** 0.5)
+                            attn_weights = 0.25 * torch.softmax(attn_scores, dim=-1) + 0.25
+                            context_read = (attn_weights.unsqueeze(-1) * reads_stack).sum(dim=1)
+                        elif self.num_pointers >= 2:
+                            context_read = 0.5 * (context_read_a + context_read_b)
+                        else:
+                            context_read = context_read_a
+
+                        context_scale = torch.sigmoid(being.context_strength)
+                        if self.ring_read_projs is not None:
+                            context_read = self.ring_read_projs[being_idx](context_read)
+
+                        # Input combination (hash LCX mode)
+                        if self.byte_token_mode:
+                            being_input_vec = self._byte_encode(_s_bytes)
+                        else:
+                            being_input_vec = self.input_proj(_s_bits)
+                        lcx_ctx = self._lcx_flat_read(being_input_vec, level=0)
+                        being_input_vec = being_input_vec + self._lcx_bottleneck(lcx_ctx)
+                        if self.being_input_projs is not None:
+                            being_input_vec = self.being_input_projs[being_idx](being_input_vec)
+                        combined_input = being_input_vec + context_scale * context_read
+
+                        # Phase embedding
+                        h_i = self.hidden_dims[being_idx]
+                        _B = combined_input.size(0)
+                        if being.phase_embedding.size(0) == h_i:
+                            phase_bias = being.phase_embedding.unsqueeze(0).expand(_B, -1)
+                        else:
+                            phase_16d = being.phase_embedding.unsqueeze(0).expand(_B, -1)
+                            if h_i >= 16:
+                                padding = torch.zeros(_B, h_i - 16, device=phase_16d.device, dtype=phase_16d.dtype)
+                                phase_bias = torch.cat([phase_16d, padding], dim=1)
+                            else:
+                                phase_bias = phase_16d[:, :h_i]
+                        combined_input = combined_input + 0.1 * phase_bias
+
+                        # State update (phi EMA)
+                        _norm = self.being_state_norms[being_idx] if self.being_state_norms is not None else self.state_norm
+                        state_update = 0.618 * _norm(state['hidden_state']) + 0.382 * combined_input
+                        if self.being_processing_layers is not None:
+                            for norm, layer in zip(self.being_processing_norms[being_idx], self.being_processing_layers[being_idx]):
+                                state_update = state_update + c19_activation(layer(norm(state_update)))
+                        elif self.processing_layers is not None:
+                            for norm, layer in zip(self.processing_norms, self.processing_layers):
+                                state_update = state_update + c19_activation(layer(norm(state_update)))
+                        state['hidden_state'] = state_update
+
+                        # LCX write
+                        if self.ring_write_projs is not None:
+                            write_vec = self.ring_write_projs[being_idx](state_update)
+                        else:
+                            write_vec = state_update
+                        self._lcx_flat_write(state['hidden_state'], write_vec, level=0)
+
+                        # Ring write (Pointer A)
+                        update_broadcast_a = write_vec.unsqueeze(1).expand(-1, weights_a.size(1), -1)
+                        contribution_a = weights_a.unsqueeze(-1) * update_broadcast_a
+                        memory_ring = memory_ring.scatter_add(1, indices_exp_a, contribution_a)
+
+                        if self.num_pointers >= 2:
+                            update_broadcast_b = write_vec.unsqueeze(1).expand(-1, weights_b.size(1), -1)
+                            contribution_b = weights_b.unsqueeze(-1) * update_broadcast_b
+                            memory_ring = memory_ring.scatter_add(1, indices_exp_b, contribution_b)
+
+                        if self.num_pointers >= 3:
+                            update_broadcast_c = write_vec.unsqueeze(1).expand(-1, weights_c.size(1), -1)
+                            contribution_c = weights_c.unsqueeze(-1) * update_broadcast_c
+                            memory_ring = memory_ring.scatter_add(1, indices_exp_c, contribution_c)
+
+                        # Pointer update (A)
+                        current_pos_a = state['pointer_position'].long().clamp(0, self.num_memory_positions - 1)
+                        jump_target_a = being.pointer_destinations[current_pos_a].float().clamp(0, self.num_memory_positions - 1)
+                        jump_logits_a = being.jump_gate(state_update).squeeze(-1)
+                        jump_prob_a = torch.sigmoid(jump_logits_a / JUMP_SIGMOID_TAU)
+                        walk_position_a = (state['pointer_position'] + 1.0) % self.num_memory_positions
+                        state['pointer_position'] = jump_prob_a * jump_target_a + (1.0 - jump_prob_a) * walk_position_a
+
+                        if self.num_pointers >= 2:
+                            current_pos_b = state['pointer_position_b'].long().clamp(0, self.num_memory_positions - 1)
+                            jump_target_b = being.pointer_destinations_b[current_pos_b].float().clamp(0, self.num_memory_positions - 1)
+                            jump_logits_b = being.jump_gate_b(state_update).squeeze(-1)
+                            jump_prob_b = torch.sigmoid(jump_logits_b / JUMP_SIGMOID_TAU)
+                            walk_position_b = (state['pointer_position_b'] + 1.0) % self.num_memory_positions
+                            state['pointer_position_b'] = jump_prob_b * jump_target_b + (1.0 - jump_prob_b) * walk_position_b
+
+                        if self.num_pointers >= 3:
+                            current_pos_c = state['pointer_position_c'].long().clamp(0, self.num_memory_positions - 1)
+                            jump_target_c = being.pointer_destinations_c[current_pos_c].float().clamp(0, self.num_memory_positions - 1)
+                            jump_logits_c = being.jump_gate_c(state_update).squeeze(-1)
+                            jump_prob_c = torch.sigmoid(jump_logits_c / JUMP_SIGMOID_TAU)
+                            walk_position_c = (state['pointer_position_c'] + 1.0) % self.num_memory_positions
+                            state['pointer_position_c'] = jump_prob_c * jump_target_c + (1.0 - jump_prob_c) * walk_position_c
+            # ─── END Scanner Pre-Sweep ───
+
+        # TIMESTEP LOOP (thinker beings only when phase split active)
         for t in range(T):
             # 1. Shared input projection (all beings see same input)
-            input_bits = x[:, t, :]
+            if self.byte_token_mode:
+                input_bytes = x[:, t]       # [B] Long tensor of byte values
+                input_bits = None           # not used in byte token mode
+            else:
+                input_bits = x[:, t, :]     # [B, num_bits] float tensor
             # Memory: Hash LCX (embedding space) or Dense LCX (input space) or GEM
-            if self._lcx_hash_mode:
+            if self.byte_token_mode:
+                # Byte token mode: encode bytes directly, skip raw-bits path
+                input_with_mem = None
+                input_vec = self._byte_encode(input_bytes)  # [B, D]
+            elif self._lcx_hash_mode:
                 # Hash LCX: raw bits only (LCX context added per-being in step 2b)
                 input_with_mem = input_bits  # [B, num_bits]
             elif self.lcx is not None:
@@ -2484,23 +2735,24 @@ class SwarmByteRingModel(nn.Module):
             else:
                 # No memory active (INFANT mode: hash-mode model with LCX disabled)
                 input_with_mem = input_bits  # [B, num_bits]
-            if self.input_proj is not None:
-                input_vec = self.input_proj(input_with_mem)
-            else:
-                input_vec = input_with_mem
+            if not self.byte_token_mode:
+                if self.input_proj is not None:
+                    input_vec = self.input_proj(input_with_mem)
+                else:
+                    input_vec = input_with_mem
 
             # 2. Each being processes independently
             being_outputs_t = []
             hidden_states_t = []
             pointer_positions_t = []
 
-            for being_idx in range(self.num_beings):
+            for being_idx in _active_beings:
                 being = self.beings[being_idx]
                 state = being_states[being_idx]
 
                 # NULL BEINGS: skip entirely (output zeros, no influence)
                 if self.being_states.get(being_idx, 'null') == 'null':
-                    output_bits = torch.zeros(x.size(0), self.num_bits, device=x.device, dtype=x.dtype)
+                    output_bits = torch.zeros(x.size(0), self._output_dim, device=x.device, dtype=_float_dtype)
                     being_outputs_t.append(output_bits)
                     outputs_per_being[being_idx].append(output_bits)
                     hidden_states_t.append(state['hidden_state'].clone())
@@ -2519,8 +2771,10 @@ class SwarmByteRingModel(nn.Module):
                         vis_idx = self.receptive_masks[being_idx].nonzero(as_tuple=True)[0]
                         output_k = self.being_output_projs[being_idx](state['hidden_state'])
                         output_bits = torch.zeros(state['hidden_state'].size(0), self.num_bits,
-                                                  device=x.device, dtype=x.dtype)
+                                                  device=x.device, dtype=_float_dtype)
                         output_bits[:, vis_idx] = output_k
+                    elif self.byte_token_mode:
+                        output_bits = self._byte_decode(state['hidden_state'])
                     elif self.output_proj is not None:
                         output_bits = self.output_proj(state['hidden_state'])
                     else:
@@ -2533,6 +2787,12 @@ class SwarmByteRingModel(nn.Module):
                         if self._is_contributing(being_idx):
                             pointer_positions_t.append(state['pointer_position'].mean().item())
                     continue
+
+                # Scanner no_grad: disable gradient for scanner beings
+                _is_scanner = self.being_modes[being_idx] == 'scanner'
+                _prev_grad = torch.is_grad_enabled()
+                if _is_scanner:
+                    torch.set_grad_enabled(False)
 
                 # 2a. Read from being's pointer position(s)
                 indices_a, weights_a = self._gaussian_attention_weights(
@@ -2581,8 +2841,11 @@ class SwarmByteRingModel(nn.Module):
 
                 # 2b. Combine input + context (with optional receptive field masking)
                 if self._lcx_hash_mode:
-                    # Hash LCX: project raw bits, add LCX context in embedding space
-                    being_input_vec = self.input_proj(input_bits)  # [B, D]
+                    # Hash LCX: project input to embedding space, add LCX context
+                    if self.byte_token_mode:
+                        being_input_vec = self._byte_encode(input_bytes)  # [B, D]
+                    else:
+                        being_input_vec = self.input_proj(input_bits)  # [B, D]
                     lcx_ctx = self._lcx_flat_read(being_input_vec, level=0)  # [B, D]
                     being_input_vec = being_input_vec + self._lcx_bottleneck(lcx_ctx)
                 elif self.lcx is not None:
@@ -2764,9 +3027,11 @@ class SwarmByteRingModel(nn.Module):
                     output_k = self.being_output_projs[being_idx](state['hidden_state'])  # [B, K_i]
                     output_bits = torch.zeros(
                         state['hidden_state'].size(0), self.num_bits,
-                        device=x.device, dtype=x.dtype,
+                        device=x.device, dtype=_float_dtype,
                     )
                     output_bits[:, vis_idx] = output_k
+                elif self.byte_token_mode:
+                    output_bits = self._byte_decode(state['hidden_state'])
                 elif self.output_proj is not None:
                     output_bits = self.output_proj(state['hidden_state'])
                 else:
@@ -2775,6 +3040,10 @@ class SwarmByteRingModel(nn.Module):
                 being_outputs_t.append(output_bits)
                 outputs_per_being[being_idx].append(output_bits)
                 hidden_states_t.append(state['hidden_state'].clone())
+
+                # Restore gradient state after scanner processing
+                if _is_scanner:
+                    torch.set_grad_enabled(_prev_grad)
 
             # 2g. THINK TICKS: extra ring rounds without input injection
             #     Beings read what others wrote, process, write back. No new input.
@@ -2785,15 +3054,25 @@ class SwarmByteRingModel(nn.Module):
                         being = self.beings[being_idx]
                         state = being_states[being_idx]
 
+                        # Per-being think tick quota: skip if exhausted
+                        if _tt >= self.think_ticks_per_being[being_idx]:
+                            continue
+
                         # NULL BEINGS: skip in think ticks
                         if self.being_states.get(being_idx, 'null') == 'null':
                             continue
 
                         # TEMPORAL FIBONACCI: skip dormant beings in think ticks
                         if self.tick_periods is not None:
-                            global_tick = t * (1 + self.think_ticks) + 1 + _tt
+                            global_tick = t * (1 + self.think_ticks_per_being[being_idx]) + 1 + _tt
                             if global_tick % self.tick_periods[being_idx].item() != 0:
                                 continue
+
+                        # Scanner no_grad: disable gradient for scanner beings in think ticks
+                        _is_scanner_tt = self.being_modes[being_idx] == 'scanner'
+                        _prev_grad_tt = torch.is_grad_enabled()
+                        if _is_scanner_tt:
+                            torch.set_grad_enabled(False)
 
                         # Read from ring (Pointer A)
                         indices_a, weights_a = self._gaussian_attention_weights(
@@ -2885,9 +3164,10 @@ class SwarmByteRingModel(nn.Module):
                                 _query = state['hidden_state']
                                 lcx_tt_ctx = self._lcx_flat_read(_query, level=_lcx_level)
                                 lcx_tt_ctx = self._lcx_bottleneck(lcx_tt_ctx)
-                                # zoom_gate: L2-normalize input to bound pre-activation, fp32
+                                # zoom_gate: L2-normalize input to bound pre-activation
                                 with torch.amp.autocast('cuda', enabled=False):
-                                    _q32 = torch.nn.functional.normalize(_query.float(), dim=-1)
+                                    _zg_dtype = self.zoom_gate.weight.dtype
+                                    _q32 = torch.nn.functional.normalize(_query.to(_zg_dtype), dim=-1)
                                     zg = torch.sigmoid(self.zoom_gate(_q32))
                                 lcx_tt_ctx = lcx_tt_ctx * zg
                                 self._last_zoom_gate = zg.mean().item()
@@ -2948,6 +3228,10 @@ class SwarmByteRingModel(nn.Module):
                             walk_position_c = (state['pointer_position_c'] + 1.0) % self.num_memory_positions
                             state['pointer_position_c'] = jump_prob_c * jump_target_c + (1.0 - jump_prob_c) * walk_position_c
 
+                        # Restore gradient state after scanner think tick processing
+                        if _is_scanner_tt:
+                            torch.set_grad_enabled(_prev_grad_tt)
+
                     # Detach between think ticks (VRAM fix): only last tick gets gradient
                     if _tt < _eff_think_ticks - 1:
                         for being_idx in range(self.num_beings):
@@ -2957,7 +3241,7 @@ class SwarmByteRingModel(nn.Module):
                 # Regenerate outputs from post-thinking hidden states
                 being_outputs_t = []
                 hidden_states_t = []
-                for being_idx in range(self.num_beings):
+                for being_idx in _active_beings:
                     state = being_states[being_idx]
 
                     # NULL BEINGS: output zeros, don't overwrite per-being history
@@ -2977,6 +3261,8 @@ class SwarmByteRingModel(nn.Module):
                             device=state['hidden_state'].device, dtype=state['hidden_state'].dtype,
                         )
                         output_bits[:, vis_idx] = output_k
+                    elif self.byte_token_mode:
+                        output_bits = self._byte_decode(state['hidden_state'])
                     elif self.output_proj is not None:
                         output_bits = self.output_proj(state['hidden_state'])
                     else:
@@ -3005,7 +3291,7 @@ class SwarmByteRingModel(nn.Module):
                     # EVAL: Hard voting (majority wins)
                     being_binary = (being_stack > 0.0).float()
                     vote_sum = being_binary.sum(dim=0)
-                    majority_threshold = self.num_beings / 2.0
+                    majority_threshold = being_stack.size(0) / 2.0
                     mean_output_t = (vote_sum > majority_threshold).float() * 2.0 - 1.0
 
             # Store combined output for this timestep
@@ -3185,8 +3471,12 @@ class SwarmByteRingModel(nn.Module):
                 # Get ALL timestep outputs for each being
                 all_being_outputs = []
                 for being_idx in range(self.num_beings):
-                    # Stack all timesteps: [T, B, 8]
-                    being_sequence = torch.stack(outputs_per_being[being_idx])
+                    if len(outputs_per_being[being_idx]) > 0:
+                        being_sequence = torch.stack(outputs_per_being[being_idx])
+                    else:
+                        # Scanner beings in phase split produce no output
+                        being_sequence = torch.zeros(T, B, self._output_dim,
+                                                     device=x.device, dtype=_float_dtype)
                     all_being_outputs.append(being_sequence)
                 # Stack to [num_beings, T, B, 8]
                 stats['being_outputs'] = torch.stack(all_being_outputs)

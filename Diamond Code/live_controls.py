@@ -20,12 +20,12 @@ Format:
     }
 
 Effort tiers:
-    Alpha(Reflex):    tt=0,  batch=10, lcx=OFF  (pure feedforward)
-    Beta(Recall):     tt=1,  batch=10, lcx=ON   (first memory, L0)
-    Gamma(Reason):    tt=2,  batch=5,  lcx=ON   (pattern matching, L0+L1)
-    Delta(Depth):     tt=4,  batch=3,  lcx=ON   (multi-step, L0-L2)
-    Epsilon(Emerge):  tt=8,  batch=2,  lcx=ON   (structure discovery, L0-L3)
-    Zeta(Zenith):     tt=16, batch=1,  lcx=ON   (full depth, L0-L4)
+    Alpha(Reflex):    tt=0,  batch=500, lcx=OFF  (pure feedforward)
+    Beta(Recall):     tt=1,  batch=500, lcx=ON   (first memory, L0)
+    Gamma(Reason):    tt=2,  batch=500, lcx=ON   (deeper retrieval)
+    Delta(Depth):     tt=4,  batch=500, lcx=ON   (multi-pass reasoning)
+    Epsilon(Emerge):  tt=8,  batch=500, lcx=ON   (extended contemplation)
+    Zeta(Zenith):     tt=16, batch=250, lcx=ON   (maximum think depth)
 """
 
 import json
@@ -40,12 +40,12 @@ import torch.nn as nn
 # Greek alphabet effort tiers — canonical definition.
 # To advance: edit controls.json {"effort": "Gamma"} and apply_controls() does the rest.
 DEFAULT_EFFORT_TIERS = {
-    "Alpha":   {"tt": 0,  "lcx": False, "batch": 10, "name": "Reflex"},
-    "Beta":    {"tt": 1,  "lcx": True,  "batch": 10, "name": "Recall"},
-    "Gamma":   {"tt": 2,  "lcx": True,  "batch": 5,  "name": "Reason"},
-    "Delta":   {"tt": 4,  "lcx": True,  "batch": 3,  "name": "Depth"},
-    "Epsilon": {"tt": 8,  "lcx": True,  "batch": 2,  "name": "Emergence"},
-    "Zeta":    {"tt": 16, "lcx": True,  "batch": 1,  "name": "Zenith"},
+    "Alpha":   {"tt": 0,  "lcx": False, "batch": 500, "name": "Reflex"},
+    "Beta":    {"tt": 1,  "lcx": True,  "batch": 500, "name": "Recall"},
+    "Gamma":   {"tt": 2,  "lcx": True,  "batch": 500, "name": "Reason"},
+    "Delta":   {"tt": 4,  "lcx": True,  "batch": 500, "name": "Depth"},
+    "Epsilon": {"tt": 8,  "lcx": True,  "batch": 500, "name": "Emergence"},
+    "Zeta":    {"tt": 16, "lcx": True,  "batch": 250, "name": "Zenith"},
 }
 
 VALID_EFFORTS = set(DEFAULT_EFFORT_TIERS.keys())
@@ -92,9 +92,10 @@ def write_default_controls(path: str, lr: float, data_weights: Dict[str, float],
     (user may have configured these via the control panel). Other fields are
     overwritten from run args to ensure effort tier consistency.
     """
-    # Preserve user-configured data_weights from existing controls.json
+    # Preserve user-configured fields from existing controls.json
     existing_data_weights = None
     existing_eval_every = None
+    existing_tiers = None
     if Path(path).exists():
         try:
             with open(path, 'r') as f:
@@ -103,11 +104,15 @@ def write_default_controls(path: str, lr: float, data_weights: Dict[str, float],
                 existing_data_weights = existing['data_weights']
             if 'eval_every' in existing:
                 existing_eval_every = existing['eval_every']
+            if 'effort_tiers' in existing and isinstance(existing['effort_tiers'], dict):
+                existing_tiers = existing['effort_tiers']
         except Exception:
             pass
 
     # Look up effort tier — override tt/lcx/batch from tier definition
-    tier = DEFAULT_EFFORT_TIERS.get(effort)
+    # Prefer tiers from existing controls.json (user may have customized batch sizes)
+    tiers = existing_tiers or DEFAULT_EFFORT_TIERS
+    tier = tiers.get(effort)
     if tier:
         think_ticks = tier["tt"]
         use_lcx = tier["lcx"]
@@ -138,7 +143,7 @@ def write_default_controls(path: str, lr: float, data_weights: Dict[str, float],
         "checkpoint_every": checkpoint_every,
         "eval_every": existing_eval_every if existing_eval_every is not None else eval_every,
         "data_weights": data_weights,
-        "effort_tiers": DEFAULT_EFFORT_TIERS,
+        "effort_tiers": tiers,
         "agc_enabled": True,
         "agc_low": 0.5,
         "agc_high": 1.0,

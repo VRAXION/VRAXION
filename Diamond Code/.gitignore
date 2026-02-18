@@ -29,8 +29,21 @@ nul
 # Archive (dead-end exploration scripts)
 archive/
 
+# Archived probes and historical artifacts
+tools/_archive/
+
 # Scratch probes
 tools/_scratch/
+
+# LCX film snapshots
+lcx_film/
+
+# CSV sweep data
+*.csv
+
+# Backup files
+*.bak
+*.json.bak
 
 # Live server state
 live/
