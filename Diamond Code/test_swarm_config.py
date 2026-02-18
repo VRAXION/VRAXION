@@ -25,7 +25,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 
 from swarm_model import SwarmByteRingModel, fibonacci_split
 from byte_data import byte_accuracy, bit_accuracy
-from traindat_loader import TraindatLoader, GRAY_ENCODE, gray_scalar_to_byte
+from traindat_loader import TraindatLoader, ThemeLoader, GRAY_ENCODE, gray_scalar_to_byte
 from live_controls import read_controls, apply_controls, write_default_controls, _set_being_grad
 import influx_writer
 
@@ -793,6 +793,14 @@ def main():
                         help='Directory of .traindat files (overrides --text and math modes)')
     parser.add_argument('--data_weights', type=str, default=None,
                         help='JSON string of file weights, e.g. {"shakespeare.traindat": 3.0, "xor.traindat": 1.0}')
+    parser.add_argument('--themes_dir', type=str, default=None,
+                        help='Directory of .jsonl theme files for dialogue-mode training (overrides --data_dir)')
+    parser.add_argument('--active_theme', type=str, default=None,
+                        help='Active theme name for curriculum pairs (default: first found)')
+    parser.add_argument('--gist_ratio', type=float, default=0.10,
+                        help='Fraction of batch from gist pairs (default: 0.10)')
+    parser.add_argument('--difficulty_max', type=int, default=None,
+                        help='Max difficulty level for curriculum pairs (1-6, default: all)')
     parser.add_argument('--controls_every', type=int, default=1,
                         help='Poll controls.json every N steps (default: 1)')
     parser.add_argument('--controls_path', type=str, default='logs/swarm/controls.json',
@@ -868,10 +876,27 @@ def main():
     print("SWARM CONFIG TEST: Multi-Task Benchmark")
     print("="*70)
     print()
-    # Data source init: 3-tier priority (data_dir > text > math)
+    # Data source init: 4-tier priority (themes_dir > data_dir > text > math)
     text_corpus = None
     traindat_loader = None
-    if args.data_dir:
+    theme_loader = None
+    _loss_mask = None  # set per-batch when using theme loader
+
+    if args.themes_dir:
+        theme_loader = ThemeLoader(
+            args.themes_dir,
+            num_bits=num_bits,
+            active_theme=args.active_theme,
+            gist_ratio=args.gist_ratio,
+        )
+        print(f"THEME MODE: {args.themes_dir} (dialogue-mode paired training)")
+        for name, st in theme_loader.stats().items():
+            active = " [ACTIVE]" if st["active"] else ""
+            print(f"  {name}: {st['curriculum']} curriculum, {st['gist']} gist, enc={st['encoding']}{active}")
+        if args.difficulty_max:
+            print(f"  difficulty_max: {args.difficulty_max}")
+        print(f"  gist_ratio: {args.gist_ratio}")
+    elif args.data_dir:
         # Parse weights from JSON string
         data_weights = None
         if args.data_weights:
@@ -987,20 +1012,43 @@ def main():
     if args.loss == 'auto':
         if args.byte_tokens:
             _loss_mode = 'ce'
-        elif args.binary_bits or traindat_loader:
+        elif args.binary_bits or traindat_loader or theme_loader:
             _loss_mode = 'bce'
         else:
             _loss_mode = 'bce'
     else:
         _loss_mode = args.loss
 
-    def compute_loss(logits, targets):
+    def compute_loss(logits, targets, loss_mask=None):
+        """Compute loss with optional dialogue-mode position mask.
+
+        Args:
+            loss_mask: [B, T] float tensor. 1.0 = compute loss, 0.0 = ignore.
+                When provided, per-position loss is weighted by mask before reduction.
+        """
         if _loss_mode == 'ce':
             # Byte token mode: logits [B, T, 256], targets [B, T] Long
+            if loss_mask is not None:
+                # Per-element CE, then mask
+                per_pos = nn.functional.cross_entropy(
+                    logits.reshape(-1, 256), targets.reshape(-1), reduction='none'
+                ).reshape(targets.shape)
+                return (per_pos * loss_mask).sum() / loss_mask.sum().clamp(min=1)
             return nn.functional.cross_entropy(logits.reshape(-1, 256), targets.reshape(-1))
         elif _loss_mode == 'mse':
+            if loss_mask is not None:
+                per_elem = (torch.sigmoid(logits) - targets) ** 2
+                mask_expanded = loss_mask.unsqueeze(-1)  # [B, T, 1] broadcast over bits
+                return (per_elem * mask_expanded).sum() / (mask_expanded.sum() * logits.shape[-1]).clamp(min=1)
             return nn.functional.mse_loss(torch.sigmoid(logits), targets)
         else:
+            # BCE mode (binary bits / theme loader)
+            if loss_mask is not None:
+                per_elem = nn.functional.binary_cross_entropy_with_logits(
+                    logits, targets, reduction='none'
+                )
+                mask_expanded = loss_mask.unsqueeze(-1)  # [B, T, 1] broadcast over bits
+                return (per_elem * mask_expanded).sum() / (mask_expanded.sum() * logits.shape[-1]).clamp(min=1)
             return nn.functional.binary_cross_entropy_with_logits(logits, targets)
 
     _loss_desc = {'ce': 'CrossEntropy (256-class byte tokens)', 'mse': 'sigmoid+MSE for Gray scalars', 'bce': 'BCE for binary targets'}
@@ -1139,6 +1187,9 @@ def main():
         'memory_size': memory_size,
         'seq_len': args.seq_len,
         'data_dir': args.data_dir,
+        'themes_dir': args.themes_dir,
+        'active_theme': args.active_theme,
+        'gist_ratio': args.gist_ratio,
         'effort_mode': args.effort_mode,
         'attention_radius': args.attention_radius,
         'lcx_num_levels': args.lcx_num_levels,
@@ -1339,7 +1390,14 @@ def main():
                 model.effort_level = 0
 
             # Generate training batch
-            if traindat_loader:
+            _loss_mask = None  # reset each step
+            if theme_loader:
+                x_train, y_train, _loss_mask = theme_loader.sample_batch(
+                    n_samples=batch_size, seq_len=seq_len,
+                    seed=42 + step + 1000000,
+                    difficulty_max=args.difficulty_max,
+                )
+            elif traindat_loader:
                 x_train, y_train = traindat_loader.sample_batch(
                     n_samples=batch_size, seq_len=seq_len,
                     num_bits=num_bits, seed=42 + step + 1000000,
@@ -1366,6 +1424,8 @@ def main():
                 _dtype = torch.float64 if args.fp64 else None
                 x_train = x_train.to(device=device, dtype=_dtype, non_blocking=True)
                 y_train = y_train.to(device=device, dtype=_dtype, non_blocking=True)
+            if _loss_mask is not None:
+                _loss_mask = _loss_mask.to(device=device, dtype=x_train.dtype, non_blocking=True)
 
             # Freeze-gate warmup: freeze being params, train only gate
             if args.combiner == 'ring_attention' and args.freeze_gate_steps > 0:
@@ -1386,16 +1446,13 @@ def main():
             if _amp_ctx_used:
                 with torch.amp.autocast('cuda', dtype=torch.bfloat16):
                     output, train_stats = model(x_train, return_stats=True, return_being_outputs=True)
-                    # Uniform position weighting: all positions contribute equally.
-                    # For traindat (echo/not/shift), predictable positions provide
-                    # gradient signal while random positions average to zero gradient.
-                    loss = compute_loss(output, y_train)
+                    loss = compute_loss(output, y_train, loss_mask=_loss_mask)
                     if args.combiner == 'ring_attention' and args.entropy_weight > 0:
                         entropy_loss = model._last_entropy_loss
                         loss = loss + args.entropy_weight * entropy_loss
             else:
                 output, train_stats = model(x_train, return_stats=True, return_being_outputs=True)
-                loss = compute_loss(output, y_train)
+                loss = compute_loss(output, y_train, loss_mask=_loss_mask)
                 # Gate entropy regularizer (ring_attention only)
                 if args.combiner == 'ring_attention' and args.entropy_weight > 0:
                     entropy_loss = model._last_entropy_loss
@@ -1600,17 +1657,17 @@ def main():
                         # NO gradient — pure LCX memory reorganization
                         with torch.no_grad():
                             _d_out, _d_stats = model(_dream_input, return_stats=True)
-                            _d_loss_val = compute_loss(_d_out, y_train).item()
+                            _d_loss_val = compute_loss(_d_out, y_train, loss_mask=_loss_mask).item()
                     else:
                         # REHEARSAL — gradient through dream pass, scaled LR
                         _d_amp = args.amp and device.type == 'cuda'
                         if _d_amp:
                             with torch.amp.autocast('cuda', dtype=torch.bfloat16):
                                 _d_out, _d_stats = model(_dream_input, return_stats=True)
-                                _d_loss = compute_loss(_d_out, y_train)
+                                _d_loss = compute_loss(_d_out, y_train, loss_mask=_loss_mask)
                         else:
                             _d_out, _d_stats = model(_dream_input, return_stats=True)
-                            _d_loss = compute_loss(_d_out, y_train)
+                            _d_loss = compute_loss(_d_out, y_train, loss_mask=_loss_mask)
                         _d_loss_val = _d_loss.item()
                         _d_loss.backward()
                         # AGC for dream gradients (same band as waking)
@@ -2057,7 +2114,14 @@ def main():
                 n_eval = controls.get('eval_samples') or args.eval_samples
                 with torch.no_grad():
                     for ei in range(n_eval):
-                        if traindat_loader:
+                        _ev_mask = None
+                        if theme_loader:
+                            x_ev, y_ev, _ev_mask = theme_loader.sample_batch(
+                                n_samples=batch_size, seq_len=seq_len,
+                                seed=7777 + step * 100 + ei,
+                                difficulty_max=args.difficulty_max,
+                            )
+                        elif traindat_loader:
                             x_ev, y_ev = traindat_loader.sample_batch(
                                 n_samples=batch_size, seq_len=seq_len,
                                 num_bits=num_bits, seed=7777 + step * 100 + ei,
@@ -2081,8 +2145,10 @@ def main():
                             _dtype = torch.float64 if args.fp64 else None
                             x_ev = x_ev.to(device=device, dtype=_dtype, non_blocking=True)
                             y_ev = y_ev.to(device=device, dtype=_dtype, non_blocking=True)
+                        if _ev_mask is not None:
+                            _ev_mask = _ev_mask.to(device=device, dtype=x_ev.dtype, non_blocking=True)
                         ev_out, ev_stats = model(x_ev, return_stats=True, return_being_outputs=True)
-                        ev_loss = compute_loss(ev_out, y_ev).item()
+                        ev_loss = compute_loss(ev_out, y_ev, loss_mask=_ev_mask).item()
                         ev_out_cpu = ev_out.detach().cpu()
                         y_ev_cpu = y_ev.detach().cpu()
                         ev_being_cpu = [b.detach().cpu() for b in ev_stats['being_outputs']]

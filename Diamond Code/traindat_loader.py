@@ -5,11 +5,18 @@ Universal .traindat loader for Diamond Code swarm training.
 Gray code scalar encoding: each byte -> 1 scalar in (0, 1).
 num_bits channels per position = num_bits bytes of data per position.
 
+Also includes ThemeLoader for JSONL paired training (dialogue mode).
+
 Usage:
     loader = TraindatLoader("data/traindat/")
     x, y = loader.sample_batch(batch_size=1, seq_len=62, num_bits=8, seed=42)
+
+    theme = ThemeLoader("data/themes/", num_bits=6184)
+    x, y, mask = theme.sample_batch(batch_size=10, seq_len=6, seed=42)
 """
 
+import json
+import base64
 import random
 import numpy as np
 import torch
@@ -370,3 +377,275 @@ class TraindatLoader:
             return generate_batch_binary_bits(corpus, n_samples, seq_len, num_bits, seed)
         rm = self._get_role_map(filename) if return_mask else None
         return generate_batch_from_bytes(corpus, n_samples, seq_len, num_bits, seed, role_map=rm)
+
+
+# ---------------------------------------------------------------------------
+# ThemeLoader — JSONL paired training (dialogue mode)
+# ---------------------------------------------------------------------------
+
+def _encode_theme_field(value: str, encoding: str) -> bytes:
+    """Convert a theme pair field to raw bytes using the declared encoding."""
+    if encoding == "utf8":
+        return value.encode("utf-8")
+    elif encoding == "hex":
+        return bytes.fromhex(value)
+    elif encoding == "base64":
+        return base64.b64decode(value)
+    else:
+        raise ValueError(f"unknown encoding: {encoding}")
+
+
+def _text_to_bits(text: str, num_bits: int, encoding: str = "utf8") -> np.ndarray:
+    """Convert a text field to a binary bit vector of length num_bits.
+
+    Encodes text → bytes → zero-padded to bytes_per_pos → unpackbits.
+    Returns float32 array of shape (num_bits,) with values 0.0 / 1.0.
+    """
+    raw = _encode_theme_field(text, encoding)
+    bytes_per_pos = num_bits // 8
+
+    # Pad or truncate to exactly bytes_per_pos bytes
+    if len(raw) < bytes_per_pos:
+        raw = raw + b'\x00' * (bytes_per_pos - len(raw))
+    else:
+        raw = raw[:bytes_per_pos]
+
+    arr = np.frombuffer(raw, dtype=np.uint8)
+    bits = np.unpackbits(arr).astype(np.float32)
+
+    # unpackbits may produce more bits than needed if bytes_per_pos * 8 > num_bits
+    return bits[:num_bits]
+
+
+class ThemeLoader:
+    """Load JSONL theme files for dialogue-mode paired training.
+
+    Reads .jsonl files from a themes directory. Each file has a header line
+    followed by input→output pairs with state ("c"=curriculum, "g"=gist)
+    and difficulty (1-6).
+
+    Dialogue mode: seq_len positions alternate input/output.
+    For seq_len=6: positions 0,2,4 are inputs; 1,3,5 are outputs.
+    Loss is computed only on output positions (returned via mask).
+
+    Mixing rule: ONE active theme provides curriculum pairs.
+    ALL themes contribute their gist pairs, mixed in equally.
+    """
+
+    def __init__(
+        self,
+        themes_dir: str,
+        num_bits: int = 6184,
+        active_theme: Optional[str] = None,
+        gist_ratio: float = 0.10,
+    ):
+        """
+        Args:
+            themes_dir: Path to directory containing .jsonl theme files.
+            num_bits: Bits per position (must be multiple of 8).
+            active_theme: Theme name for curriculum pairs. If None, uses first found.
+            gist_ratio: Fraction of each batch drawn from gist pairs (0.0-1.0).
+        """
+        assert num_bits % 8 == 0, f"num_bits must be multiple of 8, got {num_bits}"
+        self.themes_dir = Path(themes_dir)
+        self.num_bits = num_bits
+        self.gist_ratio = gist_ratio
+
+        # Storage: theme_name -> {meta, curriculum, gist, encoding}
+        self._themes: Dict[str, dict] = {}
+        self._active_theme: Optional[str] = active_theme
+
+        self._load_all_themes()
+
+        if self._active_theme is None and self._themes:
+            self._active_theme = sorted(self._themes.keys())[0]
+
+    def _load_all_themes(self):
+        """Scan themes directory and load all .jsonl files."""
+        if not self.themes_dir.exists():
+            raise FileNotFoundError(f"Themes directory not found: {self.themes_dir}")
+
+        files = sorted(self.themes_dir.glob("*.jsonl"))
+        if not files:
+            raise FileNotFoundError(f"No .jsonl files in {self.themes_dir}")
+
+        for fp in files:
+            self._load_theme_file(fp)
+
+    def _load_theme_file(self, filepath: Path):
+        """Parse a single .jsonl theme file into curriculum + gist lists."""
+        with open(filepath, "r", encoding="utf-8") as f:
+            lines = f.readlines()
+
+        if not lines:
+            return
+
+        meta = json.loads(lines[0])
+        if not meta.get("_meta"):
+            return
+
+        theme_name = meta.get("theme", filepath.stem)
+        encoding = meta.get("encoding", "utf8")
+
+        curriculum = []
+        gist = []
+
+        for line in lines[1:]:
+            line = line.strip()
+            if not line:
+                continue
+            pair = json.loads(line)
+            if pair.get("_meta"):
+                continue
+
+            entry = {
+                "id": pair["id"],
+                "in": pair["in"],
+                "out": pair["out"],
+                "d": pair.get("d", 1),
+                "set": pair.get("set"),
+            }
+
+            if pair["s"] == "g":
+                gist.append(entry)
+            else:
+                curriculum.append(entry)
+
+        self._themes[theme_name] = {
+            "meta": meta,
+            "encoding": encoding,
+            "curriculum": curriculum,
+            "gist": gist,
+            "filepath": str(filepath),
+        }
+
+    @property
+    def active_theme(self) -> Optional[str]:
+        return self._active_theme
+
+    @active_theme.setter
+    def active_theme(self, name: str):
+        if name not in self._themes:
+            raise ValueError(f"Theme '{name}' not found. Available: {list(self._themes.keys())}")
+        self._active_theme = name
+
+    @property
+    def theme_names(self) -> List[str]:
+        return sorted(self._themes.keys())
+
+    def stats(self) -> dict:
+        """Return summary statistics for all loaded themes."""
+        result = {}
+        for name, t in self._themes.items():
+            result[name] = {
+                "curriculum": len(t["curriculum"]),
+                "gist": len(t["gist"]),
+                "encoding": t["encoding"],
+                "active": name == self._active_theme,
+            }
+        return result
+
+    def _all_gist(self) -> List[Tuple[dict, str]]:
+        """Collect all gist pairs from all themes, with their encoding."""
+        out = []
+        for name, t in self._themes.items():
+            enc = t["encoding"]
+            for pair in t["gist"]:
+                out.append((pair, enc))
+        return out
+
+    def sample_batch(
+        self,
+        n_samples: int,
+        seq_len: int = 6,
+        seed: Optional[int] = None,
+        difficulty_max: Optional[int] = None,
+    ) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+        """Sample a batch of dialogue-mode sequences.
+
+        Each sequence has seq_len positions, alternating input/output.
+        For seq_len=6: [in0, out0, in1, out1, in2, out2]
+        The model sees all seq_len positions as input x.
+        Target y is the same as x (next-position prediction is identity in dialogue mode).
+        Loss mask marks which positions to compute loss on (output positions only).
+
+        Args:
+            n_samples: Batch size.
+            seq_len: Sequence length (must be even). Default 6.
+            seed: Random seed for reproducibility.
+            difficulty_max: If set, only use curriculum pairs with d <= this value.
+
+        Returns:
+            x: [n_samples, seq_len, num_bits] float32 — input positions
+            y: [n_samples, seq_len, num_bits] float32 — target positions
+            loss_mask: [n_samples, seq_len] float32 — 1.0 for output positions, 0.0 for input
+        """
+        assert seq_len % 2 == 0, f"seq_len must be even for dialogue mode, got {seq_len}"
+        n_pairs_per_seq = seq_len // 2
+
+        rng = random.Random(seed)
+
+        if self._active_theme is None:
+            raise RuntimeError("No active theme set and no themes loaded")
+
+        theme = self._themes[self._active_theme]
+        curriculum = theme["curriculum"]
+        curriculum_enc = theme["encoding"]
+
+        if difficulty_max is not None:
+            curriculum = [p for p in curriculum if p["d"] <= difficulty_max]
+
+        all_gist = self._all_gist()
+
+        if not curriculum and not all_gist:
+            raise RuntimeError(f"No pairs available (curriculum empty, no gist)")
+
+        # Pre-allocate output tensors
+        x = torch.zeros(n_samples, seq_len, self.num_bits, dtype=torch.float32)
+        y = torch.zeros(n_samples, seq_len, self.num_bits, dtype=torch.float32)
+        loss_mask = torch.zeros(n_samples, seq_len, dtype=torch.float32)
+
+        # Mark output positions in loss mask (positions 1, 3, 5, ...)
+        for t in range(seq_len):
+            if t % 2 == 1:
+                loss_mask[:, t] = 1.0
+
+        for i in range(n_samples):
+            pairs_for_seq = []
+
+            for _ in range(n_pairs_per_seq):
+                # Decide: gist or curriculum for this pair
+                use_gist = (rng.random() < self.gist_ratio) and all_gist
+                if use_gist:
+                    pair, enc = rng.choice(all_gist)
+                elif curriculum:
+                    pair = rng.choice(curriculum)
+                    enc = curriculum_enc
+                elif all_gist:
+                    pair, enc = rng.choice(all_gist)
+                else:
+                    continue  # shouldn't reach here
+
+                pairs_for_seq.append((pair, enc))
+
+            # Fill sequence positions: input at even slots, output at odd slots
+            for j, (pair, enc) in enumerate(pairs_for_seq):
+                in_bits = _text_to_bits(pair["in"], self.num_bits, enc)
+                out_bits = _text_to_bits(pair["out"], self.num_bits, enc)
+                x[i, j * 2, :] = torch.from_numpy(in_bits)
+                x[i, j * 2 + 1, :] = torch.from_numpy(out_bits)
+
+        # y = shifted x: y[t] = x[t+1], y[last] = 0
+        # Autoregressive target: model at position t predicts position t+1
+        # Loss mask ensures we only train on output positions (1, 3, 5)
+        y[:, :seq_len - 1, :] = x[:, 1:, :]
+        # y[:, seq_len-1, :] stays zero (already initialized)
+
+        return x, y, loss_mask
+
+    def reload(self):
+        """Re-scan the themes directory and reload all files."""
+        self._themes.clear()
+        self._load_all_themes()
+        if self._active_theme and self._active_theme not in self._themes:
+            self._active_theme = sorted(self._themes.keys())[0] if self._themes else None
