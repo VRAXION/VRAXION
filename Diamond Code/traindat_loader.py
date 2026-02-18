@@ -39,6 +39,106 @@ def gray_scalar_to_byte(scalar: float) -> int:
     return GRAY_ENCODE[pos]
 
 
+def generate_batch_binary_bits(
+    corpus: bytes,
+    n_samples: int,
+    seq_len: int = 16,
+    num_bits: int = 8,
+    seed=None,
+) -> Tuple[torch.Tensor, torch.Tensor]:
+    """
+    Generate next-chunk prediction batch using binary bit encoding.
+
+    Each position = bytes_per_pos bytes (num_bits // 8), each decomposed into 8 bits.
+    Input = bits[0:seq_len], Target = bits[1:seq_len+1] (shifted by bytes_per_pos bytes).
+
+    Args:
+        num_bits: Total bits per position. Must be multiple of 8.
+            num_bits=8  -> 1 byte/pos (original behavior)
+            num_bits=16 -> 2 bytes/pos (16 binary bits)
+            num_bits=64 -> 8 bytes/pos (64 binary bits, covers 128 bytes in 16 positions)
+
+    Returns:
+        (x, y) where x, y are [n_samples, seq_len, num_bits] float tensors
+    """
+    assert num_bits % 8 == 0, f"num_bits must be multiple of 8, got {num_bits}"
+    bytes_per_pos = num_bits // 8
+
+    if seed is not None:
+        random.seed(seed)
+
+    chunk_bytes = (seq_len + 1) * bytes_per_pos  # seq_len chunks + 1 shifted target
+    max_start = len(corpus) - chunk_bytes
+
+    if max_start < 0:
+        raise ValueError(
+            f"Corpus too small ({len(corpus)} bytes) for "
+            f"seq_len={seq_len}, bytes_per_pos={bytes_per_pos} (need >= {chunk_bytes})"
+        )
+
+    x = torch.zeros(n_samples, seq_len, num_bits)
+    y = torch.zeros(n_samples, seq_len, num_bits)
+
+    for i in range(n_samples):
+        start = random.randint(0, max_start)
+        chunk = corpus[start:start + chunk_bytes]
+
+        for t in range(seq_len):
+            base_x = t * bytes_per_pos
+            base_y = (t + 1) * bytes_per_pos
+            for byte_idx in range(bytes_per_pos):
+                bx = chunk[base_x + byte_idx]
+                by = chunk[base_y + byte_idx]
+                bit_offset = byte_idx * 8
+                for b in range(8):
+                    x[i, t, bit_offset + 7 - b] = float((bx >> b) & 1)
+                    y[i, t, bit_offset + 7 - b] = float((by >> b) & 1)
+
+    return x, y
+
+
+def generate_batch_byte_tokens(
+    corpus: bytes,
+    n_samples: int,
+    seq_len: int = 16,
+    seed=None,
+) -> Tuple[torch.Tensor, torch.Tensor]:
+    """
+    Generate next-byte prediction batch from raw bytes (discrete token mode).
+
+    Each position = 1 byte (0-255) as a Long tensor.
+    Input = bytes[0:seq_len], Target = bytes[1:seq_len+1] (shifted by 1 byte).
+    Every unique byte maps to a unique integer — lossless by construction.
+
+    Returns:
+        (x, y) where x, y are [n_samples, seq_len] Long tensors
+    """
+    if seed is not None:
+        random.seed(seed)
+
+    chunk_len = seq_len + 1  # one extra byte for shifted target
+    max_start = len(corpus) - chunk_len
+
+    if max_start < 0:
+        raise ValueError(
+            f"Corpus too small ({len(corpus)} bytes) for "
+            f"seq_len={seq_len} (need >= {chunk_len})"
+        )
+
+    x = torch.zeros(n_samples, seq_len, dtype=torch.long)
+    y = torch.zeros(n_samples, seq_len, dtype=torch.long)
+
+    for i in range(n_samples):
+        start = random.randint(0, max_start)
+        chunk = corpus[start:start + chunk_len]
+
+        for t in range(seq_len):
+            x[i, t] = chunk[t]
+            y[i, t] = chunk[t + 1]
+
+    return x, y
+
+
 def generate_batch_from_bytes(
     corpus: bytes,
     n_samples: int,
@@ -241,6 +341,8 @@ class TraindatLoader:
         num_bits: int,
         seed: int = None,
         return_mask: bool = False,
+        byte_token_mode: bool = False,
+        binary_bits_mode: bool = False,
     ) -> Union[Tuple[torch.Tensor, torch.Tensor],
                Tuple[torch.Tensor, torch.Tensor, torch.Tensor]]:
         """
@@ -249,10 +351,18 @@ class TraindatLoader:
         Args:
             return_mask: If True, returns (x, y, mask) with Golden Disc role mask.
                 mask is [n_samples, seq_len] uint8 with role of each target byte.
+            byte_token_mode: If True, returns (x, y) as [B, seq] Long tensors
+                of raw byte values (0-255). Each position = 1 discrete byte token.
+            binary_bits_mode: If True, returns (x, y) as [B, seq, 8] float tensors.
+                Each byte decomposed to 8 binary bits (0.0/1.0). 1 byte per position.
 
         Returns (x, y) or (x, y, mask) if return_mask=True.
         """
         filename = self.pick_file()
         corpus = self._load_corpus(filename)
+        if byte_token_mode:
+            return generate_batch_byte_tokens(corpus, n_samples, seq_len, seed)
+        if binary_bits_mode:
+            return generate_batch_binary_bits(corpus, n_samples, seq_len, num_bits, seed)
         rm = self._get_role_map(filename) if return_mask else None
         return generate_batch_from_bytes(corpus, n_samples, seq_len, num_bits, seed, role_map=rm)

@@ -38,6 +38,14 @@ def int_to_bits(x, num_bits=8):
     return torch.tensor(bits, dtype=torch.float32)
 
 
+def _parse_int_or_list(s):
+    """Parse a string as int or comma-separated list of ints.
+    E.g. '2' -> 2, '1,4' -> [1, 4]"""
+    if ',' in s:
+        return [int(x.strip()) for x in s.split(',')]
+    return int(s)
+
+
 def load_text_corpus(path: str) -> bytes:
     """Load a text file as raw bytes."""
     with open(path, 'rb') as f:
@@ -181,10 +189,13 @@ def generate_multitask_batch(n_samples, seq_len=16, max_value=100, seed=None, nu
 
 # --- Gray code decode helpers ---
 _GRAY_ENCODE_TENSOR = torch.tensor(GRAY_ENCODE, dtype=torch.long)
+_BINARY_BITS_MODE = False  # Set True for binary bits encoding (0/1 per bit)
 
 
 def _output_to_bytes(output_slice):
     """Convert model logits [..., num_bits] to predicted byte values [..., num_bits]."""
+    if _BINARY_BITS_MODE:
+        return (torch.sigmoid(output_slice) > 0.5).long()
     probs = torch.sigmoid(output_slice)
     positions = torch.round(probs * 256.0 - 0.5).clamp(0, 255).long()
     return _GRAY_ENCODE_TENSOR[positions]
@@ -192,6 +203,8 @@ def _output_to_bytes(output_slice):
 
 def _target_to_bytes(target_slice):
     """Convert Gray scalar targets [..., num_bits] to byte values [..., num_bits]."""
+    if _BINARY_BITS_MODE:
+        return target_slice.round().long()
     positions = torch.round(target_slice * 256.0 - 0.5).clamp(0, 255).long()
     return _GRAY_ENCODE_TENSOR[positions]
 
@@ -408,6 +421,109 @@ def evaluate_metrics(output, stats, y, train_loss, num_beings, num_bits, n_contr
     }
 
 
+def evaluate_metrics_binary_bits(output, stats, y, train_loss, num_beings):
+    """Compute metrics for binary bits mode. output: [B, T, num_bits] logits, y: [B, T, num_bits] binary 0/1."""
+    T = output.size(1)
+    num_bits = output.size(2)
+    eval_pos = min(2, T - 1)
+
+    # Bit accuracy: sigmoid(logit) > 0.5 matches target bit
+    pred_bits = (torch.sigmoid(output) > 0.5).float()  # [B, T, num_bits]
+    bit_correct = (pred_bits == y).float()  # [B, T, num_bits]
+
+    # Per-position metrics at eval_pos
+    bit_acc = bit_correct[:, eval_pos, :].mean().item()  # avg across batch and bits
+    # Byte accuracy: group bits into bytes (groups of 8), check all 8 bits correct per byte
+    _bc_eval = bit_correct[:, eval_pos, :]  # [B, num_bits]
+    if num_bits > 8:
+        _bc_grouped = _bc_eval.reshape(_bc_eval.size(0), -1, 8)  # [B, num_bytes, 8]
+        byte_acc = _bc_grouped.all(dim=-1).float().mean().item()  # avg across batch and bytes
+    else:
+        byte_acc = _bc_eval.all(dim=-1).float().mean().item()  # all bits correct = 1 byte correct
+    # Per-bit accs: cap at 8 summary values for log readability (avg over byte groups)
+    _raw_per_bit = bit_correct[:, eval_pos, :].mean(dim=0)  # [num_bits]
+    if num_bits > 8:
+        per_bit_accs = _raw_per_bit.reshape(-1, 8).mean(dim=0).tolist()  # [8] averaged over bytes
+    else:
+        per_bit_accs = _raw_per_bit.tolist()  # [8]
+
+    # All-position average
+    avg_bit_acc = bit_correct.mean().item()
+
+    # Per-being metrics
+    being_outputs = stats['being_outputs']
+    being_accs = []
+    for i in range(num_beings):
+        bo = being_outputs[i]  # [T, B, 8]
+        bo_pred = (torch.sigmoid(bo[eval_pos]) > 0.5).float()  # [B, 8]
+        being_accs.append((bo_pred == y[:, eval_pos, :]).float().mean().item())
+
+    # Spatial metrics
+    pointer_positions = stats['pointer_positions_all']
+    coverage = len(set(pointer_positions)) / 64.0
+    position_counts = Counter(pointer_positions)
+    clustering = max(position_counts.values()) / max(num_beings, 1) if position_counts else 0.0
+    jump_rates = stats['jump_rates_per_being']
+
+    return {
+        'eval_loss': train_loss, 'overall_acc': byte_acc, 'bit_acc': bit_acc,
+        'avg_bit_acc': avg_bit_acc,
+        'byte_match': byte_acc, 'hamming': 0.0, 'per_bit_accs': per_bit_accs,
+        'being_accs': being_accs, 'being_masked_accs': being_accs,
+        'oracle_acc': max(being_accs) if being_accs else 0.0,
+        'bit_oracle_acc': max(being_accs) if being_accs else 0.0,
+        'ensemble_benefit': byte_acc - (max(being_accs) if being_accs else 0.0),
+        'circular_spread': stats['circular_spread'],
+        'coverage': coverage, 'clustering': clustering, 'jump_rates': jump_rates,
+        'mask_stats': {}, 'activation_ratio': stats.get('activation_ratio', None),
+        '_binary_bits_mode': True,
+    }
+
+
+def evaluate_metrics_byte_tokens(output, stats, y, train_loss, num_beings):
+    """Compute metrics for byte token mode. output: [B, T, 256], y: [B, T] Long."""
+    T = output.size(1)
+    eval_pos = min(2, T - 1)
+
+    # Byte accuracy: argmax matches target
+    pred = output.argmax(dim=-1)  # [B, T]
+    byte_acc = (pred[:, eval_pos] == y[:, eval_pos]).float().mean().item()
+    avg_byte_acc = (pred == y).float().mean().item()
+
+    # Top-5 accuracy at eval position
+    top5 = output[:, eval_pos, :].topk(5, dim=-1).indices  # [B, 5]
+    top5_acc = (top5 == y[:, eval_pos].unsqueeze(-1)).any(dim=-1).float().mean().item()
+
+    # Per-being byte accuracy
+    being_outputs = stats['being_outputs']
+    being_accs = []
+    for i in range(num_beings):
+        bo = being_outputs[i]  # [T, B, 256]
+        bo_pred = bo[eval_pos].argmax(dim=-1)  # [B]
+        being_accs.append((bo_pred == y[:, eval_pos]).float().mean().item())
+
+    # Spatial metrics
+    pointer_positions = stats['pointer_positions_all']
+    coverage = len(set(pointer_positions)) / 64.0
+    position_counts = Counter(pointer_positions)
+    clustering = max(position_counts.values()) / max(num_beings, 1) if position_counts else 0.0
+    jump_rates = stats['jump_rates_per_being']
+
+    return {
+        'eval_loss': train_loss, 'overall_acc': byte_acc, 'bit_acc': byte_acc,
+        'avg_bit_acc': avg_byte_acc, 'byte_match': byte_acc,
+        'hamming': 0.0, 'per_bit_accs': [byte_acc], 'top5_acc': top5_acc,
+        'being_accs': being_accs, 'being_masked_accs': being_accs,
+        'oracle_acc': max(being_accs) if being_accs else 0.0,
+        'bit_oracle_acc': max(being_accs) if being_accs else 0.0,
+        'ensemble_benefit': byte_acc - (max(being_accs) if being_accs else 0.0),
+        'circular_spread': stats['circular_spread'],
+        'coverage': coverage, 'clustering': clustering, 'jump_rates': jump_rates,
+        'mask_stats': {}, 'activation_ratio': stats.get('activation_ratio', None),
+        '_byte_token_mode': True,
+    }
+
+
 def format_metrics_line(step, train_loss, step_time, metrics):
     """Format step + metrics into dashboard-compatible log line."""
     m = metrics
@@ -581,7 +697,8 @@ def load_checkpoint(checkpoint_path, model, optimizer=None):
 def main():
     parser = argparse.ArgumentParser(description='Test swarm model config')
     parser.add_argument('--embedding', type=int, default=64, help='Embedding dimension (default: 64)')
-    parser.add_argument('--depth', type=int, default=2, help='Number of layers (default: 2)')
+    parser.add_argument('--depth', type=str, default='2',
+                        help='Depth: int or comma-sep per being (e.g. "1,4")')
     parser.add_argument('--num_beings', type=int, default=3, help='Number of beings in swarm (default: 3, voting ensemble)')
     parser.add_argument('--steps', type=int, default=100000, help='Training steps (default: 100000, effectively unlimited - stop manually)')
     parser.add_argument('--checkpoint_dir', type=str, default='checkpoints/swarm', help='Directory to save checkpoints')
@@ -627,8 +744,10 @@ def main():
                         help='Comma-separated slot counts per level, e.g. "256,1024,4096"')
     parser.add_argument('--text', type=str, default=None,
                         help='Path to text file for byte-level language modeling (overrides math tasks)')
-    parser.add_argument('--think_ticks', type=int, default=0,
-                        help='Extra ring ticks without input (beings read each other, then output). 0=reflex mode.')
+    parser.add_argument('--think_ticks', type=str, default='0',
+                        help='Think ticks: int or comma-sep per being (e.g. "0,1")')
+    parser.add_argument('--being_modes', type=str, default=None,
+                        help='Comma-sep being modes: "scanner,thinker" (default: all thinker)')
     parser.add_argument('--effort_mode', action='store_true',
                         help='Enable effort-level training: randomly sample think_ticks from 3 ranges '
                              '(fast=0-1, medium=2-4, slow=6-12) and encode effort in input bits 4-5')
@@ -648,6 +767,14 @@ def main():
                         help='torch.compile() the model for fused GPU kernels')
     parser.add_argument('--amp', action='store_true',
                         help='BF16 mixed precision (halves activation VRAM, uses tensor cores)')
+    parser.add_argument('--fp64', action='store_true',
+                        help='Use float64 precision (CPU only, max accuracy for small models)')
+    parser.add_argument('--loss', type=str, default='auto', choices=['bce', 'mse', 'auto', 'ce'],
+                        help='Loss function: bce (binary), mse (Gray scalar), ce (byte token 256-class), auto (detect)')
+    parser.add_argument('--byte-tokens', action='store_true', dest='byte_tokens',
+                        help='Byte token mode: each position = 1 discrete byte (0-255). Uses Embedding + C19 bottleneck + CrossEntropyLoss.')
+    parser.add_argument('--binary-bits', action='store_true', dest='binary_bits',
+                        help='Binary bits mode: each byte -> 8 binary bits (0/1). Uses standard input_proj + output_proj + BCE.')
     parser.add_argument('--batch_size', type=int, default=32,
                         help='Training batch size (default: 32)')
     parser.add_argument('--seq_len', type=int, default=16,
@@ -697,7 +824,7 @@ def main():
         args.combiner = 'masked'
 
     embedding_dim = args.embedding
-    depth = args.depth
+    depth = _parse_int_or_list(args.depth)
     num_beings = args.num_beings
     num_steps = args.steps
     num_bits = args.num_bits
@@ -754,12 +881,55 @@ def main():
         for fname in traindat_loader.files:
             w = traindat_loader.weights.get(fname, 1.0)
             print(f"  {fname} (weight={w:.1f})")
+
+        # ── Traindat validation: HARD STOP if active tasks are impossible ──
+        # Uses args.seq_len and args.memory_size directly (local vars not yet resolved)
+        from tools.validate_traindat import compute_min_seq_len, compute_min_ring_size
+        _val_seq_len = args.seq_len
+        _val_memory_size = args.memory_size if args.memory_size > 0 else args.embedding
+        data_dir_path = Path(args.data_dir)
+        impossible_active = []
+        for fname in traindat_loader.files:
+            w = traindat_loader.weights.get(fname, 1.0)
+            if w <= 0:
+                continue
+            meta_path = data_dir_path / fname.replace('.traindat', '.meta.json')
+            if meta_path.exists():
+                with open(meta_path) as mf:
+                    meta = json.load(mf)
+                min_seq = compute_min_seq_len(meta)
+                min_ring = compute_min_ring_size(meta)
+                reasons = []
+                if min_seq > _val_seq_len:
+                    reasons.append(f"needs min_seq_len={min_seq} > seq_len={_val_seq_len}")
+                if min_ring > _val_memory_size:
+                    reasons.append(f"needs min_ring={min_ring} > memory_size={_val_memory_size}")
+                if reasons:
+                    impossible_active.append((fname, meta.get('task', '?'), '; '.join(reasons)))
+        if impossible_active:
+            print(f"\n{'!'*60}")
+            print(f"  FATAL: {len(impossible_active)} active task(s) IMPOSSIBLE:")
+            for fname, task, reason in impossible_active:
+                print(f"    {fname} ({task}): {reason}")
+            print(f"  Training on impossible tasks wastes compute.")
+            print(f"  Fix: change data_weights in controls.json,")
+            print(f"       increase --seq_len, or increase --memory_size.")
+            print(f"{'!'*60}\n")
+            sys.exit(1)
     elif args.text:
         text_corpus = load_text_corpus(args.text)
         print(f"TEXT MODE: {args.text} ({len(text_corpus):,} bytes)")
 
+    if args.byte_tokens:
+        print(f"BYTE TOKEN MODE: 1 byte per position, Embedding(256) + C19 bottleneck, CrossEntropyLoss")
+    if args.binary_bits:
+        global _BINARY_BITS_MODE
+        _BINARY_BITS_MODE = True
+        _bpp = num_bits // 8
+        print(f"BINARY BITS MODE: {_bpp} byte(s)/pos -> {num_bits} binary bits (0/1), standard model + BCE loss")
     print(f"Configuration:")
-    print(f"  Num bits: {num_bits}")
+    _bits_note = ' (byte_token_mode: 1 byte per position)' if args.byte_tokens else (f' (binary bits: {num_bits // 8} byte(s) -> {num_bits} bits)' if args.binary_bits else '')
+    print(f"  Num bits: {num_bits}{_bits_note}")
     print(f"  Embedding: {embedding_dim}D")
     print(f"  Depth: {depth} layers")
     print(f"  Num beings: {num_beings}")
@@ -812,6 +982,29 @@ def main():
         torch.backends.cudnn.allow_tf32 = True
         print(f"  TF32: enabled")
     print(f"  Steps: {num_steps:,}")
+
+    # Loss function: auto-detect based on data source and mode
+    if args.loss == 'auto':
+        if args.byte_tokens:
+            _loss_mode = 'ce'
+        elif args.binary_bits or traindat_loader:
+            _loss_mode = 'bce'
+        else:
+            _loss_mode = 'bce'
+    else:
+        _loss_mode = args.loss
+
+    def compute_loss(logits, targets):
+        if _loss_mode == 'ce':
+            # Byte token mode: logits [B, T, 256], targets [B, T] Long
+            return nn.functional.cross_entropy(logits.reshape(-1, 256), targets.reshape(-1))
+        elif _loss_mode == 'mse':
+            return nn.functional.mse_loss(torch.sigmoid(logits), targets)
+        else:
+            return nn.functional.binary_cross_entropy_with_logits(logits, targets)
+
+    _loss_desc = {'ce': 'CrossEntropy (256-class byte tokens)', 'mse': 'sigmoid+MSE for Gray scalars', 'bce': 'BCE for binary targets'}
+    print(f"  Loss: {_loss_mode} ({_loss_desc.get(_loss_mode, _loss_mode)})")
     print("="*70)
     print()
 
@@ -830,7 +1023,8 @@ def main():
         mask_seed=args.mask_seed,
         fibonacci=args.fibonacci,
         combinatorial=args.combinatorial,
-        think_ticks=args.think_ticks,
+        think_ticks=_parse_int_or_list(args.think_ticks),
+        being_modes=[x.strip() for x in args.being_modes.split(',')] if args.being_modes else None,
         temporal_fibonacci=args.temporal_fibonacci,
         capacity_fibonacci=args.capacity_fibonacci,
         max_hidden=args.max_hidden,
@@ -846,6 +1040,7 @@ def main():
         lcx_level_slots=[int(x) for x in args.lcx_level_slots.split(',')] if args.lcx_level_slots else None,
         attention_radius=args.attention_radius,
         num_pointers=args.num_pointers,
+        byte_token_mode=args.byte_tokens,
     )
 
     # Print temporal fibonacci tick schedule
@@ -879,6 +1074,15 @@ def main():
         print(f"  Total being-specific: {total_being_params:,}")
 
     model = model.to(device)
+
+    if args.fp64:
+        model = model.double()
+        print("FP64: model cast to float64 (full precision)")
+
+    if args.byte_tokens:
+        _bn = model._byte_bn_dim
+        _enc_p = sum(p.numel() for n, p in model.named_parameters() if 'byte_' in n)
+        print(f"Byte token encoder/decoder: bn_dim={_bn}, params={_enc_p:,}")
 
     if args.compile:
         print("Compiling model with torch.compile()...")
@@ -1013,7 +1217,7 @@ def main():
     fib_tag = "_fib" if args.fibonacci else ""
     comb_tag = "_comb" if args.combinatorial else ""
     text_tag = "_traindat" if traindat_loader else ("_text" if args.text else "")
-    think_tag = f"_think{args.think_ticks}" if args.think_ticks > 0 else ""
+    think_tag = f"_think{args.think_ticks}" if args.think_ticks != '0' else ""
     tempo_tag = "_tempo" if args.temporal_fibonacci else ""
     cap_tag = "_cap" if args.capacity_fibonacci else ""
     fv_tag = "_fv" if args.full_view else ""
@@ -1092,8 +1296,10 @@ def main():
         initial_weights = traindat_loader.weights if traindat_loader else {}
         # Effort tier determines initial tt/lcx/batch — --start_lcx_off overrides to Alpha
         _effort = "Alpha" if args.start_lcx_off else args.effort
+        _tt_parsed = _parse_int_or_list(args.think_ticks)
+        _tt_scalar = max(_tt_parsed) if isinstance(_tt_parsed, list) else _tt_parsed
         write_default_controls(controls_path, args.lr, initial_weights,
-                               think_ticks=args.think_ticks, checkpoint_every=args.checkpoint_every,
+                               think_ticks=_tt_scalar, checkpoint_every=args.checkpoint_every,
                                eval_every=args.eval_every, batch_size=batch_size,
                                use_lcx=args.use_lcx, stage="INFANT",
                                effort=_effort)
@@ -1137,6 +1343,8 @@ def main():
                 x_train, y_train = traindat_loader.sample_batch(
                     n_samples=batch_size, seq_len=seq_len,
                     num_bits=num_bits, seed=42 + step + 1000000,
+                    byte_token_mode=args.byte_tokens,
+                    binary_bits_mode=args.binary_bits,
                 )
             elif text_corpus:
                 x_train, y_train = generate_text_batch(
@@ -1149,9 +1357,15 @@ def main():
                     "Use --data_dir for traindat mode."
                 )
 
-            # Move training data to device
-            x_train = x_train.to(device, non_blocking=True)
-            y_train = y_train.to(device, non_blocking=True)
+            # Move training data to device (and cast to fp64 if requested)
+            if args.byte_tokens:
+                # Byte tokens: x is Long (embedding input), y is Long (CE target)
+                x_train = x_train.to(device=device, non_blocking=True)
+                y_train = y_train.to(device=device, non_blocking=True)
+            else:
+                _dtype = torch.float64 if args.fp64 else None
+                x_train = x_train.to(device=device, dtype=_dtype, non_blocking=True)
+                y_train = y_train.to(device=device, dtype=_dtype, non_blocking=True)
 
             # Freeze-gate warmup: freeze being params, train only gate
             if args.combiner == 'ring_attention' and args.freeze_gate_steps > 0:
@@ -1175,16 +1389,13 @@ def main():
                     # Uniform position weighting: all positions contribute equally.
                     # For traindat (echo/not/shift), predictable positions provide
                     # gradient signal while random positions average to zero gradient.
-                    loss = nn.functional.binary_cross_entropy_with_logits(output, y_train)
+                    loss = compute_loss(output, y_train)
                     if args.combiner == 'ring_attention' and args.entropy_weight > 0:
                         entropy_loss = model._last_entropy_loss
                         loss = loss + args.entropy_weight * entropy_loss
             else:
                 output, train_stats = model(x_train, return_stats=True, return_being_outputs=True)
-                # Uniform position weighting: all positions contribute equally.
-                # For traindat (echo/not/shift), predictable positions provide
-                # gradient signal while random positions average to zero gradient.
-                loss = nn.functional.binary_cross_entropy_with_logits(output, y_train)
+                loss = compute_loss(output, y_train)
                 # Gate entropy regularizer (ring_attention only)
                 if args.combiner == 'ring_attention' and args.entropy_weight > 0:
                     entropy_loss = model._last_entropy_loss
@@ -1389,20 +1600,17 @@ def main():
                         # NO gradient — pure LCX memory reorganization
                         with torch.no_grad():
                             _d_out, _d_stats = model(_dream_input, return_stats=True)
-                            _d_loss_val = nn.functional.binary_cross_entropy_with_logits(
-                                _d_out, y_train).item()
+                            _d_loss_val = compute_loss(_d_out, y_train).item()
                     else:
                         # REHEARSAL — gradient through dream pass, scaled LR
                         _d_amp = args.amp and device.type == 'cuda'
                         if _d_amp:
                             with torch.amp.autocast('cuda', dtype=torch.bfloat16):
                                 _d_out, _d_stats = model(_dream_input, return_stats=True)
-                                _d_loss = nn.functional.binary_cross_entropy_with_logits(
-                                    _d_out, y_train)
+                                _d_loss = compute_loss(_d_out, y_train)
                         else:
                             _d_out, _d_stats = model(_dream_input, return_stats=True)
-                            _d_loss = nn.functional.binary_cross_entropy_with_logits(
-                                _d_out, y_train)
+                            _d_loss = compute_loss(_d_out, y_train)
                         _d_loss_val = _d_loss.item()
                         _d_loss.backward()
                         # AGC for dream gradients (same band as waking)
@@ -1523,7 +1731,12 @@ def main():
             # Count contributing beings for spatial metric denominators
             _n_cont = sum(1 for s in model.being_states.values() if s != 'null')
             _masks = model.receptive_masks.detach().cpu() if model.receptive_masks is not None else None
-            metrics = evaluate_metrics(output_cpu, stats_cpu, y_cpu, train_loss, num_beings, num_bits, _n_cont, receptive_masks=_masks)
+            if args.byte_tokens:
+                metrics = evaluate_metrics_byte_tokens(output_cpu, stats_cpu, y_cpu, train_loss, num_beings)
+            elif args.binary_bits:
+                metrics = evaluate_metrics_binary_bits(output_cpu, stats_cpu, y_cpu, train_loss, num_beings)
+            else:
+                metrics = evaluate_metrics(output_cpu, stats_cpu, y_cpu, train_loss, num_beings, num_bits, _n_cont, receptive_masks=_masks)
             _current_lr = optimizer.param_groups[0]['lr']
             log_line = format_metrics_line(step, train_loss, step_time, metrics)
             log_line += f" | lr={_current_lr:.2e}"
@@ -1848,6 +2061,8 @@ def main():
                             x_ev, y_ev = traindat_loader.sample_batch(
                                 n_samples=batch_size, seq_len=seq_len,
                                 num_bits=num_bits, seed=7777 + step * 100 + ei,
+                                byte_token_mode=args.byte_tokens,
+                                binary_bits_mode=args.binary_bits,
                             )
                         elif text_corpus:
                             x_ev, y_ev = generate_text_batch(
@@ -1859,16 +2074,26 @@ def main():
                                 "Multitask binary encoding incompatible with Gray code scalar metrics. "
                                 "Use --data_dir for traindat mode."
                             )
-                        x_ev = x_ev.to(device, non_blocking=True)
-                        y_ev = y_ev.to(device, non_blocking=True)
+                        if args.byte_tokens:
+                            x_ev = x_ev.to(device=device, non_blocking=True)
+                            y_ev = y_ev.to(device=device, non_blocking=True)
+                        else:
+                            _dtype = torch.float64 if args.fp64 else None
+                            x_ev = x_ev.to(device=device, dtype=_dtype, non_blocking=True)
+                            y_ev = y_ev.to(device=device, dtype=_dtype, non_blocking=True)
                         ev_out, ev_stats = model(x_ev, return_stats=True, return_being_outputs=True)
-                        ev_loss = nn.functional.binary_cross_entropy_with_logits(ev_out, y_ev).item()
+                        ev_loss = compute_loss(ev_out, y_ev).item()
                         ev_out_cpu = ev_out.detach().cpu()
                         y_ev_cpu = y_ev.detach().cpu()
                         ev_being_cpu = [b.detach().cpu() for b in ev_stats['being_outputs']]
                         ev_stats_cpu = {k: v for k, v in ev_stats.items()}
                         ev_stats_cpu['being_outputs'] = ev_being_cpu
-                        em = evaluate_metrics(ev_out_cpu, ev_stats_cpu, y_ev_cpu, ev_loss, num_beings, num_bits, _n_cont, receptive_masks=_masks)
+                        if args.byte_tokens:
+                            em = evaluate_metrics_byte_tokens(ev_out_cpu, ev_stats_cpu, y_ev_cpu, ev_loss, num_beings)
+                        elif args.binary_bits:
+                            em = evaluate_metrics_binary_bits(ev_out_cpu, ev_stats_cpu, y_ev_cpu, ev_loss, num_beings)
+                        else:
+                            em = evaluate_metrics(ev_out_cpu, ev_stats_cpu, y_ev_cpu, ev_loss, num_beings, num_bits, _n_cont, receptive_masks=_masks)
                         if eval_metrics_accum is None:
                             eval_metrics_accum = {k: v for k, v in em.items()}
                         else:
