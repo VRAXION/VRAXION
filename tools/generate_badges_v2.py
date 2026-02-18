@@ -217,7 +217,7 @@ def main(argv: list[str]) -> int:
     ap.add_argument("--check-only", action="store_true", help="Verify outputs are up-to-date; do not write files.")
     args = ap.parse_args(argv)
 
-    repo_root = Path(__file__).resolve().parents[2]
+    repo_root = Path(__file__).resolve().parents[1]
     tmpl_path = repo_root / "docs" / "assets" / "badges" / "_templates" / "glass_template.svg"
     manifest_path = repo_root / "docs" / "assets" / "badges" / "_templates" / "badges_v2.json"
 
