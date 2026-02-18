@@ -177,7 +177,7 @@ def _check_svg(path: Path) -> list[Issue]:
 
 
 def main(argv: list[str]) -> int:
-    repo_root = Path(__file__).resolve().parents[2]
+    repo_root = Path(__file__).resolve().parents[1]
     badges_root = repo_root / "docs" / "assets" / "badges"
     v2_dir = badges_root / "v2"
     compat_dirs = (badges_root / "mono", badges_root / "neon")
