@@ -433,6 +433,15 @@ def evaluate_metrics_binary_bits(output, stats, y, train_loss, num_beings):
 
     # Per-position metrics at eval_pos
     bit_acc = bit_correct[:, eval_pos, :].mean().item()  # avg across batch and bits
+
+    # Answer bit accuracy: only on bits where target is non-zero.
+    # Removes zero-padding inflation (e.g. num_bits=6184 but answer is 1-3 bytes).
+    target_at_pos = y[:, eval_pos, :]                      # [B, num_bits]
+    nonzero_mask = target_at_pos.bool()                    # True where target=1
+    if nonzero_mask.any():
+        answer_bit_acc = bit_correct[:, eval_pos, :][nonzero_mask].float().mean().item()
+    else:
+        answer_bit_acc = 0.0  # all-zero target (e.g. 0+0=0 edge case)
     # Byte accuracy: group bits into bytes (groups of 8), check all 8 bits correct per byte
     _bc_eval = bit_correct[:, eval_pos, :]  # [B, num_bits]
     if num_bits > 8:
@@ -467,7 +476,7 @@ def evaluate_metrics_binary_bits(output, stats, y, train_loss, num_beings):
 
     return {
         'eval_loss': train_loss, 'overall_acc': byte_acc, 'bit_acc': bit_acc,
-        'avg_bit_acc': avg_bit_acc,
+        'avg_bit_acc': avg_bit_acc, 'answer_bit_acc': answer_bit_acc,
         'byte_match': byte_acc, 'hamming': 0.0, 'per_bit_accs': per_bit_accs,
         'being_accs': being_accs, 'being_masked_accs': being_accs,
         'oracle_acc': max(being_accs) if being_accs else 0.0,
@@ -530,6 +539,7 @@ def format_metrics_line(step, train_loss, step_time, metrics):
     line = (
         f"step {step} | loss {train_loss:.6f} | "
         f"overall={m['overall_acc']:.4f} bit_acc={m['bit_acc']:.4f} "
+        f"answer_bit_acc={m.get('answer_bit_acc', 0):.4f} "
         f"avg_bit_acc={m.get('avg_bit_acc', 0):.4f} "
         f"byte_match={m['byte_match']:.4f} hamming={m['hamming']:.4f} | "
     )
@@ -1614,6 +1624,18 @@ def main():
                         json.dump(controls, _cf, indent=2)
                 if changes:
                     print(f"  [CTRL] {changes}")
+                # Live theme_states: switch active_theme from Control Desk
+                _ts = controls.get('theme_states')
+                if _ts and theme_loader:
+                    _new_active = None
+                    for _tn, _tv in _ts.items():
+                        if _tv == 'active':
+                            _new_active = _tn
+                            break
+                    if _new_active and _new_active != theme_loader.active_theme:
+                        _old_active = theme_loader.active_theme
+                        theme_loader.active_theme = _new_active
+                        print(f"  [CTRL] active_theme: {_old_active} -> {_new_active}")
 
             # ========== DREAMING PHASE ==========
             _dream_on = controls.get('dream_enabled', False)
@@ -1803,7 +1825,8 @@ def main():
             # InfluxDB metrics (non-blocking, no-op if not configured)
             influx_writer.log_step(
                 influx_run_id, step, train_loss,
-                bit_acc=metrics['bit_acc'], byte_match=metrics['byte_match'],
+                bit_acc=metrics['bit_acc'], answer_bit_acc=metrics.get('answer_bit_acc', 0),
+                byte_match=metrics['byte_match'],
                 oracle=metrics['oracle_acc'], bit_oracle=metrics['bit_oracle_acc'],
                 ensemble_benefit=metrics['ensemble_benefit'],
                 coverage=metrics['coverage'], clustering=metrics['clustering'],
@@ -2163,7 +2186,7 @@ def main():
                         if eval_metrics_accum is None:
                             eval_metrics_accum = {k: v for k, v in em.items()}
                         else:
-                            for k in ['eval_loss', 'overall_acc', 'bit_acc', 'avg_bit_acc', 'byte_match', 'hamming',
+                            for k in ['eval_loss', 'overall_acc', 'bit_acc', 'avg_bit_acc', 'answer_bit_acc', 'byte_match', 'hamming',
                                        'oracle_acc', 'bit_oracle_acc', 'ensemble_benefit',
                                        'circular_spread', 'coverage', 'clustering']:
                                 eval_metrics_accum[k] += em[k]
@@ -2176,7 +2199,7 @@ def main():
                             for i in range(len(eval_metrics_accum['jump_rates'])):
                                 eval_metrics_accum['jump_rates'][i] += em['jump_rates'][i]
                 # Average
-                for k in ['eval_loss', 'overall_acc', 'bit_acc', 'avg_bit_acc', 'byte_match', 'hamming',
+                for k in ['eval_loss', 'overall_acc', 'bit_acc', 'avg_bit_acc', 'answer_bit_acc', 'byte_match', 'hamming',
                            'oracle_acc', 'bit_oracle_acc', 'ensemble_benefit',
                            'circular_spread', 'coverage', 'clustering']:
                     eval_metrics_accum[k] /= n_eval
@@ -2194,7 +2217,9 @@ def main():
                 # InfluxDB eval metrics
                 influx_writer.log_step(
                     influx_run_id, step, eval_metrics_accum['eval_loss'],
-                    bit_acc=eval_metrics_accum['bit_acc'], byte_match=eval_metrics_accum['byte_match'],
+                    bit_acc=eval_metrics_accum['bit_acc'],
+                    answer_bit_acc=eval_metrics_accum.get('answer_bit_acc', 0),
+                    byte_match=eval_metrics_accum['byte_match'],
                     oracle=eval_metrics_accum['oracle_acc'], bit_oracle=eval_metrics_accum['bit_oracle_acc'],
                     ensemble_benefit=eval_metrics_accum['ensemble_benefit'],
                     coverage=eval_metrics_accum['coverage'], clustering=eval_metrics_accum['clustering'],

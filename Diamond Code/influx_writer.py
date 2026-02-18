@@ -133,7 +133,7 @@ def harvest_run(archive_dir, config_name="unknown"):
         return None
 
 
-def log_step(run_id, step, loss, bit_acc=0, byte_match=0, oracle=0,
+def log_step(run_id, step, loss, bit_acc=0, answer_bit_acc=0, byte_match=0, oracle=0,
              bit_oracle=0, ensemble_benefit=0, coverage=0, clustering=0,
              circular_spread=0, s_per_step=0, is_eval=False, n_bits=0,
              gate_entropy=0, effort_level=-1, think_ticks=0,
@@ -148,6 +148,7 @@ def log_step(run_id, step, loss, bit_acc=0, byte_match=0, oracle=0,
          .field("step", int(step))
          .field("loss", float(loss))
          .field("bit_acc", float(bit_acc))
+         .field("answer_bit_acc", float(answer_bit_acc))
          .field("byte_match", float(byte_match))
          .field("oracle", float(oracle))
          .field("bit_oracle", float(bit_oracle))

@@ -52,8 +52,9 @@ python -u test_swarm_config.py ^
     --num_pointers 1 ^
     --fp64 ^
     --device cpu ^
-    --data_dir "data/traindat/" ^
-    --data_weights "{\"copy_echo256.traindat\":1,\"constant256.traindat\":0,\"add256.traindat\":0,\"count256.traindat\":0,\"delay_echo256.traindat\":0,\"denoise256.traindat\":0,\"echo256.traindat\":0,\"fib256.traindat\":0,\"gold_origin_echo.traindat\":0,\"not256.traindat\":0,\"shift256.traindat\":0}" ^
+    --themes_dir "data/themes/" ^
+    --active_theme arithmetic_mul ^
+    --gist_ratio 0.10 ^
     --checkpoint_dir "checkpoints/nano_golden" ^
     --checkpoint_every 25 ^
     --eval_every 5 ^
@@ -62,8 +63,7 @@ python -u test_swarm_config.py ^
     --warmup_steps 100 ^
     --lr_min 1e-5 ^
     --controls_every 1 ^
-    --effort Beta ^
-    --resume "checkpoints/nano_golden/checkpoint_latest.pt"
+    --effort Alpha
 
 echo Training ended.
 pause

@@ -231,8 +231,8 @@
     },
     {
       "id": 5,
-      "title": "Byte Match",
-      "description": "Byte-level accuracy: ALL 8 bits in a byte must be correct.\n\nThis is the strictest accuracy metric. 0% means no bytes fully correct yet.\nWhen this climbs, the model is going from 'close' to 'exact'.\n\n50% = half the bytes perfect. 100% = every byte nailed.",
+      "title": "Train Acc",
+      "description": "Answer bit accuracy (non-zero target bits only, training pass).\n\nFilters out zero-padding inflation from sparse encodings.\n50% = random. 100% = perfect.",
       "type": "stat",
       "gridPos": {
         "x": 5,
@@ -247,7 +247,7 @@
       "targets": [
         {
           "refId": "A",
-          "query": "from(bucket: \"diamond\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"training_step\")\n  |> filter(fn: (r) => r.run_id == \"${run_id}\")\n  |> filter(fn: (r) => r.is_eval == \"false\")\n  |> filter(fn: (r) => r._field == \"byte_match\")\n  |> group(columns: [\"_field\"])\n  |> aggregateWindow(every: v.windowPeriod, fn: last, createEmpty: false)"
+          "query": "from(bucket: \"diamond\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"training_step\")\n  |> filter(fn: (r) => r.run_id == \"${run_id}\")\n  |> filter(fn: (r) => r.is_eval == \"false\")\n  |> filter(fn: (r) => r._field == \"answer_bit_acc\")\n  |> group(columns: [\"_field\"])\n  |> aggregateWindow(every: v.windowPeriod, fn: last, createEmpty: false)"
         }
       ],
       "fieldConfig": {
@@ -412,7 +412,7 @@
     {
       "id": 3,
       "title": "Accuracy",
-      "description": "Bit-level accuracy (bit_acc) for the active run.\n\nSparkline shows accuracy trajectory Ă˘â‚¬â€ť upward slope = improving, flat = plateau.\n\n50% = random guessing. 100% = perfect prediction.",
+      "description": "Answer bit accuracy (non-zero target bits only, training pass).\n\nFilters out zero-padding inflation from sparse encodings.\n50% = random. 100% = perfect.",
       "type": "stat",
       "gridPos": {
         "x": 16,
@@ -427,7 +427,7 @@
       "targets": [
         {
           "refId": "A",
-          "query": "from(bucket: \"diamond\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"training_step\")\n  |> filter(fn: (r) => r.run_id == \"${run_id}\")\n  |> filter(fn: (r) => r.is_eval == \"false\")\n  |> filter(fn: (r) => r._field == \"bit_acc\")\n  |> group(columns: [\"_field\"])\n  |> aggregateWindow(every: v.windowPeriod, fn: last, createEmpty: false)"
+          "query": "from(bucket: \"diamond\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"training_step\")\n  |> filter(fn: (r) => r.run_id == \"${run_id}\")\n  |> filter(fn: (r) => r.is_eval == \"false\")\n  |> filter(fn: (r) => r._field == \"answer_bit_acc\")\n  |> group(columns: [\"_field\"])\n  |> aggregateWindow(every: v.windowPeriod, fn: last, createEmpty: false)"
         }
       ],
       "fieldConfig": {
@@ -466,7 +466,7 @@
     {
       "id": 4,
       "title": "Eval Acc",
-      "description": "Evaluation accuracy (bit_acc on held-out eval batch).\n\nThis is the honest score Ă˘â‚¬â€ť measures generalization, not memorization.\nCompare with training Accuracy to spot overfitting (train >> eval = bad).\n\n50% = random guessing. 100% = perfect generalization.",
+      "description": "Answer bit accuracy (non-zero target bits only, eval pass).\n\nFilters out zero-padding inflation from sparse encodings (e.g. num_bits=6184 with 1-byte answers).\n50-65% = random/untrained. 90-100% = learned.",
       "type": "stat",
       "gridPos": {
         "x": 20,
@@ -481,7 +481,7 @@
       "targets": [
         {
           "refId": "A",
-          "query": "from(bucket: \"diamond\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"training_step\")\n  |> filter(fn: (r) => r.run_id == \"${run_id}\")\n  |> filter(fn: (r) => r.is_eval == \"true\")\n  |> filter(fn: (r) => r._field == \"bit_acc\")\n  |> group(columns: [\"_field\"])\n  |> aggregateWindow(every: v.windowPeriod, fn: last, createEmpty: false)"
+          "query": "from(bucket: \"diamond\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"training_step\")\n  |> filter(fn: (r) => r.run_id == \"${run_id}\")\n  |> filter(fn: (r) => r.is_eval == \"true\")\n  |> filter(fn: (r) => r._field == \"answer_bit_acc\")\n  |> group(columns: [\"_field\"])\n  |> aggregateWindow(every: v.windowPeriod, fn: last, createEmpty: false)"
         }
       ],
       "fieldConfig": {
@@ -3462,11 +3462,15 @@
       "targets": [
         {
           "refId": "A",
-          "query": "from(bucket: \"diamond\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"training_step\")\n  |> filter(fn: (r) => r.run_id == \"${run_id}\")\n  |> filter(fn: (r) => r.is_eval == \"false\")\n  |> filter(fn: (r) => r._field == \"bit_acc\")\n  |> group(columns: [\"_field\"])\n  |> aggregateWindow(every: v.windowPeriod, fn: last, createEmpty: false)"
+          "query": "from(bucket: \"diamond\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"training_step\")\n  |> filter(fn: (r) => r.run_id == \"${run_id}\")\n  |> filter(fn: (r) => r.is_eval == \"false\")\n  |> filter(fn: (r) => r._field == \"answer_bit_acc\")\n  |> group(columns: [\"_field\"])\n  |> aggregateWindow(every: v.windowPeriod, fn: last, createEmpty: false)"
         },
         {
           "refId": "B",
           "query": "from(bucket: \"diamond\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"training_step\")\n  |> filter(fn: (r) => r.run_id == \"${run_id}\")\n  |> filter(fn: (r) => r.is_eval == \"false\")\n  |> filter(fn: (r) => r._field == \"bit_oracle\")\n  |> group(columns: [\"_field\"])\n  |> aggregateWindow(every: v.windowPeriod, fn: last, createEmpty: false)"
+        },
+        {
+          "refId": "C",
+          "query": "from(bucket: \"diamond\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"training_step\")\n  |> filter(fn: (r) => r.run_id == \"${run_id}\")\n  |> filter(fn: (r) => r.is_eval == \"true\")\n  |> filter(fn: (r) => r._field == \"answer_bit_acc\")\n  |> group(columns: [\"_field\"])\n  |> aggregateWindow(every: v.windowPeriod, fn: last, createEmpty: false)"
         }
       ],
       "fieldConfig": {
@@ -3512,7 +3516,7 @@
               }
             ]
           },
-          "displayName": "Bit Accuracy"
+          "displayName": "Train Acc"
         },
         "overrides": [
           {
@@ -3549,6 +3553,40 @@
                     5
                   ]
                 }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "answer_bit_acc"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Answer Bit Acc (eval)"
+              },
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "#FF9830",
+                  "mode": "fixed"
+                }
+              },
+              {
+                "id": "custom.lineWidth",
+                "value": 2
+              },
+              {
+                "id": "custom.lineStyle",
+                "value": {
+                  "fill": "dash",
+                  "dash": [4, 4]
+                }
+              },
+              {
+                "id": "custom.fillOpacity",
+                "value": 0
               }
             ]
           }
@@ -5313,11 +5351,11 @@
         },
         {
           "refId": "E",
-          "query": "from(bucket: \"diamond\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"training_step\")\n  |> filter(fn: (r) => r.run_id == \"${run_id}\")\n  |> filter(fn: (r) => r.is_eval == \"false\")\n  |> filter(fn: (r) => r._field == \"bit_acc\")\n  |> group(columns: [\"_field\"])\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> keep(columns: [\"_time\", \"_value\", \"_field\"])"
+          "query": "from(bucket: \"diamond\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"training_step\")\n  |> filter(fn: (r) => r.run_id == \"${run_id}\")\n  |> filter(fn: (r) => r.is_eval == \"false\")\n  |> filter(fn: (r) => r._field == \"answer_bit_acc\")\n  |> group(columns: [\"_field\"])\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> keep(columns: [\"_time\", \"_value\", \"_field\"])"
         },
         {
           "refId": "F",
-          "query": "from(bucket: \"diamond\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"training_step\")\n  |> filter(fn: (r) => r.run_id == \"${run_id}\")\n  |> filter(fn: (r) => r.is_eval == \"true\")\n  |> filter(fn: (r) => r._field == \"bit_acc\")\n  |> group(columns: [\"_field\"])\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> keep(columns: [\"_time\", \"_value\", \"_field\"])"
+          "query": "from(bucket: \"diamond\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"training_step\")\n  |> filter(fn: (r) => r.run_id == \"${run_id}\")\n  |> filter(fn: (r) => r.is_eval == \"true\")\n  |> filter(fn: (r) => r._field == \"answer_bit_acc\")\n  |> group(columns: [\"_field\"])\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> keep(columns: [\"_time\", \"_value\", \"_field\"])"
         },
         {
           "refId": "G",
@@ -5449,7 +5487,7 @@
             "properties": [
               {
                 "id": "displayName",
-                "value": "Train Bit Acc"
+                "value": "Train Acc"
               },
               {
                 "id": "color",
@@ -5476,7 +5514,7 @@
             "properties": [
               {
                 "id": "displayName",
-                "value": "Eval Bit Acc"
+                "value": "Eval Acc"
               },
               {
                 "id": "color",
