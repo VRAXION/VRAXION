@@ -65,6 +65,103 @@ body {
   color: var(--white);
 }
 
+/* ─── TOP NAV BAR ─── */
+.site-nav {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  height: 48px;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  padding: 0 1.75rem;
+  background: rgba(10, 12, 20, 0.55);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  pointer-events: auto;
+}
+
+.nav-logo {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  text-decoration: none;
+  margin-right: 2.5rem;
+  flex-shrink: 0;
+}
+.nav-logo img {
+  width: 18px;
+  height: 18px;
+  opacity: 0.9;
+}
+.nav-logo-text {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 0.95rem;
+  letter-spacing: 0.08em;
+  color: var(--white);
+}
+
+.nav-links {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  flex: 1;
+}
+
+.nav-link {
+  font-family: var(--font-body);
+  font-weight: 400;
+  font-size: 0.82rem;
+  letter-spacing: 0.04em;
+  color: var(--text);
+  text-decoration: none;
+  padding: 0.3rem 0.75rem;
+  border-radius: var(--radius-sm);
+  position: relative;
+  transition: color 0.2s ease;
+}
+.nav-link:hover { color: var(--white); }
+
+.nav-link.active { color: var(--white); }
+.nav-link.active::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 0.75rem;
+  right: 0.75rem;
+  height: 2px;
+  border-radius: 1px;
+  background: var(--nav-accent, var(--white));
+  transition: background 0.4s ease;
+}
+
+.nav-cta {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  color: var(--text);
+  text-decoration: none;
+  padding: 0.3rem 0.85rem;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: var(--radius-md);
+  transition: color 0.2s ease, border-color 0.2s ease;
+  flex-shrink: 0;
+}
+.nav-cta:hover {
+  color: var(--white);
+  border-color: rgba(255, 255, 255, 0.28);
+}
+
+/* Shift arrow buttons down so they stay centered in the canvas area below the nav */
+.arrow-btn { top: calc(50% + 24px); }
+
+@media (max-width: 900px) {
+  .nav-links { display: none; }
+  .nav-cta { display: none; }
+}
+
 /* ─── THREE.JS CANVAS (BACKGROUND) ─── */
 #scene-canvas {
   position: fixed;
@@ -1102,6 +1199,20 @@ body.detail-active .arrow-next { right: calc(var(--bar-right) + 1rem); }
 
 <body>
 
+<nav class="site-nav" aria-label="Site navigation">
+  <a href="#" class="nav-logo" aria-label="VRAXION home">
+    <img src="assets/vraxion_logo.svg" alt="" aria-hidden="true">
+    <span class="nav-logo-text">VRAXION</span>
+  </a>
+  <div class="nav-links" role="list">
+    <a href="#" class="nav-link" role="listitem">Home</a>
+    <a href="#" class="nav-link active" id="navProducts" role="listitem">Products</a>
+    <a href="#" class="nav-link" role="listitem">Wiki</a>
+    <a href="#" class="nav-link" role="listitem">About</a>
+  </div>
+  <a href="#" class="nav-cta">Token ▸</a>
+</nav>
+
 <noscript><div style="display:flex;align-items:center;justify-content:center;height:100vh;background:#0A0C14;color:#8890A0;font-family:sans-serif;text-align:center;padding:2rem;"><p>VRAXION requires JavaScript to run. Please enable JavaScript in your browser settings.</p></div></noscript>
 
 <!-- Background layers -->
@@ -1730,6 +1841,7 @@ body.detail-active .arrow-next { right: calc(var(--bar-right) + 1rem); }
   var taglineFadeTimer = null;
   if (TIERS[0].detail) document.body.classList.add('detail-active');
   taglineEl.textContent = TIERS[0].tagline || '';
+  document.documentElement.style.setProperty('--nav-accent', TIERS[0].color);
 
   /* ─── CAROUSEL: goTo ─── */
   function goTo(index, direction) {
@@ -1782,6 +1894,7 @@ body.detail-active .arrow-next { right: calc(var(--bar-right) + 1rem); }
 
     current = index;
     document.body.classList.toggle('detail-active', !!TIERS[index].detail);
+    document.documentElement.style.setProperty('--nav-accent', TIERS[index].color);
 
     oldSlide.addEventListener('transitionend', function handler() {
       oldSlide.removeEventListener('transitionend', handler);
