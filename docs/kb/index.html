@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="VRAXION Knowledge Base — how and why we build what we build.">
+  <meta name="theme-color" content="#0A0C14">
+  <meta property="og:title" content="VRAXION — Knowledge Base">
+  <meta property="og:description" content="Architecture, training data, inner composition — the engineering behind VRAXION.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://vraxion.net/kb/">
+  <meta property="og:image" content="../assets/vraxion_logo.svg">
+  <link rel="icon" href="../assets/vraxion_logo.svg" type="image/svg+xml">
+  <title>Knowledge Base — VRAXION</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=Outfit:wght@300;400;600&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+
+<style>
+/* ═══════════════════════════════════════════════════════════
+   VRAXION KNOWLEDGE BASE
+   ═══════════════════════════════════════════════════════════ */
+
+:root {
+  --bg: #0A0C14;
+  --white: #E8EAF0;
+  --dim: #4A4E5A;
+  --text: #8890A0;
+  --accent: #5B4BD5;
+  --font-display: 'Syne', system-ui, -apple-system, sans-serif;
+  --font-body: 'Outfit', system-ui, -apple-system, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Cascadia Code', 'Fira Code', monospace;
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 16px;
+  --nav-h: 48px;
+  --sidebar-w: 220px;
+}
+
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+html {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-weight: 400;
+  line-height: 1.6;
+  min-height: 100vh;
+  overflow-y: scroll;
+}
+
+::selection {
+  background: rgba(91, 75, 213, 0.35);
+  color: var(--white);
+}
+
+/* ─── FIXED ATMOSPHERE LAYERS ─── */
+.noise-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  opacity: 0.015;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-repeat: repeat;
+  background-size: 256px 256px;
+  pointer-events: none;
+}
+
+.vignette {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  background: radial-gradient(ellipse at center, transparent 50%, rgba(0, 0, 0, 0.40) 100%);
+  pointer-events: none;
+}
+
+/* ─── TOP NAV BAR ─── */
+.site-nav {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  height: var(--nav-h);
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  padding: 0 1.75rem;
+  background: rgba(10, 12, 20, 0.55);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  pointer-events: auto;
+}
+
+.nav-logo {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  text-decoration: none;
+  margin-right: 2.5rem;
+  flex-shrink: 0;
+}
+.nav-logo img {
+  width: 18px;
+  height: 18px;
+  opacity: 0.9;
+}
+.nav-logo-text {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 0.95rem;
+  letter-spacing: 0.08em;
+  color: var(--white);
+}
+
+.nav-links {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  flex: 1;
+}
+
+.nav-link {
+  font-family: var(--font-body);
+  font-weight: 400;
+  font-size: 0.82rem;
+  letter-spacing: 0.04em;
+  color: var(--text);
+  text-decoration: none;
+  padding: 0.3rem 0.75rem;
+  border-radius: var(--radius-sm);
+  position: relative;
+  transition: color 0.2s ease;
+}
+.nav-link:hover { color: var(--white); }
+.nav-link.active { color: var(--white); }
+.nav-link.active::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 0.75rem;
+  right: 0.75rem;
+  height: 2px;
+  border-radius: 1px;
+  background: var(--accent);
+}
+
+.nav-cta {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  color: var(--text);
+  text-decoration: none;
+  padding: 0.3rem 0.85rem;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: var(--radius-md);
+  transition: color 0.2s ease, border-color 0.2s ease;
+  flex-shrink: 0;
+}
+.nav-cta:hover {
+  color: var(--white);
+  border-color: rgba(255, 255, 255, 0.28);
+}
+
+@media (max-width: 900px) {
+  .nav-links { display: none; }
+  .nav-cta { display: none; }
+}
+
+/* ─── SIDEBAR ─── */
+.kb-sidebar {
+  position: fixed;
+  top: var(--nav-h);
+  left: 0;
+  bottom: 0;
+  width: var(--sidebar-w);
+  z-index: 20;
+  background: rgba(15, 18, 25, 0.6);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-right: 1px solid rgba(255, 255, 255, 0.05);
+  padding: 2rem 1.25rem;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255,255,255,0.08) transparent;
+}
+.kb-sidebar::-webkit-scrollbar { width: 3px; }
+.kb-sidebar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 2px; }
+
+.kb-sidebar-label {
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  color: var(--dim);
+  text-transform: uppercase;
+  margin-bottom: 0.85rem;
+}
+
+.kb-sidebar-divider {
+  height: 1px;
+  background: rgba(255, 255, 255, 0.05);
+  margin-bottom: 1rem;
+}
+
+.kb-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.kb-nav-item {
+  display: block;
+  font-family: var(--font-body);
+  font-size: 0.82rem;
+  font-weight: 400;
+  color: var(--text);
+  text-decoration: none;
+  padding: 0.4rem 0.75rem;
+  border-radius: var(--radius-sm);
+  border-left: 2px solid transparent;
+  transition: color 0.2s ease, border-color 0.2s ease, background 0.2s ease;
+  cursor: pointer;
+}
+.kb-nav-item:hover {
+  color: var(--white);
+  background: rgba(255,255,255,0.03);
+}
+.kb-nav-item.active {
+  color: var(--white);
+  border-left-color: var(--accent);
+  background: rgba(91, 75, 213, 0.06);
+}
+.kb-nav-item.soon {
+  color: var(--dim);
+  cursor: default;
+  pointer-events: none;
+}
+.kb-nav-item.soon::after {
+  content: '·';
+  margin-left: 0.4em;
+  opacity: 0.4;
+}
+
+/* ─── MAIN CONTENT ─── */
+.kb-main {
+  margin-left: var(--sidebar-w);
+  padding-top: var(--nav-h);
+  min-height: 100vh;
+}
+
+.kb-content {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 3.5rem 2rem 6rem;
+}
+
+/* ─── ARTICLE HEADER ─── */
+.article-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1.25rem;
+}
+
+.article-tag {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 400;
+  color: var(--dim);
+  letter-spacing: 0.06em;
+  padding-left: 0.75rem;
+  border-left: 2px solid var(--accent);
+  line-height: 1.4;
+}
+
+.article-h1 {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 2rem;
+  color: var(--white);
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+  margin-bottom: 1.75rem;
+}
+
+.article-rule {
+  border: none;
+  border-top: 1px solid rgba(255, 255, 255, 0.07);
+  margin-bottom: 2.5rem;
+}
+
+/* ─── EMPTY STATE ─── */
+.article-empty {
+  border: 1px dashed rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-md);
+  padding: 2.5rem 2rem;
+  text-align: center;
+}
+
+.article-empty-label {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.1em;
+  color: var(--dim);
+  margin-bottom: 0.75rem;
+  text-transform: uppercase;
+}
+
+.article-empty-text {
+  font-family: var(--font-body);
+  font-weight: 300;
+  font-size: 0.95rem;
+  color: var(--dim);
+  font-style: italic;
+  line-height: 1.7;
+}
+
+/* ─── RESPONSIVE ─── */
+@media (max-width: 900px) {
+  .kb-sidebar { display: none; }
+  .kb-main { margin-left: 0; }
+  .kb-content { padding: 2rem 1.25rem 4rem; }
+  .article-h1 { font-size: 1.5rem; }
+}
+</style>
+</head>
+
+<body>
+
+<!-- Atmosphere -->
+<div class="noise-overlay" aria-hidden="true"></div>
+<div class="vignette" aria-hidden="true"></div>
+
+<!-- Nav -->
+<nav class="site-nav" aria-label="Site navigation">
+  <a href="../" class="nav-logo" aria-label="VRAXION home">
+    <img src="../assets/vraxion_logo.svg" alt="" aria-hidden="true">
+    <span class="nav-logo-text">VRAXION</span>
+  </a>
+  <div class="nav-links" role="list">
+    <a href="#" class="nav-link" role="listitem">Home</a>
+    <a href="../" class="nav-link" role="listitem">Products</a>
+    <a href="../kb/" class="nav-link active" role="listitem">Wiki</a>
+    <a href="#" class="nav-link" role="listitem">About</a>
+  </div>
+  <a href="#" class="nav-cta">Token ▸</a>
+</nav>
+
+<!-- Sidebar -->
+<aside class="kb-sidebar" aria-label="Knowledge base navigation">
+  <div class="kb-sidebar-label">Knowledge Base</div>
+  <div class="kb-sidebar-divider"></div>
+  <nav class="kb-nav">
+    <a href="#training-data" class="kb-nav-item active">Training Data</a>
+    <span class="kb-nav-item soon">Architecture</span>
+    <span class="kb-nav-item soon">Inner Composition</span>
+    <span class="kb-nav-item soon">Evaluation</span>
+  </nav>
+</aside>
+
+<!-- Main -->
+<main class="kb-main">
+  <div class="kb-content">
+
+    <div class="article-meta">
+      <span class="article-tag">KB · 01</span>
+    </div>
+
+    <h1 class="article-h1" id="training-data">Training Data Generation</h1>
+
+    <hr class="article-rule">
+
+    <div class="article-empty">
+      <div class="article-empty-label">In progress</div>
+      <p class="article-empty-text">This article is being written.</p>
+    </div>
+
+  </div>
+</main>
+
+</body>
+</html>
