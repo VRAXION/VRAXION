@@ -126,8 +126,9 @@ body {
   align-self: stretch;
   display: flex;
   flex-direction: column;
-  justify-content: center;
-  padding: 3rem clamp(1.8rem, 3.5vw, 2.8rem);
+  justify-content: flex-start;
+  padding: 4rem clamp(1.8rem, 3.5vw, 2.8rem) 2.5rem;
+  scroll-padding-top: 4rem;
   overflow-y: auto;
   position: relative;
   background: rgba(15, 18, 25, 0.5);
@@ -140,13 +141,13 @@ body {
               opacity var(--slide-duration) ease;
   will-change: transform, opacity;
   scrollbar-width: thin;
-  scrollbar-color: rgba(255,255,255,0.1) transparent;
+  scrollbar-color: rgba(255,255,255,0.18) transparent;
   touch-action: pan-y;
 }
 .slide-content::-webkit-scrollbar { width: 4px; }
 .slide-content::-webkit-scrollbar-track { background: transparent; }
-.slide-content::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 2px; }
-.slide-content::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
+.slide-content::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.18); border-radius: 2px; }
+.slide-content::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.32); }
 
 .slide.active .slide-content {
   transform: translateX(0);
@@ -182,13 +183,13 @@ body {
               opacity var(--slide-duration) ease;
   will-change: transform, opacity;
   scrollbar-width: thin;
-  scrollbar-color: rgba(255,255,255,0.1) transparent;
+  scrollbar-color: rgba(255,255,255,0.18) transparent;
   touch-action: pan-y;
 }
 .slide-right::-webkit-scrollbar { width: 4px; }
 .slide-right::-webkit-scrollbar-track { background: transparent; }
-.slide-right::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 2px; }
-.slide-right::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
+.slide-right::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.18); border-radius: 2px; }
+.slide-right::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.32); }
 
 .slide.active .slide-right {
   transform: translateX(0);
@@ -213,6 +214,32 @@ body {
   height: 1px;
   background: linear-gradient(90deg, transparent, var(--bar-accent, transparent), transparent);
   opacity: 0.4;
+}
+
+/* Bottom scroll fade hint for left panel */
+.slide-content::after {
+  content: '';
+  position: sticky;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 3rem;
+  flex-shrink: 0;
+  background: linear-gradient(to bottom, transparent, rgba(15, 18, 25, 0.88));
+  pointer-events: none;
+  margin-top: auto;
+}
+
+/* Bottom scroll fade hint for right panel */
+.slide-right::after {
+  content: '';
+  position: sticky;
+  bottom: 0;
+  height: 3rem;
+  flex-shrink: 0;
+  background: linear-gradient(to bottom, transparent, rgba(10, 12, 20, 0.88));
+  pointer-events: none;
+  margin-top: auto;
 }
 
 /* Detail vs compact layout */
