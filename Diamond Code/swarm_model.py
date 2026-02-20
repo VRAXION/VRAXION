@@ -13,10 +13,15 @@ from typing import Tuple, Dict
 import math
 
 
-# Jump gate sigmoid temperature: >1 softens gradient at saturation.
-# At tau=1 (normal): sigmoid(4)=0.98, gradient=0.02
-# At tau=2: sigmoid(4/2)=0.88, gradient=0.105 (5x better gradient flow)
-JUMP_SIGMOID_TAU = 2.0
+# Jump gate sigmoid temperature: controls sharpness of jump/walk decision.
+# Probe sweep (v1+v2): TAU=0.5 optimal, plateau at 0.25-0.5, TAU=0.1 hurts.
+# At tau=0.5: sigmoid(2/0.5)=0.98 — near-binary, decisive pointer navigation.
+JUMP_SIGMOID_TAU = 0.5
+
+# State update EMA blend: old_hidden vs new_input (ALPHA * old + (1-ALPHA) * new).
+# Probe sweep (v1+v2): plateau at 0.2-0.3, peak at 0.2. Below 0.1 collapses (memory starvation).
+# Golden ratio 0.618 was suboptimal (-1.4%). Model wants fast input integration.
+STATE_EMA_ALPHA = 0.2
 
 # Exclusive effort weights: each effort level owns one LCX channel only
 EFFORT_WEIGHTS = torch.tensor([
@@ -919,8 +924,8 @@ class SwarmByteRingModel(nn.Module):
             _n0 = self._lcx_level_slots[0] if self._lcx_level_slots else 0
             if _n0 >= self._LCX_MIN_SLOTS_FOR_BUCKETING:
                 self._lcx_init_hash_planes(0, _n0, _k.device, _k.dtype)
-            # Temperature per level: higher at coarse (wider exploration), lower at fine
-            self._lcx_route_temps = [2.0 / (1.0 + _lvl) for _lvl in range(self._lcx_num_levels)]
+            # Temperature: tau sweep (probe #93) confirmed flat across [0.1, 2.0] — keep 1.0
+            self._lcx_route_temps = [1.0 for _lvl in range(self._lcx_num_levels)]
             self._lcx_total_slots = sum(self._lcx_level_slots)
             self.lcx_route_query = nn.Linear(embedding_dim, lcx_key_dim)
             self.lcx_write_gate = nn.Linear(embedding_dim, 1)
@@ -1032,22 +1037,21 @@ class SwarmByteRingModel(nn.Module):
         pointer_position: torch.Tensor,
         num_positions: int,
     ) -> Tuple[torch.Tensor, torch.Tensor]:
-        """Compute Gaussian attention weights around pointer."""
+        """Compute uniform attention weights over window around pointer.
+
+        Probe v1-v3 showed Gaussian shape adds zero value vs mean-pool
+        (90.26% vs 90.20%, within noise). Uniform is simpler and ~8% faster.
+        """
         B = pointer_position.size(0)
         K = self.attention_radius
+        window_size = 2 * K + 1
 
         offsets = torch.arange(-K, K + 1, device=pointer_position.device)
         base = torch.floor(pointer_position).long().clamp(0, num_positions - 1)
         indices = (base.unsqueeze(1) + offsets.unsqueeze(0)) % num_positions
-        indices_float = indices.float()
 
-        # Circular distance
-        half = num_positions / 2.0
-        delta = torch.remainder(indices_float - pointer_position.unsqueeze(1) + half, num_positions) - half
-
-        # Gaussian logits
-        logits = -(delta ** 2) / self.attention_temperature
-        weights = torch.softmax(logits, dim=1)
+        # Uniform weights: mean-pool over neighborhood
+        weights = torch.ones(B, window_size, device=pointer_position.device) / window_size
 
         return indices, weights
 
@@ -1411,7 +1415,7 @@ class SwarmByteRingModel(nn.Module):
             combined = being_input + ctx_scales * context_reads + 0.1 * phase_bias
 
             # 4. State update (phi EMA — norm hidden only, input path clean)
-            state_update = 0.618 * self.state_norm(hidden_states) + 0.382 * combined
+            state_update = STATE_EMA_ALPHA * self.state_norm(hidden_states) + (1 - STATE_EMA_ALPHA) * combined
             if self.processing_layers is not None:
                 for norm, layer in zip(self.processing_norms, self.processing_layers):
                     state_update = state_update + c19_activation(layer(norm(state_update)))
@@ -1670,7 +1674,7 @@ class SwarmByteRingModel(nn.Module):
                     comb_tt = ctx_scales * ctx_tt + 0.1 * phase_bias
                     if self.think_token is not None:
                         comb_tt = comb_tt + self.think_token  # "I'm thinking" signal
-                    su_tt = 0.618 * self.state_norm(hidden_states) + 0.382 * comb_tt
+                    su_tt = STATE_EMA_ALPHA * self.state_norm(hidden_states) + (1 - STATE_EMA_ALPHA) * comb_tt
                     if self.processing_layers is not None:
                         for norm, layer in zip(self.processing_norms, self.processing_layers):
                             su_tt = su_tt + c19_activation(layer(norm(su_tt)))
@@ -2008,8 +2012,13 @@ class SwarmByteRingModel(nn.Module):
 
     def _lcx_level_bufs(self, level: int):
         """Return (keys, values) for a given zoom level.
-        Lazy-allocates the level if not yet on GPU."""
+        Lazy-allocates the level if not yet on GPU.
+        In double-buffer mode, returns golden buffers during reads."""
         level = min(level, self._lcx_num_levels - 1)
+        # Double-buffer: redirect reads to golden copy
+        if getattr(self, '_db_mode', False) and getattr(self, '_db_reading', False):
+            g = self._db_golden
+            return g[f'L{level}_keys'], g[f'L{level}_values']
         if hasattr(self, '_lcx_allocated_levels') and level not in self._lcx_allocated_levels:
             self._allocate_lcx_level(level)
         return getattr(self, f'lcx_keys_{level}'), getattr(self, f'lcx_values_{level}')
@@ -2238,7 +2247,7 @@ class SwarmByteRingModel(nn.Module):
         self._lcx_level_slots = [new_slots]
         self._lcx_total_slots = new_slots
         self._lcx_allocated_levels = {0}
-        self._lcx_route_temps = [2.0]
+        self._lcx_route_temps = [1.0]
 
         # ── 9. Re-init hash planes + bucket index ──
         if new_slots >= self._LCX_MIN_SLOTS_FOR_BUCKETING:
@@ -2275,6 +2284,49 @@ class SwarmByteRingModel(nn.Module):
         stats['allocated_levels'] = len(self._lcx_allocated_levels)
         return stats
 
+    # --- LCX double-buffer (golden read / scratch write / sleep cycle) ---
+
+    def snapshot_lcx(self) -> dict:
+        """Clone all LCX buffers for allocated levels. Returns CPU copies."""
+        snap = {}
+        if not hasattr(self, '_lcx_allocated_levels'):
+            return snap
+        for lvl in self._lcx_allocated_levels:
+            snap[f'L{lvl}_keys'] = getattr(self, f'lcx_keys_{lvl}').detach().cpu().clone()
+            snap[f'L{lvl}_values'] = getattr(self, f'lcx_values_{lvl}').detach().cpu().clone()
+            snap[f'L{lvl}_heat'] = getattr(self, f'lcx_heat_{lvl}').cpu().clone()
+            snap[f'L{lvl}_valid'] = getattr(self, f'lcx_valid_{lvl}').cpu().clone()
+        return snap
+
+    def restore_lcx(self, snap: dict):
+        """Restore LCX buffers from a snapshot (moves to model device)."""
+        for lvl in self._lcx_allocated_levels:
+            dev = getattr(self, f'lcx_keys_{lvl}').device
+            getattr(self, f'lcx_keys_{lvl}').copy_(snap[f'L{lvl}_keys'].to(dev))
+            getattr(self, f'lcx_values_{lvl}').copy_(snap[f'L{lvl}_values'].to(dev))
+            getattr(self, f'lcx_heat_{lvl}').copy_(snap[f'L{lvl}_heat'].to(dev))
+            getattr(self, f'lcx_valid_{lvl}').copy_(snap[f'L{lvl}_valid'].to(dev))
+
+    def enable_double_buffer(self, golden_snap=None):
+        """Enable double-buffer mode: reads from golden, writes to live scratch.
+        If no golden_snap provided, snapshots current LCX as initial golden."""
+        if golden_snap is None:
+            golden_snap = self.snapshot_lcx()
+        # Move golden to model device for fast reads
+        dev = next(self.parameters()).device
+        self._db_golden = {k: v.to(dev) for k, v in golden_snap.items()}
+        self._db_mode = True
+        self._db_reading = False
+
+    def disable_double_buffer(self, keep_golden=False):
+        """Disable double-buffer mode. If keep_golden, restore golden to live buffers."""
+        if keep_golden and hasattr(self, '_db_golden'):
+            self.restore_lcx(self._db_golden)
+        self._db_mode = False
+        self._db_reading = False
+        if hasattr(self, '_db_golden'):
+            del self._db_golden
+
     # --- LCX bottleneck projection ---
 
     def _lcx_bottleneck(self, x: torch.Tensor) -> torch.Tensor:
@@ -2309,8 +2361,20 @@ class SwarmByteRingModel(nn.Module):
 
     def _lcx_flat_read(self, state: torch.Tensor, level: int) -> torch.Tensor:
         """Bucketed cosine similarity read at a single level.
-        SimHash query → bucket → search within bucket → topk → softmax weighted sum.
-        For small levels (<1024 slots), falls back to full search."""
+        SimHash query -> bucket -> search within bucket -> topk -> softmax weighted sum.
+        For small levels (<1024 slots), falls back to full search.
+        In double-buffer mode, reads from golden copy via _db_reading flag."""
+        _db = getattr(self, '_db_mode', False)
+        if _db:
+            self._db_reading = True
+        try:
+            return self._lcx_flat_read_impl(state, level)
+        finally:
+            if _db:
+                self._db_reading = False
+
+    def _lcx_flat_read_impl(self, state: torch.Tensor, level: int) -> torch.Tensor:
+        """Inner implementation of flat LCX read."""
         squeeze = state.dim() == 1
         if squeeze:
             state = state.unsqueeze(0)
@@ -2654,7 +2718,7 @@ class SwarmByteRingModel(nn.Module):
 
                         # State update (phi EMA)
                         _norm = self.being_state_norms[being_idx] if self.being_state_norms is not None else self.state_norm
-                        state_update = 0.618 * _norm(state['hidden_state']) + 0.382 * combined_input
+                        state_update = STATE_EMA_ALPHA * _norm(state['hidden_state']) + (1 - STATE_EMA_ALPHA) * combined_input
                         if self.being_processing_layers is not None:
                             for norm, layer in zip(self.being_processing_norms[being_idx], self.being_processing_layers[being_idx]):
                                 state_update = state_update + c19_activation(layer(norm(state_update)))
@@ -2901,7 +2965,7 @@ class SwarmByteRingModel(nn.Module):
 
                 # 2c. State update (phi EMA — norm hidden only, input path clean)
                 _norm = self.being_state_norms[being_idx] if self.being_state_norms is not None else self.state_norm
-                state_update = 0.618 * _norm(state['hidden_state']) + 0.382 * combined_input
+                state_update = STATE_EMA_ALPHA * _norm(state['hidden_state']) + (1 - STATE_EMA_ALPHA) * combined_input
 
                 # Additional processing layers (Pre-LN + C19 residual)
                 if self.being_processing_layers is not None:
@@ -3141,7 +3205,7 @@ class SwarmByteRingModel(nn.Module):
                         # State update (phi EMA — norm hidden only, input path clean)
                         # Matches vectorized path: single EMA + direct assign (no double blend)
                         _norm_tt = self.being_state_norms[being_idx] if self.being_state_norms is not None else self.state_norm
-                        state_update = 0.618 * _norm_tt(state['hidden_state']) + 0.382 * combined_input
+                        state_update = STATE_EMA_ALPHA * _norm_tt(state['hidden_state']) + (1 - STATE_EMA_ALPHA) * combined_input
                         if self.being_processing_layers is not None:
                             for norm, layer in zip(self.being_processing_norms[being_idx], self.being_processing_layers[being_idx]):
                                 state_update = state_update + c19_activation(layer(norm(state_update)))

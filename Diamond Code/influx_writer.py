@@ -167,13 +167,19 @@ def log_step(run_id, step, loss, bit_acc=0, answer_bit_acc=0, byte_match=0, orac
          .field("agc_norm", float(kwargs.get('agc_norm', 0)))
          .field("agc_scale", float(kwargs.get('agc_scale', 1.0)))
          .time(time.time_ns(), WritePrecision.NS))
+    # Split metric for streaming datasets (optional)
+    if kwargs.get('copy_bit_acc') is not None:
+        p = p.field("copy_bit_acc", float(kwargs['copy_bit_acc']))
+    if kwargs.get('novel_bit_acc') is not None:
+        p = p.field("novel_bit_acc", float(kwargs['novel_bit_acc']))
     _write_api.write(bucket=_bucket, record=p)
 
 
 def log_dream(run_id, step, dream_step, dream_mode="consolidation",
               dream_loss=0, dream_bit_acc=0, dream_lcx_norm=0,
               dream_zoom_gate=0, dream_step_time=0, dream_think_ticks=0,
-              dream_binarized=False, dream_score_margin=0):
+              dream_binarized=False, dream_score_margin=0,
+              dream_golden_dataset=""):
     """Log one dream step. Non-blocking."""
     if not _write_api:
         return
@@ -190,6 +196,42 @@ def log_dream(run_id, step, dream_step, dream_mode="consolidation",
          .field("dream_think_ticks", int(dream_think_ticks))
          .field("dream_binarized", 1 if dream_binarized else 0)
          .field("dream_score_margin", float(dream_score_margin))
+         .time(time.time_ns(), WritePrecision.NS))
+    if dream_golden_dataset:
+        p = p.tag("golden_dataset", dream_golden_dataset)
+    _write_api.write(bucket=_bucket, record=p)
+
+
+def log_sleep_cycle(run_id, step, cycle_num, n_snapshots=0,
+                    spread=0, best_loss=0, golden_loss=0,
+                    promoted=False, promotions_total=0):
+    """Log a double-buffer sleep cycle event. Non-blocking."""
+    if not _write_api:
+        return
+    p = (Point("sleep_cycle")
+         .tag("run_id", run_id)
+         .field("step", int(step))
+         .field("cycle_num", int(cycle_num))
+         .field("n_snapshots", int(n_snapshots))
+         .field("spread", float(spread))
+         .field("best_loss", float(best_loss))
+         .field("golden_loss", float(golden_loss))
+         .field("promoted", 1 if promoted else 0)
+         .field("promotions_total", int(promotions_total))
+         .time(time.time_ns(), WritePrecision.NS))
+    _write_api.write(bucket=_bucket, record=p)
+
+
+def log_retirement(run_id, step, dataset_name, mastery_acc=0, threshold=0):
+    """Log a dataset retirement event."""
+    if not _write_api:
+        return
+    p = (Point("retirement_event")
+         .tag("run_id", run_id)
+         .tag("dataset", dataset_name)
+         .field("step", int(step))
+         .field("mastery_acc", float(mastery_acc))
+         .field("threshold", float(threshold))
          .time(time.time_ns(), WritePrecision.NS))
     _write_api.write(bucket=_bucket, record=p)
 

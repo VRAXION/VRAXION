@@ -28,6 +28,7 @@ from byte_data import byte_accuracy, bit_accuracy
 from traindat_loader import TraindatLoader, ThemeLoader, GRAY_ENCODE, gray_scalar_to_byte
 from live_controls import read_controls, apply_controls, write_default_controls, _set_being_grad
 import influx_writer
+import checkpoint_manager
 
 
 def int_to_bits(x, num_bits=8):
@@ -242,6 +243,23 @@ def bit_accuracy_at_position(output, target, position):
     return (pred_bytes == tgt_bytes).float().mean().item()
 
 
+def compute_split_accuracy(output, target, overlap_bytes, num_bits):
+    """Separate accuracy for copy-region vs novel-region (streaming datasets).
+
+    Returns (copy_bit_acc, novel_bit_acc) or (None, None) if not applicable.
+    """
+    T = output.size(1)
+    bytes_per_pos = max(1, num_bits // 8)
+    overlap_positions = overlap_bytes // bytes_per_pos
+    if overlap_positions <= 0 or overlap_positions >= T:
+        return None, None
+    pred = (torch.sigmoid(output) > 0.5).float()
+    correct = (pred == target).float()
+    copy_acc = correct[:, :overlap_positions, :].mean().item()
+    novel_acc = correct[:, overlap_positions:, :].mean().item()
+    return copy_acc, novel_acc
+
+
 def per_bit_accuracy_at_position(output, target, position):
     """Per-channel byte accuracy (list of num_bits values)."""
     pred_bytes = _output_to_bytes(output[:, position, :])
@@ -421,8 +439,14 @@ def evaluate_metrics(output, stats, y, train_loss, num_beings, num_bits, n_contr
     }
 
 
-def evaluate_metrics_binary_bits(output, stats, y, train_loss, num_beings):
-    """Compute metrics for binary bits mode. output: [B, T, num_bits] logits, y: [B, T, num_bits] binary 0/1."""
+def evaluate_metrics_binary_bits(output, stats, y, train_loss, num_beings, bit_mask=None):
+    """Compute metrics for binary bits mode. output: [B, T, num_bits] logits, y: [B, T, num_bits] binary 0/1.
+
+    Args:
+        bit_mask: [B, T, num_bits] float tensor. 1.0 = real data, 0.0 = N/A (empty/padding).
+            When provided, answer_bit_acc only counts real-data bits (not padding).
+            When None, all bits are treated as real data.
+    """
     T = output.size(1)
     num_bits = output.size(2)
     eval_pos = min(2, T - 1)
@@ -434,14 +458,16 @@ def evaluate_metrics_binary_bits(output, stats, y, train_loss, num_beings):
     # Per-position metrics at eval_pos
     bit_acc = bit_correct[:, eval_pos, :].mean().item()  # avg across batch and bits
 
-    # Answer bit accuracy: only on bits where target is non-zero.
-    # Removes zero-padding inflation (e.g. num_bits=6184 but answer is 1-3 bytes).
-    target_at_pos = y[:, eval_pos, :]                      # [B, num_bits]
-    nonzero_mask = target_at_pos.bool()                    # True where target=1
-    if nonzero_mask.any():
-        answer_bit_acc = bit_correct[:, eval_pos, :][nonzero_mask].float().mean().item()
+    # Answer bit accuracy: only on bits where data is REAL (mask=1), not padding.
+    # Uses data mask (from loader) instead of target.bool() — correctly counts 0-valued real bits.
+    if bit_mask is not None:
+        data_mask = bit_mask[:, eval_pos, :].bool()       # [B, num_bits] True where real data
     else:
-        answer_bit_acc = 0.0  # all-zero target (e.g. 0+0=0 edge case)
+        data_mask = torch.ones_like(y[:, eval_pos, :]).bool()  # all bits are real
+    if data_mask.any():
+        answer_bit_acc = bit_correct[:, eval_pos, :][data_mask].float().mean().item()
+    else:
+        answer_bit_acc = 0.0  # no real data bits at this position
     # Byte accuracy: group bits into bytes (groups of 8), check all 8 bits correct per byte
     _bc_eval = bit_correct[:, eval_pos, :]  # [B, num_bits]
     if num_bits > 8:
@@ -536,13 +562,24 @@ def evaluate_metrics_byte_tokens(output, stats, y, train_loss, num_beings):
 def format_metrics_line(step, train_loss, step_time, metrics):
     """Format step + metrics into dashboard-compatible log line."""
     m = metrics
-    line = (
-        f"step {step} | loss {train_loss:.6f} | "
-        f"overall={m['overall_acc']:.4f} bit_acc={m['bit_acc']:.4f} "
-        f"answer_bit_acc={m.get('answer_bit_acc', 0):.4f} "
-        f"avg_bit_acc={m.get('avg_bit_acc', 0):.4f} "
-        f"byte_match={m['byte_match']:.4f} hamming={m['hamming']:.4f} | "
-    )
+    _ans_acc = m.get('answer_bit_acc', 0)
+    _is_binary = m.get('_binary_bits_mode', False)
+    # In binary bits mode, show answer_bit_acc as primary "acc" (non-padded bits only)
+    # bit_acc is demoted to "raw_bit_acc" since it includes zero-padding inflation
+    if _is_binary:
+        line = (
+            f"step {step} | loss {train_loss:.6f} | "
+            f"acc={_ans_acc:.4f} raw_bit_acc={m['bit_acc']:.4f} "
+            f"byte_match={m['byte_match']:.4f} | "
+        )
+    else:
+        line = (
+            f"step {step} | loss {train_loss:.6f} | "
+            f"overall={m['overall_acc']:.4f} bit_acc={m['bit_acc']:.4f} "
+            f"answer_bit_acc={_ans_acc:.4f} "
+            f"avg_bit_acc={m.get('avg_bit_acc', 0):.4f} "
+            f"byte_match={m['byte_match']:.4f} hamming={m['hamming']:.4f} | "
+        )
     for i, ba in enumerate(m['being_accs']):
         line += f"being_{i}={ba:.4f} "
     if 'being_masked_accs' in m:
@@ -716,6 +753,7 @@ def main():
     parser.add_argument('--eval_every', type=int, default=10, help='Eval interval in steps (default: 10)')
     parser.add_argument('--eval_samples', type=int, default=10, help='Number of eval samples (default: 10)')
     parser.add_argument('--resume', type=str, default=None, help='Resume from checkpoint file')
+    parser.add_argument('--fresh', action='store_true', help='Start from random init (skip auto-resume)')
     parser.add_argument('--combiner', type=str, default='mean', choices=['mean', 'ring_attention', 'masked'],
                         help='Combiner mode: mean | ring_attention | masked (with receptive fields)')
     parser.add_argument('--entropy_weight', type=float, default=0.01,
@@ -1029,37 +1067,48 @@ def main():
     else:
         _loss_mode = args.loss
 
-    def compute_loss(logits, targets, loss_mask=None):
-        """Compute loss with optional dialogue-mode position mask.
+    def compute_loss(logits, targets, loss_mask=None, bit_mask=None):
+        """Compute loss with optional masks.
 
         Args:
             loss_mask: [B, T] float tensor. 1.0 = compute loss, 0.0 = ignore.
-                When provided, per-position loss is weighted by mask before reduction.
+                Per-position mask (dialogue mode: only train on output positions).
+            bit_mask: [B, T, num_bits] float tensor. 1.0 = real data, 0.0 = N/A.
+                Per-bit mask (padding: ignore empty bits in loss).
         """
         if _loss_mode == 'ce':
             # Byte token mode: logits [B, T, 256], targets [B, T] Long
             if loss_mask is not None:
-                # Per-element CE, then mask
                 per_pos = nn.functional.cross_entropy(
                     logits.reshape(-1, 256), targets.reshape(-1), reduction='none'
                 ).reshape(targets.shape)
                 return (per_pos * loss_mask).sum() / loss_mask.sum().clamp(min=1)
             return nn.functional.cross_entropy(logits.reshape(-1, 256), targets.reshape(-1))
         elif _loss_mode == 'mse':
-            if loss_mask is not None:
-                per_elem = (torch.sigmoid(logits) - targets) ** 2
-                mask_expanded = loss_mask.unsqueeze(-1)  # [B, T, 1] broadcast over bits
-                return (per_elem * mask_expanded).sum() / (mask_expanded.sum() * logits.shape[-1]).clamp(min=1)
-            return nn.functional.mse_loss(torch.sigmoid(logits), targets)
+            per_elem = (torch.sigmoid(logits) - targets) ** 2
+            combined_mask = _combine_masks(loss_mask, bit_mask, logits.shape)
+            if combined_mask is not None:
+                return (per_elem * combined_mask).sum() / combined_mask.sum().clamp(min=1)
+            return per_elem.mean()
         else:
             # BCE mode (binary bits / theme loader)
-            if loss_mask is not None:
-                per_elem = nn.functional.binary_cross_entropy_with_logits(
-                    logits, targets, reduction='none'
-                )
-                mask_expanded = loss_mask.unsqueeze(-1)  # [B, T, 1] broadcast over bits
-                return (per_elem * mask_expanded).sum() / (mask_expanded.sum() * logits.shape[-1]).clamp(min=1)
-            return nn.functional.binary_cross_entropy_with_logits(logits, targets)
+            per_elem = nn.functional.binary_cross_entropy_with_logits(
+                logits, targets, reduction='none'
+            )
+            combined_mask = _combine_masks(loss_mask, bit_mask, logits.shape)
+            if combined_mask is not None:
+                return (per_elem * combined_mask).sum() / combined_mask.sum().clamp(min=1)
+            return per_elem.mean()
+
+    def _combine_masks(loss_mask, bit_mask, shape):
+        """Combine position mask [B,T] and bit mask [B,T,num_bits] into one [B,T,num_bits] mask."""
+        if loss_mask is None and bit_mask is None:
+            return None
+        if loss_mask is not None and bit_mask is not None:
+            return loss_mask.unsqueeze(-1) * bit_mask  # both apply
+        if loss_mask is not None:
+            return loss_mask.unsqueeze(-1).expand(shape)  # [B,T,1] -> [B,T,num_bits]
+        return bit_mask  # bit_mask only
 
     _loss_desc = {'ce': 'CrossEntropy (256-class byte tokens)', 'mse': 'sigmoid+MSE for Gray scalars', 'bce': 'BCE for binary targets'}
     print(f"  Loss: {_loss_mode} ({_loss_desc.get(_loss_mode, _loss_mode)})")
@@ -1253,11 +1302,18 @@ def main():
         _dtype_str = getattr(args, 'amp_dtype', 'bfloat16')
         print(f"AMP: {_dtype_str} mixed precision enabled" + (" (GradScaler active)" if amp_scaler else ""))
 
-    # Load checkpoint if resuming
+    # Load checkpoint if resuming (auto-resume is default, --fresh to skip)
     start_step = 0
     if args.resume:
+        # Explicit checkpoint path given
         start_step, _ = load_checkpoint(args.resume, model, optimizer)
         print()
+    elif not args.fresh:
+        # Auto-resume from latest draft in checkpoint_dir
+        start_step, _ = checkpoint_manager.load_latest(
+            args.checkpoint_dir, model, optimizer, load_fn=load_checkpoint)
+        if start_step > 0:
+            print()
 
     # Override jump gate bias AFTER checkpoint load (so it actually takes effect on resume)
     if args.jump_bias != 0.5:
@@ -1377,6 +1433,8 @@ def main():
         _lcx_initial = model.lcx.detach().cpu().tolist() if model.lcx is not None else None
         _gem_initial = model.gem.detach().cpu().tolist() if model.gem is not None else None
 
+        eval_metrics_accum = None  # initialized here for checkpoint_manager access
+
         for step in range(start_step, num_steps):
             step_start = time.time()
 
@@ -1400,7 +1458,8 @@ def main():
                 model.effort_level = 0
 
             # Generate training batch
-            _loss_mask = None  # reset each step
+            _loss_mask = None  # reset each step — [B, T] position mask (dialogue mode)
+            _bit_mask = None   # reset each step — [B, T, num_bits] per-bit mask (1=real, 0=N/A)
             if theme_loader:
                 x_train, y_train, _loss_mask = theme_loader.sample_batch(
                     n_samples=batch_size, seq_len=seq_len,
@@ -1408,12 +1467,20 @@ def main():
                     difficulty_max=args.difficulty_max,
                 )
             elif traindat_loader:
-                x_train, y_train = traindat_loader.sample_batch(
-                    n_samples=batch_size, seq_len=seq_len,
-                    num_bits=num_bits, seed=42 + step + 1000000,
-                    byte_token_mode=args.byte_tokens,
-                    binary_bits_mode=args.binary_bits,
-                )
+                if args.binary_bits:
+                    x_train, y_train, _bit_mask = traindat_loader.sample_batch(
+                        n_samples=batch_size, seq_len=seq_len,
+                        num_bits=num_bits, seed=42 + step + 1000000,
+                        binary_bits_mode=True,
+                    )
+                    # Model physically sees -1.0 for N/A bits (empty/padding)
+                    x_train = x_train.where(_bit_mask.bool(), torch.tensor(-1.0))
+                else:
+                    x_train, y_train = traindat_loader.sample_batch(
+                        n_samples=batch_size, seq_len=seq_len,
+                        num_bits=num_bits, seed=42 + step + 1000000,
+                        byte_token_mode=args.byte_tokens,
+                    )
             elif text_corpus:
                 x_train, y_train = generate_text_batch(
                     text_corpus, n_samples=batch_size, seq_len=seq_len,
@@ -1436,6 +1503,8 @@ def main():
                 y_train = y_train.to(device=device, dtype=_dtype, non_blocking=True)
             if _loss_mask is not None:
                 _loss_mask = _loss_mask.to(device=device, dtype=x_train.dtype, non_blocking=True)
+            if _bit_mask is not None:
+                _bit_mask = _bit_mask.to(device=device, dtype=x_train.dtype, non_blocking=True)
 
             # Freeze-gate warmup: freeze being params, train only gate
             if args.combiner == 'ring_attention' and args.freeze_gate_steps > 0:
@@ -1456,13 +1525,13 @@ def main():
             if _amp_ctx_used:
                 with torch.amp.autocast('cuda', dtype=torch.bfloat16):
                     output, train_stats = model(x_train, return_stats=True, return_being_outputs=True)
-                    loss = compute_loss(output, y_train, loss_mask=_loss_mask)
+                    loss = compute_loss(output, y_train, loss_mask=_loss_mask, bit_mask=_bit_mask)
                     if args.combiner == 'ring_attention' and args.entropy_weight > 0:
                         entropy_loss = model._last_entropy_loss
                         loss = loss + args.entropy_weight * entropy_loss
             else:
                 output, train_stats = model(x_train, return_stats=True, return_being_outputs=True)
-                loss = compute_loss(output, y_train, loss_mask=_loss_mask)
+                loss = compute_loss(output, y_train, loss_mask=_loss_mask, bit_mask=_bit_mask)
                 # Gate entropy regularizer (ring_attention only)
                 if args.combiner == 'ring_attention' and args.entropy_weight > 0:
                     entropy_loss = model._last_entropy_loss
@@ -1535,7 +1604,18 @@ def main():
                 _zg = getattr(model, 'zoom_gate', None)
                 _zg_g = _zg.weight.grad if _zg is not None and hasattr(_zg, 'weight') and _zg.weight.grad is not None else None
                 _zg_val = _zg_g.norm().item() if _zg_g is not None else 0.0
-                gd_parts.append(f"zg={_zg_val:.4e}")
+                # Diagnostic: also check bias grad and bottleneck grads
+                _zg_bias_g = _zg.bias.grad if _zg is not None and hasattr(_zg, 'bias') and _zg.bias.grad is not None else None
+                _zg_bias_val = _zg_bias_g.norm().item() if _zg_bias_g is not None else 0.0
+                _bn_layers = getattr(model, 'lcx_bn_layers', None)
+                _bn_grad_str = ""
+                if _bn_layers is not None:
+                    _bn_grads = []
+                    for _bli, _bl in enumerate(_bn_layers):
+                        _blg = _bl.weight.grad
+                        _bn_grads.append(f"bn{_bli}={'%.2e' % _blg.norm().item() if _blg is not None else 'None'}")
+                    _bn_grad_str = " " + " ".join(_bn_grads)
+                gd_parts.append(f"zg={_zg_val:.4e}(bias={_zg_bias_val:.2e}{_bn_grad_str})")
                 # Stash LCX grads for InfluxDB (used in LCX logging section below)
                 _lcx_grad_cache = {'lcx_rq': _lcx_rq_val, 'lcx_wg': _lcx_wg_val, 'zg': _zg_val}
                 # Total grad norm (all params)
@@ -1657,18 +1737,57 @@ def main():
                 # Save waking state
                 _waking_tt = model.think_ticks
                 model.think_ticks = _dream_tt
-                _dream_y_cpu = y_train.detach().cpu()
 
-                # Prepare dream input from waking output
-                _dream_input = output.detach()
-                if _dream_binarize:
-                    _dream_input = (torch.sigmoid(_dream_input) > 0.5).float()
-                else:
-                    _dream_input = torch.sigmoid(_dream_input)
+                # Prepare dream data source
+                _dream_golden_file = None
+                _dream_y = y_train
+                _dream_bit_mask = _bit_mask if '_bit_mask' in dir() else None
+
+                if _dream_mode == 'rehearsal':
+                    # Staleness-based golden dataset selection
+                    from retirement import pick_stalest_dataset, update_staleness_after_rehearsal
+                    _golden_dir = str(Path(args.data_dir).parent / 'golden')
+                    _dream_golden_file = pick_stalest_dataset(_golden_dir)
+                    if _dream_golden_file is None:
+                        _cold = "  [DREAM] cold start: no golden datasets, skipping"
+                        print(_cold)
+                        log_file.write(_cold + "\n")
+                        current_file.write(_cold + "\n")
+                        _dream_n = 0  # skip dream loop
+                    else:
+                        _golden_path = str(Path(_golden_dir) / _dream_golden_file)
+                        try:
+                            from traindat_loader import load_batch_from_file
+                            _gx, _gy, _g_mask = load_batch_from_file(
+                                _golden_path, batch_size, seq_len, num_bits,
+                                seed=42 + step, binary_bits_mode=args.binary_bits)
+                            _dtype = torch.float64 if args.fp64 else None
+                            _dream_input = _gx.to(device=device, dtype=_dtype)
+                            _dream_y = _gy.to(device=device, dtype=_dtype)
+                            _dream_bit_mask = _g_mask.to(device=device, dtype=_dtype) if _g_mask is not None else None
+                            _dream_hdr += f" golden={_dream_golden_file}"
+                            print(f"  [DREAM] rehearsing from {_dream_golden_file}")
+                            log_file.write(f"  [DREAM] rehearsing from {_dream_golden_file}\n")
+                        except FileNotFoundError:
+                            _miss = f"  [DREAM] WARNING: golden file missing: {_dream_golden_file}, skipping"
+                            print(_miss)
+                            log_file.write(_miss + "\n")
+                            _dream_golden_file = None
+                            _dream_n = 0  # skip dream loop
+
+                if _dream_mode == 'consolidation' or (_dream_mode == 'rehearsal' and _dream_golden_file is None):
+                    # Consolidation or failed rehearsal: dream from waking output
+                    _dream_input = output.detach()
+                    if _dream_binarize:
+                        _dream_input = (torch.sigmoid(_dream_input) > 0.5).float()
+                    else:
+                        _dream_input = torch.sigmoid(_dream_input)
+
+                _dream_y_cpu = _dream_y.detach().cpu()
 
                 # Scale LR for rehearsal mode
                 _waking_lr = optimizer.param_groups[0]['lr']
-                if _dream_mode == 'rehearsal':
+                if _dream_mode == 'rehearsal' and _dream_n > 0:
                     for _pg in optimizer.param_groups:
                         _pg['lr'] = _waking_lr * _dream_lr_scale
 
@@ -1679,17 +1798,17 @@ def main():
                         # NO gradient — pure LCX memory reorganization
                         with torch.no_grad():
                             _d_out, _d_stats = model(_dream_input, return_stats=True)
-                            _d_loss_val = compute_loss(_d_out, y_train, loss_mask=_loss_mask).item()
+                            _d_loss_val = compute_loss(_d_out, _dream_y, loss_mask=None, bit_mask=_dream_bit_mask).item()
                     else:
                         # REHEARSAL — gradient through dream pass, scaled LR
                         _d_amp = args.amp and device.type == 'cuda'
                         if _d_amp:
                             with torch.amp.autocast('cuda', dtype=torch.bfloat16):
                                 _d_out, _d_stats = model(_dream_input, return_stats=True)
-                                _d_loss = compute_loss(_d_out, y_train, loss_mask=_loss_mask)
+                                _d_loss = compute_loss(_d_out, _dream_y, loss_mask=None, bit_mask=_dream_bit_mask)
                         else:
                             _d_out, _d_stats = model(_dream_input, return_stats=True)
-                            _d_loss = compute_loss(_d_out, y_train, loss_mask=_loss_mask)
+                            _d_loss = compute_loss(_d_out, _dream_y, loss_mask=None, bit_mask=_dream_bit_mask)
                         _d_loss_val = _d_loss.item()
                         _d_loss.backward()
                         # AGC for dream gradients (same band as waking)
@@ -1716,12 +1835,14 @@ def main():
                         optimizer.step()
                         optimizer.zero_grad()
 
-                    # Chain: this dream's output -> next dream's input
-                    _dream_input = _d_out.detach()
-                    if _dream_binarize:
-                        _dream_input = (torch.sigmoid(_dream_input) > 0.5).float()
-                    else:
-                        _dream_input = torch.sigmoid(_dream_input)
+                    # Chain: consolidation chains output -> next input;
+                    # rehearsal keeps golden data as input each step
+                    if _dream_mode == 'consolidation':
+                        _dream_input = _d_out.detach()
+                        if _dream_binarize:
+                            _dream_input = (torch.sigmoid(_dream_input) > 0.5).float()
+                        else:
+                            _dream_input = torch.sigmoid(_dream_input)
 
                     _d_elapsed = time.time() - _d_t0
 
@@ -1773,7 +1894,15 @@ def main():
                         dream_think_ticks=_dream_tt,
                         dream_binarized=_dream_binarize,
                         dream_score_margin=_d_sm,
+                        dream_golden_dataset=_dream_golden_file or "",
                     )
+
+                # Staleness update after rehearsal
+                if _dream_golden_file is not None:
+                    update_staleness_after_rehearsal(_golden_dir, _dream_golden_file)
+                    _stale_msg = f"  [DREAM] staleness updated: {_dream_golden_file} -> 0"
+                    print(_stale_msg)
+                    log_file.write(_stale_msg + "\n")
 
                 # Restore waking state
                 model.think_ticks = _waking_tt
@@ -1790,6 +1919,149 @@ def main():
                 current_file.flush()
             # ========== END DREAMING PHASE ==========
 
+            # ========== DOUBLE-BUFFER SLEEP CYCLE ==========
+            _db_on = controls.get('db_enabled', False)
+            _db_interval = controls.get('db_sleep_interval', 200)
+            _db_snap_every = controls.get('db_snap_every', 10)
+            _db_eval_batches = controls.get('db_eval_batches', 3)
+
+            # Enable/disable double-buffer on the fly via controls
+            if _db_on and not getattr(model, '_db_mode', False):
+                model.enable_double_buffer()
+                _db_cycle_num = 0
+                _db_promotions = 0
+                _db_snapshots = []
+                print(f"  [DB] Double-buffer ENABLED at step {step}")
+                log_file.write(f"  [DB] Double-buffer ENABLED at step {step}\n")
+                log_file.flush()
+            elif not _db_on and getattr(model, '_db_mode', False):
+                model.disable_double_buffer(keep_golden=True)
+                _db_snapshots = []
+                print(f"  [DB] Double-buffer DISABLED at step {step}")
+                log_file.write(f"  [DB] Double-buffer DISABLED at step {step}\n")
+                log_file.flush()
+
+            # Accumulate scratch snapshots
+            if _db_on and getattr(model, '_db_mode', False):
+                if not hasattr(model, '_db_snapshots_list'):
+                    model._db_snapshots_list = []
+                if step > 0 and step % _db_snap_every == 0:
+                    model._db_snapshots_list.append(model.snapshot_lcx())
+                    # Cap at max to prevent memory bloat
+                    _max_snaps = max(10, _db_interval // _db_snap_every)
+                    if len(model._db_snapshots_list) > _max_snaps:
+                        model._db_snapshots_list = model._db_snapshots_list[-_max_snaps:]
+
+            # Sleep cycle: evaluate snapshots and promote best to golden
+            if (_db_on and getattr(model, '_db_mode', False)
+                    and step > 0 and step % _db_interval == 0
+                    and hasattr(model, '_db_snapshots_list')
+                    and len(model._db_snapshots_list) > 0):
+                if not hasattr(model, '_db_cycle_num'):
+                    model._db_cycle_num = 0
+                    model._db_promotions = 0
+                model._db_cycle_num += 1
+                _n_snaps = len(model._db_snapshots_list)
+                print(f"  [DB] SLEEP CYCLE {model._db_cycle_num} "
+                      f"({_n_snaps} snapshots, {_db_eval_batches} eval batches)")
+
+                # Generate fresh eval batches with different seeds
+                _db_eval_data = []
+                for _ei in range(_db_eval_batches):
+                    _eval_seed = 99999 + step * 100 + _ei * 7
+                    if traindat_loader:
+                        if args.binary_bits:
+                            _ex, _ey, _ebm = traindat_loader.sample_batch(
+                                n_samples=batch_size, seq_len=seq_len,
+                                num_bits=num_bits, seed=_eval_seed,
+                                binary_bits_mode=True)
+                            _ex = _ex.where(_ebm.bool(), torch.tensor(-1.0))
+                        else:
+                            _ex, _ey = traindat_loader.sample_batch(
+                                n_samples=batch_size, seq_len=seq_len,
+                                num_bits=num_bits, seed=_eval_seed,
+                                byte_token_mode=args.byte_tokens)
+                            _ebm = None
+                    elif theme_loader:
+                        _ex, _ey, _ = theme_loader.sample_batch(
+                            n_samples=batch_size, seq_len=seq_len,
+                            seed=_eval_seed)
+                        _ebm = None
+                    else:
+                        break
+                    _dtype = torch.float64 if args.fp64 else None
+                    _ex = _ex.to(device=device, dtype=_dtype)
+                    _ey = _ey.to(device=device, dtype=_dtype)
+                    if _ebm is not None:
+                        _ebm = _ebm.to(device=device, dtype=_ex.dtype)
+                    _db_eval_data.append((_ex, _ey, _ebm))
+
+                if _db_eval_data:
+                    model.eval()
+                    _snap_losses = []
+
+                    # Test each accumulated snapshot
+                    for _si, _snap in enumerate(model._db_snapshots_list):
+                        model.restore_lcx(_snap)
+                        _snap_total = 0.0
+                        for _ex, _ey, _ebm in _db_eval_data:
+                            with torch.no_grad():
+                                _sout, _ = model(_ex, return_stats=True)
+                                _sloss = compute_loss(_sout, _ey, bit_mask=_ebm)
+                                _snap_total += _sloss.item()
+                        _snap_losses.append(_snap_total / len(_db_eval_data))
+
+                    # Test current golden
+                    model.restore_lcx(model._db_golden)
+                    _golden_total = 0.0
+                    for _ex, _ey, _ebm in _db_eval_data:
+                        with torch.no_grad():
+                            _gout, _ = model(_ex, return_stats=True)
+                            _gloss = compute_loss(_gout, _ey, bit_mask=_ebm)
+                            _golden_total += _gloss.item()
+                    _golden_avg = _golden_total / len(_db_eval_data)
+
+                    # Find best snapshot
+                    _best_idx = min(range(len(_snap_losses)), key=lambda i: _snap_losses[i])
+                    _best_loss = _snap_losses[_best_idx]
+                    _worst_loss = max(_snap_losses)
+                    _spread = _worst_loss - _best_loss
+
+                    # Promote if best snapshot beats golden
+                    _promoted = _best_loss < _golden_avg
+                    if _promoted:
+                        _new_golden = model._db_snapshots_list[_best_idx]
+                        model._db_golden = {k: v.to(device) for k, v in _new_golden.items()}
+                        model._db_promotions += 1
+
+                    _result = "PROMOTED" if _promoted else "GOLDEN_KEPT"
+                    _db_line = (f"SLEEP {model._db_cycle_num} | "
+                                f"n_snaps={_n_snaps} spread={_spread:.6f} "
+                                f"best={_best_loss:.6f} worst={_worst_loss:.6f} "
+                                f"golden={_golden_avg:.6f} {_result}")
+                    print(f"  [DB] {_db_line}")
+                    log_file.write(f"{_db_line}\n")
+                    log_file.flush()
+
+                    # InfluxDB telemetry
+                    influx_writer.log_sleep_cycle(
+                        run_id=influx_run_id,
+                        step=step,
+                        cycle_num=model._db_cycle_num,
+                        n_snapshots=_n_snaps,
+                        spread=_spread,
+                        best_loss=_best_loss,
+                        golden_loss=_golden_avg,
+                        promoted=_promoted,
+                        promotions_total=model._db_promotions)
+
+                    # Restore scratch LCX for continued training
+                    # (writes go to scratch, reads from updated golden)
+                    model.restore_lcx(model._db_snapshots_list[-1])
+                    model._db_snapshots_list.clear()
+                    model.train()
+            # ========== END DOUBLE-BUFFER SLEEP CYCLE ==========
+
             # Apply LR schedule (warmup + cosine decay) — overrides controls LR when active
             if _lr_schedule_active:
                 _scheduled_lr = _get_scheduled_lr(step)
@@ -1803,6 +2075,7 @@ def main():
             with torch.no_grad():
                 output_cpu = output.detach().cpu()
                 y_cpu = y_train.detach().cpu()
+                _bit_mask_cpu = _bit_mask.detach().cpu() if _bit_mask is not None else None
                 being_outputs_cpu = [b.detach().cpu() for b in train_stats['being_outputs']]
                 stats_cpu = {k: v for k, v in train_stats.items()}
                 stats_cpu['being_outputs'] = being_outputs_cpu
@@ -1813,7 +2086,7 @@ def main():
             if args.byte_tokens:
                 metrics = evaluate_metrics_byte_tokens(output_cpu, stats_cpu, y_cpu, train_loss, num_beings)
             elif args.binary_bits:
-                metrics = evaluate_metrics_binary_bits(output_cpu, stats_cpu, y_cpu, train_loss, num_beings)
+                metrics = evaluate_metrics_binary_bits(output_cpu, stats_cpu, y_cpu, train_loss, num_beings, bit_mask=_bit_mask_cpu)
             else:
                 metrics = evaluate_metrics(output_cpu, stats_cpu, y_cpu, train_loss, num_beings, num_bits, _n_cont, receptive_masks=_masks)
             _current_lr = optimizer.param_groups[0]['lr']
@@ -2132,12 +2405,13 @@ def main():
             eval_every = controls.get('eval_every') or args.eval_every
             if step > 0 and step % eval_every == 0:
                 model.eval()
-                model._eval_skip_think = True
+                model._eval_skip_think = False  # eval must use same think ticks as training
                 eval_metrics_accum = None
                 n_eval = controls.get('eval_samples') or args.eval_samples
                 with torch.no_grad():
                     for ei in range(n_eval):
                         _ev_mask = None
+                        _ev_bit_mask = None
                         if theme_loader:
                             x_ev, y_ev, _ev_mask = theme_loader.sample_batch(
                                 n_samples=batch_size, seq_len=seq_len,
@@ -2145,12 +2419,19 @@ def main():
                                 difficulty_max=args.difficulty_max,
                             )
                         elif traindat_loader:
-                            x_ev, y_ev = traindat_loader.sample_batch(
-                                n_samples=batch_size, seq_len=seq_len,
-                                num_bits=num_bits, seed=7777 + step * 100 + ei,
-                                byte_token_mode=args.byte_tokens,
-                                binary_bits_mode=args.binary_bits,
-                            )
+                            if args.binary_bits:
+                                x_ev, y_ev, _ev_bit_mask = traindat_loader.sample_batch(
+                                    n_samples=batch_size, seq_len=seq_len,
+                                    num_bits=num_bits, seed=7777 + step * 100 + ei,
+                                    binary_bits_mode=True,
+                                )
+                                x_ev = x_ev.where(_ev_bit_mask.bool(), torch.tensor(-1.0))
+                            else:
+                                x_ev, y_ev = traindat_loader.sample_batch(
+                                    n_samples=batch_size, seq_len=seq_len,
+                                    num_bits=num_bits, seed=7777 + step * 100 + ei,
+                                    byte_token_mode=args.byte_tokens,
+                                )
                         elif text_corpus:
                             x_ev, y_ev = generate_text_batch(
                                 text_corpus, n_samples=batch_size, seq_len=seq_len,
@@ -2170,17 +2451,20 @@ def main():
                             y_ev = y_ev.to(device=device, dtype=_dtype, non_blocking=True)
                         if _ev_mask is not None:
                             _ev_mask = _ev_mask.to(device=device, dtype=x_ev.dtype, non_blocking=True)
+                        if _ev_bit_mask is not None:
+                            _ev_bit_mask = _ev_bit_mask.to(device=device, dtype=x_ev.dtype, non_blocking=True)
                         ev_out, ev_stats = model(x_ev, return_stats=True, return_being_outputs=True)
-                        ev_loss = compute_loss(ev_out, y_ev, loss_mask=_ev_mask).item()
+                        ev_loss = compute_loss(ev_out, y_ev, loss_mask=_ev_mask, bit_mask=_ev_bit_mask).item()
                         ev_out_cpu = ev_out.detach().cpu()
                         y_ev_cpu = y_ev.detach().cpu()
                         ev_being_cpu = [b.detach().cpu() for b in ev_stats['being_outputs']]
                         ev_stats_cpu = {k: v for k, v in ev_stats.items()}
                         ev_stats_cpu['being_outputs'] = ev_being_cpu
+                        _ev_bit_mask_cpu = _ev_bit_mask.detach().cpu() if _ev_bit_mask is not None else None
                         if args.byte_tokens:
                             em = evaluate_metrics_byte_tokens(ev_out_cpu, ev_stats_cpu, y_ev_cpu, ev_loss, num_beings)
                         elif args.binary_bits:
-                            em = evaluate_metrics_binary_bits(ev_out_cpu, ev_stats_cpu, y_ev_cpu, ev_loss, num_beings)
+                            em = evaluate_metrics_binary_bits(ev_out_cpu, ev_stats_cpu, y_ev_cpu, ev_loss, num_beings, bit_mask=_ev_bit_mask_cpu)
                         else:
                             em = evaluate_metrics(ev_out_cpu, ev_stats_cpu, y_ev_cpu, ev_loss, num_beings, num_bits, _n_cont, receptive_masks=_masks)
                         if eval_metrics_accum is None:
@@ -2189,7 +2473,8 @@ def main():
                             for k in ['eval_loss', 'overall_acc', 'bit_acc', 'avg_bit_acc', 'answer_bit_acc', 'byte_match', 'hamming',
                                        'oracle_acc', 'bit_oracle_acc', 'ensemble_benefit',
                                        'circular_spread', 'coverage', 'clustering']:
-                                eval_metrics_accum[k] += em[k]
+                                if k in em and k in eval_metrics_accum:
+                                    eval_metrics_accum[k] += em[k]
                             for i in range(len(eval_metrics_accum['per_bit_accs'])):
                                 eval_metrics_accum['per_bit_accs'][i] += em['per_bit_accs'][i]
                             for i in range(len(eval_metrics_accum['being_accs'])):
@@ -2202,7 +2487,8 @@ def main():
                 for k in ['eval_loss', 'overall_acc', 'bit_acc', 'avg_bit_acc', 'answer_bit_acc', 'byte_match', 'hamming',
                            'oracle_acc', 'bit_oracle_acc', 'ensemble_benefit',
                            'circular_spread', 'coverage', 'clustering']:
-                    eval_metrics_accum[k] /= n_eval
+                    if k in eval_metrics_accum:
+                        eval_metrics_accum[k] /= n_eval
                 eval_metrics_accum['per_bit_accs'] = [v / n_eval for v in eval_metrics_accum['per_bit_accs']]
                 eval_metrics_accum['being_accs'] = [v / n_eval for v in eval_metrics_accum['being_accs']]
                 if 'being_masked_accs' in eval_metrics_accum:
@@ -2231,13 +2517,91 @@ def main():
                     current_stage=getattr(model, '_current_stage', 'UNKNOWN'))
                 influx_writer.log_bits(influx_run_id, step, eval_metrics_accum['per_bit_accs'])
 
+                # ========== DATASET RETIREMENT CHECK ==========
+                _retire_on = controls.get('auto_retire', True)
+                _retire_thresh = controls.get('mastery_threshold', 0.95)
+                if _retire_on and traindat_loader and eval_metrics_accum:
+                    _eval_ba = eval_metrics_accum.get('bit_acc', 0)
+                    if _eval_ba >= _retire_thresh:
+                        _active_ds = traindat_loader.current_dataset
+                        if _active_ds:
+                            from retirement import retire_dataset
+                            _data_root = str(Path(args.data_dir).parent)
+                            if retire_dataset(_data_root, _active_ds, step):
+                                _rmsg = (f"  [RETIRE] {_active_ds} mastered "
+                                         f"(bit_acc={_eval_ba:.4f} >= {_retire_thresh})")
+                                print(_rmsg)
+                                log_file.write(_rmsg + "\n")
+                                current_file.write(_rmsg + "\n")
+                                traindat_loader.update_weights({_active_ds: 0})
+                                influx_writer.log_retirement(
+                                    influx_run_id, step, _active_ds,
+                                    mastery_acc=_eval_ba, threshold=_retire_thresh)
+
+                # ========== SPLIT METRIC (streaming datasets) ==========
+                _copy_ba, _novel_ba = None, None
+                if traindat_loader and traindat_loader.current_dataset:
+                    _meta_p = Path(args.data_dir) / traindat_loader.current_dataset.replace('.traindat', '.meta.json')
+                    if _meta_p.exists():
+                        try:
+                            with open(_meta_p) as _mf:
+                                _smeta = json.load(_mf)
+                            if _smeta.get('is_streaming', False):
+                                _ovlap = _smeta.get('overlap_bytes', 0)
+                                if _ovlap > 0:
+                                    _copy_ba, _novel_ba = compute_split_accuracy(
+                                        ev_out_cpu, y_ev_cpu, _ovlap, num_bits)
+                                    _split_msg = (f"  [SPLIT] copy={_copy_ba:.4f} "
+                                                  f"novel={_novel_ba:.4f}")
+                                    print(_split_msg)
+                                    log_file.write(_split_msg + "\n")
+                        except (json.JSONDecodeError, KeyError):
+                            pass
+
                 model._eval_skip_think = False
                 model.train()
 
             # Save checkpoint periodically (frequency is live-controllable)
             ckpt_every = controls.get('checkpoint_every') or args.checkpoint_every
             if step > 0 and step % ckpt_every == 0:
-                save_checkpoint(model, optimizer, step, 0.0, args.checkpoint_dir, config=arch_config)
+                _ckpt_loss = loss.item() if hasattr(loss, 'item') else float(loss)
+                try:
+                    _ckpt_acc = eval_metrics_accum.get('bit_acc', 0.0) if eval_metrics_accum else 0.0
+                except (NameError, UnboundLocalError):
+                    _ckpt_acc = 0.0
+                _ckpt_ds = traindat_loader.current_dataset if traindat_loader else None
+                _max_drafts = controls.get('max_drafts', 15)
+                checkpoint_manager.save_draft(
+                    model, optimizer, step, _ckpt_loss, _ckpt_acc,
+                    args.checkpoint_dir, dataset=_ckpt_ds, config=arch_config,
+                    max_drafts=_max_drafts)
+
+                # Auto-promote on mastery (pairs with dataset retirement)
+                if (controls.get('auto_promote_on_mastery', True)
+                        and _ckpt_acc >= controls.get('mastery_threshold', 0.95)
+                        and _ckpt_ds):
+                    _tags = [f"mastered_{_ckpt_ds.replace('.traindat', '')}", "auto_promoted"]
+                    checkpoint_manager.promote_to_golden(args.checkpoint_dir, step, tags=_tags)
+
+            # Manual golden promotion trigger (one-shot via controls.json)
+            _promote_tag = controls.get('promote_tag')
+            if _promote_tag and isinstance(_promote_tag, str):
+                checkpoint_manager.promote_to_golden(
+                    args.checkpoint_dir, step, tags=[_promote_tag, "manual"])
+                # Clear the one-shot trigger
+                try:
+                    _ctrl_path = Path(__file__).parent / "logs" / "swarm" / "controls.json"
+                    with open(_ctrl_path, 'r') as _pf:
+                        _ctrl_data = json.load(_pf)
+                    _ctrl_data['promote_tag'] = None
+                    _tmp_ctrl = _ctrl_path.with_suffix('.json.tmp')
+                    with open(_tmp_ctrl, 'w') as _pf:
+                        json.dump(_ctrl_data, _pf, indent=2)
+                    if _ctrl_path.exists():
+                        _ctrl_path.unlink()
+                    _tmp_ctrl.rename(_ctrl_path)
+                except Exception:
+                    pass
 
     total_time = time.time() - start_time
 
@@ -2252,7 +2616,10 @@ def main():
 
     # Save final checkpoint
     final_step = num_steps - 1 if not args.resume else start_step + (num_steps - start_step)
-    save_checkpoint(model, optimizer, final_step, 0.0, args.checkpoint_dir, config=arch_config)
+    checkpoint_manager.save_draft(
+        model, optimizer, final_step, 0.0, 0.0,
+        args.checkpoint_dir, config=arch_config,
+        max_drafts=controls.get('max_drafts', 15) if 'controls' in dir() else 15)
 
     # Archive current run to git-tracked directory, then close InfluxDB
     import datetime
