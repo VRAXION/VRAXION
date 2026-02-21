@@ -508,6 +508,46 @@ HTML_PAGE = r"""<!DOCTYPE html>
     </div>
   </div>
 
+  <!-- Double-Buffer LCX -->
+  <div class="card">
+    <label>Double-Buffer LCX</label>
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px">
+      <label class="toggle">
+        <input type="checkbox" id="db_enabled" onchange="setVal('db_enabled', this.checked)">
+        <span class="track"></span>
+        <span class="knob"></span>
+      </label>
+      <span style="font-size:13px;color:#aaa">Golden read / scratch write</span>
+    </div>
+    <div style="font-size:11px;color:#555;margin-top:4px">Separates LCX reads (proven golden) from writes (scratch). Sleep cycles promote best snapshots.</div>
+  </div>
+
+  <!-- Sleep Cycle Settings -->
+  <div class="card">
+    <label>Sleep Cycle Settings</label>
+    <div style="margin-bottom:8px">
+      <span style="color:#888;font-size:11px">Sleep Interval (steps)</span>
+      <div class="row">
+        <input type="number" id="db_sleep_interval" step="10" min="10" value="200">
+        <button onclick="setVal('db_sleep_interval', parseInt(document.getElementById('db_sleep_interval').value))">Set</button>
+      </div>
+    </div>
+    <div style="margin-bottom:8px">
+      <span style="color:#888;font-size:11px">Eval Batches</span>
+      <div class="row">
+        <input type="number" id="db_eval_batches" step="1" min="1" max="10" value="2">
+        <button onclick="setVal('db_eval_batches', parseInt(document.getElementById('db_eval_batches').value))">Set</button>
+      </div>
+    </div>
+    <div>
+      <span style="color:#888;font-size:11px">Snapshot Every N Steps</span>
+      <div class="row">
+        <input type="number" id="db_snap_every" step="1" min="1" value="10">
+        <button onclick="setVal('db_snap_every', parseInt(document.getElementById('db_snap_every').value))">Set</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Data Mix -->
   <div class="card full-width">
     <label>Data Mix</label>
@@ -775,12 +815,16 @@ async function poll() {
     currentControls = d;
 
     // Update input values (only if not focused)
-    for (const key of ['lr', 'think_ticks', 'checkpoint_every', 'eval_every']) {
+    for (const key of ['lr', 'think_ticks', 'checkpoint_every', 'eval_every',
+                        'db_sleep_interval', 'db_eval_batches', 'db_snap_every']) {
       const el = document.getElementById(key);
       if (el && document.activeElement !== el && d[key] != null) {
         el.value = d[key];
       }
     }
+    // Sync db_enabled toggle
+    const dbToggle = document.getElementById('db_enabled');
+    if (dbToggle) dbToggle.checked = !!d.db_enabled;
 
     renderDataWeights(d.data_weights || {});
     renderBeingStates(d.being_states || {});
@@ -1674,9 +1718,19 @@ setInterval(load,5000);
                        'stage', 'effort', 'effort_name',
                        'checkpoint_every', 'eval_every', 'eval_samples',
                        'temporal_fibonacci', 'effort_mode', 'effort_lock',
-                       'agc_enabled', 'agc_low', 'agc_high'):
+                       'agc_enabled', 'agc_low', 'agc_high',
+                       'db_enabled', 'db_sleep_interval', 'db_eval_batches', 'db_snap_every'):
                 controls = self._read_controls()
                 old_value = controls.get(key, 'none')
+                # Type coercion for strict fields
+                if key in ('db_enabled', 'use_lcx', 'agc_enabled', 'temporal_fibonacci'):
+                    value = bool(value)
+                elif key in ('think_ticks', 'batch_size', 'checkpoint_every', 'eval_every',
+                             'eval_samples', 'num_bits',
+                             'db_sleep_interval', 'db_eval_batches', 'db_snap_every'):
+                    value = int(value)
+                elif key in ('lr', 'agc_low', 'agc_high'):
+                    value = float(value)
                 controls[key] = value
                 self._write_controls(controls)
                 influx_log_control_change(key, old_value, value)
