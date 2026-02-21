@@ -118,10 +118,11 @@ Full details: [Proven Findings](https://github.com/VRAXION/VRAXION/wiki/Proven-F
 - [Diamond Code v3 Architecture](https://github.com/VRAXION/VRAXION/wiki/Diamond-Code-v3-Architecture)
 - [Proven Findings](https://github.com/VRAXION/VRAXION/wiki/Proven-Findings)
 - [Probe Archive v3](https://github.com/VRAXION/VRAXION/wiki/Probe-Archive-v3) — all experiment results
+- [Session Log Feb 21](https://github.com/VRAXION/VRAXION/wiki/Session-Log-Feb-21-2026) — Zoom gate unfreeze + sleep cycles
 - [Session Log Feb 18](https://github.com/VRAXION/VRAXION/wiki/Session-Log-Feb-18-2026) — Nano launch + binary-bits
 - [Session Log Feb 17](https://github.com/VRAXION/VRAXION/wiki/Session-Log-Feb-17-2026) — 10 levers locked
 - [Theory of Thought](https://github.com/VRAXION/VRAXION/wiki/Theory-of-Thought)
 
 ---
 
-Version: v3.3.000 (2026-02-18) — Consolidated codebase. 78 legacy scripts removed; knowledge preserved in [Probe Archive v3](https://github.com/VRAXION/VRAXION/wiki/Probe-Archive-v3).
+Version: v3.4.000 (2026-02-21) — Zoom gate gradient unfreeze (AGC exempt). Sleep cycle validation (6 cycles, 3 promotions). Beta language training stable (73% eval, 85% peak). Dashboard consolidated (3→1).

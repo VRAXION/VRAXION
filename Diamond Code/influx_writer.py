@@ -172,6 +172,11 @@ def log_step(run_id, step, loss, bit_acc=0, answer_bit_acc=0, byte_match=0, orac
         p = p.field("copy_bit_acc", float(kwargs['copy_bit_acc']))
     if kwargs.get('novel_bit_acc') is not None:
         p = p.field("novel_bit_acc", float(kwargs['novel_bit_acc']))
+    # LCX contribution delta (eval only): negative = LCX helps
+    if kwargs.get('lcx_delta') is not None:
+        p = p.field("lcx_delta", float(kwargs['lcx_delta']))
+    if kwargs.get('lcx_off_loss') is not None:
+        p = p.field("lcx_off_loss", float(kwargs['lcx_off_loss']))
     _write_api.write(bucket=_bucket, record=p)
 
 
@@ -204,7 +209,14 @@ def log_dream(run_id, step, dream_step, dream_mode="consolidation",
 
 def log_sleep_cycle(run_id, step, cycle_num, n_snapshots=0,
                     spread=0, best_loss=0, golden_loss=0,
-                    promoted=False, promotions_total=0):
+                    promoted=False, promotions_total=0,
+                    spike_triggered=False,
+                    winner_step=0, winner_position_pct=0.0,
+                    lr_ceiling=0.0, lr_at_trigger=0.0,
+                    steps_since_last_sleep=0,
+                    best_bit_acc=0.0, golden_bit_acc=0.0,
+                    top3_mean_loss=0.0, median_loss=0.0,
+                    sleep_duration_sec=0.0):
     """Log a double-buffer sleep cycle event. Non-blocking."""
     if not _write_api:
         return
@@ -218,6 +230,36 @@ def log_sleep_cycle(run_id, step, cycle_num, n_snapshots=0,
          .field("golden_loss", float(golden_loss))
          .field("promoted", 1 if promoted else 0)
          .field("promotions_total", int(promotions_total))
+         .field("spike_triggered", 1 if spike_triggered else 0)
+         .field("winner_step", int(winner_step))
+         .field("winner_position_pct", float(winner_position_pct))
+         .field("lr_ceiling", float(lr_ceiling))
+         .field("lr_at_trigger", float(lr_at_trigger))
+         .field("steps_since_last_sleep", int(steps_since_last_sleep))
+         .field("best_bit_acc", float(best_bit_acc))
+         .field("golden_bit_acc", float(golden_bit_acc))
+         .field("top3_mean_loss", float(top3_mean_loss))
+         .field("median_loss", float(median_loss))
+         .field("sleep_duration_sec", float(sleep_duration_sec))
+         .time(time.time_ns(), WritePrecision.NS))
+    _write_api.write(bucket=_bucket, record=p)
+
+
+def log_sleep_snap(run_id, cycle_num, snap_index, snap_step,
+                   snap_loss, snap_bit_acc, best_so_far_acc, n_total):
+    """Log one snapshot evaluation during a sleep cycle (real-time). Non-blocking."""
+    if not _write_api:
+        return
+    p = (Point("sleep_snap")
+         .tag("run_id", run_id)
+         .tag("cycle_num", str(cycle_num))
+         .field("snap_index", int(snap_index))
+         .field("snap_step", int(snap_step))
+         .field("snap_loss", float(snap_loss))
+         .field("snap_bit_acc", float(snap_bit_acc))
+         .field("best_so_far_acc", float(best_so_far_acc))
+         .field("n_total", int(n_total))
+         .field("progress_pct", float((snap_index + 1) / max(n_total, 1) * 100))
          .time(time.time_ns(), WritePrecision.NS))
     _write_api.write(bucket=_bucket, record=p)
 

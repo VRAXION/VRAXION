@@ -725,7 +725,10 @@ def load_checkpoint(checkpoint_path, model, optimizer=None):
         print(f"  [LOAD] Unexpected params (ignored): {unexpected}")
 
     if optimizer is not None and not missing and not unexpected:
-        optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+        try:
+            optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+        except (ValueError, RuntimeError) as e:
+            print(f"  [LOAD] Skipping optimizer state (param group mismatch: {e})")
     elif optimizer is not None:
         print(f"  [LOAD] Skipping optimizer state (model architecture changed)")
 
@@ -837,6 +840,8 @@ def main():
                         help='Ring memory positions (default: 0 = match embedding dim)')
     parser.add_argument('--jump_bias', type=float, default=0.5,
                         help='Initial jump gate bias (default: 0.5 -> 62%% jump). Use -2.0 for ~12%% jump.')
+    parser.add_argument('--zoom_gate_init', type=float, default=-4.0,
+                        help='Zoom gate bias init (default: -4.0 -> 1.8%%). -5.0 was too frozen by AGC.')
     parser.add_argument('--data_dir', type=str, default=None,
                         help='Directory of .traindat files (overrides --text and math modes)')
     parser.add_argument('--data_weights', type=str, default=None,
@@ -1275,23 +1280,47 @@ def main():
     batch_size = args.batch_size
     max_value = 2 ** num_bits - 1  # Full bit range (all bits exercised)
 
-    optimizer = torch.optim.AdamW(
-        filter(lambda p: p.requires_grad, model.parameters()),
-        lr=args.lr, weight_decay=0.01
-    )
+    # Separate zoom_gate params for higher LR + AGC exemption
+    _gate_lr_mult = 1.0  # 1x LR for zoom_gate (AGC exempt alone provides sufficient gradient boost)
+    _zg_params = list(model.zoom_gate.parameters()) if hasattr(model, 'zoom_gate') and model.zoom_gate is not None else []
+    _zg_param_ids = {id(p) for p in _zg_params}  # used for both LR split and AGC exempt
+    _other_params = [p for p in model.parameters() if p.requires_grad and id(p) not in _zg_param_ids]
+    if _zg_params:
+        print(f"  [AGC] zoom_gate exempt: {len(_zg_params)} params ({sum(p.numel() for p in _zg_params)} values)")
 
-    # LR schedule: linear warmup then cosine decay
+    if _zg_params:
+        optimizer = torch.optim.AdamW([
+            {'params': _other_params, 'lr': args.lr, 'weight_decay': 0.01},
+            {'params': _zg_params, 'lr': args.lr * _gate_lr_mult, 'weight_decay': 0.0},
+        ])
+        print(f"  Optimizer: 2 param groups (main lr={args.lr}, zoom_gate lr={args.lr * _gate_lr_mult} [{_gate_lr_mult}x])")
+    else:
+        optimizer = torch.optim.AdamW(
+            filter(lambda p: p.requires_grad, model.parameters()),
+            lr=args.lr, weight_decay=0.01
+        )
+
+    # LR schedule: linear warmup then cosine decay (with adaptive ceiling)
     _base_lr = args.lr
     _warmup_steps = args.warmup_steps
     _lr_min = args.lr_min
     _lr_schedule_active = True  # disabled if user overrides LR via live controls
 
+    # Adaptive LR ceiling: reduced after spike, recovered after stable training
+    _lr_state = {
+        'ceiling': args.lr,       # current max lr (drops on spike, recovers on stability)
+        'warmup_offset': 0,       # warmup restarts from this step after promotion
+        'stable_steps': 0,        # consecutive steps without spike (for ceiling recovery)
+    }
+
     def _get_scheduled_lr(step):
-        """Warmup + cosine decay. Returns LR for this step."""
-        if step < _warmup_steps:
-            return _base_lr * (step + 1) / _warmup_steps
-        progress = (step - _warmup_steps) / max(num_steps - _warmup_steps, 1)
-        return _lr_min + 0.5 * (_base_lr - _lr_min) * (1.0 + math.cos(math.pi * progress))
+        """Warmup + cosine decay with adaptive ceiling. Warmup restarts after promotion."""
+        _eff = step - _lr_state['warmup_offset']
+        _ceil = _lr_state['ceiling']
+        if _eff < _warmup_steps:
+            return _lr_min + (_ceil - _lr_min) * (_eff + 1) / _warmup_steps
+        progress = (_eff - _warmup_steps) / max(num_steps - _warmup_steps, 1)
+        return _lr_min + 0.5 * (_ceil - _lr_min) * (1.0 + math.cos(math.pi * progress))
 
     print(f"LR schedule: warmup {_warmup_steps} steps -> cosine decay to {_lr_min:.1e}")
 
@@ -1320,6 +1349,14 @@ def main():
         for being in model.beings:
             nn.init.constant_(being.jump_gate.bias, args.jump_bias)
         print(f"Jump gate bias set to {args.jump_bias} (sigmoid={1/(1+2.718**(-args.jump_bias)):.0%})")
+
+    # Override zoom gate bias AFTER checkpoint load (so it takes effect on resume)
+    if hasattr(model, 'zoom_gate') and model.zoom_gate is not None:
+        with torch.no_grad():
+            _old_zg = model.zoom_gate.bias.item()
+            model.zoom_gate.bias.fill_(args.zoom_gate_init)
+            _new_sig = 1.0 / (1.0 + 2.718 ** (-args.zoom_gate_init))
+            print(f"  Zoom gate bias: {_old_zg:.1f} -> {args.zoom_gate_init} (sigmoid={_new_sig:.1%})")
 
     print(f"Eval: CPU metrics every step (from training output)")
     print()
@@ -1435,6 +1472,15 @@ def main():
 
         eval_metrics_accum = None  # initialized here for checkpoint_manager access
 
+        # Evolutionary sleep cycle: snapshot dir + state tracking
+        _snap_dir = os.path.join(args.checkpoint_dir, 'sleep_snapshots')
+        os.makedirs(_snap_dir, exist_ok=True)
+        _db_snap_paths = []       # disk paths of (weights + LCX) snapshots
+        _loss_history = []        # rolling window for spike baseline
+        _trigger_sleep = False    # spike-triggered sleep flag
+        _last_sleep_step = 0      # step of last sleep cycle (for interval tracking)
+
+        metrics = {}  # initialized here so snapshot saves before first eval don't crash
         for step in range(start_step, num_steps):
             step_start = time.time()
 
@@ -1505,6 +1551,7 @@ def main():
                 _loss_mask = _loss_mask.to(device=device, dtype=x_train.dtype, non_blocking=True)
             if _bit_mask is not None:
                 _bit_mask = _bit_mask.to(device=device, dtype=x_train.dtype, non_blocking=True)
+
 
             # Freeze-gate warmup: freeze being params, train only gate
             if args.combiner == 'ring_attention' and args.freeze_gate_steps > 0:
@@ -1646,8 +1693,9 @@ def main():
                 _agc_scale = 1.0
                 _agc_norm = 0.0
                 if _agc_on:
+                    # Compute global norm EXCLUDING zoom_gate (exempt — too small to survive global clamp)
                     for _p in model.parameters():
-                        if _p.grad is not None:
+                        if _p.grad is not None and id(_p) not in _zg_param_ids:
                             _agc_norm += _p.grad.data.norm(2).item() ** 2
                     _agc_norm = _agc_norm ** 0.5
                     if _agc_norm > _agc_hi:
@@ -1657,7 +1705,7 @@ def main():
                     if _agc_scale != 1.0:
                         with torch.no_grad():
                             for _p in model.parameters():
-                                if _p.grad is not None:
+                                if _p.grad is not None and id(_p) not in _zg_param_ids:
                                     _p.grad.data.mul_(_agc_scale)
                         if step % 10 == 0:
                             _dir = "DOWN" if _agc_scale < 1.0 else "UP"
@@ -1666,15 +1714,22 @@ def main():
                             log_file.write(_agc_msg + "\n")
                             current_file.write(_agc_msg + "\n")
 
-                # Hard clip as emergency backstop (at AGC high band)
+                # Hard clip as emergency backstop — exempt zoom_gate from global clip
                 _clip_max = _agc_hi if _agc_on else 1.0
-                torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=_clip_max)
+                _clip_params = [p for p in model.parameters() if p.grad is not None and id(p) not in _zg_param_ids]
+                if _clip_params:
+                    torch.nn.utils.clip_grad_norm_(_clip_params, max_norm=_clip_max)
+                # Separate gentle value clip for zoom_gate (bounded, won't spike)
+                for _p in model.parameters():
+                    if _p.grad is not None and id(_p) in _zg_param_ids:
+                        _p.grad.data.clamp_(-0.1, 0.1)
                 if amp_scaler:
                     amp_scaler.step(optimizer)
                     amp_scaler.update()
                 else:
                     optimizer.step()
                 optimizer.zero_grad()
+                torch.cuda.empty_cache()
 
             # Live controls polling
             if step % args.controls_every == 0:
@@ -1785,11 +1840,11 @@ def main():
 
                 _dream_y_cpu = _dream_y.detach().cpu()
 
-                # Scale LR for rehearsal mode
-                _waking_lr = optimizer.param_groups[0]['lr']
+                # Scale LR for rehearsal mode (save per-group for correct restore)
+                _waking_lrs = [_pg['lr'] for _pg in optimizer.param_groups]
                 if _dream_mode == 'rehearsal' and _dream_n > 0:
                     for _pg in optimizer.param_groups:
-                        _pg['lr'] = _waking_lr * _dream_lr_scale
+                        _pg['lr'] = _pg['lr'] * _dream_lr_scale
 
                 for _di in range(_dream_n):
                     _d_t0 = time.time()
@@ -1818,7 +1873,7 @@ def main():
                         if _d_agc_on:
                             _d_gn = 0.0
                             for _p in model.parameters():
-                                if _p.grad is not None:
+                                if _p.grad is not None and id(_p) not in _zg_param_ids:
                                     _d_gn += _p.grad.data.norm(2).item() ** 2
                             _d_gn = _d_gn ** 0.5
                             _d_agc_s = 1.0
@@ -1829,11 +1884,17 @@ def main():
                             if _d_agc_s != 1.0:
                                 with torch.no_grad():
                                     for _p in model.parameters():
-                                        if _p.grad is not None:
+                                        if _p.grad is not None and id(_p) not in _zg_param_ids:
                                             _p.grad.data.mul_(_d_agc_s)
-                            torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=_d_agc_hi)
+                            _d_clip_params = [p for p in model.parameters() if p.grad is not None and id(p) not in _zg_param_ids]
+                            if _d_clip_params:
+                                torch.nn.utils.clip_grad_norm_(_d_clip_params, max_norm=_d_agc_hi)
+                            for _p in model.parameters():
+                                if _p.grad is not None and id(_p) in _zg_param_ids:
+                                    _p.grad.data.clamp_(-0.1, 0.1)
                         optimizer.step()
                         optimizer.zero_grad()
+                        torch.cuda.empty_cache()
 
                     # Chain: consolidation chains output -> next input;
                     # rehearsal keeps golden data as input each step
@@ -1907,8 +1968,8 @@ def main():
                 # Restore waking state
                 model.think_ticks = _waking_tt
                 if _dream_mode == 'rehearsal':
-                    for _pg in optimizer.param_groups:
-                        _pg['lr'] = _waking_lr
+                    for _pgi, _pg in enumerate(optimizer.param_groups):
+                        _pg['lr'] = _waking_lrs[_pgi]
 
                 _dream_total = time.time() - _dream_start
                 _dream_ftr = f"  [DREAM DONE] total={_dream_total:.1f}s ({_dream_n} steps)"
@@ -1924,45 +1985,78 @@ def main():
             _db_interval = controls.get('db_sleep_interval', 200)
             _db_snap_every = controls.get('db_snap_every', 10)
             _db_eval_batches = controls.get('db_eval_batches', 3)
+            _db_spike_thresh = float(controls.get('db_spike_threshold', 5.0))
+
+            # Spike detection: track rolling baseline and detect explosions
+            _loss_val = loss.item() if loss is not None else 0.0
+            if _db_on and step > 0:
+                _loss_history.append(_loss_val)
+                if len(_loss_history) > 20:
+                    _loss_history = _loss_history[-20:]
+                if len(_loss_history) >= 3:
+                    _loss_baseline = sorted(_loss_history)[len(_loss_history) // 2]
+                    if (_loss_val > _db_spike_thresh * _loss_baseline
+                            and len(_db_snap_paths) >= 3
+                            and getattr(model, '_db_mode', False)):
+                        _spike_msg = (f"  [DB] SPIKE DETECTED step {step}: "
+                                      f"loss={_loss_val:.4f} > {_db_spike_thresh}x "
+                                      f"baseline={_loss_baseline:.4f}")
+                        print(_spike_msg)
+                        log_file.write(_spike_msg + "\n")
+                        current_file.write(_spike_msg + "\n")
+                        _trigger_sleep = True
 
             # Enable/disable double-buffer on the fly via controls
             if _db_on and not getattr(model, '_db_mode', False):
                 model.enable_double_buffer()
-                _db_cycle_num = 0
-                _db_promotions = 0
-                _db_snapshots = []
                 print(f"  [DB] Double-buffer ENABLED at step {step}")
                 log_file.write(f"  [DB] Double-buffer ENABLED at step {step}\n")
                 log_file.flush()
             elif not _db_on and getattr(model, '_db_mode', False):
                 model.disable_double_buffer(keep_golden=True)
-                _db_snapshots = []
+                # Cleanup snapshot files on disable
+                for _sp in _db_snap_paths:
+                    if os.path.exists(_sp):
+                        os.remove(_sp)
+                _db_snap_paths.clear()
                 print(f"  [DB] Double-buffer DISABLED at step {step}")
                 log_file.write(f"  [DB] Double-buffer DISABLED at step {step}\n")
                 log_file.flush()
 
-            # Accumulate scratch snapshots
+            # Accumulate (weights + LCX) snapshots to disk
             if _db_on and getattr(model, '_db_mode', False):
-                if not hasattr(model, '_db_snapshots_list'):
-                    model._db_snapshots_list = []
                 if step > 0 and step % _db_snap_every == 0:
-                    model._db_snapshots_list.append(model.snapshot_lcx())
-                    # Cap at max to prevent memory bloat
-                    _max_snaps = max(10, _db_interval // _db_snap_every)
-                    if len(model._db_snapshots_list) > _max_snaps:
-                        model._db_snapshots_list = model._db_snapshots_list[-_max_snaps:]
+                    _snap_path = os.path.join(_snap_dir, f"snap_{step:08d}.pt")
+                    torch.save({
+                        'weights': model.state_dict(),
+                        'lcx': model.snapshot_lcx(),
+                        'step': step,
+                        'loss': loss.item() if loss is not None else float('inf'),
+                        'bit_acc': metrics.get('bit_acc', 0.0),
+                    }, _snap_path)
+                    _db_snap_paths.append(_snap_path)
+                    # Cap: keep only last N snapshots on disk
+                    _max_snaps = max(10, _db_interval // max(1, _db_snap_every))
+                    while len(_db_snap_paths) > _max_snaps:
+                        _old = _db_snap_paths.pop(0)
+                        if os.path.exists(_old):
+                            os.remove(_old)
 
-            # Sleep cycle: evaluate snapshots and promote best to golden
+            # Sleep cycle: triggered by spike OR fixed interval
+            _interval_trigger = (step > 0 and step % _db_interval == 0
+                                 and len(_db_snap_paths) > 0)
             if (_db_on and getattr(model, '_db_mode', False)
-                    and step > 0 and step % _db_interval == 0
-                    and hasattr(model, '_db_snapshots_list')
-                    and len(model._db_snapshots_list) > 0):
+                    and (_trigger_sleep or _interval_trigger)
+                    and len(_db_snap_paths) > 0):
+                _spike_triggered = _trigger_sleep
+                _trigger_sleep = False  # reset flag
                 if not hasattr(model, '_db_cycle_num'):
                     model._db_cycle_num = 0
                     model._db_promotions = 0
                 model._db_cycle_num += 1
-                _n_snaps = len(model._db_snapshots_list)
-                print(f"  [DB] SLEEP CYCLE {model._db_cycle_num} "
+                _n_snaps = len(_db_snap_paths)
+                _trigger_type = "SPIKE" if _spike_triggered else "INTERVAL"
+                print(f"  [DB] SLEEP CYCLE {model._db_cycle_num} [{_trigger_type}] "
                       f"({_n_snaps} snapshots, {_db_eval_batches} eval batches)")
 
                 # Generate fresh eval batches with different seeds
@@ -1997,53 +2091,153 @@ def main():
                     _db_eval_data.append((_ex, _ey, _ebm))
 
                 if _db_eval_data:
+                    # Save current training state BEFORE eval loop overwrites weights
+                    _presleep_path = os.path.join(_snap_dir, "_presleep_state.pt")
+                    torch.save({
+                        'weights': model.state_dict(),
+                        'lcx': model.snapshot_lcx(),
+                    }, _presleep_path)
+
                     model.eval()
                     _snap_losses = []
+                    _snap_bit_accs = []
 
-                    # Test each accumulated snapshot
-                    for _si, _snap in enumerate(model._db_snapshots_list):
-                        model.restore_lcx(_snap)
+                    # Test each snapshot: load full state (weights + LCX) from disk
+                    _sleep_t0 = time.time()
+                    for _si, _snap_path in enumerate(_db_snap_paths):
+                        _snap_data = torch.load(_snap_path, map_location=device, weights_only=False)
+                        model.load_state_dict(_snap_data['weights'])
+                        model.restore_lcx(_snap_data['lcx'])
                         _snap_total = 0.0
+                        _snap_correct = 0
+                        _snap_total_bits = 0
                         for _ex, _ey, _ebm in _db_eval_data:
                             with torch.no_grad():
                                 _sout, _ = model(_ex, return_stats=True)
                                 _sloss = compute_loss(_sout, _ey, bit_mask=_ebm)
                                 _snap_total += _sloss.item()
-                        _snap_losses.append(_snap_total / len(_db_eval_data))
+                                _spred = (torch.sigmoid(_sout) > 0.5).float()
+                                _snap_correct += (_spred == _ey).float().sum().item()
+                                _snap_total_bits += _ey.numel()
+                        _snap_avg = _snap_total / len(_db_eval_data)
+                        _snap_acc = _snap_correct / max(_snap_total_bits, 1)
+                        _snap_losses.append(_snap_avg)
+                        _snap_bit_accs.append(_snap_acc)
+                        _elapsed = time.time() - _sleep_t0
+                        _eta = _elapsed / (_si + 1) * (_n_snaps - _si - 1)
+                        print(f"  [DB] snap {_si+1}/{_n_snaps} loss={_snap_avg:.4f} acc={_snap_acc:.4f} "
+                              f"(step {_snap_data.get('step', '?')}) [{_elapsed:.0f}s / ETA {_eta:.0f}s]",
+                              flush=True)
+                        influx_writer.log_sleep_snap(
+                            run_id=influx_run_id,
+                            cycle_num=model._db_cycle_num,
+                            snap_index=_si,
+                            snap_step=int(_snap_data.get('step', 0)),
+                            snap_loss=_snap_avg,
+                            snap_bit_acc=_snap_acc,
+                            best_so_far_acc=max(_snap_bit_accs),
+                            n_total=_n_snaps)
+                        del _snap_data
+                        torch.cuda.empty_cache()
 
-                    # Test current golden
+                    # Test current golden (use latest weights with golden LCX)
+                    # Load the best-so-far snapshot as base for golden comparison
+                    _pre_best = min(range(len(_snap_losses)), key=lambda i: _snap_losses[i])
+                    _pre_best_data = torch.load(_db_snap_paths[_pre_best], map_location=device, weights_only=False)
+                    model.load_state_dict(_pre_best_data['weights'])
                     model.restore_lcx(model._db_golden)
                     _golden_total = 0.0
+                    _golden_correct = 0
+                    _golden_total_bits = 0
                     for _ex, _ey, _ebm in _db_eval_data:
                         with torch.no_grad():
                             _gout, _ = model(_ex, return_stats=True)
                             _gloss = compute_loss(_gout, _ey, bit_mask=_ebm)
                             _golden_total += _gloss.item()
+                            _gpred = (torch.sigmoid(_gout) > 0.5).float()
+                            _golden_correct += (_gpred == _ey).float().sum().item()
+                            _golden_total_bits += _ey.numel()
                     _golden_avg = _golden_total / len(_db_eval_data)
+                    _golden_acc = _golden_correct / max(_golden_total_bits, 1)
 
-                    # Find best snapshot
+                    # Find best snapshot + derived metrics
                     _best_idx = min(range(len(_snap_losses)), key=lambda i: _snap_losses[i])
                     _best_loss = _snap_losses[_best_idx]
                     _worst_loss = max(_snap_losses)
                     _spread = _worst_loss - _best_loss
+                    _best_bit_acc = _snap_bit_accs[_best_idx]
+                    _sorted_losses = sorted(_snap_losses)
+                    _top3_mean = sum(_sorted_losses[:3]) / min(3, len(_sorted_losses))
+                    _median_loss = _sorted_losses[len(_sorted_losses) // 2]
+                    _winner_pos_pct = (_best_idx / max(1, _n_snaps - 1)) * 100.0
+                    _sleep_duration = time.time() - _sleep_t0
+                    _steps_since_last = step - _last_sleep_step
 
-                    # Promote if best snapshot beats golden
+                    # Promote best snapshot OR restore pre-sleep state
                     _promoted = _best_loss < _golden_avg
                     if _promoted:
-                        _new_golden = model._db_snapshots_list[_best_idx]
-                        model._db_golden = {k: v.to(device) for k, v in _new_golden.items()}
+                        _winner_data = torch.load(_db_snap_paths[_best_idx], map_location=device, weights_only=False)
+                        model.load_state_dict(_winner_data['weights'])
+                        model._db_golden = {k: v.to(device) for k, v in _winner_data['lcx'].items()}
                         model._db_promotions += 1
+                        del _winner_data
+
+                        # Capture LR before modifications
+                        _lr_before_sleep = optimizer.param_groups[0]['lr']
+
+                        # Adaptive LR ceiling: reduce on spike
+                        if _spike_triggered:
+                            _lr_state['ceiling'] = max(_lr_min * 10, _lr_before_sleep * 0.8)
+                            print(f"  [DB] LR ceiling reduced: {_lr_before_sleep:.2e} -> {_lr_state['ceiling']:.2e}")
+                        _lr_state['warmup_offset'] = step
+                        _lr_state['stable_steps'] = 0
+
+                        # Rebuild optimizer (new weights need fresh Adam states)
+                        # Re-split param groups (load_state_dict updates in-place, refs still valid)
+                        if _zg_params:
+                            optimizer = torch.optim.AdamW([
+                                {'params': _other_params, 'lr': _lr_min, 'weight_decay': 0.01},
+                                {'params': _zg_params, 'lr': _lr_min * _gate_lr_mult, 'weight_decay': 0.0},
+                            ])
+                        else:
+                            optimizer = torch.optim.AdamW(
+                                filter(lambda p: p.requires_grad, model.parameters()),
+                                lr=_lr_min, weight_decay=0.01
+                            )
+                        if amp_scaler:
+                            amp_scaler = torch.amp.GradScaler('cuda')
+                        _loss_history.clear()
+                    else:
+                        # GOLDEN_KEPT: restore pre-sleep training state (no rollback)
+                        _presleep_data = torch.load(_presleep_path, map_location=device, weights_only=False)
+                        model.load_state_dict(_presleep_data['weights'])
+                        model.restore_lcx(_presleep_data['lcx'])
+                        del _presleep_data
+                        _lr_before_sleep = optimizer.param_groups[0]['lr']
+                        # No optimizer rebuild — keep Adam momentum, continue training
 
                     _result = "PROMOTED" if _promoted else "GOLDEN_KEPT"
-                    _db_line = (f"SLEEP {model._db_cycle_num} | "
+                    _winner_step = _db_snap_paths[_best_idx]  # for log
+                    # Extract step from snapshot filename (snap_NNNNNN.pt)
+                    try:
+                        _winner_step = int(os.path.basename(_db_snap_paths[_best_idx]).split('_')[1].split('.')[0])
+                    except (IndexError, ValueError):
+                        _winner_step = '?'
+                    _db_line = (f"SLEEP {model._db_cycle_num} [{_trigger_type}] | "
                                 f"n_snaps={_n_snaps} spread={_spread:.6f} "
-                                f"best={_best_loss:.6f} worst={_worst_loss:.6f} "
-                                f"golden={_golden_avg:.6f} {_result}")
+                                f"best={_best_loss:.6f}(step={_winner_step}) "
+                                f"worst={_worst_loss:.6f} "
+                                f"golden={_golden_avg:.6f} {_result} | "
+                                f"acc={_best_bit_acc:.4f} g_acc={_golden_acc:.4f} "
+                                f"top3={_top3_mean:.4f} med={_median_loss:.4f} "
+                                f"pos={_winner_pos_pct:.0f}% dur={_sleep_duration:.0f}s "
+                                f"ceil={_lr_state['ceiling']:.2e}")
                     print(f"  [DB] {_db_line}")
                     log_file.write(f"{_db_line}\n")
                     log_file.flush()
 
                     # InfluxDB telemetry
+                    _lr_at_trig = _lr_before_sleep if _spike_triggered else 0.0
                     influx_writer.log_sleep_cycle(
                         run_id=influx_run_id,
                         step=step,
@@ -2053,20 +2247,47 @@ def main():
                         best_loss=_best_loss,
                         golden_loss=_golden_avg,
                         promoted=_promoted,
-                        promotions_total=model._db_promotions)
+                        promotions_total=model._db_promotions,
+                        spike_triggered=_spike_triggered,
+                        winner_step=int(_winner_step) if isinstance(_winner_step, int) else 0,
+                        winner_position_pct=_winner_pos_pct,
+                        lr_ceiling=_lr_state['ceiling'],
+                        lr_at_trigger=_lr_at_trig,
+                        steps_since_last_sleep=_steps_since_last,
+                        best_bit_acc=_best_bit_acc,
+                        golden_bit_acc=_golden_acc,
+                        top3_mean_loss=_top3_mean,
+                        median_loss=_median_loss,
+                        sleep_duration_sec=_sleep_duration)
+                    _last_sleep_step = step
 
-                    # Restore scratch LCX for continued training
-                    # (writes go to scratch, reads from updated golden)
-                    model.restore_lcx(model._db_snapshots_list[-1])
-                    model._db_snapshots_list.clear()
+                    # Cleanup: delete snapshot files, reset paths
+                    for _sp in _db_snap_paths:
+                        if os.path.exists(_sp):
+                            os.remove(_sp)
+                    _db_snap_paths.clear()
+                    if os.path.exists(_presleep_path):
+                        os.remove(_presleep_path)
+                    torch.cuda.empty_cache()
                     model.train()
             # ========== END DOUBLE-BUFFER SLEEP CYCLE ==========
 
             # Apply LR schedule (warmup + cosine decay) — overrides controls LR when active
             if _lr_schedule_active:
                 _scheduled_lr = _get_scheduled_lr(step)
-                for _pg in optimizer.param_groups:
-                    _pg['lr'] = _scheduled_lr
+                for _pgi, _pg in enumerate(optimizer.param_groups):
+                    if _pgi == 1 and _zg_params:  # zoom_gate group gets multiplied LR
+                        _pg['lr'] = _scheduled_lr * _gate_lr_mult
+                    else:
+                        _pg['lr'] = _scheduled_lr
+
+            # LR ceiling recovery: if stable for 50 steps, raise ceiling 10% (capped at base_lr)
+            _lr_state['stable_steps'] += 1
+            if _lr_state['stable_steps'] > 0 and _lr_state['stable_steps'] % 50 == 0:
+                _old_ceil = _lr_state['ceiling']
+                _lr_state['ceiling'] = min(_base_lr, _lr_state['ceiling'] * 1.1)
+                if _lr_state['ceiling'] > _old_ceil:
+                    print(f"  [DB] LR ceiling recovered: {_old_ceil:.2e} -> {_lr_state['ceiling']:.2e}")
 
             step_time = time.time() - step_start
             train_loss = loss.item()
@@ -2494,7 +2715,45 @@ def main():
                 if 'being_masked_accs' in eval_metrics_accum:
                     eval_metrics_accum['being_masked_accs'] = [v / n_eval for v in eval_metrics_accum['being_masked_accs']]
                 eval_metrics_accum['jump_rates'] = [v / n_eval for v in eval_metrics_accum['jump_rates']]
+                # LCX delta: one extra forward pass with LCX disabled
+                _lcx_delta = None
+                _lcx_off_loss = None
+                if getattr(model, '_lcx_hash_mode', False):
+                    _saved_allowed = getattr(model, '_allowed_levels', None)
+                    model._allowed_levels = set()  # disable all LCX reads
+                    _nolcx_total = 0.0
+                    with torch.no_grad():
+                        for ei in range(n_eval):
+                            if traindat_loader and args.binary_bits:
+                                _dx, _dy, _dbm = traindat_loader.sample_batch(
+                                    n_samples=batch_size, seq_len=seq_len,
+                                    num_bits=num_bits, seed=7777 + step * 100 + ei,
+                                    binary_bits_mode=True)
+                                _dx = _dx.where(_dbm.bool(), torch.tensor(-1.0))
+                                _dtype = torch.float64 if args.fp64 else None
+                                _dx = _dx.to(device=device, dtype=_dtype, non_blocking=True)
+                                _dy = _dy.to(device=device, dtype=_dtype, non_blocking=True)
+                                _dbm = _dbm.to(device=device, dtype=_dx.dtype, non_blocking=True)
+                                _dout, _ = model(_dx, return_stats=True)
+                                _nolcx_total += compute_loss(_dout, _dy, bit_mask=_dbm).item()
+                            elif traindat_loader:
+                                _dx, _dy = traindat_loader.sample_batch(
+                                    n_samples=batch_size, seq_len=seq_len,
+                                    num_bits=num_bits, seed=7777 + step * 100 + ei,
+                                    byte_token_mode=args.byte_tokens)
+                                _dtype = torch.float64 if args.fp64 else None
+                                _dx = _dx.to(device=device, dtype=_dtype, non_blocking=True)
+                                _dy = _dy.to(device=device, dtype=_dtype, non_blocking=True)
+                                _dout, _ = model(_dx, return_stats=True)
+                                _dout_loss = compute_loss(_dout, _dy)
+                                _nolcx_total += _dout_loss.item()
+                    _lcx_off_loss = _nolcx_total / max(n_eval, 1)
+                    _lcx_delta = eval_metrics_accum['eval_loss'] - _lcx_off_loss
+                    model._allowed_levels = _saved_allowed  # restore
+
                 eval_line = "EVAL | " + format_metrics_line(step, eval_metrics_accum['eval_loss'], 0, eval_metrics_accum)
+                if _lcx_delta is not None:
+                    eval_line += f" | lcx_delta={_lcx_delta:+.4f}"
                 log_file.write(eval_line + "\n")
                 current_file.write(eval_line + "\n")
                 log_file.flush()
@@ -2514,7 +2773,8 @@ def main():
                     batch_size=batch_size,
                     use_lcx=1 if getattr(model, '_lcx_hash_mode', False) else 0,
                     effort_name=getattr(model, '_current_effort_name', ''),
-                    current_stage=getattr(model, '_current_stage', 'UNKNOWN'))
+                    current_stage=getattr(model, '_current_stage', 'UNKNOWN'),
+                    lcx_delta=_lcx_delta, lcx_off_loss=_lcx_off_loss)
                 influx_writer.log_bits(influx_run_id, step, eval_metrics_accum['per_bit_accs'])
 
                 # ========== SPLIT METRIC (streaming datasets) ==========
@@ -2539,6 +2799,8 @@ def main():
 
                 model._eval_skip_think = False
                 model.train()
+                if device.type == 'cuda':
+                    torch.cuda.empty_cache()
 
             # Save checkpoint periodically (frequency is live-controllable)
             ckpt_every = controls.get('checkpoint_every') or args.checkpoint_every

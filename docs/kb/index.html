@@ -3,341 +3,378 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="VRAXION Knowledge Base — how and why we build what we build.">
+  <meta name="description" content="VRAXION Knowledge Base — Training Data Generation">
   <meta name="theme-color" content="#0A0C14">
-  <meta property="og:title" content="VRAXION — Knowledge Base">
-  <meta property="og:description" content="Architecture, training data, inner composition — the engineering behind VRAXION.">
-  <meta property="og:type" content="website">
-  <meta property="og:url" content="https://vraxion.net/kb/">
-  <meta property="og:image" content="../assets/vraxion_logo.svg">
   <link rel="icon" href="../assets/vraxion_logo.svg" type="image/svg+xml">
-  <title>Knowledge Base — VRAXION</title>
-
+  <title>Training Data — VRAXION KB</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=Outfit:wght@300;400;600&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
-
+  <link href="https://fonts.googleapis.com/css2?family=Russo+One&family=Marck+Script&family=Ubuntu+Mono:wght@400;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
-/* ═══════════════════════════════════════════════════════════
-   VRAXION KNOWLEDGE BASE
-   ═══════════════════════════════════════════════════════════ */
+/* ═══════════════════════════════════════════
+   VRAXION KB — CANVAS EDITION
+   ═══════════════════════════════════════════ */
 
 :root {
-  --bg: #0A0C14;
-  --white: #E8EAF0;
-  --dim: #4A4E5A;
-  --text: #8890A0;
-  --accent: #5B4BD5;
-  --font-display: 'Syne', system-ui, -apple-system, sans-serif;
-  --font-body: 'Outfit', system-ui, -apple-system, sans-serif;
-  --font-mono: 'JetBrains Mono', 'Cascadia Code', 'Fira Code', monospace;
-  --radius-sm: 4px;
-  --radius-md: 8px;
-  --radius-lg: 16px;
-  --nav-h: 48px;
-  --sidebar-w: 220px;
+  --bg:      #0A0C14;
+  --bg2:     #0D0F1A;
+  --white:   #E8EAF0;
+  --dim:     #4A4E5A;
+  --text:    #8890A0;
+  --cyan:    #0E7490;   /* trust · depth · professional */
+  --fuchsia: #C026D3;   /* spark · edge · experimental  */
+  --accent:  var(--cyan);
+  --orange:  #F59E0B;
+  --red:     #EF4444;
+  --font-display: 'Russo One', system-ui, sans-serif;
+  --font-title:   'Russo One', system-ui, sans-serif;
+  --font-body:    'Ubuntu Mono', monospace;
+  --font-mono:    'JetBrains Mono', monospace;
+  --nav-h:    48px;
+  --side-w:   200px;
+  --r:        8px;
 }
 
-*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
-
-html {
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
+*, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+html { -webkit-font-smoothing:antialiased; }
 
 body {
   background: var(--bg);
   color: var(--text);
   font-family: var(--font-body);
-  font-weight: 400;
-  line-height: 1.6;
-  min-height: 100vh;
-  overflow-y: scroll;
+  overflow: hidden; /* snap container handles scroll */
+  height: 100vh;
 }
 
-::selection {
-  background: rgba(91, 75, 213, 0.35);
-  color: var(--white);
+/* ── ATMOSPHERE ── */
+.noise {
+  position:fixed; inset:0; z-index:1; pointer-events:none;
+  opacity:0.018;
+  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size:256px;
 }
 
-/* ─── FIXED ATMOSPHERE LAYERS ─── */
-.noise-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 1;
-  opacity: 0.015;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-  background-repeat: repeat;
-  background-size: 256px 256px;
-  pointer-events: none;
-}
-
-.vignette {
-  position: fixed;
-  inset: 0;
-  z-index: 1;
-  background: radial-gradient(ellipse at center, transparent 50%, rgba(0, 0, 0, 0.40) 100%);
-  pointer-events: none;
-}
-
-/* ─── TOP NAV BAR ─── */
+/* ── TOP NAV ── */
 .site-nav {
-  position: fixed;
-  top: 0; left: 0; right: 0;
-  height: var(--nav-h);
-  z-index: 40;
-  display: flex;
-  align-items: center;
-  padding: 0 1.75rem;
-  background: rgba(10, 12, 20, 0.55);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-  pointer-events: auto;
+  position:fixed; top:0; left:0; right:0;
+  height:var(--nav-h); z-index:40;
+  display:flex; align-items:center; padding:0 1.75rem;
+  background:rgba(10,12,20,0.6);
+  backdrop-filter:blur(20px); -webkit-backdrop-filter:blur(20px);
+  border-bottom:1px solid rgba(255,255,255,0.05);
 }
-
 .nav-logo {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  text-decoration: none;
-  margin-right: 2.5rem;
-  flex-shrink: 0;
+  display:flex; align-items:center; gap:.5rem;
+  text-decoration:none; margin-right:2.5rem; flex-shrink:0;
 }
-.nav-logo img {
-  width: 18px;
-  height: 18px;
-  opacity: 0.9;
-}
+.nav-logo img { width:18px; height:18px; opacity:.9; }
 .nav-logo-text {
-  font-family: var(--font-display);
-  font-weight: 700;
-  font-size: 0.95rem;
-  letter-spacing: 0.08em;
-  color: var(--white);
+  font-family:var(--font-display); font-weight:700; font-size:.95rem;
+  letter-spacing:.08em; color:var(--white);
 }
-
-.nav-links {
-  display: flex;
-  align-items: center;
-  gap: 0.25rem;
-  flex: 1;
-}
-
+.nav-links { display:flex; align-items:center; gap:.25rem; flex:1; }
 .nav-link {
-  font-family: var(--font-body);
-  font-weight: 400;
-  font-size: 0.82rem;
-  letter-spacing: 0.04em;
-  color: var(--text);
-  text-decoration: none;
-  padding: 0.3rem 0.75rem;
-  border-radius: var(--radius-sm);
-  position: relative;
-  transition: color 0.2s ease;
+  font-family:var(--font-body); font-size:.82rem; color:var(--text);
+  text-decoration:none; padding:.3rem .75rem; border-radius:4px;
+  position:relative; transition:color .2s;
 }
-.nav-link:hover { color: var(--white); }
-.nav-link.active { color: var(--white); }
+.nav-link:hover { color:var(--white); }
+.nav-link.active { color:var(--white); }
 .nav-link.active::after {
-  content: '';
-  position: absolute;
-  bottom: -2px;
-  left: 0.75rem;
-  right: 0.75rem;
-  height: 2px;
-  border-radius: 1px;
-  background: var(--accent);
+  content:''; position:absolute; bottom:-2px; left:.75rem; right:.75rem;
+  height:2px; border-radius:1px; background:var(--accent);
 }
-
 .nav-cta {
-  font-family: var(--font-mono);
-  font-size: 0.72rem;
-  font-weight: 500;
-  letter-spacing: 0.06em;
-  color: var(--text);
-  text-decoration: none;
-  padding: 0.3rem 0.85rem;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: var(--radius-md);
-  transition: color 0.2s ease, border-color 0.2s ease;
-  flex-shrink: 0;
+  font-family:var(--font-mono); font-size:.72rem; color:var(--text);
+  text-decoration:none; padding:.3rem .85rem;
+  border:1px solid rgba(255,255,255,.12); border-radius:var(--r);
+  transition:color .2s, border-color .2s; flex-shrink:0;
 }
-.nav-cta:hover {
-  color: var(--white);
-  border-color: rgba(255, 255, 255, 0.28);
-}
+.nav-cta:hover { color:var(--white); border-color:rgba(255,255,255,.28); }
+@media(max-width:900px){.nav-links,.nav-cta{display:none}}
 
-@media (max-width: 900px) {
-  .nav-links { display: none; }
-  .nav-cta { display: none; }
-}
-
-/* ─── SIDEBAR ─── */
+/* ── SIDEBAR ── */
 .kb-sidebar {
-  position: fixed;
-  top: var(--nav-h);
-  left: 0;
-  bottom: 0;
-  width: var(--sidebar-w);
-  z-index: 20;
-  background: rgba(15, 18, 25, 0.6);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border-right: 1px solid rgba(255, 255, 255, 0.05);
-  padding: 2rem 1.25rem;
-  overflow-y: auto;
-  scrollbar-width: thin;
-  scrollbar-color: rgba(255,255,255,0.08) transparent;
+  position:fixed; top:var(--nav-h); left:0; bottom:0;
+  width:var(--side-w); z-index:20;
+  background:rgba(13,15,26,0.7);
+  backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px);
+  border-right:1px solid rgba(255,255,255,.05);
+  display:flex; flex-direction:column;
+  padding:2rem 1.25rem;
 }
-.kb-sidebar::-webkit-scrollbar { width: 3px; }
-.kb-sidebar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 2px; }
-
-.kb-sidebar-label {
-  font-family: var(--font-mono);
-  font-size: 0.65rem;
-  font-weight: 500;
-  letter-spacing: 0.12em;
-  color: var(--dim);
-  text-transform: uppercase;
-  margin-bottom: 0.85rem;
+.kb-side-label {
+  font-family:var(--font-mono); font-size:.62rem; font-weight:500;
+  letter-spacing:.14em; color:var(--dim); text-transform:uppercase;
+  margin-bottom:.75rem;
+}
+.kb-side-divider {
+  height:1px; background:rgba(255,255,255,.05); margin-bottom:1.5rem;
 }
 
-.kb-sidebar-divider {
-  height: 1px;
-  background: rgba(255, 255, 255, 0.05);
-  margin-bottom: 1rem;
+/* Dot nav */
+.dot-nav { display:flex; flex-direction:column; gap:0; }
+.dot-item {
+  display:flex; align-items:center; gap:.75rem;
+  padding:.5rem .5rem; cursor:pointer; border-radius:4px;
+  transition:background .15s;
+  user-select:none;
+}
+.dot-item:hover { background:rgba(255,255,255,.03); }
+.dot-circle {
+  width:8px; height:8px; border-radius:50%; flex-shrink:0;
+  border:1.5px solid var(--dim);
+  transition:background .25s, border-color .25s, box-shadow .25s;
+}
+.dot-item.active .dot-circle {
+  background:var(--accent);
+  border-color:var(--accent);
+  box-shadow:0 0 8px rgba(14,116,144,.6);
+}
+.dot-label {
+  font-family:var(--font-body); font-size:.78rem;
+  color:var(--dim); transition:color .2s; white-space:nowrap;
+}
+.dot-item.active .dot-label { color:var(--white); }
+.dot-item:hover .dot-label { color:var(--text); }
+
+/* Connector line between dots */
+.dot-track {
+  width:1px; height:18px; background:rgba(255,255,255,.06);
+  margin-left:calc(.5rem + 3.5px);
 }
 
-.kb-nav {
-  display: flex;
-  flex-direction: column;
-  gap: 0.15rem;
-}
-
-.kb-nav-item {
-  display: block;
-  font-family: var(--font-body);
-  font-size: 0.82rem;
-  font-weight: 400;
-  color: var(--text);
-  text-decoration: none;
-  padding: 0.4rem 0.75rem;
-  border-radius: var(--radius-sm);
-  border-left: 2px solid transparent;
-  transition: color 0.2s ease, border-color 0.2s ease, background 0.2s ease;
-  cursor: pointer;
-}
-.kb-nav-item:hover {
-  color: var(--white);
-  background: rgba(255,255,255,0.03);
-}
-.kb-nav-item.active {
-  color: var(--white);
-  border-left-color: var(--accent);
-  background: rgba(91, 75, 213, 0.06);
-}
-.kb-nav-item.soon {
-  color: var(--dim);
-  cursor: default;
-  pointer-events: none;
-}
-.kb-nav-item.soon::after {
-  content: '·';
-  margin-left: 0.4em;
-  opacity: 0.4;
-}
-
-/* ─── MAIN CONTENT ─── */
+/* ── MAIN SNAP CONTAINER ── */
 .kb-main {
-  margin-left: var(--sidebar-w);
-  padding-top: var(--nav-h);
-  min-height: 100vh;
+  position:fixed;
+  top:var(--nav-h); left:var(--side-w); right:0; bottom:0;
+  overflow-y:scroll;
+  scroll-snap-type:y mandatory;
+  scroll-behavior:smooth;
+  scrollbar-width:none;
+}
+.kb-main::-webkit-scrollbar { display:none; }
+
+@media(max-width:900px){
+  .kb-sidebar { display:none; }
+  .kb-main { left:0; }
 }
 
-.kb-content {
-  max-width: 720px;
-  margin: 0 auto;
-  padding: 3.5rem 2rem 6rem;
+/* ── SECTIONS ── */
+.kb-section {
+  height:100%; /* fills kb-main viewport exactly */
+  scroll-snap-align:start;
+  scroll-snap-stop:always;
+  display:flex; align-items:center; justify-content:center;
+  position:relative;
+  padding:3rem 4rem;
 }
 
-/* ─── ARTICLE HEADER ─── */
-.article-meta {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  margin-bottom: 1.25rem;
+/* subtle bg alternation */
+.kb-section:nth-child(even) { background:rgba(255,255,255,.008); }
+
+/* section counter + title block (top-left) */
+.sec-head {
+  position:absolute; top:2.5rem; left:3.5rem;
+  display:flex; align-items:baseline; gap:.75rem;
+}
+.sec-num {
+  font-family:var(--font-mono); font-size:.65rem; color:var(--dim);
+  letter-spacing:.1em;
+}
+.sec-title {
+  font-family:var(--font-display); font-weight:700; font-size:1rem;
+  color:var(--white); letter-spacing:-.01em;
 }
 
-.article-tag {
-  font-family: var(--font-mono);
-  font-size: 0.72rem;
-  font-weight: 400;
-  color: var(--dim);
-  letter-spacing: 0.06em;
-  padding-left: 0.75rem;
-  border-left: 2px solid var(--accent);
-  line-height: 1.4;
+/* ── TWO-COL LAYOUT (sections 1 & 5) ── */
+.two-col {
+  display:grid; grid-template-columns:1fr 1fr;
+  gap:5rem; align-items:center; width:100%; max-width:960px;
+}
+.col-text { display:flex; flex-direction:column; gap:1.25rem; }
+.col-text h2 {
+  font-family:var(--font-display); font-weight:800; font-size:2.25rem;
+  color:var(--white); line-height:1.15; letter-spacing:-.02em;
+}
+.col-text p {
+  font-family:var(--font-body); font-weight:300; font-size:.95rem;
+  color:var(--text); line-height:1.7; max-width:380px;
+}
+.stat-chips { display:flex; flex-wrap:wrap; gap:.6rem; margin-top:.25rem; }
+.chip {
+  font-family:var(--font-mono); font-size:.72rem; font-weight:400;
+  white-space:nowrap; position:relative;
+  padding:.45rem .85rem;
+  border-radius:6px;
+  background: linear-gradient(135deg, rgba(255,255,255,.10) 0%, rgba(255,255,255,.04) 100%);
+  backdrop-filter: blur(12px) saturate(1.4);
+  -webkit-backdrop-filter: blur(12px) saturate(1.4);
+  border: 1px solid rgba(255,255,255,.14);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.12),
+    inset 0 -1px 0 rgba(0,0,0,.2),
+    0 2px 8px rgba(0,0,0,.25);
+  --chip-color: var(--cyan);
+  color: rgba(255,255,255,.75);
+  overflow: hidden;
+}
+.chip::before {
+  content:'';
+  position:absolute; inset:0;
+  background: var(--chip-color);
+  opacity:.12;
+  border-radius:inherit;
+  pointer-events:none;
+}
+.chip::after {
+  content:'';
+  position:absolute; top:0; left:10%; right:10%; height:1px;
+  background: linear-gradient(to right, transparent, rgba(255,255,255,.3), transparent);
+  pointer-events:none;
+}
+.chip b {
+  font-weight:700;
+  color: var(--chip-color);
+  text-shadow: 0 0 10px var(--chip-color), 0 0 3px var(--chip-color);
+  position:relative;
+}
+.chip:nth-child(1) { --chip-color: var(--cyan);    }
+.chip:nth-child(2) { --chip-color: var(--fuchsia); }
+.chip:nth-child(3) { --chip-color: var(--cyan);    }
+.chip:nth-child(4) { --chip-color: var(--fuchsia); }
+.chip:nth-child(5) { --chip-color: var(--cyan);    }
+
+/* ── CENTERED LAYOUT (sections 2 & 4) ── */
+.centered {
+  display:flex; flex-direction:column; align-items:center;
+  gap:2rem; width:100%;
+}
+.centered .cap {
+  font-family:var(--font-mono); font-size:.7rem; color:var(--dim);
+  letter-spacing:.08em; text-align:center; line-height:1.6;
+}
+.centered .cap b { color:var(--text); }
+
+/* ── QUAD GRID (section 3) ── */
+.quad {
+  display:grid; grid-template-columns:1fr 1fr; grid-template-rows:1fr 1fr;
+  gap:1px; width:100%; height:100%;
+  background:rgba(255,255,255,.06);
+}
+.quad-cell {
+  background:var(--bg); display:flex; flex-direction:column;
+  align-items:center; justify-content:center; gap:1.25rem;
+  padding:2.5rem; position:relative; overflow:hidden;
+  transition:background .2s;
+}
+.quad-cell::before {
+  content:''; position:absolute; top:0; left:0; right:0; height:2px;
+  background:var(--cell-color, var(--dim)); opacity:.6;
+}
+.quad-cat {
+  position:absolute; top:1.5rem; left:1.75rem;
+  font-family:var(--font-mono); font-size:.6rem; font-weight:500;
+  letter-spacing:.12em; text-transform:uppercase;
+  color:var(--cell-color, var(--dim));
+}
+.quad-pair {
+  display:flex; align-items:center; gap:1.5rem;
+  font-family:var(--font-mono); font-weight:700;
+}
+.quad-val {
+  font-size:clamp(1.1rem, 2.5vw, 2rem);
+  color:var(--white); white-space:nowrap;
+}
+.quad-arrow {
+  font-size:1.5rem; color:var(--dim);
 }
 
-.article-h1 {
-  font-family: var(--font-display);
-  font-weight: 700;
-  font-size: 2rem;
-  color: var(--white);
-  line-height: 1.2;
-  letter-spacing: -0.01em;
-  margin-bottom: 1.75rem;
+/* ── SECTION 0 — FULL CANVAS LAYOUT ── */
+.sec0-inner {
+  display:grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1fr;
+  width:100%; height:100%;
+  padding: 0 3rem 0 4rem;
+  gap:0;
 }
 
-.article-rule {
-  border: none;
-  border-top: 1px solid rgba(255, 255, 255, 0.07);
-  margin-bottom: 2.5rem;
+/* LEFT COLUMN — titles + description */
+.sec0-left {
+  display:flex; flex-direction:column;
+  justify-content:center;
+  gap:2rem;
+  padding-right:3rem;
+  border-right:1px solid rgba(255,255,255,.05);
+}
+.sec0-title-block { display:flex; flex-direction:column; gap:1rem; }
+.sec0-page-title {
+  font-family:var(--font-title); font-weight:400;
+  font-size:clamp(3.5rem, 6vw, 6rem);
+  color:var(--white); letter-spacing:.01em; line-height:1.0;
+}
+.sec0-title {
+  font-family:'Marck Script', cursive; font-weight:400;
+  font-size:clamp(1.3rem, 2vw, 1.7rem);
+  color:var(--accent); letter-spacing:.01em; line-height:1.3;
+}
+.sec0-desc {
+  font-family:var(--font-body); font-weight:300;
+  font-size:1rem; color:var(--text);
+  line-height:1.75; max-width:38ch;
+}
+.sec0-subtitle { display:none; }
+
+/* RIGHT COLUMN — illustration */
+.sec0-right {
+  display:flex; flex-direction:column;
+  justify-content:center; align-items:center;
+  gap:2.5rem;
+  padding-left:3rem;
+}
+.sec0-visual-top {
+  display:flex; align-items:center; gap:2rem;
+  width:100%;
+}
+.sec0-matrix {
+  display:flex; flex-direction:column;
+  align-items:center; gap:.8rem;
+  width:100%;
+}
+.sec0-matrix-rule {
+  width:100%; height:1px;
+  background:linear-gradient(to right, transparent, rgba(255,255,255,.06), transparent);
 }
 
-/* ─── EMPTY STATE ─── */
-.article-empty {
-  border: 1px dashed rgba(255, 255, 255, 0.08);
-  border-radius: var(--radius-md);
-  padding: 2.5rem 2rem;
-  text-align: center;
+/* ── SPEC TABLE ── */
+.spec-table {
+  border:1px solid rgba(255,255,255,.08); border-radius:var(--r);
+  overflow:hidden; width:100%;
+}
+.spec-row {
+  display:flex; border-bottom:1px solid rgba(255,255,255,.05);
+}
+.spec-row:last-child { border-bottom:none; }
+.spec-k {
+  font-family:var(--font-mono); font-size:.68rem; color:var(--dim);
+  letter-spacing:.05em; padding:.7rem 1rem;
+  width:48%; flex-shrink:0;
+  border-right:1px solid rgba(255,255,255,.05);
+  background:rgba(255,255,255,.015);
+}
+.spec-v {
+  font-family:var(--font-mono); font-size:.78rem; font-weight:500;
+  color:var(--white); padding:.7rem 1rem;
 }
 
-.article-empty-label {
-  font-family: var(--font-mono);
-  font-size: 0.7rem;
-  letter-spacing: 0.1em;
-  color: var(--dim);
-  margin-bottom: 0.75rem;
-  text-transform: uppercase;
-}
-
-.article-empty-text {
-  font-family: var(--font-body);
-  font-weight: 300;
-  font-size: 0.95rem;
-  color: var(--dim);
-  font-style: italic;
-  line-height: 1.7;
-}
-
-/* ─── RESPONSIVE ─── */
-@media (max-width: 900px) {
-  .kb-sidebar { display: none; }
-  .kb-main { margin-left: 0; }
-  .kb-content { padding: 2rem 1.25rem 4rem; }
-  .article-h1 { font-size: 1.5rem; }
-}
 </style>
 </head>
-
 <body>
 
-<!-- Atmosphere -->
-<div class="noise-overlay" aria-hidden="true"></div>
-<div class="vignette" aria-hidden="true"></div>
+<div class="noise" aria-hidden="true"></div>
 
-<!-- Nav -->
+<!-- NAV -->
 <nav class="site-nav" aria-label="Site navigation">
   <a href="../" class="nav-logo" aria-label="VRAXION home">
     <img src="../assets/vraxion_logo.svg" alt="" aria-hidden="true">
@@ -352,37 +389,387 @@ body {
   <a href="#" class="nav-cta">Token ▸</a>
 </nav>
 
-<!-- Sidebar -->
+<!-- SIDEBAR -->
 <aside class="kb-sidebar" aria-label="Knowledge base navigation">
-  <div class="kb-sidebar-label">Knowledge Base</div>
-  <div class="kb-sidebar-divider"></div>
-  <nav class="kb-nav">
-    <a href="#training-data" class="kb-nav-item active">Training Data</a>
-    <span class="kb-nav-item soon">Architecture</span>
-    <span class="kb-nav-item soon">Inner Composition</span>
-    <span class="kb-nav-item soon">Evaluation</span>
+  <div class="kb-side-label">KB · 01</div>
+  <div class="kb-side-divider"></div>
+  <nav class="dot-nav" aria-label="Section navigation">
+
+    <div class="dot-item active" data-idx="0">
+      <div class="dot-circle"></div>
+      <span class="dot-label">The Format</span>
+    </div>
+    <div class="dot-track"></div>
+
+    <div class="dot-item" data-idx="1">
+      <div class="dot-circle"></div>
+      <span class="dot-label">Pairs</span>
+    </div>
+    <div class="dot-track"></div>
+
+    <div class="dot-item" data-idx="2">
+      <div class="dot-circle"></div>
+      <span class="dot-label">Training Loop</span>
+    </div>
+    <div class="dot-track"></div>
+
+    <div class="dot-item" data-idx="3">
+      <div class="dot-circle"></div>
+      <span class="dot-label">Disk Layout</span>
+    </div>
+
   </nav>
 </aside>
 
-<!-- Main -->
-<main class="kb-main">
-  <div class="kb-content">
+<!-- SNAP CONTAINER -->
+<main class="kb-main" id="kb-main">
 
-    <div class="article-meta">
-      <span class="article-tag">KB · 01</span>
+  <!-- ╔══════════════════════════════════════════════════╗
+       ║  §1 — THE FORMAT + MATRICES (merged)           ║
+       ╚══════════════════════════════════════════════════╝ -->
+  <section class="kb-section" id="sec-0" style="padding:0;align-items:stretch;">
+    <div class="sec-head" aria-hidden="true" style="opacity:0;pointer-events:none">
+      <span class="sec-num">01 /</span>
+      <span class="sec-title">Training Data Generation</span>
     </div>
 
-    <h1 class="article-h1" id="training-data">Training Data Generation</h1>
+    <div class="sec0-inner">
 
-    <hr class="article-rule">
+      <!-- LEFT: titles + description -->
+      <div class="sec0-left">
+        <div class="sec0-title-block">
+          <div class="sec0-page-title">The Training<br>Pipeline</div>
+          <div class="sec0-title">↳ how training data is structured and consumed</div>
+        </div>
+        <p class="sec0-desc">A fixed-shape binary container holding exactly 100,000 input/output association pairs, organized into themed chunks and designed for direct memory mapping at training time.</p>
+        <div class="stat-chips">
+          <div class="chip"><b>100,000</b> pairs / file</div>
+          <div class="chip"><b>~1.18 GB</b> on disk</div>
+          <div class="chip"><b>int8</b> dtype</div>
+          <div class="chip"><b>binary</b> encoded</div>
+          <div class="chip"><b>themed</b> chunks</div>
+        </div>
+      </div>
 
-    <div class="article-empty">
-      <div class="article-empty-label">In progress</div>
-      <p class="article-empty-text">This article is being written.</p>
+      <!-- RIGHT: illustration -->
+      <div class="sec0-right">
+
+        <!-- File icon + label -->
+        <div class="sec0-visual-top">
+          <svg viewBox="0 0 200 230" width="120" height="138" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" style="flex-shrink:0">
+            <ellipse cx="100" cy="210" rx="60" ry="14" fill="rgba(14,116,144,0.12)"/>
+            <rect x="16" y="10" width="148" height="190" rx="10" fill="rgba(14,116,144,0.07)" stroke="rgba(14,116,144,0.38)" stroke-width="1.5"/>
+            <path d="M133 10 L164 41 L133 41 Z" fill="rgba(14,116,144,0.18)" stroke="rgba(14,116,144,0.3)" stroke-width="1.5" stroke-linejoin="round"/>
+            <path d="M133 10 L164 41" stroke="rgba(14,116,144,0.28)" stroke-width="1.5"/>
+            <line x1="36" y1="72"  x2="122" y2="72"  stroke="rgba(14,116,144,0.32)" stroke-width="1.5" stroke-linecap="round"/>
+            <line x1="36" y1="86"  x2="115" y2="86"  stroke="rgba(14,116,144,0.22)" stroke-width="1.5" stroke-linecap="round"/>
+            <line x1="36" y1="100" x2="120" y2="100" stroke="rgba(14,116,144,0.16)" stroke-width="1.5" stroke-linecap="round"/>
+            <line x1="36" y1="114" x2="108" y2="114" stroke="rgba(14,116,144,0.11)" stroke-width="1.5" stroke-linecap="round"/>
+            <line x1="36" y1="128" x2="118" y2="128" stroke="rgba(14,116,144,0.07)" stroke-width="1.5" stroke-linecap="round"/>
+            <text x="92" y="174" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="11" font-weight="700" fill="rgba(14,116,144,0.85)" letter-spacing=".5">.traindat</text>
+          </svg>
+          <div style="display:flex;flex-direction:column;gap:.5rem;">
+            <div style="font-family:'JetBrains Mono',monospace;font-size:.75rem;color:var(--dim);letter-spacing:.06em;">FILE FORMAT</div>
+            <div style="font-family:'JetBrains Mono',monospace;font-size:1rem;font-weight:700;color:var(--white);">.traindat</div>
+            <div style="font-family:var(--font-body);font-size:.85rem;color:var(--text);line-height:1.5;">Binary · Fixed-shape<br>Direct memory-mapped</div>
+          </div>
+        </div>
+
+        <!-- Matrix diagram -->
+        <div class="sec0-matrix">
+          <div class="sec0-matrix-rule"></div>
+        <svg viewBox="0 0 720 220" width="100%" style="max-width:820px" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+
+          <!-- INPTMTX -->
+          <rect x="10" y="10" width="220" height="200" rx="8"
+            fill="rgba(14,116,144,0.07)" stroke="rgba(14,116,144,0.4)" stroke-width="1.5"/>
+          <rect x="10" y="10" width="220" height="3" rx="1.5" fill="#0E7490"/>
+          <line x1="30" y1="42"  x2="210" y2="42"  stroke="rgba(14,116,144,0.35)" stroke-width="1.5" stroke-linecap="round"/>
+          <line x1="30" y1="56"  x2="204" y2="56"  stroke="rgba(14,116,144,0.26)" stroke-width="1.5" stroke-linecap="round"/>
+          <line x1="30" y1="70"  x2="210" y2="70"  stroke="rgba(14,116,144,0.18)" stroke-width="1.5" stroke-linecap="round"/>
+          <line x1="30" y1="84"  x2="200" y2="84"  stroke="rgba(14,116,144,0.12)" stroke-width="1.5" stroke-linecap="round"/>
+          <line x1="30" y1="98"  x2="207" y2="98"  stroke="rgba(14,116,144,0.08)" stroke-width="1.5" stroke-linecap="round"/>
+          <text x="120" y="124" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="9" fill="rgba(14,116,144,0.22)">· · · 100,000 rows · · ·</text>
+          <text x="120" y="155" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="13" font-weight="700" fill="#E8EAF0">INPTMTX</text>
+          <text x="120" y="171" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="10" fill="rgba(14,116,144,0.75)">100,000 × 6,184</text>
+          <text x="120" y="191" text-anchor="middle" font-family="'Outfit',sans-serif" font-size="10" fill="#8890A0">Question matrix · ~590 MB</text>
+
+          <!-- ARROW -->
+          <line x1="244" y1="110" x2="330" y2="110" stroke="#4A4E5A" stroke-width="1.5"/>
+          <polygon points="330,105 340,110 330,115" fill="#4A4E5A"/>
+          <text x="292" y="102" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="8" fill="#4A4E5A" letter-spacing=".04em">PAIRED</text>
+
+          <!-- OUTPMTX -->
+          <rect x="350" y="10" width="360" height="200" rx="8"
+            fill="rgba(192,38,211,0.05)" stroke="rgba(192,38,211,0.35)" stroke-width="1.5"/>
+          <rect x="350" y="10" width="360" height="3" rx="1.5" fill="#C026D3"/>
+          <line x1="370" y1="42"  x2="688" y2="42"  stroke="rgba(192,38,211,0.35)" stroke-width="1.5" stroke-linecap="round"/>
+          <line x1="370" y1="56"  x2="682" y2="56"  stroke="rgba(192,38,211,0.26)" stroke-width="1.5" stroke-linecap="round"/>
+          <line x1="370" y1="70"  x2="688" y2="70"  stroke="rgba(192,38,211,0.18)" stroke-width="1.5" stroke-linecap="round"/>
+          <line x1="370" y1="84"  x2="678" y2="84"  stroke="rgba(192,38,211,0.12)" stroke-width="1.5" stroke-linecap="round"/>
+          <line x1="370" y1="98"  x2="685" y2="98"  stroke="rgba(192,38,211,0.08)" stroke-width="1.5" stroke-linecap="round"/>
+          <text x="530" y="124" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="9" fill="rgba(192,38,211,0.2)">· · · 100,000 rows · · ·</text>
+          <text x="530" y="155" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="13" font-weight="700" fill="#E8EAF0">OUTPMTX</text>
+          <text x="530" y="171" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="10" fill="rgba(192,38,211,0.75)">100,000 × 6,184</text>
+          <text x="530" y="191" text-anchor="middle" font-family="'Outfit',sans-serif" font-size="10" fill="#8890A0">Answer matrix · ~590 MB</text>
+
+        </svg>
+          <p class="cap">Each row = one string encoded as binary bits — <b>773 bytes × 8 bits = 6,184 int8 values</b> · Sentinel −1 = no-grade position</p>
+        </div><!-- /sec0-matrix -->
+
+      </div><!-- /sec0-right -->
+
+    </div><!-- /sec0-inner -->
+  </section>
+
+  <!-- ╔══════════════════════════════════════════════╗
+       ║  §3 — ASSOCIATION PAIRS                     ║
+       ╚══════════════════════════════════════════════╝ -->
+  <section class="kb-section" id="sec-2" style="padding:0;">
+    <div class="sec-head" style="z-index:2;">
+      <span class="sec-num">03 /</span>
+      <span class="sec-title">Association Pairs</span>
     </div>
 
-  </div>
+    <div class="quad">
+
+      <div class="quad-cell" style="--cell-color:#F59E0B;">
+        <div class="quad-cat">Arithmetic</div>
+        <div class="quad-pair">
+          <span class="quad-val">"1 + 1"</span>
+          <span class="quad-arrow">→</span>
+          <span class="quad-val">"2"</span>
+        </div>
+      </div>
+
+      <div class="quad-cell" style="--cell-color:#0E7490;">
+        <div class="quad-cat">Logic / Pattern</div>
+        <div class="quad-pair">
+          <span class="quad-val">"A+B+C"</span>
+          <span class="quad-arrow">→</span>
+          <span class="quad-val">"D"</span>
+        </div>
+      </div>
+
+      <div class="quad-cell" style="--cell-color:#C026D3;">
+        <div class="quad-cat">Dialogue</div>
+        <div class="quad-pair">
+          <span class="quad-val">"Hi!"</span>
+          <span class="quad-arrow">→</span>
+          <span class="quad-val">"Hello!"</span>
+        </div>
+      </div>
+
+      <div class="quad-cell" style="--cell-color:#0E7490;">
+        <div class="quad-cat">Text Completion</div>
+        <div class="quad-pair">
+          <span class="quad-val" style="font-size:clamp(.9rem,1.8vw,1.5rem)">"The cat sat on"</span>
+          <span class="quad-arrow">→</span>
+          <span class="quad-val">"the mat"</span>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ╔══════════════════════════════════════════════╗
+       ║  §4 — TRAINING LOOP                         ║
+       ╚══════════════════════════════════════════════╝ -->
+  <section class="kb-section" id="sec-3">
+    <div class="sec-head">
+      <span class="sec-num">04 /</span>
+      <span class="sec-title">Training Loop</span>
+    </div>
+
+    <div class="centered">
+      <svg viewBox="0 0 860 220" width="100%" style="max-width:860px" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+
+        <!-- ── Node helper: each node is a rect + label ── -->
+
+        <!-- Node 1: INPTMTX[n] — purple -->
+        <rect x="10"  y="50" width="118" height="52" rx="8" fill="rgba(14,116,144,0.12)" stroke="rgba(14,116,144,0.5)" stroke-width="1.5"/>
+        <text x="69"  y="73" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="10" font-weight="700" fill="#0E7490">INPTMTX[n]</text>
+        <text x="69"  y="90" text-anchor="middle" font-family="'Outfit',sans-serif" font-size="9" fill="#8890A0">row n</text>
+
+        <!-- arrow -->
+        <line x1="128" y1="76" x2="150" y2="76" stroke="#4A4E5A" stroke-width="1.5"/>
+        <polygon points="150,71 158,76 150,81" fill="#4A4E5A"/>
+
+        <!-- Node 2: f(model) — white -->
+        <rect x="158" y="50" width="100" height="52" rx="8" fill="rgba(232,234,240,0.05)" stroke="rgba(232,234,240,0.25)" stroke-width="1.5"/>
+        <text x="208" y="73" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="11" font-weight="700" fill="#E8EAF0">f(model)</text>
+        <text x="208" y="90" text-anchor="middle" font-family="'Outfit',sans-serif" font-size="9" fill="#8890A0">forward pass</text>
+
+        <!-- arrow -->
+        <line x1="258" y1="76" x2="280" y2="76" stroke="#4A4E5A" stroke-width="1.5"/>
+        <polygon points="280,71 288,76 280,81" fill="#4A4E5A"/>
+
+        <!-- Node 3: prediction — orange -->
+        <rect x="288" y="50" width="110" height="52" rx="8" fill="rgba(245,158,11,0.08)" stroke="rgba(245,158,11,0.4)" stroke-width="1.5"/>
+        <text x="343" y="73" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="11" font-weight="700" fill="#F59E0B">prediction</text>
+        <text x="343" y="90" text-anchor="middle" font-family="'Outfit',sans-serif" font-size="9" fill="#8890A0">output bits</text>
+
+        <!-- arrow -->
+        <line x1="398" y1="76" x2="420" y2="76" stroke="#4A4E5A" stroke-width="1.5"/>
+        <polygon points="420,71 428,76 420,81" fill="#4A4E5A"/>
+
+        <!-- Node 4: compare — orange -->
+        <rect x="428" y="50" width="138" height="52" rx="8" fill="rgba(245,158,11,0.08)" stroke="rgba(245,158,11,0.35)" stroke-width="1.5"/>
+        <text x="497" y="73" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="10" font-weight="700" fill="#F59E0B">compare</text>
+        <text x="497" y="90" text-anchor="middle" font-family="'Outfit',sans-serif" font-size="9" fill="#8890A0">vs OUTPMTX[n]</text>
+
+        <!-- arrow -->
+        <line x1="566" y1="76" x2="586" y2="76" stroke="#4A4E5A" stroke-width="1.5"/>
+        <polygon points="586,71 594,76 586,81" fill="#4A4E5A"/>
+
+        <!-- Node 5: grade ≠ −1 — green -->
+        <rect x="594" y="50" width="118" height="52" rx="8" fill="rgba(192,38,211,0.08)" stroke="rgba(192,38,211,0.4)" stroke-width="1.5"/>
+        <text x="653" y="73" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="10.5" font-weight="700" fill="#C026D3">grade ≠ −1</text>
+        <text x="653" y="90" text-anchor="middle" font-family="'Outfit',sans-serif" font-size="9" fill="#8890A0">valid positions</text>
+
+        <!-- arrow -->
+        <line x1="712" y1="76" x2="732" y2="76" stroke="#4A4E5A" stroke-width="1.5"/>
+        <polygon points="732,71 740,76 732,81" fill="#4A4E5A"/>
+
+        <!-- Node 6: backprop — red -->
+        <rect x="740" y="50" width="110" height="52" rx="8" fill="rgba(239,68,68,0.08)" stroke="rgba(239,68,68,0.4)" stroke-width="1.5"/>
+        <text x="795" y="73" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="11" font-weight="700" fill="#EF4444">backprop</text>
+        <text x="795" y="90" text-anchor="middle" font-family="'Outfit',sans-serif" font-size="9" fill="#8890A0">weight update</text>
+
+        <!-- ── RETURN LOOP ── smooth bezier under pipeline -->
+        <path d="M795 102 C795 160, 69 160, 69 102"
+          stroke="url(#loopGrad)" stroke-width="1.5" stroke-dasharray="4 3"
+          fill="none"/>
+        <!-- arrowhead pointing up into node 1 -->
+        <polygon points="64,103 69,95 74,103" fill="rgba(14,116,144,0.6)"/>
+
+        <!-- loop label -->
+        <text x="432" y="175" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="9" fill="#4A4E5A" letter-spacing=".05em">n + 1  ·  repeat for all 100,000 rows</text>
+
+        <!-- gradient definition for the loop arc -->
+        <defs>
+          <linearGradient id="loopGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%"   stop-color="rgba(14,116,144,0.6)"/>
+            <stop offset="100%" stop-color="rgba(239,68,68,0.5)"/>
+          </linearGradient>
+        </defs>
+
+      </svg>
+
+      <p class="cap">For each of 100,000 rows: feed input → run model → generate prediction → compare against expected output → grade only non-sentinel positions → backpropagate error</p>
+    </div>
+  </section>
+
+  <!-- ╔══════════════════════════════════════════════╗
+       ║  §5 — DISK LAYOUT                           ║
+       ╚══════════════════════════════════════════════╝ -->
+  <section class="kb-section" id="sec-4">
+    <div class="sec-head">
+      <span class="sec-num">05 /</span>
+      <span class="sec-title">Disk Layout</span>
+    </div>
+
+    <div class="two-col" style="align-items:start; padding-top:3rem;">
+
+      <!-- SVG file anatomy -->
+      <div style="display:flex;align-items:center;justify-content:center;">
+        <svg viewBox="0 0 260 340" width="260" height="340" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+
+          <!-- INPTMTX block -->
+          <rect x="20" y="20" width="180" height="130" rx="0"
+            fill="rgba(14,116,144,0.1)" stroke="rgba(14,116,144,0.35)" stroke-width="1.5"/>
+          <!-- top accent -->
+          <rect x="20" y="20" width="180" height="3" fill="#0E7490"/>
+          <!-- left accent line -->
+          <rect x="20" y="20" width="3" height="130" fill="rgba(14,116,144,0.5)"/>
+
+          <text x="40" y="52"  font-family="'JetBrains Mono',monospace" font-size="12" font-weight="700" fill="#E8EAF0">INPTMTX</text>
+          <text x="40" y="70"  font-family="'Outfit',sans-serif" font-size="10" fill="#8890A0">flat 1D array</text>
+          <!-- data stripes -->
+          <line x1="40" y1="90"  x2="180" y2="90"  stroke="rgba(14,116,144,0.3)" stroke-width="1.5" stroke-linecap="round"/>
+          <line x1="40" y1="103" x2="175" y2="103" stroke="rgba(14,116,144,0.2)" stroke-width="1.5" stroke-linecap="round"/>
+          <line x1="40" y1="116" x2="178" y2="116" stroke="rgba(14,116,144,0.12)" stroke-width="1.5" stroke-linecap="round"/>
+
+          <text x="40" y="138" font-family="'JetBrains Mono',monospace" font-size="13" font-weight="700" fill="rgba(14,116,144,0.9)">~590 MB</text>
+
+          <!-- divider -->
+          <line x1="20" y1="150" x2="200" y2="150" stroke="rgba(255,255,255,0.12)" stroke-width="1"/>
+
+          <!-- OUTPMTX block -->
+          <rect x="20" y="150" width="180" height="130" rx="0"
+            fill="rgba(192,38,211,0.07)" stroke="rgba(192,38,211,0.3)" stroke-width="1.5"/>
+          <rect x="20" y="150" width="3" height="130" fill="rgba(192,38,211,0.5)"/>
+
+          <text x="40" y="182" font-family="'JetBrains Mono',monospace" font-size="12" font-weight="700" fill="#E8EAF0">OUTPMTX</text>
+          <text x="40" y="200" font-family="'Outfit',sans-serif" font-size="10" fill="#8890A0">flat 1D array</text>
+          <line x1="40" y1="220" x2="180" y2="220" stroke="rgba(192,38,211,0.28)" stroke-width="1.5" stroke-linecap="round"/>
+          <line x1="40" y1="233" x2="175" y2="233" stroke="rgba(192,38,211,0.18)" stroke-width="1.5" stroke-linecap="round"/>
+          <line x1="40" y1="246" x2="178" y2="246" stroke="rgba(192,38,211,0.1)" stroke-width="1.5" stroke-linecap="round"/>
+          <text x="40" y="268" font-family="'JetBrains Mono',monospace" font-size="13" font-weight="700" fill="rgba(192,38,211,0.85)">~590 MB</text>
+
+          <!-- bottom border -->
+          <rect x="20" y="280" width="180" height="2" fill="rgba(255,255,255,0.06)"/>
+
+          <!-- total brace line on right -->
+          <line x1="208" y1="20"  x2="215" y2="20"  stroke="#4A4E5A" stroke-width="1"/>
+          <line x1="215" y1="20"  x2="215" y2="280" stroke="#4A4E5A" stroke-width="1"/>
+          <line x1="215" y1="280" x2="208" y2="280" stroke="#4A4E5A" stroke-width="1"/>
+          <line x1="215" y1="150" x2="222" y2="150" stroke="#4A4E5A" stroke-width="1"/>
+
+          <text x="228" y="155" font-family="'JetBrains Mono',monospace" font-size="9" font-weight="700" fill="#E8EAF0" writing-mode="tb" transform="rotate(90 228 155)">~1.18 GB total</text>
+
+        </svg>
+      </div>
+
+      <!-- Spec table -->
+      <div style="display:flex;flex-direction:column;gap:1rem;">
+        <div style="font-family:var(--font-mono);font-size:.62rem;letter-spacing:.12em;color:var(--dim);text-transform:uppercase;margin-bottom:.25rem;">Spec</div>
+        <div class="spec-table">
+          <div class="spec-row"><div class="spec-k">logical shape</div><div class="spec-v">100,000 × 6,184</div></div>
+          <div class="spec-row"><div class="spec-k">physical layout</div><div class="spec-v">1D flat array</div></div>
+          <div class="spec-row"><div class="spec-k">row width</div><div class="spec-v">773 bytes × 8 bits</div></div>
+          <div class="spec-row"><div class="spec-k">dtype</div><div class="spec-v">int8</div></div>
+          <div class="spec-row"><div class="spec-k">per matrix</div><div class="spec-v">~590 MB</div></div>
+          <div class="spec-row"><div class="spec-k">total file</div><div class="spec-v">~1.18 GB</div></div>
+          <div class="spec-row"><div class="spec-k">padding sentinel</div><div class="spec-v">−1 (no grade)</div></div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
 </main>
+
+<script>
+(function() {
+  const main     = document.getElementById('kb-main');
+  const sections = Array.from(document.querySelectorAll('.kb-section'));
+  const dots     = Array.from(document.querySelectorAll('.dot-item'));
+
+  // Update active dot based on scroll position
+  function updateDot() {
+    const scrollTop  = main.scrollTop;
+    const viewH      = main.clientHeight;
+    let   activeIdx  = 0;
+    sections.forEach((s, i) => {
+      if (s.offsetTop <= scrollTop + viewH * 0.5) activeIdx = i;
+    });
+    dots.forEach((d, i) => d.classList.toggle('active', i === activeIdx));
+  }
+
+  main.addEventListener('scroll', updateDot, { passive: true });
+
+  // Dot click → scroll to section
+  dots.forEach((d, i) => {
+    d.addEventListener('click', () => {
+      sections[i].scrollIntoView({ behavior: 'smooth' });
+    });
+  });
+
+  // Initial state
+  updateDot();
+})();
+</script>
 
 </body>
 </html>

@@ -83,6 +83,7 @@ DEFAULT_CONTROLS = {
     "db_sleep_interval": 200,
     "db_eval_batches": 2,
     "db_snap_every": 10,
+    "db_spike_threshold": 5.0,  # loss > N× baseline triggers immediate sleep
     # Checkpoint management
     "max_drafts": 15,
     "promote_tag": None,
@@ -122,7 +123,7 @@ def write_default_controls(path: str, lr: float, data_weights: Dict[str, float],
             if 'max_drafts' in existing:
                 existing_max_drafts = existing['max_drafts']
             # Preserve double-buffer settings (user may have enabled via controls.json)
-            for _dbk in ('db_enabled', 'db_sleep_interval', 'db_eval_batches', 'db_snap_every'):
+            for _dbk in ('db_enabled', 'db_sleep_interval', 'db_eval_batches', 'db_snap_every', 'db_spike_threshold'):
                 if _dbk in existing:
                     existing_db[_dbk] = existing[_dbk]
         except Exception:
@@ -179,6 +180,7 @@ def write_default_controls(path: str, lr: float, data_weights: Dict[str, float],
         "db_sleep_interval": existing_db.get('db_sleep_interval', 200),
         "db_eval_batches": existing_db.get('db_eval_batches', 2),
         "db_snap_every": existing_db.get('db_snap_every', 10),
+        "db_spike_threshold": existing_db.get('db_spike_threshold', 5.0),
         # Checkpoint management
         "max_drafts": existing_max_drafts if existing_max_drafts is not None else 15,
         "promote_tag": None,
@@ -286,6 +288,8 @@ def read_controls(path: str) -> Dict[str, Any]:
                 result['db_eval_batches'] = max(1, min(10, int(data['db_eval_batches'])))
             if 'db_snap_every' in data and isinstance(data['db_snap_every'], int):
                 result['db_snap_every'] = max(1, int(data['db_snap_every']))
+            if 'db_spike_threshold' in data:
+                result['db_spike_threshold'] = max(2.0, min(100.0, float(data['db_spike_threshold'])))
         return result
     except Exception:
         return dict(DEFAULT_CONTROLS)

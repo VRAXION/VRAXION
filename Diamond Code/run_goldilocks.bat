@@ -50,10 +50,10 @@ python -u test_swarm_config.py ^
     --depth 2 ^
     --num_beings 1 ^
     --num_bits 8 ^
-    --batch_size 10 ^
+    --batch_size 5 ^
     --seq_len 192 ^
     --memory_size 192 ^
-    --think_ticks 0 ^
+    --think_ticks 1 ^
     --attention_radius 8 ^
     --lcx_mode hash ^
     --lcx_num_levels 1 ^
@@ -69,12 +69,12 @@ python -u test_swarm_config.py ^
     --checkpoint_every 25 ^
     --eval_every 5 ^
     --steps 1000000 ^
-    --lr 0.001 ^
-    --warmup_steps 100 ^
-    --lr_min 1e-4 ^
+    --lr 0.0004 ^
+    --warmup_steps 50 ^
+    --lr_min 1e-5 ^
     --controls_every 1 ^
-    --start_lcx_off ^
-    --effort Alpha
+    --zoom_gate_init -4.0 ^
+    --effort Beta
 
 REM Kill control panel when training ends
 taskkill /F /FI "WINDOWTITLE eq CTRL_PANEL" >nul 2>&1
