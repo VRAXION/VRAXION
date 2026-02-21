@@ -2517,27 +2517,6 @@ def main():
                     current_stage=getattr(model, '_current_stage', 'UNKNOWN'))
                 influx_writer.log_bits(influx_run_id, step, eval_metrics_accum['per_bit_accs'])
 
-                # ========== DATASET RETIREMENT CHECK ==========
-                _retire_on = controls.get('auto_retire', True)
-                _retire_thresh = controls.get('mastery_threshold', 0.95)
-                if _retire_on and traindat_loader and eval_metrics_accum:
-                    _eval_ba = eval_metrics_accum.get('bit_acc', 0)
-                    if _eval_ba >= _retire_thresh:
-                        _active_ds = traindat_loader.current_dataset
-                        if _active_ds:
-                            from retirement import retire_dataset
-                            _data_root = str(Path(args.data_dir).parent)
-                            if retire_dataset(_data_root, _active_ds, step):
-                                _rmsg = (f"  [RETIRE] {_active_ds} mastered "
-                                         f"(bit_acc={_eval_ba:.4f} >= {_retire_thresh})")
-                                print(_rmsg)
-                                log_file.write(_rmsg + "\n")
-                                current_file.write(_rmsg + "\n")
-                                traindat_loader.update_weights({_active_ds: 0})
-                                influx_writer.log_retirement(
-                                    influx_run_id, step, _active_ds,
-                                    mastery_acc=_eval_ba, threshold=_retire_thresh)
-
                 # ========== SPLIT METRIC (streaming datasets) ==========
                 _copy_ba, _novel_ba = None, None
                 if traindat_loader and traindat_loader.current_dataset:
@@ -2575,13 +2554,6 @@ def main():
                     model, optimizer, step, _ckpt_loss, _ckpt_acc,
                     args.checkpoint_dir, dataset=_ckpt_ds, config=arch_config,
                     max_drafts=_max_drafts)
-
-                # Auto-promote on mastery (pairs with dataset retirement)
-                if (controls.get('auto_promote_on_mastery', True)
-                        and _ckpt_acc >= controls.get('mastery_threshold', 0.95)
-                        and _ckpt_ds):
-                    _tags = [f"mastered_{_ckpt_ds.replace('.traindat', '')}", "auto_promoted"]
-                    checkpoint_manager.promote_to_golden(args.checkpoint_dir, step, tags=_tags)
 
             # Manual golden promotion trigger (one-shot via controls.json)
             _promote_tag = controls.get('promote_tag')

@@ -6,6 +6,7 @@ Tier 3 (logic):  add256 — arithmetic (logic256 already exists)
 Tier 4 (memory): fib256 — two-step dependency
 Tier 5 (LCX):   delay_echo256, denoise256 — require working memory
 """
+import datetime
 import json
 import os
 import random
@@ -318,11 +319,15 @@ if __name__ == '__main__':
         size = os.path.getsize(path)
         print(f"  -> {size:,} bytes")
 
-        # Write .meta.json sidecar
+        # Write .meta.json sidecar (v2.0 format)
         meta = dict(entry['meta'])
         meta['seed'] = 42
         meta['target_bytes'] = TARGET
         meta['actual_bytes'] = size
+        meta['version'] = '2.0'
+        meta['date'] = datetime.datetime.now().isoformat()[:19]
+        meta['pairs_estimate'] = size // (BLOCK * 2)
+        meta['script'] = 'generate_traindat_suite.py'
         meta_path = path.replace('.traindat', '.meta.json')
         with open(meta_path, 'w') as f:
             json.dump(meta, f, indent=2)

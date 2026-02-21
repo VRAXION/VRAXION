@@ -52,7 +52,7 @@ def generate_batch_binary_bits(
     seq_len: int = 16,
     num_bits: int = 8,
     seed=None,
-) -> Tuple[torch.Tensor, torch.Tensor]:
+) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
     """
     Generate next-chunk prediction batch using binary bit encoding.
 
@@ -66,7 +66,9 @@ def generate_batch_binary_bits(
             num_bits=64 -> 8 bytes/pos (64 binary bits, covers 128 bytes in 16 positions)
 
     Returns:
-        (x, y) where x, y are [n_samples, seq_len, num_bits] float tensors
+        (x, y, mask) where x, y are [n_samples, seq_len, num_bits] float tensors
+        and mask is [n_samples, seq_len, num_bits] float tensor (1.0=real data, 0.0=N/A).
+        For traindat, mask is always all-1s (all bits are real data).
     """
     assert num_bits % 8 == 0, f"num_bits must be multiple of 8, got {num_bits}"
     bytes_per_pos = num_bits // 8
@@ -105,7 +107,33 @@ def generate_batch_binary_bits(
     x = torch.from_numpy(all_bits[:, :seq_len, :].copy())
     y = torch.from_numpy(all_bits[:, 1:seq_len + 1, :].copy())
 
-    return x, y
+    # Bit mask: 1.0 = real data, 0.0 = N/A (empty/padding).
+    # For traindat, every bit is real data. Future: sparse encodings set padding to 0.
+    mask = torch.ones_like(y)
+
+    return x, y, mask
+
+
+def load_batch_from_file(
+    filepath: str,
+    n_samples: int,
+    seq_len: int,
+    num_bits: int,
+    seed: int = None,
+    binary_bits_mode: bool = False,
+) -> Tuple[torch.Tensor, torch.Tensor, Optional[torch.Tensor]]:
+    """Load a random batch from a specific .traindat file (for dream rehearsal).
+
+    Returns (x, y, mask). mask is None for Gray mode, [B,T,num_bits] for binary.
+    Raises FileNotFoundError if file doesn't exist.
+    """
+    with open(filepath, 'rb') as f:
+        corpus = f.read()
+    if binary_bits_mode:
+        return generate_batch_binary_bits(corpus, n_samples, seq_len, num_bits, seed)
+    else:
+        x, y = generate_batch_from_bytes(corpus, n_samples, seq_len, num_bits, seed)
+        return x, y, None
 
 
 def generate_batch_byte_tokens(
@@ -231,6 +259,7 @@ class TraindatLoader:
         self._role_maps: Dict[str, np.ndarray] = {}
         self._file_list: List[str] = []
         self._weights: Dict[str, float] = weights or {}
+        self._explicit_weights = weights is not None  # if True, unlisted files get weight=0
         self._sequential = False
         self._seq_steps = 100
         self._seq_index = 0
@@ -253,7 +282,7 @@ class TraindatLoader:
 
         for fname in self._file_list:
             if fname not in self._weights:
-                self._weights[fname] = 1.0
+                self._weights[fname] = 0.0 if self._explicit_weights else 1.0
 
     def _load_corpus(self, filename: str) -> bytes:
         """Lazily load and cache a .traindat file."""
@@ -311,9 +340,13 @@ class TraindatLoader:
 
     @property
     def current_dataset(self) -> Optional[str]:
-        """Return the current dataset name in sequential mode, or None."""
+        """Return the current dataset name in sequential mode, or the sole active dataset in random mode."""
         if self._sequential and self._seq_active:
             return self._seq_active[self._seq_index]
+        # In random mode: if exactly 1 dataset has weight > 0, return it
+        active = [f for f, w in self._weights.items() if w > 0]
+        if len(active) == 1:
+            return active[0]
         return None
 
     @property
@@ -374,6 +407,7 @@ class TraindatLoader:
         if byte_token_mode:
             return generate_batch_byte_tokens(corpus, n_samples, seq_len, seed)
         if binary_bits_mode:
+            # Always returns (x, y, mask) — mask is [B, T, num_bits] float
             return generate_batch_binary_bits(corpus, n_samples, seq_len, num_bits, seed)
         rm = self._get_role_map(filename) if return_mask else None
         return generate_batch_from_bytes(corpus, n_samples, seq_len, num_bits, seed, role_map=rm)

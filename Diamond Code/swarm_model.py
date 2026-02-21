@@ -3450,7 +3450,7 @@ class SwarmByteRingModel(nn.Module):
             circular_spreads = []
             all_pointer_positions = []  # For coverage calculation
             for t in range(T):
-                positions_t = pointer_positions_log[t]  # List of positions for this timestep
+                positions_t = [p for p in pointer_positions_log[t] if not (p != p)]  # filter NaN
                 all_pointer_positions.extend([int(p) % self.num_memory_positions for p in positions_t])
 
                 # Compute mean pairwise circular distance

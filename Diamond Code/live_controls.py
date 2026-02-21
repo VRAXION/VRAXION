@@ -81,14 +81,10 @@ DEFAULT_CONTROLS = {
     # Double-buffer LCX (golden read / scratch write / sleep cycle)
     "db_enabled": False,
     "db_sleep_interval": 200,
-    "db_eval_batches": 3,
+    "db_eval_batches": 2,
     "db_snap_every": 10,
-    # Retirement controls
-    "auto_retire": True,
-    "mastery_threshold": 0.95,
     # Checkpoint management
     "max_drafts": 15,
-    "auto_promote_on_mastery": True,
     "promote_tag": None,
 }
 
@@ -109,7 +105,6 @@ def write_default_controls(path: str, lr: float, data_weights: Dict[str, float],
     existing_eval_every = None
     existing_tiers = None
     existing_checkpoint_every = None
-    existing_mastery_threshold = None
     existing_max_drafts = None
     existing_db = {}
     if Path(path).exists():
@@ -124,8 +119,6 @@ def write_default_controls(path: str, lr: float, data_weights: Dict[str, float],
                 existing_tiers = existing['effort_tiers']
             if 'checkpoint_every' in existing:
                 existing_checkpoint_every = existing['checkpoint_every']
-            if 'mastery_threshold' in existing:
-                existing_mastery_threshold = existing['mastery_threshold']
             if 'max_drafts' in existing:
                 existing_max_drafts = existing['max_drafts']
             # Preserve double-buffer settings (user may have enabled via controls.json)
@@ -184,14 +177,10 @@ def write_default_controls(path: str, lr: float, data_weights: Dict[str, float],
         # Double-buffer LCX (golden read / scratch write / sleep cycle)
         "db_enabled": existing_db.get('db_enabled', False),
         "db_sleep_interval": existing_db.get('db_sleep_interval', 200),
-        "db_eval_batches": existing_db.get('db_eval_batches', 3),
+        "db_eval_batches": existing_db.get('db_eval_batches', 2),
         "db_snap_every": existing_db.get('db_snap_every', 10),
-        # Retirement
-        "auto_retire": True,
-        "mastery_threshold": existing_mastery_threshold if existing_mastery_threshold is not None else 0.95,
         # Checkpoint management
         "max_drafts": existing_max_drafts if existing_max_drafts is not None else 15,
-        "auto_promote_on_mastery": True,
         "promote_tag": None,
     }
     Path(path).parent.mkdir(parents=True, exist_ok=True)
@@ -283,16 +272,9 @@ def read_controls(path: str) -> Dict[str, Any]:
                 result['dream_binarize'] = data['dream_binarize']
             if 'dream_lr_scale' in data and isinstance(data['dream_lr_scale'], (int, float)):
                 result['dream_lr_scale'] = float(max(0.001, min(1.0, data['dream_lr_scale'])))
-            # Retirement controls
-            if 'auto_retire' in data and isinstance(data['auto_retire'], bool):
-                result['auto_retire'] = data['auto_retire']
-            if 'mastery_threshold' in data and isinstance(data['mastery_threshold'], (int, float)):
-                result['mastery_threshold'] = float(max(0.5, min(1.0, data['mastery_threshold'])))
             # Checkpoint management controls
             if 'max_drafts' in data and isinstance(data['max_drafts'], int):
                 result['max_drafts'] = max(3, min(50, int(data['max_drafts'])))
-            if 'auto_promote_on_mastery' in data and isinstance(data['auto_promote_on_mastery'], bool):
-                result['auto_promote_on_mastery'] = data['auto_promote_on_mastery']
             if 'promote_tag' in data and (data['promote_tag'] is None or isinstance(data['promote_tag'], str)):
                 result['promote_tag'] = data['promote_tag']
             # Double-buffer LCX controls
