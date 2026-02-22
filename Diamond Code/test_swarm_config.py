@@ -1311,6 +1311,7 @@ def main():
         'ceiling': args.lr,       # current max lr (drops on spike, recovers on stability)
         'warmup_offset': 0,       # warmup restarts from this step after promotion
         'stable_steps': 0,        # consecutive steps without spike (for ceiling recovery)
+        'spike_cooldown': 0,      # steps remaining at lr_min after spike (prevents immediate LR jump)
     }
 
     def _get_scheduled_lr(step):
@@ -1729,7 +1730,6 @@ def main():
                 else:
                     optimizer.step()
                 optimizer.zero_grad()
-                torch.cuda.empty_cache()
 
             # Live controls polling
             if step % args.controls_every == 0:
@@ -1894,7 +1894,6 @@ def main():
                                     _p.grad.data.clamp_(-0.1, 0.1)
                         optimizer.step()
                         optimizer.zero_grad()
-                        torch.cuda.empty_cache()
 
                     # Chain: consolidation chains output -> next input;
                     # rehearsal keeps golden data as input each step
@@ -2005,6 +2004,9 @@ def main():
                         log_file.write(_spike_msg + "\n")
                         current_file.write(_spike_msg + "\n")
                         _trigger_sleep = True
+                        # Spike cooldown: force LR to minimum for 10 steps
+                        _lr_state['spike_cooldown'] = 10
+                        _lr_state['stable_steps'] = 0
 
             # Enable/disable double-buffer on the fly via controls
             if _db_on and not getattr(model, '_db_mode', False):
@@ -2268,7 +2270,6 @@ def main():
                     _db_snap_paths.clear()
                     if os.path.exists(_presleep_path):
                         os.remove(_presleep_path)
-                    torch.cuda.empty_cache()
                     model.train()
             # ========== END DOUBLE-BUFFER SLEEP CYCLE ==========
 
@@ -2281,8 +2282,17 @@ def main():
                     else:
                         _pg['lr'] = _scheduled_lr
 
+            # Spike cooldown: force LR to minimum, overrides controls.json AND schedule
+            if _lr_state['spike_cooldown'] > 0:
+                _lr_state['spike_cooldown'] -= 1
+                for _pg in optimizer.param_groups:
+                    _pg['lr'] = _lr_min
+                if _lr_state['spike_cooldown'] == 0:
+                    print(f"  [DB] Spike cooldown ended at step {step}, LR unlocked")
+
             # LR ceiling recovery: if stable for 50 steps, raise ceiling 10% (capped at base_lr)
-            _lr_state['stable_steps'] += 1
+            if _lr_state['spike_cooldown'] == 0:
+                _lr_state['stable_steps'] += 1
             if _lr_state['stable_steps'] > 0 and _lr_state['stable_steps'] % 50 == 0:
                 _old_ceil = _lr_state['ceiling']
                 _lr_state['ceiling'] = min(_base_lr, _lr_state['ceiling'] * 1.1)

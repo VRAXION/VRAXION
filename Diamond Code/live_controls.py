@@ -107,6 +107,7 @@ def write_default_controls(path: str, lr: float, data_weights: Dict[str, float],
     existing_tiers = None
     existing_checkpoint_every = None
     existing_max_drafts = None
+    existing_attention_radius = None
     existing_db = {}
     if Path(path).exists():
         try:
@@ -122,6 +123,8 @@ def write_default_controls(path: str, lr: float, data_weights: Dict[str, float],
                 existing_checkpoint_every = existing['checkpoint_every']
             if 'max_drafts' in existing:
                 existing_max_drafts = existing['max_drafts']
+            if 'attention_radius' in existing:
+                existing_attention_radius = existing['attention_radius']
             # Preserve double-buffer settings (user may have enabled via controls.json)
             for _dbk in ('db_enabled', 'db_sleep_interval', 'db_eval_batches', 'db_snap_every', 'db_spike_threshold'):
                 if _dbk in existing:
@@ -181,6 +184,8 @@ def write_default_controls(path: str, lr: float, data_weights: Dict[str, float],
         "db_eval_batches": existing_db.get('db_eval_batches', 2),
         "db_snap_every": existing_db.get('db_snap_every', 10),
         "db_spike_threshold": existing_db.get('db_spike_threshold', 5.0),
+        # Attention radius (live-tunable)
+        **({"attention_radius": existing_attention_radius} if existing_attention_radius is not None else {}),
         # Checkpoint management
         "max_drafts": existing_max_drafts if existing_max_drafts is not None else 15,
         "promote_tag": None,
@@ -345,6 +350,14 @@ def apply_controls(controls: Dict[str, Any], optimizer, loader=None, model=None)
             if hasattr(model, 'think_ticks_per_being'):
                 model.think_ticks_per_being = [new_tt] * len(model.think_ticks_per_being)
             changes.append(f"think_ticks: {current_tt} -> {new_tt}")
+
+    # Attention radius (live-tunable, no learned params depend on it)
+    if controls.get('attention_radius') is not None and model is not None:
+        new_ar = int(controls['attention_radius'])
+        old_ar = getattr(model, 'attention_radius', 8)
+        if new_ar != old_ar:
+            model.attention_radius = new_ar
+            changes.append(f"attention_radius: {old_ar} -> {new_ar}")
 
     # LCX on/off toggle (sets _lcx_hash_mode which gates all LCX operations)
     if controls.get('use_lcx') is not None and model is not None:

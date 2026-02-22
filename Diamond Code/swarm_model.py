@@ -2491,7 +2491,21 @@ class SwarmByteRingModel(nn.Module):
             query = self.lcx_route_query(state)
             query = torch.nn.functional.normalize(query, dim=-1)
 
+            # Absolute norm cap on write content to prevent L0 explosion
+            # Cap individual vectors to max norm of 10.0 (empirical: healthy norms are ~1-5)
+            _wc_norms = write_content.norm(dim=-1, keepdim=True).clamp(min=1e-8)
+            _abs_cap = 10.0
+            write_content = torch.where(
+                _wc_norms > _abs_cap,
+                write_content * (_abs_cap / _wc_norms),
+                write_content)
+
             keys, values = self._lcx_level_bufs(level)
+
+            # L0 guard: if total LCX norm > 2M, skip writes entirely (memory corrupted)
+            _l0 = values.norm().item() if values is not None else 0.0
+            if _l0 > 2_000_000:
+                return  # LCX corrupted, don't make it worse
             scores = query @ keys.T                                      # [B, S]
             eff_k = min(k, scores.shape[-1])
             topk_scores, topk_idx = scores.topk(eff_k, dim=-1)          # [B, K]
