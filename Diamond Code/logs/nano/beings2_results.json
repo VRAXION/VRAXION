@@ -1,0 +1,21 @@
+{
+  "timestamp": "2026-02-22T14:30:00",
+  "status": "killed_at_step_152",
+  "config": {
+    "D": 618, "depth": 2, "beings": 2, "seq_len": 192, "batch": 10,
+    "radius": 8, "tt": 1, "lcx_slots": [200], "lr": 0.0003
+  },
+  "n_params": 516624,
+  "beta_checkpoint_step": 1100,
+  "beta_beings1_baseline": 0.791,
+  "verdict": "beings=2 consistently 4-6% WORSE than beings=1. Random Being 1 drags accuracy down. No convergence trend after 150 steps.",
+  "eval_history": [
+    {"step": 0, "loss": 0.5709, "bit_acc": 0.742, "byte_acc": 0.122, "per_bit": [1.0, 0.83, 0.96, 0.71, 0.66, 0.55, 0.64, 0.59], "vs_beings1": -0.049},
+    {"step": 25, "loss": 0.5667, "bit_acc": 0.747, "byte_acc": 0.117, "per_bit": [1.0, 0.84, 0.96, 0.72, 0.67, 0.55, 0.64, 0.60], "vs_beings1": -0.044},
+    {"step": 50, "loss": 0.5786, "bit_acc": 0.735, "byte_acc": 0.118, "per_bit": [1.0, 0.76, 0.96, 0.72, 0.68, 0.53, 0.65, 0.58], "vs_beings1": -0.056},
+    {"step": 75, "loss": 0.5842, "bit_acc": 0.729, "byte_acc": 0.124, "per_bit": [1.0, 0.72, 0.96, 0.73, 0.68, 0.55, 0.61, 0.59], "vs_beings1": -0.062},
+    {"step": 100, "loss": 0.5778, "bit_acc": 0.736, "byte_acc": 0.114, "per_bit": [1.0, 0.79, 0.96, 0.68, 0.68, 0.54, 0.65, 0.59], "vs_beings1": -0.055},
+    {"step": 125, "loss": 0.5784, "bit_acc": 0.735, "byte_acc": 0.123, "per_bit": [1.0, 0.78, 0.96, 0.73, 0.62, 0.54, 0.65, 0.60], "vs_beings1": -0.056},
+    {"step": 150, "loss": 0.5666, "bit_acc": 0.747, "byte_acc": 0.106, "per_bit": [1.0, 0.83, 0.95, 0.73, 0.68, 0.56, 0.66, 0.58], "vs_beings1": -0.044}
+  ]
+}
