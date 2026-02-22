@@ -1,2960 +1,533 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="VRAXION — Recurrent intelligence deployed from edge devices to dedicated data centers. One architecture, infinite depth.">
-  <meta name="theme-color" content="#0A0C14">
-  <meta property="og:title" content="VRAXION — Recurrent Intelligence">
-  <meta property="og:description" content="From edge devices to dedicated data centers — one architecture, infinite depth.">
-  <meta property="og:type" content="website">
-  <meta property="og:url" content="https://vraxion.github.io/VRAXION/">
-  <meta property="og:image" content="https://vraxion.github.io/VRAXION/assets/vraxion_logo.svg">
-  <meta property="og:image:type" content="image/svg+xml">
-  <meta property="og:image:width" content="512">
-  <meta property="og:image:height" content="512">
-  <link rel="icon" href="assets/vraxion_logo.svg" type="image/svg+xml">
-  <title>VRAXION — Recurrent Intelligence</title>
-
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="preload" href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&display=swap" as="style">
-  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=Outfit:wght@300;400;600&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
-
-<style>
-/* ═══════════════════════════════════════════════════════════
-   VRAXION PRODUCT SHOWCASE — FULL-SCREEN CAROUSEL
-   ═══════════════════════════════════════════════════════════ */
-
-:root {
-  --bg: #0A0C14;
-  --white: #E8EAF0;
-  --dim: #4A4E5A;
-  --text: #8890A0;
-  --font-display: 'Syne', system-ui, -apple-system, sans-serif;
-  --font-body: 'Outfit', system-ui, -apple-system, sans-serif;
-  --font-mono: 'JetBrains Mono', 'Cascadia Code', 'Fira Code', monospace;
-  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
-  --slide-duration: 500ms;
-  --bar-left: 475px;
-  --bar-right: 600px;
-  --radius-sm: 4px;
-  --radius-md: 8px;
-  --radius-lg: 16px;
-}
-
-*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
-
-html, body {
-  width: 100%; height: 100%;
-  overflow: hidden;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-
-body {
-  background: var(--bg);
-  color: var(--text);
-  font-family: var(--font-body);
-  font-weight: 400;
-  line-height: 1.6;
-}
-
-::selection {
-  background: rgba(100, 80, 220, 0.35);
-  color: var(--white);
-}
-
-/* ─── TOP NAV BAR ─── */
-.site-nav {
-  position: fixed;
-  top: 0; left: 0; right: 0;
-  height: 48px;
-  z-index: 40;
-  display: flex;
-  align-items: center;
-  padding: 0 1.75rem;
-  background: rgba(10, 12, 20, 0.55);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-  pointer-events: auto;
-}
-
-.nav-logo {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  text-decoration: none;
-  margin-right: 2.5rem;
-  flex-shrink: 0;
-}
-.nav-logo img {
-  width: 18px;
-  height: 18px;
-  opacity: 0.9;
-}
-.nav-logo-text {
-  font-family: var(--font-display);
-  font-weight: 700;
-  font-size: 0.95rem;
-  letter-spacing: 0.08em;
-  color: var(--white);
-}
-
-.nav-links {
-  display: flex;
-  align-items: center;
-  gap: 0.25rem;
-  flex: 1;
-}
-
-.nav-link {
-  font-family: var(--font-body);
-  font-weight: 400;
-  font-size: 0.82rem;
-  letter-spacing: 0.04em;
-  color: var(--text);
-  text-decoration: none;
-  padding: 0.3rem 0.75rem;
-  border-radius: var(--radius-sm);
-  position: relative;
-  transition: color 0.2s ease;
-}
-.nav-link:hover { color: var(--white); }
-
-.nav-link.active { color: var(--white); }
-.nav-link.active::after {
-  content: '';
-  position: absolute;
-  bottom: -2px;
-  left: 0.75rem;
-  right: 0.75rem;
-  height: 2px;
-  border-radius: 1px;
-  background: var(--nav-accent, var(--white));
-  transition: background 0.4s ease;
-}
-
-.nav-cta {
-  font-family: var(--font-mono);
-  font-size: 0.72rem;
-  font-weight: 500;
-  letter-spacing: 0.06em;
-  color: var(--text);
-  text-decoration: none;
-  padding: 0.3rem 0.85rem;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: var(--radius-md);
-  transition: color 0.2s ease, border-color 0.2s ease;
-  flex-shrink: 0;
-}
-.nav-cta:hover {
-  color: var(--white);
-  border-color: rgba(255, 255, 255, 0.28);
-}
-
-/* Shift arrow buttons down so they stay centered in the canvas area below the nav */
-.arrow-btn { top: calc(50% + 24px); }
-
-@media (max-width: 900px) {
-  .nav-links { display: none; }
-  .nav-cta { display: none; }
-}
-
-/* ─── THREE.JS CANVAS (BACKGROUND) ─── */
-#scene-canvas {
-  position: fixed;
-  inset: 0;
-  z-index: 0;
-  pointer-events: none;
-}
-
-/* ─── NOISE GRAIN OVERLAY ─── */
-.noise-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 1;
-  opacity: 0.015;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-  background-repeat: repeat;
-  background-size: 256px 256px;
-  pointer-events: none;
-}
-
-/* ─── VIGNETTE ─── */
-.vignette {
-  position: fixed;
-  inset: 0;
-  z-index: 1;
-  background: radial-gradient(ellipse at center, transparent 50%, rgba(0, 0, 0, 0.40) 100%);
-  pointer-events: none;
-}
-
-
-/* ─── SLIDE CONTAINER ─── */
-.carousel {
-  position: fixed;
-  inset: 0;
-  z-index: 10;
-  pointer-events: none;
-}
-
-.slide {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  padding: 0 clamp(2rem, 6vw, 6rem) 0 0;
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity var(--slide-duration) ease;
-}
-
-.slide.active {
-  opacity: 1;
-  pointer-events: auto;
-}
-
-/* Slide text content */
-.slide-content {
-  width: var(--bar-left);
-  max-width: var(--bar-left);
-  align-self: stretch;
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-start;
-  padding: 4rem clamp(1.8rem, 3.5vw, 2.8rem) 2.5rem;
-  scroll-padding-top: 4rem;
-  overflow-y: auto;
-  position: relative;
-  background: rgba(15, 18, 25, 0.5);
-  backdrop-filter: blur(24px);
-  -webkit-backdrop-filter: blur(24px);
-  border-right: 1px solid rgba(255, 255, 255, 0.06);
-  transform: translateX(-30px);
-  opacity: 0;
-  transition: transform var(--slide-duration) var(--ease-out-expo),
-              opacity var(--slide-duration) ease;
-  will-change: transform, opacity;
-  scrollbar-width: thin;
-  scrollbar-color: rgba(255,255,255,0.18) transparent;
-  touch-action: pan-y;
-}
-.slide-content::-webkit-scrollbar { width: 4px; }
-.slide-content::-webkit-scrollbar-track { background: transparent; }
-.slide-content::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.18); border-radius: 2px; }
-.slide-content::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.32); }
-
-.slide.active .slide-content {
-  transform: translateX(0);
-  opacity: 1;
-}
-
-.slide.exit-left .slide-content {
-  transform: translateX(-60px);
-  opacity: 0;
-}
-.slide.exit-right .slide-content {
-  transform: translateX(60px);
-  opacity: 0;
-}
-
-/* ─── RIGHT BAR (technical detail) ─── */
-.slide-right {
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  right: 0;
-  width: var(--bar-right);
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-start;
-  padding: 2rem clamp(1.8rem, 3.5vw, 2.8rem);
-  overflow-y: auto;
-  background: transparent;
-  border-left: none;
-  transform: translateX(30px);
-  opacity: 0;
-  transition: transform var(--slide-duration) var(--ease-out-expo),
-              opacity var(--slide-duration) ease;
-  will-change: transform, opacity;
-  scrollbar-width: thin;
-  scrollbar-color: rgba(255,255,255,0.18) transparent;
-  touch-action: pan-y;
-}
-.slide-right::-webkit-scrollbar { width: 4px; }
-.slide-right::-webkit-scrollbar-track { background: transparent; }
-.slide-right::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.18); border-radius: 2px; }
-.slide-right::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.32); }
-
-.slide.active .slide-right {
-  transform: translateX(0);
-  opacity: 1;
-}
-.slide.exit-left .slide-right {
-  transform: translateX(60px);
-  opacity: 0;
-}
-.slide.exit-right .slide-right {
-  transform: translateX(-60px);
-  opacity: 0;
-}
-
-/* Top accent line on both bars */
-.slide-content::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 1px;
-  background: linear-gradient(90deg, transparent, var(--bar-accent, transparent), transparent);
-  opacity: 0.4;
-}
-
-/* Bottom scroll fade hint for left panel */
-.slide-content::after {
-  content: '';
-  position: sticky;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  height: 3rem;
-  flex-shrink: 0;
-  background: linear-gradient(to bottom, transparent, rgba(15, 18, 25, 0.88));
-  pointer-events: none;
-  margin-top: auto;
-}
-
-/* Bottom scroll fade hint for right panel */
-.slide-right::after {
-  content: '';
-  position: sticky;
-  bottom: 0;
-  height: 3rem;
-  flex-shrink: 0;
-  background: linear-gradient(to bottom, transparent, rgba(10, 12, 20, 0.88));
-  pointer-events: none;
-  margin-top: auto;
-}
-
-/* Detail vs compact layout */
-.slide:not(.has-detail) .slide-right { display: none; }
-.slide.has-detail .slide-hero {
-  right: var(--bar-right);
-}
-
-/* ─── HERO TITLE (centered inside polygon) ─── */
-.slide-hero {
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  left: var(--bar-left);
-  right: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-  pointer-events: none;
-  transform: translateY(-15px);
-  opacity: 0;
-  transition: transform var(--slide-duration) var(--ease-out-expo),
-              opacity var(--slide-duration) ease;
-}
-
-.slide.active .slide-hero {
-  transform: translateY(0);
-  opacity: 1;
-}
-
-.slide.exit-left .slide-hero,
-.slide.exit-right .slide-hero {
-  opacity: 0;
-  transform: translateY(15px);
-}
-
-/* Tier tag */
-.tier-tag {
-  font-family: var(--font-mono);
-  font-size: 0.95rem;
-  font-weight: 600;
-  letter-spacing: 0.2em;
-  text-transform: uppercase;
-  margin-bottom: 0.6rem;
-  opacity: 0.9;
-}
-
-/* Model name */
-.model-name {
-  font-family: var(--font-display);
-  font-weight: 800;
-  font-size: clamp(2.8rem, 6vw, 4.5rem);
-  color: var(--white);
-  line-height: 1;
-  letter-spacing: -0.02em;
-  margin-bottom: 0.25rem;
-  text-shadow: 0 0 30px rgba(255,255,255,0.08);
-}
-.slide.has-detail .model-name {
-  color: white;
-  opacity: 0.85;
-  text-shadow: 0 0 60px var(--bar-accent), 0 0 120px var(--bar-accent);
-}
-.has-detail .core-name {
-  opacity: 0.6;
-  text-shadow: 0 0 40px var(--bar-accent);
-}
-.has-detail .model-rule {
-  opacity: 0.5;
-  box-shadow: 0 0 20px var(--bar-accent);
-}
-.slide[data-tier="consensus"] .model-name {
-  opacity: 0.5;
-  text-shadow: 0 0 40px var(--bar-accent), 0 0 80px var(--bar-accent);
-}
-.slide[data-tier="consensus"] .core-name {
-  opacity: 0.35;
-}
-.slide[data-tier="consensus"] .model-rule {
-  opacity: 0.3;
-}
-.slide[data-tier="swarm-network"] .model-name {
-  background: linear-gradient(135deg, #FFB800, #0088CC, #5B4BD5, #9333EA, #E11D74, #DC2626, #FF0080);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-  background-size: 300% 300%;
-  animation: swarm-gradient 8s ease infinite;
-}
-@keyframes swarm-gradient {
-  0%, 100% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
-}
-.slide[data-tier="swarm-network"] .model-rule {
-  background: linear-gradient(90deg, #FFB800, #FF0080) !important;
-  width: 80px;
-}
-.slide[data-tier="swarm-network"] .core-name {
-  display: none;
-}
-
-.model-rule {
-  width: 60px;
-  height: 2px;
-  margin: 0 auto 0.75rem;
-  border: none;
-  border-radius: 1px;
-}
-
-/* Core name */
-.core-name {
-  font-family: var(--font-display);
-  font-weight: 700;
-  font-size: clamp(0.85rem, 1.5vw, 1rem);
-  letter-spacing: 0.08em;
-  margin-bottom: 1rem;
-}
-
-/* Description */
-.model-desc {
-  font-family: var(--font-body);
-  font-weight: 300;
-  font-size: clamp(0.9rem, 1.3vw, 1.05rem);
-  color: var(--text);
-  line-height: 1.7;
-  margin-bottom: 1.75rem;
-  max-width: 440px;
-}
-
-/* Stat boxes row */
-.stat-row {
-  display: flex;
-  gap: 0.75rem;
-  margin-bottom: 1.75rem;
-}
-
-.stat-box {
-  flex: 1;
-  max-width: 120px;
-  padding: 0.75rem 0.5rem;
-  background: rgba(255, 255, 255, 0.04);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  border-radius: 10px;
-  text-align: center;
-}
-
-.stat-val {
-  font-family: var(--font-mono);
-  font-weight: 700;
-  font-size: 1rem;
-  display: block;
-  color: var(--white);
-}
-
-.stat-unit {
-  font-family: var(--font-mono);
-  font-size: 0.6rem;
-  letter-spacing: 0.06em;
-  color: var(--text);
-  opacity: 0.5;
-  display: block;
-  margin-top: 0.15rem;
-}
-
-/* Tagline */
-.model-tagline {
-  font-family: var(--font-body);
-  font-weight: 300;
-  font-style: italic;
-  font-size: clamp(0.85rem, 1.2vw, 1rem);
-  color: var(--white);
-  opacity: 0.65;
-}
-
-/* ─── DETAILED SIDEBAR SECTIONS (v2) ─── */
-
-/* -- Left bar: brand identity -- */
-.sb-title {
-  font-family: var(--font-mono);
-  font-weight: 700;
-  font-size: var(--title-size, clamp(1.4rem, 4vw, 2.6rem));
-  color: var(--bar-accent, #FFB800);
-  line-height: 1;
-  margin-bottom: 0;
-  max-width: 100%;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.sb-brand {
-  display: flex;
-  align-items: center;
-  gap: 0.8rem;
-  margin-bottom: 0.3rem;
-}
-
-.sb-shape {
-  width: 1em;
-  height: 1em;
-  flex-shrink: 0;
-  font-size: var(--title-size, clamp(1.4rem, 4vw, 2.6rem));
-  opacity: 0.85;
-}
-
-.sb-core-section {
-  margin-bottom: 1.2rem;
-  padding: 0.8rem 0;
-  border-top: 1px solid rgba(255,255,255,0.06);
-  border-bottom: 1px solid rgba(255,255,255,0.06);
-}
-
-.sb-core-head {
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
-  margin-bottom: 0.2rem;
-}
-
-.sb-core-icon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 2rem;
-  height: 2rem;
-  border-radius: 50%;
-  border: 1.5px solid;
-  background: rgba(255,255,255,0.04);
-  box-shadow: 0 0 12px rgba(255,255,255,0.06);
-  flex-shrink: 0;
-}
-.sb-core-icon svg {
-  width: 1.1rem;
-  height: 1.1rem;
-}
-
-.sb-core-tag {
-  font-family: var(--font-mono);
-  font-weight: 700;
-  font-size: 1.4rem;
-  letter-spacing: 0.12em;
-}
-
-.sb-core-name {
-  font-family: var(--font-mono);
-  font-weight: 400;
-  font-size: 0.8rem;
-  letter-spacing: 0.08em;
-  color: rgba(255,255,255,0.4);
-  text-transform: uppercase;
-}
-
-.sb-subtitle {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-family: var(--font-mono);
-  font-weight: 500;
-  font-size: 1.05rem;
-  letter-spacing: 0.15em;
-  text-transform: uppercase;
-  color: rgba(255,255,255,0.45);
-  margin-bottom: 1.2rem;
-}
-.sb-class-icon {
-  width: 1.1em;
-  height: 1.1em;
-  flex-shrink: 0;
-  opacity: 0.6;
-  color: var(--bar-accent);
-}
-
-/* -- Left bar: content sections -- */
-.sb-section {
-  margin-bottom: 1.5rem;
-}
-
-.sb-section-heading {
-  font-family: var(--font-mono);
-  font-weight: 800;
-  font-size: 0.95rem;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--bar-accent, #FFB800);
-  margin-bottom: 0.4rem;
-}
-
-.sb-section-text {
-  font-family: var(--font-body);
-  font-weight: 400;
-  font-size: 0.95rem;
-  color: #BCC2D0;
-  line-height: 1.7;
-}
-
-/* -- Left bar: action buttons -- */
-.sb-actions {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  margin-top: 0.5rem;
-}
-
-.sb-cta-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.45rem;
-  padding: 0.7rem 0.5rem;
-  border-radius: var(--radius-md);
-  border: 1px solid rgba(255,255,255,0.1);
-  background: rgba(255,255,255,0.03);
-  color: var(--white);
-  font-family: var(--font-mono);
-  font-size: 0.85rem;
-  font-weight: 600;
-  letter-spacing: 0.03em;
-  cursor: pointer;
-  pointer-events: auto;
-  transition: background 0.2s, border-color 0.2s;
-}
-
-.sb-cta-btn:hover {
-  background: rgba(255, 255, 255, 0.04);
-  background: color-mix(in srgb, var(--bar-accent) 8%, transparent);
-  border-color: rgba(255, 255, 255, 0.15);
-  border-color: color-mix(in srgb, var(--bar-accent) 30%, transparent);
-  color: var(--bar-accent);
-}
-
-.sb-cta-btn svg { width: 16px; height: 16px; flex-shrink: 0; }
-
-/* -- Right bar: sections -- */
-.rb-heading {
-  font-family: var(--font-mono);
-  font-size: 1rem;
-  font-weight: 800;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  color: var(--bar-accent, #FFB800);
-  padding-bottom: 0.5rem;
-  margin-bottom: 0.8rem;
-  border-bottom: 2px dashed var(--bar-accent, #FFB800);
-}
-
-/* -- Right bar: step cards -- */
-.rb-steps-container {
-  margin: 0 0 1.4rem 0;
-}
-
-.rb-step-card {
-  position: relative;
-  display: flex;
-  align-items: flex-start;
-  gap: 0.75rem;
-  padding: 0.85rem 1.2rem;
-  margin-bottom: 0.5rem;
-  background: linear-gradient(135deg, color-mix(in srgb, var(--step-color) 10%, transparent) 0%, rgba(10, 12, 20, 0.6) 100%);
-  border: 1px solid color-mix(in srgb, var(--step-color) 10%, transparent);
-  border-radius: var(--radius-md);
-  transition: transform 0.2s ease, box-shadow 0.25s ease, border-color 0.25s ease, background 0.3s ease;
-}
-
-.rb-step-card:hover {
-  transform: translateY(-1px);
-  border-color: color-mix(in srgb, var(--step-color) 18%, transparent);
-  background: linear-gradient(135deg, color-mix(in srgb, var(--step-color) 15%, transparent) 0%, rgba(10, 12, 20, 0.65) 100%);
-  box-shadow: 0 4px 20px rgba(0,0,0,0.3);
-}
-
-.rb-step-num {
-  width: 28px;
-  height: 28px;
-  min-width: 28px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 50%;
-  background: color-mix(in srgb, var(--step-color) 20%, transparent);
-  border: 1px solid color-mix(in srgb, var(--step-color) 30%, transparent);
-  font-family: var(--font-mono);
-  font-size: 0.75rem;
-  font-weight: 700;
-  color: var(--step-color);
-  flex-shrink: 0;
-  margin-top: 0.1rem;
-}
-
-.rb-step-body {
-  flex: 1;
-  min-width: 0;
-}
-
-.rb-step-head {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  margin-bottom: 0.2rem;
-}
-
-.rb-step-icon {
-  width: 18px;
-  height: 18px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-
-.rb-step-icon svg {
-  width: 18px;
-  height: 18px;
-  opacity: 0.9;
-}
-
-.rb-step-label {
-  font-family: var(--font-mono);
-  font-size: 0.75rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--step-color);
-}
-
-.rb-step-text {
-  font-family: var(--font-body);
-  font-weight: 400;
-  font-size: 1rem;
-  color: #BCC2D0;
-  line-height: 1.5;
-}
-
-/* -- Right bar: spec group labels -- */
-.rb-spec-group {
-  font-family: var(--font-mono);
-  font-size: 0.65rem;
-  font-weight: 700;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: color-mix(in srgb, var(--bar-accent) 60%, var(--dim));
-  margin: 1rem 0 0.5rem 0.2rem;
-}
-.rb-spec-group:first-child { margin-top: 0; }
-
-/* -- Right bar: spec cards -- */
-.rb-spec {
-  position: relative;
-  padding: 0.85rem 1.2rem;
-  margin-bottom: 0.5rem;
-  background: linear-gradient(135deg, rgba(255,255,255,0.04) 0%, rgba(10, 12, 20, 0.6) 100%);
-  background: linear-gradient(135deg, color-mix(in srgb, var(--bar-accent) 10%, transparent) 0%, rgba(10, 12, 20, 0.6) 100%);
-  border: 1px solid rgba(255,255,255,0.04);
-  border: 1px solid color-mix(in srgb, var(--bar-accent) 10%, transparent);
-  border-radius: var(--radius-md);
-  transition: transform 0.2s ease, box-shadow 0.25s ease, border-color 0.25s ease, background 0.3s ease;
-}
-
-.rb-spec:hover {
-  transform: translateY(-1px);
-  border-color: rgba(255,255,255,0.10);
-  border-color: color-mix(in srgb, var(--bar-accent) 18%, transparent);
-  background: linear-gradient(135deg, rgba(255,255,255,0.06) 0%, rgba(10, 12, 20, 0.65) 100%);
-  background: linear-gradient(135deg, color-mix(in srgb, var(--bar-accent) 15%, transparent) 0%, rgba(10, 12, 20, 0.65) 100%);
-  box-shadow: 0 4px 20px rgba(0,0,0,0.3);
-}
-
-.rb-spec-head {
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
-  margin-bottom: 0.3rem;
-}
-
-.rb-spec-icon {
-  width: 24px;
-  height: 24px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-
-.rb-spec-icon svg {
-  width: 24px;
-  height: 24px;
-  opacity: 0.9;
-}
-
-.rb-spec-label {
-  font-family: var(--font-mono);
-  font-size: 1.1rem;
-  font-weight: 800;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--bar-accent, #FFB800);
-}
-
-.rb-spec-text {
-  font-family: var(--font-body);
-  font-weight: 400;
-  font-size: 1rem;
-  color: #BCC2D0;
-  line-height: 1.5;
-}
-
-/* Inline bullet lists within spec/step cards */
-.rb-pts {
-  margin: 0.4rem 0 0;
-  padding: 0;
-  list-style: none;
-}
-.rb-pts li {
-  position: relative;
-  padding-left: 1.1rem;
-  font-size: 0.88rem;
-  line-height: 1.45;
-  color: rgba(188,194,208,0.7);
-  margin-bottom: 0.15rem;
-}
-.rb-pts li::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  top: 0.5em;
-  width: 5px;
-  height: 5px;
-  background: var(--bar-accent, #FFB800);
-  border-radius: 1px;
-  opacity: 0.6;
-}
-.rb-step-text .rb-pts li::before {
-  background: var(--step-color);
-}
-
-/* Highlighted metrics */
-.rb-hi {
-  font-family: var(--font-mono);
-  font-weight: 600;
-  font-size: 0.95em;
-  color: var(--bar-accent, #FFB800);
-  opacity: 0.9;
-}
-
-/* Bold lead phrases */
-.rb-step-text strong,
-.rb-spec-text strong {
-  font-weight: 600;
-  color: rgba(255,255,255,0.88);
-}
-
-/* ─── AMBIENT GLOW (per-slide, behind 3D area) ─── */
-.slide-glow {
-  position: absolute;
-  top: 50%;
-  left: calc(var(--bar-left) + (100% - var(--bar-left)) / 2);
-  width: 400px;
-  height: 400px;
-  border-radius: 50%;
-  transform: translate(-50%, -50%);
-  filter: blur(100px);
-  opacity: 0;
-  transition: opacity 800ms ease;
-  pointer-events: none;
-  will-change: filter, opacity;
-}
-.slide.has-detail .slide-glow {
-  left: calc(var(--bar-left) + (100% - var(--bar-left) - var(--bar-right)) / 2);
-}
-
-.slide.active .slide-glow {
-  opacity: 0.18;
-}
-
-/* ─── NAVIGATION: BOTTOM BAR (tagline + dots) ─── */
-.bottom-nav {
-  position: fixed;
-  bottom: 1.5rem;
-  left: calc(var(--bar-left) + (100vw - var(--bar-left)) / 2);
-  transform: translateX(-50%);
-  z-index: 30;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.6rem;
-  padding: 0.6rem 1.5rem 0.5rem;
-  background: rgba(15, 18, 25, 0.45);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  border-radius: 16px;
-  transition: left 0.4s var(--ease-out-expo);
-}
-body.detail-active .bottom-nav {
-  left: calc(var(--bar-left) + (100vw - var(--bar-left) - var(--bar-right)) / 2);
-}
-
-.nav-tagline {
-  font-family: var(--font-body);
-  font-weight: 300;
-  font-style: italic;
-  font-size: 0.85rem;
-  color: var(--white);
-  opacity: 0.55;
-  text-align: center;
-  white-space: nowrap;
-  letter-spacing: 0.02em;
-  min-height: 1.2em;
-  transition: opacity 0.3s ease;
-}
-.nav-tagline.fading { opacity: 0; }
-
-.dot-nav {
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-}
-
-.dot {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.25rem;
-  background: none;
-  border: none;
-  cursor: pointer;
-  padding: 0.4rem 0.5rem;
-  outline: none;
-  transition: transform 0.3s, opacity 0.3s;
-  opacity: 0.4;
-}
-
-.dot:hover {
-  opacity: 0.7;
-  transform: scale(1.1);
-}
-
-.dot.active {
-  opacity: 1;
-  transform: scale(1.15);
-}
-
-.dot-shape {
-  width: 18px;
-  height: 18px;
-  transition: fill 0.3s, filter 0.3s;
-  fill: color-mix(in srgb, var(--dot-color) 35%, var(--dim));
-}
-
-.dot.active .dot-shape {
-  filter: drop-shadow(0 0 6px var(--dot-color));
-}
-
-.dot-label {
-  font-family: var(--font-mono);
-  font-size: 0.55rem;
-  font-weight: 600;
-  letter-spacing: 0.06em;
-  color: color-mix(in srgb, var(--dot-color) 25%, var(--dim));
-  text-transform: uppercase;
-  white-space: nowrap;
-  transition: color 0.3s;
-}
-
-.dot.active .dot-label {
-  color: var(--dot-color);
-}
-
-/* ─── NAVIGATION: ARROWS ─── */
-.arrow-btn {
-  position: fixed;
-  top: 50%;
-  transform: translateY(-50%);
-  z-index: 30;
-  width: 48px;
-  height: 48px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.03);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  color: var(--white);
-  font-size: 1.2rem;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: background 0.3s, border-color 0.3s, transform 0.3s;
-  outline: none;
-}
-
-.arrow-btn:hover {
-  background: rgba(255, 255, 255, 0.06);
-  border-color: rgba(255, 255, 255, 0.15);
-}
-
-.arrow-btn:active {
-  transform: translateY(-50%) scale(0.92);
-}
-
-.arrow-prev { left: calc(var(--bar-left) + 1rem); }
-.arrow-next { right: 1.25rem; transition: background 0.3s, border-color 0.3s, transform 0.3s, right 0.4s var(--ease-out-expo); }
-body.detail-active .arrow-next { right: calc(var(--bar-right) + 1rem); }
-
-.arrow-btn svg {
-  width: 20px;
-  height: 20px;
-  stroke: currentColor;
-  stroke-width: 2;
-  fill: none;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-}
-
-/* ─── FOCUS VISIBLE (keyboard navigation) ─── */
-.sb-cta-btn:focus-visible,
-.dot:focus-visible,
-.arrow-btn:focus-visible {
-  outline: 2px solid rgba(255, 255, 255, 0.6);
-  outline-offset: 2px;
-}
-.arrow-btn:focus-visible {
-  outline-offset: -2px;
-}
-
-/* ─── SLIDE COUNTER ─── */
-.slide-counter {
-  font-family: var(--font-mono);
-  font-size: 0.7rem;
-  color: var(--dim);
-  letter-spacing: 0.1em;
-  margin-top: 0.5rem;
-  opacity: 0.7;
-}
-
-/* ─── REDUCED MOTION ─── */
-@media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-  }
-}
-
-/* ─── RESPONSIVE ─── */
-@media (max-width: 900px) {
-  .slide {
-    flex-direction: column;
-    justify-content: flex-start;
-    align-items: flex-start;
-    padding: 3rem 1.5rem calc(5rem + env(safe-area-inset-bottom, 0px));
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
-  }
-
-  .slide-content {
-    width: 100%;
-    max-width: none;
-    align-self: auto;
-    border-right: none;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-    overflow-y: visible;
-    background: none;
-    backdrop-filter: none;
-    -webkit-backdrop-filter: none;
-    transform: none;
-    opacity: 1;
-    padding: 1rem 0;
-  }
-
-  .slide.active .slide-content {
-    transform: none;
-  }
-
-  .slide-right {
-    position: relative;
-    width: 100%;
-    border-left: none;
-    border-top: 1px solid rgba(255, 255, 255, 0.06);
-    transform: none;
-    opacity: 1;
-    overflow-y: visible;
-    background: none;
-    backdrop-filter: none;
-    -webkit-backdrop-filter: none;
-    padding: 1rem 0;
-  }
-
-  .slide-hero {
-    position: relative;
-    left: auto;
-    right: auto;
-    top: auto;
-    bottom: auto;
-    width: 100%;
-    padding: 2rem 0;
-    transform: none;
-    opacity: 1;
-  }
-
-  .slide.has-detail .slide-hero {
-    display: none;
-  }
-
-  .slide.active .slide-hero {
-    transform: none;
-  }
-
-  .model-name {
-    font-size: clamp(2.2rem, 10vw, 3.2rem);
-  }
-
-  .slide-glow {
-    top: 15%;
-    left: 50%;
-    right: auto;
-    transform: translate(-50%, 0);
-    width: 250px;
-    height: 250px;
-  }
-
-  .arrow-btn { display: none; }
-  .dot-label { display: none; }
-  .dot-shape { width: 14px; height: 14px; }
-  .dot { padding: 0.3rem 0.35rem; }
-
-  .bottom-nav, body.detail-active .bottom-nav {
-    left: 50%;
-    bottom: calc(0.75rem + env(safe-area-inset-bottom, 0px));
-  }
-
-  .stat-box {
-    max-width: none;
-  }
-}
-
-@media (max-width: 480px) {
-  .model-name {
-    font-size: 2rem;
-  }
-
-  .stat-row {
-    gap: 0.5rem;
-  }
-
-  .stat-box {
-    padding: 0.5rem 0.25rem;
-  }
-
-  .stat-val {
-    font-size: 0.85rem;
-  }
-}
-
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VRAXION // SYSTEMS</title>
+    <style>
+        :root {
+            --bg: #050505;
+            --cyan: #00f0ff;
+            --magenta: #C026D3;
+            --font-mono: 'Courier New', Courier, monospace;
+            --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            user-select: none;
+        }
+
+        body {
+            background-color: var(--bg);
+            color: #fff;
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+            font-family: var(--font-mono);
+            display: flex;
+            /* Split Screen layout */
+        }
+
+        /* --- HUD DATUM CORNERS --- */
+        .hud-abs {
+            position: absolute;
+            font-size: 0.65rem;
+            letter-spacing: 0.2em;
+            color: rgba(0, 240, 255, 0.4);
+            z-index: 50;
+            pointer-events: none;
+            text-transform: uppercase;
+        }
+
+        .hud-tl {
+            top: 30px;
+            left: 40px;
+        }
+
+        .hud-bl {
+            bottom: 30px;
+            left: 40px;
+        }
+
+        .hud-br {
+            bottom: 30px;
+            right: 40px;
+            text-align: right;
+        }
+
+        /* --- LAYOUT GRID --- */
+        .layout-left {
+            width: 50%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+
+        .layout-right {
+            width: 50%;
+            height: 100%;
+            position: relative;
+            /* Container for 3D jog-dial */
+            perspective: 1200px;
+        }
+
+        /* --- THE CORE (SVG HUD) --- */
+        .core-container {
+            position: relative;
+            width: 25vh;
+            /* Slightly larger for split screen focus */
+            height: 25vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-left: -10vw;
+            /* Push slightly left conceptually */
+        }
+
+        .base-shape {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            overflow: visible;
+            pointer-events: none;
+        }
+
+        .shape-polygon {
+            fill: transparent;
+            stroke: var(--cyan);
+            stroke-width: 2px;
+            vector-effect: non-scaling-stroke;
+            transition: all 1.2s cubic-bezier(0.8, 0, 0.2, 1);
+            transform-origin: center;
+        }
+
+        /* Inner Consciousness Spark */
+        .core-spark {
+            position: relative;
+            z-index: 10;
+            display: flex;
+            gap: 6px;
+            align-items: center;
+            justify-content: center;
+            transition: all 1.2s ease;
+        }
+
+        .dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background-color: var(--magenta);
+            box-shadow: 0 0 15px var(--magenta), 0 0 30px rgba(192, 38, 211, 0.4);
+            transition: all 0.6s ease;
+        }
+
+        /* Default Idle Wavy Animation */
+        @keyframes idleWave {
+
+            0%,
+            100% {
+                transform: translateY(0) scale(1);
+                opacity: 0.8;
+            }
+
+            50% {
+                transform: translateY(-4px) scale(1.1);
+                opacity: 1;
+            }
+        }
+
+        .dot:nth-child(1) {
+            animation: idleWave 2s infinite ease-in-out;
+            animation-delay: 0.0s;
+        }
+
+        .dot:nth-child(2) {
+            animation: idleWave 2s infinite ease-in-out;
+            animation-delay: 0.3s;
+        }
+
+        .dot:nth-child(3) {
+            animation: idleWave 2s infinite ease-in-out;
+            animation-delay: 0.6s;
+        }
+
+        /* --- CORE STATES --- */
+
+        /* 1. IDLE (Circle) */
+        body.state-idle .shape-polygon {
+            filter: drop-shadow(0 0 10px rgba(0, 240, 255, 0.4));
+        }
+
+        /* 2. PROCESS (Hexagon) */
+        body.state-process .shape-polygon {
+            filter: drop-shadow(0 0 15px rgba(0, 240, 255, 0.6));
+        }
+
+        body.state-process .core-spark {
+            /* Dots remain static in center while processing */
+        }
+
+        /* 3. WARNING (Triangle) */
+        body.state-warning .shape-polygon {
+            filter: drop-shadow(0 0 20px rgba(0, 240, 255, 0.8));
+            stroke-width: 3px;
+        }
+
+        body.state-warning .dot {
+            height: 16px;
+            border-radius: 2px;
+            background-color: var(--cyan);
+            box-shadow: 0 0 15px var(--cyan);
+        }
+
+        body.state-warning .dot:nth-child(1) {
+            animation: frantic 0.4s infinite;
+            animation-delay: 0s;
+        }
+
+        body.state-warning .dot:nth-child(2) {
+            animation: frantic 0.4s infinite;
+            animation-delay: 0.1s;
+        }
+
+        body.state-warning .dot:nth-child(3) {
+            animation: frantic 0.4s infinite;
+            animation-delay: 0.2s;
+        }
+
+        @keyframes frantic {
+
+            0%,
+            100% {
+                transform: scaleY(1)
+            }
+
+            50% {
+                transform: scaleY(1.5)
+            }
+        }
+
+        /* 4. ERROR/STOP (Square) */
+        body.state-error .shape-polygon {
+            filter: drop-shadow(0 0 30px rgba(0, 240, 255, 1));
+            stroke-width: 4px;
+        }
+
+        body.state-error .core-spark {
+            gap: 2px;
+        }
+
+        body.state-error .dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 1px;
+            background-color: #ff3366;
+            box-shadow: 0 0 20px #ff3366;
+            animation: none;
+        }
+
+
+        /* --- JOG-DIAL MENU --- */
+        .jog-dial-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: flex-start;
+            padding-left: 2vw;
+            /* Proximity to center */
+        }
+
+        .menu-list {
+            position: relative;
+            transform-style: preserve-3d;
+            height: 80vh;
+            /* Scroller hit area */
+            width: 100%;
+            cursor: ns-resize;
+            /* Indicate vertical scrolling */
+        }
+
+        .menu-item {
+            position: absolute;
+            left: 0;
+            top: 50%;
+            /* Center mathematically */
+            font-family: var(--font-sans);
+            font-weight: 800;
+            font-size: 4rem;
+            text-transform: uppercase;
+            letter-spacing: -0.02em;
+            color: rgba(255, 255, 255, 0.8);
+            white-space: nowrap;
+            cursor: pointer;
+            transition: color 0.3s, text-shadow 0.3s;
+            /* Will be transformed by JS */
+            transform-origin: left center;
+        }
+
+        .menu-item:hover {
+            color: #fff;
+            text-shadow: 0 0 20px rgba(255, 255, 255, 0.5);
+        }
+
+        /* Subtitle attached to menu item */
+        .menu-item::after {
+            content: attr(data-sub);
+            display: block;
+            font-family: var(--font-mono);
+            font-size: 0.75rem;
+            font-weight: 400;
+            letter-spacing: 0.2em;
+            color: var(--cyan);
+            margin-top: 4px;
+            opacity: 0.6;
+            text-shadow: none;
+        }
+    </style>
 </head>
 
-<body>
+<body class="state-idle">
 
-<nav class="site-nav" aria-label="Site navigation">
-  <a href="#" class="nav-logo" aria-label="VRAXION home">
-    <img src="assets/vraxion_logo.svg" alt="" aria-hidden="true">
-    <span class="nav-logo-text">VRAXION</span>
-  </a>
-  <div class="nav-links" role="list">
-    <a href="#" class="nav-link" role="listitem">Home</a>
-    <a href="#" class="nav-link active" id="navProducts" role="listitem">Products</a>
-    <a href="kb/" class="nav-link" role="listitem">Wiki</a>
-    <a href="#" class="nav-link" role="listitem">About</a>
-  </div>
-  <a href="#" class="nav-cta">Token ▸</a>
-</nav>
+    <!-- HUD OVERLAYS -->
+    <div class="hud-abs hud-tl">
+        SYS_ID: VRAXION-9<br>
+        LOC: SECTOR_Q
+    </div>
+    <div class="hud-abs hud-bl">
+        UPTIME: <span id="uptime">00:00:00</span><br>
+        STATE: <span id="hud-state" style="color:var(--cyan)">IDLE</span>
+    </div>
+    <div class="hud-abs hud-br">
+        VRAXION.NET v2.1<br>
+        SECURE CONNECTION
+    </div>
 
-<noscript><div style="display:flex;align-items:center;justify-content:center;height:100vh;background:#0A0C14;color:#8890A0;font-family:sans-serif;text-align:center;padding:2rem;"><p>VRAXION requires JavaScript to run. Please enable JavaScript in your browser settings.</p></div></noscript>
+    <!-- LEFT: THE ENTITY -->
+    <div class="layout-left">
+        <div class="core-container">
+            <svg class="base-shape" viewBox="-1.2 -1.2 2.4 2.4" preserveAspectRatio="xMidYMid meet">
+                <polygon class="shape-polygon" id="shape-polygon" points="" />
+            </svg>
+            <div class="core-spark">
+                <div class="dot"></div>
+                <div class="dot"></div>
+                <div class="dot"></div>
+            </div>
+        </div>
+    </div>
 
-<!-- Background layers -->
-<canvas id="scene-canvas" aria-hidden="true">Your browser does not support canvas.</canvas>
-<div class="noise-overlay" aria-hidden="true"></div>
-<div class="vignette" aria-hidden="true"></div>
+    <!-- RIGHT: THE JOG-DIAL MENU -->
+    <div class="layout-right">
+        <div class="jog-dial-container">
+            <div class="menu-list" id="jog-dial">
+                <!-- Data-state determines the Core's mutation when hovered -->
+                <div class="menu-item" data-state="idle" data-sub="[ RETURN TO HUB ]"
+                    onclick="window.location.href='#'">Home</div>
+                <div class="menu-item" data-state="process" data-sub="[ VIEW ARCHITECTURE ]"
+                    onclick="window.location.href='dashboard.html'">Blueprint</div>
+                <div class="menu-item" data-state="idle" data-sub="[ NEURAL NETWORK ]"
+                    onclick="window.location.href='#'">Nodes</div>
+                <div class="menu-item" data-state="process" data-sub="[ DATABASE QUERY ]"
+                    onclick="window.location.href='#'">Archives</div>
+                <div class="menu-item" data-state="warning" data-sub="[ SECURE LOGIN ]"
+                    onclick="window.location.href='#'">Authenticate</div>
+                <div class="menu-item" data-state="error" data-sub="[ SYSTEM OVERRIDE ]"
+                    onclick="window.location.href='#'">Terminal</div>
+            </div>
+        </div>
+    </div>
 
+    <!-- ENGINE SCRIPTS -->
+    <script>
+        // --- 1. SVG GEOMETRY ENGINE ---
+        function createPolygonPoints(sides, points = 36) {
+            let pts = [];
+            for (let i = 0; i < points; i++) {
+                let sideIndex = Math.floor(i / (points / sides));
+                let t = (i % (points / sides)) / (points / sides);
+                let a1 = (sideIndex / sides) * Math.PI * 2 - Math.PI / 2;
+                let a2 = ((sideIndex + 1) / sides) * Math.PI * 2 - Math.PI / 2;
 
-<!-- Carousel container (slides injected by JS) -->
-<div class="carousel" id="carousel" role="region" aria-label="VRAXION tier showcase"></div>
+                let x1 = Math.cos(a1); let y1 = Math.sin(a1);
+                let x2 = Math.cos(a2); let y2 = Math.sin(a2);
 
-<!-- Bottom navigation: tagline + dots -->
-<div class="bottom-nav" id="bottomNav">
-  <div class="nav-tagline" id="navTagline"></div>
-  <div class="dot-nav" id="dotNav" role="tablist"></div>
-</div>
-
-<!-- Arrow buttons -->
-<button class="arrow-btn arrow-prev" id="arrowPrev" aria-label="Previous">
-  <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
-</button>
-<button class="arrow-btn arrow-next" id="arrowNext" aria-label="Next">
-  <svg viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg>
-</button>
-
-<!-- ═══════════════════════════════════════════════════════════
-     THREE.JS + CAROUSEL ENGINE
-     ═══════════════════════════════════════════════════════════ -->
-<script>
-(function() {
-  'use strict';
-
-  /* ─── SPEC ICONS ─── */
-  var ICON_FILTER = '<svg viewBox="0 0 20 20" fill="currentColor"><path d="M2 4a1 1 0 011-1h14a1 1 0 01.7 1.7L12 11.42V17a1 1 0 01-.55.9l-3 1.5A1 1 0 017 18.5v-7.08L1.3 4.7A1 1 0 012 4z"/></svg>';
-  var ICON_NODE = '<svg viewBox="0 0 20 20" fill="currentColor"><path d="M10 2l6.93 4v8L10 18l-6.93-4V6L10 2zm0 2.31L5.07 7v6L10 15.69 14.93 13V7L10 4.31z"/><circle cx="10" cy="10" r="2.5"/></svg>';
-  var ICON_DEVICE = '<svg viewBox="0 0 20 20" fill="currentColor"><rect x="5" y="2" width="10" height="16" rx="2"/><rect x="6.5" y="4" width="7" height="10" rx="0.5" fill="none" stroke="currentColor" stroke-width="1"/><circle cx="10" cy="16" r="0.8"/></svg>';
-  var ICON_CLOCK = '<svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm0-2a6 6 0 100-12 6 6 0 000 12z"/><path d="M10 6a.75.75 0 01.75.75V10h2.5a.75.75 0 010 1.5H10a.75.75 0 01-.75-.75V6.75A.75.75 0 0110 6z"/></svg>';
-  var ICON_CHIP = '<svg viewBox="0 0 20 20" fill="currentColor"><rect x="5" y="5" width="10" height="10" rx="1.5"/><rect x="7" y="7" width="6" height="6" rx="0.5" fill="none" stroke="currentColor" stroke-width="0.8"/><path d="M8 2v3M12 2v3M8 15v3M12 15v3M2 8h3M2 12h3M15 8h3M15 12h3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" fill="none"/></svg>';
-  var ICON_DELTA = '<svg viewBox="0 0 20 20" fill="currentColor"><polygon points="10,2 19,18 1,18"/></svg>';
-  var ICON_SIGMA = '<svg viewBox="0 0 20 20" fill="currentColor"><path d="M5 3h10v2.5H8.5L12 10l-3.5 4.5H15V17H5l4.5-5.5L5 6V3z"/></svg>';
-  var ICON_ENGI = '<svg viewBox="0 0 20 20" fill="currentColor"><path d="M10 1.5l1.3 2.6 2.9.4-2.1 2 .5 2.9L10 7.9 7.4 9.4l.5-2.9-2.1-2 2.9-.4L10 1.5z"/><path d="M3 12h14v1.5H3z"/><path d="M4.5 15h11v1.5h-11z"/><path d="M6 18h8v1h-8z"/></svg>';
-  var ICON_PHI = '<svg viewBox="0 0 20 20" fill="currentColor"><path d="M10 2v4.5C7 6.5 5 8 5 10.5S7 14.5 10 14.5V18h1v-3.5c3 0 5-1.5 5-4s-2-4-5-4V2h-1zm0 5.5v6c-2.2 0-4-1.2-4-3s1.8-3 4-3zm1 0c2.2 0 4 1.2 4 3s-1.8 3-4 3v-6z"/></svg>';
-  var ICON_WINDOWS = '<svg viewBox="0 0 16 16" fill="currentColor"><path d="M1.5 3.2l5.5-.8v5.3H1.5V3.2zm0 9.6l5.5.8V8.3H1.5v4.5zm6.5 1l7 1V8.3H8v5.5zm0-11.6v5.5h7V1.2l-7 1z"/></svg>';
-
-  /* ─── CHESS PIECE ICONS ─── */
-  var CHESS_PAWN = '<svg viewBox="0 0 20 20" fill="currentColor"><circle cx="10" cy="5.5" r="2.8"/><path d="M7.5 9.5c-.8 1-1.3 2.2-1.3 3.5h7.6c0-1.3-.5-2.5-1.3-3.5H7.5z"/><path d="M5 15.5h10v1.5H5z"/><path d="M6 14h8v1.5H6z"/></svg>';
-  var CHESS_KNIGHT = '<svg viewBox="0 0 20 20" fill="currentColor"><path d="M6 17h8v1H6zM7 15h6v2H7zM7.5 7.5c0-1.5.8-3 2-4l1-.8c.3-.2.5-.1.5.2v2l1.5 1c.5.4.8 1 .8 1.8v4.3H7.5V7.5z"/><circle cx="11.5" cy="6.5" r="0.7" fill="rgba(0,0,0,0.3)"/><path d="M8.5 9.5l-1.5 1v1.5h2l-.5-2.5z"/></svg>';
-  var CHESS_BISHOP = '<svg viewBox="0 0 20 20" fill="currentColor"><path d="M10 2L9 4.5c-.1.3.1.5.4.5h1.2c.3 0 .5-.2.4-.5L10 2z"/><ellipse cx="10" cy="6.5" rx="2.2" ry="2"/><path d="M7 9c-.6 1-1 2.3-1 3.8h8c0-1.5-.4-2.8-1-3.8H7z"/><path d="M5.5 15h9v1.5h-9z"/><path d="M6.5 13.5h7v1.5h-7z"/><line x1="10" y1="5" x2="10" y2="8" stroke="rgba(0,0,0,0.25)" stroke-width="0.8"/></svg>';
-  var CHESS_ROOK = '<svg viewBox="0 0 20 20" fill="currentColor"><path d="M5 3h2v2h2V3h2v2h2V3h2v4H5V3z"/><path d="M6 7h8v1.5H6z"/><path d="M7 8.5h6v5H7z"/><path d="M6 13.5h8v1.5H6z"/><path d="M5 15h10v2H5z"/></svg>';
-  var CHESS_QUEEN = '<svg viewBox="0 0 20 20" fill="currentColor"><circle cx="10" cy="3" r="1.3"/><circle cx="4.5" cy="5" r="1"/><circle cx="15.5" cy="5" r="1"/><path d="M4.5 6l2.5 7h6l2.5-7-2.5 3.5L10 5l-3 4.5L4.5 6z"/><path d="M6.5 13.5h7v1.5h-7z"/><path d="M5.5 15.5h9v1.5h-9z"/></svg>';
-  var CHESS_KING = '<svg viewBox="0 0 20 20" fill="currentColor"><path d="M9.25 1.5h1.5v2h2v1.5h-2v2h-1.5v-2h-2V3.5h2v-2z"/><ellipse cx="10" cy="8.5" rx="3" ry="2"/><path d="M6.5 10.5c-.3.8-.5 1.8-.5 2.5h8c0-.7-.2-1.7-.5-2.5h-7z"/><path d="M5.5 14h9v1.5h-9z"/><path d="M5 16h10v1.5H5z"/></svg>';
-  var CHESS_BOARD = '<svg viewBox="0 0 20 20" fill="currentColor"><rect x="2" y="2" width="4" height="4"/><rect x="10" y="2" width="4" height="4"/><rect x="6" y="6" width="4" height="4"/><rect x="14" y="6" width="4" height="4"/><rect x="2" y="10" width="4" height="4"/><rect x="10" y="10" width="4" height="4"/><rect x="6" y="14" width="4" height="4"/><rect x="14" y="14" width="4" height="4"/><rect x="2" y="2" width="16" height="16" fill="none" stroke="currentColor" stroke-width="0.8"/></svg>';
-
-  /* ─── GREEK LETTER ICONS ─── */
-  var ICON_LAMBDA = '<svg viewBox="0 0 20 20" fill="currentColor"><path d="M4 18L10 2l6 16h-3l-3-9-3 9H4z"/></svg>';
-  var ICON_PI = '<svg viewBox="0 0 20 20" fill="currentColor"><path d="M3 4h14v2.5H13V18h-2.5V6.5h-4V18H4V6.5H3V4z"/></svg>';
-  var ICON_OMEGA = '<svg viewBox="0 0 20 20" fill="currentColor"><path d="M10 3a6.5 6.5 0 00-4.5 11.2V18h3v-2.5a6.5 6.5 0 003 0V18h3v-3.8A6.5 6.5 0 0010 3zm0 2.5a4 4 0 110 8 4 4 0 010-8z"/></svg>';
-  var ICON_ALEPH = '<svg viewBox="0 0 20 20" fill="currentColor"><path d="M14 2c-2 2-4 5.5-4 8s2 6 4 8M6 2c2 2 4 5.5 4 8s-2 6-4 8" stroke="currentColor" stroke-width="2" fill="none"/><path d="M6 10h8" stroke="currentColor" stroke-width="1.5"/></svg>';
-
-  var CORE_ICON_SVG = {
-    '\u0394': ICON_DELTA,  '\u03A3': ICON_SIGMA,  '\u03A6': ICON_PHI,
-    '\u039B': ICON_LAMBDA, '\u03A0': ICON_PI,     '\u03A9': ICON_OMEGA,
-    '\u2135': ICON_ALEPH
-  };
-
-  /* ─── PLATFORM ICONS ─── */
-  var ICON_SERVER = '<svg viewBox="0 0 20 20" fill="currentColor"><rect x="4" y="2" width="12" height="5" rx="1"/><circle cx="14" cy="4.5" r="0.8"/><rect x="6" y="3.8" width="5" height="1.2" rx="0.3" opacity="0.4"/><rect x="4" y="8" width="12" height="5" rx="1"/><circle cx="14" cy="10.5" r="0.8"/><rect x="6" y="9.8" width="5" height="1.2" rx="0.3" opacity="0.4"/><rect x="4" y="14" width="12" height="4" rx="1"/><circle cx="14" cy="16" r="0.8"/><rect x="6" y="15.3" width="5" height="1.2" rx="0.3" opacity="0.4"/></svg>';
-  var ICON_LOCK = '<svg viewBox="0 0 20 20" fill="currentColor"><path d="M6 9V7a4 4 0 018 0v2h1a1 1 0 011 1v7a1 1 0 01-1 1H5a1 1 0 01-1-1v-7a1 1 0 011-1h1zm2 0h4V7a2 2 0 00-4 0v2z"/><circle cx="10" cy="14" r="1.5"/></svg>';
-  var ICON_APPLE = '<svg viewBox="0 0 14 16" fill="currentColor"><path d="M11.3 8.5c0-1.8 1.5-2.7 1.5-2.7s-.8-1.2-2.1-1.2c-.9 0-1.6.5-2.1.5-.5 0-1.1-.5-1.9-.5-1.4 0-2.9 1.2-2.9 3.5 0 1.4.5 2.9 1.2 3.9.6.8 1.1 1.5 1.8 1.5.7 0 1-.5 1.9-.5s1.1.5 1.9.5c.7 0 1.2-.7 1.7-1.4.4-.5.6-1 .7-1.1-.1 0-1.7-.7-1.7-2.5zM9.7 2.8c.5-.6.8-1.3.8-2-.8.1-1.7.5-2.2 1.2-.5.5-.9 1.3-.8 2 .8.1 1.7-.4 2.2-1.2z"/></svg>';
-  var ICON_DROID = '<svg viewBox="0 0 16 16" fill="currentColor"><path d="M4 7.5h8v5a1 1 0 01-1 1H5a1 1 0 01-1-1v-5z"/><rect x="4" y="5.5" width="8" height="2" rx="1"/><circle cx="6" cy="4" r="0.6"/><circle cx="10" cy="4" r="0.6"/><line x1="5" y1="2" x2="6" y2="3.5" stroke="currentColor" stroke-width="0.8" fill="none"/><line x1="11" y1="2" x2="10" y2="3.5" stroke="currentColor" stroke-width="0.8" fill="none"/><rect x="2" y="8" width="1.2" height="3.5" rx="0.6"/><rect x="12.8" y="8" width="1.2" height="3.5" rx="0.6"/></svg>';
-  var ICON_TOKEN = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.2"><circle cx="8" cy="8" r="6.5"/><circle cx="8" cy="8" r="3.2"/><line x1="8" y1="1.5" x2="8" y2="4.8"/><line x1="8" y1="11.2" x2="8" y2="14.5"/><line x1="1.5" y1="8" x2="4.8" y2="8"/><line x1="11.2" y1="8" x2="14.5" y2="8"/></svg>';
-
-  /* --- STEP ICONS --- */
-  var ICON_DOWNLOAD = '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2v10M10 12l-3.5-3.5M10 12l3.5-3.5"/><path d="M4 15v1a2 2 0 002 2h8a2 2 0 002-2v-1"/></svg>';
-  var ICON_PULSE = '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 10h3l2-6 3 12 2.5-8L14 12h5"/></svg>';
-  var ICON_GEM = '<svg viewBox="0 0 20 20" fill="currentColor"><path d="M10 18L2 8l3-5h10l3 5-8 10z"/><path d="M2 8h16M6.5 3L10 8l3.5-5M10 8v10" stroke="rgba(0,0,0,0.25)" stroke-width="0.8" fill="none"/></svg>';
-  var ICON_SEEDLING = '<svg viewBox="0 0 20 20" fill="currentColor"><path d="M10 18v-8" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/><path d="M10 14c-4 0-6-3-6-6 3 0 6 2 6 6z"/><path d="M10 11c3-1 5-4 5-7-3 0-6 2.5-5 7z"/></svg>';
-  var ICON_EXPAND = '<svg viewBox="0 0 20 20" fill="currentColor"><circle cx="10" cy="10" r="2"/><circle cx="4" cy="4" r="1.3"/><circle cx="16" cy="4" r="1.3"/><circle cx="4" cy="16" r="1.3"/><circle cx="16" cy="16" r="1.3"/><path d="M5.2 5.2l3.3 3.3M14.8 5.2l-3.3 3.3M5.2 14.8l3.3-3.3M14.8 14.8l-3.3-3.3" stroke="currentColor" stroke-width="1.2" fill="none"/></svg>';
-
-  var STEP_COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#A855F7', '#EC4899'];
-  var STEP_ICONS  = [ICON_DOWNLOAD, ICON_PULSE, ICON_GEM, ICON_SEEDLING, ICON_EXPAND];
-
-  /* ─── TIER DATA ─── */
-  const TIERS = [
-    {
-      id: 'bee',
-      tag: 'T1 \u00b7 PAWN CLASS',
-      name: 'BEE',
-      core: 'GF8-LOW',
-      color: '#FFB800',
-      tagline: 'In a stable loop \u2014 Structure emerges.',
-      detail: {
-        title: 'BEE',
-        subtitle: 'Pawn Class',
-        coreTag: 'GF8-LOW',
-        coreIcon: '\u0394',
-        coreName: 'Validation Core',
-        classIcon: CHESS_PAWN,
-        sections: [
-          {
-            heading: 'Be the Bee',
-            text: 'Lend idle compute to the swarm. Earn tokens while your device sleeps \u2014 spend them on AI queries or trade them. Not contributing? Buy tokens directly.'
-          },
-          {
-            heading: 'Like Bitcoin mining \u2014 but useful',
-            text: 'Bitcoin miners burn energy on hashes that prove nothing. Your device validates real AI queries while it charges. No GPU-melting hashes, no battery drain \u2014 just lightweight LCX filter passes while your phone idles. Stay online longer, build reputation \u2014 reputation unlocks more work and more tokens.'
-          }
-        ],
-        steps: [
-          'Download. Tap start. Done.',
-          'Leave it running \u2014 overnight earns the most.',
-          'Earn tokens. Spend them to ask the swarm anything.'
-        ],
-        specs: [
-          { label: 'Purpose', text: 'Edge filter \u2014 first point of contact for incoming swarm queries.', icon: ICON_FILTER },
-          { label: 'Place in Swarm', text: 'The atomic unit. Nothing works without it.', icon: ICON_NODE },
-          { label: 'Hosted On', text: 'Phones, Raspberry Pi, edge devices.', icon: ICON_DEVICE },
-          { label: 'Working Hours', text: 'Always open. More uptime = more tokens.', icon: ICON_CLOCK },
-          { label: 'GF8-LOW Core', text: 'Local Consensus Matrix \u2014 <span class="rb-hi">8\u00d78</span> LCX grid, <span class="rb-hi">64</span> cells.<ul class="rb-pts"><li>Validates inputs against base pattern rules</li><li>Lightweight enough to run on phones without battery drain</li></ul>', icon: ICON_DELTA },
-          { label: 'Engineering', text: 'Input noise filter at the swarm edge.<ul class="rb-pts"><li>Catches malformed or incoherent inputs before propagation</li><li>Keeps deeper processing layers clean and undistorted</li></ul>', icon: ICON_ENGI }
-        ],
-        buttons: [
-          { icon: ICON_APPLE, label: 'Download for iOS' },
-          { icon: ICON_DROID, label: 'Download for Android' },
-          { icon: ICON_TOKEN, label: 'Buy & Sell Tokens' }
-        ]
-      }
-    },
-    {
-      id: 'tsar',
-      tag: 'T2 \u00b7 KNIGHT CLASS',
-      name: 'TSAR',
-      core: 'CSF16-HIGH',
-      color: '#0088CC',
-      tagline: 'Signals converge. Paths multiply.',
-      detail: {
-        title: 'TSAR',
-        subtitle: 'Knight Class',
-        coreTag: 'CSF16-HIGH',
-        coreIcon: '\u03A3',
-        coreName: 'Routing Core',
-        classIcon: CHESS_KNIGHT,
-        sections: [
-          {
-            heading: 'Command the signal',
-            text: 'Got a tablet in a drawer? A mini PC behind the TV doing nothing? Run TSAR. It turns idle mid-range hardware into a signal router for the swarm \u2014 aggregating what BEE nodes filter and sending it where it needs to go. Same idea, beefier device, different job.'
-          },
-          {
-            heading: 'BEE filters. TSAR routes.',
-            text: 'BEE catches noise at the edge \u2014 one device, one filter. TSAR sits one layer inward, collecting outputs from clusters of BEEs and splitting them across the right processing paths. It doesn\u2019t think deeper. It thinks wider \u2014 coordinating many signals so the layers above don\u2019t have to sort through chaos.'
-          }
-        ],
-        steps: [
-          'Install on any tablet, mini PC, or single-board computer.',
-          'Leave it connected \u2014 TSAR works best with steady uptime.',
-          'Earn more per hour \u2014 routing pays better than filtering, and reputation compounds.'
-        ],
-        specs: [
-          { label: 'Purpose', text: 'Signal router \u2014 aggregates BEE outputs and distributes them across processing paths.', icon: ICON_FILTER },
-          { label: 'Place in Swarm', text: 'The first coordinator. Bridges edge nodes into functional clusters.', icon: ICON_NODE },
-          { label: 'Hosted On', text: 'Tablets, Intel NUCs, Raspberry Pi 5, single-board computers.', icon: ICON_DEVICE },
-          { label: 'Working Hours', text: 'Always routing. Steady uptime builds reputation faster than raw hours.', icon: ICON_CLOCK },
-          { label: 'CSF16-HIGH Core', text: 'Signal Aggregator \u2014 <span class="rb-hi">16\u00d716</span> LCX grid, <span class="rb-hi">256</span> cells.<ul class="rb-pts"><li>Aggregates validated outputs from BEE clusters</li><li>Splits inputs across processing paths by complexity</li></ul>', icon: ICON_SIGMA },
-          { label: 'Engineering', text: 'Routing switchboard for filtered signals.<ul class="rb-pts"><li>Sorts BEE outputs by pattern complexity</li><li>Delivers pre-sorted, coherent bundles to deeper layers</li></ul>', icon: ICON_ENGI }
-        ],
-        buttons: [
-          { icon: ICON_DROID, label: 'Download for Android' },
-          { icon: ICON_CHIP, label: 'Download for Linux' },
-          { icon: ICON_TOKEN, label: 'Buy & Sell Tokens' }
-        ]
-      }
-    },
-    {
-      id: 'prism',
-      tag: 'T3 \u00b7 BISHOP CLASS',
-      name: 'PRISM',
-      core: 'REF32-SPIRE',
-      color: '#5B4BD5',
-      tagline: 'Where noise decomposes, patterns remain.',
-      detail: {
-        title: 'PRISM',
-        subtitle: 'Bishop Class',
-        coreTag: 'REF32-SPIRE',
-        coreIcon: '\u03A6',
-        coreName: 'Decomposition Core',
-        classIcon: CHESS_BISHOP,
-        sections: [
-          {
-            heading: 'Decompose the noise',
-            text: 'Got a desktop gathering dust? A workstation between renders? Run PRISM. It takes the routed bundles from TSAR and decomposes them \u2014 splitting noisy data into clean feature components. What comes out the other side is structured, more coherent. The first real pattern.'
-          },
-          {
-            heading: 'The first layer that thinks',
-            text: 'BEE filters. TSAR routes. Neither reasons. PRISM is the first pattern recognizer \u2014 the first tier that tries to form a coherent connection from the information it receives. Fire means warmth. Motion means threat. Simple associations, but real ones. Everything above PRISM builds on these primitive logical links.'
-          }
-        ],
-        steps: [
-          'Install on any desktop, workstation, or GPU-equipped machine.',
-          'Let it run during idle hours \u2014 decomposition is compute-hungry but patient.',
-          'Earn a premium \u2014 your machine forms thoughts, not just passes data.'
-        ],
-        specs: [
-          { label: 'Purpose', text: 'Pattern decomposer \u2014 breaks TSAR bundles into feature components, isolating patterns from noise.', icon: ICON_FILTER },
-          { label: 'Place in Swarm', text: 'The first reasoning layer. Bridges coordination into pattern recognition.', icon: ICON_NODE },
-          { label: 'Hosted On', text: 'Desktops, workstations, machines with dedicated GPUs.', icon: ICON_DEVICE },
-          { label: 'Working Hours', text: 'Idle hours preferred. Runs best when the machine isn\u2019t busy.', icon: ICON_CLOCK },
-          { label: 'REF32-SPIRE Core', text: 'Pattern Decomposer \u2014 <span class="rb-hi">32\u00d732</span> LCX grid, <span class="rb-hi">1,024</span> cells.<ul class="rb-pts"><li>Decomposes inputs across 32 feature channels</li><li>Mid-resolution pattern recognition from routed bundles</li></ul>', icon: ICON_PHI },
-          { label: 'Engineering', text: 'First real reasoning layer \u2014 raw data becomes structured patterns.<ul class="rb-pts"><li>Separates signal into feature-level components</li><li>First layer producing coherent logical associations</li></ul>', icon: ICON_ENGI }
-        ],
-        buttons: [
-          { icon: ICON_CHIP, label: 'Download for Linux' },
-          { icon: ICON_WINDOWS, label: 'Download for Windows' },
-          { icon: ICON_TOKEN, label: 'Buy & Sell Tokens' }
-        ]
-      }
-    },
-    {
-      id: 'pulsar',
-      tag: 'T4 \u00b7 ROOK CLASS',
-      name: 'PULSAR',
-      core: 'PLS64-BEAM',
-      color: '#9333EA',
-      tagline: 'The deeper the tick, the sharper the pulse.',
-      detail: {
-        title: 'PULSAR',
-        subtitle: 'Rook Class',
-        coreTag: 'PLS64-BEAM',
-        coreIcon: '\u039B',
-        coreName: 'Deep Processing Core',
-        classIcon: CHESS_ROOK,
-        sections: [
-          {
-            heading: 'The first long thought',
-            text: 'Got a multi-GPU workstation? A render farm between jobs? Run PULSAR. Below it, BEE filters, TSAR routes, PRISM decomposes \u2014 all fast, reactive, reflex-like. PULSAR is different. It runs longer inference cycles \u2014 the first tier that doesn\u2019t just react but deliberates. It recombines partial results from PRISM, tests them across multiple dimensions, and embeds them into a richer representation space. Or discards them if they don\u2019t hold up.'
-          },
-          {
-            heading: 'Network authority',
-            text: 'PULSAR doesn\u2019t just process data \u2014 it manages the network around it. It\u2019s the lowest tier with authority to discover unregistered nodes, bring them into the swarm, and assign basic trust. It embeds flat patterns into a higher-dimensional space \u2014 upgrading the resolution of everything that passes through. The output carries more weight in the network because it took more work to produce.'
-          }
-        ],
-        steps: [
-          'Install on any multi-GPU workstation or high-end desktop.',
-          'Keep it running \u2014 longer uptime means sharper abstractions.',
-          'Earn premium rates \u2014 PULSAR nodes carry network authority.'
-        ],
-        specs: [
-          { label: 'Purpose', text: 'Deep-cycle processor for extended pattern embedding.<ul class="rb-pts"><li>Recombines PRISM outputs through longer inference cycles</li><li>Tests coherence across multiple embedding dimensions</li><li>Embeds results into higher-dimensional representation space</li></ul>', icon: ICON_FILTER },
-          { label: 'Place in Swarm', text: 'First node with network authority.<ul class="rb-pts"><li>Discovers and registers unregistered nodes</li><li>Reorganizes local swarm topology</li><li>Broadcasts processed results upstream</li></ul>', icon: ICON_NODE },
-          { label: 'Hosted On', text: 'Multi-GPU workstations, CUDA nodes, render farms.', icon: ICON_DEVICE },
-          { label: 'Working Hours', text: 'Continuous uptime required.<ul class="rb-pts"><li>Longer inference cycles build coherence over time</li><li>Longer uptime = better abstractions + healthier topology</li></ul>', icon: ICON_CLOCK },
-          { label: 'PLS64-BEAM Core', text: 'Deep Processor \u2014 <span class="rb-hi">64\u00d764</span> LCX grid, <span class="rb-hi">4,096</span> cells.<ul class="rb-pts"><li>Encodes patterns across 64 embedding dimensions</li><li>Each cycle recombines, evaluates, and embeds</li></ul>', icon: ICON_LAMBDA },
-          { label: 'Engineering', text: 'First-tier network reorganization authority.<ul class="rb-pts"><li>Discovers nodes, assigns trust, manages topology</li><li>Processed outputs update the inference fabric upstream</li></ul>', icon: ICON_ENGI }
-        ],
-        buttons: [
-          { icon: ICON_CHIP, label: 'Download for Linux' },
-          { icon: ICON_WINDOWS, label: 'Download for Windows' },
-          { icon: ICON_TOKEN, label: 'Buy & Sell Tokens' }
-        ]
-      }
-    },
-    {
-      id: 'synapse',
-      tag: 'T5 \u00b7 QUEEN CLASS',
-      name: 'SYNAPSE',
-      core: 'SYN128-CORTEX',
-      color: '#E11D74',
-      tagline: 'Where dimensions meet, meaning falls into place.',
-      detail: {
-        title: 'SYNAPSE',
-        subtitle: 'Queen Class',
-        coreTag: 'SYN128-CORTEX',
-        coreIcon: '\u03A0',
-        coreName: 'Cluster Core',
-        classIcon: CHESS_QUEEN,
-        sections: [
-          {
-            heading: 'The cluster that governs',
-            text: 'Got a server rack collecting dust between workloads? SYNAPSE is the first cluster-level processor in the swarm \u2014 it groups PULSAR\u2019s outputs into thematic regions. Medicine. Physics. Abstract reasoning. It rates and reorganizes every node below it, corrects evaluations when actors seem untrustworthy, and monitors node health to redistribute work when something goes offline. Local clusters gain self-correction. The swarm gets more reliable as it grows.'
-          },
-          {
-            heading: 'The knowledge index',
-            text: 'SYNAPSE doesn\u2019t solve the hard questions \u2014 not yet, not alone. It organizes them. Results, hypotheses, pre-filtered associations \u2014 all indexed into thematic libraries, prepared for deeper correlation by the tiers above. What enters as individual results exits as organized, topic-grouped knowledge. This is the first cluster that operates as a unit \u2014 coordinating many nodes toward a single goal.'
-          }
-        ],
-        steps: [
-          'Deploy on server infrastructure \u2014 bare metal or containerized.',
-          'Maintain <span class="rb-hi">99%</span> uptime \u2014 trust and credits compound with availability.',
-          'Earn research-grade credits \u2014 your cluster organizes the knowledge behind breakthroughs.'
-        ],
-        specs: [
-          { label: 'Purpose', text: 'Regional thematic processor \u2014 clusters pulses into knowledge domains.<ul class="rb-pts"><li>Organizes medicine, physics, abstract reasoning</li><li>Builds libraries of facts and testable hypotheses</li></ul>', icon: ICON_FILTER },
-          { label: 'Place in Swarm', text: 'Self-correcting governance layer.<ul class="rb-pts"><li>Rates and reorganizes all nodes below</li><li>Monitors node health, redistributes on failure</li><li>Rebalances workload distribution in real time</li></ul>', icon: ICON_NODE },
-          { label: 'Hosted On', text: 'Server racks with high-bandwidth interconnects.', icon: ICON_DEVICE },
-          { label: 'Working Hours', text: '<span class="rb-hi">99%</span> uptime \u2014 non-negotiable.<ul class="rb-pts"><li>Trust and credit rates compound with reliability</li><li>Every minute of downtime costs reputation</li></ul>', icon: ICON_CLOCK },
-          { label: 'SYN128-CORTEX Core', text: 'Cluster Processor \u2014 <span class="rb-hi">128\u00d7128</span> LCX grid, <span class="rb-hi">16,384</span> cells.<ul class="rb-pts"><li>Groups processed results into coherent knowledge regions</li><li>Each region maintains its own indexed result library</li></ul>', icon: ICON_PI },
-          { label: 'Engineering', text: 'Autonomous node governance engine.<ul class="rb-pts"><li>Rates reliability, corrects evaluations, monitors health</li><li>Redistributes workload across the local cluster</li><li>Outputs exit as organized, topic-grouped knowledge</li></ul>', icon: ICON_ENGI }
-        ],
-        buttons: [
-          { icon: ICON_CHIP, label: 'Download for Linux' },
-          { icon: ICON_SERVER, label: 'Deploy Server' },
-          { icon: ICON_TOKEN, label: 'Buy & Sell Tokens' }
-        ]
-      }
-    },
-    {
-      id: 'overlord',
-      tag: 'T6 \u00b7 KING CLASS',
-      name: 'OVERLORD',
-      core: 'OVR256-DOMINION',
-      color: '#DC2626',
-      tagline: 'Where abstractions explode and conclusions crystallize.',
-      detail: {
-        title: 'OVERLORD',
-        subtitle: 'King Class',
-        coreTag: 'OVR256-DOMINION',
-        coreIcon: '\u03A9',
-        coreName: 'Expansion Core',
-        classIcon: CHESS_KING,
-        sections: [
-          {
-            heading: 'The expansion engine',
-            text: 'Got multi-rack infrastructure between deployments? OVERLORD takes SYNAPSE\u2019s organized knowledge regions and decomposes them. Multi-pass refinement breaks every abstraction into fundamental components, then reprojects them into a high-dimensional representation space \u2014 orders of magnitude denser than anything below. What SYNAPSE indexed as organized results, OVERLORD expands into every possible permutation. Every combination. Every recombination. Inference cycles run longer here than anywhere else in the swarm, testing connections that no single cluster could find on its own.'
-          },
-          {
-            heading: 'The compression',
-            text: 'The permutations converge. OVERLORD reprojects each expanded result into a high-tier association space, recombines them \u2014 each with each \u2014 and derives conclusions that didn\u2019t exist in any of the inputs. Then it compresses: findings collapse into verified results, dense and proven. These results propagate as model updates through the network, refining every tier\u2019s accuracy. BEE filters better. TSAR routes smarter. PRISM decomposes sharper. The whole swarm improves because OVERLORD found something new.'
-          }
-        ],
-        steps: [
-          'Stake tokens to qualify \u2014 higher tiers require proven uptime and track record.',
-          'Provision multi-rack infrastructure with redundant interconnects.',
-          'Earn expansion-class rewards \u2014 you run the engine that tests every permutation.'
-        ],
-        specs: [
-          { label: 'Purpose', text: 'Expansion-compression engine for cross-domain discovery.<ul class="rb-pts"><li>Reprojects knowledge into high-dimensional representation space</li><li>Tests all permutations across thematic domains</li><li>Compresses conclusions into verified results</li></ul>', icon: ICON_FILTER },
-          { label: 'Place in Swarm', text: 'The permutation authority between SYNAPSE and CONSENSUS.<ul class="rb-pts"><li>Expands, recombines, derives, compresses</li><li>Propagates model updates that refine the network below</li></ul>', icon: ICON_NODE },
-          { label: 'Hosted On', text: 'Multi-rack clusters with redundant interconnects.', icon: ICON_DEVICE },
-          { label: 'Working Hours', text: 'Infrastructure committed indefinitely.<ul class="rb-pts"><li>Expansion-compression cycle never stops</li><li>Every minute of downtime = lost permutation cycles</li></ul>', icon: ICON_CLOCK },
-          { label: 'OVR256-DOMINION Core', text: 'Expansion Processor \u2014 <span class="rb-hi">256\u00d7256</span> LCX grid, <span class="rb-hi">65,536</span> cells.<ul class="rb-pts"><li>Reprojects into high-dimensional representation space</li><li>Full permutation sets across all thematic domains</li><li>Compresses conclusions into verified model updates</li></ul>', icon: ICON_OMEGA },
-          { label: 'Engineering', text: 'Deep multi-pass refinement pipeline.<ul class="rb-pts"><li>Decomposes abstractions, expands permutations, recombines</li><li>Derives cross-domain conclusions</li><li>Propagates model updates to refine downstream tiers</li></ul>', icon: ICON_ENGI }
-        ],
-        buttons: [
-          { icon: ICON_LOCK, label: 'Request Access' },
-          { icon: ICON_SERVER, label: 'Deploy Cluster' },
-          { icon: ICON_TOKEN, label: 'Buy & Sell Tokens' }
-        ]
-      }
-    },
-    {
-      id: 'consensus',
-      tag: 'T7 \u00b7 COLLECTIVE INTELLIGENCE CLASS',
-      name: 'CONSENSUS',
-      core: 'CNS4K-CONVERGENCE',
-      color: '#FF0080',
-      tagline: 'Not one mind \u2014 every mind, aligned.',
-      detail: {
-        title: 'CONSENSUS',
-        subtitle: 'Collective Intelligence Class',
-        coreTag: 'CNS4K-CONVERGENCE',
-        coreIcon: '\u2135',
-        coreName: 'Convergence Core',
-        classIcon: CHESS_BOARD,
-        sections: [
-          {
-            heading: 'Full-depth convergence',
-            text: 'CONSENSUS doesn\u2019t work alone \u2014 it works with everything below it. Every BEE that filtered noise, every TSAR that routed signal, every PRISM that found a pattern, every PULSAR that deliberated, every SYNAPSE that organized a cluster, every OVERLORD that expanded a region \u2014 all of it converges here. Weighted by reputation, verified through multi-node consensus, crystallized into one answer the network agrees on. The harder the question, the more tiers engage. The answer isn\u2019t dictated by one node \u2014 it\u2019s agreed upon by all of them.'
-          },
-          {
-            heading: 'Where the hardest problems land',
-            text: 'This is where the token economy meets real demand. Research teams submit questions that no single machine can answer. The network decomposes them, distributes work across every tier, and runs convergence cycles until the answer holds up. No black box. No single point of authority. Every answer is auditable \u2014 you can trace which nodes contributed and how. The harder the question, the more compute it costs, and the more nodes get paid for solving it.'
-          }
-        ],
-        steps: [
-          'Provision dedicated infrastructure \u2014 data center partitions with persistent uptime.',
-          'Submit convergence contracts \u2014 problems priced in token cycles by network consensus.',
-          'Earn convergence-class returns \u2014 proportional to cycles committed and answer quality.'
-        ],
-        specs: [
-          { label: 'Purpose', text: 'Full-depth convergence processor for the hardest problems.<ul class="rb-pts"><li>Receives goals \u2014 aligns the entire swarm to converge</li><li><span class="rb-hi">4K+</span> LCX resolution, <span class="rb-hi">16K</span> inner processing dimensions</li><li>Designed for high-complexity problems: molecular dynamics, climate modeling, multi-agent optimization</li></ul>', icon: ICON_FILTER },
-          { label: 'Place in Swarm', text: 'The convergence apex \u2014 all tiers feed upward here.<ul class="rb-pts"><li>Aggregates weighted results from the full network</li><li>Reputation-weighted consensus across all dimensions</li></ul>', icon: ICON_NODE },
-          { label: 'Hosted On', text: 'Dedicated data center infrastructure.<ul class="rb-pts"><li>Multi-rack clusters or purpose-built facilities</li><li>Persistent power, cooling, and swarm interconnects</li></ul>', icon: ICON_DEVICE },
-          { label: 'Working Hours', text: 'Always converging \u2014 never idles.<ul class="rb-pts"><li>Convergence contracts queue continuously</li><li>Every cycle of downtime = unanswered questions</li></ul>', icon: ICON_CLOCK },
-          { label: 'CNS4K-CONVERGENCE Core', text: 'Convergence Processor \u2014 <span class="rb-hi">4096\u00d74096</span> LCX grid.<ul class="rb-pts"><li><span class="rb-hi">16.7M</span> outer cells, <span class="rb-hi">268M</span> inner processing dimensions</li><li>Highest-resolution consensus available in the network</li><li>Reputation-weighted alignment across all dimensions</li></ul>', icon: ICON_ALEPH },
-          { label: 'Engineering', text: 'Convergence-contract execution engine.<ul class="rb-pts"><li>Decomposes goals, aligns resources, runs deep cycles</li><li>Delivers verified results to the swarm</li><li>Fault-tolerant \u2014 recovers in-place from node failures</li></ul>', icon: ICON_ENGI }
-        ],
-        buttons: [
-          { icon: ICON_LOCK, label: 'Request Access' },
-          { icon: ICON_CHIP, label: 'Infrastructure Requirements' },
-          { icon: ICON_TOKEN, label: 'Buy & Sell Tokens' }
-        ]
-      }
-    },
-    {
-      id: 'swarm-network',
-      tag: 'THE SWARM',
-      name: 'NETWORK',
-      core: '',
-      color: '#FFFFFF',
-      tagline: 'One architecture. Infinite depth.',
-      detail: {
-        title: 'NETWORK',
-        subtitle: 'The Living Architecture',
-        coreTag: '',
-        coreName: '',
-        isSwarmNetwork: true,
-        sections: [
-          {
-            heading: 'A network that processes',
-            text: 'Every tier plays a role. BEEs filter noise at the edge. TSARs route signal into clusters. PRISMs decompose patterns into features. PULSARs run deep inference cycles. SYNAPSEs organize and govern clusters. OVERLORDs expand and compress whole regions. CONSENSUS converges on answers at full depth. Together, they form one recursive processing network \u2014 self-improving with every query it handles.'
-          },
-          {
-            heading: 'Built by everyone',
-            text: 'Your phone. Your desktop. Your rack. Every device that joins the swarm adds processing capacity. Contribute compute, earn tokens. Ask questions, spend tokens. Token minting scales with actual demand \u2014 supply matches computational load.'
-          },
-          {
-            heading: 'The economy of thought',
-            text: 'Tokens are minted by the network and distributed to reliable contributors. Each token lives 30 days \u2014 use it or lose it. Harder questions cost more tokens because they wake deeper tiers. A simple recipe lookup wakes a few phones. A hard research question activates servers across the swarm. This isn\u2019t built for trading floors. It\u2019s built to help humanity spend compute to earn answers.'
-          }
-        ],
-        steps: [
-          'Download the app. Tap start. Your device joins the outermost ring as a BEE.',
-          'Contribute compute. Earn tokens. Build reputation.',
-          'Spend tokens to ask the swarm anything \u2014 from recipes to rocket science.',
-          'Climb the tiers as your hardware grows \u2014 the deeper you go, the more you earn.',
-          'The network scales itself \u2014 more nodes = more intelligence.'
-        ],
-        specs: [
-          { label: 'Total Tiers', text: '<span class="rb-hi">7</span> tiers of recursive depth.<ul class="rb-pts"><li>Edge phones (BEE) to dedicated data centers (CONSENSUS)</li><li>Each tier filters, routes, or reasons at increasing LCX resolution</li></ul>', icon: ICON_NODE },
-          { label: 'Token Economy', text: 'Dynamic minting with <span class="rb-hi">30-day</span> expiry.<ul class="rb-pts"><li>No central bank \u2014 network-governed supply</li><li>Scales with demand, uptime, and compute quality</li></ul>', icon: ICON_TOKEN },
-          { label: 'Device Spectrum', text: 'Every device class has a role.<ul class="rb-pts"><li>Phones \u203A Tablets \u203A Desktops \u203A Workstations</li><li>Servers \u203A GPU Clusters \u203A Data Centers</li></ul>', icon: ICON_DEVICE },
-          { label: 'Swarm Topology', text: 'Fibonacci-halving concentric rings.<ul class="rb-pts"><li>Outer rings: more nodes. Inner rings: fewer, more powerful</li><li>Signal flows inward, governance flows outward</li></ul>', icon: ICON_FILTER },
-          { label: 'Latency Chain', text: 'Depth-adaptive response times.<ul class="rb-pts"><li>Shallow queries resolve fast \u2014 deeper tiers take longer</li><li>Full-depth convergence: minutes to hours by complexity</li></ul>', icon: ICON_CLOCK },
-          { label: 'Architecture', text: 'Permissionless at edge, stake-gated at depth.<ul class="rb-pts"><li>Reputation-weighted consensus at every tier</li><li>Self-governing: mint rates, difficulty, tier boundaries</li></ul>', icon: ICON_ENGI }
-        ],
-        buttons: [
-          { icon: ICON_APPLE, label: 'Download for iOS' },
-          { icon: ICON_DROID, label: 'Download for Android' },
-          { icon: ICON_CHIP, label: 'Run a Node' },
-          { icon: ICON_TOKEN, label: 'Buy & Sell Tokens' }
-        ]
-      }
-    }
-  ];
-
-  /* ─── DOM GENERATION ─── */
-  const carousel = document.getElementById('carousel');
-  const dotNav = document.getElementById('dotNav');
-
-  var BRAND_SIDES = [3, 4, 5, 6, 7, 8, 32, 24];
-  function makeBulletClip(sides) {
-    var pts = [];
-    for (var p = 0; p < sides; p++) {
-      var a = -Math.PI / 2 + p * 2 * Math.PI / sides;
-      pts.push((50 + 50 * Math.cos(a)).toFixed(1) + '% ' + (50 + 50 * Math.sin(a)).toFixed(1) + '%');
-    }
-    return 'polygon(' + pts.join(', ') + ')';
-  }
-  function makeBrandSvg(tierIndex, color) {
-    var sides = BRAND_SIDES[tierIndex] || 3;
-    var pts = [];
-    for (var p = 0; p < sides; p++) {
-      var a = -Math.PI / 2 + p * 2 * Math.PI / sides;
-      pts.push((20 + 17 * Math.cos(a)).toFixed(1) + ',' + (20 + 17 * Math.sin(a)).toFixed(1));
-    }
-    return '<svg class="sb-shape" viewBox="0 0 40 40" fill="' + color + '"><polygon points="' + pts.join(' ') + '"/></svg>';
-  }
-  function makeNavSvg(tierIndex) {
-    var sides = BRAND_SIDES[tierIndex] || 3;
-    var pts = [];
-    for (var p = 0; p < sides; p++) {
-      var a = -Math.PI / 2 + p * 2 * Math.PI / sides;
-      pts.push((12 + 10 * Math.cos(a)).toFixed(1) + ',' + (12 + 10 * Math.sin(a)).toFixed(1));
-    }
-    return '<svg class="dot-shape" viewBox="0 0 24 24"><polygon points="' + pts.join(' ') + '"/></svg>';
-  }
-
-  TIERS.forEach((t, i) => {
-    const slide = document.createElement('div');
-    slide.className = 'slide' + (i === 0 ? ' active' : '');
-    slide.style.setProperty('--bar-accent', t.color);
-    slide.dataset.index = i;
-
-    var leftHtml, rightHtml = '';
-    if (t.detail) {
-      var d = t.detail;
-      var c = t.color;
-      slide.className += ' has-detail';
-      slide.dataset.tier = t.id;
-
-      // Steps (card panels with per-step colors and icons)
-      var stepsHtml = '<div class="rb-steps-container">';
-      for (var si = 0; si < d.steps.length; si++) {
-        var stepColor = STEP_COLORS[si] || STEP_COLORS[2];
-        var stepIcon = STEP_ICONS[si] || STEP_ICONS[2];
-        stepsHtml +=
-          '<div class="rb-step-card" style="--step-color:' + stepColor + ';">' +
-            '<div class="rb-step-num">' + (si + 1) + '</div>' +
-            '<div class="rb-step-body">' +
-              '<div class="rb-step-head">' +
-                '<div class="rb-step-icon" style="color:' + stepColor + ';">' + stepIcon + '</div>' +
-                '<div class="rb-step-label">Step ' + (si + 1) + '</div>' +
-              '</div>' +
-              '<div class="rb-step-text">' + d.steps[si] + '</div>' +
-            '</div>' +
-          '</div>';
-      }
-      stepsHtml += '</div>';
-
-      // Specs (grouped into 3 categories of 2)
-      var specGroups = d.isSwarmNetwork
-        ? ['STRUCTURE', 'DESIGN', 'OPERATIONS']
-        : ['ROLE', 'INFRASTRUCTURE', 'CORE TECHNOLOGY'];
-      var specsHtml = '';
-      for (var spi = 0; spi < d.specs.length; spi++) {
-        if (spi % 2 === 0 && spi / 2 < specGroups.length) {
-          specsHtml += '<div class="rb-spec-group">' + specGroups[spi / 2] + '</div>';
+                let x = x1 + (x2 - x1) * t;
+                let y = y1 + (y2 - y1) * t;
+                pts.push(`${x.toFixed(4)},${y.toFixed(4)}`);
+            }
+            return pts.join(' ');
         }
-        var sp = d.specs[spi];
-        specsHtml += '<div class="rb-spec">' +
-          '<div class="rb-spec-head">' +
-            '<div class="rb-spec-icon" style="color:' + c + ';">' + sp.icon + '</div>' +
-            '<div class="rb-spec-label">' + sp.label + '</div>' +
-          '</div>' +
-          '<div class="rb-spec-text">' + sp.text + '</div>' +
-        '</div>';
-      }
 
-      // LEFT BAR
-      if (d.isSwarmNetwork) {
-        leftHtml =
-          '<div class="sb-title" style="color:' + c + ';">' + d.title + '</div>' +
-          '<div class="sb-subtitle">' + d.subtitle + '</div>';
-      } else {
-        var len = d.title.length;
-        var maxRem = Math.min(2.6, 20 / len);
-        var minRem = Math.max(1.2, maxRem * 0.55);
-        var vwMid = Math.min(5.5, maxRem * 1.2);
-        var spacing = Math.max(0.06, 0.3 - len * 0.02);
-        var titleSize = 'clamp(' + minRem.toFixed(2) + 'rem, ' + vwMid.toFixed(1) + 'vw, ' + maxRem.toFixed(2) + 'rem)';
-        var titleSpacing = spacing.toFixed(2) + 'em';
-        leftHtml =
-          '<div class="sb-brand" style="--title-size:' + titleSize + ';">' +
-            makeBrandSvg(i, c) +
-            '<div class="sb-title" style="letter-spacing:' + titleSpacing + ';">' + d.title + '</div>' +
-          '</div>' +
-          '<div class="sb-subtitle">' + (d.classIcon ? '<span class="sb-class-icon">' + d.classIcon + '</span>' : '') + d.subtitle + '</div>' +
-          '<div class="sb-core-section">' +
-            '<div class="sb-core-head">' +
-              '<span class="sb-core-icon" style="color:' + c + ';border-color:' + c + ';">' + (CORE_ICON_SVG[d.coreIcon] || d.coreIcon || '\u03B4') + '</span>' +
-              '<span class="sb-core-tag" style="color:' + c + ';">' + d.coreTag + '</span>' +
-            '</div>' +
-            '<div class="sb-core-name">' + d.coreName + '</div>' +
-          '</div>';
-      }
-
-      // Sections
-      var sectHtml = '';
-      for (var xi = 0; xi < d.sections.length; xi++) {
-        var sec = d.sections[xi];
-        sectHtml += '<div class="sb-section">' +
-          '<h3 class="sb-section-heading">' + sec.heading + '</h3>' +
-          '<div class="sb-section-text">' + sec.text + '</div>' +
-        '</div>';
-      }
-
-      var btnHtml = '<div class="sb-actions">';
-      if (d.buttons) {
-        for (var bi = 0; bi < d.buttons.length; bi++) {
-          btnHtml += '<button class="sb-cta-btn">' + d.buttons[bi].icon + ' ' + d.buttons[bi].label + '</button>';
+        function createCirclePoints(points = 36) {
+            let pts = [];
+            for (let i = 0; i < points; i++) {
+                let a = (i / points) * Math.PI * 2 - Math.PI / 2;
+                pts.push(`${Math.cos(a).toFixed(4)},${Math.sin(a).toFixed(4)}`);
+            }
+            return pts.join(' ');
         }
-      }
-      btnHtml += '</div>';
-      leftHtml += sectHtml + btnHtml;
 
-      // RIGHT BAR
-      rightHtml =
-        '<div class="rb-heading">How it works</div>' +
-        stepsHtml +
-        '<div class="rb-heading">Specs</div>' +
-        specsHtml;
-    } else {
-      leftHtml = '<div class="tier-tag" style="color:' + t.color + ';">' + t.tag + '</div>';
-    }
+        const polyStates = {
+            idle: createCirclePoints(36),
+            warning: createPolygonPoints(3, 36),
+            process: createPolygonPoints(6, 36),
+            error: createPolygonPoints(4, 36)
+        };
 
-    var rightBarMarkup = rightHtml
-      ? '<div class="slide-right" style="--bar-accent:' + t.color + '; --bullet-clip:' + makeBulletClip(BRAND_SIDES[i] || 3) + ';">' + rightHtml + '</div>'
-      : '';
+        const polygonEl = document.getElementById('shape-polygon');
+        const hudStateText = document.getElementById('hud-state');
+        let autoMorphTimer = null;
 
-    slide.innerHTML =
-      '<div class="slide-glow" style="background:' + t.color + ';"></div>' +
-      '<div class="slide-hero">' +
-        (function(){var nl=t.name.length,nm=Math.min(4.5,24/nl),ni=Math.max(1.6,nm*0.6),nv=Math.min(6,nm*1.3);return '<h1 class="model-name" style="font-size:clamp('+ni.toFixed(2)+'rem,'+nv.toFixed(1)+'vw,'+nm.toFixed(2)+'rem);">'})() + t.name + '</h1>' +
-        '<hr class="model-rule" style="background:' + t.color + ';">' +
-        '<div class="core-name" style="color:' + t.color + ';">' + t.core + '</div>' +
-      '</div>' +
-      '<div class="slide-content" style="--bar-accent:' + t.color + '; --bullet-clip:' + makeBulletClip(BRAND_SIDES[i] || 3) + ';">' + leftHtml + '</div>' +
-      rightBarMarkup;
-    carousel.appendChild(slide);
+        function setState(stateName) {
+            document.body.className = `state-${stateName}`;
+            polygonEl.setAttribute('points', polyStates[stateName]);
+            hudStateText.textContent = stateName.toUpperCase();
 
-    // Dot
-    const dot = document.createElement('button');
-    dot.className = 'dot' + (i === 0 ? ' active' : '');
-    dot.dataset.index = i;
-    dot.style.setProperty('--dot-color', t.color);
-    dot.setAttribute('role', 'tab');
-    dot.setAttribute('aria-selected', i === 0 ? 'true' : 'false');
-    dot.setAttribute('aria-label', 'Go to ' + t.name);
-    dot.innerHTML = makeNavSvg(i) + '<span class="dot-label">' + t.name + '</span>';
-    if (i === 0) {
-      dot.querySelector('.dot-shape').style.fill = t.color;
-    }
-    dotNav.appendChild(dot);
-  });
-
-  // Slide counter
-  var counterEl = document.createElement('div');
-  counterEl.className = 'slide-counter';
-  counterEl.textContent = '1 / ' + TIERS.length;
-  document.getElementById('bottomNav').appendChild(counterEl);
-
-  const slides = carousel.querySelectorAll('.slide');
-  const dots = dotNav.querySelectorAll('.dot');
-  const taglineEl = document.getElementById('navTagline');
-  let current = 0;
-  let transitioning = false;
-  var taglineFadeTimer = null;
-  if (TIERS[0].detail) document.body.classList.add('detail-active');
-  taglineEl.textContent = TIERS[0].tagline || '';
-  document.documentElement.style.setProperty('--nav-accent', TIERS[0].color);
-
-  /* ─── CAROUSEL: goTo ─── */
-  function goTo(index, direction) {
-    if (index === current || transitioning) return;
-    if (index < 0) index = TIERS.length - 1;
-    if (index >= TIERS.length) index = 0;
-    transitioning = true;
-
-    const dir = direction || (index > current ? 'right' : 'left');
-    const oldSlide = slides[current];
-    const newSlide = slides[index];
-
-    // Exit old
-    oldSlide.classList.remove('active');
-    oldSlide.classList.add(dir === 'right' ? 'exit-left' : 'exit-right');
-
-    // Enter new
-    newSlide.classList.add('active');
-
-    // Update dots
-    dots[current].classList.remove('active');
-    dots[current].querySelector('.dot-shape').style.fill = '';
-    dots[current].setAttribute('aria-selected', 'false');
-    dots[index].classList.add('active');
-    dots[index].querySelector('.dot-shape').style.fill = TIERS[index].color;
-    dots[index].setAttribute('aria-selected', 'true');
-
-    // Update slide counter
-    counterEl.textContent = (index + 1) + ' / ' + TIERS.length;
-
-    // Tagline crossfade (debounced)
-    if (taglineFadeTimer) clearTimeout(taglineFadeTimer);
-    taglineEl.classList.add('fading');
-    taglineFadeTimer = setTimeout(function() {
-      taglineEl.textContent = TIERS[index].tagline || '';
-      taglineEl.classList.remove('fading');
-      taglineFadeTimer = null;
-    }, 350);
-
-    // Transition visuals
-    targetScales[current] = 0;
-    targetOpacities[current] = 0;
-    targetScales[index] = 1;
-    targetOpacities[index] = 1;
-
-    // Clear network flow particles when leaving the swarm network slide
-    if (TIER_VIS[current] && TIER_VIS[current].isSwarmNetwork) {
-      networkFlowParticles = [];
-    }
-
-    current = index;
-    document.body.classList.toggle('detail-active', !!TIERS[index].detail);
-    document.documentElement.style.setProperty('--nav-accent', TIERS[index].color);
-
-    oldSlide.addEventListener('transitionend', function handler() {
-      oldSlide.removeEventListener('transitionend', handler);
-      oldSlide.classList.remove('exit-left', 'exit-right');
-      transitioning = false;
-    });
-    setTimeout(function() { transitioning = false; }, 600);
-  }
-
-  function next() { goTo((current + 1) % TIERS.length, 'right'); }
-  function prev() { goTo((current - 1 + TIERS.length) % TIERS.length, 'left'); }
-
-  /* ─── NAVIGATION EVENTS ─── */
-
-  // Arrow buttons
-  document.getElementById('arrowNext').addEventListener('click', next);
-  document.getElementById('arrowPrev').addEventListener('click', prev);
-
-  // Dot clicks
-  dots.forEach(function(dot) {
-    dot.addEventListener('click', function() {
-      goTo(parseInt(this.dataset.index));
-    });
-  });
-
-  // Keyboard
-  document.addEventListener('keydown', function(e) {
-    if (e.key === 'ArrowRight' || e.key === 'ArrowDown') next();
-    else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') prev();
-  });
-
-  // Mouse wheel (debounced, ignores sidebar scroll)
-  var wheelTimeout = null;
-  document.addEventListener('wheel', function(e) {
-    if (wheelTimeout) return;
-    var t = e.target;
-    while (t && t !== document.body) {
-      if (t.classList.contains('slide-content') || t.classList.contains('slide-right')) return;
-      t = t.parentElement;
-    }
-    wheelTimeout = setTimeout(function() { wheelTimeout = null; }, 800);
-    if (e.deltaY > 0) next();
-    else if (e.deltaY < 0) prev();
-  }, { passive: true });
-
-  // Touch swipe (skips when inside scrollable sidebars)
-  var touchStartX = 0;
-  var touchStartY = 0;
-  var touchStartTarget = null;
-  document.addEventListener('touchstart', function(e) {
-    touchStartX = e.touches[0].clientX;
-    touchStartY = e.touches[0].clientY;
-    touchStartTarget = e.target;
-  }, { passive: true });
-
-  document.addEventListener('touchend', function(e) {
-    var t = touchStartTarget;
-    while (t && t !== document.body) {
-      if (t.classList.contains('slide-content') || t.classList.contains('slide-right')) return;
-      t = t.parentElement;
-    }
-    var dx = e.changedTouches[0].clientX - touchStartX;
-    var dy = e.changedTouches[0].clientY - touchStartY;
-    if (Math.abs(dx) < 30 || Math.abs(dx) < Math.abs(dy)) return;
-    if (dx < 0) next();
-    else prev();
-  }, { passive: true });
-
-  /* ═══════════════════════════════════════════════════════════
-     GRAVITATIONAL POLYGON ATTRACTOR — CANVAS 2D
-     ═══════════════════════════════════════════════════════════ */
-  var canvas = document.getElementById('scene-canvas');
-  if (!canvas) return;
-  var ctx = canvas.getContext('2d');
-  if (!ctx) return;
-
-  var W, H, dpr = Math.min(window.devicePixelRatio, 2);
-  var rootStyle = getComputedStyle(document.documentElement);
-  var BAR_LEFT = parseInt(rootStyle.getPropertyValue('--bar-left')) || 475;
-  var BAR_RIGHT = parseInt(rootStyle.getPropertyValue('--bar-right')) || 600;
-  var NUM_VIS = TIERS.length;
-  var baseRadius = 200;
-  var prevCompactR = 0, prevDetailR = 0;
-
-  function resizeCanvas() {
-    W = window.innerWidth;
-    H = window.innerHeight;
-    canvas.width = W * dpr;
-    canvas.height = H * dpr;
-    canvas.style.width = W + 'px';
-    canvas.style.height = H + 'px';
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-
-    var newCompact = Math.min((W - BAR_LEFT) * 0.35, H * 0.35);
-    var newDetail = Math.min((W - BAR_LEFT - BAR_RIGHT) * 0.35, H * 0.35);
-
-    if (prevCompactR > 0 && typeof tierParticles !== 'undefined') {
-      for (var ti = 0; ti < NUM_VIS; ti++) {
-        var oldR = TIERS[ti].detail ? prevDetailR : prevCompactR;
-        var newR = TIERS[ti].detail ? newDetail : newCompact;
-        if (oldR > 0) {
-          var scale = newR / oldR;
-          for (var pi = 0; pi < tierParticles[ti].length; pi++) {
-            tierParticles[ti][pi].orbitR *= scale;
-          }
-          for (var pi = 0; pi < tierFeedParticles[ti].length; pi++) {
-            tierFeedParticles[ti][pi].orbitR *= scale;
-          }
+            // Recolor HUD text based on state
+            if (stateName === 'warning') hudStateText.style.color = '#ff8c00';
+            else if (stateName === 'error') hudStateText.style.color = '#ff3366';
+            else hudStateText.style.color = 'var(--cyan)';
         }
-      }
-    }
 
-    baseRadius = newCompact;
-    prevCompactR = newCompact;
-    prevDetailR = newDetail;
-    networkInitialized = false;
-  }
-  resizeCanvas();
-  var resizeTimer;
-  window.addEventListener('resize', function() {
-    clearTimeout(resizeTimer);
-    resizeTimer = setTimeout(resizeCanvas, 150);
-  });
+        // --- 2. JOG-DIAL 3D MENU ENGINE ---
+        const items = document.querySelectorAll('.menu-item');
+        const listHeight = window.innerHeight * 0.8;
+        const itemSpacing = 120; // px distance between items
+        let scrollY = 0;
+        let targetScrollY = 0;
 
-  /* ─── SHARED STATE ─── */
-  var targetScales = []; var targetOpacities = [];
-  var currentScales = []; var currentOpacities = [];
-  for (var _i = 0; _i < NUM_VIS; _i++) {
-    targetScales.push(_i === 0 ? 1 : 0);
-    targetOpacities.push(_i === 0 ? 1 : 0);
-    currentScales.push(0);
-    currentOpacities.push(0);
-  }
-  var mouseX = 0, mouseY = 0;
+        // Calculate maximum scroll based on item count to prevent infinite scrolling
+        const maxScroll = Math.max(0, (items.length - 1) * itemSpacing);
 
-  /* ─── MOUSE PARALLAX ─── */
-  document.addEventListener('mousemove', function(e) {
-    mouseX = (e.clientX / window.innerWidth - 0.5) * 2;
-    mouseY = (e.clientY / window.innerHeight - 0.5) * 2;
-  });
+        function updateMenu() {
+            // Smooth spring lerp for scroll position
+            scrollY += (targetScrollY - scrollY) * 0.1;
 
-  /* ─── TIER VISUAL CONFIG (polar coordinate system) ─── */
-  var TIER_VIS = [
-    { sides:3,  maxP:60,  angV:[0.15,0.35], drift:[14,28],  spawnR:[1.4,2.4], pSize:[1.2,2.5], dirBias:0.7,  glow:true,  gravity:0,   angPull:0   },
-    { sides:4,  maxP:65,  angV:[0.25,0.55], drift:[22,42],  spawnR:[1.3,2.2], pSize:[1.2,2.5], dirBias:0.65, glow:true,  gravity:8,   angPull:0.3,
-      feed: { color:'#FFB800', maxP:35, angV:[0.06,0.15], drift:[16,32], spawnR:[1.8,2.8], pSize:[0.8,1.4], dirBias:0.55 } },
-    { sides:5,  maxP:70,  angV:[0.25,0.6],  drift:[15,35],  spawnR:[1.8,3.2], pSize:[1.0,2.5], dirBias:0.6,  glow:true,  gravity:18,  angPull:0.6,
-      feed: { color:'#0088CC', maxP:25, angV:[0.08,0.18], drift:[14,28], spawnR:[2.0,3.0], pSize:[0.7,1.2], dirBias:0.5 } },
-    { sides:6,  maxP:90,  angV:[0.3, 0.8],  drift:[18,40],  spawnR:[1.8,3.0], pSize:[1.0,2.2], dirBias:0.55, glow:true,  gravity:35,  angPull:1.0,
-      feed: { color:'#5B4BD5', maxP:30, angV:[0.10,0.22], drift:[16,32], spawnR:[2.2,3.4], pSize:[0.7,1.3], dirBias:0.5 } },
-    { sides:7,  maxP:110, angV:[0.4, 1.0],  drift:[22,50],  spawnR:[1.6,2.8], pSize:[1.0,2.0], dirBias:0.5,  glow:true,  gravity:60,  angPull:1.5,
-      feed: { color:'#9333EA', maxP:35, angV:[0.12,0.25], drift:[18,36], spawnR:[2.0,3.2], pSize:[0.6,1.2], dirBias:0.45 } },
-    { sides:8,  maxP:140, angV:[0.5, 1.2],  drift:[28,60],  spawnR:[1.5,2.5], pSize:[0.8,2.0], dirBias:0.5,  glow:true,  gravity:100, angPull:2.0,
-      feed: { color:'#E11D74', maxP:40, angV:[0.15,0.30], drift:[20,40], spawnR:[1.8,3.0], pSize:[0.6,1.1], dirBias:0.4 } },
-    { sides:32, maxP:200, angV:[0.8, 2.0],  drift:[35,80],  spawnR:[1.5,3.0], pSize:[0.8,2.0], dirBias:0.5,  glow:false, blackHole:true, gravity:200, angPull:3.0,
-      accretion: { stallR:1.6, stallFactor:0.15, discWidth:0.4 },
-      feed: { color:'#DC2626', maxP:50, angV:[0.20,0.40], drift:[25,50], spawnR:[2.0,3.5], pSize:[0.5,1.0], dirBias:0.35 } },
-    { sides:24, maxP:0, angV:[0,0], drift:[0,0], spawnR:[0,0], pSize:[0,0], dirBias:0, glow:false, gravity:0, angPull:0, isSwarmNetwork:true }
-  ];
+            items.forEach((item, index) => {
+                // Determine item's target Y based on index and scroll position
+                const targetY = (index * itemSpacing) - scrollY;
 
+                // Calculate curve effect based on distance from zero (center)
+                const absY = Math.abs(targetY);
+                const curveFactor = Math.min(absY / listHeight, 1); // 0 to 1
 
+                // Parabolic fade, scale, rotate, and CURVE horizontally
+                const rotateX = targetY > 0 ? curveFactor * -50 : curveFactor * 50;
+                const scale = 1 - (curveFactor * 0.5); // Shrink up to 50%
+                const opacity = 1 - (curveFactor * 0.9); // Fade out to near zero edges
 
-  /* ─── PARTICLE POOLS ─── */
-  var tierParticles = [];
-  var tierFeedParticles = [];
-  var tierSideGlow = [];
-  var tierSegEnergy = [];
-  for (var ti = 0; ti < NUM_VIS; ti++) {
-    tierParticles.push([]);
-    tierFeedParticles.push([]);
-    var sg = [];
-    var se = [];
-    for (var si = 0; si < TIER_VIS[ti].sides; si++) { sg.push(0); se.push(0); }
-    tierSideGlow.push(sg);
-    tierSegEnergy.push(se);
-  }
+                // Curve arc: Center pushes right (+), Top/Bottom pull left (-)
+                // At center (curveFactor = 0), we want it pushed right (+50px)
+                // At edges (curveFactor = 1), we want it pulled left (-150px)
+                const translateX = 100 - (Math.pow(curveFactor, 2) * 250);
 
-  /* ═══════════════════════════════════════════════════════════
-     SWARM NETWORK VISUALIZATION — Fractal Concentric Graph
-     ═══════════════════════════════════════════════════════════ */
+                item.style.transform = `translateY(calc(-50% + ${targetY}px)) translateX(${translateX}px) perspective(1000px) rotateX(${rotateX}deg) scale(${scale})`;
+                item.style.opacity = Math.max(0, opacity);
 
-  var NETWORK_TIERS = [
-    { name:'CONSENSUS', sides:32, color:'#FF0080', count:1,  radius:40, speed:0.08, blackHole:true },
-    { name:'OVERLORD',  sides:8,  color:'#DC2626', count:3,  radius:22, speed:0.12 },
-    { name:'SYNAPSE',   sides:7,  color:'#E11D74', count:5,  radius:18, speed:0.18 },
-    { name:'PULSAR',    sides:6,  color:'#9333EA', count:7,  radius:15, speed:0.25 },
-    { name:'PRISM',     sides:5,  color:'#5B4BD5', count:9,  radius:13, speed:0.30 },
-    { name:'TSAR',      sides:4,  color:'#0088CC', count:13, radius:11, speed:0.35 },
-    { name:'BEE',       sides:3,  color:'#FFB800', count:20, radius:8,  speed:0.50 }
-  ];
+                // Hide completely if far out to save rendering
+                item.style.pointerEvents = opacity < 0.2 ? 'none' : 'auto';
+            });
 
-  var RING_FRACTIONS = [0, 0.24, 0.39, 0.54, 0.68, 0.81, 0.93];
+            requestAnimationFrame(updateMenu);
+        }
 
-  var networkNodes = [];
-  var networkConnections = [];
-  var networkFlowParticles = [];
-  var networkInitialized = false;
+        // Mouse wheel scroll binding
+        window.addEventListener('wheel', (e) => {
+            targetScrollY += e.deltaY * 0.8;
+            targetScrollY = Math.max(0, Math.min(targetScrollY, maxScroll));
 
-  function initNetworkNodes(maxR) {
-    networkNodes = [];
-    networkConnections = [];
-    networkFlowParticles = [];
-
-    var scaleFactor = maxR / 345;
-
-    for (var ri = 0; ri < NETWORK_TIERS.length; ri++) {
-      var tier = NETWORK_TIERS[ri];
-      var ringR = RING_FRACTIONS[ri] * maxR;
-      for (var ni = 0; ni < tier.count; ni++) {
-        var baseAngle = (ni / tier.count) * Math.PI * 2 - Math.PI / 2;
-        if (ri % 2 === 1) baseAngle += Math.PI / tier.count;
-
-        networkNodes.push({
-          tierIdx: ri,
-          sides: tier.sides,
-          color: tier.color,
-          ringR: ringR,
-          baseAngle: baseAngle,
-          angle: baseAngle,
-          polyRadius: tier.radius * scaleFactor,
-          rotation: Math.random() * Math.PI * 2,
-          rotSpeed: tier.speed,
-          blackHole: tier.blackHole || false,
-          // Signature flags
-          isJitter: tier.name === 'BEE',
-          isBreathe: tier.name === 'PULSAR',
-          isShimmer: tier.name === 'PRISM',
-          isCluster: tier.name === 'SYNAPSE',
-          isPulse: tier.name === 'TSAR',
-          isWave: tier.name === 'OVERLORD',
-          // State
-          breathPhase: Math.random() * Math.PI * 2,
-          shimmerPhase: Math.random() * Math.PI * 2,
-          pulseTimer: Math.random() * 4,
-          pulseAlpha: 0,
-          wavePhase: Math.random() * Math.PI * 2,
-          energy: 0
+            // If scrolling clears hover, reset to idle
+            clearTimeout(autoMorphTimer);
+            autoMorphTimer = setTimeout(() => {
+                if (!document.querySelector('.menu-item:hover')) {
+                    setState('idle');
+                }
+            }, 300);
         });
-      }
-    }
 
-    // Build connections: each outer-ring node connects to nearest inner-ring node
-    var ringStart = [];
-    var idx = 0;
-    for (var ri = 0; ri < NETWORK_TIERS.length; ri++) {
-      ringStart.push(idx);
-      idx += NETWORK_TIERS[ri].count;
-    }
+        // Click-drag (Touch) scrolling binding
+        let isDragging = false;
+        let startY = 0;
+        const dialArea = document.getElementById('jog-dial');
 
-    for (var ri = 1; ri < NETWORK_TIERS.length; ri++) {
-      var outerStart = ringStart[ri];
-      var outerCount = NETWORK_TIERS[ri].count;
-      var innerStart = ringStart[ri - 1];
-      var innerCount = NETWORK_TIERS[ri - 1].count;
-
-      for (var oi = 0; oi < outerCount; oi++) {
-        var outer = networkNodes[outerStart + oi];
-        var bestDist = Infinity;
-        var bestIdx = 0;
-        for (var ii = 0; ii < innerCount; ii++) {
-          var inner = networkNodes[innerStart + ii];
-          var da = Math.abs(outer.baseAngle - inner.baseAngle);
-          if (da > Math.PI) da = Math.PI * 2 - da;
-          if (da < bestDist) { bestDist = da; bestIdx = ii; }
-        }
-        networkConnections.push({
-          from: outer,
-          to: networkNodes[innerStart + bestIdx],
-          alpha: 0.06 + Math.random() * 0.06,
-          pulsePhase: Math.random() * Math.PI * 2
+        dialArea.addEventListener('mousedown', (e) => { isDragging = true; startY = e.clientY; });
+        window.addEventListener('mouseup', () => { isDragging = false; });
+        window.addEventListener('mousemove', (e) => {
+            if (!isDragging) return;
+            const deltaY = startY - e.clientY;
+            targetScrollY += deltaY * 1.5; // Drag sensitivity
+            targetScrollY = Math.max(0, Math.min(targetScrollY, maxScroll));
+            startY = e.clientY;
         });
-      }
-    }
 
-    networkInitialized = true;
-  }
 
-  var MAX_FLOW_PARTICLES = 80;
+        // --- 3. AUTONOMOUS BRAIN ENGINE ---
+        // The entity thinks independently of the user
+        let brainTimer = null;
 
-  function spawnFlowParticle() {
-    if (networkConnections.length === 0) return null;
-    var conn = networkConnections[Math.floor(Math.random() * networkConnections.length)];
-    return {
-      conn: conn,
-      t: 0,
-      speed: 0.15 + Math.random() * 0.25,
-      size: 1.0 + Math.random() * 1.5,
-      color: conn.from.color,
-      life: 1
-    };
-  }
+        function autonomousBrainLoop() {
+            const randomChance = Math.random();
+            const currentState = document.body.className.replace('state-', '');
+            let nextState = 'idle';
+            let thoughtDuration = 5000; // Base IDLE duration
 
-  function updateFlowParticles(dt) {
-    while (networkFlowParticles.length < MAX_FLOW_PARTICLES) {
-      var fp = spawnFlowParticle();
-      if (fp) networkFlowParticles.push(fp);
-      else break;
-    }
-    for (var i = networkFlowParticles.length - 1; i >= 0; i--) {
-      var p = networkFlowParticles[i];
-      p.t += p.speed * dt;
-      if (p.t >= 1) {
-        p.conn.to.energy = Math.min(1, p.conn.to.energy + 0.3);
-        networkFlowParticles[i] = networkFlowParticles[networkFlowParticles.length - 1];
-        networkFlowParticles.pop();
-      }
-    }
-  }
+            if (currentState === 'idle') {
+                if (randomChance > 0.95) {
+                    nextState = 'error';
+                    thoughtDuration = 1000 + Math.random() * 2000; // Brief error spikes
+                } else if (randomChance > 0.8) {
+                    nextState = 'warning';
+                    thoughtDuration = 2000 + Math.random() * 3000; // Suspicions
+                } else if (randomChance > 0.6) {
+                    nextState = 'process';
+                    thoughtDuration = 4000 + Math.random() * 6000; // Long calculations
+                } else {
+                    nextState = 'idle'; // Stay idle
+                    thoughtDuration = 3000 + Math.random() * 5000; // Breathe
+                }
+            } else {
+                // If it was doing something else, mostly return to IDLE, sometimes chain tasks
+                if (randomChance > 0.3) {
+                    nextState = 'idle';
+                    thoughtDuration = 4000;
+                } else {
+                    nextState = 'process'; // Chain into processing the warning/error
+                    thoughtDuration = 3000;
+                }
+            }
 
-  function updateNetworkNodes(dt, time) {
-    for (var i = 0; i < networkNodes.length; i++) {
-      var n = networkNodes[i];
-      n.rotation += n.rotSpeed * dt;
-      n.angle += n.rotSpeed * 0.15 * dt;
-
-      if (n.isJitter) {
-        n.rotation += (Math.random() - 0.5) * 0.06;
-      }
-      if (n.isBreathe) {
-        n.breathPhase += dt * 3.14;
-      }
-      if (n.isShimmer) {
-        n.shimmerPhase += dt * 2.5;
-      }
-      if (n.isPulse) {
-        n.pulseTimer += dt;
-        if (n.pulseTimer > 2.5 + Math.random() * 2.0) {
-          n.pulseAlpha = 1.0;
-          n.pulseTimer = 0;
-        }
-        n.pulseAlpha = Math.max(0, n.pulseAlpha - dt * 2.0);
-      }
-      if (n.isWave) {
-        n.wavePhase += dt * 0.7;
-      }
-
-      n.energy = Math.max(0, n.energy - dt * 1.5);
-    }
-  }
-
-  function drawSwarmNetwork(ctx, cx, cy, maxR, alpha, time) {
-    if (!networkInitialized) {
-      initNetworkNodes(maxR);
-    }
-
-    ctx.save();
-
-    // Layer 1: Ring orbit circles (very faint)
-    for (var ri = 1; ri < RING_FRACTIONS.length; ri++) {
-      var rr = RING_FRACTIONS[ri] * maxR;
-      ctx.beginPath();
-      ctx.arc(cx, cy, rr, 0, Math.PI * 2);
-      ctx.strokeStyle = NETWORK_TIERS[ri].color;
-      ctx.lineWidth = 0.3;
-      ctx.globalAlpha = alpha * 0.06;
-      ctx.stroke();
-    }
-
-    // Layer 2: Connection lines
-    for (var ci = 0; ci < networkConnections.length; ci++) {
-      var conn = networkConnections[ci];
-      var fromX = cx + Math.cos(conn.from.angle) * conn.from.ringR;
-      var fromY = cy + Math.sin(conn.from.angle) * conn.from.ringR;
-      var toX = cx + Math.cos(conn.to.angle) * conn.to.ringR;
-      var toY = cy + Math.sin(conn.to.angle) * conn.to.ringR;
-
-      var lineAlpha = conn.alpha + 0.03 * Math.sin(time * 1.5 + conn.pulsePhase);
-      ctx.beginPath();
-      ctx.moveTo(fromX, fromY);
-      ctx.lineTo(toX, toY);
-      ctx.strokeStyle = conn.from.color;
-      ctx.lineWidth = 0.5;
-      ctx.globalAlpha = alpha * lineAlpha;
-      ctx.stroke();
-    }
-
-    // Layer 3: Flow particles
-    for (var fi = 0; fi < networkFlowParticles.length; fi++) {
-      var fp = networkFlowParticles[fi];
-      var fromX = cx + Math.cos(fp.conn.from.angle) * fp.conn.from.ringR;
-      var fromY = cy + Math.sin(fp.conn.from.angle) * fp.conn.from.ringR;
-      var toX = cx + Math.cos(fp.conn.to.angle) * fp.conn.to.ringR;
-      var toY = cy + Math.sin(fp.conn.to.angle) * fp.conn.to.ringR;
-      var px = fromX + (toX - fromX) * fp.t;
-      var py = fromY + (toY - fromY) * fp.t;
-      ctx.fillStyle = fp.color;
-      ctx.globalAlpha = alpha * 0.6;
-      ctx.beginPath();
-      ctx.arc(px, py, fp.size, 0, 6.2832);
-      ctx.fill();
-    }
-
-    // Layer 4: Node polygons
-    for (var ni = 0; ni < networkNodes.length; ni++) {
-      var n = networkNodes[ni];
-      var nx = cx + Math.cos(n.angle) * n.ringR;
-      var ny = cy + Math.sin(n.angle) * n.ringR;
-      var pr = n.polyRadius;
-
-      // PULSAR breathe
-      if (n.isBreathe) {
-        pr *= 1 + 0.15 * Math.sin(n.breathPhase);
-      }
-
-      // BEE jitter position
-      if (n.isJitter) {
-        nx += (Math.random() - 0.5) * 1.5;
-        ny += (Math.random() - 0.5) * 1.5;
-      }
-
-      ctx.globalAlpha = alpha;
-
-      if (n.blackHole) {
-        // CONSENSUS: convergence point — dark void + event horizon + accretion glow
-        ctx.fillStyle = '#030508';
-        ctx.beginPath();
-        ctx.arc(nx, ny, pr, 0, 6.2832);
-        ctx.fill();
-
-        ctx.strokeStyle = n.color;
-        ctx.lineWidth = 1.5;
-        ctx.globalAlpha = alpha * 0.5;
-        ctx.beginPath();
-        ctx.arc(nx, ny, pr, 0, 6.2832);
-        ctx.stroke();
-
-        // Accretion glow
-        var ag = ctx.createRadialGradient(nx, ny, pr * 0.8, nx, ny, pr * 2.0);
-        ag.addColorStop(0, 'rgba(255,0,128,0)');
-        ag.addColorStop(0.5, 'rgba(255,0,128,0.15)');
-        ag.addColorStop(1, 'rgba(255,0,128,0)');
-        ctx.fillStyle = ag;
-        ctx.globalAlpha = alpha * 0.5;
-        ctx.beginPath();
-        ctx.arc(nx, ny, pr * 2.0, 0, 6.2832);
-        ctx.fill();
-
-        // Magenta accent ring
-        ctx.strokeStyle = 'rgba(255,0,160,0.25)';
-        ctx.lineWidth = 2;
-        ctx.globalAlpha = alpha * 0.4;
-        ctx.beginPath();
-        ctx.arc(nx, ny, pr * 1.05, 0, 6.2832);
-        ctx.stroke();
-      } else {
-        // Regular polygon
-        ctx.beginPath();
-        for (var vi = 0; vi <= n.sides; vi++) {
-          var a = n.rotation + (vi / n.sides) * Math.PI * 2;
-          var vx = nx + Math.cos(a) * pr;
-          var vy = ny + Math.sin(a) * pr;
-          if (vi === 0) ctx.moveTo(vx, vy);
-          else ctx.lineTo(vx, vy);
-        }
-        ctx.closePath();
-
-        // Dark fill
-        ctx.fillStyle = 'rgba(12, 15, 25, 0.6)';
-        ctx.globalAlpha = alpha * 0.5;
-        ctx.fill();
-
-        // Energy glow fill
-        if (n.energy > 0.01) {
-          ctx.fillStyle = n.color;
-          ctx.globalAlpha = alpha * n.energy * 0.35;
-          ctx.fill();
+            setState(nextState);
+            brainTimer = setTimeout(autonomousBrainLoop, thoughtDuration);
         }
 
-        // Outline with glow
-        ctx.strokeStyle = n.color;
-        ctx.lineWidth = 1;
-        ctx.globalAlpha = alpha * 0.7;
-        if (n.isShimmer) {
-          ctx.shadowBlur = 4 + 4 * Math.sin(n.shimmerPhase);
-        } else {
-          ctx.shadowBlur = 4;
-        }
-        ctx.shadowColor = n.color;
-        ctx.stroke();
-        ctx.shadowBlur = 0;
+        // --- 4. UPTIME HUD TICKER ---
+        const uptimeEl = document.getElementById('uptime');
+        let seconds = 0;
+        setInterval(() => {
+            seconds++;
+            const h = String(Math.floor(seconds / 3600)).padStart(2, '0');
+            const m = String(Math.floor((seconds % 3600) / 60)).padStart(2, '0');
+            const s = String(seconds % 60).padStart(2, '0');
+            uptimeEl.textContent = `${h}:${m}:${s}`;
+        }, 1000);
 
-        // TSAR pulse flash overlay
-        if (n.pulseAlpha > 0.01) {
-          ctx.strokeStyle = n.color;
-          ctx.lineWidth = 2.5;
-          ctx.globalAlpha = alpha * n.pulseAlpha * 0.8;
-          ctx.shadowBlur = 14;
-          ctx.shadowColor = n.color;
-          ctx.stroke();
-          ctx.shadowBlur = 0;
-        }
-      }
+        // Boot
+        setState('idle');
+        updateMenu();
+        autonomousBrainLoop(); // Start the independent thinking engine
 
-      // OVERLORD expansion wave
-      if (n.isWave) {
-        var waveCycle = n.wavePhase % (Math.PI * 2);
-        var waveT = waveCycle / (Math.PI * 2);
-        var waveR = pr * (1.3 + waveT * 0.8);
-        var waveAlpha = (1 - waveT) * 0.25;
-        ctx.beginPath();
-        ctx.arc(nx, ny, waveR, 0, 6.2832);
-        ctx.strokeStyle = n.color;
-        ctx.lineWidth = 0.8;
-        ctx.globalAlpha = alpha * waveAlpha;
-        ctx.stroke();
-      }
-    }
-
-    ctx.restore();
-  }
-
-  /* ─── POLAR PARTICLE SYSTEM ─── */
-
-  function spawnParticle(vis, radius) {
-    var minR = vis.spawnR[0], maxR = vis.spawnR[1];
-    var minAV = vis.angV[0], maxAV = vis.angV[1];
-    var minD = vis.drift[0], maxD = vis.drift[1];
-    var minS = vis.pSize[0], maxS = vis.pSize[1];
-    var dir = Math.random() < vis.dirBias ? 1 : -1;
-    return {
-      angle: Math.random() * Math.PI * 2,
-      orbitR: (minR + Math.random() * (maxR - minR)) * radius,
-      angularV: (minAV + Math.random() * (maxAV - minAV)) * dir,
-      drift: minD + Math.random() * (maxD - minD),
-      size: minS + Math.random() * (maxS - minS),
-      life: 0,
-      fadeState: 'in'
-    };
-  }
-
-  function polyEdgeDist(angle, rotation, sides, radius) {
-    /* Exact distance from center to polygon edge at a given angle */
-    var sector = 2 * Math.PI / sides;
-    var rel = ((angle - rotation) % sector + sector) % sector;
-    var theta = rel - sector / 2;
-    return radius * Math.cos(Math.PI / sides) / Math.cos(theta);
-  }
-
-  function updateParticle(p, radius, vis, rot, dt) {
-    /* Fade management */
-    if (p.fadeState === 'in') {
-      p.life = Math.min(1, p.life + dt * 2.0);
-      if (p.life >= 1) p.fadeState = 'live';
-    } else if (p.fadeState === 'out') {
-      p.life = Math.max(0, p.life - dt * 3.0);
-      if (p.life <= 0) return false;
-    }
-
-    /* Angular speed-up: progressively stronger per tier */
-    var angMul = 1;
-    if (vis.angPull > 0 && p.orbitR < radius * 2.5) {
-      var prox = Math.max(0.3, p.orbitR / (radius * 2.5));
-      angMul = 1 + vis.angPull / Math.sqrt(prox);
-    }
-
-    /* Gravity: radial acceleration (inverse-distance) */
-    if (vis.gravity) {
-      var distRatio = Math.max(0.3, p.orbitR / radius);
-      p.drift += (vis.gravity / distRatio) * dt;
-      p.drift = Math.min(p.drift, vis.drift[1] * 6);
-    }
-
-    /* Accretion disc stall zone: reduce drift near stall radius */
-    if (vis.accretion) {
-      var stallDist = vis.accretion.stallR * radius;
-      var halfWidth = vis.accretion.discWidth * radius;
-      var distFromStall = Math.abs(p.orbitR - stallDist);
-      if (distFromStall < halfWidth) {
-        var stallStrength = 1 - (distFromStall / halfWidth);
-        p.drift *= (1 - stallStrength * (1 - vis.accretion.stallFactor));
-      }
-    }
-
-    /* Polar update */
-    p.angle = (p.angle + p.angularV * angMul * dt) % (Math.PI * 2);
-    p.orbitR -= p.drift * dt;
-
-    /* Absorption — exact polygon boundary at this angle */
-    var edgeDist = polyEdgeDist(p.angle, rot, vis.sides, radius);
-    if (p.orbitR <= edgeDist) return false;
-
-    return true;
-  }
-
-  function drawParticle(ctx, p, cx, cy, radius, vis, color, tierAlpha) {
-    var x = cx + Math.cos(p.angle) * p.orbitR;
-    var y = cy + Math.sin(p.angle) * p.orbitR;
-    var alpha = tierAlpha * p.life * 0.7;
-    if (alpha < 0.01) return;
-
-    if (vis.blackHole && p.orbitR < radius * 2) {
-      /* Spaghettification: stretch along tangent */
-      var prox = Math.max(0.1, p.orbitR / radius);
-      var stretch = Math.min(4.0 / prox, 12);
-      var sign = p.angularV > 0 ? 1 : -1;
-      var tx = -Math.sin(p.angle) * sign;
-      var ty =  Math.cos(p.angle) * sign;
-      ctx.strokeStyle = color;
-      ctx.globalAlpha = alpha * 0.8;
-      ctx.lineWidth = p.size * 0.7;
-      ctx.beginPath();
-      ctx.moveTo(x - tx * stretch, y - ty * stretch);
-      ctx.lineTo(x + tx * stretch, y + ty * stretch);
-      ctx.stroke();
-    } else if (p.isFeed) {
-      /* Feed particles: mini triangles (BEE data being consumed) */
-      var s = p.size * 1.8;
-      ctx.fillStyle = color;
-      ctx.globalAlpha = alpha;
-      ctx.beginPath();
-      ctx.moveTo(x, y - s);
-      ctx.lineTo(x + s * 0.866, y + s * 0.5);
-      ctx.lineTo(x - s * 0.866, y + s * 0.5);
-      ctx.closePath();
-      ctx.fill();
-    } else {
-      ctx.fillStyle = color;
-      ctx.globalAlpha = alpha;
-      ctx.beginPath();
-      ctx.arc(x, y, p.size, 0, 6.2832);
-      ctx.fill();
-    }
-  }
-
-  function getAbsorptionSide(absorbAngle, rotation, sides) {
-    var rel = (absorbAngle - rotation) % (Math.PI * 2);
-    if (rel < 0) rel += Math.PI * 2;
-    return Math.floor(rel / (Math.PI * 2 / sides)) % sides;
-  }
-
-  function prePopulateTier(ti, radius) {
-    var vis = TIER_VIS[ti];
-    var particles = tierParticles[ti];
-    var maxR = vis.spawnR[1] * radius;
-    for (var i = 0; i < vis.maxP; i++) {
-      var p = spawnParticle(vis, radius);
-      p.orbitR = radius * 1.05 + Math.random() * (maxR - radius * 1.05);
-      p.life = 1;
-      p.fadeState = 'live';
-      particles.push(p);
-    }
-    if (vis.feed) {
-      var feed = vis.feed;
-      var feedPool = tierFeedParticles[ti];
-      var fMaxR = feed.spawnR[1] * radius;
-      for (var i = 0; i < feed.maxP; i++) {
-        var fp = spawnParticle(feed, radius);
-        fp.orbitR = radius * 1.05 + Math.random() * (fMaxR - radius * 1.05);
-        fp.life = 1;
-        fp.fadeState = 'live';
-        fp.isFeed = true;
-        feedPool.push(fp);
-      }
-    }
-  }
-
-  /* ─── MOBILE PERFORMANCE ─── */
-  var isMobile = window.innerWidth <= 900;
-  if (isMobile) {
-    for (var mi = 0; mi < TIER_VIS.length; mi++) {
-      if (TIER_VIS[mi].maxP) TIER_VIS[mi].maxP = Math.ceil(TIER_VIS[mi].maxP * 0.5);
-      if (TIER_VIS[mi].feed && TIER_VIS[mi].feed.maxP) TIER_VIS[mi].feed.maxP = Math.ceil(TIER_VIS[mi].feed.maxP * 0.5);
-    }
-    MAX_FLOW_PARTICLES = 40;
-  }
-
-  /* ─── BACKGROUND STARS ─── */
-  var starCount = isMobile ? 60 : 150;
-  var starData = [];
-  for (var si = 0; si < starCount; si++) {
-    starData.push({
-      x: Math.random(), y: Math.random(),
-      size: 0.3 + Math.random() * 1.2,
-      alpha: 0.08 + Math.random() * 0.2,
-      twinkleSpeed: 0.5 + Math.random() * 2,
-      twinkleOffset: Math.random() * Math.PI * 2
-    });
-  }
-
-  function drawStars(time) {
-    for (var i = 0; i < starCount; i++) {
-      var s = starData[i];
-      var twinkle = 0.5 + 0.5 * Math.sin(time * s.twinkleSpeed + s.twinkleOffset);
-      ctx.globalAlpha = s.alpha * twinkle;
-      ctx.fillStyle = '#6670A0';
-      ctx.beginPath();
-      ctx.arc(s.x * W, s.y * H, s.size, 0, 6.2832);
-      ctx.fill();
-    }
-    ctx.globalAlpha = 1;
-  }
-
-  /* ─── ANIMATION LOOP ─── */
-  var time = 0, lastFrame = performance.now();
-  var shapeRotation = 0;
-
-  function animate() {
-    requestAnimationFrame(animate);
-    var now = performance.now();
-    var dt = Math.min((now - lastFrame) / 1000, 0.05);
-    lastFrame = now;
-    time += dt;
-    shapeRotation = (shapeRotation + dt * 0.2) % (Math.PI * 2);
-
-    ctx.clearRect(0, 0, W, H);
-    drawStars(time);
-
-    var px = mouseX * 15, py = mouseY * 8;
-
-    var lerpF = 1 - Math.exp(-4.0 * dt);
-    for (var ti = 0; ti < NUM_VIS; ti++) {
-      currentScales[ti] += (targetScales[ti] - currentScales[ti]) * lerpF;
-      currentOpacities[ti] += (targetOpacities[ti] - currentOpacities[ti]) * lerpF;
-
-      var vis = TIER_VIS[ti];
-      var particles = tierParticles[ti];
-      var sideGlow = tierSideGlow[ti];
-      var color = TIERS[ti].color;
-
-      var hasRight = TIERS[ti].detail ? 1 : 0;
-      var effectiveRight = hasRight ? BAR_RIGHT : 0;
-      var cx = BAR_LEFT + (W - BAR_LEFT - effectiveRight) / 2 + px;
-      var cy = H / 2 + py;
-      var tierBaseR = hasRight ? prevDetailR : baseRadius;
-      var radius = tierBaseR * (0.85 + currentScales[ti] * 0.15);
-      var rot = shapeRotation * (vis.blackHole ? 0.5 : 1);
-
-      var isActive = currentOpacities[ti] > 0.02;
-      var isTarget = targetOpacities[ti] > 0.5;
-
-      /* ─── SWARM NETWORK: dedicated renderer bypass ─── */
-      if (vis.isSwarmNetwork) {
-        if (!isActive) continue;
-        ctx.save();
-        var netMaxR = Math.min((W - BAR_LEFT - effectiveRight) * 0.42, H * 0.42);
-        updateNetworkNodes(dt, time);
-        updateFlowParticles(dt);
-        drawSwarmNetwork(ctx, cx, cy, netMaxR, currentOpacities[ti], time);
-        ctx.restore();
-        continue;
-      }
-
-      /* Fade out departing tier */
-      var feedPool = tierFeedParticles[ti];
-      if (!isTarget) {
-        for (var pi = 0; pi < particles.length; pi++) {
-          if (particles[pi].fadeState !== 'out') particles[pi].fadeState = 'out';
-        }
-        for (var pi = 0; pi < feedPool.length; pi++) {
-          if (feedPool[pi].fadeState !== 'out') feedPool[pi].fadeState = 'out';
-        }
-      }
-
-      /* Spawn new particles for active tier */
-      if (isTarget && particles.length < vis.maxP) {
-        var spawnRate = vis.maxP * 0.4;
-        var toSpawn = Math.min(Math.ceil(spawnRate * dt), vis.maxP - particles.length);
-        for (var sp = 0; sp < toSpawn; sp++) {
-          particles.push(spawnParticle(vis, radius));
-        }
-      }
-
-      /* Spawn feed particles (BEE-yellow input for TSAR etc.) */
-      if (vis.feed && isTarget && feedPool.length < vis.feed.maxP) {
-        var fRate = vis.feed.maxP * 0.25;
-        var fSpawn = Math.min(Math.ceil(fRate * dt), vis.feed.maxP - feedPool.length);
-        for (var fi = 0; fi < fSpawn; fi++) {
-          var fp = spawnParticle(vis.feed, radius);
-          fp.isFeed = true;
-          feedPool.push(fp);
-        }
-      }
-
-      /* Update particles (polar motion) */
-      var segE = tierSegEnergy[ti];
-      for (var pi = particles.length - 1; pi >= 0; pi--) {
-        if (!updateParticle(particles[pi], radius, vis, rot, dt)) {
-          var eDist = polyEdgeDist(particles[pi].angle, rot, vis.sides, radius);
-          if (particles[pi].orbitR <= eDist) {
-            var side = getAbsorptionSide(particles[pi].angle, rot, vis.sides);
-            segE[side] = Math.min(1, segE[side] + 0.5);
-            if (vis.glow) sideGlow[side] = 1.0;
-          }
-          particles[pi] = particles[particles.length - 1]; particles.pop();
-        }
-      }
-
-      /* Update feed particles */
-      for (var pi = feedPool.length - 1; pi >= 0; pi--) {
-        if (!updateParticle(feedPool[pi], radius, vis, rot, dt)) {
-          var eDist = polyEdgeDist(feedPool[pi].angle, rot, vis.sides, radius);
-          if (feedPool[pi].orbitR <= eDist) {
-            var side = getAbsorptionSide(feedPool[pi].angle, rot, vis.sides);
-            segE[side] = Math.min(1, segE[side] + 0.35);
-            if (vis.glow) sideGlow[side] = 1.0;
-          }
-          feedPool[pi] = feedPool[feedPool.length - 1]; feedPool.pop();
-        }
-      }
-
-      /* Decay side glow + segment energy */
-      for (var gi = 0; gi < sideGlow.length; gi++) {
-        if (sideGlow[gi] > 0) sideGlow[gi] = Math.max(0, sideGlow[gi] - dt * 2.0);
-        if (segE[gi] > 0) segE[gi] = Math.max(0, segE[gi] - dt * 2.5);
-      }
-
-      /* ─── DRAW ─── */
-      if (!isActive) continue;
-
-      ctx.save();
-      ctx.globalAlpha = currentOpacities[ti];
-
-      /* Draw feed particles first (behind main) */
-      if (vis.feed) {
-        for (var pi = 0; pi < feedPool.length; pi++) {
-          drawParticle(ctx, feedPool[pi], cx, cy, radius, vis, vis.feed.color, currentOpacities[ti]);
-        }
-      }
-
-      /* Draw particles */
-      for (var pi = 0; pi < particles.length; pi++) {
-        drawParticle(ctx, particles[pi], cx, cy, radius, vis, color, currentOpacities[ti]);
-      }
-
-      ctx.globalAlpha = currentOpacities[ti];
-
-      if (vis.blackHole) {
-        /* T7: Dark void with event horizon ring */
-        /* Accretion disk glow */
-        ctx.save();
-        var diskGrad = ctx.createRadialGradient(cx, cy, radius * 0.8, cx, cy, radius * 2.5);
-        diskGrad.addColorStop(0, 'rgba(255,0,128,0)');
-        diskGrad.addColorStop(0.3, 'rgba(255,0,128,0.10)');
-        diskGrad.addColorStop(0.6, 'rgba(200,0,100,0.05)');
-        diskGrad.addColorStop(1, 'rgba(150,0,80,0)');
-        ctx.fillStyle = diskGrad;
-        ctx.beginPath();
-        ctx.arc(cx, cy, radius * 2.5, 0, 6.2832);
-        ctx.fill();
-        ctx.restore();
-
-        /* Dark void center */
-        ctx.fillStyle = '#030508';
-        ctx.beginPath();
-        ctx.arc(cx, cy, radius, 0, 6.2832);
-        ctx.fill();
-
-        /* Event horizon ring */
-        ctx.strokeStyle = color;
-        ctx.lineWidth = 1.5;
-        ctx.globalAlpha = currentOpacities[ti] * 0.4;
-        ctx.beginPath();
-        ctx.arc(cx, cy, radius, 0, 6.2832);
-        ctx.stroke();
-
-        /* Magenta event horizon accent */
-        ctx.strokeStyle = 'rgba(255,0,160,0.2)';
-        ctx.lineWidth = 2.5;
-        ctx.globalAlpha = currentOpacities[ti] * 0.3;
-        ctx.beginPath();
-        ctx.arc(cx, cy, radius * 1.02, 0, 6.2832);
-        ctx.stroke();
-
-        /* Subtle inner ring */
-        ctx.globalAlpha = currentOpacities[ti] * 0.15;
-        ctx.lineWidth = 1;
-        ctx.beginPath();
-        ctx.arc(cx, cy, radius * 0.7, 0, 6.2832);
-        ctx.stroke();
-
-        /* Accretion disc — layered radial gradient (not a ring stroke) */
-        if (vis.accretion) {
-          var discR = vis.accretion.stallR * radius;
-          var discW = vis.accretion.discWidth * radius;
-
-          /* Layer 1: wide diffuse warm glow */
-          var glowInner = radius * 1.05;
-          var glowOuter = discR + discW * 1.5;
-          var g1 = ctx.createRadialGradient(cx, cy, glowInner, cx, cy, glowOuter);
-          g1.addColorStop(0, 'rgba(255,0,160,0)');
-          g1.addColorStop(0.25, 'rgba(255,0,140,0.08)');
-          g1.addColorStop(0.5, 'rgba(220,0,120,0.10)');
-          g1.addColorStop(0.8, 'rgba(180,0,90,0.04)');
-          g1.addColorStop(1, 'rgba(140,0,70,0)');
-          ctx.globalAlpha = currentOpacities[ti];
-          ctx.fillStyle = g1;
-          ctx.beginPath();
-          ctx.arc(cx, cy, glowOuter, 0, 6.2832);
-          ctx.fill();
-
-          /* Layer 2: brighter concentrated band at stallR */
-          var bandInner = discR - discW * 0.3;
-          var bandOuter = discR + discW * 0.6;
-          var g2 = ctx.createRadialGradient(cx, cy, bandInner, cx, cy, bandOuter);
-          g2.addColorStop(0, 'rgba(255,50,200,0)');
-          g2.addColorStop(0.3, 'rgba(255,0,160,0.16)');
-          g2.addColorStop(0.55, 'rgba(230,0,140,0.10)');
-          g2.addColorStop(1, 'rgba(180,0,100,0)');
-          ctx.fillStyle = g2;
-          ctx.beginPath();
-          ctx.arc(cx, cy, bandOuter, 0, 6.2832);
-          ctx.fill();
-
-          /* Layer 3: thin bright hotline at peak density */
-          ctx.beginPath();
-          ctx.arc(cx, cy, discR, 0, 6.2832);
-          ctx.strokeStyle = 'rgba(255,80,200,0.6)';
-          ctx.lineWidth = 1.5;
-          ctx.globalAlpha = currentOpacities[ti] * 0.4;
-          ctx.shadowBlur = 12;
-          ctx.shadowColor = 'rgba(255,0,160,0.5)';
-          ctx.stroke();
-          ctx.shadowBlur = 0;
-        }
-
-        /* Energy spoke pulses around event horizon */
-        for (var gi = 0; gi < vis.sides; gi++) {
-          if (segE[gi] > 0.01) {
-            var spokeA = rot + ((gi + 0.5) / vis.sides) * Math.PI * 2;
-            var innerR = radius * 1.05;
-            var outerR = radius * 1.5;
-            ctx.beginPath();
-            ctx.moveTo(cx + Math.cos(spokeA) * innerR, cy + Math.sin(spokeA) * innerR);
-            ctx.lineTo(cx + Math.cos(spokeA) * outerR, cy + Math.sin(spokeA) * outerR);
-            ctx.strokeStyle = color;
-            ctx.lineWidth = 2;
-            ctx.globalAlpha = currentOpacities[ti] * segE[gi] * 0.6;
-            ctx.shadowBlur = 14;
-            ctx.shadowColor = 'rgba(255,0,160,0.4)';
-            ctx.stroke();
-            ctx.shadowBlur = 0;
-          }
-        }
-
-      } else {
-        /* Regular polygon: pizza-slice segments with volumetric reactions */
-        ctx.beginPath();
-        for (var vi = 0; vi <= vis.sides; vi++) {
-          var angle = rot + (vi / vis.sides) * Math.PI * 2;
-          var vx = cx + Math.cos(angle) * radius;
-          var vy = cy + Math.sin(angle) * radius;
-          if (vi === 0) ctx.moveTo(vx, vy);
-          else ctx.lineTo(vx, vy);
-        }
-        ctx.closePath();
-        /* Planet body fill */
-        ctx.globalAlpha = currentOpacities[ti] * 0.5;
-        ctx.fillStyle = 'rgba(12, 15, 25, 0.6)';
-        ctx.fill();
-
-        /* Per-segment volumetric gradient fills */
-        for (var gi = 0; gi < vis.sides; gi++) {
-          if (segE[gi] > 0.01) {
-            var a1 = rot + (gi / vis.sides) * Math.PI * 2;
-            var a2 = rot + ((gi + 1) / vis.sides) * Math.PI * 2;
-            var sx1 = cx + Math.cos(a1) * radius;
-            var sy1 = cy + Math.sin(a1) * radius;
-            var sx2 = cx + Math.cos(a2) * radius;
-            var sy2 = cy + Math.sin(a2) * radius;
-            var mx = (sx1 + sx2) / 2;
-            var my = (sy1 + sy2) / 2;
-
-            ctx.save();
-            var segGrad = ctx.createLinearGradient(mx, my, cx, cy);
-            segGrad.addColorStop(0, color);
-            segGrad.addColorStop(1, 'rgba(0,0,0,0)');
-            ctx.beginPath();
-            ctx.moveTo(cx, cy);
-            ctx.lineTo(sx1, sy1);
-            ctx.lineTo(sx2, sy2);
-            ctx.closePath();
-            ctx.fillStyle = segGrad;
-            ctx.globalAlpha = currentOpacities[ti] * segE[gi] * 0.45;
-            ctx.shadowBlur = 16;
-            ctx.shadowColor = color;
-            ctx.fill();
-            ctx.shadowBlur = 0;
-            ctx.restore();
-          }
-        }
-
-        /* Radial lines (center → each corner) */
-        for (var ri = 0; ri < vis.sides; ri++) {
-          var ra = rot + (ri / vis.sides) * Math.PI * 2;
-          var rvx = cx + Math.cos(ra) * radius;
-          var rvy = cy + Math.sin(ra) * radius;
-          var leftSeg = (ri - 1 + vis.sides) % vis.sides;
-          var radialE = Math.max(segE[leftSeg], segE[ri]);
-
-          ctx.beginPath();
-          ctx.moveTo(cx, cy);
-          ctx.lineTo(rvx, rvy);
-          ctx.strokeStyle = color;
-          ctx.lineWidth = 1;
-          ctx.globalAlpha = currentOpacities[ti] * (0.12 + radialE * 0.5);
-          if (radialE > 0.05) {
-            ctx.shadowBlur = 10;
-            ctx.shadowColor = color;
-          }
-          ctx.stroke();
-          ctx.shadowBlur = 0;
-        }
-
-        /* Outline — re-draw polygon path */
-        ctx.beginPath();
-        for (var vi = 0; vi <= vis.sides; vi++) {
-          var oa = rot + (vi / vis.sides) * Math.PI * 2;
-          var ox = cx + Math.cos(oa) * radius;
-          var oy = cy + Math.sin(oa) * radius;
-          if (vi === 0) ctx.moveTo(ox, oy);
-          else ctx.lineTo(ox, oy);
-        }
-        ctx.closePath();
-        ctx.globalAlpha = currentOpacities[ti] * 0.55;
-        ctx.strokeStyle = color;
-        ctx.lineWidth = 1;
-        ctx.shadowBlur = 8;
-        ctx.shadowColor = color;
-        ctx.stroke();
-        ctx.shadowBlur = 0;
-
-        /* Glowing sides */
-        for (var gi = 0; gi < vis.sides; gi++) {
-          if (sideGlow[gi] > 0.01) {
-            var a1 = rot + (gi / vis.sides) * Math.PI * 2;
-            var a2 = rot + ((gi + 1) / vis.sides) * Math.PI * 2;
-            var x1 = cx + Math.cos(a1) * radius;
-            var y1 = cy + Math.sin(a1) * radius;
-            var x2 = cx + Math.cos(a2) * radius;
-            var y2 = cy + Math.sin(a2) * radius;
-
-            ctx.save();
-            ctx.globalAlpha = currentOpacities[ti] * sideGlow[gi];
-            ctx.strokeStyle = color;
-            ctx.lineWidth = 4;
-            ctx.shadowBlur = 22;
-            ctx.shadowColor = color;
-            ctx.beginPath();
-            ctx.moveTo(x1, y1);
-            ctx.lineTo(x2, y2);
-            ctx.stroke();
-            ctx.shadowBlur = 0;
-            ctx.restore();
-          }
-        }
-      }
-
-      ctx.restore();
-    }
-  }
-
-  /* ─── PRE-POPULATE T1 (instant, no warmup needed) ─── */
-  currentScales[0] = 1;
-  currentOpacities[0] = 1;
-  prePopulateTier(0, prevDetailR);
-
-  animate();
-
-})();
-</script>
-
+    </script>
 </body>
+
 </html>

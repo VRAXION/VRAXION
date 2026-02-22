@@ -1,0 +1,1156 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VRAXION // TRANSCENDENT PROTOCOL</title>
+    <!-- Official VRAXION Site Fonts -->
+    <link
+        href="https://fonts.googleapis.com/css2?family=Russo+One&family=Marck+Script&family=Ubuntu+Mono:wght@400;700&family=JetBrains+Mono:wght@300;400;500;700;800&display=swap"
+        rel="stylesheet">
+
+    <style>
+        :root {
+            --bg: #010103;
+
+            --glass-base: rgba(6, 9, 15, 0.45);
+            --glass-highlight: rgba(14, 116, 144, 0.03);
+            --border-glass: rgba(255, 255, 255, 0.1);
+
+            --cyan: #0E7490;
+            --fuchsia: #C026D3;
+            --gold: #F59E0B;
+
+            --text-pure: #ffffff;
+            --text-high: #E8EAF0;
+            --text-muted: #8890A0;
+            --dim: #4A4E5A;
+
+            --font-display: 'Russo One', system-ui, sans-serif;
+            --font-script: 'Marck Script', cursive;
+            --font-body: 'Ubuntu Mono', monospace;
+            --font-mono: 'JetBrains Mono', monospace;
+
+            --glow-inner: inset 0 0 30px rgba(0, 0, 0, 0.6), inset 0 0 10px rgba(255, 255, 255, 0.02);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text-high);
+            font-family: var(--font-body);
+            overflow: hidden;
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1.5rem;
+        }
+
+        /* ── THE CONSCIOUS CORE (Animated Background) ── */
+        .conscious-core {
+            position: fixed;
+            inset: 0;
+            z-index: 0;
+            pointer-events: none;
+            background-image:
+                radial-gradient(circle at 30% 70%, rgba(14, 116, 144, 0.05) 0%, transparent 60%),
+                radial-gradient(circle at 70% 30%, rgba(192, 38, 211, 0.05) 0%, transparent 60%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .neural-ring {
+            position: absolute;
+            border: 1px solid rgba(255, 255, 255, 0.015);
+            border-radius: 50%;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        .r1 {
+            width: 85vw;
+            height: 85vw;
+            animation: slowSpin 180s linear infinite;
+            border-style: dashed;
+            border-color: rgba(255, 255, 255, 0.02);
+        }
+
+        .r2 {
+            width: 65vw;
+            height: 65vw;
+            animation: slowSpin 140s linear infinite reverse;
+            border-color: rgba(14, 116, 144, 0.02);
+        }
+
+        .r3 {
+            width: 45vw;
+            height: 45vw;
+            animation: slowSpin 100s linear infinite;
+        }
+
+        @keyframes slowSpin {
+            100% {
+                transform: translate(-50%, -50%) rotate(360deg);
+            }
+        }
+
+        /* ── THE MASTER COMPARTMENT GRID ── */
+        .interface-grid {
+            position: relative;
+            z-index: 10;
+            width: 100%;
+            height: 100%;
+            display: grid;
+            grid-template-columns: 350px 1fr 400px;
+            grid-template-rows: 90px 1fr;
+            gap: 6px;
+        }
+
+        .compartment {
+            background: var(--glass-base);
+            backdrop-filter: blur(40px) saturate(120%);
+            -webkit-backdrop-filter: blur(40px) saturate(120%);
+            box-shadow: var(--glow-inner);
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            border: 1px solid var(--border-glass);
+        }
+
+        /* ── SECTOR 1: TOP LEFT (HEADER) ── */
+        .sector-header {
+            grid-column: 1 / 3;
+            grid-row: 1;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 2.5rem;
+            clip-path: polygon(0 0, 100% 0, 100% calc(100% - 20px), calc(100% - 20px) 100%, 0 100%);
+            border-bottom: none;
+            border-right: none;
+        }
+
+        .header-title-box {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .header-title {
+            font-family: var(--font-display);
+            font-size: 30px;
+            font-weight: 400;
+            color: var(--text-pure);
+            letter-spacing: 0.5px;
+            line-height: 1;
+            text-transform: uppercase;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+        }
+
+        .header-subtitle {
+            font-family: var(--font-script);
+            font-size: 20px;
+            color: var(--cyan);
+            letter-spacing: 1px;
+            margin-top: 4px;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+        }
+
+        .sys-info-bar {
+            display: flex;
+            gap: 3rem;
+            align-items: center;
+            margin-right: 20px;
+        }
+
+        .sys-log-item {
+            font-family: var(--font-mono);
+            font-size: 11px;
+            color: var(--text-muted);
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            font-weight: 700;
+        }
+
+        .sys-log-item span {
+            color: var(--cyan);
+            font-weight: 800;
+            text-shadow: 0 0 10px rgba(14, 116, 144, 0.3);
+        }
+
+
+        /* ── SECTOR 2: TOP RIGHT (STATUS) ── */
+        .sector-status {
+            grid-column: 3;
+            grid-row: 1;
+            clip-path: polygon(0 0, 100% 0, 100% 100%, 20px 100%, 0 calc(100% - 20px));
+            background: rgba(245, 158, 11, 0.05);
+            border: 1px solid var(--border-glass);
+            border-bottom: 2px solid var(--gold);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: var(--font-mono);
+            font-weight: 700;
+            font-size: 14px;
+            color: var(--gold);
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            text-shadow: 0 0 10px rgba(245, 158, 11, .3);
+        }
+
+        .sector-status::before {
+            content: '';
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            background: var(--gold);
+            margin-right: 14px;
+            box-shadow: 0 0 10px var(--gold);
+            animation: pulseCore 4s infinite;
+        }
+
+        @keyframes pulseCore {
+
+            0%,
+            100% {
+                transform: scale(1);
+                opacity: 0.6;
+            }
+
+            50% {
+                transform: scale(1.2);
+                opacity: 1;
+            }
+        }
+
+
+        /* ── SECTOR 3: LEFT (HARD DATA) ── */
+        .sector-stats {
+            grid-column: 1;
+            grid-row: 2;
+            padding: 2.5rem;
+            display: flex;
+            flex-direction: column;
+            clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%);
+        }
+
+        .stat-blocks {
+            display: flex;
+            flex-direction: column;
+            gap: 3.5rem;
+            flex: 1;
+            justify-content: center;
+            margin-bottom: 2rem;
+        }
+
+        .data-metric {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            position: relative;
+            padding-left: 20px;
+        }
+
+        .data-metric::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 3px;
+            background: var(--cyan);
+        }
+
+        .data-metric:nth-child(2)::before {
+            background: var(--fuchsia);
+        }
+
+        .data-metric:nth-child(3)::before {
+            background: var(--gold);
+        }
+
+        .metric-label {
+            font-family: var(--font-mono);
+            font-size: 10px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.2em;
+            font-weight: 700;
+        }
+
+        .metric-val {
+            font-family: var(--font-display);
+            font-size: 32px;
+            font-weight: 400;
+            color: var(--text-pure);
+            letter-spacing: 1px;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
+        }
+
+        .metric-sub {
+            font-family: var(--font-body);
+            font-size: 15px;
+            color: var(--text-muted);
+            line-height: 1.5;
+            margin-top: 2px;
+        }
+
+        .nav-column {
+            display: flex;
+            gap: 6px;
+            margin-top: auto;
+        }
+
+        .rigid-btn {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--border-glass);
+            color: var(--text-pure);
+            font-family: var(--font-mono);
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.2em;
+            padding: 1.4rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            backdrop-filter: blur(10px);
+            flex: 1;
+            text-align: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .btn-prev {
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .btn-prev:hover {
+            background: rgba(255, 255, 255, 0.08);
+        }
+
+        .btn-next {
+            background: rgba(14, 116, 144, 0.1);
+            border-color: rgba(14, 116, 144, 0.3);
+            color: var(--cyan);
+        }
+
+        .btn-next:hover {
+            background: var(--cyan);
+            color: #000;
+        }
+
+        /* ── SECTOR 4: CENTER (2D CSS BLUEPRINT ARCHITECTURE) ── */
+        .sector-core {
+            grid-column: 2;
+            grid-row: 2;
+            position: relative;
+            background-color: #01060D;
+            /* Slightly darker than 020C17 for deeper contrast */
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            overflow: hidden;
+
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: inset 0 0 100px rgba(0, 0, 0, 1);
+            cursor: grab;
+        }
+
+        .sector-core:active {
+            cursor: grabbing;
+        }
+
+        .blueprint-bg {
+            position: absolute;
+            top: -5000px;
+            left: -5000px;
+            right: -5000px;
+            bottom: -5000px;
+            /* Enhanced Blueprint Grid */
+            background-image:
+                linear-gradient(rgba(14, 116, 144, 0.45) 1.5px, transparent 1.5px),
+                linear-gradient(90deg, rgba(14, 116, 144, 0.45) 1.5px, transparent 1.5px),
+                linear-gradient(rgba(14, 116, 144, 0.25) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(14, 116, 144, 0.25) 1px, transparent 1px),
+                linear-gradient(rgba(14, 116, 144, 0.08) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(14, 116, 144, 0.08) 1px, transparent 1px);
+            background-size: 256px 256px, 256px 256px, 64px 64px, 64px 64px, 16px 16px, 16px 16px;
+            background-position: center center;
+            pointer-events: none;
+            z-index: 0;
+            will-change: transform;
+        }
+
+        .pan-container {
+            position: relative;
+            z-index: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            will-change: transform;
+            transform-origin: center center;
+            padding: 100px;
+            /* Buffer for panning around the structure safely */
+        }
+
+        .canvas-bracket {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            border: 2px solid;
+            opacity: 0.2;
+            z-index: 20;
+            pointer-events: none;
+        }
+
+        .cb-tl {
+            top: -1px;
+            left: -1px;
+            border-right: none;
+            border-bottom: none;
+            border-color: var(--cyan);
+        }
+
+        .cb-tr {
+            top: -1px;
+            right: -1px;
+            border-left: none;
+            border-bottom: none;
+            border-color: var(--cyan);
+        }
+
+        .cb-bl {
+            bottom: -1px;
+            left: -1px;
+            border-right: none;
+            border-top: none;
+            border-color: var(--fuchsia);
+        }
+
+        .cb-br {
+            bottom: -1px;
+            right: -1px;
+            border-left: none;
+            border-top: none;
+            border-color: var(--fuchsia);
+        }
+
+        .reset-view-btn {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            z-index: 30;
+            background: rgba(0, 0, 0, 0.6);
+            border: 1px solid var(--cyan);
+            color: var(--cyan);
+            font-family: var(--font-mono);
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            padding: 6px 12px;
+            cursor: pointer;
+            backdrop-filter: blur(5px);
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s, background 0.2s, color 0.2s;
+        }
+
+        .reset-view-btn.visible {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .reset-view-btn:hover {
+            background: var(--cyan);
+            color: #000;
+        }
+
+
+        /* ── HIGH-FIDELITY 2D SCHEMATIC ELEMENTS ── */
+        .arch-baseplate {
+            position: relative;
+            width: 580px;
+            height: 380px;
+
+            /* Blueprint schematic look: transparent, strong dashed border */
+            background-color: transparent;
+            border: 2px dashed rgba(56, 189, 248, 0.5);
+            /* Cyan dashed bounding box */
+            display: flex;
+            justify-content: center;
+            align-items: stretch;
+            padding: 50px;
+            gap: 60px;
+
+            /* Internal sub-grid measuring plane */
+            background-image:
+                linear-gradient(rgba(56, 189, 248, 0.08) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(56, 189, 248, 0.08) 1px, transparent 1px);
+            background-size: 10px 10px;
+        }
+
+        /* Schematic corner brackets */
+        .arch-baseplate::before,
+        .arch-baseplate::after {
+            content: '';
+            position: absolute;
+            pointer-events: none;
+            width: 30px;
+            height: 30px;
+            border: 2px solid var(--cyan);
+        }
+
+        .arch-baseplate::before {
+            top: -2px;
+            left: -2px;
+            border-right: none;
+            border-bottom: none;
+        }
+
+        .arch-baseplate::after {
+            bottom: -2px;
+            right: -2px;
+            border-left: none;
+            border-top: none;
+        }
+
+        .baseplate-label {
+            position: absolute;
+            bottom: -45px;
+            left: 0;
+            font-family: var(--font-mono);
+            font-size: 13px;
+            font-weight: 800;
+            color: rgba(56, 189, 248, 0.9);
+            letter-spacing: 0.1em;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .baseplate-label span {
+            font-size: 10px;
+            color: var(--text-muted);
+            letter-spacing: 0.2em;
+        }
+
+        .bp-line {
+            height: 1px;
+            width: 40px;
+            background: rgba(56, 189, 248, 0.4);
+            display: inline-block;
+        }
+
+        /* Complex Ribbon Cable Data Bus */
+        .arch-data-bus {
+            position: absolute;
+            top: 50%;
+            left: 30px;
+            right: 30px;
+            height: 24px;
+            transform: translateY(-50%);
+            /* Multi-wire ribbon cable simulation */
+            background-image: repeating-linear-gradient(to bottom,
+                    rgba(255, 255, 255, 0.4) 0px,
+                    rgba(255, 255, 255, 0.4) 1px,
+                    transparent 1px,
+                    transparent 3px);
+            z-index: 1;
+            display: flex;
+            align-items: center;
+            border-left: 2px solid rgba(255, 255, 255, 0.8);
+            border-right: 2px solid rgba(255, 255, 255, 0.8);
+        }
+
+        .arch-chip {
+            flex: 1;
+            z-index: 2;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            background-color: #01060D;
+            /* Block out the grid behind it */
+        }
+
+        /* Diagonal hatching to simulate internal circuitry/heat sinks */
+        .chip-cyan {
+            border: 2px solid var(--cyan);
+            background-image: repeating-linear-gradient(45deg,
+                    rgba(14, 116, 144, 0.2) 0px,
+                    rgba(14, 116, 144, 0.2) 2px,
+                    transparent 2px,
+                    transparent 6px);
+            box-shadow: 0 0 20px rgba(14, 116, 144, 0.1), inset 0 0 40px rgba(14, 116, 144, 0.2);
+        }
+
+        .chip-cyan::after {
+            /* Inner block */
+            content: '';
+            position: absolute;
+            inset: 6px;
+            border: 1px dashed rgba(14, 116, 144, 0.6);
+            pointer-events: none;
+        }
+
+        .chip-fuchsia {
+            border: 2px solid var(--fuchsia);
+            background-image: repeating-linear-gradient(-45deg,
+                    rgba(192, 38, 211, 0.2) 0px,
+                    rgba(192, 38, 211, 0.2) 2px,
+                    transparent 2px,
+                    transparent 6px);
+            box-shadow: 0 0 20px rgba(192, 38, 211, 0.1), inset 0 0 40px rgba(192, 38, 211, 0.2);
+        }
+
+        .chip-fuchsia::after {
+            /* Inner block */
+            content: '';
+            position: absolute;
+            inset: 6px;
+            border: 1px dashed rgba(192, 38, 211, 0.6);
+            pointer-events: none;
+        }
+
+        .chip-content-wrapper {
+            background: #01060D;
+            /* Solid plate behind text for legibility over hatching */
+            padding: 10px 20px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            text-align: center;
+            z-index: 5;
+        }
+
+        .chip-title {
+            font-family: var(--font-mono);
+            font-size: 26px;
+            font-weight: 800;
+            letter-spacing: -1px;
+            color: #fff;
+            margin-bottom: 4px;
+            line-height: 1;
+        }
+
+        .chip-sub {
+            font-family: var(--font-mono);
+            font-size: 10px;
+            color: var(--text-muted);
+            letter-spacing: 0.1em;
+            border-top: 1px solid rgba(255, 255, 255, 0.2);
+            padding-top: 6px;
+        }
+
+        /* Dimension Guides alongside the chips */
+        .dim-guide {
+            position: absolute;
+            font-family: var(--font-mono);
+            font-size: 9px;
+            color: var(--text-muted);
+            letter-spacing: 0.1em;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .dim-w {
+            bottom: -25px;
+            left: 0;
+            right: 0;
+        }
+
+        .dim-w::before,
+        .dim-w::after {
+            content: '';
+            height: 1px;
+            flex: 1;
+            background: rgba(255, 255, 255, 0.2);
+            margin: 0 8px;
+        }
+
+        .dim-w::before {
+            border-left: 1px solid rgba(255, 255, 255, 0.8);
+            height: 5px;
+        }
+
+        .dim-w::after {
+            border-right: 1px solid rgba(255, 255, 255, 0.8);
+            height: 5px;
+        }
+
+        /* I/O Connector Nodes */
+        .connector {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 8px;
+            height: 32px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.8);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-evenly;
+            align-items: center;
+            z-index: 10;
+        }
+
+        .connector::before,
+        .connector::after {
+            content: '';
+            width: 4px;
+            height: 2px;
+            background: #fff;
+        }
+
+        .cx-left {
+            left: -8px;
+            border-right: none;
+        }
+
+        .cx-right {
+            right: -8px;
+            border-left: none;
+        }
+
+        /* ── SECTOR 5: RIGHT (NARRATIVE / STRUCTURE) ── */
+        .sector-narrative {
+            grid-column: 3;
+            grid-row: 2;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .prose-container {
+            flex: 1;
+            padding: 3rem;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .prose-text {
+            font-family: var(--font-body);
+            font-size: 16px;
+            line-height: 1.8;
+            color: var(--text-high);
+            border-left: 3px solid var(--cyan);
+            padding-left: 1.5rem;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+        }
+
+        .prose-text strong {
+            color: var(--text-pure);
+            font-weight: 700;
+            text-decoration: underline;
+            text-decoration-color: rgba(255, 255, 255, 0.3);
+            text-underline-offset: 3px;
+        }
+
+        .prose-text .hl {
+            color: var(--cyan);
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .spec-grid {
+            border-top: 1px solid var(--border-glass);
+            display: grid;
+            grid-template-columns: 1fr;
+            background: rgba(0, 0, 0, 0.2);
+        }
+
+        .spec-row {
+            display: flex;
+            border-bottom: 1px solid var(--border-glass);
+            padding: 1.4rem 2.5rem;
+        }
+
+        .spec-row:last-child {
+            border-bottom: none;
+        }
+
+        .spec-k {
+            width: 45%;
+            font-family: var(--font-mono);
+            font-size: 11px;
+            color: var(--dim);
+            text-transform: uppercase;
+            font-weight: 700;
+            letter-spacing: 0.1em;
+        }
+
+        .spec-v {
+            width: 55%;
+            font-family: var(--font-mono);
+            font-size: 13px;
+            color: var(--text-pure);
+            font-weight: 700;
+            text-align: right;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="conscious-core">
+        <div class="data-sweep"></div>
+        <div class="neural-ring r1"></div>
+        <div class="neural-ring r2"></div>
+        <div class="neural-ring r3"></div>
+    </div>
+
+    <div class="interface-grid">
+
+        <!-- SECTOR 1: HEADER -->
+        <div class="compartment sector-header">
+            <div class="header-title-box">
+                <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 5px;">
+                    <a href="index.html"
+                        style="color: var(--cyan); text-decoration: none; font-family: var(--font-mono); font-size: 12px; font-weight: 700; border: 1px solid rgba(14, 116, 144, 0.3); padding: 4px 10px; border-radius: 4px; background: rgba(14, 116, 144, 0.1); transition: all 0.2s;">←
+                        HOME</a>
+                    <div class="header-title" id="dyn-title" style="margin-bottom: 0;">The Training Pipeline</div>
+                </div>
+                <div class="header-subtitle" id="dyn-subtitle">↳ how training data is structured & consumed</div>
+            </div>
+
+            <div class="sys-info-bar">
+                <div class="sys-log-item">Target // <span id="dyn-target">SYS_VOL://.traindat</span></div>
+                <div class="sys-log-item">Checksum // <span>OK</span></div>
+
+                <a href="https://github.com/Kenessy/VRAXION" target="_blank"
+                    style="margin-left: 20px; background: var(--cyan); color: #000; text-decoration: none; font-family: var(--font-mono); font-weight: 800; font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; padding: 10px 20px; display: flex; align-items: center; gap: 8px; transition: all 0.2s; box-shadow: 0 0 15px rgba(14, 116, 144, 0.4);"
+                    onmouseover="this.style.background='#fff'; this.style.boxShadow='0 0 20px rgba(255,255,255,0.6)';"
+                    onmouseout="this.style.background='var(--cyan)'; this.style.boxShadow='0 0 15px rgba(14, 116, 144, 0.4)';">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                        <path
+                            d="M12 2C6.477 2 2 6.477 2 12c0 4.42 2.865 8.166 6.839 9.489.5.092.682-.217.682-.482 0-.237-.008-.866-.013-1.7-2.782.603-3.369-1.34-3.369-1.34-.454-1.156-1.11-1.462-1.11-1.462-.908-.62.069-.608.069-.608 1.003.07 1.531 1.03 1.531 1.03.892 1.529 2.341 1.087 2.91.831.092-.646.35-1.086.636-1.336-2.22-.253-4.555-1.11-4.555-4.943 0-1.091.39-1.984 1.029-2.683-.103-.253-.446-1.27.098-2.647 0 0 .84-.269 2.75 1.025A9.578 9.578 0 0112 6.836c.85.004 1.705.114 2.504.336 1.909-1.294 2.747-1.025 2.747-1.025.546 1.377.203 2.394.1 2.647.64.699 1.028 1.592 1.028 2.683 0 3.842-2.339 4.687-4.566 4.935.359.309.678.919.678 1.852 0 1.336-.012 2.415-.012 2.743 0 .267.18.578.688.48C19.138 20.161 22 16.416 22 12c0-5.523-4.477-10-10-10z" />
+                    </svg>
+                    GitHub
+                </a>
+
+                <svg width="40" height="40" viewBox="0 0 40 40" fill="none" stroke="currentColor"
+                    style="color:rgba(255,255,255,0.2); stroke-width:3; margin-left: 10px;">
+                    <path d="M0 20 h40 M20 0 v40" />
+                </svg>
+            </div>
+        </div>
+
+        <!-- SECTOR 2: STATUS -->
+        <div class="compartment sector-status">SYS.MEM_BIND_ACTIVE</div>
+
+        <!-- SECTOR 3: LEFT DATA COLUMN -->
+        <div class="compartment sector-stats">
+            <!-- VIEW 1 STATS (.traindat) -->
+            <div class="stat-blocks" id="stats-view-1">
+                <div class="data-metric">
+                    <div class="metric-label">Container Vol</div>
+                    <div class="metric-val">1.18 GB</div>
+                    <div class="metric-sub">Contiguous physical array mapped directly to silicon memory.</div>
+                </div>
+                <div class="data-metric">
+                    <div class="metric-label">Association Pairs</div>
+                    <div class="metric-val">100,000</div>
+                    <div class="metric-sub">Strict, fixed-shape binary mathematical permutations.</div>
+                </div>
+                <div class="data-metric">
+                    <div class="metric-label">Execution Schema</div>
+                    <div class="metric-val" style="color:var(--gold);">Zero-Parse</div>
+                    <div class="metric-sub">Bypasses mortal CPU decoding overhead entirely.</div>
+                </div>
+            </div>
+
+            <!-- VIEW 2 STATS (INSTNCT Engine) -->
+            <div class="stat-blocks" id="stats-view-2" style="display: none;">
+                <div class="data-metric">
+                    <div class="metric-label">Engine Type</div>
+                    <div class="metric-val">PyTorch Pointer</div>
+                    <div class="metric-sub">Graph-based recurrent routing instead of fixed linear passes.</div>
+                </div>
+                <div class="data-metric">
+                    <div class="metric-label">Node Dynamics</div>
+                    <div class="metric-val">Thermodynamic</div>
+                    <div class="metric-sub">Regulates exploration/exploitation via global temperature.</div>
+                </div>
+                <div class="data-metric">
+                    <div class="metric-label">Fault Tolerance</div>
+                    <div class="metric-val" style="color:var(--fuchsia);">Auto-Panic</div>
+                    <div class="metric-sub">Checkpoints and prunes degenerate pathways upon collapse.</div>
+                </div>
+            </div>
+
+            <div class="nav-column">
+                <button class="rigid-btn btn-prev" onclick="switchView(1)">❮ RWD</button>
+                <button class="rigid-btn btn-next" onclick="switchView(2)">FWD ❯</button>
+            </div>
+        </div>
+
+        <!-- SECTOR 4: CENTER GEOMETRY (2D ARCHITECTURE DIAGRAM) -->
+        <div class="sector-core" id="blueprint-viewport">
+            <div class="blueprint-bg" id="blueprint-bg"></div>
+            <div class="canvas-bracket cb-tl"></div>
+            <div class="canvas-bracket cb-tr"></div>
+            <div class="canvas-bracket cb-bl"></div>
+            <div class="canvas-bracket cb-br"></div>
+
+            <button class="reset-view-btn" id="reset-pan-btn">⌖ Reset View</button>
+
+            <div class="pan-container" id="pan-container">
+
+                <!-- VIEW 1 BLUEPRINT (.traindat) -->
+                <div class="arch-baseplate" id="bp-view-1">
+                    <div class="baseplate-label"><span class="bp-line"></span>// FILE: .traindat
+                        &nbsp;&nbsp;&nbsp;<span>VOL. 1.18 GB</span></div>
+
+                    <div class="arch-data-bus"></div>
+
+                    <div class="arch-chip chip-cyan" style="cursor:help;"
+                        title="Input Matrix: 100,000 association parameters">
+                        <div class="connector cx-right"></div>
+                        <div class="chip-content-wrapper">
+                            <div class="chip-title">INPTMTX</div>
+                            <div class="chip-sub">100K × 6184</div>
+                        </div>
+                        <div class="dim-guide dim-w">WIDTH 773B</div>
+                    </div>
+
+                    <div class="arch-chip chip-fuchsia" style="cursor:help;"
+                        title="Output Matrix: 100,000 solution vectors">
+                        <div class="connector cx-left"></div>
+                        <div class="chip-content-wrapper">
+                            <div class="chip-title">OUTPMTX</div>
+                            <div class="chip-sub">100K × 6184</div>
+                        </div>
+                        <div class="dim-guide dim-w">WIDTH 773B</div>
+                    </div>
+                </div>
+
+                <!-- VIEW 2 BLUEPRINT (INSTNCT Engine) -->
+                <div class="arch-baseplate" id="bp-view-2" style="display: none;">
+                    <div class="baseplate-label"><span class="bp-line"></span>// MODULE: INSTNCT
+                        &nbsp;&nbsp;&nbsp;<span>CORE: PyTorch</span></div>
+
+                    <!-- Vertical data bus for engine view -->
+                    <div class="arch-data-bus"
+                        style="top: 20px; bottom: 20px; left: 50%; right: auto; width: 24px; height: auto; transform: translateX(-50%); border-left: 2px solid rgba(255, 255, 255, 0.8); border-right: 2px solid rgba(255, 255, 255, 0.8); border-top: none; border-bottom: none; background-image: repeating-linear-gradient(to right, rgba(255, 255, 255, 0.4) 0px, rgba(255, 255, 255, 0.4) 1px, transparent 1px, transparent 3px);">
+                    </div>
+
+                    <div style="display: flex; flex-direction: column; gap: 40px; width: 100%; z-index: 2;">
+                        <div class="arch-chip chip-cyan" style="flex: none; padding: 20px;">
+                            <div class="connector cx-right"
+                                style="left: auto; right: -8px; top: auto; bottom: -16px; transform: rotate(90deg);">
+                            </div>
+                            <div class="chip-content-wrapper">
+                                <div class="chip-title">ENV_OBSERVATION</div>
+                                <div class="chip-sub">Sensory Input Tensor</div>
+                            </div>
+                        </div>
+
+                        <div style="display: flex; gap: 40px; justify-content: center;">
+                            <div class="arch-chip"
+                                style="border: 2px solid var(--gold); background-color: #01060D; box-shadow: 0 0 20px rgba(245, 158, 11, 0.1);">
+                                <div class="chip-content-wrapper" style="border: none;">
+                                    <div class="chip-title" style="color: var(--gold); font-size: 20px;">GOVERNOR</div>
+                                    <div class="chip-sub">Thermodynamic dT</div>
+                                </div>
+                            </div>
+                            <div class="arch-chip chip-fuchsia">
+                                <div class="chip-content-wrapper">
+                                    <div class="chip-title">PTR_NETWORK</div>
+                                    <div class="chip-sub">Dynamic Graph Routing</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="arch-chip chip-cyan"
+                            style="flex: none; padding: 20px; border-color: #E8EAF0; box-shadow: 0 0 20px rgba(232, 234, 240, 0.1);">
+                            <div class="connector cx-right"
+                                style="left: 50%; right: auto; top: -16px; bottom: auto; transform: rotate(90deg) translateX(-50%);">
+                            </div>
+                            <div class="chip-content-wrapper">
+                                <div class="chip-title">ACTION_LOGIT</div>
+                                <div class="chip-sub">Actuator Mutator</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+        </div>
+
+        <!-- SECTOR 5: RIGHT NARRATIVE & SPECS -->
+        <div class="compartment sector-narrative">
+            <div class="prose-container">
+                <div class="prose-text">
+                    <span class="hl">VRAXION</span> is a self-organizing neural architecture built on PyTorch. It
+                    abandons rigid transformer logic in favor of <strong>dynamic, biological routing</strong>. <br><br>
+                    By coupling our <span class="hl">INSTNCT</span> Pointer Network with thermodynamic governing,
+                    VRAXION forces the graph to physically map new connections, allowing for extreme,
+                    <strong>Zero-Parse</strong> neuroevolution without traditional backpropagation.
+                </div>
+            </div>
+
+            <div class="spec-grid">
+                <div class="spec-row">
+                    <div class="spec-k">logical shape</div>
+                    <div class="spec-v">100,000 × 6,184</div>
+                </div>
+                <div class="spec-row">
+                    <div class="spec-k">physical layout</div>
+                    <div class="spec-v">1D flat array</div>
+                </div>
+                <div class="spec-row">
+                    <div class="spec-k">row width</div>
+                    <div class="spec-v">773 bytes × 8 bits</div>
+                </div>
+                <div class="spec-row">
+                    <div class="spec-k">dtype</div>
+                    <div class="spec-v">int8</div>
+                </div>
+                <div class="spec-row">
+                    <div class="spec-k">padding sentinel</div>
+                    <div class="spec-v">−1 (no grade)</div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // VIEW SWITCHING LOGIC
+        let currentView = 1;
+
+        const viewData = {
+            1: {
+                title: "The Training Pipeline",
+                subtitle: "↳ how training data is structured & consumed",
+                target: "SYS_VOL://.traindat"
+            },
+            2: {
+                title: "The INSTNCT Engine",
+                subtitle: "↳ thermodynamic pointer network architecture",
+                target: "CORE://pytorch_modules"
+            }
+        };
+
+        function switchView(viewId) {
+            if (viewId === currentView) return;
+
+            // Hide current
+            document.getElementById(`stats-view-${currentView}`).style.display = 'none';
+            document.getElementById(`bp-view-${currentView}`).style.display = 'none';
+            document.getElementById(`prose-view-${currentView}`).style.display = 'none';
+
+            // Update Header
+            document.getElementById('dyn-title').textContent = viewData[viewId].title;
+            document.getElementById('dyn-subtitle').textContent = viewData[viewId].subtitle;
+            document.getElementById('dyn-target').textContent = viewData[viewId].target;
+
+            // Show new
+            document.getElementById(`stats-view-${viewId}`).style.display = 'flex';
+            document.getElementById(`bp-view-${viewId}`).style.display = 'flex';
+            document.getElementById(`prose-view-${viewId}`).style.display = 'block';
+
+            // Update buttons active states
+            const prevBtn = document.querySelector('.btn-prev');
+            const nextBtn = document.querySelector('.btn-next');
+
+            if (viewId === 1) {
+                prevBtn.style.background = 'rgba(255, 255, 255, 0.08)';
+                prevBtn.style.color = '#fff';
+                nextBtn.style.background = 'rgba(14, 116, 144, 0.1)';
+                nextBtn.style.color = 'var(--cyan)';
+            } else {
+                nextBtn.style.background = 'var(--cyan)';
+                nextBtn.style.color = '#000';
+                prevBtn.style.background = 'rgba(255, 255, 255, 0.02)';
+                prevBtn.style.color = 'var(--text-pure)';
+            }
+
+            currentView = viewId;
+            resetPan(); // Reset panning when switching views
+        }
+
+        // 2D PAN AND ZOOM LOGIC
+        const viewport = document.getElementById('blueprint-viewport');
+        const blueprintBg = document.getElementById('blueprint-bg');
+        const panContainer = document.getElementById('pan-container');
+        const resetBtn = document.getElementById('reset-pan-btn');
+
+        let isDragging = false;
+        let currentX = 0, currentY = 0;
+        let initialX = 0, initialY = 0;
+        let scale = 1;
+
+        const updateTransforms = () => {
+            panContainer.style.transform = `translate(${currentX}px, ${currentY}px) scale(${scale})`;
+            blueprintBg.style.transform = `translate(${currentX}px, ${currentY}px) scale(${scale})`;
+
+            if (Math.abs(currentX) > 10 || Math.abs(currentY) > 10 || scale !== 1) {
+                resetBtn.classList.add('visible');
+            } else {
+                resetBtn.classList.remove('visible');
+            }
+        };
+
+        const resetPan = () => {
+            currentX = 0;
+            currentY = 0;
+            scale = 1;
+            panContainer.style.transition = 'transform 0.3s ease-out';
+            blueprintBg.style.transition = 'transform 0.3s ease-out';
+            updateTransforms();
+
+            setTimeout(() => {
+                panContainer.style.transition = 'none';
+                blueprintBg.style.transition = 'none';
+            }, 300);
+        };
+
+        viewport.addEventListener('mousedown', (e) => {
+            isDragging = true;
+            initialX = e.clientX - currentX;
+            initialY = e.clientY - currentY;
+        });
+
+        window.addEventListener('mouseup', () => {
+            isDragging = false;
+        });
+
+        window.addEventListener('mousemove', (e) => {
+            if (!isDragging) return;
+            currentX = e.clientX - initialX;
+            currentY = e.clientY - initialY;
+            updateTransforms();
+        });
+
+        viewport.addEventListener('wheel', (e) => {
+            e.preventDefault();
+            const delta = e.deltaY > 0 ? -0.1 : 0.1;
+            scale = Math.min(Math.max(0.5, scale + delta), 2);
+            updateTransforms();
+        });
+
+        resetBtn.addEventListener('click', resetPan);
+
+    </script>
+
+</body>
+
+</html>

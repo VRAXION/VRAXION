@@ -930,9 +930,9 @@ class SwarmByteRingModel(nn.Module):
             self.lcx_route_query = nn.Linear(embedding_dim, lcx_key_dim)
             self.lcx_write_gate = nn.Linear(embedding_dim, 1)
             nn.init.constant_(self.lcx_write_gate.bias, 0.0)  # balanced init (sigmoid=0.5)
-            # Zoom gate: auto-effort (model decides "need more detail?")
+            # Zoom gate: KEPT as parameter for checkpoint compat, NOT used in forward (v3.5)
             self.zoom_gate = nn.Linear(embedding_dim, 1)
-            nn.init.constant_(self.zoom_gate.bias, -4.0)  # sigmoid(-4)=1.8% — prevents noise while allowing gradient flow (was -5.0, frozen by AGC)
+            nn.init.constant_(self.zoom_gate.bias, -4.0)
             # LCX read bottleneck: D → D//10 → C19 → D//10 → C19 → D
             # Translates raw LCX read vectors into hidden-compatible representations.
             _bn_dim = max(1, embedding_dim // 10)  # 618 at D=6180
@@ -941,10 +941,14 @@ class SwarmByteRingModel(nn.Module):
                 nn.Linear(_bn_dim, _bn_dim),
                 nn.Linear(_bn_dim, embedding_dim),
             ])
-            # Orthogonal init for bottleneck (probe: +0.8% vs kaiming, preserves norms through C19)
-            for _bn_layer in self.lcx_bn_layers:
+            # Orthogonal init for BN layers 0,1 (probe: +0.8% vs kaiming)
+            for _bn_layer in self.lcx_bn_layers[:-1]:
                 nn.init.orthogonal_(_bn_layer.weight)
                 nn.init.zeros_(_bn_layer.bias)
+            # ZERO-init last BN layer: LCX output = 0 at start, gradients flow freely (GPT-2 trick)
+            # Replaces zoom_gate — no scalar bottleneck, full gradient flow, self-regulating.
+            nn.init.zeros_(self.lcx_bn_layers[-1].weight)
+            nn.init.zeros_(self.lcx_bn_layers[-1].bias)
             # Think token: learned "I'm thinking" signal for think ticks
             self.think_token = nn.Parameter(torch.randn(embedding_dim) * 0.02)
             # Stubs for dense LCX layers (not used in hash mode)
@@ -1694,21 +1698,9 @@ class SwarmByteRingModel(nn.Module):
                             _query = hidden_states.mean(dim=0)
                             lcx_tt_ctx = self._lcx_flat_read(_query, level=_lcx_level)
                             lcx_tt_ctx = self._lcx_bottleneck(lcx_tt_ctx)
-                            # zoom_gate: L2-normalize input to bound pre-activation
-                            with torch.amp.autocast('cuda', enabled=False):
-                                _zg_dtype = self.zoom_gate.weight.dtype
-                                _q32 = torch.nn.functional.normalize(_query.to(_zg_dtype), dim=-1)
-                                zg = torch.sigmoid(self.zoom_gate(_q32))
-                            lcx_tt_ctx = lcx_tt_ctx * zg
-                            self._last_zoom_gate = zg.mean().item()
-                            # Stash zoom_gate output for anti-saturation aux loss
-                            if self.training:
-                                if not hasattr(self, '_lcx_zoom_gate_accum'):
-                                    self._lcx_zoom_gate_accum = []
-                                self._lcx_zoom_gate_accum.append(zg)
-                            # Early-stop during eval only
-                            if not self.training and zg.max().item() < 0.1:
-                                break
+                            # zoom_gate REMOVED — zero-init last BN layer handles cold start (GPT-2 trick, v3.5)
+                            # Full gradient flow through bottleneck. No gate throttling.
+                            self._last_zoom_gate = 1.0
                             hidden_states = hidden_states + lcx_tt_ctx.unsqueeze(0) * tt_mask
                             # Write at this level
                             _wv = hidden_states.mean(dim=0)
@@ -3242,18 +3234,8 @@ class SwarmByteRingModel(nn.Module):
                                 _query = state['hidden_state']
                                 lcx_tt_ctx = self._lcx_flat_read(_query, level=_lcx_level)
                                 lcx_tt_ctx = self._lcx_bottleneck(lcx_tt_ctx)
-                                # zoom_gate: L2-normalize input to bound pre-activation
-                                with torch.amp.autocast('cuda', enabled=False):
-                                    _zg_dtype = self.zoom_gate.weight.dtype
-                                    _q32 = torch.nn.functional.normalize(_query.to(_zg_dtype), dim=-1)
-                                    zg = torch.sigmoid(self.zoom_gate(_q32))
-                                lcx_tt_ctx = lcx_tt_ctx * zg
-                                self._last_zoom_gate = zg.mean().item()
-                                # Stash zoom_gate output for anti-saturation aux loss
-                                if self.training:
-                                    if not hasattr(self, '_lcx_zoom_gate_accum'):
-                                        self._lcx_zoom_gate_accum = []
-                                    self._lcx_zoom_gate_accum.append(zg)
+                                # zoom_gate REMOVED — zero-init last BN layer handles cold start (GPT-2 trick, v3.5)
+                                self._last_zoom_gate = 1.0
                                 state['hidden_state'] = state['hidden_state'] + lcx_tt_ctx
                                 # Write at this level
                                 self._lcx_flat_write(state['hidden_state'], state_update,

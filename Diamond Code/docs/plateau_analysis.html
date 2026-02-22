@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+<meta charset="UTF-8">
+<title>VRAXION — Plateau Analysis</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1"></script>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { background: #0d1117; color: #c9d1d9; font-family: 'JetBrains Mono', 'Cascadia Code', monospace; padding: 32px; }
+
+h1 { font-size: 20px; color: #58a6ff; margin-bottom: 4px; }
+.subtitle { font-size: 13px; color: #8b949e; margin-bottom: 32px; }
+
+.main-chart { background: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: 24px; margin-bottom: 24px; }
+.main-chart h2 { font-size: 15px; color: #c9d1d9; margin-bottom: 16px; }
+
+.grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 24px; }
+@media (max-width: 900px) { .grid { grid-template-columns: 1fr; } }
+
+.card { background: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: 20px; }
+.card h3 { font-size: 14px; color: #58a6ff; margin-bottom: 12px; }
+
+table { width: 100%; border-collapse: collapse; font-size: 12px; }
+th { text-align: left; padding: 6px 8px; color: #8b949e; border-bottom: 1px solid #30363d; font-weight: normal; }
+td { padding: 6px 8px; border-bottom: 1px solid #21262d; }
+td.val { font-weight: bold; }
+.hi { color: #3fb950; }
+.lo { color: #f85149; }
+.mid { color: #d29922; }
+.same { color: #8b949e; }
+
+.insight { background: #161b22; border: 2px solid #58a6ff; border-radius: 8px; padding: 20px; margin-bottom: 24px; }
+.insight h3 { font-size: 14px; color: #58a6ff; margin-bottom: 8px; }
+.insight p { font-size: 13px; line-height: 1.6; }
+.insight ul { font-size: 13px; line-height: 1.8; padding-left: 20px; margin-top: 8px; }
+
+.verdict { background: #161b22; border: 2px solid #3fb950; border-radius: 8px; padding: 20px; }
+.verdict h3 { font-size: 14px; color: #3fb950; margin-bottom: 8px; }
+.verdict p { font-size: 13px; line-height: 1.6; }
+.verdict code { background: #21262d; padding: 2px 6px; border-radius: 3px; color: #79c0ff; }
+</style>
+</head>
+<body>
+
+<h1>PLATEAU ANALYSIS</h1>
+<p class="subtitle">Miert all meg 79%-on a CPU Beta es GPU, mikozben a D=2000 longrun 84%-on is emelkedik?</p>
+
+<!-- MAIN CHART: Learning curves -->
+<div class="main-chart">
+  <h2>Tanulasi gorbek — eval bit_acc vs step</h2>
+  <canvas id="mainChart" height="110"></canvas>
+</div>
+
+<!-- CONFIG COMPARISON -->
+<div class="grid">
+  <div class="card">
+    <h3>Config osszehasonlitas</h3>
+    <table>
+      <tr>
+        <th></th>
+        <th>D=2000 longrun</th>
+        <th>GPU (D=6180)</th>
+        <th>CPU Beta (D=618)</th>
+      </tr>
+      <tr>
+        <td>D</td>
+        <td class="val hi">2000</td>
+        <td class="val mid">6180</td>
+        <td class="val lo">618</td>
+      </tr>
+      <tr>
+        <td>depth</td>
+        <td class="val same">2</td>
+        <td class="val same">2</td>
+        <td class="val same">2</td>
+      </tr>
+      <tr>
+        <td>seq_len</td>
+        <td class="val hi">256</td>
+        <td class="val lo">192</td>
+        <td class="val lo">192</td>
+      </tr>
+      <tr>
+        <td>radius</td>
+        <td class="val hi">16</td>
+        <td class="val lo">6</td>
+        <td class="val mid">8</td>
+      </tr>
+      <tr>
+        <td>LCX</td>
+        <td class="val hi">OFF</td>
+        <td class="val lo">ON (tt=1)</td>
+        <td class="val lo">ON (tt=1)</td>
+      </tr>
+      <tr>
+        <td>batch</td>
+        <td class="val same">8</td>
+        <td class="val same">5</td>
+        <td class="val same">10</td>
+      </tr>
+      <tr>
+        <td>params</td>
+        <td class="val same">4.1M</td>
+        <td class="val same">50M</td>
+        <td class="val same">515K</td>
+      </tr>
+      <tr>
+        <td>best eval</td>
+        <td class="val hi">84.4%</td>
+        <td class="val lo">~79%</td>
+        <td class="val lo">79.1%</td>
+      </tr>
+      <tr>
+        <td>trend @ 2000</td>
+        <td class="val hi">EMELKEDIK</td>
+        <td class="val lo">PLATO</td>
+        <td class="val mid">lassul</td>
+      </tr>
+    </table>
+  </div>
+
+  <div class="card">
+    <h3>Overnight depth probe @ 500 step (seq=256, r=16, NO LCX)</h3>
+    <table>
+      <tr><th>Config</th><th>Params</th><th>Eval acc</th></tr>
+      <tr><td>d=1, D=2000</td><td>72K</td><td class="val">74.1%</td></tr>
+      <tr><td class="hi">d=2, D=2000</td><td>4.1M</td><td class="val hi">75.9% → 84.4%*</td></tr>
+      <tr><td>d=4, D=2000</td><td>12M</td><td class="val lo">74.2%</td></tr>
+      <tr><td>d=2, D=4000</td><td>16M</td><td class="val">74.7%</td></tr>
+    </table>
+    <p style="font-size:11px; color:#8b949e; margin-top:8px;">* longrun 2000 stepnel — NEM platozott</p>
+    <p style="font-size:11px; color:#d29922; margin-top:4px;">depth=4 ROSSZABB mint depth=2 (3x param, -1.7%)</p>
+    <p style="font-size:11px; color:#d29922;">D=4000 ROSSZABB mint D=2000 (4x param, -1.2%)</p>
+  </div>
+</div>
+
+<!-- INSIGHT -->
+<div class="insight">
+  <h3>Mi kulonbozik? 3 valtozo egyszerre</h3>
+  <p>A D=2000 longrun 3 dologban ter el a GPU/CPU Beta-tol:</p>
+  <ul>
+    <li><strong>seq_len</strong>: 256 vs 192 — 33% tobb kontextus inputban</li>
+    <li><strong>radius</strong>: 16 vs 6-8 — 2-3x szeles lokalis attention</li>
+    <li><strong>LCX</strong>: OFF vs ON — nincs memory overhead / zaj</li>
+  </ul>
+  <p style="margin-top:12px;">Amit <strong>NEM</strong> magyaraz:</p>
+  <ul>
+    <li><strong>D (modell meretek)</strong> — D=4000 (16M) rosszabb mint D=2000 (4.1M). GPU 50M ≈ CPU 515K.</li>
+    <li><strong>depth</strong> — depth=4 rosszabb mint depth=2. Mindharom kiserlet depth=2.</li>
+    <li><strong>Tobb training step</strong> — GPU 2095 stepnel is plato, D=2000 meg 2000-nel emelkedik.</li>
+  </ul>
+</div>
+
+<!-- VERDICT -->
+<div class="verdict">
+  <h3>Kovetkezo lepes: kontrollalt kiserlet</h3>
+  <p>Nem tudjuk, melyik a 3-bol (seq_len, radius, LCX). Egy <strong>kontrollalt probe</strong> kell:</p>
+  <p style="margin-top:8px;">
+    <code>A</code> CPU Beta config + <strong>seq_len=256</strong> (csak seq_len valtozik)<br>
+    <code>B</code> CPU Beta config + <strong>radius=16</strong> (csak radius valtozik)<br>
+    <code>C</code> CPU Beta config + <strong>LCX OFF</strong> (csak LCX valtozik)<br>
+  </p>
+  <p style="margin-top:8px;">Mind D=618, depth=2, 500 step, CPU. Amelyik kitori 79% fole = az a bottleneck.</p>
+</div>
+
+<script>
+// D=2000 longrun data
+const longrun = [
+  {s:50,a:74.4},{s:100,a:74.6},{s:150,a:74.9},{s:200,a:75.4},{s:250,a:75.8},
+  {s:300,a:75.8},{s:350,a:76.2},{s:400,a:76.8},{s:450,a:76.8},{s:500,a:77.5},
+  {s:550,a:77.9},{s:600,a:78.9},{s:650,a:79.0},{s:700,a:79.6},{s:750,a:80.1},
+  {s:800,a:80.5},{s:850,a:80.7},{s:900,a:81.2},{s:950,a:81.2},{s:1000,a:81.4},
+  {s:1050,a:81.7},{s:1100,a:81.9},{s:1150,a:82.6},{s:1200,a:83.2},{s:1250,a:82.8},
+  {s:1300,a:83.1},{s:1350,a:83.1},{s:1400,a:83.0},{s:1450,a:82.8},{s:1500,a:84.1},
+  {s:1550,a:83.7},{s:1600,a:83.1},{s:1650,a:83.9},{s:1700,a:84.1},{s:1750,a:84.0},
+  {s:1800,a:84.3},{s:1850,a:84.0},{s:1900,a:84.0},{s:1950,a:84.0},{s:2000,a:84.4}
+];
+
+// GPU eval data (sampled every 5th eval for clarity)
+const gpu = [
+  {s:1775,a:73.8},{s:1800,a:76.8},{s:1825,a:77.0},{s:1850,a:76.5},{s:1875,a:81.8},
+  {s:1900,a:78.8},{s:1925,a:77.5},{s:1950,a:78.3},{s:1975,a:79.3},{s:2000,a:80.5},
+  {s:2025,a:75.0},{s:2050,a:75.0},{s:2075,a:76.5},{s:2095,a:78.0}
+];
+
+// CPU Beta endpoint
+const cpuBeta = [{s:1100, a:79.1}];
+
+// CPU tt=2 data
+const cpuTt2 = [
+  {s:0,a:67.2},{s:25,a:73.7},{s:50,a:74.3},{s:75,a:74.4},{s:100,a:75.2},
+  {s:125,a:74.9},{s:150,a:74.9},{s:175,a:74.9},{s:200,a:75.2},{s:225,a:75.1},
+  {s:250,a:75.0},{s:275,a:75.1},{s:300,a:75.0},{s:325,a:75.3},{s:350,a:75.1},
+  {s:375,a:75.3}
+];
+// tt=2 steps are from Beta step 1100, so offset
+const cpuTt2Offset = cpuTt2.map(d => ({s: 1100 + d.s, a: d.a}));
+
+const ctx = document.getElementById('mainChart').getContext('2d');
+new Chart(ctx, {
+  type: 'scatter',
+  data: {
+    datasets: [
+      {
+        label: 'D=2000 longrun (NO LCX, seq=256, r=16)',
+        data: longrun.map(d => ({x: d.s, y: d.a})),
+        borderColor: '#3fb950',
+        backgroundColor: '#3fb95033',
+        showLine: true,
+        borderWidth: 2.5,
+        pointRadius: 2,
+        tension: 0.3
+      },
+      {
+        label: 'GPU D=6180 (LCX ON, seq=192, r=6)',
+        data: gpu.map(d => ({x: d.s, y: d.a})),
+        borderColor: '#f85149',
+        backgroundColor: '#f8514933',
+        showLine: true,
+        borderWidth: 2,
+        pointRadius: 2,
+        tension: 0.3
+      },
+      {
+        label: 'CPU Beta D=618 (LCX ON, seq=192, r=8) — utolso pont',
+        data: cpuBeta.map(d => ({x: d.s, y: d.a})),
+        borderColor: '#d29922',
+        backgroundColor: '#d29922',
+        pointRadius: 8,
+        pointStyle: 'star',
+        showLine: false
+      },
+      {
+        label: 'CPU tt=2 D=618 (LCX ON, seq=192, r=8)',
+        data: cpuTt2Offset.map(d => ({x: d.s, y: d.a})),
+        borderColor: '#d2992288',
+        backgroundColor: '#d2992233',
+        showLine: true,
+        borderWidth: 1.5,
+        borderDash: [4, 4],
+        pointRadius: 1.5,
+        tension: 0.3
+      }
+    ]
+  },
+  options: {
+    responsive: true,
+    plugins: {
+      legend: {
+        labels: { color: '#c9d1d9', font: { size: 11, family: 'monospace' } },
+        position: 'bottom'
+      },
+      tooltip: {
+        callbacks: {
+          label: (ctx) => `${ctx.dataset.label}: ${ctx.parsed.y.toFixed(1)}% @ step ${ctx.parsed.x}`
+        }
+      }
+    },
+    scales: {
+      x: {
+        title: { display: true, text: 'Training step', color: '#8b949e', font: { size: 12 } },
+        grid: { color: '#21262d' },
+        ticks: { color: '#8b949e' }
+      },
+      y: {
+        title: { display: true, text: 'Eval bit_acc %', color: '#8b949e', font: { size: 12 } },
+        grid: { color: '#21262d' },
+        ticks: { color: '#8b949e' },
+        min: 65,
+        max: 86
+      }
+    }
+  }
+});
+</script>
+
+</body>
+</html>
