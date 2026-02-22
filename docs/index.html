@@ -337,9 +337,9 @@
                 <div class="menu-item" data-state="process" data-sub="[ VIEW ARCHITECTURE ]"
                     onclick="window.location.href='dashboard.html'">Blueprint</div>
                 <div class="menu-item" data-state="idle" data-sub="[ NEURAL NETWORK ]"
-                    onclick="window.location.href='#'">Nodes</div>
+                    onclick="window.location.href='products.html'">Nodes</div>
                 <div class="menu-item" data-state="process" data-sub="[ DATABASE QUERY ]"
-                    onclick="window.location.href='#'">Archives</div>
+                    onclick="window.location.href='kb/'">Archives</div>
                 <div class="menu-item" data-state="warning" data-sub="[ SECURE LOGIN ]"
                     onclick="window.location.href='#'">Authenticate</div>
                 <div class="menu-item" data-state="error" data-sub="[ SYSTEM OVERRIDE ]"
@@ -427,10 +427,9 @@
                 const scale = 1 - (curveFactor * 0.5); // Shrink up to 50%
                 const opacity = 1 - (curveFactor * 0.9); // Fade out to near zero edges
 
-                // Curve arc: Center pushes right (+), Top/Bottom pull left (-)
-                // At center (curveFactor = 0), we want it pushed right (+50px)
-                // At edges (curveFactor = 1), we want it pulled left (-150px)
-                const translateX = 100 - (Math.pow(curveFactor, 2) * 250);
+                // Curve arc: Center pushes right (+), Top/Bottom pull aggressively left (-)
+                // Creates a strong half-circle wrapping around the left-side Core
+                const translateX = 200 - (Math.pow(curveFactor, 2) * 1000);
 
                 item.style.transform = `translateY(calc(-50% + ${targetY}px)) translateX(${translateX}px) perspective(1000px) rotateX(${rotateX}deg) scale(${scale})`;
                 item.style.opacity = Math.max(0, opacity);
