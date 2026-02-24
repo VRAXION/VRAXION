@@ -1,0 +1,111 @@
+# ═══════════════════════════════════════════════════════════════
+#  VRAXION v4 — Central Configuration
+#  Single source of truth for all runtime parameters.
+#  Sectioned by module: model, data, (training TBD).
+# ═══════════════════════════════════════════════════════════════
+
+
+# ══════════════════════════════════════════════════════════════
+#  MODEL — instnct.py
+#  Ring + Pointer architecture hyperparameters.
+#  All values sweep-validated unless noted.
+# ══════════════════════════════════════════════════════════════
+
+model:
+
+  # ── M: Ring Slots ───────────────────────────────────────────
+  # Circular buffer size. Slot M wraps to slot 0.
+  # This is the total "memory capacity" of the ring.
+  # Sweep: not yet isolated. Match D as a natural pair.
+  # Cost: VRAM scales with M×D, but attention cost scales with R not M.
+  M: 256              # ring_slots — circular buffer size
+
+  # ── D: Slot Dimension ──────────────────────────────────────
+  # Embedding width of each ring slot and hidden state.
+  # Every tensor in the system is D-wide.
+  # Sweep (2026-02-24, echo, RTX 4070 Ti): D=256 best loss (0.304),
+  #   D>256 underfits due to sequential forward loop bottleneck.
+  #   All sizes fit in VRAM (D=4096=6.5GB), but training throughput
+  #   is the limit, not memory. Input projection needs B/D ratio ≥4x.
+  D: 256              # slot_dims — embedding width
+
+  # ── N: Beings Count ────────────────────────────────────────
+  # Independent agents sharing one ring. Each owns its own
+  # pointer, read projection, and jump destinations.
+  # Sweep (2026-02-24, D=256, echo, CUDA): N=6 best loss (0.2656),
+  #   N=2 close second (0.2708) at 3x speed — good for fast iteration.
+  #   Speed linear with N. N>8 no benefit, N=24 degrades.
+  N: 6                # beings — expert count
+
+  # ── R: Attention Radius ────────────────────────────────────
+  # Soft attention window = 2R+1 slots around pointer.
+  # R=2 → reads 5 slots. Uniform mean-pool (not gaussian).
+  # Tip: R=2 is the sweet spot. R=1 too narrow, R=4+ diminishing.
+  R: 2                # attn_radius — window half-width
+
+  # ── S: Context Scale ───────────────────────────────────────
+  # How much the projected ring read blends into hidden state.
+  # hidden += S * read_proj(read_vec)
+  # Swept 0.00–0.50 across 6 sizes (CPU+GPU): 0.05 geo mean #1.
+  # Note: at D=256 this may benefit from a bump (~0.10–0.15).
+  #   Not yet re-swept at new D — future experiment.
+  S: 0.05             # context_scale — read blend strength
+
+  # ── Jump/Walk Probabilities ────────────────────────────────
+  # Pointer movement blend: p·jump + (1-p)·walk.
+  # Swept 0.50–0.95 × 6 sizes (CPU+GPU), 10 seeds:
+  #   loss surface flat — seed variance 14× param effect.
+  #   0.9/0.1 = geo mean #1. Value barely matters.
+  Je: 0.9             # jump_prob — explorer role (long φ-leap)
+  Jw: 0.1             # walk_prob — walker role (short +1 step)
+                      # neutral beings use fixed 0.5 (not configurable)
+
+
+# ══════════════════════════════════════════════════════════════
+#  DATA — generate.py
+#  Training data generation constants.
+#  These are task design choices, not hyperparameters.
+# ══════════════════════════════════════════════════════════════
+
+data:
+
+  # ── Block Size ─────────────────────────────────────────────
+  # Task pattern granularity — generators structure data in
+  # N-byte chunks. The model reads byte-by-byte (not block-by-block).
+  # BLOCK sets how long the patterns are that the model must
+  # learn to recognise, independent of D.
+  block: 16
+
+  # ── Echo Repeat ────────────────────────────────────────────
+  # echo task: repeat each random block N times.
+  # 7 of 8 consecutive pairs are identical → 87.5% predictable.
+  # The 12.5% random transitions keep the model honest.
+  echo_repeat: 8
+
+  # ── Delay Gap ──────────────────────────────────────────────
+  # delay_echo: number of random filler blocks between original
+  # and its echo. gap = 4 × 16 = 64 bytes. When seq_len < gap,
+  # the original falls outside the attention window — the model
+  # must use ring memory (not just local context) to recall it.
+  delay_gap: 4
+
+  # ── Flip Probability ───────────────────────────────────────
+  # denoise: probability of flipping each bit in the noisy copy.
+  # 10% corruption = enough to destroy naive copy, not so much
+  # that the clean signal is unrecoverable.
+  flip_prob: 0.1
+
+
+# ══════════════════════════════════════════════════════════════
+#  DERIVED (computed, not configurable)
+# ══════════════════════════════════════════════════════════════
+
+# φ Jump Destinations:
+#   dest(n, slot) = (slot + int(M·0.618) + n) % M
+#   0.618 = 1/φ — golden ratio inverse, maximally irrational spacing.
+#   Each being gets unique offset (+n) → no collisions.
+
+# Runtime State (per forward pass):
+#   ring:    Tensor [B, M, D]  — the synaptic ring
+#   hidden:  Tensor [N, B, D]  — hidden state per being
+#   pointer: Tensor [N, B]     — pointer positions (float ∈ [0,M))
