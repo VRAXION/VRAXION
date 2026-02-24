@@ -16,8 +16,10 @@ model:
   # ── M: Ring Slots ───────────────────────────────────────────
   # Circular buffer size. Slot M wraps to slot 0.
   # This is the total "memory capacity" of the ring.
-  # Sweep: not yet isolated. Match D as a natural pair.
-  # Cost: VRAM scales with M×D, but attention cost scales with R not M.
+  # Sweep (2026-02-24, seq=64, 3 tasks): M≥2×seq_len required.
+  #   M<seq → ring overwrites → loss degrades 24-46%.
+  #   M=256 covers seq≤128. Scale M with seq_len for longer runs.
+  # LOCKED — validated across echo, delay_echo, denoise tasks.
   M: 256              # ring_slots — circular buffer size
 
   # ── D: Slot Dimension ──────────────────────────────────────
@@ -27,6 +29,7 @@ model:
   #   D>256 underfits due to sequential forward loop bottleneck.
   #   All sizes fit in VRAM (D=4096=6.5GB), but training throughput
   #   is the limit, not memory. Input projection needs B/D ratio ≥4x.
+  # LOCKED — GPU sweet spot confirmed.
   D: 256              # slot_dims — embedding width
 
   # ── N: Beings Count ────────────────────────────────────────
@@ -35,6 +38,7 @@ model:
   # Sweep (2026-02-24, D=256, echo, CUDA): N=6 best loss (0.2656),
   #   N=2 close second (0.2708) at 3x speed — good for fast iteration.
   #   Speed linear with N. N>8 no benefit, N=24 degrades.
+  # LOCKED — optimal confirmed.
   N: 6                # beings — expert count
 
   # ── R: Attention Radius ────────────────────────────────────
