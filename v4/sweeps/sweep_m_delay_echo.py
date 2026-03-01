@@ -154,7 +154,7 @@ for task_name in task_names:
                 torch.cuda.empty_cache()
                 torch.cuda.reset_peak_memory_stats()
 
-            model = INSTNCT(M=M, D=args.d, N=6, B=B).to(DEV)
+            model = INSTNCT(M=M, embed_dim=args.d, N=6, B=B).to(DEV)
             params = sum(p.numel() for p in model.parameters())
             print("[MODEL] params: %s" % "{:,}".format(params))
 

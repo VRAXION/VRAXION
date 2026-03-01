@@ -1,0 +1,94 @@
+<mxfile host="Electron" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) draw.io/29.5.2 Chrome/142.0.7444.265 Electron/39.6.1 Safari/537.36" version="29.5.2">
+  <diagram name="Write Fix Roadmap" id="roadmap1">
+    <mxGraphModel dx="26261" dy="20181" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1100" pageHeight="1400" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="ph1" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E1D5E7;strokeColor=#9673A6;fontStyle=1;fontSize=14;" value="PHASE 1: WRITE STABILIZATION" vertex="1">
+          <mxGeometry height="40" width="310" x="260" y="20" as="geometry" />
+        </mxCell>
+        <mxCell id="a1" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F8CECC;strokeColor=#B85450;" value="A1: Fixed Scalars (2 params/expert)&lt;br&gt;&lt;b&gt;SIKERTELEN&lt;/b&gt; — paramok nem tanultak 500 lépésnél&lt;br&gt;blob = hosszútávú jelenség" vertex="1">
+          <mxGeometry height="60" width="390" x="220" y="90" as="geometry" />
+        </mxCell>
+        <mxCell id="e_ph1_a1" edge="1" parent="1" source="ph1" style="edgeStyle=orthogonalEdgeStyle;" target="a1" />
+        <mxCell id="s1" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF2CC;strokeColor=#D6B656;" value="&lt;b&gt;Step 1:&lt;/b&gt; 3000 lépéses baseline bench futtatás&lt;br&gt;ring diagnostics ON (SVD rank, adj_cos)" vertex="1">
+          <mxGeometry height="50" width="340" x="245" y="190" as="geometry" />
+        </mxCell>
+        <mxCell id="e_a1_s1" edge="1" parent="1" source="a1" style="edgeStyle=orthogonalEdgeStyle;" target="s1" />
+        <mxCell id="here" parent="1" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;fontColor=#CC0000;fontSize=13;fontStyle=1;" value="⬅ ITT TARTUNK" vertex="1">
+          <mxGeometry height="30" width="140" x="595" y="200" as="geometry" />
+        </mxCell>
+        <mxCell id="d_blob" parent="1" style="rhombus;whiteSpace=wrap;html=1;fillColor=#DAE8FC;strokeColor=#6C8EBF;" value="Blob megjelenik&lt;br&gt;3000 lépésnél?&lt;br&gt;&lt;i&gt;(rank↓ cos→1)&lt;/i&gt;" vertex="1">
+          <mxGeometry height="110" width="200" x="315" y="280" as="geometry" />
+        </mxCell>
+        <mxCell id="e_s1_d" edge="1" parent="1" source="s1" style="edgeStyle=orthogonalEdgeStyle;" target="d_blob" />
+        <mxCell id="noblob" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#666666;fontColor=#333333;" value="Bench nem reprodukálja&lt;br&gt;→ Mini Head (biztosabb)&lt;br&gt;→ teszt közvetlenül main modellen" vertex="1">
+          <mxGeometry height="60" width="240" x="20" y="305" as="geometry" />
+        </mxCell>
+        <mxCell id="e_d_noblob" edge="1" parent="1" source="d_blob" style="edgeStyle=orthogonalEdgeStyle;fontStyle=1;" target="noblob" value="Nem" />
+        <mxCell id="s2" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF2CC;strokeColor=#D6B656;" value="&lt;b&gt;Step 2:&lt;/b&gt; A/B teszt a fix-ekre (3000 lépés)" vertex="1">
+          <mxGeometry height="40" width="270" x="280" y="430" as="geometry" />
+        </mxCell>
+        <mxCell id="e_d_s2" edge="1" parent="1" source="d_blob" style="edgeStyle=orthogonalEdgeStyle;fontStyle=1;" target="s2" value="Igen" />
+        <mxCell id="optA" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#D5E8D4;strokeColor=#82B366;" value="&lt;b&gt;A: Scalars (ugyanaz, 2 param)&lt;/b&gt;&lt;br&gt;Hosszabb futás → talán megtanulnak&lt;br&gt;&lt;i&gt;olcsó teszt&lt;/i&gt;" vertex="1">
+          <mxGeometry height="60" width="230" x="80" y="510" as="geometry" />
+        </mxCell>
+        <mxCell id="e_s2_A" edge="1" parent="1" source="s2" style="edgeStyle=orthogonalEdgeStyle;" target="optA" />
+        <mxCell id="optB" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#D5E8D4;strokeColor=#82B366;" value="&lt;b&gt;B: Mini Head — Linear(H→2)&lt;/b&gt;&lt;br&gt;Kontextus-függő erase + write_gate&lt;br&gt;&lt;i&gt;GPT is ezt javasolta&lt;/i&gt;" vertex="1">
+          <mxGeometry height="60" width="240" x="510" y="510" as="geometry" />
+        </mxCell>
+        <mxCell id="e_s2_B" edge="1" parent="1" source="s2" style="edgeStyle=orthogonalEdgeStyle;" target="optB" />
+        <mxCell id="cmp" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF2CC;strokeColor=#D6B656;" value="Összehasonlítás: ring health + accuracy&lt;br&gt;&lt;i&gt;SVD rank, adj_cos, peak_acc, fresh_acc&lt;/i&gt;" vertex="1">
+          <mxGeometry height="45" width="320" x="255" y="610" as="geometry" />
+        </mxCell>
+        <mxCell id="e_A_cmp" edge="1" parent="1" source="optA" style="edgeStyle=orthogonalEdgeStyle;" target="cmp" />
+        <mxCell id="e_B_cmp" edge="1" parent="1" source="optB" style="edgeStyle=orthogonalEdgeStyle;" target="cmp" />
+        <mxCell id="d_winner" parent="1" style="rhombus;whiteSpace=wrap;html=1;fillColor=#DAE8FC;strokeColor=#6C8EBF;" value="Nyertes javítja a&lt;br&gt;blobot + acc OK?" vertex="1">
+          <mxGeometry height="90" width="190" x="320" y="690" as="geometry" />
+        </mxCell>
+        <mxCell id="e_cmp_d2" edge="1" parent="1" source="cmp" style="edgeStyle=orthogonalEdgeStyle;" target="d_winner" />
+        <mxCell id="deep" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F8CECC;strokeColor=#B85450;" value="Egyik sem működik →&lt;br&gt;mélyebb architekturális probléma&lt;br&gt;&lt;i&gt;write mechanizmus újragondolása&lt;/i&gt;" vertex="1">
+          <mxGeometry height="55" width="240" x="570" y="705" as="geometry" />
+        </mxCell>
+        <mxCell id="e_d2_deep" edge="1" parent="1" source="d_winner" style="edgeStyle=orthogonalEdgeStyle;fontStyle=1;" target="deep" value="Nem" />
+        <mxCell id="ship" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#D5E8D4;strokeColor=#82B366;fontSize=13;fontStyle=1;" value="&lt;b&gt;BEÉPÍTÉS&lt;/b&gt; — write fix integrálás train.py-ba" vertex="1">
+          <mxGeometry height="40" width="320" x="255" y="830" as="geometry" />
+        </mxCell>
+        <mxCell id="e_d2_ship" edge="1" parent="1" source="d_winner" style="edgeStyle=orthogonalEdgeStyle;fontStyle=1;" target="ship" value="Igen" />
+        <mxCell id="e_noblob_ship" edge="1" parent="1" source="noblob" style="edgeStyle=orthogonalEdgeStyle;dashed=1;strokeColor=#999999;fontColor=#999999;fontStyle=2;" target="ship" value="bench skip" />
+        <mxCell id="ph2" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E1D5E7;strokeColor=#9673A6;fontStyle=1;fontSize=14;" value="PHASE 2: C19 SATURÁCIÓ ELLENŐRZÉS" vertex="1">
+          <mxGeometry height="40" width="360" x="235" y="910" as="geometry" />
+        </mxCell>
+        <mxCell id="e_ship_ph2" edge="1" parent="1" source="ship" style="edgeStyle=orthogonalEdgeStyle;" target="ph2" />
+        <mxCell id="mon" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF2CC;strokeColor=#D6B656;" value="Main training futtatás write fix-szel&lt;br&gt;C19 szaturáció monitorozás (|tanh| &gt; 0.95 %)" vertex="1">
+          <mxGeometry height="45" width="340" x="245" y="980" as="geometry" />
+        </mxCell>
+        <mxCell id="e_ph2_mon" edge="1" parent="1" source="ph2" style="edgeStyle=orthogonalEdgeStyle;" target="mon" />
+        <mxCell id="d_c19" parent="1" style="rhombus;whiteSpace=wrap;html=1;fillColor=#DAE8FC;strokeColor=#6C8EBF;" value="C19 szaturáció&lt;br&gt;megoldódott?" vertex="1">
+          <mxGeometry height="80" width="160" x="335" y="1060" as="geometry" />
+        </mxCell>
+        <mxCell id="e_mon_d3" edge="1" parent="1" source="mon" style="edgeStyle=orthogonalEdgeStyle;" target="d_c19" />
+        <mxCell id="c19y" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#D5E8D4;strokeColor=#82B366;" value="Skip — write fix&lt;br&gt;magától megoldotta" vertex="1">
+          <mxGeometry height="40" width="170" x="115" y="1078" as="geometry" />
+        </mxCell>
+        <mxCell id="e_d3_y" edge="1" parent="1" source="d_c19" style="edgeStyle=orthogonalEdgeStyle;fontStyle=1;" target="c19y" value="Igen" />
+        <mxCell id="c19n" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF2CC;strokeColor=#D6B656;" value="C19 fix külön szükséges&lt;br&gt;&lt;i&gt;(init scale, grad clamp, stb.)&lt;/i&gt;" vertex="1">
+          <mxGeometry height="40" width="200" x="545" y="1078" as="geometry" />
+        </mxCell>
+        <mxCell id="e_d3_n" edge="1" parent="1" source="d_c19" style="edgeStyle=orthogonalEdgeStyle;fontStyle=1;" target="c19n" value="Nem" />
+        <mxCell id="ph3" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E1D5E7;strokeColor=#9673A6;fontStyle=1;fontSize=14;" value="PHASE 3: SOFT ADDRESSING / POINTER" vertex="1">
+          <mxGeometry height="40" width="340" x="245" y="1180" as="geometry" />
+        </mxCell>
+        <mxCell id="e_c19y_ph3" edge="1" parent="1" source="c19y" style="edgeStyle=orthogonalEdgeStyle;" target="ph3" />
+        <mxCell id="e_c19n_ph3" edge="1" parent="1" source="c19n" style="edgeStyle=orthogonalEdgeStyle;" target="ph3" />
+        <mxCell id="sa" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF2CC;strokeColor=#D6B656;" value="Differenciálható pointer&lt;br&gt;Tartalom-alapú címzés&lt;br&gt;&lt;i&gt;(fix p++ pointer helyett)&lt;/i&gt;" vertex="1">
+          <mxGeometry height="55" width="270" x="280" y="1250" as="geometry" />
+        </mxCell>
+        <mxCell id="e_ph3_sa" edge="1" parent="1" source="ph3" style="edgeStyle=orthogonalEdgeStyle;" target="sa" />
+        <mxCell id="legend" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#000066;strokeColor=#999999;fontSize=11;align=left;spacingLeft=8;" value="&lt;b&gt;Jelmagyarázat&lt;/b&gt;&lt;br&gt;🟡 Sárga = akció lépés&lt;br&gt;🔵 Kék rombusz = döntési pont&lt;br&gt;🟢 Zöld = pozitív eredmény&lt;br&gt;🔴 Piros = sikertelen / probléma&lt;br&gt;🟣 Lila = fázis fejléc" vertex="1">
+          <mxGeometry height="120" width="200" x="735" y="30" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

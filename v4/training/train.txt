@@ -1,0 +1,949 @@
+"""INSTNCT v4 Training Harness — byte-level model training with masked supervision.
+
+Connects the data pipeline (.traindat + .mask files) to the INSTNCT model.
+Supports both synthetic data (echo, denoise from generate.py) and real-world
+data (text/code shards from convert.py) in the same format.
+
+Two modes:
+    binary (default): each byte → 8-bit float vector, MSE loss
+    embed (--embed):  each byte → token index 0-255, CrossEntropy loss
+
+Usage:
+    python train.py --data training_data --steps 10000
+    python train.py --data training_data/echo256.traindat --embed --steps 500
+    python train.py --resume training_output/ckpt_latest.pt --steps 20000
+    python train.py --data training_data --device cuda --batch 64 --seq 256
+"""
+
+import argparse
+import bisect
+import csv
+import math
+import os
+import shutil
+import sys
+import time
+import traceback
+from datetime import datetime, timezone
+from pathlib import Path
+
+import numpy as np
+import torch
+import torch.nn.functional as F
+import yaml
+
+# ── Model import ──────────────────────────────────────────────
+# INSTNCT lives in model/instnct.py — a sibling directory to training/.
+# Python can't find it without help, so we add model/ to the import path.
+# This is a standard R&D pattern; a proper package install replaces it later.
+
+# resolve() normalizes the path (symlinks, case) — robust across platforms;
+# parent.parent walks: training/train.py → training/ → v4/ — the project root;
+# then we append 'model' to land in v4/model/ where instnct.py lives.
+_MODEL_DIR = Path(__file__).resolve().parent.parent / 'model'
+
+# fail fast with a clear message if the directory structure has changed —
+# without this, the import below would raise a confusing ModuleNotFoundError
+if not _MODEL_DIR.is_dir():
+    raise FileNotFoundError(f"Model directory not found: {_MODEL_DIR}")
+
+# convert to string for sys.path compatibility, then guard against duplicate
+# entries (matters if this module is somehow imported more than once)
+_MODEL_DIR_STR = str(_MODEL_DIR)
+if _MODEL_DIR_STR not in sys.path:
+    sys.path.insert(0, _MODEL_DIR_STR)  # index 0 = highest priority on the search path
+
+# now the import resolves to v4/model/instnct.py — the INSTNCT ring-buffer network;
+# type: ignore silences Pylance (can't follow runtime sys.path);
+# noqa: E402 silences flake8 (import not at top-of-file, because sys.path must come first)
+from instnct import INSTNCT  # type: ignore[import-not-found]  # noqa: E402
+
+
+# ── Config ────────────────────────────────────────────────────
+# vraxion_config.yaml is the single source of truth for all runtime parameters.
+# This loader mirrors the one in instnct.py — both read the same YAML,
+# just different sections (model vs training).
+
+def _load_yaml(section: str) -> dict:
+    """Load one section from vraxion_config.yaml. Fails loud if missing."""
+
+    # navigate: training/train.py → training/ → v4/ → config/vraxion_config.yaml
+    cfg_path = Path(__file__).parent.parent / 'config' / 'vraxion_config.yaml'
+
+    # existence check — fail immediately with a clear path, not a buried IOError
+    if not cfg_path.exists():
+        raise FileNotFoundError(f"Config not found: {cfg_path}")
+
+    # safe_load blocks arbitrary Python execution (unlike yaml.load) — always use safe;
+    # YAMLError catch turns cryptic scanner exceptions into a one-line message
+    try:
+        with open(cfg_path, encoding='utf-8') as f:
+            root = yaml.safe_load(f)
+    except yaml.YAMLError as e:
+        raise RuntimeError(f"Corrupted YAML in {cfg_path}: {e}") from e
+
+    # empty YAML returns None, broken YAML might return a list — guard both
+    if not isinstance(root, dict):
+        raise RuntimeError(f"Expected dict in {cfg_path}, got {type(root).__name__}")
+
+    # tell the user what sections DO exist — saves a round-trip to open the file manually
+    if section not in root:
+        raise KeyError(f"Missing '{section}' in {cfg_path} (have: {list(root.keys())})")
+
+    # guard against `training: 42` or `training: [list]` — must be a key-value mapping;
+    # without this, the caller would get a confusing TypeError deep in config access
+    result = root[section]
+    if not isinstance(result, dict):
+        raise TypeError(
+            f"Section '{section}' in {cfg_path} must be a dict, "
+            f"got {type(result).__name__}: {result!r}"
+        )
+
+    return result
+
+
+# checkpoint format version — bump when adding/removing keys from the saved dict;
+# func_loadckpt_dct can compare this to decide if a checkpoint is compatible
+CKPT_VERSION = 1
+
+
+# ── Data Discovery ────────────────────────────────────────────
+# The data pipeline produces .traindat + .mask file pairs (generate.py, convert.py).
+# This function finds them, no matter how the user points at them:
+# a single file, a flat directory, or nested shard subdirectories.
+
+def func_discover_dat(data_path_str: str) -> list[tuple[Path, Path, int]]:
+    """Discover .traindat + .mask file pairs from a path.
+
+    Handles three cases:
+        1. Specific .traindat file → single pair
+        2. Flat directory with .traindat files → all pairs
+        3. Directory with shard subdirs (real_text/, real_code/) → recurse
+
+    Returns list of (traindat_path, mask_path, byte_count) sorted by path.
+    Raises FileNotFoundError if nothing found."""
+
+    # CLI passes strings; convert once at the boundary so the rest works with Path
+    data_path = Path(data_path_str)
+
+    # ── Case 1: explicit .traindat file path ──
+    if data_path.is_file() and data_path.suffix == '.traindat':
+        # convention: echo256.traindat always has a matching echo256.mask next to it
+        mask_path = data_path.with_suffix('.mask')
+        if not mask_path.exists():
+            raise FileNotFoundError(f"Mask file missing: {mask_path}")
+
+        # reject 0-byte files — same guard as the directory branch below;
+        # without this, ByteDataset would create a 0-sample dataset
+        sz = data_path.stat().st_size
+        if sz == 0:
+            raise ValueError(f"Training data file is empty (0 bytes): {data_path}")
+
+        # mask must be exactly the same size as traindat — one mask byte per data byte;
+        # a mismatch means stale mask from a previous generation run, and would cause
+        # silent out-of-bounds reads or garbage supervision signals in ByteDataset
+        mask_sz = mask_path.stat().st_size
+        if mask_sz != sz:
+            raise ValueError(
+                f"Size mismatch: {data_path.name} is {sz} bytes "
+                f"but {mask_path.name} is {mask_sz} bytes"
+            )
+
+        return [(data_path, mask_path, sz)]
+
+    # ── Case 2/3: directory (flat or with shard subdirs) ──
+    if not data_path.is_dir():
+        raise FileNotFoundError(f"Data path not found: {data_path}")
+
+    # rglob recurses into subdirectories — finds shards in real_text/, real_code/ etc.;
+    # sorted() guarantees deterministic ordering across runs (reproducibility)
+    pairs = []
+    for td in sorted(data_path.rglob('*.traindat')):
+        mask = td.with_suffix('.mask')
+
+        # warn if a .traindat has no matching .mask — likely a generation bug;
+        # we skip it rather than crash, but the user should know
+        if not mask.exists():
+            print(f'  [WARN] skipping {td.name} — no matching .mask file')
+            continue
+
+        # skip empty files — they contribute 0 samples and waste a memmap slot
+        sz = td.stat().st_size
+        if sz == 0:
+            continue
+
+        # mask must be byte-for-byte aligned with traindat — one mask byte per data byte;
+        # a stale or truncated mask would silently corrupt supervision in ByteDataset
+        mask_sz = mask.stat().st_size
+        if mask_sz != sz:
+            print(f'  [WARN] skipping {td.name} — size mismatch '
+                  f'(data={sz}, mask={mask_sz})')
+            continue
+
+        pairs.append((td, mask, sz))
+
+    if not pairs:
+        raise FileNotFoundError(f"No .traindat/.mask pairs found in {data_path}")
+
+    return pairs
+
+
+# ── Dataset ───────────────────────────────────────────────────
+# The core data feeder: maps raw bytes from disk into tensors the model can eat.
+# Uses memory-mapped I/O (np.memmap) so multi-GB datasets don't fill RAM —
+# the OS pages in bytes on demand, and we never hold the full file in memory.
+
+class ByteDataset:
+    """Memory-mapped random-offset dataset for .traindat + .mask files.
+
+    Concatenates multiple files into a virtual byte stream. Samples
+    random byte positions and returns (x, y, mask) tuples ready for
+    the model.
+
+    Binary mode: x/y = (batch, seq_len, 8) float32
+    Embed mode:  x/y = (batch, seq_len) int64
+    Mask always: (batch, seq_len) or (batch, seq_len, 1) float32
+    """
+
+    def __init__(self, file_pairs: list[tuple[Path, Path, int]],
+                 seq_len: int, embed_mode: bool):
+        self.seq_len = seq_len
+        self.embed_mode = embed_mode
+        self.file_pairs = file_pairs
+
+        # cumulative byte offsets: [0, sz1, sz1+sz2, ...] — treats N files as one
+        # contiguous stream; bisect_right finds which file a global offset falls in
+        self._cum = [0]
+        for _, _, sz in file_pairs:
+            self._cum.append(self._cum[-1] + sz)
+
+        # mmaps are opened lazily on first access and cached for the session;
+        # dict (not list) because file indices may not be contiguous in future
+        self._data_mmaps: dict[int, np.ndarray] = {}
+        self._mask_mmaps: dict[int, np.ndarray] = {}
+
+    @property
+    def total_bytes(self) -> int:
+        return self._cum[-1]
+
+    @property
+    def n_samples(self) -> int:
+        """Number of valid random start positions.
+        Each sample reads seq_len+1 bytes (x overlaps y by 1), so the last
+        valid offset is total_bytes - seq_len - 1, giving total_bytes - seq_len
+        valid positions (0 through total_bytes - seq_len - 1 inclusive)."""
+        return max(0, self.total_bytes - self.seq_len)
+
+    def _get_mmap(self, file_idx: int) -> tuple[np.ndarray, np.ndarray]:
+        """Get or create mmap for file at index."""
+        if file_idx not in self._data_mmaps:
+            td_path, mask_path, _ = self.file_pairs[file_idx]
+            # mode='r' = read-only; the OS handles paging from disk transparently
+            self._data_mmaps[file_idx] = np.memmap(td_path, dtype=np.uint8, mode='r')
+            self._mask_mmaps[file_idx] = np.memmap(mask_path, dtype=np.uint8, mode='r')
+        return self._data_mmaps[file_idx], self._mask_mmaps[file_idx]
+
+    def _read_bytes(self, global_offset: int, length: int) -> tuple[np.ndarray, np.ndarray]:
+        """Read `length` bytes of data + mask starting at global_offset.
+        Handles spans crossing file boundaries."""
+
+        # pre-allocate output buffers — filled in chunks if the read spans files
+        data_buf = np.empty(length, dtype=np.uint8)
+        mask_buf = np.empty(length, dtype=np.uint8)
+        written = 0
+
+        while written < length:
+            # bisect_right on cumulative offsets → O(log n) file lookup;
+            # subtract 1 because cum[i] is the START of file i
+            file_idx = bisect.bisect_right(self._cum, global_offset + written) - 1
+            # local_off = position within this specific file
+            local_off = (global_offset + written) - self._cum[file_idx]
+            data_mm, mask_mm = self._get_mmap(file_idx)
+            # how many bytes remain in this file from local_off onward
+            available = len(data_mm) - local_off
+            # take as many as we need, but don't exceed what's available
+            take = min(length - written, available)
+
+            data_buf[written:written + take] = data_mm[local_off:local_off + take]
+            mask_buf[written:written + take] = mask_mm[local_off:local_off + take]
+            written += take
+            # if take < remaining, the loop continues into the next file
+
+        return data_buf, mask_buf
+
+    def sample_batch(self, batch_size: int, device: str) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+        """Sample a random batch of sequences.
+
+        Returns (x, y, supervision_mask):
+            binary: x/y = (B, T, 8) float, mask = (B, T, 1) float
+            embed:  x/y = (B, T) long,     mask = (B, T) float
+        """
+        T = self.seq_len
+        # uniform random offsets into the virtual byte stream;
+        # each offset yields a (T+1)-byte window: x = [0:T], y = [1:T+1]
+        offsets = np.random.randint(0, self.n_samples, size=batch_size)
+
+        # read raw bytes for all samples: T+1 because y is shifted by 1
+        data_all = np.empty((batch_size, T + 1), dtype=np.uint8)
+        mask_all = np.empty((batch_size, T + 1), dtype=np.uint8)
+        for i, off in enumerate(offsets):
+            data_all[i], mask_all[i] = self._read_bytes(int(off), T + 1)
+
+        # supervision mask aligned with targets — mask[1:] because we predict
+        # byte[t+1] from byte[t], so supervision applies to the prediction target
+        sup = mask_all[:, 1:].astype(np.float32)  # (batch, T)
+
+        if self.embed_mode:
+            # embed mode: each byte is a token index (0–255), model outputs (B, T, 256)
+            x = torch.from_numpy(data_all[:, :T].astype(np.int64)).to(device)
+            y = torch.from_numpy(data_all[:, 1:T + 1].astype(np.int64)).to(device)
+            mask_t = torch.from_numpy(sup).to(device)          # (B, T) — flat for CE loss
+        else:
+            # binary mode: unpack each byte into 8 float bits (MSB first)
+            flat = np.unpackbits(data_all.reshape(-1))         # flatten → unpack all
+            bits = flat.reshape(batch_size, T + 1, 8).astype(np.float32)
+            # .copy() is critical — without it, torch.from_numpy shares the numpy
+            # buffer, and any later numpy operation could silently corrupt the tensor
+            x = torch.from_numpy(bits[:, :T].copy()).to(device)
+            y = torch.from_numpy(bits[:, 1:T + 1].copy()).to(device)
+            # mask is (B, T, 1) for broadcasting against (B, T, 8) predictions
+            mask_t = torch.from_numpy(sup).unsqueeze(-1).to(device)  # (B, T, 1)
+
+        return x, y, mask_t
+
+
+# ── Masked Loss ───────────────────────────────────────────────
+# Two loss functions — one per training mode (binary / embed).
+# Both return (raw_loss, masked_loss):
+#   raw_loss   = unmasked average over ALL positions (for logging context)
+#   masked_loss = average over SUPERVISED positions only (the actual training signal)
+# The mask (0=unsupervised, 1=supervised) controls which positions contribute
+# to gradients. Unsupervised positions still see raw_loss for diagnostics.
+
+def func_maskloss_mse(pred, target, mask):
+    """Masked MSE loss for binary mode.
+
+    Args:
+        pred:   (B, T, 8) float — model output, 8 bits per position
+        target: (B, T, 8) float — ground truth bits
+        mask:   (B, T, 1) float — 0=unsupervised, 1=supervised
+
+    Returns (raw_loss, masked_loss) — both scalar tensors."""
+
+    # raw_loss: standard unmasked MSE — logs how the model is doing on everything,
+    # including unsupervised positions; useful for detecting overfitting to mask patterns
+    raw_loss = F.mse_loss(pred, target)
+
+    # manual per-element squared error — we need the un-reduced tensor
+    # to apply the mask before averaging (F.mse_loss reduces internally)
+    sq_err = (pred - target) ** 2               # (B, T, 8)
+
+    # zero out unsupervised positions: mask (B,T,1) broadcasts across the 8-bit dim;
+    # only supervised positions contribute to the numerator
+    masked_sq = sq_err * mask                   # zero where unsupervised
+
+    # denominator: total supervised ELEMENTS (not positions) — mask.sum() counts
+    # supervised positions, ×8 because each position has 8 bit-values;
+    # clamp(min=1) prevents 0/0 = NaN when an entire batch is unsupervised
+    n_sup = mask.sum() * pred.shape[-1]         # total supervised elements
+    masked_loss = masked_sq.sum() / n_sup.clamp(min=1)
+
+    return raw_loss, masked_loss
+
+
+def func_maskloss_ce(pred, target, mask):
+    """Masked CrossEntropy loss for embed mode.
+
+    Args:
+        pred:   (B, T, 256) float logits — one logit per possible byte value
+        target: (B, T) long — ground truth byte values 0-255
+        mask:   (B, T) float — 0=unsupervised, 1=supervised
+
+    Returns (raw_loss, masked_loss) — both scalar tensors."""
+
+    # F.cross_entropy expects class dim at index 1: (B, V, T) not (B, T, V).
+    # transpose(1,2) swaps dims without copying data (stride metadata only) —
+    # this avoids the reshape(-1, V) → reshape(B, T) round-trip which could
+    # trigger a hidden contiguous() copy if pred's memory layout isn't C-contiguous.
+    # The output is already (B, T), no reshape needed.
+    per_pos = F.cross_entropy(
+        pred.transpose(1, 2), target, reduction='none'
+    )  # (B, T) — one loss value per position, no reshape needed
+    raw_loss = per_pos.mean()                   # unmasked average for logging
+
+    # mask out unsupervised positions — per_pos is already (B, T)
+    masked_ce = per_pos * mask                  # zero where unsupervised
+
+    # average over supervised positions only; clamp prevents NaN on all-zero masks
+    n_sup = mask.sum().clamp(min=1)
+    masked_loss = masked_ce.sum() / n_sup
+
+    return raw_loss, masked_loss
+
+
+# ── Accuracy ─────────────────────────────────────────────────
+# Two accuracy functions — one per training mode (binary / embed).
+# Both return (raw_acc, masked_acc):
+#   raw_acc    = fraction correct over ALL positions (for logging context)
+#   masked_acc = fraction correct over SUPERVISED positions only
+# Computed from the same pred/target tensors used for loss — zero extra cost.
+# These run inside the training loop but do NOT contribute to gradients.
+
+@torch.no_grad()
+def func_accuracy_bin(pred, target, mask):
+    """Bit-level accuracy for binary mode.
+
+    pred/target are (B, T, 8) float tensors. A bit is "correct" when
+    round(pred) == round(target) — both snapped to {0, 1}.
+    mask is (B, T, 1) — already broadcastable against (B, T, 8).
+    Returns (raw_acc, masked_acc) — both float scalars."""
+
+    # round both to {0,1} and compare element-wise; shape (B, T, 8)
+    correct = (pred.round() == target.round()).float()
+
+    # raw: fraction correct over all B×T×8 bits
+    raw_acc = correct.mean().item()
+
+    # masked: only count supervised positions (mask=1)
+    # mask arrives as (B, T, 1) in binary mode — broadcasts against (B, T, 8) naturally
+    n_sup = mask.sum() * pred.shape[-1]                # total supervised bits
+    masked_acc = (correct * mask).sum() / n_sup.clamp(min=1)
+
+    return raw_acc, masked_acc.item()
+
+
+@torch.no_grad()
+def func_accuracy_emb(pred, target, mask):
+    """Byte-level accuracy for embed mode.
+
+    pred is (B, T, 256) float logits — argmax gives the predicted byte.
+    target is (B, T) long — the actual byte value.
+    Returns (raw_acc, masked_acc) — both float scalars."""
+
+    # argmax over vocab dim → predicted byte index; shape (B, T)
+    correct = (pred.argmax(-1) == target).float()      # 1.0 = exact match, 0.0 = miss
+
+    # raw: fraction correct over all B×T positions
+    raw_acc = correct.mean().item()
+
+    # masked: only count supervised positions (mask=1); mask is already (B, T)
+    n_sup = mask.sum().clamp(min=1)
+    masked_acc = (correct * mask).sum() / n_sup
+
+    return raw_acc, masked_acc.item()
+
+
+# ── LR Schedule ──────────────────────────────────────────────
+# Stateless warmup + cosine decay — no scheduler object to save/restore.
+# The function is pure: lr = f(step, config). Resume works automatically
+# because step number encodes all the history the schedule needs.
+
+def _compute_lr(base_lr: float, step: int, warmup: int, total: int) -> float:
+    """Compute learning rate for a given step.
+
+    Linear warmup from ~0 to base_lr over `warmup` steps, then
+    cosine decay from base_lr to 0 over the remaining steps.
+    Stateless — depends only on step number, not on history."""
+
+    # warmup phase: ramp linearly from near-zero to base_lr;
+    # (step+1) so the very first step gets lr > 0, not exactly 0
+    if warmup > 0 and step < warmup:
+        return base_lr * (step + 1) / warmup
+
+    # cosine decay phase: smooth curve from base_lr → 0;
+    # cos(0) = 1 → full lr at start of decay; cos(π) = -1 → 0 at end
+    progress = (step - warmup) / max(1, total - warmup)
+    return base_lr * 0.5 * (1.0 + math.cos(math.pi * progress))
+
+
+# ── Checkpoint ────────────────────────────────────────────────
+# Save/load core training state: model weights, optimizer state, step counter,
+# best loss, config snapshot, and a UTC timestamp for forensics.
+# Note: RNG states (torch/numpy/random) are NOT saved — resume is not bitwise
+# deterministic, but that's acceptable for stochastic training.
+# CKPT_VERSION (defined above) gates loading — if the format changes, old
+# checkpoints are rejected rather than silently corrupting a resumed run.
+
+def func_saveckpt_non(path, model, optimizer, step, best_loss, config):
+    """Save training checkpoint to disk.
+
+    Uses write-to-temp + atomic rename so a crash mid-save cannot corrupt
+    the target file. If the process dies during torch.save, only the .tmp
+    file is left behind — the previous checkpoint stays intact."""
+
+    # write to a temp file first — if torch.save crashes (OOM, Ctrl+C,
+    # power loss), the .tmp is garbage but the target path is untouched
+    tmp_path = str(path) + '.tmp'
+    torch.save({
+        'ckpt_version': CKPT_VERSION,
+        'step': step,
+        'best_loss': best_loss,
+        'model_state': model.state_dict(),
+        'optimizer_state': optimizer.state_dict(),
+        'config': config,
+        'timestamp': datetime.now(timezone.utc).isoformat(),
+    }, tmp_path)
+
+    # os.replace is atomic on the same filesystem (POSIX guarantee, Windows
+    # best-effort) — the target file is either fully old or fully new, never
+    # half-written. This is the standard pattern for crash-safe file updates.
+    os.replace(tmp_path, str(path))
+
+
+def func_loadckpt_dct(path, device):
+    """Load checkpoint from disk. Returns raw dict.
+
+    Validates checkpoint format version against CKPT_VERSION — a mismatch
+    means the checkpoint layout changed and blindly resuming could load
+    wrong keys or missing state, silently corrupting the training run."""
+
+    if not Path(path).exists():
+        raise FileNotFoundError(f"Checkpoint not found: {path}")
+
+    # weights_only=False because we save config (a plain dict), not just tensors;
+    # this is safe here because checkpoints are self-generated, not untrusted input
+    ckpt = torch.load(path, map_location=device, weights_only=False)
+
+    # guard against loading a non-checkpoint file (e.g. a raw tensor or model-only export);
+    # without this, the .get() below would throw a cryptic AttributeError
+    if not isinstance(ckpt, dict):
+        raise RuntimeError(
+            f"Expected checkpoint dict, got {type(ckpt).__name__}. "
+            f"Is {path} a valid training checkpoint?"
+        )
+
+    # version gate — catch silent incompatibility before it corrupts training;
+    # pre-version checkpoints get 0, which != CKPT_VERSION(1), so they fail loud
+    saved_ver = ckpt.get('ckpt_version', 0)
+    if saved_ver != CKPT_VERSION:
+        raise RuntimeError(
+            f"Checkpoint version mismatch: file has v{saved_ver}, "
+            f"code expects v{CKPT_VERSION}. Cannot safely resume."
+        )
+    return ckpt
+
+
+# ── CSV Logger ────────────────────────────────────────────────
+# Lightweight append-only CSV for training curves. One row per log interval.
+# The file is human-readable and trivially loadable by pandas/Excel/gnuplot.
+# Flush-per-row minimizes data loss on crash — at most one row can be lost
+# (flush pushes to OS cache, not physical disk, but that's good enough for CSV logs).
+
+class CSVLogger:
+    """Append-only CSV logger for training metrics."""
+
+    # column order is the contract — tools that parse train_log.csv depend on this.
+    # accuracy = fraction of correct predictions over ALL positions (raw).
+    # masked_acc = fraction of correct predictions over SUPERVISED positions only.
+    COLUMNS = ['step', 'raw_loss', 'masked_loss', 'accuracy', 'masked_acc',
+               'lr', 'elapsed_s', 'samples_seen', 'mask_frac']
+
+    def __init__(self, path: Path):
+        self.path = path
+
+        # write header only on first creation or if the file is empty;
+        # on resume, the file already has a header + previous rows — just append
+        write_header = not path.exists() or path.stat().st_size == 0
+
+        # newline='' is required by the csv module on Windows to prevent double \r\n;
+        # append mode ('a') ensures resume doesn't overwrite previous log entries
+        self._f = open(path, 'a', newline='', encoding='utf-8')
+        self._w = csv.writer(self._f)
+        if write_header:
+            self._w.writerow(self.COLUMNS)
+            self._f.flush()
+
+    def log(self, step, raw_loss, masked_loss, accuracy, masked_acc,
+            lr, elapsed_s, samples_seen, mask_frac):
+        """Append one row. Flushes immediately so the last step is never lost."""
+        self._w.writerow([
+            step,
+            f'{raw_loss:.6f}',        # 6 decimals — enough to see convergence trends
+            f'{masked_loss:.6f}',
+            f'{accuracy:.6f}',         # fraction correct over ALL positions
+            f'{masked_acc:.6f}',       # fraction correct over SUPERVISED positions only
+            f'{lr:.6f}',
+            f'{elapsed_s:.1f}',        # wall clock since training start
+            samples_seen,              # cumulative across all runs (total exposure)
+            f'{mask_frac:.4f}',        # fraction of supervised positions in this batch
+        ])
+        self._f.flush()                # flush Python buffer → OS write cache (not fsync)
+
+    def close(self):
+        self._f.close()
+
+
+# ── Boot Info ─────────────────────────────────────────────────
+# One-shot diagnostics printed at startup. No state mutation — purely informational.
+# Intended for the user to sanity-check before a long training run:
+# "is this the right GPU? right data? right mode?"
+
+def func_bootinfo_non(config, model, dataset, device):
+    """Print boot diagnostics — environment, model, data, and config at a glance."""
+    print(f'VRAXION v4 — INSTNCT Training Harness')
+    print(f'{"=" * 52}')
+    print(f'[BOOT] Python     {sys.version.split()[0]}')
+    print(f'[BOOT] PyTorch    {torch.__version__}')
+    print(f'[BOOT] Device     {device}')
+    # GPU info only if CUDA is actually in play — str() wraps in case device is torch.device.
+    # Derive GPU index from device string ("cuda:1" → 1, "cuda" → 0) so multi-GPU
+    # setups report the ACTUAL device, not always GPU 0.
+    if 'cuda' in str(device) and torch.cuda.is_available():
+        gpu_idx = torch.device(device).index or 0
+        print(f'[BOOT] GPU        {torch.cuda.get_device_name(gpu_idx)}')
+        vram = torch.cuda.get_device_properties(gpu_idx).total_memory / 1024**3
+        print(f'[BOOT] VRAM       {vram:.1f} GB')
+    # total params (trainable + frozen) — INSTNCT has no frozen params so this is all trainable
+    n_params = sum(p.numel() for p in model.parameters())
+    print(f'[BOOT] Params     {n_params:,}')
+    mode = 'embed (256 tokens, CE loss)' if config['embed_mode'] else 'binary (8-bit, MSE loss)'
+    print(f'[BOOT] Mode       {mode}')
+    print(f'[BOOT] Data       {len(dataset.file_pairs)} file(s), '
+          f'{dataset.total_bytes / 1024**2:.1f} MB, '
+          f'{dataset.n_samples:,} samples')
+    print(f'[BOOT] Batch      {config["batch_size"]} x {config["seq_len"]} bytes')
+    print(f'[BOOT] Steps      {config["steps"]:,}')
+    print(f'[BOOT] LR         {config["lr"]}')
+    warmup = config.get('warmup_steps', 0)
+    if warmup > 0:
+        print(f'[BOOT] Warmup     {warmup} steps (cosine decay after)')
+    else:
+        print(f'[BOOT] Schedule   constant (no warmup)')
+    grad_clip = config.get('max_grad_norm', 0)
+    if grad_clip > 0:
+        print(f'[BOOT] Grad clip  {grad_clip}')
+    patience = config.get('patience', 0)
+    if patience > 0:
+        print(f'[BOOT] Patience   {patience} save intervals')
+    print(f'[BOOT] Save every {config["save_every"]} steps')
+    print(f'[BOOT] Log every  {config["log_every"]} steps')
+    print()
+
+
+# ── Training Loop ─────────────────────────────────────────────
+# Orchestrates the full training lifecycle: device selection, data loading,
+# model creation, optional checkpoint resume, and the step loop itself.
+# Stability guards: NaN/Inf detection, gradient clipping, LR warmup + cosine
+# decay, and optional early stopping (patience). No DDP — single GPU only.
+
+def train(config):
+    """Main training loop."""
+    # ── Device ──
+    # "auto" → prefer GPU, fall back to CPU. Explicit "cuda"/"cpu" bypasses.
+    dev_str = config.get('device', 'auto')
+    if dev_str == 'auto':
+        device = 'cuda' if torch.cuda.is_available() else 'cpu'
+    else:
+        device = dev_str
+
+    # ── Data ──
+    files = func_discover_dat(config['data_dir'])
+    dataset = ByteDataset(files, config['seq_len'], config['embed_mode'])
+
+    # n_samples = total_bytes - seq_len. For a full batch we need
+    # n_samples >= batch_size, i.e. total_bytes >= seq_len + batch_size.
+    if dataset.n_samples < config['batch_size']:
+        raise ValueError(
+            f"Not enough data: {dataset.n_samples} samples < batch_size {config['batch_size']}. "
+            f"Need at least {config['seq_len'] + config['batch_size']} bytes of training data."
+        )
+
+    # Guard against zero-interval configs — these cause ZeroDivisionError on modulo.
+    for k in ('heartbeat_every', 'log_every', 'save_every'):
+        if config.get(k, 1) < 1:
+            raise ValueError(f"Config '{k}' must be >= 1, got {config[k]}")
+
+    # ── Model ──
+    # Single-device allocation. .to(device) moves all parameters + buffers.
+    model = INSTNCT(embed_mode=config['embed_mode']).to(device)
+    opt = torch.optim.Adam(model.parameters(), lr=config['lr'])
+
+    # ── Output dir ──
+    out_dir = Path(config['out_dir'])
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    # ── Resume ──
+    # start_step=0 means fresh run; overridden below if resuming.
+    # best_loss=inf guarantees the first step always becomes the new best.
+    start_step = 0
+    best_loss = float('inf')
+
+    if config.get('resume'):
+        resume_path = config['resume']
+        if resume_path == 'latest':
+            resume_path = str(out_dir / 'ckpt_latest.pt')
+        ckpt = func_loadckpt_dct(resume_path, device)
+        # load_state_dict is strict by default — shape/key mismatches crash here
+        # (e.g. resuming with wrong embed_mode). That's intentional: fail loud.
+        model.load_state_dict(ckpt['model_state'])
+        # map_location in func_loadckpt_dct already moved optimizer tensors
+        # to the correct device, so no manual .to() needed here.
+        opt.load_state_dict(ckpt['optimizer_state'])
+        start_step = ckpt['step']
+        best_loss = ckpt['best_loss']
+        # Warn if config changed between runs — common for LR tuning, dangerous
+        # for seq_len/embed_mode (architecture mismatch). PyTorch would crash
+        # above if embed_mode differs, so these warnings are a courtesy.
+        old_cfg = ckpt.get('config', {})
+        for key in ['seq_len', 'embed_mode', 'batch_size']:
+            if key in old_cfg and old_cfg[key] != config.get(key):
+                print(f'[WARN] Config mismatch: {key} was {old_cfg[key]}, now {config[key]}')
+        print(f'[RESUME] step={start_step}  best_loss={best_loss:.6f}  from {resume_path}')
+
+    # ── Boot ──
+    func_bootinfo_non(config, model, dataset, device)
+
+    if config['steps'] <= start_step:
+        print(f'[DONE] Already at step {start_step} >= target {config["steps"]}. Nothing to do.')
+        return
+
+    # ── Logger ──
+    csv_log = CSVLogger(out_dir / 'train_log.csv')
+    # Select loss AND accuracy functions once, not per-step.
+    # loss_fn returns (raw_loss, masked_loss). acc_fn returns (raw_acc, masked_acc).
+    loss_fn = func_maskloss_ce if config['embed_mode'] else func_maskloss_mse
+    acc_fn  = func_accuracy_emb if config['embed_mode'] else func_accuracy_bin
+
+    # ── Loop ──
+    t0 = time.perf_counter()
+    model.train()  # enable dropout/batchnorm train behavior (INSTNCT has neither, but convention)
+
+    # NaN/Inf guard state — consecutive NaN count; 10 in a row = divergence, abort
+    nan_count = 0
+    s = start_step  # last completed step (1-indexed); updated inside loop
+
+    # Early stopping state — tracked at save intervals, not per-step (too noisy)
+    prev_best = best_loss
+    stale_saves = 0
+
+    # Reset CUDA peak stats so the final report shows THIS run's peak, not
+    # accumulated from previous PyTorch work in the same process.
+    if 'cuda' in device:
+        torch.cuda.empty_cache()
+        torch.cuda.reset_peak_memory_stats()
+
+    for step in range(start_step, config['steps']):
+        # 1-indexed for display — used by heartbeat, log, save, and NaN guard messages
+        s = step + 1
+
+        # ── LR Schedule ──
+        # Compute LR from step number — warmup ramps from ~0 to base_lr,
+        # then cosine decays to 0. Stateless: no scheduler state to save.
+        lr = _compute_lr(config['lr'], step, config['warmup_steps'], config['steps'])
+        for pg in opt.param_groups:
+            pg['lr'] = lr
+
+        # ── Forward ──
+        # sample_batch returns tensors already on `device` — no extra .to() needed.
+        xb, yb, mask = dataset.sample_batch(config['batch_size'], device)
+
+        pred = model(xb)
+        # loss_fn returns two values: raw_loss (all positions) and masked_loss
+        # (supervised positions only). We optimize masked_loss but log both.
+        raw_loss, masked_loss = loss_fn(pred, yb, mask)
+
+        # ── NaN/Inf guard ──
+        # Silent NaN/Inf in loss would corrupt gradients, optimizer state, checkpoint.
+        # Detect and skip the entire step. One bad batch is recoverable;
+        # corrupted optimizer momentum buffers are not.
+        if not torch.isfinite(masked_loss):
+            nan_count += 1
+            print(f'  [NAN] step {s} -- loss={masked_loss.item()}, skipping ({nan_count} consecutive)')
+            if nan_count >= 10:
+                raise RuntimeError(
+                    f'NaN/Inf loss in {nan_count} consecutive steps -- training is diverging. '
+                    f'Try lower lr or check data.'
+                )
+            continue
+        nan_count = 0  # reset on healthy step
+
+        # ── Backward ──
+        opt.zero_grad()
+        masked_loss.backward()
+        # gradient clipping — caps the global norm to prevent a single bad batch
+        # from blowing up optimizer momentum; 0 = disabled, 1.0 is a safe default
+        if config['max_grad_norm'] > 0:
+            torch.nn.utils.clip_grad_norm_(model.parameters(), config['max_grad_norm'])
+        opt.step()
+
+        # .item() detaches from the graph — safe to hold across iterations.
+        lv = masked_loss.item()
+        if lv < best_loss:
+            best_loss = lv
+
+        # ── Heartbeat ──
+        if s % config['heartbeat_every'] == 0:
+            elapsed = time.perf_counter() - t0
+            sps = s - start_step
+            rate = sps / elapsed if elapsed > 0 else 0
+            print(f'  [{s}/{config["steps"]}] loss={lv:.6f}  best={best_loss:.6f}'
+                  f'  {elapsed:.1f}s  {rate:.1f} step/s')
+
+        # ── CSV Log ──
+        # Log at regular intervals AND on the very first step (to capture initial loss).
+        # acc_fn reuses the pred/yb/mask tensors already in memory — zero extra forward pass.
+        if s % config['log_every'] == 0 or s == start_step + 1:
+            raw_acc, masked_acc = acc_fn(pred, yb, mask)
+            elapsed = time.perf_counter() - t0
+            mf = mask.mean().item()
+            csv_log.log(s, raw_loss.item(), lv, raw_acc, masked_acc,
+                        lr, elapsed, s * config['batch_size'], mf)
+
+        # ── Checkpoint ──
+        if s % config['save_every'] == 0:
+            ckpt_path = out_dir / f'ckpt_step_{s:06d}.pt'
+            func_saveckpt_non(ckpt_path, model, opt, s, best_loss, config)
+            shutil.copy2(ckpt_path, out_dir / 'ckpt_latest.pt')
+            print(f'  [SAVE] {ckpt_path}')
+
+            # ── Early stopping ──
+            # Measured at save intervals (not per-step) to smooth out noise.
+            # If best_loss hasn't improved for `patience` consecutive save checks,
+            # training has plateaued — stop and save the user's GPU time.
+            if config['patience'] > 0:
+                if best_loss < prev_best:
+                    prev_best = best_loss
+                    stale_saves = 0
+                else:
+                    stale_saves += 1
+                    if stale_saves >= config['patience']:
+                        print(f'  [EARLY STOP] No improvement for {config["patience"]} '
+                              f'save intervals (best={best_loss:.6f})')
+                        break
+
+    # ── Final ──
+    # s = last completed step (1-indexed). If early stopping triggered, the
+    # checkpoint was already saved inside the save block (early stop is always
+    # at a save point). If normal completion, save only if the last step wasn't
+    # already a save point — avoids rewriting an identical checkpoint.
+    if s % config['save_every'] != 0:
+        final_path = out_dir / f'ckpt_step_{s:06d}.pt'
+        func_saveckpt_non(final_path, model, opt, s, best_loss, config)
+        shutil.copy2(final_path, out_dir / 'ckpt_latest.pt')
+    csv_log.close()
+
+    # ── Summary ──
+    # Mirror the boot info block: give the user a quick glance at what happened.
+    elapsed = time.perf_counter() - t0
+    total_steps = s - start_step
+    rate = total_steps / elapsed if elapsed > 0 else 0
+
+    print()
+    print(f'[DONE] {total_steps} steps in {elapsed:.1f}s ({rate:.1f} step/s)')
+    print(f'       best_loss={best_loss:.6f}')
+    if 'cuda' in device:
+        # max_memory_allocated tracks the high-water mark since reset_peak_memory_stats().
+        peak = torch.cuda.max_memory_allocated() / 1024**2
+        print(f'       peak_vram={peak:.0f} MB')
+    print(f'       checkpoint: {out_dir / "ckpt_latest.pt"}')
+    print(f'       log: {out_dir / "train_log.csv"}')
+
+
+# ── CLI ───────────────────────────────────────────────────────
+# Config merge: CLI args > YAML file > hardcoded defaults.
+# Most keys go through all three tiers. Exceptions:
+#   - `resume` is CLI-only (no YAML default — intentional).
+#   - `heartbeat_every` is YAML-only (no CLI flag — too niche).
+# All args use default=None so we can distinguish "user didn't pass this"
+# from "user explicitly set this". The merge logic below relies on that.
+
+def func_parsecli_dct() -> dict:
+    """Parse CLI args, merge with YAML config. CLI overrides YAML."""
+    # Load YAML defaults — missing file or missing section is fine, just use {}.
+    try:
+        yaml_cfg = _load_yaml('training')
+    except (FileNotFoundError, KeyError):
+        yaml_cfg = {}
+
+    parser = argparse.ArgumentParser(
+        description='INSTNCT v4 Training Harness',
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""examples:
+  python train.py --data training_data --steps 10000
+  python train.py --data training_data/echo256.traindat --embed --steps 500
+  python train.py --resume latest --steps 20000""",
+    )
+
+    parser.add_argument('--data', default=None,
+                        help='path to training data dir or .traindat file')
+    # No `choices` constraint — allows cuda:0, cuda:1, etc. for multi-GPU.
+    # Invalid strings (e.g. "banana") crash at model.to(device) with a clear error.
+    parser.add_argument('--device', default=None,
+                        help='device (default: auto). e.g. cuda, cpu, cuda:1')
+    parser.add_argument('--steps', type=int, default=None,
+                        help='total training steps')
+    parser.add_argument('--batch', type=int, default=None,
+                        help='batch size')
+    parser.add_argument('--seq', type=int, default=None,
+                        help='sequence length in bytes')
+    parser.add_argument('--lr', type=float, default=None,
+                        help='learning rate')
+    parser.add_argument('--embed', action='store_true', default=None,
+                        help='use embed mode (256 tokens, CrossEntropy)')
+    parser.add_argument('--resume', default=None,
+                        help='checkpoint path to resume from ("latest" = auto)')
+    parser.add_argument('--log-every', type=int, default=None,
+                        help='CSV logging interval (steps)')
+    parser.add_argument('--save-every', type=int, default=None,
+                        help='checkpoint save interval (steps)')
+    parser.add_argument('--out', default=None,
+                        help='output directory for checkpoints + logs')
+    parser.add_argument('--warmup', type=int, default=None,
+                        help='LR warmup steps (default: from config or 0)')
+    parser.add_argument('--grad-clip', type=float, default=None,
+                        help='gradient clipping max norm (0=disabled, default: from config or 1.0)')
+    parser.add_argument('--patience', type=int, default=None,
+                        help='early stopping: save intervals without improvement (0=disabled)')
+
+    args = parser.parse_args()
+
+    # Merge: CLI > YAML > hardcoded defaults.
+    # All string args use `is not None` (not `or`) to avoid falsy-short-circuit
+    # on empty strings. `--embed` is store_true so it's True or None — no way
+    # to force False from CLI if YAML sets embed_mode: true (rare edge case).
+    config = {
+        'data_dir':        args.data if args.data is not None else yaml_cfg.get('data_dir', 'training_data'),
+        'device':          args.device if args.device is not None else yaml_cfg.get('device', 'auto'),
+        'steps':           args.steps if args.steps is not None else yaml_cfg.get('steps', 10000),
+        'batch_size':      args.batch if args.batch is not None else yaml_cfg.get('batch_size', 32),
+        'seq_len':         args.seq if args.seq is not None else yaml_cfg.get('seq_len', 128),
+        'lr':              args.lr if args.lr is not None else yaml_cfg.get('lr', 1e-3),
+        'embed_mode':      args.embed if args.embed is not None else yaml_cfg.get('embed_mode', False),
+        'resume':          args.resume,
+        'log_every':       args.log_every if args.log_every is not None else yaml_cfg.get('log_every', 100),
+        'save_every':      args.save_every if args.save_every is not None else yaml_cfg.get('save_every', 1000),
+        'heartbeat_every': yaml_cfg.get('heartbeat_every', 10),
+        'out_dir':         args.out if args.out is not None else yaml_cfg.get('out_dir', 'training_output'),
+        'warmup_steps':    args.warmup if args.warmup is not None else yaml_cfg.get('warmup_steps', 0),
+        'max_grad_norm':   args.grad_clip if args.grad_clip is not None else yaml_cfg.get('max_grad_norm', 1.0),
+        'patience':        args.patience if args.patience is not None else yaml_cfg.get('patience', 0),
+    }
+
+    # Resolve relative paths from v4/ root so `python training/train.py --data foo`
+    # works the same as `cd v4 && python training/train.py --data foo`.
+    v4_root = Path(__file__).parent.parent
+    for key in ('data_dir', 'out_dir'):
+        p = Path(config[key])
+        if not p.is_absolute():
+            config[key] = str(v4_root / p)
+
+    return config
+
+
+# ── Entry Point ───────────────────────────────────────────────
+# Top-level exception handling: KeyboardInterrupt is NOT an error (exit 0),
+# everything else prints the full traceback and exits with code 1 so that
+# shell scripts and CI can detect failure.
+
+if __name__ == '__main__':
+    cfg = func_parsecli_dct()
+
+    try:
+        train(cfg)
+    except KeyboardInterrupt:
+        print('\n[INTERRUPTED] Training stopped by user.')
+        sys.exit(0)
+    except Exception as e:
+        print(f'[FATAL] {type(e).__name__}: {e}')
+        traceback.print_exc()
+        sys.exit(1)

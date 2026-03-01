@@ -1,0 +1,721 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>INSTNCT v4 — Architecture Reference</title>
+<style>
+  :root {
+    --bg: #1a1b26;
+    --bg2: #24283b;
+    --bg3: #2f3347;
+    --fg: #c0caf5;
+    --fg-dim: #737aa2;
+    --accent: #7aa2f7;
+    --amber: #e0af68;
+    --green: #9ece6a;
+    --red: #f7768e;
+    --purple: #bb9af7;
+    --cyan: #7dcfff;
+    --orange: #ff9e64;
+    --border: #3b4261;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--fg);
+    font-family: 'Segoe UI', 'Inter', system-ui, -apple-system, sans-serif;
+    line-height: 1.6;
+    padding: 2rem;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+
+  h1 {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--accent);
+    margin-bottom: 0.5rem;
+    letter-spacing: -0.02em;
+  }
+
+  h1 span { color: var(--fg-dim); font-weight: 400; font-size: 1rem; }
+
+  h2 {
+    font-size: 1.3rem;
+    font-weight: 600;
+    color: var(--amber);
+    margin-top: 3rem;
+    margin-bottom: 1rem;
+    padding-bottom: 0.4rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  h3 {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--fg);
+    margin-top: 1.5rem;
+    margin-bottom: 0.5rem;
+  }
+
+  p, li { color: var(--fg); margin-bottom: 0.6rem; font-size: 0.95rem; }
+
+  .subtitle {
+    color: var(--fg-dim);
+    font-size: 0.95rem;
+    margin-bottom: 2rem;
+  }
+
+  /* Parameter table */
+  .param-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 0.75rem;
+    margin: 1.5rem 0;
+  }
+
+  .param-card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.75rem 1rem;
+  }
+
+  .param-card .label {
+    font-size: 0.75rem;
+    color: var(--fg-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .param-card .value {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--accent);
+    font-family: 'Cascadia Code', 'JetBrains Mono', monospace;
+  }
+
+  .param-card .desc {
+    font-size: 0.8rem;
+    color: var(--fg-dim);
+    margin-top: 0.2rem;
+  }
+
+  /* SVG containers */
+  .diagram-container {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin: 1.5rem 0;
+    overflow-x: auto;
+  }
+
+  .diagram-container svg {
+    display: block;
+    margin: 0 auto;
+  }
+
+  /* Legend */
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.2rem;
+    margin: 1rem 0;
+    padding: 0.8rem 1rem;
+    background: var(--bg3);
+    border-radius: 8px;
+    font-size: 0.85rem;
+  }
+
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+
+  .legend-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  /* Tables */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1rem 0;
+    font-size: 0.9rem;
+  }
+
+  th {
+    background: var(--bg3);
+    color: var(--amber);
+    font-weight: 600;
+    text-align: left;
+    padding: 0.6rem 1rem;
+    border-bottom: 2px solid var(--border);
+  }
+
+  td {
+    padding: 0.5rem 1rem;
+    border-bottom: 1px solid var(--border);
+    color: var(--fg);
+  }
+
+  td:first-child {
+    font-family: 'Cascadia Code', 'JetBrains Mono', monospace;
+    color: var(--cyan);
+    font-size: 0.85rem;
+  }
+
+  tr:hover td { background: var(--bg3); }
+
+  code {
+    font-family: 'Cascadia Code', 'JetBrains Mono', monospace;
+    background: var(--bg3);
+    padding: 0.1em 0.4em;
+    border-radius: 4px;
+    font-size: 0.85em;
+    color: var(--cyan);
+  }
+
+  .two-col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+    margin: 1.5rem 0;
+  }
+
+  @media (max-width: 800px) {
+    .two-col { grid-template-columns: 1fr; }
+  }
+
+  .note {
+    background: var(--bg3);
+    border-left: 3px solid var(--amber);
+    padding: 0.8rem 1rem;
+    border-radius: 0 8px 8px 0;
+    margin: 1rem 0;
+    font-size: 0.9rem;
+    color: var(--fg-dim);
+  }
+
+  .formula {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1rem 1.2rem;
+    margin: 1rem 0;
+    font-family: 'Cascadia Code', 'JetBrains Mono', monospace;
+    font-size: 0.95rem;
+    color: var(--purple);
+    text-align: center;
+  }
+</style>
+</head>
+<body>
+
+<h1>INSTNCT v4 <span>Architecture Reference</span></h1>
+<p class="subtitle">Ring-buffer pointer network with N parallel experts, phi-jump routing, and soft read/write memory. Source: <code>model/instnct.py</code> (273 lines).</p>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<h2>Parameters</h2>
+
+<div class="param-grid">
+  <div class="param-card">
+    <div class="label">M — Ring Slots</div>
+    <div class="value">256</div>
+    <div class="desc">Circular buffer capacity</div>
+  </div>
+  <div class="param-card">
+    <div class="label">D — Slot Dims</div>
+    <div class="value">256</div>
+    <div class="desc">Embedding width per slot</div>
+  </div>
+  <div class="param-card">
+    <div class="label">N — Experts</div>
+    <div class="value">6</div>
+    <div class="desc">Parallel agents on ring</div>
+  </div>
+  <div class="param-card">
+    <div class="label">R — Attn Radius</div>
+    <div class="value">2</div>
+    <div class="desc">Window = 2R+1 = 5 slots</div>
+  </div>
+  <div class="param-card">
+    <div class="label">S — Context Scale</div>
+    <div class="value">0.05</div>
+    <div class="desc">Read blend strength</div>
+  </div>
+  <div class="param-card">
+    <div class="label">Je / Jw</div>
+    <div class="value">0.9 / 0.1</div>
+    <div class="desc">Jump / Walk probability</div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<h2>Ring Buffer Topology</h2>
+
+<p>The ring is a circular buffer of M=256 slots, each holding a D=256 vector. Six experts share this memory, reading and writing through sliding attention windows. Pointers move via golden-ratio jumps for maximal coverage.</p>
+
+<div class="diagram-container">
+<svg viewBox="0 0 700 520" width="700" height="520" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <marker id="arrow-amber" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+      <path d="M0,0 L8,3 L0,6" fill="none" stroke="#e0af68" stroke-width="1.2"/>
+    </marker>
+    <marker id="arrow-blue" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+      <path d="M0,0 L8,3 L0,6" fill="none" stroke="#7aa2f7" stroke-width="1.2"/>
+    </marker>
+    <marker id="arrow-green" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+      <path d="M0,0 L8,3 L0,6" fill="none" stroke="#9ece6a" stroke-width="1.2"/>
+    </marker>
+  </defs>
+
+  <!-- Ring circle -->
+  <circle cx="280" cy="260" r="190" fill="none" stroke="#3b4261" stroke-width="2"/>
+  <circle cx="280" cy="260" r="190" fill="none" stroke="#565f89" stroke-width="0.5" stroke-dasharray="2.95,1.48" />
+
+  <!-- Slot tick marks (every 8th slot = 32 ticks) -->
+  <g stroke="#565f89" stroke-width="1">
+    <line x1="280" y1="62" x2="280" y2="70" />      <!-- 0 -->
+    <line x1="315.3" y1="62.7" x2="314.9" y2="70.7" /> <!-- 8 -->
+    <line x1="349.5" y1="65.0" x2="348.3" y2="72.9" /> <!-- 16 -->
+    <line x1="381.5" y1="68.9" x2="379.5" y2="76.6" /> <!-- 24 -->
+    <line x1="410.5" y1="74.5" x2="407.9" y2="82.0" /> <!-- 32 -->
+    <line x1="435.6" y1="81.6" x2="432.5" y2="88.8" /> <!-- 40 -->
+    <line x1="456.4" y1="90.0" x2="452.8" y2="97.0" /> <!-- 48 -->
+    <line x1="462.0" y1="125.0" x2="455.5" y2="129.5" /> <!-- ~56 -->
+    <line x1="470.0" y1="160.0" x2="463.0" y2="162.5" /> <!-- 64 -->
+    <line x1="472.0" y1="195.0" x2="465.0" y2="196.0" /> <!-- ~72 -->
+    <line x1="470.0" y1="230.0" x2="463.0" y2="229.5" /> <!-- 80 -->
+    <line x1="472.0" y1="260.0" x2="464.0" y2="260.0" /> <!-- ~88 -->
+    <line x1="470.0" y1="290.0" x2="463.0" y2="290.5" /> <!-- 96 -->
+    <line x1="472.0" y1="325.0" x2="465.0" y2="324.0" /> <!-- ~104 -->
+    <line x1="462.0" y1="395.0" x2="455.5" y2="390.5" /> <!-- ~120 -->
+    <line x1="280.0" y1="458.0" x2="280.0" y2="450.0" /> <!-- 128 -->
+    <line x1="88.0" y1="260.0" x2="96.0" y2="260.0" />   <!-- 192 -->
+  </g>
+
+  <!-- Slot labels -->
+  <g font-family="'Cascadia Code', monospace" font-size="11" fill="#565f89" text-anchor="middle">
+    <text x="280" y="55">0</text>
+    <text x="478" y="264">64</text>
+    <text x="280" y="472">128</text>
+    <text x="78" y="264">192</text>
+  </g>
+
+  <!-- Attention window highlight (5 slots around expert 0 at slot ~20) -->
+  <path d="M 342,72 A 190,190 0 0,1 390,84" stroke="#e0af68" stroke-width="12" fill="none" opacity="0.3" stroke-linecap="round"/>
+  <text x="395" y="62" font-family="'Cascadia Code', monospace" font-size="10" fill="#e0af68">window (2R+1=5)</text>
+
+  <!-- Expert pointers -->
+  <!-- Explorer 0 (blue, at slot ~20) -->
+  <circle cx="365" cy="78" r="7" fill="#7aa2f7" opacity="0.9"/>
+  <text x="378" y="74" font-family="'Cascadia Code', monospace" font-size="9" fill="#7aa2f7">E0</text>
+
+  <!-- Walker 1 (green, at slot ~50) -->
+  <circle cx="460" cy="94" r="7" fill="#9ece6a" opacity="0.9"/>
+  <text x="468" y="106" font-family="'Cascadia Code', monospace" font-size="9" fill="#9ece6a">W1</text>
+
+  <!-- Neutral 2 (gray, at slot ~100) -->
+  <circle cx="465" cy="310" r="7" fill="#737aa2" opacity="0.9"/>
+  <text x="473" y="322" font-family="'Cascadia Code', monospace" font-size="9" fill="#737aa2">N2</text>
+
+  <!-- Explorer 3 (blue, at slot ~140) -->
+  <circle cx="220" cy="440" r="7" fill="#7aa2f7" opacity="0.9"/>
+  <text x="200" y="452" font-family="'Cascadia Code', monospace" font-size="9" fill="#7aa2f7">E3</text>
+
+  <!-- Walker 4 (green, at slot ~180) -->
+  <circle cx="102" cy="305" r="7" fill="#9ece6a" opacity="0.9"/>
+  <text x="78" y="310" font-family="'Cascadia Code', monospace" font-size="9" fill="#9ece6a">W4</text>
+
+  <!-- Neutral 5 (gray, at slot ~220) -->
+  <circle cx="138" cy="135" r="7" fill="#737aa2" opacity="0.9"/>
+  <text x="113" y="138" font-family="'Cascadia Code', monospace" font-size="9" fill="#737aa2">N5</text>
+
+  <!-- Phi-jump arc from E0 (slot ~20) to destination (~178) -->
+  <path d="M 358,84 Q 280,260 108,295" stroke="#7aa2f7" stroke-width="1.5" fill="none" stroke-dasharray="6,3" marker-end="url(#arrow-blue)" opacity="0.7"/>
+  <text x="200" y="210" font-family="'Cascadia Code', monospace" font-size="10" fill="#7aa2f7" opacity="0.7" transform="rotate(-40, 200, 210)">phi-jump (Je=0.9)</text>
+
+  <!-- Walk arrow from W1 (slot ~50 to ~51) -->
+  <path d="M 460,101 Q 462,108 463,115" stroke="#9ece6a" stroke-width="1.5" fill="none" marker-end="url(#arrow-green)" opacity="0.7"/>
+  <text x="478" y="118" font-family="'Cascadia Code', monospace" font-size="10" fill="#9ece6a" opacity="0.7">+1 walk</text>
+
+  <!-- Center text -->
+  <text x="280" y="245" font-family="'Segoe UI', sans-serif" font-size="14" fill="#c0caf5" text-anchor="middle" font-weight="600">Ring Buffer</text>
+  <text x="280" y="265" font-family="'Cascadia Code', monospace" font-size="12" fill="#737aa2" text-anchor="middle">M=256 slots</text>
+  <text x="280" y="282" font-family="'Cascadia Code', monospace" font-size="12" fill="#737aa2" text-anchor="middle">D=256 dims each</text>
+
+  <!-- Phi formula -->
+  <rect x="505" y="170" width="185" height="100" rx="8" fill="#24283b" stroke="#3b4261" stroke-width="1"/>
+  <text x="597" y="192" font-family="'Cascadia Code', monospace" font-size="10" fill="#bb9af7" text-anchor="middle">dest(i, j) =</text>
+  <text x="597" y="210" font-family="'Cascadia Code', monospace" font-size="10" fill="#bb9af7" text-anchor="middle">(j + floor(M/phi) + i) % M</text>
+  <text x="597" y="235" font-family="'Cascadia Code', monospace" font-size="9" fill="#565f89" text-anchor="middle">1/phi = 0.618...</text>
+  <text x="597" y="252" font-family="'Cascadia Code', monospace" font-size="9" fill="#565f89" text-anchor="middle">step = floor(256 * 0.618) = 158</text>
+
+  <!-- Pointer blend formula -->
+  <rect x="505" y="290" width="185" height="65" rx="8" fill="#24283b" stroke="#3b4261" stroke-width="1"/>
+  <text x="597" y="312" font-family="'Cascadia Code', monospace" font-size="10" fill="#e0af68" text-anchor="middle">new_ptr =</text>
+  <text x="597" y="330" font-family="'Cascadia Code', monospace" font-size="10" fill="#e0af68" text-anchor="middle">p * jump + (1-p) * walk</text>
+  <text x="597" y="348" font-family="'Cascadia Code', monospace" font-size="9" fill="#565f89" text-anchor="middle">differentiable soft blend</text>
+
+</svg>
+</div>
+
+<div class="legend">
+  <div class="legend-item"><div class="legend-dot" style="background:#7aa2f7"></div> Explorer (Je=0.9) — long phi-jumps</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#9ece6a"></div> Walker (Jw=0.1) — short +1 steps</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#737aa2"></div> Neutral (0.5) — balanced blend</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#e0af68"></div> Attention window (2R+1 slots)</div>
+</div>
+
+<p>Each expert is assigned a role in round-robin: expert <code>i</code> gets role <code>i % 3</code>. With N=6: two explorers (E0, E3), two walkers (W1, W4), two neutrals (N2, N5). This guarantees both broad coverage (explorers) and local continuity (walkers) on every timestep.</p>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<h2>Forward Pass</h2>
+
+<p>One call to <code>model.forward(x)</code> processes T timesteps sequentially. Each timestep runs N experts in series, each performing the full read-accumulate-write-move cycle.</p>
+
+<div class="diagram-container">
+<svg viewBox="0 0 700 920" width="700" height="920" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <marker id="arr" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+      <path d="M0,0.5 L7,3 L0,5.5" fill="none" stroke="#565f89" stroke-width="1"/>
+    </marker>
+    <marker id="arr-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+      <path d="M0,0.5 L7,3 L0,5.5" fill="none" stroke="#7aa2f7" stroke-width="1"/>
+    </marker>
+    <marker id="arr-amber" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+      <path d="M0,0.5 L7,3 L0,5.5" fill="none" stroke="#e0af68" stroke-width="1"/>
+    </marker>
+  </defs>
+
+  <!-- ── INPUT ── -->
+  <rect x="235" y="15" width="230" height="40" rx="8" fill="#2f3347" stroke="#7aa2f7" stroke-width="1.5"/>
+  <text x="350" y="40" font-family="'Cascadia Code', monospace" font-size="13" fill="#7aa2f7" text-anchor="middle">Input x</text>
+  <text x="500" y="40" font-family="'Cascadia Code', monospace" font-size="10" fill="#565f89">(B, T, 8) or (B, T)</text>
+
+  <!-- Arrow down -->
+  <line x1="350" y1="55" x2="350" y2="80" stroke="#565f89" stroke-width="1.2" marker-end="url(#arr)"/>
+
+  <!-- ── INIT ── -->
+  <rect x="185" y="82" width="330" height="50" rx="8" fill="#24283b" stroke="#3b4261" stroke-width="1"/>
+  <text x="350" y="101" font-family="'Segoe UI', sans-serif" font-size="12" fill="#fg-dim" text-anchor="middle" fill="#737aa2">Initialize state (all zeros)</text>
+  <text x="350" y="120" font-family="'Cascadia Code', monospace" font-size="10" fill="#565f89" text-anchor="middle">ring(B,M,D)  ptr(N,B)  hidden(N,B,D)</text>
+
+  <!-- Arrow down -->
+  <line x1="350" y1="132" x2="350" y2="157" stroke="#565f89" stroke-width="1.2" marker-end="url(#arr)"/>
+
+  <!-- ══ TIMESTEP LOOP ══ -->
+  <rect x="60" y="160" width="580" height="680" rx="12" fill="none" stroke="#e0af68" stroke-width="1.5" stroke-dasharray="8,4"/>
+  <text x="80" y="180" font-family="'Segoe UI', sans-serif" font-size="12" fill="#e0af68" font-weight="600">for t in range(T):</text>
+
+  <!-- ── INPUT PROJECTION ── -->
+  <rect x="220" y="195" width="260" height="40" rx="8" fill="#2f3347" stroke="#7aa2f7" stroke-width="1.5"/>
+  <text x="350" y="213" font-family="'Cascadia Code', monospace" font-size="12" fill="#7aa2f7" text-anchor="middle">input_vec = inp(x[:,t])</text>
+  <text x="520" y="213" font-family="'Cascadia Code', monospace" font-size="10" fill="#565f89">(B, D)</text>
+
+  <!-- Arrow down -->
+  <line x1="350" y1="235" x2="350" y2="260" stroke="#565f89" stroke-width="1.2" marker-end="url(#arr)"/>
+
+  <!-- ══ EXPERT LOOP ══ -->
+  <rect x="95" y="265" width="510" height="470" rx="10" fill="none" stroke="#9ece6a" stroke-width="1.2" stroke-dasharray="6,3"/>
+  <text x="115" y="285" font-family="'Segoe UI', sans-serif" font-size="11" fill="#9ece6a" font-weight="600">for i in range(N):  (6 experts)</text>
+
+  <!-- Step 1: Accumulate -->
+  <rect x="175" y="300" width="350" height="35" rx="6" fill="#24283b" stroke="#3b4261" stroke-width="1"/>
+  <text x="195" y="322" font-family="'Cascadia Code', monospace" font-size="11" fill="#c0caf5">hidden[i] += input_vec</text>
+  <text x="490" y="322" font-family="'Cascadia Code', monospace" font-size="9" fill="#565f89">additive</text>
+
+  <line x1="350" y1="335" x2="350" y2="355" stroke="#565f89" stroke-width="1" marker-end="url(#arr)"/>
+
+  <!-- Step 2: Attention window -->
+  <rect x="175" y="358" width="350" height="35" rx="6" fill="#24283b" stroke="#3b4261" stroke-width="1"/>
+  <text x="195" y="380" font-family="'Cascadia Code', monospace" font-size="11" fill="#c0caf5">attn_window(ptr[i], R, M)</text>
+  <text x="460" y="380" font-family="'Cascadia Code', monospace" font-size="9" fill="#565f89">(B, 2R+1)</text>
+
+  <line x1="350" y1="393" x2="350" y2="413" stroke="#565f89" stroke-width="1" marker-end="url(#arr)"/>
+
+  <!-- Step 3: Soft read -->
+  <rect x="175" y="416" width="350" height="35" rx="6" fill="#24283b" stroke="#e0af68" stroke-width="1.2"/>
+  <text x="195" y="438" font-family="'Cascadia Code', monospace" font-size="11" fill="#e0af68">soft_read(ring, window)</text>
+  <text x="450" y="438" font-family="'Cascadia Code', monospace" font-size="9" fill="#565f89">gather+sum (B,D)</text>
+
+  <line x1="350" y1="451" x2="350" y2="471" stroke="#565f89" stroke-width="1" marker-end="url(#arr)"/>
+
+  <!-- Step 4: Read projection + accumulate -->
+  <rect x="175" y="474" width="350" height="35" rx="6" fill="#24283b" stroke="#7aa2f7" stroke-width="1.2"/>
+  <text x="195" y="496" font-family="'Cascadia Code', monospace" font-size="11" fill="#7aa2f7">hidden[i] += S * read_proj[i](read)</text>
+  <text x="540" y="496" font-family="'Cascadia Code', monospace" font-size="9" fill="#565f89">D->D</text>
+
+  <line x1="350" y1="509" x2="350" y2="529" stroke="#565f89" stroke-width="1" marker-end="url(#arr)"/>
+
+  <!-- Step 5: Soft write -->
+  <rect x="175" y="532" width="350" height="35" rx="6" fill="#24283b" stroke="#e0af68" stroke-width="1.2"/>
+  <text x="195" y="554" font-family="'Cascadia Code', monospace" font-size="11" fill="#e0af68">soft_write(ring, hidden[i], window)</text>
+  <text x="540" y="554" font-family="'Cascadia Code', monospace" font-size="9" fill="#565f89">scatter_add</text>
+
+  <line x1="350" y1="567" x2="350" y2="587" stroke="#565f89" stroke-width="1" marker-end="url(#arr)"/>
+
+  <!-- Step 6: Move pointer -->
+  <rect x="175" y="590" width="350" height="35" rx="6" fill="#24283b" stroke="#bb9af7" stroke-width="1.2"/>
+  <text x="195" y="612" font-family="'Cascadia Code', monospace" font-size="11" fill="#bb9af7">move_ptr(ptr[i], dests[i], prob)</text>
+  <text x="540" y="612" font-family="'Cascadia Code', monospace" font-size="9" fill="#565f89">phi/walk</text>
+
+  <!-- Ring memory annotation -->
+  <rect x="560" y="416" width="60" height="151" rx="20" fill="none" stroke="#e0af68" stroke-width="1" stroke-dasharray="4,2"/>
+  <text x="590" y="498" font-family="'Segoe UI', sans-serif" font-size="10" fill="#e0af68" text-anchor="middle" transform="rotate(90, 590, 498)">Ring Memory</text>
+
+  <!-- Learned params annotation -->
+  <line x1="160" y1="488" x2="175" y2="488" stroke="#7aa2f7" stroke-width="1" stroke-dasharray="3,2"/>
+  <text x="110" y="485" font-family="'Segoe UI', sans-serif" font-size="9" fill="#7aa2f7" text-anchor="middle">Learned</text>
+  <text x="110" y="497" font-family="'Segoe UI', sans-serif" font-size="9" fill="#7aa2f7" text-anchor="middle">param</text>
+
+  <!-- End expert loop arrow back -->
+  <path d="M 350,625 L 350,645 Q 350,660 335,660 L 130,660 Q 115,660 115,645 L 115,300 Q 115,285 130,285" stroke="#9ece6a" stroke-width="1" fill="none" stroke-dasharray="4,3" marker-end="url(#arr)"/>
+  <text x="115" y="475" font-family="'Cascadia Code', monospace" font-size="9" fill="#9ece6a" transform="rotate(-90, 115, 475)">next expert</text>
+
+  <!-- ── OUTPUT PROJECTION ── -->
+  <line x1="350" y1="665" x2="350" y2="690" stroke="#565f89" stroke-width="1.2" marker-end="url(#arr)"/>
+
+  <rect x="185" y="695" width="330" height="35" rx="6" fill="#24283b" stroke="#3b4261" stroke-width="1"/>
+  <text x="350" y="717" font-family="'Cascadia Code', monospace" font-size="11" fill="#c0caf5" text-anchor="middle">expert_mean = mean(hidden, dim=0)</text>
+  <text x="540" y="717" font-family="'Cascadia Code', monospace" font-size="9" fill="#565f89">(B, D)</text>
+
+  <line x1="350" y1="730" x2="350" y2="750" stroke="#565f89" stroke-width="1" marker-end="url(#arr)"/>
+
+  <rect x="205" y="755" width="290" height="35" rx="6" fill="#2f3347" stroke="#7aa2f7" stroke-width="1.5"/>
+  <text x="350" y="777" font-family="'Cascadia Code', monospace" font-size="11" fill="#7aa2f7" text-anchor="middle">output = out(expert_mean)</text>
+  <text x="530" y="777" font-family="'Cascadia Code', monospace" font-size="9" fill="#565f89">(B, 8)/(B, 256)</text>
+
+  <!-- Loop back for timestep -->
+  <path d="M 350,790 L 350,810 Q 350,825 335,825 L 75,825 Q 60,825 60,810 L 60,195 Q 60,180 75,180" stroke="#e0af68" stroke-width="1.2" fill="none" stroke-dasharray="6,4" marker-end="url(#arr-amber)"/>
+  <text x="60" y="500" font-family="'Cascadia Code', monospace" font-size="10" fill="#e0af68" transform="rotate(-90, 60, 500)">next timestep t</text>
+
+  <!-- ── FINAL STACK ── -->
+  <line x1="350" y1="828" x2="350" y2="855" stroke="#565f89" stroke-width="1.2" marker-end="url(#arr)"/>
+
+  <rect x="210" y="860" width="280" height="40" rx="8" fill="#2f3347" stroke="#7aa2f7" stroke-width="1.5"/>
+  <text x="350" y="878" font-family="'Cascadia Code', monospace" font-size="12" fill="#7aa2f7" text-anchor="middle">torch.stack(outs, dim=1)</text>
+  <text x="530" y="885" font-family="'Cascadia Code', monospace" font-size="10" fill="#565f89">(B, T, 8)</text>
+
+</svg>
+</div>
+
+<div class="note">
+  All operations inside the expert loop are <strong>linear</strong> in v4: Linear projections + additive accumulation + scatter_add. The pointer movement uses <code>.long()</code> which breaks gradient flow — pointer routing is a fixed structural prior, not a learned parameter.
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<h2>Soft Read / Write</h2>
+
+<p>The ring is accessed through a sliding attention window of 2R+1 = 5 slots centered on each expert's pointer. Reads gather and average; writes scatter-add.</p>
+
+<div class="two-col">
+  <div class="diagram-container">
+    <h3 style="color:#e0af68; margin-bottom:1rem;">Soft Read</h3>
+    <svg viewBox="0 0 280 200" width="280" height="200" xmlns="http://www.w3.org/2000/svg">
+      <!-- Ring slots -->
+      <g font-family="'Cascadia Code', monospace" font-size="10">
+        <rect x="20" y="20" width="50" height="30" rx="4" fill="#2f3347" stroke="#3b4261"/>
+        <text x="45" y="40" fill="#565f89" text-anchor="middle">slot-2</text>
+
+        <rect x="75" y="20" width="50" height="30" rx="4" fill="#2f3347" stroke="#3b4261"/>
+        <text x="100" y="40" fill="#565f89" text-anchor="middle">slot-1</text>
+
+        <rect x="130" y="20" width="50" height="30" rx="4" fill="#2f3347" stroke="#e0af68" stroke-width="1.5"/>
+        <text x="155" y="40" fill="#e0af68" text-anchor="middle">ptr</text>
+
+        <rect x="185" y="20" width="50" height="30" rx="4" fill="#2f3347" stroke="#3b4261"/>
+        <text x="210" y="40" fill="#565f89" text-anchor="middle">slot+1</text>
+
+        <rect x="240" y="20" width="35" height="30" rx="4" fill="#2f3347" stroke="#3b4261"/>
+        <text x="257" y="40" fill="#565f89" text-anchor="middle">+2</text>
+      </g>
+
+      <!-- Gather arrows -->
+      <g stroke="#e0af68" stroke-width="1" opacity="0.6">
+        <line x1="45" y1="50" x2="140" y2="90" marker-end="url(#arr-amber)"/>
+        <line x1="100" y1="50" x2="140" y2="90" marker-end="url(#arr-amber)"/>
+        <line x1="155" y1="50" x2="140" y2="90" marker-end="url(#arr-amber)"/>
+        <line x1="210" y1="50" x2="140" y2="90" marker-end="url(#arr-amber)"/>
+        <line x1="257" y1="50" x2="140" y2="90" marker-end="url(#arr-amber)"/>
+      </g>
+
+      <!-- Gather box -->
+      <rect x="100" y="95" width="80" height="28" rx="6" fill="#24283b" stroke="#e0af68" stroke-width="1"/>
+      <text x="140" y="114" font-family="'Cascadia Code', monospace" font-size="10" fill="#e0af68" text-anchor="middle">gather</text>
+
+      <line x1="140" y1="123" x2="140" y2="143" stroke="#565f89" stroke-width="1" marker-end="url(#arr)"/>
+
+      <!-- Weighted sum -->
+      <rect x="80" y="147" width="120" height="28" rx="6" fill="#24283b" stroke="#e0af68" stroke-width="1"/>
+      <text x="140" y="166" font-family="'Cascadia Code', monospace" font-size="10" fill="#e0af68" text-anchor="middle">weighted sum</text>
+
+      <text x="140" y="195" font-family="'Cascadia Code', monospace" font-size="10" fill="#737aa2" text-anchor="middle">read_vec (B, D)</text>
+    </svg>
+  </div>
+
+  <div class="diagram-container">
+    <h3 style="color:#e0af68; margin-bottom:1rem;">Soft Write</h3>
+    <svg viewBox="0 0 280 200" width="280" height="200" xmlns="http://www.w3.org/2000/svg">
+      <!-- Hidden state -->
+      <rect x="80" y="15" width="120" height="28" rx="6" fill="#24283b" stroke="#7aa2f7" stroke-width="1"/>
+      <text x="140" y="34" font-family="'Cascadia Code', monospace" font-size="10" fill="#7aa2f7" text-anchor="middle">hidden[i] (B,D)</text>
+
+      <line x1="140" y1="43" x2="140" y2="63" stroke="#565f89" stroke-width="1" marker-end="url(#arr)"/>
+
+      <!-- Broadcast -->
+      <rect x="85" y="68" width="110" height="28" rx="6" fill="#24283b" stroke="#e0af68" stroke-width="1"/>
+      <text x="140" y="87" font-family="'Cascadia Code', monospace" font-size="10" fill="#e0af68" text-anchor="middle">broadcast</text>
+
+      <!-- Scatter arrows -->
+      <g stroke="#e0af68" stroke-width="1" opacity="0.6">
+        <line x1="110" y1="96" x2="45" y2="130" marker-end="url(#arr-amber)"/>
+        <line x1="120" y1="96" x2="100" y2="130" marker-end="url(#arr-amber)"/>
+        <line x1="140" y1="96" x2="155" y2="130" marker-end="url(#arr-amber)"/>
+        <line x1="160" y1="96" x2="210" y2="130" marker-end="url(#arr-amber)"/>
+        <line x1="170" y1="96" x2="257" y2="130" marker-end="url(#arr-amber)"/>
+      </g>
+
+      <!-- Ring slots -->
+      <g font-family="'Cascadia Code', monospace" font-size="9">
+        <rect x="20" y="135" width="50" height="26" rx="4" fill="#2f3347" stroke="#3b4261"/>
+        <text x="45" y="152" fill="#565f89" text-anchor="middle">+= w*h</text>
+
+        <rect x="75" y="135" width="50" height="26" rx="4" fill="#2f3347" stroke="#3b4261"/>
+        <text x="100" y="152" fill="#565f89" text-anchor="middle">+= w*h</text>
+
+        <rect x="130" y="135" width="50" height="26" rx="4" fill="#2f3347" stroke="#e0af68" stroke-width="1.5"/>
+        <text x="155" y="152" fill="#e0af68" text-anchor="middle">+= w*h</text>
+
+        <rect x="185" y="135" width="50" height="26" rx="4" fill="#2f3347" stroke="#3b4261"/>
+        <text x="210" y="152" fill="#565f89" text-anchor="middle">+= w*h</text>
+
+        <rect x="240" y="135" width="35" height="26" rx="4" fill="#2f3347" stroke="#3b4261"/>
+        <text x="257" y="152" fill="#565f89" text-anchor="middle">+=</text>
+      </g>
+
+      <text x="140" y="185" font-family="'Cascadia Code', monospace" font-size="10" fill="#737aa2" text-anchor="middle">scatter_add (additive)</text>
+    </svg>
+  </div>
+</div>
+
+<div class="note">
+  Writes are <strong>additive</strong> — <code>scatter_add</code> accumulates information, never erases existing slot content. Weights are uniform: each of the 5 window slots gets <code>1/5 = 0.2</code> of the write value.
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<h2>Pointer Movement</h2>
+
+<p>Each expert's pointer blends between two movement strategies:</p>
+
+<div class="param-grid" style="grid-template-columns: repeat(3, 1fr);">
+  <div class="param-card" style="border-color: #7aa2f7;">
+    <div class="label" style="color: #7aa2f7;">Explorer</div>
+    <div class="value" style="font-size:1.2rem;">p = 0.9</div>
+    <div class="desc">90% phi-jump, 10% walk. Covers the ring fast — reads distant memory.</div>
+  </div>
+  <div class="param-card" style="border-color: #9ece6a;">
+    <div class="label" style="color: #9ece6a;">Walker</div>
+    <div class="value" style="font-size:1.2rem;">p = 0.1</div>
+    <div class="desc">10% phi-jump, 90% walk. Stays local — reinforces recent writes.</div>
+  </div>
+  <div class="param-card" style="border-color: #737aa2;">
+    <div class="label" style="color: #737aa2;">Neutral</div>
+    <div class="value" style="font-size:1.2rem;">p = 0.5</div>
+    <div class="desc">50/50 blend. Medium coverage — balanced strategy.</div>
+  </div>
+</div>
+
+<div class="formula">
+  new_ptr = p &middot; dest[current_slot] + (1 - p) &middot; (current_ptr + 1) % M
+</div>
+
+<p>The golden ratio (<code>1/phi = 0.618...</code>) guarantees maximally irrational spacing — no expert revisits the same slot pattern. With M=256, the jump step is <code>floor(256 * 0.618) = 158</code> slots.</p>
+
+<div class="note">
+  <strong>Gradient note:</strong> The pointer position uses <code>.long()</code> for slot indexing, which has zero derivative everywhere. This means the pointer path is a <strong>fixed structural prior</strong> — the network cannot learn to change WHERE it reads, only HOW it interprets what it reads (via <code>read_proj</code>).
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<h2>Input / Output Modes</h2>
+
+<div class="two-col">
+  <div class="param-card">
+    <div class="label" style="color:#7aa2f7;">Binary Mode (default)</div>
+    <div class="desc" style="margin-top:0.5rem;">
+      Input: <code>(B, T, 8)</code> float — 8 bits per byte<br>
+      <code>inp</code>: Linear(8, D)<br>
+      <code>out</code>: Linear(D, 8)<br>
+      Loss: MSE on bit predictions<br>
+      Accuracy: per-bit match (threshold 0.5)
+    </div>
+  </div>
+  <div class="param-card">
+    <div class="label" style="color:#bb9af7;">Embed Mode</div>
+    <div class="desc" style="margin-top:0.5rem;">
+      Input: <code>(B, T)</code> long — byte index 0-255<br>
+      <code>inp</code>: Embedding(256, D)<br>
+      <code>out</code>: Linear(D, 256)<br>
+      Loss: CrossEntropy on 256-class logits<br>
+      Accuracy: argmax match
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<h2>Tensor Shape Reference</h2>
+
+<table>
+  <thead>
+    <tr><th>Tensor</th><th>Shape</th><th>Description</th><th>Lifetime</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>x</td><td>(B, T, 8) / (B, T)</td><td>Input sequence</td><td>Argument</td></tr>
+    <tr><td>ring_tns</td><td>(B, M, D)</td><td>Shared ring buffer memory</td><td>Per forward pass</td></tr>
+    <tr><td>hidden_tns</td><td>(N, B, D)</td><td>Expert hidden accumulators</td><td>Per forward pass</td></tr>
+    <tr><td>ptr_tns</td><td>(N, B)</td><td>Expert pointer positions (float)</td><td>Per forward pass</td></tr>
+    <tr><td>dests</td><td>(N, M)</td><td>Phi-jump destination table</td><td>Buffer (permanent)</td></tr>
+    <tr><td>input_vec_tns</td><td>(B, D)</td><td>Projected input token</td><td>Per timestep</td></tr>
+    <tr><td>indices_tns</td><td>(B, 2R+1)</td><td>Attention window slot indices</td><td>Per expert step</td></tr>
+    <tr><td>weights_tns</td><td>(B, 2R+1)</td><td>Attention window weights (uniform)</td><td>Per expert step</td></tr>
+    <tr><td>read_vec_tns</td><td>(B, D)</td><td>Weighted sum of ring window</td><td>Per expert step</td></tr>
+    <tr><td>expanded_idx_tns</td><td>(B, 2R+1, D)</td><td>Window indices expanded for gather/scatter</td><td>Per expert step</td></tr>
+    <tr><td>outs_lst</td><td>T x (B, out)</td><td>Output collector</td><td>Per forward pass</td></tr>
+    <tr><td>output</td><td>(B, T, 8) / (B, T, 256)</td><td>Stacked predictions</td><td>Return value</td></tr>
+  </tbody>
+</table>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<h2>Learnable Parameters</h2>
+
+<table>
+  <thead>
+    <tr><th>Layer</th><th>Shape</th><th>Count</th><th>Purpose</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>inp.weight</td><td>(D, 8) / Emb(256, D)</td><td>2,048 / 65,536</td><td>Input projection</td></tr>
+    <tr><td>inp.bias</td><td>(D,)</td><td>256</td><td>Input bias</td></tr>
+    <tr><td>out.weight</td><td>(8, D) / (256, D)</td><td>2,048 / 65,536</td><td>Output projection</td></tr>
+    <tr><td>out.bias</td><td>(8,) / (256,)</td><td>8 / 256</td><td>Output bias</td></tr>
+    <tr><td>read_proj[i].weight</td><td>(D, D) x N</td><td>393,216</td><td>Ring read transformation</td></tr>
+    <tr><td>read_proj[i].bias</td><td>(D,) x N</td><td>1,536</td><td>Read bias</td></tr>
+  </tbody>
+</table>
+
+<p>Binary mode total: <strong>399,112</strong> parameters. Embed mode total: <strong>526,600</strong> parameters. The <code>dests</code> buffer is not a parameter (not trained).</p>
+
+<div style="margin-top:3rem; padding-top:1rem; border-top:1px solid var(--border); color:var(--fg-dim); font-size:0.8rem;">
+  INSTNCT v4 &mdash; Architecture Reference &mdash; Based on <code>model/instnct.py</code> (273 lines) &mdash; Generated 2026-02-25
+</div>
+
+</body>
+</html>

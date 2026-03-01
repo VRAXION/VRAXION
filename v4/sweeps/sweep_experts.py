@@ -123,8 +123,8 @@ for N in N_VALUES:
             torch.cuda.empty_cache()
             torch.cuda.reset_peak_memory_stats()
 
-        print("[MODEL] creating INSTNCT(D=%d, N=%d, B=8)..." % (D, N))
-        model = INSTNCT(D=D, N=N, B=8).to(DEV)
+        print("[MODEL] creating INSTNCT(embed_dim=%d, N=%d, B=8)..." % (D, N))
+        model = INSTNCT(embed_dim=D, N=N, B=8).to(DEV)
         params = sum(p.numel() for p in model.parameters())
         print("[MODEL] params: %s  device: %s" % ("{:,}".format(params), DEV))
 

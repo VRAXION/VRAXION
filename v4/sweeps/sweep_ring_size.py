@@ -115,8 +115,8 @@ for M in args.m_values:
             torch.cuda.empty_cache()
             torch.cuda.reset_peak_memory_stats()
 
-        print("[MODEL] creating INSTNCT(M=%d, D=%d, N=6, B=8)..." % (M, args.d))
-        model = INSTNCT(M=M, D=args.d, N=6, B=B).to(DEV)
+        print("[MODEL] creating INSTNCT(M=%d, embed_dim=%d, N=6, B=8)..." % (M, args.d))
+        model = INSTNCT(M=M, embed_dim=args.d, N=6, B=B).to(DEV)
         params = sum(p.numel() for p in model.parameters())
         print("[MODEL] params: %s" % "{:,}".format(params))
 

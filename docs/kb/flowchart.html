@@ -1,0 +1,3418 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VRAXION · KB 02 — Ring + Pointer</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Russo+One&family=JetBrains+Mono:wght@300;400;500;700&family=Ubuntu+Mono:wght@400;700&display=swap"
+    rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/drawflow@0.0.60/dist/drawflow.min.css">
+  <style>
+    :root {
+      --bg: #08090F;
+      --bg2: #0B0D15;
+      --bg3: #0F111A;
+      --surface: #131620;
+      --border: rgba(255, 255, 255, 0.06);
+      --border-h: rgba(255, 255, 255, 0.12);
+      --white: #E8EAF0;
+      --dim: #4A4E5A;
+      --text: #A0A8B8;
+      --cyan: #00f0ff;
+
+      --fuchsia: #c026d3;
+      --fuchsia-l: #E879F9;
+      --amber: #F59E0B;
+      --amber-l: #FCD34D;
+      --red: #EF4444;
+      --green: #22C55E;
+      --blue: #3B82F6;
+      --nav-h: 44px;
+      --font-display: 'Russo One', system-ui, sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+      --font-body: 'Ubuntu Mono', monospace;
+    }
+
+    *,
+    *::before,
+    *::after {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box
+    }
+
+    html,
+    body {
+      height: 100%;
+      overflow: hidden
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-body);
+      -webkit-font-smoothing: antialiased
+    }
+
+
+    /* --- HUD DATUM CORNERS --- */
+    .hud-abs {
+      position: absolute;
+      font-size: 0.65rem;
+      letter-spacing: 0.2em;
+      color: rgba(0, 240, 255, 0.4);
+      z-index: 50;
+      pointer-events: none;
+      font-family: var(--font-mono);
+      text-transform: uppercase;
+    }
+
+    .hud-tl {
+      top: 60px;
+      left: 40px;
+    }
+
+    .hud-bl {
+      bottom: 30px;
+      left: 40px;
+    }
+
+    .hud-br {
+      bottom: 30px;
+      right: 40px;
+      text-align: right;
+    }
+
+    /* NAV */
+    .nav {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: var(--nav-h);
+      z-index: 50;
+      display: flex;
+      align-items: center;
+      padding: 0 1.25rem;
+      background: rgba(10, 12, 20, .85);
+      backdrop-filter: blur(24px);
+      border-bottom: 1px solid var(--border)
+    }
+
+    .nav-brand {
+      display: flex;
+      align-items: center;
+      gap: .5rem;
+      text-decoration: none;
+      margin-right: 2rem
+    }
+
+    .nav-brand-mark {
+      width: 14px;
+      height: 14px;
+      border: 1.5px solid var(--cyan);
+      border-radius: 2px;
+      position: relative;
+      opacity: .8
+    }
+
+    .nav-brand-mark::after {
+      content: '';
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      right: 2px;
+      bottom: 2px;
+      background: var(--cyan);
+      border-radius: 1px;
+      opacity: .4
+    }
+
+    .nav-brand-text {
+      font-family: var(--font-display);
+      font-size: .8rem;
+      letter-spacing: .12em;
+      color: var(--white)
+    }
+
+    .nav-sep {
+      width: 1px;
+      height: 16px;
+      background: var(--border-h);
+      margin: 0 1rem
+    }
+
+    .nav-items {
+      display: flex;
+      gap: .125rem
+    }
+
+    .nav-item {
+      font-family: var(--font-mono);
+      font-size: .68rem;
+      font-weight: 400;
+      color: var(--dim);
+      padding: .3rem .65rem;
+      border-radius: 3px;
+      text-decoration: none;
+      letter-spacing: .04em;
+      transition: color .15s, background .15s;
+      cursor: pointer
+    }
+
+    .nav-item:hover {
+      color: var(--text);
+      background: rgba(255, 255, 255, .03)
+    }
+
+    .nav-item.active {
+      color: var(--cyan);
+      background: rgba(14, 116, 144, .1)
+    }
+
+    .nav-right {
+      margin-left: auto;
+      display: flex;
+      align-items: center;
+      gap: .75rem
+    }
+
+    .nav-status {
+      display: flex;
+      align-items: center;
+      gap: .4rem;
+      font-family: var(--font-mono);
+      font-size: .6rem;
+      letter-spacing: .06em;
+      color: var(--dim)
+    }
+
+    .nav-dot {
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: var(--green);
+      box-shadow: 0 0 6px var(--green);
+      animation: pulse-dot 2s ease-in-out infinite
+    }
+
+    @keyframes pulse-dot {
+
+      0%,
+      100% {
+        opacity: 1
+      }
+
+      50% {
+        opacity: .4
+      }
+    }
+
+    .nav-page {
+      font-family: var(--font-mono);
+      font-size: .6rem;
+      color: var(--dim);
+      letter-spacing: .04em
+    }
+
+    .nav-page b {
+      color: var(--text)
+    }
+
+    /* MAIN */
+    .main {
+      position: fixed;
+      top: var(--nav-h);
+      left: 0;
+      right: 0;
+      bottom: 0;
+      display: flex
+    }
+
+    /* LEFT PANEL — Drawflow */
+    .panel-flow {
+      flex: 1;
+      min-width: 0;
+      position: relative;
+      overflow: hidden;
+      background: var(--bg)
+    }
+
+    .panel-flow-header {
+      position: absolute;
+      top: .75rem;
+      left: 1rem;
+      display: flex;
+      align-items: center;
+      gap: .5rem;
+      z-index: 20;
+      pointer-events: none
+    }
+
+    .panel-label {
+      font-family: var(--font-mono);
+      font-size: .55rem;
+      font-weight: 500;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      color: var(--dim)
+    }
+
+    .panel-tag {
+      font-family: var(--font-mono);
+      font-size: .52rem;
+      font-weight: 400;
+      color: var(--cyan);
+      padding: .12rem .4rem;
+      border: 1px solid rgba(14, 116, 144, .25);
+      border-radius: 3px;
+      background: rgba(14, 116, 144, .06)
+    }
+
+    .flow-corner {
+      position: absolute;
+      font-family: var(--font-mono);
+      font-size: .5rem;
+      letter-spacing: .08em;
+      color: rgba(74, 78, 90, .35);
+      z-index: 20;
+      pointer-events: none
+    }
+
+    .flow-bl {
+      bottom: .75rem;
+      left: 1rem
+    }
+
+    .flow-br {
+      bottom: .75rem;
+      right: 1rem;
+      text-align: right
+    }
+
+    /* ── Drawflow Dark Theme ── */
+    #drawflow-canvas {
+      width: 100%;
+      height: 100%
+    }
+
+    .drawflow .drawflow-node {
+      background: rgba(16, 18, 28, 0.85);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 4px;
+      color: var(--text);
+      font-family: var(--font-mono);
+      font-size: .7rem;
+      min-width: 180px;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+      z-index: 2;
+    }
+
+    .drawflow .drawflow-node:hover {
+      border-color: rgba(255, 255, 255, 0.15);
+      background: rgba(22, 24, 36, 0.9);
+    }
+
+    .drawflow .drawflow-node.selected {
+      border-color: var(--border-h);
+      border-top: 2px solid var(--fuchsia-l);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+      z-index: 50;
+    }
+
+    .drawflow .drawflow-node .drawflow_content_node {
+      padding: 0
+    }
+
+    .drawflow .drawflow-node .title-box {
+      background: transparent;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+      padding: .4rem .65rem;
+      font-weight: 600;
+      font-size: .65rem;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: var(--white);
+    }
+
+    .drawflow .drawflow-node .input,
+    .drawflow .drawflow-node .output {
+      background: var(--cyan);
+      border: 2px solid rgba(10, 12, 20, .8);
+      width: 12px;
+      height: 12px
+    }
+
+    .drawflow .drawflow-node .output {
+      background: var(--fuchsia-l)
+    }
+
+    .drawflow .connection .main-path {
+      stroke: rgba(255, 255, 255, 0.12);
+      stroke-width: 1.5;
+      stroke-dasharray: 4 12;
+      animation: dashFlow 4s linear infinite;
+      filter: none;
+    }
+
+    /* Config → Function: solid amber, thin — parameter wiring */
+    .drawflow .connection.conn-from-cfg .main-path {
+      stroke: rgba(245, 158, 11, 0.35);
+      stroke-width: 1;
+      stroke-dasharray: none;
+      animation: none;
+    }
+
+    /* Func → Func: dashed blue — data pipeline flow */
+    .drawflow .connection.conn-from-func .main-path {
+      stroke: rgba(96, 165, 250, 0.3);
+      stroke-width: 1.5;
+      stroke-dasharray: 6 10;
+      animation: dashFlow 3s linear infinite;
+    }
+
+    @keyframes dashFlow {
+      to {
+        stroke-dashoffset: -32;
+      }
+    }
+
+    .drawflow .drawflow-delete {
+      display: none
+    }
+
+    .drawflow {
+      background: var(--bg);
+      background-image: radial-gradient(circle, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+      background-size: 24px 24px;
+    }
+
+    /* ── Canvas zone backgrounds ── */
+    .zone-bg {
+      position: absolute;
+      border-radius: 10px;
+      pointer-events: none;
+      z-index: 0;
+      border: 2px dashed;
+    }
+    .zone-bg .zone-label {
+      position: absolute;
+      top: -11px;
+      left: 16px;
+      font-family: var(--font-mono);
+      font-size: 0.65rem;
+      font-weight: 700;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      padding: 0 8px;
+      background: var(--bg);
+      pointer-events: none;
+    }
+    .zone-concepts {
+      background: rgba(0, 240, 255, 0.04);
+      border-color: rgba(0, 240, 255, 0.35);
+    }
+    .zone-concepts .zone-label { color: #00f0ff; }
+    .zone-files {
+      background: rgba(34, 197, 94, 0.04);
+      border-color: rgba(34, 197, 94, 0.35);
+    }
+    .zone-files .zone-label { color: #22C55E; }
+    .zone-vars {
+      background: rgba(192, 38, 211, 0.04);
+      border-color: rgba(192, 38, 211, 0.35);
+    }
+    .zone-vars .zone-label { color: #E879F9; }
+    .zone-configs {
+      background: rgba(245, 158, 11, 0.04);
+      border-color: rgba(245, 158, 11, 0.35);
+    }
+    .zone-configs .zone-label { color: #F59E0B; }
+    .zone-funcs {
+      background: rgba(59, 130, 246, 0.03);
+      border-color: rgba(59, 130, 246, 0.3);
+    }
+    .zone-funcs .zone-label { color: #3B82F6; }
+
+    /* ── Function nodes — flowchart steps ── */
+    .drawflow .drawflow-node.func {
+      min-width: 260px;
+      max-width: 300px;
+      background: rgba(14, 16, 26, 0.9);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      border: 1px solid rgba(59, 130, 246, 0.12);
+      border-left: 2px solid rgba(59, 130, 246, 0.5);
+      border-radius: 5px;
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
+    }
+    .drawflow .drawflow-node.func:hover {
+      border-color: rgba(59, 130, 246, 0.25);
+      border-left-color: rgba(59, 130, 246, 0.8);
+      background: rgba(18, 22, 34, 0.94);
+    }
+    .drawflow .drawflow-node.func.selected {
+      border-color: var(--border-h);
+      border-left-color: var(--blue);
+      box-shadow: 0 6px 24px rgba(0, 0, 0, 0.5);
+    }
+    .drawflow .drawflow-node.func .title-box { display: none }
+    .drawflow .drawflow-node.func .drawflow_content_node { padding: 0 }
+    .drawflow .drawflow-node.func .input { background: rgba(59, 130, 246, .7); border-color: rgba(20, 25, 45, .9) }
+    .drawflow .drawflow-node.func .output { background: rgba(59, 130, 246, .7); border-color: rgba(20, 25, 45, .9) }
+
+    .func-node { font-family: var(--font-body); padding: .6rem .75rem; }
+    .func-node-name {
+      font-family: var(--font-mono);
+      font-size: .7rem;
+      font-weight: 700;
+      color: rgba(96, 165, 250, .95);
+      letter-spacing: .02em;
+      margin-bottom: .25rem;
+    }
+    .func-node-line {
+      font-family: var(--font-mono);
+      font-size: .5rem;
+      color: var(--dim);
+      margin-bottom: .35rem;
+    }
+    .func-node-sig {
+      font-family: var(--font-mono);
+      font-size: .55rem;
+      color: rgba(147, 197, 253, .7);
+      line-height: 1.4;
+      margin-bottom: .3rem;
+    }
+    .func-node-desc {
+      font-family: var(--font-body);
+      font-size: .55rem;
+      color: var(--text);
+      line-height: 1.4;
+    }
+    .func-node-out {
+      font-family: var(--font-mono);
+      font-size: .5rem;
+      color: rgba(96, 165, 250, .6);
+      margin-top: .3rem;
+      padding-top: .3rem;
+      border-top: 1px solid rgba(59, 130, 246, 0.1);
+    }
+
+    /* ── Config nodes — hardware register style ── */
+    .drawflow .drawflow-node.cfg {
+      min-width: auto;
+      width: 260px;
+      background: rgba(14, 16, 26, 0.88);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      border: 1px solid rgba(245, 158, 11, 0.1);
+      border-left: 2px solid rgba(245, 158, 11, 0.4);
+      border-radius: 4px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    }
+
+    .drawflow .drawflow-node.cfg:hover {
+      border-color: rgba(245, 158, 11, 0.2);
+      border-left-color: rgba(245, 158, 11, 0.7);
+      background: rgba(18, 22, 34, 0.92);
+    }
+
+    .drawflow .drawflow-node.cfg.selected {
+      border-color: var(--border-h);
+      border-left-color: var(--amber);
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+    }
+
+    .drawflow .drawflow-node.cfg .title-box {
+      display: none
+    }
+
+    .drawflow .drawflow-node.cfg .drawflow_content_node {
+      padding: 0
+    }
+
+    .drawflow .drawflow-node.cfg .output {
+      background: rgba(245, 158, 11, .8);
+      border-color: rgba(20, 25, 45, .9)
+    }
+
+    .cfg .df-body {
+      display: flex;
+      align-items: center;
+      gap: .5rem;
+      padding: .45rem .7rem .45rem .5rem;
+      white-space: nowrap
+    }
+
+    .cfg .df-badge {
+      width: 24px;
+      height: 24px;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: .65rem;
+      font-weight: 700;
+      letter-spacing: 0;
+      margin: 0;
+      padding: 0;
+      background: rgba(245, 158, 11, 0.1);
+      border: 1px solid rgba(245, 158, 11, 0.2);
+      color: rgba(252, 211, 77, 0.9);
+      flex-shrink: 0;
+      box-shadow: inset 0 0 8px rgba(245, 158, 11, 0.05);
+    }
+
+    .cfg .cfg-name {
+      font-family: var(--font-mono);
+      font-size: .58rem;
+      font-weight: 500;
+      color: rgba(252, 211, 77, .85);
+      letter-spacing: .02em;
+      line-height: 1.2
+    }
+
+    .cfg .cfg-desc {
+      font-family: var(--font-mono);
+      font-size: .48rem;
+      color: var(--dim);
+      letter-spacing: .03em
+    }
+
+    .cfg .df-val {
+      display: none
+    }
+
+    /* ── Concept blocks — large rich cards ── */
+    /* Runtime state nodes on canvas */
+    .drawflow .drawflow-node.var {
+      min-width: 220px;
+      max-width: 260px;
+      background: rgba(14, 16, 26, 0.88);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      border: 1px solid rgba(232, 121, 249, 0.1);
+      border-left: 2px solid rgba(232, 121, 249, 0.4);
+      border-radius: 5px;
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
+    }
+
+    .drawflow .drawflow-node.var:hover {
+      border-color: rgba(232, 121, 249, 0.22);
+      border-left-color: rgba(232, 121, 249, 0.7);
+      background: rgba(18, 22, 32, 0.92);
+    }
+
+    .drawflow .drawflow-node.var.selected {
+      border-color: var(--border-h);
+      border-left-color: var(--fuchsia-l);
+      box-shadow: 0 6px 24px rgba(0, 0, 0, 0.45);
+    }
+
+    .drawflow .drawflow-node.var .title-box {
+      display: none
+    }
+
+    .drawflow .drawflow-node.var .drawflow_content_node {
+      padding: 0
+    }
+
+    .var-node {
+      font-family: var(--font-body);
+      padding: .55rem .7rem;
+    }
+
+    .var-node-head {
+      display: flex;
+      align-items: center;
+      gap: .45rem;
+      margin-bottom: .3rem;
+    }
+
+    .var-node-icon {
+      width: 22px;
+      height: 22px;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(232, 121, 249, .08);
+      border: 1px solid rgba(232, 121, 249, .2);
+      flex-shrink: 0;
+    }
+
+    .var-node-icon svg {
+      width: 12px;
+      height: 12px;
+    }
+
+    .var-node-name {
+      font-family: var(--font-mono);
+      font-size: .62rem;
+      font-weight: 700;
+      color: rgba(232, 121, 249, .9);
+      letter-spacing: .02em;
+    }
+
+    .var-node-shape {
+      font-family: var(--font-mono);
+      font-size: .44rem;
+      color: var(--dim);
+      margin-left: auto;
+      flex-shrink: 0;
+    }
+
+    .var-node-desc {
+      font-size: .54rem;
+      color: var(--text);
+      line-height: 1.4;
+    }
+
+    .var-node-desc code {
+      font-size: .5rem;
+      background: rgba(232, 121, 249, .06);
+      color: rgba(232, 121, 249, .8);
+      padding: .05em .3em;
+      border-radius: 2px;
+    }
+
+    /* Source file nodes on canvas */
+    .drawflow .drawflow-node.file {
+      min-width: 240px;
+      max-width: 280px;
+      background: rgba(14, 16, 26, 0.88);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      border: 1px solid rgba(34, 197, 94, 0.12);
+      border-left: 2px solid rgba(34, 197, 94, 0.4);
+      border-radius: 5px;
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
+    }
+
+    .drawflow .drawflow-node.file:hover {
+      border-color: rgba(34, 197, 94, 0.25);
+      border-left-color: rgba(34, 197, 94, 0.7);
+      background: rgba(18, 22, 32, 0.92);
+    }
+
+    .drawflow .drawflow-node.file.selected {
+      border-color: var(--border-h);
+      border-left-color: var(--green);
+      box-shadow: 0 6px 24px rgba(0, 0, 0, 0.45);
+    }
+
+    .drawflow .drawflow-node.file .title-box {
+      display: none
+    }
+
+    .drawflow .drawflow-node.file .drawflow_content_node {
+      padding: 0
+    }
+
+    .file-node {
+      font-family: var(--font-body);
+      padding: .55rem .7rem;
+    }
+
+    .file-node-head {
+      display: flex;
+      align-items: center;
+      gap: .5rem;
+      margin-bottom: .35rem;
+    }
+
+    .file-node-icon {
+      width: 24px;
+      height: 24px;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(34, 197, 94, .08);
+      border: 1px solid rgba(34, 197, 94, .2);
+      flex-shrink: 0;
+    }
+
+    .file-node-icon svg {
+      width: 14px;
+      height: 14px;
+    }
+
+    .file-node-name {
+      font-family: var(--font-mono);
+      font-size: .65rem;
+      font-weight: 700;
+      color: rgba(34, 197, 94, .9);
+      letter-spacing: .02em;
+    }
+
+    .file-node-tag {
+      font-family: var(--font-mono);
+      font-size: .44rem;
+      color: var(--dim);
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      margin-left: auto;
+    }
+
+    .file-node-desc {
+      font-size: .56rem;
+      color: var(--text);
+      line-height: 1.4;
+      margin-bottom: .35rem;
+    }
+
+    .file-node-desc code {
+      font-size: .52rem;
+      background: rgba(34, 197, 94, .06);
+      color: rgba(34, 197, 94, .8);
+      padding: .05em .3em;
+      border-radius: 2px;
+    }
+
+    .file-node-chips {
+      display: flex;
+      gap: .3rem;
+      flex-wrap: wrap;
+    }
+
+    .file-node-chip {
+      font-family: var(--font-mono);
+      font-size: .42rem;
+      background: rgba(34, 197, 94, .05);
+      border: 1px solid rgba(34, 197, 94, .12);
+      color: rgba(34, 197, 94, .6);
+      padding: .12em .4em;
+      border-radius: 3px;
+    }
+
+    .drawflow .drawflow-node.concept {
+      min-width: 280px;
+      max-width: 320px;
+      background: rgba(14, 16, 26, 0.9);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border: 1px solid rgba(0, 240, 255, 0.1);
+      border-radius: 6px;
+      box-shadow: 0 8px 28px rgba(0, 0, 0, 0.45);
+    }
+
+    .drawflow .drawflow-node.concept:hover {
+      border-color: rgba(0, 240, 255, 0.22);
+      background: rgba(18, 20, 32, 0.93);
+      box-shadow: 0 10px 36px rgba(0, 0, 0, 0.5);
+    }
+
+    .drawflow .drawflow-node.concept.selected {
+      border-color: var(--border-h);
+      border-top: 2px solid var(--fuchsia-l);
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
+    }
+
+    .drawflow .drawflow-node.concept .title-box {
+      display: none
+    }
+
+    .drawflow .drawflow-node.concept .drawflow_content_node {
+      padding: 0
+    }
+
+    .concept-block {
+      font-family: var(--font-body)
+    }
+
+    .concept-head {
+      display: flex;
+      align-items: center;
+      gap: .6rem;
+      padding: .75rem .85rem;
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.05), transparent);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 6px 6px 0 0;
+    }
+
+    .concept-head-icon {
+      width: 28px;
+      height: 28px;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0, 240, 255, 0.08);
+      border: 1px solid rgba(0, 240, 255, 0.25);
+      box-shadow: inset 0 0 8px rgba(0, 240, 255, 0.1);
+      flex-shrink: 0;
+    }
+
+    .concept-head-icon svg {
+      width: 15px;
+      height: 15px
+    }
+
+    .concept-head-label {
+      font-family: var(--font-mono);
+      font-size: .48rem;
+      font-weight: 600;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      color: rgba(0, 240, 255, 0.85);
+      line-height: 1;
+      margin-bottom: 3px;
+    }
+
+    .concept-head-title {
+      font-family: var(--font-display);
+      font-size: .8rem;
+      font-weight: 500;
+      color: var(--white);
+      letter-spacing: .03em;
+      line-height: 1.1;
+      text-shadow: 0 0 8px rgba(255, 255, 255, 0.15);
+    }
+
+    .concept-diagram {
+      height: 96px;
+      padding: 10px 4px;
+      background: linear-gradient(to bottom, rgba(6, 8, 14, 0.85), rgba(10, 12, 20, 0.9));
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+      box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.8);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+
+    .concept-diagram svg {
+      display: block;
+      flex-shrink: 0
+    }
+
+    .concept-text {
+      padding: .75rem .85rem .6rem
+    }
+
+    .concept-text p {
+      font-size: .62rem;
+      color: var(--text);
+      line-height: 1.6;
+      margin: 0 0 .4rem
+    }
+
+    .concept-text p:last-child {
+      margin-bottom: 0
+    }
+
+    .concept-text code {
+      font-family: var(--font-mono);
+      font-size: .56rem;
+      color: var(--cyan);
+      background: rgba(0, 240, 255, .08);
+      padding: .1rem .25rem;
+      border-radius: 3px;
+      border: 1px solid rgba(0, 240, 255, 0.15);
+    }
+
+    .concept-text strong {
+      color: var(--white);
+      font-weight: 600
+    }
+
+    .concept-kv {
+      padding: .4rem .85rem .6rem;
+      border-top: 1px solid rgba(255, 255, 255, .03);
+      background: rgba(0, 0, 0, 0.15);
+    }
+
+    .concept-kv-row {
+      display: flex;
+      gap: .6rem;
+      padding: .25rem 0;
+      font-size: .56rem;
+      align-items: baseline;
+      border-bottom: 1px dashed rgba(255, 255, 255, 0.05);
+    }
+
+    .concept-kv-row:last-child {
+      border-bottom: none;
+    }
+
+    .concept-kv-k {
+      font-family: var(--font-mono);
+      color: var(--dim);
+      letter-spacing: .06em;
+      min-width: 48px;
+      flex-shrink: 0;
+      text-transform: uppercase;
+      font-size: .52rem;
+      font-weight: 600;
+    }
+
+    .concept-kv-v {
+      font-family: var(--font-mono);
+      color: rgba(220, 230, 240, .9)
+    }
+
+    .concept-kv-v code {
+      font-size: .7rem;
+      color: var(--cyan);
+      background: rgba(0, 240, 255, .08);
+    }
+
+    /* Node inner content */
+    .df-body {
+      padding: .6rem .75rem .7rem;
+      font-family: var(--font-body);
+      font-size: .66rem;
+      color: var(--text);
+      line-height: 1.5
+    }
+
+    .df-body code {
+      font-family: var(--font-mono);
+      font-size: .58rem;
+      color: var(--cyan);
+      background: rgba(0, 240, 255, .1);
+      padding: .05rem .2rem;
+      border-radius: 2px
+    }
+
+    .df-badge {
+      display: inline-block;
+      font-family: var(--font-mono);
+      font-size: .48rem;
+      font-weight: 600;
+      letter-spacing: .08em;
+      padding: .1rem .35rem;
+      border-radius: 3px;
+      margin-right: .4rem;
+      text-transform: uppercase;
+    }
+
+
+    .df-badge.slate {
+      color: rgba(160, 195, 230, .9);
+      background: rgba(100, 150, 200, .15);
+      box-shadow: 0 0 8px rgba(100, 150, 200, 0.2);
+      border: 1px solid rgba(100, 150, 200, .3);
+    }
+
+
+    /* DIVIDER — draggable resize handle */
+    .divider {
+      width: 5px;
+      background: var(--border);
+      position: relative;
+      z-index: 30;
+      flex-shrink: 0;
+      cursor: col-resize;
+      transition: background .15s;
+    }
+
+    .divider:hover,
+    .divider.dragging {
+      background: rgba(0, 240, 255, .25);
+    }
+
+    .divider::before {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 3px;
+      height: 48px;
+      background: linear-gradient(transparent, var(--border-h), transparent);
+      border-radius: 2px;
+      transition: background .15s;
+    }
+
+    .divider:hover::before,
+    .divider.dragging::before {
+      background: linear-gradient(transparent, rgba(0, 240, 255, .4), transparent);
+    }
+
+    /* RIGHT PANEL */
+    .panel-code {
+      width: 42%;
+      min-width: 240px;
+      max-width: 70%;
+      display: flex;
+      flex-direction: column;
+      background: var(--bg2);
+      border-left: 1px solid var(--border)
+    }
+
+    .code-tabs {
+      display: flex;
+      align-items: center;
+      height: 42px;
+      background: rgba(8, 9, 15, 0.95);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+      padding: 0 .75rem;
+      flex-shrink: 0;
+    }
+
+    .code-tab {
+      display: flex;
+      align-items: center;
+      gap: .5rem;
+      padding: .4rem .85rem;
+      font-family: var(--font-mono);
+      font-size: .65rem;
+      font-weight: 500;
+      color: rgba(255, 255, 255, 0.4);
+      border-radius: 4px 4px 0 0;
+      border: 1px solid transparent;
+      border-bottom: none;
+      background: transparent;
+      cursor: pointer;
+      position: relative;
+      transition: all .2s;
+    }
+
+    .code-tab:hover {
+      color: rgba(255, 255, 255, 0.7);
+      background: rgba(255, 255, 255, 0.02);
+    }
+
+    .code-tab.active {
+      color: var(--cyan);
+      background: rgba(0, 240, 255, 0.04);
+      border-color: rgba(255, 255, 255, 0.06);
+      box-shadow: inset 0 2px 0 var(--cyan);
+    }
+
+    .code-tab.active::after {
+      content: '';
+      position: absolute;
+      bottom: -1px;
+      left: 0;
+      right: 0;
+      height: 1px;
+      background: var(--bg2);
+    }
+
+    .tab-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      flex-shrink: 0
+    }
+
+    .tab-dot.py {
+      background: var(--cyan);
+      box-shadow: 0 0 8px var(--cyan);
+    }
+
+    .tab-dot.ref {
+      background: var(--fuchsia);
+      box-shadow: 0 0 8px var(--fuchsia);
+    }
+
+    .tab-dot.yaml {
+      background: var(--green);
+      box-shadow: 0 0 8px var(--green);
+    }
+
+    .code-breadcrumb {
+      margin-left: auto;
+      font-family: var(--font-mono);
+      font-size: .55rem;
+      color: var(--dim);
+      letter-spacing: .03em
+    }
+
+    .code-scroll {
+      flex: 1;
+      overflow-y: auto;
+      overflow-x: hidden;
+      padding: 1rem 0;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(255, 255, 255, .08) transparent;
+      display: none
+    }
+
+    .code-scroll.visible {
+      display: block
+    }
+
+    .code-scroll::-webkit-scrollbar,
+    .ref-scroll::-webkit-scrollbar,
+    .yaml-scroll::-webkit-scrollbar {
+      width: 6px
+    }
+
+    .code-scroll::-webkit-scrollbar-track,
+    .ref-scroll::-webkit-scrollbar-track,
+    .yaml-scroll::-webkit-scrollbar-track {
+      background: transparent
+    }
+
+    .code-scroll::-webkit-scrollbar-thumb,
+    .ref-scroll::-webkit-scrollbar-thumb,
+    .yaml-scroll::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, .08);
+      border-radius: 3px
+    }
+
+    /* REFERENCE PANEL */
+    .ref-scroll {
+      flex: 1;
+      overflow-y: auto;
+      overflow-x: hidden;
+      padding: .75rem 1rem;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(255, 255, 255, .08) transparent;
+      display: none
+    }
+
+    .ref-scroll.visible {
+      display: block
+    }
+
+    /* YAML CONFIG PANEL */
+    .yaml-scroll {
+      flex: 1;
+      overflow-y: auto;
+      overflow-x: hidden;
+      padding: 1rem 0;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(255, 255, 255, .08) transparent;
+      display: none
+    }
+
+    .yaml-scroll.visible {
+      display: block
+    }
+
+    .yaml-line {
+      display: flex;
+      padding: 0 1.2rem;
+      line-height: 1.65;
+      font-family: var(--font-mono);
+      font-size: .62rem;
+      min-height: 1.3em;
+      transition: background .15s;
+    }
+
+    .yaml-line:hover {
+      background: rgba(255, 255, 255, .02)
+    }
+
+    .yaml-ln {
+      width: 2.4rem;
+      text-align: right;
+      color: var(--dim);
+      opacity: .5;
+      user-select: none;
+      padding-right: .7rem;
+      flex-shrink: 0;
+      font-size: .52rem;
+    }
+
+    .yaml-content {
+      white-space: pre;
+      flex: 1;
+      min-width: 0;
+    }
+
+    /* YAML syntax classes */
+    .y-cm { color: rgba(74, 78, 90, .85); font-style: italic }
+    .y-key { color: rgba(0, 240, 255, .85) }
+    .y-pfx { color: rgba(0, 240, 255, .3) }
+    .y-sfx { color: rgba(192, 38, 211, .45); font-size: .56rem }
+    .y-val { color: rgba(252, 211, 77, .9) }
+    .y-num { color: rgba(252, 211, 77, .95) }
+    .y-str { color: rgba(34, 197, 94, .85) }
+    .y-sec { color: rgba(0, 240, 255, .6); font-weight: 600 }
+    .y-tag { color: rgba(160, 168, 184, .35) }
+
+    .ref-section {
+      margin-bottom: 1.1rem
+    }
+
+    .ref-section-title {
+      font-family: var(--font-mono);
+      font-size: .6rem;
+      font-weight: 700;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      color: var(--dim);
+      margin-bottom: .5rem;
+      padding-bottom: .3rem;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: .4rem
+    }
+
+    .ref-section-title::before {
+      content: '';
+      width: 3px;
+      height: 3px;
+      border-radius: 50%;
+      flex-shrink: 0
+    }
+
+    .ref-section.fn .ref-section-title::before {
+      background: var(--cyan)
+    }
+
+    .ref-section.var {
+      margin-top: 1.2rem;
+      padding-top: .8rem;
+      border-top: 1px solid rgba(232, 121, 249, .1);
+    }
+
+    .ref-section.var .ref-section-title {
+      color: rgba(232, 121, 249, .7);
+      border-bottom-color: rgba(232, 121, 249, .12);
+      font-size: .65rem;
+      letter-spacing: .14em;
+    }
+
+    .ref-section.var .ref-section-title::before {
+      background: var(--fuchsia-l);
+      width: 4px;
+      height: 4px;
+      box-shadow: 0 0 6px rgba(232, 121, 249, .4);
+    }
+
+    .var-card {
+      background: rgba(232, 121, 249, .02);
+      border: 1px solid rgba(232, 121, 249, .08);
+      border-left: 2px solid rgba(232, 121, 249, .3);
+      border-radius: 5px;
+      padding: .45rem .55rem;
+      margin-bottom: .3rem;
+    }
+
+    .var-card:hover {
+      background: rgba(232, 121, 249, .05);
+      border-left-color: rgba(232, 121, 249, .6);
+    }
+
+    .var-card-head {
+      display: flex;
+      align-items: center;
+      gap: .4rem;
+      margin-bottom: .2rem;
+    }
+
+    .var-card-badge {
+      width: 22px;
+      height: 22px;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(232, 121, 249, .08);
+      border: 1px solid rgba(232, 121, 249, .2);
+      flex-shrink: 0;
+    }
+
+    .var-card-badge svg {
+      width: 12px;
+      height: 12px;
+    }
+
+    .var-card-name {
+      font-family: var(--font-mono);
+      font-size: .58rem;
+      font-weight: 600;
+      color: rgba(232, 121, 249, .85);
+      letter-spacing: .02em;
+    }
+
+    .var-card-type {
+      font-family: var(--font-mono);
+      font-size: .44rem;
+      color: var(--dim);
+      margin-left: auto;
+      flex-shrink: 0;
+    }
+
+    .var-card-desc {
+      font-size: .54rem;
+      color: var(--text);
+      line-height: 1.4;
+    }
+
+    .var-card-desc code {
+      font-size: .5rem;
+      background: rgba(232, 121, 249, .06);
+      color: rgba(232, 121, 249, .8);
+      padding: .05em .3em;
+      border-radius: 2px;
+    }
+
+    .var-card-shape {
+      font-family: var(--font-mono);
+      font-size: .46rem;
+      background: rgba(232, 121, 249, .05);
+      border: 1px solid rgba(232, 121, 249, .1);
+      color: rgba(232, 121, 249, .6);
+      padding: .12em .4em;
+      border-radius: 3px;
+      margin-top: .2rem;
+      display: inline-block;
+    }
+
+
+
+    .ref-section.param .ref-section-title::before {
+      background: var(--amber-l)
+    }
+
+    .ref-section.file .ref-section-title::before {
+      background: var(--green)
+    }
+
+    /* Source file cards — green category */
+    .ref-section.file {
+      margin-top: 1.2rem;
+      padding-top: .8rem;
+      border-top: 1px solid rgba(34, 197, 94, .1);
+    }
+
+    .ref-section.file .ref-section-title {
+      color: rgba(34, 197, 94, .7);
+      border-bottom-color: rgba(34, 197, 94, .12);
+      font-size: .65rem;
+      letter-spacing: .14em;
+    }
+
+    .ref-section.file .ref-section-title::before {
+      background: var(--green);
+      width: 4px;
+      height: 4px;
+      box-shadow: 0 0 6px rgba(34, 197, 94, .4);
+    }
+
+    .file-card {
+      background: rgba(34, 197, 94, .02);
+      border: 1px solid rgba(34, 197, 94, .08);
+      border-left: 2px solid rgba(34, 197, 94, .3);
+      border-radius: 5px;
+      padding: .5rem .6rem;
+      margin-bottom: .35rem;
+    }
+
+    .file-card-head {
+      display: flex;
+      align-items: center;
+      gap: .4rem;
+      margin-bottom: .25rem;
+    }
+
+    .file-card-icon {
+      width: 20px;
+      height: 20px;
+      border-radius: 3px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(34, 197, 94, .08);
+      border: 1px solid rgba(34, 197, 94, .18);
+      flex-shrink: 0;
+    }
+
+    .file-card-icon svg {
+      width: 12px;
+      height: 12px;
+    }
+
+    .file-card-name {
+      font-family: var(--font-mono);
+      font-size: .6rem;
+      font-weight: 600;
+      color: rgba(34, 197, 94, .9);
+      letter-spacing: .02em;
+    }
+
+    .file-card-line {
+      font-family: var(--font-mono);
+      font-size: .46rem;
+      color: var(--dim);
+      margin-left: auto;
+      flex-shrink: 0;
+    }
+
+    .file-card-desc {
+      font-size: .56rem;
+      color: var(--text);
+      line-height: 1.4;
+      margin-bottom: .25rem;
+    }
+
+    .file-card-desc code {
+      font-size: .52rem;
+      background: rgba(34, 197, 94, .06);
+      color: rgba(34, 197, 94, .8);
+      padding: .05em .3em;
+      border-radius: 2px;
+    }
+
+    .file-card-symbols {
+      display: flex;
+      gap: .35rem;
+      flex-wrap: wrap;
+    }
+
+    .file-card-sym {
+      font-family: var(--font-mono);
+      font-size: .44rem;
+      background: rgba(34, 197, 94, .05);
+      border: 1px solid rgba(34, 197, 94, .1);
+      color: rgba(34, 197, 94, .6);
+      padding: .12em .4em;
+      border-radius: 3px;
+    }
+
+    .ref-section.concept {
+      margin-top: 1.4rem;
+      padding-top: 1rem;
+      border-top: 1px solid rgba(0, 240, 255, .12);
+    }
+
+    .ref-section.concept .ref-section-title {
+      color: rgba(0, 240, 255, .7);
+      border-bottom-color: rgba(0, 240, 255, .15);
+      font-size: .65rem;
+      letter-spacing: .14em;
+    }
+
+    .ref-section.concept .ref-section-title::before {
+      background: var(--cyan);
+      width: 4px;
+      height: 4px;
+      box-shadow: 0 0 6px rgba(0, 240, 255, .4);
+    }
+
+    .ref-row {
+      display: flex;
+      align-items: flex-start;
+      gap: .6rem;
+      padding: .3rem .35rem;
+      border-radius: 3px;
+      transition: background .12s;
+      cursor: default;
+      margin-bottom: 1px
+    }
+
+    .ref-row:hover {
+      background: rgba(255, 255, 255, .025)
+    }
+
+    /* Config badge square in reference panel */
+    /* Parameters section — amber category */
+    .ref-section.param {
+      margin-top: 1.2rem;
+      padding-top: .8rem;
+      border-top: 1px solid rgba(245, 158, 11, .1);
+    }
+
+    .ref-section.param .ref-section-title {
+      color: rgba(245, 158, 11, .7);
+      border-bottom-color: rgba(245, 158, 11, .12);
+      font-size: .65rem;
+      letter-spacing: .14em;
+    }
+
+    .ref-section.param .ref-section-title::before {
+      background: var(--amber);
+      width: 4px;
+      height: 4px;
+      box-shadow: 0 0 6px rgba(245, 158, 11, .4);
+    }
+
+    .param-card {
+      background: rgba(245, 158, 11, .02);
+      border: 1px solid rgba(245, 158, 11, .08);
+      border-left: 2px solid rgba(245, 158, 11, .3);
+      border-radius: 5px;
+      padding: .45rem .55rem;
+      margin-bottom: .3rem;
+    }
+
+    .param-card:hover {
+      background: rgba(245, 158, 11, .05);
+      border-left-color: rgba(245, 158, 11, .6);
+    }
+
+    .param-card-head {
+      display: flex;
+      align-items: center;
+      gap: .4rem;
+      margin-bottom: .2rem;
+    }
+
+    .param-card-badge {
+      width: 22px;
+      height: 22px;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: var(--font-mono);
+      font-size: .56rem;
+      font-weight: 700;
+      background: rgba(245, 158, 11, .1);
+      border: 1px solid rgba(245, 158, 11, .2);
+      color: rgba(252, 211, 77, .9);
+      flex-shrink: 0;
+    }
+
+    .param-card-name {
+      font-family: var(--font-mono);
+      font-size: .58rem;
+      font-weight: 600;
+      color: rgba(252, 211, 77, .85);
+      letter-spacing: .02em;
+    }
+
+    .param-card-type {
+      font-family: var(--font-mono);
+      font-size: .44rem;
+      color: var(--dim);
+      margin-left: auto;
+      flex-shrink: 0;
+    }
+
+    .param-card-desc {
+      font-size: .54rem;
+      color: var(--text);
+      line-height: 1.4;
+    }
+
+    .param-card-desc code {
+      font-size: .5rem;
+      background: rgba(245, 158, 11, .06);
+      color: rgba(252, 211, 77, .8);
+      padding: .05em .3em;
+      border-radius: 2px;
+    }
+
+    /* Function cards in reference panel — cyan category */
+    .ref-section.fn .ref-section-title {
+      color: rgba(0, 240, 255, .7);
+      border-bottom-color: rgba(0, 240, 255, .12);
+      font-size: .65rem;
+      letter-spacing: .14em;
+    }
+
+    .ref-section.fn .ref-section-title::before {
+      width: 4px;
+      height: 4px;
+      box-shadow: 0 0 6px rgba(0, 240, 255, .4);
+    }
+
+    .fn-card {
+      background: rgba(0, 240, 255, .02);
+      border: 1px solid rgba(0, 240, 255, .08);
+      border-left: 2px solid rgba(0, 240, 255, .3);
+      border-radius: 5px;
+      padding: .45rem .55rem;
+      margin-bottom: .3rem;
+    }
+
+    .fn-card:hover {
+      background: rgba(0, 240, 255, .05);
+      border-left-color: rgba(0, 240, 255, .6);
+    }
+
+    .fn-card-head {
+      display: flex;
+      align-items: center;
+      gap: .4rem;
+      margin-bottom: .25rem;
+    }
+
+    .fn-card-badge {
+      font-family: var(--font-mono);
+      font-size: .5rem;
+      font-weight: 700;
+      color: rgba(0, 240, 255, .9);
+      background: rgba(0, 240, 255, .1);
+      border: 1px solid rgba(0, 240, 255, .2);
+      padding: .1rem .35rem;
+      border-radius: 3px;
+      letter-spacing: .04em;
+      text-transform: uppercase;
+    }
+
+    .fn-card-name {
+      font-family: var(--font-mono);
+      font-size: .68rem;
+      font-weight: 500;
+      color: var(--white);
+    }
+
+    .fn-card-type {
+      font-family: var(--font-mono);
+      font-size: .55rem;
+      color: var(--dim);
+      margin-left: auto;
+    }
+
+    .fn-card-desc {
+      font-size: .54rem;
+      color: var(--text);
+      line-height: 1.4;
+    }
+
+    .fn-card-desc code {
+      font-size: .5rem;
+      background: rgba(0, 240, 255, .06);
+      color: rgba(0, 240, 255, .8);
+      padding: .05em .3em;
+      border-radius: 2px;
+    }
+
+    .fn-card-sig {
+      font-family: var(--font-mono);
+      font-size: .5rem;
+      color: var(--dim);
+      margin-top: .2rem;
+      padding: .2rem .35rem;
+      background: rgba(0, 240, 255, .03);
+      border: 1px solid rgba(0, 240, 255, .06);
+      border-radius: 3px;
+    }
+
+    /* Concept cards in reference panel — mini-card style */
+    .concept-card {
+      background: rgba(0, 240, 255, .02);
+      border: 1px solid rgba(0, 240, 255, .08);
+      border-left: 2px solid rgba(0, 240, 255, .3);
+      border-radius: 5px;
+      padding: .55rem .6rem .5rem;
+      margin-bottom: .35rem;
+      cursor: pointer;
+      transition: background .15s, border-color .2s, box-shadow .2s;
+    }
+
+    .concept-card:hover {
+      background: rgba(0, 240, 255, .05);
+      border-left-color: rgba(0, 240, 255, .7);
+      box-shadow: 0 0 12px rgba(0, 240, 255, .04);
+    }
+
+    .concept-card-head {
+      display: flex;
+      align-items: center;
+      gap: .45rem;
+      margin-bottom: .3rem;
+    }
+
+    .concept-card-icon {
+      width: 22px;
+      height: 22px;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0, 240, 255, .08);
+      border: 1px solid rgba(0, 240, 255, .2);
+      flex-shrink: 0;
+    }
+
+    .concept-card-icon svg {
+      width: 12px;
+      height: 12px;
+    }
+
+    .concept-card-name {
+      font-family: var(--font-mono);
+      font-size: .62rem;
+      font-weight: 600;
+      color: rgba(0, 240, 255, .9);
+      letter-spacing: .04em;
+    }
+
+    .concept-card-tag {
+      font-family: var(--font-mono);
+      font-size: .48rem;
+      color: var(--dim);
+      letter-spacing: .06em;
+      text-transform: uppercase;
+      margin-left: auto;
+      flex-shrink: 0;
+    }
+
+    .concept-card-desc {
+      font-size: .58rem;
+      color: var(--text);
+      line-height: 1.45;
+      margin-bottom: .3rem;
+    }
+
+    .concept-card-desc code {
+      font-size: .54rem;
+      background: rgba(0, 240, 255, .06);
+      color: rgba(0, 240, 255, .8);
+      padding: .05em .3em;
+      border-radius: 2px;
+    }
+
+    .concept-card-kv {
+      display: flex;
+      gap: .5rem;
+      flex-wrap: wrap;
+    }
+
+    .concept-card-chip {
+      font-family: var(--font-mono);
+      font-size: .46rem;
+      background: rgba(0, 240, 255, .05);
+      border: 1px solid rgba(0, 240, 255, .1);
+      color: rgba(0, 240, 255, .65);
+      padding: .15em .45em;
+      border-radius: 3px;
+      letter-spacing: .03em;
+    }
+
+    .ref-name {
+      font-family: var(--font-mono);
+      font-size: .72rem;
+      font-weight: 500;
+      color: var(--white);
+      white-space: nowrap;
+      min-width: 110px;
+      flex-shrink: 0
+    }
+
+    .ref-name .ref-type {
+      font-size: .55rem;
+      font-weight: 400;
+      color: var(--dim);
+      margin-left: .3rem;
+      letter-spacing: .03em
+    }
+
+    .ref-desc {
+      font-family: var(--font-body);
+      font-size: .72rem;
+      color: var(--text);
+      line-height: 1.4
+    }
+
+    .ref-desc code {
+      font-family: var(--font-mono);
+      font-size: .65rem;
+      color: var(--amber-l);
+      background: rgba(245, 158, 11, .06);
+      padding: .05rem .25rem;
+      border-radius: 2px
+    }
+
+
+    .code-line {
+      display: flex;
+      align-items: flex-start;
+      min-height: 1.55em;
+      font-family: var(--font-mono);
+      font-size: .75rem;
+      line-height: 1.55;
+      letter-spacing: .01em
+    }
+
+    .code-line:hover {
+      background: rgba(255, 255, 255, .02)
+    }
+
+    .code-line.highlighted {
+      background: rgba(14, 116, 144, .08);
+      border-left: 2px solid var(--cyan)
+    }
+
+    .line-num {
+      width: 48px;
+      text-align: right;
+      padding-right: 16px;
+      color: rgba(74, 78, 90, .6);
+      flex-shrink: 0;
+      user-select: none;
+      font-variant-numeric: tabular-nums
+    }
+
+    .line-content {
+      flex: 1;
+      white-space: pre;
+      color: var(--text);
+      padding-right: 1rem
+    }
+
+    .code-status {
+      height: 22px;
+      display: flex;
+      align-items: center;
+      padding: 0 .75rem;
+      background: var(--bg);
+      border-top: 1px solid var(--border);
+      font-family: var(--font-mono);
+      font-size: .55rem;
+      color: var(--dim);
+      gap: 1rem;
+      flex-shrink: 0
+    }
+
+    .status-item {
+      display: flex;
+      align-items: center;
+      gap: .3rem
+    }
+
+    .status-sep {
+      width: 1px;
+      height: 10px;
+      background: var(--border)
+    }
+
+    /* SYNTAX */
+    .s-kw {
+      color: #C792EA
+    }
+
+    .s-fn {
+      color: #82AAFF
+    }
+
+    .s-str {
+      color: #C3E88D
+    }
+
+    .s-num {
+      color: #F78C6C
+    }
+
+    .s-cm {
+      color: #546E7A;
+      font-style: italic
+    }
+
+    .s-op {
+      color: #89DDFF
+    }
+
+    .s-cls {
+      color: #FFCB6B
+    }
+
+
+    .s-par {
+      color: #89DDFF
+    }
+
+    .s-prop {
+      color: #E8EAF0
+    }
+
+    .s-arg {
+      color: #E8EAF0
+    }
+
+    @media(max-width:860px) {
+      .main {
+        flex-direction: column
+      }
+
+      .panel-flow {
+        flex: 1
+      }
+
+      .panel-code {
+        width: 100%;
+        min-width: 0;
+        max-width: none;
+        height: 45%
+      }
+
+      .divider {
+        width: 100%;
+        height: 1px
+      }
+
+      .divider::before {
+        width: 48px;
+        height: 3px
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <!-- HUD OVERLAYS -->
+  <div class="hud-abs hud-tl">
+    SYS_ID: VRAXION-9<br>
+    LOC: SECTOR_Q
+  </div>
+  <div class="hud-abs hud-bl">
+    FLOWCHART: <span style="color:var(--cyan)">ONLINE</span><br>
+    NODE: KNOWLEDGE_BASE
+  </div>
+  <div class="hud-abs hud-br">
+    VRAXION.NET v2.1<br>
+    SECURE CONNECTION
+  </div>
+
+
+  <nav class="nav">
+    <a href="../" class="nav-brand">
+      <div class="nav-brand-mark"></div><span class="nav-brand-text">VRAXION</span>
+    </a>
+    <div class="nav-sep"></div>
+    <div class="nav-items">
+      <a href="../" class="nav-item">Home</a>
+      <a href="../products.html" class="nav-item">Nodes</a>
+      <a href="./" class="nav-item active">KB</a>
+      <a href="../dashboard.html" class="nav-item">Blueprint</a>
+    </div>
+    <div class="nav-right">
+      <div class="nav-page">Page <b>1</b>/6</div>
+      <div class="nav-status">
+        <div class="nav-dot"></div><span>LIVE</span>
+      </div>
+    </div>
+  </nav>
+
+  <div class="main">
+    <div class="panel-flow">
+      <div class="panel-flow-header">
+        <span class="panel-label">Schematic</span>
+        <span class="panel-tag">KB 02 · Ring + Pointer</span>
+      </div>
+      <div id="drawflow-canvas"></div>
+      <div class="flow-corner flow-bl">RING + POINTER · PAGE 1/6</div>
+      <div class="flow-corner flow-br">KB 02 · v4.0.0</div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="panel-code">
+      <div class="code-tabs">
+        <div class="code-tab active" data-panel="ref">
+          <div class="tab-dot ref"></div><span>Reference</span>
+        </div>
+        <div class="code-tab" data-panel="yaml">
+          <div class="tab-dot yaml"></div><span>config.yaml</span>
+        </div>
+        <div class="code-tab" data-panel="code">
+          <div class="tab-dot py"></div><span>instnct.py</span>
+        </div>
+        <div class="code-breadcrumb" id="breadcrumb">instnct / ring</div>
+      </div>
+      <div class="ref-scroll visible" id="ref-scroll">
+
+        <div class="ref-section fn">
+          <div class="ref-section-title">Functions</div>
+
+          <div class="fn-card">
+            <div class="fn-card-head">
+              <div class="fn-card-badge">hlp</div>
+              <div class="fn-card-name">phi_destinations</div>
+              <div class="fn-card-type">→ Tensor</div>
+            </div>
+            <div class="fn-card-desc">Builds the jump destination lookup table for all experts.
+              Uses golden ratio (<code>1/φ ≈ 0.618</code>) to space jumps maximally apart on the ring.
+              <code>dest[i, j] = (j + floor(M/φ) + i) % M</code>.
+              Called once in <code>__init__</code>, stored as buffer — never recomputed.</div>
+            <div class="fn-card-sig">(n_int, m_int) → (N, M)</div>
+          </div>
+
+          <div class="fn-card">
+            <div class="fn-card-head">
+              <div class="fn-card-badge">fn</div>
+              <div class="fn-card-name">func_ringstart_tns</div>
+              <div class="fn-card-type">→ Tensor</div>
+            </div>
+            <div class="fn-card-desc">Creates the ring buffer — all-zeros shared memory.
+              Every expert reads from and writes to this each timestep. Batch-first so
+              PyTorch <code>gather</code> / <code>scatter</code> work along dim=1.</div>
+            <div class="fn-card-sig">(batch_int, slots_int, dims_int, device_str) → (B, M, D)</div>
+          </div>
+
+          <div class="fn-card">
+            <div class="fn-card-head">
+              <div class="fn-card-badge">fn</div>
+              <div class="fn-card-name">func_attnwndow_tpl</div>
+              <div class="fn-card-type">→ Tuple</div>
+            </div>
+            <div class="fn-card-desc">Builds a sliding window of <code>2R+1</code> slots centered on the pointer.
+              Uniform weights <code>1/(2R+1)</code> — no learned attention yet.
+              Wraps around via modular arithmetic — no edge effects.</div>
+            <div class="fn-card-sig">(ptr_tns, radius_int, slots_int, device_str) → (indices, weights)</div>
+          </div>
+
+          <div class="fn-card">
+            <div class="fn-card-head">
+              <div class="fn-card-badge">fn</div>
+              <div class="fn-card-name">func_softread_tns</div>
+              <div class="fn-card-type">→ Tuple</div>
+            </div>
+            <div class="fn-card-desc">Differentiable read from the ring.
+              <code>expand</code> window indices to D → <code>gather</code> 2R+1 neighbor vectors
+              → uniform weighted <code>sum</code> → D-dim read vector.
+              Also returns expanded indices for <code>func_softwrit_tns</code> reuse.</div>
+            <div class="fn-card-sig">(ring_tns, indices_tns, weights_tns, dims_int) → (read_vec, expanded_idx)</div>
+          </div>
+
+          <div class="fn-card">
+            <div class="fn-card-head">
+              <div class="fn-card-badge">fn</div>
+              <div class="fn-card-name">func_softwrit_tns</div>
+              <div class="fn-card-type">→ Tensor</div>
+            </div>
+            <div class="fn-card-desc">Differentiable write back into the ring.
+              Broadcasts hidden state to window → <code>scatter_add</code> at window slots.
+              Additive — accumulates, never erases.
+              No write projection in v4 — writes raw hidden state directly.</div>
+            <div class="fn-card-sig">(ring_tns, hidden_tns, expanded_idx_tns, weights_tns) → (B, M, D)</div>
+          </div>
+
+          <div class="fn-card">
+            <div class="fn-card-head">
+              <div class="fn-card-badge">fn</div>
+              <div class="fn-card-name">func_movepntr_tns</div>
+              <div class="fn-card-type">→ Tensor</div>
+            </div>
+            <div class="fn-card-desc">Moves one expert's pointer. Two options soft-blended:
+              φ-jump (golden-ratio destination) or +1 walk (short step).
+              <code>p·jump + (1−p)·walk</code> — fully differentiable, no hard switching.
+              Pointer stays fractional so gradients flow through.</div>
+            <div class="fn-card-sig">(ptr_tns, dests_tns, prob_flt, slots_int) → (B,)</div>
+          </div>
+
+        </div>
+
+        <!-- Learned Weights section removed: v4 uses phi_destinations() for jump targets
+             and fixed probability constants (CNFG_JUMPIPROB_FLT / CNFG_WALKIPROB_FLT) — zero learned weights -->
+
+        <div class="ref-section var">
+          <div class="ref-section-title">Runtime State</div>
+          <div class="var-card">
+            <div class="var-card-head">
+              <div class="var-card-badge"><svg viewBox="0 0 16 16" fill="none">
+                  <circle cx="8" cy="8" r="3" stroke="rgba(232,121,249,.7)" stroke-width="1.2"
+                    fill="rgba(232,121,249,.12)" />
+                  <circle cx="8" cy="8" r="1.2" fill="rgba(232,121,249,.5)" />
+                </svg></div>
+              <div class="var-card-name">VRBL_SYNAPRING</div>
+              <div class="var-card-type">Tensor</div>
+            </div>
+            <div class="var-card-desc">The synaptic ring. Created fresh each forward pass via <code>torch.zeros</code>.
+              All beings read/write here.</div>
+            <div class="var-card-shape">[B, M, D]</div>
+          </div>
+          <div class="var-card">
+            <div class="var-card-head">
+              <div class="var-card-badge"><svg viewBox="0 0 16 16" fill="none">
+                  <circle cx="8" cy="8" r="3" stroke="rgba(232,121,249,.7)" stroke-width="1.2"
+                    fill="rgba(232,121,249,.12)" />
+                  <circle cx="8" cy="8" r="1.2" fill="rgba(232,121,249,.5)" />
+                </svg></div>
+              <div class="var-card-name">VRBL_PTRPOSITN</div>
+              <div class="var-card-type">Tensor</div>
+            </div>
+            <div class="var-card-desc">Pointer position per being. Fractional float ∈ <code>[0, M)</code>. Updated each
+              step by <code>func_movepntr_tns</code>.</div>
+            <div class="var-card-shape">[N, B]</div>
+          </div>
+        </div>
+
+        <div class="ref-section param">
+          <div class="ref-section-title">Parameters</div>
+          <div class="param-card">
+            <div class="param-card-head">
+              <div class="param-card-badge">M</div>
+              <div class="param-card-name">CNFG_RINGSLOTS_INT</div>
+              <div class="param-card-type">int</div>
+            </div>
+            <div class="param-card-desc">Ring size. Default 64. Circular — slot <code>M</code> wraps to 0.</div>
+          </div>
+          <div class="param-card">
+            <div class="param-card-head">
+              <div class="param-card-badge">D</div>
+              <div class="param-card-name">CNFG_RSLOTDIMS_INT</div>
+              <div class="param-card-type">int</div>
+            </div>
+            <div class="param-card-desc">Slot dimension. Default 64. Width of each slot vector and hidden state.</div>
+          </div>
+          <div class="param-card">
+            <div class="param-card-head">
+              <div class="param-card-badge">N</div>
+              <div class="param-card-name">CNFG_BEINGSNUM_INT</div>
+              <div class="param-card-type">int</div>
+            </div>
+            <div class="param-card-desc">Beings count. Default 6. Each has own pointer, read projection, and role-based jump probability.</div>
+          </div>
+          <div class="param-card">
+            <div class="param-card-head">
+              <div class="param-card-badge">R</div>
+              <div class="param-card-name">CNFG_ATNRADIUS_INT</div>
+              <div class="param-card-type">int</div>
+            </div>
+            <div class="param-card-desc">Attention radius. Default 2 → reads <code>2R+1 = 5</code> slots per pointer.
+            </div>
+          </div>
+          <div class="param-card">
+            <div class="param-card-head">
+              <div class="param-card-badge">S</div>
+              <div class="param-card-name">CNFG_CNTEXTSCL_FLT</div>
+              <div class="param-card-type">float</div>
+            </div>
+            <div class="param-card-desc">Context read scale. Fixed <code>0.05</code>. Scales how much projected ring
+              reads blend into hidden state. Swept 0.00-0.50 across 6 network sizes (CPU+GPU): 0.05 wins 4/6, best geo
+              mean. Larger nets prefer slightly higher (xlarge optimal ~0.15). Requires <code>read_proj</code>
+              Linear(D,D) on the read path.</div>
+          </div>
+          <div class="param-card">
+            <div class="param-card-head">
+              <div class="param-card-badge">Jₑ</div>
+              <div class="param-card-name">CNFG_JUMPIPROB_FLT</div>
+              <div class="param-card-type">float</div>
+            </div>
+            <div class="param-card-desc">Explorer jump probability. Fixed <code>0.9</code>. Stride gate blend weight for
+              explorer-role beings. Swept 0.5–0.95 across 6 sizes (CPU+GPU), 10 seeds: loss surface flat — seed variance
+              14× param effect. 0.9/0.1 = geo mean #1 (CPU+GPU combined). Was <code>nn.Linear(D,1)</code> — eliminated.</div>
+          </div>
+          <div class="param-card">
+            <div class="param-card-head">
+              <div class="param-card-badge">Jw</div>
+              <div class="param-card-name">CNFG_WALKIPROB_FLT</div>
+              <div class="param-card-type">float</div>
+            </div>
+            <div class="param-card-desc">Walker jump probability. Fixed <code>0.1</code>. Stride gate blend weight for
+              walker-role beings. Complement of explorer: walkers prefer sequential <code>pos+1</code> steps.
+              Neutral beings use fixed 0.5.</div>
+          </div>
+        </div>
+
+        <div class="ref-section file">
+          <div class="ref-section-title">Source Files</div>
+          <div class="file-card">
+            <div class="file-card-head">
+              <div class="file-card-icon"><svg viewBox="0 0 16 16" fill="none">
+                  <path d="M3 1.5h6.5L13 5v9.5a1 1 0 01-1 1H4a1 1 0 01-1-1V1.5z" stroke="rgba(34,197,94,.7)"
+                    stroke-width="1" fill="rgba(34,197,94,.08)" />
+                  <path d="M9.5 1.5V5H13" stroke="rgba(34,197,94,.5)" stroke-width="1" fill="none" />
+                </svg></div>
+              <div class="file-card-name">instnct.py</div>
+              <div class="file-card-line">core model</div>
+            </div>
+            <div class="file-card-desc">Core model. <code>INSTNCT</code> — ring init, gather read, scatter_add write,
+              pointer movement. All 5 concepts live here.</div>
+            <div class="file-card-symbols">
+              <div class="file-card-sym">INSTNCT</div>
+              <div class="file-card-sym">phi_destinations</div>
+              <div class="file-card-sym">func_softread_tns</div>
+              <div class="file-card-sym">func_softwrit_tns</div>
+              <div class="file-card-sym">func_movepntr_tns</div>
+              <div class="file-card-sym">forward()</div>
+            </div>
+          </div>
+          <div class="file-card">
+            <div class="file-card-head">
+              <div class="file-card-icon"><svg viewBox="0 0 16 16" fill="none">
+                  <path d="M3 1.5h6.5L13 5v9.5a1 1 0 01-1 1H4a1 1 0 01-1-1V1.5z" stroke="rgba(34,197,94,.7)"
+                    stroke-width="1" fill="rgba(34,197,94,.08)" />
+                  <path d="M9.5 1.5V5H13" stroke="rgba(34,197,94,.5)" stroke-width="1" fill="none" />
+                </svg></div>
+              <div class="file-card-name">train.py</div>
+              <div class="file-card-line">entrypoint</div>
+            </div>
+            <div class="file-card-desc">Training harness. Calls <code>INSTNCT.forward()</code> per batch — triggers the
+              full ring pipeline each step.</div>
+            <div class="file-card-symbols">
+              <div class="file-card-sym">train loop</div>
+              <div class="file-card-sym">CrossEntropyLoss</div>
+              <div class="file-card-sym">256-class</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="ref-section concept">
+          <div class="ref-section-title">Key Concepts</div>
+          <div class="concept-card" data-concept="Synaptic Ring">
+            <div class="concept-card-head">
+              <div class="concept-card-icon"><svg viewBox="0 0 16 16" fill="none">
+                  <path d="M8 2 L13 8 L8 14 L3 8 Z" stroke="rgba(0,240,255,.8)" stroke-width="1.2"
+                    fill="rgba(0,240,255,.15)" />
+                </svg></div>
+              <div class="concept-card-name">Synaptic Ring</div>
+              <div class="concept-card-tag">memory</div>
+            </div>
+            <div class="concept-card-desc">Fixed-size circular buffer. Slot <code>M</code> wraps to 0 — the ring is
+              infinite in one direction.</div>
+            <div class="concept-card-kv">
+              <div class="concept-card-chip">[B, M, D]</div>
+              <div class="concept-card-chip">zeros each pass</div>
+            </div>
+          </div>
+          <div class="concept-card" data-concept="Soft Gather">
+            <div class="concept-card-head">
+              <div class="concept-card-icon"><svg viewBox="0 0 16 16" fill="none">
+                  <path d="M8 2 L13 8 L8 14 L3 8 Z" stroke="rgba(0,240,255,.8)" stroke-width="1.2"
+                    fill="rgba(0,240,255,.15)" />
+                </svg></div>
+              <div class="concept-card-name">Soft Gather</div>
+              <div class="concept-card-tag">read</div>
+            </div>
+            <div class="concept-card-desc">Float pointer → <code>floor</code> → window <code>2R+1</code> →
+              <code>gather</code> → mean-pool → read vector.
+            </div>
+            <div class="concept-card-kv">
+              <div class="concept-card-chip">window 2R+1</div>
+              <div class="concept-card-chip">differentiable</div>
+            </div>
+          </div>
+          <div class="concept-card" data-concept="Stride Gate">
+            <div class="concept-card-head">
+              <div class="concept-card-icon"><svg viewBox="0 0 16 16" fill="none">
+                  <path d="M8 2 L13 8 L8 14 L3 8 Z" stroke="rgba(0,240,255,.8)" stroke-width="1.2"
+                    fill="rgba(0,240,255,.15)" />
+                </svg></div>
+              <div class="concept-card-name">Stride Gate</div>
+              <div class="concept-card-tag">move</div>
+            </div>
+            <div class="concept-card-desc">Walk <code>pos+1</code> or jump to <code>dest</code>. Fixed probability blend:
+              <code>p·jump + (1-p)·walk</code>. Value insensitive (sweep-validated).
+            </div>
+            <div class="concept-card-kv">
+              <div class="concept-card-chip">CNFG_JUMPIPROB_FLT / CNFG_WALKIPROB_FLT</div>
+              <div class="concept-card-chip">per-being role</div>
+            </div>
+          </div>
+          <div class="concept-card" data-concept="Scatter-Add Write">
+            <div class="concept-card-head">
+              <div class="concept-card-icon"><svg viewBox="0 0 16 16" fill="none">
+                  <path d="M8 2 L13 8 L8 14 L3 8 Z" stroke="rgba(0,240,255,.8)" stroke-width="1.2"
+                    fill="rgba(0,240,255,.15)" />
+                </svg></div>
+              <div class="concept-card-name">Scatter-Add Write</div>
+              <div class="concept-card-tag">write</div>
+            </div>
+            <div class="concept-card-desc">Additive <code>scatter_add</code> — no erase, only accumulate. Overlapping
+              writes stack.</div>
+            <div class="concept-card-kv">
+              <div class="concept-card-chip">scatter_add(dim=1)</div>
+              <div class="concept-card-chip">shared blackboard</div>
+            </div>
+          </div>
+          <div class="concept-card" data-concept="Fully Differentiable">
+            <div class="concept-card-head">
+              <div class="concept-card-icon"><svg viewBox="0 0 16 16" fill="none">
+                  <path d="M8 2 L13 8 L8 14 L3 8 Z" stroke="rgba(0,240,255,.8)" stroke-width="1.2"
+                    fill="rgba(0,240,255,.15)" />
+                </svg></div>
+              <div class="concept-card-name">Fully Differentiable</div>
+              <div class="concept-card-tag">design</div>
+            </div>
+            <div class="concept-card-desc">No <code>argmax</code>, no <code>detach()</code>. Every op has gradients —
+              end-to-end backprop.</div>
+            <div class="concept-card-kv">
+              <div class="concept-card-chip">autograd-native</div>
+              <div class="concept-card-chip">no STE needed</div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+      <div class="yaml-scroll" id="yaml-scroll"></div>
+      <div class="code-scroll" id="code-scroll"></div>
+      <div class="code-status">
+        <div class="status-item">Python</div>
+        <div class="status-sep"></div>
+        <div class="status-item">UTF-8</div>
+        <div class="status-sep"></div>
+        <div class="status-item">Ln 1, Col 1</div>
+        <div class="status-sep"></div>
+        <div class="status-item" style="margin-left:auto"><span style="color:var(--cyan)">●</span> INSTNCT v4.0.0</div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/drawflow@0.0.60/dist/drawflow.min.js"></script>
+  <script>
+const CODE = [
+      [['s-kw','import'],['',' '],['s-cls','math'],['','                '],['s-cm','# sqrt for golden ratio constant']],
+      [['s-kw','import'],['',' '],['s-cls','torch'],['','               '],['s-cm','# tensor operations and autograd']],
+      [['s-kw','import'],['',' '],['s-cls','torch'],['s-op','.'],['s-cls','nn'],['',' '],['s-kw','as'],['',' '],['s-cls','nn'],['','      '],['s-cm','# neural network layers (Linear, Module, ModuleList)']],
+      [['s-kw','import'],['',' '],['s-cls','yaml'],['','                '],['s-cm','# YAML config parser']],
+      [['s-kw','from'],['',' '],['s-cls','pathlib'],['',' '],['s-kw','import'],['',' '],['s-cls','Path'],['','   '],['s-cm','# cross-platform file path resolution']],
+      [],
+      [['s-cm','# ── Constants ───────────────────────────────────────────────────']],
+      [['s-cm','# inverse golden ratio — used in phi_destinations() to compute maximally-spaced pointer jumps']],
+      [['s-arg','PHI_INV'],['',' '],['s-op','='],['',' '],['s-par','('],['s-cls','math'],['s-op','.'],['s-fn','sqrt'],['s-par','('],['s-num','5'],['s-par',')'],['',' '],['s-op','-'],['',' '],['s-num','1'],['s-par',')'],['',' '],['s-op','/'],['',' '],['s-num','2'],['','  '],['s-cm','# 1/φ ≈ 0.6180339887']],
+      [],
+      [['s-cm','# ── Config ──────────────────────────────────────────────────────']],
+      [['s-cm','# All hyperparameters live in instnct_config.yaml — single source of truth.']],
+      [['s-cm','# Change values in the YAML, not here — these lines just bind them to Python names.']],
+      [['s-cm','# Naming: CNFG_ prefix = config constant, suffix = type (_INT, _FLT, _STR).']],
+      [['s-arg','_yaml_path'],['',' '],['s-op','='],['',' '],['s-cls','Path'],['s-par','('],['s-arg','__file__'],['s-par',')'],['s-op','.'],['s-arg','parent'],['',' '],['s-op','/'],['',' '],['s-str','\'instnct_config.yaml\''],['','  '],['s-cm','# same directory as this .py file']],
+      [['s-kw','with'],['',' '],['s-fn','open'],['s-par','('],['s-arg','_yaml_path'],['s-op',','],['',' '],['s-arg','encoding'],['s-op','='],['s-str','\'utf-8\''],['s-par',')'],['',' '],['s-kw','as'],['',' '],['s-arg','_f'],['s-op',':']],
+      [['','    '],['s-arg','_raw'],['',' '],['s-op','='],['',' '],['s-cls','yaml'],['s-op','.'],['s-fn','safe_load'],['s-par','('],['s-arg','_f'],['s-par',')'],['','  '],['s-cm','# safe_load blocks arbitrary code execution from YAML']],
+      [],
+      [['s-cm','# ─ architecture ─']],
+      [['s-arg','CNFG_RINGSLOTS_INT'],['',' '],['s-op','='],['',' '],['s-arg','_raw'],['s-par','['],['s-str','\'CNFG_RINGSLOTS_INT\''],['s-par',']'],['','   '],['s-cm','# M  – 64    memory slots on the ring buffer']],
+      [['s-arg','CNFG_RSLOTDIMS_INT'],['',' '],['s-op','='],['',' '],['s-arg','_raw'],['s-par','['],['s-str','\'CNFG_RSLOTDIMS_INT\''],['s-par',']'],['','   '],['s-cm','# D  – 64    embedding dimensions per slot']],
+      [['s-arg','CNFG_BEINGSNUM_INT'],['',' '],['s-op','='],['',' '],['s-arg','_raw'],['s-par','['],['s-str','\'CNFG_BEINGSNUM_INT\''],['s-par',']'],['','   '],['s-cm','# N  – 6     parallel experts sharing the ring']],
+      [['s-arg','CNFG_ATNRADIUS_INT'],['',' '],['s-op','='],['',' '],['s-arg','_raw'],['s-par','['],['s-str','\'CNFG_ATNRADIUS_INT\''],['s-par',']'],['','   '],['s-cm','# R  – 2     attention window half-width (window = 2R+1)']],
+      [],
+      [['s-cm','# ─ pointer behavior ─']],
+      [['s-arg','CNFG_CNTEXTSCL_FLT'],['',' '],['s-op','='],['',' '],['s-arg','_raw'],['s-par','['],['s-str','\'CNFG_CNTEXTSCL_FLT\''],['s-par',']'],['','   '],['s-cm','# S  – 0.05  how much the read signal scales into hidden state']],
+      [['s-arg','CNFG_JUMPIPROB_FLT'],['',' '],['s-op','='],['',' '],['s-arg','_raw'],['s-par','['],['s-str','\'CNFG_JUMPIPROB_FLT\''],['s-par',']'],['','   '],['s-cm','# Jₑ – 0.9   probability of φ-jump (long leap)']],
+      [['s-arg','CNFG_WALKIPROB_FLT'],['',' '],['s-op','='],['',' '],['s-arg','_raw'],['s-par','['],['s-str','\'CNFG_WALKIPROB_FLT\''],['s-par',']'],['','   '],['s-cm','# Jw – 0.1   probability of +1 walk (short step)']],
+      [],
+      [['s-kw','del'],['',' '],['s-arg','_yaml_path'],['s-op',','],['',' '],['s-arg','_raw'],['s-op',','],['',' '],['s-arg','_f'],['','  '],['s-cm','# remove temporaries so they don\'t pollute the module namespace']],
+      [],
+      [['s-cm','# ── Helpers ─────────────────────────────────────────────────────']],
+      [['s-kw','def'],['',' '],['s-fn','phi_destinations'],['s-par','('],['s-arg','n_int'],['s-op',','],['',' '],['s-arg','m_int'],['s-par',')'],['s-op',':']],
+      [['','    '],['s-str','"""Builds the jump destination table for all experts on the ring.']],
+      [['s-str','    Each expert at slot j looks up where to jump: dests[i, j].']],
+      [['s-str','    Uses the golden ratio to space jumps maximally apart — φ guarantees']],
+      [['s-str','    the most uniform coverage of the ring with zero clustering.']],
+      [['s-str','    Called once in __init__ and stored as a buffer — never recomputed."""']],
+      [],
+      [['','    '],['s-cm','# golden-ratio step: floor(M × 1/φ) = 39 when M=64 — maximally irrational stride']],
+      [['','    '],['s-arg','step_int'],['',' '],['s-op','='],['',' '],['s-fn','int'],['s-par','('],['s-arg','m_int'],['',' '],['s-op','*'],['',' '],['s-arg','PHI_INV'],['s-par',')']],
+      [],
+      [['','    '],['s-cm','# all M slot indices as a row vector for broadcasting; shape (M,)']],
+      [['','    '],['s-arg','slots_tns'],['',' '],['s-op','='],['',' '],['s-cls','torch'],['s-op','.'],['s-fn','arange'],['s-par','('],['s-arg','m_int'],['s-op',','],['',' '],['s-arg','dtype'],['s-op','='],['s-cls','torch'],['s-op','.'],['s-arg','long'],['s-par',')']],
+      [],
+      [['','    '],['s-cm','# N expert IDs as a column vector — unsqueeze(1) makes (N,1) so']],
+      [['','    '],['s-cm','# slots (M,) + beings (N,1) broadcasts to the full (N, M) table']],
+      [['','    '],['s-arg','beings_tns'],['',' '],['s-op','='],['',' '],['s-cls','torch'],['s-op','.'],['s-fn','arange'],['s-par','('],['s-arg','n_int'],['s-op',','],['',' '],['s-arg','dtype'],['s-op','='],['s-cls','torch'],['s-op','.'],['s-arg','long'],['s-par',')'],['s-op','.'],['s-fn','unsqueeze'],['s-par','('],['s-num','1'],['s-par',')']],
+      [],
+      [['','    '],['s-cm','# destination[i, j] = (j + step + i) % M — the slot expert i jumps to from slot j; shape (N, M)']],
+      [['','    '],['s-kw','return'],['',' '],['s-par','('],['s-arg','slots_tns'],['',' '],['s-op','+'],['',' '],['s-arg','step_int'],['',' '],['s-op','+'],['',' '],['s-arg','beings_tns'],['s-par',')'],['',' '],['s-op','%'],['',' '],['s-arg','m_int']],
+      [],
+      [['s-cm','# ── func_ operations ───────────────────────────────────────────']],
+      [['s-kw','def'],['',' '],['s-fn','func_ringstart_tns'],['s-par','('],['','  '],['s-cm','# func_ = standalone op, _tns = returns a tensor']],
+      [['','    '],['s-arg','batch_int'],['s-op',','],['','    '],['s-cm','# parallel sequences in batch']],
+      [['','    '],['s-arg','slots_int'],['s-op',','],['','    '],['s-cm','# circular buffer capacity']],
+      [['','    '],['s-arg','dims_int'],['s-op',','],['','     '],['s-cm','# embedding width per slot']],
+      [['','    '],['s-arg','device_str'],['','    '],['s-cm','# torch device (cpu/cuda)']],
+      [['s-par',')'],['s-op',':']],
+      [['','    '],['s-str','"""Creates the ring buffer — a (B, M, D) zero tensor that serves as']],
+      [['s-str','    shared memory for all experts. Every expert reads from and writes']],
+      [['s-str','    to this buffer each timestep. Starts empty so the network learns']],
+      [['s-str','    what to store, not what to forget."""']],
+      [],
+      [['','    '],['s-cm','# shape (B, M, D) — batch-first so PyTorch gather/scatter work along dim=1 (slots)']],
+      [['','    '],['s-kw','return'],['',' '],['s-cls','torch'],['s-op','.'],['s-fn','zeros'],['s-par','(']],
+      [['','        '],['s-arg','batch_int'],['s-op',','],['','   '],['s-cm','# B — one ring per sequence in the batch']],
+      [['','        '],['s-arg','slots_int'],['s-op',','],['','   '],['s-cm','# M — each slot is an addressable memory cell']],
+      [['','        '],['s-arg','dims_int'],['s-op',','],['','    '],['s-cm','# D — each cell holds a D-dimensional embedding vector']],
+      [['','        '],['s-arg','device'],['s-op','='],['s-arg','device_str']],
+      [['','    '],['s-par',')']],
+      [],
+      [['s-cm','# · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · ·']],
+      [['s-kw','def'],['',' '],['s-fn','func_attnwndow_tpl'],['s-par','('],['','  '],['s-cm','# function: attention window | format: tuple (tpl)']],
+      [['','    '],['s-arg','ptr_tns'],['s-op',','],['','       '],['s-cm','# pointer position per batch (B,)']],
+      [['','    '],['s-arg','radius_int'],['s-op',','],['','    '],['s-cm','# attention radius — window covers 2R+1 slots']],
+      [['','    '],['s-arg','slots_int'],['s-op',','],['','     '],['s-cm','# total ring slots (M)']],
+      [['','    '],['s-arg','device_str'],['','     '],['s-cm','# torch device (cpu/cuda)']],
+      [['s-par',')'],['s-op',':']],
+      [['','    '],['s-str','"""Builds a sliding window of 2R+1 ring slots centered on the current']],
+      [['s-str','    pointer position. Each slot gets equal weight (uniform mean-pool)']],
+      [['s-str','    so the read/write operations blend nearby memory smoothly. The']],
+      [['s-str','    window wraps around using modular arithmetic — no edge effects."""']],
+      [],
+      [['','    '],['s-cm','# total slots the window covers — e.g. 2*2+1 = 5 when R=2']],
+      [['','    '],['s-arg','window_size_int'],['',' '],['s-op','='],['',' '],['s-num','2'],['',' '],['s-op','*'],['',' '],['s-arg','radius_int'],['',' '],['s-op','+'],['',' '],['s-num','1']],
+      [],
+      [['','    '],['s-cm','# symmetric offsets around the pointer: [-2,-1,0,1,2] when R=2; shape (2R+1,)']],
+      [['','    '],['s-arg','offsets_tns'],['',' '],['s-op','='],['',' '],['s-cls','torch'],['s-op','.'],['s-fn','arange'],['s-par','('],['s-op','-'],['s-arg','radius_int'],['s-op',','],['',' '],['s-arg','radius_int'],['',' '],['s-op','+'],['',' '],['s-num','1'],['s-op',','],['',' '],['s-arg','device'],['s-op','='],['s-arg','device_str'],['s-par',')']],
+      [],
+      [['','    '],['s-cm','# pointer arrives as float (blended position) — truncate to int slot,']],
+      [['','    '],['s-cm','# clamp to valid ring range [0, M-1] so gather never goes out of bounds; shape (B,)']],
+      [['','    '],['s-arg','center_tns'],['',' '],['s-op','='],['',' '],['s-arg','ptr_tns'],['s-op','.'],['s-fn','long'],['s-par','('],['s-par',')'],['s-op','.'],['s-fn','clamp'],['s-par','('],['s-num','0'],['s-op',','],['',' '],['s-arg','slots_int'],['',' '],['s-op','-'],['',' '],['s-num','1'],['s-par',')']],
+      [],
+      [['','    '],['s-cm','# add offsets to each batch\'s center, mod M wraps around the ring']],
+      [['','    '],['s-cm','# so slot 63+1 becomes slot 0 — no edge effects; shape (B, 2R+1)']],
+      [['','    '],['s-arg','indices_tns'],['',' '],['s-op','='],['',' '],['s-par','('],['s-arg','center_tns'],['s-op','.'],['s-fn','unsqueeze'],['s-par','('],['s-num','1'],['s-par',')'],['',' '],['s-op','+'],['',' '],['s-arg','offsets_tns'],['s-par',')'],['',' '],['s-op','%'],['',' '],['s-arg','slots_int']],
+      [],
+      [['','    '],['s-cm','# every slot in the window gets equal weight 1/(2R+1) — uniform mean-pool']],
+      [['','    '],['s-cm','# so the read blends 5 neighbors equally (no learned attention yet); shape (B, 2R+1)']],
+      [['','    '],['s-arg','weights_tns'],['',' '],['s-op','='],['',' '],['s-cls','torch'],['s-op','.'],['s-fn','full'],['s-par','('],['s-par','('],['s-arg','ptr_tns'],['s-op','.'],['s-arg','shape'],['s-par','['],['s-num','0'],['s-par',']'],['s-op',','],['',' '],['s-arg','window_size_int'],['s-par',')'],['s-op',','],['',' '],['s-num','1.0'],['',' '],['s-op','/'],['',' '],['s-arg','window_size_int'],['s-op',','],['',' '],['s-arg','device'],['s-op','='],['s-arg','device_str'],['s-par',')']],
+      [],
+      [['','    '],['s-kw','return'],['',' '],['s-arg','indices_tns'],['s-op',','],['',' '],['s-arg','weights_tns']],
+      [],
+      [['s-cm','# · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · ·']],
+      [['s-kw','def'],['',' '],['s-fn','func_softread_tns'],['s-par','('],['','  '],['s-cm','# func_ = standalone op, _tns = returns a tensor']],
+      [['','    '],['s-arg','ring_tns'],['s-op',','],['','      '],['s-cm','# the shared ring buffer; shape (B, M, D)']],
+      [['','    '],['s-arg','indices_tns'],['s-op',','],['','   '],['s-cm','# window slot indices from func_attnwndow_tpl; shape (B, 2R+1)']],
+      [['','    '],['s-arg','weights_tns'],['s-op',','],['','   '],['s-cm','# window weights from func_attnwndow_tpl; shape (B, 2R+1)']],
+      [['','    '],['s-arg','dims_int'],['','       '],['s-cm','# embedding dimension (D) — needed to expand indices for gather']],
+      [['s-par',')'],['s-op',':']],
+      [['','    '],['s-str','"""Differentiable read from the ring buffer. Gathers 2R+1 neighbor']],
+      [['s-str','    slot vectors at the window positions, then collapses them into a']],
+      [['s-str','    single D-dimensional read vector via uniform weighted sum.']],
+      [['s-str','    The caller applies the per-expert projection and scaling separately."""']],
+      [],
+      [['','    '],['s-cm','# expand window indices from (B, 2R+1) to (B, 2R+1, D) so gather can pull full D-dim vectors']],
+      [['','    '],['s-arg','expanded_idx_tns'],['',' '],['s-op','='],['',' '],['s-arg','indices_tns'],['s-op','.'],['s-fn','unsqueeze'],['s-par','('],['s-op','-'],['s-num','1'],['s-par',')'],['s-op','.'],['s-fn','expand'],['s-par','('],['s-op','-'],['s-num','1'],['s-op',','],['',' '],['s-op','-'],['s-num','1'],['s-op',','],['',' '],['s-arg','dims_int'],['s-par',')']],
+      [],
+      [['','    '],['s-cm','# pull 2R+1 neighbor slot vectors from the ring; shape (B, 2R+1, D)']],
+      [['','    '],['s-arg','neighbors_tns'],['',' '],['s-op','='],['',' '],['s-arg','ring_tns'],['s-op','.'],['s-fn','gather'],['s-par','('],['s-num','1'],['s-op',','],['',' '],['s-arg','expanded_idx_tns'],['s-par',')']],
+      [],
+      [['','    '],['s-cm','# uniform weighted sum collapses the window into one read vector; shape (B, D)']],
+      [['','    '],['s-arg','read_vec_tns'],['',' '],['s-op','='],['',' '],['s-par','('],['s-arg','weights_tns'],['s-op','.'],['s-fn','unsqueeze'],['s-par','('],['s-op','-'],['s-num','1'],['s-par',')'],['',' '],['s-op','*'],['',' '],['s-arg','neighbors_tns'],['s-par',')'],['s-op','.'],['s-fn','sum'],['s-par','('],['s-num','1'],['s-par',')']],
+      [],
+      [['','    '],['s-kw','return'],['',' '],['s-arg','read_vec_tns'],['s-op',','],['',' '],['s-arg','expanded_idx_tns'],['','  '],['s-cm','# also return expanded indices — soft_write reuses them']],
+      [],
+      [['s-cm','# · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · ·']],
+      [['s-kw','def'],['',' '],['s-fn','func_softwrit_tns'],['s-par','('],['','  '],['s-cm','# func_ = standalone op, _tns = returns a tensor (the updated ring)']],
+      [['','    '],['s-arg','ring_tns'],['s-op',','],['','            '],['s-cm','# the shared ring buffer to write into; shape (B, M, D)']],
+      [['','    '],['s-arg','hidden_tns'],['s-op',','],['','          '],['s-cm','# hidden state of the current expert; shape (B, D)']],
+      [['','    '],['s-arg','expanded_idx_tns'],['s-op',','],['','    '],['s-cm','# expanded window indices from func_softread_tns; shape (B, 2R+1, D)']],
+      [['','    '],['s-arg','weights_tns'],['','          '],['s-cm','# window weights from func_attnwndow_tpl; shape (B, 2R+1)']],
+      [['s-par',')'],['s-op',':']],
+      [['','    '],['s-str','"""Differentiable write back into the ring buffer. Broadcasts the']],
+      [['s-str','    expert\'s hidden state to all window positions, then scatter_adds it']],
+      [['s-str','    weighted by the attention window. Additive — accumulates information,']],
+      [['s-str','    never erases existing slot content. No write projection in v4."""']],
+      [],
+      [['','    '],['s-cm','# broadcast hidden state to match window size — same value written to all window slots; shape (B, 2R+1, D)']],
+      [['','    '],['s-arg','write_val_tns'],['',' '],['s-op','='],['',' '],['s-arg','hidden_tns'],['s-op','.'],['s-fn','unsqueeze'],['s-par','('],['s-num','1'],['s-par',')'],['s-op','.'],['s-fn','expand'],['s-par','('],['s-op','-'],['s-num','1'],['s-op',','],['',' '],['s-arg','weights_tns'],['s-op','.'],['s-fn','size'],['s-par','('],['s-num','1'],['s-par',')'],['s-op',','],['',' '],['s-op','-'],['s-num','1'],['s-par',')']],
+      [],
+      [['','    '],['s-cm','# scatter_add writes weighted hidden into ring at window positions — additive, never erases; shape (B, M, D)']],
+      [['','    '],['s-kw','return'],['',' '],['s-arg','ring_tns'],['s-op','.'],['s-fn','scatter_add'],['s-par','('],['s-num','1'],['s-op',','],['',' '],['s-arg','expanded_idx_tns'],['s-op',','],['',' '],['s-arg','weights_tns'],['s-op','.'],['s-fn','unsqueeze'],['s-par','('],['s-op','-'],['s-num','1'],['s-par',')'],['',' '],['s-op','*'],['',' '],['s-arg','write_val_tns'],['s-par',')']],
+      [],
+      [['s-cm','# · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · ·']],
+      [['s-kw','def'],['',' '],['s-fn','func_movepntr_tns'],['s-par','('],['','  '],['s-cm','# func_ = standalone op, _tns = returns a tensor (new pointer positions)']],
+      [['','    '],['s-arg','ptr_tns'],['s-op',','],['','         '],['s-cm','# current pointer position for this expert; shape (B,)']],
+      [['','    '],['s-arg','dests_tns'],['s-op',','],['','       '],['s-cm','# φ-destination row for this expert; shape (M,) — from phi_destinations table']],
+      [['','    '],['s-arg','prob_flt'],['s-op',','],['','        '],['s-cm','# jump probability for this expert — e.g. 0.9, 0.1, or 0.5']],
+      [['','    '],['s-arg','slots_int'],['','        '],['s-cm','# total ring slots (M) — needed for mod wrap on walk']],
+      [['s-par',')'],['s-op',':']],
+      [['','    '],['s-str','"""Moves one expert\'s pointer on the ring. Two options soft-blended:']],
+      [['s-str','    φ-jump (long leap to golden-ratio destination) or +1 walk (short step).']],
+      [['s-str','    The blend is p·jump + (1-p)·walk — fully differentiable, no hard switching.']],
+      [['s-str','    The pointer stays fractional (float) so gradients flow through."""']],
+      [],
+      [['','    '],['s-cm','# truncate float pointer to int slot, clamp to valid range [0, M-1]; shape (B,)']],
+      [['','    '],['s-arg','current_slot_tns'],['',' '],['s-op','='],['',' '],['s-arg','ptr_tns'],['s-op','.'],['s-fn','long'],['s-par','('],['s-par',')'],['s-op','.'],['s-fn','clamp'],['s-par','('],['s-num','0'],['s-op',','],['',' '],['s-arg','slots_int'],['',' '],['s-op','-'],['',' '],['s-num','1'],['s-par',')']],
+      [],
+      [['','    '],['s-cm','# look up φ-destination for this expert at current slot — the long jump target; shape (B,)']],
+      [['','    '],['s-arg','jump_target_tns'],['',' '],['s-op','='],['',' '],['s-arg','dests_tns'],['s-par','['],['s-arg','current_slot_tns'],['s-par',']'],['s-op','.'],['s-fn','float'],['s-par','('],['s-par',')']],
+      [],
+      [['','    '],['s-cm','# short step: just move +1, wrap around via mod M; shape (B,)']],
+      [['','    '],['s-arg','walk_target_tns'],['',' '],['s-op','='],['',' '],['s-par','('],['s-arg','ptr_tns'],['',' '],['s-op','+'],['',' '],['s-num','1'],['s-par',')'],['',' '],['s-op','%'],['',' '],['s-arg','slots_int']],
+      [],
+      [['','    '],['s-cm','# soft blend: p·jump + (1-p)·walk — differentiable, no hard switching; shape (B,)']],
+      [['','    '],['s-kw','return'],['',' '],['s-arg','prob_flt'],['',' '],['s-op','*'],['',' '],['s-arg','jump_target_tns'],['',' '],['s-op','+'],['',' '],['s-par','('],['s-num','1'],['',' '],['s-op','-'],['',' '],['s-arg','prob_flt'],['s-par',')'],['',' '],['s-op','*'],['',' '],['s-arg','walk_target_tns']],
+      [],
+      [['s-cm','# ── Model ───────────────────────────────────────────────────────']],
+      [['s-kw','class'],['',' '],['s-cls','INSTNCT'],['s-par','('],['s-cls','nn'],['s-op','.'],['s-cls','Module'],['s-par',')'],['s-op',':']],
+      [['','    '],['s-str','"""Ring-buffer pointer network — v4 minimal reference implementation.']],
+      [['s-str','    N experts share one ring of M slots (each D-wide). Each expert reads,']],
+      [['s-str','    writes, and moves its pointer every timestep. No activation functions,']],
+      [['s-str','    no decay — pure linear accumulation. Complexity lives in the ring']],
+      [['s-str','    topology, not in the compute graph."""']],
+      [],
+      [['','    '],['s-kw','def'],['',' '],['s-fn','__init__'],['s-par','('],['s-kw','self'],['s-op',',']],
+      [['','                 '],['s-arg','M'],['s-op','='],['s-arg','CNFG_RINGSLOTS_INT'],['s-op',','],['','   '],['s-cm','# ring slots (64)']],
+      [['','                 '],['s-arg','D'],['s-op','='],['s-arg','CNFG_RSLOTDIMS_INT'],['s-op',','],['','   '],['s-cm','# embedding dim (64)']],
+      [['','                 '],['s-arg','N'],['s-op','='],['s-arg','CNFG_BEINGSNUM_INT'],['s-op',','],['','   '],['s-cm','# expert count (6)']],
+      [['','                 '],['s-arg','R'],['s-op','='],['s-arg','CNFG_ATNRADIUS_INT'],['s-par',')'],['s-op',':'],['','  '],['s-cm','# attention radius (2)']],
+      [['','        '],['s-fn','super'],['s-par','('],['s-par',')'],['s-op','.'],['s-fn','__init__'],['s-par','('],['s-par',')'],['','                         '],['s-cm','# initialize nn.Module — registers parameters and buffers']],
+      [['','        '],['s-kw','self'],['s-op','.'],['s-arg','M'],['s-op',','],['',' '],['s-kw','self'],['s-op','.'],['s-arg','D'],['s-op',','],['',' '],['s-kw','self'],['s-op','.'],['s-arg','N'],['s-op',','],['',' '],['s-kw','self'],['s-op','.'],['s-arg','R'],['',' '],['s-op','='],['',' '],['s-arg','M'],['s-op',','],['',' '],['s-arg','D'],['s-op',','],['',' '],['s-arg','N'],['s-op',','],['',' '],['s-arg','R'],['','  '],['s-cm','# store arch dims for forward()']],
+      [],
+      [['','        '],['s-cm','# input projection: raw 8-dim token → D-dim embedding space']],
+      [['','        '],['s-kw','self'],['s-op','.'],['s-arg','inp'],['',' '],['s-op','='],['',' '],['s-cls','nn'],['s-op','.'],['s-fn','Linear'],['s-par','('],['s-num','8'],['s-op',','],['',' '],['s-arg','D'],['s-par',')']],
+      [],
+      [['','        '],['s-cm','# output projection: D-dim hidden → 8-dim prediction (mirrors inp)']],
+      [['','        '],['s-kw','self'],['s-op','.'],['s-arg','out'],['',' '],['s-op','='],['',' '],['s-cls','nn'],['s-op','.'],['s-fn','Linear'],['s-par','('],['s-arg','D'],['s-op',','],['',' '],['s-num','8'],['s-par',')']],
+      [],
+      [['','        '],['s-cm','# one learned D→D read projection per expert — transforms ring read before mixing into hidden']],
+      [['','        '],['s-kw','self'],['s-op','.'],['s-arg','read_proj'],['',' '],['s-op','='],['',' '],['s-cls','nn'],['s-op','.'],['s-fn','ModuleList'],['s-par','('],['s-par','['],['s-cls','nn'],['s-op','.'],['s-fn','Linear'],['s-par','('],['s-arg','D'],['s-op',','],['',' '],['s-arg','D'],['s-par',')'],['',' '],['s-kw','for'],['',' '],['s-arg','_'],['',' '],['s-kw','in'],['',' '],['s-fn','range'],['s-par','('],['s-arg','N'],['s-par',')'],['s-par',']'],['s-par',')']],
+      [],
+      [['','        '],['s-cm','# precomputed φ-jump table — shape (N, M), not trainable, moves with device']],
+      [['','        '],['s-kw','self'],['s-op','.'],['s-arg','dests'],['s-op',':'],['',' '],['s-cls','torch'],['s-op','.'],['s-cls','Tensor'],['','                   '],['s-cm','# type hint for Pylance — register_buffer is dynamic']],
+      [['','        '],['s-kw','self'],['s-op','.'],['s-fn','register_buffer'],['s-par','('],['s-str','\'dests\''],['s-op',','],['',' '],['s-fn','phi_destinations'],['s-par','('],['s-arg','N'],['s-op',','],['',' '],['s-arg','M'],['s-par',')'],['s-par',')']],
+      [],
+      [['','    '],['s-kw','def'],['',' '],['s-fn','forward'],['s-par','('],['s-kw','self'],['s-op',','],['',' '],['s-arg','x'],['s-op',','],['',' '],['s-arg','S'],['s-op','='],['s-arg','CNFG_CNTEXTSCL_FLT'],['s-op',','],['',' '],['s-arg','probs'],['s-op','='],['s-kw','None'],['s-par',')'],['s-op',':']],
+      [['','        '],['s-str','"""Processes T timesteps over B sequences. Each timestep: every expert']],
+      [['s-str','        reads from ring, updates hidden, writes back, moves pointer.']],
+      [['s-str','        Output = uniform mean of all N experts, projected to token space."""']],
+      [],
+      [['','        '],['s-arg','B'],['s-op',','],['',' '],['s-arg','T'],['s-op',','],['',' '],['s-arg','_'],['',' '],['s-op','='],['',' '],['s-arg','x'],['s-op','.'],['s-arg','shape'],['','                           '],['s-cm','# B=batch, T=time, _=8 (token dim)']],
+      [['','        '],['s-arg','M'],['s-op',','],['',' '],['s-arg','D'],['s-op',','],['',' '],['s-arg','N'],['s-op',','],['',' '],['s-arg','R'],['',' '],['s-op','='],['',' '],['s-kw','self'],['s-op','.'],['s-arg','M'],['s-op',','],['',' '],['s-kw','self'],['s-op','.'],['s-arg','D'],['s-op',','],['',' '],['s-kw','self'],['s-op','.'],['s-arg','N'],['s-op',','],['',' '],['s-kw','self'],['s-op','.'],['s-arg','R'],['',' '],['s-cm','# unpack for readability']],
+      [],
+      [['','        '],['s-cm','# 3-role cycling: explorer (0.9 jump), walker (0.1 jump), neutral (0.5)']],
+      [['','        '],['s-cm','# expert i gets role i % len(probs) — 6 experts = 2 of each role']],
+      [['','        '],['s-kw','if'],['',' '],['s-arg','probs'],['',' '],['s-kw','is'],['',' '],['s-kw','None'],['s-op',':']],
+      [['','            '],['s-arg','probs'],['',' '],['s-op','='],['',' '],['s-par','['],['s-arg','CNFG_JUMPIPROB_FLT'],['s-op',','],['',' '],['s-arg','CNFG_WALKIPROB_FLT'],['s-op',','],['',' '],['s-num','0.5'],['s-par',']']],
+      [],
+      [['','        '],['s-cm','# ─ state initialization — all start at zero ─']],
+      [['','        '],['s-arg','ring_tns'],['','   '],['s-op','='],['',' '],['s-fn','func_ringstart_tns'],['s-par','('],['s-arg','B'],['s-op',','],['',' '],['s-arg','M'],['s-op',','],['',' '],['s-arg','D'],['s-op',','],['',' '],['s-arg','x'],['s-op','.'],['s-arg','device'],['s-par',')'],['','  '],['s-cm','# shared memory; shape (B, M, D)']],
+      [['','        '],['s-arg','ptr_tns'],['','    '],['s-op','='],['',' '],['s-cls','torch'],['s-op','.'],['s-fn','zeros'],['s-par','('],['s-arg','N'],['s-op',','],['',' '],['s-arg','B'],['s-op',','],['',' '],['s-arg','device'],['s-op','='],['s-arg','x'],['s-op','.'],['s-arg','device'],['s-par',')'],['','      '],['s-cm','# pointer positions; shape (N, B)']],
+      [['','        '],['s-arg','hidden_tns'],['',' '],['s-op','='],['',' '],['s-cls','torch'],['s-op','.'],['s-fn','zeros'],['s-par','('],['s-arg','N'],['s-op',','],['',' '],['s-arg','B'],['s-op',','],['',' '],['s-arg','D'],['s-op',','],['',' '],['s-arg','device'],['s-op','='],['s-arg','x'],['s-op','.'],['s-arg','device'],['s-par',')'],['','   '],['s-cm','# hidden accumulators; shape (N, B, D)']],
+      [['','        '],['s-arg','outs_lst'],['','   '],['s-op','='],['',' '],['s-par','['],['s-par',']'],['','                                       '],['s-cm','# one output per timestep']],
+      [],
+      [['','        '],['s-kw','for'],['',' '],['s-arg','t'],['',' '],['s-kw','in'],['',' '],['s-fn','range'],['s-par','('],['s-arg','T'],['s-par',')'],['s-op',':']],
+      [['','            '],['s-cm','# project token into embedding space — shared across all experts; shape (B, D)']],
+      [['','            '],['s-arg','input_vec_tns'],['',' '],['s-op','='],['',' '],['s-kw','self'],['s-op','.'],['s-fn','inp'],['s-par','('],['s-arg','x'],['s-par','['],['s-op',':'],['s-op',','],['',' '],['s-arg','t'],['s-par',']'],['s-par',')']],
+      [],
+      [['','            '],['s-kw','for'],['',' '],['s-arg','i'],['',' '],['s-kw','in'],['',' '],['s-fn','range'],['s-par','('],['s-arg','N'],['s-par',')'],['s-op',':']],
+      [['','                '],['s-cm','# accumulate input into this expert\'s hidden (additive, no decay)']],
+      [['','                '],['s-arg','hidden_tns'],['s-par','['],['s-arg','i'],['s-par',']'],['',' '],['s-op','+='],['',' '],['s-arg','input_vec_tns']],
+      [],
+      [['','                '],['s-cm','# build attention window centered on pointer; returns (B, 2R+1) indices + weights']],
+      [['','                '],['s-arg','indices_tns'],['s-op',','],['',' '],['s-arg','weights_tns'],['',' '],['s-op','='],['',' '],['s-fn','func_attnwndow_tpl'],['s-par','('],['s-arg','ptr_tns'],['s-par','['],['s-arg','i'],['s-par',']'],['s-op',','],['',' '],['s-arg','R'],['s-op',','],['',' '],['s-arg','M'],['s-op',','],['',' '],['s-arg','x'],['s-op','.'],['s-arg','device'],['s-par',')']],
+      [],
+      [['','                '],['s-cm','# ─ soft_read ─']],
+      [['','                '],['s-arg','read_vec_tns'],['s-op',','],['',' '],['s-arg','expanded_idx_tns'],['',' '],['s-op','='],['',' '],['s-fn','func_softread_tns'],['s-par','('],['s-arg','ring_tns'],['s-op',','],['',' '],['s-arg','indices_tns'],['s-op',','],['',' '],['s-arg','weights_tns'],['s-op',','],['',' '],['s-arg','D'],['s-par',')']],
+      [['','                '],['s-cm','# learned D→D projection, scaled by S (0.05) — small so read nudges, doesn\'t dominate']],
+      [['','                '],['s-arg','hidden_tns'],['s-par','['],['s-arg','i'],['s-par',']'],['',' '],['s-op','+='],['',' '],['s-arg','S'],['',' '],['s-op','*'],['',' '],['s-kw','self'],['s-op','.'],['s-arg','read_proj'],['s-par','['],['s-arg','i'],['s-par',']'],['s-par','('],['s-arg','read_vec_tns'],['s-par',')']],
+      [],
+      [['','                '],['s-cm','# ─ soft_write ─']],
+      [['','                '],['s-arg','ring_tns'],['',' '],['s-op','='],['',' '],['s-fn','func_softwrit_tns'],['s-par','('],['s-arg','ring_tns'],['s-op',','],['',' '],['s-arg','hidden_tns'],['s-par','['],['s-arg','i'],['s-par',']'],['s-op',','],['',' '],['s-arg','expanded_idx_tns'],['s-op',','],['',' '],['s-arg','weights_tns'],['s-par',')']],
+      [],
+      [['','                '],['s-cm','# ─ move_pointer — role cycles: explorer(0.9) → walker(0.1) → neutral(0.5) → ... ─']],
+      [['','                '],['s-arg','ptr_tns'],['s-par','['],['s-arg','i'],['s-par',']'],['',' '],['s-op','='],['',' '],['s-fn','func_movepntr_tns'],['s-par','('],['s-arg','ptr_tns'],['s-par','['],['s-arg','i'],['s-par',']'],['s-op',','],['',' '],['s-kw','self'],['s-op','.'],['s-arg','dests'],['s-par','['],['s-arg','i'],['s-par',']'],['s-op',','],['',' '],['s-arg','probs'],['s-par','['],['s-arg','i'],['',' '],['s-op','%'],['',' '],['s-fn','len'],['s-par','('],['s-arg','probs'],['s-par',')'],['s-par',']'],['s-op',','],['',' '],['s-arg','M'],['s-par',')']],
+      [],
+      [['','            '],['s-cm','# collapse N experts via uniform mean, project to token space; shape (B, 8)']],
+      [['','            '],['s-arg','outs_lst'],['s-op','.'],['s-fn','append'],['s-par','('],['s-kw','self'],['s-op','.'],['s-fn','out'],['s-par','('],['s-arg','hidden_tns'],['s-op','.'],['s-fn','mean'],['s-par','('],['s-num','0'],['s-par',')'],['s-par',')'],['s-par',')']],
+      [],
+      [['','        '],['s-kw','return'],['',' '],['s-cls','torch'],['s-op','.'],['s-fn','stack'],['s-par','('],['s-arg','outs_lst'],['s-op',','],['',' '],['s-num','1'],['s-par',')'],['','  '],['s-cm','# stack along time axis; shape (B, T, 8)']]
+    ];
+
+    const scroll = document.getElementById('code-scroll');
+    CODE.forEach((spans, i) => {
+      const line = document.createElement('div');
+      line.className = 'code-line';
+      const num = document.createElement('span');
+      num.className = 'line-num';
+      num.textContent = i + 1;
+      const content = document.createElement('span');
+      content.className = 'line-content';
+      if (!spans.length) { content.innerHTML = '\u00a0'; }
+      else { spans.forEach(([cls, text]) => { if (cls) { const s = document.createElement('span'); s.className = cls; s.textContent = text; content.appendChild(s); } else { content.appendChild(document.createTextNode(text)); } }); }
+      line.appendChild(num);
+      line.appendChild(content);
+      scroll.appendChild(line);
+    });
+
+    // ═══ YAML CONFIG PANEL ═══
+    // Fetch and render instnct_config.yaml live (no hardcoded copy)
+    function tokenizeYamlLine(raw) {
+      const line = raw.replace(/\r$/, '');  // strip Windows \r
+      if (line.trim() === '') return { t: '' };
+      if (line.trimStart().startsWith('#')) return { t: 'cm', v: line };
+      // Config line: CNFG_KEYNAME_SFX: value
+      const m = line.match(/^(CNFG_)([A-Z]+)(_[A-Z]{3})(:\s*)(.+)$/);
+      if (m) return { parts: [['y-pfx',m[1]],['y-key',m[2]],['y-sfx',m[3]],['y-tag',m[4]],['y-num',m[5]]] };
+      return { t: 'cm', v: line };
+    }
+
+    function renderYaml(lines) {
+      const yamlScroll = document.getElementById('yaml-scroll');
+      yamlScroll.innerHTML = '';
+      lines.forEach((ln, i) => {
+        const row = document.createElement('div');
+        row.className = 'yaml-line';
+        const num = document.createElement('span');
+        num.className = 'yaml-ln';
+        num.textContent = i + 1;
+        const content = document.createElement('span');
+        content.className = 'yaml-content';
+        if (ln.parts) {
+          ln.parts.forEach(([cls, text]) => {
+            if (cls) { const s = document.createElement('span'); s.className = cls; s.textContent = text; content.appendChild(s); }
+            else { content.appendChild(document.createTextNode(text)); }
+          });
+        } else if (ln.t === 'cm') {
+          const s = document.createElement('span'); s.className = 'y-cm'; s.textContent = ln.v; content.appendChild(s);
+        } else {
+          content.innerHTML = ' ';
+        }
+        row.appendChild(num);
+        row.appendChild(content);
+        yamlScroll.appendChild(row);
+      });
+    }
+
+    fetch('../../../../v4/instnct_config.yaml')
+      .then(r => r.text())
+      .then(text => renderYaml(text.split('\n').map(tokenizeYamlLine)))
+      .catch(() => {
+        const yamlScroll = document.getElementById('yaml-scroll');
+        yamlScroll.innerHTML = '<div class="yaml-line"><span class="yaml-content y-cm"># Failed to load instnct_config.yaml</span></div>';
+      });
+
+    // Tab switching
+    const breadcrumbMap = { ref: 'variables · functions · files', yaml: 'v4.0.0 / instnct_config.yaml', code: 'v4.0.0 / instnct.py' };
+    function switchTab(panel) {
+      document.querySelectorAll('.code-tab').forEach(t => t.classList.toggle('active', t.dataset.panel === panel));
+      document.getElementById('code-scroll').classList.toggle('visible', panel === 'code');
+      document.getElementById('ref-scroll').classList.toggle('visible', panel === 'ref');
+      document.getElementById('yaml-scroll').classList.toggle('visible', panel === 'yaml');
+      document.getElementById('breadcrumb').textContent = breadcrumbMap[panel] || '';
+    }
+    document.querySelectorAll('.code-tab').forEach(tab => {
+      tab.addEventListener('click', () => switchTab(tab.dataset.panel));
+    });
+
+    // ═══ DRAWFLOW NODE EDITOR ═══
+    const dfEl = document.getElementById('drawflow-canvas');
+    const editor = new Drawflow(dfEl);
+    editor.reroute = true;
+    editor.reroute_fix_curvature = true;
+    editor.editor_mode = 'fixed'; // Disable manual node moving
+    editor.start();
+
+    // Snap-to-grid (24px)
+    const GRID = 24;
+    editor.on('nodeMoved', function (id) {
+      const n = editor.getNodeFromId(id);
+      const sx = Math.round(n.pos_x / GRID) * GRID;
+      const sy = Math.round(n.pos_y / GRID) * GRID;
+      const d = editor.drawflow.drawflow[editor.module].data[id];
+      d.pos_x = sx; d.pos_y = sy;
+      const el = document.getElementById('node-' + id);
+      if (el) { el.style.left = sx + 'px'; el.style.top = sy + 'px'; }
+      // Auto-save positions
+      localStorage.setItem('vraxion_kb02_flow_v62', JSON.stringify(editor.export()));
+    });
+
+    // ── Node definitions ──
+    const CFGS = [
+      { name: 'CNFG_RINGSLOTS_INT', short: 'M', desc: 'ring slots (64)' },
+      { name: 'CNFG_RSLOTDIMS_INT', short: 'D', desc: 'slot dimension (64)' },
+      { name: 'CNFG_BEINGSNUM_INT', short: 'N', desc: 'beings count (6)' },
+      { name: 'CNFG_ATNRADIUS_INT', short: 'R', desc: 'attention radius (2)' },
+      { name: 'CNFG_CNTEXTSCL_FLT', short: 'S', desc: 'context read scale (0.05)' },
+      { name: 'CNFG_JUMPIPROB_FLT', short: 'Jₑ', desc: 'explorer jump prob (0.9)' },
+      { name: 'CNFG_WALKIPROB_FLT', short: 'Jw', desc: 'walker jump prob (0.1)' },
+    ];
+
+    function cfgHTML(c) {
+      return `<div class="df-body"><span class="df-badge">${c.short}</span><div><div class="cfg-name">${c.name}</div><div class="cfg-desc">${c.desc}</div></div></div>`;
+    }
+
+    // ── Function panel HTML builders ──
+    function funcRingstartHTML() {
+      return '<div class="func-node">'
+        + '<div class="func-node-name">func_ringstart_tns()</div>'
+        + '<div class="func-node-line">instnct.py : 54–72</div>'
+        + '<div class="func-node-sig">M → slots, D → dims</div>'
+        + '<div class="func-node-desc">Creates the shared ring buffer — a <code>(B, M, D)</code> zero tensor. All experts read from and write to this memory each step.</div>'
+        + '<div class="func-node-out">→ torch.zeros(B, M, D)</div>'
+        + '</div>';
+    }
+
+    function funcAttnwndowHTML() {
+      return '<div class="func-node">'
+        + '<div class="func-node-name">func_attnwndow_tpl()</div>'
+        + '<div class="func-node-line">instnct.py : 74–103</div>'
+        + '<div class="func-node-sig">R → radius, M → slots</div>'
+        + '<div class="func-node-desc">Builds a sliding window of <code>2R+1</code> slots centered on the pointer. Uniform mean-pool weights, wraps via mod M — no edge effects.</div>'
+        + '<div class="func-node-out">→ (indices, weights) per batch</div>'
+        + '</div>';
+    }
+
+    function funcSoftreadHTML() {
+      return '<div class="func-node">'
+        + '<div class="func-node-name">func_softread_tns()</div>'
+        + '<div class="func-node-line">instnct.py : 106–127</div>'
+        + '<div class="func-node-sig">ring + (indices, weights) → read</div>'
+        + '<div class="func-node-desc">Gathers <code>2R+1</code> neighbor vectors from the ring at window positions, then collapses via weighted sum into one <code>(B, D)</code> read vector.</div>'
+        + '<div class="func-node-out">→ read_vec (B, D)</div>'
+        + '</div>';
+    }
+
+    function funcSoftwritHTML() {
+      return '<div class="func-node">'
+        + '<div class="func-node-name">func_softwrit_tns()</div>'
+        + '<div class="func-node-line">instnct.py : 129–144</div>'
+        + '<div class="func-node-sig">ring + hidden + indices → updated ring</div>'
+        + '<div class="func-node-desc">Broadcasts expert hidden state to window positions, then <code>scatter_add</code> weighted into ring. Additive — accumulates, never erases.</div>'
+        + '<div class="func-node-out">→ ring_tns (B, M, D) updated</div>'
+        + '</div>';
+    }
+
+    function funcMovepntrHTML() {
+      return '<div class="func-node">'
+        + '<div class="func-node-name">func_movepntr_tns()</div>'
+        + '<div class="func-node-line">instnct.py : 147–168</div>'
+        + '<div class="func-node-sig">ptr + Jₑ/Jw → new ptr</div>'
+        + '<div class="func-node-desc">Moves pointer via soft blend: <code>p·φ-jump + (1-p)·walk</code>. Golden-ratio leap or +1 step — fully differentiable, no hard switching.</div>'
+        + '<div class="func-node-out">→ ptr_tns (B,) updated</div>'
+        + '</div>';
+    }
+
+    function funcPhidestsHTML() {
+      return '<div class="func-node">'
+        + '<div class="func-node-name">phi_destinations()</div>'
+        + '<div class="func-node-line">instnct.py : 33–51</div>'
+        + '<div class="func-node-sig">N → experts, M → slots</div>'
+        + '<div class="func-node-desc">Builds the <code>(N, M)</code> jump table. Golden ratio stride <code>⌊M/φ⌋</code> spaces jumps maximally apart — zero clustering. Computed once, stored as buffer.</div>'
+        + '<div class="func-node-out">→ dests (N, M) lookup table</div>'
+        + '</div>';
+    }
+
+    function funcInitHTML() {
+      return '<div class="func-node">'
+        + '<div class="func-node-name">INSTNCT.__init__()</div>'
+        + '<div class="func-node-line">instnct.py : 178–197</div>'
+        + '<div class="func-node-sig">M, D, N, R → model</div>'
+        + '<div class="func-node-desc">Creates the model: <code>inp</code> (8→D), <code>out</code> (D→8), N <code>read_proj</code> layers (D→D), and precomputes <code>phi_destinations</code> buffer.</div>'
+        + '<div class="func-node-out">→ INSTNCT model instance</div>'
+        + '</div>';
+    }
+
+    function funcForwardHTML() {
+      return '<div class="func-node">'
+        + '<div class="func-node-name">INSTNCT.forward()</div>'
+        + '<div class="func-node-line">instnct.py : 199–243</div>'
+        + '<div class="func-node-sig">x (B,T,8) + S → y (B,T,8)</div>'
+        + '<div class="func-node-desc">The core loop: for each timestep T, each expert N reads, accumulates <code>S × read_proj(read)</code> into hidden, writes back, moves pointer. Output = mean of N experts → 8-dim.</div>'
+        + '<div class="func-node-out">→ torch.stack(outs, 1) shape (B, T, 8)</div>'
+        + '</div>';
+    }
+
+    function conceptIcon() {
+      return '<div class="concept-head-icon">'
+        + '<svg viewBox="0 0 16 16" fill="none"><path d="M8 2 L13 8 L8 14 L3 8 Z" stroke="rgba(0,240,255,.8)" stroke-width="1.2" fill="rgba(0,240,255,.15)"/></svg>'
+        + '</div>';
+    }
+
+    function circularBufferHTML() {
+      // Horizontal slot strip — gradient attention window around pointer
+      var s = '<svg width="240" height="72" viewBox="0 0 240 72" fill="none">';
+      var x0 = 16, y0 = 22, w = 24, h = 22, gap = 2;
+      var ptr = 3, radius = 2; // pointer at slot 3, R=2 → window covers slots 1..5
+      for (var i = 0; i < 8; i++) {
+        var x = x0 + i * (w + gap);
+        var dist = Math.abs(i - ptr);
+        var inWindow = dist <= radius;
+        var intensity = inWindow ? 1 - (dist / (radius + 1)) : 0;
+        // Gradient fill: brightest at ptr, fades outward within window
+        var fillA = inWindow ? (intensity * 0.5).toFixed(2) : '0.03';
+        var strokeA = inWindow ? (0.3 + intensity * 0.5).toFixed(2) : '0.08';
+        var txtA = inWindow ? (0.4 + intensity * 0.5).toFixed(2) : '0.25';
+        var isPtr = (i === ptr);
+        s += '<rect x="' + x + '" y="' + y0 + '" width="' + w + '" height="' + h + '" rx="3"'
+          + ' fill="rgba(14,116,144,' + fillA + ')"'
+          + ' stroke="rgba(34,211,238,' + strokeA + ')"'
+          + ' stroke-width="' + (isPtr ? '1.5' : inWindow ? '1' : '.6') + '"/>';
+        s += '<text x="' + (x + w / 2) + '" y="' + (y0 + h / 2 + 3.5) + '" text-anchor="middle"'
+          + ' font-family="JetBrains Mono" font-size="8" font-weight="' + (isPtr ? '700' : '400') + '"'
+          + ' fill="rgba(34,211,238,' + txtA + ')">' + i + '</text>';
+      }
+      // Pointer arrow pointing down at slot 3
+      var ptrX = x0 + ptr * (w + gap) + w / 2;
+      s += '<polygon points="' + (ptrX - 4) + ',14 ' + (ptrX + 4) + ',14 ' + ptrX + ',20" fill="#22D3EE" opacity=".8"/>';
+      s += '<text x="' + ptrX + '" y="11" text-anchor="middle" font-family="JetBrains Mono" font-size="7" font-weight="600" fill="#22D3EE" opacity=".7">ptr</text>';
+      // Attention bracket under the window slots (1..5)
+      var bL = x0 + (ptr - radius) * (w + gap);
+      var bR = x0 + (ptr + radius) * (w + gap) + w;
+      var bY = y0 + h + 5;
+      s += '<line x1="' + bL + '" y1="' + bY + '" x2="' + bR + '" y2="' + bY + '" stroke="#22D3EE" stroke-width="1" opacity=".3"/>';
+      s += '<line x1="' + bL + '" y1="' + (bY - 3) + '" x2="' + bL + '" y2="' + (bY + 1) + '" stroke="#22D3EE" stroke-width="1" opacity=".3"/>';
+      s += '<line x1="' + bR + '" y1="' + (bY - 3) + '" x2="' + bR + '" y2="' + (bY + 1) + '" stroke="#22D3EE" stroke-width="1" opacity=".3"/>';
+      s += '<text x="' + ((bL + bR) / 2) + '" y="' + (bY + 9) + '" text-anchor="middle" font-family="JetBrains Mono" font-size="6" fill="rgba(34,211,238,.35)">2R+1 = 5 slots</text>';
+      // Wrap arrow: curved from slot 7 end → slot 0 start
+      var endX = x0 + 8 * (w + gap) - gap + 2;
+      var startX = x0 - 2;
+      var midY = y0 + h + 22;
+      s += '<path d="M ' + endX + ',' + (y0 + h / 2) + ' Q ' + (endX + 10) + ',' + midY + ' ' + ((endX + startX) / 2) + ',' + midY + ' Q ' + (startX - 10) + ',' + midY + ' ' + startX + ',' + (y0 + h / 2) + '"'
+        + ' stroke="#22D3EE" stroke-width="1" fill="none" opacity=".15" stroke-dasharray="3,2"/>';
+      s += '<polygon points="' + startX + ',' + (y0 + h / 2) + ' ' + (startX + 5) + ',' + (y0 + h / 2 - 3) + ' ' + (startX + 5) + ',' + (y0 + h / 2 + 3) + '" fill="#22D3EE" opacity=".2"/>';
+      s += '</svg>';
+
+      return '<div class="concept-block">'
+        + '<div class="concept-head">'
+        + conceptIcon()
+        + '<div><div class="concept-head-label">Key Concept</div><div class="concept-head-title">Synaptic Ring</div></div>'
+        + '</div>'
+        + '<div class="concept-diagram">' + s + '</div>'
+        + '<div class="concept-text">'
+        + '<p><strong>Fixed-size ring</strong> of <code>M</code> slots, each <code>D</code>-wide. Slot M wraps to 0 via modulo — no edges, no growth.</p>'
+        + '<p>Fresh each pass: <code>zeros(B, M, D)</code>. Beings read/write the same ring via <code>scatter_add</code> — additive, not destructive.</p>'
+        + '<p>The ring is the <strong>shared workspace</strong>. All inter-being communication flows through it.</p>'
+        + '</div>'
+        + '<div class="concept-kv">'
+        + '<div class="concept-kv-row"><span class="concept-kv-k">Shape</span><span class="concept-kv-v"><code>[B, M, D]</code></span></div>'
+        + '<div class="concept-kv-row"><span class="concept-kv-k">Wrap</span><span class="concept-kv-v"><code>idx % M</code></span></div>'
+        + '<div class="concept-kv-row"><span class="concept-kv-k">Init</span><span class="concept-kv-v"><code>torch.zeros</code></span></div>'
+        + '</div>'
+        + '</div>';
+    }
+
+    function softGatherHTML() {
+      // Number line with float pointer at 3.7, window R=2 covers slots 1..5
+      var s = '<svg width="240" height="78" viewBox="0 0 240 78" fill="none">';
+      var x0 = 16, y0 = 30, w = 24, h = 18, gap = 2;
+      var ptrVal = 3.7, ptrSlot = 3, radius = 2;
+      // Slot boxes
+      for (var i = 0; i < 8; i++) {
+        var x = x0 + i * (w + gap);
+        var inW = Math.abs(i - ptrSlot) <= radius;
+        s += '<rect x="' + x + '" y="' + y0 + '" width="' + w + '" height="' + h + '" rx="2"'
+          + ' fill="rgba(14,116,144,' + (inW ? '.18' : '.03') + ')"'
+          + ' stroke="rgba(34,211,238,' + (inW ? '.4' : '.08') + ')"'
+          + ' stroke-width="' + (inW ? '1' : '.5') + '"/>';
+        s += '<text x="' + (x + w / 2) + '" y="' + (y0 + h / 2 + 3) + '" text-anchor="middle"'
+          + ' font-family="JetBrains Mono" font-size="7" fill="rgba(34,211,238,' + (inW ? '.7' : '.25') + ')">' + i + '</text>';
+      }
+      // Float pointer marker — between slot 3 and 4
+      var fX = x0 + ptrVal * (w + gap) + w / 2 - ptrVal + ptrSlot;
+      fX = x0 + 3 * (w + gap) + w * 0.7 + gap * 0.7; // 70% through slot 3
+      s += '<line x1="' + fX + '" y1="' + (y0 - 2) + '" x2="' + fX + '" y2="' + (y0 + h + 2) + '" stroke="#E879F9" stroke-width="1.5" opacity=".8"/>';
+      s += '<circle cx="' + fX + '" cy="' + (y0 - 5) + '" r="2" fill="#E879F9" opacity=".9"/>';
+      s += '<text x="' + fX + '" y="' + (y0 - 10) + '" text-anchor="middle" font-family="JetBrains Mono" font-size="7" font-weight="700" fill="#E879F9" opacity=".85">3.7</text>';
+      // Uniform weight bars above window slots
+      var barH = 6;
+      for (var j = ptrSlot - radius; j <= ptrSlot + radius; j++) {
+        var bx = x0 + j * (w + gap) + 3;
+        var bw = w - 6;
+        s += '<rect x="' + bx + '" y="' + (y0 + h + 4) + '" width="' + bw + '" height="' + barH + '" rx="1"'
+          + ' fill="rgba(34,211,238,.25)" stroke="rgba(34,211,238,.15)" stroke-width=".5"/>';
+      }
+      // "1/W" label under bars
+      var ctrX = x0 + ptrSlot * (w + gap) + w / 2;
+      s += '<text x="' + ctrX + '" y="' + (y0 + h + barH + 13) + '" text-anchor="middle" font-family="JetBrains Mono" font-size="6" fill="rgba(34,211,238,.35)">uniform 1/W each</text>';
+      // gather arrow: window → single output
+      var arrowY = y0 + h + barH + 18;
+      var aL = x0 + (ptrSlot - radius) * (w + gap) + w / 2;
+      var aR = x0 + (ptrSlot + radius) * (w + gap) + w / 2;
+      s += '<line x1="' + aL + '" y1="' + arrowY + '" x2="' + aR + '" y2="' + arrowY + '" stroke="rgba(34,211,238,.2)" stroke-width=".5"/>';
+      s += '<line x1="' + aL + '" y1="' + arrowY + '" x2="' + ctrX + '" y2="' + (arrowY + 6) + '" stroke="rgba(34,211,238,.2)" stroke-width=".5"/>';
+      s += '<line x1="' + aR + '" y1="' + arrowY + '" x2="' + ctrX + '" y2="' + (arrowY + 6) + '" stroke="rgba(34,211,238,.2)" stroke-width=".5"/>';
+      s += '<text x="' + (ctrX + 18) + '" y="' + (arrowY + 7) + '" font-family="JetBrains Mono" font-size="5.5" fill="rgba(232,234,240,.3)">→ read_vec</text>';
+      s += '</svg>';
+
+      return '<div class="concept-block">'
+        + '<div class="concept-head">'
+        + conceptIcon()
+        + '<div><div class="concept-head-label">Key Concept</div><div class="concept-head-title">Soft Gather</div></div>'
+        + '</div>'
+        + '<div class="concept-diagram">' + s + '</div>'
+        + '<div class="concept-text">'
+        + '<p>The pointer is a <strong>float</strong>, not an int. Position <code>3.7</code> doesn\'t snap — it opens a <strong>window</strong> of <code>2R+1</code> slots around <code>floor(pos)</code>.</p>'
+        + '<p><code>gather</code> pulls the neighborhood, then <strong>uniform mean-pool</strong> collapses it into one read vector. No hard indexing — fully differentiable.</p>'
+        + '<p>Gradients flow back through the <strong>weighted sum</strong> into pointer position, jump gate, and hidden state.</p>'
+        + '</div>'
+        + '<div class="concept-kv">'
+        + '<div class="concept-kv-row"><span class="concept-kv-k">Window</span><span class="concept-kv-v"><code>2R+1</code> slots around <code>floor(pos)</code></span></div>'
+        + '<div class="concept-kv-row"><span class="concept-kv-k">Weights</span><span class="concept-kv-v"><code>ones(W) / W</code> — uniform</span></div>'
+        + '<div class="concept-kv-row"><span class="concept-kv-k">Op</span><span class="concept-kv-v"><code>gather → weighted sum</code></span></div>'
+        + '</div>'
+        + '</div>';
+    }
+
+    function jumpOrWalkHTML() {
+      // Two paths from slot 3: short walk +1 and long jump arc to slot 7
+      var s = '<svg width="240" height="76" viewBox="0 0 240 76" fill="none">';
+      var x0 = 16, y0 = 32, w = 24, h = 18, gap = 2;
+      var src = 3, walkDst = 4, jumpDst = 7;
+      // Slot boxes
+      for (var i = 0; i < 8; i++) {
+        var x = x0 + i * (w + gap);
+        var isSrc = (i === src);
+        var isWalk = (i === walkDst);
+        var isJump = (i === jumpDst);
+        var fillA = isSrc ? '.25' : (isWalk || isJump) ? '.12' : '.03';
+        var strokeA = isSrc ? '.6' : (isWalk || isJump) ? '.35' : '.08';
+        var strokeC = isJump ? '34,197,94' : '34,211,238';
+        if (isWalk) strokeC = '232,121,249';
+        s += '<rect x="' + x + '" y="' + y0 + '" width="' + w + '" height="' + h + '" rx="2"'
+          + ' fill="rgba(14,116,144,' + fillA + ')"'
+          + ' stroke="rgba(' + strokeC + ',' + strokeA + ')"'
+          + ' stroke-width="' + (isSrc ? '1.5' : '1') + '"/>';
+        s += '<text x="' + (x + w / 2) + '" y="' + (y0 + h / 2 + 3) + '" text-anchor="middle"'
+          + ' font-family="JetBrains Mono" font-size="7" fill="rgba(' + strokeC + ',' + (isSrc || isWalk || isJump ? '.8' : '.25') + ')">' + i + '</text>';
+      }
+      // Source label
+      var srcX = x0 + src * (w + gap) + w / 2;
+      s += '<text x="' + srcX + '" y="' + (y0 - 6) + '" text-anchor="middle" font-family="JetBrains Mono" font-size="6" font-weight="600" fill="#22D3EE" opacity=".7">pos</text>';
+      // Walk arrow: short step right → slot 4 (fuchsia)
+      var walkX = x0 + walkDst * (w + gap) + w / 2;
+      var arrowY = y0 + h + 8;
+      s += '<line x1="' + srcX + '" y1="' + arrowY + '" x2="' + (walkX - 4) + '" y2="' + arrowY + '" stroke="#E879F9" stroke-width="1.2" opacity=".6"/>';
+      s += '<polygon points="' + (walkX - 4) + ',' + (arrowY - 2.5) + ' ' + (walkX) + ',' + arrowY + ' ' + (walkX - 4) + ',' + (arrowY + 2.5) + '" fill="#E879F9" opacity=".6"/>';
+      s += '<text x="' + ((srcX + walkX) / 2) + '" y="' + (arrowY + 10) + '" text-anchor="middle" font-family="JetBrains Mono" font-size="5.5" fill="#E879F9" opacity=".5">walk +1</text>';
+      // Jump arc: long curved arrow to slot 7 (green)
+      var jumpX = x0 + jumpDst * (w + gap) + w / 2;
+      var arcY = y0 - 14;
+      s += '<path d="M ' + srcX + ',' + (y0 - 1) + ' Q ' + ((srcX + jumpX) / 2) + ',' + arcY + ' ' + (jumpX) + ',' + (y0 - 1) + '"'
+        + ' stroke="#22C55E" stroke-width="1.2" fill="none" opacity=".5" stroke-dasharray="3,2"/>';
+      s += '<polygon points="' + (jumpX) + ',' + (y0 - 1) + ' ' + (jumpX - 4) + ',' + (y0 - 5) + ' ' + (jumpX - 4) + ',' + (y0 + 2) + '" fill="#22C55E" opacity=".5"/>';
+      s += '<text x="' + ((srcX + jumpX) / 2) + '" y="' + (arcY - 2) + '" text-anchor="middle" font-family="JetBrains Mono" font-size="5.5" fill="#22C55E" opacity=".5">jump dest[3]</text>';
+      // Sigmoid gate box in the middle
+      var gX = x0 + 5 * (w + gap) + w / 2 - 16;
+      var gY = y0 + h + 5;
+      s += '<rect x="' + gX + '" y="' + gY + '" width="32" height="12" rx="6" fill="rgba(245,158,11,.12)" stroke="rgba(245,158,11,.3)" stroke-width=".8"/>';
+      s += '<text x="' + (gX + 16) + '" y="' + (gY + 8.5) + '" text-anchor="middle" font-family="JetBrains Mono" font-size="5.5" font-weight="600" fill="rgba(245,158,11,.8)">p·blend</text>';
+      s += '</svg>';
+
+      return '<div class="concept-block">'
+        + '<div class="concept-head">'
+        + conceptIcon()
+        + '<div><div class="concept-head-label">Key Concept</div><div class="concept-head-title">Stride Gate</div></div>'
+        + '</div>'
+        + '<div class="concept-diagram">' + s + '</div>'
+        + '<div class="concept-text">'
+        + '<p>Every step, the pointer faces a <strong>binary choice</strong>: walk to <code>pos+1</code> (sequential) or jump to a <strong>φ-based destination</strong> <code>φ_dest(slot)</code>.</p>'
+        + '<p>A <strong>fixed probability</strong> blends the two: <code>p·jump + (1-p)·walk</code>. No hard switch — the blend is smooth and differentiable.</p>'
+        + '<p>The gate is <strong>role-based</strong>: each being gets <code>CNFG_JUMPIPROB_FLT</code> (explorer), <code>CNFG_WALKIPROB_FLT</code> (walker), or 0.5 (neutral). Sweep-validated: loss surface is flat — exact value barely matters.</p>'
+        + '</div>'
+        + '<div class="concept-kv">'
+        + '<div class="concept-kv-row"><span class="concept-kv-k">Walk</span><span class="concept-kv-v"><code>(pos + 1) % M</code></span></div>'
+        + '<div class="concept-kv-row"><span class="concept-kv-k">Jump</span><span class="concept-kv-v"><code>φ_dest(slot)</code> — golden ratio, zero params</span></div>'
+        + '<div class="concept-kv-row"><span class="concept-kv-k">Gate</span><span class="concept-kv-v">Fixed: <code>CNFG_JUMPIPROB_FLT</code>=0.9 / <code>CNFG_WALKIPROB_FLT</code>=0.1</span></div>'
+        + '</div>'
+        + '</div>';
+    }
+
+    function scatterAddHTML() {
+      // Two beings writing to overlapping ring regions — overlap glows brighter
+      var s = '<svg width="240" height="80" viewBox="0 0 240 80" fill="none">';
+      var x0 = 16, y0 = 30, w = 24, h = 18, gap = 2;
+      // Being A writes to slots 2-4, Being B writes to slots 4-6 → overlap at slot 4
+      var beingA = [2, 3, 4], beingB = [4, 5, 6];
+      for (var i = 0; i < 8; i++) {
+        var x = x0 + i * (w + gap);
+        var inA = beingA.indexOf(i) >= 0;
+        var inB = beingB.indexOf(i) >= 0;
+        var overlap = inA && inB;
+        var fillA = overlap ? '.4' : (inA || inB) ? '.18' : '.03';
+        var strokeC = overlap ? '232,121,249' : inA ? '34,211,238' : inB ? '245,158,11' : '255,255,255';
+        var strokeA = overlap ? '.7' : (inA || inB) ? '.4' : '.08';
+        var sw = overlap ? '1.5' : '1';
+        s += '<rect x="' + x + '" y="' + y0 + '" width="' + w + '" height="' + h + '" rx="2"'
+          + ' fill="rgba(' + (overlap ? '192,38,211' : '14,116,144') + ',' + fillA + ')"'
+          + ' stroke="rgba(' + strokeC + ',' + strokeA + ')"'
+          + ' stroke-width="' + sw + '"/>';
+        s += '<text x="' + (x + w / 2) + '" y="' + (y0 + h / 2 + 3) + '" text-anchor="middle"'
+          + ' font-family="JetBrains Mono" font-size="7" fill="rgba(' + strokeC + ',' + (inA || inB ? '.8' : '.25') + ')">' + i + '</text>';
+      }
+      // Being A bracket + label (cyan)
+      var aL = x0 + beingA[0] * (w + gap), aR = x0 + beingA[beingA.length - 1] * (w + gap) + w;
+      var brkY = y0 - 6;
+      s += '<line x1="' + aL + '" y1="' + brkY + '" x2="' + aR + '" y2="' + brkY + '" stroke="#22D3EE" stroke-width="1" opacity=".4"/>';
+      s += '<text x="' + ((aL + aR) / 2) + '" y="' + (brkY - 3) + '" text-anchor="middle" font-family="JetBrains Mono" font-size="5.5" font-weight="600" fill="#22D3EE" opacity=".6">Being A</text>';
+      // Being B bracket + label (amber)
+      var bL = x0 + beingB[0] * (w + gap), bR = x0 + beingB[beingB.length - 1] * (w + gap) + w;
+      s += '<line x1="' + bL + '" y1="' + (brkY - 12) + '" x2="' + bR + '" y2="' + (brkY - 12) + '" stroke="#FCD34D" stroke-width="1" opacity=".4"/>';
+      s += '<text x="' + ((bL + bR) / 2) + '" y="' + (brkY - 15) + '" text-anchor="middle" font-family="JetBrains Mono" font-size="5.5" font-weight="600" fill="#FCD34D" opacity=".6">Being B</text>';
+      // Scatter arrows coming down into slots
+      for (var k = 0; k < beingA.length; k++) {
+        var ax = x0 + beingA[k] * (w + gap) + w / 2 - 3;
+        s += '<line x1="' + ax + '" y1="' + (y0 + h + 2) + '" x2="' + ax + '" y2="' + (y0 + h + 8) + '" stroke="#22D3EE" stroke-width="1" opacity=".35"/>';
+        s += '<polygon points="' + (ax - 2) + ',' + (y0 + h + 2) + ' ' + (ax + 2) + ',' + (y0 + h + 2) + ' ' + ax + ',' + (y0 + h + 5) + '" fill="#22D3EE" opacity=".35"/>';
+      }
+      for (var m = 0; m < beingB.length; m++) {
+        var bx = x0 + beingB[m] * (w + gap) + w / 2 + 3;
+        s += '<line x1="' + bx + '" y1="' + (y0 + h + 2) + '" x2="' + bx + '" y2="' + (y0 + h + 8) + '" stroke="#FCD34D" stroke-width="1" opacity=".35"/>';
+        s += '<polygon points="' + (bx - 2) + ',' + (y0 + h + 2) + ' ' + (bx + 2) + ',' + (y0 + h + 2) + ' ' + bx + ',' + (y0 + h + 5) + '" fill="#FCD34D" opacity=".35"/>';
+      }
+      // Overlap glow label
+      var ovX = x0 + 4 * (w + gap) + w / 2;
+      s += '<text x="' + ovX + '" y="' + (y0 + h + 18) + '" text-anchor="middle" font-family="JetBrains Mono" font-size="5" fill="#E879F9" opacity=".5">Σ accumulate</text>';
+      // "+" symbols at overlap slot
+      s += '<text x="' + ovX + '" y="' + (y0 + h / 2 + 3) + '" text-anchor="middle" font-family="JetBrains Mono" font-size="9" font-weight="700" fill="#E879F9" opacity=".6">+</text>';
+      s += '</svg>';
+
+      return '<div class="concept-block">'
+        + '<div class="concept-head">'
+        + conceptIcon()
+        + '<div><div class="concept-head-label">Key Concept</div><div class="concept-head-title">Scatter-Add Write</div></div>'
+        + '</div>'
+        + '<div class="concept-diagram">' + s + '</div>'
+        + '<div class="concept-text">'
+        + '<p>Writing is <strong>additive</strong>: <code>scatter_add</code> accumulates contributions into ring slots. Nothing gets erased or overwritten.</p>'
+        + '<p>When multiple beings write to <strong>overlapping</strong> regions, their hidden states <strong>stack</strong>. Slot value = Σ all contributions from all beings.</p>'
+        + '<p>Weighted by attention window. The ring becomes a <strong>shared blackboard</strong>.</p>'
+        + '</div>'
+        + '<div class="concept-kv">'
+        + '<div class="concept-kv-row"><span class="concept-kv-k">Op</span><span class="concept-kv-v"><code>scatter_add(dim=1, idx, src)</code></span></div>'
+        + '<div class="concept-kv-row"><span class="concept-kv-k">Shape</span><span class="concept-kv-v"><code>[B, M, D]</code> ring accumulates all writes</span></div>'
+        + '<div class="concept-kv-row"><span class="concept-kv-k">Mode</span><span class="concept-kv-v">additive — no erase, only accumulate</span></div>'
+        + '</div>'
+        + '</div>';
+    }
+
+    function fullyDiffHTML() {
+      // Forward pipeline boxes + backward gradient arrow
+      var s = '<svg width="240" height="80" viewBox="0 0 240 80" fill="none">';
+      // Pipeline stages as small rounded boxes
+      var stages = ['ptr', 'move', 'read', 'proc', 'write'];
+      var labels = ['pos', 'stride', 'gather', 'h·W+b', 'scatter'];
+      var colors = ['#22D3EE', '#22C55E', '#E879F9', '#E8EAF0', '#FCD34D'];
+      var bw = 38, bh = 18, gx = 6, y1 = 18;
+      var totalW = stages.length * bw + (stages.length - 1) * gx;
+      var startX = (240 - totalW) / 2;
+      // Forward arrow line
+      s += '<line x1="' + (startX - 2) + '" y1="' + (y1 + bh / 2) + '" x2="' + (startX + totalW + 2) + '" y2="' + (y1 + bh / 2) + '" stroke="rgba(255,255,255,.06)" stroke-width="12" stroke-linecap="round"/>';
+      for (var i = 0; i < stages.length; i++) {
+        var bx = startX + i * (bw + gx);
+        // Box
+        s += '<rect x="' + bx + '" y="' + y1 + '" width="' + bw + '" height="' + bh + '" rx="4"'
+          + ' fill="rgba(14,116,144,.12)" stroke="' + colors[i] + '" stroke-width="1" stroke-opacity=".4"/>';
+        // Label
+        s += '<text x="' + (bx + bw / 2) + '" y="' + (y1 + bh / 2 + 3) + '" text-anchor="middle"'
+          + ' font-family="JetBrains Mono" font-size="6" font-weight="500" fill="' + colors[i] + '" opacity=".8">' + labels[i] + '</text>';
+        // Forward arrow between boxes
+        if (i < stages.length - 1) {
+          var ax = bx + bw + 1;
+          s += '<polygon points="' + ax + ',' + (y1 + bh / 2 - 2) + ' ' + (ax + 4) + ',' + (y1 + bh / 2) + ' ' + ax + ',' + (y1 + bh / 2 + 2) + '" fill="rgba(255,255,255,.15)"/>';
+        }
+      }
+      // "forward →" label
+      s += '<text x="' + (startX + totalW / 2) + '" y="' + (y1 - 4) + '" text-anchor="middle" font-family="JetBrains Mono" font-size="5.5" fill="rgba(255,255,255,.2)">forward →</text>';
+      // Backward gradient arrow — red/coral, flowing right to left under the boxes
+      var gradY = y1 + bh + 12;
+      var gL = startX + totalW - 2;
+      var gR = startX + 2;
+      // Gradient line with glow
+      s += '<line x1="' + gL + '" y1="' + gradY + '" x2="' + (gR + 6) + '" y2="' + gradY + '" stroke="#EF4444" stroke-width="1.5" opacity=".5"/>';
+      // Arrowhead pointing left
+      s += '<polygon points="' + (gR + 6) + ',' + (gradY - 3) + ' ' + gR + ',' + gradY + ' ' + (gR + 6) + ',' + (gradY + 3) + '" fill="#EF4444" opacity=".5"/>';
+      // "← ∇ gradient" label
+      s += '<text x="' + (startX + totalW / 2) + '" y="' + (gradY + 11) + '" text-anchor="middle" font-family="JetBrains Mono" font-size="5.5" fill="#EF4444" opacity=".4">← ∇ backprop</text>';
+      // Small vertical connecting lines from gradient to each box
+      for (var j = 0; j < stages.length; j++) {
+        var cx = startX + j * (bw + gx) + bw / 2;
+        s += '<line x1="' + cx + '" y1="' + (y1 + bh) + '" x2="' + cx + '" y2="' + gradY + '" stroke="#EF4444" stroke-width=".6" opacity=".2" stroke-dasharray="2,2"/>';
+      }
+      // "Loss" label at the right end
+      s += '<text x="' + (gL + 8) + '" y="' + (gradY + 3) + '" font-family="JetBrains Mono" font-size="6" font-weight="600" fill="#EF4444" opacity=".45">L</text>';
+      s += '</svg>';
+
+      return '<div class="concept-block">'
+        + '<div class="concept-head">'
+        + conceptIcon()
+        + '<div><div class="concept-head-label">Key Concept</div><div class="concept-head-title">Fully Differentiable</div></div>'
+        + '</div>'
+        + '<div class="concept-diagram">' + s + '</div>'
+        + '<div class="concept-text">'
+        + '<p><strong>Every operation</strong> has gradients. No hard indexing, no <code>argmax</code>, no <code>detach()</code>. The entire ring pipeline trains end-to-end via backprop.</p>'
+        + '<p>Pointer is a <strong>float</strong> (not int), movement is a <strong>fixed probability blend</strong> (not if/else), read is a <strong>weighted sum</strong> (not array lookup).</p>'
+        + '<p>Loss gradients flow from write → process → read → move → <strong>pointer position</strong>. No straight-through estimators needed.</p>'
+        + '</div>'
+        + '<div class="concept-kv">'
+        + '<div class="concept-kv-row"><span class="concept-kv-k">Key</span><span class="concept-kv-v">all ops are <code>autograd</code>-compatible</span></div>'
+        + '<div class="concept-kv-row"><span class="concept-kv-k">No</span><span class="concept-kv-v"><code>detach, no_grad, argmax, STE</code></span></div>'
+        + '<div class="concept-kv-row"><span class="concept-kv-k">Flow</span><span class="concept-kv-v">Loss → write → read → move → pos</span></div>'
+        + '</div>'
+        + '</div>';
+    }
+
+    // ── Source file node builders ──
+    var FILE_ICON = '<svg viewBox="0 0 16 16" fill="none"><path d="M3 1.5h6.5L13 5v9.5a1 1 0 01-1 1H4a1 1 0 01-1-1V1.5z" stroke="rgba(34,197,94,.7)" stroke-width="1" fill="rgba(34,197,94,.08)"/><path d="M9.5 1.5V5H13" stroke="rgba(34,197,94,.5)" stroke-width="1" fill="none"/></svg>';
+
+    function fileInstnctHTML() {
+      return '<div class="file-node">'
+        + '<div class="file-node-head">'
+        + '<div class="file-node-icon">' + FILE_ICON + '</div>'
+        + '<div class="file-node-name">instnct.py</div>'
+        + '<div class="file-node-tag">core model</div>'
+        + '</div>'
+        + '<div class="file-node-desc">Ring init, gather read, scatter_add write, stride gate, pointer movement. The <code>INSTNCT</code> class.</div>'
+        + '<div class="file-node-chips">'
+        + '<div class="file-node-chip">INSTNCT</div>'
+        + '<div class="file-node-chip">phi_destinations</div>'
+        + '<div class="file-node-chip">func_softread_tns</div>'
+        + '<div class="file-node-chip">func_softwrit_tns</div>'
+        + '<div class="file-node-chip">func_movepntr_tns</div>'
+        + '<div class="file-node-chip">forward()</div>'
+        + '</div>'
+        + '</div>';
+    }
+
+    function fileTrainHTML() {
+      return '<div class="file-node">'
+        + '<div class="file-node-head">'
+        + '<div class="file-node-icon">' + FILE_ICON + '</div>'
+        + '<div class="file-node-name">train.py</div>'
+        + '<div class="file-node-tag">entrypoint</div>'
+        + '</div>'
+        + '<div class="file-node-desc">Training harness. Calls <code>INSTNCT.forward()</code> per batch — full ring pipeline each step.</div>'
+        + '<div class="file-node-chips">'
+        + '<div class="file-node-chip">train loop</div>'
+        + '<div class="file-node-chip">CrossEntropyLoss</div>'
+        + '<div class="file-node-chip">256-class</div>'
+        + '</div>'
+        + '</div>';
+    }
+
+    // ── Runtime state node builders ──
+    var VAR_ICON = '<svg viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="3" stroke="rgba(232,121,249,.7)" stroke-width="1.2" fill="rgba(232,121,249,.12)"/><circle cx="8" cy="8" r="1.2" fill="rgba(232,121,249,.5)"/></svg>';
+
+    function varSynapringHTML() {
+      return '<div class="var-node">'
+        + '<div class="var-node-head">'
+        + '<div class="var-node-icon">' + VAR_ICON + '</div>'
+        + '<div class="var-node-name">VRBL_SYNAPRING</div>'
+        + '<div class="var-node-shape">[B, M, D]</div>'
+        + '</div>'
+        + '<div class="var-node-desc">The synaptic ring. Fresh <code>torch.zeros</code> each pass. All beings read/write here.</div>'
+        + '</div>';
+    }
+
+    function varPtrpositnHTML() {
+      return '<div class="var-node">'
+        + '<div class="var-node-head">'
+        + '<div class="var-node-icon">' + VAR_ICON + '</div>'
+        + '<div class="var-node-name">VRBL_PTRPOSITN</div>'
+        + '<div class="var-node-shape">[N, B]</div>'
+        + '</div>'
+        + '<div class="var-node-desc">Pointer position per being. Float ∈ <code>[0, M)</code>. Updated each step by Stride Gate.</div>'
+        + '</div>';
+    }
+
+    // ── Try restore saved layout, otherwise use defaults ──
+    const saved = localStorage.getItem('vraxion_kb02_flow_v62');
+    if (saved) {
+      try { editor.import(JSON.parse(saved)); } catch (e) { buildDefault(); }
+    } else {
+      buildDefault();
+    }
+
+    function buildDefault() {
+      // Concept blocks — horizontal row (nodes 1-5), reference cards only
+      var startX = -680, spaceX = 340, cY = -320;
+      editor.addNode('Synaptic Ring', 0, 0, startX, cY, 'concept', {}, circularBufferHTML());              // node 1
+      editor.addNode('Soft Gather', 0, 0, startX + spaceX, cY, 'concept', {}, softGatherHTML());           // node 2
+      editor.addNode('Stride Gate', 0, 0, startX + spaceX * 2, cY, 'concept', {}, jumpOrWalkHTML());       // node 3
+      editor.addNode('Scatter-Add Write', 0, 0, startX + spaceX * 3, cY, 'concept', {}, scatterAddHTML()); // node 4
+      editor.addNode('Fully Differentiable', 0, 0, startX + spaceX * 4, cY, 'concept', {}, fullyDiffHTML()); // node 5
+
+      // Source file nodes (nodes 6-7)
+      var fileY = 296;
+      editor.addNode('instnct.py', 0, 0, startX, fileY, 'file', {}, fileInstnctHTML());
+      editor.addNode('train.py', 0, 0, startX + 300, fileY, 'file', {}, fileTrainHTML());
+
+      // Runtime state nodes (nodes 8-9)
+      var varY = 296;
+      editor.addNode('VRBL_SYNAPRING', 0, 0, startX + 760, varY, 'var', {}, varSynapringHTML());
+      editor.addNode('VRBL_PTRPOSITN', 0, 0, startX + 1040, varY, 'var', {}, varPtrpositnHTML());
+
+      // Config nodes — left column (nodes 10-16)
+      var cfgY = 656;
+      CFGS.forEach((c, i) => {
+        editor.addNode(c.name, 0, 1, startX, cfgY + i * 96, 'cfg', {}, cfgHTML(c));
+      });
+
+      // ── Function panels — the flowchart ──
+      // Two-row layout: top = per-timestep pipeline, bottom = setup + execution
+      var funcX = startX + 420;  // right of config column
+      var rowTop = cfgY + 28;    // pipeline row
+      var rowBot = cfgY + 320;   // assembly row
+
+      // ── Top row: per-timestep pipeline (L→R) ──
+      //   ringstart → attnwndow → softread → softwrit → movepntr
+      editor.addNode('func_ringstart_tns', 2, 3, funcX,        rowTop, 'func', {}, funcRingstartHTML());  // 17: 2in(M,D) 3out
+      editor.addNode('func_attnwndow_tpl', 2, 2, funcX + 380,  rowTop, 'func', {}, funcAttnwndowHTML()); // 18: 2in(R,ring) 2out
+      editor.addNode('func_softread_tns',  2, 2, funcX + 760,  rowTop, 'func', {}, funcSoftreadHTML());  // 19: 2in(ring,wnd) 2out
+      editor.addNode('func_softwrit_tns',  2, 2, funcX + 1140, rowTop, 'func', {}, funcSoftwritHTML());  // 20: 2in(read,wnd) 2out
+      editor.addNode('func_movepntr_tns',  4, 1, funcX + 1520, rowTop, 'func', {}, funcMovepntrHTML());  // 21: 4in(Jₑ,Jw,chain,dests) 1out
+
+      // ── Bottom row: setup + execution ──
+      //   phi_destinations → __init__ → forward
+      editor.addNode('phi_destinations',    2, 2, funcX + 760,  rowBot, 'func', {}, funcPhidestsHTML());  // 22: 2in(M,N) 2out
+      editor.addNode('INSTNCT.__init__',    2, 1, funcX + 1140, rowBot, 'func', {}, funcInitHTML());      // 23: 2in(ring,phi) 1out
+      editor.addNode('INSTNCT.forward',     5, 0, funcX + 1520, rowBot, 'func', {}, funcForwardHTML());   // 24: 5in(init,S,mvp,rd,wr) 0out
+
+      // ── Config → Function connections ──
+      editor.addConnection(10, 17, 'output_1', 'input_1');  // M → ringstart in_1
+      editor.addConnection(11, 17, 'output_1', 'input_2');  // D → ringstart in_2
+      editor.addConnection(13, 18, 'output_1', 'input_1');  // R → attnwndow in_1
+      editor.addConnection(15, 21, 'output_1', 'input_1');  // Jₑ → movepntr in_1
+      editor.addConnection(16, 21, 'output_1', 'input_2');  // Jw → movepntr in_2
+      editor.addConnection(10, 22, 'output_1', 'input_1');  // M → phi_dests in_1
+      editor.addConnection(12, 22, 'output_1', 'input_2');  // N → phi_dests in_2
+      editor.addConnection(14, 24, 'output_1', 'input_2');  // S → forward in_2
+
+      // ── Top row pipeline (horizontal L→R) ──
+      editor.addConnection(17, 18, 'output_1', 'input_2');  // ringstart out_1 → attnwndow in_2 (ring)
+      editor.addConnection(17, 19, 'output_2', 'input_1');  // ringstart out_2 → softread in_1 (ring tensor)
+      editor.addConnection(18, 19, 'output_1', 'input_2');  // attnwndow out_1 → softread in_2 (indices, weights)
+      editor.addConnection(19, 20, 'output_1', 'input_1');  // softread out_1 → softwrit in_1 (read data)
+      editor.addConnection(18, 20, 'output_2', 'input_2');  // attnwndow out_2 → softwrit in_2 (reuses window)
+      editor.addConnection(20, 21, 'output_1', 'input_3');  // softwrit out_1 → movepntr in_3 (chain)
+
+      // ── Cross-row connections ──
+      editor.addConnection(22, 21, 'output_1', 'input_4');  // phi_dests out_1 → movepntr in_4 (dests table)
+      editor.addConnection(17, 23, 'output_3', 'input_1');  // ringstart out_3 → __init__ in_1 (buffer init)
+      editor.addConnection(22, 23, 'output_2', 'input_2');  // phi_dests out_2 → __init__ in_2 (stored buffer)
+      editor.addConnection(23, 24, 'output_1', 'input_1');  // __init__ → forward in_1 (model ready)
+
+      // ── Loop: pipeline funcs feed into forward each timestep ──
+      editor.addConnection(21, 24, 'output_1', 'input_3');  // movepntr → forward in_3
+      editor.addConnection(19, 24, 'output_2', 'input_4');  // softread → forward in_4
+      editor.addConnection(20, 24, 'output_2', 'input_5');  // softwrit → forward in_5
+
+      // Save initial layout
+      localStorage.setItem('vraxion_kb02_flow_v62', JSON.stringify(editor.export()));
+    }
+
+    // ── Zone backgrounds ──
+    setTimeout(function() {
+      var c = editor.precanvas || document.querySelector('#drawflow-canvas .drawflow');
+      if (!c) return;
+      [
+        ['zone-concepts','CONCEPTS',-712,-352,1744,560],
+        ['zone-files','SOURCE FILES',-712,264,684,324],
+        ['zone-vars','RUNTIME STATE',48,264,644,324],
+        ['zone-configs','HYPERPARAMS',-712,624,324,740],
+        ['zone-funcs','FUNCTIONS',-340,624,2040,740]
+      ].forEach(function(z) {
+        var d = document.createElement('div');
+        d.className = 'zone-bg ' + z[0];
+        d.style.cssText = 'position:absolute;left:'+z[2]+'px;top:'+z[3]+'px;width:'+z[4]+'px;height:'+z[5]+'px;';
+        d.innerHTML = '<span class="zone-label">'+z[1]+'</span>';
+        c.appendChild(d);
+      });
+    }, 50);
+
+    // ── Arrowhead SVG markers (global defs) ──
+    (function() {
+      var svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+      svg.style.cssText = 'position:absolute;width:0;height:0;overflow:hidden';
+      svg.innerHTML = '<defs>'
+        + '<marker id="arrow-cfg" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse">'
+        + '<path d="M 0 1 L 8 5 L 0 9 z" fill="rgba(245,158,11,0.45)"/>'
+        + '</marker>'
+        + '<marker id="arrow-func" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse">'
+        + '<path d="M 0 1 L 8 5 L 0 9 z" fill="rgba(96,165,250,0.35)"/>'
+        + '</marker>'
+        + '</defs>';
+      document.body.appendChild(svg);
+    })();
+
+    // ── Classify & style all connections by source/target node type ──
+    function styleAllConnections() {
+      document.querySelectorAll('.drawflow .connection').forEach(function(connSvg) {
+        var classes = connSvg.className.baseVal || '';
+        var inMatch = classes.match(/node_in_node-(\d+)/);
+        var outMatch = classes.match(/node_out_node-(\d+)/);
+        if (!inMatch || !outMatch) return;
+        var fromNode = editor.getNodeFromId(parseInt(outMatch[1], 10));
+        var toNode = editor.getNodeFromId(parseInt(inMatch[1], 10));
+        if (!fromNode || !toNode) return;
+        // Add type classes for CSS targeting
+        connSvg.classList.add('conn-from-' + fromNode.class);
+        connSvg.classList.add('conn-to-' + toNode.class);
+        // Add arrowhead marker
+        var path = connSvg.querySelector('.main-path');
+        if (path) {
+          var marker = fromNode.class === 'cfg' ? 'arrow-cfg' : 'arrow-func';
+          path.setAttribute('marker-end', 'url(#' + marker + ')');
+        }
+      });
+    }
+    setTimeout(styleAllConnections, 100);
+
+    // Node click → highlight code
+    editor.on('nodeSelected', function (id) {
+      const n = editor.getNodeFromId(id);
+      const name = n.name;
+      // Map node names to code line ranges
+      const ranges = {
+        // Configs → YAML declaration lines
+        'CNFG_RINGSLOTS_INT': [20, 24], 'CNFG_RSLOTDIMS_INT': [20, 24],
+        'CNFG_BEINGSNUM_INT': [20, 24], 'CNFG_ATNRADIUS_INT': [20, 24],
+        'CNFG_CNTEXTSCL_FLT': [26, 29], 'CNFG_JUMPIPROB_FLT': [26, 29], 'CNFG_WALKIPROB_FLT': [26, 29],
+        // Concepts → corresponding function code
+        'Synaptic Ring': [54, 72], 'Soft Gather': [106, 127], 'Stride Gate': [147, 169],
+        'Scatter-Add Write': [129, 145],
+        'Fully Differentiable': [1, 243],
+        // Function panels → exact code ranges in instnct.py
+        'func_ringstart_tns': [54, 72],
+        'func_attnwndow_tpl': [74, 103],
+        'func_softread_tns': [106, 127],
+        'func_softwrit_tns': [129, 144],
+        'func_movepntr_tns': [147, 168],
+        'phi_destinations': [33, 51],
+        'INSTNCT.__init__': [178, 197],
+        'INSTNCT.forward': [199, 243],
+      };
+      const [s, e] = ranges[name] || [0, 0];
+      if (s) {
+        switchTab('code');
+        document.querySelectorAll('.code-line').forEach((line, i) => {
+          line.classList.toggle('highlighted', i >= s - 1 && i <= e - 1);
+        });
+        const target = document.querySelectorAll('.code-line')[s - 1];
+        if (target) target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    });
+    editor.on('nodeUnselected', function () {
+      document.querySelectorAll('.code-line').forEach(l => l.classList.remove('highlighted'));
+    });
+
+    // Concept row click → select matching node on canvas + highlight code
+    document.querySelectorAll('.concept-card').forEach(row => {
+      row.addEventListener('click', function () {
+        const conceptName = this.dataset.concept;
+        // Find the node by name
+        const data = editor.drawflow.drawflow[editor.module].data;
+        for (const id in data) {
+          if (data[id].name === conceptName) {
+            // Deselect current
+            editor.node_selected && editor.node_selected.classList.remove('selected');
+            // Select this node
+            const el = document.getElementById('node-' + id);
+            if (el) {
+              el.classList.add('selected');
+              editor.node_selected = el;
+              // Trigger nodeSelected to highlight code
+              editor.dispatch('nodeSelected', id);
+              // Scroll canvas to node
+              el.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
+            }
+            break;
+          }
+        }
+      });
+    });
+
+    // ── Draggable divider — resize right panel ──
+    (function () {
+      const divider = document.querySelector('.divider');
+      const panelCode = document.querySelector('.panel-code');
+      let dragging = false;
+
+      divider.addEventListener('mousedown', function (e) {
+        e.preventDefault();
+        dragging = true;
+        divider.classList.add('dragging');
+        document.body.style.cursor = 'col-resize';
+        document.body.style.userSelect = 'none';
+      });
+
+      document.addEventListener('mousemove', function (e) {
+        if (!dragging) return;
+        const totalW = window.innerWidth;
+        const newW = totalW - e.clientX;
+        const minW = 240;
+        const maxW = totalW * 0.7;
+        const clamped = Math.max(minW, Math.min(maxW, newW));
+        panelCode.style.width = clamped + 'px';
+        panelCode.style.maxWidth = clamped + 'px';
+      });
+
+      document.addEventListener('mouseup', function () {
+        if (!dragging) return;
+        dragging = false;
+        divider.classList.remove('dragging');
+        document.body.style.cursor = '';
+        document.body.style.userSelect = '';
+      });
+    })();
+  </script>
+</body>
+
+</html>

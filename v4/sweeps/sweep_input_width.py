@@ -89,8 +89,8 @@ def train_one_config(B, D, raw_bytes, steps, batch_size, device, log_every=10):
     x_all, y_all = load_binary_data(raw_bytes, B, seq_len)
     n_samples = x_all.shape[0]
 
-    print("[MODEL] creating INSTNCT(B=%d, D=%d)..." % (B, D))
-    model = INSTNCT(B=B, D=D).to(device)
+    print("[MODEL] creating INSTNCT(B=%d, embed_dim=%d)..." % (B, D))
+    model = INSTNCT(B=B, embed_dim=D).to(device)
     opt = torch.optim.Adam(model.parameters(), lr=1e-3)
     loss_fn = nn.MSELoss()
 

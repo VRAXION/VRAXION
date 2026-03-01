@@ -52,7 +52,7 @@ def train_one_config(B, D, raw_bytes, steps, batch_size, seq_len, device):
     if n_samples < batch_size:
         batch_size = max(1, n_samples)
 
-    model = INSTNCT(D=D, B=B).to(device)
+    model = INSTNCT(embed_dim=D, B=B).to(device)
     opt = torch.optim.Adam(model.parameters(), lr=1e-3)
     loss_fn = nn.MSELoss()
 
