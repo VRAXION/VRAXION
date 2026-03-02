@@ -310,6 +310,7 @@ def func_hdd_write_tns(
     write_vec_tns,       # content to write; shape (B, D)
     expanded_idx_tns,    # expanded window indices; shape (B, 2R+1, D)
     weights_tns,         # window weights; shape (B, 2R+1)
+    write_strength=None, # per-sample write intensity; shape (B, 1) or None
 ):
     """HDD-style write: REPLACE slot content instead of accumulating.
 
@@ -317,10 +318,15 @@ def func_hdd_write_tns(
     Weighted by attention window — center slot gets full replacement,
     edge slots get partial replacement (lerp with old content).
 
-    slot_new = w * write_vec + (1 - w) * slot_old
-    where w = attention weight at each window position."""
+    If write_strength is provided, it modulates the overall replacement:
+      slot_new = (w * s) * write_vec + (1 - w * s) * slot_old
+    Otherwise:
+      slot_new = w * write_vec + (1 - w) * slot_old
+    where w = attention weight, s = per-sample write strength in [0,1]."""
 
     w = weights_tns.unsqueeze(-1)  # (B, 2R+1, 1)
+    if write_strength is not None:
+        w = w * write_strength.unsqueeze(1)  # (B, 1, 1) broadcast → (B, 2R+1, 1)
 
     # Current slot values
     current = ring_tns.gather(1, expanded_idx_tns)  # (B, 2R+1, D)
@@ -528,7 +534,7 @@ class INSTNCT(nn.Module):
         # 'dotprod': α = sigmoid(τ · cosine(input, ring_signal)) — scale-invariant, bounded [0,1]
         # 'fixed':   α = S (from config) — fixed scalar, backward compat
         self.s_constraint = s_constraint  # kept for checkpoint compat
-        self.S_raw = nn.Parameter(torch.tensor(0.3))  # fallback for 'fixed' mode / checkpoint loading
+        self.S_raw = nn.Parameter(torch.tensor(1.0))  # full ring signal — let backprop decide
         self.gate_tau = nn.Parameter(torch.tensor(4.0))  # learnable temperature for cosine gate
         self.ring_signal_norm = nn.LayerNorm(hidden_dim)  # normalizes ring signal before blend
 
@@ -542,6 +548,17 @@ class INSTNCT(nn.Module):
             self.write_head = nn.ModuleList([
                 nn.Linear(hidden_dim, 2) for _ in range(N)
             ])
+
+        # ── Adaptive write strength ──
+        # Per-timestep write intensity from hidden state: S_write = sigmoid(linear(h))
+        # Bias init so sigmoid(bias) ≈ 0.3 (matches old fixed S_raw), weight ≈ 0
+        # Old checkpoints without this key → falls back to fixed S_raw behavior
+        self.write_gate = nn.ModuleList([
+            nn.Linear(hidden_dim, 1) for _ in range(N)
+        ])
+        for wg in self.write_gate:
+            nn.init.zeros_(wg.weight)
+            wg.bias.data.fill_(-0.847)  # sigmoid(-0.847) ≈ 0.3
 
         # ── Bulletin board temporal cache ──
         # FIFO buffer of past input_vecs with soft attention read at fixed time taps.
@@ -830,7 +847,8 @@ class INSTNCT(nn.Module):
                     if self._expert_conf is not None:
                         write_vec = self._expert_conf[i].item() * write_vec
                     if self.write_mode == 'replace':
-                        ring_tns = func_hdd_write_tns(ring_tns, write_vec, expanded_idx_tns, weights_tns)
+                        ws = torch.sigmoid(self.write_gate[i](hidden_lst[i]))  # (B, 1)
+                        ring_tns = func_hdd_write_tns(ring_tns, write_vec, expanded_idx_tns, weights_tns, write_strength=ws)
                     elif self.gated_write:
                         decisions = torch.sigmoid(self.write_head[i](hidden_lst[i]))  # (B, 2)
                         erase = decisions[:, 0]   # (B,) — per-sample erase strength
@@ -945,7 +963,7 @@ class INSTNCT(nn.Module):
         # S=float:     fixed scalar multiplier (backward compat / ablation)
         # S=None:      default to 'dotprod'
         if S is None:
-            S = self.S_raw.item()  # 0.3 from config — proven champion (Run 24)
+            S = 'dotprod'
 
         if self.embed_mode:
             B, T = x.shape

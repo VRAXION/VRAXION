@@ -186,7 +186,11 @@ def main():
 
     # ── Build model ──
     model = build_model_from_spec(model_rec, device=device)
-    model.load_state_dict(model_rec['state_dict'])
+    _missing, _unexpected = model.load_state_dict(model_rec['state_dict'], strict=False)
+    if _missing:
+        print(f'[BOOT] New params (init from scratch): {_missing}')
+    if _unexpected:
+        print(f'[BOOT] Dropped params (no longer in model): {_unexpected}')
     model.eval()
 
     n_params = sum(p.numel() for p in model.parameters())

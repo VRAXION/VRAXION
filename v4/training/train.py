@@ -722,6 +722,11 @@ def func_saveckpt_non(path: str | Path, model, optimizer, step: int, best_loss: 
     }
     if lr_plateau_state is not None:
         save_dict['lr_plateau_state'] = lr_plateau_state
+    # AMP GradScaler state is passed via train_config_resolved['_amp_scaler_state']
+    # (optional — only present when use_amp=True)
+    _amp_state = train_config_resolved.get('_amp_scaler_state')
+    if _amp_state is not None:
+        save_dict['amp_scaler_state'] = _amp_state
 
     torch.save(save_dict, tmp_path)
     os.replace(tmp_path, str(path))
@@ -980,6 +985,8 @@ def func_bootinfo_non(config, model, dataset, device):
     print(f'[BOOT] Log every  {config["log_every"]} steps')
     if config.get('sequential', False):
         print(f'[BOOT] DataMode   sequential (state persists across sequences)')
+    if config.get('use_amp', False) and 'cuda' in str(device):
+        print(f'[BOOT] AMP        fp16 mixed precision (GradScaler enabled)')
     print()
 
 
@@ -1083,17 +1090,15 @@ def train(config):
             raise ValueError(f"Config '{k}' must be >= 1, got {config[k]}")
 
     # ── Model ──
-    if ckpt is not None:
-        model_record = ckpt['model']
-        model = build_model_from_spec(model_record, device=device)
-    else:
-        model_record = build_model_spec(
-            model_type=config.get('model_type', 'instnct'),
-            embed_mode=config['embed_mode'],
-            model_config=model_cfg_resolved,
-            training_config=config,
-        )
-        model = build_model_from_spec(model_record, device=device)
+    # Always build from YAML config (not checkpoint) so architecture changes
+    # (e.g. slot_dim 64→256) take effect on resume. Old weights load via strict=False.
+    model_record = build_model_spec(
+        model_type=config.get('model_type', 'instnct'),
+        embed_mode=config['embed_mode'],
+        model_config=model_cfg_resolved,
+        training_config=config,
+    )
+    model = build_model_from_spec(model_record, device=device)
     opt = _build_optimizer(model, model_record['type'], config['lr'])
 
     # ── Output dir ──
@@ -1111,8 +1116,28 @@ def train(config):
 
     if ckpt is not None:
         resume_path = config['resume']
-        model.load_state_dict(ckpt['model']['state_dict'])
-        opt.load_state_dict(ckpt['optimizer']['state_dict'])
+        # Filter out shape-mismatched params (e.g. slot_dim 64→256 resizes write/read_proj)
+        ckpt_sd = ckpt['model']['state_dict']
+        model_sd = model.state_dict()
+        _shape_mismatch = []
+        filtered_sd = {}
+        for k, v in ckpt_sd.items():
+            if k in model_sd and v.shape != model_sd[k].shape:
+                _shape_mismatch.append(f'{k}: ckpt={list(v.shape)} model={list(model_sd[k].shape)}')
+            else:
+                filtered_sd[k] = v
+        if _shape_mismatch:
+            print(f'  [RESUME] Shape-changed params (re-init): {_shape_mismatch}')
+        _missing, _unexpected = model.load_state_dict(filtered_sd, strict=False)
+        _needs_reset = bool(_missing) or bool(_shape_mismatch)
+        if _missing:
+            print(f'  [RESUME] New params (init from scratch): {_missing}')
+        if _unexpected:
+            print(f'  [RESUME] Dropped params (no longer in model): {_unexpected}')
+        if _needs_reset:
+            print(f'  [RESUME] Optimizer reset (architecture changed — Adam state incompatible)')
+        else:
+            opt.load_state_dict(ckpt['optimizer']['state_dict'])
         start_step = int(ckpt['step'])
         best_loss = float(ckpt['best_loss'])
         run_id = str(ckpt['run_id'])
@@ -1128,8 +1153,9 @@ def train(config):
             print(f'[WARN] Data manifest mismatch: {msg}')
 
         # Restore sequential/TBPTT state
+        # Validate shapes: batch/slot_dim/hidden_dim may have changed via config.
         seq_state = ckpt.get('sequence_state', {})
-        if seq_state:
+        if seq_state and not _needs_reset:
             _resumed_state = {}
             for k in ('ring_state', 'ptr_state', 'hidden_state', 'bb_buf', 'bb_keys'):
                 if k in seq_state:
@@ -1138,6 +1164,9 @@ def train(config):
             for k in ('bb_write_ptr', 'bb_steps'):
                 if k in seq_state:
                     _resumed_state[k] = seq_state[k]
+        elif seq_state and _needs_reset:
+            print(f'  [RESUME] Sequential state discarded (architecture changed — shapes incompatible)')
+            _resumed_state = None
 
         saved_seq_offsets = ckpt.get('data_state', {}).get('seq_offsets')
         if saved_seq_offsets is not None:
@@ -1173,6 +1202,13 @@ def train(config):
                   f'stale={plateau.stale_steps}/{plateau.patience}')
     else:
         plateau = None
+
+    # ── AMP (mixed precision) ──
+    use_amp = bool(config.get('use_amp', False)) and 'cuda' in device
+    scaler = torch.amp.GradScaler('cuda', enabled=use_amp) if use_amp else None
+    if use_amp and ckpt is not None and 'amp_scaler_state' in ckpt:
+        scaler.load_state_dict(ckpt['amp_scaler_state'])
+        print(f'[RESUME] AMP GradScaler state restored')
 
     # ── Boot ──
     func_bootinfo_non(config, model, dataset, device)
@@ -1264,10 +1300,18 @@ def train(config):
         else:
             xb, yb, mask = dataset.sample_batch(config['batch_size'], device)
 
-        pred, state = model(xb, state=state if sequential else None)
-        # loss_fn returns two values: raw_loss (all positions) and masked_loss
-        # (supervised positions only). We optimize masked_loss but log both.
-        raw_loss, masked_loss = loss_fn(pred, yb, mask)
+        _ring_pre = state['ring'].norm().item() if state is not None and 'ring' in state else -1
+
+        with torch.amp.autocast('cuda', enabled=use_amp):
+            pred, state = model(xb, state=state if sequential else None)
+            # loss_fn returns two values: raw_loss (all positions) and masked_loss
+            # (supervised positions only). We optimize masked_loss but log both.
+            raw_loss, masked_loss = loss_fn(pred, yb, mask)
+
+        _ring_post = state['ring'].norm().item() if state is not None and 'ring' in state else -1
+        # Temporary ring delta probe — remove once ring freeze is resolved
+        if s <= start_step + 5:
+            print(f'  [RING-PROBE] step {s}: pre={_ring_pre:.4f} post={_ring_post:.4f} delta={_ring_post - _ring_pre:.6f}')
 
         # ── NaN/Inf guard ──
         # Silent NaN/Inf in loss would corrupt gradients, optimizer state, checkpoint.
@@ -1286,15 +1330,22 @@ def train(config):
 
         # ── Backward ──
         opt.zero_grad()
-        masked_loss.backward()
-        # ── Expert confidence update (1-frame delay) ──
-        if hasattr(model, 'update_expert_conf'):
-            model.update_expert_conf()
-        # gradient clipping — caps the global norm to prevent a single bad batch
-        # from blowing up optimizer momentum; 0 = disabled, 1.0 is a safe default
-        if config['max_grad_norm'] > 0:
-            torch.nn.utils.clip_grad_norm_(model.parameters(), config['max_grad_norm'])
-        opt.step()
+        if scaler is not None:
+            scaler.scale(masked_loss).backward()
+            if hasattr(model, 'update_expert_conf'):
+                model.update_expert_conf()
+            if config['max_grad_norm'] > 0:
+                scaler.unscale_(opt)
+                torch.nn.utils.clip_grad_norm_(model.parameters(), config['max_grad_norm'])
+            scaler.step(opt)
+            scaler.update()
+        else:
+            masked_loss.backward()
+            if hasattr(model, 'update_expert_conf'):
+                model.update_expert_conf()
+            if config['max_grad_norm'] > 0:
+                torch.nn.utils.clip_grad_norm_(model.parameters(), config['max_grad_norm'])
+            opt.step()
 
         # .item() detaches from the graph — safe to hold across iterations.
         lv = masked_loss.item()
@@ -1314,7 +1365,7 @@ def train(config):
             if 'alpha_0_mean' in diag:
                 alphas = ' '.join(f'{diag.get(f"alpha_{i}_mean", 0):.3f}' for i in range(model.N))
                 alpha_str = f'  alpha=[{alphas}]'
-            ring_str = f'  ring={diag.get("ring_norm", 0):.1f}' if 'ring_norm' in diag else ''
+            ring_str = f'  ring={diag.get("ring_norm", 0):.2f}' if 'ring_norm' in diag else ''
             bb_str = ''
             if 'bb_beta_0' in diag:
                 betas = ' '.join(f'{diag.get(f"bb_beta_{i}", 0):.3f}' for i in range(model.N))
@@ -1344,6 +1395,8 @@ def train(config):
         if s % config['save_every'] == 0:
             ckpt_path = out_dir / f'ckpt_step_{s:06d}.pt'
             seq_off = getattr(dataset, '_seq_offsets', None) if sequential else None
+            if scaler is not None:
+                train_config_resolved['_amp_scaler_state'] = scaler.state_dict()
             func_saveckpt_non(
                 ckpt_path,
                 model=model,
@@ -1411,6 +1464,8 @@ def train(config):
     if s % config['save_every'] != 0:
         final_path = out_dir / f'ckpt_step_{s:06d}.pt'
         seq_off = getattr(dataset, '_seq_offsets', None) if sequential else None
+        if scaler is not None:
+            train_config_resolved['_amp_scaler_state'] = scaler.state_dict()
         func_saveckpt_non(
             final_path,
             model=model,
@@ -1543,6 +1598,10 @@ def func_parsecli_dct() -> dict:
         'lr_patience':     int(yaml_cfg.get('lr_patience', 150)),
         'lr_factor':       float(yaml_cfg.get('lr_factor', 0.5)),
         'lr_min':          float(yaml_cfg.get('lr_min', 1e-5)),
+        # Sequential / stateful training (TBPTT): ring/hidden/ptr persist across batches
+        'sequential':      bool(yaml_cfg.get('sequential', False)),
+        # Mixed precision (AMP): fp16 forward/backward, fp32 optimizer
+        'use_amp':         bool(yaml_cfg.get('use_amp', False)),
     }
 
     # Resolve relative paths from v4/ root so `python training/train.py --data foo`

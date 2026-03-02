@@ -35,7 +35,7 @@ model:
   # Ring buffer cell width. Smaller = less VRAM (ring gets cloned T×N
   # times during backprop). Experts compress hidden→slot before writing.
   # When slot_dim < hidden_dim, read_proj decompresses, write_proj compresses.
-  slot_dim: 64
+  slot_dim: 128
 
   # ── N: Beings Count ────────────────────────────────────────
   # Independent agents sharing one ring. Each owns its own
@@ -195,8 +195,8 @@ training:
   # ── Optimizer ────────────────────────────────────────────────
   # Adam with constant LR. All sweeps converged with 1e-3.
   lr: 1.0e-03             # learning rate
-  batch_size: 128        # sequences per step (bumped 32→64→128 — VRAM headroom confirmed)
-  seq_len: 128           # bytes per sequence (model sees seq_len timesteps)
+  batch_size: 64        # sequences per step (bumped 32→64→128 — VRAM headroom confirmed)
+  seq_len: 256           # bytes per sequence (model sees seq_len timesteps)
 
   # ── Schedule ─────────────────────────────────────────────────
   steps: 50000          # total training steps
@@ -236,6 +236,12 @@ training:
   # Number of CPU threads for PyTorch (torch.set_num_threads).
   # Only applies when device = cpu. 0 = PyTorch default (all cores).
   cpu_threads: 20
+
+  # ── Mixed Precision (AMP) ──────────────────────────────────
+  # fp16 mixed precision via torch.amp. Halves VRAM for activations,
+  # speeds up matmuls on Tensor Cores. Model weights stay fp32.
+  # Only effective on CUDA. Checkpoint-compatible (scaler state saved).
+  use_amp: true
 
   # ── Sequential / Stateful Training (TBPTT) ─────────────────
   # When true: data is read in order (not random offsets), and
