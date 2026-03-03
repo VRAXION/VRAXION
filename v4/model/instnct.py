@@ -399,13 +399,12 @@ def func_additive_write_tns(
     weights_tns,         # window weights; shape (B, 2R+1)
     write_strength=None, # per-sample write gate; shape (B, 1) or None
 ):
-    """Additive write: ring_new = ring_old + σ(gate) * w * write_vec.
+    """Pure additive write: ring_new = ring_old + σ(gate) * w * write_vec.
 
-    Skip-connection for gradient: ∂ring_new/∂ring_old = 1.0 (identity).
-    The gradient flows through the old slot unattenuated — "superconductor"
-    path. The write_vec gradient gets σ(gate)*w scaling (learnable resistance).
-
-    Requires LayerNorm on ring read to prevent unbounded growth."""
+    Perfect skip-connection: ∂ring_new/∂ring_old = 1.0 (identity).
+    No decay (preserves all written information), no LayerNorm on read
+    (clean gradient, no input-dependent Jacobian). The read_proj linear
+    layer handles arbitrary ring magnitude — its gradient is constant."""
 
     w = weights_tns.unsqueeze(-1)  # (B, 2R+1, 1)
     if write_strength is not None:
@@ -414,9 +413,9 @@ def func_additive_write_tns(
     # Broadcast write_vec to all window positions
     write_val = write_vec_tns.unsqueeze(1).expand(-1, weights_tns.size(1), -1)  # (B, 2R+1, D)
 
-    # Additive: old content + gated new content (no erasure of old)
+    # Pure additive: old content preserved exactly + gated new content
     current = ring_tns.gather(1, expanded_idx_tns)  # (B, 2R+1, D)
-    updated = current + w * write_val               # (B, 2R+1, D)
+    updated = current + w * write_val                # (B, 2R+1, D)
 
     ring_new = ring_tns.clone()
     ring_new.scatter_(1, expanded_idx_tns, updated)
@@ -835,8 +834,6 @@ class INSTNCT(nn.Module):
                            + torch.sin(theta_tns).unsqueeze(-1) * self.phase_sin)
 
                 # ─ hidden update (all hidden_dim-wide) ─
-                if self.write_mode == 'additive':
-                    read_vec_tns = self.ring_read_norm(read_vec_tns)
                 ring_signal = self.read_proj[i](read_vec_tns)  # slot_dim → hidden_dim
                 if S_flt == 'dotprod':
                     # content-based gate: cosine similarity (scale-invariant)
@@ -1126,10 +1123,7 @@ class INSTNCT(nn.Module):
                            + torch.sin(theta_tns).unsqueeze(-1) * self.phase_sin)
 
                 # ─ ring signal blend ─
-                rv = read_vecs[i]
-                if self.write_mode == 'additive':
-                    rv = self.ring_read_norm(rv)
-                ring_signal = self.read_proj[i](rv)
+                ring_signal = self.read_proj[i](read_vecs[i])
                 if S_flt == 'dotprod':
                     cos_sim = F.cosine_similarity(
                         input_vec_tns, ring_signal, dim=-1
@@ -1418,8 +1412,6 @@ class INSTNCT(nn.Module):
             # ════════════════════════════════════════════════════
             # VECTORIZED READ PROJECTION (all N: slot_dim → hidden_dim)
             # ════════════════════════════════════════════════════
-            if self.write_mode == 'additive':
-                read_vecs = self.ring_read_norm(read_vecs)
             ring_signals = self._bmm_linear(read_vecs, self._bw_read, self._bb_read)  # (N, B, H)
 
             # ════════════════════════════════════════════════════
