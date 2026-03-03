@@ -101,7 +101,7 @@ def run():
 
     device = 'cpu'  # diagnostic test — small model, CPU is faster (no kernel launch overhead)
     print(f"Device: {device}")
-    print(f"Model:  M={MODEL_CFG['M']}, D={MODEL_CFG['D']}, "
+    print(f"Model:  M={MODEL_CFG['M']}, embed_dim={MODEL_CFG.get('embed_dim', MODEL_CFG.get('D', '?'))}, "
           f"N={MODEL_CFG['N']}, R={MODEL_CFG['R']}")
     print(f"Batch:  {BATCH} × {SEQ_LEN} (binary mode)")
     print(f"LR:     {LR} (constant, no schedule)")
