@@ -398,13 +398,13 @@ def func_additive_write_tns(
     expanded_idx_tns,    # expanded window indices; shape (B, 2R+1, D)
     weights_tns,         # window weights; shape (B, 2R+1)
     write_strength=None, # per-sample write gate; shape (B, 1) or None
+    decay=0.999,         # ring content decay: λ * old + gate * new
 ):
-    """Pure additive write: ring_new = ring_old + σ(gate) * w * write_vec.
+    """Additive write: ring_new = λ * ring_old + σ(gate) * w * write_vec.
 
-    Perfect skip-connection: ∂ring_new/∂ring_old = 1.0 (identity).
-    No decay (preserves all written information), no LayerNorm on read
-    (clean gradient, no input-dependent Jacobian). The read_proj linear
-    layer handles arbitrary ring magnitude — its gradient is constant."""
+    Near-skip-connection for gradient: ∂ring_new/∂ring_old = λ ≈ 1.0.
+    At λ=0.999, gradient after T=64 steps: 0.999^64 = 0.938 (94% preserved).
+    Ring norm converges to finite equilibrium instead of growing unbounded."""
 
     w = weights_tns.unsqueeze(-1)  # (B, 2R+1, 1)
     if write_strength is not None:
@@ -413,9 +413,9 @@ def func_additive_write_tns(
     # Broadcast write_vec to all window positions
     write_val = write_vec_tns.unsqueeze(1).expand(-1, weights_tns.size(1), -1)  # (B, 2R+1, D)
 
-    # Pure additive: old content preserved exactly + gated new content
+    # Leaky additive: decay old content + gated new content
     current = ring_tns.gather(1, expanded_idx_tns)  # (B, 2R+1, D)
-    updated = current + w * write_val                # (B, 2R+1, D)
+    updated = decay * current + w * write_val        # (B, 2R+1, D)
 
     ring_new = ring_tns.clone()
     ring_new.scatter_(1, expanded_idx_tns, updated)
