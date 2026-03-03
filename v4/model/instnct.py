@@ -71,6 +71,55 @@ class _C19Module(nn.Module):
         return _c19_activation(x)
 
 
+class BatchedLinear(nn.Module):
+    """N independent Linear layers fused into a single bmm call.
+
+    Replaces nn.ModuleList([nn.Linear(in, out) for _ in range(N)])
+    with a single (N, out, in) weight + (N, out) bias — one torch.bmm
+    instead of N sequential matmuls.
+
+    Input:  (N, B, in_features)
+    Output: (N, B, out_features)
+    """
+    def __init__(self, N, in_features, out_features):
+        super().__init__()
+        self.N = N
+        self.in_features = in_features
+        self.out_features = out_features
+        # Same init as nn.Linear (Kaiming uniform)
+        self.weight = nn.Parameter(torch.empty(N, out_features, in_features))
+        self.bias = nn.Parameter(torch.empty(N, out_features))
+        self._reset_parameters()
+
+    def _reset_parameters(self):
+        for i in range(self.N):
+            nn.init.kaiming_uniform_(self.weight[i], a=math.sqrt(5))
+            fan_in = self.in_features
+            bound = 1 / math.sqrt(fan_in)
+            nn.init.uniform_(self.bias[i], -bound, bound)
+
+    def forward(self, x):
+        """x: (N, B, in_features) → (N, B, out_features)"""
+        # bmm: (N, out, in) @ (N, in, B)^T → (N, B, out)
+        return torch.bmm(x, self.weight.transpose(1, 2)) + self.bias.unsqueeze(1)
+
+    @staticmethod
+    def from_module_list(module_list):
+        """Convert existing nn.ModuleList of nn.Linear to BatchedLinear.
+
+        Copies weights/biases from individual Linear layers into the
+        fused (N, out, in) format. For checkpoint migration."""
+        N = len(module_list)
+        in_f = module_list[0].in_features
+        out_f = module_list[0].out_features
+        bl = BatchedLinear(N, in_f, out_f)
+        with torch.no_grad():
+            for i, lin in enumerate(module_list):
+                bl.weight[i].copy_(lin.weight)
+                bl.bias[i].copy_(lin.bias)
+        return bl
+
+
 class _C19LearnableModule(nn.Module):
     """C19 with per-neuron learnable rho and C, bounded via sigmoid."""
     def __init__(self, width, rho_init=4.0, learn_C=True):
@@ -403,7 +452,7 @@ class INSTNCT(nn.Module):
                  gated_write=False,                        # True = erase+gate write (anti-blob), False = scatter_add (legacy)
                  write_mode='accumulate',                  # 'accumulate' (scatter_add) | 'replace' (HDD-style overwrite)
                  s_constraint='softplus',                  # 'softplus' (S>0) | 'raw' (unconstrained)
-                 parallel_experts=False):                  # True = parallel read/write (1 ring clone per timestep vs N)
+                 parallel_experts=False):                  # False/True/'vectorized' — expert execution mode
         super().__init__()
         assert kernel_mode in ('uniform', 'vshape', 'gaussian', 'dotprod', 'topk'), \
             f"kernel_mode must be 'uniform', 'vshape', 'gaussian', 'dotprod', or 'topk', got '{kernel_mode}'"
@@ -1183,6 +1232,233 @@ class INSTNCT(nn.Module):
 
         return ring_tns, ptr_tns, hidden_tns, bb_buf, bb_keys, bb_write_ptr, bb_steps, outs_tns
 
+    def _ensure_batched_weights(self):
+        """Stack per-expert weights into fused (N, out, in) tensors for bmm.
+
+        Called once before the vectorized loop. Reuses existing nn.ModuleList
+        weights (no extra parameters, fully checkpoint-compatible)."""
+        if hasattr(self, '_bw_read') and self._bw_read is not None:
+            return  # already cached
+        N = self.N
+        # read_proj: (N, hidden_dim, slot_dim) + (N, hidden_dim)
+        self._bw_read = torch.stack([self.read_proj[i].weight for i in range(N)])
+        self._bb_read = torch.stack([self.read_proj[i].bias for i in range(N)])
+        # write_proj: (N, slot_dim, hidden_dim) + (N, slot_dim)
+        if self.write_proj is not None:
+            self._bw_write = torch.stack([self.write_proj[i].weight for i in range(N)])
+            self._bb_write = torch.stack([self.write_proj[i].bias for i in range(N)])
+        # write_gate: (N, 1, hidden_dim) + (N, 1)
+        self._bw_wgate = torch.stack([self.write_gate[i].weight for i in range(N)])
+        self._bb_wgate = torch.stack([self.write_gate[i].bias for i in range(N)])
+        # ptr_query (pilot): (N, id_dim, hidden_dim) + (N, id_dim)
+        if self.pointer_mode == 'pilot':
+            self._bw_ptrq = torch.stack([self.ptr_query[i].weight for i in range(N)])
+            self._bb_ptrq = torch.stack([self.ptr_query[i].bias for i in range(N)])
+
+    def _invalidate_batched_weights(self):
+        """Clear cached batched weights (call after optimizer.step())."""
+        self._bw_read = None
+
+    def _bmm_linear(self, x, W, b):
+        """Batched linear: x (N,B,in) @ W^T (N,in,out) + b (N,out) → (N,B,out)"""
+        return torch.bmm(x, W.transpose(1, 2)) + b.unsqueeze(1)
+
+    def _process_chunk_vectorized(self, x_chunk, ring_tns, ptr_tns, hidden_tns,
+                                  bb_buf, bb_keys, bb_write_ptr, bb_steps,
+                                  S_flt, probs_lst, offsets_long, expert_weights,
+                                  topk_write_weights=None):
+        """Vectorized expert processing — replaces the for-i-in-range(N) loop.
+
+        Instead of N sequential Linear calls, uses torch.bmm to process
+        all experts in a single batched matmul. Combined with parallel ring
+        access (all experts read same state, single coalesced write).
+
+        Supports: vshape kernel + pilot pointer + replace write (production config).
+        Falls back to _process_chunk_parallel for unsupported configs.
+        """
+        M, slot_dim, N, hidden_dim = self.M, self.slot_dim, self.N, self.hidden_dim
+
+        # Validate: vectorized path only supports specific config
+        if self.kernel_mode not in ('vshape',):
+            return self._process_chunk_parallel(
+                x_chunk, ring_tns, ptr_tns, hidden_tns,
+                bb_buf, bb_keys, bb_write_ptr, bb_steps,
+                S_flt, probs_lst, offsets_long, expert_weights,
+                topk_write_weights)
+
+        ptr_tns = ptr_tns.clone()
+        # hidden_tns is already (N, B, hidden_dim) — keep as tensor, no unpacking
+
+        C = x_chunk.shape[1]
+        outs_lst = []
+        W = offsets_long.shape[0]  # window size = 2R+1
+
+        if self._bitlift:
+            _bit_shifts = torch.arange(7, -1, -1, device=x_chunk.device)
+
+        # Pre-stack expert weights for bmm (views into existing params, no copy)
+        self._ensure_batched_weights()
+
+        # Pre-expand vshape weights: (N, W) → (N, 1, W) for broadcasting
+        # expert_weights is (N, 2R+1) — each expert's positional attention
+        ew_N1W = expert_weights.unsqueeze(1)  # (N, 1, W)
+
+        for t in range(C):
+            # ── Embed input ──
+            if self.inp is not None:
+                if self._bitlift:
+                    byte_val = x_chunk[:, t]
+                    bits = ((byte_val.unsqueeze(-1) >> _bit_shifts) & 1).float()
+                    input_vec = _c19_activation(self.inp(bits), rho=_rho_from_raw(self.c19_rho_input), C=_C_from_raw(self.c19_C_input))
+                else:
+                    input_vec = self.inp(x_chunk[:, t])
+            else:
+                input_vec = self._fixed_table[x_chunk[:, t]]
+
+            B_size = input_vec.shape[0]
+
+            # ════════════════════════════════════════════════════
+            # VECTORIZED PILOT POINTER (all N experts at once)
+            # ════════════════════════════════════════════════════
+            if self.pointer_mode == 'pilot':
+                current_slots = ptr_tns.long().clamp(0, M - 1)       # (N, B)
+                # Gather slot identities for all experts at once
+                # slot_identity: (M, id_dim)  current_slots: (N, B)
+                slot_ids = self.slot_identity[current_slots]          # (N, B, id_dim)
+                slot_ids = F.normalize(slot_ids, dim=-1)              # (N, B, id_dim)
+
+                # Batched query projection: hidden_tns (N,B,H) → queries (N,B,id_dim)
+                queries = self._bmm_linear(hidden_tns, self._bw_ptrq, self._bb_ptrq)
+                queries = F.normalize(queries, dim=-1)                # (N, B, id_dim)
+
+                sim = (queries * slot_ids).sum(-1)                    # (N, B)
+                tau = F.softplus(self._ptr_tau)
+                jump = self._ptr_max_jump * torch.sigmoid(-sim * tau) # (N, B)
+                ptr_tns = (ptr_tns + 1 + jump) % M                   # (N, B)
+
+            # ════════════════════════════════════════════════════
+            # VECTORIZED RING READ (all N experts, single batched gather)
+            # ════════════════════════════════════════════════════
+            centers = ptr_tns.long().clamp(0, M - 1)                  # (N, B)
+            # Window indices: (N, B, W) — each expert's read positions
+            indices = (centers.unsqueeze(2) + offsets_long) % M       # (N, B, W)
+
+            # Expand for gather: (N, B, W, slot_dim)
+            exp_idx = indices.unsqueeze(-1).expand(-1, -1, -1, slot_dim)  # (N, B, W, D)
+
+            # Batched gather: ring_tns is (B, M, D), expand to (N, B, M, D) for N gathers
+            ring_exp = ring_tns.unsqueeze(0).expand(N, -1, -1, -1)    # (N, B, M, D)
+            neighbors = ring_exp.gather(2, exp_idx)                    # (N, B, W, D)
+
+            # Weighted sum: (N, 1, W, 1) * (N, B, W, D) → sum over W → (N, B, D)
+            weights_4d = ew_N1W.unsqueeze(-1)                         # (N, 1, W, 1)
+            read_vecs = (weights_4d * neighbors).sum(2)               # (N, B, D)
+
+            # ════════════════════════════════════════════════════
+            # VECTORIZED READ PROJECTION (all N: slot_dim → hidden_dim)
+            # ════════════════════════════════════════════════════
+            ring_signals = self._bmm_linear(read_vecs, self._bw_read, self._bb_read)  # (N, B, H)
+
+            # ════════════════════════════════════════════════════
+            # VECTORIZED GATE + BLEND
+            # ════════════════════════════════════════════════════
+            if S_flt == 'dotprod':
+                # input_vec: (B, H) → broadcast to (N, B, H)
+                input_exp = input_vec.unsqueeze(0).expand(N, -1, -1)  # (N, B, H)
+                cos_sim = F.cosine_similarity(input_exp, ring_signals, dim=-1).unsqueeze(-1)  # (N, B, 1)
+                alpha = torch.sigmoid(self.gate_tau * cos_sim)        # (N, B, 1)
+                blended_ring = alpha * ring_signals                   # (N, B, H)
+            else:
+                blended_ring = S_flt * ring_signals
+
+            # ════════════════════════════════════════════════════
+            # VECTORIZED PHASE SIGNAL
+            # ════════════════════════════════════════════════════
+            theta = (ptr_tns / M) * (2 * math.pi)                    # (N, B)
+            phase = (torch.cos(theta).unsqueeze(-1) * self.phase_cos  # (N, B, H)
+                   + torch.sin(theta).unsqueeze(-1) * self.phase_sin)
+
+            # ════════════════════════════════════════════════════
+            # VECTORIZED HIDDEN UPDATE (single batched c19)
+            # ════════════════════════════════════════════════════
+            input_exp = input_vec.unsqueeze(0).expand(N, -1, -1) if S_flt != 'dotprod' else input_exp
+            hidden_tns = _c19_activation(
+                input_exp + blended_ring + phase + hidden_tns,
+                rho=_rho_from_raw(self.c19_rho_hidden),
+                C=_C_from_raw(self.c19_C_hidden),
+            )  # (N, B, H)
+
+            # ════════════════════════════════════════════════════
+            # VECTORIZED WRITE PROJECTION + GATE
+            # ════════════════════════════════════════════════════
+            if self.write_proj is not None:
+                write_vecs = self._bmm_linear(hidden_tns, self._bw_write, self._bb_write)  # (N, B, D)
+            else:
+                write_vecs = hidden_tns  # identity when dims match
+
+            if self._expert_conf is not None:
+                conf = self._expert_conf.view(N, 1, 1)               # (N, 1, 1)
+                write_vecs = conf * write_vecs
+
+            # Write strength: (N, B, 1) — from batched write_gate
+            ws = torch.sigmoid(self._bmm_linear(hidden_tns, self._bw_wgate, self._bb_wgate))  # (N, B, 1)
+
+            # ════════════════════════════════════════════════════
+            # COALESCED RING WRITE (single clone, all N experts)
+            # ════════════════════════════════════════════════════
+            ring_new = ring_tns.clone()                                # 1 clone per timestep
+
+            # Write weights: (N, 1, W, 1) * ws: (N, B, 1, 1) → (N, B, W, 1)
+            w = ew_N1W.unsqueeze(-1) * ws.unsqueeze(2)                # (N, B, W, 1)
+
+            # write_vecs: (N, B, D) → expand to (N, B, W, D)
+            wv_exp = write_vecs.unsqueeze(2).expand(-1, -1, W, -1)    # (N, B, W, D)
+
+            # Current ring values at write positions
+            ring_new_exp = ring_new.unsqueeze(0).expand(N, -1, -1, -1)  # (N, B, M, D)
+            current = ring_new_exp.gather(2, exp_idx)                   # (N, B, W, D)
+
+            # HDD lerp: w * write_val + (1-w) * current
+            updated = w * wv_exp + (1 - w) * current                  # (N, B, W, D)
+
+            # Scatter all experts back — sequential per expert (scatter_ doesn't support batched dim0)
+            for i in range(N):
+                ring_new.scatter_(1, exp_idx[i], updated[i])
+
+            ring_tns = ring_new
+
+            # ════════════════════════════════════════════════════
+            # POINTER MOVEMENT (post-write, non-pilot modes)
+            # ════════════════════════════════════════════════════
+            if self.pointer_mode == 'pilot':
+                pass  # already moved pre-read
+            else:
+                ptr_tns = (ptr_tns + 1) % M
+
+            # ── Bulletin board write ──
+            if self.bb_enabled and bb_buf is not None:
+                bb_buf = bb_buf.clone()
+                bb_buf[:, bb_write_ptr] = input_vec
+                bb_keys = bb_keys.clone()
+                written_key = self.bb_key_proj(input_vec)
+                bb_keys[:, bb_write_ptr] = written_key
+                bb_write_ptr = (bb_write_ptr + 1) % self._bb_L
+                bb_steps += 1
+
+            # ── Output ──
+            mean_hidden = hidden_tns.mean(0)                          # (B, H)
+            if self._bitlift_out:
+                bit_scores = torch.tanh(self.out(mean_hidden))
+                outs_lst.append(bit_scores @ self._bit_patterns.T)
+            elif self.out is not None:
+                outs_lst.append(self.out(mean_hidden))
+            else:
+                outs_lst.append(mean_hidden @ self._fixed_output_table.T)
+
+        outs_tns = torch.stack(outs_lst, dim=1)
+
+        return ring_tns, ptr_tns, hidden_tns, bb_buf, bb_keys, bb_write_ptr, bb_steps, outs_tns
+
     @torch.no_grad()
     def update_expert_conf(self, temperature=2.0, decay=0.95, floor=0.1):
         """Update expert write confidence from gradient magnitudes.
@@ -1327,7 +1603,12 @@ class INSTNCT(nn.Module):
             C = T  # single chunk = identical to original forward loop
 
         # Select chunk processor based on parallel_experts flag
-        _chunk_fn = self._process_chunk_parallel if self.parallel_experts else self._process_chunk
+        if self.parallel_experts == 'vectorized':
+            _chunk_fn = self._process_chunk_vectorized
+        elif self.parallel_experts:
+            _chunk_fn = self._process_chunk_parallel
+        else:
+            _chunk_fn = self._process_chunk
 
         all_outs = []
         for t_start in range(0, T, C):
