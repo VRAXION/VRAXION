@@ -402,7 +402,8 @@ class INSTNCT(nn.Module):
                  io_output_from_readers_only=CNFG_IOREADOUT_BOOL,    # output from readers only (strict mode)
                  gated_write=False,                        # True = erase+gate write (anti-blob), False = scatter_add (legacy)
                  write_mode='accumulate',                  # 'accumulate' (scatter_add) | 'replace' (HDD-style overwrite)
-                 s_constraint='softplus'):                 # 'softplus' (S>0) | 'raw' (unconstrained)
+                 s_constraint='softplus',                  # 'softplus' (S>0) | 'raw' (unconstrained)
+                 parallel_experts=False):                  # True = parallel read/write (1 ring clone per timestep vs N)
         super().__init__()
         assert kernel_mode in ('uniform', 'vshape', 'gaussian', 'dotprod', 'topk'), \
             f"kernel_mode must be 'uniform', 'vshape', 'gaussian', 'dotprod', or 'topk', got '{kernel_mode}'"
@@ -534,6 +535,7 @@ class INSTNCT(nn.Module):
         # 'dotprod': α = sigmoid(τ · cosine(input, ring_signal)) — scale-invariant, bounded [0,1]
         # 'fixed':   α = S (from config) — fixed scalar, backward compat
         self.s_constraint = s_constraint  # kept for checkpoint compat
+        self.parallel_experts = parallel_experts  # parallel read/write mode
         self.S_raw = nn.Parameter(torch.tensor(1.0))  # full ring signal — let backprop decide
         self.gate_tau = nn.Parameter(torch.tensor(4.0))  # learnable temperature for cosine gate
         self.ring_signal_norm = nn.LayerNorm(hidden_dim)  # normalizes ring signal before blend
@@ -912,6 +914,275 @@ class INSTNCT(nn.Module):
 
         return ring_tns, ptr_tns, hidden_tns, bb_buf, bb_keys, bb_write_ptr, bb_steps, outs_tns
 
+    def _process_chunk_parallel(self, x_chunk, ring_tns, ptr_tns, hidden_tns,
+                                bb_buf, bb_keys, bb_write_ptr, bb_steps,
+                                S_flt, probs_lst, offsets_long, expert_weights,
+                                topk_write_weights=None):
+        """Parallel-expert variant of _process_chunk.
+
+        Key difference from sequential version:
+        - All N experts read from the SAME ring state (no intra-timestep crosstalk)
+        - All N writes are coalesced into a SINGLE ring update per timestep
+        - 1 ring.clone() per timestep instead of N → 6× less memory copy for N=6
+
+        Trade-off: experts only see each other's writes at t+1 (not within t).
+        With staggered pointers (expert i starts at i*M/N ≈ 10 slots apart),
+        intra-timestep overlap is rare, so this is nearly equivalent.
+        """
+        M, slot_dim, N, hidden_dim = self.M, self.slot_dim, self.N, self.hidden_dim
+
+        ptr_tns = ptr_tns.clone()
+        hidden_lst = [hidden_tns[i] for i in range(N)]
+
+        C = x_chunk.shape[1]
+        outs_lst = []
+
+        if self._bitlift:
+            _bit_shifts = torch.arange(7, -1, -1, device=x_chunk.device)
+
+        for t in range(C):
+            # ── Embed input (same as sequential) ──
+            if self.inp is not None:
+                if self._bitlift:
+                    byte_val = x_chunk[:, t]
+                    bits = ((byte_val.unsqueeze(-1) >> _bit_shifts) & 1).float()
+                    input_vec_tns = _c19_activation(self.inp(bits), rho=_rho_from_raw(self.c19_rho_input), C=_C_from_raw(self.c19_C_input))
+                else:
+                    input_vec_tns = self.inp(x_chunk[:, t])
+            else:
+                input_vec_tns = self._fixed_table[x_chunk[:, t]]
+
+            B_size = input_vec_tns.shape[0]
+
+            # ════════════════════════════════════════════════════
+            # PHASE 1: All reads from the SAME ring state
+            # ════════════════════════════════════════════════════
+            read_vecs = []           # (B, slot_dim) per expert
+            expanded_idxs = []       # (B, 2R+1, slot_dim) per expert
+            all_weights = []         # (B, 2R+1) per expert
+            write_flags = []         # bool per expert — should this expert write?
+
+            for i in range(N):
+                # ─ PRE-READ pointer seek (pilot mode) ─
+                if self.pointer_mode == 'pilot':
+                    current_slot = ptr_tns[i].long().clamp(0, M - 1)
+                    slot_id = F.normalize(self.slot_identity[current_slot], dim=-1)
+                    query = F.normalize(self.ptr_query[i](hidden_lst[i]), dim=-1)
+                    sim = (query * slot_id).sum(-1)
+                    tau = F.softplus(self._ptr_tau)
+                    jump = self._ptr_max_jump * torch.sigmoid(-sim * tau)
+                    ptr_tns[i] = (ptr_tns[i] + 1 + jump) % M
+
+                center = ptr_tns[i].long().clamp(0, M - 1)
+                indices_tns = (center.unsqueeze(1) + offsets_long) % M
+
+                # ── Hourglass I/O split ──
+                is_writer = bool(self._writer_mask[i]) if self.io_split_mode == 'strict' else False
+                is_reader = bool(self._reader_mask[i]) if self.io_split_mode == 'strict' else True
+                should_write = not (self.io_split_mode == 'strict' and is_reader and not is_writer)
+                write_flags.append(should_write)
+
+                if is_writer and not is_reader:
+                    read_vec_tns = torch.zeros(B_size, slot_dim, device=input_vec_tns.device)
+                    expanded_idx_tns = indices_tns.unsqueeze(-1).expand(-1, -1, slot_dim)
+                    if expert_weights is not None:
+                        weights_tns = expert_weights[i].unsqueeze(0).expand(B_size, -1)
+                    elif topk_write_weights is not None:
+                        weights_tns = topk_write_weights[i].unsqueeze(0).expand(B_size, -1)
+                    else:
+                        weights_tns = torch.ones(B_size, indices_tns.shape[1], device=input_vec_tns.device)
+                        weights_tns = weights_tns / weights_tns.sum(dim=1, keepdim=True)
+                elif expert_weights is not None:
+                    weights_tns = expert_weights[i].unsqueeze(0).expand(B_size, -1)
+                    read_vec_tns, expanded_idx_tns = func_softread_tns(
+                        ring_tns, indices_tns, weights_tns, slot_dim)
+                elif self.kernel_mode == 'topk':
+                    q = self.query_proj[i](hidden_lst[i])
+                    scores = torch.bmm(ring_tns, q.unsqueeze(-1)).squeeze(-1)
+                    scores = scores * (slot_dim ** -0.5)
+                    topk_scores, topk_idx = scores.topk(self._topk_K, dim=-1)
+                    topk_attn = F.softmax(topk_scores, dim=-1)
+                    topk_expanded = topk_idx.unsqueeze(-1).expand(-1, -1, slot_dim)
+                    topk_neighbors = ring_tns.gather(1, topk_expanded)
+                    read_vec_tns = (topk_attn.unsqueeze(-1) * topk_neighbors).sum(1)
+                    expanded_idx_tns = indices_tns.unsqueeze(-1).expand(-1, -1, slot_dim)
+                    weights_tns = topk_write_weights[i].unsqueeze(0).expand(B_size, -1)
+                else:
+                    expanded_idx_tns = indices_tns.unsqueeze(-1).expand(-1, -1, slot_dim)
+                    neighbors_tns = ring_tns.gather(1, expanded_idx_tns)
+                    q = self.query_proj[i](hidden_lst[i])
+                    scores = (q.unsqueeze(1) * neighbors_tns).sum(-1)
+                    scores = scores * (slot_dim ** -0.5)
+                    weights_tns = F.softmax(scores, dim=-1)
+                    read_vec_tns = (weights_tns.unsqueeze(-1) * neighbors_tns).sum(1)
+
+                read_vecs.append(read_vec_tns)
+                expanded_idxs.append(expanded_idx_tns)
+                all_weights.append(weights_tns)
+
+            # ════════════════════════════════════════════════════
+            # PHASE 2: All hidden updates (independent — no ring mutation)
+            # ════════════════════════════════════════════════════
+            write_vecs = []          # (B, slot_dim) per expert
+            write_strengths = []     # (B, 1) per expert (for HDD write)
+            write_erases = []        # (B,) per expert (for gated write)
+            write_gates = []         # (B,) per expert (for gated write)
+
+            for i in range(N):
+                # ─ phase signal ─
+                theta_tns = (ptr_tns[i] / M) * (2 * math.pi)
+                phase_tns = (torch.cos(theta_tns).unsqueeze(-1) * self.phase_cos
+                           + torch.sin(theta_tns).unsqueeze(-1) * self.phase_sin)
+
+                # ─ ring signal blend ─
+                ring_signal = self.read_proj[i](read_vecs[i])
+                if S_flt == 'dotprod':
+                    cos_sim = F.cosine_similarity(
+                        input_vec_tns, ring_signal, dim=-1
+                    ).unsqueeze(-1)
+                    alpha = torch.sigmoid(self.gate_tau * cos_sim)
+                    blended_ring = alpha * ring_signal
+                else:
+                    blended_ring = S_flt * ring_signal
+
+                # ─ bulletin board cache read ─
+                bb_ctx = 0
+                if self.bb_enabled and bb_buf is not None:
+                    taps = self._bb_taps
+                    if bb_steps >= taps[0]:
+                        tap_idx = [(bb_write_ptr - tap) % self._bb_L for tap in taps]
+                        cached_vecs = bb_buf[:, tap_idx]
+                        cached_keys = bb_keys[:, tap_idx]
+                        q = self.bb_query_proj[i](hidden_lst[i])
+                        q_norm = F.normalize(q, dim=-1)
+                        k_norm = F.normalize(cached_keys, dim=-1)
+                        scores = (q_norm.unsqueeze(1) * k_norm).sum(-1)
+                        scores = scores * self._bb_tau
+                        for k_idx, tap in enumerate(taps):
+                            if bb_steps < tap:
+                                scores[:, k_idx] = float('-inf')
+                        weights_bb = F.softmax(scores, dim=-1)
+                        ctx = (weights_bb.unsqueeze(-1) * cached_vecs).sum(1)
+                        if self.bb_gate is not None:
+                            beta = torch.sigmoid(self.bb_gate[i](hidden_lst[i]))
+                            bb_ctx = self._bb_scale * beta * ctx
+                        else:
+                            bb_ctx = self._bb_scale * ctx
+
+                # ─ hidden update ─
+                hidden_lst[i] = _c19_activation(
+                    input_vec_tns + blended_ring + bb_ctx + phase_tns + hidden_lst[i],
+                    rho=_rho_from_raw(self.c19_rho_hidden),
+                    C=_C_from_raw(self.c19_C_hidden),
+                )
+
+                # ─ compute write vectors (but don't apply yet) ─
+                if write_flags[i]:
+                    if self.write_proj is not None:
+                        wv = self.write_proj[i](hidden_lst[i])
+                    else:
+                        wv = hidden_lst[i]
+                    if self._expert_conf is not None:
+                        wv = self._expert_conf[i].item() * wv
+                    write_vecs.append(wv)
+
+                    if self.write_mode == 'replace':
+                        ws = torch.sigmoid(self.write_gate[i](hidden_lst[i]))
+                        write_strengths.append(ws)
+                    elif self.gated_write:
+                        decisions = torch.sigmoid(self.write_head[i](hidden_lst[i]))
+                        write_erases.append(decisions[:, 0])
+                        write_gates.append(decisions[:, 1])
+                else:
+                    write_vecs.append(None)
+                    write_strengths.append(None)
+
+                # ─ POST-WRITE pointer move ─
+                if self.pointer_mode == 'learned':
+                    dir_logits = self.ptr_dir_head[i](hidden_lst[i])
+                    a = F.softmax(dir_logits, dim=-1)
+                    raw_mag = self.ptr_mag_head[i](hidden_lst[i])
+                    m = self._ptr_Rmax * torch.sigmoid(raw_mag.squeeze(-1))
+                    direction = a[:, 1] - a[:, 2]
+                    delta = (1 - a[:, 0]) * direction * m
+                    ptr_tns[i] = (ptr_tns[i] + delta) % M
+                elif self.pointer_mode == 'pilot':
+                    pass
+                else:
+                    ptr_tns[i] = (ptr_tns[i] + 1) % M
+
+            # ════════════════════════════════════════════════════
+            # PHASE 3: Single coalesced ring write (1 clone, not N)
+            # ════════════════════════════════════════════════════
+            if self.write_mode == 'replace':
+                # HDD-style: apply all expert writes to a single ring clone
+                ring_new = ring_tns.clone()
+                wr_idx = 0
+                for i in range(N):
+                    if write_vecs[i] is not None:
+                        w = all_weights[i].unsqueeze(-1)
+                        ws = write_strengths[wr_idx]
+                        wr_idx += 1
+                        if ws is not None:
+                            w = w * ws.unsqueeze(1)
+                        current = ring_new.gather(1, expanded_idxs[i])
+                        write_val = write_vecs[i].unsqueeze(1).expand(-1, all_weights[i].size(1), -1)
+                        updated = w * write_val + (1 - w) * current
+                        ring_new.scatter_(1, expanded_idxs[i], updated)
+                ring_tns = ring_new
+            elif self.gated_write:
+                ring_new = ring_tns.clone()
+                er_idx = 0
+                for i in range(N):
+                    if write_vecs[i] is not None:
+                        w = all_weights[i].unsqueeze(-1)
+                        erase_b = write_erases[er_idx].unsqueeze(-1).unsqueeze(-1)
+                        wgate_b = write_gates[er_idx].unsqueeze(-1).unsqueeze(-1)
+                        er_idx += 1
+                        current = ring_new.gather(1, expanded_idxs[i])
+                        erased = current * (1 - erase_b * w)
+                        write_val = write_vecs[i].unsqueeze(1).expand(-1, all_weights[i].size(1), -1)
+                        updated = erased + wgate_b * w * write_val
+                        ring_new.scatter_(1, expanded_idxs[i], updated)
+                ring_tns = ring_new
+            else:
+                # scatter_add: accumulate all writes into one clone
+                ring_new = ring_tns.clone()
+                for i in range(N):
+                    if write_vecs[i] is not None:
+                        write_val = write_vecs[i].unsqueeze(1).expand(-1, all_weights[i].size(1), -1)
+                        ring_new.scatter_add_(1, expanded_idxs[i], all_weights[i].unsqueeze(-1) * write_val)
+                ring_tns = ring_new
+
+            # ── Bulletin board write ──
+            if self.bb_enabled and bb_buf is not None:
+                bb_buf = bb_buf.clone()
+                bb_buf[:, bb_write_ptr] = input_vec_tns
+                bb_keys = bb_keys.clone()
+                written_key = self.bb_key_proj(input_vec_tns)
+                bb_keys[:, bb_write_ptr] = written_key
+                bb_write_ptr = (bb_write_ptr + 1) % self._bb_L
+                bb_steps += 1
+
+            # ── Output ──
+            if self.io_split_mode == 'strict' and self.io_output_from_readers_only:
+                reader_idx = self._reader_mask.nonzero(as_tuple=False).flatten().tolist()
+                mean_hidden = torch.stack([hidden_lst[j] for j in reader_idx]).mean(0)
+            else:
+                mean_hidden = torch.stack(hidden_lst).mean(0)
+            if self._bitlift_out:
+                bit_scores = torch.tanh(self.out(mean_hidden))
+                outs_lst.append(bit_scores @ self._bit_patterns.T)
+            elif self.out is not None:
+                outs_lst.append(self.out(mean_hidden))
+            else:
+                outs_lst.append(mean_hidden @ self._fixed_output_table.T)
+
+        hidden_tns = torch.stack(hidden_lst)
+        outs_tns = torch.stack(outs_lst, dim=1)
+
+        return ring_tns, ptr_tns, hidden_tns, bb_buf, bb_keys, bb_write_ptr, bb_steps, outs_tns
+
     @torch.no_grad()
     def update_expert_conf(self, temperature=2.0, decay=0.95, floor=0.1):
         """Update expert write confidence from gradient magnitudes.
@@ -1055,6 +1326,9 @@ class INSTNCT(nn.Module):
         if not use_ckpt:
             C = T  # single chunk = identical to original forward loop
 
+        # Select chunk processor based on parallel_experts flag
+        _chunk_fn = self._process_chunk_parallel if self.parallel_experts else self._process_chunk
+
         all_outs = []
         for t_start in range(0, T, C):
             t_end = min(t_start + C, T)
@@ -1064,7 +1338,7 @@ class INSTNCT(nn.Module):
                 # grad_checkpoint discards intermediate activations and recomputes
                 # them during backward — saves ~13× VRAM on ring clones.
                 ring_tns, ptr_tns, hidden_tns, bb_buf, bb_keys, bb_write_ptr, bb_steps, chunk_outs = grad_checkpoint(  # type: ignore[misc]
-                    self._process_chunk,
+                    _chunk_fn,
                     x_chunk, ring_tns, ptr_tns, hidden_tns,
                     bb_buf, bb_keys, bb_write_ptr, bb_steps,
                     S, probs, offsets_long, expert_weights,
@@ -1073,7 +1347,7 @@ class INSTNCT(nn.Module):
                     preserve_rng_state=False,  # no random ops in the loop
                 )
             else:
-                ring_tns, ptr_tns, hidden_tns, bb_buf, bb_keys, bb_write_ptr, bb_steps, chunk_outs = self._process_chunk(
+                ring_tns, ptr_tns, hidden_tns, bb_buf, bb_keys, bb_write_ptr, bb_steps, chunk_outs = _chunk_fn(
                     x_chunk, ring_tns, ptr_tns, hidden_tns,
                     bb_buf, bb_keys, bb_write_ptr, bb_steps,
                     S, probs, offsets_long, expert_weights,
