@@ -392,6 +392,37 @@ def func_hdd_write_tns(
     return ring_new
 
 # · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · ·
+def func_additive_write_tns(
+    ring_tns,            # the shared ring buffer; shape (B, M, D)
+    write_vec_tns,       # content to write; shape (B, D)
+    expanded_idx_tns,    # expanded window indices; shape (B, 2R+1, D)
+    weights_tns,         # window weights; shape (B, 2R+1)
+    write_strength=None, # per-sample write gate; shape (B, 1) or None
+):
+    """Additive write: ring_new = ring_old + σ(gate) * w * write_vec.
+
+    Skip-connection for gradient: ∂ring_new/∂ring_old = 1.0 (identity).
+    The gradient flows through the old slot unattenuated — "superconductor"
+    path. The write_vec gradient gets σ(gate)*w scaling (learnable resistance).
+
+    Requires LayerNorm on ring read to prevent unbounded growth."""
+
+    w = weights_tns.unsqueeze(-1)  # (B, 2R+1, 1)
+    if write_strength is not None:
+        w = w * write_strength.unsqueeze(1)  # modulate by learned gate
+
+    # Broadcast write_vec to all window positions
+    write_val = write_vec_tns.unsqueeze(1).expand(-1, weights_tns.size(1), -1)  # (B, 2R+1, D)
+
+    # Additive: old content + gated new content (no erasure of old)
+    current = ring_tns.gather(1, expanded_idx_tns)  # (B, 2R+1, D)
+    updated = current + w * write_val               # (B, 2R+1, D)
+
+    ring_new = ring_tns.clone()
+    ring_new.scatter_(1, expanded_idx_tns, updated)
+    return ring_new
+
+# · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · ·
 def func_movepntr_tns(  # func_ = standalone op, _tns = returns a tensor (new pointer positions)
     ptr_tns,         # current pointer position for this expert; shape (B,)
     dests_tns,       # φ-destination row for this expert; shape (M,) — from phi_destinations table
@@ -456,8 +487,8 @@ class INSTNCT(nn.Module):
         super().__init__()
         assert kernel_mode in ('uniform', 'vshape', 'gaussian', 'dotprod', 'topk'), \
             f"kernel_mode must be 'uniform', 'vshape', 'gaussian', 'dotprod', or 'topk', got '{kernel_mode}'"
-        assert write_mode in ('accumulate', 'replace'), \
-            f"write_mode must be 'accumulate' or 'replace', got '{write_mode}'"
+        assert write_mode in ('accumulate', 'replace', 'additive'), \
+            f"write_mode must be 'accumulate', 'replace', or 'additive', got '{write_mode}'"
         assert pointer_mode in ('sequential', 'learned', 'pilot'), \
             f"pointer_mode must be 'sequential', 'learned', or 'pilot', got '{pointer_mode}'"
         self.write_mode = write_mode
@@ -588,6 +619,12 @@ class INSTNCT(nn.Module):
         self.S_raw = nn.Parameter(torch.tensor(1.0))  # full ring signal — let backprop decide
         self.gate_tau = nn.Parameter(torch.tensor(4.0))  # learnable temperature for cosine gate
         self.ring_signal_norm = nn.LayerNorm(hidden_dim)  # normalizes ring signal before blend
+
+        # ── Ring read norm (additive write mode) ──
+        # When write_mode='additive', ring slot magnitudes grow unbounded (no erasure).
+        # LayerNorm on the raw ring read stabilizes the signal before read_proj.
+        # Always created for checkpoint compat; only used in additive mode.
+        self.ring_read_norm = nn.LayerNorm(slot_dim)
 
         # ── Gated write (anti-blob) ──
         # Mini head per expert: Linear(hidden_dim → 2) → sigmoid → [erase, write_gate]
@@ -798,6 +835,8 @@ class INSTNCT(nn.Module):
                            + torch.sin(theta_tns).unsqueeze(-1) * self.phase_sin)
 
                 # ─ hidden update (all hidden_dim-wide) ─
+                if self.write_mode == 'additive':
+                    read_vec_tns = self.ring_read_norm(read_vec_tns)
                 ring_signal = self.read_proj[i](read_vec_tns)  # slot_dim → hidden_dim
                 if S_flt == 'dotprod':
                     # content-based gate: cosine similarity (scale-invariant)
@@ -897,7 +936,10 @@ class INSTNCT(nn.Module):
                         write_vec = hidden_lst[i]                      # identity when dims match
                     if self._expert_conf is not None:
                         write_vec = self._expert_conf[i].item() * write_vec
-                    if self.write_mode == 'replace':
+                    if self.write_mode == 'additive':
+                        ws = torch.sigmoid(self.write_gate[i](hidden_lst[i]))  # (B, 1)
+                        ring_tns = func_additive_write_tns(ring_tns, write_vec, expanded_idx_tns, weights_tns, write_strength=ws)
+                    elif self.write_mode == 'replace':
                         ws = torch.sigmoid(self.write_gate[i](hidden_lst[i]))  # (B, 1)
                         ring_tns = func_hdd_write_tns(ring_tns, write_vec, expanded_idx_tns, weights_tns, write_strength=ws)
                     elif self.gated_write:
@@ -1084,7 +1126,10 @@ class INSTNCT(nn.Module):
                            + torch.sin(theta_tns).unsqueeze(-1) * self.phase_sin)
 
                 # ─ ring signal blend ─
-                ring_signal = self.read_proj[i](read_vecs[i])
+                rv = read_vecs[i]
+                if self.write_mode == 'additive':
+                    rv = self.ring_read_norm(rv)
+                ring_signal = self.read_proj[i](rv)
                 if S_flt == 'dotprod':
                     cos_sim = F.cosine_similarity(
                         input_vec_tns, ring_signal, dim=-1
@@ -1135,7 +1180,7 @@ class INSTNCT(nn.Module):
                         wv = self._expert_conf[i].item() * wv
                     write_vecs.append(wv)
 
-                    if self.write_mode == 'replace':
+                    if self.write_mode in ('replace', 'additive'):
                         ws = torch.sigmoid(self.write_gate[i](hidden_lst[i]))
                         write_strengths.append(ws)
                     elif self.gated_write:
@@ -1163,7 +1208,23 @@ class INSTNCT(nn.Module):
             # ════════════════════════════════════════════════════
             # PHASE 3: Single coalesced ring write (1 clone, not N)
             # ════════════════════════════════════════════════════
-            if self.write_mode == 'replace':
+            if self.write_mode == 'additive':
+                # Additive: ring_old + gate*w*write_vec (gradient=1.0 on old path)
+                ring_new = ring_tns.clone()
+                wr_idx = 0
+                for i in range(N):
+                    if write_vecs[i] is not None:
+                        w = all_weights[i].unsqueeze(-1)
+                        ws = write_strengths[wr_idx]
+                        wr_idx += 1
+                        if ws is not None:
+                            w = w * ws.unsqueeze(1)
+                        current = ring_new.gather(1, expanded_idxs[i])
+                        write_val = write_vecs[i].unsqueeze(1).expand(-1, all_weights[i].size(1), -1)
+                        updated = current + w * write_val
+                        ring_new.scatter_(1, expanded_idxs[i], updated)
+                ring_tns = ring_new
+            elif self.write_mode == 'replace':
                 # HDD-style: apply all expert writes to a single ring clone
                 ring_new = ring_tns.clone()
                 wr_idx = 0
@@ -1357,6 +1418,8 @@ class INSTNCT(nn.Module):
             # ════════════════════════════════════════════════════
             # VECTORIZED READ PROJECTION (all N: slot_dim → hidden_dim)
             # ════════════════════════════════════════════════════
+            if self.write_mode == 'additive':
+                read_vecs = self.ring_read_norm(read_vecs)
             ring_signals = self._bmm_linear(read_vecs, self._bw_read, self._bb_read)  # (N, B, H)
 
             # ════════════════════════════════════════════════════
@@ -1418,8 +1481,13 @@ class INSTNCT(nn.Module):
             ring_new_exp = ring_new.unsqueeze(0).expand(N, -1, -1, -1)  # (N, B, M, D)
             current = ring_new_exp.gather(2, exp_idx)                   # (N, B, W, D)
 
-            # HDD lerp: w * write_val + (1-w) * current
-            updated = w * wv_exp + (1 - w) * current                  # (N, B, W, D)
+            # Write formula depends on mode
+            if self.write_mode == 'additive':
+                # Additive: ring_old + gate*w*write_vec (gradient=1.0 on old path)
+                updated = current + w * wv_exp                        # (N, B, W, D)
+            else:
+                # HDD lerp: w * write_val + (1-w) * current
+                updated = w * wv_exp + (1 - w) * current              # (N, B, W, D)
 
             # Scatter all experts back — sequential per expert (scatter_ doesn't support batched dim0)
             for i in range(N):
