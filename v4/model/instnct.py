@@ -203,6 +203,12 @@ CNFG_IOSPLIT_STR = _cfg.get('io_split_mode', 'off')       # 'off' | 'strict'
 CNFG_IOWRITERCNT_INT = int(_cfg.get('io_writer_count', 1))  # how many experts are writers
 CNFG_IOREADOUT_BOOL = bool(_cfg.get('io_output_from_readers_only', True))  # output from readers only
 
+# ─ circuit fixes (gradient flow improvements) ─
+CNFG_RINGDECAY_BOOL = _cfg.get('ring_decay', False)             # exponential ring forgetting
+CNFG_GATEBIAS_BOOL = _cfg.get('gate_bias', False)               # learnable bias on cosine gate
+CNFG_EXPERTOUTW_BOOL = _cfg.get('expert_output_weights', False) # learned expert output weighting
+CNFG_PTRGRADIENT_BOOL = _cfg.get('ptr_gradient', False)         # fractional pointer interpolation
+
 del _cfg
 
 # ── Fixed Encoding Tables ────────────────────────────────────────
@@ -480,7 +486,11 @@ class INSTNCT(nn.Module):
                  gated_write=False,                        # True = erase+gate write (anti-blob), False = scatter_add (legacy)
                  write_mode='accumulate',                  # 'accumulate' (scatter_add) | 'replace' (HDD-style overwrite)
                  s_constraint='softplus',                  # 'softplus' (S>0) | 'raw' (unconstrained)
-                 parallel_experts=False):                  # False/True/'vectorized' — expert execution mode
+                 parallel_experts=False,                   # False/True/'vectorized' — expert execution mode
+                 ring_decay=CNFG_RINGDECAY_BOOL,          # exponential ring forgetting (prevents accumulation blob)
+                 gate_bias=CNFG_GATEBIAS_BOOL,            # learnable bias on cosine gate (allows full close/open)
+                 expert_output_weights=CNFG_EXPERTOUTW_BOOL,  # learned softmax weights for expert output mix
+                 ptr_gradient=CNFG_PTRGRADIENT_BOOL):     # fractional pointer interpolation (gradient through read)
         super().__init__()
         assert kernel_mode in ('uniform', 'vshape', 'gaussian', 'dotprod', 'topk'), \
             f"kernel_mode must be 'uniform', 'vshape', 'gaussian', 'dotprod', or 'topk', got '{kernel_mode}'"
@@ -677,6 +687,31 @@ class INSTNCT(nn.Module):
         # R=0 → 1 slot (needle), R=1 → 3 slots, R=2 → 5 slots
         self.register_buffer('_R_eff', torch.full((N,), R + 0.5))
 
+        # ── Circuit fix: Ring decay (exponential forgetting) ──
+        # Prevents unbounded ring magnitude in accumulate/additive write modes.
+        # ring_tns *= sigmoid(raw_decay) each timestep. sigmoid(4.6) ≈ 0.99.
+        # Default off: decay=1.0 (identity). When enabled, starts at ~0.99.
+        self.ring_decay_enabled = ring_decay
+        if ring_decay:
+            self._raw_ring_decay = nn.Parameter(torch.tensor(4.6))  # sigmoid(4.6) ≈ 0.99
+
+        # ── Circuit fix: Gate bias (allows full close/open) ──
+        # alpha = sigmoid(tau * cos_sim + bias). Default bias=0 → same as before.
+        self.gate_bias_enabled = gate_bias
+        if gate_bias:
+            self.gate_bias = nn.Parameter(torch.tensor(0.0))
+
+        # ── Circuit fix: Expert output weighting ──
+        # mean_hidden = softmax(logits) · stack(hidden). Default logits=0 → uniform.
+        self.expert_output_weights_enabled = expert_output_weights
+        if expert_output_weights:
+            self.expert_output_logits = nn.Parameter(torch.zeros(N))
+
+        # ── Circuit fix: Pointer gradient (fractional interpolation) ──
+        # Makes kernel weights differentiable w.r.t. pointer position.
+        # Only active for learned/pilot modes (sequential is always integer).
+        self.ptr_gradient = ptr_gradient
+
         # precomputed φ-jump table — shape (N, M), not trainable, moves with device
         self.dests: torch.Tensor
         self.register_buffer('dests', phi_destinations(N, M))
@@ -762,6 +797,10 @@ class INSTNCT(nn.Module):
             else:
                 input_vec_tns = self._fixed_table[x_chunk[:, t]]           # (B, hidden_dim)
 
+            # ── Circuit fix: ring decay (per-timestep exponential forgetting) ──
+            if self.ring_decay_enabled:
+                ring_tns = ring_tns * torch.sigmoid(self._raw_ring_decay)
+
             for i in range(N):
                 # ─ PRE-READ pointer seek (pilot: move BEFORE reading) ─
                 if self.pointer_mode == 'pilot':
@@ -800,7 +839,23 @@ class INSTNCT(nn.Module):
                         weights_tns = weights_tns / weights_tns.sum(dim=1, keepdim=True)
                 elif expert_weights is not None:
                     # ─ positional kernel (vshape/gaussian/uniform) ─
-                    weights_tns = expert_weights[i].unsqueeze(0).expand(input_vec_tns.shape[0], -1)
+                    if self.ptr_gradient and self.pointer_mode != 'sequential':
+                        # Circuit fix: fractional pointer interpolation
+                        # Recompute kernel weights using differentiable fractional offset
+                        ptr_float = ptr_tns[i] % M                                    # (B,) differentiable
+                        frac = ptr_float - ptr_float.detach().floor()                  # (B,) has gradient
+                        adj_offsets = offsets_long.float().unsqueeze(0) - frac.unsqueeze(1)  # (B, 2R+1)
+                        R_eff_i = self._R_eff[i]
+                        if self.kernel_mode == 'vshape':
+                            raw_w = (1.0 - adj_offsets.abs() / R_eff_i.clamp(min=0.5)).clamp(min=0)
+                        elif self.kernel_mode == 'gaussian':
+                            sigma = (R_eff_i / 2.5).clamp(min=0.3)
+                            raw_w = torch.exp(-0.5 * (adj_offsets / sigma) ** 2)
+                        else:  # uniform
+                            raw_w = torch.sigmoid(10.0 * (R_eff_i - adj_offsets.abs()))
+                        weights_tns = raw_w / raw_w.sum(dim=1, keepdim=True)           # (B, 2R+1) normalized
+                    else:
+                        weights_tns = expert_weights[i].unsqueeze(0).expand(input_vec_tns.shape[0], -1)
                     read_vec_tns, expanded_idx_tns = func_softread_tns(
                         ring_tns, indices_tns, weights_tns, slot_dim)
                 elif self.kernel_mode == 'topk':
@@ -838,7 +893,10 @@ class INSTNCT(nn.Module):
                     cos_sim = F.cosine_similarity(
                         input_vec_tns, ring_signal, dim=-1
                     ).unsqueeze(-1)  # (B, 1) — always [-1, +1] regardless of norms
-                    alpha = torch.sigmoid(self.gate_tau * cos_sim)  # (B, 1) — bounded [0, 1]
+                    gate_input = self.gate_tau * cos_sim
+                    if self.gate_bias_enabled:
+                        gate_input = gate_input + self.gate_bias
+                    alpha = torch.sigmoid(gate_input)  # (B, 1) — bounded [0, 1]
                     blended_ring = alpha * ring_signal  # no LayerNorm — keep magnitude info
 
                     # ── diagnostics: track alpha + signal norms ──
@@ -975,9 +1033,15 @@ class INSTNCT(nn.Module):
             # ── Hourglass: reader-only output ──
             if self.io_split_mode == 'strict' and self.io_output_from_readers_only:
                 reader_idx = self._reader_mask.nonzero(as_tuple=False).flatten().tolist()
-                mean_hidden = torch.stack([hidden_lst[j] for j in reader_idx]).mean(0)
+                stacked = torch.stack([hidden_lst[j] for j in reader_idx])  # (K, B, H)
             else:
-                mean_hidden = torch.stack(hidden_lst).mean(0)       # (B, hidden_dim)
+                stacked = torch.stack(hidden_lst)                           # (N, B, H)
+            if self.expert_output_weights_enabled:
+                # Circuit fix: learned softmax weights over experts
+                w = F.softmax(self.expert_output_logits, dim=0)             # (N,)
+                mean_hidden = (stacked * w[:stacked.shape[0]].view(-1, 1, 1)).sum(0)
+            else:
+                mean_hidden = stacked.mean(0)                               # (B, hidden_dim)
             if self._bitlift_out:
                 bit_scores = torch.tanh(self.out(mean_hidden))   # (B, 8)
                 outs_lst.append(bit_scores @ self._bit_patterns.T)  # (B, 8) @ (8, 256) → (B, 256)
@@ -1040,6 +1104,10 @@ class INSTNCT(nn.Module):
 
             B_size = input_vec_tns.shape[0]
 
+            # ── Circuit fix: ring decay (per-timestep exponential forgetting) ──
+            if self.ring_decay_enabled:
+                ring_tns = ring_tns * torch.sigmoid(self._raw_ring_decay)
+
             # ════════════════════════════════════════════════════
             # PHASE 1: All reads from the SAME ring state
             # ════════════════════════════════════════════════════
@@ -1079,7 +1147,21 @@ class INSTNCT(nn.Module):
                         weights_tns = torch.ones(B_size, indices_tns.shape[1], device=input_vec_tns.device)
                         weights_tns = weights_tns / weights_tns.sum(dim=1, keepdim=True)
                 elif expert_weights is not None:
-                    weights_tns = expert_weights[i].unsqueeze(0).expand(B_size, -1)
+                    if self.ptr_gradient and self.pointer_mode != 'sequential':
+                        ptr_float = ptr_tns[i] % M
+                        frac = ptr_float - ptr_float.detach().floor()
+                        adj_offsets = offsets_long.float().unsqueeze(0) - frac.unsqueeze(1)
+                        R_eff_i = self._R_eff[i]
+                        if self.kernel_mode == 'vshape':
+                            raw_w = (1.0 - adj_offsets.abs() / R_eff_i.clamp(min=0.5)).clamp(min=0)
+                        elif self.kernel_mode == 'gaussian':
+                            sigma = (R_eff_i / 2.5).clamp(min=0.3)
+                            raw_w = torch.exp(-0.5 * (adj_offsets / sigma) ** 2)
+                        else:
+                            raw_w = torch.sigmoid(10.0 * (R_eff_i - adj_offsets.abs()))
+                        weights_tns = raw_w / raw_w.sum(dim=1, keepdim=True)
+                    else:
+                        weights_tns = expert_weights[i].unsqueeze(0).expand(B_size, -1)
                     read_vec_tns, expanded_idx_tns = func_softread_tns(
                         ring_tns, indices_tns, weights_tns, slot_dim)
                 elif self.kernel_mode == 'topk':
@@ -1126,7 +1208,10 @@ class INSTNCT(nn.Module):
                     cos_sim = F.cosine_similarity(
                         input_vec_tns, ring_signal, dim=-1
                     ).unsqueeze(-1)
-                    alpha = torch.sigmoid(self.gate_tau * cos_sim)
+                    gate_input = self.gate_tau * cos_sim
+                    if self.gate_bias_enabled:
+                        gate_input = gate_input + self.gate_bias
+                    alpha = torch.sigmoid(gate_input)
                     blended_ring = alpha * ring_signal
                 else:
                     blended_ring = S_flt * ring_signal
@@ -1269,9 +1354,14 @@ class INSTNCT(nn.Module):
             # ── Output ──
             if self.io_split_mode == 'strict' and self.io_output_from_readers_only:
                 reader_idx = self._reader_mask.nonzero(as_tuple=False).flatten().tolist()
-                mean_hidden = torch.stack([hidden_lst[j] for j in reader_idx]).mean(0)
+                stacked = torch.stack([hidden_lst[j] for j in reader_idx])
             else:
-                mean_hidden = torch.stack(hidden_lst).mean(0)
+                stacked = torch.stack(hidden_lst)
+            if self.expert_output_weights_enabled:
+                w = F.softmax(self.expert_output_logits, dim=0)
+                mean_hidden = (stacked * w[:stacked.shape[0]].view(-1, 1, 1)).sum(0)
+            else:
+                mean_hidden = stacked.mean(0)
             if self._bitlift_out:
                 bit_scores = torch.tanh(self.out(mean_hidden))
                 outs_lst.append(bit_scores @ self._bit_patterns.T)
@@ -1370,6 +1460,10 @@ class INSTNCT(nn.Module):
 
             B_size = input_vec.shape[0]
 
+            # ── Circuit fix: ring decay ──
+            if self.ring_decay_enabled:
+                ring_tns = ring_tns * torch.sigmoid(self._raw_ring_decay)
+
             # ════════════════════════════════════════════════════
             # VECTORIZED PILOT POINTER (all N experts at once)
             # ════════════════════════════════════════════════════
@@ -1403,8 +1497,23 @@ class INSTNCT(nn.Module):
             ring_exp = ring_tns.unsqueeze(0).expand(N, -1, -1, -1)    # (N, B, M, D)
             neighbors = ring_exp.gather(2, exp_idx)                    # (N, B, W, D)
 
-            # Weighted sum: (N, 1, W, 1) * (N, B, W, D) → sum over W → (N, B, D)
-            weights_4d = ew_N1W.unsqueeze(-1)                         # (N, 1, W, 1)
+            # Weighted sum: (N, ?, W, 1) * (N, B, W, D) → sum over W → (N, B, D)
+            if self.ptr_gradient and self.pointer_mode != 'sequential':
+                # Circuit fix: fractional pointer interpolation (vectorized)
+                ptr_float = ptr_tns % M                                       # (N, B)
+                frac = ptr_float - ptr_float.detach().floor()                 # (N, B)
+                adj_offsets = offsets_long.float().unsqueeze(0).unsqueeze(0) - frac.unsqueeze(2)  # (N, B, W)
+                R_effs = self._R_eff.view(N, 1, 1)                           # (N, 1, 1)
+                if self.kernel_mode == 'vshape':
+                    raw_w = (1.0 - adj_offsets.abs() / R_effs.clamp(min=0.5)).clamp(min=0)
+                elif self.kernel_mode == 'gaussian':
+                    sigma = (R_effs / 2.5).clamp(min=0.3)
+                    raw_w = torch.exp(-0.5 * (adj_offsets / sigma) ** 2)
+                else:
+                    raw_w = torch.sigmoid(10.0 * (R_effs - adj_offsets.abs()))
+                weights_4d = (raw_w / raw_w.sum(dim=2, keepdim=True)).unsqueeze(-1)  # (N, B, W, 1)
+            else:
+                weights_4d = ew_N1W.unsqueeze(-1)                         # (N, 1, W, 1)
             read_vecs = (weights_4d * neighbors).sum(2)               # (N, B, D)
 
             # ════════════════════════════════════════════════════
@@ -1419,7 +1528,10 @@ class INSTNCT(nn.Module):
                 # input_vec: (B, H) → broadcast to (N, B, H)
                 input_exp = input_vec.unsqueeze(0).expand(N, -1, -1)  # (N, B, H)
                 cos_sim = F.cosine_similarity(input_exp, ring_signals, dim=-1).unsqueeze(-1)  # (N, B, 1)
-                alpha = torch.sigmoid(self.gate_tau * cos_sim)        # (N, B, 1)
+                gate_input = self.gate_tau * cos_sim
+                if self.gate_bias_enabled:
+                    gate_input = gate_input + self.gate_bias
+                alpha = torch.sigmoid(gate_input)                     # (N, B, 1)
                 blended_ring = alpha * ring_signals                   # (N, B, H)
             else:
                 blended_ring = S_flt * ring_signals
@@ -1504,7 +1616,11 @@ class INSTNCT(nn.Module):
                 bb_steps += 1
 
             # ── Output ──
-            mean_hidden = hidden_tns.mean(0)                          # (B, H)
+            if self.expert_output_weights_enabled:
+                w = F.softmax(self.expert_output_logits, dim=0)       # (N,)
+                mean_hidden = (hidden_tns * w.view(N, 1, 1)).sum(0)   # (B, H)
+            else:
+                mean_hidden = hidden_tns.mean(0)                      # (B, H)
             if self._bitlift_out:
                 bit_scores = torch.tanh(self.out(mean_hidden))
                 outs_lst.append(bit_scores @ self._bit_patterns.T)

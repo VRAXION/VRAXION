@@ -149,6 +149,30 @@ model:
   # BB gate mode: 'learned' = sigmoid gate (sample-dependent), 'fixed' = no gate (scale only)
   bb_gate_mode: fixed
 
+  # ── Circuit Fixes (Gradient Flow Improvements) ─────────────
+  # These address "electrical network" defects in the signal path.
+  # All default to false for backward compat — enable to improve gradient flow.
+
+  # Ring decay: exponential forgetting per timestep.
+  # Prevents unbounded ring magnitude in accumulate/additive write modes.
+  # Learnable decay ∈ [~0.9, ~1.0] via sigmoid-bounded parameter.
+  ring_decay: false
+
+  # Gate bias: adds learnable bias to the cosine gate α.
+  # alpha = sigmoid(tau * cos_sim + bias) — allows gate to default closed/open.
+  # Without bias, cos_sim=0 → alpha=0.5 (half-open), which may leak noise.
+  gate_bias: false
+
+  # Expert output weights: learned softmax weights for expert output mix.
+  # Replaces uniform mean(h₁..hₙ) with weighted sum, so better experts
+  # contribute more to the output. Init at uniform (logits=0).
+  expert_output_weights: false
+
+  # Pointer gradient: fractional interpolation makes the ring read
+  # differentiable w.r.t. pointer position. Only active for learned/pilot
+  # pointer modes (sequential is always integer, no effect).
+  ptr_gradient: false
+
 
 # ══════════════════════════════════════════════════════════════
 #  DATA — generate.py

@@ -645,3 +645,177 @@ def test_output_encoding_default_learned():
     x = torch.randint(0, 256, (2, 16))
     with torch.no_grad():
         assert torch.allclose(ref(x)[0], exp(x)[0], atol=1e-6)
+
+
+# ══════════════════════════════════════════════════════════════
+#  Circuit Fixes — gradient flow improvements
+# ══════════════════════════════════════════════════════════════
+
+CIRCUIT_CFG = dict(M=32, hidden_dim=64, slot_dim=16, N=2, R=1)
+
+
+def test_ring_decay_disabled_is_default():
+    """Ring decay disabled by default, no extra parameter."""
+    model = INSTNCT(**CIRCUIT_CFG, embed_mode=True, ring_decay=False)
+    assert not model.ring_decay_enabled
+    assert not hasattr(model, '_raw_ring_decay')
+
+
+def test_ring_decay_enabled_forward():
+    """Ring decay enabled produces valid finite output."""
+    model = INSTNCT(**CIRCUIT_CFG, embed_mode=True, ring_decay=True)
+    x = torch.randint(0, 256, (2, 8))
+    out, _ = model(x)
+    assert out.shape == (2, 8, 256)
+    assert torch.isfinite(out).all()
+
+
+def test_ring_decay_gradient_flows():
+    """Ring decay parameter receives gradients during backward."""
+    model = INSTNCT(**CIRCUIT_CFG, embed_mode=True, ring_decay=True)
+    x = torch.randint(0, 256, (2, 8))
+    model(x)[0].sum().backward()
+    assert model._raw_ring_decay.grad is not None
+    assert model._raw_ring_decay.grad.abs().item() > 0
+
+
+def test_ring_decay_init_near_one():
+    """Ring decay should initialize close to 1.0 (minimal forgetting)."""
+    model = INSTNCT(**CIRCUIT_CFG, embed_mode=True, ring_decay=True)
+    decay_val = torch.sigmoid(model._raw_ring_decay).item()
+    assert 0.98 < decay_val < 1.0, f"Expected ~0.99, got {decay_val}"
+
+
+def test_gate_bias_disabled_is_default():
+    """Gate bias disabled by default."""
+    model = INSTNCT(**CIRCUIT_CFG, embed_mode=True, gate_bias=False)
+    assert not model.gate_bias_enabled
+
+
+def test_gate_bias_enabled_forward():
+    """Gate bias enabled produces valid finite output."""
+    model = INSTNCT(**CIRCUIT_CFG, embed_mode=True, gate_bias=True)
+    x = torch.randint(0, 256, (2, 8))
+    out, _ = model(x)
+    assert out.shape == (2, 8, 256)
+    assert torch.isfinite(out).all()
+
+
+def test_gate_bias_gradient_flows():
+    """Gate bias parameter receives gradients during backward."""
+    model = INSTNCT(**CIRCUIT_CFG, embed_mode=True, gate_bias=True)
+    x = torch.randint(0, 256, (2, 8))
+    model(x)[0].sum().backward()
+    assert model.gate_bias.grad is not None
+    assert model.gate_bias.grad.abs().item() > 0
+
+
+def test_gate_bias_zero_matches_no_bias():
+    """Gate bias=0 should produce identical output to no bias."""
+    torch.manual_seed(42)
+    ref = INSTNCT(**CIRCUIT_CFG, embed_mode=True, gate_bias=False)
+    torch.manual_seed(42)
+    biased = INSTNCT(**CIRCUIT_CFG, embed_mode=True, gate_bias=True)
+    x = torch.randint(0, 256, (2, 8))
+    with torch.no_grad():
+        out_ref, _ = ref(x)
+        out_biased, _ = biased(x)
+    assert torch.allclose(out_ref, out_biased, atol=1e-6), \
+        f"max diff = {(out_ref - out_biased).abs().max().item():.2e}"
+
+
+def test_expert_output_weights_disabled_is_default():
+    """Expert output weights disabled by default."""
+    model = INSTNCT(**CIRCUIT_CFG, embed_mode=True, expert_output_weights=False)
+    assert not model.expert_output_weights_enabled
+
+
+def test_expert_output_weights_enabled_forward():
+    """Expert output weights enabled produces valid finite output."""
+    model = INSTNCT(**CIRCUIT_CFG, embed_mode=True, expert_output_weights=True)
+    x = torch.randint(0, 256, (2, 8))
+    out, _ = model(x)
+    assert out.shape == (2, 8, 256)
+    assert torch.isfinite(out).all()
+
+
+def test_expert_output_weights_gradient_flows():
+    """Expert output logits receive gradients during backward."""
+    model = INSTNCT(**CIRCUIT_CFG, embed_mode=True, expert_output_weights=True)
+    x = torch.randint(0, 256, (2, 8))
+    model(x)[0].sum().backward()
+    assert model.expert_output_logits.grad is not None
+    assert model.expert_output_logits.grad.abs().sum().item() > 0
+
+
+def test_expert_output_weights_zero_matches_uniform():
+    """Expert output logits=0 (uniform softmax) should match mean baseline."""
+    torch.manual_seed(42)
+    ref = INSTNCT(**CIRCUIT_CFG, embed_mode=True, expert_output_weights=False)
+    torch.manual_seed(42)
+    weighted = INSTNCT(**CIRCUIT_CFG, embed_mode=True, expert_output_weights=True)
+    x = torch.randint(0, 256, (2, 8))
+    with torch.no_grad():
+        out_ref, _ = ref(x)
+        out_weighted, _ = weighted(x)
+    assert torch.allclose(out_ref, out_weighted, atol=1e-5), \
+        f"max diff = {(out_ref - out_weighted).abs().max().item():.2e}"
+
+
+def test_ptr_gradient_disabled_is_default():
+    """Pointer gradient disabled by default."""
+    model = INSTNCT(**CIRCUIT_CFG, embed_mode=True, ptr_gradient=False)
+    assert not model.ptr_gradient
+
+
+def test_ptr_gradient_enabled_forward_pilot():
+    """Pointer gradient with pilot mode produces valid finite output."""
+    model = INSTNCT(**CIRCUIT_CFG, embed_mode=True, ptr_gradient=True,
+                    pointer_mode='pilot', kernel_mode='vshape')
+    x = torch.randint(0, 256, (2, 8))
+    out, _ = model(x)
+    assert out.shape == (2, 8, 256)
+    assert torch.isfinite(out).all()
+
+
+def test_ptr_gradient_enabled_forward_learned():
+    """Pointer gradient with learned pointer produces valid finite output."""
+    model = INSTNCT(**CIRCUIT_CFG, embed_mode=True, ptr_gradient=True,
+                    pointer_mode='learned', kernel_mode='vshape')
+    x = torch.randint(0, 256, (2, 8))
+    out, _ = model(x)
+    assert out.shape == (2, 8, 256)
+    assert torch.isfinite(out).all()
+
+
+def test_ptr_gradient_sequential_no_effect():
+    """Pointer gradient in sequential mode is a no-op (frac=0 always)."""
+    torch.manual_seed(42)
+    ref = INSTNCT(**CIRCUIT_CFG, embed_mode=True, ptr_gradient=False,
+                  pointer_mode='sequential')
+    torch.manual_seed(42)
+    grad = INSTNCT(**CIRCUIT_CFG, embed_mode=True, ptr_gradient=True,
+                   pointer_mode='sequential')
+    x = torch.randint(0, 256, (2, 8))
+    with torch.no_grad():
+        out_ref, _ = ref(x)
+        out_grad, _ = grad(x)
+    assert torch.allclose(out_ref, out_grad, atol=1e-6), \
+        f"max diff = {(out_ref - out_grad).abs().max().item():.2e}"
+
+
+def test_all_circuit_fixes_combined():
+    """All 4 circuit fixes enabled together must produce valid output."""
+    model = INSTNCT(**CIRCUIT_CFG, embed_mode=True,
+                    ring_decay=True, gate_bias=True,
+                    expert_output_weights=True, ptr_gradient=True,
+                    pointer_mode='pilot', kernel_mode='vshape')
+    x = torch.randint(0, 256, (2, 8))
+    out, _ = model(x)
+    assert out.shape == (2, 8, 256)
+    assert torch.isfinite(out).all()
+    # Gradient should flow to all new parameters
+    out.sum().backward()
+    assert model._raw_ring_decay.grad is not None
+    assert model.gate_bias.grad is not None
+    assert model.expert_output_logits.grad is not None
