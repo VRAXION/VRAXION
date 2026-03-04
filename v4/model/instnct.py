@@ -25,11 +25,14 @@ def _c19_activation(x, rho=4.0, C=None):
     4. Dual-phi asymmetry: neg×φ, pos×(1/φ) — two anti-resonance filters
        that prevent gradient standing waves in recurrent loops
 
-    The dual-phi gain breaks the symmetry between negative and positive arches:
-    - Negative arches (error signal) scaled by φ (1.618): amplified
-    - Positive arches (stable signal) scaled by 1/φ (0.618): dampened
-    - Their ratio is φ² (2.618) — also maximally irrational
-    This creates three levels of anti-resonance simultaneously.
+    rho is fixed at 4.0 — the critical point where negative arches just
+    touch zero at their midpoint. Combined with dual-phi, this gives:
+    - Positive arches (even n): peak 0.5C, scaled by 1/φ → 0.309C
+    - Negative arches (odd n): min -0.0625C, scaled by φ → -0.101C
+    - Three-level anti-resonance: φ, 1/φ, and φ² ratio between them
+
+    The dual-phi gain is folded into arch parity (odd=φ, even=1/φ)
+    instead of testing core<0 — saves one comparison + one where.
     """
     if C is None:
         C = _C19_C
@@ -39,15 +42,13 @@ def _c19_activation(x, rho=4.0, C=None):
     n = torch.floor(scaled)
     t = scaled - n                                      # [0, 1) fractional position
     h = t - t * t                                       # parabola: t*(1-t), peak 0.25 at t=0.5
-    sgn = 1.0 - 2.0 * torch.remainder(n, 2.0)          # ±1 alternating sign
-    core = C * h * (sgn + rho * h)                      # factored: C*(sgn*h + rho*h²)
-    # Dual-phi interference filter: neg×φ, pos×(1/φ)
-    core = core * torch.where(core < 0, PHI, PHI_INV)
+    odd = torch.remainder(n, 2.0)                       # 0=even (pos arch), 1=odd (neg arch)
+    sgn = 1.0 - 2.0 * odd                              # ±1 alternating sign
+    gain = odd * (PHI - PHI_INV) + PHI_INV              # odd→φ, even→φ⁻¹ (branchless)
+    core = C * h * (sgn + rho * h) * gain               # fused: arch × dual-phi
     return torch.where(x.abs() > l, x - x.sign() * l, core)
 
 
-_C19_RHO_MIN = 0.5
-_C19_RHO_MAX = 8.0
 _C19_C_MIN = 1.0
 _C19_C_MAX = 50.0
 
@@ -55,12 +56,8 @@ def _sigmoid_bounded(raw, lo, hi):
     """Sigmoid-bounded parameter: raw float → [lo, hi]."""
     return lo + (hi - lo) * torch.sigmoid(raw)
 
-def _rho_from_raw(raw_rho):
-    """Sigmoid-bounded rho: raw float → [0.5, 8.0]."""
-    return _sigmoid_bounded(raw_rho, _C19_RHO_MIN, _C19_RHO_MAX)
-
 def _C_from_raw(raw_C):
-    """Sigmoid-bounded C: raw float → [1.0, 10.0]."""
+    """Sigmoid-bounded C: raw float → [1.0, 50.0]."""
     return _sigmoid_bounded(raw_C, _C19_C_MIN, _C19_C_MAX)
 
 def _init_raw(val, lo, hi):
@@ -68,10 +65,6 @@ def _init_raw(val, lo, hi):
     p = (val - lo) / (hi - lo)
     p = min(max(p, 1e-4), 1 - 1e-4)
     return math.log(p / (1 - p))
-
-def _rho_init_raw(rho_init=4.0):
-    """Inverse sigmoid so that sigmoid(raw) maps to rho_init."""
-    return _init_raw(rho_init, _C19_RHO_MIN, _C19_RHO_MAX)
 
 def _C_init_raw(C_init=None):
     """Inverse sigmoid so that sigmoid(raw) maps to C_init (default π)."""
@@ -136,18 +129,16 @@ class BatchedLinear(nn.Module):
 
 
 class _C19LearnableModule(nn.Module):
-    """C19 with per-neuron learnable rho and C, bounded via sigmoid."""
-    def __init__(self, width, rho_init=4.0, learn_C=True):
+    """C19 with per-neuron learnable C (rho fixed at 4.0), bounded via sigmoid."""
+    def __init__(self, width, learn_C=True):
         super().__init__()
-        self.raw_rho = nn.Parameter(torch.full((width,), _rho_init_raw(rho_init)))
         self.learn_C = learn_C
         if learn_C:
             self.raw_C = nn.Parameter(torch.full((width,), _C_init_raw()))
 
     def forward(self, x):
-        rho = _rho_from_raw(self.raw_rho)
         C = _C_from_raw(self.raw_C) if self.learn_C else None
-        return _c19_activation(x, rho=rho, C=C)
+        return _c19_activation(x, C=C)
 
 # ── Config ──────────────────────────────────────────────────────
 # All hyperparameters live in vraxion_config.yaml — single source of truth.
@@ -608,11 +599,8 @@ class INSTNCT(nn.Module):
             self.inp = nn.Linear(B, hidden_dim)        # B bits → hidden_dim
             self.out = nn.Linear(hidden_dim, B)        # hidden_dim → B bits
 
-        # ── Per-neuron learnable rho + C for c19 activations (both embed_mode) ──
-        _raw0_rho = _rho_init_raw(4.0)
+        # ── Per-neuron learnable C for c19 activations (rho fixed at 4.0) ──
         _raw0_C = _C_init_raw()
-        self.c19_rho_input = nn.Parameter(torch.full((hidden_dim,), _raw0_rho))
-        self.c19_rho_hidden = nn.Parameter(torch.full((hidden_dim,), _raw0_rho))
         self.c19_C_input = nn.Parameter(torch.full((hidden_dim,), _raw0_C))
         self.c19_C_hidden = nn.Parameter(torch.full((hidden_dim,), _raw0_C))
 
@@ -806,7 +794,7 @@ class INSTNCT(nn.Module):
                     # byte index → 8 float bits, GPU-native
                     byte_val = x_chunk[:, t]                               # (B,) int64
                     bits = ((byte_val.unsqueeze(-1) >> _bit_shifts) & 1).float()  # (B, 8)
-                    input_vec_tns = _c19_activation(self.inp(bits), rho=_rho_from_raw(self.c19_rho_input), C=_C_from_raw(self.c19_C_input))  # Linear+c19: (B, 8) → (B, hidden_dim)
+                    input_vec_tns = _c19_activation(self.inp(bits), C=_C_from_raw(self.c19_C_input))  # Linear+c19: (B, 8) → (B, hidden_dim)
                 else:
                     input_vec_tns = self.inp(x_chunk[:, t])                # Embedding: int64 → (B, hidden_dim)
             else:
@@ -991,7 +979,6 @@ class INSTNCT(nn.Module):
                     + bb_ctx                                   # (B, hidden_dim) — bulletin board
                     + phase_tns                                # (B, hidden_dim)
                     + hidden_lst[i],                           # (B, hidden_dim)
-                    rho=_rho_from_raw(self.c19_rho_hidden),
                     C=_C_from_raw(self.c19_C_hidden),
                 )
 
@@ -1111,7 +1098,7 @@ class INSTNCT(nn.Module):
                 if self._bitlift:
                     byte_val = x_chunk[:, t]
                     bits = ((byte_val.unsqueeze(-1) >> _bit_shifts) & 1).float()
-                    input_vec_tns = _c19_activation(self.inp(bits), rho=_rho_from_raw(self.c19_rho_input), C=_C_from_raw(self.c19_C_input))
+                    input_vec_tns = _c19_activation(self.inp(bits), C=_C_from_raw(self.c19_C_input))
                 else:
                     input_vec_tns = self.inp(x_chunk[:, t])
             else:
@@ -1258,7 +1245,6 @@ class INSTNCT(nn.Module):
                 # ─ hidden update ─
                 hidden_lst[i] = _c19_activation(
                     input_vec_tns + blended_ring + bb_ctx + phase_tns + hidden_lst[i],
-                    rho=_rho_from_raw(self.c19_rho_hidden),
                     C=_C_from_raw(self.c19_C_hidden),
                 )
 
@@ -1467,7 +1453,7 @@ class INSTNCT(nn.Module):
                 if self._bitlift:
                     byte_val = x_chunk[:, t]
                     bits = ((byte_val.unsqueeze(-1) >> _bit_shifts) & 1).float()
-                    input_vec = _c19_activation(self.inp(bits), rho=_rho_from_raw(self.c19_rho_input), C=_C_from_raw(self.c19_C_input))
+                    input_vec = _c19_activation(self.inp(bits), C=_C_from_raw(self.c19_C_input))
                 else:
                     input_vec = self.inp(x_chunk[:, t])
             else:
@@ -1564,7 +1550,6 @@ class INSTNCT(nn.Module):
             input_exp = input_vec.unsqueeze(0).expand(N, -1, -1) if S_flt != 'dotprod' else input_exp
             hidden_tns = _c19_activation(
                 input_exp + blended_ring + phase + hidden_tns,
-                rho=_rho_from_raw(self.c19_rho_hidden),
                 C=_C_from_raw(self.c19_C_hidden),
             )  # (N, B, H)
 
