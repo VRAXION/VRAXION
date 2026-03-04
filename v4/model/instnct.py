@@ -16,16 +16,20 @@ _C19_C = math.pi
 
 
 def _c19_activation(x, rho=4.0, C=None):
-    """C19 periodic parabolic wave activation. C defaults to _C19_C (π).
+    """C19 periodic parabolic wave activation with dual-phi interference filter.
 
-    Three key properties for recurrent stability:
+    Four key properties for recurrent stability:
     1. Bounded core (|x| < 6C): prevents hidden state explosion
     2. Linear tails (|x| > 6C): prevents gradient vanishing
     3. Periodic parabolic arches: natural hashing of input magnitudes
+    4. Dual-phi asymmetry: neg×φ, pos×(1/φ) — two anti-resonance filters
+       that prevent gradient standing waves in recurrent loops
 
-    Optimized: factored h*(sgn + rho*h), fused sign, merged where.
-    Numerically identical to the original formulation (max diff < 1e-6).
-    ~1.45x faster on CPU.
+    The dual-phi gain breaks the symmetry between negative and positive arches:
+    - Negative arches (error signal) scaled by φ (1.618): amplified
+    - Positive arches (stable signal) scaled by 1/φ (0.618): dampened
+    - Their ratio is φ² (2.618) — also maximally irrational
+    This creates three levels of anti-resonance simultaneously.
     """
     if C is None:
         C = _C19_C
@@ -37,6 +41,8 @@ def _c19_activation(x, rho=4.0, C=None):
     h = t - t * t                                       # parabola: t*(1-t), peak 0.25 at t=0.5
     sgn = 1.0 - 2.0 * torch.remainder(n, 2.0)          # ±1 alternating sign
     core = C * h * (sgn + rho * h)                      # factored: C*(sgn*h + rho*h²)
+    # Dual-phi interference filter: neg×φ, pos×(1/φ)
+    core = core * torch.where(core < 0, PHI, PHI_INV)
     return torch.where(x.abs() > l, x - x.sign() * l, core)
 
 
