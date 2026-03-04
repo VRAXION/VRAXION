@@ -1064,6 +1064,16 @@ class INSTNCT(nn.Module):
             for i in range(self.N):
                 d[f'hidden_final_norm_{i}'] = hidden_tns[i].detach().norm(dim=-1).mean().item()
 
+            # ── C parameter telemetry (learnable activation period) ──
+            c_inp = _C_from_raw(self.c19_C_input).detach()
+            c_hid = _C_from_raw(self.c19_C_hidden).detach()
+            d['c_input_mean'] = c_inp.mean().item()
+            d['c_input_min']  = c_inp.min().item()
+            d['c_input_max']  = c_inp.max().item()
+            d['c_hidden_mean'] = c_hid.mean().item()
+            d['c_hidden_min']  = c_hid.min().item()
+            d['c_hidden_max']  = c_hid.max().item()
+
         return ring_tns, ptr_tns, hidden_tns, bb_buf, bb_keys, bb_write_ptr, bb_steps, outs_tns
 
     def _process_chunk_parallel(self, x_chunk, ring_tns, ptr_tns, hidden_tns,

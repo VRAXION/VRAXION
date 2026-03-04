@@ -838,6 +838,9 @@ class CSVLogger:
                'bb_key_norm',                               # written key strength
                'bb_ctx_vs_input_0', 'bb_ctx_vs_input_1',   # ratio: bb_ctx / input_vec
                'bb_ctx_vs_ring_0', 'bb_ctx_vs_ring_1',     # ratio: bb_ctx / blended_ring
+               # ── C parameter telemetry (learnable activation period) ──
+               'c_input_mean', 'c_input_min', 'c_input_max',
+               'c_hidden_mean', 'c_hidden_min', 'c_hidden_max',
                ]
 
     def __init__(self, path: Path):
@@ -905,6 +908,13 @@ class CSVLogger:
             f'{d.get("bb_ctx_vs_input_1", 0):.4f}',
             f'{d.get("bb_ctx_vs_ring_0", 0):.4f}',
             f'{d.get("bb_ctx_vs_ring_1", 0):.4f}',
+            # ── C parameter telemetry ──
+            f'{d.get("c_input_mean", 0):.4f}',
+            f'{d.get("c_input_min", 0):.4f}',
+            f'{d.get("c_input_max", 0):.4f}',
+            f'{d.get("c_hidden_mean", 0):.4f}',
+            f'{d.get("c_hidden_min", 0):.4f}',
+            f'{d.get("c_hidden_max", 0):.4f}',
         ])
         self._f.flush()
 
@@ -1376,9 +1386,15 @@ def train(config):
             if plateau is not None:
                 plat_str = f'  stale={plateau.stale_steps}/{plateau.patience} mult={plateau.multiplier:.2f}'
             bpc = lv * 1.4427  # nats -> bits (log2(e))
+            c_str = ''
+            if 'c_input_mean' in diag:
+                c_str = (f'  C_in={diag["c_input_mean"]:.2f}'
+                         f'[{diag["c_input_min"]:.1f}-{diag["c_input_max"]:.1f}]'
+                         f'  C_hid={diag["c_hidden_mean"]:.2f}'
+                         f'[{diag["c_hidden_min"]:.1f}-{diag["c_hidden_max"]:.1f}]')
             print(f'  [{s}/{config["steps"]}] loss={lv:.6f}  bpc={bpc:.3f}  best={best_loss:.6f}'
                   f'  {elapsed:.1f}s  {sec_per_step:.1f}s/step  lr={lr:.2e}'
-                  f'{plat_str}{xc_str}{alpha_str}{ring_str}{bb_str}')
+                  f'{plat_str}{xc_str}{alpha_str}{ring_str}{bb_str}{c_str}')
 
         # ── CSV Log ──
         # Log at regular intervals AND on the very first step (to capture initial loss).
