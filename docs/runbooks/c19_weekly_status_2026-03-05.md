@@ -42,6 +42,10 @@ This week focused on four questions:
 - Real-data GPU A/B:
   - baseline vs `dual-phi`
   - `neg-phi` vs `dual-phi`
+- Real-data GPU telemetry pilot:
+  - `dual-phi` vs `dual-phi-envelope(alpha)`
+  - `alpha = 0.02, 0.05, 0.10`
+  - tail-hit and `|x|/C` quantile logging
 
 ## What Looks Confirmed
 
@@ -104,6 +108,21 @@ Current read:
 - learnable `C` is not yet fully production-qualified;
 - but it is no longer reasonable to treat it as decorative.
 
+### 5) Light outer-loop damping is inert in the current regime
+
+A local 200-step WikiText telemetry pilot compared plain `dual-phi` against `dual-phi-envelope(alpha)` with `alpha = 0.02, 0.05, 0.10`.
+
+Observed pattern:
+- all four variants finished at essentially the same place (`45.5%` final acc);
+- `tail_hit = 0.0000%` for every variant;
+- `p99 |x|/C = 1.05`;
+- `max |x|/C ~= 2.20-2.21`, still far below the `6C` tail boundary.
+
+Interpretation:
+- the model is operating deep inside the periodic core;
+- light damping of farther arches does not meaningfully change the active regime;
+- this makes "more loops before tail" and "small soft envelope before tail" low-priority ideas for the current task.
+
 ## What Is Still Open
 
 ### 1) The dual-phi verdict is strong, but still based on a narrow validation slice
@@ -130,6 +149,8 @@ Still open:
 
 The current read is:
 - there is no strong evidence yet that the current `6C` tail boundary needs to change;
+- new telemetry says the active distribution sits far below the tail (`p99 |x|/C ~= 1.05`, `max ~= 2.21`);
+- light outer-loop damping also failed to change behavior in this regime;
 - tail-limit work remains lower priority than asymmetry and `C` regularization.
 
 ## Current Best Read
@@ -151,7 +172,8 @@ The next tests should be about confidence, not rediscovery:
 - repeat the `neg-phi` vs `dual-phi` WikiText A/B across more seeds;
 - run at least one longer or sequential validation;
 - carry the winning activation into the active model path and confirm the gain survives integration;
-- continue `C` regularization work only after the activation verdict is stable.
+- continue `C` regularization work only after the activation verdict is stable;
+- if tail work is revisited, do it with a forced-tail stress task or much stronger envelope, not with more light damping.
 
 ## Promotion Guidance
 
@@ -160,6 +182,7 @@ Safe to say now:
 - negative-side amplification is meaningful;
 - positive-side amplification is dangerous;
 - `dual-phi` is the current standalone winner and belongs in nightly-level experiment notes.
+- light outer-loop damping does not buy anything in the current WikiText regime.
 
 Not safe to say yet:
 - that `dual-phi` should already replace the active mainline C19 in production;
