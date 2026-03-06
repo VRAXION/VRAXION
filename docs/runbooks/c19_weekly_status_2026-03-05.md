@@ -310,6 +310,7 @@ Scripts used:
 Artifacts:
 - baseline JSON: [profile_sweep_step_wikitext_20260306_113911.json](../../v4/dev_notes/telemetry/profile_sweep_step_wikitext_20260306_113911.json)
 - baseline op table: [profile_sweep_step_wikitext_20260306_113911_ops.txt](../../v4/dev_notes/telemetry/profile_sweep_step_wikitext_20260306_113911_ops.txt)
+- baseline breakdown chart: [profile_sweep_step_wikitext_20260306_113911_breakdown.png](../../v4/dev_notes/telemetry/profile_sweep_step_wikitext_20260306_113911_breakdown.png)
 - candidate JSON: [profile_sweep_step_wikitext_20260306_114037.json](../../v4/dev_notes/telemetry/profile_sweep_step_wikitext_20260306_114037.json)
 - candidate op table: [profile_sweep_step_wikitext_20260306_114037_ops.txt](../../v4/dev_notes/telemetry/profile_sweep_step_wikitext_20260306_114037_ops.txt)
 
