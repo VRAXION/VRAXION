@@ -1304,3 +1304,77 @@ Next action:
 - stop treating addressing range as the main unknown on this exact small WikiText surface;
 - if global retrieval is revisited, the next candidate should be a different retrieval shape rather than another topK sweep;
 - the more promising next proof target is either differentiated pointer interpolation or a multi-timescale tap design.
+
+### Batch 20 — canonical nightly runner + adversarial hardening
+
+Purpose:
+- consolidate the nightly research path into one canonical entrypoint;
+- prevent fresh-start vs carry and local vs global claims from being mixed silently;
+- make every canonical artifact self-describing enough that the surface semantics are obvious from the JSON alone.
+
+Canonical entrypoint:
+- script: [v4/tests/nightly_research_runner.py](../../v4/tests/nightly_research_runner.py)
+- allowed surfaces only:
+  - `small_wikitext_fresh`
+  - `fast_memory_carry`
+  - `wikitext_sequential_carry`
+- allowed variants only:
+  - `LL`
+  - `GL`
+  - `GG`
+
+Hardening changes:
+- all canonical artifacts now record:
+  - `surface_kind`
+  - `state_mode`
+  - `read_mode`
+  - `write_mode`
+  - `seq`
+  - `steps`
+  - `ring_slots`
+  - `reset_each_batch`
+  - `pooled_topk_read`
+- all canonical runs now emit ring-trace summaries with:
+  - `ptr_unique_frac`
+  - `read_unique_frac`
+  - `write_unique_frac`
+  - `read_center_dist_mean`
+  - `write_center_dist_mean`
+  - `read_write_overlap_mean`
+- `GL/GG` runs are forced to expose topk telemetry, or the runner fails loudly;
+- `_scratch` proof and smoke leftovers were separated from the canonical path and ignored in git.
+
+Validation:
+- unit guards: [v4/tests/test_nightly_research_runner.py](../../v4/tests/test_nightly_research_runner.py)
+- `pytest` result: `5 passed`
+- smoke artifacts:
+  - small fresh:
+    - [LL](../../v4/dev_notes/telemetry/nightly_runner_small_wikitext_fresh_LL_20260306_212253.json)
+    - [GL](../../v4/dev_notes/telemetry/nightly_runner_small_wikitext_fresh_GL_20260306_212254.json)
+    - [GG](../../v4/dev_notes/telemetry/nightly_runner_small_wikitext_fresh_GG_20260306_212253.json)
+  - fast memory carry:
+    - [LL](../../v4/dev_notes/telemetry/nightly_runner_fast_memory_carry_LL_20260306_212542.json)
+    - [GL](../../v4/dev_notes/telemetry/nightly_runner_fast_memory_carry_GL_20260306_212542.json)
+    - [GG](../../v4/dev_notes/telemetry/nightly_runner_fast_memory_carry_GG_20260306_212542.json)
+  - sequential real-data carry:
+    - [LL](../../v4/dev_notes/telemetry/nightly_runner_wikitext_sequential_carry_LL_20260306_212457.json)
+    - [GG](../../v4/dev_notes/telemetry/nightly_runner_wikitext_sequential_carry_GG_20260306_212459.json)
+
+Observed result:
+- `small_wikitext_fresh` now makes the fresh-start limitation explicit:
+  - reset each batch is encoded in the artifact;
+  - pointer coverage is capped and guarded.
+- `fast_memory_carry` now produces full-step ring traces instead of log-point fragments;
+  - globality claims are now backed by complete trace counts.
+- `wikitext_sequential_carry` now exists as a separate canonical real-data surface;
+  - it proves state carry and broad pointer coverage without being confused with the fresh-start surface.
+
+Verdict:
+- the nightly research path now has one official runner and one official artifact format;
+- fresh-start and carry surfaces are no longer easy to confuse;
+- the prior small-WikiText `GL/GG` verdict remains valid, but only as a `fresh-start` surface verdict, not a general ring verdict.
+
+Next action:
+- keep using the canonical runner for all nightly evidence;
+- open no new architecture branch until the next candidate is tested through this runner;
+- the next architecture candidate remains `pointer interpolation`, followed by `multi-timescale taps`.
