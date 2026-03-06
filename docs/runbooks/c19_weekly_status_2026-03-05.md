@@ -46,6 +46,14 @@ This week focused on four questions:
   - `dual-phi` vs `dual-phi-envelope(alpha)`
   - `alpha = 0.02, 0.05, 0.10`
   - tail-hit and `|x|/C` quantile logging
+- Fixed-`C` core-geometry pilot:
+  - `C = phi^2, pi, 2pi`
+  - `tail = linear` vs `tail = periodic`
+  - deterministic single-seed WikiText comparison
+- Learnable-`C` synth probe:
+  - `rho` frozen
+  - `C` left learnable
+  - task-wise telemetry on `count1`, `alternate2`, `echo8`
 
 ## What Looks Confirmed
 
@@ -123,6 +131,44 @@ Interpretation:
 - light damping of farther arches does not meaningfully change the active regime;
 - this makes "more loops before tail" and "small soft envelope before tail" low-priority ideas for the current task.
 
+### 6) `pi` remains the best default `C` initialization among the tested fixed scales
+
+A fixed-`C` core-geometry pilot compared `C = phi^2`, `pi`, and `2pi`, with both standard linear tail and pure periodic/no-tail mode.
+
+Observed pattern:
+- `phi^2`: `34.8%` final acc, `p99 |x|/C = 1.31`
+- `pi`: `35.4%` final acc, `p99 |x|/C = 1.04`
+- `2pi`: `35.0%` final acc, `p99 |x|/C = 0.57`
+- linear tail and periodic/no-tail were identical at all three `C` values
+
+Interpretation:
+- smaller `C` makes the geometry too dense and hurts;
+- larger `C` makes the geometry too loose and slightly underuses the internal structure;
+- `pi` is currently the best-tested compromise for the core geometry;
+- this supports keeping `C_init = pi` as the default starting point.
+
+### 7) Learnable `C` adapts in a task-dependent way
+
+A synthetic `learnable C` probe was run with `rho` frozen and `bitlift` input active so both input-side and hidden-side `C` remained trainable.
+
+Observed pattern:
+- `count1`:
+  - `C_in: +0.101`
+  - `C_h: +0.069`
+- `alternate2`:
+  - `C_in: -0.017`
+  - `C_h: +0.061`
+- `echo8`:
+  - `C_in: +0.001`
+  - `C_h: -0.030`
+- `tail_hit = 0%` on all three tasks
+
+Interpretation:
+- `C` is not decorative;
+- the model does move `C`, and not always in the same direction;
+- input-side and hidden-side `C` can diverge by task;
+- the current best read is to keep `C` learnable, but initialize it at `pi`.
+
 ## What Is Still Open
 
 ### 1) The dual-phi verdict is strong, but still based on a narrow validation slice
@@ -143,7 +189,8 @@ The current best read is that simple flat regularization around `lambda ~= 1e-4`
 
 Still open:
 - whether phi-structured regularization has any real edge;
-- how much regularization survives after moving from toy tests to production training.
+- how much regularization survives after moving from toy tests to production training;
+- whether the task-dependent `C` drift seen in synth probes survives longer real-data runs in the same direction.
 
 ### 3) Tail-limit changes are not yet compelling
 
@@ -151,6 +198,7 @@ The current read is:
 - there is no strong evidence yet that the current `6C` tail boundary needs to change;
 - new telemetry says the active distribution sits far below the tail (`p99 |x|/C ~= 1.05`, `max ~= 2.21`);
 - light outer-loop damping also failed to change behavior in this regime;
+- fixed-`C` comparison also found no measurable gap between linear-tail and pure-periodic variants at tested scales;
 - tail-limit work remains lower priority than asymmetry and `C` regularization.
 
 ## Current Best Read
@@ -163,7 +211,9 @@ Practical version:
 - symmetric baseline is too weak;
 - `neg*phi only` helped expose the direction of the effect;
 - `dual-phi` is now the current lead standalone variant, not just the prettier hypothesis;
-- the sign of the asymmetry matters more than the raw amount of scaling.
+- the sign of the asymmetry matters more than the raw amount of scaling;
+- `pi` remains the best-tested default `C` init;
+- `C` itself should remain learnable.
 
 ## Planned Next Tests
 
@@ -173,7 +223,8 @@ The next tests should be about confidence, not rediscovery:
 - run at least one longer or sequential validation;
 - carry the winning activation into the active model path and confirm the gain survives integration;
 - continue `C` regularization work only after the activation verdict is stable;
-- if tail work is revisited, do it with a forced-tail stress task or much stronger envelope, not with more light damping.
+- if tail work is revisited, do it with a forced-tail stress task or much stronger envelope, not with more light damping;
+- rerun the learnable-`C` telemetry on longer synth or mixed-data tasks to see whether the early task-specific drift persists.
 
 ## Promotion Guidance
 
@@ -183,6 +234,8 @@ Safe to say now:
 - positive-side amplification is dangerous;
 - `dual-phi` is the current standalone winner and belongs in nightly-level experiment notes.
 - light outer-loop damping does not buy anything in the current WikiText regime.
+- keep `C_init = pi` as the default.
+- keep `C` learnable.
 
 Not safe to say yet:
 - that `dual-phi` should already replace the active mainline C19 in production;
