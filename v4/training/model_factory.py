@@ -51,6 +51,7 @@ def _build_instnct_spec(embed_mode: bool, model_config: dict) -> dict:
         'output_encoding': model_config.get('output_encoding', 'learned'),
         'pointer_mode': model_config.get('pointer_mode', 'sequential'),
         'write_mode': model_config.get('write_mode', 'accumulate'),
+        'replace_impl': model_config.get('replace_impl', 'dense'),
         'bb_enabled': bool(model_config.get('bb_enabled', False)),
         'bb_gate_bias': float(model_config.get('bb_gate_bias', 0.0)),
         'bb_scale': float(model_config.get('bb_scale', 0.1)),
@@ -107,4 +108,3 @@ def build_model_from_spec(model_record: dict, device: str):
     else:
         raise ValueError(f"Unsupported checkpoint model.type: {mtype!r}")
     return model.to(device)
-

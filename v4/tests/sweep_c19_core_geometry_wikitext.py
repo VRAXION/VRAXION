@@ -1,0 +1,469 @@
+"""Deterministic sweep of C19 core geometry on WikiText-103.
+
+This isolates the core geometry by forcing a fixed C inside the activation,
+instead of letting the model's learnable C drift. It also compares whether
+the standard linear tail matters at all in the current regime.
+
+Core:
+  dual-phi periodic parabolic C19, rho fixed at 4.0
+
+Search axes:
+  - fixed C values
+  - tail mode:
+      linear   -> standard linear tail after |x| > K*C
+      periodic -> no tail; pure periodic core everywhere
+
+Usage:
+  python tests/sweep_c19_core_geometry_wikitext.py
+  python tests/sweep_c19_core_geometry_wikitext.py --steps 100 --c-values 2.618,3.1415926535,6.283185307 --tail-modes linear,periodic
+"""
+
+import argparse
+import json
+import math
+import sys
+import time
+from datetime import datetime
+from pathlib import Path
+
+import numpy as np
+import torch
+
+V4_ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(V4_ROOT / 'model'))
+sys.path.insert(0, str(V4_ROOT / 'training'))
+
+from train import ByteDataset, func_discover_dat, func_maskloss_ce
+from model_factory import build_model_from_spec
+
+PHI = (1 + math.sqrt(5)) / 2
+PHI_INV = (math.sqrt(5) - 1) / 2
+
+
+def _default_json_path():
+    stamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+    out_dir = V4_ROOT / 'dev_notes' / 'telemetry'
+    out_dir.mkdir(parents=True, exist_ok=True)
+    return out_dir / f'{Path(__file__).stem}_{stamp}.json'
+
+
+def _set_determinism(seed):
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed_all(seed)
+    np.random.seed(seed)
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False
+    torch.use_deterministic_algorithms(True, warn_only=True)
+
+
+def _label_c(c_value):
+    named = [
+        ('phi', PHI),
+        ('phi2', PHI * PHI),
+        ('pi/phi', math.pi / PHI),
+        ('pi', math.pi),
+        ('2pi', 2 * math.pi),
+    ]
+    for name, ref in named:
+        if abs(c_value - ref) < 1e-5:
+            return name
+    return f'{c_value:.3f}'
+
+
+class ActivationTelemetry:
+    def __init__(self, sample_per_call=1024, max_sample_size=65536):
+        self.sample_per_call = sample_per_call
+        self.max_sample_size = max_sample_size
+        self.call_count = 0
+        self.total_values = 0
+        self.tail_values = 0
+        self.abs_sum = 0.0
+        self.scaled_abs_sum = 0.0
+        self.max_abs_x = 0.0
+        self.max_abs_over_c = 0.0
+        self.abs_samples = []
+        self.scaled_abs_samples = []
+        self.ring_idx_samples = []
+
+    def _append_sample(self, bucket, sample):
+        bucket.append(sample)
+        merged = torch.cat(bucket)
+        if merged.numel() > self.max_sample_size:
+            idx = torch.randint(0, merged.numel(), (self.max_sample_size,), device=merged.device)
+            merged = merged[idx]
+        bucket[:] = [merged]
+
+    def observe(self, x, c_value, tail_k):
+        with torch.no_grad():
+            abs_x = x.detach().abs()
+            scaled_abs = abs_x / c_value
+            ring_idx = torch.floor(scaled_abs)
+
+            self.call_count += 1
+            self.total_values += abs_x.numel()
+            self.tail_values += int((scaled_abs > tail_k).sum().item())
+            self.abs_sum += float(abs_x.sum().item())
+            self.scaled_abs_sum += float(scaled_abs.sum().item())
+            self.max_abs_x = max(self.max_abs_x, float(abs_x.max().item()))
+            self.max_abs_over_c = max(self.max_abs_over_c, float(scaled_abs.max().item()))
+
+            flat_abs = abs_x.reshape(-1)
+            flat_scaled = scaled_abs.reshape(-1)
+            flat_ring = ring_idx.reshape(-1)
+            k = min(self.sample_per_call, flat_abs.numel())
+            if k > 0:
+                if flat_abs.numel() > k:
+                    idx = torch.randint(0, flat_abs.numel(), (k,), device=flat_abs.device)
+                    abs_sample = flat_abs[idx].float().cpu()
+                    scaled_sample = flat_scaled[idx].float().cpu()
+                    ring_sample = flat_ring[idx].float().cpu()
+                else:
+                    abs_sample = flat_abs.float().cpu()
+                    scaled_sample = flat_scaled.float().cpu()
+                    ring_sample = flat_ring.float().cpu()
+                self._append_sample(self.abs_samples, abs_sample)
+                self._append_sample(self.scaled_abs_samples, scaled_sample)
+                self._append_sample(self.ring_idx_samples, ring_sample)
+
+    def summary(self):
+        if self.total_values == 0:
+            return {
+                'activation_calls': 0,
+                'activation_values': 0,
+                'tail_hit_pct': 0.0,
+                'mean_abs_x': 0.0,
+                'mean_abs_over_c': 0.0,
+                'p95_abs_x': 0.0,
+                'p99_abs_x': 0.0,
+                'max_abs_x': 0.0,
+                'p95_abs_over_c': 0.0,
+                'p99_abs_over_c': 0.0,
+                'max_abs_over_c': 0.0,
+                'p95_ring_idx': 0.0,
+                'p99_ring_idx': 0.0,
+                'max_ring_idx': 0.0,
+                'quantile_sample_size': 0,
+            }
+
+        abs_sample = torch.cat(self.abs_samples) if self.abs_samples else torch.empty(0)
+        scaled_sample = (
+            torch.cat(self.scaled_abs_samples) if self.scaled_abs_samples else torch.empty(0)
+        )
+        ring_sample = (
+            torch.cat(self.ring_idx_samples) if self.ring_idx_samples else torch.empty(0)
+        )
+        sample_size = int(abs_sample.numel())
+
+        def q(sample, quant):
+            if sample.numel() == 0:
+                return 0.0
+            return float(torch.quantile(sample, quant).item())
+
+        return {
+            'activation_calls': int(self.call_count),
+            'activation_values': int(self.total_values),
+            'tail_hit_pct': 100.0 * self.tail_values / self.total_values,
+            'mean_abs_x': self.abs_sum / self.total_values,
+            'mean_abs_over_c': self.scaled_abs_sum / self.total_values,
+            'p95_abs_x': q(abs_sample, 0.95),
+            'p99_abs_x': q(abs_sample, 0.99),
+            'max_abs_x': self.max_abs_x,
+            'p95_abs_over_c': q(scaled_sample, 0.95),
+            'p99_abs_over_c': q(scaled_sample, 0.99),
+            'max_abs_over_c': self.max_abs_over_c,
+            'p95_ring_idx': q(ring_sample, 0.95),
+            'p99_ring_idx': q(ring_sample, 0.99),
+            'max_ring_idx': float(torch.max(ring_sample).item()) if ring_sample.numel() else 0.0,
+            'quantile_sample_size': sample_size,
+        }
+
+
+def make_c19_dualphi_fixed_c(c_value, tail_mode='linear', tail_k=6.0, telemetry=None):
+    def c19_dualphi_fixed(x, rho=4.0, C=None):
+        if telemetry is not None:
+            telemetry.observe(x, c_value, tail_k)
+        inv_c = 1.0 / c_value
+        scaled = x * inv_c
+        n = torch.floor(scaled)
+        t = scaled - n
+        h = t - t * t
+        odd = torch.remainder(n, 2.0)
+        sgn = 1.0 - 2.0 * odd
+        gain = odd * (PHI - PHI_INV) + PHI_INV
+        core = c_value * h * (sgn + 4.0 * h) * gain
+
+        if tail_mode == 'periodic':
+            return core
+        if tail_mode == 'linear':
+            limit = tail_k * c_value
+            return torch.where(x.abs() > limit, x - x.sign() * limit, core)
+        raise ValueError(f'Unknown tail_mode: {tail_mode!r}')
+
+    return c19_dualphi_fixed
+
+
+def build_model(seed, replace_impl='dense'):
+    _set_determinism(seed)
+    spec = {
+        'M': 1024,
+        'embed_dim': None,
+        'hidden_dim': 2048,
+        'slot_dim': 128,
+        'N': 1,
+        'R': 1,
+        'B': 8,
+        'embed_mode': True,
+        'kernel_mode': 'vshape',
+        'checkpoint_chunks': 0,
+        'expert_weighting': False,
+        'embed_encoding': 'learned',
+        'output_encoding': 'learned',
+        'pointer_mode': 'sequential',
+        'write_mode': 'replace',
+        'replace_impl': replace_impl,
+        'bb_enabled': False,
+        'bb_gate_bias': 0.0,
+        'bb_scale': 0.1,
+        'bb_tau': 4.0,
+        'bb_gate_mode': 'learned',
+        'topk_K': 8,
+        's_constraint': 'softplus',
+    }
+    record = {'type': 'instnct', 'build_spec': spec}
+    return build_model_from_spec(record, 'cuda')
+
+
+def run_one(variant_name, act_fn, dataset, steps, batch_size, seed):
+    import instnct
+
+    orig_fn = instnct._c19_activation
+    instnct._c19_activation = act_fn
+
+    model = build_model(seed)
+
+    # We want fixed-C geometry. Freeze the learnable C/rho carriers so the
+    # optimizer doesn't waste effort on parameters the activation ignores.
+    for name, param in model.named_parameters():
+        if any(key in name for key in ('c19_C_', 'c19_rho_')):
+            param.requires_grad_(False)
+
+    n_params = sum(p.numel() for p in model.parameters())
+    opt = torch.optim.Adam((p for p in model.parameters() if p.requires_grad), lr=1e-3)
+    scaler = torch.amp.GradScaler('cuda', enabled=True)
+
+    losses = []
+    accs = []
+    grad_norms = []
+    max_grad = 0.0
+    t0 = time.time()
+
+    for step in range(1, steps + 1):
+        xb, yb, mask = dataset.sample_batch(batch_size, 'cuda')
+
+        with torch.amp.autocast('cuda', enabled=True):
+            pred, _state = model(xb, state=None)
+            _, masked_loss = func_maskloss_ce(pred, yb, mask)
+
+        opt.zero_grad()
+        scaler.scale(masked_loss).backward()
+        scaler.unscale_(opt)
+        gn = torch.nn.utils.clip_grad_norm_(model.parameters(), 10.0).item()
+        scaler.step(opt)
+        scaler.update()
+
+        lv = masked_loss.item()
+        losses.append(lv)
+        grad_norms.append(gn)
+        max_grad = max(max_grad, gn)
+
+        with torch.no_grad():
+            preds = pred.argmax(dim=-1)
+            correct = (preds == yb).float() * mask
+            acc = correct.sum() / mask.sum().clamp(min=1)
+            accs.append(acc.item())
+
+        if step % 100 == 0 or step == 1:
+            avg_loss = sum(losses[-100:]) / len(losses[-100:])
+            avg_acc = sum(accs[-100:]) / len(accs[-100:])
+            avg_gn = sum(grad_norms[-100:]) / len(grad_norms[-100:])
+            tele = getattr(act_fn, '_telemetry').summary()
+            elapsed = time.time() - t0
+            spike = '*SPIKE*' if max(grad_norms[-100:]) > 50 else ''
+            print(
+                f'  [{variant_name}] step {step:4d}/{steps}  '
+                f'loss={avg_loss:.4f}  bpc={avg_loss*1.4427:.3f}  '
+                f'acc={avg_acc:.3f}  gnorm={avg_gn:.1f}  '
+                f'tail={tele["tail_hit_pct"]:.3f}%  '
+                f'p99|x|/C={tele["p99_abs_over_c"]:.2f}  '
+                f'p99-ring={tele["p99_ring_idx"]:.2f}  '
+                f'{elapsed:.0f}s {spike}'
+            )
+
+    elapsed = time.time() - t0
+    instnct._c19_activation = orig_fn
+
+    tail = min(100, len(losses))
+    spikes = sum(1 for g in grad_norms if g > 50)
+    result = {
+        'variant': variant_name,
+        'seed': seed,
+        'steps': steps,
+        'params': n_params,
+        'final_loss': sum(losses[-tail:]) / tail,
+        'final_bpc': sum(losses[-tail:]) / tail * 1.4427,
+        'final_acc': sum(accs[-tail:]) / tail,
+        'best_loss': min(losses),
+        'best_acc': max(accs),
+        'time_s': elapsed,
+        's_per_step': elapsed / steps,
+        'max_grad': max_grad,
+        'grad_spikes': spikes,
+        'loss_curve': losses,
+        'acc_curve': accs,
+    }
+    result.update(act_fn._telemetry.summary())
+    return result
+
+
+def parse_floats(text):
+    return [float(x.strip()) for x in text.split(',') if x.strip()]
+
+
+def parse_modes(text):
+    return [x.strip() for x in text.split(',') if x.strip()]
+
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--steps', type=int, default=100)
+    parser.add_argument('--batch', type=int, default=32)
+    parser.add_argument('--seq', type=int, default=256)
+    parser.add_argument('--seed', type=int, default=42)
+    parser.add_argument('--c-values', type=str, default=f'{PHI*PHI},{math.pi},{2*math.pi}')
+    parser.add_argument('--tail-modes', type=str, default='linear,periodic')
+    parser.add_argument('--tail-k', type=float, default=6.0)
+    parser.add_argument('--sample-per-call', type=int, default=1024)
+    parser.add_argument('--json-out', type=str, default='')
+    args = parser.parse_args()
+
+    c_values = parse_floats(args.c_values)
+    tail_modes = parse_modes(args.tail_modes)
+
+    _set_determinism(args.seed)
+
+    print('=== C19 Core Geometry Sweep ===')
+    print(f'Steps: {args.steps}  Seed: {args.seed}  Batch: {args.batch}x{args.seq}')
+    print(f'GPU: {torch.cuda.get_device_name(0)}')
+    print(f'C values: {[round(c, 4) for c in c_values]}')
+    print(f'Tail modes: {tail_modes}  tail_k={args.tail_k}')
+    print()
+
+    data_dir = V4_ROOT / 'training_data'
+    if not data_dir.exists():
+        fallback_dir = Path(r'S:\AI\work\VRAXION_DEV\v4\training_data')
+        if fallback_dir.exists():
+            data_dir = fallback_dir
+    files = func_discover_dat(str(data_dir))
+    dataset = ByteDataset(files, args.seq, embed_mode=True, seed=args.seed)
+    print(f'Data: {len(files)} shards, {dataset.total_bytes / 1e6:.0f} MB')
+    print()
+
+    variants = []
+    for c_value in c_values:
+        for tail_mode in tail_modes:
+            telemetry = ActivationTelemetry(sample_per_call=args.sample_per_call)
+            act_fn = make_c19_dualphi_fixed_c(
+                c_value=c_value,
+                tail_mode=tail_mode,
+                tail_k=args.tail_k,
+                telemetry=telemetry,
+            )
+            act_fn._telemetry = telemetry
+            variants.append(
+                {
+                    'name': f'{_label_c(c_value)}-{tail_mode}',
+                    'c_value': c_value,
+                    'tail_mode': tail_mode,
+                    'act_fn': act_fn,
+                }
+            )
+
+    results = []
+    for item in variants:
+        dataset.rng = np.random.default_rng(args.seed)
+        r = run_one(item['name'], item['act_fn'], dataset, args.steps, args.batch, args.seed)
+        r['fixed_C'] = item['c_value']
+        r['tail_mode'] = item['tail_mode']
+        results.append(r)
+        print(
+            f'  -> {item["name"]}: loss={r["final_loss"]:.4f} '
+            f'bpc={r["final_bpc"]:.3f} '
+            f'acc={r["final_acc"]:.3f} '
+            f'best_acc={r["best_acc"]:.3f} '
+            f'max_gnorm={r["max_grad"]:.1f} '
+            f'tail={r["tail_hit_pct"]:.4f}% '
+            f'p99|x|/C={r["p99_abs_over_c"]:.2f} '
+            f'p99-ring={r["p99_ring_idx"]:.2f} '
+            f'({r["time_s"]:.0f}s)'
+        )
+        print()
+
+    print('=' * 118)
+    print(
+        f'{"Variant":16s} {"C":>7s} {"Tail":>8s} {"Final Acc":>10s} {"Best Acc":>10s} '
+        f'{"Loss":>10s} {"BPC":>8s} {"Tail%":>8s} {"p99|x|/C":>10s} {"p99-ring":>10s}'
+    )
+    print('-' * 118)
+    for r in results:
+        print(
+            f'{r["variant"]:16s} {r["fixed_C"]:7.3f} {r["tail_mode"]:>8s} '
+            f'{r["final_acc"]:10.3f} {r["best_acc"]:10.3f} {r["final_loss"]:10.4f} '
+            f'{r["final_bpc"]:8.3f} {r["tail_hit_pct"]:8.4f} '
+            f'{r["p99_abs_over_c"]:10.2f} {r["p99_ring_idx"]:10.2f}'
+        )
+
+    best = max(results, key=lambda r: r['final_acc'])
+    print(f'\nBest variant: {best["variant"]}')
+
+    linear_by_c = {r['fixed_C']: r for r in results if r['tail_mode'] == 'linear'}
+    periodic_by_c = {r['fixed_C']: r for r in results if r['tail_mode'] == 'periodic'}
+    if linear_by_c and periodic_by_c:
+        print('\nTail necessity check')
+        print(f'{"C":>7s} {"Linear Acc":>10s} {"Periodic Acc":>12s} {"Delta":>8s} {"Linear Tail%":>13s}')
+        print('-' * 62)
+        for c_value in c_values:
+            if c_value in linear_by_c and c_value in periodic_by_c:
+                rl = linear_by_c[c_value]
+                rp = periodic_by_c[c_value]
+                delta = (rp['final_acc'] - rl['final_acc']) * 100
+                print(
+                    f'{c_value:7.3f} {rl["final_acc"]:10.3f} {rp["final_acc"]:12.3f} '
+                    f'{delta:8.2f} {rl["tail_hit_pct"]:13.4f}'
+                )
+
+    json_out = Path(args.json_out) if args.json_out else _default_json_path()
+    payload = {
+        'script': Path(__file__).name,
+        'timestamp': datetime.now().isoformat(),
+        'config': {
+            'steps': args.steps,
+            'batch': args.batch,
+            'seq': args.seq,
+            'seed': args.seed,
+            'c_values': c_values,
+            'tail_modes': tail_modes,
+            'tail_k': args.tail_k,
+            'sample_per_call': args.sample_per_call,
+            'gpu': torch.cuda.get_device_name(0),
+        },
+        'results': results,
+    }
+    json_out.parent.mkdir(parents=True, exist_ok=True)
+    with open(json_out, 'w', encoding='utf-8') as f:
+        json.dump(payload, f, indent=2)
+    print(f'\nSaved telemetry JSON: {json_out}')
+    print('=' * 118)
+
+
+if __name__ == '__main__':
+    main()
