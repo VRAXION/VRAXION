@@ -112,6 +112,32 @@ Interpretation:
 - the ring path is not placebo
 - but its efficiency cost is still real
 
+### D. Fresh-start vs sequential-carry on the same small real-data `LL` path
+
+This was rerun directly on the canonical runner with the same small WikiText `LL` setup and the same sequential pointer. Only the surface changed:
+
+- `small_wikitext_fresh`
+  - [nightly_runner_small_wikitext_fresh_LL_10k_seqptr_20260306.json](../../v4/dev_notes/telemetry/nightly_runner_small_wikitext_fresh_LL_10k_seqptr_20260306.json)
+- `wikitext_sequential_carry`
+  - [nightly_runner_wikitext_sequential_carry_LL_10k_seqptr_20260306.json](../../v4/dev_notes/telemetry/nightly_runner_wikitext_sequential_carry_LL_10k_seqptr_20260306.json)
+
+Observed result:
+- fresh:
+  - final acc `0.356`
+  - best acc `0.578`
+  - final BPC `3.303`
+  - `ptr_unique_frac = 0.125`
+- carry:
+  - final acc `0.355`
+  - best acc `0.632`
+  - final BPC `3.318`
+  - `ptr_unique_frac = 1.000`
+
+Interpretation:
+- removing the reset does exactly what it should geometrically: pointer coverage expands from a tiny front segment to the full ring;
+- but on this exact small real-data `LL` setup the final quality barely changes;
+- so the previous fresh-surface conclusions were surface-limited, but the reset itself was not hiding a large `LL` quality win here.
+
 ## 3. What We Closed
 
 ### A. Pooled hard topK is not the near-term path
