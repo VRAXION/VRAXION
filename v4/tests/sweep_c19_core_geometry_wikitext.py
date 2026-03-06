@@ -55,10 +55,12 @@ def _default_json_path():
 
 def _set_determinism(seed):
     torch.manual_seed(seed)
-    torch.cuda.manual_seed_all(seed)
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed_all(seed)
     np.random.seed(seed)
-    torch.backends.cudnn.deterministic = True
-    torch.backends.cudnn.benchmark = False
+    if hasattr(torch.backends, 'cudnn'):
+        torch.backends.cudnn.deterministic = True
+        torch.backends.cudnn.benchmark = False
     torch.use_deterministic_algorithms(True, warn_only=True)
 
 
@@ -208,15 +210,26 @@ def make_c19_dualphi_fixed_c(c_value, tail_mode='linear', tail_k=6.0, telemetry=
     return c19_dualphi_fixed
 
 
-def build_model(seed, replace_impl='dense', kernel_mode='vshape', topk_k=8):
+def build_model(
+    seed,
+    replace_impl='dense',
+    kernel_mode='vshape',
+    topk_k=8,
+    device='cuda',
+    hidden_dim=2048,
+    M=1024,
+    slot_dim=128,
+    N=1,
+    R=1,
+):
     _set_determinism(seed)
     spec = {
-        'M': 1024,
+        'M': M,
         'embed_dim': None,
-        'hidden_dim': 2048,
-        'slot_dim': 128,
-        'N': 1,
-        'R': 1,
+        'hidden_dim': hidden_dim,
+        'slot_dim': slot_dim,
+        'N': N,
+        'R': R,
         'B': 8,
         'embed_mode': True,
         'kernel_mode': kernel_mode,
@@ -236,7 +249,7 @@ def build_model(seed, replace_impl='dense', kernel_mode='vshape', topk_k=8):
         's_constraint': 'softplus',
     }
     record = {'type': 'instnct', 'build_spec': spec}
-    return build_model_from_spec(record, 'cuda')
+    return build_model_from_spec(record, device)
 
 
 def run_one(
@@ -250,6 +263,12 @@ def run_one(
     topk_k=8,
     replace_impl='dense',
     topk_read_diag=False,
+    device='cuda',
+    hidden_dim=2048,
+    M=1024,
+    slot_dim=128,
+    N=1,
+    R=1,
 ):
     import instnct
 
@@ -257,7 +276,18 @@ def run_one(
     instnct._c19_activation = act_fn
     instnct.set_topk_read_diag_enabled(topk_read_diag)
 
-    model = build_model(seed, replace_impl=replace_impl, kernel_mode=kernel_mode, topk_k=topk_k)
+    model = build_model(
+        seed,
+        replace_impl=replace_impl,
+        kernel_mode=kernel_mode,
+        topk_k=topk_k,
+        device=device,
+        hidden_dim=hidden_dim,
+        M=M,
+        slot_dim=slot_dim,
+        N=N,
+        R=R,
+    )
 
     # We want fixed-C geometry. Freeze the learnable C/rho carriers so the
     # optimizer doesn't waste effort on parameters the activation ignores.
@@ -267,7 +297,8 @@ def run_one(
 
     n_params = sum(p.numel() for p in model.parameters())
     opt = torch.optim.Adam((p for p in model.parameters() if p.requires_grad), lr=1e-3)
-    scaler = torch.amp.GradScaler('cuda', enabled=True)
+    amp_enabled = device == 'cuda'
+    scaler = torch.amp.GradScaler(device, enabled=amp_enabled)
 
     losses = []
     accs = []
@@ -277,9 +308,9 @@ def run_one(
     t0 = time.time()
 
     for step in range(1, steps + 1):
-        xb, yb, mask = dataset.sample_batch(batch_size, 'cuda')
+        xb, yb, mask = dataset.sample_batch(batch_size, device)
 
-        with torch.amp.autocast('cuda', enabled=True):
+        with torch.amp.autocast(device, enabled=amp_enabled):
             pred, _state = model(xb, state=None)
             _, masked_loss = func_maskloss_ce(pred, yb, mask)
 
@@ -382,6 +413,12 @@ def main():
     parser.add_argument('--tail-k', type=float, default=6.0)
     parser.add_argument('--sample-per-call', type=int, default=1024)
     parser.add_argument('--json-out', type=str, default='')
+    parser.add_argument('--device', type=str, default='cuda', choices=['cuda', 'cpu'])
+    parser.add_argument('--hidden-dim', type=int, default=2048)
+    parser.add_argument('--M', type=int, default=1024)
+    parser.add_argument('--slot-dim', type=int, default=128)
+    parser.add_argument('--N', type=int, default=1)
+    parser.add_argument('--R', type=int, default=1)
     args = parser.parse_args()
 
     c_values = parse_floats(args.c_values)
@@ -392,10 +429,16 @@ def main():
 
     print('=== C19 Core Geometry Sweep ===')
     print(f'Steps: {args.steps}  Seed: {args.seed}  Batch: {args.batch}x{args.seq}')
-    print(f'GPU: {torch.cuda.get_device_name(0)}')
+    if args.device == 'cuda':
+        print(f'GPU: {torch.cuda.get_device_name(0)}')
+    else:
+        print('Device: cpu')
     print(f'C values: {[round(c, 4) for c in c_values]}')
     print(f'Tail modes: {tail_modes}  tail_k={args.tail_k}')
     print(f'Kernel modes: {kernel_modes}  topk_K={args.topk_k}  replace={args.replace_impl}')
+    print(
+        f'Model: hidden={args.hidden_dim} M={args.M} slot={args.slot_dim} N={args.N} R={args.R}'
+    )
     print(f'topk_read_diag: {args.topk_read_diag}')
     print()
 
@@ -445,6 +488,12 @@ def main():
             topk_k=args.topk_k,
             replace_impl=args.replace_impl,
             topk_read_diag=args.topk_read_diag and item['kernel_mode'] == 'topk',
+            device=args.device,
+            hidden_dim=args.hidden_dim,
+            M=args.M,
+            slot_dim=args.slot_dim,
+            N=args.N,
+            R=args.R,
         )
         r['kernel_mode'] = item['kernel_mode']
         r['fixed_C'] = item['c_value']
@@ -514,6 +563,12 @@ def main():
             'tail_k': args.tail_k,
             'sample_per_call': args.sample_per_call,
             'gpu': torch.cuda.get_device_name(0),
+            'device': args.device,
+            'hidden_dim': args.hidden_dim,
+            'M': args.M,
+            'slot_dim': args.slot_dim,
+            'N': args.N,
+            'R': args.R,
         },
         'results': results,
     }

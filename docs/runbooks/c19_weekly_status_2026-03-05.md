@@ -917,6 +917,61 @@ Verdict:
 Next action:
 - run the matching small-model WikiText `GL` baseline on the same `10k` CPU surface if we want to know whether global read breaks this local plateau or merely converges to the same ceiling.
 
+### Batch 15 — param-matched TinyTransformer baseline on the same small WikiText surface
+
+Purpose:
+- establish an apples-to-apples standard-language-model baseline on the exact same small WikiText CPU surface;
+- check whether the small ring model is merely "working" or actually stronger than a standard transformer at the same parameter budget.
+
+Harness:
+- script: `v4/tests/bench_tiny_transformer_wikitext_small.py`
+- device: `cpu`
+- config:
+  - `steps=10000`
+  - `batch=8`
+  - `seq=8`
+  - `seed=42`
+  - `d_model=32`
+  - `n_layers=1`
+  - `n_heads=2`
+  - `d_ff=32`
+  - `max_seq=16`
+
+Artifact:
+- [bench_tiny_transformer_wikitext_small_20260306_193120.json](../../v4/dev_notes/telemetry/bench_tiny_transformer_wikitext_small_20260306_193120.json)
+
+Observed result:
+- final acc `0.303`
+- best acc `0.567`
+- final loss `2.4207`
+- final BPC `3.492`
+- wall time `40.4s`
+- `0.00404 s/step`
+
+Comparison vs the small `LL` ring baseline:
+- params:
+  - `TinyTransformer`: `23,168`
+  - `LL`: `23,116`
+- quality:
+  - final acc delta: `LL +5.3 pt`
+  - final BPC delta: `LL -0.189`
+- speed:
+  - `TinyTransformer` is about `9.8x` faster wall-clock on this CPU surface
+
+Read:
+- the standard tiny transformer is much faster, but it plateaus lower on final-window quality;
+- the ring model is materially slower, but on this tiny real-data surface it does appear to buy real predictive quality, not just a different style of training dynamics;
+- the best-acc values are relatively close, but the ring baseline holds a stronger late-run plateau.
+
+Verdict:
+- on this exact small WikiText surface, the ring `LL` baseline is stronger than a param-matched tiny transformer in final quality;
+- the transformer remains a valuable speed baseline and sanity reference;
+- this result supports continuing the `LL vs GL` comparison on the small real-data surface instead of dismissing the ring path as obviously inferior.
+
+Next action:
+- keep the tiny transformer result as the standard non-ring baseline for this small surface;
+- if we continue the real-data comparison, the next useful run is still the matching small-model `GL` baseline.
+
 ## Planned Next Tests
 
 The next tests should be about confidence, not rediscovery:
