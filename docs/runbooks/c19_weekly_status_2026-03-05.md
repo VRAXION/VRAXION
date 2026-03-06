@@ -1435,3 +1435,52 @@ Verdict:
   - `fast_memory_carry`, longer confirm
   - then `wikitext_sequential_carry`
 - no reason to reopen pooled topK before this pointer branch is properly confirmed.
+
+### Batch 22 — pointer interpolation long confirm (`learned` pointer, `LL` path)
+
+Purpose:
+- confirm whether the Batch 21 win survives a full `10k` carry run;
+- separate the mechanistic routing signal from the real-data carry signal before promoting pointer interpolation further.
+
+Runner:
+- [v4/tests/nightly_research_runner.py](../../v4/tests/nightly_research_runner.py)
+- variant: `LL`
+- pointer mode: `learned`
+- compare:
+  - `pointer_interp_mode = off`
+  - `pointer_interp_mode = linear`
+
+Artifacts:
+- fast memory carry, `10k`:
+  - [off](../../v4/dev_notes/telemetry/nightly_runner_fast_memory_carry_LL_20260306_221755_793650.json)
+  - [linear](../../v4/dev_notes/telemetry/nightly_runner_fast_memory_carry_LL_20260306_222517_866783.json)
+- sequential WikiText carry, `10k`:
+  - [off](../../v4/dev_notes/telemetry/nightly_runner_wikitext_sequential_carry_LL_20260306_223327_017337.json)
+  - [linear](../../v4/dev_notes/telemetry/nightly_runner_wikitext_sequential_carry_LL_20260306_224150_937913.json)
+
+Observed result:
+- fast memory carry, `10k`:
+  - `off`: final acc `0.891`, best acc `1.000`, time `386.7s`, ring dependency `+88.3pp`
+  - `linear`: final acc `1.000`, best acc `1.000`, time `429.5s`, ring dependency `+99.2pp`
+- sequential WikiText carry, `10k`:
+  - `off`: final acc `0.367`, best acc `0.719`, BPC `3.261`, time `460.6s`
+  - `linear`: final acc `0.363`, best acc `0.688`, BPC `3.279`, time `486.1s`
+
+Read:
+- on the mechanistic carry surface, pointer interpolation survives the longer run and remains clearly stronger:
+  - earlier convergence
+  - better final accuracy
+  - stronger ring dependence
+  - cleaner ring health
+- on the real-data sequential carry surface, the same change does not help:
+  - final accuracy is slightly worse
+  - best accuracy is lower
+  - BPC is slightly worse
+  - runtime is slightly slower
+
+Verdict:
+- the discrete pointer center is a real bottleneck for learned routing on the mechanistic carry task;
+- it is not the dominant bottleneck on the current small real-data sequential carry surface;
+- pointer interpolation stays alive as a research branch, but it is not ready for promotion as a general nightly default;
+- the next architecture branch should not reopen pooled topK;
+- the next serious candidate after this is still `multi-timescale taps`, unless a larger-capacity real-data surface is introduced first.
