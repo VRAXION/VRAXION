@@ -15,9 +15,11 @@ Usage:
 """
 
 import argparse
+import json
 import math
 import sys
 import time
+from datetime import datetime
 
 import numpy as np
 import torch
@@ -32,7 +34,7 @@ for subdir in ('model', 'training', 'datagen'):
     if p not in sys.path:
         sys.path.insert(0, p)
 
-from instnct import INSTNCT
+from instnct import INSTNCT, set_topk_read_diag_enabled
 from tiny_transformer import TinyTransformer
 
 
@@ -117,6 +119,41 @@ def masked_accuracy(logits, targets, mask):
     n_sup = flat_mask.sum().clamp(min=1)
     acc = (flat_correct * flat_mask).sum() / n_sup
     return acc.item(), int(n_sup.item())
+
+
+TOPK_DIAG_KEYS = (
+    'topk_mean_abs_circ_dist',
+    'topk_outside_local_frac',
+    'topk_attn_entropy',
+    'topk_unique_slot_frac',
+    'write_topk_mean_abs_circ_dist',
+    'write_topk_outside_local_frac',
+    'write_topk_unique_slot_frac',
+)
+
+
+def _default_json_path() -> Path:
+    stamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+    out_dir = ROOT / 'dev_notes' / 'telemetry'
+    out_dir.mkdir(parents=True, exist_ok=True)
+    return out_dir / f'{Path(__file__).stem}_{stamp}.json'
+
+
+def _mean(values):
+    if not values:
+        return None
+    return float(sum(values) / len(values))
+
+
+def _set_determinism(seed):
+    torch.manual_seed(seed)
+    np.random.seed(seed)
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed_all(seed)
+    torch.use_deterministic_algorithms(True)
+    if hasattr(torch.backends, 'cudnn'):
+        torch.backends.cudnn.deterministic = True
+        torch.backends.cudnn.benchmark = False
 
 
 # ═══════════════════════════════════════════════════════════
@@ -227,14 +264,14 @@ def ring_diagnostics(model, state, device):
 
 def run_one(N, period, steps, batch, seq, hidden_dim, M, slot_dim,
             model_type, device, io_split_mode='off', gated_write=False, lr=1e-3,
-            log_every=100, seed=42):
+            log_every=100, seed=42, read_kernel_mode='vshape',
+            write_address_mode='pointer', topk_k=2):
     """Train one configuration and return results.
 
     Returns:
         dict with peak_acc, final_acc, fresh_acc, s0_acc, wall_time, n_params, history
     """
-    torch.manual_seed(seed)
-    np.random.seed(seed)
+    _set_determinism(seed)
 
     # ── Generate data ──
     total_len = (steps + 20) * seq  # margin to avoid wrapping
@@ -246,10 +283,13 @@ def run_one(N, period, steps, batch, seq, hidden_dim, M, slot_dim,
 
     # ── Create model ──
     if model_type == 'instnct':
+        use_topk_diag = read_kernel_mode == 'topk' or write_address_mode == 'content_topk'
+        set_topk_read_diag_enabled(use_topk_diag)
         model = INSTNCT(
             M=M, hidden_dim=hidden_dim, slot_dim=slot_dim,
             N=N, R=1, embed_mode=True,
             kernel_mode='vshape',
+            read_kernel_mode=read_kernel_mode,
             embed_encoding='bitlift',
             output_encoding='lowrank_c19',
             expert_weighting=False,
@@ -259,11 +299,18 @@ def run_one(N, period, steps, batch, seq, hidden_dim, M, slot_dim,
             io_writer_count=1,
             io_output_from_readers_only=(io_split_mode == 'strict'),
             gated_write=gated_write,
+            write_address_mode=write_address_mode,
+            topk_K=topk_k,
+            read_topk_K=topk_k,
+            write_topk_K=topk_k,
         ).to(device)
         split_tag = f' io={io_split_mode}' if io_split_mode != 'off' else ''
         gw_tag = ' gated_write' if gated_write else ''
-        model_label = f'INSTNCT N={N}{split_tag}{gw_tag}'
+        rk_tag = f' read={read_kernel_mode}'
+        wa_tag = f' write={write_address_mode}'
+        model_label = f'INSTNCT N={N}{split_tag}{gw_tag}{rk_tag}{wa_tag}'
     elif model_type == 'transformer':
+        set_topk_read_diag_enabled(False)
         model = TinyTransformer(
             embed_mode=True, d_model=64, n_layers=2, n_heads=2, d_ff=256,
             max_seq=seq + 16,
@@ -296,6 +343,7 @@ def run_one(N, period, steps, batch, seq, hidden_dim, M, slot_dim,
     peak_acc = 0.0
     peak_step = 0
     history = []
+    diag_rows = {key: [] for key in TOPK_DIAG_KEYS}
     t0 = time.perf_counter()
 
     for step in range(1, steps + 1):
@@ -341,10 +389,25 @@ def run_one(N, period, steps, batch, seq, hidden_dim, M, slot_dim,
             if acc > peak_acc:
                 peak_acc = acc
                 peak_step = step
+            for key in TOPK_DIAG_KEYS:
+                value = model._diag.get(key) if model_type == 'instnct' else None
+                if value is not None:
+                    diag_rows[key].append(float(value))
             history.append((step, acc, loss.item(), elapsed))
+            diag_suffix = ''
+            if diag_rows['topk_mean_abs_circ_dist']:
+                diag_suffix += (
+                    f" rdist={diag_rows['topk_mean_abs_circ_dist'][-1]:.2f}"
+                    f" rout={diag_rows['topk_outside_local_frac'][-1]:.3f}"
+                )
+            if diag_rows['write_topk_mean_abs_circ_dist']:
+                diag_suffix += (
+                    f" wdist={diag_rows['write_topk_mean_abs_circ_dist'][-1]:.2f}"
+                    f" wout={diag_rows['write_topk_outside_local_frac'][-1]:.3f}"
+                )
             print(f"  Step {step:5d} | echo_acc={acc*100:5.1f}% | "
                   f"loss={loss.item():.3f} | {elapsed:6.1f}s | "
-                  f"sup={n_sup}")
+                  f"sup={n_sup}{diag_suffix}")
 
     wall = time.perf_counter() - t0
     final_acc = history[-1][1] if history else 0.0
@@ -375,15 +438,28 @@ def run_one(N, period, steps, batch, seq, hidden_dim, M, slot_dim,
             wgate_vals = [torch.sigmoid(model.write_gate_raw[i]).item() for i in range(model.N)]
         print(f"  Gated write: erase={erase_vals} write_gate={wgate_vals}")
 
+    diag_means = {}
+    for key in TOPK_DIAG_KEYS:
+        avg = _mean(diag_rows[key])
+        if avg is not None:
+            diag_means[key] = avg
+
     return {
         'peak_acc': peak_acc,
         'peak_step': peak_step,
         'final_acc': final_acc,
         'fresh_acc': fresh_acc,
         's0_acc': s0_acc,
+        'ring_dependency_pp': (final_acc - s0_acc) * 100.0 if s0_acc >= 0 else None,
         'wall_time': wall,
+        'sec_per_step': wall / steps,
         'n_params': n_params,
+        'period': period,
+        'read_kernel_mode': read_kernel_mode,
+        'write_address_mode': write_address_mode,
+        'topk_k': topk_k,
         'history': history,
+        'topk_diag_means': diag_means,
         **ring_diag,
     }
 
@@ -412,6 +488,12 @@ def main():
     parser.add_argument('--lr', type=float, default=1e-3, help='Learning rate')
     parser.add_argument('--log-every', type=int, default=100, help='Log interval')
     parser.add_argument('--seed', type=int, default=42, help='Random seed')
+    parser.add_argument('--read-kernel-mode', choices=['vshape', 'topk'], default='vshape',
+                        help='Read addressing mode for INSTNCT.')
+    parser.add_argument('--write-address-mode', choices=['pointer', 'content_topk'], default='pointer',
+                        help='Write addressing mode for INSTNCT.')
+    parser.add_argument('--topk-k', type=int, default=2, help='TopK for topk read/write modes.')
+    parser.add_argument('--json-out', default=None, help='Optional JSON results path.')
     args = parser.parse_args()
 
     # Device
@@ -434,6 +516,9 @@ def main():
             io_split_mode=args.io_split,
             gated_write=args.gated_write,
             lr=args.lr, log_every=args.log_every, seed=args.seed,
+            read_kernel_mode=args.read_kernel_mode,
+            write_address_mode=args.write_address_mode,
+            topk_k=args.topk_k,
         )
 
     # Summary table (if sweep)
@@ -450,6 +535,31 @@ def main():
                   f"{r['final_acc']*100:5.1f}% | {r['fresh_acc']*100:5.1f}% | "
                   f"{s0_str} | {r['wall_time']:>4.0f}s | "
                   f"{r['n_params']:>8,}")
+
+    json_out = Path(args.json_out) if args.json_out else _default_json_path()
+    payload = {
+        'script': Path(__file__).name,
+        'device': device,
+        'seed': args.seed,
+        'steps': args.steps,
+        'batch': args.batch,
+        'seq': args.seq,
+        'hidden_dim': args.hidden_dim,
+        'M': args.M,
+        'slot_dim': args.slot_dim,
+        'N': args.N,
+        'model': args.model,
+        'io_split_mode': args.io_split,
+        'gated_write': bool(args.gated_write),
+        'read_kernel_mode': args.read_kernel_mode,
+        'write_address_mode': args.write_address_mode,
+        'topk_k': args.topk_k,
+        'results': results,
+    }
+    json_out.parent.mkdir(parents=True, exist_ok=True)
+    with open(json_out, 'w', encoding='utf-8') as f:
+        json.dump(payload, f, indent=2)
+    print(f"\n  JSON: {json_out}")
 
     print("\n" + "=" * 60)
 

@@ -23,6 +23,9 @@ _TOPK_READ_DIAG_KEYS = (
     'topk_outside_local_frac',
     'topk_attn_entropy',
     'topk_unique_slot_frac',
+    'write_topk_mean_abs_circ_dist',
+    'write_topk_outside_local_frac',
+    'write_topk_unique_slot_frac',
 )
 
 
@@ -520,6 +523,7 @@ class INSTNCT(nn.Module):
                  B=8,                             # bits per input position (default: 1 byte = 8 bits)
                  embed_mode=False,                # True = byte embedding (256->hidden_dim), False = binary bits (B->hidden_dim)
                  kernel_mode=CNFG_KERNELMODE_STR,  # attention kernel: 'uniform', 'vshape', 'gaussian', 'dotprod', 'topk'
+                 read_kernel_mode=None,            # nightly-only proof split: defaults to kernel_mode
                  checkpoint_chunks=CNFG_CKPTCHUNK_INT,   # gradient checkpointing chunk size (0 = off)
                  expert_weighting=CNFG_XPRTWGHT_BOOL,    # gradient-based expert write confidence
                  embed_encoding=CNFG_EMBEDENC_STR,       # 'learned' | 'hadamard' | 'sincos' | 'bitlift'
@@ -531,6 +535,9 @@ class INSTNCT(nn.Module):
                  bb_tau=CNFG_BBTAU_FLT,                         # attention temperature
                  bb_gate_mode=CNFG_BBGATEMODE_STR,              # 'learned' | 'fixed'
                  topk_K=CNFG_TOPK_INT,                            # topK ring read: K slots
+                 read_topk_K=None,                                # nightly-only proof split: defaults to topk_K
+                 write_address_mode='pointer',                    # 'pointer' | 'content_topk'
+                 write_topk_K=2,                                  # nightly-only proof split: K slots for content_topk write
                  io_split_mode=CNFG_IOSPLIT_STR,                     # 'off' | 'strict' — hourglass I/O split
                  io_writer_count=CNFG_IOWRITERCNT_INT,               # experts 0..count-1 are writers
                  io_output_from_readers_only=CNFG_IOREADOUT_BOOL,    # output from readers only (strict mode)
@@ -541,12 +548,20 @@ class INSTNCT(nn.Module):
         super().__init__()
         assert kernel_mode in ('uniform', 'vshape', 'gaussian', 'dotprod', 'topk'), \
             f"kernel_mode must be 'uniform', 'vshape', 'gaussian', 'dotprod', or 'topk', got '{kernel_mode}'"
+        if read_kernel_mode is None:
+            read_kernel_mode = kernel_mode
+        if read_topk_K is None:
+            read_topk_K = topk_K
+        assert read_kernel_mode in ('uniform', 'vshape', 'gaussian', 'dotprod', 'topk'), \
+            f"read_kernel_mode must be 'uniform', 'vshape', 'gaussian', 'dotprod', or 'topk', got '{read_kernel_mode}'"
         assert write_mode in ('accumulate', 'replace'), \
             f"write_mode must be 'accumulate' or 'replace', got '{write_mode}'"
         assert pointer_mode in ('sequential', 'learned', 'pilot'), \
             f"pointer_mode must be 'sequential', 'learned', or 'pilot', got '{pointer_mode}'"
         assert replace_impl in ('dense', 'proxy_overlay'), \
             f"replace_impl must be 'dense' or 'proxy_overlay', got '{replace_impl}'"
+        assert write_address_mode in ('pointer', 'content_topk'), \
+            f"write_address_mode must be 'pointer' or 'content_topk', got '{write_address_mode}'"
         self.write_mode = write_mode
         self.replace_impl = replace_impl
 
@@ -560,6 +575,8 @@ class INSTNCT(nn.Module):
         self.B = B
         self.embed_mode = embed_mode
         self.kernel_mode = kernel_mode
+        self.read_kernel_mode = read_kernel_mode
+        self.write_address_mode = write_address_mode
         self.checkpoint_chunks = checkpoint_chunks  # not nn.Parameter — excluded from state_dict
         self.expert_weighting = expert_weighting
         self._proxy_overlay_flush_interval = 16
@@ -569,7 +586,8 @@ class INSTNCT(nn.Module):
             and N == 1
             and R == 1
             and write_mode == 'replace'
-            and kernel_mode == 'vshape'
+            and read_kernel_mode == 'vshape'
+            and write_address_mode == 'pointer'
             and pointer_mode == 'sequential'
             and not bb_enabled
             and io_split_mode == 'off'
@@ -669,9 +687,11 @@ class INSTNCT(nn.Module):
 
         # query_proj: hidden_dim → slot_dim (content-based attention query per expert)
         # created for dotprod/topk reads only — pilot uses its own ptr_query (smaller dim)
-        if kernel_mode in ('dotprod', 'topk'):
+        if read_kernel_mode in ('dotprod', 'topk') or write_address_mode == 'content_topk':
             self.query_proj = nn.ModuleList([nn.Linear(hidden_dim, slot_dim) for _ in range(N)])
-        self._topk_K = topk_K  # number of ring slots for topK content-based read
+        self._topk_K = topk_K  # legacy alias for checkpoint compat
+        self._read_topk_K = read_topk_K
+        self._write_topk_K = write_topk_K
 
         # write_proj: hidden_dim → slot_dim (compress hidden before writing to ring)
         # only created when dims differ — when equal, write is identity (exact v4 behavior)
@@ -822,7 +842,11 @@ class INSTNCT(nn.Module):
         topk_diag_sum_outside = 0.0
         topk_diag_sum_entropy = 0.0
         topk_diag_sum_unique = 0.0
+        write_topk_diag_sum_dist = 0.0
+        write_topk_diag_sum_outside = 0.0
+        write_topk_diag_sum_unique = 0.0
         topk_diag_count = 0
+        write_topk_diag_count = 0
         if proxy_overlay_enabled:
             ptr0_tns = ptr_tns[0].long().clamp(0, M - 1)
             if bool((ptr0_tns != ptr0_tns[:1]).any().item()):
@@ -877,30 +901,45 @@ class INSTNCT(nn.Module):
                 # ── Hourglass I/O split: role flags ──
                 is_writer = bool(self._writer_mask[i]) if self.io_split_mode == 'strict' else False
                 is_reader = bool(self._reader_mask[i]) if self.io_split_mode == 'strict' else True
+                current_window_tns = None
+                local_pointer_weights_tns = None
+                local_pointer_expanded_idx_tns = None
+                content_topk_scores_tns = None
+                content_topk_idx_tns = None
+                max_content_topk = 0
+                if self.read_kernel_mode == 'topk':
+                    max_content_topk = max(max_content_topk, self._read_topk_K)
+                if self.write_address_mode == 'content_topk':
+                    max_content_topk = max(max_content_topk, self._write_topk_K)
+                if max_content_topk > 0:
+                    q = self.query_proj[i](hidden_lst[i])                           # (B, slot_dim)
+                    scores = torch.bmm(ring_tns, q.unsqueeze(-1)).squeeze(-1)       # (B, M)
+                    scores = scores * (slot_dim ** -0.5)                            # scale
+                    content_topk_scores_tns, content_topk_idx_tns = scores.topk(max_content_topk, dim=-1)
 
                 if is_writer and not is_reader:
                     # Writer-only: NO ring read, zero ring signal
                     with _source_scope('window_prepare'):
                         read_vec_tns = torch.zeros(input_vec_tns.shape[0], slot_dim, device=input_vec_tns.device)
-                        expanded_idx_tns = indices_tns.unsqueeze(-1).expand(-1, -1, slot_dim)
+                        local_pointer_expanded_idx_tns = indices_tns.unsqueeze(-1).expand(-1, -1, slot_dim)
                         if expert_weights is not None:
-                            weights_tns = expert_weights[i].unsqueeze(0).expand(input_vec_tns.shape[0], -1)
+                            local_pointer_weights_tns = expert_weights[i].unsqueeze(0).expand(input_vec_tns.shape[0], -1)
                         elif topk_write_weights is not None:
-                            weights_tns = topk_write_weights[i].unsqueeze(0).expand(input_vec_tns.shape[0], -1)
+                            local_pointer_weights_tns = topk_write_weights[i].unsqueeze(0).expand(input_vec_tns.shape[0], -1)
                         else:
                             # dotprod fallback: use uniform weights for write
-                            weights_tns = torch.ones(input_vec_tns.shape[0], indices_tns.shape[1], device=input_vec_tns.device)
-                            weights_tns = weights_tns / weights_tns.sum(dim=1, keepdim=True)
+                            local_pointer_weights_tns = torch.ones(input_vec_tns.shape[0], indices_tns.shape[1], device=input_vec_tns.device)
+                            local_pointer_weights_tns = local_pointer_weights_tns / local_pointer_weights_tns.sum(dim=1, keepdim=True)
                 elif expert_weights is not None:
                     # ─ positional kernel (vshape/gaussian/uniform) ─
                     with _source_scope('window_prepare'):
-                        weights_tns = expert_weights[i].unsqueeze(0).expand(input_vec_tns.shape[0], -1)
+                        local_pointer_weights_tns = expert_weights[i].unsqueeze(0).expand(input_vec_tns.shape[0], -1)
                     with _source_scope('softread'):
                         if proxy_overlay_enabled:
-                            read_vec_tns, expanded_idx_tns, current_window_tns = func_proxy_overlay_read_tns(
+                            read_vec_tns, local_pointer_expanded_idx_tns, current_window_tns = func_proxy_overlay_read_tns(
                                 ring_tns,
                                 indices_tns,
-                                weights_tns,
+                                local_pointer_weights_tns,
                                 slot_dim,
                                 overlay_start_int,
                                 overlay_vals_tns,
@@ -908,15 +947,12 @@ class INSTNCT(nn.Module):
                                 M,
                             )
                         else:
-                            read_vec_tns, expanded_idx_tns = func_softread_tns(
-                                ring_tns, indices_tns, weights_tns, slot_dim)
-                            current_window_tns = None
-                elif self.kernel_mode == 'topk':
+                            read_vec_tns, local_pointer_expanded_idx_tns = func_softread_tns(
+                                ring_tns, indices_tns, local_pointer_weights_tns, slot_dim)
+                elif self.read_kernel_mode == 'topk':
                     # ─ topK: content-based global search over entire ring ─
-                    q = self.query_proj[i](hidden_lst[i])                           # (B, slot_dim)
-                    scores = torch.bmm(ring_tns, q.unsqueeze(-1)).squeeze(-1)       # (B, M)
-                    scores = scores * (slot_dim ** -0.5)                            # scale
-                    topk_scores, topk_idx = scores.topk(self._topk_K, dim=-1)      # (B, K)
+                    topk_scores = content_topk_scores_tns[:, :self._read_topk_K]
+                    topk_idx = content_topk_idx_tns[:, :self._read_topk_K]
                     topk_attn = F.softmax(topk_scores, dim=-1)                      # (B, K)
                     if _TOPK_READ_DIAG_ENABLED:
                         center_long = center.unsqueeze(1)
@@ -939,22 +975,45 @@ class INSTNCT(nn.Module):
                     topk_expanded = topk_idx.unsqueeze(-1).expand(-1, -1, slot_dim) # (B, K, slot_dim)
                     topk_neighbors = ring_tns.gather(1, topk_expanded)              # (B, K, slot_dim)
                     read_vec_tns = (topk_attn.unsqueeze(-1) * topk_neighbors).sum(1)  # (B, slot_dim)
-                    # Write uses pointer-based indices (vshape), NOT topK read indices
-                    with _source_scope('window_prepare'):
-                        expanded_idx_tns = indices_tns.unsqueeze(-1).expand(-1, -1, slot_dim)
-                        weights_tns = topk_write_weights[i].unsqueeze(0).expand(input_vec_tns.shape[0], -1)
                 else:
                     # ─ dot-product attention within local window ─
                     with _source_scope('window_prepare'):
-                        expanded_idx_tns = indices_tns.unsqueeze(-1).expand(-1, -1, slot_dim)
+                        local_pointer_expanded_idx_tns = indices_tns.unsqueeze(-1).expand(-1, -1, slot_dim)
                     with _source_scope('softread'):
-                        neighbors_tns = ring_tns.gather(1, expanded_idx_tns)        # (B, 2R+1, slot_dim)
+                        neighbors_tns = ring_tns.gather(1, local_pointer_expanded_idx_tns)        # (B, 2R+1, slot_dim)
                     current_window_tns = neighbors_tns
                     q = self.query_proj[i](hidden_lst[i])                       # (B, slot_dim)
                     scores = (q.unsqueeze(1) * neighbors_tns).sum(-1)           # (B, 2R+1)
                     scores = scores * (slot_dim ** -0.5)                        # scale
-                    weights_tns = F.softmax(scores, dim=-1)                     # (B, 2R+1)
-                    read_vec_tns = (weights_tns.unsqueeze(-1) * neighbors_tns).sum(1)  # (B, slot_dim)
+                    local_pointer_weights_tns = F.softmax(scores, dim=-1)                     # (B, 2R+1)
+                    read_vec_tns = (local_pointer_weights_tns.unsqueeze(-1) * neighbors_tns).sum(1)  # (B, slot_dim)
+
+                if self.write_address_mode == 'content_topk':
+                    write_topk_scores = content_topk_scores_tns[:, :self._write_topk_K]
+                    write_topk_idx = content_topk_idx_tns[:, :self._write_topk_K]
+                    write_weights_tns = F.softmax(write_topk_scores, dim=-1)
+                    write_expanded_idx_tns = write_topk_idx.unsqueeze(-1).expand(-1, -1, slot_dim)
+                    if _TOPK_READ_DIAG_ENABLED:
+                        center_long = center.unsqueeze(1)
+                        delta_fwd = torch.remainder(write_topk_idx - center_long, M).float()
+                        delta_back = torch.remainder(center_long - write_topk_idx, M).float()
+                        write_circ_dist = torch.minimum(delta_fwd, delta_back)
+                        write_topk_diag_sum_dist += write_circ_dist.mean().item()
+                        write_topk_diag_sum_outside += (write_circ_dist > float(self.R)).float().mean().item()
+                        write_unique_vals = [
+                            row.unique().numel() / max(int(row.numel()), 1)
+                            for row in write_topk_idx.detach()
+                        ]
+                        write_topk_diag_sum_unique += float(sum(write_unique_vals) / max(len(write_unique_vals), 1))
+                        write_topk_diag_count += 1
+                else:
+                    if local_pointer_expanded_idx_tns is None:
+                        local_pointer_expanded_idx_tns = indices_tns.unsqueeze(-1).expand(-1, -1, slot_dim)
+                    if local_pointer_weights_tns is None:
+                        local_pointer_weights_tns = torch.ones(input_vec_tns.shape[0], indices_tns.shape[1], device=input_vec_tns.device)
+                        local_pointer_weights_tns = local_pointer_weights_tns / local_pointer_weights_tns.sum(dim=1, keepdim=True)
+                    write_expanded_idx_tns = local_pointer_expanded_idx_tns
+                    write_weights_tns = local_pointer_weights_tns
 
                 # ─ phase signal ─
                 theta_tns = (ptr_tns[i] / M) * (2 * math.pi)
@@ -1067,10 +1126,10 @@ class INSTNCT(nn.Module):
                             ws = torch.sigmoid(self.write_gate[i](hidden_lst[i]))  # (B, 1)
                         with _source_scope('write_replace'):
                             if proxy_overlay_enabled:
-                                w = weights_tns.unsqueeze(-1) * ws.unsqueeze(1)
+                                w = write_weights_tns.unsqueeze(-1) * ws.unsqueeze(1)
                                 if current_window_tns is None:
-                                    current_window_tns = ring_tns.gather(1, expanded_idx_tns)
-                                write_val_tns = write_vec.unsqueeze(1).expand(-1, weights_tns.size(1), -1)
+                                    current_window_tns = ring_tns.gather(1, write_expanded_idx_tns)
+                                write_val_tns = write_vec.unsqueeze(1).expand(-1, write_weights_tns.size(1), -1)
                                 updated_window_tns = w * write_val_tns + (1.0 - w) * current_window_tns
                                 window_start_int = (proxy_center_int - self.R) % M
                                 ring_tns, overlay_start_int, overlay_vals_tns, overlay_len_int, overlay_steps_int = func_proxy_overlay_write_tns(
@@ -1086,14 +1145,14 @@ class INSTNCT(nn.Module):
                                     self._proxy_overlay_cap,
                                 )
                             else:
-                                ring_tns = func_hdd_write_tns(ring_tns, write_vec, expanded_idx_tns, weights_tns, write_strength=ws)
+                                ring_tns = func_hdd_write_tns(ring_tns, write_vec, write_expanded_idx_tns, write_weights_tns, write_strength=ws)
                     elif self.gated_write:
                         decisions = torch.sigmoid(self.write_head[i](hidden_lst[i]))  # (B, 2)
                         erase = decisions[:, 0]   # (B,) — per-sample erase strength
                         wgate = decisions[:, 1]   # (B,) — per-sample write gate
-                        ring_tns = func_gated_write_tns(ring_tns, write_vec, expanded_idx_tns, weights_tns, erase, wgate)
+                        ring_tns = func_gated_write_tns(ring_tns, write_vec, write_expanded_idx_tns, write_weights_tns, erase, wgate)
                     else:
-                        ring_tns = func_softwrit_tns(ring_tns, write_vec, expanded_idx_tns, weights_tns)
+                        ring_tns = func_softwrit_tns(ring_tns, write_vec, write_expanded_idx_tns, write_weights_tns)
 
                 # ─ POST-WRITE pointer move (sequential/learned only; pilot already moved pre-read) ─
                 if self.pointer_mode == 'learned':
@@ -1170,6 +1229,10 @@ class INSTNCT(nn.Module):
             self._diag['topk_outside_local_frac'] = topk_diag_sum_outside / topk_diag_count
             self._diag['topk_attn_entropy'] = topk_diag_sum_entropy / topk_diag_count
             self._diag['topk_unique_slot_frac'] = topk_diag_sum_unique / topk_diag_count
+        if _TOPK_READ_DIAG_ENABLED and write_topk_diag_count > 0:
+            self._diag['write_topk_mean_abs_circ_dist'] = write_topk_diag_sum_dist / write_topk_diag_count
+            self._diag['write_topk_outside_local_frac'] = write_topk_diag_sum_outside / write_topk_diag_count
+            self._diag['write_topk_unique_slot_frac'] = write_topk_diag_sum_unique / write_topk_diag_count
 
         return ring_tns, ptr_tns, hidden_tns, bb_buf, bb_keys, bb_write_ptr, bb_steps, outs_tns
 
@@ -1287,26 +1350,26 @@ class INSTNCT(nn.Module):
         # gaussian/uniform: tail extends further, use 2.5× + guard.
         with _source_scope('window_prepare'):
             max_R = R_effs.max().item()
-            if self.kernel_mode in ('vshape', 'dotprod', 'topk'):
+            if self.read_kernel_mode in ('vshape', 'dotprod', 'topk'):
                 win = int(math.floor(max_R))  # exact: no wasted gathers
             else:
                 win = max(int(math.ceil(max_R * 2.5)) + 1, 1)
             offsets_long = torch.arange(-win, win + 1, device=x.device)
             abs_offsets  = offsets_long.float().abs()
 
-            if self.kernel_mode in ('dotprod', 'topk'):
+            if self.read_kernel_mode in ('dotprod', 'topk'):
                 expert_weights = None  # computed per-timestep in loop (content-based)
-                # topK still needs positional weights for WRITING (scatter_add to pointer window)
-                if self.kernel_mode == 'topk':
+                # content-based read can still use local pointer write weights
+                if self.write_address_mode == 'pointer':
                     _raw_w = (1.0 - abs_offsets.unsqueeze(0) / R_effs.unsqueeze(1).clamp(min=0.5)).clamp(min=0)
                     topk_write_weights = _raw_w / _raw_w.sum(dim=1, keepdim=True)  # (N, 2R+1) vshape
                 else:
                     topk_write_weights = None
-            elif self.kernel_mode == 'vshape':
+            elif self.read_kernel_mode == 'vshape':
                 raw_w = (1.0 - abs_offsets.unsqueeze(0) / R_effs.unsqueeze(1).clamp(min=0.5)).clamp(min=0)
                 expert_weights = raw_w / raw_w.sum(dim=1, keepdim=True)
                 topk_write_weights = None
-            elif self.kernel_mode == 'gaussian':
+            elif self.read_kernel_mode == 'gaussian':
                 sigma = (R_effs.unsqueeze(1) / 2.5).clamp(min=0.3)
                 raw_w = torch.exp(-0.5 * (abs_offsets.unsqueeze(0) / sigma) ** 2)
                 expert_weights = raw_w / raw_w.sum(dim=1, keepdim=True)

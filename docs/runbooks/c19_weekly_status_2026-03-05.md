@@ -747,6 +747,74 @@ Verdict:
 Next action:
 - if global retrieval is revisited later, it should be via a hybrid read/write coupling design, not read-only topK.
 
+### Batch 12 — `10k step < 10 min` CPU mechanistic probe
+
+Purpose:
+- establish a single-run probe that can hit `10k` steps inside the `10` minute budget;
+- use a dense, deterministic memory task instead of the sparse delayed-recall task;
+- re-check the `GL` branch on a longer horizon where the model can fully train.
+
+Harness:
+- script: `v4/tests/bench_fast_memory.py`
+- task: repeating-pattern long-memory bench
+- device: `cpu`
+- config:
+  - `N=1`
+  - `hidden_dim=32`
+  - `M=64`
+  - `slot_dim=8`
+  - `batch=8`
+  - `seq=8`
+  - `period=64`
+  - `steps=10000`
+  - `seed=42`
+- addressing:
+  - `LL = read_kernel_mode=vshape, write_address_mode=pointer`
+  - `GL = read_kernel_mode=topk, topk_K=2, write_address_mode=pointer`
+
+Artifacts:
+- `LL`: [bench_fast_memory_ll_10k_cpu_20260306.json](../../v4/dev_notes/telemetry/bench_fast_memory_ll_10k_cpu_20260306.json)
+- `GL`: [bench_fast_memory_gl_10k_cpu_20260306.json](../../v4/dev_notes/telemetry/bench_fast_memory_gl_10k_cpu_20260306.json)
+
+Observed runtime:
+- `LL`: `384.0s` total, `0.0384 s/step`
+- `GL`: `473.1s` total, `0.0473 s/step`
+
+Observed quality:
+- `LL`
+  - final acc `100.0%`
+  - peak acc `100.0% @ 7000`
+  - fresh eval `1.09%`
+  - `S=0` probe `1.88%`
+  - ring dependency `+98.13pp`
+- `GL`
+  - final acc `100.0%`
+  - peak acc `100.0% @ 2000`
+  - fresh eval `0.47%`
+  - `S=0` probe `0.31%`
+  - ring dependency `+99.69pp`
+
+Observed topK telemetry (`GL`):
+- `topk_mean_abs_circ_dist = 17.20`
+- `topk_outside_local_frac = 0.9625`
+- `topk_attn_entropy = 0.1345`
+- `topk_unique_slot_frac = 1.0000`
+
+Read:
+- this CPU bench is a valid `10k step < 10 min` mechanistic probe;
+- the `GL` branch does not die on the longer dense-memory horizon;
+- the telemetry confirms the `GL` branch is genuinely non-local here, not a disguised local read;
+- `GL` is slower than `LL`, but on this probe it reaches the same final quality and even peaks earlier.
+
+Verdict:
+- keep both `LL` and `GL` alive on this specific CPU bench;
+- do not treat this as a production promotion signal;
+- this bench is useful as a fast mechanistic truth surface, not as a real-data winner pick.
+
+Next action:
+- run `GG` on the same `10k` CPU bench only if we explicitly want to test whether global write adds anything on top of a now-surviving global read;
+- do not use the sparse delayed-recall harness as the first `10k` budget probe.
+
 ## Planned Next Tests
 
 The next tests should be about confidence, not rediscovery:
