@@ -17,11 +17,23 @@ PHI = (1 + math.sqrt(5)) / 2      # φ ≈ 1.6180339887 — golden ratio
 _C19_C = math.pi
 _SOURCE_MAP_ENABLED = False
 _NO_SOURCE_SCOPE = nullcontext()
+_TOPK_READ_DIAG_ENABLED = False
+_TOPK_READ_DIAG_KEYS = (
+    'topk_mean_abs_circ_dist',
+    'topk_outside_local_frac',
+    'topk_attn_entropy',
+    'topk_unique_slot_frac',
+)
 
 
 def set_source_map_enabled(enabled: bool):
     global _SOURCE_MAP_ENABLED
     _SOURCE_MAP_ENABLED = bool(enabled)
+
+
+def set_topk_read_diag_enabled(enabled: bool):
+    global _TOPK_READ_DIAG_ENABLED
+    _TOPK_READ_DIAG_ENABLED = bool(enabled)
 
 
 def _source_scope(name: str):
@@ -806,6 +818,11 @@ class INSTNCT(nn.Module):
         overlay_steps_int = 0
         overlay_vals_tns = None
         proxy_center_int = None
+        topk_diag_sum_dist = 0.0
+        topk_diag_sum_outside = 0.0
+        topk_diag_sum_entropy = 0.0
+        topk_diag_sum_unique = 0.0
+        topk_diag_count = 0
         if proxy_overlay_enabled:
             ptr0_tns = ptr_tns[0].long().clamp(0, M - 1)
             if bool((ptr0_tns != ptr0_tns[:1]).any().item()):
@@ -901,6 +918,24 @@ class INSTNCT(nn.Module):
                     scores = scores * (slot_dim ** -0.5)                            # scale
                     topk_scores, topk_idx = scores.topk(self._topk_K, dim=-1)      # (B, K)
                     topk_attn = F.softmax(topk_scores, dim=-1)                      # (B, K)
+                    if _TOPK_READ_DIAG_ENABLED:
+                        center_long = center.unsqueeze(1)
+                        delta_fwd = torch.remainder(topk_idx - center_long, M).float()
+                        delta_back = torch.remainder(center_long - topk_idx, M).float()
+                        circ_dist = torch.minimum(delta_fwd, delta_back)
+                        outside_frac = (circ_dist > float(self.R)).float().mean().item()
+                        probs_safe = topk_attn.clamp_min(1e-12)
+                        entropy = -(probs_safe * probs_safe.log()).sum(dim=-1).mean().item()
+                        unique_vals = [
+                            row.unique().numel() / max(int(row.numel()), 1)
+                            for row in topk_idx.detach()
+                        ]
+                        unique_frac = float(sum(unique_vals) / max(len(unique_vals), 1))
+                        topk_diag_sum_dist += circ_dist.mean().item()
+                        topk_diag_sum_outside += outside_frac
+                        topk_diag_sum_entropy += entropy
+                        topk_diag_sum_unique += unique_frac
+                        topk_diag_count += 1
                     topk_expanded = topk_idx.unsqueeze(-1).expand(-1, -1, slot_dim) # (B, K, slot_dim)
                     topk_neighbors = ring_tns.gather(1, topk_expanded)              # (B, K, slot_dim)
                     read_vec_tns = (topk_attn.unsqueeze(-1) * topk_neighbors).sum(1)  # (B, slot_dim)
@@ -1130,6 +1165,11 @@ class INSTNCT(nn.Module):
             d['ring_slot_mean'] = ring_tns.detach().norm(dim=-1).mean().item()
             for i in range(self.N):
                 d[f'hidden_final_norm_{i}'] = hidden_tns[i].detach().norm(dim=-1).mean().item()
+        if _TOPK_READ_DIAG_ENABLED and topk_diag_count > 0:
+            self._diag['topk_mean_abs_circ_dist'] = topk_diag_sum_dist / topk_diag_count
+            self._diag['topk_outside_local_frac'] = topk_diag_sum_outside / topk_diag_count
+            self._diag['topk_attn_entropy'] = topk_diag_sum_entropy / topk_diag_count
+            self._diag['topk_unique_slot_frac'] = topk_diag_sum_unique / topk_diag_count
 
         return ring_tns, ptr_tns, hidden_tns, bb_buf, bb_keys, bb_write_ptr, bb_steps, outs_tns
 
@@ -1193,6 +1233,13 @@ class INSTNCT(nn.Module):
         M, hidden_dim, slot_dim, N = self.M, self.hidden_dim, self.slot_dim, self.N
         if probs is None:
             probs = [0.5]
+        for key in _TOPK_READ_DIAG_KEYS:
+            self._diag.pop(key, None)
+        topk_diag_sum_dist = 0.0
+        topk_diag_sum_outside = 0.0
+        topk_diag_sum_entropy = 0.0
+        topk_diag_sum_unique = 0.0
+        topk_diag_count = 0
 
         # ─ state initialization ─
         # When state is provided (sequential/TBPTT mode), resume from previous

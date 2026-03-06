@@ -701,6 +701,52 @@ Next action:
 - keep `vshape` as the baseline;
 - if a future hybrid/global retrieval experiment is opened, use `topk_K=2` as the global-read ceiling candidate, not `K=1` or `K=8`.
 
+### Batch 11 — large-step closure check for read-only `topk_K=2`
+
+Purpose:
+- run the current best global-read candidate (`kernel_mode=topk`, `topk_K=2`) at a larger deterministic horizon;
+- add nightly-only topK read telemetry to verify whether the candidate is truly using non-local slots;
+- close the read-only global topK branch early if it is still clearly worse than the local `vshape` baseline.
+
+Quality script used:
+- `v4/tests/sweep_c19_core_geometry_wikitext.py --steps 200 --batch 16 --seq 256 --seed 42 --c-values 3.141592653589793 --tail-modes linear --kernel-modes vshape,topk --topk-k 2 --replace-impl dense --topk-read-diag --json-out v4/dev_notes/telemetry/sweep_kernel_topk2_stage1_20260306_rerun.json`
+
+Quality artifact:
+- [sweep_kernel_topk2_stage1_20260306_rerun.json](../../v4/dev_notes/telemetry/sweep_kernel_topk2_stage1_20260306_rerun.json)
+
+Observed 200-step quality:
+- `vshape`
+  - final acc `0.442`
+  - best acc `0.479`
+  - final loss `1.9590`
+  - wall time `849s`
+- `topk_K=2`
+  - final acc `0.401`
+  - best acc `0.439`
+  - final loss `2.0956`
+  - wall time `1142s`
+
+Observed topK read telemetry:
+- `topk_mean_abs_circ_dist = 67.08`
+- `topk_outside_local_frac = 0.9738`
+- `topk_attn_entropy = 0.6423`
+- `topk_unique_slot_frac = 1.0000`
+
+Read:
+- the telemetry confirms this is a genuinely non-local read path, not a disguised local read;
+- despite that, the candidate misses the explicit Stage 1 keep-alive thresholds by a wide margin:
+  - final acc delta vs `vshape`: `-4.09 pt`
+  - best acc delta vs `vshape`: `-4.03 pt`
+- because the close condition was `final < -1.5 pt` and `best < -1.0 pt`, the branch closes here without a 500-step or 3-seed continuation.
+
+Verdict:
+- close the read-only global topK branch for this round;
+- do not run Stage 2 (`500` step) or Stage 3 (`3` seeds), because the candidate is already decisively worse at Stage 1;
+- keep `vshape` as the active baseline.
+
+Next action:
+- if global retrieval is revisited later, it should be via a hybrid read/write coupling design, not read-only topK.
+
 ## Planned Next Tests
 
 The next tests should be about confidence, not rediscovery:

@@ -38,6 +38,12 @@ from model_factory import build_model_from_spec
 
 PHI = (1 + math.sqrt(5)) / 2
 PHI_INV = (math.sqrt(5) - 1) / 2
+TOPK_READ_DIAG_KEYS = (
+    'topk_mean_abs_circ_dist',
+    'topk_outside_local_frac',
+    'topk_attn_entropy',
+    'topk_unique_slot_frac',
+)
 
 
 def _default_json_path():
@@ -233,11 +239,23 @@ def build_model(seed, replace_impl='dense', kernel_mode='vshape', topk_k=8):
     return build_model_from_spec(record, 'cuda')
 
 
-def run_one(variant_name, act_fn, dataset, steps, batch_size, seed, kernel_mode='vshape', topk_k=8, replace_impl='dense'):
+def run_one(
+    variant_name,
+    act_fn,
+    dataset,
+    steps,
+    batch_size,
+    seed,
+    kernel_mode='vshape',
+    topk_k=8,
+    replace_impl='dense',
+    topk_read_diag=False,
+):
     import instnct
 
     orig_fn = instnct._c19_activation
     instnct._c19_activation = act_fn
+    instnct.set_topk_read_diag_enabled(topk_read_diag)
 
     model = build_model(seed, replace_impl=replace_impl, kernel_mode=kernel_mode, topk_k=topk_k)
 
@@ -254,6 +272,7 @@ def run_one(variant_name, act_fn, dataset, steps, batch_size, seed, kernel_mode=
     losses = []
     accs = []
     grad_norms = []
+    topk_diag_rows = {key: [] for key in TOPK_READ_DIAG_KEYS}
     max_grad = 0.0
     t0 = time.time()
 
@@ -281,6 +300,11 @@ def run_one(variant_name, act_fn, dataset, steps, batch_size, seed, kernel_mode=
             correct = (preds == yb).float() * mask
             acc = correct.sum() / mask.sum().clamp(min=1)
             accs.append(acc.item())
+        if topk_read_diag:
+            for key in TOPK_READ_DIAG_KEYS:
+                value = model._diag.get(key)
+                if value is not None:
+                    topk_diag_rows[key].append(float(value))
 
         if step % 100 == 0 or step == 1:
             avg_loss = sum(losses[-100:]) / len(losses[-100:])
@@ -289,6 +313,12 @@ def run_one(variant_name, act_fn, dataset, steps, batch_size, seed, kernel_mode=
             tele = getattr(act_fn, '_telemetry').summary()
             elapsed = time.time() - t0
             spike = '*SPIKE*' if max(grad_norms[-100:]) > 50 else ''
+            diag_suffix = ''
+            if topk_read_diag:
+                dist = model._diag.get('topk_mean_abs_circ_dist')
+                outside = model._diag.get('topk_outside_local_frac')
+                if dist is not None and outside is not None:
+                    diag_suffix = f'  topk_dist={dist:.2f}  outside={outside:.3f}'
             print(
                 f'  [{variant_name}] step {step:4d}/{steps}  '
                 f'loss={avg_loss:.4f}  bpc={avg_loss*1.4427:.3f}  '
@@ -296,11 +326,12 @@ def run_one(variant_name, act_fn, dataset, steps, batch_size, seed, kernel_mode=
                 f'tail={tele["tail_hit_pct"]:.3f}%  '
                 f'p99|x|/C={tele["p99_abs_over_c"]:.2f}  '
                 f'p99-ring={tele["p99_ring_idx"]:.2f}  '
-                f'{elapsed:.0f}s {spike}'
+                f'{elapsed:.0f}s {spike}{diag_suffix}'
             )
 
     elapsed = time.time() - t0
     instnct._c19_activation = orig_fn
+    instnct.set_topk_read_diag_enabled(False)
 
     tail = min(100, len(losses))
     spikes = sum(1 for g in grad_norms if g > 50)
@@ -322,6 +353,9 @@ def run_one(variant_name, act_fn, dataset, steps, batch_size, seed, kernel_mode=
         'acc_curve': accs,
     }
     result.update(act_fn._telemetry.summary())
+    for key in TOPK_READ_DIAG_KEYS:
+        rows = topk_diag_rows[key]
+        result[key] = (sum(rows) / len(rows)) if rows else None
     return result
 
 
@@ -343,6 +377,7 @@ def main():
     parser.add_argument('--tail-modes', type=str, default='linear,periodic')
     parser.add_argument('--kernel-modes', type=str, default='vshape')
     parser.add_argument('--topk-k', type=int, default=8)
+    parser.add_argument('--topk-read-diag', action='store_true')
     parser.add_argument('--replace-impl', type=str, default='dense', choices=['dense', 'proxy_overlay'])
     parser.add_argument('--tail-k', type=float, default=6.0)
     parser.add_argument('--sample-per-call', type=int, default=1024)
@@ -361,6 +396,7 @@ def main():
     print(f'C values: {[round(c, 4) for c in c_values]}')
     print(f'Tail modes: {tail_modes}  tail_k={args.tail_k}')
     print(f'Kernel modes: {kernel_modes}  topk_K={args.topk_k}  replace={args.replace_impl}')
+    print(f'topk_read_diag: {args.topk_read_diag}')
     print()
 
     data_dir = V4_ROOT / 'training_data'
@@ -408,6 +444,7 @@ def main():
             kernel_mode=item['kernel_mode'],
             topk_k=args.topk_k,
             replace_impl=args.replace_impl,
+            topk_read_diag=args.topk_read_diag and item['kernel_mode'] == 'topk',
         )
         r['kernel_mode'] = item['kernel_mode']
         r['fixed_C'] = item['c_value']
@@ -472,6 +509,7 @@ def main():
             'tail_modes': tail_modes,
             'kernel_modes': kernel_modes,
             'topk_k': args.topk_k,
+            'topk_read_diag': args.topk_read_diag,
             'replace_impl': args.replace_impl,
             'tail_k': args.tail_k,
             'sample_per_call': args.sample_per_call,
