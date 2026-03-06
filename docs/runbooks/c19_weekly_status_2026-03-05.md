@@ -14,6 +14,15 @@ Rules for reading it:
 Primary entrypoint:
 - [nightly_research_runner.py](../../v4/tests/nightly_research_runner.py)
 
+Canonical overnight wrapper:
+- [nightly_orchestrator.py](../../v4/tools/nightly_orchestrator.py)
+- [overnight_llt_validation.json](../../v4/tools/queues/overnight_llt_validation.json)
+
+Overnight runtime contract:
+- runtime outputs live under `bench_vault/night_runs/...`
+- each run writes `status.json`, `summary.json`, `wake_trigger.json`
+- per-job logs live under `jobs/<job_id>/`
+
 ## 1. What Is Actually Settled
 
 ### C19 core

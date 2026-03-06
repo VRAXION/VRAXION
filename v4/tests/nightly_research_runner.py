@@ -124,6 +124,30 @@ VARIANTS: dict[str, dict] = {
         "mtaps_enabled": True,
         "mtaps_lags": [1, 2, 4, 8, 16, 32],
     },
+    "LLT4": {
+        "read_kernel_mode": "vshape",
+        "write_address_mode": "pointer",
+        "read_topk_K": 2,
+        "write_topk_K": 2,
+        "mtaps_enabled": True,
+        "mtaps_lags": [1, 2, 4, 8],
+    },
+    "LLT6": {
+        "read_kernel_mode": "vshape",
+        "write_address_mode": "pointer",
+        "read_topk_K": 2,
+        "write_topk_K": 2,
+        "mtaps_enabled": True,
+        "mtaps_lags": [1, 2, 4, 8, 16, 32],
+    },
+    "LLT7": {
+        "read_kernel_mode": "vshape",
+        "write_address_mode": "pointer",
+        "read_topk_K": 2,
+        "write_topk_K": 2,
+        "mtaps_enabled": True,
+        "mtaps_lags": [1, 2, 4, 8, 16, 32, 64],
+    },
     "GL": {
         "read_kernel_mode": "topk",
         "write_address_mode": "pointer",
@@ -531,6 +555,7 @@ def run_surface(
     variant: str,
     steps_override: int | None = None,
     device_override: str | None = None,
+    seed_override: int | None = None,
     pointer_mode_override: str | None = None,
     pointer_interp_mode_override: str | None = None,
     pointer_seam_mode_override: str | None = None,
@@ -540,6 +565,8 @@ def run_surface(
         cfg["steps"] = int(steps_override)
     if device_override is not None:
         cfg["device"] = device_override
+    if seed_override is not None:
+        cfg["seed"] = int(seed_override)
     if pointer_mode_override is not None:
         cfg["pointer_mode"] = pointer_mode_override
     if pointer_interp_mode_override is not None:
@@ -591,6 +618,7 @@ def main():
     parser.add_argument("--variant", required=True, choices=sorted(VARIANTS.keys()))
     parser.add_argument("--steps", type=int, default=0, help="Optional override for preset steps.")
     parser.add_argument("--device", type=str, default="", choices=["", "cpu", "cuda"])
+    parser.add_argument("--seed", type=int, default=-1, help="Optional override for preset seed.")
     parser.add_argument("--pointer-mode", type=str, default="", choices=["", "sequential", "learned", "pilot"])
     parser.add_argument("--pointer-interp-mode", type=str, default="", choices=["", "off", "linear"])
     parser.add_argument("--pointer-seam-mode", type=str, default="", choices=["", "mod", "shortest_arc"])
@@ -602,6 +630,7 @@ def main():
         variant=args.variant,
         steps_override=(args.steps or None),
         device_override=(args.device or None),
+        seed_override=(None if args.seed < 0 else args.seed),
         pointer_mode_override=(args.pointer_mode or None),
         pointer_interp_mode_override=(args.pointer_interp_mode or None),
         pointer_seam_mode_override=(args.pointer_seam_mode or None),

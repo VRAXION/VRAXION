@@ -1,0 +1,241 @@
+{
+  "version": 1,
+  "name": "overnight_llt_validation",
+  "watch": {
+    "heartbeat_minutes": 60,
+    "ping_enabled": true,
+    "ping_timer_sec": 1,
+    "wake_file": "wake_trigger.json"
+  },
+  "cpu_stages": [
+    {
+      "id": "seed_validation",
+      "enabled": true,
+      "jobs": [
+        {
+          "id": "cpu_ll_s42",
+          "role": "cpu_validator",
+          "lane": "cpu",
+          "surface": "wikitext_sequential_carry",
+          "variant": "LL",
+          "steps": 10000,
+          "seed": 42,
+          "device": "cpu",
+          "stop_on_fail": true,
+          "wake_on_complete": false,
+          "evidence_required": true
+        },
+        {
+          "id": "cpu_ll_s43",
+          "role": "cpu_validator",
+          "lane": "cpu",
+          "surface": "wikitext_sequential_carry",
+          "variant": "LL",
+          "steps": 10000,
+          "seed": 43,
+          "device": "cpu",
+          "stop_on_fail": true,
+          "wake_on_complete": false,
+          "evidence_required": true
+        },
+        {
+          "id": "cpu_ll_s44",
+          "role": "cpu_validator",
+          "lane": "cpu",
+          "surface": "wikitext_sequential_carry",
+          "variant": "LL",
+          "steps": 10000,
+          "seed": 44,
+          "device": "cpu",
+          "stop_on_fail": true,
+          "wake_on_complete": false,
+          "evidence_required": true
+        },
+        {
+          "id": "cpu_llt6_s42",
+          "role": "cpu_validator",
+          "lane": "cpu",
+          "surface": "wikitext_sequential_carry",
+          "variant": "LLT6",
+          "steps": 10000,
+          "seed": 42,
+          "device": "cpu",
+          "stop_on_fail": true,
+          "wake_on_complete": false,
+          "evidence_required": true
+        },
+        {
+          "id": "cpu_llt6_s43",
+          "role": "cpu_validator",
+          "lane": "cpu",
+          "surface": "wikitext_sequential_carry",
+          "variant": "LLT6",
+          "steps": 10000,
+          "seed": 43,
+          "device": "cpu",
+          "stop_on_fail": true,
+          "wake_on_complete": false,
+          "evidence_required": true
+        },
+        {
+          "id": "cpu_llt6_s44",
+          "role": "cpu_validator",
+          "lane": "cpu",
+          "surface": "wikitext_sequential_carry",
+          "variant": "LLT6",
+          "steps": 10000,
+          "seed": 44,
+          "device": "cpu",
+          "stop_on_fail": true,
+          "wake_on_complete": false,
+          "evidence_required": true
+        }
+      ],
+      "decision": {
+        "kind": "promote_candidate",
+        "baseline_ids": ["cpu_ll_s42", "cpu_ll_s43", "cpu_ll_s44"],
+        "candidate_ids": ["cpu_llt6_s42", "cpu_llt6_s43", "cpu_llt6_s44"],
+        "baseline_variant": "LL",
+        "candidate_variant": "LLT6",
+        "final_acc_gain_min_pp": 0.8,
+        "bpc_improve_min": 0.03,
+        "seed_floor_pp": -1.0,
+        "on_pass_enable": ["lag_selection"],
+        "on_fail_skip": ["lag_selection", "winner_replay", "long_confirm"]
+      }
+    },
+    {
+      "id": "lag_selection",
+      "enabled": false,
+      "jobs": [
+        {
+          "id": "cpu_lag_llt4_s42",
+          "role": "cpu_validator",
+          "lane": "cpu",
+          "surface": "wikitext_sequential_carry",
+          "variant": "LLT4",
+          "steps": 10000,
+          "seed": 42,
+          "device": "cpu",
+          "stop_on_fail": true,
+          "wake_on_complete": false,
+          "evidence_required": true
+        },
+        {
+          "id": "cpu_lag_llt6_s42",
+          "role": "cpu_validator",
+          "lane": "cpu",
+          "surface": "wikitext_sequential_carry",
+          "variant": "LLT6",
+          "steps": 10000,
+          "seed": 42,
+          "device": "cpu",
+          "stop_on_fail": true,
+          "wake_on_complete": false,
+          "evidence_required": true
+        },
+        {
+          "id": "cpu_lag_llt7_s42",
+          "role": "cpu_validator",
+          "lane": "cpu",
+          "surface": "wikitext_sequential_carry",
+          "variant": "LLT7",
+          "steps": 10000,
+          "seed": 42,
+          "device": "cpu",
+          "stop_on_fail": true,
+          "wake_on_complete": false,
+          "evidence_required": true
+        }
+      ],
+      "decision": {
+        "kind": "select_best_variant",
+        "job_ids": ["cpu_lag_llt4_s42", "cpu_lag_llt6_s42", "cpu_lag_llt7_s42"],
+        "preferred_variant": "LLT6",
+        "winner_key": "lag_winner_variant",
+        "on_complete_enable": ["long_confirm"],
+        "enable_if_winner_not_preferred": ["winner_replay"],
+        "skip_if_winner_is_preferred": ["winner_replay"]
+      }
+    },
+    {
+      "id": "winner_replay",
+      "enabled": false,
+      "jobs": [
+        {
+          "id": "cpu_replay_s43",
+          "role": "cpu_validator",
+          "lane": "cpu",
+          "surface": "wikitext_sequential_carry",
+          "variant_from_decision": "lag_selection.lag_winner_variant",
+          "steps": 10000,
+          "seed": 43,
+          "device": "cpu",
+          "stop_on_fail": true,
+          "wake_on_complete": false,
+          "evidence_required": true
+        },
+        {
+          "id": "cpu_replay_s44",
+          "role": "cpu_validator",
+          "lane": "cpu",
+          "surface": "wikitext_sequential_carry",
+          "variant_from_decision": "lag_selection.lag_winner_variant",
+          "steps": 10000,
+          "seed": 44,
+          "device": "cpu",
+          "stop_on_fail": true,
+          "wake_on_complete": false,
+          "evidence_required": true
+        }
+      ]
+    },
+    {
+      "id": "long_confirm",
+      "enabled": false,
+      "jobs": [
+        {
+          "id": "cpu_long_confirm",
+          "role": "cpu_validator",
+          "lane": "cpu",
+          "surface": "wikitext_sequential_carry",
+          "variant_from_decision": "lag_selection.lag_winner_variant",
+          "steps": 30000,
+          "seed": 42,
+          "device": "cpu",
+          "stop_on_fail": true,
+          "wake_on_complete": true,
+          "evidence_required": true
+        }
+      ]
+    }
+  ],
+  "gpu_queue": [
+    {
+      "id": "gpu_llt6_long",
+      "role": "gpu_primary",
+      "lane": "gpu",
+      "surface": "wikitext_sequential_carry",
+      "variant": "LLT6",
+      "steps": 30000,
+      "seed": 42,
+      "device": "cuda",
+      "stop_on_fail": false,
+      "wake_on_complete": false,
+      "evidence_required": true
+    },
+    {
+      "id": "gpu_ll_long",
+      "role": "gpu_secondary",
+      "lane": "gpu",
+      "surface": "wikitext_sequential_carry",
+      "variant": "LL",
+      "steps": 30000,
+      "seed": 42,
+      "device": "cuda",
+      "stop_on_fail": false,
+      "wake_on_complete": false,
+      "evidence_required": true
+    }
+  ]
+}

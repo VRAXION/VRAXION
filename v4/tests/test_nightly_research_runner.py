@@ -48,7 +48,7 @@ def _fake_trace(batch=2, seq=4, steps=3, M=16, read_width=3, write_width=3):
 
 def test_surface_and_variant_presets_exist():
     assert set(SURFACES) == {"small_wikitext_fresh", "fast_memory_carry", "wikitext_sequential_carry"}
-    assert set(VARIANTS) == {"LL", "LLT", "GL", "GG"}
+    assert set(VARIANTS) == {"LL", "LLT", "LLT4", "LLT6", "LLT7", "GL", "GG"}
 
 
 def test_small_fresh_pointer_guard_passes_on_capped_trace():
