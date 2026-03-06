@@ -1,0 +1,111 @@
+{
+  "script": "bench_fast_memory.py",
+  "device": "cpu",
+  "seed": 42,
+  "steps": 10000,
+  "batch": 8,
+  "seq": 8,
+  "hidden_dim": 32,
+  "M": 64,
+  "slot_dim": 8,
+  "N": 1,
+  "model": "instnct",
+  "io_split_mode": "off",
+  "gated_write": false,
+  "read_kernel_mode": "topk",
+  "write_address_mode": "content_topk",
+  "topk_k": 2,
+  "results": {
+    "64": {
+      "peak_acc": 1.0,
+      "peak_step": 7000,
+      "final_acc": 0.921875,
+      "fresh_acc": 0.015625,
+      "s0_acc": 0.0046875,
+      "ring_dependency_pp": 91.71875,
+      "wall_time": 492.70383449993096,
+      "sec_per_step": 0.0492703834499931,
+      "n_params": 23380,
+      "period": 64,
+      "read_kernel_mode": "topk",
+      "write_address_mode": "content_topk",
+      "topk_k": 2,
+      "history": [
+        [
+          1000,
+          0.515625,
+          2.0377819538116455,
+          46.94140079990029
+        ],
+        [
+          2000,
+          0.84375,
+          0.692885160446167,
+          91.28190339996945
+        ],
+        [
+          3000,
+          0.890625,
+          0.3429637849330902,
+          135.55127169995103
+        ],
+        [
+          4000,
+          0.96875,
+          0.1702793538570404,
+          186.9013312999159
+        ],
+        [
+          5000,
+          0.921875,
+          0.21972662210464478,
+          239.88771779998206
+        ],
+        [
+          6000,
+          0.953125,
+          0.21562178432941437,
+          292.38934339990374
+        ],
+        [
+          7000,
+          1.0,
+          0.06170041859149933,
+          344.0457479999168
+        ],
+        [
+          8000,
+          1.0,
+          0.05300695076584816,
+          395.6151851998875
+        ],
+        [
+          9000,
+          1.0,
+          0.014389622956514359,
+          443.46156429999974
+        ],
+        [
+          10000,
+          0.921875,
+          0.3328537046909332,
+          492.7037652999861
+        ]
+      ],
+      "topk_diag_means": {
+        "topk_mean_abs_circ_dist": 15.39609375,
+        "topk_outside_local_frac": 0.93671875,
+        "topk_attn_entropy": 0.6931471824645996,
+        "topk_unique_slot_frac": 1.0,
+        "write_topk_mean_abs_circ_dist": 15.39609375,
+        "write_topk_outside_local_frac": 0.93671875,
+        "write_topk_unique_slot_frac": 1.0
+      },
+      "ring_active_pct": 100.0,
+      "ring_adj_cos": 0.9744710326194763,
+      "ring_svd_rank90": 1,
+      "ring_svd_rank95": 2,
+      "ring_slot_norm_mean": 1274.238037109375
+    }
+  }
+}

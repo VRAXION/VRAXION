@@ -815,6 +815,47 @@ Next action:
 - run `GG` on the same `10k` CPU bench only if we explicitly want to test whether global write adds anything on top of a now-surviving global read;
 - do not use the sparse delayed-recall harness as the first `10k` budget probe.
 
+### Batch 13 — `GG` check on the same `10k` CPU bench
+
+Purpose:
+- test whether global write adds anything on top of the now-surviving `GL` branch;
+- resolve the original mismatch suspicion on the same dense, fully trained mechanistic horizon.
+
+Artifact:
+- [bench_fast_memory_gg_10k_cpu_20260306.json](../../v4/dev_notes/telemetry/bench_fast_memory_gg_10k_cpu_20260306.json)
+
+Observed `GG` result:
+- final acc `92.2%`
+- peak acc `100.0% @ 7000`
+- fresh eval `1.6%`
+- `S=0` probe `0.5%`
+- ring dependency `+91.7pp`
+- wall time `492.7s`
+- `0.049 s/step`
+
+Observed topK telemetry (`GG`):
+- `topk_mean_abs_circ_dist ~= 15.9`
+- `topk_outside_local_frac ~= 0.945`
+- `write_topk_mean_abs_circ_dist ~= 15.9`
+- `write_topk_outside_local_frac ~= 0.945`
+
+Read:
+- `GG` is genuinely non-local on both read and write;
+- it can solve the task transiently (`100%` peak), but it does not hold the solution as cleanly as `GL`;
+- compared to `GL`, it is slower and less stable at the end of training.
+
+Verdict:
+- on this `10k` CPU mechanistic bench, `GL` is better than `GG`;
+- the original "global read needs global write to work" suspicion is not supported here;
+- the current best read on this fast truth-surface is:
+  - `LL` and `GL` are both viable;
+  - `GG` is not the upgrade path.
+
+Next action:
+- keep `GL` alive as a mechanistic branch;
+- do not pursue `GG` as the next refinement on this bench;
+- if global retrieval is revisited beyond `GL`, it should be via a more selective hybrid write, not full content-topk write.
+
 ## Planned Next Tests
 
 The next tests should be about confidence, not rediscovery:
