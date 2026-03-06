@@ -1158,3 +1158,75 @@ Not safe to say yet:
 - that `dual-phi` should already replace the active mainline C19 in production;
 - that tail-limit changes should be merged;
 - that phi-structured regularization has beaten the simpler flat regularization.
+
+### Batch 18 — small-model WikiText `GL` with `topk_K = 1`
+
+Purpose:
+- test the quick "pooling blur" hypothesis on the same small real-data surface;
+- check whether collapsing global retrieval from `topk_K = 2` to `topk_K = 1` helps by avoiding weighted averaging of two remote slots.
+
+Harness:
+- script: `v4/tests/sweep_c19_core_geometry_wikitext.py`
+- device: `cpu`
+- config:
+  - `steps=10000`
+  - `batch=8`
+  - `seq=8`
+  - `seed=42`
+  - `hidden_dim=32`
+  - `M=64`
+  - `slot_dim=8`
+  - `N=1`
+  - `R=1`
+  - fixed `C = pi`
+  - `tail_mode = linear`
+  - `kernel_mode = topk`
+  - `topk_K = 1`
+  - `write_address_mode = pointer`
+  - `topk_read_diag = on`
+
+Artifact:
+- [sweep_c19_core_geometry_wikitext_20260306_202009.json](../../v4/dev_notes/telemetry/sweep_c19_core_geometry_wikitext_20260306_202009.json)
+
+Observed result:
+- final acc `0.345`
+- best acc `0.562`
+- final loss `2.3324`
+- final BPC `3.365`
+- wall time `480s`
+- `0.0480 s/step`
+
+Comparison vs the earlier small real-data baselines:
+- final acc:
+  - `LL`: `0.356`
+  - `GL, K=2`: `0.352`
+  - `GL, K=1`: `0.345`
+- final BPC:
+  - `LL`: `3.303`
+  - `GL, K=2`: `3.324`
+  - `GL, K=1`: `3.365`
+- wall time:
+  - `LL`: `395s`
+  - `GL, K=2`: `481s`
+  - `GL, K=1`: `480s`
+
+Observed topK telemetry:
+- `topk_mean_abs_circ_dist = 1.84`
+- `topk_outside_local_frac = 0.328`
+- `p99 |x|/C = 1.30`
+- `p99-ring = 1.00`
+
+Read:
+- `topk_K = 1` did not improve the small real-data result over `topk_K = 2`;
+- it was slightly worse in final-window quality and did not recover the `LL` baseline;
+- importantly, the `K = 1` read became even more local than the `K = 2` run, with much smaller average ring distance and much lower outside-local fraction.
+
+Verdict:
+- the quick "topK blur" explanation is not supported on this surface;
+- simply removing the weighted average over two slots does not rescue the global-read path;
+- the evidence now points more toward limited useful non-local signal / representation bandwidth than toward topK pooling blur as the primary issue.
+
+Next action:
+- keep `LL` as the active small real-data baseline;
+- do not spend more time on `topk_K` sweeps on this exact surface;
+- if global retrieval is revisited, it should be through a different retrieval shape (for example differentiated pointer or multi-timescale taps), not by tuning `topk_K` within this pooled read design.
