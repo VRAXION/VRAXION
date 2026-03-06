@@ -238,6 +238,37 @@ Practical version:
 - the fixed-`C` surface looks smooth, not strongly resonant;
 - `C` itself should remain learnable.
 
+## Performance Investigation
+
+### Batch 0 — Proxy-step baseline and closed C19 micro-opt check
+
+Purpose:
+- establish a deterministic runtime baseline for the current short WikiText proxy;
+- close the current exact dual-phi activation micro-opt branch before touching the write path.
+
+Proxy-step baseline (`seed=42`, `batch=32`, `seq=256`, `C=pi`, `N=1`, `R=1`, `write_mode=replace`):
+- `forward_loss ~= 2.14s`
+- `backward ~= 1.55s`
+- main logical hotspots:
+  - `_c19_activation`
+  - `func_hdd_write_tns`
+  - `func_softread_tns`
+
+Artifacts:
+- baseline JSON: [profile_sweep_step_wikitext_20260306_112140.json](../../v4/dev_notes/telemetry/profile_sweep_step_wikitext_20260306_112140.json)
+- baseline op table: [profile_sweep_step_wikitext_20260306_112140_ops.txt](../../v4/dev_notes/telemetry/profile_sweep_step_wikitext_20260306_112140_ops.txt)
+- activation microbench: [bench_c19_dualphi_optimize_20260306_1130.txt](../../v4/dev_notes/telemetry/bench_c19_dualphi_optimize_20260306_1130.txt)
+- rejected activation variant JSON: [profile_sweep_step_wikitext_20260306_112321.json](../../v4/dev_notes/telemetry/profile_sweep_step_wikitext_20260306_112321.json)
+- rejected activation op table: [profile_sweep_step_wikitext_20260306_112321_ops.txt](../../v4/dev_notes/telemetry/profile_sweep_step_wikitext_20260306_112321_ops.txt)
+
+Closed finding:
+- isolated dual-phi activation microbench (`gain_v2`) looked better in forward-only timing;
+- the same variant regressed on the full proxy step because backward became significantly slower;
+- verdict: do not promote the current exact `gain_v2` activation rewrite.
+
+Next action:
+- move to deterministic write-path A/B (`func_hdd_write_tns`) before opening any new activation rewrites.
+
 ## Planned Next Tests
 
 The next tests should be about confidence, not rediscovery:
