@@ -439,6 +439,103 @@ Verdict:
 Next action:
 - close write-algebra rewrites for this round and move to tensor-churn reduction inside the current `write_replace` path (`copy_`, `fill_`, `empty`, `_index_put_impl_`, `scatter_`), not new formulas.
 
+### Batch 6 — Nightly-only `proxy_overlay` fast path implementation and correctness validation
+
+Purpose:
+- test a narrow `nightly`-only fast path for the exact proxy regime instead of another algebra rewrite;
+- avoid cloning the full ring on every replace write while preserving immediate read-after-write visibility.
+
+Implementation scope:
+- new runtime switch: `replace_impl = dense | proxy_overlay`
+- proxy overlay is gated behind the exact proxy regime only:
+  - `N = 1`
+  - `R = 1`
+  - `write_mode = replace`
+  - `kernel_mode = vshape`
+  - `pointer_mode = sequential`
+  - `bb_enabled = false`
+  - `io_split_mode = off`
+  - `checkpoint_chunks = 0`
+- implementation style: dense base ring + small contiguous overlay segment with periodic flushes
+- this is `nightly`-only and not for `main` yet
+
+Scripts used:
+- `v4/tests/validate_replace_overlay_proxy.py`
+
+Artifacts:
+- validation JSON: [validate_replace_overlay_proxy_20260306_125335.json](../../v4/dev_notes/telemetry/validate_replace_overlay_proxy_20260306_125335.json)
+
+Observed correctness:
+- fixed-batch fp32 loss diff: `0.00000000`
+- fixed-batch logit max abs diff: `0.00000000`
+- 16-step chunk logit max abs diff: `0.00000000`
+- 16-step final ring max abs diff: `0.00000000`
+- 16-step final ptr max abs diff: `0.00000000`
+- 16-step final hidden max abs diff: `0.00000000`
+
+Verdict:
+- the proxy overlay path is numerically exact on the current validation harness;
+- correctness is not the blocker for promotion.
+
+Next action:
+- validate the overlay path on the clean deterministic proxy benchmark and keep it only if total step time improves by at least `5%`.
+
+### Batch 7 — Proxy-step and source-map validation for `replace_impl=proxy_overlay`
+
+Purpose:
+- determine whether the nightly proxy overlay is worth keeping after full proxy-step timing, not just correctness.
+
+Scripts used:
+- `v4/tests/profile_sweep_step_wikitext.py --impl current --write-impl current --replace-impl dense`
+- `v4/tests/profile_sweep_step_wikitext.py --impl current --write-impl current --replace-impl proxy_overlay`
+- `v4/tests/profile_sweep_step_wikitext.py --impl current --write-impl current --replace-impl dense --source-map`
+- `v4/tests/profile_sweep_step_wikitext.py --impl current --write-impl current --replace-impl proxy_overlay --source-map`
+- `v4/tests/plot_profile_breakdown.py --json ...125954.json --ops ...125954_ops.txt`
+- `v4/tests/plot_profile_breakdown.py --json ...125712.json --ops ...125712_ops.txt`
+
+Artifacts:
+- dense plain JSON: [profile_sweep_step_wikitext_20260306_125359.json](../../v4/dev_notes/telemetry/profile_sweep_step_wikitext_20260306_125359.json)
+- dense plain ops: [profile_sweep_step_wikitext_20260306_125359_ops.txt](../../v4/dev_notes/telemetry/profile_sweep_step_wikitext_20260306_125359_ops.txt)
+- overlay plain JSON: [profile_sweep_step_wikitext_20260306_125530.json](../../v4/dev_notes/telemetry/profile_sweep_step_wikitext_20260306_125530.json)
+- overlay plain ops: [profile_sweep_step_wikitext_20260306_125530_ops.txt](../../v4/dev_notes/telemetry/profile_sweep_step_wikitext_20260306_125530_ops.txt)
+- dense source-map JSON: [profile_sweep_step_wikitext_20260306_125954.json](../../v4/dev_notes/telemetry/profile_sweep_step_wikitext_20260306_125954.json)
+- dense source-map ops: [profile_sweep_step_wikitext_20260306_125954_ops.txt](../../v4/dev_notes/telemetry/profile_sweep_step_wikitext_20260306_125954_ops.txt)
+- dense source scopes: [profile_sweep_step_wikitext_20260306_125954_scopes.json](../../v4/dev_notes/telemetry/profile_sweep_step_wikitext_20260306_125954_scopes.json)
+- dense source scope ops: [profile_sweep_step_wikitext_20260306_125954_scope_ops.json](../../v4/dev_notes/telemetry/profile_sweep_step_wikitext_20260306_125954_scope_ops.json)
+- dense source-map chart: [profile_sweep_step_wikitext_20260306_125954_breakdown.png](../../v4/dev_notes/telemetry/profile_sweep_step_wikitext_20260306_125954_breakdown.png)
+- overlay source-map JSON: [profile_sweep_step_wikitext_20260306_125712.json](../../v4/dev_notes/telemetry/profile_sweep_step_wikitext_20260306_125712.json)
+- overlay source-map ops: [profile_sweep_step_wikitext_20260306_125712_ops.txt](../../v4/dev_notes/telemetry/profile_sweep_step_wikitext_20260306_125712_ops.txt)
+- overlay source scopes: [profile_sweep_step_wikitext_20260306_125712_scopes.json](../../v4/dev_notes/telemetry/profile_sweep_step_wikitext_20260306_125712_scopes.json)
+- overlay source scope ops: [profile_sweep_step_wikitext_20260306_125712_scope_ops.json](../../v4/dev_notes/telemetry/profile_sweep_step_wikitext_20260306_125712_scope_ops.json)
+- overlay source-map chart: [profile_sweep_step_wikitext_20260306_125712_breakdown.png](../../v4/dev_notes/telemetry/profile_sweep_step_wikitext_20260306_125712_breakdown.png)
+
+Observed plain proxy timings:
+- `dense`: `forward ~= 2.269s`, `backward ~= 1.352s`, total `~= 3.624s`
+- `proxy_overlay`: `forward ~= 1.917s`, `backward ~= 1.600s`, total `~= 3.519s`
+- total-step improvement: `~2.9%`
+
+Observed source-scope shift:
+- dense `write_replace`: `1292.5ms` scoped CUDA (`60.5%`)
+- overlay `write_replace`: `251.6ms` scoped CUDA (`19.3%`)
+- overlay now shifts more scoped time into:
+  - `softread`: `362.7ms` (`27.9%`)
+  - `write_prepare`: `292.4ms` (`22.5%`)
+  - `output_head`: `214.1ms` (`16.5%`)
+- `source_map_complete` remains `false` in both runs because some high-cost ops still live outside the forward source scopes.
+
+Key read:
+- the overlay path does exactly what it was meant to do for the scoped hotspot: `write_replace` drops sharply;
+- the saved write time is partly paid back in extra `softread` / overlay merge work and backward cost;
+- the full proxy step does improve, but not enough to clear the acceptance threshold.
+
+Verdict:
+- reject `replace_impl=proxy_overlay` for promotion in this round;
+- keep it as a documented nightly experiment only;
+- do not merge it into `main` and do not make it the default nightly replace path.
+
+Next action:
+- keep the conclusion from Batch 4/5: the next worthwhile performance work is tensor-churn reduction inside the current write path and surrounding read/write prep (`copy_`, `empty`, `fill_`, `as_strided`, `_index_put_impl_`, `scatter_`), not more replace-formula variants.
+
 ## Planned Next Tests
 
 The next tests should be about confidence, not rediscovery:

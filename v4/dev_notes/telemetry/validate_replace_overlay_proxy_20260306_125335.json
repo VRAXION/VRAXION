@@ -1,0 +1,22 @@
+{
+  "script": "validate_replace_overlay_proxy.py",
+  "timestamp": "2026-03-06T12:53:35.692496",
+  "config": {
+    "seed": 42,
+    "batch": 32,
+    "seq": 256,
+    "chunk_steps": 16
+  },
+  "fixed_batch": {
+    "dense_loss": 5.647251605987549,
+    "overlay_loss": 5.647251605987549,
+    "loss_abs_diff": 0.0,
+    "logit_max_abs_diff": 0.0
+  },
+  "chunk_behavior": {
+    "logit_max_abs_diff": 0.0,
+    "ring_max_abs_diff": 0.0,
+    "ptr_max_abs_diff": 0.0,
+    "hidden_max_abs_diff": 0.0
+  }
+}
