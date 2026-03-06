@@ -50,6 +50,10 @@ This week focused on four questions:
   - `C = phi^2, pi, 2pi`
   - `tail = linear` vs `tail = periodic`
   - deterministic single-seed WikiText comparison
+- Fixed-`C` upper-sweep follow-up:
+  - `C = 2.8, 3.0, pi, 3.3, 3.5`
+  - `C = 3.5, 3.8, 4.2, 4.8, 5.5, 2pi`
+  - deterministic single-seed WikiText comparison
 - Learnable-`C` synth probe:
   - `rho` frozen
   - `C` left learnable
@@ -147,6 +151,24 @@ Interpretation:
 - `pi` is currently the best-tested compromise for the core geometry;
 - this supports keeping `C_init = pi` as the default starting point.
 
+Follow-up upper-sweep:
+- `2.8`: `35.0%`
+- `3.0`: `35.3%`
+- `pi`: `35.4%`
+- `3.3`: `35.4%`
+- `3.5`: `35.5%`
+- `3.8`: `35.6%`
+- `4.2`: `35.7%`
+- `4.8`: `35.4%`
+- `5.5`: `35.2%`
+- `2pi`: `35.0%`
+
+Read:
+- the fixed-`C` curve currently looks like a broad, smooth hump rather than a phi-like spiky resonance pattern;
+- the best 100-step single-seed point so far is `C = 4.2`;
+- the improvement over `pi` is tiny, so it is not enough evidence to change the default init;
+- the safer current interpretation is "wide safe band, likely peaking somewhere around `4.0-4.4`", not "special irrational magic value".
+
 ### 7) Learnable `C` adapts in a task-dependent way
 
 A synthetic `learnable C` probe was run with `rho` frozen and `bitlift` input active so both input-side and hidden-side `C` remained trainable.
@@ -213,6 +235,7 @@ Practical version:
 - `dual-phi` is now the current lead standalone variant, not just the prettier hypothesis;
 - the sign of the asymmetry matters more than the raw amount of scaling;
 - `pi` remains the best-tested default `C` init;
+- the fixed-`C` surface looks smooth, not strongly resonant;
 - `C` itself should remain learnable.
 
 ## Planned Next Tests
@@ -222,6 +245,7 @@ The next tests should be about confidence, not rediscovery:
 - repeat the `neg-phi` vs `dual-phi` WikiText A/B across more seeds;
 - run at least one longer or sequential validation;
 - carry the winning activation into the active model path and confirm the gain survives integration;
+- if fixed-`C` tuning is revisited, do a narrow `3.8-4.6` multi-seed sweep to confirm whether `4.2` is real or just noise;
 - continue `C` regularization work only after the activation verdict is stable;
 - if tail work is revisited, do it with a forced-tail stress task or much stronger envelope, not with more light damping;
 - rerun the learnable-`C` telemetry on longer synth or mixed-data tasks to see whether the early task-specific drift persists.
@@ -236,6 +260,7 @@ Safe to say now:
 - light outer-loop damping does not buy anything in the current WikiText regime.
 - keep `C_init = pi` as the default.
 - keep `C` learnable.
+- treat the current `4.2` fixed-`C` win as suggestive, not promotion-grade.
 
 Not safe to say yet:
 - that `dual-phi` should already replace the active mainline C19 in production;
