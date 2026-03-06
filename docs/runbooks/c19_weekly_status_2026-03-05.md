@@ -395,6 +395,50 @@ Verdict:
 Next action:
 - run `current` vs `lerp_v2` on the same deterministic proxy config and accept only if total proxy-step time improves by at least `5%`.
 
+### Batch 5 — Proxy-step validation for `lerp_v2` after source-map attribution
+
+Purpose:
+- test the safest semantically equivalent replace-write implementation against the clean, non-source-map proxy path;
+- make sure the validation is not polluted by the disabled source-map scaffolding itself.
+
+Setup note:
+- the first disabled source-map implementation allocated a fresh no-op context on every scope entry and measurably distorted the plain proxy path;
+- validation was therefore rerun only after switching the off-path to a singleton no-op scope.
+
+Scripts used:
+- `v4/tests/profile_sweep_step_wikitext.py --impl current --write-impl current`
+- `v4/tests/profile_sweep_step_wikitext.py --impl current --write-impl lerp_v2`
+
+Artifacts:
+- clean baseline JSON: [profile_sweep_step_wikitext_20260306_122326.json](../../v4/dev_notes/telemetry/profile_sweep_step_wikitext_20260306_122326.json)
+- clean baseline op table: [profile_sweep_step_wikitext_20260306_122326_ops.txt](../../v4/dev_notes/telemetry/profile_sweep_step_wikitext_20260306_122326_ops.txt)
+- `lerp_v2` JSON: [profile_sweep_step_wikitext_20260306_122458.json](../../v4/dev_notes/telemetry/profile_sweep_step_wikitext_20260306_122458.json)
+- `lerp_v2` op table: [profile_sweep_step_wikitext_20260306_122458_ops.txt](../../v4/dev_notes/telemetry/profile_sweep_step_wikitext_20260306_122458_ops.txt)
+
+Observed proxy-step timings:
+- `current`: `forward ~= 2.067s`, `backward ~= 1.403s`, total `~= 3.470s`
+- `lerp_v2`: `forward ~= 2.312s`, `backward ~= 1.576s`, total `~= 3.888s`
+
+Observed helper timings:
+- `func_hdd_write_tns`
+  - `current ~= 315.3ms`
+  - `lerp_v2 ~= 368.0ms`
+- `_c19_activation`
+  - `current ~= 878.1ms`
+  - `lerp_v2 ~= 955.5ms`
+
+Key read:
+- the apparent earlier `lerp_v2` win vanished once the disabled source-map overhead was removed;
+- on the clean proxy path, `lerp_v2` is slower in both forward and backward;
+- native `torch.lerp` also needed an autocast-safe float-cast fallback to run in this path at all, which further weakens it as a production-quality candidate.
+
+Verdict:
+- reject `lerp_v2` for this proxy;
+- the current write algebra still wins on the real proxy step even though microbench and scoped attribution made the write path look promising.
+
+Next action:
+- close write-algebra rewrites for this round and move to tensor-churn reduction inside the current `write_replace` path (`copy_`, `fill_`, `empty`, `_index_put_impl_`, `scatter_`), not new formulas.
+
 ## Planned Next Tests
 
 The next tests should be about confidence, not rediscovery:
