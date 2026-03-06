@@ -356,6 +356,45 @@ Verdict:
 Next action:
 - start from intermediate-tensor reduction and write-path memory traffic, not from new C19 formulas or expert-vectorization.
 
+### Batch 4 — Source-map baseline for the proxy step
+
+Purpose:
+- replace guesswork with source-level attribution inside the actual proxy forward path;
+- identify which exact block owns the bulk of the scoped CUDA time before picking a new low-risk optimization.
+
+Scripts used:
+- `v4/tests/profile_sweep_step_wikitext.py --impl current --write-impl current --source-map`
+- `v4/tests/plot_profile_breakdown.py --json ...121153.json --ops ...121153_ops.txt`
+
+Artifacts:
+- source-map JSON: [profile_sweep_step_wikitext_20260306_121153.json](../../v4/dev_notes/telemetry/profile_sweep_step_wikitext_20260306_121153.json)
+- source-map op table: [profile_sweep_step_wikitext_20260306_121153_ops.txt](../../v4/dev_notes/telemetry/profile_sweep_step_wikitext_20260306_121153_ops.txt)
+- source scope totals: [profile_sweep_step_wikitext_20260306_121153_scopes.json](../../v4/dev_notes/telemetry/profile_sweep_step_wikitext_20260306_121153_scopes.json)
+- source scope op attribution: [profile_sweep_step_wikitext_20260306_121153_scope_ops.json](../../v4/dev_notes/telemetry/profile_sweep_step_wikitext_20260306_121153_scope_ops.json)
+- updated breakdown chart: [profile_sweep_step_wikitext_20260306_121153_breakdown.png](../../v4/dev_notes/telemetry/profile_sweep_step_wikitext_20260306_121153_breakdown.png)
+
+Observed scope totals:
+- `write_replace`: `1222.5ms` scoped CUDA (`62.4%`)
+- `write_prepare`: `261.8ms` (`13.4%`)
+- `output_head`: `187.8ms` (`9.6%`)
+- `window_prepare`: `141.4ms` (`7.2%`)
+- `softread`: `92.9ms` (`4.7%`)
+- `pointer_update`: `53.0ms` (`2.7%`)
+- `state_init`: `0.5ms` (`~0.0%`)
+
+Key read:
+- the dominant scoped cost is not `state_init` and not `pointer_update`;
+- the live hotspot is the current `write_replace` path around `func_hdd_write_tns`;
+- `_index_put_impl_`, `copy_`, `fill_`, and `empty` all show their largest scoped share under `write_replace`;
+- `source_map_complete` is still `false` because some global top ops are outside the forward source scopes (`random_`, backward-heavy ops like `scatter_add_`, and other non-model-shell overhead).
+
+Verdict:
+- close the earlier `state_init` and `pointer_update` hypotheses for this proxy config;
+- promote the safest semantically equivalent replace-write candidate into full proxy validation next.
+
+Next action:
+- run `current` vs `lerp_v2` on the same deterministic proxy config and accept only if total proxy-step time improves by at least `5%`.
+
 ## Planned Next Tests
 
 The next tests should be about confidence, not rediscovery:
