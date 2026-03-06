@@ -4,6 +4,8 @@ import sys
 ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT / "tests") not in sys.path:
     sys.path.insert(0, str(ROOT / "tests"))
+if str(ROOT / "model") not in sys.path:
+    sys.path.insert(0, str(ROOT / "model"))
 
 from nightly_research_runner import (  # type: ignore[import-not-found]
     SURFACES,
@@ -13,6 +15,7 @@ from nightly_research_runner import (  # type: ignore[import-not-found]
     _ring_trace_guard,
     _surface_guards,
 )
+from instnct import func_linear_pointer_window_tns  # type: ignore[import-not-found]
 
 
 def _fake_trace(batch=2, seq=4, steps=3, M=16, read_width=3, write_width=3):
@@ -87,3 +90,19 @@ def test_effective_global_flags_require_nonlocal_telemetry():
     flags = _effective_global_flags(result, "GG")
     assert flags["effective_global_read"] is True
     assert flags["effective_global_write"] is True
+
+
+def test_linear_pointer_window_preserves_integer_case():
+    import torch
+
+    ptr = torch.tensor([2.0, 5.0])
+    offsets = torch.tensor([-1, 0, 1], dtype=torch.long)
+    weights = torch.tensor([[0.2, 0.6, 0.2], [0.2, 0.6, 0.2]])
+    center, alpha, idx, merged_w = func_linear_pointer_window_tns(ptr, offsets, weights, 8)
+
+    assert torch.equal(center, torch.tensor([2, 5]))
+    assert torch.allclose(alpha, torch.zeros_like(alpha))
+    assert torch.equal(idx[0], torch.tensor([1, 2, 3, 4]))
+    assert torch.equal(idx[1], torch.tensor([4, 5, 6, 7]))
+    assert torch.allclose(merged_w[:, :3], weights)
+    assert torch.allclose(merged_w[:, 3], torch.zeros(2))

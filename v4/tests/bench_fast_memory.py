@@ -299,7 +299,8 @@ def ring_diagnostics(model, state, device):
 def run_one(N, period, steps, batch, seq, hidden_dim, M, slot_dim,
             model_type, device, io_split_mode='off', gated_write=False, lr=1e-3,
             log_every=100, seed=42, read_kernel_mode='vshape',
-            write_address_mode='pointer', topk_k=2, ring_trace=False):
+            write_address_mode='pointer', topk_k=2, ring_trace=False,
+            pointer_mode='sequential', pointer_interp_mode='off'):
     """Train one configuration and return results.
 
     Returns:
@@ -334,16 +335,20 @@ def run_one(N, period, steps, batch, seq, hidden_dim, M, slot_dim,
             io_writer_count=1,
             io_output_from_readers_only=(io_split_mode == 'strict'),
             gated_write=gated_write,
+            pointer_mode=pointer_mode,
             write_address_mode=write_address_mode,
             topk_K=topk_k,
             read_topk_K=topk_k,
             write_topk_K=topk_k,
+            pointer_interp_mode=pointer_interp_mode,
         ).to(device)
         split_tag = f' io={io_split_mode}' if io_split_mode != 'off' else ''
         gw_tag = ' gated_write' if gated_write else ''
         rk_tag = f' read={read_kernel_mode}'
         wa_tag = f' write={write_address_mode}'
-        model_label = f'INSTNCT N={N}{split_tag}{gw_tag}{rk_tag}{wa_tag}'
+        pm_tag = f' ptr={pointer_mode}'
+        pi_tag = '' if pointer_interp_mode == 'off' else f' interp={pointer_interp_mode}'
+        model_label = f'INSTNCT N={N}{split_tag}{gw_tag}{rk_tag}{wa_tag}{pm_tag}{pi_tag}'
     elif model_type == 'transformer':
         set_topk_read_diag_enabled(False)
         set_ring_trace_enabled(False)
@@ -557,6 +562,10 @@ def main():
     parser.add_argument('--write-address-mode', choices=['pointer', 'content_topk'], default='pointer',
                         help='Write addressing mode for INSTNCT.')
     parser.add_argument('--topk-k', type=int, default=2, help='TopK for topk read/write modes.')
+    parser.add_argument('--pointer-mode', choices=['sequential', 'learned', 'pilot'], default='sequential',
+                        help='Pointer movement mode for INSTNCT.')
+    parser.add_argument('--pointer-interp-mode', choices=['off', 'linear'], default='off',
+                        help='Fractional pointer center mode for local read/write.')
     parser.add_argument('--ring-trace', action='store_true', help='Capture full ring trace/histograms.')
     parser.add_argument('--json-out', default=None, help='Optional JSON results path.')
     args = parser.parse_args()
@@ -585,6 +594,8 @@ def main():
             write_address_mode=args.write_address_mode,
             topk_k=args.topk_k,
             ring_trace=args.ring_trace,
+            pointer_mode=args.pointer_mode,
+            pointer_interp_mode=args.pointer_interp_mode,
         )
 
     # Summary table (if sweep)
@@ -620,6 +631,8 @@ def main():
         'read_kernel_mode': args.read_kernel_mode,
         'write_address_mode': args.write_address_mode,
         'topk_k': args.topk_k,
+        'pointer_mode': args.pointer_mode,
+        'pointer_interp_mode': args.pointer_interp_mode,
         'ring_trace': bool(args.ring_trace),
         'results': results,
     }

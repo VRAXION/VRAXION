@@ -1378,3 +1378,60 @@ Next action:
 - keep using the canonical runner for all nightly evidence;
 - open no new architecture branch until the next candidate is tested through this runner;
 - the next architecture candidate remains `pointer interpolation`, followed by `multi-timescale taps`.
+
+### Batch 21 — pointer interpolation quick gate (`learned` pointer, `LL` path)
+
+Purpose:
+- test the first real post-hardening architecture candidate;
+- isolate whether the discrete pointer center (`ptr.long()`) is a real bottleneck once the pointer is allowed to move fractionally.
+
+Implementation:
+- nightly-only `pointer_interp_mode = off|linear` added to [v4/model/instnct.py](../../v4/model/instnct.py)
+- local positional read/write now supports a merged fractional support:
+  - pointer floor window
+  - pointer ceil window
+  - aggregated unique support with blended weights
+- no topK changes
+- no new write mechanism
+- no perf-opt changes
+
+Correctness checks:
+- [v4/tests/test_nightly_research_runner.py](../../v4/tests/test_nightly_research_runner.py) now includes integer-case equivalence coverage for the interpolation helper
+- `pytest` status after patch: `6 passed`
+
+Quick gate A/B:
+- runner: [v4/tests/nightly_research_runner.py](../../v4/tests/nightly_research_runner.py)
+- variant: `LL`
+- pointer mode: `learned`
+- compare:
+  - `pointer_interp_mode = off`
+  - `pointer_interp_mode = linear`
+
+Artifacts:
+- fast memory carry:
+  - [off](../../v4/dev_notes/telemetry/nightly_runner_fast_memory_carry_LL_20260306_220336_443934.json)
+  - [linear](../../v4/dev_notes/telemetry/nightly_runner_fast_memory_carry_LL_20260306_220429_002560.json)
+- small WikiText fresh:
+  - [off](../../v4/dev_notes/telemetry/nightly_runner_small_wikitext_fresh_LL_20260306_220648_975520.json)
+  - [linear](../../v4/dev_notes/telemetry/nightly_runner_small_wikitext_fresh_LL_20260306_220754_769265.json)
+
+Observed result:
+- fast memory carry, `1000` steps:
+  - `off`: final acc `0.094`, best acc `0.203`, time `42.5s`
+  - `linear`: final acc `0.719`, best acc `0.719`, time `39.0s`
+- small WikiText fresh, `1000` steps:
+  - `off`: final acc `0.274`, best acc `0.484`, BPC `3.904`, time `45.7s`
+  - `linear`: final acc `0.275`, best acc `0.500`, BPC `3.897`, time `50.9s`
+
+Read:
+- on the mechanistic carry task, pointer interpolation is a major win;
+- on the small fresh real-data surface, the gain is present but marginal;
+- this strongly suggests the discrete center is a real bottleneck for learned memory routing, but not the dominant limit on the current small fresh WikiText surface.
+
+Verdict:
+- keep `pointer interpolation` alive as the next architecture branch;
+- do not promote from the `1000`-step quick gate alone;
+- the next confirmation run should be:
+  - `fast_memory_carry`, longer confirm
+  - then `wikitext_sequential_carry`
+- no reason to reopen pooled topK before this pointer branch is properly confirmed.

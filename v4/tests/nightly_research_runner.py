@@ -55,6 +55,8 @@ SURFACES: dict[str, dict] = {
         "slot_dim": 8,
         "N": 1,
         "R": 1,
+        "pointer_mode": "sequential",
+        "pointer_interp_mode": "off",
         "fixed_C": math.pi,
         "tail_mode": "linear",
         "tail_k": 6.0,
@@ -73,6 +75,8 @@ SURFACES: dict[str, dict] = {
         "slot_dim": 8,
         "N": 1,
         "R": 1,
+        "pointer_mode": "sequential",
+        "pointer_interp_mode": "off",
         "period": 64,
         "reset_each_batch": False,
         "pooled_topk_read": True,
@@ -89,6 +93,8 @@ SURFACES: dict[str, dict] = {
         "slot_dim": 8,
         "N": 1,
         "R": 1,
+        "pointer_mode": "sequential",
+        "pointer_interp_mode": "off",
         "fixed_C": math.pi,
         "tail_mode": "linear",
         "tail_k": 6.0,
@@ -121,7 +127,7 @@ VARIANTS: dict[str, dict] = {
 
 
 def _default_json_path(surface: str, variant: str) -> Path:
-    stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    stamp = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
     out_dir = ROOT / "dev_notes" / "telemetry"
     out_dir.mkdir(parents=True, exist_ok=True)
     return out_dir / f"nightly_runner_{surface}_{variant}_{stamp}.json"
@@ -139,7 +145,8 @@ def _build_meta(surface: str, variant: str, cfg: dict, overrides: dict | None = 
         "surface_kind": surface,
         "variant": variant,
         "state_mode": cfg["state_mode"],
-        "pointer_mode": "sequential",
+        "pointer_mode": cfg["pointer_mode"],
+        "pointer_interp_mode": cfg.get("pointer_interp_mode", "off"),
         "read_mode": variant_cfg["read_kernel_mode"],
         "write_mode": variant_cfg["write_address_mode"],
         "seq": cfg["seq"],
@@ -213,7 +220,7 @@ def _surface_guards(surface: str, result: dict, meta: dict) -> dict:
     }
     ring_summary = result.get("ring_trace_summary") or {}
     ptr_unique = ring_summary.get("ptr_unique_frac")
-    if surface == "small_wikitext_fresh":
+    if surface == "small_wikitext_fresh" and meta.get("pointer_mode") == "sequential":
         guards["fresh_pointer_coverage_capped"] = bool(
             ptr_unique is not None and ptr_unique <= (meta["seq"] / meta["ring_slots"]) + 1e-9
         )
@@ -274,6 +281,8 @@ def _run_small_wikitext_fresh(surface: str, variant: str, cfg: dict) -> dict:
         read_kernel_mode=variant_cfg["read_kernel_mode"],
         write_address_mode=variant_cfg["write_address_mode"],
         write_topk_k=variant_cfg["write_topk_K"],
+        pointer_mode=cfg["pointer_mode"],
+        pointer_interp_mode=cfg["pointer_interp_mode"],
         ring_trace=True,
         device=cfg["device"],
         hidden_dim=cfg["hidden_dim"],
@@ -307,6 +316,8 @@ def _run_fast_memory_carry(surface: str, variant: str, cfg: dict) -> dict:
         write_address_mode=variant_cfg["write_address_mode"],
         topk_k=variant_cfg["read_topk_K"],
         ring_trace=True,
+        pointer_mode=cfg["pointer_mode"],
+        pointer_interp_mode=cfg["pointer_interp_mode"],
     )
     result["best_acc"] = result.get("peak_acc")
     result["time_s"] = result.get("wall_time")
@@ -363,6 +374,8 @@ def _run_wikitext_sequential_carry(surface: str, variant: str, cfg: dict) -> dic
         read_kernel_mode=variant_cfg["read_kernel_mode"],
         write_address_mode=variant_cfg["write_address_mode"],
         write_topk_k=variant_cfg["write_topk_K"],
+        pointer_mode=cfg["pointer_mode"],
+        pointer_interp_mode=cfg["pointer_interp_mode"],
         device=cfg["device"],
         hidden_dim=cfg["hidden_dim"],
         M=cfg["M"],
@@ -480,12 +493,23 @@ def _run_wikitext_sequential_carry(surface: str, variant: str, cfg: dict) -> dic
     return result
 
 
-def run_surface(surface: str, variant: str, steps_override: int | None = None, device_override: str | None = None) -> dict:
+def run_surface(
+    surface: str,
+    variant: str,
+    steps_override: int | None = None,
+    device_override: str | None = None,
+    pointer_mode_override: str | None = None,
+    pointer_interp_mode_override: str | None = None,
+) -> dict:
     cfg = dict(SURFACES[surface])
     if steps_override is not None:
         cfg["steps"] = int(steps_override)
     if device_override is not None:
         cfg["device"] = device_override
+    if pointer_mode_override is not None:
+        cfg["pointer_mode"] = pointer_mode_override
+    if pointer_interp_mode_override is not None:
+        cfg["pointer_interp_mode"] = pointer_interp_mode_override
 
     if surface == "small_wikitext_fresh":
         result = _run_small_wikitext_fresh(surface, variant, cfg)
@@ -504,7 +528,11 @@ def run_surface(surface: str, variant: str, steps_override: int | None = None, d
         **_effective_global_flags(result, variant),
     }
 
-    if surface == "small_wikitext_fresh" and not guards.get("fresh_pointer_coverage_capped", False):
+    if (
+        surface == "small_wikitext_fresh"
+        and meta.get("pointer_mode") == "sequential"
+        and not guards.get("fresh_pointer_coverage_capped", False)
+    ):
         raise RuntimeError("small_wikitext_fresh violated fresh-start pointer coverage guard")
     if surface == "wikitext_sequential_carry" and not guards.get("carry_pointer_coverage_exceeds_fresh_bound", False):
         raise RuntimeError("wikitext_sequential_carry failed carry pointer coverage guard")
@@ -527,6 +555,8 @@ def main():
     parser.add_argument("--variant", required=True, choices=sorted(VARIANTS.keys()))
     parser.add_argument("--steps", type=int, default=0, help="Optional override for preset steps.")
     parser.add_argument("--device", type=str, default="", choices=["", "cpu", "cuda"])
+    parser.add_argument("--pointer-mode", type=str, default="", choices=["", "sequential", "learned", "pilot"])
+    parser.add_argument("--pointer-interp-mode", type=str, default="", choices=["", "off", "linear"])
     parser.add_argument("--json-out", type=str, default="")
     args = parser.parse_args()
 
@@ -535,6 +565,8 @@ def main():
         variant=args.variant,
         steps_override=(args.steps or None),
         device_override=(args.device or None),
+        pointer_mode_override=(args.pointer_mode or None),
+        pointer_interp_mode_override=(args.pointer_interp_mode or None),
     )
 
     result = payload["result"]

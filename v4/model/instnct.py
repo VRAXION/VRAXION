@@ -285,6 +285,36 @@ def func_softread_tns(  # func_ = standalone op, _tns = returns a tensor
     return read_vec_tns, expanded_idx_tns  # also return expanded indices — soft_write reuses them
 
 # · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · ·
+def func_linear_pointer_window_tns(
+    ptr_tns,
+    offsets_long,
+    base_weights_tns,
+    slots_int,
+):
+    """Blend two adjacent local windows around a fractional pointer.
+
+    For ptr = i + alpha we merge the windows centered at i and i+1 into a
+    unique support of width (2R+2). Integer ptr values fall back exactly to
+    the original discrete support.
+    """
+    ptr_floor_tns = torch.floor(ptr_tns)
+    alpha_tns = (ptr_tns - ptr_floor_tns).unsqueeze(1)  # (B, 1)
+    center0_tns = ptr_floor_tns.long().clamp(0, slots_int - 1)
+    center1_tns = (center0_tns + 1) % slots_int
+
+    idx0_tns = (center0_tns.unsqueeze(1) + offsets_long) % slots_int
+    idx1_tns = (center1_tns.unsqueeze(1) + offsets_long) % slots_int
+    w0_tns = (1.0 - alpha_tns) * base_weights_tns
+    w1_tns = alpha_tns * base_weights_tns
+
+    merged_idx_tns = torch.cat([idx0_tns[:, :1], idx1_tns], dim=1)
+    merged_weights_tns = torch.cat(
+        [w0_tns[:, :1], w0_tns[:, 1:] + w1_tns[:, :-1], w1_tns[:, -1:]],
+        dim=1,
+    )
+    return center0_tns, alpha_tns.squeeze(1), merged_idx_tns, merged_weights_tns
+
+# · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · ·
 def func_softwrit_tns(  # func_ = standalone op, _tns = returns a tensor (the updated ring)
     ring_tns,            # the shared ring buffer to write into; shape (B, M, D)
     hidden_tns,          # hidden state of the current expert; shape (B, D)
@@ -550,6 +580,7 @@ class INSTNCT(nn.Module):
                  gated_write=False,                        # True = erase+gate write (anti-blob), False = scatter_add (legacy)
                  write_mode='accumulate',                  # 'accumulate' (scatter_add) | 'replace' (HDD-style overwrite)
                  replace_impl=CNFG_REPLACEIMPL_STR,        # 'dense' | 'proxy_overlay' (nightly-only proxy fast path)
+                 pointer_interp_mode='off',                # 'off' | 'linear' — nightly-only fractional pointer center
                  s_constraint='softplus'):                 # 'softplus' (S>0) | 'raw' (unconstrained)
         super().__init__()
         assert kernel_mode in ('uniform', 'vshape', 'gaussian', 'dotprod', 'topk'), \
@@ -566,10 +597,13 @@ class INSTNCT(nn.Module):
             f"pointer_mode must be 'sequential', 'learned', or 'pilot', got '{pointer_mode}'"
         assert replace_impl in ('dense', 'proxy_overlay'), \
             f"replace_impl must be 'dense' or 'proxy_overlay', got '{replace_impl}'"
+        assert pointer_interp_mode in ('off', 'linear'), \
+            f"pointer_interp_mode must be 'off' or 'linear', got '{pointer_interp_mode}'"
         assert write_address_mode in ('pointer', 'content_topk'), \
             f"write_address_mode must be 'pointer' or 'content_topk', got '{write_address_mode}'"
         self.write_mode = write_mode
         self.replace_impl = replace_impl
+        self.pointer_interp_mode = pointer_interp_mode
 
         # backward compat: embed_dim=X sets hidden_dim=slot_dim=X
         if embed_dim is not None:
@@ -595,6 +629,7 @@ class INSTNCT(nn.Module):
             and read_kernel_mode == 'vshape'
             and write_address_mode == 'pointer'
             and pointer_mode == 'sequential'
+            and pointer_interp_mode == 'off'
             and not bb_enabled
             and io_split_mode == 'off'
             and checkpoint_chunks == 0
@@ -921,6 +956,7 @@ class INSTNCT(nn.Module):
                 is_writer = bool(self._writer_mask[i]) if self.io_split_mode == 'strict' else False
                 is_reader = bool(self._reader_mask[i]) if self.io_split_mode == 'strict' else True
                 current_window_tns = None
+                local_pointer_indices_tns = indices_tns
                 local_pointer_weights_tns = None
                 local_pointer_expanded_idx_tns = None
                 content_topk_scores_tns = None
@@ -936,28 +972,49 @@ class INSTNCT(nn.Module):
                     scores = scores * (slot_dim ** -0.5)                            # scale
                     content_topk_scores_tns, content_topk_idx_tns = scores.topk(max_content_topk, dim=-1)
 
+                use_linear_pointer = (
+                    self.pointer_interp_mode == 'linear'
+                    and expert_weights is not None
+                    and self.read_kernel_mode in ('uniform', 'vshape', 'gaussian')
+                    and self.write_address_mode == 'pointer'
+                )
+                if use_linear_pointer:
+                    with _source_scope('window_prepare'):
+                        base_weights_tns = expert_weights[i].unsqueeze(0).expand(input_vec_tns.shape[0], -1)
+                        center, ptr_alpha_tns, local_pointer_indices_tns, local_pointer_weights_tns = func_linear_pointer_window_tns(
+                            ptr_tns[i],
+                            offsets_long,
+                            base_weights_tns,
+                            M,
+                        )
+                    if torch.is_grad_enabled() and self.training:
+                        self._diag[f'ptr_alpha_{i}'] = ptr_alpha_tns.detach().mean().item()
+
                 if is_writer and not is_reader:
                     # Writer-only: NO ring read, zero ring signal
                     with _source_scope('window_prepare'):
                         read_vec_tns = torch.zeros(input_vec_tns.shape[0], slot_dim, device=input_vec_tns.device)
-                        local_pointer_expanded_idx_tns = indices_tns.unsqueeze(-1).expand(-1, -1, slot_dim)
-                        if expert_weights is not None:
+                        local_pointer_expanded_idx_tns = local_pointer_indices_tns.unsqueeze(-1).expand(-1, -1, slot_dim)
+                        if local_pointer_weights_tns is not None:
+                            pass
+                        elif expert_weights is not None:
                             local_pointer_weights_tns = expert_weights[i].unsqueeze(0).expand(input_vec_tns.shape[0], -1)
                         elif topk_write_weights is not None:
                             local_pointer_weights_tns = topk_write_weights[i].unsqueeze(0).expand(input_vec_tns.shape[0], -1)
                         else:
                             # dotprod fallback: use uniform weights for write
-                            local_pointer_weights_tns = torch.ones(input_vec_tns.shape[0], indices_tns.shape[1], device=input_vec_tns.device)
+                            local_pointer_weights_tns = torch.ones(input_vec_tns.shape[0], local_pointer_indices_tns.shape[1], device=input_vec_tns.device)
                             local_pointer_weights_tns = local_pointer_weights_tns / local_pointer_weights_tns.sum(dim=1, keepdim=True)
                 elif expert_weights is not None:
                     # ─ positional kernel (vshape/gaussian/uniform) ─
                     with _source_scope('window_prepare'):
-                        local_pointer_weights_tns = expert_weights[i].unsqueeze(0).expand(input_vec_tns.shape[0], -1)
+                        if local_pointer_weights_tns is None:
+                            local_pointer_weights_tns = expert_weights[i].unsqueeze(0).expand(input_vec_tns.shape[0], -1)
                     with _source_scope('softread'):
                         if proxy_overlay_enabled:
                             read_vec_tns, local_pointer_expanded_idx_tns, current_window_tns = func_proxy_overlay_read_tns(
                                 ring_tns,
-                                indices_tns,
+                                local_pointer_indices_tns,
                                 local_pointer_weights_tns,
                                 slot_dim,
                                 overlay_start_int,
@@ -967,7 +1024,7 @@ class INSTNCT(nn.Module):
                             )
                         else:
                             read_vec_tns, local_pointer_expanded_idx_tns = func_softread_tns(
-                                ring_tns, indices_tns, local_pointer_weights_tns, slot_dim)
+                                ring_tns, local_pointer_indices_tns, local_pointer_weights_tns, slot_dim)
                 elif self.read_kernel_mode == 'topk':
                     # ─ topK: content-based global search over entire ring ─
                     topk_scores = content_topk_scores_tns[:, :self._read_topk_K]
@@ -1027,9 +1084,9 @@ class INSTNCT(nn.Module):
                         write_topk_diag_count += 1
                 else:
                     if local_pointer_expanded_idx_tns is None:
-                        local_pointer_expanded_idx_tns = indices_tns.unsqueeze(-1).expand(-1, -1, slot_dim)
+                        local_pointer_expanded_idx_tns = local_pointer_indices_tns.unsqueeze(-1).expand(-1, -1, slot_dim)
                     if local_pointer_weights_tns is None:
-                        local_pointer_weights_tns = torch.ones(input_vec_tns.shape[0], indices_tns.shape[1], device=input_vec_tns.device)
+                        local_pointer_weights_tns = torch.ones(input_vec_tns.shape[0], local_pointer_indices_tns.shape[1], device=input_vec_tns.device)
                         local_pointer_weights_tns = local_pointer_weights_tns / local_pointer_weights_tns.sum(dim=1, keepdim=True)
                     write_expanded_idx_tns = local_pointer_expanded_idx_tns
                     write_weights_tns = local_pointer_weights_tns
@@ -1039,13 +1096,13 @@ class INSTNCT(nn.Module):
                         read_idx_src = topk_idx
                         read_w_src = topk_attn
                     else:
-                        read_idx_src = indices_tns
+                        read_idx_src = local_pointer_indices_tns
                         read_w_src = local_pointer_weights_tns
                     if self.write_address_mode == 'content_topk':
                         write_idx_src = write_topk_idx
                         write_w_src = write_weights_tns
                     else:
-                        write_idx_src = indices_tns
+                        write_idx_src = local_pointer_indices_tns
                         write_w_src = write_weights_tns
 
                     ptr_sample = int(center[0].detach().item())
