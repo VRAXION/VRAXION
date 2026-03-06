@@ -1048,6 +1048,88 @@ Next action:
 - if global retrieval is revisited on real data, it should likely be through a hybrid or delayed-use design, not this direct `topk_K=2` read-only path;
 - otherwise the more useful next step is to keep `LL` as the small real-data baseline and compare larger-capacity or integrated variants against it.
 
+### Batch 17 — small-model WikiText `GG` baseline
+
+Purpose:
+- close the remaining coupling question on the same small real-data surface;
+- test whether the `GL` branch missed the `LL` plateau only because write stayed pointer-local.
+
+Harness:
+- script: `v4/tests/sweep_c19_core_geometry_wikitext.py`
+- device: `cpu`
+- config:
+  - `steps=10000`
+  - `batch=8`
+  - `seq=8`
+  - `seed=42`
+  - `hidden_dim=32`
+  - `M=64`
+  - `slot_dim=8`
+  - `N=1`
+  - `R=1`
+  - fixed `C = pi`
+  - `tail_mode = linear`
+  - `kernel_mode = topk`
+  - `topk_K = 2`
+  - `write_address_mode = content_topk`
+  - `write_topk_K = 2`
+  - `topk_read_diag = on`
+
+Artifact:
+- [sweep_c19_core_geometry_wikitext_20260306_200228.json](../../v4/dev_notes/telemetry/sweep_c19_core_geometry_wikitext_20260306_200228.json)
+
+Observed result:
+- final acc `0.350`
+- best acc `0.547`
+- final loss `2.3153`
+- final BPC `3.340`
+- wall time `523.6s`
+- `0.0524 s/step`
+
+Comparison vs `LL` and `GL`:
+- final acc:
+  - `LL`: `0.356`
+  - `GL`: `0.352`
+  - `GG`: `0.350`
+- final BPC:
+  - `LL`: `3.303`
+  - `GL`: `3.324`
+  - `GG`: `3.340`
+- wall time:
+  - `LL`: `395s`
+  - `GL`: `481s`
+  - `GG`: `524s`
+
+Observed topK telemetry:
+- read:
+  - `topk_mean_abs_circ_dist = 5.02`
+  - `topk_outside_local_frac = 0.744`
+- write:
+  - `write_topk_mean_abs_circ_dist = 5.02`
+  - `write_topk_outside_local_frac = 0.744`
+
+Observed C19 telemetry:
+- `tail_hit = 0.0000%`
+- `p99 |x|/C = 1.33`
+- `p99-ring = 1.00`
+
+Read:
+- unlike `GL`, the `GG` branch is now genuinely non-local on both read and write;
+- despite that, it still does not beat the local baseline and does not beat `GL`;
+- this means the small real-data surface is not primarily bottlenecked by pointer-local addressing.
+
+Verdict:
+- close the "maybe `GL` only lost because write stayed local" hypothesis on this surface;
+- the current ordering is:
+  - `LL` best final-window quality;
+  - `GL` slightly worse;
+  - `GG` slightly worse again and slower;
+- on this small WikiText setup, relaxing addressing range does not improve the objective.
+
+Next action:
+- if global retrieval is revisited, it should be because a different task or a larger-capacity model makes it worth it;
+- for this exact small real-data surface, the stronger hypothesis is now capacity / representation bottleneck, not addressing bottleneck.
+
 ## Planned Next Tests
 
 The next tests should be about confidence, not rediscovery:

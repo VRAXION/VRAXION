@@ -43,6 +43,9 @@ TOPK_READ_DIAG_KEYS = (
     'topk_outside_local_frac',
     'topk_attn_entropy',
     'topk_unique_slot_frac',
+    'write_topk_mean_abs_circ_dist',
+    'write_topk_outside_local_frac',
+    'write_topk_unique_slot_frac',
 )
 
 
@@ -215,6 +218,9 @@ def build_model(
     replace_impl='dense',
     kernel_mode='vshape',
     topk_k=8,
+    read_kernel_mode=None,
+    write_address_mode='pointer',
+    write_topk_k=None,
     device='cuda',
     hidden_dim=2048,
     M=1024,
@@ -223,6 +229,8 @@ def build_model(
     R=1,
 ):
     _set_determinism(seed)
+    effective_read_kernel_mode = read_kernel_mode or kernel_mode
+    effective_write_topk_k = topk_k if write_topk_k is None else write_topk_k
     spec = {
         'M': M,
         'embed_dim': None,
@@ -233,6 +241,7 @@ def build_model(
         'B': 8,
         'embed_mode': True,
         'kernel_mode': kernel_mode,
+        'read_kernel_mode': effective_read_kernel_mode,
         'checkpoint_chunks': 0,
         'expert_weighting': False,
         'embed_encoding': 'learned',
@@ -246,6 +255,9 @@ def build_model(
         'bb_tau': 4.0,
         'bb_gate_mode': 'learned',
         'topk_K': topk_k,
+        'read_topk_K': topk_k,
+        'write_address_mode': write_address_mode,
+        'write_topk_K': effective_write_topk_k,
         's_constraint': 'softplus',
     }
     record = {'type': 'instnct', 'build_spec': spec}
@@ -263,6 +275,9 @@ def run_one(
     topk_k=8,
     replace_impl='dense',
     topk_read_diag=False,
+    read_kernel_mode=None,
+    write_address_mode='pointer',
+    write_topk_k=None,
     device='cuda',
     hidden_dim=2048,
     M=1024,
@@ -281,6 +296,9 @@ def run_one(
         replace_impl=replace_impl,
         kernel_mode=kernel_mode,
         topk_k=topk_k,
+        read_kernel_mode=read_kernel_mode,
+        write_address_mode=write_address_mode,
+        write_topk_k=write_topk_k,
         device=device,
         hidden_dim=hidden_dim,
         M=M,
@@ -348,8 +366,12 @@ def run_one(
             if topk_read_diag:
                 dist = model._diag.get('topk_mean_abs_circ_dist')
                 outside = model._diag.get('topk_outside_local_frac')
+                wdist = model._diag.get('write_topk_mean_abs_circ_dist')
+                woutside = model._diag.get('write_topk_outside_local_frac')
                 if dist is not None and outside is not None:
                     diag_suffix = f'  topk_dist={dist:.2f}  outside={outside:.3f}'
+                if wdist is not None and woutside is not None:
+                    diag_suffix += f'  wdist={wdist:.2f}  wout={woutside:.3f}'
             print(
                 f'  [{variant_name}] step {step:4d}/{steps}  '
                 f'loss={avg_loss:.4f}  bpc={avg_loss*1.4427:.3f}  '
@@ -408,8 +430,11 @@ def main():
     parser.add_argument('--tail-modes', type=str, default='linear,periodic')
     parser.add_argument('--kernel-modes', type=str, default='vshape')
     parser.add_argument('--topk-k', type=int, default=8)
+    parser.add_argument('--write-topk-k', type=int, default=0)
     parser.add_argument('--topk-read-diag', action='store_true')
     parser.add_argument('--replace-impl', type=str, default='dense', choices=['dense', 'proxy_overlay'])
+    parser.add_argument('--read-kernel-mode', type=str, default='', choices=['', 'vshape', 'topk'])
+    parser.add_argument('--write-address-mode', type=str, default='pointer', choices=['pointer', 'content_topk'])
     parser.add_argument('--tail-k', type=float, default=6.0)
     parser.add_argument('--sample-per-call', type=int, default=1024)
     parser.add_argument('--json-out', type=str, default='')
@@ -436,6 +461,11 @@ def main():
     print(f'C values: {[round(c, 4) for c in c_values]}')
     print(f'Tail modes: {tail_modes}  tail_k={args.tail_k}')
     print(f'Kernel modes: {kernel_modes}  topk_K={args.topk_k}  replace={args.replace_impl}')
+    if args.read_kernel_mode or args.write_address_mode != 'pointer' or args.write_topk_k:
+        print(
+            f'Addressing override: read={args.read_kernel_mode or "default"}  '
+            f'write={args.write_address_mode}  write_topk_K={args.write_topk_k or args.topk_k}'
+        )
     print(
         f'Model: hidden={args.hidden_dim} M={args.M} slot={args.slot_dim} N={args.N} R={args.R}'
     )
@@ -488,6 +518,9 @@ def main():
             topk_k=args.topk_k,
             replace_impl=args.replace_impl,
             topk_read_diag=args.topk_read_diag and item['kernel_mode'] == 'topk',
+            read_kernel_mode=args.read_kernel_mode or None,
+            write_address_mode=args.write_address_mode,
+            write_topk_k=(args.write_topk_k or None),
             device=args.device,
             hidden_dim=args.hidden_dim,
             M=args.M,
@@ -558,8 +591,11 @@ def main():
             'tail_modes': tail_modes,
             'kernel_modes': kernel_modes,
             'topk_k': args.topk_k,
+            'write_topk_k': args.write_topk_k,
             'topk_read_diag': args.topk_read_diag,
             'replace_impl': args.replace_impl,
+            'read_kernel_mode': args.read_kernel_mode or None,
+            'write_address_mode': args.write_address_mode,
             'tail_k': args.tail_k,
             'sample_per_call': args.sample_per_call,
             'gpu': torch.cuda.get_device_name(0),
