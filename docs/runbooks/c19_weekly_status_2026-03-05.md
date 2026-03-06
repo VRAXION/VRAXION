@@ -649,6 +649,58 @@ Verdict:
 Next action:
 - stay on the local pointer-window path and optimize the deterministic local read/write pipeline instead of global topK variants.
 
+### Batch 10 — `topk_K=2` check after the failed `K=1` sanity run
+
+Purpose:
+- test whether the `K=1` failure was just too aggressive, or whether a smaller global topK can recover the `K=8` quality while staying cheaper.
+
+Quality script used:
+- `v4/tests/sweep_c19_core_geometry_wikitext.py --steps 60 --batch 16 --seq 256 --seed 42 --c-values pi --tail-modes linear --kernel-modes topk --topk-k 2 --replace-impl dense`
+
+Quality artifact:
+- [sweep_kernel_topk2_20260306.json](../../v4/dev_notes/telemetry/sweep_kernel_topk2_20260306.json)
+
+Observed short-train quality:
+- `topk_K=8`
+  - final acc `0.307`
+  - best acc `0.370`
+  - final loss `2.6022`
+  - wall time `286s`
+- `topk_K=2`
+  - final acc `0.307`
+  - best acc `0.372`
+  - final loss `2.6030`
+  - wall time `260s`
+- `topk_K=1`
+  - final acc `0.298`
+  - best acc `0.361`
+  - final loss `2.6358`
+  - wall time `290s`
+
+Perf script used:
+- `v4/tests/profile_sweep_step_wikitext.py --impl current --write-impl current --replace-impl dense --kernel-mode topk --topk-k 2`
+
+Perf artifacts:
+- [profile_kernel_topk2_20260306.json](../../v4/dev_notes/telemetry/profile_kernel_topk2_20260306.json)
+- [profile_kernel_topk2_20260306_ops.txt](../../v4/dev_notes/telemetry/profile_kernel_topk2_20260306_ops.txt)
+
+Observed one-step perf:
+- `topk_K=8`: total `~= 4.449s`
+- `topk_K=2`: total `~= 3.948s`
+
+Read:
+- `K=2` is materially better than `K=1`;
+- on this short nightly proxy, `K=2` essentially matches the current `K=8` quality;
+- it also beats `K=8` on both short-run wall time and one-step proxy time.
+
+Verdict:
+- if the global topK branch is revisited later, `topk_K=2` is the only currently defensible value;
+- but it still does not beat the local `vshape` baseline on quality, so this does not reopen global topK as the mainline refinement path.
+
+Next action:
+- keep `vshape` as the baseline;
+- if a future hybrid/global retrieval experiment is opened, use `topk_K=2` as the global-read ceiling candidate, not `K=1` or `K=8`.
+
 ## Planned Next Tests
 
 The next tests should be about confidence, not rediscovery:
