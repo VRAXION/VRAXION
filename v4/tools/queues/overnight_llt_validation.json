@@ -7,6 +7,18 @@
     "ping_timer_sec": 1,
     "wake_file": "wake_trigger.json"
   },
+  "lane_defaults": {
+    "cpu": {
+      "max_restarts": 1,
+      "watchdog_no_output_s": 1800,
+      "restart_delay_s": 10
+    },
+    "gpu": {
+      "max_restarts": 1,
+      "watchdog_no_output_s": 2400,
+      "restart_delay_s": 15
+    }
+  },
   "cpu_stages": [
     {
       "id": "seed_validation",

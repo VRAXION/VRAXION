@@ -22,6 +22,9 @@ Overnight runtime contract:
 - runtime outputs live under `bench_vault/night_runs/...`
 - each run writes `status.json`, `summary.json`, `wake_trigger.json`
 - per-job logs live under `jobs/<job_id>/`
+- detached launch is supported through the orchestrator `launch` subcommand
+- lane defaults now include restart budget and no-output watchdogs
+- the overnight path has been smoke-tested in detached mode, not just dry-run mode
 
 ## 1. What Is Actually Settled
 

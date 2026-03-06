@@ -34,6 +34,9 @@ HYBERNATION_PING_DETACH = Path(
     )
 )
 
+DETACHED_PROCESS = getattr(subprocess, "DETACHED_PROCESS", 0x00000008)
+CREATE_NEW_PROCESS_GROUP = getattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 0x00000200)
+
 ALLOWED_CPU_ROLES = {"cpu_validator"}
 ALLOWED_GPU_ROLES = {"gpu_primary", "gpu_secondary"}
 SUMMARY_KEYS = (
@@ -48,6 +51,10 @@ SUMMARY_KEYS = (
     "s_per_step",
     "max_grad",
 )
+DEFAULT_LANE_DEFAULTS = {
+    "cpu": {"max_restarts": 1, "watchdog_no_output_s": 1800, "restart_delay_s": 10},
+    "gpu": {"max_restarts": 1, "watchdog_no_output_s": 2400, "restart_delay_s": 15},
+}
 
 
 def _now_iso() -> str:
@@ -68,6 +75,18 @@ def _load_json(path: Path) -> dict[str, Any]:
 
 def _mean(values: list[float]) -> float:
     return sum(values) / max(len(values), 1)
+
+
+def _epoch_to_iso(ts: float | None) -> str | None:
+    if ts is None:
+        return None
+    return datetime.fromtimestamp(float(ts), timezone.utc).isoformat()
+
+
+def _iso_to_epoch(value: str | None) -> float | None:
+    if not value:
+        return None
+    return datetime.fromisoformat(value).timestamp()
 
 
 def _slug(s: str) -> str:
@@ -155,6 +174,13 @@ def _emit_wake(runtime_root: Path, watch_cfg: dict[str, Any], reason: str, messa
         _ping_via_hybernation(message, timer_sec=timer_sec)
 
 
+def _lane_defaults(plan: dict[str, Any], lane: str) -> dict[str, int]:
+    defaults = deepcopy(DEFAULT_LANE_DEFAULTS.get(lane, {}))
+    plan_defaults = plan.get("lane_defaults", {}).get(lane, {})
+    defaults.update({k: int(v) for k, v in plan_defaults.items() if k in defaults})
+    return defaults
+
+
 def _validate_job(job: dict[str, Any], lane: str) -> None:
     required = ("id", "role", "lane", "surface", "steps", "seed", "device", "stop_on_fail", "wake_on_complete", "evidence_required")
     missing = [key for key in required if key not in job]
@@ -190,6 +216,13 @@ def validate_plan(plan: dict[str, Any]) -> None:
         raise ValueError("Plan must define non-empty cpu_stages")
     if not isinstance(gpu_queue, list):
         raise ValueError("Plan must define gpu_queue")
+    lane_defaults = plan.get("lane_defaults", {})
+    if lane_defaults:
+        if not isinstance(lane_defaults, dict):
+            raise ValueError("lane_defaults must be an object")
+        for lane in ("cpu", "gpu"):
+            if lane in lane_defaults and not isinstance(lane_defaults[lane], dict):
+                raise ValueError(f"lane_defaults.{lane} must be an object")
     seen_jobs: set[str] = set()
     for stage in cpu_stages:
         if not stage.get("id"):
@@ -221,6 +254,7 @@ def build_initial_status(plan: dict[str, Any], runtime_root: Path) -> dict[str, 
             "jobs": [job["id"] for job in stage["jobs"]],
         }
         for job in stage["jobs"]:
+            lane_defaults = _lane_defaults(plan, "cpu")
             record = deepcopy(job)
             record.update(
                 {
@@ -237,11 +271,19 @@ def build_initial_status(plan: dict[str, Any], runtime_root: Path) -> dict[str, 
                     "wake_reason": None,
                     "exit_code": None,
                     "error": None,
+                    "pid": None,
+                    "restart_count": 0,
+                    "max_restarts": int(job.get("max_restarts", lane_defaults["max_restarts"])),
+                    "watchdog_no_output_s": int(job.get("watchdog_no_output_s", lane_defaults["watchdog_no_output_s"])),
+                    "restart_delay_s": int(job.get("restart_delay_s", lane_defaults["restart_delay_s"])),
+                    "last_output_ts": None,
+                    "retry_not_before": None,
                 }
             )
             jobs[job["id"]] = record
     gpu_ids = []
     for job in plan["gpu_queue"]:
+        lane_defaults = _lane_defaults(plan, "gpu")
         record = deepcopy(job)
         record.update(
             {
@@ -258,6 +300,13 @@ def build_initial_status(plan: dict[str, Any], runtime_root: Path) -> dict[str, 
                 "wake_reason": None,
                 "exit_code": None,
                 "error": None,
+                "pid": None,
+                "restart_count": 0,
+                "max_restarts": int(job.get("max_restarts", lane_defaults["max_restarts"])),
+                "watchdog_no_output_s": int(job.get("watchdog_no_output_s", lane_defaults["watchdog_no_output_s"])),
+                "restart_delay_s": int(job.get("restart_delay_s", lane_defaults["restart_delay_s"])),
+                "last_output_ts": None,
+                "retry_not_before": None,
             }
         )
         jobs[job["id"]] = record
@@ -325,10 +374,10 @@ def _skip_stage(status: dict[str, Any], stage_id: str) -> None:
             status["jobs"][job_id]["status"] = "skipped"
 
 
-def _apply_stage_decision(status: dict[str, Any], stage: dict[str, Any]) -> None:
+def _apply_stage_decision(status: dict[str, Any], stage: dict[str, Any]) -> dict[str, Any] | None:
     decision = stage.get("decision")
     if not decision:
-        return
+        return None
     if decision["kind"] == "promote_candidate":
         baseline = [status["jobs"][job_id]["summary_metrics"] for job_id in decision["baseline_ids"]]
         candidate = [status["jobs"][job_id]["summary_metrics"] for job_id in decision["candidate_ids"]]
@@ -360,7 +409,7 @@ def _apply_stage_decision(status: dict[str, Any], stage: dict[str, Any]) -> None
         else:
             for sid in decision.get("on_fail_skip", []):
                 _skip_stage(status, sid)
-        return
+        return status["decisions"][stage["id"]]
 
     if decision["kind"] == "select_best_variant":
         stage_jobs = [status["jobs"][job_id] for job_id in decision["job_ids"]]
@@ -392,7 +441,7 @@ def _apply_stage_decision(status: dict[str, Any], stage: dict[str, Any]) -> None
         else:
             for sid in decision.get("enable_if_winner_not_preferred", []):
                 _enable_stage(status, sid)
-        return
+        return status["decisions"][stage["id"]]
 
     raise RuntimeError(f"Unsupported decision kind: {decision['kind']}")
 
@@ -433,8 +482,16 @@ def _start_job(job: dict[str, Any]) -> dict[str, Any]:
     stderr_path = Path(job["stderr_log"])
     stdout_path.parent.mkdir(parents=True, exist_ok=True)
     stderr_path.parent.mkdir(parents=True, exist_ok=True)
-    stdout_handle = open(stdout_path, "w", encoding="utf-8")
-    stderr_handle = open(stderr_path, "w", encoding="utf-8")
+    stdout_handle = open(stdout_path, "a", encoding="utf-8")
+    stderr_handle = open(stderr_path, "a", encoding="utf-8")
+    banner = (
+        f"\n=== START ts={_now_iso()} job={job['id']} attempt={job['restart_count'] + 1} "
+        f"variant={job['variant_resolved']} surface={job['surface']} device={job['device']} ===\n"
+    )
+    stdout_handle.write(banner)
+    stderr_handle.write(banner)
+    stdout_handle.flush()
+    stderr_handle.flush()
     proc = subprocess.Popen(
         _build_runner_cmd(job),
         cwd=str(REPO_ROOT),
@@ -444,21 +501,96 @@ def _start_job(job: dict[str, Any]) -> dict[str, Any]:
     return {"proc": proc, "stdout_handle": stdout_handle, "stderr_handle": stderr_handle}
 
 
+def _log_mtime(path_str: str | None) -> float | None:
+    if not path_str:
+        return None
+    path = Path(path_str)
+    if not path.exists():
+        return None
+    return path.stat().st_mtime
+
+
+def _latest_output_mtime(job: dict[str, Any]) -> float | None:
+    mtimes = [_log_mtime(job.get("stdout_log")), _log_mtime(job.get("stderr_log"))]
+    mtimes = [mtime for mtime in mtimes if mtime is not None]
+    return max(mtimes) if mtimes else None
+
+
+def _job_can_start(job: dict[str, Any], now_epoch: float | None = None) -> bool:
+    if job["status"] != "pending":
+        return False
+    now_epoch = float(now_epoch if now_epoch is not None else time.time())
+    retry_epoch = _iso_to_epoch(job.get("retry_not_before"))
+    return retry_epoch is None or now_epoch >= retry_epoch
+
+
+def _should_watchdog_fire(job: dict[str, Any], now_epoch: float, latest_output_epoch: float | None) -> bool:
+    timeout = int(job.get("watchdog_no_output_s") or 0)
+    if timeout <= 0:
+        return False
+    baseline = latest_output_epoch
+    if baseline is None:
+        baseline = _iso_to_epoch(job.get("start_ts")) or now_epoch
+    return (now_epoch - baseline) >= timeout
+
+
+def _job_has_restart_budget(job: dict[str, Any]) -> bool:
+    return int(job.get("restart_count") or 0) < int(job.get("max_restarts") or 0)
+
+
+def _close_proc_handles(proc_info: dict[str, Any]) -> None:
+    for key in ("stdout_handle", "stderr_handle"):
+        handle = proc_info.get(key)
+        if handle and not handle.closed:
+            handle.close()
+
+
+def _terminate_proc(proc_info: dict[str, Any]) -> None:
+    proc = proc_info["proc"]
+    if proc.poll() is not None:
+        return
+    try:
+        proc.terminate()
+        proc.wait(timeout=5)
+    except Exception:
+        try:
+            proc.kill()
+        except Exception:
+            pass
+
+
+def _schedule_retry(job: dict[str, Any], reason: str, now_epoch: float) -> None:
+    job["restart_count"] = int(job.get("restart_count") or 0) + 1
+    job["status"] = "pending"
+    job["error"] = reason
+    job["exit_code"] = None
+    job["summary_metrics"] = None
+    job["wake_reason"] = "restart"
+    job["pid"] = None
+    job["last_output_ts"] = None
+    job["end_ts"] = _epoch_to_iso(now_epoch)
+    job["duration_s"] = None
+    job["retry_not_before"] = _epoch_to_iso(now_epoch + int(job.get("restart_delay_s") or 0))
+
+
 def _find_next_cpu_job(status: dict[str, Any], plan: dict[str, Any]) -> str | None:
     if status["lanes"]["cpu"]["active_job_id"] is not None:
         return None
+    now_epoch = time.time()
     for stage in plan["cpu_stages"]:
         sid = stage["id"]
         stage_state = status["cpu_stages"][sid]
         if stage_state["status"] in {"blocked", "skipped", "done"}:
             continue
-        pending = [job_id for job_id in stage_state["jobs"] if status["jobs"][job_id]["status"] == "pending"]
+        pending = [job_id for job_id in stage_state["jobs"] if _job_can_start(status["jobs"][job_id], now_epoch)]
         if pending:
             status["lanes"]["cpu"]["current_stage"] = sid
             return pending[0]
         if all(_job_terminal(status["jobs"][job_id]) for job_id in stage_state["jobs"]):
             stage_state["status"] = "done"
-            _apply_stage_decision(status, stage)
+            decision_event = _apply_stage_decision(status, stage)
+            if decision_event is not None:
+                status["last_decision_event"] = {"stage_id": sid, "decision": decision_event}
             return _find_next_cpu_job(status, plan)
     return None
 
@@ -466,10 +598,27 @@ def _find_next_cpu_job(status: dict[str, Any], plan: dict[str, Any]) -> str | No
 def _find_next_gpu_job(status: dict[str, Any]) -> str | None:
     if status["lanes"]["gpu"]["active_job_id"] is not None:
         return None
+    now_epoch = time.time()
     for job_id in status["lanes"]["gpu"]["queue"]:
-        if status["jobs"][job_id]["status"] == "pending":
+        if _job_can_start(status["jobs"][job_id], now_epoch):
             return job_id
     return None
+
+
+def _start_ready_job(job: dict[str, Any], runtime_root: Path, decisions: dict[str, Any]) -> dict[str, Any]:
+    job = _resolve_job_record(job, runtime_root, decisions)
+    proc_info = _start_job(job)
+    job["status"] = "running"
+    job["start_ts"] = _now_iso()
+    job["end_ts"] = None
+    job["duration_s"] = None
+    job["exit_code"] = None
+    job["error"] = None
+    job["wake_reason"] = None
+    job["pid"] = int(proc_info["proc"].pid)
+    job["retry_not_before"] = None
+    job["last_output_ts"] = _epoch_to_iso(_latest_output_mtime(job) or time.time())
+    return proc_info
 
 
 def run_plan(plan_path: Path, runtime_root: Path, dry_run: bool = False) -> tuple[Path, Path]:
@@ -489,38 +638,57 @@ def run_plan(plan_path: Path, runtime_root: Path, dry_run: bool = False) -> tupl
     while True:
         cpu_job_id = _find_next_cpu_job(status, plan)
         if cpu_job_id:
-            job = _resolve_job_record(status["jobs"][cpu_job_id], runtime_root, status["decisions"])
-            running[cpu_job_id] = _start_job(job)
-            job["status"] = "running"
-            job["start_ts"] = _now_iso()
+            job = status["jobs"][cpu_job_id]
+            running[cpu_job_id] = _start_ready_job(job, runtime_root, status["decisions"])
             status["lanes"]["cpu"]["active_job_id"] = cpu_job_id
             status_path, summary_path = _write_status_and_summary(status, runtime_root)
 
         gpu_job_id = _find_next_gpu_job(status)
         if gpu_job_id:
-            job = _resolve_job_record(status["jobs"][gpu_job_id], runtime_root, status["decisions"])
-            running[gpu_job_id] = _start_job(job)
-            job["status"] = "running"
-            job["start_ts"] = _now_iso()
+            job = status["jobs"][gpu_job_id]
+            running[gpu_job_id] = _start_ready_job(job, runtime_root, status["decisions"])
             status["lanes"]["gpu"]["active_job_id"] = gpu_job_id
             status_path, summary_path = _write_status_and_summary(status, runtime_root)
 
+        if status.get("last_decision_event") is not None:
+            event = status.pop("last_decision_event")
+            status_path, summary_path = _write_status_and_summary(status, runtime_root)
+            _emit_wake(
+                runtime_root,
+                watch_cfg,
+                "decision",
+                f"[NIGHTMODE] decision stage={event['stage_id']} kind={event['decision']['kind']} wake=1s",
+                status_path,
+                summary_path,
+            )
+
+        now_epoch = time.time()
         for job_id, proc in list(running.items()):
-            rc = proc["proc"].poll()
-            if rc is None:
-                continue
-            proc["stdout_handle"].close()
-            proc["stderr_handle"].close()
             job = status["jobs"][job_id]
+            latest_mtime = _latest_output_mtime(job)
+            if latest_mtime is not None:
+                last_epoch = _iso_to_epoch(job.get("last_output_ts"))
+                if last_epoch is None or latest_mtime > last_epoch + 1e-6:
+                    job["last_output_ts"] = _epoch_to_iso(latest_mtime)
+            rc = proc["proc"].poll()
+            watchdog_reason = None
+            if rc is None:
+                if _should_watchdog_fire(job, now_epoch, latest_mtime):
+                    watchdog_reason = f"watchdog:no_output>{job['watchdog_no_output_s']}s"
+                    _terminate_proc(proc)
+                    rc = proc["proc"].poll()
+                else:
+                    continue
+            _close_proc_handles(proc)
             job["end_ts"] = _now_iso()
             if job["start_ts"]:
                 start_dt = datetime.fromisoformat(job["start_ts"])
                 end_dt = datetime.fromisoformat(job["end_ts"])
                 job["duration_s"] = (end_dt - start_dt).total_seconds()
-            job["exit_code"] = int(rc)
+            job["exit_code"] = int(rc) if rc is not None else -9
             ok = False
             err = None
-            if rc == 0:
+            if rc == 0 and watchdog_reason is None:
                 artifact = Path(job["artifact_path"]) if job["artifact_path"] else None
                 if artifact and artifact.exists():
                     try:
@@ -532,6 +700,8 @@ def run_plan(plan_path: Path, runtime_root: Path, dry_run: bool = False) -> tupl
                     ok = True
                 else:
                     err = f"missing artifact: {artifact}"
+            elif watchdog_reason is not None:
+                err = watchdog_reason
             else:
                 err = f"runner exited with code {rc}"
             job["status"] = "done" if ok else "failed"
@@ -544,7 +714,21 @@ def run_plan(plan_path: Path, runtime_root: Path, dry_run: bool = False) -> tupl
             status_path, summary_path = _write_status_and_summary(status, runtime_root)
             if ok and job["wake_on_complete"]:
                 job["wake_reason"] = "done"
+                status_path, summary_path = _write_status_and_summary(status, runtime_root)
                 _emit_wake(runtime_root, watch_cfg, "done", f"[NIGHTMODE] done job={job_id} art={job['artifact_path']} wake=1s", status_path, summary_path, job_id=job_id)
+            if not ok and _job_has_restart_budget(job):
+                _schedule_retry(job, err or "restart", now_epoch)
+                status_path, summary_path = _write_status_and_summary(status, runtime_root)
+                _emit_wake(
+                    runtime_root,
+                    watch_cfg,
+                    "restart",
+                    f"[NIGHTMODE] restart job={job_id} got={err} next=retry wake=1s",
+                    status_path,
+                    summary_path,
+                    job_id=job_id,
+                )
+                continue
             if not ok and job["stop_on_fail"]:
                 status["state"] = "failed"
                 status_path, summary_path = _write_status_and_summary(status, runtime_root)
@@ -586,6 +770,46 @@ def watch_plan(runtime_root: Path, follow: bool = False, interval_s: int = 30) -
         time.sleep(max(1, int(interval_s)))
 
 
+def launch_plan(plan_path: Path, runtime_root: Path, dry_run: bool = False) -> Path:
+    runtime_root.mkdir(parents=True, exist_ok=True)
+    stdout_path = runtime_root / "orchestrator.stdout.log"
+    stderr_path = runtime_root / "orchestrator.stderr.log"
+    launch_path = runtime_root / "launch.json"
+    cmd = [
+        sys.executable,
+        str(Path(__file__).resolve()),
+        "run",
+        "--plan",
+        str(plan_path),
+        "--runtime-root",
+        str(runtime_root),
+    ]
+    if dry_run:
+        cmd.append("--dry-run")
+    with open(stdout_path, "a", encoding="utf-8") as stdout_handle, open(stderr_path, "a", encoding="utf-8") as stderr_handle:
+        proc = subprocess.Popen(
+            cmd,
+            cwd=str(REPO_ROOT),
+            stdin=subprocess.DEVNULL,
+            stdout=stdout_handle,
+            stderr=stderr_handle,
+            close_fds=True,
+            creationflags=(DETACHED_PROCESS | CREATE_NEW_PROCESS_GROUP) if os.name == "nt" else 0,
+        )
+    payload = {
+        "timestamp": _now_iso(),
+        "pid": int(proc.pid),
+        "plan": str(plan_path),
+        "runtime_root": str(runtime_root),
+        "stdout_log": str(stdout_path),
+        "stderr_log": str(stderr_path),
+        "cmd": cmd,
+        "dry_run": bool(dry_run),
+    }
+    _safe_json_write(launch_path, payload)
+    return launch_path
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Overnight orchestrator for canonical nightly runner")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -593,6 +817,10 @@ def main() -> int:
     run_p.add_argument("--plan", type=Path, default=DEFAULT_PLAN_PATH)
     run_p.add_argument("--runtime-root", type=Path, default=None)
     run_p.add_argument("--dry-run", action="store_true")
+    launch_p = sub.add_parser("launch", help="Launch queue plan detached in background")
+    launch_p.add_argument("--plan", type=Path, default=DEFAULT_PLAN_PATH)
+    launch_p.add_argument("--runtime-root", type=Path, default=None)
+    launch_p.add_argument("--dry-run", action="store_true")
     watch_p = sub.add_parser("watch", help="Inspect runtime root")
     watch_p.add_argument("--runtime-root", type=Path, required=True)
     watch_p.add_argument("--follow", action="store_true")
@@ -604,6 +832,11 @@ def main() -> int:
 
     plan = _load_json(args.plan)
     runtime_root = args.runtime_root or _default_runtime_root(_slug(plan["name"]))
+    if args.command == "launch":
+        launch_path = launch_plan(args.plan, runtime_root, dry_run=args.dry_run)
+        print(f"LAUNCH runtime: {runtime_root}")
+        print(f"LAUNCH metadata: {launch_path}")
+        return 0
     status_path, summary_path = run_plan(args.plan, runtime_root, dry_run=args.dry_run)
     label = "DRY-RUN" if args.dry_run else "RUN"
     print(f"{label} status: {status_path}")
