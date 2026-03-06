@@ -34,7 +34,7 @@ for subdir in ('model', 'training', 'datagen'):
     if p not in sys.path:
         sys.path.insert(0, p)
 
-from instnct import INSTNCT, set_topk_read_diag_enabled
+from instnct import INSTNCT, set_ring_trace_enabled, set_topk_read_diag_enabled
 from tiny_transformer import TinyTransformer
 
 
@@ -130,6 +130,40 @@ TOPK_DIAG_KEYS = (
     'write_topk_outside_local_frac',
     'write_topk_unique_slot_frac',
 )
+
+
+def _circ_dist(a, b, M):
+    delta = abs(int(a) - int(b))
+    return min(delta, M - delta)
+
+
+def _summarize_ring_trace(trace, M):
+    if not trace or not trace.get('ptr_trace'):
+        return None
+    ptr_trace = trace['ptr_trace']
+    read_idx_trace = trace['read_idx_trace']
+    write_idx_trace = trace['write_idx_trace']
+    overlap_trace = trace['read_write_overlap_trace']
+    ptr_jump = []
+    read_center_dist = []
+    write_center_dist = []
+    for i in range(1, len(ptr_trace)):
+        ptr_jump.append(_circ_dist(ptr_trace[i - 1], ptr_trace[i], M))
+    for center, read_idx, write_idx in zip(ptr_trace, read_idx_trace, write_idx_trace):
+        if read_idx:
+            read_center_dist.append(sum(_circ_dist(center, idx, M) for idx in read_idx) / len(read_idx))
+        if write_idx:
+            write_center_dist.append(sum(_circ_dist(center, idx, M) for idx in write_idx) / len(write_idx))
+    return {
+        'steps_traced': len(ptr_trace),
+        'ptr_unique_frac': sum(1 for v in trace['center_hist'] if v > 0) / max(len(trace['center_hist']), 1),
+        'read_unique_frac': sum(1 for v in trace['read_hist'] if v > 0) / max(len(trace['read_hist']), 1),
+        'write_unique_frac': sum(1 for v in trace['write_hist'] if v > 0) / max(len(trace['write_hist']), 1),
+        'ptr_jump_mean': (sum(ptr_jump) / len(ptr_jump)) if ptr_jump else 0.0,
+        'read_center_dist_mean': (sum(read_center_dist) / len(read_center_dist)) if read_center_dist else 0.0,
+        'write_center_dist_mean': (sum(write_center_dist) / len(write_center_dist)) if write_center_dist else 0.0,
+        'read_write_overlap_mean': (sum(overlap_trace) / len(overlap_trace)) if overlap_trace else 0.0,
+    }
 
 
 def _default_json_path() -> Path:
@@ -265,7 +299,7 @@ def ring_diagnostics(model, state, device):
 def run_one(N, period, steps, batch, seq, hidden_dim, M, slot_dim,
             model_type, device, io_split_mode='off', gated_write=False, lr=1e-3,
             log_every=100, seed=42, read_kernel_mode='vshape',
-            write_address_mode='pointer', topk_k=2):
+            write_address_mode='pointer', topk_k=2, ring_trace=False):
     """Train one configuration and return results.
 
     Returns:
@@ -285,6 +319,7 @@ def run_one(N, period, steps, batch, seq, hidden_dim, M, slot_dim,
     if model_type == 'instnct':
         use_topk_diag = read_kernel_mode == 'topk' or write_address_mode == 'content_topk'
         set_topk_read_diag_enabled(use_topk_diag)
+        set_ring_trace_enabled(ring_trace)
         model = INSTNCT(
             M=M, hidden_dim=hidden_dim, slot_dim=slot_dim,
             N=N, R=1, embed_mode=True,
@@ -311,6 +346,7 @@ def run_one(N, period, steps, batch, seq, hidden_dim, M, slot_dim,
         model_label = f'INSTNCT N={N}{split_tag}{gw_tag}{rk_tag}{wa_tag}'
     elif model_type == 'transformer':
         set_topk_read_diag_enabled(False)
+        set_ring_trace_enabled(False)
         model = TinyTransformer(
             embed_mode=True, d_model=64, n_layers=2, n_heads=2, d_ff=256,
             max_seq=seq + 16,
@@ -344,6 +380,19 @@ def run_one(N, period, steps, batch, seq, hidden_dim, M, slot_dim,
     peak_step = 0
     history = []
     diag_rows = {key: [] for key in TOPK_DIAG_KEYS}
+    ring_trace_rows = None
+    if ring_trace and model_type == 'instnct':
+        ring_trace_rows = {
+            'ptr_trace': [],
+            'read_idx_trace': [],
+            'read_weight_trace': [],
+            'write_idx_trace': [],
+            'write_weight_trace': [],
+            'read_write_overlap_trace': [],
+            'center_hist': [0 for _ in range(M)],
+            'read_hist': [0 for _ in range(M)],
+            'write_hist': [0 for _ in range(M)],
+        }
     t0 = time.perf_counter()
 
     for step in range(1, steps + 1):
@@ -381,6 +430,19 @@ def run_one(N, period, steps, batch, seq, hidden_dim, M, slot_dim,
             pos = 0
             state = None  # reset on wrap
 
+        for key in TOPK_DIAG_KEYS:
+            value = model._diag.get(key) if model_type == 'instnct' else None
+            if value is not None:
+                diag_rows[key].append(float(value))
+        if ring_trace_rows is not None:
+            trace = getattr(model, '_ring_trace', None)
+            if trace is not None:
+                for key in ('ptr_trace', 'read_idx_trace', 'read_weight_trace', 'write_idx_trace', 'write_weight_trace', 'read_write_overlap_trace'):
+                    ring_trace_rows[key].extend(trace.get(key, []))
+                for key in ('center_hist', 'read_hist', 'write_hist'):
+                    vals = trace.get(key, [])
+                    ring_trace_rows[key] = [a + int(b) for a, b in zip(ring_trace_rows[key], vals)]
+
         # Log
         if step % log_every == 0 or step == steps:
             with torch.no_grad():
@@ -389,10 +451,6 @@ def run_one(N, period, steps, batch, seq, hidden_dim, M, slot_dim,
             if acc > peak_acc:
                 peak_acc = acc
                 peak_step = step
-            for key in TOPK_DIAG_KEYS:
-                value = model._diag.get(key) if model_type == 'instnct' else None
-                if value is not None:
-                    diag_rows[key].append(float(value))
             history.append((step, acc, loss.item(), elapsed))
             diag_suffix = ''
             if diag_rows['topk_mean_abs_circ_dist']:
@@ -437,14 +495,15 @@ def run_one(N, period, steps, batch, seq, hidden_dim, M, slot_dim,
             erase_vals = [torch.sigmoid(model.erase_raw[i]).item() for i in range(model.N)]
             wgate_vals = [torch.sigmoid(model.write_gate_raw[i]).item() for i in range(model.N)]
         print(f"  Gated write: erase={erase_vals} write_gate={wgate_vals}")
-
     diag_means = {}
     for key in TOPK_DIAG_KEYS:
         avg = _mean(diag_rows[key])
         if avg is not None:
             diag_means[key] = avg
+    ring_trace_summary = _summarize_ring_trace(ring_trace_rows, M) if ring_trace_rows is not None else None
+    set_ring_trace_enabled(False)
 
-    return {
+    result = {
         'peak_acc': peak_acc,
         'peak_step': peak_step,
         'final_acc': final_acc,
@@ -462,6 +521,11 @@ def run_one(N, period, steps, batch, seq, hidden_dim, M, slot_dim,
         'topk_diag_means': diag_means,
         **ring_diag,
     }
+    result.update(diag_means)
+    if ring_trace_rows is not None:
+        result['ring_trace_summary'] = ring_trace_summary
+        result['ring_trace'] = ring_trace_rows
+    return result
 
 
 # ═══════════════════════════════════════════════════════════
@@ -493,6 +557,7 @@ def main():
     parser.add_argument('--write-address-mode', choices=['pointer', 'content_topk'], default='pointer',
                         help='Write addressing mode for INSTNCT.')
     parser.add_argument('--topk-k', type=int, default=2, help='TopK for topk read/write modes.')
+    parser.add_argument('--ring-trace', action='store_true', help='Capture full ring trace/histograms.')
     parser.add_argument('--json-out', default=None, help='Optional JSON results path.')
     args = parser.parse_args()
 
@@ -519,6 +584,7 @@ def main():
             read_kernel_mode=args.read_kernel_mode,
             write_address_mode=args.write_address_mode,
             topk_k=args.topk_k,
+            ring_trace=args.ring_trace,
         )
 
     # Summary table (if sweep)
@@ -554,6 +620,7 @@ def main():
         'read_kernel_mode': args.read_kernel_mode,
         'write_address_mode': args.write_address_mode,
         'topk_k': args.topk_k,
+        'ring_trace': bool(args.ring_trace),
         'results': results,
     }
     json_out.parent.mkdir(parents=True, exist_ok=True)
