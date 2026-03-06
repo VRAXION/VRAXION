@@ -269,6 +269,35 @@ Closed finding:
 Next action:
 - move to deterministic write-path A/B (`func_hdd_write_tns`) before opening any new activation rewrites.
 
+### Batch 1 — HDD write microbench
+
+Purpose:
+- measure whether the current replace-write path has cheap implementation headroom before touching the full proxy step.
+
+Scripts used:
+- `v4/tests/bench_hdd_write_optimize.py`
+
+Variants:
+- `current`
+- `lerp_v2 = torch.lerp(current, write_vec, w)`
+- `delta_v3 = current + w * (write_vec - current)`
+
+Artifact:
+- microbench JSON: [bench_hdd_write_optimize_20260306_113735.json](../../v4/dev_notes/telemetry/bench_hdd_write_optimize_20260306_113735.json)
+- microbench text: [bench_hdd_write_optimize_20260306_113735.txt](../../v4/dev_notes/telemetry/bench_hdd_write_optimize_20260306_113735.txt)
+
+Result:
+- both rewrites matched the current implementation within tolerance (`max diff <= 4.768e-07`);
+- `lerp_v2` improved forward by `1.705x` and backward by `1.201x`;
+- `delta_v3` improved forward by `1.431x` and backward by `1.255x`.
+
+Verdict:
+- both rewrites clear the Batch 1 promotion threshold;
+- carry only `delta_v3` into Batch 2 because it had the best combined forward+backward write time.
+
+Next action:
+- run deterministic proxy-step validation for `current` vs `delta_v3`.
+
 ## Planned Next Tests
 
 The next tests should be about confidence, not rediscovery:
