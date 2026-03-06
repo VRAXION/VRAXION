@@ -325,6 +325,36 @@ Verdict:
 Next action:
 - move to Batch 3 and target op-level overhead (`aten::empty`, `aten::copy_`, `aten::fill_`, scatter/index-related ops) using the existing profiler tables.
 
+### Batch 3 — Next op-level target after write rewrite failure
+
+Purpose:
+- choose the next optimization target from the existing profiler evidence instead of opening another algebra rewrite branch.
+
+Evidence source:
+- [profile_sweep_step_wikitext_20260306_113911_ops.txt](../../v4/dev_notes/telemetry/profile_sweep_step_wikitext_20260306_113911_ops.txt)
+- [profile_sweep_step_wikitext_20260306_114037_ops.txt](../../v4/dev_notes/telemetry/profile_sweep_step_wikitext_20260306_114037_ops.txt)
+
+Read:
+- the failed write rewrite did not change the overall op picture;
+- the dominant non-model-shell costs remain allocation/copy/scatter-heavy:
+  - `aten::empty`
+  - `aten::empty_strided`
+  - `aten::resize_`
+  - `aten::copy_`
+  - `aten::_to_copy`
+  - `aten::scatter_add_`
+  - `aten::_index_put_impl_`
+  - `aten::scatter_`
+- this points to temporary tensor churn and scatter/index traffic, not a missing activation algebra trick.
+
+Verdict:
+- close the current activation-rewrite branch;
+- close the current write-algebra rewrite branch;
+- the next performance round should target allocation/copy/scatter reduction on the same proxy path.
+
+Next action:
+- start from intermediate-tensor reduction and write-path memory traffic, not from new C19 formulas or expert-vectorization.
+
 ## Planned Next Tests
 
 The next tests should be about confidence, not rediscovery:
