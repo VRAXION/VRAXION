@@ -409,7 +409,12 @@ def run_profile(args):
         fn_timer.wrap(instnct, fn_name)
 
     try:
-        model = build_model(args.seed, replace_impl=args.replace_impl)
+        model = build_model(
+            args.seed,
+            replace_impl=args.replace_impl,
+            kernel_mode=args.kernel_mode,
+            topk_k=args.topk_k,
+        )
         _freeze_c_carriers(model)
         opt = torch.optim.Adam((p for p in model.parameters() if p.requires_grad), lr=1e-3)
         scaler = torch.amp.GradScaler('cuda', enabled=True)
@@ -509,6 +514,8 @@ def run_profile(args):
                 'impl': args.impl,
                 'write_impl': args.write_impl,
                 'replace_impl': args.replace_impl,
+                'kernel_mode': args.kernel_mode,
+                'topk_k': args.topk_k,
                 'tail_k': args.tail_k,
                 'warmup_steps': args.warmup_steps,
                 'gpu': torch.cuda.get_device_name(0) if torch.cuda.is_available() else 'cpu',
@@ -543,6 +550,8 @@ def main():
     parser.add_argument('--impl', type=str, default='current', choices=['current', 'gain_v2', 'bitwise_v3'])
     parser.add_argument('--write-impl', type=str, default='current', choices=['current', 'lerp_v2', 'delta_v3'])
     parser.add_argument('--replace-impl', type=str, default='dense', choices=['dense', 'proxy_overlay'])
+    parser.add_argument('--kernel-mode', type=str, default='vshape', choices=['vshape', 'topk', 'dotprod', 'gaussian', 'uniform'])
+    parser.add_argument('--topk-k', type=int, default=8)
     parser.add_argument('--tail-k', type=float, default=6.0)
     parser.add_argument('--warmup-steps', type=int, default=2)
     parser.add_argument('--sample-per-call', type=int, default=1024)
@@ -589,6 +598,7 @@ def main():
     print(f'GPU: {payload["config"]["gpu"]}')
     print(
         f'Batch: {args.batch}x{args.seq}  C={args.c_value:.4f}  impl={args.impl}  '
+        f'kernel={args.kernel_mode}  topk_K={args.topk_k}  '
         f'write={args.write_impl}  replace={args.replace_impl}  warmup={args.warmup_steps}  source_map={args.source_map}'
     )
     print()

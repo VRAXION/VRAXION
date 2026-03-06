@@ -202,7 +202,7 @@ def make_c19_dualphi_fixed_c(c_value, tail_mode='linear', tail_k=6.0, telemetry=
     return c19_dualphi_fixed
 
 
-def build_model(seed, replace_impl='dense'):
+def build_model(seed, replace_impl='dense', kernel_mode='vshape', topk_k=8):
     _set_determinism(seed)
     spec = {
         'M': 1024,
@@ -213,7 +213,7 @@ def build_model(seed, replace_impl='dense'):
         'R': 1,
         'B': 8,
         'embed_mode': True,
-        'kernel_mode': 'vshape',
+        'kernel_mode': kernel_mode,
         'checkpoint_chunks': 0,
         'expert_weighting': False,
         'embed_encoding': 'learned',
@@ -226,20 +226,20 @@ def build_model(seed, replace_impl='dense'):
         'bb_scale': 0.1,
         'bb_tau': 4.0,
         'bb_gate_mode': 'learned',
-        'topk_K': 8,
+        'topk_K': topk_k,
         's_constraint': 'softplus',
     }
     record = {'type': 'instnct', 'build_spec': spec}
     return build_model_from_spec(record, 'cuda')
 
 
-def run_one(variant_name, act_fn, dataset, steps, batch_size, seed):
+def run_one(variant_name, act_fn, dataset, steps, batch_size, seed, kernel_mode='vshape', topk_k=8, replace_impl='dense'):
     import instnct
 
     orig_fn = instnct._c19_activation
     instnct._c19_activation = act_fn
 
-    model = build_model(seed)
+    model = build_model(seed, replace_impl=replace_impl, kernel_mode=kernel_mode, topk_k=topk_k)
 
     # We want fixed-C geometry. Freeze the learnable C/rho carriers so the
     # optimizer doesn't waste effort on parameters the activation ignores.
@@ -341,6 +341,9 @@ def main():
     parser.add_argument('--seed', type=int, default=42)
     parser.add_argument('--c-values', type=str, default=f'{PHI*PHI},{math.pi},{2*math.pi}')
     parser.add_argument('--tail-modes', type=str, default='linear,periodic')
+    parser.add_argument('--kernel-modes', type=str, default='vshape')
+    parser.add_argument('--topk-k', type=int, default=8)
+    parser.add_argument('--replace-impl', type=str, default='dense', choices=['dense', 'proxy_overlay'])
     parser.add_argument('--tail-k', type=float, default=6.0)
     parser.add_argument('--sample-per-call', type=int, default=1024)
     parser.add_argument('--json-out', type=str, default='')
@@ -348,6 +351,7 @@ def main():
 
     c_values = parse_floats(args.c_values)
     tail_modes = parse_modes(args.tail_modes)
+    kernel_modes = parse_modes(args.kernel_modes)
 
     _set_determinism(args.seed)
 
@@ -356,6 +360,7 @@ def main():
     print(f'GPU: {torch.cuda.get_device_name(0)}')
     print(f'C values: {[round(c, 4) for c in c_values]}')
     print(f'Tail modes: {tail_modes}  tail_k={args.tail_k}')
+    print(f'Kernel modes: {kernel_modes}  topk_K={args.topk_k}  replace={args.replace_impl}')
     print()
 
     data_dir = V4_ROOT / 'training_data'
@@ -369,29 +374,42 @@ def main():
     print()
 
     variants = []
-    for c_value in c_values:
-        for tail_mode in tail_modes:
-            telemetry = ActivationTelemetry(sample_per_call=args.sample_per_call)
-            act_fn = make_c19_dualphi_fixed_c(
-                c_value=c_value,
-                tail_mode=tail_mode,
-                tail_k=args.tail_k,
-                telemetry=telemetry,
-            )
-            act_fn._telemetry = telemetry
-            variants.append(
-                {
-                    'name': f'{_label_c(c_value)}-{tail_mode}',
-                    'c_value': c_value,
-                    'tail_mode': tail_mode,
-                    'act_fn': act_fn,
-                }
-            )
+    for kernel_mode in kernel_modes:
+        for c_value in c_values:
+            for tail_mode in tail_modes:
+                telemetry = ActivationTelemetry(sample_per_call=args.sample_per_call)
+                act_fn = make_c19_dualphi_fixed_c(
+                    c_value=c_value,
+                    tail_mode=tail_mode,
+                    tail_k=args.tail_k,
+                    telemetry=telemetry,
+                )
+                act_fn._telemetry = telemetry
+                variants.append(
+                    {
+                        'name': f'{kernel_mode}-{_label_c(c_value)}-{tail_mode}',
+                        'kernel_mode': kernel_mode,
+                        'c_value': c_value,
+                        'tail_mode': tail_mode,
+                        'act_fn': act_fn,
+                    }
+                )
 
     results = []
     for item in variants:
         dataset.rng = np.random.default_rng(args.seed)
-        r = run_one(item['name'], item['act_fn'], dataset, args.steps, args.batch, args.seed)
+        r = run_one(
+            item['name'],
+            item['act_fn'],
+            dataset,
+            args.steps,
+            args.batch,
+            args.seed,
+            kernel_mode=item['kernel_mode'],
+            topk_k=args.topk_k,
+            replace_impl=args.replace_impl,
+        )
+        r['kernel_mode'] = item['kernel_mode']
         r['fixed_C'] = item['c_value']
         r['tail_mode'] = item['tail_mode']
         results.append(r)
@@ -452,6 +470,9 @@ def main():
             'seed': args.seed,
             'c_values': c_values,
             'tail_modes': tail_modes,
+            'kernel_modes': kernel_modes,
+            'topk_k': args.topk_k,
+            'replace_impl': args.replace_impl,
             'tail_k': args.tail_k,
             'sample_per_call': args.sample_per_call,
             'gpu': torch.cuda.get_device_name(0),

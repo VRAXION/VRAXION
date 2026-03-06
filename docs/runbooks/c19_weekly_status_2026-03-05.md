@@ -536,6 +536,69 @@ Verdict:
 Next action:
 - keep the conclusion from Batch 4/5: the next worthwhile performance work is tensor-churn reduction inside the current write path and surrounding read/write prep (`copy_`, `empty`, `fill_`, `as_strided`, `_index_put_impl_`, `scatter_`), not more replace-formula variants.
 
+### Batch 8 — `kernel_mode=vshape` vs `kernel_mode=topk(K=8)` on the current nightly proxy
+
+Purpose:
+- test whether the existing global content-read branch is worth revisiting on the current architecture;
+- compare the current local pointer-window read (`vshape`) against the existing `topk` global-read path with the same C19, write mode, and proxy config.
+
+Setup:
+- same fixed-C dual-phi activation in both variants
+- `C = pi`
+- `tail_mode = linear`
+- `replace_impl = dense`
+- `topk_K = 8`
+- current `topk` semantics are hybrid:
+  - read is global content-based topK over the whole ring
+  - write still uses the pointer-centered vshape window
+
+Quality script used:
+- `v4/tests/sweep_c19_core_geometry_wikitext.py --steps 60 --batch 16 --seq 256 --seed 42 --c-values pi --tail-modes linear --kernel-modes vshape,topk --topk-k 8 --replace-impl dense`
+
+Quality artifact:
+- [sweep_c19_core_geometry_wikitext_20260306_135900.json](../../v4/dev_notes/telemetry/sweep_c19_core_geometry_wikitext_20260306_135900.json)
+
+Observed short-train quality:
+- `vshape`
+  - final acc `0.315`
+  - best acc `0.393`
+  - final loss `2.5777`
+  - wall time `269s`
+- `topk(K=8)`
+  - final acc `0.307`
+  - best acc `0.370`
+  - final loss `2.6022`
+  - wall time `286s`
+
+Perf scripts used:
+- `v4/tests/profile_sweep_step_wikitext.py --impl current --write-impl current --replace-impl dense --kernel-mode vshape --topk-k 8`
+- `v4/tests/profile_sweep_step_wikitext.py --impl current --write-impl current --replace-impl dense --kernel-mode topk --topk-k 8`
+
+Perf artifacts:
+- vshape JSON: [profile_kernel_vshape_20260306.json](../../v4/dev_notes/telemetry/profile_kernel_vshape_20260306.json)
+- vshape ops: [profile_kernel_vshape_20260306_ops.txt](../../v4/dev_notes/telemetry/profile_kernel_vshape_20260306_ops.txt)
+- topk JSON: [profile_kernel_topk_20260306.json](../../v4/dev_notes/telemetry/profile_kernel_topk_20260306.json)
+- topk ops: [profile_kernel_topk_20260306_ops.txt](../../v4/dev_notes/telemetry/profile_kernel_topk_20260306_ops.txt)
+
+Observed one-step perf:
+- `vshape`: `forward ~= 2.643s`, `backward ~= 1.902s`, total `~= 4.547s`
+- `topk(K=8)`: `forward ~= 2.346s`, `backward ~= 2.102s`, total `~= 4.449s`
+
+Read:
+- the quality result is the important one here: the current global `topk` read did not beat the local `vshape` baseline on this architecture;
+- perf is mixed:
+  - one-step proxy timing gives `topk` a small total-step edge,
+  - but the 60-step short-train wall time is still worse for `topk`;
+- this is not strong enough evidence to reopen global-read work as the next priority.
+
+Verdict:
+- do not promote `kernel_mode=topk` as the next refinement path right now;
+- keep `vshape` as the working baseline;
+- only revisit global read if a later task shows a clear quality ceiling that locality cannot reach.
+
+Next action:
+- continue with deterministic ring-path minmaxing around the local read/write pipeline (`window_prepare`, `softread`, rolling local cache, tensor churn), not global topK search.
+
 ## Planned Next Tests
 
 The next tests should be about confidence, not rediscovery:
