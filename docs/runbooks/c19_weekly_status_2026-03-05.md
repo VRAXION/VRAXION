@@ -254,6 +254,48 @@ Reason:
 - it also matches the newer nightly evidence
 - it targets long-range access without collapsing everything into one pooled global read
 
+## 6A. Multi-Timescale Taps: First Deterministic Verdict
+
+Nightly-only implementation:
+- `LLT = LL + fixed lag taps`
+- taps stay as separate channels
+- no pooled topk averaging
+- current lag set: `[1, 2, 4, 8, 16, 32]`
+
+What was tested:
+- `fast_memory_carry`, CPU, `10k`
+  - `LL` vs `LLT`
+- `wikitext_sequential_carry`, CPU, `10k`
+  - `LL` vs `LLT`
+
+Artifacts:
+- mechanistic carry:
+  - [nightly_runner_fast_memory_carry_LL_mtaps_baseline_20260306.json](../../v4/dev_notes/telemetry/nightly_runner_fast_memory_carry_LL_mtaps_baseline_20260306.json)
+  - [nightly_runner_fast_memory_carry_LLT_10k_20260306.json](../../v4/dev_notes/telemetry/nightly_runner_fast_memory_carry_LLT_10k_20260306.json)
+- real-data sequential carry:
+  - [nightly_runner_wikitext_sequential_carry_LL_10k_seqptr_20260306.json](../../v4/dev_notes/telemetry/nightly_runner_wikitext_sequential_carry_LL_10k_seqptr_20260306.json)
+  - [nightly_runner_wikitext_sequential_carry_LLT_10k_20260306.json](../../v4/dev_notes/telemetry/nightly_runner_wikitext_sequential_carry_LLT_10k_20260306.json)
+
+Verdict:
+- `fast_memory_carry`
+  - `LL`: final `100%`, `358.2s`
+  - `LLT`: final `100%`, `353.5s`
+  - meaning: taps do not hurt the mechanistic carry surface, but they do not create a new ceiling there
+- `wikitext_sequential_carry`
+  - `LL`: final acc `0.3551`, BPC `3.3185`, `376.5s`
+  - `LLT`: final acc `0.3686`, BPC `3.2487`, `414.4s`
+  - delta: `+1.34 pt` final accuracy, `-0.0698` BPC, slower by about `10%`
+
+Trace evidence:
+- `LLT` taps were genuinely active, not decorative
+- `tap_unique_frac = 1.0`
+- `tap_center_dist_mean = 10.5`
+
+Meaning:
+- this is the first nightly branch after pooled topk that gives a clean carry-surface quality win
+- the gain is not coming from global search
+- it is coming from structured, non-pooled extra retrieval bandwidth
+
 ## 7. Operational Rules Going Forward
 
 1. Any new claim must name the surface:
@@ -282,4 +324,4 @@ Current best consolidated read:
 - pooled topk is still not the near-term solution
 - pointer interpolation is a local fix, not a late-game memory fix
 - shortest-arc is not the current bottleneck
-- the next serious architecture branch is **multi-timescale taps**
+- **multi-timescale taps is now the active winning nightly branch**

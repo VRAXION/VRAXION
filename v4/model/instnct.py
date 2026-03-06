@@ -602,6 +602,8 @@ class INSTNCT(nn.Module):
                  replace_impl=CNFG_REPLACEIMPL_STR,        # 'dense' | 'proxy_overlay' (nightly-only proxy fast path)
                  pointer_interp_mode='off',                # 'off' | 'linear' — nightly-only fractional pointer center
                  pointer_seam_mode='mod',                  # 'mod' | 'shortest_arc' — nightly-only wrap-seam fix
+                 mtaps_enabled=False,                      # nightly-only multi-timescale taps
+                 mtaps_lags=(1, 2, 4, 8, 16, 32),          # lag taps, kept separate then mixed
                  s_constraint='softplus'):                 # 'softplus' (S>0) | 'raw' (unconstrained)
         super().__init__()
         assert kernel_mode in ('uniform', 'vshape', 'gaussian', 'dotprod', 'topk'), \
@@ -624,10 +626,19 @@ class INSTNCT(nn.Module):
             f"pointer_seam_mode must be 'mod' or 'shortest_arc', got '{pointer_seam_mode}'"
         assert write_address_mode in ('pointer', 'content_topk'), \
             f"write_address_mode must be 'pointer' or 'content_topk', got '{write_address_mode}'"
+        if mtaps_enabled:
+            if read_kernel_mode == 'topk':
+                raise ValueError("mtaps_enabled requires a local read path, not pooled topk")
+            if not mtaps_lags:
+                raise ValueError("mtaps_enabled requires at least one lag")
+            mtaps_lags = tuple(sorted({int(x) for x in mtaps_lags}))
+            if any(x <= 0 for x in mtaps_lags):
+                raise ValueError(f"mtaps_lags must be positive integers, got {mtaps_lags!r}")
         self.write_mode = write_mode
         self.replace_impl = replace_impl
         self.pointer_interp_mode = pointer_interp_mode
         self.pointer_seam_mode = pointer_seam_mode
+        self.mtaps_enabled = bool(mtaps_enabled)
 
         # backward compat: embed_dim=X sets hidden_dim=slot_dim=X
         if embed_dim is not None:
@@ -641,6 +652,7 @@ class INSTNCT(nn.Module):
         self.kernel_mode = kernel_mode
         self.read_kernel_mode = read_kernel_mode
         self.write_address_mode = write_address_mode
+        self._mtaps_lags = list(mtaps_lags) if self.mtaps_enabled else []
         self.checkpoint_chunks = checkpoint_chunks  # not nn.Parameter — excluded from state_dict
         self.expert_weighting = expert_weighting
         self._proxy_overlay_flush_interval = 16
@@ -749,6 +761,14 @@ class INSTNCT(nn.Module):
 
         # read_proj: slot_dim → hidden_dim (decompress ring read into hidden space)
         self.read_proj = nn.ModuleList([nn.Linear(slot_dim, hidden_dim) for _ in range(N)])
+        if self.mtaps_enabled:
+            self.register_buffer('_mtaps_lags_tns', torch.tensor(self._mtaps_lags, dtype=torch.long))
+            self.read_tap_proj = nn.ModuleList([
+                nn.Linear(slot_dim * (1 + len(self._mtaps_lags)), hidden_dim) for _ in range(N)
+            ])
+        else:
+            self.register_buffer('_mtaps_lags_tns', torch.tensor([], dtype=torch.long))
+            self.read_tap_proj = None
 
         # query_proj: hidden_dim → slot_dim (content-based attention query per expert)
         # created for dotprod/topk reads only — pilot uses its own ptr_query (smaller dim)
@@ -918,11 +938,13 @@ class INSTNCT(nn.Module):
                 'ptr_trace': [],
                 'read_idx_trace': [],
                 'read_weight_trace': [],
+                'tap_idx_trace': [],
                 'write_idx_trace': [],
                 'write_weight_trace': [],
                 'read_write_overlap_trace': [],
                 'center_hist': torch.zeros(M, dtype=torch.long),
                 'read_hist': torch.zeros(M, dtype=torch.long),
+                'tap_hist': torch.zeros(M, dtype=torch.long),
                 'write_hist': torch.zeros(M, dtype=torch.long),
             }
         if proxy_overlay_enabled:
@@ -1019,6 +1041,9 @@ class INSTNCT(nn.Module):
                     if torch.is_grad_enabled() and self.training:
                         self._diag[f'ptr_alpha_{i}'] = ptr_alpha_tns.detach().mean().item()
 
+                tap_idx_src = None
+                tap_neighbors_tns = None
+
                 if is_writer and not is_reader:
                     # Writer-only: NO ring read, zero ring signal
                     with _source_scope('window_prepare'):
@@ -1093,6 +1118,15 @@ class INSTNCT(nn.Module):
                     local_pointer_weights_tns = F.softmax(scores, dim=-1)                     # (B, 2R+1)
                     read_vec_tns = (local_pointer_weights_tns.unsqueeze(-1) * neighbors_tns).sum(1)  # (B, slot_dim)
 
+                if self.mtaps_enabled:
+                    with _source_scope('softread'):
+                        tap_idx_src = torch.remainder(
+                            center.unsqueeze(1) - self._mtaps_lags_tns.unsqueeze(0),
+                            M,
+                        )
+                        tap_expanded_idx_tns = tap_idx_src.unsqueeze(-1).expand(-1, -1, slot_dim)
+                        tap_neighbors_tns = ring_tns.gather(1, tap_expanded_idx_tns)
+
                 if self.write_address_mode == 'content_topk':
                     write_topk_scores = content_topk_scores_tns[:, :self._write_topk_K]
                     write_topk_idx = content_topk_idx_tns[:, :self._write_topk_K]
@@ -1144,11 +1178,16 @@ class INSTNCT(nn.Module):
                     ring_trace['ptr_trace'].append(ptr_sample)
                     ring_trace['read_idx_trace'].append(read_idx_sample)
                     ring_trace['read_weight_trace'].append(read_weight_sample)
+                    ring_trace['tap_idx_trace'].append(
+                        [int(x) for x in tap_idx_src[0].detach().tolist()] if tap_idx_src is not None else []
+                    )
                     ring_trace['write_idx_trace'].append(write_idx_sample)
                     ring_trace['write_weight_trace'].append(write_weight_sample)
                     ring_trace['read_write_overlap_trace'].append(float(overlap))
                     ring_trace['center_hist'] += torch.bincount(center.detach().cpu(), minlength=M)
                     ring_trace['read_hist'] += torch.bincount(read_idx_src.detach().reshape(-1).cpu(), minlength=M)
+                    if tap_idx_src is not None:
+                        ring_trace['tap_hist'] += torch.bincount(tap_idx_src.detach().reshape(-1).cpu(), minlength=M)
                     ring_trace['write_hist'] += torch.bincount(write_idx_src.detach().reshape(-1).cpu(), minlength=M)
 
                 # ─ phase signal ─
@@ -1157,7 +1196,16 @@ class INSTNCT(nn.Module):
                            + torch.sin(theta_tns).unsqueeze(-1) * self.phase_sin)
 
                 # ─ hidden update (all hidden_dim-wide) ─
-                ring_signal = self.read_proj[i](read_vec_tns)  # slot_dim → hidden_dim
+                if self.mtaps_enabled:
+                    tap_flat_tns = tap_neighbors_tns.reshape(input_vec_tns.shape[0], -1)
+                    mtap_input_tns = torch.cat([read_vec_tns, tap_flat_tns], dim=-1)
+                    ring_signal = self.read_tap_proj[i](mtap_input_tns)
+                    if torch.is_grad_enabled() and self.training:
+                        self._diag[f'mtap_main_norm_{i}'] = read_vec_tns.detach().norm(dim=-1).mean().item()
+                        self._diag[f'mtap_tap_norm_{i}'] = tap_neighbors_tns.detach().norm(dim=-1).mean().item()
+                        self._diag[f'mtap_signal_norm_{i}'] = ring_signal.detach().norm(dim=-1).mean().item()
+                else:
+                    ring_signal = self.read_proj[i](read_vec_tns)  # slot_dim → hidden_dim
                 if S_flt == 'dotprod':
                     # content-based gate: cosine similarity (scale-invariant)
                     cos_sim = F.cosine_similarity(
@@ -1379,11 +1427,13 @@ class INSTNCT(nn.Module):
                 'ptr_trace': ring_trace['ptr_trace'],
                 'read_idx_trace': ring_trace['read_idx_trace'],
                 'read_weight_trace': ring_trace['read_weight_trace'],
+                'tap_idx_trace': ring_trace['tap_idx_trace'],
                 'write_idx_trace': ring_trace['write_idx_trace'],
                 'write_weight_trace': ring_trace['write_weight_trace'],
                 'read_write_overlap_trace': ring_trace['read_write_overlap_trace'],
                 'center_hist': ring_trace['center_hist'].tolist(),
                 'read_hist': ring_trace['read_hist'].tolist(),
+                'tap_hist': ring_trace['tap_hist'].tolist(),
                 'write_hist': ring_trace['write_hist'].tolist(),
             }
         else:

@@ -113,18 +113,32 @@ VARIANTS: dict[str, dict] = {
         "write_address_mode": "pointer",
         "read_topk_K": 2,
         "write_topk_K": 2,
+        "mtaps_enabled": False,
+        "mtaps_lags": [],
+    },
+    "LLT": {
+        "read_kernel_mode": "vshape",
+        "write_address_mode": "pointer",
+        "read_topk_K": 2,
+        "write_topk_K": 2,
+        "mtaps_enabled": True,
+        "mtaps_lags": [1, 2, 4, 8, 16, 32],
     },
     "GL": {
         "read_kernel_mode": "topk",
         "write_address_mode": "pointer",
         "read_topk_K": 2,
         "write_topk_K": 2,
+        "mtaps_enabled": False,
+        "mtaps_lags": [],
     },
     "GG": {
         "read_kernel_mode": "topk",
         "write_address_mode": "content_topk",
         "read_topk_K": 2,
         "write_topk_K": 2,
+        "mtaps_enabled": False,
+        "mtaps_lags": [],
     },
 }
 
@@ -153,6 +167,8 @@ def _build_meta(surface: str, variant: str, cfg: dict, overrides: dict | None = 
         "pointer_seam_mode": cfg.get("pointer_seam_mode", "mod"),
         "read_mode": variant_cfg["read_kernel_mode"],
         "write_mode": variant_cfg["write_address_mode"],
+        "mtaps_enabled": bool(variant_cfg.get("mtaps_enabled", False)),
+        "mtaps_lags": list(variant_cfg.get("mtaps_lags", [])),
         "seq": cfg["seq"],
         "steps": cfg["steps"],
         "ring_slots": cfg["M"],
@@ -196,7 +212,8 @@ def _ring_trace_guard(result: dict, batch: int, seq: int, steps: int) -> dict:
 
 
 def _effective_global_flags(result: dict, variant: str) -> dict:
-    if variant == "LL":
+    variant_cfg = VARIANTS[variant]
+    if variant_cfg["read_kernel_mode"] != "topk":
         return {"effective_global_read": False, "effective_global_write": False}
     read_outside = result.get("topk_outside_local_frac")
     write_outside = result.get("write_topk_outside_local_frac")
@@ -205,7 +222,7 @@ def _effective_global_flags(result: dict, variant: str) -> dict:
     write_dist = ring_summary.get("write_center_dist_mean")
     effective_read = bool(read_outside is not None and read_outside >= 0.50 and (read_dist or 0.0) > 1.5)
     effective_write = bool(
-        variant == "GG"
+        variant_cfg["write_address_mode"] == "content_topk"
         and write_outside is not None
         and write_outside >= 0.50
         and (write_dist or 0.0) > 1.5
@@ -236,12 +253,13 @@ def _surface_guards(surface: str, result: dict, meta: dict) -> dict:
 
 
 def _require_topk_diag(variant: str, result: dict):
-    if variant == "LL":
+    variant_cfg = VARIANTS[variant]
+    if variant_cfg["read_kernel_mode"] != "topk":
         return
     missing = [key for key in ("topk_mean_abs_circ_dist", "topk_outside_local_frac") if result.get(key) is None]
     if missing:
         raise RuntimeError(f"Missing required topk telemetry for {variant}: {missing}")
-    if variant == "GG":
+    if variant_cfg["write_address_mode"] == "content_topk":
         missing_write = [
             key for key in ("write_topk_mean_abs_circ_dist", "write_topk_outside_local_frac")
             if result.get(key) is None
@@ -281,13 +299,15 @@ def _run_small_wikitext_fresh(surface: str, variant: str, cfg: dict) -> dict:
         kernel_mode=variant_cfg["read_kernel_mode"],
         topk_k=variant_cfg["read_topk_K"],
         replace_impl="dense",
-        topk_read_diag=(variant != "LL"),
+        topk_read_diag=(variant_cfg["read_kernel_mode"] == "topk"),
         read_kernel_mode=variant_cfg["read_kernel_mode"],
         write_address_mode=variant_cfg["write_address_mode"],
         write_topk_k=variant_cfg["write_topk_K"],
         pointer_mode=cfg["pointer_mode"],
         pointer_interp_mode=cfg["pointer_interp_mode"],
         pointer_seam_mode=cfg["pointer_seam_mode"],
+        mtaps_enabled=variant_cfg["mtaps_enabled"],
+        mtaps_lags=tuple(variant_cfg["mtaps_lags"]),
         ring_trace=True,
         device=cfg["device"],
         hidden_dim=cfg["hidden_dim"],
@@ -324,6 +344,8 @@ def _run_fast_memory_carry(surface: str, variant: str, cfg: dict) -> dict:
         pointer_mode=cfg["pointer_mode"],
         pointer_interp_mode=cfg["pointer_interp_mode"],
         pointer_seam_mode=cfg["pointer_seam_mode"],
+        mtaps_enabled=variant_cfg["mtaps_enabled"],
+        mtaps_lags=tuple(variant_cfg["mtaps_lags"]),
     )
     result["best_acc"] = result.get("peak_acc")
     result["time_s"] = result.get("wall_time")
@@ -369,7 +391,7 @@ def _run_wikitext_sequential_carry(surface: str, variant: str, cfg: dict) -> dic
 
     orig_fn = instnct._c19_activation
     instnct._c19_activation = act_fn
-    instnct.set_topk_read_diag_enabled(variant != "LL")
+    instnct.set_topk_read_diag_enabled(variant_cfg["read_kernel_mode"] == "topk")
     instnct.set_ring_trace_enabled(True)
 
     model = build_model(
@@ -383,6 +405,8 @@ def _run_wikitext_sequential_carry(surface: str, variant: str, cfg: dict) -> dic
         pointer_mode=cfg["pointer_mode"],
         pointer_interp_mode=cfg["pointer_interp_mode"],
         pointer_seam_mode=cfg["pointer_seam_mode"],
+        mtaps_enabled=variant_cfg["mtaps_enabled"],
+        mtaps_lags=tuple(variant_cfg["mtaps_lags"]),
         device=cfg["device"],
         hidden_dim=cfg["hidden_dim"],
         M=cfg["M"],
@@ -402,11 +426,13 @@ def _run_wikitext_sequential_carry(surface: str, variant: str, cfg: dict) -> dic
         "ptr_trace": [],
         "read_idx_trace": [],
         "read_weight_trace": [],
+        "tap_idx_trace": [],
         "write_idx_trace": [],
         "write_weight_trace": [],
         "read_write_overlap_trace": [],
         "center_hist": [0 for _ in range(cfg["M"])],
         "read_hist": [0 for _ in range(cfg["M"])],
+        "tap_hist": [0 for _ in range(cfg["M"])],
         "write_hist": [0 for _ in range(cfg["M"])],
     }
     state = None
@@ -437,9 +463,9 @@ def _run_wikitext_sequential_carry(surface: str, variant: str, cfg: dict) -> dic
                 topk_diag_rows[key].append(float(value))
         trace = getattr(model, "_ring_trace", None)
         if trace is not None:
-            for key in ("ptr_trace", "read_idx_trace", "read_weight_trace", "write_idx_trace", "write_weight_trace", "read_write_overlap_trace"):
+            for key in ("ptr_trace", "read_idx_trace", "read_weight_trace", "tap_idx_trace", "write_idx_trace", "write_weight_trace", "read_write_overlap_trace"):
                 ring_trace_rows[key].extend(trace.get(key, []))
-            for key in ("center_hist", "read_hist", "write_hist"):
+            for key in ("center_hist", "read_hist", "tap_hist", "write_hist"):
                 vals = trace.get(key, [])
                 ring_trace_rows[key] = [a + int(b) for a, b in zip(ring_trace_rows[key], vals)]
 
@@ -449,7 +475,7 @@ def _run_wikitext_sequential_carry(surface: str, variant: str, cfg: dict) -> dic
             tele = act_fn._telemetry.summary()
             elapsed = time.time() - t0
             diag_suffix = ""
-            if variant != "LL":
+            if variant_cfg["read_kernel_mode"] == "topk":
                 dist = model._diag.get("topk_mean_abs_circ_dist")
                 outside = model._diag.get("topk_outside_local_frac")
                 wdist = model._diag.get("write_topk_mean_abs_circ_dist")

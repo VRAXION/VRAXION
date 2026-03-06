@@ -34,11 +34,13 @@ def _fake_trace(batch=2, seq=4, steps=3, M=16, read_width=3, write_width=3):
             "ptr_trace": [i % seq for i in range(ptr_steps)],
             "read_idx_trace": [[0, 1, 2] for _ in range(ptr_steps)],
             "write_idx_trace": [[0, 1, 2] for _ in range(ptr_steps)],
+            "tap_idx_trace": [[15, 14] for _ in range(ptr_steps)],
             "read_weight_trace": [[0.2, 0.6, 0.2] for _ in range(ptr_steps)],
             "write_weight_trace": [[0.2, 0.6, 0.2] for _ in range(ptr_steps)],
             "read_write_overlap_trace": [1.0 for _ in range(ptr_steps)],
             "center_hist": [center_sum // seq for _ in range(seq)] + [0 for _ in range(M - seq)],
             "read_hist": [center_sum * read_width // seq for _ in range(seq)] + [0 for _ in range(M - seq)],
+            "tap_hist": [center_sum * 2 // seq for _ in range(seq)] + [0 for _ in range(M - seq)],
             "write_hist": [center_sum * write_width // seq for _ in range(seq)] + [0 for _ in range(M - seq)],
         },
     }
@@ -46,7 +48,7 @@ def _fake_trace(batch=2, seq=4, steps=3, M=16, read_width=3, write_width=3):
 
 def test_surface_and_variant_presets_exist():
     assert set(SURFACES) == {"small_wikitext_fresh", "fast_memory_carry", "wikitext_sequential_carry"}
-    assert set(VARIANTS) == {"LL", "GL", "GG"}
+    assert set(VARIANTS) == {"LL", "LLT", "GL", "GG"}
 
 
 def test_small_fresh_pointer_guard_passes_on_capped_trace():
