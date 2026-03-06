@@ -922,6 +922,7 @@ Next action:
 Purpose:
 - establish an apples-to-apples standard-language-model baseline on the exact same small WikiText CPU surface;
 - check whether the small ring model is merely "working" or actually stronger than a standard transformer at the same parameter budget.
+- this batch supersedes the earlier rough transformer check that landed near `23k` params; the verdict below is the corrected `~17.5k` parameter match.
 
 Harness:
 - script: `v4/tests/bench_tiny_transformer_wikitext_small.py`
@@ -931,37 +932,37 @@ Harness:
   - `batch=8`
   - `seq=8`
   - `seed=42`
-  - `d_model=32`
+  - `d_model=24`
   - `n_layers=1`
   - `n_heads=2`
-  - `d_ff=32`
+  - `d_ff=48`
   - `max_seq=16`
 
 Artifact:
-- [bench_tiny_transformer_wikitext_small_20260306_193120.json](../../v4/dev_notes/telemetry/bench_tiny_transformer_wikitext_small_20260306_193120.json)
+- [bench_tiny_transformer_wikitext_small_20260306_194722.json](../../v4/dev_notes/telemetry/bench_tiny_transformer_wikitext_small_20260306_194722.json)
 
 Observed result:
-- final acc `0.303`
-- best acc `0.567`
-- final loss `2.4207`
-- final BPC `3.492`
-- wall time `40.4s`
-- `0.00404 s/step`
+- final acc `0.309`
+- best acc `0.531`
+- final loss `2.4125`
+- final BPC `3.480`
+- wall time `46.1s`
+- `0.00461 s/step`
 
 Comparison vs the small `LL` ring baseline:
 - params:
-  - `TinyTransformer`: `23,168`
-  - `LL`: `23,116`
+  - `TinyTransformer`: `17,464`
+  - `LL`: `17,483`
 - quality:
-  - final acc delta: `LL +5.3 pt`
-  - final BPC delta: `LL -0.189`
+  - final acc delta: `LL +4.7 pt`
+  - final BPC delta: `LL -0.177`
 - speed:
-  - `TinyTransformer` is about `9.8x` faster wall-clock on this CPU surface
+  - `TinyTransformer` is about `8.6x` faster wall-clock on this CPU surface
 
 Read:
 - the standard tiny transformer is much faster, but it plateaus lower on final-window quality;
 - the ring model is materially slower, but on this tiny real-data surface it does appear to buy real predictive quality, not just a different style of training dynamics;
-- the best-acc values are relatively close, but the ring baseline holds a stronger late-run plateau.
+- the ring baseline holds a stronger late-run plateau, while the transformer remains the cheap speed reference.
 
 Verdict:
 - on this exact small WikiText surface, the ring `LL` baseline is stronger than a param-matched tiny transformer in final quality;
@@ -971,6 +972,81 @@ Verdict:
 Next action:
 - keep the tiny transformer result as the standard non-ring baseline for this small surface;
 - if we continue the real-data comparison, the next useful run is still the matching small-model `GL` baseline.
+
+### Batch 16 — small-model WikiText `GL` baseline
+
+Purpose:
+- test whether the same small real-data surface benefits from global topk read once the `LL` local baseline and the standard transformer baseline are both fixed;
+- check whether the local plateau around `0.34-0.36` is a true local-read ceiling or just a retriever bottleneck.
+
+Harness:
+- script: `v4/tests/sweep_c19_core_geometry_wikitext.py`
+- device: `cpu`
+- config:
+  - `steps=10000`
+  - `batch=8`
+  - `seq=8`
+  - `seed=42`
+  - `hidden_dim=32`
+  - `M=64`
+  - `slot_dim=8`
+  - `N=1`
+  - `R=1`
+  - fixed `C = pi`
+  - `tail_mode = linear`
+  - `kernel_mode = topk`
+  - `topk_K = 2`
+  - `write_address_mode = pointer` via the existing default path
+  - `topk_read_diag = on`
+
+Artifact:
+- [sweep_c19_core_geometry_wikitext_20260306_194510.json](../../v4/dev_notes/telemetry/sweep_c19_core_geometry_wikitext_20260306_194510.json)
+
+Observed result:
+- final acc `0.352`
+- best acc `0.625`
+- final loss `2.3037`
+- final BPC `3.324`
+- wall time `481.2s`
+- `0.0481 s/step`
+
+Comparison vs `LL`:
+- params:
+  - `GL`: `17,747`
+  - `LL`: `17,483`
+- quality:
+  - final acc delta vs `LL`: `-0.41 pt`
+  - final BPC delta vs `LL`: `+0.021`
+  - best acc delta vs `LL`: `+4.69 pt`
+- speed:
+  - `GL` is about `1.22x` slower than `LL`
+
+Observed topK telemetry:
+- `topk_mean_abs_circ_dist = 1.97`
+- `topk_outside_local_frac = 0.479`
+- `topk_attn_entropy = 0.691`
+- `topk_unique_slot_frac = 1.000`
+
+Observed C19 telemetry:
+- `tail_hit = 0.0000%`
+- `p99 |x|/C = 1.29`
+- `p99-ring = 1.00`
+
+Read:
+- on this real-data surface, `GL` does not unlock a clearly more global retrieval regime;
+- compared to the mechanistic `10k` memory bench, the learned topk read stays much closer to the pointer neighborhood;
+- the candidate does not break the small `LL` plateau:
+  - it reaches a slightly higher transient peak;
+  - but its final-window quality is slightly worse and its wall time is worse.
+
+Verdict:
+- keep `LL` as the active small real-data baseline;
+- do not promote `GL` as the better real-data small-model read path;
+- the result suggests that, on this surface, topk behaves more like a soft local read than a genuinely useful global retriever.
+
+Next action:
+- if global retrieval is revisited on real data, it should likely be through a hybrid or delayed-use design, not this direct `topk_K=2` read-only path;
+- otherwise the more useful next step is to keep `LL` as the small real-data baseline and compare larger-capacity or integrated variants against it.
 
 ## Planned Next Tests
 
