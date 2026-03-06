@@ -89,6 +89,7 @@ model:
   #                step = 1 + max_jump × sigmoid(-sim × tau)
   pointer_mode: pilot
   write_mode: replace            # 'accumulate' (scatter_add) | 'replace' (HDD-style overwrite)
+  replace_impl: dense            # 'dense' | 'proxy_overlay' (nightly-only proxy fast path)
 
   # ── Pilot Pulse Pointer Params ──────────────────────────────
   # When pointer_mode = 'pilot': each ring slot gets a learned identity.
