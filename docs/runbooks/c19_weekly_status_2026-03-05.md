@@ -298,6 +298,33 @@ Verdict:
 Next action:
 - run deterministic proxy-step validation for `current` vs `delta_v3`.
 
+### Batch 2 — Proxy-step validation for `delta_v3`
+
+Purpose:
+- verify whether the microbench winner survives the actual short WikiText proxy step.
+
+Scripts used:
+- `v4/tests/profile_sweep_step_wikitext.py --impl current --write-impl current`
+- `v4/tests/profile_sweep_step_wikitext.py --impl current --write-impl delta_v3`
+
+Artifacts:
+- baseline JSON: [profile_sweep_step_wikitext_20260306_113911.json](../../v4/dev_notes/telemetry/profile_sweep_step_wikitext_20260306_113911.json)
+- baseline op table: [profile_sweep_step_wikitext_20260306_113911_ops.txt](../../v4/dev_notes/telemetry/profile_sweep_step_wikitext_20260306_113911_ops.txt)
+- candidate JSON: [profile_sweep_step_wikitext_20260306_114037.json](../../v4/dev_notes/telemetry/profile_sweep_step_wikitext_20260306_114037.json)
+- candidate op table: [profile_sweep_step_wikitext_20260306_114037_ops.txt](../../v4/dev_notes/telemetry/profile_sweep_step_wikitext_20260306_114037_ops.txt)
+
+Observed proxy-step timings:
+- `current`: `forward ~= 2.096s`, `backward ~= 1.345s`
+- `delta_v3`: `forward ~= 2.185s`, `backward ~= 1.353s`
+
+Verdict:
+- the microbench winner did not survive the real proxy step;
+- total proxy-step time regressed slightly instead of improving by the required `>= 5%`;
+- do not promote the `delta_v3` write rewrite.
+
+Next action:
+- move to Batch 3 and target op-level overhead (`aten::empty`, `aten::copy_`, `aten::fill_`, scatter/index-related ops) using the existing profiler tables.
+
 ## Planned Next Tests
 
 The next tests should be about confidence, not rediscovery:
