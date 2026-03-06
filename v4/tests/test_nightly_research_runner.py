@@ -15,7 +15,7 @@ from nightly_research_runner import (  # type: ignore[import-not-found]
     _ring_trace_guard,
     _surface_guards,
 )
-from instnct import func_linear_pointer_window_tns  # type: ignore[import-not-found]
+from instnct import func_linear_pointer_window_tns, func_shortest_arc_delta_tns  # type: ignore[import-not-found]
 
 
 def _fake_trace(batch=2, seq=4, steps=3, M=16, read_width=3, write_width=3):
@@ -106,3 +106,13 @@ def test_linear_pointer_window_preserves_integer_case():
     assert torch.equal(idx[1], torch.tensor([4, 5, 6, 7]))
     assert torch.allclose(merged_w[:, :3], weights)
     assert torch.allclose(merged_w[:, 3], torch.zeros(2))
+
+
+def test_shortest_arc_delta_wraps_across_seam():
+    import torch
+
+    current = torch.tensor([63.75, 0.25], dtype=torch.float32)
+    target = torch.tensor([0.25, 63.75], dtype=torch.float32)
+    delta = func_shortest_arc_delta_tns(current, target, 64)
+
+    assert torch.allclose(delta, torch.tensor([0.5, -0.5]))

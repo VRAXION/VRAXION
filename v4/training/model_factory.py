@@ -51,6 +51,7 @@ def _build_instnct_spec(embed_mode: bool, model_config: dict) -> dict:
         'embed_encoding': model_config.get('embed_encoding', 'learned'),
         'output_encoding': model_config.get('output_encoding', 'learned'),
         'pointer_mode': model_config.get('pointer_mode', 'sequential'),
+        'pointer_seam_mode': model_config.get('pointer_seam_mode', 'mod'),
         'write_mode': model_config.get('write_mode', 'accumulate'),
         'replace_impl': model_config.get('replace_impl', 'dense'),
         'bb_enabled': bool(model_config.get('bb_enabled', False)),

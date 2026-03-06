@@ -57,6 +57,7 @@ SURFACES: dict[str, dict] = {
         "R": 1,
         "pointer_mode": "sequential",
         "pointer_interp_mode": "off",
+        "pointer_seam_mode": "mod",
         "fixed_C": math.pi,
         "tail_mode": "linear",
         "tail_k": 6.0,
@@ -77,6 +78,7 @@ SURFACES: dict[str, dict] = {
         "R": 1,
         "pointer_mode": "sequential",
         "pointer_interp_mode": "off",
+        "pointer_seam_mode": "mod",
         "period": 64,
         "reset_each_batch": False,
         "pooled_topk_read": True,
@@ -95,6 +97,7 @@ SURFACES: dict[str, dict] = {
         "R": 1,
         "pointer_mode": "sequential",
         "pointer_interp_mode": "off",
+        "pointer_seam_mode": "mod",
         "fixed_C": math.pi,
         "tail_mode": "linear",
         "tail_k": 6.0,
@@ -147,6 +150,7 @@ def _build_meta(surface: str, variant: str, cfg: dict, overrides: dict | None = 
         "state_mode": cfg["state_mode"],
         "pointer_mode": cfg["pointer_mode"],
         "pointer_interp_mode": cfg.get("pointer_interp_mode", "off"),
+        "pointer_seam_mode": cfg.get("pointer_seam_mode", "mod"),
         "read_mode": variant_cfg["read_kernel_mode"],
         "write_mode": variant_cfg["write_address_mode"],
         "seq": cfg["seq"],
@@ -283,6 +287,7 @@ def _run_small_wikitext_fresh(surface: str, variant: str, cfg: dict) -> dict:
         write_topk_k=variant_cfg["write_topk_K"],
         pointer_mode=cfg["pointer_mode"],
         pointer_interp_mode=cfg["pointer_interp_mode"],
+        pointer_seam_mode=cfg["pointer_seam_mode"],
         ring_trace=True,
         device=cfg["device"],
         hidden_dim=cfg["hidden_dim"],
@@ -318,6 +323,7 @@ def _run_fast_memory_carry(surface: str, variant: str, cfg: dict) -> dict:
         ring_trace=True,
         pointer_mode=cfg["pointer_mode"],
         pointer_interp_mode=cfg["pointer_interp_mode"],
+        pointer_seam_mode=cfg["pointer_seam_mode"],
     )
     result["best_acc"] = result.get("peak_acc")
     result["time_s"] = result.get("wall_time")
@@ -376,6 +382,7 @@ def _run_wikitext_sequential_carry(surface: str, variant: str, cfg: dict) -> dic
         write_topk_k=variant_cfg["write_topk_K"],
         pointer_mode=cfg["pointer_mode"],
         pointer_interp_mode=cfg["pointer_interp_mode"],
+        pointer_seam_mode=cfg["pointer_seam_mode"],
         device=cfg["device"],
         hidden_dim=cfg["hidden_dim"],
         M=cfg["M"],
@@ -500,6 +507,7 @@ def run_surface(
     device_override: str | None = None,
     pointer_mode_override: str | None = None,
     pointer_interp_mode_override: str | None = None,
+    pointer_seam_mode_override: str | None = None,
 ) -> dict:
     cfg = dict(SURFACES[surface])
     if steps_override is not None:
@@ -510,6 +518,8 @@ def run_surface(
         cfg["pointer_mode"] = pointer_mode_override
     if pointer_interp_mode_override is not None:
         cfg["pointer_interp_mode"] = pointer_interp_mode_override
+    if pointer_seam_mode_override is not None:
+        cfg["pointer_seam_mode"] = pointer_seam_mode_override
 
     if surface == "small_wikitext_fresh":
         result = _run_small_wikitext_fresh(surface, variant, cfg)
@@ -557,6 +567,7 @@ def main():
     parser.add_argument("--device", type=str, default="", choices=["", "cpu", "cuda"])
     parser.add_argument("--pointer-mode", type=str, default="", choices=["", "sequential", "learned", "pilot"])
     parser.add_argument("--pointer-interp-mode", type=str, default="", choices=["", "off", "linear"])
+    parser.add_argument("--pointer-seam-mode", type=str, default="", choices=["", "mod", "shortest_arc"])
     parser.add_argument("--json-out", type=str, default="")
     args = parser.parse_args()
 
@@ -567,6 +578,7 @@ def main():
         device_override=(args.device or None),
         pointer_mode_override=(args.pointer_mode or None),
         pointer_interp_mode_override=(args.pointer_interp_mode or None),
+        pointer_seam_mode_override=(args.pointer_seam_mode or None),
     )
 
     result = payload["result"]

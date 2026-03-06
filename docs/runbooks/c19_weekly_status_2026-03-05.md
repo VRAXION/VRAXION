@@ -1484,3 +1484,37 @@ Verdict:
 - pointer interpolation stays alive as a research branch, but it is not ready for promotion as a general nightly default;
 - the next architecture branch should not reopen pooled topK;
 - the next serious candidate after this is still `multi-timescale taps`, unless a larger-capacity real-data surface is introduced first.
+
+### Batch 23 — shortest-arc pointer seam mode (nightly-only implementation)
+
+Purpose:
+- add the historical wrap-seam fix as an explicit nightly-only pointer option;
+- avoid silently conflating the existing fractional pointer interpolation with the older shortest-arc topology idea.
+
+Implementation:
+- added `pointer_seam_mode = mod|shortest_arc` to [v4/model/instnct.py](../../v4/model/instnct.py)
+- added circular delta helper:
+  - `delta = ((target - current + M/2) % M) - M/2`
+- wired this mode into pointer updates so seam-crossing movement can use shortest circular motion instead of flat-line wrap behavior
+- propagated the mode through:
+  - [v4/training/model_factory.py](../../v4/training/model_factory.py)
+  - [v4/tests/bench_fast_memory.py](../../v4/tests/bench_fast_memory.py)
+  - [v4/tests/sweep_c19_core_geometry_wikitext.py](../../v4/tests/sweep_c19_core_geometry_wikitext.py)
+  - [v4/tests/nightly_research_runner.py](../../v4/tests/nightly_research_runner.py)
+
+Correctness checks:
+- [v4/tests/test_nightly_research_runner.py](../../v4/tests/test_nightly_research_runner.py) now includes direct seam-wrap coverage for the shortest-arc delta helper
+- `pytest` status after patch: `7 passed`
+- canonical runner smoke:
+  - [fast memory carry / LL / learned / linear / shortest_arc](../../v4/dev_notes/telemetry/nightly_runner_fast_memory_carry_LL_20260306_225427_897372.json)
+
+Read:
+- this patch does **not** claim a measured accuracy win yet;
+- it only makes the historical shortest-arc seam handling available as an explicit nightly research mode;
+- the previous `pointer_interp_mode=linear` branch remains separate from this seam-topology fix.
+
+Verdict:
+- shortest-arc support is now present in the nightly codepath;
+- no benchmark conclusion should be drawn from the smoke artifact alone;
+- if we want to test it seriously, the next fair A/B is:
+  - `fast_memory_carry`, `LL`, learned pointer, `linear + mod` vs `linear + shortest_arc`

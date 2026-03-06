@@ -315,6 +315,18 @@ def func_linear_pointer_window_tns(
     return center0_tns, alpha_tns.squeeze(1), merged_idx_tns, merged_weights_tns
 
 # · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · ·
+def func_shortest_arc_delta_tns(
+    current_tns,
+    target_tns,
+    slots_int,
+):
+    """Shortest signed circular delta from current to target on a ring."""
+    slots_flt = float(slots_int)
+    half_flt = slots_flt / 2.0
+    return torch.remainder((target_tns - current_tns) + half_flt, slots_flt) - half_flt
+
+
+# · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · ·
 def func_softwrit_tns(  # func_ = standalone op, _tns = returns a tensor (the updated ring)
     ring_tns,            # the shared ring buffer to write into; shape (B, M, D)
     hidden_tns,          # hidden state of the current expert; shape (B, D)
@@ -520,7 +532,8 @@ def func_movepntr_tns(  # func_ = standalone op, _tns = returns a tensor (new po
     ptr_tns,         # current pointer position for this expert; shape (B,)
     dests_tns,       # φ-destination row for this expert; shape (M,) — from phi_destinations table
     prob_flt,        # jump probability for this expert — e.g. 0.9, 0.1, or 0.5
-    slots_int        # total ring slots (M) — needed for mod wrap on walk
+    slots_int,       # total ring slots (M) — needed for mod wrap on walk
+    seam_mode='mod'  # 'mod' | 'shortest_arc' — nightly-only wrap semantics
 ):
     """Moves one expert's pointer on the ring. Two options soft-blended:
     φ-jump (long leap to golden-ratio destination) or +1 walk (short step).
@@ -537,7 +550,14 @@ def func_movepntr_tns(  # func_ = standalone op, _tns = returns a tensor (new po
     # short step: just move +1, wrap around via mod M; shape (B,)
     walk_target_tns = (ptr_tns + 1) % slots_int
 
-    # soft blend: p·jump + (1-p)·walk — differentiable, no hard switching; shape (B,)
+    # soft blend on the circle, not on the flattened [0, M) line.
+    if seam_mode == 'shortest_arc':
+        jump_delta_tns = func_shortest_arc_delta_tns(ptr_tns, jump_target_tns, slots_int)
+        walk_delta_tns = func_shortest_arc_delta_tns(ptr_tns, walk_target_tns, slots_int)
+        blended_delta_tns = prob_flt * jump_delta_tns + (1 - prob_flt) * walk_delta_tns
+        return torch.remainder(ptr_tns + blended_delta_tns, float(slots_int))
+
+    # legacy flat blend: p·jump + (1-p)·walk; shape (B,)
     return prob_flt * jump_target_tns + (1 - prob_flt) * walk_target_tns
 
 # ── Model ───────────────────────────────────────────────────────
@@ -581,6 +601,7 @@ class INSTNCT(nn.Module):
                  write_mode='accumulate',                  # 'accumulate' (scatter_add) | 'replace' (HDD-style overwrite)
                  replace_impl=CNFG_REPLACEIMPL_STR,        # 'dense' | 'proxy_overlay' (nightly-only proxy fast path)
                  pointer_interp_mode='off',                # 'off' | 'linear' — nightly-only fractional pointer center
+                 pointer_seam_mode='mod',                  # 'mod' | 'shortest_arc' — nightly-only wrap-seam fix
                  s_constraint='softplus'):                 # 'softplus' (S>0) | 'raw' (unconstrained)
         super().__init__()
         assert kernel_mode in ('uniform', 'vshape', 'gaussian', 'dotprod', 'topk'), \
@@ -599,11 +620,14 @@ class INSTNCT(nn.Module):
             f"replace_impl must be 'dense' or 'proxy_overlay', got '{replace_impl}'"
         assert pointer_interp_mode in ('off', 'linear'), \
             f"pointer_interp_mode must be 'off' or 'linear', got '{pointer_interp_mode}'"
+        assert pointer_seam_mode in ('mod', 'shortest_arc'), \
+            f"pointer_seam_mode must be 'mod' or 'shortest_arc', got '{pointer_seam_mode}'"
         assert write_address_mode in ('pointer', 'content_topk'), \
             f"write_address_mode must be 'pointer' or 'content_topk', got '{write_address_mode}'"
         self.write_mode = write_mode
         self.replace_impl = replace_impl
         self.pointer_interp_mode = pointer_interp_mode
+        self.pointer_seam_mode = pointer_seam_mode
 
         # backward compat: embed_dim=X sets hidden_dim=slot_dim=X
         if embed_dim is not None:
@@ -932,7 +956,12 @@ class INSTNCT(nn.Module):
                     sim = (query * slot_id).sum(-1)                                    # (B,) cosine sim
                     tau = F.softplus(self._ptr_tau)
                     jump = self._ptr_max_jump * torch.sigmoid(-sim * tau)              # (B,)
-                    ptr_tns[i] = (ptr_tns[i] + 1 + jump) % M                          # seek to new pos
+                    target_tns = torch.remainder(ptr_tns[i] + 1 + jump, float(M))
+                    if self.pointer_seam_mode == 'shortest_arc':
+                        delta_tns = func_shortest_arc_delta_tns(ptr_tns[i], target_tns, M)
+                        ptr_tns[i] = torch.remainder(ptr_tns[i] + delta_tns, float(M))
+                    else:
+                        ptr_tns[i] = target_tns
 
                     if torch.is_grad_enabled() and self.training:
                         d = self._diag
@@ -1270,7 +1299,12 @@ class INSTNCT(nn.Module):
                     direction = a[:, 1] - a[:, 2]                                # (B,) in [-1, 1]
                     delta = (1 - a[:, 0]) * direction * m                        # (B,)
                     with _source_scope('pointer_update'):
-                        ptr_tns[i] = (ptr_tns[i] + delta) % M
+                        if self.pointer_seam_mode == 'shortest_arc':
+                            target_tns = torch.remainder(ptr_tns[i] + delta, float(M))
+                            delta_tns = func_shortest_arc_delta_tns(ptr_tns[i], target_tns, M)
+                            ptr_tns[i] = torch.remainder(ptr_tns[i] + delta_tns, float(M))
+                        else:
+                            ptr_tns[i] = torch.remainder(ptr_tns[i] + delta, float(M))
                 elif self.pointer_mode == 'pilot':
                     pass  # already moved pre-read (seek-then-read)
                 else:
