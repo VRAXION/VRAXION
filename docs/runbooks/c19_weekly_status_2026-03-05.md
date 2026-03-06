@@ -1518,3 +1518,36 @@ Verdict:
 - no benchmark conclusion should be drawn from the smoke artifact alone;
 - if we want to test it seriously, the next fair A/B is:
   - `fast_memory_carry`, `LL`, learned pointer, `linear + mod` vs `linear + shortest_arc`
+
+### Batch 24 — shortest-arc quick gate (`fast_memory_carry`, `LL`, learned pointer)
+
+Purpose:
+- quickly test whether the newly added shortest-arc seam handling helps once pointer interpolation is already enabled.
+
+Runner:
+- [v4/tests/nightly_research_runner.py](../../v4/tests/nightly_research_runner.py)
+- surface: `fast_memory_carry`
+- variant: `LL`
+- pointer mode: `learned`
+- pointer interpolation: `linear`
+- compare:
+  - `pointer_seam_mode = mod`
+  - `pointer_seam_mode = shortest_arc`
+
+Artifacts:
+- [linear + mod](../../v4/dev_notes/telemetry/nightly_runner_fast_memory_carry_LL_20260306_225703_457521.json)
+- [linear + shortest_arc](../../v4/dev_notes/telemetry/nightly_runner_fast_memory_carry_LL_20260306_225757_282215.json)
+
+Observed result:
+- `mod`: final acc `0.719`, best acc `0.719`, time `41.9s`, ring dependency `+71.1pp`
+- `shortest_arc`: final acc `0.656`, best acc `0.688`, time `43.0s`, ring dependency `+65.0pp`
+
+Read:
+- on this quick deterministic gate, shortest-arc did not help;
+- it was slightly slower and clearly worse in both final and best accuracy;
+- this suggests the current learned-pointer regime is not seam-limited on this mechanistic surface.
+
+Verdict:
+- keep the seam mode in nightly as an available research option;
+- do not promote it or prioritize it;
+- the shortest-arc branch is currently lower priority than `multi-timescale taps`.
