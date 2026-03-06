@@ -1230,3 +1230,77 @@ Next action:
 - keep `LL` as the active small real-data baseline;
 - do not spend more time on `topk_K` sweeps on this exact surface;
 - if global retrieval is revisited, it should be through a different retrieval shape (for example differentiated pointer or multi-timescale taps), not by tuning `topk_K` within this pooled read design.
+
+### Batch 19 — full ring trace on small WikiText surface (`LL` vs `GG`)
+
+Purpose:
+- remove the remaining ambiguity around how the ring is actually used on the small real-data surface;
+- collect a full per-step pointer/read/write trace plus slot histograms on the same objective where `LL > GG` was already observed.
+
+Harness:
+- script: `v4/tests/sweep_c19_core_geometry_wikitext.py`
+- device: `cpu`
+- config shared by both runs:
+  - `steps=10000`
+  - `batch=8`
+  - `seq=8`
+  - `seed=42`
+  - `hidden_dim=32`
+  - `M=64`
+  - `slot_dim=8`
+  - `N=1`
+  - `R=1`
+  - fixed `C = pi`
+  - `tail_mode = linear`
+  - `ring_trace = on`
+- variants:
+  - `LL = vshape read + pointer write`
+  - `GG = topk_K=2 read + content_topk write`
+
+Artifacts:
+- [LL trace run](../../v4/dev_notes/telemetry/sweep_c19_core_geometry_wikitext_20260306_203626.json)
+- [GG trace run](../../v4/dev_notes/telemetry/sweep_c19_core_geometry_wikitext_20260306_204520.json)
+
+Observed result:
+- `LL`
+  - final acc `0.356`
+  - final BPC `3.303`
+  - wall time `407s`
+  - trace summary:
+    - `ptr_unique_frac = 0.125`
+    - `read_unique_frac = 0.156`
+    - `write_unique_frac = 0.156`
+    - `ptr_jump_mean = 1.75`
+    - `read_center_dist_mean = 0.67`
+    - `write_center_dist_mean = 0.67`
+    - `read_write_overlap_mean = 1.000`
+- `GG`
+  - final acc `0.350`
+  - final BPC `3.340`
+  - wall time `514s`
+  - trace summary:
+    - `ptr_unique_frac = 0.125`
+    - `read_unique_frac = 0.250`
+    - `write_unique_frac = 0.250`
+    - `ptr_jump_mean = 1.75`
+    - `read_center_dist_mean = 5.02`
+    - `write_center_dist_mean = 5.02`
+    - `read_write_overlap_mean = 1.000`
+
+Read:
+- both variants traverse the same pointer path; the pointer itself is not the differentiator here;
+- `LL` keeps both read and write tightly local around the pointer-centered working set;
+- `GG` genuinely spreads both read and write much farther across the ring while still following the same pointer timeline;
+- despite that much broader ring usage, `GG` still finishes slightly worse than `LL`.
+
+Verdict:
+- the missing information on this surface is no longer "how the ring is being used";
+- the ring trace now makes the failure mode explicit:
+  - `GG` is using a broader non-local ring footprint,
+  - but that extra address range does not convert into a better objective;
+- this is strong evidence that the small real-data surface is bottlenecked more by representation / bandwidth than by pointer-local reach.
+
+Next action:
+- stop treating addressing range as the main unknown on this exact small WikiText surface;
+- if global retrieval is revisited, the next candidate should be a different retrieval shape rather than another topK sweep;
+- the more promising next proof target is either differentiated pointer interpolation or a multi-timescale tap design.

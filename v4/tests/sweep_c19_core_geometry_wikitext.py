@@ -49,6 +49,43 @@ TOPK_READ_DIAG_KEYS = (
 )
 
 
+def _circ_dist(a, b, M):
+    delta = abs(int(a) - int(b))
+    return min(delta, M - delta)
+
+
+def _summarize_ring_trace(trace, M):
+    if not trace or not trace.get('ptr_trace'):
+        return None
+    ptr_trace = trace['ptr_trace']
+    read_idx_trace = trace['read_idx_trace']
+    write_idx_trace = trace['write_idx_trace']
+    read_write_overlap_trace = trace['read_write_overlap_trace']
+    ptr_jump = []
+    read_center_dist = []
+    write_center_dist = []
+    for i in range(1, len(ptr_trace)):
+        ptr_jump.append(_circ_dist(ptr_trace[i - 1], ptr_trace[i], M))
+    for center, read_idx, write_idx in zip(ptr_trace, read_idx_trace, write_idx_trace):
+        if read_idx:
+            read_center_dist.append(sum(_circ_dist(center, idx, M) for idx in read_idx) / len(read_idx))
+        if write_idx:
+            write_center_dist.append(sum(_circ_dist(center, idx, M) for idx in write_idx) / len(write_idx))
+    center_hist = trace['center_hist']
+    read_hist = trace['read_hist']
+    write_hist = trace['write_hist']
+    return {
+        'steps_traced': len(ptr_trace),
+        'ptr_unique_frac': sum(1 for v in center_hist if v > 0) / max(len(center_hist), 1),
+        'read_unique_frac': sum(1 for v in read_hist if v > 0) / max(len(read_hist), 1),
+        'write_unique_frac': sum(1 for v in write_hist if v > 0) / max(len(write_hist), 1),
+        'ptr_jump_mean': (sum(ptr_jump) / len(ptr_jump)) if ptr_jump else 0.0,
+        'read_center_dist_mean': (sum(read_center_dist) / len(read_center_dist)) if read_center_dist else 0.0,
+        'write_center_dist_mean': (sum(write_center_dist) / len(write_center_dist)) if write_center_dist else 0.0,
+        'read_write_overlap_mean': (sum(read_write_overlap_trace) / len(read_write_overlap_trace)) if read_write_overlap_trace else 0.0,
+    }
+
+
 def _default_json_path():
     stamp = datetime.now().strftime('%Y%m%d_%H%M%S')
     out_dir = V4_ROOT / 'dev_notes' / 'telemetry'
@@ -278,6 +315,7 @@ def run_one(
     read_kernel_mode=None,
     write_address_mode='pointer',
     write_topk_k=None,
+    ring_trace=False,
     device='cuda',
     hidden_dim=2048,
     M=1024,
@@ -290,6 +328,7 @@ def run_one(
     orig_fn = instnct._c19_activation
     instnct._c19_activation = act_fn
     instnct.set_topk_read_diag_enabled(topk_read_diag)
+    instnct.set_ring_trace_enabled(ring_trace)
 
     model = build_model(
         seed,
@@ -322,6 +361,20 @@ def run_one(
     accs = []
     grad_norms = []
     topk_diag_rows = {key: [] for key in TOPK_READ_DIAG_KEYS}
+    ring_trace_rows = None
+    ring_trace_summary = None
+    if ring_trace:
+        ring_trace_rows = {
+            'ptr_trace': [],
+            'read_idx_trace': [],
+            'read_weight_trace': [],
+            'write_idx_trace': [],
+            'write_weight_trace': [],
+            'read_write_overlap_trace': [],
+            'center_hist': [0 for _ in range(M)],
+            'read_hist': [0 for _ in range(M)],
+            'write_hist': [0 for _ in range(M)],
+        }
     max_grad = 0.0
     t0 = time.time()
 
@@ -354,6 +407,14 @@ def run_one(
                 value = model._diag.get(key)
                 if value is not None:
                     topk_diag_rows[key].append(float(value))
+        if ring_trace:
+            trace = getattr(model, '_ring_trace', None)
+            if trace is not None:
+                for key in ('ptr_trace', 'read_idx_trace', 'read_weight_trace', 'write_idx_trace', 'write_weight_trace', 'read_write_overlap_trace'):
+                    ring_trace_rows[key].extend(trace.get(key, []))
+                for key in ('center_hist', 'read_hist', 'write_hist'):
+                    vals = trace.get(key, [])
+                    ring_trace_rows[key] = [a + int(b) for a, b in zip(ring_trace_rows[key], vals)]
 
         if step % 100 == 0 or step == 1:
             avg_loss = sum(losses[-100:]) / len(losses[-100:])
@@ -385,6 +446,7 @@ def run_one(
     elapsed = time.time() - t0
     instnct._c19_activation = orig_fn
     instnct.set_topk_read_diag_enabled(False)
+    instnct.set_ring_trace_enabled(False)
 
     tail = min(100, len(losses))
     spikes = sum(1 for g in grad_norms if g > 50)
@@ -409,6 +471,10 @@ def run_one(
     for key in TOPK_READ_DIAG_KEYS:
         rows = topk_diag_rows[key]
         result[key] = (sum(rows) / len(rows)) if rows else None
+    if ring_trace_rows is not None:
+        ring_trace_summary = _summarize_ring_trace(ring_trace_rows, M)
+        result['ring_trace_summary'] = ring_trace_summary
+        result['ring_trace'] = ring_trace_rows
     return result
 
 
@@ -432,6 +498,7 @@ def main():
     parser.add_argument('--topk-k', type=int, default=8)
     parser.add_argument('--write-topk-k', type=int, default=0)
     parser.add_argument('--topk-read-diag', action='store_true')
+    parser.add_argument('--ring-trace', action='store_true')
     parser.add_argument('--replace-impl', type=str, default='dense', choices=['dense', 'proxy_overlay'])
     parser.add_argument('--read-kernel-mode', type=str, default='', choices=['', 'vshape', 'topk'])
     parser.add_argument('--write-address-mode', type=str, default='pointer', choices=['pointer', 'content_topk'])
@@ -470,6 +537,7 @@ def main():
         f'Model: hidden={args.hidden_dim} M={args.M} slot={args.slot_dim} N={args.N} R={args.R}'
     )
     print(f'topk_read_diag: {args.topk_read_diag}')
+    print(f'ring_trace: {args.ring_trace}')
     print()
 
     data_dir = V4_ROOT / 'training_data'
@@ -521,6 +589,7 @@ def main():
             read_kernel_mode=args.read_kernel_mode or None,
             write_address_mode=args.write_address_mode,
             write_topk_k=(args.write_topk_k or None),
+            ring_trace=args.ring_trace,
             device=args.device,
             hidden_dim=args.hidden_dim,
             M=args.M,
@@ -543,6 +612,17 @@ def main():
             f'p99-ring={r["p99_ring_idx"]:.2f} '
             f'({r["time_s"]:.0f}s)'
         )
+        if args.ring_trace and r.get('ring_trace_summary'):
+            s = r['ring_trace_summary']
+            print(
+                f'     trace: ptr_unique={s["ptr_unique_frac"]:.3f} '
+                f'read_unique={s["read_unique_frac"]:.3f} '
+                f'write_unique={s["write_unique_frac"]:.3f} '
+                f'ptr_jump={s["ptr_jump_mean"]:.2f} '
+                f'rdist={s["read_center_dist_mean"]:.2f} '
+                f'wdist={s["write_center_dist_mean"]:.2f} '
+                f'overlap={s["read_write_overlap_mean"]:.3f}'
+            )
         print()
 
     print('=' * 118)
@@ -593,6 +673,7 @@ def main():
             'topk_k': args.topk_k,
             'write_topk_k': args.write_topk_k,
             'topk_read_diag': args.topk_read_diag,
+            'ring_trace': args.ring_trace,
             'replace_impl': args.replace_impl,
             'read_kernel_mode': args.read_kernel_mode or None,
             'write_address_mode': args.write_address_mode,

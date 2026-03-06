@@ -18,6 +18,7 @@ _C19_C = math.pi
 _SOURCE_MAP_ENABLED = False
 _NO_SOURCE_SCOPE = nullcontext()
 _TOPK_READ_DIAG_ENABLED = False
+_RING_TRACE_ENABLED = False
 _TOPK_READ_DIAG_KEYS = (
     'topk_mean_abs_circ_dist',
     'topk_outside_local_frac',
@@ -37,6 +38,11 @@ def set_source_map_enabled(enabled: bool):
 def set_topk_read_diag_enabled(enabled: bool):
     global _TOPK_READ_DIAG_ENABLED
     _TOPK_READ_DIAG_ENABLED = bool(enabled)
+
+
+def set_ring_trace_enabled(enabled: bool):
+    global _RING_TRACE_ENABLED
+    _RING_TRACE_ENABLED = bool(enabled)
 
 
 def _source_scope(name: str):
@@ -847,6 +853,19 @@ class INSTNCT(nn.Module):
         write_topk_diag_sum_unique = 0.0
         topk_diag_count = 0
         write_topk_diag_count = 0
+        ring_trace = None
+        if _RING_TRACE_ENABLED:
+            ring_trace = {
+                'ptr_trace': [],
+                'read_idx_trace': [],
+                'read_weight_trace': [],
+                'write_idx_trace': [],
+                'write_weight_trace': [],
+                'read_write_overlap_trace': [],
+                'center_hist': torch.zeros(M, dtype=torch.long),
+                'read_hist': torch.zeros(M, dtype=torch.long),
+                'write_hist': torch.zeros(M, dtype=torch.long),
+            }
         if proxy_overlay_enabled:
             ptr0_tns = ptr_tns[0].long().clamp(0, M - 1)
             if bool((ptr0_tns != ptr0_tns[:1]).any().item()):
@@ -1014,6 +1033,37 @@ class INSTNCT(nn.Module):
                         local_pointer_weights_tns = local_pointer_weights_tns / local_pointer_weights_tns.sum(dim=1, keepdim=True)
                     write_expanded_idx_tns = local_pointer_expanded_idx_tns
                     write_weights_tns = local_pointer_weights_tns
+
+                if ring_trace is not None and i == 0:
+                    if self.read_kernel_mode == 'topk':
+                        read_idx_src = topk_idx
+                        read_w_src = topk_attn
+                    else:
+                        read_idx_src = indices_tns
+                        read_w_src = local_pointer_weights_tns
+                    if self.write_address_mode == 'content_topk':
+                        write_idx_src = write_topk_idx
+                        write_w_src = write_weights_tns
+                    else:
+                        write_idx_src = indices_tns
+                        write_w_src = write_weights_tns
+
+                    ptr_sample = int(center[0].detach().item())
+                    read_idx_sample = [int(x) for x in read_idx_src[0].detach().tolist()]
+                    read_weight_sample = [float(x) for x in read_w_src[0].detach().tolist()]
+                    write_idx_sample = [int(x) for x in write_idx_src[0].detach().tolist()]
+                    write_weight_sample = [float(x) for x in write_w_src[0].detach().tolist()]
+                    overlap = len(set(read_idx_sample) & set(write_idx_sample)) / max(len(set(read_idx_sample) | set(write_idx_sample)), 1)
+
+                    ring_trace['ptr_trace'].append(ptr_sample)
+                    ring_trace['read_idx_trace'].append(read_idx_sample)
+                    ring_trace['read_weight_trace'].append(read_weight_sample)
+                    ring_trace['write_idx_trace'].append(write_idx_sample)
+                    ring_trace['write_weight_trace'].append(write_weight_sample)
+                    ring_trace['read_write_overlap_trace'].append(float(overlap))
+                    ring_trace['center_hist'] += torch.bincount(center.detach().cpu(), minlength=M)
+                    ring_trace['read_hist'] += torch.bincount(read_idx_src.detach().reshape(-1).cpu(), minlength=M)
+                    ring_trace['write_hist'] += torch.bincount(write_idx_src.detach().reshape(-1).cpu(), minlength=M)
 
                 # ─ phase signal ─
                 theta_tns = (ptr_tns[i] / M) * (2 * math.pi)
@@ -1233,6 +1283,20 @@ class INSTNCT(nn.Module):
             self._diag['write_topk_mean_abs_circ_dist'] = write_topk_diag_sum_dist / write_topk_diag_count
             self._diag['write_topk_outside_local_frac'] = write_topk_diag_sum_outside / write_topk_diag_count
             self._diag['write_topk_unique_slot_frac'] = write_topk_diag_sum_unique / write_topk_diag_count
+        if ring_trace is not None:
+            self._ring_trace = {
+                'ptr_trace': ring_trace['ptr_trace'],
+                'read_idx_trace': ring_trace['read_idx_trace'],
+                'read_weight_trace': ring_trace['read_weight_trace'],
+                'write_idx_trace': ring_trace['write_idx_trace'],
+                'write_weight_trace': ring_trace['write_weight_trace'],
+                'read_write_overlap_trace': ring_trace['read_write_overlap_trace'],
+                'center_hist': ring_trace['center_hist'].tolist(),
+                'read_hist': ring_trace['read_hist'].tolist(),
+                'write_hist': ring_trace['write_hist'].tolist(),
+            }
+        else:
+            self._ring_trace = None
 
         return ring_tns, ptr_tns, hidden_tns, bb_buf, bb_keys, bb_write_ptr, bb_steps, outs_tns
 
