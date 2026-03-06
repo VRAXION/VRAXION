@@ -856,6 +856,67 @@ Next action:
 - do not pursue `GG` as the next refinement on this bench;
 - if global retrieval is revisited beyond `GL`, it should be via a more selective hybrid write, not full content-topk write.
 
+### Batch 14 — small-model WikiText `LL` baseline
+
+Purpose:
+- take the same small `10k` CPU model used on the mechanistic memory bench;
+- place it on real English WikiText shards;
+- measure where the local baseline (`LL`) actually plateaus before comparing it to `GL`.
+
+Harness:
+- script: `v4/tests/sweep_c19_core_geometry_wikitext.py`
+- device: `cpu`
+- config:
+  - `steps=10000`
+  - `batch=8`
+  - `seq=8`
+  - `hidden_dim=32`
+  - `M=64`
+  - `slot_dim=8`
+  - `N=1`
+  - `R=1`
+  - fixed `C = pi`
+  - `tail_mode = linear`
+  - `read_kernel_mode = vshape`
+  - `write_address_mode = pointer`
+
+Artifact:
+- [sweep_wikitext_ll_small_10k_cpu_20260306.json](../../v4/dev_notes/telemetry/sweep_wikitext_ll_small_10k_cpu_20260306.json)
+
+Observed result:
+- final acc `0.356`
+- best acc `0.578`
+- final loss `2.2893`
+- final BPC `3.303`
+- wall time `395s`
+- `0.0395 s/step`
+
+Observed training shape:
+- strong early gains up to roughly the `2k-4k` region;
+- after that the run enters a broad, noisy plateau around `0.34-0.36` final-window accuracy;
+- no instability signal:
+  - grad norm stayed around `0.5-0.6`
+  - max grad norm stayed below `1.0`
+
+Observed C19 telemetry:
+- `tail_hit = 0.0000%`
+- `p99 |x|/C = 1.19`
+- `p99-ring = 1.00`
+
+Read:
+- this small real-data baseline is stable, not spiky;
+- it does learn real byte-level English regularities, but it appears capacity-limited;
+- the plateau looks like a small-model ceiling, not a training-instability failure;
+- just like the earlier probes, the active C19 regime still stays deep inside the inner core and does not use the tail.
+
+Verdict:
+- this is a valid real-data baseline for a same-size `LL vs GL` comparison;
+- the local baseline does not collapse, but it also does not continue improving sharply after the mid-run;
+- the next useful comparison on this exact surface is `GL`, not a larger `LL`.
+
+Next action:
+- run the matching small-model WikiText `GL` baseline on the same `10k` CPU surface if we want to know whether global read breaks this local plateau or merely converges to the same ceiling.
+
 ## Planned Next Tests
 
 The next tests should be about confidence, not rediscovery:
