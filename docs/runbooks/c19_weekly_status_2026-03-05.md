@@ -599,6 +599,56 @@ Verdict:
 Next action:
 - continue with deterministic ring-path minmaxing around the local read/write pipeline (`window_prepare`, `softread`, rolling local cache, tensor churn), not global topK search.
 
+### Batch 9 — `topk_K=1` sanity check against the current `topk_K=8` result
+
+Purpose:
+- test the simplest reduction of the current global-read branch:
+  - same `kernel_mode=topk`
+  - same current architecture
+  - only reduce `topk_K` from `8` to `1`
+- check whether the old intuition ("smaller K might keep the benefit but get cheaper") still holds here.
+
+Quality script used:
+- `v4/tests/sweep_c19_core_geometry_wikitext.py --steps 60 --batch 16 --seq 256 --seed 42 --c-values pi --tail-modes linear --kernel-modes topk --topk-k 1 --replace-impl dense`
+
+Quality artifact:
+- [sweep_kernel_topk1_20260306.json](../../v4/dev_notes/telemetry/sweep_kernel_topk1_20260306.json)
+
+Observed short-train quality:
+- `topk_K=8`
+  - final acc `0.307`
+  - best acc `0.370`
+  - final loss `2.6022`
+  - wall time `286s`
+- `topk_K=1`
+  - final acc `0.298`
+  - best acc `0.361`
+  - final loss `2.6358`
+  - wall time `290s`
+
+Perf script used:
+- `v4/tests/profile_sweep_step_wikitext.py --impl current --write-impl current --replace-impl dense --kernel-mode topk --topk-k 1`
+
+Perf artifacts:
+- [profile_kernel_topk1_20260306.json](../../v4/dev_notes/telemetry/profile_kernel_topk1_20260306.json)
+- [profile_kernel_topk1_20260306_ops.txt](../../v4/dev_notes/telemetry/profile_kernel_topk1_20260306_ops.txt)
+
+Observed one-step perf:
+- `topk_K=8`: total `~= 4.449s`
+- `topk_K=1`: total `~= 5.099s`
+
+Read:
+- on this architecture, shrinking `K` from `8` to `1` did not preserve quality;
+- it also did not buy a clean perf win in the one-step proxy;
+- that fits the current code path: the branch still scores the whole ring before taking topK, so reducing `K` does not remove the main global-search cost.
+
+Verdict:
+- reject `topk_K=1` as a promising cheap substitute for the current `topk_K=8` branch;
+- do not reopen global topK search as the next minmax target.
+
+Next action:
+- stay on the local pointer-window path and optimize the deterministic local read/write pipeline instead of global topK variants.
+
 ## Planned Next Tests
 
 The next tests should be about confidence, not rediscovery:
