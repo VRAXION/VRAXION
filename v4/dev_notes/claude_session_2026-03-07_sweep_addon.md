@@ -241,5 +241,54 @@ A bitlift architektúra: `byte → 8-bit binary → Linear(8, hidden_dim)`. A pr
 
 ---
 
+## 9. IQ Ladder Sweep — "Mit tud megtanulni ez a modell?"
+
+> **Hozzáadva: 2026-03-07 — Első teljes IQ benchmark**
+
+### 9.1 Motiváció
+
+Az eddigi sweep-ek (echo + delay_echo) szintetikus micro-taskok voltak. Nem tudtuk,
+hogy az INSTNCT v4 **valójában milyen nehézségű feladatot tud megtanulni** 134K param-mal.
+
+Új sweep: a `datagen/generate.py` 5-tieres nehézségi létrájának mind a 8 taskja, 500 step, masked loss.
+
+### 9.2 Phase 1: IQ Ceiling — Baseline (H=256, SD=64, M=256, N=1, R=1, 134K params)
+
+| Tier | Task | Acc | Threshold | Eredmény |
+|------|------|-----|-----------|----------|
+| 1 | echo256 | **20.6%** | 2.0% | PASS |
+| 1 | not256 | **16.2%** | 2.0% | PASS |
+| 2 | shift256 | **38.0%** | 1.5% | PASS |
+| 2 | count256 | **89.8%** | 1.5% | PASS |
+| 3 | add256 | **5.1%** | 1.0% | PASS |
+| 4 | fib256 | **3.2%** | 1.0% | PASS |
+| 5 | delay_echo256 | **15.0%** | 1.0% | PASS |
+| 5 | denoise256 | **5.5%** | 1.0% | PASS |
+
+**IQ Ceiling: Tier 5 — 8/8 PASS** (500 step, batch=8, seq=64, CPU)
+
+### 9.3 Elemzés
+
+1. **A modell MINDEN tieret megtanulta** 134K param-mal, 500 step alatt
+2. **count256 dominál** (89.8%) — a +1 mod 256 mintázat triviális a modellnek
+3. **shift256 erős** (38.0%) — a byte-rotáció jól tanulható vshape kernellel
+4. **echo/not szolid** (20.6% / 16.2%) — a copy/invert task megy
+5. **add256 gyenge** (5.1%) — az aritmetika nehezebb, de tanul
+6. **fib256 minimális** (3.2%) — a 2-step memory task a leggyengébb PASS
+7. **delay_echo erős** (15.0%) — a ring memory MŰKÖDIK, noise-on át is emlékezik
+8. **denoise alacsony** (5.5%) — a byte-level zajtisztítás nehéz
+
+### 9.4 Következtetés
+
+A 134K param-os INSTNCT v4 már 500 step-ben is tanul minden tiernél.
+A Phase 2 sweep ezért nem pass/fail, hanem **acc-maximalizáló** kell legyen:
+melyik param-allokáció adja a LEGMAGASABB acc-t a nehéz taskokon?
+
+### 9.5 Phase 2: Param-allokáció sweep (eredmények pending...)
+
+*Futás alatt — 8 config × nehéz taskok × 500 step*
+
+---
+
 *Generálta: Claude (Opus 4.6) — 2026-03-07*
 *Session: claude/update-nightly-branch-1pysT*
