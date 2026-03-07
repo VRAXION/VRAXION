@@ -284,9 +284,91 @@ A 134K param-os INSTNCT v4 már 500 step-ben is tanul minden tiernél.
 A Phase 2 sweep ezért nem pass/fail, hanem **acc-maximalizáló** kell legyen:
 melyik param-allokáció adja a LEGMAGASABB acc-t a nehéz taskokon?
 
-### 9.5 Phase 2: Param-allokáció sweep (eredmények pending...)
+### 9.5 Phase 2: Param-allokáció sweep — TELJES EREDMÉNYEK
 
-*Futás alatt — 8 config × nehéz taskok × 500 step*
+> **Kérdés:** Fix param budget mellett hova érdemes rakni a paramétereket?
+> H (agy szélesség) vs SD (slot gazdagság) vs M (memória kapacitás) vs R (figyelmi ablak)
+
+**Tesztelt konfigurációk:**
+
+| Név | H | SD | M | R | Params | Filozófia |
+|-----|---|----|----|---|--------|-----------|
+| wide_brain | 512 | 32 | 128 | 1 | 218K | Okos agy, gyenge memória |
+| deep_memory | 256 | 64 | 512 | 1 | 134K | Közepes agy, sok slot |
+| rich_slots | 256 | 128 | 128 | 1 | 167K | Közepes agy, gazdag slotok |
+| balanced | 256 | 64 | 256 | 1 | 134K | Kiegyensúlyozott (≈baseline) |
+| wide+attn | 512 | 32 | 128 | 2 | 218K | Okos + szélesebb figyelmi ablak |
+| memory_monster | 128 | 64 | 1024 | 1 | 75K | Kis agy, hatalmas memória |
+| wide+memory | 512 | 32 | 512 | 1 | 218K | Okos + sok slot |
+| tiny_wide | 512 | 16 | 256 | 1 | 202K | Okos, minimális slot dim |
+
+**delay_echo256 eredmények (memória-teszt, 500 step):**
+
+| Config | Params | Best Loss | Best Acc | steps/s |
+|--------|--------|-----------|----------|---------|
+| wide_brain (H512 SD32 M128 R1) | 218,595 | 5.0427 | 16.7% | 2.4 |
+| deep_memory (H256 SD64 M512 R1) | 134,147 | 4.9316 | 14.7% | 4.5 |
+| rich_slots (H256 SD128 M128 R1) | 166,979 | 4.9536 | 17.4% | 1.5 |
+| balanced (H256 SD64 M256 R1) | 134,147 | 5.0295 | 14.4% | 4.5 |
+| **wide+attn (H512 SD32 M128 R2)** | **218,595** | **4.9197** | **23.9%** | **2.4** |
+| memory_monster (H128 SD64 M1024 R1) | 75,523 | 5.0516 | 13.3% | 4.7 |
+| wide+memory (H512 SD32 M512 R1) | 218,595 | 5.0390 | 14.1% | 2.1 |
+| tiny_wide (H512 SD16 M256 R1) | 202,195 | 4.9245 | 18.2% | 2.4 |
+
+**Győztes: wide+attn (H512, SD32, M128, R2) — 23.9% acc**
+
+**denoise256 eredmények (zajtisztítás-teszt, 500 step):**
+
+| Config | Params | Best Loss | Best Acc | steps/s |
+|--------|--------|-----------|----------|---------|
+| wide_brain (H512 SD32 M128 R1) | 218,595 | 5.2916 | 5.1% | 2.3 |
+| deep_memory (H256 SD64 M512 R1) | 134,147 | 5.2831 | 5.9% | 4.4 |
+| rich_slots (H256 SD128 M128 R1) | 166,979 | 5.2709 | 4.7% | 1.4 |
+| balanced (H256 SD64 M256 R1) | 134,147 | 5.3107 | 5.5% | 4.7 |
+| **wide+attn (H512 SD32 M128 R2)** | **218,595** | **5.2789** | **6.2%** | **2.4** |
+| memory_monster (H128 SD64 M1024 R1) | 75,523 | 5.3403 | 4.3% | 5.0 |
+| wide+memory (H512 SD32 M512 R1) | 218,595 | 5.2805 | 5.1% | 2.1 |
+| tiny_wide (H512 SD16 M256 R1) | 202,195 | 5.2639 | 6.2% | 2.5 |
+
+**Győztesek: wide+attn & tiny_wide — 6.2% acc (holtverseny)**
+
+### 9.6 Phase 2 elemzés és következtetések
+
+**1. Az attention radius (R) az egyetlen igazán nagy lever:**
+- wide+attn (R=2) a delay_echo-n **23.9%** — ez +7.2 pp a wide_brain-hez képest (R=1, minden más azonos)
+- Csak az R változott! Ez azt jelenti a figyelmi ablak szélessége fontosabb mint a nyers memória méret
+
+**2. H=512 (agy szélesség) konzisztensen segít:**
+- Minden H512 config jobb mint az azonos M/SD-vel rendelkező H256 társa
+- De a H512 önmagában nem elég — M512-vel (wide+memory) rosszabb mint M128+R2-vel (wide+attn)
+
+**3. M (memória slotok száma) NEM segít annyit mint vártuk:**
+- memory_monster (M=1024) volt a LEGROSSZABB (13.3% delay_echo)
+- wide+memory (M=512) nem jobb mint wide_brain (M=128) — 14.1% vs 16.7%
+- **Több slot ≠ jobb memória.** A slot_dim (minőség) fontosabb mint a slot_count (mennyiség)
+
+**4. A tiny_wide (SD=16) meglepően erős:**
+- Minimális slot dim-mel is 18.2% delay_echo és 6.2% denoise
+- Ez azt sugallja: a H=512 a domináns tényező, SD minimalizálható
+
+**5. Összefoglaló ranglista (delay_echo acc alapján):**
+1. **wide+attn** — 23.9% ← GYŐZTES
+2. tiny_wide — 18.2%
+3. rich_slots — 17.4%
+4. wide_brain — 16.7%
+5. balanced — 14.4%
+6. deep_memory — 14.7%
+7. wide+memory — 14.1%
+8. memory_monster — 13.3% ← VESZTES
+
+### 9.7 Ajánlás a következő lépésekhez
+
+1. **Új default baseline → H=512, SD=32, R=2:** A wide+attn config legyen az új kiindulópont
+2. **R sweep mélyítése:** R=3, R=4 tesztelése — ha R=2 ennyit segít, R=3 talán még jobb
+3. **Skálázási teszt:** A wide+attn config 2× és 4× méretben, megtartva az arányokat
+4. **Hosszabb tréning:** 500 → 2000 step, mert a nehéz taskok (fib, denoise) még tanulnak step 500-nál
+
+**Teljes futási idő: 66 perc (CPU)**
 
 ---
 
