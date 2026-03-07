@@ -595,6 +595,54 @@ Meaning:
   - confirming the hidden knee (`512 -> 768`),
   - or probing tap-mixer / architectural expressivity.
 
+## 6I. CPU Pareto Needle-Poke: `slot_dim=16` vs `32` vs `64` at `H=512`
+
+After confirming that `slot_dim=16` beat `8`, and that raw ring size `M` was not the next limit, the next question was whether the memory/read bandwidth axis itself had a sweet spot.
+
+Method:
+- canonical surface: `wikitext_sequential_carry`
+- canonical branch: `LLT7`
+- fixed:
+  - `hidden_dim=512`
+  - `M=64`
+  - `seq=8`
+  - `batch=8`
+- compare:
+  - `slot_dim=16`
+  - `slot_dim=32`
+  - `slot_dim=64`
+- time budget: about `5` minutes each
+- summary artifact:
+  - [cpu_pareto_probe_seq_tradeoff_20260307_202412_877309.json](../../v4/dev_notes/telemetry/cpu_pareto_probe_seq_tradeoff_20260307_202412_877309.json)
+
+Results:
+- `slot16`
+  - final acc `0.4308`
+  - final BPC `2.8747`
+  - time `320.8s`
+- `slot32`
+  - final acc `0.4697`
+  - final BPC `2.7091`
+  - time `277.2s`
+- `slot64`
+  - final acc `0.4192`
+  - final BPC `2.9376`
+  - time `299.3s`
+
+Verdict:
+- the slot-width frontier is now clearly non-monotonic;
+- `slot32` is the current sweet spot on this canonical CPU carry surface;
+- `slot64` is worse than both `slot16` and `slot32`, so the next bottleneck is not "keep widening slots indefinitely";
+- relative to `slot16`, `slot32` improved:
+  - accuracy `+3.89 pt`
+  - BPC `-0.1656`
+  - while also running faster in this budgeted probe
+
+Meaning:
+- memory/read bandwidth was still a real bottleneck beyond `slot16`, but it has now hit an internal optimum;
+- the next frontier move should not be more raw `slot_dim`;
+- the remaining likely bottleneck is now the tap mixer / architectural expressivity rather than another simple size axis.
+
 ## 7. Operational Rules Going Forward
 
 1. Any new claim must name the surface:
