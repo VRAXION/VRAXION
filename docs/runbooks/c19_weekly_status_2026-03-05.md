@@ -340,6 +340,52 @@ Meaning:
 - the current evidence points to `LLT7` being at or very near the useful tap knee on this `M=64` carry surface;
 - the near-term task is no longer "add more taps blindly", but "confirm `LLT7` and scale it".
 
+## 6C. CPU Pareto Needle-Poke: `seq=8,batch=8` vs `seq=16,batch=4`
+
+Goal:
+- start a CPU-smartness / CPU-speed frontier search without broad sweeps;
+- keep runs sequential and budgeted to about `5` minutes each;
+- compare one factor at a time, then stop and interpret.
+
+Method:
+- canonical surface: `wikitext_sequential_carry`
+- canonical branch: `LLT7`
+- equal token budget per step: `64 tokens/step`
+- candidate A:
+  - `seq=8`
+  - `batch=8`
+- candidate B:
+  - `seq=16`
+  - `batch=4`
+- probe script:
+  - [cpu_pareto_probe.py](../../v4/tests/cpu_pareto_probe.py)
+- summary artifact:
+  - [cpu_pareto_probe_seq_tradeoff_20260307_175928_639660.json](../../v4/dev_notes/telemetry/cpu_pareto_probe_seq_tradeoff_20260307_175928_639660.json)
+
+Results:
+- `A_seq8_b8`
+  - target steps `7300`
+  - final acc `0.3744`
+  - final BPC `3.2167`
+  - time `320.8s`
+- `B_seq16_b4`
+  - target steps `3700`
+  - final acc `0.3438`
+  - final BPC `3.3883`
+  - time `309.4s`
+
+Verdict:
+- longer `seq` at the same token budget was worse on both quality metrics;
+- this is not a tiny edge:
+  - accuracy drops by `3.06 pt`
+  - BPC worsens by `+0.1716`
+- the extra in-sequence context did not pay for itself on this small CPU surface.
+
+Meaning:
+- the next CPU-smart frontier probe should not spend more budget on longer `seq`;
+- on this surface, the better use of the same budget is still the shorter, denser update schedule;
+- the next single-factor probe should target model capacity or read bandwidth instead of sequence length.
+
 ## 7. Operational Rules Going Forward
 
 1. Any new claim must name the surface:

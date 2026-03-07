@@ -1,0 +1,58 @@
+{
+  "script": "cpu_pareto_probe.py",
+  "timestamp": "2026-03-07T18:11:29.313260",
+  "surface": "wikitext_sequential_carry",
+  "variant": "LLT7",
+  "preset": "seq_tradeoff",
+  "thread_limit": 4,
+  "probe_steps": 500,
+  "time_budget_s": 300,
+  "results": [
+    {
+      "id": "A_seq8_b8",
+      "candidate": {
+        "id": "A_seq8_b8",
+        "seq": 8,
+        "batch": 8
+      },
+      "probe_steps": 500,
+      "probe_time_s": 20.664481163024902,
+      "probe_s_per_step": 0.0413289623260498,
+      "target_steps": 7300,
+      "final_acc": 0.3744248902797699,
+      "best_acc": 0.671875,
+      "final_bpc": 3.2166744836922887,
+      "final_loss": 2.2296211850643157,
+      "time_s": 320.8434112071991,
+      "s_per_step": 0.04395115222016426,
+      "carry_eval_acc": 0.34769386720729856,
+      "fresh_eval_acc": 0.2242777496198682,
+      "carry_minus_reset_pp": 12.341611758743035,
+      "probe_json": "S:\\AI\\_tmp\\nightly_worktree\\v4\\dev_notes\\telemetry\\cpu_pareto_probe_A_seq8_b8_probe_20260307_175928_639660.json",
+      "full_json": "S:\\AI\\_tmp\\nightly_worktree\\v4\\dev_notes\\telemetry\\cpu_pareto_probe_A_seq8_b8_full_20260307_175928_639660.json"
+    },
+    {
+      "id": "B_seq16_b4",
+      "candidate": {
+        "id": "B_seq16_b4",
+        "seq": 16,
+        "batch": 4
+      },
+      "probe_steps": 500,
+      "probe_time_s": 40.748239517211914,
+      "probe_s_per_step": 0.08149647903442382,
+      "target_steps": 3700,
+      "final_acc": 0.34377766743302346,
+      "best_acc": 0.59375,
+      "final_bpc": 3.3882677554457192,
+      "final_loss": 2.3485601687431337,
+      "time_s": 309.3763701915741,
+      "s_per_step": 0.08361523518691191,
+      "carry_eval_acc": 0.3371134020618557,
+      "fresh_eval_acc": 0.23969072164948454,
+      "carry_minus_reset_pp": 9.742268041237114,
+      "probe_json": "S:\\AI\\_tmp\\nightly_worktree\\v4\\dev_notes\\telemetry\\cpu_pareto_probe_B_seq16_b4_probe_20260307_175928_639660.json",
+      "full_json": "S:\\AI\\_tmp\\nightly_worktree\\v4\\dev_notes\\telemetry\\cpu_pareto_probe_B_seq16_b4_full_20260307_175928_639660.json"
+    }
+  ]
+}
