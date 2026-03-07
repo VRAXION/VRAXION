@@ -1,0 +1,81 @@
+{
+  "run_id": "20260307_160229",
+  "args": {
+    "steps": 50,
+    "batch": 32,
+    "seq": 256,
+    "warmup": 50,
+    "grad_clip": 10.0,
+    "device": "cpu",
+    "configs": "A,B",
+    "log_every": 25,
+    "data": null,
+    "seed": 42
+  },
+  "configs": {
+    "A": {
+      "label": "base_small",
+      "desc": "H=256, R=1, learned, lr=1e-3",
+      "model": {
+        "hidden_dim": 256,
+        "slot_dim": 64,
+        "M": 512,
+        "R": 1,
+        "embed_encoding": "learned"
+      },
+      "lr": 0.001
+    },
+    "B": {
+      "label": "small_R2",
+      "desc": "H=256, R=2, learned, lr=1e-3",
+      "model": {
+        "hidden_dim": 256,
+        "slot_dim": 64,
+        "M": 512,
+        "R": 2,
+        "embed_encoding": "learned"
+      },
+      "lr": 0.001
+    }
+  },
+  "results": [
+    {
+      "config": "A",
+      "label": "base_small",
+      "desc": "H=256, R=1, learned, lr=1e-3",
+      "seed": 42,
+      "steps": 50,
+      "params": 158756,
+      "lr": 0.001,
+      "final_loss": 4.715205597877502,
+      "final_bpc": 6.802603732829753,
+      "best_loss": 3.5397698879241943,
+      "best_bpc": 5.106808463196317,
+      "final_acc": 0.13270429530413821,
+      "best_acc": 0.19653970003128052,
+      "final_gnorm": 1.565167875289917,
+      "time_s": 135.82660841941833,
+      "s_per_step": 2.7165321683883668,
+      "csv_log": "/home/user/VRAXION/v4/sweep_results/hyperparam_sweep_20260307_160229/A_base_small_seed42.csv"
+    },
+    {
+      "config": "B",
+      "label": "small_R2",
+      "desc": "H=256, R=2, learned, lr=1e-3",
+      "seed": 42,
+      "steps": 50,
+      "params": 158756,
+      "lr": 0.001,
+      "final_loss": 4.715067524909973,
+      "final_bpc": 6.802404535644217,
+      "best_loss": 3.5389623641967773,
+      "best_bpc": 5.105643452719373,
+      "final_acc": 0.13284011302283033,
+      "best_acc": 0.19653970003128052,
+      "final_gnorm": 1.5649384951591492,
+      "time_s": 140.6929476261139,
+      "s_per_step": 2.8138589525222777,
+      "csv_log": "/home/user/VRAXION/v4/sweep_results/hyperparam_sweep_20260307_160229/B_small_R2_seed42.csv"
+    }
+  ]
+}
