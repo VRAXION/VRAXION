@@ -11,6 +11,26 @@ Rules for reading it:
   - `wikitext_sequential_carry`
 - Old one-off probes and scratch files are not treated as primary evidence.
 
+## 0. Active Correction: `S` Wiring
+
+There is one active correction that must stay visible until the canonical runner/train path is cleaned up.
+
+Current fact pattern:
+- the canonical train path does **not** pass `S` into `model(...)`
+- `forward(..., S=None, ...)` falls back to `S = 'dotprod'`
+- therefore the YAML/config `S: 0.3` is currently **not** the active mode on the canonical train/nightly path
+
+What this means:
+- current canonical nightly/train evidence should be read as **implicit `dotprod` evidence**
+- any old claim that a fixed scalar `S` from config was actively used is **not settled**
+- relative branch comparisons that all used the same path remain valid
+- explicit probes that pass `S` directly are still meaningful and should be marked separately
+
+Practical rule until this is fixed:
+- do **not** describe the canonical nightly/train results as "fixed `S=0.3`"
+- do describe them as "current implicit `dotprod` path"
+- treat fixed-`S` conclusions as pending re-validation
+
 Primary entrypoint:
 - [nightly_research_runner.py](../../v4/tests/nightly_research_runner.py)
 
