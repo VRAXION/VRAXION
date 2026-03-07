@@ -35,6 +35,7 @@ HYBERNATION_PING_DETACH = Path(
 )
 
 DETACHED_PROCESS = getattr(subprocess, "DETACHED_PROCESS", 0x00000008)
+CREATE_NEW_CONSOLE = getattr(subprocess, "CREATE_NEW_CONSOLE", 0x00000010)
 CREATE_NEW_PROCESS_GROUP = getattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 0x00000200)
 
 ALLOWED_CPU_ROLES = {"cpu_validator"}
@@ -818,16 +819,25 @@ def launch_plan(plan_path: Path, runtime_root: Path, dry_run: bool = False) -> P
     ]
     if dry_run:
         cmd.append("--dry-run")
-    with open(stdout_path, "a", encoding="utf-8") as stdout_handle, open(stderr_path, "a", encoding="utf-8") as stderr_handle:
-        proc = subprocess.Popen(
-            cmd,
-            cwd=str(REPO_ROOT),
-            stdin=subprocess.DEVNULL,
-            stdout=stdout_handle,
-            stderr=stderr_handle,
-            close_fds=True,
-            creationflags=(DETACHED_PROCESS | CREATE_NEW_PROCESS_GROUP) if os.name == "nt" else 0,
-        )
+    stdout_path.write_text(
+        "launch mode uses a separate orchestrator console; authoritative state is status.json/summary.json\n",
+        encoding="utf-8",
+    )
+    stderr_path.write_text("", encoding="utf-8")
+    popen_kwargs: dict[str, Any] = {
+        "cwd": str(REPO_ROOT),
+        "stdin": subprocess.DEVNULL,
+        "stdout": subprocess.DEVNULL,
+        "stderr": subprocess.DEVNULL,
+        "close_fds": True,
+    }
+    if os.name == "nt":
+        startupinfo = subprocess.STARTUPINFO()
+        startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+        startupinfo.wShowWindow = 7  # SW_SHOWMINNOACTIVE
+        popen_kwargs["startupinfo"] = startupinfo
+        popen_kwargs["creationflags"] = CREATE_NEW_CONSOLE | CREATE_NEW_PROCESS_GROUP
+    proc = subprocess.Popen(cmd, **popen_kwargs)
     payload = {
         "timestamp": _now_iso(),
         "pid": int(proc.pid),
@@ -837,6 +847,7 @@ def launch_plan(plan_path: Path, runtime_root: Path, dry_run: bool = False) -> P
         "stderr_log": str(stderr_path),
         "cmd": cmd,
         "dry_run": bool(dry_run),
+        "launch_mode": "new_console",
     }
     _safe_json_write(launch_path, payload)
     return launch_path

@@ -362,6 +362,8 @@ Meaning:
 - Canonical overnight jobs now write a `heartbeat.json` sidecar under each job directory.
 - The orchestrator watches that heartbeat first, and only falls back to log mtimes second.
 - CPU lane env now explicitly pins thread counts in the queue JSON so unattended launches do not depend on the parent shell state.
+- Windows launch mode now uses a separate orchestrator console instead of a fully detached stdio-redirected process.
+- This was added after adversarial smoke tests showed that the fully detached Windows launch path could start child jobs that stayed idle with no heartbeat and no progress.
 
 ## Final Summary
 
