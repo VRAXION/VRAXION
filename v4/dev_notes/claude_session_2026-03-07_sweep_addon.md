@@ -174,7 +174,7 @@ Mindkettő az INSTNCT v4 modellt teszteli (`v4/model/instnct.py`), byte-level to
 ### Azonnali beolvasztás (high confidence):
 1. **lowrank_c19 output encoding** — egyértelműen jobb mint learned, kevesebb param
 2. **vshape kernel** — konzisztensen a legjobb pozicionális kernel
-3. **bitlift embed encoding** — 28× kevesebb param mint learned, azonos teljesítmény
+3. **learned embed encoding** — ~~bitlift~~ felülvizsgálva: learned szignifikánsan jobb IQ (ld. §8)
 4. **S=dotprod** (tanult gate) — legjobb S érték, adaptív
 
 ### Továbbvizsgálandó:
@@ -196,6 +196,48 @@ Mindkettő az INSTNCT v4 modellt teszteli (`v4/model/instnct.py`), byte-level to
 - **Reprodukálhatóság**: seed=42, determinisztikus data generátor
 - **Limitáció**: CPU tesztek 150-step limit — a valós GPU futtatás (500-50000 step) más rangsort hozhat a lassabban konvergáló konfigoknál
 - **Kód minőség**: mindkét sweep script self-contained, argparse CLI, futtatható `python v4/sweeps/sweep_minmax_iq.py` ill. `python v4/tests/bench_param_sweep.py`
+
+---
+
+## 8. Kiegészítés: embed_encoding — learned vs bitlift (részletes összehasonlítás)
+
+> **Hozzáadva: 2026-03-07 — Korábbi ajánlás felülvizsgálata**
+
+A sweep Phase 1 eredményei **megcáfolják** a korábbi "bitlift ≈ learned" állítást. A learned embedding egyértelműen jobb mindkét taskon:
+
+### Echo task
+| Config | Params | Best Loss | Best Acc | steps/s |
+|--------|--------|-----------|----------|---------|
+| **embed_enc=learned** | 150,307 | **4.5442** | **27.3%** | 9.0 |
+| embed_enc=bitlift | 87,075 | 5.3056 | 3.5% | 7.5 |
+
+### Delay_echo task
+| Config | Params | Best Loss | Best Acc | steps/s |
+|--------|--------|-----------|----------|---------|
+| **embed_enc=learned** | 150,307 | **5.3301** | **5.1%** | 8.9 |
+| embed_enc=bitlift | 87,075 | 5.5208 | 2.3% | 7.4 |
+
+### Elemzés
+
+- **Echo**: loss 4.54 vs 5.31 (-14.5%), acc 27.3% vs 3.5% — **hatalmas különbség**
+- **Delay_echo**: loss 5.33 vs 5.52 (-3.6%), acc 5.1% vs 2.3% — kisebb de egyértelmű
+- **Sebesség**: learned **gyorsabb** is (9.0 vs 7.5 steps/s) — a bitlift Linear(8, H) forward overhead-je nagyobb mint az nn.Embedding lookup
+- **Param count**: learned 150K vs bitlift 87K (+72%) — de ez az IQ gap-hoz képest elfogadható trade-off
+
+### Miért bukik a bitlift?
+
+A bitlift architektúra: `byte → 8-bit binary → Linear(8, hidden_dim)`. A probléma:
+- 8-bites bottleneck: bár 256 különböző bemeneti mintázat van, a `Linear(8, H)` csak egy 8-dimenziós altéren tud dolgozni
+- Az nn.Embedding(256, H) minden tokenhez **szabad H-dimenziós vektort** rendel — sokkal gazdagabb reprezentáció
+- A bitlift "param megtakarítása" valójában **kapacitás veszteség**
+
+### Korrigált ajánlás
+
+| Korábbi ajánlás | Új ajánlás |
+|-----------------|------------|
+| ~~bitlift embed encoding — 28× kevesebb param, azonos teljesítmény~~ | **learned embed encoding** — szignifikánsan jobb IQ, elfogadható param cost |
+
+**A bitlift csak extrém param-budget constraint esetén indokolt.** Alapértelmezett embed encoding: **learned**.
 
 ---
 
