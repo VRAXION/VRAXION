@@ -457,6 +457,7 @@ def _resolve_job_record(job: dict[str, Any], runtime_root: Path, decisions: dict
 def _build_runner_cmd(job: dict[str, Any]) -> list[str]:
     cmd = [
         sys.executable,
+        "-u",
         str(RUNNER_PATH),
         "--surface",
         job["surface"],

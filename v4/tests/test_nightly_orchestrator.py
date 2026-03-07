@@ -7,6 +7,7 @@ if str(ROOT / "tools") not in sys.path:
 
 from nightly_orchestrator import (  # type: ignore[import-not-found]
     DEFAULT_PLAN_PATH,
+    _build_runner_cmd,
     _job_can_start,
     _job_has_restart_budget,
     _should_watchdog_fire,
@@ -119,3 +120,16 @@ def test_restart_budget_helper():
 def test_launch_plan_writes_metadata(tmp_path):
     launch_path = launch_plan(DEFAULT_PLAN_PATH, tmp_path, dry_run=True)
     assert launch_path.exists()
+
+
+def test_build_runner_cmd_uses_unbuffered_python():
+    job = {
+        "surface": "wikitext_sequential_carry",
+        "variant_resolved": "LL",
+        "steps": 10,
+        "device": "cpu",
+        "seed": 42,
+        "artifact_path": "out.json",
+    }
+    cmd = _build_runner_cmd(job)
+    assert cmd[1] == "-u"
