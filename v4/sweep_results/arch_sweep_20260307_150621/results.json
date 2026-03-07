@@ -1,0 +1,133 @@
+{
+  "run_id": "20260307_150621",
+  "args": {
+    "steps": 1000,
+    "seeds": 1,
+    "batch": 8,
+    "seq": 64,
+    "lr": 0.001,
+    "warmup": 100,
+    "device": "cpu",
+    "amp": false,
+    "configs": "A,B,C",
+    "log_every": 200,
+    "data": "training_data"
+  },
+  "configs": {
+    "A": {
+      "label": "baseline",
+      "desc": "H=256, SD=64, M=256, R=1 \u2014 current default",
+      "overrides": {
+        "hidden_dim": 256,
+        "slot_dim": 64,
+        "M": 256,
+        "R": 1
+      }
+    },
+    "B": {
+      "label": "wide+attn",
+      "desc": "H=512, SD=32, M=128, R=2 \u2014 synthetic winner",
+      "overrides": {
+        "hidden_dim": 512,
+        "slot_dim": 32,
+        "M": 128,
+        "R": 2
+      }
+    },
+    "C": {
+      "label": "wide_only",
+      "desc": "H=512, SD=16, M=256, R=1 \u2014 isolates H vs R",
+      "overrides": {
+        "hidden_dim": 512,
+        "slot_dim": 16,
+        "M": 256,
+        "R": 1
+      }
+    }
+  },
+  "results": [
+    {
+      "config": "A",
+      "label": "baseline",
+      "seed": 42,
+      "steps": 1000,
+      "params": 87332,
+      "final_loss": 4.8876557970047,
+      "final_bpc": 7.051396779910875,
+      "final_acc": 0.12244449737248943,
+      "best_loss": 2.398740291595459,
+      "best_acc": 0.6212121248245239,
+      "conv_step_90pct": 305,
+      "time_s": 300.98700761795044,
+      "s_per_step": 0.30098700761795044,
+      "csv_log": "/home/user/VRAXION/v4/sweep_results/arch_sweep_20260307_150621/A_baseline_seed42.csv"
+    },
+    {
+      "config": "B",
+      "label": "wide+attn",
+      "seed": 42,
+      "steps": 1000,
+      "params": 112644,
+      "final_loss": 4.892355364561081,
+      "final_bpc": 7.058176822718789,
+      "final_acc": 0.12318126812926494,
+      "best_loss": 2.5346834659576416,
+      "best_acc": 0.5984848737716675,
+      "conv_step_90pct": 306,
+      "time_s": 514.1254663467407,
+      "s_per_step": 0.5141254663467407,
+      "csv_log": "/home/user/VRAXION/v4/sweep_results/arch_sweep_20260307_150621/B_wide+attn_seed42.csv"
+    },
+    {
+      "config": "C",
+      "label": "wide_only",
+      "seed": 42,
+      "steps": 1000,
+      "params": 100340,
+      "final_loss": 4.88984992146492,
+      "final_bpc": 7.054562232388728,
+      "final_acc": 0.12351650234311819,
+      "best_loss": 2.5059211254119873,
+      "best_acc": 0.6035353541374207,
+      "conv_step_90pct": 318,
+      "time_s": 512.8653972148895,
+      "s_per_step": 0.5128653972148896,
+      "csv_log": "/home/user/VRAXION/v4/sweep_results/arch_sweep_20260307_150621/C_wide_only_seed42.csv"
+    }
+  ],
+  "summary": [
+    {
+      "config": "A",
+      "label": "baseline",
+      "params": 87332,
+      "avg_loss": 4.8876557970047,
+      "avg_bpc": 7.051396779910875,
+      "avg_acc": 0.12244449737248943,
+      "best_acc": 0.6212121248245239,
+      "avg_conv_step": 305.0,
+      "avg_time_s": 300.98700761795044
+    },
+    {
+      "config": "B",
+      "label": "wide+attn",
+      "params": 112644,
+      "avg_loss": 4.892355364561081,
+      "avg_bpc": 7.058176822718789,
+      "avg_acc": 0.12318126812926494,
+      "best_acc": 0.5984848737716675,
+      "avg_conv_step": 306.0,
+      "avg_time_s": 514.1254663467407
+    },
+    {
+      "config": "C",
+      "label": "wide_only",
+      "params": 100340,
+      "avg_loss": 4.88984992146492,
+      "avg_bpc": 7.054562232388728,
+      "avg_acc": 0.12351650234311819,
+      "best_acc": 0.6035353541374207,
+      "avg_conv_step": 318.0,
+      "avg_time_s": 512.8653972148895
+    }
+  ]
+}
