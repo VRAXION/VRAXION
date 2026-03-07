@@ -58,12 +58,72 @@ Key findings:
 3. Sweet spot: hidden=4096 (best loss + fastest speed).
 4. Python loop overhead + CUDA kernel launch dominates at small hidden_dim.
 
+**CAVEAT**: Phase 0+1 ran only 100 steps = warmup only. Loss values NOT reliable
+for intelligence comparison. Speed data IS reliable.
+
+## Phase 2: seq_len speed (seq=8..32 @ hidden=4096)
+
+All runs: hidden=4096, M=256, batch=64, sequential pointer, 100 steps.
+
+| seq_len | step/sec | best_loss | tok/sec (batch*seq*step/sec) |
+|---------|----------|-----------|------------------------------|
+| 8       | 4.0      | 3.273     | 2048                         |
+| 16      | 2.4      | 3.246     | 2457                         |
+| 32      | 1.2      | 3.164     | 2457                         |
+
+Token throughput: seq=16 and seq=32 process equal tok/sec.
+Difference is gradient depth (16 vs 32 step backprop).
+
+## Phase 3: Intelligence race (5 min wall time each)
+
+THE REAL TEST: same wall time, which config learns the most?
+All runs: hidden=4096, M=256, sequential pointer.
+
+| Config | seq | batch | steps | wall_time | best_loss | step/sec | status        |
+|--------|-----|-------|-------|-----------|-----------|----------|---------------|
+| **A**  | 16  | 512   | 1000  | 4.5 min   | **2.047** | 3.7      | stable        |
+| B      | 32  | 256   | 400   | 3.4 min   | 2.535     | 2.0      | spike @340    |
+| C      | 64  | 128   | -     | crash     | NaN       | -        | diverged @17  |
+
+### Analysis
+
+1. **Config A (seq=16) is the clear winner**: best loss (2.047) AND fastest.
+   More steps compensate for shallow gradient depth.
+   1000 steps at seq=16 beats 400 steps at seq=32, same walltime.
+
+2. **Config B (seq=32) showed instability**: loss spiked from 2.53 to 3.02 around
+   step 330-340 then slowly recovered. Possible cause: larger seq = larger gradients
+   per step = more volatile updates at lr=1e-3.
+
+3. **Config C (seq=64) diverged immediately**: NaN at step 17. M=256 is too small
+   for seq=64 (ring overwrites itself every 256/64=4 steps). Need M>=512 for seq=64.
+
+4. **Batch size has minimal speed impact**: batch 64->512 at seq=16 went from 2.4
+   to 3.7 step/sec (only 1.5x for 8x batch). Ring loop is the bottleneck, not matmuls.
+   But bigger batch = better gradient signal per step.
+
+### Adversarial self-check
+
+Initial hypothesis was that seq=16 would produce "fundamentally dumber" models because
+TBPTT gradient depth of only 16 bytes can't capture sentence-level patterns.
+
+**This was WRONG.** At 1000 steps, seq=16 reached loss 2.047 which is competitive with
+prior runs at seq=256. The sequential training carry-over IS sufficient -- the model
+learns to use persistent hidden state even though gradients only flow 16 steps back.
+The speed advantage (3.7 vs 2.0 step/sec) gives seq=16 more gradient updates per minute,
+which outweighs the shallower gradient.
+
+**Still unresolved:** does this advantage hold at 10K+ steps? Or does seq=32's deeper
+gradient eventually overtake? Prior all-time record was 47.8% acc at 3000 steps with
+seq=256. Need longer runs to confirm.
+
 ## Current winner
 
 ```
-hidden_dim: 4096, slot_dim: 128, M: 256, seq: 16, batch: 64
+hidden_dim: 4096, slot_dim: 128, M: 256, seq: 16, batch: 512
 pointer: sequential, write: replace
-params: 1.4M, speed: 2.4 step/sec, best_loss: 3.246, VRAM: 511M
+params: 1.4M, speed: 3.7 step/sec, best_loss: 2.047 @ 1000 steps
+VRAM: 3.8 GB, wall time: 4.5 min
 ```
 
 ## Observations
@@ -74,11 +134,13 @@ params: 1.4M, speed: 2.4 step/sec, best_loss: 3.246, VRAM: 511M
 - The ring sequential loop (T timesteps, not parallelizable) is THE speed bottleneck.
 - At seq=16 with sequential training, gradient depth is only 16 steps but
   ring/hidden state persists, so effective context is unlimited.
+- Batch size barely affects step/sec (ring loop dominates), so crank it up for free.
+- M=256 is too small for seq>=64 (causes NaN divergence).
 
 ## Next (TODO)
 
-- [ ] Phase 2: seq_len sweep at hidden=4096 (seq=8, 16, 32, 64)
-- [ ] Phase 3: batch_size sweep (32, 64, 128, 256)
-- [ ] Phase 4: slot_dim sweep (64, 128, 256)
-- [ ] Phase 5: longer runs (500-1000 steps) with winner config
-- [ ] Investigate: does slot_dim=256 fix the hidden=8192 saturation?
+- [ ] Longer run: winner config at 5000+ steps. Does seq=16 plateau early?
+- [ ] seq=32 stability fix: try lr=5e-4 or grad_clip=5.0
+- [ ] slot_dim sweep (64, 128, 256) with winner config
+- [ ] Does slot_dim=256 fix hidden=8192 saturation?
+- [ ] Re-test pilot pointer with M=256 (was tested at M=1024)
