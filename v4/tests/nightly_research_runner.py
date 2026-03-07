@@ -41,11 +41,26 @@ from sweep_c19_core_geometry_wikitext import (  # type: ignore[import-not-found]
     run_one as run_wikitext_fresh,
 )
 
+MTAP_DIAG_SCALAR_PREFIXES = (
+    "mtap_main_frac_",
+    "mtap_gate_max_frac_",
+    "mtap_gate_entropy_",
+    "mtap_resid_beta_",
+    "mtap_delta_norm_",
+    "mtap_main_norm_",
+    "mtap_tap_norm_",
+    "mtap_signal_norm_",
+)
+MTAP_DIAG_LIST_PREFIXES = (
+    "mtap_gate_mean_by_lag_",
+)
+
 PHI = (1 + math.sqrt(5)) / 2
 
 SURFACES: dict[str, dict] = {
     "small_wikitext_fresh": {
         "state_mode": "fresh",
+        "context_mode": "dotprod",
         "device": "cpu",
         "steps": 10000,
         "batch": 8,
@@ -67,6 +82,7 @@ SURFACES: dict[str, dict] = {
     },
     "fast_memory_carry": {
         "state_mode": "carry",
+        "context_mode": "dotprod",
         "device": "cpu",
         "steps": 10000,
         "batch": 8,
@@ -86,6 +102,7 @@ SURFACES: dict[str, dict] = {
     },
     "wikitext_sequential_carry": {
         "state_mode": "carry",
+        "context_mode": "dotprod",
         "device": "cpu",
         "steps": 10000,
         "batch": 8,
@@ -116,6 +133,7 @@ VARIANTS: dict[str, dict] = {
         "write_topk_K": 2,
         "mtaps_enabled": False,
         "mtaps_lags": [],
+        "mtaps_mixer_mode": "current",
     },
     "LLT": {
         "read_kernel_mode": "vshape",
@@ -124,6 +142,7 @@ VARIANTS: dict[str, dict] = {
         "write_topk_K": 2,
         "mtaps_enabled": True,
         "mtaps_lags": [1, 2, 4, 8, 16, 32],
+        "mtaps_mixer_mode": "current",
     },
     "LLT4": {
         "read_kernel_mode": "vshape",
@@ -132,6 +151,7 @@ VARIANTS: dict[str, dict] = {
         "write_topk_K": 2,
         "mtaps_enabled": True,
         "mtaps_lags": [1, 2, 4, 8],
+        "mtaps_mixer_mode": "current",
     },
     "LLT6": {
         "read_kernel_mode": "vshape",
@@ -140,6 +160,7 @@ VARIANTS: dict[str, dict] = {
         "write_topk_K": 2,
         "mtaps_enabled": True,
         "mtaps_lags": [1, 2, 4, 8, 16, 32],
+        "mtaps_mixer_mode": "current",
     },
     "LLT7": {
         "read_kernel_mode": "vshape",
@@ -148,6 +169,7 @@ VARIANTS: dict[str, dict] = {
         "write_topk_K": 2,
         "mtaps_enabled": True,
         "mtaps_lags": [1, 2, 4, 8, 16, 32, 64],
+        "mtaps_mixer_mode": "current",
     },
     "LLT48": {
         "read_kernel_mode": "vshape",
@@ -156,6 +178,25 @@ VARIANTS: dict[str, dict] = {
         "write_topk_K": 2,
         "mtaps_enabled": True,
         "mtaps_lags": [1, 2, 4, 8, 16, 32, 48],
+        "mtaps_mixer_mode": "current",
+    },
+    "LLT7SG": {
+        "read_kernel_mode": "vshape",
+        "write_address_mode": "pointer",
+        "read_topk_K": 2,
+        "write_topk_K": 2,
+        "mtaps_enabled": True,
+        "mtaps_lags": [1, 2, 4, 8, 16, 32, 64],
+        "mtaps_mixer_mode": "tap_scalar_gate",
+    },
+    "LLT7RG": {
+        "read_kernel_mode": "vshape",
+        "write_address_mode": "pointer",
+        "read_topk_K": 2,
+        "write_topk_K": 2,
+        "mtaps_enabled": True,
+        "mtaps_lags": [1, 2, 4, 8, 16, 32, 64],
+        "mtaps_mixer_mode": "residual_gated",
     },
     "GL": {
         "read_kernel_mode": "topk",
@@ -164,6 +205,7 @@ VARIANTS: dict[str, dict] = {
         "write_topk_K": 2,
         "mtaps_enabled": False,
         "mtaps_lags": [],
+        "mtaps_mixer_mode": "current",
     },
     "GG": {
         "read_kernel_mode": "topk",
@@ -172,6 +214,7 @@ VARIANTS: dict[str, dict] = {
         "write_topk_K": 2,
         "mtaps_enabled": False,
         "mtaps_lags": [],
+        "mtaps_mixer_mode": "current",
     },
 }
 
@@ -209,8 +252,10 @@ def _build_meta(surface: str, variant: str, cfg: dict, overrides: dict | None = 
         "pointer_seam_mode": cfg.get("pointer_seam_mode", "mod"),
         "read_mode": variant_cfg["read_kernel_mode"],
         "write_mode": variant_cfg["write_address_mode"],
+        "context_mode": cfg.get("context_mode", "dotprod"),
         "mtaps_enabled": bool(variant_cfg.get("mtaps_enabled", False)),
         "mtaps_lags": list(variant_cfg.get("mtaps_lags", [])),
+        "mtaps_mixer_mode": variant_cfg.get("mtaps_mixer_mode", "current"),
         "seq": cfg["seq"],
         "steps": cfg["steps"],
         "ring_slots": cfg["M"],
@@ -367,6 +412,8 @@ def _run_small_wikitext_fresh(surface: str, variant: str, cfg: dict, heartbeat_p
         pointer_seam_mode=cfg["pointer_seam_mode"],
         mtaps_enabled=variant_cfg["mtaps_enabled"],
         mtaps_lags=tuple(variant_cfg["mtaps_lags"]),
+        mtaps_mixer_mode=variant_cfg.get("mtaps_mixer_mode", "current"),
+        context_mode=cfg.get("context_mode", "dotprod"),
         ring_trace=True,
         device=cfg["device"],
         hidden_dim=cfg["hidden_dim"],
@@ -409,6 +456,7 @@ def _run_fast_memory_carry(surface: str, variant: str, cfg: dict, heartbeat_path
         pointer_mode=cfg["pointer_mode"],
         pointer_interp_mode=cfg["pointer_interp_mode"],
         pointer_seam_mode=cfg["pointer_seam_mode"],
+        context_mode=cfg.get("context_mode", "dotprod"),
         mtaps_enabled=variant_cfg["mtaps_enabled"],
         mtaps_lags=tuple(variant_cfg["mtaps_lags"]),
         heartbeat_cb=(
@@ -425,7 +473,16 @@ def _run_fast_memory_carry(surface: str, variant: str, cfg: dict, heartbeat_path
     return result
 
 
-def _eval_sequential(model, dataset: ByteDataset, batch: int, seq: int, device: str, steps: int, reset_each_batch: bool) -> float:
+def _eval_sequential(
+    model,
+    dataset: ByteDataset,
+    batch: int,
+    seq: int,
+    device: str,
+    steps: int,
+    reset_each_batch: bool,
+    context_mode,
+) -> float:
     offsets = np.array(dataset._seq_offsets, dtype=np.int64)
     state = None
     total_correct = 0.0
@@ -434,7 +491,7 @@ def _eval_sequential(model, dataset: ByteDataset, batch: int, seq: int, device: 
     with torch.no_grad():
         for _ in range(steps):
             xb, yb, mask = dataset.sample_batch_sequential(batch, device)
-            logits, new_state = model(xb, state=None if reset_each_batch else state)
+            logits, new_state = model(xb, S=context_mode, state=None if reset_each_batch else state)
             if new_state is not None and not reset_each_batch:
                 state = {k: v.detach() for k, v in new_state.items()}
             preds = logits.argmax(dim=-1)
@@ -478,6 +535,7 @@ def _run_wikitext_sequential_carry(surface: str, variant: str, cfg: dict, heartb
         pointer_seam_mode=cfg["pointer_seam_mode"],
         mtaps_enabled=variant_cfg["mtaps_enabled"],
         mtaps_lags=tuple(variant_cfg["mtaps_lags"]),
+        mtaps_mixer_mode=variant_cfg.get("mtaps_mixer_mode", "current"),
         device=cfg["device"],
         hidden_dim=cfg["hidden_dim"],
         M=cfg["M"],
@@ -493,6 +551,8 @@ def _run_wikitext_sequential_carry(surface: str, variant: str, cfg: dict, heartb
     losses: list[float] = []
     accs: list[float] = []
     topk_diag_rows = {key: [] for key in TOPK_READ_DIAG_KEYS}
+    mtap_scalar_rows: dict[str, list[float]] = {}
+    mtap_list_rows: dict[str, list[list[float]]] = {}
     ring_trace_rows = {
         "ptr_trace": [],
         "read_idx_trace": [],
@@ -516,7 +576,7 @@ def _run_wikitext_sequential_carry(surface: str, variant: str, cfg: dict, heartb
 
     for step in range(1, cfg["steps"] + 1):
         xb, yb, mask = dataset.sample_batch_sequential(cfg["batch"], cfg["device"])
-        logits, new_state = model(xb, state=state)
+        logits, new_state = model(xb, S=cfg.get("context_mode", "dotprod"), state=state)
         if new_state is not None:
             state = {k: v.detach() for k, v in new_state.items()}
         _, masked_loss = func_maskloss_ce(logits, yb, mask)
@@ -536,6 +596,13 @@ def _run_wikitext_sequential_carry(surface: str, variant: str, cfg: dict, heartb
             value = model._diag.get(key)
             if value is not None:
                 topk_diag_rows[key].append(float(value))
+        for key, value in model._diag.items():
+            if value is None:
+                continue
+            if any(key.startswith(prefix) for prefix in MTAP_DIAG_SCALAR_PREFIXES):
+                mtap_scalar_rows.setdefault(key, []).append(float(value))
+            elif any(key.startswith(prefix) for prefix in MTAP_DIAG_LIST_PREFIXES):
+                mtap_list_rows.setdefault(key, []).append([float(x) for x in value])
         trace = getattr(model, "_ring_trace", None)
         if trace is not None:
             for key in ("ptr_trace", "read_idx_trace", "read_weight_trace", "tap_idx_trace", "write_idx_trace", "write_weight_trace", "read_write_overlap_trace"):
@@ -586,8 +653,26 @@ def _run_wikitext_sequential_carry(surface: str, variant: str, cfg: dict, heartb
             )
 
     elapsed = time.time() - t0
-    carry_eval = _eval_sequential(model, dataset, cfg["batch"], cfg["seq"], cfg["device"], cfg["eval_steps"], reset_each_batch=False)
-    reset_eval = _eval_sequential(model, dataset, cfg["batch"], cfg["seq"], cfg["device"], cfg["eval_steps"], reset_each_batch=True)
+    carry_eval = _eval_sequential(
+        model,
+        dataset,
+        cfg["batch"],
+        cfg["seq"],
+        cfg["device"],
+        cfg["eval_steps"],
+        reset_each_batch=False,
+        context_mode=cfg.get("context_mode", "dotprod"),
+    )
+    reset_eval = _eval_sequential(
+        model,
+        dataset,
+        cfg["batch"],
+        cfg["seq"],
+        cfg["device"],
+        cfg["eval_steps"],
+        reset_each_batch=True,
+        context_mode=cfg.get("context_mode", "dotprod"),
+    )
 
     instnct._c19_activation = orig_fn
     instnct.set_topk_read_diag_enabled(False)
@@ -612,6 +697,14 @@ def _run_wikitext_sequential_carry(surface: str, variant: str, cfg: dict, heartb
     for key in TOPK_READ_DIAG_KEYS:
         rows = topk_diag_rows[key]
         result[key] = (sum(rows) / len(rows)) if rows else None
+    for key, rows in mtap_scalar_rows.items():
+        result[key] = (sum(rows) / len(rows)) if rows else None
+    for key, rows in mtap_list_rows.items():
+        if rows:
+            width = len(rows[0])
+            result[key] = [sum(row[idx] for row in rows) / len(rows) for idx in range(width)]
+        else:
+            result[key] = None
     result["ring_trace_summary"] = _summarize_ring_trace(ring_trace_rows, cfg["M"])
     result["ring_trace"] = ring_trace_rows
     _write_heartbeat(

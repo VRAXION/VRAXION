@@ -205,7 +205,7 @@ def _set_determinism(seed):
 #  TRAINING
 # ═══════════════════════════════════════════════════════════
 
-def fresh_state_eval(model, data, mask, seq, period, device, n_seqs=10):
+def fresh_state_eval(model, data, mask, seq, period, device, n_seqs=10, context_mode='dotprod'):
     """Evaluate with fresh state (no carry) — tests if model cheats via state.
 
     Picks a random start offset aligned to period boundary, runs n_seqs
@@ -229,7 +229,7 @@ def fresh_state_eval(model, data, mask, seq, period, device, n_seqs=10):
             x = data[:, pos:pos + seq]
             y = data[:, pos + 1:pos + seq + 1]
             m = mask[:, pos + 1:pos + seq + 1]
-            logits, _ = model(x, state=None)  # fresh state each time
+            logits, _ = model(x, S=context_mode, state=None)  # fresh state each time
             preds = logits.argmax(dim=-1)
             correct = (preds == y).float()
             all_correct += (correct * m).sum().item()
@@ -312,7 +312,8 @@ def run_one(N, period, steps, batch, seq, hidden_dim, M, slot_dim,
             log_every=100, seed=42, read_kernel_mode='vshape',
             write_address_mode='pointer', topk_k=2, ring_trace=False,
             pointer_mode='sequential', pointer_interp_mode='off', pointer_seam_mode='mod',
-            mtaps_enabled=False, mtaps_lags=(1, 2, 4, 8, 16, 32), heartbeat_cb=None):
+            mtaps_enabled=False, mtaps_lags=(1, 2, 4, 8, 16, 32),
+            context_mode='dotprod', heartbeat_cb=None):
     """Train one configuration and return results.
 
     Returns:
@@ -433,7 +434,7 @@ def run_one(N, period, steps, batch, seq, hidden_dim, M, slot_dim,
         m = mask[:, pos + 1:pos + seq + 1]     # (B, seq) — supervision
 
         # Forward
-        logits, new_state = model(x, state=state)
+        logits, new_state = model(x, S=context_mode, state=state)
 
         # State carry (TBPTT for INSTNCT, None for transformer)
         if new_state is not None:
@@ -508,7 +509,7 @@ def run_one(N, period, steps, batch, seq, hidden_dim, M, slot_dim,
     final_acc = history[-1][1] if history else 0.0
 
     # ── Post-training eval ──
-    fresh_acc = fresh_state_eval(model, data, mask, seq, period, device)
+    fresh_acc = fresh_state_eval(model, data, mask, seq, period, device, context_mode=context_mode)
     s0_acc = s_zero_probe(model, data, mask, seq, period, device) if model_type == 'instnct' else -1.0
 
     # ── Ring diagnostics ──
@@ -556,6 +557,7 @@ def run_one(N, period, steps, batch, seq, hidden_dim, M, slot_dim,
         'topk_k': topk_k,
         'mtaps_enabled': bool(mtaps_enabled),
         'mtaps_lags': list(mtaps_lags),
+        'context_mode': context_mode,
         'history': history,
         'topk_diag_means': diag_means,
         **ring_diag,

@@ -18,7 +18,8 @@ There is one active correction that must stay visible until the canonical runner
 Current fact pattern:
 - the canonical train path does **not** pass `S` into `model(...)`
 - `forward(..., S=None, ...)` falls back to `S = 'dotprod'`
-- therefore the YAML/config `S: 0.3` is currently **not** the active mode on the canonical train/nightly path
+- the canonical nightly runner now passes `context_mode='dotprod'` **explicitly**
+- therefore the YAML/config `S: 0.3` is currently **not** the active mode on the canonical train path, and old nightly evidence before the runner fix should be read as implicit `dotprod`
 
 What this means:
 - current canonical nightly/train evidence should be read as **implicit `dotprod` evidence**
@@ -26,9 +27,10 @@ What this means:
 - relative branch comparisons that all used the same path remain valid
 - explicit probes that pass `S` directly are still meaningful and should be marked separately
 
-Practical rule until this is fixed:
-- do **not** describe the canonical nightly/train results as "fixed `S=0.3`"
-- do describe them as "current implicit `dotprod` path"
+Practical rule:
+- do **not** describe the canonical train/nightly results as "fixed `S=0.3`"
+- do describe old nightly/train results as "implicit `dotprod`"
+- do describe current canonical runner results as "explicit `dotprod`"
 - treat fixed-`S` conclusions as pending re-validation
 
 Primary entrypoint:

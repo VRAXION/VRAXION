@@ -263,6 +263,7 @@ def build_model(
     pointer_seam_mode='mod',
     mtaps_enabled=False,
     mtaps_lags=(1, 2, 4, 8, 16, 32),
+    mtaps_mixer_mode='current',
     device='cuda',
     hidden_dim=2048,
     M=1024,
@@ -295,6 +296,7 @@ def build_model(
         'pointer_interp_mode': pointer_interp_mode,
         'mtaps_enabled': bool(mtaps_enabled),
         'mtaps_lags': list(mtaps_lags),
+        'mtaps_mixer_mode': mtaps_mixer_mode,
         'bb_enabled': False,
         'bb_gate_bias': 0.0,
         'bb_scale': 0.1,
@@ -329,6 +331,8 @@ def run_one(
     pointer_seam_mode='mod',
     mtaps_enabled=False,
     mtaps_lags=(1, 2, 4, 8, 16, 32),
+    mtaps_mixer_mode='current',
+    context_mode='dotprod',
     ring_trace=False,
     device='cuda',
     hidden_dim=2048,
@@ -358,6 +362,7 @@ def run_one(
         pointer_seam_mode=pointer_seam_mode,
         mtaps_enabled=mtaps_enabled,
         mtaps_lags=mtaps_lags,
+        mtaps_mixer_mode=mtaps_mixer_mode,
         device=device,
         hidden_dim=hidden_dim,
         M=M,
@@ -404,7 +409,7 @@ def run_one(
         xb, yb, mask = dataset.sample_batch(batch_size, device)
 
         with torch.amp.autocast(device, enabled=amp_enabled):
-            pred, _state = model(xb, state=None)
+            pred, _state = model(xb, S=context_mode, state=None)
             _, masked_loss = func_maskloss_ce(pred, yb, mask)
 
         opt.zero_grad()
