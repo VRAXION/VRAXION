@@ -36,6 +36,11 @@ PRESETS: dict[str, list[dict]] = {
         {"id": "A_seq8_b8", "seq": 8, "batch": 8},
         {"id": "B_seq16_b4", "seq": 16, "batch": 4},
     ],
+    "mtaps_mixer_probe": [
+        {"id": "A_current", "variant": "LLT7"},
+        {"id": "B_scalar_gate", "variant": "LLT7SG"},
+        {"id": "C_residual_gated", "variant": "LLT7RG"},
+    ],
 }
 
 
@@ -170,11 +175,12 @@ def main() -> None:
     print(f"Thread limit={args.thread_limit} probe_steps={args.probe_steps} time_budget_s={args.time_budget_s}")
     for idx, candidate in enumerate(candidates, start=1):
         label = candidate["id"]
+        variant = candidate.get("variant", args.variant)
         cfg_probe = _apply_candidate_cfg(base_cfg, candidate)
         cfg_probe["steps"] = args.probe_steps
         probe_json = out_dir / f"cpu_pareto_probe_{label}_probe_{run_stamp}.json"
-        print(f"[{idx}/{len(candidates)}] Probe {label} ...")
-        probe_payload = _run_with_cfg(surface=args.surface, variant=args.variant, cfg=cfg_probe, json_out=probe_json)
+        print(f"[{idx}/{len(candidates)}] Probe {label} ({variant}) ...")
+        probe_payload = _run_with_cfg(surface=args.surface, variant=variant, cfg=cfg_probe, json_out=probe_json)
         probe_time = float(probe_payload["result"].get("time_s", 0.0))
         s_per_step = probe_time / max(1, args.probe_steps)
         target_steps = _round_steps(max(args.probe_steps, int(args.time_budget_s / max(1e-6, s_per_step))))
@@ -182,9 +188,10 @@ def main() -> None:
         cfg_full = _apply_candidate_cfg(base_cfg, candidate)
         cfg_full["steps"] = target_steps
         full_json = out_dir / f"cpu_pareto_probe_{label}_full_{run_stamp}.json"
-        print(f"[{idx}/{len(candidates)}] Full {label}: target_steps={target_steps} (~{args.time_budget_s}s) ...")
-        full_payload = _run_with_cfg(surface=args.surface, variant=args.variant, cfg=cfg_full, json_out=full_json)
+        print(f"[{idx}/{len(candidates)}] Full {label} ({variant}): target_steps={target_steps} (~{args.time_budget_s}s) ...")
+        full_payload = _run_with_cfg(surface=args.surface, variant=variant, cfg=cfg_full, json_out=full_json)
         summary = _candidate_summary(candidate, probe_payload, full_payload, target_steps)
+        summary["variant"] = variant
         summary["probe_json"] = str(probe_json)
         summary["full_json"] = str(full_json)
         summaries.append(summary)

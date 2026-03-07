@@ -665,6 +665,79 @@ Meaning:
 - the next frontier move should not be more raw `slot_dim`;
 - the remaining likely bottleneck is now the tap mixer / architectural expressivity rather than another simple size axis.
 
+## 6J. Canonical Context Wiring Correction: Implicit vs Explicit `dotprod`
+
+During review we confirmed that the canonical train path had been relying on the model's default `S=None -> dotprod` behavior rather than explicitly passing the configured YAML `S` value.
+
+What this means:
+- old nightly/train evidence should be read as **implicit `dotprod`**, not as validated fixed-`S=0.3`;
+- the YAML `S: 0.3` value was effectively dead on the canonical train path;
+- relative nightly verdicts such as `LL`, `LLT6`, and `LLT7` remain valid, because they were all measured on the same implicit `dotprod` path.
+
+Canonical runner correction:
+- the canonical nightly runner now passes `context_mode=dotprod` explicitly;
+- canonical artifacts now record this in both:
+  - `meta.context_mode`
+  - `surface_config.context_mode`
+
+Meaning:
+- future nightly evidence is no longer ambiguous about context mode;
+- fixed-`S` claims remain pending re-validation, but the current `LLT7` branch comparison remains valid.
+
+## 6K. CPU Pareto Needle-Poke: Tap Mixer / Expressivity A-B-C
+
+After the `slot_dim` sweep established that `slot32` is the current sweet spot at `H=512`, the next question was whether the remaining bottleneck is no longer a size axis but the tap mixer itself.
+
+Method:
+- canonical surface: `wikitext_sequential_carry`
+- fixed:
+  - `variant family = LLT7`
+  - `hidden_dim=512`
+  - `slot_dim=32`
+  - `M=64`
+  - `seq=8`
+  - `batch=8`
+- deterministic CPU probe, about `5` minutes per run
+- compare:
+  - `A_current = LLT7`
+  - `B_scalar_gate = LLT7SG`
+  - `C_residual_gated = LLT7RG`
+- summary artifact:
+  - [cpu_pareto_probe_seq_tradeoff_20260307_213644_482474.json](../../v4/dev_notes/telemetry/cpu_pareto_probe_seq_tradeoff_20260307_213644_482474.json)
+
+Results:
+- `A_current`
+  - final acc `0.4436`
+  - final BPC `2.8920`
+  - time `314.6s`
+  - `carry-reset = +5.14 pp`
+- `B_scalar_gate`
+  - final acc `0.5033`
+  - final BPC `2.5695`
+  - time `314.7s`
+  - `carry-reset = +8.95 pp`
+- `C_residual_gated`
+  - final acc `0.4838`
+  - final BPC `2.5984`
+  - time `272.2s`
+  - `carry-reset = +8.10 pp`
+
+Verdict:
+- both new mixer variants beat the current `LLT7` mixer strongly enough to count as real wins;
+- `B_scalar_gate` is the current leader on this probe:
+  - accuracy `+5.97 pt` over baseline
+  - BPC `-0.3225`
+  - essentially identical wall time
+- `C_residual_gated` is also a real win over baseline:
+  - accuracy `+4.02 pt`
+  - BPC `-0.2935`
+  - and it is faster than both `A` and `B`
+
+Meaning:
+- the next weak link was indeed tap-mixer / architectural expressivity, not another raw size axis;
+- the current best next branch is **not** a new `M`/`seq`/`topk` sweep;
+- the next step should be to confirm `LLT7SG` against `LLT7RG` and baseline on the canonical carry surface with multi-seed / longer runs.
+
 ## 7. Operational Rules Going Forward
 
 1. Any new claim must name the surface:
