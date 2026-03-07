@@ -553,6 +553,48 @@ Meaning:
 - the next useful branch should not blindly push `M` higher;
 - the stronger remaining question is whether the post-`512` hidden knee is already at `768`, or whether the next gains must come from a better tap mixer / non-size architectural refinement rather than just scaling ring size.
 
+## 6H. CPU Pareto Needle-Poke: `M=256` Early-Stop Check
+
+Because the hidden sweep was non-monotonic, we explicitly checked one higher-capacity `M` point before closing the ring-capacity axis.
+
+Method:
+- canonical surface: `wikitext_sequential_carry`
+- canonical branch: `LLT7`
+- fixed:
+  - `hidden_dim=512`
+  - `slot_dim=16`
+  - `seq=8`
+  - `batch=8`
+- compare:
+  - current winner `M=64`
+  - one higher-capacity probe `M=256`
+- time budget: about `5` minutes
+- summary artifact:
+  - [cpu_pareto_probe_seq_tradeoff_20260307_201122_925029.json](../../v4/dev_notes/telemetry/cpu_pareto_probe_seq_tradeoff_20260307_201122_925029.json)
+
+Results:
+- `M64`
+  - final acc `0.4599`
+  - final BPC `2.7996`
+- `M256`
+  - final acc `0.4158`
+  - final BPC `2.9942`
+  - time `279.3s`
+
+Verdict:
+- `M=256` was substantially worse than `M=64`:
+  - accuracy `-4.41 pt`
+  - BPC `+0.1946`
+- this is strong enough to early-stop the upward `M` sweep for now;
+- on this canonical CPU carry surface, raw ring capacity is not the next bottleneck.
+
+Meaning:
+- the non-monotonic hidden sweep does not generalize into evidence that `M` should keep scaling upward;
+- at least up to the next meaningful higher point, more ring capacity is not buying quality;
+- the next frontier question should move away from `M` and toward either:
+  - confirming the hidden knee (`512 -> 768`),
+  - or probing tap-mixer / architectural expressivity.
+
 ## 7. Operational Rules Going Forward
 
 1. Any new claim must name the surface:

@@ -1,0 +1,38 @@
+{
+  "script": "cpu_pareto_probe.py",
+  "timestamp": "2026-03-07T20:16:57.481689",
+  "surface": "wikitext_sequential_carry",
+  "variant": "LLT7",
+  "preset": "seq_tradeoff",
+  "thread_limit": 4,
+  "probe_steps": 500,
+  "time_budget_s": 300,
+  "results": [
+    {
+      "id": "M256",
+      "candidate": {
+        "id": "M256",
+        "hidden_dim": 512,
+        "slot_dim": 16,
+        "M": 256,
+        "seq": 8,
+        "batch": 8
+      },
+      "probe_steps": 500,
+      "probe_time_s": 40.773841857910156,
+      "probe_s_per_step": 0.08154768371582032,
+      "target_steps": 3700,
+      "final_acc": 0.41579411059618,
+      "best_acc": 0.7460317611694336,
+      "final_bpc": 2.9942336888172627,
+      "final_loss": 2.0754375052452088,
+      "time_s": 279.32572889328003,
+      "s_per_step": 0.07549344024142704,
+      "carry_eval_acc": 0.40347394540942927,
+      "fresh_eval_acc": 0.34292803970223323,
+      "carry_minus_reset_pp": 6.054590570719603,
+      "probe_json": "S:\\AI\\_tmp\\nightly_worktree\\v4\\dev_notes\\telemetry\\cpu_pareto_probe_M256_probe_20260307_201122_925029.json",
+      "full_json": "S:\\AI\\_tmp\\nightly_worktree\\v4\\dev_notes\\telemetry\\cpu_pareto_probe_M256_full_20260307_201122_925029.json"
+    }
+  ]
+}
