@@ -336,6 +336,7 @@ def run_one(
     slot_dim=128,
     N=1,
     R=1,
+    heartbeat_cb=None,
 ):
     import instnct
 
@@ -396,6 +397,8 @@ def run_one(
         }
     max_grad = 0.0
     t0 = time.time()
+    if heartbeat_cb is not None:
+        heartbeat_cb('start', 0, steps, {'variant_name': variant_name})
 
     for step in range(1, steps + 1):
         xb, yb, mask = dataset.sample_batch(batch_size, device)
@@ -461,6 +464,17 @@ def run_one(
                 f'p99-ring={tele["p99_ring_idx"]:.2f}  '
                 f'{elapsed:.0f}s {spike}{diag_suffix}'
             )
+            if heartbeat_cb is not None:
+                heartbeat_cb(
+                    'progress',
+                    step,
+                    steps,
+                    {
+                        'avg_loss': float(avg_loss),
+                        'avg_acc': float(avg_acc),
+                        'elapsed_s': float(elapsed),
+                    },
+                )
 
     elapsed = time.time() - t0
     instnct._c19_activation = orig_fn
@@ -494,6 +508,17 @@ def run_one(
         ring_trace_summary = _summarize_ring_trace(ring_trace_rows, M)
         result['ring_trace_summary'] = ring_trace_summary
         result['ring_trace'] = ring_trace_rows
+    if heartbeat_cb is not None:
+        heartbeat_cb(
+            'done',
+            steps,
+            steps,
+            {
+                'final_acc': float(result['final_acc']),
+                'final_bpc': float(result['final_bpc']),
+                'time_s': float(result['time_s']),
+            },
+        )
     return result
 
 

@@ -110,6 +110,10 @@ def _job_stderr_path(runtime_root: Path, job_id: str) -> Path:
     return runtime_root / "jobs" / job_id / "stderr.log"
 
 
+def _job_heartbeat_path(runtime_root: Path, job_id: str) -> Path:
+    return runtime_root / "jobs" / job_id / "heartbeat.json"
+
+
 def _resolve_variant(job: dict[str, Any], decisions: dict[str, Any]) -> str:
     if job.get("variant"):
         return job["variant"]
@@ -223,6 +227,13 @@ def validate_plan(plan: dict[str, Any]) -> None:
         for lane in ("cpu", "gpu"):
             if lane in lane_defaults and not isinstance(lane_defaults[lane], dict):
                 raise ValueError(f"lane_defaults.{lane} must be an object")
+    lane_env = plan.get("lane_env", {})
+    if lane_env:
+        if not isinstance(lane_env, dict):
+            raise ValueError("lane_env must be an object")
+        for lane in ("cpu", "gpu"):
+            if lane in lane_env and not isinstance(lane_env[lane], dict):
+                raise ValueError(f"lane_env.{lane} must be an object")
     seen_jobs: set[str] = set()
     for stage in cpu_stages:
         if not stage.get("id"):
@@ -256,6 +267,9 @@ def build_initial_status(plan: dict[str, Any], runtime_root: Path) -> dict[str, 
         for job in stage["jobs"]:
             lane_defaults = _lane_defaults(plan, "cpu")
             record = deepcopy(job)
+            lane_env = deepcopy(plan.get("lane_env", {}).get("cpu", {}))
+            job_env = deepcopy(job.get("env", {}))
+            merged_env = {**lane_env, **job_env}
             record.update(
                 {
                     "stage_id": sid,
@@ -264,6 +278,7 @@ def build_initial_status(plan: dict[str, Any], runtime_root: Path) -> dict[str, 
                     "artifact_path": None,
                     "stdout_log": None,
                     "stderr_log": None,
+                    "heartbeat_path": None,
                     "start_ts": None,
                     "end_ts": None,
                     "duration_s": None,
@@ -278,6 +293,7 @@ def build_initial_status(plan: dict[str, Any], runtime_root: Path) -> dict[str, 
                     "restart_delay_s": int(job.get("restart_delay_s", lane_defaults["restart_delay_s"])),
                     "last_output_ts": None,
                     "retry_not_before": None,
+                    "env": merged_env,
                 }
             )
             jobs[job["id"]] = record
@@ -285,6 +301,9 @@ def build_initial_status(plan: dict[str, Any], runtime_root: Path) -> dict[str, 
     for job in plan["gpu_queue"]:
         lane_defaults = _lane_defaults(plan, "gpu")
         record = deepcopy(job)
+        lane_env = deepcopy(plan.get("lane_env", {}).get("gpu", {}))
+        job_env = deepcopy(job.get("env", {}))
+        merged_env = {**lane_env, **job_env}
         record.update(
             {
                 "stage_id": None,
@@ -293,6 +312,7 @@ def build_initial_status(plan: dict[str, Any], runtime_root: Path) -> dict[str, 
                 "artifact_path": None,
                 "stdout_log": None,
                 "stderr_log": None,
+                "heartbeat_path": None,
                 "start_ts": None,
                 "end_ts": None,
                 "duration_s": None,
@@ -307,6 +327,7 @@ def build_initial_status(plan: dict[str, Any], runtime_root: Path) -> dict[str, 
                 "restart_delay_s": int(job.get("restart_delay_s", lane_defaults["restart_delay_s"])),
                 "last_output_ts": None,
                 "retry_not_before": None,
+                "env": merged_env,
             }
         )
         jobs[job["id"]] = record
@@ -451,6 +472,7 @@ def _resolve_job_record(job: dict[str, Any], runtime_root: Path, decisions: dict
     job["artifact_path"] = str(_job_artifact_path(runtime_root, job["id"]))
     job["stdout_log"] = str(_job_stdout_path(runtime_root, job["id"]))
     job["stderr_log"] = str(_job_stderr_path(runtime_root, job["id"]))
+    job["heartbeat_path"] = str(_job_heartbeat_path(runtime_root, job["id"]))
     return job
 
 
@@ -469,6 +491,8 @@ def _build_runner_cmd(job: dict[str, Any]) -> list[str]:
         job["device"],
         "--seed",
         str(job["seed"]),
+        "--heartbeat-out",
+        job["heartbeat_path"],
         "--json-out",
         job["artifact_path"],
     ]
@@ -493,11 +517,14 @@ def _start_job(job: dict[str, Any]) -> dict[str, Any]:
     stderr_handle.write(banner)
     stdout_handle.flush()
     stderr_handle.flush()
+    child_env = os.environ.copy()
+    child_env.update({str(k): str(v) for k, v in (job.get("env") or {}).items()})
     proc = subprocess.Popen(
         _build_runner_cmd(job),
         cwd=str(REPO_ROOT),
         stdout=stdout_handle,
         stderr=stderr_handle,
+        env=child_env,
     )
     return {"proc": proc, "stdout_handle": stdout_handle, "stderr_handle": stderr_handle}
 
@@ -512,7 +539,11 @@ def _log_mtime(path_str: str | None) -> float | None:
 
 
 def _latest_output_mtime(job: dict[str, Any]) -> float | None:
-    mtimes = [_log_mtime(job.get("stdout_log")), _log_mtime(job.get("stderr_log"))]
+    mtimes = [
+        _log_mtime(job.get("heartbeat_path")),
+        _log_mtime(job.get("stdout_log")),
+        _log_mtime(job.get("stderr_log")),
+    ]
     mtimes = [mtime for mtime in mtimes if mtime is not None]
     return max(mtimes) if mtimes else None
 

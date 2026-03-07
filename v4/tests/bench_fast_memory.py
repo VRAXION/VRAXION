@@ -312,7 +312,7 @@ def run_one(N, period, steps, batch, seq, hidden_dim, M, slot_dim,
             log_every=100, seed=42, read_kernel_mode='vshape',
             write_address_mode='pointer', topk_k=2, ring_trace=False,
             pointer_mode='sequential', pointer_interp_mode='off', pointer_seam_mode='mod',
-            mtaps_enabled=False, mtaps_lags=(1, 2, 4, 8, 16, 32)):
+            mtaps_enabled=False, mtaps_lags=(1, 2, 4, 8, 16, 32), heartbeat_cb=None):
     """Train one configuration and return results.
 
     Returns:
@@ -418,6 +418,8 @@ def run_one(N, period, steps, batch, seq, hidden_dim, M, slot_dim,
             'write_hist': [0 for _ in range(M)],
         }
     t0 = time.perf_counter()
+    if heartbeat_cb is not None:
+        heartbeat_cb('start', 0, steps, {'model_type': model_type, 'period': period})
 
     for step in range(1, steps + 1):
         # Update LR
@@ -490,6 +492,17 @@ def run_one(N, period, steps, batch, seq, hidden_dim, M, slot_dim,
             print(f"  Step {step:5d} | echo_acc={acc*100:5.1f}% | "
                   f"loss={loss.item():.3f} | {elapsed:6.1f}s | "
                   f"sup={n_sup}{diag_suffix}")
+            if heartbeat_cb is not None:
+                heartbeat_cb(
+                    'progress',
+                    step,
+                    steps,
+                    {
+                        'echo_acc': float(acc),
+                        'loss': float(loss.item()),
+                        'elapsed_s': float(elapsed),
+                    },
+                )
 
     wall = time.perf_counter() - t0
     final_acc = history[-1][1] if history else 0.0
@@ -551,6 +564,16 @@ def run_one(N, period, steps, batch, seq, hidden_dim, M, slot_dim,
     if ring_trace_rows is not None:
         result['ring_trace_summary'] = ring_trace_summary
         result['ring_trace'] = ring_trace_rows
+    if heartbeat_cb is not None:
+        heartbeat_cb(
+            'done',
+            steps,
+            steps,
+            {
+                'final_acc': float(result['final_acc']),
+                'time_s': float(result['wall_time']),
+            },
+        )
     return result
 
 

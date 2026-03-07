@@ -357,6 +357,12 @@ Meaning:
 
 5. Pooled hard topk stays closed for near-term mainline work.
 
+6. Overnight orchestration now uses an explicit runner heartbeat, not just stdout/stderr log mtimes.
+- This was added after a false-positive `watchdog:no_output` failure on a long CPU scale-up run.
+- Canonical overnight jobs now write a `heartbeat.json` sidecar under each job directory.
+- The orchestrator watches that heartbeat first, and only falls back to log mtimes second.
+- CPU lane env now explicitly pins thread counts in the queue JSON so unattended launches do not depend on the parent shell state.
+
 ## Final Summary
 
 Current best consolidated read:

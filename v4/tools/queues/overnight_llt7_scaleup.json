@@ -19,6 +19,15 @@
       "restart_delay_s": 15
     }
   },
+  "lane_env": {
+    "cpu": {
+      "OMP_NUM_THREADS": "8",
+      "MKL_NUM_THREADS": "8",
+      "OPENBLAS_NUM_THREADS": "8",
+      "NUMEXPR_NUM_THREADS": "8"
+    },
+    "gpu": {}
+  },
   "cpu_stages": [
     {
       "id": "seed_scaleup",

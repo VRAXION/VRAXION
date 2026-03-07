@@ -8,6 +8,7 @@ if str(ROOT / "tools") not in sys.path:
 from nightly_orchestrator import (  # type: ignore[import-not-found]
     DEFAULT_PLAN_PATH,
     _build_runner_cmd,
+    _latest_output_mtime,
     _job_can_start,
     _job_has_restart_budget,
     _should_watchdog_fire,
@@ -93,6 +94,7 @@ def test_lane_defaults_are_applied_to_jobs(tmp_path):
     gpu_job = status["jobs"]["gpu_llt6_long"]
     assert cpu_job["max_restarts"] >= 1
     assert cpu_job["watchdog_no_output_s"] > 0
+    assert cpu_job["env"]["OMP_NUM_THREADS"] == "8"
     assert gpu_job["max_restarts"] >= 1
     assert gpu_job["watchdog_no_output_s"] > 0
 
@@ -129,7 +131,24 @@ def test_build_runner_cmd_uses_unbuffered_python():
         "steps": 10,
         "device": "cpu",
         "seed": 42,
+        "heartbeat_path": "heartbeat.json",
         "artifact_path": "out.json",
     }
     cmd = _build_runner_cmd(job)
     assert cmd[1] == "-u"
+    assert "--heartbeat-out" in cmd
+
+
+def test_latest_output_prefers_heartbeat(tmp_path):
+    hb = tmp_path / "heartbeat.json"
+    out = tmp_path / "stdout.log"
+    err = tmp_path / "stderr.log"
+    out.write_text("out", encoding="utf-8")
+    err.write_text("err", encoding="utf-8")
+    hb.write_text("hb", encoding="utf-8")
+    job = {
+        "heartbeat_path": str(hb),
+        "stdout_log": str(out),
+        "stderr_log": str(err),
+    }
+    assert _latest_output_mtime(job) is not None
