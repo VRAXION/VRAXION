@@ -386,6 +386,132 @@ Meaning:
 - on this surface, the better use of the same budget is still the shorter, denser update schedule;
 - the next single-factor probe should target model capacity or read bandwidth instead of sequence length.
 
+## 6D. CPU Pareto Needle-Poke: `hidden_dim=32` vs `hidden_dim=512`
+
+With sequence length ruled out as the next frontier lever, the next direct question was whether the real limit was internal capacity.
+
+Method:
+- canonical surface: `wikitext_sequential_carry`
+- canonical branch: `LLT7`
+- fixed:
+  - `seq=8`
+  - `batch=8`
+- time budget: about `5` minutes per run
+- summary artifact:
+  - [cpu_pareto_probe_seq_tradeoff_20260307_182020_815561.json](../../v4/dev_notes/telemetry/cpu_pareto_probe_seq_tradeoff_20260307_182020_815561.json)
+
+Results:
+- `A_h32`
+  - `hidden_dim=32`
+  - final acc `0.3744`
+  - final BPC `3.2167`
+  - time `348.2s`
+- `B_h512`
+  - `hidden_dim=512`
+  - final acc `0.4731`
+  - final BPC `2.7097`
+  - time `296.3s`
+
+Verdict:
+- this is a large, clean win for more internal capacity on the same CPU budget;
+- delta:
+  - accuracy `+9.87 pt`
+  - BPC `-0.5070`
+- the current bottleneck at this stage was not sequence length;
+- it was internal representation capacity.
+
+Meaning:
+- once `LLT7` fixed the retrieval structure, the next limiting factor became "how much model can actually use what it reads";
+- on this small CPU frontier, more "brain" mattered far more than more in-sequence context.
+
+## 6E. CPU Pareto Needle-Poke: `slot_dim=8` vs `slot_dim=16`
+
+After the `hidden_dim=512` win, the next question became whether the memory/read path itself was now the bottleneck.
+
+Method:
+- canonical surface: `wikitext_sequential_carry`
+- canonical branch: `LLT7`
+- fixed:
+  - `hidden_dim=512`
+  - `seq=8`
+  - `batch=8`
+- compare:
+  - `slot_dim=8`
+  - `slot_dim=16`
+- summary artifact:
+  - [cpu_pareto_probe_seq_tradeoff_20260307_184037_121413.json](../../v4/dev_notes/telemetry/cpu_pareto_probe_seq_tradeoff_20260307_184037_121413.json)
+
+Results:
+- `A_slot8`
+  - final acc `0.4313`
+  - final BPC `2.8448`
+  - time `329.8s`
+- `B_slot16`
+  - final acc `0.4532`
+  - final BPC `2.7707`
+  - time `275.3s`
+
+Verdict:
+- `slot_dim=16` is a clean win over `slot_dim=8`;
+- delta:
+  - accuracy `+2.19 pt`
+  - BPC `-0.0741`
+- this means the next bottleneck after `hidden_dim=512` was indeed read / memory bandwidth.
+
+Meaning:
+- retrieval structure alone was not enough;
+- once there was enough hidden capacity, wider slot bandwidth also paid off;
+- the frontier question then changed from "is more bandwidth helpful at all?" to "where is the knee?"
+
+## 6F. Coarse Hidden Frontier on the Better Memory Width
+
+With `slot_dim=16` already beating `8`, a coarse hidden sweep was used to stop guessing and bracket the hidden-capacity knee.
+
+Method:
+- canonical surface: `wikitext_sequential_carry`
+- canonical branch: `LLT7`
+- fixed:
+  - `slot_dim=16`
+  - `seq=8`
+  - `batch=8`
+- candidates:
+  - `hidden_dim = 128, 256, 512, 768`
+- time budget: about `5` minutes each
+- summary artifact:
+  - [cpu_pareto_probe_seq_tradeoff_20260307_191847_013563.json](../../v4/dev_notes/telemetry/cpu_pareto_probe_seq_tradeoff_20260307_191847_013563.json)
+
+Results:
+- `H128`
+  - final acc `0.4480`
+  - final BPC `2.8735`
+  - time `376.7s`
+- `H256`
+  - final acc `0.4267`
+  - final BPC `2.9007`
+  - time `306.2s`
+- `H512`
+  - final acc `0.4414`
+  - final BPC `2.8187`
+  - time `284.5s`
+- `H768`
+  - final acc `0.4456`
+  - final BPC `2.7947`
+  - time `299.8s`
+
+Verdict:
+- the frontier is no longer monotonic in a naive way;
+- `H256` did not beat `H128`;
+- `H512` beat `H256` strongly on BPC;
+- `H768` only improved modestly over `H512`:
+  - accuracy `+0.43 pt`
+  - BPC `-0.0240`
+
+Meaning:
+- the hidden-capacity knee now appears to be in the `512 -> 768` region, not down near `128/256`;
+- `512` is still a very strong quality/time point;
+- `768` may still be a viable frontier move, but it is already much closer to the knee than the earlier `32 -> 512` jump;
+- the next deterministic question is no longer "is more hidden useful at all?" but rather whether `768` is enough, or whether the next real limit after that is ring capacity `M`.
+
 ## 7. Operational Rules Going Forward
 
 1. Any new claim must name the surface:

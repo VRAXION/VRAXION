@@ -1,0 +1,112 @@
+{
+  "script": "cpu_pareto_probe.py",
+  "timestamp": "2026-03-07T19:42:14.169863",
+  "surface": "wikitext_sequential_carry",
+  "variant": "LLT7",
+  "preset": "seq_tradeoff",
+  "thread_limit": 4,
+  "probe_steps": 500,
+  "time_budget_s": 300,
+  "results": [
+    {
+      "id": "H128",
+      "candidate": {
+        "id": "H128",
+        "hidden_dim": 128,
+        "slot_dim": 16,
+        "seq": 8,
+        "batch": 8
+      },
+      "probe_steps": 500,
+      "probe_time_s": 20.527915477752686,
+      "probe_s_per_step": 0.04105583095550537,
+      "target_steps": 7300,
+      "final_acc": 0.4480351388454437,
+      "best_acc": 0.6875,
+      "final_bpc": 2.873532193193436,
+      "final_loss": 1.9917738914489747,
+      "time_s": 376.664431810379,
+      "s_per_step": 0.0515978673712848,
+      "carry_eval_acc": 0.41206284845413077,
+      "fresh_eval_acc": 0.28661936137861127,
+      "carry_minus_reset_pp": 12.54434870755195,
+      "probe_json": "S:\\AI\\_tmp\\nightly_worktree\\v4\\dev_notes\\telemetry\\cpu_pareto_probe_H128_probe_20260307_191847_013563.json",
+      "full_json": "S:\\AI\\_tmp\\nightly_worktree\\v4\\dev_notes\\telemetry\\cpu_pareto_probe_H128_full_20260307_191847_013563.json"
+    },
+    {
+      "id": "H256",
+      "candidate": {
+        "id": "H256",
+        "hidden_dim": 256,
+        "slot_dim": 16,
+        "seq": 8,
+        "batch": 8
+      },
+      "probe_steps": 500,
+      "probe_time_s": 26.233426809310913,
+      "probe_s_per_step": 0.05246685361862183,
+      "target_steps": 5700,
+      "final_acc": 0.4266971358656883,
+      "best_acc": 0.761904776096344,
+      "final_bpc": 2.9006513225584034,
+      "final_loss": 2.0105713748931886,
+      "time_s": 306.1588325500488,
+      "s_per_step": 0.05371207588597348,
+      "carry_eval_acc": 0.4462564862861379,
+      "fresh_eval_acc": 0.3412404250061774,
+      "carry_minus_reset_pp": 10.50160612799605,
+      "probe_json": "S:\\AI\\_tmp\\nightly_worktree\\v4\\dev_notes\\telemetry\\cpu_pareto_probe_H256_probe_20260307_191847_013563.json",
+      "full_json": "S:\\AI\\_tmp\\nightly_worktree\\v4\\dev_notes\\telemetry\\cpu_pareto_probe_H256_full_20260307_191847_013563.json"
+    },
+    {
+      "id": "H512",
+      "candidate": {
+        "id": "H512",
+        "hidden_dim": 512,
+        "slot_dim": 16,
+        "seq": 8,
+        "batch": 8
+      },
+      "probe_steps": 500,
+      "probe_time_s": 25.48728060722351,
+      "probe_s_per_step": 0.050974561214447024,
+      "target_steps": 5900,
+      "final_acc": 0.4413727006316185,
+      "best_acc": 0.734375,
+      "final_bpc": 2.818728180110335,
+      "final_loss": 1.9537867748737334,
+      "time_s": 284.50427651405334,
+      "s_per_step": 0.04822106381594125,
+      "carry_eval_acc": 0.4274412855377009,
+      "fresh_eval_acc": 0.34487021013597036,
+      "carry_minus_reset_pp": 8.257107540173052,
+      "probe_json": "S:\\AI\\_tmp\\nightly_worktree\\v4\\dev_notes\\telemetry\\cpu_pareto_probe_H512_probe_20260307_191847_013563.json",
+      "full_json": "S:\\AI\\_tmp\\nightly_worktree\\v4\\dev_notes\\telemetry\\cpu_pareto_probe_H512_full_20260307_191847_013563.json"
+    },
+    {
+      "id": "H768",
+      "candidate": {
+        "id": "H768",
+        "hidden_dim": 768,
+        "slot_dim": 16,
+        "seq": 8,
+        "batch": 8
+      },
+      "probe_steps": 500,
+      "probe_time_s": 24.946180820465088,
+      "probe_s_per_step": 0.04989236164093017,
+      "target_steps": 6000,
+      "final_acc": 0.44563919454813006,
+      "best_acc": 0.734375,
+      "final_bpc": 2.794653195405364,
+      "final_loss": 1.937099324464798,
+      "time_s": 299.8286683559418,
+      "s_per_step": 0.04997144472599029,
+      "carry_eval_acc": 0.4477059694129255,
+      "fresh_eval_acc": 0.37789837197829307,
+      "carry_minus_reset_pp": 6.980759743463244,
+      "probe_json": "S:\\AI\\_tmp\\nightly_worktree\\v4\\dev_notes\\telemetry\\cpu_pareto_probe_H768_probe_20260307_191847_013563.json",
+      "full_json": "S:\\AI\\_tmp\\nightly_worktree\\v4\\dev_notes\\telemetry\\cpu_pareto_probe_H768_full_20260307_191847_013563.json"
+    }
+  ]
+}

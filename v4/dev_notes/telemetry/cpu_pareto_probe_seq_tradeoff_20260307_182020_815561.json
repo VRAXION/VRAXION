@@ -1,0 +1,60 @@
+{
+  "script": "cpu_pareto_probe.py",
+  "timestamp": "2026-03-07T18:32:19.375416",
+  "surface": "wikitext_sequential_carry",
+  "variant": "LLT7",
+  "preset": "seq_tradeoff",
+  "thread_limit": 4,
+  "probe_steps": 500,
+  "time_budget_s": 300,
+  "results": [
+    {
+      "id": "A_h32",
+      "candidate": {
+        "id": "A_h32",
+        "hidden_dim": 32,
+        "seq": 8,
+        "batch": 8
+      },
+      "probe_steps": 500,
+      "probe_time_s": 20.541191816329956,
+      "probe_s_per_step": 0.04108238363265991,
+      "target_steps": 7300,
+      "final_acc": 0.3744248902797699,
+      "best_acc": 0.671875,
+      "final_bpc": 3.2166744836922887,
+      "final_loss": 2.2296211850643157,
+      "time_s": 348.16076159477234,
+      "s_per_step": 0.047693255012982515,
+      "carry_eval_acc": 0.34769386720729856,
+      "fresh_eval_acc": 0.2242777496198682,
+      "carry_minus_reset_pp": 12.341611758743035,
+      "probe_json": "S:\\AI\\_tmp\\nightly_worktree\\v4\\dev_notes\\telemetry\\cpu_pareto_probe_A_h32_probe_20260307_182020_815561.json",
+      "full_json": "S:\\AI\\_tmp\\nightly_worktree\\v4\\dev_notes\\telemetry\\cpu_pareto_probe_A_h32_full_20260307_182020_815561.json"
+    },
+    {
+      "id": "B_h512",
+      "candidate": {
+        "id": "B_h512",
+        "hidden_dim": 512,
+        "seq": 8,
+        "batch": 8
+      },
+      "probe_steps": 500,
+      "probe_time_s": 29.404348373413086,
+      "probe_s_per_step": 0.05880869674682617,
+      "target_steps": 5100,
+      "final_acc": 0.47310316741466524,
+      "best_acc": 0.761904776096344,
+      "final_bpc": 2.7097348375296595,
+      "final_loss": 1.878238606452942,
+      "time_s": 296.3368275165558,
+      "s_per_step": 0.05810526029736388,
+      "carry_eval_acc": 0.4625,
+      "fresh_eval_acc": 0.37,
+      "carry_minus_reset_pp": 9.250000000000004,
+      "probe_json": "S:\\AI\\_tmp\\nightly_worktree\\v4\\dev_notes\\telemetry\\cpu_pareto_probe_B_h512_probe_20260307_182020_815561.json",
+      "full_json": "S:\\AI\\_tmp\\nightly_worktree\\v4\\dev_notes\\telemetry\\cpu_pareto_probe_B_h512_full_20260307_182020_815561.json"
+    }
+  ]
+}
