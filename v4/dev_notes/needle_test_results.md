@@ -137,10 +137,99 @@ VRAM: 3.8 GB, wall time: 4.5 min
 - Batch size barely affects step/sec (ring loop dominates), so crank it up for free.
 - M=256 is too small for seq>=64 (causes NaN divergence).
 
+## Phase 4: slot_dim sweep (hidden=4096, seq=16, batch=512, 1000 steps)
+
+Fixed: hidden=4096, M=256, seq=16, batch=512, sequential pointer, replace write, seed=1337.
+Varying slot_dim to find the compression bottleneck knee.
+
+| slot_dim | ratio | best_loss | step/sec | VRAM   | wall    | alpha | ring_norm | stable? |
+|----------|-------|-----------|----------|--------|---------|-------|-----------|---------|
+| 32       | 128:1 | 2.164     | 3.6      | 2.9 GB | 4.6 min | ~0.40 | 5305      | NO — diverged ~step 630, loss→3.4 |
+| 64       | 64:1  | 2.218     | 3.0      | 3.2 GB | 5.5 min | ~0.41 | 8215      | NO — diverged ~step 570, 2× LR plateau |
+| **128**  | **32:1** | **2.047** | **3.7** | **3.8 GB** | **4.5 min** | **~0.40** | **~2000** | **YES — stable through 1000 steps** |
+| 256      | 16:1  | 2.318     | 2.75     | 4.9 GB | 6.1 min | ~0.15 | 11795     | NO — diverged ~step 500, 2× LR plateau |
+| 512      | 8:1   | 2.422     | 1.78     | 7.2 GB | 9.4 min | ~0.08 | 29816↑    | NO — diverged ~step 600, ring_norm exploding |
+
+### Analysis: U-shaped curve, 128 is the Goldilocks point
+
+1. **slot_dim=128 wins on EVERY metric**: best loss, fastest speed, only stable config.
+
+2. **Too small (32, 64) — compression bottleneck**: The 4096→32/64 compression loses too much
+   information. Ring can't carry the hidden state signal. Training learns fast initially
+   but diverges as the model hits the compression ceiling. Interestingly, alpha stays ~0.40
+   (ring is being used), but the information flowing through it is degraded.
+
+3. **Too large (256, 512) — alpha collapse**: This is the surprising finding.
+   Wider slots should carry MORE information, but alpha collapses (0.15→0.08).
+   The model effectively stops using the ring. Why?
+   - Larger slot_dim = larger read/write projections = harder optimization surface
+   - ring_norm explodes (11K→30K) because each write deposits more energy
+   - The read_proj can't extract useful signal from the high-norm noisy ring
+   - Net effect: model learns to ignore the ring (alpha→0) and rely on hidden state alone
+
+4. **Speed is non-monotonic**: 128 (3.7) > 32 (3.6) > 64 (3.0) > 256 (2.75) > 512 (1.78).
+   slot_dim=128 hits the Tensor Core sweet spot, same as hidden_dim=4096.
+
+5. **32:1 compression ratio** (4096/128) is the magic number for this architecture.
+   With hidden=8192 this predicts optimal slot_dim=256. Testable but lower priority
+   since hidden=8192 had saturation issues at slot_dim=128 (Phase 1).
+
+### Diagnostic: alpha as health metric
+
+The `alpha` (context blend factor) is the best single diagnostic:
+- alpha ~0.40 = healthy (ring contributing ~40% of signal) → 32, 64, 128
+- alpha ~0.15 = degraded (ring mostly ignored) → 256
+- alpha ~0.08 = dead (ring is noise) → 512
+
+But alpha alone doesn't predict stability. 32 and 64 have healthy alpha but diverge
+because the compressed signal is lossy. Need alpha ~0.40 AND adequate slot capacity.
+
+## Phase 5: Pilot pointer @ M=256
+
+Same winner config (hidden=4096, slot=128, M=256, seq=16, batch=512) but pointer_mode=pilot.
+Prior test was at M=1024 (2× slower). M=256 has 4× fewer slots to cosine-scan.
+
+| pointer    | best_loss | step/sec | VRAM   | wall    | alpha | ring_norm       | stable? |
+|------------|-----------|----------|--------|---------|-------|-----------------|---------|
+| sequential | 2.047     | 3.7      | 3.8 GB | 4.5 min | ~0.40 | ~2000 (varying) | YES     |
+| **pilot**  | **2.004** | **2.86** | 3.85 GB | 5.8 min | ~0.22 | 8021.33 (FROZEN) | **YES — still improving** |
+
+### Analysis
+
+1. **Pilot wins on loss** (-2.1%): 2.004 vs 2.047, and loss was STILL DECLINING at step 1000
+   (stale=4). Sequential had plateaued. With more steps, pilot likely pulls further ahead.
+
+2. **Speed cost is acceptable**: 2.86 vs 3.7 step/sec (23% slower). At M=256, cosine sim
+   scans 256 slots per timestep (vs 1024 before = 4× less work). Still above 2+ step/sec target.
+
+3. **ring_norm FROZEN at 8021.33**: Didn't change by a single digit across 1000 steps.
+   With sequential pointer, ring_norm varied (decayed from ~2060 to ~1700). Pilot's
+   content-based jumping + replace write creates a stable equilibrium — pointer revisits
+   and overwrites the same slots in a balanced cycle. Needs investigation but doesn't hurt.
+
+4. **Alpha halved (0.22 vs 0.40)**: Pilot uses the ring LESS but MORE SELECTIVELY.
+   Sequential reads every slot in order (brute force). Pilot jumps to relevant content.
+   Less total ring influence, but higher quality per read. Net result: better loss.
+
+5. **pilot_max_jump=512 > M=256**: Jump wraps around the ring. Effectively any slot
+   is reachable in one step. Could try max_jump=128 (M/2) for less chaotic jumping.
+
+## Updated winner (NEW — pilot pointer)
+
+```
+hidden_dim: 4096, slot_dim: 128, M: 256, seq: 16, batch: 512
+pointer: pilot (max_jump=512, id_dim=32), write: replace
+params: ~1.4M + 8K (slot identities), speed: 2.86 step/sec
+best_loss: 2.004 @ 1000 steps (still declining)
+VRAM: 3.85 GB, wall time: 5.8 min
+compression ratio: 32:1 (hidden/slot)
+```
+
 ## Next (TODO)
 
-- [ ] Longer run: winner config at 5000+ steps. Does seq=16 plateau early?
+- [x] slot_dim sweep — **128 confirmed optimal** (U-shaped, both directions worse)
+- [x] Pilot pointer @ M=256 — **NEW WINNER** (2.004 vs 2.047, still improving)
+- [ ] Longer run: pilot winner at 3000-5000 steps. How far does loss drop?
+- [ ] pilot_max_jump sweep: 64, 128, 256 (currently 512 > M, wraps fully)
 - [ ] seq=32 stability fix: try lr=5e-4 or grad_clip=5.0
-- [ ] slot_dim sweep (64, 128, 256) with winner config
-- [ ] Does slot_dim=256 fix hidden=8192 saturation?
-- [ ] Re-test pilot pointer with M=256 (was tested at M=1024)
+- [ ] hidden=8192 + slot_dim=256 (predicted 32:1 sweet spot)

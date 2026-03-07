@@ -87,7 +87,7 @@ model:
   #                pulse compares hidden→query to slot identity (cosine sim)
   #                similar → small step, different → big jump forward
   #                step = 1 + max_jump × sigmoid(-sim × tau)
-  pointer_mode: sequential
+  pointer_mode: pilot
   write_mode: replace            # 'accumulate' (scatter_add) | 'replace' (HDD-style overwrite)
   replace_impl: dense            # 'dense' | 'proxy_overlay' (nightly-only proxy fast path)
 
