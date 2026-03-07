@@ -512,6 +512,47 @@ Meaning:
 - `768` may still be a viable frontier move, but it is already much closer to the knee than the earlier `32 -> 512` jump;
 - the next deterministic question is no longer "is more hidden useful at all?" but rather whether `768` is enough, or whether the next real limit after that is ring capacity `M`.
 
+## 6G. CPU Pareto Needle-Poke: `M=64` vs `M=128`
+
+After the hidden and slot sweeps, the next frontier hypothesis was that ring capacity / horizon might be the next bottleneck.
+
+Method:
+- canonical surface: `wikitext_sequential_carry`
+- canonical branch: `LLT7`
+- fixed:
+  - `hidden_dim=512`
+  - `slot_dim=16`
+  - `seq=8`
+  - `batch=8`
+- compare:
+  - `M=64`
+  - `M=128`
+- time budget: about `5` minutes each
+- summary artifact:
+  - [cpu_pareto_probe_seq_tradeoff_20260307_195200_668300.json](../../v4/dev_notes/telemetry/cpu_pareto_probe_seq_tradeoff_20260307_195200_668300.json)
+
+Results:
+- `M64`
+  - final acc `0.4599`
+  - final BPC `2.7996`
+  - time `415.1s`
+- `M128`
+  - final acc `0.4474`
+  - final BPC `2.8154`
+  - time `328.6s`
+
+Verdict:
+- `M=128` did not improve over `M=64`;
+- it was slightly worse on both quality metrics:
+  - accuracy `-1.25 pt`
+  - BPC `+0.0158`
+- on this canonical CPU carry surface, raw ring capacity is not the next limiting factor.
+
+Meaning:
+- the current frontier does not appear to be horizon-limited at `M=64`;
+- the next useful branch should not blindly push `M` higher;
+- the stronger remaining question is whether the post-`512` hidden knee is already at `768`, or whether the next gains must come from a better tap mixer / non-size architectural refinement rather than just scaling ring size.
+
 ## 7. Operational Rules Going Forward
 
 1. Any new claim must name the surface:

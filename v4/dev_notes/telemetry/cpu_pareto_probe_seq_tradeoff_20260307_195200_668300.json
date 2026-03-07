@@ -1,0 +1,64 @@
+{
+  "script": "cpu_pareto_probe.py",
+  "timestamp": "2026-03-07T20:05:45.295680",
+  "surface": "wikitext_sequential_carry",
+  "variant": "LLT7",
+  "preset": "seq_tradeoff",
+  "thread_limit": 4,
+  "probe_steps": 500,
+  "time_budget_s": 300,
+  "results": [
+    {
+      "id": "M64",
+      "candidate": {
+        "id": "M64",
+        "hidden_dim": 512,
+        "slot_dim": 16,
+        "M": 64,
+        "seq": 8,
+        "batch": 8
+      },
+      "probe_steps": 500,
+      "probe_time_s": 21.154149770736694,
+      "probe_s_per_step": 0.04230829954147339,
+      "target_steps": 7100,
+      "final_acc": 0.45990363270044327,
+      "best_acc": 0.734375,
+      "final_bpc": 2.799571573880911,
+      "final_loss": 1.9405084729194642,
+      "time_s": 415.11608958244324,
+      "s_per_step": 0.05846705487076665,
+      "carry_eval_acc": 0.4591939546599496,
+      "fresh_eval_acc": 0.36977329974811085,
+      "carry_minus_reset_pp": 8.942065491183875,
+      "probe_json": "S:\\AI\\_tmp\\nightly_worktree\\v4\\dev_notes\\telemetry\\cpu_pareto_probe_M64_probe_20260307_195200_668300.json",
+      "full_json": "S:\\AI\\_tmp\\nightly_worktree\\v4\\dev_notes\\telemetry\\cpu_pareto_probe_M64_full_20260307_195200_668300.json"
+    },
+    {
+      "id": "M128",
+      "candidate": {
+        "id": "M128",
+        "hidden_dim": 512,
+        "slot_dim": 16,
+        "M": 128,
+        "seq": 8,
+        "batch": 8
+      },
+      "probe_steps": 500,
+      "probe_time_s": 34.10426044464111,
+      "probe_s_per_step": 0.06820852088928223,
+      "target_steps": 4400,
+      "final_acc": 0.4474235227704048,
+      "best_acc": 0.7301587462425232,
+      "final_bpc": 2.8153601634882692,
+      "final_loss": 1.9514522516727448,
+      "time_s": 328.5623140335083,
+      "s_per_step": 0.0746732531894337,
+      "carry_eval_acc": 0.4412925505673409,
+      "fresh_eval_acc": 0.36605821410952144,
+      "carry_minus_reset_pp": 7.523433645781946,
+      "probe_json": "S:\\AI\\_tmp\\nightly_worktree\\v4\\dev_notes\\telemetry\\cpu_pareto_probe_M128_probe_20260307_195200_668300.json",
+      "full_json": "S:\\AI\\_tmp\\nightly_worktree\\v4\\dev_notes\\telemetry\\cpu_pareto_probe_M128_full_20260307_195200_668300.json"
+    }
+  ]
+}
