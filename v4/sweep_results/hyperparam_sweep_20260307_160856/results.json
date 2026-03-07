@@ -1,0 +1,267 @@
+{
+  "run_id": "20260307_160856",
+  "args": {
+    "steps": 500,
+    "batch": 32,
+    "seq": 256,
+    "warmup": 50,
+    "grad_clip": 10.0,
+    "device": "cpu",
+    "configs": "A,B,C,D,E,F,G,H",
+    "log_every": 50,
+    "data": null,
+    "seed": 42
+  },
+  "configs": {
+    "A": {
+      "label": "base_small",
+      "desc": "H=256, R=1, learned, lr=1e-3",
+      "model": {
+        "hidden_dim": 256,
+        "slot_dim": 64,
+        "M": 512,
+        "R": 1,
+        "embed_encoding": "learned"
+      },
+      "lr": 0.001
+    },
+    "B": {
+      "label": "small_R2",
+      "desc": "H=256, R=2, learned, lr=1e-3",
+      "model": {
+        "hidden_dim": 256,
+        "slot_dim": 64,
+        "M": 512,
+        "R": 2,
+        "embed_encoding": "learned"
+      },
+      "lr": 0.001
+    },
+    "C": {
+      "label": "wide",
+      "desc": "H=512, R=1, learned, lr=1e-3",
+      "model": {
+        "hidden_dim": 512,
+        "slot_dim": 64,
+        "M": 512,
+        "R": 1,
+        "embed_encoding": "learned"
+      },
+      "lr": 0.001
+    },
+    "D": {
+      "label": "wide_R2",
+      "desc": "H=512, R=2, learned, lr=1e-3",
+      "model": {
+        "hidden_dim": 512,
+        "slot_dim": 64,
+        "M": 512,
+        "R": 2,
+        "embed_encoding": "learned"
+      },
+      "lr": 0.001
+    },
+    "E": {
+      "label": "wide_R2_bit",
+      "desc": "H=512, R=2, bitlift, lr=1e-3",
+      "model": {
+        "hidden_dim": 512,
+        "slot_dim": 64,
+        "M": 512,
+        "R": 2,
+        "embed_encoding": "bitlift"
+      },
+      "lr": 0.001
+    },
+    "F": {
+      "label": "wide_R2_slow",
+      "desc": "H=512, R=2, learned, lr=5e-4",
+      "model": {
+        "hidden_dim": 512,
+        "slot_dim": 64,
+        "M": 512,
+        "R": 2,
+        "embed_encoding": "learned"
+      },
+      "lr": 0.0005
+    },
+    "G": {
+      "label": "wide_R3",
+      "desc": "H=512, R=3, learned, lr=1e-3",
+      "model": {
+        "hidden_dim": 512,
+        "slot_dim": 64,
+        "M": 512,
+        "R": 3,
+        "embed_encoding": "learned"
+      },
+      "lr": 0.001
+    },
+    "H": {
+      "label": "small_R2_slow",
+      "desc": "H=256, R=2, learned, lr=5e-4",
+      "model": {
+        "hidden_dim": 256,
+        "slot_dim": 64,
+        "M": 512,
+        "R": 2,
+        "embed_encoding": "learned"
+      },
+      "lr": 0.0005
+    }
+  },
+  "results": [
+    {
+      "config": "A",
+      "label": "base_small",
+      "desc": "H=256, R=1, learned, lr=1e-3",
+      "seed": 42,
+      "steps": 500,
+      "params": 158756,
+      "lr": 0.001,
+      "final_loss": 2.1559830582141877,
+      "final_bpc": 3.1104260663262298,
+      "best_loss": 2.0586390495300293,
+      "best_bpc": 2.9699883477373423,
+      "final_acc": 0.39777243420481684,
+      "best_acc": 0.42378392815589905,
+      "final_gnorm": 0.2324371026456356,
+      "time_s": 1345.570816040039,
+      "s_per_step": 2.691141632080078,
+      "csv_log": "/home/user/VRAXION/v4/sweep_results/hyperparam_sweep_20260307_160856/A_base_small_seed42.csv"
+    },
+    {
+      "config": "B",
+      "label": "small_R2",
+      "desc": "H=256, R=2, learned, lr=1e-3",
+      "seed": 42,
+      "steps": 500,
+      "params": 158756,
+      "lr": 0.001,
+      "final_loss": 2.157647534608841,
+      "final_bpc": 3.1128273981664734,
+      "best_loss": 2.060382127761841,
+      "best_bpc": 2.9725030780582586,
+      "final_acc": 0.39749750420451163,
+      "best_acc": 0.42215830087661743,
+      "final_gnorm": 0.2242263939231634,
+      "time_s": 1385.9266488552094,
+      "s_per_step": 2.7718532977104187,
+      "csv_log": "/home/user/VRAXION/v4/sweep_results/hyperparam_sweep_20260307_160856/B_small_R2_seed42.csv"
+    },
+    {
+      "config": "C",
+      "label": "wide",
+      "desc": "H=512, R=1, learned, lr=1e-3",
+      "seed": 42,
+      "steps": 500,
+      "params": 284196,
+      "lr": 0.001,
+      "final_loss": 2.0533009219169616,
+      "final_bpc": 2.962287057502337,
+      "best_loss": 1.9557708501815796,
+      "best_bpc": 2.821580906672157,
+      "final_acc": 0.4272179302573204,
+      "best_acc": 0.4520413279533386,
+      "final_gnorm": 0.3298586996644735,
+      "time_s": 916.6822481155396,
+      "s_per_step": 1.833364496231079,
+      "csv_log": "/home/user/VRAXION/v4/sweep_results/hyperparam_sweep_20260307_160856/C_wide_seed42.csv"
+    },
+    {
+      "config": "D",
+      "label": "wide_R2",
+      "desc": "H=512, R=2, learned, lr=1e-3",
+      "seed": 42,
+      "steps": 500,
+      "params": 284196,
+      "lr": 0.001,
+      "final_loss": 2.053079847097397,
+      "final_bpc": 2.961968113956486,
+      "best_loss": 1.9542866945266724,
+      "best_bpc": 2.819439722668915,
+      "final_acc": 0.4270197047293186,
+      "best_acc": 0.45354509353637695,
+      "final_gnorm": 0.33540685832500455,
+      "time_s": 929.3116755485535,
+      "s_per_step": 1.8586233510971069,
+      "csv_log": "/home/user/VRAXION/v4/sweep_results/hyperparam_sweep_20260307_160856/D_wide_R2_seed42.csv"
+    },
+    {
+      "config": "E",
+      "label": "wide_R2_bit",
+      "desc": "H=512, R=2, bitlift, lr=1e-3",
+      "seed": 42,
+      "steps": 500,
+      "params": 157732,
+      "lr": 0.001,
+      "final_loss": 2.5296959614753725,
+      "final_bpc": 3.649579818577358,
+      "best_loss": 2.41871976852417,
+      "best_bpc": 3.4894750153499214,
+      "final_acc": 0.3081395569443703,
+      "best_acc": 0.33727148175239563,
+      "final_gnorm": 3.4575395077466964,
+      "time_s": 1103.7278439998627,
+      "s_per_step": 2.207455687999725,
+      "csv_log": "/home/user/VRAXION/v4/sweep_results/hyperparam_sweep_20260307_160856/E_wide_R2_bit_seed42.csv"
+    },
+    {
+      "config": "F",
+      "label": "wide_R2_slow",
+      "desc": "H=512, R=2, learned, lr=5e-4",
+      "seed": 42,
+      "steps": 500,
+      "params": 284196,
+      "lr": 0.0005,
+      "final_loss": 2.254961152076721,
+      "final_bpc": 3.2532212714983495,
+      "best_loss": 2.1425280570983887,
+      "best_bpc": 3.0910146029413115,
+      "final_acc": 0.3830211067199707,
+      "best_acc": 0.41043028235435486,
+      "final_gnorm": 0.27872711651027204,
+      "time_s": 927.2010841369629,
+      "s_per_step": 1.8544021682739258,
+      "csv_log": "/home/user/VRAXION/v4/sweep_results/hyperparam_sweep_20260307_160856/F_wide_R2_slow_seed42.csv"
+    },
+    {
+      "config": "G",
+      "label": "wide_R3",
+      "desc": "H=512, R=3, learned, lr=1e-3",
+      "seed": 42,
+      "steps": 500,
+      "params": 284196,
+      "lr": 0.001,
+      "final_loss": 2.054596856236458,
+      "final_bpc": 2.9641566955183922,
+      "best_loss": 1.9568339586257935,
+      "best_bpc": 2.8231146479525515,
+      "final_acc": 0.42659528642892836,
+      "best_acc": 0.45266973972320557,
+      "final_gnorm": 0.33099412932991984,
+      "time_s": 941.7241973876953,
+      "s_per_step": 1.8834483947753906,
+      "csv_log": "/home/user/VRAXION/v4/sweep_results/hyperparam_sweep_20260307_160856/G_wide_R3_seed42.csv"
+    },
+    {
+      "config": "H",
+      "label": "small_R2_slow",
+      "desc": "H=256, R=2, learned, lr=5e-4",
+      "seed": 42,
+      "steps": 500,
+      "params": 158756,
+      "lr": 0.0005,
+      "final_loss": 2.3686680233478548,
+      "final_bpc": 3.4172656107962136,
+      "best_loss": 2.257193088531494,
+      "best_bpc": 3.2564412751532297,
+      "final_acc": 0.35165107637643817,
+      "best_acc": 0.3782517611980438,
+      "final_gnorm": 0.23332524210214614,
+      "time_s": 1357.994609117508,
+      "s_per_step": 2.715989218235016,
+      "csv_log": "/home/user/VRAXION/v4/sweep_results/hyperparam_sweep_20260307_160856/H_small_R2_slow_seed42.csv"
+    }
+  ]
+}
