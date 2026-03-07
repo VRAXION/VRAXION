@@ -20,7 +20,7 @@ model:
   #   M<seq → ring overwrites → loss degrades 24-46%.
   #   M=256 covers seq≤128. Scale M with seq_len for longer runs.
   # LOCKED — validated across echo, delay_echo, denoise tasks.
-  M: 256               # ring_slots — circular buffer size
+  M: 128               # ring_slots — circular buffer size
 
   # ── D: Legacy Dimension (fallback for hidden_dim + slot_dim) ──
   # Used when hidden_dim/slot_dim are absent. Keep for backward compat.

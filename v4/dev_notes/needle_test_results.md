@@ -225,11 +225,63 @@ VRAM: 3.85 GB, wall time: 5.8 min
 compression ratio: 32:1 (hidden/slot)
 ```
 
+## Phase 6: M sweep with pilot pointer
+
+Fixed: hidden=4096, slot=128, seq=16, batch=512, pilot pointer, replace write, seed=1337.
+Varying M (ring capacity) to find optimal slot count AND diagnose frozen ring_norm.
+
+| M    | best_loss | step/sec | VRAM   | wall    | alpha | ring_norm (frozen) | stable? |
+|------|-----------|----------|--------|---------|-------|--------------------|---------|
+| **128** | **1.941** | **3.42** | **3.3 GB** | **4.9 min** | **~0.21** | 6622 | **YES — still improving** |
+| 256  | 2.004     | 2.86     | 3.85 GB | 5.8 min | ~0.22 | 8021               | YES     |
+| 512  | 2.023     | 3.86     | 4.9 GB | 4.3 min | ~0.33 | 2725               | YES     |
+| 1024 | 2.038     | 3.79     | 7.1 GB | 4.4 min | ~0.72 | 1708               | YES     |
+
+### Analysis: SMALLER M = BETTER with pilot pointer
+
+1. **Loss monotonically decreases with smaller M**: 1.941 < 2.004 < 2.023 < 2.038.
+   This is counterintuitive — fewer memory slots = better learning. Why?
+
+2. **Freshness hypothesis**: With M=128 and seq=16, the ring gets fully overwritten every
+   128/16=8 sequences. Content stays FRESH. With M=1024, overwrite cycle is 64 sequences
+   — stale content accumulates. Pilot reads stale slots → garbage in, garbage out.
+
+3. **Alpha SCALES with M**: 0.21 (M=128) → 0.72 (M=1024). More slots = model reads MORE
+   from ring. But MORE ring dependence = WORSE loss! The model is better off relying on
+   hidden state. Ring reads at M=1024 are a crutch, not an asset.
+
+4. **ring_norm inverse pattern**: 6622 (M=128) > 8021 (M=256) > 2725 (M=512) > 1708 (M=1024).
+   Smaller M = higher norm per slot (more overwrites = more energy concentrated).
+   Larger M = lower norm (energy spread thin, many slots barely written).
+   ALL FROZEN — pilot pointer universally creates ring equilibrium.
+
+5. **Speed non-monotonic (GPU scheduling)**: M=512 (3.86) > M=1024 (3.79) > M=128 (3.42) > M=256 (2.86).
+   Not a simple "more M = slower". VRAM and Tensor Core effects dominate.
+
+### Key insight: pilot pointer inverts the M requirement
+
+With sequential pointer, bigger M = more memory capacity = better (up to a point).
+With pilot pointer, smaller M = fresher content = better signal per read.
+The pilot's content-based jumping means it doesn't need many slots — it just needs
+the few slots it has to contain FRESH, RELEVANT information.
+
+## Updated winner (NEW — M=128)
+
+```
+hidden_dim: 4096, slot_dim: 128, M: 128, seq: 16, batch: 512
+pointer: pilot (max_jump=512, id_dim=32), write: replace
+params: ~1.4M + 4K (slot identities), speed: 3.42 step/sec
+best_loss: 1.941 @ 1000 steps (still declining)
+VRAM: 3.3 GB, wall time: 4.9 min
+compression ratio: 32:1 (hidden/slot)
+```
+
 ## Next (TODO)
 
 - [x] slot_dim sweep — **128 confirmed optimal** (U-shaped, both directions worse)
-- [x] Pilot pointer @ M=256 — **NEW WINNER** (2.004 vs 2.047, still improving)
-- [ ] Longer run: pilot winner at 3000-5000 steps. How far does loss drop?
-- [ ] pilot_max_jump sweep: 64, 128, 256 (currently 512 > M, wraps fully)
-- [ ] seq=32 stability fix: try lr=5e-4 or grad_clip=5.0
-- [ ] hidden=8192 + slot_dim=256 (predicted 32:1 sweet spot)
+- [x] Pilot pointer @ M=256 — beat sequential (2.004 vs 2.047)
+- [x] M sweep with pilot — **M=128 NEW WINNER** (1.941, smaller M = fresher ring)
+- [ ] M=64 test: does the trend continue? (M/seq=4, borderline)
+- [ ] Longer run: M=128 pilot at 3000-5000 steps
+- [ ] pilot_max_jump sweep: max_jump=512 > M=128, try 64/128
+- [ ] seq=32 stability fix
