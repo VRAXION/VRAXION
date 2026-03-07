@@ -308,6 +308,38 @@ Meaning:
 - the gain is not coming from global search
 - it is coming from structured, non-pooled extra retrieval bandwidth
 
+## 6B. `LLT7` Long Confirmation and Knee Check
+
+The first `LLT` win was not enough on its own, so the branch was pushed through longer deterministic carry runs.
+
+Long CPU confirmations on `wikitext_sequential_carry`:
+- seed `43`
+  - [nightly_runner_wikitext_sequential_carry_LLT7_20260307_044641_296480_summary.json](../../v4/dev_notes/telemetry/nightly_runner_wikitext_sequential_carry_LLT7_20260307_044641_296480_summary.json)
+  - final acc `0.405`
+  - final BPC `2.966`
+- seed `44`
+  - [nightly_runner_wikitext_sequential_carry_LLT7_20260307_051820_497573_summary.json](../../v4/dev_notes/telemetry/nightly_runner_wikitext_sequential_carry_LLT7_20260307_051820_497573_summary.json)
+  - final acc `0.407`
+  - best acc `0.703`
+  - final BPC `2.987`
+  - time `1088.1s`
+
+Observed result:
+- `LLT7` keeps the long-run gain stable across multiple seeds;
+- the branch does not show late collapse on the canonical carry surface;
+- the gain is not a single-seed artifact.
+
+Non-aliased extra-lag knee check:
+- [nightly_runner_wikitext_sequential_carry_LLT48_20260307_042510_607837_summary.json](../../v4/dev_notes/telemetry/nightly_runner_wikitext_sequential_carry_LLT48_20260307_042510_607837_summary.json)
+- `LLT48 = [1,2,4,8,16,32,48]`
+- final acc `0.373`
+- final BPC `3.268`
+
+Meaning:
+- a meaningful extra long lag did not improve over `LLT7`;
+- the current evidence points to `LLT7` being at or very near the useful tap knee on this `M=64` carry surface;
+- the near-term task is no longer "add more taps blindly", but "confirm `LLT7` and scale it".
+
 ## 7. Operational Rules Going Forward
 
 1. Any new claim must name the surface:
@@ -337,3 +369,5 @@ Current best consolidated read:
 - pointer interpolation is a local fix, not a late-game memory fix
 - shortest-arc is not the current bottleneck
 - **multi-timescale taps is now the active winning nightly branch**
+
+
