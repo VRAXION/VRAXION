@@ -20,7 +20,7 @@ model:
   #   M<seq → ring overwrites → loss degrades 24-46%.
   #   M=256 covers seq≤128. Scale M with seq_len for longer runs.
   # LOCKED — validated across echo, delay_echo, denoise tasks.
-  M: 1024              # ring_slots — circular buffer size
+  M: 256               # ring_slots — circular buffer size
 
   # ── D: Legacy Dimension (fallback for hidden_dim + slot_dim) ──
   # Used when hidden_dim/slot_dim are absent. Keep for backward compat.
@@ -29,7 +29,7 @@ model:
   # ── hidden_dim: Hidden State Width ────────────────────────
   # Expert "brain" width. Bigger = more capacity for pattern recognition.
   # Independent of ring buffer — can be very large without VRAM cost.
-  hidden_dim: 2048
+  hidden_dim: 4096
 
   # ── slot_dim: Ring Slot Width ─────────────────────────────
   # Ring buffer cell width. Smaller = less VRAM (ring gets cloned T×N
@@ -87,7 +87,7 @@ model:
   #                pulse compares hidden→query to slot identity (cosine sim)
   #                similar → small step, different → big jump forward
   #                step = 1 + max_jump × sigmoid(-sim × tau)
-  pointer_mode: pilot
+  pointer_mode: sequential
   write_mode: replace            # 'accumulate' (scatter_add) | 'replace' (HDD-style overwrite)
   replace_impl: dense            # 'dense' | 'proxy_overlay' (nightly-only proxy fast path)
 
