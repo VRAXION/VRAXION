@@ -774,11 +774,12 @@ class INSTNCT(nn.Module):
         if self.mtaps_enabled:
             self.register_buffer('_mtaps_lags_tns', torch.tensor(self._mtaps_lags, dtype=torch.long))
             n_taps = len(self._mtaps_lags)
-            aux_heads = 2 if mtaps_mixer_mode in (
-                'hybrid_heads_scalar_gate',
-                'hybrid_heads_spaced_scalar_gate',
-                'hybrid_heads_fixed_scalar_gate',
-            ) else 0
+            if mtaps_mixer_mode in ('hybrid_heads_scalar_gate', 'hybrid_heads_spaced_scalar_gate'):
+                aux_heads = 2
+            elif mtaps_mixer_mode == 'hybrid_heads_fixed_scalar_gate':
+                aux_heads = len(mtaps_aux_fixed_offsets)
+            else:
+                aux_heads = 0
             if mtaps_mixer_mode in ('current', 'tap_scalar_gate', 'hybrid_heads_scalar_gate', 'hybrid_heads_spaced_scalar_gate', 'hybrid_heads_fixed_scalar_gate'):
                 self.read_tap_proj = nn.ModuleList([
                     nn.Linear(slot_dim * (1 + n_taps + aux_heads), hidden_dim) for _ in range(N)
@@ -938,6 +939,7 @@ class INSTNCT(nn.Module):
         # fixed attention radius from config — R_eff = R + 0.5 gives window of exactly 2R+1 slots
         # R=0 → 1 slot (needle), R=1 → 3 slots, R=2 → 5 slots
         self.register_buffer('_R_eff', torch.full((N,), R + 0.5))
+        self._max_R: float = R + 0.5  # precomputed scalar — avoids .item() graph break in forward
 
         # precomputed φ-jump table — shape (N, M), not trainable, moves with device
         self.dests: torch.Tensor
@@ -1791,7 +1793,7 @@ class INSTNCT(nn.Module):
         #   R=2 → R_eff=2.5 → win=2 → 5 slots (exact)
         # gaussian/uniform: tail extends further, use 2.5× + guard.
         with _source_scope('window_prepare'):
-            max_R = R_effs.max().item()
+            max_R = self._max_R  # precomputed in __init__, no .item() graph break
             if self.read_kernel_mode in ('vshape', 'dotprod', 'topk'):
                 win = int(math.floor(max_R))  # exact: no wasted gathers
             else:
