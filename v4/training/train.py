@@ -1099,13 +1099,17 @@ def train(config):
         training_config=config,
     )
     model = build_model_from_spec(model_record, device=device)
-    # torch.compile: +22% step/sec, -55% VRAM after ~73s warmup. Breakeven ~1460 steps.
+    # TF32 tensor cores: ~2× throughput on fp32 matmul (RTX 30xx/40xx), negligible precision loss.
+    if device.startswith('cuda'):
+        torch.set_float32_matmul_precision('high')
+    # torch.compile: chunk-level compilation of _process_chunk.
+    # Dynamo traces C timesteps once, replays the graph for each chunk of the sequence.
+    # Avoids full-sequence unroll that hangs at T>=128.
     if config.get('compile', False) and device.startswith('cuda') and hasattr(torch, 'compile'):
-        try:
-            model = torch.compile(model, mode='reduce-overhead')
-            print("[compile] torch.compile enabled (reduce-overhead)")
-        except Exception as e:
-            print(f"[compile] torch.compile failed, running eager: {e}")
+        compile_cs = int(config.get('compile_chunk_size', 32))
+        model._compile_chunks = True
+        model.compile_chunk_size = compile_cs
+        print(f"[compile] chunk-level compile enabled (C={compile_cs}, mode=reduce-overhead)")
     opt = _build_optimizer(model, model_record['type'], config['lr'])
 
     # ── Output dir ──
@@ -1300,6 +1304,17 @@ def train(config):
             lr = config['lr']
         opt.param_groups[0]['lr'] = lr
         # group 1 (c19 rho/C): constant LR — no decay, always adaptive
+
+        # ── Diagnostics gate ──
+        # Enable .item() diagnostics only on steps that will read them (heartbeat/CSV log).
+        # Saves ~600 CUDA sync points per forward pass on non-log steps.
+        _is_log_step = (s % config['heartbeat_every'] == 0) or (s % config['log_every'] == 0) or (s == start_step + 1)
+        if hasattr(model, '_diag_enabled'):
+            model._diag_enabled = _is_log_step
+        # Chunk-compile path cannot tolerate .item() graph breaks from diagnostics.
+        # Force off — diag data comes from the non-compiled eval pass instead.
+        if hasattr(model, '_compile_chunks') and model._compile_chunks:
+            model._diag_enabled = False
 
         # ── Forward ──
         if sequential:
@@ -1612,6 +1627,7 @@ def func_parsecli_dct() -> dict:
         # Mixed precision (AMP): fp16 forward/backward, fp32 optimizer
         'use_amp':         bool(yaml_cfg.get('use_amp', False)),
         'compile':         args.compile if args.compile is not None else bool(yaml_cfg.get('compile', False)),
+        'compile_chunk_size': int(yaml_cfg.get('compile_chunk_size', 32)),
     }
 
     # Resolve relative paths from v4/ root so `python training/train.py --data foo`
