@@ -52,6 +52,8 @@ MTAP_DIAG_SCALAR_PREFIXES = (
     "mtap_signal_norm_",
     "head_gate_max_frac_",
     "channel_gate_entropy_",
+    "head_pair_dist_mean_",
+    "head_pair_near_frac_",
 )
 MTAP_DIAG_LIST_PREFIXES = (
     "mtap_gate_mean_by_lag_",
@@ -205,6 +207,15 @@ VARIANTS: dict[str, dict] = {
         "mtaps_enabled": True,
         "mtaps_lags": [1, 2, 4],
         "mtaps_mixer_mode": "hybrid_heads_scalar_gate",
+    },
+    "LLT3H2SGR": {
+        "read_kernel_mode": "vshape",
+        "write_address_mode": "pointer",
+        "read_topk_K": 2,
+        "write_topk_K": 2,
+        "mtaps_enabled": True,
+        "mtaps_lags": [1, 2, 4],
+        "mtaps_mixer_mode": "hybrid_heads_spaced_scalar_gate",
     },
     "LLT7RG": {
         "read_kernel_mode": "vshape",

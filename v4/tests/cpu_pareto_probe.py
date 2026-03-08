@@ -61,6 +61,35 @@ PRESETS: dict[str, list[dict]] = {
             "batch": 8,
         },
     ],
+    "multi_read_repulsive_probe": [
+        {
+            "id": "A_scalar_gate_baseline",
+            "variant": "LLT7SG",
+            "hidden_dim": 512,
+            "slot_dim": 32,
+            "M": 64,
+            "seq": 8,
+            "batch": 8,
+        },
+        {
+            "id": "B_multi_read_heads",
+            "variant": "LLT3H2SG",
+            "hidden_dim": 512,
+            "slot_dim": 32,
+            "M": 64,
+            "seq": 8,
+            "batch": 8,
+        },
+        {
+            "id": "C_multi_read_heads_spaced",
+            "variant": "LLT3H2SGR",
+            "hidden_dim": 512,
+            "slot_dim": 32,
+            "M": 64,
+            "seq": 8,
+            "batch": 8,
+        },
+    ],
 }
 
 

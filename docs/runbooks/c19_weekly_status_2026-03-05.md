@@ -804,6 +804,69 @@ Verdict:
 - the branch reduces quality and weakens carry utility while only being slightly faster;
 - current best branch remains **`LLT7SG`**.
 
+### `LLT3H2SGR` repulsive / spaced heads check
+
+Purpose:
+- test whether the failure mode of `LLT3H2SG` was mainly head collapse;
+- keep the same sweet-point setup, but force the two learned auxiliary heads to stay separated.
+
+Surface:
+- `wikitext_sequential_carry`
+- CPU
+- `H=512`
+- `slot=32`
+- `M=64`
+- `seq=8`
+- `batch=8`
+- `~300s` budget
+
+Compare:
+- `LLT7SG` baseline
+- `LLT3H2SG` free learned heads
+- `LLT3H2SGR` spaced learned heads
+
+Artifacts:
+- [cpu_pareto_probe_A_scalar_gate_baseline_full_20260308_032815_499251.json](../../v4/dev_notes/telemetry/cpu_pareto_probe_A_scalar_gate_baseline_full_20260308_032815_499251.json)
+- [cpu_pareto_probe_B_multi_read_heads_full_20260308_032815_499251.json](../../v4/dev_notes/telemetry/cpu_pareto_probe_B_multi_read_heads_full_20260308_032815_499251.json)
+- [cpu_pareto_probe_C_multi_read_heads_spaced_full_20260308_032815_499251.json](../../v4/dev_notes/telemetry/cpu_pareto_probe_C_multi_read_heads_spaced_full_20260308_032815_499251.json)
+- [cpu_pareto_probe_multi_read_repulsive_probe_20260308_032815_499251.json](../../v4/dev_notes/telemetry/cpu_pareto_probe_multi_read_repulsive_probe_20260308_032815_499251.json)
+
+Results:
+- `LLT7SG`
+  - final acc `0.5085`
+  - final BPC `2.5211`
+  - time `308.4s`
+  - `carry-reset = +10.11 pp`
+- `LLT3H2SG`
+  - final acc `0.4212`
+  - final BPC `2.9294`
+  - time `285.2s`
+  - `carry-reset = +7.18 pp`
+- `LLT3H2SGR`
+  - final acc `0.4644`
+  - final BPC `2.7749`
+  - time `311.9s`
+  - `carry-reset = +7.47 pp`
+
+Telemetry readout:
+- the spacing constraint worked:
+  - `head_pair_dist_mean ~ 15.35`
+  - `head_pair_near_frac ~ 0.0016`
+- the heads no longer collapsed onto each other;
+- but one head still stayed effectively near-local:
+  - `head_near_local_frac ~ [0.0006, 0.8737]`
+- head usage remained weak:
+  - `head_gate_mean ~ [0.058, 0.128]`
+- channel entropy stayed healthy:
+  - `channel_gate_entropy ~ 1.34`
+
+Verdict:
+- spacing/repulsion fixes part of the collapse problem;
+- `LLT3H2SGR` is clearly better than free `LLT3H2SG`;
+- but it still does not beat `LLT7SG`;
+- therefore the next bottleneck is not simply "make the two learned heads different";
+- current best branch remains **`LLT7SG`**.
+
 ## 7. Operational Rules Going Forward
 
 1. Any new claim must name the surface:

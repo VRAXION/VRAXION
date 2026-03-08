@@ -57,6 +57,7 @@ def test_surface_and_variant_presets_exist():
         "LLT48",
         "LLT7SG",
         "LLT3H2SG",
+        "LLT3H2SGR",
         "LLT7RG",
         "GL",
         "GG",
