@@ -161,6 +161,10 @@ model:
   # Head 0 = current pointer (baseline). Heads 1..K-1 = φ-spaced positions.
   mp_heads: 4
 
+  # Gate mode for multi-pointer: 'sigmoid' = independent gates (sum can be >1),
+  # 'softmax' = probability distribution (sum = 1, bounded output).
+  mp_gate_mode: softmax
+
 
 # ══════════════════════════════════════════════════════════════
 #  DATA — generate.py

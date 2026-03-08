@@ -185,6 +185,7 @@ CNFG_BBGATEMODE_STR = _cfg.get('bb_gate_mode', 'learned')  # 'learned' | 'fixed'
 # ─ multi-pointer φ-spaced read heads ─
 CNFG_MPENABLED_BOOL = _cfg.get('mp_enabled', False)   # φ-spaced multi-head ring read
 CNFG_MPHEADS_INT = int(_cfg.get('mp_heads', 4))       # number of φ-spaced read positions
+CNFG_MPGATEMODE_STR = _cfg.get('mp_gate_mode', 'softmax')  # 'sigmoid' | 'softmax'
 
 # ─ topK ring read ─
 CNFG_TOPK_INT = int(_cfg.get('topk_K', 8))  # number of ring slots for content-based read
@@ -608,7 +609,8 @@ class INSTNCT(nn.Module):
                  pointer_seam_mode='mod',                  # 'mod' | 'shortest_arc' — nightly-only wrap-seam fix
                  s_constraint='softplus',                  # 'softplus' (S>0) | 'raw' (unconstrained)
                  mp_enabled=CNFG_MPENABLED_BOOL,           # multi-pointer φ-spaced read heads
-                 mp_heads=CNFG_MPHEADS_INT):                # number of φ-spaced read positions
+                 mp_heads=CNFG_MPHEADS_INT,                # number of φ-spaced read positions
+                 mp_gate_mode=CNFG_MPGATEMODE_STR):        # 'sigmoid' | 'softmax'
         super().__init__()
         assert kernel_mode in ('uniform', 'vshape', 'gaussian', 'dotprod', 'topk'), \
             f"kernel_mode must be 'uniform', 'vshape', 'gaussian', 'dotprod', or 'topk', got '{kernel_mode}'"
@@ -832,6 +834,7 @@ class INSTNCT(nn.Module):
         # Head 0 = current pointer. Independent sigmoid gates per head.
         self.mp_enabled = mp_enabled
         self._mp_heads = mp_heads
+        self._mp_gate_mode = mp_gate_mode
         if mp_enabled:
             phi_step = int(M * PHI_INV)  # floor(M/φ) ≈ 632 for M=1024
             mp_offsets = torch.tensor([i * phi_step % M for i in range(mp_heads)], dtype=torch.long)
@@ -1201,7 +1204,10 @@ class INSTNCT(nn.Module):
                     # stack → (B, K, hidden_dim), gate → (B, K, 1)
                     head_stack = torch.stack(head_signals, dim=1)  # (B, K, hidden_dim)
                     gate_logits = self.mp_gate[i](hidden_lst[i])  # (B, K)
-                    gate_vals = torch.sigmoid(gate_logits)  # (B, K) — independent per head
+                    if self._mp_gate_mode == 'softmax':
+                        gate_vals = torch.softmax(gate_logits, dim=-1)  # (B, K) — sum=1, bounded
+                    else:
+                        gate_vals = torch.sigmoid(gate_logits)  # (B, K) — independent per head
                     ring_signal = (gate_vals.unsqueeze(-1) * head_stack).sum(1)  # (B, hidden_dim)
 
                     # ── multi-pointer diagnostics ──
