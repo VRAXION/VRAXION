@@ -135,9 +135,6 @@ CNFG_HIDDNDIMS_INT = _cfg.get('hidden_dim', _cfg['D'])    # hidden state width (
 CNFG_BEINGSNUM_INT = _cfg['N']                            # 6    parallel experts sharing the ring
 CNFG_ATNRADIUS_INT = _cfg['R']                            # 2    attention window half-width (window = 2R+1)
 
-# ─ pointer behavior ─
-CNFG_CNTEXTSCL_FLT = _cfg['S']    # 0.05 how much the read signal scales into hidden state
-
 # ─ attention kernel ─
 CNFG_KERNELMODE_STR = _cfg.get('kernel_mode', 'vshape')  # 'uniform'|'vshape'|'gaussian'|'dotprod'|'topk'
 

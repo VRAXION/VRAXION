@@ -52,14 +52,6 @@ model:
   # Ablation: R=0 best on tiny XOR, but R=1 better at scale (run 21 A/B).
   R: 1                # attn_radius — window half-width
 
-  # ── S: Context Scale ───────────────────────────────────────
-  # How much the projected ring read blends into hidden state.
-  # hidden += S * read_proj(read_vec)
-  # Swept 0.00–0.50 across 6 sizes (CPU+GPU): 0.05 geo mean #1.
-  # Note: at D=256 this may benefit from a bump (~0.10–0.15).
-  #   Not yet re-swept at new D — future experiment.
-  S: 0.3             # context_scale — read blend strength
-
   # ── Attention Kernel Mode ──────────────────────────────────
   # Shape of the attention window weights around the pointer.
   # 'vshape'   = triangle decay (center=1, linear to 0 at edges) — best positional by geo mean
