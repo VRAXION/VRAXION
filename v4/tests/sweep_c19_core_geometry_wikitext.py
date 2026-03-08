@@ -346,7 +346,6 @@ def run_one(
 
     orig_fn = instnct._c19_activation
     instnct._c19_activation = act_fn
-    instnct.set_topk_read_diag_enabled(topk_read_diag)
     instnct.set_ring_trace_enabled(ring_trace)
 
     model = build_model(
@@ -373,6 +372,7 @@ def run_one(
 
     # We want fixed-C geometry. Freeze the learnable C/rho carriers so the
     # optimizer doesn't waste effort on parameters the activation ignores.
+    model._diag_enabled = topk_read_diag
     for name, param in model.named_parameters():
         if any(key in name for key in ('c19_C_', 'c19_rho_')):
             param.requires_grad_(False)
@@ -483,7 +483,7 @@ def run_one(
 
     elapsed = time.time() - t0
     instnct._c19_activation = orig_fn
-    instnct.set_topk_read_diag_enabled(False)
+    model._diag_enabled = False
     instnct.set_ring_trace_enabled(False)
 
     tail = min(100, len(losses))

@@ -34,7 +34,7 @@ for subdir in ('model', 'training', 'datagen'):
     if p not in sys.path:
         sys.path.insert(0, p)
 
-from instnct import INSTNCT, set_ring_trace_enabled, set_topk_read_diag_enabled
+from instnct import INSTNCT, set_ring_trace_enabled
 from tiny_transformer import TinyTransformer
 
 
@@ -332,7 +332,6 @@ def run_one(N, period, steps, batch, seq, hidden_dim, M, slot_dim,
     # ── Create model ──
     if model_type == 'instnct':
         use_topk_diag = read_kernel_mode == 'topk' or write_address_mode == 'content_topk'
-        set_topk_read_diag_enabled(use_topk_diag)
         set_ring_trace_enabled(ring_trace)
         model = INSTNCT(
             M=M, hidden_dim=hidden_dim, slot_dim=slot_dim,
@@ -367,8 +366,8 @@ def run_one(N, period, steps, batch, seq, hidden_dim, M, slot_dim,
         ps_tag = '' if pointer_seam_mode == 'mod' else f' seam={pointer_seam_mode}'
         mt_tag = '' if not mtaps_enabled else f' mtaps={list(mtaps_lags)}'
         model_label = f'INSTNCT N={N}{split_tag}{gw_tag}{rk_tag}{wa_tag}{pm_tag}{pi_tag}{ps_tag}{mt_tag}'
+        model._diag_enabled = use_topk_diag
     elif model_type == 'transformer':
-        set_topk_read_diag_enabled(False)
         set_ring_trace_enabled(False)
         model = TinyTransformer(
             embed_mode=True, d_model=64, n_layers=2, n_heads=2, d_ff=256,
