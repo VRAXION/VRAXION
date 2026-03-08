@@ -905,5 +905,9 @@ Current best consolidated read:
 - shortest-arc is not the current bottleneck
 - **`LLT7SG` is now the active winning nightly branch**
 - learned multi-read auxiliary heads (`LLT3H2SG`) are currently rejected
+- fixed 2-head near+far hybrids beat `LLT7SG` in short deterministic CPU probes
+  - `(2,16)` is the current best fixed-head pair
+  - `(2,16)` > `(2,32)` > `(4,32)` > `LLT7SG`
+  - this suggests structured fixed extra reads are useful, while learned extra heads are not
 
 
