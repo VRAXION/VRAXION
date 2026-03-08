@@ -19,6 +19,21 @@ _SOURCE_MAP_ENABLED = False
 _NO_SOURCE_SCOPE = nullcontext()
 _RING_TRACE_ENABLED = False
 
+_COMPILE_DIAG_ALPHA_MEAN = 0
+_COMPILE_DIAG_ALPHA_MIN = 1
+_COMPILE_DIAG_ALPHA_MAX = 2
+_COMPILE_DIAG_INPUT_NORM = 3
+_COMPILE_DIAG_RING_SIGNAL_NORM = 4
+_COMPILE_DIAG_BLENDED_NORM = 5
+_COMPILE_DIAG_HIDDEN_NORM = 6
+_COMPILE_DIAG_HIDDEN_FINAL_NORM = 7
+_COMPILE_DIAG_PTR_POS = 8
+_COMPILE_DIAG_EXPERT_WIDTH = 9
+
+_COMPILE_DIAG_RING_NORM = 0
+_COMPILE_DIAG_RING_SLOT_MEAN = 1
+_COMPILE_DIAG_GLOBAL_WIDTH = 2
+
 
 def set_source_map_enabled(enabled: bool):
     global _SOURCE_MAP_ENABLED
@@ -663,8 +678,12 @@ class INSTNCT(nn.Module):
         self.checkpoint_chunks = checkpoint_chunks  # not nn.Parameter — excluded from state_dict
         # Chunk-level compile: compile _process_chunk instead of full forward.
         # Set by training harness (not model config). Does not affect model behavior.
+        self._compile_mode = 'eager'
         self._compile_chunks: bool = False
         self._compiled_chunk_fn = None
+        self._compiled_chunk_size = None
+        self.compile_chunk_size = 32
+        self._disable_proxy_overlay_for_compile = False
         self.expert_weighting = expert_weighting
         self._proxy_overlay_flush_interval = 16
         self._proxy_overlay_cap = 18
@@ -695,6 +714,16 @@ class INSTNCT(nn.Module):
         else:
             self._write_grad_ema = None
             self._expert_conf = None
+        self.register_buffer(
+            '_compile_diag_global_tns',
+            torch.zeros(_COMPILE_DIAG_GLOBAL_WIDTH),
+            persistent=False,
+        )
+        self.register_buffer(
+            '_compile_diag_expert_tns',
+            torch.zeros(N, _COMPILE_DIAG_EXPERT_WIDTH),
+            persistent=False,
+        )
 
         # ── Hourglass I/O split ──
         self.io_split_mode = io_split_mode
@@ -974,6 +1003,32 @@ class INSTNCT(nn.Module):
             self.slot_identity = nn.Parameter(torch.randn(M, _id_dim) * 0.01)  # per-slot identity
             self.ptr_query = nn.ModuleList([nn.Linear(hidden_dim, _id_dim) for _ in range(N)])
 
+    def _store_compile_diag_payload(self, expert_tns: torch.Tensor, global_tns: torch.Tensor):
+        """Store compile-safe scalar diag tensors for Python-side formatting."""
+        self._compile_diag_expert_tns.copy_(expert_tns.detach())
+        self._compile_diag_global_tns.copy_(global_tns.detach())
+
+    def materialize_compile_diag(self) -> dict:
+        """Convert compile-safe diag tensors into the scalar dict used by train.py."""
+        d = {}
+        global_tns = self._compile_diag_global_tns.detach().cpu()
+        expert_tns = self._compile_diag_expert_tns.detach().cpu()
+        d['ring_norm'] = global_tns[_COMPILE_DIAG_RING_NORM].item()
+        d['ring_slot_mean'] = global_tns[_COMPILE_DIAG_RING_SLOT_MEAN].item()
+        for i in range(self.N):
+            row = expert_tns[i]
+            d[f'alpha_{i}_mean'] = row[_COMPILE_DIAG_ALPHA_MEAN].item()
+            d[f'alpha_{i}_min'] = row[_COMPILE_DIAG_ALPHA_MIN].item()
+            d[f'alpha_{i}_max'] = row[_COMPILE_DIAG_ALPHA_MAX].item()
+            d[f'input_norm_{i}'] = row[_COMPILE_DIAG_INPUT_NORM].item()
+            d[f'ring_signal_norm_{i}'] = row[_COMPILE_DIAG_RING_SIGNAL_NORM].item()
+            d[f'blended_norm_{i}'] = row[_COMPILE_DIAG_BLENDED_NORM].item()
+            d[f'hidden_norm_{i}'] = row[_COMPILE_DIAG_HIDDEN_NORM].item()
+            d[f'hidden_final_norm_{i}'] = row[_COMPILE_DIAG_HIDDEN_FINAL_NORM].item()
+            d[f'ptr_pos_{i}'] = row[_COMPILE_DIAG_PTR_POS].item()
+        self._diag = d
+        return d
+
     def _process_chunk(self, x_chunk, ring_tns, ptr_tns, hidden_tns,
                        bb_buf, bb_keys, bb_write_ptr, bb_steps,
                        S_flt, probs_lst, offsets_long, expert_weights,
@@ -996,11 +1051,13 @@ class INSTNCT(nn.Module):
             topk_write_weights: (N, 2·R_max+1) or None — vshape weights for topK write path
 
         Returns:
-            tuple of (ring_tns, ptr_tns, hidden_tns, outs_tns):
+            tuple of (ring_tns, ptr_tns, hidden_tns, outs_tns, core_diag payload):
                 ring_tns:   (B, M, slot_dim)     — updated ring buffer
                 ptr_tns:    (N, B)               — updated pointer positions
                 hidden_tns: (N, B, hidden_dim)    — updated packed hidden states
                 outs_tns:   (B, C, vocab_size)   — output logits for this chunk
+                core_diag_expert_tns: (N, 9)     — compile-safe scalar diag payload
+                core_diag_global_tns: (2,)       — compile-safe global diag payload
         """
         M, slot_dim, N, hidden_dim = self.M, self.slot_dim, self.N, self.hidden_dim
 
@@ -1014,6 +1071,11 @@ class INSTNCT(nn.Module):
 
         C = x_chunk.shape[1]  # chunk length (may be < checkpoint_chunks for the last chunk)
         outs_lst = []
+        compile_active = self._compile_mode in ('full', 'chunk') and torch.is_grad_enabled()
+        eager_diag_enabled = self._diag_enabled and not compile_active
+        core_diag_enabled = self._diag_enabled and compile_active
+        core_diag_expert_tns = ring_tns.new_zeros((N, _COMPILE_DIAG_EXPERT_WIDTH))
+        core_diag_global_tns = ring_tns.new_zeros((_COMPILE_DIAG_GLOBAL_WIDTH,))
         proxy_overlay_enabled = self._proxy_overlay_enabled
         overlay_start_int = 0
         overlay_len_int = 0
@@ -1047,7 +1109,7 @@ class INSTNCT(nn.Module):
         # Proxy overlay uses .item() calls that break torch.compile graph capture.
         # Disable it when chunk-compile is active — correctness is identical,
         # proxy overlay is a pure performance optimization for the dense scatter path.
-        if self._compile_chunks:
+        if self._disable_proxy_overlay_for_compile and compile_active:
             proxy_overlay_enabled = False
         if proxy_overlay_enabled:
             ptr0_tns = ptr_tns[0].long().clamp(0, M - 1)
@@ -1087,7 +1149,7 @@ class INSTNCT(nn.Module):
                     else:
                         ptr_tns[i] = target_tns
 
-                    if self._diag_enabled:
+                    if eager_diag_enabled:
                         d = self._diag
                         d[f'jump_mean_{i}'] = jump.detach().mean().item()
                         d[f'sim_mean_{i}'] = sim.detach().mean().item()
@@ -1140,7 +1202,7 @@ class INSTNCT(nn.Module):
                             base_weights_tns,
                             M,
                         )
-                    if self._diag_enabled:
+                    if eager_diag_enabled:
                         self._diag[f'ptr_alpha_{i}'] = ptr_alpha_tns.detach().mean().item()
 
                 tap_idx_src = None
@@ -1187,7 +1249,7 @@ class INSTNCT(nn.Module):
                     topk_scores = content_topk_scores_tns[:, :self._read_topk_K]
                     topk_idx = content_topk_idx_tns[:, :self._read_topk_K]
                     topk_attn = F.softmax(topk_scores, dim=-1)                      # (B, K)
-                    if self._diag_enabled:
+                    if eager_diag_enabled:
                         center_long = center.unsqueeze(1)
                         delta_fwd = torch.remainder(topk_idx - center_long, M).float()
                         delta_back = torch.remainder(center_long - topk_idx, M).float()
@@ -1288,7 +1350,7 @@ class INSTNCT(nn.Module):
                                     slot_dim,
                                 )
                                 aux_reads_lst.append(head_read_tns)
-                                if self._diag_enabled:
+                                if eager_diag_enabled:
                                     center_long = center.long()
                                     delta_fwd = torch.remainder(head_center0_tns - center_long, M).float()
                                     delta_back = torch.remainder(center_long - head_center0_tns, M).float()
@@ -1299,7 +1361,7 @@ class INSTNCT(nn.Module):
                                         head_center0_tns.detach().unique().numel() / max(int(head_center0_tns.numel()), 1)
                                     )
                             aux_head_reads_tns = torch.stack(aux_reads_lst, dim=1)
-                            if self._diag_enabled:
+                            if eager_diag_enabled:
                                 self._diag[f'head_offset_mean_abs_{i}'] = aux_offsets_tns.detach().abs().mean(dim=0).cpu().tolist()
                                 self._diag[f'head_offset_std_{i}'] = aux_offsets_tns.detach().std(dim=0, unbiased=False).cpu().tolist()
                                 self._diag[f'head_near_local_frac_{i}'] = aux_near_local_lst
@@ -1324,7 +1386,7 @@ class INSTNCT(nn.Module):
                     write_topk_idx = content_topk_idx_tns[:, :self._write_topk_K]
                     write_weights_tns = F.softmax(write_topk_scores, dim=-1)
                     write_expanded_idx_tns = write_topk_idx.unsqueeze(-1).expand(-1, -1, slot_dim)
-                    if self._diag_enabled:
+                    if eager_diag_enabled:
                         center_long = center.unsqueeze(1)
                         delta_fwd = torch.remainder(write_topk_idx - center_long, M).float()
                         delta_back = torch.remainder(center_long - write_topk_idx, M).float()
@@ -1407,7 +1469,7 @@ class INSTNCT(nn.Module):
                             dim=-1,
                         )
                         ring_signal = self.read_tap_proj[i](mtap_input_tns)
-                        if self._diag_enabled:
+                        if eager_diag_enabled:
                             probs_safe = tap_gate_norm.clamp_min(1e-12)
                             self._diag[f'mtap_main_frac_{i}'] = (main_gate / gate_vals.sum(dim=-1, keepdim=True).clamp_min(1e-8)).detach().mean().item()
                             self._diag[f'mtap_gate_mean_by_lag_{i}'] = tap_gate_norm.detach().mean(dim=0).cpu().tolist()
@@ -1431,7 +1493,7 @@ class INSTNCT(nn.Module):
                             dim=-1,
                         )
                         ring_signal = self.read_tap_proj[i](mtap_input_tns)
-                        if self._diag_enabled:
+                        if eager_diag_enabled:
                             probs_safe = channel_gate_norm.clamp_min(1e-12)
                             self._diag[f'mtap_main_frac_{i}'] = channel_gate_norm[:, :1].detach().mean().item()
                             self._diag[f'mtap_gate_mean_by_lag_{i}'] = tap_gate_norm.detach().mean(dim=0).cpu().tolist()
@@ -1452,14 +1514,14 @@ class INSTNCT(nn.Module):
                         )
                         resid_beta = torch.sigmoid(self.read_tap_resid_gate[i](hidden_lst[i]))
                         ring_signal = self.read_proj[i](read_vec_tns) + resid_beta * tap_delta
-                        if self._diag_enabled:
+                        if eager_diag_enabled:
                             probs_safe = tap_gate_norm.clamp_min(1e-12)
                             self._diag[f'mtap_gate_mean_by_lag_{i}'] = tap_gate_norm.detach().mean(dim=0).cpu().tolist()
                             self._diag[f'mtap_gate_max_frac_{i}'] = tap_gate_norm.detach().max(dim=-1).values.mean().item()
                             self._diag[f'mtap_gate_entropy_{i}'] = (-(probs_safe * probs_safe.log()).sum(dim=-1).mean().item())
                             self._diag[f'mtap_resid_beta_{i}'] = resid_beta.detach().mean().item()
                             self._diag[f'mtap_delta_norm_{i}'] = tap_delta.detach().norm(dim=-1).mean().item()
-                    if self._diag_enabled:
+                    if eager_diag_enabled:
                         self._diag[f'mtap_main_norm_{i}'] = read_vec_tns.detach().norm(dim=-1).mean().item()
                         self._diag[f'mtap_tap_norm_{i}'] = tap_neighbors_tns.detach().norm(dim=-1).mean().item()
                         self._diag[f'mtap_signal_norm_{i}'] = ring_signal.detach().norm(dim=-1).mean().item()
@@ -1474,7 +1536,7 @@ class INSTNCT(nn.Module):
                     blended_ring = alpha * ring_signal  # no LayerNorm — keep magnitude info
 
                     # ── diagnostics: track alpha + signal norms ──
-                    if self._diag_enabled:
+                    if eager_diag_enabled:
                         d = self._diag
                         a = alpha.detach()
                         d[f'alpha_{i}_mean'] = a.mean().item()
@@ -1485,6 +1547,16 @@ class INSTNCT(nn.Module):
                         d[f'blended_norm_{i}'] = blended_ring.detach().norm(dim=-1).mean().item()
                         d[f'hidden_norm_{i}'] = hidden_lst[i].detach().norm(dim=-1).mean().item()
                         d[f'ptr_pos_{i}'] = ptr_tns[i].detach().float().mean().item()
+                    elif core_diag_enabled:
+                        a = alpha.detach()
+                        core_diag_expert_tns[i, _COMPILE_DIAG_ALPHA_MEAN] = a.mean()
+                        core_diag_expert_tns[i, _COMPILE_DIAG_ALPHA_MIN] = a.min()
+                        core_diag_expert_tns[i, _COMPILE_DIAG_ALPHA_MAX] = a.max()
+                        core_diag_expert_tns[i, _COMPILE_DIAG_INPUT_NORM] = input_vec_tns.detach().norm(dim=-1).mean()
+                        core_diag_expert_tns[i, _COMPILE_DIAG_RING_SIGNAL_NORM] = ring_signal.detach().norm(dim=-1).mean()
+                        core_diag_expert_tns[i, _COMPILE_DIAG_BLENDED_NORM] = blended_ring.detach().norm(dim=-1).mean()
+                        core_diag_expert_tns[i, _COMPILE_DIAG_HIDDEN_NORM] = hidden_lst[i].detach().norm(dim=-1).mean()
+                        core_diag_expert_tns[i, _COMPILE_DIAG_PTR_POS] = ptr_tns[i].detach().float().mean()
                 else:
                     blended_ring = S_flt * ring_signal
 
@@ -1520,7 +1592,7 @@ class INSTNCT(nn.Module):
                             bb_ctx = self._bb_scale * ctx
 
                         # ── BB telemetry (every transform point) ──
-                        if self._diag_enabled:
+                        if eager_diag_enabled:
                             d = self._diag
                             ctx_raw_n = ctx.detach().norm(dim=-1).mean().item()
                             ctx_scaled_n = bb_ctx.detach().norm(dim=-1).mean().item()
@@ -1628,7 +1700,7 @@ class INSTNCT(nn.Module):
                 bb_write_ptr = (bb_write_ptr + 1) % self._bb_L
                 bb_steps += 1
                 # key norm telemetry
-                if self._diag_enabled:
+                if eager_diag_enabled:
                     self._diag['bb_key_norm'] = written_key.detach().norm(dim=-1).mean().item()
 
             # ── Hourglass: reader-only output ──
@@ -1664,18 +1736,23 @@ class INSTNCT(nn.Module):
             overlay_len_int = 0
 
         # ── diagnostics: ring + final hidden norms ──
-        if self._diag_enabled:
+        if eager_diag_enabled:
             d = self._diag
             d['ring_norm'] = ring_tns.detach().norm().item()
             d['ring_slot_mean'] = ring_tns.detach().norm(dim=-1).mean().item()
             for i in range(self.N):
                 d[f'hidden_final_norm_{i}'] = hidden_tns[i].detach().norm(dim=-1).mean().item()
-        if self._diag_enabled and topk_diag_count > 0:
+        elif core_diag_enabled:
+            core_diag_global_tns[_COMPILE_DIAG_RING_NORM] = ring_tns.detach().norm()
+            core_diag_global_tns[_COMPILE_DIAG_RING_SLOT_MEAN] = ring_tns.detach().norm(dim=-1).mean()
+            for i in range(self.N):
+                core_diag_expert_tns[i, _COMPILE_DIAG_HIDDEN_FINAL_NORM] = hidden_tns[i].detach().norm(dim=-1).mean()
+        if eager_diag_enabled and topk_diag_count > 0:
             self._diag['topk_mean_abs_circ_dist'] = topk_diag_sum_dist / topk_diag_count
             self._diag['topk_outside_local_frac'] = topk_diag_sum_outside / topk_diag_count
             self._diag['topk_attn_entropy'] = topk_diag_sum_entropy / topk_diag_count
             self._diag['topk_unique_slot_frac'] = topk_diag_sum_unique / topk_diag_count
-        if self._diag_enabled and write_topk_diag_count > 0:
+        if eager_diag_enabled and write_topk_diag_count > 0:
             self._diag['write_topk_mean_abs_circ_dist'] = write_topk_diag_sum_dist / write_topk_diag_count
             self._diag['write_topk_outside_local_frac'] = write_topk_diag_sum_outside / write_topk_diag_count
             self._diag['write_topk_unique_slot_frac'] = write_topk_diag_sum_unique / write_topk_diag_count
@@ -1696,7 +1773,18 @@ class INSTNCT(nn.Module):
         else:
             self._ring_trace = None
 
-        return ring_tns, ptr_tns, hidden_tns, bb_buf, bb_keys, bb_write_ptr, bb_steps, outs_tns
+        return (
+            ring_tns,
+            ptr_tns,
+            hidden_tns,
+            bb_buf,
+            bb_keys,
+            bb_write_ptr,
+            bb_steps,
+            outs_tns,
+            core_diag_expert_tns,
+            core_diag_global_tns,
+        )
 
     @torch.no_grad()
     def update_expert_conf(self, temperature=2.0, decay=0.95, floor=0.1):
@@ -1842,28 +1930,32 @@ class INSTNCT(nn.Module):
 
         # ── Chunk-based processing ──
         # Three modes (mutually exclusive):
-        #   1. compile_chunks: _process_chunk compiled via torch.compile (C=compile_chunk_size)
-        #   2. grad_checkpoint: _process_chunk wrapped in grad_checkpoint (C=checkpoint_chunks)
-        #   3. eager: single chunk C=T, no wrapping
-        use_compile = self._compile_chunks and torch.is_grad_enabled()
+        #   1. full compile: forward compiled externally, single chunk C=T
+        #   2. chunk compile: _process_chunk compiled via torch.compile (C=compile_chunk_size)
+        #   3. eager/checkpoint: eager forward, optional grad_checkpoint(C=checkpoint_chunks)
+        active_compile_mode = self._compile_mode if torch.is_grad_enabled() else 'eager'
+        use_compile = active_compile_mode == 'chunk'
         if use_compile:
             C = getattr(self, 'compile_chunk_size', 32)
-            if self._compiled_chunk_fn is None:
+            if self._compiled_chunk_fn is None or self._compiled_chunk_size != C:
                 self._compiled_chunk_fn = torch.compile(
                     self._process_chunk, mode='reduce-overhead')
+                self._compiled_chunk_size = C
         else:
             C = self.checkpoint_chunks
-        use_ckpt = C > 0 and torch.is_grad_enabled() and not use_compile
+        use_ckpt = C > 0 and torch.is_grad_enabled() and active_compile_mode == 'eager'
         if not use_ckpt and not use_compile:
             C = T  # single chunk = identical to original forward loop
 
         all_outs = []
+        chunk_diag_expert_tns = None
+        chunk_diag_global_tns = None
         for t_start in range(0, T, C):
             t_end = min(t_start + C, T)
             x_chunk = x[:, t_start:t_end]
 
             if use_compile:
-                ring_tns, ptr_tns, hidden_tns, bb_buf, bb_keys, bb_write_ptr, bb_steps, chunk_outs = self._compiled_chunk_fn(
+                ring_tns, ptr_tns, hidden_tns, bb_buf, bb_keys, bb_write_ptr, bb_steps, chunk_outs, chunk_diag_expert_tns, chunk_diag_global_tns = self._compiled_chunk_fn(
                     x_chunk, ring_tns, ptr_tns, hidden_tns,
                     bb_buf, bb_keys, bb_write_ptr, bb_steps,
                     S, probs, offsets_long, expert_weights,
@@ -1871,7 +1963,7 @@ class INSTNCT(nn.Module):
             elif use_ckpt:
                 # grad_checkpoint discards intermediate activations and recomputes
                 # them during backward — saves ~13× VRAM on ring clones.
-                ring_tns, ptr_tns, hidden_tns, bb_buf, bb_keys, bb_write_ptr, bb_steps, chunk_outs = grad_checkpoint(  # type: ignore[misc]
+                ring_tns, ptr_tns, hidden_tns, bb_buf, bb_keys, bb_write_ptr, bb_steps, chunk_outs, chunk_diag_expert_tns, chunk_diag_global_tns = grad_checkpoint(  # type: ignore[misc]
                     self._process_chunk,
                     x_chunk, ring_tns, ptr_tns, hidden_tns,
                     bb_buf, bb_keys, bb_write_ptr, bb_steps,
@@ -1881,13 +1973,20 @@ class INSTNCT(nn.Module):
                     preserve_rng_state=False,  # no random ops in the loop
                 )
             else:
-                ring_tns, ptr_tns, hidden_tns, bb_buf, bb_keys, bb_write_ptr, bb_steps, chunk_outs = self._process_chunk(
+                ring_tns, ptr_tns, hidden_tns, bb_buf, bb_keys, bb_write_ptr, bb_steps, chunk_outs, chunk_diag_expert_tns, chunk_diag_global_tns = self._process_chunk(
                     x_chunk, ring_tns, ptr_tns, hidden_tns,
                     bb_buf, bb_keys, bb_write_ptr, bb_steps,
                     S, probs, offsets_long, expert_weights,
                     topk_write_weights)
 
             all_outs.append(chunk_outs)
+
+        if active_compile_mode in ('full', 'chunk') and self._diag_enabled:
+            assert chunk_diag_expert_tns is not None
+            assert chunk_diag_global_tns is not None
+            self._store_compile_diag_payload(chunk_diag_expert_tns, chunk_diag_global_tns)
+            if active_compile_mode == 'chunk':
+                self.materialize_compile_diag()
 
         output = torch.cat(all_outs, dim=1)  # (B, T, vocab_size)
 

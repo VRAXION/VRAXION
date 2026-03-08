@@ -1010,6 +1010,66 @@ def _build_optimizer(model, model_type: str, lr: float):
     ], lr=lr)
 
 
+_COMPILE_FULL_SEQ_THRESHOLD = 48
+
+
+def _unwrap_model(model):
+    """Return the original nn.Module when torch.compile wraps the model."""
+    return getattr(model, '_orig_mod', model)
+
+
+def _configure_compile_policy(model, config: dict, device: str):
+    """Apply the nightly auto compile policy and return the active model object."""
+    base_model = _unwrap_model(model)
+    base_model._compile_mode = 'eager'
+    base_model._compile_chunks = False
+    base_model._disable_proxy_overlay_for_compile = False
+    base_model._compiled_chunk_size = None
+
+    if not config.get('compile', False):
+        return model
+
+    compile_chunk_size = int(config.get('compile_chunk_size', 32))
+    fallback_reason = None
+    if not device.startswith('cuda'):
+        fallback_reason = f"compile requested on non-CUDA device '{device}'"
+    elif not hasattr(torch, 'compile'):
+        fallback_reason = 'torch.compile is unavailable in this PyTorch build'
+    elif getattr(base_model, 'bb_enabled', False):
+        fallback_reason = 'bb_enabled=true is out of scope for compile in this pass'
+    elif getattr(base_model, 'io_split_mode', 'off') != 'off':
+        fallback_reason = f"io_split_mode='{getattr(base_model, 'io_split_mode', 'off')}' is not compile-safe in this pass"
+    elif compile_chunk_size < 1:
+        fallback_reason = f'compile_chunk_size must be >= 1, got {compile_chunk_size}'
+
+    if fallback_reason is not None:
+        print(f'[compile] eager fallback: {fallback_reason}')
+        return model
+
+    base_model._disable_proxy_overlay_for_compile = (
+        getattr(base_model, 'replace_impl', 'dense') == 'proxy_overlay'
+    )
+    seq_len = int(config.get('seq_len', 0))
+
+    if seq_len <= _COMPILE_FULL_SEQ_THRESHOLD:
+        base_model._compile_mode = 'full'
+        try:
+            model = torch.compile(model, mode='reduce-overhead')
+            print(f'[compile] full-model compile enabled (seq={seq_len}, threshold={_COMPILE_FULL_SEQ_THRESHOLD}, mode=reduce-overhead)')
+        except Exception as e:
+            base_model = _unwrap_model(model)
+            base_model._compile_mode = 'eager'
+            base_model._disable_proxy_overlay_for_compile = False
+            print(f'[compile] eager fallback: full-model compile failed: {e}')
+        return model
+
+    base_model._compile_mode = 'chunk'
+    base_model._compile_chunks = True
+    base_model.compile_chunk_size = compile_chunk_size
+    print(f'[compile] chunk-level compile enabled (seq={seq_len}, C={compile_chunk_size}, mode=reduce-overhead)')
+    return model
+
+
 # ── Training Loop ─────────────────────────────────────────────
 # Orchestrates the full training lifecycle: device selection, data loading,
 # model creation, optional checkpoint resume, and the step loop itself.
@@ -1102,14 +1162,8 @@ def train(config):
     # TF32 tensor cores: ~2× throughput on fp32 matmul (RTX 30xx/40xx), negligible precision loss.
     if device.startswith('cuda'):
         torch.set_float32_matmul_precision('high')
-    # torch.compile: chunk-level compilation of _process_chunk.
-    # Dynamo traces C timesteps once, replays the graph for each chunk of the sequence.
-    # Avoids full-sequence unroll that hangs at T>=128.
-    if config.get('compile', False) and device.startswith('cuda') and hasattr(torch, 'compile'):
-        compile_cs = int(config.get('compile_chunk_size', 32))
-        model._compile_chunks = True
-        model.compile_chunk_size = compile_cs
-        print(f"[compile] chunk-level compile enabled (C={compile_cs}, mode=reduce-overhead)")
+    model = _configure_compile_policy(model, config, device)
+    runtime_model = _unwrap_model(model)
     opt = _build_optimizer(model, model_record['type'], config['lr'])
 
     # ── Output dir ──
@@ -1222,7 +1276,7 @@ def train(config):
         print(f'[RESUME] AMP GradScaler state restored')
 
     # ── Boot ──
-    func_bootinfo_non(config, model, dataset, device)
+    func_bootinfo_non(config, runtime_model, dataset, device)
 
     if config['steps'] <= start_step:
         print(f'[DONE] Already at step {start_step} >= target {config["steps"]}. Nothing to do.')
@@ -1309,12 +1363,10 @@ def train(config):
         # Enable .item() diagnostics only on steps that will read them (heartbeat/CSV log).
         # Saves ~600 CUDA sync points per forward pass on non-log steps.
         _is_log_step = (s % config['heartbeat_every'] == 0) or (s % config['log_every'] == 0) or (s == start_step + 1)
-        if hasattr(model, '_diag_enabled'):
-            model._diag_enabled = _is_log_step
-        # Chunk-compile path cannot tolerate .item() graph breaks from diagnostics.
-        # Force off — diag data comes from the non-compiled eval pass instead.
-        if hasattr(model, '_compile_chunks') and model._compile_chunks:
-            model._diag_enabled = False
+        if hasattr(runtime_model, '_diag_enabled'):
+            runtime_model._diag_enabled = _is_log_step
+        if _is_log_step and hasattr(runtime_model, '_diag'):
+            runtime_model._diag = {}
 
         # ── Forward ──
         if sequential:
@@ -1329,6 +1381,8 @@ def train(config):
             # loss_fn returns two values: raw_loss (all positions) and masked_loss
             # (supervised positions only). We optimize masked_loss but log both.
             raw_loss, masked_loss = loss_fn(pred, yb, mask)
+        if _is_log_step and getattr(runtime_model, '_compile_mode', 'eager') in ('full', 'chunk'):
+            runtime_model.materialize_compile_diag()
 
         _ring_post = state['ring'].norm().item() if state is not None and 'ring' in state else -1
         # Temporary ring delta probe — remove once ring freeze is resolved
@@ -1354,8 +1408,8 @@ def train(config):
         opt.zero_grad()
         if scaler is not None:
             scaler.scale(masked_loss).backward()
-            if hasattr(model, 'update_expert_conf'):
-                model.update_expert_conf()
+            if hasattr(runtime_model, 'update_expert_conf'):
+                runtime_model.update_expert_conf()
             if config['max_grad_norm'] > 0:
                 scaler.unscale_(opt)
                 torch.nn.utils.clip_grad_norm_(model.parameters(), config['max_grad_norm'])
@@ -1363,8 +1417,8 @@ def train(config):
             scaler.update()
         else:
             masked_loss.backward()
-            if hasattr(model, 'update_expert_conf'):
-                model.update_expert_conf()
+            if hasattr(runtime_model, 'update_expert_conf'):
+                runtime_model.update_expert_conf()
             if config['max_grad_norm'] > 0:
                 torch.nn.utils.clip_grad_norm_(model.parameters(), config['max_grad_norm'])
             opt.step()
@@ -1379,18 +1433,18 @@ def train(config):
             elapsed = time.perf_counter() - t0
             sps = s - start_step
             sec_per_step = elapsed / sps if sps > 0 else 0
-            xc = getattr(model, '_expert_conf', None)
+            xc = getattr(runtime_model, '_expert_conf', None)
             xc_str = f'  conf=[{" ".join(f"{c:.4f}" for c in xc.tolist())}]' if xc is not None else ''
             # diagnostics from model forward pass
-            diag = getattr(model, '_diag', {})
+            diag = getattr(runtime_model, '_diag', {})
             alpha_str = ''
             if 'alpha_0_mean' in diag:
-                alphas = ' '.join(f'{diag.get(f"alpha_{i}_mean", 0):.3f}' for i in range(model.N))
+                alphas = ' '.join(f'{diag.get(f"alpha_{i}_mean", 0):.3f}' for i in range(runtime_model.N))
                 alpha_str = f'  alpha=[{alphas}]'
             ring_str = f'  ring={diag.get("ring_norm", 0):.2f}' if 'ring_norm' in diag else ''
             bb_str = ''
             if 'bb_beta_0' in diag:
-                betas = ' '.join(f'{diag.get(f"bb_beta_{i}", 0):.3f}' for i in range(model.N))
+                betas = ' '.join(f'{diag.get(f"bb_beta_{i}", 0):.3f}' for i in range(runtime_model.N))
                 ent = f'{diag.get("bb_attn_entropy_0", 0):.2f}'
                 ratio = f'{diag.get("bb_ctx_vs_ring_0", 0):.2f}'
                 bb_str = f'  bb=[{betas}] ent={ent} ctx/ring={ratio}'
@@ -1411,7 +1465,7 @@ def train(config):
             mf = mask.mean().item()
             csv_log.log(s, raw_loss.item(), lv, raw_acc, masked_acc,
                         lr, elapsed, s * config['batch_size'], mf,
-                        diag=getattr(model, '_diag', {}))
+                        diag=getattr(runtime_model, '_diag', {}))
 
         # ── Checkpoint ──
         if s % config['save_every'] == 0:
@@ -1586,6 +1640,8 @@ def func_parsecli_dct() -> dict:
                         help='global random seed for fresh runs (default: from config)')
     parser.add_argument('--compile', action='store_true', default=None,
                         help='enable torch.compile (reduce-overhead). +22%% speed after ~73s warmup')
+    parser.add_argument('--compile-chunk-size', type=int, default=None,
+                        help='chunk size for compile auto/chunk mode (default: from config or 32)')
 
     args = parser.parse_args()
 
@@ -1627,7 +1683,7 @@ def func_parsecli_dct() -> dict:
         # Mixed precision (AMP): fp16 forward/backward, fp32 optimizer
         'use_amp':         bool(yaml_cfg.get('use_amp', False)),
         'compile':         args.compile if args.compile is not None else bool(yaml_cfg.get('compile', False)),
-        'compile_chunk_size': int(yaml_cfg.get('compile_chunk_size', 32)),
+        'compile_chunk_size': args.compile_chunk_size if args.compile_chunk_size is not None else int(yaml_cfg.get('compile_chunk_size', 32)),
     }
 
     # Resolve relative paths from v4/ root so `python training/train.py --data foo`

@@ -10,6 +10,7 @@ Tests cover:
 import numpy as np
 import torch
 import pytest
+import instnct as instnct_mod
 from instnct import INSTNCT, phi_destinations
 
 # Tiny config — same architecture, far fewer parameters → tests run in <1s
@@ -645,3 +646,122 @@ def test_output_encoding_default_learned():
     x = torch.randint(0, 256, (2, 16))
     with torch.no_grad():
         assert torch.allclose(ref(x)[0], exp(x)[0], atol=1e-6)
+
+
+# ══════════════════════════════════════════════════════════════
+#  Compile stabilization
+# ══════════════════════════════════════════════════════════════
+
+def test_compile_chunk_bypasses_grad_checkpoint(monkeypatch):
+    """Chunk compile must take precedence over grad checkpointing."""
+    model = INSTNCT(
+        M=32,
+        hidden_dim=32,
+        slot_dim=16,
+        N=1,
+        R=1,
+        embed_mode=True,
+        checkpoint_chunks=4,
+        expert_weighting=False,
+        embed_encoding='learned',
+        output_encoding='learned',
+    )
+    model._compile_mode = 'chunk'
+    model._compile_chunks = True
+    model.compile_chunk_size = 4
+
+    monkeypatch.setattr(torch, 'compile', lambda fn, mode=None: fn, raising=False)
+
+    def fail_grad_checkpoint(*args, **kwargs):
+        raise AssertionError('grad_checkpoint should not run when chunk compile is active')
+
+    monkeypatch.setattr(instnct_mod, 'grad_checkpoint', fail_grad_checkpoint)
+
+    x = torch.randint(0, 256, (2, 8))
+    out, state = model(x)
+
+    assert out.shape == (2, 8, 256)
+    assert state['ring'].shape == (2, 32, 16)
+    assert state['ptr'].shape == (1, 2)
+    assert state['hidden'].shape == (1, 2, 32)
+
+
+def test_compile_chunk_disables_proxy_overlay(monkeypatch):
+    """Proxy overlay helpers must be bypassed inside the compiled chunk path."""
+    model = INSTNCT(
+        M=32,
+        hidden_dim=16,
+        slot_dim=16,
+        N=1,
+        R=1,
+        embed_mode=False,
+        checkpoint_chunks=0,
+        expert_weighting=False,
+        write_mode='replace',
+        replace_impl='proxy_overlay',
+    )
+    assert model._proxy_overlay_enabled is True
+    model._compile_mode = 'chunk'
+    model._compile_chunks = True
+    model.compile_chunk_size = 4
+    model._disable_proxy_overlay_for_compile = True
+
+    monkeypatch.setattr(torch, 'compile', lambda fn, mode=None: fn, raising=False)
+
+    def fail_overlay(*args, **kwargs):
+        raise AssertionError('proxy overlay helper should not run in compiled chunk mode')
+
+    monkeypatch.setattr(instnct_mod, 'func_proxy_overlay_read_tns', fail_overlay)
+    monkeypatch.setattr(instnct_mod, 'func_proxy_overlay_write_tns', fail_overlay)
+    monkeypatch.setattr(instnct_mod, 'func_proxy_overlay_flush_tns', fail_overlay)
+
+    x = to_bits(torch.randint(0, 256, (2, 8)))
+    out, _ = model(x)
+
+    assert out.shape == (2, 8, 8)
+    assert torch.isfinite(out).all()
+
+
+def test_compile_chunk_keeps_core_scalar_diags(monkeypatch):
+    """Compiled chunks should preserve scalar training diagnostics only."""
+    model = INSTNCT(
+        M=32,
+        hidden_dim=32,
+        slot_dim=16,
+        N=1,
+        R=1,
+        embed_mode=False,
+        checkpoint_chunks=0,
+        expert_weighting=False,
+    )
+    model._compile_mode = 'chunk'
+    model._compile_chunks = True
+    model.compile_chunk_size = 4
+    model._diag_enabled = True
+    model._diag = {}
+
+    monkeypatch.setattr(torch, 'compile', lambda fn, mode=None: fn, raising=False)
+
+    x = to_bits(torch.randint(0, 256, (2, 8)))
+    out, _ = model(x)
+    diag = model._diag
+
+    assert out.shape == (2, 8, 8)
+    for key in (
+        'ring_norm',
+        'ring_slot_mean',
+        'alpha_0_mean',
+        'alpha_0_min',
+        'alpha_0_max',
+        'input_norm_0',
+        'ring_signal_norm_0',
+        'blended_norm_0',
+        'hidden_norm_0',
+        'hidden_final_norm_0',
+        'ptr_pos_0',
+    ):
+        assert key in diag, f'missing compile-safe diag key: {key}'
+        assert isinstance(diag[key], float)
+
+    assert 'topk_mean_abs_circ_dist' not in diag
+    assert 'write_topk_mean_abs_circ_dist' not in diag
