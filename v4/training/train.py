@@ -1099,7 +1099,10 @@ def train(config):
         training_config=config,
     )
     model = build_model_from_spec(model_record, device=device)
-    # torch.compile: +22% step/sec, -55% VRAM after ~73s warmup. Breakeven ~1460 steps.
+    # TF32 tensor cores: ~2× throughput on fp32 matmul (RTX 30xx/40xx), negligible precision loss.
+    if device.startswith('cuda'):
+        torch.set_float32_matmul_precision('high')
+    # torch.compile: +26% step/sec after graph break fixes. Breakeven ~430 steps.
     if config.get('compile', False) and device.startswith('cuda') and hasattr(torch, 'compile'):
         try:
             model = torch.compile(model, mode='reduce-overhead')
@@ -1300,6 +1303,13 @@ def train(config):
             lr = config['lr']
         opt.param_groups[0]['lr'] = lr
         # group 1 (c19 rho/C): constant LR — no decay, always adaptive
+
+        # ── Diagnostics gate ──
+        # Enable .item() diagnostics only on steps that will read them (heartbeat/CSV log).
+        # Saves ~600 CUDA sync points per forward pass on non-log steps.
+        _is_log_step = (s % config['heartbeat_every'] == 0) or (s % config['log_every'] == 0) or (s == start_step + 1)
+        if hasattr(model, '_diag_enabled'):
+            model._diag_enabled = _is_log_step
 
         # ── Forward ──
         if sequential:
