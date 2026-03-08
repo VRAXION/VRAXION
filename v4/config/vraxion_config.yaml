@@ -150,6 +150,17 @@ model:
   # BB gate mode: 'learned' = sigmoid gate (sample-dependent), 'fixed' = no gate (scale only)
   bb_gate_mode: fixed
 
+  # ── Multi-Pointer φ-Spaced Read Heads ─────────────────────────
+  # Multiple read positions on the ring, each φ-step apart.
+  # Each head reads at (ptr + i × floor(M/φ)) % M — maximally spread.
+  # Independent sigmoid gates let the model activate any subset.
+  # true = enabled. false = single pointer read (baseline).
+  mp_enabled: false
+
+  # Number of φ-spaced read heads. Each head adds one ring read per timestep.
+  # Head 0 = current pointer (baseline). Heads 1..K-1 = φ-spaced positions.
+  mp_heads: 4
+
 
 # ══════════════════════════════════════════════════════════════
 #  DATA — generate.py

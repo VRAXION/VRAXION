@@ -182,6 +182,10 @@ CNFG_BBSCALE_FLT = float(_cfg.get('bb_scale', 0.1))
 CNFG_BBTAU_FLT = float(_cfg.get('bb_tau', 4.0))
 CNFG_BBGATEMODE_STR = _cfg.get('bb_gate_mode', 'learned')  # 'learned' | 'fixed'
 
+# ─ multi-pointer φ-spaced read heads ─
+CNFG_MPENABLED_BOOL = _cfg.get('mp_enabled', False)   # φ-spaced multi-head ring read
+CNFG_MPHEADS_INT = int(_cfg.get('mp_heads', 4))       # number of φ-spaced read positions
+
 # ─ topK ring read ─
 CNFG_TOPK_INT = int(_cfg.get('topk_K', 8))  # number of ring slots for content-based read
 
@@ -602,7 +606,9 @@ class INSTNCT(nn.Module):
                  replace_impl=CNFG_REPLACEIMPL_STR,        # 'dense' | 'proxy_overlay' (nightly-only proxy fast path)
                  pointer_interp_mode='off',                # 'off' | 'linear' — nightly-only fractional pointer center
                  pointer_seam_mode='mod',                  # 'mod' | 'shortest_arc' — nightly-only wrap-seam fix
-                 s_constraint='softplus'):                 # 'softplus' (S>0) | 'raw' (unconstrained)
+                 s_constraint='softplus',                  # 'softplus' (S>0) | 'raw' (unconstrained)
+                 mp_enabled=CNFG_MPENABLED_BOOL,           # multi-pointer φ-spaced read heads
+                 mp_heads=CNFG_MPHEADS_INT):                # number of φ-spaced read positions
         super().__init__()
         assert kernel_mode in ('uniform', 'vshape', 'gaussian', 'dotprod', 'topk'), \
             f"kernel_mode must be 'uniform', 'vshape', 'gaussian', 'dotprod', or 'topk', got '{kernel_mode}'"
@@ -653,6 +659,7 @@ class INSTNCT(nn.Module):
             and read_kernel_mode == 'vshape'
             and write_address_mode == 'pointer'
             and pointer_mode == 'sequential'
+            and not mp_enabled
             and pointer_interp_mode == 'off'
             and not bb_enabled
             and io_split_mode == 'off'
@@ -819,6 +826,26 @@ class INSTNCT(nn.Module):
                 self.bb_gate = None  # fixed mode: no gate, just scale
             self._bb_scale = bb_scale
             self._bb_tau = bb_tau
+
+        # ── Multi-pointer φ-spaced read heads ──
+        # K read positions on the ring, each floor(M/φ) apart → maximally spread.
+        # Head 0 = current pointer. Independent sigmoid gates per head.
+        self.mp_enabled = mp_enabled
+        self._mp_heads = mp_heads
+        if mp_enabled:
+            phi_step = int(M * PHI_INV)  # floor(M/φ) ≈ 632 for M=1024
+            mp_offsets = torch.tensor([i * phi_step % M for i in range(mp_heads)], dtype=torch.long)
+            self.register_buffer('_mp_offsets', mp_offsets)  # (K,) — not trainable, on device
+            # per-expert gate: hidden → K sigmoid gates (independent on/off per head)
+            self.mp_gate = nn.ModuleList([
+                nn.Linear(hidden_dim, mp_heads) for _ in range(N)
+            ])
+            # init: head 0 (current pointer) starts open, others start modest
+            for g in self.mp_gate:
+                nn.init.zeros_(g.weight)
+                bias_init = torch.full((mp_heads,), -1.0)  # sigmoid(-1) ≈ 0.27
+                bias_init[0] = 1.0  # sigmoid(1) ≈ 0.73 — favor current pointer initially
+                g.bias.data.copy_(bias_init)
 
         # phase embeddings: sin/cos position encoding — hidden_dim wide (adds to hidden state)
         self.phase_cos = nn.Parameter(torch.randn(hidden_dim) * 0.01)
@@ -1157,7 +1184,38 @@ class INSTNCT(nn.Module):
                            + torch.sin(theta_tns).unsqueeze(-1) * self.phase_sin)
 
                 # ─ hidden update (all hidden_dim-wide) ─
-                ring_signal = self.read_proj[i](read_vec_tns)  # slot_dim → hidden_dim
+                if self.mp_enabled and expert_weights is not None:
+                    # Multi-pointer φ-spaced read: K heads at phi-spaced positions
+                    # Head 0 = read_vec_tns (already computed from pointer position)
+                    mp_K = self._mp_heads
+                    mp_offsets = self._mp_offsets  # (K,) precomputed: [0, φ_step, 2φ_step, ...]
+                    head_signals = []
+                    head_signals.append(self.read_proj[i](read_vec_tns))  # head 0: current pointer
+                    ew = expert_weights[i].unsqueeze(0).expand(input_vec_tns.shape[0], -1)  # (B, 2R+1)
+                    for h in range(1, mp_K):
+                        # position for head h: (ptr + φ_offset_h) % M
+                        head_center = (center + mp_offsets[h]) % M
+                        head_indices = (head_center.unsqueeze(1) + offsets_long) % M
+                        head_read, _ = func_softread_tns(ring_tns, head_indices, ew, slot_dim)
+                        head_signals.append(self.read_proj[i](head_read))
+                    # stack → (B, K, hidden_dim), gate → (B, K, 1)
+                    head_stack = torch.stack(head_signals, dim=1)  # (B, K, hidden_dim)
+                    gate_logits = self.mp_gate[i](hidden_lst[i])  # (B, K)
+                    gate_vals = torch.sigmoid(gate_logits)  # (B, K) — independent per head
+                    ring_signal = (gate_vals.unsqueeze(-1) * head_stack).sum(1)  # (B, hidden_dim)
+
+                    # ── multi-pointer diagnostics ──
+                    if torch.is_grad_enabled() and self.training:
+                        d = self._diag
+                        gv = gate_vals.detach()
+                        for h in range(mp_K):
+                            d[f'mp_gate_{i}_head{h}'] = gv[:, h].mean().item()
+                        # entropy of gate distribution (treat as pseudo-probs)
+                        gv_norm = gv / gv.sum(dim=1, keepdim=True).clamp(min=1e-8)
+                        mp_entropy = -(gv_norm * torch.log(gv_norm.clamp(min=1e-8))).sum(-1).mean().item()
+                        d[f'mp_gate_entropy_{i}'] = mp_entropy
+                else:
+                    ring_signal = self.read_proj[i](read_vec_tns)  # slot_dim → hidden_dim
                 if S_flt == 'dotprod':
                     # content-based gate: cosine similarity (scale-invariant)
                     cos_sim = F.cosine_similarity(
