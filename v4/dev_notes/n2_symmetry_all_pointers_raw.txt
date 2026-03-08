@@ -1,0 +1,88 @@
+Device: cuda
+B=64, T=16, max_steps=500, plateau_window=50
+Pointer modes to test: ['sequential', 'learned', 'pilot']
+
+======================================================================
+N=2 SYMMETRY COLLAPSE TEST — ALL POINTER MODES
+======================================================================
+
+######################################################################
+# POINTER MODE: sequential
+######################################################################
+Params: 2,462,404
+  step   0 | loss=5.5920 | grad_delta=0.006592 | alpha:[0.509,0.481] | input:[26.345,26.345] | ring_sig:[3.842,3.843] | blended:[1.955,1.849] | hidden:[74.085,74.296]
+  step  10 | loss=5.5985 | grad_delta=0.213906 | alpha:[0.509,0.582] | input:[26.194,26.194] | ring_sig:[3.281,90.518] | blended:[1.668,52.701] | hidden:[73.793,62.934]
+  step  20 | loss=5.5684 | grad_delta=0.171327 | alpha:[0.510,0.645] | input:[26.435,26.435] | ring_sig:[3.288,89.868] | blended:[1.677,57.954] | hidden:[73.053,42.572]
+  step  30 | loss=5.5929 | grad_delta=0.161825 | alpha:[0.516,0.680] | input:[26.761,26.761] | ring_sig:[3.298,100.824] | blended:[1.701,68.578] | hidden:[72.339,40.668]
+  step  40 | loss=5.5635 | grad_delta=0.154937 | alpha:[0.527,0.689] | input:[26.251,26.251] | ring_sig:[3.308,128.496] | blended:[1.744,88.552] | hidden:[72.170,41.104]
+  step  50 | loss=5.5752 | grad_delta=0.361592 | alpha:[0.533,0.683] | input:[26.230,26.230] | ring_sig:[3.318,157.217] | blended:[1.770,107.366] | hidden:[72.540,43.198]
+  step  60 | loss=5.5718 | grad_delta=0.118030 | alpha:[0.554,0.643] | input:[26.322,26.322] | ring_sig:[3.338,105.497] | blended:[1.849,67.815] | hidden:[71.665,38.788]
+  step  70 | loss=5.5731 | grad_delta=0.105461 | alpha:[0.568,0.645] | input:[26.178,26.178] | ring_sig:[3.354,121.652] | blended:[1.904,78.515] | hidden:[71.576,38.370]
+  step  80 | loss=5.5800 | grad_delta=0.099848 | alpha:[0.578,0.636] | input:[26.902,26.902] | ring_sig:[3.364,118.359] | blended:[1.943,75.352] | hidden:[71.351,37.581]
+  ** PLATEAU at step 81: old_avg=5.5852, new_avg=5.5754, delta=0.0097 < 0.01
+  ** Elapsed: 28.7s (2.8 step/s)
+
+  SUMMARY (sequential):
+  Steps: 82, Time: 28.7s, Best loss: 5.5596
+  Final diag keys _0: 6, _1: 6
+    blended_norm                            1.9406     73.0977  d=71.1572  DIVERGED
+    hidden_final_norm                      71.6019     56.2795  d=15.3224  DIVERGED
+    hidden_norm                            71.1243     37.4388  d=33.6855  DIVERGED
+    input_norm                             25.9899     25.9899  d=0.0000  SAME
+    ptr_pos                                15.0000     79.0000  d=64.0000  DIVERGED
+    ring_signal_norm                        3.3658    115.6184  d=112.2526  DIVERGED
+
+######################################################################
+# POINTER MODE: learned
+######################################################################
+Params: 2,495,180
+  step   0 | loss=5.5994 | grad_delta=0.040455 | alpha:[0.488,0.497] | input:[26.561,26.561] | ring_sig:[5.195,5.783] | blended:[2.534,2.875] | hidden:[74.989,75.138]
+  step  10 | loss=5.5755 | grad_delta=0.648949 | alpha:[0.425,0.537] | input:[27.747,27.747] | ring_sig:[82.513,226.888] | blended:[35.085,121.761] | hidden:[70.214,51.101]
+  step  20 | loss=5.5637 | grad_delta=0.499812 | alpha:[0.477,0.559] | input:[26.948,26.948] | ring_sig:[176.317,323.919] | blended:[84.048,181.109] | hidden:[59.292,47.757]
+  step  30 | loss=5.5554 | grad_delta=0.091776 | alpha:[0.479,0.563] | input:[26.887,26.887] | ring_sig:[306.641,397.549] | blended:[146.916,223.773] | hidden:[51.089,47.004]
+  step  40 | loss=5.5597 | grad_delta=0.036939 | alpha:[0.452,0.556] | input:[26.070,26.070] | ring_sig:[337.456,420.390] | blended:[152.554,233.631] | hidden:[48.675,45.240]
+  step  50 | loss=5.5570 | grad_delta=0.015454 | alpha:[0.423,0.547] | input:[27.430,27.430] | ring_sig:[387.888,444.051] | blended:[163.907,242.893] | hidden:[46.836,44.433]
+  step  60 | loss=5.5542 | grad_delta=0.058524 | alpha:[0.414,0.543] | input:[26.666,26.666] | ring_sig:[418.496,482.655] | blended:[173.327,262.224] | hidden:[45.786,44.166]
+  step  70 | loss=5.5591 | grad_delta=0.100555 | alpha:[0.400,0.543] | input:[26.383,26.383] | ring_sig:[381.448,583.985] | blended:[152.426,317.034] | hidden:[45.953,45.529]
+  ** PLATEAU at step 74: old_avg=5.5662, new_avg=5.5568, delta=0.0093 < 0.01
+  ** Elapsed: 30.9s (2.4 step/s)
+
+  SUMMARY (learned):
+  Steps: 75, Time: 30.9s, Best loss: 5.5453
+  Final diag keys _0: 6, _1: 6
+    blended_norm                          154.2232    276.5860  d=122.3628  DIVERGED
+    hidden_final_norm                      46.3991     40.9744  d=5.4247  DIVERGED
+    hidden_norm                            44.5452     41.3513  d=3.1939  DIVERGED
+    input_norm                             26.0594     26.0594  d=0.0000  SAME
+    ptr_pos                                 0.0286     63.9073  d=63.8787  DIVERGED
+    ring_signal_norm                      376.3015    507.8217  d=131.5203  DIVERGED
+
+######################################################################
+# POINTER MODE: pilot
+######################################################################
+Params: 2,728,709
+  step   0 | loss=5.5993 | grad_delta=0.020139 | alpha:[0.500,0.507] | input:[25.380,25.380] | ring_sig:[3.699,3.799] | blended:[1.853,1.926] | hidden:[74.632,74.571]
+  step  10 | loss=5.6263 | grad_delta=0.043258 | alpha:[0.554,0.558] | input:[26.033,26.033] | ring_sig:[56.840,58.196] | blended:[32.804,33.937] | hidden:[66.728,65.944]
+  step  20 | loss=5.6017 | grad_delta=0.009633 | alpha:[0.585,0.601] | input:[25.916,25.916] | ring_sig:[110.234,150.312] | blended:[67.003,94.055] | hidden:[58.959,55.995]
+  step  30 | loss=5.5925 | grad_delta=0.024698 | alpha:[0.606,0.617] | input:[26.412,26.412] | ring_sig:[178.436,196.509] | blended:[112.188,125.487] | hidden:[54.937,53.893]
+  step  40 | loss=5.5627 | grad_delta=0.032203 | alpha:[0.610,0.617] | input:[26.309,26.309] | ring_sig:[206.976,191.171] | blended:[130.278,122.185] | hidden:[53.525,53.255]
+  step  50 | loss=5.5963 | grad_delta=0.004521 | alpha:[0.612,0.615] | input:[25.853,25.853] | ring_sig:[290.938,255.156] | blended:[181.812,162.239] | hidden:[54.465,53.634]
+  step  60 | loss=5.6037 | grad_delta=0.027534 | alpha:[0.603,0.610] | input:[26.247,26.247] | ring_sig:[288.330,297.061] | blended:[179.664,186.126] | hidden:[53.993,53.471]
+  ** PLATEAU at step 65: old_avg=5.6077, new_avg=5.5983, delta=0.0094 < 0.01
+  ** Elapsed: 29.3s (2.2 step/s)
+
+  SUMMARY (pilot):
+  Steps: 66, Time: 29.3s, Best loss: 5.5627
+  Final diag keys _0: 8, _1: 8
+    blended_norm                          186.8196    174.8347  d=11.9849  DIVERGED
+    hidden_final_norm                      54.5326     59.1198  d=4.5872  DIVERGED
+    hidden_norm                            56.0990     56.0428  d=0.0562  DIVERGED
+    input_norm                             26.6236     26.6236  d=0.0000  SAME
+    jump_mean                             276.9963    308.8998  d=31.9036  DIVERGED
+    ptr_pos                                64.8951     61.2986  d=3.5965  DIVERGED
+    ring_signal_norm                      300.8506    278.5888  d=22.2618  DIVERGED
+    sim_mean                               -0.0384     -0.1062  d=0.0678  DIVERGED
+
+======================================================================
+ALL DONE
+======================================================================
