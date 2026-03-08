@@ -687,7 +687,7 @@ class INSTNCT(nn.Module):
         self._diag_enabled: bool = False
         if expert_weighting:
             self._write_grad_ema = torch.zeros(N)     # EMA of gradient magnitudes (CPU)
-            self._expert_conf = torch.ones(N)         # write weights, sum=N → each=1.0
+            self.register_buffer('_expert_conf', torch.ones(N), persistent=False)  # moves with device, no .item() needed
         else:
             self._write_grad_ema = None
             self._expert_conf = None
@@ -1544,7 +1544,7 @@ class INSTNCT(nn.Module):
                         else:
                             write_vec = hidden_lst[i]                      # identity when dims match
                         if self._expert_conf is not None:
-                            write_vec = self._expert_conf[i].item() * write_vec
+                            write_vec = self._expert_conf[i] * write_vec
                     if self.write_mode == 'replace':
                         with _source_scope('write_prepare'):
                             ws = torch.sigmoid(self.write_gate[i](hidden_lst[i]))  # (B, 1)
@@ -1696,8 +1696,8 @@ class INSTNCT(nn.Module):
             g = self.write_proj[i].weight.grad  # type: ignore[union-attr]
             if g is None:
                 continue
-            mag = g.abs().mean().item()  # type: ignore[misc]
-            w = self._expert_conf[i].item()
+            mag = g.abs().mean().item()  # type: ignore[misc]  — CPU-side, OK outside forward
+            w = self._expert_conf[i].item()  # CPU-side, OK outside forward
             mag = mag / max(w, 0.05)       # normalize out the weight's influence
             self._write_grad_ema[i] = decay * self._write_grad_ema[i] + (1.0 - decay) * mag
         # Normalize EMA by its mean so softmax sees relative differences,
@@ -1705,7 +1705,7 @@ class INSTNCT(nn.Module):
         ema_mean = self._write_grad_ema.mean().clamp(min=1e-10)
         normalized = self._write_grad_ema / ema_mean
         raw = (-normalized / temperature).softmax(dim=0)
-        self._expert_conf = N * ((1.0 - floor) * raw + floor / N)
+        self._expert_conf.copy_(N * ((1.0 - floor) * raw + floor / N))
 
     def forward(self, x, S=None, probs=None, state=None):
         """Processes T timesteps over B sequences. Each timestep: every expert
