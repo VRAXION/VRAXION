@@ -765,3 +765,177 @@ def test_compile_chunk_keeps_core_scalar_diags(monkeypatch):
 
     assert 'topk_mean_abs_circ_dist' not in diag
     assert 'write_topk_mean_abs_circ_dist' not in diag
+
+
+FASTPATH_CFG = dict(
+    M=32,
+    hidden_dim=32,
+    slot_dim=16,
+    N=1,
+    R=1,
+    checkpoint_chunks=0,
+    expert_weighting=False,
+    pointer_mode='sequential',
+    pointer_interp_mode='off',
+    pointer_seam_mode='mod',
+    read_kernel_mode='vshape',
+    write_address_mode='pointer',
+    write_mode='replace',
+    replace_impl='dense',
+)
+
+
+def _clone_state(state):
+    if state is None:
+        return None
+    cloned = {}
+    for key, value in state.items():
+        cloned[key] = value.clone() if torch.is_tensor(value) else value
+    return cloned
+
+
+def _assert_state_close(ref_state, fast_state, *, atol=1e-6, rtol=1e-5):
+    assert ref_state.keys() == fast_state.keys()
+    for key in ref_state:
+        ref_val = ref_state[key]
+        fast_val = fast_state[key]
+        if torch.is_tensor(ref_val):
+            assert torch.allclose(ref_val, fast_val, atol=atol, rtol=rtol), key
+        else:
+            assert ref_val == fast_val, key
+
+
+def _make_fastpath_pair(*, embed_mode=True, **overrides):
+    cfg = dict(FASTPATH_CFG)
+    cfg.update(overrides)
+    torch.manual_seed(1234)
+    ref = INSTNCT(**cfg, embed_mode=embed_mode)
+    torch.manual_seed(1234)
+    fast = INSTNCT(**cfg, embed_mode=embed_mode)
+    fast.load_state_dict(ref.state_dict())
+    ref._fastpath_mode = 'off'
+    fast._fastpath_mode = 'force'
+    return ref, fast
+
+
+def test_fastpath_auto_uses_specialized_chunk(monkeypatch):
+    """Supported nightly configs should dispatch to the single-expert fast path."""
+    model = INSTNCT(**FASTPATH_CFG, embed_mode=True)
+    model._process_chunk_generic = lambda *args, **kwargs: (_ for _ in ()).throw(
+        AssertionError('generic chunk path should not run for supported auto fast path')
+    )
+
+    x = torch.randint(0, 256, (2, 8))
+    out, state = model(x)
+
+    assert out.shape == (2, 8, 256)
+    assert state['ring'].shape == (2, 32, 16)
+
+
+@pytest.mark.parametrize(
+    'overrides',
+    [
+        {'N': 2},
+        {'R': 2},
+        {'bb_enabled': True},
+        {'mtaps_enabled': True, 'mtaps_lags': (1, 2)},
+        {'N': 2, 'io_split_mode': 'strict', 'io_writer_count': 1},
+        {'replace_impl': 'proxy_overlay'},
+        {'gated_write': True},
+        {'read_kernel_mode': 'topk'},
+    ],
+)
+def test_fastpath_auto_falls_back_for_unsupported_shapes(monkeypatch, overrides):
+    """Unsupported configs must stay on the generic path under auto mode."""
+    cfg = dict(FASTPATH_CFG)
+    cfg.update(overrides)
+    model = INSTNCT(**cfg, embed_mode=True)
+    model._process_chunk_fast_n1_seqreplace = lambda *args, **kwargs: (_ for _ in ()).throw(
+        AssertionError('fast path should not run for unsupported config')
+    )
+
+    x = torch.randint(0, 256, (2, 8))
+    out, state = model(x)
+
+    assert model._fastpath_reason() is not None
+    assert out.shape[0] == 2
+    assert state['ptr'].shape[0] == cfg['N']
+
+
+def test_fastpath_force_rejects_unsupported_config():
+    """Force mode must fail loudly when the narrow nightly predicate is false."""
+    model = INSTNCT(**FASTPATH_CFG, embed_mode=True, bb_enabled=True)
+    model._fastpath_mode = 'force'
+
+    with pytest.raises(RuntimeError, match='bb_enabled=true'):
+        model(torch.randint(0, 256, (2, 8)))
+
+
+def test_fastpath_parity_eager_backward_embed():
+    """Force fast path must match generic outputs, states, and grads in training mode."""
+    ref, fast = _make_fastpath_pair(embed_mode=True)
+    x = torch.randint(0, 256, (2, 8))
+
+    ref_out, ref_state = ref(x)
+    fast_out, fast_state = fast(x)
+    assert torch.allclose(ref_out, fast_out, atol=1e-6, rtol=1e-5)
+    _assert_state_close(ref_state, fast_state)
+
+    ref_loss = ref_out.square().mean()
+    fast_loss = fast_out.square().mean()
+    ref_loss.backward()
+    fast_loss.backward()
+
+    for (ref_name, ref_param), (fast_name, fast_param) in zip(ref.named_parameters(), fast.named_parameters()):
+        assert ref_name == fast_name
+        if ref_param.grad is None or fast_param.grad is None:
+            assert ref_param.grad is None and fast_param.grad is None, ref_name
+            continue
+        assert torch.allclose(ref_param.grad, fast_param.grad, atol=1e-6, rtol=1e-5), ref_name
+
+
+def test_fastpath_parity_no_grad_binary():
+    """Binary-mode inference should remain numerically identical under the fast path."""
+    ref, fast = _make_fastpath_pair(embed_mode=False)
+    x = to_bits(torch.randint(0, 256, (2, 8)))
+
+    with torch.no_grad():
+        ref_out, ref_state = ref(x)
+        fast_out, fast_state = fast(x)
+
+    assert torch.allclose(ref_out, fast_out, atol=1e-6, rtol=1e-5)
+    _assert_state_close(ref_state, fast_state)
+
+
+def test_fastpath_parity_chunk_compile_identity(monkeypatch):
+    """Chunk-compiled dispatch should preserve the same results as the generic path."""
+    monkeypatch.setattr(torch, 'compile', lambda fn, mode=None: fn, raising=False)
+    ref, fast = _make_fastpath_pair(embed_mode=True)
+    for model in (ref, fast):
+        model._compile_mode = 'chunk'
+        model._compile_chunks = True
+        model.compile_chunk_size = 4
+
+    x = torch.randint(0, 256, (2, 8))
+    ref_out, ref_state = ref(x)
+    fast_out, fast_state = fast(x)
+
+    assert torch.allclose(ref_out, fast_out, atol=1e-6, rtol=1e-5)
+    _assert_state_close(ref_state, fast_state)
+
+
+def test_fastpath_parity_sequential_carry():
+    """Carry-over state across consecutive batches must stay identical."""
+    ref, fast = _make_fastpath_pair(embed_mode=True)
+    x0 = torch.randint(0, 256, (2, 8))
+    x1 = torch.randint(0, 256, (2, 8))
+
+    ref_out0, ref_state0 = ref(x0)
+    fast_out0, fast_state0 = fast(x0)
+    assert torch.allclose(ref_out0, fast_out0, atol=1e-6, rtol=1e-5)
+    _assert_state_close(ref_state0, fast_state0)
+
+    ref_out1, ref_state1 = ref(x1, state=_clone_state(ref_state0))
+    fast_out1, fast_state1 = fast(x1, state=_clone_state(fast_state0))
+    assert torch.allclose(ref_out1, fast_out1, atol=1e-6, rtol=1e-5)
+    _assert_state_close(ref_state1, fast_state1)

@@ -682,8 +682,10 @@ class INSTNCT(nn.Module):
         self._compile_chunks: bool = False
         self._compiled_chunk_fn = None
         self._compiled_chunk_size = None
+        self._compiled_chunk_target = None
         self.compile_chunk_size = 32
         self._disable_proxy_overlay_for_compile = False
+        self._fastpath_mode = 'auto'
         self.expert_weighting = expert_weighting
         self._proxy_overlay_flush_interval = 16
         self._proxy_overlay_cap = 18
@@ -740,6 +742,9 @@ class INSTNCT(nn.Module):
         else:
             self.register_buffer('_writer_mask', torch.zeros(N, dtype=torch.bool))
             self.register_buffer('_reader_mask', torch.ones(N, dtype=torch.bool))
+        self._strict_reader_idx = tuple(
+            int(j) for j in self._reader_mask.nonzero(as_tuple=False).flatten().tolist()
+        )
 
         self.embed_encoding = embed_encoding
         self.output_encoding = output_encoding
@@ -1029,10 +1034,256 @@ class INSTNCT(nn.Module):
         self._diag = d
         return d
 
+    def _project_output_hidden(self, mean_hidden):
+        """Project a hidden state tensor into the model's output space."""
+        if self._bitlift_out:
+            bit_scores = torch.tanh(self.out(mean_hidden))
+            return bit_scores @ self._bit_patterns.T
+        if self.out is not None:
+            return self.out(mean_hidden)
+        return mean_hidden @ self._fixed_output_table.T
+
+    def _fastpath_reason(self):
+        """Return None when the narrow nightly fast path is supported, else a reason."""
+        checks = (
+            (self.N == 1, f'N={self.N}'),
+            (self.R == 1, f'R={self.R}'),
+            (self.pointer_mode == 'sequential', f'pointer_mode={self.pointer_mode!r}'),
+            (self.pointer_interp_mode == 'off', f'pointer_interp_mode={self.pointer_interp_mode!r}'),
+            (self.pointer_seam_mode == 'mod', f'pointer_seam_mode={self.pointer_seam_mode!r}'),
+            (self.io_split_mode == 'off', f'io_split_mode={self.io_split_mode!r}'),
+            (self.write_mode == 'replace', f'write_mode={self.write_mode!r}'),
+            (self.replace_impl == 'dense', f'replace_impl={self.replace_impl!r}'),
+            (self.write_address_mode == 'pointer', f'write_address_mode={self.write_address_mode!r}'),
+            (not self.bb_enabled, 'bb_enabled=true'),
+            (not self.mtaps_enabled, 'mtaps_enabled=true'),
+            (not self.gated_write, 'gated_write=true'),
+            (self.read_kernel_mode == 'vshape', f'read_kernel_mode={self.read_kernel_mode!r}'),
+        )
+        for ok, reason in checks:
+            if not ok:
+                return reason
+        return None
+
     def _process_chunk(self, x_chunk, ring_tns, ptr_tns, hidden_tns,
                        bb_buf, bb_keys, bb_write_ptr, bb_steps,
                        S_flt, probs_lst, offsets_long, expert_weights,
                        topk_write_weights=None):
+        reason = self._fastpath_reason()
+        if self._fastpath_mode == 'force':
+            if reason is not None:
+                raise RuntimeError(f'Nightly fast path unavailable: {reason}')
+            return self._process_chunk_fast_n1_seqreplace(
+                x_chunk, ring_tns, ptr_tns, hidden_tns,
+                bb_buf, bb_keys, bb_write_ptr, bb_steps,
+                S_flt, probs_lst, offsets_long, expert_weights,
+                topk_write_weights=topk_write_weights,
+            )
+        if self._fastpath_mode == 'auto' and reason is None:
+            return self._process_chunk_fast_n1_seqreplace(
+                x_chunk, ring_tns, ptr_tns, hidden_tns,
+                bb_buf, bb_keys, bb_write_ptr, bb_steps,
+                S_flt, probs_lst, offsets_long, expert_weights,
+                topk_write_weights=topk_write_weights,
+            )
+        return self._process_chunk_generic(
+            x_chunk, ring_tns, ptr_tns, hidden_tns,
+            bb_buf, bb_keys, bb_write_ptr, bb_steps,
+            S_flt, probs_lst, offsets_long, expert_weights,
+            topk_write_weights=topk_write_weights,
+        )
+
+    def _process_chunk_fast_n1_seqreplace(self, x_chunk, ring_tns, ptr_tns, hidden_tns,
+                                          bb_buf, bb_keys, bb_write_ptr, bb_steps,
+                                          S_flt, probs_lst, offsets_long, expert_weights,
+                                          topk_write_weights=None):
+        """Single-expert fast path for the validated nightly production shape."""
+        del probs_lst, topk_write_weights
+
+        M, slot_dim = self.M, self.slot_dim
+        ptr0 = ptr_tns[0].clone()
+        hidden0 = hidden_tns[0]
+        B, C = x_chunk.shape[:2]
+        outs_tns = None
+        compile_active = self._compile_mode in ('full', 'chunk') and torch.is_grad_enabled()
+        eager_diag_enabled = self._diag_enabled and not compile_active
+        core_diag_enabled = self._diag_enabled and compile_active
+        core_diag_expert_tns = ring_tns.new_zeros((1, _COMPILE_DIAG_EXPERT_WIDTH))
+        core_diag_global_tns = ring_tns.new_zeros((_COMPILE_DIAG_GLOBAL_WIDTH,))
+        ring_trace = None
+        if _RING_TRACE_ENABLED:
+            ring_trace = {
+                'ptr_trace': [],
+                'read_idx_trace': [],
+                'read_weight_trace': [],
+                'tap_idx_trace': [],
+                'write_idx_trace': [],
+                'write_weight_trace': [],
+                'read_write_overlap_trace': [],
+                'center_hist': torch.zeros(M, dtype=torch.long),
+                'read_hist': torch.zeros(M, dtype=torch.long),
+                'tap_hist': torch.zeros(M, dtype=torch.long),
+                'write_hist': torch.zeros(M, dtype=torch.long),
+            }
+
+        base_weights_tns = expert_weights[0].unsqueeze(0).expand(B, -1)
+        if self._bitlift:
+            _bit_shifts = torch.arange(7, -1, -1, device=x_chunk.device)
+
+        for t in range(C):
+            if self.inp is not None:
+                if self._bitlift:
+                    byte_val = x_chunk[:, t]
+                    bits = ((byte_val.unsqueeze(-1) >> _bit_shifts) & 1).float()
+                    input_vec_tns = _c19_activation(
+                        self.inp(bits),
+                        rho=_rho_from_raw(self.c19_rho_input),
+                        C=_C_from_raw(self.c19_C_input),
+                    )
+                else:
+                    input_vec_tns = self.inp(x_chunk[:, t])
+            else:
+                input_vec_tns = self._fixed_table[x_chunk[:, t]]
+
+            with _source_scope('window_prepare'):
+                center = ptr0.long().clamp(0, M - 1)
+                indices_tns = (center.unsqueeze(1) + offsets_long) % M
+                weights_tns = base_weights_tns
+            with _source_scope('softread'):
+                read_vec_tns, expanded_idx_tns = func_softread_tns(
+                    ring_tns,
+                    indices_tns,
+                    weights_tns,
+                    slot_dim,
+                )
+
+            if ring_trace is not None:
+                ptr_sample = int(center[0].detach().item())
+                read_idx_sample = [int(x) for x in indices_tns[0].detach().tolist()]
+                read_weight_sample = [float(x) for x in weights_tns[0].detach().tolist()]
+                ring_trace['ptr_trace'].append(ptr_sample)
+                ring_trace['read_idx_trace'].append(read_idx_sample)
+                ring_trace['read_weight_trace'].append(read_weight_sample)
+                ring_trace['tap_idx_trace'].append([])
+                ring_trace['write_idx_trace'].append(read_idx_sample)
+                ring_trace['write_weight_trace'].append(read_weight_sample)
+                ring_trace['read_write_overlap_trace'].append(1.0)
+                ring_trace['center_hist'] += torch.bincount(center.detach().cpu(), minlength=M)
+                flat_idx = indices_tns.detach().reshape(-1).cpu()
+                ring_trace['read_hist'] += torch.bincount(flat_idx, minlength=M)
+                ring_trace['write_hist'] += torch.bincount(flat_idx, minlength=M)
+
+            theta_tns = (ptr0 / M) * (2 * math.pi)
+            phase_tns = (
+                torch.cos(theta_tns).unsqueeze(-1) * self.phase_cos
+                + torch.sin(theta_tns).unsqueeze(-1) * self.phase_sin
+            )
+
+            ring_signal = self.read_proj[0](read_vec_tns)
+            if S_flt == 'dotprod':
+                cos_sim = F.cosine_similarity(input_vec_tns, ring_signal, dim=-1).unsqueeze(-1)
+                alpha = torch.sigmoid(self.gate_tau * cos_sim)
+                blended_ring = alpha * ring_signal
+                if eager_diag_enabled:
+                    d = self._diag
+                    a = alpha.detach()
+                    d['alpha_0_mean'] = a.mean().item()
+                    d['alpha_0_min'] = a.min().item()
+                    d['alpha_0_max'] = a.max().item()
+                    d['input_norm_0'] = input_vec_tns.detach().norm(dim=-1).mean().item()
+                    d['ring_signal_norm_0'] = ring_signal.detach().norm(dim=-1).mean().item()
+                    d['blended_norm_0'] = blended_ring.detach().norm(dim=-1).mean().item()
+                    d['hidden_norm_0'] = hidden0.detach().norm(dim=-1).mean().item()
+                    d['ptr_pos_0'] = ptr0.detach().float().mean().item()
+                elif core_diag_enabled:
+                    a = alpha.detach()
+                    core_diag_expert_tns[0, _COMPILE_DIAG_ALPHA_MEAN] = a.mean()
+                    core_diag_expert_tns[0, _COMPILE_DIAG_ALPHA_MIN] = a.min()
+                    core_diag_expert_tns[0, _COMPILE_DIAG_ALPHA_MAX] = a.max()
+                    core_diag_expert_tns[0, _COMPILE_DIAG_INPUT_NORM] = input_vec_tns.detach().norm(dim=-1).mean()
+                    core_diag_expert_tns[0, _COMPILE_DIAG_RING_SIGNAL_NORM] = ring_signal.detach().norm(dim=-1).mean()
+                    core_diag_expert_tns[0, _COMPILE_DIAG_BLENDED_NORM] = blended_ring.detach().norm(dim=-1).mean()
+                    core_diag_expert_tns[0, _COMPILE_DIAG_HIDDEN_NORM] = hidden0.detach().norm(dim=-1).mean()
+                    core_diag_expert_tns[0, _COMPILE_DIAG_PTR_POS] = ptr0.detach().float().mean()
+            else:
+                blended_ring = S_flt * ring_signal
+
+            hidden0 = _c19_activation(
+                input_vec_tns + blended_ring + phase_tns + hidden0,
+                rho=_rho_from_raw(self.c19_rho_hidden),
+                C=_C_from_raw(self.c19_C_hidden),
+            )
+
+            with _source_scope('write_prepare'):
+                if self.write_proj is not None:
+                    write_vec = self.write_proj[0](hidden0)
+                else:
+                    write_vec = hidden0
+                if self._expert_conf is not None:
+                    write_vec = self._expert_conf[0] * write_vec
+                ws = torch.sigmoid(self.write_gate[0](hidden0))
+            with _source_scope('write_replace'):
+                ring_tns = func_hdd_write_tns(
+                    ring_tns,
+                    write_vec,
+                    expanded_idx_tns,
+                    weights_tns,
+                    write_strength=ws,
+                )
+            with _source_scope('pointer_update'):
+                ptr0 = (ptr0 + 1) % M
+            with _source_scope('output_head'):
+                step_out = self._project_output_hidden(hidden0)
+                if outs_tns is None:
+                    outs_tns = step_out.new_empty((B, C, step_out.shape[-1]))
+                outs_tns[:, t] = step_out
+
+        hidden_tns = hidden0.unsqueeze(0)
+        ptr_tns = ptr0.unsqueeze(0)
+
+        if eager_diag_enabled:
+            d = self._diag
+            d['ring_norm'] = ring_tns.detach().norm().item()
+            d['ring_slot_mean'] = ring_tns.detach().norm(dim=-1).mean().item()
+            d['hidden_final_norm_0'] = hidden0.detach().norm(dim=-1).mean().item()
+        elif core_diag_enabled:
+            core_diag_global_tns[_COMPILE_DIAG_RING_NORM] = ring_tns.detach().norm()
+            core_diag_global_tns[_COMPILE_DIAG_RING_SLOT_MEAN] = ring_tns.detach().norm(dim=-1).mean()
+            core_diag_expert_tns[0, _COMPILE_DIAG_HIDDEN_FINAL_NORM] = hidden0.detach().norm(dim=-1).mean()
+        if ring_trace is not None:
+            self._ring_trace = {
+                'ptr_trace': ring_trace['ptr_trace'],
+                'read_idx_trace': ring_trace['read_idx_trace'],
+                'read_weight_trace': ring_trace['read_weight_trace'],
+                'tap_idx_trace': ring_trace['tap_idx_trace'],
+                'write_idx_trace': ring_trace['write_idx_trace'],
+                'write_weight_trace': ring_trace['write_weight_trace'],
+                'read_write_overlap_trace': ring_trace['read_write_overlap_trace'],
+                'center_hist': ring_trace['center_hist'].tolist(),
+                'read_hist': ring_trace['read_hist'].tolist(),
+                'tap_hist': ring_trace['tap_hist'].tolist(),
+                'write_hist': ring_trace['write_hist'].tolist(),
+            }
+        else:
+            self._ring_trace = None
+
+        return (
+            ring_tns,
+            ptr_tns,
+            hidden_tns,
+            bb_buf,
+            bb_keys,
+            bb_write_ptr,
+            bb_steps,
+            outs_tns,
+            core_diag_expert_tns,
+            core_diag_global_tns,
+        )
+
+    def _process_chunk_generic(self, x_chunk, ring_tns, ptr_tns, hidden_tns,
+                               bb_buf, bb_keys, bb_write_ptr, bb_steps,
+                               S_flt, probs_lst, offsets_long, expert_weights,
+                               topk_write_weights=None):
         """Process C timesteps of the T×N loop.
 
         Extracted from forward() so the same code serves both the
@@ -1070,7 +1321,7 @@ class INSTNCT(nn.Module):
         hidden_lst = [hidden_tns[i] for i in range(N)]
 
         C = x_chunk.shape[1]  # chunk length (may be < checkpoint_chunks for the last chunk)
-        outs_lst = []
+        outs_tns = None
         compile_active = self._compile_mode in ('full', 'chunk') and torch.is_grad_enabled()
         eager_diag_enabled = self._diag_enabled and not compile_active
         core_diag_enabled = self._diag_enabled and compile_active
@@ -1706,22 +1957,21 @@ class INSTNCT(nn.Module):
             # ── Hourglass: reader-only output ──
             with _source_scope('output_head'):
                 if self.io_split_mode == 'strict' and self.io_output_from_readers_only:
-                    reader_idx = self._reader_mask.nonzero(as_tuple=False).flatten().tolist()
-                    mean_hidden = torch.stack([hidden_lst[j] for j in reader_idx]).mean(0)
+                    mean_hidden = torch.stack([hidden_lst[j] for j in self._strict_reader_idx]).mean(0)
+                elif N == 1:
+                    mean_hidden = hidden_lst[0]
                 else:
                     mean_hidden = torch.stack(hidden_lst).mean(0)       # (B, hidden_dim)
-                if self._bitlift_out:
-                    bit_scores = torch.tanh(self.out(mean_hidden))   # (B, 8)
-                    outs_lst.append(bit_scores @ self._bit_patterns.T)  # (B, 8) @ (8, 256) → (B, 256)
-                elif self.out is not None:
-                    outs_lst.append(self.out(mean_hidden))           # nn.Linear
-                else:
-                    outs_lst.append(mean_hidden @ self._fixed_output_table.T)  # (B, 256)
+                step_out = self._project_output_hidden(mean_hidden)
+                if outs_tns is None:
+                    outs_tns = step_out.new_empty((input_vec_tns.shape[0], C, step_out.shape[-1]))
+                outs_tns[:, t] = step_out
 
         # Repack hidden states and stack outputs
-        hidden_tns = torch.stack(hidden_lst)       # (N, B, hidden_dim)
-        with _source_scope('output_head'):
-            outs_tns = torch.stack(outs_lst, dim=1)    # (B, C, vocab_size)
+        if N == 1:
+            hidden_tns = hidden_lst[0].unsqueeze(0)
+        else:
+            hidden_tns = torch.stack(hidden_lst)       # (N, B, hidden_dim)
 
         if proxy_overlay_enabled and overlay_len_int > 0:
             with _source_scope('write_replace'):
@@ -1846,7 +2096,8 @@ class INSTNCT(nn.Module):
         M, hidden_dim, slot_dim, N = self.M, self.hidden_dim, self.slot_dim, self.N
         if probs is None:
             probs = [0.5]
-        self._diag.clear()
+        if self._diag_enabled:
+            self._diag.clear()
         topk_diag_sum_dist = 0.0
         topk_diag_sum_outside = 0.0
         topk_diag_sum_entropy = 0.0
@@ -1937,10 +2188,26 @@ class INSTNCT(nn.Module):
         use_compile = active_compile_mode == 'chunk'
         if use_compile:
             C = getattr(self, 'compile_chunk_size', 32)
-            if self._compiled_chunk_fn is None or self._compiled_chunk_size != C:
+            compile_target_name = '_process_chunk'
+            compile_target = self._process_chunk
+            fastpath_reason = self._fastpath_reason()
+            if self._fastpath_mode == 'force':
+                if fastpath_reason is not None:
+                    raise RuntimeError(f'Nightly fast path unavailable: {fastpath_reason}')
+                compile_target_name = '_process_chunk_fast_n1_seqreplace'
+                compile_target = self._process_chunk_fast_n1_seqreplace
+            elif self._fastpath_mode == 'auto' and fastpath_reason is None:
+                compile_target_name = '_process_chunk_fast_n1_seqreplace'
+                compile_target = self._process_chunk_fast_n1_seqreplace
+            if (
+                self._compiled_chunk_fn is None
+                or self._compiled_chunk_size != C
+                or self._compiled_chunk_target != compile_target_name
+            ):
                 self._compiled_chunk_fn = torch.compile(
-                    self._process_chunk, mode='reduce-overhead')
+                    compile_target, mode='reduce-overhead')
                 self._compiled_chunk_size = C
+                self._compiled_chunk_target = compile_target_name
         else:
             C = self.checkpoint_chunks
         use_ckpt = C > 0 and torch.is_grad_enabled() and active_compile_mode == 'eager'
