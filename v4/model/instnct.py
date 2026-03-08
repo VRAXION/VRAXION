@@ -47,7 +47,7 @@ def _c19_activation(x, rho=4.0, C=None):
     t = scaled - n
     h = t * (1.0 - t)
     is_even = torch.remainder(n, 2.0) < 1.0
-    sgn = torch.where(is_even, torch.ones_like(x), -torch.ones_like(x))
+    sgn = torch.where(is_even, 1.0, -1.0)
     core = C * (sgn * h + (rho * h * h))
     return torch.where(x >= l, x - l, torch.where(x <= -l, x + l, core))
 
@@ -586,7 +586,8 @@ class INSTNCT(nn.Module):
                  pointer_seam_mode='mod',                  # 'mod' | 'shortest_arc' — nightly-only wrap-seam fix
                  mtaps_enabled=False,                      # nightly-only multi-timescale taps
                  mtaps_lags=(1, 2, 4, 8, 16, 32),          # lag taps, kept separate then mixed
-                mtaps_mixer_mode='current',               # 'current' | 'tap_scalar_gate' | 'residual_gated' | 'hybrid_heads_scalar_gate' | 'hybrid_heads_spaced_scalar_gate'
+                 mtaps_mixer_mode='current',               # 'current' | 'tap_scalar_gate' | 'residual_gated' | 'hybrid_heads_scalar_gate' | 'hybrid_heads_spaced_scalar_gate' | 'hybrid_heads_fixed_scalar_gate'
+                 mtaps_aux_fixed_offsets=(),               # nightly-only fixed auxiliary read heads, pointer-relative
                  s_constraint='softplus'):                 # 'softplus' (S>0) | 'raw' (unconstrained)
         super().__init__()
         assert kernel_mode in ('uniform', 'vshape', 'gaussian', 'dotprod', 'topk'), \
@@ -609,8 +610,15 @@ class INSTNCT(nn.Module):
             f"pointer_seam_mode must be 'mod' or 'shortest_arc', got '{pointer_seam_mode}'"
         assert write_address_mode in ('pointer', 'content_topk'), \
             f"write_address_mode must be 'pointer' or 'content_topk', got '{write_address_mode}'"
-        assert mtaps_mixer_mode in ('current', 'tap_scalar_gate', 'residual_gated', 'hybrid_heads_scalar_gate', 'hybrid_heads_spaced_scalar_gate'), \
-            f"mtaps_mixer_mode must be 'current', 'tap_scalar_gate', 'residual_gated', 'hybrid_heads_scalar_gate', or 'hybrid_heads_spaced_scalar_gate', got '{mtaps_mixer_mode}'"
+        assert mtaps_mixer_mode in (
+            'current',
+            'tap_scalar_gate',
+            'residual_gated',
+            'hybrid_heads_scalar_gate',
+            'hybrid_heads_spaced_scalar_gate',
+            'hybrid_heads_fixed_scalar_gate',
+        ), \
+            f"mtaps_mixer_mode must be 'current', 'tap_scalar_gate', 'residual_gated', 'hybrid_heads_scalar_gate', 'hybrid_heads_spaced_scalar_gate', or 'hybrid_heads_fixed_scalar_gate', got '{mtaps_mixer_mode}'"
         if mtaps_enabled:
             if read_kernel_mode == 'topk':
                 raise ValueError("mtaps_enabled requires a local read path, not pooled topk")
@@ -619,12 +627,23 @@ class INSTNCT(nn.Module):
             mtaps_lags = tuple(sorted({int(x) for x in mtaps_lags}))
             if any(x <= 0 for x in mtaps_lags):
                 raise ValueError(f"mtaps_lags must be positive integers, got {mtaps_lags!r}")
+        mtaps_aux_fixed_offsets = tuple(int(x) for x in mtaps_aux_fixed_offsets)
+        if mtaps_mixer_mode == 'hybrid_heads_fixed_scalar_gate':
+            if len(mtaps_aux_fixed_offsets) != 2:
+                raise ValueError(
+                    "hybrid_heads_fixed_scalar_gate requires exactly 2 mtaps_aux_fixed_offsets"
+                )
+            if any(x <= 0 for x in mtaps_aux_fixed_offsets):
+                raise ValueError(
+                    f"mtaps_aux_fixed_offsets must be positive integers, got {mtaps_aux_fixed_offsets!r}"
+                )
         self.write_mode = write_mode
         self.replace_impl = replace_impl
         self.pointer_interp_mode = pointer_interp_mode
         self.pointer_seam_mode = pointer_seam_mode
         self.mtaps_enabled = bool(mtaps_enabled)
         self.mtaps_mixer_mode = mtaps_mixer_mode
+        self._mtaps_aux_fixed_offsets = mtaps_aux_fixed_offsets
 
         # backward compat: embed_dim=X sets hidden_dim=slot_dim=X
         if embed_dim is not None:
@@ -753,8 +772,12 @@ class INSTNCT(nn.Module):
         if self.mtaps_enabled:
             self.register_buffer('_mtaps_lags_tns', torch.tensor(self._mtaps_lags, dtype=torch.long))
             n_taps = len(self._mtaps_lags)
-            aux_heads = 2 if mtaps_mixer_mode in ('hybrid_heads_scalar_gate', 'hybrid_heads_spaced_scalar_gate') else 0
-            if mtaps_mixer_mode in ('current', 'tap_scalar_gate', 'hybrid_heads_scalar_gate', 'hybrid_heads_spaced_scalar_gate'):
+            aux_heads = 2 if mtaps_mixer_mode in (
+                'hybrid_heads_scalar_gate',
+                'hybrid_heads_spaced_scalar_gate',
+                'hybrid_heads_fixed_scalar_gate',
+            ) else 0
+            if mtaps_mixer_mode in ('current', 'tap_scalar_gate', 'hybrid_heads_scalar_gate', 'hybrid_heads_spaced_scalar_gate', 'hybrid_heads_fixed_scalar_gate'):
                 self.read_tap_proj = nn.ModuleList([
                     nn.Linear(slot_dim * (1 + n_taps + aux_heads), hidden_dim) for _ in range(N)
                 ])
@@ -787,6 +810,19 @@ class INSTNCT(nn.Module):
                 self.read_tap_delta_proj = None
                 self.read_tap_resid_gate = None
                 self.register_buffer('_mtaps_aux_ranges_tns', torch.tensor([16.0, 64.0], dtype=torch.float32))
+                self.register_buffer('_mtaps_aux_fixed_offsets_tns', torch.tensor([], dtype=torch.float32))
+            elif mtaps_mixer_mode == 'hybrid_heads_fixed_scalar_gate':
+                self.read_tap_gate = nn.ModuleList([
+                    nn.Linear(hidden_dim, 1 + n_taps + len(mtaps_aux_fixed_offsets)) for _ in range(N)
+                ])
+                for gate in self.read_tap_gate:
+                    nn.init.zeros_(gate.weight)
+                    nn.init.zeros_(gate.bias)
+                self.read_tap_aux_offset = None
+                self.read_tap_delta_proj = None
+                self.read_tap_resid_gate = None
+                self.register_buffer('_mtaps_aux_ranges_tns', torch.tensor([], dtype=torch.float32))
+                self.register_buffer('_mtaps_aux_fixed_offsets_tns', torch.tensor(mtaps_aux_fixed_offsets, dtype=torch.float32))
             elif mtaps_mixer_mode == 'residual_gated':
                 self.read_tap_gate = nn.ModuleList([
                     nn.Linear(hidden_dim, n_taps) for _ in range(N)
@@ -805,12 +841,14 @@ class INSTNCT(nn.Module):
                     nn.init.zeros_(resid_gate.bias)
                 self.read_tap_aux_offset = None
                 self.register_buffer('_mtaps_aux_ranges_tns', torch.tensor([], dtype=torch.float32))
+                self.register_buffer('_mtaps_aux_fixed_offsets_tns', torch.tensor([], dtype=torch.float32))
             else:
                 self.read_tap_gate = None
                 self.read_tap_delta_proj = None
                 self.read_tap_resid_gate = None
                 self.read_tap_aux_offset = None
                 self.register_buffer('_mtaps_aux_ranges_tns', torch.tensor([], dtype=torch.float32))
+                self.register_buffer('_mtaps_aux_fixed_offsets_tns', torch.tensor([], dtype=torch.float32))
         else:
             self.register_buffer('_mtaps_lags_tns', torch.tensor([], dtype=torch.long))
             self.read_tap_proj = None
@@ -819,6 +857,7 @@ class INSTNCT(nn.Module):
             self.read_tap_resid_gate = None
             self.read_tap_aux_offset = None
             self.register_buffer('_mtaps_aux_ranges_tns', torch.tensor([], dtype=torch.float32))
+            self.register_buffer('_mtaps_aux_fixed_offsets_tns', torch.tensor([], dtype=torch.float32))
 
         # query_proj: hidden_dim → slot_dim (content-based attention query per expert)
         # created for dotprod/topk reads only — pilot uses its own ptr_query (smaller dim)
@@ -1177,10 +1216,13 @@ class INSTNCT(nn.Module):
                         )
                         tap_expanded_idx_tns = tap_idx_src.unsqueeze(-1).expand(-1, -1, slot_dim)
                         tap_neighbors_tns = ring_tns.gather(1, tap_expanded_idx_tns)
-                        if self.mtaps_mixer_mode in ('hybrid_heads_scalar_gate', 'hybrid_heads_spaced_scalar_gate'):
+                        if self.mtaps_mixer_mode in ('hybrid_heads_scalar_gate', 'hybrid_heads_spaced_scalar_gate', 'hybrid_heads_fixed_scalar_gate'):
                             base_weights_tns = expert_weights[i].unsqueeze(0).expand(input_vec_tns.shape[0], -1)
-                            aux_offset_logits_tns = self.read_tap_aux_offset[i](hidden_lst[i])
-                            aux_offsets_tns = torch.tanh(aux_offset_logits_tns) * self._mtaps_aux_ranges_tns.unsqueeze(0)
+                            if self.mtaps_mixer_mode == 'hybrid_heads_fixed_scalar_gate':
+                                aux_offsets_tns = -self._mtaps_aux_fixed_offsets_tns.unsqueeze(0).expand(input_vec_tns.shape[0], -1)
+                            else:
+                                aux_offset_logits_tns = self.read_tap_aux_offset[i](hidden_lst[i])
+                                aux_offsets_tns = torch.tanh(aux_offset_logits_tns) * self._mtaps_aux_ranges_tns.unsqueeze(0)
                             if self.mtaps_mixer_mode == 'hybrid_heads_spaced_scalar_gate':
                                 # Hard-space the two learned heads:
                                 # head 0 stays near/medium, head 1 is forced to remain
@@ -1353,7 +1395,7 @@ class INSTNCT(nn.Module):
                             self._diag[f'mtap_gate_mean_by_lag_{i}'] = tap_gate_norm.detach().mean(dim=0).cpu().tolist()
                             self._diag[f'mtap_gate_max_frac_{i}'] = tap_gate_norm.detach().max(dim=-1).values.mean().item()
                             self._diag[f'mtap_gate_entropy_{i}'] = (-(probs_safe * probs_safe.log()).sum(dim=-1).mean().item())
-                    elif self.mtaps_mixer_mode in ('hybrid_heads_scalar_gate', 'hybrid_heads_spaced_scalar_gate'):
+                    elif self.mtaps_mixer_mode in ('hybrid_heads_scalar_gate', 'hybrid_heads_spaced_scalar_gate', 'hybrid_heads_fixed_scalar_gate'):
                         gate_logits = self.read_tap_gate[i](hidden_lst[i])  # (B, 1+K+2)
                         gate_vals = torch.sigmoid(gate_logits)
                         main_gate = gate_vals[:, :1]
