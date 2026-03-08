@@ -133,8 +133,6 @@ SURFACES: dict[str, dict] = {
         "pooled_topk_read": True,
         "eval_steps": 64,
     },
-}
-
     # ── Upgraded surfaces (2026-03-08): linear pointer interp + shortest_arc seam ──
     "wikitext_sequential_carry_v2": {
         "state_mode": "carry",
