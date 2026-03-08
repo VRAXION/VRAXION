@@ -23,6 +23,9 @@ Key principles:
 
 Current status lives in the [Roadmap](https://github.com/VRAXION/VRAXION/wiki/Chapter-11---Roadmap) and [Releases](https://github.com/VRAXION/VRAXION/releases). See [CHANGELOG.md](CHANGELOG.md) for version history.
 
+Latest internal experiment note:
+- [C19 Weekly Status — 2026-03-05](docs/runbooks/c19_weekly_status_2026-03-05.md)
+
 ## Diamond Code
 
 The active codebase lives in `Diamond Code/`. Key files:

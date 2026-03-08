@@ -34,7 +34,7 @@ for subdir in ('model', 'training', 'datagen'):
     if p not in sys.path:
         sys.path.insert(0, p)
 
-from instnct import INSTNCT, set_ring_trace_enabled, set_topk_read_diag_enabled
+from instnct import INSTNCT, set_ring_trace_enabled
 from tiny_transformer import TinyTransformer
 
 
@@ -142,25 +142,36 @@ def _summarize_ring_trace(trace, M):
         return None
     ptr_trace = trace['ptr_trace']
     read_idx_trace = trace['read_idx_trace']
+    tap_idx_trace = trace.get('tap_idx_trace', [])
     write_idx_trace = trace['write_idx_trace']
     overlap_trace = trace['read_write_overlap_trace']
     ptr_jump = []
     read_center_dist = []
+    tap_center_dist = []
     write_center_dist = []
     for i in range(1, len(ptr_trace)):
         ptr_jump.append(_circ_dist(ptr_trace[i - 1], ptr_trace[i], M))
-    for center, read_idx, write_idx in zip(ptr_trace, read_idx_trace, write_idx_trace):
+    for step_idx, (center, read_idx, write_idx) in enumerate(zip(ptr_trace, read_idx_trace, write_idx_trace)):
         if read_idx:
             read_center_dist.append(sum(_circ_dist(center, idx, M) for idx in read_idx) / len(read_idx))
+        if step_idx < len(tap_idx_trace):
+            tap_idx = tap_idx_trace[step_idx]
+            if tap_idx:
+                tap_center_dist.append(sum(_circ_dist(center, idx, M) for idx in tap_idx) / len(tap_idx))
         if write_idx:
             write_center_dist.append(sum(_circ_dist(center, idx, M) for idx in write_idx) / len(write_idx))
     return {
         'steps_traced': len(ptr_trace),
         'ptr_unique_frac': sum(1 for v in trace['center_hist'] if v > 0) / max(len(trace['center_hist']), 1),
         'read_unique_frac': sum(1 for v in trace['read_hist'] if v > 0) / max(len(trace['read_hist']), 1),
+        'tap_unique_frac': (
+            sum(1 for v in trace.get('tap_hist', []) if v > 0) / max(len(trace.get('tap_hist', [])), 1)
+            if trace.get('tap_hist') is not None else 0.0
+        ),
         'write_unique_frac': sum(1 for v in trace['write_hist'] if v > 0) / max(len(trace['write_hist']), 1),
         'ptr_jump_mean': (sum(ptr_jump) / len(ptr_jump)) if ptr_jump else 0.0,
         'read_center_dist_mean': (sum(read_center_dist) / len(read_center_dist)) if read_center_dist else 0.0,
+        'tap_center_dist_mean': (sum(tap_center_dist) / len(tap_center_dist)) if tap_center_dist else 0.0,
         'write_center_dist_mean': (sum(write_center_dist) / len(write_center_dist)) if write_center_dist else 0.0,
         'read_write_overlap_mean': (sum(overlap_trace) / len(overlap_trace)) if overlap_trace else 0.0,
     }
@@ -194,7 +205,7 @@ def _set_determinism(seed):
 #  TRAINING
 # ═══════════════════════════════════════════════════════════
 
-def fresh_state_eval(model, data, mask, seq, period, device, n_seqs=10):
+def fresh_state_eval(model, data, mask, seq, period, device, n_seqs=10, context_mode='dotprod'):
     """Evaluate with fresh state (no carry) — tests if model cheats via state.
 
     Picks a random start offset aligned to period boundary, runs n_seqs
@@ -218,7 +229,7 @@ def fresh_state_eval(model, data, mask, seq, period, device, n_seqs=10):
             x = data[:, pos:pos + seq]
             y = data[:, pos + 1:pos + seq + 1]
             m = mask[:, pos + 1:pos + seq + 1]
-            logits, _ = model(x, state=None)  # fresh state each time
+            logits, _ = model(x, S=context_mode, state=None)  # fresh state each time
             preds = logits.argmax(dim=-1)
             correct = (preds == y).float()
             all_correct += (correct * m).sum().item()
@@ -300,7 +311,9 @@ def run_one(N, period, steps, batch, seq, hidden_dim, M, slot_dim,
             model_type, device, io_split_mode='off', gated_write=False, lr=1e-3,
             log_every=100, seed=42, read_kernel_mode='vshape',
             write_address_mode='pointer', topk_k=2, ring_trace=False,
-            pointer_mode='sequential', pointer_interp_mode='off', pointer_seam_mode='mod'):
+            pointer_mode='sequential', pointer_interp_mode='off', pointer_seam_mode='mod',
+            mtaps_enabled=False, mtaps_lags=(1, 2, 4, 8, 16, 32),
+            context_mode='dotprod', heartbeat_cb=None):
     """Train one configuration and return results.
 
     Returns:
@@ -319,7 +332,6 @@ def run_one(N, period, steps, batch, seq, hidden_dim, M, slot_dim,
     # ── Create model ──
     if model_type == 'instnct':
         use_topk_diag = read_kernel_mode == 'topk' or write_address_mode == 'content_topk'
-        set_topk_read_diag_enabled(use_topk_diag)
         set_ring_trace_enabled(ring_trace)
         model = INSTNCT(
             M=M, hidden_dim=hidden_dim, slot_dim=slot_dim,
@@ -342,6 +354,8 @@ def run_one(N, period, steps, batch, seq, hidden_dim, M, slot_dim,
             write_topk_K=topk_k,
             pointer_interp_mode=pointer_interp_mode,
             pointer_seam_mode=pointer_seam_mode,
+            mtaps_enabled=mtaps_enabled,
+            mtaps_lags=mtaps_lags,
         ).to(device)
         split_tag = f' io={io_split_mode}' if io_split_mode != 'off' else ''
         gw_tag = ' gated_write' if gated_write else ''
@@ -350,9 +364,10 @@ def run_one(N, period, steps, batch, seq, hidden_dim, M, slot_dim,
         pm_tag = f' ptr={pointer_mode}'
         pi_tag = '' if pointer_interp_mode == 'off' else f' interp={pointer_interp_mode}'
         ps_tag = '' if pointer_seam_mode == 'mod' else f' seam={pointer_seam_mode}'
-        model_label = f'INSTNCT N={N}{split_tag}{gw_tag}{rk_tag}{wa_tag}{pm_tag}{pi_tag}{ps_tag}'
+        mt_tag = '' if not mtaps_enabled else f' mtaps={list(mtaps_lags)}'
+        model_label = f'INSTNCT N={N}{split_tag}{gw_tag}{rk_tag}{wa_tag}{pm_tag}{pi_tag}{ps_tag}{mt_tag}'
+        model._diag_enabled = use_topk_diag
     elif model_type == 'transformer':
-        set_topk_read_diag_enabled(False)
         set_ring_trace_enabled(False)
         model = TinyTransformer(
             embed_mode=True, d_model=64, n_layers=2, n_heads=2, d_ff=256,
@@ -393,14 +408,18 @@ def run_one(N, period, steps, batch, seq, hidden_dim, M, slot_dim,
             'ptr_trace': [],
             'read_idx_trace': [],
             'read_weight_trace': [],
+            'tap_idx_trace': [],
             'write_idx_trace': [],
             'write_weight_trace': [],
             'read_write_overlap_trace': [],
             'center_hist': [0 for _ in range(M)],
             'read_hist': [0 for _ in range(M)],
+            'tap_hist': [0 for _ in range(M)],
             'write_hist': [0 for _ in range(M)],
         }
     t0 = time.perf_counter()
+    if heartbeat_cb is not None:
+        heartbeat_cb('start', 0, steps, {'model_type': model_type, 'period': period})
 
     for step in range(1, steps + 1):
         # Update LR
@@ -414,7 +433,7 @@ def run_one(N, period, steps, batch, seq, hidden_dim, M, slot_dim,
         m = mask[:, pos + 1:pos + seq + 1]     # (B, seq) — supervision
 
         # Forward
-        logits, new_state = model(x, state=state)
+        logits, new_state = model(x, S=context_mode, state=state)
 
         # State carry (TBPTT for INSTNCT, None for transformer)
         if new_state is not None:
@@ -444,9 +463,9 @@ def run_one(N, period, steps, batch, seq, hidden_dim, M, slot_dim,
         if ring_trace_rows is not None:
             trace = getattr(model, '_ring_trace', None)
             if trace is not None:
-                for key in ('ptr_trace', 'read_idx_trace', 'read_weight_trace', 'write_idx_trace', 'write_weight_trace', 'read_write_overlap_trace'):
+                for key in ('ptr_trace', 'read_idx_trace', 'read_weight_trace', 'tap_idx_trace', 'write_idx_trace', 'write_weight_trace', 'read_write_overlap_trace'):
                     ring_trace_rows[key].extend(trace.get(key, []))
-                for key in ('center_hist', 'read_hist', 'write_hist'):
+                for key in ('center_hist', 'read_hist', 'tap_hist', 'write_hist'):
                     vals = trace.get(key, [])
                     ring_trace_rows[key] = [a + int(b) for a, b in zip(ring_trace_rows[key], vals)]
 
@@ -473,12 +492,23 @@ def run_one(N, period, steps, batch, seq, hidden_dim, M, slot_dim,
             print(f"  Step {step:5d} | echo_acc={acc*100:5.1f}% | "
                   f"loss={loss.item():.3f} | {elapsed:6.1f}s | "
                   f"sup={n_sup}{diag_suffix}")
+            if heartbeat_cb is not None:
+                heartbeat_cb(
+                    'progress',
+                    step,
+                    steps,
+                    {
+                        'echo_acc': float(acc),
+                        'loss': float(loss.item()),
+                        'elapsed_s': float(elapsed),
+                    },
+                )
 
     wall = time.perf_counter() - t0
     final_acc = history[-1][1] if history else 0.0
 
     # ── Post-training eval ──
-    fresh_acc = fresh_state_eval(model, data, mask, seq, period, device)
+    fresh_acc = fresh_state_eval(model, data, mask, seq, period, device, context_mode=context_mode)
     s0_acc = s_zero_probe(model, data, mask, seq, period, device) if model_type == 'instnct' else -1.0
 
     # ── Ring diagnostics ──
@@ -524,6 +554,9 @@ def run_one(N, period, steps, batch, seq, hidden_dim, M, slot_dim,
         'read_kernel_mode': read_kernel_mode,
         'write_address_mode': write_address_mode,
         'topk_k': topk_k,
+        'mtaps_enabled': bool(mtaps_enabled),
+        'mtaps_lags': list(mtaps_lags),
+        'context_mode': context_mode,
         'history': history,
         'topk_diag_means': diag_means,
         **ring_diag,
@@ -532,6 +565,16 @@ def run_one(N, period, steps, batch, seq, hidden_dim, M, slot_dim,
     if ring_trace_rows is not None:
         result['ring_trace_summary'] = ring_trace_summary
         result['ring_trace'] = ring_trace_rows
+    if heartbeat_cb is not None:
+        heartbeat_cb(
+            'done',
+            steps,
+            steps,
+            {
+                'final_acc': float(result['final_acc']),
+                'time_s': float(result['wall_time']),
+            },
+        )
     return result
 
 

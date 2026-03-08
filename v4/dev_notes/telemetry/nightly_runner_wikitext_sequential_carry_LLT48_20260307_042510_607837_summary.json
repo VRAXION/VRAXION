@@ -1,0 +1,71 @@
+{
+  "script": "nightly_research_runner.py",
+  "timestamp": "2026-03-07T04:25:10.607837",
+  "meta": {
+    "surface_kind": "wikitext_sequential_carry",
+    "variant": "LLT48",
+    "state_mode": "carry",
+    "pointer_mode": "sequential",
+    "pointer_interp_mode": "off",
+    "pointer_seam_mode": "mod",
+    "read_mode": "vshape",
+    "write_mode": "pointer",
+    "mtaps_enabled": true,
+    "mtaps_lags": [
+      1,
+      2,
+      4,
+      8,
+      16,
+      32,
+      48
+    ],
+    "seq": 8,
+    "steps": 10000,
+    "ring_slots": 64,
+    "reset_each_batch": false,
+    "pooled_topk_read": false,
+    "device": "cpu",
+    "seed": 42
+  },
+  "guards": {
+    "trace_present": true,
+    "ptr_steps_ok": true,
+    "center_hist_ok": true,
+    "read_hist_ok": true,
+    "write_hist_ok": true,
+    "expected_ptr_steps": 80000,
+    "actual_ptr_steps": 80000,
+    "expected_center_sum": 640000,
+    "actual_center_sum": 640000,
+    "expected_read_sum": 1920000,
+    "actual_read_sum": 1920000,
+    "expected_write_sum": 1920000,
+    "actual_write_sum": 1920000,
+    "surface_kind": "wikitext_sequential_carry",
+    "reset_each_batch_matches": true,
+    "carry_surface_has_broader_pointer": true,
+    "carry_pointer_coverage_exceeds_fresh_bound": true,
+    "effective_global_read": false,
+    "effective_global_write": false
+  },
+  "result": {
+    "final_loss": 2.265542440414429,
+    "final_bpc": 3.2684980787858966,
+    "final_acc": 0.3733512544631958,
+    "best_acc": 0.6507936716079712,
+    "time_s": 413.9018003940582,
+    "s_per_step": 0.041390180039405824,
+    "max_grad": 1.8462961912155151
+  },
+  "trace_summary": {
+    "ptr_unique_frac": null,
+    "read_unique_frac": null,
+    "write_unique_frac": null,
+    "read_center_dist_mean": null,
+    "write_center_dist_mean": null,
+    "read_write_overlap_mean": null,
+    "top_slots_read": null,
+    "top_slots_write": null
+  }
+}

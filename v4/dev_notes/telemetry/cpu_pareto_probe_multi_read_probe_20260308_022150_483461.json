@@ -1,0 +1,68 @@
+{
+  "script": "cpu_pareto_probe.py",
+  "timestamp": "2026-03-08T02:33:53.773053",
+  "surface": "wikitext_sequential_carry",
+  "variant": "LLT7SG",
+  "preset": "multi_read_probe",
+  "thread_limit": 4,
+  "probe_steps": 500,
+  "time_budget_s": 300,
+  "results": [
+    {
+      "id": "A_scalar_gate_baseline",
+      "candidate": {
+        "id": "A_scalar_gate_baseline",
+        "variant": "LLT7SG",
+        "hidden_dim": 512,
+        "slot_dim": 32,
+        "M": 64,
+        "seq": 8,
+        "batch": 8
+      },
+      "probe_steps": 500,
+      "probe_time_s": 28.02946901321411,
+      "probe_s_per_step": 0.05605893802642822,
+      "target_steps": 5400,
+      "final_acc": 0.5191172245144844,
+      "best_acc": 0.734375,
+      "final_bpc": 2.4710380679490567,
+      "final_loss": 1.7127871823310852,
+      "time_s": 332.13636898994446,
+      "s_per_step": 0.061506734998137864,
+      "carry_eval_acc": 0.4619647355163728,
+      "fresh_eval_acc": 0.3758186397984887,
+      "carry_minus_reset_pp": 8.614609571788412,
+      "variant": "LLT7SG",
+      "probe_json": "S:\\AI\\_tmp\\nightly_worktree\\v4\\dev_notes\\telemetry\\cpu_pareto_probe_A_scalar_gate_baseline_probe_20260308_022150_483461.json",
+      "full_json": "S:\\AI\\_tmp\\nightly_worktree\\v4\\dev_notes\\telemetry\\cpu_pareto_probe_A_scalar_gate_baseline_full_20260308_022150_483461.json"
+    },
+    {
+      "id": "B_multi_read_heads",
+      "candidate": {
+        "id": "B_multi_read_heads",
+        "variant": "LLT3H2SG",
+        "hidden_dim": 512,
+        "slot_dim": 32,
+        "M": 64,
+        "seq": 8,
+        "batch": 8
+      },
+      "probe_steps": 500,
+      "probe_time_s": 42.664976596832275,
+      "probe_s_per_step": 0.08532995319366456,
+      "target_steps": 3500,
+      "final_acc": 0.43570770233869555,
+      "best_acc": 0.6875,
+      "final_bpc": 2.8489473848054407,
+      "final_loss": 1.9747330594062804,
+      "time_s": 296.15523767471313,
+      "s_per_step": 0.08461578219277519,
+      "carry_eval_acc": 0.43626482213438733,
+      "fresh_eval_acc": 0.3816699604743083,
+      "carry_minus_reset_pp": 5.459486166007904,
+      "variant": "LLT3H2SG",
+      "probe_json": "S:\\AI\\_tmp\\nightly_worktree\\v4\\dev_notes\\telemetry\\cpu_pareto_probe_B_multi_read_heads_probe_20260308_022150_483461.json",
+      "full_json": "S:\\AI\\_tmp\\nightly_worktree\\v4\\dev_notes\\telemetry\\cpu_pareto_probe_B_multi_read_heads_full_20260308_022150_483461.json"
+    }
+  ]
+}

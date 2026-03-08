@@ -1,0 +1,90 @@
+{
+  "script": "cpu_pareto_probe.py",
+  "timestamp": "2026-03-07T20:41:01.348867",
+  "surface": "wikitext_sequential_carry",
+  "variant": "LLT7",
+  "preset": "seq_tradeoff",
+  "thread_limit": 4,
+  "probe_steps": 500,
+  "time_budget_s": 300,
+  "results": [
+    {
+      "id": "slot16",
+      "candidate": {
+        "id": "slot16",
+        "hidden_dim": 512,
+        "slot_dim": 16,
+        "M": 64,
+        "seq": 8,
+        "batch": 8
+      },
+      "probe_steps": 500,
+      "probe_time_s": 27.506617069244385,
+      "probe_s_per_step": 0.05501323413848877,
+      "target_steps": 5500,
+      "final_acc": 0.43077876657247544,
+      "best_acc": 0.734375,
+      "final_bpc": 2.874721397117973,
+      "final_loss": 1.992598181962967,
+      "time_s": 320.82338976860046,
+      "s_per_step": 0.058331525412472815,
+      "carry_eval_acc": 0.4245,
+      "fresh_eval_acc": 0.355,
+      "carry_minus_reset_pp": 6.950000000000001,
+      "probe_json": "S:\\AI\\_tmp\\nightly_worktree\\v4\\dev_notes\\telemetry\\cpu_pareto_probe_slot16_probe_20260307_202412_877309.json",
+      "full_json": "S:\\AI\\_tmp\\nightly_worktree\\v4\\dev_notes\\telemetry\\cpu_pareto_probe_slot16_full_20260307_202412_877309.json"
+    },
+    {
+      "id": "slot32",
+      "candidate": {
+        "id": "slot32",
+        "hidden_dim": 512,
+        "slot_dim": 32,
+        "M": 64,
+        "seq": 8,
+        "batch": 8
+      },
+      "probe_steps": 500,
+      "probe_time_s": 28.193535566329956,
+      "probe_s_per_step": 0.056387071132659915,
+      "target_steps": 5300,
+      "final_acc": 0.4697209146618843,
+      "best_acc": 0.7241379022598267,
+      "final_bpc": 2.709138855401874,
+      "final_loss": 1.8778255045413972,
+      "time_s": 277.1799969673157,
+      "s_per_step": 0.05229811263534258,
+      "carry_eval_acc": 0.4672413793103448,
+      "fresh_eval_acc": 0.408128078817734,
+      "carry_minus_reset_pp": 5.911330049261082,
+      "probe_json": "S:\\AI\\_tmp\\nightly_worktree\\v4\\dev_notes\\telemetry\\cpu_pareto_probe_slot32_probe_20260307_202412_877309.json",
+      "full_json": "S:\\AI\\_tmp\\nightly_worktree\\v4\\dev_notes\\telemetry\\cpu_pareto_probe_slot32_full_20260307_202412_877309.json"
+    },
+    {
+      "id": "slot64",
+      "candidate": {
+        "id": "slot64",
+        "hidden_dim": 512,
+        "slot_dim": 64,
+        "M": 64,
+        "seq": 8,
+        "batch": 8
+      },
+      "probe_steps": 500,
+      "probe_time_s": 24.65487051010132,
+      "probe_s_per_step": 0.049309741020202635,
+      "target_steps": 6100,
+      "final_acc": 0.4192228791117668,
+      "best_acc": 0.734375,
+      "final_bpc": 2.9375591636359695,
+      "final_loss": 2.0361538529396057,
+      "time_s": 299.31114768981934,
+      "s_per_step": 0.04906740126062612,
+      "carry_eval_acc": 0.43186323092170464,
+      "fresh_eval_acc": 0.35232903865213083,
+      "carry_minus_reset_pp": 7.953419226957381,
+      "probe_json": "S:\\AI\\_tmp\\nightly_worktree\\v4\\dev_notes\\telemetry\\cpu_pareto_probe_slot64_probe_20260307_202412_877309.json",
+      "full_json": "S:\\AI\\_tmp\\nightly_worktree\\v4\\dev_notes\\telemetry\\cpu_pareto_probe_slot64_full_20260307_202412_877309.json"
+    }
+  ]
+}

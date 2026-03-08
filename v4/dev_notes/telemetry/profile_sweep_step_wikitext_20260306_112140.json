@@ -1,0 +1,96 @@
+{
+  "script": "profile_sweep_step_wikitext.py",
+  "timestamp": "2026-03-06T11:23:05.363744",
+  "config": {
+    "seed": 42,
+    "batch": 32,
+    "seq": 256,
+    "c_value": 3.141592653589793,
+    "impl": "current",
+    "tail_k": 6.0,
+    "warmup_steps": 2,
+    "gpu": "NVIDIA GeForce RTX 4070 Ti SUPER"
+  },
+  "coarse_stage_breakdown": [
+    {
+      "stage": "sample",
+      "seconds": 0.0011628000065684319,
+      "pct_total": 0.03151585250487973
+    },
+    {
+      "stage": "forward_loss",
+      "seconds": 2.13909379998222,
+      "pct_total": 57.97674949563641
+    },
+    {
+      "stage": "backward",
+      "seconds": 1.5469716000370681,
+      "pct_total": 41.92821508479826
+    },
+    {
+      "stage": "unscale_clip",
+      "seconds": 0.0014277000445872545,
+      "pct_total": 0.03869554847974979
+    },
+    {
+      "stage": "optim",
+      "seconds": 0.000915899989195168,
+      "pct_total": 0.024824018580702597
+    }
+  ],
+  "function_breakdown": [
+    {
+      "name": "_c19_activation",
+      "count": 256,
+      "total_ms": 902.7666232585907,
+      "avg_ms": 3.52643212210387
+    },
+    {
+      "name": "func_hdd_write_tns",
+      "count": 256,
+      "total_ms": 330.14329785108566,
+      "avg_ms": 1.2896222572308034
+    },
+    {
+      "name": "func_softread_tns",
+      "count": 256,
+      "total_ms": 40.48201606795192,
+      "avg_ms": 0.15813287526543718
+    },
+    {
+      "name": "func_softwrit_tns",
+      "count": 0,
+      "total_ms": 0.0,
+      "avg_ms": 0.0
+    },
+    {
+      "name": "func_gated_write_tns",
+      "count": 0,
+      "total_ms": 0.0,
+      "avg_ms": 0.0
+    },
+    {
+      "name": "func_movepntr_tns",
+      "count": 0,
+      "total_ms": 0.0,
+      "avg_ms": 0.0
+    }
+  ],
+  "activation_telemetry": {
+    "activation_calls": 256,
+    "activation_values": 16777216,
+    "tail_hit_pct": 0.0,
+    "mean_abs_x": 0.9094478250481188,
+    "mean_abs_over_c": 0.28948622185271233,
+    "p95_abs_x": 2.288921356201172,
+    "p99_abs_x": 2.9733588695526123,
+    "max_abs_x": 5.683648586273193,
+    "p95_abs_over_c": 0.7417430877685547,
+    "p99_abs_over_c": 0.922541618347168,
+    "max_abs_over_c": 1.8091614246368408,
+    "p95_ring_idx": 0.0,
+    "p99_ring_idx": 0.0,
+    "max_ring_idx": 1.0,
+    "quantile_sample_size": 65536
+  }
+}

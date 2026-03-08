@@ -1,0 +1,924 @@
+{
+  "source_map_complete": false,
+  "significant_ops": [
+    {
+      "name": "aten::fill_",
+      "self_device_us": 755243.0,
+      "pct_total_device": 8.798080748316176,
+      "primary_scope": "write_replace",
+      "coverage_pct": 20.750672300173587,
+      "contributions": [
+        {
+          "scope": "write_replace",
+          "self_device_us": 126572.0,
+          "pct_of_op": 16.759109319781846
+        },
+        {
+          "scope": "write_prepare",
+          "self_device_us": 14354.0,
+          "pct_of_op": 1.9005803430154269
+        },
+        {
+          "scope": "window_prepare",
+          "self_device_us": 8445.0,
+          "pct_of_op": 1.1181831542960345
+        },
+        {
+          "scope": "output_head",
+          "self_device_us": 7165.0,
+          "pct_of_op": 0.9487012789261204
+        },
+        {
+          "scope": "state_init",
+          "self_device_us": 182.0,
+          "pct_of_op": 0.024098204154159655
+        }
+      ]
+    },
+    {
+      "name": "aten::mul",
+      "self_device_us": 511161.0,
+      "pct_total_device": 5.9546871051966646,
+      "primary_scope": "write_replace",
+      "coverage_pct": 13.063203178646258,
+      "contributions": [
+        {
+          "scope": "write_replace",
+          "self_device_us": 54849.0,
+          "pct_of_op": 10.73027871844683
+        },
+        {
+          "scope": "softread",
+          "self_device_us": 11925.0,
+          "pct_of_op": 2.3329244601994286
+        }
+      ]
+    },
+    {
+      "name": "aten::copy_",
+      "self_device_us": 474169.0,
+      "pct_total_device": 5.523754805206182,
+      "primary_scope": "write_replace",
+      "coverage_pct": 42.8904040542507,
+      "contributions": [
+        {
+          "scope": "write_replace",
+          "self_device_us": 158241.0,
+          "pct_of_op": 33.37227866014016
+        },
+        {
+          "scope": "write_prepare",
+          "self_device_us": 18195.0,
+          "pct_of_op": 3.8372394652539494
+        },
+        {
+          "scope": "pointer_update",
+          "self_device_us": 10708.0,
+          "pct_of_op": 2.2582665674052924
+        },
+        {
+          "scope": "output_head",
+          "self_device_us": 8635.0,
+          "pct_of_op": 1.8210806695503081
+        },
+        {
+          "scope": "window_prepare",
+          "self_device_us": 7594.0,
+          "pct_of_op": 1.6015386919009889
+        }
+      ]
+    },
+    {
+      "name": "aten::empty",
+      "self_device_us": 456552.0,
+      "pct_total_device": 5.318528423044301,
+      "primary_scope": "write_replace",
+      "coverage_pct": 19.961143528009952,
+      "contributions": [
+        {
+          "scope": "write_replace",
+          "self_device_us": 90840.0,
+          "pct_of_op": 19.896966829627292
+        },
+        {
+          "scope": "window_prepare",
+          "self_device_us": 184.0,
+          "pct_of_op": 0.04030209045190909
+        },
+        {
+          "scope": "state_init",
+          "self_device_us": 109.0,
+          "pct_of_op": 0.023874607930750497
+        }
+      ]
+    },
+    {
+      "name": "aten::add_",
+      "self_device_us": 388850.0,
+      "pct_total_device": 4.529844962459427,
+      "primary_scope": "",
+      "coverage_pct": 0.0,
+      "contributions": []
+    },
+    {
+      "name": "aten::as_strided",
+      "self_device_us": 354964.0,
+      "pct_total_device": 4.135095505347687,
+      "primary_scope": "write_replace",
+      "coverage_pct": 32.866149806740964,
+      "contributions": [
+        {
+          "scope": "write_replace",
+          "self_device_us": 59075.0,
+          "pct_of_op": 16.642532763885914
+        },
+        {
+          "scope": "softread",
+          "self_device_us": 16853.0,
+          "pct_of_op": 4.747805411252972
+        },
+        {
+          "scope": "window_prepare",
+          "self_device_us": 15486.0,
+          "pct_of_op": 4.362695935362459
+        },
+        {
+          "scope": "write_prepare",
+          "self_device_us": 10355.0,
+          "pct_of_op": 2.917197236902897
+        },
+        {
+          "scope": "output_head",
+          "self_device_us": 8788.0,
+          "pct_of_op": 2.475744019111797
+        },
+        {
+          "scope": "pointer_update",
+          "self_device_us": 6105.0,
+          "pct_of_op": 1.7198927215154214
+        },
+        {
+          "scope": "state_init",
+          "self_device_us": 1.0,
+          "pct_of_op": 0.0002817187095029355
+        }
+      ]
+    },
+    {
+      "name": "aten::_index_put_impl_",
+      "self_device_us": 338028.0,
+      "pct_total_device": 3.9378023221556773,
+      "primary_scope": "write_replace",
+      "coverage_pct": 39.68517400925367,
+      "contributions": [
+        {
+          "scope": "write_replace",
+          "self_device_us": 134147.0,
+          "pct_of_op": 39.68517400925367
+        }
+      ]
+    },
+    {
+      "name": "aten::random_",
+      "self_device_us": 274343.0,
+      "pct_total_device": 3.1959142510891256,
+      "primary_scope": "",
+      "coverage_pct": 0.0,
+      "contributions": []
+    },
+    {
+      "name": "aten::_to_copy",
+      "self_device_us": 246978.0,
+      "pct_total_device": 2.8771301250824335,
+      "primary_scope": "write_prepare",
+      "coverage_pct": 27.3481848585704,
+      "contributions": [
+        {
+          "scope": "write_prepare",
+          "self_device_us": 30199.0,
+          "pct_of_op": 12.2274048700694
+        },
+        {
+          "scope": "output_head",
+          "self_device_us": 14470.0,
+          "pct_of_op": 5.858821433488003
+        },
+        {
+          "scope": "window_prepare",
+          "self_device_us": 13477.0,
+          "pct_of_op": 5.45676133096875
+        },
+        {
+          "scope": "write_replace",
+          "self_device_us": 9398.0,
+          "pct_of_op": 3.805197224044247
+        }
+      ]
+    },
+    {
+      "name": "aten::sum",
+      "self_device_us": 231828.0,
+      "pct_total_device": 2.700642659012586,
+      "primary_scope": "write_replace",
+      "coverage_pct": 13.392256327967287,
+      "contributions": [
+        {
+          "scope": "write_replace",
+          "self_device_us": 15706.0,
+          "pct_of_op": 6.774850320064876
+        },
+        {
+          "scope": "softread",
+          "self_device_us": 15286.0,
+          "pct_of_op": 6.593681522508066
+        },
+        {
+          "scope": "window_prepare",
+          "self_device_us": 55.0,
+          "pct_of_op": 0.02372448539434408
+        }
+      ]
+    },
+    {
+      "name": "aten::unsqueeze",
+      "self_device_us": 223678.0,
+      "pct_total_device": 2.6057005568033937,
+      "primary_scope": "write_replace",
+      "coverage_pct": 45.89007412441099,
+      "contributions": [
+        {
+          "scope": "write_replace",
+          "self_device_us": 70764.0,
+          "pct_of_op": 31.636548967712514
+        },
+        {
+          "scope": "softread",
+          "self_device_us": 16539.0,
+          "pct_of_op": 7.39411117767505
+        },
+        {
+          "scope": "window_prepare",
+          "self_device_us": 15343.0,
+          "pct_of_op": 6.859413979023418
+        }
+      ]
+    },
+    {
+      "name": "aten::resize_",
+      "self_device_us": 220369.0,
+      "pct_total_device": 2.5671528983726923,
+      "primary_scope": "write_replace",
+      "coverage_pct": 19.24998525200913,
+      "contributions": [
+        {
+          "scope": "write_replace",
+          "self_device_us": 42259.0,
+          "pct_of_op": 19.176472189827063
+        },
+        {
+          "scope": "window_prepare",
+          "self_device_us": 162.0,
+          "pct_of_op": 0.07351306218206735
+        }
+      ]
+    },
+    {
+      "name": "aten::empty_strided",
+      "self_device_us": 204147.0,
+      "pct_total_device": 2.3781773422944696,
+      "primary_scope": "write_prepare",
+      "coverage_pct": 25.908291574208782,
+      "contributions": [
+        {
+          "scope": "write_prepare",
+          "self_device_us": 18711.0,
+          "pct_of_op": 9.165454304986113
+        },
+        {
+          "scope": "write_replace",
+          "self_device_us": 16598.0,
+          "pct_of_op": 8.130415827810353
+        },
+        {
+          "scope": "window_prepare",
+          "self_device_us": 9449.0,
+          "pct_of_op": 4.628527482647308
+        },
+        {
+          "scope": "output_head",
+          "self_device_us": 8133.0,
+          "pct_of_op": 3.9838939587650075
+        }
+      ]
+    },
+    {
+      "name": "aten::scatter_add_",
+      "self_device_us": 170549.0,
+      "pct_total_device": 1.986782894438711,
+      "primary_scope": "",
+      "coverage_pct": 0.0,
+      "contributions": []
+    },
+    {
+      "name": "aten::index",
+      "self_device_us": 169800.0,
+      "pct_total_device": 1.9780575405056209,
+      "primary_scope": "",
+      "coverage_pct": 0.0,
+      "contributions": []
+    },
+    {
+      "name": "aten::mm",
+      "self_device_us": 154278.0,
+      "pct_total_device": 1.797236520813464,
+      "primary_scope": "",
+      "coverage_pct": 0.0,
+      "contributions": []
+    },
+    {
+      "name": "aten::_local_scalar_dense",
+      "self_device_us": 152562.0,
+      "pct_total_device": 1.7772462573299088,
+      "primary_scope": "window_prepare",
+      "coverage_pct": 0.05964788086155137,
+      "contributions": [
+        {
+          "scope": "window_prepare",
+          "self_device_us": 63.0,
+          "pct_of_op": 0.041294686750304795
+        },
+        {
+          "scope": "state_init",
+          "self_device_us": 28.0,
+          "pct_of_op": 0.018353194111246574
+        }
+      ]
+    },
+    {
+      "name": "aten::arange",
+      "self_device_us": 148986.0,
+      "pct_total_device": 1.735588225734808,
+      "primary_scope": "write_replace",
+      "coverage_pct": 39.395647913226746,
+      "contributions": [
+        {
+          "scope": "write_replace",
+          "self_device_us": 58577.0,
+          "pct_of_op": 39.31711704455452
+        },
+        {
+          "scope": "window_prepare",
+          "self_device_us": 117.0,
+          "pct_of_op": 0.07853086867222424
+        }
+      ]
+    },
+    {
+      "name": "aten::to",
+      "self_device_us": 140726.0,
+      "pct_total_device": 1.6393646963792343,
+      "primary_scope": "write_replace",
+      "coverage_pct": 28.639341699472734,
+      "contributions": [
+        {
+          "scope": "write_replace",
+          "self_device_us": 13258.0,
+          "pct_of_op": 9.421144635674999
+        },
+        {
+          "scope": "write_prepare",
+          "self_device_us": 12318.0,
+          "pct_of_op": 8.753179938319855
+        },
+        {
+          "scope": "window_prepare",
+          "self_device_us": 9262.0,
+          "pct_of_op": 6.58158407117377
+        },
+        {
+          "scope": "output_head",
+          "self_device_us": 5465.0,
+          "pct_of_op": 3.883433054304109
+        }
+      ]
+    },
+    {
+      "name": "aten::add",
+      "self_device_us": 125399.0,
+      "pct_total_device": 1.4608152975374815,
+      "primary_scope": "pointer_update",
+      "coverage_pct": 23.347873587508673,
+      "contributions": [
+        {
+          "scope": "pointer_update",
+          "self_device_us": 10286.0,
+          "pct_of_op": 8.202617245751561
+        },
+        {
+          "scope": "window_prepare",
+          "self_device_us": 10150.0,
+          "pct_of_op": 8.094163430330385
+        },
+        {
+          "scope": "write_replace",
+          "self_device_us": 8842.0,
+          "pct_of_op": 7.051092911426726
+        }
+      ]
+    },
+    {
+      "name": "aten::scatter_",
+      "self_device_us": 119178.0,
+      "pct_total_device": 1.3883447677407472,
+      "primary_scope": "write_replace",
+      "coverage_pct": 100.0,
+      "contributions": [
+        {
+          "scope": "write_replace",
+          "self_device_us": 119178.0,
+          "pct_of_op": 100.0
+        }
+      ]
+    },
+    {
+      "name": "aten::addmm",
+      "self_device_us": 118751.0,
+      "pct_total_device": 1.3833705005452472,
+      "primary_scope": "write_prepare",
+      "coverage_pct": 79.96311610007494,
+      "contributions": [
+        {
+          "scope": "write_prepare",
+          "self_device_us": 64833.0,
+          "pct_of_op": 54.595750772625074
+        },
+        {
+          "scope": "output_head",
+          "self_device_us": 30124.0,
+          "pct_of_op": 25.367365327449875
+        }
+      ]
+    },
+    {
+      "name": "aten::t",
+      "self_device_us": 114757.0,
+      "pct_total_device": 1.336843045793896,
+      "primary_scope": "write_prepare",
+      "coverage_pct": 24.885627891980445,
+      "contributions": [
+        {
+          "scope": "write_prepare",
+          "self_device_us": 19249.0,
+          "pct_of_op": 16.773704436330682
+        },
+        {
+          "scope": "output_head",
+          "self_device_us": 9309.0,
+          "pct_of_op": 8.111923455649764
+        }
+      ]
+    },
+    {
+      "name": "aten::linalg_vector_norm",
+      "self_device_us": 107097.0,
+      "pct_total_device": 1.2476091190549499,
+      "primary_scope": "",
+      "coverage_pct": 0.0,
+      "contributions": []
+    },
+    {
+      "name": "aten::mean",
+      "self_device_us": 104589.0,
+      "pct_total_device": 1.2183925801174462,
+      "primary_scope": "output_head",
+      "coverage_pct": 15.213837019189398,
+      "contributions": [
+        {
+          "scope": "output_head",
+          "self_device_us": 15912.0,
+          "pct_of_op": 15.213837019189398
+        }
+      ]
+    },
+    {
+      "name": "aten::transpose",
+      "self_device_us": 103565.0,
+      "pct_total_device": 1.2064636583184019,
+      "primary_scope": "write_prepare",
+      "coverage_pct": 20.757978081398157,
+      "contributions": [
+        {
+          "scope": "write_prepare",
+          "self_device_us": 14685.0,
+          "pct_of_op": 14.179500796601168
+        },
+        {
+          "scope": "output_head",
+          "self_device_us": 6813.0,
+          "pct_of_op": 6.578477284796987
+        }
+      ]
+    },
+    {
+      "name": "aten::div",
+      "self_device_us": 100071.0,
+      "pct_total_device": 1.16576087241424,
+      "primary_scope": "window_prepare",
+      "coverage_pct": 0.1119205364191424,
+      "contributions": [
+        {
+          "scope": "window_prepare",
+          "self_device_us": 112.0,
+          "pct_of_op": 0.1119205364191424
+        }
+      ]
+    },
+    {
+      "name": "aten::max",
+      "self_device_us": 99980.0,
+      "pct_total_device": 1.1647007826840516,
+      "primary_scope": "write_replace",
+      "coverage_pct": 16.603320664132827,
+      "contributions": [
+        {
+          "scope": "write_replace",
+          "self_device_us": 16498.0,
+          "pct_of_op": 16.50130026005201
+        },
+        {
+          "scope": "window_prepare",
+          "self_device_us": 102.0,
+          "pct_of_op": 0.10202040408081617
+        }
+      ]
+    },
+    {
+      "name": "aten::view",
+      "self_device_us": 92683.0,
+      "pct_total_device": 1.0796955655281653,
+      "primary_scope": "write_replace",
+      "coverage_pct": 19.08872177206176,
+      "contributions": [
+        {
+          "scope": "write_replace",
+          "self_device_us": 14198.0,
+          "pct_of_op": 15.318882642987386
+        },
+        {
+          "scope": "output_head",
+          "self_device_us": 3494.0,
+          "pct_of_op": 3.769839129074372
+        }
+      ]
+    },
+    {
+      "name": "aten::cat",
+      "self_device_us": 91197.0,
+      "pct_total_device": 1.0623846497143175,
+      "primary_scope": "output_head",
+      "coverage_pct": 19.37892693838613,
+      "contributions": [
+        {
+          "scope": "output_head",
+          "self_device_us": 17673.0,
+          "pct_of_op": 19.37892693838613
+        }
+      ]
+    },
+    {
+      "name": "aten::item",
+      "self_device_us": 86309.0,
+      "pct_total_device": 1.005442687064191,
+      "primary_scope": "window_prepare",
+      "coverage_pct": 0.0556141306236893,
+      "contributions": [
+        {
+          "scope": "window_prepare",
+          "self_device_us": 26.0,
+          "pct_of_op": 0.030124320754498373
+        },
+        {
+          "scope": "state_init",
+          "self_device_us": 22.0,
+          "pct_of_op": 0.02548980986919093
+        }
+      ]
+    }
+  ],
+  "per_scope_top_ops": {
+    "state_init": [
+      {
+        "name": "aten::fill_",
+        "self_device_us": 182.0,
+        "pct_of_scope": 35.75638506876228
+      },
+      {
+        "name": "aten::empty",
+        "self_device_us": 109.0,
+        "pct_of_scope": 21.414538310412574
+      },
+      {
+        "name": "aten::zeros",
+        "self_device_us": 93.0,
+        "pct_of_scope": 18.271119842829076
+      },
+      {
+        "name": "aten::zero_",
+        "self_device_us": 68.0,
+        "pct_of_scope": 13.359528487229863
+      },
+      {
+        "name": "aten::_local_scalar_dense",
+        "self_device_us": 28.0,
+        "pct_of_scope": 5.50098231827112
+      },
+      {
+        "name": "aten::item",
+        "self_device_us": 22.0,
+        "pct_of_scope": 4.322200392927308
+      },
+      {
+        "name": "aten::select",
+        "self_device_us": 4.0,
+        "pct_of_scope": 0.7858546168958742
+      },
+      {
+        "name": "aten::lift_fresh",
+        "self_device_us": 2.0,
+        "pct_of_scope": 0.3929273084479371
+      },
+      {
+        "name": "aten::as_strided",
+        "self_device_us": 1.0,
+        "pct_of_scope": 0.19646365422396855
+      }
+    ],
+    "window_prepare": [
+      {
+        "name": "aten::select",
+        "self_device_us": 18054.0,
+        "pct_of_scope": 12.772098616957306
+      },
+      {
+        "name": "aten::clamp",
+        "self_device_us": 16514.0,
+        "pct_of_scope": 11.6826429910509
+      },
+      {
+        "name": "aten::as_strided",
+        "self_device_us": 15486.0,
+        "pct_of_scope": 10.955395988822469
+      },
+      {
+        "name": "aten::unsqueeze",
+        "self_device_us": 15343.0,
+        "pct_of_scope": 10.854232252131158
+      },
+      {
+        "name": "aten::_to_copy",
+        "self_device_us": 13477.0,
+        "pct_of_scope": 9.534151604117293
+      },
+      {
+        "name": "aten::add",
+        "self_device_us": 10150.0,
+        "pct_of_scope": 7.180502988928584
+      },
+      {
+        "name": "aten::empty_strided",
+        "self_device_us": 9449.0,
+        "pct_of_scope": 6.684588447525733
+      },
+      {
+        "name": "aten::to",
+        "self_device_us": 9262.0,
+        "pct_of_scope": 6.5522974072370985
+      },
+      {
+        "name": "aten::fill_",
+        "self_device_us": 8445.0,
+        "pct_of_scope": 5.974319974532206
+      },
+      {
+        "name": "aten::remainder",
+        "self_device_us": 8319.0,
+        "pct_of_scope": 5.885182696048955
+      }
+    ],
+    "softread": [
+      {
+        "name": "aten::gather",
+        "self_device_us": 23746.0,
+        "pct_of_scope": 25.554766363186328
+      },
+      {
+        "name": "aten::as_strided",
+        "self_device_us": 16853.0,
+        "pct_of_scope": 18.13671681625449
+      },
+      {
+        "name": "aten::unsqueeze",
+        "self_device_us": 16539.0,
+        "pct_of_scope": 17.798798992703556
+      },
+      {
+        "name": "aten::sum",
+        "self_device_us": 15286.0,
+        "pct_of_scope": 16.450356212737564
+      },
+      {
+        "name": "aten::mul",
+        "self_device_us": 11925.0,
+        "pct_of_scope": 12.83334409504746
+      },
+      {
+        "name": "aten::expand",
+        "self_device_us": 8573.0,
+        "pct_of_scope": 9.226017520070597
+      }
+    ],
+    "write_prepare": [
+      {
+        "name": "aten::addmm",
+        "self_device_us": 64833.0,
+        "pct_of_scope": 24.762905104749535
+      },
+      {
+        "name": "aten::linear",
+        "self_device_us": 41034.0,
+        "pct_of_scope": 15.672898802589614
+      },
+      {
+        "name": "aten::_to_copy",
+        "self_device_us": 30199.0,
+        "pct_of_scope": 11.534480453755515
+      },
+      {
+        "name": "aten::t",
+        "self_device_us": 19249.0,
+        "pct_of_scope": 7.352137960009931
+      },
+      {
+        "name": "aten::empty_strided",
+        "self_device_us": 18711.0,
+        "pct_of_scope": 7.146649351641426
+      },
+      {
+        "name": "aten::copy_",
+        "self_device_us": 18195.0,
+        "pct_of_scope": 6.949563623169031
+      },
+      {
+        "name": "aten::transpose",
+        "self_device_us": 14685.0,
+        "pct_of_scope": 5.608922330653324
+      },
+      {
+        "name": "aten::fill_",
+        "self_device_us": 14354.0,
+        "pct_of_scope": 5.482497183125489
+      },
+      {
+        "name": "aten::to",
+        "self_device_us": 12318.0,
+        "pct_of_scope": 4.704848843649142
+      },
+      {
+        "name": "aten::sigmoid",
+        "self_device_us": 11588.0,
+        "pct_of_scope": 4.42602601073277
+      }
+    ],
+    "write_replace": [
+      {
+        "name": "aten::copy_",
+        "self_device_us": 158241.0,
+        "pct_of_scope": 12.944292612458149
+      },
+      {
+        "name": "aten::_index_put_impl_",
+        "self_device_us": 134147.0,
+        "pct_of_scope": 10.973376186218637
+      },
+      {
+        "name": "aten::fill_",
+        "self_device_us": 126572.0,
+        "pct_of_scope": 10.353732626462502
+      },
+      {
+        "name": "aten::scatter_",
+        "self_device_us": 119178.0,
+        "pct_of_scope": 9.748895071236515
+      },
+      {
+        "name": "aten::empty",
+        "self_device_us": 90840.0,
+        "pct_of_scope": 7.430814649273565
+      },
+      {
+        "name": "aten::unsqueeze",
+        "self_device_us": 70764.0,
+        "pct_of_scope": 5.788575163377307
+      },
+      {
+        "name": "aten::as_strided",
+        "self_device_us": 59075.0,
+        "pct_of_scope": 4.832401754797841
+      },
+      {
+        "name": "aten::arange",
+        "self_device_us": 58577.0,
+        "pct_of_scope": 4.791664792057437
+      },
+      {
+        "name": "aten::mul",
+        "self_device_us": 54849.0,
+        "pct_of_scope": 4.486710179414419
+      },
+      {
+        "name": "aten::resize_",
+        "self_device_us": 42259.0,
+        "pct_of_scope": 3.4568339527042227
+      }
+    ],
+    "pointer_update": [
+      {
+        "name": "aten::select",
+        "self_device_us": 16835.0,
+        "pct_of_scope": 31.75097129493418
+      },
+      {
+        "name": "aten::copy_",
+        "self_device_us": 10708.0,
+        "pct_of_scope": 20.19539059258421
+      },
+      {
+        "name": "aten::add",
+        "self_device_us": 10286.0,
+        "pct_of_scope": 19.399494549432312
+      },
+      {
+        "name": "aten::remainder",
+        "self_device_us": 9088.0,
+        "pct_of_scope": 17.140055071479765
+      },
+      {
+        "name": "aten::as_strided",
+        "self_device_us": 6105.0,
+        "pct_of_scope": 11.514088491569536
+      }
+    ],
+    "output_head": [
+      {
+        "name": "aten::addmm",
+        "self_device_us": 30124.0,
+        "pct_of_scope": 16.039956124937436
+      },
+      {
+        "name": "aten::linear",
+        "self_device_us": 20546.0,
+        "pct_of_scope": 10.940012566158696
+      },
+      {
+        "name": "aten::cat",
+        "self_device_us": 17673.0,
+        "pct_of_scope": 9.410242484265678
+      },
+      {
+        "name": "aten::mean",
+        "self_device_us": 15912.0,
+        "pct_of_scope": 8.472572761253634
+      },
+      {
+        "name": "aten::stack",
+        "self_device_us": 15170.0,
+        "pct_of_scope": 8.077484212431978
+      },
+      {
+        "name": "aten::_to_copy",
+        "self_device_us": 14470.0,
+        "pct_of_scope": 7.704759166373811
+      },
+      {
+        "name": "aten::t",
+        "self_device_us": 9309.0,
+        "pct_of_scope": 4.956710648222102
+      },
+      {
+        "name": "aten::as_strided",
+        "self_device_us": 8788.0,
+        "pct_of_scope": 4.6792967210845235
+      },
+      {
+        "name": "aten::copy_",
+        "self_device_us": 8635.0,
+        "pct_of_scope": 4.597829675303238
+      },
+      {
+        "name": "aten::empty_strided",
+        "self_device_us": 8133.0,
+        "pct_of_scope": 4.330532570844382
+      }
+    ]
+  }
+}

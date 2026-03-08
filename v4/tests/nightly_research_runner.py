@@ -14,6 +14,7 @@ from __future__ import annotations
 import argparse
 import json
 import math
+import os
 import sys
 import time
 from datetime import datetime
@@ -40,11 +41,36 @@ from sweep_c19_core_geometry_wikitext import (  # type: ignore[import-not-found]
     run_one as run_wikitext_fresh,
 )
 
+MTAP_DIAG_SCALAR_PREFIXES = (
+    "mtap_main_frac_",
+    "mtap_gate_max_frac_",
+    "mtap_gate_entropy_",
+    "mtap_resid_beta_",
+    "mtap_delta_norm_",
+    "mtap_main_norm_",
+    "mtap_tap_norm_",
+    "mtap_signal_norm_",
+    "head_gate_max_frac_",
+    "channel_gate_entropy_",
+    "head_pair_dist_mean_",
+    "head_pair_near_frac_",
+)
+MTAP_DIAG_LIST_PREFIXES = (
+    "mtap_gate_mean_by_lag_",
+    "head_offset_mean_abs_",
+    "head_offset_std_",
+    "head_near_local_frac_",
+    "head_gate_mean_",
+    "head_center_dist_mean_",
+    "head_unique_frac_",
+)
+
 PHI = (1 + math.sqrt(5)) / 2
 
 SURFACES: dict[str, dict] = {
     "small_wikitext_fresh": {
         "state_mode": "fresh",
+        "context_mode": "dotprod",
         "device": "cpu",
         "steps": 10000,
         "batch": 8,
@@ -66,6 +92,7 @@ SURFACES: dict[str, dict] = {
     },
     "fast_memory_carry": {
         "state_mode": "carry",
+        "context_mode": "dotprod",
         "device": "cpu",
         "steps": 10000,
         "batch": 8,
@@ -85,6 +112,7 @@ SURFACES: dict[str, dict] = {
     },
     "wikitext_sequential_carry": {
         "state_mode": "carry",
+        "context_mode": "dotprod",
         "device": "cpu",
         "steps": 10000,
         "batch": 8,
@@ -113,20 +141,119 @@ VARIANTS: dict[str, dict] = {
         "write_address_mode": "pointer",
         "read_topk_K": 2,
         "write_topk_K": 2,
+        "mtaps_enabled": False,
+        "mtaps_lags": [],
+        "mtaps_mixer_mode": "current",
+    },
+    "LLT": {
+        "read_kernel_mode": "vshape",
+        "write_address_mode": "pointer",
+        "read_topk_K": 2,
+        "write_topk_K": 2,
+        "mtaps_enabled": True,
+        "mtaps_lags": [1, 2, 4, 8, 16, 32],
+        "mtaps_mixer_mode": "current",
+    },
+    "LLT4": {
+        "read_kernel_mode": "vshape",
+        "write_address_mode": "pointer",
+        "read_topk_K": 2,
+        "write_topk_K": 2,
+        "mtaps_enabled": True,
+        "mtaps_lags": [1, 2, 4, 8],
+        "mtaps_mixer_mode": "current",
+    },
+    "LLT6": {
+        "read_kernel_mode": "vshape",
+        "write_address_mode": "pointer",
+        "read_topk_K": 2,
+        "write_topk_K": 2,
+        "mtaps_enabled": True,
+        "mtaps_lags": [1, 2, 4, 8, 16, 32],
+        "mtaps_mixer_mode": "current",
+    },
+    "LLT7": {
+        "read_kernel_mode": "vshape",
+        "write_address_mode": "pointer",
+        "read_topk_K": 2,
+        "write_topk_K": 2,
+        "mtaps_enabled": True,
+        "mtaps_lags": [1, 2, 4, 8, 16, 32, 64],
+        "mtaps_mixer_mode": "current",
+    },
+    "LLT48": {
+        "read_kernel_mode": "vshape",
+        "write_address_mode": "pointer",
+        "read_topk_K": 2,
+        "write_topk_K": 2,
+        "mtaps_enabled": True,
+        "mtaps_lags": [1, 2, 4, 8, 16, 32, 48],
+        "mtaps_mixer_mode": "current",
+    },
+    "LLT7SG": {
+        "read_kernel_mode": "vshape",
+        "write_address_mode": "pointer",
+        "read_topk_K": 2,
+        "write_topk_K": 2,
+        "mtaps_enabled": True,
+        "mtaps_lags": [1, 2, 4, 8, 16, 32, 64],
+        "mtaps_mixer_mode": "tap_scalar_gate",
+    },
+    "LLT3H2SG": {
+        "read_kernel_mode": "vshape",
+        "write_address_mode": "pointer",
+        "read_topk_K": 2,
+        "write_topk_K": 2,
+        "mtaps_enabled": True,
+        "mtaps_lags": [1, 2, 4],
+        "mtaps_mixer_mode": "hybrid_heads_scalar_gate",
+    },
+    "LLT3H2SGR": {
+        "read_kernel_mode": "vshape",
+        "write_address_mode": "pointer",
+        "read_topk_K": 2,
+        "write_topk_K": 2,
+        "mtaps_enabled": True,
+        "mtaps_lags": [1, 2, 4],
+        "mtaps_mixer_mode": "hybrid_heads_spaced_scalar_gate",
+    },
+    "LLT7RG": {
+        "read_kernel_mode": "vshape",
+        "write_address_mode": "pointer",
+        "read_topk_K": 2,
+        "write_topk_K": 2,
+        "mtaps_enabled": True,
+        "mtaps_lags": [1, 2, 4, 8, 16, 32, 64],
+        "mtaps_mixer_mode": "residual_gated",
     },
     "GL": {
         "read_kernel_mode": "topk",
         "write_address_mode": "pointer",
         "read_topk_K": 2,
         "write_topk_K": 2,
+        "mtaps_enabled": False,
+        "mtaps_lags": [],
+        "mtaps_mixer_mode": "current",
     },
     "GG": {
         "read_kernel_mode": "topk",
         "write_address_mode": "content_topk",
         "read_topk_K": 2,
         "write_topk_K": 2,
+        "mtaps_enabled": False,
+        "mtaps_lags": [],
+        "mtaps_mixer_mode": "current",
     },
 }
+
+
+def _write_heartbeat(path: Path | None, payload: dict) -> None:
+    if path is None:
+        return
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = path.with_suffix(path.suffix + ".tmp")
+    tmp.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+    tmp.replace(path)
 
 
 def _default_json_path(surface: str, variant: str) -> Path:
@@ -153,6 +280,10 @@ def _build_meta(surface: str, variant: str, cfg: dict, overrides: dict | None = 
         "pointer_seam_mode": cfg.get("pointer_seam_mode", "mod"),
         "read_mode": variant_cfg["read_kernel_mode"],
         "write_mode": variant_cfg["write_address_mode"],
+        "context_mode": cfg.get("context_mode", "dotprod"),
+        "mtaps_enabled": bool(variant_cfg.get("mtaps_enabled", False)),
+        "mtaps_lags": list(variant_cfg.get("mtaps_lags", [])),
+        "mtaps_mixer_mode": variant_cfg.get("mtaps_mixer_mode", "current"),
         "seq": cfg["seq"],
         "steps": cfg["steps"],
         "ring_slots": cfg["M"],
@@ -196,7 +327,8 @@ def _ring_trace_guard(result: dict, batch: int, seq: int, steps: int) -> dict:
 
 
 def _effective_global_flags(result: dict, variant: str) -> dict:
-    if variant == "LL":
+    variant_cfg = VARIANTS[variant]
+    if variant_cfg["read_kernel_mode"] != "topk":
         return {"effective_global_read": False, "effective_global_write": False}
     read_outside = result.get("topk_outside_local_frac")
     write_outside = result.get("write_topk_outside_local_frac")
@@ -205,7 +337,7 @@ def _effective_global_flags(result: dict, variant: str) -> dict:
     write_dist = ring_summary.get("write_center_dist_mean")
     effective_read = bool(read_outside is not None and read_outside >= 0.50 and (read_dist or 0.0) > 1.5)
     effective_write = bool(
-        variant == "GG"
+        variant_cfg["write_address_mode"] == "content_topk"
         and write_outside is not None
         and write_outside >= 0.50
         and (write_dist or 0.0) > 1.5
@@ -236,18 +368,36 @@ def _surface_guards(surface: str, result: dict, meta: dict) -> dict:
 
 
 def _require_topk_diag(variant: str, result: dict):
-    if variant == "LL":
+    variant_cfg = VARIANTS[variant]
+    if variant_cfg["read_kernel_mode"] != "topk":
         return
     missing = [key for key in ("topk_mean_abs_circ_dist", "topk_outside_local_frac") if result.get(key) is None]
     if missing:
         raise RuntimeError(f"Missing required topk telemetry for {variant}: {missing}")
-    if variant == "GG":
+    if variant_cfg["write_address_mode"] == "content_topk":
         missing_write = [
             key for key in ("write_topk_mean_abs_circ_dist", "write_topk_outside_local_frac")
             if result.get(key) is None
         ]
         if missing_write:
             raise RuntimeError(f"Missing required write-topk telemetry for GG: {missing_write}")
+
+
+def _heartbeat_payload(surface: str, variant: str, cfg: dict, phase: str, step: int, steps: int, extra: dict | None = None) -> dict:
+    payload = {
+        "timestamp": datetime.now().isoformat(),
+        "pid": os.getpid(),
+        "surface": surface,
+        "variant": variant,
+        "device": cfg["device"],
+        "seed": cfg["seed"],
+        "phase": phase,
+        "step": int(step),
+        "steps": int(steps),
+    }
+    if extra:
+        payload.update(extra)
+    return payload
 
 
 def _discover_dataset(seq: int, seed: int) -> ByteDataset:
@@ -260,7 +410,7 @@ def _discover_dataset(seq: int, seed: int) -> ByteDataset:
     return ByteDataset(files, seq, embed_mode=True, seed=seed)
 
 
-def _run_small_wikitext_fresh(surface: str, variant: str, cfg: dict) -> dict:
+def _run_small_wikitext_fresh(surface: str, variant: str, cfg: dict, heartbeat_path: Path | None = None) -> dict:
     variant_cfg = VARIANTS[variant]
     dataset = _discover_dataset(cfg["seq"], cfg["seed"])
     telemetry = ActivationTelemetry(sample_per_call=1024)
@@ -281,13 +431,17 @@ def _run_small_wikitext_fresh(surface: str, variant: str, cfg: dict) -> dict:
         kernel_mode=variant_cfg["read_kernel_mode"],
         topk_k=variant_cfg["read_topk_K"],
         replace_impl="dense",
-        topk_read_diag=(variant != "LL"),
+        topk_read_diag=(variant_cfg["read_kernel_mode"] == "topk"),
         read_kernel_mode=variant_cfg["read_kernel_mode"],
         write_address_mode=variant_cfg["write_address_mode"],
         write_topk_k=variant_cfg["write_topk_K"],
         pointer_mode=cfg["pointer_mode"],
         pointer_interp_mode=cfg["pointer_interp_mode"],
         pointer_seam_mode=cfg["pointer_seam_mode"],
+        mtaps_enabled=variant_cfg["mtaps_enabled"],
+        mtaps_lags=tuple(variant_cfg["mtaps_lags"]),
+        mtaps_mixer_mode=variant_cfg.get("mtaps_mixer_mode", "current"),
+        context_mode=cfg.get("context_mode", "dotprod"),
         ring_trace=True,
         device=cfg["device"],
         hidden_dim=cfg["hidden_dim"],
@@ -295,11 +449,17 @@ def _run_small_wikitext_fresh(surface: str, variant: str, cfg: dict) -> dict:
         slot_dim=cfg["slot_dim"],
         N=cfg["N"],
         R=cfg["R"],
+        heartbeat_cb=(
+            lambda phase, step, steps, extra=None: _write_heartbeat(
+                heartbeat_path,
+                _heartbeat_payload(surface, variant, cfg, phase, step, steps, extra),
+            )
+        ),
     )
     return result
 
 
-def _run_fast_memory_carry(surface: str, variant: str, cfg: dict) -> dict:
+def _run_fast_memory_carry(surface: str, variant: str, cfg: dict, heartbeat_path: Path | None = None) -> dict:
     variant_cfg = VARIANTS[variant]
     result = run_fast_memory(
         N=cfg["N"],
@@ -324,6 +484,15 @@ def _run_fast_memory_carry(surface: str, variant: str, cfg: dict) -> dict:
         pointer_mode=cfg["pointer_mode"],
         pointer_interp_mode=cfg["pointer_interp_mode"],
         pointer_seam_mode=cfg["pointer_seam_mode"],
+        context_mode=cfg.get("context_mode", "dotprod"),
+        mtaps_enabled=variant_cfg["mtaps_enabled"],
+        mtaps_lags=tuple(variant_cfg["mtaps_lags"]),
+        heartbeat_cb=(
+            lambda phase, step, steps, extra=None: _write_heartbeat(
+                heartbeat_path,
+                _heartbeat_payload(surface, variant, cfg, phase, step, steps, extra),
+            )
+        ),
     )
     result["best_acc"] = result.get("peak_acc")
     result["time_s"] = result.get("wall_time")
@@ -332,7 +501,16 @@ def _run_fast_memory_carry(surface: str, variant: str, cfg: dict) -> dict:
     return result
 
 
-def _eval_sequential(model, dataset: ByteDataset, batch: int, seq: int, device: str, steps: int, reset_each_batch: bool) -> float:
+def _eval_sequential(
+    model,
+    dataset: ByteDataset,
+    batch: int,
+    seq: int,
+    device: str,
+    steps: int,
+    reset_each_batch: bool,
+    context_mode,
+) -> float:
     offsets = np.array(dataset._seq_offsets, dtype=np.int64)
     state = None
     total_correct = 0.0
@@ -341,7 +519,7 @@ def _eval_sequential(model, dataset: ByteDataset, batch: int, seq: int, device: 
     with torch.no_grad():
         for _ in range(steps):
             xb, yb, mask = dataset.sample_batch_sequential(batch, device)
-            logits, new_state = model(xb, state=None if reset_each_batch else state)
+            logits, new_state = model(xb, S=context_mode, state=None if reset_each_batch else state)
             if new_state is not None and not reset_each_batch:
                 state = {k: v.detach() for k, v in new_state.items()}
             preds = logits.argmax(dim=-1)
@@ -353,7 +531,7 @@ def _eval_sequential(model, dataset: ByteDataset, batch: int, seq: int, device: 
     return total_correct / max(total_sup, 1.0)
 
 
-def _run_wikitext_sequential_carry(surface: str, variant: str, cfg: dict) -> dict:
+def _run_wikitext_sequential_carry(surface: str, variant: str, cfg: dict, heartbeat_path: Path | None = None) -> dict:
     variant_cfg = VARIANTS[variant]
     _set_determinism(cfg["seed"])
     dataset = _discover_dataset(cfg["seq"], cfg["seed"])
@@ -369,7 +547,6 @@ def _run_wikitext_sequential_carry(surface: str, variant: str, cfg: dict) -> dic
 
     orig_fn = instnct._c19_activation
     instnct._c19_activation = act_fn
-    instnct.set_topk_read_diag_enabled(variant != "LL")
     instnct.set_ring_trace_enabled(True)
 
     model = build_model(
@@ -383,6 +560,9 @@ def _run_wikitext_sequential_carry(surface: str, variant: str, cfg: dict) -> dic
         pointer_mode=cfg["pointer_mode"],
         pointer_interp_mode=cfg["pointer_interp_mode"],
         pointer_seam_mode=cfg["pointer_seam_mode"],
+        mtaps_enabled=variant_cfg["mtaps_enabled"],
+        mtaps_lags=tuple(variant_cfg["mtaps_lags"]),
+        mtaps_mixer_mode=variant_cfg.get("mtaps_mixer_mode", "current"),
         device=cfg["device"],
         hidden_dim=cfg["hidden_dim"],
         M=cfg["M"],
@@ -390,6 +570,7 @@ def _run_wikitext_sequential_carry(surface: str, variant: str, cfg: dict) -> dic
         N=cfg["N"],
         R=cfg["R"],
     )
+    model._diag_enabled = (variant_cfg["read_kernel_mode"] == "topk")
     for name, param in model.named_parameters():
         if any(key in name for key in ("c19_C_", "c19_rho_")):
             param.requires_grad_(False)
@@ -398,24 +579,33 @@ def _run_wikitext_sequential_carry(surface: str, variant: str, cfg: dict) -> dic
     losses: list[float] = []
     accs: list[float] = []
     topk_diag_rows = {key: [] for key in TOPK_READ_DIAG_KEYS}
+    mtap_scalar_rows: dict[str, list[float]] = {}
+    mtap_list_rows: dict[str, list[list[float]]] = {}
     ring_trace_rows = {
         "ptr_trace": [],
         "read_idx_trace": [],
         "read_weight_trace": [],
+        "tap_idx_trace": [],
         "write_idx_trace": [],
         "write_weight_trace": [],
         "read_write_overlap_trace": [],
         "center_hist": [0 for _ in range(cfg["M"])],
         "read_hist": [0 for _ in range(cfg["M"])],
+        "tap_hist": [0 for _ in range(cfg["M"])],
         "write_hist": [0 for _ in range(cfg["M"])],
     }
     state = None
     max_grad = 0.0
     t0 = time.time()
+    _write_heartbeat(
+        heartbeat_path,
+        _heartbeat_payload(surface, variant, cfg, "start", 0, cfg["steps"]),
+    )
 
     for step in range(1, cfg["steps"] + 1):
+        model._diag_enabled = True
         xb, yb, mask = dataset.sample_batch_sequential(cfg["batch"], cfg["device"])
-        logits, new_state = model(xb, state=state)
+        logits, new_state = model(xb, S=cfg.get("context_mode", "dotprod"), state=state)
         if new_state is not None:
             state = {k: v.detach() for k, v in new_state.items()}
         _, masked_loss = func_maskloss_ce(logits, yb, mask)
@@ -435,11 +625,18 @@ def _run_wikitext_sequential_carry(surface: str, variant: str, cfg: dict) -> dic
             value = model._diag.get(key)
             if value is not None:
                 topk_diag_rows[key].append(float(value))
+        for key, value in model._diag.items():
+            if value is None:
+                continue
+            if any(key.startswith(prefix) for prefix in MTAP_DIAG_SCALAR_PREFIXES):
+                mtap_scalar_rows.setdefault(key, []).append(float(value))
+            elif any(key.startswith(prefix) for prefix in MTAP_DIAG_LIST_PREFIXES):
+                mtap_list_rows.setdefault(key, []).append([float(x) for x in value])
         trace = getattr(model, "_ring_trace", None)
         if trace is not None:
-            for key in ("ptr_trace", "read_idx_trace", "read_weight_trace", "write_idx_trace", "write_weight_trace", "read_write_overlap_trace"):
+            for key in ("ptr_trace", "read_idx_trace", "read_weight_trace", "tap_idx_trace", "write_idx_trace", "write_weight_trace", "read_write_overlap_trace"):
                 ring_trace_rows[key].extend(trace.get(key, []))
-            for key in ("center_hist", "read_hist", "write_hist"):
+            for key in ("center_hist", "read_hist", "tap_hist", "write_hist"):
                 vals = trace.get(key, [])
                 ring_trace_rows[key] = [a + int(b) for a, b in zip(ring_trace_rows[key], vals)]
 
@@ -449,7 +646,7 @@ def _run_wikitext_sequential_carry(surface: str, variant: str, cfg: dict) -> dic
             tele = act_fn._telemetry.summary()
             elapsed = time.time() - t0
             diag_suffix = ""
-            if variant != "LL":
+            if variant_cfg["read_kernel_mode"] == "topk":
                 dist = model._diag.get("topk_mean_abs_circ_dist")
                 outside = model._diag.get("topk_outside_local_frac")
                 wdist = model._diag.get("write_topk_mean_abs_circ_dist")
@@ -467,13 +664,47 @@ def _run_wikitext_sequential_carry(surface: str, variant: str, cfg: dict) -> dic
                 f"p99-ring={tele['p99_ring_idx']:.2f}  "
                 f"{elapsed:.0f}s{diag_suffix}"
             )
+            _write_heartbeat(
+                heartbeat_path,
+                _heartbeat_payload(
+                    surface,
+                    variant,
+                    cfg,
+                    "progress",
+                    step,
+                    cfg["steps"],
+                    {
+                        "avg_loss": float(avg_loss),
+                        "avg_acc": float(avg_acc),
+                        "elapsed_s": float(elapsed),
+                    },
+                ),
+            )
 
     elapsed = time.time() - t0
-    carry_eval = _eval_sequential(model, dataset, cfg["batch"], cfg["seq"], cfg["device"], cfg["eval_steps"], reset_each_batch=False)
-    reset_eval = _eval_sequential(model, dataset, cfg["batch"], cfg["seq"], cfg["device"], cfg["eval_steps"], reset_each_batch=True)
+    carry_eval = _eval_sequential(
+        model,
+        dataset,
+        cfg["batch"],
+        cfg["seq"],
+        cfg["device"],
+        cfg["eval_steps"],
+        reset_each_batch=False,
+        context_mode=cfg.get("context_mode", "dotprod"),
+    )
+    reset_eval = _eval_sequential(
+        model,
+        dataset,
+        cfg["batch"],
+        cfg["seq"],
+        cfg["device"],
+        cfg["eval_steps"],
+        reset_each_batch=True,
+        context_mode=cfg.get("context_mode", "dotprod"),
+    )
 
     instnct._c19_activation = orig_fn
-    instnct.set_topk_read_diag_enabled(False)
+    model._diag_enabled = False
     instnct.set_ring_trace_enabled(False)
 
     result = {
@@ -495,8 +726,32 @@ def _run_wikitext_sequential_carry(surface: str, variant: str, cfg: dict) -> dic
     for key in TOPK_READ_DIAG_KEYS:
         rows = topk_diag_rows[key]
         result[key] = (sum(rows) / len(rows)) if rows else None
+    for key, rows in mtap_scalar_rows.items():
+        result[key] = (sum(rows) / len(rows)) if rows else None
+    for key, rows in mtap_list_rows.items():
+        if rows:
+            width = len(rows[0])
+            result[key] = [sum(row[idx] for row in rows) / len(rows) for idx in range(width)]
+        else:
+            result[key] = None
     result["ring_trace_summary"] = _summarize_ring_trace(ring_trace_rows, cfg["M"])
     result["ring_trace"] = ring_trace_rows
+    _write_heartbeat(
+        heartbeat_path,
+        _heartbeat_payload(
+            surface,
+            variant,
+            cfg,
+            "done",
+            cfg["steps"],
+            cfg["steps"],
+            {
+                "final_acc": float(result["final_acc"]),
+                "final_bpc": float(result["final_bpc"]),
+                "time_s": float(result["time_s"]),
+            },
+        ),
+    )
     return result
 
 
@@ -505,28 +760,33 @@ def run_surface(
     variant: str,
     steps_override: int | None = None,
     device_override: str | None = None,
+    seed_override: int | None = None,
     pointer_mode_override: str | None = None,
     pointer_interp_mode_override: str | None = None,
     pointer_seam_mode_override: str | None = None,
+    heartbeat_out: str | None = None,
 ) -> dict:
     cfg = dict(SURFACES[surface])
     if steps_override is not None:
         cfg["steps"] = int(steps_override)
     if device_override is not None:
         cfg["device"] = device_override
+    if seed_override is not None:
+        cfg["seed"] = int(seed_override)
     if pointer_mode_override is not None:
         cfg["pointer_mode"] = pointer_mode_override
     if pointer_interp_mode_override is not None:
         cfg["pointer_interp_mode"] = pointer_interp_mode_override
     if pointer_seam_mode_override is not None:
         cfg["pointer_seam_mode"] = pointer_seam_mode_override
+    heartbeat_path = Path(heartbeat_out) if heartbeat_out else None
 
     if surface == "small_wikitext_fresh":
-        result = _run_small_wikitext_fresh(surface, variant, cfg)
+        result = _run_small_wikitext_fresh(surface, variant, cfg, heartbeat_path=heartbeat_path)
     elif surface == "fast_memory_carry":
-        result = _run_fast_memory_carry(surface, variant, cfg)
+        result = _run_fast_memory_carry(surface, variant, cfg, heartbeat_path=heartbeat_path)
     elif surface == "wikitext_sequential_carry":
-        result = _run_wikitext_sequential_carry(surface, variant, cfg)
+        result = _run_wikitext_sequential_carry(surface, variant, cfg, heartbeat_path=heartbeat_path)
     else:
         raise ValueError(f"Unknown surface: {surface}")
 
@@ -565,9 +825,11 @@ def main():
     parser.add_argument("--variant", required=True, choices=sorted(VARIANTS.keys()))
     parser.add_argument("--steps", type=int, default=0, help="Optional override for preset steps.")
     parser.add_argument("--device", type=str, default="", choices=["", "cpu", "cuda"])
+    parser.add_argument("--seed", type=int, default=-1, help="Optional override for preset seed.")
     parser.add_argument("--pointer-mode", type=str, default="", choices=["", "sequential", "learned", "pilot"])
     parser.add_argument("--pointer-interp-mode", type=str, default="", choices=["", "off", "linear"])
     parser.add_argument("--pointer-seam-mode", type=str, default="", choices=["", "mod", "shortest_arc"])
+    parser.add_argument("--heartbeat-out", type=str, default="")
     parser.add_argument("--json-out", type=str, default="")
     args = parser.parse_args()
 
@@ -576,9 +838,11 @@ def main():
         variant=args.variant,
         steps_override=(args.steps or None),
         device_override=(args.device or None),
+        seed_override=(None if args.seed < 0 else args.seed),
         pointer_mode_override=(args.pointer_mode or None),
         pointer_interp_mode_override=(args.pointer_interp_mode or None),
         pointer_seam_mode_override=(args.pointer_seam_mode or None),
+        heartbeat_out=(args.heartbeat_out or None),
     )
 
     result = payload["result"]

@@ -1,0 +1,101 @@
+{
+  "script": "profile_sweep_step_wikitext.py",
+  "timestamp": "2026-03-06T14:16:52.810571",
+  "config": {
+    "seed": 42,
+    "batch": 32,
+    "seq": 256,
+    "c_value": 3.141592653589793,
+    "impl": "current",
+    "write_impl": "current",
+    "replace_impl": "dense",
+    "kernel_mode": "topk",
+    "topk_k": 1,
+    "tail_k": 6.0,
+    "warmup_steps": 2,
+    "gpu": "NVIDIA GeForce RTX 4070 Ti SUPER",
+    "source_map": false
+  },
+  "coarse_stage_breakdown": [
+    {
+      "stage": "sample",
+      "seconds": 0.000681100063957274,
+      "pct_total": 0.01335477935615366
+    },
+    {
+      "stage": "forward_loss",
+      "seconds": 2.752884399960749,
+      "pct_total": 53.97762487477833
+    },
+    {
+      "stage": "backward",
+      "seconds": 2.343301499960944,
+      "pct_total": 45.94666210292037
+    },
+    {
+      "stage": "unscale_clip",
+      "seconds": 0.0018448999617248774,
+      "pct_total": 0.03617417355661509
+    },
+    {
+      "stage": "optim",
+      "seconds": 0.0013353999238461256,
+      "pct_total": 0.02618406938852989
+    }
+  ],
+  "function_breakdown": [
+    {
+      "name": "_c19_activation",
+      "count": 256,
+      "total_ms": 1087.657922387123,
+      "avg_ms": 4.2486637593247
+    },
+    {
+      "name": "func_hdd_write_tns",
+      "count": 256,
+      "total_ms": 423.76147162914276,
+      "avg_ms": 1.655318248551339
+    },
+    {
+      "name": "func_softread_tns",
+      "count": 0,
+      "total_ms": 0.0,
+      "avg_ms": 0.0
+    },
+    {
+      "name": "func_softwrit_tns",
+      "count": 0,
+      "total_ms": 0.0,
+      "avg_ms": 0.0
+    },
+    {
+      "name": "func_gated_write_tns",
+      "count": 0,
+      "total_ms": 0.0,
+      "avg_ms": 0.0
+    },
+    {
+      "name": "func_movepntr_tns",
+      "count": 0,
+      "total_ms": 0.0,
+      "avg_ms": 0.0
+    }
+  ],
+  "activation_telemetry": {
+    "activation_calls": 256,
+    "activation_values": 16777216,
+    "tail_hit_pct": 0.0,
+    "mean_abs_x": 0.9196862890385091,
+    "mean_abs_over_c": 0.29274522652849555,
+    "p95_abs_x": 2.285560131072998,
+    "p99_abs_x": 2.8333723545074463,
+    "max_abs_x": 5.81785249710083,
+    "p95_abs_over_c": 0.7441170811653137,
+    "p99_abs_over_c": 1.0237481594085693,
+    "max_abs_over_c": 1.8518798351287842,
+    "p95_ring_idx": 0.0,
+    "p99_ring_idx": 0.0,
+    "max_ring_idx": 1.0,
+    "quantile_sample_size": 65536
+  }
+}

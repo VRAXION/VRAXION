@@ -17,27 +17,12 @@ PHI = (1 + math.sqrt(5)) / 2      # φ ≈ 1.6180339887 — golden ratio
 _C19_C = math.pi
 _SOURCE_MAP_ENABLED = False
 _NO_SOURCE_SCOPE = nullcontext()
-_TOPK_READ_DIAG_ENABLED = False
 _RING_TRACE_ENABLED = False
-_TOPK_READ_DIAG_KEYS = (
-    'topk_mean_abs_circ_dist',
-    'topk_outside_local_frac',
-    'topk_attn_entropy',
-    'topk_unique_slot_frac',
-    'write_topk_mean_abs_circ_dist',
-    'write_topk_outside_local_frac',
-    'write_topk_unique_slot_frac',
-)
 
 
 def set_source_map_enabled(enabled: bool):
     global _SOURCE_MAP_ENABLED
     _SOURCE_MAP_ENABLED = bool(enabled)
-
-
-def set_topk_read_diag_enabled(enabled: bool):
-    global _TOPK_READ_DIAG_ENABLED
-    _TOPK_READ_DIAG_ENABLED = bool(enabled)
 
 
 def set_ring_trace_enabled(enabled: bool):
@@ -62,7 +47,7 @@ def _c19_activation(x, rho=4.0, C=None):
     t = scaled - n
     h = t * (1.0 - t)
     is_even = torch.remainder(n, 2.0) < 1.0
-    sgn = torch.where(is_even, torch.ones_like(x), -torch.ones_like(x))
+    sgn = torch.where(is_even, 1.0, -1.0)
     core = C * (sgn * h + (rho * h * h))
     return torch.where(x >= l, x - l, torch.where(x <= -l, x + l, core))
 
@@ -149,9 +134,6 @@ CNFG_SLOTDIMS_INT  = _cfg.get('slot_dim', _cfg['D'])      # ring buffer slot wid
 CNFG_HIDDNDIMS_INT = _cfg.get('hidden_dim', _cfg['D'])    # hidden state width (large = more capacity)
 CNFG_BEINGSNUM_INT = _cfg['N']                            # 6    parallel experts sharing the ring
 CNFG_ATNRADIUS_INT = _cfg['R']                            # 2    attention window half-width (window = 2R+1)
-
-# ─ pointer behavior ─
-CNFG_CNTEXTSCL_FLT = _cfg['S']    # 0.05 how much the read signal scales into hidden state
 
 # ─ attention kernel ─
 CNFG_KERNELMODE_STR = _cfg.get('kernel_mode', 'vshape')  # 'uniform'|'vshape'|'gaussian'|'dotprod'|'topk'
@@ -607,10 +589,11 @@ class INSTNCT(nn.Module):
                  replace_impl=CNFG_REPLACEIMPL_STR,        # 'dense' | 'proxy_overlay' (nightly-only proxy fast path)
                  pointer_interp_mode='off',                # 'off' | 'linear' — nightly-only fractional pointer center
                  pointer_seam_mode='mod',                  # 'mod' | 'shortest_arc' — nightly-only wrap-seam fix
-                 s_constraint='softplus',                  # 'softplus' (S>0) | 'raw' (unconstrained)
-                 mp_enabled=CNFG_MPENABLED_BOOL,           # multi-pointer φ-spaced read heads
-                 mp_heads=CNFG_MPHEADS_INT,                # number of φ-spaced read positions
-                 mp_gate_mode=CNFG_MPGATEMODE_STR):        # 'sigmoid' | 'softmax'
+                 mtaps_enabled=False,                      # nightly-only multi-timescale taps
+                 mtaps_lags=(1, 2, 4, 8, 16, 32),          # lag taps, kept separate then mixed
+                 mtaps_mixer_mode='current',               # 'current' | 'tap_scalar_gate' | 'residual_gated' | 'hybrid_heads_scalar_gate' | 'hybrid_heads_spaced_scalar_gate' | 'hybrid_heads_fixed_scalar_gate'
+                 mtaps_aux_fixed_offsets=(),               # nightly-only fixed auxiliary read heads, pointer-relative
+                 s_constraint='softplus'):                 # 'softplus' (S>0) | 'raw' (unconstrained)
         super().__init__()
         assert kernel_mode in ('uniform', 'vshape', 'gaussian', 'dotprod', 'topk'), \
             f"kernel_mode must be 'uniform', 'vshape', 'gaussian', 'dotprod', or 'topk', got '{kernel_mode}'"
@@ -632,10 +615,40 @@ class INSTNCT(nn.Module):
             f"pointer_seam_mode must be 'mod' or 'shortest_arc', got '{pointer_seam_mode}'"
         assert write_address_mode in ('pointer', 'content_topk'), \
             f"write_address_mode must be 'pointer' or 'content_topk', got '{write_address_mode}'"
+        assert mtaps_mixer_mode in (
+            'current',
+            'tap_scalar_gate',
+            'residual_gated',
+            'hybrid_heads_scalar_gate',
+            'hybrid_heads_spaced_scalar_gate',
+            'hybrid_heads_fixed_scalar_gate',
+        ), \
+            f"mtaps_mixer_mode must be 'current', 'tap_scalar_gate', 'residual_gated', 'hybrid_heads_scalar_gate', 'hybrid_heads_spaced_scalar_gate', or 'hybrid_heads_fixed_scalar_gate', got '{mtaps_mixer_mode}'"
+        if mtaps_enabled:
+            if read_kernel_mode == 'topk':
+                raise ValueError("mtaps_enabled requires a local read path, not pooled topk")
+            if not mtaps_lags:
+                raise ValueError("mtaps_enabled requires at least one lag")
+            mtaps_lags = tuple(sorted({int(x) for x in mtaps_lags}))
+            if any(x <= 0 for x in mtaps_lags):
+                raise ValueError(f"mtaps_lags must be positive integers, got {mtaps_lags!r}")
+        mtaps_aux_fixed_offsets = tuple(int(x) for x in mtaps_aux_fixed_offsets)
+        if mtaps_mixer_mode == 'hybrid_heads_fixed_scalar_gate':
+            if len(mtaps_aux_fixed_offsets) != 2:
+                raise ValueError(
+                    "hybrid_heads_fixed_scalar_gate requires exactly 2 mtaps_aux_fixed_offsets"
+                )
+            if any(x <= 0 for x in mtaps_aux_fixed_offsets):
+                raise ValueError(
+                    f"mtaps_aux_fixed_offsets must be positive integers, got {mtaps_aux_fixed_offsets!r}"
+                )
         self.write_mode = write_mode
         self.replace_impl = replace_impl
         self.pointer_interp_mode = pointer_interp_mode
         self.pointer_seam_mode = pointer_seam_mode
+        self.mtaps_enabled = bool(mtaps_enabled)
+        self.mtaps_mixer_mode = mtaps_mixer_mode
+        self._mtaps_aux_fixed_offsets = mtaps_aux_fixed_offsets
 
         # backward compat: embed_dim=X sets hidden_dim=slot_dim=X
         if embed_dim is not None:
@@ -649,6 +662,7 @@ class INSTNCT(nn.Module):
         self.kernel_mode = kernel_mode
         self.read_kernel_mode = read_kernel_mode
         self.write_address_mode = write_address_mode
+        self._mtaps_lags = list(mtaps_lags) if self.mtaps_enabled else []
         self.checkpoint_chunks = checkpoint_chunks  # not nn.Parameter — excluded from state_dict
         self.expert_weighting = expert_weighting
         self._proxy_overlay_flush_interval = 16
@@ -661,7 +675,6 @@ class INSTNCT(nn.Module):
             and read_kernel_mode == 'vshape'
             and write_address_mode == 'pointer'
             and pointer_mode == 'sequential'
-            and not mp_enabled
             and pointer_interp_mode == 'off'
             and not bb_enabled
             and io_split_mode == 'off'
@@ -671,7 +684,10 @@ class INSTNCT(nn.Module):
         # ── Diagnostics accumulator ──
         # Populated during forward(), read by train.py after each step.
         # Keys: alpha_mean/min/max (per expert), ring_norm, hidden_norm, input_norm, ptr_pos
+        # Gate: _diag_enabled controls whether .item() calls run (CUDA sync points).
+        # train.py sets True on log steps only → ~98% of steps skip all diagnostics.
         self._diag: dict = {}
+        self._diag_enabled: bool = False
         if expert_weighting:
             self._write_grad_ema = torch.zeros(N)     # EMA of gradient magnitudes (CPU)
             self._expert_conf = torch.ones(N)         # write weights, sum=N → each=1.0
@@ -758,6 +774,95 @@ class INSTNCT(nn.Module):
 
         # read_proj: slot_dim → hidden_dim (decompress ring read into hidden space)
         self.read_proj = nn.ModuleList([nn.Linear(slot_dim, hidden_dim) for _ in range(N)])
+        if self.mtaps_enabled:
+            self.register_buffer('_mtaps_lags_tns', torch.tensor(self._mtaps_lags, dtype=torch.long))
+            n_taps = len(self._mtaps_lags)
+            aux_heads = 2 if mtaps_mixer_mode in (
+                'hybrid_heads_scalar_gate',
+                'hybrid_heads_spaced_scalar_gate',
+                'hybrid_heads_fixed_scalar_gate',
+            ) else 0
+            if mtaps_mixer_mode in ('current', 'tap_scalar_gate', 'hybrid_heads_scalar_gate', 'hybrid_heads_spaced_scalar_gate', 'hybrid_heads_fixed_scalar_gate'):
+                self.read_tap_proj = nn.ModuleList([
+                    nn.Linear(slot_dim * (1 + n_taps + aux_heads), hidden_dim) for _ in range(N)
+                ])
+            else:
+                self.read_tap_proj = None
+            if mtaps_mixer_mode == 'tap_scalar_gate':
+                self.read_tap_gate = nn.ModuleList([
+                    nn.Linear(hidden_dim, 1 + n_taps) for _ in range(N)
+                ])
+                for gate in self.read_tap_gate:
+                    nn.init.zeros_(gate.weight)
+                    nn.init.zeros_(gate.bias)
+                self.read_tap_delta_proj = None
+                self.read_tap_resid_gate = None
+                self.read_tap_aux_offset = None
+                self.register_buffer('_mtaps_aux_ranges_tns', torch.tensor([], dtype=torch.float32))
+            elif mtaps_mixer_mode in ('hybrid_heads_scalar_gate', 'hybrid_heads_spaced_scalar_gate'):
+                self.read_tap_gate = nn.ModuleList([
+                    nn.Linear(hidden_dim, 1 + n_taps + 2) for _ in range(N)
+                ])
+                self.read_tap_aux_offset = nn.ModuleList([
+                    nn.Linear(hidden_dim, 2) for _ in range(N)
+                ])
+                for gate in self.read_tap_gate:
+                    nn.init.zeros_(gate.weight)
+                    nn.init.zeros_(gate.bias)
+                for head in self.read_tap_aux_offset:
+                    nn.init.zeros_(head.weight)
+                    head.bias.data.copy_(torch.tensor([-0.5, -0.75]))
+                self.read_tap_delta_proj = None
+                self.read_tap_resid_gate = None
+                self.register_buffer('_mtaps_aux_ranges_tns', torch.tensor([16.0, 64.0], dtype=torch.float32))
+                self.register_buffer('_mtaps_aux_fixed_offsets_tns', torch.tensor([], dtype=torch.float32))
+            elif mtaps_mixer_mode == 'hybrid_heads_fixed_scalar_gate':
+                self.read_tap_gate = nn.ModuleList([
+                    nn.Linear(hidden_dim, 1 + n_taps + len(mtaps_aux_fixed_offsets)) for _ in range(N)
+                ])
+                for gate in self.read_tap_gate:
+                    nn.init.zeros_(gate.weight)
+                    nn.init.zeros_(gate.bias)
+                self.read_tap_aux_offset = None
+                self.read_tap_delta_proj = None
+                self.read_tap_resid_gate = None
+                self.register_buffer('_mtaps_aux_ranges_tns', torch.tensor([], dtype=torch.float32))
+                self.register_buffer('_mtaps_aux_fixed_offsets_tns', torch.tensor(mtaps_aux_fixed_offsets, dtype=torch.float32))
+            elif mtaps_mixer_mode == 'residual_gated':
+                self.read_tap_gate = nn.ModuleList([
+                    nn.Linear(hidden_dim, n_taps) for _ in range(N)
+                ])
+                self.read_tap_delta_proj = nn.ModuleList([
+                    nn.Linear(slot_dim * n_taps, hidden_dim) for _ in range(N)
+                ])
+                self.read_tap_resid_gate = nn.ModuleList([
+                    nn.Linear(hidden_dim, 1) for _ in range(N)
+                ])
+                for gate in self.read_tap_gate:
+                    nn.init.zeros_(gate.weight)
+                    nn.init.zeros_(gate.bias)
+                for resid_gate in self.read_tap_resid_gate:
+                    nn.init.zeros_(resid_gate.weight)
+                    nn.init.zeros_(resid_gate.bias)
+                self.read_tap_aux_offset = None
+                self.register_buffer('_mtaps_aux_ranges_tns', torch.tensor([], dtype=torch.float32))
+                self.register_buffer('_mtaps_aux_fixed_offsets_tns', torch.tensor([], dtype=torch.float32))
+            else:
+                self.read_tap_gate = None
+                self.read_tap_delta_proj = None
+                self.read_tap_resid_gate = None
+                self.read_tap_aux_offset = None
+                self.register_buffer('_mtaps_aux_ranges_tns', torch.tensor([], dtype=torch.float32))
+                self.register_buffer('_mtaps_aux_fixed_offsets_tns', torch.tensor([], dtype=torch.float32))
+        else:
+            self.register_buffer('_mtaps_lags_tns', torch.tensor([], dtype=torch.long))
+            self.read_tap_proj = None
+            self.read_tap_gate = None
+            self.read_tap_delta_proj = None
+            self.read_tap_resid_gate = None
+            self.read_tap_aux_offset = None
+            self.register_buffer('_mtaps_aux_ranges_tns', torch.tensor([], dtype=torch.float32))
+            self.register_buffer('_mtaps_aux_fixed_offsets_tns', torch.tensor([], dtype=torch.float32))
 
         # query_proj: hidden_dim → slot_dim (content-based attention query per expert)
         # created for dotprod/topk reads only — pilot uses its own ptr_query (smaller dim)
@@ -948,11 +1053,13 @@ class INSTNCT(nn.Module):
                 'ptr_trace': [],
                 'read_idx_trace': [],
                 'read_weight_trace': [],
+                'tap_idx_trace': [],
                 'write_idx_trace': [],
                 'write_weight_trace': [],
                 'read_write_overlap_trace': [],
                 'center_hist': torch.zeros(M, dtype=torch.long),
                 'read_hist': torch.zeros(M, dtype=torch.long),
+                'tap_hist': torch.zeros(M, dtype=torch.long),
                 'write_hist': torch.zeros(M, dtype=torch.long),
             }
         if proxy_overlay_enabled:
@@ -993,7 +1100,7 @@ class INSTNCT(nn.Module):
                     else:
                         ptr_tns[i] = target_tns
 
-                    if torch.is_grad_enabled() and self.training:
+                    if self._diag_enabled:
                         d = self._diag
                         d[f'jump_mean_{i}'] = jump.detach().mean().item()
                         d[f'sim_mean_{i}'] = sim.detach().mean().item()
@@ -1046,8 +1153,12 @@ class INSTNCT(nn.Module):
                             base_weights_tns,
                             M,
                         )
-                    if torch.is_grad_enabled() and self.training:
+                    if self._diag_enabled:
                         self._diag[f'ptr_alpha_{i}'] = ptr_alpha_tns.detach().mean().item()
+
+                tap_idx_src = None
+                tap_neighbors_tns = None
+                aux_head_reads_tns = None
 
                 if is_writer and not is_reader:
                     # Writer-only: NO ring read, zero ring signal
@@ -1089,7 +1200,7 @@ class INSTNCT(nn.Module):
                     topk_scores = content_topk_scores_tns[:, :self._read_topk_K]
                     topk_idx = content_topk_idx_tns[:, :self._read_topk_K]
                     topk_attn = F.softmax(topk_scores, dim=-1)                      # (B, K)
-                    if _TOPK_READ_DIAG_ENABLED:
+                    if self._diag_enabled:
                         center_long = center.unsqueeze(1)
                         delta_fwd = torch.remainder(topk_idx - center_long, M).float()
                         delta_back = torch.remainder(center_long - topk_idx, M).float()
@@ -1123,12 +1234,105 @@ class INSTNCT(nn.Module):
                     local_pointer_weights_tns = F.softmax(scores, dim=-1)                     # (B, 2R+1)
                     read_vec_tns = (local_pointer_weights_tns.unsqueeze(-1) * neighbors_tns).sum(1)  # (B, slot_dim)
 
+                if self.mtaps_enabled:
+                    with _source_scope('softread'):
+                        tap_idx_src = torch.remainder(
+                            center.unsqueeze(1) - self._mtaps_lags_tns.unsqueeze(0),
+                            M,
+                        )
+                        tap_expanded_idx_tns = tap_idx_src.unsqueeze(-1).expand(-1, -1, slot_dim)
+                        tap_neighbors_tns = ring_tns.gather(1, tap_expanded_idx_tns)
+                        if self.mtaps_mixer_mode in ('hybrid_heads_scalar_gate', 'hybrid_heads_spaced_scalar_gate', 'hybrid_heads_fixed_scalar_gate'):
+                            base_weights_tns = expert_weights[i].unsqueeze(0).expand(input_vec_tns.shape[0], -1)
+                            if self.mtaps_mixer_mode == 'hybrid_heads_fixed_scalar_gate':
+                                aux_offsets_tns = -self._mtaps_aux_fixed_offsets_tns.unsqueeze(0).expand(input_vec_tns.shape[0], -1)
+                            else:
+                                aux_offset_logits_tns = self.read_tap_aux_offset[i](hidden_lst[i])
+                                aux_offsets_tns = torch.tanh(aux_offset_logits_tns) * self._mtaps_aux_ranges_tns.unsqueeze(0)
+                            if self.mtaps_mixer_mode == 'hybrid_heads_spaced_scalar_gate':
+                                # Hard-space the two learned heads:
+                                # head 0 stays near/medium, head 1 is forced to remain
+                                # outside the local shortcut band and at least 8 slots away
+                                # from head 0 on the ring.
+                                near_off_tns = aux_offsets_tns[:, 0]
+                                raw_far_off_tns = aux_offsets_tns[:, 1]
+                                far_sign_tns = torch.where(raw_far_off_tns >= 0, 1.0, -1.0)
+                                far_mag_tns = raw_far_off_tns.abs() / self._mtaps_aux_ranges_tns[1].clamp_min(1e-8)
+                                far_mag_tns = 8.0 + far_mag_tns * (self._mtaps_aux_ranges_tns[1] - 8.0)
+                                far_off_tns = far_sign_tns * far_mag_tns
+                                near_center_tns = torch.remainder(ptr_tns[i] + near_off_tns, float(M))
+                                far_center_tns = torch.remainder(ptr_tns[i] + far_off_tns, float(M))
+                                signed_delta_tns = torch.remainder(
+                                    far_center_tns - near_center_tns + (float(M) / 2.0),
+                                    float(M),
+                                ) - (float(M) / 2.0)
+                                spacing_sign_tns = torch.where(
+                                    signed_delta_tns.abs() < 1e-6,
+                                    far_sign_tns,
+                                    torch.sign(signed_delta_tns),
+                                )
+                                far_center_tns = torch.where(
+                                    signed_delta_tns.abs() < 8.0,
+                                    torch.remainder(near_center_tns + spacing_sign_tns * 8.0, float(M)),
+                                    far_center_tns,
+                                )
+                                aux_centers_tns = torch.stack([near_center_tns, far_center_tns], dim=1)
+                                far_off_rewrapped_tns = torch.remainder(
+                                    far_center_tns - ptr_tns[i] + (float(M) / 2.0),
+                                    float(M),
+                                ) - (float(M) / 2.0)
+                                aux_offsets_tns = torch.stack([near_off_tns, far_off_rewrapped_tns], dim=1)
+                            aux_centers_tns = torch.remainder(ptr_tns[i].unsqueeze(1) + aux_offsets_tns, float(M))
+                            aux_reads_lst = []
+                            aux_center_dist_lst = []
+                            aux_near_local_lst = []
+                            aux_unique_frac_lst = []
+                            for head_idx in range(aux_centers_tns.shape[1]):
+                                head_center0_tns, _head_alpha_tns, head_indices_tns, head_weights_tns = func_linear_pointer_window_tns(
+                                    aux_centers_tns[:, head_idx],
+                                    offsets_long,
+                                    base_weights_tns,
+                                    M,
+                                )
+                                head_read_tns, _ = func_softread_tns(
+                                    ring_tns,
+                                    head_indices_tns,
+                                    head_weights_tns,
+                                    slot_dim,
+                                )
+                                aux_reads_lst.append(head_read_tns)
+                                if self._diag_enabled:
+                                    center_long = center.long()
+                                    delta_fwd = torch.remainder(head_center0_tns - center_long, M).float()
+                                    delta_back = torch.remainder(center_long - head_center0_tns, M).float()
+                                    head_circ_dist = torch.minimum(delta_fwd, delta_back)
+                                    aux_center_dist_lst.append(head_circ_dist.mean().item())
+                                    aux_near_local_lst.append((head_circ_dist <= float(self.R)).float().mean().item())
+                                    aux_unique_frac_lst.append(
+                                        head_center0_tns.detach().unique().numel() / max(int(head_center0_tns.numel()), 1)
+                                    )
+                            aux_head_reads_tns = torch.stack(aux_reads_lst, dim=1)
+                            if self._diag_enabled:
+                                self._diag[f'head_offset_mean_abs_{i}'] = aux_offsets_tns.detach().abs().mean(dim=0).cpu().tolist()
+                                self._diag[f'head_offset_std_{i}'] = aux_offsets_tns.detach().std(dim=0, unbiased=False).cpu().tolist()
+                                self._diag[f'head_near_local_frac_{i}'] = aux_near_local_lst
+                                self._diag[f'head_center_dist_mean_{i}'] = aux_center_dist_lst
+                                self._diag[f'head_unique_frac_{i}'] = aux_unique_frac_lst
+                                if aux_centers_tns.shape[1] >= 2:
+                                    head0_tns = aux_centers_tns[:, 0]
+                                    head1_tns = aux_centers_tns[:, 1]
+                                    delta_fwd = torch.remainder(head1_tns - head0_tns, M).float()
+                                    delta_back = torch.remainder(head0_tns - head1_tns, M).float()
+                                    head_head_dist_tns = torch.minimum(delta_fwd, delta_back)
+                                    self._diag[f'head_pair_dist_mean_{i}'] = head_head_dist_tns.mean().item()
+                                    self._diag[f'head_pair_near_frac_{i}'] = (head_head_dist_tns < 8.0).float().mean().item()
+
                 if self.write_address_mode == 'content_topk':
                     write_topk_scores = content_topk_scores_tns[:, :self._write_topk_K]
                     write_topk_idx = content_topk_idx_tns[:, :self._write_topk_K]
                     write_weights_tns = F.softmax(write_topk_scores, dim=-1)
                     write_expanded_idx_tns = write_topk_idx.unsqueeze(-1).expand(-1, -1, slot_dim)
-                    if _TOPK_READ_DIAG_ENABLED:
+                    if self._diag_enabled:
                         center_long = center.unsqueeze(1)
                         delta_fwd = torch.remainder(write_topk_idx - center_long, M).float()
                         delta_back = torch.remainder(center_long - write_topk_idx, M).float()
@@ -1174,11 +1378,16 @@ class INSTNCT(nn.Module):
                     ring_trace['ptr_trace'].append(ptr_sample)
                     ring_trace['read_idx_trace'].append(read_idx_sample)
                     ring_trace['read_weight_trace'].append(read_weight_sample)
+                    ring_trace['tap_idx_trace'].append(
+                        [int(x) for x in tap_idx_src[0].detach().tolist()] if tap_idx_src is not None else []
+                    )
                     ring_trace['write_idx_trace'].append(write_idx_sample)
                     ring_trace['write_weight_trace'].append(write_weight_sample)
                     ring_trace['read_write_overlap_trace'].append(float(overlap))
                     ring_trace['center_hist'] += torch.bincount(center.detach().cpu(), minlength=M)
                     ring_trace['read_hist'] += torch.bincount(read_idx_src.detach().reshape(-1).cpu(), minlength=M)
+                    if tap_idx_src is not None:
+                        ring_trace['tap_hist'] += torch.bincount(tap_idx_src.detach().reshape(-1).cpu(), minlength=M)
                     ring_trace['write_hist'] += torch.bincount(write_idx_src.detach().reshape(-1).cpu(), minlength=M)
 
                 # ─ phase signal ─
@@ -1187,39 +1396,78 @@ class INSTNCT(nn.Module):
                            + torch.sin(theta_tns).unsqueeze(-1) * self.phase_sin)
 
                 # ─ hidden update (all hidden_dim-wide) ─
-                if self.mp_enabled and expert_weights is not None:
-                    # Multi-pointer φ-spaced read: K heads at phi-spaced positions
-                    # Head 0 = read_vec_tns (already computed from pointer position)
-                    mp_K = self._mp_heads
-                    mp_offsets = self._mp_offsets  # (K,) precomputed: [0, φ_step, 2φ_step, ...]
-                    head_signals = []
-                    head_signals.append(self.read_proj[i](read_vec_tns))  # head 0: current pointer
-                    ew = expert_weights[i].unsqueeze(0).expand(input_vec_tns.shape[0], -1)  # (B, 2R+1)
-                    for h in range(1, mp_K):
-                        # position for head h: (ptr + φ_offset_h) % M
-                        head_center = (center + mp_offsets[h]) % M
-                        head_indices = (head_center.unsqueeze(1) + offsets_long) % M
-                        head_read, _ = func_softread_tns(ring_tns, head_indices, ew, slot_dim)
-                        head_signals.append(self.read_proj[i](head_read))
-                    # stack → (B, K, hidden_dim), gate → (B, K, 1)
-                    head_stack = torch.stack(head_signals, dim=1)  # (B, K, hidden_dim)
-                    gate_logits = self.mp_gate[i](hidden_lst[i])  # (B, K)
-                    if self._mp_gate_mode == 'softmax':
-                        gate_vals = torch.softmax(gate_logits, dim=-1)  # (B, K) — sum=1, bounded
+                if self.mtaps_enabled:
+                    tap_flat_tns = tap_neighbors_tns.reshape(input_vec_tns.shape[0], -1)
+                    if self.mtaps_mixer_mode == 'current':
+                        mtap_input_tns = torch.cat([read_vec_tns, tap_flat_tns], dim=-1)
+                        ring_signal = self.read_tap_proj[i](mtap_input_tns)
+                    elif self.mtaps_mixer_mode == 'tap_scalar_gate':
+                        gate_logits = self.read_tap_gate[i](hidden_lst[i])  # (B, 1+K)
+                        gate_vals = torch.sigmoid(gate_logits)
+                        main_gate = gate_vals[:, :1]
+                        tap_gate = gate_vals[:, 1:]
+                        tap_gate_norm = tap_gate / tap_gate.sum(dim=-1, keepdim=True).clamp_min(1e-8)
+                        mtap_input_tns = torch.cat(
+                            [
+                                main_gate * read_vec_tns,
+                                (tap_gate.unsqueeze(-1) * tap_neighbors_tns).reshape(input_vec_tns.shape[0], -1),
+                            ],
+                            dim=-1,
+                        )
+                        ring_signal = self.read_tap_proj[i](mtap_input_tns)
+                        if self._diag_enabled:
+                            probs_safe = tap_gate_norm.clamp_min(1e-12)
+                            self._diag[f'mtap_main_frac_{i}'] = (main_gate / gate_vals.sum(dim=-1, keepdim=True).clamp_min(1e-8)).detach().mean().item()
+                            self._diag[f'mtap_gate_mean_by_lag_{i}'] = tap_gate_norm.detach().mean(dim=0).cpu().tolist()
+                            self._diag[f'mtap_gate_max_frac_{i}'] = tap_gate_norm.detach().max(dim=-1).values.mean().item()
+                            self._diag[f'mtap_gate_entropy_{i}'] = (-(probs_safe * probs_safe.log()).sum(dim=-1).mean().item())
+                    elif self.mtaps_mixer_mode in ('hybrid_heads_scalar_gate', 'hybrid_heads_spaced_scalar_gate', 'hybrid_heads_fixed_scalar_gate'):
+                        gate_logits = self.read_tap_gate[i](hidden_lst[i])  # (B, 1+K+2)
+                        gate_vals = torch.sigmoid(gate_logits)
+                        main_gate = gate_vals[:, :1]
+                        tap_gate = gate_vals[:, 1:1 + len(self._mtaps_lags)]
+                        head_gate = gate_vals[:, 1 + len(self._mtaps_lags):]
+                        channel_gate_norm = gate_vals / gate_vals.sum(dim=-1, keepdim=True).clamp_min(1e-8)
+                        tap_gate_norm = tap_gate / tap_gate.sum(dim=-1, keepdim=True).clamp_min(1e-8)
+                        head_gate_norm = head_gate / head_gate.sum(dim=-1, keepdim=True).clamp_min(1e-8)
+                        mtap_input_tns = torch.cat(
+                            [
+                                main_gate * read_vec_tns,
+                                (tap_gate.unsqueeze(-1) * tap_neighbors_tns).reshape(input_vec_tns.shape[0], -1),
+                                (head_gate.unsqueeze(-1) * aux_head_reads_tns).reshape(input_vec_tns.shape[0], -1),
+                            ],
+                            dim=-1,
+                        )
+                        ring_signal = self.read_tap_proj[i](mtap_input_tns)
+                        if self._diag_enabled:
+                            probs_safe = channel_gate_norm.clamp_min(1e-12)
+                            self._diag[f'mtap_main_frac_{i}'] = channel_gate_norm[:, :1].detach().mean().item()
+                            self._diag[f'mtap_gate_mean_by_lag_{i}'] = tap_gate_norm.detach().mean(dim=0).cpu().tolist()
+                            self._diag[f'mtap_gate_max_frac_{i}'] = tap_gate_norm.detach().max(dim=-1).values.mean().item()
+                            self._diag[f'mtap_gate_entropy_{i}'] = (-(tap_gate_norm.clamp_min(1e-12) * tap_gate_norm.clamp_min(1e-12).log()).sum(dim=-1).mean().item())
+                            self._diag[f'head_gate_mean_{i}'] = channel_gate_norm[:, 1 + len(self._mtaps_lags):].detach().mean(dim=0).cpu().tolist()
+                            self._diag[f'head_gate_max_frac_{i}'] = channel_gate_norm[:, 1 + len(self._mtaps_lags):].detach().max(dim=-1).values.mean().item()
+                            self._diag[f'channel_gate_entropy_{i}'] = (-(probs_safe * probs_safe.log()).sum(dim=-1).mean().item())
                     else:
-                        gate_vals = torch.sigmoid(gate_logits)  # (B, K) — independent per head
-                    ring_signal = (gate_vals.unsqueeze(-1) * head_stack).sum(1)  # (B, hidden_dim)
-
-                    # ── multi-pointer diagnostics ──
-                    if torch.is_grad_enabled() and self.training:
-                        d = self._diag
-                        gv = gate_vals.detach()
-                        for h in range(mp_K):
-                            d[f'mp_gate_{i}_head{h}'] = gv[:, h].mean().item()
-                        # entropy of gate distribution (treat as pseudo-probs)
-                        gv_norm = gv / gv.sum(dim=1, keepdim=True).clamp(min=1e-8)
-                        mp_entropy = -(gv_norm * torch.log(gv_norm.clamp(min=1e-8))).sum(-1).mean().item()
-                        d[f'mp_gate_entropy_{i}'] = mp_entropy
+                        tap_gate_logits = self.read_tap_gate[i](hidden_lst[i])  # (B, K)
+                        tap_gate = torch.sigmoid(tap_gate_logits)
+                        tap_gate_norm = tap_gate / tap_gate.sum(dim=-1, keepdim=True).clamp_min(1e-8)
+                        tap_delta = self.read_tap_delta_proj[i](
+                            (tap_gate.unsqueeze(-1) * tap_neighbors_tns).reshape(input_vec_tns.shape[0], -1)
+                        )
+                        resid_beta = torch.sigmoid(self.read_tap_resid_gate[i](hidden_lst[i]))
+                        ring_signal = self.read_proj[i](read_vec_tns) + resid_beta * tap_delta
+                        if self._diag_enabled:
+                            probs_safe = tap_gate_norm.clamp_min(1e-12)
+                            self._diag[f'mtap_gate_mean_by_lag_{i}'] = tap_gate_norm.detach().mean(dim=0).cpu().tolist()
+                            self._diag[f'mtap_gate_max_frac_{i}'] = tap_gate_norm.detach().max(dim=-1).values.mean().item()
+                            self._diag[f'mtap_gate_entropy_{i}'] = (-(probs_safe * probs_safe.log()).sum(dim=-1).mean().item())
+                            self._diag[f'mtap_resid_beta_{i}'] = resid_beta.detach().mean().item()
+                            self._diag[f'mtap_delta_norm_{i}'] = tap_delta.detach().norm(dim=-1).mean().item()
+                    if self._diag_enabled:
+                        self._diag[f'mtap_main_norm_{i}'] = read_vec_tns.detach().norm(dim=-1).mean().item()
+                        self._diag[f'mtap_tap_norm_{i}'] = tap_neighbors_tns.detach().norm(dim=-1).mean().item()
+                        self._diag[f'mtap_signal_norm_{i}'] = ring_signal.detach().norm(dim=-1).mean().item()
                 else:
                     ring_signal = self.read_proj[i](read_vec_tns)  # slot_dim → hidden_dim
                 if S_flt == 'dotprod':
@@ -1231,9 +1479,7 @@ class INSTNCT(nn.Module):
                     blended_ring = alpha * ring_signal  # no LayerNorm — keep magnitude info
 
                     # ── diagnostics: track alpha + signal norms ──
-                    if not torch.is_grad_enabled() or not self.training:
-                        pass  # skip during eval to save compute
-                    else:
+                    if self._diag_enabled:
                         d = self._diag
                         a = alpha.detach()
                         d[f'alpha_{i}_mean'] = a.mean().item()
@@ -1279,7 +1525,7 @@ class INSTNCT(nn.Module):
                             bb_ctx = self._bb_scale * ctx
 
                         # ── BB telemetry (every transform point) ──
-                        if torch.is_grad_enabled() and self.training:
+                        if self._diag_enabled:
                             d = self._diag
                             ctx_raw_n = ctx.detach().norm(dim=-1).mean().item()
                             ctx_scaled_n = bb_ctx.detach().norm(dim=-1).mean().item()
@@ -1387,7 +1633,7 @@ class INSTNCT(nn.Module):
                 bb_write_ptr = (bb_write_ptr + 1) % self._bb_L
                 bb_steps += 1
                 # key norm telemetry
-                if torch.is_grad_enabled() and self.training:
+                if self._diag_enabled:
                     self._diag['bb_key_norm'] = written_key.detach().norm(dim=-1).mean().item()
 
             # ── Hourglass: reader-only output ──
@@ -1423,18 +1669,18 @@ class INSTNCT(nn.Module):
             overlay_len_int = 0
 
         # ── diagnostics: ring + final hidden norms ──
-        if torch.is_grad_enabled() and self.training:
+        if self._diag_enabled:
             d = self._diag
             d['ring_norm'] = ring_tns.detach().norm().item()
             d['ring_slot_mean'] = ring_tns.detach().norm(dim=-1).mean().item()
             for i in range(self.N):
                 d[f'hidden_final_norm_{i}'] = hidden_tns[i].detach().norm(dim=-1).mean().item()
-        if _TOPK_READ_DIAG_ENABLED and topk_diag_count > 0:
+        if self._diag_enabled and topk_diag_count > 0:
             self._diag['topk_mean_abs_circ_dist'] = topk_diag_sum_dist / topk_diag_count
             self._diag['topk_outside_local_frac'] = topk_diag_sum_outside / topk_diag_count
             self._diag['topk_attn_entropy'] = topk_diag_sum_entropy / topk_diag_count
             self._diag['topk_unique_slot_frac'] = topk_diag_sum_unique / topk_diag_count
-        if _TOPK_READ_DIAG_ENABLED and write_topk_diag_count > 0:
+        if self._diag_enabled and write_topk_diag_count > 0:
             self._diag['write_topk_mean_abs_circ_dist'] = write_topk_diag_sum_dist / write_topk_diag_count
             self._diag['write_topk_outside_local_frac'] = write_topk_diag_sum_outside / write_topk_diag_count
             self._diag['write_topk_unique_slot_frac'] = write_topk_diag_sum_unique / write_topk_diag_count
@@ -1443,11 +1689,13 @@ class INSTNCT(nn.Module):
                 'ptr_trace': ring_trace['ptr_trace'],
                 'read_idx_trace': ring_trace['read_idx_trace'],
                 'read_weight_trace': ring_trace['read_weight_trace'],
+                'tap_idx_trace': ring_trace['tap_idx_trace'],
                 'write_idx_trace': ring_trace['write_idx_trace'],
                 'write_weight_trace': ring_trace['write_weight_trace'],
                 'read_write_overlap_trace': ring_trace['read_write_overlap_trace'],
                 'center_hist': ring_trace['center_hist'].tolist(),
                 'read_hist': ring_trace['read_hist'].tolist(),
+                'tap_hist': ring_trace['tap_hist'].tolist(),
                 'write_hist': ring_trace['write_hist'].tolist(),
             }
         else:
@@ -1515,8 +1763,7 @@ class INSTNCT(nn.Module):
         M, hidden_dim, slot_dim, N = self.M, self.hidden_dim, self.slot_dim, self.N
         if probs is None:
             probs = [0.5]
-        for key in _TOPK_READ_DIAG_KEYS:
-            self._diag.pop(key, None)
+        self._diag.clear()
         topk_diag_sum_dist = 0.0
         topk_diag_sum_outside = 0.0
         topk_diag_sum_entropy = 0.0

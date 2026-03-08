@@ -1,0 +1,51 @@
+[
+  {
+    "scope": "write_replace",
+    "calls": 256,
+    "self_device_us": 1292472.0,
+    "self_cpu_us": 1236686.0000000016,
+    "pct_scoped_device": 60.477815508017635
+  },
+  {
+    "scope": "write_prepare",
+    "calls": 512,
+    "self_device_us": 295857.0,
+    "self_cpu_us": 279022.2999999962,
+    "pct_scoped_device": 13.843847342732047
+  },
+  {
+    "scope": "output_head",
+    "calls": 257,
+    "self_device_us": 214718.0,
+    "self_cpu_us": 205553.50000001077,
+    "pct_scoped_device": 10.047162019951326
+  },
+  {
+    "scope": "window_prepare",
+    "calls": 513,
+    "self_device_us": 161424.0,
+    "self_cpu_us": 135447.89999998757,
+    "pct_scoped_device": 7.553409969861041
+  },
+  {
+    "scope": "softread",
+    "calls": 256,
+    "self_device_us": 105749.0,
+    "self_cpu_us": 91383.0999999811,
+    "pct_scoped_device": 4.948245309884745
+  },
+  {
+    "scope": "pointer_update",
+    "calls": 256,
+    "self_device_us": 66214.0,
+    "self_cpu_us": 57685.90000000681,
+    "pct_scoped_device": 3.098309345229823
+  },
+  {
+    "scope": "state_init",
+    "calls": 1,
+    "self_device_us": 667.0,
+    "self_cpu_us": 620.9,
+    "pct_scoped_device": 0.03121050432338013
+  }
+]

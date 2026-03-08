@@ -1,0 +1,62 @@
+{
+  "script": "cpu_pareto_probe.py",
+  "timestamp": "2026-03-07T18:52:01.820409",
+  "surface": "wikitext_sequential_carry",
+  "variant": "LLT7",
+  "preset": "seq_tradeoff",
+  "thread_limit": 4,
+  "probe_steps": 500,
+  "time_budget_s": 300,
+  "results": [
+    {
+      "id": "A_slot8",
+      "candidate": {
+        "id": "A_slot8",
+        "hidden_dim": 512,
+        "slot_dim": 8,
+        "seq": 8,
+        "batch": 8
+      },
+      "probe_steps": 500,
+      "probe_time_s": 25.366356372833252,
+      "probe_s_per_step": 0.05073271274566651,
+      "target_steps": 5900,
+      "final_acc": 0.43127964943647384,
+      "best_acc": 0.761904776096344,
+      "final_bpc": 2.84480581507802,
+      "final_loss": 1.9718623518943788,
+      "time_s": 329.8150851726532,
+      "s_per_step": 0.05590086189367004,
+      "carry_eval_acc": 0.4281829419035847,
+      "fresh_eval_acc": 0.3517923362175525,
+      "carry_minus_reset_pp": 7.639060568603218,
+      "probe_json": "S:\\AI\\_tmp\\nightly_worktree\\v4\\dev_notes\\telemetry\\cpu_pareto_probe_A_slot8_probe_20260307_184037_121413.json",
+      "full_json": "S:\\AI\\_tmp\\nightly_worktree\\v4\\dev_notes\\telemetry\\cpu_pareto_probe_A_slot8_full_20260307_184037_121413.json"
+    },
+    {
+      "id": "B_slot16",
+      "candidate": {
+        "id": "B_slot16",
+        "hidden_dim": 512,
+        "slot_dim": 16,
+        "seq": 8,
+        "batch": 8
+      },
+      "probe_steps": 500,
+      "probe_time_s": 30.480265855789185,
+      "probe_s_per_step": 0.06096053171157837,
+      "target_steps": 4900,
+      "final_acc": 0.4531778526306152,
+      "best_acc": 0.734375,
+      "final_bpc": 2.7707339879615307,
+      "final_loss": 1.9205198502540588,
+      "time_s": 275.3395426273346,
+      "s_per_step": 0.05619174339333359,
+      "carry_eval_acc": 0.4809217046580773,
+      "fresh_eval_acc": 0.3937066402378593,
+      "carry_minus_reset_pp": 8.721506442021804,
+      "probe_json": "S:\\AI\\_tmp\\nightly_worktree\\v4\\dev_notes\\telemetry\\cpu_pareto_probe_B_slot16_probe_20260307_184037_121413.json",
+      "full_json": "S:\\AI\\_tmp\\nightly_worktree\\v4\\dev_notes\\telemetry\\cpu_pareto_probe_B_slot16_full_20260307_184037_121413.json"
+    }
+  ]
+}

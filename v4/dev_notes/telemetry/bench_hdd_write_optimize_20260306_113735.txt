@@ -1,0 +1,11 @@
+=== HDD Write Optimization Benchmark ===
+GPU: NVIDIA GeForce RTX 4070 Ti SUPER
+Shape: B=32, M=1024, W=3, D=128  repeats=100
+
+Variant      Max diff    Forward   Backward   Fwd speed   Bwd speed   Promote
+-------------------------------------------------------------------------------
+current     0.000e+00     0.305ms     1.131ms      1.000x      1.000x     False
+lerp_v2     4.768e-07     0.179ms     0.942ms      1.705x      1.201x      True
+delta_v3    2.384e-07     0.213ms     0.901ms      1.431x      1.255x      True
+
+Promoted variants: ['lerp_v2', 'delta_v3']

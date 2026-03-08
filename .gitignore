@@ -49,6 +49,8 @@ v4/eval_data/
 v4/ARCHIVE/
 v4/data_adversarial/
 v4/data_test/
+v4/tests/_scratch/
+v4/dev_notes/telemetry/_scratch/
 *.traindat
 *.mask
 *.drawio.bkp
