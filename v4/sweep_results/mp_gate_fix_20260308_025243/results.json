@@ -1,0 +1,41 @@
+[
+  {
+    "config": "A",
+    "label": "baseline",
+    "seed": 42,
+    "steps": 500,
+    "params": 87332,
+    "final_loss": 4.85691841006279,
+    "final_bpc": 7.0070521041998965,
+    "final_acc": 0.13813706885208377,
+    "best_loss": 2.892397880554199,
+    "time_s": 644.5859615802765,
+    "csv_log": "/home/user/VRAXION/v4/sweep_results/mp_gate_fix_20260308_025243/A_baseline_seed42.csv"
+  },
+  {
+    "config": "B",
+    "label": "mp_softmax",
+    "seed": 42,
+    "steps": 500,
+    "params": 88360,
+    "final_loss": 4.9906181037426,
+    "final_bpc": 7.199939989240131,
+    "final_acc": 0.13386427645862567,
+    "best_loss": 2.982084274291992,
+    "time_s": 822.5176765918732,
+    "csv_log": "/home/user/VRAXION/v4/sweep_results/mp_gate_fix_20260308_025243/B_mp_softmax_seed42.csv"
+  },
+  {
+    "config": "C",
+    "label": "mp_sigmoid",
+    "seed": 42,
+    "steps": 500,
+    "params": 88360,
+    "final_loss": 5.19964936375618,
+    "final_bpc": 7.501508351452495,
+    "final_acc": 0.10200761091226013,
+    "best_loss": 3.987358808517456,
+    "time_s": 825.7279732227325,
+    "csv_log": "/home/user/VRAXION/v4/sweep_results/mp_gate_fix_20260308_025243/C_mp_sigmoid_seed42.csv"
+  }
+]

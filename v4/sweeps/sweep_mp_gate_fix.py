@@ -41,31 +41,24 @@ from train import ByteDataset, func_discover_dat, func_maskloss_ce
 from model_factory import _build_instnct_spec, build_model_from_spec, load_model_config
 
 # ── Configs ──
+# Small model overrides for fast CPU runs
+_SMALL = {'hidden_dim': 256, 'slot_dim': 64, 'M': 256}
+
 SWEEP_CONFIGS = {
     'A': {
         'label': 'baseline',
         'desc': 'mp_enabled=false — single pointer (control)',
-        'overrides': {
-            'mp_enabled': False,
-        },
+        'overrides': {**_SMALL, 'mp_enabled': False},
     },
     'B': {
         'label': 'mp_softmax',
         'desc': 'mp_enabled=true, gate_mode=softmax — bounded (fix)',
-        'overrides': {
-            'mp_enabled': True,
-            'mp_heads': 4,
-            'mp_gate_mode': 'softmax',
-        },
+        'overrides': {**_SMALL, 'mp_enabled': True, 'mp_heads': 4, 'mp_gate_mode': 'softmax'},
     },
     'C': {
         'label': 'mp_sigmoid',
         'desc': 'mp_enabled=true, gate_mode=sigmoid — unbounded (original)',
-        'overrides': {
-            'mp_enabled': True,
-            'mp_heads': 4,
-            'mp_gate_mode': 'sigmoid',
-        },
+        'overrides': {**_SMALL, 'mp_enabled': True, 'mp_heads': 4, 'mp_gate_mode': 'sigmoid'},
     },
 }
 
