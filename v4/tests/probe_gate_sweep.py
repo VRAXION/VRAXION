@@ -22,7 +22,7 @@ def run_variant(label, S_override):
     torch.cuda.manual_seed_all(SEED)
 
     model = INSTNCT(
-        M=64, hidden_dim=512, slot_dim=64, N=3, R=1, B=8,
+        M=64, hidden_dim=512, slot_dim=64, N=3, R=2, B=8,
         embed_mode=True, kernel_mode='vshape',
         checkpoint_chunks=0, expert_weighting=False,
         embed_encoding='learned', output_encoding='learned',

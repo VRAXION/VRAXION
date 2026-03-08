@@ -454,9 +454,9 @@ def create_model(device, gated_write=False, write_mode='accumulate', kernel_mode
                  pointer_mode='sequential', N=2):
     """Create INSTNCT with bench_fast_memory defaults."""
     return INSTNCT(
-        M=256, hidden_dim=512, slot_dim=64, N=N, R=1,
+        M=256, hidden_dim=512, slot_dim=64, N=N, R=2,
         embed_mode=True, kernel_mode=kernel_mode,
-        embed_encoding='bitlift', output_encoding='lowrank_c19',
+        embed_encoding='learned', output_encoding='lowrank_c19',
         expert_weighting=False, checkpoint_chunks=0,
         bb_enabled=False, io_split_mode='off',
         pointer_mode=pointer_mode,

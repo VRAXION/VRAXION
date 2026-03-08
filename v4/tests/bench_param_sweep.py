@@ -19,9 +19,9 @@ torch.set_num_threads(16)
 
 # ── Baseline config (fast, ~1-2 steps/sec) ──────────────────────
 BASELINE = dict(
-    hidden_dim=256, slot_dim=64, M=128, N=1, R=1, B=16,
+    hidden_dim=256, slot_dim=64, M=128, N=1, R=2, B=16,
     kernel_mode='vshape', pointer_mode='sequential',
-    embed_mode=True, embed_encoding='bitlift', output_encoding='lowrank_c19',
+    embed_mode=True, embed_encoding='learned', output_encoding='lowrank_c19',
     write_mode='replace',
 )
 BASELINE_SEQ = 64

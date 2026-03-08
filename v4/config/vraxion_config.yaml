@@ -161,6 +161,15 @@ model:
   # BB gate mode: 'learned' = sigmoid gate (sample-dependent), 'fixed' = no gate (scale only)
   bb_gate_mode: fixed
 
+  # ── Multi-Timescale Taps (MTAPS) ──────────────────────────
+  # Read from historical ring positions at fixed lag offsets.
+  # Provides temporal context without extra parameters (except mixer).
+  # Nightly results: LLT (mtaps) is 10-15% faster and equivalent loss to baseline.
+  # false = disabled (single pointer read). true = read from all lag positions.
+  mtaps_enabled: false
+  mtaps_lags: [1, 2, 4, 8, 16, 32, 64]
+  mtaps_mixer_mode: current          # 'current' | 'tap_scalar_gate' | 'residual_gated' | etc.
+
 
 # ══════════════════════════════════════════════════════════════
 #  DATA — generate.py

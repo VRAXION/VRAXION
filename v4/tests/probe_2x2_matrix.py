@@ -22,9 +22,9 @@ from bench_fast_memory import generate_repeating_pattern
 def create_model(write_mode, pointer_mode, seed=42):
     torch.manual_seed(seed)
     return INSTNCT(
-        M=256, hidden_dim=512, slot_dim=64, N=1, R=1,
+        M=256, hidden_dim=512, slot_dim=64, N=1, R=2,
         embed_mode=True, kernel_mode='vshape',
-        embed_encoding='bitlift', output_encoding='lowrank_c19',
+        embed_encoding='learned', output_encoding='lowrank_c19',
         expert_weighting=False, checkpoint_chunks=0,
         bb_enabled=False, io_split_mode='off',
         pointer_mode=pointer_mode, write_mode=write_mode,

@@ -18,9 +18,9 @@ torch.manual_seed(42)
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
 # Full-scale model (same as training)
-model = INSTNCT(M=1024, hidden_dim=2048, slot_dim=64, N=2, R=1,
+model = INSTNCT(M=1024, hidden_dim=2048, slot_dim=64, N=2, R=2,
                 embed_mode=True, kernel_mode='vshape',
-                embed_encoding='bitlift', output_encoding='lowrank_c19',
+                embed_encoding='learned', output_encoding='lowrank_c19',
                 pointer_mode='sequential')
 model.to(device)
 model.train()
