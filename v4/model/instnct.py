@@ -164,10 +164,6 @@ CNFG_BBSCALE_FLT = float(_cfg.get('bb_scale', 0.1))
 CNFG_BBTAU_FLT = float(_cfg.get('bb_tau', 4.0))
 CNFG_BBGATEMODE_STR = _cfg.get('bb_gate_mode', 'learned')  # 'learned' | 'fixed'
 
-# ─ multi-pointer φ-spaced read heads ─
-CNFG_MPENABLED_BOOL = _cfg.get('mp_enabled', False)   # φ-spaced multi-head ring read
-CNFG_MPHEADS_INT = int(_cfg.get('mp_heads', 4))       # number of φ-spaced read positions
-CNFG_MPGATEMODE_STR = _cfg.get('mp_gate_mode', 'softmax')  # 'sigmoid' | 'softmax'
 
 # ─ topK ring read ─
 CNFG_TOPK_INT = int(_cfg.get('topk_K', 8))  # number of ring slots for content-based read
@@ -933,27 +929,6 @@ class INSTNCT(nn.Module):
                 self.bb_gate = None  # fixed mode: no gate, just scale
             self._bb_scale = bb_scale
             self._bb_tau = bb_tau
-
-        # ── Multi-pointer φ-spaced read heads ──
-        # K read positions on the ring, each floor(M/φ) apart → maximally spread.
-        # Head 0 = current pointer. Independent sigmoid gates per head.
-        self.mp_enabled = mp_enabled
-        self._mp_heads = mp_heads
-        self._mp_gate_mode = mp_gate_mode
-        if mp_enabled:
-            phi_step = int(M * PHI_INV)  # floor(M/φ) ≈ 632 for M=1024
-            mp_offsets = torch.tensor([i * phi_step % M for i in range(mp_heads)], dtype=torch.long)
-            self.register_buffer('_mp_offsets', mp_offsets)  # (K,) — not trainable, on device
-            # per-expert gate: hidden → K sigmoid gates (independent on/off per head)
-            self.mp_gate = nn.ModuleList([
-                nn.Linear(hidden_dim, mp_heads) for _ in range(N)
-            ])
-            # init: head 0 (current pointer) starts open, others start modest
-            for g in self.mp_gate:
-                nn.init.zeros_(g.weight)
-                bias_init = torch.full((mp_heads,), -1.0)  # sigmoid(-1) ≈ 0.27
-                bias_init[0] = 1.0  # sigmoid(1) ≈ 0.73 — favor current pointer initially
-                g.bias.data.copy_(bias_init)
 
         # phase embeddings: sin/cos position encoding — hidden_dim wide (adds to hidden state)
         self.phase_cos = nn.Parameter(torch.randn(hidden_dim) * 0.01)
