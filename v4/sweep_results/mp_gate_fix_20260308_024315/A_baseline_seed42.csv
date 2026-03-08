@@ -1,0 +1,2 @@
+step,loss,acc,lr,elapsed_s,ring_norm,ring_signal_norm_0,hidden_norm_0,alpha_0_mean,ptr_pos_0,mp_gate_0_head0,mp_gate_0_head1,mp_gate_0_head2,mp_gate_0_head3,mp_gate_entropy_0
+1,5.617348,0.0007,0.000010,5.0,90.81,2.54,58.57,0.5242,559.44,0.0000,0.0000,0.0000,0.0000,0.0000
