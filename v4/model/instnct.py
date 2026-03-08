@@ -49,7 +49,9 @@ def _c19_activation(x, rho=4.0, C=None):
     is_even = torch.remainder(n, 2.0) < 1.0
     sgn = torch.where(is_even, 1.0, -1.0)
     core = C * (sgn * h + (rho * h * h))
-    return torch.where(x >= l, x - l, torch.where(x <= -l, x + l, core))
+    # Linear tails: shift by ±l outside periodic region
+    result = torch.where(x <= -l, x + l, core)
+    return torch.where(x >= l, x - l, result)
 
 
 def _c19_dualphi_activation(x, rho=4.0, C=None):
@@ -660,9 +662,9 @@ class INSTNCT(nn.Module):
                 raise ValueError(f"mtaps_lags must be positive integers, got {mtaps_lags!r}")
         mtaps_aux_fixed_offsets = tuple(int(x) for x in mtaps_aux_fixed_offsets)
         if mtaps_mixer_mode == 'hybrid_heads_fixed_scalar_gate':
-            if len(mtaps_aux_fixed_offsets) != 2:
+            if len(mtaps_aux_fixed_offsets) < 1:
                 raise ValueError(
-                    "hybrid_heads_fixed_scalar_gate requires exactly 2 mtaps_aux_fixed_offsets"
+                    "hybrid_heads_fixed_scalar_gate requires at least 1 mtaps_aux_fixed_offsets entry"
                 )
             if any(x <= 0 for x in mtaps_aux_fixed_offsets):
                 raise ValueError(
@@ -721,7 +723,7 @@ class INSTNCT(nn.Module):
         self._diag_enabled: bool = False
         if expert_weighting:
             self._write_grad_ema = torch.zeros(N)     # EMA of gradient magnitudes (CPU)
-            self._expert_conf = torch.ones(N)         # write weights, sum=N → each=1.0
+            self.register_buffer('_expert_conf', torch.ones(N), persistent=False)  # moves with device, no .item() needed
         else:
             self._write_grad_ema = None
             self._expert_conf = None
@@ -808,11 +810,12 @@ class INSTNCT(nn.Module):
         if self.mtaps_enabled:
             self.register_buffer('_mtaps_lags_tns', torch.tensor(self._mtaps_lags, dtype=torch.long))
             n_taps = len(self._mtaps_lags)
-            aux_heads = 2 if mtaps_mixer_mode in (
-                'hybrid_heads_scalar_gate',
-                'hybrid_heads_spaced_scalar_gate',
-                'hybrid_heads_fixed_scalar_gate',
-            ) else 0
+            if mtaps_mixer_mode in ('hybrid_heads_scalar_gate', 'hybrid_heads_spaced_scalar_gate'):
+                aux_heads = 2
+            elif mtaps_mixer_mode == 'hybrid_heads_fixed_scalar_gate':
+                aux_heads = len(mtaps_aux_fixed_offsets)
+            else:
+                aux_heads = 0
             if mtaps_mixer_mode in ('current', 'tap_scalar_gate', 'hybrid_heads_scalar_gate', 'hybrid_heads_spaced_scalar_gate', 'hybrid_heads_fixed_scalar_gate'):
                 self.read_tap_proj = nn.ModuleList([
                     nn.Linear(slot_dim * (1 + n_taps + aux_heads), hidden_dim) for _ in range(N)
@@ -972,6 +975,7 @@ class INSTNCT(nn.Module):
         # fixed attention radius from config — R_eff = R + 0.5 gives window of exactly 2R+1 slots
         # R=0 → 1 slot (needle), R=1 → 3 slots, R=2 → 5 slots
         self.register_buffer('_R_eff', torch.full((N,), R + 0.5))
+        self._max_R: float = R + 0.5  # precomputed scalar — avoids .item() graph break in forward
 
         # precomputed φ-jump table — shape (N, M), not trainable, moves with device
         self.dests: torch.Tensor
@@ -1586,7 +1590,7 @@ class INSTNCT(nn.Module):
                         else:
                             write_vec = hidden_lst[i]                      # identity when dims match
                         if self._expert_conf is not None:
-                            write_vec = self._expert_conf[i].item() * write_vec
+                            write_vec = self._expert_conf[i] * write_vec
                     if self.write_mode == 'replace':
                         with _source_scope('write_prepare'):
                             ws = torch.sigmoid(self.write_gate[i](hidden_lst[i]))  # (B, 1)
@@ -1755,8 +1759,8 @@ class INSTNCT(nn.Module):
             g = self.write_proj[i].weight.grad  # type: ignore[union-attr]
             if g is None:
                 continue
-            mag = g.abs().mean().item()  # type: ignore[misc]
-            w = self._expert_conf[i].item()
+            mag = g.abs().mean().item()  # type: ignore[misc]  — CPU-side, OK outside forward
+            w = self._expert_conf[i].item()  # CPU-side, OK outside forward
             mag = mag / max(w, 0.05)       # normalize out the weight's influence
             self._write_grad_ema[i] = decay * self._write_grad_ema[i] + (1.0 - decay) * mag
         # Normalize EMA by its mean so softmax sees relative differences,
@@ -1764,7 +1768,7 @@ class INSTNCT(nn.Module):
         ema_mean = self._write_grad_ema.mean().clamp(min=1e-10)
         normalized = self._write_grad_ema / ema_mean
         raw = (-normalized / temperature).softmax(dim=0)
-        self._expert_conf = N * ((1.0 - floor) * raw + floor / N)
+        self._expert_conf.copy_(N * ((1.0 - floor) * raw + floor / N))
 
     def forward(self, x, S=None, probs=None, state=None):
         """Processes T timesteps over B sequences. Each timestep: every expert
@@ -1852,7 +1856,7 @@ class INSTNCT(nn.Module):
         #   R=2 → R_eff=2.5 → win=2 → 5 slots (exact)
         # gaussian/uniform: tail extends further, use 2.5× + guard.
         with _source_scope('window_prepare'):
-            max_R = R_effs.max().item()
+            max_R = self._max_R  # precomputed in __init__, no .item() graph break
             if self.read_kernel_mode in ('vshape', 'dotprod', 'topk'):
                 win = int(math.floor(max_R))  # exact: no wasted gathers
             else:
