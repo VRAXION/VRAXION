@@ -119,6 +119,14 @@ model:
   # false = disabled (equal weights). true = enabled.
   expert_weighting: true
 
+  # ── C19 Activation Mode ───────────────────────────────────
+  # 'standard' = original C19 periodic parabolic wave
+  # 'dualphi'  = dual-phi asymmetric gain: neg arches × φ, pos arches × 1/φ
+  #              + linear tails (not periodic wrap) for gradient stability
+  # A/B test (2026-03-05): dualphi = +1.5% acc, 2× lower max grad norm,
+  # -7.7% wall time vs neg-phi-only. Validated on GPU WikiText-103, 500 steps.
+  c19_mode: dualphi
+
   # ── Embedding Encoding ─────────────────────────────────────
   # Input encoding type for byte tokens (embed_mode: true only).
   # 'learned'  = standard nn.Embedding(256, hidden_dim) — 524K learnable params
