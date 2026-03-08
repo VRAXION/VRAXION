@@ -661,6 +661,10 @@ class INSTNCT(nn.Module):
         self.write_address_mode = write_address_mode
         self._mtaps_lags = list(mtaps_lags) if self.mtaps_enabled else []
         self.checkpoint_chunks = checkpoint_chunks  # not nn.Parameter — excluded from state_dict
+        # Chunk-level compile: compile _process_chunk instead of full forward.
+        # Set by training harness (not model config). Does not affect model behavior.
+        self._compile_chunks: bool = False
+        self._compiled_chunk_fn = None
         self.expert_weighting = expert_weighting
         self._proxy_overlay_flush_interval = 16
         self._proxy_overlay_cap = 18
@@ -1040,6 +1044,11 @@ class INSTNCT(nn.Module):
                 'tap_hist': torch.zeros(M, dtype=torch.long),
                 'write_hist': torch.zeros(M, dtype=torch.long),
             }
+        # Proxy overlay uses .item() calls that break torch.compile graph capture.
+        # Disable it when chunk-compile is active — correctness is identical,
+        # proxy overlay is a pure performance optimization for the dense scatter path.
+        if self._compile_chunks:
+            proxy_overlay_enabled = False
         if proxy_overlay_enabled:
             ptr0_tns = ptr_tns[0].long().clamp(0, M - 1)
             if bool((ptr0_tns != ptr0_tns[:1]).any().item()):
@@ -1296,6 +1305,11 @@ class INSTNCT(nn.Module):
                                 self._diag[f'head_near_local_frac_{i}'] = aux_near_local_lst
                                 self._diag[f'head_center_dist_mean_{i}'] = aux_center_dist_lst
                                 self._diag[f'head_unique_frac_{i}'] = aux_unique_frac_lst
+                                if self.mtaps_mixer_mode == 'hybrid_heads_fixed_scalar_gate':
+                                    self._diag[f'fixed_head_offset_mean_abs_{i}'] = aux_offsets_tns.detach().abs().mean(dim=0).cpu().tolist()
+                                    self._diag[f'fixed_head_near_local_frac_{i}'] = aux_near_local_lst
+                                    self._diag[f'fixed_head_center_dist_mean_{i}'] = aux_center_dist_lst
+                                    self._diag[f'fixed_head_unique_frac_{i}'] = aux_unique_frac_lst
                                 if aux_centers_tns.shape[1] >= 2:
                                     head0_tns = aux_centers_tns[:, 0]
                                     head1_tns = aux_centers_tns[:, 1]
@@ -1426,6 +1440,9 @@ class INSTNCT(nn.Module):
                             self._diag[f'head_gate_mean_{i}'] = channel_gate_norm[:, 1 + len(self._mtaps_lags):].detach().mean(dim=0).cpu().tolist()
                             self._diag[f'head_gate_max_frac_{i}'] = channel_gate_norm[:, 1 + len(self._mtaps_lags):].detach().max(dim=-1).values.mean().item()
                             self._diag[f'channel_gate_entropy_{i}'] = (-(probs_safe * probs_safe.log()).sum(dim=-1).mean().item())
+                            if self.mtaps_mixer_mode == 'hybrid_heads_fixed_scalar_gate':
+                                self._diag[f'fixed_head_gate_mean_{i}'] = channel_gate_norm[:, 1 + len(self._mtaps_lags):].detach().mean(dim=0).cpu().tolist()
+                                self._diag[f'fixed_head_gate_max_frac_{i}'] = channel_gate_norm[:, 1 + len(self._mtaps_lags):].detach().max(dim=-1).values.mean().item()
                     else:
                         tap_gate_logits = self.read_tap_gate[i](hidden_lst[i])  # (B, K)
                         tap_gate = torch.sigmoid(tap_gate_logits)
@@ -1824,12 +1841,20 @@ class INSTNCT(nn.Module):
                 topk_write_weights = None
 
         # ── Chunk-based processing ──
-        # When checkpoint_chunks=0 or not training: C=T → single chunk, zero overhead.
-        # When checkpoint_chunks>0 and training: T split into C-sized chunks,
-        # each wrapped in grad_checkpoint to discard/recompute ring clone activations.
-        C = self.checkpoint_chunks
-        use_ckpt = C > 0 and torch.is_grad_enabled()
-        if not use_ckpt:
+        # Three modes (mutually exclusive):
+        #   1. compile_chunks: _process_chunk compiled via torch.compile (C=compile_chunk_size)
+        #   2. grad_checkpoint: _process_chunk wrapped in grad_checkpoint (C=checkpoint_chunks)
+        #   3. eager: single chunk C=T, no wrapping
+        use_compile = self._compile_chunks and torch.is_grad_enabled()
+        if use_compile:
+            C = getattr(self, 'compile_chunk_size', 32)
+            if self._compiled_chunk_fn is None:
+                self._compiled_chunk_fn = torch.compile(
+                    self._process_chunk, mode='reduce-overhead')
+        else:
+            C = self.checkpoint_chunks
+        use_ckpt = C > 0 and torch.is_grad_enabled() and not use_compile
+        if not use_ckpt and not use_compile:
             C = T  # single chunk = identical to original forward loop
 
         all_outs = []
@@ -1837,7 +1862,13 @@ class INSTNCT(nn.Module):
             t_end = min(t_start + C, T)
             x_chunk = x[:, t_start:t_end]
 
-            if use_ckpt:
+            if use_compile:
+                ring_tns, ptr_tns, hidden_tns, bb_buf, bb_keys, bb_write_ptr, bb_steps, chunk_outs = self._compiled_chunk_fn(
+                    x_chunk, ring_tns, ptr_tns, hidden_tns,
+                    bb_buf, bb_keys, bb_write_ptr, bb_steps,
+                    S, probs, offsets_long, expert_weights,
+                    topk_write_weights)
+            elif use_ckpt:
                 # grad_checkpoint discards intermediate activations and recomputes
                 # them during backward — saves ~13× VRAM on ring clones.
                 ring_tns, ptr_tns, hidden_tns, bb_buf, bb_keys, bb_write_ptr, bb_steps, chunk_outs = grad_checkpoint(  # type: ignore[misc]

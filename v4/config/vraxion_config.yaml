@@ -236,6 +236,13 @@ training:
   # Only effective on CUDA. Checkpoint-compatible (scaler state saved).
   use_amp: true
 
+  # ── torch.compile ─────────────────────────────────────────────
+  # Chunk-level compilation: Dynamo traces _process_chunk once (C timesteps),
+  # replays the graph for each chunk of the sequence. Avoids full-sequence
+  # unroll that hangs at T>=128. Requires bb_enabled=false, _diag_enabled=false.
+  compile: true
+  compile_chunk_size: 32  # timesteps per compiled chunk (must be > 0)
+
   # ── Sequential / Stateful Training (TBPTT) ─────────────────
   # When true: data is read in order (not random offsets), and
   # ring/hidden/pointer state persists across sequences. Gradients
