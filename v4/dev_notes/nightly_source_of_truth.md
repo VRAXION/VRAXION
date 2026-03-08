@@ -51,6 +51,7 @@ This was acceptable around `T=48`, but became unusable at `T=128` and production
 
 - Compile `_process_chunk()` at chunk granularity.
 - Keep the outer timestep/chunk loop in Python.
+- On the supported production path, chunk compile now targets the single-expert fast helper directly instead of the generic dispatcher.
 - Auto policy:
   - `seq_len <= 48` -> full-model compile
   - `seq_len > 48` -> chunk compile of `_process_chunk`
@@ -64,17 +65,35 @@ This was acceptable around `T=48`, but became unusable at `T=128` and production
 - CPU remains eager fallback in this pass.
 - Only scalar diagnostics needed by the training loop/CSV path are preserved in compiled mode.
 
+### Current Hot-Path Specialization
+
+- The active nightly production shape is now special-cased in `instnct.py`:
+  - `N=1`
+  - `R=1`
+  - `pointer_mode='sequential'`
+  - `write_mode='replace'`
+  - `replace_impl='dense'`
+  - `bb_enabled=false`
+  - `io_split_mode='off'`
+  - `read_kernel_mode='vshape'`
+- This removes generic single-expert overhead from `_process_chunk()`:
+  - no per-step `hidden_lst` materialization for `N=1`
+  - no `torch.stack(hidden_lst).mean(0)` on the hot path
+  - no list-based output accumulation before final `torch.stack`
+  - cached strict reader indices instead of per-step `.nonzero().flatten().tolist()`
+- The generic chunk path keeps the same behavior and now also uses the cheaper output assembly path.
+
 ### Verified Benchmark
 
-Validated on the nightly T=256 compile benchmark:
+Validated on the nightly T=256 compile benchmark after the hot-path specialization:
 
-- eager: `3981.1 ms/step`, `warmup=23.1s`, `vram=6468 MB`, `final_loss=5.5116`
-- compile auto/chunk: `205.3 ms/step`, `warmup=200.1s`, `vram=3223 MB`, `final_loss=5.5439`
+- eager: `3819.3 ms/step`, `warmup=24.0s`, `vram=6468 MB`, `final_loss=5.5116`
+- compile auto/chunk: `101.0 ms/step`, `warmup=249.3s`, `vram=2978 MB`, `final_loss=5.5210`
 
 Practical conclusion:
 
 - the old T=256 compile hang is fixed
-- steady-state training is dramatically faster
+- steady-state training is dramatically faster and materially better than the earlier `~205 ms/step` chunk-compile baseline
 - compile warmup is still expensive and remains open work
 
 ## What Changed And Why
@@ -83,6 +102,7 @@ Practical conclusion:
 - Compile policy is a runtime/training concern, not a model architecture concern, so it stays outside the serialized build spec.
 - Compiled paths keep only scalar diagnostics because `.item()` and rich list/trace formatting inside the graph cause graph breaks or retracing.
 - Gradient checkpointing and chunk compile are mutually exclusive in the active path; chunk compile takes precedence.
+- The single-expert fast path was added because the validated production shape is narrow enough to specialize safely without changing model semantics.
 
 ## Known Failed Or Deferred Paths
 
@@ -158,7 +178,7 @@ Expectations:
 
 ## Next Work, In Order
 
-1. Reduce chunk-compile warmup cost.
+1. Reduce chunk-compile warmup cost further.
 2. Add BB/tensorized state compile support only if the nightly production path needs it.
 3. Optimize ring clone/write-path overhead.
 4. Continue the fixed-head/aux-offset runner follow-up through the canonical nightly runner surfaces before promoting any new variant to default status.

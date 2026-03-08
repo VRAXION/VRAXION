@@ -4,6 +4,27 @@ Newest entries at top. Copy from [TEMPLATE.md](TEMPLATE.md) for new entries.
 
 ---
 
+## 2026-03-08 — Single-Expert Hot-Path Specialization
+
+- Nightly production path now has a narrow fast path for the validated shape:
+  - `N=1`, `R=1`, sequential pointer, replace-write, dense replace impl, BB off, strict I/O off, local vshape read
+- `_process_chunk()` now dispatches between the generic path and a specialized single-expert helper.
+- Chunk compile on the supported path compiles the fast helper directly.
+- Added adversarial parity coverage for:
+  - eager train + backward
+  - `torch.no_grad()`
+  - chunk-compile with identity-patched `torch.compile`
+  - sequential carry across consecutive batches
+  - explicit fallback cases (`N>1`, `R!=1`, BB, mtaps, strict I/O, proxy overlay, gated write, topk)
+- Verified T=256 benchmark on nightly after the change:
+  - eager `3819.3 ms/step`
+  - compile-auto `101.0 ms/step`
+  - warmup `249.3s`
+  - final loss delta `0.0094`
+- Practical result: steady-state chunk-compiled training improved again over the earlier `~205 ms/step` baseline, while keeping the compile/checkpoint/carry contracts green.
+
+---
+
 ## 2026-03-08 — Nightly Source-of-Truth Consolidation
 
 - `origin/nightly` is now the active source-of-truth branch for VRAXION v4 runtime and nightly research work.
