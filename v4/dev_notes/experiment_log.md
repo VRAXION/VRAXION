@@ -4,6 +4,21 @@ Newest entries at top. Copy from [TEMPLATE.md](TEMPLATE.md) for new entries.
 
 ---
 
+## 2026-03-08 — Nightly Source-of-Truth Consolidation
+
+- `origin/nightly` is now the active source-of-truth branch for VRAXION v4 runtime and nightly research work.
+- Canonical handoff/setup doc: [nightly_source_of_truth.md](nightly_source_of_truth.md)
+- Compile stabilization is now part of the curated nightly runtime:
+  - `seq_len <= 48` -> full-model compile
+  - `seq_len > 48` -> chunk compile of `_process_chunk`
+- Verified T=256 benchmark on nightly:
+  - eager `3981.1 ms/step`
+  - compile-auto `205.3 ms/step`
+  - warmup still expensive (`200.1s`) but the old compile hang is gone
+- CPU WikiText carry smoke also passed through the canonical nightly runner.
+
+---
+
 ## 2026-03-01 — Pilot Seek-First: Pointer Before Read
 
 ### Motivation
@@ -1167,6 +1182,7 @@ Interpretation:
 2. Keep strict split and hard topK out of mainline.
 3. Next A/B should isolate write stabilization first (single change), then pointer/read upgrades.
 
+
 ---
 
 ## Session 2026-03-08: v2 Default Config Upgrade
@@ -1215,4 +1231,3 @@ Upgraded 6 production defaults based on sweep evidence from sessions 2026-03-05 
 1. `python v4/tests/sweep_v2_defaults_ab.py --steps 10000` — v1 vs v2 on WikiText + memory
 2. `python v4/tests/sweep_jump_gate_ab.py --steps 5000` — jump gate A/B
 3. Enable `mtaps_enabled: true` in YAML for production runs
-

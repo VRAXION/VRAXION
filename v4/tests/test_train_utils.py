@@ -15,6 +15,7 @@ import pytest
 from train import (
     ByteDataset,
     _capture_rng_state,
+    _configure_compile_policy,
     _restore_rng_state,
     func_maskloss_mse,
     func_maskloss_ce,
@@ -25,6 +26,19 @@ from train import (
 )
 from instnct import INSTNCT
 from model_factory import build_model_from_spec
+
+
+def _make_compile_policy_model(**kwargs):
+    """Small INSTNCT config used by compile policy unit tests."""
+    return INSTNCT(
+        M=32,
+        embed_dim=16,
+        N=1,
+        R=1,
+        embed_mode=False,
+        expert_weighting=False,
+        **kwargs,
+    )
 
 
 # ══════════════════════════════════════════════════════════════════
@@ -347,3 +361,80 @@ def test_rng_restore_roundtrip_including_dataset(tmp_path):
     assert second[1] == pytest.approx(first[1], abs=1e-12)
     assert second[2] == pytest.approx(first[2], abs=1e-12)
     assert second[3] == first[3]
+
+
+# ══════════════════════════════════════════════════════════════════
+#  Compile policy
+# ══════════════════════════════════════════════════════════════════
+
+def test_compile_policy_seq48_uses_full_model_compile(monkeypatch):
+    """Auto compile should use full-model compile at or below the nightly threshold."""
+    calls = []
+
+    def fake_compile(model, mode=None):
+        calls.append((model, mode))
+        return model
+
+    monkeypatch.setattr(torch, 'compile', fake_compile, raising=False)
+    model = _make_compile_policy_model()
+
+    configured = _configure_compile_policy(
+        model,
+        {'compile': True, 'compile_chunk_size': 32, 'seq_len': 48},
+        device='cuda',
+    )
+
+    assert configured is model
+    assert calls == [(model, 'reduce-overhead')]
+    assert model._compile_mode == 'full'
+    assert model._compile_chunks is False
+    assert model._disable_proxy_overlay_for_compile is False
+
+
+def test_compile_policy_seq256_enables_chunk_compile(monkeypatch):
+    """Auto compile should defer to chunk compile above the full-model threshold."""
+    calls = []
+
+    def fake_compile(model, mode=None):
+        calls.append((model, mode))
+        return model
+
+    monkeypatch.setattr(torch, 'compile', fake_compile, raising=False)
+    model = _make_compile_policy_model()
+
+    configured = _configure_compile_policy(
+        model,
+        {'compile': True, 'compile_chunk_size': 32, 'seq_len': 256},
+        device='cuda',
+    )
+
+    assert configured is model
+    assert calls == []
+    assert model._compile_mode == 'chunk'
+    assert model._compile_chunks is True
+    assert model.compile_chunk_size == 32
+
+
+def test_compile_policy_bb_enabled_falls_back_to_eager(monkeypatch, capsys):
+    """BB-enabled configs are intentionally kept eager in this compile pass."""
+    calls = []
+
+    def fake_compile(model, mode=None):
+        calls.append((model, mode))
+        return model
+
+    monkeypatch.setattr(torch, 'compile', fake_compile, raising=False)
+    model = _make_compile_policy_model(bb_enabled=True)
+
+    configured = _configure_compile_policy(
+        model,
+        {'compile': True, 'compile_chunk_size': 32, 'seq_len': 256},
+        device='cuda',
+    )
+    out = capsys.readouterr().out
+
+    assert configured is model
+    assert calls == []
+    assert model._compile_mode == 'eager'
+    assert model._compile_chunks is False
+    assert 'bb_enabled=true' in out
