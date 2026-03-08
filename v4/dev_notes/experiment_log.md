@@ -4,6 +4,32 @@ Newest entries at top. Copy from [TEMPLATE.md](TEMPLATE.md) for new entries.
 
 ---
 
+## 2026-03-08 — Chunk-Local Ring Strip Cache (No-Go, Reverted)
+
+- Tried a narrow fast-path-only chunk-local strip cache for the validated nightly shape:
+  - `N=1`, `R=1`, sequential pointer, replace write, dense replace impl, BB off, strict I/O off
+- Goal:
+  - gather one contiguous strip per chunk
+  - do read+write against that strip
+  - flush once at chunk end instead of cloning/scattering the full ring each timestep
+- Result:
+  - parity and compile-related tests passed
+  - real GPU validation regressed badly enough to reject the change
+- Measured regression versus the active nightly baseline:
+  - previous stable compiled path: `~101.0 ms/step`, `warmup=249.3s`
+  - strip-cache attempt: `127.6 ms/step`, `warmup=703.7s`
+  - profiler also worsened `write_replace` (`~1431.1ms -> 1488.8ms`)
+- Practical conclusion:
+  - the extra strip gather/flush and backward/compile costs outweighed the smaller per-step write footprint
+  - this should not be treated as the next low-risk optimization target in its current form
+- Reverted locally after validation; not promoted to `origin/nightly` runtime code
+- Better next tests:
+  - `compile_chunk_size` sweep (`16/24/32/48/64`)
+  - top-level `forward()` output prealloc
+  - isolated `cudagraph_mark_step_begin()` A/B probe
+
+---
+
 ## 2026-03-08 — Single-Expert Hot-Path Specialization
 
 - Nightly production path now has a narrow fast path for the validated shape:

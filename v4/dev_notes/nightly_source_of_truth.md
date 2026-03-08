@@ -96,6 +96,23 @@ Practical conclusion:
 - steady-state training is dramatically faster and materially better than the earlier `~205 ms/step` chunk-compile baseline
 - compile warmup is still expensive and remains open work
 
+### Recorded No-Go: Chunk-Local Ring Strip Cache
+
+Do not treat a generic or fast-path-only ring strip cache as the current best next fix.
+
+- A narrow strip-cache attempt was tested on `2026-03-08` for the validated fast path:
+  - one contiguous strip gathered per chunk
+  - read+write performed against the strip
+  - one flush back into the dense ring at chunk end
+- It preserved numerics in tests but regressed the real compiled path:
+  - previous stable compiled path: `~101.0 ms/step`, `warmup=249.3s`
+  - strip-cache attempt: `127.6 ms/step`, `warmup=703.7s`
+  - profiler also worsened `write_replace`
+- Current policy:
+  - keep the existing dense write path
+  - record the strip-cache idea as a tried-and-reverted path
+  - do not reintroduce it without a materially different implementation strategy
+
 ## What Changed And Why
 
 - Chunk compile was chosen because it bounds graph size while preserving sequential timestep semantics.
@@ -111,6 +128,7 @@ Practical conclusion:
 - Rich list/trace telemetry inside compiled chunks is intentionally not preserved in this pass.
 - Compile warmup is still long even though steady-state performance is fixed.
 - CPU compile is not part of the supported performance path in this pass.
+- The chunk-local strip-cache write experiment is a recorded no-go in its current form and was reverted after benchmark/profiler regression.
 
 ## Nightly Runner State
 
@@ -178,7 +196,8 @@ Expectations:
 
 ## Next Work, In Order
 
-1. Reduce chunk-compile warmup cost further.
-2. Add BB/tensorized state compile support only if the nightly production path needs it.
-3. Optimize ring clone/write-path overhead.
-4. Continue the fixed-head/aux-offset runner follow-up through the canonical nightly runner surfaces before promoting any new variant to default status.
+1. Run a `compile_chunk_size` sweep (`16/24/32/48/64`) to optimize the current chunk-compile wall-clock and warmup tradeoff without touching model math.
+2. Replace top-level `forward()` chunk output list accumulation with direct output preallocation/slice writes.
+3. Run an isolated `cudagraph_mark_step_begin()` A/B probe to see whether the remaining CUDAGraph warning can be reduced without destabilizing training.
+4. Add sampled/minimal telemetry modes to the canonical nightly runner to improve research turnaround without changing model behavior.
+5. Revisit deeper write-path work only through materially different approaches (for example fused/custom ops), not by reviving the reverted strip-cache patch as-is.
