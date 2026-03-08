@@ -616,7 +616,8 @@ class INSTNCT(nn.Module):
                  mtaps_mixer_mode='current',               # 'current' | 'tap_scalar_gate' | 'residual_gated' | 'hybrid_heads_scalar_gate' | 'hybrid_heads_spaced_scalar_gate' | 'hybrid_heads_fixed_scalar_gate'
                  mtaps_aux_fixed_offsets=(),               # nightly-only fixed auxiliary read heads, pointer-relative
                  s_constraint='softplus',                  # 'softplus' (S>0) | 'raw' (unconstrained)
-                 c19_mode='standard'):                     # 'standard' | 'dualphi' — activation variant
+                 c19_mode='standard',                      # 'standard' | 'dualphi' — activation variant
+                 jump_gate=False):                         # learned φ-jump gate for sequential pointer mode
         super().__init__()
         assert kernel_mode in ('uniform', 'vshape', 'gaussian', 'dotprod', 'topk'), \
             f"kernel_mode must be 'uniform', 'vshape', 'gaussian', 'dotprod', or 'topk', got '{kernel_mode}'"
@@ -1000,6 +1001,16 @@ class INSTNCT(nn.Module):
             self._ptr_tau = nn.Parameter(torch.tensor(5.0))            # learnable temperature (softplus → ~5.0)
             self.slot_identity = nn.Parameter(torch.randn(M, _id_dim) * 0.01)  # per-slot identity
             self.ptr_query = nn.ModuleList([nn.Linear(hidden_dim, _id_dim) for _ in range(N)])
+
+        # ── Jump Gate (optional, for sequential pointer mode) ──
+        # Learned gate: sigmoid(Linear(hidden)) → probability of φ-jump vs +1 walk.
+        # Soft blend: ptr = gate * jump_dest + (1-gate) * (ptr+1).
+        # ~hidden_dim params per expert. Init bias -3.0 → sigmoid ≈ 0.05 (mostly walk).
+        self.jump_gate_enabled = bool(jump_gate) and pointer_mode == 'sequential'
+        if self.jump_gate_enabled:
+            self.jump_gate_head = nn.ModuleList([nn.Linear(hidden_dim, 1) for _ in range(N)])
+            for head in self.jump_gate_head:
+                head.bias.data.fill_(-3.0)  # sigmoid(-3) ≈ 0.047 → mostly walk at init
 
     def _process_chunk(self, x_chunk, ring_tns, ptr_tns, hidden_tns,
                        bb_buf, bb_keys, bb_write_ptr, bb_steps,
@@ -1626,6 +1637,23 @@ class INSTNCT(nn.Module):
                             ptr_tns[i] = torch.remainder(ptr_tns[i] + delta, float(M))
                 elif self.pointer_mode == 'pilot':
                     pass  # already moved pre-read (seek-then-read)
+                elif self.jump_gate_enabled:
+                    # Learned jump gate: soft blend between walk (+1) and φ-jump
+                    with _source_scope('pointer_update'):
+                        gate = torch.sigmoid(self.jump_gate_head[i](hidden_lst[i])).squeeze(-1)  # (B,)
+                        walk_target = (ptr_tns[i] + 1) % M
+                        ptr_int = ptr_tns[i].long().clamp(0, M - 1)
+                        jump_target = self.dests[i][ptr_int].float()           # (B,) φ-destination
+                        if self.pointer_seam_mode == 'shortest_arc':
+                            walk_delta = func_shortest_arc_delta_tns(ptr_tns[i], walk_target.float(), M)
+                            jump_delta = func_shortest_arc_delta_tns(ptr_tns[i], jump_target, M)
+                            blended_delta = gate * jump_delta + (1 - gate) * walk_delta
+                            ptr_tns[i] = torch.remainder(ptr_tns[i] + blended_delta, float(M))
+                        else:
+                            ptr_tns[i] = torch.remainder(gate * jump_target + (1 - gate) * walk_target, float(M))
+                        if self._diag_enabled:
+                            self._diag[f'jump_gate_mean_{i}'] = gate.detach().mean().item()
+                            self._diag[f'jump_gate_max_{i}'] = gate.detach().max().item()
                 else:
                     with _source_scope('pointer_update'):
                         ptr_tns[i] = (ptr_tns[i] + 1) % M

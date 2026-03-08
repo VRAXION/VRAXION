@@ -85,6 +85,14 @@ model:
   write_mode: replace            # 'accumulate' (scatter_add) | 'replace' (HDD-style overwrite)
   replace_impl: dense            # 'dense' | 'proxy_overlay' (nightly-only proxy fast path)
 
+  # ── Learned Jump Gate ──────────────────────────────────────
+  # When true + pointer_mode=sequential: expert learns when to φ-jump vs walk.
+  # gate = sigmoid(Linear(hidden)) → prob of jump. Soft blend:
+  #   ptr = gate * phi_dest + (1-gate) * (ptr+1)
+  # Init bias -3.0 → sigmoid ≈ 0.05 (mostly walk at start).
+  # ~hidden_dim params per expert. Disabled by default — experimental.
+  jump_gate: false
+
   # ── Pointer Interpolation ─────────────────────────────────
   # Fractional pointer blending: read window blends between floor(ptr) and ceil(ptr).
   # 'off'    = integer quantization (discrete, loses sub-slot gradient info)

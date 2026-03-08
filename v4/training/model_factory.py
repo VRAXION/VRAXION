@@ -69,6 +69,7 @@ def _build_instnct_spec(embed_mode: bool, model_config: dict) -> dict:
         'write_topk_K': int(model_config.get('write_topk_K', model_config.get('topk_K', 8))),
         's_constraint': model_config.get('s_constraint', 'softplus'),
         'c19_mode': model_config.get('c19_mode', 'standard'),
+        'jump_gate': bool(model_config.get('jump_gate', False)),
     }
 
 
