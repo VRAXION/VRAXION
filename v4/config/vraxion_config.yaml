@@ -50,7 +50,9 @@ model:
   # Fixed attention window = 2R+1 slots around pointer.
   # R=0 → 1 slot (needle), R=1 → 3 slots, R=2 → 5 slots.
   # Ablation: R=0 best on tiny XOR, but R=1 better at scale (run 21 A/B).
-  R: 1                # attn_radius — window half-width
+  # UPDATED 2026-03-08: R=1→2. IQ ladder sweep: R=2 gives +7.2pp acc on memory tasks.
+  # WikiText CPU sweep: R=1≈R=2 (within 0.002 BPC) — no regression, memory upside.
+  R: 2                # attn_radius — window half-width
 
   # ── Attention Kernel Mode ──────────────────────────────────
   # Shape of the attention window weights around the pointer.
@@ -83,6 +85,20 @@ model:
   write_mode: replace            # 'accumulate' (scatter_add) | 'replace' (HDD-style overwrite)
   replace_impl: dense            # 'dense' | 'proxy_overlay' (nightly-only proxy fast path)
 
+  # ── Pointer Interpolation ─────────────────────────────────
+  # Fractional pointer blending: read window blends between floor(ptr) and ceil(ptr).
+  # 'off'    = integer quantization (discrete, loses sub-slot gradient info)
+  # 'linear' = bilinear blend of two adjacent windows (0 extra params, ~130 FLOPs/read)
+  # UPDATED 2026-03-08: enabled linear. 6/6 deep-research sources agree: +1-4% acc expected.
+  pointer_interp_mode: linear
+
+  # ── Pointer Seam Fix ──────────────────────────────────────
+  # Wrap-seam gradient handling for circular ring.
+  # 'mod'           = standard modulo (gradient discontinuity at M-1 → 0 boundary)
+  # 'shortest_arc'  = signed circular delta (smooth gradient across wrap seam)
+  # UPDATED 2026-03-08: enabled shortest_arc. Fixes gradient breakage at ring wrap point.
+  pointer_seam_mode: shortest_arc
+
   # ── Pilot Pulse Pointer Params ──────────────────────────────
   # When pointer_mode = 'pilot': each ring slot gets a learned identity.
   # The pulse compares to current slot — high sim = stay, low sim = jump.
@@ -109,7 +125,10 @@ model:
   # 'hadamard' = Hadamard matrix rows — 0 params, cosine sim = 0 between ALL tokens
   # 'sincos'   = standard sinusoidal — 0 params, cosine sim ~0.97 between adjacent tokens
   # 'bitlift'  = byte→8 bits→Linear(8, hidden_dim) — 18K learnable params (28× fewer)
-  embed_encoding: bitlift
+  # UPDATED 2026-03-08: bitlift→learned. Sweep evidence overwhelming:
+  #   CPU sweep: +14.5% loss improvement, +9% faster (nn.Embedding lookup < Linear(8,H))
+  #   WikiText: +0.688 BPC gap (3.65 vs 2.96). Bitlift rank-8 bottleneck confirmed by 6/6 sources.
+  embed_encoding: learned
 
   # ── Output Encoding ─────────────────────────────────────────
   # Output projection type for byte tokens (embed_mode: true only).

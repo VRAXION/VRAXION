@@ -135,6 +135,52 @@ SURFACES: dict[str, dict] = {
     },
 }
 
+    # ── Upgraded surfaces (2026-03-08): linear pointer interp + shortest_arc seam ──
+    "wikitext_sequential_carry_v2": {
+        "state_mode": "carry",
+        "context_mode": "dotprod",
+        "device": "cpu",
+        "steps": 10000,
+        "batch": 8,
+        "seq": 8,
+        "seed": 42,
+        "hidden_dim": 32,
+        "M": 64,
+        "slot_dim": 8,
+        "N": 1,
+        "R": 2,
+        "pointer_mode": "sequential",
+        "pointer_interp_mode": "linear",
+        "pointer_seam_mode": "shortest_arc",
+        "fixed_C": math.pi,
+        "tail_mode": "linear",
+        "tail_k": 6.0,
+        "reset_each_batch": False,
+        "pooled_topk_read": True,
+        "eval_steps": 64,
+    },
+    "fast_memory_carry_v2": {
+        "state_mode": "carry",
+        "context_mode": "dotprod",
+        "device": "cpu",
+        "steps": 10000,
+        "batch": 8,
+        "seq": 8,
+        "seed": 42,
+        "hidden_dim": 32,
+        "M": 64,
+        "slot_dim": 8,
+        "N": 1,
+        "R": 2,
+        "pointer_mode": "sequential",
+        "pointer_interp_mode": "linear",
+        "pointer_seam_mode": "shortest_arc",
+        "period": 64,
+        "reset_each_batch": False,
+        "pooled_topk_read": True,
+    },
+}
+
 VARIANTS: dict[str, dict] = {
     "LL": {
         "read_kernel_mode": "vshape",
@@ -360,7 +406,7 @@ def _surface_guards(surface: str, result: dict, meta: dict) -> dict:
         guards["fresh_pointer_coverage_capped"] = bool(
             ptr_unique is not None and ptr_unique <= (meta["seq"] / meta["ring_slots"]) + 1e-9
         )
-    if surface == "wikitext_sequential_carry":
+    if surface in ("wikitext_sequential_carry", "wikitext_sequential_carry_v2"):
         guards["carry_pointer_coverage_exceeds_fresh_bound"] = bool(
             ptr_unique is not None and ptr_unique > (meta["seq"] / meta["ring_slots"])
         )
@@ -487,6 +533,7 @@ def _run_fast_memory_carry(surface: str, variant: str, cfg: dict, heartbeat_path
         context_mode=cfg.get("context_mode", "dotprod"),
         mtaps_enabled=variant_cfg["mtaps_enabled"],
         mtaps_lags=tuple(variant_cfg["mtaps_lags"]),
+        R=cfg["R"],
         heartbeat_cb=(
             lambda phase, step, steps, extra=None: _write_heartbeat(
                 heartbeat_path,
@@ -783,9 +830,9 @@ def run_surface(
 
     if surface == "small_wikitext_fresh":
         result = _run_small_wikitext_fresh(surface, variant, cfg, heartbeat_path=heartbeat_path)
-    elif surface == "fast_memory_carry":
+    elif surface in ("fast_memory_carry", "fast_memory_carry_v2"):
         result = _run_fast_memory_carry(surface, variant, cfg, heartbeat_path=heartbeat_path)
-    elif surface == "wikitext_sequential_carry":
+    elif surface in ("wikitext_sequential_carry", "wikitext_sequential_carry_v2"):
         result = _run_wikitext_sequential_carry(surface, variant, cfg, heartbeat_path=heartbeat_path)
     else:
         raise ValueError(f"Unknown surface: {surface}")
@@ -804,7 +851,7 @@ def run_surface(
         and not guards.get("fresh_pointer_coverage_capped", False)
     ):
         raise RuntimeError("small_wikitext_fresh violated fresh-start pointer coverage guard")
-    if surface == "wikitext_sequential_carry" and not guards.get("carry_pointer_coverage_exceeds_fresh_bound", False):
+    if surface in ("wikitext_sequential_carry", "wikitext_sequential_carry_v2") and not guards.get("carry_pointer_coverage_exceeds_fresh_bound", False):
         raise RuntimeError("wikitext_sequential_carry failed carry pointer coverage guard")
     if not guards.get("ptr_steps_ok", True) or not guards.get("center_hist_ok", True) or not guards.get("read_hist_ok", True) or not guards.get("write_hist_ok", True):
         raise RuntimeError(f"Trace consistency failed: {guards}")

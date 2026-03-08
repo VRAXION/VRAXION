@@ -313,7 +313,8 @@ def run_one(N, period, steps, batch, seq, hidden_dim, M, slot_dim,
             write_address_mode='pointer', topk_k=2, ring_trace=False,
             pointer_mode='sequential', pointer_interp_mode='off', pointer_seam_mode='mod',
             mtaps_enabled=False, mtaps_lags=(1, 2, 4, 8, 16, 32),
-            context_mode='dotprod', heartbeat_cb=None):
+            context_mode='dotprod', heartbeat_cb=None,
+            R=1, embed_encoding='learned'):
     """Train one configuration and return results.
 
     Returns:
@@ -335,10 +336,10 @@ def run_one(N, period, steps, batch, seq, hidden_dim, M, slot_dim,
         set_ring_trace_enabled(ring_trace)
         model = INSTNCT(
             M=M, hidden_dim=hidden_dim, slot_dim=slot_dim,
-            N=N, R=1, embed_mode=True,
+            N=N, R=R, embed_mode=True,
             kernel_mode='vshape',
             read_kernel_mode=read_kernel_mode,
-            embed_encoding='bitlift',
+            embed_encoding=embed_encoding,
             output_encoding='lowrank_c19',
             expert_weighting=False,
             checkpoint_chunks=0,
