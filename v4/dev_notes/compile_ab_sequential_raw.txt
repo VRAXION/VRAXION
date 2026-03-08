@@ -1,0 +1,53 @@
+============================================================
+COMPILE A/B BENCHMARK
+============================================================
+B=64, T=48, warmup=5, measure=50
+
+--- A: eager diag=off ---
+  warmup (5 steps)... 0 1 2 3 4 done (3.4s)
+  measuring (50 steps)... 0 10 20 30 40 done
+  >> 620.1 ms/step | 1.6 step/s | VRAM: 1282 MB | warmup: 3.4s | NaN: False | loss: 5.5484
+
+--- B: compile diag=off ---
+  compile call: 0.9s
+  warmup (5 steps)...W0308 05:47:01.672000 6172 site-packages\torch\_dynamo\variables\tensor.py:776] [0/0] Graph break from `Tensor.item()`, consider setting:
+W0308 05:47:01.672000 6172 site-packages\torch\_dynamo\variables\tensor.py:776] [0/0]     torch._dynamo.config.capture_scalar_outputs = True
+W0308 05:47:01.672000 6172 site-packages\torch\_dynamo\variables\tensor.py:776] [0/0] or:
+W0308 05:47:01.672000 6172 site-packages\torch\_dynamo\variables\tensor.py:776] [0/0]     env TORCHDYNAMO_CAPTURE_SCALAR_OUTPUTS=1
+W0308 05:47:01.672000 6172 site-packages\torch\_dynamo\variables\tensor.py:776] [0/0] to include these operations in the captured graph.
+W0308 05:47:01.672000 6172 site-packages\torch\_dynamo\variables\tensor.py:776] [0/0] 
+W0308 05:47:01.672000 6172 site-packages\torch\_dynamo\variables\tensor.py:776] [0/0] Graph break: from user code at:
+W0308 05:47:01.672000 6172 site-packages\torch\_dynamo\variables\tensor.py:776] [0/0]   File "S:\AI\_tmp\nightly_worktree\v4\model\instnct.py", line 1792, in forward
+W0308 05:47:01.672000 6172 site-packages\torch\_dynamo\variables\tensor.py:776] [0/0]     max_R = R_effs.max().item()
+W0308 05:47:01.672000 6172 site-packages\torch\_dynamo\variables\tensor.py:776] [0/0] 
+W0308 05:47:01.672000 6172 site-packages\torch\_dynamo\variables\tensor.py:776] [0/0] 
+ 0 1 2 3 4 done (215.8s)
+  measuring (50 steps)... 0 10 20 30 40 done
+  >> 508.0 ms/step | 2.0 step/s | VRAM: 492 MB | warmup: 215.8s | NaN: False | loss: 5.5667
+
+--- C: eager diag=on ---
+  warmup (5 steps)... 0 1 2 3 4 done (5.5s)
+  measuring (50 steps)... 0 10 20 30 40 done
+  >> 803.1 ms/step | 1.2 step/s | VRAM: 1292 MB | warmup: 5.5s | NaN: False | loss: 5.5484
+
+--- D: compile diag=on ---
+  compile call: 0.0s
+  warmup (5 steps)... 0 1 2 3 4 done (181.2s)
+  measuring (50 steps)... 0 10 20 30 40 done
+  >> 495.5 ms/step | 2.0 step/s | VRAM: 494 MB | warmup: 181.2s | NaN: False | loss: 5.5667
+
+============================================================
+SUMMARY
+============================================================
+  A: eager diag=off          620.1 ms/step    1.6 step/s  VRAM:  1282 MB  warmup: 3.4s
+  B: compile diag=off        508.0 ms/step    2.0 step/s  VRAM:   492 MB  warmup: 215.8s
+  C: eager diag=on           803.1 ms/step    1.2 step/s  VRAM:  1292 MB  warmup: 5.5s
+  D: compile diag=on         495.5 ms/step    2.0 step/s  VRAM:   494 MB  warmup: 181.2s
+
+  Speedup compile (diag=off): +18.1%
+  Speedup compile (diag=on):  +38.3%
+  VRAM save compile (diag=off): +61.6%
+  Diag overhead eager: +29.5%
+
+  NaN check: ALL PASS
+============================================================
