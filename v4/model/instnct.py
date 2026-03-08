@@ -49,7 +49,9 @@ def _c19_activation(x, rho=4.0, C=None):
     is_even = torch.remainder(n, 2.0) < 1.0
     sgn = torch.where(is_even, 1.0, -1.0)
     core = C * (sgn * h + (rho * h * h))
-    return torch.where(x >= l, x - l, torch.where(x <= -l, x + l, core))
+    # Linear tails: shift by ±l outside periodic region
+    result = torch.where(x <= -l, x + l, core)
+    return torch.where(x >= l, x - l, result)
 
 
 _C19_RHO_MIN = 0.5
@@ -629,9 +631,9 @@ class INSTNCT(nn.Module):
                 raise ValueError(f"mtaps_lags must be positive integers, got {mtaps_lags!r}")
         mtaps_aux_fixed_offsets = tuple(int(x) for x in mtaps_aux_fixed_offsets)
         if mtaps_mixer_mode == 'hybrid_heads_fixed_scalar_gate':
-            if len(mtaps_aux_fixed_offsets) != 2:
+            if len(mtaps_aux_fixed_offsets) < 1:
                 raise ValueError(
-                    "hybrid_heads_fixed_scalar_gate requires exactly 2 mtaps_aux_fixed_offsets"
+                    "hybrid_heads_fixed_scalar_gate requires at least 1 mtaps_aux_fixed_offsets entry"
                 )
             if any(x <= 0 for x in mtaps_aux_fixed_offsets):
                 raise ValueError(
