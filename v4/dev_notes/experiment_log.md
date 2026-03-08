@@ -1167,3 +1167,52 @@ Interpretation:
 2. Keep strict split and hard topK out of mainline.
 3. Next A/B should isolate write stabilization first (single change), then pointer/read upgrades.
 
+---
+
+## Session 2026-03-08: v2 Default Config Upgrade
+
+### Summary of Changes
+
+Upgraded 6 production defaults based on sweep evidence from sessions 2026-03-05 through 2026-03-07:
+
+| Change | Old | New | Evidence |
+|--------|-----|-----|----------|
+| `embed_encoding` | bitlift | learned | +14.5% loss, +9% speed, +0.688 BPC (6/6 sources) |
+| `pointer_interp_mode` | off | linear | 0 params, +1-4% acc expected (6/6 sources) |
+| `pointer_seam_mode` | mod | shortest_arc | Fixes gradient discontinuity at ring wrap |
+| `R` | 1 | 2 | +7.2pp acc on memory tasks, ±0 on WikiText |
+| `c19_mode` | (not configurable) | dualphi | +1.5% acc, 2× lower grad norm, -7.7% wall time |
+| `jump_gate` | (not available) | false (opt-in) | New: learned φ-jump gate for sequential mode |
+
+### Implementation Details
+
+1. **`_c19_dualphi_activation()`** — merged into instnct.py as built-in variant
+   - Previously only available via nightly runner monkey-patching
+   - `c19_mode` parameter selects variant at instance level
+   - Backward compat preserved (nightly monkey-patching still works for `c19_mode='standard'`)
+
+2. **Jump gate** — new feature, disabled by default
+   - `sigmoid(Linear(hidden))` → probability of φ-jump vs +1 walk
+   - ~hidden_dim params per expert, init bias -3.0 (mostly walk at start)
+   - A/B sweep script: `sweep_jump_gate_ab.py`
+
+3. **Nightly v2 surfaces** — for A/B comparison
+   - `wikitext_sequential_carry_v2` and `fast_memory_carry_v2`
+   - Use linear interp + shortest_arc + R=2
+   - A/B sweep script: `sweep_v2_defaults_ab.py`
+
+4. **bench script alignment** — bench_param_sweep, probe_dataflow, diag_ring_signal, probe_2x2_matrix, probe_gate_sweep updated from bitlift→learned, R=1→2
+
+### Test Results
+
+- 71/71 tests pass (57 model + 14 train_utils)
+- 1 pre-existing failure (hadamard test, scipy not installed)
+- dualphi activation verified: smaller outputs (mean 0.17 vs 0.38), matching expected gradient compression
+- Jump gate verified: initial gate ~0.066, mostly walk at start
+
+### Next Experiments to Run
+
+1. `python v4/tests/sweep_v2_defaults_ab.py --steps 10000` — v1 vs v2 on WikiText + memory
+2. `python v4/tests/sweep_jump_gate_ab.py --steps 5000` — jump gate A/B
+3. Enable `mtaps_enabled: true` in YAML for production runs
+
