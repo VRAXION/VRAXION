@@ -41,6 +41,26 @@ PRESETS: dict[str, list[dict]] = {
         {"id": "B_scalar_gate", "variant": "LLT7SG"},
         {"id": "C_residual_gated", "variant": "LLT7RG"},
     ],
+    "multi_read_probe": [
+        {
+            "id": "A_scalar_gate_baseline",
+            "variant": "LLT7SG",
+            "hidden_dim": 512,
+            "slot_dim": 32,
+            "M": 64,
+            "seq": 8,
+            "batch": 8,
+        },
+        {
+            "id": "B_multi_read_heads",
+            "variant": "LLT3H2SG",
+            "hidden_dim": 512,
+            "slot_dim": 32,
+            "M": 64,
+            "seq": 8,
+            "batch": 8,
+        },
+    ],
 }
 
 

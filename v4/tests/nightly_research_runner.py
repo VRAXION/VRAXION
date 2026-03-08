@@ -50,9 +50,17 @@ MTAP_DIAG_SCALAR_PREFIXES = (
     "mtap_main_norm_",
     "mtap_tap_norm_",
     "mtap_signal_norm_",
+    "head_gate_max_frac_",
+    "channel_gate_entropy_",
 )
 MTAP_DIAG_LIST_PREFIXES = (
     "mtap_gate_mean_by_lag_",
+    "head_offset_mean_abs_",
+    "head_offset_std_",
+    "head_near_local_frac_",
+    "head_gate_mean_",
+    "head_center_dist_mean_",
+    "head_unique_frac_",
 )
 
 PHI = (1 + math.sqrt(5)) / 2
@@ -188,6 +196,15 @@ VARIANTS: dict[str, dict] = {
         "mtaps_enabled": True,
         "mtaps_lags": [1, 2, 4, 8, 16, 32, 64],
         "mtaps_mixer_mode": "tap_scalar_gate",
+    },
+    "LLT3H2SG": {
+        "read_kernel_mode": "vshape",
+        "write_address_mode": "pointer",
+        "read_topk_K": 2,
+        "write_topk_K": 2,
+        "mtaps_enabled": True,
+        "mtaps_lags": [1, 2, 4],
+        "mtaps_mixer_mode": "hybrid_heads_scalar_gate",
     },
     "LLT7RG": {
         "read_kernel_mode": "vshape",
@@ -519,7 +536,6 @@ def _run_wikitext_sequential_carry(surface: str, variant: str, cfg: dict, heartb
 
     orig_fn = instnct._c19_activation
     instnct._c19_activation = act_fn
-    instnct.set_topk_read_diag_enabled(variant_cfg["read_kernel_mode"] == "topk")
     instnct.set_ring_trace_enabled(True)
 
     model = build_model(
@@ -543,6 +559,7 @@ def _run_wikitext_sequential_carry(surface: str, variant: str, cfg: dict, heartb
         N=cfg["N"],
         R=cfg["R"],
     )
+    model._diag_enabled = (variant_cfg["read_kernel_mode"] == "topk")
     for name, param in model.named_parameters():
         if any(key in name for key in ("c19_C_", "c19_rho_")):
             param.requires_grad_(False)
@@ -575,6 +592,7 @@ def _run_wikitext_sequential_carry(surface: str, variant: str, cfg: dict, heartb
     )
 
     for step in range(1, cfg["steps"] + 1):
+        model._diag_enabled = True
         xb, yb, mask = dataset.sample_batch_sequential(cfg["batch"], cfg["device"])
         logits, new_state = model(xb, S=cfg.get("context_mode", "dotprod"), state=state)
         if new_state is not None:
@@ -675,7 +693,7 @@ def _run_wikitext_sequential_carry(surface: str, variant: str, cfg: dict, heartb
     )
 
     instnct._c19_activation = orig_fn
-    instnct.set_topk_read_diag_enabled(False)
+    model._diag_enabled = False
     instnct.set_ring_trace_enabled(False)
 
     result = {

@@ -738,6 +738,72 @@ Meaning:
 - the current best next branch is **not** a new `M`/`seq`/`topk` sweep;
 - the next step should be to confirm `LLT7SG` against `LLT7RG` and baseline on the canonical carry surface with multi-seed / longer runs.
 
+## 6L. Canonical Probe: `LLT3H2SG` Learned Multi-Read Heads (Rejected)
+
+We tested the next non-pooled content-style idea after `LLT7SG`: keep the strong short fixed taps `[1,2,4]`, then add two learned auxiliary read heads (`med`, `long`) that each read with the same local `vshape` primitive around a learned continuous offset from the main pointer.
+
+Branch shape:
+- main local read unchanged
+- fixed taps: `[1,2,4]`
+- learned auxiliary heads:
+  - `head_med` range `[-16, +16]`
+  - `head_long` range `[-64, +64]`
+- scalar-gated mixer over:
+  - `main`
+  - `tap1`
+  - `tap2`
+  - `tap4`
+  - `head_med`
+  - `head_long`
+
+Canonical fair comparison:
+- surface: `wikitext_sequential_carry`
+- fixed sweet-point setup:
+  - `hidden_dim=512`
+  - `slot_dim=32`
+  - `M=64`
+  - `seq=8`
+  - `batch=8`
+- compare:
+  - `LLT7SG` baseline
+  - `LLT3H2SG` candidate
+- artifacts:
+  - [cpu_pareto_probe_A_scalar_gate_baseline_full_20260308_022150_483461.json](../../v4/dev_notes/telemetry/cpu_pareto_probe_A_scalar_gate_baseline_full_20260308_022150_483461.json)
+  - [cpu_pareto_probe_B_multi_read_heads_full_20260308_022150_483461.json](../../v4/dev_notes/telemetry/cpu_pareto_probe_B_multi_read_heads_full_20260308_022150_483461.json)
+  - [cpu_pareto_probe_multi_read_probe_20260308_022150_483461.json](../../v4/dev_notes/telemetry/cpu_pareto_probe_multi_read_probe_20260308_022150_483461.json)
+
+Results:
+- `LLT7SG`
+  - final acc `0.5191`
+  - final BPC `2.4710`
+  - time `332.1s`
+  - `carry-reset = +8.61 pp`
+- `LLT3H2SG`
+  - final acc `0.4357`
+  - final BPC `2.8489`
+  - time `296.2s`
+  - `carry-reset = +5.46 pp`
+
+Telemetry readout:
+- the learned heads did not collapse to exactly the same place;
+- one head stayed genuinely non-local:
+  - `head_center_dist_mean ~ 13.7`
+  - `head_near_local_frac ~ 0.011`
+- the other head stayed much closer:
+  - `head_center_dist_mean ~ 4.15`
+  - `head_near_local_frac ~ 0.686`
+- both heads were only weakly used:
+  - `head_gate_mean ~ [0.059, 0.119]`
+  - `head_gate_max_frac ~ 0.145`
+- meanwhile the fixed short taps still dominated:
+  - `mtap_gate_mean_by_lag ~ [0.437, 0.347, 0.216]`
+
+Verdict:
+- `LLT3H2SG` is a clear reject on the canonical CPU carry probe;
+- the learned extra heads are not dead, but they are too weakly useful to beat the fixed short taps;
+- the branch reduces quality and weakens carry utility while only being slightly faster;
+- current best branch remains **`LLT7SG`**.
+
 ## 7. Operational Rules Going Forward
 
 1. Any new claim must name the surface:
@@ -774,6 +840,7 @@ Current best consolidated read:
 - pooled topk is still not the near-term solution
 - pointer interpolation is a local fix, not a late-game memory fix
 - shortest-arc is not the current bottleneck
-- **multi-timescale taps is now the active winning nightly branch**
+- **`LLT7SG` is now the active winning nightly branch**
+- learned multi-read auxiliary heads (`LLT3H2SG`) are currently rejected
 
 
