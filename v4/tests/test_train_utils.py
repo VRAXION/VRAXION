@@ -67,7 +67,6 @@ def _make_instnct_model_record(*, embed_mode: bool, **overrides):
         'bb_tau': 4.0,
         'bb_gate_mode': 'learned',
         'topk_K': 8,
-        's_constraint': 'softplus',
     }
     model_cfg.update(overrides)
     return build_model_spec(
@@ -294,7 +293,6 @@ def test_checkpoint_roundtrip(tmp_path):
         bb_tau=4.0,
         bb_gate_mode='learned',
         topk_K=8,
-        s_constraint='softplus',
     )
 
     ckpt_path = str(tmp_path / 'test.pt')
@@ -404,8 +402,7 @@ def test_model_factory_roundtrip_both_models():
             'bb_tau': 4.0,
             'bb_gate_mode': 'learned',
             'topk_K': 8,
-            's_constraint': 'softplus',
-        },
+            },
     }
     tr_spec = {
         'type': 'transformer',

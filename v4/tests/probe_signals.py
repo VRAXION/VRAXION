@@ -20,7 +20,7 @@ model = build_model_from_spec(spec, 'cpu')
 model.load_state_dict(spec['state_dict'])
 model.eval()
 
-S = model.S_raw.item()
+S = model.S_raw.item() if hasattr(model, 'S_raw') else float('nan')
 print(f'Checkpoint: step={ckpt["step"]}, best_loss={ckpt["best_loss"]:.6f}')
 print(f'S={S:.4f}, N={model.N}, M={model.M}, hidden={model.hidden_dim}, slot={model.slot_dim}, R={model.R}')
 

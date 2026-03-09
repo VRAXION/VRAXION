@@ -611,8 +611,7 @@ class INSTNCT(nn.Module):
                  mtaps_lags=(1, 2, 4, 8, 16, 32),          # lag taps, kept separate then mixed
                  mtaps_mixer_mode='current',               # 'current' | 'tap_scalar_gate' | 'residual_gated' | 'hybrid_heads_scalar_gate' | 'hybrid_heads_spaced_scalar_gate' | 'hybrid_heads_fixed_scalar_gate'
                  mtaps_aux_fixed_offsets=(),               # nightly-only fixed auxiliary read heads, pointer-relative
-                 min_write_strength=0.0,                   # nightly-only floor on replace-write gate
-                 s_constraint='softplus'):                 # 'softplus' (S>0) | 'raw' (unconstrained)
+                 min_write_strength=0.0):                   # nightly-only floor on replace-write gate
         super().__init__()
         assert kernel_mode in ('uniform', 'vshape', 'gaussian', 'dotprod', 'topk'), \
             f"kernel_mode must be 'uniform', 'vshape', 'gaussian', 'dotprod', or 'topk', got '{kernel_mode}'"
@@ -809,12 +808,14 @@ class INSTNCT(nn.Module):
             self.inp = nn.Linear(B, hidden_dim)        # B bits → hidden_dim
             self.out = nn.Linear(hidden_dim, B)        # hidden_dim → B bits
 
-        # ── Per-neuron learnable rho + C for c19 activations (both embed_mode) ──
+        # ── Per-neuron learnable rho + C for c19 activations ──
         _raw0_rho = _rho_init_raw(4.0)
         _raw0_C = _C_init_raw()
-        self.c19_rho_input = nn.Parameter(torch.full((hidden_dim,), _raw0_rho))
+        # c19 input params only needed in bitlift mode; dead in learned embed
+        if self._bitlift:
+            self.c19_rho_input = nn.Parameter(torch.full((hidden_dim,), _raw0_rho))
+            self.c19_C_input = nn.Parameter(torch.full((hidden_dim,), _raw0_C))
         self.c19_rho_hidden = nn.Parameter(torch.full((hidden_dim,), _raw0_rho))
-        self.c19_C_input = nn.Parameter(torch.full((hidden_dim,), _raw0_C))
         self.c19_C_hidden = nn.Parameter(torch.full((hidden_dim,), _raw0_C))
 
         # read_proj: slot_dim → hidden_dim (decompress ring read into hidden space)
@@ -929,10 +930,9 @@ class INSTNCT(nn.Module):
         # Controls how ring read signal blends into hidden state.
         # 'dotprod': α = sigmoid(τ · cosine(input, ring_signal)) — scale-invariant, bounded [0,1]
         # 'fixed':   α = S (from config) — fixed scalar, backward compat
-        self.s_constraint = s_constraint  # kept for checkpoint compat
-        self.S_raw = nn.Parameter(torch.tensor(1.0))  # full ring signal — let backprop decide
+        # S_raw + s_constraint removed — legacy from ring_gate='scalar' mode, dead in dotprod
         self.gate_tau = nn.Parameter(torch.tensor(4.0))  # learnable temperature for cosine gate
-        self.ring_signal_norm = nn.LayerNorm(hidden_dim)  # normalizes ring signal before blend
+        # ring_signal_norm removed — LayerNorm was never called in forward(), dead since dotprod gate
 
         # ── Gated write (anti-blob) ──
         # Mini head per expert: Linear(hidden_dim → 2) → sigmoid → [erase, write_gate]
@@ -947,13 +947,14 @@ class INSTNCT(nn.Module):
 
         # ── Adaptive write strength ──
         # Per-timestep write intensity from hidden state: S_write = sigmoid(linear(h))
-        # Bias init so sigmoid(bias) ≈ 0.3 (matches old fixed S_raw), weight ≈ 0
-        # Old checkpoints without this key → falls back to fixed S_raw behavior
+        # Xavier init with small gain so gate starts near-uniform but can learn context-dependent writes.
+        # Bias init so sigmoid(bias) ≈ 0.3 baseline write strength.
+        # Previous zero-init collapsed by step 7K (Adam exp_avg=0, exp_avg_sq≈1e-7).
         self.write_gate = nn.ModuleList([
             nn.Linear(hidden_dim, 1) for _ in range(N)
         ])
         for wg in self.write_gate:
-            nn.init.zeros_(wg.weight)
+            nn.init.xavier_uniform_(wg.weight, gain=0.01)
             wg.bias.data.fill_(-0.847)  # sigmoid(-0.847) ≈ 0.3
 
         # ── Bulletin board temporal cache ──

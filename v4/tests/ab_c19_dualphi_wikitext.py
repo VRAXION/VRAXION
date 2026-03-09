@@ -108,7 +108,6 @@ def build_model(seed):
         'bb_tau': 4.0,
         'bb_gate_mode': 'learned',
         'topk_K': 8,
-        's_constraint': 'softplus',
     }
     record = {'type': 'instnct', 'build_spec': spec}
     return build_model_from_spec(record, 'cuda')

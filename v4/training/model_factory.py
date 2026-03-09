@@ -68,7 +68,6 @@ def _build_instnct_spec(embed_mode: bool, model_config: dict) -> dict:
         'read_topk_K': int(model_config.get('read_topk_K', model_config.get('topk_K', 8))),
         'write_address_mode': model_config.get('write_address_mode', 'pointer'),
         'write_topk_K': int(model_config.get('write_topk_K', model_config.get('topk_K', 8))),
-        's_constraint': model_config.get('s_constraint', 'softplus'),
     }
 
 

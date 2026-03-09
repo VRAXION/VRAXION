@@ -308,7 +308,6 @@ def build_model(
         'read_topk_K': topk_k,
         'write_address_mode': write_address_mode,
         'write_topk_K': effective_write_topk_k,
-        's_constraint': 'softplus',
     }
     record = {'type': 'instnct', 'build_spec': spec}
     return build_model_from_spec(record, device)

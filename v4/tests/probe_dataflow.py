@@ -97,7 +97,7 @@ def probe_forward_stream(model, device, state=None, label=''):
         else:
             ew = torch.ones(N, 2 * win + 1, device=device) / (2 * win + 1)
 
-        S_val = model.S_raw.item()
+        S_val = model.S_raw.item() if hasattr(model, 'S_raw') else 1.0
 
         for i in range(N):
             pfx = f'expert{i}'
@@ -299,7 +299,7 @@ def probe_backward(model, device, label=''):
         grad_report['write_gate_raw'] = model.write_gate_raw.grad.norm().item()
 
     # S_raw
-    if hasattr(model, 'S_raw') and model.S_raw.grad is not None:
+    if hasattr(model, 'S_raw') and getattr(model.S_raw, 'grad', None) is not None:
         grad_report['S_raw'] = model.S_raw.grad.norm().item()
 
     model.zero_grad()

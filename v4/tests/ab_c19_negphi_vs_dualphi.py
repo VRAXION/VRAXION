@@ -78,7 +78,7 @@ def build_model(seed):
         'output_encoding': 'learned', 'pointer_mode': 'sequential',
         'write_mode': 'replace', 'bb_enabled': False,
         'bb_gate_bias': 0.0, 'bb_scale': 0.1, 'bb_tau': 4.0,
-        'bb_gate_mode': 'learned', 'topk_K': 8, 's_constraint': 'softplus',
+        'bb_gate_mode': 'learned', 'topk_K': 8,
     }
     record = {'type': 'instnct', 'build_spec': spec}
     return build_model_from_spec(record, 'cuda')
