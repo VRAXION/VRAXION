@@ -28,7 +28,13 @@ _COMPILE_DIAG_BLENDED_NORM = 5
 _COMPILE_DIAG_HIDDEN_NORM = 6
 _COMPILE_DIAG_HIDDEN_FINAL_NORM = 7
 _COMPILE_DIAG_PTR_POS = 8
-_COMPILE_DIAG_EXPERT_WIDTH = 9
+_COMPILE_DIAG_WRITE_STRENGTH_MEAN = 9
+_COMPILE_DIAG_WRITE_STRENGTH_MIN = 10
+_COMPILE_DIAG_WRITE_STRENGTH_MAX = 11
+_COMPILE_DIAG_WRITE_GATE_LOGIT_MEAN = 12
+_COMPILE_DIAG_WRITE_GATE_LOGIT_MIN = 13
+_COMPILE_DIAG_WRITE_GATE_LOGIT_MAX = 14
+_COMPILE_DIAG_EXPERT_WIDTH = 15
 
 _COMPILE_DIAG_RING_NORM = 0
 _COMPILE_DIAG_RING_SLOT_MEAN = 1
@@ -605,6 +611,7 @@ class INSTNCT(nn.Module):
                  mtaps_lags=(1, 2, 4, 8, 16, 32),          # lag taps, kept separate then mixed
                  mtaps_mixer_mode='current',               # 'current' | 'tap_scalar_gate' | 'residual_gated' | 'hybrid_heads_scalar_gate' | 'hybrid_heads_spaced_scalar_gate' | 'hybrid_heads_fixed_scalar_gate'
                  mtaps_aux_fixed_offsets=(),               # nightly-only fixed auxiliary read heads, pointer-relative
+                 min_write_strength=0.0,                   # nightly-only floor on replace-write gate
                  s_constraint='softplus'):                 # 'softplus' (S>0) | 'raw' (unconstrained)
         super().__init__()
         assert kernel_mode in ('uniform', 'vshape', 'gaussian', 'dotprod', 'topk'), \
@@ -661,6 +668,9 @@ class INSTNCT(nn.Module):
         self.mtaps_enabled = bool(mtaps_enabled)
         self.mtaps_mixer_mode = mtaps_mixer_mode
         self._mtaps_aux_fixed_offsets = mtaps_aux_fixed_offsets
+        assert 0.0 <= float(min_write_strength) < 1.0, \
+            f"min_write_strength must be in [0, 1), got {min_write_strength!r}"
+        self.min_write_strength = float(min_write_strength)
 
         # backward compat: embed_dim=X sets hidden_dim=slot_dim=X
         if embed_dim is not None:
@@ -1031,6 +1041,12 @@ class INSTNCT(nn.Module):
             d[f'hidden_norm_{i}'] = row[_COMPILE_DIAG_HIDDEN_NORM].item()
             d[f'hidden_final_norm_{i}'] = row[_COMPILE_DIAG_HIDDEN_FINAL_NORM].item()
             d[f'ptr_pos_{i}'] = row[_COMPILE_DIAG_PTR_POS].item()
+            d[f'write_strength_{i}_mean'] = row[_COMPILE_DIAG_WRITE_STRENGTH_MEAN].item()
+            d[f'write_strength_{i}_min'] = row[_COMPILE_DIAG_WRITE_STRENGTH_MIN].item()
+            d[f'write_strength_{i}_max'] = row[_COMPILE_DIAG_WRITE_STRENGTH_MAX].item()
+            d[f'write_gate_logit_{i}_mean'] = row[_COMPILE_DIAG_WRITE_GATE_LOGIT_MEAN].item()
+            d[f'write_gate_logit_{i}_min'] = row[_COMPILE_DIAG_WRITE_GATE_LOGIT_MIN].item()
+            d[f'write_gate_logit_{i}_max'] = row[_COMPILE_DIAG_WRITE_GATE_LOGIT_MAX].item()
         self._diag = d
         return d
 
@@ -1064,6 +1080,14 @@ class INSTNCT(nn.Module):
             if not ok:
                 return reason
         return None
+
+    def _resolve_write_strength(self, expert_idx: int, hidden_tns: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
+        """Return floored write strength and its pre-sigmoid logit."""
+        raw_ws = self.write_gate[expert_idx](hidden_tns)
+        ws = torch.sigmoid(raw_ws)
+        if self.min_write_strength > 0.0:
+            ws = self.min_write_strength + (1.0 - self.min_write_strength) * ws
+        return ws, raw_ws
 
     def _process_chunk(self, x_chunk, ring_tns, ptr_tns, hidden_tns,
                        bb_buf, bb_keys, bb_write_ptr, bb_steps,
@@ -1221,7 +1245,26 @@ class INSTNCT(nn.Module):
                     write_vec = hidden0
                 if self._expert_conf is not None:
                     write_vec = self._expert_conf[0] * write_vec
-                ws = torch.sigmoid(self.write_gate[0](hidden0))
+                ws, raw_ws = self._resolve_write_strength(0, hidden0)
+                if eager_diag_enabled:
+                    d = self._diag
+                    wsd = ws.detach()
+                    rawd = raw_ws.detach()
+                    d['write_strength_0_mean'] = wsd.mean().item()
+                    d['write_strength_0_min'] = wsd.min().item()
+                    d['write_strength_0_max'] = wsd.max().item()
+                    d['write_gate_logit_0_mean'] = rawd.mean().item()
+                    d['write_gate_logit_0_min'] = rawd.min().item()
+                    d['write_gate_logit_0_max'] = rawd.max().item()
+                elif core_diag_enabled:
+                    wsd = ws.detach()
+                    rawd = raw_ws.detach()
+                    core_diag_expert_tns[0, _COMPILE_DIAG_WRITE_STRENGTH_MEAN] = wsd.mean()
+                    core_diag_expert_tns[0, _COMPILE_DIAG_WRITE_STRENGTH_MIN] = wsd.min()
+                    core_diag_expert_tns[0, _COMPILE_DIAG_WRITE_STRENGTH_MAX] = wsd.max()
+                    core_diag_expert_tns[0, _COMPILE_DIAG_WRITE_GATE_LOGIT_MEAN] = rawd.mean()
+                    core_diag_expert_tns[0, _COMPILE_DIAG_WRITE_GATE_LOGIT_MIN] = rawd.min()
+                    core_diag_expert_tns[0, _COMPILE_DIAG_WRITE_GATE_LOGIT_MAX] = rawd.max()
             with _source_scope('write_replace'):
                 ring_tns = func_hdd_write_tns(
                     ring_tns,
@@ -1582,7 +1625,8 @@ class INSTNCT(nn.Module):
                                     float(M),
                                 ) - (float(M) / 2.0)
                                 aux_offsets_tns = torch.stack([near_off_tns, far_off_rewrapped_tns], dim=1)
-                            aux_centers_tns = torch.remainder(ptr_tns[i].unsqueeze(1) + aux_offsets_tns, float(M))
+                            else:
+                                aux_centers_tns = torch.remainder(ptr_tns[i].unsqueeze(1) + aux_offsets_tns, float(M))
                             aux_reads_lst = []
                             aux_center_dist_lst = []
                             aux_near_local_lst = []
@@ -1887,7 +1931,26 @@ class INSTNCT(nn.Module):
                             write_vec = self._expert_conf[i] * write_vec
                     if self.write_mode == 'replace':
                         with _source_scope('write_prepare'):
-                            ws = torch.sigmoid(self.write_gate[i](hidden_lst[i]))  # (B, 1)
+                            ws, raw_ws = self._resolve_write_strength(i, hidden_lst[i])  # (B, 1)
+                            if eager_diag_enabled:
+                                d = self._diag
+                                wsd = ws.detach()
+                                rawd = raw_ws.detach()
+                                d[f'write_strength_{i}_mean'] = wsd.mean().item()
+                                d[f'write_strength_{i}_min'] = wsd.min().item()
+                                d[f'write_strength_{i}_max'] = wsd.max().item()
+                                d[f'write_gate_logit_{i}_mean'] = rawd.mean().item()
+                                d[f'write_gate_logit_{i}_min'] = rawd.min().item()
+                                d[f'write_gate_logit_{i}_max'] = rawd.max().item()
+                            elif core_diag_enabled:
+                                wsd = ws.detach()
+                                rawd = raw_ws.detach()
+                                core_diag_expert_tns[i, _COMPILE_DIAG_WRITE_STRENGTH_MEAN] = wsd.mean()
+                                core_diag_expert_tns[i, _COMPILE_DIAG_WRITE_STRENGTH_MIN] = wsd.min()
+                                core_diag_expert_tns[i, _COMPILE_DIAG_WRITE_STRENGTH_MAX] = wsd.max()
+                                core_diag_expert_tns[i, _COMPILE_DIAG_WRITE_GATE_LOGIT_MEAN] = rawd.mean()
+                                core_diag_expert_tns[i, _COMPILE_DIAG_WRITE_GATE_LOGIT_MIN] = rawd.min()
+                                core_diag_expert_tns[i, _COMPILE_DIAG_WRITE_GATE_LOGIT_MAX] = rawd.max()
                         with _source_scope('write_replace'):
                             if proxy_overlay_enabled:
                                 w = write_weights_tns.unsqueeze(-1) * ws.unsqueeze(1)

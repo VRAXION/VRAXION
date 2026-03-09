@@ -74,12 +74,18 @@ def evaluate(model, dataset, config, device, n_samples: int):
     # ceiling div — last batch may be smaller, but we sample exactly n_samples
     n_batches = -(-n_samples // batch_size)
 
-    # accumulators
-    sum_raw_loss = 0.0
-    sum_masked_loss = 0.0
-    sum_accuracy = 0.0
-    sum_masked_acc = 0.0
-    sum_mask_frac = 0.0
+    # Exact numerator/denominator accumulators. Do not average batch means:
+    # the final batch may be smaller, and mask density may vary across batches.
+    raw_loss_num = 0.0
+    raw_loss_den = 0.0
+    masked_loss_num = 0.0
+    masked_loss_den = 0.0
+    raw_acc_num = 0.0
+    raw_acc_den = 0.0
+    masked_acc_num = 0.0
+    masked_acc_den = 0.0
+    mask_frac_num = 0.0
+    mask_frac_den = 0.0
 
     # Fix dataset RNG for reproducibility — ByteDataset sampling uses its own RNG.
     if hasattr(dataset, 'rng'):
@@ -100,18 +106,31 @@ def evaluate(model, dataset, config, device, n_samples: int):
         raw_loss, masked_loss = loss_fn(pred, yb, mask)
         raw_acc, masked_acc = acc_fn(pred, yb, mask)
 
-        sum_raw_loss += raw_loss.item()
-        sum_masked_loss += masked_loss.item()
-        sum_accuracy += raw_acc
-        sum_masked_acc += masked_acc
-        sum_mask_frac += mask.mean().item()
+        if config['embed_mode']:
+            raw_count = float(yb.numel())
+            masked_count = float(mask.sum().item())
+        else:
+            raw_count = float(pred.numel())
+            masked_count = float((mask.sum() * pred.shape[-1]).item())
+
+        mask_count = float(mask.numel())
+        raw_loss_num += raw_loss.item() * raw_count
+        raw_loss_den += raw_count
+        masked_loss_num += masked_loss.item() * masked_count
+        masked_loss_den += masked_count
+        raw_acc_num += raw_acc * raw_count
+        raw_acc_den += raw_count
+        masked_acc_num += masked_acc * masked_count
+        masked_acc_den += masked_count
+        mask_frac_num += float(mask.sum().item())
+        mask_frac_den += mask_count
 
     return {
-        'raw_loss':    sum_raw_loss / n_batches,
-        'masked_loss': sum_masked_loss / n_batches,
-        'accuracy':    sum_accuracy / n_batches,
-        'masked_acc':  sum_masked_acc / n_batches,
-        'mask_frac':   sum_mask_frac / n_batches,
+        'raw_loss':    raw_loss_num / max(raw_loss_den, 1.0),
+        'masked_loss': masked_loss_num / max(masked_loss_den, 1.0),
+        'accuracy':    raw_acc_num / max(raw_acc_den, 1.0),
+        'masked_acc':  masked_acc_num / max(masked_acc_den, 1.0),
+        'mask_frac':   mask_frac_num / max(mask_frac_den, 1.0),
         'n_samples':   n_samples,
         'n_batches':   n_batches,
     }

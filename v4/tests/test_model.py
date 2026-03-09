@@ -759,6 +759,12 @@ def test_compile_chunk_keeps_core_scalar_diags(monkeypatch):
         'hidden_norm_0',
         'hidden_final_norm_0',
         'ptr_pos_0',
+        'write_strength_0_mean',
+        'write_strength_0_min',
+        'write_strength_0_max',
+        'write_gate_logit_0_mean',
+        'write_gate_logit_0_min',
+        'write_gate_logit_0_max',
     ):
         assert key in diag, f'missing compile-safe diag key: {key}'
         assert isinstance(diag[key], float)
@@ -939,3 +945,59 @@ def test_fastpath_parity_sequential_carry():
     fast_out1, fast_state1 = fast(x1, state=_clone_state(fast_state0))
     assert torch.allclose(ref_out1, fast_out1, atol=1e-6, rtol=1e-5)
     _assert_state_close(ref_state1, fast_state1)
+
+
+def test_min_write_strength_floor_prevents_noop_ring_write():
+    """A small write floor should keep replace-write updates from collapsing to zero."""
+    torch.manual_seed(123)
+    base = INSTNCT(**FASTPATH_CFG, embed_mode=True, min_write_strength=0.0)
+    torch.manual_seed(123)
+    floored = INSTNCT(**FASTPATH_CFG, embed_mode=True, min_write_strength=0.002)
+    floored.load_state_dict(base.state_dict())
+    for model in (base, floored):
+        model._fastpath_mode = 'force'
+        with torch.no_grad():
+            model.write_gate[0].weight.zero_()
+            model.write_gate[0].bias.fill_(-25.0)
+
+    x = torch.randint(0, 256, (2, 1))
+    state = {
+        'ring': torch.randn(2, 32, 16),
+        'ptr': torch.zeros(1, 2),
+        'hidden': torch.randn(1, 2, 32),
+    }
+
+    _, base_state = base(x, state=_clone_state(state))
+    _, floored_state = floored(x, state=_clone_state(state))
+    base_delta = (base_state['ring'] - state['ring']).norm().item()
+    floored_delta = (floored_state['ring'] - state['ring']).norm().item()
+
+    assert base_delta < 1e-4
+    assert floored_delta > 1e-3
+    assert floored_delta > base_delta * 1000.0
+
+
+def test_mtaps_spaced_heads_enforce_minimum_gap():
+    """Spaced MTAPS heads must keep the enforced >=8-slot separation."""
+    model = INSTNCT(
+        M=32,
+        hidden_dim=32,
+        slot_dim=16,
+        N=1,
+        R=1,
+        embed_mode=True,
+        checkpoint_chunks=0,
+        expert_weighting=False,
+        mtaps_enabled=True,
+        mtaps_mixer_mode='hybrid_heads_spaced_scalar_gate',
+    )
+    model._diag_enabled = True
+    with torch.no_grad():
+        model.read_tap_aux_offset[0].weight.zero_()
+        model.read_tap_aux_offset[0].bias.zero_()
+
+    out, _ = model(torch.randint(0, 256, (4, 8)))
+
+    assert out.shape == (4, 8, 256)
+    assert model._diag['head_pair_near_frac_0'] == pytest.approx(0.0)
+    assert model._diag['head_pair_dist_mean_0'] >= 7.9

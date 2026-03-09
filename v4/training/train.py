@@ -912,6 +912,15 @@ class CSVLogger:
         self._f.close()
 
 
+def _select_sequential_state(previous_state, next_state, masked_loss, sequential: bool):
+    """Keep the prior carry state when a forward produces a non-finite loss."""
+    if not sequential:
+        return next_state
+    if torch.isfinite(masked_loss):
+        return next_state
+    return previous_state
+
+
 # ── Boot Info ─────────────────────────────────────────────────
 # One-shot diagnostics printed at startup. No state mutation — purely informational.
 # Intended for the user to sanity-check before a long training run:
@@ -1374,17 +1383,30 @@ def train(config):
         else:
             xb, yb, mask = dataset.sample_batch(config['batch_size'], device)
 
-        _ring_pre = state['ring'].norm().item() if state is not None and 'ring' in state else -1
+        # Deep-clone carry state so rollback survives CUDA graph memory reuse.
+        # Without clone, reduce-overhead CUDA graphs can overwrite the input
+        # tensor memory during forward, making NaN rollback ineffective.
+        if state is not None and sequential:
+            prev_state = {k: v.clone() if isinstance(v, torch.Tensor) else v
+                          for k, v in state.items()}
+        else:
+            prev_state = state
+        _ring_pre = prev_state['ring'].norm().item() if prev_state is not None and 'ring' in prev_state else -1
+
+        # Fence CUDA graph boundaries so reduce-overhead mode properly
+        # separates forward passes (prevents "pending uninvoked backwards").
+        if hasattr(torch.compiler, 'cudagraph_mark_step_begin'):
+            torch.compiler.cudagraph_mark_step_begin()
 
         with torch.amp.autocast('cuda', enabled=use_amp):
-            pred, state = model(xb, state=state if sequential else None)
+            pred, next_state = model(xb, state=prev_state if sequential else None)
             # loss_fn returns two values: raw_loss (all positions) and masked_loss
             # (supervised positions only). We optimize masked_loss but log both.
             raw_loss, masked_loss = loss_fn(pred, yb, mask)
         if _is_log_step and getattr(runtime_model, '_compile_mode', 'eager') in ('full', 'chunk'):
             runtime_model.materialize_compile_diag()
 
-        _ring_post = state['ring'].norm().item() if state is not None and 'ring' in state else -1
+        _ring_post = next_state['ring'].norm().item() if next_state is not None and 'ring' in next_state else -1
         # Temporary ring delta probe — remove once ring freeze is resolved
         if s <= start_step + 5:
             print(f'  [RING-PROBE] step {s}: pre={_ring_pre:.4f} post={_ring_post:.4f} delta={_ring_post - _ring_pre:.6f}')
@@ -1395,7 +1417,22 @@ def train(config):
         # corrupted optimizer momentum buffers are not.
         if not torch.isfinite(masked_loss):
             nan_count += 1
-            print(f'  [NAN] step {s} -- loss={masked_loss.item()}, skipping ({nan_count} consecutive)')
+            state = _select_sequential_state(prev_state, next_state, masked_loss, sequential)
+            opt.zero_grad(set_to_none=True)
+            # Halve AMP scaler to prevent future fp16 overflow
+            if scaler is not None and scaler.is_enabled():
+                old_scale = scaler.get_scale()
+                scaler.update(new_scale=old_scale * 0.5)
+                _scale_msg = f', scaler {old_scale:.0f}->{old_scale*0.5:.0f}'
+            else:
+                _scale_msg = ''
+            _state_msg = 'carry rolled back' if sequential else 'stateless step'
+            print(
+                f'  [NAN] step {s} -- loss={masked_loss.item()}, '
+                f'skipping ({nan_count} consecutive, {_state_msg}, '
+                f'ring_pre={_ring_pre:.4f}, ring_post={_ring_post:.4f}'
+                f'{_scale_msg})'
+            )
             if nan_count >= 10:
                 raise RuntimeError(
                     f'NaN/Inf loss in {nan_count} consecutive steps -- training is diverging. '
@@ -1403,6 +1440,7 @@ def train(config):
                 )
             continue
         nan_count = 0  # reset on healthy step
+        state = _select_sequential_state(prev_state, next_state, masked_loss, sequential)
 
         # ── Backward ──
         opt.zero_grad()
@@ -1410,18 +1448,27 @@ def train(config):
             scaler.scale(masked_loss).backward()
             if hasattr(runtime_model, 'update_expert_conf'):
                 runtime_model.update_expert_conf()
-            if config['max_grad_norm'] > 0:
-                scaler.unscale_(opt)
-                torch.nn.utils.clip_grad_norm_(model.parameters(), config['max_grad_norm'])
-            scaler.step(opt)
-            scaler.update()
+            # unscale_ + check for inf/nan grads before stepping
+            scaler.unscale_(opt)
+            grad_norm = torch.nn.utils.clip_grad_norm_(
+                model.parameters(), config['max_grad_norm'] if config['max_grad_norm'] > 0 else 1e9)
+            if not torch.isfinite(grad_norm):
+                print(f'  [GRAD-INF] step {s} -- grad_norm={grad_norm.item():.1f}, '
+                      f'skipping optimizer step (scaler={scaler.get_scale():.0f})')
+                scaler.update()   # scaler detects inf and halves scale automatically
+            else:
+                scaler.step(opt)
+                scaler.update()
         else:
             masked_loss.backward()
             if hasattr(runtime_model, 'update_expert_conf'):
                 runtime_model.update_expert_conf()
-            if config['max_grad_norm'] > 0:
-                torch.nn.utils.clip_grad_norm_(model.parameters(), config['max_grad_norm'])
-            opt.step()
+            grad_norm = torch.nn.utils.clip_grad_norm_(
+                model.parameters(), config['max_grad_norm'] if config['max_grad_norm'] > 0 else 1e9)
+            if not torch.isfinite(grad_norm):
+                print(f'  [GRAD-INF] step {s} -- grad_norm={grad_norm.item():.1f}, skipping optimizer step')
+            else:
+                opt.step()
 
         # .item() detaches from the graph — safe to hold across iterations.
         lv = masked_loss.item()

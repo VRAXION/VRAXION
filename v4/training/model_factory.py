@@ -55,6 +55,7 @@ def _build_instnct_spec(embed_mode: bool, model_config: dict) -> dict:
         'pointer_interp_mode': model_config.get('pointer_interp_mode', 'off'),
         'write_mode': model_config.get('write_mode', 'accumulate'),
         'replace_impl': model_config.get('replace_impl', 'dense'),
+        'min_write_strength': float(model_config.get('min_write_strength', 0.0)),
         'mtaps_enabled': bool(model_config.get('mtaps_enabled', False)),
         'mtaps_lags': model_config.get('mtaps_lags', [1, 2, 4, 8, 16, 32]),
         'mtaps_mixer_mode': model_config.get('mtaps_mixer_mode', 'current'),

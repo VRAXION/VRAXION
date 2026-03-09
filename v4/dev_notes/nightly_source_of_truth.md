@@ -27,8 +27,11 @@ Locked defaults for the current nightly path:
 - `seq_len=256`
 - `sequential=true`
 - `N=1`
+- `pointer_mode='sequential'`
+- `embed_encoding='learned'`
 - `write_mode=replace`
 - `replace_impl=dense`
+- `min_write_strength=0.002`
 - `bb_enabled=false`
 - compile auto enabled via `--compile` or `training.compile: true`
 
@@ -39,6 +42,17 @@ This is the current best-supported long-sequence training path. It is the one va
 Use the canonical runner surfaces from `v4/tests/nightly_research_runner.py`.
 Do not use ad hoc `training/train.py` runs with the production-scale `hidden_dim=4096` config for CPU experiments unless the goal is explicitly to measure that slow path.
 For CPU WikiText carry smoke or architectural probes, use the small research surfaces and fixed presets.
+
+## Verified Runtime Corrections
+
+The current verified nightly fix pack also includes a small runtime-correctness set that should be treated as part of the source of truth:
+
+- `training/inference.py` now targets the v2 checkpoint contract instead of legacy `config/model_state` keys.
+- Inference is intentionally `embed_mode`-only. Binary checkpoints fail fast with a clear error instead of silently constructing the wrong architecture.
+- `hybrid_heads_spaced_scalar_gate` now keeps its post-spacing auxiliary head centers instead of overwriting them before the read loop.
+- Eval aggregation is intended to be exact over sample/mask numerators and denominators, not a simple average of per-batch means.
+
+These are verified against the current `v4/nightly` code path. Broader audit findings from inactive or missing files should not be treated as nightly facts until separately verified.
 
 ## Compile Stabilization
 
@@ -120,6 +134,30 @@ Do not treat a generic or fast-path-only ring strip cache as the current best ne
 - Compiled paths keep only scalar diagnostics because `.item()` and rich list/trace formatting inside the graph cause graph breaks or retracing.
 - Gradient checkpointing and chunk compile are mutually exclusive in the active path; chunk compile takes precedence.
 - The single-expert fast path was added because the validated production shape is narrow enough to specialize safely without changing model semantics.
+- A small `min_write_strength` floor (`0.002`) is now the intended nightly write-collapse mitigation:
+  - CPU probes showed the learned replace-write gate collapsing toward zero by roughly `2k-4k` steps
+  - fixed read-side `S` was tested and rejected
+  - the floor keeps ring writes alive without replacing the existing read-side gate
+- Current CPU A/B guidance:
+  - `embed_encoding='learned'` outperformed `bitlift` on the current production-style corpus smoke run
+  - `pointer_mode='sequential'` outperformed `pilot` on the same current-corpus CPU smoke
+  - pilot remains a valid synthetic/needle research variant, but not the current production default
+
+### Ring Write Collapse Finding
+
+The main long-run model finding is that the replace-write gate can collapse toward zero, freezing the ring into a largely static feature bank.
+
+- Observed behavior from CPU checkpoint probes:
+  - write strength healthy around `1k-2k`
+  - collapse begins around `2k-4k`
+  - by later checkpoints, one-step `ring_delta_l2` is effectively zero
+- Practical implication:
+  - the ring content can still matter
+  - but slot order starts mattering much less than expected for a live temporal memory
+- Current mitigation:
+  - keep read-side `S='dotprod'`
+  - add `min_write_strength: 0.002`
+  - track `write_strength_*` and `write_gate_logit_*` in diagnostics
 
 ## Known Failed Or Deferred Paths
 

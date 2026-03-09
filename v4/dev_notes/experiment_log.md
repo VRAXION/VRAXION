@@ -4,6 +4,118 @@ Newest entries at top. Copy from [TEMPLATE.md](TEMPLATE.md) for new entries.
 
 ---
 
+## 2026-03-09 — Overnight Config C Run (5.19M params, WikiText-103)
+
+**Setup**: Config C (hidden_dim=6144, slot_dim=256, M=1024, N=1), sequential mode,
+AMP fp16, chunk-level torch.compile (reduce-overhead), WikiText-103 byte-level.
+Ran ~9800 steps overnight before NaN crash.
+
+### Results
+
+| Metric       | Step 1   | Step 1000 | Step 5000 | Step 9000 | Step 9790 (crash) |
+|-------------|----------|-----------|-----------|-----------|-------------------|
+| loss        | 5.63     | 1.58      | 1.44      | 1.42      | 1.37 (best)       |
+| accuracy    | 0.1%     | 54.3%     | 58.2%     | 58.3%     | 60.2% (best)      |
+| alpha_0     | 0.596    | 0.586     | 0.500     | 0.299     | 0.274             |
+| ring_norm   | 281      | 3651      | 3186      | 4962      | 5548              |
+| grad_norm   | 5.63     | 1.71      | 1.55      | 1.57      | 1.54              |
+| LR          | 0.00001  | 0.001     | 0.000990  | 0.000961  | 0.000961          |
+
+### Key Findings
+
+**1. Ring is actively useful (alpha × ring_signal = gain control)**
+- alpha decreased 0.60 → 0.27, BUT ring_signal_norm grew 3.4 → 429
+- product (alpha × ring_signal_norm) monotonically INCREASED: 2 → 128
+- This is automatic gain control — the model reduces the gate as the signal strengthens
+- The ring is not being shut off; it's contributing more over time
+
+**2. Learnable parameter dynamics**
+- `gate_tau`: 4.3 → 8.8 (monoton increase, actively shaping alpha)
+- `write_proj` norm: 10 → 141 (ring writes getting stronger, 14× growth)
+- `read_proj` norm: 47 → 64 (steady growth)
+- `phase_sin/cos`: stabilized early, norms ~1.3
+
+**3. Write gate collapse (gradient starvation)**
+- `write_gate` weight/bias byte-identical between step 7000 and 9000
+- Adam `exp_avg` = 0.0, `exp_avg_sq` ≈ 1e-7 → gradient flow fully dried up
+- The gate IS in the optimizer (confirmed), but sigmoid saturation kills gradients
+- Output always ≈ sigmoid(-0.88) ≈ 0.29, independent of context
+- Note: this run had no `min_write_strength` floor (now added in nightly)
+
+**4. Dead parameters confirmed (zero gradient, no Adam state)**
+- `S_raw`: legacy from scalar ring gate, not used in dotprod mode
+- `ring_signal_norm` (LayerNorm, 12,288 params): defined but never called in forward
+- `c19_rho_input` + `c19_C_input` (12,288 params): dead in `learned` embed mode
+  (active in `bitlift` mode — DO NOT delete, make conditional if cleaning up)
+
+**5. Training plateau**
+- Fast learning step 1-1000 (loss 5.63 → 1.58)
+- Slow grind step 1000-9800 (loss 1.58 → 1.37, only 0.21 improvement over 8800 steps)
+- LR plateau scheduler triggered 4× (0.001 → 0.000961), minimal effect
+- Diminishing returns consistent with previous 710K run pattern
+
+### NaN Crash Analysis (step 9793-9803)
+
+**Root cause**: CUDA graph memory reuse defeats NaN rollback.
+
+Chain of events:
+1. Step 9793: forward OK, backward produces inf gradients → GRAD-INF, optimizer skipped
+2. Step 9794: CUDA graph warning "pending uninvoked backwards", forward with clean
+   ring_pre=5546 produces ring_post=nan
+3. Steps 9795-9803: ring_pre=nan (rollback failed), 10 consecutive NaN → fatal crash
+
+**Mechanism**: `reduce-overhead` CUDA graphs record fixed memory addresses. When the
+optimizer step is skipped (GRAD-INF), the graph state becomes inconsistent. On the next
+forward, the graph replays and overwrites input tensor memory. The rollback line
+`prev_state = state` was a shallow dict reference — both point to the same tensor memory,
+which CUDA graphs have now corrupted.
+
+**Fix** (applied to work/VRAXION_DEV/v4, needs porting to nightly):
+1. Deep-clone carry state before forward: `prev_state = {k: v.clone() ...}`
+2. `torch.compiler.cudagraph_mark_step_begin()` before each forward pass
+
+**Checkpoint**: ckpt_step_009000.pt verified healthy (loadable, step=9000, optimizer OK).
+Run is resumable from 9K with the fix applied.
+
+### Data
+- Training CSV: `dev_notes/telemetry/overnight_configC_9800steps.csv`
+- Checkpoints: work/VRAXION_DEV/v4/training_output/ckpt_step_{001000..009000}.pt
+
+---
+
+## 2026-03-09 — CPU A/B Canonical Defaults
+
+- Ran clean CPU/no-compile A/B on the current nightly corpus with matched training settings (`steps=120`, `batch=2`, `seq=64`, sequential carry).
+- `embed_encoding='learned'` beat `bitlift` on the current production-style smoke:
+  - learned: `best_loss=2.578349`, `final_loss=2.748368`
+  - bitlift: `best_loss=2.723226`, `final_loss=2.948056`
+- Speed was effectively tied in this short CPU run (`~0.6s/step` both cases), so the quality win was not offset by a practical CPU slowdown.
+- Updated canonical nightly default:
+  - `embed_encoding: learned`
+- Also rechecked pointer mode on the same current-corpus CPU smoke:
+  - sequential beat pilot (`best_loss=2.723226` vs `2.844055`)
+  - pilot remains promising on synthetic/needle tasks, but not the current canonical default for production-style training
+
+---
+
+## 2026-03-08 — Verified Nightly Runtime Corrections
+
+- Verified current-nightly issues from the broader audit and fixed only the ones supported by the active `v4` worktree:
+  - `training/inference.py` legacy checkpoint-key usage
+  - hardcoded inference model construction
+  - `hybrid_heads_spaced_scalar_gate` auxiliary-head overwrite
+  - eval batch-mean aggregation bias
+- Shipped ring-write-collapse mitigation:
+  - `min_write_strength: 0.002`
+  - additional write gate diagnostics (`write_strength_*`, `write_gate_logit_*`)
+- Fixed read-side `S` was tested on CPU probes and rejected; it materially worsened loss.
+- The NaN sequential-carry rollback behavior remains part of the active nightly path.
+- Deferred from the broader Claude audit:
+  - findings tied to files missing from the current `v4/nightly` tree
+  - broader repo/research cleanup outside the active runtime
+
+---
+
 ## 2026-03-08 — Chunk-Local Ring Strip Cache (No-Go, Reverted)
 
 - Tried a narrow fast-path-only chunk-local strip cache for the validated nightly shape:

@@ -29,13 +29,14 @@ model:
   # ── hidden_dim: Hidden State Width ────────────────────────
   # Expert "brain" width. Bigger = more capacity for pattern recognition.
   # Independent of ring buffer — can be very large without VRAM cost.
-  hidden_dim: 4096
+  hidden_dim: 6144      # Config C sweep winner (was 4096)
 
   # ── slot_dim: Ring Slot Width ─────────────────────────────
   # Ring buffer cell width. Smaller = less VRAM (ring gets cloned T×N
   # times during backprop). Experts compress hidden→slot before writing.
   # When slot_dim < hidden_dim, read_proj decompresses, write_proj compresses.
-  slot_dim: 128
+  # Sweep (2026-03-08): slot_dim=256 best loss (2.094) at 5.8 step/s compiled.
+  slot_dim: 256         # Config C sweep winner (was 128)
 
   # ── N: Beings Count ────────────────────────────────────────
   # Independent agents sharing one ring. Each owns its own
@@ -82,6 +83,7 @@ model:
   pointer_mode: sequential
   write_mode: replace            # 'accumulate' (scatter_add) | 'replace' (HDD-style overwrite)
   replace_impl: dense            # 'dense' | 'proxy_overlay' (nightly-only proxy fast path)
+  min_write_strength: 0.002      # floor on replace-write gate; prevents full ring-write collapse
 
   # ── Pilot Pulse Pointer Params ──────────────────────────────
   # When pointer_mode = 'pilot': each ring slot gets a learned identity.
@@ -105,11 +107,11 @@ model:
 
   # ── Embedding Encoding ─────────────────────────────────────
   # Input encoding type for byte tokens (embed_mode: true only).
-  # 'learned'  = standard nn.Embedding(256, hidden_dim) — 524K learnable params
+  # 'learned'  = standard nn.Embedding(256, hidden_dim) — current canonical default
   # 'hadamard' = Hadamard matrix rows — 0 params, cosine sim = 0 between ALL tokens
   # 'sincos'   = standard sinusoidal — 0 params, cosine sim ~0.97 between adjacent tokens
-  # 'bitlift'  = byte→8 bits→Linear(8, hidden_dim) — 18K learnable params (28× fewer)
-  embed_encoding: bitlift
+  # 'bitlift'  = byte→8 bits→Linear(8, hidden_dim) — cheap ablation mode, not the current default
+  embed_encoding: learned
 
   # ── Output Encoding ─────────────────────────────────────────
   # Output projection type for byte tokens (embed_mode: true only).
@@ -192,9 +194,9 @@ training:
   seq_len: 256           # bytes per sequence (model sees seq_len timesteps)
 
   # ── Schedule ─────────────────────────────────────────────────
-  steps: 50000          # total training steps
+  steps: 999999        # effectively infinite — stop manually or via patience
   log_every: 10         # CSV + console log interval (steps)
-  save_every: 100       # checkpoint save interval (steps)
+  save_every: 1000      # checkpoint save interval (steps) — long run, save less often
   heartbeat_every: 10    # lightweight progress print interval (steps)
 
   # ── Mode ─────────────────────────────────────────────────────
@@ -241,7 +243,7 @@ training:
   #   seq_len <= 48 -> full-model compile
   #   seq_len > 48  -> chunk compile of _process_chunk
   # Unsupported configs (for example BB enabled) fall back to eager with a warning.
-  compile: false
+  compile: true          # chunk-compile C=32 — 5.8 step/s at Config C
   compile_chunk_size: 32  # timesteps per compiled chunk when auto selects chunk compile
 
   # ── Sequential / Stateful Training (TBPTT) ─────────────────

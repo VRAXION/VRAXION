@@ -1,7 +1,8 @@
-"""INSTNCT v4 Inference — load a checkpoint and generate text autoregressively.
+"""INSTNCT v4 Inference — load an embed-mode checkpoint and generate text autoregressively.
 
 Feeds a text prompt byte-by-byte, then samples the model's output distribution
 to generate new bytes. Shows the raw model output as decoded text.
+Binary-mode checkpoints are intentionally unsupported here.
 
 Runs on CPU by default so it doesn't compete with GPU training.
 
@@ -27,7 +28,7 @@ for d in (_TRAINING_DIR, _MODEL_DIR):
     if ds not in sys.path:
         sys.path.insert(0, ds)
 
-from instnct import INSTNCT  # type: ignore  # noqa: E402
+from model_factory import build_model_from_spec  # type: ignore  # noqa: E402
 from train import func_loadckpt_dct  # type: ignore  # noqa: E402
 
 
@@ -137,7 +138,7 @@ def bytes_to_display(byte_list):
 
 
 def main():
-    parser = argparse.ArgumentParser(description='INSTNCT v4 Inference — generate text from checkpoint')
+    parser = argparse.ArgumentParser(description='INSTNCT v4 Inference — generate text from an embed-mode checkpoint')
     parser.add_argument('--checkpoint', required=True, help='path to checkpoint (.pt)')
     parser.add_argument('--prompt', default='The ', help='text prompt to start from')
     parser.add_argument('--length', type=int, default=200, help='bytes to generate (default: 200)')
@@ -155,23 +156,34 @@ def main():
     if not ckpt_path.is_absolute():
         ckpt_path = v4_root / ckpt_path
 
+    device = args.device
+    if device == 'auto':
+        device = 'cuda' if torch.cuda.is_available() else 'cpu'
+
     # ── Load checkpoint ──
     print(f'VRAXION v4 — Inference')
     print(f'{"=" * 60}')
 
-    ckpt = func_loadckpt_dct(str(ckpt_path), args.device)
-    config = ckpt['config']
+    ckpt = func_loadckpt_dct(str(ckpt_path), device)
+    train_cfg = ckpt['train_config_resolved']
+    model_rec = ckpt['model']
     step = ckpt['step']
 
     print(f'[BOOT] Checkpoint  {ckpt_path.name}')
     print(f'[BOOT] Step        {step}')
-    print(f'[BOOT] Device      {args.device}')
+    print(f'[BOOT] Device      {device}')
+
+    if not train_cfg.get('embed_mode', False):
+        raise RuntimeError(
+            'Inference only supports embed-mode checkpoints. '
+            'This checkpoint was trained in binary mode.'
+        )
 
     # ── Build model ──
-    model = INSTNCT(embed_mode=True).to(args.device)
-    # strict=False: older checkpoints may lack newer params (e.g. learnable C).
-    # Missing keys keep their init values, which is correct behavior.
-    missing, unexpected = model.load_state_dict(ckpt['model_state'], strict=False)
+    model = build_model_from_spec(model_rec, device=device)
+    # strict=False: checkpoints may predate newer params (for example write floors or
+    # extra telemetry-only modules). Missing keys keep their init values.
+    missing, unexpected = model.load_state_dict(model_rec['state_dict'], strict=False)
     if missing:
         print(f'[INFO] Missing keys (using defaults): {missing}')
     if unexpected:
@@ -186,7 +198,7 @@ def main():
     eval_text = args.eval_text or args.prompt
     if len(eval_text) > 3:
         prompt_bytes = list(eval_text.encode('utf-8'))
-        results = eval_prompt(model, prompt_bytes, args.device)
+        results = eval_prompt(model, prompt_bytes, device)
 
         print(f'--- Per-position prediction analysis ---')
         print(f'Input text: {repr(eval_text)}')
@@ -236,7 +248,7 @@ def main():
             model, prompt_bytes, args.length,
             temperature=args.temperature,
             top_k=args.top_k,
-            device=args.device,
+            device=device,
         )
         output_text = bytes_to_display(prompt_bytes + generated)
         print(f'== Sample {s + 1} ==')
