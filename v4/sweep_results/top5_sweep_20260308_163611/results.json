@@ -1,0 +1,213 @@
+{
+  "run_id": "20260308_163611",
+  "args": {
+    "steps": 500,
+    "batch": 32,
+    "seq": 256,
+    "seed": 42,
+    "lr": 0.001,
+    "device": "cpu"
+  },
+  "results": [
+    {
+      "config": "0_baseline",
+      "label": "baseline",
+      "overrides": {},
+      "seed": 42,
+      "steps": 500,
+      "final_loss": 4.494164199999999,
+      "final_bpc": 6.483730691339999,
+      "final_acc": 0.16129008000000003,
+      "best_loss": 4.470256,
+      "best_bpc": 6.4492383312,
+      "best_acc": 0.170169,
+      "final_gnorm": 0.11205299999999997,
+      "time_s": 1252.9,
+      "csv_log": "sweep_results/top5_sweep_20260308_163611/0_baseline_seed42.csv"
+    },
+    {
+      "config": "1B_ptr_pilot",
+      "label": "pilot pointer",
+      "overrides": {
+        "pointer_mode": "pilot"
+      },
+      "seed": 42,
+      "steps": 500,
+      "final_loss": 4.539979209999999,
+      "final_bpc": 6.549828006266999,
+      "final_acc": 0.15257396,
+      "best_loss": 4.500855,
+      "best_bpc": 6.4933835085,
+      "best_acc": 0.162993,
+      "final_gnorm": 1846477253.832449,
+      "time_s": 1482.4,
+      "csv_log": "sweep_results/top5_sweep_20260308_163611/1B_ptr_pilot_seed42.csv"
+    },
+    {
+      "config": "1C_ptr_jumpgate",
+      "label": "seq + jump_gate",
+      "overrides": {
+        "jump_gate": true
+      },
+      "seed": 42,
+      "steps": 500,
+      "final_loss": 4.498163009999998,
+      "final_bpc": 6.4894997745269976,
+      "final_acc": 0.16068625999999994,
+      "best_loss": 4.473172,
+      "best_bpc": 6.4534452444,
+      "best_acc": 0.169837,
+      "final_gnorm": 0.11744800000000001,
+      "time_s": 1384.6,
+      "csv_log": "sweep_results/top5_sweep_20260308_163611/1C_ptr_jumpgate_seed42.csv"
+    },
+    {
+      "config": "2B_M256",
+      "label": "M=256",
+      "overrides": {
+        "M": 256
+      },
+      "seed": 42,
+      "steps": 500,
+      "final_loss": 4.494543480000001,
+      "final_bpc": 6.484277878596002,
+      "final_acc": 0.16322072999999995,
+      "best_loss": 4.463335,
+      "best_bpc": 6.4392534045000005,
+      "best_acc": 0.173415,
+      "final_gnorm": 0.11438500000000003,
+      "time_s": 1272.1,
+      "csv_log": "sweep_results/top5_sweep_20260308_163611/2B_M256_seed42.csv"
+    },
+    {
+      "config": "2C_M512",
+      "label": "M=512",
+      "overrides": {
+        "M": 512
+      },
+      "seed": 42,
+      "steps": 500,
+      "final_loss": 4.491615600000002,
+      "final_bpc": 6.480053826120003,
+      "final_acc": 0.16219741000000001,
+      "best_loss": 4.466909,
+      "best_bpc": 6.4444096143000005,
+      "best_acc": 0.172726,
+      "final_gnorm": 0.11526299999999995,
+      "time_s": 1292.9,
+      "csv_log": "sweep_results/top5_sweep_20260308_163611/2C_M512_seed42.csv"
+    },
+    {
+      "config": "3B_mtaps_current",
+      "label": "mtaps current",
+      "overrides": {
+        "mtaps_enabled": true,
+        "mtaps_mixer_mode": "current"
+      },
+      "seed": 42,
+      "steps": 500,
+      "final_loss": 4.4739502999999985,
+      "final_bpc": 6.454568097809998,
+      "final_acc": 0.16801182000000012,
+      "best_loss": 4.44793,
+      "best_bpc": 6.417028611000001,
+      "best_acc": 0.17837,
+      "final_gnorm": 0.12400399999999999,
+      "time_s": 1277.7,
+      "csv_log": "sweep_results/top5_sweep_20260308_163611/3B_mtaps_current_seed42.csv"
+    },
+    {
+      "config": "3C_mtaps_gate",
+      "label": "mtaps gate",
+      "overrides": {
+        "mtaps_enabled": true,
+        "mtaps_mixer_mode": "tap_scalar_gate"
+      },
+      "seed": 42,
+      "steps": 500,
+      "final_loss": 4.470605999999999,
+      "final_bpc": 6.4497432761999995,
+      "final_acc": 0.16634829000000004,
+      "best_loss": 4.44259,
+      "best_bpc": 6.409324593000001,
+      "best_acc": 0.176832,
+      "final_gnorm": 0.12196299999999997,
+      "time_s": 1369.4,
+      "csv_log": "sweep_results/top5_sweep_20260308_163611/3C_mtaps_gate_seed42.csv"
+    },
+    {
+      "config": "4B_slot128",
+      "label": "slot_dim=128",
+      "overrides": {
+        "slot_dim": 128
+      },
+      "seed": 42,
+      "steps": 500,
+      "final_loss": 4.491130900000001,
+      "final_bpc": 6.479354549430002,
+      "final_acc": 0.16130040000000004,
+      "best_loss": 4.4661,
+      "best_bpc": 6.44324247,
+      "best_acc": 0.170853,
+      "final_gnorm": 0.11430499999999993,
+      "time_s": 1376.5,
+      "csv_log": "sweep_results/top5_sweep_20260308_163611/4B_slot128_seed42.csv"
+    },
+    {
+      "config": "4C_slot256",
+      "label": "slot_dim=256",
+      "overrides": {
+        "slot_dim": 256
+      },
+      "seed": 42,
+      "steps": 500,
+      "final_loss": 4.480417890000001,
+      "final_bpc": 6.463898889903001,
+      "final_acc": 0.16675929000000003,
+      "best_loss": 4.451772,
+      "best_bpc": 6.422571464400001,
+      "best_acc": 0.177378,
+      "final_gnorm": 0.12112400000000005,
+      "time_s": 1529.6,
+      "csv_log": "sweep_results/top5_sweep_20260308_163611/4C_slot256_seed42.csv"
+    },
+    {
+      "config": "5B_bb_fixed",
+      "label": "BB fixed",
+      "overrides": {
+        "bb_enabled": true,
+        "bb_gate_mode": "fixed"
+      },
+      "seed": 42,
+      "steps": 500,
+      "final_loss": 4.491794839999999,
+      "final_bpc": 6.480312415667999,
+      "final_acc": 0.16138081000000004,
+      "best_loss": 4.467733,
+      "best_bpc": 6.4455983991000005,
+      "best_acc": 0.172408,
+      "final_gnorm": 0.11307700000000001,
+      "time_s": 1674.2,
+      "csv_log": "sweep_results/top5_sweep_20260308_163611/5B_bb_fixed_seed42.csv"
+    },
+    {
+      "config": "5C_bb_learned",
+      "label": "BB learned",
+      "overrides": {
+        "bb_enabled": true,
+        "bb_gate_mode": "learned"
+      },
+      "seed": 42,
+      "steps": 500,
+      "final_loss": 4.4936286600000015,
+      "final_bpc": 6.482958067782002,
+      "final_acc": 0.16112616000000002,
+      "best_loss": 4.470029,
+      "best_bpc": 6.448910838300001,
+      "best_acc": 0.172579,
+      "final_gnorm": 0.10999300000000006,
+      "time_s": 1161.9,
+      "csv_log": "sweep_results/top5_sweep_20260308_163611/5C_bb_learned_seed42.csv"
+    }
+  ]
+}

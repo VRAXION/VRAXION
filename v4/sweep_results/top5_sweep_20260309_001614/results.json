@@ -1,0 +1,97 @@
+{
+  "run_id": "20260309_001614",
+  "args": {
+    "steps": 500,
+    "batch": 32,
+    "seq": 256,
+    "seed": 42,
+    "lr": 0.001,
+    "grad_clip": 10.0,
+    "warmup": 50,
+    "log_every": 50,
+    "device": "cpu",
+    "data": "",
+    "configs": "5C_bb_learned"
+  },
+  "base_spec": {
+    "M": 128,
+    "hidden_dim": 512,
+    "slot_dim": 64,
+    "N": 1,
+    "R": 2,
+    "B": 8,
+    "embed_mode": true,
+    "kernel_mode": "vshape",
+    "read_kernel_mode": "vshape",
+    "embed_encoding": "learned",
+    "output_encoding": "lowrank_c19",
+    "write_mode": "replace",
+    "replace_impl": "dense",
+    "c19_mode": "dualphi",
+    "pointer_mode": "sequential",
+    "pointer_interp_mode": "linear",
+    "pointer_seam_mode": "shortest_arc",
+    "checkpoint_chunks": 0,
+    "expert_weighting": false,
+    "s_constraint": "softplus",
+    "bb_enabled": false,
+    "bb_gate_bias": 0.0,
+    "bb_scale": 0.05,
+    "bb_tau": 4.0,
+    "bb_gate_mode": "fixed",
+    "mtaps_enabled": false,
+    "mtaps_lags": [
+      1,
+      2,
+      4,
+      8,
+      16,
+      32,
+      64
+    ],
+    "mtaps_mixer_mode": "current",
+    "mtaps_aux_fixed_offsets": [],
+    "topk_K": 8,
+    "read_topk_K": 8,
+    "write_address_mode": "pointer",
+    "write_topk_K": 2,
+    "io_split_mode": "off",
+    "io_writer_count": 1,
+    "io_output_from_readers_only": false,
+    "gated_write": false,
+    "jump_gate": false
+  },
+  "configs": {
+    "5C_bb_learned": {
+      "label": "BB learned",
+      "overrides": {
+        "bb_enabled": true,
+        "bb_gate_mode": "learned"
+      }
+    }
+  },
+  "results": [
+    {
+      "config": "5C_bb_learned",
+      "seed": 42,
+      "steps": 500,
+      "params": 317572,
+      "lr": 0.001,
+      "final_loss": 4.49362868309021,
+      "final_bpc": 6.482958101094247,
+      "final_acc": 0.16112614795565605,
+      "best_loss": 4.470029354095459,
+      "best_bpc": 6.448911349153519,
+      "best_acc": 0.17257925868034363,
+      "final_gnorm": 0.1099973177164793,
+      "time_s": 1161.9487249851227,
+      "s_per_step": 2.323897449970245,
+      "csv_log": "/home/user/VRAXION/v4/sweep_results/top5_sweep_20260309_001614/5C_bb_learned_seed42.csv",
+      "label": "BB learned",
+      "overrides": {
+        "bb_enabled": true,
+        "bb_gate_mode": "learned"
+      }
+    }
+  ]
+}
