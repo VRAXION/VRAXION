@@ -4,6 +4,25 @@ Newest entries at top. Copy from [TEMPLATE.md](TEMPLATE.md) for new entries.
 
 ---
 
+## 2026-03-09 — Repo-Local Results Tables Published
+
+Added a tracked, repo-local results store for current `nightly` runs:
+
+- `v4/results/runs_master.csv`
+- `v4/results/derived/runs_golden.csv`
+- `v4/results/derived/runs_quarantined.csv`
+- rebuild via `python tools/results_ingest.py`
+
+Intent:
+
+- keep canonical run summaries online on `origin/nightly`
+- keep raw telemetry JSONs local/untracked
+- make Steam Deck / low-bandwidth review possible without digging through `training_output/**`
+
+The initial golden table includes the current-corpus CPU A/B runs, the long `Config C` run summary, and the meaningful needle-task memory/pointer/slot ablations.
+
+---
+
 ## 2026-03-09 — Overnight Config C Run (5.19M params, WikiText-103)
 
 **Setup**: Config C (hidden_dim=6144, slot_dim=256, M=1024, N=1), sequential mode,

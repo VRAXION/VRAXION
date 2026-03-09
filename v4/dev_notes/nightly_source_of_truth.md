@@ -17,6 +17,12 @@ Do not infer branch state from scratch telemetry, archived notes, or ad hoc help
 - `v4/config/vraxion_config.yaml`
   - Runtime default source for model/training policy.
   - Compile policy, sequential carry defaults, and production-ish training defaults live here.
+- `v4/results/runs_master.csv`
+  - Repo-local canonical experiment table generated from `training_output/**`.
+  - Use this for quick run inventory instead of grepping raw logs.
+- `v4/results/derived/runs_golden.csv`
+  - Curated subset of source-of-truth comparisons.
+  - This is the CSV to read first on constrained devices.
 
 ## Current Recommended Setups
 
@@ -53,6 +59,23 @@ The current verified nightly fix pack also includes a small runtime-correctness 
 - Eval aggregation is intended to be exact over sample/mask numerators and denominators, not a simple average of per-batch means.
 
 These are verified against the current `v4/nightly` code path. Broader audit findings from inactive or missing files should not be treated as nightly facts until separately verified.
+
+## Results Tables
+
+Repo-local curated results now live under `v4/results/`.
+
+- Rebuild command:
+  - `python tools/results_ingest.py`
+- Main tables:
+  - `v4/results/runs_master.csv`
+  - `v4/results/derived/runs_golden.csv`
+  - `v4/results/derived/runs_quarantined.csv`
+
+Policy:
+
+- push curated CSVs
+- do not push raw telemetry dumps from `dev_notes/telemetry/`
+- keep future incoming raw runs ingestible through the same table builder
 
 ## Compile Stabilization
 
