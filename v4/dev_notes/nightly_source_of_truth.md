@@ -239,3 +239,29 @@ Expectations:
 3. Run an isolated `cudagraph_mark_step_begin()` A/B probe to see whether the remaining CUDAGraph warning can be reduced without destabilizing training.
 4. Add sampled/minimal telemetry modes to the canonical nightly runner to improve research turnaround without changing model behavior.
 5. Revisit deeper write-path work only through materially different approaches (for example fused/custom ops), not by reviving the reverted strip-cache patch as-is.
+
+## Dead Parameter Cleanup Queue (from overnight Config C analysis, 2026-03-09)
+
+These are confirmed dead or collapsed parameters found in the 5.19M-param overnight run.
+Changes here break checkpoint compatibility — apply only on fresh runs, not resume.
+
+1. **`ring_signal_norm` — DELETE** (12,288 params, LayerNorm)
+   - Defined at `instnct.py:935` but never called in forward().
+   - Weight=1.0 and bias=0.0 across all 9K checkpoints. No Adam state created (zero gradient).
+   - Safe to remove entirely. No config guard needed.
+
+2. **`S_raw` + `s_constraint` — DELETE** (1 scalar + attribute)
+   - Legacy from the old `ring_gate: scalar` mode. `ring_gate: dotprod` does not reference it.
+   - Value stuck at 1.0 across all checkpoints. No Adam state.
+   - Remove the parameter and the `s_constraint` attribute.
+
+3. **`c19_rho_input` + `c19_C_input` — MAKE CONDITIONAL** (12,288 params)
+   - Dead in `embed_encoding: learned` mode (the `else` branch skips c19 on input).
+   - **Active in `embed_encoding: bitlift`** — do NOT delete unconditionally.
+   - Wrap creation in `if self._bitlift:` guard. When not bitlift, do not register these params.
+
+4. **`write_gate` init — A/B TEST** (6,145 params, not dead but collapsed)
+   - Currently zero-init weights + bias=-0.847. Gate output is ~constant 0.29 regardless of context.
+   - Gradient dries up by step 7K: Adam `exp_avg`=0.0, `exp_avg_sq`≈1e-7.
+   - Proposed: `nn.init.xavier_uniform_(wg.weight, gain=0.01)` to allow context-dependent writes.
+   - Test separately from other changes. The nightly `min_write_strength=0.002` floor also affects this.
