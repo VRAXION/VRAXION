@@ -3,7 +3,7 @@ VRAXION v21 — Full Combo: Hill-Climbing Mutation + Self-Wiring + Reward Learni
 =================================================================================
 Combines ALL best-performing components:
 
-1. Activation: leaky_relu (best compromise at scale)
+1. Activation: binary threshold (clean signals for Hebbian learning)
 2. Addresses: 3D+1D (spatial + functional type) — 2x faster than random
 3. Self-wiring with target_W direction learning
 4. Reward-modulated Hebbian weight learning (from v19b)
@@ -120,24 +120,23 @@ class SelfWiringNetV21:
         self._effective_W_dirty = False
 
     def forward(self, input_vec):
-        """Forward pass with leaky_relu and sustained input."""
+        """Forward pass with binary activation and sustained input."""
         self.state = np.zeros(self.n_neurons, dtype=np.float32)
 
         if self._effective_W_dirty:
             self._update_effective_W()
         eW = self._effective_W
+        thresholds = self.thresholds
         self._tick_activations = []
 
         for tick in range(self.n_ticks):
             np.maximum(self.state[:self.n_in], input_vec, out=self.state[:self.n_in])
-            pre = self.state - self.thresholds
-            activated = np.where(pre > 0, pre, self.leaky_slope * pre)
+            activated = (self.state > thresholds).astype(np.float32)
             self._tick_activations.append(activated.copy())
             incoming = activated @ eW
             self.state = self.state * self.decay + incoming
 
-        pre = self.state - self.thresholds
-        self._last_activations = np.where(pre > 0, pre, self.leaky_slope * pre)
+        self._last_activations = (self.state > thresholds).astype(np.float32)
         return self.state[-self.n_out:]
 
     def forward_batch(self, input_batch):
@@ -153,8 +152,7 @@ class SelfWiringNetV21:
         for tick in range(self.n_ticks):
             np.maximum(states[:, :self.n_in], input_batch,
                        out=states[:, :self.n_in])
-            pre = states - thresholds[np.newaxis, :]
-            activated = np.where(pre > 0, pre, self.leaky_slope * pre)
+            activated = (states > thresholds[np.newaxis, :]).astype(np.float32)
             incoming = activated @ eW
             states = states * self.decay + incoming
 
@@ -167,7 +165,7 @@ class SelfWiringNetV21:
             return []
 
         activated = self._last_activations
-        active_mask = np.abs(activated) > 0.01
+        active_mask = activated > 0
         n_active = active_mask.sum()
         if n_active == 0:
             return []
@@ -179,7 +177,7 @@ class SelfWiringNetV21:
         new_connections = []
         for i in top_indices:
             self._sw_proposals += 1
-            target_addr = self.addresses[i] + np.abs(activated[i]) * self.target_W[i]
+            target_addr = self.addresses[i] + activated[i] * self.target_W[i]
             dists = np.linalg.norm(self.addresses - target_addr[np.newaxis, :], axis=1)
             dists[i] = np.inf
 
@@ -199,21 +197,20 @@ class SelfWiringNetV21:
         return new_connections
 
     def reward_update(self, target_idx, predicted_idx, new_connections):
-        """Reward-modulated weight update — normalized for leaky_relu."""
+        """Reward-modulated weight update — binary activation signals."""
         correct = (target_idx == predicted_idx)
         activated = self._last_activations
         n = self.n_neurons
         out_start = n - self.n_out
 
         if not correct:
-            act_abs = np.abs(activated)
-            act_max = act_abs.max()
-            active_vec = act_abs / max(act_max, 1e-8)
-
+            active_vec = (activated > 0).astype(np.float32)
             target_neuron = out_start + target_idx
             pred_neuron = out_start + predicted_idx
 
+            # Strengthen: active → target output
             self.W[:, target_neuron] += self.weight_lr * active_vec * self.mask[:, target_neuron]
+            # Weaken: active → predicted output
             self.W[:, pred_neuron] -= self.weight_lr * active_vec * self.mask[:, pred_neuron]
 
             # Deep trace-back
@@ -221,18 +218,11 @@ class SelfWiringNetV21:
                 late_act = self._tick_activations[-1]
                 early_act = self._tick_activations[len(self._tick_activations) // 2]
 
-                late_norm = np.abs(late_act)
-                lm = late_norm.max()
-                if lm > 0:
-                    late_norm = late_norm / lm
-                early_norm = np.abs(early_act)
-                em = early_norm.max()
-                if em > 0:
-                    early_norm = early_norm / em
+                feeds_target = (late_act > 0).astype(np.float32) * self.mask[:, target_neuron]
+                feeds_pred = (late_act > 0).astype(np.float32) * self.mask[:, pred_neuron]
+                early_active = (early_act > 0).astype(np.float32)
 
-                feeds_target = late_norm * self.mask[:, target_neuron]
-                feeds_pred = late_norm * self.mask[:, pred_neuron]
-                delta = np.outer(early_norm, feeds_target - feeds_pred) * self.mask
+                delta = np.outer(early_active, feeds_target - feeds_pred) * self.mask
                 self.W += self.weight_lr * 0.1 * delta
 
             self._effective_W_dirty = True
@@ -247,10 +237,10 @@ class SelfWiringNetV21:
             direction = self.addresses[j] - self.addresses[i]
             norm = np.linalg.norm(direction) + 1e-8
             direction /= norm
-            self.target_W[i] += self.target_lr * np.abs(activated[i]) * direction * reward
+            self.target_W[i] += self.target_lr * activated[i] * direction * reward
 
         # Threshold neuromodulation
-        active_mask = np.abs(activated) > 0.01
+        active_mask = activated > 0
         if active_mask.any():
             if correct:
                 self.thresholds[active_mask] -= self.threshold_lr
@@ -402,7 +392,7 @@ def train_v21(n_classes=32, n_neurons=160, max_attempts=200_000,
     print("VRAXION v21 — Full Combo: Hill-Climbing + Self-Wiring + Reward")
     print("=" * 70)
     print(f"Config: {n_classes} classes, {n_neurons} neurons, 8 ticks")
-    print(f"Activation: leaky_relu (slope=0.01)")
+    print(f"Activation: binary threshold (learnable, init=0.3)")
     print(f"Addresses: 3D+1D (spatial + functional type)")
     print(f"Learning: reward-modulated Hebbian (normalized)")
     print(f"  weight_lr=0.02, threshold_lr=0.003, target_lr=0.01")
@@ -438,44 +428,97 @@ def train_v21(n_classes=32, n_neurons=160, max_attempts=200_000,
     max_epochs = max_attempts // n_classes
     step = 0
 
+    # SEQUENTIAL: Phase 1 = reward learning, Phase 2 = pure hill-climbing
+    mode = 'reward'  # starts with reward learning
+    reward_stale_limit = 15_000
+    best_snap = net.snapshot()
+
     for epoch in range(1, max_epochs + 1):
-        # --- Phase 1: Per-sample reward learning ---
-        order = list(range(n_classes))
-        random.shuffle(order)
+        if mode == 'reward':
+            # --- REWARD LEARNING PHASE ---
+            order = list(range(n_classes))
+            random.shuffle(order)
 
-        for idx in order:
-            step += 1
-            inp, target = pairs[idx]
-            output = net.forward(inp)
-            predicted = int(output.argmax())
+            for idx in order:
+                step += 1
+                inp, target = pairs[idx]
+                output = net.forward(inp)
+                predicted = int(output.argmax())
 
-            new_conns = []
-            if predicted != target:
-                new_conns = net.self_wire()
+                new_conns = []
+                if predicted != target:
+                    new_conns = net.self_wire()
 
-            net.reward_update(target, predicted, new_conns)
+                net.reward_update(target, predicted, new_conns)
 
-        net.age_connections()
+            net.age_connections()
 
-        # --- Phase 2: Hill-climbing mutation (multi-scale) ---
-        acc, improved = hill_climb_mutation(
-            net, input_batch, targets, acc,
-            n_mutations=10,
-        )
+            # Evaluate
+            acc = evaluate_accuracy_batch(net, input_batch, targets)
 
-        if acc > best_acc:
-            best_acc = acc
-            best_acc_step = step
-            stale_count = 0
+            if acc > best_acc:
+                best_acc = acc
+                best_acc_step = step
+                stale_count = 0
+                best_snap = net.snapshot()
+            else:
+                stale_count += n_classes
+
+            # Switch to hill-climbing when reward learning plateaus
+            if stale_count >= reward_stale_limit:
+                elapsed = time.time() - start_time
+                print(f"\n[SWITCH TO HILL-CLIMBING] epoch {epoch}, "
+                      f"best={best_acc*100:.1f}%, time={elapsed:.1f}s")
+                net.restore(best_snap)
+                acc = best_acc
+                mode = 'hillclimb'
+                stale_count = 0
+                stale_limit = 50_000
+
         else:
-            stale_count += n_classes
+            # --- PURE HILL-CLIMBING PHASE ---
+            step += n_classes  # count steps
+
+            hc_acc, improved = hill_climb_mutation(
+                net, input_batch, targets, acc,
+                n_mutations=20,  # more mutations since no reward learning
+            )
+
+            if hc_acc > best_acc:
+                best_acc = hc_acc
+                best_acc_step = step
+                stale_count = 0
+                best_snap = net.snapshot()
+            else:
+                stale_count += n_classes
+
+            acc = hc_acc
+
+            # If stuck in HC, switch back to reward learning from best
+            if stale_count >= stale_limit:
+                elapsed = time.time() - start_time
+                print(f"\n[SWITCH BACK TO REWARD] epoch {epoch}, "
+                      f"best={best_acc*100:.1f}%, time={elapsed:.1f}s")
+                net.restore(best_snap)
+                # Small perturbation to explore new directions
+                active = net.mask > 0
+                noise = np.random.randn(*net.W.shape).astype(np.float32) * 0.05
+                net.W += noise * active
+                np.clip(net.W, -2.0, 2.0, out=net.W)
+                net.W *= net.mask
+                net._effective_W_dirty = True
+                net.top_k_wire = min(net.top_k_wire + 1, 10)
+                mode = 'reward'
+                stale_count = 0
+
+                acc = evaluate_accuracy_batch(net, input_batch, targets)
 
         # Log
-        if epoch % (log_interval // n_classes + 1) == 0 or improved:
+        if epoch % (log_interval // n_classes + 1) == 0:
             elapsed = time.time() - start_time
             n_conns = int(net.mask.sum())
-            print(f"[Epoch {epoch:>5d} Step {step:>7d}]  acc={acc*100:>5.1f}%  "
-                  f"best={best_acc*100:.1f}% (@{best_acc_step})  "
+            print(f"[{mode:>8s} Epoch {epoch:>5d} Step {step:>7d}]  "
+                  f"acc={acc*100:>5.1f}%  best={best_acc*100:.1f}% (@{best_acc_step})  "
                   f"conns={n_conns}  stale={stale_count}  time={elapsed:.1f}s")
 
         # SUCCESS
@@ -496,27 +539,6 @@ def train_v21(n_classes=32, n_neurons=160, max_attempts=200_000,
                 'n_classes': n_classes,
                 'n_neurons': n_neurons,
             }
-
-        # Stale-out: big perturbation to escape local minimum
-        if stale_count >= stale_limit:
-            elapsed = time.time() - start_time
-            print(f"\n[STALE-OUT epoch {epoch}] best={best_acc*100:.1f}% "
-                  f"(@{best_acc_step}) time={elapsed:.1f}s")
-            net.top_k_wire = min(net.top_k_wire + 1, 10)
-            net.target_W += np.random.randn(*net.target_W.shape).astype(np.float32) * 0.05
-            # Big weight shakeup (but keep structure)
-            active = net.mask > 0
-            noise = np.random.randn(*net.W.shape).astype(np.float32) * 0.3
-            net.W += noise * active
-            np.clip(net.W, -2.0, 2.0, out=net.W)
-            net.W *= net.mask
-            net._effective_W_dirty = True
-            print(f"  Perturbation: top_k={net.top_k_wire}, weight noise=0.3")
-            stale_count = 0
-            stale_limit += 10_000
-
-            # Re-evaluate after perturbation
-            acc = evaluate_accuracy_batch(net, input_batch, targets)
 
     elapsed = time.time() - start_time
     n_conns = int(net.mask.sum())
