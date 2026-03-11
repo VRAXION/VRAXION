@@ -6,25 +6,20 @@ NO mutation. NO backprop. Pure self-wiring + reward-modulated learning.
 Key features:
 - Binary activation with per-neuron learnable threshold (neuromodulation)
 - 3D+1D address initialization (spatial + functional type)
-- Reward-modulated target_W learning (per-sample reward drives wiring)
-- Per-output reward-modulated Hebbian/anti-Hebbian weight learning
+- Per-sample per-output reward-modulated Hebbian/anti-Hebbian weight learning
+- Three-factor Hebbian target_W learning for self-wiring direction
+- Deep trace-back credit assignment through tick activations
 - Threshold neuromodulation (active neurons adjust sensitivity based on reward)
-- 32-class A→B association task, 160 neurons
+- Sustained input (re-injected every tick)
+- Pure numpy for speed (torch CPU BLAS is broken on some systems)
 
-This is the critical test: can the network learn ENTIRELY through self-wiring
-guided by a global reward signal, without any mutation?
-
-Core learning mechanism:
-- Self-wiring proposes new topology (exploration)
-- Weight learning steers signal to correct outputs (exploitation)
-- Threshold modulation controls neuron selectivity
-- All driven by per-sample reward: did THIS input map to correct output?
+32-class A→B association task, 160 neurons.
 
 Author: Daniel (researcher) + Claude (advisor)
 Date: 2026-03-11
 """
 
-import torch
+import numpy as np
 import time
 import math
 import random
@@ -32,12 +27,10 @@ from collections import defaultdict
 
 
 # =============================================================================
-# Network Monitor — tracks internal dynamics
+# Network Monitor
 # =============================================================================
 
 class NetworkMonitor:
-    """Tracks all internal dynamics of the self-wiring network."""
-
     def __init__(self, log_interval=500):
         self.log_interval = log_interval
         self.history = defaultdict(list)
@@ -50,51 +43,48 @@ class NetworkMonitor:
 
         mask = net.mask
         n = net.n_neurons
-        n_conns = mask.sum().item()
+        n_conns = mask.sum()
         density = n_conns / (n * n)
 
-        in_deg = mask.sum(dim=0).float()
-        out_deg = mask.sum(dim=1).float()
-        max_in = in_deg.max().item()
-        max_out = out_deg.max().item()
+        in_deg = mask.sum(axis=0)
+        out_deg = mask.sum(axis=1)
+        max_in = in_deg.max()
+        max_out = out_deg.max()
         avg_deg = n_conns / n if n > 0 else 0
-        hubs_in = (in_deg > 2 * avg_deg).sum().item()
-        hubs_out = (out_deg > 2 * avg_deg).sum().item()
+        hubs_in = (in_deg > 2 * avg_deg).sum()
+        hubs_out = (out_deg > 2 * avg_deg).sum()
 
-        sw_conns = net.conn_origin.sum().item()
+        sw_conns = net.conn_origin.sum()
         total = n_conns
 
-        ages = net.conn_age[mask.bool()]
+        ages = net.conn_age[mask > 0]
         if len(ages) > 0:
-            mean_age = ages.float().mean().item()
-            max_age = ages.max().item()
-            young = (ages < 100).sum().item()
-            old = (ages >= 100).sum().item()
+            mean_age = ages.mean()
+            max_age = ages.max()
+            young = (ages < 100).sum()
+            old = (ages >= 100).sum()
         else:
             mean_age = max_age = young = old = 0
 
         activated = net._last_activations
-        active_frac = (activated > 0).float().mean().item()
-        addr_range = net.addresses.max(dim=0).values - net.addresses.min(dim=0).values
-        target_mag = net.target_W.abs().mean().item()
-        thresh_mean = net.thresholds.mean().item()
-        thresh_std = net.thresholds.std().item()
-        thresh_min = net.thresholds.min().item()
-        thresh_max = net.thresholds.max().item()
+        active_frac = (activated > 0).mean()
 
-        sw_proposals = net._sw_proposals
-        sw_accepts = net._sw_accepts
-        accept_rate = sw_accepts / max(sw_proposals, 1)
-        rw_positive = net._reward_positive
-        rw_negative = net._reward_negative
-        rw_neutral = net._reward_neutral
+        addr_range = net.addresses.max(axis=0) - net.addresses.min(axis=0)
+        target_mag = np.abs(net.target_W).mean()
 
-        active_W = net.W[mask.bool()]
+        thresh_mean = net.thresholds.mean()
+        thresh_std = net.thresholds.std()
+        thresh_min = net.thresholds.min()
+        thresh_max = net.thresholds.max()
+
+        accept_rate = net._sw_accepts / max(net._sw_proposals, 1)
+
+        active_W = net.W[mask > 0]
         if len(active_W) > 0:
-            w_mean = active_W.mean().item()
-            w_std = active_W.std().item()
-            w_pos = (active_W > 0).sum().item()
-            w_neg = (active_W < 0).sum().item()
+            w_mean = active_W.mean()
+            w_std = active_W.std()
+            w_pos = (active_W > 0).sum()
+            w_neg = (active_W < 0).sum()
         else:
             w_mean = w_std = 0
             w_pos = w_neg = 0
@@ -102,12 +92,12 @@ class NetworkMonitor:
         print(f"\n{'='*70}")
         print(f"[MONITOR] Step {self.step}")
         print(f"{'='*70}")
-        print(f"[GRAPH]  conns={n_conns:.0f}  density={density:.4f}  "
-              f"max_in={max_in:.0f}  max_out={max_out:.0f}  "
+        print(f"[GRAPH]  conns={n_conns}  density={density:.4f}  "
+              f"max_in={max_in}  max_out={max_out}  "
               f"hubs_in={hubs_in}  hubs_out={hubs_out}")
         print(f"[ORIGIN] self-wired={sw_conns:.0f}/{total:.0f} "
               f"({sw_conns/max(total,1)*100:.1f}%)")
-        print(f"[WIRE]   proposals={sw_proposals}  accepts={sw_accepts}  "
+        print(f"[WIRE]   proposals={net._sw_proposals}  accepts={net._sw_accepts}  "
               f"rate={accept_rate:.3f}")
         print(f"[AGE]    mean={mean_age:.1f}  max={max_age:.0f}  "
               f"young(<100)={young}  old(>=100)={old}")
@@ -120,8 +110,8 @@ class NetworkMonitor:
               f"min={thresh_min:.3f}  max={thresh_max:.3f}")
         print(f"[WEIGHT] mean={w_mean:.3f}  std={w_std:.3f}  "
               f"pos={w_pos}  neg={w_neg}")
-        print(f"[REWARD] positive={rw_positive}  negative={rw_negative}  "
-              f"neutral={rw_neutral}")
+        print(f"[REWARD] positive={net._reward_positive}  negative={net._reward_negative}  "
+              f"neutral={net._reward_neutral}")
         if extra:
             for k, v in extra.items():
                 print(f"[EXTRA]  {k}={v}")
@@ -130,36 +120,24 @@ class NetworkMonitor:
         self.history['step'].append(self.step)
         self.history['n_conns'].append(n_conns)
         self.history['density'].append(density)
-        self.history['sw_rate'].append(accept_rate)
         self.history['active_frac'].append(active_frac)
         self.history['target_mag'].append(target_mag)
         self.history['thresh_mean'].append(thresh_mean)
-        self.history['thresh_std'].append(thresh_std)
 
 
 # =============================================================================
-# v19b Self-Wiring Graph Network
+# v19b Self-Wiring Graph Network (numpy)
 # =============================================================================
 
 class SelfWiringNetV19b:
     """
     Self-wiring graph network with reward-modulated target learning.
-
-    NO mutation. NO backprop. The network learns ONLY through:
-    1. Self-wiring: active neurons propose new connections (topology exploration)
-    2. Reward-modulated weight learning: per-output Hebbian/anti-Hebbian
-    3. Reward-modulated target_W: steers WHERE self-wiring reaches
-    4. Threshold neuromodulation: controls neuron selectivity
-
-    The key learning mechanism: for each sample, strengthen weights on paths
-    to the correct output and weaken weights on paths to the wrong (predicted)
-    output. This creates input-specific routing through weight differentiation
-    even though topology is shared.
+    Pure numpy for speed. NO mutation, NO backprop.
     """
 
     def __init__(self, n_neurons=160, n_in=32, n_out=32, n_ticks=8,
                  decay=0.5, top_k_wire=5, target_lr=0.01, threshold_lr=0.003,
-                 weight_lr=0.015, device='cpu'):
+                 weight_lr=0.015):
         self.n_neurons = n_neurons
         self.n_in = n_in
         self.n_out = n_out
@@ -169,40 +147,38 @@ class SelfWiringNetV19b:
         self.target_lr = target_lr
         self.threshold_lr = threshold_lr
         self.weight_lr = weight_lr
-        self.device = device
 
-        # --- Neuron properties ---
+        # Neuron properties
         self.addresses = self._init_3d_1d_addresses()
-        self.target_W = torch.randn(n_neurons, 4, device=device) * 0.2
-        self.thresholds = torch.full((n_neurons,), 0.3, device=device)
+        self.target_W = np.random.randn(n_neurons, 4).astype(np.float32) * 0.2
+        self.thresholds = np.full(n_neurons, 0.3, dtype=np.float32)
 
-        # --- Connection structure ---
-        self.mask = torch.zeros(n_neurons, n_neurons, device=device)
+        # Connection structure
+        self.mask = np.zeros((n_neurons, n_neurons), dtype=np.float32)
         self._init_connections()
-
-        # Weight matrix: larger init for signal propagation, biased positive
-        self.W = torch.randn(n_neurons, n_neurons, device=device) * 0.3 + 0.2
+        self.W = (np.random.randn(n_neurons, n_neurons).astype(np.float32) * 0.3 + 0.2)
         self.W *= self.mask
 
-        # --- Tracking ---
-        self.conn_origin = torch.zeros(n_neurons, n_neurons, device=device)
-        self.conn_age = torch.zeros(n_neurons, n_neurons, dtype=torch.long,
-                                    device=device)
-        self.state = torch.zeros(n_neurons, device=device)
+        # Precomputed effective weights (updated when mask/W changes)
+        self._effective_W = self.W * self.mask
+        self._effective_W_dirty = False
+
+        # Tracking
+        self.conn_origin = np.zeros((n_neurons, n_neurons), dtype=np.float32)
+        self.conn_age = np.zeros((n_neurons, n_neurons), dtype=np.int32)
+        self.state = np.zeros(n_neurons, dtype=np.float32)
         self._sw_proposals = 0
         self._sw_accepts = 0
         self._reward_positive = 0
         self._reward_negative = 0
         self._reward_neutral = 0
-        self._last_activations = torch.zeros(n_neurons, device=device)
-        # Per-tick activation history for credit assignment
+        self._last_activations = np.zeros(n_neurons, dtype=np.float32)
         self._tick_activations = []
 
     def _init_3d_1d_addresses(self):
-        """4D addresses: dims 0-2 spatial random, dim 3 functional type."""
         n = self.n_neurons
-        addresses = torch.zeros(n, 4, device=self.device)
-        addresses[:, :3] = torch.rand(n, 3, device=self.device)
+        addresses = np.zeros((n, 4), dtype=np.float32)
+        addresses[:, :3] = np.random.rand(n, 3).astype(np.float32)
         for i in range(n):
             if i < self.n_in:
                 addresses[i, 3] = 0.0
@@ -213,18 +189,12 @@ class SelfWiringNetV19b:
         return addresses
 
     def _init_connections(self):
-        """
-        Sparse seed connections ensuring paths from every input to every output.
-        Each input → 3 random internals, each internal → 2 others + 2 outputs.
-        Plus 2% random diversity.
-        """
         n = self.n_neurons
         n_in = self.n_in
         n_out = self.n_out
         internal_start = n_in
         internal_end = n - n_out
         n_internal = internal_end - internal_start
-
         if n_internal == 0:
             return
 
@@ -241,7 +211,6 @@ class SelfWiringNetV19b:
             if others:
                 for j in random.sample(others, min(2, len(others))):
                     self.mask[i, j] = 1.0
-            # 2 random outputs
             for _ in range(2):
                 out_j = random.randint(n - n_out, n - 1)
                 self.mask[i, out_j] = 1.0
@@ -254,302 +223,289 @@ class SelfWiringNetV19b:
             if i != j:
                 self.mask[i, j] = 1.0
 
-    def forward(self, input_vec):
-        """Forward pass: inject input every tick (sustained), propagate, read output."""
-        self.state = torch.zeros(self.n_neurons, device=self.device)
+    def _update_effective_W(self):
+        self._effective_W = self.W * self.mask
+        self._effective_W_dirty = False
 
-        effective_W = self.W * self.mask
+    def forward(self, input_vec):
+        """Forward pass with sustained input injection."""
+        self.state = np.zeros(self.n_neurons, dtype=np.float32)
+
+        if self._effective_W_dirty:
+            self._update_effective_W()
+        eW = self._effective_W
+        thresholds = self.thresholds
         self._tick_activations = []
 
         for tick in range(self.n_ticks):
-            # Sustained input: re-inject every tick so input neurons stay active
-            self.state[:self.n_in] = torch.max(self.state[:self.n_in], input_vec)
+            # Sustained input
+            np.maximum(self.state[:self.n_in], input_vec, out=self.state[:self.n_in])
 
-            activated = (self.state > self.thresholds).float()
-            self._tick_activations.append(activated.clone())
-            incoming = activated @ effective_W
+            activated = (self.state > thresholds).astype(np.float32)
+            self._tick_activations.append(activated.copy())
+            incoming = activated @ eW
             self.state = self.state * self.decay + incoming
 
-        self._last_activations = (self.state > self.thresholds).float()
-        output = self.state[-self.n_out:]
-        return output
+        self._last_activations = (self.state > thresholds).astype(np.float32)
+        return self.state[-self.n_out:]
+
+    def forward_batch(self, input_batch):
+        """Batched forward pass for evaluation. input_batch: (B, n_in)"""
+        B = input_batch.shape[0]
+        states = np.zeros((B, self.n_neurons), dtype=np.float32)
+
+        if self._effective_W_dirty:
+            self._update_effective_W()
+        eW = self._effective_W
+        thresholds = self.thresholds
+
+        for tick in range(self.n_ticks):
+            np.maximum(states[:, :self.n_in], input_batch,
+                       out=states[:, :self.n_in])
+            activated = (states > thresholds[np.newaxis, :]).astype(np.float32)
+            incoming = activated @ eW
+            states = states * self.decay + incoming
+
+        return states[:, -self.n_out:]
 
     def self_wire(self):
-        """
-        Self-wiring: top-k most active neurons propose new connections.
-        Each computes target = address + activation * target_W.
-        """
         activated = self._last_activations
         active_mask = activated > 0
-        n_active = int(active_mask.sum().item())
+        n_active = active_mask.sum()
         if n_active == 0:
             return []
 
-        active_states = self.state.abs() * active_mask.float()
-        k = min(self.top_k_wire, n_active)
-        _, top_indices = torch.topk(active_states, k)
+        active_states = np.abs(self.state) * active_mask
+        k = min(self.top_k_wire, int(n_active))
+        top_indices = np.argpartition(active_states, -k)[-k:]
 
         new_connections = []
-        for idx in top_indices:
-            i = idx.item()
+        for i in top_indices:
             self._sw_proposals += 1
             target_addr = self.addresses[i] + activated[i] * self.target_W[i]
-            dists = torch.norm(self.addresses - target_addr.unsqueeze(0), dim=1)
-            dists[i] = float('inf')
+            dists = np.linalg.norm(self.addresses - target_addr[np.newaxis, :], axis=1)
+            dists[i] = np.inf
 
             for _ in range(5):
-                j = dists.argmin().item()
+                j = dists.argmin()
                 if self.mask[i, j] == 0:
                     self.mask[i, j] = 1.0
-                    self.W[i, j] = torch.randn(1, device=self.device).item() * 0.1
+                    self.W[i, j] = np.random.randn() * 0.1
                     self.conn_origin[i, j] = 1.0
                     self.conn_age[i, j] = 0
                     new_connections.append((i, j))
                     self._sw_accepts += 1
+                    self._effective_W_dirty = True
                     break
                 else:
-                    dists[j] = float('inf')
+                    dists[j] = np.inf
 
         return new_connections
 
     def reward_update(self, target_idx, predicted_idx, new_connections):
-        """
-        Reward-modulated learning based on per-sample correctness.
-
-        Core mechanism — per-output credit assignment:
-        - For CORRECT output neuron: strengthen weights from active pre-synaptic
-          neurons TO this output (reward pathway)
-        - For WRONG predicted output: weaken weights from active pre-synaptic
-          neurons TO this output (punishment pathway)
-        - This creates input-specific weight patterns without backprop
-
-        Also updates:
-        - target_W for self-wiring neurons (three-factor Hebbian)
-        - Thresholds via neuromodulation
-        """
         correct = (target_idx == predicted_idx)
 
         if correct:
             self._reward_positive += 1
-            reward = 1.0
         else:
             self._reward_negative += 1
-            reward = -1.0
 
         activated = self._last_activations
         n = self.n_neurons
-        n_out = self.n_out
-        out_start = n - n_out
+        out_start = n - self.n_out
 
-        # --- Per-output weight adjustment (THE key mechanism) ---
         if not correct:
-            # Get which neurons were active (potential pre-synaptic sources)
-            active_indices = (activated > 0).nonzero(as_tuple=True)[0]
-
-            # STRENGTHEN paths to correct output
+            active_vec = (activated > 0).astype(np.float32)
             target_neuron = out_start + target_idx
-            for pre_idx in active_indices:
-                i = pre_idx.item()
-                if self.mask[i, target_neuron] > 0:
-                    # Existing connection: make more excitatory
-                    self.W[i, target_neuron] += self.weight_lr
-
-            # WEAKEN paths to wrong predicted output
             pred_neuron = out_start + predicted_idx
-            for pre_idx in active_indices:
-                i = pre_idx.item()
-                if self.mask[i, pred_neuron] > 0:
-                    # Existing connection: make less excitatory / more inhibitory
-                    self.W[i, pred_neuron] -= self.weight_lr
 
-            # Also adjust weights deeper in the network using tick activations
-            # Trace back: which internals were active and connected to active neurons
-            # that connected to the target/predicted outputs?
+            # Strengthen: active → target output
+            self.W[:, target_neuron] += self.weight_lr * active_vec * self.mask[:, target_neuron]
+            # Weaken: active → predicted output
+            self.W[:, pred_neuron] -= self.weight_lr * active_vec * self.mask[:, pred_neuron]
+
+            # Deep trace-back (vectorized)
             if len(self._tick_activations) >= 2:
-                late_act = self._tick_activations[-1]  # near-output activation
-                early_act = self._tick_activations[len(self._tick_activations)//2]  # mid
+                late_act = self._tick_activations[-1]
+                early_act = self._tick_activations[len(self._tick_activations) // 2]
 
-                # Strengthen mid→late connections where late feeds target
-                for pre_idx in (early_act > 0).nonzero(as_tuple=True)[0]:
-                    i = pre_idx.item()
-                    for post_idx in (late_act > 0).nonzero(as_tuple=True)[0]:
-                        j = post_idx.item()
-                        if self.mask[i, j] > 0 and self.mask[j, target_neuron] > 0:
-                            self.W[i, j] += self.weight_lr * 0.1
-                        if self.mask[i, j] > 0 and self.mask[j, pred_neuron] > 0:
-                            self.W[i, j] -= self.weight_lr * 0.1
+                feeds_target = (late_act > 0).astype(np.float32) * self.mask[:, target_neuron]
+                feeds_pred = (late_act > 0).astype(np.float32) * self.mask[:, pred_neuron]
+                early_active = (early_act > 0).astype(np.float32)
 
-        # Small weight decay to prevent runaway (shrink toward zero)
-        self.W *= 0.9999
+                delta = np.outer(early_active, feeds_target - feeds_pred) * self.mask
+                self.W += self.weight_lr * 0.1 * delta
+
+            self._effective_W_dirty = True
+
         # Clamp weights
-        self.W.clamp_(-2.0, 2.0)
+        np.clip(self.W, -2.0, 2.0, out=self.W)
+        # Anti-Hebbian pruning: connections pushed near zero by conflicting
+        # updates are dead — remove them (the network "decides" to disconnect)
+        near_zero = (np.abs(self.W) < 0.01) & (self.mask > 0)
+        if near_zero.any():
+            self.mask[near_zero] = 0.0
+            self.W[near_zero] = 0.0
+            self.conn_origin[near_zero] = 0.0
+            self.conn_age[near_zero] = 0
         self.W *= self.mask
+        self._effective_W_dirty = True
 
-        # --- Target_W update for wiring direction ---
+        # Target_W update
+        reward = 1.0 if correct else -1.0
         for (i, j) in new_connections:
             direction = self.addresses[j] - self.addresses[i]
-            direction = direction / (direction.norm() + 1e-8)
+            norm = np.linalg.norm(direction) + 1e-8
+            direction /= norm
             self.target_W[i] += self.target_lr * activated[i] * direction * reward
 
-        # --- Threshold neuromodulation ---
+        # Threshold neuromodulation
         active_mask = activated > 0
         if active_mask.any():
             if correct:
-                # Good outcome: active neurons lower threshold (more sensitive)
                 self.thresholds[active_mask] -= self.threshold_lr
             else:
-                # Bad outcome: active neurons raise threshold (more selective)
                 self.thresholds[active_mask] += self.threshold_lr * 0.5
-            self.thresholds.clamp_(0.01, 5.0)
+            np.clip(self.thresholds, 0.01, 5.0, out=self.thresholds)
 
     def remove_connection(self, i, j):
         self.mask[i, j] = 0.0
         self.W[i, j] = 0.0
         self.conn_origin[i, j] = 0.0
         self.conn_age[i, j] = 0
+        self._effective_W_dirty = True
 
     def prune_dead_connections(self, max_age=10000, min_conns=100):
-        n_conns = self.mask.sum().item()
+        n_conns = self.mask.sum()
         if n_conns <= min_conns:
             return 0
-        old = (self.conn_age > max_age) & self.mask.bool()
-        n_pruned = min(int(old.sum().item()), int(n_conns - min_conns))
+        old = (self.conn_age > max_age) & (self.mask > 0)
+        n_pruned = min(int(old.sum()), int(n_conns - min_conns))
         if n_pruned > 0:
-            old_ages = self.conn_age.clone()
+            old_ages = self.conn_age.copy()
             old_ages[~old] = 0
             flat = old_ages.flatten()
-            _, prune_idx = torch.topk(flat, n_pruned)
+            prune_idx = np.argpartition(flat, -n_pruned)[-n_pruned:]
             rows = prune_idx // self.n_neurons
             cols = prune_idx % self.n_neurons
-            for r, c in zip(rows.tolist(), cols.tolist()):
+            for r, c in zip(rows, cols):
                 self.remove_connection(r, c)
         return n_pruned
 
     def age_connections(self):
-        self.conn_age += self.mask.long()
+        self.conn_age += (self.mask > 0).astype(np.int32)
 
 
 # =============================================================================
 # Task
 # =============================================================================
 
-def make_association_task(n_classes=32, device='cpu'):
+def make_association_task(n_classes=32):
     indices = list(range(n_classes))
     targets = indices.copy()
     random.shuffle(targets)
-    pairs = []
-    mapping = {}
-    for a_idx, b_idx in zip(indices, targets):
-        inp = torch.zeros(n_classes, device=device)
-        inp[a_idx] = 1.0
-        pairs.append((inp, b_idx))
-        mapping[a_idx] = b_idx
-    return pairs, mapping
+    # Build batch input matrix (n_classes, n_classes) — one-hot rows
+    input_batch = np.zeros((n_classes, n_classes), dtype=np.float32)
+    for i in range(n_classes):
+        input_batch[i, indices[i]] = 1.0
+    return input_batch, targets, dict(zip(indices, targets))
 
 
-def evaluate_accuracy(net, pairs):
-    correct = 0
-    for inp, target in pairs:
-        output = net.forward(inp)
-        if output.argmax().item() == target:
-            correct += 1
-    return correct / len(pairs)
+def evaluate_accuracy_batch(net, input_batch, targets):
+    """Batched evaluation — single forward pass for all samples."""
+    outputs = net.forward_batch(input_batch)
+    predictions = outputs.argmax(axis=1)
+    correct = sum(1 for p, t in zip(predictions, targets) if p == t)
+    return correct / len(targets)
 
 
 # =============================================================================
-# Main training loop — Per-Sample Reward with Credit Assignment
+# Training
 # =============================================================================
 
 def train_v19b(n_classes=32, n_neurons=160, max_attempts=200_000,
-               log_interval=500, target_acc=1.0, device='cpu'):
-    """
-    Train v19b with per-sample reward + per-output credit assignment.
-
-    Each step:
-    1. Pick sample (input_a, target_b)
-    2. Forward pass → output, activations
-    3. Self-wire based on activations (topology exploration)
-    4. Reward update: strengthen path to target, weaken path to prediction
-    5. Threshold neuromodulation
-    """
+               log_interval=500, target_acc=1.0):
     print("=" * 70)
     print("VRAXION v19b — Self-Wiring with Reward-Modulated Target Learning")
     print("=" * 70)
-    print(f"Config: {n_classes} classes, {n_neurons} neurons, {8} ticks")
+    print(f"Config: {n_classes} classes, {n_neurons} neurons, 8 ticks")
     print(f"Activation: binary, learnable threshold (init=0.3, [0.01, 5.0])")
     print(f"Addresses: 3D+1D (spatial + functional type)")
     print(f"Learning: per-sample per-output reward-modulated Hebbian")
-    print(f"  target_W lr={0.01}, weight lr={0.015}, threshold lr={0.003}")
+    print(f"  target_W lr=0.01, weight lr=0.008, threshold lr=0.001")
+    print(f"  Deep trace-back: 0.1 × weight_lr on intermediate connections")
+    print(f"  Epoch-based: all samples per epoch, reduced interference")
     print(f"Mutation: NONE")
+    print(f"Backend: numpy (pure CPU)")
     print("=" * 70)
 
     net = SelfWiringNetV19b(
         n_neurons=n_neurons, n_in=n_classes, n_out=n_classes,
         n_ticks=8, decay=0.5, top_k_wire=5,
-        target_lr=0.01, threshold_lr=0.003, weight_lr=0.015,
-        device=device,
+        target_lr=0.01, threshold_lr=0.001, weight_lr=0.008,
     )
 
-    pairs, mapping = make_association_task(n_classes, device)
+    input_batch, targets, mapping = make_association_task(n_classes)
+    # Individual pairs for per-sample training
+    pairs = [(input_batch[i], targets[i]) for i in range(n_classes)]
+
     print(f"\nMapping (first 8): {dict(list(mapping.items())[:8])}")
 
     monitor = NetworkMonitor(log_interval=log_interval)
 
-    acc = evaluate_accuracy(net, pairs)
+    acc = evaluate_accuracy_batch(net, input_batch, targets)
     best_acc = acc
     best_acc_step = 0
     stale_count = 0
     stale_limit = 30_000
 
     print(f"\nInitial accuracy: {acc*100:.1f}%")
-    print(f"Initial connections: {net.mask.sum().item():.0f}")
+    print(f"Initial connections: {net.mask.sum():.0f}")
     print(f"\nStarting per-sample reward training...\n")
 
     start_time = time.time()
+    max_epochs = max_attempts // n_classes
+    step = 0
 
-    for attempt in range(1, max_attempts + 1):
-        # Pick random sample
-        inp, target = random.choice(pairs)
+    for epoch in range(1, max_epochs + 1):
+        # Shuffle sample order each epoch (reduces ordering bias)
+        order = list(range(n_classes))
+        random.shuffle(order)
 
-        # Forward pass
-        output = net.forward(inp)
-        predicted = output.argmax().item()
+        for idx in order:
+            step += 1
+            inp, target = pairs[idx]
 
-        # Self-wire (topology exploration)
-        new_conns = net.self_wire()
+            # Forward pass
+            output = net.forward(inp)
+            predicted = int(output.argmax())
 
-        # Reward-modulated learning (weight adjustment + target_W + thresholds)
-        net.reward_update(target, predicted, new_conns)
+            # Self-wire (only on wrong predictions — focus wiring on failures)
+            new_conns = []
+            if predicted != target:
+                new_conns = net.self_wire()
 
-        # Age connections
+            # Reward-modulated learning
+            net.reward_update(target, predicted, new_conns)
+
+        # Age connections once per epoch (not every sample)
         net.age_connections()
 
-        # Pruning
-        if attempt % 5000 == 0:
-            net.prune_dead_connections(max_age=10000)
-
-        # Periodic full accuracy
-        if attempt % 100 == 0:
-            acc = evaluate_accuracy(net, pairs)
-            if acc > best_acc:
-                best_acc = acc
-                best_acc_step = attempt
-                stale_count = 0
-            else:
-                stale_count += 100
+        # Evaluate accuracy after each epoch
+        acc = evaluate_accuracy_batch(net, input_batch, targets)
+        if acc > best_acc:
+            best_acc = acc
+            best_acc_step = step
+            stale_count = 0
+        else:
+            stale_count += n_classes
 
         # Logging
-        if attempt % log_interval == 0:
-            if attempt % 100 != 0:
-                acc = evaluate_accuracy(net, pairs)
-                if acc > best_acc:
-                    best_acc = acc
-                    best_acc_step = attempt
+        if epoch % (log_interval // n_classes + 1) == 0 or acc > best_acc - 0.01:
             elapsed = time.time() - start_time
-
-            print(f"[Step {attempt:>7d}]  acc={acc*100:>5.1f}%  "
+            print(f"[Epoch {epoch:>5d} Step {step:>7d}]  acc={acc*100:>5.1f}%  "
                   f"best={best_acc*100:.1f}% (@{best_acc_step})  "
-                  f"conns={net.mask.sum().item():.0f}  "
+                  f"conns={net.mask.sum():.0f}  "
                   f"stale={stale_count}  "
                   f"time={elapsed:.1f}s")
 
@@ -559,26 +515,26 @@ def train_v19b(n_classes=32, n_neurons=160, max_attempts=200_000,
             })
 
         # Success
-        if attempt % 100 == 0 and acc >= target_acc:
+        if acc >= target_acc:
             elapsed = time.time() - start_time
             print(f"\n{'='*70}")
-            print(f"SUCCESS! 100% accuracy at step {attempt} ({elapsed:.1f}s)")
-            print(f"Connections: {net.mask.sum().item():.0f} "
-                  f"(self-wired: {net.conn_origin.sum().item():.0f})")
+            print(f"SUCCESS! 100% accuracy at epoch {epoch}, step {step} ({elapsed:.1f}s)")
+            print(f"Connections: {net.mask.sum():.0f} "
+                  f"(self-wired: {net.conn_origin.sum():.0f})")
             print(f"Threshold: [{net.thresholds.min():.3f}, {net.thresholds.max():.3f}]")
-            print(f"Target_W mag: {net.target_W.abs().mean():.4f}")
+            print(f"Target_W mag: {np.abs(net.target_W).mean():.4f}")
             print(f"{'='*70}")
             return net, monitor
 
         # Stale-out recovery
         if stale_count >= stale_limit:
             elapsed = time.time() - start_time
-            print(f"\n[STALE-OUT step {attempt}] best={best_acc*100:.1f}% "
+            print(f"\n[STALE-OUT epoch {epoch} step {step}] best={best_acc*100:.1f}% "
                   f"(@{best_acc_step}) time={elapsed:.1f}s")
             net.top_k_wire = min(net.top_k_wire + 2, 12)
-            net.target_W += torch.randn_like(net.target_W) * 0.05
-            net.thresholds += torch.randn_like(net.thresholds) * 0.02
-            net.thresholds.clamp_(0.01, 5.0)
+            net.target_W += np.random.randn(*net.target_W.shape).astype(np.float32) * 0.05
+            net.thresholds += np.random.randn(*net.thresholds.shape).astype(np.float32) * 0.02
+            np.clip(net.thresholds, 0.01, 5.0, out=net.thresholds)
             print(f"  Recovery: top_k={net.top_k_wire}, target+threshold noise")
             stale_count = 0
             stale_limit += 10_000
@@ -592,11 +548,10 @@ def train_v19b(n_classes=32, n_neurons=160, max_attempts=200_000,
 
 
 if __name__ == '__main__':
-    torch.manual_seed(42)
+    np.random.seed(42)
     random.seed(42)
-    device = 'cuda' if torch.cuda.is_available() else 'cpu'
-    print(f"Device: {device}")
+    print("VRAXION v19b — numpy backend")
     net, monitor = train_v19b(
         n_classes=32, n_neurons=160, max_attempts=200_000,
-        log_interval=500, target_acc=1.0, device=device,
+        log_interval=500, target_acc=1.0,
     )
