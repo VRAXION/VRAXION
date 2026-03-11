@@ -1,15 +1,15 @@
 """
-VRAXION v21 — Full Combo: Mutation + Self-Wiring + Reward-Modulated Target Learning
-====================================================================================
-Combines ALL best-performing components from v18 and v19b:
+VRAXION v21 — Full Combo: Hill-Climbing Mutation + Self-Wiring + Reward Learning
+=================================================================================
+Combines ALL best-performing components:
 
 1. Activation: leaky_relu (best compromise at scale)
 2. Addresses: 3D+1D (spatial + functional type) — 2x faster than random
 3. Self-wiring with target_W direction learning
 4. Reward-modulated Hebbian weight learning (from v19b)
-5. Mutation: structure (add/remove connections) + weight perturbation (from v18)
+5. Hill-climbing mutation: try perturbation → evaluate → keep/revert (from v18)
 6. Epoch-based training with per-sample updates
-7. Connection cap: prevents explosion, forces quality over quantity
+7. Connection cap prevents explosion
 
 Scaling test: 32-class, 64-class, 128-class
 
@@ -20,7 +20,6 @@ Date: 2026-03-11
 import numpy as np
 import time
 import random
-from collections import defaultdict
 
 
 # =============================================================================
@@ -30,7 +29,7 @@ from collections import defaultdict
 class SelfWiringNetV21:
     """
     Full combo self-wiring graph network.
-    leaky_relu activation + mutation + self-wiring + reward-modulated learning.
+    leaky_relu + hill-climbing mutation + self-wiring + reward-modulated learning.
     """
 
     def __init__(self, n_neurons=160, n_in=32, n_out=32, n_ticks=8,
@@ -46,7 +45,6 @@ class SelfWiringNetV21:
         self.threshold_lr = threshold_lr
         self.weight_lr = weight_lr
         self.leaky_slope = leaky_slope
-        # Max connections = ratio * n_neurons (prevents explosion)
         self.max_connections = int(max_conn_ratio * n_neurons)
 
         # Neuron properties
@@ -65,20 +63,12 @@ class SelfWiringNetV21:
         self._effective_W_dirty = False
 
         # Tracking
-        self.conn_origin = np.zeros((n_neurons, n_neurons), dtype=np.float32)
         self.conn_age = np.zeros((n_neurons, n_neurons), dtype=np.int32)
         self.state = np.zeros(n_neurons, dtype=np.float32)
         self._sw_proposals = 0
         self._sw_accepts = 0
-        self._reward_positive = 0
-        self._reward_negative = 0
         self._last_activations = np.zeros(n_neurons, dtype=np.float32)
         self._tick_activations = []
-
-        # Best state snapshot for mutation
-        self._best_W = self.W.copy()
-        self._best_mask = self.mask.copy()
-        self._best_acc = 0.0
 
     def _init_3d_1d_addresses(self):
         n = self.n_neurons
@@ -130,7 +120,7 @@ class SelfWiringNetV21:
         self._effective_W_dirty = False
 
     def forward(self, input_vec):
-        """Forward pass with leaky_relu activation and sustained input."""
+        """Forward pass with leaky_relu and sustained input."""
         self.state = np.zeros(self.n_neurons, dtype=np.float32)
 
         if self._effective_W_dirty:
@@ -140,7 +130,6 @@ class SelfWiringNetV21:
 
         for tick in range(self.n_ticks):
             np.maximum(self.state[:self.n_in], input_vec, out=self.state[:self.n_in])
-            # Leaky ReLU: continuous activation
             pre = self.state - self.thresholds
             activated = np.where(pre > 0, pre, self.leaky_slope * pre)
             self._tick_activations.append(activated.copy())
@@ -172,8 +161,7 @@ class SelfWiringNetV21:
         return states[:, -self.n_out:]
 
     def self_wire(self):
-        """Self-wiring: active neurons propose new connections based on target_W."""
-        # Don't wire if already at cap
+        """Self-wiring: active neurons propose connections via target_W."""
         n_conns = int(self.mask.sum())
         if n_conns >= self.max_connections:
             return []
@@ -200,7 +188,6 @@ class SelfWiringNetV21:
                 if self.mask[i, j] == 0:
                     self.mask[i, j] = 1.0
                     self.W[i, j] = np.random.randn() * 0.15
-                    self.conn_origin[i, j] = 1.0
                     self.conn_age[i, j] = 0
                     new_connections.append((i, j))
                     self._sw_accepts += 1
@@ -212,33 +199,21 @@ class SelfWiringNetV21:
         return new_connections
 
     def reward_update(self, target_idx, predicted_idx, new_connections):
-        """Reward-modulated weight update — adapted for leaky_relu."""
+        """Reward-modulated weight update — normalized for leaky_relu."""
         correct = (target_idx == predicted_idx)
-
-        if correct:
-            self._reward_positive += 1
-        else:
-            self._reward_negative += 1
-
         activated = self._last_activations
         n = self.n_neurons
         out_start = n - self.n_out
 
         if not correct:
-            # Normalize activation to [0,1] for cleaner Hebbian signal
             act_abs = np.abs(activated)
             act_max = act_abs.max()
-            if act_max > 0:
-                active_vec = act_abs / act_max
-            else:
-                active_vec = act_abs
+            active_vec = act_abs / max(act_max, 1e-8)
 
             target_neuron = out_start + target_idx
             pred_neuron = out_start + predicted_idx
 
-            # Strengthen: active → target output
             self.W[:, target_neuron] += self.weight_lr * active_vec * self.mask[:, target_neuron]
-            # Weaken: active → predicted output
             self.W[:, pred_neuron] -= self.weight_lr * active_vec * self.mask[:, pred_neuron]
 
             # Deep trace-back
@@ -246,29 +221,22 @@ class SelfWiringNetV21:
                 late_act = self._tick_activations[-1]
                 early_act = self._tick_activations[len(self._tick_activations) // 2]
 
-                late_abs = np.abs(late_act)
-                late_max = late_abs.max()
-                if late_max > 0:
-                    late_norm = late_abs / late_max
-                else:
-                    late_norm = late_abs
-
-                early_abs = np.abs(early_act)
-                early_max = early_abs.max()
-                if early_max > 0:
-                    early_norm = early_abs / early_max
-                else:
-                    early_norm = early_abs
+                late_norm = np.abs(late_act)
+                lm = late_norm.max()
+                if lm > 0:
+                    late_norm = late_norm / lm
+                early_norm = np.abs(early_act)
+                em = early_norm.max()
+                if em > 0:
+                    early_norm = early_norm / em
 
                 feeds_target = late_norm * self.mask[:, target_neuron]
                 feeds_pred = late_norm * self.mask[:, pred_neuron]
-
                 delta = np.outer(early_norm, feeds_target - feeds_pred) * self.mask
                 self.W += self.weight_lr * 0.1 * delta
 
             self._effective_W_dirty = True
 
-        # Clamp weights
         np.clip(self.W, -2.0, 2.0, out=self.W)
         self.W *= self.mask
         self._effective_W_dirty = True
@@ -290,112 +258,117 @@ class SelfWiringNetV21:
                 self.thresholds[active_mask] += self.threshold_lr * 0.5
             np.clip(self.thresholds, 0.01, 5.0, out=self.thresholds)
 
-    # =========================================================================
-    # Mutation (from v18)
-    # =========================================================================
+    def snapshot(self):
+        """Save state for hill-climbing revert."""
+        return {
+            'W': self.W.copy(),
+            'mask': self.mask.copy(),
+            'thresholds': self.thresholds.copy(),
+            'target_W': self.target_W.copy(),
+            'conn_age': self.conn_age.copy(),
+        }
 
-    def mutate_structure(self, n_add=3, n_remove=3):
-        """Structural mutation: add random, remove weakest."""
-        n = self.n_neurons
-        n_conns = int(self.mask.sum())
-
-        # Add (only if below cap)
-        added = 0
-        if n_conns < self.max_connections:
-            for _ in range(n_add * 3):
-                if added >= n_add:
-                    break
-                i = random.randint(0, n - 1)
-                j = random.randint(0, n - 1)
-                if i != j and self.mask[i, j] == 0:
-                    self.mask[i, j] = 1.0
-                    self.W[i, j] = np.random.randn() * 0.15
-                    self.conn_age[i, j] = 0
-                    added += 1
-
-        # Remove weakest (keep minimum)
-        n_conns = int(self.mask.sum())
-        min_conns = max(self.n_in + self.n_out, n // 2)
-        n_to_remove = min(n_remove, n_conns - min_conns)
-
-        if n_to_remove > 0:
-            active_W = np.abs(self.W) * self.mask
-            # Protect young connections
-            young = self.conn_age < 30
-            active_W[young & (self.mask > 0)] = np.inf
-            active_W[self.mask == 0] = np.inf
-
-            flat = active_W.flatten()
-            remove_idx = np.argpartition(flat, n_to_remove)[:n_to_remove]
-            for idx in remove_idx:
-                if flat[idx] < np.inf:
-                    r, c = divmod(idx, n)
-                    self.mask[r, c] = 0.0
-                    self.W[r, c] = 0.0
-                    self.conn_origin[r, c] = 0.0
-                    self.conn_age[r, c] = 0
-
-        self._effective_W_dirty = True
-
-    def mutate_weights(self, rate=0.08, scale=0.15):
-        """Weight mutation: random perturbations to a fraction of weights."""
-        active = self.mask > 0
-        n_active = int(active.sum())
-        if n_active == 0:
-            return
-
-        n_mutate = max(1, int(n_active * rate))
-        active_indices = np.argwhere(active)
-        chosen = active_indices[np.random.choice(len(active_indices),
-                                min(n_mutate, len(active_indices)), replace=False)]
-
-        for r, c in chosen:
-            self.W[r, c] += np.random.randn() * scale
-
-        np.clip(self.W, -2.0, 2.0, out=self.W)
-        self.W *= self.mask
-        self._effective_W_dirty = True
-
-    def save_best(self, acc):
-        """Save best state for rollback on catastrophic forgetting."""
-        if acc > self._best_acc:
-            self._best_acc = acc
-            self._best_W = self.W.copy()
-            self._best_mask = self.mask.copy()
-
-    def rollback_to_best(self):
-        """Rollback to best known state (anti-catastrophic-forgetting)."""
-        self.W = self._best_W.copy()
-        self.mask = self._best_mask.copy()
+    def restore(self, snap):
+        """Restore from snapshot."""
+        self.W = snap['W'].copy()
+        self.mask = snap['mask'].copy()
+        self.thresholds = snap['thresholds'].copy()
+        self.target_W = snap['target_W'].copy()
+        self.conn_age = snap['conn_age'].copy()
         self._effective_W_dirty = True
 
     def age_connections(self):
         self.conn_age += (self.mask > 0).astype(np.int32)
 
-    def prune_over_cap(self):
-        """Hard prune to stay under connection cap."""
-        n_conns = int(self.mask.sum())
-        if n_conns <= self.max_connections:
-            return 0
 
-        n_to_remove = n_conns - self.max_connections
-        active_W = np.abs(self.W) * self.mask
-        active_W[self.mask == 0] = np.inf
+# =============================================================================
+# Hill-Climbing Mutation
+# =============================================================================
 
-        flat = active_W.flatten()
-        remove_idx = np.argpartition(flat, n_to_remove)[:n_to_remove]
-        removed = 0
-        for idx in remove_idx:
-            if flat[idx] < np.inf:
-                r, c = divmod(idx, self.n_neurons)
-                self.mask[r, c] = 0.0
-                self.W[r, c] = 0.0
-                self.conn_origin[r, c] = 0.0
-                self.conn_age[r, c] = 0
-                removed += 1
+def hill_climb_mutation(net, input_batch, targets, current_acc,
+                        n_mutations=10):
+    """
+    Try random mutations, keep if accuracy improves or stays same.
+    Multi-scale: small precise perturbations + occasional big jumps.
+    """
+    n = net.n_neurons
+    best_acc = current_acc
+    improved = False
 
-        self._effective_W_dirty = True
-        return removed
+    active = np.argwhere(net.mask > 0)
+    if len(active) == 0:
+        return best_acc, improved
+
+    n_active = len(active)
+
+    for trial in range(n_mutations):
+        snap = net.snapshot()
+
+        # Alternate between different mutation types
+        mut_type = trial % 4
+
+        if mut_type == 0:
+            # Small weight perturbation (fine-tuning)
+            n_perturb = max(1, n_active // 20)
+            chosen = active[np.random.choice(n_active, min(n_perturb, n_active), replace=False)]
+            for r, c in chosen:
+                net.W[r, c] += np.random.randn() * 0.15
+
+        elif mut_type == 1:
+            # Medium weight perturbation
+            n_perturb = max(1, n_active // 5)
+            chosen = active[np.random.choice(n_active, min(n_perturb, n_active), replace=False)]
+            for r, c in chosen:
+                net.W[r, c] += np.random.randn() * 0.3
+
+        elif mut_type == 2:
+            # Large single-connection change (targeted exploration)
+            idx = np.random.randint(n_active)
+            r, c = active[idx]
+            net.W[r, c] = np.random.randn() * 0.5  # Complete reset
+
+        else:
+            # Structure mutation: swap weak→new
+            n_conns = int(net.mask.sum())
+            if n_conns > 0:
+                # Remove 1 weakest
+                active_W = np.abs(net.W) * net.mask
+                active_W[net.mask == 0] = np.inf
+                flat = active_W.flatten()
+                worst = flat.argmin()
+                if flat[worst] < np.inf:
+                    r, c = divmod(worst, n)
+                    net.mask[r, c] = 0.0
+                    net.W[r, c] = 0.0
+                    net.conn_age[r, c] = 0
+
+                # Add 1 new random
+                for _ in range(10):
+                    i = random.randint(0, n - 1)
+                    j = random.randint(0, n - 1)
+                    if i != j and net.mask[i, j] == 0:
+                        net.mask[i, j] = 1.0
+                        net.W[i, j] = np.random.randn() * 0.3
+                        net.conn_age[i, j] = 0
+                        break
+
+        np.clip(net.W, -2.0, 2.0, out=net.W)
+        net.W *= net.mask
+        net._effective_W_dirty = True
+
+        acc = evaluate_accuracy_batch(net, input_batch, targets)
+        if acc >= best_acc:
+            best_acc = acc
+            if acc > current_acc:
+                improved = True
+            # Update active list if structure changed
+            if mut_type == 3:
+                active = np.argwhere(net.mask > 0)
+                n_active = len(active)
+        else:
+            net.restore(snap)
+
+    return best_acc, improved
 
 
 # =============================================================================
@@ -426,19 +399,17 @@ def evaluate_accuracy_batch(net, input_batch, targets):
 def train_v21(n_classes=32, n_neurons=160, max_attempts=200_000,
               log_interval=500, target_acc=1.0):
     print("=" * 70)
-    print("VRAXION v21 — Full Combo: Mutation + Self-Wiring + Reward Learning")
+    print("VRAXION v21 — Full Combo: Hill-Climbing + Self-Wiring + Reward")
     print("=" * 70)
     print(f"Config: {n_classes} classes, {n_neurons} neurons, 8 ticks")
     print(f"Activation: leaky_relu (slope=0.01)")
     print(f"Addresses: 3D+1D (spatial + functional type)")
-    print(f"Learning: reward-modulated Hebbian (normalized activations)")
-    print(f"  target_lr=0.01, weight_lr=0.02, threshold_lr=0.003")
-    print(f"Mutation: structure (add=3, remove=3) + weight (rate=8%, scale=0.15)")
+    print(f"Learning: reward-modulated Hebbian (normalized)")
+    print(f"  weight_lr=0.02, threshold_lr=0.003, target_lr=0.01")
+    print(f"Mutation: hill-climbing (10 multi-scale per epoch)")
     print(f"Self-wiring: top_k=5, address-directed")
     print(f"Connection cap: {int(6.0 * n_neurons)}")
-    print(f"Anti-forgetting: rollback to best on stale-out")
     print(f"Solved: accuracy >= 100%")
-    print(f"Backend: numpy")
     print("=" * 70)
 
     net = SelfWiringNetV21(
@@ -457,25 +428,24 @@ def train_v21(n_classes=32, n_neurons=160, max_attempts=200_000,
     best_acc = acc
     best_acc_step = 0
     stale_count = 0
-    stale_limit = 20_000
-    rollback_count = 0
+    stale_limit = 25_000
 
     print(f"\nInitial accuracy: {acc*100:.1f}%")
     print(f"Initial connections: {net.mask.sum():.0f}")
-    print(f"\nStarting training...\n")
+    print()
 
     start_time = time.time()
     max_epochs = max_attempts // n_classes
     step = 0
 
     for epoch in range(1, max_epochs + 1):
+        # --- Phase 1: Per-sample reward learning ---
         order = list(range(n_classes))
         random.shuffle(order)
 
         for idx in order:
             step += 1
             inp, target = pairs[idx]
-
             output = net.forward(inp)
             predicted = int(output.argmax())
 
@@ -487,16 +457,11 @@ def train_v21(n_classes=32, n_neurons=160, max_attempts=200_000,
 
         net.age_connections()
 
-        # Mutation every epoch
-        net.mutate_structure(n_add=3, n_remove=3)
-        net.mutate_weights(rate=0.08, scale=0.15)
-
-        # Enforce connection cap
-        net.prune_over_cap()
-
-        # Evaluate
-        acc = evaluate_accuracy_batch(net, input_batch, targets)
-        net.save_best(acc)
+        # --- Phase 2: Hill-climbing mutation (multi-scale) ---
+        acc, improved = hill_climb_mutation(
+            net, input_batch, targets, acc,
+            n_mutations=10,
+        )
 
         if acc > best_acc:
             best_acc = acc
@@ -506,7 +471,7 @@ def train_v21(n_classes=32, n_neurons=160, max_attempts=200_000,
             stale_count += n_classes
 
         # Log
-        if epoch % (log_interval // n_classes + 1) == 0 or acc > best_acc - 0.01:
+        if epoch % (log_interval // n_classes + 1) == 0 or improved:
             elapsed = time.time() - start_time
             n_conns = int(net.mask.sum())
             print(f"[Epoch {epoch:>5d} Step {step:>7d}]  acc={acc*100:>5.1f}%  "
@@ -519,9 +484,7 @@ def train_v21(n_classes=32, n_neurons=160, max_attempts=200_000,
             n_conns = int(net.mask.sum())
             print(f"\n{'='*70}")
             print(f"SUCCESS! 100% accuracy at epoch {epoch}, step {step}")
-            print(f"Time: {elapsed:.1f}s")
-            print(f"Connections: {n_conns}")
-            print(f"Rollbacks: {rollback_count}")
+            print(f"Time: {elapsed:.1f}s  Connections: {n_conns}")
             print(f"{'='*70}")
             return {
                 'solved': True,
@@ -534,30 +497,32 @@ def train_v21(n_classes=32, n_neurons=160, max_attempts=200_000,
                 'n_neurons': n_neurons,
             }
 
-        # Stale-out: rollback + perturbation
+        # Stale-out: big perturbation to escape local minimum
         if stale_count >= stale_limit:
             elapsed = time.time() - start_time
             print(f"\n[STALE-OUT epoch {epoch}] best={best_acc*100:.1f}% "
                   f"(@{best_acc_step}) time={elapsed:.1f}s")
-
-            # Rollback to best known state
-            net.rollback_to_best()
-            rollback_count += 1
-
-            # Perturbation to escape local minimum
             net.top_k_wire = min(net.top_k_wire + 1, 10)
             net.target_W += np.random.randn(*net.target_W.shape).astype(np.float32) * 0.05
-            net.mutate_weights(rate=0.15, scale=0.2)
-            net.mutate_structure(n_add=5, n_remove=2)
-
-            print(f"  Rollback #{rollback_count}, perturbation, top_k={net.top_k_wire}")
+            # Big weight shakeup (but keep structure)
+            active = net.mask > 0
+            noise = np.random.randn(*net.W.shape).astype(np.float32) * 0.3
+            net.W += noise * active
+            np.clip(net.W, -2.0, 2.0, out=net.W)
+            net.W *= net.mask
+            net._effective_W_dirty = True
+            print(f"  Perturbation: top_k={net.top_k_wire}, weight noise=0.3")
             stale_count = 0
+            stale_limit += 10_000
+
+            # Re-evaluate after perturbation
+            acc = evaluate_accuracy_batch(net, input_batch, targets)
 
     elapsed = time.time() - start_time
     n_conns = int(net.mask.sum())
     print(f"\n{'='*70}")
     print(f"MAX ATTEMPTS ({max_attempts}). Best: {best_acc*100:.1f}% (@{best_acc_step})")
-    print(f"Time: {elapsed:.1f}s  Connections: {n_conns}  Rollbacks: {rollback_count}")
+    print(f"Time: {elapsed:.1f}s  Connections: {n_conns}")
     print(f"{'='*70}")
     return {
         'solved': False,
