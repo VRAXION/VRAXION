@@ -66,30 +66,69 @@ class SelfWiringGraph:
     def reset(self):
         self.state *= 0
 
-    def forward(self, world, ticks=6):
+    def forward(self, world, ticks=6, mode='capacitor'):
         """
-        Forward pass:
-        - world: one-hot input vector (size V)
-        - First tick: inject input into I/O neurons
-        - Remaining ticks: free propagation
-        - Output: read I/O neurons after final tick
+        Forward pass with selectable neuron model.
+        mode='leaky_relu': original continuous activation
+        mode='capacitor': integrate-and-fire (biological capacitor)
         """
-        act = self.state.copy()
-        Weff = self.W * self.mask  # effective weights
+        if mode == 'leaky_relu':
+            return self._forward_leaky_relu(world, ticks)
+        else:
+            return self._forward_capacitor(world, ticks)
 
+    def _forward_leaky_relu(self, world, ticks=6):
+        """Original leaky ReLU forward pass."""
+        act = self.state.copy()
+        Weff = self.W * self.mask
         for t in range(ticks):
             act = act * self.decay
-
-            # First tick only: inject input
             if t == 0:
                 act[:self.V] = world
-
-            # Propagate through graph
             raw = act @ Weff + act * 0.1
-            act = np.where(raw > 0, raw, np.float32(0.01) * raw)  # leaky relu
-
+            act = np.where(raw > 0, raw, np.float32(0.01) * raw)
+            np.clip(act, -10.0, 10.0, out=act)
         self.state = act.copy()
-        return act[:self.V]  # shared I/O: output = same neurons as input
+        return act[:self.V]
+
+    def _forward_capacitor(self, world, ticks=6):
+        """Integrate-and-fire capacitor model.
+        - charge accumulates from incoming signals
+        - neuron fires (emits spike) when charge > threshold
+        - after firing: charge resets to 0 (refractory)
+        - charge leaks each tick (decay)
+        This naturally creates sparse activation patterns."""
+        charge = self.state.copy()  # accumulated charge per neuron
+        Weff = self.W * self.mask
+        threshold = 0.5  # fire threshold (sweet spot from config sweep)
+        spike_strength = 1.0  # output magnitude when firing
+        leak = 0.85  # charge retention per tick (sweet spot from config sweep)
+
+        # Accumulate output reads across ticks (temporal code)
+        output_acc = np.zeros(self.V, dtype=np.float32)
+
+        for t in range(ticks):
+            # Leak charge (capacitor discharge)
+            charge *= leak
+
+            # First tick: inject input current
+            if t == 0:
+                charge[:self.V] += world * 2.0  # strong input current
+
+            # Incoming current from connected neurons that fired
+            spikes = (charge > threshold).astype(np.float32) * spike_strength
+            current = spikes @ Weff  # weighted sum of incoming spikes
+            charge += current * 0.3  # integration rate
+
+            # Fire and reset
+            fired = charge > threshold
+            charge[fired] = 0.0  # reset after firing (refractory)
+
+            # Accumulate output (temporal integration)
+            output_acc += charge[:self.V]
+
+        self.state = charge.copy()
+        return output_acc  # accumulated output over all ticks
 
     def count_connections(self):
         return int((self.mask != 0).sum())
@@ -115,6 +154,51 @@ class SelfWiringGraph:
         self.target_W = s[4].copy()
 
     # === Mutation operators ===
+
+    def mutate_diff_guided(self, diff, rate=0.05):
+        """Diff-guided mutation: target connections of the worst output neuron.
+        diff: array of size V, signed error per output neuron.
+        Positive diff = output too high, negative = output too low."""
+        worst_idx = int(np.argmax(np.abs(diff)))
+        worst_sign = diff[worst_idx]  # negative = needs more excitation, positive = needs inhibition
+
+        # Find connections INTO the worst output neuron
+        conns_to_worst = np.argwhere(self.mask[:, worst_idx] != 0).flatten()
+        dead_to_worst = np.argwhere(self.mask[:, worst_idx] == 0).flatten()
+        dead_to_worst = dead_to_worst[dead_to_worst != worst_idx]  # no self
+
+        r = random.random()
+        if r < self.flip_rate and len(conns_to_worst) > 0:
+            # Flip a connection to worst neuron
+            src = int(np.random.choice(conns_to_worst))
+            self.mask[src, worst_idx] *= -1
+        elif worst_sign < 0 and len(dead_to_worst) > 0:
+            # Output too low → add excitatory or flip inhibitory to excitatory
+            if len(conns_to_worst) > 0 and random.random() < 0.5:
+                # Flip an inhibitory to excitatory
+                inhib = conns_to_worst[self.mask[conns_to_worst, worst_idx] < 0]
+                if len(inhib) > 0:
+                    src = int(np.random.choice(inhib))
+                    self.mask[src, worst_idx] = 1.0
+                    return
+            # Add excitatory
+            src = int(np.random.choice(dead_to_worst))
+            self.mask[src, worst_idx] = 1.0
+            self.W[src, worst_idx] = random.choice([np.float32(0.5), np.float32(1.5)])
+        elif worst_sign > 0 and len(dead_to_worst) > 0:
+            # Output too high → add inhibitory or flip excitatory to inhibitory
+            if len(conns_to_worst) > 0 and random.random() < 0.5:
+                excit = conns_to_worst[self.mask[conns_to_worst, worst_idx] > 0]
+                if len(excit) > 0:
+                    src = int(np.random.choice(excit))
+                    self.mask[src, worst_idx] = -1.0
+                    return
+            src = int(np.random.choice(dead_to_worst))
+            self.mask[src, worst_idx] = -1.0
+            self.W[src, worst_idx] = random.choice([np.float32(0.5), np.float32(1.5)])
+        else:
+            # Fallback to random mutation
+            self.mutate_structure(rate)
 
     def mutate_structure(self, rate=0.05):
         """Structural mutation: flip / add / remove / rewire."""
@@ -214,6 +298,100 @@ class SelfWiringGraph:
                 new += 1
             if new >= max_new:
                 break
+
+
+    # === Diagnostics ===
+
+    def per_class_accuracy(self, inputs, targets, vocab, ticks=6):
+        """Evaluate accuracy per class. Returns dict {class_id: (correct, total)}."""
+        from collections import defaultdict
+        stats = defaultdict(lambda: [0, 0])  # [correct, total]
+        self.reset()
+        # 2 passes like normal eval
+        for p in range(2):
+            for i in range(len(inputs)):
+                world = np.zeros(vocab, dtype=np.float32)
+                world[inputs[i]] = 1.0
+                logits = self.forward(world, ticks)
+                if p == 1:
+                    pred = np.argmax(softmax(logits))
+                    stats[targets[i]][1] += 1
+                    if pred == targets[i]:
+                        stats[targets[i]][0] += 1
+        return dict(stats)
+
+    def activation_map(self, inputs, vocab, ticks=6):
+        """Get activation pattern for each input. Returns (n_inputs, N) array."""
+        maps = []
+        self.reset()
+        for _ in range(2):  # 2 passes
+            maps_pass = []
+            for i in range(len(inputs)):
+                world = np.zeros(vocab, dtype=np.float32)
+                world[inputs[i]] = 1.0
+                self.forward(world, ticks)
+                maps_pass.append(self.state.copy())
+        return np.array(maps_pass)
+
+    def interference_test(self, inputs, targets, vocab, ticks=6, n_samples=200):
+        """Test interference: mutate, measure per-class delta.
+        Returns (n_samples, n_classes) array of accuracy changes."""
+        n_classes = vocab
+        deltas = []
+        base_pc = self.per_class_accuracy(inputs, targets, vocab, ticks)
+
+        for _ in range(n_samples):
+            state = self.save_state()
+            self.mutate_structure(0.05)
+            new_pc = self.per_class_accuracy(inputs, targets, vocab, ticks)
+            self.restore_state(state)
+
+            row = []
+            for c in range(n_classes):
+                base_c = base_pc.get(c, [0, 1])
+                new_c = new_pc.get(c, [0, 1])
+                base_a = base_c[0] / max(base_c[1], 1)
+                new_a = new_c[0] / max(new_c[1], 1)
+                row.append(new_a - base_a)
+            deltas.append(row)
+        return np.array(deltas)
+
+    def connection_overlap(self, inputs, vocab, ticks=6):
+        """Measure how many inputs share each connection (activation overlap).
+        Returns (N, N) array: overlap[i,j] = number of inputs where both i and j are active."""
+        act_map = self.activation_map(inputs, vocab, ticks)
+        active = (np.abs(act_map) > 0.1).astype(np.float32)  # (n_inputs, N)
+        # overlap[i,j] = how many inputs activate BOTH neuron i and j
+        overlap = active.T @ active  # (N, N)
+        return overlap
+
+    def diagnose(self, inputs, targets, vocab, ticks=6):
+        """Full diagnostic report. Returns dict with all metrics."""
+        pc = self.per_class_accuracy(inputs, targets, vocab, ticks)
+        act_map = self.activation_map(inputs, vocab, ticks)
+
+        # Active neuron stats
+        active_per_input = (np.abs(act_map) > 0.1).sum(axis=1)
+        active_neurons = np.unique(np.where(np.abs(act_map) > 0.1)[1])
+
+        # Connection overlap
+        active_bin = (np.abs(act_map) > 0.1).astype(np.float32)
+        overlap = active_bin.T @ active_bin  # (N, N)
+        # Average overlap per active connection
+        alive_mask = (self.mask != 0)
+        conn_overlaps = overlap[alive_mask]
+
+        return {
+            'per_class': pc,
+            'n_classes': vocab,
+            'active_neurons_total': len(active_neurons),
+            'active_per_input_mean': float(active_per_input.mean()),
+            'active_per_input_std': float(active_per_input.std()),
+            'conn_overlap_mean': float(conn_overlaps.mean()) if len(conn_overlaps) > 0 else 0,
+            'conn_overlap_max': float(conn_overlaps.max()) if len(conn_overlaps) > 0 else 0,
+            'connections': self.count_connections(),
+            'pos_neg': self.pos_neg_ratio(),
+        }
 
 
 def softmax(x):
