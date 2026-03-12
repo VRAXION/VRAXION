@@ -54,6 +54,22 @@ Unlike the 16-class/80-neuron offline test where -1 never activated,
    the user's offline v18. The relative ordering (t=1.0 > leaky_relu > t=0.1 >
    t=0.3 > t=0.5) should be valid for comparison though.
 
+## Inverse Arousal Test Results
+
+Low accuracy → less self-wiring (top_k=2, max=1), high accuracy → more (top_k=5, max=3).
+
+| Config | Best Acc | Conns | Time |
+|--------|----------|-------|------|
+| **inverse, 32-class** | 40.6% | **1440** | 17.7s |
+| none, 32-class | 40.6% | 1708 | 18.1s |
+| **inverse, 64-class** | **29.7%** | **3970** | 129.9s |
+| none, 64-class | 25.0% | 4609 | 136.7s |
+
+**Inverse wins on both sizes:**
+- 32-class: same accuracy, 16% fewer connections
+- 64-class: +4.7% accuracy AND 14% fewer connections
+- Confirms offline result: "wire less when you don't know where" works
+
 ## Next Steps
 - Get the actual v18 mutation code to reach 100% baseline
 - If t=1.0 maintains its lead at 100%, test 64/128-class scaling
