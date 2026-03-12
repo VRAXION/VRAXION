@@ -1,0 +1,110 @@
+{
+  "16_class": {
+    "forced": {
+      "score": 0.4375,
+      "accuracy": 0.4375,
+      "precision": 0.4375,
+      "abstain_rate": 0.0,
+      "correct": 7,
+      "incorrect": 9,
+      "abstained": 0,
+      "time": 27.8,
+      "kept": 5,
+      "connections": 368
+    },
+    "abstain_p1": {
+      "score": 0.0625,
+      "precision": 1.0,
+      "abstain_rate": 0.9375,
+      "correct": 1,
+      "incorrect": 0,
+      "abstained": 15,
+      "time": 21.5,
+      "kept": 3,
+      "connections": 400
+    },
+    "abstain_p2": {
+      "score": 0.0625,
+      "precision": 1.0,
+      "abstain_rate": 0.9375,
+      "correct": 1,
+      "incorrect": 0,
+      "abstained": 15,
+      "time": 21.6,
+      "kept": 3,
+      "connections": 400
+    }
+  },
+  "32_class": {
+    "forced": {
+      "score": 0.15625,
+      "accuracy": 0.15625,
+      "precision": 0.15625,
+      "abstain_rate": 0.0,
+      "correct": 5,
+      "incorrect": 27,
+      "abstained": 0,
+      "time": 50.4,
+      "kept": 2,
+      "connections": 2706
+    },
+    "abstain_p1": {
+      "score": -0.6875,
+      "precision": 0.15625,
+      "abstain_rate": 0.0,
+      "correct": 5,
+      "incorrect": 27,
+      "abstained": 0,
+      "time": 53.8,
+      "kept": 5,
+      "connections": 3666
+    },
+    "abstain_p2": {
+      "score": -1.53125,
+      "precision": 0.15625,
+      "abstain_rate": 0.0,
+      "correct": 5,
+      "incorrect": 27,
+      "abstained": 0,
+      "time": 54.3,
+      "kept": 5,
+      "connections": 3666
+    }
+  },
+  "bigram": {
+    "forced": {
+      "score": 0.3333333333333333,
+      "accuracy": 0.3333333333333333,
+      "precision": 0.3333333333333333,
+      "abstain_rate": 0.0,
+      "correct": 9,
+      "incorrect": 18,
+      "abstained": 0,
+      "time": 37.6,
+      "kept": 1,
+      "connections": 1902
+    },
+    "abstain_p1": {
+      "score": -0.18518518518518517,
+      "precision": 0.4074074074074074,
+      "abstain_rate": 0.0,
+      "correct": 11,
+      "incorrect": 16,
+      "abstained": 0,
+      "time": 43.8,
+      "kept": 3,
+      "connections": 2742
+    },
+    "abstain_p2": {
+      "score": 0.07407407407407407,
+      "precision": 1.0,
+      "abstain_rate": 0.9259259259259259,
+      "correct": 2,
+      "incorrect": 0,
+      "abstained": 25,
+      "time": 46.2,
+      "kept": 9,
+      "connections": 3346
+    }
+  }
+}
