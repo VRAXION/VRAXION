@@ -13,9 +13,11 @@ Usage:
 """
 
 import argparse
+import json
 import math
 import sys
 import time
+from datetime import datetime
 from pathlib import Path
 
 import torch
@@ -32,6 +34,132 @@ from model_factory import build_model_from_spec
 PHI = (1 + math.sqrt(5)) / 2
 PHI_INV = (math.sqrt(5) - 1) / 2
 C19_C = math.pi
+
+
+def _default_json_path():
+    stamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+    out_dir = V4_ROOT / 'dev_notes' / 'telemetry'
+    out_dir.mkdir(parents=True, exist_ok=True)
+    return out_dir / f'{Path(__file__).stem}_{stamp}.json'
+
+
+class ActivationTelemetry:
+    def __init__(self, sample_per_call=1024, max_sample_size=65536):
+        self.sample_per_call = sample_per_call
+        self.max_sample_size = max_sample_size
+        self.call_count = 0
+        self.total_values = 0
+        self.tail_values = 0
+        self.abs_sum = 0.0
+        self.scaled_abs_sum = 0.0
+        self.max_abs_x = 0.0
+        self.max_abs_over_c = 0.0
+        self.c_sum = 0.0
+        self.c_min = float('inf')
+        self.c_max = 0.0
+        self.abs_samples = []
+        self.scaled_abs_samples = []
+
+    def _append_sample(self, bucket, sample):
+        bucket.append(sample)
+        merged = torch.cat(bucket)
+        if merged.numel() > self.max_sample_size:
+            idx = torch.randint(0, merged.numel(), (self.max_sample_size,), device=merged.device)
+            merged = merged[idx]
+        bucket[:] = [merged]
+
+    def observe(self, x, C):
+        with torch.no_grad():
+            abs_x = x.detach().abs()
+            c_tns = torch.as_tensor(C, device=abs_x.device, dtype=abs_x.dtype)
+            scaled_abs = abs_x / c_tns
+
+            self.call_count += 1
+            self.total_values += abs_x.numel()
+            self.tail_values += int((scaled_abs > 6.0).sum().item())
+            self.abs_sum += float(abs_x.sum().item())
+            self.scaled_abs_sum += float(scaled_abs.sum().item())
+            self.max_abs_x = max(self.max_abs_x, float(abs_x.max().item()))
+            self.max_abs_over_c = max(self.max_abs_over_c, float(scaled_abs.max().item()))
+
+            c_mean = float(c_tns.float().mean().item())
+            c_min = float(c_tns.float().min().item())
+            c_max = float(c_tns.float().max().item())
+            self.c_sum += c_mean
+            self.c_min = min(self.c_min, c_min)
+            self.c_max = max(self.c_max, c_max)
+
+            flat_abs = abs_x.reshape(-1)
+            flat_scaled = scaled_abs.reshape(-1)
+            k = min(self.sample_per_call, flat_abs.numel())
+            if k > 0:
+                if flat_abs.numel() > k:
+                    idx = torch.randint(0, flat_abs.numel(), (k,), device=flat_abs.device)
+                    abs_sample = flat_abs[idx].float().cpu()
+                    scaled_sample = flat_scaled[idx].float().cpu()
+                else:
+                    abs_sample = flat_abs.float().cpu()
+                    scaled_sample = flat_scaled.float().cpu()
+                self._append_sample(self.abs_samples, abs_sample)
+                self._append_sample(self.scaled_abs_samples, scaled_sample)
+
+    def summary(self):
+        if self.total_values == 0:
+            return {
+                'activation_calls': 0,
+                'activation_values': 0,
+                'tail_hit_pct': 0.0,
+                'mean_abs_x': 0.0,
+                'mean_abs_over_c': 0.0,
+                'p95_abs_x': 0.0,
+                'p99_abs_x': 0.0,
+                'max_abs_x': 0.0,
+                'p95_abs_over_c': 0.0,
+                'p99_abs_over_c': 0.0,
+                'max_abs_over_c': 0.0,
+                'c_mean': 0.0,
+                'c_min': 0.0,
+                'c_max': 0.0,
+                'quantile_sample_size': 0,
+            }
+
+        abs_sample = torch.cat(self.abs_samples) if self.abs_samples else torch.empty(0)
+        scaled_sample = (
+            torch.cat(self.scaled_abs_samples) if self.scaled_abs_samples else torch.empty(0)
+        )
+        sample_size = int(abs_sample.numel())
+
+        def q(sample, quant):
+            if sample.numel() == 0:
+                return 0.0
+            return float(torch.quantile(sample, quant).item())
+
+        return {
+            'activation_calls': int(self.call_count),
+            'activation_values': int(self.total_values),
+            'tail_hit_pct': 100.0 * self.tail_values / self.total_values,
+            'mean_abs_x': self.abs_sum / self.total_values,
+            'mean_abs_over_c': self.scaled_abs_sum / self.total_values,
+            'p95_abs_x': q(abs_sample, 0.95),
+            'p99_abs_x': q(abs_sample, 0.99),
+            'max_abs_x': self.max_abs_x,
+            'p95_abs_over_c': q(scaled_sample, 0.95),
+            'p99_abs_over_c': q(scaled_sample, 0.99),
+            'max_abs_over_c': self.max_abs_over_c,
+            'c_mean': self.c_sum / max(self.call_count, 1),
+            'c_min': 0.0 if self.c_min == float('inf') else self.c_min,
+            'c_max': self.c_max,
+            'quantile_sample_size': sample_size,
+        }
+
+
+def _wrap_with_telemetry(act_fn, telemetry):
+    def wrapped(x, rho=4.0, C=None):
+        actual_c = C19_C if C is None else C
+        telemetry.observe(x, actual_c)
+        return act_fn(x, rho=rho, C=C)
+
+    return wrapped
 
 
 def c19_negphi(x, rho=4.0, C=None):
@@ -84,10 +212,20 @@ def build_model(seed):
     return build_model_from_spec(record, 'cuda')
 
 
-def run_one(variant_name, act_fn, dataset, steps, batch_size, seed, use_amp=True):
+def run_one(
+    variant_name,
+    act_fn,
+    dataset,
+    steps,
+    batch_size,
+    seed,
+    use_amp=True,
+    sample_per_call=1024,
+):
     import instnct
     orig_fn = instnct._c19_activation
-    instnct._c19_activation = act_fn
+    telemetry = ActivationTelemetry(sample_per_call=sample_per_call)
+    instnct._c19_activation = _wrap_with_telemetry(act_fn, telemetry)
 
     model = build_model(seed)
     n_params = sum(p.numel() for p in model.parameters())
@@ -132,9 +270,13 @@ def run_one(variant_name, act_fn, dataset, steps, batch_size, seed, use_amp=True
             avg_gn = sum(grad_norms[-100:]) / len(grad_norms[-100:])
             elapsed = time.time() - t0
             spike = '*SPIKE*' if max(grad_norms[-100:]) > 50 else ''
+            tele = telemetry.summary()
             print(f'  [{variant_name}] step {step:4d}/{steps}  '
                   f'loss={avg_loss:.4f}  bpc={avg_loss*1.4427:.3f}  '
                   f'acc={avg_acc:.3f}  gnorm={avg_gn:.1f}  '
+                  f'tail={tele["tail_hit_pct"]:.3f}%  '
+                  f'p99|x|/C={tele["p99_abs_over_c"]:.2f}  '
+                  f'max|x|/C={tele["max_abs_over_c"]:.2f}  '
                   f'{elapsed:.0f}s {spike}')
 
     elapsed = time.time() - t0
@@ -142,7 +284,7 @@ def run_one(variant_name, act_fn, dataset, steps, batch_size, seed, use_amp=True
 
     tail = min(100, len(losses))
     spikes = sum(1 for g in grad_norms if g > 50)
-    return {
+    result = {
         'variant': variant_name,
         'seed': seed,
         'steps': steps,
@@ -159,13 +301,24 @@ def run_one(variant_name, act_fn, dataset, steps, batch_size, seed, use_amp=True
         'loss_curve': losses,
         'acc_curve': accs,
     }
+    result.update(telemetry.summary())
+    return result
 
 
 def main():
-    steps = 500
-    batch = 32
-    seq = 256
-    seed = 42
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--steps', type=int, default=500)
+    parser.add_argument('--batch', type=int, default=32)
+    parser.add_argument('--seq', type=int, default=256)
+    parser.add_argument('--seed', type=int, default=42)
+    parser.add_argument('--sample-per-call', type=int, default=1024)
+    parser.add_argument('--json-out', type=str, default='')
+    args = parser.parse_args()
+
+    steps = args.steps
+    batch = args.batch
+    seq = args.seq
+    seed = args.seed
 
     print(f'=== Neg-Phi vs Dual-Phi A/B Test ===')
     print(f'Steps: {steps}  Seed: {seed}  Batch: {batch}x{seq}')
@@ -186,13 +339,23 @@ def main():
     results = []
     for name, fn in variants:
         dataset.rng = np.random.default_rng(seed)
-        r = run_one(name, fn, dataset, steps, batch, seed)
+        r = run_one(
+            name,
+            fn,
+            dataset,
+            steps,
+            batch,
+            seed,
+            sample_per_call=args.sample_per_call,
+        )
         results.append(r)
         print(f'  -> {name}: loss={r["final_loss"]:.4f} '
               f'bpc={r["final_bpc"]:.3f} '
               f'acc={r["final_acc"]:.3f} '
               f'best_acc={r["best_acc"]:.3f} '
               f'max_gnorm={r["max_grad"]:.1f} '
+              f'tail={r["tail_hit_pct"]:.4f}% '
+              f'p99|x|/C={r["p99_abs_over_c"]:.2f} '
               f'spikes={r["grad_spikes"]} '
               f'({r["time_s"]:.0f}s)')
         print()
@@ -233,6 +396,34 @@ def main():
             print(f'  {r["variant"]}: {r["grad_spikes"]} gradient spikes (gnorm > 50)')
         else:
             print(f'  {r["variant"]}: no gradient spikes (stable)')
+
+    print('\nActivation telemetry')
+    print(f'{"Variant":12s} {"Tail%":>8s} {"p95|x|/C":>10s} {"p99|x|/C":>10s} '
+          f'{"Max|x|/C":>10s} {"p99|x|":>10s} {"Cmean":>8s}')
+    print('-' * 75)
+    for r in results:
+        print(f'{r["variant"]:12s} {r["tail_hit_pct"]:8.4f} {r["p95_abs_over_c"]:10.2f} '
+              f'{r["p99_abs_over_c"]:10.2f} {r["max_abs_over_c"]:10.2f} '
+              f'{r["p99_abs_x"]:10.2f} {r["c_mean"]:8.3f}')
+
+    json_out = Path(args.json_out) if args.json_out else _default_json_path()
+    payload = {
+        'script': Path(__file__).name,
+        'timestamp': datetime.now().isoformat(),
+        'config': {
+            'steps': steps,
+            'batch': batch,
+            'seq': seq,
+            'seed': seed,
+            'sample_per_call': args.sample_per_call,
+            'gpu': torch.cuda.get_device_name(0),
+        },
+        'results': results,
+    }
+    json_out.parent.mkdir(parents=True, exist_ok=True)
+    with open(json_out, 'w', encoding='utf-8') as f:
+        json.dump(payload, f, indent=2)
+    print(f'\nSaved telemetry JSON: {json_out}')
     print('=' * 75)
 
 

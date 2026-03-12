@@ -1,24 +1,22 @@
-"""A/B Test: C19 baseline vs dual-phi on WikiText-103 (GPU, real data).
+"""A/B Test: dual-phi vs dual-phi + outer-envelope damping on WikiText-103.
 
-Tests whether the dual-phi interference filter improves byte-level
-language modeling accuracy on real text data.
+This tests whether gently damping farther C19 arches helps learning without
+adding more periodic structure before the linear tail.
 
-Variant A (baseline): original C19 activation
-  core = C * (sgn * h + rho * h^2)
+Baseline:
+  dual-phi core, rho=4.0, C=pi, linear tail at 6C
 
-Variant B (dual-phi): asymmetric phi scaling on arches
-  gain = odd * (phi - 1/phi) + 1/phi   (even->1/phi, odd->phi)
-  core = C * h * (sgn + rho * h) * gain
-
-Both variants use rho=4.0, C=pi.
-Everything else identical: model arch, data, optimizer, seed.
+Variants:
+  dual-phi-envelope(alpha): same core, multiplied by
+      envelope = 1 / (1 + alpha * floor(|x| / C))
+  inside the periodic core only. Tail remains unchanged.
 
 Usage:
-    python tests/ab_c19_dualphi_wikitext.py [--steps 1000] [--seeds 3]
+    python tests/ab_c19_dualphi_envelope_wikitext.py
+    python tests/ab_c19_dualphi_envelope_wikitext.py --steps 300 --alphas 0.02,0.05,0.1
 """
 
 import argparse
-import copy
 import json
 import math
 import sys
@@ -26,11 +24,9 @@ import time
 from datetime import datetime
 from pathlib import Path
 
-import torch
-import torch.nn.functional as F
 import numpy as np
+import torch
 
-# ── Path setup ──
 V4_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(V4_ROOT / 'model'))
 sys.path.insert(0, str(V4_ROOT / 'training'))
@@ -38,7 +34,6 @@ sys.path.insert(0, str(V4_ROOT / 'training'))
 from train import ByteDataset, func_discover_dat, func_maskloss_ce
 from model_factory import build_model_from_spec
 
-# ── C19 variants ──
 PHI = (1 + math.sqrt(5)) / 2
 PHI_INV = (math.sqrt(5) - 1) / 2
 C19_C = math.pi
@@ -170,24 +165,7 @@ def _wrap_with_telemetry(act_fn, telemetry):
     return wrapped
 
 
-def c19_baseline(x, rho=4.0, C=None):
-    """Original C19: symmetric arches."""
-    if C is None:
-        C = C19_C
-    l = 6.0 * C
-    inv_c = 1.0 / C
-    scaled = x * inv_c
-    n = torch.floor(scaled)
-    t = scaled - n
-    h = t * (1.0 - t)
-    is_even = torch.remainder(n, 2.0) < 1.0
-    sgn = torch.where(is_even, torch.ones_like(x), -torch.ones_like(x))
-    core = C * (sgn * h + (rho * h * h))
-    return torch.where(x >= l, x - l, torch.where(x <= -l, x + l, core))
-
-
 def c19_dualphi(x, rho=4.0, C=None):
-    """Dual-phi C19: asymmetric phi scaling on arches."""
     if C is None:
         C = C19_C
     l = 6.0 * C
@@ -203,16 +181,28 @@ def c19_dualphi(x, rho=4.0, C=None):
     return torch.where(x.abs() > l, x - x.sign() * l, core)
 
 
-def patch_activation(model, act_fn):
-    """Replace the C19 activation function inside the model's expert layers."""
-    # The model uses _c19_activation via inp layer (c19 module) and output layers
-    # We monkey-patch the module's forward to use our variant
-    import instnct
-    instnct._c19_activation = act_fn
+def make_c19_dualphi_envelope(alpha):
+    def c19_dualphi_envelope(x, rho=4.0, C=None):
+        if C is None:
+            C = C19_C
+        l = 6.0 * C
+        inv_c = 1.0 / C
+        scaled = x * inv_c
+        n = torch.floor(scaled)
+        t = scaled - n
+        h = t - t * t
+        odd = torch.remainder(n, 2.0)
+        sgn = 1.0 - 2.0 * odd
+        gain = odd * (PHI - PHI_INV) + PHI_INV
+        rings = torch.floor(x.abs() * inv_c)
+        envelope = 1.0 / (1.0 + alpha * rings)
+        core = C * h * (sgn + rho * h) * gain * envelope
+        return torch.where(x.abs() > l, x - x.sign() * l, core)
+
+    return c19_dualphi_envelope
 
 
 def build_model(seed):
-    """Build a fresh INSTNCT model with current config."""
     torch.manual_seed(seed)
     spec = {
         'M': 1024,
@@ -242,20 +232,9 @@ def build_model(seed):
     return build_model_from_spec(record, 'cuda')
 
 
-def run_one(
-    variant_name,
-    act_fn,
-    dataset,
-    steps,
-    batch_size,
-    seq_len,
-    seed,
-    use_amp=True,
-    sample_per_call=1024,
-):
-    """Train one variant, return metrics dict."""
+def run_one(variant_name, act_fn, dataset, steps, batch_size, seed, sample_per_call=1024):
     import instnct
-    # Save original and patch
+
     orig_fn = instnct._c19_activation
     telemetry = ActivationTelemetry(sample_per_call=sample_per_call)
     instnct._c19_activation = _wrap_with_telemetry(act_fn, telemetry)
@@ -263,32 +242,36 @@ def run_one(
     model = build_model(seed)
     n_params = sum(p.numel() for p in model.parameters())
     opt = torch.optim.Adam(model.parameters(), lr=1e-3)
-    scaler = torch.amp.GradScaler('cuda', enabled=use_amp)
+    scaler = torch.amp.GradScaler('cuda', enabled=True)
 
     losses = []
     accs = []
+    grad_norms = []
+    max_grad = 0.0
     t0 = time.time()
 
     for step in range(1, steps + 1):
         xb, yb, mask = dataset.sample_batch(batch_size, 'cuda')
 
-        with torch.amp.autocast('cuda', enabled=use_amp):
+        with torch.amp.autocast('cuda', enabled=True):
             pred, _state = model(xb, state=None)
             _, masked_loss = func_maskloss_ce(pred, yb, mask)
 
         opt.zero_grad()
         scaler.scale(masked_loss).backward()
         scaler.unscale_(opt)
-        torch.nn.utils.clip_grad_norm_(model.parameters(), 10.0)
+        gn = torch.nn.utils.clip_grad_norm_(model.parameters(), 10.0).item()
         scaler.step(opt)
         scaler.update()
 
         lv = masked_loss.item()
         losses.append(lv)
+        grad_norms.append(gn)
+        if gn > max_grad:
+            max_grad = gn
 
-        # Accuracy: argmax match on supervised positions
         with torch.no_grad():
-            preds = pred.argmax(dim=-1)  # (B, T)
+            preds = pred.argmax(dim=-1)
             correct = (preds == yb).float() * mask
             acc = correct.sum() / mask.sum().clamp(min=1)
             accs.append(acc.item())
@@ -296,23 +279,25 @@ def run_one(
         if step % 100 == 0 or step == 1:
             avg_loss = sum(losses[-100:]) / len(losses[-100:])
             avg_acc = sum(accs[-100:]) / len(accs[-100:])
-            elapsed = time.time() - t0
+            avg_gn = sum(grad_norms[-100:]) / len(grad_norms[-100:])
             tele = telemetry.summary()
-            print(f'  [{variant_name}] step {step:4d}/{steps}  '
-                  f'loss={avg_loss:.4f}  bpc={avg_loss*1.4427:.3f}  '
-                  f'acc={avg_acc:.3f}  '
-                  f'tail={tele["tail_hit_pct"]:.3f}%  '
-                  f'p99|x|/C={tele["p99_abs_over_c"]:.2f}  '
-                  f'max|x|/C={tele["max_abs_over_c"]:.2f}  '
-                  f'{elapsed:.0f}s')
+            elapsed = time.time() - t0
+            spike = '*SPIKE*' if max(grad_norms[-100:]) > 50 else ''
+            print(
+                f'  [{variant_name}] step {step:4d}/{steps}  '
+                f'loss={avg_loss:.4f}  bpc={avg_loss*1.4427:.3f}  '
+                f'acc={avg_acc:.3f}  gnorm={avg_gn:.1f}  '
+                f'tail={tele["tail_hit_pct"]:.3f}%  '
+                f'p99|x|/C={tele["p99_abs_over_c"]:.2f}  '
+                f'max|x|/C={tele["max_abs_over_c"]:.2f}  '
+                f'{elapsed:.0f}s {spike}'
+            )
 
     elapsed = time.time() - t0
-
-    # Restore original
     instnct._c19_activation = orig_fn
 
-    # Final metrics: average of last 100 steps
     tail = min(100, len(losses))
+    spikes = sum(1 for g in grad_norms if g > 50)
     result = {
         'variant': variant_name,
         'seed': seed,
@@ -325,6 +310,8 @@ def run_one(
         'best_acc': max(accs),
         'time_s': elapsed,
         's_per_step': elapsed / steps,
+        'max_grad': max_grad,
+        'grad_spikes': spikes,
         'loss_curve': losses,
         'acc_curve': accs,
     }
@@ -332,96 +319,98 @@ def run_one(
     return result
 
 
+def parse_alphas(text):
+    if not text.strip():
+        return []
+    return [float(x.strip()) for x in text.split(',') if x.strip()]
+
+
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--steps', type=int, default=1000)
-    parser.add_argument('--seeds', type=int, default=2)
-    parser.add_argument('--batch', type=int, default=64)
+    parser.add_argument('--steps', type=int, default=200)
+    parser.add_argument('--batch', type=int, default=32)
     parser.add_argument('--seq', type=int, default=256)
+    parser.add_argument('--seed', type=int, default=42)
+    parser.add_argument('--alphas', type=str, default='0.02,0.05,0.10')
     parser.add_argument('--sample-per-call', type=int, default=1024)
     parser.add_argument('--json-out', type=str, default='')
     args = parser.parse_args()
 
-    print(f'=== C19 Baseline vs Dual-Phi A/B Test ===')
-    print(f'Steps: {args.steps}  Seeds: {args.seeds}  Batch: {args.batch}x{args.seq}')
+    alphas = parse_alphas(args.alphas)
+
+    print('=== Dual-Phi Envelope Sweep ===')
+    print(f'Steps: {args.steps}  Seed: {args.seed}  Batch: {args.batch}x{args.seq}')
     print(f'GPU: {torch.cuda.get_device_name(0)}')
+    print(f'Alphas: {[0.0] + alphas}')
     print()
 
-    # Load data
     data_dir = V4_ROOT / 'training_data'
     files = func_discover_dat(str(data_dir))
-    dataset = ByteDataset(files, args.seq, embed_mode=True, seed=42)
+    dataset = ByteDataset(files, args.seq, embed_mode=True, seed=args.seed)
     print(f'Data: {len(files)} shards, {dataset.total_bytes / 1e6:.0f} MB')
     print()
 
-    variants = [
-        ('baseline', c19_baseline),
-        ('dual-phi', c19_dualphi),
-    ]
+    variants = [('dual-phi', c19_dualphi)]
+    for alpha in alphas:
+        variants.append((f'dual-env-{alpha:.2f}', make_c19_dualphi_envelope(alpha)))
 
-    all_results = []
-
-    for seed_idx in range(args.seeds):
-        seed = 42 + seed_idx * 1000
-        print(f'--- Seed {seed} ---')
-        for name, fn in variants:
-            # Reset dataset RNG for fair comparison
-            dataset.rng = np.random.default_rng(seed)
-            result = run_one(
-                name,
-                fn,
-                dataset,
-                args.steps,
-                args.batch,
-                args.seq,
-                seed,
-                sample_per_call=args.sample_per_call,
-            )
-            all_results.append(result)
-            print(f'  -> {name}: loss={result["final_loss"]:.4f} '
-                  f'bpc={result["final_bpc"]:.3f} '
-                  f'acc={result["final_acc"]:.3f} '
-                  f'best_acc={result["best_acc"]:.3f} '
-                  f'tail={result["tail_hit_pct"]:.4f}% '
-                  f'p99|x|/C={result["p99_abs_over_c"]:.2f} '
-                  f'({result["time_s"]:.0f}s)')
+    results = []
+    for name, fn in variants:
+        dataset.rng = np.random.default_rng(args.seed)
+        r = run_one(
+            name,
+            fn,
+            dataset,
+            args.steps,
+            args.batch,
+            args.seed,
+            sample_per_call=args.sample_per_call,
+        )
+        results.append(r)
+        print(
+            f'  -> {name}: loss={r["final_loss"]:.4f} '
+            f'bpc={r["final_bpc"]:.3f} '
+            f'acc={r["final_acc"]:.3f} '
+            f'best_acc={r["best_acc"]:.3f} '
+            f'max_gnorm={r["max_grad"]:.1f} '
+            f'tail={r["tail_hit_pct"]:.4f}% '
+            f'p99|x|/C={r["p99_abs_over_c"]:.2f} '
+            f'spikes={r["grad_spikes"]} '
+            f'({r["time_s"]:.0f}s)'
+        )
         print()
 
-    # Summary
-    print('=' * 70)
-    print(f'{"Variant":12s} {"Avg Loss":>10s} {"Avg BPC":>10s} {"Avg Acc":>10s} {"Best Acc":>10s} {"Time":>8s}')
-    print('-' * 70)
-    for name, _ in variants:
-        runs = [r for r in all_results if r['variant'] == name]
-        avg_loss = sum(r['final_loss'] for r in runs) / len(runs)
-        avg_bpc = sum(r['final_bpc'] for r in runs) / len(runs)
-        avg_acc = sum(r['final_acc'] for r in runs) / len(runs)
-        best_acc = max(r['best_acc'] for r in runs)
-        avg_time = sum(r['time_s'] for r in runs) / len(runs)
-        print(f'{name:12s} {avg_loss:10.4f} {avg_bpc:10.3f} {avg_acc:10.3f} {best_acc:10.3f} {avg_time:7.0f}s')
+    print('=' * 100)
+    print(
+        f'{"Variant":14s} {"Final Acc":>10s} {"Best Acc":>10s} {"Final Loss":>11s} '
+        f'{"BPC":>8s} {"Time":>8s} {"MaxGrad":>8s} {"Tail%":>8s} {"p99|x|/C":>10s}'
+    )
+    print('-' * 100)
+    for r in results:
+        print(
+            f'{r["variant"]:14s} {r["final_acc"]:10.3f} {r["best_acc"]:10.3f} '
+            f'{r["final_loss"]:11.4f} {r["final_bpc"]:8.3f} '
+            f'{r["time_s"]:7.0f}s {r["max_grad"]:8.1f} {r["tail_hit_pct"]:8.4f} '
+            f'{r["p99_abs_over_c"]:10.2f}'
+        )
 
-    # Delta
-    base_runs = [r for r in all_results if r['variant'] == 'baseline']
-    phi_runs = [r for r in all_results if r['variant'] == 'dual-phi']
-    base_acc = sum(r['final_acc'] for r in base_runs) / len(base_runs)
-    phi_acc = sum(r['final_acc'] for r in phi_runs) / len(phi_runs)
-    delta = (phi_acc - base_acc) * 100
-    winner = 'dual-phi' if delta > 0 else 'baseline'
-    print(f'\nDelta: {delta:+.2f}% accuracy  -> {winner} wins')
+    best = max(results, key=lambda r: r['final_acc'])
+    baseline = next(r for r in results if r['variant'] == 'dual-phi')
+    delta = (best['final_acc'] - baseline['final_acc']) * 100
+    print(f'\nBest variant: {best["variant"]}  ({delta:+.2f}% vs dual-phi baseline)')
+
     print('\nActivation telemetry')
-    print(f'{"Variant":12s} {"Tail%":>8s} {"p95|x|/C":>10s} {"p99|x|/C":>10s} '
-          f'{"Max|x|/C":>10s} {"p99|x|":>10s} {"Cmean":>8s}')
-    print('-' * 75)
-    for name, _ in variants:
-        runs = [r for r in all_results if r['variant'] == name]
-        tail_hit = sum(r['tail_hit_pct'] for r in runs) / len(runs)
-        p95_scaled = sum(r['p95_abs_over_c'] for r in runs) / len(runs)
-        p99_scaled = sum(r['p99_abs_over_c'] for r in runs) / len(runs)
-        max_scaled = max(r['max_abs_over_c'] for r in runs)
-        p99_abs = sum(r['p99_abs_x'] for r in runs) / len(runs)
-        c_mean = sum(r['c_mean'] for r in runs) / len(runs)
-        print(f'{name:12s} {tail_hit:8.4f} {p95_scaled:10.2f} {p99_scaled:10.2f} '
-              f'{max_scaled:10.2f} {p99_abs:10.2f} {c_mean:8.3f}')
+    print(
+        f'{"Variant":14s} {"Tail%":>8s} {"p95|x|/C":>10s} {"p99|x|/C":>10s} '
+        f'{"Max|x|/C":>10s} {"p99|x|":>10s} {"Cmean":>8s}'
+    )
+    print('-' * 100)
+    for r in results:
+        print(
+            f'{r["variant"]:14s} {r["tail_hit_pct"]:8.4f} {r["p95_abs_over_c"]:10.2f} '
+            f'{r["p99_abs_over_c"]:10.2f} {r["max_abs_over_c"]:10.2f} '
+            f'{r["p99_abs_x"]:10.2f} {r["c_mean"]:8.3f}'
+        )
 
     json_out = Path(args.json_out) if args.json_out else _default_json_path()
     payload = {
@@ -429,19 +418,20 @@ def main():
         'timestamp': datetime.now().isoformat(),
         'config': {
             'steps': args.steps,
-            'seeds': args.seeds,
             'batch': args.batch,
             'seq': args.seq,
+            'seed': args.seed,
+            'alphas': alphas,
             'sample_per_call': args.sample_per_call,
             'gpu': torch.cuda.get_device_name(0),
         },
-        'results': all_results,
+        'results': results,
     }
     json_out.parent.mkdir(parents=True, exist_ok=True)
     with open(json_out, 'w', encoding='utf-8') as f:
         json.dump(payload, f, indent=2)
     print(f'\nSaved telemetry JSON: {json_out}')
-    print('=' * 70)
+    print('=' * 100)
 
 
 if __name__ == '__main__':

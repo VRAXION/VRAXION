@@ -20,7 +20,7 @@ model:
   #   M<seq → ring overwrites → loss degrades 24-46%.
   #   M=256 covers seq≤128. Scale M with seq_len for longer runs.
   # LOCKED — validated across echo, delay_echo, denoise tasks.
-  M: 1024              # ring_slots — circular buffer size
+  M: 1024               # ring_slots — circular buffer size
 
   # ── D: Legacy Dimension (fallback for hidden_dim + slot_dim) ──
   # Used when hidden_dim/slot_dim are absent. Keep for backward compat.
@@ -29,13 +29,13 @@ model:
   # ── hidden_dim: Hidden State Width ────────────────────────
   # Expert "brain" width. Bigger = more capacity for pattern recognition.
   # Independent of ring buffer — can be very large without VRAM cost.
-  hidden_dim: 2048
+  hidden_dim: 6144      # Config C sweep winner (was 4096)
 
   # ── slot_dim: Ring Slot Width ─────────────────────────────
   # Ring buffer cell width. Smaller = less VRAM (ring gets cloned T×N
   # times during backprop). Experts compress hidden→slot before writing.
   # When slot_dim < hidden_dim, read_proj decompresses, write_proj compresses.
-  slot_dim: 128
+  slot_dim: 256         # Config C sweep winner (was 128)
 
   # ── N: Beings Count ────────────────────────────────────────
   # Independent agents sharing one ring. Each owns its own
@@ -52,13 +52,13 @@ model:
   # Ablation: R=0 best on tiny XOR, but R=1 better at scale (run 21 A/B).
   R: 1                # attn_radius — window half-width
 
-  # ── S: Context Scale ───────────────────────────────────────
-  # How much the projected ring read blends into hidden state.
-  # hidden += S * read_proj(read_vec)
-  # Swept 0.00–0.50 across 6 sizes (CPU+GPU): 0.05 geo mean #1.
-  # Note: at D=256 this may benefit from a bump (~0.10–0.15).
-  #   Not yet re-swept at new D — future experiment.
-  S: 0.3             # context_scale — read blend strength
+  # ── Ring Read Gate ──────────────────────────────────────────
+  # How ring read signal blends into hidden state.
+  # Mode: 'dotprod' (default) — α = sigmoid(τ · cosine(input, ring_signal))
+  #   τ (gate_tau) is a learnable parameter (init 4.0).
+  #   Scale-invariant, bounded [0,1], content-dependent per sample.
+  # Legacy S=float was a fixed scalar multiplier — no longer used.
+  ring_gate: dotprod          # 'dotprod' = learnable cosine gate
 
   # ── Attention Kernel Mode ──────────────────────────────────
   # Shape of the attention window weights around the pointer.
@@ -87,8 +87,10 @@ model:
   #                pulse compares hidden→query to slot identity (cosine sim)
   #                similar → small step, different → big jump forward
   #                step = 1 + max_jump × sigmoid(-sim × tau)
-  pointer_mode: pilot
+  pointer_mode: sequential
   write_mode: replace            # 'accumulate' (scatter_add) | 'replace' (HDD-style overwrite)
+  write_content: input           # 'hidden' = write_proj(hidden) — can freeze; 'input' = write_proj(input_embed) — always diverse
+  replace_impl: dense            # 'dense' | 'proxy_overlay' (nightly-only proxy fast path)
 
   # ── Pilot Pulse Pointer Params ──────────────────────────────
   # When pointer_mode = 'pilot': each ring slot gets a learned identity.
@@ -116,7 +118,7 @@ model:
   # 'hadamard' = Hadamard matrix rows — 0 params, cosine sim = 0 between ALL tokens
   # 'sincos'   = standard sinusoidal — 0 params, cosine sim ~0.97 between adjacent tokens
   # 'bitlift'  = byte→8 bits→Linear(8, hidden_dim) — 18K learnable params (28× fewer)
-  embed_encoding: bitlift
+  embed_encoding: learned
 
   # ── Output Encoding ─────────────────────────────────────────
   # Output projection type for byte tokens (embed_mode: true only).
@@ -199,9 +201,9 @@ training:
   seq_len: 256           # bytes per sequence (model sees seq_len timesteps)
 
   # ── Schedule ─────────────────────────────────────────────────
-  steps: 50000          # total training steps
+  steps: 999999        # effectively infinite — stop manually or via patience
   log_every: 10         # CSV + console log interval (steps)
-  save_every: 100       # checkpoint save interval (steps)
+  save_every: 1000      # checkpoint save interval (steps) — long run, save less often
   heartbeat_every: 10    # lightweight progress print interval (steps)
 
   # ── Mode ─────────────────────────────────────────────────────
@@ -218,7 +220,7 @@ training:
 
   # ── Adaptive LR (ReduceLROnPlateau) ─────────────────────────
   lr_schedule: plateau       # 'constant' | 'plateau'
-  lr_patience: 200           # steps without improvement -> reduce LR
+  lr_patience: 1000          # steps without improvement -> reduce LR
   lr_factor: 0.99            # LR multiplier on plateau (0.99 = gentle -1% decay)
   lr_min: 1.0e-05            # minimum LR floor
 
@@ -243,6 +245,14 @@ training:
   # Only effective on CUDA. Checkpoint-compatible (scaler state saved).
   use_amp: true
 
+  # ── torch.compile ─────────────────────────────────────────────
+  # false = eager runtime. true = nightly auto policy:
+  #   seq_len <= 48 -> full-model compile
+  #   seq_len > 48  -> chunk compile of _process_chunk
+  # Unsupported configs (for example BB enabled) fall back to eager with a warning.
+  compile: true          # chunk-compile C=32 — 5.8 step/s at Config C
+  compile_chunk_size: 32  # timesteps per compiled chunk when auto selects chunk compile
+
   # ── Sequential / Stateful Training (TBPTT) ─────────────────
   # When true: data is read in order (not random offsets), and
   # ring/hidden/pointer state persists across sequences. Gradients
@@ -258,7 +268,7 @@ training:
   # - hot_reload_enabled=false: disabled to avoid mid-run config drift
   # - eval_seed: fixed seed for reproducible eval sampling
   deterministic_resume: true
-  hot_reload_enabled: false
+  hot_reload_enabled: true
   eval_seed: 1337
 
   # Optional global seeds (fresh runs only; resume restores from checkpoint).

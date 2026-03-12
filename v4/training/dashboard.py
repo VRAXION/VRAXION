@@ -308,6 +308,8 @@ def _save_config(yaml_path: Path):
 _proc: list = [None]          # [subprocess.Popen | None]
 _output_queue: queue.Queue = queue.Queue()
 _log_lines: list = []         # rolling stdout buffer (newest last)
+_csv_path: list = [None]      # [Path] — set by _build_ui, used by _start_training
+_nan_count: list = [0]        # consecutive NaN count from stdout
 
 # ── Eval subprocess state ─────────────────────────────────────────
 _eval_proc: list = [None]
@@ -321,6 +323,7 @@ _status_run_theme: int = 0    # green text — running
 _status_off_theme: int = 0    # gray text  — stopped
 _status_ok_theme: int = 0     # bright green — done OK
 _status_err_theme: int = 0    # red text   — error
+_status_compile_theme: int = 0  # amber text — compile warmup
 
 
 def _reader_thread(proc: Any, q: 'queue.Queue'):
@@ -376,10 +379,37 @@ def _start_training():
     cmd = [sys.executable, str(TRAIN_SCRIPT),
            '--log-every', str(int(log_every)),
            '--device', str(device).strip()]
+
+    # Pass --embed if embed_mode is true in config
+    embed_tag = "cfg__training__embed_mode"
+    if dpg.does_item_exist(embed_tag) and dpg.get_value(embed_tag):
+        cmd.append('--embed')
+
+    # Pass --compile if compile is true in config
+    compile_tag = "cfg__training__compile"
+    if dpg.does_item_exist(compile_tag) and dpg.get_value(compile_tag):
+        cmd.append('--compile')
+
+    # Pass --out so train.py writes to the correct directory
+    csv_p = _csv_path[0]
+    if csv_p is not None:
+        try:
+            out_rel = str(csv_p.parent.relative_to(V4_ROOT))
+            cmd.extend(['--out', out_rel])
+        except ValueError:
+            cmd.extend(['--out', str(csv_p.parent)])
+
+    # Pass --data from config
+    data_tag = "cfg__training__data_dir"
+    if dpg.does_item_exist(data_tag):
+        data_val = str(dpg.get_value(data_tag)).strip()
+        if data_val:
+            cmd.extend(['--data', data_val])
+
     # Auto-resume from latest checkpoint if one exists
     ckpt_latest = _ckpt_path[0]
     if ckpt_latest and ckpt_latest.exists():
-        cmd.extend(['--resume', 'latest'])
+        cmd.extend(['--resume', str(ckpt_latest)])
     env = {**os.environ, 'PYTHONUNBUFFERED': '1'}
     try:
         _proc[0] = subprocess.Popen(
@@ -523,9 +553,10 @@ def _start_eval():
 
 def _build_ui(csv_path: Path, yaml_path: Path, refresh_s: float):
     global _dirty_theme, _clean_theme
-    global _status_run_theme, _status_off_theme, _status_ok_theme, _status_err_theme
+    global _status_run_theme, _status_off_theme, _status_ok_theme, _status_err_theme, _status_compile_theme
 
-    # Set checkpoint path derived from csv output directory
+    # Set paths derived from csv output directory
+    _csv_path[0] = csv_path
     _ckpt_path[0] = csv_path.parent / 'ckpt_latest.pt'
     # Seed last-mtime so auto-eval doesn't fire on existing checkpoints at startup
     if _ckpt_path[0].exists():
@@ -560,6 +591,9 @@ def _build_ui(csv_path: Path, yaml_path: Path, refresh_s: float):
     with dpg.theme() as _status_err_theme:
         with dpg.theme_component(dpg.mvAll):
             dpg.add_theme_color(dpg.mvThemeCol_Text, (255, 80, 80))
+    with dpg.theme() as _status_compile_theme:
+        with dpg.theme_component(dpg.mvAll):
+            dpg.add_theme_color(dpg.mvThemeCol_Text, (255, 200, 50))
 
     # ── Line series color themes ──
     line_themes = {}
@@ -839,6 +873,35 @@ def _build_ui(csv_path: Path, yaml_path: Path, refresh_s: float):
             except queue.Empty:
                 break
         if new_lines:
+            # Parse lines for status signals
+            for line in new_lines:
+                if '[NAN]' in line:
+                    m = re.search(r'\((\d+) consecutive\)', line)
+                    if m:
+                        _nan_count[0] = int(m.group(1))
+                    _set_train_status(
+                        f"! NaN detected ({_nan_count[0]} consecutive)",
+                        _status_err_theme)
+                elif 'Unable to hit fast path of CUDAGraphs' in line:
+                    _set_train_status(
+                        "! CUDA graph issue -- may need restart",
+                        _status_err_theme)
+                elif '[RING-PROBE]' in line or '[compile]' in line:
+                    _set_train_status(
+                        "* Compiling (warmup)...", _status_compile_theme)
+                elif 's/step' in line and _is_running():
+                    m = re.search(r'(\d+\.\d+)s/step', line)
+                    if m:
+                        sps = float(m.group(1))
+                        if sps > 30.0:
+                            _set_train_status(
+                                "* Compiling (warmup)...",
+                                _status_compile_theme)
+                        else:
+                            _set_train_status(
+                                "* Training (compiled)", _status_run_theme)
+                            _nan_count[0] = 0
+
             _log_lines.extend(new_lines)
             del _log_lines[:-80]
             dpg.set_value("train_log_text",
@@ -921,12 +984,39 @@ def main():
                     help='path to vraxion_config.yaml (default: auto-detect)')
     ap.add_argument('--log', default=None,
                     help='path to train_log.csv (default: auto-detect)')
+    ap.add_argument('--out', default=None,
+                    help='training output directory (overrides config out_dir)')
     ap.add_argument('--refresh', type=float, default=5.0,
                     help='chart refresh interval in seconds (default: 5)')
     args = ap.parse_args()
 
     yaml_path = Path(args.config) if args.config else DEFAULT_CONFIG
-    csv_path = Path(args.log) if args.log else DEFAULT_CSV
+
+    # Resolve CSV path: --log > --out > config out_dir > auto-detect
+    if args.log:
+        csv_path = Path(args.log)
+    elif args.out:
+        out_p = Path(args.out)
+        if not out_p.is_absolute():
+            out_p = V4_ROOT / out_p
+        csv_path = out_p / 'train_log.csv'
+    else:
+        # Auto-detect from config's out_dir — check subdirs for most recent log
+        try:
+            cfg = _load_yaml(yaml_path)
+            out_dir = cfg.get('training', {}).get('out_dir', 'training_output')
+        except Exception:
+            out_dir = 'training_output'
+        out_path = Path(out_dir)
+        if not out_path.is_absolute():
+            out_path = V4_ROOT / out_path
+        candidates = list(out_path.glob('*/train_log.csv'))
+        if candidates:
+            csv_path = max(candidates, key=lambda p: p.stat().st_mtime)
+        elif (out_path / 'train_log.csv').exists():
+            csv_path = out_path / 'train_log.csv'
+        else:
+            csv_path = DEFAULT_CSV
 
     if not yaml_path.exists():
         print(f'[ERROR] Config not found: {yaml_path}')

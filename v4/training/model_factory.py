@@ -45,19 +45,31 @@ def _build_instnct_spec(embed_mode: bool, model_config: dict) -> dict:
         'B': 8,
         'embed_mode': bool(embed_mode),
         'kernel_mode': model_config.get('kernel_mode', 'vshape'),
+        'read_kernel_mode': model_config.get('read_kernel_mode', model_config.get('kernel_mode', 'vshape')),
         'checkpoint_chunks': int(model_config.get('checkpoint_chunks', 0)),
         'expert_weighting': bool(model_config.get('expert_weighting', False)),
         'embed_encoding': model_config.get('embed_encoding', 'learned'),
         'output_encoding': model_config.get('output_encoding', 'learned'),
         'pointer_mode': model_config.get('pointer_mode', 'sequential'),
+        'pointer_seam_mode': model_config.get('pointer_seam_mode', 'mod'),
+        'pointer_interp_mode': model_config.get('pointer_interp_mode', 'off'),
         'write_mode': model_config.get('write_mode', 'accumulate'),
+        'write_content': model_config.get('write_content', 'hidden'),
+        'replace_impl': model_config.get('replace_impl', 'dense'),
+        'mtaps_enabled': bool(model_config.get('mtaps_enabled', False)),
+        'mtaps_lags': model_config.get('mtaps_lags', [1, 2, 4, 8, 16, 32]),
+        'mtaps_mixer_mode': model_config.get('mtaps_mixer_mode', 'current'),
         'bb_enabled': bool(model_config.get('bb_enabled', False)),
         'bb_gate_bias': float(model_config.get('bb_gate_bias', 0.0)),
         'bb_scale': float(model_config.get('bb_scale', 0.1)),
         'bb_tau': float(model_config.get('bb_tau', 4.0)),
         'bb_gate_mode': model_config.get('bb_gate_mode', 'learned'),
         'topk_K': int(model_config.get('topk_K', 8)),
+        'read_topk_K': int(model_config.get('read_topk_K', model_config.get('topk_K', 8))),
+        'write_address_mode': model_config.get('write_address_mode', 'pointer'),
+        'write_topk_K': int(model_config.get('write_topk_K', model_config.get('topk_K', 8))),
         's_constraint': model_config.get('s_constraint', 'softplus'),
+        'ring_gate': model_config.get('ring_gate', 'dotprod'),
     }
 
 
@@ -107,4 +119,3 @@ def build_model_from_spec(model_record: dict, device: str):
     else:
         raise ValueError(f"Unsupported checkpoint model.type: {mtype!r}")
     return model.to(device)
-

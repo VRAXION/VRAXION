@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Self-Wiring Graph Network</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { 
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background: #0a0a1a; color: #e0e0e0; 
+  padding: 16px; max-width: 800px; margin: 0 auto;
+}
+h1 { font-size: 1.3em; color: #60a5fa; margin-bottom: 12px; text-align: center; }
+h2 { font-size: 1.1em; color: #818cf8; margin: 20px 0 8px; }
+h3 { font-size: 0.95em; color: #a78bfa; margin: 12px 0 6px; }
+
+.card {
+  background: #1a1a2e; border-radius: 12px; padding: 16px;
+  margin-bottom: 12px; border: 1px solid #2a2a4e;
+}
+.card.green { border-color: #22c55e33; }
+.card.red { border-color: #ef444433; }
+.card.blue { border-color: #3b82f633; }
+.card.purple { border-color: #8b5cf633; }
+
+.tag {
+  display: inline-block; padding: 2px 8px; border-radius: 6px;
+  font-size: 0.75em; font-weight: 600; margin: 2px;
+}
+.tag.ok { background: #22c55e22; color: #4ade80; }
+.tag.fail { background: #ef444422; color: #f87171; }
+.tag.info { background: #3b82f622; color: #60a5fa; }
+
+.flow-container { position: relative; padding: 10px 0; }
+.flow-box {
+  background: #16213e; border: 2px solid #334155;
+  border-radius: 10px; padding: 12px; margin: 8px 0;
+  text-align: center; position: relative;
+}
+.flow-box.input { border-color: #22c55e; }
+.flow-box.process { border-color: #3b82f6; }
+.flow-box.output { border-color: #f59e0b; }
+.flow-box.learn { border-color: #8b5cf6; }
+
+.arrow {
+  text-align: center; color: #475569; font-size: 1.5em;
+  line-height: 1; padding: 2px 0;
+}
+
+.neuron-grid {
+  display: flex; flex-wrap: wrap; gap: 3px;
+  justify-content: center; padding: 8px;
+}
+.neuron {
+  width: 14px; height: 14px; border-radius: 50%;
+  transition: all 0.3s;
+}
+.neuron.io { background: #22c55e; }
+.neuron.internal { background: #1e3a5f; border: 1px solid #3b82f6; }
+.neuron.active { background: #f59e0b; box-shadow: 0 0 6px #f59e0b; }
+.neuron.wta-winner { background: #ef4444; box-shadow: 0 0 6px #ef4444; }
+
+.tick-bar {
+  display: flex; gap: 4px; margin: 8px 0;
+}
+.tick {
+  flex: 1; height: 32px; border-radius: 6px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.7em; font-weight: 600; cursor: pointer;
+  transition: all 0.3s;
+}
+.tick.past { background: #1e3a5f; color: #60a5fa; }
+.tick.current { background: #3b82f6; color: white; transform: scale(1.05); }
+.tick.future { background: #0f172a; color: #475569; }
+
+.stat-grid {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 8px; margin: 8px 0;
+}
+.stat {
+  background: #0f172a; border-radius: 8px; padding: 10px;
+  text-align: center;
+}
+.stat-val { font-size: 1.4em; font-weight: 700; color: #60a5fa; }
+.stat-label { font-size: 0.7em; color: #94a3b8; margin-top: 2px; }
+
+.result-row {
+  display: flex; justify-content: space-between;
+  padding: 6px 0; border-bottom: 1px solid #1e293b;
+  font-size: 0.85em;
+}
+.result-row .name { color: #94a3b8; }
+.result-row .val { font-weight: 600; }
+.result-row .val.good { color: #4ade80; }
+.result-row .val.mid { color: #fbbf24; }
+.result-row .val.bad { color: #f87171; }
+
+button {
+  background: #3b82f6; color: white; border: none;
+  border-radius: 8px; padding: 10px 20px; font-size: 0.9em;
+  cursor: pointer; width: 100%; margin: 6px 0;
+}
+button:active { background: #2563eb; }
+button.secondary { background: #1e293b; border: 1px solid #334155; }
+
+.phase { display: none; }
+.phase.active { display: block; }
+
+.legend {
+  display: flex; gap: 12px; flex-wrap: wrap;
+  justify-content: center; margin: 8px 0;
+}
+.legend-item {
+  display: flex; align-items: center; gap: 4px;
+  font-size: 0.75em; color: #94a3b8;
+}
+.legend-dot {
+  width: 10px; height: 10px; border-radius: 50%;
+}
+</style>
+</head>
+<body>
+
+<h1>🧠 Self-Wiring Graph Network</h1>
+
+<div id="nav" style="display:flex;gap:4px;margin-bottom:12px;">
+  <button onclick="show(0)" id="btn0">Architektúra</button>
+  <button onclick="show(1)" id="btn1" class="secondary">Folyamat</button>
+  <button onclick="show(2)" id="btn2" class="secondary">Eredmények</button>
+</div>
+
+<!-- PAGE 0: Architecture -->
+<div class="phase active" id="p0">
+
+<div class="card blue">
+<h2>🔵 A Hálózat Felépítése</h2>
+<p style="font-size:0.85em;color:#94a3b8;margin-bottom:10px;">
+  92 neuron egy lapos gráfban. Nincs réteg, nincs hierarchia.
+  Bármelyik neuron bármelyikkel összekötődhet.
+</p>
+
+<div class="neuron-grid" id="neuronGrid"></div>
+
+<div class="legend">
+  <div class="legend-item"><div class="legend-dot" style="background:#22c55e"></div> I/O (28)</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#1e3a5f;border:1px solid #3b82f6"></div> Belső (64)</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#f59e0b"></div> Aktív (~3-5)</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#ef4444"></div> WTA nyertes</div>
+</div>
+</div>
+
+<div class="card">
+<h3>📍 Neuron típusok</h3>
+<div class="stat-grid">
+  <div class="stat">
+    <div class="stat-val" style="color:#22c55e">28</div>
+    <div class="stat-label">I/O neuron<br>Input ÉS Output<br>(megosztott)</div>
+  </div>
+  <div class="stat">
+    <div class="stat-val" style="color:#3b82f6">64</div>
+    <div class="stat-label">Belső neuron<br>Feldolgozás<br>(flat gráf)</div>
+  </div>
+  <div class="stat">
+    <div class="stat-val" style="color:#f59e0b">~5</div>
+    <div class="stat-label">Aktív egyszerre<br>A többi 87<br>"alszik"</div>
+  </div>
+  <div class="stat">
+    <div class="stat-val" style="color:#ef4444">~200</div>
+    <div class="stat-label">Connectionök<br>8464 lehetséges-<br>ből (~2.4%)</div>
+  </div>
+</div>
+</div>
+
+<div class="card purple">
+<h3>🏗️ Kulcs tulajdonságok</h3>
+<p style="font-size:0.85em;line-height:1.6;">
+  <b style="color:#a78bfa">Flat gráf:</b> Nincs réteg. Nem MLP, nem RNN. 
+  A neuronok maguk döntik el ki kivel beszél.<br><br>
+  <b style="color:#a78bfa">Binary mask:</b> Minden connection 0 vagy 1. 
+  Van vagy nincs — nincs közte.<br><br>
+  <b style="color:#a78bfa">Shared I/O:</b> Ugyanazok a neuronok fogadják 
+  az inputot ÉS adják az outputot. Mint az agyban.<br><br>
+  <b style="color:#a78bfa">Persistent state:</b> A neuronok "emlékeznek" 
+  az előző lépésre (decay 0.5). Ez az implicit memória.<br><br>
+  <b style="color:#a78bfa">Group WTA:</b> A belső neuronok csoportokban 
+  versenyeznek. Csoportonként 1 nyertes, a többi elcsendesül.
+</p>
+</div>
+
+</div>
+
+<!-- PAGE 1: Process -->
+<div class="phase" id="p1">
+
+<div class="card green">
+<h2>⚡ Egy lépés élete</h2>
+<p style="font-size:0.85em;color:#94a3b8;">
+  Mi történik amikor egy karakter bemegy a hálózatba?
+</p>
+</div>
+
+<div class="flow-box input">
+  <b>1. INPUT</b><br>
+  <span style="font-size:0.85em;">
+    "t" → one-hot [0,0,...,1,...,0]<br>
+    Csak az első tickben injektálva<br>
+    Az I/O neuronokba (első 28)
+  </span>
+</div>
+<div class="arrow">▼</div>
+
+<div class="flow-box process">
+  <b>2. FELDOLGOZÁS (6 tick)</b>
+  <div class="tick-bar" id="tickBar"></div>
+  <span style="font-size:0.8em;color:#94a3b8;">
+    Minden tick: jel terjed → leaky_relu → Group WTA<br>
+    A neuronok aktivációja a gráfon át propagálódik
+  </span>
+</div>
+<div class="arrow">▼</div>
+
+<div class="flow-box output">
+  <b>3. OUTPUT</b><br>
+  <span style="font-size:0.85em;">
+    Ugyanazok az I/O neuronok → softmax<br>
+    → "h" (predikció a következő karakterre)
+  </span>
+</div>
+<div class="arrow">▼</div>
+
+<div class="flow-box" style="border-color:#475569;">
+  <b>4. ÖSSZEHASONLÍTÁS</b><br>
+  <span style="font-size:0.85em;">
+    Predikció vs valódi következő karakter<br>
+    diff = target - prediction (per karakter)
+  </span>
+</div>
+<div class="arrow">▼</div>
+
+<div class="flow-box learn">
+  <b>5. TANULÁS</b><br>
+  <span style="font-size:0.85em;">
+    A diff NEM megy vissza az inputba!<br>
+    Háttérben a tanulási mechanizmust modulálja.
+  </span>
+</div>
+
+<div class="card" style="margin-top:16px;">
+<h3>🔄 A tanulási ciklus</h3>
+<div style="font-size:0.85em;line-height:1.8;">
+
+<div style="display:flex;gap:8px;margin:8px 0;">
+  <div style="flex:1;" class="card blue">
+    <b style="color:#60a5fa;">Mutáció (97%)</b><br>
+    <span style="font-size:0.8em;">
+    Külső, random<br>
+    Add / Remove / Rewire<br>
+    Ha jobb → megtartja<br>
+    Ha rosszabb → visszavonja
+    </span>
+  </div>
+  <div style="flex:1;" class="card purple">
+    <b style="color:#a78bfa;">Self-Wiring (3%)</b><br>
+    <span style="font-size:0.8em;">
+    Belső, célzott<br>
+    Aktív neuronok javasolnak<br>
+    4D address alapján<br>
+    Inverse arousal: jobb → több
+    </span>
+  </div>
+</div>
+
+<p style="color:#94a3b8;font-size:0.8em;">
+  <b>Inverse arousal:</b> Ha az accuracy alacsony, a self-wiring 
+  visszafogja magát (a mutáció keres). Ha magas, a self-wiring 
+  aktívabb (célzottan finomhangol). Ez volt a leggyorsabb konfig.
+</p>
+</div>
+</div>
+
+</div>
+
+<!-- PAGE 2: Results -->
+<div class="phase" id="p2">
+
+<div class="card green">
+<h2>📊 Eredmények</h2>
+</div>
+
+<div class="card">
+<h3>✅ Ami működik</h3>
+<div class="result-row"><span class="name">32-class lookup</span><span class="val good">100%</span></div>
+<div class="result-row"><span class="name">Sorting (algoritmikus!)</span><span class="val good">100%</span></div>
+<div class="result-row"><span class="name">Pattern completion</span><span class="val good">100%</span></div>
+<div class="result-row"><span class="name">Angol karakter bigram</span><span class="val good">28% (7.8x random)</span></div>
+</div>
+
+<div class="card">
+<h3>⚠️ Részben működik</h3>
+<div class="result-row"><span class="name">Sequence (prev+curr)</span><span class="val mid">47%</span></div>
+<div class="result-row"><span class="name">XOR (nemlineáris)</span><span class="val mid">59%</span></div>
+<div class="result-row"><span class="name">64-class lookup</span><span class="val mid">55% (fal)</span></div>
+</div>
+
+<div class="card">
+<h3>📐 Architektúra döntések</h3>
+<div class="result-row"><span class="name">Flat graph vs MLP</span><span class="val good">Graph nyer</span></div>
+<div class="result-row"><span class="name">Binary vs Soft mask</span><span class="val good">Binary nyer</span></div>
+<div class="result-row"><span class="name">Sparse vs Distributed</span><span class="val good">Sparse nyer</span></div>
+<div class="result-row"><span class="name">Group WTA vs No inhib.</span><span class="val good">WTA: 94 vs 88%</span></div>
+<div class="result-row"><span class="name">Inverse vs Normal arousal</span><span class="val good">Inverse: 1000 vs 1500</span></div>
+<div class="result-row"><span class="name">Diff as input vs not</span><span class="val good">Nem kell: 26≈28%</span></div>
+<div class="result-row"><span class="name">Shared vs Separate I/O</span><span class="val good">Shared: egyszerűbb</span></div>
+</div>
+
+<div class="card red">
+<h3>❌ Ami NEM működik</h3>
+<div class="result-row"><span class="name">Binary activation (nagyon)</span><span class="val fail">Halott</span></div>
+<div class="result-row"><span class="name">Soft/continuous mask</span><span class="val fail">Zajos</span></div>
+<div class="result-row"><span class="name">Pipeline (chipek sorban)</span><span class="val fail">Bottleneck</span></div>
+<div class="result-row"><span class="name">Sculpt-only (csak prune)</span><span class="val fail">Visszafordíthatatlan</span></div>
+<div class="result-row"><span class="name">Inhibitoros neuron típus</span><span class="val fail">Ront mutációval</span></div>
+<div class="result-row"><span class="name">Dense distributed kódolás</span><span class="val fail">Rossz mut+sel-hez</span></div>
+</div>
+
+<div class="card blue">
+<h3>🔮 Nyitott kérdések</h3>
+<p style="font-size:0.85em;line-height:1.6;color:#94a3b8;">
+  1. A 64-class fal — interferencia, jobb credit assignment kell<br>
+  2. Self-wiring csak 3% — hogyan legyen a fő motor?<br>
+  3. Skálázás valódi nyelvre — több neuron kell<br>
+  4. Hardware deployment — ESP32/RPi swarm lehetséges<br>
+  5. v19b reward Hebbian + jelenlegi setup = v22?
+</p>
+</div>
+
+</div>
+
+<script>
+// Navigation
+function show(idx) {
+  document.querySelectorAll('.phase').forEach((p,i) => {
+    p.classList.toggle('active', i===idx);
+  });
+  document.querySelectorAll('#nav button').forEach((b,i) => {
+    b.className = i===idx ? '' : 'secondary';
+  });
+}
+
+// Build neuron grid
+const grid = document.getElementById('neuronGrid');
+for(let i=0; i<92; i++) {
+  const n = document.createElement('div');
+  n.className = 'neuron';
+  if(i < 28) n.className += ' io';
+  else n.className += ' internal';
+  // Random active neurons
+  if(i >= 28 && [31, 45, 62, 78, 85].includes(i)) {
+    n.className += ' active';
+  }
+  if([45, 78].includes(i)) {
+    n.className = 'neuron wta-winner';
+  }
+  grid.appendChild(n);
+}
+
+// Build tick bar
+const tickBar = document.getElementById('tickBar');
+const tickLabels = ['Input', 'Spread', 'WTA', 'Spread', 'Stable', 'Output'];
+for(let i=0; i<6; i++) {
+  const t = document.createElement('div');
+  t.className = 'tick future';
+  t.textContent = tickLabels[i];
+  t.onclick = () => animateTick(i);
+  tickBar.appendChild(t);
+}
+
+let currentTick = -1;
+function animateTick(idx) {
+  currentTick = idx;
+  document.querySelectorAll('.tick').forEach((t,i) => {
+    if(i < idx) t.className = 'tick past';
+    else if(i === idx) t.className = 'tick current';
+    else t.className = 'tick future';
+  });
+}
+
+// Auto-animate ticks
+let autoTick = 0;
+setInterval(() => {
+  animateTick(autoTick % 6);
+  autoTick++;
+}, 1000);
+</script>
+
+</body>
+</html>

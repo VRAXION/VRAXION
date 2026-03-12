@@ -812,6 +812,15 @@ def func_loadckpt_dct(path, device):
 # Flush-per-row minimizes data loss on crash — at most one row can be lost
 # (flush pushes to OS cache, not physical disk, but that's good enough for CSV logs).
 
+def _grad_norm_group(model, keywords) -> float:
+    """L2 norm of gradients for parameters whose name contains any keyword."""
+    total_sq = 0.0
+    for name, p in model.named_parameters():
+        if p.grad is not None and any(k in name for k in keywords):
+            total_sq += p.grad.data.norm(2).item() ** 2
+    return total_sq ** 0.5
+
+
 class CSVLogger:
     """Append-only CSV logger for training metrics."""
 
@@ -838,6 +847,12 @@ class CSVLogger:
                'bb_key_norm',                               # written key strength
                'bb_ctx_vs_input_0', 'bb_ctx_vs_input_1',   # ratio: bb_ctx / input_vec
                'bb_ctx_vs_ring_0', 'bb_ctx_vs_ring_1',     # ratio: bb_ctx / blended_ring
+               # ── extended telemetry (v2) ──
+               'wr_vec_norm_0', 'wr_gate_0',              # write magnitude + gate
+               'ring_adj_cos', 'ring_norm_std',            # ring diversity
+               'loss_q0', 'loss_q1', 'loss_q2', 'loss_q3', # loss by seq quarter
+               'grad_norm', 'scaler_scale',                # optimization health
+               'gn_read', 'gn_write', 'gn_out',           # grad norm by group
                ]
 
     def __init__(self, path: Path):
@@ -905,11 +920,34 @@ class CSVLogger:
             f'{d.get("bb_ctx_vs_input_1", 0):.4f}',
             f'{d.get("bb_ctx_vs_ring_0", 0):.4f}',
             f'{d.get("bb_ctx_vs_ring_1", 0):.4f}',
+            # ── extended telemetry (v2) ──
+            f'{d.get("wr_vec_norm_0", 0):.2f}',
+            f'{d.get("wr_gate_0", 0):.4f}',
+            f'{d.get("ring_adj_cos", 0):.4f}',
+            f'{d.get("ring_norm_std", 0):.2f}',
+            f'{d.get("loss_q0", 0):.4f}',
+            f'{d.get("loss_q1", 0):.4f}',
+            f'{d.get("loss_q2", 0):.4f}',
+            f'{d.get("loss_q3", 0):.4f}',
+            f'{d.get("grad_norm", 0):.4f}',
+            f'{d.get("scaler_scale", 0):.0f}',
+            f'{d.get("gn_read", 0):.4f}',
+            f'{d.get("gn_write", 0):.4f}',
+            f'{d.get("gn_out", 0):.4f}',
         ])
         self._f.flush()
 
     def close(self):
         self._f.close()
+
+
+def _select_sequential_state(previous_state, next_state, masked_loss, sequential: bool):
+    """Keep the prior carry state when a forward produces a non-finite loss."""
+    if not sequential:
+        return next_state
+    if torch.isfinite(masked_loss):
+        return next_state
+    return previous_state
 
 
 # ── Boot Info ─────────────────────────────────────────────────
@@ -1010,6 +1048,66 @@ def _build_optimizer(model, model_type: str, lr: float):
     ], lr=lr)
 
 
+_COMPILE_FULL_SEQ_THRESHOLD = 48
+
+
+def _unwrap_model(model):
+    """Return the original nn.Module when torch.compile wraps the model."""
+    return getattr(model, '_orig_mod', model)
+
+
+def _configure_compile_policy(model, config: dict, device: str):
+    """Apply the nightly auto compile policy and return the active model object."""
+    base_model = _unwrap_model(model)
+    base_model._compile_mode = 'eager'
+    base_model._compile_chunks = False
+    base_model._disable_proxy_overlay_for_compile = False
+    base_model._compiled_chunk_size = None
+
+    if not config.get('compile', False):
+        return model
+
+    compile_chunk_size = int(config.get('compile_chunk_size', 32))
+    fallback_reason = None
+    if not device.startswith('cuda'):
+        fallback_reason = f"compile requested on non-CUDA device '{device}'"
+    elif not hasattr(torch, 'compile'):
+        fallback_reason = 'torch.compile is unavailable in this PyTorch build'
+    elif getattr(base_model, 'bb_enabled', False):
+        fallback_reason = 'bb_enabled=true is out of scope for compile in this pass'
+    elif getattr(base_model, 'io_split_mode', 'off') != 'off':
+        fallback_reason = f"io_split_mode='{getattr(base_model, 'io_split_mode', 'off')}' is not compile-safe in this pass"
+    elif compile_chunk_size < 1:
+        fallback_reason = f'compile_chunk_size must be >= 1, got {compile_chunk_size}'
+
+    if fallback_reason is not None:
+        print(f'[compile] eager fallback: {fallback_reason}')
+        return model
+
+    base_model._disable_proxy_overlay_for_compile = (
+        getattr(base_model, 'replace_impl', 'dense') == 'proxy_overlay'
+    )
+    seq_len = int(config.get('seq_len', 0))
+
+    if seq_len <= _COMPILE_FULL_SEQ_THRESHOLD:
+        base_model._compile_mode = 'full'
+        try:
+            model = torch.compile(model, mode='reduce-overhead')
+            print(f'[compile] full-model compile enabled (seq={seq_len}, threshold={_COMPILE_FULL_SEQ_THRESHOLD}, mode=reduce-overhead)')
+        except Exception as e:
+            base_model = _unwrap_model(model)
+            base_model._compile_mode = 'eager'
+            base_model._disable_proxy_overlay_for_compile = False
+            print(f'[compile] eager fallback: full-model compile failed: {e}')
+        return model
+
+    base_model._compile_mode = 'chunk'
+    base_model._compile_chunks = True
+    base_model.compile_chunk_size = compile_chunk_size
+    print(f'[compile] chunk-level compile enabled (seq={seq_len}, C={compile_chunk_size}, mode=reduce-overhead)')
+    return model
+
+
 # ── Training Loop ─────────────────────────────────────────────
 # Orchestrates the full training lifecycle: device selection, data loading,
 # model creation, optional checkpoint resume, and the step loop itself.
@@ -1099,6 +1197,11 @@ def train(config):
         training_config=config,
     )
     model = build_model_from_spec(model_record, device=device)
+    # TF32 tensor cores: ~2× throughput on fp32 matmul (RTX 30xx/40xx), negligible precision loss.
+    if device.startswith('cuda'):
+        torch.set_float32_matmul_precision('high')
+    model = _configure_compile_policy(model, config, device)
+    runtime_model = _unwrap_model(model)
     opt = _build_optimizer(model, model_record['type'], config['lr'])
 
     # ── Output dir ──
@@ -1211,7 +1314,7 @@ def train(config):
         print(f'[RESUME] AMP GradScaler state restored')
 
     # ── Boot ──
-    func_bootinfo_non(config, model, dataset, device)
+    func_bootinfo_non(config, runtime_model, dataset, device)
 
     if config['steps'] <= start_step:
         print(f'[DONE] Already at step {start_step} >= target {config["steps"]}. Nothing to do.')
@@ -1294,21 +1397,45 @@ def train(config):
         opt.param_groups[0]['lr'] = lr
         # group 1 (c19 rho/C): constant LR — no decay, always adaptive
 
+        # ── Diagnostics gate ──
+        # Enable .item() diagnostics only on steps that will read them (heartbeat/CSV log).
+        # Saves ~600 CUDA sync points per forward pass on non-log steps.
+        _is_log_step = (s % config['heartbeat_every'] == 0) or (s % config['log_every'] == 0) or (s == start_step + 1)
+        if hasattr(runtime_model, '_diag_enabled'):
+            runtime_model._diag_enabled = _is_log_step
+        if _is_log_step and hasattr(runtime_model, '_diag'):
+            runtime_model._diag = {}
+
         # ── Forward ──
         if sequential:
             xb, yb, mask = dataset.sample_batch_sequential(config['batch_size'], device)
         else:
             xb, yb, mask = dataset.sample_batch(config['batch_size'], device)
 
-        _ring_pre = state['ring'].norm().item() if state is not None and 'ring' in state else -1
+        # Deep-clone carry state so rollback survives CUDA graph memory reuse.
+        # Without clone, reduce-overhead CUDA graphs can overwrite the input
+        # tensor memory during forward, making NaN rollback ineffective.
+        if state is not None and sequential:
+            prev_state = {k: v.clone() if isinstance(v, torch.Tensor) else v
+                          for k, v in state.items()}
+        else:
+            prev_state = state
+        _ring_pre = prev_state['ring'].norm().item() if prev_state is not None and 'ring' in prev_state else -1
+
+        # Fence CUDA graph boundaries so reduce-overhead mode properly
+        # separates forward passes (prevents "pending uninvoked backwards").
+        if hasattr(torch.compiler, 'cudagraph_mark_step_begin'):
+            torch.compiler.cudagraph_mark_step_begin()
 
         with torch.amp.autocast('cuda', enabled=use_amp):
-            pred, state = model(xb, state=state if sequential else None)
+            pred, next_state = model(xb, state=prev_state if sequential else None)
             # loss_fn returns two values: raw_loss (all positions) and masked_loss
             # (supervised positions only). We optimize masked_loss but log both.
             raw_loss, masked_loss = loss_fn(pred, yb, mask)
+        if _is_log_step and getattr(runtime_model, '_compile_mode', 'eager') in ('full', 'chunk'):
+            runtime_model.materialize_compile_diag()
 
-        _ring_post = state['ring'].norm().item() if state is not None and 'ring' in state else -1
+        _ring_post = next_state['ring'].norm().item() if next_state is not None and 'ring' in next_state else -1
         # Temporary ring delta probe — remove once ring freeze is resolved
         if s <= start_step + 5:
             print(f'  [RING-PROBE] step {s}: pre={_ring_pre:.4f} post={_ring_post:.4f} delta={_ring_post - _ring_pre:.6f}')
@@ -1319,7 +1446,22 @@ def train(config):
         # corrupted optimizer momentum buffers are not.
         if not torch.isfinite(masked_loss):
             nan_count += 1
-            print(f'  [NAN] step {s} -- loss={masked_loss.item()}, skipping ({nan_count} consecutive)')
+            state = _select_sequential_state(prev_state, next_state, masked_loss, sequential)
+            opt.zero_grad(set_to_none=True)
+            # Halve AMP scaler to prevent future fp16 overflow
+            if scaler is not None and scaler.is_enabled():
+                old_scale = scaler.get_scale()
+                scaler.update(new_scale=old_scale * 0.5)
+                _scale_msg = f', scaler {old_scale:.0f}->{old_scale*0.5:.0f}'
+            else:
+                _scale_msg = ''
+            _state_msg = 'carry rolled back' if sequential else 'stateless step'
+            print(
+                f'  [NAN] step {s} -- loss={masked_loss.item()}, '
+                f'skipping ({nan_count} consecutive, {_state_msg}, '
+                f'ring_pre={_ring_pre:.4f}, ring_post={_ring_post:.4f}'
+                f'{_scale_msg})'
+            )
             if nan_count >= 10:
                 raise RuntimeError(
                     f'NaN/Inf loss in {nan_count} consecutive steps -- training is diverging. '
@@ -1327,25 +1469,54 @@ def train(config):
                 )
             continue
         nan_count = 0  # reset on healthy step
+        state = _select_sequential_state(prev_state, next_state, masked_loss, sequential)
 
         # ── Backward ──
         opt.zero_grad()
         if scaler is not None:
             scaler.scale(masked_loss).backward()
-            if hasattr(model, 'update_expert_conf'):
-                model.update_expert_conf()
-            if config['max_grad_norm'] > 0:
-                scaler.unscale_(opt)
-                torch.nn.utils.clip_grad_norm_(model.parameters(), config['max_grad_norm'])
-            scaler.step(opt)
-            scaler.update()
+            if hasattr(runtime_model, 'update_expert_conf'):
+                runtime_model.update_expert_conf()
+            # unscale_ + check for inf/nan grads before stepping
+            scaler.unscale_(opt)
+            grad_norm = torch.nn.utils.clip_grad_norm_(
+                model.parameters(), config['max_grad_norm'] if config['max_grad_norm'] > 0 else 1e9)
+            if not torch.isfinite(grad_norm):
+                print(f'  [GRAD-INF] step {s} -- grad_norm={grad_norm.item():.1f}, '
+                      f'skipping optimizer step (scaler={scaler.get_scale():.0f})')
+                scaler.update()   # scaler detects inf and halves scale automatically
+            else:
+                scaler.step(opt)
+                scaler.update()
         else:
             masked_loss.backward()
-            if hasattr(model, 'update_expert_conf'):
-                model.update_expert_conf()
-            if config['max_grad_norm'] > 0:
-                torch.nn.utils.clip_grad_norm_(model.parameters(), config['max_grad_norm'])
-            opt.step()
+            if hasattr(runtime_model, 'update_expert_conf'):
+                runtime_model.update_expert_conf()
+            grad_norm = torch.nn.utils.clip_grad_norm_(
+                model.parameters(), config['max_grad_norm'] if config['max_grad_norm'] > 0 else 1e9)
+            if not torch.isfinite(grad_norm):
+                print(f'  [GRAD-INF] step {s} -- grad_norm={grad_norm.item():.1f}, skipping optimizer step')
+            else:
+                opt.step()
+
+        # ── Extended telemetry (log steps only — avoid CUDA sync on every step) ──
+        _is_log_step_ext = (s % config['log_every'] == 0) or (s == start_step + 1)
+        if _is_log_step_ext:
+            _ext_diag = getattr(runtime_model, '_diag', {})
+            # Grad norms by group (grads still available before zero_grad next step)
+            _ext_diag['grad_norm'] = grad_norm.item() if torch.isfinite(grad_norm) else 0.0
+            _ext_diag['scaler_scale'] = scaler.get_scale() if scaler is not None else 0
+            _ext_diag['gn_read'] = _grad_norm_group(runtime_model, ['read_proj'])
+            _ext_diag['gn_write'] = _grad_norm_group(runtime_model, ['write_proj', 'write_gate'])
+            _ext_diag['gn_out'] = _grad_norm_group(runtime_model, ['output_', 'lowrank', 'out_proj'])
+            # Loss by sequence quarter
+            _T = pred.size(1)
+            _Q = _T // 4
+            _V = pred.size(-1)
+            for _q in range(4):
+                _qp = pred[:, _q*_Q:(_q+1)*_Q].reshape(-1, _V)
+                _qt = yb[:, _q*_Q:(_q+1)*_Q].reshape(-1)
+                _ext_diag[f'loss_q{_q}'] = F.cross_entropy(_qp, _qt, reduction='mean').item()
 
         # .item() detaches from the graph — safe to hold across iterations.
         lv = masked_loss.item()
@@ -1357,18 +1528,18 @@ def train(config):
             elapsed = time.perf_counter() - t0
             sps = s - start_step
             sec_per_step = elapsed / sps if sps > 0 else 0
-            xc = getattr(model, '_expert_conf', None)
+            xc = getattr(runtime_model, '_expert_conf', None)
             xc_str = f'  conf=[{" ".join(f"{c:.4f}" for c in xc.tolist())}]' if xc is not None else ''
             # diagnostics from model forward pass
-            diag = getattr(model, '_diag', {})
+            diag = getattr(runtime_model, '_diag', {})
             alpha_str = ''
             if 'alpha_0_mean' in diag:
-                alphas = ' '.join(f'{diag.get(f"alpha_{i}_mean", 0):.3f}' for i in range(model.N))
+                alphas = ' '.join(f'{diag.get(f"alpha_{i}_mean", 0):.3f}' for i in range(runtime_model.N))
                 alpha_str = f'  alpha=[{alphas}]'
             ring_str = f'  ring={diag.get("ring_norm", 0):.2f}' if 'ring_norm' in diag else ''
             bb_str = ''
             if 'bb_beta_0' in diag:
-                betas = ' '.join(f'{diag.get(f"bb_beta_{i}", 0):.3f}' for i in range(model.N))
+                betas = ' '.join(f'{diag.get(f"bb_beta_{i}", 0):.3f}' for i in range(runtime_model.N))
                 ent = f'{diag.get("bb_attn_entropy_0", 0):.2f}'
                 ratio = f'{diag.get("bb_ctx_vs_ring_0", 0):.2f}'
                 bb_str = f'  bb=[{betas}] ent={ent} ctx/ring={ratio}'
@@ -1389,7 +1560,7 @@ def train(config):
             mf = mask.mean().item()
             csv_log.log(s, raw_loss.item(), lv, raw_acc, masked_acc,
                         lr, elapsed, s * config['batch_size'], mf,
-                        diag=getattr(model, '_diag', {}))
+                        diag=getattr(runtime_model, '_diag', {}))
 
         # ── Checkpoint ──
         if s % config['save_every'] == 0:
@@ -1427,6 +1598,7 @@ def train(config):
                     'batch_size': int, 'lr': float, 'log_every': int,
                     'save_every': int, 'heartbeat_every': int,
                     'max_grad_norm': float, 'patience': int,
+                    'lr_patience': int, 'lr_factor': float,
                 }
                 _changed = []
                 for k, cast in _safe_keys.items():
@@ -1437,6 +1609,12 @@ def train(config):
                         train_config_resolved[k] = new_val
                 if _changed:
                     print(f'  [HOT-RELOAD] {", ".join(_changed)}')
+                    # Propagate plateau params to the live tracker
+                    if plateau is not None:
+                        if 'lr_patience' in config:
+                            plateau.patience = config['lr_patience']
+                        if 'lr_factor' in config:
+                            plateau.factor = config['lr_factor']
             except Exception as e:
                 if str(e) != 'disabled':
                     print(f'  [HOT-RELOAD] failed: {e}')
@@ -1562,6 +1740,10 @@ def func_parsecli_dct() -> dict:
                         help='model architecture (default: instnct)')
     parser.add_argument('--seed', type=int, default=None,
                         help='global random seed for fresh runs (default: from config)')
+    parser.add_argument('--compile', action='store_true', default=None,
+                        help='enable torch.compile (reduce-overhead). +22%% speed after ~73s warmup')
+    parser.add_argument('--compile-chunk-size', type=int, default=None,
+                        help='chunk size for compile auto/chunk mode (default: from config or 32)')
 
     args = parser.parse_args()
 
@@ -1602,6 +1784,8 @@ def func_parsecli_dct() -> dict:
         'sequential':      bool(yaml_cfg.get('sequential', False)),
         # Mixed precision (AMP): fp16 forward/backward, fp32 optimizer
         'use_amp':         bool(yaml_cfg.get('use_amp', False)),
+        'compile':         args.compile if args.compile is not None else bool(yaml_cfg.get('compile', False)),
+        'compile_chunk_size': args.compile_chunk_size if args.compile_chunk_size is not None else int(yaml_cfg.get('compile_chunk_size', 32)),
     }
 
     # Resolve relative paths from v4/ root so `python training/train.py --data foo`
