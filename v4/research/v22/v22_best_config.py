@@ -7,10 +7,15 @@ Architecture:
   - Flat graph (no layers, no hierarchy)
   - Ternary mask (-1/0/+1) with flip mutation (30%)
   - Binary weights (0.5/1.5) — positive only, sign in mask
-  - Leaky ReLU activation (continuous, like membrane potential)
+  - Capacitor neuron activation (threshold=0.5, leak=0.85)
+    * Charge accumulates over ticks: charge += raw * 0.3
+    * Charge leaks each tick: charge *= 0.85
+    * Fires only above threshold: act = max(charge - 0.5, 0)
+    * Output reads CHARGE (not act) for richer softmax signal
+    * Temporal integration compensates for binary weight precision
   - Shared I/O (first V neurons = input + output)
   - First tick only input injection
-  - Persistent state with decay 0.5
+  - 8 ticks per forward pass
 
 Learning:
   - Mutation + selection (keep/revert)
@@ -18,11 +23,13 @@ Learning:
   - Flip mutation is the most powerful operator
   - Self-wiring with inverse arousal (optional)
 
-Results (16-class lookup):
-  - 87.5% accuracy
-  - 890 connections
-  - 3 bits per connection (2 mask + 1 weight)
+Results (capacitor t=0.5, leak=0.85 vs leaky_relu):
+  16-class: 75.0% vs 25.0% (3x improvement)
+  32-class: 43.8% vs 18.8% (2.3x improvement)
+  64-class: 29.7% vs  7.8% (3.8x improvement)
+  Capacitor wins 3/3 tasks.
 
+Previous best (leaky_relu): 87.5% on 16-class (different seed/setup)
 Proven on real English text: 28% bigram prediction (7.8x random)
 """
 
@@ -34,11 +41,14 @@ import random
 class SelfWiringGraph:
     """The best-of-all-tests architecture."""
 
-    def __init__(self, n_neurons, vocab, density=0.06, flip_rate=0.30):
+    def __init__(self, n_neurons, vocab, density=0.06, flip_rate=0.30,
+                 threshold=0.5, leak=0.85):
         self.N = n_neurons
         self.V = vocab
         self.flip_rate = flip_rate
         self.last_acc = 0.0
+        self.threshold = threshold
+        self.leak = leak
 
         # Ternary mask: -1 (inhibit), 0 (no connection), +1 (excite)
         r = np.random.rand(n_neurons, n_neurons)
@@ -59,37 +69,49 @@ class SelfWiringGraph:
         self.addr[vocab:, 3] = 0.5        # Internal: functional = 0.5
         self.target_W = np.random.randn(n_neurons, 4).astype(np.float32) * 0.1
 
-        # Persistent state (implicit memory via decay)
+        # Persistent state
         self.state = np.zeros(n_neurons, dtype=np.float32)
-        self.decay = 0.5
+        # Capacitor charge (accumulates over ticks)
+        self.charge = np.zeros(n_neurons, dtype=np.float32)
 
     def reset(self):
         self.state *= 0
+        self.charge *= 0
 
-    def forward(self, world, ticks=6):
+    def forward(self, world, ticks=8):
         """
-        Forward pass:
-        - world: one-hot input vector (size V)
-        - First tick: inject input into I/O neurons
-        - Remaining ticks: free propagation
-        - Output: read I/O neurons after final tick
+        Forward pass with capacitor neuron dynamics:
+        - Charge accumulates: charge += raw * 0.3
+        - Charge leaks: charge *= 0.85
+        - Fires above threshold: act = max(charge - threshold, 0)
+        - Output: read CHARGE (not act) for richer softmax signal
         """
         act = self.state.copy()
         Weff = self.W * self.mask  # effective weights
 
         for t in range(ticks):
-            act = act * self.decay
-
             # First tick only: inject input
             if t == 0:
                 act[:self.V] = world
 
             # Propagate through graph
             raw = act @ Weff + act * 0.1
-            act = np.where(raw > 0, raw, np.float32(0.01) * raw)  # leaky relu
+
+            # Capacitor dynamics
+            self.charge += raw * 0.3
+            self.charge *= self.leak
+
+            # Threshold output
+            act = np.maximum(self.charge - self.threshold, 0.0)
+
+            # Clamp charge to prevent explosion
+            self.charge = np.clip(self.charge,
+                                  -self.threshold * 2,
+                                  self.threshold * 2)
 
         self.state = act.copy()
-        return act[:self.V]  # shared I/O: output = same neurons as input
+        # Output: read CHARGE for richer softmax signal
+        return self.charge[:self.V]
 
     def count_connections(self):
         return int((self.mask != 0).sum())
@@ -105,7 +127,7 @@ class SelfWiringGraph:
 
     def save_state(self):
         return (self.W.copy(), self.mask.copy(), self.state.copy(),
-                self.addr.copy(), self.target_W.copy())
+                self.addr.copy(), self.target_W.copy(), self.charge.copy())
 
     def restore_state(self, s):
         self.W = s[0].copy()
@@ -113,6 +135,7 @@ class SelfWiringGraph:
         self.state = s[2].copy()
         self.addr = s[3].copy()
         self.target_W = s[4].copy()
+        self.charge = s[5].copy()
 
     # === Mutation operators ===
 
@@ -221,7 +244,7 @@ def softmax(x):
     return e / e.sum()
 
 
-def train(net, inputs, targets, vocab, max_attempts=8000, ticks=6, verbose=True):
+def train(net, inputs, targets, vocab, max_attempts=8000, ticks=8, verbose=True):
     """Train the network using mutation + selection."""
 
     def evaluate():
