@@ -4,6 +4,31 @@ Newest entries at top. Copy from [TEMPLATE.md](TEMPLATE.md) for new entries.
 
 ---
 
+## 2026-03-13 — v4.1 Promoted to Experimental Trunk
+
+Branch roles are now explicit:
+
+- `main` = frozen historical old-old architecture line
+- `nightly` = curated ring/loss trunk
+- `v4.1` = active proving ground for the no-loss / self-wiring line
+
+Consolidated into `v4.1` from experiment-family Claude branches:
+
+- updated `research/v22/` capacitor benchmark/docs artifacts
+- `v22_ternary/` experiment evidence
+- `v23_instnct_lm/` CPU language-model experiment evidence
+
+Not promoted by default:
+
+- older `v19b` / `v21` lines
+- raw branch-local clutter that is not part of the current experiment canon
+
+Canonical handoff for this branch:
+
+- `v4/research/EXPERIMENT_SOURCE_OF_TRUTH.md`
+
+---
+
 ## 2026-03-01 — Pilot Seek-First: Pointer Before Read
 
 ### Motivation
