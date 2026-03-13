@@ -1,0 +1,152 @@
+{
+  "16_class": {
+    "accuracy": {
+      "scoring": "accuracy",
+      "best_score": 0.4375,
+      "accuracy": 0.4375,
+      "acceptance_rate": 0.062,
+      "kept": 5,
+      "total_attempts": 8000,
+      "connections": 368,
+      "pos": 176,
+      "neg": 192,
+      "time": 16.9
+    },
+    "mse": {
+      "scoring": "mse",
+      "best_score": -0.05845607792223378,
+      "accuracy": 0.0625,
+      "acceptance_rate": 0.175,
+      "kept": 14,
+      "total_attempts": 8000,
+      "connections": 732,
+      "pos": 522,
+      "neg": 210,
+      "time": 17.5
+    },
+    "target_prob": {
+      "scoring": "target_prob",
+      "best_score": 0.17873334354680992,
+      "accuracy": 0.25,
+      "acceptance_rate": 0.3,
+      "kept": 24,
+      "total_attempts": 8000,
+      "connections": 353,
+      "pos": 195,
+      "neg": 158,
+      "time": 16.7
+    },
+    "log_prob": {
+      "scoring": "log_prob",
+      "best_score": -2.7248753011226654,
+      "accuracy": 0.125,
+      "acceptance_rate": 0.175,
+      "kept": 14,
+      "total_attempts": 8000,
+      "connections": 841,
+      "pos": 589,
+      "neg": 252,
+      "time": 16.8
+    },
+    "margin": {
+      "scoring": "margin",
+      "best_score": 0.0,
+      "accuracy": 0.0625,
+      "acceptance_rate": 0.025,
+      "kept": 2,
+      "total_attempts": 8000,
+      "connections": 969,
+      "pos": 769,
+      "neg": 200,
+      "time": 16.4
+    },
+    "combined": {
+      "scoring": "combined",
+      "best_score": 0.378989145392552,
+      "accuracy": 0.6875,
+      "acceptance_rate": 0.35,
+      "kept": 28,
+      "total_attempts": 8000,
+      "connections": 507,
+      "pos": 162,
+      "neg": 345,
+      "time": 17.1
+    }
+  },
+  "32_class": {
+    "combined": {
+      "scoring": "combined",
+      "best_score": 0.1832244616624905,
+      "accuracy": 0.1875,
+      "acceptance_rate": 0.092,
+      "kept": 11,
+      "total_attempts": 12000,
+      "connections": 7282,
+      "pos": 2042,
+      "neg": 5240,
+      "time": 66.7
+    },
+    "target_prob": {
+      "scoring": "target_prob",
+      "best_score": 0.13161204481309596,
+      "accuracy": 0.15625,
+      "acceptance_rate": 0.079,
+      "kept": 9,
+      "total_attempts": 11324,
+      "connections": 2313,
+      "pos": 777,
+      "neg": 1536,
+      "time": 59.7
+    },
+    "mse": {
+      "scoring": "mse",
+      "best_score": -0.0302734375,
+      "accuracy": 0.03125,
+      "acceptance_rate": 0.035,
+      "kept": 3,
+      "total_attempts": 8508,
+      "connections": 3714,
+      "pos": 3009,
+      "neg": 705,
+      "time": 45.2
+    },
+    "accuracy": {
+      "scoring": "accuracy",
+      "best_score": 0.15625,
+      "accuracy": 0.15625,
+      "acceptance_rate": 0.023,
+      "kept": 2,
+      "total_attempts": 8781,
+      "connections": 2706,
+      "pos": 803,
+      "neg": 1903,
+      "time": 45.7
+    }
+  },
+  "64_class": {
+    "accuracy": {
+      "scoring": "accuracy",
+      "best_score": 0.09375,
+      "accuracy": 0.09375,
+      "acceptance_rate": 0.016,
+      "kept": 2,
+      "total_attempts": 12680,
+      "connections": 10782,
+      "pos": 2953,
+      "neg": 7829,
+      "time": 242.6
+    },
+    "combined": {
+      "scoring": "combined",
+      "best_score": 0.08569955812522778,
+      "accuracy": 0.09375,
+      "acceptance_rate": 0.075,
+      "kept": 9,
+      "total_attempts": 12080,
+      "connections": 10143,
+      "pos": 3191,
+      "neg": 6952,
+      "time": 237.9
+    }
+  }
+}
