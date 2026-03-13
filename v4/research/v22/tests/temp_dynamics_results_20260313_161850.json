@@ -1,0 +1,6500 @@
+{
+  "42": {
+    "accuracy": 0.578125,
+    "elapsed": 181.2419068813324,
+    "log": [
+      {
+        "attempt": 200,
+        "temperature": 0.1,
+        "accuracy": 0.1094,
+        "current_acc": 0.1094,
+        "accept_rate": 0.295,
+        "connections": 4050,
+        "active_neurons": 138,
+        "total_neurons": 192,
+        "stale": 3,
+        "mutations": {
+          "flip": 106,
+          "add": 29,
+          "remove": 22,
+          "rewire": 21,
+          "block": 22
+        },
+        "zones": {
+          "ultra_focus": 146,
+          "focus": 53,
+          "normal": 1,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 2.2
+      },
+      {
+        "attempt": 400,
+        "temperature": 0.1,
+        "accuracy": 0.125,
+        "current_acc": 0.125,
+        "accept_rate": 0.25,
+        "connections": 4681,
+        "active_neurons": 149,
+        "total_neurons": 192,
+        "stale": 1,
+        "mutations": {
+          "flip": 114,
+          "add": 20,
+          "remove": 18,
+          "rewire": 24,
+          "block": 24
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 4.5
+      },
+      {
+        "attempt": 600,
+        "temperature": 0.1,
+        "accuracy": 0.1406,
+        "current_acc": 0.1406,
+        "accept_rate": 0.17,
+        "connections": 5139,
+        "active_neurons": 154,
+        "total_neurons": 192,
+        "stale": 2,
+        "mutations": {
+          "flip": 120,
+          "add": 15,
+          "remove": 25,
+          "rewire": 17,
+          "block": 23
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 6.8
+      },
+      {
+        "attempt": 800,
+        "temperature": 0.1,
+        "accuracy": 0.1406,
+        "current_acc": 0.1406,
+        "accept_rate": 0.195,
+        "connections": 5982,
+        "active_neurons": 160,
+        "total_neurons": 192,
+        "stale": 6,
+        "mutations": {
+          "flip": 123,
+          "add": 25,
+          "remove": 13,
+          "rewire": 18,
+          "block": 21
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 9.0
+      },
+      {
+        "attempt": 1000,
+        "temperature": 0.1,
+        "accuracy": 0.1406,
+        "current_acc": 0.1406,
+        "accept_rate": 0.18,
+        "connections": 6642,
+        "active_neurons": 166,
+        "total_neurons": 192,
+        "stale": 3,
+        "mutations": {
+          "flip": 118,
+          "add": 19,
+          "remove": 15,
+          "rewire": 20,
+          "block": 28
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 11.2
+      },
+      {
+        "attempt": 1200,
+        "temperature": 0.1,
+        "accuracy": 0.1562,
+        "current_acc": 0.1562,
+        "accept_rate": 0.145,
+        "connections": 6979,
+        "active_neurons": 169,
+        "total_neurons": 192,
+        "stale": 8,
+        "mutations": {
+          "flip": 124,
+          "add": 16,
+          "remove": 21,
+          "rewire": 24,
+          "block": 15
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 13.5
+      },
+      {
+        "attempt": 1400,
+        "temperature": 0.1,
+        "accuracy": 0.1562,
+        "current_acc": 0.1406,
+        "accept_rate": 0.13,
+        "connections": 7401,
+        "active_neurons": 173,
+        "total_neurons": 192,
+        "stale": 13,
+        "mutations": {
+          "flip": 118,
+          "add": 18,
+          "remove": 25,
+          "rewire": 23,
+          "block": 16
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 15.8
+      },
+      {
+        "attempt": 1600,
+        "temperature": 0.1,
+        "accuracy": 0.1562,
+        "current_acc": 0.1562,
+        "accept_rate": 0.08,
+        "connections": 7809,
+        "active_neurons": 178,
+        "total_neurons": 192,
+        "stale": 18,
+        "mutations": {
+          "flip": 127,
+          "add": 17,
+          "remove": 13,
+          "rewire": 15,
+          "block": 28
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 18.1
+      },
+      {
+        "attempt": 1800,
+        "temperature": 0.1,
+        "accuracy": 0.1875,
+        "current_acc": 0.1875,
+        "accept_rate": 0.135,
+        "connections": 8242,
+        "active_neurons": 180,
+        "total_neurons": 192,
+        "stale": 0,
+        "mutations": {
+          "flip": 128,
+          "add": 17,
+          "remove": 18,
+          "rewire": 20,
+          "block": 17
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 20.3
+      },
+      {
+        "attempt": 2000,
+        "temperature": 0.1,
+        "accuracy": 0.2031,
+        "current_acc": 0.2031,
+        "accept_rate": 0.185,
+        "connections": 9143,
+        "active_neurons": 183,
+        "total_neurons": 192,
+        "stale": 0,
+        "mutations": {
+          "flip": 119,
+          "add": 22,
+          "remove": 15,
+          "rewire": 19,
+          "block": 25
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 22.6
+      },
+      {
+        "attempt": 2200,
+        "temperature": 0.1,
+        "accuracy": 0.2188,
+        "current_acc": 0.2188,
+        "accept_rate": 0.105,
+        "connections": 9885,
+        "active_neurons": 186,
+        "total_neurons": 192,
+        "stale": 11,
+        "mutations": {
+          "flip": 131,
+          "add": 25,
+          "remove": 16,
+          "rewire": 11,
+          "block": 17
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 25.0
+      },
+      {
+        "attempt": 2400,
+        "temperature": 0.1,
+        "accuracy": 0.2344,
+        "current_acc": 0.2031,
+        "accept_rate": 0.105,
+        "connections": 10099,
+        "active_neurons": 187,
+        "total_neurons": 192,
+        "stale": 5,
+        "mutations": {
+          "flip": 118,
+          "add": 22,
+          "remove": 15,
+          "rewire": 22,
+          "block": 23
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 27.4
+      },
+      {
+        "attempt": 2600,
+        "temperature": 0.1,
+        "accuracy": 0.2344,
+        "current_acc": 0.2344,
+        "accept_rate": 0.095,
+        "connections": 10651,
+        "active_neurons": 188,
+        "total_neurons": 192,
+        "stale": 5,
+        "mutations": {
+          "flip": 111,
+          "add": 27,
+          "remove": 17,
+          "rewire": 22,
+          "block": 23
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 29.7
+      },
+      {
+        "attempt": 2800,
+        "temperature": 0.1,
+        "accuracy": 0.2344,
+        "current_acc": 0.2344,
+        "accept_rate": 0.075,
+        "connections": 10790,
+        "active_neurons": 188,
+        "total_neurons": 192,
+        "stale": 34,
+        "mutations": {
+          "flip": 121,
+          "add": 17,
+          "remove": 26,
+          "rewire": 18,
+          "block": 18
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 32.0
+      },
+      {
+        "attempt": 3000,
+        "temperature": 0.1,
+        "accuracy": 0.25,
+        "current_acc": 0.2188,
+        "accept_rate": 0.13,
+        "connections": 11313,
+        "active_neurons": 189,
+        "total_neurons": 192,
+        "stale": 13,
+        "mutations": {
+          "flip": 114,
+          "add": 18,
+          "remove": 16,
+          "rewire": 30,
+          "block": 22
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 34.3
+      },
+      {
+        "attempt": 3200,
+        "temperature": 0.1,
+        "accuracy": 0.2656,
+        "current_acc": 0.2656,
+        "accept_rate": 0.11,
+        "connections": 11560,
+        "active_neurons": 188,
+        "total_neurons": 192,
+        "stale": 5,
+        "mutations": {
+          "flip": 109,
+          "add": 21,
+          "remove": 23,
+          "rewire": 25,
+          "block": 22
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 36.6
+      },
+      {
+        "attempt": 3400,
+        "temperature": 0.1,
+        "accuracy": 0.2812,
+        "current_acc": 0.2812,
+        "accept_rate": 0.095,
+        "connections": 11741,
+        "active_neurons": 190,
+        "total_neurons": 192,
+        "stale": 0,
+        "mutations": {
+          "flip": 130,
+          "add": 16,
+          "remove": 22,
+          "rewire": 14,
+          "block": 18
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 38.9
+      },
+      {
+        "attempt": 3600,
+        "temperature": 0.1,
+        "accuracy": 0.2812,
+        "current_acc": 0.25,
+        "accept_rate": 0.085,
+        "connections": 12301,
+        "active_neurons": 190,
+        "total_neurons": 192,
+        "stale": 2,
+        "mutations": {
+          "flip": 124,
+          "add": 20,
+          "remove": 21,
+          "rewire": 19,
+          "block": 16
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 41.2
+      },
+      {
+        "attempt": 3800,
+        "temperature": 0.1,
+        "accuracy": 0.2969,
+        "current_acc": 0.2969,
+        "accept_rate": 0.075,
+        "connections": 12414,
+        "active_neurons": 190,
+        "total_neurons": 192,
+        "stale": 3,
+        "mutations": {
+          "flip": 117,
+          "add": 19,
+          "remove": 26,
+          "rewire": 20,
+          "block": 18
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 43.5
+      },
+      {
+        "attempt": 4000,
+        "temperature": 0.1,
+        "accuracy": 0.3125,
+        "current_acc": 0.2812,
+        "accept_rate": 0.115,
+        "connections": 12943,
+        "active_neurons": 190,
+        "total_neurons": 192,
+        "stale": 8,
+        "mutations": {
+          "flip": 109,
+          "add": 24,
+          "remove": 28,
+          "rewire": 20,
+          "block": 19
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 45.9
+      },
+      {
+        "attempt": 4200,
+        "temperature": 0.1,
+        "accuracy": 0.3125,
+        "current_acc": 0.3125,
+        "accept_rate": 0.085,
+        "connections": 13227,
+        "active_neurons": 190,
+        "total_neurons": 192,
+        "stale": 13,
+        "mutations": {
+          "flip": 117,
+          "add": 20,
+          "remove": 19,
+          "rewire": 21,
+          "block": 23
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 48.1
+      },
+      {
+        "attempt": 4400,
+        "temperature": 0.1,
+        "accuracy": 0.3125,
+        "current_acc": 0.3125,
+        "accept_rate": 0.075,
+        "connections": 13343,
+        "active_neurons": 190,
+        "total_neurons": 192,
+        "stale": 6,
+        "mutations": {
+          "flip": 122,
+          "add": 19,
+          "remove": 25,
+          "rewire": 13,
+          "block": 21
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 50.4
+      },
+      {
+        "attempt": 4600,
+        "temperature": 0.1,
+        "accuracy": 0.3594,
+        "current_acc": 0.3438,
+        "accept_rate": 0.1,
+        "connections": 13686,
+        "active_neurons": 190,
+        "total_neurons": 192,
+        "stale": 40,
+        "mutations": {
+          "flip": 112,
+          "add": 28,
+          "remove": 20,
+          "rewire": 19,
+          "block": 21
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 52.7
+      },
+      {
+        "attempt": 4800,
+        "temperature": 0.1,
+        "accuracy": 0.3594,
+        "current_acc": 0.3125,
+        "accept_rate": 0.07,
+        "connections": 14061,
+        "active_neurons": 190,
+        "total_neurons": 192,
+        "stale": 14,
+        "mutations": {
+          "flip": 114,
+          "add": 23,
+          "remove": 21,
+          "rewire": 18,
+          "block": 24
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 55.0
+      },
+      {
+        "attempt": 5000,
+        "temperature": 0.1,
+        "accuracy": 0.3594,
+        "current_acc": 0.3594,
+        "accept_rate": 0.06,
+        "connections": 14354,
+        "active_neurons": 190,
+        "total_neurons": 192,
+        "stale": 4,
+        "mutations": {
+          "flip": 123,
+          "add": 18,
+          "remove": 28,
+          "rewire": 20,
+          "block": 11
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 57.5
+      },
+      {
+        "attempt": 5200,
+        "temperature": 0.1,
+        "accuracy": 0.375,
+        "current_acc": 0.3438,
+        "accept_rate": 0.055,
+        "connections": 14635,
+        "active_neurons": 190,
+        "total_neurons": 192,
+        "stale": 4,
+        "mutations": {
+          "flip": 109,
+          "add": 26,
+          "remove": 20,
+          "rewire": 21,
+          "block": 24
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 60.0
+      },
+      {
+        "attempt": 5400,
+        "temperature": 0.1,
+        "accuracy": 0.375,
+        "current_acc": 0.3594,
+        "accept_rate": 0.105,
+        "connections": 15293,
+        "active_neurons": 190,
+        "total_neurons": 192,
+        "stale": 4,
+        "mutations": {
+          "flip": 112,
+          "add": 25,
+          "remove": 22,
+          "rewire": 20,
+          "block": 21
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 62.4
+      },
+      {
+        "attempt": 5600,
+        "temperature": 0.1,
+        "accuracy": 0.4062,
+        "current_acc": 0.3906,
+        "accept_rate": 0.06,
+        "connections": 15433,
+        "active_neurons": 190,
+        "total_neurons": 192,
+        "stale": 2,
+        "mutations": {
+          "flip": 120,
+          "add": 20,
+          "remove": 19,
+          "rewire": 17,
+          "block": 24
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 64.8
+      },
+      {
+        "attempt": 5800,
+        "temperature": 0.1,
+        "accuracy": 0.4062,
+        "current_acc": 0.375,
+        "accept_rate": 0.07,
+        "connections": 15513,
+        "active_neurons": 190,
+        "total_neurons": 192,
+        "stale": 3,
+        "mutations": {
+          "flip": 116,
+          "add": 17,
+          "remove": 18,
+          "rewire": 29,
+          "block": 20
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 67.1
+      },
+      {
+        "attempt": 6000,
+        "temperature": 0.1,
+        "accuracy": 0.4062,
+        "current_acc": 0.3594,
+        "accept_rate": 0.05,
+        "connections": 15688,
+        "active_neurons": 190,
+        "total_neurons": 192,
+        "stale": 26,
+        "mutations": {
+          "flip": 129,
+          "add": 17,
+          "remove": 19,
+          "rewire": 24,
+          "block": 11
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 69.3
+      },
+      {
+        "attempt": 6200,
+        "temperature": 0.1,
+        "accuracy": 0.4062,
+        "current_acc": 0.3906,
+        "accept_rate": 0.055,
+        "connections": 16007,
+        "active_neurons": 190,
+        "total_neurons": 192,
+        "stale": 17,
+        "mutations": {
+          "flip": 113,
+          "add": 24,
+          "remove": 21,
+          "rewire": 28,
+          "block": 14
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 71.6
+      },
+      {
+        "attempt": 6400,
+        "temperature": 0.1,
+        "accuracy": 0.4062,
+        "current_acc": 0.3906,
+        "accept_rate": 0.04,
+        "connections": 16240,
+        "active_neurons": 190,
+        "total_neurons": 192,
+        "stale": 1,
+        "mutations": {
+          "flip": 120,
+          "add": 19,
+          "remove": 26,
+          "rewire": 12,
+          "block": 23
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 73.9
+      },
+      {
+        "attempt": 6600,
+        "temperature": 0.1,
+        "accuracy": 0.4062,
+        "current_acc": 0.4062,
+        "accept_rate": 0.08,
+        "connections": 16140,
+        "active_neurons": 190,
+        "total_neurons": 192,
+        "stale": 0,
+        "mutations": {
+          "flip": 118,
+          "add": 20,
+          "remove": 25,
+          "rewire": 18,
+          "block": 19
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 76.1
+      },
+      {
+        "attempt": 6800,
+        "temperature": 0.1,
+        "accuracy": 0.4062,
+        "current_acc": 0.4062,
+        "accept_rate": 0.075,
+        "connections": 16357,
+        "active_neurons": 191,
+        "total_neurons": 192,
+        "stale": 3,
+        "mutations": {
+          "flip": 110,
+          "add": 22,
+          "remove": 18,
+          "rewire": 26,
+          "block": 24
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 78.4
+      },
+      {
+        "attempt": 7000,
+        "temperature": 0.1,
+        "accuracy": 0.4062,
+        "current_acc": 0.4062,
+        "accept_rate": 0.03,
+        "connections": 16521,
+        "active_neurons": 192,
+        "total_neurons": 192,
+        "stale": 43,
+        "mutations": {
+          "flip": 128,
+          "add": 12,
+          "remove": 20,
+          "rewire": 24,
+          "block": 16
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 80.7
+      },
+      {
+        "attempt": 7200,
+        "temperature": 0.1,
+        "accuracy": 0.4062,
+        "current_acc": 0.4062,
+        "accept_rate": 0.06,
+        "connections": 16784,
+        "active_neurons": 192,
+        "total_neurons": 192,
+        "stale": 4,
+        "mutations": {
+          "flip": 119,
+          "add": 17,
+          "remove": 21,
+          "rewire": 24,
+          "block": 19
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 82.9
+      },
+      {
+        "attempt": 7400,
+        "temperature": 0.1,
+        "accuracy": 0.4062,
+        "current_acc": 0.4062,
+        "accept_rate": 0.055,
+        "connections": 17161,
+        "active_neurons": 192,
+        "total_neurons": 192,
+        "stale": 13,
+        "mutations": {
+          "flip": 128,
+          "add": 20,
+          "remove": 19,
+          "rewire": 19,
+          "block": 14
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 85.2
+      },
+      {
+        "attempt": 7600,
+        "temperature": 0.1,
+        "accuracy": 0.4062,
+        "current_acc": 0.375,
+        "accept_rate": 0.06,
+        "connections": 17424,
+        "active_neurons": 192,
+        "total_neurons": 192,
+        "stale": 2,
+        "mutations": {
+          "flip": 114,
+          "add": 26,
+          "remove": 24,
+          "rewire": 20,
+          "block": 16
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 87.4
+      },
+      {
+        "attempt": 7800,
+        "temperature": 0.1,
+        "accuracy": 0.4062,
+        "current_acc": 0.375,
+        "accept_rate": 0.08,
+        "connections": 17599,
+        "active_neurons": 192,
+        "total_neurons": 192,
+        "stale": 3,
+        "mutations": {
+          "flip": 130,
+          "add": 19,
+          "remove": 12,
+          "rewire": 21,
+          "block": 18
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 89.7
+      },
+      {
+        "attempt": 8000,
+        "temperature": 0.1,
+        "accuracy": 0.4219,
+        "current_acc": 0.3906,
+        "accept_rate": 0.095,
+        "connections": 18145,
+        "active_neurons": 192,
+        "total_neurons": 192,
+        "stale": 12,
+        "mutations": {
+          "flip": 116,
+          "add": 22,
+          "remove": 22,
+          "rewire": 19,
+          "block": 21
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 92.0
+      },
+      {
+        "attempt": 8200,
+        "temperature": 0.1,
+        "accuracy": 0.4219,
+        "current_acc": 0.4062,
+        "accept_rate": 0.1,
+        "connections": 18628,
+        "active_neurons": 192,
+        "total_neurons": 192,
+        "stale": 10,
+        "mutations": {
+          "flip": 116,
+          "add": 25,
+          "remove": 16,
+          "rewire": 29,
+          "block": 14
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 94.2
+      },
+      {
+        "attempt": 8400,
+        "temperature": 0.1,
+        "accuracy": 0.4375,
+        "current_acc": 0.4375,
+        "accept_rate": 0.07,
+        "connections": 18945,
+        "active_neurons": 192,
+        "total_neurons": 192,
+        "stale": 6,
+        "mutations": {
+          "flip": 118,
+          "add": 14,
+          "remove": 23,
+          "rewire": 21,
+          "block": 24
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 96.5
+      },
+      {
+        "attempt": 8600,
+        "temperature": 0.1,
+        "accuracy": 0.4375,
+        "current_acc": 0.4375,
+        "accept_rate": 0.06,
+        "connections": 19136,
+        "active_neurons": 192,
+        "total_neurons": 192,
+        "stale": 32,
+        "mutations": {
+          "flip": 117,
+          "add": 18,
+          "remove": 24,
+          "rewire": 20,
+          "block": 21
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 98.7
+      },
+      {
+        "attempt": 8800,
+        "temperature": 0.1,
+        "accuracy": 0.4375,
+        "current_acc": 0.3906,
+        "accept_rate": 0.065,
+        "connections": 19367,
+        "active_neurons": 192,
+        "total_neurons": 192,
+        "stale": 2,
+        "mutations": {
+          "flip": 119,
+          "add": 15,
+          "remove": 18,
+          "rewire": 21,
+          "block": 27
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 101.0
+      },
+      {
+        "attempt": 9000,
+        "temperature": 0.1,
+        "accuracy": 0.4375,
+        "current_acc": 0.4219,
+        "accept_rate": 0.06,
+        "connections": 19597,
+        "active_neurons": 192,
+        "total_neurons": 192,
+        "stale": 13,
+        "mutations": {
+          "flip": 138,
+          "add": 15,
+          "remove": 15,
+          "rewire": 18,
+          "block": 14
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 103.2
+      },
+      {
+        "attempt": 9200,
+        "temperature": 0.1,
+        "accuracy": 0.4531,
+        "current_acc": 0.4219,
+        "accept_rate": 0.075,
+        "connections": 19736,
+        "active_neurons": 192,
+        "total_neurons": 192,
+        "stale": 5,
+        "mutations": {
+          "flip": 130,
+          "add": 16,
+          "remove": 19,
+          "rewire": 19,
+          "block": 16
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 105.5
+      },
+      {
+        "attempt": 9400,
+        "temperature": 0.1,
+        "accuracy": 0.4844,
+        "current_acc": 0.4844,
+        "accept_rate": 0.105,
+        "connections": 19917,
+        "active_neurons": 192,
+        "total_neurons": 192,
+        "stale": 3,
+        "mutations": {
+          "flip": 110,
+          "add": 23,
+          "remove": 19,
+          "rewire": 29,
+          "block": 19
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 107.7
+      },
+      {
+        "attempt": 9600,
+        "temperature": 0.1,
+        "accuracy": 0.4844,
+        "current_acc": 0.4531,
+        "accept_rate": 0.095,
+        "connections": 20022,
+        "active_neurons": 192,
+        "total_neurons": 192,
+        "stale": 1,
+        "mutations": {
+          "flip": 112,
+          "add": 17,
+          "remove": 23,
+          "rewire": 24,
+          "block": 24
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 109.9
+      },
+      {
+        "attempt": 9800,
+        "temperature": 0.1,
+        "accuracy": 0.4844,
+        "current_acc": 0.4844,
+        "accept_rate": 0.095,
+        "connections": 20343,
+        "active_neurons": 192,
+        "total_neurons": 192,
+        "stale": 2,
+        "mutations": {
+          "flip": 118,
+          "add": 19,
+          "remove": 26,
+          "rewire": 15,
+          "block": 22
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 112.2
+      },
+      {
+        "attempt": 10000,
+        "temperature": 0.1,
+        "accuracy": 0.5,
+        "current_acc": 0.4844,
+        "accept_rate": 0.07,
+        "connections": 20555,
+        "active_neurons": 192,
+        "total_neurons": 192,
+        "stale": 2,
+        "mutations": {
+          "flip": 110,
+          "add": 21,
+          "remove": 22,
+          "rewire": 20,
+          "block": 27
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 114.4
+      },
+      {
+        "attempt": 10200,
+        "temperature": 0.1,
+        "accuracy": 0.5,
+        "current_acc": 0.5,
+        "accept_rate": 0.07,
+        "connections": 20848,
+        "active_neurons": 192,
+        "total_neurons": 192,
+        "stale": 17,
+        "mutations": {
+          "flip": 107,
+          "add": 24,
+          "remove": 26,
+          "rewire": 20,
+          "block": 23
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 116.7
+      },
+      {
+        "attempt": 10400,
+        "temperature": 0.1,
+        "accuracy": 0.5,
+        "current_acc": 0.4844,
+        "accept_rate": 0.04,
+        "connections": 21034,
+        "active_neurons": 192,
+        "total_neurons": 192,
+        "stale": 8,
+        "mutations": {
+          "flip": 123,
+          "add": 24,
+          "remove": 20,
+          "rewire": 20,
+          "block": 13
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 119.0
+      },
+      {
+        "attempt": 10600,
+        "temperature": 0.1,
+        "accuracy": 0.5,
+        "current_acc": 0.0156,
+        "accept_rate": 0.03,
+        "connections": 21126,
+        "active_neurons": 192,
+        "total_neurons": 192,
+        "stale": 29,
+        "mutations": {
+          "flip": 125,
+          "add": 16,
+          "remove": 17,
+          "rewire": 21,
+          "block": 21
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 121.3
+      },
+      {
+        "attempt": 10800,
+        "temperature": 0.1,
+        "accuracy": 0.5156,
+        "current_acc": 0.5,
+        "accept_rate": 0.08,
+        "connections": 21389,
+        "active_neurons": 192,
+        "total_neurons": 192,
+        "stale": 4,
+        "mutations": {
+          "flip": 124,
+          "add": 19,
+          "remove": 20,
+          "rewire": 16,
+          "block": 21
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 123.6
+      },
+      {
+        "attempt": 11000,
+        "temperature": 0.1,
+        "accuracy": 0.5156,
+        "current_acc": 0.5,
+        "accept_rate": 0.07,
+        "connections": 21523,
+        "active_neurons": 192,
+        "total_neurons": 192,
+        "stale": 20,
+        "mutations": {
+          "flip": 127,
+          "add": 14,
+          "remove": 19,
+          "rewire": 15,
+          "block": 25
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 125.8
+      },
+      {
+        "attempt": 11200,
+        "temperature": 0.1,
+        "accuracy": 0.5312,
+        "current_acc": 0.5,
+        "accept_rate": 0.05,
+        "connections": 21658,
+        "active_neurons": 192,
+        "total_neurons": 192,
+        "stale": 7,
+        "mutations": {
+          "flip": 121,
+          "add": 24,
+          "remove": 12,
+          "rewire": 23,
+          "block": 20
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 128.0
+      },
+      {
+        "attempt": 11400,
+        "temperature": 0.1,
+        "accuracy": 0.5312,
+        "current_acc": 0.5156,
+        "accept_rate": 0.065,
+        "connections": 21691,
+        "active_neurons": 192,
+        "total_neurons": 192,
+        "stale": 9,
+        "mutations": {
+          "flip": 114,
+          "add": 16,
+          "remove": 21,
+          "rewire": 23,
+          "block": 26
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 130.2
+      },
+      {
+        "attempt": 11600,
+        "temperature": 0.1,
+        "accuracy": 0.5312,
+        "current_acc": 0.5156,
+        "accept_rate": 0.06,
+        "connections": 21686,
+        "active_neurons": 192,
+        "total_neurons": 192,
+        "stale": 5,
+        "mutations": {
+          "flip": 131,
+          "add": 19,
+          "remove": 20,
+          "rewire": 17,
+          "block": 13
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 132.4
+      },
+      {
+        "attempt": 11800,
+        "temperature": 0.1,
+        "accuracy": 0.5312,
+        "current_acc": 0.5156,
+        "accept_rate": 0.05,
+        "connections": 21659,
+        "active_neurons": 192,
+        "total_neurons": 192,
+        "stale": 3,
+        "mutations": {
+          "flip": 122,
+          "add": 21,
+          "remove": 21,
+          "rewire": 15,
+          "block": 21
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 134.6
+      },
+      {
+        "attempt": 12000,
+        "temperature": 0.1,
+        "accuracy": 0.5469,
+        "current_acc": 0.5469,
+        "accept_rate": 0.08,
+        "connections": 22035,
+        "active_neurons": 192,
+        "total_neurons": 192,
+        "stale": 11,
+        "mutations": {
+          "flip": 123,
+          "add": 25,
+          "remove": 17,
+          "rewire": 15,
+          "block": 20
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 136.9
+      },
+      {
+        "attempt": 12200,
+        "temperature": 0.1,
+        "accuracy": 0.5469,
+        "current_acc": 0.0156,
+        "accept_rate": 0.08,
+        "connections": 22103,
+        "active_neurons": 192,
+        "total_neurons": 192,
+        "stale": 9,
+        "mutations": {
+          "flip": 122,
+          "add": 19,
+          "remove": 13,
+          "rewire": 21,
+          "block": 25
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 139.1
+      },
+      {
+        "attempt": 12400,
+        "temperature": 0.1,
+        "accuracy": 0.5469,
+        "current_acc": 0.4531,
+        "accept_rate": 0.055,
+        "connections": 22077,
+        "active_neurons": 192,
+        "total_neurons": 192,
+        "stale": 36,
+        "mutations": {
+          "flip": 124,
+          "add": 19,
+          "remove": 24,
+          "rewire": 14,
+          "block": 19
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 141.3
+      },
+      {
+        "attempt": 12600,
+        "temperature": 0.1,
+        "accuracy": 0.5469,
+        "current_acc": 0.5469,
+        "accept_rate": 0.03,
+        "connections": 22137,
+        "active_neurons": 192,
+        "total_neurons": 192,
+        "stale": 0,
+        "mutations": {
+          "flip": 120,
+          "add": 14,
+          "remove": 30,
+          "rewire": 16,
+          "block": 20
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 143.5
+      },
+      {
+        "attempt": 12800,
+        "temperature": 0.1,
+        "accuracy": 0.5469,
+        "current_acc": 0.4844,
+        "accept_rate": 0.06,
+        "connections": 22155,
+        "active_neurons": 192,
+        "total_neurons": 192,
+        "stale": 18,
+        "mutations": {
+          "flip": 116,
+          "add": 17,
+          "remove": 20,
+          "rewire": 24,
+          "block": 23
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 145.7
+      },
+      {
+        "attempt": 13000,
+        "temperature": 0.1,
+        "accuracy": 0.5469,
+        "current_acc": 0.5,
+        "accept_rate": 0.02,
+        "connections": 22155,
+        "active_neurons": 192,
+        "total_neurons": 192,
+        "stale": 38,
+        "mutations": {
+          "flip": 121,
+          "add": 24,
+          "remove": 16,
+          "rewire": 12,
+          "block": 27
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 148.0
+      },
+      {
+        "attempt": 13200,
+        "temperature": 0.1235,
+        "accuracy": 0.5469,
+        "current_acc": 0.5312,
+        "accept_rate": 0.03,
+        "connections": 22198,
+        "active_neurons": 192,
+        "total_neurons": 192,
+        "stale": 15,
+        "mutations": {
+          "flip": 121,
+          "add": 21,
+          "remove": 19,
+          "rewire": 18,
+          "block": 21
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 150.2
+      },
+      {
+        "attempt": 13400,
+        "temperature": 0.1,
+        "accuracy": 0.5625,
+        "current_acc": 0.5625,
+        "accept_rate": 0.055,
+        "connections": 22235,
+        "active_neurons": 192,
+        "total_neurons": 192,
+        "stale": 20,
+        "mutations": {
+          "flip": 130,
+          "add": 22,
+          "remove": 10,
+          "rewire": 22,
+          "block": 16
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 152.4
+      },
+      {
+        "attempt": 13600,
+        "temperature": 0.1,
+        "accuracy": 0.5625,
+        "current_acc": 0.5625,
+        "accept_rate": 0.045,
+        "connections": 22448,
+        "active_neurons": 192,
+        "total_neurons": 192,
+        "stale": 5,
+        "mutations": {
+          "flip": 114,
+          "add": 25,
+          "remove": 22,
+          "rewire": 28,
+          "block": 11
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 154.6
+      },
+      {
+        "attempt": 13800,
+        "temperature": 0.1,
+        "accuracy": 0.5625,
+        "current_acc": 0.0156,
+        "accept_rate": 0.035,
+        "connections": 22490,
+        "active_neurons": 192,
+        "total_neurons": 192,
+        "stale": 22,
+        "mutations": {
+          "flip": 124,
+          "add": 22,
+          "remove": 14,
+          "rewire": 16,
+          "block": 24
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 156.9
+      },
+      {
+        "attempt": 14000,
+        "temperature": 0.1,
+        "accuracy": 0.5625,
+        "current_acc": 0.5156,
+        "accept_rate": 0.045,
+        "connections": 22532,
+        "active_neurons": 192,
+        "total_neurons": 192,
+        "stale": 20,
+        "mutations": {
+          "flip": 118,
+          "add": 22,
+          "remove": 17,
+          "rewire": 18,
+          "block": 25
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 159.1
+      },
+      {
+        "attempt": 14200,
+        "temperature": 0.1,
+        "accuracy": 0.5625,
+        "current_acc": 0.0156,
+        "accept_rate": 0.025,
+        "connections": 22574,
+        "active_neurons": 192,
+        "total_neurons": 192,
+        "stale": 47,
+        "mutations": {
+          "flip": 125,
+          "add": 15,
+          "remove": 18,
+          "rewire": 17,
+          "block": 25
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 161.3
+      },
+      {
+        "attempt": 14400,
+        "temperature": 0.1,
+        "accuracy": 0.5625,
+        "current_acc": 0.5469,
+        "accept_rate": 0.045,
+        "connections": 22574,
+        "active_neurons": 192,
+        "total_neurons": 192,
+        "stale": 19,
+        "mutations": {
+          "flip": 110,
+          "add": 26,
+          "remove": 18,
+          "rewire": 18,
+          "block": 28
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 163.5
+      },
+      {
+        "attempt": 14600,
+        "temperature": 0.1,
+        "accuracy": 0.5781,
+        "current_acc": 0.5,
+        "accept_rate": 0.05,
+        "connections": 22711,
+        "active_neurons": 192,
+        "total_neurons": 192,
+        "stale": 11,
+        "mutations": {
+          "flip": 121,
+          "add": 25,
+          "remove": 17,
+          "rewire": 13,
+          "block": 24
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 165.7
+      },
+      {
+        "attempt": 14800,
+        "temperature": 0.1,
+        "accuracy": 0.5781,
+        "current_acc": 0.0156,
+        "accept_rate": 0.025,
+        "connections": 22711,
+        "active_neurons": 192,
+        "total_neurons": 192,
+        "stale": 20,
+        "mutations": {
+          "flip": 127,
+          "add": 15,
+          "remove": 16,
+          "rewire": 21,
+          "block": 21
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 168.0
+      },
+      {
+        "attempt": 15000,
+        "temperature": 0.1173,
+        "accuracy": 0.5781,
+        "current_acc": 0.5156,
+        "accept_rate": 0.01,
+        "connections": 22711,
+        "active_neurons": 192,
+        "total_neurons": 192,
+        "stale": 31,
+        "mutations": {
+          "flip": 125,
+          "add": 21,
+          "remove": 10,
+          "rewire": 25,
+          "block": 19
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 170.2
+      },
+      {
+        "attempt": 15200,
+        "temperature": 0.1,
+        "accuracy": 0.5781,
+        "current_acc": 0.5312,
+        "accept_rate": 0.025,
+        "connections": 22711,
+        "active_neurons": 192,
+        "total_neurons": 192,
+        "stale": 43,
+        "mutations": {
+          "flip": 115,
+          "add": 22,
+          "remove": 22,
+          "rewire": 21,
+          "block": 20
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 172.5
+      },
+      {
+        "attempt": 15400,
+        "temperature": 0.1059,
+        "accuracy": 0.5781,
+        "current_acc": 0.5312,
+        "accept_rate": 0.02,
+        "connections": 22711,
+        "active_neurons": 192,
+        "total_neurons": 192,
+        "stale": 10,
+        "mutations": {
+          "flip": 124,
+          "add": 24,
+          "remove": 17,
+          "rewire": 12,
+          "block": 23
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 174.7
+      },
+      {
+        "attempt": 15600,
+        "temperature": 0.1,
+        "accuracy": 0.5781,
+        "current_acc": 0.5156,
+        "accept_rate": 0.02,
+        "connections": 22711,
+        "active_neurons": 192,
+        "total_neurons": 192,
+        "stale": 16,
+        "mutations": {
+          "flip": 117,
+          "add": 20,
+          "remove": 25,
+          "rewire": 20,
+          "block": 18
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 176.9
+      },
+      {
+        "attempt": 15800,
+        "temperature": 0.169,
+        "accuracy": 0.5781,
+        "current_acc": 0.0156,
+        "accept_rate": 0.0,
+        "connections": 22711,
+        "active_neurons": 192,
+        "total_neurons": 192,
+        "stale": 216,
+        "mutations": {
+          "flip": 108,
+          "add": 27,
+          "remove": 26,
+          "rewire": 20,
+          "block": 19
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 179.0
+      },
+      {
+        "attempt": 16000,
+        "temperature": 0.1308,
+        "accuracy": 0.5781,
+        "current_acc": 0.0156,
+        "accept_rate": 0.025,
+        "connections": 22834,
+        "active_neurons": 192,
+        "total_neurons": 192,
+        "stale": 3,
+        "mutations": {
+          "flip": 133,
+          "add": 16,
+          "remove": 16,
+          "rewire": 16,
+          "block": 19
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 181.2
+      }
+    ]
+  },
+  "123": {
+    "accuracy": 0.609375,
+    "elapsed": 181.88884735107422,
+    "log": [
+      {
+        "attempt": 200,
+        "temperature": 0.1,
+        "accuracy": 0.0625,
+        "current_acc": 0.0469,
+        "accept_rate": 0.31,
+        "connections": 4249,
+        "active_neurons": 136,
+        "total_neurons": 192,
+        "stale": 2,
+        "mutations": {
+          "flip": 96,
+          "add": 19,
+          "remove": 35,
+          "rewire": 20,
+          "block": 30
+        },
+        "zones": {
+          "ultra_focus": 138,
+          "focus": 61,
+          "normal": 1,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 2.2
+      },
+      {
+        "attempt": 400,
+        "temperature": 0.1,
+        "accuracy": 0.0938,
+        "current_acc": 0.0938,
+        "accept_rate": 0.295,
+        "connections": 4501,
+        "active_neurons": 138,
+        "total_neurons": 192,
+        "stale": 0,
+        "mutations": {
+          "flip": 118,
+          "add": 19,
+          "remove": 20,
+          "rewire": 18,
+          "block": 25
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 4.4
+      },
+      {
+        "attempt": 600,
+        "temperature": 0.1,
+        "accuracy": 0.125,
+        "current_acc": 0.125,
+        "accept_rate": 0.26,
+        "connections": 5085,
+        "active_neurons": 144,
+        "total_neurons": 192,
+        "stale": 0,
+        "mutations": {
+          "flip": 129,
+          "add": 21,
+          "remove": 15,
+          "rewire": 15,
+          "block": 20
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 6.7
+      },
+      {
+        "attempt": 800,
+        "temperature": 0.1,
+        "accuracy": 0.1406,
+        "current_acc": 0.1406,
+        "accept_rate": 0.185,
+        "connections": 5596,
+        "active_neurons": 155,
+        "total_neurons": 192,
+        "stale": 0,
+        "mutations": {
+          "flip": 113,
+          "add": 20,
+          "remove": 23,
+          "rewire": 22,
+          "block": 22
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 9.0
+      },
+      {
+        "attempt": 1000,
+        "temperature": 0.1,
+        "accuracy": 0.1875,
+        "current_acc": 0.1875,
+        "accept_rate": 0.19,
+        "connections": 6046,
+        "active_neurons": 160,
+        "total_neurons": 192,
+        "stale": 4,
+        "mutations": {
+          "flip": 117,
+          "add": 17,
+          "remove": 21,
+          "rewire": 17,
+          "block": 28
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 11.3
+      },
+      {
+        "attempt": 1200,
+        "temperature": 0.1,
+        "accuracy": 0.2031,
+        "current_acc": 0.2031,
+        "accept_rate": 0.13,
+        "connections": 6531,
+        "active_neurons": 165,
+        "total_neurons": 192,
+        "stale": 19,
+        "mutations": {
+          "flip": 115,
+          "add": 24,
+          "remove": 17,
+          "rewire": 23,
+          "block": 21
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 13.6
+      },
+      {
+        "attempt": 1400,
+        "temperature": 0.1,
+        "accuracy": 0.2188,
+        "current_acc": 0.2188,
+        "accept_rate": 0.165,
+        "connections": 7333,
+        "active_neurons": 174,
+        "total_neurons": 192,
+        "stale": 5,
+        "mutations": {
+          "flip": 110,
+          "add": 21,
+          "remove": 24,
+          "rewire": 17,
+          "block": 28
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 15.8
+      },
+      {
+        "attempt": 1600,
+        "temperature": 0.1,
+        "accuracy": 0.2344,
+        "current_acc": 0.2344,
+        "accept_rate": 0.11,
+        "connections": 7525,
+        "active_neurons": 175,
+        "total_neurons": 192,
+        "stale": 3,
+        "mutations": {
+          "flip": 116,
+          "add": 15,
+          "remove": 23,
+          "rewire": 19,
+          "block": 27
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 18.1
+      },
+      {
+        "attempt": 1800,
+        "temperature": 0.1,
+        "accuracy": 0.25,
+        "current_acc": 0.25,
+        "accept_rate": 0.15,
+        "connections": 7961,
+        "active_neurons": 175,
+        "total_neurons": 192,
+        "stale": 0,
+        "mutations": {
+          "flip": 121,
+          "add": 15,
+          "remove": 18,
+          "rewire": 27,
+          "block": 19
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 20.3
+      },
+      {
+        "attempt": 2000,
+        "temperature": 0.1,
+        "accuracy": 0.2656,
+        "current_acc": 0.2656,
+        "accept_rate": 0.14,
+        "connections": 8418,
+        "active_neurons": 176,
+        "total_neurons": 192,
+        "stale": 4,
+        "mutations": {
+          "flip": 114,
+          "add": 22,
+          "remove": 23,
+          "rewire": 22,
+          "block": 19
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 22.5
+      },
+      {
+        "attempt": 2200,
+        "temperature": 0.1,
+        "accuracy": 0.2656,
+        "current_acc": 0.2656,
+        "accept_rate": 0.135,
+        "connections": 9078,
+        "active_neurons": 181,
+        "total_neurons": 192,
+        "stale": 9,
+        "mutations": {
+          "flip": 126,
+          "add": 22,
+          "remove": 20,
+          "rewire": 17,
+          "block": 15
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 24.8
+      },
+      {
+        "attempt": 2400,
+        "temperature": 0.1,
+        "accuracy": 0.2656,
+        "current_acc": 0.25,
+        "accept_rate": 0.075,
+        "connections": 9315,
+        "active_neurons": 183,
+        "total_neurons": 192,
+        "stale": 2,
+        "mutations": {
+          "flip": 119,
+          "add": 17,
+          "remove": 19,
+          "rewire": 21,
+          "block": 24
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 27.0
+      },
+      {
+        "attempt": 2600,
+        "temperature": 0.1,
+        "accuracy": 0.2656,
+        "current_acc": 0.25,
+        "accept_rate": 0.1,
+        "connections": 9714,
+        "active_neurons": 184,
+        "total_neurons": 192,
+        "stale": 3,
+        "mutations": {
+          "flip": 112,
+          "add": 25,
+          "remove": 20,
+          "rewire": 25,
+          "block": 18
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 29.3
+      },
+      {
+        "attempt": 2800,
+        "temperature": 0.1,
+        "accuracy": 0.3125,
+        "current_acc": 0.3125,
+        "accept_rate": 0.07,
+        "connections": 10120,
+        "active_neurons": 186,
+        "total_neurons": 192,
+        "stale": 4,
+        "mutations": {
+          "flip": 130,
+          "add": 17,
+          "remove": 19,
+          "rewire": 21,
+          "block": 13
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 31.6
+      },
+      {
+        "attempt": 3000,
+        "temperature": 0.1,
+        "accuracy": 0.3125,
+        "current_acc": 0.2969,
+        "accept_rate": 0.09,
+        "connections": 10371,
+        "active_neurons": 187,
+        "total_neurons": 192,
+        "stale": 4,
+        "mutations": {
+          "flip": 121,
+          "add": 17,
+          "remove": 16,
+          "rewire": 21,
+          "block": 25
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 33.9
+      },
+      {
+        "attempt": 3200,
+        "temperature": 0.1,
+        "accuracy": 0.3438,
+        "current_acc": 0.3438,
+        "accept_rate": 0.105,
+        "connections": 10940,
+        "active_neurons": 187,
+        "total_neurons": 192,
+        "stale": 3,
+        "mutations": {
+          "flip": 119,
+          "add": 22,
+          "remove": 27,
+          "rewire": 18,
+          "block": 14
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 36.2
+      },
+      {
+        "attempt": 3400,
+        "temperature": 0.1,
+        "accuracy": 0.3438,
+        "current_acc": 0.3438,
+        "accept_rate": 0.08,
+        "connections": 11388,
+        "active_neurons": 188,
+        "total_neurons": 192,
+        "stale": 12,
+        "mutations": {
+          "flip": 116,
+          "add": 28,
+          "remove": 17,
+          "rewire": 18,
+          "block": 21
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 38.5
+      },
+      {
+        "attempt": 3600,
+        "temperature": 0.1,
+        "accuracy": 0.3438,
+        "current_acc": 0.3281,
+        "accept_rate": 0.08,
+        "connections": 11692,
+        "active_neurons": 188,
+        "total_neurons": 192,
+        "stale": 6,
+        "mutations": {
+          "flip": 126,
+          "add": 22,
+          "remove": 19,
+          "rewire": 13,
+          "block": 20
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 40.7
+      },
+      {
+        "attempt": 3800,
+        "temperature": 0.1,
+        "accuracy": 0.375,
+        "current_acc": 0.3438,
+        "accept_rate": 0.095,
+        "connections": 11940,
+        "active_neurons": 188,
+        "total_neurons": 192,
+        "stale": 6,
+        "mutations": {
+          "flip": 112,
+          "add": 24,
+          "remove": 20,
+          "rewire": 23,
+          "block": 21
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 43.1
+      },
+      {
+        "attempt": 4000,
+        "temperature": 0.1,
+        "accuracy": 0.3906,
+        "current_acc": 0.375,
+        "accept_rate": 0.075,
+        "connections": 12174,
+        "active_neurons": 189,
+        "total_neurons": 192,
+        "stale": 1,
+        "mutations": {
+          "flip": 118,
+          "add": 17,
+          "remove": 21,
+          "rewire": 14,
+          "block": 30
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 45.3
+      },
+      {
+        "attempt": 4200,
+        "temperature": 0.1,
+        "accuracy": 0.4219,
+        "current_acc": 0.4219,
+        "accept_rate": 0.11,
+        "connections": 12418,
+        "active_neurons": 189,
+        "total_neurons": 192,
+        "stale": 0,
+        "mutations": {
+          "flip": 125,
+          "add": 12,
+          "remove": 25,
+          "rewire": 21,
+          "block": 17
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 47.5
+      },
+      {
+        "attempt": 4400,
+        "temperature": 0.1,
+        "accuracy": 0.4219,
+        "current_acc": 0.4219,
+        "accept_rate": 0.115,
+        "connections": 12668,
+        "active_neurons": 189,
+        "total_neurons": 192,
+        "stale": 3,
+        "mutations": {
+          "flip": 115,
+          "add": 25,
+          "remove": 22,
+          "rewire": 16,
+          "block": 22
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 49.8
+      },
+      {
+        "attempt": 4600,
+        "temperature": 0.1,
+        "accuracy": 0.4375,
+        "current_acc": 0.4219,
+        "accept_rate": 0.08,
+        "connections": 12808,
+        "active_neurons": 189,
+        "total_neurons": 192,
+        "stale": 1,
+        "mutations": {
+          "flip": 113,
+          "add": 22,
+          "remove": 26,
+          "rewire": 19,
+          "block": 20
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 52.0
+      },
+      {
+        "attempt": 4800,
+        "temperature": 0.1,
+        "accuracy": 0.4531,
+        "current_acc": 0.4375,
+        "accept_rate": 0.075,
+        "connections": 13154,
+        "active_neurons": 189,
+        "total_neurons": 192,
+        "stale": 5,
+        "mutations": {
+          "flip": 116,
+          "add": 24,
+          "remove": 22,
+          "rewire": 18,
+          "block": 20
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 54.2
+      },
+      {
+        "attempt": 5000,
+        "temperature": 0.1,
+        "accuracy": 0.4688,
+        "current_acc": 0.4688,
+        "accept_rate": 0.095,
+        "connections": 13406,
+        "active_neurons": 188,
+        "total_neurons": 192,
+        "stale": 3,
+        "mutations": {
+          "flip": 122,
+          "add": 16,
+          "remove": 29,
+          "rewire": 17,
+          "block": 16
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 56.5
+      },
+      {
+        "attempt": 5200,
+        "temperature": 0.1,
+        "accuracy": 0.4844,
+        "current_acc": 0.4219,
+        "accept_rate": 0.045,
+        "connections": 13599,
+        "active_neurons": 188,
+        "total_neurons": 192,
+        "stale": 31,
+        "mutations": {
+          "flip": 114,
+          "add": 23,
+          "remove": 19,
+          "rewire": 24,
+          "block": 20
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 58.7
+      },
+      {
+        "attempt": 5400,
+        "temperature": 0.1,
+        "accuracy": 0.4844,
+        "current_acc": 0.4531,
+        "accept_rate": 0.09,
+        "connections": 13792,
+        "active_neurons": 188,
+        "total_neurons": 192,
+        "stale": 3,
+        "mutations": {
+          "flip": 117,
+          "add": 26,
+          "remove": 16,
+          "rewire": 20,
+          "block": 21
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 61.1
+      },
+      {
+        "attempt": 5600,
+        "temperature": 0.1,
+        "accuracy": 0.4844,
+        "current_acc": 0.4844,
+        "accept_rate": 0.065,
+        "connections": 14048,
+        "active_neurons": 189,
+        "total_neurons": 192,
+        "stale": 42,
+        "mutations": {
+          "flip": 109,
+          "add": 20,
+          "remove": 23,
+          "rewire": 22,
+          "block": 26
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 63.4
+      },
+      {
+        "attempt": 5800,
+        "temperature": 0.1,
+        "accuracy": 0.4844,
+        "current_acc": 0.4844,
+        "accept_rate": 0.08,
+        "connections": 14277,
+        "active_neurons": 189,
+        "total_neurons": 192,
+        "stale": 10,
+        "mutations": {
+          "flip": 127,
+          "add": 20,
+          "remove": 17,
+          "rewire": 20,
+          "block": 16
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 65.7
+      },
+      {
+        "attempt": 6000,
+        "temperature": 0.1,
+        "accuracy": 0.4844,
+        "current_acc": 0.4531,
+        "accept_rate": 0.095,
+        "connections": 14343,
+        "active_neurons": 190,
+        "total_neurons": 192,
+        "stale": 17,
+        "mutations": {
+          "flip": 117,
+          "add": 16,
+          "remove": 19,
+          "rewire": 22,
+          "block": 26
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 68.0
+      },
+      {
+        "attempt": 6200,
+        "temperature": 0.1,
+        "accuracy": 0.4844,
+        "current_acc": 0.4688,
+        "accept_rate": 0.06,
+        "connections": 14603,
+        "active_neurons": 190,
+        "total_neurons": 192,
+        "stale": 12,
+        "mutations": {
+          "flip": 122,
+          "add": 19,
+          "remove": 20,
+          "rewire": 21,
+          "block": 18
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 70.3
+      },
+      {
+        "attempt": 6400,
+        "temperature": 0.1,
+        "accuracy": 0.4844,
+        "current_acc": 0.4844,
+        "accept_rate": 0.035,
+        "connections": 14580,
+        "active_neurons": 191,
+        "total_neurons": 192,
+        "stale": 56,
+        "mutations": {
+          "flip": 125,
+          "add": 15,
+          "remove": 14,
+          "rewire": 25,
+          "block": 21
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 72.7
+      },
+      {
+        "attempt": 6600,
+        "temperature": 0.1,
+        "accuracy": 0.4844,
+        "current_acc": 0.4688,
+        "accept_rate": 0.065,
+        "connections": 14841,
+        "active_neurons": 191,
+        "total_neurons": 192,
+        "stale": 16,
+        "mutations": {
+          "flip": 121,
+          "add": 26,
+          "remove": 15,
+          "rewire": 19,
+          "block": 19
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 75.0
+      },
+      {
+        "attempt": 6800,
+        "temperature": 0.1,
+        "accuracy": 0.4844,
+        "current_acc": 0.4844,
+        "accept_rate": 0.07,
+        "connections": 15089,
+        "active_neurons": 191,
+        "total_neurons": 192,
+        "stale": 5,
+        "mutations": {
+          "flip": 124,
+          "add": 17,
+          "remove": 23,
+          "rewire": 13,
+          "block": 23
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 77.3
+      },
+      {
+        "attempt": 7000,
+        "temperature": 0.1,
+        "accuracy": 0.4844,
+        "current_acc": 0.4844,
+        "accept_rate": 0.065,
+        "connections": 15177,
+        "active_neurons": 191,
+        "total_neurons": 192,
+        "stale": 14,
+        "mutations": {
+          "flip": 123,
+          "add": 16,
+          "remove": 18,
+          "rewire": 18,
+          "block": 25
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 79.6
+      },
+      {
+        "attempt": 7200,
+        "temperature": 0.1,
+        "accuracy": 0.4844,
+        "current_acc": 0.4688,
+        "accept_rate": 0.095,
+        "connections": 15709,
+        "active_neurons": 191,
+        "total_neurons": 192,
+        "stale": 2,
+        "mutations": {
+          "flip": 111,
+          "add": 28,
+          "remove": 23,
+          "rewire": 14,
+          "block": 24
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 81.9
+      },
+      {
+        "attempt": 7400,
+        "temperature": 0.1,
+        "accuracy": 0.4844,
+        "current_acc": 0.4844,
+        "accept_rate": 0.04,
+        "connections": 16069,
+        "active_neurons": 191,
+        "total_neurons": 192,
+        "stale": 3,
+        "mutations": {
+          "flip": 124,
+          "add": 22,
+          "remove": 24,
+          "rewire": 16,
+          "block": 14
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 84.1
+      },
+      {
+        "attempt": 7600,
+        "temperature": 0.1,
+        "accuracy": 0.4844,
+        "current_acc": 0.4531,
+        "accept_rate": 0.065,
+        "connections": 16217,
+        "active_neurons": 192,
+        "total_neurons": 192,
+        "stale": 13,
+        "mutations": {
+          "flip": 105,
+          "add": 22,
+          "remove": 23,
+          "rewire": 21,
+          "block": 29
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 86.4
+      },
+      {
+        "attempt": 7800,
+        "temperature": 0.1,
+        "accuracy": 0.4844,
+        "current_acc": 0.4531,
+        "accept_rate": 0.075,
+        "connections": 16639,
+        "active_neurons": 192,
+        "total_neurons": 192,
+        "stale": 11,
+        "mutations": {
+          "flip": 109,
+          "add": 26,
+          "remove": 26,
+          "rewire": 16,
+          "block": 23
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 88.7
+      },
+      {
+        "attempt": 8000,
+        "temperature": 0.1,
+        "accuracy": 0.5,
+        "current_acc": 0.5,
+        "accept_rate": 0.095,
+        "connections": 16880,
+        "active_neurons": 192,
+        "total_neurons": 192,
+        "stale": 5,
+        "mutations": {
+          "flip": 116,
+          "add": 14,
+          "remove": 16,
+          "rewire": 33,
+          "block": 21
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 91.0
+      },
+      {
+        "attempt": 8200,
+        "temperature": 0.1,
+        "accuracy": 0.5,
+        "current_acc": 0.5,
+        "accept_rate": 0.07,
+        "connections": 17069,
+        "active_neurons": 192,
+        "total_neurons": 192,
+        "stale": 25,
+        "mutations": {
+          "flip": 119,
+          "add": 15,
+          "remove": 20,
+          "rewire": 22,
+          "block": 24
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 93.2
+      },
+      {
+        "attempt": 8400,
+        "temperature": 0.1,
+        "accuracy": 0.5156,
+        "current_acc": 0.4844,
+        "accept_rate": 0.07,
+        "connections": 17630,
+        "active_neurons": 192,
+        "total_neurons": 192,
+        "stale": 45,
+        "mutations": {
+          "flip": 114,
+          "add": 24,
+          "remove": 18,
+          "rewire": 18,
+          "block": 26
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 95.6
+      },
+      {
+        "attempt": 8600,
+        "temperature": 0.1,
+        "accuracy": 0.5156,
+        "current_acc": 0.4688,
+        "accept_rate": 0.065,
+        "connections": 18064,
+        "active_neurons": 192,
+        "total_neurons": 192,
+        "stale": 17,
+        "mutations": {
+          "flip": 121,
+          "add": 17,
+          "remove": 15,
+          "rewire": 24,
+          "block": 23
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 98.0
+      },
+      {
+        "attempt": 8800,
+        "temperature": 0.1,
+        "accuracy": 0.5156,
+        "current_acc": 0.4844,
+        "accept_rate": 0.07,
+        "connections": 18344,
+        "active_neurons": 192,
+        "total_neurons": 192,
+        "stale": 23,
+        "mutations": {
+          "flip": 115,
+          "add": 19,
+          "remove": 26,
+          "rewire": 20,
+          "block": 20
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 100.3
+      },
+      {
+        "attempt": 9000,
+        "temperature": 0.1,
+        "accuracy": 0.5156,
+        "current_acc": 0.5156,
+        "accept_rate": 0.085,
+        "connections": 18587,
+        "active_neurons": 192,
+        "total_neurons": 192,
+        "stale": 5,
+        "mutations": {
+          "flip": 117,
+          "add": 15,
+          "remove": 20,
+          "rewire": 23,
+          "block": 25
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 102.6
+      },
+      {
+        "attempt": 9200,
+        "temperature": 0.1,
+        "accuracy": 0.5156,
+        "current_acc": 0.4844,
+        "accept_rate": 0.07,
+        "connections": 19101,
+        "active_neurons": 192,
+        "total_neurons": 192,
+        "stale": 1,
+        "mutations": {
+          "flip": 119,
+          "add": 20,
+          "remove": 21,
+          "rewire": 17,
+          "block": 23
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 104.9
+      },
+      {
+        "attempt": 9400,
+        "temperature": 0.1,
+        "accuracy": 0.5156,
+        "current_acc": 0.4844,
+        "accept_rate": 0.075,
+        "connections": 19470,
+        "active_neurons": 192,
+        "total_neurons": 192,
+        "stale": 5,
+        "mutations": {
+          "flip": 110,
+          "add": 26,
+          "remove": 17,
+          "rewire": 21,
+          "block": 26
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 107.2
+      },
+      {
+        "attempt": 9600,
+        "temperature": 0.1,
+        "accuracy": 0.5312,
+        "current_acc": 0.5312,
+        "accept_rate": 0.06,
+        "connections": 19690,
+        "active_neurons": 192,
+        "total_neurons": 192,
+        "stale": 30,
+        "mutations": {
+          "flip": 118,
+          "add": 24,
+          "remove": 23,
+          "rewire": 19,
+          "block": 16
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 109.6
+      },
+      {
+        "attempt": 9800,
+        "temperature": 0.1,
+        "accuracy": 0.5312,
+        "current_acc": 0.5312,
+        "accept_rate": 0.1,
+        "connections": 20011,
+        "active_neurons": 192,
+        "total_neurons": 192,
+        "stale": 2,
+        "mutations": {
+          "flip": 123,
+          "add": 14,
+          "remove": 19,
+          "rewire": 22,
+          "block": 22
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 111.9
+      },
+      {
+        "attempt": 10000,
+        "temperature": 0.1,
+        "accuracy": 0.5469,
+        "current_acc": 0.5469,
+        "accept_rate": 0.05,
+        "connections": 20027,
+        "active_neurons": 192,
+        "total_neurons": 192,
+        "stale": 55,
+        "mutations": {
+          "flip": 118,
+          "add": 16,
+          "remove": 17,
+          "rewire": 19,
+          "block": 30
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 114.2
+      },
+      {
+        "attempt": 10200,
+        "temperature": 0.1,
+        "accuracy": 0.5469,
+        "current_acc": 0.5156,
+        "accept_rate": 0.105,
+        "connections": 20470,
+        "active_neurons": 192,
+        "total_neurons": 192,
+        "stale": 7,
+        "mutations": {
+          "flip": 127,
+          "add": 25,
+          "remove": 19,
+          "rewire": 13,
+          "block": 16
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 116.4
+      },
+      {
+        "attempt": 10400,
+        "temperature": 0.1,
+        "accuracy": 0.5469,
+        "current_acc": 0.5312,
+        "accept_rate": 0.065,
+        "connections": 20499,
+        "active_neurons": 192,
+        "total_neurons": 192,
+        "stale": 4,
+        "mutations": {
+          "flip": 118,
+          "add": 16,
+          "remove": 18,
+          "rewire": 25,
+          "block": 23
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 118.7
+      },
+      {
+        "attempt": 10600,
+        "temperature": 0.1,
+        "accuracy": 0.5625,
+        "current_acc": 0.5156,
+        "accept_rate": 0.075,
+        "connections": 20926,
+        "active_neurons": 192,
+        "total_neurons": 192,
+        "stale": 55,
+        "mutations": {
+          "flip": 119,
+          "add": 28,
+          "remove": 17,
+          "rewire": 12,
+          "block": 24
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 120.9
+      },
+      {
+        "attempt": 10800,
+        "temperature": 0.1,
+        "accuracy": 0.5781,
+        "current_acc": 0.4375,
+        "accept_rate": 0.055,
+        "connections": 20983,
+        "active_neurons": 192,
+        "total_neurons": 192,
+        "stale": 20,
+        "mutations": {
+          "flip": 118,
+          "add": 27,
+          "remove": 15,
+          "rewire": 20,
+          "block": 20
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 123.1
+      },
+      {
+        "attempt": 11000,
+        "temperature": 0.1,
+        "accuracy": 0.5781,
+        "current_acc": 0.5156,
+        "accept_rate": 0.03,
+        "connections": 20921,
+        "active_neurons": 192,
+        "total_neurons": 192,
+        "stale": 31,
+        "mutations": {
+          "flip": 109,
+          "add": 18,
+          "remove": 18,
+          "rewire": 21,
+          "block": 34
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 125.4
+      },
+      {
+        "attempt": 11200,
+        "temperature": 0.1,
+        "accuracy": 0.5781,
+        "current_acc": 0.5,
+        "accept_rate": 0.035,
+        "connections": 21000,
+        "active_neurons": 192,
+        "total_neurons": 192,
+        "stale": 12,
+        "mutations": {
+          "flip": 124,
+          "add": 18,
+          "remove": 17,
+          "rewire": 19,
+          "block": 22
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 127.6
+      },
+      {
+        "attempt": 11400,
+        "temperature": 0.1,
+        "accuracy": 0.5781,
+        "current_acc": 0.5,
+        "accept_rate": 0.055,
+        "connections": 20997,
+        "active_neurons": 192,
+        "total_neurons": 192,
+        "stale": 52,
+        "mutations": {
+          "flip": 112,
+          "add": 20,
+          "remove": 15,
+          "rewire": 25,
+          "block": 28
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 129.8
+      },
+      {
+        "attempt": 11600,
+        "temperature": 0.1,
+        "accuracy": 0.5781,
+        "current_acc": 0.5312,
+        "accept_rate": 0.035,
+        "connections": 20976,
+        "active_neurons": 192,
+        "total_neurons": 192,
+        "stale": 40,
+        "mutations": {
+          "flip": 120,
+          "add": 18,
+          "remove": 22,
+          "rewire": 19,
+          "block": 21
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 132.1
+      },
+      {
+        "attempt": 11800,
+        "temperature": 0.1,
+        "accuracy": 0.5781,
+        "current_acc": 0.5625,
+        "accept_rate": 0.04,
+        "connections": 20983,
+        "active_neurons": 192,
+        "total_neurons": 192,
+        "stale": 4,
+        "mutations": {
+          "flip": 116,
+          "add": 21,
+          "remove": 21,
+          "rewire": 22,
+          "block": 20
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 134.4
+      },
+      {
+        "attempt": 12000,
+        "temperature": 0.1,
+        "accuracy": 0.5781,
+        "current_acc": 0.4688,
+        "accept_rate": 0.025,
+        "connections": 21030,
+        "active_neurons": 192,
+        "total_neurons": 192,
+        "stale": 41,
+        "mutations": {
+          "flip": 119,
+          "add": 17,
+          "remove": 23,
+          "rewire": 22,
+          "block": 19
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 136.7
+      },
+      {
+        "attempt": 12200,
+        "temperature": 0.1,
+        "accuracy": 0.5781,
+        "current_acc": 0.4844,
+        "accept_rate": 0.02,
+        "connections": 20996,
+        "active_neurons": 192,
+        "total_neurons": 192,
+        "stale": 10,
+        "mutations": {
+          "flip": 126,
+          "add": 19,
+          "remove": 18,
+          "rewire": 18,
+          "block": 19
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 139.0
+      },
+      {
+        "attempt": 12400,
+        "temperature": 0.1,
+        "accuracy": 0.5781,
+        "current_acc": 0.5,
+        "accept_rate": 0.035,
+        "connections": 21043,
+        "active_neurons": 192,
+        "total_neurons": 192,
+        "stale": 3,
+        "mutations": {
+          "flip": 107,
+          "add": 19,
+          "remove": 25,
+          "rewire": 22,
+          "block": 27
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 141.2
+      },
+      {
+        "attempt": 12600,
+        "temperature": 0.1,
+        "accuracy": 0.5781,
+        "current_acc": 0.0156,
+        "accept_rate": 0.03,
+        "connections": 21043,
+        "active_neurons": 192,
+        "total_neurons": 192,
+        "stale": 19,
+        "mutations": {
+          "flip": 122,
+          "add": 23,
+          "remove": 21,
+          "rewire": 17,
+          "block": 17
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 143.4
+      },
+      {
+        "attempt": 12800,
+        "temperature": 0.1,
+        "accuracy": 0.5781,
+        "current_acc": 0.5781,
+        "accept_rate": 0.045,
+        "connections": 21135,
+        "active_neurons": 192,
+        "total_neurons": 192,
+        "stale": 4,
+        "mutations": {
+          "flip": 120,
+          "add": 19,
+          "remove": 14,
+          "rewire": 25,
+          "block": 22
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 145.6
+      },
+      {
+        "attempt": 13000,
+        "temperature": 0.1,
+        "accuracy": 0.5781,
+        "current_acc": 0.5156,
+        "accept_rate": 0.03,
+        "connections": 21156,
+        "active_neurons": 192,
+        "total_neurons": 192,
+        "stale": 43,
+        "mutations": {
+          "flip": 122,
+          "add": 16,
+          "remove": 21,
+          "rewire": 18,
+          "block": 23
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 147.8
+      },
+      {
+        "attempt": 13200,
+        "temperature": 0.13,
+        "accuracy": 0.5781,
+        "current_acc": 0.5469,
+        "accept_rate": 0.01,
+        "connections": 21156,
+        "active_neurons": 192,
+        "total_neurons": 192,
+        "stale": 157,
+        "mutations": {
+          "flip": 131,
+          "add": 18,
+          "remove": 19,
+          "rewire": 17,
+          "block": 15
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 150.1
+      },
+      {
+        "attempt": 13400,
+        "temperature": 0.1242,
+        "accuracy": 0.5781,
+        "current_acc": 0.4844,
+        "accept_rate": 0.03,
+        "connections": 21231,
+        "active_neurons": 192,
+        "total_neurons": 192,
+        "stale": 4,
+        "mutations": {
+          "flip": 113,
+          "add": 28,
+          "remove": 25,
+          "rewire": 19,
+          "block": 15
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 152.3
+      },
+      {
+        "attempt": 13600,
+        "temperature": 0.1534,
+        "accuracy": 0.5781,
+        "current_acc": 0.5156,
+        "accept_rate": 0.005,
+        "connections": 21231,
+        "active_neurons": 192,
+        "total_neurons": 192,
+        "stale": 62,
+        "mutations": {
+          "flip": 116,
+          "add": 18,
+          "remove": 25,
+          "rewire": 22,
+          "block": 19
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 154.6
+      },
+      {
+        "attempt": 13800,
+        "temperature": 0.1187,
+        "accuracy": 0.5781,
+        "current_acc": 0.5469,
+        "accept_rate": 0.025,
+        "connections": 21277,
+        "active_neurons": 192,
+        "total_neurons": 192,
+        "stale": 92,
+        "mutations": {
+          "flip": 118,
+          "add": 23,
+          "remove": 22,
+          "rewire": 20,
+          "block": 17
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 156.9
+      },
+      {
+        "attempt": 14000,
+        "temperature": 0.1194,
+        "accuracy": 0.5938,
+        "current_acc": 0.5625,
+        "accept_rate": 0.025,
+        "connections": 21297,
+        "active_neurons": 192,
+        "total_neurons": 192,
+        "stale": 8,
+        "mutations": {
+          "flip": 108,
+          "add": 22,
+          "remove": 14,
+          "rewire": 31,
+          "block": 25
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 159.2
+      },
+      {
+        "attempt": 14200,
+        "temperature": 0.1,
+        "accuracy": 0.5938,
+        "current_acc": 0.5,
+        "accept_rate": 0.04,
+        "connections": 21478,
+        "active_neurons": 192,
+        "total_neurons": 192,
+        "stale": 55,
+        "mutations": {
+          "flip": 132,
+          "add": 17,
+          "remove": 16,
+          "rewire": 17,
+          "block": 18
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 161.4
+      },
+      {
+        "attempt": 14400,
+        "temperature": 0.1,
+        "accuracy": 0.5938,
+        "current_acc": 0.4375,
+        "accept_rate": 0.03,
+        "connections": 21523,
+        "active_neurons": 192,
+        "total_neurons": 192,
+        "stale": 33,
+        "mutations": {
+          "flip": 121,
+          "add": 13,
+          "remove": 16,
+          "rewire": 22,
+          "block": 28
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 163.7
+      },
+      {
+        "attempt": 14600,
+        "temperature": 0.1,
+        "accuracy": 0.5938,
+        "current_acc": 0.5625,
+        "accept_rate": 0.035,
+        "connections": 21568,
+        "active_neurons": 192,
+        "total_neurons": 192,
+        "stale": 21,
+        "mutations": {
+          "flip": 126,
+          "add": 21,
+          "remove": 10,
+          "rewire": 21,
+          "block": 22
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 166.0
+      },
+      {
+        "attempt": 14800,
+        "temperature": 0.1173,
+        "accuracy": 0.6094,
+        "current_acc": 0.5469,
+        "accept_rate": 0.015,
+        "connections": 21658,
+        "active_neurons": 192,
+        "total_neurons": 192,
+        "stale": 33,
+        "mutations": {
+          "flip": 117,
+          "add": 20,
+          "remove": 30,
+          "rewire": 17,
+          "block": 16
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 168.3
+      },
+      {
+        "attempt": 15000,
+        "temperature": 0.1,
+        "accuracy": 0.6094,
+        "current_acc": 0.6094,
+        "accept_rate": 0.035,
+        "connections": 21770,
+        "active_neurons": 192,
+        "total_neurons": 192,
+        "stale": 51,
+        "mutations": {
+          "flip": 116,
+          "add": 31,
+          "remove": 19,
+          "rewire": 15,
+          "block": 19
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 170.6
+      },
+      {
+        "attempt": 15200,
+        "temperature": 0.1,
+        "accuracy": 0.6094,
+        "current_acc": 0.5625,
+        "accept_rate": 0.03,
+        "connections": 21814,
+        "active_neurons": 192,
+        "total_neurons": 192,
+        "stale": 42,
+        "mutations": {
+          "flip": 126,
+          "add": 27,
+          "remove": 15,
+          "rewire": 13,
+          "block": 19
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 172.8
+      },
+      {
+        "attempt": 15400,
+        "temperature": 0.1,
+        "accuracy": 0.6094,
+        "current_acc": 0.5938,
+        "accept_rate": 0.045,
+        "connections": 22034,
+        "active_neurons": 192,
+        "total_neurons": 192,
+        "stale": 54,
+        "mutations": {
+          "flip": 120,
+          "add": 23,
+          "remove": 17,
+          "rewire": 20,
+          "block": 20
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 175.0
+      },
+      {
+        "attempt": 15600,
+        "temperature": 0.1,
+        "accuracy": 0.6094,
+        "current_acc": 0.6094,
+        "accept_rate": 0.045,
+        "connections": 22141,
+        "active_neurons": 192,
+        "total_neurons": 192,
+        "stale": 9,
+        "mutations": {
+          "flip": 122,
+          "add": 19,
+          "remove": 20,
+          "rewire": 16,
+          "block": 23
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 177.3
+      },
+      {
+        "attempt": 15800,
+        "temperature": 0.1,
+        "accuracy": 0.6094,
+        "current_acc": 0.5,
+        "accept_rate": 0.025,
+        "connections": 22227,
+        "active_neurons": 192,
+        "total_neurons": 192,
+        "stale": 22,
+        "mutations": {
+          "flip": 125,
+          "add": 21,
+          "remove": 15,
+          "rewire": 18,
+          "block": 21
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 179.6
+      },
+      {
+        "attempt": 16000,
+        "temperature": 0.1,
+        "accuracy": 0.6094,
+        "current_acc": 0.5156,
+        "accept_rate": 0.055,
+        "connections": 22203,
+        "active_neurons": 192,
+        "total_neurons": 192,
+        "stale": 1,
+        "mutations": {
+          "flip": 122,
+          "add": 16,
+          "remove": 17,
+          "rewire": 18,
+          "block": 27
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 181.9
+      }
+    ]
+  },
+  "777": {
+    "accuracy": 0.6875,
+    "elapsed": 179.1957185268402,
+    "log": [
+      {
+        "attempt": 200,
+        "temperature": 0.1,
+        "accuracy": 0.0312,
+        "current_acc": 0.0312,
+        "accept_rate": 0.28,
+        "connections": 3700,
+        "active_neurons": 131,
+        "total_neurons": 192,
+        "stale": 3,
+        "mutations": {
+          "flip": 110,
+          "add": 18,
+          "remove": 19,
+          "rewire": 21,
+          "block": 32
+        },
+        "zones": {
+          "ultra_focus": 135,
+          "focus": 64,
+          "normal": 1,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 2.3
+      },
+      {
+        "attempt": 400,
+        "temperature": 0.1,
+        "accuracy": 0.0938,
+        "current_acc": 0.0938,
+        "accept_rate": 0.185,
+        "connections": 3945,
+        "active_neurons": 137,
+        "total_neurons": 192,
+        "stale": 3,
+        "mutations": {
+          "flip": 122,
+          "add": 14,
+          "remove": 20,
+          "rewire": 22,
+          "block": 22
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 4.5
+      },
+      {
+        "attempt": 600,
+        "temperature": 0.1,
+        "accuracy": 0.0938,
+        "current_acc": 0.0938,
+        "accept_rate": 0.185,
+        "connections": 4466,
+        "active_neurons": 149,
+        "total_neurons": 192,
+        "stale": 17,
+        "mutations": {
+          "flip": 124,
+          "add": 20,
+          "remove": 21,
+          "rewire": 14,
+          "block": 21
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 6.8
+      },
+      {
+        "attempt": 800,
+        "temperature": 0.1,
+        "accuracy": 0.1094,
+        "current_acc": 0.1094,
+        "accept_rate": 0.16,
+        "connections": 4709,
+        "active_neurons": 154,
+        "total_neurons": 192,
+        "stale": 8,
+        "mutations": {
+          "flip": 123,
+          "add": 16,
+          "remove": 23,
+          "rewire": 17,
+          "block": 21
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 9.0
+      },
+      {
+        "attempt": 1000,
+        "temperature": 0.1,
+        "accuracy": 0.1562,
+        "current_acc": 0.1562,
+        "accept_rate": 0.18,
+        "connections": 5519,
+        "active_neurons": 162,
+        "total_neurons": 192,
+        "stale": 1,
+        "mutations": {
+          "flip": 111,
+          "add": 24,
+          "remove": 21,
+          "rewire": 20,
+          "block": 24
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 11.2
+      },
+      {
+        "attempt": 1200,
+        "temperature": 0.1,
+        "accuracy": 0.1875,
+        "current_acc": 0.1719,
+        "accept_rate": 0.12,
+        "connections": 6089,
+        "active_neurons": 165,
+        "total_neurons": 192,
+        "stale": 4,
+        "mutations": {
+          "flip": 121,
+          "add": 22,
+          "remove": 19,
+          "rewire": 21,
+          "block": 17
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 13.5
+      },
+      {
+        "attempt": 1400,
+        "temperature": 0.1,
+        "accuracy": 0.2188,
+        "current_acc": 0.2188,
+        "accept_rate": 0.095,
+        "connections": 6281,
+        "active_neurons": 163,
+        "total_neurons": 192,
+        "stale": 20,
+        "mutations": {
+          "flip": 118,
+          "add": 21,
+          "remove": 22,
+          "rewire": 17,
+          "block": 22
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 15.8
+      },
+      {
+        "attempt": 1600,
+        "temperature": 0.1,
+        "accuracy": 0.2344,
+        "current_acc": 0.2344,
+        "accept_rate": 0.165,
+        "connections": 6801,
+        "active_neurons": 166,
+        "total_neurons": 192,
+        "stale": 10,
+        "mutations": {
+          "flip": 122,
+          "add": 25,
+          "remove": 15,
+          "rewire": 19,
+          "block": 19
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 18.0
+      },
+      {
+        "attempt": 1800,
+        "temperature": 0.1,
+        "accuracy": 0.2344,
+        "current_acc": 0.2188,
+        "accept_rate": 0.185,
+        "connections": 7467,
+        "active_neurons": 172,
+        "total_neurons": 192,
+        "stale": 2,
+        "mutations": {
+          "flip": 117,
+          "add": 18,
+          "remove": 24,
+          "rewire": 22,
+          "block": 19
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 20.2
+      },
+      {
+        "attempt": 2000,
+        "temperature": 0.1,
+        "accuracy": 0.2656,
+        "current_acc": 0.2656,
+        "accept_rate": 0.12,
+        "connections": 7854,
+        "active_neurons": 178,
+        "total_neurons": 192,
+        "stale": 10,
+        "mutations": {
+          "flip": 119,
+          "add": 19,
+          "remove": 18,
+          "rewire": 27,
+          "block": 17
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 22.5
+      },
+      {
+        "attempt": 2200,
+        "temperature": 0.1,
+        "accuracy": 0.2812,
+        "current_acc": 0.2656,
+        "accept_rate": 0.11,
+        "connections": 8092,
+        "active_neurons": 182,
+        "total_neurons": 192,
+        "stale": 4,
+        "mutations": {
+          "flip": 121,
+          "add": 17,
+          "remove": 18,
+          "rewire": 22,
+          "block": 22
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 24.7
+      },
+      {
+        "attempt": 2400,
+        "temperature": 0.1,
+        "accuracy": 0.3125,
+        "current_acc": 0.3125,
+        "accept_rate": 0.12,
+        "connections": 8450,
+        "active_neurons": 182,
+        "total_neurons": 192,
+        "stale": 10,
+        "mutations": {
+          "flip": 128,
+          "add": 21,
+          "remove": 15,
+          "rewire": 22,
+          "block": 14
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 27.0
+      },
+      {
+        "attempt": 2600,
+        "temperature": 0.1,
+        "accuracy": 0.3125,
+        "current_acc": 0.3125,
+        "accept_rate": 0.11,
+        "connections": 8623,
+        "active_neurons": 183,
+        "total_neurons": 192,
+        "stale": 5,
+        "mutations": {
+          "flip": 124,
+          "add": 19,
+          "remove": 26,
+          "rewire": 21,
+          "block": 10
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 29.4
+      },
+      {
+        "attempt": 2800,
+        "temperature": 0.1,
+        "accuracy": 0.3125,
+        "current_acc": 0.3125,
+        "accept_rate": 0.09,
+        "connections": 8887,
+        "active_neurons": 183,
+        "total_neurons": 192,
+        "stale": 1,
+        "mutations": {
+          "flip": 126,
+          "add": 15,
+          "remove": 25,
+          "rewire": 18,
+          "block": 16
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 31.7
+      },
+      {
+        "attempt": 3000,
+        "temperature": 0.1,
+        "accuracy": 0.3125,
+        "current_acc": 0.3125,
+        "accept_rate": 0.11,
+        "connections": 9672,
+        "active_neurons": 184,
+        "total_neurons": 192,
+        "stale": 1,
+        "mutations": {
+          "flip": 112,
+          "add": 26,
+          "remove": 20,
+          "rewire": 15,
+          "block": 27
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 34.0
+      },
+      {
+        "attempt": 3200,
+        "temperature": 0.1,
+        "accuracy": 0.3125,
+        "current_acc": 0.3125,
+        "accept_rate": 0.13,
+        "connections": 10358,
+        "active_neurons": 187,
+        "total_neurons": 192,
+        "stale": 3,
+        "mutations": {
+          "flip": 123,
+          "add": 22,
+          "remove": 14,
+          "rewire": 22,
+          "block": 19
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 36.3
+      },
+      {
+        "attempt": 3400,
+        "temperature": 0.1,
+        "accuracy": 0.3438,
+        "current_acc": 0.3438,
+        "accept_rate": 0.085,
+        "connections": 10520,
+        "active_neurons": 187,
+        "total_neurons": 192,
+        "stale": 20,
+        "mutations": {
+          "flip": 112,
+          "add": 20,
+          "remove": 22,
+          "rewire": 20,
+          "block": 26
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 38.7
+      },
+      {
+        "attempt": 3600,
+        "temperature": 0.1,
+        "accuracy": 0.3438,
+        "current_acc": 0.3438,
+        "accept_rate": 0.095,
+        "connections": 10497,
+        "active_neurons": 188,
+        "total_neurons": 192,
+        "stale": 7,
+        "mutations": {
+          "flip": 108,
+          "add": 25,
+          "remove": 17,
+          "rewire": 24,
+          "block": 26
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 41.0
+      },
+      {
+        "attempt": 3800,
+        "temperature": 0.1,
+        "accuracy": 0.3438,
+        "current_acc": 0.3125,
+        "accept_rate": 0.12,
+        "connections": 11148,
+        "active_neurons": 189,
+        "total_neurons": 192,
+        "stale": 4,
+        "mutations": {
+          "flip": 129,
+          "add": 20,
+          "remove": 20,
+          "rewire": 16,
+          "block": 15
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 43.3
+      },
+      {
+        "attempt": 4000,
+        "temperature": 0.1,
+        "accuracy": 0.3438,
+        "current_acc": 0.3438,
+        "accept_rate": 0.1,
+        "connections": 11640,
+        "active_neurons": 189,
+        "total_neurons": 192,
+        "stale": 2,
+        "mutations": {
+          "flip": 116,
+          "add": 25,
+          "remove": 19,
+          "rewire": 25,
+          "block": 15
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 45.6
+      },
+      {
+        "attempt": 4200,
+        "temperature": 0.1,
+        "accuracy": 0.3594,
+        "current_acc": 0.3438,
+        "accept_rate": 0.08,
+        "connections": 11753,
+        "active_neurons": 189,
+        "total_neurons": 192,
+        "stale": 24,
+        "mutations": {
+          "flip": 114,
+          "add": 10,
+          "remove": 24,
+          "rewire": 32,
+          "block": 20
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 47.8
+      },
+      {
+        "attempt": 4400,
+        "temperature": 0.1,
+        "accuracy": 0.375,
+        "current_acc": 0.3594,
+        "accept_rate": 0.025,
+        "connections": 11934,
+        "active_neurons": 189,
+        "total_neurons": 192,
+        "stale": 27,
+        "mutations": {
+          "flip": 119,
+          "add": 17,
+          "remove": 27,
+          "rewire": 16,
+          "block": 21
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 50.2
+      },
+      {
+        "attempt": 4600,
+        "temperature": 0.1,
+        "accuracy": 0.3906,
+        "current_acc": 0.375,
+        "accept_rate": 0.055,
+        "connections": 12135,
+        "active_neurons": 189,
+        "total_neurons": 192,
+        "stale": 18,
+        "mutations": {
+          "flip": 129,
+          "add": 17,
+          "remove": 16,
+          "rewire": 22,
+          "block": 16
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 52.4
+      },
+      {
+        "attempt": 4800,
+        "temperature": 0.1,
+        "accuracy": 0.3906,
+        "current_acc": 0.3906,
+        "accept_rate": 0.095,
+        "connections": 12573,
+        "active_neurons": 189,
+        "total_neurons": 192,
+        "stale": 0,
+        "mutations": {
+          "flip": 127,
+          "add": 18,
+          "remove": 19,
+          "rewire": 19,
+          "block": 17
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 54.7
+      },
+      {
+        "attempt": 5000,
+        "temperature": 0.1,
+        "accuracy": 0.4062,
+        "current_acc": 0.3906,
+        "accept_rate": 0.1,
+        "connections": 12971,
+        "active_neurons": 189,
+        "total_neurons": 192,
+        "stale": 12,
+        "mutations": {
+          "flip": 117,
+          "add": 24,
+          "remove": 19,
+          "rewire": 18,
+          "block": 22
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 57.0
+      },
+      {
+        "attempt": 5200,
+        "temperature": 0.1,
+        "accuracy": 0.4062,
+        "current_acc": 0.4062,
+        "accept_rate": 0.095,
+        "connections": 13526,
+        "active_neurons": 189,
+        "total_neurons": 192,
+        "stale": 2,
+        "mutations": {
+          "flip": 122,
+          "add": 20,
+          "remove": 17,
+          "rewire": 18,
+          "block": 23
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 59.2
+      },
+      {
+        "attempt": 5400,
+        "temperature": 0.1,
+        "accuracy": 0.4219,
+        "current_acc": 0.4219,
+        "accept_rate": 0.05,
+        "connections": 13796,
+        "active_neurons": 189,
+        "total_neurons": 192,
+        "stale": 6,
+        "mutations": {
+          "flip": 120,
+          "add": 20,
+          "remove": 18,
+          "rewire": 22,
+          "block": 20
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 61.5
+      },
+      {
+        "attempt": 5600,
+        "temperature": 0.1,
+        "accuracy": 0.4219,
+        "current_acc": 0.375,
+        "accept_rate": 0.065,
+        "connections": 14129,
+        "active_neurons": 189,
+        "total_neurons": 192,
+        "stale": 22,
+        "mutations": {
+          "flip": 128,
+          "add": 18,
+          "remove": 16,
+          "rewire": 15,
+          "block": 23
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 63.7
+      },
+      {
+        "attempt": 5800,
+        "temperature": 0.1,
+        "accuracy": 0.4375,
+        "current_acc": 0.4375,
+        "accept_rate": 0.065,
+        "connections": 14130,
+        "active_neurons": 190,
+        "total_neurons": 192,
+        "stale": 7,
+        "mutations": {
+          "flip": 117,
+          "add": 18,
+          "remove": 20,
+          "rewire": 23,
+          "block": 22
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 66.0
+      },
+      {
+        "attempt": 6000,
+        "temperature": 0.1,
+        "accuracy": 0.4375,
+        "current_acc": 0.4219,
+        "accept_rate": 0.085,
+        "connections": 14545,
+        "active_neurons": 190,
+        "total_neurons": 192,
+        "stale": 7,
+        "mutations": {
+          "flip": 116,
+          "add": 19,
+          "remove": 22,
+          "rewire": 21,
+          "block": 22
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 68.2
+      },
+      {
+        "attempt": 6200,
+        "temperature": 0.1,
+        "accuracy": 0.4375,
+        "current_acc": 0.4219,
+        "accept_rate": 0.04,
+        "connections": 14710,
+        "active_neurons": 190,
+        "total_neurons": 192,
+        "stale": 3,
+        "mutations": {
+          "flip": 124,
+          "add": 12,
+          "remove": 20,
+          "rewire": 22,
+          "block": 22
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 70.4
+      },
+      {
+        "attempt": 6400,
+        "temperature": 0.1,
+        "accuracy": 0.4375,
+        "current_acc": 0.4219,
+        "accept_rate": 0.095,
+        "connections": 15160,
+        "active_neurons": 190,
+        "total_neurons": 192,
+        "stale": 11,
+        "mutations": {
+          "flip": 121,
+          "add": 25,
+          "remove": 23,
+          "rewire": 15,
+          "block": 16
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 72.7
+      },
+      {
+        "attempt": 6600,
+        "temperature": 0.1,
+        "accuracy": 0.4688,
+        "current_acc": 0.4531,
+        "accept_rate": 0.08,
+        "connections": 15670,
+        "active_neurons": 190,
+        "total_neurons": 192,
+        "stale": 5,
+        "mutations": {
+          "flip": 114,
+          "add": 27,
+          "remove": 12,
+          "rewire": 27,
+          "block": 20
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 74.9
+      },
+      {
+        "attempt": 6800,
+        "temperature": 0.1,
+        "accuracy": 0.4688,
+        "current_acc": 0.4375,
+        "accept_rate": 0.07,
+        "connections": 15830,
+        "active_neurons": 190,
+        "total_neurons": 192,
+        "stale": 1,
+        "mutations": {
+          "flip": 119,
+          "add": 23,
+          "remove": 15,
+          "rewire": 22,
+          "block": 21
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 77.1
+      },
+      {
+        "attempt": 7000,
+        "temperature": 0.1,
+        "accuracy": 0.4688,
+        "current_acc": 0.4688,
+        "accept_rate": 0.075,
+        "connections": 16014,
+        "active_neurons": 190,
+        "total_neurons": 192,
+        "stale": 20,
+        "mutations": {
+          "flip": 117,
+          "add": 17,
+          "remove": 21,
+          "rewire": 24,
+          "block": 21
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 79.4
+      },
+      {
+        "attempt": 7200,
+        "temperature": 0.1,
+        "accuracy": 0.4688,
+        "current_acc": 0.4531,
+        "accept_rate": 0.08,
+        "connections": 16286,
+        "active_neurons": 190,
+        "total_neurons": 192,
+        "stale": 24,
+        "mutations": {
+          "flip": 110,
+          "add": 24,
+          "remove": 25,
+          "rewire": 21,
+          "block": 20
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 81.6
+      },
+      {
+        "attempt": 7400,
+        "temperature": 0.1,
+        "accuracy": 0.4688,
+        "current_acc": 0.4375,
+        "accept_rate": 0.04,
+        "connections": 16490,
+        "active_neurons": 191,
+        "total_neurons": 192,
+        "stale": 2,
+        "mutations": {
+          "flip": 119,
+          "add": 18,
+          "remove": 27,
+          "rewire": 17,
+          "block": 19
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 83.9
+      },
+      {
+        "attempt": 7600,
+        "temperature": 0.1,
+        "accuracy": 0.4688,
+        "current_acc": 0.4531,
+        "accept_rate": 0.09,
+        "connections": 16871,
+        "active_neurons": 191,
+        "total_neurons": 192,
+        "stale": 11,
+        "mutations": {
+          "flip": 119,
+          "add": 24,
+          "remove": 21,
+          "rewire": 20,
+          "block": 16
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 86.1
+      },
+      {
+        "attempt": 7800,
+        "temperature": 0.1,
+        "accuracy": 0.4688,
+        "current_acc": 0.4375,
+        "accept_rate": 0.065,
+        "connections": 16868,
+        "active_neurons": 191,
+        "total_neurons": 192,
+        "stale": 11,
+        "mutations": {
+          "flip": 127,
+          "add": 18,
+          "remove": 22,
+          "rewire": 13,
+          "block": 20
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 88.4
+      },
+      {
+        "attempt": 8000,
+        "temperature": 0.1,
+        "accuracy": 0.4688,
+        "current_acc": 0.4531,
+        "accept_rate": 0.07,
+        "connections": 17293,
+        "active_neurons": 192,
+        "total_neurons": 192,
+        "stale": 38,
+        "mutations": {
+          "flip": 108,
+          "add": 25,
+          "remove": 25,
+          "rewire": 25,
+          "block": 17
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 90.6
+      },
+      {
+        "attempt": 8200,
+        "temperature": 0.1,
+        "accuracy": 0.4688,
+        "current_acc": 0.4688,
+        "accept_rate": 0.06,
+        "connections": 17555,
+        "active_neurons": 192,
+        "total_neurons": 192,
+        "stale": 13,
+        "mutations": {
+          "flip": 125,
+          "add": 22,
+          "remove": 22,
+          "rewire": 15,
+          "block": 16
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 92.8
+      },
+      {
+        "attempt": 8400,
+        "temperature": 0.1,
+        "accuracy": 0.4688,
+        "current_acc": 0.4531,
+        "accept_rate": 0.1,
+        "connections": 18126,
+        "active_neurons": 192,
+        "total_neurons": 192,
+        "stale": 2,
+        "mutations": {
+          "flip": 119,
+          "add": 25,
+          "remove": 14,
+          "rewire": 22,
+          "block": 20
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 95.1
+      },
+      {
+        "attempt": 8600,
+        "temperature": 0.1,
+        "accuracy": 0.4844,
+        "current_acc": 0.4688,
+        "accept_rate": 0.065,
+        "connections": 18416,
+        "active_neurons": 192,
+        "total_neurons": 192,
+        "stale": 20,
+        "mutations": {
+          "flip": 115,
+          "add": 27,
+          "remove": 17,
+          "rewire": 20,
+          "block": 21
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 97.3
+      },
+      {
+        "attempt": 8800,
+        "temperature": 0.1,
+        "accuracy": 0.4844,
+        "current_acc": 0.4844,
+        "accept_rate": 0.08,
+        "connections": 18876,
+        "active_neurons": 192,
+        "total_neurons": 192,
+        "stale": 4,
+        "mutations": {
+          "flip": 129,
+          "add": 18,
+          "remove": 17,
+          "rewire": 21,
+          "block": 15
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 99.6
+      },
+      {
+        "attempt": 9000,
+        "temperature": 0.1,
+        "accuracy": 0.5,
+        "current_acc": 0.4688,
+        "accept_rate": 0.075,
+        "connections": 19150,
+        "active_neurons": 192,
+        "total_neurons": 192,
+        "stale": 19,
+        "mutations": {
+          "flip": 134,
+          "add": 14,
+          "remove": 23,
+          "rewire": 15,
+          "block": 14
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 101.8
+      },
+      {
+        "attempt": 9200,
+        "temperature": 0.1,
+        "accuracy": 0.5,
+        "current_acc": 0.5,
+        "accept_rate": 0.085,
+        "connections": 19427,
+        "active_neurons": 192,
+        "total_neurons": 192,
+        "stale": 1,
+        "mutations": {
+          "flip": 111,
+          "add": 26,
+          "remove": 18,
+          "rewire": 25,
+          "block": 20
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 104.0
+      },
+      {
+        "attempt": 9400,
+        "temperature": 0.1,
+        "accuracy": 0.5156,
+        "current_acc": 0.5156,
+        "accept_rate": 0.08,
+        "connections": 19711,
+        "active_neurons": 192,
+        "total_neurons": 192,
+        "stale": 17,
+        "mutations": {
+          "flip": 134,
+          "add": 25,
+          "remove": 11,
+          "rewire": 12,
+          "block": 18
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 106.2
+      },
+      {
+        "attempt": 9600,
+        "temperature": 0.1,
+        "accuracy": 0.5312,
+        "current_acc": 0.5312,
+        "accept_rate": 0.085,
+        "connections": 19944,
+        "active_neurons": 192,
+        "total_neurons": 192,
+        "stale": 20,
+        "mutations": {
+          "flip": 112,
+          "add": 23,
+          "remove": 25,
+          "rewire": 25,
+          "block": 15
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 108.3
+      },
+      {
+        "attempt": 9800,
+        "temperature": 0.1,
+        "accuracy": 0.5469,
+        "current_acc": 0.5469,
+        "accept_rate": 0.085,
+        "connections": 19723,
+        "active_neurons": 192,
+        "total_neurons": 192,
+        "stale": 1,
+        "mutations": {
+          "flip": 106,
+          "add": 21,
+          "remove": 27,
+          "rewire": 26,
+          "block": 20
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 110.5
+      },
+      {
+        "attempt": 10000,
+        "temperature": 0.1,
+        "accuracy": 0.5781,
+        "current_acc": 0.5156,
+        "accept_rate": 0.075,
+        "connections": 20045,
+        "active_neurons": 192,
+        "total_neurons": 192,
+        "stale": 35,
+        "mutations": {
+          "flip": 135,
+          "add": 17,
+          "remove": 13,
+          "rewire": 20,
+          "block": 15
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 112.7
+      },
+      {
+        "attempt": 10200,
+        "temperature": 0.1,
+        "accuracy": 0.5938,
+        "current_acc": 0.5,
+        "accept_rate": 0.06,
+        "connections": 20184,
+        "active_neurons": 192,
+        "total_neurons": 192,
+        "stale": 47,
+        "mutations": {
+          "flip": 121,
+          "add": 21,
+          "remove": 26,
+          "rewire": 22,
+          "block": 10
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 114.9
+      },
+      {
+        "attempt": 10400,
+        "temperature": 0.1,
+        "accuracy": 0.6094,
+        "current_acc": 0.5625,
+        "accept_rate": 0.095,
+        "connections": 20549,
+        "active_neurons": 192,
+        "total_neurons": 192,
+        "stale": 2,
+        "mutations": {
+          "flip": 118,
+          "add": 21,
+          "remove": 16,
+          "rewire": 15,
+          "block": 30
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 117.2
+      },
+      {
+        "attempt": 10600,
+        "temperature": 0.1,
+        "accuracy": 0.6094,
+        "current_acc": 0.5938,
+        "accept_rate": 0.075,
+        "connections": 21049,
+        "active_neurons": 192,
+        "total_neurons": 192,
+        "stale": 10,
+        "mutations": {
+          "flip": 128,
+          "add": 24,
+          "remove": 10,
+          "rewire": 19,
+          "block": 19
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 119.4
+      },
+      {
+        "attempt": 10800,
+        "temperature": 0.1,
+        "accuracy": 0.625,
+        "current_acc": 0.6094,
+        "accept_rate": 0.08,
+        "connections": 21229,
+        "active_neurons": 192,
+        "total_neurons": 192,
+        "stale": 4,
+        "mutations": {
+          "flip": 120,
+          "add": 24,
+          "remove": 19,
+          "rewire": 18,
+          "block": 19
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 121.7
+      },
+      {
+        "attempt": 11000,
+        "temperature": 0.1,
+        "accuracy": 0.625,
+        "current_acc": 0.5938,
+        "accept_rate": 0.075,
+        "connections": 21682,
+        "active_neurons": 192,
+        "total_neurons": 192,
+        "stale": 1,
+        "mutations": {
+          "flip": 112,
+          "add": 26,
+          "remove": 18,
+          "rewire": 19,
+          "block": 25
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 123.9
+      },
+      {
+        "attempt": 11200,
+        "temperature": 0.1,
+        "accuracy": 0.625,
+        "current_acc": 0.5781,
+        "accept_rate": 0.07,
+        "connections": 21750,
+        "active_neurons": 192,
+        "total_neurons": 192,
+        "stale": 2,
+        "mutations": {
+          "flip": 117,
+          "add": 18,
+          "remove": 25,
+          "rewire": 19,
+          "block": 21
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 126.1
+      },
+      {
+        "attempt": 11400,
+        "temperature": 0.1,
+        "accuracy": 0.625,
+        "current_acc": 0.6094,
+        "accept_rate": 0.045,
+        "connections": 21981,
+        "active_neurons": 192,
+        "total_neurons": 192,
+        "stale": 37,
+        "mutations": {
+          "flip": 125,
+          "add": 15,
+          "remove": 21,
+          "rewire": 18,
+          "block": 21
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 128.3
+      },
+      {
+        "attempt": 11600,
+        "temperature": 0.1,
+        "accuracy": 0.625,
+        "current_acc": 0.5781,
+        "accept_rate": 0.065,
+        "connections": 22160,
+        "active_neurons": 192,
+        "total_neurons": 192,
+        "stale": 5,
+        "mutations": {
+          "flip": 117,
+          "add": 18,
+          "remove": 25,
+          "rewire": 22,
+          "block": 18
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 130.5
+      },
+      {
+        "attempt": 11800,
+        "temperature": 0.1,
+        "accuracy": 0.625,
+        "current_acc": 0.625,
+        "accept_rate": 0.06,
+        "connections": 22352,
+        "active_neurons": 192,
+        "total_neurons": 192,
+        "stale": 19,
+        "mutations": {
+          "flip": 115,
+          "add": 27,
+          "remove": 16,
+          "rewire": 21,
+          "block": 21
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 132.7
+      },
+      {
+        "attempt": 12000,
+        "temperature": 0.1,
+        "accuracy": 0.6406,
+        "current_acc": 0.6406,
+        "accept_rate": 0.035,
+        "connections": 22562,
+        "active_neurons": 192,
+        "total_neurons": 192,
+        "stale": 6,
+        "mutations": {
+          "flip": 121,
+          "add": 16,
+          "remove": 21,
+          "rewire": 16,
+          "block": 26
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 134.9
+      },
+      {
+        "attempt": 12200,
+        "temperature": 0.1,
+        "accuracy": 0.6406,
+        "current_acc": 0.5938,
+        "accept_rate": 0.065,
+        "connections": 22481,
+        "active_neurons": 192,
+        "total_neurons": 192,
+        "stale": 16,
+        "mutations": {
+          "flip": 116,
+          "add": 12,
+          "remove": 16,
+          "rewire": 28,
+          "block": 28
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 137.0
+      },
+      {
+        "attempt": 12400,
+        "temperature": 0.1,
+        "accuracy": 0.6562,
+        "current_acc": 0.6094,
+        "accept_rate": 0.08,
+        "connections": 22716,
+        "active_neurons": 192,
+        "total_neurons": 192,
+        "stale": 6,
+        "mutations": {
+          "flip": 124,
+          "add": 23,
+          "remove": 20,
+          "rewire": 16,
+          "block": 17
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 139.2
+      },
+      {
+        "attempt": 12600,
+        "temperature": 0.1,
+        "accuracy": 0.6562,
+        "current_acc": 0.6562,
+        "accept_rate": 0.04,
+        "connections": 22859,
+        "active_neurons": 192,
+        "total_neurons": 192,
+        "stale": 0,
+        "mutations": {
+          "flip": 118,
+          "add": 23,
+          "remove": 17,
+          "rewire": 25,
+          "block": 17
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 141.4
+      },
+      {
+        "attempt": 12800,
+        "temperature": 0.1,
+        "accuracy": 0.6562,
+        "current_acc": 0.6094,
+        "accept_rate": 0.075,
+        "connections": 23078,
+        "active_neurons": 192,
+        "total_neurons": 192,
+        "stale": 28,
+        "mutations": {
+          "flip": 123,
+          "add": 17,
+          "remove": 14,
+          "rewire": 27,
+          "block": 19
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 143.6
+      },
+      {
+        "attempt": 13000,
+        "temperature": 0.1,
+        "accuracy": 0.6562,
+        "current_acc": 0.6562,
+        "accept_rate": 0.055,
+        "connections": 23209,
+        "active_neurons": 192,
+        "total_neurons": 192,
+        "stale": 0,
+        "mutations": {
+          "flip": 126,
+          "add": 20,
+          "remove": 27,
+          "rewire": 10,
+          "block": 17
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 145.8
+      },
+      {
+        "attempt": 13200,
+        "temperature": 0.1,
+        "accuracy": 0.6562,
+        "current_acc": 0.625,
+        "accept_rate": 0.06,
+        "connections": 23167,
+        "active_neurons": 192,
+        "total_neurons": 192,
+        "stale": 46,
+        "mutations": {
+          "flip": 118,
+          "add": 20,
+          "remove": 20,
+          "rewire": 24,
+          "block": 18
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 148.1
+      },
+      {
+        "attempt": 13400,
+        "temperature": 0.1,
+        "accuracy": 0.6562,
+        "current_acc": 0.0156,
+        "accept_rate": 0.04,
+        "connections": 23178,
+        "active_neurons": 192,
+        "total_neurons": 192,
+        "stale": 11,
+        "mutations": {
+          "flip": 128,
+          "add": 21,
+          "remove": 19,
+          "rewire": 15,
+          "block": 17
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 150.3
+      },
+      {
+        "attempt": 13600,
+        "temperature": 0.1173,
+        "accuracy": 0.6719,
+        "current_acc": 0.0156,
+        "accept_rate": 0.015,
+        "connections": 23218,
+        "active_neurons": 192,
+        "total_neurons": 192,
+        "stale": 8,
+        "mutations": {
+          "flip": 123,
+          "add": 18,
+          "remove": 20,
+          "rewire": 18,
+          "block": 21
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 152.5
+      },
+      {
+        "attempt": 13800,
+        "temperature": 0.1,
+        "accuracy": 0.6719,
+        "current_acc": 0.625,
+        "accept_rate": 0.03,
+        "connections": 23258,
+        "active_neurons": 192,
+        "total_neurons": 192,
+        "stale": 6,
+        "mutations": {
+          "flip": 126,
+          "add": 20,
+          "remove": 16,
+          "rewire": 19,
+          "block": 19
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 154.7
+      },
+      {
+        "attempt": 14000,
+        "temperature": 0.1,
+        "accuracy": 0.6719,
+        "current_acc": 0.6719,
+        "accept_rate": 0.035,
+        "connections": 23378,
+        "active_neurons": 192,
+        "total_neurons": 192,
+        "stale": 9,
+        "mutations": {
+          "flip": 125,
+          "add": 19,
+          "remove": 19,
+          "rewire": 14,
+          "block": 23
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 156.9
+      },
+      {
+        "attempt": 14200,
+        "temperature": 0.1,
+        "accuracy": 0.6719,
+        "current_acc": 0.6094,
+        "accept_rate": 0.03,
+        "connections": 23417,
+        "active_neurons": 192,
+        "total_neurons": 192,
+        "stale": 8,
+        "mutations": {
+          "flip": 126,
+          "add": 18,
+          "remove": 21,
+          "rewire": 18,
+          "block": 17
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 159.2
+      },
+      {
+        "attempt": 14400,
+        "temperature": 0.1235,
+        "accuracy": 0.6719,
+        "current_acc": 0.6719,
+        "accept_rate": 0.025,
+        "connections": 23464,
+        "active_neurons": 192,
+        "total_neurons": 192,
+        "stale": 22,
+        "mutations": {
+          "flip": 126,
+          "add": 18,
+          "remove": 28,
+          "rewire": 15,
+          "block": 13
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 161.5
+      },
+      {
+        "attempt": 14600,
+        "temperature": 0.1,
+        "accuracy": 0.6719,
+        "current_acc": 0.6719,
+        "accept_rate": 0.035,
+        "connections": 23542,
+        "active_neurons": 192,
+        "total_neurons": 192,
+        "stale": 25,
+        "mutations": {
+          "flip": 120,
+          "add": 18,
+          "remove": 17,
+          "rewire": 23,
+          "block": 22
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 163.7
+      },
+      {
+        "attempt": 14800,
+        "temperature": 0.1,
+        "accuracy": 0.6719,
+        "current_acc": 0.6094,
+        "accept_rate": 0.025,
+        "connections": 23581,
+        "active_neurons": 192,
+        "total_neurons": 192,
+        "stale": 65,
+        "mutations": {
+          "flip": 127,
+          "add": 23,
+          "remove": 19,
+          "rewire": 20,
+          "block": 11
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 165.9
+      },
+      {
+        "attempt": 15000,
+        "temperature": 0.1,
+        "accuracy": 0.6719,
+        "current_acc": 0.6719,
+        "accept_rate": 0.02,
+        "connections": 23659,
+        "active_neurons": 192,
+        "total_neurons": 192,
+        "stale": 10,
+        "mutations": {
+          "flip": 125,
+          "add": 22,
+          "remove": 17,
+          "rewire": 16,
+          "block": 20
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 168.1
+      },
+      {
+        "attempt": 15200,
+        "temperature": 0.13,
+        "accuracy": 0.6719,
+        "current_acc": 0.6406,
+        "accept_rate": 0.03,
+        "connections": 23736,
+        "active_neurons": 192,
+        "total_neurons": 192,
+        "stale": 120,
+        "mutations": {
+          "flip": 134,
+          "add": 21,
+          "remove": 14,
+          "rewire": 13,
+          "block": 18
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 170.3
+      },
+      {
+        "attempt": 15400,
+        "temperature": 0.1525,
+        "accuracy": 0.6719,
+        "current_acc": 0.0156,
+        "accept_rate": 0.01,
+        "connections": 23774,
+        "active_neurons": 192,
+        "total_neurons": 192,
+        "stale": 113,
+        "mutations": {
+          "flip": 133,
+          "add": 10,
+          "remove": 19,
+          "rewire": 17,
+          "block": 21
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 172.6
+      },
+      {
+        "attempt": 15600,
+        "temperature": 0.1065,
+        "accuracy": 0.6719,
+        "current_acc": 0.6562,
+        "accept_rate": 0.035,
+        "connections": 23926,
+        "active_neurons": 192,
+        "total_neurons": 192,
+        "stale": 21,
+        "mutations": {
+          "flip": 123,
+          "add": 14,
+          "remove": 23,
+          "rewire": 18,
+          "block": 22
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 174.8
+      },
+      {
+        "attempt": 15800,
+        "temperature": 0.1,
+        "accuracy": 0.6719,
+        "current_acc": 0.0156,
+        "accept_rate": 0.025,
+        "connections": 23893,
+        "active_neurons": 192,
+        "total_neurons": 192,
+        "stale": 48,
+        "mutations": {
+          "flip": 130,
+          "add": 13,
+          "remove": 22,
+          "rewire": 16,
+          "block": 19
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 177.0
+      },
+      {
+        "attempt": 16000,
+        "temperature": 0.1,
+        "accuracy": 0.6875,
+        "current_acc": 0.0156,
+        "accept_rate": 0.03,
+        "connections": 23900,
+        "active_neurons": 192,
+        "total_neurons": 192,
+        "stale": 31,
+        "mutations": {
+          "flip": 122,
+          "add": 23,
+          "remove": 19,
+          "rewire": 18,
+          "block": 18
+        },
+        "zones": {
+          "ultra_focus": 200,
+          "focus": 0,
+          "normal": 0,
+          "wide": 0,
+          "earthquake": 0
+        },
+        "dominant_zone": "ultra_focus",
+        "elapsed": 179.2
+      }
+    ]
+  }
+}
