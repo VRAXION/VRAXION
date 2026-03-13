@@ -1,0 +1,1750 @@
+{
+  "test_a": {
+    "fixed_default": [
+      {
+        "seed": 42,
+        "accuracy": 1.0,
+        "kept": 177,
+        "time": 3.5,
+        "connections": 6117,
+        "logs": [
+          {
+            "step": 1000,
+            "accuracy": 0.9375,
+            "connections": 6003,
+            "kept": 162
+          }
+        ]
+      },
+      {
+        "seed": 123,
+        "accuracy": 1.0,
+        "kept": 175,
+        "time": 3.8,
+        "connections": 6056,
+        "logs": [
+          {
+            "step": 1000,
+            "accuracy": 0.9375,
+            "connections": 5604,
+            "kept": 146
+          }
+        ]
+      },
+      {
+        "seed": 456,
+        "accuracy": 1.0,
+        "kept": 177,
+        "time": 5.5,
+        "connections": 6149,
+        "logs": [
+          {
+            "step": 1000,
+            "accuracy": 0.9375,
+            "connections": 6026,
+            "kept": 147
+          },
+          {
+            "step": 2000,
+            "accuracy": 0.9375,
+            "connections": 6140,
+            "kept": 173
+          }
+        ]
+      },
+      {
+        "seed": 789,
+        "accuracy": 0.9375,
+        "kept": 240,
+        "time": 20.9,
+        "connections": 6205,
+        "logs": [
+          {
+            "step": 1000,
+            "accuracy": 0.875,
+            "connections": 6153,
+            "kept": 160
+          },
+          {
+            "step": 2000,
+            "accuracy": 0.9375,
+            "connections": 6216,
+            "kept": 193
+          },
+          {
+            "step": 3000,
+            "accuracy": 0.9375,
+            "connections": 6134,
+            "kept": 216
+          },
+          {
+            "step": 4000,
+            "accuracy": 0.9375,
+            "connections": 6181,
+            "kept": 225
+          },
+          {
+            "step": 5000,
+            "accuracy": 0.9375,
+            "connections": 6181,
+            "kept": 227
+          },
+          {
+            "step": 6000,
+            "accuracy": 0.9375,
+            "connections": 6181,
+            "kept": 233
+          },
+          {
+            "step": 7000,
+            "accuracy": 0.9375,
+            "connections": 6199,
+            "kept": 237
+          },
+          {
+            "step": 8000,
+            "accuracy": 0.9375,
+            "connections": 6205,
+            "kept": 240
+          }
+        ]
+      },
+      {
+        "seed": 1337,
+        "accuracy": 1.0,
+        "kept": 118,
+        "time": 1.7,
+        "connections": 5700,
+        "logs": []
+      }
+    ],
+    "fixed_sweep": [
+      {
+        "seed": 42,
+        "accuracy": 0.375,
+        "kept": 17,
+        "time": 21.0,
+        "connections": 1004,
+        "logs": [
+          {
+            "step": 1000,
+            "accuracy": 0.25,
+            "connections": 1056,
+            "kept": 13
+          },
+          {
+            "step": 2000,
+            "accuracy": 0.25,
+            "connections": 1004,
+            "kept": 14
+          },
+          {
+            "step": 3000,
+            "accuracy": 0.3125,
+            "connections": 1004,
+            "kept": 15
+          },
+          {
+            "step": 4000,
+            "accuracy": 0.3125,
+            "connections": 1004,
+            "kept": 16
+          },
+          {
+            "step": 5000,
+            "accuracy": 0.3125,
+            "connections": 1004,
+            "kept": 16
+          },
+          {
+            "step": 6000,
+            "accuracy": 0.3125,
+            "connections": 1004,
+            "kept": 16
+          },
+          {
+            "step": 7000,
+            "accuracy": 0.375,
+            "connections": 1004,
+            "kept": 17
+          },
+          {
+            "step": 8000,
+            "accuracy": 0.375,
+            "connections": 1004,
+            "kept": 17
+          }
+        ]
+      },
+      {
+        "seed": 123,
+        "accuracy": 0.3125,
+        "kept": 19,
+        "time": 20.8,
+        "connections": 2242,
+        "logs": [
+          {
+            "step": 1000,
+            "accuracy": 0.25,
+            "connections": 2168,
+            "kept": 16
+          },
+          {
+            "step": 2000,
+            "accuracy": 0.25,
+            "connections": 2028,
+            "kept": 18
+          },
+          {
+            "step": 3000,
+            "accuracy": 0.25,
+            "connections": 2028,
+            "kept": 18
+          },
+          {
+            "step": 4000,
+            "accuracy": 0.3125,
+            "connections": 2242,
+            "kept": 19
+          },
+          {
+            "step": 5000,
+            "accuracy": 0.3125,
+            "connections": 2242,
+            "kept": 19
+          },
+          {
+            "step": 6000,
+            "accuracy": 0.3125,
+            "connections": 2242,
+            "kept": 19
+          },
+          {
+            "step": 7000,
+            "accuracy": 0.3125,
+            "connections": 2242,
+            "kept": 19
+          },
+          {
+            "step": 8000,
+            "accuracy": 0.3125,
+            "connections": 2242,
+            "kept": 19
+          }
+        ]
+      },
+      {
+        "seed": 456,
+        "accuracy": 0.375,
+        "kept": 22,
+        "time": 21.0,
+        "connections": 1548,
+        "logs": [
+          {
+            "step": 1000,
+            "accuracy": 0.3125,
+            "connections": 1629,
+            "kept": 20
+          },
+          {
+            "step": 2000,
+            "accuracy": 0.3125,
+            "connections": 1629,
+            "kept": 20
+          },
+          {
+            "step": 3000,
+            "accuracy": 0.375,
+            "connections": 1548,
+            "kept": 21
+          },
+          {
+            "step": 4000,
+            "accuracy": 0.375,
+            "connections": 1548,
+            "kept": 21
+          },
+          {
+            "step": 5000,
+            "accuracy": 0.375,
+            "connections": 1548,
+            "kept": 22
+          },
+          {
+            "step": 6000,
+            "accuracy": 0.375,
+            "connections": 1548,
+            "kept": 22
+          },
+          {
+            "step": 7000,
+            "accuracy": 0.375,
+            "connections": 1548,
+            "kept": 22
+          },
+          {
+            "step": 8000,
+            "accuracy": 0.375,
+            "connections": 1548,
+            "kept": 22
+          }
+        ]
+      },
+      {
+        "seed": 789,
+        "accuracy": 0.3125,
+        "kept": 14,
+        "time": 20.4,
+        "connections": 644,
+        "logs": [
+          {
+            "step": 1000,
+            "accuracy": 0.25,
+            "connections": 647,
+            "kept": 10
+          },
+          {
+            "step": 2000,
+            "accuracy": 0.25,
+            "connections": 647,
+            "kept": 11
+          },
+          {
+            "step": 3000,
+            "accuracy": 0.25,
+            "connections": 644,
+            "kept": 13
+          },
+          {
+            "step": 4000,
+            "accuracy": 0.25,
+            "connections": 644,
+            "kept": 13
+          },
+          {
+            "step": 5000,
+            "accuracy": 0.25,
+            "connections": 644,
+            "kept": 13
+          },
+          {
+            "step": 6000,
+            "accuracy": 0.3125,
+            "connections": 644,
+            "kept": 14
+          },
+          {
+            "step": 7000,
+            "accuracy": 0.3125,
+            "connections": 644,
+            "kept": 14
+          },
+          {
+            "step": 8000,
+            "accuracy": 0.3125,
+            "connections": 644,
+            "kept": 14
+          }
+        ]
+      },
+      {
+        "seed": 1337,
+        "accuracy": 0.375,
+        "kept": 18,
+        "time": 20.2,
+        "connections": 2352,
+        "logs": [
+          {
+            "step": 1000,
+            "accuracy": 0.375,
+            "connections": 2352,
+            "kept": 16
+          },
+          {
+            "step": 2000,
+            "accuracy": 0.375,
+            "connections": 2352,
+            "kept": 18
+          },
+          {
+            "step": 3000,
+            "accuracy": 0.375,
+            "connections": 2352,
+            "kept": 18
+          },
+          {
+            "step": 4000,
+            "accuracy": 0.375,
+            "connections": 2352,
+            "kept": 18
+          },
+          {
+            "step": 5000,
+            "accuracy": 0.375,
+            "connections": 2352,
+            "kept": 18
+          },
+          {
+            "step": 6000,
+            "accuracy": 0.375,
+            "connections": 2352,
+            "kept": 18
+          },
+          {
+            "step": 7000,
+            "accuracy": 0.375,
+            "connections": 2352,
+            "kept": 18
+          }
+        ]
+      }
+    ],
+    "global_learn": [
+      {
+        "seed": 42,
+        "accuracy": 0.75,
+        "kept": 111,
+        "time": 20.9,
+        "connections": 4413,
+        "logs": [
+          {
+            "step": 1000,
+            "accuracy": 0.625,
+            "connections": 4645,
+            "kept": 91,
+            "threshold": 0.4485,
+            "leak": 0.8784,
+            "acc_rate": 0.3721,
+            "self_fb": 0.1786
+          },
+          {
+            "step": 2000,
+            "accuracy": 0.6875,
+            "connections": 4413,
+            "kept": 107,
+            "threshold": 0.4596,
+            "leak": 0.8813,
+            "acc_rate": 0.375,
+            "self_fb": 0.2464
+          },
+          {
+            "step": 3000,
+            "accuracy": 0.6875,
+            "connections": 4413,
+            "kept": 108,
+            "threshold": 0.4657,
+            "leak": 0.8813,
+            "acc_rate": 0.375,
+            "self_fb": 0.2464
+          },
+          {
+            "step": 4000,
+            "accuracy": 0.6875,
+            "connections": 4413,
+            "kept": 108,
+            "threshold": 0.4657,
+            "leak": 0.8813,
+            "acc_rate": 0.375,
+            "self_fb": 0.2464
+          },
+          {
+            "step": 5000,
+            "accuracy": 0.6875,
+            "connections": 4413,
+            "kept": 108,
+            "threshold": 0.4657,
+            "leak": 0.8813,
+            "acc_rate": 0.375,
+            "self_fb": 0.2464
+          },
+          {
+            "step": 6000,
+            "accuracy": 0.6875,
+            "connections": 4413,
+            "kept": 108,
+            "threshold": 0.4657,
+            "leak": 0.8813,
+            "acc_rate": 0.375,
+            "self_fb": 0.2464
+          },
+          {
+            "step": 7000,
+            "accuracy": 0.6875,
+            "connections": 4413,
+            "kept": 108,
+            "threshold": 0.4657,
+            "leak": 0.8813,
+            "acc_rate": 0.375,
+            "self_fb": 0.2464
+          },
+          {
+            "step": 8000,
+            "accuracy": 0.75,
+            "connections": 4413,
+            "kept": 111,
+            "threshold": 0.4657,
+            "leak": 0.8813,
+            "acc_rate": 0.375,
+            "self_fb": 0.253
+          }
+        ],
+        "final_threshold": 0.4657,
+        "final_leak": 0.8813,
+        "final_acc_rate": 0.375,
+        "final_self_fb": 0.253
+      },
+      {
+        "seed": 123,
+        "accuracy": 0.8125,
+        "kept": 125,
+        "time": 21.0,
+        "connections": 5560,
+        "logs": [
+          {
+            "step": 1000,
+            "accuracy": 0.75,
+            "connections": 4692,
+            "kept": 95,
+            "threshold": 0.4526,
+            "leak": 0.864,
+            "acc_rate": 0.4071,
+            "self_fb": 0.3101
+          },
+          {
+            "step": 2000,
+            "accuracy": 0.75,
+            "connections": 5390,
+            "kept": 109,
+            "threshold": 0.4526,
+            "leak": 0.864,
+            "acc_rate": 0.4071,
+            "self_fb": 0.3456
+          },
+          {
+            "step": 3000,
+            "accuracy": 0.75,
+            "connections": 5480,
+            "kept": 111,
+            "threshold": 0.4526,
+            "leak": 0.864,
+            "acc_rate": 0.4071,
+            "self_fb": 0.3456
+          },
+          {
+            "step": 4000,
+            "accuracy": 0.75,
+            "connections": 5522,
+            "kept": 112,
+            "threshold": 0.4526,
+            "leak": 0.864,
+            "acc_rate": 0.4071,
+            "self_fb": 0.3456
+          },
+          {
+            "step": 5000,
+            "accuracy": 0.75,
+            "connections": 5634,
+            "kept": 115,
+            "threshold": 0.4526,
+            "leak": 0.864,
+            "acc_rate": 0.4071,
+            "self_fb": 0.3456
+          },
+          {
+            "step": 6000,
+            "accuracy": 0.75,
+            "connections": 5634,
+            "kept": 116,
+            "threshold": 0.4526,
+            "leak": 0.864,
+            "acc_rate": 0.4071,
+            "self_fb": 0.3456
+          },
+          {
+            "step": 7000,
+            "accuracy": 0.75,
+            "connections": 5731,
+            "kept": 120,
+            "threshold": 0.4526,
+            "leak": 0.864,
+            "acc_rate": 0.4071,
+            "self_fb": 0.3458
+          },
+          {
+            "step": 8000,
+            "accuracy": 0.8125,
+            "connections": 5560,
+            "kept": 125,
+            "threshold": 0.4526,
+            "leak": 0.864,
+            "acc_rate": 0.4071,
+            "self_fb": 0.3546
+          }
+        ],
+        "final_threshold": 0.4526,
+        "final_leak": 0.864,
+        "final_acc_rate": 0.4071,
+        "final_self_fb": 0.3546
+      },
+      {
+        "seed": 456,
+        "accuracy": 0.9375,
+        "kept": 236,
+        "time": 21.0,
+        "connections": 6278,
+        "logs": [
+          {
+            "step": 1000,
+            "accuracy": 0.8125,
+            "connections": 5604,
+            "kept": 110,
+            "threshold": 0.4287,
+            "leak": 0.8901,
+            "acc_rate": 0.3321,
+            "self_fb": 0.1839
+          },
+          {
+            "step": 2000,
+            "accuracy": 0.8125,
+            "connections": 6056,
+            "kept": 131,
+            "threshold": 0.4287,
+            "leak": 0.8901,
+            "acc_rate": 0.3321,
+            "self_fb": 0.1839
+          },
+          {
+            "step": 3000,
+            "accuracy": 0.875,
+            "connections": 6156,
+            "kept": 170,
+            "threshold": 0.4213,
+            "leak": 0.8903,
+            "acc_rate": 0.3321,
+            "self_fb": 0.2146
+          },
+          {
+            "step": 4000,
+            "accuracy": 0.9375,
+            "connections": 6187,
+            "kept": 208,
+            "threshold": 0.4213,
+            "leak": 0.8903,
+            "acc_rate": 0.3321,
+            "self_fb": 0.2228
+          },
+          {
+            "step": 5000,
+            "accuracy": 0.9375,
+            "connections": 6264,
+            "kept": 227,
+            "threshold": 0.4213,
+            "leak": 0.8903,
+            "acc_rate": 0.3321,
+            "self_fb": 0.2228
+          },
+          {
+            "step": 6000,
+            "accuracy": 0.9375,
+            "connections": 6274,
+            "kept": 234,
+            "threshold": 0.4213,
+            "leak": 0.8904,
+            "acc_rate": 0.3321,
+            "self_fb": 0.2228
+          },
+          {
+            "step": 7000,
+            "accuracy": 0.9375,
+            "connections": 6276,
+            "kept": 235,
+            "threshold": 0.4213,
+            "leak": 0.8904,
+            "acc_rate": 0.3321,
+            "self_fb": 0.2228
+          },
+          {
+            "step": 8000,
+            "accuracy": 0.9375,
+            "connections": 6278,
+            "kept": 236,
+            "threshold": 0.4213,
+            "leak": 0.8904,
+            "acc_rate": 0.3321,
+            "self_fb": 0.2228
+          }
+        ],
+        "final_threshold": 0.4213,
+        "final_leak": 0.8904,
+        "final_acc_rate": 0.3321,
+        "final_self_fb": 0.2228
+      },
+      {
+        "seed": 789,
+        "accuracy": 0.625,
+        "kept": 117,
+        "time": 21.0,
+        "connections": 3784,
+        "logs": [
+          {
+            "step": 1000,
+            "accuracy": 0.5625,
+            "connections": 3280,
+            "kept": 92,
+            "threshold": 0.4532,
+            "leak": 0.9335,
+            "acc_rate": 0.3808,
+            "self_fb": 0.2403
+          },
+          {
+            "step": 2000,
+            "accuracy": 0.5625,
+            "connections": 3280,
+            "kept": 95,
+            "threshold": 0.4561,
+            "leak": 0.9335,
+            "acc_rate": 0.3808,
+            "self_fb": 0.2403
+          },
+          {
+            "step": 3000,
+            "accuracy": 0.5625,
+            "connections": 3280,
+            "kept": 100,
+            "threshold": 0.4577,
+            "leak": 0.9342,
+            "acc_rate": 0.3808,
+            "self_fb": 0.236
+          },
+          {
+            "step": 4000,
+            "accuracy": 0.5625,
+            "connections": 3280,
+            "kept": 100,
+            "threshold": 0.4577,
+            "leak": 0.9342,
+            "acc_rate": 0.3808,
+            "self_fb": 0.236
+          },
+          {
+            "step": 5000,
+            "accuracy": 0.5625,
+            "connections": 3576,
+            "kept": 105,
+            "threshold": 0.4577,
+            "leak": 0.9342,
+            "acc_rate": 0.3817,
+            "self_fb": 0.236
+          },
+          {
+            "step": 6000,
+            "accuracy": 0.5625,
+            "connections": 3713,
+            "kept": 111,
+            "threshold": 0.4563,
+            "leak": 0.932,
+            "acc_rate": 0.4048,
+            "self_fb": 0.2292
+          },
+          {
+            "step": 7000,
+            "accuracy": 0.5625,
+            "connections": 3713,
+            "kept": 112,
+            "threshold": 0.4563,
+            "leak": 0.932,
+            "acc_rate": 0.4048,
+            "self_fb": 0.2295
+          },
+          {
+            "step": 8000,
+            "accuracy": 0.625,
+            "connections": 3784,
+            "kept": 117,
+            "threshold": 0.4573,
+            "leak": 0.932,
+            "acc_rate": 0.4048,
+            "self_fb": 0.2289
+          }
+        ],
+        "final_threshold": 0.4573,
+        "final_leak": 0.932,
+        "final_acc_rate": 0.4048,
+        "final_self_fb": 0.2289
+      },
+      {
+        "seed": 1337,
+        "accuracy": 0.9375,
+        "kept": 217,
+        "time": 20.6,
+        "connections": 6232,
+        "logs": [
+          {
+            "step": 1000,
+            "accuracy": 0.9375,
+            "connections": 4914,
+            "kept": 87,
+            "threshold": 0.4748,
+            "leak": 0.8727,
+            "acc_rate": 0.3847,
+            "self_fb": 0.2021
+          },
+          {
+            "step": 2000,
+            "accuracy": 0.9375,
+            "connections": 6090,
+            "kept": 142,
+            "threshold": 0.4682,
+            "leak": 0.8793,
+            "acc_rate": 0.3847,
+            "self_fb": 0.2342
+          },
+          {
+            "step": 3000,
+            "accuracy": 0.9375,
+            "connections": 6258,
+            "kept": 172,
+            "threshold": 0.4682,
+            "leak": 0.8793,
+            "acc_rate": 0.3847,
+            "self_fb": 0.2342
+          },
+          {
+            "step": 4000,
+            "accuracy": 0.9375,
+            "connections": 6263,
+            "kept": 174,
+            "threshold": 0.4682,
+            "leak": 0.8793,
+            "acc_rate": 0.3847,
+            "self_fb": 0.2342
+          },
+          {
+            "step": 5000,
+            "accuracy": 0.9375,
+            "connections": 6275,
+            "kept": 183,
+            "threshold": 0.4682,
+            "leak": 0.8793,
+            "acc_rate": 0.3847,
+            "self_fb": 0.2206
+          },
+          {
+            "step": 6000,
+            "accuracy": 0.9375,
+            "connections": 6219,
+            "kept": 214,
+            "threshold": 0.4682,
+            "leak": 0.8823,
+            "acc_rate": 0.3847,
+            "self_fb": 0.2033
+          },
+          {
+            "step": 7000,
+            "accuracy": 0.9375,
+            "connections": 6232,
+            "kept": 217,
+            "threshold": 0.4682,
+            "leak": 0.8823,
+            "acc_rate": 0.3847,
+            "self_fb": 0.2033
+          },
+          {
+            "step": 8000,
+            "accuracy": 0.9375,
+            "connections": 6232,
+            "kept": 217,
+            "threshold": 0.4682,
+            "leak": 0.8823,
+            "acc_rate": 0.3847,
+            "self_fb": 0.2033
+          }
+        ],
+        "final_threshold": 0.4682,
+        "final_leak": 0.8823,
+        "final_acc_rate": 0.3847,
+        "final_self_fb": 0.2033
+      }
+    ]
+  },
+  "test_b": {
+    "global_learn": [
+      {
+        "seed": 42,
+        "accuracy": 0.75,
+        "kept": 111,
+        "time": 20.8,
+        "connections": 4413,
+        "logs": [
+          {
+            "step": 1000,
+            "accuracy": 0.625,
+            "connections": 4645,
+            "kept": 91,
+            "threshold": 0.4485,
+            "leak": 0.8784,
+            "acc_rate": 0.3721,
+            "self_fb": 0.1786
+          },
+          {
+            "step": 2000,
+            "accuracy": 0.6875,
+            "connections": 4413,
+            "kept": 107,
+            "threshold": 0.4596,
+            "leak": 0.8813,
+            "acc_rate": 0.375,
+            "self_fb": 0.2464
+          },
+          {
+            "step": 3000,
+            "accuracy": 0.6875,
+            "connections": 4413,
+            "kept": 108,
+            "threshold": 0.4657,
+            "leak": 0.8813,
+            "acc_rate": 0.375,
+            "self_fb": 0.2464
+          },
+          {
+            "step": 4000,
+            "accuracy": 0.6875,
+            "connections": 4413,
+            "kept": 108,
+            "threshold": 0.4657,
+            "leak": 0.8813,
+            "acc_rate": 0.375,
+            "self_fb": 0.2464
+          },
+          {
+            "step": 5000,
+            "accuracy": 0.6875,
+            "connections": 4413,
+            "kept": 108,
+            "threshold": 0.4657,
+            "leak": 0.8813,
+            "acc_rate": 0.375,
+            "self_fb": 0.2464
+          },
+          {
+            "step": 6000,
+            "accuracy": 0.6875,
+            "connections": 4413,
+            "kept": 108,
+            "threshold": 0.4657,
+            "leak": 0.8813,
+            "acc_rate": 0.375,
+            "self_fb": 0.2464
+          },
+          {
+            "step": 7000,
+            "accuracy": 0.6875,
+            "connections": 4413,
+            "kept": 108,
+            "threshold": 0.4657,
+            "leak": 0.8813,
+            "acc_rate": 0.375,
+            "self_fb": 0.2464
+          },
+          {
+            "step": 8000,
+            "accuracy": 0.75,
+            "connections": 4413,
+            "kept": 111,
+            "threshold": 0.4657,
+            "leak": 0.8813,
+            "acc_rate": 0.375,
+            "self_fb": 0.253
+          }
+        ]
+      },
+      {
+        "seed": 123,
+        "accuracy": 0.8125,
+        "kept": 125,
+        "time": 21.0,
+        "connections": 5560,
+        "logs": [
+          {
+            "step": 1000,
+            "accuracy": 0.75,
+            "connections": 4692,
+            "kept": 95,
+            "threshold": 0.4526,
+            "leak": 0.864,
+            "acc_rate": 0.4071,
+            "self_fb": 0.3101
+          },
+          {
+            "step": 2000,
+            "accuracy": 0.75,
+            "connections": 5390,
+            "kept": 109,
+            "threshold": 0.4526,
+            "leak": 0.864,
+            "acc_rate": 0.4071,
+            "self_fb": 0.3456
+          },
+          {
+            "step": 3000,
+            "accuracy": 0.75,
+            "connections": 5480,
+            "kept": 111,
+            "threshold": 0.4526,
+            "leak": 0.864,
+            "acc_rate": 0.4071,
+            "self_fb": 0.3456
+          },
+          {
+            "step": 4000,
+            "accuracy": 0.75,
+            "connections": 5522,
+            "kept": 112,
+            "threshold": 0.4526,
+            "leak": 0.864,
+            "acc_rate": 0.4071,
+            "self_fb": 0.3456
+          },
+          {
+            "step": 5000,
+            "accuracy": 0.75,
+            "connections": 5634,
+            "kept": 115,
+            "threshold": 0.4526,
+            "leak": 0.864,
+            "acc_rate": 0.4071,
+            "self_fb": 0.3456
+          },
+          {
+            "step": 6000,
+            "accuracy": 0.75,
+            "connections": 5634,
+            "kept": 116,
+            "threshold": 0.4526,
+            "leak": 0.864,
+            "acc_rate": 0.4071,
+            "self_fb": 0.3456
+          },
+          {
+            "step": 7000,
+            "accuracy": 0.75,
+            "connections": 5731,
+            "kept": 120,
+            "threshold": 0.4526,
+            "leak": 0.864,
+            "acc_rate": 0.4071,
+            "self_fb": 0.3458
+          },
+          {
+            "step": 8000,
+            "accuracy": 0.8125,
+            "connections": 5560,
+            "kept": 125,
+            "threshold": 0.4526,
+            "leak": 0.864,
+            "acc_rate": 0.4071,
+            "self_fb": 0.3546
+          }
+        ]
+      },
+      {
+        "seed": 456,
+        "accuracy": 0.9375,
+        "kept": 236,
+        "time": 20.9,
+        "connections": 6278,
+        "logs": [
+          {
+            "step": 1000,
+            "accuracy": 0.8125,
+            "connections": 5604,
+            "kept": 110,
+            "threshold": 0.4287,
+            "leak": 0.8901,
+            "acc_rate": 0.3321,
+            "self_fb": 0.1839
+          },
+          {
+            "step": 2000,
+            "accuracy": 0.8125,
+            "connections": 6056,
+            "kept": 131,
+            "threshold": 0.4287,
+            "leak": 0.8901,
+            "acc_rate": 0.3321,
+            "self_fb": 0.1839
+          },
+          {
+            "step": 3000,
+            "accuracy": 0.875,
+            "connections": 6156,
+            "kept": 170,
+            "threshold": 0.4213,
+            "leak": 0.8903,
+            "acc_rate": 0.3321,
+            "self_fb": 0.2146
+          },
+          {
+            "step": 4000,
+            "accuracy": 0.9375,
+            "connections": 6187,
+            "kept": 208,
+            "threshold": 0.4213,
+            "leak": 0.8903,
+            "acc_rate": 0.3321,
+            "self_fb": 0.2228
+          },
+          {
+            "step": 5000,
+            "accuracy": 0.9375,
+            "connections": 6264,
+            "kept": 227,
+            "threshold": 0.4213,
+            "leak": 0.8903,
+            "acc_rate": 0.3321,
+            "self_fb": 0.2228
+          },
+          {
+            "step": 6000,
+            "accuracy": 0.9375,
+            "connections": 6274,
+            "kept": 234,
+            "threshold": 0.4213,
+            "leak": 0.8904,
+            "acc_rate": 0.3321,
+            "self_fb": 0.2228
+          },
+          {
+            "step": 7000,
+            "accuracy": 0.9375,
+            "connections": 6276,
+            "kept": 235,
+            "threshold": 0.4213,
+            "leak": 0.8904,
+            "acc_rate": 0.3321,
+            "self_fb": 0.2228
+          },
+          {
+            "step": 8000,
+            "accuracy": 0.9375,
+            "connections": 6278,
+            "kept": 236,
+            "threshold": 0.4213,
+            "leak": 0.8904,
+            "acc_rate": 0.3321,
+            "self_fb": 0.2228
+          }
+        ]
+      },
+      {
+        "seed": 789,
+        "accuracy": 0.625,
+        "kept": 117,
+        "time": 21.4,
+        "connections": 3784,
+        "logs": [
+          {
+            "step": 1000,
+            "accuracy": 0.5625,
+            "connections": 3280,
+            "kept": 92,
+            "threshold": 0.4532,
+            "leak": 0.9335,
+            "acc_rate": 0.3808,
+            "self_fb": 0.2403
+          },
+          {
+            "step": 2000,
+            "accuracy": 0.5625,
+            "connections": 3280,
+            "kept": 95,
+            "threshold": 0.4561,
+            "leak": 0.9335,
+            "acc_rate": 0.3808,
+            "self_fb": 0.2403
+          },
+          {
+            "step": 3000,
+            "accuracy": 0.5625,
+            "connections": 3280,
+            "kept": 100,
+            "threshold": 0.4577,
+            "leak": 0.9342,
+            "acc_rate": 0.3808,
+            "self_fb": 0.236
+          },
+          {
+            "step": 4000,
+            "accuracy": 0.5625,
+            "connections": 3280,
+            "kept": 100,
+            "threshold": 0.4577,
+            "leak": 0.9342,
+            "acc_rate": 0.3808,
+            "self_fb": 0.236
+          },
+          {
+            "step": 5000,
+            "accuracy": 0.5625,
+            "connections": 3576,
+            "kept": 105,
+            "threshold": 0.4577,
+            "leak": 0.9342,
+            "acc_rate": 0.3817,
+            "self_fb": 0.236
+          },
+          {
+            "step": 6000,
+            "accuracy": 0.5625,
+            "connections": 3713,
+            "kept": 111,
+            "threshold": 0.4563,
+            "leak": 0.932,
+            "acc_rate": 0.4048,
+            "self_fb": 0.2292
+          },
+          {
+            "step": 7000,
+            "accuracy": 0.5625,
+            "connections": 3713,
+            "kept": 112,
+            "threshold": 0.4563,
+            "leak": 0.932,
+            "acc_rate": 0.4048,
+            "self_fb": 0.2295
+          },
+          {
+            "step": 8000,
+            "accuracy": 0.625,
+            "connections": 3784,
+            "kept": 117,
+            "threshold": 0.4573,
+            "leak": 0.932,
+            "acc_rate": 0.4048,
+            "self_fb": 0.2289
+          }
+        ]
+      },
+      {
+        "seed": 1337,
+        "accuracy": 0.9375,
+        "kept": 217,
+        "time": 21.3,
+        "connections": 6232,
+        "logs": [
+          {
+            "step": 1000,
+            "accuracy": 0.9375,
+            "connections": 4914,
+            "kept": 87,
+            "threshold": 0.4748,
+            "leak": 0.8727,
+            "acc_rate": 0.3847,
+            "self_fb": 0.2021
+          },
+          {
+            "step": 2000,
+            "accuracy": 0.9375,
+            "connections": 6090,
+            "kept": 142,
+            "threshold": 0.4682,
+            "leak": 0.8793,
+            "acc_rate": 0.3847,
+            "self_fb": 0.2342
+          },
+          {
+            "step": 3000,
+            "accuracy": 0.9375,
+            "connections": 6258,
+            "kept": 172,
+            "threshold": 0.4682,
+            "leak": 0.8793,
+            "acc_rate": 0.3847,
+            "self_fb": 0.2342
+          },
+          {
+            "step": 4000,
+            "accuracy": 0.9375,
+            "connections": 6263,
+            "kept": 174,
+            "threshold": 0.4682,
+            "leak": 0.8793,
+            "acc_rate": 0.3847,
+            "self_fb": 0.2342
+          },
+          {
+            "step": 5000,
+            "accuracy": 0.9375,
+            "connections": 6275,
+            "kept": 183,
+            "threshold": 0.4682,
+            "leak": 0.8793,
+            "acc_rate": 0.3847,
+            "self_fb": 0.2206
+          },
+          {
+            "step": 6000,
+            "accuracy": 0.9375,
+            "connections": 6219,
+            "kept": 214,
+            "threshold": 0.4682,
+            "leak": 0.8823,
+            "acc_rate": 0.3847,
+            "self_fb": 0.2033
+          },
+          {
+            "step": 7000,
+            "accuracy": 0.9375,
+            "connections": 6232,
+            "kept": 217,
+            "threshold": 0.4682,
+            "leak": 0.8823,
+            "acc_rate": 0.3847,
+            "self_fb": 0.2033
+          },
+          {
+            "step": 8000,
+            "accuracy": 0.9375,
+            "connections": 6232,
+            "kept": 217,
+            "threshold": 0.4682,
+            "leak": 0.8823,
+            "acc_rate": 0.3847,
+            "self_fb": 0.2033
+          }
+        ]
+      }
+    ],
+    "per_neuron": [
+      {
+        "seed": 42,
+        "accuracy": 0.9375,
+        "kept": 324,
+        "time": 22.5,
+        "connections": 6227,
+        "logs": [
+          {
+            "step": 1000,
+            "accuracy": 0.9375,
+            "connections": 5879,
+            "kept": 144,
+            "threshold_mean": 0.5,
+            "threshold_std": 0.0,
+            "threshold_min": 0.5,
+            "threshold_max": 0.5,
+            "leak_mean": 0.8515,
+            "leak_std": 0.0058,
+            "leak_min": 0.85,
+            "leak_max": 0.8879
+          },
+          {
+            "step": 2000,
+            "accuracy": 0.9375,
+            "connections": 6066,
+            "kept": 179,
+            "threshold_mean": 0.5001,
+            "threshold_std": 0.0009,
+            "threshold_min": 0.5,
+            "threshold_max": 0.5082,
+            "leak_mean": 0.8526,
+            "leak_std": 0.0076,
+            "leak_min": 0.85,
+            "leak_max": 0.8879
+          },
+          {
+            "step": 3000,
+            "accuracy": 0.9375,
+            "connections": 6130,
+            "kept": 204,
+            "threshold_mean": 0.4999,
+            "threshold_std": 0.0059,
+            "threshold_min": 0.4693,
+            "threshold_max": 0.5395,
+            "leak_mean": 0.8548,
+            "leak_std": 0.0124,
+            "leak_min": 0.85,
+            "leak_max": 0.9024
+          },
+          {
+            "step": 4000,
+            "accuracy": 0.9375,
+            "connections": 6130,
+            "kept": 226,
+            "threshold_mean": 0.4974,
+            "threshold_std": 0.0122,
+            "threshold_min": 0.4409,
+            "threshold_max": 0.5395,
+            "leak_mean": 0.8558,
+            "leak_std": 0.0151,
+            "leak_min": 0.85,
+            "leak_max": 0.9324
+          },
+          {
+            "step": 5000,
+            "accuracy": 0.9375,
+            "connections": 6156,
+            "kept": 244,
+            "threshold_mean": 0.4962,
+            "threshold_std": 0.0141,
+            "threshold_min": 0.4383,
+            "threshold_max": 0.5395,
+            "leak_mean": 0.8565,
+            "leak_std": 0.0165,
+            "leak_min": 0.8256,
+            "leak_max": 0.9324
+          },
+          {
+            "step": 6000,
+            "accuracy": 0.9375,
+            "connections": 6164,
+            "kept": 264,
+            "threshold_mean": 0.4963,
+            "threshold_std": 0.0163,
+            "threshold_min": 0.4383,
+            "threshold_max": 0.5476,
+            "leak_mean": 0.8582,
+            "leak_std": 0.0229,
+            "leak_min": 0.8256,
+            "leak_max": 0.9702
+          },
+          {
+            "step": 7000,
+            "accuracy": 0.9375,
+            "connections": 6197,
+            "kept": 292,
+            "threshold_mean": 0.4956,
+            "threshold_std": 0.0199,
+            "threshold_min": 0.4082,
+            "threshold_max": 0.5502,
+            "leak_mean": 0.8589,
+            "leak_std": 0.0246,
+            "leak_min": 0.8256,
+            "leak_max": 0.9702
+          },
+          {
+            "step": 8000,
+            "accuracy": 0.9375,
+            "connections": 6227,
+            "kept": 324,
+            "threshold_mean": 0.4943,
+            "threshold_std": 0.0255,
+            "threshold_min": 0.4049,
+            "threshold_max": 0.5656,
+            "leak_mean": 0.86,
+            "leak_std": 0.0265,
+            "leak_min": 0.8094,
+            "leak_max": 0.9702
+          }
+        ],
+        "threshold_distribution": {
+          "mean": 0.4943,
+          "std": 0.0255,
+          "min": 0.4049,
+          "max": 0.5656,
+          "q25": 0.5,
+          "q50": 0.5,
+          "q75": 0.5
+        },
+        "leak_distribution": {
+          "mean": 0.86,
+          "std": 0.0265,
+          "min": 0.8094,
+          "max": 0.9702,
+          "q25": 0.85,
+          "q50": 0.85,
+          "q75": 0.8531
+        }
+      },
+      {
+        "seed": 123,
+        "accuracy": 1.0,
+        "kept": 196,
+        "time": 4.7,
+        "connections": 5698,
+        "logs": [
+          {
+            "step": 1000,
+            "accuracy": 0.875,
+            "connections": 6049,
+            "kept": 156,
+            "threshold_mean": 0.4997,
+            "threshold_std": 0.0032,
+            "threshold_min": 0.4719,
+            "threshold_max": 0.5073,
+            "leak_mean": 0.8509,
+            "leak_std": 0.0054,
+            "leak_min": 0.8296,
+            "leak_max": 0.8768
+          }
+        ],
+        "threshold_distribution": {
+          "mean": 0.4992,
+          "std": 0.0055,
+          "min": 0.4601,
+          "max": 0.5073,
+          "q25": 0.5,
+          "q50": 0.5,
+          "q75": 0.5
+        },
+        "leak_distribution": {
+          "mean": 0.8516,
+          "std": 0.0069,
+          "min": 0.8296,
+          "max": 0.8817,
+          "q25": 0.85,
+          "q50": 0.85,
+          "q75": 0.85
+        }
+      },
+      {
+        "seed": 456,
+        "accuracy": 1.0,
+        "kept": 148,
+        "time": 2.5,
+        "connections": 5987,
+        "logs": [],
+        "threshold_distribution": {
+          "mean": 0.4994,
+          "std": 0.0045,
+          "min": 0.4656,
+          "max": 0.5054,
+          "q25": 0.5,
+          "q50": 0.5,
+          "q75": 0.5
+        },
+        "leak_distribution": {
+          "mean": 0.851,
+          "std": 0.0036,
+          "min": 0.85,
+          "max": 0.8724,
+          "q25": 0.85,
+          "q50": 0.85,
+          "q75": 0.85
+        }
+      },
+      {
+        "seed": 789,
+        "accuracy": 1.0,
+        "kept": 148,
+        "time": 2.6,
+        "connections": 5839,
+        "logs": [],
+        "threshold_distribution": {
+          "mean": 0.5,
+          "std": 0.0097,
+          "min": 0.4318,
+          "max": 0.5452,
+          "q25": 0.5,
+          "q50": 0.5,
+          "q75": 0.5
+        },
+        "leak_distribution": {
+          "mean": 0.8511,
+          "std": 0.0044,
+          "min": 0.8422,
+          "max": 0.876,
+          "q25": 0.85,
+          "q50": 0.85,
+          "q75": 0.85
+        }
+      },
+      {
+        "seed": 1337,
+        "accuracy": 1.0,
+        "kept": 168,
+        "time": 3.7,
+        "connections": 5621,
+        "logs": [
+          {
+            "step": 1000,
+            "accuracy": 0.9375,
+            "connections": 5844,
+            "kept": 140,
+            "threshold_mean": 0.4991,
+            "threshold_std": 0.0067,
+            "threshold_min": 0.4542,
+            "threshold_max": 0.523,
+            "leak_mean": 0.8514,
+            "leak_std": 0.0058,
+            "leak_min": 0.85,
+            "leak_max": 0.8885
+          }
+        ],
+        "threshold_distribution": {
+          "mean": 0.4989,
+          "std": 0.007,
+          "min": 0.4542,
+          "max": 0.523,
+          "q25": 0.5,
+          "q50": 0.5,
+          "q75": 0.5
+        },
+        "leak_distribution": {
+          "mean": 0.8515,
+          "std": 0.006,
+          "min": 0.85,
+          "max": 0.8885,
+          "q25": 0.85,
+          "q50": 0.85,
+          "q75": 0.85
+        }
+      }
+    ]
+  },
+  "test_c": {
+    "32_class": {
+      "fixed_default": [
+        {
+          "seed": 42,
+          "accuracy": 0.875,
+          "kept": 276,
+          "time": 83.1,
+          "connections": 25205
+        },
+        {
+          "seed": 123,
+          "accuracy": 0.90625,
+          "kept": 363,
+          "time": 83.3,
+          "connections": 25318
+        },
+        {
+          "seed": 456,
+          "accuracy": 0.96875,
+          "kept": 395,
+          "time": 81.7,
+          "connections": 25295
+        }
+      ],
+      "fixed_sweep": [
+        {
+          "seed": 42,
+          "accuracy": 0.15625,
+          "kept": 9,
+          "time": 60.4,
+          "connections": 4921
+        },
+        {
+          "seed": 123,
+          "accuracy": 0.15625,
+          "kept": 11,
+          "time": 74.5,
+          "connections": 2437
+        },
+        {
+          "seed": 456,
+          "accuracy": 0.1875,
+          "kept": 7,
+          "time": 64.0,
+          "connections": 2554
+        }
+      ],
+      "per_neuron": [
+        {
+          "seed": 42,
+          "accuracy": 0.84375,
+          "kept": 420,
+          "time": 86.2,
+          "connections": 25343,
+          "threshold_mean": 0.4932,
+          "leak_mean": 0.8612
+        },
+        {
+          "seed": 123,
+          "accuracy": 0.84375,
+          "kept": 508,
+          "time": 85.6,
+          "connections": 25345,
+          "threshold_mean": 0.4929,
+          "leak_mean": 0.8555
+        },
+        {
+          "seed": 456,
+          "accuracy": 0.875,
+          "kept": 482,
+          "time": 86.9,
+          "connections": 25334,
+          "threshold_mean": 0.4923,
+          "leak_mean": 0.8561
+        }
+      ]
+    },
+    "64_class": {
+      "fixed_default": [
+        {
+          "seed": 42,
+          "accuracy": 0.53125,
+          "kept": 664,
+          "time": 493.7,
+          "connections": 101941
+        },
+        {
+          "seed": 123,
+          "accuracy": 0.609375,
+          "kept": 854,
+          "time": 493.9,
+          "connections": 101917
+        },
+        {
+          "seed": 456,
+          "accuracy": 0.5625,
+          "kept": 420,
+          "time": 492.6,
+          "connections": 101981
+        }
+      ],
+      "fixed_sweep": [
+        {
+          "seed": 42,
+          "accuracy": 0.015625,
+          "kept": 0,
+          "time": 137.7,
+          "connections": 5977
+        },
+        {
+          "seed": 123,
+          "accuracy": 0.015625,
+          "kept": 0,
+          "time": 138.8,
+          "connections": 6088
+        },
+        {
+          "seed": 456,
+          "accuracy": 0.015625,
+          "kept": 0,
+          "time": 136.6,
+          "connections": 5959
+        }
+      ],
+      "per_neuron": [
+        {
+          "seed": 42,
+          "accuracy": 0.609375,
+          "kept": 1129,
+          "time": 499.8,
+          "connections": 101947,
+          "threshold_mean": 0.4926,
+          "leak_mean": 0.8555
+        },
+        {
+          "seed": 123,
+          "accuracy": 0.578125,
+          "kept": 838,
+          "time": 497.0,
+          "connections": 101985,
+          "threshold_mean": 0.4935,
+          "leak_mean": 0.8564
+        },
+        {
+          "seed": 456,
+          "accuracy": 0.546875,
+          "kept": 673,
+          "time": 503.0,
+          "connections": 101951,
+          "threshold_mean": 0.4921,
+          "leak_mean": 0.8576
+        }
+      ]
+    }
+  }
+}
