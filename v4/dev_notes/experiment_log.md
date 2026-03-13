@@ -4,6 +4,31 @@ Newest entries at top. Copy from [TEMPLATE.md](TEMPLATE.md) for new entries.
 
 ---
 
+## 2026-03-13 — Nightly Branch Consolidation (Curated Ingest Only)
+
+Consolidated the remaining nightly-family Claude branches into the curated `nightly` integration branch using selective ingest, not whole-branch merges.
+
+Kept:
+
+- `tests/test_adversarial.py`
+- `tests/cpu_ring_health_monitor.py`
+- selected sweep/benchmark scripts from the old nightly-family branches
+- normalized sweep findings in `v4/results/derived/branch_ingest_highlights.csv`
+
+Rejected from the curated trunk:
+
+- raw `sweep_results/**` trees
+- tracked checkpoints and telemetry dumps
+- stale `v2 default` / `expert batch` tests that target an older API (`c19_mode`, `pointer_interp_mode='linear'`, `pointer_seam_mode='shortest_arc'`)
+
+Branch policy is now explicit:
+
+- `main` = historical frozen line
+- `nightly` = curated ring/loss trunk
+- `v4.1` = experimental proving ground for the no-loss/self-wiring line
+
+---
+
 ## 2026-03-09 — Repo-Local Results Tables Published
 
 Added a tracked, repo-local results store for current `nightly` runs:

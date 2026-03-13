@@ -23,6 +23,9 @@ Do not infer branch state from scratch telemetry, archived notes, or ad hoc help
 - `v4/results/derived/runs_golden.csv`
   - Curated subset of source-of-truth comparisons.
   - This is the CSV to read first on constrained devices.
+- `v4/results/derived/branch_ingest_highlights.csv`
+  - Curated historical findings normalized out of absorbed Claude branches.
+  - Use this instead of revisiting archived branch-local raw sweep trees.
 
 ## Current Recommended Setups
 
@@ -59,6 +62,30 @@ The current verified nightly fix pack also includes a small runtime-correctness 
 - Eval aggregation is intended to be exact over sample/mask numerators and denominators, not a simple average of per-batch means.
 
 These are verified against the current `v4/nightly` code path. Broader audit findings from inactive or missing files should not be treated as nightly facts until separately verified.
+
+## Branch Consolidation Policy
+
+- `main` stays frozen as the historical old-old architecture line.
+- `origin/nightly` remains the curated ring/loss source-of-truth trunk.
+- `origin/v4.1` is the experimental proving branch for the no-loss/self-wiring line.
+- Claude side branches are never treated as trunks:
+  - useful content gets normalized into `nightly` or `v4.1`
+  - raw artifacts stay out of trunk history
+  - archive tags preserve branch tips before deletion
+
+Current absorbed nightly-family additions include:
+
+- adversarial regression coverage via `tests/test_adversarial.py`
+- CPU ring-health instrumentation via `tests/cpu_ring_health_monitor.py`
+- selected sweep and benchmark scripts under `tests/`, `sweeps/`, and `training/`
+- normalized sweep outcomes in `v4/results/derived/branch_ingest_highlights.csv`
+
+Explicitly excluded from the curated trunk:
+
+- tracked checkpoints
+- raw `sweep_results/**` trees
+- stale v2-default/expert-batch tests that do not match the current model API
+- branch-local helper clutter that is superseded by current nightly runtime code
 
 ## Results Tables
 
