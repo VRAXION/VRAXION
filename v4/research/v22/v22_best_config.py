@@ -13,7 +13,8 @@ Architecture:
     * Fires only above threshold: act = max(charge - 0.5, 0)
     * Output reads CHARGE (not act) for richer softmax signal
     * Temporal integration compensates for binary weight precision
-  - Shared I/O (first V neurons = input + output)
+  - Split I/O (default): first V = input, last V = output (+4.7% at V=64)
+  - Shared I/O (legacy): first V neurons = input + output
   - First tick only input injection
   - 8 ticks per forward pass
 
@@ -42,13 +43,22 @@ class SelfWiringGraph:
     """The best-of-all-tests architecture."""
 
     def __init__(self, n_neurons, vocab, density=0.06, flip_rate=0.30,
-                 threshold=0.5, leak=0.85):
+                 threshold=0.5, leak=0.85, io_mode='split'):
         self.N = n_neurons
         self.V = vocab
+        self.io_mode = io_mode
         self.flip_rate = flip_rate
         self.last_acc = 0.0
         self.threshold = threshold
         self.leak = leak
+
+        # Output zone: split = last V neurons, shared = first V neurons
+        # Auto-fallback to shared if not enough neurons for split
+        if io_mode == 'split' and n_neurons >= 2 * vocab:
+            self.out_start = n_neurons - vocab
+        else:
+            self.io_mode = 'shared'
+            self.out_start = 0
 
         # Ternary mask: -1 (inhibit), 0 (no connection), +1 (excite)
         r = np.random.rand(n_neurons, n_neurons)
@@ -96,6 +106,7 @@ class SelfWiringGraph:
 
             # Propagate through graph
             raw = act @ Weff + act * 0.1
+            np.nan_to_num(raw, copy=False, nan=0.0, posinf=0.0, neginf=0.0)
 
             # Capacitor dynamics
             self.charge += raw * 0.3
@@ -111,7 +122,7 @@ class SelfWiringGraph:
 
         self.state = act.copy()
         # Output: read CHARGE for richer softmax signal
-        return self.charge[:self.V]
+        return self.charge[self.out_start:self.out_start + self.V]
 
     def forward_batch(self, ticks=8):
         """
@@ -130,13 +141,14 @@ class SelfWiringGraph:
             if t == 0:
                 acts[:, :V] = worlds
             raw = acts @ Weff + acts * 0.1
+            np.nan_to_num(raw, copy=False, nan=0.0, posinf=0.0, neginf=0.0)
             charges += raw * 0.3
             charges *= self.leak
             acts = np.maximum(charges - self.threshold, 0.0)
             charges = np.clip(charges, -self.threshold * 2,
                               self.threshold * 2)
 
-        return charges[:, :V]
+        return charges[:, self.out_start:self.out_start + V]
 
     def count_connections(self):
         return int((self.mask != 0).sum())
@@ -347,7 +359,7 @@ if __name__ == "__main__":
     import time
 
     V = 16  # vocabulary / classes
-    N = 80  # total neurons (V shared I/O + 64 internal)
+    N = 80  # total neurons (V input + V output + 48 internal)
     SEED = 42
 
     np.random.seed(SEED)
