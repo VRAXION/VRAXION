@@ -1,0 +1,161 @@
+[23:06:02] OVERNIGHT COMBO TEST STARTED
+[23:06:02] Seeds: [42, 123, 777, 1337, 2024]
+[23:06:02] Ticks: 6, Internal: 64
+[23:06:02] ============================================================
+[23:06:02] PHASE 1: BASELINE (Shared I/O)
+[23:06:02] ============================================================
+[23:06:02] START: baseline_V32
+[23:06:46]   baseline_V32 seed=42: acc=65.6%
+[23:07:29]   baseline_V32 seed=123: acc=59.4%
+[23:08:12]   baseline_V32 seed=777: acc=75.0%
+[23:08:56]   baseline_V32 seed=1337: acc=87.5%
+[23:09:39]   baseline_V32 seed=2024: acc=68.8%
+[23:09:39] DONE: baseline_V32 -> acc=0.7125
+[23:09:41] START: baseline_V64
+[23:11:12]   baseline_V64 seed=42: acc=50.0%
+[23:12:43]   baseline_V64 seed=123: acc=48.4%
+[23:14:14]   baseline_V64 seed=777: acc=48.4%
+[23:15:47]   baseline_V64 seed=1337: acc=50.0%
+[23:17:18]   baseline_V64 seed=2024: acc=45.3%
+[23:17:18] DONE: baseline_V64 -> acc=0.484375
+[23:17:20] ============================================================
+[23:17:20] PHASE 2: SPLIT I/O
+[23:17:20] ============================================================
+[23:17:20] START: split_io_V32
+[23:18:13]   split_io_V32 seed=42: acc=65.6%
+[23:19:06]   split_io_V32 seed=123: acc=90.6%
+[23:19:55]   split_io_V32 seed=777: acc=50.0%
+[23:20:45]   split_io_V32 seed=1337: acc=81.2%
+[23:21:34]   split_io_V32 seed=2024: acc=78.1%
+[23:21:34] DONE: split_io_V32 -> acc=0.73125
+[23:21:36] START: split_io_V64
+[23:23:34]   split_io_V64 seed=42: acc=45.3%
+[23:25:28]   split_io_V64 seed=123: acc=43.8%
+[23:27:24]   split_io_V64 seed=777: acc=56.2%
+[23:29:21]   split_io_V64 seed=1337: acc=43.8%
+[23:31:14]   split_io_V64 seed=2024: acc=34.4%
+[23:31:14] DONE: split_io_V64 -> acc=0.446875
+[23:31:16] ============================================================
+[23:31:16] PHASE 3: SPLIT I/O + HIGHWAY
+[23:31:16] ============================================================
+[23:31:16] START: split_hw1_V32
+[23:32:07]   split_hw1_V32 seed=42: acc=93.8%
+[23:32:57]   split_hw1_V32 seed=123: acc=50.0%
+[23:33:48]   split_hw1_V32 seed=777: acc=78.1%
+[23:34:38]   split_hw1_V32 seed=1337: acc=78.1%
+[23:35:27]   split_hw1_V32 seed=2024: acc=59.4%
+[23:35:27] DONE: split_hw1_V32 -> acc=0.71875
+[23:35:29] START: split_hw1_V64
+[23:37:30]   split_hw1_V64 seed=42: acc=25.0%
+[23:39:25]   split_hw1_V64 seed=123: acc=56.2%
+[23:41:24]   split_hw1_V64 seed=777: acc=26.6%
+[23:43:22]   split_hw1_V64 seed=1337: acc=43.8%
+[23:45:20]   split_hw1_V64 seed=2024: acc=29.7%
+[23:45:20] DONE: split_hw1_V64 -> acc=0.3625
+[23:45:22] START: split_hw2_V32
+[23:46:13]   split_hw2_V32 seed=42: acc=68.8%
+[23:47:03]   split_hw2_V32 seed=123: acc=68.8%
+[23:47:54]   split_hw2_V32 seed=777: acc=62.5%
+[23:48:46]   split_hw2_V32 seed=1337: acc=93.8%
+[23:49:38]   split_hw2_V32 seed=2024: acc=71.9%
+[23:49:38] DONE: split_hw2_V32 -> acc=0.73125
+[23:49:40] START: split_hw2_V64
+[23:51:39]   split_hw2_V64 seed=42: acc=42.2%
+[23:53:36]   split_hw2_V64 seed=123: acc=29.7%
+[23:55:33]   split_hw2_V64 seed=777: acc=42.2%
+[23:57:34]   split_hw2_V64 seed=1337: acc=40.6%
+[23:59:38]   split_hw2_V64 seed=2024: acc=34.4%
+[23:59:38] DONE: split_hw2_V64 -> acc=0.378125
+[23:59:40] START: split_hw4_V32
+[00:00:31]   split_hw4_V32 seed=42: acc=59.4%
+[00:01:21]   split_hw4_V32 seed=123: acc=81.2%
+[00:02:12]   split_hw4_V32 seed=777: acc=62.5%
+[00:03:04]   split_hw4_V32 seed=1337: acc=37.5%
+[00:03:54]   split_hw4_V32 seed=2024: acc=71.9%
+[00:03:54] DONE: split_hw4_V32 -> acc=0.625
+[00:03:56] START: split_hw4_V64
+[00:05:56]   split_hw4_V64 seed=42: acc=45.3%
+[00:07:57]   split_hw4_V64 seed=123: acc=48.4%
+[00:09:57]   split_hw4_V64 seed=777: acc=34.4%
+[00:12:01]   split_hw4_V64 seed=1337: acc=39.1%
+[00:14:00]   split_hw4_V64 seed=2024: acc=29.7%
+[00:14:00] DONE: split_hw4_V64 -> acc=0.39375
+[00:14:02] ============================================================
+[00:14:02] PHASE 4: CHAIN ENSEMBLE
+[00:14:02] ============================================================
+[00:14:02]   Best V=32: split_io_V32 (hw=0)
+[00:14:02]   Best V=64: split_io_V64 (hw=0)
+[00:14:02] START: ensemble_V32
+[00:15:31]   Round 1: winner=scout acc=37.5% score=0.2040
+[00:17:00]   Round 2: winner=scout acc=50.0% score=0.2670
+[00:18:30]   Round 3: winner=rewirer acc=59.4% score=0.3143
+[00:20:02]   Round 4: winner=rewirer acc=68.8% score=0.3614
+[00:20:02]   ensemble_V32 seed=42: acc=68.8%
+[00:21:35]   Round 1: winner=scout acc=40.6% score=0.2196
+[00:23:03]   Round 2: winner=scout acc=59.4% score=0.3141
+[00:24:32]   Round 3: winner=scout acc=71.9% score=0.3773
+[00:26:01]   Round 4: winner=refiner acc=81.2% score=0.4252
+[00:26:01]   ensemble_V32 seed=123: acc=81.2%
+[00:27:29]   Round 1: winner=scout acc=43.8% score=0.2353
+[00:28:58]   Round 2: winner=scout acc=59.4% score=0.3142
+[00:30:28]   Round 3: winner=scout acc=65.6% score=0.3461
+[00:31:57]   Round 4: winner=rewirer acc=75.0% score=0.3932
+[00:31:57]   ensemble_V32 seed=777: acc=75.0%
+[00:33:25]   Round 1: winner=rewirer acc=50.0% score=0.2669
+[00:34:53]   Round 2: winner=rewirer acc=56.2% score=0.2982
+[00:36:23]   Round 3: winner=rewirer acc=71.9% score=0.3766
+[00:37:51]   Round 4: winner=scout acc=75.0% score=0.3928
+[00:37:51]   ensemble_V32 seed=1337: acc=75.0%
+[00:39:21]   Round 1: winner=rewirer acc=37.5% score=0.2038
+[00:40:51]   Round 2: winner=scout acc=59.4% score=0.3138
+[00:42:20]   Round 3: winner=rewirer acc=68.8% score=0.3612
+[00:43:50]   Round 4: winner=rewirer acc=81.2% score=0.4240
+[00:43:50]   ensemble_V32 seed=2024: acc=81.2%
+[00:43:50] DONE: ensemble_V32 -> acc=0.7625
+[00:43:52] START: ensemble_V64
+[00:47:24]   Round 1: winner=scout acc=26.6% score=0.1410
+[00:50:51]   Round 2: winner=rewirer acc=40.6% score=0.2114
+[00:54:20]   Round 3: winner=scout acc=45.3% score=0.2351
+[00:57:48]   Round 4: winner=refiner acc=51.6% score=0.2665
+[00:57:48]   ensemble_V64 seed=42: acc=51.6%
+[01:01:19]   Round 1: winner=rewirer acc=23.4% score=0.1253
+[01:04:51]   Round 2: winner=rewirer acc=37.5% score=0.1957
+[01:08:24]   Round 3: winner=refiner acc=43.8% score=0.2272
+[01:11:55]   Round 4: winner=scout acc=50.0% score=0.2585
+[01:11:55]   ensemble_V64 seed=123: acc=50.0%
+[01:15:23]   Round 1: winner=rewirer acc=23.4% score=0.1252
+[01:18:55]   Round 2: winner=rewirer acc=37.5% score=0.1957
+[01:22:30]   Round 3: winner=scout acc=43.8% score=0.2270
+[01:26:00]   Round 4: winner=rewirer acc=48.4% score=0.2506
+[01:26:00]   ensemble_V64 seed=777: acc=48.4%
+[01:29:34]   Round 1: winner=scout acc=26.6% score=0.1410
+[01:33:19]   Round 2: winner=rewirer acc=37.5% score=0.1957
+[01:36:58]   Round 3: winner=rewirer acc=46.9% score=0.2428
+[01:40:28]   Round 4: winner=refiner acc=51.6% score=0.2664
+[01:40:28]   ensemble_V64 seed=1337: acc=51.6%
+[01:43:58]   Round 1: winner=rewirer acc=28.1% score=0.1486
+[01:47:34]   Round 2: winner=scout acc=35.9% score=0.1879
+[01:51:03]   Round 3: winner=scout acc=40.6% score=0.2115
+[01:54:35]   Round 4: winner=rewirer acc=48.4% score=0.2506
+[01:54:35]   ensemble_V64 seed=2024: acc=48.4%
+[01:54:35] DONE: ensemble_V64 -> acc=0.5
+[01:54:37] ============================================================
+[01:54:37] PHASE 5: REBALANCED ENSEMBLE
+[01:54:37] ============================================================
+[01:54:37]   Using: hw=0
+[01:54:37] START: rebalanced_V64
+[01:58:09]   Round 1: winner=scout acc=26.6% score=0.1410
+[02:01:46]   Round 2: winner=rewirer acc=43.8% score=0.2271
+[02:05:32]   Round 3: winner=scout acc=51.6% score=0.2664
+[02:09:11]   Round 4: winner=scout acc=54.7% score=0.2822
+[02:12:51]   Round 5: winner=refiner acc=60.9% score=0.3138
+[02:16:29]   Round 6: winner=scout acc=65.6% score=0.3374
+[02:20:05]   Round 7: winner=scout acc=70.3% score=0.3611
+[02:23:45]   Round 8: winner=rewirer acc=78.1% score=0.4002
+[02:23:45]   rebalanced_V64 seed=42: acc=78.1%
+[02:27:16]   Round 1: winner=rewirer acc=23.4% score=0.1253
+[02:30:50]   Round 2: winner=rewirer acc=39.1% score=0.2034
+[02:34:23]   Round 3: winner=scout acc=50.0% score=0.2584
+[02:37:59]   Round 4: winner=scout acc=60.9% score=0.3135
+[02:41:38]   Round 5: winner=refiner acc=67.2% score=0.3450
+[02:45:14]   Round 6: winner=scout acc=76.6% score=0.3922
