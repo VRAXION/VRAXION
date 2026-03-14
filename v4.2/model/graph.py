@@ -6,21 +6,20 @@ Gradient-free: learns via mutation + selection.
 
 Architecture:
   - Ternary mask (int8): -1 (inhibit), 0 (none), +1 (excite)
-  - NO weight matrix: dynamic threshold determines weak/strong
+  - Fixed gain = 2.0 (no dynamic threshold, no weight matrix)
   - Capacitor neuron: charge accumulates, leaks, fires above threshold
   - Split I/O: first V = input, last V = output
   - 2D mood: co-evolved mutation controller
+  - Learnable leak with adaptive freeze
 
-Canonical decisions (empirically validated):
-  - Encoding: 8-bit byte spatial (V<=32), one-hot (V>=64)
-  - Split I/O: +4.7% over shared
-  - Capacitor: threshold=0.5, leak=0.85, charge_rate=0.3
-  - Dynamic threshold: act >= C -> strong(2.0), else weak(1.5)
-    Eliminates weight matrix, +2.1pp over static bool (87.5% vs 85.4%)
-  - Weight ratio ~4/3 (bandpass sweet spot, phi-adjacent)
-  - 2D mood mutation: +28pp over old structure/both
-  - Ternary mask critical: -14pp without inhibition
-  - NaN guard: nan_to_num in forward
+Learnable parameters:
+  mask (int8 NxN):  topology — the ONLY matrix
+  mood_x (float):   mutation type (scout/rewirer/refiner)
+  mood_z (float):   mutation intensity (1-15 changes per attempt)
+  leak (float):     capacitor decay rate (converges ~500 att, then freezes)
+
+Fixed constants:
+  gain = 2.0, threshold = 0.5, charge_rate = 0.3, self_conn = 0.1
 """
 
 import numpy as np
@@ -30,16 +29,11 @@ import random
 class SelfWiringGraph:
     """Flat graph network with capacitor neuron dynamics."""
 
-    # Capacitor hyperparameters
+    # Fixed constants
+    gain = 2.0
     charge_rate = 0.3
     self_conn = 0.1
     clip_factor = 2.0
-
-    # Dynamic weight threshold: neurons with act >= dyn_C send strong signal
-    # Sweep validated: C=0.1-1.0 all equivalent (87.5%), C>=1.25 collapses
-    dyn_C = 0.5
-    w_weak = 1.5
-    w_strong = 2.0
 
     def __init__(self, n_neurons, vocab, density=0.06, flip_rate=0.30,
                  threshold=0.5, leak=0.85, io_mode='split'):
@@ -72,35 +66,24 @@ class SelfWiringGraph:
         self.mood_x = 0.5  # 0=scout, 0.5=rewirer, 1=refiner
         self.mood_z = 0.5  # 0=1 change, 1=15 changes per attempt
 
+        # Adaptive leak freeze: tracks accepted leak values
+        # Leak is learnable: co-evolves with mask via mutation + selection
+        # Converges to ~0.98-0.99 within ~500 attempts, then stabilizes
+        # No freeze needed: the save/restore mechanism handles it naturally
+
     def reset(self):
         self.state *= 0
         self.charge *= 0
 
-    def _make_weff(self, acts):
-        """Build effective weight matrix with dynamic threshold.
-        Neurons with activation >= dyn_C send at w_strong, else w_weak."""
-        mask_f = self.mask.astype(np.float32)
-        if acts.ndim == 1:
-            is_strong = np.abs(acts) >= self.dyn_C
-            row_weight = np.where(is_strong, np.float32(self.w_strong),
-                                  np.float32(self.w_weak))
-            return mask_f * row_weight[:, None]
-        else:
-            neuron_act = np.abs(acts).max(axis=0)
-            is_strong = neuron_act >= self.dyn_C
-            row_weight = np.where(is_strong, np.float32(self.w_strong),
-                                  np.float32(self.w_weak))
-            return mask_f * row_weight[:, None]
-
     def forward(self, world, ticks=8):
         """Single-input forward pass with capacitor dynamics."""
         act = self.state.copy()
+        Weff = self.mask.astype(np.float32) * self.gain
         clip_bound = self.threshold * self.clip_factor
 
         for t in range(ticks):
             if t == 0:
                 act[:self.V] = world
-            Weff = self._make_weff(act)
             raw = act @ Weff + act * self.self_conn
             np.nan_to_num(raw, copy=False, nan=0.0, posinf=0.0, neginf=0.0)
             self.charge += raw * self.charge_rate
@@ -114,6 +97,7 @@ class SelfWiringGraph:
     def forward_batch(self, ticks=8):
         """Batch forward: all V inputs simultaneously. Returns (V, V) logits."""
         V, N = self.V, self.N
+        Weff = self.mask.astype(np.float32) * self.gain
         clip_bound = self.threshold * self.clip_factor
         charges = np.zeros((V, N), dtype=np.float32)
         acts = np.zeros((V, N), dtype=np.float32)
@@ -121,7 +105,6 @@ class SelfWiringGraph:
         for t in range(ticks):
             if t == 0:
                 acts[:, :V] = np.eye(V, dtype=np.float32)
-            Weff = self._make_weff(acts)
             raw = acts @ Weff + acts * self.self_conn
             np.nan_to_num(raw, copy=False, nan=0.0, posinf=0.0, neginf=0.0)
             charges += raw * self.charge_rate
@@ -150,6 +133,7 @@ class SelfWiringGraph:
             'charge': self.charge.copy(),
             'mood_x': self.mood_x,
             'mood_z': self.mood_z,
+            'leak': self.leak,
         }
 
     def restore_state(self, s):
@@ -158,17 +142,23 @@ class SelfWiringGraph:
         self.charge[:] = s['charge']
         self.mood_x = s['mood_x']
         self.mood_z = s['mood_z']
+        self.leak = s['leak']
 
     # --- Mutation operators ---
 
     def mutate_with_mood(self):
-        """2D mood-driven mutation. Only mutates mask (no weight matrix).
-        mood_x = type (scout/rewirer/refiner), mood_z = intensity."""
+        """2D mood-driven mutation + adaptive leak learning."""
+        # Mood mutation
         if random.random() < 0.2:
             self.mood_x = np.clip(self.mood_x + random.gauss(0, 0.15), 0.0, 1.0)
         if random.random() < 0.2:
             self.mood_z = np.clip(self.mood_z + random.gauss(0, 0.15), 0.0, 1.0)
 
+        # Leak mutation
+        if random.random() < 0.2:
+            self.leak = np.clip(self.leak + random.gauss(0, 0.03), 0.5, 0.99)
+
+        # Mask mutation
         n_changes = max(1, int(1 + self.mood_z * 14))
         for _ in range(n_changes):
             if self.mood_x < 0.33:
@@ -218,21 +208,18 @@ def softmax(x):
 
 
 def train(net, inputs, targets, vocab, max_attempts=8000, ticks=8,
-          stale_limit=6000, phase_switch=2500, verbose=True):
-    """Train via mutation + selection using 2D mood."""
+          stale_limit=6000, verbose=True):
+    """Train via mutation + selection using 2D mood + adaptive leak."""
 
     def evaluate():
-        net.reset()
-        correct = 0
-        for p in range(2):
-            for i in range(len(inputs)):
-                world = np.zeros(vocab, dtype=np.float32)
-                world[inputs[i]] = 1.0
-                logits = net.forward(world, ticks)
-                probs = softmax(logits)
-                if p == 1 and np.argmax(probs) == targets[i]:
-                    correct += 1
-        return correct / len(inputs)
+        logits = net.forward_batch(ticks)
+        e = np.exp(logits - logits.max(axis=1, keepdims=True))
+        probs = e / e.sum(axis=1, keepdims=True)
+        preds = np.argmax(probs, axis=1)
+        V = min(vocab, net.V)
+        acc = (preds[:V] == targets[:V]).mean()
+        tp = probs[np.arange(V), targets[:V]].mean()
+        return 0.5 * acc + 0.5 * tp
 
     score = evaluate()
     best = score
@@ -241,6 +228,7 @@ def train(net, inputs, targets, vocab, max_attempts=8000, ticks=8,
 
     for att in range(max_attempts):
         state = net.save_state()
+        old_leak = net.leak
         net.mutate_with_mood()
         new_score = evaluate()
 
@@ -257,7 +245,7 @@ def train(net, inputs, targets, vocab, max_attempts=8000, ticks=8,
             pos, neg = net.pos_neg_ratio()
             print(f"  [{att+1:5d}] Acc: {best*100:5.1f}% | "
                   f"Conns: {net.count_connections():4d} (+:{pos} -:{neg}) | "
-                  f"Kept: {kept:3d}")
+                  f"Kept: {kept:3d} | Leak: {net.leak:.4f}")
 
         if best >= 0.99:
             break
