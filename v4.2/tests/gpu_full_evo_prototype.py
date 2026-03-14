@@ -40,6 +40,23 @@ class BenchConfig:
     threshold: float = 0.5
 
 
+@dataclass
+class GpuEvalBuffers:
+    eye: torch.Tensor
+    charges: torch.Tensor
+    acts: torch.Tensor
+    weff: torch.Tensor
+    row_idx: torch.Tensor
+
+
+@dataclass
+class MutationDelta:
+    prev_mood_x: float
+    prev_mood_z: float
+    prev_leak: float
+    changes: list[tuple[int, int, int]]
+
+
 CONFIGS = {
     "V64_N192": BenchConfig("V64_N192", 64, 192, 0.06),
     "V64_dense": BenchConfig("V64_dense", 64, 192, 0.15),
@@ -86,13 +103,46 @@ def gpu_init_from_cpu(cfg: BenchConfig, seed: int, device: torch.device):
     return mask, mood_x, mood_z, leak, targets_t, out_start
 
 
-def gpu_eval(mask: torch.Tensor, leak: torch.Tensor, targets: torch.Tensor, out_start: int, eye: torch.Tensor):
+def make_eval_buffers(cfg: BenchConfig, device: torch.device) -> GpuEvalBuffers:
+    return GpuEvalBuffers(
+        eye=torch.eye(cfg.vocab, dtype=torch.float32, device=device),
+        charges=torch.empty((cfg.vocab, cfg.neurons), dtype=torch.float32, device=device),
+        acts=torch.empty((cfg.vocab, cfg.neurons), dtype=torch.float32, device=device),
+        weff=torch.empty((cfg.neurons, cfg.neurons), dtype=torch.float32, device=device),
+        row_idx=torch.arange(cfg.vocab, device=device, dtype=torch.long),
+    )
+
+
+def gpu_eval(
+    mask: torch.Tensor,
+    leak: torch.Tensor,
+    targets: torch.Tensor,
+    out_start: int,
+    eye: torch.Tensor | None = None,
+    buffers: GpuEvalBuffers | None = None,
+):
     device = mask.device
-    vocab = eye.shape[0]
-    neurons = mask.shape[0]
-    weff = mask.to(torch.float32) * GAIN
-    charges = torch.zeros((vocab, neurons), dtype=torch.float32, device=device)
-    acts = torch.zeros((vocab, neurons), dtype=torch.float32, device=device)
+    if buffers is None:
+        if eye is None:
+            raise ValueError("gpu_eval requires either eye or buffers")
+        vocab = eye.shape[0]
+        neurons = mask.shape[0]
+        charges = torch.zeros((vocab, neurons), dtype=torch.float32, device=device)
+        acts = torch.zeros((vocab, neurons), dtype=torch.float32, device=device)
+        weff = mask.to(torch.float32) * GAIN
+        row_idx = torch.arange(vocab, device=device, dtype=torch.long)
+    else:
+        eye = buffers.eye
+        vocab = eye.shape[0]
+        charges = buffers.charges
+        acts = buffers.acts
+        weff = buffers.weff
+        row_idx = buffers.row_idx
+        charges.zero_()
+        acts.zero_()
+        weff.copy_(mask)
+        weff.mul_(GAIN)
+
     clip_bound = 0.5 * CLIP_FACTOR
 
     for t in range(TICKS):
@@ -109,7 +159,7 @@ def gpu_eval(mask: torch.Tensor, leak: torch.Tensor, targets: torch.Tensor, out_
     probs = torch.softmax(logits, dim=1)
     preds = torch.argmax(probs, dim=1)
     acc = (preds == targets).to(torch.float32).mean()
-    tp = probs[torch.arange(vocab, device=device), targets].mean()
+    tp = probs[row_idx, targets].mean()
     score = 0.5 * acc + 0.5 * tp
     return logits, score, acc
 
@@ -122,6 +172,14 @@ def randn_scaled(gen: torch.Generator, device: torch.device, sigma: float) -> fl
     return float((torch.randn((), generator=gen, device=device) * sigma).item())
 
 
+def record_mask_change(mask: torch.Tensor, changes: list[tuple[int, int, int]], row: int, col: int, new_val: int):
+    old_val = int(mask[row, col].item())
+    if old_val == new_val:
+        return
+    changes.append((row, col, old_val))
+    mask[row, col] = new_val
+
+
 def mutate_gpu(
     mask: torch.Tensor,
     mood_x: torch.Tensor,
@@ -131,6 +189,12 @@ def mutate_gpu(
     diag_mask: torch.Tensor,
 ):
     device = mask.device
+    delta = MutationDelta(
+        prev_mood_x=float(mood_x.item()),
+        prev_mood_z=float(mood_z.item()),
+        prev_leak=float(leak.item()),
+        changes=[],
+    )
 
     if rand_uniform(gen, device) < 0.2:
         mood_x.add_(randn_scaled(gen, device, 0.15)).clamp_(0.0, 1.0)
@@ -144,41 +208,49 @@ def mutate_gpu(
         mx = float(mood_x.item())
         if mx < 0.33:
             if rand_uniform(gen, device) < 0.7:
-                add_connection_gpu(mask, gen, diag_mask)
+                add_connection_gpu(mask, gen, diag_mask, delta.changes)
             else:
-                flip_connection_gpu(mask, gen)
+                flip_connection_gpu(mask, gen, delta.changes)
         elif mx < 0.66:
             r = rand_uniform(gen, device)
             if r < 0.6:
-                rewire_connection_gpu(mask, gen)
+                rewire_connection_gpu(mask, gen, delta.changes)
             elif r < 0.8:
-                flip_connection_gpu(mask, gen)
+                flip_connection_gpu(mask, gen, delta.changes)
             else:
-                add_connection_gpu(mask, gen, diag_mask)
+                add_connection_gpu(mask, gen, diag_mask, delta.changes)
         else:
-            flip_connection_gpu(mask, gen)
+            flip_connection_gpu(mask, gen, delta.changes)
+    return delta
 
 
-def add_connection_gpu(mask: torch.Tensor, gen: torch.Generator, diag_mask: torch.Tensor):
+def add_connection_gpu(
+    mask: torch.Tensor,
+    gen: torch.Generator,
+    diag_mask: torch.Tensor,
+    changes: list[tuple[int, int, int]],
+):
     dead = torch.nonzero((mask == 0) & diag_mask, as_tuple=False)
     if dead.numel() == 0:
         return
     idx = int(torch.randint(dead.shape[0], (1,), generator=gen, device=mask.device).item())
     rc = dead[idx]
     sign = 1 if rand_uniform(gen, mask.device) > 0.5 else -1
-    mask[rc[0], rc[1]] = sign
+    record_mask_change(mask, changes, int(rc[0].item()), int(rc[1].item()), sign)
 
 
-def flip_connection_gpu(mask: torch.Tensor, gen: torch.Generator):
+def flip_connection_gpu(mask: torch.Tensor, gen: torch.Generator, changes: list[tuple[int, int, int]]):
     alive = torch.nonzero(mask != 0, as_tuple=False)
     if alive.numel() == 0:
         return
     idx = int(torch.randint(alive.shape[0], (1,), generator=gen, device=mask.device).item())
     rc = alive[idx]
-    mask[rc[0], rc[1]] = -mask[rc[0], rc[1]]
+    row = int(rc[0].item())
+    col = int(rc[1].item())
+    record_mask_change(mask, changes, row, col, -int(mask[row, col].item()))
 
 
-def rewire_connection_gpu(mask: torch.Tensor, gen: torch.Generator):
+def rewire_connection_gpu(mask: torch.Tensor, gen: torch.Generator, changes: list[tuple[int, int, int]]):
     alive = torch.nonzero(mask != 0, as_tuple=False)
     if alive.numel() == 0:
         return
@@ -186,13 +258,27 @@ def rewire_connection_gpu(mask: torch.Tensor, gen: torch.Generator):
     rc = alive[idx]
     src = int(rc[0].item())
     dst = int(rc[1].item())
-    old = mask[src, dst].clone()
-    mask[src, dst] = 0
+    old = int(mask[src, dst].item())
+    record_mask_change(mask, changes, src, dst, 0)
     n = mask.shape[0]
     new_dst = int(torch.randint(n, (1,), generator=gen, device=mask.device).item())
     while new_dst == src:
         new_dst = int(torch.randint(n, (1,), generator=gen, device=mask.device).item())
-    mask[src, new_dst] = old
+    record_mask_change(mask, changes, src, new_dst, old)
+
+
+def rollback_gpu(
+    mask: torch.Tensor,
+    mood_x: torch.Tensor,
+    mood_z: torch.Tensor,
+    leak: torch.Tensor,
+    delta: MutationDelta,
+):
+    for row, col, old_val in reversed(delta.changes):
+        mask[row, col] = old_val
+    mood_x.fill_(delta.prev_mood_x)
+    mood_z.fill_(delta.prev_mood_z)
+    leak.fill_(delta.prev_leak)
 
 
 def gpu_train(cfg: BenchConfig, attempts: int, seed: int, verbose_every: int = 200):
@@ -205,10 +291,10 @@ def gpu_train(cfg: BenchConfig, attempts: int, seed: int, verbose_every: int = 2
     gen.manual_seed(seed)
 
     mask, mood_x, mood_z, leak, targets, out_start = gpu_init_from_cpu(cfg, seed, device)
-    eye = torch.eye(cfg.vocab, dtype=torch.float32, device=device)
     diag_mask = ~torch.eye(cfg.neurons, dtype=torch.bool, device=device)
+    buffers = make_eval_buffers(cfg, device)
 
-    _, score, acc = gpu_eval(mask, leak, targets, out_start, eye)
+    _, score, acc = gpu_eval(mask, leak, targets, out_start, buffers=buffers)
     best_score = score.clone()
     best_acc = acc.clone()
     kept = 0
@@ -216,13 +302,8 @@ def gpu_train(cfg: BenchConfig, attempts: int, seed: int, verbose_every: int = 2
     torch.cuda.synchronize()
     t0 = time.perf_counter()
     for att in range(attempts):
-        mask_prev = mask.clone()
-        mood_x_prev = mood_x.clone()
-        mood_z_prev = mood_z.clone()
-        leak_prev = leak.clone()
-
-        mutate_gpu(mask, mood_x, mood_z, leak, gen, diag_mask)
-        _, new_score, new_acc = gpu_eval(mask, leak, targets, out_start, eye)
+        delta = mutate_gpu(mask, mood_x, mood_z, leak, gen, diag_mask)
+        _, new_score, new_acc = gpu_eval(mask, leak, targets, out_start, buffers=buffers)
 
         if bool((new_score > score).item()):
             score = new_score
@@ -231,10 +312,7 @@ def gpu_train(cfg: BenchConfig, attempts: int, seed: int, verbose_every: int = 2
                 best_score = new_score
                 best_acc = new_acc
         else:
-            mask.copy_(mask_prev)
-            mood_x.copy_(mood_x_prev)
-            mood_z.copy_(mood_z_prev)
-            leak.copy_(leak_prev)
+            rollback_gpu(mask, mood_x, mood_z, leak, delta)
 
         if verbose_every and (att + 1) % verbose_every == 0:
             print(
