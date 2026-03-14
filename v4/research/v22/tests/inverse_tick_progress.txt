@@ -9,3 +9,122 @@
 [14:49:26] 
 [14:49:26] 
   [1/6] START: baseline_V64_64K
+[16:03:58] 
+======================================================================
+[16:03:58] INVERSE TICK TEST — RESUME RUN
+[16:03:58] V=64, N=256, attempts=64000, seeds=[42, 123, 777, 1337, 2024], workers=3
+[16:03:58] Already completed: ['baseline_V64_64K']
+[16:03:58] ======================================================================
+[16:03:58]   [1/6] SKIP baseline_V64_64K — already done (avg=47.5%)
+[16:03:58] 
+  [2/6] START: 2d_mood_fix8_V64_64K
+[16:48:48]     seed=42: acc=89.1%
+[16:48:48]     seed=123: acc=92.2%
+[16:48:48]     seed=777: acc=92.2%
+[16:48:48]     seed=1337: acc=92.2%
+[16:48:48]     seed=2024: acc=96.9%
+[16:48:48]   2d_mood_fix8_V64_64K: avg=92.5% best=96.9% time=2690.5s
+[16:48:48]     seed=42 mood: x=0.32(0.37->0.25) z=0.69(0.64->0.71) tick_avg=8.0 tick(8.0->8.0) scout=63% rewirer=17% refiner=20% nch=10.23 impr=4848
+[16:48:48]              floor/ceil: {'x_floor': 11135, 'x_ceil': 2759, 'z_floor': 402, 'z_ceil': 7257}
+[16:48:48]     seed=123 mood: x=0.40(0.42->0.47) z=0.72(0.72->0.70) tick_avg=8.0 tick(8.0->8.0) scout=55% rewirer=18% refiner=26% nch=10.75 impr=4596
+[16:48:48]              floor/ceil: {'x_floor': 6815, 'x_ceil': 5820, 'z_floor': 1933, 'z_ceil': 12231}
+[16:48:48]     seed=777 mood: x=0.40(0.33->0.38) z=0.66(0.73->0.69) tick_avg=8.0 tick(8.0->8.0) scout=52% rewirer=21% refiner=27% nch=9.88 impr=4110
+[16:48:48]              floor/ceil: {'x_floor': 7962, 'x_ceil': 3370, 'z_floor': 2782, 'z_ceil': 6669}
+[16:48:48]     seed=1337 mood: x=0.37(0.38->0.36) z=0.61(0.55->0.70) tick_avg=8.0 tick(8.0->8.0) scout=58% rewirer=16% refiner=26% nch=9.13 impr=4482
+[16:48:48]              floor/ceil: {'x_floor': 9100, 'x_ceil': 5016, 'z_floor': 1313, 'z_ceil': 4937}
+[16:48:48]     seed=2024 mood: x=0.32(0.38->0.28) z=0.69(0.64->0.70) tick_avg=8.0 tick(8.0->8.0) scout=64% rewirer=19% refiner=17% nch=10.26 impr=4734
+[16:48:48]              floor/ceil: {'x_floor': 10547, 'x_ceil': 2535, 'z_floor': 2867, 'z_ceil': 9458}
+[16:48:48]   >>> SAVED to /home/user/VRAXION/v4/research/v22/tests/inverse_tick_results.json
+[16:48:50] 
+  [3/6] START: 2d_mood_fix4_V64_64K
+[17:13:52]     seed=42: acc=75.0%
+[17:13:52]     seed=123: acc=73.4%
+[17:13:52]     seed=777: acc=78.1%
+[17:13:52]     seed=1337: acc=70.3%
+[17:13:52]     seed=2024: acc=60.9%
+[17:13:52]   2d_mood_fix4_V64_64K: avg=71.6% best=78.1% time=1501.8s
+[17:13:52]     seed=42 mood: x=0.42(0.50->0.34) z=0.42(0.63->0.20) tick_avg=4.0 tick(4.0->4.0) scout=47% rewirer=27% refiner=27% nch=6.46 impr=5512
+[17:13:52]              floor/ceil: {'x_floor': 7766, 'x_ceil': 5898, 'z_floor': 8965, 'z_ceil': 1824}
+[17:13:52]     seed=123 mood: x=0.47(0.56->0.46) z=0.48(0.66->0.26) tick_avg=4.0 tick(4.0->4.0) scout=42% rewirer=25% refiner=33% nch=7.32 impr=5535
+[17:13:52]              floor/ceil: {'x_floor': 5241, 'x_ceil': 7267, 'z_floor': 6949, 'z_ceil': 3432}
+[17:13:52]     seed=777 mood: x=0.42(0.32->0.42) z=0.47(0.72->0.24) tick_avg=4.0 tick(4.0->4.0) scout=48% rewirer=25% refiner=27% nch=7.07 impr=5506
+[17:13:52]              floor/ceil: {'x_floor': 8049, 'x_ceil': 4974, 'z_floor': 5266, 'z_ceil': 1670}
+[17:13:52]     seed=1337 mood: x=0.47(0.42->0.57) z=0.43(0.61->0.18) tick_avg=4.0 tick(4.0->4.0) scout=41% rewirer=25% refiner=34% nch=6.59 impr=5320
+[17:13:52]              floor/ceil: {'x_floor': 5776, 'x_ceil': 7639, 'z_floor': 8017, 'z_ceil': 2038}
+[17:13:52]     seed=2024 mood: x=0.42(0.46->0.26) z=0.43(0.71->0.23) tick_avg=4.0 tick(4.0->4.0) scout=49% rewirer=23% refiner=28% nch=6.63 impr=4894
+[17:13:52]              floor/ceil: {'x_floor': 7325, 'x_ceil': 3298, 'z_floor': 7434, 'z_ceil': 1895}
+[17:13:52]   >>> SAVED to /home/user/VRAXION/v4/research/v22/tests/inverse_tick_results.json
+[17:13:54] 
+  [4/6] START: inverse_v1_V64_64K
+[17:39:19]     seed=42: acc=46.9%
+[17:39:19]     seed=123: acc=45.3%
+[17:39:19]     seed=777: acc=39.1%
+[17:39:19]     seed=1337: acc=37.5%
+[17:39:19]     seed=2024: acc=50.0%
+[17:39:19]   inverse_v1_V64_64K: avg=43.8% best=50.0% time=1525.0s
+[17:39:19]     seed=42 mood: x=0.05(0.06->0.02) z=0.42(0.54->0.25) tick_avg=1.0 tick(1.01->1.0) scout=100% rewirer=0% refiner=0% nch=6.33 impr=4064
+[17:39:19]              floor/ceil: {'x_floor': 32908, 'x_ceil': 0, 'z_floor': 862, 'z_ceil': 2042}
+[17:39:19]     seed=123 mood: x=0.08(0.19->0.03) z=0.41(0.64->0.29) tick_avg=1.25 tick(1.74->1.0) scout=93% rewirer=5% refiner=1% nch=6.25 impr=4444
+[17:39:19]              floor/ceil: {'x_floor': 32962, 'x_ceil': 4, 'z_floor': 970, 'z_ceil': 935}
+[17:39:19]     seed=777 mood: x=0.06(0.10->0.04) z=0.44(0.59->0.35) tick_avg=1.06 tick(1.18->1.0) scout=96% rewirer=4% refiner=0% nch=6.61 impr=4099
+[17:39:19]              floor/ceil: {'x_floor': 28923, 'x_ceil': 0, 'z_floor': 829, 'z_ceil': 1569}
+[17:39:19]     seed=1337 mood: x=0.05(0.07->0.03) z=0.41(0.58->0.28) tick_avg=1.01 tick(1.02->1.0) scout=99% rewirer=1% refiner=0% nch=6.31 impr=4298
+[17:39:19]              floor/ceil: {'x_floor': 31016, 'x_ceil': 0, 'z_floor': 1583, 'z_ceil': 3481}
+[17:39:19]     seed=2024 mood: x=0.05(0.08->0.02) z=0.43(0.63->0.28) tick_avg=1.03 tick(1.08->1.0) scout=99% rewirer=1% refiner=0% nch=6.54 impr=3956
+[17:39:19]              floor/ceil: {'x_floor': 33777, 'x_ceil': 0, 'z_floor': 1127, 'z_ceil': 3288}
+[17:39:19]   >>> SAVED to /home/user/VRAXION/v4/research/v22/tests/inverse_tick_results.json
+[17:39:21] 
+  [5/6] START: inverse_v2_V64_64K
+[18:01:48]     seed=42: acc=57.8%
+[18:01:48]     seed=123: acc=60.9%
+[18:01:48]     seed=777: acc=53.1%
+[18:01:48]     seed=1337: acc=57.8%
+[18:01:48]     seed=2024: acc=46.9%
+[18:01:48]   inverse_v2_V64_64K: avg=55.3% best=60.9% time=1346.2s
+[18:01:48]     seed=42 mood: x=0.13(0.19->0.10) z=0.39(0.61->0.25) tick_avg=2.01 tick(2.04->2.0) scout=93% rewirer=7% refiner=0% nch=6.0 impr=4543
+[18:01:48]              floor/ceil: {'x_floor': 19917, 'x_ceil': 0, 'z_floor': 6402, 'z_ceil': 1556}
+[18:01:48]     seed=123 mood: x=0.16(0.23->0.09) z=0.37(0.59->0.18) tick_avg=2.11 tick(2.32->2.0) scout=90% rewirer=10% refiner=0% nch=5.78 impr=4665
+[18:01:48]              floor/ceil: {'x_floor': 16540, 'x_ceil': 1, 'z_floor': 6949, 'z_ceil': 1123}
+[18:01:48]     seed=777 mood: x=0.11(0.14->0.09) z=0.31(0.60->0.15) tick_avg=2.0 tick(2.01->2.0) scout=97% rewirer=3% refiner=0% nch=4.88 impr=5555
+[18:01:48]              floor/ceil: {'x_floor': 19241, 'x_ceil': 0, 'z_floor': 12125, 'z_ceil': 1003}
+[18:01:48]     seed=1337 mood: x=0.12(0.17->0.08) z=0.31(0.58->0.14) tick_avg=2.0 tick(2.01->2.0) scout=95% rewirer=5% refiner=0% nch=4.94 impr=5191
+[18:01:48]              floor/ceil: {'x_floor': 18997, 'x_ceil': 0, 'z_floor': 11621, 'z_ceil': 896}
+[18:01:48]     seed=2024 mood: x=0.13(0.18->0.10) z=0.35(0.64->0.18) tick_avg=2.02 tick(2.05->2.0) scout=94% rewirer=6% refiner=0% nch=5.54 impr=5368
+[18:01:48]              floor/ceil: {'x_floor': 18024, 'x_ceil': 0, 'z_floor': 9083, 'z_ceil': 1466}
+[18:01:48]   >>> SAVED to /home/user/VRAXION/v4/research/v22/tests/inverse_tick_results.json
+[18:01:50] 
+  [6/6] START: inverse_v3_V64_64K
+[18:34:43]     seed=42: acc=56.2%
+[18:34:43]     seed=123: acc=71.9%
+[18:34:43]     seed=777: acc=65.6%
+[18:34:43]     seed=1337: acc=43.8%
+[18:34:43]     seed=2024: acc=54.7%
+[18:34:43]   inverse_v3_V64_64K: avg=58.4% best=71.9% time=1973.6s
+[18:34:43]     seed=42 mood: x=0.02(0.03->0.02) z=0.77(0.81->0.71) tick_avg=2.02 tick(2.06->2.0) scout=100% rewirer=0% refiner=0% nch=11.26 impr=2512
+[18:34:43]              floor/ceil: {'x_floor': 39656, 'x_ceil': 0, 'z_floor': 1, 'z_ceil': 6076}
+[18:34:43]     seed=123 mood: x=0.10(0.25->0.02) z=0.46(0.81->0.23) tick_avg=3.12 tick(3.37->3.0) scout=94% rewirer=6% refiner=0% nch=6.96 impr=5393
+[18:34:43]              floor/ceil: {'x_floor': 31664, 'x_ceil': 0, 'z_floor': 1334, 'z_ceil': 3214}
+[18:34:43]     seed=777 mood: x=0.08(0.18->0.02) z=0.46(0.81->0.23) tick_avg=2.98 tick(2.94->3.0) scout=100% rewirer=0% refiner=0% nch=6.94 impr=4918
+[18:34:43]              floor/ceil: {'x_floor': 30672, 'x_ceil': 0, 'z_floor': 1365, 'z_ceil': 2058}
+[18:34:43]     seed=1337 mood: x=0.02(0.05->0.01) z=0.75(0.86->0.66) tick_avg=2.02 tick(2.05->2.0) scout=100% rewirer=0% refiner=0% nch=11.14 impr=2594
+[18:34:43]              floor/ceil: {'x_floor': 45195, 'x_ceil': 0, 'z_floor': 0, 'z_ceil': 8016}
+[18:34:43]     seed=2024 mood: x=0.03(0.07->0.00) z=0.76(0.90->0.64) tick_avg=2.07 tick(2.22->2.0) scout=98% rewirer=1% refiner=1% nch=11.2 impr=2535
+[18:34:43]              floor/ceil: {'x_floor': 48417, 'x_ceil': 0, 'z_floor': 0, 'z_ceil': 3848}
+[18:34:43]   >>> SAVED to /home/user/VRAXION/v4/research/v22/tests/inverse_tick_results.json
+[18:34:45] 
+======================================================================
+[18:34:45] FINAL SUMMARY
+[18:34:45] ======================================================================
+[18:34:45] Method                            Avg Acc   Best Acc       Time
+[18:34:45] ----------------------------------------------------------------------
+[18:34:45] baseline_V64_64K                   47.5%     54.7%    2145.5s
+[18:34:45] 2d_mood_fix8_V64_64K               92.5%     96.9%    2690.5s
+[18:34:45] 2d_mood_fix4_V64_64K               71.6%     78.1%    1501.8s
+[18:34:45] inverse_v1_V64_64K                 43.8%     50.0%    1525.0s
+[18:34:45] inverse_v2_V64_64K                 55.3%     60.9%    1346.2s
+[18:34:45] inverse_v3_V64_64K                 58.4%     71.9%    1973.6s
+[18:34:45]   inverse_v1_V64_64K vs fix8: -48.8% → FIX8 WINS by 48.8%
+[18:34:45]   inverse_v2_V64_64K vs fix8: -37.2% → FIX8 WINS by 37.2%
+[18:34:45]   inverse_v3_V64_64K vs fix8: -34.1% → FIX8 WINS by 34.1%
+[18:34:45] 
+DONE.
