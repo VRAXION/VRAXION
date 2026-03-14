@@ -19,8 +19,10 @@ import numpy as np
 import random
 import time
 import csv
+import multiprocessing
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from v22_best_config import SelfWiringGraph
+from v22_log import live_log, log_msg
 
 # =============================================================
 # Global test params
@@ -158,7 +160,7 @@ def update_neuron_channels(neuron_chs, expert_ch, net, old_mask, learning_rate=0
 # =============================================================
 # Single config runner
 # =============================================================
-def run_config(config_name, config, seed, V=64, N=256, budget=2000, rounds=4):
+def run_config(config_name, config, seed, V=64, N=256, budget=2000, rounds=4, log_q=None):
     """Run one config with one seed. Returns result dict."""
     np.random.seed(seed)
     random.seed(seed)
@@ -269,6 +271,7 @@ def run_config(config_name, config, seed, V=64, N=256, budget=2000, rounds=4):
     net.W = best_W.copy()
     _, final_acc = score_full()
 
+    log_msg(log_q, f"{config_name:25s} seed={seed} acc={final_acc*100:5.1f}% time={elapsed:.0f}s")
     return {
         'config': config_name,
         'seed': seed,
@@ -286,7 +289,7 @@ def run_config(config_name, config, seed, V=64, N=256, budget=2000, rounds=4):
 # Ensemble runner (DIM 6)
 # =============================================================
 def run_ensemble(ensemble_name, slave_configs, seed, V=64, N=256,
-                 budget_per_slave=2000, rounds=4):
+                 budget_per_slave=2000, rounds=4, log_q=None):
     """Run a multi-slave ensemble with jackpot broadcast."""
     np.random.seed(seed)
     random.seed(seed)
@@ -361,6 +364,8 @@ def run_ensemble(ensemble_name, slave_configs, seed, V=64, N=256,
 
     elapsed = time.time() - t0
 
+    log_msg(log_q, f"{ensemble_name:25s} seed={seed} acc={champion_acc*100:5.1f}% "
+            f"wins={wins} time={elapsed:.0f}s")
     return {
         'config': ensemble_name,
         'seed': seed,
@@ -439,48 +444,44 @@ def main():
     all_results = []
     t_start = time.time()
 
-    # Phase 1: Single configs (parallel)
-    print(f"\n  PHASE 1: Single config tests ({len(CONFIGS)*len(SEEDS)} jobs)")
-    print(f"  {'-' * 50}")
-    sys.stdout.flush()
+    with live_log('overnight_expert_dims') as (log_q, log_path):
+        log_msg(log_q, f"Starting test run")
 
-    jobs = []
-    with ProcessPoolExecutor(max_workers=MAX_WORKERS) as pool:
-        for cname, cfg in CONFIGS.items():
+        # Phase 1: Single configs (parallel)
+        print(f"\n  PHASE 1: Single config tests ({len(CONFIGS)*len(SEEDS)} jobs)")
+        print(f"  {'-' * 50}")
+        sys.stdout.flush()
+
+        jobs = []
+        with ProcessPoolExecutor(max_workers=MAX_WORKERS) as pool:
+            for cname, cfg in CONFIGS.items():
+                for seed in SEEDS:
+                    fut = pool.submit(run_config, cname, cfg, seed, V, N, BUDGET, ROUNDS,
+                                      log_q=log_q)
+                    jobs.append((cname, seed, fut))
+
+            for cname, seed, fut in jobs:
+                try:
+                    res = fut.result(timeout=600)
+                    all_results.append(res)
+                except Exception as ex:
+                    log_msg(log_q, f"[ERR] {cname} seed={seed}: {ex}")
+
+        # Phase 2: Ensemble configs (sequential)
+        print(f"\n  PHASE 2: Ensemble tests ({len(ENSEMBLE_CONFIGS)*len(SEEDS)} jobs)")
+        print(f"  {'-' * 50}")
+        sys.stdout.flush()
+
+        for ename, slave_cfgs in ENSEMBLE_CONFIGS.items():
             for seed in SEEDS:
-                fut = pool.submit(run_config, cname, cfg, seed, V, N, BUDGET, ROUNDS)
-                jobs.append((cname, seed, fut))
+                try:
+                    res = run_ensemble(ename, slave_cfgs, seed, V, N, BUDGET, ROUNDS,
+                                       log_q=log_q)
+                    all_results.append(res)
+                except Exception as ex:
+                    log_msg(log_q, f"[ERR] {ename} seed={seed}: {ex}")
 
-        completed = 0
-        for cname, seed, fut in jobs:
-            try:
-                res = fut.result(timeout=600)
-                all_results.append(res)
-                completed += 1
-                print(f"    [{completed:3d}/{len(jobs)}] {res['config']:25s} seed={res['seed']} "
-                      f"acc={res['acc']*100:5.1f}% time={res['time']:.0f}s")
-                sys.stdout.flush()
-            except Exception as ex:
-                print(f"    [ERR] {cname} seed={seed}: {ex}")
-                sys.stdout.flush()
-
-    # Phase 2: Ensemble configs (sequential -- each uses multiple slaves internally)
-    print(f"\n  PHASE 2: Ensemble tests ({len(ENSEMBLE_CONFIGS)*len(SEEDS)} jobs)")
-    print(f"  {'-' * 50}")
-    sys.stdout.flush()
-
-    for ename, slave_cfgs in ENSEMBLE_CONFIGS.items():
-        for seed in SEEDS:
-            try:
-                res = run_ensemble(ename, slave_cfgs, seed, V, N, BUDGET, ROUNDS)
-                all_results.append(res)
-                wins_str = str(res.get('wins', {}))
-                print(f"    {ename:25s} seed={seed} acc={res['acc']*100:5.1f}% "
-                      f"time={res['time']:.0f}s wins={wins_str}")
-                sys.stdout.flush()
-            except Exception as ex:
-                print(f"    [ERR] {ename} seed={seed}: {ex}")
-                sys.stdout.flush()
+        log_msg(log_q, f"All jobs complete ({len(all_results)} results)")
 
     total_time = time.time() - t_start
 
@@ -554,4 +555,5 @@ def main():
 
 
 if __name__ == '__main__':
+    multiprocessing.freeze_support()
     main()
