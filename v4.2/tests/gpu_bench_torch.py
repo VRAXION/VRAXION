@@ -1,29 +1,18 @@
-"""Torch CUDA parity + speed benchmark for the current v4.2 graph core.
+"""Torch CUDA parity + speed benchmark for v4.2 baselines.
 
-This is a narrow benchmark for the real hot path:
-  - build Weff from int8 ternary mask + fixed gain
-  - run the 8-tick batch forward pass
-  - compare three paths:
-      1. dense NumPy reference
-      2. current CPU implementation from graph.py
-      3. dense Torch CUDA
-
-The goal is to answer one question quickly:
-  Is a straight dense CUDA port already enough to justify GPU work?
+This forward-only probe freezes two CPU baselines explicitly:
+  - CPU_DENSE_COMMITTED: exact origin/v4.2 graph.py
+  - CPU_SPARSE_LOCAL: current local graph.py
+  - CUDA_DENSE: dense Torch implementation on the current device
 """
 
-import os
-import sys
 import time
-import random
 from dataclasses import dataclass
 
 import numpy as np
 import torch
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
-
-from model.graph import SelfWiringGraph
+from graph_baseline_loader import build_paired_nets
 
 
 @dataclass
@@ -45,12 +34,6 @@ TICKS = 8
 CPU_ITERS = 80
 GPU_ITERS = 400
 WARMUP = 50
-
-
-def build_net(cfg: BenchConfig) -> SelfWiringGraph:
-    np.random.seed(SEED)
-    random.seed(SEED)
-    return SelfWiringGraph(cfg.neurons, cfg.vocab, density=cfg.density)
 
 
 def torch_forward_batch(
@@ -85,7 +68,7 @@ def torch_forward_batch(
     return charges[:, out_start : out_start + vocab]
 
 
-def numpy_dense_forward_batch(net: SelfWiringGraph, ticks: int) -> np.ndarray:
+def numpy_dense_forward_batch(net, ticks: int) -> np.ndarray:
     v, n = net.V, net.N
     weff = net.mask.astype(np.float32) * net.gain
     clip_bound = net.threshold * net.clip_factor
@@ -105,7 +88,7 @@ def numpy_dense_forward_batch(net: SelfWiringGraph, ticks: int) -> np.ndarray:
     return charges[:, net.out_start : net.out_start + v]
 
 
-def bench_dense_numpy(net: SelfWiringGraph, iters: int) -> tuple[np.ndarray, float]:
+def bench_dense_numpy(net, iters: int) -> tuple[np.ndarray, float]:
     out = numpy_dense_forward_batch(net, TICKS)
     t0 = time.perf_counter()
     for _ in range(iters):
@@ -114,7 +97,7 @@ def bench_dense_numpy(net: SelfWiringGraph, iters: int) -> tuple[np.ndarray, flo
     return out, dt
 
 
-def bench_cpu_impl(net: SelfWiringGraph, iters: int) -> tuple[np.ndarray, float]:
+def bench_cpu_impl(net, iters: int) -> tuple[np.ndarray, float]:
     out = net.forward_batch(TICKS)
     t0 = time.perf_counter()
     for _ in range(iters):
@@ -123,7 +106,7 @@ def bench_cpu_impl(net: SelfWiringGraph, iters: int) -> tuple[np.ndarray, float]
     return out, dt
 
 
-def bench_gpu(net: SelfWiringGraph, iters: int) -> tuple[np.ndarray, float]:
+def bench_gpu(net, iters: int) -> tuple[np.ndarray, float]:
     device = torch.device("cuda")
     mask_i8 = torch.from_numpy(net.mask).to(device=device, dtype=torch.int8)
 
@@ -174,27 +157,35 @@ def main() -> int:
     )
     print("=" * 88)
     print(
-        f"{'config':12s} {'dense_ms':>10s} {'cpu_ms':>10s} {'gpu_ms':>10s} "
-        f"{'cpu_x':>8s} {'gpu_x':>8s} {'diff_cpu':>11s} {'diff_gpu':>11s}"
+        f"{'config':12s} {'dense_ms':>10s} {'sparse_ms':>10s} {'gpu_ms':>10s} "
+        f"{'sparse_x':>9s} {'gpu_x':>8s} {'diff_sparse':>12s} {'diff_gpu':>11s} "
+        f"{'agree_sparse':>13s} {'agree_gpu':>10s}"
     )
 
     for cfg in CONFIGS:
-        net = build_net(cfg)
-        dense_out, dense_dt = bench_dense_numpy(net, CPU_ITERS)
-        cpu_out, cpu_dt = bench_cpu_impl(net, CPU_ITERS)
-        gpu_out, gpu_dt = bench_gpu(net, GPU_ITERS)
+        _, dense_net, _, sparse_net = build_paired_nets(cfg.vocab, cfg.neurons, cfg.density, SEED)
+        dense_out, dense_dt = bench_dense_numpy(dense_net, CPU_ITERS)
+        sparse_out, sparse_dt = bench_cpu_impl(sparse_net, CPU_ITERS)
+        gpu_out, gpu_dt = bench_gpu(dense_net, GPU_ITERS)
 
         dense_ms = (dense_dt / CPU_ITERS) * 1000.0
-        cpu_ms = (cpu_dt / CPU_ITERS) * 1000.0
+        sparse_ms = (sparse_dt / CPU_ITERS) * 1000.0
         gpu_ms = (gpu_dt / GPU_ITERS) * 1000.0
-        diff_cpu = float(np.max(np.abs(dense_out - cpu_out)))
+        diff_sparse = float(np.max(np.abs(dense_out - sparse_out)))
         diff_gpu = float(np.max(np.abs(dense_out - gpu_out)))
-        cpu_speedup = dense_ms / cpu_ms if cpu_ms > 0 else float("inf")
+        agree_sparse = float(
+            (np.argmax(dense_out, axis=1) == np.argmax(sparse_out, axis=1)).mean()
+        )
+        agree_gpu = float(
+            (np.argmax(dense_out, axis=1) == np.argmax(gpu_out, axis=1)).mean()
+        )
+        sparse_speedup = dense_ms / sparse_ms if sparse_ms > 0 else float("inf")
         gpu_speedup = dense_ms / gpu_ms if gpu_ms > 0 else float("inf")
 
         print(
-            f"{cfg.name:12s} {dense_ms:10.3f} {cpu_ms:10.3f} {gpu_ms:10.3f} "
-            f"{cpu_speedup:8.2f} {gpu_speedup:8.2f} {diff_cpu:11.3e} {diff_gpu:11.3e}"
+            f"{cfg.name:12s} {dense_ms:10.3f} {sparse_ms:10.3f} {gpu_ms:10.3f} "
+            f"{sparse_speedup:9.2f} {gpu_speedup:8.2f} {diff_sparse:12.3e} {diff_gpu:11.3e} "
+            f"{agree_sparse:13.3f} {agree_gpu:10.3f}"
         )
 
     return 0
