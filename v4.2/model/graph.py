@@ -43,7 +43,7 @@ class SelfWiringGraph:
 
         # Ternary mask: -1 (inhibit), 0 (no connection), +1 (excite)
         r = np.random.rand(n_neurons, n_neurons)
-        self.mask = np.zeros((n_neurons, n_neurons), dtype=np.float32)
+        self.mask = np.zeros((n_neurons, n_neurons), dtype=np.int8)
         self.mask[r < density / 2] = -1
         self.mask[r > 1 - density / 2] = 1
         np.fill_diagonal(self.mask, 0)
@@ -70,7 +70,7 @@ class SelfWiringGraph:
     def forward(self, world, ticks=8):
         """Single-input forward pass with capacitor dynamics."""
         act = self.state.copy()
-        Weff = self.W * self.mask
+        Weff = self.W * self.mask.astype(np.float32)
         clip_bound = self.threshold * self.clip_factor
 
         for t in range(ticks):
@@ -88,7 +88,7 @@ class SelfWiringGraph:
 
     def forward_batch(self, ticks=8):
         """Batch forward: all V inputs simultaneously. Returns (V, V) logits."""
-        Weff = self.W * self.mask
+        Weff = self.W * self.mask.astype(np.float32)
         V, N = self.V, self.N
         clip_bound = self.threshold * self.clip_factor
         charges = np.zeros((V, N), dtype=np.float32)
