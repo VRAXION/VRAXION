@@ -20,6 +20,7 @@ from gpu_full_evo_prototype import (
     TICKS,
     cpu_train,
     determinism_check,
+    gpu_train_reference,
     gpu_eval,
     gpu_init_from_cpu,
     gpu_train,
@@ -32,6 +33,7 @@ ADVERSARIAL_CONFIGS = ["V64_dense", "V128_N384", "V128_dense"]
 SEEDS = [42, 77]
 DET_ATTEMPTS = 120
 SHORT_ATTEMPTS = 120
+PARITY_ATTEMPTS = 120
 
 
 def initial_eval_parity(cfg: BenchConfig, seed: int) -> tuple[float, float]:
@@ -54,7 +56,7 @@ def initial_eval_parity(cfg: BenchConfig, seed: int) -> tuple[float, float]:
 
 
 def bounded_and_semantic(cfg: BenchConfig, seed: int, attempts: int):
-    res = gpu_train(cfg, attempts, seed, verbose_every=0)
+    res = gpu_train(cfg, attempts, seed, verbose_every=0, engine="tensorized")
     ok = True
     reasons = []
     if not math.isfinite(res["best_acc"]):
@@ -78,6 +80,19 @@ def bounded_and_semantic(cfg: BenchConfig, seed: int, attempts: int):
     return ok, reasons, res
 
 
+def reference_vs_tensorized(cfg: BenchConfig, seed: int, attempts: int):
+    ref = gpu_train_reference(cfg, attempts, seed, verbose_every=0)
+    new = gpu_train(cfg, attempts, seed, verbose_every=0, engine="tensorized")
+    same = (
+        ref["mask_hash"] == new["mask_hash"]
+        and abs(ref["best_acc"] - new["best_acc"]) == 0.0
+        and abs(ref["best_score"] - new["best_score"]) == 0.0
+        and abs(ref["final_leak"] - new["final_leak"]) == 0.0
+        and ref["kept"] == new["kept"]
+    )
+    return same, ref, new
+
+
 def main() -> int:
     if not torch.cuda.is_available():
         print("CUDA not available.")
@@ -99,15 +114,29 @@ def main() -> int:
             if max_abs > 1e-5 or pred_agree < 1.0:
                 parity_fail = True
 
+    # 1b) Exact engine parity
+    print("\n1b) REFERENCE VS TENSORIZED PARITY")
+    for name in ["V64_N192", "V128_N384"]:
+        cfg = CONFIGS[name]
+        for seed in SEEDS:
+            same, ref, new = reference_vs_tensorized(cfg, seed, PARITY_ATTEMPTS)
+            print(
+                f"  {name:10s} seed={seed:3d} same={same} "
+                f"ref_mask={ref['mask_hash']} new_mask={new['mask_hash']}"
+            )
+            if not same:
+                parity_fail = True
+
     # 2) Determinism
     det_fail = False
     print("\n2) DETERMINISM")
     for name in ["V64_N192", "V128_N384"]:
         cfg = CONFIGS[name]
-        rc = determinism_check(cfg, DET_ATTEMPTS, 42)
-        print(f"  {name:10s} deterministic_rc={rc}")
-        if rc != 0:
-            det_fail = True
+        for engine in ["reference", "tensorized"]:
+            rc = determinism_check(cfg, DET_ATTEMPTS, 42, engine=engine)
+            print(f"  {name:10s} engine={engine:10s} deterministic_rc={rc}")
+            if rc != 0:
+                det_fail = True
 
     # 3) Boundedness / semantic invariants
     bound_fail = False
