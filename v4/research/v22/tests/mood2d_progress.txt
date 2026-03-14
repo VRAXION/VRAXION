@@ -1,0 +1,191 @@
+[10:18:40] ======================================================================
+[10:18:40] 2D MOOD FIX EVAL TEST — STARTED
+[10:18:40] Seeds: [42, 123, 777, 1337, 2024], Workers: 4, CPUs: 4
+[10:18:40] ======================================================================
+[10:18:40] ======================================================================
+[10:18:40] MAIN TEST: 2D Mood Fix Eval | V=64 | N=192 | 64K attempts
+[10:18:40] ======================================================================
+[10:18:40] 
+  [1/4] START: baseline_V64_64K
+[10:53:05]     seed=42: acc=39.1%
+[10:53:05]     seed=123: acc=54.7%
+[10:53:05]     seed=777: acc=48.4%
+[10:53:05]     seed=1337: acc=42.2%
+[10:53:05]     seed=2024: acc=53.1%
+[10:53:05]   baseline_V64_64K: avg=47.5% best=54.7% time=2065.0s
+[10:53:07] 
+  [2/4] START: 3d_mood_V64_64K
+[11:09:29]     seed=42: acc=32.8%
+[11:09:29]     seed=123: acc=42.2%
+[11:09:29]     seed=777: acc=48.4%
+[11:09:29]     seed=1337: acc=56.2%
+[11:09:29]     seed=2024: acc=35.9%
+[11:09:29]   3d_mood_V64_64K: avg=43.1% best=56.2% time=981.8s
+[11:09:29]     seed=42 mood: x=0.47 y=0.02 z=0.26 x_shift=+0.106 y_shift=+0.001 z_shift=-0.252 tick_avg=1.01 improvements=4395
+[11:09:29]              floor/ceil: {'x_floor': 4285, 'x_ceil': 5901, 'y_floor': 38216, 'y_ceil': 0, 'z_floor': 11282, 'z_ceil': 3028}
+[11:09:29]     seed=123 mood: x=0.35 y=0.04 z=0.34 x_shift=-0.009 y_shift=-0.054 z_shift=-0.403 tick_avg=1.21 improvements=4750
+[11:09:29]              floor/ceil: {'x_floor': 9955, 'x_ceil': 4502, 'y_floor': 39224, 'y_ceil': 152, 'z_floor': 10501, 'z_ceil': 1030}
+[11:09:29]     seed=777 mood: x=0.42 y=0.02 z=0.38 x_shift=+0.021 y_shift=-0.012 z_shift=-0.305 tick_avg=1.02 improvements=4092
+[11:09:29]              floor/ceil: {'x_floor': 7454, 'x_ceil': 4499, 'y_floor': 40150, 'y_ceil': 0, 'z_floor': 6771, 'z_ceil': 2445}
+[11:09:29]     seed=1337 mood: x=0.43 y=0.02 z=0.34 x_shift=+0.029 y_shift=-0.006 z_shift=-0.281 tick_avg=1.02 improvements=5017
+[11:09:29]              floor/ceil: {'x_floor': 9761, 'x_ceil': 7633, 'y_floor': 41236, 'y_ceil': 0, 'z_floor': 5663, 'z_ceil': 1319}
+[11:09:29]     seed=2024 mood: x=0.47 y=0.02 z=0.34 x_shift=+0.161 y_shift=-0.015 z_shift=-0.338 tick_avg=1.02 improvements=4048
+[11:09:29]              floor/ceil: {'x_floor': 6370, 'x_ceil': 7299, 'y_floor': 39358, 'y_ceil': 0, 'z_floor': 7996, 'z_ceil': 1653}
+[11:09:31] 
+  [3/4] START: 2d_mood_fix8_V64_64K ← THE KEY TEST
+[12:00:35]     seed=42: acc=89.1%
+[12:00:35]     seed=123: acc=92.2%
+[12:00:35]     seed=777: acc=92.2%
+[12:00:35]     seed=1337: acc=92.2%
+[12:00:35]     seed=2024: acc=96.9%
+[12:00:35]   2d_mood_fix8_V64_64K: avg=92.5% best=96.9% time=3064.7s
+[12:00:35]     seed=42 mood: x=0.32(0.37->0.25) z=0.69(0.64->0.71) scout=63% rewirer=17% refiner=20% nch_avg=10.23 improvements=4848
+[12:00:35]              floor/ceil: {'x_floor': 11135, 'x_ceil': 2759, 'z_floor': 402, 'z_ceil': 7257}
+[12:00:35]     seed=123 mood: x=0.40(0.42->0.47) z=0.72(0.72->0.70) scout=55% rewirer=18% refiner=26% nch_avg=10.75 improvements=4596
+[12:00:35]              floor/ceil: {'x_floor': 6815, 'x_ceil': 5820, 'z_floor': 1933, 'z_ceil': 12231}
+[12:00:35]     seed=777 mood: x=0.40(0.33->0.38) z=0.66(0.73->0.69) scout=52% rewirer=21% refiner=27% nch_avg=9.88 improvements=4110
+[12:00:35]              floor/ceil: {'x_floor': 7962, 'x_ceil': 3370, 'z_floor': 2782, 'z_ceil': 6669}
+[12:00:35]     seed=1337 mood: x=0.37(0.38->0.36) z=0.61(0.55->0.70) scout=58% rewirer=16% refiner=26% nch_avg=9.13 improvements=4482
+[12:00:35]              floor/ceil: {'x_floor': 9100, 'x_ceil': 5016, 'z_floor': 1313, 'z_ceil': 4937}
+[12:00:35]     seed=2024 mood: x=0.32(0.38->0.28) z=0.69(0.64->0.70) scout=64% rewirer=19% refiner=17% nch_avg=10.26 improvements=4734
+[12:00:35]              floor/ceil: {'x_floor': 10547, 'x_ceil': 2535, 'z_floor': 2867, 'z_ceil': 9458}
+[12:00:37] 
+  [4/4] START: 2d_mood_fix4_V64_64K
+[12:28:43]     seed=42: acc=75.0%
+[12:28:43]     seed=123: acc=73.4%
+[12:28:43]     seed=777: acc=78.1%
+[12:28:43]     seed=1337: acc=70.3%
+[12:28:43]     seed=2024: acc=60.9%
+[12:28:43]   2d_mood_fix4_V64_64K: avg=71.6% best=78.1% time=1685.7s
+[12:28:43]     seed=42 mood: x=0.42(0.50->0.34) z=0.42(0.63->0.20) scout=47% rewirer=27% refiner=27% nch_avg=6.46 improvements=5512
+[12:28:43]              floor/ceil: {'x_floor': 7766, 'x_ceil': 5898, 'z_floor': 8965, 'z_ceil': 1824}
+[12:28:43]     seed=123 mood: x=0.47(0.56->0.46) z=0.48(0.66->0.26) scout=42% rewirer=25% refiner=33% nch_avg=7.32 improvements=5535
+[12:28:43]              floor/ceil: {'x_floor': 5241, 'x_ceil': 7267, 'z_floor': 6949, 'z_ceil': 3432}
+[12:28:43]     seed=777 mood: x=0.42(0.32->0.42) z=0.47(0.72->0.24) scout=48% rewirer=25% refiner=27% nch_avg=7.07 improvements=5506
+[12:28:43]              floor/ceil: {'x_floor': 8049, 'x_ceil': 4974, 'z_floor': 5266, 'z_ceil': 1670}
+[12:28:43]     seed=1337 mood: x=0.47(0.42->0.57) z=0.43(0.61->0.18) scout=41% rewirer=25% refiner=34% nch_avg=6.59 improvements=5320
+[12:28:43]              floor/ceil: {'x_floor': 5776, 'x_ceil': 7639, 'z_floor': 8017, 'z_ceil': 2038}
+[12:28:43]     seed=2024 mood: x=0.42(0.46->0.26) z=0.43(0.71->0.23) scout=49% rewirer=23% refiner=28% nch_avg=6.63 improvements=4894
+[12:28:43]              floor/ceil: {'x_floor': 7325, 'x_ceil': 3298, 'z_floor': 7434, 'z_ceil': 1895}
+[12:28:43] 
+======================================================================
+[12:28:43] MAIN TEST SUMMARY
+[12:28:43] ======================================================================
+[12:28:43] Method                            Avg Acc   Best Acc       Time
+[12:28:43] ----------------------------------------------------------------------
+[12:28:43] baseline_V64_64K                   47.5%     54.7%    2065.0s
+[12:28:43] 3d_mood_V64_64K                    43.1%     56.2%     981.8s
+[12:28:43] 2d_mood_fix8_V64_64K               92.5%     96.9%    3064.7s
+[12:28:43] 2d_mood_fix4_V64_64K               71.6%     78.1%    1685.7s
+[12:28:45] 
+======================================================================
+[12:28:45] SIDE QUEST 1: Byte_8 vs One-Hot Encoding | V=64 | 8K attempts
+[12:28:45]   one_hot: 64 I/O + 128 internal = N=192 (64+128+64)
+[12:28:45]   byte_8:  8 I/O + 176 internal = N=192 (8+176+8)
+[12:28:45] ======================================================================
+[12:28:45] 
+  START: sq1_onehot_V64_8K
+[12:32:21]     seed=42: acc=21.9%
+[12:32:21]     seed=123: acc=14.1%
+[12:32:21]     seed=777: acc=15.6%
+[12:32:21]     seed=1337: acc=15.6%
+[12:32:21]     seed=2024: acc=10.9%
+[12:32:21]   sq1_onehot_V64_8K: avg=15.6% best=21.9% time=216.3s
+[12:32:21]   Layout: 64 in + 64 internal + 64 out = 192
+[12:32:23] 
+  START: sq1_byte8_V64_8K
+[12:40:07]     seed=42: acc=4.7%
+[12:40:07]     seed=123: acc=3.1%
+[12:40:07]     seed=777: acc=7.8%
+[12:40:07]     seed=1337: acc=6.2%
+[12:40:07]     seed=2024: acc=3.1%
+[12:40:07]   sq1_byte8_V64_8K: avg=5.0% best=7.8% time=463.4s
+[12:40:07]   Layout: 8 in + 176 internal + 8 out = 192
+[12:40:07] 
+  SQ1 SUMMARY:
+[12:40:07]     sq1_onehot_V64_8K: avg=15.6% best=21.9% layout=64+64+64=192
+[12:40:07]     sq1_byte8_V64_8K: avg=5.0% best=7.8% layout=8+176+8=192
+[12:40:09] 
+======================================================================
+[12:40:09] SIDE QUEST 2: Intrinsic Dimension Calibration via mood_z
+[12:40:09]   Fix tick=8, measure mood_z convergence across V sizes
+[12:40:09]   V=16 N=64 | V=32 N=96 | V=64 N=192
+[12:40:09] ======================================================================
+[12:40:09] 
+  START: sq2_V16_N64_8K
+[12:40:33]     seed=42: acc=100.0% mz_end=0.6922 mz_mean=0.7246
+[12:40:33]     seed=123: acc=100.0% mz_end=0.7458 mz_mean=0.7793
+[12:40:33]     seed=777: acc=100.0% mz_end=0.8118 mz_mean=0.6871
+[12:40:33]     seed=1337: acc=87.5% mz_end=0.392 mz_mean=0.6384
+[12:40:33]     seed=2024: acc=100.0% mz_end=0.807 mz_mean=0.7917
+[12:40:33]   sq2_V16_N64_8K: avg_acc=97.5% avg_mz_end=0.690
+[12:40:35] 
+  START: sq2_V32_N96_8K
+[12:42:16]     seed=42: acc=90.6% mz_end=0.7118 mz_mean=0.6827
+[12:42:16]     seed=123: acc=90.6% mz_end=0.8488 mz_mean=0.6861
+[12:42:16]     seed=777: acc=90.6% mz_end=0.6057 mz_mean=0.631
+[12:42:16]     seed=1337: acc=87.5% mz_end=0.8343 mz_mean=0.6834
+[12:42:16]     seed=2024: acc=81.2% mz_end=0.2006 mz_mean=0.3888
+[12:42:16]   sq2_V32_N96_8K: avg_acc=88.1% avg_mz_end=0.640
+[12:42:18] 
+  START: sq2_V64_N192_8K
+[12:47:12]     seed=42: acc=56.2% mz_end=0.6399 mz_mean=0.7067
+[12:47:12]     seed=123: acc=46.9% mz_end=0.6374 mz_mean=0.7201
+[12:47:12]     seed=777: acc=54.7% mz_end=0.658 mz_mean=0.7412
+[12:47:12]     seed=1337: acc=45.3% mz_end=0.5639 mz_mean=0.6528
+[12:47:12]     seed=2024: acc=60.9% mz_end=0.7028 mz_mean=0.6664
+[12:47:12]   sq2_V64_N192_8K: avg_acc=52.8% avg_mz_end=0.640
+[12:47:14] 
+  SQ2 SUMMARY — mood_z convergence vs V:
+[12:47:14]   Config                       Avg Acc   avg_mz_end Interpretation
+[12:47:14]   -----------------------------------------------------------------
+[12:47:14]   sq2_V16_N64_8K                97.5%       0.690  HARD
+[12:47:14]   sq2_V32_N96_8K                88.1%       0.640  HARD
+[12:47:14]   sq2_V64_N192_8K               52.8%       0.640  HARD
+[12:47:16] 
+======================================================================
+[12:47:16] SIDE QUEST 3: Context Length with byte_8 Encoding
+[12:47:16]   English bigram prediction, 8K attempts, 3 seeds
+[12:47:16]   1 char (8 neuron input) vs 2 char (16) vs 3 char (24)
+[12:47:16] ======================================================================
+[12:47:16] 
+  START: sq3_ctx1_byte8_8K (input=8, internal=176, N=192)
+[12:49:51]     seed=42: acc=20.3%
+[12:49:51]     seed=123: acc=21.9%
+[12:49:51]     seed=777: acc=20.3%
+[12:49:51]   sq3_ctx1_byte8_8K: avg=20.8% best=21.9% time=155.5s
+[12:49:53] 
+  START: sq3_ctx2_byte8_8K (input=16, internal=168, N=192)
+[12:52:31]     seed=42: acc=20.3%
+[12:52:31]     seed=123: acc=21.9%
+[12:52:31]     seed=777: acc=20.3%
+[12:52:31]   sq3_ctx2_byte8_8K: avg=20.8% best=21.9% time=157.5s
+[12:52:33] 
+  START: sq3_ctx3_byte8_8K (input=24, internal=160, N=192)
+[12:55:14]     seed=42: acc=20.3%
+[12:55:14]     seed=123: acc=21.9%
+[12:55:14]     seed=777: acc=20.3%
+[12:55:14]   sq3_ctx3_byte8_8K: avg=20.8% best=21.9% time=161.0s
+[12:55:16] 
+  SQ3 SUMMARY — Context length effect with byte_8:
+[12:55:16]     sq3_ctx1_byte8_8K: avg=20.8% best=21.9% layout=8+176+8=192
+[12:55:16]     sq3_ctx2_byte8_8K: avg=20.8% best=21.9% layout=16+168+8=192
+[12:55:16]     sq3_ctx3_byte8_8K: avg=20.8% best=21.9% layout=24+160+8=192
+[12:55:16] 
+======================================================================
+[12:55:16] ALL TESTS COMPLETE — FINAL SUMMARY
+[12:55:16] ======================================================================
+[12:55:16]   baseline_V64_64K: avg=47.5% best=54.7%
+[12:55:16]   3d_mood_V64_64K: avg=43.1% best=56.2%
+[12:55:16]   2d_mood_fix8_V64_64K: avg=92.5% best=96.9%
+[12:55:16]   2d_mood_fix4_V64_64K: avg=71.6% best=78.1%
+[12:55:16]   sq1_onehot_V64_8K: avg=15.6% best=21.9% layout=64+64+64=192
+[12:55:16]   sq1_byte8_V64_8K: avg=5.0% best=7.8% layout=8+176+8=192
+[12:55:16]   sq2_V16_N64_8K: avg=97.5% best=100.0% mz_end=0.690
+[12:55:16]   sq2_V32_N96_8K: avg=88.1% best=90.6% mz_end=0.640
+[12:55:16]   sq2_V64_N192_8K: avg=52.8% best=60.9% mz_end=0.640
+[12:55:16]   sq3_ctx1_byte8_8K: avg=20.8% best=21.9% layout=8+176+8=192
+[12:55:16]   sq3_ctx2_byte8_8K: avg=20.8% best=21.9% layout=16+168+8=192
+[12:55:16]   sq3_ctx3_byte8_8K: avg=20.8% best=21.9% layout=24+160+8=192
+[12:55:16] 
+DONE.
