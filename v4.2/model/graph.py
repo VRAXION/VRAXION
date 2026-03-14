@@ -24,11 +24,12 @@ class SelfWiringGraph:
     self_conn = 0.1
     clip_factor = 2.0
 
-    # Weight values: W_strong=False → w_weak, W_strong=True → w_strong
-    # Current best from sweep: 1.0/3.0 (+13.5pp over 0.5/1.5)
-    # WARNING: not yet plateau-tested — may not be final optimal
-    w_weak = 1.0
-    w_strong = 3.0
+    # Weight values: Weff = C * (1 + boost * (ratio - 1)) * mask
+    # C = bandpass center, ratio = strong/weak optimal from sweep
+    # Sweep result: C=1.5, ratio=4/3 → weak=1.5, strong=2.0 (85.4% V=64)
+    # Phi ratio (1.618) also strong (83.9%) but 4/3 is the peak
+    w_weak = 1.5
+    w_strong = 2.0
 
     def __init__(self, n_neurons, vocab, density=0.06, flip_rate=0.30,
                  threshold=0.5, leak=0.85, io_mode='split'):
