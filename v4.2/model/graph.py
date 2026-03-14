@@ -24,6 +24,12 @@ class SelfWiringGraph:
     self_conn = 0.1
     clip_factor = 2.0
 
+    # Weight values: W_strong=False → w_weak, W_strong=True → w_strong
+    # Current best from sweep: 1.0/3.0 (+13.5pp over 0.5/1.5)
+    # WARNING: not yet plateau-tested — may not be final optimal
+    w_weak = 1.0
+    w_strong = 3.0
+
     def __init__(self, n_neurons, vocab, density=0.06, flip_rate=0.30,
                  threshold=0.5, leak=0.85, io_mode='split'):
         self.N = n_neurons
@@ -67,7 +73,7 @@ class SelfWiringGraph:
     def forward(self, world, ticks=8):
         """Single-input forward pass with capacitor dynamics."""
         act = self.state.copy()
-        Weff = (0.5 + self.W_strong.astype(np.float32)) * self.mask.astype(np.float32)
+        Weff = (self.w_weak + self.W_strong.astype(np.float32) * (self.w_strong - self.w_weak)) * self.mask.astype(np.float32)
         clip_bound = self.threshold * self.clip_factor
 
         for t in range(ticks):
@@ -85,7 +91,7 @@ class SelfWiringGraph:
 
     def forward_batch(self, ticks=8):
         """Batch forward: all V inputs simultaneously. Returns (V, V) logits."""
-        Weff = (0.5 + self.W_strong.astype(np.float32)) * self.mask.astype(np.float32)
+        Weff = (self.w_weak + self.W_strong.astype(np.float32) * (self.w_strong - self.w_weak)) * self.mask.astype(np.float32)
         V, N = self.V, self.N
         clip_bound = self.threshold * self.clip_factor
         charges = np.zeros((V, N), dtype=np.float32)
