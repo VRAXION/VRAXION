@@ -43,51 +43,6 @@ def score_batch(net, targets, V, ticks=8):
     return score, acc
 
 
-def flip_single(net):
-    """Flip exactly one random existing connection."""
-    alive = np.argwhere(net.mask != 0)
-    if len(alive) > 0:
-        idx = alive[np.random.randint(len(alive))]
-        net.mask[idx[0], idx[1]] *= -1
-
-
-def capped_mutate(net, cap=0.15, rate=0.03):
-    """Density-aware mutation: only add if below cap, always allow remove/flip."""
-    density = net.count_connections() / (net.N * (net.N - 1))
-    if density < cap:
-        net.mutate_structure(rate)
-    else:
-        r = random.random()
-        if r < 0.5:
-            flip_single(net)
-        elif r < 0.8:
-            alive = np.argwhere(net.mask != 0)
-            if len(alive) > 3:
-                idx = alive[np.random.randint(len(alive))]
-                net.mask[idx[0], idx[1]] = 0
-        else:
-            net.mutate_weights()
-
-
-def temp_mutate(net, temperature, cap=0.20):
-    """Temperature-modulated mutation (4 zones based on temperature)."""
-    density = net.count_connections() / (net.N * (net.N - 1))
-    if temperature < 0.5:
-        if density < cap:
-            net.mutate_structure(0.02)
-        else:
-            flip_single(net)
-    elif temperature < 1.5:
-        net.mutate_structure(0.05)
-    elif temperature < 3.0:
-        net.mutate_structure(0.10)
-        if random.random() < 0.3:
-            net.mutate_weights()
-    else:
-        net.mutate_structure(0.15)
-        net.mutate_weights()
-
-
 def train_loop(net, targets, V, score_fn, mutate_fn=None,
                max_att=8000, ticks=8, stale_limit=6000, phase_switch=2500):
     """Generic training loop with mutation + selection.
@@ -115,19 +70,12 @@ def train_loop(net, targets, V, score_fn, mutate_fn=None,
     switched = False
 
     for att in range(max_att):
-        saved_mask = net.mask.copy()
-        saved_W = net.W.copy()
+        state = net.save_state()
 
         if mutate_fn:
             mutate_fn(net)
         else:
-            if phase == 'STRUCTURE':
-                net.mutate_structure(0.05)
-            else:
-                if random.random() < 0.3:
-                    net.mutate_structure(0.02)
-                else:
-                    net.mutate_weights()
+            net.mutate_with_mood()
 
         sc, acc = score_fn(net, targets, V, ticks)
 
@@ -137,8 +85,7 @@ def train_loop(net, targets, V, score_fn, mutate_fn=None,
             kept += 1
             stale = 0
         else:
-            net.mask = saved_mask
-            net.W = saved_W
+            net.restore_state(state)
             stale += 1
 
         if phase == 'STRUCTURE' and stale > phase_switch and not switched:
