@@ -48,11 +48,8 @@ class SelfWiringGraph:
         self.mask[r > 1 - density / 2] = 1
         np.fill_diagonal(self.mask, 0)
 
-        # Binary weights: 0.5 (weak) or 1.5 (strong), positive only
-        self.W = np.where(
-            np.random.rand(n_neurons, n_neurons) > 0.5,
-            np.float32(0.5), np.float32(1.5)
-        )
+        # Binary weights: False=0.5 (weak), True=1.5 (strong)
+        self.W_strong = np.random.rand(n_neurons, n_neurons) > 0.5
 
         # Persistent state
         self.state = np.zeros(n_neurons, dtype=np.float32)
@@ -70,7 +67,7 @@ class SelfWiringGraph:
     def forward(self, world, ticks=8):
         """Single-input forward pass with capacitor dynamics."""
         act = self.state.copy()
-        Weff = self.W * self.mask.astype(np.float32)
+        Weff = (0.5 + self.W_strong.astype(np.float32)) * self.mask.astype(np.float32)
         clip_bound = self.threshold * self.clip_factor
 
         for t in range(ticks):
@@ -88,7 +85,7 @@ class SelfWiringGraph:
 
     def forward_batch(self, ticks=8):
         """Batch forward: all V inputs simultaneously. Returns (V, V) logits."""
-        Weff = self.W * self.mask.astype(np.float32)
+        Weff = (0.5 + self.W_strong.astype(np.float32)) * self.mask.astype(np.float32)
         V, N = self.V, self.N
         clip_bound = self.threshold * self.clip_factor
         charges = np.zeros((V, N), dtype=np.float32)
@@ -120,13 +117,13 @@ class SelfWiringGraph:
 
     def save_state(self):
         return {
-            'W': self.W.copy(), 'mask': self.mask.copy(),
+            'W_strong': self.W_strong.copy(), 'mask': self.mask.copy(),
             'state': self.state.copy(), 'charge': self.charge.copy(),
             'mood_x': self.mood_x, 'mood_z': self.mood_z,
         }
 
     def restore_state(self, s):
-        self.W[:] = s['W']
+        self.W_strong[:] = s['W_strong']
         self.mask[:] = s['mask']
         self.state[:] = s['state']
         self.charge[:] = s['charge']
@@ -156,10 +153,8 @@ class SelfWiringGraph:
                     n = max(1, int(len(dead) * rate))
                     idx = dead[np.random.choice(len(dead), min(n, len(dead)), replace=False)]
                     rows, cols = idx[:, 0], idx[:, 1]
-                    self.mask[rows, cols] = 1.0 if action == 'add_pos' else -1.0
-                    self.W[rows, cols] = np.where(
-                        np.random.rand(len(rows)) > 0.5,
-                        np.float32(0.5), np.float32(1.5))
+                    self.mask[rows, cols] = 1 if action == 'add_pos' else -1
+                    self.W_strong[rows, cols] = np.random.rand(len(rows)) > 0.5
 
             elif action == 'remove':
                 alive = np.argwhere(self.mask != 0)
@@ -176,13 +171,13 @@ class SelfWiringGraph:
                     for j in range(len(idx)):
                         r2, c = int(idx[j][0]), int(idx[j][1])
                         old_sign = self.mask[r2, c]
-                        old_w = self.W[r2, c]
+                        old_w = self.W_strong[r2, c]
                         self.mask[r2, c] = 0
                         nc = random.randint(0, self.N - 1)
                         while nc == r2:
                             nc = random.randint(0, self.N - 1)
                         self.mask[r2, nc] = old_sign
-                        self.W[r2, nc] = old_w
+                        self.W_strong[r2, nc] = old_w
 
     def mutate_with_mood(self):
         """2D mood-driven mutation. mood_x = type, mood_z = intensity.
@@ -221,7 +216,7 @@ class SelfWiringGraph:
         dead = dead[dead[:, 0] != dead[:, 1]]
         if len(dead) > 0:
             i = dead[random.randint(0, len(dead) - 1)]
-            self.mask[i[0], i[1]] = 1.0 if random.random() > 0.5 else -1.0
+            self.mask[i[0], i[1]] = 1 if random.random() > 0.5 else -1
 
     def _flip_connection(self):
         alive = np.argwhere(self.mask != 0)
@@ -244,18 +239,16 @@ class SelfWiringGraph:
         alive = np.argwhere(self.mask != 0)
         if len(alive) > 0:
             i = alive[random.randint(0, len(alive) - 1)]
-            self.W[i[0], i[1]] = 1.5 if self.W[i[0], i[1]] < 1.0 else 0.5
+            self.W_strong[i[0], i[1]] = not self.W_strong[i[0], i[1]]
 
     def mutate_weights(self):
-        """Weight mutation: toggle 0.5 <-> 1.5 for random connections."""
+        """Weight mutation: toggle weak <-> strong for random connections."""
         alive = np.argwhere(self.mask != 0)
         if len(alive) > 0:
             n = max(1, int(len(alive) * 0.05))
             idx = alive[np.random.choice(len(alive), min(n, len(alive)), replace=False)]
             rows, cols = idx[:, 0], idx[:, 1]
-            self.W[rows, cols] = np.where(
-                self.W[rows, cols] < 1.0,
-                np.float32(1.5), np.float32(0.5))
+            self.W_strong[rows, cols] = ~self.W_strong[rows, cols]
 
 
 def softmax(x):

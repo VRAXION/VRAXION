@@ -42,7 +42,7 @@ def main():
         perm = np.random.permutation(16)
         score_best = 0.0
         for att in range(2000):
-            sm = net.mask.copy(); sw = net.W.copy()
+            sm = net.mask.copy(); sw = net.W_strong.copy()
             net.mutate_structure(0.05)
             logits = net.forward_batch(ticks=8)
             e = np.exp(logits - logits.max(axis=1, keepdims=True))
@@ -52,7 +52,7 @@ def main():
             tp = probs[np.arange(16), perm].mean()
             sc = 0.5*acc + 0.5*tp
             if sc > score_best: score_best = sc
-            else: net.mask = sm; net.W = sw
+            else: net.mask = sm; net.W_strong = sw
         r = result(PASS if score_best > 0.05 else WARN,
                    f"V=N=16: {score_best*100:.1f}%")
     except Exception as ex:
@@ -66,7 +66,7 @@ def main():
     identity = np.arange(16)
     acc_best = 0.0
     for att in range(3000):
-        sm = net.mask.copy(); sw = net.W.copy()
+        sm = net.mask.copy(); sw = net.W_strong.copy()
         net.mutate_structure(0.05)
         logits = net.forward_batch(ticks=8)
         e = np.exp(logits - logits.max(axis=1, keepdims=True))
@@ -75,7 +75,7 @@ def main():
         tp = probs[np.arange(16), identity].mean()
         sc = 0.5*acc + 0.5*tp
         if sc > 0: acc_best = max(acc_best, acc)
-        else: net.mask = sm; net.W = sw
+        else: net.mask = sm; net.W_strong = sw
     r = result(PASS if acc_best > 0.5 else WARN, f"Identity: {acc_best*100:.1f}%")
     results.append(("Identity perm", r))
 
@@ -89,14 +89,14 @@ def main():
         np.random.seed(SEED); random.seed(SEED)
         net = SelfWiringGraph(80, 16)
         for att in range(2000):
-            sm = net.mask.copy(); sw = net.W.copy()
+            sm = net.mask.copy(); sw = net.W_strong.copy()
             net.mutate_structure(0.05)
             logits = net.forward_batch(ticks=8)
             e = np.exp(logits - logits.max(axis=1, keepdims=True))
             probs = e / e.sum(axis=1, keepdims=True)
             acc = (np.argmax(probs, axis=1) == perm).mean()
             if acc > 0: pass
-            else: net.mask = sm; net.W = sw
+            else: net.mask = sm; net.W_strong = sw
         print(f"    {name}: OK")
     r = result(PASS, "All adversarial perms trained without crash")
     results.append(("Adversarial perms", r))
@@ -176,7 +176,7 @@ def main():
     np.random.seed(99); random.seed(99)
     net2 = SelfWiringGraph(48, 16)
     for _ in range(100): net2.mutate_structure(0.05); net2.mutate_weights()
-    ok = np.array_equal(net1.mask, net2.mask) and np.array_equal(net1.W, net2.W)
+    ok = np.array_equal(net1.mask, net2.mask) and np.array_equal(net1.W_strong, net2.W_strong)
     r = result(PASS if ok else FAIL, f"Deterministic: {ok}")
     results.append(("Determinism", r))
 
@@ -209,15 +209,15 @@ def main():
     net = SelfWiringGraph(64, 16)
     net.forward(np.zeros(16, dtype=np.float32), ticks=8)
     state = net.save_state()
-    net.W[:] = 999; net.mask[:] = -1; net.state[:] = 42; net.charge[:] = 100
+    net.W_strong[:] = True; net.mask[:] = -1; net.state[:] = 42; net.charge[:] = 100
     net.mood_x = 0.0; net.mood_z = 0.0
     net.restore_state(state)
-    ok = (np.array_equal(net.W, state['W']) and np.array_equal(net.mask, state['mask']) and
+    ok = (np.array_equal(net.W_strong, state['W_strong']) and np.array_equal(net.mask, state['mask']) and
           np.array_equal(net.state, state['state']) and np.array_equal(net.charge, state['charge']) and
           net.mood_x == state['mood_x'] and net.mood_z == state['mood_z'])
     # Deep copy check
-    state['W'][0, 0] = -999
-    deep_ok = net.W[0, 0] != -999
+    state['W_strong'][0, 0] = not state['W_strong'][0, 0]
+    deep_ok = net.W_strong[0, 0] != state['W_strong'][0, 0]
     r = result(PASS if ok and deep_ok else FAIL,
                f"Bitwise restore: {ok}, deep copy: {deep_ok}")
     results.append(("Save/restore", r))
