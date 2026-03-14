@@ -210,11 +210,13 @@ def main():
     net.forward(np.zeros(16, dtype=np.float32), ticks=8)
     state = net.save_state()
     net.W[:] = 999; net.mask[:] = -1; net.state[:] = 42; net.charge[:] = 100
+    net.mood_x = 0.0; net.mood_z = 0.0
     net.restore_state(state)
-    ok = (np.array_equal(net.W, state[0]) and np.array_equal(net.mask, state[1]) and
-          np.array_equal(net.state, state[2]) and np.array_equal(net.charge, state[3]))
+    ok = (np.array_equal(net.W, state['W']) and np.array_equal(net.mask, state['mask']) and
+          np.array_equal(net.state, state['state']) and np.array_equal(net.charge, state['charge']) and
+          net.mood_x == state['mood_x'] and net.mood_z == state['mood_z'])
     # Deep copy check
-    state[0][0, 0] = -999
+    state['W'][0, 0] = -999
     deep_ok = net.W[0, 0] != -999
     r = result(PASS if ok and deep_ok else FAIL,
                f"Bitwise restore: {ok}, deep copy: {deep_ok}")

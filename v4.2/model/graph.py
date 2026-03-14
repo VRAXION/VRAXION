@@ -58,6 +58,11 @@ class SelfWiringGraph:
         self.state = np.zeros(n_neurons, dtype=np.float32)
         self.charge = np.zeros(n_neurons, dtype=np.float32)
 
+        # 2D mood: controls mutation type (mood_x) and intensity (mood_z)
+        # Co-evolved with network via mutation + selection
+        self.mood_x = 0.5  # 0=scout, 0.5=rewirer, 1=refiner
+        self.mood_z = 0.5  # 0=1 change, 1=15 changes per attempt
+
     def reset(self):
         self.state *= 0
         self.charge *= 0
@@ -114,11 +119,19 @@ class SelfWiringGraph:
     # --- State management ---
 
     def save_state(self):
-        return (self.W.copy(), self.mask.copy(), self.state.copy(), self.charge.copy())
+        return {
+            'W': self.W.copy(), 'mask': self.mask.copy(),
+            'state': self.state.copy(), 'charge': self.charge.copy(),
+            'mood_x': self.mood_x, 'mood_z': self.mood_z,
+        }
 
     def restore_state(self, s):
-        self.W, self.mask, self.state, self.charge = (
-            s[0].copy(), s[1].copy(), s[2].copy(), s[3].copy())
+        self.W[:] = s['W']
+        self.mask[:] = s['mask']
+        self.state[:] = s['state']
+        self.charge[:] = s['charge']
+        self.mood_x = s['mood_x']
+        self.mood_z = s['mood_z']
 
     # --- Mutation operators ---
 
@@ -170,6 +183,68 @@ class SelfWiringGraph:
                             nc = random.randint(0, self.N - 1)
                         self.mask[r2, nc] = old_sign
                         self.W[r2, nc] = old_w
+
+    def mutate_with_mood(self):
+        """2D mood-driven mutation. mood_x = type, mood_z = intensity.
+        Co-evolves with network: mood mutates, reverts if no improvement."""
+        if random.random() < 0.2:
+            self.mood_x = np.clip(self.mood_x + random.gauss(0, 0.15), 0.0, 1.0)
+        if random.random() < 0.2:
+            self.mood_z = np.clip(self.mood_z + random.gauss(0, 0.15), 0.0, 1.0)
+
+        n_changes = max(1, int(1 + self.mood_z * 14))
+        for _ in range(n_changes):
+            if self.mood_x < 0.33:
+                # Scout: heavy add + some flip
+                if random.random() < 0.7:
+                    self._add_connection()
+                else:
+                    self._flip_connection()
+            elif self.mood_x < 0.66:
+                # Rewirer: rewire + flip + add
+                r = random.random()
+                if r < 0.6:
+                    self._rewire_connection()
+                elif r < 0.8:
+                    self._flip_connection()
+                else:
+                    self._add_connection()
+            else:
+                # Refiner: flip + weight toggle
+                if random.random() < 0.5:
+                    self._flip_connection()
+                else:
+                    self._toggle_weight()
+
+    def _add_connection(self):
+        dead = np.argwhere(self.mask == 0)
+        dead = dead[dead[:, 0] != dead[:, 1]]
+        if len(dead) > 0:
+            i = dead[random.randint(0, len(dead) - 1)]
+            self.mask[i[0], i[1]] = 1.0 if random.random() > 0.5 else -1.0
+
+    def _flip_connection(self):
+        alive = np.argwhere(self.mask != 0)
+        if len(alive) > 0:
+            i = alive[random.randint(0, len(alive) - 1)]
+            self.mask[i[0], i[1]] *= -1
+
+    def _rewire_connection(self):
+        alive = np.argwhere(self.mask != 0)
+        if len(alive) > 0:
+            i = alive[random.randint(0, len(alive) - 1)]
+            old = self.mask[i[0], i[1]]
+            self.mask[i[0], i[1]] = 0
+            nc = random.randint(0, self.N - 1)
+            while nc == i[0]:
+                nc = random.randint(0, self.N - 1)
+            self.mask[i[0], nc] = old
+
+    def _toggle_weight(self):
+        alive = np.argwhere(self.mask != 0)
+        if len(alive) > 0:
+            i = alive[random.randint(0, len(alive) - 1)]
+            self.W[i[0], i[1]] = 1.5 if self.W[i[0], i[1]] < 1.0 else 0.5
 
     def mutate_weights(self):
         """Weight mutation: toggle 0.5 <-> 1.5 for random connections."""
