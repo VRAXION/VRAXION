@@ -23,10 +23,8 @@ class SelfWiringGraph:
     THRESHOLD = 0.5    # firing threshold
     # Mutation int fractions: PATIENCE 7/20, LOSS_DRIFT 1/5, SHRINK 7/10, LOSS_STEP +-3
 
-    def __init__(self, *args, density=None):
-        # SelfWiringGraph(64) — new: vocab only
-        # SelfWiringGraph(192, 64) — old backward compat
-        # density param ignored (use class DENSITY constant)
+    def __init__(self, *args, **_):
+        # SelfWiringGraph(64) or SelfWiringGraph(192, 64)
         if len(args) == 1:
             vocab = args[0]
         else:
@@ -66,34 +64,7 @@ class SelfWiringGraph:
 
     @property
     def retention(self):
-        return np.float32((100 - int(self.loss_pct)) * 0.01)
-
-    @property
-    def loss(self):
-        """Backward-compatible alias used by ad-hoc experiment scripts."""
-        return int(self.loss_pct)
-
-    @loss.setter
-    def loss(self, value):
-        self.loss_pct = np.int8(max(1, min(50, int(value))))
-
-    @property
-    def leak(self):
-        """Backward-compatible retention view used by older scripts."""
-        return float(self.retention)
-
-    @leak.setter
-    def leak(self, value):
-        # Support:
-        # - float retention 0..1
-        # - int legacy retention bucket 50..99
-        # - int direct loss bucket 1..50
-        if isinstance(value, (float, np.floating)):
-            loss = int(round((1.0 - float(value)) * 100.0))
-        else:
-            iv = int(value)
-            loss = 100 - iv if 50 <= iv <= 99 else iv
-        self.loss_pct = np.int8(max(1, min(50, loss)))
+        return (100 - int(self.loss_pct)) * 0.01
 
     def forward(self, world, ticks=8):
         """Single-input forward pass."""
@@ -235,10 +206,6 @@ class SelfWiringGraph:
                     else:
                         self._rewire(undo)
         return undo
-
-    def mutate_with_mood(self):
-        """Backward-compatible alias for older experiment scripts."""
-        self.mutate()
 
     def _add(self, undo):
         r, c = random.randint(0, self.N-1), random.randint(0, self.N-1)
