@@ -20,7 +20,8 @@ class SelfWiringGraph:
     CHARGE_RATE = 0.3
     SELF_CONN = 0.05
     THRESHOLD = 0.5
-    CLIP_BOUND = 1.0  # was threshold * clip_factor (0.5 * 2.0)
+    CLIP_BOUND = 1.0
+    PATIENCE = 0.35  # strategy flip prob on reject (~patience=10 implicit)
 
     def __init__(self, n_neurons, vocab, density=0.06, conn_budget=0):
         self.N = n_neurons
@@ -158,7 +159,7 @@ class SelfWiringGraph:
                                        NO:  remove/rewire
         """
         # Intensity drift (survives rejects)
-        if random.random() < 0.35:
+        if random.random() < self.PATIENCE:
             self.intensity = np.int8(max(1, min(15, int(self.intensity) + random.choice([-1, 1]))))
 
         # Loss step (reverts with mask on reject)
@@ -253,9 +254,9 @@ def train(net, targets, vocab, max_attempts=8000, ticks=8,
             net.restore_state(state)
             stale += 1
             # Strategy failed → reconsider (flip on reject)
-            if random.random() < 0.35:
+            if random.random() < net.PATIENCE:
                 net.signal = np.int8(1 - int(net.signal))
-            if random.random() < 0.35:
+            if random.random() < net.PATIENCE:
                 net.grow = np.int8(1 - int(net.grow))
 
         if verbose and (att + 1) % 1000 == 0:
