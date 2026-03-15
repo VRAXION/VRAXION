@@ -23,23 +23,26 @@ Reference harness:
 
 Mini-gate log:
 
-- [gpu_eval_dtype_minigate_20260315_212636.log](/S:/AI/logs/gpu_eval_dtype_minigate_20260315_212636.log)
+- [gpu_eval_dtype_minigate_sd0_20260315_214541.log](/S:/AI/logs/gpu_eval_dtype_minigate_sd0_20260315_214541.log)
 
 Short result:
 
 - `V64_N192`, `2k`, seeds `42,77,123`
-  - `fp32`: `35.9%`, `109.6 aps`
-  - `bf16`: `39.1%`, `125.6 aps`
+  - `fp32`: `28.1%`, `103.9 aps`
+  - `bf16`: `32.3%`, `97.1 aps`
 - `V128_N384`, `2k`, seeds `42,77,123`
-  - `fp32`: `13.0%`, `158.9 aps`
-  - `bf16`: `10.4%`, `199.0 aps`
+  - `fp32`: `15.6%`, `86.5 aps`
+  - `bf16`: `14.3%`, `122.4 aps`
 
 Interpretation:
 
 - `bf16` is a **real** simplification candidate on GPU
 - but it is **not** a universal free win
-- it currently looks promising enough to keep testing, but not safe enough to
-  replace the `fp32` baseline without a larger gate
+- after syncing to the current canonical `SELF_DRIVE=0` core:
+  - `V64`: small quality lift, small speed loss
+  - `V128`: speed lift, small quality loss
+- so `bf16` stays a live branch, but is still **not** safe to promote without
+  a larger gate
 
 ## What current PyTorch/CUDA reality implies
 

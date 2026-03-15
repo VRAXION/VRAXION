@@ -24,9 +24,15 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 from model.graph import SelfWiringGraph
 
 
-GAIN = 2.0
-CHARGE_RATE = 0.3
-SELF_CONN = 0.05
+# Canonical CPU core is now fused to:
+#   raw = acts @ mask * DRIVE
+#   charges += raw
+# Keep compatibility aliases so downstream GPU harnesses don't each need
+# their own rewrite; the combined math matches the new canonical core.
+DRIVE = 0.6
+GAIN = DRIVE
+CHARGE_RATE = 1.0
+SELF_CONN = 0.0
 THRESHOLD = 0.5
 CLIP_BOUND = 1.0
 TICKS = 8
@@ -74,10 +80,16 @@ def make_cpu_reference(vocab: int, neurons: int, density: float, seed: int):
     return net, perm
 
 
+def cpu_retention(net) -> float:
+    if hasattr(net, "retention"):
+        return float(net.retention)
+    return float(net.leak)
+
+
 def gpu_init(vocab: int, neurons: int, density: float, seed: int, device: torch.device):
     cpu_net, targets = make_cpu_reference(vocab, neurons, density, seed)
     mask = torch.from_numpy(cpu_net.mask.copy()).to(device=device, dtype=torch.int8)
-    leak = torch.tensor(cpu_net.leak, device=device, dtype=torch.float32)
+    leak = torch.tensor(cpu_retention(cpu_net), device=device, dtype=torch.float32)
     targets_t = torch.from_numpy(targets).to(device=device, dtype=torch.long)
     out_start = cpu_net.out_start
     return mask, leak, targets_t, out_start
