@@ -61,7 +61,7 @@ int net_init(Net *n, int vocab, uint32_t seed) {
     n->N = vocab * NV_RATIO;
     n->out_start = (n->N >= 2 * vocab) ? n->N - vocab : 0;
     n->rng = seed ? seed : 1;
-    n->loss_pct = 15;
+    n->loss_pct = 1;  /* start at 99% retain — Python converges here anyway */
     n->signal = 0;
     n->grow = 1;
     n->intensity = 7;
@@ -135,19 +135,31 @@ void forward(Net *n) {
     }
 }
 
-/* ─── Evaluate ─── */
-int evaluate(Net *n, const int *targets) {
-    int V = n->V, N = n->N, correct = 0;
+/* ─── Evaluate (softmax scoring, same as Python) ─── */
+float evaluate(Net *n, const int *targets) {
+    int V = n->V, N = n->N;
+    float acc = 0, tp = 0;
     for (int i = 0; i < V; i++) {
-        int best_j = 0;
-        float best_v = n->charges[i * N + n->out_start];
+        /* Softmax row i */
+        float mx = -1e30f;
+        for (int j = 0; j < V; j++) {
+            float v = n->charges[i * N + n->out_start + j];
+            if (v > mx) mx = v;
+        }
+        float sum = 0;
+        for (int j = 0; j < V; j++)
+            sum += expf(n->charges[i * N + n->out_start + j] - mx);
+        /* Argmax */
+        int pred = 0;
+        float pred_v = n->charges[i * N + n->out_start];
         for (int j = 1; j < V; j++) {
             float v = n->charges[i * N + n->out_start + j];
-            if (v > best_v) { best_v = v; best_j = j; }
+            if (v > pred_v) { pred_v = v; pred = j; }
         }
-        if (best_j == targets[i]) correct++;
+        if (pred == targets[i]) acc += 1.0f;
+        tp += expf(n->charges[i * N + n->out_start + targets[i]] - mx) / sum;
     }
-    return correct;
+    return 0.5f * acc / V + 0.5f * tp / V;
 }
 
 /* ─── Mutations (int logic, float mask values) ─── */
@@ -267,17 +279,18 @@ void replay(Net *n) {
     }
 }
 
-int train(Net *n, const int *targets, int max_att, int verbose) {
+float train(Net *n, const int *targets, int max_att, int verbose) {
     forward(n);
-    int best = evaluate(n, targets);
-    int score = best, stale = 0;
+    float best = evaluate(n, targets);
+    float score = best;
+    int stale = 0;
 
     clock_t t0 = clock();
     for (int att = 0; att < max_att; att++) {
         int old_loss = n->loss_pct;
         mutate(n);
         forward(n);
-        int s = evaluate(n, targets);
+        float s = evaluate(n, targets);
 
         if (s > score) {
             score = s;
@@ -293,13 +306,13 @@ int train(Net *n, const int *targets, int max_att, int verbose) {
 
         if (verbose && (att + 1) % 1000 == 0) {
             double ms = (double)(clock() - t0) / CLOCKS_PER_SEC * 1000.0 / (att + 1);
-            printf("  [%5d] %d/%d (%.1f%%) conns=%d %s int=%d loss=%d  %.2fms/att\n",
-                   att + 1, best, n->V, 100.0 * best / n->V,
+            printf("  [%5d] score=%.1f%% conns=%d %s int=%d loss=%d  %.2fms/att\n",
+                   att + 1, best * 100,
                    n->alive_n,
                    n->signal ? "SIG" : (n->grow ? "GRO" : "SHR"),
                    n->intensity, n->loss_pct, ms);
         }
-        if (best == n->V || stale >= 6000) break;
+        if (best >= 0.99f || stale >= 6000) break;
     }
     return best;
 }
@@ -325,12 +338,11 @@ int main(int argc, char **argv) {
     }
 
     clock_t t0 = clock();
-    int best = train(&n, targets, budget, 1);
+    float best = train(&n, targets, budget, 1);
     double elapsed = (double)(clock() - t0) / CLOCKS_PER_SEC;
 
-    printf("\nFinal: %d/%d (%.1f%%) conns=%d time=%.2fs (%.2fms/att)\n",
-           best, vocab, 100.0 * best / vocab, n.alive_n,
-           elapsed, elapsed / budget * 1000);
+    printf("\nFinal: %.1f%% conns=%d time=%.2fs (%.2fms/att)\n",
+           best * 100, n.alive_n, elapsed, elapsed / budget * 1000);
 
     free(targets);
     net_free(&n);
