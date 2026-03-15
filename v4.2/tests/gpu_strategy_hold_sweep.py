@@ -29,7 +29,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 from lib.log import live_log, log_msg
 from tests.gpu_strategy_ab import retention_from_loss, rollback_two_bit
 from tests.gpu_strategy_plateau import mask_density, mutate_two_bit
-from tests.gpu_int_mood_ab import CONFIGS, gpu_eval, gpu_init
+from tests.gpu_int_mood_ab import CONFIGS, gpu_init, make_eval_runner
 
 
 DEFAULT_CANDIDATES = (
@@ -97,11 +97,11 @@ def run_one(config_name: str, seed: int, attempts: int, candidate_name: str, log
 
     mask, _leak, targets, out_start = gpu_init(vocab, neurons, density, seed, device)
     diag_mask = ~torch.eye(neurons, dtype=torch.bool, device=device)
-    eye = torch.eye(vocab, dtype=torch.float32, device=device)
+    eval_runner = make_eval_runner(vocab, neurons, targets, out_start, device)
     loss_pct = torch.tensor(15, device=device, dtype=torch.int16)
     controller = {"signal": 0, "grow": 1, "intensity": 7}
 
-    score, acc = gpu_eval(mask, retention_from_loss(loss_pct), targets, out_start, eye)
+    score, acc = eval_runner(mask, retention_from_loss(loss_pct))
     best_score = score.clone()
     best_acc = acc.clone()
     accepted = 0
@@ -116,7 +116,7 @@ def run_one(config_name: str, seed: int, attempts: int, candidate_name: str, log
     t0 = time.perf_counter()
     for att in range(1, attempts + 1):
         prev, changes = mutate_two_bit(mask, loss_pct, controller, gen, diag_mask)
-        new_score, new_acc = gpu_eval(mask, retention_from_loss(loss_pct), targets, out_start, eye)
+        new_score, new_acc = eval_runner(mask, retention_from_loss(loss_pct))
         if bool((new_score > score).item()):
             score = new_score
             accepted += 1

@@ -25,8 +25,8 @@ from tests.gpu_int_mood_ab import (
     CONFIGS,
     add_connection,
     flip_connection,
-    gpu_eval,
     gpu_init,
+    make_eval_runner,
     remove_connection,
     rewire_connection,
 )
@@ -196,7 +196,7 @@ def run_one(args, log_q=None):
 
     mask, _leak, targets, out_start = gpu_init(vocab, neurons, density, seed, device)
     diag_mask = ~torch.eye(neurons, dtype=torch.bool, device=device)
-    eye = torch.eye(vocab, dtype=torch.float32, device=device)
+    eval_runner = make_eval_runner(vocab, neurons, targets, out_start, device)
     loss_pct = torch.tensor(15, device=device, dtype=torch.int16)
 
     if variant == "mood4_coupled":
@@ -206,7 +206,7 @@ def run_one(args, log_q=None):
         controller = {"signal": 0, "grow": 1, "intensity": 7}
         mutate = mutate_two_bit
 
-    score, acc = gpu_eval(mask, retention_from_loss(loss_pct), targets, out_start, eye)
+    score, acc = eval_runner(mask, retention_from_loss(loss_pct))
     best_score = score.clone()
     best_acc = acc.clone()
     accepted = 0
@@ -231,7 +231,7 @@ def run_one(args, log_q=None):
     t0 = time.perf_counter()
     for att in range(1, safety_cap + 1):
         prev, changes = mutate(mask, loss_pct, controller, gen, diag_mask)
-        new_score, new_acc = gpu_eval(mask, retention_from_loss(loss_pct), targets, out_start, eye)
+        new_score, new_acc = eval_runner(mask, retention_from_loss(loss_pct))
 
         if bool((new_score > score).item()):
             score = new_score

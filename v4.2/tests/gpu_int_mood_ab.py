@@ -13,9 +13,11 @@ import os
 import random
 import sys
 import time
+from dataclasses import dataclass
 
 import numpy as np
 import torch
+import torch._dynamo
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
@@ -28,6 +30,18 @@ SELF_CONN = 0.05
 THRESHOLD = 0.5
 CLIP_BOUND = 1.0
 TICKS = 8
+
+torch.set_float32_matmul_precision("high")
+torch._dynamo.config.suppress_errors = True
+
+
+@dataclass
+class GpuEvalBuffers:
+    eye: torch.Tensor
+    charges: torch.Tensor
+    acts: torch.Tensor
+    weff: torch.Tensor
+    row_idx: torch.Tensor
 
 SEEDS = [42, 77, 123]
 CONFIGS = {
@@ -66,11 +80,43 @@ def gpu_init(vocab: int, neurons: int, density: float, seed: int, device: torch.
     return mask, leak, targets_t, out_start
 
 
-def gpu_eval(mask: torch.Tensor, leak: torch.Tensor, targets: torch.Tensor, out_start: int, eye: torch.Tensor):
-    vocab, neurons = eye.shape[0], mask.shape[0]
-    charges = torch.zeros((vocab, neurons), dtype=torch.float32, device=mask.device)
-    acts = torch.zeros((vocab, neurons), dtype=torch.float32, device=mask.device)
-    weff = mask.to(torch.float32) * GAIN
+def make_eval_buffers(vocab: int, neurons: int, device: torch.device) -> GpuEvalBuffers:
+    return GpuEvalBuffers(
+        eye=torch.eye(vocab, dtype=torch.float32, device=device),
+        charges=torch.empty((vocab, neurons), dtype=torch.float32, device=device),
+        acts=torch.empty((vocab, neurons), dtype=torch.float32, device=device),
+        weff=torch.empty((neurons, neurons), dtype=torch.float32, device=device),
+        row_idx=torch.arange(vocab, device=device, dtype=torch.long),
+    )
+
+
+def gpu_eval(
+    mask: torch.Tensor,
+    leak: torch.Tensor,
+    targets: torch.Tensor,
+    out_start: int,
+    eye: torch.Tensor | None = None,
+    buffers: GpuEvalBuffers | None = None,
+):
+    if buffers is None:
+        if eye is None:
+            raise ValueError("gpu_eval requires either eye or buffers")
+        vocab, neurons = eye.shape[0], mask.shape[0]
+        charges = torch.zeros((vocab, neurons), dtype=torch.float32, device=mask.device)
+        acts = torch.zeros((vocab, neurons), dtype=torch.float32, device=mask.device)
+        weff = mask.to(torch.float32) * GAIN
+        row_idx = torch.arange(vocab, device=mask.device, dtype=torch.long)
+    else:
+        eye = buffers.eye
+        charges = buffers.charges
+        acts = buffers.acts
+        weff = buffers.weff
+        row_idx = buffers.row_idx
+        vocab = eye.shape[0]
+        charges.zero_()
+        acts.zero_()
+        weff.copy_(mask)
+        weff.mul_(GAIN)
 
     for t in range(TICKS):
         if t == 0:
@@ -86,9 +132,27 @@ def gpu_eval(mask: torch.Tensor, leak: torch.Tensor, targets: torch.Tensor, out_
     probs = torch.softmax(logits, dim=1)
     preds = torch.argmax(probs, dim=1)
     acc = (preds == targets).to(torch.float32).mean()
-    tp = probs[torch.arange(vocab, device=mask.device), targets].mean()
+    tp = probs[row_idx, targets].mean()
     score = 0.5 * acc + 0.5 * tp
     return score, acc
+
+
+def make_eval_runner(
+    vocab: int,
+    neurons: int,
+    targets: torch.Tensor,
+    out_start: int,
+    device: torch.device,
+    compile_eval: bool = True,
+):
+    buffers = make_eval_buffers(vocab, neurons, device)
+
+    def eval_runner(mask: torch.Tensor, leak: torch.Tensor):
+        return gpu_eval(mask, leak, targets, out_start, buffers=buffers)
+
+    if compile_eval:
+        return torch.compile(eval_runner, mode="reduce-overhead", fullgraph=False)
+    return eval_runner
 
 
 def add_connection(mask, gen, diag_mask, changes):
@@ -261,7 +325,7 @@ def run_one(config_name: str, seed: int, attempts: int, kind: str):
 
     mask, leak, targets, out_start = gpu_init(vocab, neurons, density, seed, device)
     diag_mask = ~torch.eye(neurons, dtype=torch.bool, device=device)
-    eye = torch.eye(vocab, dtype=torch.float32, device=device)
+    eval_runner = make_eval_runner(vocab, neurons, targets, out_start, device)
 
     if kind == "float":
         controller = {
@@ -278,7 +342,7 @@ def run_one(config_name: str, seed: int, attempts: int, kind: str):
         }
         mutate = mutate_int
 
-    score, acc = gpu_eval(mask, leak, targets, out_start, eye)
+    score, acc = eval_runner(mask, leak)
     best_score = score.clone()
     best_acc = acc.clone()
     kept = 0
@@ -287,7 +351,7 @@ def run_one(config_name: str, seed: int, attempts: int, kind: str):
     t0 = time.perf_counter()
     for _ in range(attempts):
         prev, changes = mutate(mask, leak, controller, gen, diag_mask)
-        new_score, new_acc = gpu_eval(mask, leak, targets, out_start, eye)
+        new_score, new_acc = eval_runner(mask, leak)
         if bool((new_score > score).item()):
             score = new_score
             kept += 1
