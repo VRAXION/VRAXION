@@ -17,6 +17,7 @@ import random
 class SelfWiringGraph:
 
     # Fixed constants (all sweep-validated)
+    NV_RATIO = 3      # neurons per vocab unit (min 2, brain≈5000)
     GAIN = 2
     CHARGE_RATE = 0.3
     SELF_CONN = 0.05
@@ -25,16 +26,22 @@ class SelfWiringGraph:
     PATIENCE = 0.35   # strategy flip prob on reject (~patience=10 implicit)
     LOSS_DRIFT = 0.2  # loss_pct mutation probability per attempt
 
-    def __init__(self, n_neurons, vocab, density=0.06):
-        self.N = n_neurons
+    def __init__(self, *args, density=0.06):
+        # SelfWiringGraph(64) — new: vocab only, N=V*NV_RATIO
+        # SelfWiringGraph(192, 64) — old: (n_neurons, vocab)
+        if len(args) == 1:
+            vocab = args[0]
+        else:
+            _, vocab = args[0], args[1]
         self.V = vocab
+        self.N = vocab * self.NV_RATIO
 
         # Split I/O: first V = input, last V = output
-        self.out_start = n_neurons - vocab if n_neurons >= 2 * vocab else 0
+        self.out_start = self.N - vocab if self.N >= 2 * vocab else 0
 
         # Ternary mask: the ONLY learnable matrix
-        r = np.random.rand(n_neurons, n_neurons)
-        self.mask = np.zeros((n_neurons, n_neurons), dtype=np.int8)
+        r = np.random.rand(self.N, self.N)
+        self.mask = np.zeros((self.N, self.N), dtype=np.int8)
         self.mask[r < density / 2] = -1
         self.mask[r > 1 - density / 2] = 1
         np.fill_diagonal(self.mask, 0)
@@ -45,8 +52,8 @@ class SelfWiringGraph:
         self.alive_set = set(self.alive)
 
         # Persistent state
-        self.state = np.zeros(n_neurons, dtype=np.float32)
-        self.charge = np.zeros(n_neurons, dtype=np.float32)
+        self.state = np.zeros(self.N, dtype=np.float32)
+        self.charge = np.zeros(self.N, dtype=np.float32)
 
         # Co-evolved learned params (all int8)
         self.loss_pct = np.int8(15)    # 1-50, charge loses loss% per tick
