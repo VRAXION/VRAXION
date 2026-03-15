@@ -54,16 +54,27 @@ typedef struct {
     int  undo_wi[16];        /* alive idx for W */
     int  undo_n;
 
-    uint64_t rng_state, rng_inc;
+    uint32_t mt[624];
+    int mt_idx;
 } Net;
 
-static uint32_t pcg32(Net *n) {
-    /* PCG32: proven statistical quality, tiny state, fast */
-    uint64_t old = n->rng_state;
-    n->rng_state = old * UINT64_C(6364136223846793005) + n->rng_inc;
-    uint32_t xorshifted = (uint32_t)(((old >> 18u) ^ old) >> 27u);
-    uint32_t rot = (uint32_t)(old >> 59u);
-    return (xorshifted >> rot) | (xorshifted << ((-rot) & 31));
+static void mt_twist(Net *n) {
+    for (int i = 0; i < 624; i++) {
+        uint32_t y = (n->mt[i] & 0x80000000u) | (n->mt[(i+1) % 624] & 0x7fffffffu);
+        n->mt[i] = n->mt[(i + 397) % 624] ^ (y >> 1);
+        if (y & 1) n->mt[i] ^= 0x9908b0dfu;
+    }
+    n->mt_idx = 0;
+}
+
+static uint32_t mt_rand(Net *n) {
+    if (n->mt_idx >= 624) mt_twist(n);
+    uint32_t y = n->mt[n->mt_idx++];
+    y ^= y >> 11;
+    y ^= (y << 7) & 0x9d2c5680u;
+    y ^= (y << 15) & 0xefc60000u;
+    y ^= y >> 18;
+    return y;
 }
 
 static uint32_t init_rng_state(uint32_t seed) {
@@ -84,7 +95,7 @@ static int ri(Net *n, int lo, int hi) {
     uint32_t range = (uint32_t)(hi - lo + 1);
     uint32_t limit = (UINT32_MAX / range) * range;
     uint32_t r;
-    do { r = pcg32(n); } while (r >= limit);
+    do { r = mt_rand(n); } while (r >= limit);
     return lo + (int)(r % range);
 }
 
@@ -93,12 +104,11 @@ int net_init(Net *n, int vocab, uint32_t seed) {
     n->V = vocab;
     n->N = vocab * NV_RATIO;
     n->out_start = (n->N >= 2 * vocab) ? n->N - vocab : 0;
-    /* PCG32 seeding */
-    n->rng_state = 0;
-    n->rng_inc = ((uint64_t)seed << 1u) | 1u;  /* must be odd */
-    pcg32(n);  /* advance once */
-    n->rng_state += (uint64_t)seed;
-    pcg32(n);  /* advance again */
+    /* MT19937 seeding */
+    n->mt[0] = seed;
+    for (int i = 1; i < 624; i++)
+        n->mt[i] = 1812433253u * (n->mt[i-1] ^ (n->mt[i-1] >> 30)) + (uint32_t)i;
+    n->mt_idx = 624;
     n->loss_pct = INIT_LOSS_PCT;
     n->signal = 0;
     n->grow = 1;
