@@ -50,14 +50,18 @@ typedef struct {
     int  undo_wi[16];        /* alive idx for W */
     int  undo_n;
 
-    uint32_t rng;
+    uint32_t rng, rng2;
 } Net;
 
 static uint32_t xor32(Net *n) {
+    /* Dual xorshift: two independent streams XOR'd together */
     n->rng ^= n->rng << 13;
     n->rng ^= n->rng >> 17;
     n->rng ^= n->rng << 5;
-    return n->rng;
+    n->rng2 ^= n->rng2 << 7;
+    n->rng2 ^= n->rng2 >> 9;
+    n->rng2 ^= n->rng2 << 8;
+    return n->rng ^ n->rng2;
 }
 
 static uint32_t init_rng_state(uint32_t seed) {
@@ -88,6 +92,7 @@ int net_init(Net *n, int vocab, uint32_t seed) {
     n->N = vocab * NV_RATIO;
     n->out_start = (n->N >= 2 * vocab) ? n->N - vocab : 0;
     n->rng = init_rng_state(seed);
+    n->rng2 = init_rng_state(seed ^ 0xCAFEBABEu);  /* independent second stream */
     n->loss_pct = INIT_LOSS_PCT;
     n->signal = 0;
     n->grow = 1;
