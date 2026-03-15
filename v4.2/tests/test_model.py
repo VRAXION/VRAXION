@@ -52,7 +52,7 @@ def main():
             tp = probs[np.arange(16), perm].mean()
             sc = 0.5*acc + 0.5*tp
             if sc > score_best: score_best = sc
-            else: net.mask = sm
+            else: net.mask = sm; net.resync_alive()
         r = result(PASS if score_best > 0.05 else WARN,
                    f"V=N=16: {score_best*100:.1f}%")
     except Exception as ex:
@@ -75,7 +75,7 @@ def main():
         tp = probs[np.arange(16), identity].mean()
         sc = 0.5*acc + 0.5*tp
         if sc > 0: acc_best = max(acc_best, acc)
-        else: net.mask = sm
+        else: net.mask = sm; net.resync_alive()
     r = result(PASS if acc_best > 0.5 else WARN, f"Identity: {acc_best*100:.1f}%")
     results.append(("Identity perm", r))
 
@@ -96,7 +96,7 @@ def main():
             probs = e / e.sum(axis=1, keepdims=True)
             acc = (np.argmax(probs, axis=1) == perm).mean()
             if acc > 0: pass
-            else: net.mask = sm
+            else: net.mask = sm; net.resync_alive()
         print(f"    {name}: OK")
     r = result(PASS, "All adversarial perms trained without crash")
     results.append(("Adversarial perms", r))

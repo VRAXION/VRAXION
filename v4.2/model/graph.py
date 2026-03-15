@@ -119,6 +119,11 @@ class SelfWiringGraph:
             charges = np.clip(charges, -self.CLIP_BOUND, self.CLIP_BOUND)
         return charges[:, self.out_start:self.out_start + V]
 
+    def resync_alive(self):
+        """Rebuild alive list from mask. Call after direct mask writes."""
+        rows, cols = np.where(self.mask != 0)
+        self.alive = list(zip(rows.tolist(), cols.tolist()))
+
     def count_connections(self):
         return len(self.alive)
 
