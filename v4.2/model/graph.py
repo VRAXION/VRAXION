@@ -20,7 +20,6 @@ class SelfWiringGraph:
     NV_RATIO = 3       # neurons per vocab unit
     DENSITY = 4        # init density in percent (4% = 0.04)
     DRIVE = 0.6        # GAIN(2) × CHARGE_RATE(0.3)
-    SELF_DRIVE = 0.015 # SELF_CONN(0.05) × CHARGE_RATE(0.3)
     THRESHOLD = 0.5    # firing threshold
     # Mutation int fractions: PATIENCE 7/20, LOSS_DRIFT 1/5, SHRINK 7/10, LOSS_STEP +-3
 
@@ -103,7 +102,7 @@ class SelfWiringGraph:
         for t in range(ticks):
             if t == 0:
                 act[:self.V] = world
-            raw = act @ self.mask * self.DRIVE + act * self.SELF_DRIVE
+            raw = act @ self.mask * self.DRIVE
             np.nan_to_num(raw, copy=False, nan=0.0, posinf=0.0, neginf=0.0)
             self.charge += raw
             self.charge *= retain
@@ -121,7 +120,7 @@ class SelfWiringGraph:
         for t in range(ticks):
             if t == 0:
                 acts[:, :V] = np.eye(V, dtype=np.float32)
-            raw = acts @ self.mask * self.DRIVE + acts * self.SELF_DRIVE
+            raw = acts @ self.mask * self.DRIVE
             np.nan_to_num(raw, copy=False, nan=0.0, posinf=0.0, neginf=0.0)
             charges += raw
             charges *= retain
