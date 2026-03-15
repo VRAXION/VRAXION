@@ -35,12 +35,13 @@ class SelfWiringGraph:
         # Split I/O: first V = input, last V = output
         self.out_start = self.N - vocab if self.N >= 2 * vocab else 0
 
-        # Ternary mask: the ONLY learnable matrix
-        d = self.DENSITY / 100  # 4% → 0.04
+        # Mask: float32 with baked DRIVE {-0.6, 0, +0.6}
+        # No post-multiply needed — matmul gives final signal directly
+        d = self.DENSITY / 100
         r = np.random.rand(self.N, self.N)
-        self.mask = np.zeros((self.N, self.N), dtype=np.int8)
-        self.mask[r < d / 2] = -1
-        self.mask[r > 1 - d / 2] = 1
+        self.mask = np.zeros((self.N, self.N), dtype=np.float32)
+        self.mask[r < d / 2] = -self.DRIVE
+        self.mask[r > 1 - d / 2] = self.DRIVE
         np.fill_diagonal(self.mask, 0)
 
         # Alive edges: list for O(1) random pick, set for O(1) undo
@@ -73,7 +74,7 @@ class SelfWiringGraph:
         for t in range(ticks):
             if t == 0:
                 act[:self.V] = world
-            raw = act @ self.mask * self.DRIVE
+            raw = act @ self.mask
             np.nan_to_num(raw, copy=False, nan=0.0, posinf=0.0, neginf=0.0)
             self.charge += raw
             self.charge *= retain
@@ -91,7 +92,7 @@ class SelfWiringGraph:
         for t in range(ticks):
             if t == 0:
                 acts[:, :V] = np.eye(V, dtype=np.float32)
-            raw = acts @ self.mask * self.DRIVE
+            raw = acts @ self.mask
             np.nan_to_num(raw, copy=False, nan=0.0, posinf=0.0, neginf=0.0)
             charges += raw
             charges *= retain
@@ -210,7 +211,7 @@ class SelfWiringGraph:
     def _add(self, undo):
         r, c = random.randint(0, self.N-1), random.randint(0, self.N-1)
         if r != c and self.mask[r, c] == 0:
-            self.mask[r, c] = 1 if random.randint(0, 1) else -1
+            self.mask[r, c] = self.DRIVE if random.randint(0, 1) else -self.DRIVE
             self.alive.append((r, c))
             self.alive_set.add((r, c))
             undo.append(('A', r, c))
