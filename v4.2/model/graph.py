@@ -17,12 +17,11 @@ import random
 class SelfWiringGraph:
 
     # Fixed constants (all sweep-validated)
-    NV_RATIO = 3      # neurons per vocab unit (min 2, brain≈5000)
-    GAIN = 2
-    CHARGE_RATE = 0.3
-    SELF_CONN = 0.05
+    NV_RATIO = 3       # neurons per vocab unit (min 2, brain≈5000)
+    DRIVE = 0.6        # GAIN(2) × CHARGE_RATE(0.3) — merged
+    SELF_DRIVE = 0.015 # SELF_CONN(0.05) × CHARGE_RATE(0.3) — merged
     THRESHOLD = 0.5
-    CLIP_BOUND = 1.0
+    CLIP_BOUND = 1.0   # = 2 × THRESHOLD
     # Mutation probabilities as int fractions (no float needed)
     # PATIENCE: 7/20 = 0.35 — strategy flip prob on reject
     # LOSS_DRIFT: 1/5 = 0.20 — loss_pct mutation prob
@@ -105,9 +104,9 @@ class SelfWiringGraph:
         for t in range(ticks):
             if t == 0:
                 act[:self.V] = world
-            raw = act @ self.mask * self.GAIN + act * self.SELF_CONN
+            raw = act @ self.mask * self.DRIVE + act * self.SELF_DRIVE
             np.nan_to_num(raw, copy=False, nan=0.0, posinf=0.0, neginf=0.0)
-            self.charge += raw * self.CHARGE_RATE
+            self.charge += raw
             self.charge *= retain
             act = np.maximum(self.charge - self.THRESHOLD, 0.0)
             self.charge = np.clip(self.charge, -self.CLIP_BOUND, self.CLIP_BOUND)
@@ -123,9 +122,9 @@ class SelfWiringGraph:
         for t in range(ticks):
             if t == 0:
                 acts[:, :V] = np.eye(V, dtype=np.float32)
-            raw = acts @ self.mask * self.GAIN + acts * self.SELF_CONN
+            raw = acts @ self.mask * self.DRIVE + acts * self.SELF_DRIVE
             np.nan_to_num(raw, copy=False, nan=0.0, posinf=0.0, neginf=0.0)
-            charges += raw * self.CHARGE_RATE
+            charges += raw
             charges *= retain
             acts = np.maximum(charges - self.THRESHOLD, 0.0)
             charges = np.clip(charges, -self.CLIP_BOUND, self.CLIP_BOUND)
