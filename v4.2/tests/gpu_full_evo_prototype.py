@@ -10,6 +10,7 @@ It mirrors the current local v4.2 semantics:
   - ternary mask in {-1, 0, +1}
   - gain = 2.0, charge_rate = 0.3, self_conn = 0.1, threshold = 0.5
   - 2D mood + learnable leak
+  - 4 expert zones on mood_x: scout/rewirer/refiner/pruner
   - batch eval over all V one-hot inputs
 """
 
@@ -238,12 +239,12 @@ def mutate_gpu_reference(
     n_changes = max(1, int(1 + float(mood_z.item()) * 14))
     for _ in range(n_changes):
         mx = float(mood_x.item())
-        if mx < 0.33:
+        if mx < 0.25:
             if rand_uniform(gen, device) < 0.7:
                 add_connection_gpu_reference(mask, gen, diag_mask, delta.changes)
             else:
                 flip_connection_gpu_reference(mask, gen, delta.changes)
-        elif mx < 0.66:
+        elif mx < 0.50:
             r = rand_uniform(gen, device)
             if r < 0.6:
                 rewire_connection_gpu_reference(mask, gen, delta.changes)
@@ -251,8 +252,19 @@ def mutate_gpu_reference(
                 flip_connection_gpu_reference(mask, gen, delta.changes)
             else:
                 add_connection_gpu_reference(mask, gen, diag_mask, delta.changes)
+        elif mx < 0.75:
+            if rand_uniform(gen, device) < 0.8:
+                flip_connection_gpu_reference(mask, gen, delta.changes)
+            else:
+                rewire_connection_gpu_reference(mask, gen, delta.changes)
         else:
-            flip_connection_gpu_reference(mask, gen, delta.changes)
+            r = rand_uniform(gen, device)
+            if r < 0.7:
+                remove_connection_gpu_reference(mask, gen, delta.changes)
+            elif r < 0.9:
+                flip_connection_gpu_reference(mask, gen, delta.changes)
+            else:
+                rewire_connection_gpu_reference(mask, gen, delta.changes)
     return delta
 
 
@@ -280,6 +292,21 @@ def flip_connection_gpu_reference(mask: torch.Tensor, gen: torch.Generator, chan
     row = int(rc[0].item())
     col = int(rc[1].item())
     record_mask_change_reference(mask, changes, row, col, -int(mask[row, col].item()))
+
+
+def remove_connection_gpu_reference(
+    mask: torch.Tensor,
+    gen: torch.Generator,
+    changes: list[tuple[int, int, int]],
+):
+    alive = torch.nonzero(mask != 0, as_tuple=False)
+    if alive.numel() == 0:
+        return
+    idx = int(torch.randint(alive.shape[0], (1,), generator=gen, device=mask.device).item())
+    rc = alive[idx]
+    row = int(rc[0].item())
+    col = int(rc[1].item())
+    record_mask_change_reference(mask, changes, row, col, 0)
 
 
 def rewire_connection_gpu_reference(mask: torch.Tensor, gen: torch.Generator, changes: list[tuple[int, int, int]]):
@@ -388,6 +415,21 @@ def flip_connection_gpu_tensorized(
     record_mask_change_tensor(mask, delta, row, col, -int(mask[row, col].item()))
 
 
+def remove_connection_gpu_tensorized(
+    mask: torch.Tensor,
+    gen: torch.Generator,
+    delta: TensorMutationDelta,
+):
+    alive = torch.nonzero(mask != 0, as_tuple=False)
+    if alive.numel() == 0:
+        return
+    idx = int(torch.randint(alive.shape[0], (1,), generator=gen, device=mask.device).item())
+    rc = alive[idx]
+    row = int(rc[0].item())
+    col = int(rc[1].item())
+    record_mask_change_tensor(mask, delta, row, col, 0)
+
+
 def rewire_connection_gpu_tensorized(
     mask: torch.Tensor,
     gen: torch.Generator,
@@ -431,7 +473,11 @@ def mutate_gpu_tensorized(
     if bool((gate_leak < 0.2).item()):
         leak.add_(torch.randn((), generator=gen, device=device) * 0.03).clamp_(0.5, 0.99)
 
-    mx_band = int((mood_x >= 0.33).to(torch.int64).item()) + int((mood_x >= 0.66).to(torch.int64).item())
+    mx_band = (
+        int((mood_x >= 0.25).to(torch.int64).item())
+        + int((mood_x >= 0.50).to(torch.int64).item())
+        + int((mood_x >= 0.75).to(torch.int64).item())
+    )
     n_changes = int(torch.clamp((1 + mood_z * 14).to(torch.int64), min=1, max=15).item())
 
     for _ in range(n_changes):
@@ -441,15 +487,21 @@ def mutate_gpu_tensorized(
         elif mx_band == 1:
             op_u = torch.rand((), generator=gen, device=device)
             op_code = 2 if bool((op_u < 0.6).item()) else (1 if bool((op_u < 0.8).item()) else 0)
+        elif mx_band == 2:
+            op_u = torch.rand((), generator=gen, device=device)
+            op_code = 1 if bool((op_u < 0.8).item()) else 2
         else:
-            op_code = 1
+            op_u = torch.rand((), generator=gen, device=device)
+            op_code = 3 if bool((op_u < 0.7).item()) else (1 if bool((op_u < 0.9).item()) else 2)
 
         if op_code == 0:
             add_connection_gpu_tensorized(mask, gen, diag_mask, delta)
         elif op_code == 1:
             flip_connection_gpu_tensorized(mask, gen, delta)
-        else:
+        elif op_code == 2:
             rewire_connection_gpu_tensorized(mask, gen, delta)
+        else:
+            remove_connection_gpu_tensorized(mask, gen, delta)
 
 
 def finalize_attempt_tensorized(
