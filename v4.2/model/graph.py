@@ -22,7 +22,8 @@ class SelfWiringGraph:
     SELF_CONN = 0.05
     THRESHOLD = 0.5
     CLIP_BOUND = 1.0
-    PATIENCE = 0.35  # strategy flip prob on reject (~patience=10 implicit)
+    PATIENCE = 0.35   # strategy flip prob on reject (~patience=10 implicit)
+    LOSS_DRIFT = 0.2  # loss_pct mutation probability per attempt
 
     def __init__(self, n_neurons, vocab, density=0.06):
         self.N = n_neurons
@@ -169,7 +170,7 @@ class SelfWiringGraph:
             elif op == 'R':                         # un-remove = restore sign
                 self.mask[entry[1], entry[2]] = entry[3]
             elif op == 'W':                         # un-rewire = swap back
-                _, r, c_old, c_new, _ = entry
+                _, r, c_old, c_new = entry
                 sign = self.mask[r, c_new]
                 self.mask[r, c_new] = 0
                 self.mask[r, c_old] = sign
@@ -197,7 +198,7 @@ class SelfWiringGraph:
             self.intensity = np.int8(max(1, min(15, int(self.intensity) + random.choice([-1, 1]))))
 
         # Loss step (reverts with mask on reject)
-        if random.random() < 0.2:
+        if random.random() < self.LOSS_DRIFT:
             self.loss_pct = np.int8(max(1, min(50, int(self.loss_pct) + random.randint(-3, 3))))
 
         # Mask mutations using current strategy — returns undo log
@@ -241,7 +242,7 @@ class SelfWiringGraph:
             self.mask[r, c] = 0
             self.alive[idx] = self.alive[-1]
             self.alive.pop()
-            undo.append(('R', r, c, old_sign, idx))
+            undo.append(('R', r, c, old_sign))
 
     def _rewire(self, undo):
         if self.alive:
@@ -253,7 +254,7 @@ class SelfWiringGraph:
                 self.mask[r, c] = 0
                 self.mask[r, nc] = old
                 self.alive[idx] = (r, nc)
-                undo.append(('W', r, c, nc, idx))
+                undo.append(('W', r, c, nc))
 
 
 def softmax(x):
