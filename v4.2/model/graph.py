@@ -16,19 +16,18 @@ import random
 
 class SelfWiringGraph:
 
-    # Fixed constants (all sweep-validated)
-    NV_RATIO = 3       # neurons per vocab unit (min 2, brain≈5000)
-    DRIVE = 0.6        # GAIN(2) × CHARGE_RATE(0.3) — merged
-    SELF_DRIVE = 0.015 # SELF_CONN(0.05) × CHARGE_RATE(0.3) — merged
-    THRESHOLD = 0.5
-    # Mutation probabilities as int fractions (no float needed)
-    # PATIENCE: 7/20 = 0.35 — strategy flip prob on reject
-    # LOSS_DRIFT: 1/5 = 0.20 — loss_pct mutation prob
-    # SHRINK_REMOVE: 7/10 = 0.70 — remove vs rewire in shrink mode
+    # All constants sweep-validated and locked in
+    NV_RATIO = 3       # neurons per vocab unit
+    DENSITY = 4        # init density in percent (4% = 0.04)
+    DRIVE = 0.6        # GAIN(2) × CHARGE_RATE(0.3)
+    SELF_DRIVE = 0.015 # SELF_CONN(0.05) × CHARGE_RATE(0.3)
+    THRESHOLD = 0.5    # firing threshold
+    # Mutation int fractions: PATIENCE 7/20, LOSS_DRIFT 1/5, SHRINK 7/10, LOSS_STEP +-3
 
-    def __init__(self, *args, density=0.06):
-        # SelfWiringGraph(64) — new: vocab only, N=V*NV_RATIO
-        # SelfWiringGraph(192, 64) — old: (n_neurons, vocab)
+    def __init__(self, *args, density=None):
+        # SelfWiringGraph(64) — new: vocab only
+        # SelfWiringGraph(192, 64) — old backward compat
+        # density param ignored (use class DENSITY constant)
         if len(args) == 1:
             vocab = args[0]
         else:
@@ -40,10 +39,11 @@ class SelfWiringGraph:
         self.out_start = self.N - vocab if self.N >= 2 * vocab else 0
 
         # Ternary mask: the ONLY learnable matrix
+        d = self.DENSITY / 100  # 4% → 0.04
         r = np.random.rand(self.N, self.N)
         self.mask = np.zeros((self.N, self.N), dtype=np.int8)
-        self.mask[r < density / 2] = -1
-        self.mask[r > 1 - density / 2] = 1
+        self.mask[r < d / 2] = -1
+        self.mask[r > 1 - d / 2] = 1
         np.fill_diagonal(self.mask, 0)
 
         # Alive edges: list for O(1) random pick, set for O(1) undo
