@@ -23,10 +23,9 @@ class SelfWiringGraph:
     CLIP_BOUND = 1.0
     PATIENCE = 0.35  # strategy flip prob on reject (~patience=10 implicit)
 
-    def __init__(self, n_neurons, vocab, density=0.06, conn_budget=0):
+    def __init__(self, n_neurons, vocab, density=0.06):
         self.N = n_neurons
         self.V = vocab
-        self.conn_budget = conn_budget
 
         # Split I/O: first V = input, last V = output
         self.out_start = n_neurons - vocab if n_neurons >= 2 * vocab else 0
@@ -37,6 +36,10 @@ class SelfWiringGraph:
         self.mask[r < density / 2] = -1
         self.mask[r > 1 - density / 2] = 1
         np.fill_diagonal(self.mask, 0)
+
+        # Alive index for O(1) mutation picks (synced with mask)
+        rows, cols = np.where(self.mask != 0)
+        self.alive = list(zip(rows.tolist(), cols.tolist()))
 
         # Persistent state
         self.state = np.zeros(n_neurons, dtype=np.float32)
@@ -117,10 +120,11 @@ class SelfWiringGraph:
         return charges[:, self.out_start:self.out_start + V]
 
     def count_connections(self):
-        return int((self.mask != 0).sum())
+        return len(self.alive)
 
     def pos_neg_ratio(self):
-        return int((self.mask > 0).sum()), int((self.mask < 0).sum())
+        pos = sum(1 for r, c in self.alive if self.mask[r, c] > 0)
+        return pos, len(self.alive) - pos
 
     # --- State management ---
 
@@ -130,6 +134,7 @@ class SelfWiringGraph:
         they survive rejects and learn through differential survival."""
         return {
             'mask': self.mask.copy(),
+            'alive': self.alive.copy(),
             'state': self.state.copy(),
             'charge': self.charge.copy(),
             'loss_pct': np.int8(self.loss_pct),
@@ -138,6 +143,7 @@ class SelfWiringGraph:
     def restore_state(self, s):
         """Revert forward-pass state. Strategy bits untouched."""
         self.mask[:] = s['mask']
+        self.alive = s['alive'].copy()
         self.state[:] = s['state']
         self.charge[:] = s['charge']
         self.loss_pct = np.int8(s.get('loss_pct', s.get('loss', 15)))
@@ -184,39 +190,37 @@ class SelfWiringGraph:
         self.mutate()
 
     def _add(self):
-        if self.conn_budget > 0:
-            alive = np.argwhere(self.mask != 0)
-            if len(alive) >= self.conn_budget:
-                j = alive[random.randint(0, len(alive) - 1)]
-                self.mask[j[0], j[1]] = 0
-        dead = np.argwhere(self.mask == 0)
-        dead = dead[dead[:, 0] != dead[:, 1]]
-        if len(dead) > 0:
-            i = dead[random.randint(0, len(dead) - 1)]
-            self.mask[i[0], i[1]] = 1 if random.random() > 0.5 else -1
+        # Single try — skip = natural density cap
+        r, c = random.randint(0, self.N-1), random.randint(0, self.N-1)
+        if r != c and self.mask[r, c] == 0:
+            sign = random.choice([-1, 1])
+            self.mask[r, c] = sign
+            self.alive.append((r, c))
 
     def _flip(self):
-        alive = np.argwhere(self.mask != 0)
-        if len(alive) > 0:
-            i = alive[random.randint(0, len(alive) - 1)]
-            self.mask[i[0], i[1]] *= -1
+        if self.alive:
+            idx = random.randint(0, len(self.alive)-1)
+            r, c = self.alive[idx]
+            self.mask[r, c] *= -1
 
     def _remove(self):
-        alive = np.argwhere(self.mask != 0)
-        if len(alive) > 0:
-            i = alive[random.randint(0, len(alive) - 1)]
-            self.mask[i[0], i[1]] = 0
+        if self.alive:
+            idx = random.randint(0, len(self.alive)-1)
+            r, c = self.alive[idx]
+            self.mask[r, c] = 0
+            self.alive[idx] = self.alive[-1]  # swap-to-end
+            self.alive.pop()
 
     def _rewire(self):
-        alive = np.argwhere(self.mask != 0)
-        if len(alive) > 0:
-            i = alive[random.randint(0, len(alive) - 1)]
-            old = self.mask[i[0], i[1]]
-            self.mask[i[0], i[1]] = 0
-            nc = random.randint(0, self.N - 1)
-            while nc == i[0]:
-                nc = random.randint(0, self.N - 1)
-            self.mask[i[0], nc] = old
+        if self.alive:
+            idx = random.randint(0, len(self.alive)-1)
+            r, c = self.alive[idx]
+            nc = random.randint(0, self.N-1)
+            if nc != r and nc != c and self.mask[r, nc] == 0:
+                old = self.mask[r, c]
+                self.mask[r, c] = 0
+                self.mask[r, nc] = old
+                self.alive[idx] = (r, nc)
 
 
 def softmax(x):
