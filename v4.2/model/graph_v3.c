@@ -19,6 +19,14 @@
 #define DENSITY_PCT 4
 #define TICKS       8
 
+#ifndef INIT_LOSS_PCT
+#define INIT_LOSS_PCT 15  /* same as Python default */
+#endif
+
+#ifndef RNG_SEED_MODE
+#define RNG_SEED_MODE 1  /* hash seed for better distribution */
+#endif
+
 /* Float constants — same as Python graph.py */
 #define DRIVE       0.6f
 #define THRESHOLD   0.5f
@@ -51,8 +59,27 @@ static uint32_t xor32(Net *n) {
     n->rng ^= n->rng << 5;
     return n->rng;
 }
+
+static uint32_t init_rng_state(uint32_t seed) {
+#if RNG_SEED_MODE == 0
+    return seed ? seed : 1u;
+#else
+    uint32_t x = seed + 0x9E3779B9u;
+    x ^= x >> 16;
+    x *= 0x7FEB352Du;
+    x ^= x >> 15;
+    x *= 0x846CA68Bu;
+    x ^= x >> 16;
+    return x ? x : 1u;
+#endif
+}
+
 static int ri(Net *n, int lo, int hi) {
-    return lo + (int)(xor32(n) % (uint32_t)(hi - lo + 1));
+    uint32_t range = (uint32_t)(hi - lo + 1);
+    uint32_t limit = (UINT32_MAX / range) * range;
+    uint32_t r;
+    do { r = xor32(n); } while (r >= limit);
+    return lo + (int)(r % range);
 }
 
 int net_init(Net *n, int vocab, uint32_t seed) {
@@ -60,8 +87,8 @@ int net_init(Net *n, int vocab, uint32_t seed) {
     n->V = vocab;
     n->N = vocab * NV_RATIO;
     n->out_start = (n->N >= 2 * vocab) ? n->N - vocab : 0;
-    n->rng = seed ? seed : 1;
-    n->loss_pct = 1;  /* start at 99% retain — Python converges here anyway */
+    n->rng = init_rng_state(seed);
+    n->loss_pct = INIT_LOSS_PCT;
     n->signal = 0;
     n->grow = 1;
     n->intensity = 7;
@@ -83,7 +110,7 @@ int net_init(Net *n, int vocab, uint32_t seed) {
     for (int i = 0; i < N; i++)
         for (int j = 0; j < N; j++) {
             if (i == j) continue;
-            int r = xor32(n) % 10000;
+            int r = ri(n, 0, 9999);
             float val = 0;
             if (r < DENSITY_PCT * 100 / 2) val = -DRIVE;
             else if (r >= 10000 - DENSITY_PCT * 100 / 2) val = DRIVE;
