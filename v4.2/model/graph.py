@@ -41,10 +41,10 @@ class SelfWiringGraph:
         self.state = np.zeros(n_neurons, dtype=np.float32)
         self.charge = np.zeros(n_neurons, dtype=np.float32)
 
-        # Co-evolved scalars
-        self.leak = 0.85
-        self.mood = 2      # 0=scout 1=rewirer 2=refiner 3=pruner
-        self.intensity = 7  # n_changes per mutation (1-15)
+        # Co-evolved integers (no floats)
+        self.leak = 85      # 50-99, used as leak/100 in forward
+        self.mood = 2       # 0=scout 1=rewirer 2=refiner 3=pruner
+        self.intensity = 7  # 1-15, n_changes per mutation
 
     def reset(self):
         self.state *= 0
@@ -59,7 +59,7 @@ class SelfWiringGraph:
             raw = act @ self.mask * self.GAIN + act * self.SELF_CONN
             np.nan_to_num(raw, copy=False, nan=0.0, posinf=0.0, neginf=0.0)
             self.charge += raw * self.CHARGE_RATE
-            self.charge *= self.leak
+            self.charge *= self.leak * 0.01
             act = np.maximum(self.charge - self.THRESHOLD, 0.0)
             self.charge = np.clip(self.charge, -self.CLIP_BOUND, self.CLIP_BOUND)
         self.state = act.copy()
@@ -76,7 +76,7 @@ class SelfWiringGraph:
             raw = acts @ self.mask * self.GAIN + acts * self.SELF_CONN
             np.nan_to_num(raw, copy=False, nan=0.0, posinf=0.0, neginf=0.0)
             charges += raw * self.CHARGE_RATE
-            charges *= self.leak
+            charges *= self.leak * 0.01
             acts = np.maximum(charges - self.THRESHOLD, 0.0)
             charges = np.clip(charges, -self.CLIP_BOUND, self.CLIP_BOUND)
         return charges[:, self.out_start:self.out_start + V]
@@ -119,9 +119,9 @@ class SelfWiringGraph:
         if random.random() < 0.35:
             self.intensity = max(1, min(15, self.intensity + random.choice([-1, 1])))
 
-        # Leak drift
+        # Leak step (±1-3)
         if random.random() < 0.2:
-            self.leak = np.clip(self.leak + random.gauss(0, 0.03), 0.5, 0.99)
+            self.leak = max(50, min(99, self.leak + random.randint(-3, 3)))
 
         # Mask mutations
         for _ in range(self.intensity):
@@ -227,7 +227,7 @@ def train(net, targets, vocab, max_attempts=8000, ticks=8,
             pos, neg = net.pos_neg_ratio()
             print(f"  [{att+1:5d}] Score: {best*100:5.1f}% | "
                   f"Conns: {net.count_connections():4d} (+:{pos} -:{neg}) | "
-                  f"Leak: {net.leak:.4f}")
+                  f"Leak: {net.leak}")
 
         if best >= 0.99 or stale >= stale_limit:
             break
