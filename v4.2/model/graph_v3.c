@@ -27,6 +27,10 @@
 #define RNG_SEED_MODE 1  /* hash seed for better distribution */
 #endif
 
+#ifndef VERBOSE_DEFAULT
+#define VERBOSE_DEFAULT 1
+#endif
+
 /* Float constants — same as Python graph.py */
 #define DRIVE       0.6f
 #define THRESHOLD   0.5f
@@ -50,18 +54,16 @@ typedef struct {
     int  undo_wi[16];        /* alive idx for W */
     int  undo_n;
 
-    uint32_t rng, rng2;
+    uint64_t rng_state, rng_inc;
 } Net;
 
-static uint32_t xor32(Net *n) {
-    /* Dual xorshift: two independent streams XOR'd together */
-    n->rng ^= n->rng << 13;
-    n->rng ^= n->rng >> 17;
-    n->rng ^= n->rng << 5;
-    n->rng2 ^= n->rng2 << 7;
-    n->rng2 ^= n->rng2 >> 9;
-    n->rng2 ^= n->rng2 << 8;
-    return n->rng ^ n->rng2;
+static uint32_t pcg32(Net *n) {
+    /* PCG32: proven statistical quality, tiny state, fast */
+    uint64_t old = n->rng_state;
+    n->rng_state = old * UINT64_C(6364136223846793005) + n->rng_inc;
+    uint32_t xorshifted = (uint32_t)(((old >> 18u) ^ old) >> 27u);
+    uint32_t rot = (uint32_t)(old >> 59u);
+    return (xorshifted >> rot) | (xorshifted << ((-rot) & 31));
 }
 
 static uint32_t init_rng_state(uint32_t seed) {
@@ -82,7 +84,7 @@ static int ri(Net *n, int lo, int hi) {
     uint32_t range = (uint32_t)(hi - lo + 1);
     uint32_t limit = (UINT32_MAX / range) * range;
     uint32_t r;
-    do { r = xor32(n); } while (r >= limit);
+    do { r = pcg32(n); } while (r >= limit);
     return lo + (int)(r % range);
 }
 
@@ -91,8 +93,12 @@ int net_init(Net *n, int vocab, uint32_t seed) {
     n->V = vocab;
     n->N = vocab * NV_RATIO;
     n->out_start = (n->N >= 2 * vocab) ? n->N - vocab : 0;
-    n->rng = init_rng_state(seed);
-    n->rng2 = init_rng_state(seed ^ 0xCAFEBABEu);  /* independent second stream */
+    /* PCG32 seeding */
+    n->rng_state = 0;
+    n->rng_inc = ((uint64_t)seed << 1u) | 1u;  /* must be odd */
+    pcg32(n);  /* advance once */
+    n->rng_state += (uint64_t)seed;
+    pcg32(n);  /* advance again */
     n->loss_pct = INIT_LOSS_PCT;
     n->signal = 0;
     n->grow = 1;
@@ -370,7 +376,7 @@ int main(int argc, char **argv) {
     }
 
     clock_t t0 = clock();
-    float best = train(&n, targets, budget, 1);
+    float best = train(&n, targets, budget, VERBOSE_DEFAULT);
     double elapsed = (double)(clock() - t0) / CLOCKS_PER_SEC;
 
     printf("\nFinal: %.1f%% conns=%d time=%.2fs (%.2fms/att)\n",
