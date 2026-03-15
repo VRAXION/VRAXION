@@ -15,6 +15,32 @@ On the current GPU path:
 This is the right place to be today. The hot path is not yet a good candidate
 for a naive "full int everywhere" rewrite.
 
+## First probe result
+
+Reference harness:
+
+- [gpu_eval_dtype_ab.py](/S:/AI/work/VRAXION_DEV/v4.2/tests/gpu_eval_dtype_ab.py)
+
+Mini-gate log:
+
+- [gpu_eval_dtype_minigate_20260315_212636.log](/S:/AI/logs/gpu_eval_dtype_minigate_20260315_212636.log)
+
+Short result:
+
+- `V64_N192`, `2k`, seeds `42,77,123`
+  - `fp32`: `35.9%`, `109.6 aps`
+  - `bf16`: `39.1%`, `125.6 aps`
+- `V128_N384`, `2k`, seeds `42,77,123`
+  - `fp32`: `13.0%`, `158.9 aps`
+  - `bf16`: `10.4%`, `199.0 aps`
+
+Interpretation:
+
+- `bf16` is a **real** simplification candidate on GPU
+- but it is **not** a universal free win
+- it currently looks promising enough to keep testing, but not safe enough to
+  replace the `fp32` baseline without a larger gate
+
 ## What current PyTorch/CUDA reality implies
 
 The current official PyTorch direction does **not** say that arbitrary
