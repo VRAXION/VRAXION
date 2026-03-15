@@ -22,7 +22,7 @@
 #define CLIP       10      /* 1.0 × 10 */
 #define TICKS      8
 #define INPUT_SCALE 10     /* 1.0 × 10 */
-#define MAX_N      2048
+#define MAX_N      256          /* V=64 N=192 fits */
 #define MAX_EDGES  (MAX_N * MAX_N / 4)
 
 /* ─── RNG: xorshift32, fast + deterministic ─── */
@@ -101,8 +101,8 @@ void graph_init(Graph *g, int vocab, unsigned seed) {
 void graph_forward_batch(Graph *g, int *out_charges) {
     int V = g->V, N = g->N;
     int retain = 100 - g->loss_pct;
-    int charges[MAX_N * MAX_N]; /* V×N */
-    int acts[MAX_N * MAX_N];    /* V×N */
+    static int charges[MAX_N * MAX_N]; /* V×N — static, not stack */
+    static int acts[MAX_N * MAX_N];    /* V×N */
     memset(charges, 0, V * N * sizeof(int));
     memset(acts, 0, V * N * sizeof(int));
 
