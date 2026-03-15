@@ -42,6 +42,15 @@ class EdgeListState:
         total = self.n * self.n - self.n
         return len(self.rows) / float(total) if total else 0.0
 
+    def clone(self) -> "EdgeListState":
+        return EdgeListState(
+            self.n,
+            self.rows.copy(),
+            self.cols.copy(),
+            self.vals.copy(),
+            self.pos.copy(),
+        )
+
     def validate(self) -> None:
         if not (len(self.rows) == len(self.cols) == len(self.vals) == len(self.pos)):
             raise AssertionError("edge-list arrays out of sync")
@@ -211,6 +220,74 @@ def edge_rewire_connection(state: EdgeListState, rng: random.Random, undo: list[
     return False
 
 
+def edge_patch_add_connection(
+    state: EdgeListState,
+    rng: random.Random,
+    patches: list[tuple[int, int, int]],
+) -> bool:
+    target = state.sample_dead_edge(rng)
+    if target is None:
+        return False
+    row, col = target
+    value = 1 if rng.random() > 0.5 else -1
+    state.add_edge(row, col, value)
+    patches.append((row, col, value))
+    return True
+
+
+def edge_patch_flip_connection(
+    state: EdgeListState,
+    rng: random.Random,
+    patches: list[tuple[int, int, int]],
+) -> bool:
+    if not state.rows:
+        return False
+    idx = rng.randrange(len(state.rows))
+    row = state.rows[idx]
+    col = state.cols[idx]
+    new_value = -state.vals[idx]
+    state.vals[idx] = new_value
+    patches.append((row, col, new_value))
+    return True
+
+
+def edge_patch_remove_connection(
+    state: EdgeListState,
+    rng: random.Random,
+    patches: list[tuple[int, int, int]],
+) -> bool:
+    if not state.rows:
+        return False
+    idx = rng.randrange(len(state.rows))
+    row, col, _value = state.remove_at(idx)
+    patches.append((row, col, 0))
+    return True
+
+
+def edge_patch_rewire_connection(
+    state: EdgeListState,
+    rng: random.Random,
+    patches: list[tuple[int, int, int]],
+) -> bool:
+    if not state.rows:
+        return False
+    probes = min(32, len(state.rows))
+    for _ in range(probes):
+        idx = rng.randrange(len(state.rows))
+        row = state.rows[idx]
+        old_col = state.cols[idx]
+        value = state.vals[idx]
+        new_col = state.sample_dead_dst(row, rng, forbidden_dst=old_col)
+        if new_col is None:
+            continue
+        state.remove_at(idx)
+        state.add_edge(row, new_col, value)
+        patches.append((row, old_col, 0))
+        patches.append((row, new_col, value))
+        return True
+    return False
+
+
 def rollback_edge_ops(state: EdgeListState, undo: list[tuple]) -> None:
     for op in reversed(undo):
         kind = op[0]
@@ -233,4 +310,3 @@ def rollback_edge_ops(state: EdgeListState, undo: list[tuple]) -> None:
                 state.add_edge(row, old_col, value)
         else:
             raise AssertionError(f"unknown edge rollback op {kind}")
-

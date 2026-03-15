@@ -48,6 +48,7 @@ CONFIGS = {
     "V64_N192": (64, 192, 0.06),
     "V128_N384": (128, 384, 0.06),
     "V256_N768": (256, 768, 0.06),
+    "V512_N1536": (512, 1536, 0.06),
 }
 
 
@@ -144,6 +145,7 @@ def make_eval_runner(
     out_start: int,
     device: torch.device,
     compile_eval: bool = True,
+    compile_mode: str = "reduce-overhead",
 ):
     buffers = make_eval_buffers(vocab, neurons, device)
 
@@ -151,7 +153,7 @@ def make_eval_runner(
         return gpu_eval(mask, leak, targets, out_start, buffers=buffers)
 
     if compile_eval:
-        return torch.compile(eval_runner, mode="reduce-overhead", fullgraph=False)
+        return torch.compile(eval_runner, mode=compile_mode, fullgraph=False)
     return eval_runner
 
 
