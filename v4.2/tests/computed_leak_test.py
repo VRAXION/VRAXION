@@ -90,7 +90,7 @@ def run_one(net_name, V, N, density, threshold, budget, mode_name, learnable, se
 
         a, s = eval_b(leak)
         if s > score: score = s; best_acc = max(best_acc, a)
-        else: net.mask = sm; net.mood_x = mx_s; net.mood_z = mz_s; leak = lk_s
+        else: net.mask = sm; net.resync_alive(); net.mood_x = mx_s; net.mood_z = mz_s; leak = lk_s
 
     log_msg(log_q, f"{net_name:12s} {mode_name:10s} seed={seed:3d} "
             f"acc={best_acc*100:5.1f}% leak={leak:.3f}")

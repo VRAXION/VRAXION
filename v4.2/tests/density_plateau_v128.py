@@ -76,7 +76,7 @@ def main():
             best_tp = tp
             stale = 0
         else:
-            net.mask = sm; net.mood_x = mx_s; net.mood_z = mz_s; net.leak = lk_s
+            net.mask = sm; net.resync_alive(); net.mood_x = mx_s; net.mood_z = mz_s; net.leak = lk_s
             stale += 1
 
         if (att + 1) % CHECK_INTERVAL == 0:

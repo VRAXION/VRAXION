@@ -63,7 +63,7 @@ def run_one(name, gain, seed, log_q=None):
         net.mutate_with_mood()
         a, s = eval_b()
         if s > score: score = s; best_acc = max(best_acc, a)
-        else: net.mask = sm; net.mood_x = mx_s; net.mood_z = mz_s
+        else: net.mask = sm; net.resync_alive(); net.mood_x = mx_s; net.mood_z = mz_s
 
     log_msg(log_q, f"{name:15s} seed={seed:3d} acc={best_acc*100:5.1f}%")
     return {'name': name, 'seed': seed, 'acc': best_acc}

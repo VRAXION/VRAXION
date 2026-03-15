@@ -101,7 +101,7 @@ def run_one(net_name, V, N, density, threshold, mode_name, health_weight, seed, 
             score = s; best_acc = max(best_acc, a)
             final_health = h; final_dead = d; final_sat = sa; final_spread = sp
         else:
-            net.mask = sm; net.mood_x = mx_s; net.mood_z = mz_s; leak = lk_s
+            net.mask = sm; net.resync_alive(); net.mood_x = mx_s; net.mood_z = mz_s; leak = lk_s
 
     eff_drive = net.charge_rate / (1 - leak) if leak < 1 else 999
     log_msg(log_q, f"{net_name:12s} {mode_name:12s} seed={seed:3d} "

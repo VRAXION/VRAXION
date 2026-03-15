@@ -63,6 +63,8 @@ def load_sparse_local_module() -> ModuleType:
 def clone_common_state(src_net, dst_net) -> None:
     """Copy the shared state fields between the dense committed and local sparse nets."""
     dst_net.mask[:] = src_net.mask
+    if hasattr(dst_net, "resync_alive"):
+        dst_net.resync_alive()
     dst_net.state[:] = src_net.state
     dst_net.charge[:] = src_net.charge
     dst_net.mood_x = src_net.mood_x

@@ -99,7 +99,7 @@ def run_one(net_name, V, N, density, threshold, mode, seed, log_q=None):
         if s > score:
             score = s; best_acc = max(best_acc, a)
         else:
-            net.mask = sm; net.mood_x = mx_s; net.mood_z = mz_s; net.leak = lk_s
+            net.mask = sm; net.resync_alive(); net.mood_x = mx_s; net.mood_z = mz_s; net.leak = lk_s
 
         if att % 8000 == 0 or att == BUDGET - 1:
             conns = int((net.mask != 0).sum())

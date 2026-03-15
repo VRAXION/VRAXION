@@ -97,7 +97,7 @@ def run_one(cfg, seed, log_q=None):
         if s > score:
             score = s; best_acc = max(best_acc, a)
         else:
-            net.mask = sm; net.mood_x = mx_s; net.mood_z = mz_s
+            net.mask = sm; net.resync_alive(); net.mood_x = mx_s; net.mood_z = mz_s
 
     log_msg(log_q, f"{name:16s} seed={seed:2d} V={V:3d} N={N:3d} d={density:.2f} "
             f"th={threshold:.1f} lk={leak:.2f} cr={charge_rate:.1f} cl={clip_factor:.1f} "

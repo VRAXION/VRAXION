@@ -5,8 +5,9 @@ Flat graph with ternary mask and capacitor neurons.
 Gradient-free: learns via mutation + selection.
 Pure numpy + random. Zero dependencies.
 
-The ONLY learnable matrix: int8 mask {-1, 0, +1}
-Everything else is either a fixed constant or co-evolved scalar.
+The ONLY learnable matrix is the int8 mask {-1, 0, +1}.
+Mutations sample from an O(1) alive-edge cache; the remaining learned knobs
+are small co-evolved int controller params.
 """
 
 import numpy as np

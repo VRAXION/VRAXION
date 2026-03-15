@@ -88,6 +88,8 @@ def bench_cpu_eval(net, targets: np.ndarray, candidates) -> tuple[float, list[np
     t0 = time.perf_counter()
     for mask, leak in candidates:
         net.mask[:] = mask
+        if hasattr(net, "resync_alive"):
+            net.resync_alive()
         net.leak = leak
         if hasattr(net, "_weff_dirty"):
             net._weff_dirty = True

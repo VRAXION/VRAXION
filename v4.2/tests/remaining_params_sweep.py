@@ -85,7 +85,7 @@ def run_one(sweep_name, param_label, threshold, ticks, clip_factor,
         if s > score:
             score = s; best_acc = max(best_acc, a)
         else:
-            net.mask = sm; net.mood_x = mx_s; net.mood_z = mz_s; net.leak = lk_s
+            net.mask = sm; net.resync_alive(); net.mood_x = mx_s; net.mood_z = mz_s; net.leak = lk_s
 
     log_msg(log_q, f"{sweep_name:12s} {param_label:16s} seed={seed:3d} "
             f"acc={best_acc*100:5.1f}% leak={net.leak:.3f}")

@@ -84,7 +84,7 @@ def run_with_method(method, V, N, density, seed):
         if s > score:
             score = s; best_acc = max(best_acc, a)
         else:
-            net.mask = sm; net.mood_x = mx_s; net.mood_z = mz_s; net.leak = lk_s
+            net.mask = sm; net.resync_alive(); net.mood_x = mx_s; net.mood_z = mz_s; net.leak = lk_s
     return best_acc
 
 

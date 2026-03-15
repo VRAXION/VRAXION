@@ -1,7 +1,7 @@
 """
-Adversarial Stress Test — 12 probes for SelfWiringGraph
+Adversarial Stress Test — 13 probes for SelfWiringGraph
 =========================================================
-All 12 must PASS for the model to be considered valid.
+All 13 must PASS for the model to be considered valid.
 """
 
 import sys, os
@@ -223,6 +223,23 @@ def main():
     r = result(PASS if ok and deep_ok else FAIL,
                f"Bitwise restore: {ok}, deep copy: {deep_ok}")
     results.append(("Save/restore", r))
+
+    # PROBE 13: Alive cache coherence after direct mask restore
+    header(13, "Alive cache coherence after direct mask restore")
+    np.random.seed(SEED); random.seed(SEED)
+    net = SelfWiringGraph(64, 16)
+    sm = net.mask.copy()
+    for _ in range(32):
+        net.mutate()
+    net.mask = sm; net.resync_alive()
+    alive_set = set(net.alive)
+    mask_set = set(zip(*np.where(net.mask != 0)))
+    count_ok = len(net.alive) == int((net.mask != 0).sum())
+    cells_ok = alive_set == mask_set
+    diag_ok = all(r != c for r, c in net.alive)
+    r = result(PASS if count_ok and cells_ok and diag_ok else FAIL,
+               f"count={count_ok}, cells={cells_ok}, diag={diag_ok}")
+    results.append(("Alive cache coherence", r))
 
     # SUMMARY
     print(f"\n{'='*60}")

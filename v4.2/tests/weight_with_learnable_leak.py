@@ -128,7 +128,7 @@ def run_one(mode, seed, log_q=None):
         a, s = eval_b(leak)
         if s > score: score = s; best_acc = max(best_acc, a)
         else:
-            net.mask = sm; net.mood_x = mx_s; net.mood_z = mz_s; leak = lk_s; gain = gn_s
+            net.mask = sm; net.resync_alive(); net.mood_x = mx_s; net.mood_z = mz_s; leak = lk_s; gain = gn_s
             if mode == 'binary_1.5_2.0': W_strong[:] = sw
             elif mode == 'ternary_1.5_1.75_2.0': W_level[:] = sw
 

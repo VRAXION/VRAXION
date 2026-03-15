@@ -86,7 +86,7 @@ def run_one(net_name, V, N, density, threshold, budget_name, budget_frac, seed, 
             score = s; best_acc = max(best_acc, a)
             stale = 0
         else:
-            net.mask = sm; net.mood_x = mx_s; net.mood_z = mz_s; net.leak = lk_s
+            net.mask = sm; net.resync_alive(); net.mood_x = mx_s; net.mood_z = mz_s; net.leak = lk_s
             stale += 1
 
         # Periodic checkpoint

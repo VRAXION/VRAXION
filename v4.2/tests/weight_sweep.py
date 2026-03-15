@@ -101,7 +101,7 @@ def run_one(name, weak, mid, strong, n_levels, seed, log_q=None):
 
         a, s = eval_b()
         if s > score: score = s; best_acc = max(best_acc, a)
-        else: net.mask = sm; net.W_strong = sw; net.mood_x = mx_s; net.mood_z = mz_s
+        else: net.mask = sm; net.resync_alive(); net.W_strong = sw; net.mood_x = mx_s; net.mood_z = mz_s
 
     log_msg(log_q, f"{name:22s} seed={seed:3d} acc={best_acc*100:5.1f}% "
             f"({n_levels}L: {weak:.3f}/{mid:.3f}/{strong:.3f})")

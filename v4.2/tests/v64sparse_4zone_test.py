@@ -56,7 +56,7 @@ def run_one(density, seed):
         if s > score:
             score = s; best_acc = max(best_acc, a)
         else:
-            net.mask = sm; net.mood_x = mx_s; net.mood_z = mz_s; net.leak = lk_s
+            net.mask = sm; net.resync_alive(); net.mood_x = mx_s; net.mood_z = mz_s; net.leak = lk_s
 
     final_conns = int((net.mask != 0).sum())
     final_density = final_conns / (N * N - N)

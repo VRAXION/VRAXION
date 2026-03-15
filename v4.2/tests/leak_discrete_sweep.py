@@ -68,7 +68,7 @@ def run_one(vocab, neurons, density, budget, seed):
             lk_int = int(round(net.leak * 100))
             leak_accepts[lk_int] += 1
         else:
-            net.mask = sm; net.mood = mood_s; net.intensity = int_s; net.leak = lk_s
+            net.mask = sm; net.resync_alive(); net.mood = mood_s; net.intensity = int_s; net.leak = lk_s
 
         if att % 4000 == 0:
             leak_trajectory.append((att, round(net.leak, 3)))

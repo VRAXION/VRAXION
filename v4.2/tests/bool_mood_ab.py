@@ -117,7 +117,7 @@ def run_bool_mood(seed):
         if s > score:
             score = s; best = max(best, score)
         else:
-            net.mask = sm
+            net.mask = sm; net.resync_alive()
             net.loss_pct = np.int8(lk_s)
             grow = grow_s; refine = refine_s; aggressive = agg_s
 

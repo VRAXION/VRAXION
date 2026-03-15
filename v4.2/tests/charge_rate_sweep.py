@@ -182,7 +182,7 @@ def run_one(
             score = s
             best_acc = max(best_acc, a)
         else:
-            net.mask = sm
+            net.mask = sm; net.resync_alive()
             net.mood_x = mx_s
             net.mood_z = mz_s
             leak = lk_s

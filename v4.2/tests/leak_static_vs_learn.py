@@ -78,7 +78,7 @@ def run_one(net_name, V, N, density, threshold, budget, leak_name, leak_init, le
         if s > score:
             score = s; best_acc = max(best_acc, a)
         else:
-            net.mask = sm; net.mood_x = mx_s; net.mood_z = mz_s
+            net.mask = sm; net.resync_alive(); net.mood_x = mx_s; net.mood_z = mz_s
             leak = lk_s
 
     log_msg(log_q, f"{net_name:12s} {leak_name:10s} seed={seed:2d} "
