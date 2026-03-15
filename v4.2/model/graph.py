@@ -23,8 +23,10 @@ class SelfWiringGraph:
     SELF_CONN = 0.05
     THRESHOLD = 0.5
     CLIP_BOUND = 1.0
-    PATIENCE = 0.35   # strategy flip prob on reject (~patience=10 implicit)
-    LOSS_DRIFT = 0.2  # loss_pct mutation probability per attempt
+    # Mutation probabilities as int fractions (no float needed)
+    # PATIENCE: 7/20 = 0.35 — strategy flip prob on reject
+    # LOSS_DRIFT: 1/5 = 0.20 — loss_pct mutation prob
+    # SHRINK_REMOVE: 7/10 = 0.70 — remove vs rewire in shrink mode
 
     def __init__(self, *args, density=0.06):
         # SelfWiringGraph(64) — new: vocab only, N=V*NV_RATIO
@@ -214,12 +216,12 @@ class SelfWiringGraph:
                             Q2 grow? → YES: add
                                        NO:  remove/rewire
         """
-        # Intensity drift (survives rejects)
-        if random.random() < self.PATIENCE:
+        # Intensity drift (survives rejects) — 7/20 chance
+        if random.randint(1, 20) <= 7:
             self.intensity = np.int8(max(1, min(15, int(self.intensity) + random.choice([-1, 1]))))
 
-        # Loss step (reverts with mask on reject)
-        if random.random() < self.LOSS_DRIFT:
+        # Loss step (reverts with mask on reject) — 1/5 chance
+        if random.randint(1, 5) == 1:
             self.loss_pct = np.int8(max(1, min(50, int(self.loss_pct) + random.randint(-3, 3))))
 
         # Mask mutations using current strategy — returns undo log
@@ -230,8 +232,8 @@ class SelfWiringGraph:
             else:            # structural change
                 if self.grow:    # Q2: grow → add
                     self._add(undo)
-                else:            # shrink → remove or rewire
-                    if random.random() < 0.7:
+                else:            # shrink → 7/10 remove, 3/10 rewire
+                    if random.randint(1, 10) <= 7:
                         self._remove(undo)
                     else:
                         self._rewire(undo)
@@ -244,7 +246,7 @@ class SelfWiringGraph:
     def _add(self, undo):
         r, c = random.randint(0, self.N-1), random.randint(0, self.N-1)
         if r != c and self.mask[r, c] == 0:
-            self.mask[r, c] = random.choice([-1, 1])
+            self.mask[r, c] = 1 if random.randint(0, 1) else -1
             self.alive.append((r, c))
             self.alive_set.add((r, c))
             undo.append(('A', r, c))
@@ -318,9 +320,9 @@ def train(net, targets, vocab, max_attempts=8000, ticks=8,
             net.loss_pct = np.int8(old_loss)
             stale += 1
             # Strategy failed → reconsider (flip on reject)
-            if random.random() < net.PATIENCE:
+            if random.randint(1, 20) <= 7:  # 7/20 = 0.35
                 net.signal = np.int8(1 - int(net.signal))
-            if random.random() < net.PATIENCE:
+            if random.randint(1, 20) <= 7:
                 net.grow = np.int8(1 - int(net.grow))
 
         if verbose and (att + 1) % 1000 == 0:
