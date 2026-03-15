@@ -199,7 +199,7 @@ def main():
     net = SelfWiringGraph(64, 16, density=0.3)
     net.reset()
     logits = net.forward(np.zeros(16, dtype=np.float32), ticks=1000)
-    ok = np.all(np.isfinite(logits)) and np.abs(net.charge).max() <= net.CLIP_BOUND + 0.01
+    ok = np.all(np.isfinite(logits)) and np.abs(net.charge).max() <= 1.01
     r = result(PASS if ok else FAIL, f"Charge bounded: {ok}")
     results.append(("Charge explosion", r))
 

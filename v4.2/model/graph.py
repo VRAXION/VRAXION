@@ -21,7 +21,6 @@ class SelfWiringGraph:
     DRIVE = 0.6        # GAIN(2) × CHARGE_RATE(0.3) — merged
     SELF_DRIVE = 0.015 # SELF_CONN(0.05) × CHARGE_RATE(0.3) — merged
     THRESHOLD = 0.5
-    CLIP_BOUND = 1.0   # = 2 × THRESHOLD
     # Mutation probabilities as int fractions (no float needed)
     # PATIENCE: 7/20 = 0.35 — strategy flip prob on reject
     # LOSS_DRIFT: 1/5 = 0.20 — loss_pct mutation prob
@@ -109,7 +108,7 @@ class SelfWiringGraph:
             self.charge += raw
             self.charge *= retain
             act = np.maximum(self.charge - self.THRESHOLD, 0.0)
-            self.charge = np.clip(self.charge, -self.CLIP_BOUND, self.CLIP_BOUND)
+            self.charge = np.clip(self.charge, -1.0, 1.0)
         self.state = act.copy()
         return self.charge[self.out_start:self.out_start + self.V]
 
@@ -127,7 +126,7 @@ class SelfWiringGraph:
             charges += raw
             charges *= retain
             acts = np.maximum(charges - self.THRESHOLD, 0.0)
-            charges = np.clip(charges, -self.CLIP_BOUND, self.CLIP_BOUND)
+            charges = np.clip(charges, -1.0, 1.0)
         return charges[:, self.out_start:self.out_start + V]
 
     def resync_alive(self):
