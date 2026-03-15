@@ -43,7 +43,7 @@ def main():
         score_best = 0.0
         for att in range(2000):
             sm = net.mask.copy()
-            net.mutate_with_mood()
+            net.mutate()
             logits = net.forward_batch(ticks=8)
             e = np.exp(logits - logits.max(axis=1, keepdims=True))
             probs = e / e.sum(axis=1, keepdims=True)
@@ -67,7 +67,7 @@ def main():
     acc_best = 0.0
     for att in range(3000):
         sm = net.mask.copy()
-        net.mutate_with_mood()
+        net.mutate()
         logits = net.forward_batch(ticks=8)
         e = np.exp(logits - logits.max(axis=1, keepdims=True))
         probs = e / e.sum(axis=1, keepdims=True)
@@ -90,7 +90,7 @@ def main():
         net = SelfWiringGraph(80, 16)
         for att in range(2000):
             sm = net.mask.copy()
-            net.mutate_with_mood()
+            net.mutate()
             logits = net.forward_batch(ticks=8)
             e = np.exp(logits - logits.max(axis=1, keepdims=True))
             probs = e / e.sum(axis=1, keepdims=True)
@@ -145,8 +145,8 @@ def main():
         net.reset()
         logits = net.forward(np.array([1.0], dtype=np.float32), ticks=8)
         logits_b = net.forward_batch(ticks=8)
-        net.mutate_with_mood()
-        net.mutate_with_mood()
+        net.mutate()
+        net.mutate()
         r = result(PASS, "V=1 N=1 works")
     except Exception as ex:
         r = result(FAIL, f"Crashed: {ex}")
@@ -172,10 +172,10 @@ def main():
     header(9, "Mutation determinism")
     np.random.seed(99); random.seed(99)
     net1 = SelfWiringGraph(48, 16)
-    for _ in range(100): net1.mutate_with_mood()
+    for _ in range(100): net1.mutate()
     np.random.seed(99); random.seed(99)
     net2 = SelfWiringGraph(48, 16)
-    for _ in range(100): net2.mutate_with_mood()
+    for _ in range(100): net2.mutate()
     ok = np.array_equal(net1.mask, net2.mask)
     r = result(PASS if ok else FAIL, f"Deterministic: {ok}")
     results.append(("Determinism", r))
@@ -210,13 +210,13 @@ def main():
     net.forward(np.zeros(16, dtype=np.float32), ticks=8)
     state = net.save_state()
     net.mask[:] = -1; net.state[:] = 42; net.charge[:] = 100
-    net.mood = 0; net.intensity = 1; net.loss_pct = 50
+    net.signal = 1; net.grow = 0; net.intensity = 1; net.loss_pct = 50
     net.restore_state(state)
-    state_loss = state['loss_pct'] if 'loss_pct' in state else state['loss']
+    # Only mask+loss_pct revert. Strategy bits (signal, grow, intensity) survive.
     ok = (np.array_equal(net.mask, state['mask']) and
           np.array_equal(net.state, state['state']) and np.array_equal(net.charge, state['charge']) and
-          net.mood == state['mood'] and net.intensity == state['intensity'] and
-          net.loss_pct == state_loss)
+          net.loss_pct == state['loss_pct'] and
+          net.signal == 1 and net.grow == 0 and net.intensity == 1)  # NOT reverted
     # Deep copy check
     state['mask'][0, 0] = 99
     deep_ok = net.mask[0, 0] != 99

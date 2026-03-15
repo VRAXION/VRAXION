@@ -41,12 +41,11 @@ class SelfWiringGraph:
         self.state = np.zeros(n_neurons, dtype=np.float32)
         self.charge = np.zeros(n_neurons, dtype=np.float32)
 
-        # Co-evolved integers only. int4 would be enough semantically, but NumPy
-        # does not expose a native int4 dtype, so int8 is the smallest practical
-        # storage type here.
-        self.loss_pct = np.int8(15)  # 1-50, charge loses loss% per tick
-        self.mood = np.int8(2)       # 0=scout 1=rewirer 2=refiner 3=pruner
-        self.intensity = np.int8(7)  # 1-15, n_changes per mutation
+        # Co-evolved learned params (all int8)
+        self.loss_pct = np.int8(15)    # 1-50, charge loses loss% per tick
+        self.signal = np.int8(0)       # Q1: 0=structural, 1=signal-only (flip)
+        self.grow = np.int8(1)         # Q2: 0=shrink, 1=grow (only if structural)
+        self.intensity = np.int8(7)    # 1-15, n_changes per mutation
 
     def reset(self):
         self.state *= 0
@@ -125,72 +124,63 @@ class SelfWiringGraph:
     # --- State management ---
 
     def save_state(self):
+        """Save only what affects the forward pass.
+        Strategy bits (signal, grow, intensity) are NOT saved —
+        they survive rejects and learn through differential survival."""
         return {
             'mask': self.mask.copy(),
             'state': self.state.copy(),
             'charge': self.charge.copy(),
-            'mood': np.int8(self.mood),
-            'intensity': np.int8(self.intensity),
             'loss_pct': np.int8(self.loss_pct),
         }
 
     def restore_state(self, s):
+        """Revert forward-pass state. Strategy bits untouched."""
         self.mask[:] = s['mask']
         self.state[:] = s['state']
         self.charge[:] = s['charge']
-        self.mood = np.int8(s['mood'])
-        self.intensity = np.int8(s['intensity'])
-        if 'loss_pct' in s:
-            self.loss_pct = np.int8(s['loss_pct'])
-        elif 'loss' in s:
-            self.loss_pct = np.int8(s['loss'])
-        else:
-            self.leak = s['leak']
+        self.loss_pct = np.int8(s.get('loss_pct', s.get('loss', 15)))
 
     # --- Mutation ---
 
-    def mutate_with_mood(self):
-        """4-zone mood-driven mutation + learnable leak."""
-        # Mood step: randomly move to neighbor zone
-        if random.random() < 0.35:
-            self.mood = np.int8(max(0, min(3, int(self.mood) + random.choice([-1, 1]))))
+    def mutate(self):
+        """Decoupled strategy mutation: mask/loss revert, strategy survives.
 
-        # Intensity step: randomly adjust
+        Strategy bits (signal, grow, intensity) are NOT reverted on reject.
+        Only mask + loss_pct revert on reject (they affect the forward pass).
+        Strategy updates happen through slower differential survival across
+        multiple attempts rather than per-attempt scalar reversion.
+
+        Decision tree:
+          Q1 signal? → YES: flip only (CHEAP)
+                       NO:  structural
+                            Q2 grow? → YES: add
+                                       NO:  remove/rewire
+        """
+        # Intensity drift (survives rejects)
         if random.random() < 0.35:
             self.intensity = np.int8(max(1, min(15, int(self.intensity) + random.choice([-1, 1]))))
 
-        # Loss step (±1-3)
+        # Loss step (reverts with mask on reject)
         if random.random() < 0.2:
             self.loss_pct = np.int8(max(1, min(50, int(self.loss_pct) + random.randint(-3, 3))))
 
-        # Mask mutations
+        # Mask mutations using current strategy
         for _ in range(int(self.intensity)):
-            if self.mood == 0:       # scout: grow
-                if random.random() < 0.7:
+            if self.signal:  # Q1: signal-only → flip (CHEAP)
+                self._flip()
+            else:            # structural change
+                if self.grow:    # Q2: grow → add
                     self._add()
-                else:
-                    self._flip()
-            elif self.mood == 1:     # rewirer: reroute
-                r = random.random()
-                if r < 0.6:
-                    self._rewire()
-                elif r < 0.8:
-                    self._flip()
-                else:
-                    self._add()
-            elif self.mood == 2:     # refiner: tune signs
-                if random.random() < 0.8:
-                    self._flip()
-                else:
-                    self._rewire()
-            else:                     # pruner: shrink
-                r = random.random()
-                if r < 0.7:
-                    self._remove()
-                elif r < 0.9:
-                    self._flip()
-                else:
-                    self._rewire()
+                else:            # shrink → remove or rewire
+                    if random.random() < 0.7:
+                        self._remove()
+                    else:
+                        self._rewire()
+
+    def mutate_with_mood(self):
+        """Backward-compatible alias for older experiment scripts."""
+        self.mutate()
 
     def _add(self):
         if self.conn_budget > 0:
@@ -252,7 +242,7 @@ def train(net, targets, vocab, max_attempts=8000, ticks=8,
 
     for att in range(max_attempts):
         state = net.save_state()
-        net.mutate_with_mood()
+        net.mutate()
         new_score = evaluate()
 
         if new_score > score:
@@ -262,12 +252,17 @@ def train(net, targets, vocab, max_attempts=8000, ticks=8,
         else:
             net.restore_state(state)
             stale += 1
+            # Strategy failed → reconsider (flip on reject)
+            if random.random() < 0.35:
+                net.signal = np.int8(1 - int(net.signal))
+            if random.random() < 0.35:
+                net.grow = np.int8(1 - int(net.grow))
 
         if verbose and (att + 1) % 1000 == 0:
-            pos, neg = net.pos_neg_ratio()
+            mode = "SIGNAL" if net.signal else ("GROW" if net.grow else "SHRINK")
             print(f"  [{att+1:5d}] Score: {best*100:5.1f}% | "
-                  f"Conns: {net.count_connections():4d} (+:{pos} -:{neg}) | "
-                  f"Loss: {int(net.loss_pct)}% (ret={net.retention:.2f})")
+                  f"Conns: {net.count_connections():4d} | {mode} int={int(net.intensity)} | "
+                  f"Loss: {int(net.loss_pct)}%")
 
         if best >= 0.99 or stale >= stale_limit:
             break
