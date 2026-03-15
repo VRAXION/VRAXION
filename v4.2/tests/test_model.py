@@ -210,12 +210,13 @@ def main():
     net.forward(np.zeros(16, dtype=np.float32), ticks=8)
     state = net.save_state()
     net.mask[:] = -1; net.state[:] = 42; net.charge[:] = 100
-    net.mood = 0; net.intensity = 1; net.leak = 0.5
+    net.mood = 0; net.intensity = 1; net.loss_pct = 50
     net.restore_state(state)
+    state_loss = state['loss_pct'] if 'loss_pct' in state else state['loss']
     ok = (np.array_equal(net.mask, state['mask']) and
           np.array_equal(net.state, state['state']) and np.array_equal(net.charge, state['charge']) and
           net.mood == state['mood'] and net.intensity == state['intensity'] and
-          net.leak == state['leak'])
+          net.loss_pct == state_loss)
     # Deep copy check
     state['mask'][0, 0] = 99
     deep_ok = net.mask[0, 0] != 99

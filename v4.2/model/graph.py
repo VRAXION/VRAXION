@@ -41,25 +41,59 @@ class SelfWiringGraph:
         self.state = np.zeros(n_neurons, dtype=np.float32)
         self.charge = np.zeros(n_neurons, dtype=np.float32)
 
-        # Co-evolved integers (no floats)
-        self.leak = 85      # 50-99, used as leak/100 in forward
-        self.mood = 2       # 0=scout 1=rewirer 2=refiner 3=pruner
-        self.intensity = 7  # 1-15, n_changes per mutation
+        # Co-evolved integers only. int4 would be enough semantically, but NumPy
+        # does not expose a native int4 dtype, so int8 is the smallest practical
+        # storage type here.
+        self.loss_pct = np.int8(15)  # 1-50, charge loses loss% per tick
+        self.mood = np.int8(2)       # 0=scout 1=rewirer 2=refiner 3=pruner
+        self.intensity = np.int8(7)  # 1-15, n_changes per mutation
 
     def reset(self):
         self.state *= 0
         self.charge *= 0
 
+    @property
+    def retention(self):
+        return np.float32((100 - int(self.loss_pct)) * 0.01)
+
+    @property
+    def loss(self):
+        """Backward-compatible alias used by ad-hoc experiment scripts."""
+        return int(self.loss_pct)
+
+    @loss.setter
+    def loss(self, value):
+        self.loss_pct = np.int8(max(1, min(50, int(value))))
+
+    @property
+    def leak(self):
+        """Backward-compatible retention view used by older scripts."""
+        return float(self.retention)
+
+    @leak.setter
+    def leak(self, value):
+        # Support:
+        # - float retention 0..1
+        # - int legacy retention bucket 50..99
+        # - int direct loss bucket 1..50
+        if isinstance(value, (float, np.floating)):
+            loss = int(round((1.0 - float(value)) * 100.0))
+        else:
+            iv = int(value)
+            loss = 100 - iv if 50 <= iv <= 99 else iv
+        self.loss_pct = np.int8(max(1, min(50, loss)))
+
     def forward(self, world, ticks=8):
         """Single-input forward pass."""
         act = self.state.copy()
+        retain = float(self.retention)
         for t in range(ticks):
             if t == 0:
                 act[:self.V] = world
             raw = act @ self.mask * self.GAIN + act * self.SELF_CONN
             np.nan_to_num(raw, copy=False, nan=0.0, posinf=0.0, neginf=0.0)
             self.charge += raw * self.CHARGE_RATE
-            self.charge *= self.leak * 0.01
+            self.charge *= retain
             act = np.maximum(self.charge - self.THRESHOLD, 0.0)
             self.charge = np.clip(self.charge, -self.CLIP_BOUND, self.CLIP_BOUND)
         self.state = act.copy()
@@ -70,13 +104,14 @@ class SelfWiringGraph:
         V, N = self.V, self.N
         charges = np.zeros((V, N), dtype=np.float32)
         acts = np.zeros((V, N), dtype=np.float32)
+        retain = float(self.retention)
         for t in range(ticks):
             if t == 0:
                 acts[:, :V] = np.eye(V, dtype=np.float32)
             raw = acts @ self.mask * self.GAIN + acts * self.SELF_CONN
             np.nan_to_num(raw, copy=False, nan=0.0, posinf=0.0, neginf=0.0)
             charges += raw * self.CHARGE_RATE
-            charges *= self.leak * 0.01
+            charges *= retain
             acts = np.maximum(charges - self.THRESHOLD, 0.0)
             charges = np.clip(charges, -self.CLIP_BOUND, self.CLIP_BOUND)
         return charges[:, self.out_start:self.out_start + V]
@@ -94,18 +129,23 @@ class SelfWiringGraph:
             'mask': self.mask.copy(),
             'state': self.state.copy(),
             'charge': self.charge.copy(),
-            'mood': self.mood,
-            'intensity': self.intensity,
-            'leak': self.leak,
+            'mood': np.int8(self.mood),
+            'intensity': np.int8(self.intensity),
+            'loss_pct': np.int8(self.loss_pct),
         }
 
     def restore_state(self, s):
         self.mask[:] = s['mask']
         self.state[:] = s['state']
         self.charge[:] = s['charge']
-        self.mood = s['mood']
-        self.intensity = s['intensity']
-        self.leak = s['leak']
+        self.mood = np.int8(s['mood'])
+        self.intensity = np.int8(s['intensity'])
+        if 'loss_pct' in s:
+            self.loss_pct = np.int8(s['loss_pct'])
+        elif 'loss' in s:
+            self.loss_pct = np.int8(s['loss'])
+        else:
+            self.leak = s['leak']
 
     # --- Mutation ---
 
@@ -113,18 +153,18 @@ class SelfWiringGraph:
         """4-zone mood-driven mutation + learnable leak."""
         # Mood step: randomly move to neighbor zone
         if random.random() < 0.35:
-            self.mood = max(0, min(3, self.mood + random.choice([-1, 1])))
+            self.mood = np.int8(max(0, min(3, int(self.mood) + random.choice([-1, 1]))))
 
         # Intensity step: randomly adjust
         if random.random() < 0.35:
-            self.intensity = max(1, min(15, self.intensity + random.choice([-1, 1])))
+            self.intensity = np.int8(max(1, min(15, int(self.intensity) + random.choice([-1, 1]))))
 
-        # Leak step (±1-3)
+        # Loss step (±1-3)
         if random.random() < 0.2:
-            self.leak = max(50, min(99, self.leak + random.randint(-3, 3)))
+            self.loss_pct = np.int8(max(1, min(50, int(self.loss_pct) + random.randint(-3, 3))))
 
         # Mask mutations
-        for _ in range(self.intensity):
+        for _ in range(int(self.intensity)):
             if self.mood == 0:       # scout: grow
                 if random.random() < 0.7:
                     self._add()
@@ -227,7 +267,7 @@ def train(net, targets, vocab, max_attempts=8000, ticks=8,
             pos, neg = net.pos_neg_ratio()
             print(f"  [{att+1:5d}] Score: {best*100:5.1f}% | "
                   f"Conns: {net.count_connections():4d} (+:{pos} -:{neg}) | "
-                  f"Leak: {net.leak}")
+                  f"Loss: {int(net.loss_pct)}% (ret={net.retention:.2f})")
 
         if best >= 0.99 or stale >= stale_limit:
             break
