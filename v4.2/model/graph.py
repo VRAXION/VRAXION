@@ -149,10 +149,34 @@ class SelfWiringGraph:
     def restore_state(self, s):
         """Revert forward-pass state. Strategy bits untouched."""
         self.mask[:] = s['mask']
-        self.alive = s['alive'].copy()
+        if 'alive' in s:
+            self.alive = s['alive'].copy()
+        else:
+            self.resync_alive()
         self.state[:] = s['state']
         self.charge[:] = s['charge']
         self.loss_pct = np.int8(s.get('loss_pct', s.get('loss', 15)))
+
+    def replay(self, log):
+        """Repeat logged ops in reverse = undo. Flip is literally repeat.
+        O(changes) not O(N²). No 36KB mask copy needed."""
+        for entry in reversed(log):
+            op = entry[0]
+            if op == 'F':                           # flip again = original
+                self.mask[entry[1], entry[2]] *= -1
+            elif op == 'A':                         # un-add = remove
+                self.mask[entry[1], entry[2]] = 0
+                self.alive.pop()
+            elif op == 'R':                         # un-remove = add back
+                _, r, c, sign, _ = entry
+                self.mask[r, c] = sign
+                self.alive.append((r, c))
+            elif op == 'W':                         # un-rewire = rewire back
+                _, r, c_old, c_new, idx = entry
+                sign = self.mask[r, c_new]
+                self.mask[r, c_new] = 0
+                self.mask[r, c_old] = sign
+                self.alive[idx] = (r, c_old)
 
     # --- Mutation ---
 
@@ -178,46 +202,50 @@ class SelfWiringGraph:
         if random.random() < 0.2:
             self.loss_pct = np.int8(max(1, min(50, int(self.loss_pct) + random.randint(-3, 3))))
 
-        # Mask mutations using current strategy
+        # Mask mutations using current strategy — returns undo log
+        undo = []
         for _ in range(int(self.intensity)):
             if self.signal:  # Q1: signal-only → flip (CHEAP)
-                self._flip()
+                self._flip(undo)
             else:            # structural change
                 if self.grow:    # Q2: grow → add
-                    self._add()
+                    self._add(undo)
                 else:            # shrink → remove or rewire
                     if random.random() < 0.7:
-                        self._remove()
+                        self._remove(undo)
                     else:
-                        self._rewire()
+                        self._rewire(undo)
+        return undo
 
     def mutate_with_mood(self):
         """Backward-compatible alias for older experiment scripts."""
         self.mutate()
 
-    def _add(self):
-        # Single try — skip = natural density cap
+    def _add(self, undo):
         r, c = random.randint(0, self.N-1), random.randint(0, self.N-1)
         if r != c and self.mask[r, c] == 0:
-            sign = random.choice([-1, 1])
-            self.mask[r, c] = sign
+            self.mask[r, c] = random.choice([-1, 1])
             self.alive.append((r, c))
+            undo.append(('A', r, c))
 
-    def _flip(self):
+    def _flip(self, undo):
         if self.alive:
             idx = random.randint(0, len(self.alive)-1)
             r, c = self.alive[idx]
             self.mask[r, c] *= -1
+            undo.append(('F', r, c))  # undo = repeat!
 
-    def _remove(self):
+    def _remove(self, undo):
         if self.alive:
             idx = random.randint(0, len(self.alive)-1)
             r, c = self.alive[idx]
+            old_sign = self.mask[r, c]
             self.mask[r, c] = 0
-            self.alive[idx] = self.alive[-1]  # swap-to-end
+            self.alive[idx] = self.alive[-1]
             self.alive.pop()
+            undo.append(('R', r, c, old_sign, idx))
 
-    def _rewire(self):
+    def _rewire(self, undo):
         if self.alive:
             idx = random.randint(0, len(self.alive)-1)
             r, c = self.alive[idx]
@@ -227,6 +255,7 @@ class SelfWiringGraph:
                 self.mask[r, c] = 0
                 self.mask[r, nc] = old
                 self.alive[idx] = (r, nc)
+                undo.append(('W', r, c, nc, idx))
 
 
 def softmax(x):
@@ -252,8 +281,8 @@ def train(net, targets, vocab, max_attempts=8000, ticks=8,
     stale = 0
 
     for att in range(max_attempts):
-        state = net.save_state()
-        net.mutate()
+        old_loss = int(net.loss_pct)
+        undo = net.mutate()
         new_score = evaluate()
 
         if new_score > score:
@@ -261,7 +290,8 @@ def train(net, targets, vocab, max_attempts=8000, ticks=8,
             best = max(best, score)
             stale = 0
         else:
-            net.restore_state(state)
+            net.replay(undo)
+            net.loss_pct = np.int8(old_loss)
             stale += 1
             # Strategy failed → reconsider (flip on reject)
             if random.random() < net.PATIENCE:
