@@ -39,9 +39,10 @@ class SelfWiringGraph:
         self.mask[r > 1 - density / 2] = 1
         np.fill_diagonal(self.mask, 0)
 
-        # Alive index for O(1) mutation picks (synced with mask)
+        # Alive edges: list for O(1) random pick, set for O(1) undo
         rows, cols = np.where(self.mask != 0)
         self.alive = list(zip(rows.tolist(), cols.tolist()))
+        self.alive_set = set(self.alive)
 
         # Persistent state
         self.state = np.zeros(n_neurons, dtype=np.float32)
@@ -122,9 +123,10 @@ class SelfWiringGraph:
         return charges[:, self.out_start:self.out_start + V]
 
     def resync_alive(self):
-        """Rebuild alive list from mask. Call after direct mask writes."""
+        """Rebuild alive list+set from mask. Call after direct mask writes."""
         rows, cols = np.where(self.mask != 0)
         self.alive = list(zip(rows.tolist(), cols.tolist()))
+        self.alive_set = set(self.alive)
 
     def count_connections(self):
         return len(self.alive)
@@ -142,6 +144,7 @@ class SelfWiringGraph:
         return {
             'mask': self.mask.copy(),
             'alive': self.alive.copy(),
+            'alive_set': self.alive_set.copy(),
             'state': self.state.copy(),
             'charge': self.charge.copy(),
             'loss_pct': np.int8(self.loss_pct),
@@ -152,6 +155,7 @@ class SelfWiringGraph:
         self.mask[:] = s['mask']
         if 'alive' in s:
             self.alive = s['alive'].copy()
+            self.alive_set = s.get('alive_set', set(self.alive)).copy()
         else:
             self.resync_alive()
         self.state[:] = s['state']
@@ -159,23 +163,33 @@ class SelfWiringGraph:
         self.loss_pct = np.int8(s.get('loss_pct', s.get('loss', 15)))
 
     def replay(self, log):
-        """Repeat logged ops in reverse = undo. Flip is literally repeat.
-        Mask: O(changes). Alive: rebuilt once at end via resync."""
+        """Repeat logged ops in reverse = undo. O(changes) + O(alive) list rebuild.
+        Flip = repeat (mask only). Structural ops update mask + set, list rebuilt once."""
+        has_structural = False
         for entry in reversed(log):
             op = entry[0]
-            if op == 'F':                           # flip again = original
+            if op == 'F':
                 self.mask[entry[1], entry[2]] *= -1
-            elif op == 'A':                         # un-add = zero it
-                self.mask[entry[1], entry[2]] = 0
-            elif op == 'R':                         # un-remove = restore sign
-                self.mask[entry[1], entry[2]] = entry[3]
-            elif op == 'W':                         # un-rewire = swap back
+            elif op == 'A':
+                r, c = entry[1], entry[2]
+                self.mask[r, c] = 0
+                self.alive_set.discard((r, c))
+                has_structural = True
+            elif op == 'R':
+                r, c = entry[1], entry[2]
+                self.mask[r, c] = entry[3]
+                self.alive_set.add((r, c))
+                has_structural = True
+            elif op == 'W':
                 _, r, c_old, c_new = entry
                 sign = self.mask[r, c_new]
                 self.mask[r, c_new] = 0
                 self.mask[r, c_old] = sign
-        if any(e[0] in ('A', 'R', 'W') for e in log):
-            self.resync_alive()  # rebuild alive from mask
+                self.alive_set.discard((r, c_new))
+                self.alive_set.add((r, c_old))
+                has_structural = True
+        if has_structural:
+            self.alive = list(self.alive_set)
 
     # --- Mutation ---
 
@@ -225,6 +239,7 @@ class SelfWiringGraph:
         if r != c and self.mask[r, c] == 0:
             self.mask[r, c] = random.choice([-1, 1])
             self.alive.append((r, c))
+            self.alive_set.add((r, c))
             undo.append(('A', r, c))
 
     def _flip(self, undo):
@@ -232,7 +247,7 @@ class SelfWiringGraph:
             idx = random.randint(0, len(self.alive)-1)
             r, c = self.alive[idx]
             self.mask[r, c] *= -1
-            undo.append(('F', r, c))  # undo = repeat!
+            undo.append(('F', r, c))
 
     def _remove(self, undo):
         if self.alive:
@@ -242,6 +257,7 @@ class SelfWiringGraph:
             self.mask[r, c] = 0
             self.alive[idx] = self.alive[-1]
             self.alive.pop()
+            self.alive_set.discard((r, c))
             undo.append(('R', r, c, old_sign))
 
     def _rewire(self, undo):
@@ -254,6 +270,8 @@ class SelfWiringGraph:
                 self.mask[r, c] = 0
                 self.mask[r, nc] = old
                 self.alive[idx] = (r, nc)
+                self.alive_set.discard((r, c))
+                self.alive_set.add((r, nc))
                 undo.append(('W', r, c, nc))
 
 
