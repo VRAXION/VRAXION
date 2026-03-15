@@ -12,7 +12,7 @@ Architecture:
   - 2D mood: co-evolved mutation controller (scout/rewirer/refiner/pruner)
   - Connection budget: optional cap, add becomes replace when full
   - Learnable leak: co-evolves with mask, converges ~0.98 within ~500 att
-  - Sparse CSR matmul: 14x speedup at V=128 (94% of mask is zero)
+  - Pure numpy matmul: int8 mask * gain, no scipy dependency
 
 Learnable parameters:
   mask (int8 NxN):  topology — the ONLY matrix
@@ -21,12 +21,11 @@ Learnable parameters:
   leak (float):     capacitor decay rate
 
 Fixed constants (all sweep-validated):
-  gain = 2.0, threshold = 0.5, charge_rate = 0.3, self_conn = 0.1
+  gain = 2.0, threshold = 0.5, charge_rate = 0.3, self_conn = 0.05
 """
 
 import numpy as np
 import random
-from scipy import sparse
 
 
 class SelfWiringGraph:
@@ -73,14 +72,13 @@ class SelfWiringGraph:
         self.mood_x = 0.5
         self.mood_z = 0.5
 
-        # Sparse CSR cache (rebuilt after mask mutation)
+        # Cached float32 view of mask (rebuilt after mutation)
         self._weff_dirty = True
-        self._Weff_csr = None
+        self._mask_f32 = None
 
     def _rebuild_weff(self):
-        """Rebuild sparse CSR weight matrix from mask."""
-        self._Weff_csr = sparse.csr_matrix(
-            self.mask.astype(np.float32) * self.gain)
+        """Rebuild float32 weight matrix: mask * gain. No scipy needed."""
+        self._mask_f32 = self.mask.astype(np.float32) * self.gain
         self._weff_dirty = False
 
     def reset(self):
@@ -97,7 +95,7 @@ class SelfWiringGraph:
         for t in range(ticks):
             if t == 0:
                 act[:self.V] = world
-            raw = np.asarray(act @ self._Weff_csr) + act * self.self_conn
+            raw = act @ self._mask_f32 + act * self.self_conn
             np.nan_to_num(raw, copy=False, nan=0.0, posinf=0.0, neginf=0.0)
             self.charge += raw * self.charge_rate
             self.charge *= self.leak
@@ -119,7 +117,7 @@ class SelfWiringGraph:
         for t in range(ticks):
             if t == 0:
                 acts[:, :V] = np.eye(V, dtype=np.float32)
-            raw = np.asarray(acts @ self._Weff_csr) + acts * self.self_conn
+            raw = acts @ self._mask_f32 + acts * self.self_conn
             np.nan_to_num(raw, copy=False, nan=0.0, posinf=0.0, neginf=0.0)
             charges += raw * self.charge_rate
             charges *= self.leak
