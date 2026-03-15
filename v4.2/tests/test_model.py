@@ -199,7 +199,7 @@ def main():
     net = SelfWiringGraph(64, 16, density=0.3)
     net.reset()
     logits = net.forward(np.zeros(16, dtype=np.float32), ticks=1000)
-    ok = np.all(np.isfinite(logits)) and np.abs(net.charge).max() <= net.threshold * net.clip_factor + 0.01
+    ok = np.all(np.isfinite(logits)) and np.abs(net.charge).max() <= net.CLIP_BOUND + 0.01
     r = result(PASS if ok else FAIL, f"Charge bounded: {ok}")
     results.append(("Charge explosion", r))
 
@@ -210,11 +210,11 @@ def main():
     net.forward(np.zeros(16, dtype=np.float32), ticks=8)
     state = net.save_state()
     net.mask[:] = -1; net.state[:] = 42; net.charge[:] = 100
-    net.mood_x = 0.0; net.mood_z = 0.0; net.leak = 0.5
+    net.mood = 0; net.intensity = 1; net.leak = 0.5
     net.restore_state(state)
     ok = (np.array_equal(net.mask, state['mask']) and
           np.array_equal(net.state, state['state']) and np.array_equal(net.charge, state['charge']) and
-          net.mood_x == state['mood_x'] and net.mood_z == state['mood_z'] and
+          net.mood == state['mood'] and net.intensity == state['intensity'] and
           net.leak == state['leak'])
     # Deep copy check
     state['mask'][0, 0] = 99

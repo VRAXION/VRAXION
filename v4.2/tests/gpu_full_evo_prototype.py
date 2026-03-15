@@ -73,6 +73,7 @@ CONFIGS = {
     "V64_dense": BenchConfig("V64_dense", 64, 192, 0.15),
     "V128_N384": BenchConfig("V128_N384", 128, 384, 0.06),
     "V128_dense": BenchConfig("V128_dense", 128, 384, 0.15),
+    "V256_N768": BenchConfig("V256_N768", 256, 768, 0.06),
 }
 
 GAIN = 2.0
@@ -101,7 +102,7 @@ def make_cpu_reference(cfg: BenchConfig, seed: int):
     import random
 
     random.seed(seed)
-    net = SelfWiringGraph(cfg.neurons, cfg.vocab, density=cfg.density, threshold=cfg.threshold)
+    net = SelfWiringGraph(cfg.neurons, cfg.vocab, density=cfg.density)
     perm = np.random.permutation(cfg.vocab).astype(np.int64)
     return net, perm
 
