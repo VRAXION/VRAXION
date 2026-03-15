@@ -159,24 +159,22 @@ class SelfWiringGraph:
 
     def replay(self, log):
         """Repeat logged ops in reverse = undo. Flip is literally repeat.
-        O(changes) not O(N²). No 36KB mask copy needed."""
+        Mask: O(changes). Alive: rebuilt once at end via resync."""
         for entry in reversed(log):
             op = entry[0]
             if op == 'F':                           # flip again = original
                 self.mask[entry[1], entry[2]] *= -1
-            elif op == 'A':                         # un-add = remove
+            elif op == 'A':                         # un-add = zero it
                 self.mask[entry[1], entry[2]] = 0
-                self.alive.pop()
-            elif op == 'R':                         # un-remove = add back
-                _, r, c, sign, _ = entry
-                self.mask[r, c] = sign
-                self.alive.append((r, c))
-            elif op == 'W':                         # un-rewire = rewire back
-                _, r, c_old, c_new, idx = entry
+            elif op == 'R':                         # un-remove = restore sign
+                self.mask[entry[1], entry[2]] = entry[3]
+            elif op == 'W':                         # un-rewire = swap back
+                _, r, c_old, c_new, _ = entry
                 sign = self.mask[r, c_new]
                 self.mask[r, c_new] = 0
                 self.mask[r, c_old] = sign
-                self.alive[idx] = (r, c_old)
+        if any(e[0] in ('A', 'R', 'W') for e in log):
+            self.resync_alive()  # rebuild alive from mask
 
     # --- Mutation ---
 
