@@ -35,7 +35,7 @@ class SelfWiringGraph:
     # Fixed constants (sweep-validated, do not change)
     gain = 2.0
     charge_rate = 0.3
-    self_conn = 0.1
+    self_conn = 0.05
     clip_factor = 2.0
 
     def __init__(self, n_neurons, vocab, density=0.06, flip_rate=0.30,
@@ -170,11 +170,11 @@ class SelfWiringGraph:
           [0.50, 0.75): refiner -> mostly flip
           [0.75, 1.00]: pruner  -> mostly remove
         """
-        # Mood mutation
-        if random.random() < 0.2:
-            self.mood_x = np.clip(self.mood_x + random.gauss(0, 0.15), 0.0, 1.0)
-        if random.random() < 0.2:
-            self.mood_z = np.clip(self.mood_z + random.gauss(0, 0.15), 0.0, 1.0)
+        # Mood mutation (sweep-validated: prob=0.35, step=0.10)
+        if random.random() < 0.35:
+            self.mood_x = np.clip(self.mood_x + random.gauss(0, 0.10), 0.0, 1.0)
+        if random.random() < 0.35:
+            self.mood_z = np.clip(self.mood_z + random.gauss(0, 0.10), 0.0, 1.0)
 
         # Leak mutation
         if random.random() < 0.2:
