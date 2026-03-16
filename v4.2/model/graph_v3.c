@@ -79,7 +79,7 @@ static uint32_t mt_rand(Net *n) {
 
 static uint32_t init_rng_state(uint32_t seed) {
 #if RNG_SEED_MODE == 0
-    return seed ? seed : 1u;
+    return seed;
 #else
     uint32_t x = seed + 0x9E3779B9u;
     x ^= x >> 16;
@@ -105,7 +105,7 @@ int net_init(Net *n, int vocab, uint32_t seed) {
     n->N = vocab * NV_RATIO;
     n->out_start = (n->N >= 2 * vocab) ? n->N - vocab : 0;
     /* MT19937 seeding */
-    n->mt[0] = seed;
+    n->mt[0] = init_rng_state(seed);
     for (int i = 1; i < 624; i++)
         n->mt[i] = 1812433253u * (n->mt[i-1] ^ (n->mt[i-1] >> 30)) + (uint32_t)i;
     n->mt_idx = 624;
