@@ -106,6 +106,23 @@ static int ri(Net *n, int lo, int hi) {
     return lo + (int)(r % range);
 }
 
+/* numpy-compatible bounded random [0, max] — bitmask rejection, 1 MT per attempt.
+   Matches numpy's rk_interval for 32-bit path (legacy RandomState). */
+static uint32_t np_interval(Net *n, uint32_t max) {
+    if (max == 0) return 0;
+    uint32_t mask = max;
+    mask |= mask >> 1;
+    mask |= mask >> 2;
+    mask |= mask >> 4;
+    mask |= mask >> 8;
+    mask |= mask >> 16;
+    uint32_t value;
+    do {
+        value = mt_rand(n) & mask;
+    } while (value > max);
+    return value;
+}
+
 int net_init(Net *n, int vocab, uint32_t seed) {
     memset(n, 0, sizeof(Net));
     n->V = vocab;
@@ -185,9 +202,10 @@ void forward(Net *n) {
         for (int i = 0; i < VN; i++) {
             n->charges[i] += n->raw[i];
             n->charges[i] *= retain;
+            /* acts from UNCLIPPED charges, then clip — same order as Python */
+            n->acts[i] = n->charges[i] > THRESHOLD ? n->charges[i] - THRESHOLD : 0.0f;
             if (n->charges[i] > 1.0f) n->charges[i] = 1.0f;
             if (n->charges[i] < -1.0f) n->charges[i] = -1.0f;
-            n->acts[i] = n->charges[i] > THRESHOLD ? n->charges[i] - THRESHOLD : 0.0f;
         }
     }
 }
@@ -389,8 +407,9 @@ int main(int argc, char **argv) {
 
     int *targets = (int *)malloc(vocab * sizeof(int));
     for (int i = 0; i < vocab; i++) targets[i] = i;
+    /* numpy-compatible Fisher-Yates shuffle using np_interval (bitmask rejection) */
     for (int i = vocab - 1; i > 0; i--) {
-        int j = ri(&n, 0, i);
+        int j = (int)np_interval(&n, (uint32_t)i);
         int tmp = targets[i]; targets[i] = targets[j]; targets[j] = tmp;
     }
 
