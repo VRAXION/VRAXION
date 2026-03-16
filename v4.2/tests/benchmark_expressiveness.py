@@ -242,15 +242,16 @@ def run_expressiveness(V, n_seeds=5):
     print(f"  SWG info: {(V*3)**2 * 2:,} bits  |  MLP info: {(2*V*V+2*V) * 32:,} bits  |  ratio: {((2*V*V+2*V)*32) / ((V*3)**2*2):.1f}x")
     print(f"{'='*78}")
 
-    # Determine budgets based on V
+    # Determine budgets based on V — tuned for reasonable wall-clock time
+    # From convergence test: V=16 ~4K, V=32 ~17K, V=64 ~69K to converge
     if V <= 16:
-        swg_budget, swg_stale = 50000, 30000
+        swg_budget, swg_stale = 30000, 15000
         mlp_epochs = 5000
     elif V <= 32:
-        swg_budget, swg_stale = 100000, 50000
+        swg_budget, swg_stale = 60000, 30000
         mlp_epochs = 8000
     else:
-        swg_budget, swg_stale = 200000, 80000
+        swg_budget, swg_stale = 100000, 30000
         mlp_epochs = 10000
 
     results = {}
@@ -302,7 +303,8 @@ if __name__ == '__main__':
 
     all_results = {}
     for V in [16, 32, 64]:
-        all_results[V] = run_expressiveness(V, n_seeds=5)
+        n = 5 if V <= 32 else 3  # fewer seeds for V=64 (slower)
+        all_results[V] = run_expressiveness(V, n_seeds=n)
 
     # ── Final comparison table ──
     print(f"\n\n{'='*78}")
