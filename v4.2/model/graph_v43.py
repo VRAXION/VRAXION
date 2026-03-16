@@ -136,6 +136,128 @@ class SelfWiringGraph:
         self.out_start = N - self.V if N >= 2 * self.V else 0
         return self.charge[self.out_start:self.out_start + self.V]
 
+    # --- Chain analytics ---
+
+    def chain_stats(self):
+        """Compute full chain/path statistics via BFS from every neuron.
+
+        Returns dict with:
+            avg_path:     mean shortest path length (connected pairs)
+            diameter:     longest shortest path (graph diameter)
+            avg_degree:   mean out-degree of active neurons
+            dead_neurons: neurons with zero in+out edges
+            bottlenecks:  edges whose removal disconnects components
+            clustering:   average local clustering coefficient
+            reachable:    fraction of neuron pairs that are connected
+        """
+        from collections import deque
+        N = self.N
+        # Build adjacency list
+        adj = [[] for _ in range(N)]
+        for r, c in self.alive:
+            if r < N and c < N:
+                adj[r].append(c)
+
+        # BFS from every neuron
+        total_dist = 0
+        total_pairs = 0
+        diameter = 0
+
+        for start in range(N):
+            dist = [-1] * N
+            dist[start] = 0
+            q = deque([start])
+            while q:
+                u = q.popleft()
+                for v in adj[u]:
+                    if dist[v] == -1:
+                        dist[v] = dist[u] + 1
+                        q.append(v)
+                        total_dist += dist[v]
+                        total_pairs += 1
+                        if dist[v] > diameter:
+                            diameter = dist[v]
+
+        avg_path = total_dist / total_pairs if total_pairs > 0 else 0
+        reachable = total_pairs / (N * (N - 1)) if N > 1 else 0
+
+        # Degree stats
+        out_deg = np.array([len(adj[i]) for i in range(N)])
+        in_deg = np.zeros(N, dtype=int)
+        for r, c in self.alive:
+            if c < N:
+                in_deg[c] += 1
+
+        dead = int(((out_deg == 0) & (in_deg == 0)).sum())
+
+        # Local clustering coefficient
+        # For directed graph: fraction of neighbor pairs that are connected
+        cluster_sum = 0.0
+        cluster_count = 0
+        for u in range(N):
+            neighbors = set(adj[u])
+            k = len(neighbors)
+            if k < 2:
+                continue
+            links = 0
+            for v in neighbors:
+                for w in neighbors:
+                    if v != w and w in set(adj[v]):
+                        links += 1
+            cluster_sum += links / (k * (k - 1))
+            cluster_count += 1
+
+        clustering = cluster_sum / cluster_count if cluster_count > 0 else 0
+
+        # Bottleneck detection: edges on all shortest paths between I/O
+        # Simplified: find edges with highest "betweenness" approximation
+        edge_usage = {}
+        # Sample BFS from input neurons to output neurons
+        for src in range(min(self.V, 8)):  # sample up to 8 input neurons
+            dist = [-1] * N
+            parent = [[] for _ in range(N)]
+            dist[src] = 0
+            q = deque([src])
+            while q:
+                u = q.popleft()
+                for v in adj[u]:
+                    if dist[v] == -1:
+                        dist[v] = dist[u] + 1
+                        parent[v] = [u]
+                        q.append(v)
+                    elif dist[v] == dist[u] + 1:
+                        parent[v].append(u)
+            # Trace back from output neurons
+            for out_n in range(self.out_start, min(self.out_start + self.V, N)):
+                if dist[out_n] == -1:
+                    continue
+                # Walk parents back
+                frontier = [out_n]
+                while frontier:
+                    nxt = []
+                    for node in frontier:
+                        for p in parent[node]:
+                            key = (p, node)
+                            edge_usage[key] = edge_usage.get(key, 0) + 1
+                            nxt.append(p)
+                    frontier = nxt
+
+        # Top bottleneck edges (highest betweenness)
+        bottlenecks = sorted(edge_usage.items(), key=lambda x: -x[1])[:10]
+
+        return {
+            'avg_path': round(avg_path, 2),
+            'diameter': diameter,
+            'avg_out_degree': round(float(out_deg.mean()), 2),
+            'avg_in_degree': round(float(in_deg.mean()), 2),
+            'dead_neurons': dead,
+            'clustering': round(clustering, 4),
+            'reachable': round(reachable, 4),
+            'total_edges': len(self.alive),
+            'total_neurons': N,
+            'bottlenecks': bottlenecks,
+        }
+
     # --- Energy-guided chain detection ---
 
     def find_chain(self, length=3):
@@ -372,6 +494,160 @@ class SelfWiringGraph:
 
         self.resync_alive()
         undo.append(('ANTI', n))
+
+    # --- Pruning ---
+
+    def prune(self, targets, ticks=8, tolerance=0.005, strategy='energy',
+              batch_size=1, verbose=True):
+        """Iteratively remove edges while accuracy holds.
+
+        Args:
+            targets:    target permutation array (length V)
+            ticks:      forward pass ticks
+            tolerance:  max allowed score drop from baseline
+            strategy:   'energy' (weakest first) or 'random'
+            batch_size: edges to remove per iteration (1 = safest)
+            verbose:    print progress
+
+        Returns:
+            dict with pruning stats
+        """
+        V, N = self.V, self.N
+
+        def evaluate():
+            logits = self.forward_batch(ticks)
+            e = np.exp(logits - logits.max(axis=1, keepdims=True))
+            probs = e / e.sum(axis=1, keepdims=True)
+            acc = (np.argmax(probs, axis=1)[:V] == targets[:V]).mean()
+            tp = probs[np.arange(V), targets[:V]].mean()
+            return 0.5 * acc + 0.5 * tp
+
+        baseline = evaluate()
+        threshold = baseline - tolerance
+        init_edges = len(self.alive)
+        removed = 0
+        history = [(0, init_edges, baseline)]
+
+        if verbose:
+            print(f"  Prune start: {init_edges} edges, "
+                  f"score={baseline*100:.1f}%, threshold={threshold*100:.1f}%")
+
+        while self.alive:
+            # Rank edges by weakness
+            if strategy == 'energy':
+                # Score each edge: low energy at both endpoints = weak
+                scored = []
+                for r, c in self.alive:
+                    edge_score = self.energy[r] + self.energy[c]
+                    scored.append((edge_score, r, c))
+                scored.sort()  # weakest first
+                candidates = [(r, c) for _, r, c in scored[:batch_size]]
+            else:
+                # Random removal
+                indices = random.sample(range(len(self.alive)),
+                                        min(batch_size, len(self.alive)))
+                candidates = [self.alive[i] for i in indices]
+
+            # Save state for rollback
+            saved_edges = []
+            for r, c in candidates:
+                saved_edges.append((r, c, self.mask[r, c]))
+                self.mask[r, c] = 0
+                self.alive_set.discard((r, c))
+
+            self.alive = list(self.alive_set)
+
+            new_score = evaluate()
+
+            if new_score >= threshold:
+                # Accept: edges were dispensable
+                removed += len(candidates)
+                history.append((removed, len(self.alive), new_score))
+                if verbose and removed % 50 == 0:
+                    print(f"    removed {removed:4d} | "
+                          f"edges={len(self.alive):4d} | "
+                          f"score={new_score*100:.1f}%")
+            else:
+                # Reject: restore edges, stop pruning
+                for r, c, val in saved_edges:
+                    self.mask[r, c] = val
+                    self.alive_set.add((r, c))
+                self.alive = list(self.alive_set)
+                if verbose:
+                    print(f"    STOP at {removed} removed | "
+                          f"would drop to {new_score*100:.1f}%")
+                break
+
+        final_edges = len(self.alive)
+        final_score = evaluate()
+        compression = 1.0 - (final_edges / init_edges) if init_edges > 0 else 0
+
+        result = {
+            'init_edges': init_edges,
+            'final_edges': final_edges,
+            'removed': removed,
+            'compression': compression,
+            'baseline_score': baseline,
+            'final_score': final_score,
+            'tolerance': tolerance,
+            'strategy': strategy,
+            'history': history,
+        }
+
+        if verbose:
+            print(f"  Prune done: {init_edges} → {final_edges} edges "
+                  f"({compression*100:.1f}% compression) | "
+                  f"score: {baseline*100:.1f}% → {final_score*100:.1f}%")
+
+        return result
+
+    def prune_neurons(self, targets, ticks=8, tolerance=0.005, verbose=True):
+        """Kill neurons with zero remaining edges after edge pruning."""
+        V, N = self.V, self.N
+
+        def evaluate():
+            logits = self.forward_batch(ticks)
+            e = np.exp(logits - logits.max(axis=1, keepdims=True))
+            probs = e / e.sum(axis=1, keepdims=True)
+            acc = (np.argmax(probs, axis=1)[:V] == targets[:V]).mean()
+            tp = probs[np.arange(V), targets[:V]].mean()
+            return 0.5 * acc + 0.5 * tp
+
+        baseline = evaluate()
+        threshold = baseline - tolerance
+        killed = 0
+
+        # Find internal neurons with no connections
+        for n in range(self.V, self.N - self.V):
+            row_sum = np.abs(self.mask[n, :self.N]).sum()
+            col_sum = np.abs(self.mask[:self.N, n]).sum()
+            if row_sum == 0 and col_sum == 0:
+                killed += 1
+
+        # Also try killing lowest-energy neurons
+        internals = list(range(self.V, self.N - self.V))
+        if internals:
+            energies = [(self.energy[n], n) for n in internals]
+            energies.sort()  # lowest energy first
+            for _, n in energies:
+                saved_row = self.mask[n, :self.N].copy()
+                saved_col = self.mask[:self.N, n].copy()
+                self.mask[n, :] = 0
+                self.mask[:, n] = 0
+                self.resync_alive()
+
+                if evaluate() >= threshold:
+                    killed += 1
+                    if verbose:
+                        print(f"    killed neuron {n} (energy={self.energy[n]:.4f})")
+                else:
+                    self.mask[n, :self.N] = saved_row
+                    self.mask[:self.N, n] = saved_col
+                    self.resync_alive()
+
+        if verbose:
+            print(f"  Neuron prune: killed {killed} neurons")
+        return killed
 
     def _kill(self, undo):
         """Remove lowest-energy internal neuron."""
