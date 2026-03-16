@@ -3,251 +3,250 @@ Self-Wiring Graph Network
 ==========================
 Flat graph with ternary mask and capacitor neurons.
 Gradient-free: learns via mutation + selection.
+Pure numpy + random. Zero dependencies.
 
-Architecture:
-  - Ternary mask (int8): -1 (inhibit), 0 (none), +1 (excite)
-  - Fixed gain = 2.0 (proven optimal over learnable/binary/ternary/dynamic)
-  - Capacitor neuron: charge accumulates, leaks, fires above threshold
-  - Split I/O: first V = input, last V = output
-  - 2D mood: co-evolved mutation controller (scout/rewirer/refiner/pruner)
-  - Connection budget: optional cap, add becomes replace when full
-  - Learnable leak: co-evolves with mask, converges ~0.98 within ~500 att
-  - Sparse CSR matmul: 14x speedup at V=128 (94% of mask is zero)
-
-Learnable parameters:
-  mask (int8 NxN):  topology — the ONLY matrix
-  mood_x (float):   mutation type (scout/rewirer/refiner)
-  mood_z (float):   mutation intensity (1-15 changes per attempt)
-  leak (float):     capacitor decay rate
-
-Fixed constants (all sweep-validated):
-  gain = 2.0, threshold = 0.5, charge_rate = 0.3, self_conn = 0.1
+The ONLY learnable matrix is the int8 mask {-1, 0, +1}.
+Mutations sample from an O(1) alive-edge cache; the remaining learned knobs
+are small co-evolved int controller params.
 """
 
 import numpy as np
 import random
-from scipy import sparse
 
 
 class SelfWiringGraph:
-    """Flat graph network with capacitor neuron dynamics."""
 
-    # Fixed constants (sweep-validated, do not change)
-    gain = 2.0
-    charge_rate = 0.3
-    self_conn = 0.1
-    clip_factor = 2.0
+    # All constants sweep-validated and locked in
+    NV_RATIO = 3       # neurons per vocab unit
+    DENSITY = 4        # init density in percent (4% = 0.04)
+    DRIVE = 0.6        # GAIN(2) × CHARGE_RATE(0.3)
+    THRESHOLD = 0.5    # firing threshold
+    # Mutation int fractions: PATIENCE 7/20, LOSS_DRIFT 1/5, SHRINK 7/10, LOSS_STEP +-3
 
-    def __init__(self, n_neurons, vocab, density=0.06, flip_rate=0.30,
-                 threshold=0.5, leak=0.85, io_mode='split',
-                 conn_budget=0):
-        self.N = n_neurons
-        self.V = vocab
-        self.io_mode = io_mode
-        self.flip_rate = flip_rate
-        self.threshold = threshold
-        self.leak = leak
-
-        # Output zone
-        if io_mode == 'split' and n_neurons >= 2 * vocab:
-            self.out_start = n_neurons - vocab
+    def __init__(self, *args, **_):
+        # SelfWiringGraph(64) or SelfWiringGraph(192, 64)
+        if len(args) == 1:
+            vocab = args[0]
         else:
-            self.io_mode = 'shared'
-            self.out_start = 0
+            _, vocab = args[0], args[1]
+        self.V = vocab
+        self.N = vocab * self.NV_RATIO
 
-        # Ternary mask: -1/0/+1 (the ONLY learnable matrix)
-        r = np.random.rand(n_neurons, n_neurons)
-        self.mask = np.zeros((n_neurons, n_neurons), dtype=np.int8)
-        self.mask[r < density / 2] = -1
-        self.mask[r > 1 - density / 2] = 1
+        # Split I/O: first V = input, last V = output
+        self.out_start = self.N - vocab if self.N >= 2 * vocab else 0
+
+        # Mask: float32 with baked DRIVE {-0.6, 0, +0.6}
+        # No post-multiply needed — matmul gives final signal directly
+        d = self.DENSITY / 100
+        r = np.random.rand(self.N, self.N)
+        self.mask = np.zeros((self.N, self.N), dtype=np.float32)
+        self.mask[r < d / 2] = -self.DRIVE
+        self.mask[r > 1 - d / 2] = self.DRIVE
         np.fill_diagonal(self.mask, 0)
 
+        # Alive edges: list for O(1) random pick, set for O(1) undo
+        rows, cols = np.where(self.mask != 0)
+        self.alive = list(zip(rows.tolist(), cols.tolist()))
+        self.alive_set = set(self.alive)
+
         # Persistent state
-        self.state = np.zeros(n_neurons, dtype=np.float32)
-        self.charge = np.zeros(n_neurons, dtype=np.float32)
+        self.state = np.zeros(self.N, dtype=np.float32)
+        self.charge = np.zeros(self.N, dtype=np.float32)
 
-        # Connection budget (0 = unlimited)
-        self.conn_budget = conn_budget
-
-        # 2D mood: controls mutation type and intensity across 4 expert zones
-        self.mood_x = 0.5
-        self.mood_z = 0.5
-
-        # Sparse CSR cache (rebuilt after mask mutation)
-        self._weff_dirty = True
-        self._Weff_csr = None
-
-    def _rebuild_weff(self):
-        """Rebuild sparse CSR weight matrix from mask."""
-        self._Weff_csr = sparse.csr_matrix(
-            self.mask.astype(np.float32) * self.gain)
-        self._weff_dirty = False
+        # Co-evolved learned params (all int8)
+        self.loss_pct = np.int8(15)    # 1-50, charge loses loss% per tick
+        self.signal = np.int8(0)       # Q1: 0=structural, 1=signal-only (flip)
+        self.grow = np.int8(1)         # Q2: 0=shrink, 1=grow (only if structural)
+        self.intensity = np.int8(7)    # 1-15, n_changes per mutation
 
     def reset(self):
         self.state *= 0
         self.charge *= 0
 
-    def forward(self, world, ticks=8):
-        """Single-input forward pass with capacitor dynamics."""
-        if self._weff_dirty:
-            self._rebuild_weff()
-        act = self.state.copy()
-        clip_bound = self.threshold * self.clip_factor
+    @property
+    def retention(self):
+        return (100 - int(self.loss_pct)) * 0.01
 
+    def forward(self, world, ticks=8):
+        """Single-input forward pass."""
+        act = self.state.copy()
+        retain = float(self.retention)
         for t in range(ticks):
             if t == 0:
                 act[:self.V] = world
-            raw = np.asarray(act @ self._Weff_csr) + act * self.self_conn
+            raw = act @ self.mask
             np.nan_to_num(raw, copy=False, nan=0.0, posinf=0.0, neginf=0.0)
-            self.charge += raw * self.charge_rate
-            self.charge *= self.leak
-            act = np.maximum(self.charge - self.threshold, 0.0)
-            self.charge = np.clip(self.charge, -clip_bound, clip_bound)
-
+            self.charge += raw
+            self.charge *= retain
+            act = np.maximum(self.charge - self.THRESHOLD, 0.0)
+            self.charge = np.clip(self.charge, -1.0, 1.0)
         self.state = act.copy()
         return self.charge[self.out_start:self.out_start + self.V]
 
     def forward_batch(self, ticks=8):
         """Batch forward: all V inputs simultaneously. Returns (V, V) logits."""
-        if self._weff_dirty:
-            self._rebuild_weff()
         V, N = self.V, self.N
-        clip_bound = self.threshold * self.clip_factor
         charges = np.zeros((V, N), dtype=np.float32)
         acts = np.zeros((V, N), dtype=np.float32)
-
+        retain = float(self.retention)
         for t in range(ticks):
             if t == 0:
                 acts[:, :V] = np.eye(V, dtype=np.float32)
-            raw = np.asarray(acts @ self._Weff_csr) + acts * self.self_conn
+            raw = acts @ self.mask
             np.nan_to_num(raw, copy=False, nan=0.0, posinf=0.0, neginf=0.0)
-            charges += raw * self.charge_rate
-            charges *= self.leak
-            acts = np.maximum(charges - self.threshold, 0.0)
-            charges = np.clip(charges, -clip_bound, clip_bound)
-
+            charges += raw
+            charges *= retain
+            acts = np.maximum(charges - self.THRESHOLD, 0.0)
+            charges = np.clip(charges, -1.0, 1.0)
         return charges[:, self.out_start:self.out_start + V]
 
+    def resync_alive(self):
+        """Rebuild alive list+set from mask. Call after direct mask writes."""
+        rows, cols = np.where(self.mask != 0)
+        self.alive = list(zip(rows.tolist(), cols.tolist()))
+        self.alive_set = set(self.alive)
+
     def count_connections(self):
-        return int((self.mask != 0).sum())
+        return len(self.alive)
 
     def pos_neg_ratio(self):
-        return int((self.mask > 0).sum()), int((self.mask < 0).sum())
-
-    def memory_bytes(self):
-        """Model size: 2 bits per connection (ternary mask only)."""
-        return self.count_connections() * 2 // 8
+        pos = sum(1 for r, c in self.alive if self.mask[r, c] > 0)
+        return pos, len(self.alive) - pos
 
     # --- State management ---
 
     def save_state(self):
+        """Save only what affects the forward pass.
+        Strategy bits (signal, grow, intensity) are NOT saved —
+        they survive rejects and learn through differential survival."""
         return {
             'mask': self.mask.copy(),
+            'alive': self.alive.copy(),
+            'alive_set': self.alive_set.copy(),
             'state': self.state.copy(),
             'charge': self.charge.copy(),
-            'mood_x': self.mood_x,
-            'mood_z': self.mood_z,
-            'leak': self.leak,
+            'loss_pct': np.int8(self.loss_pct),
         }
 
     def restore_state(self, s):
+        """Revert forward-pass state. Strategy bits untouched."""
         self.mask[:] = s['mask']
+        if 'alive' in s:
+            self.alive = s['alive'].copy()
+            self.alive_set = s.get('alive_set', set(self.alive)).copy()
+        else:
+            self.resync_alive()
         self.state[:] = s['state']
         self.charge[:] = s['charge']
-        self.mood_x = s['mood_x']
-        self.mood_z = s['mood_z']
-        self.leak = s['leak']
-        self._weff_dirty = True
+        self.loss_pct = np.int8(s.get('loss_pct', s.get('loss', 15)))
 
-    # --- Mutation operators ---
+    def replay(self, log):
+        """Repeat logged ops in reverse = undo. O(changes) + O(alive) list rebuild.
+        Flip = repeat (mask only). Structural ops update mask + set, list rebuilt once."""
+        has_structural = False
+        for entry in reversed(log):
+            op = entry[0]
+            if op == 'F':
+                self.mask[entry[1], entry[2]] *= -1
+            elif op == 'A':
+                r, c = entry[1], entry[2]
+                self.mask[r, c] = 0
+                self.alive_set.discard((r, c))
+                has_structural = True
+            elif op == 'R':
+                r, c = entry[1], entry[2]
+                self.mask[r, c] = entry[3]
+                self.alive_set.add((r, c))
+                has_structural = True
+            elif op == 'W':
+                _, r, c_old, c_new = entry
+                sign = self.mask[r, c_new]
+                self.mask[r, c_new] = 0
+                self.mask[r, c_old] = sign
+                self.alive_set.discard((r, c_new))
+                self.alive_set.add((r, c_old))
+                has_structural = True
+        if has_structural:
+            self.alive = list(self.alive_set)
 
-    def mutate_with_mood(self):
-        """2D mood-driven mutation + learnable leak.
+    # --- Mutation ---
 
-        mood_x zones:
-          [0.00, 0.25): scout   -> mostly add
-          [0.25, 0.50): rewirer -> mostly rewire
-          [0.50, 0.75): refiner -> mostly flip
-          [0.75, 1.00]: pruner  -> mostly remove
+    def mutate(self):
+        """Decoupled strategy mutation: mask/loss revert, strategy survives.
+
+        Strategy bits (signal, grow, intensity) are NOT reverted on reject.
+        Only mask + loss_pct revert on reject (they affect the forward pass).
+        Strategy updates happen through slower differential survival across
+        multiple attempts rather than per-attempt scalar reversion.
+
+        Decision tree:
+          Q1 signal? → YES: flip only (CHEAP)
+                       NO:  structural
+                            Q2 grow? → YES: add
+                                       NO:  remove/rewire
         """
-        # Mood mutation
-        if random.random() < 0.2:
-            self.mood_x = np.clip(self.mood_x + random.gauss(0, 0.15), 0.0, 1.0)
-        if random.random() < 0.2:
-            self.mood_z = np.clip(self.mood_z + random.gauss(0, 0.15), 0.0, 1.0)
+        # Intensity drift (survives rejects) — 7/20 chance
+        if random.randint(1, 20) <= 7:
+            self.intensity = np.int8(max(1, min(15, int(self.intensity) + random.choice([-1, 1]))))
 
-        # Leak mutation
-        if random.random() < 0.2:
-            self.leak = np.clip(self.leak + random.gauss(0, 0.03), 0.5, 0.99)
+        # Loss step (reverts with mask on reject) — 1/5 chance
+        if random.randint(1, 5) == 1:
+            self.loss_pct = np.int8(max(1, min(50, int(self.loss_pct) + random.randint(-3, 3))))
 
-        # Mask mutation (4 mood zones: scout/rewirer/refiner/pruner)
-        n_changes = max(1, int(1 + self.mood_z * 14))
-        for _ in range(n_changes):
-            if self.mood_x < 0.25:
-                if random.random() < 0.7:
-                    self._add_connection()
-                else:
-                    self._flip_connection()
-            elif self.mood_x < 0.50:
-                r = random.random()
-                if r < 0.6:
-                    self._rewire_connection()
-                elif r < 0.8:
-                    self._flip_connection()
-                else:
-                    self._add_connection()
-            elif self.mood_x < 0.75:
-                if random.random() < 0.8:
-                    self._flip_connection()
-                else:
-                    self._rewire_connection()
-            else:
-                r = random.random()
-                if r < 0.7:
-                    self._remove_connection()
-                elif r < 0.9:
-                    self._flip_connection()
-                else:
-                    self._rewire_connection()
+        # Mask mutations using current strategy — returns undo log
+        undo = []
+        for _ in range(int(self.intensity)):
+            if self.signal:  # Q1: signal-only → flip (CHEAP)
+                self._flip(undo)
+            else:            # structural change
+                if self.grow:    # Q2: grow → add
+                    self._add(undo)
+                else:            # shrink → 7/10 remove, 3/10 rewire
+                    if random.randint(1, 10) <= 7:
+                        self._remove(undo)
+                    else:
+                        self._rewire(undo)
+        return undo
 
-        self._weff_dirty = True
+    def _add(self, undo):
+        r, c = random.randint(0, self.N-1), random.randint(0, self.N-1)
+        if r != c and self.mask[r, c] == 0:
+            self.mask[r, c] = self.DRIVE if random.randint(0, 1) else -self.DRIVE
+            self.alive.append((r, c))
+            self.alive_set.add((r, c))
+            undo.append(('A', r, c))
 
-    def _add_connection(self):
-        # If at budget, remove a random connection first (replace)
-        if self.conn_budget > 0:
-            alive = np.argwhere(self.mask != 0)
-            if len(alive) >= self.conn_budget:
-                j = alive[random.randint(0, len(alive) - 1)]
-                self.mask[j[0], j[1]] = 0
+    def _flip(self, undo):
+        if self.alive:
+            idx = random.randint(0, len(self.alive)-1)
+            r, c = self.alive[idx]
+            self.mask[r, c] *= -1
+            undo.append(('F', r, c))
 
-        dead = np.argwhere(self.mask == 0)
-        dead = dead[dead[:, 0] != dead[:, 1]]
-        if len(dead) > 0:
-            i = dead[random.randint(0, len(dead) - 1)]
-            self.mask[i[0], i[1]] = 1 if random.random() > 0.5 else -1
+    def _remove(self, undo):
+        if self.alive:
+            idx = random.randint(0, len(self.alive)-1)
+            r, c = self.alive[idx]
+            old_sign = self.mask[r, c]
+            self.mask[r, c] = 0
+            self.alive[idx] = self.alive[-1]
+            self.alive.pop()
+            self.alive_set.discard((r, c))
+            undo.append(('R', r, c, old_sign))
 
-    def _flip_connection(self):
-        alive = np.argwhere(self.mask != 0)
-        if len(alive) > 0:
-            i = alive[random.randint(0, len(alive) - 1)]
-            self.mask[i[0], i[1]] *= -1
-
-    def _remove_connection(self):
-        alive = np.argwhere(self.mask != 0)
-        if len(alive) > 0:
-            i = alive[random.randint(0, len(alive) - 1)]
-            self.mask[i[0], i[1]] = 0
-
-    def _rewire_connection(self):
-        alive = np.argwhere(self.mask != 0)
-        if len(alive) > 0:
-            i = alive[random.randint(0, len(alive) - 1)]
-            old = self.mask[i[0], i[1]]
-            self.mask[i[0], i[1]] = 0
-            nc = random.randint(0, self.N - 1)
-            while nc == i[0]:
-                nc = random.randint(0, self.N - 1)
-            self.mask[i[0], nc] = old
+    def _rewire(self, undo):
+        if self.alive:
+            idx = random.randint(0, len(self.alive)-1)
+            r, c = self.alive[idx]
+            nc = random.randint(0, self.N-1)
+            if nc != r and nc != c and self.mask[r, nc] == 0:
+                old = self.mask[r, c]
+                self.mask[r, c] = 0
+                self.mask[r, nc] = old
+                self.alive[idx] = (r, nc)
+                self.alive_set.discard((r, c))
+                self.alive_set.add((r, nc))
+                undo.append(('W', r, c, nc))
 
 
 def softmax(x):
@@ -255,48 +254,49 @@ def softmax(x):
     return e / e.sum()
 
 
-def train(net, inputs, targets, vocab, max_attempts=8000, ticks=8,
+def train(net, targets, vocab, max_attempts=8000, ticks=8,
           stale_limit=6000, verbose=True):
-    """Train via mutation + selection using 2D mood + learnable leak."""
+    """Train via mutation + selection."""
 
     def evaluate():
         logits = net.forward_batch(ticks)
         e = np.exp(logits - logits.max(axis=1, keepdims=True))
         probs = e / e.sum(axis=1, keepdims=True)
-        preds = np.argmax(probs, axis=1)
         V = min(vocab, net.V)
-        acc = (preds[:V] == targets[:V]).mean()
+        acc = (np.argmax(probs, axis=1)[:V] == targets[:V]).mean()
         tp = probs[np.arange(V), targets[:V]].mean()
         return 0.5 * acc + 0.5 * tp
 
     score = evaluate()
     best = score
-    kept = 0
     stale = 0
 
     for att in range(max_attempts):
-        state = net.save_state()
-        net.mutate_with_mood()
+        old_loss = int(net.loss_pct)
+        undo = net.mutate()
         new_score = evaluate()
 
         if new_score > score:
             score = new_score
-            kept += 1
-            stale = 0
             best = max(best, score)
+            stale = 0
         else:
-            net.restore_state(state)
+            net.replay(undo)
+            net.loss_pct = np.int8(old_loss)
             stale += 1
+            # Strategy failed → reconsider (flip on reject)
+            if random.randint(1, 20) <= 7:  # 7/20 = 0.35
+                net.signal = np.int8(1 - int(net.signal))
+            if random.randint(1, 20) <= 7:
+                net.grow = np.int8(1 - int(net.grow))
 
         if verbose and (att + 1) % 1000 == 0:
-            pos, neg = net.pos_neg_ratio()
-            print(f"  [{att+1:5d}] Acc: {best*100:5.1f}% | "
-                  f"Conns: {net.count_connections():4d} (+:{pos} -:{neg}) | "
-                  f"Kept: {kept:3d} | Leak: {net.leak:.4f}")
+            mode = "SIGNAL" if net.signal else ("GROW" if net.grow else "SHRINK")
+            print(f"  [{att+1:5d}] Score: {best*100:5.1f}% | "
+                  f"Conns: {net.count_connections():4d} | {mode} int={int(net.intensity)} | "
+                  f"Loss: {int(net.loss_pct)}%")
 
-        if best >= 0.99:
-            break
-        if stale >= stale_limit:
+        if best >= 0.99 or stale >= stale_limit:
             break
 
-    return best, kept
+    return best

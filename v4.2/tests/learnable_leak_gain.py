@@ -80,7 +80,7 @@ def run_one(mode, seed, log_q=None):
         if s > score:
             score = s; best_acc = max(best_acc, a)
         else:
-            net.mask = sm; net.mood_x = mx_s; net.mood_z = mz_s
+            net.mask = sm; net.resync_alive(); net.mood_x = mx_s; net.mood_z = mz_s
             lk = lk_s; gn = gn_s
 
     log_msg(log_q, f"{mode:15s} seed={seed:3d} acc={best_acc*100:5.1f}% "

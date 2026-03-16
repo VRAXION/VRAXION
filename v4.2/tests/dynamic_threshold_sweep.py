@@ -67,7 +67,7 @@ def run_one(mode, C, seed, log_q=None):
         if s > score:
             score = s; best_acc = max(best_acc, a)
         else:
-            net.mask = sm
+            net.mask = sm; net.resync_alive()
             if mode == 'static':
                 net.W_strong = sw
             net.mood_x = mx_s; net.mood_z = mz_s

@@ -1,6 +1,10 @@
 __pycache__/
 *.py[cod]
 *.pyo
+*.exe
+*.dll
+*.bin
+_probe_bins/
 
 # Virtual envs
 .venv/

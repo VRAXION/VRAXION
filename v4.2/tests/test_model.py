@@ -1,7 +1,7 @@
 """
-Adversarial Stress Test — 12 probes for SelfWiringGraph
+Adversarial Stress Test — 13 probes for SelfWiringGraph
 =========================================================
-All 12 must PASS for the model to be considered valid.
+All 13 must PASS for the model to be considered valid.
 """
 
 import sys, os
@@ -43,7 +43,7 @@ def main():
         score_best = 0.0
         for att in range(2000):
             sm = net.mask.copy()
-            net.mutate_with_mood()
+            net.mutate()
             logits = net.forward_batch(ticks=8)
             e = np.exp(logits - logits.max(axis=1, keepdims=True))
             probs = e / e.sum(axis=1, keepdims=True)
@@ -52,7 +52,7 @@ def main():
             tp = probs[np.arange(16), perm].mean()
             sc = 0.5*acc + 0.5*tp
             if sc > score_best: score_best = sc
-            else: net.mask = sm
+            else: net.mask = sm; net.resync_alive()
         r = result(PASS if score_best > 0.05 else WARN,
                    f"V=N=16: {score_best*100:.1f}%")
     except Exception as ex:
@@ -67,7 +67,7 @@ def main():
     acc_best = 0.0
     for att in range(3000):
         sm = net.mask.copy()
-        net.mutate_with_mood()
+        net.mutate()
         logits = net.forward_batch(ticks=8)
         e = np.exp(logits - logits.max(axis=1, keepdims=True))
         probs = e / e.sum(axis=1, keepdims=True)
@@ -75,7 +75,7 @@ def main():
         tp = probs[np.arange(16), identity].mean()
         sc = 0.5*acc + 0.5*tp
         if sc > 0: acc_best = max(acc_best, acc)
-        else: net.mask = sm
+        else: net.mask = sm; net.resync_alive()
     r = result(PASS if acc_best > 0.5 else WARN, f"Identity: {acc_best*100:.1f}%")
     results.append(("Identity perm", r))
 
@@ -90,13 +90,13 @@ def main():
         net = SelfWiringGraph(80, 16)
         for att in range(2000):
             sm = net.mask.copy()
-            net.mutate_with_mood()
+            net.mutate()
             logits = net.forward_batch(ticks=8)
             e = np.exp(logits - logits.max(axis=1, keepdims=True))
             probs = e / e.sum(axis=1, keepdims=True)
             acc = (np.argmax(probs, axis=1) == perm).mean()
             if acc > 0: pass
-            else: net.mask = sm
+            else: net.mask = sm; net.resync_alive()
         print(f"    {name}: OK")
     r = result(PASS, "All adversarial perms trained without crash")
     results.append(("Adversarial perms", r))
@@ -145,8 +145,8 @@ def main():
         net.reset()
         logits = net.forward(np.array([1.0], dtype=np.float32), ticks=8)
         logits_b = net.forward_batch(ticks=8)
-        net.mutate_with_mood()
-        net.mutate_with_mood()
+        net.mutate()
+        net.mutate()
         r = result(PASS, "V=1 N=1 works")
     except Exception as ex:
         r = result(FAIL, f"Crashed: {ex}")
@@ -172,10 +172,10 @@ def main():
     header(9, "Mutation determinism")
     np.random.seed(99); random.seed(99)
     net1 = SelfWiringGraph(48, 16)
-    for _ in range(100): net1.mutate_with_mood()
+    for _ in range(100): net1.mutate()
     np.random.seed(99); random.seed(99)
     net2 = SelfWiringGraph(48, 16)
-    for _ in range(100): net2.mutate_with_mood()
+    for _ in range(100): net2.mutate()
     ok = np.array_equal(net1.mask, net2.mask)
     r = result(PASS if ok else FAIL, f"Deterministic: {ok}")
     results.append(("Determinism", r))
@@ -199,7 +199,7 @@ def main():
     net = SelfWiringGraph(64, 16, density=0.3)
     net.reset()
     logits = net.forward(np.zeros(16, dtype=np.float32), ticks=1000)
-    ok = np.all(np.isfinite(logits)) and np.abs(net.charge).max() <= net.threshold * net.clip_factor + 0.01
+    ok = np.all(np.isfinite(logits)) and np.abs(net.charge).max() <= 1.01
     r = result(PASS if ok else FAIL, f"Charge bounded: {ok}")
     results.append(("Charge explosion", r))
 
@@ -210,18 +210,36 @@ def main():
     net.forward(np.zeros(16, dtype=np.float32), ticks=8)
     state = net.save_state()
     net.mask[:] = -1; net.state[:] = 42; net.charge[:] = 100
-    net.mood_x = 0.0; net.mood_z = 0.0; net.leak = 0.5
+    net.signal = 1; net.grow = 0; net.intensity = 1; net.loss_pct = 50
     net.restore_state(state)
+    # Only mask+loss_pct revert. Strategy bits (signal, grow, intensity) survive.
     ok = (np.array_equal(net.mask, state['mask']) and
           np.array_equal(net.state, state['state']) and np.array_equal(net.charge, state['charge']) and
-          net.mood_x == state['mood_x'] and net.mood_z == state['mood_z'] and
-          net.leak == state['leak'])
+          net.loss_pct == state['loss_pct'] and
+          net.signal == 1 and net.grow == 0 and net.intensity == 1)  # NOT reverted
     # Deep copy check
     state['mask'][0, 0] = 99
     deep_ok = net.mask[0, 0] != 99
     r = result(PASS if ok and deep_ok else FAIL,
                f"Bitwise restore: {ok}, deep copy: {deep_ok}")
     results.append(("Save/restore", r))
+
+    # PROBE 13: Alive cache coherence after direct mask restore
+    header(13, "Alive cache coherence after direct mask restore")
+    np.random.seed(SEED); random.seed(SEED)
+    net = SelfWiringGraph(64, 16)
+    sm = net.mask.copy()
+    for _ in range(32):
+        net.mutate()
+    net.mask = sm; net.resync_alive()
+    alive_set = set(net.alive)
+    mask_set = set(zip(*np.where(net.mask != 0)))
+    count_ok = len(net.alive) == int((net.mask != 0).sum())
+    cells_ok = alive_set == mask_set
+    diag_ok = all(r != c for r, c in net.alive)
+    r = result(PASS if count_ok and cells_ok and diag_ok else FAIL,
+               f"count={count_ok}, cells={cells_ok}, diag={diag_ok}")
+    results.append(("Alive cache coherence", r))
 
     # SUMMARY
     print(f"\n{'='*60}")
