@@ -1,12 +1,13 @@
 """
-Self-Wiring Graph Network v4.3 — Dynamic Growth
-=================================================
+Self-Wiring Graph Network v4.3 — Dynamic Growth + Learnable Strategy
+=====================================================================
 Everything from v4.2 PLUS:
 - Dynamic N (pre-allocated N_MAX, active sub-region)
 - Energy-guided chain detection (follow the signal highways)
 - Chain spawn: clone/anti/split variants of high-energy chains
 - Neuron sculpting: kill low-energy neurons
-- Q3 growth_type bit in decision tree
+- Learnable strategy weights: bandit-style action selection
+  replaces Q1/Q2/Q3 decision tree with softmax over 7 actions
 
 EXPERIMENTAL — not yet sweep-validated.
 """
@@ -25,8 +26,12 @@ class SelfWiringGraph:
     SELF_CONN = 0.05
     THRESHOLD = 0.5
     CLIP_BOUND = 1.0
-    PATIENCE = 0.35
     LOSS_DRIFT = 0.2
+    STRAT_REWARD = 2     # int8 bump on accept
+    STRAT_PENALTY = 1    # int8 drop on reject
+    # Action indices: 0=FLIP 1=ADD 2=SPLIT 3=ANTI 4=REMOVE 5=REWIRE 6=KILL
+    N_ACTIONS = 7
+    ACTION_NAMES = ['FLIP', 'ADD', 'SPLIT', 'ANTI', 'REMOVE', 'REWIRE', 'KILL']
 
     def __init__(self, *args, density=0.06):
         if len(args) == 1:
@@ -59,12 +64,13 @@ class SelfWiringGraph:
         # Energy per neuron (updated after each forward_batch)
         self.energy = np.zeros(self.N_MAX, dtype=np.float32)
 
-        # Co-evolved learned params (all int8)
+        # Co-evolved learned params
         self.loss_pct = np.int8(15)
-        self.signal = np.int8(0)       # Q1: 0=structural, 1=signal
-        self.grow = np.int8(1)         # Q2: 0=shrink, 1=grow
-        self.growth_type = np.int8(0)  # Q3: 0=micro, 1=split, 2=anti
         self.intensity = np.int8(7)
+        # Learnable strategy weights — one int8 per action, starts uniform
+        # [FLIP, ADD, SPLIT, ANTI, REMOVE, REWIRE, KILL]
+        self.strat_w = np.zeros(self.N_ACTIONS, dtype=np.int8)
+        self.last_action = 0  # track last chosen action for bandit update
 
     def reset(self):
         self.state[:self.N] *= 0
@@ -304,6 +310,7 @@ class SelfWiringGraph:
             'state': self.state[:N].copy(),
             'charge': self.charge[:N].copy(),
             'loss_pct': np.int8(self.loss_pct),
+            'strat_w': self.strat_w.copy(),
             'N': N,
         }
 
@@ -322,6 +329,8 @@ class SelfWiringGraph:
         self.state[:old_N] = s['state']
         self.charge[:old_N] = s['charge']
         self.loss_pct = np.int8(s.get('loss_pct', 15))
+        if 'strat_w' in s:
+            self.strat_w = s['strat_w'].copy()
 
     def replay(self, log):
         """Undo logged ops. Handles neuron growth/kill too."""
@@ -370,37 +379,54 @@ class SelfWiringGraph:
 
     # --- Mutation ---
 
+    def _sample_action(self):
+        """Sample mutation action from softmax(strat_w). Returns action index."""
+        w = self.strat_w.astype(np.float32)
+        w = np.exp(w - w.max())  # stable softmax
+        p = w / w.sum()
+        return int(np.random.choice(self.N_ACTIONS, p=p))
+
+    _ACTION_DISPATCH = {
+        0: '_flip', 1: '_add', 2: '_split', 3: '_anti',
+        4: '_remove', 5: '_rewire', 6: '_kill',
+    }
+
     def mutate(self):
-        """Extended decision tree with Q3 growth_type."""
-        # Intensity drift
-        if random.random() < self.PATIENCE:
+        """Bandit-style: sample action from learnable strat_w, repeat intensity times."""
+        # Intensity drift (small random walk, independent of strategy)
+        if random.random() < self.LOSS_DRIFT:
             self.intensity = np.int8(max(1, min(15, int(self.intensity) + random.choice([-1, 1]))))
 
         # Loss step
         if random.random() < self.LOSS_DRIFT:
             self.loss_pct = np.int8(max(1, min(50, int(self.loss_pct) + random.randint(-3, 3))))
 
+        # Sample one action for this mutation round
+        action = self._sample_action()
+        self.last_action = action
+        op_name = self._ACTION_DISPATCH[action]
+
         undo = []
+        op = getattr(self, op_name)
         for _ in range(int(self.intensity)):
-            if self.signal:         # Q1: signal → flip
-                self._flip(undo)
-            else:                   # structural
-                if self.grow:       # Q2: grow
-                    gt = int(self.growth_type)
-                    if gt == 0:
-                        self._add(undo)        # MICRO
-                    elif gt == 1:
-                        self._split(undo)      # SPLIT (NEAT-style)
-                    else:
-                        self._anti(undo)       # ANTI (original)
-                else:               # shrink
-                    if random.random() < 0.5:
-                        self._remove(undo)
-                    elif random.random() < 0.5:
-                        self._rewire(undo)
-                    else:
-                        self._kill(undo)       # KILL neuron
+            op(undo)
         return undo
+
+    def reward_action(self):
+        """Bandit accept: boost weight of last chosen action."""
+        a = self.last_action
+        self.strat_w[a] = np.int8(min(127, int(self.strat_w[a]) + self.STRAT_REWARD))
+
+    def punish_action(self):
+        """Bandit reject: decrease weight of last chosen action."""
+        a = self.last_action
+        self.strat_w[a] = np.int8(max(-128, int(self.strat_w[a]) - self.STRAT_PENALTY))
+
+    def strat_probs(self):
+        """Return current action probabilities (for logging)."""
+        w = self.strat_w.astype(np.float32)
+        w = np.exp(w - w.max())
+        return w / w.sum()
 
     def mutate_with_mood(self):
         return self.mutate()
@@ -691,7 +717,7 @@ def softmax(x):
 
 def train(net, targets, vocab, max_attempts=8000, ticks=8,
           stale_limit=6000, verbose=True):
-    """Train with extended decision tree (Q1+Q2+Q3)."""
+    """Train with bandit-style learnable mutation strategy."""
 
     def evaluate():
         logits = net.forward_batch(ticks)
@@ -716,27 +742,25 @@ def train(net, targets, vocab, max_attempts=8000, ticks=8,
             score = new_score
             best = max(best, score)
             stale = 0
+            net.reward_action()   # bandit: reinforce what worked
         else:
             net.replay(undo)
             net.loss_pct = np.int8(old_loss)
             if net.N != old_N:
-                # replay should have fixed it, but safety
                 net.N = old_N
             stale += 1
-            # Strategy flip on reject
-            if random.random() < net.PATIENCE:
-                net.signal = np.int8(1 - int(net.signal))
-            if random.random() < net.PATIENCE:
-                net.grow = np.int8(1 - int(net.grow))
-            if random.random() < net.PATIENCE:
-                net.growth_type = np.int8(random.randint(0, 2))
+            net.punish_action()   # bandit: discourage what failed
 
         if verbose and (att + 1) % 1000 == 0:
-            gt = ['MICRO', 'SPLIT', 'ANTI'][int(net.growth_type)]
-            mode = "SIGNAL" if net.signal else ("GROW/" + gt if net.grow else "SHRINK")
+            probs = net.strat_probs()
+            top = int(np.argmax(probs))
+            mode = net.ACTION_NAMES[top]
+            sw = ' '.join(f'{net.ACTION_NAMES[i]}:{int(net.strat_w[i]):+d}'
+                          for i in range(net.N_ACTIONS))
             print(f"  [{att+1:5d}] Score: {best*100:5.1f}% | "
-                  f"N={net.N} Conns={net.count_connections()} | {mode} | "
-                  f"Loss: {int(net.loss_pct)}%")
+                  f"N={net.N} Conns={net.count_connections()} | "
+                  f"Fav={mode}({probs[top]*100:.0f}%) | "
+                  f"Loss: {int(net.loss_pct)}% | W=[{sw}]")
 
         if best >= 0.99 or stale >= stale_limit:
             break
