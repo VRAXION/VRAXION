@@ -24,7 +24,7 @@
 #endif
 
 #ifndef RNG_SEED_MODE
-#define RNG_SEED_MODE 1  /* hash seed for better distribution */
+#define RNG_SEED_MODE 0  /* raw MT seed by default; seed mixing stays probe-only */
 #endif
 
 #ifndef VERBOSE_DEFAULT
