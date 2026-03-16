@@ -77,6 +77,13 @@ static uint32_t mt_rand(Net *n) {
     return y;
 }
 
+/* numpy-compatible rand(): 53-bit float from 2 MT outputs */
+static double mt_rand_float(Net *n) {
+    uint32_t a = mt_rand(n) >> 5;   /* 27 bits */
+    uint32_t b = mt_rand(n) >> 6;   /* 26 bits */
+    return ((double)a * 67108864.0 + (double)b) / 9007199254740992.0;
+}
+
 static uint32_t init_rng_state(uint32_t seed) {
 #if RNG_SEED_MODE == 0
     return seed;
@@ -127,14 +134,16 @@ int net_init(Net *n, int vocab, uint32_t seed) {
     if (!n->mask || !n->charges || !n->acts || !n->raw ||
         !n->alive_r || !n->alive_c || !n->alive_s) return -1;
 
+    /* numpy-compatible mask init: rand_float() consumes 2 MT per cell */
     int N = n->N;
     for (int i = 0; i < N; i++)
         for (int j = 0; j < N; j++) {
-            if (i == j) continue;
-            int r = ri(n, 0, 9999);
+            if (i == j) { mt_rand_float(n); continue; } /* consume RNG like numpy */
+            double r = mt_rand_float(n);
             float val = 0;
-            if (r < DENSITY_PCT * 100 / 2) val = -DRIVE;
-            else if (r >= 10000 - DENSITY_PCT * 100 / 2) val = DRIVE;
+            double d = DENSITY_PCT / 100.0;
+            if (r < d / 2) val = -DRIVE;
+            else if (r > 1.0 - d / 2) val = DRIVE;
             if (val != 0) {
                 n->mask[i * N + j] = val;
                 n->alive_r[n->alive_n] = i;
