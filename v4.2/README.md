@@ -18,6 +18,11 @@ This directory contains the active self-wiring graph line.
 - `tests/sparse_scaling_benchmark.py`: sparse-forward scaling benchmark
 - `tests/graph_v3_probe.py`: compare and inspect the C path
 
+## Test Layout Notes
+
+- `tests/fixtures/`: frozen replay assets used by deterministic replay checks
+- `tests/gpu_experimental/`: isolated GPU prototype and plateau-study scripts
+
 ## Intentionally Excluded From Clean Main
 
 The previous `surprise` learning path was removed from this cleaned main candidate.

@@ -26,7 +26,7 @@ from dataclasses import dataclass
 import numpy as np
 import torch
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
 
 from lib.log import live_log, log_msg
 from tests.gpu_backend_ab import (

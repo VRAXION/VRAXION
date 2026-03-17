@@ -2,8 +2,11 @@
 This isolates whether the gap is in mutation SELECTION or forward/eval."""
 import sys, os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
+from pathlib import Path
 import numpy as np, random, json
 from model.graph import SelfWiringGraph
+
+FIXTURE_DIR = Path(__file__).resolve().parent / "fixtures"
 
 V, N = 64, 192
 np.random.seed(42); random.seed(42)
@@ -11,8 +14,9 @@ net = SelfWiringGraph(V)
 perm = np.random.permutation(V)
 
 # Dump init mask
-net.mask.tofile('tests/frozen_mask_v64.bin')
-perm.astype(np.int32).tofile('tests/frozen_targets_v64.bin')
+FIXTURE_DIR.mkdir(exist_ok=True)
+net.mask.tofile(FIXTURE_DIR / 'frozen_mask_v64.bin')
+perm.astype(np.int32).tofile(FIXTURE_DIR / 'frozen_targets_v64.bin')
 
 # Run 2000 steps, log every mutation + accept/reject + score
 def evaluate(net, perm):
@@ -59,7 +63,7 @@ for att in range(2000):
             net.grow = np.int8(1 - int(net.grow))
 
 # Save log
-with open('tests/frozen_mutation_log.json', 'w') as f:
+with open(FIXTURE_DIR / 'frozen_mutation_log.json', 'w') as f:
     json.dump(log, f, indent=1)
 
 # Summary

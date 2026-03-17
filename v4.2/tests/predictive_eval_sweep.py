@@ -5,7 +5,7 @@ Modes:
   BATCH       — stateless forward_batch (baseline)
   SEQ_BATCH   — 2-pass forward_batch (charge carries across passes)
   PRED_ERR    — 2-pass, fitness includes pass1→pass2 improvement
-  SURPRISE    — accuracy + normalized log-likelihood
+  NLL_BLEND   — accuracy + normalized negative log-likelihood
   CUMUL_STATE — charge/state persists BETWEEN mutation attempts
 """
 
@@ -22,7 +22,7 @@ SEEDS = [42, 77, 123]
 BUDGET = 4000
 STALE = 3000
 TICKS = 8
-MODES = ['BATCH', 'SEQ_BATCH', 'PRED_ERR', 'SURPRISE', 'CUMUL_STATE']
+MODES = ['BATCH', 'SEQ_BATCH', 'PRED_ERR', 'NLL_BLEND', 'CUMUL_STATE']
 
 
 def safe_softmax(x, axis=-1):
@@ -83,14 +83,14 @@ def score_pred_err(net, targets):
     return score, acc
 
 
-def score_surprise(net, targets):
+def score_nll_blend(net, targets):
     logits = net.forward_batch(TICKS)
     probs = safe_softmax(logits)
     acc = (np.argmax(probs, axis=1)[:V] == targets[:V]).mean()
     tp = np.clip(probs[np.arange(V), targets[:V]], 1e-10, 1.0)
-    mean_surp = (-np.log(tp)).mean()
-    norm_surp = 1.0 - min(mean_surp / np.log(V), 1.0)
-    return 0.5 * acc + 0.5 * norm_surp, acc
+    mean_nll = (-np.log(tp)).mean()
+    norm_nll = 1.0 - min(mean_nll / np.log(V), 1.0)
+    return 0.5 * acc + 0.5 * norm_nll, acc
 
 
 def score_cumul(net, targets):
@@ -122,7 +122,7 @@ SCORE_FN = {
     'BATCH': score_batch,
     'SEQ_BATCH': score_seq_batch,
     'PRED_ERR': score_pred_err,
-    'SURPRISE': score_surprise,
+    'NLL_BLEND': score_nll_blend,
     'CUMUL_STATE': score_cumul,
 }
 

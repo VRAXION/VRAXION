@@ -24,10 +24,10 @@ import time
 
 import torch
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
 
 from lib.log import live_log, log_msg
-from tests.gpu_full_evo_prototype import (
+from tests.gpu_experimental.gpu_full_evo_prototype import (
     BenchConfig,
     gpu_init_from_cpu,
     make_eval_runner,

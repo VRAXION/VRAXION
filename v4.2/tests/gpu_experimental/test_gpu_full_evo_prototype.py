@@ -10,11 +10,15 @@ Ordered checks:
 from __future__ import annotations
 
 import math
+import os
+import sys
 
 import numpy as np
 import torch
 
-from gpu_full_evo_prototype import (
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
+
+from tests.gpu_experimental.gpu_full_evo_prototype import (
     CONFIGS,
     BenchConfig,
     TICKS,

@@ -35,6 +35,8 @@ The stable reference implementation is [`v4.2/model/graph.py`](v4.2/model/graph.
 - [`v4.2/tests/test_model.py`](v4.2/tests/test_model.py): adversarial stress test
 - [`v4.2/tests/rng_tier_benchmark.py`](v4.2/tests/rng_tier_benchmark.py): RNG sensitivity benchmark
 - [`v4.2/tests/sparse_scaling_benchmark.py`](v4.2/tests/sparse_scaling_benchmark.py): sparse scaling benchmark
+- [`v4.2/tests/fixtures`](v4.2/tests/fixtures): frozen replay assets
+- [`v4.2/tests/gpu_experimental`](v4.2/tests/gpu_experimental): isolated GPU prototype lane
 
 ## Quickstart
 
