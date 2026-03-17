@@ -10,6 +10,7 @@ _probe_bins/
 graph_dense
 graph_v3
 mutation_strategy_bench
+rewire_intensity_bench
 
 # Virtual envs
 .venv/
