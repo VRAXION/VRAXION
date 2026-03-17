@@ -1,5 +1,5 @@
 """
-Scoring, mutation helpers, and generic training loop for v22 experiments.
+Scoring, mutation helpers, and generic training loops for the self-wiring graph line.
 """
 
 import numpy as np

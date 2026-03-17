@@ -10,7 +10,7 @@ from pathlib import Path
 import numpy as np
 
 
-ROOT = Path(r"S:\AI\work\VRAXION_DEV")
+ROOT = Path(__file__).resolve().parents[2]
 SRC = ROOT / "v4.2" / "model" / "graph_v3.c"
 PY_SRC = ROOT / "v4.2" / "model" / "graph.py"
 OUT_DIR = ROOT / "v4.2" / "model" / "_probe_bins"
@@ -20,7 +20,8 @@ FINAL_RE = re.compile(r"Final:\s+([0-9.]+)%")
 
 
 def compile_variant(name: str, extra_flags: list[str]) -> Path:
-    exe = OUT_DIR / f"{name}.exe"
+    exe_name = f"{name}.exe" if sys.platform.startswith("win") else name
+    exe = OUT_DIR / exe_name
     cmd = ["gcc", "-O3", "-std=c11", "-Wall", "-Wextra", "-o", str(exe), str(SRC), "-lm", "-DVERBOSE_DEFAULT=0", *extra_flags]
     subprocess.run(cmd, check=True)
     return exe

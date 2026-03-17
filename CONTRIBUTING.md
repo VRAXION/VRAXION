@@ -1,64 +1,63 @@
 # Contributing
 
-VRAXION is a research repo where **mechanism + repeatability > vibes**.
+VRAXION is a research repo where mechanism and repeatability matter more than presentation.
 If a change cannot be reproduced or audited, it is not done.
 
-## Repo map
+## Repo Map
 
-- `Golden Code/`: reusable runtime library code.
-- `Golden Draft/`: tooling, tests, harnesses, and experiment-grade code.
-- `docs/`: GitHub Pages site (public-facing).
+- `v4.2/model/`: self-wiring graph implementations
+- `v4.2/lib/`: shared scoring, data, and logging helpers
+- `v4.2/tests/`: stress tests, sweeps, probes, and benchmark scripts
+- `docs/`: GitHub Pages landing page for the cleaned main branch
 
-## Where to put things
+## Where To Put Things
 
-- Tools / harnesses / scripts: `Golden Draft/tools/`
-- Unit tests (CPU-only by default): `Golden Draft/tests/`
-- GPU measurement contracts and docs: `Golden Draft/docs/gpu/`
-- Ops/process docs: `Golden Draft/docs/ops/`
+- Core model changes: `v4.2/model/`
+- Shared training helpers: `v4.2/lib/`
+- CPU and GPU experiments: `v4.2/tests/`
+- Public-facing repo text: root docs plus `docs/`
 
-## Branch naming
+## Branch Naming
 
 Use short, intent-revealing branch names. Examples:
 
-- `feat/vra-32-gpu-probe-harness`
-- `chore/ci-v1`
-- `docs/audit-v1`
+- `feat/slot-soft-write`
+- `chore/main-cleanup-pass2`
+- `docs/self-wiring-pages-refresh`
 
-## Pull request requirements
+## Pull Request Requirements
 
 Every PR should include:
 
-- **Why**: what problem this solves.
-- **What changed**: concise list of files/behavior changes.
-- **How to verify**: exact commands.
+- Why: what problem it solves
+- What changed: concise behavior and file summary
+- How to verify: exact commands
 
-And must respect these guardrails:
+Guardrails:
 
-- Do not commit run artifacts (`bench_vault/`, `logs/`, checkpoints, large binaries).
-- Keep PRs small and reversible; avoid mass refactors.
-- If a change affects measurement/stability, verify against the contract:
-  - `Golden Draft/docs/gpu/objective_contract_v1.md`
+- Do not commit run artifacts, logs, checkpoints, or large binaries
+- Keep changes small and reversible where possible
+- If a change affects metrics or stability, include the exact benchmark or smoke command used
 
 Recommended verification commands:
 
-```powershell
-python -m unittest discover -s "Golden Draft/tests" -v
-python -m compileall "Golden Code" "Golden Draft"
+```bash
+python -m compileall v4.2
+python v4.2/tests/test_model.py
+python v4.2/tests/test_logging.py
 ```
 
-## Issues, discussions, and internal tracking
+## Issues And Discussions
 
-- **GitHub Issues** in this repo are curated **public updates** (heartbeat/bundles), not the full internal tracker.
-- For questions and design discussion, use **GitHub Discussions**.
-- Internal execution planning and backlog live in Linear (not mirrored 1:1 here).
+- GitHub Issues are best used for curated public updates or concrete cleanup tasks
+- GitHub Discussions are for design questions and broader research discussion
 
 ## Reproducibility
 
-If you report a number (throughput, VRAM, stability), include a minimal result packet:
+If you report a metric, include at minimum:
 
 - commit hash
-- `env.json`
-- `workload_id`
-- full CLI args and output directory
-
-See: `Golden Draft/docs/ops/reproducibility_v1.md`
+- exact command line
+- seed list
+- relevant config values
+- output summary

@@ -19,11 +19,11 @@ for a naive "full int everywhere" rewrite.
 
 Reference harness:
 
-- [gpu_eval_dtype_ab.py](/S:/AI/work/VRAXION_DEV/v4.2/tests/gpu_eval_dtype_ab.py)
+- `gpu_eval_dtype_ab.py`
 
 Mini-gate log:
 
-- [gpu_eval_dtype_minigate_sd0_20260315_214541.log](/S:/AI/logs/gpu_eval_dtype_minigate_sd0_20260315_214541.log)
+- stored outside the repo in the original experiment log directory
 
 Short result:
 

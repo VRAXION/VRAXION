@@ -1,8 +1,8 @@
 blank_issues_enabled: false
 contact_links:
   - name: VRAXION Discussions
-    url: https://github.com/Kenessy/VRAXION/discussions
+    url: https://github.com/VRAXION/VRAXION/discussions
     about: Questions, design discussion, and general conversation.
   - name: Security reports
-    url: https://github.com/Kenessy/VRAXION/security/advisories/new
+    url: https://github.com/VRAXION/VRAXION/security/advisories/new
     about: Please report vulnerabilities privately via GitHub Security Advisories.

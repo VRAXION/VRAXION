@@ -1,6 +1,6 @@
 """
-Corpus and bigram data for v22 experiments.
-Lazy-loaded: bigram distribution computed on first access, not at import.
+Small corpus and bigram helpers for self-wiring graph toy evaluations.
+Lazy-loaded: the bigram distribution is computed on first access, not at import.
 """
 
 import numpy as np

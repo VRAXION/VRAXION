@@ -1,31 +1,36 @@
 ---
 name: Public Update
-about: Curated public update (bundle of work) for the public roadmap + releases.
-title: "Public Update: MAJOR.MINOR (short theme)"
+about: Curated public update for a self-wiring graph milestone or cleanup bundle.
+title: "Public Update: short theme"
 labels: ["public-update"]
 ---
 
 ## Summary
 
-One paragraph. What did we ship, and why does it matter?
+One paragraph. What changed, and why does it matter for the self-wiring graph line?
 
-## What shipped
+## What changed
 
 - Item 1
 - Item 2
 
-## Key PRs
+## Validation
+
+- Command 1
+- Command 2
+
+## Key branches or PRs
 
 - #
 
-## Wiki / deep dives
+## Deep dives or notes
 
-- (link)
+- [optional link]
 
 ## Pages
 
-- https://kenessy.github.io/VRAXION/
+- https://vraxion.github.io/VRAXION/
 
 ## Release
 
-- (link once published)
+- [optional link]

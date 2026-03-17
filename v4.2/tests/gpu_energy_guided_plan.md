@@ -2,8 +2,8 @@
 
 ## Current GPU finding
 
-- Existing-edge scoring A/B is implemented in [gpu_energy_edge_score_ab.py](/S:/AI/work/VRAXION_DEV/v4.2/tests/gpu_energy_edge_score_ab.py).
-- Canonical reference log: [gpu_energy_edge_score_ab_v64_20260315_192653.log](/S:/AI/work/VRAXION_DEV/logs/gpu_energy_edge_score_ab_v64_20260315_192653.log)
+- Existing-edge scoring A/B is implemented in `gpu_energy_edge_score_ab.py`.
+- Canonical reference log lives outside the repo in the original experiment log directory.
 - `V64_N192`, `energy_pct=0.60`, `16k`, seeds `42,77,123`:
   - `product(src,dst)`: `76.0%`, `64.95 aps`
   - `max(src,dst)`: `77.6%`, `83.34 aps`
@@ -37,7 +37,7 @@ The GPU-oriented hypothesis:
 
 Script:
 
-- [gpu_energy_hotlist_ab.py](/S:/AI/work/VRAXION_DEV/v4.2/tests/gpu_energy_hotlist_ab.py)
+- `gpu_energy_hotlist_ab.py`
 
 Modes:
 

@@ -2,27 +2,25 @@
 
 Describe what changed and why.
 
-## Version impact (MAJOR.MINOR.BUILD)
+## Scope
 
-Select one (default is **build**):
-
-- [ ] build — merged "ticket completion" (fast/beta cadence)
-- [ ] minor — curated public update (BUILD unchanged)
-- [ ] major — lifetime milestone (MINOR resets to 0; BUILD unchanged)
+- [ ] Core self-wiring graph behavior
+- [ ] Benchmark or sweep
+- [ ] Docs or repo cleanup
+- [ ] CI or tooling
 
 ## Validation
 
 Commands run (or N/A):
 
-```powershell
+```bash
 # example
-python -m compileall "Golden Code" "Golden Draft"
-python -m unittest discover -s "Golden Draft/tests" -v
+python -m compileall v4.2
+python v4.2/tests/test_model.py
 ```
 
 ## Docs / links (if applicable)
 
-- Wiki:
 - Pages:
-- Roadmap:
-- Releases:
+- Public update:
+- Related issue:
