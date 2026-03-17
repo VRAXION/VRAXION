@@ -1,12 +1,9 @@
-# VRAXION core dependencies
-# Install: pip install -r requirements.txt
-torch>=2.1
+# Core self-wiring graph dependencies
 numpy>=1.24
 
-# Optional: only needed for MNIST / real-data modes
-# torchvision>=0.16
+# Optional benchmark helpers
+scipy>=1.10
 
-# Live dashboard (Streamlit UI)
-streamlit>=1.30
-plotly>=5.18
-pandas>=2.0
+# Optional acceleration / prototype paths
+# numba>=0.58
+# torch>=2.1

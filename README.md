@@ -1,86 +1,71 @@
-# VRAXION
+# VRAXION Self-Wiring Graph
 
-[![RESEARCH](docs/assets/badges/v2/research.svg)](https://github.com/VRAXION/VRAXION/wiki/Hypotheses) [![NONCOMMERCIAL](docs/assets/badges/v2/noncommercial.svg)](LICENSE) [![DOI 10.5281/zenodo.18332532](docs/assets/badges/v2/doi_10_5281_zenodo_18332532.svg)](https://doi.org/10.5281/zenodo.18332532) [![WIKI](docs/assets/badges/v2/wiki.svg)](https://github.com/VRAXION/VRAXION/wiki) [![CANONICAL](docs/assets/badges/v2/canonical.svg)](https://github.com/VRAXION/VRAXION/wiki/Governance)
+This repository is the slimmed `main` line for the self-wiring graph work.
+Everything outside the active self-wiring path has been moved out of the mainline scope.
 
-VRAXION is a research program pursuing **repeatable internal mechanisms** for machine reasoning. The core scaling idea is **resolution over reshuffling**: grow capacity locally without breaking what coordinates mean. Progress is accepted only with explicit objectives, hard fail gates, and reproducible artifacts.
+## Scope
 
-## What makes this different
+`main` is now intentionally focused on the `v4.2` self-wiring graph stack:
 
-Most systems optimize for producing the right output by absorbing patterns. VRAXION bets on learning the **mechanism that generates logic** — looped refinement rather than one-pass generation. "Better" means the loop converges more reliably under pressure (noise, longer contexts, resets), and we can show it via artifacts.
+- `v4.2/model/graph.py`: reference NumPy self-wiring graph
+- `v4.2/model/graph_v3.c`: C backend and scaling path under active evaluation
+- `v4.2/lib/utils.py`: scoring and cyclic training helpers
+- `v4.2/tests/`: sweeps, smoke tests, scaling probes, and benchmark scripts
 
-Key principles:
-- **Mechanism over memorization** — internal paths matter, not just outputs
-- **Instrumented evaluation** — every run has an objective, fail gates, and an artifact bundle
-- **Resolution over reshuffling** — grow capacity via local refinement at deterministic boundaries
+The half-ready `surprise` learning path is not part of this cleaned mainline. It needs redesign before it belongs on the default branch again.
 
-## Current state
+## What The Model Is
 
-**v3.2.001** (theory stage). Architecture complete — all 10 bottleneck levers locked. Training paused for architecture validation.
+The current self-wiring graph is a gradient-free graph learner with:
 
-- **Model:** SwarmByteRingModel (424M params, D=6180, depth=12, hash LCX memory, C19 activation, bottleneck projection)
-- **Observability:** Grafana + InfluxDB (66 panels), live-tunable controls
-- **Platform:** NVIDIA RTX 4070 Ti SUPER (16 GB VRAM), Windows 11
+- flat directed graph topology
+- ternary signed edges baked into the mask
+- persistent charge and state dynamics
+- mutation plus selection as the training loop
+- cyclic `rewire -> crystallize` training support
 
-Current status lives in the [Roadmap](https://github.com/VRAXION/VRAXION/wiki/Chapter-11---Roadmap) and [Releases](https://github.com/VRAXION/VRAXION/releases). See [CHANGELOG.md](CHANGELOG.md) for version history.
+The stable reference implementation is [`v4.2/model/graph.py`](v4.2/model/graph.py).
 
-## Diamond Code
+## Repo Layout
 
-The active codebase lives in `Diamond Code/`. Key files:
-
-| File | Purpose |
-|------|---------|
-| `swarm_model.py` | SwarmByteRingModel (424M params, hash LCX, C19 activation, bottleneck projection) |
-| `test_swarm_config.py` | Training loop (Goldilocks Ant v4 config, progressive schedule, dreaming phase) |
-| `run_goldilocks.bat` | Launch script (D=6180 full model) |
-| `run_d618.bat` | Launch script (D=618 edge model) |
-| `influx_writer.py` | InfluxDB telemetry (Grafana dashboards) |
-| `live_controls.py` | Live-tunable training controls via controls.json |
-| `byte_data.py` | Data loading and metrics |
-| `traindat_loader.py` | Dataset interface (Gray code encoding) |
-
-## Documentation
-
-| Resource | What you'll find |
-|----------|-----------------|
-| [Wiki](https://github.com/VRAXION/VRAXION/wiki) | Full documentation — architecture, engineering, governance, evidence |
-| [Engineering](https://github.com/VRAXION/VRAXION/wiki/Engineering) | Capacity guardrails, evaluation doctrine, failure taxonomy, telemetry |
-| [Architecture](https://github.com/VRAXION/VRAXION/wiki/Diamond-Code-v3-Architecture) | Diamond Code v3 system specification |
-| [Governance](https://github.com/VRAXION/VRAXION/wiki/Governance) | Wiki policy, versioning, provenance, contribution workflow |
-| [Roadmap](https://github.com/orgs/VRAXION/projects/4) | Public project board |
-| [Releases](https://github.com/VRAXION/VRAXION/releases) | Version history with detailed notes |
-| [Pages](https://vraxion.github.io/VRAXION/) | Landing page |
-| [Discussions](https://github.com/VRAXION/VRAXION/discussions) | Questions and community |
+- [`v4.2/README.md`](v4.2/README.md): module-level map
+- [`v4.2/model/graph.py`](v4.2/model/graph.py): reference Python model
+- [`v4.2/model/graph_v3.c`](v4.2/model/graph_v3.c): C implementation path
+- [`v4.2/lib/utils.py`](v4.2/lib/utils.py): training helpers
+- [`v4.2/tests/test_model.py`](v4.2/tests/test_model.py): adversarial stress test
+- [`v4.2/tests/rng_tier_benchmark.py`](v4.2/tests/rng_tier_benchmark.py): RNG sensitivity benchmark
+- [`v4.2/tests/sparse_scaling_benchmark.py`](v4.2/tests/sparse_scaling_benchmark.py): sparse scaling benchmark
 
 ## Quickstart
 
-**Code review and compilation** (no GPU required):
+Create a Python environment and install the minimal dependencies:
 
-```powershell
-python -m compileall "Diamond Code"
+```bash
+python -m venv .venv
+. .venv/bin/activate
+pip install -r requirements.txt
 ```
 
-**Launch training** (requires NVIDIA GPU with 16+ GB VRAM):
+Run the reference stress test:
 
-```powershell
-cd "Diamond Code"
-run_goldilocks.bat
+```bash
+python v4.2/tests/test_model.py
 ```
 
-## Versioning (MAJOR.MINOR.BUILD)
+Run a quick RNG benchmark:
 
-VRAXION uses a cadence tracker stored in `VERSION.json`:
+```bash
+python v4.2/tests/rng_tier_benchmark.py --seeds 2 --vocab 32 --attempts 2000
+```
 
-- `BUILD` increments on every merged "ticket completion" PR (fast/beta cadence).
-- `MINOR` increments only for curated public updates (BUILD unchanged).
-- `MAJOR` increments only for lifetime milestones (MINOR resets to 0; BUILD unchanged).
+## Notes On Branch Policy
+
+- `main` should stay small and self-wiring focused.
+- Historical non-self-wiring lines should live on archive branches, not in the default branch tree.
+- Experimental branches are fine, but they should not redefine what `main` is about until they beat the current self-wiring baseline.
 
 ## License
 
-- **Noncommercial use:** [PolyForm Noncommercial 1.0.0](LICENSE)
-- **Commercial licensing:** [COMMERCIAL_LICENSE.md](COMMERCIAL_LICENSE.md) (contact: kenessy.dani@gmail.com)
-- **Citation:** [CITATION.cff](CITATION.cff)
-
-## Naming conventions
-
-- Runtime env vars use the `VRX_` prefix.
-- Legacy naming (`prime_c19`, `tournament_phase6`, `TP6_*`) is intentionally removed from the active code surface.
+- Noncommercial: [LICENSE](LICENSE)
+- Commercial terms: [COMMERCIAL_LICENSE.md](COMMERCIAL_LICENSE.md)
+- Citation: [CITATION.cff](CITATION.cff)

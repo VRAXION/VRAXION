@@ -1,532 +1,151 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>VRAXION // SYSTEMS</title>
-    <style>
-        :root {
-            --bg: #050505;
-            --cyan: #00f0ff;
-            --magenta: #C026D3;
-            --font-mono: 'Courier New', Courier, monospace;
-            --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
-        }
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            user-select: none;
-        }
-
-        body {
-            background-color: var(--bg);
-            color: #fff;
-            width: 100vw;
-            height: 100vh;
-            overflow: hidden;
-            font-family: var(--font-mono);
-            display: flex;
-            /* Split Screen layout */
-        }
-
-        /* --- HUD DATUM CORNERS --- */
-        .hud-abs {
-            position: absolute;
-            font-size: 0.65rem;
-            letter-spacing: 0.2em;
-            color: rgba(0, 240, 255, 0.4);
-            z-index: 50;
-            pointer-events: none;
-            text-transform: uppercase;
-        }
-
-        .hud-tl {
-            top: 30px;
-            left: 40px;
-        }
-
-        .hud-bl {
-            bottom: 30px;
-            left: 40px;
-        }
-
-        .hud-br {
-            bottom: 30px;
-            right: 40px;
-            text-align: right;
-        }
-
-        /* --- LAYOUT GRID --- */
-        .layout-left {
-            width: 50%;
-            height: 100%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            position: relative;
-        }
-
-        .layout-right {
-            width: 50%;
-            height: 100%;
-            position: relative;
-            /* Container for 3D jog-dial */
-            perspective: 1200px;
-        }
-
-        /* --- THE CORE (SVG HUD) --- */
-        .core-container {
-            position: relative;
-            width: 25vh;
-            /* Slightly larger for split screen focus */
-            height: 25vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin-left: -10vw;
-            /* Push slightly left conceptually */
-        }
-
-        .base-shape {
-            position: absolute;
-            inset: 0;
-            width: 100%;
-            height: 100%;
-            overflow: visible;
-            pointer-events: none;
-        }
-
-        .shape-polygon {
-            fill: transparent;
-            stroke: var(--cyan);
-            stroke-width: 2px;
-            vector-effect: non-scaling-stroke;
-            transition: all 1.2s cubic-bezier(0.8, 0, 0.2, 1);
-            transform-origin: center;
-        }
-
-        /* Inner Consciousness Spark */
-        .core-spark {
-            position: relative;
-            z-index: 10;
-            display: flex;
-            gap: 6px;
-            align-items: center;
-            justify-content: center;
-            transition: all 1.2s ease;
-        }
-
-        .dot {
-            width: 10px;
-            height: 10px;
-            border-radius: 50%;
-            background-color: var(--magenta);
-            box-shadow: 0 0 15px var(--magenta), 0 0 30px rgba(192, 38, 211, 0.4);
-            transition: all 0.6s ease;
-        }
-
-        /* Default Idle Wavy Animation */
-        @keyframes idleWave {
-
-            0%,
-            100% {
-                transform: translateY(0) scale(1);
-                opacity: 0.8;
-            }
-
-            50% {
-                transform: translateY(-4px) scale(1.1);
-                opacity: 1;
-            }
-        }
-
-        .dot:nth-child(1) {
-            animation: idleWave 2s infinite ease-in-out;
-            animation-delay: 0.0s;
-        }
-
-        .dot:nth-child(2) {
-            animation: idleWave 2s infinite ease-in-out;
-            animation-delay: 0.3s;
-        }
-
-        .dot:nth-child(3) {
-            animation: idleWave 2s infinite ease-in-out;
-            animation-delay: 0.6s;
-        }
-
-        /* --- CORE STATES --- */
-
-        /* 1. IDLE (Circle) */
-        body.state-idle .shape-polygon {
-            filter: drop-shadow(0 0 10px rgba(0, 240, 255, 0.4));
-        }
-
-        /* 2. PROCESS (Hexagon) */
-        body.state-process .shape-polygon {
-            filter: drop-shadow(0 0 15px rgba(0, 240, 255, 0.6));
-        }
-
-        body.state-process .core-spark {
-            /* Dots remain static in center while processing */
-        }
-
-        /* 3. WARNING (Triangle) */
-        body.state-warning .shape-polygon {
-            filter: drop-shadow(0 0 20px rgba(0, 240, 255, 0.8));
-            stroke-width: 3px;
-        }
-
-        body.state-warning .dot {
-            height: 16px;
-            border-radius: 2px;
-            background-color: var(--cyan);
-            box-shadow: 0 0 15px var(--cyan);
-        }
-
-        body.state-warning .dot:nth-child(1) {
-            animation: frantic 0.4s infinite;
-            animation-delay: 0s;
-        }
-
-        body.state-warning .dot:nth-child(2) {
-            animation: frantic 0.4s infinite;
-            animation-delay: 0.1s;
-        }
-
-        body.state-warning .dot:nth-child(3) {
-            animation: frantic 0.4s infinite;
-            animation-delay: 0.2s;
-        }
-
-        @keyframes frantic {
-
-            0%,
-            100% {
-                transform: scaleY(1)
-            }
-
-            50% {
-                transform: scaleY(1.5)
-            }
-        }
-
-        /* 4. ERROR/STOP (Square) */
-        body.state-error .shape-polygon {
-            filter: drop-shadow(0 0 30px rgba(0, 240, 255, 1));
-            stroke-width: 4px;
-        }
-
-        body.state-error .core-spark {
-            gap: 2px;
-        }
-
-        body.state-error .dot {
-            width: 8px;
-            height: 8px;
-            border-radius: 1px;
-            background-color: #ff3366;
-            box-shadow: 0 0 20px #ff3366;
-            animation: none;
-        }
-
-
-        /* --- JOG-DIAL MENU --- */
-        .jog-dial-container {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            display: flex;
-            align-items: center;
-            justify-content: flex-start;
-            padding-left: 2vw;
-            /* Proximity to center */
-        }
-
-        .menu-list {
-            position: relative;
-            transform-style: preserve-3d;
-            height: 80vh;
-            /* Scroller hit area */
-            width: 100%;
-            cursor: ns-resize;
-            /* Indicate vertical scrolling */
-        }
-
-        .menu-item {
-            position: absolute;
-            left: 0;
-            top: 50%;
-            /* Center mathematically */
-            font-family: var(--font-sans);
-            font-weight: 800;
-            font-size: 4rem;
-            text-transform: uppercase;
-            letter-spacing: -0.02em;
-            color: rgba(255, 255, 255, 0.8);
-            white-space: nowrap;
-            cursor: pointer;
-            transition: color 0.3s, text-shadow 0.3s;
-            /* Will be transformed by JS */
-            transform-origin: left center;
-        }
-
-        .menu-item:hover {
-            color: #fff;
-            text-shadow: 0 0 20px rgba(255, 255, 255, 0.5);
-        }
-
-        /* Subtitle attached to menu item */
-        .menu-item::after {
-            content: attr(data-sub);
-            display: block;
-            font-family: var(--font-mono);
-            font-size: 0.75rem;
-            font-weight: 400;
-            letter-spacing: 0.2em;
-            color: var(--cyan);
-            margin-top: 4px;
-            opacity: 0.6;
-            text-shadow: none;
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>VRAXION // Self-Wiring Graph</title>
+  <style>
+    :root {
+      --bg: #0d1117;
+      --panel: rgba(255, 245, 230, 0.88);
+      --ink: #131313;
+      --accent: #d64f2a;
+      --accent-soft: #f4b183;
+      --line: rgba(19, 19, 19, 0.14);
+      --mono: "IBM Plex Mono", "SFMono-Regular", "Consolas", monospace;
+      --display: "Avenir Next Condensed", "Franklin Gothic Medium", "Arial Narrow", sans-serif;
+      --body: "Avenir Next", "Segoe UI", sans-serif;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at top left, rgba(244, 177, 131, 0.28), transparent 28%),
+        linear-gradient(135deg, #08131c 0%, #102433 38%, #271611 100%);
+      font-family: var(--body);
+    }
+    main {
+      width: min(1100px, calc(100vw - 32px));
+      margin: 24px auto;
+      padding: 28px;
+      background: var(--panel);
+      border: 1px solid rgba(255,255,255,0.35);
+      box-shadow: 0 24px 90px rgba(0, 0, 0, 0.32);
+      backdrop-filter: blur(10px);
+    }
+    .eyebrow {
+      font: 700 12px/1 var(--mono);
+      letter-spacing: 0.24em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 18px;
+    }
+    h1 {
+      margin: 0;
+      font-family: var(--display);
+      font-size: clamp(2.6rem, 7vw, 5.6rem);
+      line-height: 0.92;
+      letter-spacing: -0.04em;
+      max-width: 9ch;
+    }
+    .lede {
+      margin: 22px 0 0;
+      max-width: 62ch;
+      font-size: clamp(1rem, 1.8vw, 1.2rem);
+      line-height: 1.65;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 16px;
+      margin-top: 28px;
+    }
+    .card {
+      padding: 18px;
+      background: rgba(255,255,255,0.55);
+      border: 1px solid var(--line);
+      min-height: 180px;
+    }
+    .card h2 {
+      margin: 0 0 10px;
+      font-size: 0.9rem;
+      font-family: var(--mono);
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+    .card p, .card li {
+      font-size: 0.98rem;
+      line-height: 1.55;
+    }
+    ul {
+      margin: 0;
+      padding-left: 18px;
+    }
+    .band {
+      margin-top: 24px;
+      padding: 16px 0 0;
+      border-top: 1px solid var(--line);
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px 18px;
+      font: 600 0.9rem/1.4 var(--mono);
+    }
+    a {
+      color: var(--accent);
+      text-decoration: none;
+    }
+    a:hover { text-decoration: underline; }
+    code {
+      font-family: var(--mono);
+      background: rgba(0,0,0,0.06);
+      padding: 0.12rem 0.35rem;
+      border-radius: 4px;
+    }
+    @media (max-width: 700px) {
+      main { padding: 20px; }
+      .band { flex-direction: column; gap: 6px; }
+    }
+  </style>
 </head>
+<body>
+  <main>
+    <div class="eyebrow">VRAXION / Mainline Cleanup</div>
+    <h1>Self-Wiring Graph Only.</h1>
+    <p class="lede">
+      The default branch is now scoped to the active self-wiring graph line. Historical VRAXION codepaths were removed from the main tree so the repo, the docs, and CI all describe the same thing: the <code>v4.2</code> self-wiring graph stack.
+    </p>
 
-<body class="state-idle">
+    <section class="grid">
+      <article class="card">
+        <h2>Core</h2>
+        <p><code>v4.2/model/graph.py</code> is the stable NumPy reference. It couples sparse signed edges, persistent charge, and gradient-free mutation/selection training.</p>
+      </article>
+      <article class="card">
+        <h2>Training</h2>
+        <p><code>v4.2/lib/utils.py</code> contains the generic score helpers plus cyclic <code>rewire -&gt; crystallize</code> training used in the stronger self-wiring runs.</p>
+      </article>
+      <article class="card">
+        <h2>Benchmarks</h2>
+        <ul>
+          <li><code>tests/test_model.py</code> for adversarial stress</li>
+          <li><code>tests/rng_tier_benchmark.py</code> for RNG sensitivity</li>
+          <li><code>tests/sparse_scaling_benchmark.py</code> for scaling probes</li>
+        </ul>
+      </article>
+      <article class="card">
+        <h2>Out Of Main</h2>
+        <p>The unfinished <code>surprise</code> learning branch is intentionally excluded from the cleaned mainline until it beats the mutation baseline and its learning rule is redesigned.</p>
+      </article>
+    </section>
 
-    <!-- HUD OVERLAYS -->
-    <div class="hud-abs hud-tl">
-        SYS_ID: VRAXION-9<br>
-        LOC: SECTOR_Q
+    <div class="band">
+      <span><a href="https://github.com/VRAXION/VRAXION">Repository</a></span>
+      <span><a href="https://github.com/VRAXION/VRAXION/blob/main/README.md">README</a></span>
+      <span><a href="https://github.com/VRAXION/VRAXION/tree/main/v4.2">v4.2</a></span>
+      <span><a href="https://github.com/VRAXION/VRAXION/blob/main/v4.2/tests/test_model.py">Stress Test</a></span>
     </div>
-    <div class="hud-abs hud-bl">
-        UPTIME: <span id="uptime">00:00:00</span><br>
-        STATE: <span id="hud-state" style="color:var(--cyan)">IDLE</span>
-    </div>
-    <div class="hud-abs hud-br">
-        VRAXION.NET v2.1<br>
-        SECURE CONNECTION
-    </div>
-
-    <!-- LEFT: THE ENTITY -->
-    <div class="layout-left">
-        <div class="core-container">
-            <svg class="base-shape" viewBox="-1.2 -1.2 2.4 2.4" preserveAspectRatio="xMidYMid meet">
-                <polygon class="shape-polygon" id="shape-polygon" points="" />
-            </svg>
-            <div class="core-spark">
-                <div class="dot"></div>
-                <div class="dot"></div>
-                <div class="dot"></div>
-            </div>
-        </div>
-    </div>
-
-    <!-- RIGHT: THE JOG-DIAL MENU -->
-    <div class="layout-right">
-        <div class="jog-dial-container">
-            <div class="menu-list" id="jog-dial">
-                <!-- Data-state determines the Core's mutation when hovered -->
-                <div class="menu-item" data-state="idle" data-sub="[ RETURN TO HUB ]"
-                    onclick="window.location.href='#'">Home</div>
-                <div class="menu-item" data-state="process" data-sub="[ VIEW ARCHITECTURE ]"
-                    onclick="window.location.href='dashboard.html'">Blueprint</div>
-                <div class="menu-item" data-state="idle" data-sub="[ NEURAL NETWORK ]"
-                    onclick="window.location.href='products.html'">Nodes</div>
-                <div class="menu-item" data-state="process" data-sub="[ DATABASE QUERY ]"
-                    onclick="window.location.href='kb/'">Archives</div>
-                <div class="menu-item" data-state="warning" data-sub="[ SECURE LOGIN ]"
-                    onclick="window.location.href='#'">Authenticate</div>
-                <div class="menu-item" data-state="error" data-sub="[ SYSTEM OVERRIDE ]"
-                    onclick="window.location.href='#'">Terminal</div>
-            </div>
-        </div>
-    </div>
-
-    <!-- ENGINE SCRIPTS -->
-    <script>
-        // --- 1. SVG GEOMETRY ENGINE ---
-        function createPolygonPoints(sides, points = 36) {
-            let pts = [];
-            for (let i = 0; i < points; i++) {
-                let sideIndex = Math.floor(i / (points / sides));
-                let t = (i % (points / sides)) / (points / sides);
-                let a1 = (sideIndex / sides) * Math.PI * 2 - Math.PI / 2;
-                let a2 = ((sideIndex + 1) / sides) * Math.PI * 2 - Math.PI / 2;
-
-                let x1 = Math.cos(a1); let y1 = Math.sin(a1);
-                let x2 = Math.cos(a2); let y2 = Math.sin(a2);
-
-                let x = x1 + (x2 - x1) * t;
-                let y = y1 + (y2 - y1) * t;
-                pts.push(`${x.toFixed(4)},${y.toFixed(4)}`);
-            }
-            return pts.join(' ');
-        }
-
-        function createCirclePoints(points = 36) {
-            let pts = [];
-            for (let i = 0; i < points; i++) {
-                let a = (i / points) * Math.PI * 2 - Math.PI / 2;
-                pts.push(`${Math.cos(a).toFixed(4)},${Math.sin(a).toFixed(4)}`);
-            }
-            return pts.join(' ');
-        }
-
-        const polyStates = {
-            idle: createCirclePoints(36),
-            warning: createPolygonPoints(3, 36),
-            process: createPolygonPoints(6, 36),
-            error: createPolygonPoints(4, 36)
-        };
-
-        const polygonEl = document.getElementById('shape-polygon');
-        const hudStateText = document.getElementById('hud-state');
-        let autoMorphTimer = null;
-
-        function setState(stateName) {
-            document.body.className = `state-${stateName}`;
-            polygonEl.setAttribute('points', polyStates[stateName]);
-            hudStateText.textContent = stateName.toUpperCase();
-
-            // Recolor HUD text based on state
-            if (stateName === 'warning') hudStateText.style.color = '#ff8c00';
-            else if (stateName === 'error') hudStateText.style.color = '#ff3366';
-            else hudStateText.style.color = 'var(--cyan)';
-        }
-
-        // --- 2. JOG-DIAL 3D MENU ENGINE ---
-        const items = document.querySelectorAll('.menu-item');
-        const listHeight = window.innerHeight * 0.8;
-        const itemSpacing = 120; // px distance between items
-        let scrollY = 0;
-        let targetScrollY = 0;
-
-        // Calculate maximum scroll based on item count to prevent infinite scrolling
-        const maxScroll = Math.max(0, (items.length - 1) * itemSpacing);
-
-        function updateMenu() {
-            // Smooth spring lerp for scroll position
-            scrollY += (targetScrollY - scrollY) * 0.1;
-
-            items.forEach((item, index) => {
-                // Determine item's target Y based on index and scroll position
-                const targetY = (index * itemSpacing) - scrollY;
-
-                // Calculate curve effect based on distance from zero (center)
-                const absY = Math.abs(targetY);
-                const curveFactor = Math.min(absY / listHeight, 1); // 0 to 1
-
-                // Parabolic fade, scale, rotate, and CURVE horizontally
-                const rotateX = targetY > 0 ? curveFactor * -50 : curveFactor * 50;
-                const scale = 1 - (curveFactor * 0.5); // Shrink up to 50%
-                const opacity = 1 - (curveFactor * 0.9); // Fade out to near zero edges
-
-                // Curve arc: Center pushes right (+), Top/Bottom pull aggressively left (-)
-                // Creates a strong half-circle wrapping around the left-side Core
-                const translateX = 200 - (Math.pow(curveFactor, 2) * 1000);
-
-                item.style.transform = `translateY(calc(-50% + ${targetY}px)) translateX(${translateX}px) perspective(1000px) rotateX(${rotateX}deg) scale(${scale})`;
-                item.style.opacity = Math.max(0, opacity);
-
-                // Hide completely if far out to save rendering
-                item.style.pointerEvents = opacity < 0.2 ? 'none' : 'auto';
-            });
-
-            requestAnimationFrame(updateMenu);
-        }
-
-        // Mouse wheel scroll binding
-        window.addEventListener('wheel', (e) => {
-            targetScrollY += e.deltaY * 0.8;
-            targetScrollY = Math.max(0, Math.min(targetScrollY, maxScroll));
-
-            // If scrolling clears hover, reset to idle
-            clearTimeout(autoMorphTimer);
-            autoMorphTimer = setTimeout(() => {
-                if (!document.querySelector('.menu-item:hover')) {
-                    setState('idle');
-                }
-            }, 300);
-        });
-
-        // Click-drag (Touch) scrolling binding
-        let isDragging = false;
-        let startY = 0;
-        const dialArea = document.getElementById('jog-dial');
-
-        dialArea.addEventListener('mousedown', (e) => { isDragging = true; startY = e.clientY; });
-        window.addEventListener('mouseup', () => { isDragging = false; });
-        window.addEventListener('mousemove', (e) => {
-            if (!isDragging) return;
-            const deltaY = startY - e.clientY;
-            targetScrollY += deltaY * 1.5; // Drag sensitivity
-            targetScrollY = Math.max(0, Math.min(targetScrollY, maxScroll));
-            startY = e.clientY;
-        });
-
-
-        // --- 3. AUTONOMOUS BRAIN ENGINE ---
-        // The entity thinks independently of the user
-        let brainTimer = null;
-
-        function autonomousBrainLoop() {
-            const randomChance = Math.random();
-            const currentState = document.body.className.replace('state-', '');
-            let nextState = 'idle';
-            let thoughtDuration = 5000; // Base IDLE duration
-
-            if (currentState === 'idle') {
-                if (randomChance > 0.95) {
-                    nextState = 'error';
-                    thoughtDuration = 1000 + Math.random() * 2000; // Brief error spikes
-                } else if (randomChance > 0.8) {
-                    nextState = 'warning';
-                    thoughtDuration = 2000 + Math.random() * 3000; // Suspicions
-                } else if (randomChance > 0.6) {
-                    nextState = 'process';
-                    thoughtDuration = 4000 + Math.random() * 6000; // Long calculations
-                } else {
-                    nextState = 'idle'; // Stay idle
-                    thoughtDuration = 3000 + Math.random() * 5000; // Breathe
-                }
-            } else {
-                // If it was doing something else, mostly return to IDLE, sometimes chain tasks
-                if (randomChance > 0.3) {
-                    nextState = 'idle';
-                    thoughtDuration = 4000;
-                } else {
-                    nextState = 'process'; // Chain into processing the warning/error
-                    thoughtDuration = 3000;
-                }
-            }
-
-            setState(nextState);
-            brainTimer = setTimeout(autonomousBrainLoop, thoughtDuration);
-        }
-
-        // --- 4. UPTIME HUD TICKER ---
-        const uptimeEl = document.getElementById('uptime');
-        let seconds = 0;
-        setInterval(() => {
-            seconds++;
-            const h = String(Math.floor(seconds / 3600)).padStart(2, '0');
-            const m = String(Math.floor((seconds % 3600) / 60)).padStart(2, '0');
-            const s = String(seconds % 60).padStart(2, '0');
-            uptimeEl.textContent = `${h}:${m}:${s}`;
-        }, 1000);
-
-        // Boot
-        setState('idle');
-        updateMenu();
-        autonomousBrainLoop(); // Start the independent thinking engine
-
-    </script>
+  </main>
 </body>
-
 </html>
