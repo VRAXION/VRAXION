@@ -171,7 +171,7 @@ class SelfWiringGraph:
 
     # --- Mutation ---
 
-    def mutate(self):
+    def mutate(self, forced_op=None):
         """Decoupled strategy mutation: mask/loss revert, strategy survives.
 
         Strategy bits (signal, grow, intensity) are NOT reverted on reject.
@@ -179,11 +179,13 @@ class SelfWiringGraph:
         Strategy updates happen through slower differential survival across
         multiple attempts rather than per-attempt scalar reversion.
 
-        Decision tree:
+        Decision tree (when forced_op is None):
           Q1 signal? → YES: flip only (CHEAP)
                        NO:  structural
                             Q2 grow? → YES: add
                                        NO:  remove/rewire
+
+        forced_op: 'rewire', 'remove', 'add', 'flip' — overrides mood bits.
         """
         # Intensity drift (survives rejects) — 7/20 chance
         if random.randint(1, 20) <= 7:
@@ -196,16 +198,28 @@ class SelfWiringGraph:
         # Mask mutations using current strategy — returns undo log
         undo = []
         for _ in range(int(self.intensity)):
-            if self.signal:  # Q1: signal-only → flip (CHEAP)
-                self._flip(undo)
-            else:            # structural change
-                if self.grow:    # Q2: grow → add
+            if forced_op is not None:
+                # Phase-driven: override mood bits
+                if forced_op == 'rewire':
+                    self._rewire(undo)
+                elif forced_op == 'remove':
+                    self._remove(undo)
+                elif forced_op == 'add':
                     self._add(undo)
-                else:            # shrink → 7/10 remove, 3/10 rewire
-                    if random.randint(1, 10) <= 7:
-                        self._remove(undo)
-                    else:
-                        self._rewire(undo)
+                elif forced_op == 'flip':
+                    self._flip(undo)
+            else:
+                # Normal mood-driven mutation
+                if self.signal:  # Q1: signal-only → flip (CHEAP)
+                    self._flip(undo)
+                else:            # structural change
+                    if self.grow:    # Q2: grow → add
+                        self._add(undo)
+                    else:            # shrink → 7/10 remove, 3/10 rewire
+                        if random.randint(1, 10) <= 7:
+                            self._remove(undo)
+                        else:
+                            self._rewire(undo)
         return undo
 
     def _add(self, undo):
