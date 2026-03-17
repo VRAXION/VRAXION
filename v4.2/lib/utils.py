@@ -103,17 +103,16 @@ def train_cyclic(net, targets, V, score_fn, ticks=8,
                  max_att=20000, stale_limit=6000,
                  add_every=50,
                  crystal_budget=3000, crystal_window=200, crystal_min_rate=0.005,
-                 crystal_tolerance=0.02,
                  verbose=True):
     """Cyclic phase training: REWIRE → CRYSTALLIZE → repeat.
 
     Phase 1 - REWIRE: mostly rewire ops, with one add every `add_every` attempts.
               Runs until stale_limit is hit. Acceptance: strict (sc > best_sc).
-    Phase 2 - CRYSTALLIZE: remove-only. Has its own budget (crystal_budget).
-              Acceptance is RELAXED: sc >= best_sc * (1 - crystal_tolerance).
-              This lets removes through even if they slightly hurt the score,
-              because pruning enables better rewiring in the next cycle.
-              Keeps going until budget runs out OR plateau detected.
+    Phase 2 - CRYSTALLIZE: remove-only, strictly monotonic.
+              Acceptance: sc >= current_sc (score must NOT decrease).
+              Every accepted remove is guaranteed safe — score can only stay
+              or improve. More rejects than tolerant mode, but the kept removes
+              are pure gold. Has its own budget (crystal_budget).
               Plateau: sliding window acceptance rate < crystal_min_rate.
 
     Args:
@@ -128,8 +127,6 @@ def train_cyclic(net, targets, V, score_fn, ticks=8,
         crystal_budget: max attempts per crystallize phase
         crystal_window: sliding window for plateau detection
         crystal_min_rate: if accepts/window < this → plateau (default 0.5%)
-        crystal_tolerance: accept removes within this fraction of best score
-                          (0.02 = accept if score stays within 2% of best)
         verbose: print phase transitions and progress
 
     Returns:
@@ -193,24 +190,19 @@ def train_cyclic(net, targets, V, score_fn, ticks=8,
         if best_sc >= 0.99:
             break
 
-        # ── Phase 2: CRYSTALLIZE (remove-only, aggressive) ──
+        # ── Phase 2: CRYSTALLIZE (remove-only, strictly monotonic) ──
         phase_att = 0
         edges_before = net.count_connections()
         crystal_kept = 0
-        # Relaxed acceptance: allow score to drop within tolerance
-        crystal_floor = best_sc * (1 - crystal_tolerance)
-        # Track score at start of crystal phase — we'll restore best_sc
-        # to this if crystal hurt the score (the next rewire rebuilds)
-        pre_crystal_sc = best_sc
-        # Sliding window: track last crystal_window results (1=accepted, 0=rejected)
+        # Current running score — only goes up or stays same
+        cur_sc = best_sc
+        # Sliding window for plateau detection
         window = []
         if verbose:
             print(f"\n  Cycle {cycle} | CRYSTALLIZE phase | "
-                  f"Conns: {edges_before} | Score: {best_sc*100:.1f}% | "
-                  f"floor: {crystal_floor*100:.1f}%")
+                  f"Conns: {edges_before} | Score: {cur_sc*100:.1f}%")
 
         while phase_att < crystal_budget:
-            old_loss = int(net.loss_pct)
             edges_pre = net.count_connections()
 
             undo = net.mutate(forced_op='remove', n_changes=1,
@@ -218,20 +210,18 @@ def train_cyclic(net, targets, V, score_fn, ticks=8,
 
             sc, acc = score_fn(net, targets, V, ticks)
 
-            # Relaxed acceptance: keep remove if score stays above floor
-            if sc >= crystal_floor:
-                # Update best if we actually improved
+            # Strict monotonic: accept only if score didn't drop
+            if sc >= cur_sc:
+                cur_sc = sc
                 if sc > best_sc:
                     best_sc = sc
                     best_acc = acc
-                    crystal_floor = best_sc * (1 - crystal_tolerance)
                 kept += 1
                 crystal_kept += 1
                 shrunk = 1 if net.count_connections() < edges_pre else 0
                 window.append(shrunk)
             else:
                 net.replay(undo)
-                net.loss_pct = np.int8(old_loss)
                 window.append(0)
 
             # Keep window bounded
@@ -245,29 +235,32 @@ def train_cyclic(net, targets, V, score_fn, ticks=8,
                 edges_now = net.count_connections()
                 pruned = edges_before - edges_now
                 rate = sum(window) / len(window) if window else 0
-                print(f"  [{total_att:6d}] CRYSTAL Score: {best_sc*100:5.1f}% | "
+                print(f"  [{total_att:6d}] CRYSTAL Score: {cur_sc*100:5.1f}% | "
                       f"Conns: {edges_now:4d} (pruned {pruned}) | "
                       f"accept_rate={rate:.3f}")
 
-            # Plateau check: only after full window filled
+            # Plateau: no more useful removes
             if (len(window) >= crystal_window
                     and sum(window) / crystal_window < crystal_min_rate):
                 if verbose:
-                    print(f"  Crystal plateau detected at att {phase_att}")
+                    print(f"  Crystal plateau at att {phase_att}")
                 break
 
-        # Reset best_sc to current score after crystal pruning.
-        # The pruned network may score lower — rewire needs to rebuild from here.
-        post_sc, post_acc = score_fn(net, targets, V, ticks)
         if verbose:
             edges_after = net.count_connections()
             print(f"  CRYSTALLIZE done: {edges_before} → {edges_after} edges "
                   f"(pruned {edges_before - edges_after}) | "
-                  f"score: {pre_crystal_sc*100:.1f}% → {post_sc*100:.1f}%")
-        best_sc = post_sc
-        best_acc = post_acc
+                  f"score: {best_sc*100:.1f}%")
+        # best_sc already updated inline — no reset needed since score
+        # can only stay or improve in strict monotonic mode
 
         if best_sc >= 0.99:
+            break
+
+        # Stop cycling if both rewire and crystal produced nothing
+        if rewire_kept == 0 and crystal_kept == 0:
+            if verbose:
+                print(f"\n  Converged: no progress in cycle {cycle}, stopping.")
             break
 
     if verbose:

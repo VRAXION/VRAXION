@@ -18,13 +18,12 @@ best_sc, best_acc, kept, cycles = train_cyclic(
     net, targets, V,
     score_fn=score_batch,
     ticks=8,
-    max_att=80000,       # enough for 2-3 full cycles
+    max_att=80000,
     stale_limit=2000,
     add_every=50,
-    crystal_budget=3000,
-    crystal_window=200,
-    crystal_min_rate=0.005,
-    crystal_tolerance=0.10,
+    crystal_budget=5000,     # more budget since strict mode has lower accept rate
+    crystal_window=300,
+    crystal_min_rate=0.003,
     verbose=True,
 )
 
