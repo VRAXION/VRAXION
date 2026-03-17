@@ -1,0 +1,156 @@
+Experiment Summary — 2026-03-17
+================================
+
+Experiment 1: Fixed cap=5000, sparse forward, scaling V (seed=42, budget=8k)
+- Score: V=32→59%, V=64→49%, V=128→18%, V=256→3%, V=512→1%
+- ms/att scales ~linearly with V (sparse works)
+- Fixed cap too small for large V
+
+Experiment 2: Proportional cap (V*40), sparse forward, scaling V (seed=42, budget=8k)
+- Better than fixed: V=128→17%, V=192→10.5%, V=256→6.3%
+- Still drops but slower
+
+Experiment 3: Pair-seq vs Drive at V=128, cap=5120, 5 seeds (budget=12k)
+- MAJOR FINDING: Drive=1.4% avg, Pair-seq=18.2% avg (+16.8%)
+- Drive is dead with conn cap — can't restructure
+- Pair-seq can add AND remove independently → restructuring within cap
+
+Experiment 4: Pair-seq at V=256, cap=10240, 5 seeds (budget=12k)
+- avg 7.2% (range 5.7-10.2%)
+
+Experiment 5: Cap ratio sweep at V=128 (seed=42, budget=12k)
+- ratio=20→7.5%, 40→20.2%, 60→33.6%, 80→39.6%, 120→42.1%, 160→42.1%
+- Network self-limits at ~11000 conns (7.5% density)
+- Plateau at ratio=120, more cap doesn't help at this budget
+
+Experiment 6: Pair-seq V=128, cap=10240, 5 seeds (budget=24k)
+- avg 42.6% (range 29-48%)
+- Massive gain from 2x budget (18.2% → 42.6%)
+
+Experiment 7: Pair-seq V=128, cap=10240, seeds 0+42 (budget=48k)
+- BREAKTHROUGH: seed 0 = 50.6%, seed 42 = 50.5%
+- Matches V=64 drive performance (50.3%)!
+- Still climbing ~1%/8k steps, no hard plateau
+- Trajectory: 8k→32%, 16k→44%, 24k→47%, 32k→49%, 48k→50.5%
+- Both seeds converge to same score = robust, not lucky
+
+Key Findings:
+1. Pair-seq >> drive when connections are capped (+16.8% at V=128)
+2. Sparse forward gives ~linear V scaling (not V³)
+3. V=128 pair-seq matches V=64 drive at ~3x budget
+4. Network self-limits connections (~7.5% density at V=128)
+5. Score still climbing at 48k — no hard wall yet
+6. The approach SCALES: bigger V just needs more iterations
+
+Next experiments to try:
+- Push V=128 to 96k budget — can it break 60%?
+- V=256 with higher budget (48k+) and larger cap
+- Add rewire as 3rd phase in pair-seq
+
+Experiment 8: Pair-seq V=128, cap=10240, seed 42 (budget=96k)
+- Full trajectory: 8k→32%, 16k→44%, 24k→48%, 32k→49%, 48k→50.5%, 96k→52.3%
+- Still climbing but diminishing returns (~0.3%/8k after 48k)
+- Stale counter rising (180-252) — search space getting exhausted
+- 52.3% slightly beats V=64 drive avg (50.3%)
+- Conclusion: pair-seq + sparse + cap SCALES to V=128 and beyond
+
+Experiment 9: Pair-seq V=256, cap=20480, seed 42 (budget=48k)
+- Trajectory: 8k→13.5%, 16k→17.9%, 24k→21.7%, 32k→22.9%, 40k→28.1%, 48k→31.3%
+- Still climbing, no plateau (stale=15 at end)
+- 31 min total runtime (1879s)
+- Follows same scaling curve as V=128, shifted right
+- Projected ~40% at 96k budget based on V=128 trajectory
+
+Experiment 10: 3-phase pair-seq (add→remove→rewire) vs 2-phase, V=128, cap=10240, 5 seeds (budget=24k)
+- MAJOR FINDING: 3-phase avg 49.0% vs 2-phase avg 42.6% (+6.4%)
+- 3-phase wins ALL 5 seeds (+0.9% to +20.0%)
+- Rewire especially helps when 2-phase gets stuck (seed 1: 29.1%→49.1%, +20%)
+- 3-phase takes ~50% more wall time (375s vs 250s, 3 evals/step vs 2)
+- Network learns rewire amount independently (w1 to w10)
+- Connection counts stay at cap — rewire restructures without growing
+
+Experiment 11: Pair-seq V=256, cap=20480, seed 42 (budget=96k)
+- Full trajectory: 8k→13.5%, 16k→17.9%, 24k→21.7%, 32k→22.9%, 40k→28.1%, 48k→31.3%,
+  56k→34.1%, 64k→36.0%, 72k→37.4%, 80k→38.2%, 88k→39.2%, 96k→40.8%
+- CONFIRMED: 40.8% matches projected ~40% — scaling law holds!
+- Still climbing (stale=1), needs ~200k+ to match V=128's 52.3%
+- 67.5 min runtime on Steam Deck CPU
+
+Scaling law (pair-seq + sparse + cap=V*80):
+- V=64:  50.3% @ 16k budget (baseline drive)
+- V=128: 50.5% @ 48k budget (2-phase pair-seq, ~3x more budget)
+- V=128: 49.0% @ 24k budget (3-phase pair-seq — nearly matches 2-phase@48k at HALF budget!)
+- V=256: 31.3% @ 48k budget (needs ~150k+ to match 50%)
+- V=256: 40.8% @ 96k budget (confirmed prediction!)
+
+Experiment 12: 3-phase pair-seq V=256, cap=20480, seed 42 (budget=48k)
+- 3-phase 29.5% vs 2-phase 31.3% = -1.8% — 3-phase LOSES at V=256
+- But: 3-phase at effective ~32k budget (29.5%) > 2-phase at 32k (22.9%)
+- 3-phase is more efficient per-eval, but 50% overhead kills it at low budget
+- Needs budget >~72k at V=256 for stuck-state benefit to exceed eval overhead
+
+3-phase analysis:
+- V=128 at 24k: 3-phase wins +6.4% (budget sufficient to overcome overhead)
+- V=256 at 48k: 3-phase loses -1.8% (budget too low, overhead dominates)
+- Crossover: 3-phase wins when budget is large enough relative to search space
+
+Experiment 13: 3-phase pair-seq V=128, cap=10240, seeds 0+42 (budget=48k)
+- Seed 0: 52.3% — MATCHES 2-phase 96k record at HALF the budget!
+- Seed 42: 50.6% — matches 2-phase@48k (50.5%)
+- Average: 51.5% vs 2-phase 50.6% (+0.9%)
+- 3-phase reaches 2-phase@48k level at ~32k budget (seed 0: 51.8%@32k)
+
+Best known scores at V=128:
+- 2-phase@96k: 52.3% (exp 8, seed 42)
+- 3-phase@48k: 52.3% (exp 13, seed 0) ← same quality, half the budget!
+- 3-phase@24k avg: 49.0% (exp 10)
+- 2-phase@48k avg: 50.6% (exp 7)
+
+Experiment 14: 3-phase pair-seq V=128, cap=10240, seed 42 (budget=96k)
+- NEW RECORD: 52.7% (previous best 52.3%)
+- But only +0.4% — V=128 ceiling is ~52-53% regardless of method
+- Plateaued at 80k, last 16k no improvement (stale rising)
+- 3-phase's real value: reaches same score FASTER (52.3%@72k vs 96k for 2-phase)
+
+V=128 ceiling analysis:
+- 2-phase@96k: 52.3%
+- 3-phase@96k: 52.7%
+- Hard ceiling appears to be ~52-53% at V=128 with cap=10240
+- Breaking this likely needs: bigger cap, more neurons (NV_RATIO>3), or new mutation ops
+
+Experiment 15: 3-phase cap sweep V=128, seed 42 (budget=48k)
+- ratio=80→50.6%, 120→52.7%, 160→52.7%, 200→52.7%
+- Cap WAS limiting at ratio=80: +2.1% when raised to 120
+- Network self-limits at 13744 conns (9.3% density) regardless of cap
+- Plateau at ratio=120 — same pattern as 2-phase but at higher score
+- V=128 ceiling at 48k is 52.7%, limited by BUDGET not cap
+
+Optimal V=128 config: 3-phase, cap=V*120, budget=48k+ → 52.7%
+
+V=128 complete picture:
+- 2-phase@12k cap80: 18.2% (exp 3)
+- 2-phase@24k cap80: 42.6% avg (exp 6)
+- 3-phase@24k cap80: 49.0% avg (exp 10)
+- 2-phase@48k cap80: 50.6% avg (exp 7)
+- 3-phase@48k cap80: 50.6% (exp 13, seed 42)
+- 3-phase@48k cap120: 52.7% (exp 15) ← BEST at 48k
+- 2-phase@96k cap80: 52.3% (exp 8)
+- 3-phase@96k cap80: 52.7% (exp 14) ← BEST overall
+
+Experiment 16: 3-phase V=256, cap=30720 (ratio=120), seed 42 (budget=96k)
+- BREAKTHROUGH: 49.5% — nearly matches V=128's 52.7% ceiling!
+- vs 2-phase@cap80@96k: +8.7% (40.8%→49.5%)
+- Full trajectory: 8k→19.5%, 16k→26.5%, 24k→33.5%, 32k→38.7%, 40k→43.8%,
+  48k→45.7%, 56k→47.3%, 64k→47.9%, 72k→48.3%, 80k→49.1%, 96k→49.5%
+- Still climbing (stale=7) — more budget would push past 50%
+- 110 min runtime on Steam Deck CPU
+
+Updated scaling law (optimal: 3-phase, cap=V*120):
+  V=64:   50.3% @ 16k budget (drive baseline)
+  V=128:  52.7% @ 48k budget (3-phase cap120, ~3x)
+  V=256:  49.5% @ 96k budget (3-phase cap120, ~6x) — nearly matches!
+
+Next experiments:
+- V=256 at 192k budget — can it match/beat V=128's 52.7%?
+- V=512 scaling test with optimal config (3-phase, cap=V*120)
+- Flip as 4th phase? (sign change, zero cost, might help fine-tuning)

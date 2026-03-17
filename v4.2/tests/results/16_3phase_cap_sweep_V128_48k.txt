@@ -1,0 +1,22 @@
+3-phase cap sweep V=128, seed=42, budget=48k
+
+ ratio     cap    score   conns     time
+---------------------------------------------
+    80   10240    50.6%   10239   675.7s
+   120   15360    52.7%   13744   734.9s
+   160   20480    52.7%   13744   747.1s
+   200   25600    52.7%   13744   735.6s
+
+Key findings:
+- Cap=80→120 gives +2.1% (50.6% → 52.7%) — cap WAS limiting at ratio=80
+- Plateau at ratio=120: network self-limits at 13744 conns (9.3% density)
+- Same pattern as 2-phase (exp 5): plateau at 120, but 3-phase reaches higher score
+- The V=128 ceiling at 48k budget is 52.7%, limited by BUDGET not by cap
+- More connections ≠ better after ~14k — the network finds its optimal density
+
+Compare with 2-phase cap sweep (exp 5, budget=12k):
+  2-phase: ratio=80→39.6%, 120→42.1%, 160→42.1%
+  3-phase: ratio=80→50.6%, 120→52.7%, 160→52.7%
+  3-phase advantage: +11.0% at ratio=80, +10.6% at ratio=120 (4x budget helps too)
+
+Optimal config for V=128: 3-phase, cap=V*120 (15360), budget=48k+ → 52.7%

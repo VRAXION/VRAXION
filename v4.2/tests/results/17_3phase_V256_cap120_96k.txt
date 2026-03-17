@@ -1,0 +1,26 @@
+3-phase pair-seq V=256, cap=30720 (ratio=120), seed=42, budget=96k
+Applies optimal config from V=128 cap sweep to V=256
+
+Trajectory:
+  8k→19.5%, 16k→26.5%, 24k→33.5%, 32k→38.7%, 40k→43.8%
+  48k→45.7%, 56k→47.3%, 64k→47.9%, 72k→48.3%, 80k→49.1%
+  88k→49.3%, 96k→49.5%
+
+Result: 49.5% in 96000 steps (6587s / 110 min)
+Final: +2/-2/w1, conns=30720, stale=7
+
+BREAKTHROUGH: V=256 nearly matches V=128's best (52.7%)!
+- vs 2-phase@cap80@96k: 40.8% → 49.5% (+8.7%) — higher cap + 3-phase
+- vs 3-phase@cap80@48k: 29.5% → 49.5% (+20.0%) — higher cap + more budget
+- Still climbing at 96k (stale=7) — more budget would push past 50%
+
+Impact of each optimization at V=256:
+  2-phase, cap80,  48k: 31.3% (exp 9 baseline)
+  2-phase, cap80,  96k: 40.8% (+9.5% from 2x budget)
+  3-phase, cap80,  48k: 29.5% (-1.8%, overhead > benefit at low budget)
+  3-phase, cap120, 96k: 49.5% (+18.2% from all optimizations combined)
+
+Scaling law update (optimal config: 3-phase, cap=V*120):
+  V=64:   50.3% @ 16k (drive baseline)
+  V=128:  52.7% @ 48k (3-phase, ~3x budget)
+  V=256:  49.5% @ 96k (3-phase, ~6x budget) — nearly matches!

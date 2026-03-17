@@ -1,0 +1,16 @@
+Pair-seq (2-phase) V=256, cap=20480, seed=42, budget=96k
+Extends exp 9 (48k→31.3%) to 96k
+
+Trajectory:
+  8k→13.5%, 16k→17.9%, 24k→21.7%, 32k→22.9%, 40k→28.1%, 48k→31.3%
+  56k→34.1%, 64k→36.0%, 72k→37.4%, 80k→38.2%, 88k→39.2%, 96k→40.8%
+
+Result: 40.8% in 96000 steps (4053s / 67.5 min)
+Final: +2/-3, conns=20478, stale=1
+
+Key findings:
+- Matches projected ~40% from V=128 scaling curve — scaling law holds!
+- Still climbing at 96k (stale=1, gaining ~1%/8k)
+- Diminishing returns: 2.8%/8k early → 0.8%/8k late
+- 67 min runtime on Steam Deck CPU
+- Confirms: V=256 needs ~200k+ budget to match V=128's 52.3%

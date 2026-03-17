@@ -1,0 +1,2 @@
+Pair-seq V=128 cap=10240 budget=96000 seed=42
+FINAL: 52.3%  conns=10242  +4/-3  steps=96000  889s

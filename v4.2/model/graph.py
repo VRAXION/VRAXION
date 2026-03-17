@@ -53,11 +53,9 @@ class SelfWiringGraph:
         self.state = np.zeros(self.N, dtype=np.float32)
         self.charge = np.zeros(self.N, dtype=np.float32)
 
-        # Co-evolved learned params (all int8)
+        # Co-evolved learned params
         self.loss_pct = np.int8(15)    # 1-50, charge loses loss% per tick
-        self.signal = np.int8(0)       # Q1: 0=structural, 1=signal-only (flip)
-        self.grow = np.int8(1)         # Q2: 0=shrink, 1=grow (only if structural)
-        self.intensity = np.int8(7)    # 1-15, n_changes per mutation
+        self.drive = np.int8(1)        # signed: +N=add N, -N=remove N, [-15,+15]
 
     def reset(self):
         self.state *= 0
@@ -116,9 +114,7 @@ class SelfWiringGraph:
     # --- State management ---
 
     def save_state(self):
-        """Save only what affects the forward pass.
-        Strategy bits (signal, grow, intensity) are NOT saved —
-        they survive rejects and learn through differential survival."""
+        """Save everything that reverts on reject: mask, charge, loss, drive."""
         return {
             'mask': self.mask.copy(),
             'alive': self.alive.copy(),
@@ -126,10 +122,11 @@ class SelfWiringGraph:
             'state': self.state.copy(),
             'charge': self.charge.copy(),
             'loss_pct': np.int8(self.loss_pct),
+            'drive': np.int8(self.drive),
         }
 
     def restore_state(self, s):
-        """Revert forward-pass state. Strategy bits untouched."""
+        """Revert all state including drive."""
         self.mask[:] = s['mask']
         if 'alive' in s:
             self.alive = s['alive'].copy()
@@ -139,6 +136,8 @@ class SelfWiringGraph:
         self.state[:] = s['state']
         self.charge[:] = s['charge']
         self.loss_pct = np.int8(s.get('loss_pct', s.get('loss', 15)))
+        if 'drive' in s:
+            self.drive = np.int8(s['drive'])
 
     def replay(self, log):
         """Repeat logged ops in reverse = undo. O(changes) + O(alive) list rebuild.
@@ -171,61 +170,28 @@ class SelfWiringGraph:
 
     # --- Mutation ---
 
-    def mutate(self, forced_op=None, n_changes=None, freeze_params=False):
-        """Decoupled strategy mutation: mask/loss revert, strategy survives.
-
-        Strategy bits (signal, grow, intensity) are NOT reverted on reject.
-        Only mask + loss_pct revert on reject (they affect the forward pass).
-        Strategy updates happen through slower differential survival across
-        multiple attempts rather than per-attempt scalar reversion.
-
-        Decision tree (when forced_op is None):
-          Q1 signal? → YES: flip only (CHEAP)
-                       NO:  structural
-                            Q2 grow? → YES: add
-                                       NO:  remove/rewire
-
-        forced_op: 'rewire', 'remove', 'add', 'flip' — overrides mood bits.
-        n_changes: override intensity (number of changes per call).
-                   If None, uses self.intensity as normal.
-        freeze_params: if True, skip intensity/loss_pct drift. Use during
-                      crystallization for pure structural pruning.
+    def mutate(self):
+        """Learned drive mutation: drive is a signed int that reverts on reject.
+        +N = add N connections, -N = remove N, 0 = no structural change.
+        The network learns what it needs: build, prune, or hold.
         """
-        if not freeze_params:
-            # Intensity drift (survives rejects) — 7/20 chance
-            if random.randint(1, 20) <= 7:
-                self.intensity = np.int8(max(1, min(15, int(self.intensity) + random.choice([-1, 1]))))
+        # Loss drift (reverts on reject) — 1/5 chance
+        if random.randint(1, 5) == 1:
+            self.loss_pct = np.int8(max(1, min(50, int(self.loss_pct) + random.randint(-3, 3))))
 
-            # Loss step (reverts with mask on reject) — 1/5 chance
-            if random.randint(1, 5) == 1:
-                self.loss_pct = np.int8(max(1, min(50, int(self.loss_pct) + random.randint(-3, 3))))
+        # Drive drift — 7/20 chance, ±1, reverts on reject
+        if random.randint(1, 20) <= 7:
+            self.drive = np.int8(max(-15, min(15, int(self.drive) + random.choice([-1, 1]))))
 
-        # Mask mutations using current strategy — returns undo log
+        # Execute drive: +N=add, -N=remove, 0=nothing
         undo = []
-        iters = n_changes if n_changes is not None else int(self.intensity)
-        for _ in range(iters):
-            if forced_op is not None:
-                # Phase-driven: override mood bits
-                if forced_op == 'rewire':
-                    self._rewire(undo)
-                elif forced_op == 'remove':
-                    self._remove(undo)
-                elif forced_op == 'add':
-                    self._add(undo)
-                elif forced_op == 'flip':
-                    self._flip(undo)
-            else:
-                # Normal mood-driven mutation
-                if self.signal:  # Q1: signal-only → flip (CHEAP)
-                    self._flip(undo)
-                else:            # structural change
-                    if self.grow:    # Q2: grow → add
-                        self._add(undo)
-                    else:            # shrink → 7/10 remove, 3/10 rewire
-                        if random.randint(1, 10) <= 7:
-                            self._remove(undo)
-                        else:
-                            self._rewire(undo)
+        d = int(self.drive)
+        if d > 0:
+            for _ in range(d):
+                self._add(undo)
+        elif d < 0:
+            for _ in range(-d):
+                self._remove(undo)
         return undo
 
     def _add(self, undo):
@@ -293,6 +259,7 @@ def train(net, targets, vocab, max_attempts=8000, ticks=8,
 
     for att in range(max_attempts):
         old_loss = int(net.loss_pct)
+        old_drive = int(net.drive)
         undo = net.mutate()
         new_score = evaluate()
 
@@ -303,17 +270,12 @@ def train(net, targets, vocab, max_attempts=8000, ticks=8,
         else:
             net.replay(undo)
             net.loss_pct = np.int8(old_loss)
+            net.drive = np.int8(old_drive)
             stale += 1
-            # Strategy failed → reconsider (flip on reject)
-            if random.randint(1, 20) <= 7:  # 7/20 = 0.35
-                net.signal = np.int8(1 - int(net.signal))
-            if random.randint(1, 20) <= 7:
-                net.grow = np.int8(1 - int(net.grow))
 
         if verbose and (att + 1) % 1000 == 0:
-            mode = "SIGNAL" if net.signal else ("GROW" if net.grow else "SHRINK")
             print(f"  [{att+1:5d}] Score: {best*100:5.1f}% | "
-                  f"Conns: {net.count_connections():4d} | {mode} int={int(net.intensity)} | "
+                  f"Conns: {net.count_connections():4d} | drive={int(net.drive):+d} | "
                   f"Loss: {int(net.loss_pct)}%")
 
         if best >= 0.99 or stale >= stale_limit:

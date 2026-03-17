@@ -1,0 +1,3 @@
+Pair-seq LONG run @ V=128 cap=10240 sparse | budget=48000
+seed=0  50.6%  conns=10239  +1/-3  steps=48000  444s
+seed=42  50.5%  conns=10240  +1/-5  steps=48000  446s

@@ -1,0 +1,2 @@
+Pair-seq V=256 cap=20480 budget=48000 seed=42
+FINAL: 31.3%  conns=20482  +8/-2  steps=48000  1879s
