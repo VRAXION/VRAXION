@@ -101,32 +101,28 @@ def train_loop(net, targets, V, score_fn, mutate_fn=None,
 
 def train_cyclic(net, targets, V, score_fn, ticks=8,
                  max_att=20000, stale_limit=6000,
-                 add_every=50,
+                 add_every=50, add_burst=1,
+                 frontload_until=0, frontload_every=None,
                  crystal_budget=3000, crystal_window=200, crystal_min_rate=0.005,
                  verbose=True):
     """Cyclic phase training: REWIRE → CRYSTALLIZE → repeat.
 
-    Phase 1 - REWIRE: mostly rewire ops, with one add every `add_every` attempts.
+    Phase 1 - REWIRE: mostly rewire ops, with periodic add injections.
               Runs until stale_limit is hit. Acceptance: strict (sc > best_sc).
     Phase 2 - CRYSTALLIZE: remove-only, strictly monotonic.
               Acceptance: sc >= current_sc (score must NOT decrease).
-              Every accepted remove is guaranteed safe — score can only stay
-              or improve. More rejects than tolerant mode, but the kept removes
-              are pure gold. Has its own budget (crystal_budget).
-              Plateau: sliding window acceptance rate < crystal_min_rate.
 
     Args:
-        net: SelfWiringGraph instance
-        targets: target array
-        V: vocab size
-        score_fn: callable(net, targets, V, ticks) -> (score, acc)
-        ticks: forward pass ticks
+        net, targets, V, score_fn, ticks: standard training args
         max_att: total max attempts across all cycles
         stale_limit: stale limit for REWIRE phase
-        add_every: inject one add every N attempts during REWIRE
-        crystal_budget: max attempts per crystallize phase
+        add_every: inject add(s) every N attempts during REWIRE (0/None = no adds)
+        add_burst: number of add ops per injection point (default 1)
+        frontload_until: use frontload_every instead of add_every for first N atts
+        frontload_every: add frequency during frontload zone (None = use add_every)
+        crystal_budget: max attempts per crystallize phase (0 = skip crystal)
         crystal_window: sliding window for plateau detection
-        crystal_min_rate: if accepts/window < this → plateau (default 0.5%)
+        crystal_min_rate: if accepts/window < this → plateau
         verbose: print phase transitions and progress
 
     Returns:
@@ -157,9 +153,15 @@ def train_cyclic(net, targets, V, score_fn, ticks=8,
             state = net.save_state()
             old_loss = int(net.loss_pct)
 
-            # Every add_every attempts, force one add; otherwise rewire
-            if phase_att > 0 and phase_att % add_every == 0:
-                undo = net.mutate(forced_op='add')
+            # Determine effective add frequency (frontload zone vs normal)
+            eff_every = add_every
+            if frontload_until and phase_att < frontload_until and frontload_every is not None:
+                eff_every = frontload_every
+
+            if eff_every and phase_att > 0 and phase_att % eff_every == 0:
+                undo = []
+                for _ in range(add_burst):
+                    undo.extend(net.mutate(forced_op='add'))
             else:
                 undo = net.mutate(forced_op='rewire')
 
