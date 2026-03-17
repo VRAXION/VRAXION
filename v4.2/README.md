@@ -17,6 +17,8 @@ This directory contains the active self-wiring graph line.
 - `tests/rng_tier_benchmark.py`: RNG-quality sensitivity benchmark
 - `tests/sparse_scaling_benchmark.py`: sparse-forward scaling benchmark
 - `tests/graph_v3_probe.py`: compare and inspect the C path
+- `CREDIT_GUIDED_REWIRING.md`: research note on recurrence, pain probes, and credit-guided rewiring
+- `CREDIT_GUIDED_REWIRING_SKETCH.md`: prototype plan for `forward_batch_trace()` + `backward_credit()`
 
 ## Test Layout Notes
 
