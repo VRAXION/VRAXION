@@ -5,7 +5,7 @@
  * + int mutation path (fast). Best of all worlds.
  *
  * Compile: gcc -O3 -o graph_v3 graph_v3.c -lm
- * Run:     ./graph_v3 [vocab] [seed] [budget]
+ * Run:     ./graph_v3 [vocab] [seed] [budget] [conn_cap]
  */
 
 #include <stdio.h>
@@ -45,6 +45,7 @@ typedef struct {
     int *alive_r, *alive_c;
     float *alive_s;           /* edge sign with baked drive: ±0.6 */
     int alive_n, alive_cap;
+    int conn_cap;             /* 0 = unlimited, >0 = hard cap on alive edges */
 
     int loss_pct, signal, grow, intensity;
 
@@ -172,6 +173,20 @@ int net_init(Net *n, int vocab, uint32_t seed) {
     return 0;
 }
 
+/* Prune random edges until alive_n <= cap. Call after init. */
+void net_enforce_cap(Net *n) {
+    if (n->conn_cap <= 0) return;
+    while (n->alive_n > n->conn_cap) {
+        int idx = ri(n, 0, n->alive_n - 1);
+        int r = n->alive_r[idx], c = n->alive_c[idx];
+        n->mask[r * n->N + c] = 0;
+        n->alive_n--;
+        n->alive_r[idx] = n->alive_r[n->alive_n];
+        n->alive_c[idx] = n->alive_c[n->alive_n];
+        n->alive_s[idx] = n->alive_s[n->alive_n];
+    }
+}
+
 void net_free(Net *n) {
     free(n->mask); free(n->charges); free(n->acts); free(n->raw);
     free(n->alive_r); free(n->alive_c); free(n->alive_s);
@@ -250,7 +265,8 @@ static void op_flip(Net *n) {
 
 static void op_add(Net *n) {
     int r = ri(n, 0, n->N - 1), c = ri(n, 0, n->N - 1);
-    if (r != c && n->mask[r * n->N + c] == 0 && n->alive_n < n->alive_cap) {
+    int cap = (n->conn_cap > 0) ? n->conn_cap : n->alive_cap;
+    if (r != c && n->mask[r * n->N + c] == 0 && n->alive_n < cap) {
         float val = ri(n, 0, 1) ? DRIVE : -DRIVE;
         n->mask[r * n->N + c] = val;
         n->alive_r[n->alive_n] = r;
@@ -396,14 +412,21 @@ int main(int argc, char **argv) {
     int vocab = (argc > 1) ? atoi(argv[1]) : 64;
     uint32_t seed = (argc > 2) ? (uint32_t)atoi(argv[2]) : 42;
     int budget = (argc > 3) ? atoi(argv[3]) : 16000;
+    int cap = (argc > 4) ? atoi(argv[4]) : 0;  /* 0 = unlimited */
 
     Net n;
     if (net_init(&n, vocab, seed) != 0) {
         fprintf(stderr, "OOM\n"); return 1;
     }
+    n.conn_cap = cap;
 
-    printf("graph_v3 — sparse float | V=%d N=%d seed=%u conns=%d\n\n",
+    int init_conns = n.alive_n;
+    if (cap > 0) net_enforce_cap(&n);
+
+    printf("graph_v3 — sparse float | V=%d N=%d seed=%u conns=%d",
            n.V, n.N, seed, n.alive_n);
+    if (cap > 0) printf(" (cap=%d, pruned %d)", cap, init_conns - n.alive_n);
+    printf("\n\n");
 
     int *targets = (int *)malloc(vocab * sizeof(int));
     for (int i = 0; i < vocab; i++) targets[i] = i;
