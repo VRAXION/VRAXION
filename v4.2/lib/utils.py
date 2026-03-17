@@ -101,8 +101,8 @@ def train_loop(net, targets, V, score_fn, mutate_fn=None,
 
 def train_cyclic(net, targets, V, score_fn, ticks=8,
                  max_att=20000, stale_limit=6000,
-                 add_every=50, add_burst=1,
-                 frontload_until=0, frontload_every=None,
+                 add_every=200, add_burst=1,
+                 frontload_until=500, frontload_every=10,
                  crystal_budget=3000, crystal_window=200, crystal_min_rate=0.005,
                  verbose=True):
     """Cyclic phase training: REWIRE → CRYSTALLIZE → repeat.

@@ -37,7 +37,9 @@ for seed in SEEDS:
         ticks=8,
         max_att=BUDGET,
         stale_limit=BUDGET,  # never stop from stale — use full budget on rewire
-        add_every=50,
+        add_every=200,
+        frontload_until=500,
+        frontload_every=10,
         crystal_budget=0,    # NO crystal phase
         crystal_window=300,
         crystal_min_rate=0.003,
@@ -60,7 +62,9 @@ for seed in SEEDS:
         ticks=8,
         max_att=BUDGET,
         stale_limit=2000,
-        add_every=50,
+        add_every=200,
+        frontload_until=500,
+        frontload_every=10,
         crystal_budget=5000,
         crystal_window=300,
         crystal_min_rate=0.003,
