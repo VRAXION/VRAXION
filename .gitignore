@@ -9,6 +9,7 @@ _probe_bins/
 # Compiled C binaries
 graph_dense
 graph_v3
+mutation_strategy_bench
 
 # Virtual envs
 .venv/
@@ -60,3 +61,4 @@ v4/data_test/
 *.traindat
 *.mask
 *.drawio.bkp
+*.o
