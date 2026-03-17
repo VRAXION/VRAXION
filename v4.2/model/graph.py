@@ -171,7 +171,7 @@ class SelfWiringGraph:
 
     # --- Mutation ---
 
-    def mutate(self, forced_op=None):
+    def mutate(self, forced_op=None, n_changes=None, freeze_params=False):
         """Decoupled strategy mutation: mask/loss revert, strategy survives.
 
         Strategy bits (signal, grow, intensity) are NOT reverted on reject.
@@ -186,18 +186,24 @@ class SelfWiringGraph:
                                        NO:  remove/rewire
 
         forced_op: 'rewire', 'remove', 'add', 'flip' — overrides mood bits.
+        n_changes: override intensity (number of changes per call).
+                   If None, uses self.intensity as normal.
+        freeze_params: if True, skip intensity/loss_pct drift. Use during
+                      crystallization for pure structural pruning.
         """
-        # Intensity drift (survives rejects) — 7/20 chance
-        if random.randint(1, 20) <= 7:
-            self.intensity = np.int8(max(1, min(15, int(self.intensity) + random.choice([-1, 1]))))
+        if not freeze_params:
+            # Intensity drift (survives rejects) — 7/20 chance
+            if random.randint(1, 20) <= 7:
+                self.intensity = np.int8(max(1, min(15, int(self.intensity) + random.choice([-1, 1]))))
 
-        # Loss step (reverts with mask on reject) — 1/5 chance
-        if random.randint(1, 5) == 1:
-            self.loss_pct = np.int8(max(1, min(50, int(self.loss_pct) + random.randint(-3, 3))))
+            # Loss step (reverts with mask on reject) — 1/5 chance
+            if random.randint(1, 5) == 1:
+                self.loss_pct = np.int8(max(1, min(50, int(self.loss_pct) + random.randint(-3, 3))))
 
         # Mask mutations using current strategy — returns undo log
         undo = []
-        for _ in range(int(self.intensity)):
+        iters = n_changes if n_changes is not None else int(self.intensity)
+        for _ in range(iters):
             if forced_op is not None:
                 # Phase-driven: override mood bits
                 if forced_op == 'rewire':

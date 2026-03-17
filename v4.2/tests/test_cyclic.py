@@ -18,10 +18,13 @@ best_sc, best_acc, kept, cycles = train_cyclic(
     net, targets, V,
     score_fn=score_batch,
     ticks=8,
-    max_att=5000,
-    stale_limit=1500,
+    max_att=80000,       # enough for 2-3 full cycles
+    stale_limit=2000,
     add_every=50,
-    crystal_plateau=300,
+    crystal_budget=3000,
+    crystal_window=200,
+    crystal_min_rate=0.005,
+    crystal_tolerance=0.10,
     verbose=True,
 )
 
