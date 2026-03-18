@@ -1,8 +1,8 @@
 cff-version: 1.2.0
 message: "If you use this software, please cite it as below."
-title: "VRAXION"
-version: "3.2.001"
-date-released: "2026-02-17"
+title: "VRAXION Self-Wiring Graph"
+version: "4.2"
+date-released: "2026-03-18"
 type: software
 authors:
   - family-names: Kenessy
@@ -10,9 +10,9 @@ authors:
 repository-code: "https://github.com/VRAXION/VRAXION"
 keywords:
   - ai
-  - manifold
+  - self-wiring-graph
+  - graph-learning
+  - mutation-selection
+  - recurrent-graphs
   - research
-  - consciousness
-  - recursive-verification
-  - swarm
-  - lcx-memory
+  - benchmark

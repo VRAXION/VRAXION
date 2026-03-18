@@ -2,6 +2,15 @@
 
 This directory contains the active self-wiring graph line.
 
+## Current Emphasis
+
+The current `v4.2` line is centered on four things:
+
+- a stable NumPy reference core
+- a C path for scaling and parity work
+- reproducible benchmark harnesses for capability and scaling claims
+- new training ideas prototyped outside the core first, then promoted only if they beat the baseline
+
 ## Core Files
 
 - `model/graph.py`: stable NumPy reference implementation

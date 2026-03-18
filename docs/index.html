@@ -6,13 +6,14 @@
   <title>VRAXION // Self-Wiring Graph</title>
   <style>
     :root {
-      --bg: #0d1117;
-      --panel: rgba(255, 245, 230, 0.88);
-      --ink: #131313;
-      --accent: #d64f2a;
-      --accent-soft: #f4b183;
-      --line: rgba(19, 19, 19, 0.14);
-      --mono: "IBM Plex Mono", "SFMono-Regular", "Consolas", monospace;
+      --bg: #09131b;
+      --panel: rgba(250, 246, 238, 0.92);
+      --panel-strong: rgba(255, 255, 255, 0.68);
+      --ink: #161616;
+      --accent: #d24c2f;
+      --accent-2: #0f6277;
+      --line: rgba(22, 22, 22, 0.12);
+      --mono: "IBM Plex Mono", "SFMono-Regular", Consolas, monospace;
       --display: "Avenir Next Condensed", "Franklin Gothic Medium", "Arial Narrow", sans-serif;
       --body: "Avenir Next", "Segoe UI", sans-serif;
     }
@@ -22,74 +23,95 @@
       min-height: 100vh;
       color: var(--ink);
       background:
-        radial-gradient(circle at top left, rgba(244, 177, 131, 0.28), transparent 28%),
-        linear-gradient(135deg, #08131c 0%, #102433 38%, #271611 100%);
+        radial-gradient(circle at 12% 18%, rgba(210, 76, 47, 0.24), transparent 24%),
+        radial-gradient(circle at 84% 16%, rgba(15, 98, 119, 0.18), transparent 20%),
+        linear-gradient(135deg, #071019 0%, #132431 38%, #271811 100%);
       font-family: var(--body);
     }
     main {
-      width: min(1100px, calc(100vw - 32px));
-      margin: 24px auto;
+      width: min(1160px, calc(100vw - 28px));
+      margin: 18px auto;
       padding: 28px;
       background: var(--panel);
-      border: 1px solid rgba(255,255,255,0.35);
-      box-shadow: 0 24px 90px rgba(0, 0, 0, 0.32);
+      border: 1px solid rgba(255,255,255,0.28);
+      box-shadow: 0 28px 90px rgba(0,0,0,0.34);
       backdrop-filter: blur(10px);
     }
     .eyebrow {
       font: 700 12px/1 var(--mono);
-      letter-spacing: 0.24em;
+      letter-spacing: 0.26em;
       text-transform: uppercase;
       color: var(--accent);
-      margin-bottom: 18px;
+      margin-bottom: 16px;
+    }
+    .hero {
+      display: grid;
+      grid-template-columns: minmax(0, 1.4fr) minmax(280px, 0.85fr);
+      gap: 18px;
+      align-items: stretch;
+    }
+    .hero-copy, .hero-aside {
+      background: var(--panel-strong);
+      border: 1px solid var(--line);
+      padding: 20px;
     }
     h1 {
       margin: 0;
       font-family: var(--display);
-      font-size: clamp(2.6rem, 7vw, 5.6rem);
-      line-height: 0.92;
-      letter-spacing: -0.04em;
-      max-width: 9ch;
+      font-size: clamp(2.9rem, 7vw, 5.9rem);
+      line-height: 0.9;
+      letter-spacing: -0.045em;
+      max-width: 10ch;
     }
     .lede {
-      margin: 22px 0 0;
-      max-width: 62ch;
-      font-size: clamp(1rem, 1.8vw, 1.2rem);
-      line-height: 1.65;
+      margin: 20px 0 0;
+      max-width: 64ch;
+      font-size: clamp(1rem, 1.7vw, 1.18rem);
+      line-height: 1.68;
     }
+    .metric {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--line);
+      font: 600 0.95rem/1.45 var(--mono);
+    }
+    .metric:last-child { border-bottom: 0; }
     .grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-      gap: 16px;
-      margin-top: 28px;
+      grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+      gap: 14px;
+      margin-top: 16px;
     }
     .card {
       padding: 18px;
-      background: rgba(255,255,255,0.55);
+      background: rgba(255,255,255,0.58);
       border: 1px solid var(--line);
-      min-height: 180px;
+      min-height: 170px;
     }
-    .card h2 {
+    h2 {
       margin: 0 0 10px;
-      font-size: 0.9rem;
-      font-family: var(--mono);
+      font: 700 0.88rem/1.2 var(--mono);
       letter-spacing: 0.12em;
       text-transform: uppercase;
     }
-    .card p, .card li {
-      font-size: 0.98rem;
-      line-height: 1.55;
+    p, li {
+      font-size: 0.97rem;
+      line-height: 1.58;
+      margin: 0;
     }
     ul {
       margin: 0;
       padding-left: 18px;
     }
-    .band {
-      margin-top: 24px;
-      padding: 16px 0 0;
+    .links {
+      margin-top: 18px;
+      padding-top: 16px;
       border-top: 1px solid var(--line);
       display: flex;
       flex-wrap: wrap;
-      gap: 10px 18px;
+      gap: 10px 16px;
       font: 600 0.9rem/1.4 var(--mono);
     }
     a {
@@ -103,48 +125,78 @@
       padding: 0.12rem 0.35rem;
       border-radius: 4px;
     }
+    .note {
+      margin-top: 16px;
+      padding: 14px 16px;
+      background: rgba(15, 98, 119, 0.08);
+      border-left: 4px solid var(--accent-2);
+      font-size: 0.98rem;
+      line-height: 1.6;
+    }
+    @media (max-width: 860px) {
+      .hero { grid-template-columns: 1fr; }
+    }
     @media (max-width: 700px) {
-      main { padding: 20px; }
-      .band { flex-direction: column; gap: 6px; }
+      main { padding: 18px; }
+      .links { flex-direction: column; gap: 6px; }
     }
   </style>
 </head>
 <body>
   <main>
-    <div class="eyebrow">VRAXION / Mainline Cleanup</div>
-    <h1>Self-Wiring Graph Only.</h1>
-    <p class="lede">
-      The default branch is now scoped to the active self-wiring graph line. Historical VRAXION codepaths were removed from the main tree so the repo, the docs, and CI all describe the same thing: the <code>v4.2</code> self-wiring graph stack.
-    </p>
+    <div class="eyebrow">VRAXION / Self-Wiring Mainline</div>
+
+    <section class="hero">
+      <article class="hero-copy">
+        <h1>Self-Wiring Graph Core.</h1>
+        <p class="lede">
+          The default branch now presents one coherent line: the <code>v4.2</code> self-wiring graph stack. The repo surface, benchmark harnesses, archive policy, and CI are aligned so public readers see the active work directly instead of historical branch noise.
+        </p>
+      </article>
+      <aside class="hero-aside">
+        <div class="metric"><span>Active branch</span><span><code>main</code></span></div>
+        <div class="metric"><span>Reference core</span><span><code>v4.2/model/graph.py</code></span></div>
+        <div class="metric"><span>Scaling path</span><span><code>graph_v3.c</code></span></div>
+        <div class="metric"><span>CI policy</span><span>compile + stress + cyclic smoke</span></div>
+        <div class="metric"><span>Archive policy</span><span>branches for eras, tags for snapshots</span></div>
+      </aside>
+    </section>
 
     <section class="grid">
       <article class="card">
         <h2>Core</h2>
-        <p><code>v4.2/model/graph.py</code> is the stable NumPy reference. It couples sparse signed edges, persistent charge, and gradient-free mutation/selection training.</p>
-      </article>
-      <article class="card">
-        <h2>Training</h2>
-        <p><code>v4.2/lib/utils.py</code> contains the generic score helpers plus cyclic <code>rewire -&gt; crystallize</code> training used in the stronger self-wiring runs.</p>
+        <p><code>graph.py</code> is the stable NumPy reference for sparse signed edges, persistent charge, and mutation-selection training. New ideas should beat this line before they are promoted into doctrine.</p>
       </article>
       <article class="card">
         <h2>Benchmarks</h2>
         <ul>
-          <li><code>tests/test_model.py</code> for adversarial stress</li>
-          <li><code>tests/rng_tier_benchmark.py</code> for RNG sensitivity</li>
-          <li><code>tests/sparse_scaling_benchmark.py</code> for scaling probes</li>
+          <li><code>test_model.py</code> adversarial stress</li>
+          <li><code>ab_rng_knee.py</code> random-source knee</li>
+          <li><code>benchmark_ab.py</code> SWG vs MLP vs random search</li>
+          <li><code>benchmark_expressiveness.py</code> multi-task expressiveness</li>
         </ul>
       </article>
       <article class="card">
-        <h2>Out Of Main</h2>
-        <p>The unfinished <code>surprise</code> learning branch is intentionally excluded from the cleaned mainline until it beats the mutation baseline and its learning rule is redesigned.</p>
+        <h2>Research Notes</h2>
+        <p>The current documented next step is <em>credit-guided rewiring</em>: backward-style blame on the current graph, used to bias <code>add/remove/flip/rewire</code> instead of direct pain injection.</p>
+      </article>
+      <article class="card">
+        <h2>Archive</h2>
+        <p>Older repo eras stay out of the active branch list. Long-lived old lines remain as archive branches; short-lived lines are preserved as snapshot tags.</p>
       </article>
     </section>
 
-    <div class="band">
+    <div class="note">
+      The repo was intentionally pruned so the public branch surface is now only the active <code>main</code> line plus the two historical pre-self-wiring archive branches. Everything else was either merged, deleted, or preserved as a tag.
+    </div>
+
+    <div class="links">
       <span><a href="https://github.com/VRAXION/VRAXION">Repository</a></span>
       <span><a href="https://github.com/VRAXION/VRAXION/blob/main/README.md">README</a></span>
+      <span><a href="https://github.com/VRAXION/VRAXION/blob/main/ARCHIVE.md">Archive Policy</a></span>
       <span><a href="https://github.com/VRAXION/VRAXION/tree/main/v4.2">v4.2</a></span>
-      <span><a href="https://github.com/VRAXION/VRAXION/blob/main/v4.2/tests/test_model.py">Stress Test</a></span>
+      <span><a href="https://github.com/VRAXION/VRAXION/blob/main/v4.2/CREDIT_GUIDED_REWIRING.md">Credit-Guided Rewiring</a></span>
+      <span><a href="https://github.com/VRAXION/VRAXION/blob/main/v4.2/viz/swg_demo.html">SWG Demo</a></span>
     </div>
   </main>
 </body>

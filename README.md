@@ -1,7 +1,7 @@
 # VRAXION Self-Wiring Graph
 
-This repository is the slimmed `main` line for the self-wiring graph work.
-Everything outside the active self-wiring path has been moved out of the mainline scope.
+This repository is the active mainline for the VRAXION self-wiring graph program.
+The branch surface, docs, and CI are intentionally aligned so the public repo describes one thing clearly: the current `v4.2` self-wiring graph stack.
 
 ## Scope
 
@@ -26,6 +26,14 @@ The current self-wiring graph is a gradient-free graph learner with:
 
 The stable reference implementation is [`v4.2/model/graph.py`](v4.2/model/graph.py).
 
+## Current Snapshot
+
+- Active line: `v4.2` self-wiring graph
+- Reference core: NumPy `graph.py` plus C `graph_v3.c` path
+- Bench suite: stress, RNG, expressiveness, convergence, density, and browser visualization harnesses
+- CI: compile sanity + reference stress + tiny cyclic smoke on every push to `main`
+- Archive policy: old eras stay in `archive/*` branches or `archive/*` tags, not in the active branch list
+
 ## Repo Layout
 
 - [`v4.2/README.md`](v4.2/README.md): module-level map
@@ -34,6 +42,7 @@ The stable reference implementation is [`v4.2/model/graph.py`](v4.2/model/graph.
 - [`v4.2/lib/utils.py`](v4.2/lib/utils.py): training helpers
 - [`v4.2/tests/`](v4.2/tests/): experiment scripts and results
 - [`v4.2/CREDIT_GUIDED_REWIRING.md`](v4.2/CREDIT_GUIDED_REWIRING.md): design note for credit-guided rewiring
+- [`ARCHIVE.md`](ARCHIVE.md): branch and snapshot-tag policy for older lines
 - [`v4.2/tests/benchmark_ab.py`](v4.2/tests/benchmark_ab.py): SWG vs MLP vs random-search benchmark
 - [`v4.2/tests/benchmark_expressiveness.py`](v4.2/tests/benchmark_expressiveness.py): expressiveness benchmark across task families
 - [`v4.2/tests/ab_rng_knee.py`](v4.2/tests/ab_rng_knee.py): random-source knee benchmark
