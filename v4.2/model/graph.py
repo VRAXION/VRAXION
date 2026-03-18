@@ -25,13 +25,16 @@ class SelfWiringGraph:
     # Mutation int fractions: PATIENCE 7/20, LOSS_DRIFT 1/5, SHRINK 7/10, LOSS_STEP +-3
 
     def __init__(self, *args, **_):
-        # SelfWiringGraph(64) or SelfWiringGraph(192, 64)
+        # SelfWiringGraph(64)        → V=64, N=64*NV_RATIO
+        # SelfWiringGraph(192, 64)   → N=192, V=64 (explicit N)
         if len(args) == 1:
             vocab = args[0]
+            self.V = vocab
+            self.N = vocab * self.NV_RATIO
         else:
-            _, vocab = args[0], args[1]
-        self.V = vocab
-        self.N = vocab * self.NV_RATIO
+            self.N = args[0]
+            self.V = args[1]
+            vocab = self.V
 
         # Split I/O: first V = input, last V = output
         self.out_start = self.N - vocab if self.N >= 2 * vocab else 0

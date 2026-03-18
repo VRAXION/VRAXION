@@ -1,17 +1,20 @@
 """
-Neuron Capacity Sweep — N-centric scaling analysis
-====================================================
-Primary question: Given N neurons and T ticks, what is the MAXIMUM
-vocab size V the network can learn?
+Neuron Capacity Sweep — N-centric, plateau-based
+==================================================
+Q: Given N neurons and T ticks, how much knowledge (V) fits?
 
-We fix N and increase V until accuracy collapses.
-This gives us the fundamental capacity metric: bits-per-neuron.
+Design:
+  - N is the primary axis (physical substrate)
+  - For each N, try increasing V until the network can't learn it
+  - Train until plateau (stale_limit), not fixed budget
+  - Use sparse forward for N≥256 (much faster)
+  - Track learning curves: accuracy over attempts
 
-Metrics:
-  - max_V(N, T):  largest V that reaches ≥90% accuracy
-  - knowledge_density = max_V / N  (vocab units per neuron)
-  - bits_per_neuron = log2(max_V!) / N  (information bits stored per neuron)
-  - edges_per_neuron = final_edges / N
+Output:
+  - max_V(N):       largest V reaching ≥90% accuracy
+  - V/N:            knowledge density (vocab per neuron)
+  - bits/neuron:    log2(V!) / N  (information per neuron)
+  - plateau_at:     attempt number where learning stopped
 """
 import sys, os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
@@ -20,62 +23,84 @@ import numpy as np
 import random
 import math
 import time
+import json
 import multiprocessing
 from concurrent.futures import ProcessPoolExecutor, as_completed
+from scipy import sparse as sp
 from model.graph import SelfWiringGraph
 
 
 # ── Config ──────────────────────────────────────────────────────────
-# N values to test (the physical substrate sizes)
-N_VALUES = [48, 96, 192, 384, 768]
 
-# For each N, we try V values from small to large.
-# V must be ≤ N//2 (need room for split I/O: input V + output V ≤ N)
-# We'll generate V candidates dynamically per N.
+N_VALUES = [48, 96, 192]
 
-# Ticks to test
-TICK_VALUES = [4, 8, 12, 16]
+TICK_PHASE1 = [8]
+TICK_PHASE2 = [4, 8, 12, 16]
 
-# Training budget — scales with task difficulty
-def budget_for(N, V):
-    """More budget for harder configs (bigger V relative to N)."""
-    base = max(8000, V * 100)
-    return min(base, 64000)
+STALE_LIMIT = 4000
+MAX_ATTEMPTS = 32000
 
-# Accuracy threshold to consider "learned"
 ACC_THRESHOLD = 0.90
-
-# Seeds
+SNAPSHOT_EVERY = 500
 SEEDS = [42, 77, 123]
+
+RESULTS_DIR = os.path.join(os.path.dirname(__file__), 'results')
+
+# Use sparse forward for N >= this threshold
+SPARSE_THRESHOLD = 256
+
 
 # ── Helpers ─────────────────────────────────────────────────────────
 
 def v_candidates(N):
-    """Generate V values to try for a given N.
-    V must satisfy: 2*V ≤ N (split I/O needs V input + V output neurons).
-    We use roughly logarithmic spacing."""
-    max_v = N // 2  # hard upper bound from split I/O
-    # But also NV_RATIO=3 means normal V = N/3, so we go beyond that
-    candidates = []
+    """V values to try for a given N. Max V = N//2 (split I/O).
+    Coarse spacing — we want ~8 points per N, not 20."""
+    max_v = N // 2
+    candidates = set()
     v = 4
     while v <= max_v:
-        candidates.append(v)
-        if v < 16:
-            v += 4
-        elif v < 64:
+        candidates.add(v)
+        # ~doublings: 4, 8, 16, 24, 32, 48, 64, 96, ...
+        if v < 8:
+            v = 8
+        elif v < 16:
+            v = 16
+        elif v < 32:
             v += 8
-        elif v < 256:
-            v += 16
         else:
-            v += 32
-    if candidates and candidates[-1] != max_v:
-        candidates.append(max_v)
-    return candidates
+            v += max(16, v // 2)
+    candidates.add(max_v)
+    return sorted(candidates)
 
 
-def evaluate(net, targets, V, ticks):
-    """Score a network. Returns (accuracy, composite_score)."""
-    logits = net.forward_batch(ticks)
+def forward_batch_sparse(net, ticks=8):
+    """Sparse forward using scipy CSR — much faster for large N."""
+    V, N = net.V, net.N
+    mask_csr = sp.csr_matrix(net.mask)
+    charges = np.zeros((V, N), dtype=np.float32)
+    acts = np.zeros((V, N), dtype=np.float32)
+    retain = float(net.retention)
+    for t in range(ticks):
+        if t == 0:
+            acts[:, :V] = np.eye(V, dtype=np.float32)
+        raw = acts @ mask_csr
+        if sp.issparse(raw):
+            raw = raw.toarray()
+        else:
+            raw = np.asarray(raw)
+        charges += raw
+        charges *= retain
+        acts = np.maximum(charges - net.THRESHOLD, 0.0)
+        charges = np.clip(charges, -1.0, 1.0)
+    return charges[:, net.out_start:net.out_start + V]
+
+
+def evaluate(net, targets, V, ticks, use_sparse=False):
+    """Returns (accuracy, composite_score)."""
+    if use_sparse:
+        logits = forward_batch_sparse(net, ticks)
+    else:
+        logits = net.forward_batch(ticks)
     e = np.exp(logits - logits.max(axis=1, keepdims=True))
     probs = e / e.sum(axis=1, keepdims=True)
     acc = float((np.argmax(probs, axis=1)[:V] == targets[:V]).mean())
@@ -84,39 +109,39 @@ def evaluate(net, targets, V, ticks):
 
 
 def permutation_bits(V):
-    """Information content of a random permutation: log2(V!)
-    This is how many bits a perfect learner needs to memorize the mapping."""
+    """log2(V!) — bits needed to encode a random permutation of V."""
     return sum(math.log2(i) for i in range(2, V + 1))
 
 
-# ── Single run ──────────────────────────────────────────────────────
+# ── Single run with plateau detection ──────────────────────────────
 
 def run_one(N, V, ticks, seed):
-    """Train one (N, V, T) config. Returns stats dict."""
+    """Train until plateau. Track learning curve."""
     t0 = time.time()
     np.random.seed(seed)
     random.seed(seed)
 
-    # Create network with explicit N, V
     net = SelfWiringGraph(N, V)
-    assert net.N == N, f"Expected N={N}, got {net.N}"
     targets = np.random.permutation(V)
+    use_sparse = N >= SPARSE_THRESHOLD
 
-    budget = budget_for(N, V)
-    _, score = evaluate(net, targets, V, ticks)
+    _, score = evaluate(net, targets, V, ticks, use_sparse)
     best_acc = 0.0
     best_score = score
     stale = 0
+    plateau_at = 0
+    curve = []
 
-    for att in range(budget):
+    for att in range(MAX_ATTEMPTS):
         old_loss = int(net.loss_pct)
         old_drive = int(net.drive)
         undo = net.mutate()
-        acc, s = evaluate(net, targets, V, ticks)
+        acc, s = evaluate(net, targets, V, ticks, use_sparse)
 
         if s > score:
             score = s
-            best_acc = max(best_acc, acc)
+            if acc > best_acc:
+                best_acc = acc
             best_score = max(best_score, s)
             stale = 0
         else:
@@ -125,32 +150,39 @@ def run_one(N, V, ticks, seed):
             net.drive = np.int8(old_drive)
             stale += 1
 
-        if best_acc >= 1.0 or stale >= 6000:
+        if (att + 1) % SNAPSHOT_EVERY == 0:
+            curve.append({
+                'att': att + 1,
+                'acc': round(best_acc, 4),
+                'score': round(best_score, 4),
+                'edges': net.count_connections(),
+            })
+
+        if best_acc >= 1.0:
+            plateau_at = att + 1
             break
+        if stale >= STALE_LIMIT:
+            plateau_at = att + 1 - STALE_LIMIT
+            break
+    else:
+        plateau_at = MAX_ATTEMPTS
 
     edges = net.count_connections()
     elapsed = time.time() - t0
-
     info_bits = permutation_bits(V)
 
     return {
-        'N': N,
-        'V': V,
-        'ticks': ticks,
-        'seed': seed,
-        'acc': best_acc,
-        'score': best_score,
-        'edges': edges,
-        'budget': budget,
-        'attempts': att + 1,
-        'elapsed': elapsed,
-        # Derived metrics
-        'nv_ratio_actual': N / V,
-        'knowledge_density': V / N,           # vocab per neuron
-        'edges_per_neuron': edges / N,
-        'bits_total': info_bits,               # log2(V!) bits in the task
-        'bits_per_neuron': info_bits / N,      # bits stored per neuron
+        'N': N, 'V': V, 'ticks': ticks, 'seed': seed,
+        'acc': best_acc, 'score': best_score,
+        'edges': edges, 'attempts': att + 1,
+        'plateau_at': plateau_at, 'elapsed': elapsed,
+        'V_over_N': V / N,
+        'bits_total': info_bits,
+        'bits_per_neuron': info_bits / N,
         'bits_per_edge': info_bits / edges if edges > 0 else 0,
+        'edges_per_neuron': edges / N,
+        'density_pct': edges / (N * (N - 1)) * 100,
+        'curve': curve,
     }
 
 
@@ -158,169 +190,267 @@ def run_one(N, V, ticks, seed):
 
 def main():
     ncpu = multiprocessing.cpu_count()
+    os.makedirs(RESULTS_DIR, exist_ok=True)
 
-    # Build job list
-    jobs = []
-    for N in N_VALUES:
-        for V in v_candidates(N):
-            for T in TICK_VALUES:
-                for seed in SEEDS:
-                    jobs.append((N, V, T, seed))
-
-    total = len(jobs)
-    print(f"NEURON CAPACITY SWEEP — N-centric analysis")
-    print(f"  N values:    {N_VALUES}")
-    print(f"  Tick values: {TICK_VALUES}")
-    print(f"  Seeds:       {SEEDS}")
-    print(f"  Total jobs:  {total}")
-    print(f"  CPU cores:   {ncpu}")
-    print(f"  Workers:     {min(ncpu, total)}")
-    print(f"  ACC threshold: {ACC_THRESHOLD*100:.0f}%")
+    # ═══════════════════════════════════════════════════════════════
+    # PHASE 1: T=8 fixed, sweep N × V
+    # ═══════════════════════════════════════════════════════════════
+    print("=" * 120)
+    print("PHASE 1: CAPACITY LIMITS  (T=8, plateau-based stopping)")
     print("=" * 120)
 
-    results = []
-    done = 0
+    jobs_p1 = []
+    for N in N_VALUES:
+        vs = v_candidates(N)
+        print(f"  N={N:4d}: V candidates = {vs}")
+        for V in vs:
+            for seed in SEEDS:
+                jobs_p1.append((N, V, 8, seed))
 
-    with ProcessPoolExecutor(max_workers=min(ncpu, total)) as pool:
-        futures = {pool.submit(run_one, *j): j for j in jobs}
-        for fut in as_completed(futures):
-            r = fut.result()
-            results.append(r)
-            done += 1
-            if done % 10 == 0 or done == total:
-                print(f"  [{done:4d}/{total}] N={r['N']:4d} V={r['V']:3d} T={r['ticks']:2d} "
-                      f"seed={r['seed']:3d}  acc={r['acc']*100:5.1f}%  "
-                      f"edges={r['edges']:5d}  bits/neuron={r['bits_per_neuron']:.2f}  "
-                      f"({r['elapsed']:.1f}s)", flush=True)
-
-    # ── Aggregate: for each (N, T), find max V that reaches threshold ──
-    print(f"\n{'='*120}")
-    print("MAX LEARNABLE VOCAB PER NEURON COUNT")
-    print(f"(accuracy ≥ {ACC_THRESHOLD*100:.0f}% on ≥2 of {len(SEEDS)} seeds)")
-    print(f"\n{'N':>5s}", end="")
-    for T in TICK_VALUES:
-        print(f"  {'T='+str(T)+' max_V':>12s} {'V/N':>6s} {'bits/N':>7s} {'e/N':>6s}", end="")
-    print()
+    total = len(jobs_p1)
+    workers = min(ncpu, total)
+    print(f"\n  Total Phase 1 jobs: {total}, Workers: {workers}")
+    print(f"  Stale limit: {STALE_LIMIT}, Max attempts: {MAX_ATTEMPTS}")
+    print(f"  Sparse forward for N≥{SPARSE_THRESHOLD}")
     print("-" * 120)
 
-    capacity_data = {}  # (N, T) -> {max_V, bits_per_neuron, ...}
+    results_p1 = []
+    done = 0
 
-    for N in N_VALUES:
-        print(f"{N:5d}", end="")
-        for T in TICK_VALUES:
-            # For each V, check if majority of seeds passed threshold
-            max_v = 0
-            max_v_bits = 0
-            max_v_edges = 0
-            for V in v_candidates(N):
-                runs = [r for r in results
-                        if r['N'] == N and r['V'] == V and r['ticks'] == T]
-                passing = sum(1 for r in runs if r['acc'] >= ACC_THRESHOLD)
-                if passing >= 2:  # majority of seeds
-                    max_v = V
-                    max_v_bits = np.mean([r['bits_per_neuron'] for r in runs])
-                    max_v_edges = np.mean([r['edges_per_neuron'] for r in runs])
+    with ProcessPoolExecutor(max_workers=workers) as pool:
+        futures = {pool.submit(run_one, *j): j for j in jobs_p1}
+        for fut in as_completed(futures):
+            r = fut.result()
+            results_p1.append(r)
+            done += 1
+            tag = "OK" if r['acc'] >= ACC_THRESHOLD else "  "
+            print(f"  [{done:3d}/{total}] N={r['N']:4d} V={r['V']:3d} T=8 "
+                  f"seed={r['seed']:3d}  acc={r['acc']*100:5.1f}% "
+                  f"plateau@{r['plateau_at']:5d} "
+                  f"edges={r['edges']:5d} "
+                  f"bits/N={r['bits_per_neuron']:.2f} "
+                  f"[{tag}] ({r['elapsed']:.1f}s)", flush=True)
 
-            if max_v > 0:
-                print(f"  {max_v:12d} {max_v/N:6.3f} {max_v_bits:7.2f} {max_v_edges:6.1f}", end="")
-                capacity_data[(N, T)] = {
-                    'max_V': max_v, 'V_per_N': max_v / N,
-                    'bits_per_N': max_v_bits, 'edges_per_N': max_v_edges,
-                }
-            else:
-                print(f"  {'---':>12s} {'---':>6s} {'---':>7s} {'---':>6s}", end="")
-        print()
-
-    # ── Detailed breakdown per N ──
+    # ── Phase 1 analysis ──
     print(f"\n{'='*120}")
-    print("DETAILED ACCURACY BY (N, V, T) — averaged over seeds")
-    print(f"\n{'N':>5s} {'V':>5s} {'N/V':>5s}", end="")
-    for T in TICK_VALUES:
-        print(f"  {'T='+str(T):>8s}", end="")
-    print(f"  {'bits(V!)':>8s}")
-    print("-" * 100)
+    print("PHASE 1 RESULTS: CAPACITY TABLE (T=8)")
+    print(f"(✓ = ≥{ACC_THRESHOLD*100:.0f}% on ≥2/{len(SEEDS)} seeds)\n")
+
+    header = f"{'N':>5s} {'V':>5s} {'N/V':>5s} {'V/N':>5s} {'mean_acc':>9s} {'pass':>5s} {'plateau':>8s} {'edges':>6s} {'bits/N':>7s} {'e/N':>6s} {'dens%':>6s}"
+    print(header)
+    print("-" * len(header))
+
+    capacity = {}
 
     for N in N_VALUES:
+        max_v_passing = 0
+        max_v_data = None
         for V in v_candidates(N):
-            print(f"{N:5d} {V:5d} {N/V:5.1f}", end="")
-            for T in TICK_VALUES:
-                runs = [r for r in results
-                        if r['N'] == N and r['V'] == V and r['ticks'] == T]
-                if runs:
-                    mean_acc = np.mean([r['acc'] for r in runs])
-                    marker = " *" if mean_acc >= ACC_THRESHOLD else "  "
-                    print(f"  {mean_acc*100:5.1f}%{marker}", end="")
-                else:
-                    print(f"  {'---':>8s}", end="")
-            print(f"  {permutation_bits(V):8.1f}")
+            runs = [r for r in results_p1 if r['N'] == N and r['V'] == V]
+            if not runs:
+                continue
+            accs = [r['acc'] for r in runs]
+            mean_acc = np.mean(accs)
+            passing = sum(1 for a in accs if a >= ACC_THRESHOLD)
+            mean_plateau = np.mean([r['plateau_at'] for r in runs])
+            mean_edges = np.mean([r['edges'] for r in runs])
+            mean_bpn = np.mean([r['bits_per_neuron'] for r in runs])
+            mean_epn = np.mean([r['edges_per_neuron'] for r in runs])
+            mean_dens = np.mean([r['density_pct'] for r in runs])
+
+            mark = "✓" if passing >= 2 else " "
+            print(f"{N:5d} {V:5d} {N/V:5.1f} {V/N:5.3f} "
+                  f"{mean_acc*100:7.1f}%  {passing}/{len(runs)}  "
+                  f"{mean_plateau:7.0f} {mean_edges:6.0f} "
+                  f"{mean_bpn:7.2f} {mean_epn:6.1f} {mean_dens:5.2f}% {mark}")
+
+            if passing >= 2:
+                max_v_passing = V
+                max_v_data = {
+                    'max_V': V, 'V_per_N': V / N,
+                    'bits_per_N': mean_bpn, 'edges_per_N': mean_epn,
+                    'plateau': mean_plateau, 'density': mean_dens,
+                }
+
+        if max_v_data:
+            capacity[N] = max_v_data
         print()
 
-    # ── Scaling law fits ──
-    print(f"\n{'='*120}")
-    print("SCALING LAW: max_V = a × N^b  (per tick count)")
-    for T in TICK_VALUES:
-        ns = []
-        vs = []
-        for N in N_VALUES:
-            key = (N, T)
-            if key in capacity_data and capacity_data[key]['max_V'] > 0:
-                ns.append(N)
-                vs.append(capacity_data[key]['max_V'])
-        if len(ns) >= 3:
-            log_n = np.log(np.array(ns, dtype=float))
-            log_v = np.log(np.array(vs, dtype=float))
-            coeffs = np.polyfit(log_n, log_v, 1)
-            b = coeffs[0]
-            a = np.exp(coeffs[1])
-            predicted = a * np.array(ns) ** b
-            ss_res = np.sum((np.array(vs) - predicted) ** 2)
-            ss_tot = np.sum((np.array(vs) - np.mean(vs)) ** 2)
-            r2 = 1 - ss_res / ss_tot if ss_tot > 0 else 0
-            print(f"  T={T:2d}:  max_V = {a:.4f} × N^{b:.4f}  (R²={r2:.4f})")
-
-            # Extrapolation
-            for N_ext in [1536, 3072, 6144]:
-                pred_V = a * N_ext ** b
-                print(f"         N={N_ext:5d} → max_V ≈ {pred_V:.0f}  "
-                      f"(V/N={pred_V/N_ext:.3f})")
-        else:
-            print(f"  T={T:2d}:  insufficient data points ({len(ns)})")
-
-    # ── Tick effect analysis ──
-    print(f"\n{'='*120}")
-    print("TICK EFFECT: does more T increase capacity?")
+    # ── Capacity summary ──
+    print(f"{'='*120}")
+    print("CAPACITY SUMMARY (T=8)\n")
+    print(f"{'N':>5s} {'max_V':>6s} {'V/N':>6s} {'bits/N':>8s} {'plateau':>8s} {'edges/N':>8s}")
+    print("-" * 50)
     for N in N_VALUES:
-        t_vs = []
-        for T in TICK_VALUES:
-            key = (N, T)
-            if key in capacity_data:
-                t_vs.append((T, capacity_data[key]['max_V']))
-        if len(t_vs) >= 2:
-            ts = [x[0] for x in t_vs]
-            vs = [x[1] for x in t_vs]
-            improvement = vs[-1] / vs[0] if vs[0] > 0 else float('inf')
-            print(f"  N={N:4d}: T={ts[0]}→max_V={vs[0]:3d}  "
-                  f"T={ts[-1]}→max_V={vs[-1]:3d}  "
-                  f"({improvement:.2f}× from {ts[0]}→{ts[-1]} ticks)")
+        if N in capacity:
+            c = capacity[N]
+            print(f"{N:5d} {c['max_V']:6d} {c['V_per_N']:6.3f} "
+                  f"{c['bits_per_N']:8.2f} {c['plateau']:8.0f} {c['edges_per_N']:8.1f}")
+        else:
+            print(f"{N:5d}    ---")
 
-    # ── Key findings summary ──
+    # ── Scaling law ──
+    ns_fit = [N for N in N_VALUES if N in capacity]
+    vs_fit = [capacity[N]['max_V'] for N in ns_fit]
+
     print(f"\n{'='*120}")
-    print("KEY FINDINGS")
-    if capacity_data:
-        # Best bits/neuron across all configs
-        best_key = max(capacity_data.keys(), key=lambda k: capacity_data[k].get('bits_per_N', 0))
-        best = capacity_data[best_key]
-        print(f"  Best bits/neuron: {best['bits_per_N']:.2f} at N={best_key[0]}, T={best_key[1]}")
-        print(f"  Best V/N ratio:   {best['V_per_N']:.3f} (max_V={best['max_V']})")
+    print("SCALING LAW: max_V = a × N^b")
+    if len(ns_fit) >= 3:
+        log_n = np.log(np.array(ns_fit, dtype=float))
+        log_v = np.log(np.array(vs_fit, dtype=float))
+        coeffs = np.polyfit(log_n, log_v, 1)
+        b = coeffs[0]
+        a = np.exp(coeffs[1])
+        predicted = a * np.array(ns_fit) ** b
+        ss_res = np.sum((np.array(vs_fit) - predicted) ** 2)
+        ss_tot = np.sum((np.array(vs_fit) - np.mean(vs_fit)) ** 2)
+        r2 = 1 - ss_res / ss_tot if ss_tot > 0 else 0
+        print(f"  max_V = {a:.4f} × N^{b:.4f}  (R²={r2:.4f})")
 
-        # Average V/N across T=8
-        t8_data = [(k, v) for k, v in capacity_data.items() if k[1] == 8]
-        if t8_data:
-            avg_vn = np.mean([v['V_per_N'] for _, v in t8_data])
-            print(f"  Average V/N at T=8: {avg_vn:.3f}")
-            print(f"  → 1 neuron ≈ {avg_vn:.3f} vocab unit capacity")
-            print(f"  → For V=32K, need N ≈ {32000/avg_vn:,.0f} neurons")
+        if b > 0.9:
+            print(f"  → Near-linear (b≈{b:.2f}): doubling N ≈ doubles capacity")
+        elif b > 0.5:
+            print(f"  → Sub-linear (b≈{b:.2f}): diminishing returns per neuron")
+        else:
+            print(f"  → Strongly sub-linear (b≈{b:.2f})")
 
+        print(f"\n  Extrapolation:")
+        for N_ext in [768, 1536, 3072, 6144, 96000]:
+            pred_V = a * N_ext ** b
+            print(f"    N={N_ext:6d} → max_V ≈ {pred_V:8.0f}  (V/N={pred_V/N_ext:.3f})")
+    else:
+        print(f"  Insufficient data ({len(ns_fit)} points, need ≥3)")
+
+    # ═══════════════════════════════════════════════════════════════
+    # PHASE 2: T sweep near breakpoints
+    # ═══════════════════════════════════════════════════════════════
+    print(f"\n{'='*120}")
+    print("PHASE 2: TICK EFFECT ON CAPACITY")
+    print("=" * 120)
+
+    jobs_p2 = []
+    for N in N_VALUES:
+        if N not in capacity:
+            continue
+        max_v = capacity[N]['max_V']
+        test_vs = sorted(set([v for v in v_candidates(N)
+                              if abs(v - max_v) <= max(8, max_v // 2)]))
+        if not test_vs:
+            test_vs = [max_v]
+        for V in test_vs:
+            for T in [4, 12, 16]:
+                for seed in SEEDS:
+                    jobs_p2.append((N, V, T, seed))
+
+    if jobs_p2:
+        total_p2 = len(jobs_p2)
+        print(f"  Phase 2 jobs: {total_p2}")
+        print("-" * 120)
+
+        results_p2 = []
+        done = 0
+        with ProcessPoolExecutor(max_workers=min(ncpu, total_p2)) as pool:
+            futures = {pool.submit(run_one, *j): j for j in jobs_p2}
+            for fut in as_completed(futures):
+                r = fut.result()
+                results_p2.append(r)
+                done += 1
+                tag = "OK" if r['acc'] >= ACC_THRESHOLD else "  "
+                print(f"  [{done:3d}/{total_p2}] N={r['N']:4d} V={r['V']:3d} T={r['ticks']:2d} "
+                      f"seed={r['seed']:3d}  acc={r['acc']*100:5.1f}% "
+                      f"plateau@{r['plateau_at']:5d} [{tag}] ({r['elapsed']:.1f}s)",
+                      flush=True)
+
+        all_results = results_p1 + results_p2
+
+        # ── Tick effect table ──
+        print(f"\n{'='*120}")
+        print("TICK EFFECT: max_V by (N, T)")
+        print(f"\n{'N':>5s}", end="")
+        for T in TICK_PHASE2:
+            print(f"  {'T='+str(T):>10s}", end="")
+        print(f"  {'T4→T16':>8s}")
+        print("-" * 70)
+
+        for N in N_VALUES:
+            if N not in capacity:
+                continue
+            print(f"{N:5d}", end="")
+            t_maxv = {}
+            for T in TICK_PHASE2:
+                max_v = 0
+                for V in v_candidates(N):
+                    runs = [r for r in all_results
+                            if r['N'] == N and r['V'] == V and r['ticks'] == T]
+                    passing = sum(1 for r in runs if r['acc'] >= ACC_THRESHOLD)
+                    if passing >= 2:
+                        max_v = V
+                if max_v > 0:
+                    print(f"  V={max_v:4d}", end="")
+                    t_maxv[T] = max_v
+                else:
+                    print(f"  {'---':>10s}", end="")
+
+            if 4 in t_maxv and 16 in t_maxv and t_maxv[4] > 0:
+                ratio = t_maxv[16] / t_maxv[4]
+                print(f"  {ratio:6.2f}×", end="")
+            print()
+    else:
+        all_results = results_p1
+        print("  No Phase 2 jobs")
+
+    # ═══════════════════════════════════════════════════════════════
+    # LEARNING CURVES
+    # ═══════════════════════════════════════════════════════════════
+    print(f"\n{'='*120}")
+    print("LEARNING CURVES (T=8, seed=42)")
+    print("attempts → accuracy\n")
+
+    for N in N_VALUES:
+        print(f"N={N}:")
+        for V in v_candidates(N):
+            runs = [r for r in results_p1
+                    if r['N'] == N and r['V'] == V and r['seed'] == 42]
+            if not runs:
+                continue
+            r = runs[0]
+            curve = r['curve']
+            if not curve:
+                continue
+            pts = curve[::max(1, len(curve) // 6)]
+            line = " ".join([f"{p['att']:5d}:{p['acc']*100:4.0f}%" for p in pts])
+            final = f"→ {r['acc']*100:.1f}%"
+            print(f"  V={V:3d} (V/N={V/N:.3f}): {line} {final}")
+        print()
+
+    # ═══════════════════════════════════════════════════════════════
+    # FINAL SUMMARY
+    # ═══════════════════════════════════════════════════════════════
+    print(f"{'='*120}")
+    print("FINAL SUMMARY\n")
+
+    if capacity:
+        v_per_n_values = [capacity[N]['V_per_N'] for N in capacity]
+        bits_per_n_values = [capacity[N]['bits_per_N'] for N in capacity]
+        print(f"  V/N (knowledge per neuron):  {min(v_per_n_values):.3f} – {max(v_per_n_values):.3f}  (mean {np.mean(v_per_n_values):.3f})")
+        print(f"  bits/neuron:                 {min(bits_per_n_values):.2f} – {max(bits_per_n_values):.2f}  (mean {np.mean(bits_per_n_values):.2f})")
+
+        avg_vn = np.mean(v_per_n_values)
+        print(f"\n  Projections at V/N = {avg_vn:.3f}:")
+        for target_V in [256, 1024, 8192, 32000]:
+            needed_N = target_V / avg_vn
+            print(f"    V={target_V:6d} → N ≈ {needed_N:8.0f}")
+
+    # Save JSON
+    save_path = os.path.join(RESULTS_DIR, 'neuron_capacity_sweep.json')
+    save_data = []
+    for r in all_results:
+        d = {k: v for k, v in r.items() if k != 'curve'}
+        d['curve_final'] = r['curve'][-1] if r['curve'] else None
+        save_data.append(d)
+    with open(save_path, 'w') as f:
+        json.dump(save_data, f, indent=2)
+    print(f"\n  Results saved: {save_path}")
     print("=" * 120)
 
 
