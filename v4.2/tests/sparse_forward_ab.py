@@ -426,6 +426,250 @@ void ternary_csr_forward(
         for (int j = 0; j < V; j++)
             out[b * V + j] = charges[b * N + out_start + j];
 }
+
+/* ═══════════════════════════════════════════════════════════════════
+ * BRANCH PREDICTION OPTIMIZATIONS
+ * ═══════════════════════════════════════════════════════════════════ */
+
+/*
+ * V5: Active-set tracking CSR.
+ *     Instead of scanning all N neurons and branching on a==0,
+ *     we maintain an explicit list of active neuron indices per
+ *     batch row. After each tick's activation step, we rebuild the
+ *     active set. This eliminates the branch entirely — we only
+ *     iterate over neurons we KNOW are active.
+ *
+ *     Cost: O(N) scan to rebuild active set after each tick, but
+ *     this is sequential and branch-prediction-friendly (monotonic).
+ *     Win: inner SpMV loop touches only active neurons, not all N.
+ */
+void activeset_csr_forward(
+    const int V, const int N, const int n_rows,
+    const int *row_ptr, const int *col_idx, const float *csr_vals,
+    const int ticks,
+    const float retain, const float threshold,
+    const int out_start,
+    float *charges,
+    float *acts,
+    float *out,
+    int *active_buf,    /* V * N scratch for active indices */
+    int *active_counts  /* V scratch for per-row active count */
+)
+{
+    memset(charges, 0, (size_t)V * N * sizeof(float));
+    memset(acts,    0, (size_t)V * N * sizeof(float));
+
+    for (int t = 0; t < ticks; t++) {
+        if (t == 0) {
+            for (int i = 0; i < V; i++)
+                acts[i * N + i] = 1.0f;
+            /* Build initial active set: for batch row b, only neuron b is active */
+            for (int b = 0; b < V; b++) {
+                active_buf[b * N] = b;
+                active_counts[b] = 1;
+            }
+        }
+
+        /* SpMV using active set — no branching on a==0 */
+        for (int b = 0; b < V; b++) {
+            const float *act_row = acts + b * N;
+            float *ch_row = charges + b * N;
+            const int *actv = active_buf + b * N;
+            int n_active = active_counts[b];
+            for (int ai = 0; ai < n_active; ai++) {
+                int i = actv[ai];
+                float a = act_row[i];
+                /* a is guaranteed nonzero — no branch needed */
+                int start = row_ptr[i];
+                int end   = row_ptr[i + 1];
+                for (int p = start; p < end; p++) {
+                    ch_row[col_idx[p]] += a * csr_vals[p];
+                }
+            }
+        }
+
+        /* Update charges, activations, and rebuild active sets */
+        for (int b = 0; b < V; b++) {
+            float *ch = charges + b * N;
+            float *ac = acts + b * N;
+            int *actv = active_buf + b * N;
+            int cnt = 0;
+            for (int j = 0; j < N; j++) {
+                ch[j] *= retain;
+                float a = ch[j] - threshold;
+                if (a > 0.0f) {
+                    ac[j] = a;
+                    actv[cnt++] = j;  /* record as active */
+                } else {
+                    ac[j] = 0.0f;
+                }
+                if (ch[j] > 1.0f) ch[j] = 1.0f;
+                if (ch[j] < -1.0f) ch[j] = -1.0f;
+            }
+            active_counts[b] = cnt;
+        }
+    }
+
+    for (int b = 0; b < V; b++)
+        for (int j = 0; j < V; j++)
+            out[b * V + j] = charges[b * N + out_start + j];
+}
+
+/*
+ * V6: Sign-split CSR — two separate CSR arrays for +/- edges.
+ *     Eliminates the branch on sign in the inner loop.
+ *     Inner loop becomes:
+ *       for positive edges: ch[col] += a * drive
+ *       for negative edges: ch[col] -= a * drive
+ *     Both loops are branch-free.
+ */
+void signsplit_csr_forward(
+    const int V, const int N, const int n_rows,
+    const int *pos_row_ptr, const int *pos_col_idx, const int pos_nnz,
+    const int *neg_row_ptr, const int *neg_col_idx, const int neg_nnz,
+    const float drive,
+    const int ticks,
+    const float retain, const float threshold,
+    const int out_start,
+    float *charges,
+    float *acts,
+    float *out
+)
+{
+    memset(charges, 0, (size_t)V * N * sizeof(float));
+    memset(acts,    0, (size_t)V * N * sizeof(float));
+
+    for (int t = 0; t < ticks; t++) {
+        if (t == 0) {
+            for (int i = 0; i < V; i++)
+                acts[i * N + i] = 1.0f;
+        }
+
+        for (int b = 0; b < V; b++) {
+            const float *act_row = acts + b * N;
+            float *ch_row = charges + b * N;
+            for (int i = 0; i < n_rows; i++) {
+                float a = act_row[i];
+                if (a == 0.0f) continue;
+                float a_drive = a * drive;
+
+                /* Positive edges — branch-free inner loop */
+                int ps = pos_row_ptr[i];
+                int pe = pos_row_ptr[i + 1];
+                for (int p = ps; p < pe; p++) {
+                    ch_row[pos_col_idx[p]] += a_drive;
+                }
+
+                /* Negative edges — branch-free inner loop */
+                int ns = neg_row_ptr[i];
+                int ne = neg_row_ptr[i + 1];
+                for (int p = ns; p < ne; p++) {
+                    ch_row[neg_col_idx[p]] -= a_drive;
+                }
+            }
+        }
+
+        for (int b = 0; b < V; b++) {
+            float *ch = charges + b * N;
+            float *ac = acts + b * N;
+            for (int j = 0; j < N; j++) {
+                ch[j] *= retain;
+                float a = ch[j] - threshold;
+                ac[j] = a > 0.0f ? a : 0.0f;
+                if (ch[j] > 1.0f) ch[j] = 1.0f;
+                if (ch[j] < -1.0f) ch[j] = -1.0f;
+            }
+        }
+    }
+
+    for (int b = 0; b < V; b++)
+        for (int j = 0; j < V; j++)
+            out[b * V + j] = charges[b * N + out_start + j];
+}
+
+/*
+ * V7: Active-set + sign-split — the full combo.
+ *     Both optimizations combined:
+ *     - Only iterate active neurons (no a==0 branch)
+ *     - Separate +/- CSR (no sign branch in inner loop)
+ *     This should have ZERO branches in the hot path.
+ */
+void activeset_signsplit_forward(
+    const int V, const int N, const int n_rows,
+    const int *pos_row_ptr, const int *pos_col_idx,
+    const int *neg_row_ptr, const int *neg_col_idx,
+    const float drive,
+    const int ticks,
+    const float retain, const float threshold,
+    const int out_start,
+    float *charges,
+    float *acts,
+    float *out,
+    int *active_buf,
+    int *active_counts
+)
+{
+    memset(charges, 0, (size_t)V * N * sizeof(float));
+    memset(acts,    0, (size_t)V * N * sizeof(float));
+
+    for (int t = 0; t < ticks; t++) {
+        if (t == 0) {
+            for (int i = 0; i < V; i++)
+                acts[i * N + i] = 1.0f;
+            for (int b = 0; b < V; b++) {
+                active_buf[b * N] = b;
+                active_counts[b] = 1;
+            }
+        }
+
+        /* Branch-free SpMV: only active neurons, split by sign */
+        for (int b = 0; b < V; b++) {
+            const float *act_row = acts + b * N;
+            float *ch_row = charges + b * N;
+            const int *actv = active_buf + b * N;
+            int n_active = active_counts[b];
+            for (int ai = 0; ai < n_active; ai++) {
+                int i = actv[ai];
+                float a_drive = act_row[i] * drive;
+
+                int ps = pos_row_ptr[i];
+                int pe = pos_row_ptr[i + 1];
+                for (int p = ps; p < pe; p++)
+                    ch_row[pos_col_idx[p]] += a_drive;
+
+                int ns = neg_row_ptr[i];
+                int ne = neg_row_ptr[i + 1];
+                for (int p = ns; p < ne; p++)
+                    ch_row[neg_col_idx[p]] -= a_drive;
+            }
+        }
+
+        /* Update + rebuild active set */
+        for (int b = 0; b < V; b++) {
+            float *ch = charges + b * N;
+            float *ac = acts + b * N;
+            int *actv = active_buf + b * N;
+            int cnt = 0;
+            for (int j = 0; j < N; j++) {
+                ch[j] *= retain;
+                float a = ch[j] - threshold;
+                if (a > 0.0f) {
+                    ac[j] = a;
+                    actv[cnt++] = j;
+                } else {
+                    ac[j] = 0.0f;
+                }
+                if (ch[j] > 1.0f) ch[j] = 1.0f;
+                if (ch[j] < -1.0f) ch[j] = -1.0f;
+            }
+            active_counts[b] = cnt;
+        }
+    }
+
+    for (int b = 0; b < V; b++)
+        for (int j = 0; j < V; j++)
+            out[b * V + j] = charges[b * N + out_start + j];
+}
 """
 
 _c_lib = None
@@ -661,6 +905,173 @@ def forward_batch_c_ternary(net, ticks=8, csr_cache=None):
     return out
 
 
+# ── Branch-prediction optimized forwards ───────────────────────────
+
+def forward_batch_c_activeset(net, ticks=8, csr_cache=None):
+    """V5: Active-set tracking — eliminates a==0 branch."""
+    import ctypes
+    lib = _get_c_lib()
+    if lib is None:
+        return forward_batch_c_csr(net, ticks, csr_cache)
+
+    V, N = net.V, net.N
+    if csr_cache is not None:
+        row_ptr, col_idx, csr_vals, _ = csr_cache
+    else:
+        row_ptr, col_idx, csr_vals, _ = build_csr_arrays(net)
+
+    charges = np.zeros((V, N), dtype=np.float32)
+    acts = np.zeros((V, N), dtype=np.float32)
+    out = np.zeros((V, V), dtype=np.float32)
+    active_buf = np.zeros((V, N), dtype=np.int32)
+    active_counts = np.zeros(V, dtype=np.int32)
+
+    lib.activeset_csr_forward(
+        ctypes.c_int(V), ctypes.c_int(N), ctypes.c_int(N),
+        row_ptr.ctypes.data_as(ctypes.POINTER(ctypes.c_int)),
+        col_idx.ctypes.data_as(ctypes.POINTER(ctypes.c_int)),
+        csr_vals.ctypes.data_as(ctypes.POINTER(ctypes.c_float)),
+        ctypes.c_int(ticks),
+        ctypes.c_float(float(net.retention)),
+        ctypes.c_float(float(net.THRESHOLD)),
+        ctypes.c_int(net.out_start),
+        charges.ctypes.data_as(ctypes.POINTER(ctypes.c_float)),
+        acts.ctypes.data_as(ctypes.POINTER(ctypes.c_float)),
+        out.ctypes.data_as(ctypes.POINTER(ctypes.c_float)),
+        active_buf.ctypes.data_as(ctypes.POINTER(ctypes.c_int)),
+        active_counts.ctypes.data_as(ctypes.POINTER(ctypes.c_int)),
+    )
+    return out
+
+
+def build_signsplit_csr(net):
+    """Build two separate CSR arrays: one for positive edges, one for negative."""
+    N = net.N
+    pos_row_ptr = [0]
+    pos_col = []
+    neg_row_ptr = [0]
+    neg_col = []
+
+    for i in range(N):
+        for j in range(N):
+            v = net.mask[i, j]
+            if v > 0:
+                pos_col.append(j)
+            elif v < 0:
+                neg_col.append(j)
+        pos_row_ptr.append(len(pos_col))
+        neg_row_ptr.append(len(neg_col))
+
+    return (np.array(pos_row_ptr, dtype=np.int32),
+            np.array(pos_col, dtype=np.int32),
+            np.array(neg_row_ptr, dtype=np.int32),
+            np.array(neg_col, dtype=np.int32))
+
+
+def build_signsplit_csr_fast(net):
+    """Build sign-split CSR using C mask scanner."""
+    import ctypes
+    lib = _get_c_lib()
+    N = net.N
+
+    # Use unified CSR builder then split by sign
+    csr = build_csr_arrays(net)
+    row_ptr, col_idx, csr_vals, signs = csr
+
+    # Split into pos/neg
+    pos_mask = signs > 0
+    neg_mask = signs < 0
+
+    pos_row_ptr = np.zeros(N + 1, dtype=np.int32)
+    neg_row_ptr = np.zeros(N + 1, dtype=np.int32)
+
+    for i in range(N):
+        start, end = row_ptr[i], row_ptr[i + 1]
+        pos_row_ptr[i + 1] = pos_row_ptr[i] + np.sum(pos_mask[start:end])
+        neg_row_ptr[i + 1] = neg_row_ptr[i] + np.sum(neg_mask[start:end])
+
+    pos_col = col_idx[pos_mask].copy()
+    neg_col = col_idx[neg_mask].copy()
+
+    return (pos_row_ptr, pos_col, neg_row_ptr, neg_col)
+
+
+def forward_batch_c_signsplit(net, ticks=8, split_cache=None):
+    """V6: Sign-split CSR — no sign branch in inner loop."""
+    import ctypes
+    lib = _get_c_lib()
+    if lib is None:
+        return forward_batch_c_csr(net, ticks)
+
+    V, N = net.V, net.N
+    if split_cache is not None:
+        pos_row_ptr, pos_col, neg_row_ptr, neg_col = split_cache
+    else:
+        pos_row_ptr, pos_col, neg_row_ptr, neg_col = build_signsplit_csr_fast(net)
+
+    charges = np.zeros((V, N), dtype=np.float32)
+    acts = np.zeros((V, N), dtype=np.float32)
+    out = np.zeros((V, V), dtype=np.float32)
+
+    lib.signsplit_csr_forward(
+        ctypes.c_int(V), ctypes.c_int(N), ctypes.c_int(N),
+        pos_row_ptr.ctypes.data_as(ctypes.POINTER(ctypes.c_int)),
+        pos_col.ctypes.data_as(ctypes.POINTER(ctypes.c_int)),
+        ctypes.c_int(len(pos_col)),
+        neg_row_ptr.ctypes.data_as(ctypes.POINTER(ctypes.c_int)),
+        neg_col.ctypes.data_as(ctypes.POINTER(ctypes.c_int)),
+        ctypes.c_int(len(neg_col)),
+        ctypes.c_float(float(net.DRIVE)),
+        ctypes.c_int(ticks),
+        ctypes.c_float(float(net.retention)),
+        ctypes.c_float(float(net.THRESHOLD)),
+        ctypes.c_int(net.out_start),
+        charges.ctypes.data_as(ctypes.POINTER(ctypes.c_float)),
+        acts.ctypes.data_as(ctypes.POINTER(ctypes.c_float)),
+        out.ctypes.data_as(ctypes.POINTER(ctypes.c_float)),
+    )
+    return out
+
+
+def forward_batch_c_combo(net, ticks=8, split_cache=None):
+    """V7: Active-set + sign-split — zero branches in hot path."""
+    import ctypes
+    lib = _get_c_lib()
+    if lib is None:
+        return forward_batch_c_csr(net, ticks)
+
+    V, N = net.V, net.N
+    if split_cache is not None:
+        pos_row_ptr, pos_col, neg_row_ptr, neg_col = split_cache
+    else:
+        pos_row_ptr, pos_col, neg_row_ptr, neg_col = build_signsplit_csr_fast(net)
+
+    charges = np.zeros((V, N), dtype=np.float32)
+    acts = np.zeros((V, N), dtype=np.float32)
+    out = np.zeros((V, V), dtype=np.float32)
+    active_buf = np.zeros((V, N), dtype=np.int32)
+    active_counts = np.zeros(V, dtype=np.int32)
+
+    lib.activeset_signsplit_forward(
+        ctypes.c_int(V), ctypes.c_int(N), ctypes.c_int(N),
+        pos_row_ptr.ctypes.data_as(ctypes.POINTER(ctypes.c_int)),
+        pos_col.ctypes.data_as(ctypes.POINTER(ctypes.c_int)),
+        neg_row_ptr.ctypes.data_as(ctypes.POINTER(ctypes.c_int)),
+        neg_col.ctypes.data_as(ctypes.POINTER(ctypes.c_int)),
+        ctypes.c_float(float(net.DRIVE)),
+        ctypes.c_int(ticks),
+        ctypes.c_float(float(net.retention)),
+        ctypes.c_float(float(net.THRESHOLD)),
+        ctypes.c_int(net.out_start),
+        charges.ctypes.data_as(ctypes.POINTER(ctypes.c_float)),
+        acts.ctypes.data_as(ctypes.POINTER(ctypes.c_float)),
+        out.ctypes.data_as(ctypes.POINTER(ctypes.c_float)),
+        active_buf.ctypes.data_as(ctypes.POINTER(ctypes.c_int)),
+        active_counts.ctypes.data_as(ctypes.POINTER(ctypes.c_int)),
+    )
+    return out
+
+
 # ── Correctness check ──────────────────────────────────────────────
 
 def check_correctness(net, ticks=8):
@@ -670,15 +1081,19 @@ def check_correctness(net, ticks=8):
     edge_cache = build_edge_arrays(net)
     csr_cache_sp = sp.csr_matrix(net.mask)
     csr_cache_c = build_csr_arrays(net)
+    split_cache = build_signsplit_csr_fast(net)
 
     approaches = {
-        'scatter':   lambda: forward_batch_scatter(net, ticks, edge_cache),
-        'gather':    lambda: forward_batch_gather(net, ticks, edge_cache),
-        'csr':       lambda: forward_batch_csr(net, ticks, csr_cache_sp),
-        'c_edge_v1': lambda: forward_batch_c_edge(net, ticks, edge_cache),
-        'c_edge_v2': lambda: forward_batch_c_v2(net, ticks, edge_cache),
-        'c_csr':     lambda: forward_batch_c_csr(net, ticks, csr_cache_c),
-        'c_ternary': lambda: forward_batch_c_ternary(net, ticks, csr_cache_c),
+        'scatter':    lambda: forward_batch_scatter(net, ticks, edge_cache),
+        'gather':     lambda: forward_batch_gather(net, ticks, edge_cache),
+        'csr':        lambda: forward_batch_csr(net, ticks, csr_cache_sp),
+        'c_edge_v1':  lambda: forward_batch_c_edge(net, ticks, edge_cache),
+        'c_edge_v2':  lambda: forward_batch_c_v2(net, ticks, edge_cache),
+        'c_csr':      lambda: forward_batch_c_csr(net, ticks, csr_cache_c),
+        'c_ternary':  lambda: forward_batch_c_ternary(net, ticks, csr_cache_c),
+        'c_activeset': lambda: forward_batch_c_activeset(net, ticks, csr_cache_c),
+        'c_signsplit': lambda: forward_batch_c_signsplit(net, ticks, split_cache),
+        'c_combo':     lambda: forward_batch_c_combo(net, ticks, split_cache),
     }
 
     ok = True
@@ -688,7 +1103,7 @@ def check_correctness(net, ticks=8):
         status = "OK" if maxdiff < 1e-4 else f"FAIL (maxdiff={maxdiff:.6f})"
         if maxdiff >= 1e-4:
             ok = False
-        print(f"  {name:12s}: maxdiff={maxdiff:.2e}  {status}")
+        print(f"  {name:14s}: maxdiff={maxdiff:.2e}  {status}")
     return ok
 
 
@@ -733,10 +1148,10 @@ def run_benchmark(vocab_list, ticks=8, repeats=5, seed=42):
         return
     print()
 
-    # Benchmark
+    # Benchmark — focus on best approaches + new branch-prediction variants
     results = []
-    all_names = ['dense', 'csr_scipy', 'c_edge_v1', 'c_edge_v2', 'c_csr', 'c_ternary']
-    header = f"{'V':>5} {'N':>5} {'E':>6} {'d%':>5} | " + " ".join(f"{n:>10}" for n in all_names) + " | best     vs_dense"
+    all_names = ['dense', 'c_csr', 'c_ternary', 'c_activeset', 'c_signsplit', 'c_combo']
+    header = f"{'V':>5} {'N':>5} {'E':>6} {'d%':>5} | " + " ".join(f"{n:>11}" for n in all_names) + " | best      vs_dense"
     print(header)
     print("-" * len(header))
 
@@ -747,20 +1162,19 @@ def run_benchmark(vocab_list, ticks=8, repeats=5, seed=42):
         E = net.count_connections()
         density = E / (N * N) * 100
 
-        edge_cache = build_edge_arrays(net)
-        csr_cache_sp = sp.csr_matrix(net.mask)
         csr_cache_c = build_csr_arrays(net)
+        split_cache = build_signsplit_csr_fast(net)
 
         approaches = [
-            ('dense',      lambda: forward_batch_dense(net, ticks)),
-            ('csr_scipy',  lambda: forward_batch_csr(net, ticks, csr_cache_sp)),
+            ('dense',       lambda: forward_batch_dense(net, ticks)),
         ]
         if lib:
             approaches += [
-                ('c_edge_v1',  lambda: forward_batch_c_edge(net, ticks, edge_cache)),
-                ('c_edge_v2',  lambda: forward_batch_c_v2(net, ticks, edge_cache)),
-                ('c_csr',      lambda: forward_batch_c_csr(net, ticks, csr_cache_c)),
-                ('c_ternary',  lambda: forward_batch_c_ternary(net, ticks, csr_cache_c)),
+                ('c_csr',       lambda: forward_batch_c_csr(net, ticks, csr_cache_c)),
+                ('c_ternary',   lambda: forward_batch_c_ternary(net, ticks, csr_cache_c)),
+                ('c_activeset', lambda: forward_batch_c_activeset(net, ticks, csr_cache_c)),
+                ('c_signsplit', lambda: forward_batch_c_signsplit(net, ticks, split_cache)),
+                ('c_combo',     lambda: forward_batch_c_combo(net, ticks, split_cache)),
             ]
 
         times = {}
@@ -790,7 +1204,7 @@ def run_benchmark(vocab_list, ticks=8, repeats=5, seed=42):
     # Scaling analysis
     print()
     print("Scaling analysis (ms ratios between consecutive V sizes):")
-    key_names = ['dense', 'c_csr', 'c_ternary']
+    key_names = ['dense', 'c_csr', 'c_activeset', 'c_combo']
     for i in range(1, len(results)):
         r0, r1 = results[i-1], results[i]
         v_ratio = r1['V'] / r0['V']
@@ -804,12 +1218,12 @@ def run_benchmark(vocab_list, ticks=8, repeats=5, seed=42):
 
     print()
     print("Summary:")
-    print("  dense:      NumPy BLAS matmul — O(N²×V), highly optimized but touches all zeros")
-    print("  csr_scipy:  scipy CSR sparse — good but Python overhead + conversion cost")
-    print("  c_edge_v1:  C edge-scatter, edge-outer loop — poor cache (random batch access)")
-    print("  c_edge_v2:  C edge-scatter, batch-outer loop — better cache (row stays hot)")
-    print("  c_csr:      C CSR, skips zero activations — best for sparse activations")
-    print("  c_ternary:  C CSR + ternary signs — eliminates per-edge float multiply")
+    print("  dense:       NumPy BLAS matmul — O(N²×V), highly optimized but touches all zeros")
+    print("  c_csr:       C CSR, skips zero activations — baseline sparse")
+    print("  c_ternary:   C CSR + ternary signs — no per-edge float multiply")
+    print("  c_activeset: C CSR + active-set tracking — eliminates a==0 branch")
+    print("  c_signsplit: C sign-split CSR — separate +/- arrays, no sign branch")
+    print("  c_combo:     active-set + sign-split — ZERO branches in hot path")
 
     return results
 
