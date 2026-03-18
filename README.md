@@ -42,6 +42,7 @@ The stable reference implementation is [`v4.2/model/graph.py`](v4.2/model/graph.
 - [`v4.2/lib/utils.py`](v4.2/lib/utils.py): training helpers
 - [`v4.2/tests/`](v4.2/tests/): experiment scripts and results
 - [`v4.2/CREDIT_GUIDED_REWIRING.md`](v4.2/CREDIT_GUIDED_REWIRING.md): design note for credit-guided rewiring
+- [`v4.2/LATENT_DYNAMICS_ANALYSIS_PLAN.md`](v4.2/LATENT_DYNAMICS_ANALYSIS_PLAN.md): plan to test whether recurrent loops form a useful latent-like internal state-space
 - [`ARCHIVE.md`](ARCHIVE.md): branch and snapshot-tag policy for older lines
 - [`v4.2/tests/benchmark_ab.py`](v4.2/tests/benchmark_ab.py): SWG vs MLP vs random-search benchmark
 - [`v4.2/tests/benchmark_expressiveness.py`](v4.2/tests/benchmark_expressiveness.py): expressiveness benchmark across task families
