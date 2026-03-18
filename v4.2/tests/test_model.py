@@ -1,7 +1,7 @@
 """
-Adversarial Stress Test — 13 probes for SelfWiringGraph
+Adversarial Stress Test — 14 probes for SelfWiringGraph
 =========================================================
-All 13 must PASS for the model to be considered valid.
+All probes must stay green or warning-only for the model to be considered valid.
 """
 
 import sys, os
@@ -240,6 +240,24 @@ def main():
     r = result(PASS if count_ok and cells_ok and diag_ok else FAIL,
                f"count={count_ok}, cells={cells_ok}, diag={diag_ok}")
     results.append(("Alive cache coherence", r))
+
+    # PROBE 14: Legacy mutation API compatibility
+    header(14, "Legacy mutation API compatibility")
+    np.random.seed(SEED); random.seed(SEED)
+    try:
+        net = SelfWiringGraph(32, 8)
+        before = net.count_connections()
+        undo = net.mutate(forced_op='add', n_changes=2, freeze_params=True)
+        after_add = net.count_connections()
+        net.replay(undo)
+        after_replay = net.count_connections()
+        net.mutate_with_mood()
+        ok = after_add >= before and after_replay == before
+        r = result(PASS if ok else FAIL,
+                   f"forced_add={after_add-before}, replay_ok={after_replay == before}")
+    except Exception as ex:
+        r = result(FAIL, f"Crashed: {ex}")
+    results.append(("Legacy mutate API", r))
 
     # SUMMARY
     print(f"\n{'='*60}")

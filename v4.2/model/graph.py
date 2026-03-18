@@ -170,17 +170,38 @@ class SelfWiringGraph:
 
     # --- Mutation ---
 
-    def mutate(self):
-        """Learned drive mutation: drive is a signed int that reverts on reject.
-        +N = add N connections, -N = remove N, 0 = no structural change.
-        The network learns what it needs: build, prune, or hold.
+    def mutate(self, forced_op=None, n_changes=1, freeze_params=False):
+        """Mutate the graph.
+
+        Default mode keeps the current learned-drive behavior.
+        Optional ``forced_op`` keeps older research harnesses working without
+        changing the mainline mutation policy:
+          - ``add`` / ``remove`` / ``rewire`` / ``flip``
+          - ``n_changes`` repeats the structural op
+          - ``freeze_params`` is accepted for compatibility; forced ops do not
+            drift ``loss_pct`` or ``drive`` regardless
         """
+        if forced_op is not None:
+            undo = []
+            op_map = {
+                'add': self._add,
+                'remove': self._remove,
+                'rewire': self._rewire,
+                'flip': self._flip,
+            }
+            op_fn = op_map.get(forced_op)
+            if op_fn is None:
+                raise ValueError(f"Unsupported forced_op: {forced_op}")
+            for _ in range(max(0, int(n_changes))):
+                op_fn(undo)
+            return undo
+
         # Loss drift (reverts on reject) — 1/5 chance
-        if random.randint(1, 5) == 1:
+        if random.randint(1, 5) == 1 and not freeze_params:
             self.loss_pct = np.int8(max(1, min(50, int(self.loss_pct) + random.randint(-3, 3))))
 
         # Drive drift — 7/20 chance, ±1, reverts on reject
-        if random.randint(1, 20) <= 7:
+        if random.randint(1, 20) <= 7 and not freeze_params:
             self.drive = np.int8(max(-15, min(15, int(self.drive) + random.choice([-1, 1]))))
 
         # Execute drive: +N=add, -N=remove, 0=nothing
@@ -193,6 +214,10 @@ class SelfWiringGraph:
             for _ in range(-d):
                 self._remove(undo)
         return undo
+
+    def mutate_with_mood(self):
+        """Compatibility alias for older training utilities."""
+        return self.mutate()
 
     def _add(self, undo):
         r, c = random.randint(0, self.N-1), random.randint(0, self.N-1)
