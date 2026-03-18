@@ -34,6 +34,10 @@ The stable reference implementation is [`v4.2/model/graph.py`](v4.2/model/graph.
 - [`v4.2/lib/utils.py`](v4.2/lib/utils.py): training helpers
 - [`v4.2/tests/`](v4.2/tests/): experiment scripts and results
 - [`v4.2/CREDIT_GUIDED_REWIRING.md`](v4.2/CREDIT_GUIDED_REWIRING.md): design note for credit-guided rewiring
+- [`v4.2/tests/benchmark_ab.py`](v4.2/tests/benchmark_ab.py): SWG vs MLP vs random-search benchmark
+- [`v4.2/tests/benchmark_expressiveness.py`](v4.2/tests/benchmark_expressiveness.py): expressiveness benchmark across task families
+- [`v4.2/tests/ab_rng_knee.py`](v4.2/tests/ab_rng_knee.py): random-source knee benchmark
+- [`v4.2/viz/swg_demo.html`](v4.2/viz/swg_demo.html): interactive self-wiring graph viewer
 
 ## Quickstart
 

@@ -15,10 +15,15 @@ This directory contains the active self-wiring graph line.
 - `tests/test_model.py`: adversarial correctness and stability stress test
 - `tests/test_cyclic.py`: cyclic training smoke
 - `tests/rng_tier_benchmark.py`: RNG-quality sensitivity benchmark
+- `tests/ab_rng_knee.py`: quick random-source knee benchmark
+- `tests/benchmark_ab.py`: SWG vs MLP vs random-search benchmark
+- `tests/benchmark_convergence.py`: convergence benchmark with tuned budgets
+- `tests/benchmark_expressiveness.py`: expressiveness benchmark over multiple task families
 - `tests/sparse_scaling_benchmark.py`: sparse-forward scaling benchmark
 - `tests/graph_v3_probe.py`: compare and inspect the C path
 - `CREDIT_GUIDED_REWIRING.md`: research note on recurrence, pain probes, and credit-guided rewiring
 - `CREDIT_GUIDED_REWIRING_SKETCH.md`: prototype plan for `forward_batch_trace()` + `backward_credit()`
+- `viz/swg_demo.html`: interactive SWG topology viewer
 
 ## Test Layout Notes
 
