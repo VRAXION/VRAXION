@@ -1,0 +1,32 @@
+{
+  "name": "word64_bigram_both_t8_s0",
+  "type": "word",
+  "mode": "both",
+  "ticks": 8,
+  "seed": 0,
+  "V": 64,
+  "budget": 48000,
+  "score": 0.1485024429857731,
+  "steps": 8596,
+  "elapsed": 11.9,
+  "trajectory": [
+    [
+      0,
+      0.015587984584271908
+    ],
+    [
+      4800,
+      0.1485024429857731
+    ],
+    [
+      8596,
+      0.1485024429857731
+    ]
+  ],
+  "correct": 18,
+  "total": 64,
+  "accuracy": 28.1,
+  "generated": "the the the the the the [LOOP]",
+  "connections": 1398,
+  "random_baseline": 1.6
+}
