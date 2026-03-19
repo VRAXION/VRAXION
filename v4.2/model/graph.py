@@ -5,9 +5,16 @@ Flat graph with ternary mask and capacitor neurons.
 Gradient-free: learns via mutation + selection.
 Pure numpy + random. Zero dependencies.
 
-The ONLY learnable matrix is the int8 mask {-1, 0, +1}.
-Mutations sample from an O(1) alive-edge cache; the remaining learned knobs
-are small co-evolved int controller params.
+Architecture: Passive I/O sockets + hidden-only mutable mask.
+  - W_in  (V × H): fixed random projection, injects input into hidden layer
+  - W_out (H × V): fixed random projection, reads output from hidden layer
+  - mask  (H × H): the ONLY learnable matrix {-DRIVE, 0, +DRIVE}
+  - No input/output neurons — all neurons are hidden and must learn.
+
+TEMPORARY: W_in/W_out scaled by INJ_SCALE=3.0 to overcome threshold.
+  Signal dies at injection without scaling because unit-norm projection
+  values (~0.09) are far below THRESHOLD (0.5). This will be revisited
+  when we rework the threshold/signal-strength balance.
 """
 
 import numpy as np
@@ -17,11 +24,12 @@ import random
 class SelfWiringGraph:
 
     # All constants sweep-validated and locked in
-    NV_RATIO = 3       # neurons per vocab unit
+    NV_RATIO = 3       # hidden neurons per vocab unit
     DENSITY = 4        # init density in percent (4% = 0.04)
     DRIVE = 0.6        # GAIN(2) × CHARGE_RATE(0.3)
     THRESHOLD = 0.5    # firing threshold
     CAP_RATIO = 120    # max alive edges = V * NV_RATIO * CAP_RATIO
+    INJ_SCALE = 3.0    # TEMPORARY: projection amplitude to overcome threshold
     # Mutation int fractions: PATIENCE 7/20, LOSS_DRIFT 1/5, SHRINK 7/10, LOSS_STEP +-3
 
     def __init__(self, *args, **_):
@@ -31,16 +39,23 @@ class SelfWiringGraph:
         else:
             _, vocab = args[0], args[1]
         self.V = vocab
-        self.N = vocab * self.NV_RATIO
+        self.H = vocab * self.NV_RATIO      # hidden neurons (all neurons)
+        self.N = self.H                       # compat alias
 
-        # Split I/O: first V = input, last V = output
-        self.out_start = self.N - vocab if self.N >= 2 * vocab else 0
+        # Passive I/O projections (fixed, not learned)
+        # Separate RNG so mask init stays deterministic regardless of projection
+        proj_rng = np.random.RandomState(np.random.randint(0, 2**31))
+        W_in = proj_rng.randn(vocab, self.H).astype(np.float32)
+        W_in /= np.linalg.norm(W_in, axis=1, keepdims=True)
+        W_out = proj_rng.randn(self.H, vocab).astype(np.float32)
+        W_out /= np.linalg.norm(W_out, axis=0, keepdims=True)
+        self.W_in = W_in * self.INJ_SCALE    # TEMPORARY: scale up
+        self.W_out = W_out * self.INJ_SCALE   # TEMPORARY: scale up
 
-        # Mask: float32 with baked DRIVE {-0.6, 0, +0.6}
-        # No post-multiply needed — matmul gives final signal directly
+        # Mask: H × H hidden-only, float32 with baked DRIVE {-0.6, 0, +0.6}
         d = self.DENSITY / 100
-        r = np.random.rand(self.N, self.N)
-        self.mask = np.zeros((self.N, self.N), dtype=np.float32)
+        r = np.random.rand(self.H, self.H)
+        self.mask = np.zeros((self.H, self.H), dtype=np.float32)
         self.mask[r < d / 2] = -self.DRIVE
         self.mask[r > 1 - d / 2] = self.DRIVE
         np.fill_diagonal(self.mask, 0)
@@ -50,13 +65,18 @@ class SelfWiringGraph:
         self.alive = list(zip(rows.tolist(), cols.tolist()))
         self.alive_set = set(self.alive)
 
-        # Persistent state
-        self.state = np.zeros(self.N, dtype=np.float32)
-        self.charge = np.zeros(self.N, dtype=np.float32)
+        # Persistent state (hidden only)
+        self.state = np.zeros(self.H, dtype=np.float32)
+        self.charge = np.zeros(self.H, dtype=np.float32)
 
         # Co-evolved learned params
         self.loss_pct = np.int8(15)    # 1-50, charge loses loss% per tick
         self.drive = np.int8(1)        # signed: +N=add N, -N=remove N, [-15,+15]
+
+    @property
+    def out_start(self):
+        """Compat shim for old tests that reference out_start."""
+        return 0
 
     def reset(self):
         self.state *= 0
@@ -67,12 +87,12 @@ class SelfWiringGraph:
         return (100 - int(self.loss_pct)) * 0.01
 
     def forward(self, world, ticks=8):
-        """Single-input forward pass."""
+        """Single-input forward pass. Passive I/O: inject via W_in, read via W_out."""
         act = self.state.copy()
         retain = float(self.retention)
         for t in range(ticks):
             if t == 0:
-                act[:self.V] = world
+                act += world @ self.W_in
             raw = act @ self.mask
             np.nan_to_num(raw, copy=False, nan=0.0, posinf=0.0, neginf=0.0)
             self.charge += raw
@@ -80,24 +100,25 @@ class SelfWiringGraph:
             act = np.maximum(self.charge - self.THRESHOLD, 0.0)
             self.charge = np.clip(self.charge, -1.0, 1.0)
         self.state = act.copy()
-        return self.charge[self.out_start:self.out_start + self.V]
+        return self.charge @ self.W_out
 
     def forward_batch(self, ticks=8):
         """Batch forward: all V inputs simultaneously. Returns (V, V) logits."""
-        V, N = self.V, self.N
-        charges = np.zeros((V, N), dtype=np.float32)
-        acts = np.zeros((V, N), dtype=np.float32)
+        V, H = self.V, self.H
+        charges = np.zeros((V, H), dtype=np.float32)
+        acts = np.zeros((V, H), dtype=np.float32)
         retain = float(self.retention)
+        projected = np.eye(V, dtype=np.float32) @ self.W_in  # (V, H)
         for t in range(ticks):
             if t == 0:
-                acts[:, :V] = np.eye(V, dtype=np.float32)
+                acts += projected
             raw = acts @ self.mask
             np.nan_to_num(raw, copy=False, nan=0.0, posinf=0.0, neginf=0.0)
             charges += raw
             charges *= retain
             acts = np.maximum(charges - self.THRESHOLD, 0.0)
             charges = np.clip(charges, -1.0, 1.0)
-        return charges[:, self.out_start:self.out_start + V]
+        return charges @ self.W_out
 
     def resync_alive(self):
         """Rebuild alive list+set from mask. Call after direct mask writes."""
@@ -226,7 +247,7 @@ class SelfWiringGraph:
         cap = self.V * self.NV_RATIO * self.CAP_RATIO
         if len(self.alive) >= cap:
             return
-        r, c = random.randint(0, self.N-1), random.randint(0, self.N-1)
+        r, c = random.randint(0, self.H-1), random.randint(0, self.H-1)
         if r != c and self.mask[r, c] == 0:
             self.mask[r, c] = self.DRIVE if random.randint(0, 1) else -self.DRIVE
             self.alive.append((r, c))
@@ -255,7 +276,7 @@ class SelfWiringGraph:
         if self.alive:
             idx = random.randint(0, len(self.alive)-1)
             r, c = self.alive[idx]
-            nc = random.randint(0, self.N-1)
+            nc = random.randint(0, self.H-1)
             if nc != r and nc != c and self.mask[r, nc] == 0:
                 old = self.mask[r, c]
                 self.mask[r, c] = 0
