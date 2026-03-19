@@ -1,0 +1,17 @@
+{
+  "task": "echo",
+  "generator": "regen_echo256_block4",
+  "block_size": 4,
+  "echo_repeat": 32,
+  "tier": 1,
+  "seed": 42,
+  "target_bytes": 104857600,
+  "actual_bytes": 104857600,
+  "version": "2.1",
+  "date": "2026-02-19T16:29:49",
+  "notes": "Block repeated 32x (cycle=128B). Regen BLOCK=4 for ~97% ceiling at seq_len=62.",
+  "script": "inline regen",
+  "prev_block_size": 16,
+  "prev_ceiling": "~83%",
+  "new_ceiling": "~97%"
+}

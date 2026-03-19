@@ -1,0 +1,26 @@
+{
+  "name": "fineweb_edu",
+  "description": "FineWeb-Edu 10B educational text, score>=3, shuffled, raw UTF-8 bytes",
+  "source": "HuggingFace FineWeb-Edu 10B, shard 000_00000.parquet",
+  "generator": "inline (Claude Code session 2026-02-19)",
+  "seed": 42,
+  "min_score": 3,
+  "min_text_len": 100,
+  "docs_scanned": 726000,
+  "docs_kept": 726000,
+  "docs_in_output": 22126,
+  "scores": {
+    "3": 629506,
+    "4": 95929,
+    "5": 565
+  },
+  "target_bytes": 104857600,
+  "actual_bytes": 104857600,
+  "encoding": "utf-8",
+  "separator": "\n\n",
+  "block_size": 1,
+  "task": "next_byte_prediction",
+  "task_type": "next_byte_prediction",
+  "theoretical_ceiling": "unknown (natural language)",
+  "timestamp": "2026-02-19T18:12:20.012578"
+}

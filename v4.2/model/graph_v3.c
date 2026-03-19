@@ -17,7 +17,7 @@
 
 #define NV_RATIO    3
 #define DENSITY_PCT 4
-#define TICKS       8
+#define TICKS       6
 
 #ifndef INIT_LOSS_PCT
 #define INIT_LOSS_PCT 15  /* same as Python default */

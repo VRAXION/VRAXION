@@ -1,0 +1,14 @@
+{
+  "datasets": {
+    "constant256.traindat": {
+      "staleness": 0,
+      "retired_at_step": 5,
+      "retired_date": "2026-02-19"
+    },
+    "copy_echo256.traindat": {
+      "staleness": 0,
+      "retired_at_step": 600,
+      "retired_date": "2026-02-19"
+    }
+  }
+}

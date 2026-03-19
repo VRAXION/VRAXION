@@ -91,7 +91,7 @@ class SelfWiringGraph:
     def retention(self):
         return (100 - int(self.loss_pct)) * 0.01
 
-    def forward(self, world, ticks=8):
+    def forward(self, world, ticks=6):
         """Single-input forward pass. Passive I/O: inject via W_in, read via W_out."""
         act = self.state.copy()
         retain = float(self.retention)
@@ -107,7 +107,7 @@ class SelfWiringGraph:
         self.state = act.copy()
         return self.charge @ self.W_out
 
-    def forward_batch(self, ticks=8):
+    def forward_batch(self, ticks=6):
         """Batch forward: all V inputs simultaneously. Returns (V, V) logits."""
         V, H = self.V, self.H
         charges = np.zeros((V, H), dtype=np.float32)
@@ -334,7 +334,7 @@ def softmax(x):
     return e / e.sum()
 
 
-def train(net, targets, vocab, max_attempts=8000, ticks=8,
+def train(net, targets, vocab, max_attempts=8000, ticks=6,
           stale_limit=6000, verbose=True, save_path=None):
     """Train via mutation + selection. Saves winner to save_path if provided."""
 

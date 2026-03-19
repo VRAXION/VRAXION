@@ -1,0 +1,15 @@
+{
+  "task": "denoise",
+  "generator": "gen_denoise",
+  "block_size": 16,
+  "tier": 5,
+  "flip_prob": 0.1,
+  "notes": "[noisy_A][clean_A] \u2014 10% bit flip rate, tests pattern recovery",
+  "seed": 42,
+  "target_bytes": 104857600,
+  "actual_bytes": 104857600,
+  "version": "2.0",
+  "date": "2026-02-19T09:45:13",
+  "pairs_estimate": 3276800,
+  "script": "generate_traindat_suite.py"
+}

@@ -1,0 +1,8 @@
+{
+  "config_name": "1beings_64d_2layers_traindat",
+  "timestamp": "2026-02-21 00:35:13",
+  "total_steps": 15,
+  "final_loss": 0.9079950451850891,
+  "final_bit_acc": 0.42500001192092896,
+  "final_oracle": 0.42500001192092896
+}

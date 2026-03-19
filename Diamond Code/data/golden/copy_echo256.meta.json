@@ -1,0 +1,14 @@
+{
+  "task": "copy_echo",
+  "generator": "gen_copy_echo",
+  "run_length": 128,
+  "tier": 0,
+  "notes": "Each byte repeated 128x. Copy current byte = ~99% predictable.",
+  "seed": 42,
+  "target_bytes": 104857600,
+  "actual_bytes": 104857600,
+  "version": "2.0",
+  "date": "2026-02-19T09:41:50",
+  "pairs_estimate": 3276800,
+  "script": "generate_traindat_suite.py"
+}

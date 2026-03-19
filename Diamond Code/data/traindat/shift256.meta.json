@@ -1,0 +1,14 @@
+{
+  "task": "byte_rotation",
+  "generator": "gen_shift",
+  "block_size": 16,
+  "tier": 2,
+  "notes": "Byte-rotations of seed block, cross-byte pattern",
+  "seed": 42,
+  "target_bytes": 104857600,
+  "actual_bytes": 104857600,
+  "version": "2.0",
+  "date": "2026-02-19T09:42:14",
+  "pairs_estimate": 3276800,
+  "script": "generate_traindat_suite.py"
+}
