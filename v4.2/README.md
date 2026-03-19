@@ -31,6 +31,7 @@ The current `v4.2` line is centered on four things:
 - `tests/sparse_scaling_benchmark.py`: sparse-forward scaling benchmark
 - `tests/graph_v3_probe.py`: compare and inspect the C path
 - `tests/latent_dynamics_probe.py`: state-trace, separability, ablation, and perturbation probe for recurrent latent-like dynamics
+- `tests/loop_attribution_probe.py`: quick short-cycle sign/motif attribution probe for feedback loops
 - `CREDIT_GUIDED_REWIRING.md`: research note on recurrence, pain probes, and credit-guided rewiring
 - `CREDIT_GUIDED_REWIRING_SKETCH.md`: prototype plan for `forward_batch_trace()` + `backward_credit()`
 - `LATENT_DYNAMICS_ANALYSIS_PLAN.md`: plan to test whether loops create a useful latent-like internal state-space
