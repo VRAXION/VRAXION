@@ -12,6 +12,7 @@ are small co-evolved int controller params.
 
 import numpy as np
 import random
+import os
 
 
 class SelfWiringGraph:
@@ -24,13 +25,16 @@ class SelfWiringGraph:
     # Mutation int fractions: PATIENCE 7/20, LOSS_DRIFT 1/5, SHRINK 7/10, LOSS_STEP +-3
 
     def __init__(self, *args, **_):
-        # SelfWiringGraph(64) or SelfWiringGraph(192, 64)
+        # SelfWiringGraph(64)        → V=64, N=64*NV_RATIO
+        # SelfWiringGraph(192, 64)   → N=192, V=64 (explicit N)
         if len(args) == 1:
             vocab = args[0]
+            self.V = vocab
+            self.N = vocab * self.NV_RATIO
         else:
-            _, vocab = args[0], args[1]
-        self.V = vocab
-        self.N = vocab * self.NV_RATIO
+            self.N = args[0]
+            self.V = args[1]
+            vocab = self.V
 
         # Split I/O: first V = input, last V = output
         self.out_start = self.N - vocab if self.N >= 2 * vocab else 0
@@ -138,6 +142,43 @@ class SelfWiringGraph:
         self.loss_pct = np.int8(s.get('loss_pct', s.get('loss', 15)))
         if 'drive' in s:
             self.drive = np.int8(s['drive'])
+
+    # --- Disk persistence ---
+
+    def save(self, path):
+        """Save winner graph to disk (.npz). Only stores non-zero edges."""
+        rows, cols = np.where(self.mask != 0)
+        vals = self.mask[rows, cols]
+        np.savez_compressed(path,
+            V=self.V,
+            rows=rows.astype(np.int32),
+            cols=cols.astype(np.int32),
+            vals=vals,
+            loss_pct=int(self.loss_pct),
+            drive=int(self.drive),
+        )
+
+    @classmethod
+    def load(cls, path):
+        """Load a saved graph. Reconstructs full mask from sparse edges."""
+        d = np.load(path)
+        V = int(d['V'])
+        net = object.__new__(cls)
+        net.V = V
+        net.N = V * cls.NV_RATIO
+        net.out_start = net.N - V if net.N >= 2 * V else 0
+
+        net.mask = np.zeros((net.N, net.N), dtype=np.float32)
+        rows, cols, vals = d['rows'], d['cols'], d['vals']
+        net.mask[rows, cols] = vals
+        net.alive = list(zip(rows.tolist(), cols.tolist()))
+        net.alive_set = set(net.alive)
+
+        net.state = np.zeros(net.N, dtype=np.float32)
+        net.charge = np.zeros(net.N, dtype=np.float32)
+        net.loss_pct = np.int8(int(d['loss_pct']))
+        net.drive = np.int8(int(d['drive']))
+        return net
 
     def replay(self, log):
         """Repeat logged ops in reverse = undo. O(changes) + O(alive) list rebuild.
@@ -266,8 +307,8 @@ def softmax(x):
 
 
 def train(net, targets, vocab, max_attempts=8000, ticks=8,
-          stale_limit=6000, verbose=True):
-    """Train via mutation + selection."""
+          stale_limit=6000, verbose=True, save_path=None):
+    """Train via mutation + selection. Saves winner to save_path if provided."""
 
     def evaluate():
         logits = net.forward_batch(ticks)
@@ -290,7 +331,10 @@ def train(net, targets, vocab, max_attempts=8000, ticks=8,
 
         if new_score > score:
             score = new_score
-            best = max(best, score)
+            if score > best:
+                best = score
+                if save_path:
+                    net.save(save_path)
             stale = 0
         else:
             net.replay(undo)
@@ -305,5 +349,10 @@ def train(net, targets, vocab, max_attempts=8000, ticks=8,
 
         if best >= 0.99 or stale >= stale_limit:
             break
+
+    if save_path:
+        net.save(save_path)
+        if verbose:
+            print(f"  Winner saved → {save_path}")
 
     return best
