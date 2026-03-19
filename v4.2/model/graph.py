@@ -21,6 +21,7 @@ class SelfWiringGraph:
     DENSITY = 4        # init density in percent (4% = 0.04)
     DRIVE = 0.6        # GAIN(2) × CHARGE_RATE(0.3)
     THRESHOLD = 0.5    # firing threshold
+    CAP_RATIO = 120    # max alive edges = V * NV_RATIO * CAP_RATIO
     # Mutation int fractions: PATIENCE 7/20, LOSS_DRIFT 1/5, SHRINK 7/10, LOSS_STEP +-3
 
     def __init__(self, *args, **_):
@@ -204,7 +205,7 @@ class SelfWiringGraph:
         if random.randint(1, 20) <= 7 and not freeze_params:
             self.drive = np.int8(max(-15, min(15, int(self.drive) + random.choice([-1, 1]))))
 
-        # Execute drive: +N=add, -N=remove, 0=nothing
+        # Execute drive: +N=add, -N=remove, 0=rewire
         undo = []
         d = int(self.drive)
         if d > 0:
@@ -213,6 +214,8 @@ class SelfWiringGraph:
         elif d < 0:
             for _ in range(-d):
                 self._remove(undo)
+        else:
+            self._rewire(undo)
         return undo
 
     def mutate_with_mood(self):
@@ -220,6 +223,9 @@ class SelfWiringGraph:
         return self.mutate()
 
     def _add(self, undo):
+        cap = self.V * self.NV_RATIO * self.CAP_RATIO
+        if len(self.alive) >= cap:
+            return
         r, c = random.randint(0, self.N-1), random.randint(0, self.N-1)
         if r != c and self.mask[r, c] == 0:
             self.mask[r, c] = self.DRIVE if random.randint(0, 1) else -self.DRIVE
@@ -282,6 +288,8 @@ def train(net, targets, vocab, max_attempts=8000, ticks=8,
     best = score
     stale = 0
 
+    rewire_threshold = stale_limit // 3
+
     for att in range(max_attempts):
         old_loss = int(net.loss_pct)
         old_drive = int(net.drive)
@@ -297,6 +305,18 @@ def train(net, targets, vocab, max_attempts=8000, ticks=8,
             net.loss_pct = np.int8(old_loss)
             net.drive = np.int8(old_drive)
             stale += 1
+
+            # Phase 3: rewire when stale — explore new topologies
+            if stale > rewire_threshold:
+                rw_undo = []
+                net._rewire(rw_undo)
+                rw_score = evaluate()
+                if rw_score > score:
+                    score = rw_score
+                    best = max(best, score)
+                    stale = 0
+                else:
+                    net.replay(rw_undo)
 
         if verbose and (att + 1) % 1000 == 0:
             print(f"  [{att+1:5d}] Score: {best*100:5.1f}% | "

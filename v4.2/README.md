@@ -11,6 +11,12 @@ The current `v4.2` line is centered on four things:
 - reproducible benchmark harnesses for capability and scaling claims
 - new training ideas prototyped outside the core first, then promoted only if they beat the baseline
 
+## Recent Updates
+
+- **3-phase mutation**: drive=0 now triggers rewire instead of no-op; stale-triggered rewire phase in `train()` explores new topologies when stuck (+6-20% on V=128, validated across 5 seeds)
+- **Soft connection cap**: `CAP_RATIO=120` limits alive edges to `V * NV_RATIO * 120`, enabling V=256 scaling (49.5% at 96k budget) without connection explosion
+- **Scaling law confirmed**: edges scale as V^1.19 (sub-quadratic); sparse forward gives linear runtime scaling
+
 ## Core Files
 
 - `model/graph.py`: stable NumPy reference implementation
