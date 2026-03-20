@@ -536,6 +536,63 @@ Verdict:
 - therefore there is **no V128 confirmation run**
 - on the current GPU harness, ranked periodic prune is a documented **negative regularization finding**
 
+## Threshold / Signal Calibration
+
+Current branch probes:
+
+- [`gpu_threshold_activation_probe.py`](S:/AI/work/VRAXION_DEV/v4.2/tests/gpu_experimental/gpu_threshold_activation_probe.py)
+- [`gpu_threshold_train_ab.py`](S:/AI/work/VRAXION_DEV/v4.2/tests/gpu_experimental/gpu_threshold_train_ab.py)
+- shared helper: [`gpu_english_common.py`](S:/AI/work/VRAXION_DEV/v4.2/tests/gpu_experimental/gpu_english_common.py)
+
+Hypothesis:
+
+- the English 768n run looked sub-threshold in dashboard inspection
+- perhaps `THRESHOLD=0.5` suppresses recurrent activity
+- if so, a lower threshold might unlock useful multi-tick dynamics
+
+Stage A: static checkpoint probe
+
+- checkpoints:
+  - `english_768n_step1000.npz`
+  - `english_768n_step3000.npz`
+  - `english_768n_step5000.npz`
+- thresholds:
+  - `0.0`
+  - `0.1`
+  - `0.25`
+  - `0.5`
+- ticks:
+  - `1`
+  - `3`
+  - `6`
+- fixed eval:
+  - `3 x 200 byte`
+- probe bytes:
+  - `space`
+  - `a`
+  - `e`
+  - `t`
+
+What came out:
+
+- lower thresholds do open much more `act` activity
+- but they also destroy English accuracy on the trained checkpoints
+- on the latest checkpoint:
+  - `threshold=0.5`, `ticks=6`: `31.49%` eval, `0.20% -> 0.00%` active ratio across ticks
+  - `threshold=0.25`, `ticks=6`: `0.17%` eval, `4.79% -> 2.44%` active ratio
+  - `threshold=0.10`, `ticks=6`: `0.00%` eval, `22.85% -> 37.60%` active ratio
+  - `threshold=0.00`, `ticks=6`: `0.00%` eval, `49.35% -> 50.07%` active ratio
+
+Verdict:
+
+- the branch does **not** currently have a usable lower-threshold candidate
+- `THRESHOLD=0.5` remains the only threshold that preserves the trained English behavior
+- therefore Stage B add-only threshold A/B was **not** escalated
+- Stage C ticks A/B was also **not** run
+- this turns the threshold question into a documented diagnostic result:
+  - yes, lower threshold increases firing
+  - no, that does not currently improve the learned English regime
+
 ## Current Hypothesis
 
 For the current `main` model:
@@ -561,7 +618,8 @@ The current negative result also suggests:
 - exact free mid-crystal frequency also does not yet win on the current V64 budget
 - budget scaling has now also failed to recover the CPU-style free-crystal win on V64
 - ranked periodic prune has now also failed as a practical regularizer on V64
-- the next high-signal axis is now explicit CPU/GPU schedule-parity or evaluator-parity validation, not more prune/crystal scheduler heuristics
+- threshold lowering has now also failed as a bake-ready fix for the English 768n run
+- the next high-signal axis is now explicit CPU/GPU schedule-parity, evaluator-parity, or signal-strength (`INJ_SCALE`) validation, not more prune/crystal scheduler heuristics
 
 ## Planned Run Series
 

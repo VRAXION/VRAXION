@@ -398,6 +398,53 @@ Interpretation:
 - there is no V128 confirmation run
 - the branch should treat this as another documented negative result, not a bake candidate
 
+### Phase 2g: Threshold / Signal Calibration
+
+Current branch probes:
+
+- [`gpu_threshold_activation_probe.py`](S:/AI/work/VRAXION_DEV/v4.2/tests/gpu_experimental/gpu_threshold_activation_probe.py)
+- [`gpu_threshold_train_ab.py`](S:/AI/work/VRAXION_DEV/v4.2/tests/gpu_experimental/gpu_threshold_train_ab.py)
+- shared helper: [`gpu_english_common.py`](S:/AI/work/VRAXION_DEV/v4.2/tests/gpu_experimental/gpu_english_common.py)
+
+Why this exists:
+
+- dashboard inspection on the English 768n run suggested that `charge` moves while `act` mostly stays near zero
+- that raised the question whether `THRESHOLD=0.5` is suppressing useful recurrent dynamics
+
+Stage A status:
+
+- fixed-checkpoint probe completed on:
+  - `step1000`
+  - `step3000`
+  - `step5000`
+- grid:
+  - thresholds `0.0/0.1/0.25/0.5`
+  - ticks `1/3/6`
+- all runs deterministic
+
+What the probe showed:
+
+- lower thresholds do increase firing strongly
+- but they also collapse English next-byte accuracy
+- on the latest checkpoint, only `threshold=0.5, ticks=6` preserves the learned behavior (`31.49%` eval)
+- more active thresholds (`0.25`, `0.1`, `0.0`) all fall to near-zero eval despite much larger active ratios
+
+Interpretation:
+
+- this is not a simple "threshold too high" story
+- the current trained regime depends on the existing sub-threshold/charge dynamics
+- lowering threshold is therefore not a bake-ready fix
+
+Branch decision:
+
+- there is no usable Stage A threshold challenger
+- Stage B add-only threshold A/B was not escalated
+- Stage C ticks A/B was not run
+- the next meaningful signal axis is likely:
+  - evaluator/schedule parity
+  - or signal-strength calibration (`INJ_SCALE`)
+  - not more threshold-only sweeps
+
 ### Phase 3: Specialist Mix
 
 Only after Phase 2 is stable.
