@@ -328,6 +328,49 @@ class SelfWiringGraph:
                 self.alive_set.add((r, nc))
                 undo.append(('W', r, c, nc))
 
+    def crystallize(self, evaluate_fn, eps=1e-6, verbose=False):
+        """Pass-based crystal pruning. Remove dead-weight edges without hurting score.
+
+        Shuffles alive edges, tries removing each exactly once per pass.
+        Repeats passes until a full pass removes zero edges.
+
+        Args:
+            evaluate_fn: callable() -> float, returns current score
+            eps: float tolerance for score comparison
+            verbose: print pass stats
+        Returns:
+            total edges removed
+        """
+        score = evaluate_fn()
+        total_removed = 0
+        pass_num = 0
+        while True:
+            alive_snapshot = list(self.alive)
+            random.shuffle(alive_snapshot)
+            removed_this_pass = 0
+            for r, c in alive_snapshot:
+                if self.mask[r, c] == 0:
+                    continue
+                old_val = self.mask[r, c]
+                self.mask[r, c] = 0.0
+                self.alive_set.discard((r, c))
+                new_score = evaluate_fn()
+                if new_score >= score - eps:
+                    score = new_score
+                    removed_this_pass += 1
+                    total_removed += 1
+                else:
+                    self.mask[r, c] = old_val
+                    self.alive_set.add((r, c))
+            self.resync_alive()
+            pass_num += 1
+            if verbose:
+                print(f"    crystal pass {pass_num}: removed {removed_this_pass}, "
+                      f"remaining {len(self.alive)}")
+            if removed_this_pass == 0:
+                break
+        return total_removed
+
 
 def softmax(x):
     e = np.exp(x - x.max())
