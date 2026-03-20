@@ -357,6 +357,47 @@ Interpretation:
 - the next useful direction is no longer another crystal scheduler sweep
 - the next useful direction is explicit CPU/GPU schedule-parity validation or evaluator-parity validation
 
+### Phase 2f: Ranked Prune as Regularizer
+
+Current branch probes:
+
+- [`gpu_rank_prune_regularization_ab.py`](S:/AI/work/VRAXION_DEV/v4.2/tests/gpu_experimental/gpu_rank_prune_regularization_ab.py)
+- [`gpu_rank_prune_regularization_matrix.py`](S:/AI/work/VRAXION_DEV/v4.2/tests/gpu_experimental/gpu_rank_prune_regularization_matrix.py)
+
+What they test:
+
+- whether periodic least-important prune can act as a regularizer rather than a compression step
+- empty-start add-only growth
+- train-only proposal acceptance
+- train-only prune ranking
+- holdout used only for measurement
+- deterministic double-run per case
+
+Policy grid on V64:
+
+- `no_prune`
+- `prune_w512_i512_f0.005`
+- `prune_w1024_i512_f0.005`
+- `prune_w1024_i512_f0.01`
+- `prune_w1024_i1024_f0.01`
+
+Current status on V64 (`seeds=42,77,123`):
+
+- long-run budgets `4096` and `8192` are both negative
+- all prune policies compress edge count strongly
+- at `4096`, holdout does not improve and train collapses
+- at `8192`, holdout rises slightly versus baseline, but train still collapses from `0.7189` to `0.0182`
+- no policy passes the positive gate
+- no policy even qualifies as research-only positive
+- all runs are deterministic
+
+Interpretation:
+
+- periodic ranked prune is too destructive on the current GPU harness
+- this does not behave like a usable implicit regularizer under the tested settings
+- there is no V128 confirmation run
+- the branch should treat this as another documented negative result, not a bake candidate
+
 ### Phase 3: Specialist Mix
 
 Only after Phase 2 is stable.

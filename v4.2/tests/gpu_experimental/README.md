@@ -480,6 +480,62 @@ Working verdict:
 - on the current GPU harness, free mid-crystals consistently trade score for compression
 - this turns the CPU-style "mid-crystal breakthrough" into a documented **GPU-side negative finding**
 
+## Ranked Prune as Regularizer
+
+Current branch probes:
+
+- [`gpu_rank_prune_regularization_ab.py`](S:/AI/work/VRAXION_DEV/v4.2/tests/gpu_experimental/gpu_rank_prune_regularization_ab.py)
+- [`gpu_rank_prune_regularization_matrix.py`](S:/AI/work/VRAXION_DEV/v4.2/tests/gpu_experimental/gpu_rank_prune_regularization_matrix.py)
+
+Hypothesis:
+
+- perhaps periodic least-important prune is not a compression trick here
+- perhaps it behaves like an implicit regularizer
+- if so, train score may soften while holdout improves
+
+What the harness does:
+
+- empty-start, add-only growth
+- accepts proposals on **train split** only
+- ranks candidate removals on **train split** only
+- uses **holdout split** only as a metric
+- runs deterministic double-runs per case
+
+Smoke result:
+
+- a quick `V64_N192`, `seed=42`, `attempts=256` smoke showed the expected failure mode:
+  - prune reduced train sharply
+  - holdout sometimes ticked up
+  - but the policy was clearly too aggressive to treat as a default
+
+V64 long-run matrix (`seeds=42,77,123`, budgets `4096/8192`):
+
+- policies:
+  - `no_prune`
+  - `prune_w512_i512_f0.005`
+  - `prune_w1024_i512_f0.005`
+  - `prune_w1024_i512_f0.01`
+  - `prune_w1024_i1024_f0.01`
+- all cases deterministic
+
+Median outcomes:
+
+- `budget=4096`
+  - `no_prune`: train `0.4976`, holdout `0.00856`, `1221` edges
+  - prune policies: train collapses to `0.01823`, holdout `0.00781`, edges compress to `615-719`
+
+- `budget=8192`
+  - `no_prune`: train `0.7189`, holdout `0.00465`, `2271` edges
+  - prune policies: train collapses to `0.01823`, holdout `0.00781`, edges compress to `1109-1199`
+
+Verdict:
+
+- there is **no positive policy on V64**
+- there is also **no research-only winner**
+- the small holdout lift at `8192` comes with catastrophic train collapse and slower wall time
+- therefore there is **no V128 confirmation run**
+- on the current GPU harness, ranked periodic prune is a documented **negative regularization finding**
+
 ## Current Hypothesis
 
 For the current `main` model:
@@ -504,7 +560,8 @@ The current negative result also suggests:
 - naive stale-trigger mid-crystal is not yet that answer
 - exact free mid-crystal frequency also does not yet win on the current V64 budget
 - budget scaling has now also failed to recover the CPU-style free-crystal win on V64
-- the next high-signal axis is now explicit CPU/GPU schedule-parity validation, not more crystal scheduler heuristics
+- ranked periodic prune has now also failed as a practical regularizer on V64
+- the next high-signal axis is now explicit CPU/GPU schedule-parity or evaluator-parity validation, not more prune/crystal scheduler heuristics
 
 ## Planned Run Series
 
