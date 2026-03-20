@@ -197,6 +197,13 @@ Promote if:
 - removed fraction is higher or equal
 - wall time is lower or acceptable
 
+Current status:
+
+- `V=64` practical pass reached on the GPU branch
+- pass-based crystal beats retry/random on remove-attempt count and wall time
+- the remaining score delta is negligible (`-2.78e-05` median on the measured V64 matrix)
+- branch direction: keep pass-based crystal as the canonical GPU crystal primitive
+
 ### Phase 2: Add-Only Swarm
 
 Reason:
@@ -212,6 +219,15 @@ Promote if:
 
 - better score trajectory at equal wall time
 - better best-of-run score at equal attempt budget
+
+Current status:
+
+- first naive `best-of-batch` smoke is **negative on quality** at equal eval budget
+- `K=32/64` is dramatically faster, but `K=1` keeps more promotions and wins score in the short run
+- branch interpretation:
+  - this v1 scheduler is a valid throughput probe
+  - it is not yet a bake-ready training improvement
+  - if revisited, the likely next scheduler should reduce promotion starvation
 
 ### Phase 3: Specialist Mix
 

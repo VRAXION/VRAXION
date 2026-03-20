@@ -113,6 +113,77 @@ It is acceptable to merge well-isolated experimental GPU tooling before the fina
      - rewire-light
    - phase- and size-dependent mixes
 
+## Current Measured Status
+
+### Stage A: Crystal A/B
+
+Current branch harness:
+
+- [`gpu_crystal_pass_ab.py`](S:/AI/work/VRAXION_DEV/v4.2/tests/gpu_experimental/gpu_crystal_pass_ab.py)
+
+Key implementation note:
+
+- the GPU crystal harness uses a **fixed score floor** (`score_before - eps`) for remove acceptance
+- this prevents long chains of individually "almost equal" accepts from drifting score downward
+- this is an intentional experimental guardrail for Stage A verification
+
+Measured V64 matrix (`seeds=42,77,123,321`, realistic add-only grown start graphs):
+
+- retry/random crystal:
+  - removed median: `61.83%`
+  - attempts median: `22,796`
+  - wall median: `59.57s`
+- pass-based crystal:
+  - removed median: `62.36%`
+  - attempts median: `13,001`
+  - wall median: `35.66s`
+- median score delta (pass - retry): `-2.78e-05`
+
+Interpretation:
+
+- pass-based crystal is **effectively score-preserving**
+- prune is slightly better
+- remove attempts and wall time are materially better
+- repeated runs are deterministic
+
+Working verdict:
+
+- `V=64` Stage A is a practical **PASS**
+- pass-based crystal is the preferred GPU crystal primitive
+
+### Stage B: Swarm Width Smoke
+
+Current branch harness:
+
+- [`gpu_swarm_v1.py`](S:/AI/work/VRAXION_DEV/v4.2/tests/gpu_experimental/gpu_swarm_v1.py)
+
+Initial smoke (`V=64`, `seed=42`, `total_evals=256`, empty-start, add-only, crystal-end):
+
+- `K=1`
+  - score: `8.62%`
+  - wall: `642ms`
+- `K=32`
+  - score: `7.03%`
+  - wall: `53ms`
+- `K=64`
+  - score: `4.69%`
+  - wall: `69ms`
+
+Interpretation:
+
+- naive best-of-batch master promotion is **much faster**
+- but at equal total eval budget it is also **promotion-starved**
+- this means Stage B is currently a **throughput demo, not yet a quality win**
+
+Working verdict:
+
+- keep the harness
+- do not bake naive swarm width into any recommendation yet
+- if revisited, the next likely direction is a less greedy scheduler:
+  - fixed wall-time comparison
+  - micro-rollouts / island workers
+  - or multiple promotions per batch
+
 ## Current Hypothesis
 
 For the current `main` model:

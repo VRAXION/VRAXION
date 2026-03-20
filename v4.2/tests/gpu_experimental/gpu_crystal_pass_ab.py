@@ -37,6 +37,8 @@ from model.graph import SelfWiringGraph
 
 torch.backends.cuda.matmul.allow_tf32 = False
 torch.backends.cudnn.allow_tf32 = False
+torch.backends.cudnn.deterministic = True
+torch.backends.cudnn.benchmark = False
 torch.set_float32_matmul_precision("high")
 
 DEFAULT_CONFIGS = (64, 128)
@@ -80,6 +82,7 @@ def parse_args() -> argparse.Namespace:
     ap.add_argument("--grow-attempts", type=int, default=0, help="Override seeded add-only growth attempts")
     ap.add_argument("--ticks", type=int, default=6)
     ap.add_argument("--eps", type=float, default=1e-6)
+    ap.add_argument("--verdict-score-tol", type=float, default=5e-5, help="Practical score tolerance for Stage A gate")
     ap.add_argument("--compile-eval", action="store_true")
     ap.add_argument("--retry-patience-mode", default="edges", choices=["fixed", "edges"])
     ap.add_argument("--retry-patience", type=int, default=500)
@@ -277,6 +280,7 @@ def crystal_retry_random(
     score_runner,
     rng: random.Random,
     eps: float,
+    floor_score: float,
     patience_mode: str,
     fixed_patience: int,
     cap_mode: str,
@@ -308,7 +312,7 @@ def crystal_retry_random(
         state.mask[row, col] = 0.0
         new_score = score_runner(state.mask)
         attempts += 1
-        if new_score >= state.score - eps:
+        if new_score >= floor_score:
             state.score = new_score
             last = state.alive[-1]
             state.alive[idx] = last
@@ -345,6 +349,7 @@ def crystal_pass_based(
     score_runner,
     rng: random.Random,
     eps: float,
+    floor_score: float,
     max_passes: int,
     max_wall_ms: int,
 ) -> dict:
@@ -379,14 +384,15 @@ def crystal_pass_based(
             state.mask[row, col] = 0.0
             new_score = score_runner(state.mask)
             attempts += 1
-            if new_score >= state.score - eps:
+            if new_score >= floor_score:
                 state.score = new_score
                 state.alive_set.discard((row, col))
                 removed += 1
                 removed_this_pass += 1
             else:
                 state.mask[row, col] = old_val
-        state.alive = list(state.alive_set)
+        # Canonicalize edge order between passes so seeded shuffles stay reproducible.
+        state.alive = sorted(state.alive_set)
         passes += 1
         if removed_this_pass == 0:
             stop_reason = "zero_remove_pass"
@@ -443,6 +449,7 @@ def run_case(
     score_runner = make_score_runner(case, ticks, device, compile_eval)
     edges_before = len(start_state.alive)
     score_before = float(start_state.score)
+    floor_score = score_before - eps
 
     retry_rng1 = random.Random(seed + 200_000 + V)
     retry_rng2 = random.Random(seed + 200_000 + V)
@@ -450,16 +457,16 @@ def run_case(
     pass_rng2 = random.Random(seed + 300_000 + V)
 
     retry_1 = crystal_retry_random(
-        clone_state(start_state), score_runner, retry_rng1, eps, retry_patience_mode, retry_patience_fixed, retry_cap_mode, max_wall_ms
+        clone_state(start_state), score_runner, retry_rng1, eps, floor_score, retry_patience_mode, retry_patience_fixed, retry_cap_mode, max_wall_ms
     )
     retry_2 = crystal_retry_random(
-        clone_state(start_state), score_runner, retry_rng2, eps, retry_patience_mode, retry_patience_fixed, retry_cap_mode, max_wall_ms
+        clone_state(start_state), score_runner, retry_rng2, eps, floor_score, retry_patience_mode, retry_patience_fixed, retry_cap_mode, max_wall_ms
     )
     pass_1 = crystal_pass_based(
-        clone_state(start_state), score_runner, pass_rng1, eps, max_passes, max_wall_ms
+        clone_state(start_state), score_runner, pass_rng1, eps, floor_score, max_passes, max_wall_ms
     )
     pass_2 = crystal_pass_based(
-        clone_state(start_state), score_runner, pass_rng2, eps, max_passes, max_wall_ms
+        clone_state(start_state), score_runner, pass_rng2, eps, floor_score, max_passes, max_wall_ms
     )
 
     if max_wall_ms:
@@ -499,19 +506,97 @@ def summarize(results: list[dict]) -> dict:
         pass_removed = [r["pass_based"]["removed_pct"] for r in rows]
         retry_time = [r["retry_random"]["wall_ms"] for r in rows]
         pass_time = [r["pass_based"]["wall_ms"] for r in rows]
+        retry_attempts = [r["retry_random"]["attempted_removes"] for r in rows]
+        pass_attempts = [r["pass_based"]["attempted_removes"] for r in rows]
         retry_score_gain = [r["retry_random"]["score_after"] - r["score_before"] for r in rows]
         pass_score_gain = [r["pass_based"]["score_after"] - r["score_before"] for r in rows]
         summary[str(V)] = {
             "n_cases": len(rows),
             "retry_removed_pct_mean": float(np.mean(retry_removed)),
             "pass_removed_pct_mean": float(np.mean(pass_removed)),
+            "retry_removed_pct_median": float(np.median(retry_removed)),
+            "pass_removed_pct_median": float(np.median(pass_removed)),
             "retry_wall_ms_mean": float(np.mean(retry_time)),
             "pass_wall_ms_mean": float(np.mean(pass_time)),
+            "retry_wall_ms_median": float(np.median(retry_time)),
+            "pass_wall_ms_median": float(np.median(pass_time)),
+            "retry_attempts_mean": float(np.mean(retry_attempts)),
+            "pass_attempts_mean": float(np.mean(pass_attempts)),
+            "retry_attempts_median": float(np.median(retry_attempts)),
+            "pass_attempts_median": float(np.median(pass_attempts)),
             "retry_score_gain_mean": float(np.mean(retry_score_gain)),
             "pass_score_gain_mean": float(np.mean(pass_score_gain)),
             "pass_minus_retry_removed_pct": float(np.mean(pass_removed) - np.mean(retry_removed)),
         }
     return summary
+
+
+def stage_a_verdict(results: list[dict], eps: float, score_tol: float) -> dict:
+    by_v: dict[str, dict[str, object]] = {}
+    overall_pass = True
+
+    for V in sorted({r["V"] for r in results}):
+        rows = [r for r in results if r["V"] == V]
+        retry_score_after = np.array([r["retry_random"]["score_after"] for r in rows], dtype=np.float64)
+        pass_score_after = np.array([r["pass_based"]["score_after"] for r in rows], dtype=np.float64)
+        retry_removed = np.array([r["retry_random"]["removed_pct"] for r in rows], dtype=np.float64)
+        pass_removed = np.array([r["pass_based"]["removed_pct"] for r in rows], dtype=np.float64)
+        retry_attempts = np.array([r["retry_random"]["attempted_removes"] for r in rows], dtype=np.float64)
+        pass_attempts = np.array([r["pass_based"]["attempted_removes"] for r in rows], dtype=np.float64)
+        retry_wall = np.array([r["retry_random"]["wall_ms"] for r in rows], dtype=np.float64)
+        pass_wall = np.array([r["pass_based"]["wall_ms"] for r in rows], dtype=np.float64)
+
+        retry_det_all = all(r["retry_random"]["deterministic"] is True for r in rows)
+        pass_det_all = all(r["pass_based"]["deterministic"] is True for r in rows)
+
+        retry_score_median = float(np.median(retry_score_after))
+        pass_score_median = float(np.median(pass_score_after))
+        retry_removed_median = float(np.median(retry_removed))
+        pass_removed_median = float(np.median(pass_removed))
+        retry_attempts_median = float(np.median(retry_attempts))
+        pass_attempts_median = float(np.median(pass_attempts))
+        retry_wall_median = float(np.median(retry_wall))
+        pass_wall_median = float(np.median(pass_wall))
+
+        score_ok = pass_score_median >= retry_score_median - score_tol
+        removed_ok = pass_removed_median >= retry_removed_median - 0.01
+        efficiency_ok = (
+            pass_attempts_median <= 0.75 * retry_attempts_median
+            or pass_wall_median <= 0.75 * retry_wall_median
+        )
+        deterministic_ok = retry_det_all and pass_det_all
+        passed = score_ok and removed_ok and efficiency_ok and deterministic_ok
+        overall_pass = overall_pass and passed
+
+        by_v[str(V)] = {
+            "passed": passed,
+            "retry_score_after_median": retry_score_median,
+            "pass_score_after_median": pass_score_median,
+            "retry_removed_pct_median": retry_removed_median,
+            "pass_removed_pct_median": pass_removed_median,
+            "retry_attempts_median": retry_attempts_median,
+            "pass_attempts_median": pass_attempts_median,
+            "retry_wall_ms_median": retry_wall_median,
+            "pass_wall_ms_median": pass_wall_median,
+            "retry_deterministic_all": retry_det_all,
+            "pass_deterministic_all": pass_det_all,
+            "gate_score_ok": score_ok,
+            "gate_removed_ok": removed_ok,
+            "gate_efficiency_ok": efficiency_ok,
+            "gate_deterministic_ok": deterministic_ok,
+        }
+
+    return {
+        "overall_pass": overall_pass,
+        "by_v": by_v,
+        "gate": {
+            "score_after": "pass_median >= retry_median - eps",
+            "score_after_practical": f"pass_median >= retry_median - {score_tol}",
+            "removed_pct": "pass_median >= retry_median - 0.01",
+            "efficiency": "pass_attempts_median <= 0.75 * retry_attempts_median OR pass_wall_median <= 0.75 * retry_wall_median",
+            "determinism": "all repeated runs deterministic for both variants",
+        },
+    }
 
 
 def main() -> int:
@@ -554,12 +639,14 @@ def main() -> int:
             )
 
     summary = summarize(results)
+    verdict = stage_a_verdict(results, args.eps, args.verdict_score_tol)
     payload = {
         "device": torch.cuda.get_device_name(0),
         "branch_intent": "gpu crystal A/B for PassiveIO mainline",
         "args": vars(args),
         "results": results,
         "summary": summary,
+        "verdict": verdict,
     }
 
     if args.output:
@@ -570,6 +657,7 @@ def main() -> int:
     out_path.parent.mkdir(parents=True, exist_ok=True)
     out_path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
     print(f"Saved report -> {out_path}")
+    print(json.dumps(verdict, indent=2))
     print(json.dumps(summary, indent=2))
     return 0
 
