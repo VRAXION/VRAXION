@@ -229,6 +229,33 @@ Current status:
   - it is not yet a bake-ready training improvement
   - if revisited, the likely next scheduler should reduce promotion starvation
 
+### Phase 2b: Periodic Crystal Scheduler
+
+Current branch probe:
+
+- [`gpu_crystal_schedule_ab.py`](S:/AI/work/VRAXION_DEV/v4.2/tests/gpu_experimental/gpu_crystal_schedule_ab.py)
+
+What it tests:
+
+- split the same total add budget into multiple grow chunks
+- run pass-based crystal between chunks
+- compare against continuous growth with only end crystal
+
+Current status:
+
+- short-budget V64: frequent crystal compresses hard, but does not clearly improve score
+- longer V64 single-seed: one mid-crystal can improve score materially
+- longer V64 three-seed median: score is roughly tied, but the segmented schedule is denser
+
+Interpretation:
+
+- the CPU-side "grow -> crystal -> grow" win does not yet transfer cleanly to the current GPU empty-start harness
+- fixed equal segments are probably too blunt
+- if revisited, the next scheduler should crystalize on state:
+  - stale threshold
+  - edge-load threshold
+  - or score plateau
+
 ### Phase 3: Specialist Mix
 
 Only after Phase 2 is stable.

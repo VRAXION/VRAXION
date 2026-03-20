@@ -184,6 +184,53 @@ Working verdict:
   - micro-rollouts / island workers
   - or multiple promotions per batch
 
+### Stage B.5: Periodic Crystal Schedule Smoke
+
+Current branch harness:
+
+- [`gpu_crystal_schedule_ab.py`](S:/AI/work/VRAXION_DEV/v4.2/tests/gpu_experimental/gpu_crystal_schedule_ab.py)
+
+What it tests:
+
+- `segments=1`: continuous add-only growth, then final crystal
+- `segments=2`: grow half -> crystal -> grow half -> final crystal
+- `segments=4`: four short grow chunks with mid-crystal between them, then final crystal
+
+Short V64 smoke (`seed=42`, `total_evals=512`, `K=1`):
+
+- `seg=1`: `14.12%`, `78` edges
+- `seg=2`: `13.34%`, `50` edges
+- `seg=4`: `14.09%`, `31` edges
+
+Interpretation:
+
+- early budget: more frequent crystal strongly compresses the graph
+- quality does not clearly improve at this stage
+- `seg=4` nearly matched baseline score while using far fewer edges
+
+Longer V64 single-seed probe (`seed=42`, `total_evals=2048`, `K=1`):
+
+- `seg=1`: `22.76%`, `100` edges
+- `seg=2`: `25.20%`, `183` edges
+- `seg=4`: `22.77%`, `114` edges
+
+Interpretation:
+
+- at a longer budget, one mid-crystal can produce a real score gain on at least some runs
+- the gain is not compression-driven; the winner here is denser, not sparser
+
+V64 three-seed probe (`seeds=42,77,123`, `total_evals=2048`, `K=1`):
+
+- `seg=1` median: `26.70%`, `122` edges
+- `seg=2` median: `26.69%`, `160` edges
+
+Working verdict:
+
+- periodic mid-crystal is **not yet a clean GPU win**
+- it can help on some seeds / budgets, but the current fixed-segment scheduler is not robust enough to bake
+- likely next improvement:
+  - trigger crystal on state (stale / edge load / plateau), not on fixed equal segments
+
 ## Current Hypothesis
 
 For the current `main` model:
