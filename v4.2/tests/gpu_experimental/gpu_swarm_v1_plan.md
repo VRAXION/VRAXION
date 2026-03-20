@@ -297,6 +297,36 @@ Interpretation:
   - continuous add-only growth
   - one deep pass-based final crystal
 
+### Phase 2d: Exact Free Crystal Frequency
+
+Current branch probes:
+
+- [`gpu_free_crystal_frequency_ab.py`](S:/AI/work/VRAXION_DEV/v4.2/tests/gpu_experimental/gpu_free_crystal_frequency_ab.py)
+- [`gpu_single_crystal_timing_ab.py`](S:/AI/work/VRAXION_DEV/v4.2/tests/gpu_experimental/gpu_single_crystal_timing_ab.py)
+
+What they test:
+
+- CPU-style free mid-training crystal schedules under invariant add-only growth
+- exact crystal count sweeps
+- single-crystal timing sweeps
+- no final crystal in the measured score, so the mid-training effect is isolated
+
+Current status:
+
+- corrected V64 free-frequency sweep (`0/1/2/4/8`, `total_evals=2048`) is negative:
+  - more crystals compress more
+  - score median drops versus `0 crystals`
+- quick V64 single-crystal timing smoke is also negative:
+  - no insertion point beat the no-crystal baseline at `total_evals=1024`
+
+Interpretation:
+
+- the GPU branch does not yet reproduce the CPU-side "mid-crystal breakthrough" result
+- the next useful question is likely:
+  - larger budget scaling
+  - or explicit CPU/GPU schedule-parity validation
+- it is probably **not** more scheduler heuristics at the same budget
+
 ### Phase 3: Specialist Mix
 
 Only after Phase 2 is stable.

@@ -356,6 +356,79 @@ Working verdict:
   - add-only continuous growth
   - one deep pass-based final crystal
 
+### Stage B.8: Exact Free Crystal Frequency Sweep
+
+Current branch harness:
+
+- [`gpu_free_crystal_frequency_ab.py`](S:/AI/work/VRAXION_DEV/v4.2/tests/gpu_experimental/gpu_free_crystal_frequency_ab.py)
+
+What it tests:
+
+- exact CPU-style free mid-training crystal schedules
+- same total add budget for every policy
+- crystals do **not** consume add budget
+- invariant add-only proposal stream across policies
+- no final crystal in the measured score, so this isolates the mid-training effect itself
+
+Corrected V64 matrix (`seeds=42,77,123`, `total_evals=2048`, `ticks=6`):
+
+- `0 crystals`
+  - score median: `28.53%`
+  - final edges median: `270`
+- `1 crystal`
+  - score median: `25.20%`
+  - final edges median: `176`
+- `2 crystals`
+  - score median: `23.57%`
+  - final edges median: `121`
+- `4 crystals`
+  - score median: `24.42%`
+  - final edges median: `170`
+- `8 crystals`
+  - score median: `21.98%`
+  - final edges median: `90`
+
+Working verdict:
+
+- on the current GPU harness and budget, more free mid-crystals mostly mean **more compression and less score**
+- this does **not** reproduce the CPU-side V64 breakthrough claim at `total_evals=2048`
+- the discrepancy may be:
+  - budget-scale related
+  - evaluator-parity related
+  - or genuinely CPU/GPU harness specific
+
+### Stage B.9: Single Crystal Timing Smoke
+
+Current branch harness:
+
+- [`gpu_single_crystal_timing_ab.py`](S:/AI/work/VRAXION_DEV/v4.2/tests/gpu_experimental/gpu_single_crystal_timing_ab.py)
+
+What it tests:
+
+- one free mid-crystal only
+- different insertion points under the same add-only proposal stream:
+  - `25%`
+  - `50%`
+  - `75%`
+  - `87.5%`
+- no final crystal in the measured score
+
+Quick V64 smoke (`seed=42`, `total_evals=1024`):
+
+- `none`: `19.67%`, `159` edges
+- `0.25`: `18.92%`, `181` edges
+- `0.50`: `15.68%`, `54` edges
+- `0.75`: `18.82%`, `75` edges
+- `0.875`: `18.83%`, `78` edges
+
+Working verdict:
+
+- no timing window won this smoke
+- later crystals compressed harder, but still underperformed the no-crystal baseline on score
+- the next useful GPU question is probably not "which trigger?", but:
+  - does the mid-crystal win emerge only at larger total add budgets?
+  - or is there still a parity mismatch between the GPU harness and the CPU-side reported schedule?
+
 ## Current Hypothesis
 
 For the current `main` model:
@@ -378,6 +451,8 @@ The current negative result also suggests:
 - the problem is not "should we crystal at all?"
 - the problem is "how do we trigger or integrate crystal without prematurely cutting the growth trajectory?"
 - naive stale-trigger mid-crystal is not yet that answer
+- exact free mid-crystal frequency also does not yet win on the current V64 budget
+- the next high-signal axis is likely budget scaling or explicit CPU/GPU schedule parity, not more scheduler heuristics at the same budget
 
 ## Planned Run Series
 
