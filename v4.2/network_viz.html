@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>SWG Network Visualization — 768 neurons</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { background: #0a0a0a; color: #ddd; font-family: monospace; overflow: hidden; }
+canvas { display: block; }
+#info {
+    position: fixed; top: 10px; left: 10px; z-index: 10;
+    background: rgba(0,0,0,0.8); padding: 12px; border: 1px solid #333;
+    font-size: 13px; line-height: 1.6; max-width: 320px;
+}
+#hover-info {
+    position: fixed; bottom: 10px; left: 10px; z-index: 10;
+    background: rgba(0,0,0,0.9); padding: 10px; border: 1px solid #555;
+    font-size: 12px; min-width: 200px;
+}
+#controls {
+    position: fixed; top: 10px; right: 10px; z-index: 10;
+    background: rgba(0,0,0,0.8); padding: 10px; border: 1px solid #333;
+    font-size: 12px;
+}
+button { background: #222; color: #0f0; border: 1px solid #0f0; padding: 4px 10px; margin: 2px; cursor: pointer; font-family: monospace; }
+button:hover { background: #0f0; color: #000; }
+</style>
+</head>
+<body>
+<div id="info">
+    <div style="color:#0f0;font-size:16px;">SWG Network</div>
+    <div id="stats"></div>
+</div>
+<div id="hover-info">Hover over a neuron</div>
+<div id="controls">
+    <button onclick="toggleEdges()">Toggle Edges</button>
+    <button onclick="toggleLayout()">Circle / Force</button>
+    <button onclick="resetZoom()">Reset Zoom</button>
+    <div style="margin-top:8px;">
+        Edge filter: <select id="edgeFilter" onchange="render()">
+            <option value="all">All</option>
+            <option value="pos">Positive (+0.6)</option>
+            <option value="neg">Negative (-0.6)</option>
+        </select>
+    </div>
+</div>
+<canvas id="c"></canvas>
+<script>
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+let W, H;
+function resize() { W = canvas.width = window.innerWidth; H = canvas.height = window.innerHeight; }
+resize();
+window.addEventListener('resize', () => { resize(); render(); });
+
+let nodes = [], links = [];
+let showEdges = true;
+let layoutMode = 'circle'; // 'circle' or 'force'
+let zoom = 1, panX = 0, panY = 0;
+let dragging = false, dragStartX, dragStartY;
+let hoveredNode = null;
+
+// Load data
+fetch('network_viz_data.json').then(r => r.json()).then(data => {
+    nodes = data.nodes;
+    links = data.links;
+
+    // Create ID -> index map
+    const idMap = {};
+    nodes.forEach((n, i) => { idMap[n.id] = i; });
+    links.forEach(l => { l.si = idMap[l.s]; l.ti = idMap[l.t]; });
+
+    // Layout: circle by degree
+    nodes.sort((a, b) => b.deg - a.deg);
+    layoutCircle();
+
+    document.getElementById('stats').innerHTML =
+        `Neurons: ${nodes.length}<br>Edges: ${links.length}<br>` +
+        `Pos: ${links.filter(l=>l.v>0).length} Neg: ${links.filter(l=>l.v<0).length}<br>` +
+        `Max degree: ${nodes[0].deg}`;
+
+    render();
+    canvas.addEventListener('mousemove', onMouse);
+    canvas.addEventListener('wheel', onWheel);
+    canvas.addEventListener('mousedown', e => { dragging=true; dragStartX=e.clientX-panX; dragStartY=e.clientY-panY; });
+    canvas.addEventListener('mouseup', () => dragging=false);
+    canvas.addEventListener('mousemove', e => { if(dragging){panX=e.clientX-dragStartX; panY=e.clientY-dragStartY; render();} });
+});
+
+function layoutCircle() {
+    const cx = W/2, cy = H/2, r = Math.min(W,H) * 0.4;
+    nodes.forEach((n, i) => {
+        const a = (i / nodes.length) * Math.PI * 2 - Math.PI/2;
+        n.x = cx + Math.cos(a) * r;
+        n.y = cy + Math.sin(a) * r;
+    });
+}
+
+function toggleEdges() { showEdges = !showEdges; render(); }
+function toggleLayout() {
+    if (layoutMode === 'circle') {
+        layoutMode = 'force';
+        // Simple force layout (few iterations)
+        for (let iter = 0; iter < 50; iter++) {
+            nodes.forEach(n => { n.fx = 0; n.fy = 0; });
+            // Repulsion
+            for (let i = 0; i < nodes.length; i++) {
+                for (let j = i+1; j < nodes.length; j++) {
+                    let dx = nodes[j].x - nodes[i].x;
+                    let dy = nodes[j].y - nodes[i].y;
+                    let d = Math.sqrt(dx*dx+dy*dy) + 1;
+                    let f = 5000 / (d*d);
+                    nodes[i].fx -= f*dx/d; nodes[i].fy -= f*dy/d;
+                    nodes[j].fx += f*dx/d; nodes[j].fy += f*dy/d;
+                }
+            }
+            // Attraction via edges
+            links.forEach(l => {
+                if (l.si === undefined || l.ti === undefined) return;
+                let a = nodes[l.si], b = nodes[l.ti];
+                if (!a || !b) return;
+                let dx = b.x-a.x, dy = b.y-a.y;
+                let d = Math.sqrt(dx*dx+dy*dy) + 1;
+                let f = d * 0.001;
+                a.fx += f*dx; a.fy += f*dy;
+                b.fx -= f*dx; b.fy -= f*dy;
+            });
+            // Center
+            nodes.forEach(n => {
+                n.fx += (W/2-n.x)*0.01; n.fy += (H/2-n.y)*0.01;
+                n.x += n.fx * 0.5; n.y += n.fy * 0.5;
+            });
+        }
+    } else {
+        layoutMode = 'circle';
+        layoutCircle();
+    }
+    render();
+}
+function resetZoom() { zoom=1; panX=0; panY=0; render(); }
+
+function render() {
+    ctx.clearRect(0, 0, W, H);
+    ctx.save();
+    ctx.translate(panX, panY);
+    ctx.scale(zoom, zoom);
+
+    const filter = document.getElementById('edgeFilter').value;
+
+    // Edges
+    if (showEdges) {
+        ctx.globalAlpha = 0.08;
+        links.forEach(l => {
+            if (l.si === undefined || l.ti === undefined) return;
+            if (filter === 'pos' && l.v < 0) return;
+            if (filter === 'neg' && l.v > 0) return;
+            const a = nodes[l.si], b = nodes[l.ti];
+            if (!a || !b) return;
+            ctx.strokeStyle = l.v > 0 ? '#00ff88' : '#ff4444';
+            ctx.beginPath();
+            ctx.moveTo(a.x, a.y);
+            ctx.lineTo(b.x, b.y);
+            ctx.stroke();
+        });
+        // Highlight hovered node edges
+        if (hoveredNode !== null) {
+            ctx.globalAlpha = 0.6;
+            ctx.lineWidth = 2;
+            links.forEach(l => {
+                if (l.si === undefined || l.ti === undefined) return;
+                const isSource = nodes[l.si] && nodes[l.si].id === hoveredNode;
+                const isTarget = nodes[l.ti] && nodes[l.ti].id === hoveredNode;
+                if (!isSource && !isTarget) return;
+                const a = nodes[l.si], b = nodes[l.ti];
+                ctx.strokeStyle = l.v > 0 ? '#00ff88' : '#ff4444';
+                ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
+            });
+            ctx.lineWidth = 1;
+        }
+    }
+
+    // Nodes
+    ctx.globalAlpha = 1;
+    const maxDeg = nodes.length > 0 ? nodes[0].deg : 1;
+    nodes.forEach(n => {
+        const r = 2 + (n.deg / maxDeg) * 5;
+        const bright = 0.3 + 0.7 * (n.deg / maxDeg);
+        if (n.id === hoveredNode) {
+            ctx.fillStyle = '#ffffff';
+            ctx.beginPath(); ctx.arc(n.x, n.y, r+3, 0, Math.PI*2); ctx.fill();
+        }
+        ctx.fillStyle = `rgba(0, ${Math.floor(bright*255)}, ${Math.floor(bright*128)}, 1)`;
+        ctx.beginPath(); ctx.arc(n.x, n.y, r, 0, Math.PI*2); ctx.fill();
+    });
+
+    ctx.restore();
+}
+
+function onMouse(e) {
+    if (dragging) return;
+    const mx = (e.clientX - panX) / zoom;
+    const my = (e.clientY - panY) / zoom;
+    hoveredNode = null;
+    let minD = 20;
+    nodes.forEach(n => {
+        const d = Math.sqrt((n.x-mx)**2 + (n.y-my)**2);
+        if (d < minD) { minD = d; hoveredNode = n.id; }
+    });
+
+    if (hoveredNode !== null) {
+        const n = nodes.find(n => n.id === hoveredNode);
+        const outLinks = links.filter(l => nodes[l.si] && nodes[l.si].id === hoveredNode);
+        const inLinks = links.filter(l => nodes[l.ti] && nodes[l.ti].id === hoveredNode);
+        document.getElementById('hover-info').innerHTML =
+            `<span style="color:#0f0">Neuron ${hoveredNode}</span><br>` +
+            `Degree: ${n.deg} (out:${n.out} in:${n.inp})<br>` +
+            `Out to: ${outLinks.length} neurons<br>` +
+            `In from: ${inLinks.length} neurons<br>` +
+            `Pos edges: ${[...outLinks,...inLinks].filter(l=>l.v>0).length}<br>` +
+            `Neg edges: ${[...outLinks,...inLinks].filter(l=>l.v<0).length}`;
+    } else {
+        document.getElementById('hover-info').innerHTML = 'Hover over a neuron';
+    }
+    render();
+}
+
+function onWheel(e) {
+    e.preventDefault();
+    const delta = e.deltaY > 0 ? 0.9 : 1.1;
+    zoom *= delta;
+    zoom = Math.max(0.1, Math.min(10, zoom));
+    render();
+}
+</script>
+</body>
+</html>

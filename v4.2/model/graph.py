@@ -76,8 +76,10 @@ class SelfWiringGraph:
         self.charge = np.zeros(self.H, dtype=np.float32)
 
         # Co-evolved learned params
-        self.loss_pct = np.int8(15)    # 1-50, charge loses loss% per tick
+        self.loss_pct = np.int8(15)    # global legacy, kept for compat
         self.drive = np.int8(1)        # signed: +N=add N, -N=remove N, [-15,+15]
+        self.theta = np.full(self.H, 0.1, dtype=np.float32)    # per-neuron threshold [0.0, 1.0]
+        self.decay = np.full(self.H, 0.15, dtype=np.float32)   # per-neuron decay rate [0.01, 0.5]
 
     @property
     def out_start(self):
@@ -91,6 +93,11 @@ class SelfWiringGraph:
     @property
     def retention(self):
         return (100 - int(self.loss_pct)) * 0.01
+
+    @property
+    def retention_vec(self):
+        """Per-neuron retention = 1.0 - decay."""
+        return 1.0 - self.decay
 
     def _sparse_mul_1d(self, act):
         """Sparse act @ mask for 1D act vector. O(edges) instead of O(H^2)."""
@@ -111,16 +118,16 @@ class SelfWiringGraph:
     def forward(self, world, ticks=6):
         """Single-input forward pass. Passive I/O: inject via W_in, read via W_out."""
         act = self.state.copy()
-        retain = float(self.retention)
-        use_sparse = len(self.alive) < self.H * self.H * 0.1  # sparse below 10% density
+        ret = self.retention_vec  # (H,) per-neuron retention
+        use_sparse = len(self.alive) < self.H * self.H * 0.1
         for t in range(ticks):
             if t == 0:
                 act += world @ self.W_in
             raw = self._sparse_mul_1d(act) if use_sparse else act @ self.mask
             np.nan_to_num(raw, copy=False, nan=0.0, posinf=0.0, neginf=0.0)
             self.charge += raw
-            self.charge *= retain
-            act = np.maximum(self.charge - self.THRESHOLD, 0.0)
+            self.charge *= ret  # element-wise per-neuron decay
+            act = np.maximum(self.charge - self.theta, 0.0)
             self.charge = np.clip(self.charge, -1.0, 1.0)
         self.state = act.copy()
         return self.charge @ self.W_out
@@ -130,7 +137,8 @@ class SelfWiringGraph:
         V, H = self.V, self.H
         charges = np.zeros((V, H), dtype=np.float32)
         acts = np.zeros((V, H), dtype=np.float32)
-        retain = float(self.retention)
+        ret = self.retention_vec  # (H,) per-neuron — broadcasts over (V, H)
+        th = self.theta
         projected = np.eye(V, dtype=np.float32) @ self.W_in  # (V, H)
         use_sparse = len(self.alive) < H * H * 0.1
         for t in range(ticks):
@@ -139,8 +147,8 @@ class SelfWiringGraph:
             raw = self._sparse_mul_2d(acts) if use_sparse else acts @ self.mask
             np.nan_to_num(raw, copy=False, nan=0.0, posinf=0.0, neginf=0.0)
             charges += raw
-            charges *= retain
-            acts = np.maximum(charges - self.THRESHOLD, 0.0)
+            charges *= ret  # element-wise per-neuron
+            acts = np.maximum(charges - th, 0.0)
             charges = np.clip(charges, -1.0, 1.0)
         return charges @ self.W_out
 
@@ -172,7 +180,7 @@ class SelfWiringGraph:
     # --- State management ---
 
     def save_state(self):
-        """Save everything that reverts on reject: mask, charge, loss, drive."""
+        """Save everything that reverts on reject: mask, charge, loss, drive, theta."""
         return {
             'mask': self.mask.copy(),
             'alive': self.alive.copy(),
@@ -181,6 +189,8 @@ class SelfWiringGraph:
             'charge': self.charge.copy(),
             'loss_pct': np.int8(self.loss_pct),
             'drive': np.int8(self.drive),
+            'theta': self.theta.copy(),
+            'decay': self.decay.copy(),
         }
 
     def restore_state(self, s):
@@ -196,6 +206,10 @@ class SelfWiringGraph:
         self.loss_pct = np.int8(s.get('loss_pct', s.get('loss', 15)))
         if 'drive' in s:
             self.drive = np.int8(s['drive'])
+        if 'theta' in s:
+            self.theta[:] = s['theta']
+        if 'decay' in s:
+            self.decay[:] = s['decay']
 
     # --- Disk persistence ---
 
@@ -210,6 +224,8 @@ class SelfWiringGraph:
             vals=vals,
             loss_pct=int(self.loss_pct),
             drive=int(self.drive),
+            theta=self.theta,
+            decay=self.decay,
         )
 
     @classmethod
@@ -232,6 +248,8 @@ class SelfWiringGraph:
         net.charge = np.zeros(net.N, dtype=np.float32)
         net.loss_pct = np.int8(int(d['loss_pct']))
         net.drive = np.int8(int(d['drive']))
+        net.theta = np.array(d['theta'], dtype=np.float32) if 'theta' in d else np.full(net.N, 0.1, dtype=np.float32)
+        net.decay = np.array(d['decay'], dtype=np.float32) if 'decay' in d else np.full(net.N, 0.15, dtype=np.float32)
         return net
 
     def replay(self, log):
@@ -260,6 +278,10 @@ class SelfWiringGraph:
                 self.alive_set.discard((r, c_new))
                 self.alive_set.add((r, c_old))
                 has_structural = True
+            elif op == 'T':
+                self.theta[entry[1]] = np.float32(entry[2])
+            elif op == 'D':
+                self.decay[entry[1]] = np.float32(entry[2])
         if has_structural:
             self.alive = list(self.alive_set)
         self._sync_sparse_idx()
@@ -284,6 +306,8 @@ class SelfWiringGraph:
                 'remove': self._remove,
                 'rewire': self._rewire,
                 'flip': self._flip,
+                'theta': self._theta_mutate,
+                'decay': self._decay_mutate,
             }
             op_fn = op_map.get(forced_op)
             if op_fn is None:
@@ -300,6 +324,11 @@ class SelfWiringGraph:
         # Drive drift — 7/20 chance, ±1, reverts on reject
         if random.randint(1, 20) <= 7 and not freeze_params:
             self.drive = np.int8(max(-15, min(15, int(self.drive) + random.choice([-1, 1]))))
+
+        # Theta (threshold) drift — 1/5 chance, 1 random neuron, random value [0, 1]
+        if random.randint(1, 5) == 1 and not freeze_params:
+            idx = random.randint(0, self.H - 1)
+            self.theta[idx] = np.float32(random.random())
 
         # Execute drive: +N=add, -N=remove, 0=rewire
         undo = []
@@ -361,6 +390,20 @@ class SelfWiringGraph:
                 self.alive_set.discard((r, c))
                 self.alive_set.add((r, nc))
                 undo.append(('W', r, c, nc))
+
+    def _theta_mutate(self, undo):
+        """Mutate one random neuron's threshold to a random value [0, 1]."""
+        idx = random.randint(0, self.H - 1)
+        old_val = float(self.theta[idx])
+        self.theta[idx] = np.float32(random.random())
+        undo.append(('T', idx, old_val))
+
+    def _decay_mutate(self, undo):
+        """Mutate one random neuron's decay rate to a random value [0.01, 0.5]."""
+        idx = random.randint(0, self.H - 1)
+        old_val = float(self.decay[idx])
+        self.decay[idx] = np.float32(random.uniform(0.01, 0.5))
+        undo.append(('D', idx, old_val))
 
     def crystallize(self, evaluate_fn, eps=1e-6, verbose=False):
         """Pass-based crystal pruning. Remove dead-weight edges without hurting score.

@@ -1,9 +1,10 @@
 """
-English 768 neurons, 18 workers, sparse forward
-================================================
+English 1024 neurons, 18 workers, sparse forward
+=================================================
 Full byte-range (256 I/O), pattern encoding, real English text.
+Round-robin [A,A,T,A,A,D] schedule with per-neuron theta + decay.
 """
-import sys, os, time, random
+import sys, os, time, random, json
 import numpy as np
 from multiprocessing import Pool
 
@@ -26,11 +27,10 @@ def make_bp(io_dim, seed=12345):
     return p
 
 def _eval_on_seqs(mask, H, W_in, W_out, theta, decay, seqs):
-    """Eval with per-neuron theta + decay vectors."""
     rs, cs = np.where(mask != 0)
     sp_vals = mask[rs, cs]
     pat_norm = _bp / (np.linalg.norm(_bp, axis=1, keepdims=True) + 1e-8)
-    ret = 1.0 - decay  # per-neuron retention
+    ret = 1.0 - decay
     total = 0.0
     for text_bytes in seqs:
         state = np.zeros(H, dtype=np.float32)
@@ -91,7 +91,6 @@ def worker_eval(args):
         new_decay[idx] = rng.uniform(0.01, 0.5)
         info = {'idx': idx}
 
-    # Random sequences
     data_len = len(_all_data)
     seqs = []
     for _ in range(_n_train):
@@ -133,8 +132,17 @@ def eval_accuracy(mask, H, W_in, W_out, theta, decay, text_bytes, bp, ticks=6):
     return correct/total if total else 0
 
 if __name__ == "__main__":
-    IO = 256; H = IO * 3; N_WORKERS = 18; BUDGET = 20000
-    SEQ_LEN = 200; N_TRAIN_SEQS = 5; N_EVAL_SEQS = 3
+    IO = 256
+    NV = 4  # 256*4 = 1024 neurons
+    N_WORKERS = 18
+    BUDGET = 50000
+    SEQ_LEN = 200
+    N_TRAIN_SEQS = 5
+    N_EVAL_SEQS = 10  # 10 seqs for training eval (fast, ~2000 preds)
+
+    # Patch NV_RATIO before construction
+    SelfWiringGraph.NV_RATIO = NV
+    H = IO * NV  # 1024
 
     bp = make_bp(IO)
     DATA = os.path.join(os.path.dirname(os.path.abspath(__file__)),
@@ -144,7 +152,6 @@ if __name__ == "__main__":
     DATA_LEN = len(ALL_DATA)
     print(f"Loaded {DATA_LEN / 1e6:.1f} MB text")
 
-    # Fixed eval sequences (always the same for consistent reporting)
     eval_rng = np.random.RandomState(9999)
     eval_seqs = []
     for _ in range(N_EVAL_SEQS):
@@ -152,48 +159,40 @@ if __name__ == "__main__":
         eval_seqs.append(ALL_DATA[off:off+SEQ_LEN])
 
     print(f"{H} neurons, I/O={IO}, {N_WORKERS} workers, budget={BUDGET}")
-    print(f"Train: {N_TRAIN_SEQS}x{SEQ_LEN} RANDOM per step from {DATA_LEN/1e6:.1f}MB | Eval: {N_EVAL_SEQS}x{SEQ_LEN} fixed")
-    print(f"Sample: {bytes(ALL_DATA[:60])}")
+    print(f"Train: {N_TRAIN_SEQS}x{SEQ_LEN} RANDOM per step | Eval: {N_EVAL_SEQS}x{SEQ_LEN} fixed")
     sys.stdout.flush()
 
     random.seed(42); np.random.seed(42)
     net = SelfWiringGraph(IO)
 
-    # Resume from checkpoint if exists
-    # Fresh start with learnable theta=0.1
     net.mask[:]=0; net.alive=[]; net.alive_set=set(); net._sync_sparse_idx()
-    # theta already initialized as vector in __init__: np.full(H, 0.1)
-    print(f"Starting from empty network, theta mean={net.theta.mean():.3f} shape={net.theta.shape}")
-
+    print(f"Empty network, H={net.H}, theta={net.theta.mean():.3f}, decay={net.decay.mean():.3f}")
     net.state *= 0; net.charge *= 0
     W_in=net.W_in; W_out=net.W_out
 
-    # Log file
-    LOG = os.path.join(os.path.dirname(os.path.abspath(__file__)), "english_768n_live.txt")
-    with open(LOG, "a") as f:
-        f.write(f"\n--- RESUMED {time.strftime('%Y-%m-%d %H:%M:%S')} ---\n")
-        f.write(f"768n, {N_WORKERS}w, {N_TRAIN_SEQS}x{SEQ_LEN}b random train, budget={BUDGET}\n")
-
-    CKPT_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "checkpoints")
+    BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+    LOG = os.path.join(BASE_DIR, "english_1024n_live.txt")
+    JSON_LOG = os.path.join(BASE_DIR, "training_live_data.json")
+    CKPT_DIR = os.path.join(BASE_DIR, "checkpoints")
     os.makedirs(CKPT_DIR, exist_ok=True)
 
-    score = 0.0
-    best = 0.0
+    with open(LOG, "w") as f:
+        f.write(f"--- START {time.strftime('%Y-%m-%d %H:%M:%S')} ---\n")
+        f.write(f"{H}n, {N_WORKERS}w, {N_TRAIN_SEQS}x{SEQ_LEN}b, budget={BUDGET}\n")
+
+    SCHEDULE = ['add', 'add', 'theta', 'add', 'add', 'decay']
+    add_accepts = 0; theta_accepts = 0; decay_accepts = 0
     accepts = 0
-    seed_c = 1000
+    log_data = []
     t0 = time.time()
 
     pool = Pool(N_WORKERS, initializer=init_w, initargs=(bp, ALL_DATA, SEQ_LEN, N_TRAIN_SEQS))
     try:
-        # Round-robin schedule: add, add, theta, add, add, decay, repeat
-        SCHEDULE = ['add', 'add', 'theta', 'add', 'add', 'decay']
-        add_accepts = 0; theta_accepts = 0; decay_accepts = 0
-
         for step in range(1, BUDGET+1):
             ptype = SCHEDULE[(step - 1) % len(SCHEDULE)]
             mask_flat = net.mask.flatten()
             args = [(mask_flat, net.theta.copy(), net.decay.copy(), H, W_in, W_out,
-                     seed_c+step*50+w, ptype) for w in range(N_WORKERS)]
+                     1000+step*50+w, ptype) for w in range(N_WORKERS)]
             results = pool.map(worker_eval, args)
 
             best_r = max(results, key=lambda x: x['delta'])
@@ -218,29 +217,38 @@ if __name__ == "__main__":
                 ea = np.mean([eval_accuracy(net.mask, H, W_in, W_out, net.theta, net.decay, s, bp)
                               for s in eval_seqs])
                 edges = net.count_connections()
-                th_mean = float(net.theta.mean())
-                th_std = float(net.theta.std())
-                dc_mean = float(net.decay.mean())
-                dc_std = float(net.decay.std())
-                line = (f"[{step:5d}] eval={ea*100:.1f}% "
-                        f"edges={edges} [A={add_accepts}|T={theta_accepts}|D={decay_accepts}] "
-                        f"theta={th_mean:.3f}+/-{th_std:.3f} decay={dc_mean:.3f}+/-{dc_std:.3f} {elapsed:.0f}s")
+                th_m = float(net.theta.mean()); th_s = float(net.theta.std())
+                dc_m = float(net.decay.mean()); dc_s = float(net.decay.std())
+                sps = step / elapsed
+
+                line = (f"[{step:5d}] eval={ea*100:.1f}% edges={edges} "
+                        f"[A={add_accepts}|T={theta_accepts}|D={decay_accepts}] "
+                        f"theta={th_m:.3f}+/-{th_s:.3f} decay={dc_m:.3f}+/-{dc_s:.3f} "
+                        f"{elapsed:.0f}s ({sps:.2f} step/s)")
                 print(f"  {line}")
                 with open(LOG, "a") as f:
                     f.write(line + "\n")
+
+                log_data.append({
+                    'step': step, 'eval': round(ea * 100, 1), 'edges': edges,
+                    'A': add_accepts, 'T': theta_accepts, 'D': decay_accepts,
+                    'theta_m': round(th_m, 4), 'theta_s': round(th_s, 4),
+                    'decay_m': round(dc_m, 4), 'decay_s': round(dc_s, 4),
+                    'sps': round(sps, 2), 'time': int(elapsed)
+                })
+                with open(JSON_LOG, 'w') as f:
+                    json.dump(log_data, f, separators=(',', ':'))
                 sys.stdout.flush()
 
-            # Checkpoint every 500 steps
             if step % 500 == 0:
-                ckpt = os.path.join(CKPT_DIR, f"english_768n_step{step}.npz")
+                ckpt = os.path.join(CKPT_DIR, f"english_1024n_step{step}.npz")
                 net.save(ckpt)
                 print(f"  SAVED: {ckpt}")
                 sys.stdout.flush()
 
     finally:
         pool.terminate(); pool.join()
-        # Always save final state
-        final_ckpt = os.path.join(CKPT_DIR, "english_768n_final.npz")
+        final_ckpt = os.path.join(CKPT_DIR, "english_1024n_final.npz")
         net.save(final_ckpt)
         print(f"  SAVED FINAL: {final_ckpt}")
 
@@ -248,4 +256,4 @@ if __name__ == "__main__":
     final_ea = np.mean([eval_accuracy(net.mask, H, W_in, W_out, net.theta, net.decay, s, bp)
                         for s in eval_seqs])
     print(f"\nFINAL: eval={final_ea*100:.1f}% edges={net.count_connections()} "
-          f"accepts={accepts} {elapsed:.0f}s")
+          f"accepts={accepts} {elapsed:.0f}s ({BUDGET/elapsed:.2f} step/s)")
