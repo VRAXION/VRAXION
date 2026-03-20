@@ -69,6 +69,7 @@ class SelfWiringGraph:
         rows, cols = np.where(self.mask != 0)
         self.alive = list(zip(rows.tolist(), cols.tolist()))
         self.alive_set = set(self.alive)
+        self._sync_sparse_idx()
 
         # Persistent state (hidden only)
         self.state = np.zeros(self.H, dtype=np.float32)
@@ -91,14 +92,31 @@ class SelfWiringGraph:
     def retention(self):
         return (100 - int(self.loss_pct)) * 0.01
 
+    def _sparse_mul_1d(self, act):
+        """Sparse act @ mask for 1D act vector. O(edges) instead of O(H^2)."""
+        raw = np.zeros(self.H, dtype=np.float32)
+        if len(self._sp_rows):
+            np.add.at(raw, self._sp_cols, act[self._sp_rows] * self._sp_vals)
+        return raw
+
+    def _sparse_mul_2d(self, acts):
+        """Sparse acts @ mask for 2D batch. O(batch * edges) instead of O(batch * H^2)."""
+        B = acts.shape[0]
+        raw = np.zeros((B, self.H), dtype=np.float32)
+        if len(self._sp_rows):
+            np.add.at(raw, (slice(None), self._sp_cols),
+                      acts[:, self._sp_rows] * self._sp_vals)
+        return raw
+
     def forward(self, world, ticks=6):
         """Single-input forward pass. Passive I/O: inject via W_in, read via W_out."""
         act = self.state.copy()
         retain = float(self.retention)
+        use_sparse = len(self.alive) < self.H * self.H * 0.1  # sparse below 10% density
         for t in range(ticks):
             if t == 0:
                 act += world @ self.W_in
-            raw = act @ self.mask
+            raw = self._sparse_mul_1d(act) if use_sparse else act @ self.mask
             np.nan_to_num(raw, copy=False, nan=0.0, posinf=0.0, neginf=0.0)
             self.charge += raw
             self.charge *= retain
@@ -114,10 +132,11 @@ class SelfWiringGraph:
         acts = np.zeros((V, H), dtype=np.float32)
         retain = float(self.retention)
         projected = np.eye(V, dtype=np.float32) @ self.W_in  # (V, H)
+        use_sparse = len(self.alive) < H * H * 0.1
         for t in range(ticks):
             if t == 0:
                 acts += projected
-            raw = acts @ self.mask
+            raw = self._sparse_mul_2d(acts) if use_sparse else acts @ self.mask
             np.nan_to_num(raw, copy=False, nan=0.0, posinf=0.0, neginf=0.0)
             charges += raw
             charges *= retain
@@ -130,6 +149,18 @@ class SelfWiringGraph:
         rows, cols = np.where(self.mask != 0)
         self.alive = list(zip(rows.tolist(), cols.tolist()))
         self.alive_set = set(self.alive)
+        self._sync_sparse_idx()
+
+    def _sync_sparse_idx(self):
+        """Precompute numpy index arrays for sparse forward pass."""
+        if self.alive:
+            self._sp_rows = np.array([r for r, c in self.alive], dtype=np.intp)
+            self._sp_cols = np.array([c for r, c in self.alive], dtype=np.intp)
+            self._sp_vals = self.mask[self._sp_rows, self._sp_cols]
+        else:
+            self._sp_rows = np.empty(0, dtype=np.intp)
+            self._sp_cols = np.empty(0, dtype=np.intp)
+            self._sp_vals = np.empty(0, dtype=np.float32)
 
     def count_connections(self):
         return len(self.alive)
@@ -231,6 +262,7 @@ class SelfWiringGraph:
                 has_structural = True
         if has_structural:
             self.alive = list(self.alive_set)
+        self._sync_sparse_idx()
 
     # --- Mutation ---
 
@@ -258,6 +290,7 @@ class SelfWiringGraph:
                 raise ValueError(f"Unsupported forced_op: {forced_op}")
             for _ in range(max(0, int(n_changes))):
                 op_fn(undo)
+            self._sync_sparse_idx()
             return undo
 
         # Loss drift (reverts on reject) — 1/5 chance
@@ -279,6 +312,7 @@ class SelfWiringGraph:
                 self._remove(undo)
         else:
             self._rewire(undo)
+        self._sync_sparse_idx()
         return undo
 
     def mutate_with_mood(self):
