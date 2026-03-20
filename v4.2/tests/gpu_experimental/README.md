@@ -231,6 +231,50 @@ Working verdict:
 - likely next improvement:
   - trigger crystal on state (stale / edge load / plateau), not on fixed equal segments
 
+### Stage B.6: Tick-Budget Plateau Probe
+
+Current branch harness:
+
+- [`gpu_tick_plateau_probe.py`](S:/AI/work/VRAXION_DEV/v4.2/tests/gpu_experimental/gpu_tick_plateau_probe.py)
+
+What it tests:
+
+- same seeded add-only grow budget
+- same pass-based crystal logic
+- only `ticks` changes
+
+Quick V64 probe (`seeds=42,77`, `grow_attempts=2048`):
+
+- `ticks=6`
+  - grow edges mean: `2254.5`
+  - crystal edges mean: `618.0`
+  - removed mean: `72.7%`
+  - score after mean: `26.50%`
+- `ticks=10`
+  - grow edges mean: `2159.5`
+  - crystal edges mean: `628.0`
+  - removed mean: `70.9%`
+  - score after mean: `26.18%`
+- `ticks=15`
+  - grow edges mean: `2026.0`
+  - crystal edges mean: `500.5`
+  - removed mean: `75.3%`
+  - score after mean: `20.75%`
+
+Interpretation:
+
+- the crystal plateau is **not invariant** to tick budget
+- changing `ticks` materially changes both:
+  - how many edges growth keeps
+  - where crystal lands
+- the effect is not yet monotonic on this small probe
+- higher `ticks` can produce a smaller plateau, but the current grow budget may then be under-training the longer-range regime
+
+Working verdict:
+
+- the "plateau edge count is architecture-level and tick-sensitive" hypothesis is plausible
+- but the current quick probe is still too small to claim a simple law like "more ticks always means fewer edges"
+
 ## Current Hypothesis
 
 For the current `main` model:
