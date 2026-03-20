@@ -6,7 +6,8 @@ Experimental GPU-side search and evaluation work for the current PassiveIO mainl
 
 - Branch: `codex/gpu-passiveio-swarm`
 - Base branch: `main`
-- Base commit: `1095c8a`
+- Original base commit: `1095c8a`
+- Current branch also includes the newer `main` crystal update commit `f5ece0b` (`pass-based crystallize()` merge)
 - Status: experimental, isolated from the canonical CPU training loop
 - Scope: add reproducible GPU probes and batch-search harnesses without changing [`graph.py`](S:/AI/work/VRAXION_DEV/v4.2/model/graph.py)
 
@@ -24,7 +25,9 @@ CPU findings that motivate this folder:
 - local-neighborhood quality is strong early and decays late
 - late-stage accepted-move rate can fall to low single digits
 - `add_only` growth is strongest at `V >= 64`
-- end-of-run crystal pruning helps, and deeper crystal passes can remove a large redundant fraction of edges without score loss
+- end-of-run crystal pruning helps
+- deeper crystal passes can remove a large redundant fraction of edges without score loss
+- after each accepted remove, the graph is a genuinely new system; crystal is not a one-shot cleanup, it is an iterative compression process over successive reduced systems
 
 This suggests a clean GPU strategy:
 
@@ -82,14 +85,26 @@ It is acceptable to merge well-isolated experimental GPU tooling before the fina
 ## Planned First Probes
 
 1. `gpu_crystal_pass_ab.py`
-   - compare random-remove crystal against shuffled-pass crystal
+   - compare retry/random crystal against shuffled-pass crystal
+   - crystal definition:
+     - shuffle current alive-edge list
+     - test each edge once for safe remove
+     - if at least one edge is removed, rebuild and start a fresh pass
+     - stop only when a full pass removes zero edges
    - first on frozen winner graphs
    - then under batched GPU evaluation
+   - expected win condition:
+     - equal score
+     - larger removed-edge fraction
+     - lower wall time than retry/coupon-counter crystal
 
 2. `gpu_swarm_v1.py`
    - `K=1` vs `K=32` vs `K=64`
    - `add_only` candidate swarm
    - best-of-batch master update
+   - expected win condition:
+     - more promoted updates per wall time
+     - better score trajectory at equal budget
 
 3. `gpu_specialist_mix_ab.py`
    - specialist proposal workers:
@@ -97,6 +112,56 @@ It is acceptable to merge well-isolated experimental GPU tooling before the fina
      - remove-only
      - rewire-light
    - phase- and size-dependent mixes
+
+## Current Hypothesis
+
+For the current `main` model:
+
+- growth should be simple, mostly `add_only`
+- crystal should be deep, iterative, and pass-based
+- larger models likely want:
+  - growth phase: mostly add
+  - finalization phase: repeated prune passes until zero-remove fixed point
+
+This means the first useful GPU backend is not "full sparse evolutionary magic".
+It is:
+
+- fast batched candidate growth
+- fast batched crystal passes
+- simple master/candidate promotion logic
+
+## Planned Run Series
+
+Ordered from highest-signal / lowest-risk to more speculative:
+
+1. **Crystal A/B**
+   - `retry crystal` vs `pass crystal`
+   - sizes: `V=64`, `V=128`
+   - output:
+     - score before/after
+     - edges before/after
+     - removed fraction
+     - time
+
+2. **Swarm Width A/B**
+   - `K=1`, `K=32`, `K=64`
+   - proposal: `add_only`
+   - sizes: `V=64` first, then `V=128`
+   - output:
+     - score trajectory
+     - best score at fixed wall time
+     - candidate/s
+     - promotions per minute
+
+3. **Specialist Mix A/B**
+   - all add
+   - add + prune specialists
+   - add + prune + light rewire specialists
+   - sizes: `V=64`, `V=128`
+
+4. **Scale Gate**
+   - validate whether `V=256` remains practical on the local 4070 Ti SUPER
+   - if not, keep `V=256` as a research-only size and focus on `V=64/128`
 
 ## Merge Philosophy
 

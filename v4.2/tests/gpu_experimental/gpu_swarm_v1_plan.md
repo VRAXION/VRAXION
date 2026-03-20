@@ -30,6 +30,7 @@ This is why GPU matters here: not mainly because one proposal is faster, but bec
 3. end-of-run crystal pruning helps
 4. deeper crystal passes reveal large redundancy
 5. proposal simplicity is often better than clever but expensive heuristics
+6. after each accepted remove, the graph is a new system; crystal therefore needs iterative re-evaluation, not one-shot cleanup logic
 
 ## V1 Non-Goals
 
@@ -117,12 +118,28 @@ Preferred crystal design:
 - if a full pass removes zero edges, stop
 
 This reaches a clean 1-edge prune optimum without coupon-collector waste.
+It also matches the real system dynamics:
+
+- after each accepted remove, the system is different
+- other edges may become newly removable
+- therefore crystal is an iterative fixed-point search over successive reduced systems
+
+Stop condition:
+
+- stop when one full shuffled pass removes zero edges
+
+This replaces retry-based stop logic such as:
+
+- fixed patience
+- coupon-collector attempt caps
+
+Those can still exist as safety guards, but they should not be the primary crystal definition.
 
 ## First A/B Matrix
 
 ### A/B 1: Crystal
 
-- random crystal
+- retry/random crystal
 - shuffled-pass crystal
 
 Metrics:
@@ -130,7 +147,8 @@ Metrics:
 - removed edge fraction
 - score delta
 - wall time
-- attempts needed
+- passes needed
+- attempted removes
 
 ### A/B 2: Swarm Width
 
@@ -156,6 +174,56 @@ Metrics:
 - final score
 - final edge count
 - crystal remove fraction
+
+## Concrete Execution Order
+
+### Phase 1: Crystal First
+
+Reason:
+
+- highest confidence CPU signal
+- simplest GPU-side engineering
+- directly tests the new fixed-point pruning insight
+
+Run set:
+
+- `V=64`: 5-10 frozen winners
+- `V=128`: 5-10 frozen winners
+- compare retry crystal vs pass crystal
+
+Promote if:
+
+- score is preserved
+- removed fraction is higher or equal
+- wall time is lower or acceptable
+
+### Phase 2: Add-Only Swarm
+
+Reason:
+
+- current CPU results suggest large models prefer simple growth
+
+Run set:
+
+- `V=64`: `K=1`, `K=32`, `K=64`
+- `V=128`: `K=1`, `K=32`, `K=64`
+
+Promote if:
+
+- better score trajectory at equal wall time
+- better best-of-run score at equal attempt budget
+
+### Phase 3: Specialist Mix
+
+Only after Phase 2 is stable.
+
+Run set:
+
+- add-only
+- add + prune specialists
+- add + prune + light rewire specialists
+
+The expected result is that larger `V` stays close to add-first behavior, with specialists helping primarily in the finalization stage rather than in core growth.
 
 ## Practical Starting Sizes
 
