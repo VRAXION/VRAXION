@@ -41,6 +41,32 @@ class EnglishInit:
     mask_hash: str
 
 
+@dataclass(frozen=True)
+class ThresholdPolicy:
+    mode: str
+    fixed_value: float | None = None
+    k_active: int | None = None
+
+    def label(self) -> str:
+        if self.mode == "fixed":
+            if self.fixed_value is None:
+                raise ValueError("fixed threshold policy missing fixed_value")
+            return f"fixed:{self.fixed_value:g}"
+        if self.mode == "topk":
+            if self.k_active is None:
+                raise ValueError("topk threshold policy missing k_active")
+            return f"topk:{self.k_active}"
+        raise ValueError(f"Unsupported threshold policy mode: {self.mode}")
+
+    def to_dict(self) -> dict[str, object]:
+        return {
+            "label": self.label(),
+            "mode": self.mode,
+            "fixed_value": self.fixed_value,
+            "k_active": self.k_active,
+        }
+
+
 def resolve_data_path(explicit: str = "") -> Path:
     if explicit:
         path = Path(explicit)
@@ -64,6 +90,67 @@ def make_bp(io_dim: int = IO_DIM, seed: int = 12345) -> np.ndarray:
     p = rng.randn(256, io_dim).astype(np.float32)
     p /= np.linalg.norm(p, axis=1, keepdims=True)
     return p
+
+
+def parse_threshold_policy(raw: str) -> ThresholdPolicy:
+    text = raw.strip().lower()
+    if not text:
+        raise ValueError("Empty threshold policy")
+    mode, _, value = text.partition(":")
+    if mode == "fixed":
+        if not value:
+            raise ValueError(f"Missing fixed threshold value in {raw!r}")
+        return ThresholdPolicy(mode="fixed", fixed_value=float(value))
+    if mode == "topk":
+        if not value:
+            raise ValueError(f"Missing topk value in {raw!r}")
+        k_active = int(value)
+        if k_active <= 0:
+            raise ValueError(f"topk threshold requires positive k, got {k_active}")
+        return ThresholdPolicy(mode="topk", k_active=k_active)
+    raise ValueError(f"Unsupported threshold policy: {raw!r}")
+
+
+def parse_threshold_policies_csv(raw: str) -> list[ThresholdPolicy]:
+    return [parse_threshold_policy(x) for x in raw.split(",") if x.strip()]
+
+
+def resolve_threshold_policy(
+    *,
+    threshold: float | None = None,
+    threshold_policy: ThresholdPolicy | None = None,
+) -> ThresholdPolicy:
+    if threshold_policy is not None:
+        return threshold_policy
+    if threshold is None:
+        raise ValueError("Either threshold or threshold_policy must be provided")
+    return ThresholdPolicy(mode="fixed", fixed_value=float(threshold))
+
+
+def _apply_threshold_policy(
+    charge: torch.Tensor,
+    threshold_policy: ThresholdPolicy,
+) -> torch.Tensor:
+    if threshold_policy.mode == "fixed":
+        if threshold_policy.fixed_value is None:
+            raise ValueError("fixed threshold policy missing fixed_value")
+        return torch.clamp(charge - float(threshold_policy.fixed_value), min=0.0)
+
+    if threshold_policy.mode == "topk":
+        if threshold_policy.k_active is None:
+            raise ValueError("topk threshold policy missing k_active")
+        k_active = max(1, min(int(threshold_policy.k_active), charge.shape[-1]))
+        if charge.ndim == 1:
+            kth_value = torch.topk(charge, k_active).values[-1]
+            threshold_t = torch.clamp(kth_value, min=0.0)
+        elif charge.ndim == 2:
+            kth_value = torch.topk(charge, k_active, dim=1).values[:, -1]
+            threshold_t = torch.clamp(kth_value, min=0.0).unsqueeze(1)
+        else:
+            raise ValueError(f"Unsupported charge rank for threshold policy: {charge.ndim}")
+        return torch.clamp(charge - threshold_t, min=0.0)
+
+    raise ValueError(f"Unsupported threshold policy mode: {threshold_policy.mode}")
 
 
 def load_all_data(path: Path) -> np.ndarray:
@@ -178,9 +265,11 @@ def eval_sequence_batch(
     bp_norm: torch.Tensor,
     seq_batch: torch.Tensor,
     retention: float,
-    threshold: float,
     ticks: int,
+    threshold: float | None = None,
+    threshold_policy: ThresholdPolicy | None = None,
 ) -> dict[str, float]:
+    policy = resolve_threshold_policy(threshold=threshold, threshold_policy=threshold_policy)
     batch, seq_len = seq_batch.shape
     neurons = mask.shape[0]
     state = torch.zeros((batch, neurons), dtype=torch.float32, device=mask.device)
@@ -200,7 +289,7 @@ def eval_sequence_batch(
             raw = torch.nan_to_num(raw, nan=0.0, posinf=0.0, neginf=0.0)
             charge = charge + raw
             charge = charge * retention
-            act = torch.clamp(charge - threshold, min=0.0)
+            act = _apply_threshold_policy(charge, policy)
             charge = torch.clamp(charge, -1.0, 1.0)
         state = act.clone()
         out = charge @ w_out
@@ -230,9 +319,11 @@ def probe_threshold_dynamics(
     bp: torch.Tensor,
     probe_bytes: list[int],
     retention: float,
-    threshold: float,
     ticks: int,
+    threshold: float | None = None,
+    threshold_policy: ThresholdPolicy | None = None,
 ) -> dict[str, object]:
+    policy = resolve_threshold_policy(threshold=threshold, threshold_policy=threshold_policy)
     charge_max_runs: list[list[float]] = []
     act_max_runs: list[list[float]] = []
     active_count_runs: list[list[int]] = []
@@ -259,7 +350,7 @@ def probe_threshold_dynamics(
             raw = torch.nan_to_num(raw, nan=0.0, posinf=0.0, neginf=0.0)
             charge = charge + raw
             charge = charge * retention
-            act = torch.clamp(charge - threshold, min=0.0)
+            act = _apply_threshold_policy(charge, policy)
             charge = torch.clamp(charge, -1.0, 1.0)
 
             active_idx = torch.nonzero(act > 0.0, as_tuple=False).flatten().detach().cpu().tolist()

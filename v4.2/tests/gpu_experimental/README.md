@@ -593,6 +593,68 @@ Verdict:
   - yes, lower threshold increases firing
   - no, that does not currently improve the learned English regime
 
+## Adaptive Threshold / Top-k Firing
+
+Current branch probes:
+
+- [`gpu_adaptive_threshold_probe.py`](S:/AI/work/VRAXION_DEV/v4.2/tests/gpu_experimental/gpu_adaptive_threshold_probe.py)
+- [`gpu_adaptive_threshold_train_ab.py`](S:/AI/work/VRAXION_DEV/v4.2/tests/gpu_experimental/gpu_adaptive_threshold_train_ab.py)
+- shared helper update:
+  - [`gpu_english_common.py`](S:/AI/work/VRAXION_DEV/v4.2/tests/gpu_experimental/gpu_english_common.py)
+
+Why this exists:
+
+- the fixed-threshold sweep showed that lower scalar thresholds open firing, but destroy English accuracy
+- the next question was whether a **controlled** adaptive threshold could allow a little more firing without collapsing the learned regime
+- the tested adaptive rule is deterministic top-k firing:
+  - per sample
+  - per tick
+  - threshold chosen so roughly `k` neurons can fire
+
+Stage A status:
+
+- completed on:
+  - `english_768n_step1000.npz`
+  - `english_768n_step3000.npz`
+  - `english_768n_step5000.npz`
+- policies:
+  - `fixed:0.5`
+  - `topk:1`
+  - `topk:2`
+  - `topk:4`
+  - `topk:8`
+  - `topk:16`
+- ticks:
+  - `1`
+  - `3`
+  - `6`
+- all runs deterministic
+
+What came out:
+
+- `topk:1` and `topk:2` can preserve or slightly exceed the latest-checkpoint eval accuracy
+- but they do that while adding essentially **no new recurrent activity**
+  - `topk:1` at `step5000`, `ticks=6`: `32.16%` eval, but `newly_active_after_tick0 = 0`
+  - `topk:2` at `step5000`, `ticks=6`: `31.16%` eval, but `newly_active_after_tick0 = 0`
+- policies that do create visible extra firing start losing the English behavior:
+  - `topk:4` at `step5000`, `ticks=6`: `30.49%` eval, `newly_active_after_tick0 = 1.25`
+  - `topk:8` at `step5000`, `ticks=6`: `26.47%` eval, `newly_active_after_tick0 = 4.50`
+  - `topk:16` at `step5000`, `ticks=6`: `12.40%` eval, `newly_active_after_tick0 = 13.25`
+- because the Stage A gate required both:
+  - near-baseline accuracy
+  - and real new post-tick0 activity
+- no policy qualified as a challenger
+
+Verdict:
+
+- Stage A stops the project here
+- Stage B add-only adaptive-threshold training was **not** escalated
+- Stage C ticks A/B was also **not** run
+- this is a negative diagnostic result:
+  - adaptive top-k threshold can preserve English accuracy only while behaving almost the same as the current quiet regime
+  - when it opens real additional firing, accuracy drops
+- the current English 768n branch therefore still looks charge-dominant rather than usefully recurrent under this adaptive-threshold family
+
 ## Current Hypothesis
 
 For the current `main` model:
@@ -619,7 +681,8 @@ The current negative result also suggests:
 - budget scaling has now also failed to recover the CPU-style free-crystal win on V64
 - ranked periodic prune has now also failed as a practical regularizer on V64
 - threshold lowering has now also failed as a bake-ready fix for the English 768n run
-- the next high-signal axis is now explicit CPU/GPU schedule-parity, evaluator-parity, or signal-strength (`INJ_SCALE`) validation, not more prune/crystal scheduler heuristics
+- adaptive top-k threshold has now also failed to produce a useful English challenger
+- the next high-signal axis is now explicit CPU/GPU schedule-parity, evaluator-parity, or signal-strength (`INJ_SCALE`) validation, not more threshold-only or prune/crystal scheduler heuristics
 
 ## Planned Run Series
 

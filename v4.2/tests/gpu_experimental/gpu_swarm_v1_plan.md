@@ -445,6 +445,66 @@ Branch decision:
   - or signal-strength calibration (`INJ_SCALE`)
   - not more threshold-only sweeps
 
+### Phase 2h: Adaptive Threshold / Top-k Firing
+
+Current branch probes:
+
+- [`gpu_adaptive_threshold_probe.py`](S:/AI/work/VRAXION_DEV/v4.2/tests/gpu_experimental/gpu_adaptive_threshold_probe.py)
+- [`gpu_adaptive_threshold_train_ab.py`](S:/AI/work/VRAXION_DEV/v4.2/tests/gpu_experimental/gpu_adaptive_threshold_train_ab.py)
+- shared helper update:
+  - [`gpu_english_common.py`](S:/AI/work/VRAXION_DEV/v4.2/tests/gpu_experimental/gpu_english_common.py)
+
+Why this exists:
+
+- the fixed-threshold sweep showed that smaller scalar thresholds do increase firing
+- but they also destroy the English 768n accuracy
+- the next test was whether deterministic per-tick top-k firing could allow a controlled amount of new activity without collapsing the learned regime
+
+Stage A status:
+
+- completed on:
+  - `step1000`
+  - `step3000`
+  - `step5000`
+- policies:
+  - `fixed:0.5`
+  - `topk:1`
+  - `topk:2`
+  - `topk:4`
+  - `topk:8`
+  - `topk:16`
+- ticks:
+  - `1`
+  - `3`
+  - `6`
+- all runs deterministic
+
+What the probe showed:
+
+- `topk:1` and `topk:2` can preserve or slightly beat the latest checkpoint eval
+- but they do that while introducing effectively no new post-tick0 activity
+- the first policies that do open real extra firing (`topk:4`, `topk:8`, `topk:16`) all lose accuracy
+- therefore no adaptive top-k policy passes the Stage A gate:
+  - close-enough accuracy
+  - plus real additional recurrent activity
+
+Interpretation:
+
+- adaptive threshold does not rescue the English regime in a useful way
+- the network can tolerate tiny threshold-policy changes only when they leave the learned dynamics almost unchanged
+- once the policy starts producing real extra firing, the English accuracy degrades
+- this is another negative diagnostic result, not a bake candidate
+
+Branch decision:
+
+- Stage A stops here
+- Stage B add-only adaptive-threshold training is not escalated
+- Stage C ticks A/B is not run
+- the next useful axis is still:
+  - schedule/evaluator parity
+  - or `INJ_SCALE`
+  - not more threshold-policy sweeps
+
 ### Phase 3: Specialist Mix
 
 Only after Phase 2 is stable.
