@@ -275,6 +275,87 @@ Working verdict:
 - the "plateau edge count is architecture-level and tick-sensitive" hypothesis is plausible
 - but the current quick probe is still too small to claim a simple law like "more ticks always means fewer edges"
 
+### Stage B.7: Deterministic State-Triggered Crystal A/B
+
+Current branch harness:
+
+- [`gpu_state_crystal_ab.py`](S:/AI/work/VRAXION_DEV/v4.2/tests/gpu_experimental/gpu_state_crystal_ab.py)
+
+What it tests:
+
+- `continuous_end`
+  - add-only growth
+  - no mid-crystal
+  - one final pass-based crystal
+- `stale_once`
+  - same growth stream
+  - one mid-crystal allowed when consecutive non-improving proposals reach the stale trigger
+  - one final pass-based crystal
+- `stale_repeat2`
+  - same growth stream
+  - up to two mid-crystals allowed under the same stale trigger
+  - one final pass-based crystal
+
+Important implementation guardrail:
+
+- the add-only proposal RNG is now held **constant across policies**
+- this means policy differences come only from mid-crystal intervention, not from a different random growth trajectory
+- an earlier smoke before this fix was proposal-stream-confounded and should be treated as superseded
+
+Corrected V64 matrix (`seeds=42,77,123`, `total_evals=2048`, `ticks=6`, each case repeated twice for determinism):
+
+- baseline `continuous_end`
+  - score median: `27.50%`
+  - final edges median: `151`
+  - wall median: `8573ms`
+
+- `stale_once@64`
+  - score median: `24.33%`
+  - final edges median: `97`
+  - deterministic: yes
+  - verdict: too aggressive, quality loss
+
+- `stale_once@128`
+  - score median: `27.50%`
+  - final edges median: `146`
+  - deterministic: yes
+  - verdict: effectively tie, not enough edge win for the gate
+
+- `stale_once@256`
+  - score median: `27.50%`
+  - final edges median: `151`
+  - deterministic: yes
+  - verdict: baseline-equivalent, usually no mid-crystal
+
+- `stale_repeat2@64`
+  - score median: `25.17%`
+  - final edges median: `146`
+  - deterministic: yes
+  - verdict: too aggressive, quality loss
+
+- `stale_repeat2@128`
+  - score median: `27.50%`
+  - final edges median: `146`
+  - deterministic: yes
+  - verdict: effectively tie, not enough edge win for the gate
+
+- `stale_repeat2@256`
+  - score median: `27.50%`
+  - final edges median: `151`
+  - deterministic: yes
+  - verdict: baseline-equivalent, usually no mid-crystal
+
+Working verdict:
+
+- proposal-stream-matched V64 shows **no positive state-triggered scheduler**
+- aggressive triggers harm score
+- conservative triggers collapse back to baseline behavior
+- therefore this branch does **not** advance to `V=128` confirmation for this scheduler family
+- keep the harness as a documented negative finding
+- current preferred GPU baseline remains:
+  - add-only continuous growth
+  - one deep pass-based final crystal
+
 ## Current Hypothesis
 
 For the current `main` model:
@@ -291,6 +372,12 @@ It is:
 - fast batched candidate growth
 - fast batched crystal passes
 - simple master/candidate promotion logic
+
+The current negative result also suggests:
+
+- the problem is not "should we crystal at all?"
+- the problem is "how do we trigger or integrate crystal without prematurely cutting the growth trajectory?"
+- naive stale-trigger mid-crystal is not yet that answer
 
 ## Planned Run Series
 
@@ -324,6 +411,13 @@ Ordered from highest-signal / lowest-risk to more speculative:
 4. **Scale Gate**
    - validate whether `V=256` remains practical on the local 4070 Ti SUPER
    - if not, keep `V=256` as a research-only size and focus on `V=64/128`
+
+5. **State-Triggered Crystal Scheduler**
+   - completed on `V=64`
+   - outcome: negative / tie after fixing proposal-stream confound
+   - status:
+     - do not escalate this exact scheduler family to `V=128`
+     - leave harness committed for future reference
 
 ## Merge Philosophy
 

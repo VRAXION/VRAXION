@@ -256,6 +256,47 @@ Interpretation:
   - edge-load threshold
   - or score plateau
 
+### Phase 2c: State-Triggered Crystal Scheduler
+
+Current branch probe:
+
+- [`gpu_state_crystal_ab.py`](S:/AI/work/VRAXION_DEV/v4.2/tests/gpu_experimental/gpu_state_crystal_ab.py)
+
+What it tests:
+
+- `continuous_end`
+- `stale_once`
+- `stale_repeat2`
+
+with:
+
+- `K=1`
+- identical add-only proposal stream across policies
+- pass-based mid-crystal only when the stale threshold is hit
+- final pass-based crystal in every policy
+
+Important correction:
+
+- the first state-triggered smoke was proposal-stream-confounded
+- the corrected harness now keeps growth RNG invariant across policies so scheduler comparisons are fair
+
+Current status on corrected V64 matrix (`seeds=42,77,123`, `total_evals=2048`, `ticks=6`):
+
+- no policy passed the positive gate
+- aggressive triggers (`64`) harmed score
+- medium triggers (`128`) produced baseline-tie behavior, not enough edge savings
+- conservative triggers (`256`) usually never fired and collapsed to baseline
+- all runs were deterministic
+
+Interpretation:
+
+- state-triggered mid-crystal is **not** a bake-ready GPU win in this scheduler family
+- do not escalate this exact probe to `V=128`
+- keep the harness as a documented negative result
+- current branch baseline remains:
+  - continuous add-only growth
+  - one deep pass-based final crystal
+
 ### Phase 3: Specialist Mix
 
 Only after Phase 2 is stable.
