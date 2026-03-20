@@ -429,6 +429,57 @@ Working verdict:
   - does the mid-crystal win emerge only at larger total add budgets?
   - or is there still a parity mismatch between the GPU harness and the CPU-side reported schedule?
 
+### Stage B.10: Free Crystal Budget Ladder
+
+Current branch harness:
+
+- [`gpu_free_crystal_budget_ladder.py`](S:/AI/work/VRAXION_DEV/v4.2/tests/gpu_experimental/gpu_free_crystal_budget_ladder.py)
+
+What it tests:
+
+- exact free mid-crystal schedules
+- same add-only proposal stream across policies
+- same total add budget within each budget row
+- budget rows:
+  - `2048`
+  - `4096`
+  - `8192`
+- crystal counts:
+  - `0`
+  - `1`
+  - `2`
+  - `4`
+- no final crystal in the measured score
+- deterministic double-run per case
+
+Corrected V64 ladder (`seeds=42,77,123`, `ticks=6`):
+
+- `budget=2048`
+  - `0 crystals`: `28.53%`, `270` edges
+  - `1 crystal`: `25.20%`, `176` edges
+  - `2 crystals`: `23.57%`, `121` edges
+  - `4 crystals`: `24.42%`, `170` edges
+
+- `budget=4096`
+  - `0 crystals`: `38.57%`, `799` edges
+  - `1 crystal`: `34.95%`, `481` edges
+  - `2 crystals`: `32.37%`, `403` edges
+  - `4 crystals`: `29.11%`, `223` edges
+
+- `budget=8192`
+  - `0 crystals`: `56.48%`, `1917` edges
+  - `1 crystal`: `51.11%`, `1335` edges
+  - `2 crystals`: `43.97%`, `639` edges
+  - `4 crystals`: `42.86%`, `503` edges
+
+Working verdict:
+
+- there is **no winning crystal count on V64**
+- no crystal-count was positive on even a single budget row under the gate
+- therefore there is **no V128 confirmation run**
+- on the current GPU harness, free mid-crystals consistently trade score for compression
+- this turns the CPU-style "mid-crystal breakthrough" into a documented **GPU-side negative finding**
+
 ## Current Hypothesis
 
 For the current `main` model:
@@ -452,7 +503,8 @@ The current negative result also suggests:
 - the problem is "how do we trigger or integrate crystal without prematurely cutting the growth trajectory?"
 - naive stale-trigger mid-crystal is not yet that answer
 - exact free mid-crystal frequency also does not yet win on the current V64 budget
-- the next high-signal axis is likely budget scaling or explicit CPU/GPU schedule parity, not more scheduler heuristics at the same budget
+- budget scaling has now also failed to recover the CPU-style free-crystal win on V64
+- the next high-signal axis is now explicit CPU/GPU schedule-parity validation, not more crystal scheduler heuristics
 
 ## Planned Run Series
 
@@ -493,6 +545,14 @@ Ordered from highest-signal / lowest-risk to more speculative:
    - status:
      - do not escalate this exact scheduler family to `V=128`
      - leave harness committed for future reference
+
+6. **Free Crystal Budget Ladder**
+   - completed on `V=64`
+   - outcome: negative across `2048/4096/8192`
+   - status:
+     - no V64 winner
+     - no V128 confirm
+     - use as the source-of-truth negative result for CPU-style free mid-crystal on the current GPU harness
 
 ## Merge Philosophy
 

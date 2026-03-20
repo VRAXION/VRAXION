@@ -327,6 +327,36 @@ Interpretation:
   - or explicit CPU/GPU schedule-parity validation
 - it is probably **not** more scheduler heuristics at the same budget
 
+### Phase 2e: Free Crystal Budget Ladder
+
+Current branch probe:
+
+- [`gpu_free_crystal_budget_ladder.py`](S:/AI/work/VRAXION_DEV/v4.2/tests/gpu_experimental/gpu_free_crystal_budget_ladder.py)
+
+What it tests:
+
+- exact free mid-crystal schedules
+- crystal counts `0/1/2/4`
+- budget rows `2048/4096/8192`
+- invariant add-only proposal stream
+- no final crystal in the measured score
+- deterministic double-run for every case
+
+Current status on V64 (`seeds=42,77,123`, `ticks=6`):
+
+- no crystal-count passed the gate on any budget row
+- as budget increases, the no-crystal baseline climbs strongly
+- crystal schedules compress aggressively, but the score gap vs baseline widens rather than closes
+- therefore there is no V64 winner and no V128 confirm
+
+Interpretation:
+
+- the current GPU branch now has a stronger negative result:
+  - not only stale-trigger mid-crystal fails
+  - exact free mid-crystal schedules also fail, even when scaled up by budget
+- the next useful direction is no longer another crystal scheduler sweep
+- the next useful direction is explicit CPU/GPU schedule-parity validation or evaluator-parity validation
+
 ### Phase 3: Specialist Mix
 
 Only after Phase 2 is stable.
