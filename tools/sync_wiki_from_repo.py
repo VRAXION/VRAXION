@@ -16,6 +16,7 @@ FILES = [
     "Theory-of-Thought.md",
     "Hypotheses.md",
     "Release-Notes.md",
+    "Legacy-Vault.md",
     "Glossary.md",
     "Diamond-Code-v3-Architecture.md",
     "SWG-v4.2-Architecture.md",

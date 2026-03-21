@@ -30,14 +30,14 @@ The hard invalidation conditions for a run, such as OOM, NaN/Inf, step-time expl
 The run and evidence contract for VRAXION experiments: how runs are executed, validated, and promoted into public truth. See [Engineering Protocol](Engineering).
 
 **Release Notes**
-The live secondary public status page for milestone-level progress and current public targets. See [Release Notes](Release-Notes).
+The live primary public timeline and status page for milestone-level progress, major turns, and current public targets. See [Release Notes](Release-Notes).
 
 ## Legacy Terms and Historical Context
 
 These terms belong mainly to earlier architecture lines and remain useful only as historical context.
 
 **LCX (Latent Context Exchange)**
-An earlier external memory system built around hash-bucketed memory slots. It belongs to the Diamond Code v3 era, not the current INSTNCT public line. See the retired [Diamond Code v3 Architecture](Diamond-Code-v3-Architecture) page or [Legacy Vault](https://github.com/VRAXION/VRAXION/wiki/Legacy-Vault).
+An earlier external memory system built around hash-bucketed memory slots. It belongs to the Diamond Code v3 era, not the current INSTNCT public line. See the retired [Diamond Code v3 Architecture](Diamond-Code-v3-Architecture) page or the retired [Legacy Vault](Legacy-Vault) stub.
 
 **Zoom gate**
 A learned gate used in the earlier LCX memory pathway to control how much memory content was blended into the hidden state. Historical term only. See the retired [Diamond Code v3 Architecture](Diamond-Code-v3-Architecture) page.
@@ -49,11 +49,10 @@ An earlier compression block used to translate LCX reads into the model’s hidd
 A periodic activation used in the Diamond Code v3 era. It is not part of the current INSTNCT public story and should be treated as legacy context unless explicitly discussed in historical pages. See the retired [Diamond Code v3 Architecture](Diamond-Code-v3-Architecture) page for era context.
 
 **Score Margin**
-A routing-quality metric from the Diamond Code v3 observability stack. It is useful historical context for older memory experiments, but it is not a core term in the current INSTNCT public layer. See [Legacy Vault](https://github.com/VRAXION/VRAXION/wiki/Legacy-Vault) for broader historical context.
+A routing-quality metric from the Diamond Code v3 observability stack. It is useful historical context for older memory experiments, but it is not a core term in the current INSTNCT public layer. See the retired [Legacy Vault](Legacy-Vault) stub for broader historical context.
 
 ## Read Next
 
 - [Home](Home)
 - [VRAXION Architecture (INSTNCT)](SWG-v4.2-Architecture)
 - [Validated Findings](Validated-Findings)
-- [Legacy Vault](https://github.com/VRAXION/VRAXION/wiki/Legacy-Vault)

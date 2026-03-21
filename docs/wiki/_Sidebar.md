@@ -6,13 +6,12 @@
 - [VRAXION Architecture (INSTNCT)](SWG-v4.2-Architecture) **ACTIVE**
 - [Validated Findings](Validated-Findings)
 - [Engineering Protocol](Engineering)
+- [Release Notes](Release-Notes)
 
 ## Further Reference
 
 - [Documentation Governance](Governance)
-- [Release Notes](Release-Notes)
 - [Glossary](Glossary)
-- [Legacy Vault](https://github.com/VRAXION/VRAXION/wiki/Legacy-Vault)
 - [Wiki Graph](https://github.com/VRAXION/VRAXION/wiki/Wiki-Graph)
 
 ## Public

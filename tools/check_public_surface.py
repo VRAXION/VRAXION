@@ -25,6 +25,7 @@ WIKI_ROADMAP_SRC = WIKI_SOURCE_DIR / "Chapter-11---Roadmap.md"
 WIKI_TOT_SRC = WIKI_SOURCE_DIR / "Theory-of-Thought.md"
 WIKI_HYPOTHESES_SRC = WIKI_SOURCE_DIR / "Hypotheses.md"
 WIKI_RELEASE_NOTES_SRC = WIKI_SOURCE_DIR / "Release-Notes.md"
+WIKI_LEGACY_SRC = WIKI_SOURCE_DIR / "Legacy-Vault.md"
 WIKI_GLOSSARY_SRC = WIKI_SOURCE_DIR / "Glossary.md"
 WIKI_DCV3_SRC = WIKI_SOURCE_DIR / "Diamond-Code-v3-Architecture.md"
 WIKI_SWG_SRC = WIKI_SOURCE_DIR / "SWG-v4.2-Architecture.md"
@@ -42,6 +43,7 @@ PRIMARY_WIKI_SOURCE_FILES = {
     WIKI_TOT_SRC,
     WIKI_HYPOTHESES_SRC,
     WIKI_RELEASE_NOTES_SRC,
+    WIKI_LEGACY_SRC,
     WIKI_GLOSSARY_SRC,
     WIKI_DCV3_SRC,
     WIKI_SWG_SRC,
@@ -65,6 +67,7 @@ MARKDOWN_FILES = [
     WIKI_TOT_SRC,
     WIKI_HYPOTHESES_SRC,
     WIKI_RELEASE_NOTES_SRC,
+    WIKI_LEGACY_SRC,
     WIKI_GLOSSARY_SRC,
     WIKI_DCV3_SRC,
     WIKI_SWG_SRC,
@@ -86,6 +89,7 @@ WIKI_MIRROR_MAP = {
     WIKI_TOT_SRC: WIKI_MIRROR_DIR / "Theory-of-Thought.md",
     WIKI_HYPOTHESES_SRC: WIKI_MIRROR_DIR / "Hypotheses.md",
     WIKI_RELEASE_NOTES_SRC: WIKI_MIRROR_DIR / "Release-Notes.md",
+    WIKI_LEGACY_SRC: WIKI_MIRROR_DIR / "Legacy-Vault.md",
     WIKI_GLOSSARY_SRC: WIKI_MIRROR_DIR / "Glossary.md",
     WIKI_DCV3_SRC: WIKI_MIRROR_DIR / "Diamond-Code-v3-Architecture.md",
     WIKI_SWG_SRC: WIKI_MIRROR_DIR / "SWG-v4.2-Architecture.md",
@@ -256,15 +260,24 @@ def check_hypotheses_page(errors: list[str]) -> None:
             fail(f"Hypotheses.md: missing expected stub term {term!r}", errors)
 
 
+def check_legacy_stub(errors: list[str]) -> None:
+    text = read(WIKI_LEGACY_SRC)
+    for term in ["retired", "Release-Notes"]:
+        if term not in text:
+            fail(f"Legacy-Vault.md: missing expected stub term {term!r}", errors)
+
+
 def check_release_notes_page(errors: list[str]) -> None:
     text = read(WIKI_RELEASE_NOTES_SRC)
     for term in [
         "What This Page Is",
+        "How To Read It",
         "Current Public Status",
-        "Recent Milestones",
-        "Current Next Targets",
+        "What Matters Now",
+        "Timeline of Major Turns",
         "Open Questions and Promotion Gates",
         "Published Releases",
+        "Read Next",
     ]:
         if term not in text:
             fail(f"Release-Notes.md: missing expected live-status section {term!r}", errors)
@@ -291,13 +304,11 @@ def check_wiki_sources(errors: list[str]) -> None:
     sidebar_text = read(WIKI_SIDEBAR_SRC)
     if "## Primary" not in sidebar_text:
         fail("_Sidebar.md: missing Primary navigation section", errors)
-    for href in ["Home", "SWG-v4.2-Architecture", "Validated-Findings", "Engineering"]:
+    for href in ["Home", "SWG-v4.2-Architecture", "Validated-Findings", "Engineering", "Release-Notes"]:
         if not re.search(rf"\[[^\]]+\]\({re.escape(href)}\)", sidebar_text):
             fail(f"_Sidebar.md: missing markdown navigation link target {href!r}", errors)
     if not re.search(r"\[[^\]]+\]\(Governance\)", sidebar_text):
         fail("_Sidebar.md: missing markdown navigation link target 'Governance'", errors)
-    if not re.search(r"\[[^\]]+\]\(Release-Notes\)", sidebar_text):
-        fail("_Sidebar.md: missing markdown navigation link target 'Release-Notes'", errors)
     if not re.search(r"\[[^\]]+\]\(Glossary\)", sidebar_text):
         fail("_Sidebar.md: missing markdown navigation link target 'Glossary'", errors)
     if "Proven-Findings" in sidebar_text or "Proven Findings" in sidebar_text:
@@ -312,21 +323,25 @@ def check_wiki_sources(errors: list[str]) -> None:
         fail("_Sidebar.md: Hypotheses should not appear in the current wiki navigation", errors)
     if "Diamond-Code-v3-Architecture" in sidebar_text or "Diamond Code v3 Architecture" in sidebar_text:
         fail("_Sidebar.md: Diamond Code v3 Architecture should not appear in the current wiki navigation", errors)
+    if "Legacy-Vault" in sidebar_text or "Legacy Vault" in sidebar_text:
+        fail("_Sidebar.md: Legacy Vault should not appear in the current wiki navigation", errors)
 
     footer_text = read(WIKI_FOOTER_SRC)
     if "Nav:" not in footer_text:
         fail("_Footer.md: missing Nav line", errors)
-    for href in ["Home", "SWG-v4.2-Architecture", "Validated-Findings", "Engineering", "Governance"]:
+    for href in ["Home", "SWG-v4.2-Architecture", "Validated-Findings", "Engineering", "Release-Notes"]:
         if not re.search(rf"\[[^\]]+\]\({re.escape(href)}\)", footer_text):
             fail(f"_Footer.md: missing footer markdown navigation link target {href!r}", errors)
-    if not re.search(r"\[[^\]]+\]\(Release-Notes\)", footer_text):
-        fail("_Footer.md: missing footer markdown navigation link target 'Release-Notes'", errors)
+    if not re.search(r"\[[^\]]+\]\(Governance\)", footer_text):
+        fail("_Footer.md: missing footer markdown navigation link target 'Governance'", errors)
     if not re.search(r"\[[^\]]+\]\(Glossary\)", footer_text):
         fail("_Footer.md: missing footer markdown navigation link target 'Glossary'", errors)
     if "INSTNCT" not in footer_text:
         fail("_Footer.md: missing footer primary navigation label 'INSTNCT'", errors)
     if "Chapter-11---Roadmap" in footer_text or "Chapter 11 - Roadmap" in footer_text:
         fail("_Footer.md: Chapter 11 - Roadmap should not appear in the current wiki footer", errors)
+    if "Legacy-Vault" in footer_text or "Legacy Vault" in footer_text:
+        fail("_Footer.md: Legacy Vault should not appear in the current wiki footer", errors)
 
 
 def check_wiki_mirror(errors: list[str]) -> None:
@@ -371,6 +386,7 @@ def main() -> int:
     check_roadmap_stub(errors)
     check_tot_stub(errors)
     check_hypotheses_page(errors)
+    check_legacy_stub(errors)
     check_release_notes_page(errors)
     check_glossary_page(errors)
     check_dcv3_stub(errors)

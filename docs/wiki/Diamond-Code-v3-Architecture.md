@@ -11,6 +11,6 @@ For the current public stack, use:
 - [VRAXION Architecture (INSTNCT)](SWG-v4.2-Architecture) for the active technical line
 - [Home](Home) for mission and public orientation
 - [Glossary](Glossary) for legacy term definitions that still matter
-- [Legacy Vault](https://github.com/VRAXION/VRAXION/wiki/Legacy-Vault) for broader historical context
+- the retired [Legacy Vault](Legacy-Vault) stub for broader historical context
 
 The older Diamond Code v3 material is preserved only so historical links continue to resolve. It is no longer maintained as a live architecture hub or current technical reference page.

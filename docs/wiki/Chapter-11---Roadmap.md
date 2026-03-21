@@ -4,11 +4,11 @@
 
 This page is a **retired historical stub**.
 
-`Chapter 11 - Roadmap` is no longer the active public status page for VRAXION. The live status and milestone layer now lives in [Release Notes](Release-Notes).
+`Chapter 11 - Roadmap` is no longer the active public status page for VRAXION. The live status, milestone, and public timeline layer now lives in [Release Notes](Release-Notes).
 
 For the current public stack, use:
 
-- [Release Notes](Release-Notes) for live public progress and milestone-level status
+- [Release Notes](Release-Notes) for live public progress, milestone-level status, and the major public timeline
 - [Validated Findings](Validated-Findings) for experiment-backed evidence
 - [Home](Home) for mission and orientation
 - [VRAXION Architecture (INSTNCT)](SWG-v4.2-Architecture) for the active technical line

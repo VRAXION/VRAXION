@@ -4,11 +4,11 @@
 
 ## What This Page Is
 
-This page is the **live secondary public status page** for VRAXION. It tracks milestone-level progress, current public targets, and shipped or publicly promoted bundles.
+This page is the **live primary public timeline page** for VRAXION. It combines current public status, major architecture turns, curated historical milestones, and the open questions that still matter for promotion.
 
 ## How To Read It
 
-- Use this page for current status and public progress.
+- Use this page to understand what changed, when it changed, and what now counts as current public truth.
 - Use [Validated Findings](Validated-Findings) for experiment-backed evidence.
 - Use [VRAXION Architecture (INSTNCT)](SWG-v4.2-Architecture) for the active technical line.
 - Use shipped code on `main` as the final source of truth for anything described as current mainline.
@@ -21,20 +21,25 @@ This page is the **live secondary public status page** for VRAXION. It tracks mi
 - Current strongest compact learnable schedule result: the 3-angle decision-tree schedule at `20.05%`
 - Current next public build target: mixed 18-worker swarm, with schedule and mutation policy still under active evaluation
 
-## Recent Milestones
+## What Matters Now
 
-| Milestone | Outcome | Public status |
-|---|---|---|
-| Public surface hardening | Repo-tracked docs now drive the wiki mirror, and the public stack is split cleanly into Home, Architecture, Findings, Engineering, and status/history surfaces. | Complete |
-| INSTNCT naming and public alignment | The public architecture line is now consistently presented as `INSTNCT`, while legacy names stay historical. | Complete |
-| Mainline English recipe candidate refresh | The current English recipe candidate on `main` now reflects `8` ticks and the current schedule/mutation line. | Complete |
-| Schedule-policy exploration | Voltage medium leak, decay resample, and decision-tree schedule policies are now in the validated-finding layer, not mislabeled as shipped defaults. | In progress |
+- The active public architecture line is [VRAXION Architecture (INSTNCT)](SWG-v4.2-Architecture); earlier architecture lines are historical context only.
+- The strongest schedule and mutation results live in [Validated Findings](Validated-Findings) until code on `main` actually adopts them.
+- The current public docs stack is now repo-tracked and mirrored into the GitHub wiki, which means historical pages can be retired without breaking backlinks.
+- The main unresolved public targets are mixed 18-worker swarm evaluation, schedule-policy promotion, and re-checking low-theta / low-scale against today’s stronger recipe stack.
 
-## Current Next Targets
+## Timeline of Major Turns
 
-- Confirm which schedule policy should graduate from validated finding to the next promoted recipe update.
-- Resolve whether low-theta / low-scale still wins against the stronger current English recipe stack.
-- Continue mixed 18-worker swarm evaluation as the main active training target.
+| Date | Turn | Why it mattered | Where to go now |
+|---|---|---|---|
+| Early 2026 | Diamond Code / LCX era became the main active line | External memory, dreaming, observability, and Goldilocks-era experiments dominated the architecture story. | Historical context only: [Diamond Code v3 Architecture](Diamond-Code-v3-Architecture) |
+| 2026-02-17 | Governance and Engineering doctrine were split out into dedicated pages | Public structure stopped depending on scattered theory leaves and lab notes. | [Engineering Protocol](Engineering), [Documentation Governance](Governance) |
+| 2026-02-17 | Older architecture leaves and glossary drift started getting cleaned up | Current terminology and architecture reading no longer needed a chain of legacy architecture pages. | [VRAXION Architecture (INSTNCT)](SWG-v4.2-Architecture), [Glossary](Glossary) |
+| 2026-02-17 to 2026-02-22 | Evidence discipline hardened around findings instead of page-local claims | Schedule, depth, and mutation results moved into the evidence layer instead of being implied as defaults. | [Validated Findings](Validated-Findings) |
+| 2026-03-21 | Repo-tracked docs became the canonical public source and the GitHub wiki became a mirror | Public truth stopped drifting between README, Pages, findings, and wiki surfaces. | [Home](Home), [Documentation Governance](Governance) |
+| 2026-03-21 | Vision, roadmap, theory, and PF-era pages were retired into historical stubs | The public story became readable through a small number of current pages instead of a large theory-led wiki. | [Home](Home), [Validated Findings](Validated-Findings), [Engineering Protocol](Engineering) |
+| 2026-03-21 | `Hypotheses`, `Theory of Thought`, and `Roadmap` were folded into the current timeline/status stack | Open questions and current public progress now live in one place instead of being split across multiple legacy trackers. | This page |
+| 2026-03-21 | `Diamond Code v3 Architecture` and `Legacy Vault` were retired from the active browsing path | Legacy architecture and archive functions remain backlink-safe, but no longer shape the active public stack. | This page for timeline, stubs for historical links |
 
 ## Open Questions and Promotion Gates
 

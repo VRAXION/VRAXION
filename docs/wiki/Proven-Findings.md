@@ -16,7 +16,7 @@ The active evidence surface is [Validated Findings](Validated-Findings).
 For historical context, use:
 
 - [Validated Findings](Validated-Findings)
-- [Legacy Vault](https://github.com/VRAXION/VRAXION/wiki/Legacy-Vault)
+- the retired [Legacy Vault](Legacy-Vault) stub
 - the retired [Diamond Code v3 Architecture](Diamond-Code-v3-Architecture) page
 
 This page exists to preserve old backlinks without keeping the PF-numbered system active in the current doctrine stack.
