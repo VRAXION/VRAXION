@@ -4,15 +4,15 @@
 
 **Architecture line:** `INSTNCT / SWG v4.2`
 
-VRAXION is building **INSTNCT / SWG v4.2**: a gradient-free self-wiring architecture that learns by changing its own directed graph instead of running backpropagation through a fixed topology.
+VRAXION is building **INSTNCT / SWG v4.2**: a gradient-free self-wiring architecture that learns by changing its own graph instead of using backpropagation through a fixed layer stack.
 
-This page describes the current architecture line. The wiki is a **mirrored secondary surface**, and code on `main` is the source of truth for **Current mainline**. Use **Validated finding** for experiment-backed results that are not yet shipped, and **Experimental branch** for active targets that are not live defaults.
+This page explains the current architecture line in plain terms. The wiki is a **mirrored secondary surface**. Code on `main` is the source of truth for **Current mainline**. Results that are proven but not shipped are **Validated findings**. Active targets that are not shipped yet are **Experimental branches**.
 
 ## What This Architecture Is
 
-INSTNCT / SWG v4.2 treats the learnable object as structure rather than a dense weight stack. Fixed passive I/O projections feed a self-wiring hidden graph whose connectivity is changed by mutation + selection, while neurons keep persistent internal state across ticks.
+Most neural systems learn by adjusting lots of weights inside a fixed topology. SWG v4.2 changes that. Here, the thing being learned is the hidden graph itself.
 
-That changes what is being optimized: the model is not primarily learning a layer stack with backpropagation, but a directed ternary graph and its recurrent state dynamics.
+Input enters through fixed random projections, moves through a self-wiring hidden graph, and is read out through another fixed projection. The graph changes by mutation + selection, while neurons keep charge/state across ticks. In short: the model learns structure and state dynamics, not just layer weights.
 
 ## Architecture In One Screen
 
@@ -21,43 +21,43 @@ input -> W_in -> hidden ternary graph -> W_out -> output
               persistent charge/state across ticks
 ```
 
-- `W_in` and `W_out` are passive I/O projections.
-- The hidden-to-hidden graph is ternary and self-wiring.
-- Charge/state persists across ticks.
-- Training is mutation + selection, not backpropagation through the graph.
+- `W_in` and `W_out` are fixed random projections.
+- The hidden graph is directed, ternary, and can rewire itself over time.
+- Charge/state persists across ticks instead of resetting after one pass.
+- Training happens by mutation + selection, not backpropagation through the graph.
 
 ## What Is Fixed vs Learnable
 
-| Component | Role |
+| Component | What it does |
 |---|---|
 | `W_in` | Fixed random projection |
 | `W_out` | Fixed random projection |
-| Hidden-to-hidden mask | Learnable ternary graph |
-| Charge / state | Dynamic runtime state |
+| Hidden-to-hidden mask | Learnable graph structure |
+| Charge / state | Runtime state that changes while the model runs |
 
 ## Current Mainline
 
 - **Canonical code path:** [`v4.2/model/graph.py`](https://github.com/VRAXION/VRAXION/blob/main/v4.2/model/graph.py)
-- **Shipped constants on `main`:**
+- **What is actually shipped on `main`:**
   - `THRESHOLD = 0.5`
   - `INJ_SCALE = 3.0`
   - `DRIVE = 0.6`
 
-Anything else should be treated as a **Validated finding** or **Experimental branch** until it is promoted into `graph.py`.
+If a setting is not present in that file, it is not a live default. It should be read as a **Validated finding** or **Experimental branch** until it is promoted into `graph.py`.
 
 ## Validated Findings Around This Architecture
 
-| Topic | Label | Outcome | In `main`? | Supporting link |
+| Topic | Label | What it means | In `main`? | Supporting link |
 |---|---|---|---|---|
-| `flip` mutation | Validated finding | Beat float weight perturbation by `+1.89%` eval on English next-byte training | No | [#112](https://github.com/VRAXION/VRAXION/issues/112) |
-| `scale=1.0 + low theta` | Validated finding | Beat the older `scale=3.0 + theta=0.1` recipe in empty-start English sweeps | No | [#113](https://github.com/VRAXION/VRAXION/issues/113) |
-| mixed 18-worker swarm | Experimental branch | Current next build target for English training | No | [#114](https://github.com/VRAXION/VRAXION/issues/114) |
+| `flip` mutation | Validated finding | A better structural mutation than float weight perturbation on English next-byte training | No | [#112](https://github.com/VRAXION/VRAXION/issues/112) |
+| `scale=1.0 + low theta` | Validated finding | A better experimental recipe than the older `scale=3.0 + theta=0.1` setup in empty-start English sweeps | No | [#113](https://github.com/VRAXION/VRAXION/issues/113) |
+| mixed 18-worker swarm | Experimental branch | The current next build target for English training | No | [#114](https://github.com/VRAXION/VRAXION/issues/114) |
 
-The canonical evidence summary lives in [`VALIDATED_FINDINGS.md`](https://github.com/VRAXION/VRAXION/blob/main/VALIDATED_FINDINGS.md).
+For the full evidence summary, use [`VALIDATED_FINDINGS.md`](https://github.com/VRAXION/VRAXION/blob/main/VALIDATED_FINDINGS.md).
 
 ## How To Verify Quickly
 
-These checks verify both reference-code health and public-truth alignment:
+These checks verify both code health and public-truth alignment:
 
 ```bash
 python -m compileall v4.2 tools
