@@ -2,13 +2,21 @@
 
 # Engineering Protocol
 
-This page defines how VRAXION runs experiments, validates outcomes, and decides what counts as evidence. It is a **primary public page**. The wiki is a mirrored secondary surface; repo-tracked docs remain canonical.
+This page defines the run contract behind VRAXION results: how experiments are described, checked, and accepted as public evidence.
 
-Contributor-facing docs-source, provenance, and sync rules live in [`CONTRIBUTING.md`](https://github.com/VRAXION/VRAXION/blob/main/CONTRIBUTING.md). This page covers the run contract and evidence discipline behind VRAXION results.
+Audience: contributors, evaluators, and readers who need reproducible proof rather than qualitative claims. Docs-source and sync rules live in [`CONTRIBUTING.md`](https://github.com/VRAXION/VRAXION/blob/main/CONTRIBUTING.md).
 
-## What This Page Is
+## At a Glance
 
-VRAXION treats engineering as a contract problem, not a vibes problem. A run is only useful as public evidence if it can be described clearly, checked against fail gates, and tied to a reproducible artifact bundle.
+- Every meaningful run needs an objective metric, one budget mode, hard fail gates, and a required artifact bundle.
+- The minimum evidence bundle is `run_cmd.txt`, `env.json`, `metrics.json`, and `summary.md`.
+- A **Current mainline** claim must match code on `main`; everything else belongs under **Validated finding** or **Experimental branch**.
+
+## Use This Page When
+
+- you need to know what counts as evidence
+- you need the run bundle and fail gates before trusting a result
+- you need the promotion boundary between mainline, validated, and experimental work
 
 ## Run Contract
 
@@ -66,5 +74,3 @@ Use those labels consistently across the repo front door, the architecture page,
 - [INSTNCT Architecture](SWG-v4.2-Architecture)
 - [Validated Findings](Validated-Findings)
 - [Project Timeline](Release-Notes)
-
-If the GitHub wiki render looks incomplete, use [Pages](https://vraxion.github.io/VRAXION/) or the repo [README.md](https://github.com/VRAXION/VRAXION/blob/main/README.md).

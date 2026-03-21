@@ -2,24 +2,20 @@
 
 # Validated Findings
 
-This page is the public evidence summary for VRAXION.
+This page is the public evidence board for VRAXION. Use it for the strongest reproducible results, whether they are already **Current mainline**, still a **Validated finding**, or still only an **Experimental branch**.
 
-The wiki is a **mirrored secondary surface**. The canonical repo-tracked source is [`VALIDATED_FINDINGS.md`](https://github.com/VRAXION/VRAXION/blob/main/VALIDATED_FINDINGS.md).
+## Best Current Evidence
 
-## What Matters Most Right Now
-
-- **Current mainline:** [`v4.2/model/graph.py`](https://github.com/VRAXION/VRAXION/blob/main/v4.2/model/graph.py) still ships `THRESHOLD = 0.5`, `INJ_SCALE = 3.0`, `DRIVE = 0.6`, plus per-neuron `theta` / `decay` and nonnegative charge dynamics.
+- **Current mainline reference point:** [`v4.2/model/graph.py`](https://github.com/VRAXION/VRAXION/blob/main/v4.2/model/graph.py) still ships `THRESHOLD = 0.5`, `INJ_SCALE = 3.0`, `DRIVE = 0.6`, plus per-neuron `theta` / `decay` and nonnegative charge dynamics.
 - **Current recipe candidate on `main`:** [`v4.2/english_1024n_18w.py`](https://github.com/VRAXION/VRAXION/blob/main/v4.2/english_1024n_18w.py) now uses `8` ticks and an `add/add/add/flip/theta/decay` schedule.
 - **Strongest schedule result so far:** voltage medium leak reached `22.11%` peak / `21.46%` plateau.
 - **Best compact learnable control policy so far:** the 3-angle decision-tree schedule reached `20.05%` at `156` edges.
 
-## How To Read This Page
+## Use This Page When
 
-- **Current mainline**: what is actually shipped in code on `main`.
-- **Validated finding**: experimentally supported, but not yet promoted into the canonical code path.
-- **Experimental branch**: active target or design direction, not yet validated as the default.
-
-If code and docs disagree, **code wins for Current mainline**.
+- you want the strongest evidence first
+- you want to know which results are shipped, reproducible-but-unpromoted, or still active targets
+- you need one page instead of issue archaeology
 
 ## Evidence Table
 
@@ -34,7 +30,8 @@ If code and docs disagree, **code wins for Current mainline**.
 | Decision-tree schedule ([f7e6185](https://github.com/VRAXION/VRAXION/commit/f7e618511217d9b2905d93b30d7523a0be1fd79d)) | Validated finding | `20.05%` at `156` edges, with the best edge quality among the learnable schedule policies tested | Not promoted into the current recipe or `graph.py` defaults |
 | Mixed 18-worker swarm ([#114](https://github.com/VRAXION/VRAXION/issues/114)) | Experimental branch | Current next build target for English training | Not part of the canonical mainline yet |
 
-## Historical Context
+<details>
+<summary>Historical Context</summary>
 
 The earlier `Proven Findings` page belonged to the Diamond Code / pre-INSTNCT era. It is no longer the active public evidence surface. Current evidence lives here, in `Validated Findings`.
 
@@ -45,6 +42,8 @@ The earlier `Proven Findings` page belonged to the Diamond Code / pre-INSTNCT er
 
 Those historical findings are useful context, not current mainline claims.
 
+</details>
+
 ## Read Next
 
 - [VRAXION Home](Home)
@@ -52,5 +51,3 @@ Those historical findings are useful context, not current mainline claims.
 - [Engineering Protocol](Engineering)
 - [Project Timeline](Release-Notes)
 - [README.md](https://github.com/VRAXION/VRAXION/blob/main/README.md)
-
-If the GitHub wiki render looks incomplete, use [Pages](https://vraxion.github.io/VRAXION/) or the repo [README.md](https://github.com/VRAXION/VRAXION/blob/main/README.md).

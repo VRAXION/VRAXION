@@ -137,6 +137,37 @@
       font-size: 0.98rem;
       line-height: 1.6;
     }
+    .cta-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 12px;
+      margin-top: 14px;
+    }
+    .cta {
+      display: block;
+      padding: 16px;
+      background: var(--panel-strong);
+      border: 1px solid var(--line);
+    }
+    .cta strong {
+      display: block;
+      margin-bottom: 6px;
+      font: 700 0.95rem/1.25 var(--mono);
+      color: var(--ink);
+    }
+    .cta span {
+      display: block;
+      font-size: 0.93rem;
+      line-height: 1.45;
+      color: var(--ink);
+    }
+    .sub-links {
+      margin-top: 14px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px 16px;
+      font: 600 0.85rem/1.4 var(--mono);
+    }
     @media (max-width: 860px) {
       .hero { grid-template-columns: 1fr; }
     }
@@ -154,40 +185,33 @@
       <article class="hero-copy">
         <h1>INSTNCT</h1>
         <p class="lede">
-          VRAXION is building a gradient-free self-wiring architecture called <code>INSTNCT</code>. It learns by changing its own graph instead of running backpropagation through a fixed topology. The public front door is organized around one contract: what is shipped on <code>main</code>, what is validated but not promoted yet, and what is still experimental.
+          VRAXION is building a gradient-free self-wiring architecture called <code>INSTNCT</code>. The learnable object is the graph itself, not a fixed layer stack, and the public story stays organized around one contract: what is shipped on <code>main</code>, what is validated but not promoted yet, and what is still experimental.
         </p>
       </article>
       <aside class="hero-aside">
-        <div class="metric"><span>Current mainline</span><span><code>main</code></span></div>
-        <div class="metric"><span>Canonical code path</span><span><code>v4.2/model/graph.py</code></span></div>
+        <div class="metric"><span>Current mainline</span><span><code>graph.py</code></span></div>
+        <div class="metric"><span>Best validated evidence</span><span><code>22.11 / 21.46</code></span></div>
+        <div class="metric"><span>Current next target</span><span><code>18-worker swarm</code></span></div>
         <div class="metric"><span>Architecture line</span><span><code>INSTNCT</code></span></div>
-        <div class="metric"><span>Validated finding</span><span><code>see findings</code></span></div>
-        <div class="metric"><span>Experimental branch</span><span><code>#114</code></span></div>
       </aside>
     </section>
 
     <section class="grid">
       <article class="card">
-        <h2>What VRAXION Is</h2>
-        <p>VRAXION is a company and engineering program focused on a new architecture line: passive I/O, persistent internal state, and mutation-selection training in a self-wiring graph.</p>
-      </article>
-      <article class="card">
-        <h2>Why It Matters</h2>
-        <p>The core learnable structure is a directed ternary graph, complemented by co-evolved per-neuron threshold and decay vectors. The aim is to scale internal structure and persistent dynamics while keeping the reference implementation inspectable and reproducible.</p>
+        <h2>What VRAXION Is Now</h2>
+        <p>VRAXION is a company and engineering program centered on one active architecture line: passive I/O, persistent internal state, and mutation-selection training in a self-wiring graph.</p>
       </article>
       <article class="card">
         <h2>Current Mainline</h2>
-        <p>The only settings that count as live mainline defaults are the ones actually shipped in <code>v4.2/model/graph.py</code>. That mainline currently includes per-neuron <code>theta</code>/<code>decay</code> and nonnegative charge dynamics. If an issue or wiki page says more than the code does, the code wins until promotion happens.</p>
+        <p>The only settings that count as live defaults are the ones actually shipped in <code>v4.2/model/graph.py</code>. That mainline currently includes per-neuron <code>theta</code>/<code>decay</code> and nonnegative charge dynamics.</p>
       </article>
       <article class="card">
-        <h2>Evidence Snapshot</h2>
-        <ul>
-          <li>Charge ReLU is now part of the mainline forward path.</li>
-          <li><code>flip</code> beat float weight perturbation on English training.</li>
-          <li><code>scale=1.0 + low theta</code> beat the older <code>scale=3.0</code> hack.</li>
-          <li><code>8</code> ticks plus a decay slot were promoted into the current English recipe candidate on <code>main</code>.</li>
-          <li>Voltage medium leak is the strongest validated schedule result so far (<code>22.11%</code> peak / <code>21.46%</code> plateau).</li>
-        </ul>
+        <h2>Best Validated Evidence</h2>
+        <p>The strongest schedule result so far is voltage medium leak at <code>22.11%</code> peak and <code>21.46%</code> plateau. The strongest compact learnable controller so far is the 3-angle decision-tree schedule at <code>20.05%</code>.</p>
+      </article>
+      <article class="card">
+        <h2>Current Next Target</h2>
+        <p>The main live target is mixed 18-worker swarm evaluation, with schedule policy and mutation-policy promotion still under active review.</p>
       </article>
     </section>
 
@@ -209,17 +233,40 @@ python tools/check_public_surface.py</pre>
     </section>
 
     <div class="note">
-      The strongest current evidence is mirrored into one canonical summary so a buyer does not have to reconstruct the product state from issue traffic alone.
+      Pages is the polished front door. The wiki remains the lean technical reference for readers who want architecture, findings, engineering discipline, and project history in plain markdown.
     </div>
 
-    <div class="links">
-      <span><a href="https://github.com/VRAXION/VRAXION">Repository</a></span>
-      <span><a href="https://github.com/VRAXION/VRAXION/blob/main/README.md">README</a></span>
-      <span><a href="https://github.com/VRAXION/VRAXION/blob/main/VALIDATED_FINDINGS.md">Validated Findings</a></span>
-      <span><a href="https://github.com/VRAXION/VRAXION/tree/main/v4.2">v4.2</a></span>
-      <span><a href="https://github.com/VRAXION/VRAXION/wiki/SWG-v4.2-Architecture">INSTNCT Architecture</a></span>
-      <span><a href="https://github.com/VRAXION/VRAXION/issues/114">Issue #114</a></span>
-    </div>
+    <section class="section">
+      <h2>Public Surfaces</h2>
+      <div class="cta-grid">
+        <a class="cta" href="https://github.com/VRAXION/VRAXION/wiki/Home">
+          <strong>VRAXION Home</strong>
+          <span>Fast orientation to the current public stack.</span>
+        </a>
+        <a class="cta" href="https://github.com/VRAXION/VRAXION/wiki/SWG-v4.2-Architecture">
+          <strong>INSTNCT Architecture</strong>
+          <span>The active technical line in one screen.</span>
+        </a>
+        <a class="cta" href="https://github.com/VRAXION/VRAXION/wiki/Validated-Findings">
+          <strong>Validated Findings</strong>
+          <span>The strongest reproducible evidence board.</span>
+        </a>
+        <a class="cta" href="https://github.com/VRAXION/VRAXION/wiki/Engineering">
+          <strong>Engineering Protocol</strong>
+          <span>The run contract behind public claims.</span>
+        </a>
+        <a class="cta" href="https://github.com/VRAXION/VRAXION/wiki/Release-Notes">
+          <strong>Project Timeline</strong>
+          <span>Current snapshot, major turns, and open gates.</span>
+        </a>
+      </div>
+      <div class="sub-links">
+        <span><a href="https://github.com/VRAXION/VRAXION">Repository</a></span>
+        <span><a href="https://github.com/VRAXION/VRAXION/blob/main/README.md">README</a></span>
+        <span><a href="https://github.com/VRAXION/VRAXION/tree/main/v4.2">v4.2</a></span>
+        <span><a href="https://github.com/VRAXION/VRAXION/issues/114">Issue #114</a></span>
+      </div>
+    </section>
   </main>
 </body>
 </html>

@@ -4,32 +4,25 @@
 
 VRAXION is building **INSTNCT**: a gradient-free self-wiring architecture that learns by changing its own directed graph instead of running backpropagation through a fixed topology.
 
-This wiki is a **mirrored secondary surface**. The primary public entry points are the repo [README.md](https://github.com/VRAXION/VRAXION/blob/main/README.md) and [Pages](https://vraxion.github.io/VRAXION/).
+This is the lean technical reference for the public stack. Repo-tracked docs are canonical and this wiki is their mirrored secondary surface. Use [Pages](https://vraxion.github.io/VRAXION/) for the polished front door, the repo [README.md](https://github.com/VRAXION/VRAXION/blob/main/README.md) for the code-facing front door, and this page for the fastest orientation to what is current.
 
-## Status Taxonomy
+## At a Glance
 
-- **Current mainline**: what is actually shipped in code on `main`.
-- **Validated finding**: an experiment-backed result that has not been promoted into the canonical code path yet.
-- **Experimental branch**: an active build target or design direction, not a live default.
+- **Current mainline:** [`v4.2/model/graph.py`](https://github.com/VRAXION/VRAXION/blob/main/v4.2/model/graph.py) is the canonical shipped code path on `main`.
+- **Best validated evidence right now:** voltage medium leak remains the strongest schedule result at `22.11%` peak / `21.46%` plateau.
+- **Current next target:** mixed 18-worker swarm remains the main active build target.
 
-If code and docs disagree, **code wins for Current mainline**.
+## Use This Page When
+
+- you need the current public stack in one screen
+- you need the distinction between shipped code, validated evidence, and active experimental work
+- you need the right next page without reconstructing it from issue traffic
 
 ## What VRAXION Is
 
-VRAXION is both a company and an engineering effort focused on a new architecture line:
-
-- fixed random passive I/O projections,
-- a self-wiring ternary hidden graph,
-- persistent internal state across ticks,
-- mutation + selection training instead of backpropagation through the graph.
+VRAXION is both a company and an engineering effort built around one architecture line: passive I/O projections, a self-wiring ternary hidden graph, persistent internal state across ticks, and mutation-selection training instead of backpropagation through the graph.
 
 The current architecture page is [INSTNCT Architecture](SWG-v4.2-Architecture).
-
-## Why It Matters
-
-The aim is not “another model wrapper.” The aim is to make the learnable object itself structural: a directed graph that changes its own wiring while keeping the reference implementation inspectable and reproducible.
-
-For technical buyers, the important question is therefore not just benchmark score. It is whether the architecture, proof surface, and canonical code path all tell the same story.
 
 ## Long-Horizon Mission
 
@@ -49,19 +42,27 @@ This is an ambition and a research direction, not a claim of achieved sentience.
 
 Anything not actually shipped in that code path must be labeled as a **Validated finding** or **Experimental branch**, not as a live default.
 
-## What Is Already Validated
+## Strongest Current Signals
 
-| Topic | Label | Mainline state |
+| Topic | Label | Why it matters |
 |---|---|---|
-| `flip` mutation | Validated finding | Not promoted into `graph.py` defaults |
-| `scale=1.0 + low theta` | Validated finding | Not promoted into `graph.py` defaults |
+| Charge ReLU | Current mainline | Nonnegative charge dynamics already ship in the forward path |
 | `8` ticks + decay slot | Validated finding | Promoted into the current English recipe candidate on `main`, not `graph.py` defaults |
-| decay resample mutation | Validated finding | Better per-neuron decay tuning, not promoted into defaults |
-| voltage medium leak schedule | Validated finding | Best current schedule accuracy, not promoted into defaults |
-| decision-tree schedule | Validated finding | Compact learnable schedule policy, not promoted into defaults |
-| mixed 18-worker swarm | Experimental branch | Active target, not current mainline |
+| voltage medium leak schedule | Validated finding | Strongest schedule result so far |
+| mixed 18-worker swarm | Experimental branch | Main active build target, not current mainline |
 
-See [Validated Findings](Validated-Findings) for the canonical evidence summary, with issue links as supporting references rather than the front door.
+See [Validated Findings](Validated-Findings) for the full evidence board.
+
+<details>
+<summary>Status Taxonomy</summary>
+
+- **Current mainline**: what is actually shipped in code on `main`.
+- **Validated finding**: an experiment-backed result that has not been promoted into the canonical code path yet.
+- **Experimental branch**: an active build target or design direction, not a live default.
+
+If code and docs disagree, **code wins for Current mainline**.
+
+</details>
 
 ## 5-Minute Proof
 
@@ -80,5 +81,3 @@ python tools/check_public_surface.py
 - [`README.md`](https://github.com/VRAXION/VRAXION/blob/main/README.md) — repo front door
 - [Validated Findings](Validated-Findings) — canonical evidence summary
 - [Engineering Protocol](Engineering) — run contract and evidence discipline
-
-If the GitHub wiki render looks incomplete or noisy, use [Pages](https://vraxion.github.io/VRAXION/) or the repo [README.md](https://github.com/VRAXION/VRAXION/blob/main/README.md).
