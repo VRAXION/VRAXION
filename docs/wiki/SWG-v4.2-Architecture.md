@@ -41,6 +41,7 @@ input -> W_in -> hidden ternary graph -> W_out -> output
 ## Current Mainline
 
 - **Canonical code path:** [`v4.2/model/graph.py`](https://github.com/VRAXION/VRAXION/blob/main/v4.2/model/graph.py)
+- **Current English recipe candidate on `main`:** [`v4.2/english_1024n_18w.py`](https://github.com/VRAXION/VRAXION/blob/main/v4.2/english_1024n_18w.py)
 - **What is actually shipped on `main`:**
   - `THRESHOLD = 0.5`
   - `INJ_SCALE = 3.0`
@@ -55,7 +56,9 @@ If a setting is not present in that file, it is not a live default. It should be
 |---|---|---|---|---|
 | `flip` mutation | Validated finding | A better structural mutation than float weight perturbation on English next-byte training | No | [#112](https://github.com/VRAXION/VRAXION/issues/112) |
 | `scale=1.0 + low theta` | Validated finding | A better experimental recipe than the older `scale=3.0 + theta=0.1` setup in empty-start English sweeps | No | [#113](https://github.com/VRAXION/VRAXION/issues/113) |
-| `8` ticks + decay-aware schedule | Validated finding | A better English 1024n recipe that reached `19.95%` and shifted late training toward decay tuning | No | [2b4de88](https://github.com/VRAXION/VRAXION/commit/2b4de887656d5061a944d7f85b0bb2a875f767e4) |
+| `8` ticks + decay slot | Validated finding | The winning fixed schedule from the sweep line; now promoted into the current English recipe candidate on `main` | Not in `graph.py` | [36086a0](https://github.com/VRAXION/VRAXION/commit/36086a0a58b02dad3413f883fdfd7d153108ed66) |
+| voltage medium leak schedule | Validated finding | The strongest schedule result so far by accuracy: `22.11%` peak / `21.46%` plateau | No | [b971613](https://github.com/VRAXION/VRAXION/commit/b971613550d881a7298690a2016339486e4c8244) |
+| decision-tree schedule | Validated finding | A compact 3-angle learnable policy that reached `20.05%` with better edge quality than the voltage policy | No | [f7e6185](https://github.com/VRAXION/VRAXION/commit/f7e618511217d9b2905d93b30d7523a0be1fd79d) |
 | mixed 18-worker swarm | Experimental branch | The current next build target for English training | No | [#114](https://github.com/VRAXION/VRAXION/issues/114) |
 
 For the full evidence summary, use [`VALIDATED_FINDINGS.md`](https://github.com/VRAXION/VRAXION/blob/main/VALIDATED_FINDINGS.md).

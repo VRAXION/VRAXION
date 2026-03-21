@@ -35,6 +35,7 @@ For technical buyers, the important question is therefore not just benchmark sco
 
 - Canonical code path: [`v4.2/model/graph.py`](https://github.com/VRAXION/VRAXION/blob/main/v4.2/model/graph.py)
 - Architecture line: `INSTNCT`
+- Current English recipe candidate on `main`: [`v4.2/english_1024n_18w.py`](https://github.com/VRAXION/VRAXION/blob/main/v4.2/english_1024n_18w.py)
 - Canonical public evidence summary: [`VALIDATED_FINDINGS.md`](https://github.com/VRAXION/VRAXION/blob/main/VALIDATED_FINDINGS.md)
 - Mainline implementation includes per-neuron `theta` / `decay` and nonnegative charge dynamics.
 
@@ -46,7 +47,9 @@ Anything not actually shipped in that code path must be labeled as a **Validated
 |---|---|---|
 | `flip` mutation | Validated finding | Not promoted into `graph.py` defaults |
 | `scale=1.0 + low theta` | Validated finding | Not promoted into `graph.py` defaults |
-| `8` ticks + decay-aware schedule | Validated finding | Not promoted into `graph.py` defaults |
+| `8` ticks + decay slot | Validated finding | Promoted into the current English recipe candidate on `main`, not `graph.py` defaults |
+| voltage medium leak schedule | Validated finding | Best current schedule accuracy, not promoted into defaults |
+| decision-tree schedule | Validated finding | Compact learnable schedule policy, not promoted into defaults |
 | mixed 18-worker swarm | Experimental branch | Active target, not current mainline |
 
 See [`VALIDATED_FINDINGS.md`](https://github.com/VRAXION/VRAXION/blob/main/VALIDATED_FINDINGS.md) for the canonical evidence summary, with issue links as supporting references rather than the front door.

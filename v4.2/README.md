@@ -12,6 +12,7 @@ This directory contains the active architecture line behind VRAXION.
 
 - Canonical reference: [`model/graph.py`](model/graph.py)
 - Scaling/parity path: [`model/graph_v3.c`](model/graph_v3.c)
+- Current English recipe candidate on `main`: [`english_1024n_18w.py`](english_1024n_18w.py)
 - Core behavior:
   - fixed random passive I/O projections
   - ternary hidden-to-hidden mask
@@ -26,7 +27,9 @@ This is the only code path that should be described as the live default.
 
 - [`flip` mutation](../VALIDATED_FINDINGS.md) is currently the strongest English structural mutation finding.
 - [`scale=1.0 + theta=0.03`](../VALIDATED_FINDINGS.md) beat the older `INJ_SCALE=3.0` English setup in empty-start sweeps.
-- [`8` ticks + decay-aware scheduling](../VALIDATED_FINDINGS.md) reached the current `19.95%` English 1024n record, but is still not part of `model/graph.py`.
+- [`8` ticks + a decay slot](../VALIDATED_FINDINGS.md) were promoted into the current English recipe candidate on `main`, but are still not part of `model/graph.py`.
+- [Voltage medium leak scheduling](../VALIDATED_FINDINGS.md) is the strongest current schedule finding by accuracy (`22.11%` peak / `21.46%` plateau).
+- [The 3-angle decision-tree schedule](../VALIDATED_FINDINGS.md) is the strongest compact learnable control policy so far by edge quality.
 
 These findings are important, but none of them should be described as a shipped default until `model/graph.py` actually adopts them.
 
