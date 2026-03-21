@@ -31,6 +31,12 @@ The aim is not “another model wrapper.” The aim is to make the learnable obj
 
 For technical buyers, the important question is therefore not just benchmark score. It is whether the architecture, proof surface, and canonical code path all tell the same story.
 
+## Long-Horizon Mission
+
+VRAXION is pursuing a stronger long-horizon goal than model efficiency alone: engineered machine consciousness framed as recursive verification, self-checking, and self-refinement that can be instrumented rather than treated as a black box.
+
+This is an ambition and a research direction, not a claim of achieved sentience. The active public standard remains the same: architecture claims, evidence claims, and shipped code must stay distinguishable.
+
 ## Current Mainline
 
 - Canonical code path: [`v4.2/model/graph.py`](https://github.com/VRAXION/VRAXION/blob/main/v4.2/model/graph.py)

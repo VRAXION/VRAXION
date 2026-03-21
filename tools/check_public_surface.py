@@ -20,6 +20,7 @@ PUBLIC_UPDATE = ROOT / ".github" / "ISSUE_TEMPLATE" / "public_update.md"
 
 WIKI_SOURCE_DIR = ROOT / "docs" / "wiki"
 WIKI_HOME_SRC = WIKI_SOURCE_DIR / "Home.md"
+WIKI_CH01_SRC = WIKI_SOURCE_DIR / "Chapter-01---Vision-and-Scope.md"
 WIKI_SWG_SRC = WIKI_SOURCE_DIR / "SWG-v4.2-Architecture.md"
 WIKI_FINDINGS_SRC = WIKI_SOURCE_DIR / "Validated-Findings.md"
 WIKI_PROVEN_SRC = WIKI_SOURCE_DIR / "Proven-Findings.md"
@@ -30,6 +31,7 @@ WIKI_FOOTER_SRC = WIKI_SOURCE_DIR / "_Footer.md"
 WIKI_MIRROR_DIR = ROOT / "VRAXION.wiki"
 PRIMARY_WIKI_SOURCE_FILES = {
     WIKI_HOME_SRC,
+    WIKI_CH01_SRC,
     WIKI_SWG_SRC,
     WIKI_FINDINGS_SRC,
     WIKI_PROVEN_SRC,
@@ -46,6 +48,7 @@ MARKDOWN_FILES = [
     FINDINGS,
     ARCHIVE,
     WIKI_HOME_SRC,
+    WIKI_CH01_SRC,
     WIKI_SWG_SRC,
     WIKI_FINDINGS_SRC,
     WIKI_PROVEN_SRC,
@@ -60,6 +63,7 @@ TAXONOMY_FILES = [README, V42_README, FINDINGS, WIKI_HOME_SRC, WIKI_SWG_SRC, WIK
 FRONT_DOOR_TEXTS = [README, V42_README, FINDINGS, WIKI_HOME_SRC, WIKI_SWG_SRC, WIKI_FINDINGS_SRC, WIKI_ENGINEERING_SRC]
 WIKI_MIRROR_MAP = {
     WIKI_HOME_SRC: WIKI_MIRROR_DIR / "Home.md",
+    WIKI_CH01_SRC: WIKI_MIRROR_DIR / "Chapter-01---Vision-and-Scope.md",
     WIKI_SWG_SRC: WIKI_MIRROR_DIR / "SWG-v4.2-Architecture.md",
     WIKI_FINDINGS_SRC: WIKI_MIRROR_DIR / "Validated-Findings.md",
     WIKI_PROVEN_SRC: WIKI_MIRROR_DIR / "Proven-Findings.md",
@@ -200,6 +204,13 @@ def check_proven_stub(errors: list[str]) -> None:
             fail(f"Proven-Findings.md: missing expected stub term {term!r}", errors)
 
 
+def check_ch01_stub(errors: list[str]) -> None:
+    text = read(WIKI_CH01_SRC)
+    for term in ["retired", "Home"]:
+        if term not in text:
+            fail(f"Chapter-01---Vision-and-Scope.md: missing expected stub term {term!r}", errors)
+
+
 def check_wiki_sources(errors: list[str]) -> None:
     sidebar_text = read(WIKI_SIDEBAR_SRC)
     if "## Primary" not in sidebar_text:
@@ -211,6 +222,8 @@ def check_wiki_sources(errors: list[str]) -> None:
         fail("_Sidebar.md: missing markdown navigation link target 'Governance'", errors)
     if "Proven-Findings" in sidebar_text or "Proven Findings" in sidebar_text:
         fail("_Sidebar.md: Proven Findings should not appear in the current wiki navigation", errors)
+    if "Chapter-01---Vision-and-Scope" in sidebar_text or "Chapter 01 - Vision and Scope" in sidebar_text:
+        fail("_Sidebar.md: Chapter 01 should not appear in the current wiki navigation", errors)
 
     footer_text = read(WIKI_FOOTER_SRC)
     if "Nav:" not in footer_text:
@@ -260,6 +273,7 @@ def main() -> int:
     check_templates(errors)
     check_contributing(errors)
     check_proven_stub(errors)
+    check_ch01_stub(errors)
     check_wiki_sources(errors)
     check_wiki_mirror(errors)
 

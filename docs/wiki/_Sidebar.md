@@ -10,7 +10,6 @@
 ## Further Reference
 
 - [Documentation Governance](Governance)
-- [Chapter 01 - Vision and Scope](https://github.com/VRAXION/VRAXION/wiki/Chapter-01---Vision-and-Scope)
 - [Theory of Thought](https://github.com/VRAXION/VRAXION/wiki/Theory-of-Thought)
 - [Hypotheses](https://github.com/VRAXION/VRAXION/wiki/Hypotheses)
 - [Chapter 11 - Roadmap](https://github.com/VRAXION/VRAXION/wiki/Chapter-11---Roadmap)
