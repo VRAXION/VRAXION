@@ -9,6 +9,12 @@ labels: ["public-update"]
 
 One paragraph. What changed, and why does it matter for the self-wiring graph line?
 
+## Taxonomy
+
+- [ ] Current mainline
+- [ ] Validated finding
+- [ ] Experimental branch
+
 ## What changed
 
 - Item 1
