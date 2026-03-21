@@ -1,6 +1,6 @@
 """
-Self-Wiring Graph Network
-==========================
+INSTNCT — Self-Wiring Graph Network (SWG v4.2)
+================================================
 Flat graph with ternary mask and capacitor neurons.
 Gradient-free: learns via mutation + selection.
 Pure numpy + random. Zero dependencies.
