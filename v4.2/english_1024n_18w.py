@@ -1,8 +1,8 @@
 """
-INSTNCT SWG v4.2 — Canonical English Training
-===============================================
+INSTNCT — English Training Candidate
+====================================
 1024 neurons, 18 workers, bigram distribution eval.
-Winner config from 2026-03-21 sweep session.
+Validated recipe candidate from the 2026-03-21 sweep session.
 
 Config:
   - Bigram cosine eval (2 seq per worker, 3x faster than classic)
@@ -125,7 +125,7 @@ def eval_accuracy(mask, H, W_in, W_out, theta, decay, text_bytes, bp):
             if len(rs): np.add.at(raw, cs, act[rs] * sp_vals)
             charge += raw; charge *= ret
             act = np.maximum(charge - theta, 0.0)
-            charge = np.clip(charge, -1.0, 1.0)
+            charge = np.maximum(charge, 0.0)
         state = act.copy()
         out = charge @ W_out
         out_n = out / (np.linalg.norm(out) + 1e-8)
@@ -190,7 +190,7 @@ if __name__ == "__main__":
     net.state *= 0; net.charge *= 0
 
     print(f"\n{'='*60}")
-    print(f"  INSTNCT SWG v4.2 — Canonical Config")
+    print(f"  INSTNCT — English Recipe Candidate")
     print(f"  {H}n, {N_WORKERS}w, bigram {N_TRAIN_SEQS}seq, thresh={THRESHOLD}")
     print(f"  scale={INJ_SCALE}, theta={THETA_INIT}, decay={DECAY_INIT}")
     print(f"  schedule={SCHEDULE}")
@@ -205,7 +205,7 @@ if __name__ == "__main__":
 
     with open(LOG, "w") as f:
         f.write(f"--- START {time.strftime('%Y-%m-%d %H:%M:%S')} ---\n")
-        f.write(f"INSTNCT canonical: {H}n, {N_WORKERS}w, bigram {N_TRAIN_SEQS}seq, "
+        f.write(f"INSTNCT candidate: {H}n, {N_WORKERS}w, bigram {N_TRAIN_SEQS}seq, "
                 f"thresh={THRESHOLD}, scale={INJ_SCALE}\n")
 
     add_acc = 0; flip_acc = 0; theta_acc = 0; decay_acc = 0

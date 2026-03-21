@@ -15,6 +15,8 @@ This directory contains the active architecture line behind VRAXION.
 - Core behavior:
   - fixed random passive I/O projections
   - ternary hidden-to-hidden mask
+  - co-evolved per-neuron `theta` and `decay`
+  - nonnegative charge dynamics in the forward pass
   - persistent charge and state dynamics
   - mutation + selection training
 

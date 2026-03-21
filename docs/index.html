@@ -173,11 +173,11 @@
       </article>
       <article class="card">
         <h2>Why It Matters</h2>
-        <p>The learnable object is a directed ternary graph, not a dense weight stack. The aim is to scale internal structure and persistent dynamics while keeping the reference implementation inspectable and reproducible.</p>
+        <p>The core learnable structure is a directed ternary graph, complemented by co-evolved per-neuron threshold and decay vectors. The aim is to scale internal structure and persistent dynamics while keeping the reference implementation inspectable and reproducible.</p>
       </article>
       <article class="card">
         <h2>Current Mainline</h2>
-        <p>The only settings that count as live mainline defaults are the ones actually shipped in <code>v4.2/model/graph.py</code>. If an issue or wiki page says more than the code does, the code wins until promotion happens.</p>
+        <p>The only settings that count as live mainline defaults are the ones actually shipped in <code>v4.2/model/graph.py</code>. That mainline currently includes per-neuron <code>theta</code>/<code>decay</code> and nonnegative charge dynamics. If an issue or wiki page says more than the code does, the code wins until promotion happens.</p>
       </article>
       <article class="card">
         <h2>Validated Findings</h2>

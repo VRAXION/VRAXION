@@ -8,7 +8,9 @@ Pure numpy + random. Zero dependencies.
 Architecture: Passive I/O sockets + hidden-only mutable mask.
   - W_in  (V × H): fixed random projection, injects input into hidden layer
   - W_out (H × V): fixed random projection, reads output from hidden layer
-  - mask  (H × H): the ONLY learnable matrix {-DRIVE, 0, +DRIVE}
+  - mask  (H × H): primary learnable graph {-DRIVE, 0, +DRIVE}
+  - theta (H,): co-evolved per-neuron firing thresholds
+  - decay (H,): co-evolved per-neuron decay rates
   - No input/output neurons — all neurons are hidden and must learn.
 
 TEMPORARY: W_in/W_out scaled by INJ_SCALE=3.0 to overcome threshold.

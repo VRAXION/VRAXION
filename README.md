@@ -15,7 +15,7 @@ This repository is meant to be a credible front door for technical buyers and en
 INSTNCT is built around a small set of unusual choices:
 
 - **Passive I/O**: `W_in` and `W_out` are fixed random projections, not learned layers.
-- **Self-wiring core**: the only learnable structure is a hidden-to-hidden ternary graph.
+- **Self-wiring core**: the primary learnable structure is a hidden-to-hidden ternary graph, with co-evolved per-neuron `theta` and `decay`.
 - **Persistent internal state**: neurons keep charge and state across ticks instead of acting as one-shot activations.
 - **Mutation + selection**: training is done by graph edits and acceptance tests, not gradient descent through the graph.
 
@@ -38,7 +38,7 @@ The repo-tracked docs are the canonical public source. The GitHub wiki is a seco
 ### Current mainline
 
 - The live canonical path is [`v4.2/model/graph.py`](v4.2/model/graph.py).
-- The stable reference is the NumPy self-wiring graph with passive I/O, a ternary hidden mask, and persistent charge/state dynamics.
+- The stable reference is the NumPy self-wiring graph with passive I/O, a ternary hidden mask, co-evolved per-neuron `theta` / `decay`, and nonnegative charge dynamics.
 - Recent English sweeps around low-theta training and signal scaling are **not** described here as baked defaults until they land in that code path.
 
 ### Validated findings

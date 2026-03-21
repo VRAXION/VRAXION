@@ -36,6 +36,7 @@ For technical buyers, the important question is therefore not just benchmark sco
 - Canonical code path: [`v4.2/model/graph.py`](https://github.com/VRAXION/VRAXION/blob/main/v4.2/model/graph.py)
 - Architecture line: `INSTNCT`
 - Canonical public evidence summary: [`VALIDATED_FINDINGS.md`](https://github.com/VRAXION/VRAXION/blob/main/VALIDATED_FINDINGS.md)
+- Mainline implementation includes per-neuron `theta` / `decay` and nonnegative charge dynamics.
 
 Anything not actually shipped in that code path must be labeled as a **Validated finding** or **Experimental branch**, not as a live default.
 

@@ -21,6 +21,8 @@ Current mainline constants in that file:
 - `THRESHOLD = 0.5`
 - `INJ_SCALE = 3.0`
 - `DRIVE = 0.6`
+- per-neuron `theta` and `decay` are part of the mainline implementation
+- charge uses nonnegative ReLU-style dynamics in the forward pass
 
 Anything that differs from those settings should be described as a **Validated finding** or **Experimental branch**, not as the live default.
 

@@ -23,6 +23,7 @@ input -> W_in -> hidden ternary graph -> W_out -> output
 
 - `W_in` and `W_out` are fixed random projections.
 - The hidden graph is directed, ternary, and can rewire itself over time.
+- Per-neuron `theta` and `decay` are co-evolved with the graph.
 - Charge/state persists across ticks instead of resetting after one pass.
 - Training happens by mutation + selection, not backpropagation through the graph.
 
@@ -33,6 +34,8 @@ input -> W_in -> hidden ternary graph -> W_out -> output
 | `W_in` | Fixed random projection |
 | `W_out` | Fixed random projection |
 | Hidden-to-hidden mask | Learnable graph structure |
+| `theta` | Learnable per-neuron firing threshold |
+| `decay` | Learnable per-neuron decay rate |
 | Charge / state | Runtime state that changes while the model runs |
 
 ## Current Mainline
@@ -42,6 +45,7 @@ input -> W_in -> hidden ternary graph -> W_out -> output
   - `THRESHOLD = 0.5`
   - `INJ_SCALE = 3.0`
   - `DRIVE = 0.6`
+- **Mainline runtime behavior:** per-neuron `theta` / `decay` and nonnegative charge dynamics
 
 If a setting is not present in that file, it is not a live default. It should be read as a **Validated finding** or **Experimental branch** until it is promoted into `graph.py`.
 

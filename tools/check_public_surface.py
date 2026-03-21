@@ -54,6 +54,7 @@ BANNED_ANYWHERE = {
     re.compile(r"\bnew default\b", re.IGNORECASE): "use 'validated finding' or 'experimental branch' instead of 'new default'",
     re.compile(r"\bcurrent defaults?\b", re.IGNORECASE): "avoid 'current default' phrasing on canonical public surfaces; use 'current mainline' or 'live mainline default'",
     re.compile(r"cleaned research mainline", re.IGNORECASE): "old branch-cleanup phrasing should not appear on public surfaces",
+    re.compile(r"only learnable structure", re.IGNORECASE): "public surfaces should not claim the graph is the only learnable structure; theta/decay are co-evolved in mainline",
 }
 FRONT_DOOR_ONLY_BANNED = {
     re.compile(r"credit-guided rewiring", re.IGNORECASE): "credit-guided rewiring should not appear on front-door public surfaces",
