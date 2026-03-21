@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import re
 import sys
+import ast
 from pathlib import Path
 
 
@@ -28,6 +29,7 @@ WIKI_ENGINEERING_SRC = WIKI_SOURCE_DIR / "Engineering.md"
 WIKI_GOVERNANCE_SRC = WIKI_SOURCE_DIR / "Governance.md"
 WIKI_SIDEBAR_SRC = WIKI_SOURCE_DIR / "_Sidebar.md"
 WIKI_FOOTER_SRC = WIKI_SOURCE_DIR / "_Footer.md"
+ENGLISH_RECIPE = ROOT / "v4.2" / "english_1024n_18w.py"
 REMOVED_WIKI_SOURCE_FILES = [
     WIKI_GOVERNANCE_SRC,
     WIKI_SOURCE_DIR / "Chapter-11---Roadmap.md",
@@ -124,6 +126,7 @@ FRONT_DOOR_ONLY_BANNED = {
     re.compile(r"credit-guided rewiring", re.IGNORECASE): "credit-guided rewiring should not appear on front-door public surfaces",
     re.compile(r"Diamond Code v3", re.IGNORECASE): "legacy Diamond Code references should not appear on primary public surfaces",
 }
+STALE_RECIPE_TEXT = "add/add/add/flip/theta/decay"
 
 
 def read(path: Path) -> str:
@@ -139,6 +142,13 @@ def extract_constant(name: str, text: str) -> str:
     if not match:
         raise RuntimeError(f"Could not find constant {name} in {GRAPH}")
     return match.group(1)
+
+
+def extract_schedule_list(text: str) -> list[str]:
+    match = re.search(r"^\s*SCHEDULE\s*=\s*(\[[^\n]+\])", text, re.MULTILINE)
+    if not match:
+        raise RuntimeError(f"Could not find SCHEDULE in {ENGLISH_RECIPE}")
+    return ast.literal_eval(match.group(1))
 
 
 def check_required_terms(path: Path, text: str, errors: list[str]) -> None:
@@ -246,6 +256,27 @@ def check_findings_constants(threshold: str, inj_scale: str, errors: list[str]) 
         fail("VALIDATED_FINDINGS.md: threshold line is not aligned to graph.py", errors)
     if f"`INJ_SCALE = {inj_scale}`" not in findings_text:
         fail("VALIDATED_FINDINGS.md: INJ_SCALE line is not aligned to graph.py", errors)
+
+
+def check_recipe_candidate_sync(errors: list[str]) -> None:
+    recipe_text = read(ENGLISH_RECIPE)
+    schedule = extract_schedule_list(recipe_text)
+    schedule_counts = {kind: schedule.count(kind) for kind in sorted(set(schedule))}
+    expected_phrase = "triangle-derived `2 add / 1 flip / 5 decay` schedule"
+    header_phrase = "Schedule: triangle-derived 2 add / 1 flip / 5 decay (8-step fixed approximation)"
+
+    if schedule != ['add', 'add', 'flip', 'decay', 'decay', 'decay', 'decay', 'decay']:
+        fail(f"english_1024n_18w.py: unexpected current candidate schedule {schedule_counts}", errors)
+
+    if header_phrase not in recipe_text:
+        fail("english_1024n_18w.py: header schedule description is not aligned to the current SCHEDULE", errors)
+
+    for path in [FINDINGS, WIKI_FINDINGS_SRC]:
+        text = read(path)
+        if STALE_RECIPE_TEXT in text:
+            fail(f"{path.name}: stale recipe schedule text {STALE_RECIPE_TEXT!r} should not appear on active public surfaces", errors)
+        if expected_phrase not in text:
+            fail(f"{path.name}: current recipe candidate summary must match the triangle-derived 2/1/5 schedule", errors)
 
 
 def check_archive(errors: list[str]) -> None:
@@ -425,6 +456,7 @@ def main() -> int:
     check_front_door_phrases(LANDING, landing_text, errors)
 
     check_findings_constants(threshold, inj_scale, errors)
+    check_recipe_candidate_sync(errors)
     check_archive(errors)
     check_templates(errors)
     check_contributing(errors)

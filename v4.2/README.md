@@ -27,7 +27,7 @@ This is the only code path that should be described as the live default.
 
 - [`flip` mutation](../VALIDATED_FINDINGS.md) is currently the strongest English structural mutation finding.
 - [`scale=1.0 + theta=0.03`](../VALIDATED_FINDINGS.md) beat the older `INJ_SCALE=3.0` English setup in empty-start sweeps.
-- [`8` ticks + a decay slot](../VALIDATED_FINDINGS.md) were promoted into the current English recipe candidate on `main`, but are still not part of `model/graph.py`.
+- The current English recipe candidate on `main` uses `8` ticks with a triangle-derived [`2 add / 1 flip / 5 decay` schedule](../VALIDATED_FINDINGS.md), but that recipe is still not part of `model/graph.py`.
 - [Decay resample for per-neuron tuning](../VALIDATED_FINDINGS.md) beat local perturbation and produced differentiated decay rates instead of leaving decay flat.
 - [Voltage medium leak scheduling](../VALIDATED_FINDINGS.md) is the strongest current schedule finding by accuracy (`22.11%` peak / `21.46%` plateau).
 - [The 3-angle decision-tree schedule](../VALIDATED_FINDINGS.md) is the strongest compact learnable control policy so far by edge quality.

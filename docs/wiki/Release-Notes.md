@@ -38,6 +38,7 @@ This page is the single primary timeline and lookup surface for VRAXION. Use it 
 | 2026-02-17 to 2026-02-22 | Evidence discipline hardened around findings instead of page-local claims | Schedule, depth, and mutation results moved into an explicit evidence layer instead of being implied as shipped defaults. | [Validated Findings](Validated-Findings) |
 | 2026-03-21 | Repo-tracked docs became canonical and the GitHub wiki became a mirror | Public truth stopped drifting between README, Pages, findings, and ad hoc wiki edits. | [VRAXION Home](Home), [`CONTRIBUTING.md`](https://github.com/VRAXION/VRAXION/blob/main/CONTRIBUTING.md) |
 | 2026-03-21 | Schedule-control work became the main live research frontier | `8` ticks, decay-aware scheduling, voltage/leak control, and compact learnable policies became the strongest present-tense recipe questions. | [Validated Findings](Validated-Findings) |
+| 2026-03-22 | Triangle convergence was distilled into the current fixed English recipe candidate | The current candidate on `main` now uses an `8`-tick, decay-dominant `2 add / 1 flip / 5 decay` schedule without changing the canonical `graph.py` defaults. | [Validated Findings](Validated-Findings) |
 | 2026-03-21 | Roadmap, theory, archive, glossary, and old architecture leaves were collapsed into one timeline surface | History, terminology, open questions, and retirement lookup now live in one place instead of multiple smaller pages. | This page |
 
 ## Retired Surfaces and Replacements

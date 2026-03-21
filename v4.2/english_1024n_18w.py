@@ -12,7 +12,7 @@ Config:
   - Ticks: 8 (sweep: 8 > 6 > 4)
   - Injection: 2 ticks (sweep: 2 > 4 > 1 > 8, +3.26% vs tick-0-only)
   - Decay init: random [0.08, 0.24] per-neuron (23.72% peak vs 21.96% fix)
-  - Schedule: add/add/add/flip/theta/decay (resample mutation)
+  - Schedule: triangle-derived 2 add / 1 flip / 5 decay (8-step fixed approximation)
   - Empty start (no checkpoint needed)
 """
 import sys, os, time, random, json
