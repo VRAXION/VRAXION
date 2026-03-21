@@ -1,4 +1,4 @@
-"""Lightweight public-surface consistency checks for CI."""
+"""Lightweight public-surface consistency checks for CI and local audits."""
 
 from __future__ import annotations
 
@@ -14,11 +14,49 @@ V42_README = ROOT / "v4.2" / "README.md"
 CONTRIBUTING = ROOT / "CONTRIBUTING.md"
 FINDINGS = ROOT / "VALIDATED_FINDINGS.md"
 LANDING = ROOT / "docs" / "index.html"
+ARCHIVE = ROOT / "ARCHIVE.md"
+PR_TEMPLATE = ROOT / ".github" / "pull_request_template.md"
+PUBLIC_UPDATE = ROOT / ".github" / "ISSUE_TEMPLATE" / "public_update.md"
 
-MARKDOWN_FILES = [README, V42_README, CONTRIBUTING, FINDINGS]
+WIKI_SOURCE_DIR = ROOT / "docs" / "wiki"
+WIKI_HOME_SRC = WIKI_SOURCE_DIR / "Home.md"
+WIKI_SWG_SRC = WIKI_SOURCE_DIR / "SWG-v4.2-Architecture.md"
+WIKI_SIDEBAR_SRC = WIKI_SOURCE_DIR / "_Sidebar.md"
+WIKI_FOOTER_SRC = WIKI_SOURCE_DIR / "_Footer.md"
+WIKI_MIRROR_DIR = ROOT / "VRAXION.wiki"
+
+MARKDOWN_FILES = [
+    README,
+    V42_README,
+    CONTRIBUTING,
+    FINDINGS,
+    ARCHIVE,
+    WIKI_HOME_SRC,
+    WIKI_SWG_SRC,
+    WIKI_SIDEBAR_SRC,
+    WIKI_FOOTER_SRC,
+    PR_TEMPLATE,
+    PUBLIC_UPDATE,
+]
+TAXONOMY_FILES = [README, V42_README, FINDINGS, WIKI_HOME_SRC, WIKI_SWG_SRC]
+FRONT_DOOR_TEXTS = [README, V42_README, FINDINGS, WIKI_HOME_SRC, WIKI_SWG_SRC]
+WIKI_MIRROR_MAP = {
+    WIKI_HOME_SRC: WIKI_MIRROR_DIR / "Home.md",
+    WIKI_SWG_SRC: WIKI_MIRROR_DIR / "SWG-v4.2-Architecture.md",
+    WIKI_SIDEBAR_SRC: WIKI_MIRROR_DIR / "_Sidebar.md",
+    WIKI_FOOTER_SRC: WIKI_MIRROR_DIR / "_Footer.md",
+}
 REQUIRED_LOCAL_LINK_TARGETS = {
     README: ["VALIDATED_FINDINGS.md", "v4.2/README.md"],
     V42_README: ["../VALIDATED_FINDINGS.md"],
+}
+BANNED_ANYWHERE = {
+    re.compile(r"\bnew default\b", re.IGNORECASE): "use 'validated finding' or 'experimental branch' instead of 'new default'",
+    re.compile(r"\bcurrent defaults?\b", re.IGNORECASE): "avoid 'current default' phrasing on canonical public surfaces; use 'current mainline' or 'live mainline default'",
+    re.compile(r"cleaned research mainline", re.IGNORECASE): "old branch-cleanup phrasing should not appear on public surfaces",
+}
+FRONT_DOOR_ONLY_BANNED = {
+    re.compile(r"credit-guided rewiring", re.IGNORECASE): "credit-guided rewiring should not appear on front-door public surfaces",
 }
 
 
@@ -38,35 +76,131 @@ def extract_constant(name: str, text: str) -> str:
 
 
 def check_required_terms(path: Path, text: str, errors: list[str]) -> None:
-    required = ["Current mainline", "Validated finding", "Experimental branch"]
-    for term in required:
+    for term in ["Current mainline", "Validated finding", "Experimental branch"]:
         if term not in text:
             fail(f"{path.name}: missing required taxonomy term {term!r}", errors)
 
 
+def resolve_local_target(path: Path, href: str) -> Path | None:
+    target = (path.parent / href).resolve()
+    candidates = [target]
+    if not href.lower().endswith(".md"):
+        candidates.append(Path(str(target) + ".md"))
+    for candidate in candidates:
+        if candidate.exists():
+            return candidate
+    return None
+
+
 def check_links(path: Path, text: str, errors: list[str]) -> None:
     for rel_target in REQUIRED_LOCAL_LINK_TARGETS.get(path, []):
-        target = (path.parent / rel_target).resolve()
-        if not target.exists():
+        if resolve_local_target(path, rel_target) is None:
             fail(f"{path.name}: required link target does not exist: {rel_target}", errors)
 
     for match in re.finditer(r"\[[^\]]+\]\(([^)]+)\)", text):
         href = match.group(1).strip()
         if not href or href.startswith(("http://", "https://", "#", "mailto:")):
             continue
-        target = (path.parent / href).resolve()
-        if not target.exists():
+        if resolve_local_target(path, href) is None:
             fail(f"{path.name}: broken relative markdown link: {href}", errors)
 
+    for match in re.finditer(r"\[\[([^\]]+)\]\]", text):
+        href = match.group(1).split("|", 1)[0].strip()
+        if not href:
+            continue
+        if path.parent == WIKI_SOURCE_DIR and href not in {"Home", "SWG-v4.2-Architecture"}:
+            continue
+        if resolve_local_target(path, href) is None:
+            fail(f"{path.name}: broken wiki-style link: {href}", errors)
 
-def check_landing(text: str, threshold: str, inj_scale: str, errors: list[str]) -> None:
+
+def check_banned_phrases(path: Path, text: str, errors: list[str]) -> None:
+    for pattern, message in BANNED_ANYWHERE.items():
+        if pattern.search(text):
+            fail(f"{path.name}: {message}", errors)
+
+
+def check_front_door_phrases(path: Path, text: str, errors: list[str]) -> None:
+    for pattern, message in FRONT_DOOR_ONLY_BANNED.items():
+        if pattern.search(text):
+            fail(f"{path.name}: {message}", errors)
+
+
+def check_landing(text: str, errors: list[str]) -> None:
     for term in ["Current mainline", "Validated finding", "Experimental branch", "INSTNCT / SWG v4.2"]:
         if term not in text:
             fail(f"docs/index.html: missing required term {term!r}", errors)
-    if f"`THRESHOLD = {threshold}`" not in read(FINDINGS):
+
+
+def check_findings_constants(threshold: str, inj_scale: str, errors: list[str]) -> None:
+    findings_text = read(FINDINGS)
+    if f"`THRESHOLD = {threshold}`" not in findings_text:
         fail("VALIDATED_FINDINGS.md: threshold line is not aligned to graph.py", errors)
-    if f"`INJ_SCALE = {inj_scale}`" not in read(FINDINGS):
+    if f"`INJ_SCALE = {inj_scale}`" not in findings_text:
         fail("VALIDATED_FINDINGS.md: INJ_SCALE line is not aligned to graph.py", errors)
+
+
+def check_archive(errors: list[str]) -> None:
+    text = read(ARCHIVE)
+    required = [
+        "Only the active self-wiring graph line belongs on `main`:",
+        "public documentation for the current self-wiring direction",
+        "If a line is not part of the current self-wiring mainline doctrine, archive it.",
+    ]
+    for term in required:
+        if term not in text:
+            fail(f"ARCHIVE.md: missing expected archive-policy term {term!r}", errors)
+
+
+def check_templates(errors: list[str]) -> None:
+    pr_text = read(PR_TEMPLATE)
+    if "tools/check_public_surface.py" not in pr_text:
+        fail("pull_request_template.md: missing public-surface verification command", errors)
+    if "Taxonomy label" not in pr_text:
+        fail("pull_request_template.md: missing taxonomy label prompt", errors)
+
+    public_update_text = read(PUBLIC_UPDATE)
+    for term in ["Current mainline", "Validated finding", "Experimental branch"]:
+        if term not in public_update_text:
+            fail(f"public_update.md: missing taxonomy option {term!r}", errors)
+
+
+def check_contributing(errors: list[str]) -> None:
+    text = read(CONTRIBUTING)
+    if "public technical repo" not in text:
+        fail("CONTRIBUTING.md: expected public-technical-repo posture text", errors)
+    if "docs/wiki/" not in text:
+        fail("CONTRIBUTING.md: expected docs/wiki guidance", errors)
+    if "VRAXION.wiki/" not in text:
+        fail("CONTRIBUTING.md: expected mirrored wiki guidance", errors)
+
+
+def check_wiki_sources(errors: list[str]) -> None:
+    sidebar_text = read(WIKI_SIDEBAR_SRC)
+    if "## Primary" not in sidebar_text:
+        fail("_Sidebar.md: missing Primary navigation section", errors)
+    for term in ["[[Home]]", "SWG-v4.2-Architecture", "Validated Findings"]:
+        if term not in sidebar_text:
+            fail(f"_Sidebar.md: missing primary navigation item {term!r}", errors)
+
+    footer_text = read(WIKI_FOOTER_SRC)
+    if "Nav:" not in footer_text:
+        fail("_Footer.md: missing Nav line", errors)
+    for term in ["[[Home]]", "SWG v4.2", "Validated Findings"]:
+        if term not in footer_text:
+            fail(f"_Footer.md: missing footer primary navigation item {term!r}", errors)
+
+
+def check_wiki_mirror(errors: list[str]) -> None:
+    if not WIKI_MIRROR_DIR.exists():
+        return
+
+    for src, mirror in WIKI_MIRROR_MAP.items():
+        if not mirror.exists():
+            fail(f"Wiki mirror missing expected file: {mirror}", errors)
+            continue
+        if read(src) != read(mirror):
+            fail(f"Wiki mirror drift: {mirror.name} is out of sync with docs/wiki source", errors)
 
 
 def main() -> int:
@@ -78,15 +212,24 @@ def main() -> int:
 
     for path in MARKDOWN_FILES:
         text = read(path)
-        if path in {README, V42_README, FINDINGS}:
+        if path in TAXONOMY_FILES:
             check_required_terms(path, text, errors)
         check_links(path, text, errors)
+        if path in FRONT_DOOR_TEXTS:
+            check_banned_phrases(path, text, errors)
+            check_front_door_phrases(path, text, errors)
 
     landing_text = read(LANDING)
-    check_landing(landing_text, threshold, inj_scale, errors)
+    check_landing(landing_text, errors)
+    check_banned_phrases(LANDING, landing_text, errors)
+    check_front_door_phrases(LANDING, landing_text, errors)
 
-    if "public technical repo" not in read(CONTRIBUTING):
-        fail("CONTRIBUTING.md: expected public-technical-repo posture text", errors)
+    check_findings_constants(threshold, inj_scale, errors)
+    check_archive(errors)
+    check_templates(errors)
+    check_contributing(errors)
+    check_wiki_sources(errors)
+    check_wiki_mirror(errors)
 
     if errors:
         print("Public surface check FAILED:")

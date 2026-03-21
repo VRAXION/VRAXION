@@ -4,6 +4,8 @@ This page is the **canonical public evidence summary** for the repo.
 
 It exists so the strongest current findings do not live only in issue traffic.
 
+Repo-tracked docs are canonical. The GitHub wiki is treated as a mirrored secondary surface.
+
 ## Status Taxonomy
 
 - **Current mainline**: what is actually shipped in code on `main`.
@@ -33,5 +35,5 @@ Anything that differs from those settings should be described as a **Validated f
 ## How To Read This Repo
 
 - If a result is in an issue but not in the canonical code path, treat it as a **Validated finding** or **Experimental branch**.
-- If a page claims a setting is the current default, that claim should be verifiable in [`v4.2/model/graph.py`](v4.2/model/graph.py).
+- If a page claims a setting is a live mainline default, that claim should be verifiable in [`v4.2/model/graph.py`](v4.2/model/graph.py).
 - If code and narrative disagree, the code wins for “Current mainline,” and the narrative should be fixed.

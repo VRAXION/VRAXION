@@ -36,6 +36,10 @@ jobs:
         run: |
           python tools/check_public_surface.py
 
+      - name: Wiki mirror dry-run
+        run: |
+          python tools/sync_wiki_from_repo.py --dry-run
+
       - name: Tiny cyclic smoke
         run: |
           python - <<'PY'

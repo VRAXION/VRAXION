@@ -10,7 +10,7 @@ Use the repo taxonomy consistently:
 - **Validated finding** = experiment-backed result not yet promoted into the canonical code path
 - **Experimental branch** = active build target or prototype direction
 
-If a setting or training recipe is not in the canonical code path, do **not** describe it as the current default.
+If a setting or training recipe is not in the canonical code path, do **not** describe it as the live mainline default.
 
 ## Repo Map
 
@@ -18,7 +18,10 @@ If a setting or training recipe is not in the canonical code path, do **not** de
 - `v4.2/lib/`: shared scoring, data, and logging helpers
 - `v4.2/tests/`: stress tests, sweeps, probes, and benchmark scripts
 - `docs/`: GitHub Pages landing page
+- `docs/wiki/`: canonical source files for mirrored wiki pages
 - `VALIDATED_FINDINGS.md`: canonical evidence summary for public-facing claims
+
+Edit `docs/wiki/` when changing mirrored wiki content. Do not treat `VRAXION.wiki/` as hand-edited doctrine.
 
 ## Where To Put Things
 

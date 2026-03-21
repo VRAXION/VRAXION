@@ -31,6 +31,8 @@ To keep the public story truthful, this repo uses three labels consistently:
 
 If code and docs disagree, **code wins for “Current mainline.”**
 
+The repo-tracked docs are the canonical public source. The GitHub wiki is a secondary mirror, not an independent source of truth.
+
 ## Current State
 
 ### Current mainline
@@ -49,7 +51,7 @@ The canonical evidence summary lives in [`VALIDATED_FINDINGS.md`](VALIDATED_FIND
 ### Experimental branch
 
 - The current next candidate is the **mixed 18-worker swarm** for English training ([#114](https://github.com/VRAXION/VRAXION/issues/114)).
-- It is an active implementation target, not the current default training path on `main`.
+- It is an active implementation target, not the live training path on `main`.
 
 ## 5-Minute Proof
 

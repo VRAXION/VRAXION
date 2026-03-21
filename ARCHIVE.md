@@ -51,6 +51,8 @@ Benefits:
 - easier onboarding for readers who only need the active self-wiring path
 - safer preservation of older work without mixing it into the active default branch
 
+Canonical public docs live in repo-tracked files. The GitHub wiki is a mirrored secondary surface, not a separate doctrine layer.
+
 ## Practical rule
 
 If a line is not part of the current self-wiring mainline doctrine, archive it.
