@@ -197,7 +197,7 @@ if __name__ == "__main__":
     print(f"\n{'='*60}")
     print(f"  INSTNCT — English Recipe Candidate")
     print(f"  {H}n, {N_WORKERS}w, bigram {N_TRAIN_SEQS}seq, thresh={THRESHOLD}")
-    print(f"  scale={INJ_SCALE}, theta={THETA_INIT}, decay={DECAY_INIT}")
+    print(f"  scale={INJ_SCALE}, theta={THETA_INIT}, decay=[{DECAY_INIT_LO},{DECAY_INIT_HI}]")
     print(f"  schedule={SCHEDULE}")
     print(f"  budget={BUDGET} steps")
     print(f"{'='*60}")
