@@ -8,7 +8,7 @@ Config:
   - Bigram cosine eval (2 seq per worker, 3x faster than classic)
   - Threshold: 0.00005 (from adaptive sweep convergence)
   - Scale: 1.0 (no INJ_SCALE hack)
-  - Theta: 0.03 init (learnable per-neuron)
+  - Theta: 0 fix (redundant with charge ReLU, sweep confirmed)
   - Ticks: 8 (sweep: 8 > 6 > 4)
   - Injection: 2 ticks (sweep: 2 > 4 > 1 > 8, +3.26% vs tick-0-only)
   - Decay init: random [0.08, 0.24] per-neuron (23.72% peak vs 21.96% fix)
@@ -148,11 +148,11 @@ if __name__ == "__main__":
     N_EVAL_SEQS = 10    # classic accuracy for reporting
     THRESHOLD = 0.00005 # from adaptive sweep convergence
     INJ_SCALE = 1.0     # no hack (sweep confirmed)
-    THETA_INIT = 0.03   # sweep winner
+    THETA_INIT = 0.0    # redundant with charge ReLU (sweep: theta=0 = theta=3)
     DECAY_INIT_LO = 0.08   # random init range (sweep: [0.08,0.24] > fix 0.15)
     DECAY_INIT_HI = 0.24
 
-    SCHEDULE = ['add', 'add', 'add', 'flip', 'theta', 'decay']
+    SCHEDULE = ['add', 'add', 'add', 'flip', 'add', 'decay']  # theta slot -> add (theta redundant)
 
     SelfWiringGraph.NV_RATIO = NV
     H = IO * NV  # 1024
