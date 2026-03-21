@@ -10,7 +10,6 @@
 ## Further Reference
 
 - [Documentation Governance](Governance)
-- [Proven Findings](https://github.com/VRAXION/VRAXION/wiki/Proven-Findings)
 - [Chapter 01 - Vision and Scope](https://github.com/VRAXION/VRAXION/wiki/Chapter-01---Vision-and-Scope)
 - [Theory of Thought](https://github.com/VRAXION/VRAXION/wiki/Theory-of-Thought)
 - [Hypotheses](https://github.com/VRAXION/VRAXION/wiki/Hypotheses)

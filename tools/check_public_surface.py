@@ -22,6 +22,7 @@ WIKI_SOURCE_DIR = ROOT / "docs" / "wiki"
 WIKI_HOME_SRC = WIKI_SOURCE_DIR / "Home.md"
 WIKI_SWG_SRC = WIKI_SOURCE_DIR / "SWG-v4.2-Architecture.md"
 WIKI_FINDINGS_SRC = WIKI_SOURCE_DIR / "Validated-Findings.md"
+WIKI_PROVEN_SRC = WIKI_SOURCE_DIR / "Proven-Findings.md"
 WIKI_ENGINEERING_SRC = WIKI_SOURCE_DIR / "Engineering.md"
 WIKI_GOVERNANCE_SRC = WIKI_SOURCE_DIR / "Governance.md"
 WIKI_SIDEBAR_SRC = WIKI_SOURCE_DIR / "_Sidebar.md"
@@ -31,6 +32,7 @@ PRIMARY_WIKI_SOURCE_FILES = {
     WIKI_HOME_SRC,
     WIKI_SWG_SRC,
     WIKI_FINDINGS_SRC,
+    WIKI_PROVEN_SRC,
     WIKI_ENGINEERING_SRC,
     WIKI_GOVERNANCE_SRC,
     WIKI_SIDEBAR_SRC,
@@ -46,6 +48,7 @@ MARKDOWN_FILES = [
     WIKI_HOME_SRC,
     WIKI_SWG_SRC,
     WIKI_FINDINGS_SRC,
+    WIKI_PROVEN_SRC,
     WIKI_ENGINEERING_SRC,
     WIKI_GOVERNANCE_SRC,
     WIKI_SIDEBAR_SRC,
@@ -59,6 +62,7 @@ WIKI_MIRROR_MAP = {
     WIKI_HOME_SRC: WIKI_MIRROR_DIR / "Home.md",
     WIKI_SWG_SRC: WIKI_MIRROR_DIR / "SWG-v4.2-Architecture.md",
     WIKI_FINDINGS_SRC: WIKI_MIRROR_DIR / "Validated-Findings.md",
+    WIKI_PROVEN_SRC: WIKI_MIRROR_DIR / "Proven-Findings.md",
     WIKI_ENGINEERING_SRC: WIKI_MIRROR_DIR / "Engineering.md",
     WIKI_GOVERNANCE_SRC: WIKI_MIRROR_DIR / "Governance.md",
     WIKI_SIDEBAR_SRC: WIKI_MIRROR_DIR / "_Sidebar.md",
@@ -189,6 +193,13 @@ def check_contributing(errors: list[str]) -> None:
         fail("CONTRIBUTING.md: expected mirrored wiki guidance", errors)
 
 
+def check_proven_stub(errors: list[str]) -> None:
+    text = read(WIKI_PROVEN_SRC)
+    for term in ["historical", "Validated-Findings"]:
+        if term not in text:
+            fail(f"Proven-Findings.md: missing expected stub term {term!r}", errors)
+
+
 def check_wiki_sources(errors: list[str]) -> None:
     sidebar_text = read(WIKI_SIDEBAR_SRC)
     if "## Primary" not in sidebar_text:
@@ -198,6 +209,8 @@ def check_wiki_sources(errors: list[str]) -> None:
             fail(f"_Sidebar.md: missing markdown navigation link target {href!r}", errors)
     if not re.search(r"\[[^\]]+\]\(Governance\)", sidebar_text):
         fail("_Sidebar.md: missing markdown navigation link target 'Governance'", errors)
+    if "Proven-Findings" in sidebar_text or "Proven Findings" in sidebar_text:
+        fail("_Sidebar.md: Proven Findings should not appear in the current wiki navigation", errors)
 
     footer_text = read(WIKI_FOOTER_SRC)
     if "Nav:" not in footer_text:
@@ -246,6 +259,7 @@ def main() -> int:
     check_archive(errors)
     check_templates(errors)
     check_contributing(errors)
+    check_proven_stub(errors)
     check_wiki_sources(errors)
     check_wiki_mirror(errors)
 

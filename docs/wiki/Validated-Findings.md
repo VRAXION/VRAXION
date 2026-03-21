@@ -34,6 +34,17 @@ If code and docs disagree, **code wins for Current mainline**.
 | Decision-tree schedule ([f7e6185](https://github.com/VRAXION/VRAXION/commit/f7e618511217d9b2905d93b30d7523a0be1fd79d)) | Validated finding | `20.05%` at `156` edges, with the best edge quality among the learnable schedule policies tested | Not promoted into the current recipe or `graph.py` defaults |
 | Mixed 18-worker swarm ([#114](https://github.com/VRAXION/VRAXION/issues/114)) | Experimental branch | Current next build target for English training | Not part of the canonical mainline yet |
 
+## Historical Context
+
+The earlier `Proven Findings` page belonged to the Diamond Code / pre-INSTNCT era. It is no longer the active public evidence surface. Current evidence lives here, in `Validated Findings`.
+
+- External memory was already established as load-bearing in the older architecture line.
+- Routing-first / content-second learning appeared as a recurring pattern before the current INSTNCT work.
+- Task difficulty had to match actual architectural capability; impossible tasks created false bottleneck diagnoses.
+- Processing depth mattered more than simply widening the local context window.
+
+Those historical findings are useful context, not current mainline claims.
+
 ## Read Next
 
 - [Home](Home)
