@@ -1,71 +1,61 @@
 <!-- Canonical source for the mirrored GitHub wiki page. Sync with tools/sync_wiki_from_repo.py. -->
 
-# INSTNCT / SWG v4.2
+# SWG v4.2 Architecture
 
-> **Status:** Active architecture line
->
-> **Canonical code path:** [`v4.2/model/graph.py`](https://github.com/VRAXION/VRAXION/blob/main/v4.2/model/graph.py)
+VRAXION is building **INSTNCT / SWG v4.2**: a gradient-free self-wiring architecture that learns by changing its own directed graph instead of running backpropagation through a fixed topology.
 
-This page describes the current architecture line behind VRAXION while keeping the public state truthful.
+This page describes the current architecture line. The wiki is a **mirrored secondary surface**, and code on `main` is the source of truth for **Current mainline**. Use **Validated finding** for experiment-backed results that are not yet shipped, and **Experimental branch** for active targets that are not live defaults.
 
-## Status Taxonomy
+## What This Architecture Is
 
-- **Current mainline**: what is actually shipped in code on `main`
-- **Validated finding**: experiment-backed result not yet promoted into the canonical code path
-- **Experimental branch**: active target or prototype direction, not yet a live default
+INSTNCT / SWG v4.2 treats the learnable object as structure rather than a dense weight stack. Fixed passive I/O projections feed a self-wiring hidden graph whose connectivity is changed by mutation + selection, while neurons keep persistent internal state across ticks.
 
-If a setting is not present in `v4.2/model/graph.py`, it should not be described here as the live default.
+That changes what is being optimized: the model is not primarily learning a layer stack with backpropagation, but a directed ternary graph and its recurrent state dynamics.
 
-## What The Architecture Is
+## Architecture In One Screen
 
-INSTNCT / SWG v4.2 is a gradient-free self-wiring architecture.
+```text
+input -> W_in -> hidden ternary graph -> W_out -> output
+              persistent charge/state across ticks
+```
 
-- `W_in` and `W_out` are fixed random passive I/O projections.
-- The learnable object is a hidden-to-hidden ternary graph.
-- Neurons keep persistent charge/state across ticks.
-- Training is done by mutation + selection, not backpropagation through the graph.
+- `W_in` and `W_out` are passive I/O projections.
+- The hidden-to-hidden graph is ternary and self-wiring.
+- Charge/state persists across ticks.
+- Training is mutation + selection, not backpropagation through the graph.
 
-That architecture is the reason VRAXION is interesting. The product claim is not “one more benchmark result,” but a different learnable object and training loop.
+## What Is Fixed vs Learnable
+
+| Component | Role |
+|---|---|
+| `W_in` | Fixed random projection |
+| `W_out` | Fixed random projection |
+| Hidden-to-hidden mask | Learnable ternary graph |
+| Charge / state | Dynamic runtime state |
 
 ## Current Mainline
 
-The current mainline is whatever is actually present in [`v4.2/model/graph.py`](https://github.com/VRAXION/VRAXION/blob/main/v4.2/model/graph.py).
+- **Canonical code path:** [`v4.2/model/graph.py`](https://github.com/VRAXION/VRAXION/blob/main/v4.2/model/graph.py)
+- **Shipped constants on `main`:**
+  - `THRESHOLD = 0.5`
+  - `INJ_SCALE = 3.0`
+  - `DRIVE = 0.6`
 
-As of the current `main` branch:
+Anything else should be treated as a **Validated finding** or **Experimental branch** until it is promoted into `graph.py`.
 
-- `THRESHOLD = 0.5`
-- `INJ_SCALE = 3.0`
-- `DRIVE = 0.6`
+## Validated Findings Around This Architecture
 
-Those are the settings that count as **Current mainline** until promotion happens in code.
+| Topic | Label | Outcome | In `main`? | Supporting link |
+|---|---|---|---|---|
+| `flip` mutation | Validated finding | Beat float weight perturbation by `+1.89%` eval on English next-byte training | No | [#112](https://github.com/VRAXION/VRAXION/issues/112) |
+| `scale=1.0 + low theta` | Validated finding | Beat the older `scale=3.0 + theta=0.1` recipe in empty-start English sweeps | No | [#113](https://github.com/VRAXION/VRAXION/issues/113) |
+| mixed 18-worker swarm | Experimental branch | Current next build target for English training | No | [#114](https://github.com/VRAXION/VRAXION/issues/114) |
 
-## Validated Findings Not Yet Promoted
-
-The strongest current validated findings are summarized canonically in [`VALIDATED_FINDINGS.md`](https://github.com/VRAXION/VRAXION/blob/main/VALIDATED_FINDINGS.md).
-
-### Flip mutation
-
-- **Status:** Validated finding
-- **Evidence:** [issue #112](https://github.com/VRAXION/VRAXION/issues/112)
-- **Setup:** English next-byte, 1024 neurons, 18 workers, 200 steps
-- **Outcome:** `flip` beat float weight perturbation by `+1.89%` eval
-- **Mainline status:** not yet promoted into `graph.py` defaults
-
-### Low theta + `INJ_SCALE=1.0`
-
-- **Status:** Validated finding
-- **Evidence:** [issue #113](https://github.com/VRAXION/VRAXION/issues/113)
-- **Setup:** empty-start English sweep, 18 workers, 100 steps
-- **Outcome:** `scale=1.0 + theta=0.03` beat `scale=3.0 + theta=0.1` (`12.91%` vs `11.01%`)
-- **Mainline status:** not yet promoted into `graph.py` defaults
-
-## Experimental Branch
-
-- **Current next target:** [issue #114](https://github.com/VRAXION/VRAXION/issues/114)
-- **Label:** Experimental branch
-- **Meaning:** mixed 18-worker swarm is an active implementation target, not a live recipe on `main`
+The canonical evidence summary lives in [`VALIDATED_FINDINGS.md`](https://github.com/VRAXION/VRAXION/blob/main/VALIDATED_FINDINGS.md).
 
 ## How To Verify Quickly
+
+These checks verify both reference-code health and public-truth alignment:
 
 ```bash
 python -m compileall v4.2 tools
@@ -73,8 +63,10 @@ python v4.2/tests/test_model.py
 python tools/check_public_surface.py
 ```
 
-## Related Pages
+## Read Next
 
 - [[Home]]
-- [`README.md`](https://github.com/VRAXION/VRAXION/blob/main/README.md)
 - [`VALIDATED_FINDINGS.md`](https://github.com/VRAXION/VRAXION/blob/main/VALIDATED_FINDINGS.md)
+- [`README.md`](https://github.com/VRAXION/VRAXION/blob/main/README.md)
+
+If the GitHub wiki render looks incomplete, use [Pages](https://vraxion.github.io/VRAXION/) or the repo [`README.md`](https://github.com/VRAXION/VRAXION/blob/main/README.md).
