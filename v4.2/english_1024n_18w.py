@@ -152,7 +152,7 @@ if __name__ == "__main__":
     DECAY_INIT_LO = 0.08   # random init range (sweep: [0.08,0.24] > fix 0.15)
     DECAY_INIT_HI = 0.24
 
-    SCHEDULE = ['add', 'add', 'add', 'flip', 'add', 'decay']  # theta slot -> add (theta redundant)
+    SCHEDULE = ['add', 'flip', 'flip', 'decay', 'decay', 'decay']  # 1a/2f/3d
 
     SelfWiringGraph.NV_RATIO = NV
     H = IO * NV  # 1024
