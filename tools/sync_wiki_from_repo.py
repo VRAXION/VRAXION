@@ -16,6 +16,7 @@ FILES = [
     "Theory-of-Thought.md",
     "Hypotheses.md",
     "Release-Notes.md",
+    "Glossary.md",
     "SWG-v4.2-Architecture.md",
     "Validated-Findings.md",
     "Proven-Findings.md",

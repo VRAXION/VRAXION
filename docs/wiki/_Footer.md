@@ -5,6 +5,6 @@ Nav: [Home](Home) | [VRAXION Architecture (INSTNCT)](SWG-v4.2-Architecture) | [V
 
 Use [Pages](https://vraxion.github.io/VRAXION/) or the repo [README.md](https://github.com/VRAXION/VRAXION/blob/main/README.md) if the GitHub wiki render is incomplete.
 
-Reference: [Documentation Governance](Governance) | [Release Notes](Release-Notes) | [Glossary](https://github.com/VRAXION/VRAXION/wiki/Glossary)
+Reference: [Documentation Governance](Governance) | [Release Notes](Release-Notes) | [Glossary](Glossary)
 
 Epistemic boundary: treat claims as hypothesis unless backed by reproducible artifacts.

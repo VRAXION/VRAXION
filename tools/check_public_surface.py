@@ -25,6 +25,7 @@ WIKI_ROADMAP_SRC = WIKI_SOURCE_DIR / "Chapter-11---Roadmap.md"
 WIKI_TOT_SRC = WIKI_SOURCE_DIR / "Theory-of-Thought.md"
 WIKI_HYPOTHESES_SRC = WIKI_SOURCE_DIR / "Hypotheses.md"
 WIKI_RELEASE_NOTES_SRC = WIKI_SOURCE_DIR / "Release-Notes.md"
+WIKI_GLOSSARY_SRC = WIKI_SOURCE_DIR / "Glossary.md"
 WIKI_SWG_SRC = WIKI_SOURCE_DIR / "SWG-v4.2-Architecture.md"
 WIKI_FINDINGS_SRC = WIKI_SOURCE_DIR / "Validated-Findings.md"
 WIKI_PROVEN_SRC = WIKI_SOURCE_DIR / "Proven-Findings.md"
@@ -40,6 +41,7 @@ PRIMARY_WIKI_SOURCE_FILES = {
     WIKI_TOT_SRC,
     WIKI_HYPOTHESES_SRC,
     WIKI_RELEASE_NOTES_SRC,
+    WIKI_GLOSSARY_SRC,
     WIKI_SWG_SRC,
     WIKI_FINDINGS_SRC,
     WIKI_PROVEN_SRC,
@@ -61,6 +63,7 @@ MARKDOWN_FILES = [
     WIKI_TOT_SRC,
     WIKI_HYPOTHESES_SRC,
     WIKI_RELEASE_NOTES_SRC,
+    WIKI_GLOSSARY_SRC,
     WIKI_SWG_SRC,
     WIKI_FINDINGS_SRC,
     WIKI_PROVEN_SRC,
@@ -80,6 +83,7 @@ WIKI_MIRROR_MAP = {
     WIKI_TOT_SRC: WIKI_MIRROR_DIR / "Theory-of-Thought.md",
     WIKI_HYPOTHESES_SRC: WIKI_MIRROR_DIR / "Hypotheses.md",
     WIKI_RELEASE_NOTES_SRC: WIKI_MIRROR_DIR / "Release-Notes.md",
+    WIKI_GLOSSARY_SRC: WIKI_MIRROR_DIR / "Glossary.md",
     WIKI_SWG_SRC: WIKI_MIRROR_DIR / "SWG-v4.2-Architecture.md",
     WIKI_FINDINGS_SRC: WIKI_MIRROR_DIR / "Validated-Findings.md",
     WIKI_PROVEN_SRC: WIKI_MIRROR_DIR / "Proven-Findings.md",
@@ -258,6 +262,16 @@ def check_release_notes_page(errors: list[str]) -> None:
             fail(f"Release-Notes.md: missing expected live-status section {term!r}", errors)
 
 
+def check_glossary_page(errors: list[str]) -> None:
+    text = read(WIKI_GLOSSARY_SRC)
+    for term in ["What This Page Is", "Current Terms", "Legacy Terms and Historical Context", "Read Next"]:
+        if term not in text:
+            fail(f"Glossary.md: missing expected glossary section {term!r}", errors)
+    for banned in ["Stage: Theory", "CANONICAL", "GUIDE"]:
+        if banned in text:
+            fail(f"Glossary.md: should not contain stale theory/canonical badge text {banned!r}", errors)
+
+
 def check_wiki_sources(errors: list[str]) -> None:
     sidebar_text = read(WIKI_SIDEBAR_SRC)
     if "## Primary" not in sidebar_text:
@@ -271,6 +285,8 @@ def check_wiki_sources(errors: list[str]) -> None:
         fail("_Sidebar.md: missing markdown navigation link target 'Hypotheses'", errors)
     if not re.search(r"\[[^\]]+\]\(Release-Notes\)", sidebar_text):
         fail("_Sidebar.md: missing markdown navigation link target 'Release-Notes'", errors)
+    if not re.search(r"\[[^\]]+\]\(Glossary\)", sidebar_text):
+        fail("_Sidebar.md: missing markdown navigation link target 'Glossary'", errors)
     if "Proven-Findings" in sidebar_text or "Proven Findings" in sidebar_text:
         fail("_Sidebar.md: Proven Findings should not appear in the current wiki navigation", errors)
     if "Chapter-01---Vision-and-Scope" in sidebar_text or "Chapter 01 - Vision and Scope" in sidebar_text:
@@ -288,6 +304,8 @@ def check_wiki_sources(errors: list[str]) -> None:
             fail(f"_Footer.md: missing footer markdown navigation link target {href!r}", errors)
     if not re.search(r"\[[^\]]+\]\(Release-Notes\)", footer_text):
         fail("_Footer.md: missing footer markdown navigation link target 'Release-Notes'", errors)
+    if not re.search(r"\[[^\]]+\]\(Glossary\)", footer_text):
+        fail("_Footer.md: missing footer markdown navigation link target 'Glossary'", errors)
     if "INSTNCT" not in footer_text:
         fail("_Footer.md: missing footer primary navigation label 'INSTNCT'", errors)
     if "Chapter-11---Roadmap" in footer_text or "Chapter 11 - Roadmap" in footer_text:
@@ -337,6 +355,7 @@ def main() -> int:
     check_tot_stub(errors)
     check_hypotheses_page(errors)
     check_release_notes_page(errors)
+    check_glossary_page(errors)
     check_wiki_sources(errors)
     check_wiki_mirror(errors)
 
