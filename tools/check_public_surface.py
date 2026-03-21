@@ -21,8 +21,10 @@ PUBLIC_UPDATE = ROOT / ".github" / "ISSUE_TEMPLATE" / "public_update.md"
 WIKI_SOURCE_DIR = ROOT / "docs" / "wiki"
 WIKI_HOME_SRC = WIKI_SOURCE_DIR / "Home.md"
 WIKI_CH01_SRC = WIKI_SOURCE_DIR / "Chapter-01---Vision-and-Scope.md"
+WIKI_ROADMAP_SRC = WIKI_SOURCE_DIR / "Chapter-11---Roadmap.md"
 WIKI_TOT_SRC = WIKI_SOURCE_DIR / "Theory-of-Thought.md"
 WIKI_HYPOTHESES_SRC = WIKI_SOURCE_DIR / "Hypotheses.md"
+WIKI_RELEASE_NOTES_SRC = WIKI_SOURCE_DIR / "Release-Notes.md"
 WIKI_SWG_SRC = WIKI_SOURCE_DIR / "SWG-v4.2-Architecture.md"
 WIKI_FINDINGS_SRC = WIKI_SOURCE_DIR / "Validated-Findings.md"
 WIKI_PROVEN_SRC = WIKI_SOURCE_DIR / "Proven-Findings.md"
@@ -34,8 +36,10 @@ WIKI_MIRROR_DIR = ROOT / "VRAXION.wiki"
 PRIMARY_WIKI_SOURCE_FILES = {
     WIKI_HOME_SRC,
     WIKI_CH01_SRC,
+    WIKI_ROADMAP_SRC,
     WIKI_TOT_SRC,
     WIKI_HYPOTHESES_SRC,
+    WIKI_RELEASE_NOTES_SRC,
     WIKI_SWG_SRC,
     WIKI_FINDINGS_SRC,
     WIKI_PROVEN_SRC,
@@ -53,8 +57,10 @@ MARKDOWN_FILES = [
     ARCHIVE,
     WIKI_HOME_SRC,
     WIKI_CH01_SRC,
+    WIKI_ROADMAP_SRC,
     WIKI_TOT_SRC,
     WIKI_HYPOTHESES_SRC,
+    WIKI_RELEASE_NOTES_SRC,
     WIKI_SWG_SRC,
     WIKI_FINDINGS_SRC,
     WIKI_PROVEN_SRC,
@@ -70,8 +76,10 @@ FRONT_DOOR_TEXTS = [README, V42_README, FINDINGS, WIKI_HOME_SRC, WIKI_SWG_SRC, W
 WIKI_MIRROR_MAP = {
     WIKI_HOME_SRC: WIKI_MIRROR_DIR / "Home.md",
     WIKI_CH01_SRC: WIKI_MIRROR_DIR / "Chapter-01---Vision-and-Scope.md",
+    WIKI_ROADMAP_SRC: WIKI_MIRROR_DIR / "Chapter-11---Roadmap.md",
     WIKI_TOT_SRC: WIKI_MIRROR_DIR / "Theory-of-Thought.md",
     WIKI_HYPOTHESES_SRC: WIKI_MIRROR_DIR / "Hypotheses.md",
+    WIKI_RELEASE_NOTES_SRC: WIKI_MIRROR_DIR / "Release-Notes.md",
     WIKI_SWG_SRC: WIKI_MIRROR_DIR / "SWG-v4.2-Architecture.md",
     WIKI_FINDINGS_SRC: WIKI_MIRROR_DIR / "Validated-Findings.md",
     WIKI_PROVEN_SRC: WIKI_MIRROR_DIR / "Proven-Findings.md",
@@ -219,6 +227,13 @@ def check_ch01_stub(errors: list[str]) -> None:
             fail(f"Chapter-01---Vision-and-Scope.md: missing expected stub term {term!r}", errors)
 
 
+def check_roadmap_stub(errors: list[str]) -> None:
+    text = read(WIKI_ROADMAP_SRC)
+    for term in ["retired", "Release-Notes"]:
+        if term not in text:
+            fail(f"Chapter-11---Roadmap.md: missing expected stub term {term!r}", errors)
+
+
 def check_tot_stub(errors: list[str]) -> None:
     text = read(WIKI_TOT_SRC)
     for term in ["retired", "Hypotheses"]:
@@ -236,6 +251,13 @@ def check_hypotheses_page(errors: list[str]) -> None:
             fail("Hypotheses.md: should not rely on Theory of Thought as the live hypothesis model", errors)
 
 
+def check_release_notes_page(errors: list[str]) -> None:
+    text = read(WIKI_RELEASE_NOTES_SRC)
+    for term in ["What This Page Is", "Current Public Status", "Recent Milestones", "Current Next Targets", "Published Releases"]:
+        if term not in text:
+            fail(f"Release-Notes.md: missing expected live-status section {term!r}", errors)
+
+
 def check_wiki_sources(errors: list[str]) -> None:
     sidebar_text = read(WIKI_SIDEBAR_SRC)
     if "## Primary" not in sidebar_text:
@@ -247,10 +269,14 @@ def check_wiki_sources(errors: list[str]) -> None:
         fail("_Sidebar.md: missing markdown navigation link target 'Governance'", errors)
     if not re.search(r"\[[^\]]+\]\(Hypotheses\)", sidebar_text):
         fail("_Sidebar.md: missing markdown navigation link target 'Hypotheses'", errors)
+    if not re.search(r"\[[^\]]+\]\(Release-Notes\)", sidebar_text):
+        fail("_Sidebar.md: missing markdown navigation link target 'Release-Notes'", errors)
     if "Proven-Findings" in sidebar_text or "Proven Findings" in sidebar_text:
         fail("_Sidebar.md: Proven Findings should not appear in the current wiki navigation", errors)
     if "Chapter-01---Vision-and-Scope" in sidebar_text or "Chapter 01 - Vision and Scope" in sidebar_text:
         fail("_Sidebar.md: Chapter 01 should not appear in the current wiki navigation", errors)
+    if "Chapter-11---Roadmap" in sidebar_text or "Chapter 11 - Roadmap" in sidebar_text:
+        fail("_Sidebar.md: Chapter 11 - Roadmap should not appear in the current wiki navigation", errors)
     if "Theory-of-Thought" in sidebar_text or "Theory of Thought" in sidebar_text:
         fail("_Sidebar.md: Theory of Thought should not appear in the current wiki navigation", errors)
 
@@ -260,8 +286,12 @@ def check_wiki_sources(errors: list[str]) -> None:
     for href in ["Home", "SWG-v4.2-Architecture", "Validated-Findings", "Engineering", "Governance"]:
         if not re.search(rf"\[[^\]]+\]\({re.escape(href)}\)", footer_text):
             fail(f"_Footer.md: missing footer markdown navigation link target {href!r}", errors)
+    if not re.search(r"\[[^\]]+\]\(Release-Notes\)", footer_text):
+        fail("_Footer.md: missing footer markdown navigation link target 'Release-Notes'", errors)
     if "INSTNCT" not in footer_text:
         fail("_Footer.md: missing footer primary navigation label 'INSTNCT'", errors)
+    if "Chapter-11---Roadmap" in footer_text or "Chapter 11 - Roadmap" in footer_text:
+        fail("_Footer.md: Chapter 11 - Roadmap should not appear in the current wiki footer", errors)
 
 
 def check_wiki_mirror(errors: list[str]) -> None:
@@ -303,8 +333,10 @@ def main() -> int:
     check_contributing(errors)
     check_proven_stub(errors)
     check_ch01_stub(errors)
+    check_roadmap_stub(errors)
     check_tot_stub(errors)
     check_hypotheses_page(errors)
+    check_release_notes_page(errors)
     check_wiki_sources(errors)
     check_wiki_mirror(errors)
 

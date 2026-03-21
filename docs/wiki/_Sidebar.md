@@ -11,8 +11,7 @@
 
 - [Documentation Governance](Governance)
 - [Hypotheses](Hypotheses)
-- [Chapter 11 - Roadmap](https://github.com/VRAXION/VRAXION/wiki/Chapter-11---Roadmap)
-- [Release Notes](https://github.com/VRAXION/VRAXION/wiki/Release-Notes)
+- [Release Notes](Release-Notes)
 - [Glossary](https://github.com/VRAXION/VRAXION/wiki/Glossary)
 - [Diamond Code v3 Architecture](https://github.com/VRAXION/VRAXION/wiki/Diamond-Code-v3-Architecture)
 - [Legacy Vault](https://github.com/VRAXION/VRAXION/wiki/Legacy-Vault)

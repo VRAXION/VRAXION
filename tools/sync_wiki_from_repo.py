@@ -12,8 +12,10 @@ WIKI_DIR = ROOT / "VRAXION.wiki"
 FILES = [
     "Home.md",
     "Chapter-01---Vision-and-Scope.md",
+    "Chapter-11---Roadmap.md",
     "Theory-of-Thought.md",
     "Hypotheses.md",
+    "Release-Notes.md",
     "SWG-v4.2-Architecture.md",
     "Validated-Findings.md",
     "Proven-Findings.md",
