@@ -38,10 +38,10 @@ This page is the **single primary public timeline and lookup surface** for VRAXI
 | Date | Turn | Why it mattered | Where to go now |
 |---|---|---|---|
 | Early 2026 | Diamond Code / LCX experiments dominated the public architecture story | External memory, dreaming, observability, and Goldilocks-style probes shaped the earlier line before INSTNCT became the clean active center. | Use this page for chronology and [VRAXION Architecture (INSTNCT)](SWG-v4.2-Architecture) for the current line |
-| 2026-02-17 | Governance and Engineering were split into dedicated doctrine pages | Public structure stopped depending on scattered theory leaves and lab notes for reproducibility or provenance rules. | [Engineering Protocol](Engineering), [Documentation Governance](Governance) |
+| 2026-02-17 | Engineering doctrine and contributor-facing docs policy were split into stable homes | Public structure stopped depending on scattered theory leaves and lab notes for reproducibility or provenance rules. | [Engineering Protocol](Engineering), [`CONTRIBUTING.md`](https://github.com/VRAXION/VRAXION/blob/main/CONTRIBUTING.md) |
 | 2026-02-17 | Terminology and architecture drift started getting cleaned out of the front door | Readers no longer needed a chain of legacy architecture leaves just to understand the current system. | [Home](Home), [VRAXION Architecture (INSTNCT)](SWG-v4.2-Architecture) |
 | 2026-02-17 to 2026-02-22 | Evidence discipline hardened around findings instead of page-local claims | Schedule, depth, and mutation results moved into an explicit evidence layer instead of being implied as shipped defaults. | [Validated Findings](Validated-Findings) |
-| 2026-03-21 | Repo-tracked docs became the canonical public source and the GitHub wiki became a mirror | Public truth stopped drifting between README, Pages, findings, and ad hoc wiki edits. | [Home](Home), [Documentation Governance](Governance) |
+| 2026-03-21 | Repo-tracked docs became the canonical public source and the GitHub wiki became a mirror | Public truth stopped drifting between README, Pages, findings, and ad hoc wiki edits. | [Home](Home), [`CONTRIBUTING.md`](https://github.com/VRAXION/VRAXION/blob/main/CONTRIBUTING.md) |
 | 2026-03-21 | Schedule-control work became the main live research frontier | `8` ticks, decay-aware scheduling, voltage/leak control, and compact learnable policies became the strongest present-tense recipe questions. | [Validated Findings](Validated-Findings), this page |
 | 2026-03-21 | Roadmap, hypotheses, theory, archive, glossary, and old architecture leaves were collapsed into one timeline surface | History, terminology, open questions, and retirement lookup now live in one place instead of seven smaller pages. | This page |
 
@@ -111,4 +111,3 @@ Older sprint bundles, prerelease notes, and retired page histories are now summa
 - [VRAXION Architecture (INSTNCT)](SWG-v4.2-Architecture)
 - [Validated Findings](Validated-Findings)
 - [Engineering Protocol](Engineering)
-- [Documentation Governance](Governance)

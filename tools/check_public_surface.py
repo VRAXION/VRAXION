@@ -29,6 +29,7 @@ WIKI_GOVERNANCE_SRC = WIKI_SOURCE_DIR / "Governance.md"
 WIKI_SIDEBAR_SRC = WIKI_SOURCE_DIR / "_Sidebar.md"
 WIKI_FOOTER_SRC = WIKI_SOURCE_DIR / "_Footer.md"
 REMOVED_WIKI_SOURCE_FILES = [
+    WIKI_GOVERNANCE_SRC,
     WIKI_SOURCE_DIR / "Chapter-11---Roadmap.md",
     WIKI_SOURCE_DIR / "Theory-of-Thought.md",
     WIKI_SOURCE_DIR / "Hypotheses.md",
@@ -45,7 +46,6 @@ PRIMARY_WIKI_SOURCE_FILES = {
     WIKI_SWG_SRC,
     WIKI_FINDINGS_SRC,
     WIKI_ENGINEERING_SRC,
-    WIKI_GOVERNANCE_SRC,
     WIKI_SIDEBAR_SRC,
     WIKI_FOOTER_SRC,
 }
@@ -62,7 +62,6 @@ MARKDOWN_FILES = [
     WIKI_SWG_SRC,
     WIKI_FINDINGS_SRC,
     WIKI_ENGINEERING_SRC,
-    WIKI_GOVERNANCE_SRC,
     WIKI_SIDEBAR_SRC,
     WIKI_FOOTER_SRC,
     PR_TEMPLATE,
@@ -77,7 +76,6 @@ WIKI_MIRROR_MAP = {
     WIKI_SWG_SRC: WIKI_MIRROR_DIR / "SWG-v4.2-Architecture.md",
     WIKI_FINDINGS_SRC: WIKI_MIRROR_DIR / "Validated-Findings.md",
     WIKI_ENGINEERING_SRC: WIKI_MIRROR_DIR / "Engineering.md",
-    WIKI_GOVERNANCE_SRC: WIKI_MIRROR_DIR / "Governance.md",
     WIKI_SIDEBAR_SRC: WIKI_MIRROR_DIR / "_Sidebar.md",
     WIKI_FOOTER_SRC: WIKI_MIRROR_DIR / "_Footer.md",
 }
@@ -204,6 +202,16 @@ def check_contributing(errors: list[str]) -> None:
         fail("CONTRIBUTING.md: expected docs/wiki guidance", errors)
     if "VRAXION.wiki/" not in text:
         fail("CONTRIBUTING.md: expected mirrored wiki guidance", errors)
+    for term in [
+        "canonical public source",
+        "mirror output only",
+        "tools/sync_wiki_from_repo.py",
+        "tools/check_public_surface.py",
+        "VERSION.json",
+        "CITATION.cff",
+    ]:
+        if term not in text:
+            fail(f"CONTRIBUTING.md: missing governance term {term!r}", errors)
 
 
 def check_ch01_stub(errors: list[str]) -> None:
@@ -251,10 +259,10 @@ def check_wiki_sources(errors: list[str]) -> None:
             fail(f"_Sidebar.md: missing markdown navigation link target {href!r}", errors)
     if "Project Timeline" not in sidebar_text:
         fail("_Sidebar.md: missing primary navigation label 'Project Timeline'", errors)
-    if not re.search(r"\[[^\]]+\]\(Governance\)", sidebar_text):
-        fail("_Sidebar.md: missing markdown navigation link target 'Governance'", errors)
     if "Wiki Graph" in sidebar_text:
         fail("_Sidebar.md: Wiki Graph should not appear in the current wiki navigation", errors)
+    if "Governance" in sidebar_text or "Documentation Governance" in sidebar_text:
+        fail("_Sidebar.md: Governance should not appear in the current wiki navigation", errors)
     if "Proven-Findings" in sidebar_text or "Proven Findings" in sidebar_text:
         fail("_Sidebar.md: Proven Findings should not appear in the current wiki navigation", errors)
     if "Chapter-01---Vision-and-Scope" in sidebar_text or "Chapter 01 - Vision and Scope" in sidebar_text:
@@ -280,10 +288,10 @@ def check_wiki_sources(errors: list[str]) -> None:
             fail(f"_Footer.md: missing footer markdown navigation link target {href!r}", errors)
     if "Project Timeline" not in footer_text:
         fail("_Footer.md: missing footer navigation label 'Project Timeline'", errors)
-    if not re.search(r"\[[^\]]+\]\(Governance\)", footer_text):
-        fail("_Footer.md: missing footer markdown navigation link target 'Governance'", errors)
     if "INSTNCT" not in footer_text:
         fail("_Footer.md: missing footer primary navigation label 'INSTNCT'", errors)
+    if "Governance" in footer_text or "Documentation Governance" in footer_text:
+        fail("_Footer.md: Governance should not appear in the current wiki footer", errors)
     if "Chapter-11---Roadmap" in footer_text or "Chapter 11 - Roadmap" in footer_text:
         fail("_Footer.md: Chapter 11 - Roadmap should not appear in the current wiki footer", errors)
     if "Legacy-Vault" in footer_text or "Legacy Vault" in footer_text:

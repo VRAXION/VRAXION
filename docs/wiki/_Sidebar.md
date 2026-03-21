@@ -8,10 +8,6 @@
 - [Engineering Protocol](Engineering)
 - [Project Timeline](Release-Notes)
 
-## Further Reference
-
-- [Documentation Governance](Governance)
-
 ## Public
 
 - [Pages](https://vraxion.github.io/VRAXION/)

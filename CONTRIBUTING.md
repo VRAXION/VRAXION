@@ -23,6 +23,37 @@ If a setting or training recipe is not in the canonical code path, do **not** de
 
 Edit `docs/wiki/` when changing mirrored wiki content. Do not treat `VRAXION.wiki/` as hand-edited doctrine.
 
+## Documentation Governance
+
+Repo-tracked docs are the **canonical public source** for VRAXION:
+
+- `README.md`
+- `VALIDATED_FINDINGS.md`
+- `docs/index.html`
+- `docs/wiki/`
+
+`VRAXION.wiki/` is a mirror output only, not an independent source of truth.
+
+When public-facing docs change:
+
+1. edit the repo-tracked source first
+2. run `python tools/sync_wiki_from_repo.py`
+3. run `python tools/check_public_surface.py`
+4. only then treat the update as stable public truth
+
+Page placement rules:
+
+- Use fewer, stronger pages instead of many tiny pages.
+- Keep the primary public stack focused on architecture, evidence, engineering protocol, and the project timeline.
+- Put volatile status in `Project Timeline` or issues, not in the stable front door.
+- If a page is important enough to be in primary navigation, it should be readable without issue archaeology.
+
+Versioning and provenance:
+
+- Versioning source of truth: `VERSION.json`
+- Citation source of truth: `CITATION.cff`
+- Reproducible public claims should cite a release tag and its Zenodo record when applicable.
+
 ## Where To Put Things
 
 - Core model changes: `v4.2/model/`
