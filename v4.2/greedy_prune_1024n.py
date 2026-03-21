@@ -19,9 +19,14 @@ bp = make_bp(IO)
 pat_norm = bp / (np.linalg.norm(bp, axis=1, keepdims=True) + 1e-8)
 
 CKPT_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "checkpoints")
-ckpts = sorted(glob.glob(os.path.join(CKPT_DIR, "english_1024n_step*.npz")),
-               key=lambda x: int(x.split("step")[1].split(".")[0]))
-ckpt = ckpts[-1]
+# Prefer pruned checkpoint if exists, otherwise latest step
+pruned = os.path.join(CKPT_DIR, "english_1024n_pruned.npz")
+if os.path.exists(pruned):
+    ckpt = pruned
+else:
+    ckpts = sorted(glob.glob(os.path.join(CKPT_DIR, "english_1024n_step*.npz")),
+                   key=lambda x: int(x.split("step")[1].split(".")[0]))
+    ckpt = ckpts[-1]
 print(f"Loading: {ckpt}")
 d = np.load(ckpt)
 rows = list(d['rows']); cols = list(d['cols']); vals = list(d['vals'])

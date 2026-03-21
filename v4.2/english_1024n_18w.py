@@ -90,6 +90,14 @@ def worker_eval(args):
         new_decay = decay.copy()
         new_decay[idx] = rng.uniform(0.01, 0.5)
         info = {'idx': idx}
+    elif proposal_type == 'remove':
+        alive = list(zip(*np.where(mask != 0)))
+        if not alive:
+            return {'delta': -1e9, 'type': 'remove'}
+        r, c = alive[rng.randint(0, len(alive)-1)]
+        new_mask = mask.copy()
+        new_mask[r, c] = 0.0
+        info = {'r': int(r), 'c': int(c), 'val': float(mask[r, c])}
 
     data_len = len(_all_data)
     seqs = []
@@ -135,7 +143,7 @@ if __name__ == "__main__":
     IO = 256
     NV = 4  # 256*4 = 1024 neurons
     N_WORKERS = 18
-    BUDGET = 50000
+    BUDGET = 10000
     SEQ_LEN = 200
     N_TRAIN_SEQS = 5
     N_EVAL_SEQS = 10  # 10 seqs for training eval (fast, ~2000 preds)
@@ -165,10 +173,26 @@ if __name__ == "__main__":
     random.seed(42); np.random.seed(42)
     net = SelfWiringGraph(IO)
 
-    net.mask[:]=0; net.alive=[]; net.alive_set=set(); net._sync_sparse_idx()
-    print(f"Empty network, H={net.H}, theta={net.theta.mean():.3f}, decay={net.decay.mean():.3f}")
-    net.state *= 0; net.charge *= 0
     W_in=net.W_in; W_out=net.W_out
+
+    # Load pruned checkpoint if available, otherwise start empty
+    pruned_ckpt = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                               "checkpoints", "english_1024n_pruned.npz")
+    if os.path.exists(pruned_ckpt):
+        d = np.load(pruned_ckpt)
+        net.mask[:] = 0
+        net.mask[d['rows'], d['cols']] = d['vals']
+        net.theta[:] = d['theta']
+        net.decay[:] = d['decay']
+        net.alive = list(zip(d['rows'].tolist(), d['cols'].tolist()))
+        net.alive_set = set(net.alive)
+        net._sync_sparse_idx()
+        print(f"LOADED pruned: {pruned_ckpt} — {len(net.alive)} edges")
+    else:
+        net.mask[:]=0; net.alive=[]; net.alive_set=set(); net._sync_sparse_idx()
+        print(f"Empty network, H={net.H}")
+    print(f"theta={net.theta.mean():.3f}, decay={net.decay.mean():.3f}")
+    net.state *= 0; net.charge *= 0
 
     BASE_DIR = os.path.dirname(os.path.abspath(__file__))
     LOG = os.path.join(BASE_DIR, "english_1024n_live.txt")
@@ -180,8 +204,8 @@ if __name__ == "__main__":
         f.write(f"--- START {time.strftime('%Y-%m-%d %H:%M:%S')} ---\n")
         f.write(f"{H}n, {N_WORKERS}w, {N_TRAIN_SEQS}x{SEQ_LEN}b, budget={BUDGET}\n")
 
-    SCHEDULE = ['add', 'add', 'theta', 'add', 'add', 'decay']
-    add_accepts = 0; theta_accepts = 0; decay_accepts = 0
+    SCHEDULE = ['add', 'add', 'theta', 'add', 'add', 'decay', 'add', 'remove']
+    add_accepts = 0; theta_accepts = 0; decay_accepts = 0; remove_accepts = 0
     accepts = 0
     log_data = []
     t0 = time.time()
@@ -210,6 +234,14 @@ if __name__ == "__main__":
                 elif best_r['type'] == 'decay' and best_r['new_decay'] is not None:
                     net.decay[:] = best_r['new_decay']
                     decay_accepts += 1
+                elif best_r['type'] == 'remove':
+                    info = best_r['info']
+                    net.mask[info['r'], info['c']] = 0.0
+                    if (info['r'], info['c']) in net.alive_set:
+                        net.alive_set.discard((info['r'], info['c']))
+                        net.alive = [e for e in net.alive if e != (info['r'], info['c'])]
+                    net._sync_sparse_idx()
+                    remove_accepts += 1
                 accepts += 1
 
             if step % 50 == 0:
@@ -222,7 +254,7 @@ if __name__ == "__main__":
                 sps = step / elapsed
 
                 line = (f"[{step:5d}] eval={ea*100:.1f}% edges={edges} "
-                        f"[A={add_accepts}|T={theta_accepts}|D={decay_accepts}] "
+                        f"[A={add_accepts}|T={theta_accepts}|D={decay_accepts}|R={remove_accepts}] "
                         f"theta={th_m:.3f}+/-{th_s:.3f} decay={dc_m:.3f}+/-{dc_s:.3f} "
                         f"{elapsed:.0f}s ({sps:.2f} step/s)")
                 print(f"  {line}")
@@ -231,7 +263,7 @@ if __name__ == "__main__":
 
                 log_data.append({
                     'step': step, 'eval': round(ea * 100, 1), 'edges': edges,
-                    'A': add_accepts, 'T': theta_accepts, 'D': decay_accepts,
+                    'A': add_accepts, 'T': theta_accepts, 'D': decay_accepts, 'R': remove_accepts,
                     'theta_m': round(th_m, 4), 'theta_s': round(th_s, 4),
                     'decay_m': round(dc_m, 4), 'decay_s': round(dc_s, 4),
                     'sps': round(sps, 2), 'time': int(elapsed)
