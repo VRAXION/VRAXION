@@ -2,15 +2,15 @@
 
 # VRAXION Architecture
 
-**Architecture line:** `INSTNCT / SWG v4.2`
+**Architecture line:** `INSTNCT`
 
-VRAXION is building **INSTNCT / SWG v4.2**: a gradient-free self-wiring architecture that learns by changing its own graph instead of using backpropagation through a fixed layer stack.
+VRAXION is building **INSTNCT**: a gradient-free self-wiring architecture that learns by changing its own graph instead of using backpropagation through a fixed layer stack.
 
 This page explains the current architecture line in plain terms. The wiki is a **mirrored secondary surface**. Code on `main` is the source of truth for **Current mainline**. Results that are proven but not shipped are **Validated findings**. Active targets that are not shipped yet are **Experimental branches**.
 
 ## What This Architecture Is
 
-Most neural systems learn by adjusting lots of weights inside a fixed topology. SWG v4.2 changes that. Here, the thing being learned is the hidden graph itself.
+Most neural systems learn by adjusting lots of weights inside a fixed topology. INSTNCT changes that. Here, the thing being learned is the hidden graph itself.
 
 Input enters through fixed random projections, moves through a self-wiring hidden graph, and is read out through another fixed projection. The graph changes by mutation + selection, while neurons keep charge/state across ticks. In short: the model learns structure and state dynamics, not just layer weights.
 

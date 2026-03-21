@@ -1,4 +1,4 @@
-# INSTNCT / SWG v4.2
+# INSTNCT
 
 This directory contains the active architecture line behind VRAXION.
 

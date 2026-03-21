@@ -127,7 +127,7 @@ def check_front_door_phrases(path: Path, text: str, errors: list[str]) -> None:
 
 
 def check_landing(text: str, errors: list[str]) -> None:
-    for term in ["Current mainline", "Validated finding", "Experimental branch", "INSTNCT / SWG v4.2"]:
+    for term in ["Current mainline", "Validated finding", "Experimental branch", "INSTNCT"]:
         if term not in text:
             fail(f"docs/index.html: missing required term {term!r}", errors)
 
@@ -186,7 +186,7 @@ def check_wiki_sources(errors: list[str]) -> None:
     footer_text = read(WIKI_FOOTER_SRC)
     if "Nav:" not in footer_text:
         fail("_Footer.md: missing Nav line", errors)
-    for term in ["[[Home]]", "SWG v4.2", "Validated Findings"]:
+    for term in ["[[Home]]", "INSTNCT", "Validated Findings"]:
         if term not in footer_text:
             fail(f"_Footer.md: missing footer primary navigation item {term!r}", errors)
 

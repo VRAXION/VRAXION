@@ -1,6 +1,6 @@
 # VRAXION
 
-VRAXION is building **INSTNCT / SWG v4.2**: a gradient-free self-wiring architecture that learns by changing its own directed graph instead of running backpropagation through a fixed topology.
+VRAXION is building **INSTNCT**: a gradient-free self-wiring architecture that learns by changing its own directed graph instead of running backpropagation through a fixed topology.
 
 This repository is meant to be a credible front door for technical buyers and engineers. It should let a first-time reader answer five things quickly:
 
@@ -12,7 +12,7 @@ This repository is meant to be a credible front door for technical buyers and en
 
 ## Why This Architecture Is Different
 
-INSTNCT / SWG v4.2 is built around a small set of unusual choices:
+INSTNCT is built around a small set of unusual choices:
 
 - **Passive I/O**: `W_in` and `W_out` are fixed random projections, not learned layers.
 - **Self-wiring core**: the only learnable structure is a hidden-to-hidden ternary graph.
@@ -78,7 +78,7 @@ These commands verify:
 
 - [`VALIDATED_FINDINGS.md`](VALIDATED_FINDINGS.md) — canonical evidence summary
 - [`v4.2/README.md`](v4.2/README.md) — architecture-line map and technical entry points
-- [VRAXION architecture page (SWG v4.2)](https://github.com/VRAXION/VRAXION/wiki/SWG-v4.2-Architecture)
+- [VRAXION architecture page (INSTNCT)](https://github.com/VRAXION/VRAXION/wiki/SWG-v4.2-Architecture)
 - [Issue #114](https://github.com/VRAXION/VRAXION/issues/114) — current next build target
 
 ## License
