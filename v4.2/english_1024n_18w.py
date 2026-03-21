@@ -14,7 +14,7 @@ from graph import SelfWiringGraph
 _bp = None
 _all_data = None
 _seq_len = 200
-_n_train = 5
+_n_train = 30
 
 def init_w(b, d, sl, nt):
     global _bp, _all_data, _seq_len, _n_train
@@ -83,12 +83,12 @@ def worker_eval(args):
     elif proposal_type == 'theta':
         idx = rng.randint(0, H-1)
         new_theta = theta.copy()
-        new_theta[idx] = rng.random()
+        new_theta[idx] = max(0.0, min(1.0, theta[idx] + rng.uniform(-0.05, 0.05)))
         info = {'idx': idx}
     elif proposal_type == 'decay':
         idx = rng.randint(0, H-1)
         new_decay = decay.copy()
-        new_decay[idx] = rng.uniform(0.01, 0.5)
+        new_decay[idx] = max(0.01, min(0.5, decay[idx] + rng.uniform(-0.03, 0.03)))
         info = {'idx': idx}
     elif proposal_type == 'remove':
         alive = list(zip(*np.where(mask != 0)))
@@ -145,8 +145,8 @@ if __name__ == "__main__":
     N_WORKERS = 18
     BUDGET = 10000
     SEQ_LEN = 200
-    N_TRAIN_SEQS = 5
-    N_EVAL_SEQS = 10  # 10 seqs for training eval (fast, ~2000 preds)
+    N_TRAIN_SEQS = 30   # 30x200 = 5970 preds per worker (~0.017% resolution)
+    N_EVAL_SEQS = 30   # match worker resolution for eval
 
     # Patch NV_RATIO before construction
     SelfWiringGraph.NV_RATIO = NV
@@ -204,7 +204,7 @@ if __name__ == "__main__":
         f.write(f"--- START {time.strftime('%Y-%m-%d %H:%M:%S')} ---\n")
         f.write(f"{H}n, {N_WORKERS}w, {N_TRAIN_SEQS}x{SEQ_LEN}b, budget={BUDGET}\n")
 
-    SCHEDULE = ['add', 'add', 'theta', 'add', 'add', 'decay', 'add', 'remove']
+    SCHEDULE = ['add', 'add', 'theta', 'add', 'add', 'decay']
     add_accepts = 0; theta_accepts = 0; decay_accepts = 0; remove_accepts = 0
     accepts = 0
     log_data = []
@@ -220,7 +220,7 @@ if __name__ == "__main__":
             results = pool.map(worker_eval, args)
 
             best_r = max(results, key=lambda x: x['delta'])
-            if best_r['delta'] > 0:
+            if best_r['delta'] > 0.002:
                 if best_r['type'] == 'add':
                     info = best_r['info']
                     net.mask[info['r'], info['c']] = info['val']
