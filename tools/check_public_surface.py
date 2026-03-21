@@ -79,6 +79,9 @@ WIKI_MIRROR_MAP = {
     WIKI_SIDEBAR_SRC: WIKI_MIRROR_DIR / "_Sidebar.md",
     WIKI_FOOTER_SRC: WIKI_MIRROR_DIR / "_Footer.md",
 }
+WIKI_HOME_LABEL = "VRAXION Home"
+WIKI_ARCH_LABEL = "INSTNCT Architecture"
+OLD_WIKI_ARCH_LABEL = "VRAXION Architecture (INSTNCT)"
 REQUIRED_LOCAL_LINK_TARGETS = {
     README: ["VALIDATED_FINDINGS.md", "v4.2/README.md"],
     V42_README: ["../VALIDATED_FINDINGS.md"],
@@ -159,6 +162,8 @@ def check_landing(text: str, errors: list[str]) -> None:
     for term in ["Current mainline", "Validated finding", "Experimental branch", "INSTNCT"]:
         if term not in text:
             fail(f"docs/index.html: missing required term {term!r}", errors)
+    if WIKI_ARCH_LABEL not in text:
+        fail(f"docs/index.html: missing architecture landing label {WIKI_ARCH_LABEL!r}", errors)
 
 
 def check_findings_constants(threshold: str, inj_scale: str, errors: list[str]) -> None:
@@ -257,8 +262,14 @@ def check_wiki_sources(errors: list[str]) -> None:
     for href in ["Home", "SWG-v4.2-Architecture", "Validated-Findings", "Engineering", "Release-Notes"]:
         if not re.search(rf"\[[^\]]+\]\({re.escape(href)}\)", sidebar_text):
             fail(f"_Sidebar.md: missing markdown navigation link target {href!r}", errors)
+    if not re.search(rf"\[{re.escape(WIKI_HOME_LABEL)}\]\(Home\)", sidebar_text):
+        fail(f"_Sidebar.md: missing primary navigation label {WIKI_HOME_LABEL!r}", errors)
+    if not re.search(rf"\[{re.escape(WIKI_ARCH_LABEL)}\]\(SWG-v4\.2-Architecture\)", sidebar_text):
+        fail(f"_Sidebar.md: missing primary navigation label {WIKI_ARCH_LABEL!r}", errors)
     if "Project Timeline" not in sidebar_text:
         fail("_Sidebar.md: missing primary navigation label 'Project Timeline'", errors)
+    if OLD_WIKI_ARCH_LABEL in sidebar_text:
+        fail(f"_Sidebar.md: old architecture label {OLD_WIKI_ARCH_LABEL!r} should not appear in active nav", errors)
     if "Wiki Graph" in sidebar_text:
         fail("_Sidebar.md: Wiki Graph should not appear in the current wiki navigation", errors)
     if "Governance" in sidebar_text or "Documentation Governance" in sidebar_text:
@@ -286,10 +297,14 @@ def check_wiki_sources(errors: list[str]) -> None:
     for href in ["Home", "SWG-v4.2-Architecture", "Validated-Findings", "Engineering", "Release-Notes"]:
         if not re.search(rf"\[[^\]]+\]\({re.escape(href)}\)", footer_text):
             fail(f"_Footer.md: missing footer markdown navigation link target {href!r}", errors)
+    if not re.search(rf"\[{re.escape(WIKI_HOME_LABEL)}\]\(Home\)", footer_text):
+        fail(f"_Footer.md: missing footer navigation label {WIKI_HOME_LABEL!r}", errors)
+    if not re.search(rf"\[{re.escape(WIKI_ARCH_LABEL)}\]\(SWG-v4\.2-Architecture\)", footer_text):
+        fail(f"_Footer.md: missing footer navigation label {WIKI_ARCH_LABEL!r}", errors)
     if "Project Timeline" not in footer_text:
         fail("_Footer.md: missing footer navigation label 'Project Timeline'", errors)
-    if "INSTNCT" not in footer_text:
-        fail("_Footer.md: missing footer primary navigation label 'INSTNCT'", errors)
+    if OLD_WIKI_ARCH_LABEL in footer_text:
+        fail(f"_Footer.md: old architecture label {OLD_WIKI_ARCH_LABEL!r} should not appear in active nav", errors)
     if "Governance" in footer_text or "Documentation Governance" in footer_text:
         fail("_Footer.md: Governance should not appear in the current wiki footer", errors)
     if "Chapter-11---Roadmap" in footer_text or "Chapter 11 - Roadmap" in footer_text:

@@ -13,7 +13,7 @@ This page is the **single primary public timeline and lookup surface** for VRAXI
 - Use `Retired Surfaces and Replacements` when an older wiki page name appears in links, issue history, or screenshots.
 - Use `Open Questions and Promotion Gates` for the unresolved lines that still need proof before promotion.
 - Use [Validated Findings](Validated-Findings) for experiment-backed evidence.
-- Use [VRAXION Architecture (INSTNCT)](SWG-v4.2-Architecture) for the active technical line.
+- Use [INSTNCT Architecture](SWG-v4.2-Architecture) for the active technical line.
 - Use shipped code on `main` as the final source of truth for anything described as current mainline.
 - Older retired wiki URLs are no longer maintained as live lookup surfaces; this page replaces that role.
 
@@ -27,7 +27,7 @@ This page is the **single primary public timeline and lookup surface** for VRAXI
 
 ## What Matters Now
 
-- The active public architecture line is [VRAXION Architecture (INSTNCT)](SWG-v4.2-Architecture); earlier architecture lines are historical context only.
+- The active public architecture line is [INSTNCT Architecture](SWG-v4.2-Architecture); earlier architecture lines are historical context only.
 - The strongest schedule and mutation results live in [Validated Findings](Validated-Findings) until code on `main` actually adopts them.
 - The current public docs stack is repo-tracked and mirrored into the GitHub wiki, which makes the live public story readable through a small number of active pages.
 - The main unresolved public targets are mixed 18-worker swarm evaluation, schedule-policy promotion, and re-checking low-theta / low-scale against today’s stronger recipe stack.
@@ -37,11 +37,11 @@ This page is the **single primary public timeline and lookup surface** for VRAXI
 
 | Date | Turn | Why it mattered | Where to go now |
 |---|---|---|---|
-| Early 2026 | Diamond Code / LCX experiments dominated the public architecture story | External memory, dreaming, observability, and Goldilocks-style probes shaped the earlier line before INSTNCT became the clean active center. | Use this page for chronology and [VRAXION Architecture (INSTNCT)](SWG-v4.2-Architecture) for the current line |
+| Early 2026 | Diamond Code / LCX experiments dominated the public architecture story | External memory, dreaming, observability, and Goldilocks-style probes shaped the earlier line before INSTNCT became the clean active center. | Use this page for chronology and [INSTNCT Architecture](SWG-v4.2-Architecture) for the current line |
 | 2026-02-17 | Engineering doctrine and contributor-facing docs policy were split into stable homes | Public structure stopped depending on scattered theory leaves and lab notes for reproducibility or provenance rules. | [Engineering Protocol](Engineering), [`CONTRIBUTING.md`](https://github.com/VRAXION/VRAXION/blob/main/CONTRIBUTING.md) |
-| 2026-02-17 | Terminology and architecture drift started getting cleaned out of the front door | Readers no longer needed a chain of legacy architecture leaves just to understand the current system. | [Home](Home), [VRAXION Architecture (INSTNCT)](SWG-v4.2-Architecture) |
+| 2026-02-17 | Terminology and architecture drift started getting cleaned out of the front door | Readers no longer needed a chain of legacy architecture leaves just to understand the current system. | [VRAXION Home](Home), [INSTNCT Architecture](SWG-v4.2-Architecture) |
 | 2026-02-17 to 2026-02-22 | Evidence discipline hardened around findings instead of page-local claims | Schedule, depth, and mutation results moved into an explicit evidence layer instead of being implied as shipped defaults. | [Validated Findings](Validated-Findings) |
-| 2026-03-21 | Repo-tracked docs became the canonical public source and the GitHub wiki became a mirror | Public truth stopped drifting between README, Pages, findings, and ad hoc wiki edits. | [Home](Home), [`CONTRIBUTING.md`](https://github.com/VRAXION/VRAXION/blob/main/CONTRIBUTING.md) |
+| 2026-03-21 | Repo-tracked docs became the canonical public source and the GitHub wiki became a mirror | Public truth stopped drifting between README, Pages, findings, and ad hoc wiki edits. | [VRAXION Home](Home), [`CONTRIBUTING.md`](https://github.com/VRAXION/VRAXION/blob/main/CONTRIBUTING.md) |
 | 2026-03-21 | Schedule-control work became the main live research frontier | `8` ticks, decay-aware scheduling, voltage/leak control, and compact learnable policies became the strongest present-tense recipe questions. | [Validated Findings](Validated-Findings), this page |
 | 2026-03-21 | Roadmap, hypotheses, theory, archive, glossary, and old architecture leaves were collapsed into one timeline surface | History, terminology, open questions, and retirement lookup now live in one place instead of seven smaller pages. | This page |
 
@@ -52,9 +52,9 @@ This page is the **single primary public timeline and lookup surface** for VRAXI
 | `Glossary` | Standalone terminology page | The useful live terms were short enough to live inline with the timeline and status surface. | `Key Terms` on this page |
 | `Legacy Vault` | Archive index / historical directory | The archive index role was more useful as a curated timeline than as a standalone vault page. | `Project Timeline` and this table |
 | `Hypotheses` | Open-question tracker | Active public open questions were already coupled to current status and promotion gates. | `Open Questions and Promotion Gates` on this page |
-| `Theory of Thought` | Legacy theory / hypothesis ledger | It no longer described the active public architecture or the live open-question surface. | [Home](Home), [VRAXION Architecture (INSTNCT)](SWG-v4.2-Architecture), and this page |
+| `Theory of Thought` | Legacy theory / hypothesis ledger | It no longer described the active public architecture or the live open-question surface. | [VRAXION Home](Home), [INSTNCT Architecture](SWG-v4.2-Architecture), and this page |
 | `Chapter 11 - Roadmap` | Public roadmap/status page | The project needed one timeline page, not a separate roadmap surface. | This page |
-| `Diamond Code v3 Architecture` | Earlier architecture hub | It no longer described the active VRAXION architecture line. | [VRAXION Architecture (INSTNCT)](SWG-v4.2-Architecture) and this page |
+| `Diamond Code v3 Architecture` | Earlier architecture hub | It no longer described the active VRAXION architecture line. | [INSTNCT Architecture](SWG-v4.2-Architecture) and this page |
 | `Proven Findings` | Earlier evidence hub | The active evidence layer now lives in one explicit findings page for the INSTNCT-era stack. | [Validated Findings](Validated-Findings) |
 
 ## Open Questions and Promotion Gates
@@ -107,7 +107,7 @@ Older sprint bundles, prerelease notes, and retired page histories are now summa
 
 ## Read Next
 
-- [Home](Home)
-- [VRAXION Architecture (INSTNCT)](SWG-v4.2-Architecture)
+- [VRAXION Home](Home)
+- [INSTNCT Architecture](SWG-v4.2-Architecture)
 - [Validated Findings](Validated-Findings)
 - [Engineering Protocol](Engineering)

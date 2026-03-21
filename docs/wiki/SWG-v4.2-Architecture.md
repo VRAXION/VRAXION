@@ -76,7 +76,7 @@ python tools/check_public_surface.py
 
 ## Read Next
 
-- [Home](Home)
+- [VRAXION Home](Home)
 - [Validated Findings](Validated-Findings)
 - [Engineering Protocol](Engineering)
 - [`README.md`](https://github.com/VRAXION/VRAXION/blob/main/README.md)

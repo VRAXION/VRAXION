@@ -47,8 +47,8 @@ Those historical findings are useful context, not current mainline claims.
 
 ## Read Next
 
-- [Home](Home)
-- [VRAXION Architecture (INSTNCT)](SWG-v4.2-Architecture)
+- [VRAXION Home](Home)
+- [INSTNCT Architecture](SWG-v4.2-Architecture)
 - [Engineering Protocol](Engineering)
 - [Project Timeline](Release-Notes)
 - [README.md](https://github.com/VRAXION/VRAXION/blob/main/README.md)

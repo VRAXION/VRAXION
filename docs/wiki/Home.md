@@ -23,7 +23,7 @@ VRAXION is both a company and an engineering effort focused on a new architectur
 - persistent internal state across ticks,
 - mutation + selection training instead of backpropagation through the graph.
 
-The current architecture page is [VRAXION Architecture (INSTNCT)](SWG-v4.2-Architecture).
+The current architecture page is [INSTNCT Architecture](SWG-v4.2-Architecture).
 
 ## Why It Matters
 
@@ -75,7 +75,7 @@ python tools/check_public_surface.py
 
 ## Start Here
 
-- [VRAXION Architecture (INSTNCT)](SWG-v4.2-Architecture) — architecture line and public status
+- [INSTNCT Architecture](SWG-v4.2-Architecture) — architecture line and public status
 - [Project Timeline](Release-Notes) — current snapshot, major turns, retirements, and key terms
 - [`README.md`](https://github.com/VRAXION/VRAXION/blob/main/README.md) — repo front door
 - [Validated Findings](Validated-Findings) — canonical evidence summary
