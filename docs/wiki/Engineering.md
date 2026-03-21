@@ -4,7 +4,7 @@
 
 This page defines how VRAXION runs experiments, validates outcomes, and decides what counts as evidence. It is a **primary public page**. The wiki is a mirrored secondary surface; repo-tracked docs remain canonical.
 
-Governance covers documentation policy, provenance, and page maintenance. This page covers the run contract and evidence discipline behind VRAXION results.
+Documentation Governance covers canonical docs, provenance, and page maintenance. This page covers the run contract and evidence discipline behind VRAXION results.
 
 ## What This Page Is
 
@@ -65,6 +65,6 @@ Use those labels consistently across the repo front door, the architecture page,
 - [Home](Home)
 - [VRAXION Architecture (INSTNCT)](SWG-v4.2-Architecture)
 - [Validated Findings](Validated-Findings)
-- [Governance](Governance)
+- [Documentation Governance](Governance)
 
 If the GitHub wiki render looks incomplete, use [Pages](https://vraxion.github.io/VRAXION/) or the repo [README.md](https://github.com/VRAXION/VRAXION/blob/main/README.md).
