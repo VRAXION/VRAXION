@@ -1,6 +1,8 @@
 <!-- Canonical source for the mirrored GitHub wiki page. Sync with tools/sync_wiki_from_repo.py. -->
 
-# SWG v4.2 Architecture
+# VRAXION Architecture
+
+**Architecture line:** `INSTNCT / SWG v4.2`
 
 VRAXION is building **INSTNCT / SWG v4.2**: a gradient-free self-wiring architecture that learns by changing its own directed graph instead of running backpropagation through a fixed topology.
 

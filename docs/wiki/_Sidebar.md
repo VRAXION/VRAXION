@@ -3,7 +3,7 @@
 ## Primary
 
 - [[Home]]
-- [INSTNCT — SWG v4.2](SWG-v4.2-Architecture) **ACTIVE**
+- [VRAXION Architecture (SWG v4.2)](SWG-v4.2-Architecture) **ACTIVE**
 - [Validated Findings](https://github.com/VRAXION/VRAXION/blob/main/VALIDATED_FINDINGS.md)
 
 ## Further Reference

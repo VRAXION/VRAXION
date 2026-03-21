@@ -78,7 +78,7 @@ These commands verify:
 
 - [`VALIDATED_FINDINGS.md`](VALIDATED_FINDINGS.md) — canonical evidence summary
 - [`v4.2/README.md`](v4.2/README.md) — architecture-line map and technical entry points
-- [SWG v4.2 architecture wiki page](https://github.com/VRAXION/VRAXION/wiki/SWG-v4.2-Architecture)
+- [VRAXION architecture page (SWG v4.2)](https://github.com/VRAXION/VRAXION/wiki/SWG-v4.2-Architecture)
 - [Issue #114](https://github.com/VRAXION/VRAXION/issues/114) — current next build target
 
 ## License
