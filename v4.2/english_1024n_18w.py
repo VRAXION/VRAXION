@@ -142,7 +142,7 @@ if __name__ == "__main__":
     IO = 256
     NV = 4              # 256*4 = 1024 neurons
     N_WORKERS = 18
-    BUDGET = 500        # test run, increase for production
+    BUDGET = 1000       # medium run
     SEQ_LEN = 200
     N_TRAIN_SEQS = 2    # bigram eval needs only 2 seqs (3x faster)
     N_EVAL_SEQS = 10    # classic accuracy for reporting
@@ -152,7 +152,8 @@ if __name__ == "__main__":
     DECAY_INIT_LO = 0.08   # random init range (sweep: [0.08,0.24] > fix 0.15)
     DECAY_INIT_HI = 0.24
 
-    SCHEDULE = ['add', 'flip', 'flip', 'decay', 'decay', 'decay']  # 1a/2f/3d
+    # Triangle converged: add=22%/flip=16%/decay=62% → approx 2a/1f/5d
+    SCHEDULE = ['add', 'add', 'flip', 'decay', 'decay', 'decay', 'decay', 'decay']  # ~22/12/63%
 
     SelfWiringGraph.NV_RATIO = NV
     H = IO * NV  # 1024
