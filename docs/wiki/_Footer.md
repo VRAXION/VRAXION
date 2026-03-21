@@ -3,8 +3,8 @@
 ---
 Nav: [[Home]] | [INSTNCT / SWG v4.2](SWG-v4.2-Architecture) | [Validated Findings](https://github.com/VRAXION/VRAXION/blob/main/VALIDATED_FINDINGS.md)
 
-Reference: [[Engineering]] | [[Governance]] | [[Chapter 11 - Roadmap]] | [[Release Notes]] | [[Glossary]]
+Use [Pages](https://vraxion.github.io/VRAXION/) or the repo [README.md](https://github.com/VRAXION/VRAXION/blob/main/README.md) if the GitHub wiki render is incomplete.
 
-Public: [Pages](https://vraxion.github.io/VRAXION/) · [Repo](https://github.com/VRAXION/VRAXION) · [Roadmap](https://github.com/orgs/VRAXION/projects/4) · [Releases](https://github.com/VRAXION/VRAXION/releases)
+Reference: [[Engineering]] | [[Governance]] | [[Chapter 11 - Roadmap]] | [[Release Notes]] | [[Glossary]]
 
 Epistemic boundary: treat claims as hypothesis unless backed by reproducible artifacts.

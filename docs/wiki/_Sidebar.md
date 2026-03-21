@@ -25,5 +25,3 @@
 
 - [Pages](https://vraxion.github.io/VRAXION/)
 - [Repo](https://github.com/VRAXION/VRAXION)
-- [Roadmap board](https://github.com/orgs/VRAXION/projects/4)
-- [Releases](https://github.com/VRAXION/VRAXION/releases)

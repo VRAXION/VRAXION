@@ -4,13 +4,7 @@
 
 VRAXION is building **INSTNCT / SWG v4.2**: a gradient-free self-wiring architecture that learns by changing its own directed graph instead of running backpropagation through a fixed topology.
 
-This wiki is now organized around one public contract:
-
-1. what VRAXION is,
-2. why the architecture is different,
-3. what is already proven,
-4. what is actually shipped on `main`,
-5. how to verify one claim quickly.
+This wiki is a **mirrored secondary surface**. The primary public entry points are the repo [README.md](https://github.com/VRAXION/VRAXION/blob/main/README.md) and [Pages](https://vraxion.github.io/VRAXION/).
 
 ## Status Taxonomy
 
@@ -47,11 +41,13 @@ Anything not actually shipped in that code path must be labeled as a **Validated
 
 ## What Is Already Validated
 
-- **Flip mutation** beat float weight perturbation on English next-byte training.
-- **`INJ_SCALE=1.0` + low theta** beat the older `scale=3.0` hack in an empty-start English sweep.
-- **Mixed 18-worker swarm** is the current next active build target, but still experimental.
+| Topic | Label | Mainline state |
+|---|---|---|
+| `flip` mutation | Validated finding | Not promoted into `graph.py` defaults |
+| `scale=1.0 + low theta` | Validated finding | Not promoted into `graph.py` defaults |
+| mixed 18-worker swarm | Experimental branch | Active target, not current mainline |
 
-These outcomes are summarized in [`VALIDATED_FINDINGS.md`](https://github.com/VRAXION/VRAXION/blob/main/VALIDATED_FINDINGS.md) and tracked in [issue #112](https://github.com/VRAXION/VRAXION/issues/112), [issue #113](https://github.com/VRAXION/VRAXION/issues/113), and [issue #114](https://github.com/VRAXION/VRAXION/issues/114).
+See [`VALIDATED_FINDINGS.md`](https://github.com/VRAXION/VRAXION/blob/main/VALIDATED_FINDINGS.md) for the canonical evidence summary, with issue links as supporting references rather than the front door.
 
 ## 5-Minute Proof
 
@@ -68,4 +64,5 @@ python tools/check_public_surface.py
 - [[SWG-v4.2-Architecture]] — architecture line and public status
 - [`README.md`](https://github.com/VRAXION/VRAXION/blob/main/README.md) — repo front door
 - [`VALIDATED_FINDINGS.md`](https://github.com/VRAXION/VRAXION/blob/main/VALIDATED_FINDINGS.md) — canonical evidence summary
-- [Issue #114](https://github.com/VRAXION/VRAXION/issues/114) — current next build target
+
+If the GitHub wiki render looks incomplete or noisy, use [Pages](https://vraxion.github.io/VRAXION/) or the repo [README.md](https://github.com/VRAXION/VRAXION/blob/main/README.md).
