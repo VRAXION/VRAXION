@@ -9,7 +9,8 @@ Config:
   - Threshold: 0.00005 (from adaptive sweep convergence)
   - Scale: 1.0 (no INJ_SCALE hack)
   - Theta: 0.03 init (learnable per-neuron)
-  - Schedule: add/add/add/flip/theta/add
+  - Ticks: 8 (sweep: 8 > 6 > 4)
+  - Schedule: add/add/add/flip/theta/decay
   - Empty start (no checkpoint needed)
 """
 import sys, os, time, random, json
@@ -46,7 +47,7 @@ def _eval_bigram(mask, H, theta, decay, seqs):
         seq_score = 0.0; n = 0
         for i in range(len(text_bytes)-1):
             act = state.copy()
-            for t in range(6):
+            for t in range(8):
                 if t == 0:
                     act = act + _bp[text_bytes[i]] @ _W_in
                 raw = np.zeros(H, dtype=np.float32)
@@ -148,7 +149,7 @@ if __name__ == "__main__":
     THETA_INIT = 0.03   # sweep winner
     DECAY_INIT = 0.15
 
-    SCHEDULE = ['add', 'add', 'add', 'flip', 'theta', 'add']
+    SCHEDULE = ['add', 'add', 'add', 'flip', 'theta', 'decay']
 
     SelfWiringGraph.NV_RATIO = NV
     H = IO * NV  # 1024
