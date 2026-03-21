@@ -4,13 +4,13 @@
 
 This page is a **retired historical stub**.
 
-`Theory of Thought` is no longer the active hypothesis registry for VRAXION. The live open-hypothesis layer now lives in [Hypotheses](Hypotheses).
+`Theory of Thought` is no longer the active hypothesis registry for VRAXION. Live public open questions now live in [Release Notes](Release-Notes).
 
 For the current public stack, use:
 
 - [Home](Home) for mission and public orientation
 - [VRAXION Architecture (INSTNCT)](SWG-v4.2-Architecture) for the active technical line
 - [Validated Findings](Validated-Findings) for experiment-backed evidence
-- [Hypotheses](Hypotheses) for current open research questions
+- [Release Notes](Release-Notes) for current public status and open questions
 
 The older Theory of Thought material belonged to an earlier, longer-form hypothesis ledger. The slug is preserved for historical links, but it is no longer maintained as a live doctrine or evidence page.

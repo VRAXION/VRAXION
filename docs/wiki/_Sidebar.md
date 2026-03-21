@@ -10,7 +10,6 @@
 ## Further Reference
 
 - [Documentation Governance](Governance)
-- [Hypotheses](Hypotheses)
 - [Release Notes](Release-Notes)
 - [Glossary](Glossary)
 - [Diamond Code v3 Architecture](https://github.com/VRAXION/VRAXION/wiki/Diamond-Code-v3-Architecture)

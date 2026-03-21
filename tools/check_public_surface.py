@@ -240,24 +240,28 @@ def check_roadmap_stub(errors: list[str]) -> None:
 
 def check_tot_stub(errors: list[str]) -> None:
     text = read(WIKI_TOT_SRC)
-    for term in ["retired", "Hypotheses"]:
+    for term in ["retired", "Release-Notes"]:
         if term not in text:
             fail(f"Theory-of-Thought.md: missing expected stub term {term!r}", errors)
 
 
 def check_hypotheses_page(errors: list[str]) -> None:
     text = read(WIKI_HYPOTHESES_SRC)
-    for term in ["What This Page Is", "Epistemic Boundary", "Active Hypotheses", "Promotion Rule"]:
+    for term in ["retired", "Release-Notes"]:
         if term not in text:
-            fail(f"Hypotheses.md: missing expected live-tracker section {term!r}", errors)
-    for term in ["Theory of Thought", "Theory-of-Thought"]:
-        if term in text:
-            fail("Hypotheses.md: should not rely on Theory of Thought as the live hypothesis model", errors)
+            fail(f"Hypotheses.md: missing expected stub term {term!r}", errors)
 
 
 def check_release_notes_page(errors: list[str]) -> None:
     text = read(WIKI_RELEASE_NOTES_SRC)
-    for term in ["What This Page Is", "Current Public Status", "Recent Milestones", "Current Next Targets", "Published Releases"]:
+    for term in [
+        "What This Page Is",
+        "Current Public Status",
+        "Recent Milestones",
+        "Current Next Targets",
+        "Open Questions and Promotion Gates",
+        "Published Releases",
+    ]:
         if term not in text:
             fail(f"Release-Notes.md: missing expected live-status section {term!r}", errors)
 
@@ -281,8 +285,6 @@ def check_wiki_sources(errors: list[str]) -> None:
             fail(f"_Sidebar.md: missing markdown navigation link target {href!r}", errors)
     if not re.search(r"\[[^\]]+\]\(Governance\)", sidebar_text):
         fail("_Sidebar.md: missing markdown navigation link target 'Governance'", errors)
-    if not re.search(r"\[[^\]]+\]\(Hypotheses\)", sidebar_text):
-        fail("_Sidebar.md: missing markdown navigation link target 'Hypotheses'", errors)
     if not re.search(r"\[[^\]]+\]\(Release-Notes\)", sidebar_text):
         fail("_Sidebar.md: missing markdown navigation link target 'Release-Notes'", errors)
     if not re.search(r"\[[^\]]+\]\(Glossary\)", sidebar_text):
@@ -295,6 +297,8 @@ def check_wiki_sources(errors: list[str]) -> None:
         fail("_Sidebar.md: Chapter 11 - Roadmap should not appear in the current wiki navigation", errors)
     if "Theory-of-Thought" in sidebar_text or "Theory of Thought" in sidebar_text:
         fail("_Sidebar.md: Theory of Thought should not appear in the current wiki navigation", errors)
+    if "Hypotheses" in sidebar_text:
+        fail("_Sidebar.md: Hypotheses should not appear in the current wiki navigation", errors)
 
     footer_text = read(WIKI_FOOTER_SRC)
     if "Nav:" not in footer_text:
