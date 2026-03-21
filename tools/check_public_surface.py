@@ -27,6 +27,15 @@ WIKI_GOVERNANCE_SRC = WIKI_SOURCE_DIR / "Governance.md"
 WIKI_SIDEBAR_SRC = WIKI_SOURCE_DIR / "_Sidebar.md"
 WIKI_FOOTER_SRC = WIKI_SOURCE_DIR / "_Footer.md"
 WIKI_MIRROR_DIR = ROOT / "VRAXION.wiki"
+PRIMARY_WIKI_SOURCE_FILES = {
+    WIKI_HOME_SRC,
+    WIKI_SWG_SRC,
+    WIKI_FINDINGS_SRC,
+    WIKI_ENGINEERING_SRC,
+    WIKI_GOVERNANCE_SRC,
+    WIKI_SIDEBAR_SRC,
+    WIKI_FOOTER_SRC,
+}
 
 MARKDOWN_FILES = [
     README,
@@ -115,14 +124,8 @@ def check_links(path: Path, text: str, errors: list[str]) -> None:
         if resolve_local_target(path, href) is None:
             fail(f"{path.name}: broken relative markdown link: {href}", errors)
 
-    for match in re.finditer(r"\[\[([^\]]+)\]\]", text):
-        href = match.group(1).split("|", 1)[0].strip()
-        if not href:
-            continue
-        if path.parent == WIKI_SOURCE_DIR and href not in {"Home", "SWG-v4.2-Architecture", "Validated-Findings", "Engineering", "Governance"}:
-            continue
-        if resolve_local_target(path, href) is None:
-            fail(f"{path.name}: broken wiki-style link: {href}", errors)
+    if path in PRIMARY_WIKI_SOURCE_FILES and re.search(r"\[\[[^\]]+\]\]", text):
+        fail(f"{path.name}: primary wiki sources must use markdown links, not [[...]] alias links", errors)
 
 
 def check_banned_phrases(path: Path, text: str, errors: list[str]) -> None:
@@ -190,16 +193,20 @@ def check_wiki_sources(errors: list[str]) -> None:
     sidebar_text = read(WIKI_SIDEBAR_SRC)
     if "## Primary" not in sidebar_text:
         fail("_Sidebar.md: missing Primary navigation section", errors)
-    for term in ["[[Home]]", "SWG-v4.2-Architecture", "Validated-Findings", "Engineering"]:
-        if term not in sidebar_text:
-            fail(f"_Sidebar.md: missing primary navigation item {term!r}", errors)
+    for href in ["Home", "SWG-v4.2-Architecture", "Validated-Findings", "Engineering"]:
+        if not re.search(rf"\[[^\]]+\]\({re.escape(href)}\)", sidebar_text):
+            fail(f"_Sidebar.md: missing markdown navigation link target {href!r}", errors)
+    if not re.search(r"\[[^\]]+\]\(Governance\)", sidebar_text):
+        fail("_Sidebar.md: missing markdown navigation link target 'Governance'", errors)
 
     footer_text = read(WIKI_FOOTER_SRC)
     if "Nav:" not in footer_text:
         fail("_Footer.md: missing Nav line", errors)
-    for term in ["[[Home]]", "INSTNCT", "Validated-Findings", "Engineering"]:
-        if term not in footer_text:
-            fail(f"_Footer.md: missing footer primary navigation item {term!r}", errors)
+    for href in ["Home", "SWG-v4.2-Architecture", "Validated-Findings", "Engineering", "Governance"]:
+        if not re.search(rf"\[[^\]]+\]\({re.escape(href)}\)", footer_text):
+            fail(f"_Footer.md: missing footer markdown navigation link target {href!r}", errors)
+    if "INSTNCT" not in footer_text:
+        fail("_Footer.md: missing footer primary navigation label 'INSTNCT'", errors)
 
 
 def check_wiki_mirror(errors: list[str]) -> None:

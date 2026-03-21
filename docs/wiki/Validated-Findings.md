@@ -36,7 +36,7 @@ If code and docs disagree, **code wins for Current mainline**.
 
 ## Read Next
 
-- [[Home]]
+- [Home](Home)
 - [VRAXION Architecture (INSTNCT)](SWG-v4.2-Architecture)
 - [Engineering Protocol](Engineering)
 - [README.md](https://github.com/VRAXION/VRAXION/blob/main/README.md)

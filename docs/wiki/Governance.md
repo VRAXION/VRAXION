@@ -35,7 +35,7 @@ When public-facing work changes:
 
 ## Read Next
 
-- [[Home]]
+- [Home](Home)
 - [VRAXION Architecture (INSTNCT)](SWG-v4.2-Architecture)
-- [[Validated-Findings|Validated Findings]]
+- [Validated Findings](Validated-Findings)
 - [Engineering Protocol](Engineering)

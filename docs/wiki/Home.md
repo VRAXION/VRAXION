@@ -23,7 +23,7 @@ VRAXION is both a company and an engineering effort focused on a new architectur
 - persistent internal state across ticks,
 - mutation + selection training instead of backpropagation through the graph.
 
-The current architecture page is [[SWG-v4.2-Architecture|VRAXION Architecture (INSTNCT)]].
+The current architecture page is [VRAXION Architecture (INSTNCT)](SWG-v4.2-Architecture).
 
 ## Why It Matters
 
@@ -36,7 +36,7 @@ For technical buyers, the important question is therefore not just benchmark sco
 - Canonical code path: [`v4.2/model/graph.py`](https://github.com/VRAXION/VRAXION/blob/main/v4.2/model/graph.py)
 - Architecture line: `INSTNCT`
 - Current English recipe candidate on `main`: [`v4.2/english_1024n_18w.py`](https://github.com/VRAXION/VRAXION/blob/main/v4.2/english_1024n_18w.py)
-- Canonical public evidence summary: [[Validated-Findings|Validated Findings]]
+- Canonical public evidence summary: [Validated Findings](Validated-Findings)
 - Mainline implementation includes per-neuron `theta` / `decay` and nonnegative charge dynamics.
 
 Anything not actually shipped in that code path must be labeled as a **Validated finding** or **Experimental branch**, not as a live default.
@@ -53,7 +53,7 @@ Anything not actually shipped in that code path must be labeled as a **Validated
 | decision-tree schedule | Validated finding | Compact learnable schedule policy, not promoted into defaults |
 | mixed 18-worker swarm | Experimental branch | Active target, not current mainline |
 
-See [[Validated-Findings|Validated Findings]] for the canonical evidence summary, with issue links as supporting references rather than the front door.
+See [Validated Findings](Validated-Findings) for the canonical evidence summary, with issue links as supporting references rather than the front door.
 
 ## 5-Minute Proof
 
@@ -67,9 +67,9 @@ python tools/check_public_surface.py
 
 ## Start Here
 
-- [[SWG-v4.2-Architecture|VRAXION Architecture (INSTNCT)]] — architecture line and public status
+- [VRAXION Architecture (INSTNCT)](SWG-v4.2-Architecture) — architecture line and public status
 - [`README.md`](https://github.com/VRAXION/VRAXION/blob/main/README.md) — repo front door
-- [[Validated-Findings|Validated Findings]] — canonical evidence summary
+- [Validated Findings](Validated-Findings) — canonical evidence summary
 - [Engineering Protocol](Engineering) — run contract and evidence discipline
 
 If the GitHub wiki render looks incomplete or noisy, use [Pages](https://vraxion.github.io/VRAXION/) or the repo [README.md](https://github.com/VRAXION/VRAXION/blob/main/README.md).
