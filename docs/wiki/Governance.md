@@ -32,7 +32,7 @@ If a change skips that sequence, it is not ready to be treated as a stable publi
 
 - Use fewer, stronger pages instead of many tiny pages.
 - Keep primary pages focused on architecture, evidence, and engineering protocol.
-- Put volatile status reporting in release notes, roadmap, or issues, not in the stable front door.
+- Put volatile status reporting in the Project Timeline or issues, not in the stable front door.
 - If a page is important enough to be in primary navigation, it should be readable without requiring issue archaeology.
 - Governance stays secondary by design; it should support the front door, not compete with it.
 
@@ -48,3 +48,4 @@ If a change skips that sequence, it is not ready to be treated as a stable publi
 - [VRAXION Architecture (INSTNCT)](SWG-v4.2-Architecture)
 - [Validated Findings](Validated-Findings)
 - [Engineering Protocol](Engineering)
+- [Project Timeline](Release-Notes)

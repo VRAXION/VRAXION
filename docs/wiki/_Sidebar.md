@@ -6,12 +6,11 @@
 - [VRAXION Architecture (INSTNCT)](SWG-v4.2-Architecture) **ACTIVE**
 - [Validated Findings](Validated-Findings)
 - [Engineering Protocol](Engineering)
-- [Release Notes](Release-Notes)
+- [Project Timeline](Release-Notes)
 
 ## Further Reference
 
 - [Documentation Governance](Governance)
-- [Wiki Graph](https://github.com/VRAXION/VRAXION/wiki/Wiki-Graph)
 
 ## Public
 

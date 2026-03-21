@@ -21,34 +21,29 @@ PUBLIC_UPDATE = ROOT / ".github" / "ISSUE_TEMPLATE" / "public_update.md"
 WIKI_SOURCE_DIR = ROOT / "docs" / "wiki"
 WIKI_HOME_SRC = WIKI_SOURCE_DIR / "Home.md"
 WIKI_CH01_SRC = WIKI_SOURCE_DIR / "Chapter-01---Vision-and-Scope.md"
-WIKI_ROADMAP_SRC = WIKI_SOURCE_DIR / "Chapter-11---Roadmap.md"
-WIKI_TOT_SRC = WIKI_SOURCE_DIR / "Theory-of-Thought.md"
-WIKI_HYPOTHESES_SRC = WIKI_SOURCE_DIR / "Hypotheses.md"
 WIKI_RELEASE_NOTES_SRC = WIKI_SOURCE_DIR / "Release-Notes.md"
-WIKI_LEGACY_SRC = WIKI_SOURCE_DIR / "Legacy-Vault.md"
-WIKI_GLOSSARY_SRC = WIKI_SOURCE_DIR / "Glossary.md"
-WIKI_DCV3_SRC = WIKI_SOURCE_DIR / "Diamond-Code-v3-Architecture.md"
 WIKI_SWG_SRC = WIKI_SOURCE_DIR / "SWG-v4.2-Architecture.md"
 WIKI_FINDINGS_SRC = WIKI_SOURCE_DIR / "Validated-Findings.md"
-WIKI_PROVEN_SRC = WIKI_SOURCE_DIR / "Proven-Findings.md"
 WIKI_ENGINEERING_SRC = WIKI_SOURCE_DIR / "Engineering.md"
 WIKI_GOVERNANCE_SRC = WIKI_SOURCE_DIR / "Governance.md"
 WIKI_SIDEBAR_SRC = WIKI_SOURCE_DIR / "_Sidebar.md"
 WIKI_FOOTER_SRC = WIKI_SOURCE_DIR / "_Footer.md"
+REMOVED_WIKI_SOURCE_FILES = [
+    WIKI_SOURCE_DIR / "Chapter-11---Roadmap.md",
+    WIKI_SOURCE_DIR / "Theory-of-Thought.md",
+    WIKI_SOURCE_DIR / "Hypotheses.md",
+    WIKI_SOURCE_DIR / "Legacy-Vault.md",
+    WIKI_SOURCE_DIR / "Glossary.md",
+    WIKI_SOURCE_DIR / "Diamond-Code-v3-Architecture.md",
+    WIKI_SOURCE_DIR / "Proven-Findings.md",
+]
 WIKI_MIRROR_DIR = ROOT / "VRAXION.wiki"
 PRIMARY_WIKI_SOURCE_FILES = {
     WIKI_HOME_SRC,
     WIKI_CH01_SRC,
-    WIKI_ROADMAP_SRC,
-    WIKI_TOT_SRC,
-    WIKI_HYPOTHESES_SRC,
     WIKI_RELEASE_NOTES_SRC,
-    WIKI_LEGACY_SRC,
-    WIKI_GLOSSARY_SRC,
-    WIKI_DCV3_SRC,
     WIKI_SWG_SRC,
     WIKI_FINDINGS_SRC,
-    WIKI_PROVEN_SRC,
     WIKI_ENGINEERING_SRC,
     WIKI_GOVERNANCE_SRC,
     WIKI_SIDEBAR_SRC,
@@ -63,16 +58,9 @@ MARKDOWN_FILES = [
     ARCHIVE,
     WIKI_HOME_SRC,
     WIKI_CH01_SRC,
-    WIKI_ROADMAP_SRC,
-    WIKI_TOT_SRC,
-    WIKI_HYPOTHESES_SRC,
     WIKI_RELEASE_NOTES_SRC,
-    WIKI_LEGACY_SRC,
-    WIKI_GLOSSARY_SRC,
-    WIKI_DCV3_SRC,
     WIKI_SWG_SRC,
     WIKI_FINDINGS_SRC,
-    WIKI_PROVEN_SRC,
     WIKI_ENGINEERING_SRC,
     WIKI_GOVERNANCE_SRC,
     WIKI_SIDEBAR_SRC,
@@ -85,16 +73,9 @@ FRONT_DOOR_TEXTS = [README, V42_README, FINDINGS, WIKI_HOME_SRC, WIKI_SWG_SRC, W
 WIKI_MIRROR_MAP = {
     WIKI_HOME_SRC: WIKI_MIRROR_DIR / "Home.md",
     WIKI_CH01_SRC: WIKI_MIRROR_DIR / "Chapter-01---Vision-and-Scope.md",
-    WIKI_ROADMAP_SRC: WIKI_MIRROR_DIR / "Chapter-11---Roadmap.md",
-    WIKI_TOT_SRC: WIKI_MIRROR_DIR / "Theory-of-Thought.md",
-    WIKI_HYPOTHESES_SRC: WIKI_MIRROR_DIR / "Hypotheses.md",
     WIKI_RELEASE_NOTES_SRC: WIKI_MIRROR_DIR / "Release-Notes.md",
-    WIKI_LEGACY_SRC: WIKI_MIRROR_DIR / "Legacy-Vault.md",
-    WIKI_GLOSSARY_SRC: WIKI_MIRROR_DIR / "Glossary.md",
-    WIKI_DCV3_SRC: WIKI_MIRROR_DIR / "Diamond-Code-v3-Architecture.md",
     WIKI_SWG_SRC: WIKI_MIRROR_DIR / "SWG-v4.2-Architecture.md",
     WIKI_FINDINGS_SRC: WIKI_MIRROR_DIR / "Validated-Findings.md",
-    WIKI_PROVEN_SRC: WIKI_MIRROR_DIR / "Proven-Findings.md",
     WIKI_ENGINEERING_SRC: WIKI_MIRROR_DIR / "Engineering.md",
     WIKI_GOVERNANCE_SRC: WIKI_MIRROR_DIR / "Governance.md",
     WIKI_SIDEBAR_SRC: WIKI_MIRROR_DIR / "_Sidebar.md",
@@ -225,13 +206,6 @@ def check_contributing(errors: list[str]) -> None:
         fail("CONTRIBUTING.md: expected mirrored wiki guidance", errors)
 
 
-def check_proven_stub(errors: list[str]) -> None:
-    text = read(WIKI_PROVEN_SRC)
-    for term in ["historical", "Validated-Findings"]:
-        if term not in text:
-            fail(f"Proven-Findings.md: missing expected stub term {term!r}", errors)
-
-
 def check_ch01_stub(errors: list[str]) -> None:
     text = read(WIKI_CH01_SRC)
     for term in ["retired", "Home"]:
@@ -239,63 +213,33 @@ def check_ch01_stub(errors: list[str]) -> None:
             fail(f"Chapter-01---Vision-and-Scope.md: missing expected stub term {term!r}", errors)
 
 
-def check_roadmap_stub(errors: list[str]) -> None:
-    text = read(WIKI_ROADMAP_SRC)
-    for term in ["retired", "Release-Notes"]:
-        if term not in text:
-            fail(f"Chapter-11---Roadmap.md: missing expected stub term {term!r}", errors)
-
-
-def check_tot_stub(errors: list[str]) -> None:
-    text = read(WIKI_TOT_SRC)
-    for term in ["retired", "Release-Notes"]:
-        if term not in text:
-            fail(f"Theory-of-Thought.md: missing expected stub term {term!r}", errors)
-
-
-def check_hypotheses_page(errors: list[str]) -> None:
-    text = read(WIKI_HYPOTHESES_SRC)
-    for term in ["retired", "Release-Notes"]:
-        if term not in text:
-            fail(f"Hypotheses.md: missing expected stub term {term!r}", errors)
-
-
-def check_legacy_stub(errors: list[str]) -> None:
-    text = read(WIKI_LEGACY_SRC)
-    for term in ["retired", "Release-Notes"]:
-        if term not in text:
-            fail(f"Legacy-Vault.md: missing expected stub term {term!r}", errors)
-
-
 def check_release_notes_page(errors: list[str]) -> None:
     text = read(WIKI_RELEASE_NOTES_SRC)
+    if not re.search(r"^#\s+Project Timeline\s*$", text, re.MULTILINE):
+        fail("Release-Notes.md: visible page title must be 'Project Timeline'", errors)
     for term in [
         "What This Page Is",
         "How To Read It",
-        "Current Public Status",
+        "Current Snapshot",
         "What Matters Now",
-        "Timeline of Major Turns",
+        "Project Timeline",
+        "Retired Surfaces and Replacements",
         "Open Questions and Promotion Gates",
-        "Published Releases",
         "Key Terms",
+        "Published Releases",
         "Read Next",
     ]:
         if term not in text:
-            fail(f"Release-Notes.md: missing expected live-status section {term!r}", errors)
+            fail(f"Release-Notes.md: missing expected project-timeline section {term!r}", errors)
 
 
-def check_glossary_page(errors: list[str]) -> None:
-    text = read(WIKI_GLOSSARY_SRC)
-    for term in ["retired", "Release-Notes"]:
-        if term not in text:
-            fail(f"Glossary.md: missing expected stub term {term!r}", errors)
-
-
-def check_dcv3_stub(errors: list[str]) -> None:
-    text = read(WIKI_DCV3_SRC)
-    for term in ["retired", "SWG-v4.2-Architecture"]:
-        if term not in text:
-            fail(f"Diamond-Code-v3-Architecture.md: missing expected stub term {term!r}", errors)
+def check_removed_wiki_sources(errors: list[str]) -> None:
+    for path in REMOVED_WIKI_SOURCE_FILES:
+        if path.exists():
+            fail(f"{path.name}: retired wiki source should be deleted, not kept as a stub", errors)
+        mirror = WIKI_MIRROR_DIR / path.name
+        if mirror.exists():
+            fail(f"{mirror.name}: mirrored retired wiki page should be deleted", errors)
 
 
 def check_wiki_sources(errors: list[str]) -> None:
@@ -305,8 +249,12 @@ def check_wiki_sources(errors: list[str]) -> None:
     for href in ["Home", "SWG-v4.2-Architecture", "Validated-Findings", "Engineering", "Release-Notes"]:
         if not re.search(rf"\[[^\]]+\]\({re.escape(href)}\)", sidebar_text):
             fail(f"_Sidebar.md: missing markdown navigation link target {href!r}", errors)
+    if "Project Timeline" not in sidebar_text:
+        fail("_Sidebar.md: missing primary navigation label 'Project Timeline'", errors)
     if not re.search(r"\[[^\]]+\]\(Governance\)", sidebar_text):
         fail("_Sidebar.md: missing markdown navigation link target 'Governance'", errors)
+    if "Wiki Graph" in sidebar_text:
+        fail("_Sidebar.md: Wiki Graph should not appear in the current wiki navigation", errors)
     if "Proven-Findings" in sidebar_text or "Proven Findings" in sidebar_text:
         fail("_Sidebar.md: Proven Findings should not appear in the current wiki navigation", errors)
     if "Chapter-01---Vision-and-Scope" in sidebar_text or "Chapter 01 - Vision and Scope" in sidebar_text:
@@ -330,6 +278,8 @@ def check_wiki_sources(errors: list[str]) -> None:
     for href in ["Home", "SWG-v4.2-Architecture", "Validated-Findings", "Engineering", "Release-Notes"]:
         if not re.search(rf"\[[^\]]+\]\({re.escape(href)}\)", footer_text):
             fail(f"_Footer.md: missing footer markdown navigation link target {href!r}", errors)
+    if "Project Timeline" not in footer_text:
+        fail("_Footer.md: missing footer navigation label 'Project Timeline'", errors)
     if not re.search(r"\[[^\]]+\]\(Governance\)", footer_text):
         fail("_Footer.md: missing footer markdown navigation link target 'Governance'", errors)
     if "INSTNCT" not in footer_text:
@@ -379,15 +329,9 @@ def main() -> int:
     check_archive(errors)
     check_templates(errors)
     check_contributing(errors)
-    check_proven_stub(errors)
     check_ch01_stub(errors)
-    check_roadmap_stub(errors)
-    check_tot_stub(errors)
-    check_hypotheses_page(errors)
-    check_legacy_stub(errors)
     check_release_notes_page(errors)
-    check_glossary_page(errors)
-    check_dcv3_stub(errors)
+    check_removed_wiki_sources(errors)
     check_wiki_sources(errors)
     check_wiki_mirror(errors)
 

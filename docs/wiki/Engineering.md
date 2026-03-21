@@ -65,6 +65,7 @@ Use those labels consistently across the repo front door, the architecture page,
 - [Home](Home)
 - [VRAXION Architecture (INSTNCT)](SWG-v4.2-Architecture)
 - [Validated Findings](Validated-Findings)
+- [Project Timeline](Release-Notes)
 - [Documentation Governance](Governance)
 
 If the GitHub wiki render looks incomplete, use [Pages](https://vraxion.github.io/VRAXION/) or the repo [README.md](https://github.com/VRAXION/VRAXION/blob/main/README.md).
