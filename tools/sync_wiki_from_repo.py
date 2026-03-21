@@ -12,6 +12,7 @@ WIKI_DIR = ROOT / "VRAXION.wiki"
 FILES = [
     "Home.md",
     "SWG-v4.2-Architecture.md",
+    "Validated-Findings.md",
     "_Sidebar.md",
     "_Footer.md",
 ]

@@ -36,7 +36,7 @@ For technical buyers, the important question is therefore not just benchmark sco
 - Canonical code path: [`v4.2/model/graph.py`](https://github.com/VRAXION/VRAXION/blob/main/v4.2/model/graph.py)
 - Architecture line: `INSTNCT`
 - Current English recipe candidate on `main`: [`v4.2/english_1024n_18w.py`](https://github.com/VRAXION/VRAXION/blob/main/v4.2/english_1024n_18w.py)
-- Canonical public evidence summary: [`VALIDATED_FINDINGS.md`](https://github.com/VRAXION/VRAXION/blob/main/VALIDATED_FINDINGS.md)
+- Canonical public evidence summary: [[Validated-Findings|Validated Findings]]
 - Mainline implementation includes per-neuron `theta` / `decay` and nonnegative charge dynamics.
 
 Anything not actually shipped in that code path must be labeled as a **Validated finding** or **Experimental branch**, not as a live default.
@@ -52,7 +52,7 @@ Anything not actually shipped in that code path must be labeled as a **Validated
 | decision-tree schedule | Validated finding | Compact learnable schedule policy, not promoted into defaults |
 | mixed 18-worker swarm | Experimental branch | Active target, not current mainline |
 
-See [`VALIDATED_FINDINGS.md`](https://github.com/VRAXION/VRAXION/blob/main/VALIDATED_FINDINGS.md) for the canonical evidence summary, with issue links as supporting references rather than the front door.
+See [[Validated-Findings|Validated Findings]] for the canonical evidence summary, with issue links as supporting references rather than the front door.
 
 ## 5-Minute Proof
 
@@ -68,6 +68,6 @@ python tools/check_public_surface.py
 
 - [[SWG-v4.2-Architecture|VRAXION Architecture (INSTNCT)]] — architecture line and public status
 - [`README.md`](https://github.com/VRAXION/VRAXION/blob/main/README.md) — repo front door
-- [`VALIDATED_FINDINGS.md`](https://github.com/VRAXION/VRAXION/blob/main/VALIDATED_FINDINGS.md) — canonical evidence summary
+- [[Validated-Findings|Validated Findings]] — canonical evidence summary
 
 If the GitHub wiki render looks incomplete or noisy, use [Pages](https://vraxion.github.io/VRAXION/) or the repo [README.md](https://github.com/VRAXION/VRAXION/blob/main/README.md).

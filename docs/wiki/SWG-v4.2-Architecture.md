@@ -61,7 +61,7 @@ If a setting is not present in that file, it is not a live default. It should be
 | decision-tree schedule | Validated finding | A compact 3-angle learnable policy that reached `20.05%` with better edge quality than the voltage policy | No | [f7e6185](https://github.com/VRAXION/VRAXION/commit/f7e618511217d9b2905d93b30d7523a0be1fd79d) |
 | mixed 18-worker swarm | Experimental branch | The current next build target for English training | No | [#114](https://github.com/VRAXION/VRAXION/issues/114) |
 
-For the full evidence summary, use [`VALIDATED_FINDINGS.md`](https://github.com/VRAXION/VRAXION/blob/main/VALIDATED_FINDINGS.md).
+For the full evidence summary, use [[Validated-Findings|Validated Findings]].
 
 ## How To Verify Quickly
 
@@ -76,7 +76,7 @@ python tools/check_public_surface.py
 ## Read Next
 
 - [[Home]]
-- [`VALIDATED_FINDINGS.md`](https://github.com/VRAXION/VRAXION/blob/main/VALIDATED_FINDINGS.md)
+- [[Validated-Findings|Validated Findings]]
 - [`README.md`](https://github.com/VRAXION/VRAXION/blob/main/README.md)
 
 If the GitHub wiki render looks incomplete, use [Pages](https://vraxion.github.io/VRAXION/) or the repo [`README.md`](https://github.com/VRAXION/VRAXION/blob/main/README.md).

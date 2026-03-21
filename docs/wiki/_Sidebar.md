@@ -4,7 +4,7 @@
 
 - [[Home]]
 - [VRAXION Architecture (INSTNCT)](SWG-v4.2-Architecture) **ACTIVE**
-- [Validated Findings](https://github.com/VRAXION/VRAXION/blob/main/VALIDATED_FINDINGS.md)
+- [[Validated-Findings|Validated Findings]]
 
 ## Further Reference
 
