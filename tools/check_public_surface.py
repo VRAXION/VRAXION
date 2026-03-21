@@ -21,6 +21,8 @@ PUBLIC_UPDATE = ROOT / ".github" / "ISSUE_TEMPLATE" / "public_update.md"
 WIKI_SOURCE_DIR = ROOT / "docs" / "wiki"
 WIKI_HOME_SRC = WIKI_SOURCE_DIR / "Home.md"
 WIKI_CH01_SRC = WIKI_SOURCE_DIR / "Chapter-01---Vision-and-Scope.md"
+WIKI_TOT_SRC = WIKI_SOURCE_DIR / "Theory-of-Thought.md"
+WIKI_HYPOTHESES_SRC = WIKI_SOURCE_DIR / "Hypotheses.md"
 WIKI_SWG_SRC = WIKI_SOURCE_DIR / "SWG-v4.2-Architecture.md"
 WIKI_FINDINGS_SRC = WIKI_SOURCE_DIR / "Validated-Findings.md"
 WIKI_PROVEN_SRC = WIKI_SOURCE_DIR / "Proven-Findings.md"
@@ -32,6 +34,8 @@ WIKI_MIRROR_DIR = ROOT / "VRAXION.wiki"
 PRIMARY_WIKI_SOURCE_FILES = {
     WIKI_HOME_SRC,
     WIKI_CH01_SRC,
+    WIKI_TOT_SRC,
+    WIKI_HYPOTHESES_SRC,
     WIKI_SWG_SRC,
     WIKI_FINDINGS_SRC,
     WIKI_PROVEN_SRC,
@@ -49,6 +53,8 @@ MARKDOWN_FILES = [
     ARCHIVE,
     WIKI_HOME_SRC,
     WIKI_CH01_SRC,
+    WIKI_TOT_SRC,
+    WIKI_HYPOTHESES_SRC,
     WIKI_SWG_SRC,
     WIKI_FINDINGS_SRC,
     WIKI_PROVEN_SRC,
@@ -64,6 +70,8 @@ FRONT_DOOR_TEXTS = [README, V42_README, FINDINGS, WIKI_HOME_SRC, WIKI_SWG_SRC, W
 WIKI_MIRROR_MAP = {
     WIKI_HOME_SRC: WIKI_MIRROR_DIR / "Home.md",
     WIKI_CH01_SRC: WIKI_MIRROR_DIR / "Chapter-01---Vision-and-Scope.md",
+    WIKI_TOT_SRC: WIKI_MIRROR_DIR / "Theory-of-Thought.md",
+    WIKI_HYPOTHESES_SRC: WIKI_MIRROR_DIR / "Hypotheses.md",
     WIKI_SWG_SRC: WIKI_MIRROR_DIR / "SWG-v4.2-Architecture.md",
     WIKI_FINDINGS_SRC: WIKI_MIRROR_DIR / "Validated-Findings.md",
     WIKI_PROVEN_SRC: WIKI_MIRROR_DIR / "Proven-Findings.md",
@@ -211,6 +219,23 @@ def check_ch01_stub(errors: list[str]) -> None:
             fail(f"Chapter-01---Vision-and-Scope.md: missing expected stub term {term!r}", errors)
 
 
+def check_tot_stub(errors: list[str]) -> None:
+    text = read(WIKI_TOT_SRC)
+    for term in ["retired", "Hypotheses"]:
+        if term not in text:
+            fail(f"Theory-of-Thought.md: missing expected stub term {term!r}", errors)
+
+
+def check_hypotheses_page(errors: list[str]) -> None:
+    text = read(WIKI_HYPOTHESES_SRC)
+    for term in ["What This Page Is", "Epistemic Boundary", "Active Hypotheses", "Promotion Rule"]:
+        if term not in text:
+            fail(f"Hypotheses.md: missing expected live-tracker section {term!r}", errors)
+    for term in ["Theory of Thought", "Theory-of-Thought"]:
+        if term in text:
+            fail("Hypotheses.md: should not rely on Theory of Thought as the live hypothesis model", errors)
+
+
 def check_wiki_sources(errors: list[str]) -> None:
     sidebar_text = read(WIKI_SIDEBAR_SRC)
     if "## Primary" not in sidebar_text:
@@ -220,10 +245,14 @@ def check_wiki_sources(errors: list[str]) -> None:
             fail(f"_Sidebar.md: missing markdown navigation link target {href!r}", errors)
     if not re.search(r"\[[^\]]+\]\(Governance\)", sidebar_text):
         fail("_Sidebar.md: missing markdown navigation link target 'Governance'", errors)
+    if not re.search(r"\[[^\]]+\]\(Hypotheses\)", sidebar_text):
+        fail("_Sidebar.md: missing markdown navigation link target 'Hypotheses'", errors)
     if "Proven-Findings" in sidebar_text or "Proven Findings" in sidebar_text:
         fail("_Sidebar.md: Proven Findings should not appear in the current wiki navigation", errors)
     if "Chapter-01---Vision-and-Scope" in sidebar_text or "Chapter 01 - Vision and Scope" in sidebar_text:
         fail("_Sidebar.md: Chapter 01 should not appear in the current wiki navigation", errors)
+    if "Theory-of-Thought" in sidebar_text or "Theory of Thought" in sidebar_text:
+        fail("_Sidebar.md: Theory of Thought should not appear in the current wiki navigation", errors)
 
     footer_text = read(WIKI_FOOTER_SRC)
     if "Nav:" not in footer_text:
@@ -274,6 +303,8 @@ def main() -> int:
     check_contributing(errors)
     check_proven_stub(errors)
     check_ch01_stub(errors)
+    check_tot_stub(errors)
+    check_hypotheses_page(errors)
     check_wiki_sources(errors)
     check_wiki_mirror(errors)
 

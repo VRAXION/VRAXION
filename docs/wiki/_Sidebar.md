@@ -10,8 +10,7 @@
 ## Further Reference
 
 - [Documentation Governance](Governance)
-- [Theory of Thought](https://github.com/VRAXION/VRAXION/wiki/Theory-of-Thought)
-- [Hypotheses](https://github.com/VRAXION/VRAXION/wiki/Hypotheses)
+- [Hypotheses](Hypotheses)
 - [Chapter 11 - Roadmap](https://github.com/VRAXION/VRAXION/wiki/Chapter-11---Roadmap)
 - [Release Notes](https://github.com/VRAXION/VRAXION/wiki/Release-Notes)
 - [Glossary](https://github.com/VRAXION/VRAXION/wiki/Glossary)
