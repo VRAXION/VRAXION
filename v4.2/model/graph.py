@@ -128,7 +128,7 @@ class SelfWiringGraph:
             self.charge += raw
             self.charge *= ret  # element-wise per-neuron decay
             act = np.maximum(self.charge - self.theta, 0.0)
-            self.charge = np.clip(self.charge, -1.0, 1.0)
+            self.charge = np.maximum(self.charge, 0.0)  # ReLU on charge (sweep: +6% vs clip)
         self.state = act.copy()
         return self.charge @ self.W_out
 
@@ -149,7 +149,7 @@ class SelfWiringGraph:
             charges += raw
             charges *= ret  # element-wise per-neuron
             acts = np.maximum(charges - th, 0.0)
-            charges = np.clip(charges, -1.0, 1.0)
+            charges = np.maximum(charges, 0.0)  # ReLU on charge
         return charges @ self.W_out
 
     def resync_alive(self):

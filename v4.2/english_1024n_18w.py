@@ -54,7 +54,7 @@ def _eval_bigram(mask, H, theta, decay, seqs):
                     np.add.at(raw, cs, act[rs] * sp_vals)
                 charge += raw; charge *= ret
                 act = np.maximum(charge - theta, 0.0)
-                charge = np.clip(charge, -1.0, 1.0)
+                charge = np.maximum(charge, 0.0)
             state = act.copy()
             out = charge @ _W_out
             out_n = out / (np.linalg.norm(out) + 1e-8)
