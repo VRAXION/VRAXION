@@ -5,10 +5,10 @@
 - [[Home]]
 - [VRAXION Architecture (INSTNCT)](SWG-v4.2-Architecture) **ACTIVE**
 - [[Validated-Findings|Validated Findings]]
+- [[Engineering|Engineering Protocol]]
 
 ## Further Reference
 
-- [[Engineering]]
 - [[Governance]]
 - [[Proven Findings]]
 - [[Chapter 01 - Vision and Scope]]

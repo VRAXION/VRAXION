@@ -13,6 +13,8 @@ FILES = [
     "Home.md",
     "SWG-v4.2-Architecture.md",
     "Validated-Findings.md",
+    "Engineering.md",
+    "Governance.md",
     "_Sidebar.md",
     "_Footer.md",
 ]

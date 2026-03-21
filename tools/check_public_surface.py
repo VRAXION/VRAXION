@@ -22,6 +22,8 @@ WIKI_SOURCE_DIR = ROOT / "docs" / "wiki"
 WIKI_HOME_SRC = WIKI_SOURCE_DIR / "Home.md"
 WIKI_SWG_SRC = WIKI_SOURCE_DIR / "SWG-v4.2-Architecture.md"
 WIKI_FINDINGS_SRC = WIKI_SOURCE_DIR / "Validated-Findings.md"
+WIKI_ENGINEERING_SRC = WIKI_SOURCE_DIR / "Engineering.md"
+WIKI_GOVERNANCE_SRC = WIKI_SOURCE_DIR / "Governance.md"
 WIKI_SIDEBAR_SRC = WIKI_SOURCE_DIR / "_Sidebar.md"
 WIKI_FOOTER_SRC = WIKI_SOURCE_DIR / "_Footer.md"
 WIKI_MIRROR_DIR = ROOT / "VRAXION.wiki"
@@ -35,17 +37,21 @@ MARKDOWN_FILES = [
     WIKI_HOME_SRC,
     WIKI_SWG_SRC,
     WIKI_FINDINGS_SRC,
+    WIKI_ENGINEERING_SRC,
+    WIKI_GOVERNANCE_SRC,
     WIKI_SIDEBAR_SRC,
     WIKI_FOOTER_SRC,
     PR_TEMPLATE,
     PUBLIC_UPDATE,
 ]
-TAXONOMY_FILES = [README, V42_README, FINDINGS, WIKI_HOME_SRC, WIKI_SWG_SRC, WIKI_FINDINGS_SRC]
-FRONT_DOOR_TEXTS = [README, V42_README, FINDINGS, WIKI_HOME_SRC, WIKI_SWG_SRC, WIKI_FINDINGS_SRC]
+TAXONOMY_FILES = [README, V42_README, FINDINGS, WIKI_HOME_SRC, WIKI_SWG_SRC, WIKI_FINDINGS_SRC, WIKI_ENGINEERING_SRC]
+FRONT_DOOR_TEXTS = [README, V42_README, FINDINGS, WIKI_HOME_SRC, WIKI_SWG_SRC, WIKI_FINDINGS_SRC, WIKI_ENGINEERING_SRC]
 WIKI_MIRROR_MAP = {
     WIKI_HOME_SRC: WIKI_MIRROR_DIR / "Home.md",
     WIKI_SWG_SRC: WIKI_MIRROR_DIR / "SWG-v4.2-Architecture.md",
     WIKI_FINDINGS_SRC: WIKI_MIRROR_DIR / "Validated-Findings.md",
+    WIKI_ENGINEERING_SRC: WIKI_MIRROR_DIR / "Engineering.md",
+    WIKI_GOVERNANCE_SRC: WIKI_MIRROR_DIR / "Governance.md",
     WIKI_SIDEBAR_SRC: WIKI_MIRROR_DIR / "_Sidebar.md",
     WIKI_FOOTER_SRC: WIKI_MIRROR_DIR / "_Footer.md",
 }
@@ -61,6 +67,7 @@ BANNED_ANYWHERE = {
 }
 FRONT_DOOR_ONLY_BANNED = {
     re.compile(r"credit-guided rewiring", re.IGNORECASE): "credit-guided rewiring should not appear on front-door public surfaces",
+    re.compile(r"Diamond Code v3", re.IGNORECASE): "legacy Diamond Code references should not appear on primary public surfaces",
 }
 
 
@@ -112,7 +119,7 @@ def check_links(path: Path, text: str, errors: list[str]) -> None:
         href = match.group(1).split("|", 1)[0].strip()
         if not href:
             continue
-        if path.parent == WIKI_SOURCE_DIR and href not in {"Home", "SWG-v4.2-Architecture", "Validated-Findings"}:
+        if path.parent == WIKI_SOURCE_DIR and href not in {"Home", "SWG-v4.2-Architecture", "Validated-Findings", "Engineering", "Governance"}:
             continue
         if resolve_local_target(path, href) is None:
             fail(f"{path.name}: broken wiki-style link: {href}", errors)
@@ -183,14 +190,14 @@ def check_wiki_sources(errors: list[str]) -> None:
     sidebar_text = read(WIKI_SIDEBAR_SRC)
     if "## Primary" not in sidebar_text:
         fail("_Sidebar.md: missing Primary navigation section", errors)
-    for term in ["[[Home]]", "SWG-v4.2-Architecture", "Validated-Findings"]:
+    for term in ["[[Home]]", "SWG-v4.2-Architecture", "Validated-Findings", "Engineering"]:
         if term not in sidebar_text:
             fail(f"_Sidebar.md: missing primary navigation item {term!r}", errors)
 
     footer_text = read(WIKI_FOOTER_SRC)
     if "Nav:" not in footer_text:
         fail("_Footer.md: missing Nav line", errors)
-    for term in ["[[Home]]", "INSTNCT", "Validated-Findings"]:
+    for term in ["[[Home]]", "INSTNCT", "Validated-Findings", "Engineering"]:
         if term not in footer_text:
             fail(f"_Footer.md: missing footer primary navigation item {term!r}", errors)
 
