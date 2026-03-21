@@ -69,6 +69,6 @@ python tools/check_public_surface.py
 - [[SWG-v4.2-Architecture|VRAXION Architecture (INSTNCT)]] — architecture line and public status
 - [`README.md`](https://github.com/VRAXION/VRAXION/blob/main/README.md) — repo front door
 - [[Validated-Findings|Validated Findings]] — canonical evidence summary
-- [[Engineering|Engineering Protocol]] — run contract and evidence discipline
+- [Engineering Protocol](Engineering) — run contract and evidence discipline
 
 If the GitHub wiki render looks incomplete or noisy, use [Pages](https://vraxion.github.io/VRAXION/) or the repo [README.md](https://github.com/VRAXION/VRAXION/blob/main/README.md).

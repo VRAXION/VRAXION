@@ -37,7 +37,7 @@ If code and docs disagree, **code wins for Current mainline**.
 
 - [[Home]]
 - [VRAXION Architecture (INSTNCT)](SWG-v4.2-Architecture)
-- [[Engineering|Engineering Protocol]]
+- [Engineering Protocol](Engineering)
 - [README.md](https://github.com/VRAXION/VRAXION/blob/main/README.md)
 
 If the GitHub wiki render looks incomplete, use [Pages](https://vraxion.github.io/VRAXION/) or the repo [README.md](https://github.com/VRAXION/VRAXION/blob/main/README.md).

@@ -38,4 +38,4 @@ When public-facing work changes:
 - [[Home]]
 - [VRAXION Architecture (INSTNCT)](SWG-v4.2-Architecture)
 - [[Validated-Findings|Validated Findings]]
-- [[Engineering|Engineering Protocol]]
+- [Engineering Protocol](Engineering)

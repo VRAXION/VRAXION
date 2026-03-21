@@ -5,7 +5,7 @@
 - [[Home]]
 - [VRAXION Architecture (INSTNCT)](SWG-v4.2-Architecture) **ACTIVE**
 - [[Validated-Findings|Validated Findings]]
-- [[Engineering|Engineering Protocol]]
+- [Engineering Protocol](Engineering)
 
 ## Further Reference
 

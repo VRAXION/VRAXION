@@ -77,7 +77,7 @@ python tools/check_public_surface.py
 
 - [[Home]]
 - [[Validated-Findings|Validated Findings]]
-- [[Engineering|Engineering Protocol]]
+- [Engineering Protocol](Engineering)
 - [`README.md`](https://github.com/VRAXION/VRAXION/blob/main/README.md)
 
 If the GitHub wiki render looks incomplete, use [Pages](https://vraxion.github.io/VRAXION/) or the repo [`README.md`](https://github.com/VRAXION/VRAXION/blob/main/README.md).
