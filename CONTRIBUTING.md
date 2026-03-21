@@ -1,14 +1,24 @@
 # Contributing
 
-VRAXION is a research repo where mechanism and repeatability matter more than presentation.
-If a change cannot be reproduced or audited, it is not done.
+VRAXION is a **public technical repo**. Rigor and reproducibility matter, but so does clarity: the public repo should be understandable to engineers, technical buyers, and contributors without reverse-engineering issue traffic.
+
+## Public Truth Rules
+
+Use the repo taxonomy consistently:
+
+- **Current mainline** = shipped code on `main`
+- **Validated finding** = experiment-backed result not yet promoted into the canonical code path
+- **Experimental branch** = active build target or prototype direction
+
+If a setting or training recipe is not in the canonical code path, do **not** describe it as the current default.
 
 ## Repo Map
 
 - `v4.2/model/`: self-wiring graph implementations
 - `v4.2/lib/`: shared scoring, data, and logging helpers
 - `v4.2/tests/`: stress tests, sweeps, probes, and benchmark scripts
-- `docs/`: GitHub Pages landing page for the cleaned main branch
+- `docs/`: GitHub Pages landing page
+- `VALIDATED_FINDINGS.md`: canonical evidence summary for public-facing claims
 
 ## Where To Put Things
 
@@ -16,14 +26,6 @@ If a change cannot be reproduced or audited, it is not done.
 - Shared training helpers: `v4.2/lib/`
 - CPU and GPU experiments: `v4.2/tests/`
 - Public-facing repo text: root docs plus `docs/`
-
-## Branch Naming
-
-Use short, intent-revealing branch names. Examples:
-
-- `feat/slot-soft-write`
-- `chore/main-cleanup-pass2`
-- `docs/self-wiring-pages-refresh`
 
 ## Pull Request Requirements
 
@@ -37,20 +39,18 @@ Guardrails:
 
 - Do not commit run artifacts, logs, checkpoints, or large binaries
 - Keep changes small and reversible where possible
-- If a change affects metrics or stability, include the exact benchmark or smoke command used
+- If a change affects metrics, state whether the result is:
+  - current mainline
+  - validated finding
+  - experimental only
 
 Recommended verification commands:
 
 ```bash
-python -m compileall v4.2
+python -m compileall v4.2 tools
 python v4.2/tests/test_model.py
-python v4.2/tests/test_logging.py
+python tools/check_public_surface.py
 ```
-
-## Issues And Discussions
-
-- GitHub Issues are best used for curated public updates or concrete cleanup tasks
-- GitHub Discussions are for design questions and broader research discussion
 
 ## Reproducibility
 
@@ -61,3 +61,5 @@ If you report a metric, include at minimum:
 - seed list
 - relevant config values
 - output summary
+
+If the claim is important enough for the front door, it should also be mirrored into `VALIDATED_FINDINGS.md`.

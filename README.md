@@ -1,81 +1,83 @@
-# VRAXION Self-Wiring Graph
+# VRAXION
 
-This repository is the active mainline for the VRAXION self-wiring graph program.
-The branch surface, docs, and CI are intentionally aligned so the public repo describes one thing clearly: the current `v4.2` self-wiring graph stack.
+VRAXION is building **INSTNCT / SWG v4.2**: a gradient-free self-wiring architecture that learns by changing its own directed graph instead of running backpropagation through a fixed topology.
 
-## Scope
+This repository is meant to be a credible front door for technical buyers and engineers. It should let a first-time reader answer five things quickly:
 
-`main` is now intentionally focused on the `v4.2` self-wiring graph stack:
+1. what VRAXION is,
+2. why the architecture is different,
+3. what is actually proven,
+4. what the current canonical code path is,
+5. how to verify one claim in minutes.
 
-- `v4.2/model/graph.py`: reference NumPy self-wiring graph
-- `v4.2/model/graph_v3.c`: C backend and scaling path under active evaluation
-- `v4.2/lib/utils.py`: scoring and cyclic training helpers
-- `v4.2/tests/`: sweeps, smoke tests, scaling probes, and benchmark scripts
+## Why This Architecture Is Different
 
-The half-ready `surprise` learning path is not part of this cleaned mainline. It needs redesign before it belongs on the default branch again.
+INSTNCT / SWG v4.2 is built around a small set of unusual choices:
 
-## What The Model Is
+- **Passive I/O**: `W_in` and `W_out` are fixed random projections, not learned layers.
+- **Self-wiring core**: the only learnable structure is a hidden-to-hidden ternary graph.
+- **Persistent internal state**: neurons keep charge and state across ticks instead of acting as one-shot activations.
+- **Mutation + selection**: training is done by graph edits and acceptance tests, not gradient descent through the graph.
 
-The current self-wiring graph is a gradient-free graph learner with:
+The canonical reference implementation is [`v4.2/model/graph.py`](v4.2/model/graph.py).
 
-- flat directed graph topology
-- ternary signed edges baked into the mask
-- persistent charge and state dynamics
-- mutation plus selection as the training loop
-- cyclic `rewire -> crystallize` training support
+## Status Taxonomy
 
-The stable reference implementation is [`v4.2/model/graph.py`](v4.2/model/graph.py).
+To keep the public story truthful, this repo uses three labels consistently:
 
-## Current Snapshot
+- **Current mainline**: what is actually shipped in code on `main`.
+- **Validated finding**: a result backed by a concrete experiment, but not yet promoted into the canonical code path.
+- **Experimental branch**: an active build target or design direction that is not yet a validated default.
 
-- Active line: `v4.2` self-wiring graph
-- Reference core: NumPy `graph.py` plus C `graph_v3.c` path
-- Bench suite: stress, RNG, expressiveness, convergence, density, and browser visualization harnesses
-- CI: compile sanity + reference stress + tiny cyclic smoke on every push to `main`
-- Archive policy: old eras stay in `archive/*` branches or `archive/*` tags, not in the active branch list
+If code and docs disagree, **code wins for “Current mainline.”**
 
-## Repo Layout
+## Current State
 
-- [`v4.2/README.md`](v4.2/README.md): module-level map
-- [`v4.2/model/graph.py`](v4.2/model/graph.py): reference Python model
-- [`v4.2/model/graph_v3.c`](v4.2/model/graph_v3.c): C implementation path
-- [`v4.2/lib/utils.py`](v4.2/lib/utils.py): training helpers
-- [`v4.2/tests/`](v4.2/tests/): experiment scripts and results
-- [`v4.2/CREDIT_GUIDED_REWIRING.md`](v4.2/CREDIT_GUIDED_REWIRING.md): design note for credit-guided rewiring
-- [`v4.2/LATENT_DYNAMICS_ANALYSIS_PLAN.md`](v4.2/LATENT_DYNAMICS_ANALYSIS_PLAN.md): plan to test whether recurrent loops form a useful latent-like internal state-space
-- [`ARCHIVE.md`](ARCHIVE.md): branch and snapshot-tag policy for older lines
-- [`v4.2/tests/benchmark_ab.py`](v4.2/tests/benchmark_ab.py): SWG vs MLP vs random-search benchmark
-- [`v4.2/tests/benchmark_expressiveness.py`](v4.2/tests/benchmark_expressiveness.py): expressiveness benchmark across task families
-- [`v4.2/tests/ab_rng_knee.py`](v4.2/tests/ab_rng_knee.py): random-source knee benchmark
-- [`v4.2/viz/swg_demo.html`](v4.2/viz/swg_demo.html): interactive self-wiring graph viewer
+### Current mainline
 
-## Quickstart
+- The live canonical path is [`v4.2/model/graph.py`](v4.2/model/graph.py).
+- The stable reference is the NumPy self-wiring graph with passive I/O, a ternary hidden mask, and persistent charge/state dynamics.
+- Recent English sweeps around low-theta training and signal scaling are **not** described here as baked defaults until they land in that code path.
 
-Create a Python environment and install the minimal dependencies:
+### Validated findings
+
+- **Flip mutation** is the strongest structural mutation found so far on English 1024n; float weight perturbation lost badly ([#112](https://github.com/VRAXION/VRAXION/issues/112)).
+- **`INJ_SCALE=1.0` + low theta** beat the older `scale=3.0` hack in empty-start English sweeps, but that result is still tracked as a validated finding rather than a shipped default ([#113](https://github.com/VRAXION/VRAXION/issues/113)).
+
+The canonical evidence summary lives in [`VALIDATED_FINDINGS.md`](VALIDATED_FINDINGS.md).
+
+### Experimental branch
+
+- The current next candidate is the **mixed 18-worker swarm** for English training ([#114](https://github.com/VRAXION/VRAXION/issues/114)).
+- It is an active implementation target, not the current default training path on `main`.
+
+## 5-Minute Proof
+
+Create an environment, install the minimal dependencies, and run the same checks used to keep the public repo honest:
 
 ```bash
 python -m venv .venv
-. .venv/bin/activate
+# Windows PowerShell: .venv\Scripts\Activate.ps1
+# macOS/Linux: source .venv/bin/activate
 pip install -r requirements.txt
-```
 
-Run the reference stress test:
-
-```bash
+python -m compileall v4.2 tools
 python v4.2/tests/test_model.py
+python tools/check_public_surface.py
 ```
 
-Run a quick RNG benchmark:
+These commands verify:
 
-```bash
-python v4.2/tests/rng_tier_benchmark.py --seeds 2 --vocab 32 --attempts 2000
-```
+- the reference code compiles,
+- the reference self-wiring model passes its stress test,
+- the public-facing docs still agree with the canonical code path.
 
-## Notes On Branch Policy
+## Read Next
 
-- `main` should stay small and self-wiring focused.
-- Historical non-self-wiring lines should live on archive branches, not in the default branch tree.
-- Experimental branches are fine, but they should not redefine what `main` is about until they beat the current self-wiring baseline.
+- [`VALIDATED_FINDINGS.md`](VALIDATED_FINDINGS.md) — canonical evidence summary
+- [`v4.2/README.md`](v4.2/README.md) — architecture-line map and technical entry points
+- [SWG v4.2 architecture wiki page](https://github.com/VRAXION/VRAXION/wiki/SWG-v4.2-Architecture)
+- [Issue #114](https://github.com/VRAXION/VRAXION/issues/114) — current next build target
 
 ## License
 

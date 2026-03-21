@@ -1,54 +1,49 @@
-# v4.2 Self-Wiring Graph
+# INSTNCT / SWG v4.2
 
-This directory contains the active self-wiring graph line.
+This directory contains the active architecture line behind VRAXION.
 
-## Current Emphasis
+## Status Taxonomy
 
-The current `v4.2` line is centered on four things:
+- **Current mainline**: what is actually shipped on `main`.
+- **Validated finding**: experiment-backed result not yet promoted into the canonical code path.
+- **Experimental branch**: active build target or prototype direction.
 
-- a stable NumPy reference core
-- a C path for scaling and parity work
-- reproducible benchmark harnesses for capability and scaling claims
-- new training ideas prototyped outside the core first, then promoted only if they beat the baseline
+## Current Mainline
 
-## Recent Updates
+- Canonical reference: [`model/graph.py`](model/graph.py)
+- Scaling/parity path: [`model/graph_v3.c`](model/graph_v3.c)
+- Core behavior:
+  - fixed random passive I/O projections
+  - ternary hidden-to-hidden mask
+  - persistent charge and state dynamics
+  - mutation + selection training
 
-- **3-phase mutation**: drive=0 now triggers rewire instead of no-op; stale-triggered rewire phase in `train()` explores new topologies when stuck (+6-20% on V=128, validated across 5 seeds)
-- **Soft connection cap**: `CAP_RATIO=120` limits alive edges to `V * NV_RATIO * 120`, enabling V=256 scaling (49.5% at 96k budget) without connection explosion
-- **Scaling law confirmed**: edges scale as V^1.19 (sub-quadratic); sparse forward gives linear runtime scaling
+This is the only code path that should be described as the live default.
 
-## Core Files
+## Validated Findings Not Yet Promoted
 
-- `model/graph.py`: stable NumPy reference implementation
-- `model/graph_v3.c`: C backend and performance path
-- `lib/utils.py`: score functions and training loops, including cyclic training
-- `lib/data.py`: small data helpers
-- `lib/log.py`: live logging support for multiprocessing sweeps
+- [`flip` mutation](../VALIDATED_FINDINGS.md) is currently the strongest English structural mutation finding.
+- [`scale=1.0 + theta=0.03`](../VALIDATED_FINDINGS.md) beat the older `INJ_SCALE=3.0` English setup in empty-start sweeps.
+
+Both are important, but neither should be described as a shipped default until `model/graph.py` actually adopts them.
+
+## Experimental Next Target
+
+- The current next build target is the mixed 18-worker swarm tracked in [issue #114](https://github.com/VRAXION/VRAXION/issues/114).
+- It is a candidate training recipe, not the current canonical line.
 
 ## Recommended Entry Points
 
-- `tests/test_model.py`: adversarial correctness and stability stress test
-- `tests/test_cyclic.py`: cyclic training smoke
-- `tests/rng_tier_benchmark.py`: RNG-quality sensitivity benchmark
-- `tests/ab_rng_knee.py`: quick random-source knee benchmark
-- `tests/benchmark_ab.py`: SWG vs MLP vs random-search benchmark
-- `tests/benchmark_convergence.py`: convergence benchmark with tuned budgets
-- `tests/benchmark_expressiveness.py`: expressiveness benchmark over multiple task families
-- `tests/sparse_scaling_benchmark.py`: sparse-forward scaling benchmark
-- `tests/graph_v3_probe.py`: compare and inspect the C path
-- `tests/latent_dynamics_probe.py`: state-trace, separability, ablation, and perturbation probe for recurrent latent-like dynamics
-- `tests/loop_attribution_probe.py`: quick short-cycle sign/motif attribution probe for feedback loops
-- `CREDIT_GUIDED_REWIRING.md`: research note on recurrence, pain probes, and credit-guided rewiring
-- `CREDIT_GUIDED_REWIRING_SKETCH.md`: prototype plan for `forward_batch_trace()` + `backward_credit()`
-- `LATENT_DYNAMICS_ANALYSIS_PLAN.md`: plan to test whether loops create a useful latent-like internal state-space
-- `viz/swg_demo.html`: interactive SWG topology viewer
+- [`model/graph.py`](model/graph.py) — canonical Python reference
+- [`model/graph_v3.c`](model/graph_v3.c) — C scaling/parity path
+- [`tests/test_model.py`](tests/test_model.py) — adversarial stress test
+- [`tests/benchmark_ab.py`](tests/benchmark_ab.py) — benchmark comparison harness
+- [`tests/gpu_experimental/`](tests/gpu_experimental/) — isolated GPU research branch notes and probes
 
-## Test Layout Notes
+## Quick Verification
 
-- `tests/fixtures/`: frozen replay assets used by deterministic replay checks
-- `tests/gpu_experimental/`: isolated GPU prototype and plateau-study scripts
-
-## Intentionally Excluded From Clean Main
-
-The previous `surprise` learning path was removed from this cleaned main candidate.
-It underperformed the mutation+selection baseline and still needs redesign before returning to the default branch.
+```bash
+python -m compileall v4.2
+python v4.2/tests/test_model.py
+python ../tools/check_public_surface.py
+```
