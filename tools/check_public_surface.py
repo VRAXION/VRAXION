@@ -82,6 +82,34 @@ WIKI_MIRROR_MAP = {
 WIKI_HOME_LABEL = "VRAXION Home"
 WIKI_ARCH_LABEL = "INSTNCT Architecture"
 OLD_WIKI_ARCH_LABEL = "VRAXION Architecture (INSTNCT)"
+PRIMARY_NAV_TARGETS = ["Home", "SWG-v4.2-Architecture", "Validated-Findings", "Engineering", "Release-Notes"]
+LANDING_CTA_LABELS = [
+    "VRAXION Home",
+    "INSTNCT Architecture",
+    "Validated Findings",
+    "Engineering Protocol",
+    "Project Timeline",
+]
+PRIMARY_PAGE_SECTION_RULES = {
+    WIKI_HOME_SRC: ["At a Glance", "Use This Page When", "Start Here"],
+    WIKI_SWG_SRC: ["At a Glance", "Use This Page When", "Current Shipped Facts"],
+    WIKI_FINDINGS_SRC: ["Best Current Evidence", "Use This Page When", "Evidence Table"],
+    WIKI_ENGINEERING_SRC: ["At a Glance", "Use This Page When", "Run Contract", "Required Evidence"],
+    WIKI_RELEASE_NOTES_SRC: [
+        "Current Snapshot",
+        "What Matters Now",
+        "Project Timeline",
+        "Open Questions and Promotion Gates",
+        "Key Terms",
+    ],
+}
+HOME_ONLY_META_PHRASES = [
+    "Repo-tracked docs are canonical",
+    "mirrored secondary surface",
+]
+FOOTER_ONLY_META_PHRASES = [
+    "if the GitHub wiki render is incomplete",
+]
 REQUIRED_LOCAL_LINK_TARGETS = {
     README: ["VALIDATED_FINDINGS.md", "v4.2/README.md"],
     V42_README: ["../VALIDATED_FINDINGS.md"],
@@ -159,11 +187,57 @@ def check_front_door_phrases(path: Path, text: str, errors: list[str]) -> None:
 
 
 def check_landing(text: str, errors: list[str]) -> None:
-    for term in ["Current mainline", "Validated finding", "Experimental branch", "INSTNCT"]:
+    for term in ["Current mainline", "Validated finding", "Experimental branch", "INSTNCT", "Best validated evidence", "Current next target"]:
         if term not in text:
             fail(f"docs/index.html: missing required term {term!r}", errors)
     if WIKI_ARCH_LABEL not in text:
         fail(f"docs/index.html: missing architecture landing label {WIKI_ARCH_LABEL!r}", errors)
+    for label in LANDING_CTA_LABELS:
+        if label not in text:
+            fail(f"docs/index.html: missing CTA label {label!r}", errors)
+
+
+def require_sections(path: Path, text: str, sections: list[str], errors: list[str]) -> None:
+    for section in sections:
+        if section not in text:
+            fail(f"{path.name}: missing expected editorial section {section!r}", errors)
+
+
+def require_details_section(path: Path, text: str, summary: str, errors: list[str]) -> None:
+    pattern = rf"<details>\s*<summary>{re.escape(summary)}</summary>.*?</details>"
+    if not re.search(pattern, text, re.DOTALL):
+        fail(f"{path.name}: expected {summary!r} to remain inside a <details> block", errors)
+
+
+def check_primary_editorial_shape(errors: list[str]) -> None:
+    for path, sections in PRIMARY_PAGE_SECTION_RULES.items():
+        require_sections(path, read(path), sections, errors)
+
+    release_notes_text = read(WIKI_RELEASE_NOTES_SRC)
+    if not re.search(r"^#\s+Project Timeline\s*$", release_notes_text, re.MULTILINE):
+        fail("Release-Notes.md: visible page title must be 'Project Timeline'", errors)
+    require_details_section(WIKI_RELEASE_NOTES_SRC, release_notes_text, "Open retired surface map", errors)
+    require_details_section(WIKI_RELEASE_NOTES_SRC, release_notes_text, "Open key terms", errors)
+
+    findings_text = read(WIKI_FINDINGS_SRC)
+    require_details_section(WIKI_FINDINGS_SRC, findings_text, "Historical Context", errors)
+
+
+def check_meta_copy_boundaries(errors: list[str]) -> None:
+    non_home_primary_pages = [
+        WIKI_SWG_SRC,
+        WIKI_FINDINGS_SRC,
+        WIKI_ENGINEERING_SRC,
+        WIKI_RELEASE_NOTES_SRC,
+    ]
+    for path in non_home_primary_pages:
+        text = read(path)
+        for phrase in HOME_ONLY_META_PHRASES:
+            if phrase in text:
+                fail(f"{path.name}: long canonical/mirror explanation should stay on Home only", errors)
+        for phrase in FOOTER_ONLY_META_PHRASES:
+            if phrase in text:
+                fail(f"{path.name}: GitHub render fallback note should stay in the footer only", errors)
 
 
 def check_findings_constants(threshold: str, inj_scale: str, errors: list[str]) -> None:
@@ -259,7 +333,7 @@ def check_wiki_sources(errors: list[str]) -> None:
     sidebar_text = read(WIKI_SIDEBAR_SRC)
     if "## Primary" not in sidebar_text:
         fail("_Sidebar.md: missing Primary navigation section", errors)
-    for href in ["Home", "SWG-v4.2-Architecture", "Validated-Findings", "Engineering", "Release-Notes"]:
+    for href in PRIMARY_NAV_TARGETS:
         if not re.search(rf"\[[^\]]+\]\({re.escape(href)}\)", sidebar_text):
             fail(f"_Sidebar.md: missing markdown navigation link target {href!r}", errors)
     if not re.search(rf"\[{re.escape(WIKI_HOME_LABEL)}\]\(Home\)", sidebar_text):
@@ -270,6 +344,8 @@ def check_wiki_sources(errors: list[str]) -> None:
         fail("_Sidebar.md: missing primary navigation label 'Project Timeline'", errors)
     if OLD_WIKI_ARCH_LABEL in sidebar_text:
         fail(f"_Sidebar.md: old architecture label {OLD_WIKI_ARCH_LABEL!r} should not appear in active nav", errors)
+    if "**ACTIVE**" in sidebar_text or " ACTIVE" in sidebar_text:
+        fail("_Sidebar.md: active nav should not contain ad hoc status badges", errors)
     if "Wiki Graph" in sidebar_text:
         fail("_Sidebar.md: Wiki Graph should not appear in the current wiki navigation", errors)
     if "Governance" in sidebar_text or "Documentation Governance" in sidebar_text:
@@ -294,7 +370,7 @@ def check_wiki_sources(errors: list[str]) -> None:
     footer_text = read(WIKI_FOOTER_SRC)
     if "Nav:" not in footer_text:
         fail("_Footer.md: missing Nav line", errors)
-    for href in ["Home", "SWG-v4.2-Architecture", "Validated-Findings", "Engineering", "Release-Notes"]:
+    for href in PRIMARY_NAV_TARGETS:
         if not re.search(rf"\[[^\]]+\]\({re.escape(href)}\)", footer_text):
             fail(f"_Footer.md: missing footer markdown navigation link target {href!r}", errors)
     if not re.search(rf"\[{re.escape(WIKI_HOME_LABEL)}\]\(Home\)", footer_text):
@@ -354,6 +430,8 @@ def main() -> int:
     check_contributing(errors)
     check_ch01_stub(errors)
     check_release_notes_page(errors)
+    check_primary_editorial_shape(errors)
+    check_meta_copy_boundaries(errors)
     check_removed_wiki_sources(errors)
     check_wiki_sources(errors)
     check_wiki_mirror(errors)
