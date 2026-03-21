@@ -12,7 +12,6 @@
 - [Documentation Governance](Governance)
 - [Release Notes](Release-Notes)
 - [Glossary](Glossary)
-- [Diamond Code v3 Architecture](https://github.com/VRAXION/VRAXION/wiki/Diamond-Code-v3-Architecture)
 - [Legacy Vault](https://github.com/VRAXION/VRAXION/wiki/Legacy-Vault)
 - [Wiki Graph](https://github.com/VRAXION/VRAXION/wiki/Wiki-Graph)
 

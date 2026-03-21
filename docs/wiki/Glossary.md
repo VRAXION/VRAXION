@@ -37,19 +37,19 @@ The live secondary public status page for milestone-level progress and current p
 These terms belong mainly to earlier architecture lines and remain useful only as historical context.
 
 **LCX (Latent Context Exchange)**
-An earlier external memory system built around hash-bucketed memory slots. It belongs to the Diamond Code v3 era, not the current INSTNCT public line. See [Diamond Code v3 Architecture](https://github.com/VRAXION/VRAXION/wiki/Diamond-Code-v3-Architecture) or [Legacy Vault](https://github.com/VRAXION/VRAXION/wiki/Legacy-Vault).
+An earlier external memory system built around hash-bucketed memory slots. It belongs to the Diamond Code v3 era, not the current INSTNCT public line. See the retired [Diamond Code v3 Architecture](Diamond-Code-v3-Architecture) page or [Legacy Vault](https://github.com/VRAXION/VRAXION/wiki/Legacy-Vault).
 
 **Zoom gate**
-A learned gate used in the earlier LCX memory pathway to control how much memory content was blended into the hidden state. Historical term only. See [Diamond Code v3 Architecture](https://github.com/VRAXION/VRAXION/wiki/Diamond-Code-v3-Architecture).
+A learned gate used in the earlier LCX memory pathway to control how much memory content was blended into the hidden state. Historical term only. See the retired [Diamond Code v3 Architecture](Diamond-Code-v3-Architecture) page.
 
 **Bottleneck projection**
-An earlier compression block used to translate LCX reads into the model’s hidden-state space. Historical term only. See [Diamond Code v3 Architecture](https://github.com/VRAXION/VRAXION/wiki/Diamond-Code-v3-Architecture).
+An earlier compression block used to translate LCX reads into the model’s hidden-state space. Historical term only. See the retired [Diamond Code v3 Architecture](Diamond-Code-v3-Architecture) page.
 
 **C19 activation**
-A periodic activation used in the Diamond Code v3 era. It is not part of the current INSTNCT public story and should be treated as legacy context unless explicitly discussed in historical pages.
+A periodic activation used in the Diamond Code v3 era. It is not part of the current INSTNCT public story and should be treated as legacy context unless explicitly discussed in historical pages. See the retired [Diamond Code v3 Architecture](Diamond-Code-v3-Architecture) page for era context.
 
 **Score Margin**
-A routing-quality metric from the Diamond Code v3 observability stack. It is useful historical context for older memory experiments, but it is not a core term in the current INSTNCT public layer.
+A routing-quality metric from the Diamond Code v3 observability stack. It is useful historical context for older memory experiments, but it is not a core term in the current INSTNCT public layer. See [Legacy Vault](https://github.com/VRAXION/VRAXION/wiki/Legacy-Vault) for broader historical context.
 
 ## Read Next
 

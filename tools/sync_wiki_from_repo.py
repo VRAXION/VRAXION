@@ -17,6 +17,7 @@ FILES = [
     "Hypotheses.md",
     "Release-Notes.md",
     "Glossary.md",
+    "Diamond-Code-v3-Architecture.md",
     "SWG-v4.2-Architecture.md",
     "Validated-Findings.md",
     "Proven-Findings.md",

@@ -26,6 +26,7 @@ WIKI_TOT_SRC = WIKI_SOURCE_DIR / "Theory-of-Thought.md"
 WIKI_HYPOTHESES_SRC = WIKI_SOURCE_DIR / "Hypotheses.md"
 WIKI_RELEASE_NOTES_SRC = WIKI_SOURCE_DIR / "Release-Notes.md"
 WIKI_GLOSSARY_SRC = WIKI_SOURCE_DIR / "Glossary.md"
+WIKI_DCV3_SRC = WIKI_SOURCE_DIR / "Diamond-Code-v3-Architecture.md"
 WIKI_SWG_SRC = WIKI_SOURCE_DIR / "SWG-v4.2-Architecture.md"
 WIKI_FINDINGS_SRC = WIKI_SOURCE_DIR / "Validated-Findings.md"
 WIKI_PROVEN_SRC = WIKI_SOURCE_DIR / "Proven-Findings.md"
@@ -42,6 +43,7 @@ PRIMARY_WIKI_SOURCE_FILES = {
     WIKI_HYPOTHESES_SRC,
     WIKI_RELEASE_NOTES_SRC,
     WIKI_GLOSSARY_SRC,
+    WIKI_DCV3_SRC,
     WIKI_SWG_SRC,
     WIKI_FINDINGS_SRC,
     WIKI_PROVEN_SRC,
@@ -64,6 +66,7 @@ MARKDOWN_FILES = [
     WIKI_HYPOTHESES_SRC,
     WIKI_RELEASE_NOTES_SRC,
     WIKI_GLOSSARY_SRC,
+    WIKI_DCV3_SRC,
     WIKI_SWG_SRC,
     WIKI_FINDINGS_SRC,
     WIKI_PROVEN_SRC,
@@ -84,6 +87,7 @@ WIKI_MIRROR_MAP = {
     WIKI_HYPOTHESES_SRC: WIKI_MIRROR_DIR / "Hypotheses.md",
     WIKI_RELEASE_NOTES_SRC: WIKI_MIRROR_DIR / "Release-Notes.md",
     WIKI_GLOSSARY_SRC: WIKI_MIRROR_DIR / "Glossary.md",
+    WIKI_DCV3_SRC: WIKI_MIRROR_DIR / "Diamond-Code-v3-Architecture.md",
     WIKI_SWG_SRC: WIKI_MIRROR_DIR / "SWG-v4.2-Architecture.md",
     WIKI_FINDINGS_SRC: WIKI_MIRROR_DIR / "Validated-Findings.md",
     WIKI_PROVEN_SRC: WIKI_MIRROR_DIR / "Proven-Findings.md",
@@ -276,6 +280,13 @@ def check_glossary_page(errors: list[str]) -> None:
             fail(f"Glossary.md: should not contain stale theory/canonical badge text {banned!r}", errors)
 
 
+def check_dcv3_stub(errors: list[str]) -> None:
+    text = read(WIKI_DCV3_SRC)
+    for term in ["retired", "SWG-v4.2-Architecture"]:
+        if term not in text:
+            fail(f"Diamond-Code-v3-Architecture.md: missing expected stub term {term!r}", errors)
+
+
 def check_wiki_sources(errors: list[str]) -> None:
     sidebar_text = read(WIKI_SIDEBAR_SRC)
     if "## Primary" not in sidebar_text:
@@ -299,6 +310,8 @@ def check_wiki_sources(errors: list[str]) -> None:
         fail("_Sidebar.md: Theory of Thought should not appear in the current wiki navigation", errors)
     if "Hypotheses" in sidebar_text:
         fail("_Sidebar.md: Hypotheses should not appear in the current wiki navigation", errors)
+    if "Diamond-Code-v3-Architecture" in sidebar_text or "Diamond Code v3 Architecture" in sidebar_text:
+        fail("_Sidebar.md: Diamond Code v3 Architecture should not appear in the current wiki navigation", errors)
 
     footer_text = read(WIKI_FOOTER_SRC)
     if "Nav:" not in footer_text:
@@ -360,6 +373,7 @@ def main() -> int:
     check_hypotheses_page(errors)
     check_release_notes_page(errors)
     check_glossary_page(errors)
+    check_dcv3_stub(errors)
     check_wiki_sources(errors)
     check_wiki_mirror(errors)
 
