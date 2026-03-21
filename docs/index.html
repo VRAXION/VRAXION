@@ -161,7 +161,7 @@
         <div class="metric"><span>Current mainline</span><span><code>main</code></span></div>
         <div class="metric"><span>Canonical code path</span><span><code>v4.2/model/graph.py</code></span></div>
         <div class="metric"><span>Architecture line</span><span><code>INSTNCT</code></span></div>
-        <div class="metric"><span>Validated finding</span><span><code>#112</code>, <code>#113</code></span></div>
+        <div class="metric"><span>Validated finding</span><span><code>see findings</code></span></div>
         <div class="metric"><span>Experimental branch</span><span><code>#114</code></span></div>
       </aside>
     </section>
@@ -180,11 +180,12 @@
         <p>The only settings that count as live mainline defaults are the ones actually shipped in <code>v4.2/model/graph.py</code>. That mainline currently includes per-neuron <code>theta</code>/<code>decay</code> and nonnegative charge dynamics. If an issue or wiki page says more than the code does, the code wins until promotion happens.</p>
       </article>
       <article class="card">
-        <h2>Validated Findings</h2>
+        <h2>Evidence Snapshot</h2>
         <ul>
+          <li>Charge ReLU is now part of the mainline forward path.</li>
           <li><code>flip</code> beat float weight perturbation on English training.</li>
           <li><code>scale=1.0 + low theta</code> beat the older <code>scale=3.0</code> hack.</li>
-          <li>Both are tracked as evidence, not yet as shipped defaults.</li>
+          <li><code>8</code> ticks plus decay-aware scheduling pushed English 1024n to a <code>19.95%</code> record.</li>
         </ul>
       </article>
     </section>

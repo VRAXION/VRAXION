@@ -46,6 +46,7 @@ Anything not actually shipped in that code path must be labeled as a **Validated
 |---|---|---|
 | `flip` mutation | Validated finding | Not promoted into `graph.py` defaults |
 | `scale=1.0 + low theta` | Validated finding | Not promoted into `graph.py` defaults |
+| `8` ticks + decay-aware schedule | Validated finding | Not promoted into `graph.py` defaults |
 | mixed 18-worker swarm | Experimental branch | Active target, not current mainline |
 
 See [`VALIDATED_FINDINGS.md`](https://github.com/VRAXION/VRAXION/blob/main/VALIDATED_FINDINGS.md) for the canonical evidence summary, with issue links as supporting references rather than the front door.

@@ -41,10 +41,12 @@ The repo-tracked docs are the canonical public source. The GitHub wiki is a seco
 - The stable reference is the NumPy self-wiring graph with passive I/O, a ternary hidden mask, co-evolved per-neuron `theta` / `decay`, and nonnegative charge dynamics.
 - Recent English sweeps around low-theta training and signal scaling are **not** described here as baked defaults until they land in that code path.
 
-### Validated findings
+### Evidence snapshot
 
+- **Charge ReLU** is now part of the current mainline forward path; replacing symmetric clip with nonnegative charge unlocked flip accepts and materially improved English training ([66ce511](https://github.com/VRAXION/VRAXION/commit/66ce511d58b71cecbd92adc04f307299b3fc414b)).
 - **Flip mutation** is the strongest structural mutation found so far on English 1024n; float weight perturbation lost badly ([#112](https://github.com/VRAXION/VRAXION/issues/112)).
 - **`INJ_SCALE=1.0` + low theta** beat the older `scale=3.0` hack in empty-start English sweeps, but that result is still tracked as a validated finding rather than a shipped default ([#113](https://github.com/VRAXION/VRAXION/issues/113)).
+- **`8` ticks + decay-aware scheduling** pushed English 1024n to a `19.95%` record, but that recipe is still a validated finding rather than a baked default ([2b4de88](https://github.com/VRAXION/VRAXION/commit/2b4de887656d5061a944d7f85b0bb2a875f767e4)).
 
 The canonical evidence summary lives in [`VALIDATED_FINDINGS.md`](VALIDATED_FINDINGS.md).
 

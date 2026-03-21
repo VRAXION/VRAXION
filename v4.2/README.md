@@ -26,8 +26,9 @@ This is the only code path that should be described as the live default.
 
 - [`flip` mutation](../VALIDATED_FINDINGS.md) is currently the strongest English structural mutation finding.
 - [`scale=1.0 + theta=0.03`](../VALIDATED_FINDINGS.md) beat the older `INJ_SCALE=3.0` English setup in empty-start sweeps.
+- [`8` ticks + decay-aware scheduling](../VALIDATED_FINDINGS.md) reached the current `19.95%` English 1024n record, but is still not part of `model/graph.py`.
 
-Both are important, but neither should be described as a shipped default until `model/graph.py` actually adopts them.
+These findings are important, but none of them should be described as a shipped default until `model/graph.py` actually adopts them.
 
 ## Experimental Next Target
 

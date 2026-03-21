@@ -55,6 +55,7 @@ If a setting is not present in that file, it is not a live default. It should be
 |---|---|---|---|---|
 | `flip` mutation | Validated finding | A better structural mutation than float weight perturbation on English next-byte training | No | [#112](https://github.com/VRAXION/VRAXION/issues/112) |
 | `scale=1.0 + low theta` | Validated finding | A better experimental recipe than the older `scale=3.0 + theta=0.1` setup in empty-start English sweeps | No | [#113](https://github.com/VRAXION/VRAXION/issues/113) |
+| `8` ticks + decay-aware schedule | Validated finding | A better English 1024n recipe that reached `19.95%` and shifted late training toward decay tuning | No | [2b4de88](https://github.com/VRAXION/VRAXION/commit/2b4de887656d5061a944d7f85b0bb2a875f767e4) |
 | mixed 18-worker swarm | Experimental branch | The current next build target for English training | No | [#114](https://github.com/VRAXION/VRAXION/issues/114) |
 
 For the full evidence summary, use [`VALIDATED_FINDINGS.md`](https://github.com/VRAXION/VRAXION/blob/main/VALIDATED_FINDINGS.md).
