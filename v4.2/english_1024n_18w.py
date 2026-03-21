@@ -10,7 +10,8 @@ Config:
   - Scale: 1.0 (no INJ_SCALE hack)
   - Theta: 0.03 init (learnable per-neuron)
   - Ticks: 8 (sweep: 8 > 6 > 4)
-  - Schedule: add/add/add/flip/theta/decay
+  - Decay init: random [0.08, 0.24] per-neuron (23.72% peak vs 21.96% fix)
+  - Schedule: add/add/add/flip/theta/decay (resample mutation)
   - Empty start (no checkpoint needed)
 """
 import sys, os, time, random, json
@@ -147,7 +148,8 @@ if __name__ == "__main__":
     THRESHOLD = 0.00005 # from adaptive sweep convergence
     INJ_SCALE = 1.0     # no hack (sweep confirmed)
     THETA_INIT = 0.03   # sweep winner
-    DECAY_INIT = 0.15
+    DECAY_INIT_LO = 0.08   # random init range (sweep: [0.08,0.24] > fix 0.15)
+    DECAY_INIT_HI = 0.24
 
     SCHEDULE = ['add', 'add', 'add', 'flip', 'theta', 'decay']
 
@@ -187,7 +189,8 @@ if __name__ == "__main__":
     # Empty start
     net.mask[:] = 0; net.alive = []; net.alive_set = set(); net._sync_sparse_idx()
     net.theta[:] = THETA_INIT
-    net.decay[:] = DECAY_INIT
+    decay_rng = np.random.RandomState(99)
+    net.decay[:] = decay_rng.uniform(DECAY_INIT_LO, DECAY_INIT_HI, H).astype(np.float32)
     net.state *= 0; net.charge *= 0
 
     print(f"\n{'='*60}")
