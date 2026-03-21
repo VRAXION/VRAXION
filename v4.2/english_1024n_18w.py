@@ -10,6 +10,7 @@ Config:
   - Scale: 1.0 (no INJ_SCALE hack)
   - Theta: 0.03 init (learnable per-neuron)
   - Ticks: 8 (sweep: 8 > 6 > 4)
+  - Injection: 2 ticks (sweep: 2 > 4 > 1 > 8, +3.26% vs tick-0-only)
   - Decay init: random [0.08, 0.24] per-neuron (23.72% peak vs 21.96% fix)
   - Schedule: add/add/add/flip/theta/decay (resample mutation)
   - Empty start (no checkpoint needed)
@@ -49,7 +50,7 @@ def _eval_bigram(mask, H, theta, decay, seqs):
         for i in range(len(text_bytes)-1):
             act = state.copy()
             for t in range(8):
-                if t == 0:
+                if t < 2:
                     act = act + _bp[text_bytes[i]] @ _W_in
                 raw = np.zeros(H, dtype=np.float32)
                 if len(rs):
@@ -121,8 +122,8 @@ def eval_accuracy(mask, H, W_in, W_out, theta, decay, text_bytes, bp):
     correct = 0; total = 0
     for i in range(len(text_bytes)-1):
         act = state.copy()
-        for t in range(6):
-            if t == 0: act = act + bp[text_bytes[i]] @ W_in
+        for t in range(8):
+            if t < 2: act = act + bp[text_bytes[i]] @ W_in
             raw = np.zeros(H, dtype=np.float32)
             if len(rs): np.add.at(raw, cs, act[rs] * sp_vals)
             charge += raw; charge *= ret
