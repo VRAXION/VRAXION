@@ -11,7 +11,6 @@
 ## Further Reference
 
 - [Documentation Governance](Governance)
-- [Glossary](Glossary)
 - [Wiki Graph](https://github.com/VRAXION/VRAXION/wiki/Wiki-Graph)
 
 ## Public

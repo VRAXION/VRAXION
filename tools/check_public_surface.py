@@ -277,6 +277,7 @@ def check_release_notes_page(errors: list[str]) -> None:
         "Timeline of Major Turns",
         "Open Questions and Promotion Gates",
         "Published Releases",
+        "Key Terms",
         "Read Next",
     ]:
         if term not in text:
@@ -285,12 +286,9 @@ def check_release_notes_page(errors: list[str]) -> None:
 
 def check_glossary_page(errors: list[str]) -> None:
     text = read(WIKI_GLOSSARY_SRC)
-    for term in ["What This Page Is", "Current Terms", "Legacy Terms and Historical Context", "Read Next"]:
+    for term in ["retired", "Release-Notes"]:
         if term not in text:
-            fail(f"Glossary.md: missing expected glossary section {term!r}", errors)
-    for banned in ["Stage: Theory", "CANONICAL", "GUIDE"]:
-        if banned in text:
-            fail(f"Glossary.md: should not contain stale theory/canonical badge text {banned!r}", errors)
+            fail(f"Glossary.md: missing expected stub term {term!r}", errors)
 
 
 def check_dcv3_stub(errors: list[str]) -> None:
@@ -309,8 +307,6 @@ def check_wiki_sources(errors: list[str]) -> None:
             fail(f"_Sidebar.md: missing markdown navigation link target {href!r}", errors)
     if not re.search(r"\[[^\]]+\]\(Governance\)", sidebar_text):
         fail("_Sidebar.md: missing markdown navigation link target 'Governance'", errors)
-    if not re.search(r"\[[^\]]+\]\(Glossary\)", sidebar_text):
-        fail("_Sidebar.md: missing markdown navigation link target 'Glossary'", errors)
     if "Proven-Findings" in sidebar_text or "Proven Findings" in sidebar_text:
         fail("_Sidebar.md: Proven Findings should not appear in the current wiki navigation", errors)
     if "Chapter-01---Vision-and-Scope" in sidebar_text or "Chapter 01 - Vision and Scope" in sidebar_text:
@@ -325,6 +321,8 @@ def check_wiki_sources(errors: list[str]) -> None:
         fail("_Sidebar.md: Diamond Code v3 Architecture should not appear in the current wiki navigation", errors)
     if "Legacy-Vault" in sidebar_text or "Legacy Vault" in sidebar_text:
         fail("_Sidebar.md: Legacy Vault should not appear in the current wiki navigation", errors)
+    if "Glossary" in sidebar_text:
+        fail("_Sidebar.md: Glossary should not appear in the current wiki navigation", errors)
 
     footer_text = read(WIKI_FOOTER_SRC)
     if "Nav:" not in footer_text:
@@ -334,14 +332,14 @@ def check_wiki_sources(errors: list[str]) -> None:
             fail(f"_Footer.md: missing footer markdown navigation link target {href!r}", errors)
     if not re.search(r"\[[^\]]+\]\(Governance\)", footer_text):
         fail("_Footer.md: missing footer markdown navigation link target 'Governance'", errors)
-    if not re.search(r"\[[^\]]+\]\(Glossary\)", footer_text):
-        fail("_Footer.md: missing footer markdown navigation link target 'Glossary'", errors)
     if "INSTNCT" not in footer_text:
         fail("_Footer.md: missing footer primary navigation label 'INSTNCT'", errors)
     if "Chapter-11---Roadmap" in footer_text or "Chapter 11 - Roadmap" in footer_text:
         fail("_Footer.md: Chapter 11 - Roadmap should not appear in the current wiki footer", errors)
     if "Legacy-Vault" in footer_text or "Legacy Vault" in footer_text:
         fail("_Footer.md: Legacy Vault should not appear in the current wiki footer", errors)
+    if "Glossary" in footer_text:
+        fail("_Footer.md: Glossary should not appear in the current wiki footer", errors)
 
 
 def check_wiki_mirror(errors: list[str]) -> None:

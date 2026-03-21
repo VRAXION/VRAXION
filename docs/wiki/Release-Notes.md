@@ -34,7 +34,7 @@ This page is the **live primary public timeline page** for VRAXION. It combines 
 |---|---|---|---|
 | Early 2026 | Diamond Code / LCX era became the main active line | External memory, dreaming, observability, and Goldilocks-era experiments dominated the architecture story. | Historical context only: [Diamond Code v3 Architecture](Diamond-Code-v3-Architecture) |
 | 2026-02-17 | Governance and Engineering doctrine were split out into dedicated pages | Public structure stopped depending on scattered theory leaves and lab notes. | [Engineering Protocol](Engineering), [Documentation Governance](Governance) |
-| 2026-02-17 | Older architecture leaves and glossary drift started getting cleaned up | Current terminology and architecture reading no longer needed a chain of legacy architecture pages. | [VRAXION Architecture (INSTNCT)](SWG-v4.2-Architecture), [Glossary](Glossary) |
+| 2026-02-17 | Older architecture leaves and terminology drift started getting cleaned up | Current terminology and architecture reading no longer needed a chain of legacy architecture pages. | [VRAXION Architecture (INSTNCT)](SWG-v4.2-Architecture), this page |
 | 2026-02-17 to 2026-02-22 | Evidence discipline hardened around findings instead of page-local claims | Schedule, depth, and mutation results moved into the evidence layer instead of being implied as defaults. | [Validated Findings](Validated-Findings) |
 | 2026-03-21 | Repo-tracked docs became the canonical public source and the GitHub wiki became a mirror | Public truth stopped drifting between README, Pages, findings, and wiki surfaces. | [Home](Home), [Documentation Governance](Governance) |
 | 2026-03-21 | Vision, roadmap, theory, and PF-era pages were retired into historical stubs | The public story became readable through a small number of current pages instead of a large theory-led wiki. | [Home](Home), [Validated Findings](Validated-Findings), [Engineering Protocol](Engineering) |
@@ -57,6 +57,37 @@ This page is the **live primary public timeline page** for VRAXION. It combines 
 - Public update issues: [public-update label](https://github.com/VRAXION/VRAXION/issues?q=label%3Apublic-update)
 
 Older sprint-by-sprint bundles and prerelease-era notes remain part of the historical record, but they are no longer the primary status surface.
+
+## Key Terms
+
+**Current mainline**
+What is actually shipped in code on `main`. If a public page and the code disagree about current behavior, the code wins.
+
+**Validated finding**
+An experiment-backed result that has not yet been promoted into the canonical code path.
+
+**Experimental branch**
+An active build target or design direction that is still under evaluation, not a live default.
+
+**INSTNCT**
+The current public architecture line for VRAXION: a self-wiring, gradient-free system where the learnable object is the evolving directed graph and its co-evolved neuron parameters.
+
+**Artifacts (run bundle)**
+The minimum files required to treat a run as evidence: `run_cmd.txt`, `env.json`, `metrics.json`, and `summary.md`.
+
+**Fail gates**
+The hard invalidation conditions for a run, such as OOM, NaN/Inf, step-time explosion, heartbeat stall, or VRAM guard breach.
+
+**Engineering Protocol**
+The run and evidence contract for VRAXION experiments: how runs are executed, validated, and promoted into public truth. See [Engineering Protocol](Engineering).
+
+### Legacy Terms
+
+**LCX (Latent Context Exchange)**
+An earlier external-memory system from the Diamond Code v3 era, not part of the current INSTNCT public line.
+
+**Zoom gate / bottleneck projection / C19 activation / score margin**
+Historical Diamond Code v3 terms that remain useful only as legacy context. Use the retired [Diamond Code v3 Architecture](Diamond-Code-v3-Architecture) page for era-specific references.
 
 ## Read Next
 
