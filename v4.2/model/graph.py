@@ -21,7 +21,6 @@ TEMPORARY: input_projection/output_projection scaled by INJ_SCALE=3.0 to overcom
 
 import numpy as np
 import random
-import os
 
 
 class SelfWiringGraph:
@@ -33,36 +32,34 @@ class SelfWiringGraph:
     THRESHOLD = 0.5    # firing threshold
     CAP_RATIO = 120    # max alive edges = V * NV_RATIO * CAP_RATIO
     INJ_SCALE = 3.0    # TEMPORARY: projection amplitude to overcome threshold
+    DEFAULT_THETA = 0.1
+    DEFAULT_DECAY = 0.15
+    LEGACY_CLIP_FACTOR = 1.0
     # Mutation int fractions: PATIENCE 7/20, LOSS_DRIFT 1/5, SHRINK 7/10, LOSS_STEP +-3
 
-    def __init__(self, *args, **_):
-        # SelfWiringGraph(64)        → V=64, N=64*NV_RATIO
-        # SelfWiringGraph(192, 64)   → N=192, V=64 (explicit N)
-        if len(args) == 1:
-            vocab = args[0]
-            self.V = vocab
-            self.N = vocab * self.NV_RATIO
-        else:
-            self.N = args[0]
-            self.V = args[1]
-            vocab = self.V
-        self.H = vocab * self.NV_RATIO      # hidden neurons (all neurons)
-        self.N = self.H                       # compat alias
+    def __init__(self, *args, density=None, threshold=None, leak=None):
+        # SelfWiringGraph(64)      -> V=64, H=64*NV_RATIO
+        # SelfWiringGraph(192, 64) -> H=192, V=64 (explicit hidden size)
+        hidden, vocab = self._parse_init_args(*args)
+        self.V = vocab
+        self.H = hidden
+        self.N = hidden  # compat alias
+        self._init_legacy_compat()
 
         # Passive I/O projections (fixed, not learned)
         # Separate RNG so mask init stays deterministic regardless of projection
         proj_rng = np.random.RandomState(np.random.randint(0, 2**31))
-        input_projection = proj_rng.randn(vocab, self.H).astype(np.float32)
+        input_projection = proj_rng.randn(vocab, hidden).astype(np.float32)
         input_projection /= np.linalg.norm(input_projection, axis=1, keepdims=True)
-        output_projection = proj_rng.randn(self.H, vocab).astype(np.float32)
+        output_projection = proj_rng.randn(hidden, vocab).astype(np.float32)
         output_projection /= np.linalg.norm(output_projection, axis=0, keepdims=True)
         self.input_projection = input_projection * self.INJ_SCALE    # TEMPORARY: scale up
         self.output_projection = output_projection * self.INJ_SCALE   # TEMPORARY: scale up
 
         # Mask: H × H hidden-only, float32 with baked DRIVE {-0.6, 0, +0.6}
-        d = self.DENSITY / 100
-        r = np.random.rand(self.H, self.H)
-        self.mask = np.zeros((self.H, self.H), dtype=np.float32)
+        d = self._density_to_fraction(self.DENSITY if density is None else density)
+        r = np.random.rand(hidden, hidden)
+        self.mask = np.zeros((hidden, hidden), dtype=np.float32)
         self.mask[r < d / 2] = -self.DRIVE
         self.mask[r > 1 - d / 2] = self.DRIVE
         np.fill_diagonal(self.mask, 0)
@@ -80,8 +77,50 @@ class SelfWiringGraph:
         # Co-evolved learned params
         self.loss_pct = np.int8(15)    # global legacy, kept for compat
         self.drive = np.int8(1)        # signed: +N=add N, -N=remove N, [-15,+15]
-        self.theta = np.full(self.H, 0.1, dtype=np.float32)    # per-neuron threshold [0.0, 1.0]
-        self.decay = np.full(self.H, 0.15, dtype=np.float32)   # per-neuron decay rate [0.01, 0.5]
+        theta_init = self.DEFAULT_THETA if threshold is None else float(threshold)
+        decay_init = self.DEFAULT_DECAY if leak is None else (1.0 - float(np.clip(leak, 0.0, 1.0)))
+        self.theta = np.full(self.H, theta_init, dtype=np.float32)   # per-neuron threshold [0.0, 1.0]
+        self.decay = np.full(self.H, decay_init, dtype=np.float32)   # per-neuron decay rate [0.0, 1.0]
+
+    @staticmethod
+    def _parse_init_args(*args):
+        if len(args) == 1:
+            vocab = int(args[0])
+            hidden = vocab * SelfWiringGraph.NV_RATIO
+        elif len(args) == 2:
+            hidden = int(args[0])
+            vocab = int(args[1])
+        else:
+            raise TypeError(
+                "SelfWiringGraph expects either (vocab) or (hidden_neurons, vocab)"
+            )
+        if vocab <= 0 or hidden <= 0:
+            raise ValueError("hidden_neurons and vocab must both be positive integers")
+        return hidden, vocab
+
+    @staticmethod
+    def _density_to_fraction(density):
+        density = float(density)
+        if density < 0:
+            raise ValueError("density must be non-negative")
+        if density > 1.0:
+            density /= 100.0
+        return float(np.clip(density, 0.0, 1.0))
+
+    def _init_legacy_compat(self):
+        # Older sweeps still probe these fields directly. Keep them as no-op
+        # compatibility shims instead of letting the tracked tree explode.
+        self.clip_factor = np.float32(self.LEGACY_CLIP_FACTOR)
+        self.self_conn = np.float32(0.0)
+        self.signal = 0
+        self.grow = 0
+        self.intensity = 0
+        self.mood = 0
+        self.mood_x = np.float32(0.0)
+        self.mood_z = np.float32(0.0)
+        self.gain = np.float32(self.DRIVE)
+        self.charge_rate = np.float32(1.0)
+        self.W_strong = np.float32(self.DRIVE)
 
     @property
     def out_start(self):
@@ -94,12 +133,28 @@ class SelfWiringGraph:
 
     @property
     def retention(self):
-        return (100 - int(self.loss_pct)) * 0.01
+        return float(np.mean(self.retention_vec))
 
     @property
     def retention_vec(self):
         """Per-neuron retention = 1.0 - decay."""
         return 1.0 - self.decay
+
+    @property
+    def threshold(self):
+        return float(np.mean(self.theta))
+
+    @threshold.setter
+    def threshold(self, value):
+        self.theta.fill(np.float32(value))
+
+    @property
+    def leak(self):
+        return float(np.mean(self.retention_vec))
+
+    @leak.setter
+    def leak(self, value):
+        self.decay.fill(np.float32(1.0 - float(np.clip(value, 0.0, 1.0))))
 
     def _sparse_mul_1d(self, act):
         """Sparse act @ mask for 1D act vector. O(edges) instead of O(H^2)."""
@@ -203,6 +258,7 @@ class SelfWiringGraph:
             self.alive_set = s.get('alive_set', set(self.alive)).copy()
         else:
             self.resync_alive()
+        self._sync_sparse_idx()
         self.state[:] = s['state']
         self.charge[:] = s['charge']
         self.loss_pct = np.int8(s.get('loss_pct', s.get('loss', 15)))
@@ -216,11 +272,13 @@ class SelfWiringGraph:
     # --- Disk persistence ---
 
     def save(self, path):
-        """Save winner graph to disk (.npz). Only stores non-zero edges."""
+        """Save winner graph to disk (.npz) with exact forward-path projections."""
         rows, cols = np.where(self.mask != 0)
         vals = self.mask[rows, cols]
         np.savez_compressed(path,
+            schema_version=np.int16(2),
             V=self.V,
+            H=self.H,
             rows=rows.astype(np.int32),
             cols=cols.astype(np.int32),
             vals=vals,
@@ -228,30 +286,71 @@ class SelfWiringGraph:
             drive=int(self.drive),
             theta=self.theta,
             decay=self.decay,
+            input_projection=self.input_projection,
+            output_projection=self.output_projection,
         )
 
     @classmethod
     def load(cls, path):
-        """Load a saved graph. Reconstructs full mask from sparse edges."""
-        d = np.load(path)
-        V = int(d['V'])
+        """Load a saved graph. New-format checkpoints round-trip exactly."""
+        with np.load(path) as d:
+            required = {
+                'V', 'H', 'rows', 'cols', 'vals', 'loss_pct', 'drive',
+                'theta', 'decay', 'input_projection', 'output_projection',
+            }
+            missing = sorted(required.difference(d.files))
+            if missing:
+                raise ValueError(
+                    "Checkpoint is missing required fields for exact round-trip load: "
+                    + ", ".join(missing)
+                )
+
+            V = int(d['V'])
+            H = int(d['H'])
+            rows = np.array(d['rows'], dtype=np.int32)
+            cols = np.array(d['cols'], dtype=np.int32)
+            vals = np.array(d['vals'], dtype=np.float32)
+            input_projection = np.array(d['input_projection'], dtype=np.float32)
+            output_projection = np.array(d['output_projection'], dtype=np.float32)
+            theta = np.array(d['theta'], dtype=np.float32)
+            decay = np.array(d['decay'], dtype=np.float32)
+            loss_pct = np.int8(int(d['loss_pct']))
+            drive = np.int8(int(d['drive']))
+
+        if input_projection.shape != (V, H):
+            raise ValueError(
+                f"input_projection shape mismatch: expected {(V, H)}, got {input_projection.shape}"
+            )
+        if output_projection.shape != (H, V):
+            raise ValueError(
+                f"output_projection shape mismatch: expected {(H, V)}, got {output_projection.shape}"
+            )
+        if theta.shape != (H,):
+            raise ValueError(f"theta shape mismatch: expected {(H,)}, got {theta.shape}")
+        if decay.shape != (H,):
+            raise ValueError(f"decay shape mismatch: expected {(H,)}, got {decay.shape}")
+        if rows.shape != cols.shape or rows.shape != vals.shape:
+            raise ValueError("rows, cols, and vals must have identical shapes")
+        if np.any(rows < 0) or np.any(rows >= H) or np.any(cols < 0) or np.any(cols >= H):
+            raise ValueError("checkpoint edge indices fall outside hidden graph bounds")
+
         net = object.__new__(cls)
         net.V = V
-        net.N = V * cls.NV_RATIO
-        net.out_start = net.N - V if net.N >= 2 * V else 0
-
-        net.mask = np.zeros((net.N, net.N), dtype=np.float32)
-        rows, cols, vals = d['rows'], d['cols'], d['vals']
+        net.H = H
+        net.N = H
+        net._init_legacy_compat()
+        net.input_projection = input_projection
+        net.output_projection = output_projection
+        net.mask = np.zeros((H, H), dtype=np.float32)
         net.mask[rows, cols] = vals
-        net.alive = list(zip(rows.tolist(), cols.tolist()))
-        net.alive_set = set(net.alive)
-
-        net.state = np.zeros(net.N, dtype=np.float32)
-        net.charge = np.zeros(net.N, dtype=np.float32)
-        net.loss_pct = np.int8(int(d['loss_pct']))
-        net.drive = np.int8(int(d['drive']))
-        net.theta = np.array(d['theta'], dtype=np.float32) if 'theta' in d else np.full(net.N, 0.1, dtype=np.float32)
-        net.decay = np.array(d['decay'], dtype=np.float32) if 'decay' in d else np.full(net.N, 0.15, dtype=np.float32)
+        np.fill_diagonal(net.mask, 0.0)
+        net.state = np.zeros(H, dtype=np.float32)
+        net.charge = np.zeros(H, dtype=np.float32)
+        net.loss_pct = loss_pct
+        net.drive = drive
+        net.theta = theta
+        net.decay = decay
+        net.resync_alive()
         return net
 
     def replay(self, log):
@@ -284,6 +383,10 @@ class SelfWiringGraph:
                 self.theta[entry[1]] = np.float32(entry[2])
             elif op == 'D':
                 self.decay[entry[1]] = np.float32(entry[2])
+            elif op == 'L':
+                self.loss_pct = np.int8(entry[1])
+            elif op == 'G':
+                self.drive = np.int8(entry[1])
         if has_structural:
             self.alive = list(self.alive_set)
         self._sync_sparse_idx()
@@ -320,20 +423,22 @@ class SelfWiringGraph:
             return undo
 
         # Loss drift (reverts on reject) — 1/5 chance
+        undo = []
+
         if random.randint(1, 5) == 1 and not freeze_params:
+            undo.append(('L', int(self.loss_pct)))
             self.loss_pct = np.int8(max(1, min(50, int(self.loss_pct) + random.randint(-3, 3))))
 
         # Drive drift — 7/20 chance, ±1, reverts on reject
         if random.randint(1, 20) <= 7 and not freeze_params:
+            undo.append(('G', int(self.drive)))
             self.drive = np.int8(max(-15, min(15, int(self.drive) + random.choice([-1, 1]))))
 
         # Theta (threshold) drift — 1/5 chance, 1 random neuron, random value [0, 1]
         if random.randint(1, 5) == 1 and not freeze_params:
-            idx = random.randint(0, self.H - 1)
-            self.theta[idx] = np.float32(random.random())
+            self._theta_mutate(undo)
 
         # Execute drive: +N=add, -N=remove, 0=rewire
-        undo = []
         d = int(self.drive)
         if d > 0:
             for _ in range(d):
@@ -476,8 +581,6 @@ def train(net, targets, vocab, max_attempts=8000, ticks=6,
     rewire_threshold = stale_limit // 3
 
     for att in range(max_attempts):
-        old_loss = int(net.loss_pct)
-        old_drive = int(net.drive)
         undo = net.mutate()
         new_score = evaluate()
 
@@ -490,8 +593,6 @@ def train(net, targets, vocab, max_attempts=8000, ticks=6,
             stale = 0
         else:
             net.replay(undo)
-            net.loss_pct = np.int8(old_loss)
-            net.drive = np.int8(old_drive)
             stale += 1
 
             # Phase 3: rewire when stale — explore new topologies

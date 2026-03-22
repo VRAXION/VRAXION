@@ -4,7 +4,7 @@ Adversarial Stress Test — 14 probes for SelfWiringGraph
 All probes must stay green or warning-only for the model to be considered valid.
 """
 
-import sys, os
+import sys, os, tempfile
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
 import numpy as np
@@ -42,7 +42,7 @@ def main():
         perm = np.random.permutation(16)
         score_best = 0.0
         for att in range(2000):
-            sm = net.mask.copy()
+            snapshot = net.save_state()
             net.mutate()
             logits = net.forward_batch(ticks=8)
             e = np.exp(logits - logits.max(axis=1, keepdims=True))
@@ -52,7 +52,7 @@ def main():
             tp = probs[np.arange(16), perm].mean()
             sc = 0.5*acc + 0.5*tp
             if sc > score_best: score_best = sc
-            else: net.mask = sm; net.resync_alive()
+            else: net.restore_state(snapshot)
         r = result(PASS if score_best > 0.05 else WARN,
                    f"V=N=16: {score_best*100:.1f}%")
     except Exception as ex:
@@ -66,7 +66,7 @@ def main():
     identity = np.arange(16)
     acc_best = 0.0
     for att in range(3000):
-        sm = net.mask.copy()
+        snapshot = net.save_state()
         net.mutate()
         logits = net.forward_batch(ticks=8)
         e = np.exp(logits - logits.max(axis=1, keepdims=True))
@@ -75,7 +75,7 @@ def main():
         tp = probs[np.arange(16), identity].mean()
         sc = 0.5*acc + 0.5*tp
         if sc > 0: acc_best = max(acc_best, acc)
-        else: net.mask = sm; net.resync_alive()
+        else: net.restore_state(snapshot)
     r = result(PASS if acc_best > 0.5 else WARN, f"Identity: {acc_best*100:.1f}%")
     results.append(("Identity perm", r))
 
@@ -89,14 +89,14 @@ def main():
         np.random.seed(SEED); random.seed(SEED)
         net = SelfWiringGraph(80, 16)
         for att in range(2000):
-            sm = net.mask.copy()
+            snapshot = net.save_state()
             net.mutate()
             logits = net.forward_batch(ticks=8)
             e = np.exp(logits - logits.max(axis=1, keepdims=True))
             probs = e / e.sum(axis=1, keepdims=True)
             acc = (np.argmax(probs, axis=1) == perm).mean()
             if acc > 0: pass
-            else: net.mask = sm; net.resync_alive()
+            else: net.restore_state(snapshot)
         print(f"    {name}: OK")
     r = result(PASS, "All adversarial perms trained without crash")
     results.append(("Adversarial perms", r))
@@ -124,8 +124,11 @@ def main():
     net.reset()
     logits = net.forward(np.zeros(8, dtype=np.float32), ticks=8)
     logits_b = net.forward_batch(ticks=8)
-    ok = np.all(np.isfinite(logits)) and np.all(np.isfinite(logits_b))
-    r = result(PASS if ok else FAIL, f"Empty network finite: {ok}")
+    ok = (np.all(np.isfinite(logits)) and np.all(np.isfinite(logits_b)) and
+          net.count_connections() == 0)
+    r = result(PASS if ok else FAIL,
+               f"Empty network finite={np.all(np.isfinite(logits)) and np.all(np.isfinite(logits_b))}, "
+               f"edges={net.count_connections()}")
     results.append(("Empty network", r))
 
     # PROBE 6: Fully connected
@@ -134,8 +137,10 @@ def main():
     net = SelfWiringGraph(48, 16, density=1.0)
     net.reset()
     logits = net.forward(np.zeros(16, dtype=np.float32), ticks=8)
-    ok = np.all(np.isfinite(logits))
-    r = result(PASS if ok else FAIL, f"Full density finite: {ok}")
+    expected_edges = net.H * (net.H - 1)
+    ok = np.all(np.isfinite(logits)) and net.count_connections() == expected_edges
+    r = result(PASS if ok else FAIL,
+               f"Full density finite={np.all(np.isfinite(logits))}, edges={net.count_connections()}/{expected_edges}")
     results.append(("Full density", r))
 
     # PROBE 7: Single neuron
@@ -209,23 +214,68 @@ def main():
     net = SelfWiringGraph(64, 16)
     net.forward(np.zeros(16, dtype=np.float32), ticks=8)
     state = net.save_state()
-    net.mask[:] = -1; net.state[:] = 42; net.charge[:] = 100
-    net.signal = 1; net.grow = 0; net.intensity = 1; net.loss_pct = 50
+    net.mask[:] = -1
+    net.state[:] = 42
+    net.charge[:] = 100
+    net.loss_pct = 50
+    net.drive = -7
+    net.theta[:] = 0.91
+    net.decay[:] = 0.73
     net.restore_state(state)
-    # Only mask+loss_pct revert. Strategy bits (signal, grow, intensity) survive.
-    ok = (np.array_equal(net.mask, state['mask']) and
-          np.array_equal(net.state, state['state']) and np.array_equal(net.charge, state['charge']) and
-          net.loss_pct == state['loss_pct'] and
-          net.signal == 1 and net.grow == 0 and net.intensity == 1)  # NOT reverted
-    # Deep copy check
+    alive_set = set(net.alive)
+    mask_set = set(zip(*np.where(net.mask != 0)))
+    ok = (
+        np.array_equal(net.mask, state['mask']) and
+        np.array_equal(net.state, state['state']) and
+        np.array_equal(net.charge, state['charge']) and
+        net.loss_pct == state['loss_pct'] and
+        net.drive == state['drive'] and
+        np.array_equal(net.theta, state['theta']) and
+        np.array_equal(net.decay, state['decay']) and
+        alive_set == mask_set and
+        len(net.alive) == int((net.mask != 0).sum())
+    )
     state['mask'][0, 0] = 99
-    deep_ok = net.mask[0, 0] != 99
+    state['theta'][0] = 99
+    state['decay'][0] = 99
+    deep_ok = (net.mask[0, 0] != 99 and net.theta[0] != 99 and net.decay[0] != 99)
     r = result(PASS if ok and deep_ok else FAIL,
                f"Bitwise restore: {ok}, deep copy: {deep_ok}")
     results.append(("Save/restore", r))
 
-    # PROBE 13: Alive cache coherence after direct mask restore
-    header(13, "Alive cache coherence after direct mask restore")
+    # PROBE 13: Default mutation reject restores all learned params
+    header(13, "Default mutation reject restores theta/drive/loss/cache")
+    np.random.seed(SEED); random.seed(SEED)
+    net = SelfWiringGraph(64, 16)
+    net.drive = np.int8(-1)
+    before = net.save_state()
+    old_randint = random.randint
+    old_random = random.random
+    seq = iter([2, 20, 1, 3, 0])  # no loss drift, no drive drift, theta drift, remove edge 0
+    random.randint = lambda a, b: next(seq)
+    random.random = lambda: 0.73
+    try:
+        undo = net.mutate()
+    finally:
+        random.randint = old_randint
+        random.random = old_random
+    net.replay(undo)
+    alive_set = set(net.alive)
+    mask_set = set(zip(*np.where(net.mask != 0)))
+    ok = (
+        np.array_equal(net.mask, before['mask']) and
+        np.array_equal(net.theta, before['theta']) and
+        np.array_equal(net.decay, before['decay']) and
+        net.loss_pct == before['loss_pct'] and
+        net.drive == before['drive'] and
+        alive_set == mask_set and
+        len(net.alive) == int((net.mask != 0).sum())
+    )
+    r = result(PASS if ok else FAIL, f"Reject restore exact: {ok}")
+    results.append(("Reject restore", r))
+
+    # PROBE 14: Alive cache coherence after direct mask restore
+    header(14, "Alive cache coherence after direct mask restore")
     np.random.seed(SEED); random.seed(SEED)
     net = SelfWiringGraph(64, 16)
     sm = net.mask.copy()
@@ -241,8 +291,51 @@ def main():
                f"count={count_ok}, cells={cells_ok}, diag={diag_ok}")
     results.append(("Alive cache coherence", r))
 
-    # PROBE 14: Legacy mutation API compatibility
-    header(14, "Legacy mutation API compatibility")
+    # PROBE 15: Constructor kwarg semantics
+    header(15, "Constructor kwarg semantics")
+    np.random.seed(SEED); random.seed(SEED)
+    net_a = SelfWiringGraph(8, threshold=0.33, leak=0.90)
+    net_b = SelfWiringGraph(32, 8, density=0.0, threshold=0.44, leak=0.80)
+    ok = (
+        net_a.H == 8 * net_a.NV_RATIO and
+        np.allclose(net_a.theta, 0.33) and
+        np.allclose(net_a.decay, 0.10) and
+        net_b.H == 32 and
+        net_b.count_connections() == 0 and
+        np.allclose(net_b.theta, 0.44) and
+        np.allclose(net_b.decay, 0.20)
+    )
+    r = result(PASS if ok else FAIL,
+               f"one_arg_H={net_a.H}, explicit_H={net_b.H}, empty_edges={net_b.count_connections()}")
+    results.append(("Constructor kwargs", r))
+
+    # PROBE 16: Disk roundtrip exact fidelity
+    header(16, "Disk save/load exact fidelity")
+    np.random.seed(SEED); random.seed(SEED)
+    net = SelfWiringGraph(64, 16, density=0.15, threshold=0.41, leak=0.82)
+    for _ in range(8):
+        net.mutate()
+    logits_before = net.forward_batch(ticks=8)
+    with tempfile.TemporaryDirectory() as td:
+        path = os.path.join(td, "graph_roundtrip.npz")
+        net.save(path)
+        loaded = SelfWiringGraph.load(path)
+    logits_after = loaded.forward_batch(ticks=8)
+    ok = (
+        loaded.V == net.V and
+        loaded.H == net.H and
+        np.array_equal(loaded.mask, net.mask) and
+        np.array_equal(loaded.input_projection, net.input_projection) and
+        np.array_equal(loaded.output_projection, net.output_projection) and
+        np.array_equal(loaded.theta, net.theta) and
+        np.array_equal(loaded.decay, net.decay) and
+        np.allclose(logits_before, logits_after, atol=1e-6)
+    )
+    r = result(PASS if ok else FAIL, f"Roundtrip exact: {ok}")
+    results.append(("Disk roundtrip", r))
+
+    # PROBE 17: Legacy mutation API compatibility
+    header(17, "Legacy mutation API compatibility")
     np.random.seed(SEED); random.seed(SEED)
     try:
         net = SelfWiringGraph(32, 8)

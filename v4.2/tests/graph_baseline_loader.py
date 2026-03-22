@@ -1,7 +1,7 @@
 """Helpers to load deterministic graph baselines for v4.2 benchmarking.
 
 We compare two CPU baselines explicitly:
-  - CPU_DENSE_COMMITTED: exact `origin/v4.2:v4.2/model/graph.py`
+  - CPU_DENSE_COMMITTED: exact `origin/main:v4.2/model/graph.py`
   - CPU_SPARSE_LOCAL: current local `v4.2/model/graph.py`
 
 This avoids accidentally benchmarking "whatever happens to be in the worktree"
@@ -17,10 +17,12 @@ from types import ModuleType
 import importlib.util
 import sys
 
+import numpy as np
+
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 LOCAL_GRAPH_PATH = REPO_ROOT / "v4.2" / "model" / "graph.py"
-COMMITTED_GRAPH_REF = "origin/v4.2"
+COMMITTED_GRAPH_REF = "origin/main"
 COMMITTED_GRAPH_REPO_PATH = "v4.2/model/graph.py"
 
 
@@ -67,9 +69,28 @@ def clone_common_state(src_net, dst_net) -> None:
         dst_net.resync_alive()
     dst_net.state[:] = src_net.state
     dst_net.charge[:] = src_net.charge
-    dst_net.mood_x = src_net.mood_x
-    dst_net.mood_z = src_net.mood_z
-    dst_net.leak = src_net.leak
+    if hasattr(src_net, "input_projection") and hasattr(dst_net, "input_projection"):
+        if src_net.input_projection.shape == dst_net.input_projection.shape:
+            dst_net.input_projection[:] = src_net.input_projection
+    if hasattr(src_net, "output_projection") and hasattr(dst_net, "output_projection"):
+        if src_net.output_projection.shape == dst_net.output_projection.shape:
+            dst_net.output_projection[:] = src_net.output_projection
+    if hasattr(src_net, "theta") and hasattr(dst_net, "theta"):
+        if src_net.theta.shape == dst_net.theta.shape:
+            dst_net.theta[:] = src_net.theta
+    if hasattr(src_net, "decay") and hasattr(dst_net, "decay"):
+        if src_net.decay.shape == dst_net.decay.shape:
+            dst_net.decay[:] = src_net.decay
+    if hasattr(src_net, "loss_pct") and hasattr(dst_net, "loss_pct"):
+        dst_net.loss_pct = np.int8(src_net.loss_pct)
+    if hasattr(src_net, "drive") and hasattr(dst_net, "drive"):
+        dst_net.drive = np.int8(src_net.drive)
+    if hasattr(src_net, "mood_x") and hasattr(dst_net, "mood_x"):
+        dst_net.mood_x = src_net.mood_x
+    if hasattr(src_net, "mood_z") and hasattr(dst_net, "mood_z"):
+        dst_net.mood_z = src_net.mood_z
+    if hasattr(src_net, "leak") and hasattr(dst_net, "leak"):
+        dst_net.leak = src_net.leak
     if hasattr(dst_net, "_weff_dirty"):
         dst_net._weff_dirty = True
 
