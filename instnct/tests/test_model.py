@@ -1,5 +1,5 @@
 """
-Adversarial Stress Test — 20 probes for SelfWiringGraph
+Adversarial Stress Test — 21 probes for SelfWiringGraph
 =========================================================
 All probes must stay green or warning-only for the model to be considered valid.
 """
@@ -31,6 +31,34 @@ def result(status, msg):
     print(f"    [{tag}] {status}: {msg}")
     sys.stdout.flush()
     return status
+
+
+def graph_signature(net):
+    return {
+        "mask": net.mask.copy(),
+        "theta": net.theta.copy(),
+        "decay": net.decay.copy(),
+        "input_projection": net.input_projection.copy(),
+        "output_projection": net.output_projection.copy(),
+        "alive": list(net.alive),
+        "alive_set": set(net.alive_set),
+        "drive": int(net.drive),
+        "loss_pct": int(net.loss_pct),
+    }
+
+
+def same_graph_signature(left, right):
+    return (
+        np.array_equal(left["mask"], right["mask"]) and
+        np.array_equal(left["theta"], right["theta"]) and
+        np.array_equal(left["decay"], right["decay"]) and
+        np.array_equal(left["input_projection"], right["input_projection"]) and
+        np.array_equal(left["output_projection"], right["output_projection"]) and
+        left["alive"] == right["alive"] and
+        left["alive_set"] == right["alive_set"] and
+        left["drive"] == right["drive"] and
+        left["loss_pct"] == right["loss_pct"]
+    )
 
 
 def main():
@@ -232,6 +260,8 @@ def main():
         np.array_equal(net.charge, state['charge']) and
         net.loss_pct == state['loss_pct'] and
         net.drive == state['drive'] and
+        net.alive == state['alive'] and
+        net.alive_set == state['alive_set'] and
         np.array_equal(net.theta, state['theta']) and
         np.array_equal(net.decay, state['decay']) and
         alive_set == mask_set and
@@ -270,6 +300,8 @@ def main():
         np.array_equal(net.decay, before['decay']) and
         net.loss_pct == before['loss_pct'] and
         net.drive == before['drive'] and
+        net.alive == before['alive'] and
+        net.alive_set == before['alive_set'] and
         alive_set == mask_set and
         len(net.alive) == int((net.mask != 0).sum())
     )
@@ -331,13 +363,60 @@ def main():
         np.array_equal(loaded.output_projection, net.output_projection) and
         np.array_equal(loaded.theta, net.theta) and
         np.array_equal(loaded.decay, net.decay) and
+        loaded.alive == net.alive and
+        loaded.alive_set == net.alive_set and
         np.allclose(logits_before, logits_after, atol=1e-6)
     )
     r = result(PASS if ok else FAIL, f"Roundtrip exact: {ok}")
     results.append(("Disk roundtrip", r))
 
-    # PROBE 17: Forced mutation API compatibility
-    header(17, "Forced mutation API compatibility")
+    # PROBE 17: Same-state mutate trajectory after replay/load
+    header(17, "Same-state mutate trajectory after replay/load")
+    np.random.seed(SEED); random.seed(SEED)
+    base = SelfWiringGraph(64, 16, density=0.15, threshold=0.41, leak=0.82)
+    for _ in range(8):
+        base.mutate()
+    base_sig = graph_signature(base)
+
+    np.random.seed(SEED); random.seed(SEED)
+    replay_net = SelfWiringGraph(64, 16, density=0.15, threshold=0.41, leak=0.82)
+    for _ in range(8):
+        replay_net.mutate()
+    replay_undo = replay_net.mutate(forced_op='remove', n_changes=1, freeze_params=True)
+    replay_net.replay(replay_undo)
+    replay_sig = graph_signature(replay_net)
+
+    with tempfile.TemporaryDirectory() as td:
+        path = os.path.join(td, "graph_same_state.npz")
+        base.save(path)
+        loaded_net = SelfWiringGraph.load(path)
+    loaded_sig = graph_signature(loaded_net)
+
+    same_state_ok = (
+        same_graph_signature(base_sig, replay_sig) and
+        same_graph_signature(base_sig, loaded_sig)
+    )
+
+    np.random.seed(31415); random.seed(31415)
+    base.mutate()
+    base_after = graph_signature(base)
+    np.random.seed(31415); random.seed(31415)
+    replay_net.mutate()
+    replay_after = graph_signature(replay_net)
+    np.random.seed(31415); random.seed(31415)
+    loaded_net.mutate()
+    loaded_after = graph_signature(loaded_net)
+
+    next_step_ok = (
+        same_graph_signature(base_after, replay_after) and
+        same_graph_signature(base_after, loaded_after)
+    )
+    r = result(PASS if same_state_ok and next_step_ok else FAIL,
+               f"same_state={same_state_ok}, next_step={next_step_ok}")
+    results.append(("Same-state mutate path", r))
+
+    # PROBE 18: Forced mutation API compatibility
+    header(18, "Forced mutation API compatibility")
     np.random.seed(SEED); random.seed(SEED)
     try:
         net = SelfWiringGraph(32, 8)
@@ -353,8 +432,8 @@ def main():
         r = result(FAIL, f"Crashed: {ex}")
     results.append(("Forced mutate API", r))
 
-    # PROBE 18: Fineweb resolver semantics (canonical path + env override only)
-    header(18, "Fineweb resolver semantics")
+    # PROBE 19: Fineweb resolver semantics (canonical path + env override only)
+    header(19, "Fineweb resolver semantics")
     env_var = "VRAXION_TEST_FINEWEB_PATH"
     old_env = os.environ.pop(env_var, None)
     try:
@@ -403,8 +482,8 @@ def main():
             os.environ[env_var] = old_env
     results.append(("Fineweb resolver", r))
 
-    # PROBE 19: Removed compat surface must stay removed
-    header(19, "Removed compat surface stays absent")
+    # PROBE 20: Removed compat surface must stay removed
+    header(20, "Removed compat surface stays absent")
     net = SelfWiringGraph(32, 8)
     removed = [
         "N",
@@ -427,8 +506,8 @@ def main():
     r = result(PASS if ok else FAIL, f"present compat members: {present or 'none'}")
     results.append(("Compat surface removed", r))
 
-    # PROBE 20: Active instnct tree must not hardcode Diamond Code corpus paths
-    header(20, "No hardcoded Diamond Code corpus paths in active instnct")
+    # PROBE 21: Active instnct tree must not hardcode Diamond Code corpus paths
+    header(21, "No hardcoded Diamond Code corpus paths in active instnct")
     repo_root = Path(__file__).resolve().parents[2]
     tracked = subprocess.check_output(
         ["git", "-C", str(repo_root), "ls-files", "instnct"],

@@ -379,8 +379,9 @@ class SelfWiringGraph:
             elif op == 'G':
                 self.drive = np.int8(entry[1])
         if has_structural:
-            self.alive = list(self.alive_set)
-        self._sync_sparse_idx()
+            self.resync_alive()
+        else:
+            self._sync_sparse_idx()
 
     # --- Mutation ---
 
@@ -410,7 +411,7 @@ class SelfWiringGraph:
                 raise ValueError(f"Unsupported forced_op: {forced_op}")
             for _ in range(max(0, int(n_changes))):
                 op_fn(undo)
-            self._sync_sparse_idx()
+            self.resync_alive()
             return undo
 
         # Loss drift (reverts on reject) — 1/5 chance
@@ -439,7 +440,7 @@ class SelfWiringGraph:
                 self._remove(undo)
         else:
             self._rewire(undo)
-        self._sync_sparse_idx()
+        self.resync_alive()
         return undo
 
     def _add(self, undo):
