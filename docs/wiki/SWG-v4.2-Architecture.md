@@ -33,6 +33,12 @@ input -> input_projection -> hidden ternary graph -> output_projection -> output
               persistent charge/state across ticks
 ```
 
+Mutation-selection loop at a glance:
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/VRAXION/VRAXION/main/docs/assets/instnct-at-a-glance-training.png" alt="Mutation-selection training loop at a glance" width="740">
+</p>
+
 - `input_projection` and `output_projection` are fixed random projections.
 - The hidden graph is directed, ternary, and can rewire itself over time.
 - Per-neuron `theta` and `decay` are co-evolved with the graph.

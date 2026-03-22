@@ -33,9 +33,11 @@ WIKI_FOOTER_SRC = WIKI_SOURCE_DIR / "_Footer.md"
 ENGLISH_RECIPE = ROOT / "v4.2" / "english_1024n_18w.py"
 HOME_ANATOMY_FILE = ROOT / "docs" / "assets" / "instnct-at-a-glance-core.png"
 HOME_ANATOMY_SOURCE_FILE = ROOT / "docs" / "assets" / "source" / "wiki-home-graphics.drawio"
+ARCH_TRAINING_LOOP_FILE = ROOT / "docs" / "assets" / "instnct-at-a-glance-training.png"
 HOME_LOGO_ASSET = "https://raw.githubusercontent.com/VRAXION/VRAXION/main/docs/assets/vraxion-instnct-spiral.png"
 HOME_STACK_MAP_ASSET = "https://raw.githubusercontent.com/VRAXION/VRAXION/main/docs/assets/vraxion-public-stack-map.png"
 HOME_ANATOMY_ASSET = "https://raw.githubusercontent.com/VRAXION/VRAXION/main/docs/assets/instnct-at-a-glance-core.png"
+ARCH_TRAINING_LOOP_ASSET = "https://raw.githubusercontent.com/VRAXION/VRAXION/main/docs/assets/instnct-at-a-glance-training.png"
 REMOVED_WIKI_SOURCE_FILES = [
     WIKI_GOVERNANCE_SRC,
     WIKI_SOURCE_DIR / "Chapter-11---Roadmap.md",
@@ -302,6 +304,28 @@ def check_home_anatomy_graphic(errors: list[str]) -> None:
             fail(f"{path.name}: home-instnct-anatomy.svg should stay on Home only", errors)
 
 
+def check_architecture_training_graphic(errors: list[str]) -> None:
+    swg_text = read(WIKI_SWG_SRC)
+    if ARCH_TRAINING_LOOP_ASSET not in swg_text:
+        fail("SWG-v4.2-Architecture.md: missing instnct-at-a-glance-training.png training graphic", errors)
+    if "Mutation-selection loop at a glance:" not in swg_text:
+        fail("SWG-v4.2-Architecture.md: missing training-graphic lead-in line", errors)
+    if "Mutation-selection training loop at a glance" not in swg_text:
+        fail("SWG-v4.2-Architecture.md: missing training-graphic alt text", errors)
+    if not ARCH_TRAINING_LOOP_FILE.exists():
+        fail(f"Missing architecture training asset: {ARCH_TRAINING_LOOP_FILE}", errors)
+
+    other_primary_pages = [
+        WIKI_HOME_SRC,
+        WIKI_FINDINGS_SRC,
+        WIKI_ENGINEERING_SRC,
+        WIKI_RELEASE_NOTES_SRC,
+    ]
+    for path in other_primary_pages:
+        if ARCH_TRAINING_LOOP_ASSET in read(path):
+            fail(f"{path.name}: instnct-at-a-glance-training.png should stay on Architecture only", errors)
+
+
 def check_meta_copy_boundaries(errors: list[str]) -> None:
     non_home_primary_pages = [
         WIKI_SWG_SRC,
@@ -559,6 +583,7 @@ def main() -> int:
     check_primary_editorial_shape(errors)
     check_home_orientation_graphic(errors)
     check_home_anatomy_graphic(errors)
+    check_architecture_training_graphic(errors)
     check_meta_copy_boundaries(errors)
     check_removed_wiki_sources(errors)
     check_wiki_sources(errors)
