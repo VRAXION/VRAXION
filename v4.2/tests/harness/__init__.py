@@ -8,6 +8,15 @@ from .permutation_harness import (
     run_budgeted_search,
     set_seeds,
 )
+from .cpu_parameter_sweeps import (
+    ParameterSweepConfig,
+    SweepOutcome,
+    build_sweep_net,
+    evaluate_parameterized_permutation,
+    mutate_structure,
+    quantized_step,
+    run_parameter_search,
+)
 from .policy_adapters import (
     AddRemovePolicyAdapter,
     BoolMoodPolicyAdapter,
@@ -17,4 +26,3 @@ from .policy_adapters import (
     WindowReviewStrategyAdapter,
     build_policy,
 )
-

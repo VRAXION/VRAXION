@@ -334,8 +334,8 @@ def main():
     r = result(PASS if ok else FAIL, f"Roundtrip exact: {ok}")
     results.append(("Disk roundtrip", r))
 
-    # PROBE 17: Legacy mutation API compatibility
-    header(17, "Legacy mutation API compatibility")
+    # PROBE 17: Forced mutation API compatibility
+    header(17, "Forced mutation API compatibility")
     np.random.seed(SEED); random.seed(SEED)
     try:
         net = SelfWiringGraph(32, 8)
@@ -344,13 +344,12 @@ def main():
         after_add = net.count_connections()
         net.replay(undo)
         after_replay = net.count_connections()
-        net.mutate_with_mood()
         ok = after_add >= before and after_replay == before
         r = result(PASS if ok else FAIL,
                    f"forced_add={after_add-before}, replay_ok={after_replay == before}")
     except Exception as ex:
         r = result(FAIL, f"Crashed: {ex}")
-    results.append(("Legacy mutate API", r))
+    results.append(("Forced mutate API", r))
 
     # SUMMARY
     print(f"\n{'='*60}")

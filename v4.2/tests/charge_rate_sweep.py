@@ -1,13 +1,13 @@
-"""Deterministic charge-rate sweep for current v4.2 semantics.
+"""Deterministic charge-rate sweep on the current graph API.
 
 Supports both:
-  - coarse fixed+learnable sweeps
+  - coarse fixed+learnable charge-rate sweeps
   - focused holdout sweeps on selected configs/rates
 
-Current v4.2 semantics:
-  - ternary mask in {-1, 0, +1}
-  - fixed gain = 2.0
-  - no separate weight matrix
+Current semantics:
+  - signed sparse hidden graph
+  - fixed input/output projections
+  - learned theta / decay / structure
   - score = 0.5 * accuracy + 0.5 * target_probability
 """
 
@@ -25,10 +25,9 @@ import numpy as np
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from lib.log import live_log, log_msg
-from model.graph import SelfWiringGraph
+from tests.harness import ParameterSweepConfig, build_sweep_net, mutate_structure, run_parameter_search
 
 
-GAIN = 2.0
 DEFAULT_SEEDS = [42, 77, 123]
 DEFAULT_BUDGET = int(os.getenv("VRX_SWEEP_BUDGET", "32000"))
 DEFAULT_WORKERS = int(os.getenv("VRX_SWEEP_WORKERS", "22"))
@@ -132,74 +131,47 @@ def run_one(
     budget,
     log_q=None,
 ):
-    np.random.seed(seed)
-    random.seed(seed)
-    net = SelfWiringGraph(N, V, density=density, threshold=threshold)
-    perm = np.random.permutation(V)
-    leak = 0.85
-    cr = cr_init
+    config = ParameterSweepConfig(
+        vocab=V,
+        neurons=N,
+        density=density,
+        threshold=threshold,
+        ticks=8,
+        budget=budget,
+    )
+    net, perm = build_sweep_net(config, seed)
+    net.leak = 0.85
+    context = {"charge_rate": float(cr_init)}
 
-    def eval_b(lk, c_rate):
-        mask_f = net.mask.astype(np.float32)
-        clip_bound = net.threshold * net.clip_factor
-        charges = np.zeros((V, N), dtype=np.float32)
-        acts = np.zeros((V, N), dtype=np.float32)
-        for t in range(8):
-            if t == 0:
-                acts[:, :V] = np.eye(V, dtype=np.float32)
-            weff = mask_f * np.float32(GAIN)
-            raw = acts @ weff + acts * net.self_conn
-            np.nan_to_num(raw, copy=False, nan=0.0, posinf=0.0, neginf=0.0)
-            charges += raw * np.float32(c_rate)
-            charges *= np.float32(lk)
-            acts = np.maximum(charges - net.threshold, 0.0)
-            charges = np.clip(charges, -clip_bound, clip_bound)
-        out = charges[:, net.out_start : net.out_start + V]
-        e = np.exp(out - out.max(axis=1, keepdims=True))
-        probs = e / e.sum(axis=1, keepdims=True)
-        preds = np.argmax(probs, axis=1)
-        acc = (preds == perm[:V]).mean()
-        tp = probs[np.arange(V), perm[:V]].mean()
-        return acc, 0.5 * acc + 0.5 * tp
+    def propose(net, context):
+        mutate_structure(net)
+        if random.random() < 0.20:
+            net.mutate(forced_op="theta")
+        if random.random() < 0.20:
+            net.leak = float(np.clip(net.leak + random.gauss(0, 0.03), 0.50, 0.99))
+        if learnable and random.random() < 0.20:
+            context["charge_rate"] = float(np.clip(context["charge_rate"] + random.gauss(0, 0.03), 0.01, 1.0))
 
-    _, score = eval_b(leak, cr)
-    best_acc = 0.0
-    for _ in range(budget):
-        sm = net.mask.copy()
-        mx_s = net.mood_x
-        mz_s = net.mood_z
-        lk_s = leak
-        cr_s = cr
-
-        net.mutate_with_mood()
-        if random.random() < 0.2:
-            leak = np.clip(leak + random.gauss(0, 0.03), 0.5, 0.99)
-        if learnable and random.random() < 0.2:
-            cr = np.clip(cr + random.gauss(0, 0.03), 0.01, 1.0)
-
-        a, s = eval_b(leak, cr)
-        if s > score:
-            score = s
-            best_acc = max(best_acc, a)
-        else:
-            net.mask = sm; net.resync_alive()
-            net.mood_x = mx_s
-            net.mood_z = mz_s
-            leak = lk_s
-            cr = cr_s
+    outcome = run_parameter_search(
+        net,
+        perm,
+        config,
+        context=context,
+        propose_fn=propose,
+    )
 
     log_msg(
         log_q,
         f"{net_name:12s} {mode_name:10s} seed={seed:3d} "
-        f"acc={best_acc*100:5.1f}% leak={leak:.3f} cr={cr:.3f}",
+        f"acc={outcome.best_acc*100:5.1f}% leak={net.leak:.3f} cr={outcome.context['charge_rate']:.3f}",
     )
     return {
         "net": net_name,
         "mode": mode_name,
         "seed": seed,
-        "acc": best_acc,
-        "leak": leak,
-        "cr": cr,
+        "acc": outcome.best_acc,
+        "leak": net.leak,
+        "cr": outcome.context["charge_rate"],
     }
 
 

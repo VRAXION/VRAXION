@@ -85,12 +85,6 @@ def clone_common_state(src_net, dst_net) -> None:
         dst_net.loss_pct = np.int8(src_net.loss_pct)
     if hasattr(src_net, "drive") and hasattr(dst_net, "drive"):
         dst_net.drive = np.int8(src_net.drive)
-    if hasattr(src_net, "mood_x") and hasattr(dst_net, "mood_x"):
-        dst_net.mood_x = src_net.mood_x
-    if hasattr(src_net, "mood_z") and hasattr(dst_net, "mood_z"):
-        dst_net.mood_z = src_net.mood_z
-    if hasattr(src_net, "leak") and hasattr(dst_net, "leak"):
-        dst_net.leak = src_net.leak
     if hasattr(dst_net, "_weff_dirty"):
         dst_net._weff_dirty = True
 

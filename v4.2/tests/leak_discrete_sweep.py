@@ -1,7 +1,7 @@
-"""Which discrete leak values actually get used and which are dead zones?
+"""Which discrete global leak values actually get used under the current graph API?
 
-Run training, track every accepted leak value. Build histogram of
-what the network actually visits vs what it avoids.
+Run training, track every accepted leak value. Build a histogram of what the
+network actually visits vs what it avoids.
 """
 import sys, os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
@@ -10,8 +10,8 @@ import argparse
 import numpy as np
 import random
 import time
-from model.graph import SelfWiringGraph
 from collections import Counter
+from tests.harness import ParameterSweepConfig, build_sweep_net, mutate_structure, quantized_step, run_parameter_search
 
 SEEDS = [42, 77, 123]
 BUDGET = 32000
@@ -36,45 +36,50 @@ def parse_int_csv(s):
 
 
 def run_one(vocab, neurons, density, budget, seed):
-    np.random.seed(seed); random.seed(seed)
-    net = SelfWiringGraph(neurons, vocab, density=density)
-    perm = np.random.permutation(vocab)
+    config = ParameterSweepConfig(
+        vocab=vocab,
+        neurons=neurons,
+        density=density,
+        threshold=0.10,
+        ticks=8,
+        budget=budget,
+    )
+    net, perm = build_sweep_net(config, seed)
+    net.leak = 0.85
 
     # Track every accepted leak value (quantized to 2 decimals)
     leak_accepts = Counter()
     leak_trajectory = []
 
-    def eval_b():
-        raoutput_projection = net.forward_batch(ticks=8)
-        e = np.exp(raoutput_projection - raoutput_projection.max(axis=1, keepdims=True))
-        probs = e / e.sum(axis=1, keepdims=True)
-        acc = (np.argmax(probs, axis=1) == perm[:vocab]).mean()
-        tp = probs[np.arange(vocab), perm[:vocab]].mean()
-        return acc, 0.5 * acc + 0.5 * tp
+    def propose(net, context):
+        mutate_structure(net)
+        if random.random() < 0.20:
+            net.mutate(forced_op="theta")
+        if random.random() < 0.25:
+            net.leak = quantized_step(
+                net.leak,
+                step=0.01,
+                min_value=0.50,
+                max_value=0.99,
+            )
 
-    _, score = eval_b()
-    best_acc = 0.0
+    def on_accept(net, context, step, trial):
+        lk_int = int(round(net.leak * 100))
+        leak_accepts[lk_int] += 1
+        if step % 4000 == 0:
+            leak_trajectory.append((step, round(net.leak, 3)))
+        return (step, round(net.leak, 3), trial["acc"])
 
-    for att in range(budget):
-        sm = net.mask.copy()
-        mood_s = net.mood; int_s = net.intensity; lk_s = net.leak
+    outcome = run_parameter_search(
+        net,
+        perm,
+        config,
+        propose_fn=propose,
+        on_accept=on_accept,
+    )
 
-        net.mutate_with_mood()
-
-        a, s = eval_b()
-        if s > score:
-            score = s; best_acc = max(best_acc, a)
-            # Record accepted leak
-            lk_int = int(round(net.leak * 100))
-            leak_accepts[lk_int] += 1
-        else:
-            net.mask = sm; net.resync_alive(); net.mood = mood_s; net.intensity = int_s; net.leak = lk_s
-
-        if att % 4000 == 0:
-            leak_trajectory.append((att, round(net.leak, 3)))
-
-    leak_trajectory.append((budget, round(net.leak, 3)))
-    return best_acc, net.leak, leak_accepts, leak_trajectory
+    leak_trajectory.append((outcome.steps, round(net.leak, 3)))
+    return outcome.best_acc, net.leak, leak_accepts, leak_trajectory
 
 
 def print_histogram(all_accepts):
