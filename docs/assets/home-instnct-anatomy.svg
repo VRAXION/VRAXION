@@ -1,0 +1,126 @@
+<svg width="760" height="240" viewBox="0 0 760 240" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="panelFill" x1="52" y1="54" x2="707" y2="184" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#0A1730" stop-opacity="0.96"/>
+      <stop offset="1" stop-color="#12355F" stop-opacity="0.96"/>
+    </linearGradient>
+    <linearGradient id="centerFill" x1="275" y1="44" x2="487" y2="192" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#173D8D"/>
+      <stop offset="0.55" stop-color="#1E57D7"/>
+      <stop offset="1" stop-color="#20D2FF"/>
+    </linearGradient>
+    <linearGradient id="arrowStroke" x1="162" y1="118" x2="600" y2="118" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#79EAFF" stop-opacity="0.58"/>
+      <stop offset="0.55" stop-color="#2F88FF" stop-opacity="0.48"/>
+      <stop offset="1" stop-color="#F1FDFF" stop-opacity="0.54"/>
+    </linearGradient>
+    <radialGradient id="coreGlow" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(380 118) rotate(90) scale(66 66)">
+      <stop offset="0" stop-color="#FFF2C8"/>
+      <stop offset="0.26" stop-color="#FFE5B8" stop-opacity="0.88"/>
+      <stop offset="0.58" stop-color="#76E6FF" stop-opacity="0.24"/>
+      <stop offset="1" stop-color="#76E6FF" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="haloGlow" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(380 118) rotate(90) scale(100 100)">
+      <stop offset="0" stop-color="#78EAFF" stop-opacity="0.18"/>
+      <stop offset="0.65" stop-color="#2F88FF" stop-opacity="0.08"/>
+      <stop offset="1" stop-color="#2F88FF" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="softGlow" x="-35%" y="-35%" width="170%" height="170%">
+      <feGaussianBlur stdDeviation="10"/>
+    </filter>
+    <filter id="panelShadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="8" stdDeviation="14" flood-color="#04111E" flood-opacity="0.32"/>
+    </filter>
+    <style>
+      .label {
+        font-family: Arial, Helvetica, sans-serif;
+        font-size: 16px;
+        font-weight: 700;
+        letter-spacing: 0.01em;
+        fill: #F8FCFF;
+        text-anchor: middle;
+        dominant-baseline: middle;
+      }
+      .sub {
+        font-family: Arial, Helvetica, sans-serif;
+        font-size: 11px;
+        font-weight: 600;
+        letter-spacing: 0.03em;
+        fill: #9DEFFF;
+        text-anchor: middle;
+        dominant-baseline: middle;
+      }
+      .centerLabel {
+        font-family: Arial, Helvetica, sans-serif;
+        font-size: 17px;
+        font-weight: 800;
+        letter-spacing: 0.012em;
+        fill: #FBFEFF;
+        text-anchor: middle;
+        dominant-baseline: middle;
+      }
+      .dot {
+        fill: #88EDFF;
+        opacity: 0.78;
+      }
+      .edge {
+        stroke: #B5FCFF;
+        stroke-opacity: 0.34;
+      }
+    </style>
+  </defs>
+
+  <g opacity="0.88">
+    <path d="M180 118H278" stroke="url(#arrowStroke)" stroke-width="2.4" stroke-linecap="round"/>
+    <path d="M482 118H580" stroke="url(#arrowStroke)" stroke-width="2.4" stroke-linecap="round"/>
+    <path d="M274 118L265 112" stroke="url(#arrowStroke)" stroke-width="2.4" stroke-linecap="round"/>
+    <path d="M274 118L265 124" stroke="url(#arrowStroke)" stroke-width="2.4" stroke-linecap="round"/>
+    <path d="M576 118L567 112" stroke="url(#arrowStroke)" stroke-width="2.4" stroke-linecap="round"/>
+    <path d="M576 118L567 124" stroke="url(#arrowStroke)" stroke-width="2.4" stroke-linecap="round"/>
+  </g>
+
+  <g opacity="0.94">
+    <circle cx="380" cy="118" r="82" fill="url(#haloGlow)" filter="url(#softGlow)"/>
+    <circle cx="380" cy="118" r="42" fill="url(#coreGlow)"/>
+    <path d="M338 102C350 83 372 74 394 77C411 79 426 88 436 101" stroke="#8CEEFF" stroke-opacity="0.32" stroke-width="1.5" stroke-linecap="round"/>
+    <path d="M341 138C355 154 379 160 400 155C415 152 428 144 437 132" stroke="#2F88FF" stroke-opacity="0.34" stroke-width="1.5" stroke-linecap="round"/>
+    <circle class="dot" cx="337" cy="93" r="3.1"/>
+    <circle class="dot" cx="428" cy="84" r="2.9"/>
+    <circle class="dot" cx="441" cy="144" r="2.7"/>
+    <circle class="dot" cx="352" cy="157" r="2.6"/>
+  </g>
+
+  <g filter="url(#panelShadow)">
+    <rect x="52" y="70" width="128" height="96" rx="24" fill="url(#panelFill)" class="edge"/>
+    <rect x="276" y="44" width="208" height="148" rx="32" fill="url(#centerFill)" stroke="#C1FCFF" stroke-opacity="0.58"/>
+    <rect x="580" y="70" width="128" height="96" rx="24" fill="url(#panelFill)" class="edge"/>
+  </g>
+
+  <g id="io-projections">
+    <title>Passive I/O Projections</title>
+    <text class="label" x="116" y="102">Passive I/O</text>
+    <text class="label" x="116" y="124">Projections</text>
+    <text class="sub" x="116" y="146">input and output edges</text>
+  </g>
+
+  <g id="hidden-graph">
+    <title>Self-Wiring Hidden Graph</title>
+    <text class="centerLabel" x="380" y="102">Self-Wiring</text>
+    <text class="centerLabel" x="380" y="124">Hidden Graph</text>
+    <text class="sub" x="380" y="148">persistent internal state</text>
+    <circle cx="333" cy="118" r="4" fill="#F8FCFF"/>
+    <circle cx="356" cy="91" r="4.4" fill="#77E7FF"/>
+    <circle cx="357" cy="146" r="3.7" fill="#2F88FF"/>
+    <circle cx="390" cy="82" r="4.2" fill="#F8FCFF"/>
+    <circle cx="404" cy="118" r="4.8" fill="#77E7FF"/>
+    <circle cx="429" cy="104" r="3.8" fill="#2F88FF"/>
+    <circle cx="419" cy="146" r="4.1" fill="#F8FCFF"/>
+  </g>
+
+  <g id="training-method">
+    <title>Mutation-Selection Training</title>
+    <text class="label" x="644" y="102">Mutation-Selection</text>
+    <text class="label" x="644" y="124">Training</text>
+    <text class="sub" x="644" y="146">not fixed-graph backprop</text>
+  </g>
+</svg>
