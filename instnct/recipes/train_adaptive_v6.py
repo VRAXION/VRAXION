@@ -7,8 +7,9 @@ keep only positives. 7x faster edge search.
 6 mutation types: chaotic_add, certain_add, sprout, flip, mag, ret
 Prune pressure from v5 (rate drifts UP).
 """
-import sys, os, time, random
+import sys, os, time, random, warnings
 import numpy as np
+warnings.filterwarnings('ignore', category=RuntimeWarning)
 from multiprocessing import Pool
 
 from pathlib import Path
@@ -289,7 +290,7 @@ def build_schedule(weights):
 
 if __name__ == "__main__":
     IO = 256; NV = 4; H = IO * NV
-    N_WORKERS = 18; BUDGET = 5000
+    N_WORKERS = 18; BUDGET = 50000  # overnight run
     PRUNE_EVERY = 250
     HARD_PRUNE_EVERY = 1000
 
@@ -334,7 +335,7 @@ if __name__ == "__main__":
 
     # Learnable params
     sched_weights = np.array([2, 2, 2, 1, 1, 1], dtype=np.uint8)  # 2chaotic/2certain/2sprout/1f/1m/1ret
-    prune_rate = np.uint8(3)  # int4: remove bottom 3 edges per prune cycle
+    prune_rate = np.uint8(15)  # init at MAX (15%), network must fight DOWN
 
     schedule = build_schedule(sched_weights)
     accepts = {t: 0 for t in MUT_TYPES}
@@ -381,11 +382,10 @@ if __name__ == "__main__":
             elif ptype in ('certain_add', 'sprout') and (mmag > 0).sum() == 0:
                 ptype = 'chaotic_add'
 
-            # SPROUT: runs in main thread (needs alignment scoring)
+            # SPROUT: try 20 edges, keep only TOP 1
             if ptype == 'sprout' and (importance > 0).sum() > 0:
                 imp_neurons = np.where(importance > 0)[0]
                 neuron = imp_neurons[random.randint(0, len(imp_neurons)-1)]
-                # Add 20 random edges from this neuron
                 sprout_tgts = []
                 for _ in range(20):
                     tgt = random.randint(0, H-1)
@@ -393,19 +393,24 @@ if __name__ == "__main__":
                         msign[neuron, tgt] = random.random() < 0.5
                         mmag[neuron, tgt] = random.randint(1, 255)
                         sprout_tgts.append(tgt)
-                # Score with alignment
                 if sprout_tgts:
                     scores_s, e_rs, e_cs = compute_edge_scores(
                         msign, mmag, ret_int4, H, wof, bp, bigram, inj_table, eval_seqs[:2])
-                    kept = 0
+                    # Find scores for sprouted edges
+                    tgt_scores = []
                     for tgt in sprout_tgts:
                         idx = np.where((e_rs == neuron) & (e_cs == tgt))[0]
-                        if len(idx) > 0 and scores_s[idx[0]] > 0:
-                            kept += 1  # keep
+                        sc = float(scores_s[idx[0]]) if len(idx) > 0 else -1e9
+                        tgt_scores.append((tgt, sc))
+                    # Keep ONLY the top 1 (if positive)
+                    tgt_scores.sort(key=lambda x: -x[1])
+                    best_tgt, best_sc = tgt_scores[0]
+                    for tgt, sc in tgt_scores:
+                        if tgt == best_tgt and best_sc > 0:
+                            accepts['sprout'] = accepts.get('sprout', 0) + 1
                         else:
-                            mmag[neuron, tgt] = 0  # remove
+                            mmag[neuron, tgt] = 0
                             msign[neuron, tgt] = False
-                    accepts['sprout'] = accepts.get('sprout', 0) + kept
             else:
                 # Normal mutation via workers
                 if ptype == 'sprout':
@@ -422,15 +427,17 @@ if __name__ == "__main__":
                         ret_int4 = best['new_ret']
                     accepts[best['type']] += 1
 
-            # AUTO PRUNE: every PRUNE_EVERY steps, remove bottom N
-            # PRUNE PRESSURE: rate drifts up +1, network must fight it down
+            # AUTO PRUNE: every PRUNE_EVERY steps, remove bottom N%
+            # PRUNE PRESSURE: pct drifts up +1%, network must fight it down
             if step % PRUNE_EVERY == 0:
-                prune_rate = np.uint8(min(15, int(prune_rate) + 1))  # DRIFT UP
-                if (mmag > 0).sum() > int(prune_rate) + 5:
+                prune_rate = np.uint8(min(15, int(prune_rate) + 1))  # DRIFT UP (+1%)
+                n_edges_now = int((mmag > 0).sum())
+                n_remove = max(0, int(n_edges_now * int(prune_rate) / 100))
+                if n_remove > 0 and n_edges_now > n_remove + 5:
                     scores, e_rs, e_cs = compute_edge_scores(
                         msign, mmag, ret_int4, H, wof, bp, bigram, inj_table, eval_seqs[:3])
                     if len(scores) > 0:
-                        n_remove = min(int(prune_rate), len(scores) - 5)
+                        n_remove = min(n_remove, len(scores) - 5)
                         if n_remove > 0:
                             worst_idx = np.argsort(scores)[:n_remove]
                             for idx in worst_idx:
@@ -449,7 +456,7 @@ if __name__ == "__main__":
                 w_str = '/'.join(f"{MUT_TYPES[i][0]}={sched_weights[i]}" for i in range(len(MUT_TYPES)))
                 acc_str = '/'.join(f"{t[0]}={accepts[t]}" for t in MUT_TYPES)
                 n_imp = int((importance > 0).sum())
-                print(f"  [{step:4d}] acc={overall*100:.1f}% edges={edges} imp={n_imp} prune={int(prune_rate)} "
+                print(f"  [{step:4d}] acc={overall*100:.1f}% edges={edges} imp={n_imp} prune={int(prune_rate)}% "
                       f"mem={n_mem} w=[{w_str}] [{acc_str}] {elapsed:.0f}s")
                 sys.stdout.flush()
 
