@@ -52,7 +52,7 @@ This is an ambition and a research direction, not a claim of achieved sentience.
 
 - Canonical code path: [`v4.2/model/graph.py`](https://github.com/VRAXION/VRAXION/blob/main/v4.2/model/graph.py)
 - Architecture line: `INSTNCT`
-- Current English recipe candidate on `main`: [`v4.2/english_1024n_18w.py`](https://github.com/VRAXION/VRAXION/blob/main/v4.2/english_1024n_18w.py)
+- Current English recipe candidate on `main`: [`v4.2/english_1024n_18w.py`](https://github.com/VRAXION/VRAXION/blob/main/v4.2/english_1024n_18w.py) (`8` ticks, triangle-derived `2 add / 1 flip / 5 decay`)
 - Canonical public evidence summary: [Validated Findings](Validated-Findings)
 - Mainline implementation includes per-neuron `theta` / `decay` and nonnegative charge dynamics.
 
@@ -63,7 +63,8 @@ Anything not actually shipped in that code path must be labeled as a **Validated
 | Topic | Label | Why it matters |
 |---|---|---|
 | Charge ReLU | Current mainline | Nonnegative charge dynamics already ship in the forward path |
-| `8` ticks + decay slot | Validated finding | Promoted into the current English recipe candidate on `main`, not `graph.py` defaults |
+| triangle-derived `2 add / 1 flip / 5 decay` schedule | Validated finding | Promoted into the current English recipe candidate on `main`, not `graph.py` defaults |
+| sign+mag + magnitude resample | Validated finding | Best edge-quality result in the current edge-format sweep; not yet promoted into the current recipe candidate |
 | voltage medium leak schedule | Validated finding | Strongest schedule result so far |
 | mixed 18-worker swarm | Experimental branch | Main active build target, not current mainline |
 

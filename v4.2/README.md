@@ -12,7 +12,7 @@ This directory contains the active architecture line behind VRAXION.
 
 - Canonical reference: [`model/graph.py`](model/graph.py)
 - Scaling/parity path: [`model/graph_v3.c`](model/graph_v3.c)
-- Current English recipe candidate on `main`: [`english_1024n_18w.py`](english_1024n_18w.py)
+- Current English recipe candidate on `main`: [`english_1024n_18w.py`](english_1024n_18w.py) (`8` ticks, triangle-derived `2 add / 1 flip / 5 decay`)
 - Core behavior:
   - fixed random passive I/O projections
   - ternary hidden-to-hidden mask
@@ -27,7 +27,8 @@ This is the only code path that should be described as the live default.
 
 - [`flip` mutation](../VALIDATED_FINDINGS.md) is currently the strongest English structural mutation finding.
 - [`scale=1.0 + theta=0.03`](../VALIDATED_FINDINGS.md) beat the older `INJ_SCALE=3.0` English setup in empty-start sweeps.
-- The current English recipe candidate on `main` uses `8` ticks with a triangle-derived [`2 add / 1 flip / 5 decay` schedule](../VALIDATED_FINDINGS.md), but that recipe is still not part of `model/graph.py`.
+- The current English recipe candidate on `main` uses `8` ticks with a triangle-derived `2 add / 1 flip / 5 decay` schedule; see [Validated Findings](../VALIDATED_FINDINGS.md). That recipe is still not part of `model/graph.py`.
+- [Sign+mag + magnitude resample](../VALIDATED_FINDINGS.md) reached `18.69%` at `155` edges (`q=0.121`) and became the best quality-per-edge result in the current edge-format sweep, but it is still not part of the live recipe candidate.
 - [Decay resample for per-neuron tuning](../VALIDATED_FINDINGS.md) beat local perturbation and produced differentiated decay rates instead of leaving decay flat.
 - [Voltage medium leak scheduling](../VALIDATED_FINDINGS.md) is the strongest current schedule finding by accuracy (`22.11%` peak / `21.46%` plateau).
 - [The 3-angle decision-tree schedule](../VALIDATED_FINDINGS.md) is the strongest compact learnable control policy so far by edge quality.

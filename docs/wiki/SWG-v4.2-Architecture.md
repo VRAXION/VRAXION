@@ -44,7 +44,7 @@ input -> W_in -> hidden ternary graph -> W_out -> output
 | Topic | Current state |
 |---|---|
 | Canonical code path | [`v4.2/model/graph.py`](https://github.com/VRAXION/VRAXION/blob/main/v4.2/model/graph.py) |
-| Current English recipe candidate on `main` | [`v4.2/english_1024n_18w.py`](https://github.com/VRAXION/VRAXION/blob/main/v4.2/english_1024n_18w.py) |
+| Current English recipe candidate on `main` | [`v4.2/english_1024n_18w.py`](https://github.com/VRAXION/VRAXION/blob/main/v4.2/english_1024n_18w.py) (`8` ticks, triangle-derived `2 add / 1 flip / 5 decay`) |
 | Shipped constants on `main` | `THRESHOLD = 0.5`, `INJ_SCALE = 3.0`, `DRIVE = 0.6` |
 | Mainline runtime behavior | per-neuron `theta` / `decay` and nonnegative charge dynamics |
 
@@ -64,7 +64,8 @@ input -> W_in -> hidden ternary graph -> W_out -> output
 | Topic | Why it matters | Status |
 |---|---|---|
 | Charge ReLU | Nonnegative charge now ships in the mainline forward path | Current mainline |
-| `8` ticks + decay slot | The current English recipe candidate already uses the winning fixed schedule line | Validated finding |
+| triangle-derived `2 add / 1 flip / 5 decay` schedule | The current English recipe candidate already uses the winning fixed schedule line | Validated finding |
+| sign+mag + magnitude resample | Best edge-format quality result so far: `18.69%` at `155` edges (`q=0.121`), but still unpromoted | Validated finding |
 | voltage medium leak schedule | Strongest schedule result so far: `22.11%` peak / `21.46%` plateau | Validated finding |
 | mixed 18-worker swarm | Current next build target for English training | Experimental branch |
 

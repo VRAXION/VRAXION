@@ -161,6 +161,10 @@ FRONT_DOOR_ONLY_BANNED = {
     re.compile(r"Diamond Code v3", re.IGNORECASE): "legacy Diamond Code references should not appear on primary public surfaces",
 }
 STALE_RECIPE_TEXT = "add/add/add/flip/theta/decay"
+STALE_RECIPE_SLOT_TEXT = "decay slot"
+CURRENT_CANDIDATE_PHRASE = "triangle-derived `2 add / 1 flip / 5 decay` schedule"
+EDGE_FORMAT_FINDING_PHRASE = "sign+mag + magnitude resample"
+EDGE_FORMAT_RESULT_PHRASE = "`18.69%` at `155` edges (`q=0.121`)"
 
 
 def read(path: Path) -> str:
@@ -351,7 +355,6 @@ def check_recipe_candidate_sync(errors: list[str]) -> None:
     recipe_text = read(ENGLISH_RECIPE)
     schedule = extract_schedule_list(recipe_text)
     schedule_counts = {kind: schedule.count(kind) for kind in sorted(set(schedule))}
-    expected_phrase = "triangle-derived `2 add / 1 flip / 5 decay` schedule"
     header_phrase = "Schedule: triangle-derived 2 add / 1 flip / 5 decay (8-step fixed approximation)"
 
     if schedule != ['add', 'add', 'flip', 'decay', 'decay', 'decay', 'decay', 'decay']:
@@ -360,12 +363,24 @@ def check_recipe_candidate_sync(errors: list[str]) -> None:
     if header_phrase not in recipe_text:
         fail("english_1024n_18w.py: header schedule description is not aligned to the current SCHEDULE", errors)
 
-    for path in [FINDINGS, WIKI_FINDINGS_SRC]:
+    current_candidate_surfaces = [README, V42_README, FINDINGS, WIKI_HOME_SRC, WIKI_SWG_SRC, WIKI_FINDINGS_SRC, WIKI_RELEASE_NOTES_SRC]
+    for path in current_candidate_surfaces:
         text = read(path)
         if STALE_RECIPE_TEXT in text:
             fail(f"{path.name}: stale recipe schedule text {STALE_RECIPE_TEXT!r} should not appear on active public surfaces", errors)
-        if expected_phrase not in text:
+        if STALE_RECIPE_SLOT_TEXT in text.lower():
+            fail(f"{path.name}: stale recipe phrasing {STALE_RECIPE_SLOT_TEXT!r} should not appear on active public surfaces", errors)
+        if CURRENT_CANDIDATE_PHRASE not in text:
             fail(f"{path.name}: current recipe candidate summary must match the triangle-derived 2/1/5 schedule", errors)
+
+
+def check_edge_representation_sync(errors: list[str]) -> None:
+    for path in [FINDINGS, WIKI_FINDINGS_SRC, WIKI_RELEASE_NOTES_SRC]:
+        text = read(path)
+        if EDGE_FORMAT_FINDING_PHRASE not in text:
+            fail(f"{path.name}: missing sign+mag edge-representation finding", errors)
+        if EDGE_FORMAT_RESULT_PHRASE not in text:
+            fail(f"{path.name}: missing sign+mag result metrics {EDGE_FORMAT_RESULT_PHRASE}", errors)
 
 
 def check_archive(errors: list[str]) -> None:
@@ -557,6 +572,7 @@ def main() -> int:
 
     check_findings_constants(threshold, inj_scale, errors)
     check_recipe_candidate_sync(errors)
+    check_edge_representation_sync(errors)
     check_archive(errors)
     check_templates(errors)
     check_contributing(errors)

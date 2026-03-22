@@ -20,14 +20,15 @@ This page is the single primary timeline and lookup surface for VRAXION. Use it 
 - Current mainline code path: [`v4.2/model/graph.py`](https://github.com/VRAXION/VRAXION/blob/main/v4.2/model/graph.py)
 - Current strongest schedule result in the public evidence layer: voltage medium leak at `22.11%` peak / `21.46%` plateau
 - Current strongest compact learnable schedule result: the 3-angle decision-tree schedule at `20.05%`
-- Current English recipe candidate on `main`: [`v4.2/english_1024n_18w.py`](https://github.com/VRAXION/VRAXION/blob/main/v4.2/english_1024n_18w.py)
-- Current next public build target: mixed 18-worker swarm, with schedule and mutation policy still under active evaluation
+- Current English recipe candidate on `main`: [`v4.2/english_1024n_18w.py`](https://github.com/VRAXION/VRAXION/blob/main/v4.2/english_1024n_18w.py) with an `8`-tick triangle-derived `2 add / 1 flip / 5 decay` schedule; it still uses the existing ternary float edge representation.
+- Current strongest edge-representation quality result: sign+mag + magnitude resample reached `18.69%` at `155` edges (`q=0.121`), but it remains validated evidence rather than the current recipe candidate.
+- Current next public build target: mixed 18-worker swarm, with schedule, mutation policy, and edge representation still under active evaluation
 
 ## What Matters Now
 
 - The active public architecture line is [INSTNCT Architecture](SWG-v4.2-Architecture); earlier architecture lines are historical context only.
 - The strongest schedule and mutation results live in [Validated Findings](Validated-Findings) until code on `main` actually adopts them.
-- The main unresolved public targets are mixed 18-worker swarm evaluation, schedule-policy promotion, and re-checking low-theta / low-scale against today’s stronger recipe stack.
+- The main unresolved public targets are mixed 18-worker swarm evaluation, schedule-policy promotion, edge-representation promotion, and re-checking low-theta / low-scale against today’s stronger recipe stack.
 - History, terminology, and page retirements now live here instead of being spread across separate glossary, roadmap, theory, and archive leaves.
 
 ## Preparing for v5.0.0 Public Beta
@@ -57,6 +58,7 @@ This page is the single primary timeline and lookup surface for VRAXION. Use it 
 | 2026-03-21 | Repo-tracked docs became canonical and the GitHub wiki became a mirror | Public truth stopped drifting between README, Pages, findings, and ad hoc wiki edits. | [VRAXION Home](Home), [`CONTRIBUTING.md`](https://github.com/VRAXION/VRAXION/blob/main/CONTRIBUTING.md) |
 | 2026-03-21 | Schedule-control work became the main live research frontier | `8` ticks, decay-aware scheduling, voltage/leak control, and compact learnable policies became the strongest present-tense recipe questions. | [Validated Findings](Validated-Findings) |
 | 2026-03-22 | Triangle convergence was distilled into the current fixed English recipe candidate | The current candidate on `main` now uses an `8`-tick, decay-dominant `2 add / 1 flip / 5 decay` schedule without changing the canonical `graph.py` defaults. | [Validated Findings](Validated-Findings) |
+| 2026-03-22 | Sign+mag edge representation with magnitude resample became the strongest compact edge-format line | The edge-format frontier gained a new quality-per-edge winner at `18.69%` and `155` edges (`q=0.121`), without yet displacing the current recipe candidate or the best raw-accuracy schedule line. | [Validated Findings](Validated-Findings) |
 | 2026-03-22 | Explicit preparation for `v5.0.0 Public Beta` started | The public story is being reorganized around stable release identity, clearer onboarding, and higher outside traffic rather than only internal experiment cadence. | This page, [VRAXION Home](Home), and [`CONTRIBUTING.md`](https://github.com/VRAXION/VRAXION/blob/main/CONTRIBUTING.md) |
 | 2026-03-21 | Roadmap, theory, archive, glossary, and old architecture leaves were collapsed into one timeline surface | History, terminology, open questions, and retirement lookup now live in one place instead of multiple smaller pages. | This page |
 
@@ -84,6 +86,7 @@ This page is the single primary timeline and lookup surface for VRAXION. Use it 
 | Mixed 18-worker swarm | Show matched-budget reruns that beat the current single English recipe candidate on plateau accuracy without breaking reproducibility. | Promote the mixed swarm line from open target to validated finding, and make it the next serious recipe-update candidate. | Active |
 | Voltage-aware schedule pressure | Show that a voltage-style schedule policy wins on plateau accuracy under confirmation reruns, not only on isolated peaks. | Promote the policy from interesting schedule evidence to a stronger recipe candidate. | Active |
 | Compact learnable schedule control | Show that a low-parameter learnable controller, such as the 3-angle tree, can match or beat the best fixed schedules without unstable drift or overflow. | Promote the controller from exploratory mechanism to validated schedule candidate. | Active |
+| Edge representation promotion | Show matched-budget reruns that sign+mag + magnitude resample keeps its quality-per-edge advantage and justifies changing the current English candidate. | Promote a new edge format / mutation policy into the current recipe line instead of leaving sign+mag as evidence only. | Active |
 | Decay resample promotion | Show that single-neuron decay resample in `[0.01, 0.5]` keeps winning over local perturbation across reruns and budgets. | Promote the resample mutation policy into the current recipe line. | Active |
 | Low-theta / low-scale generalization | Re-run `INJ_SCALE=1.0` with low theta against the stronger current English recipe stack instead of the older baseline only. | Promote the low-scale line from older validated evidence into the current recipe discussion. | Active |
 
