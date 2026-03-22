@@ -25,7 +25,7 @@ def make_bp(io_dim, seed=12345):
     p /= np.linalg.norm(p, axis=1, keepdims=True)
     return p
 
-def _eval_on_seqs(mask, H, W_in, W_out, theta, decay, seqs):
+def _eval_on_seqs(mask, H, input_projection, output_projection, theta, decay, seqs):
     """Eval with per-neuron theta + decay vectors."""
     rs, cs = np.where(mask != 0)
     sp_vals = mask[rs, cs]
@@ -40,7 +40,7 @@ def _eval_on_seqs(mask, H, W_in, W_out, theta, decay, seqs):
             act = state.copy()
             for t in range(6):
                 if t == 0:
-                    act = act + _bp[text_bytes[i]] @ W_in
+                    act = act + _bp[text_bytes[i]] @ input_projection
                 raw = np.zeros(H, dtype=np.float32)
                 if len(rs):
                     np.add.at(raw, cs, act[rs] * sp_vals)
@@ -48,7 +48,7 @@ def _eval_on_seqs(mask, H, W_in, W_out, theta, decay, seqs):
                 act = np.maximum(charge - theta, 0.0)
                 charge = np.clip(charge, -1.0, 1.0)
             state = act.copy()
-            out = charge @ W_out
+            out = charge @ output_projection
             out_n = out / (np.linalg.norm(out) + 1e-8)
             sims = out_n @ pat_norm.T
             e = np.exp(sims - sims.max())
@@ -62,7 +62,7 @@ def _eval_on_seqs(mask, H, W_in, W_out, theta, decay, seqs):
     return total / len(seqs)
 
 def worker_eval(args):
-    mask_flat, theta, decay, H, W_in, W_out, seed, proposal_type = args
+    mask_flat, theta, decay, H, input_projection, output_projection, seed, proposal_type = args
     rng = random.Random(seed)
     np_rng = np.random.RandomState(seed)
     mask = mask_flat.reshape(H, H)
@@ -98,14 +98,14 @@ def worker_eval(args):
         off = np_rng.randint(0, data_len - _seq_len)
         seqs.append(_all_data[off:off+_seq_len])
 
-    old_score = _eval_on_seqs(mask, H, W_in, W_out, theta, decay, seqs)
-    new_score = _eval_on_seqs(new_mask, H, W_in, W_out, new_theta, new_decay, seqs)
+    old_score = _eval_on_seqs(mask, H, input_projection, output_projection, theta, decay, seqs)
+    new_score = _eval_on_seqs(new_mask, H, input_projection, output_projection, new_theta, new_decay, seqs)
 
     return {'delta': new_score - old_score, 'type': proposal_type, 'info': info,
             'new_theta': new_theta if proposal_type == 'theta' else None,
             'new_decay': new_decay if proposal_type == 'decay' else None}
 
-def eval_accuracy(mask, H, W_in, W_out, theta, decay, text_bytes, bp, ticks=6):
+def eval_accuracy(mask, H, input_projection, output_projection, theta, decay, text_bytes, bp, ticks=6):
     pat_norm = bp / (np.linalg.norm(bp, axis=1, keepdims=True) + 1e-8)
     rs, cs = np.where(mask != 0)
     sp_vals = mask[rs, cs]
@@ -117,7 +117,7 @@ def eval_accuracy(mask, H, W_in, W_out, theta, decay, text_bytes, bp, ticks=6):
         act = state.copy()
         for t in range(ticks):
             if t == 0:
-                act = act + bp[text_bytes[i]] @ W_in
+                act = act + bp[text_bytes[i]] @ input_projection
             raw = np.zeros(H, dtype=np.float32)
             if len(rs):
                 np.add.at(raw, cs, act[rs] * sp_vals)
@@ -125,7 +125,7 @@ def eval_accuracy(mask, H, W_in, W_out, theta, decay, text_bytes, bp, ticks=6):
             act = np.maximum(charge - theta, 0.0)
             charge = np.clip(charge, -1.0, 1.0)
         state = act.copy()
-        out = charge @ W_out
+        out = charge @ output_projection
         out_n = out / (np.linalg.norm(out) + 1e-8)
         sims = out_n @ pat_norm.T
         if np.argmax(sims) == text_bytes[i+1]: correct += 1
@@ -166,7 +166,7 @@ if __name__ == "__main__":
     print(f"Starting from empty network, theta mean={net.theta.mean():.3f} shape={net.theta.shape}")
 
     net.state *= 0; net.charge *= 0
-    W_in=net.W_in; W_out=net.W_out
+    input_projection=net.input_projection; output_projection=net.output_projection
 
     # Log file
     LOG = os.path.join(os.path.dirname(os.path.abspath(__file__)), "english_768n_live.txt")
@@ -192,7 +192,7 @@ if __name__ == "__main__":
         for step in range(1, BUDGET+1):
             ptype = SCHEDULE[(step - 1) % len(SCHEDULE)]
             mask_flat = net.mask.flatten()
-            args = [(mask_flat, net.theta.copy(), net.decay.copy(), H, W_in, W_out,
+            args = [(mask_flat, net.theta.copy(), net.decay.copy(), H, input_projection, output_projection,
                      seed_c+step*50+w, ptype) for w in range(N_WORKERS)]
             results = pool.map(worker_eval, args)
 
@@ -215,7 +215,7 @@ if __name__ == "__main__":
 
             if step % 50 == 0:
                 elapsed = time.time() - t0
-                ea = np.mean([eval_accuracy(net.mask, H, W_in, W_out, net.theta, net.decay, s, bp)
+                ea = np.mean([eval_accuracy(net.mask, H, input_projection, output_projection, net.theta, net.decay, s, bp)
                               for s in eval_seqs])
                 edges = net.count_connections()
                 th_mean = float(net.theta.mean())
@@ -245,7 +245,7 @@ if __name__ == "__main__":
         print(f"  SAVED FINAL: {final_ckpt}")
 
     elapsed = time.time() - t0
-    final_ea = np.mean([eval_accuracy(net.mask, H, W_in, W_out, net.theta, net.decay, s, bp)
+    final_ea = np.mean([eval_accuracy(net.mask, H, input_projection, output_projection, net.theta, net.decay, s, bp)
                         for s in eval_seqs])
     print(f"\nFINAL: eval={final_ea*100:.1f}% edges={net.count_connections()} "
           f"accepts={accepts} {elapsed:.0f}s")

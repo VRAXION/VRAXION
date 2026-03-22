@@ -35,7 +35,7 @@ def make_bp(io_dim, seed=12345):
     return p
 
 # ─── Configurable forward pass ───────────────────────────
-def eval_mask(mask, H, W_in, W_out, seqs, cfg):
+def eval_mask(mask, H, input_projection, output_projection, seqs, cfg):
     """Forward pass with configurable threshold/retention/scale."""
     threshold = cfg['threshold']
     adaptive_thresh = cfg.get('adaptive_threshold', False)
@@ -57,7 +57,7 @@ def eval_mask(mask, H, W_in, W_out, seqs, cfg):
             act = state.copy()
             for t in range(6):
                 if t == 0:
-                    act = act + _bp[text_bytes[i]] @ W_in
+                    act = act + _bp[text_bytes[i]] @ input_projection
                 raw = np.zeros(H, dtype=np.float32)
                 if len(rs):
                     np.add.at(raw, cs, act[rs] * sp_vals)
@@ -78,7 +78,7 @@ def eval_mask(mask, H, W_in, W_out, seqs, cfg):
                     charge_stats['fired'] += 1
 
             state = act.copy()
-            out = charge @ W_out
+            out = charge @ output_projection
             out_n = out / (np.linalg.norm(out) + 1e-8)
             sims = out_n @ pat_norm.T
             e = np.exp(sims - sims.max())
@@ -97,7 +97,7 @@ def eval_mask(mask, H, W_in, W_out, seqs, cfg):
 
 # ─── Worker ───────────────────────────────────────────────
 def worker_eval(args):
-    mask_flat, H, W_in, W_out, seed = args
+    mask_flat, H, input_projection, output_projection, seed = args
     rng = random.Random(seed)
     np_rng = np.random.RandomState(seed)
     mask = mask_flat.reshape(H, H)
@@ -118,14 +118,14 @@ def worker_eval(args):
         off = np_rng.randint(0, data_len - 200)
         seqs.append(_all_data[off:off + 200])
 
-    old_score, _ = eval_mask(mask, H, W_in, W_out, seqs, _cfg)
-    new_score, stats = eval_mask(new_mask, H, W_in, W_out, seqs, _cfg)
+    old_score, _ = eval_mask(mask, H, input_projection, output_projection, seqs, _cfg)
+    new_score, stats = eval_mask(new_mask, H, input_projection, output_projection, seqs, _cfg)
     delta = new_score - old_score
 
     return (delta, r, c, val, stats)
 
 # ─── Eval accuracy (fixed seqs) ──────────────────────────
-def eval_accuracy(mask, H, W_in, W_out, eval_seqs, cfg, bp):
+def eval_accuracy(mask, H, input_projection, output_projection, eval_seqs, cfg, bp):
     pat_norm = bp / (np.linalg.norm(bp, axis=1, keepdims=True) + 1e-8)
     threshold = cfg['threshold']
     adaptive_thresh = cfg.get('adaptive_threshold', False)
@@ -142,7 +142,7 @@ def eval_accuracy(mask, H, W_in, W_out, eval_seqs, cfg, bp):
             act = state.copy()
             for t in range(6):
                 if t == 0:
-                    act = act + bp[seq[i]] @ W_in
+                    act = act + bp[seq[i]] @ input_projection
                 raw = np.zeros(H, dtype=np.float32)
                 if len(rs):
                     np.add.at(raw, cs, act[rs] * sp_vals)
@@ -155,7 +155,7 @@ def eval_accuracy(mask, H, W_in, W_out, eval_seqs, cfg, bp):
                     act = np.maximum(charge - threshold, 0.0)
                 charge = np.clip(charge, -1.0, 1.0)
             state = act.copy()
-            out = charge @ W_out
+            out = charge @ output_projection
             out_n = out / (np.linalg.norm(out) + 1e-8)
             sims = out_n @ pat_norm.T
             if np.argmax(sims) == seq[i + 1]:
@@ -213,11 +213,11 @@ if __name__ == "__main__":
         # Apply INJ_SCALE override
         if cfg['inj_scale'] != 3.0:
             scale_factor = cfg['inj_scale'] / 3.0
-            W_in = net.W_in * scale_factor
-            W_out = net.W_out * scale_factor
+            input_projection = net.input_projection * scale_factor
+            output_projection = net.output_projection * scale_factor
         else:
-            W_in = net.W_in
-            W_out = net.W_out
+            input_projection = net.input_projection
+            output_projection = net.output_projection
 
         pool = Pool(N_WORKERS, initializer=init_w, initargs=(bp, ALL_DATA, cfg))
         accepts = 0
@@ -227,7 +227,7 @@ if __name__ == "__main__":
         try:
             for step in range(1, BUDGET + 1):
                 mask_flat = net.mask.flatten()
-                args = [(mask_flat, H, W_in, W_out, 1000 + step * 50 + w) for w in range(N_WORKERS)]
+                args = [(mask_flat, H, input_projection, output_projection, 1000 + step * 50 + w) for w in range(N_WORKERS)]
                 results = pool.map(worker_eval, args)
 
                 best_r = max(results, key=lambda x: x[0])
@@ -241,7 +241,7 @@ if __name__ == "__main__":
 
                 if step % 200 == 0:
                     elapsed = time.time() - t0
-                    ea = eval_accuracy(net.mask, H, W_in, W_out, eval_seqs, cfg, bp)
+                    ea = eval_accuracy(net.mask, H, input_projection, output_projection, eval_seqs, cfg, bp)
                     edges = net.count_connections()
                     fired = last_stats.get('fired', 0)
                     cmax = last_stats.get('max', 0)
@@ -257,7 +257,7 @@ if __name__ == "__main__":
 
         # Final eval
         elapsed = time.time() - t0
-        final_ea = eval_accuracy(net.mask, H, W_in, W_out, eval_seqs, cfg, bp)
+        final_ea = eval_accuracy(net.mask, H, input_projection, output_projection, eval_seqs, cfg, bp)
         edges = net.count_connections()
 
         result = {

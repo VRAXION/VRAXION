@@ -1,5 +1,5 @@
 """
-Visualize what each geometry actually looks like as W_in patterns.
+Visualize what each geometry actually looks like as input_projection patterns.
 For each geometry: show which hidden neurons light up for input 0, 5, 13, 26.
 """
 import sys, os
@@ -29,18 +29,18 @@ GEOMETRIES = {
 }
 
 for name, (geom_fn, desc) in GEOMETRIES.items():
-    W_in, W_out = geom_fn(SEED)
+    input_projection, output_projection = geom_fn(SEED)
 
     print(f"\n{'='*80}")
     print(f"  {name}: {desc}")
     print(f"{'='*80}")
-    print(f"  W_in shape: {W_in.shape}, scale: [{W_in.min():.2f}, {W_in.max():.2f}]")
+    print(f"  input_projection shape: {input_projection.shape}, scale: [{input_projection.min():.2f}, {input_projection.max():.2f}]")
 
     # Overlap analysis: how similar are different inputs?
     # Cosine similarity between all pairs
-    norms = np.linalg.norm(W_in, axis=1, keepdims=True)
+    norms = np.linalg.norm(input_projection, axis=1, keepdims=True)
     norms[norms == 0] = 1
-    W_normed = W_in / norms
+    W_normed = input_projection / norms
     cosim = W_normed @ W_normed.T  # V×V
     np.fill_diagonal(cosim, 0)  # ignore self
     avg_sim = np.abs(cosim).mean()
@@ -51,7 +51,7 @@ for name, (geom_fn, desc) in GEOMETRIES.items():
     # How many neurons does each input activate above threshold?
     THRESH = 0.5
     for inp_idx in INPUTS_TO_SHOW:
-        row = W_in[inp_idx]
+        row = input_projection[inp_idx]
         above = (np.abs(row) > THRESH)
         n_above = above.sum()
         strong = np.where(above)[0]
@@ -77,8 +77,8 @@ for name, (geom_fn, desc) in GEOMETRIES.items():
             grid += line + "\n"
         print(grid, end="")
 
-    # Show the key diagnostic: effective rank of W_in
-    U, S, Vt = np.linalg.svd(W_in, full_matrices=False)
+    # Show the key diagnostic: effective rank of input_projection
+    U, S, Vt = np.linalg.svd(input_projection, full_matrices=False)
     S_norm = S / S.sum()
     eff_rank = np.exp(-np.sum(S_norm * np.log(S_norm + 1e-10)))
     energy_90 = np.searchsorted(np.cumsum(S**2) / (S**2).sum(), 0.9) + 1
@@ -95,14 +95,14 @@ print(f"""
   ├─────────────────────┼───────┼──────────┼──────────┤""")
 
 for name, (geom_fn, desc) in GEOMETRIES.items():
-    W_in, W_out = geom_fn(SEED)
-    norms = np.linalg.norm(W_in, axis=1, keepdims=True)
+    input_projection, output_projection = geom_fn(SEED)
+    norms = np.linalg.norm(input_projection, axis=1, keepdims=True)
     norms[norms == 0] = 1
-    W_normed = W_in / norms
+    W_normed = input_projection / norms
     cosim = W_normed @ W_normed.T
     np.fill_diagonal(cosim, 0)
     avg_sim = np.abs(cosim).mean()
-    U, S, Vt = np.linalg.svd(W_in, full_matrices=False)
+    U, S, Vt = np.linalg.svd(input_projection, full_matrices=False)
     S_norm = S / S.sum()
     eff_rank = np.exp(-np.sum(S_norm * np.log(S_norm + 1e-10)))
     score_str = desc.split("—")[0].strip()

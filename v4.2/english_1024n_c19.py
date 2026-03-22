@@ -41,7 +41,7 @@ def c19_activation(x, C):
     core = C * (sgn * h + _RHO * h * h)
     return np.where(x >= l, x - l, np.where(x <= -l, x + l, core))
 
-def _eval_on_seqs(mask, H, W_in, W_out, theta, decay, C_param, seqs):
+def _eval_on_seqs(mask, H, input_projection, output_projection, theta, decay, C_param, seqs):
     rs, cs = np.where(mask != 0)
     sp_vals = mask[rs, cs]
     pat_norm = _bp / (np.linalg.norm(_bp, axis=1, keepdims=True) + 1e-8)
@@ -55,7 +55,7 @@ def _eval_on_seqs(mask, H, W_in, W_out, theta, decay, C_param, seqs):
             act = state.copy()
             for t in range(6):
                 if t == 0:
-                    act = act + _bp[text_bytes[i]] @ W_in
+                    act = act + _bp[text_bytes[i]] @ input_projection
                 raw = np.zeros(H, dtype=np.float32)
                 if len(rs):
                     np.add.at(raw, cs, act[rs] * sp_vals)
@@ -64,7 +64,7 @@ def _eval_on_seqs(mask, H, W_in, W_out, theta, decay, C_param, seqs):
                 act = c19_activation(charge - theta, C_param)
                 charge = np.clip(charge, -1.0, 1.0)
             state = act.copy()
-            out = charge @ W_out
+            out = charge @ output_projection
             out_n = out / (np.linalg.norm(out) + 1e-8)
             sims = out_n @ pat_norm.T
             e = np.exp(sims - sims.max())
@@ -78,7 +78,7 @@ def _eval_on_seqs(mask, H, W_in, W_out, theta, decay, C_param, seqs):
     return total / len(seqs)
 
 def worker_eval(args):
-    mask_flat, theta, decay, C_param, H, W_in, W_out, seed, proposal_type = args
+    mask_flat, theta, decay, C_param, H, input_projection, output_projection, seed, proposal_type = args
     rng = random.Random(seed)
     np_rng = np.random.RandomState(seed)
     mask = mask_flat.reshape(H, H)
@@ -120,15 +120,15 @@ def worker_eval(args):
         off = np_rng.randint(0, data_len - _seq_len)
         seqs.append(_all_data[off:off+_seq_len])
 
-    old_score = _eval_on_seqs(mask, H, W_in, W_out, theta, decay, C_param, seqs)
-    new_score = _eval_on_seqs(new_mask, H, W_in, W_out, new_theta, new_decay, new_C, seqs)
+    old_score = _eval_on_seqs(mask, H, input_projection, output_projection, theta, decay, C_param, seqs)
+    new_score = _eval_on_seqs(new_mask, H, input_projection, output_projection, new_theta, new_decay, new_C, seqs)
 
     return {'delta': new_score - old_score, 'type': proposal_type, 'info': info,
             'new_theta': new_theta if proposal_type == 'theta' else None,
             'new_decay': new_decay if proposal_type == 'decay' else None,
             'new_C': new_C if proposal_type == 'cparam' else None}
 
-def eval_accuracy(mask, H, W_in, W_out, theta, decay, C_param, text_bytes, bp, ticks=6):
+def eval_accuracy(mask, H, input_projection, output_projection, theta, decay, C_param, text_bytes, bp, ticks=6):
     pat_norm = bp / (np.linalg.norm(bp, axis=1, keepdims=True) + 1e-8)
     rs, cs = np.where(mask != 0)
     sp_vals = mask[rs, cs]
@@ -140,7 +140,7 @@ def eval_accuracy(mask, H, W_in, W_out, theta, decay, C_param, text_bytes, bp, t
         act = state.copy()
         for t in range(ticks):
             if t == 0:
-                act = act + bp[text_bytes[i]] @ W_in
+                act = act + bp[text_bytes[i]] @ input_projection
             raw = np.zeros(H, dtype=np.float32)
             if len(rs):
                 np.add.at(raw, cs, act[rs] * sp_vals)
@@ -148,7 +148,7 @@ def eval_accuracy(mask, H, W_in, W_out, theta, decay, C_param, text_bytes, bp, t
             act = c19_activation(charge - theta, C_param)
             charge = np.clip(charge, -1.0, 1.0)
         state = act.copy()
-        out = charge @ W_out
+        out = charge @ output_projection
         out_n = out / (np.linalg.norm(out) + 1e-8)
         sims = out_n @ pat_norm.T
         if np.argmax(sims) == text_bytes[i+1]: correct += 1
@@ -194,7 +194,7 @@ if __name__ == "__main__":
     C_param = np.full(H, 1.0, dtype=np.float32)
     print(f"Empty network, H={net.H}, theta={net.theta.mean():.3f}, C={C_param.mean():.1f}")
     net.state *= 0; net.charge *= 0
-    W_in=net.W_in; W_out=net.W_out
+    input_projection=net.input_projection; output_projection=net.output_projection
 
     BASE_DIR = os.path.dirname(os.path.abspath(__file__))
     LOG = os.path.join(BASE_DIR, "english_1024n_c19_live.txt")
@@ -217,7 +217,7 @@ if __name__ == "__main__":
         for step in range(1, BUDGET+1):
             ptype = SCHEDULE[(step - 1) % len(SCHEDULE)]
             mask_flat = net.mask.flatten()
-            args = [(mask_flat, net.theta.copy(), net.decay.copy(), C_param.copy(), H, W_in, W_out,
+            args = [(mask_flat, net.theta.copy(), net.decay.copy(), C_param.copy(), H, input_projection, output_projection,
                      1000+step*50+w, ptype) for w in range(N_WORKERS)]
             results = pool.map(worker_eval, args)
 
@@ -253,7 +253,7 @@ if __name__ == "__main__":
 
             if step % 50 == 0:
                 elapsed = time.time() - t0
-                ea = np.mean([eval_accuracy(net.mask, H, W_in, W_out, net.theta, net.decay, C_param, s, bp)
+                ea = np.mean([eval_accuracy(net.mask, H, input_projection, output_projection, net.theta, net.decay, C_param, s, bp)
                               for s in eval_seqs])
                 edges = net.count_connections()
                 th_m = float(net.theta.mean()); th_s = float(net.theta.std())
@@ -295,7 +295,7 @@ if __name__ == "__main__":
         print(f"  SAVED FINAL: {final_ckpt}")
 
     elapsed = time.time() - t0
-    final_ea = np.mean([eval_accuracy(net.mask, H, W_in, W_out, net.theta, net.decay, C_param, s, bp)
+    final_ea = np.mean([eval_accuracy(net.mask, H, input_projection, output_projection, net.theta, net.decay, C_param, s, bp)
                         for s in eval_seqs])
     print(f"\nFINAL: eval={final_ea*100:.1f}% edges={net.count_connections()} "
           f"accepts={accepts} {elapsed:.0f}s ({BUDGET/elapsed:.2f} step/s)")

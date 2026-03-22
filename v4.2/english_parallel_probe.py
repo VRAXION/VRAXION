@@ -72,7 +72,7 @@ def evaluate_binary(net, targets, ticks=6):
 
     charges = np.zeros((256, H), dtype=np.float32)
     acts = np.zeros((256, H), dtype=np.float32)
-    projected = BYTE_PATTERNS @ net.W_in  # (256, H)
+    projected = BYTE_PATTERNS @ net.input_projection  # (256, H)
     retain = float(net.retention)
 
     for t in range(ticks):
@@ -85,8 +85,8 @@ def evaluate_binary(net, targets, ticks=6):
         acts = np.maximum(charges - net.THRESHOLD, 0.0)
         charges = np.clip(charges, -1.0, 1.0)
 
-    # Output: charges @ W_out → (256, 8) bit predictions
-    out_bits = charges @ net.W_out  # (256, 8)
+    # Output: charges @ output_projection → (256, 8) bit predictions
+    out_bits = charges @ net.output_projection  # (256, 8)
 
     # Decode: for each input byte, what byte does the output encode?
     # Compare each output pattern to all 256 byte patterns

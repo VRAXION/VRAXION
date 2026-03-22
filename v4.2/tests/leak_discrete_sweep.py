@@ -45,8 +45,8 @@ def run_one(vocab, neurons, density, budget, seed):
     leak_trajectory = []
 
     def eval_b():
-        raw_out = net.forward_batch(ticks=8)
-        e = np.exp(raw_out - raw_out.max(axis=1, keepdims=True))
+        raoutput_projection = net.forward_batch(ticks=8)
+        e = np.exp(raoutput_projection - raoutput_projection.max(axis=1, keepdims=True))
         probs = e / e.sum(axis=1, keepdims=True)
         acc = (np.argmax(probs, axis=1) == perm[:vocab]).mean()
         tp = probs[np.arange(vocab), perm[:vocab]].mean()

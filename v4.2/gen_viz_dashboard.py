@@ -128,7 +128,7 @@ act = np.zeros(H, dtype=np.float32)
 retain = float(net.retention)
 for t in range(6):
     if t == 0:
-        act = act + bp[116] @ net.W_in  # 't'
+        act = act + bp[116] @ net.input_projection  # 't'
     raw = np.zeros(H, dtype=np.float32)
     if len(rows_s):
         np.add.at(raw, cols_s, act[rows_s] * vals_s)

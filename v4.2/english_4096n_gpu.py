@@ -26,7 +26,7 @@ def make_bp(io_dim, seed=12345):
     return p
 
 # --- GPU forward pass ---
-def forward_seq_batch(W, W_in, W_out, theta, decay, bp_torch, text_seqs_batch, ticks=6):
+def forward_seq_batch(W, input_projection, output_projection, theta, decay, bp_torch, text_seqs_batch, ticks=6):
     """
     Forward pass: batch of text sequences through the network.
 
@@ -57,9 +57,9 @@ def forward_seq_batch(W, W_in, W_out, theta, decay, bp_torch, text_seqs_batch, t
         act = state.clone()
         for t in range(ticks):
             if t == 0:
-                # Inject: bp[byte] @ W_in -> (B, H)
+                # Inject: bp[byte] @ input_projection -> (B, H)
                 inp = bp_torch[seqs[:, i]]  # (B, io_dim)
-                act = act + inp @ W_in  # (B, H)
+                act = act + inp @ input_projection  # (B, H)
             raw = act @ W.T  # (B, H) @ (H, H) -> (B, H)
             charge = charge + raw
             charge = charge * ret  # per-neuron decay
@@ -68,7 +68,7 @@ def forward_seq_batch(W, W_in, W_out, theta, decay, bp_torch, text_seqs_batch, t
         state = act.clone()
 
         # Output: cosine similarity
-        out = charge @ W_out  # (B, V)
+        out = charge @ output_projection  # (B, V)
         out_n = out / (out.norm(dim=1, keepdim=True) + 1e-8)  # (B, V)
         sims = out_n @ bp_norm.T  # (B, 256)
 
@@ -86,7 +86,7 @@ def forward_seq_batch(W, W_in, W_out, theta, decay, bp_torch, text_seqs_batch, t
     return score
 
 
-def eval_accuracy_only(W, W_in, W_out, theta, decay, bp_torch, text_seqs_batch, ticks=6):
+def eval_accuracy_only(W, input_projection, output_projection, theta, decay, bp_torch, text_seqs_batch, ticks=6):
     """Just accuracy (no prob), for reporting."""
     H = W.shape[0]
     B = len(text_seqs_batch)
@@ -101,14 +101,14 @@ def eval_accuracy_only(W, W_in, W_out, theta, decay, bp_torch, text_seqs_batch, 
         act = state.clone()
         for t in range(ticks):
             if t == 0:
-                act = act + bp_torch[seqs[:, i]] @ W_in
+                act = act + bp_torch[seqs[:, i]] @ input_projection
             raw = act @ W.T
             charge = charge + raw
             charge = charge * ret
             act = torch.clamp(charge - theta, min=0.0)
             charge = torch.clamp(charge, -1.0, 1.0)
         state = act.clone()
-        out = charge @ W_out
+        out = charge @ output_projection
         out_n = out / (out.norm(dim=1, keepdim=True) + 1e-8)
         sims = out_n @ bp_norm.T
         correct += (sims.argmax(dim=1) == seqs[:, i + 1]).sum().item()
@@ -162,14 +162,14 @@ if __name__ == "__main__":
 
     # Initialize network on GPU
     proj_rng = np.random.RandomState(42)
-    W_in_np = proj_rng.randn(IO, H).astype(np.float32)
-    W_in_np /= np.linalg.norm(W_in_np, axis=0, keepdims=True)
-    W_out_np = proj_rng.randn(H, IO).astype(np.float32)
-    W_out_np /= np.linalg.norm(W_out_np, axis=0, keepdims=True)
+    input_projection_np = proj_rng.randn(IO, H).astype(np.float32)
+    input_projection_np /= np.linalg.norm(input_projection_np, axis=0, keepdims=True)
+    output_projection_np = proj_rng.randn(H, IO).astype(np.float32)
+    output_projection_np /= np.linalg.norm(output_projection_np, axis=0, keepdims=True)
     INJ_SCALE = 3.0
 
-    W_in = torch.from_numpy(W_in_np * INJ_SCALE).to(DEVICE)  # (IO, H)
-    W_out = torch.from_numpy(W_out_np * INJ_SCALE).to(DEVICE)  # (H, IO)
+    input_projection = torch.from_numpy(input_projection_np * INJ_SCALE).to(DEVICE)  # (IO, H)
+    output_projection = torch.from_numpy(output_projection_np * INJ_SCALE).to(DEVICE)  # (H, IO)
 
     # Sparse mask on CPU (for bookkeeping), dense W on GPU (for compute)
     mask = np.zeros((H, H), dtype=np.float32)
@@ -214,7 +214,7 @@ if __name__ == "__main__":
 
         # Compute old score ONCE (shared across all proposals)
         with torch.no_grad():
-            old_score = forward_seq_batch(W, W_in, W_out, theta, decay, bp_torch, train_seqs, TICKS)
+            old_score = forward_seq_batch(W, input_projection, output_projection, theta, decay, bp_torch, train_seqs, TICKS)
 
         # Try N_PROPOSALS mutations, pick best
         best_delta = -1e9
@@ -233,7 +233,7 @@ if __name__ == "__main__":
                 # Apply
                 W[r, c] = val
                 with torch.no_grad():
-                    new_score = forward_seq_batch(W, W_in, W_out, theta, decay, bp_torch, train_seqs, TICKS)
+                    new_score = forward_seq_batch(W, input_projection, output_projection, theta, decay, bp_torch, train_seqs, TICKS)
                 delta = new_score - old_score
                 # Undo
                 W[r, c] = 0.0
@@ -247,7 +247,7 @@ if __name__ == "__main__":
                 new_val = rng.random()
                 theta[idx] = new_val
                 with torch.no_grad():
-                    new_score = forward_seq_batch(W, W_in, W_out, theta, decay, bp_torch, train_seqs, TICKS)
+                    new_score = forward_seq_batch(W, input_projection, output_projection, theta, decay, bp_torch, train_seqs, TICKS)
                 delta = new_score - old_score
                 theta[idx] = old_val
                 if delta > best_delta:
@@ -260,7 +260,7 @@ if __name__ == "__main__":
                 new_val = rng.uniform(0.01, 0.5)
                 decay[idx] = new_val
                 with torch.no_grad():
-                    new_score = forward_seq_batch(W, W_in, W_out, theta, decay, bp_torch, train_seqs, TICKS)
+                    new_score = forward_seq_batch(W, input_projection, output_projection, theta, decay, bp_torch, train_seqs, TICKS)
                 delta = new_score - old_score
                 decay[idx] = old_val
                 if delta > best_delta:
@@ -298,7 +298,7 @@ if __name__ == "__main__":
         if step % 50 == 0:
             elapsed = time.time() - t0
             with torch.no_grad():
-                ea = eval_accuracy_only(W, W_in, W_out, theta, decay, bp_torch, eval_seqs, TICKS)
+                ea = eval_accuracy_only(W, input_projection, output_projection, theta, decay, bp_torch, eval_seqs, TICKS)
             th_mean = theta.mean().item()
             th_std = theta.std().item()
             dc_mean = decay.mean().item()
@@ -346,6 +346,6 @@ if __name__ == "__main__":
         vals=vals, theta=theta.cpu().numpy(), decay=decay.cpu().numpy())
 
     with torch.no_grad():
-        final_ea = eval_accuracy_only(W, W_in, W_out, theta, decay, bp_torch, eval_seqs, TICKS)
+        final_ea = eval_accuracy_only(W, input_projection, output_projection, theta, decay, bp_torch, eval_seqs, TICKS)
     print(f"\nFINAL: eval={final_ea*100:.1f}% edges={n_edges} "
           f"accepts={total_accepts} {elapsed:.0f}s")

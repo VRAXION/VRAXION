@@ -1,8 +1,8 @@
 """
-Int8 W_out — quantize output projection
+Int8 output_projection — quantize output projection
 =========================================
-A: Float W_out (current)
-B: Int8 W_out (quantized, /128 at use time)
+A: Float output_projection (current)
+B: Int8 output_projection (quantized, /128 at use time)
 500 steps, 18 workers, sign+mag mask, int8 injection, ret=217.
 """
 import sys, os, time, random
@@ -13,12 +13,12 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "model"))
 from graph import SelfWiringGraph
 
 _bp = None; _all_data = None; _seq_len = 200; _n_train = 2
-_W_out_f = None; _bigram = None; _inj_table = None
+_output_projection_f = None; _bigram = None; _inj_table = None
 
 def init_w(b, d, sl, nt, wof, bg, it):
-    global _bp, _all_data, _seq_len, _n_train, _W_out_f, _bigram, _inj_table
+    global _bp, _all_data, _seq_len, _n_train, _output_projection_f, _bigram, _inj_table
     _bp, _all_data, _seq_len, _n_train = b, d, sl, nt
-    _W_out_f, _bigram, _inj_table = wof, bg, it
+    _output_projection_f, _bigram, _inj_table = wof, bg, it
 
 def make_bp(io_dim, seed=12345):
     rng = np.random.RandomState(seed)
@@ -48,7 +48,7 @@ def _eval_bigram(msign, mmag, H, seqs):
                 act = np.maximum(charge, 0.0)
                 charge = np.maximum(charge, 0.0)
             state = act.copy()
-            out = charge @ _W_out_f
+            out = charge @ _output_projection_f
             out_n = out / (np.linalg.norm(out) + 1e-8)
             sims = out_n @ pat_norm.T
             e = np.exp(sims - sims.max())
@@ -89,7 +89,7 @@ def worker_eval(args):
             'new_s': new_s.flatten() if new > old else None,
             'new_m': new_m.flatten() if new > old else None}
 
-def eval_acc(msign, mmag, H, W_out_f, text_bytes, bp, inj_table):
+def eval_acc(msign, mmag, H, output_projection_f, text_bytes, bp, inj_table):
     pat_norm = bp / (np.linalg.norm(bp, axis=1, keepdims=True) + 1e-8)
     rs, cs = np.where(mmag > 0)
     s = msign[rs, cs].astype(np.float32) * 2 - 1
@@ -106,7 +106,7 @@ def eval_acc(msign, mmag, H, W_out_f, text_bytes, bp, inj_table):
             charge += raw; charge *= ret
             act = np.maximum(charge, 0.0); charge = np.maximum(charge, 0.0)
         state = act.copy()
-        out = charge @ W_out_f
+        out = charge @ output_projection_f
         out_n = out / (np.linalg.norm(out) + 1e-8)
         sims = out_n @ pat_norm.T
         if np.argmax(sims) == text_bytes[i+1]: correct += 1
@@ -114,7 +114,7 @@ def eval_acc(msign, mmag, H, W_out_f, text_bytes, bp, inj_table):
     return correct/total if total else 0
 
 
-def run_config(name, W_out_f, bp, ALL_DATA, bigram, eval_seqs, H, inj_table,
+def run_config(name, output_projection_f, bp, ALL_DATA, bigram, eval_seqs, H, inj_table,
                max_steps=500, n_workers=18, threshold=0.00005):
     msign = np.zeros((H, H), dtype=np.bool_)
     mmag = np.zeros((H, H), dtype=np.uint8)
@@ -127,7 +127,7 @@ def run_config(name, W_out_f, bp, ALL_DATA, bigram, eval_seqs, H, inj_table,
     t0 = time.time()
 
     pool = Pool(n_workers, initializer=init_w,
-                initargs=(bp, ALL_DATA, 200, 2, W_out_f, bigram, inj_table))
+                initargs=(bp, ALL_DATA, 200, 2, output_projection_f, bigram, inj_table))
     try:
         for step in range(1, max_steps+1):
             ptype = schedule[(step-1) % len(schedule)]
@@ -146,7 +146,7 @@ def run_config(name, W_out_f, bp, ALL_DATA, bigram, eval_seqs, H, inj_table,
             if step % 100 == 0:
                 elapsed = time.time() - t0
                 edges = int((mmag > 0).sum())
-                ea = np.mean([eval_acc(msign, mmag, H, W_out_f, s, bp, inj_table)
+                ea = np.mean([eval_acc(msign, mmag, H, output_projection_f, s, bp, inj_table)
                               for s in eval_seqs])
                 print(f"  [{step:3d}] acc={ea*100:.2f}% edges={edges} "
                       f"A={accepts['add']}|F={accepts['flip']} {elapsed:.0f}s")
@@ -155,7 +155,7 @@ def run_config(name, W_out_f, bp, ALL_DATA, bigram, eval_seqs, H, inj_table,
         pool.terminate(); pool.join()
 
     edges = int((mmag > 0).sum())
-    ea = np.mean([eval_acc(msign, mmag, H, W_out_f, s, bp, inj_table)
+    ea = np.mean([eval_acc(msign, mmag, H, output_projection_f, s, bp, inj_table)
                   for s in eval_seqs])
     elapsed = time.time() - t0
     print(f"  FINAL: acc={ea*100:.2f}% edges={edges} {elapsed:.0f}s")
@@ -183,31 +183,31 @@ if __name__ == "__main__":
 
     random.seed(42); np.random.seed(42)
     ref = SelfWiringGraph(IO)
-    W_in = ref.W_in / ref.INJ_SCALE * 1.0
-    W_out = ref.W_out / ref.INJ_SCALE * 1.0
+    input_projection = ref.input_projection / ref.INJ_SCALE * 1.0
+    output_projection = ref.output_projection / ref.INJ_SCALE * 1.0
 
-    inj_table = np.clip(bp @ W_in * 128, -128, 127).astype(np.int8)
+    inj_table = np.clip(bp @ input_projection * 128, -128, 127).astype(np.int8)
     print(f"Inj table: [{inj_table.min()},{inj_table.max()}]")
 
-    # Int8 W_out
-    W_out_int8 = np.clip(W_out * 128, -128, 127).astype(np.int8)
-    W_out_from_int8 = W_out_int8.astype(np.float32) / 128.0
-    print(f"W_out float range: [{W_out.min():.4f},{W_out.max():.4f}]")
-    print(f"W_out int8 range: [{W_out_int8.min()},{W_out_int8.max()}]")
-    print(f"Max quantization error: {np.abs(W_out - W_out_from_int8).max():.6f}")
+    # Int8 output_projection
+    output_projection_int8 = np.clip(output_projection * 128, -128, 127).astype(np.int8)
+    output_projection_from_int8 = output_projection_int8.astype(np.float32) / 128.0
+    print(f"output_projection float range: [{output_projection.min():.4f},{output_projection.max():.4f}]")
+    print(f"output_projection int8 range: [{output_projection_int8.min()},{output_projection_int8.max()}]")
+    print(f"Max quantization error: {np.abs(output_projection - output_projection_from_int8).max():.6f}")
 
     results = []
 
-    # A: Float W_out
-    results.append(run_config("FLOAT W_out", W_out,
+    # A: Float output_projection
+    results.append(run_config("FLOAT output_projection", output_projection,
                               bp, ALL_DATA, bigram, eval_seqs, H, inj_table))
 
-    # B: Int8 W_out (quantized)
-    results.append(run_config("INT8 W_out", W_out_from_int8,
+    # B: Int8 output_projection (quantized)
+    results.append(run_config("INT8 output_projection", output_projection_from_int8,
                               bp, ALL_DATA, bigram, eval_seqs, H, inj_table))
 
     print(f"\n{'='*50}")
-    print(f"  FLOAT vs INT8 W_out (500 steps)")
+    print(f"  FLOAT vs INT8 output_projection (500 steps)")
     print(f"{'='*50}")
     for r in results:
         print(f"  {r['name']:<15} {r['acc']*100:6.2f}% {r['edges']} edges {r['time']:.0f}s")

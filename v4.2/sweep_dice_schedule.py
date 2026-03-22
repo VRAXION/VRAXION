@@ -16,12 +16,12 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "model"))
 from graph import SelfWiringGraph
 
 _bp = None; _all_data = None; _seq_len = 200; _n_train = 2
-_W_in = None; _W_out = None; _bigram = None
+_input_projection = None; _output_projection = None; _bigram = None
 
 def init_w(b, d, sl, nt, wi, wo, bg):
-    global _bp, _all_data, _seq_len, _n_train, _W_in, _W_out, _bigram
+    global _bp, _all_data, _seq_len, _n_train, _input_projection, _output_projection, _bigram
     _bp, _all_data, _seq_len, _n_train = b, d, sl, nt
-    _W_in, _W_out, _bigram = wi, wo, bg
+    _input_projection, _output_projection, _bigram = wi, wo, bg
 
 def make_bp(io_dim, seed=12345):
     rng = np.random.RandomState(seed)
@@ -41,7 +41,7 @@ def _eval_bigram(mask, H, theta, decay, seqs):
         seq_score = 0.0; n = 0
         for i in range(len(text_bytes)-1):
             act = state.copy()
-            injection = _bp[text_bytes[i]] @ _W_in
+            injection = _bp[text_bytes[i]] @ _input_projection
             for t in range(8):
                 if t < 2:
                     act = act + injection
@@ -52,7 +52,7 @@ def _eval_bigram(mask, H, theta, decay, seqs):
                 act = np.maximum(charge, 0.0)  # theta=0, just ReLU
                 charge = np.maximum(charge, 0.0)
             state = act.copy()
-            out = charge @ _W_out
+            out = charge @ _output_projection
             out_n = out / (np.linalg.norm(out) + 1e-8)
             sims = out_n @ pat_norm.T
             e = np.exp(sims - sims.max())
@@ -102,7 +102,7 @@ def worker_eval(args):
             'new_mask_flat': new_mask.flatten() if new_score > old_score else None,
             'new_decay': new_decay if proposal_type == 'decay' else None}
 
-def eval_accuracy_classic(mask, H, W_in, W_out, decay, text_bytes, bp):
+def eval_accuracy_classic(mask, H, input_projection, output_projection, decay, text_bytes, bp):
     pat_norm = bp / (np.linalg.norm(bp, axis=1, keepdims=True) + 1e-8)
     rs, cs = np.where(mask != 0); sp_vals = mask[rs, cs]
     ret = 1.0 - decay
@@ -110,7 +110,7 @@ def eval_accuracy_classic(mask, H, W_in, W_out, decay, text_bytes, bp):
     correct = 0; total = 0
     for i in range(len(text_bytes)-1):
         act = state.copy()
-        injection = bp[text_bytes[i]] @ W_in
+        injection = bp[text_bytes[i]] @ input_projection
         for t in range(8):
             if t < 2: act = act + injection
             raw = np.zeros(H, dtype=np.float32)
@@ -119,7 +119,7 @@ def eval_accuracy_classic(mask, H, W_in, W_out, decay, text_bytes, bp):
             act = np.maximum(charge, 0.0)
             charge = np.maximum(charge, 0.0)
         state = act.copy()
-        out = charge @ W_out
+        out = charge @ output_projection
         out_n = out / (np.linalg.norm(out) + 1e-8)
         sims = out_n @ pat_norm.T
         if np.argmax(sims) == text_bytes[i+1]: correct += 1
@@ -128,7 +128,7 @@ def eval_accuracy_classic(mask, H, W_in, W_out, decay, text_bytes, bp):
 
 
 def run_config(name, counters, learnable,
-               bp, ALL_DATA, bigram, eval_seqs, H, W_in, W_out,
+               bp, ALL_DATA, bigram, eval_seqs, H, input_projection, output_projection,
                max_steps=800, n_workers=18, threshold=0.00005):
     mask = np.zeros((H, H), dtype=np.float32)
     decay_rng = np.random.RandomState(99)
@@ -150,7 +150,7 @@ def run_config(name, counters, learnable,
     t0 = time.time()
 
     pool = Pool(n_workers, initializer=init_w,
-                initargs=(bp, ALL_DATA, 200, 2, W_in, W_out, bigram))
+                initargs=(bp, ALL_DATA, 200, 2, input_projection, output_projection, bigram))
     try:
         for step in range(1, max_steps+1):
             # Roll dice for each type independently
@@ -196,7 +196,7 @@ def run_config(name, counters, learnable,
             if step % 100 == 0:
                 elapsed = time.time() - t0
                 edges = int(np.count_nonzero(mask))
-                ea = np.mean([eval_accuracy_classic(mask, H, W_in, W_out, decay, s, bp)
+                ea = np.mean([eval_accuracy_classic(mask, H, input_projection, output_projection, decay, s, bp)
                               for s in eval_seqs])
                 acc_history.append((step, ea))
                 quality = ea / max(edges, 1) * 100
@@ -216,7 +216,7 @@ def run_config(name, counters, learnable,
         pool.terminate(); pool.join()
 
     edges = int(np.count_nonzero(mask))
-    ea = np.mean([eval_accuracy_classic(mask, H, W_in, W_out, decay, s, bp)
+    ea = np.mean([eval_accuracy_classic(mask, H, input_projection, output_projection, decay, s, bp)
                   for s in eval_seqs])
     elapsed = time.time() - t0
     quality = ea / max(edges, 1) * 100
@@ -249,30 +249,30 @@ if __name__ == "__main__":
 
     random.seed(42); np.random.seed(42)
     ref = SelfWiringGraph(IO)
-    W_in = ref.W_in / ref.INJ_SCALE * 1.0
-    W_out = ref.W_out / ref.INJ_SCALE * 1.0
+    input_projection = ref.input_projection / ref.INJ_SCALE * 1.0
+    output_projection = ref.output_projection / ref.INJ_SCALE * 1.0
 
     results = []
 
     # A: Hand-tuned (add-heavy, moderate flip, light decay)
     results.append(run_config("FIX 8/5/3",
                               {'add': 8, 'flip': 5, 'decay': 3}, False,
-                              bp, ALL_DATA, bigram, eval_seqs, H, W_in, W_out))
+                              bp, ALL_DATA, bigram, eval_seqs, H, input_projection, output_projection))
 
     # B: Equal
     results.append(run_config("FIX equal 8/8/8",
                               {'add': 8, 'flip': 8, 'decay': 8}, False,
-                              bp, ALL_DATA, bigram, eval_seqs, H, W_in, W_out))
+                              bp, ALL_DATA, bigram, eval_seqs, H, input_projection, output_projection))
 
     # C: Learnable from hand-tuned
     results.append(run_config("LEARN 8/5/3",
                               {'add': 8, 'flip': 5, 'decay': 3}, True,
-                              bp, ALL_DATA, bigram, eval_seqs, H, W_in, W_out))
+                              bp, ALL_DATA, bigram, eval_seqs, H, input_projection, output_projection))
 
     # D: Learnable from equal
     results.append(run_config("LEARN 8/8/8",
                               {'add': 8, 'flip': 8, 'decay': 8}, True,
-                              bp, ALL_DATA, bigram, eval_seqs, H, W_in, W_out))
+                              bp, ALL_DATA, bigram, eval_seqs, H, input_projection, output_projection))
 
     print(f"\n{'='*75}")
     print(f"  SUMMARY -- DICE SCHEDULE (int4, 8t, dur=2, bigram, theta=0)")

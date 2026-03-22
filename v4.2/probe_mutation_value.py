@@ -38,7 +38,7 @@ n_edges = len(rows)
 
 np.random.seed(42)
 net = SelfWiringGraph(IO)
-W_in = net.W_in; W_out = net.W_out
+input_projection = net.input_projection; output_projection = net.output_projection
 
 _bp = bp
 _all_data = ALL_DATA
@@ -60,7 +60,7 @@ def _eval_on_seqs(mask, theta, decay, seqs):
             act = state.copy()
             for t in range(6):
                 if t == 0:
-                    act = act + bp[text_bytes[i]] @ W_in
+                    act = act + bp[text_bytes[i]] @ input_projection
                 raw = np.zeros(H, dtype=np.float32)
                 if len(rs):
                     np.add.at(raw, cs, act[rs] * sp_vals)
@@ -68,7 +68,7 @@ def _eval_on_seqs(mask, theta, decay, seqs):
                 act = np.maximum(charge - theta, 0.0)
                 charge = np.clip(charge, -1.0, 1.0)
             state = act.copy()
-            out = charge @ W_out
+            out = charge @ output_projection
             out_n = out / (np.linalg.norm(out) + 1e-8)
             sims = out_n @ pat_norm.T
             e = np.exp(sims - sims.max())

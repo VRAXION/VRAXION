@@ -25,7 +25,7 @@ def make_bp(io_dim, seed=12345):
     p /= np.linalg.norm(p, axis=1, keepdims=True)
     return p
 
-def _eval_on_seqs(mask, H, W_in, W_out, theta, decay, seqs):
+def _eval_on_seqs(mask, H, input_projection, output_projection, theta, decay, seqs):
     rs, cs = np.where(mask != 0)
     sp_vals = mask[rs, cs]
     pat_norm = _bp / (np.linalg.norm(_bp, axis=1, keepdims=True) + 1e-8)
@@ -39,7 +39,7 @@ def _eval_on_seqs(mask, H, W_in, W_out, theta, decay, seqs):
             act = state.copy()
             for t in range(6):
                 if t == 0:
-                    act = act + _bp[text_bytes[i]] @ W_in
+                    act = act + _bp[text_bytes[i]] @ input_projection
                 raw = np.zeros(H, dtype=np.float32)
                 if len(rs):
                     np.add.at(raw, cs, act[rs] * sp_vals)
@@ -47,7 +47,7 @@ def _eval_on_seqs(mask, H, W_in, W_out, theta, decay, seqs):
                 act = np.maximum(charge - theta, 0.0)
                 charge = np.clip(charge, -1.0, 1.0)
             state = act.copy()
-            out = charge @ W_out
+            out = charge @ output_projection
             out_n = out / (np.linalg.norm(out) + 1e-8)
             sims = out_n @ pat_norm.T
             e = np.exp(sims - sims.max())
@@ -60,7 +60,7 @@ def _eval_on_seqs(mask, H, W_in, W_out, theta, decay, seqs):
         total += 0.5*acc + 0.5*avg_p
     return total / len(seqs)
 
-def eval_accuracy(mask, H, W_in, W_out, theta, decay, text_bytes, bp, ticks=6):
+def eval_accuracy(mask, H, input_projection, output_projection, theta, decay, text_bytes, bp, ticks=6):
     pat_norm = bp / (np.linalg.norm(bp, axis=1, keepdims=True) + 1e-8)
     rs, cs = np.where(mask != 0)
     sp_vals = mask[rs, cs]
@@ -72,7 +72,7 @@ def eval_accuracy(mask, H, W_in, W_out, theta, decay, text_bytes, bp, ticks=6):
         act = state.copy()
         for t in range(ticks):
             if t == 0:
-                act = act + bp[text_bytes[i]] @ W_in
+                act = act + bp[text_bytes[i]] @ input_projection
             raw = np.zeros(H, dtype=np.float32)
             if len(rs):
                 np.add.at(raw, cs, act[rs] * sp_vals)
@@ -80,7 +80,7 @@ def eval_accuracy(mask, H, W_in, W_out, theta, decay, text_bytes, bp, ticks=6):
             act = np.maximum(charge - theta, 0.0)
             charge = np.clip(charge, -1.0, 1.0)
         state = act.copy()
-        out = charge @ W_out
+        out = charge @ output_projection
         out_n = out / (np.linalg.norm(out) + 1e-8)
         sims = out_n @ pat_norm.T
         if np.argmax(sims) == text_bytes[i+1]: correct += 1
@@ -88,7 +88,7 @@ def eval_accuracy(mask, H, W_in, W_out, theta, decay, text_bytes, bp, ticks=6):
     return correct/total if total else 0
 
 def worker_eval(args):
-    mask_flat, theta, decay, H, W_in, W_out, seed, proposal_type, weight_step = args
+    mask_flat, theta, decay, H, input_projection, output_projection, seed, proposal_type, weight_step = args
     rng = random.Random(seed)
     np_rng = np.random.RandomState(seed)
     mask = mask_flat.reshape(H, H)
@@ -141,14 +141,14 @@ def worker_eval(args):
         off = np_rng.randint(0, data_len - _seq_len)
         seqs.append(_all_data[off:off+_seq_len])
 
-    old_score = _eval_on_seqs(mask, H, W_in, W_out, theta, decay, seqs)
-    new_score = _eval_on_seqs(new_mask, H, W_in, W_out, new_theta, new_decay, seqs)
+    old_score = _eval_on_seqs(mask, H, input_projection, output_projection, theta, decay, seqs)
+    new_score = _eval_on_seqs(new_mask, H, input_projection, output_projection, new_theta, new_decay, seqs)
 
     return {'delta': new_score - old_score, 'type': proposal_type, 'info': info,
             'new_mask_flat': new_mask.flatten() if new_score > old_score else None}
 
 def run_experiment(name, net, bp, ALL_DATA, eval_seqs, proposal_type, weight_step,
-                   n_steps, n_workers, threshold, H, W_in, W_out):
+                   n_steps, n_workers, threshold, H, input_projection, output_projection):
     """Run n_steps of a single mutation type, return stats."""
     print(f"\n{'='*60}")
     print(f"  {name}: {n_steps} steps, {n_workers} workers, threshold={threshold}")
@@ -156,7 +156,7 @@ def run_experiment(name, net, bp, ALL_DATA, eval_seqs, proposal_type, weight_ste
     sys.stdout.flush()
 
     # Pre-eval
-    pre_acc = np.mean([eval_accuracy(net.mask, H, W_in, W_out, net.theta, net.decay, s, bp)
+    pre_acc = np.mean([eval_accuracy(net.mask, H, input_projection, output_projection, net.theta, net.decay, s, bp)
                        for s in eval_seqs])
     print(f"  PRE:  eval={pre_acc*100:.2f}%, edges={net.count_connections()}")
     sys.stdout.flush()
@@ -169,7 +169,7 @@ def run_experiment(name, net, bp, ALL_DATA, eval_seqs, proposal_type, weight_ste
     try:
         for step in range(1, n_steps+1):
             mask_flat = net.mask.flatten()
-            args = [(mask_flat, net.theta.copy(), net.decay.copy(), H, W_in, W_out,
+            args = [(mask_flat, net.theta.copy(), net.decay.copy(), H, input_projection, output_projection,
                      2000+step*50+w, proposal_type, weight_step) for w in range(n_workers)]
             results = pool.map(worker_eval, args)
 
@@ -190,7 +190,7 @@ def run_experiment(name, net, bp, ALL_DATA, eval_seqs, proposal_type, weight_ste
 
             if step % 50 == 0:
                 elapsed = time.time() - t0
-                ea = np.mean([eval_accuracy(net.mask, H, W_in, W_out, net.theta, net.decay, s, bp)
+                ea = np.mean([eval_accuracy(net.mask, H, input_projection, output_projection, net.theta, net.decay, s, bp)
                               for s in eval_seqs])
                 print(f"  [{step:4d}] eval={ea*100:.2f}% accepts={accepts} "
                       f"edges={net.count_connections()} {elapsed:.0f}s")
@@ -198,7 +198,7 @@ def run_experiment(name, net, bp, ALL_DATA, eval_seqs, proposal_type, weight_ste
     finally:
         pool.terminate(); pool.join()
 
-    post_acc = np.mean([eval_accuracy(net.mask, H, W_in, W_out, net.theta, net.decay, s, bp)
+    post_acc = np.mean([eval_accuracy(net.mask, H, input_projection, output_projection, net.theta, net.decay, s, bp)
                         for s in eval_seqs])
     elapsed = time.time() - t0
 
@@ -239,13 +239,13 @@ if __name__ == "__main__":
                                "checkpoints", "english_1024n_pruned.npz")
     d = np.load(pruned_ckpt)
 
-    # Build reference net with SAME seed as original training → identical W_in/W_out
+    # Build reference net with SAME seed as original training → identical input_projection/output_projection
     random.seed(42); np.random.seed(42)
     ref_net = SelfWiringGraph(IO)
-    W_in = ref_net.W_in; W_out = ref_net.W_out
+    input_projection = ref_net.input_projection; output_projection = ref_net.output_projection
 
     def load_fresh_net():
-        """Fresh net with correct W_in/W_out + pruned checkpoint loaded."""
+        """Fresh net with correct input_projection/output_projection + pruned checkpoint loaded."""
         net = SelfWiringGraph.__new__(SelfWiringGraph)
         net.__dict__.update(ref_net.__dict__)
         net.mask = ref_net.mask.copy()
@@ -266,22 +266,22 @@ if __name__ == "__main__":
 
     # --- Test 1: Weight perturbation ±0.1 ---
     r = run_experiment("WEIGHT +/-0.1", load_fresh_net(), bp, ALL_DATA, eval_seqs,
-                       'weight', 0.1, N_STEPS, N_WORKERS, THRESHOLD, H, W_in, W_out)
+                       'weight', 0.1, N_STEPS, N_WORKERS, THRESHOLD, H, input_projection, output_projection)
     results.append(r)
 
     # --- Test 2: Weight perturbation ±0.3 ---
     r = run_experiment("WEIGHT +/-0.3", load_fresh_net(), bp, ALL_DATA, eval_seqs,
-                       'weight', 0.3, N_STEPS, N_WORKERS, THRESHOLD, H, W_in, W_out)
+                       'weight', 0.3, N_STEPS, N_WORKERS, THRESHOLD, H, input_projection, output_projection)
     results.append(r)
 
     # --- Test 3: Weight FLIP (sign flip) ---
     r = run_experiment("WEIGHT FLIP", load_fresh_net(), bp, ALL_DATA, eval_seqs,
-                       'weight_flip', 0, N_STEPS, N_WORKERS, THRESHOLD, H, W_in, W_out)
+                       'weight_flip', 0, N_STEPS, N_WORKERS, THRESHOLD, H, input_projection, output_projection)
     results.append(r)
 
     # --- Test 4: Baseline (add-only, for comparison) ---
     r = run_experiment("BASELINE (add)", load_fresh_net(), bp, ALL_DATA, eval_seqs,
-                       'add', 0, N_STEPS, N_WORKERS, THRESHOLD, H, W_in, W_out)
+                       'add', 0, N_STEPS, N_WORKERS, THRESHOLD, H, input_projection, output_projection)
     results.append(r)
 
     # --- Summary ---

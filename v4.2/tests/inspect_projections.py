@@ -27,10 +27,10 @@ print(f"  {inp}")
 print(f"  ^ Pontosan 1 db egyes, a többi nulla. Méret: ({V},)")
 
 # ══════════════════════════════════════════════════════
-# 2. W_in matrices for different projections
+# 2. input_projection matrices for different projections
 # ══════════════════════════════════════════════════════
 print(f"\n\n{'=' * 80}")
-print(f"  W_in MÁTRIXOK ÖSSZEHASONLÍTÁSA")
+print(f"  input_projection MÁTRIXOK ÖSSZEHASONLÍTÁSA")
 print(f"  Méret: ({V}, {H}) — minden input szóhoz {H} hidden neuron értéke")
 print(f"{'=' * 80}")
 
@@ -90,7 +90,7 @@ for name, W in projections.items():
 # ══════════════════════════════════════════════════════
 print(f"\n\n{'=' * 80}")
 print(f"  MI TÖRTÉNIK AMIKOR AZ INPUT BEÉRKEZIK? (tick 0)")
-print(f"  input[3] @ W_in = milyen activation a {H} hidden neuronban?")
+print(f"  input[3] @ input_projection = milyen activation a {H} hidden neuronban?")
 print(f"{'=' * 80}")
 
 THRESHOLD = 0.5
@@ -104,7 +104,7 @@ for name, W in projections.items():
     nonzero = (activation != 0).sum()
 
     print(f"\n  ── {name} ──")
-    print(f"  Injection vektor (input[3] @ W_in):")
+    print(f"  Injection vektor (input[3] @ input_projection):")
     print(f"    Nonzero elemek: {nonzero}/{H}")
     print(f"    |érték| > 0.1:  {above_01}/{H}")
     print(f"    |érték| > 0.5 (THRESHOLD): {above_thresh}/{H}")
@@ -163,11 +163,11 @@ for name, W in projections.items():
     print(f"    Charge range: [{charge.min():.3f}, {charge.max():.3f}]")
 
 # ══════════════════════════════════════════════════════
-# 5. W_out: how does output reading work?
+# 5. output_projection: how does output reading work?
 # ══════════════════════════════════════════════════════
 print(f"\n\n{'=' * 80}")
-print(f"  W_out: HOGYAN OLVASSUK KI AZ OUTPUTOT?")
-print(f"  hidden charge (H={H},) @ W_out ({H},{V}) = logits ({V},)")
+print(f"  output_projection: HOGYAN OLVASSUK KI AZ OUTPUTOT?")
+print(f"  hidden charge (H={H},) @ output_projection ({H},{V}) = logits ({V},)")
 print(f"{'=' * 80}")
 
 # Simulate a fake final charge
@@ -176,13 +176,13 @@ fake_charge = np.random.randn(H).astype(np.float32) * 0.3
 for name in ['random-1x', 'random-3x']:
     W = projections[name]
     rng_out = np.random.RandomState(42)
-    W_out = rng_out.randn(H, V).astype(np.float32)
-    W_out /= np.linalg.norm(W_out, axis=0, keepdims=True)
+    output_projection = rng_out.randn(H, V).astype(np.float32)
+    output_projection /= np.linalg.norm(output_projection, axis=0, keepdims=True)
     if '3x' in name:
-        W_out = W_out * 3.0
+        output_projection = output_projection * 3.0
 
-    logits = fake_charge @ W_out
-    print(f"\n  ── {name} W_out ──")
+    logits = fake_charge @ output_projection
+    print(f"\n  ── {name} output_projection ──")
     print(f"    Logit range: [{logits.min():.3f}, {logits.max():.3f}]")
     print(f"    Logit spread (max-min): {logits.max()-logits.min():.3f}")
     print(f"    Softmax entropy after: ", end="")

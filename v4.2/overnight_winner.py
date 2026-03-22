@@ -1,7 +1,7 @@
 """
 INSTNCT Overnight Run — all winners baked in
 ==============================================
-sign+mag mask (free weight), int8 injection table, int8 W_out,
+sign+mag mask (free weight), int8 injection table, int8 output_projection,
 int8 retention=217, charge ReLU, theta=0, 8 ticks, dur=2,
 bigram 2seq eval, 2a/1f/5d schedule, thresh=0.00005.
 10000 steps — let it run overnight.
@@ -14,12 +14,12 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "model"))
 from graph import SelfWiringGraph
 
 _bp = None; _all_data = None; _seq_len = 200; _n_train = 2
-_W_out_f = None; _bigram = None; _inj_table = None
+_output_projection_f = None; _bigram = None; _inj_table = None
 
 def init_w(b, d, sl, nt, wof, bg, it):
-    global _bp, _all_data, _seq_len, _n_train, _W_out_f, _bigram, _inj_table
+    global _bp, _all_data, _seq_len, _n_train, _output_projection_f, _bigram, _inj_table
     _bp, _all_data, _seq_len, _n_train = b, d, sl, nt
-    _W_out_f, _bigram, _inj_table = wof, bg, it
+    _output_projection_f, _bigram, _inj_table = wof, bg, it
 
 def make_bp(io_dim, seed=12345):
     rng = np.random.RandomState(seed)
@@ -50,7 +50,7 @@ def _eval_bigram(msign, mmag, H, seqs):
                 act = np.maximum(charge, 0.0)
                 charge = np.maximum(charge, 0.0)
             state = act.copy()
-            out = charge @ _W_out_f
+            out = charge @ _output_projection_f
             out_n = out / (np.linalg.norm(out) + 1e-8)
             sims = out_n @ pat_norm.T
             e = np.exp(sims - sims.max())
@@ -97,7 +97,7 @@ def worker_eval(args):
             'new_s': new_s.flatten() if new > old else None,
             'new_m': new_m.flatten() if new > old else None}
 
-def eval_accuracy(msign, mmag, H, W_out_f, text_bytes, bp, inj_table):
+def eval_accuracy(msign, mmag, H, output_projection_f, text_bytes, bp, inj_table):
     pat_norm = bp / (np.linalg.norm(bp, axis=1, keepdims=True) + 1e-8)
     rs, cs = np.where(mmag > 0)
     s = msign[rs, cs].astype(np.float32) * 2 - 1
@@ -114,7 +114,7 @@ def eval_accuracy(msign, mmag, H, W_out_f, text_bytes, bp, inj_table):
             charge += raw; charge *= ret
             act = np.maximum(charge, 0.0); charge = np.maximum(charge, 0.0)
         state = act.copy()
-        out = charge @ W_out_f
+        out = charge @ output_projection_f
         out_n = out / (np.linalg.norm(out) + 1e-8)
         sims = out_n @ pat_norm.T
         if np.argmax(sims) == text_bytes[i+1]: correct += 1
@@ -146,13 +146,13 @@ if __name__ == "__main__":
 
     random.seed(42); np.random.seed(42)
     ref = SelfWiringGraph(IO)
-    W_in = ref.W_in / ref.INJ_SCALE * 1.0
-    W_out = ref.W_out / ref.INJ_SCALE * 1.0
+    input_projection = ref.input_projection / ref.INJ_SCALE * 1.0
+    output_projection = ref.output_projection / ref.INJ_SCALE * 1.0
 
     # Int8 projections
-    inj_table = np.clip(bp @ W_in * 128, -128, 127).astype(np.int8)
-    W_out_int8 = np.clip(W_out * 128, -128, 127).astype(np.int8)
-    W_out_f = W_out_int8.astype(np.float32) / 128.0
+    inj_table = np.clip(bp @ input_projection * 128, -128, 127).astype(np.int8)
+    output_projection_int8 = np.clip(output_projection * 128, -128, 127).astype(np.int8)
+    output_projection_f = output_projection_int8.astype(np.float32) / 128.0
 
     # Sign+mag mask, empty start
     msign = np.zeros((H, H), dtype=np.bool_)
@@ -164,7 +164,7 @@ if __name__ == "__main__":
 
     print(f"\n{'='*60}")
     print(f"  INSTNCT OVERNIGHT RUN")
-    print(f"  {H}n, {N_WORKERS}w, sign+mag, int8 inj+W_out, ret=217")
+    print(f"  {H}n, {N_WORKERS}w, sign+mag, int8 inj+output_projection, ret=217")
     print(f"  schedule={SCHEDULE}, budget={BUDGET}")
     print(f"{'='*60}")
     sys.stdout.flush()
@@ -177,7 +177,7 @@ if __name__ == "__main__":
     t0 = time.time()
 
     pool = Pool(N_WORKERS, initializer=init_w,
-                initargs=(bp, ALL_DATA, 200, 2, W_out_f, bigram, inj_table))
+                initargs=(bp, ALL_DATA, 200, 2, output_projection_f, bigram, inj_table))
     try:
         for step in range(1, BUDGET+1):
             ptype = SCHEDULE[(step-1) % len(SCHEDULE)]
@@ -197,7 +197,7 @@ if __name__ == "__main__":
             if step % 100 == 0:
                 elapsed = time.time() - t0
                 edges = int((mmag > 0).sum())
-                ea = np.mean([eval_accuracy(msign, mmag, H, W_out_f, s, bp, inj_table)
+                ea = np.mean([eval_accuracy(msign, mmag, H, output_projection_f, s, bp, inj_table)
                               for s in eval_seqs])
                 sps = step / elapsed
                 vals = mmag[mmag > 0]
@@ -221,7 +221,7 @@ if __name__ == "__main__":
                 ckpt = os.path.join(CKPT_DIR, f"overnight_step{step}.npz")
                 np.savez_compressed(ckpt,
                     msign=msign, mmag=mmag,
-                    inj_table=inj_table, W_out_int8=W_out_int8)
+                    inj_table=inj_table, output_projection_int8=output_projection_int8)
                 print(f"  SAVED: {ckpt}")
                 with open(os.path.join(BASE_DIR, "overnight_log.json"), 'w') as f:
                     json.dump(log_data, f, separators=(',', ':'))
@@ -232,12 +232,12 @@ if __name__ == "__main__":
         final_ckpt = os.path.join(CKPT_DIR, "overnight_final.npz")
         np.savez_compressed(final_ckpt,
             msign=msign, mmag=mmag,
-            inj_table=inj_table, W_out_int8=W_out_int8)
+            inj_table=inj_table, output_projection_int8=output_projection_int8)
         print(f"  SAVED FINAL: {final_ckpt}")
 
     elapsed = time.time() - t0
     edges = int((mmag > 0).sum())
-    ea = np.mean([eval_accuracy(msign, mmag, H, W_out_f, s, bp, inj_table)
+    ea = np.mean([eval_accuracy(msign, mmag, H, output_projection_f, s, bp, inj_table)
                   for s in eval_seqs])
     print(f"\nFINAL: eval={ea*100:.1f}% edges={edges} "
           f"A={accepts['add']}|F={accepts['flip']}|M={accepts['mag_resample']} "

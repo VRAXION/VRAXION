@@ -37,12 +37,12 @@ def run_passive_3x(seed):
     net = PassiveIOGraph(V, h_ratio=3, proj='random')
     # Deterministic projection from separate rng
     rng = np.random.RandomState(seed + 10000)
-    W_in = rng.randn(V, V * 3).astype(np.float32)
-    W_in /= np.linalg.norm(W_in, axis=1, keepdims=True)
-    W_out = rng.randn(V * 3, V).astype(np.float32)
-    W_out /= np.linalg.norm(W_out, axis=0, keepdims=True)
-    net.W_in = W_in * 3.0
-    net.W_out = W_out * 3.0
+    input_projection = rng.randn(V, V * 3).astype(np.float32)
+    input_projection /= np.linalg.norm(input_projection, axis=1, keepdims=True)
+    output_projection = rng.randn(V * 3, V).astype(np.float32)
+    output_projection /= np.linalg.norm(output_projection, axis=0, keepdims=True)
+    net.input_projection = input_projection * 3.0
+    net.output_projection = output_projection * 3.0
     targets = np.random.permutation(V)
     t0 = time.time()
     score = train_passive(net, targets, V, max_attempts=BUDGET, ticks=TICKS,

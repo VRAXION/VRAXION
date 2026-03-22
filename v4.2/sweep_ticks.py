@@ -13,14 +13,14 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "model"))
 from graph import SelfWiringGraph
 
 _bp = None; _all_data = None; _seq_len = 200; _n_train = 2
-_W_in = None; _W_out = None; _bigram = None
+_input_projection = None; _output_projection = None; _bigram = None
 _n_ticks = 6
 _sleep_mask = None  # None = all active, or (H, max_ticks) bool array
 
 def init_w(b, d, sl, nt, wi, wo, bg, ticks, smask):
-    global _bp, _all_data, _seq_len, _n_train, _W_in, _W_out, _bigram, _n_ticks, _sleep_mask
+    global _bp, _all_data, _seq_len, _n_train, _input_projection, _output_projection, _bigram, _n_ticks, _sleep_mask
     _bp, _all_data, _seq_len, _n_train = b, d, sl, nt
-    _W_in, _W_out, _bigram = wi, wo, bg
+    _input_projection, _output_projection, _bigram = wi, wo, bg
     _n_ticks = ticks
     _sleep_mask = smask
 
@@ -45,7 +45,7 @@ def _eval_bigram(mask, H, theta, decay, sleep_mask, seqs):
             act = state.copy()
             for t in range(n_ticks):
                 if t == 0:
-                    act = act + _bp[text_bytes[i]] @ _W_in
+                    act = act + _bp[text_bytes[i]] @ _input_projection
                 raw = np.zeros(H, dtype=np.float32)
                 if len(rs):
                     np.add.at(raw, cs, act[rs] * sp_vals)
@@ -56,7 +56,7 @@ def _eval_bigram(mask, H, theta, decay, sleep_mask, seqs):
                 act = np.maximum(charge - theta, 0.0)
                 charge = np.maximum(charge, 0.0)
             state = act.copy()
-            out = charge @ _W_out
+            out = charge @ _output_projection
             out_n = out / (np.linalg.norm(out) + 1e-8)
             sims = out_n @ pat_norm.T
             e = np.exp(sims - sims.max())
@@ -115,7 +115,7 @@ def worker_eval(args):
             'new_theta': new_theta if proposal_type == 'theta' else None,
             'new_sleep_flat': new_sleep.flatten() if proposal_type == 'sleep' and new_score > old_score else None}
 
-def eval_accuracy_classic(mask, H, W_in, W_out, theta, decay, text_bytes, bp, n_ticks, sleep_mask):
+def eval_accuracy_classic(mask, H, input_projection, output_projection, theta, decay, text_bytes, bp, n_ticks, sleep_mask):
     pat_norm = bp / (np.linalg.norm(bp, axis=1, keepdims=True) + 1e-8)
     rs, cs = np.where(mask != 0); sp_vals = mask[rs, cs]
     ret = 1.0 - decay
@@ -124,7 +124,7 @@ def eval_accuracy_classic(mask, H, W_in, W_out, theta, decay, text_bytes, bp, n_
     for i in range(len(text_bytes)-1):
         act = state.copy()
         for t in range(n_ticks):
-            if t == 0: act = act + bp[text_bytes[i]] @ W_in
+            if t == 0: act = act + bp[text_bytes[i]] @ input_projection
             raw = np.zeros(H, dtype=np.float32)
             if len(rs): np.add.at(raw, cs, act[rs] * sp_vals)
             if sleep_mask is not None and t < sleep_mask.shape[1]:
@@ -133,7 +133,7 @@ def eval_accuracy_classic(mask, H, W_in, W_out, theta, decay, text_bytes, bp, n_
             act = np.maximum(charge - theta, 0.0)
             charge = np.maximum(charge, 0.0)
         state = act.copy()
-        out = charge @ W_out
+        out = charge @ output_projection
         out_n = out / (np.linalg.norm(out) + 1e-8)
         sims = out_n @ pat_norm.T
         if np.argmax(sims) == text_bytes[i+1]: correct += 1
@@ -142,7 +142,7 @@ def eval_accuracy_classic(mask, H, W_in, W_out, theta, decay, text_bytes, bp, n_
 
 
 def run_config(name, n_ticks, learnable_sleep,
-               bp, ALL_DATA, bigram, eval_seqs, H, W_in, W_out,
+               bp, ALL_DATA, bigram, eval_seqs, H, input_projection, output_projection,
                n_steps=200, n_workers=18, threshold=0.00005):
     mask = np.zeros((H, H), dtype=np.float32)
     theta = np.full(H, 0.03, dtype=np.float32)
@@ -166,7 +166,7 @@ def run_config(name, n_ticks, learnable_sleep,
 
     sleep_flat = sleep_mask.flatten() if sleep_mask is not None else None
     pool = Pool(n_workers, initializer=init_w,
-                initargs=(bp, ALL_DATA, 200, 2, W_in, W_out, bigram, n_ticks, sleep_mask))
+                initargs=(bp, ALL_DATA, 200, 2, input_projection, output_projection, bigram, n_ticks, sleep_mask))
     try:
         for step in range(1, n_steps+1):
             ptype = schedule[(step-1) % len(schedule)]
@@ -193,7 +193,7 @@ def run_config(name, n_ticks, learnable_sleep,
             if step % 50 == 0:
                 elapsed = time.time() - t0
                 edges = int(np.count_nonzero(mask))
-                ea = np.mean([eval_accuracy_classic(mask, H, W_in, W_out, theta, decay, s, bp,
+                ea = np.mean([eval_accuracy_classic(mask, H, input_projection, output_projection, theta, decay, s, bp,
                               n_ticks, sleep_mask) for s in eval_seqs])
                 tot = sum(accepts.values())
                 extra = ""
@@ -208,7 +208,7 @@ def run_config(name, n_ticks, learnable_sleep,
         pool.terminate(); pool.join()
 
     edges = int(np.count_nonzero(mask))
-    ea = np.mean([eval_accuracy_classic(mask, H, W_in, W_out, theta, decay, s, bp,
+    ea = np.mean([eval_accuracy_classic(mask, H, input_projection, output_projection, theta, decay, s, bp,
                   n_ticks, sleep_mask) for s in eval_seqs])
     elapsed = time.time() - t0
     extra = ""
@@ -240,23 +240,23 @@ if __name__ == "__main__":
 
     random.seed(42); np.random.seed(42)
     ref = SelfWiringGraph(IO)
-    W_in = ref.W_in / ref.INJ_SCALE * 1.0
-    W_out = ref.W_out / ref.INJ_SCALE * 1.0
+    input_projection = ref.input_projection / ref.INJ_SCALE * 1.0
+    output_projection = ref.output_projection / ref.INJ_SCALE * 1.0
 
     results = []
 
     # Fixed tick counts
     for ticks in [2, 4, 6, 8, 10]:
         results.append(run_config(f"FIX {ticks} ticks", ticks, False,
-                                  bp, ALL_DATA, bigram, eval_seqs, H, W_in, W_out))
+                                  bp, ALL_DATA, bigram, eval_seqs, H, input_projection, output_projection))
 
     # Learnable sleep mask (6 ticks base, neurons learn which to skip)
     results.append(run_config("LEARN sleep 6t", 6, True,
-                              bp, ALL_DATA, bigram, eval_seqs, H, W_in, W_out))
+                              bp, ALL_DATA, bigram, eval_seqs, H, input_projection, output_projection))
 
     # Learnable sleep mask (8 ticks base, more room to skip)
     results.append(run_config("LEARN sleep 8t", 8, True,
-                              bp, ALL_DATA, bigram, eval_seqs, H, W_in, W_out))
+                              bp, ALL_DATA, bigram, eval_seqs, H, input_projection, output_projection))
 
     print(f"\n{'='*65}")
     print(f"  SUMMARY -- TICKS SWEEP (200 steps, bigram 2seq, charge ReLU)")

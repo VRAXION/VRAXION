@@ -1,7 +1,7 @@
 """
 Unified Input — dense float vs int8 table vs sparse learnable
 ==============================================================
-A: Dense float W_in (current baseline)
+A: Dense float input_projection (current baseline)
 B: Precomputed int8 injection table (same mapping, quantized)
 C: Sparse learnable input edges (byte -> neuron, built by mutation)
 500 steps, 18 workers, sign+mag mask, ret=217.
@@ -14,14 +14,14 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "model"))
 from graph import SelfWiringGraph
 
 _bp = None; _all_data = None; _seq_len = 200; _n_train = 2
-_W_in = None; _W_out = None; _bigram = None
+_input_projection = None; _output_projection = None; _bigram = None
 _inj_table = None  # int8 precomputed
 _mode = 'dense'  # 'dense', 'int8_table', 'sparse'
 
 def init_w(b, d, sl, nt, wi, wo, bg, it, m):
-    global _bp, _all_data, _seq_len, _n_train, _W_in, _W_out, _bigram, _inj_table, _mode
+    global _bp, _all_data, _seq_len, _n_train, _input_projection, _output_projection, _bigram, _inj_table, _mode
     _bp, _all_data, _seq_len, _n_train = b, d, sl, nt
-    _W_in, _W_out, _bigram = wi, wo, bg
+    _input_projection, _output_projection, _bigram = wi, wo, bg
     _inj_table, _mode = it, m
 
 def make_bp(io_dim, seed=12345):
@@ -55,7 +55,7 @@ def _eval_bigram(mask_sign, mask_mag, input_sign, input_mag, H, ret, seqs):
             for t in range(8):
                 if t < 2:
                     if _mode == 'dense':
-                        act = act + _bp[text_bytes[i]] @ _W_in
+                        act = act + _bp[text_bytes[i]] @ _input_projection
                     elif _mode == 'int8_table':
                         act = act + _inj_table[text_bytes[i]].astype(np.float32) / 128.0
                     elif _mode == 'sparse':
@@ -67,7 +67,7 @@ def _eval_bigram(mask_sign, mask_mag, input_sign, input_mag, H, ret, seqs):
                 act = np.maximum(charge, 0.0)
                 charge = np.maximum(charge, 0.0)
             state = act.copy()
-            out = charge @ _W_out
+            out = charge @ _output_projection
             out_n = out / (np.linalg.norm(out) + 1e-8)
             sims = out_n @ pat_norm.T
             e = np.exp(sims - sims.max())
@@ -142,7 +142,7 @@ def worker_eval(args):
             'new_isign': new_isign.flatten() if new_score > old_score and new_isign is not None else None,
             'new_imag': new_imag.flatten() if new_score > old_score and new_imag is not None else None}
 
-def eval_accuracy(mask_sign, mask_mag, input_sign, input_mag, H, W_in, W_out, text_bytes, bp, mode, inj_table):
+def eval_accuracy(mask_sign, mask_mag, input_sign, input_mag, H, input_projection, output_projection, text_bytes, bp, mode, inj_table):
     pat_norm = bp / (np.linalg.norm(bp, axis=1, keepdims=True) + 1e-8)
     rs, cs = np.where(mask_mag > 0)
     s = mask_sign[rs, cs].astype(np.float32) * 2 - 1
@@ -155,7 +155,7 @@ def eval_accuracy(mask_sign, mask_mag, input_sign, input_mag, H, W_in, W_out, te
         for t in range(8):
             if t < 2:
                 if mode == 'dense':
-                    act = act + bp[text_bytes[i]] @ W_in
+                    act = act + bp[text_bytes[i]] @ input_projection
                 elif mode == 'int8_table':
                     act = act + inj_table[text_bytes[i]].astype(np.float32) / 128.0
                 elif mode == 'sparse':
@@ -166,7 +166,7 @@ def eval_accuracy(mask_sign, mask_mag, input_sign, input_mag, H, W_in, W_out, te
             act = np.maximum(charge, 0.0)
             charge = np.maximum(charge, 0.0)
         state = act.copy()
-        out = charge @ W_out
+        out = charge @ output_projection
         out_n = out / (np.linalg.norm(out) + 1e-8)
         sims = out_n @ pat_norm.T
         if np.argmax(sims) == text_bytes[i+1]: correct += 1
@@ -174,7 +174,7 @@ def eval_accuracy(mask_sign, mask_mag, input_sign, input_mag, H, W_in, W_out, te
     return correct/total if total else 0
 
 
-def run_config(name, mode, bp, ALL_DATA, bigram, eval_seqs, H, W_in, W_out, inj_table,
+def run_config(name, mode, bp, ALL_DATA, bigram, eval_seqs, H, input_projection, output_projection, inj_table,
                max_steps=500, n_workers=18, threshold=0.00005):
     mask_sign = np.zeros((H, H), dtype=np.bool_)
     mask_mag = np.zeros((H, H), dtype=np.uint8)
@@ -194,7 +194,7 @@ def run_config(name, mode, bp, ALL_DATA, bigram, eval_seqs, H, W_in, W_out, inj_
     t0 = time.time()
 
     pool = Pool(n_workers, initializer=init_w,
-                initargs=(bp, ALL_DATA, 200, 2, W_in, W_out, bigram, inj_table, mode))
+                initargs=(bp, ALL_DATA, 200, 2, input_projection, output_projection, bigram, inj_table, mode))
     try:
         for step in range(1, max_steps+1):
             ptype = schedule[(step-1) % len(schedule)]
@@ -225,7 +225,7 @@ def run_config(name, mode, bp, ALL_DATA, bigram, eval_seqs, H, W_in, W_out, inj_
                 edges = int((mask_mag > 0).sum())
                 iedges = int((input_mag > 0).sum()) if input_mag is not None else 0
                 ea = np.mean([eval_accuracy(mask_sign, mask_mag, input_sign, input_mag,
-                              H, W_in, W_out, s, bp, mode, inj_table) for s in eval_seqs])
+                              H, input_projection, output_projection, s, bp, mode, inj_table) for s in eval_seqs])
                 quality = ea / max(edges + iedges, 1) * 100
 
                 print(f"  [{step:3d}] acc={ea*100:.2f}% edges={edges} iedges={iedges} "
@@ -238,7 +238,7 @@ def run_config(name, mode, bp, ALL_DATA, bigram, eval_seqs, H, W_in, W_out, inj_
     edges = int((mask_mag > 0).sum())
     iedges = int((input_mag > 0).sum()) if input_mag is not None else 0
     ea = np.mean([eval_accuracy(mask_sign, mask_mag, input_sign, input_mag,
-                  H, W_in, W_out, s, bp, mode, inj_table) for s in eval_seqs])
+                  H, input_projection, output_projection, s, bp, mode, inj_table) for s in eval_seqs])
     elapsed = time.time() - t0
     quality = ea / max(edges + iedges, 1) * 100
 
@@ -268,26 +268,26 @@ if __name__ == "__main__":
 
     random.seed(42); np.random.seed(42)
     ref = SelfWiringGraph(IO)
-    W_in = ref.W_in / ref.INJ_SCALE * 1.0
-    W_out = ref.W_out / ref.INJ_SCALE * 1.0
+    input_projection = ref.input_projection / ref.INJ_SCALE * 1.0
+    output_projection = ref.output_projection / ref.INJ_SCALE * 1.0
 
     # Precompute int8 injection table
-    inj_table = np.clip(bp @ W_in * 128, -128, 127).astype(np.int8)
+    inj_table = np.clip(bp @ input_projection * 128, -128, 127).astype(np.int8)
     print(f"Injection table: {inj_table.shape}, range=[{inj_table.min()},{inj_table.max()}]")
 
     results = []
 
     # A: Dense float (current)
     results.append(run_config("A: Dense float", 'dense',
-                              bp, ALL_DATA, bigram, eval_seqs, H, W_in, W_out, inj_table))
+                              bp, ALL_DATA, bigram, eval_seqs, H, input_projection, output_projection, inj_table))
 
     # B: Int8 table (precomputed, no matmul)
     results.append(run_config("B: Int8 table", 'int8_table',
-                              bp, ALL_DATA, bigram, eval_seqs, H, W_in, W_out, inj_table))
+                              bp, ALL_DATA, bigram, eval_seqs, H, input_projection, output_projection, inj_table))
 
-    # C: Sparse learnable (no W_in, edges byte->neuron)
+    # C: Sparse learnable (no input_projection, edges byte->neuron)
     results.append(run_config("C: Sparse learnable", 'sparse',
-                              bp, ALL_DATA, bigram, eval_seqs, H, W_in, W_out, inj_table))
+                              bp, ALL_DATA, bigram, eval_seqs, H, input_projection, output_projection, inj_table))
 
     print(f"\n{'='*65}")
     print(f"  SUMMARY -- UNIFIED INPUT (500 steps, sign+mag, ret=217)")

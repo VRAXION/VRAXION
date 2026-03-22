@@ -13,13 +13,13 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "model"))
 from graph import SelfWiringGraph
 
 _bp = None; _all_data = None; _seq_len = 200; _n_train = 2
-_W_in = None; _W_out = None; _bigram = None
+_input_projection = None; _output_projection = None; _bigram = None
 _inj_dur = None; _inj_dur_fixed = 1
 
 def init_w(b, d, sl, nt, wi, wo, bg, idur, idf):
-    global _bp, _all_data, _seq_len, _n_train, _W_in, _W_out, _bigram, _inj_dur, _inj_dur_fixed
+    global _bp, _all_data, _seq_len, _n_train, _input_projection, _output_projection, _bigram, _inj_dur, _inj_dur_fixed
     _bp, _all_data, _seq_len, _n_train = b, d, sl, nt
-    _W_in, _W_out, _bigram = wi, wo, bg
+    _input_projection, _output_projection, _bigram = wi, wo, bg
     _inj_dur, _inj_dur_fixed = idur, idf
 
 def make_bp(io_dim, seed=12345):
@@ -40,7 +40,7 @@ def _eval_bigram(mask, H, theta, decay, inj_dur, seqs):
         seq_score = 0.0; n = 0
         for i in range(len(text_bytes)-1):
             act = state.copy()
-            injection = _bp[text_bytes[i]] @ _W_in
+            injection = _bp[text_bytes[i]] @ _input_projection
             for t in range(8):
                 if inj_dur is not None:
                     inject_mask = (inj_dur > t).astype(np.float32)
@@ -55,7 +55,7 @@ def _eval_bigram(mask, H, theta, decay, inj_dur, seqs):
                 act = np.maximum(charge - theta, 0.0)
                 charge = np.maximum(charge, 0.0)
             state = act.copy()
-            out = charge @ _W_out
+            out = charge @ _output_projection
             out_n = out / (np.linalg.norm(out) + 1e-8)
             sims = out_n @ pat_norm.T
             e = np.exp(sims - sims.max())
@@ -109,7 +109,7 @@ def worker_eval(args):
             'new_theta': new_theta if proposal_type == 'theta' else None,
             'new_decay': new_decay if proposal_type == 'decay' else None}
 
-def eval_accuracy_classic(mask, H, W_in, W_out, theta, decay, inj_dur, inj_dur_fixed, text_bytes, bp):
+def eval_accuracy_classic(mask, H, input_projection, output_projection, theta, decay, inj_dur, inj_dur_fixed, text_bytes, bp):
     pat_norm = bp / (np.linalg.norm(bp, axis=1, keepdims=True) + 1e-8)
     rs, cs = np.where(mask != 0); sp_vals = mask[rs, cs]
     ret = 1.0 - decay
@@ -117,7 +117,7 @@ def eval_accuracy_classic(mask, H, W_in, W_out, theta, decay, inj_dur, inj_dur_f
     correct = 0; total = 0
     for i in range(len(text_bytes)-1):
         act = state.copy()
-        injection = bp[text_bytes[i]] @ W_in
+        injection = bp[text_bytes[i]] @ input_projection
         for t in range(8):
             if inj_dur is not None:
                 inject_mask = (inj_dur > t).astype(np.float32)
@@ -131,7 +131,7 @@ def eval_accuracy_classic(mask, H, W_in, W_out, theta, decay, inj_dur, inj_dur_f
             act = np.maximum(charge - theta, 0.0)
             charge = np.maximum(charge, 0.0)
         state = act.copy()
-        out = charge @ W_out
+        out = charge @ output_projection
         out_n = out / (np.linalg.norm(out) + 1e-8)
         sims = out_n @ pat_norm.T
         if np.argmax(sims) == text_bytes[i+1]: correct += 1
@@ -140,7 +140,7 @@ def eval_accuracy_classic(mask, H, W_in, W_out, theta, decay, inj_dur, inj_dur_f
 
 
 def run_config(name, inj_dur, inj_dur_fixed,
-               bp, ALL_DATA, bigram, eval_seqs, H, W_in, W_out,
+               bp, ALL_DATA, bigram, eval_seqs, H, input_projection, output_projection,
                max_steps=800, n_workers=18, threshold=0.00005):
     mask = np.zeros((H, H), dtype=np.float32)
     theta = np.full(H, 0.03, dtype=np.float32)
@@ -157,7 +157,7 @@ def run_config(name, inj_dur, inj_dur_fixed,
     t0 = time.time()
 
     pool = Pool(n_workers, initializer=init_w,
-                initargs=(bp, ALL_DATA, 200, 2, W_in, W_out, bigram, inj_dur, inj_dur_fixed))
+                initargs=(bp, ALL_DATA, 200, 2, input_projection, output_projection, bigram, inj_dur, inj_dur_fixed))
     try:
         for step in range(1, max_steps+1):
             ptype = schedule[(step-1) % len(schedule)]
@@ -184,7 +184,7 @@ def run_config(name, inj_dur, inj_dur_fixed,
             if step % 100 == 0:
                 elapsed = time.time() - t0
                 edges = int(np.count_nonzero(mask))
-                ea = np.mean([eval_accuracy_classic(mask, H, W_in, W_out, theta, decay,
+                ea = np.mean([eval_accuracy_classic(mask, H, input_projection, output_projection, theta, decay,
                               inj_dur, inj_dur_fixed, s, bp) for s in eval_seqs])
                 acc_history.append((step, ea))
                 quality = ea / max(edges, 1) * 100
@@ -203,7 +203,7 @@ def run_config(name, inj_dur, inj_dur_fixed,
         pool.terminate(); pool.join()
 
     edges = int(np.count_nonzero(mask))
-    ea = np.mean([eval_accuracy_classic(mask, H, W_in, W_out, theta, decay,
+    ea = np.mean([eval_accuracy_classic(mask, H, input_projection, output_projection, theta, decay,
                   inj_dur, inj_dur_fixed, s, bp) for s in eval_seqs])
     elapsed = time.time() - t0
     quality = ea / max(edges, 1) * 100
@@ -233,32 +233,32 @@ if __name__ == "__main__":
 
     random.seed(42); np.random.seed(42)
     ref = SelfWiringGraph(IO)
-    W_in = ref.W_in / ref.INJ_SCALE * 1.0
-    W_out = ref.W_out / ref.INJ_SCALE * 1.0
+    input_projection = ref.input_projection / ref.INJ_SCALE * 1.0
+    output_projection = ref.output_projection / ref.INJ_SCALE * 1.0
 
     results = []
 
     # A: Fix 2 (winner from duration sweep)
     results.append(run_config("FIX dur=2", None, 2,
-                              bp, ALL_DATA, bigram, eval_seqs, H, W_in, W_out))
+                              bp, ALL_DATA, bigram, eval_seqs, H, input_projection, output_projection))
 
     # B: Random [1,3] (tight around sweet spot)
     rng_b = np.random.RandomState(66)
     results.append(run_config("RAND [1,3]",
                               rng_b.randint(1, 4, size=H).astype(np.int32), 2,
-                              bp, ALL_DATA, bigram, eval_seqs, H, W_in, W_out))
+                              bp, ALL_DATA, bigram, eval_seqs, H, input_projection, output_projection))
 
     # C: Random [1,4] (wider)
     rng_c = np.random.RandomState(67)
     results.append(run_config("RAND [1,4]",
                               rng_c.randint(1, 5, size=H).astype(np.int32), 2,
-                              bp, ALL_DATA, bigram, eval_seqs, H, W_in, W_out))
+                              bp, ALL_DATA, bigram, eval_seqs, H, input_projection, output_projection))
 
     # D: Random [2,4] (no dur=1, all get at least 2 ticks input)
     rng_d = np.random.RandomState(68)
     results.append(run_config("RAND [2,4]",
                               rng_d.randint(2, 5, size=H).astype(np.int32), 2,
-                              bp, ALL_DATA, bigram, eval_seqs, H, W_in, W_out))
+                              bp, ALL_DATA, bigram, eval_seqs, H, input_projection, output_projection))
 
     print(f"\n{'='*65}")
     print(f"  SUMMARY -- INJECTION INIT (8t, bigram, ReLU, decay [.08,.24])")

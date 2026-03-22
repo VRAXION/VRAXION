@@ -18,14 +18,14 @@ edges = list(net.alive)
 print(f"{H} neurons, {len(edges)} edges")
 
 # Compute topological depth via BFS from "input-proximal" neurons
-# Neurons that receive most energy from W_in are "close to input"
-w_in_energy = np.abs(net.W_in).sum(axis=0)  # (H,) how much input each hidden neuron gets
-w_out_energy = np.abs(net.W_out).sum(axis=1)  # (H,) how much each neuron contributes to output
+# Neurons that receive most energy from input_projection are "close to input"
+input_projection_energy = np.abs(net.input_projection).sum(axis=0)  # (H,) how much input each hidden neuron gets
+output_projection_energy = np.abs(net.output_projection).sum(axis=1)  # (H,) how much each neuron contributes to output
 
 # BFS depth from top input neurons
 depth = np.full(H, -1, dtype=int)
-# Start from neurons with highest W_in energy
-input_proximal = np.argsort(w_in_energy)[-100:]  # top 100
+# Start from neurons with highest input_projection energy
+input_proximal = np.argsort(input_projection_energy)[-100:]  # top 100
 for n in input_proximal:
     depth[n] = 0
 
@@ -85,8 +85,8 @@ for i in range(H):
         'deg': int(total_deg[i]),
         'out': int(out_deg[i]),
         'inp': int(in_deg[i]),
-        'w_in': round(float(w_in_energy[i]), 2),
-        'w_out': round(float(w_out_energy[i]), 2),
+        'input_projection': round(float(input_projection_energy[i]), 2),
+        'output_projection': round(float(output_projection_energy[i]), 2),
         'depth': int(depth[i]),
     })
 
@@ -170,8 +170,8 @@ select.btn{appearance:none;-webkit-appearance:none}
 <div class="bar ob" id="hob" style="width:0%"></div>
 <div class="sr"><span class="l">incoming</span><span class="v n" id="hin">-</span></div>
 <div class="bar ib" id="hib" style="width:0%"></div>
-<div class="sr"><span class="l">W_in energy</span><span class="v" id="hwi">-</span></div>
-<div class="sr"><span class="l">W_out energy</span><span class="v" id="hwo">-</span></div>
+<div class="sr"><span class="l">input_projection energy</span><span class="v" id="hwi">-</span></div>
+<div class="sr"><span class="l">output_projection energy</span><span class="v" id="hwo">-</span></div>
 </div>
 <div class="panel" id="controls">
 <button class="btn active" id="be" onclick="togE()">edges on</button>
@@ -333,8 +333,8 @@ function uh(){
   document.getElementById("hin").textContent=n.inp;
   document.getElementById("hob").style.width=(n.out/md*100)+"%";
   document.getElementById("hib").style.width=(n.inp/md*100)+"%";
-  document.getElementById("hwi").textContent=n.w_in.toFixed(1);
-  document.getElementById("hwo").textContent=n.w_out.toFixed(1);
+  document.getElementById("hwi").textContent=n.input_projection.toFixed(1);
+  document.getElementById("hwo").textContent=n.output_projection.toFixed(1);
 }
 function loop(){if(nr){render();nr=false}requestAnimationFrame(loop)}
 loop();

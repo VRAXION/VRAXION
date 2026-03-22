@@ -2,8 +2,8 @@
 PassiveIO Graph — Input/Output as passive projection sockets
 =============================================================
 Same self-wiring mutation engine, BUT:
-  - Input = fixed W_in  (V → H) projection matrix
-  - Output = fixed W_out (H → V) projection matrix
+  - Input = fixed input_projection  (V → H) projection matrix
+  - Output = fixed output_projection (H → V) projection matrix
   - Mutable mask is ONLY H × H  (hidden-to-hidden)
   - No IN/OUT neurons — they're just "sockets" / "plugs"
 
@@ -33,21 +33,21 @@ class PassiveIOGraph:
         # ── Fixed projection matrices (NOT learned) ──
         if proj == 'random':
             # Random orthogonal-ish projection
-            self.W_in = np.random.randn(vocab, self.H).astype(np.float32)
-            self.W_in /= np.linalg.norm(self.W_in, axis=1, keepdims=True)
-            self.W_out = np.random.randn(self.H, vocab).astype(np.float32)
-            self.W_out /= np.linalg.norm(self.W_out, axis=0, keepdims=True)
+            self.input_projection = np.random.randn(vocab, self.H).astype(np.float32)
+            self.input_projection /= np.linalg.norm(self.input_projection, axis=1, keepdims=True)
+            self.output_projection = np.random.randn(self.H, vocab).astype(np.float32)
+            self.output_projection /= np.linalg.norm(self.output_projection, axis=0, keepdims=True)
         elif proj == 'identity':
             # First V hidden neurons = input slots, last V = output slots
-            self.W_in = np.zeros((vocab, self.H), dtype=np.float32)
-            self.W_in[np.arange(vocab), np.arange(vocab)] = 1.0
-            self.W_out = np.zeros((self.H, vocab), dtype=np.float32)
-            self.W_out[np.arange(self.H - vocab, self.H), np.arange(vocab)] = 1.0
+            self.input_projection = np.zeros((vocab, self.H), dtype=np.float32)
+            self.input_projection[np.arange(vocab), np.arange(vocab)] = 1.0
+            self.output_projection = np.zeros((self.H, vocab), dtype=np.float32)
+            self.output_projection[np.arange(self.H - vocab, self.H), np.arange(vocab)] = 1.0
         elif proj == 'hadamard':
             # Hadamard-like structured projection
             H_mat = self._hadamard_like(vocab, self.H)
-            self.W_in = H_mat.astype(np.float32)
-            self.W_out = H_mat.T.astype(np.float32)
+            self.input_projection = H_mat.astype(np.float32)
+            self.output_projection = H_mat.T.astype(np.float32)
         else:
             raise ValueError(f"Unknown proj: {proj}")
 
@@ -98,7 +98,7 @@ class PassiveIOGraph:
         for t in range(ticks):
             if t == 0:
                 # Project input into hidden space (additive injection)
-                act += world @ self.W_in
+                act += world @ self.input_projection
             raw = act @ self.mask
             np.nan_to_num(raw, copy=False, nan=0.0, posinf=0.0, neginf=0.0)
             self.charge += raw
@@ -107,7 +107,7 @@ class PassiveIOGraph:
             self.charge = np.clip(self.charge, -1.0, 1.0)
         self.state = act.copy()
         # Project hidden state to output space
-        return self.charge @ self.W_out
+        return self.charge @ self.output_projection
 
     def forward_batch(self, ticks=8):
         """Batch forward: all V inputs simultaneously. Returns (V, V) logits."""
@@ -116,7 +116,7 @@ class PassiveIOGraph:
         acts = np.zeros((V, H), dtype=np.float32)
         retain = float(self.retention)
         eye = np.eye(V, dtype=np.float32)
-        projected_inputs = eye @ self.W_in  # (V, H) — precompute
+        projected_inputs = eye @ self.input_projection  # (V, H) — precompute
         for t in range(ticks):
             if t == 0:
                 acts += projected_inputs
@@ -126,7 +126,7 @@ class PassiveIOGraph:
             charges *= retain
             acts = np.maximum(charges - self.THRESHOLD, 0.0)
             charges = np.clip(charges, -1.0, 1.0)
-        return charges @ self.W_out  # (V, V) logits
+        return charges @ self.output_projection  # (V, V) logits
 
     # ── Mutation (delegate to same mechanics) ──
 

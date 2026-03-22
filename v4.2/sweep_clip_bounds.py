@@ -13,13 +13,13 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "model"))
 from graph import SelfWiringGraph
 
 _bp = None; _all_data = None; _seq_len = 200; _n_train = 2
-_W_in = None; _W_out = None; _bigram = None
+_input_projection = None; _output_projection = None; _bigram = None
 _clip_lo = None; _clip_hi = None  # per-neuron or scalar
 
 def init_w(b, d, sl, nt, wi, wo, bg, clo, chi):
-    global _bp, _all_data, _seq_len, _n_train, _W_in, _W_out, _bigram, _clip_lo, _clip_hi
+    global _bp, _all_data, _seq_len, _n_train, _input_projection, _output_projection, _bigram, _clip_lo, _clip_hi
     _bp, _all_data, _seq_len, _n_train = b, d, sl, nt
-    _W_in, _W_out, _bigram = wi, wo, bg
+    _input_projection, _output_projection, _bigram = wi, wo, bg
     _clip_lo, _clip_hi = clo, chi
 
 def make_bp(io_dim, seed=12345):
@@ -42,7 +42,7 @@ def _eval_bigram(mask, H, theta, decay, clip_lo, clip_hi, seqs):
             act = state.copy()
             for t in range(6):
                 if t == 0:
-                    act = act + _bp[text_bytes[i]] @ _W_in
+                    act = act + _bp[text_bytes[i]] @ _input_projection
                 raw = np.zeros(H, dtype=np.float32)
                 if len(rs):
                     np.add.at(raw, cs, act[rs] * sp_vals)
@@ -50,7 +50,7 @@ def _eval_bigram(mask, H, theta, decay, clip_lo, clip_hi, seqs):
                 act = np.maximum(charge - theta, 0.0)
                 charge = np.clip(charge, clip_lo, clip_hi)
             state = act.copy()
-            out = charge @ _W_out
+            out = charge @ _output_projection
             out_n = out / (np.linalg.norm(out) + 1e-8)
             sims = out_n @ pat_norm.T
             e = np.exp(sims - sims.max())
@@ -111,7 +111,7 @@ def worker_eval(args):
             'new_clip_lo': new_clip_lo if proposal_type == 'clip' else None,
             'new_clip_hi': new_clip_hi if proposal_type == 'clip' else None}
 
-def eval_accuracy_classic(mask, H, W_in, W_out, theta, decay, clip_lo, clip_hi, text_bytes, bp):
+def eval_accuracy_classic(mask, H, input_projection, output_projection, theta, decay, clip_lo, clip_hi, text_bytes, bp):
     pat_norm = bp / (np.linalg.norm(bp, axis=1, keepdims=True) + 1e-8)
     rs, cs = np.where(mask != 0); sp_vals = mask[rs, cs]
     ret = 1.0 - decay
@@ -120,14 +120,14 @@ def eval_accuracy_classic(mask, H, W_in, W_out, theta, decay, clip_lo, clip_hi, 
     for i in range(len(text_bytes)-1):
         act = state.copy()
         for t in range(6):
-            if t == 0: act = act + bp[text_bytes[i]] @ W_in
+            if t == 0: act = act + bp[text_bytes[i]] @ input_projection
             raw = np.zeros(H, dtype=np.float32)
             if len(rs): np.add.at(raw, cs, act[rs] * sp_vals)
             charge += raw; charge *= ret
             act = np.maximum(charge - theta, 0.0)
             charge = np.clip(charge, clip_lo, clip_hi)
         state = act.copy()
-        out = charge @ W_out
+        out = charge @ output_projection
         out_n = out / (np.linalg.norm(out) + 1e-8)
         sims = out_n @ pat_norm.T
         if np.argmax(sims) == text_bytes[i+1]: correct += 1
@@ -136,7 +136,7 @@ def eval_accuracy_classic(mask, H, W_in, W_out, theta, decay, clip_lo, clip_hi, 
 
 
 def run_config(name, clip_lo_init, clip_hi_init, learnable_clip,
-               bp, ALL_DATA, bigram, eval_seqs, H, W_in, W_out,
+               bp, ALL_DATA, bigram, eval_seqs, H, input_projection, output_projection,
                n_steps=200, n_workers=18, threshold=0.00005):
     mask = np.zeros((H, H), dtype=np.float32)
     theta = np.full(H, 0.03, dtype=np.float32)
@@ -161,7 +161,7 @@ def run_config(name, clip_lo_init, clip_hi_init, learnable_clip,
     t0 = time.time()
 
     pool = Pool(n_workers, initializer=init_w,
-                initargs=(bp, ALL_DATA, 200, 2, W_in, W_out, bigram, clip_lo, clip_hi))
+                initargs=(bp, ALL_DATA, 200, 2, input_projection, output_projection, bigram, clip_lo, clip_hi))
     try:
         for step in range(1, n_steps+1):
             ptype = schedule[(step-1) % len(schedule)]
@@ -188,7 +188,7 @@ def run_config(name, clip_lo_init, clip_hi_init, learnable_clip,
             if step % 50 == 0:
                 elapsed = time.time() - t0
                 edges = int(np.count_nonzero(mask))
-                ea = np.mean([eval_accuracy_classic(mask, H, W_in, W_out, theta, decay,
+                ea = np.mean([eval_accuracy_classic(mask, H, input_projection, output_projection, theta, decay,
                               clip_lo, clip_hi, s, bp) for s in eval_seqs])
                 tot = sum(accepts.values())
                 extra = ""
@@ -202,7 +202,7 @@ def run_config(name, clip_lo_init, clip_hi_init, learnable_clip,
         pool.terminate(); pool.join()
 
     edges = int(np.count_nonzero(mask))
-    ea = np.mean([eval_accuracy_classic(mask, H, W_in, W_out, theta, decay,
+    ea = np.mean([eval_accuracy_classic(mask, H, input_projection, output_projection, theta, decay,
                   clip_lo, clip_hi, s, bp) for s in eval_seqs])
     elapsed = time.time() - t0
     print(f"  FINAL: acc={ea*100:.2f}% edges={edges} {elapsed:.0f}s")
@@ -234,34 +234,34 @@ if __name__ == "__main__":
 
     random.seed(42); np.random.seed(42)
     ref = SelfWiringGraph(IO)
-    W_in = ref.W_in / ref.INJ_SCALE * 1.0
-    W_out = ref.W_out / ref.INJ_SCALE * 1.0
+    input_projection = ref.input_projection / ref.INJ_SCALE * 1.0
+    output_projection = ref.output_projection / ref.INJ_SCALE * 1.0
 
     results = []
 
     # A: Baseline [-1, +1]
     results.append(run_config("FIX [-1,+1]", -1.0, 1.0, False,
-                              bp, ALL_DATA, bigram, eval_seqs, H, W_in, W_out))
+                              bp, ALL_DATA, bigram, eval_seqs, H, input_projection, output_projection))
 
     # B: Bigger tank [-2, +2]
     results.append(run_config("FIX [-2,+2]", -2.0, 2.0, False,
-                              bp, ALL_DATA, bigram, eval_seqs, H, W_in, W_out))
+                              bp, ALL_DATA, bigram, eval_seqs, H, input_projection, output_projection))
 
     # C: Smaller tank [-0.5, +0.5]
     results.append(run_config("FIX [-0.5,+0.5]", -0.5, 0.5, False,
-                              bp, ALL_DATA, bigram, eval_seqs, H, W_in, W_out))
+                              bp, ALL_DATA, bigram, eval_seqs, H, input_projection, output_projection))
 
     # D: No clip (effectively infinite)
     results.append(run_config("FIX [-100,+100]", -100.0, 100.0, False,
-                              bp, ALL_DATA, bigram, eval_seqs, H, W_in, W_out))
+                              bp, ALL_DATA, bigram, eval_seqs, H, input_projection, output_projection))
 
     # E: Asymmetric [0, +2] (only positive charge)
     results.append(run_config("FIX [0,+2]", 0.0, 2.0, False,
-                              bp, ALL_DATA, bigram, eval_seqs, H, W_in, W_out))
+                              bp, ALL_DATA, bigram, eval_seqs, H, input_projection, output_projection))
 
     # F: Learnable per-neuron (start at [-1,+1])
     results.append(run_config("LEARN [-1,+1]", -1.0, 1.0, True,
-                              bp, ALL_DATA, bigram, eval_seqs, H, W_in, W_out))
+                              bp, ALL_DATA, bigram, eval_seqs, H, input_projection, output_projection))
 
     print(f"\n{'='*65}")
     print(f"  SUMMARY -- CLIP BOUNDS (200 steps, bigram 2seq, thresh=5e-05)")

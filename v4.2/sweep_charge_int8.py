@@ -15,14 +15,14 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "model"))
 from graph import SelfWiringGraph
 
 _bp = None; _all_data = None; _seq_len = 200; _n_train = 2
-_W_in = None; _W_out = None; _bigram = None
+_input_projection = None; _output_projection = None; _bigram = None
 _inj_table = None
 _use_int_charge = False
 
 def init_w(b, d, sl, nt, wi, wo, bg, it, uic):
-    global _bp, _all_data, _seq_len, _n_train, _W_in, _W_out, _bigram, _inj_table, _use_int_charge
+    global _bp, _all_data, _seq_len, _n_train, _input_projection, _output_projection, _bigram, _inj_table, _use_int_charge
     _bp, _all_data, _seq_len, _n_train = b, d, sl, nt
-    _W_in, _W_out, _bigram = wi, wo, bg
+    _input_projection, _output_projection, _bigram = wi, wo, bg
     _inj_table, _use_int_charge = it, uic
 
 def make_bp(io_dim, seed=12345):
@@ -66,7 +66,7 @@ def _eval_bigram(mask_sign, mask_mag, H, seqs):
                     act = np.maximum(charge, 0)
                     charge = np.maximum(charge, 0)
                 state = act.copy()
-                # Output: convert back to float for W_out matmul
+                # Output: convert back to float for output_projection matmul
                 charge_f = charge.astype(np.float32) / 256.0
             else:
                 act = state.copy()
@@ -83,7 +83,7 @@ def _eval_bigram(mask_sign, mask_mag, H, seqs):
                 state = act.copy()
                 charge_f = charge
 
-            out = charge_f @ _W_out
+            out = charge_f @ _output_projection
             out_n = out / (np.linalg.norm(out) + 1e-8)
             sims = out_n @ pat_norm.T
             e = np.exp(sims - sims.max())
@@ -129,7 +129,7 @@ def worker_eval(args):
             'new_msign': new_msign.flatten() if new_score > old_score else None,
             'new_mmag': new_mmag.flatten() if new_score > old_score else None}
 
-def eval_acc(msign, mmag, H, W_in, W_out, text_bytes, bp, inj_table, use_int):
+def eval_acc(msign, mmag, H, input_projection, output_projection, text_bytes, bp, inj_table, use_int):
     pat_norm = bp / (np.linalg.norm(bp, axis=1, keepdims=True) + 1e-8)
     rs, cs = np.where(mmag > 0)
     s = msign[rs, cs].astype(np.float32) * 2 - 1
@@ -146,7 +146,7 @@ def eval_acc(msign, mmag, H, W_in, W_out, text_bytes, bp, inj_table, use_int):
             charge += raw; charge *= ret_f
             act = np.maximum(charge, 0.0); charge = np.maximum(charge, 0.0)
         state = act.copy()
-        out = charge @ W_out
+        out = charge @ output_projection
         out_n = out / (np.linalg.norm(out) + 1e-8)
         sims = out_n @ pat_norm.T
         if np.argmax(sims) == text_bytes[i+1]: correct += 1
@@ -154,7 +154,7 @@ def eval_acc(msign, mmag, H, W_in, W_out, text_bytes, bp, inj_table, use_int):
     return correct/total if total else 0
 
 
-def run_config(name, use_int, bp, ALL_DATA, bigram, eval_seqs, H, W_in, W_out, inj_table,
+def run_config(name, use_int, bp, ALL_DATA, bigram, eval_seqs, H, input_projection, output_projection, inj_table,
                max_steps=500, n_workers=18, threshold=0.00005):
     msign = np.zeros((H, H), dtype=np.bool_)
     mmag = np.zeros((H, H), dtype=np.uint8)
@@ -167,7 +167,7 @@ def run_config(name, use_int, bp, ALL_DATA, bigram, eval_seqs, H, W_in, W_out, i
     t0 = time.time()
 
     pool = Pool(n_workers, initializer=init_w,
-                initargs=(bp, ALL_DATA, 200, 2, W_in, W_out, bigram, inj_table, use_int))
+                initargs=(bp, ALL_DATA, 200, 2, input_projection, output_projection, bigram, inj_table, use_int))
     try:
         for step in range(1, max_steps+1):
             ptype = schedule[(step-1) % len(schedule)]
@@ -186,7 +186,7 @@ def run_config(name, use_int, bp, ALL_DATA, bigram, eval_seqs, H, W_in, W_out, i
             if step % 100 == 0:
                 elapsed = time.time() - t0
                 edges = int((mmag > 0).sum())
-                ea = np.mean([eval_acc(msign, mmag, H, W_in, W_out, s, bp, inj_table, use_int)
+                ea = np.mean([eval_acc(msign, mmag, H, input_projection, output_projection, s, bp, inj_table, use_int)
                               for s in eval_seqs])
                 print(f"  [{step:3d}] acc={ea*100:.2f}% edges={edges} "
                       f"A={accepts['add']}|F={accepts['flip']} {elapsed:.0f}s")
@@ -195,7 +195,7 @@ def run_config(name, use_int, bp, ALL_DATA, bigram, eval_seqs, H, W_in, W_out, i
         pool.terminate(); pool.join()
 
     edges = int((mmag > 0).sum())
-    ea = np.mean([eval_acc(msign, mmag, H, W_in, W_out, s, bp, inj_table, use_int)
+    ea = np.mean([eval_acc(msign, mmag, H, input_projection, output_projection, s, bp, inj_table, use_int)
                   for s in eval_seqs])
     elapsed = time.time() - t0
     print(f"  FINAL: acc={ea*100:.2f}% edges={edges} {elapsed:.0f}s")
@@ -223,21 +223,21 @@ if __name__ == "__main__":
 
     random.seed(42); np.random.seed(42)
     ref = SelfWiringGraph(IO)
-    W_in = ref.W_in / ref.INJ_SCALE * 1.0
-    W_out = ref.W_out / ref.INJ_SCALE * 1.0
+    input_projection = ref.input_projection / ref.INJ_SCALE * 1.0
+    output_projection = ref.output_projection / ref.INJ_SCALE * 1.0
 
-    inj_table = np.clip(bp @ W_in * 128, -128, 127).astype(np.int8)
+    inj_table = np.clip(bp @ input_projection * 128, -128, 127).astype(np.int8)
     print(f"Injection table: range=[{inj_table.min()},{inj_table.max()}]")
 
     results = []
 
     # A: Float charge (int8 injection table, float charge/state)
     results.append(run_config("FLOAT charge", False,
-                              bp, ALL_DATA, bigram, eval_seqs, H, W_in, W_out, inj_table))
+                              bp, ALL_DATA, bigram, eval_seqs, H, input_projection, output_projection, inj_table))
 
     # B: Int charge (int32 internal, int8 output)
     results.append(run_config("INT charge", True,
-                              bp, ALL_DATA, bigram, eval_seqs, H, W_in, W_out, inj_table))
+                              bp, ALL_DATA, bigram, eval_seqs, H, input_projection, output_projection, inj_table))
 
     print(f"\n{'='*55}")
     print(f"  FLOAT vs INT CHARGE (500 steps)")

@@ -23,12 +23,12 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "model"))
 from graph import SelfWiringGraph
 
 _bp = None; _all_data = None; _seq_len = 200; _n_train = 2
-_W_in = None; _W_out = None; _bigram = None
+_input_projection = None; _output_projection = None; _bigram = None
 
 def init_w(b, d, sl, nt, wi, wo, bg):
-    global _bp, _all_data, _seq_len, _n_train, _W_in, _W_out, _bigram
+    global _bp, _all_data, _seq_len, _n_train, _input_projection, _output_projection, _bigram
     _bp, _all_data, _seq_len, _n_train = b, d, sl, nt
-    _W_in, _W_out, _bigram = wi, wo, bg
+    _input_projection, _output_projection, _bigram = wi, wo, bg
 
 def make_bp(io_dim, seed=12345):
     rng = np.random.RandomState(seed)
@@ -51,7 +51,7 @@ def _eval_bigram(mask, H, theta, decay, seqs):
             act = state.copy()
             for t in range(8):
                 if t < 2:
-                    act = act + _bp[text_bytes[i]] @ _W_in
+                    act = act + _bp[text_bytes[i]] @ _input_projection
                 raw = np.zeros(H, dtype=np.float32)
                 if len(rs):
                     np.add.at(raw, cs, act[rs] * sp_vals)
@@ -59,7 +59,7 @@ def _eval_bigram(mask, H, theta, decay, seqs):
                 act = np.maximum(charge - theta, 0.0)
                 charge = np.maximum(charge, 0.0)
             state = act.copy()
-            out = charge @ _W_out
+            out = charge @ _output_projection
             out_n = out / (np.linalg.norm(out) + 1e-8)
             sims = out_n @ pat_norm.T
             e = np.exp(sims - sims.max())
@@ -113,7 +113,7 @@ def worker_eval(args):
             'new_theta': new_theta if proposal_type == 'theta' else None,
             'new_decay': new_decay if proposal_type == 'decay' else None}
 
-def eval_accuracy(mask, H, W_in, W_out, theta, decay, text_bytes, bp):
+def eval_accuracy(mask, H, input_projection, output_projection, theta, decay, text_bytes, bp):
     """Classic accuracy for reporting (not used in training)."""
     pat_norm = bp / (np.linalg.norm(bp, axis=1, keepdims=True) + 1e-8)
     rs, cs = np.where(mask != 0); sp_vals = mask[rs, cs]
@@ -123,14 +123,14 @@ def eval_accuracy(mask, H, W_in, W_out, theta, decay, text_bytes, bp):
     for i in range(len(text_bytes)-1):
         act = state.copy()
         for t in range(8):
-            if t < 2: act = act + bp[text_bytes[i]] @ W_in
+            if t < 2: act = act + bp[text_bytes[i]] @ input_projection
             raw = np.zeros(H, dtype=np.float32)
             if len(rs): np.add.at(raw, cs, act[rs] * sp_vals)
             charge += raw; charge *= ret
             act = np.maximum(charge - theta, 0.0)
             charge = np.maximum(charge, 0.0)
         state = act.copy()
-        out = charge @ W_out
+        out = charge @ output_projection
         out_n = out / (np.linalg.norm(out) + 1e-8)
         sims = out_n @ pat_norm.T
         if np.argmax(sims) == text_bytes[i+1]: correct += 1
@@ -181,12 +181,12 @@ if __name__ == "__main__":
     net = SelfWiringGraph(IO)
     # Override INJ_SCALE: use 1.0 instead of default 3.0
     proj_rng = np.random.RandomState(42)
-    # Reconstruct W_in/W_out at scale=1.0 using same seed as SelfWiringGraph
+    # Reconstruct input_projection/output_projection at scale=1.0 using same seed as SelfWiringGraph
     # (SelfWiringGraph uses its own proj_rng, so we replicate)
     random.seed(42); np.random.seed(42)
     ref = SelfWiringGraph(IO)
-    W_in = ref.W_in / ref.INJ_SCALE * INJ_SCALE  # undo 3.0, apply 1.0
-    W_out = ref.W_out / ref.INJ_SCALE * INJ_SCALE
+    input_projection = ref.input_projection / ref.INJ_SCALE * INJ_SCALE  # undo 3.0, apply 1.0
+    output_projection = ref.output_projection / ref.INJ_SCALE * INJ_SCALE
 
     # Empty start
     net.mask[:] = 0; net.alive = []; net.alive_set = set(); net._sync_sparse_idx()
@@ -220,7 +220,7 @@ if __name__ == "__main__":
     t0 = time.time()
 
     pool = Pool(N_WORKERS, initializer=init_w,
-                initargs=(bp, ALL_DATA, SEQ_LEN, N_TRAIN_SEQS, W_in, W_out, bigram))
+                initargs=(bp, ALL_DATA, SEQ_LEN, N_TRAIN_SEQS, input_projection, output_projection, bigram))
     try:
         for step in range(1, BUDGET+1):
             ptype = SCHEDULE[(step - 1) % len(SCHEDULE)]
@@ -249,7 +249,7 @@ if __name__ == "__main__":
 
             if step % 50 == 0:
                 elapsed = time.time() - t0
-                ea = np.mean([eval_accuracy(net.mask, H, W_in, W_out, net.theta, net.decay, s, bp)
+                ea = np.mean([eval_accuracy(net.mask, H, input_projection, output_projection, net.theta, net.decay, s, bp)
                               for s in eval_seqs])
                 edges = net.count_connections()
                 sps = step / elapsed
@@ -286,7 +286,7 @@ if __name__ == "__main__":
         print(f"  SAVED FINAL: {final_ckpt}")
 
     elapsed = time.time() - t0
-    final_ea = np.mean([eval_accuracy(net.mask, H, W_in, W_out, net.theta, net.decay, s, bp)
+    final_ea = np.mean([eval_accuracy(net.mask, H, input_projection, output_projection, net.theta, net.decay, s, bp)
                         for s in eval_seqs])
     print(f"\nFINAL: eval={final_ea*100:.1f}% edges={net.count_connections()} "
           f"accepts={accepts} {elapsed:.0f}s ({BUDGET/elapsed:.2f} step/s)")

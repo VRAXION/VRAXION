@@ -13,13 +13,13 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "model"))
 from graph import SelfWiringGraph
 
 _bp = None; _all_data = None; _seq_len = 200; _n_train = 2
-_W_in = None; _W_out = None; _bigram = None
+_input_projection = None; _output_projection = None; _bigram = None
 _charge_mode = 'none'  # 'none', 'relu', 'leaky_001', 'leaky_01', 'leaky_03'
 
 def init_w(b, d, sl, nt, wi, wo, bg, mode):
-    global _bp, _all_data, _seq_len, _n_train, _W_in, _W_out, _bigram, _charge_mode
+    global _bp, _all_data, _seq_len, _n_train, _input_projection, _output_projection, _bigram, _charge_mode
     _bp, _all_data, _seq_len, _n_train = b, d, sl, nt
-    _W_in, _W_out, _bigram = wi, wo, bg
+    _input_projection, _output_projection, _bigram = wi, wo, bg
     _charge_mode = mode
 
 def make_bp(io_dim, seed=12345):
@@ -57,7 +57,7 @@ def _eval_bigram(mask, H, theta, decay, seqs):
             act = state.copy()
             for t in range(6):
                 if t == 0:
-                    act = act + _bp[text_bytes[i]] @ _W_in
+                    act = act + _bp[text_bytes[i]] @ _input_projection
                 raw = np.zeros(H, dtype=np.float32)
                 if len(rs):
                     np.add.at(raw, cs, act[rs] * sp_vals)
@@ -65,7 +65,7 @@ def _eval_bigram(mask, H, theta, decay, seqs):
                 act = np.maximum(charge - theta, 0.0)
                 charge = apply_charge_activation(charge)
             state = act.copy()
-            out = charge @ _W_out
+            out = charge @ _output_projection
             out_n = out / (np.linalg.norm(out) + 1e-8)
             sims = out_n @ pat_norm.T
             e = np.exp(sims - sims.max())
@@ -114,7 +114,7 @@ def worker_eval(args):
             'new_mask_flat': new_mask.flatten() if new_score > old_score else None,
             'new_theta': new_theta if proposal_type == 'theta' else None}
 
-def eval_accuracy_classic(mask, H, W_in, W_out, theta, decay, text_bytes, bp, charge_mode):
+def eval_accuracy_classic(mask, H, input_projection, output_projection, theta, decay, text_bytes, bp, charge_mode):
     pat_norm = bp / (np.linalg.norm(bp, axis=1, keepdims=True) + 1e-8)
     rs, cs = np.where(mask != 0); sp_vals = mask[rs, cs]
     ret = 1.0 - decay
@@ -123,7 +123,7 @@ def eval_accuracy_classic(mask, H, W_in, W_out, theta, decay, text_bytes, bp, ch
     for i in range(len(text_bytes)-1):
         act = state.copy()
         for t in range(6):
-            if t == 0: act = act + bp[text_bytes[i]] @ W_in
+            if t == 0: act = act + bp[text_bytes[i]] @ input_projection
             raw = np.zeros(H, dtype=np.float32)
             if len(rs): np.add.at(raw, cs, act[rs] * sp_vals)
             charge += raw; charge *= ret
@@ -139,7 +139,7 @@ def eval_accuracy_classic(mask, H, W_in, W_out, theta, decay, text_bytes, bp, ch
             elif charge_mode == 'leaky_05':
                 charge = np.where(charge > 0, charge, charge * 0.5)
         state = act.copy()
-        out = charge @ W_out
+        out = charge @ output_projection
         out_n = out / (np.linalg.norm(out) + 1e-8)
         sims = out_n @ pat_norm.T
         if np.argmax(sims) == text_bytes[i+1]: correct += 1
@@ -147,7 +147,7 @@ def eval_accuracy_classic(mask, H, W_in, W_out, theta, decay, text_bytes, bp, ch
     return correct/total if total else 0
 
 
-def run_config(name, mode, bp, ALL_DATA, bigram, eval_seqs, H, W_in, W_out,
+def run_config(name, mode, bp, ALL_DATA, bigram, eval_seqs, H, input_projection, output_projection,
                n_steps=200, n_workers=18, threshold=0.00005):
     mask = np.zeros((H, H), dtype=np.float32)
     theta = np.full(H, 0.03, dtype=np.float32)
@@ -161,7 +161,7 @@ def run_config(name, mode, bp, ALL_DATA, bigram, eval_seqs, H, W_in, W_out,
     t0 = time.time()
 
     pool = Pool(n_workers, initializer=init_w,
-                initargs=(bp, ALL_DATA, 200, 2, W_in, W_out, bigram, mode))
+                initargs=(bp, ALL_DATA, 200, 2, input_projection, output_projection, bigram, mode))
     try:
         for step in range(1, n_steps+1):
             ptype = schedule[(step-1) % len(schedule)]
@@ -184,7 +184,7 @@ def run_config(name, mode, bp, ALL_DATA, bigram, eval_seqs, H, W_in, W_out,
             if step % 50 == 0:
                 elapsed = time.time() - t0
                 edges = int(np.count_nonzero(mask))
-                ea = np.mean([eval_accuracy_classic(mask, H, W_in, W_out, theta, decay, s, bp, mode)
+                ea = np.mean([eval_accuracy_classic(mask, H, input_projection, output_projection, theta, decay, s, bp, mode)
                               for s in eval_seqs])
                 tot = sum(accepts.values())
                 print(f"  [{step:3d}] acc={ea*100:.2f}% edges={edges} "
@@ -195,7 +195,7 @@ def run_config(name, mode, bp, ALL_DATA, bigram, eval_seqs, H, W_in, W_out,
         pool.terminate(); pool.join()
 
     edges = int(np.count_nonzero(mask))
-    ea = np.mean([eval_accuracy_classic(mask, H, W_in, W_out, theta, decay, s, bp, mode)
+    ea = np.mean([eval_accuracy_classic(mask, H, input_projection, output_projection, theta, decay, s, bp, mode)
                   for s in eval_seqs])
     elapsed = time.time() - t0
     print(f"  FINAL: acc={ea*100:.2f}% edges={edges} accepts={sum(accepts.values())} {elapsed:.0f}s")
@@ -223,34 +223,34 @@ if __name__ == "__main__":
 
     random.seed(42); np.random.seed(42)
     ref = SelfWiringGraph(IO)
-    W_in = ref.W_in / ref.INJ_SCALE * 1.0
-    W_out = ref.W_out / ref.INJ_SCALE * 1.0
+    input_projection = ref.input_projection / ref.INJ_SCALE * 1.0
+    output_projection = ref.output_projection / ref.INJ_SCALE * 1.0
 
     results = []
 
     # 1: No activation (current baseline — clip is dead code)
     results.append(run_config("NONE (baseline)", 'none',
-                              bp, ALL_DATA, bigram, eval_seqs, H, W_in, W_out))
+                              bp, ALL_DATA, bigram, eval_seqs, H, input_projection, output_projection))
 
     # 2: Hard ReLU (what [0,+2] effectively did)
     results.append(run_config("RELU (hard)", 'relu',
-                              bp, ALL_DATA, bigram, eval_seqs, H, W_in, W_out))
+                              bp, ALL_DATA, bigram, eval_seqs, H, input_projection, output_projection))
 
     # 3: Leaky 0.01 (almost ReLU, tiny negative)
     results.append(run_config("LEAKY 0.01", 'leaky_001',
-                              bp, ALL_DATA, bigram, eval_seqs, H, W_in, W_out))
+                              bp, ALL_DATA, bigram, eval_seqs, H, input_projection, output_projection))
 
     # 4: Leaky 0.1 (some negative signal)
     results.append(run_config("LEAKY 0.1", 'leaky_01',
-                              bp, ALL_DATA, bigram, eval_seqs, H, W_in, W_out))
+                              bp, ALL_DATA, bigram, eval_seqs, H, input_projection, output_projection))
 
     # 5: Leaky 0.3 (moderate negative)
     results.append(run_config("LEAKY 0.3", 'leaky_03',
-                              bp, ALL_DATA, bigram, eval_seqs, H, W_in, W_out))
+                              bp, ALL_DATA, bigram, eval_seqs, H, input_projection, output_projection))
 
     # 6: Leaky 0.5 (half negative)
     results.append(run_config("LEAKY 0.5", 'leaky_05',
-                              bp, ALL_DATA, bigram, eval_seqs, H, W_in, W_out))
+                              bp, ALL_DATA, bigram, eval_seqs, H, input_projection, output_projection))
 
     print(f"\n{'='*60}")
     print(f"  SUMMARY -- CHARGE ACTIVATION (200 steps, bigram 2seq)")

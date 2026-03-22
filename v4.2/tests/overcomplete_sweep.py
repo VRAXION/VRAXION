@@ -106,7 +106,7 @@ def main():
     for hr in H_RATIOS:
         H = V * hr
         print(f"  h_ratio={hr:2d} → H={H:5d}, mask={H*H:>10,d} cells, "
-              f"W_in=({V},{H})", flush=True)
+              f"input_projection=({V},{H})", flush=True)
     print(flush=True)
 
     all_results = []

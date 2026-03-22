@@ -36,7 +36,7 @@ def make_byte_patterns(io_dim, seed=12345):
 
 # ─── Eval (runs in worker) ───────────────────────────────
 
-def eval_seq_single(mask, H, V, W_in, W_out, retention, threshold, text_bytes, bp, ticks):
+def eval_seq_single(mask, H, V, input_projection, output_projection, retention, threshold, text_bytes, bp, ticks):
     """Stateless sequential eval — no SWG object needed."""
     pat_norm = bp / (np.linalg.norm(bp, axis=1, keepdims=True) + 1e-8)
     state = np.zeros(H, dtype=np.float32)
@@ -50,14 +50,14 @@ def eval_seq_single(mask, H, V, W_in, W_out, retention, threshold, text_bytes, b
         act = state.copy()
         for t in range(ticks):
             if t == 0:
-                act = act + inp @ W_in
+                act = act + inp @ input_projection
             raw = act @ mask
             charge += raw
             charge *= retention
             act = np.maximum(charge - threshold, 0.0)
             charge = np.clip(charge, -1.0, 1.0)
         state = act.copy()
-        out = charge @ W_out
+        out = charge @ output_projection
 
         out_n = out / (np.linalg.norm(out) + 1e-8)
         sims = out_n @ pat_norm.T
@@ -76,7 +76,7 @@ def eval_seq_single(mask, H, V, W_in, W_out, retention, threshold, text_bytes, b
 
 def worker_try_add(args):
     """Worker: add random edge to mask copy, evaluate, return (score, r, c, val)."""
-    mask_flat, H, V, W_in, W_out, retention, threshold, seed = args
+    mask_flat, H, V, input_projection, output_projection, retention, threshold, seed = args
     bp = _worker_bp
     seqs = _worker_seqs
     ticks = _worker_ticks
@@ -97,13 +97,13 @@ def worker_try_add(args):
     # Eval on all train sequences
     total = 0.0
     for seq in seqs:
-        total += eval_seq_single(new_mask, H, V, W_in, W_out, retention, threshold, seq, bp, ticks)
+        total += eval_seq_single(new_mask, H, V, input_projection, output_projection, retention, threshold, seq, bp, ticks)
     score = total / len(seqs)
 
     return (score, r, c, val)
 
 
-def eval_accuracy_stateless(mask, H, V, W_in, W_out, retention, threshold, text_bytes, bp, ticks=6):
+def eval_accuracy_stateless(mask, H, V, input_projection, output_projection, retention, threshold, text_bytes, bp, ticks=6):
     """Pure accuracy eval."""
     pat_norm = bp / (np.linalg.norm(bp, axis=1, keepdims=True) + 1e-8)
     state = np.zeros(H, dtype=np.float32)
@@ -115,14 +115,14 @@ def eval_accuracy_stateless(mask, H, V, W_in, W_out, retention, threshold, text_
         act = state.copy()
         for t in range(ticks):
             if t == 0:
-                act = act + inp @ W_in
+                act = act + inp @ input_projection
             raw = act @ mask
             charge += raw
             charge *= retention
             act = np.maximum(charge - threshold, 0.0)
             charge = np.clip(charge, -1.0, 1.0)
         state = act.copy()
-        out = charge @ W_out
+        out = charge @ output_projection
         out_n = out / (np.linalg.norm(out) + 1e-8)
         sims = out_n @ pat_norm.T
         if np.argmax(sims) == text_bytes[i + 1]:
@@ -168,18 +168,18 @@ def main():
 
     H = net.H
     V = net.V
-    W_in = net.W_in
-    W_out = net.W_out
+    input_projection = net.input_projection
+    output_projection = net.output_projection
     retention = float(net.retention)
     threshold = float(net.THRESHOLD)
 
     # Baseline score
     base_score = 0.0
     for seq in train_seqs:
-        base_score += eval_seq_single(net.mask, H, V, W_in, W_out, retention, threshold, seq, bp, TICKS)
+        base_score += eval_seq_single(net.mask, H, V, input_projection, output_projection, retention, threshold, seq, bp, TICKS)
     base_score /= len(train_seqs)
 
-    init_acc = np.mean([eval_accuracy_stateless(net.mask, H, V, W_in, W_out, retention, threshold, s, bp, TICKS) for s in eval_seqs])
+    init_acc = np.mean([eval_accuracy_stateless(net.mask, H, V, input_projection, output_projection, retention, threshold, s, bp, TICKS) for s in eval_seqs])
     print(f"  Init: score={base_score:.4f} eval={init_acc*100:.1f}%")
     sys.stdout.flush()
 
@@ -197,7 +197,7 @@ def main():
             mask_flat = net.mask.flatten()
             args = []
             for w in range(N_WORKERS):
-                args.append((mask_flat, H, V, W_in, W_out, retention, threshold, seed_counter))
+                args.append((mask_flat, H, V, input_projection, output_projection, retention, threshold, seed_counter))
                 seed_counter += 1
 
             # TRUE PARALLEL: all workers eval simultaneously
@@ -216,7 +216,7 @@ def main():
 
             if step % 50 == 0:
                 elapsed = time.time() - t0
-                ea = np.mean([eval_accuracy_stateless(net.mask, H, V, W_in, W_out, retention, threshold, s, bp, TICKS) for s in eval_seqs])
+                ea = np.mean([eval_accuracy_stateless(net.mask, H, V, input_projection, output_projection, retention, threshold, s, bp, TICKS) for s in eval_seqs])
                 rate = step / elapsed
                 print(f"  [{step:5d}] train={score:.4f} eval={ea*100:.1f}% "
                       f"edges={net.count_connections()} acc={accepts} "
@@ -228,7 +228,7 @@ def main():
         pool.join()
 
     # Final
-    final_acc = np.mean([eval_accuracy_stateless(net.mask, H, V, W_in, W_out, retention, threshold, s, bp, TICKS) for s in eval_seqs])
+    final_acc = np.mean([eval_accuracy_stateless(net.mask, H, V, input_projection, output_projection, retention, threshold, s, bp, TICKS) for s in eval_seqs])
     elapsed = time.time() - t0
     print(f"\n  FINAL: eval={final_acc*100:.1f}% edges={net.count_connections()} "
           f"accepts={accepts} {elapsed:.0f}s")
@@ -237,11 +237,11 @@ def main():
     def ev_crystal():
         total = 0.0
         for seq in train_seqs:
-            total += eval_seq_single(net.mask, H, V, W_in, W_out, retention, threshold, seq, bp, TICKS)
+            total += eval_seq_single(net.mask, H, V, input_projection, output_projection, retention, threshold, seq, bp, TICKS)
         return total / len(train_seqs)
 
     removed = net.crystallize(ev_crystal)
-    post_acc = np.mean([eval_accuracy_stateless(net.mask, H, V, W_in, W_out, retention, threshold, s, bp, TICKS) for s in eval_seqs])
+    post_acc = np.mean([eval_accuracy_stateless(net.mask, H, V, input_projection, output_projection, retention, threshold, s, bp, TICKS) for s in eval_seqs])
     print(f"  CRYSTAL: eval={post_acc*100:.1f}% edges={net.count_connections()} removed={removed}")
 
 

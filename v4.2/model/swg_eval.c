@@ -1,7 +1,7 @@
 /*
  * SWG Eval v2 — C accelerator with precomputed matmuls
  * =====================================================
- * Python precomputes bp_W_in (256×N) and W_out_T (IO×N).
+ * Python precomputes bp_input_projection (256×N) and output_projection_T (IO×N).
  * C does only the sequential byte loop + sparse scatter.
  *
  * Compile: x86_64-w64-mingw32-gcc -O3 -shared -o swg_eval.dll swg_eval.c -lm
@@ -22,10 +22,10 @@ EXPORT float eval_seqs(
     const int *rows, const int *cols, const float *vals, int n_edges,
     /* Per-neuron params */
     const float *theta, const float *decay,
-    /* Precomputed: bp_W_in = bp @ W_in, shape 256 × N, row-major */
-    const float *bp_W_in,
-    /* Precomputed: W_out transposed, shape IO × N, row-major */
-    const float *W_out_T,
+    /* Precomputed: bp_input_projection = bp @ input_projection, shape 256 × N, row-major */
+    const float *bp_input_projection,
+    /* Precomputed: output_projection transposed, shape IO × N, row-major */
+    const float *output_projection_T,
     /* Precomputed: bp_norm transposed, shape IO × 256, row-major */
     const float *bp_norm_T,
     /* Sequences */
@@ -55,8 +55,8 @@ EXPORT float eval_seqs(
 
             for (int t = 0; t < 6; t++) {
                 if (t == 0) {
-                    /* act += bp_W_in[text[pos]] — just vector add, no matmul */
-                    const float *row = bp_W_in + text[pos] * N;
+                    /* act += bp_input_projection[text[pos]] — just vector add, no matmul */
+                    const float *row = bp_input_projection + text[pos] * N;
                     for (int j = 0; j < N; j++)
                         act[j] += row[j];
                 }
@@ -76,9 +76,9 @@ EXPORT float eval_seqs(
 
             memcpy(state, act, N * sizeof(float));
 
-            /* out = charge @ W_out — using W_out_T for cache-friendly access */
+            /* out = charge @ output_projection — using output_projection_T for cache-friendly access */
             for (int j = 0; j < IO; j++) {
-                const float *wrow = W_out_T + j * N;
+                const float *wrow = output_projection_T + j * N;
                 float sum = 0;
                 for (int i = 0; i < N; i++)
                     sum += wrow[i] * charge[i];

@@ -197,18 +197,18 @@ print(f"{'Life':>5} {'Len':>6} {'Succ':>5} {'Rate':>6} {'Improved':>9} {'HP peak
 
 # Show first 10, some middle, last 10
 total = len(life_log)
-show_indices = set()
-show_indices.update(range(min(15, total)))  # first 15
-show_indices.update(range(max(0, total - 10), total))  # last 10
+shoinput_projectiondices = set()
+shoinput_projectiondices.update(range(min(15, total)))  # first 15
+shoinput_projectiondices.update(range(max(0, total - 10), total))  # last 10
 # some evenly spaced in middle
 if total > 30:
     for i in range(15, total - 10, max(1, (total - 25) // 10)):
-        show_indices.add(i)
+        shoinput_projectiondices.add(i)
 
-for i in sorted(show_indices):
+for i in sorted(shoinput_projectiondices):
     ln, succ, imp, hp_pk, cn, a, r, w = life_log[i]
     rate = succ / max(ln, 1) * 100
-    if i > 0 and i - 1 not in show_indices:
+    if i > 0 and i - 1 not in shoinput_projectiondices:
         print("  ...")
     print(f"{i+1:5d} {ln:6d} {succ:5d} {rate:5.1f}% {imp*100:+8.2f}% {hp_pk:8d} {cn:6d} +{a}/-{r}/w{w}")
 

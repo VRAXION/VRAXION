@@ -14,11 +14,11 @@ def make_bp(io_dim, seed=12345):
     return p
 
 def load_net_with_projections(ckpt_path):
-    """Load checkpoint into a net with correct W_in/W_out (same seed as training)."""
+    """Load checkpoint into a net with correct input_projection/output_projection (same seed as training)."""
     random.seed(42); np.random.seed(42)
     d = np.load(ckpt_path)
     V = int(d['V'])
-    net = SelfWiringGraph(V)  # rebuilds W_in/W_out with same RNG state
+    net = SelfWiringGraph(V)  # rebuilds input_projection/output_projection with same RNG state
     # Overwrite mask/theta/decay from checkpoint
     net.mask[:] = 0
     rows, cols, vals = d['rows'], d['cols'], d['vals']
@@ -37,7 +37,7 @@ def generate(net, bp, prompt_bytes, gen_len=200, temperature=1.0, top_k=0):
     """Generate text autoregressively."""
     pat_norm = bp / (np.linalg.norm(bp, axis=1, keepdims=True) + 1e-8)
     H = net.H
-    W_in, W_out = net.W_in, net.W_out
+    input_projection, output_projection = net.input_projection, net.output_projection
     theta, decay = net.theta, net.decay
     ret = 1.0 - decay
 
@@ -55,7 +55,7 @@ def generate(net, bp, prompt_bytes, gen_len=200, temperature=1.0, top_k=0):
         act = state.copy()
         for t in range(6):
             if t == 0:
-                act = act + bp[b] @ W_in
+                act = act + bp[b] @ input_projection
             raw = np.zeros(H, dtype=np.float32)
             if len(rs):
                 np.add.at(raw, cs, act[rs] * sp_vals)
@@ -70,7 +70,7 @@ def generate(net, bp, prompt_bytes, gen_len=200, temperature=1.0, top_k=0):
         act = state.copy()
         for t in range(6):
             if t == 0:
-                act = act + bp[last_byte] @ W_in
+                act = act + bp[last_byte] @ input_projection
             raw = np.zeros(H, dtype=np.float32)
             if len(rs):
                 np.add.at(raw, cs, act[rs] * sp_vals)
@@ -79,7 +79,7 @@ def generate(net, bp, prompt_bytes, gen_len=200, temperature=1.0, top_k=0):
             charge = np.clip(charge, -1.0, 1.0)
         state = act.copy()
 
-        out = charge @ W_out
+        out = charge @ output_projection
         out_n = out / (np.linalg.norm(out) + 1e-8)
         sims = out_n @ pat_norm.T
 

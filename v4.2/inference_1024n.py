@@ -33,13 +33,13 @@ mask[rows, cols] = vals
 n_edges = len(rows)
 print(f"Edges: {n_edges}, theta mean={theta.mean():.3f}, decay mean={decay.mean():.3f}")
 
-# Recreate W_in, W_out with same seed as training
+# Recreate input_projection, output_projection with same seed as training
 from graph import SelfWiringGraph
 SelfWiringGraph.NV_RATIO = 4
 np.random.seed(42)
 net = SelfWiringGraph(IO)
-W_in = net.W_in
-W_out = net.W_out
+input_projection = net.input_projection
+output_projection = net.output_projection
 
 rs, cs = np.where(mask != 0)
 sp_vals = mask[rs, cs]
@@ -54,7 +54,7 @@ def generate(prompt_bytes, n_generate=200, temperature=1.0):
         act = state.copy()
         for t in range(6):
             if t == 0:
-                act = act + bp[prompt_bytes[i]] @ W_in
+                act = act + bp[prompt_bytes[i]] @ input_projection
             raw = np.zeros(H, dtype=np.float32)
             if len(rs):
                 np.add.at(raw, cs, act[rs] * sp_vals)
@@ -71,7 +71,7 @@ def generate(prompt_bytes, n_generate=200, temperature=1.0):
         act = state.copy()
         for t in range(6):
             if t == 0:
-                act = act + bp[current_byte] @ W_in
+                act = act + bp[current_byte] @ input_projection
             raw = np.zeros(H, dtype=np.float32)
             if len(rs):
                 np.add.at(raw, cs, act[rs] * sp_vals)
@@ -80,7 +80,7 @@ def generate(prompt_bytes, n_generate=200, temperature=1.0):
             charge = np.clip(charge, -1.0, 1.0)
         state = act.copy()
 
-        out = charge @ W_out
+        out = charge @ output_projection
         out_n = out / (np.linalg.norm(out) + 1e-8)
         sims = out_n @ pat_norm.T
 
@@ -133,14 +133,14 @@ for ch in [ord(' '), ord('e'), ord('t'), ord('\n'), ord('.')]:
     act = state.copy()
     for t in range(6):
         if t == 0:
-            act = act + bp[ch] @ W_in
+            act = act + bp[ch] @ input_projection
         raw = np.zeros(H, dtype=np.float32)
         if len(rs):
             np.add.at(raw, cs, act[rs] * sp_vals)
         charge += raw; charge *= ret
         act = np.maximum(charge - theta, 0.0)
         charge = np.clip(charge, -1.0, 1.0)
-    out = charge @ W_out
+    out = charge @ output_projection
     out_n = out / (np.linalg.norm(out) + 1e-8)
     sims = out_n @ pat_norm.T
     e = np.exp(sims - sims.max())

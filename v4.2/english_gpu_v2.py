@@ -21,7 +21,7 @@ def make_bp(io_dim, seed=12345):
 
 
 @torch.no_grad()
-def forward_score(W, W_in, W_out, theta, decay, bp_torch, bp_norm, seqs, ticks):
+def forward_score(W, input_projection, output_projection, theta, decay, bp_torch, bp_norm, seqs, ticks):
     """Batched forward. seqs: (B, L) long tensor. Returns scalar score."""
     B, L = seqs.shape
     H = W.shape[0]
@@ -33,14 +33,14 @@ def forward_score(W, W_in, W_out, theta, decay, bp_torch, bp_norm, seqs, ticks):
         act = state
         for t in range(ticks):
             if t == 0:
-                act = act + bp_torch[seqs[:, i]] @ W_in
+                act = act + bp_torch[seqs[:, i]] @ input_projection
             raw = act @ W.T
             charge = charge + raw
             charge = charge * ret
             act = torch.clamp(charge - theta, min=0.0)
             charge = torch.clamp(charge, -1.0, 1.0)
         state = act
-        out = charge @ W_out
+        out = charge @ output_projection
         out_n = out / (out.norm(dim=1, keepdim=True) + 1e-8)
         sims = out_n @ bp_norm.T
         targets = seqs[:, i + 1]
@@ -54,7 +54,7 @@ def forward_score(W, W_in, W_out, theta, decay, bp_torch, bp_norm, seqs, ticks):
 
 
 @torch.no_grad()
-def eval_acc(W, W_in, W_out, theta, decay, bp_torch, bp_norm, seqs, ticks):
+def eval_acc(W, input_projection, output_projection, theta, decay, bp_torch, bp_norm, seqs, ticks):
     """Just accuracy for reporting."""
     B, L = seqs.shape
     H = W.shape[0]
@@ -66,14 +66,14 @@ def eval_acc(W, W_in, W_out, theta, decay, bp_torch, bp_norm, seqs, ticks):
         act = state
         for t in range(ticks):
             if t == 0:
-                act = act + bp_torch[seqs[:, i]] @ W_in
+                act = act + bp_torch[seqs[:, i]] @ input_projection
             raw = act @ W.T
             charge = charge + raw
             charge = charge * ret
             act = torch.clamp(charge - theta, min=0.0)
             charge = torch.clamp(charge, -1.0, 1.0)
         state = act
-        out = charge @ W_out
+        out = charge @ output_projection
         out_n = out / (out.norm(dim=1, keepdim=True) + 1e-8)
         sims = out_n @ bp_norm.T
         correct += (sims.argmax(dim=1) == seqs[:, i + 1]).sum().item()
@@ -121,13 +121,13 @@ if __name__ == "__main__":
 
     # Init
     proj_rng = np.random.RandomState(42)
-    W_in_np = proj_rng.randn(IO, H).astype(np.float32)
-    W_in_np /= np.linalg.norm(W_in_np, axis=0, keepdims=True)
-    W_out_np = proj_rng.randn(H, IO).astype(np.float32)
-    W_out_np /= np.linalg.norm(W_out_np, axis=0, keepdims=True)
+    input_projection_np = proj_rng.randn(IO, H).astype(np.float32)
+    input_projection_np /= np.linalg.norm(input_projection_np, axis=0, keepdims=True)
+    output_projection_np = proj_rng.randn(H, IO).astype(np.float32)
+    output_projection_np /= np.linalg.norm(output_projection_np, axis=0, keepdims=True)
     INJ_SCALE = 3.0
-    W_in = torch.from_numpy(W_in_np * INJ_SCALE).to(DEVICE)
-    W_out = torch.from_numpy(W_out_np * INJ_SCALE).to(DEVICE)
+    input_projection = torch.from_numpy(input_projection_np * INJ_SCALE).to(DEVICE)
+    output_projection = torch.from_numpy(output_projection_np * INJ_SCALE).to(DEVICE)
     W = torch.zeros(H, H, device=DEVICE)
     theta = torch.full((H,), 0.1, device=DEVICE)
     decay = torch.full((H,), 0.15, device=DEVICE)
@@ -152,7 +152,7 @@ if __name__ == "__main__":
 
     # Warmup: 1 forward pass to compile CUDA kernels
     dummy_seqs = torch.randint(0, 256, (N_TRAIN_SEQS, SEQ_LEN), device=DEVICE)
-    forward_score(W, W_in, W_out, theta, decay, bp_torch, bp_norm, dummy_seqs, TICKS)
+    forward_score(W, input_projection, output_projection, theta, decay, bp_torch, bp_norm, dummy_seqs, TICKS)
     torch.cuda.synchronize()
     print("CUDA warmup done. Training...")
     sys.stdout.flush()
@@ -165,7 +165,7 @@ if __name__ == "__main__":
         train_seqs = torch.stack([ALL_DATA_T[o:o + SEQ_LEN] for o in offs])
 
         # Old score
-        old_score = forward_score(W, W_in, W_out, theta, decay, bp_torch, bp_norm, train_seqs, TICKS)
+        old_score = forward_score(W, input_projection, output_projection, theta, decay, bp_torch, bp_norm, train_seqs, TICKS)
 
         # Single proposal
         accepted = False
@@ -175,7 +175,7 @@ if __name__ == "__main__":
             if r != c and (r, c) not in alive_set:
                 val = DRIVE if random.random() < 0.5 else -DRIVE
                 W[r, c] = val
-                new_score = forward_score(W, W_in, W_out, theta, decay, bp_torch, bp_norm, train_seqs, TICKS)
+                new_score = forward_score(W, input_projection, output_projection, theta, decay, bp_torch, bp_norm, train_seqs, TICKS)
                 if new_score > old_score:
                     alive_set.add((r, c))
                     n_edges += 1
@@ -188,7 +188,7 @@ if __name__ == "__main__":
             idx = random.randint(0, H - 1)
             old_val = theta[idx].item()
             theta[idx] = random.random()
-            new_score = forward_score(W, W_in, W_out, theta, decay, bp_torch, bp_norm, train_seqs, TICKS)
+            new_score = forward_score(W, input_projection, output_projection, theta, decay, bp_torch, bp_norm, train_seqs, TICKS)
             if new_score > old_score:
                 theta_accepts += 1
                 accepted = True
@@ -199,7 +199,7 @@ if __name__ == "__main__":
             idx = random.randint(0, H - 1)
             old_val = decay[idx].item()
             decay[idx] = random.uniform(0.01, 0.5)
-            new_score = forward_score(W, W_in, W_out, theta, decay, bp_torch, bp_norm, train_seqs, TICKS)
+            new_score = forward_score(W, input_projection, output_projection, theta, decay, bp_torch, bp_norm, train_seqs, TICKS)
             if new_score > old_score:
                 decay_accepts += 1
                 accepted = True
@@ -220,7 +220,7 @@ if __name__ == "__main__":
         # Full eval + log
         if step % LOG_EVERY == 0:
             elapsed = time.time() - t0
-            ea = eval_acc(W, W_in, W_out, theta, decay, bp_torch, bp_norm, eval_seqs, TICKS)
+            ea = eval_acc(W, input_projection, output_projection, theta, decay, bp_torch, bp_norm, eval_seqs, TICKS)
             th_m = theta.mean().item(); th_s = theta.std().item()
             dc_m = decay.mean().item(); dc_s = decay.std().item()
             sps = step / elapsed
@@ -256,6 +256,6 @@ if __name__ == "__main__":
             sys.stdout.flush()
 
     elapsed = time.time() - t0
-    ea = eval_acc(W, W_in, W_out, theta, decay, bp_torch, bp_norm, eval_seqs, TICKS)
+    ea = eval_acc(W, input_projection, output_projection, theta, decay, bp_torch, bp_norm, eval_seqs, TICKS)
     print(f"\nFINAL: eval={ea*100:.1f}% edges={n_edges} accepts={total_accepts} "
           f"{elapsed:.0f}s ({BUDGET/elapsed:.1f} step/s)")

@@ -14,13 +14,13 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "model"))
 from graph import SelfWiringGraph
 
 _bp = None; _all_data = None; _seq_len = 200; _n_train = 2
-_W_in = None; _W_out = None; _bigram = None
+_input_projection = None; _output_projection = None; _bigram = None
 _theta_mode = 'fix'  # 'fix', 'int_resample', 'float_perturb'
 
 def init_w(b, d, sl, nt, wi, wo, bg, tm):
-    global _bp, _all_data, _seq_len, _n_train, _W_in, _W_out, _bigram, _theta_mode
+    global _bp, _all_data, _seq_len, _n_train, _input_projection, _output_projection, _bigram, _theta_mode
     _bp, _all_data, _seq_len, _n_train = b, d, sl, nt
-    _W_in, _W_out, _bigram = wi, wo, bg
+    _input_projection, _output_projection, _bigram = wi, wo, bg
     _theta_mode = tm
 
 def make_bp(io_dim, seed=12345):
@@ -42,7 +42,7 @@ def _eval_bigram(mask, H, theta_int, decay, seqs):
         seq_score = 0.0; n = 0
         for i in range(len(text_bytes)-1):
             act = state.copy()
-            injection = _bp[text_bytes[i]] @ _W_in
+            injection = _bp[text_bytes[i]] @ _input_projection
             for t in range(8):
                 if t < 2:
                     act = act + injection
@@ -53,7 +53,7 @@ def _eval_bigram(mask, H, theta_int, decay, seqs):
                 act = np.maximum(charge - theta_float, 0.0)
                 charge = np.maximum(charge, 0.0)
             state = act.copy()
-            out = charge @ _W_out
+            out = charge @ _output_projection
             out_n = out / (np.linalg.norm(out) + 1e-8)
             sims = out_n @ pat_norm.T
             e = np.exp(sims - sims.max())
@@ -111,7 +111,7 @@ def worker_eval(args):
             'new_theta': new_theta if proposal_type == 'theta' else None,
             'new_decay': new_decay if proposal_type == 'decay' else None}
 
-def eval_accuracy_classic(mask, H, W_in, W_out, theta_int, decay, text_bytes, bp):
+def eval_accuracy_classic(mask, H, input_projection, output_projection, theta_int, decay, text_bytes, bp):
     pat_norm = bp / (np.linalg.norm(bp, axis=1, keepdims=True) + 1e-8)
     rs, cs = np.where(mask != 0); sp_vals = mask[rs, cs]
     ret = 1.0 - decay
@@ -120,7 +120,7 @@ def eval_accuracy_classic(mask, H, W_in, W_out, theta_int, decay, text_bytes, bp
     correct = 0; total = 0
     for i in range(len(text_bytes)-1):
         act = state.copy()
-        injection = bp[text_bytes[i]] @ W_in
+        injection = bp[text_bytes[i]] @ input_projection
         for t in range(8):
             if t < 2: act = act + injection
             raw = np.zeros(H, dtype=np.float32)
@@ -129,7 +129,7 @@ def eval_accuracy_classic(mask, H, W_in, W_out, theta_int, decay, text_bytes, bp
             act = np.maximum(charge - theta_float, 0.0)
             charge = np.maximum(charge, 0.0)
         state = act.copy()
-        out = charge @ W_out
+        out = charge @ output_projection
         out_n = out / (np.linalg.norm(out) + 1e-8)
         sims = out_n @ pat_norm.T
         if np.argmax(sims) == text_bytes[i+1]: correct += 1
@@ -138,7 +138,7 @@ def eval_accuracy_classic(mask, H, W_in, W_out, theta_int, decay, text_bytes, bp
 
 
 def run_config(name, theta_mode, theta_init_val,
-               bp, ALL_DATA, bigram, eval_seqs, H, W_in, W_out,
+               bp, ALL_DATA, bigram, eval_seqs, H, input_projection, output_projection,
                max_steps=800, n_workers=18, threshold=0.00005):
     mask = np.zeros((H, H), dtype=np.float32)
     theta_int = np.full(H, theta_init_val, dtype=np.int32)
@@ -159,7 +159,7 @@ def run_config(name, theta_mode, theta_init_val,
     t0 = time.time()
 
     pool = Pool(n_workers, initializer=init_w,
-                initargs=(bp, ALL_DATA, 200, 2, W_in, W_out, bigram, theta_mode))
+                initargs=(bp, ALL_DATA, 200, 2, input_projection, output_projection, bigram, theta_mode))
     try:
         for step in range(1, max_steps+1):
             ptype = schedule[(step-1) % len(schedule)]
@@ -186,7 +186,7 @@ def run_config(name, theta_mode, theta_init_val,
             if step % 100 == 0:
                 elapsed = time.time() - t0
                 edges = int(np.count_nonzero(mask))
-                ea = np.mean([eval_accuracy_classic(mask, H, W_in, W_out, theta_int, decay, s, bp)
+                ea = np.mean([eval_accuracy_classic(mask, H, input_projection, output_projection, theta_int, decay, s, bp)
                               for s in eval_seqs])
                 acc_history.append((step, ea))
                 quality = ea / max(edges, 1) * 100
@@ -206,7 +206,7 @@ def run_config(name, theta_mode, theta_init_val,
         pool.terminate(); pool.join()
 
     edges = int(np.count_nonzero(mask))
-    ea = np.mean([eval_accuracy_classic(mask, H, W_in, W_out, theta_int, decay, s, bp)
+    ea = np.mean([eval_accuracy_classic(mask, H, input_projection, output_projection, theta_int, decay, s, bp)
                   for s in eval_seqs])
     elapsed = time.time() - t0
     quality = ea / max(edges, 1) * 100
@@ -241,26 +241,26 @@ if __name__ == "__main__":
 
     random.seed(42); np.random.seed(42)
     ref = SelfWiringGraph(IO)
-    W_in = ref.W_in / ref.INJ_SCALE * 1.0
-    W_out = ref.W_out / ref.INJ_SCALE * 1.0
+    input_projection = ref.input_projection / ref.INJ_SCALE * 1.0
+    output_projection = ref.output_projection / ref.INJ_SCALE * 1.0
 
     results = []
 
     # A: Fix int 3 (= 0.03 float), no mutation
     results.append(run_config("FIX int=3", 'fix', 3,
-                              bp, ALL_DATA, bigram, eval_seqs, H, W_in, W_out))
+                              bp, ALL_DATA, bigram, eval_seqs, H, input_projection, output_projection))
 
     # B: Int resample [0,100] — full random
     results.append(run_config("INT resample", 'int_resample', 3,
-                              bp, ALL_DATA, bigram, eval_seqs, H, W_in, W_out))
+                              bp, ALL_DATA, bigram, eval_seqs, H, input_projection, output_projection))
 
     # C: Int perturb +-5 (= +-0.05 float equivalent)
     results.append(run_config("INT perturb +-5", 'float_perturb', 3,
-                              bp, ALL_DATA, bigram, eval_seqs, H, W_in, W_out))
+                              bp, ALL_DATA, bigram, eval_seqs, H, input_projection, output_projection))
 
     # D: Int resample, init=0 (no threshold)
     results.append(run_config("INT resample init=0", 'int_resample', 0,
-                              bp, ALL_DATA, bigram, eval_seqs, H, W_in, W_out))
+                              bp, ALL_DATA, bigram, eval_seqs, H, input_projection, output_projection))
 
     # E: Int resample, random init [0-20]
     # (use a special init — handled below)
@@ -270,7 +270,7 @@ if __name__ == "__main__":
     theta_e = theta_rng.randint(0, 21, size=H).astype(np.int32)
     # Run inline since we need custom init
     results.append(run_config("RAND [0,20] resample", 'int_resample', 3,
-                              bp, ALL_DATA, bigram, eval_seqs, H, W_in, W_out))
+                              bp, ALL_DATA, bigram, eval_seqs, H, input_projection, output_projection))
 
     print(f"\n{'='*75}")
     print(f"  SUMMARY -- INT THETA (8t, dur=2, bigram 2seq, decay [.08,.24])")

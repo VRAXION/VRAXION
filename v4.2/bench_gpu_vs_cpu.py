@@ -22,9 +22,9 @@ def bench_numpy_sparse(H, V, n_edges, seq_len, ticks, n_seqs, repeats=5):
     theta = np.random.uniform(0, 0.3, N).astype(np.float32)
     decay = np.random.uniform(0.01, 0.3, N).astype(np.float32)
 
-    # W_in: V -> N encoding
-    W_in = np.random.randn(N, V).astype(np.float32) * 0.01
-    W_out = np.random.randn(V, N).astype(np.float32) * 0.01
+    # input_projection: V -> N encoding
+    input_projection = np.random.randn(N, V).astype(np.float32) * 0.01
+    output_projection = np.random.randn(V, N).astype(np.float32) * 0.01
 
     # Sparse forward (current approach from graph.py)
     def forward_one_seq():
@@ -33,7 +33,7 @@ def bench_numpy_sparse(H, V, n_edges, seq_len, ticks, n_seqs, repeats=5):
             # inject input
             inp = np.zeros(V, dtype=np.float32)
             inp[np.random.randint(0, V)] = 1.0
-            charge += W_in @ inp
+            charge += input_projection @ inp
             # ticks
             for t in range(ticks):
                 act = np.maximum(charge - theta, 0.0)
@@ -42,7 +42,7 @@ def bench_numpy_sparse(H, V, n_edges, seq_len, ticks, n_seqs, repeats=5):
                 np.add.at(out, dst, act[src] * wts)
                 charge = charge * (1.0 - decay) + out
             # read output (not timed separately)
-            logits = W_out @ charge
+            logits = output_projection @ charge
         return logits
 
     # Warmup
@@ -70,8 +70,8 @@ def bench_torch_gpu_dense(H, V, n_edges, seq_len, ticks, n_seqs, repeats=5):
 
     theta = torch.rand(N, device=device) * 0.3
     decay = torch.rand(N, device=device) * 0.3
-    W_in = torch.randn(N, V, device=device) * 0.01
-    W_out = torch.randn(V, N, device=device) * 0.01
+    input_projection = torch.randn(N, V, device=device) * 0.01
+    output_projection = torch.randn(V, N, device=device) * 0.01
 
     # Generate random input sequences: (n_seqs, seq_len) of byte indices
     inputs = torch.randint(0, V, (n_seqs, seq_len), device=device)
@@ -87,11 +87,11 @@ def bench_torch_gpu_dense(H, V, n_edges, seq_len, ticks, n_seqs, repeats=5):
         for b in range(seq_len):
             # inject: (n_seqs, V) -> (n_seqs, N)
             inp = eye[inputs[:, b]]  # (n_seqs, V)
-            charge = charge + inp @ W_in.T  # (n_seqs, N)
+            charge = charge + inp @ input_projection.T  # (n_seqs, N)
             for t in range(ticks):
                 act = torch.clamp(charge - theta, min=0.0)  # (n_seqs, N)
                 charge = charge * (1.0 - decay) + act @ W.T  # (n_seqs, N)
-            logits = charge @ W_out.T  # (n_seqs, V)
+            logits = charge @ output_projection.T  # (n_seqs, V)
         return logits
 
     # Warmup
@@ -121,8 +121,8 @@ def bench_torch_gpu_sparse(H, V, n_edges, seq_len, ticks, n_seqs, repeats=5):
 
     theta = torch.rand(N, device=device) * 0.3
     decay = torch.rand(N, device=device) * 0.3
-    W_in = torch.randn(N, V, device=device) * 0.01
-    W_out = torch.randn(V, N, device=device) * 0.01
+    input_projection = torch.randn(N, V, device=device) * 0.01
+    output_projection = torch.randn(V, N, device=device) * 0.01
 
     inputs = torch.randint(0, V, (n_seqs, seq_len), device=device)
     eye = torch.eye(V, device=device)
@@ -133,12 +133,12 @@ def bench_torch_gpu_sparse(H, V, n_edges, seq_len, ticks, n_seqs, repeats=5):
         charge = torch.zeros(n_seqs, N, device=device)
         for b in range(seq_len):
             inp = eye[inputs[:, b]]
-            charge = charge + inp @ W_in.T
+            charge = charge + inp @ input_projection.T
             for t in range(ticks):
                 act = torch.clamp(charge - theta, min=0.0)
                 # sparse mm: W_sparse @ act.T -> (N, n_seqs) -> transpose
                 charge = charge * (1.0 - decay) + torch.sparse.mm(W_sparse, act.T).T
-            logits = charge @ W_out.T
+            logits = charge @ output_projection.T
         return logits
 
     # Warmup

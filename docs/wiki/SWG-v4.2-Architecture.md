@@ -29,11 +29,11 @@ Input enters through fixed random projections, moves through a self-wiring hidde
 ## Architecture In One Screen
 
 ```text
-input -> W_in -> hidden ternary graph -> W_out -> output
+input -> input_projection -> hidden ternary graph -> output_projection -> output
               persistent charge/state across ticks
 ```
 
-- `W_in` and `W_out` are fixed random projections.
+- `input_projection` and `output_projection` are fixed random projections.
 - The hidden graph is directed, ternary, and can rewire itself over time.
 - Per-neuron `theta` and `decay` are co-evolved with the graph.
 - Charge/state persists across ticks instead of resetting after one pass.
@@ -52,8 +52,8 @@ input -> W_in -> hidden ternary graph -> W_out -> output
 
 | Component | What it does |
 |---|---|
-| `W_in` | Fixed random projection |
-| `W_out` | Fixed random projection |
+| `input_projection` | Fixed random projection |
+| `output_projection` | Fixed random projection |
 | Hidden-to-hidden mask | Learnable graph structure |
 | `theta` | Learnable per-neuron firing threshold |
 | `decay` | Learnable per-neuron decay rate |

@@ -154,7 +154,7 @@ class SWGRule:
         V, H = self.swg.V, self.swg.H
         inp = np.zeros((n, V), dtype=np.float32)
         inp[:, :5] = feats
-        projected = inp @ self.swg.W_in
+        projected = inp @ self.swg.input_projection
         charges = np.zeros((n, H), dtype=np.float32)
         acts = np.zeros((n, H), dtype=np.float32)
         retain = float(self.swg.retention)
@@ -167,7 +167,7 @@ class SWGRule:
             charges *= retain
             acts = np.maximum(charges - self.swg.THRESHOLD, 0.0)
             charges = np.clip(charges, -1.0, 1.0)
-        out = charges @ self.swg.W_out
+        out = charges @ self.swg.output_projection
         return np.tanh(out[:, 0]) * self.lr
 
     def save_state(self):

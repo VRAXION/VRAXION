@@ -27,10 +27,10 @@ theta = d['theta']; decay = d['decay']
 n_edges = len(rows)
 print(f"Edges: {n_edges}")
 
-# Recreate W_in/W_out
+# Recreate input_projection/output_projection
 np.random.seed(42)
 net = SelfWiringGraph(IO)
-W_in = net.W_in; W_out = net.W_out
+input_projection = net.input_projection; output_projection = net.output_projection
 
 # Load eval data
 DATA = os.path.join(os.path.dirname(os.path.abspath(__file__)),
@@ -55,7 +55,7 @@ def eval_score(rs, cs, vs, theta, decay):
             act = state.copy()
             for t in range(6):
                 if t == 0:
-                    act = act + bp[text_bytes[i]] @ W_in
+                    act = act + bp[text_bytes[i]] @ input_projection
                 raw = np.zeros(H, dtype=np.float32)
                 if len(rs):
                     np.add.at(raw, cs, act[rs] * vs)
@@ -63,7 +63,7 @@ def eval_score(rs, cs, vs, theta, decay):
                 act = np.maximum(charge - theta, 0.0)
                 charge = np.clip(charge, -1.0, 1.0)
             state = act.copy()
-            out = charge @ W_out
+            out = charge @ output_projection
             out_n = out / (np.linalg.norm(out) + 1e-8)
             sims = out_n @ pat_norm.T
             if np.argmax(sims) == text_bytes[i+1]:

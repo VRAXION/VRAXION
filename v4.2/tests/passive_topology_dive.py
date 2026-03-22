@@ -17,8 +17,8 @@ def analyze_passive_topology(net, label=""):
     H = net.H
     V = net.V
     mask = net.mask
-    W_in = net.W_in
-    W_out = net.W_out
+    input_projection = net.input_projection
+    output_projection = net.output_projection
 
     print(f"\n{'='*75}")
     print(f"  TOPOLOGY: {label}")
@@ -56,29 +56,29 @@ def analyze_passive_topology(net, label=""):
               f"{arr.mean():5.1f}  {np.median(arr):6.1f}  {arr.std():5.1f}")
 
     # ── 3. INPUT COUPLING: mennyire "hallja" minden neuron az inputot ──
-    # W_in[v, h] = how much input v activates hidden neuron h
+    # input_projection[v, h] = how much input v activates hidden neuron h
     # High abs value = strong coupling to that input
-    print(f"\n  INPUT COUPLING (W_in amplitúdó per hidden neuron):")
-    input_strength = np.abs(W_in).sum(axis=0)  # per hidden neuron: total input sensitivity
+    print(f"\n  INPUT COUPLING (input_projection amplitúdó per hidden neuron):")
+    input_strength = np.abs(input_projection).sum(axis=0)  # per hidden neuron: total input sensitivity
     print(f"    Total input sensitivity per hidden neuron:")
     print(f"      min={input_strength.min():.3f}  max={input_strength.max():.3f}  "
           f"mean={input_strength.mean():.3f}  std={input_strength.std():.3f}")
 
     # How many inputs strongly couple to each neuron?
-    threshold_strong = np.abs(W_in).mean() + np.abs(W_in).std()
-    strong_inputs_per_neuron = (np.abs(W_in) > threshold_strong).sum(axis=0)
+    threshold_strong = np.abs(input_projection).mean() + np.abs(input_projection).std()
+    strong_inputs_per_neuron = (np.abs(input_projection) > threshold_strong).sum(axis=0)
     print(f"    Strongly coupled inputs per neuron (threshold={threshold_strong:.3f}):")
     print(f"      min={int(strong_inputs_per_neuron.min())}  max={int(strong_inputs_per_neuron.max())}  "
           f"mean={strong_inputs_per_neuron.mean():.1f}")
 
     # ── 4. OUTPUT COUPLING: mennyire "beszél" minden neuron az outputba ──
-    output_strength = np.abs(W_out).sum(axis=1)  # per hidden neuron: total output influence
-    print(f"\n  OUTPUT COUPLING (W_out amplitúdó per hidden neuron):")
+    output_strength = np.abs(output_projection).sum(axis=1)  # per hidden neuron: total output influence
+    print(f"\n  OUTPUT COUPLING (output_projection amplitúdó per hidden neuron):")
     print(f"    Total output influence per hidden neuron:")
     print(f"      min={output_strength.min():.3f}  max={output_strength.max():.3f}  "
           f"mean={output_strength.mean():.3f}  std={output_strength.std():.3f}")
 
-    strong_outputs_per_neuron = (np.abs(W_out) > threshold_strong).sum(axis=1)
+    strong_outputs_per_neuron = (np.abs(output_projection) > threshold_strong).sum(axis=1)
     print(f"    Strongly coupled outputs per neuron:")
     print(f"      min={int(strong_outputs_per_neuron.min())}  max={int(strong_outputs_per_neuron.max())}  "
           f"mean={strong_outputs_per_neuron.mean():.1f}")
@@ -186,7 +186,7 @@ def analyze_passive_topology(net, label=""):
     charges = np.zeros((V, H), dtype=np.float32)
     acts = np.zeros((V, H), dtype=np.float32)
     retain = float(net.retention)
-    projected = np.eye(V, dtype=np.float32) @ W_in
+    projected = np.eye(V, dtype=np.float32) @ input_projection
 
     fired_per_tick = []
     for t in range(8):
@@ -243,7 +243,7 @@ def analyze_passive_topology(net, label=""):
     # ── 11. OUTPUT CONTRIBUTION: which hidden neurons drive the output? ──
     print(f"\n  OUTPUT KONTRIBÚCIÓ:")
     final_charges = charges2  # (V, H) — final hidden charges
-    output_logits = final_charges @ W_out  # (V, V)
+    output_logits = final_charges @ output_projection  # (V, V)
 
     # Per-neuron contribution to correct output
     targets_argmax = np.argmax(output_logits, axis=1)
@@ -251,7 +251,7 @@ def analyze_passive_topology(net, label=""):
     print(f"    Forward accuracy (no training context): {acc*100:.1f}%")
 
     # Which neurons contribute most to output magnitude?
-    contribution = np.abs(final_charges).mean(axis=0) * np.abs(W_out).sum(axis=1)
+    contribution = np.abs(final_charges).mean(axis=0) * np.abs(output_projection).sum(axis=1)
     top_contributors = np.argsort(contribution)[::-1][:10]
     print(f"\n    Top 10 output contributors:")
     print(f"    {'#':>3s} {'Neuron':>6s} {'Role':>9s} {'Contrib':>8s} {'Degree':>7s} {'ActiveT':>8s}")

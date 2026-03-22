@@ -23,12 +23,12 @@ SEEDS = [42, 123, 777, 999, 314]
 SCALE = 3.0
 
 
-def make_net_with_geometry(seed, w_in, w_out):
+def make_net_with_geometry(seed, input_projection, output_projection):
     np.random.seed(seed)
     pyrandom.seed(seed)
     net = SelfWiringGraph(V)
-    net.W_in = w_in.astype(np.float32).copy()
-    net.W_out = w_out.astype(np.float32).copy()
+    net.input_projection = input_projection.astype(np.float32).copy()
+    net.output_projection = output_projection.astype(np.float32).copy()
     return net
 
 
@@ -51,14 +51,14 @@ def norm_cols(W):
 def geom_random(seed):
     """Baseline: random unit-norm projections."""
     rng = np.random.RandomState(seed + 10000)
-    W_in = rng.randn(V, H)
-    W_out = rng.randn(H, V)
-    return norm_rows(W_in), norm_cols(W_out)
+    input_projection = rng.randn(V, H)
+    output_projection = rng.randn(H, V)
+    return norm_rows(input_projection), norm_cols(output_projection)
 
 
 def geom_concentric_rings(seed):
     """Each input maps to a ring of hidden neurons at different radii."""
-    W_in = np.zeros((V, H))
+    input_projection = np.zeros((V, H))
     for v in range(V):
         radius = (v + 1) / V
         for h in range(H):
@@ -66,50 +66,50 @@ def geom_concentric_rings(seed):
             # Gaussian bump centered on ring
             dist = abs(np.sqrt((np.cos(angle) * radius)**2 +
                               (np.sin(angle) * radius)**2) - radius)
-            W_in[v, h] = np.exp(-dist * 5) * np.sin(angle * (v + 1))
+            input_projection[v, h] = np.exp(-dist * 5) * np.sin(angle * (v + 1))
     rng = np.random.RandomState(seed + 10000)
-    W_out = rng.randn(H, V)
-    return norm_rows(W_in), norm_cols(W_out)
+    output_projection = rng.randn(H, V)
+    return norm_rows(input_projection), norm_cols(output_projection)
 
 
 def geom_2d_grid_walls(seed):
     """Hidden neurons on a 9×9 grid. Each input activates a vertical 'wall'."""
     side = 9  # 9×9 = 81
-    W_in = np.zeros((V, H))
+    input_projection = np.zeros((V, H))
     for v in range(V):
         # Input v activates column (v % side) with some spread
         col = v % side
         for row in range(side):
             h = row * side + col
-            W_in[v, h] = 1.0
+            input_projection[v, h] = 1.0
             # Add neighbors with decay
             for dc in [-1, 1]:
                 nc = col + dc
                 if 0 <= nc < side:
                     nh = row * side + nc
-                    W_in[v, nh] = 0.5
+                    input_projection[v, nh] = 0.5
     rng = np.random.RandomState(seed + 10000)
-    W_out = rng.randn(H, V)
-    return norm_rows(W_in), norm_cols(W_out)
+    output_projection = rng.randn(H, V)
+    return norm_rows(input_projection), norm_cols(output_projection)
 
 
 def geom_2d_grid_horizontal(seed):
     """Like walls but horizontal bands instead of vertical."""
     side = 9
-    W_in = np.zeros((V, H))
+    input_projection = np.zeros((V, H))
     for v in range(V):
         row = v % side
         for col in range(side):
             h = row * side + col
-            W_in[v, h] = 1.0
+            input_projection[v, h] = 1.0
             for dr in [-1, 1]:
                 nr = row + dr
                 if 0 <= nr < side:
                     nh = nr * side + col
-                    W_in[v, nh] = 0.5
+                    input_projection[v, nh] = 0.5
     rng = np.random.RandomState(seed + 10000)
-    W_out = rng.randn(H, V)
-    return norm_rows(W_in), norm_cols(W_out)
+    output_projection = rng.randn(H, V)
+    return norm_rows(input_projection), norm_cols(output_projection)
 
 
 def geom_hypercube(seed):
@@ -118,8 +118,8 @@ def geom_hypercube(seed):
     # Random binary vectors as hypercube vertices
     bits = rng.randint(0, 2, size=(V, H)).astype(np.float32)
     bits = bits * 2 - 1  # {-1, +1}
-    W_out = rng.randn(H, V)
-    return norm_rows(bits), norm_cols(W_out)
+    output_projection = rng.randn(H, V)
+    return norm_rows(bits), norm_cols(output_projection)
 
 
 def geom_simplex(seed):
@@ -132,8 +132,8 @@ def geom_simplex(seed):
     verts = Q[:, :V].T  # V × H
     centroid = verts.mean(axis=0)
     verts -= centroid
-    W_out = rng.randn(H, V)
-    return norm_rows(verts), norm_cols(W_out)
+    output_projection = rng.randn(H, V)
+    return norm_rows(verts), norm_cols(output_projection)
 
 
 def geom_spiral(seed):
@@ -145,16 +145,16 @@ def geom_spiral(seed):
     coords_2d = np.stack([radii * np.cos(angles), radii * np.sin(angles)], axis=1)  # V×2
     # Random projection 2D → H
     proj = rng.randn(2, H)
-    W_in = coords_2d @ proj  # V × H
-    W_out = rng.randn(H, V)
-    return norm_rows(W_in), norm_cols(W_out)
+    input_projection = coords_2d @ proj  # V × H
+    output_projection = rng.randn(H, V)
+    return norm_rows(input_projection), norm_cols(output_projection)
 
 
 def geom_clustered(seed):
     """3 clusters of ~9 inputs each, tight within cluster, far between."""
     rng = np.random.RandomState(seed + 10000)
     n_clusters = 3
-    W_in = np.zeros((V, H))
+    input_projection = np.zeros((V, H))
     for v in range(V):
         cluster = v % n_clusters
         center = np.zeros(H)
@@ -163,46 +163,46 @@ def geom_clustered(seed):
         end = start + H // n_clusters
         center[start:end] = 1.0
         noise = rng.randn(H) * 0.3
-        W_in[v] = center + noise
-    W_out = rng.randn(H, V)
-    return norm_rows(W_in), norm_cols(W_out)
+        input_projection[v] = center + noise
+    output_projection = rng.randn(H, V)
+    return norm_rows(input_projection), norm_cols(output_projection)
 
 
 def geom_sparse_binary(seed):
     """Each input activates exactly 8 random hidden neurons (sparse code)."""
     rng = np.random.RandomState(seed + 10000)
     k = 8
-    W_in = np.zeros((V, H))
+    input_projection = np.zeros((V, H))
     for v in range(V):
         idx = rng.choice(H, size=k, replace=False)
         signs = rng.choice([-1.0, 1.0], size=k)
-        W_in[v, idx] = signs
-    W_out = rng.randn(H, V)
-    return norm_rows(W_in), norm_cols(W_out)
+        input_projection[v, idx] = signs
+    output_projection = rng.randn(H, V)
+    return norm_rows(input_projection), norm_cols(output_projection)
 
 
 def geom_fourier(seed):
     """Each input is a different frequency in a Fourier basis."""
-    W_in = np.zeros((V, H))
+    input_projection = np.zeros((V, H))
     for v in range(V):
         freq = v + 1
         for h in range(H):
             if v % 2 == 0:
-                W_in[v, h] = np.sin(2 * np.pi * freq * h / H)
+                input_projection[v, h] = np.sin(2 * np.pi * freq * h / H)
             else:
-                W_in[v, h] = np.cos(2 * np.pi * freq * h / H)
+                input_projection[v, h] = np.cos(2 * np.pi * freq * h / H)
     rng = np.random.RandomState(seed + 10000)
-    W_out = rng.randn(H, V)
-    return norm_rows(W_in), norm_cols(W_out)
+    output_projection = rng.randn(H, V)
+    return norm_rows(input_projection), norm_cols(output_projection)
 
 
 def geom_identity_block(seed):
     """First V neurons = dedicated 1:1, rest = zero. Minimal."""
-    W_in = np.zeros((V, H))
-    W_in[np.arange(V), np.arange(V)] = SCALE
+    input_projection = np.zeros((V, H))
+    input_projection[np.arange(V), np.arange(V)] = SCALE
     rng = np.random.RandomState(seed + 10000)
-    W_out = rng.randn(H, V)
-    return W_in.astype(np.float32), norm_cols(W_out)
+    output_projection = rng.randn(H, V)
+    return input_projection.astype(np.float32), norm_cols(output_projection)
 
 
 def geom_3d_helix(seed):
@@ -211,9 +211,9 @@ def geom_3d_helix(seed):
     t = np.linspace(0, 3 * np.pi, V)
     coords_3d = np.stack([np.cos(t), np.sin(t), t / (3 * np.pi)], axis=1)  # V×3
     proj = rng.randn(3, H)
-    W_in = coords_3d @ proj
-    W_out = rng.randn(H, V)
-    return norm_rows(W_in), norm_cols(W_out)
+    input_projection = coords_3d @ proj
+    output_projection = rng.randn(H, V)
+    return norm_rows(input_projection), norm_cols(output_projection)
 
 
 # ══════════════════════════════════════════════════════
@@ -243,8 +243,8 @@ for name, geom_fn in GEOMETRIES.items():
     conns_list = []
     t0 = time.time()
     for seed in SEEDS:
-        W_in, W_out = geom_fn(seed)
-        net = make_net_with_geometry(seed, W_in, W_out)
+        input_projection, output_projection = geom_fn(seed)
+        net = make_net_with_geometry(seed, input_projection, output_projection)
         targets = np.random.permutation(V)
         score = train(net, targets, V, max_attempts=BUDGET,
                       ticks=TICKS, stale_limit=STALE, verbose=False)

@@ -13,14 +13,14 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "model"))
 from graph import SelfWiringGraph
 
 _bp = None; _all_data = None; _seq_len = 200; _n_train = 2
-_W_in = None; _W_out = None; _bigram = None
+_input_projection = None; _output_projection = None; _bigram = None
 _use_bool = False
 DRIVE = 0.6
 
 def init_w(b, d, sl, nt, wi, wo, bg, ub):
-    global _bp, _all_data, _seq_len, _n_train, _W_in, _W_out, _bigram, _use_bool
+    global _bp, _all_data, _seq_len, _n_train, _input_projection, _output_projection, _bigram, _use_bool
     _bp, _all_data, _seq_len, _n_train = b, d, sl, nt
-    _W_in, _W_out, _bigram = wi, wo, bg
+    _input_projection, _output_projection, _bigram = wi, wo, bg
     _use_bool = ub
 
 def make_bp(io_dim, seed=12345):
@@ -40,7 +40,7 @@ def _eval_bigram_float(mask, H, ret, seqs):
         seq_score = 0.0; n = 0
         for i in range(len(text_bytes)-1):
             act = state.copy()
-            injection = _bp[text_bytes[i]] @ _W_in
+            injection = _bp[text_bytes[i]] @ _input_projection
             for t in range(8):
                 if t < 2: act = act + injection
                 raw = np.zeros(H, dtype=np.float32)
@@ -49,7 +49,7 @@ def _eval_bigram_float(mask, H, ret, seqs):
                 act = np.maximum(charge, 0.0)
                 charge = np.maximum(charge, 0.0)
             state = act.copy()
-            out = charge @ _W_out
+            out = charge @ _output_projection
             out_n = out / (np.linalg.norm(out) + 1e-8)
             sims = out_n @ pat_norm.T
             e = np.exp(sims - sims.max())
@@ -73,7 +73,7 @@ def _eval_bigram_bool(exists, sign, H, ret, seqs):
         seq_score = 0.0; n = 0
         for i in range(len(text_bytes)-1):
             act = state.copy()
-            injection = _bp[text_bytes[i]] @ _W_in
+            injection = _bp[text_bytes[i]] @ _input_projection
             for t in range(8):
                 if t < 2: act = act + injection
                 raw = np.zeros(H, dtype=np.float32)
@@ -82,7 +82,7 @@ def _eval_bigram_bool(exists, sign, H, ret, seqs):
                 act = np.maximum(charge, 0.0)
                 charge = np.maximum(charge, 0.0)
             state = act.copy()
-            out = charge @ _W_out
+            out = charge @ _output_projection
             out_n = out / (np.linalg.norm(out) + 1e-8)
             sims = out_n @ pat_norm.T
             e = np.exp(sims - sims.max())
@@ -178,7 +178,7 @@ def worker_eval(args):
                 'new_mask_flat': new_mask.flatten() if new_score > old_score else None,
                 'new_ret': new_ret if new_score > old_score else None}
 
-def eval_accuracy(exists, sign, mask, H, W_in, W_out, ret_int, use_bool, text_bytes, bp):
+def eval_accuracy(exists, sign, mask, H, input_projection, output_projection, ret_int, use_bool, text_bytes, bp):
     pat_norm = bp / (np.linalg.norm(bp, axis=1, keepdims=True) + 1e-8)
     if use_bool:
         rs, cs = np.where(exists)
@@ -191,7 +191,7 @@ def eval_accuracy(exists, sign, mask, H, W_in, W_out, ret_int, use_bool, text_by
     correct = 0; total = 0
     for i in range(len(text_bytes)-1):
         act = state.copy()
-        injection = bp[text_bytes[i]] @ W_in
+        injection = bp[text_bytes[i]] @ input_projection
         for t in range(8):
             if t < 2: act = act + injection
             raw = np.zeros(H, dtype=np.float32)
@@ -200,7 +200,7 @@ def eval_accuracy(exists, sign, mask, H, W_in, W_out, ret_int, use_bool, text_by
             act = np.maximum(charge, 0.0)
             charge = np.maximum(charge, 0.0)
         state = act.copy()
-        out = charge @ W_out
+        out = charge @ output_projection
         out_n = out / (np.linalg.norm(out) + 1e-8)
         sims = out_n @ pat_norm.T
         if np.argmax(sims) == text_bytes[i+1]: correct += 1
@@ -208,7 +208,7 @@ def eval_accuracy(exists, sign, mask, H, W_in, W_out, ret_int, use_bool, text_by
     return correct/total if total else 0
 
 
-def run_config(name, use_bool, bp, ALL_DATA, bigram, eval_seqs, H, W_in, W_out,
+def run_config(name, use_bool, bp, ALL_DATA, bigram, eval_seqs, H, input_projection, output_projection,
                max_steps=500, n_workers=18, threshold=0.00005):
     # Init
     exists = np.zeros((H, H), dtype=np.bool_)
@@ -225,7 +225,7 @@ def run_config(name, use_bool, bp, ALL_DATA, bigram, eval_seqs, H, W_in, W_out,
     t0 = time.time()
 
     pool = Pool(n_workers, initializer=init_w,
-                initargs=(bp, ALL_DATA, 200, 2, W_in, W_out, bigram, use_bool))
+                initargs=(bp, ALL_DATA, 200, 2, input_projection, output_projection, bigram, use_bool))
     try:
         for step in range(1, max_steps+1):
             ptype = schedule[(step-1) % len(schedule)]
@@ -263,7 +263,7 @@ def run_config(name, use_bool, bp, ALL_DATA, bigram, eval_seqs, H, W_in, W_out,
             if step % 100 == 0:
                 elapsed = time.time() - t0
                 edges = int(exists.sum()) if use_bool else int(np.count_nonzero(mask))
-                ea = np.mean([eval_accuracy(exists, sign, mask, H, W_in, W_out, ret_int,
+                ea = np.mean([eval_accuracy(exists, sign, mask, H, input_projection, output_projection, ret_int,
                               use_bool, s, bp) for s in eval_seqs])
                 quality = ea / max(edges, 1) * 100
                 print(f"  [{step:3d}] acc={ea*100:.2f}% edges={edges} q={quality:.3f}%/e "
@@ -273,7 +273,7 @@ def run_config(name, use_bool, bp, ALL_DATA, bigram, eval_seqs, H, W_in, W_out,
         pool.terminate(); pool.join()
 
     edges = int(exists.sum()) if use_bool else int(np.count_nonzero(mask))
-    ea = np.mean([eval_accuracy(exists, sign, mask, H, W_in, W_out, ret_int,
+    ea = np.mean([eval_accuracy(exists, sign, mask, H, input_projection, output_projection, ret_int,
                   use_bool, s, bp) for s in eval_seqs])
     elapsed = time.time() - t0
     quality = ea / max(edges, 1) * 100
@@ -302,18 +302,18 @@ if __name__ == "__main__":
 
     random.seed(42); np.random.seed(42)
     ref = SelfWiringGraph(IO)
-    W_in = ref.W_in / ref.INJ_SCALE * 1.0
-    W_out = ref.W_out / ref.INJ_SCALE * 1.0
+    input_projection = ref.input_projection / ref.INJ_SCALE * 1.0
+    output_projection = ref.output_projection / ref.INJ_SCALE * 1.0
 
     results = []
 
     # A: Float mask (current)
     results.append(run_config("FLOAT mask", False,
-                              bp, ALL_DATA, bigram, eval_seqs, H, W_in, W_out))
+                              bp, ALL_DATA, bigram, eval_seqs, H, input_projection, output_projection))
 
     # B: Bool mask (2 arrays: exists + sign)
     results.append(run_config("BOOL mask", True,
-                              bp, ALL_DATA, bigram, eval_seqs, H, W_in, W_out))
+                              bp, ALL_DATA, bigram, eval_seqs, H, input_projection, output_projection))
 
     print(f"\n{'='*55}")
     print(f"  FLOAT vs BOOL MASK (500 steps, int8 retention)")

@@ -6,14 +6,14 @@ Gradient-free: learns via mutation + selection.
 Pure numpy + random. Zero dependencies.
 
 Architecture: Passive I/O sockets + hidden-only mutable mask.
-  - W_in  (V × H): fixed random projection, injects input into hidden layer
-  - W_out (H × V): fixed random projection, reads output from hidden layer
+  - input_projection  (V × H): fixed random projection, injects input into hidden layer
+  - output_projection (H × V): fixed random projection, reads output from hidden layer
   - mask  (H × H): primary learnable graph {-DRIVE, 0, +DRIVE}
   - theta (H,): co-evolved per-neuron firing thresholds
   - decay (H,): co-evolved per-neuron decay rates
   - No input/output neurons — all neurons are hidden and must learn.
 
-TEMPORARY: W_in/W_out scaled by INJ_SCALE=3.0 to overcome threshold.
+TEMPORARY: input_projection/output_projection scaled by INJ_SCALE=3.0 to overcome threshold.
   Signal dies at injection without scaling because unit-norm projection
   values (~0.09) are far below THRESHOLD (0.5). This will be revisited
   when we rework the threshold/signal-strength balance.
@@ -52,12 +52,12 @@ class SelfWiringGraph:
         # Passive I/O projections (fixed, not learned)
         # Separate RNG so mask init stays deterministic regardless of projection
         proj_rng = np.random.RandomState(np.random.randint(0, 2**31))
-        W_in = proj_rng.randn(vocab, self.H).astype(np.float32)
-        W_in /= np.linalg.norm(W_in, axis=1, keepdims=True)
-        W_out = proj_rng.randn(self.H, vocab).astype(np.float32)
-        W_out /= np.linalg.norm(W_out, axis=0, keepdims=True)
-        self.W_in = W_in * self.INJ_SCALE    # TEMPORARY: scale up
-        self.W_out = W_out * self.INJ_SCALE   # TEMPORARY: scale up
+        input_projection = proj_rng.randn(vocab, self.H).astype(np.float32)
+        input_projection /= np.linalg.norm(input_projection, axis=1, keepdims=True)
+        output_projection = proj_rng.randn(self.H, vocab).astype(np.float32)
+        output_projection /= np.linalg.norm(output_projection, axis=0, keepdims=True)
+        self.input_projection = input_projection * self.INJ_SCALE    # TEMPORARY: scale up
+        self.output_projection = output_projection * self.INJ_SCALE   # TEMPORARY: scale up
 
         # Mask: H × H hidden-only, float32 with baked DRIVE {-0.6, 0, +0.6}
         d = self.DENSITY / 100
@@ -118,13 +118,13 @@ class SelfWiringGraph:
         return raw
 
     def forward(self, world, ticks=6):
-        """Single-input forward pass. Passive I/O: inject via W_in, read via W_out."""
+        """Single-input forward pass. Passive I/O: inject via input_projection, read via output_projection."""
         act = self.state.copy()
         ret = self.retention_vec  # (H,) per-neuron retention
         use_sparse = len(self.alive) < self.H * self.H * 0.1
         for t in range(ticks):
             if t == 0:
-                act += world @ self.W_in
+                act += world @ self.input_projection
             raw = self._sparse_mul_1d(act) if use_sparse else act @ self.mask
             np.nan_to_num(raw, copy=False, nan=0.0, posinf=0.0, neginf=0.0)
             self.charge += raw
@@ -132,7 +132,7 @@ class SelfWiringGraph:
             act = np.maximum(self.charge - self.theta, 0.0)
             self.charge = np.maximum(self.charge, 0.0)  # ReLU on charge (sweep: +6% vs clip)
         self.state = act.copy()
-        return self.charge @ self.W_out
+        return self.charge @ self.output_projection
 
     def forward_batch(self, ticks=6):
         """Batch forward: all V inputs simultaneously. Returns (V, V) logits."""
@@ -141,7 +141,7 @@ class SelfWiringGraph:
         acts = np.zeros((V, H), dtype=np.float32)
         ret = self.retention_vec  # (H,) per-neuron — broadcasts over (V, H)
         th = self.theta
-        projected = np.eye(V, dtype=np.float32) @ self.W_in  # (V, H)
+        projected = np.eye(V, dtype=np.float32) @ self.input_projection  # (V, H)
         use_sparse = len(self.alive) < H * H * 0.1
         for t in range(ticks):
             if t == 0:
@@ -152,7 +152,7 @@ class SelfWiringGraph:
             charges *= ret  # element-wise per-neuron
             acts = np.maximum(charges - th, 0.0)
             charges = np.maximum(charges, 0.0)  # ReLU on charge
-        return charges @ self.W_out
+        return charges @ self.output_projection
 
     def resync_alive(self):
         """Rebuild alive list+set from mask. Call after direct mask writes."""

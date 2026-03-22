@@ -78,7 +78,7 @@ def swg_rule_batch(swg, edge_features, lr=0.1, ticks=4):
     V, H = swg.V, swg.H
     inp = np.zeros((n, V), dtype=np.float32)
     inp[:, :5] = edge_features
-    projected = inp @ swg.W_in
+    projected = inp @ swg.input_projection
     charges = np.zeros((n, H), dtype=np.float32)
     acts = np.zeros((n, H), dtype=np.float32)
     retain = float(swg.retention)
@@ -91,7 +91,7 @@ def swg_rule_batch(swg, edge_features, lr=0.1, ticks=4):
         charges *= retain
         acts = np.maximum(charges - swg.THRESHOLD, 0.0)
         charges = np.clip(charges, -1.0, 1.0)
-    out = charges @ swg.W_out
+    out = charges @ swg.output_projection
     # Use tanh to bound output, then scale by lr
     return np.tanh(out[:, 0]) * lr
 

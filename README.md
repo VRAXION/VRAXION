@@ -14,7 +14,7 @@ This repository is meant to be a credible front door for technical buyers and en
 
 INSTNCT is built around a small set of unusual choices:
 
-- **Passive I/O**: `W_in` and `W_out` are fixed random projections, not learned layers.
+- **Passive I/O**: `input_projection` and `output_projection` are fixed random projections, not learned layers.
 - **Self-wiring core**: the primary learnable structure is a hidden-to-hidden ternary graph, with co-evolved per-neuron `theta` and `decay`.
 - **Persistent internal state**: neurons keep charge and state across ticks instead of acting as one-shot activations.
 - **Mutation + selection**: training is done by graph edits and acceptance tests, not gradient descent through the graph.

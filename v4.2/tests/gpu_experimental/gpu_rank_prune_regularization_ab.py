@@ -91,16 +91,16 @@ def make_reference_init(cfg: BenchConfig, seed: int, device: torch.device):
     targets = np.random.permutation(cfg.vocab).astype(np.int64)
     mask = torch.from_numpy(cpu_net.mask.copy()).to(device=device, dtype=torch.float32)
     retain = torch.tensor(float(cpu_net.retention), device=device, dtype=torch.float32)
-    w_in = torch.from_numpy(cpu_net.W_in.copy()).to(device=device, dtype=torch.float32)
-    w_out = torch.from_numpy(cpu_net.W_out.copy()).to(device=device, dtype=torch.float32)
+    input_projection = torch.from_numpy(cpu_net.input_projection.copy()).to(device=device, dtype=torch.float32)
+    output_projection = torch.from_numpy(cpu_net.output_projection.copy()).to(device=device, dtype=torch.float32)
     targets_t = torch.from_numpy(targets).to(device=device, dtype=torch.long)
-    return mask, retain, w_in, w_out, targets_t, cpu_net.out_start
+    return mask, retain, input_projection, output_projection, targets_t, cpu_net.out_start
 
 
 def make_subset_buffers(
     cfg: BenchConfig,
     input_ids: np.ndarray,
-    w_in: torch.Tensor,
+    input_projection: torch.Tensor,
     device: torch.device,
 ) -> SplitEvalBuffers:
     batch = len(input_ids)
@@ -109,7 +109,7 @@ def make_subset_buffers(
         rows = torch.arange(batch, device=device, dtype=torch.long)
         cols = torch.from_numpy(input_ids).to(device=device, dtype=torch.long)
         inputs[rows, cols] = 1.0
-    projected_inputs = inputs @ w_in
+    projected_inputs = inputs @ input_projection
     return SplitEvalBuffers(
         projected_inputs=projected_inputs,
         charges=torch.empty((batch, cfg.neurons), dtype=torch.float32, device=device),
@@ -124,7 +124,7 @@ def gpu_eval_subset(
     targets: torch.Tensor,
     out_start: int,
     buffers: SplitEvalBuffers,
-    w_out: torch.Tensor,
+    output_projection: torch.Tensor,
 ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
     charges = buffers.charges
     acts = buffers.acts
@@ -144,7 +144,7 @@ def gpu_eval_subset(
         acts = torch.clamp(charges - SelfWiringGraph.THRESHOLD, min=0.0)
         charges = torch.clamp(charges, -1.0, 1.0)
 
-    logits = charges @ w_out
+    logits = charges @ output_projection
     probs = torch.softmax(logits, dim=1)
     preds = torch.argmax(probs, dim=1)
     subset_targets = targets
@@ -160,20 +160,20 @@ def make_split_eval_runner(
     out_start: int,
     train_ids: np.ndarray,
     holdout_ids: np.ndarray,
-    w_in: torch.Tensor,
-    w_out: torch.Tensor,
+    input_projection: torch.Tensor,
+    output_projection: torch.Tensor,
     device: torch.device,
 ):
-    train_buf = make_subset_buffers(cfg, train_ids, w_in, device)
-    hold_buf = make_subset_buffers(cfg, holdout_ids, w_in, device)
+    train_buf = make_subset_buffers(cfg, train_ids, input_projection, device)
+    hold_buf = make_subset_buffers(cfg, holdout_ids, input_projection, device)
     train_targets = targets[torch.from_numpy(train_ids).to(device=device, dtype=torch.long)]
     hold_targets = targets[torch.from_numpy(holdout_ids).to(device=device, dtype=torch.long)]
 
     def train_eval(mask: torch.Tensor, retain: torch.Tensor):
-        return gpu_eval_subset(mask, retain, train_targets, out_start, train_buf, w_out)
+        return gpu_eval_subset(mask, retain, train_targets, out_start, train_buf, output_projection)
 
     def holdout_eval(mask: torch.Tensor, retain: torch.Tensor):
-        return gpu_eval_subset(mask, retain, hold_targets, out_start, hold_buf, w_out)
+        return gpu_eval_subset(mask, retain, hold_targets, out_start, hold_buf, output_projection)
 
     return train_eval, holdout_eval
 
@@ -301,11 +301,11 @@ def run_once(
     torch.manual_seed(seed)
     rng = random.Random(seed + 810_001 + cfg.vocab * 1000 + cfg.neurons)
 
-    mask, retain, w_in, w_out, targets, out_start = make_reference_init(cfg, seed, device)
+    mask, retain, input_projection, output_projection, targets, out_start = make_reference_init(cfg, seed, device)
     mask.zero_()
     train_ids, holdout_ids = split_indices(cfg.vocab, seed, train_frac)
     train_eval, holdout_eval = make_split_eval_runner(
-        cfg, targets, out_start, train_ids, holdout_ids, w_in, w_out, device
+        cfg, targets, out_start, train_ids, holdout_ids, input_projection, output_projection, device
     )
 
     alive: list[tuple[int, int]] = []

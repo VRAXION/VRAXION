@@ -43,8 +43,8 @@ for neurons, edge_list in configs:
         theta = rng.uniform(0, 0.3, H).astype(np.float32)
         decay = rng.uniform(0.01, 0.3, H).astype(np.float32)
         ret = (1.0 - decay).astype(np.float32)
-        W_in = rng.randn(256, H).astype(np.float32) * 0.1
-        W_out = rng.randn(H, 256).astype(np.float32) * 0.1
+        input_projection = rng.randn(256, H).astype(np.float32) * 0.1
+        output_projection = rng.randn(H, 256).astype(np.float32) * 0.1
 
         t0 = time.perf_counter()
         for _ in range(2):  # old + new
@@ -56,7 +56,7 @@ for neurons, edge_list in configs:
                     act = state.copy()
                     for t in range(TICKS):
                         if t == 0:
-                            act = act + bp[text[i]] @ W_in
+                            act = act + bp[text[i]] @ input_projection
                         raw = np.zeros(H, dtype=np.float32)
                         np.add.at(raw, cols, act[rows] * vals)
                         charge += raw

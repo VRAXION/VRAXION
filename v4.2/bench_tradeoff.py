@@ -16,7 +16,7 @@ print(f"{'Neurons':>8} {'N':>7} {'W (N^2)':>10} {'Batch=1':>10} {'Batch=128':>10
 for H in [1024, 2048, 4096, 8192, 16384]:
     N = H * 3
     w = N * N * 4
-    io = 2 * N * V * 4  # W_in + W_out
+    io = 2 * N * V * 4  # input_projection + output_projection
     params = N * 4 * 2  # theta + decay
     fixed = w + io + params
     for batch in [1, 128, 512]:

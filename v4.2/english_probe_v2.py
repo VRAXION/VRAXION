@@ -51,7 +51,7 @@ def evaluate(net, byte_patterns, targets, ticks=6):
 
     charges = np.zeros((256, H), dtype=np.float32)
     acts = np.zeros((256, H), dtype=np.float32)
-    projected = byte_patterns @ net.W_in  # (256, H)
+    projected = byte_patterns @ net.input_projection  # (256, H)
     retain = float(net.retention)
 
     for t in range(ticks):
@@ -64,7 +64,7 @@ def evaluate(net, byte_patterns, targets, ticks=6):
         acts = np.maximum(charges - net.THRESHOLD, 0.0)
         charges = np.clip(charges, -1.0, 1.0)
 
-    out = charges @ net.W_out  # (256, io_dim)
+    out = charges @ net.output_projection  # (256, io_dim)
 
     # Cosine similarity to all byte patterns
     out_norm = out / (np.linalg.norm(out, axis=1, keepdims=True) + 1e-8)

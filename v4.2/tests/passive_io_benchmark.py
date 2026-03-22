@@ -119,18 +119,18 @@ print(f"  Edges: {n_edges} / {H*(H-1)} ({n_edges/(H*(H-1))*100:.1f}%)")
 print(f"  In-degree:  min={int(in_deg.min())} max={int(in_deg.max())} mean={in_deg.mean():.1f}")
 print(f"  Out-degree: min={int(out_deg.min())} max={int(out_deg.max())} mean={out_deg.mean():.1f}")
 
-# W_in and W_out analysis
-print(f"\n  W_in shape: {net.W_in.shape}  (fixed, not learned)")
-print(f"  W_out shape: {net.W_out.shape}  (fixed, not learned)")
-print(f"  W_in sparsity: {(net.W_in == 0).mean()*100:.0f}%")
-print(f"  W_out sparsity: {(net.W_out == 0).mean()*100:.0f}%")
+# input_projection and output_projection analysis
+print(f"\n  input_projection shape: {net.input_projection.shape}  (fixed, not learned)")
+print(f"  output_projection shape: {net.output_projection.shape}  (fixed, not learned)")
+print(f"  input_projection sparsity: {(net.input_projection == 0).mean()*100:.0f}%")
+print(f"  output_projection sparsity: {(net.output_projection == 0).mean()*100:.0f}%")
 
 # Check: can signals actually flow through?
 print(f"\n  Signal flow test (identity proj):")
 for inp_idx in range(min(3, V)):
     inp = np.zeros(V, dtype=np.float32)
     inp[inp_idx] = 1.0
-    projected = inp @ net.W_in
+    projected = inp @ net.input_projection
     nonzero = int((projected != 0).sum())
     print(f"    Input[{inp_idx}] → {nonzero}/{H} hidden neurons activated by projection")
 

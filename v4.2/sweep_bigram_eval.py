@@ -12,14 +12,14 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "model"))
 from graph import SelfWiringGraph
 
 _bp = None; _all_data = None; _seq_len = 200; _n_train = 10
-_W_in = None; _W_out = None
+_input_projection = None; _output_projection = None
 _bigram = None
 _eval_mode = 'classic'  # 'classic', 'bigram_cosine', 'bigram_xent'
 
 def init_w(b, d, sl, nt, wi, wo, bg, mode):
-    global _bp, _all_data, _seq_len, _n_train, _W_in, _W_out, _bigram, _eval_mode
+    global _bp, _all_data, _seq_len, _n_train, _input_projection, _output_projection, _bigram, _eval_mode
     _bp, _all_data, _seq_len, _n_train = b, d, sl, nt
-    _W_in, _W_out, _bigram, _eval_mode = wi, wo, bg, mode
+    _input_projection, _output_projection, _bigram, _eval_mode = wi, wo, bg, mode
 
 def make_bp(io_dim, seed=12345):
     rng = np.random.RandomState(seed)
@@ -41,7 +41,7 @@ def _eval_on_seqs(mask, H, theta, decay, seqs):
             act = state.copy()
             for t in range(6):
                 if t == 0:
-                    act = act + _bp[text_bytes[i]] @ _W_in
+                    act = act + _bp[text_bytes[i]] @ _input_projection
                 raw = np.zeros(H, dtype=np.float32)
                 if len(rs):
                     np.add.at(raw, cs, act[rs] * sp_vals)
@@ -49,7 +49,7 @@ def _eval_on_seqs(mask, H, theta, decay, seqs):
                 act = np.maximum(charge - theta, 0.0)
                 charge = np.clip(charge, -1.0, 1.0)
             state = act.copy()
-            out = charge @ _W_out
+            out = charge @ _output_projection
 
             if _eval_mode == 'classic':
                 # Original: 0.5*accuracy + 0.5*avg_prob
@@ -125,7 +125,7 @@ def worker_eval(args):
             'new_mask_flat': new_mask.flatten() if new_score > old_score else None,
             'new_theta': new_theta if proposal_type == 'theta' else None}
 
-def eval_accuracy_classic(mask, H, W_in, W_out, theta, decay, text_bytes, bp):
+def eval_accuracy_classic(mask, H, input_projection, output_projection, theta, decay, text_bytes, bp):
     """Standard accuracy for comparison across all configs."""
     pat_norm = bp / (np.linalg.norm(bp, axis=1, keepdims=True) + 1e-8)
     rs, cs = np.where(mask != 0); sp_vals = mask[rs, cs]
@@ -135,14 +135,14 @@ def eval_accuracy_classic(mask, H, W_in, W_out, theta, decay, text_bytes, bp):
     for i in range(len(text_bytes)-1):
         act = state.copy()
         for t in range(6):
-            if t == 0: act = act + bp[text_bytes[i]] @ W_in
+            if t == 0: act = act + bp[text_bytes[i]] @ input_projection
             raw = np.zeros(H, dtype=np.float32)
             if len(rs): np.add.at(raw, cs, act[rs] * sp_vals)
             charge += raw; charge *= ret
             act = np.maximum(charge - theta, 0.0)
             charge = np.clip(charge, -1.0, 1.0)
         state = act.copy()
-        out = charge @ W_out
+        out = charge @ output_projection
         out_n = out / (np.linalg.norm(out) + 1e-8)
         sims = out_n @ pat_norm.T
         if np.argmax(sims) == text_bytes[i+1]: correct += 1
@@ -150,7 +150,7 @@ def eval_accuracy_classic(mask, H, W_in, W_out, theta, decay, text_bytes, bp):
     return correct/total if total else 0
 
 
-def run_config(name, mode, bp, ALL_DATA, bigram, eval_seqs, H, W_in, W_out,
+def run_config(name, mode, bp, ALL_DATA, bigram, eval_seqs, H, input_projection, output_projection,
                n_steps=100, n_workers=18, threshold=0.0005):
     mask = np.zeros((H, H), dtype=np.float32)
     theta = np.full(H, 0.03, dtype=np.float32)
@@ -164,7 +164,7 @@ def run_config(name, mode, bp, ALL_DATA, bigram, eval_seqs, H, W_in, W_out,
     t0 = time.time()
 
     pool = Pool(n_workers, initializer=init_w,
-                initargs=(bp, ALL_DATA, 200, 10, W_in, W_out, bigram, mode))
+                initargs=(bp, ALL_DATA, 200, 10, input_projection, output_projection, bigram, mode))
     try:
         for step in range(1, n_steps+1):
             ptype = schedule[(step-1) % len(schedule)]
@@ -188,7 +188,7 @@ def run_config(name, mode, bp, ALL_DATA, bigram, eval_seqs, H, W_in, W_out,
                 elapsed = time.time() - t0
                 edges = int(np.count_nonzero(mask))
                 # Always measure classic accuracy for fair comparison
-                ea = np.mean([eval_accuracy_classic(mask, H, W_in, W_out, theta, decay, s, bp)
+                ea = np.mean([eval_accuracy_classic(mask, H, input_projection, output_projection, theta, decay, s, bp)
                               for s in eval_seqs])
                 tot = sum(accepts.values())
                 print(f"  [{step:3d}] acc={ea*100:.2f}% edges={edges} "
@@ -199,7 +199,7 @@ def run_config(name, mode, bp, ALL_DATA, bigram, eval_seqs, H, W_in, W_out,
         pool.terminate(); pool.join()
 
     edges = int(np.count_nonzero(mask))
-    ea = np.mean([eval_accuracy_classic(mask, H, W_in, W_out, theta, decay, s, bp)
+    ea = np.mean([eval_accuracy_classic(mask, H, input_projection, output_projection, theta, decay, s, bp)
                   for s in eval_seqs])
     elapsed = time.time() - t0
     print(f"  FINAL: acc={ea*100:.2f}% edges={edges} accepts={sum(accepts.values())} {elapsed:.0f}s")
@@ -228,26 +228,26 @@ if __name__ == "__main__":
 
     random.seed(42); np.random.seed(42)
     proj_rng = np.random.RandomState(np.random.randint(0, 2**31))
-    W_in_raw = proj_rng.randn(IO, H).astype(np.float32)
-    W_in_raw /= np.linalg.norm(W_in_raw, axis=1, keepdims=True)
-    W_out_raw = proj_rng.randn(H, IO).astype(np.float32)
-    W_out_raw /= np.linalg.norm(W_out_raw, axis=0, keepdims=True)
-    W_in = W_in_raw * 1.0
-    W_out = W_out_raw * 1.0
+    input_projection_raw = proj_rng.randn(IO, H).astype(np.float32)
+    input_projection_raw /= np.linalg.norm(input_projection_raw, axis=1, keepdims=True)
+    output_projection_raw = proj_rng.randn(H, IO).astype(np.float32)
+    output_projection_raw /= np.linalg.norm(output_projection_raw, axis=0, keepdims=True)
+    input_projection = input_projection_raw * 1.0
+    output_projection = output_projection_raw * 1.0
 
     results = []
 
     # A: Classic eval (current)
     results.append(run_config("CLASSIC (acc+prob)", 'classic',
-                              bp, ALL_DATA, bigram, eval_seqs, H, W_in, W_out))
+                              bp, ALL_DATA, bigram, eval_seqs, H, input_projection, output_projection))
 
     # B: Bigram cosine similarity
     results.append(run_config("BIGRAM COSINE", 'bigram_cosine',
-                              bp, ALL_DATA, bigram, eval_seqs, H, W_in, W_out))
+                              bp, ALL_DATA, bigram, eval_seqs, H, input_projection, output_projection))
 
     # C: Bigram cross-entropy
     results.append(run_config("BIGRAM XENT", 'bigram_xent',
-                              bp, ALL_DATA, bigram, eval_seqs, H, W_in, W_out))
+                              bp, ALL_DATA, bigram, eval_seqs, H, input_projection, output_projection))
 
     print(f"\n{'='*60}")
     print(f"  SUMMARY — EVAL METHOD COMPARISON (100 steps, scale=1.0)")

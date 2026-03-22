@@ -14,12 +14,12 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "model"))
 from graph import SelfWiringGraph
 
 _bp = None; _all_data = None; _seq_len = 200; _n_train = 2
-_W_in = None; _W_out = None; _bigram = None
+_input_projection = None; _output_projection = None; _bigram = None
 
 def init_w(b, d, sl, nt, wi, wo, bg):
-    global _bp, _all_data, _seq_len, _n_train, _W_in, _W_out, _bigram
+    global _bp, _all_data, _seq_len, _n_train, _input_projection, _output_projection, _bigram
     _bp, _all_data, _seq_len, _n_train = b, d, sl, nt
-    _W_in, _W_out, _bigram = wi, wo, bg
+    _input_projection, _output_projection, _bigram = wi, wo, bg
 
 def make_bp(io_dim, seed=12345):
     rng = np.random.RandomState(seed)
@@ -41,7 +41,7 @@ def _eval_bigram(mask, H, theta, decay, seqs):
             act = state.copy()
             for t in range(8):
                 if t == 0:
-                    act = act + _bp[text_bytes[i]] @ _W_in
+                    act = act + _bp[text_bytes[i]] @ _input_projection
                 raw = np.zeros(H, dtype=np.float32)
                 if len(rs):
                     np.add.at(raw, cs, act[rs] * sp_vals)
@@ -49,7 +49,7 @@ def _eval_bigram(mask, H, theta, decay, seqs):
                 act = np.maximum(charge - theta, 0.0)
                 charge = np.maximum(charge, 0.0)
             state = act.copy()
-            out = charge @ _W_out
+            out = charge @ _output_projection
             out_n = out / (np.linalg.norm(out) + 1e-8)
             sims = out_n @ pat_norm.T
             e = np.exp(sims - sims.max())
@@ -103,7 +103,7 @@ def worker_eval(args):
             'new_theta': new_theta if proposal_type == 'theta' else None,
             'new_decay': new_decay if proposal_type == 'decay' else None}
 
-def eval_accuracy_classic(mask, H, W_in, W_out, theta, decay, text_bytes, bp):
+def eval_accuracy_classic(mask, H, input_projection, output_projection, theta, decay, text_bytes, bp):
     pat_norm = bp / (np.linalg.norm(bp, axis=1, keepdims=True) + 1e-8)
     rs, cs = np.where(mask != 0); sp_vals = mask[rs, cs]
     ret = 1.0 - decay
@@ -112,14 +112,14 @@ def eval_accuracy_classic(mask, H, W_in, W_out, theta, decay, text_bytes, bp):
     for i in range(len(text_bytes)-1):
         act = state.copy()
         for t in range(8):
-            if t == 0: act = act + bp[text_bytes[i]] @ W_in
+            if t == 0: act = act + bp[text_bytes[i]] @ input_projection
             raw = np.zeros(H, dtype=np.float32)
             if len(rs): np.add.at(raw, cs, act[rs] * sp_vals)
             charge += raw; charge *= ret
             act = np.maximum(charge - theta, 0.0)
             charge = np.maximum(charge, 0.0)
         state = act.copy()
-        out = charge @ W_out
+        out = charge @ output_projection
         out_n = out / (np.linalg.norm(out) + 1e-8)
         sims = out_n @ pat_norm.T
         if np.argmax(sims) == text_bytes[i+1]: correct += 1
@@ -146,7 +146,7 @@ def mutate_counts(counts, rng):
 
 
 def run_config(name, init_counts, learnable_schedule,
-               bp, ALL_DATA, bigram, eval_seqs, H, W_in, W_out,
+               bp, ALL_DATA, bigram, eval_seqs, H, input_projection, output_projection,
                n_steps=300, n_workers=18, threshold=0.00005):
     mask = np.zeros((H, H), dtype=np.float32)
     theta = np.full(H, 0.03, dtype=np.float32)
@@ -164,7 +164,7 @@ def run_config(name, init_counts, learnable_schedule,
     sched_rng = random.Random(42)
 
     pool = Pool(n_workers, initializer=init_w,
-                initargs=(bp, ALL_DATA, 200, 2, W_in, W_out, bigram))
+                initargs=(bp, ALL_DATA, 200, 2, input_projection, output_projection, bigram))
     try:
         for step in range(1, n_steps+1):
             # Pick mutation type from schedule
@@ -202,7 +202,7 @@ def run_config(name, init_counts, learnable_schedule,
             if step % 50 == 0:
                 elapsed = time.time() - t0
                 edges = int(np.count_nonzero(mask))
-                ea = np.mean([eval_accuracy_classic(mask, H, W_in, W_out, theta, decay, s, bp)
+                ea = np.mean([eval_accuracy_classic(mask, H, input_projection, output_projection, theta, decay, s, bp)
                               for s in eval_seqs])
                 tot = sum(accepts.values())
                 print(f"  [{step:3d}] acc={ea*100:.2f}% edges={edges} "
@@ -213,7 +213,7 @@ def run_config(name, init_counts, learnable_schedule,
         pool.terminate(); pool.join()
 
     edges = int(np.count_nonzero(mask))
-    ea = np.mean([eval_accuracy_classic(mask, H, W_in, W_out, theta, decay, s, bp)
+    ea = np.mean([eval_accuracy_classic(mask, H, input_projection, output_projection, theta, decay, s, bp)
                   for s in eval_seqs])
     elapsed = time.time() - t0
     print(f"  FINAL: acc={ea*100:.2f}% edges={edges} "
@@ -244,38 +244,38 @@ if __name__ == "__main__":
 
     random.seed(42); np.random.seed(42)
     ref = SelfWiringGraph(IO)
-    W_in = ref.W_in / ref.INJ_SCALE * 1.0
-    W_out = ref.W_out / ref.INJ_SCALE * 1.0
+    input_projection = ref.input_projection / ref.INJ_SCALE * 1.0
+    output_projection = ref.output_projection / ref.INJ_SCALE * 1.0
 
     results = []
 
     # A: Old schedule (3a/1f/1t/0d = what we had)
     results.append(run_config("OLD 3a/1f/1t", {'add': 3, 'flip': 1, 'theta': 1},
-                              False, bp, ALL_DATA, bigram, eval_seqs, H, W_in, W_out))
+                              False, bp, ALL_DATA, bigram, eval_seqs, H, input_projection, output_projection))
 
     # B: Equal (2a/2f/2t/0d)
     results.append(run_config("EQUAL 2a/2f/2t", {'add': 2, 'flip': 2, 'theta': 2},
-                              False, bp, ALL_DATA, bigram, eval_seqs, H, W_in, W_out))
+                              False, bp, ALL_DATA, bigram, eval_seqs, H, input_projection, output_projection))
 
     # C: Flip heavy (2a/3f/1t/0d)
     results.append(run_config("FLIP 2a/3f/1t", {'add': 2, 'flip': 3, 'theta': 1},
-                              False, bp, ALL_DATA, bigram, eval_seqs, H, W_in, W_out))
+                              False, bp, ALL_DATA, bigram, eval_seqs, H, input_projection, output_projection))
 
     # D: Add heavy (5a/1f/1t/0d)
     results.append(run_config("ADD 5a/1f/1t", {'add': 5, 'flip': 1, 'theta': 1},
-                              False, bp, ALL_DATA, bigram, eval_seqs, H, W_in, W_out))
+                              False, bp, ALL_DATA, bigram, eval_seqs, H, input_projection, output_projection))
 
     # E: With decay (3a/1f/1t/1d)
     results.append(run_config("DECAY 3a/1f/1t/1d", {'add': 3, 'flip': 1, 'theta': 1, 'decay': 1},
-                              False, bp, ALL_DATA, bigram, eval_seqs, H, W_in, W_out))
+                              False, bp, ALL_DATA, bigram, eval_seqs, H, input_projection, output_projection))
 
     # F: Learnable (start at 3a/1f/1t, random walk every 20 steps)
     results.append(run_config("LEARN 3a/1f/1t", {'add': 3, 'flip': 1, 'theta': 1},
-                              True, bp, ALL_DATA, bigram, eval_seqs, H, W_in, W_out))
+                              True, bp, ALL_DATA, bigram, eval_seqs, H, input_projection, output_projection))
 
     # G: Learnable with decay (start at 3a/1f/1t/1d)
     results.append(run_config("LEARN 3a/1f/1t/1d", {'add': 3, 'flip': 1, 'theta': 1, 'decay': 1},
-                              True, bp, ALL_DATA, bigram, eval_seqs, H, W_in, W_out))
+                              True, bp, ALL_DATA, bigram, eval_seqs, H, input_projection, output_projection))
 
     print(f"\n{'='*75}")
     print(f"  SUMMARY -- SCHEDULE SWEEP (300 steps, 8 ticks, bigram 2seq, ReLU)")

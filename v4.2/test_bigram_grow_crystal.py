@@ -14,12 +14,12 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "model"))
 from graph import SelfWiringGraph
 
 _bp = None; _all_data = None; _seq_len = 200; _n_train = 2
-_W_in = None; _W_out = None; _bigram = None
+_input_projection = None; _output_projection = None; _bigram = None
 
 def init_w(b, d, sl, nt, wi, wo, bg):
-    global _bp, _all_data, _seq_len, _n_train, _W_in, _W_out, _bigram
+    global _bp, _all_data, _seq_len, _n_train, _input_projection, _output_projection, _bigram
     _bp, _all_data, _seq_len, _n_train = b, d, sl, nt
-    _W_in, _W_out, _bigram = wi, wo, bg
+    _input_projection, _output_projection, _bigram = wi, wo, bg
 
 def make_bp(io_dim, seed=12345):
     rng = np.random.RandomState(seed)
@@ -41,7 +41,7 @@ def _eval_on_seqs(mask, H, theta, decay, seqs):
             act = state.copy()
             for t in range(6):
                 if t == 0:
-                    act = act + _bp[text_bytes[i]] @ _W_in
+                    act = act + _bp[text_bytes[i]] @ _input_projection
                 raw = np.zeros(H, dtype=np.float32)
                 if len(rs):
                     np.add.at(raw, cs, act[rs] * sp_vals)
@@ -49,7 +49,7 @@ def _eval_on_seqs(mask, H, theta, decay, seqs):
                 act = np.maximum(charge - theta, 0.0)
                 charge = np.clip(charge, -1.0, 1.0)
             state = act.copy()
-            out = charge @ _W_out
+            out = charge @ _output_projection
             out_n = out / (np.linalg.norm(out) + 1e-8)
             sims = out_n @ pat_norm.T
             e = np.exp(sims - sims.max())
@@ -98,7 +98,7 @@ def worker_eval(args):
             'new_mask_flat': new_mask.flatten() if new_score > old_score else None,
             'new_theta': new_theta if proposal_type == 'theta' else None}
 
-def eval_accuracy_classic(mask, H, W_in, W_out, theta, decay, text_bytes, bp):
+def eval_accuracy_classic(mask, H, input_projection, output_projection, theta, decay, text_bytes, bp):
     pat_norm = bp / (np.linalg.norm(bp, axis=1, keepdims=True) + 1e-8)
     rs, cs = np.where(mask != 0); sp_vals = mask[rs, cs]
     ret = 1.0 - decay
@@ -107,21 +107,21 @@ def eval_accuracy_classic(mask, H, W_in, W_out, theta, decay, text_bytes, bp):
     for i in range(len(text_bytes)-1):
         act = state.copy()
         for t in range(6):
-            if t == 0: act = act + bp[text_bytes[i]] @ W_in
+            if t == 0: act = act + bp[text_bytes[i]] @ input_projection
             raw = np.zeros(H, dtype=np.float32)
             if len(rs): np.add.at(raw, cs, act[rs] * sp_vals)
             charge += raw; charge *= ret
             act = np.maximum(charge - theta, 0.0)
             charge = np.clip(charge, -1.0, 1.0)
         state = act.copy()
-        out = charge @ W_out
+        out = charge @ output_projection
         out_n = out / (np.linalg.norm(out) + 1e-8)
         sims = out_n @ pat_norm.T
         if np.argmax(sims) == text_bytes[i+1]: correct += 1
         total += 1
     return correct/total if total else 0
 
-def bigram_crystal(mask, H, theta, decay, W_in, W_out, bp, bigram, ALL_DATA, n_eval_seqs=5):
+def bigram_crystal(mask, H, theta, decay, input_projection, output_projection, bp, bigram, ALL_DATA, n_eval_seqs=5):
     """Crystal pruning using bigram cosine eval."""
     eval_rng = np.random.RandomState(7777)
     eval_seqs = [ALL_DATA[off:off+200] for off in
@@ -142,7 +142,7 @@ def bigram_crystal(mask, H, theta, decay, W_in, W_out, bp, bigram, ALL_DATA, n_e
                 act = state.copy()
                 for t in range(6):
                     if t == 0:
-                        act = act + bp[text_bytes[i]] @ W_in
+                        act = act + bp[text_bytes[i]] @ input_projection
                     raw = np.zeros(H, dtype=np.float32)
                     if len(rs):
                         np.add.at(raw, cs, act[rs] * sp_vals)
@@ -150,7 +150,7 @@ def bigram_crystal(mask, H, theta, decay, W_in, W_out, bp, bigram, ALL_DATA, n_e
                     act = np.maximum(charge - theta, 0.0)
                     charge = np.clip(charge, -1.0, 1.0)
                 state = act.copy()
-                out = charge @ W_out
+                out = charge @ output_projection
                 out_n = out / (np.linalg.norm(out) + 1e-8)
                 sims = out_n @ pat_norm.T
                 e = np.exp(sims - sims.max())
@@ -190,7 +190,7 @@ def bigram_crystal(mask, H, theta, decay, W_in, W_out, bp, bigram, ALL_DATA, n_e
     return total_removed
 
 
-def grow_phase(name, mask, theta, decay, bp, ALL_DATA, bigram, eval_seqs, H, W_in, W_out,
+def grow_phase(name, mask, theta, decay, bp, ALL_DATA, bigram, eval_seqs, H, input_projection, output_projection,
                n_steps=100, n_workers=18, threshold=0.0001):
     print(f"\n  === {name}: {n_steps} steps ===")
     sys.stdout.flush()
@@ -200,7 +200,7 @@ def grow_phase(name, mask, theta, decay, bp, ALL_DATA, bigram, eval_seqs, H, W_i
     t0 = time.time()
 
     pool = Pool(n_workers, initializer=init_w,
-                initargs=(bp, ALL_DATA, 200, 2, W_in, W_out, bigram))
+                initargs=(bp, ALL_DATA, 200, 2, input_projection, output_projection, bigram))
     try:
         for step in range(1, n_steps+1):
             ptype = schedule[(step-1) % len(schedule)]
@@ -223,7 +223,7 @@ def grow_phase(name, mask, theta, decay, bp, ALL_DATA, bigram, eval_seqs, H, W_i
             if step % 25 == 0:
                 elapsed = time.time() - t0
                 edges = int(np.count_nonzero(mask))
-                ea = np.mean([eval_accuracy_classic(mask, H, W_in, W_out, theta, decay, s, bp)
+                ea = np.mean([eval_accuracy_classic(mask, H, input_projection, output_projection, theta, decay, s, bp)
                               for s in eval_seqs])
                 tot = sum(accepts.values())
                 print(f"    [{step:3d}] acc={ea*100:.2f}% edges={edges} "
@@ -233,7 +233,7 @@ def grow_phase(name, mask, theta, decay, bp, ALL_DATA, bigram, eval_seqs, H, W_i
         pool.terminate(); pool.join()
 
     edges = int(np.count_nonzero(mask))
-    ea = np.mean([eval_accuracy_classic(mask, H, W_in, W_out, theta, decay, s, bp)
+    ea = np.mean([eval_accuracy_classic(mask, H, input_projection, output_projection, theta, decay, s, bp)
                   for s in eval_seqs])
     elapsed = time.time() - t0
     print(f"    DONE: acc={ea*100:.2f}% edges={edges} accepts={sum(accepts.values())} {elapsed:.0f}s")
@@ -261,10 +261,10 @@ if __name__ == "__main__":
 
     random.seed(42); np.random.seed(42)
     proj_rng = np.random.RandomState(np.random.randint(0, 2**31))
-    W_in = proj_rng.randn(IO, H).astype(np.float32)
-    W_in /= np.linalg.norm(W_in, axis=1, keepdims=True)
-    W_out = proj_rng.randn(H, IO).astype(np.float32)
-    W_out /= np.linalg.norm(W_out, axis=0, keepdims=True)
+    input_projection = proj_rng.randn(IO, H).astype(np.float32)
+    input_projection /= np.linalg.norm(input_projection, axis=1, keepdims=True)
+    output_projection = proj_rng.randn(H, IO).astype(np.float32)
+    output_projection /= np.linalg.norm(output_projection, axis=0, keepdims=True)
 
     t0_total = time.time()
 
@@ -278,30 +278,30 @@ if __name__ == "__main__":
     decay_a = np.full(H, 0.15, dtype=np.float32)
 
     # Phase 1: Grow
-    grow_phase("GROW-1", mask_a, theta_a, decay_a, bp, ALL_DATA, bigram, eval_seqs, H, W_in, W_out)
+    grow_phase("GROW-1", mask_a, theta_a, decay_a, bp, ALL_DATA, bigram, eval_seqs, H, input_projection, output_projection)
 
     pre_crystal = int(np.count_nonzero(mask_a))
-    pre_acc = np.mean([eval_accuracy_classic(mask_a, H, W_in, W_out, theta_a, decay_a, s, bp) for s in eval_seqs])
+    pre_acc = np.mean([eval_accuracy_classic(mask_a, H, input_projection, output_projection, theta_a, decay_a, s, bp) for s in eval_seqs])
     print(f"\n  --- CRYSTAL (bigram eval) ---")
     print(f"  Pre-crystal: {pre_acc*100:.2f}% acc, {pre_crystal} edges")
     sys.stdout.flush()
 
     t_crystal = time.time()
-    removed = bigram_crystal(mask_a, H, theta_a, decay_a, W_in, W_out, bp, bigram, ALL_DATA)
+    removed = bigram_crystal(mask_a, H, theta_a, decay_a, input_projection, output_projection, bp, bigram, ALL_DATA)
     crystal_time = time.time() - t_crystal
 
     post_crystal = int(np.count_nonzero(mask_a))
-    post_acc = np.mean([eval_accuracy_classic(mask_a, H, W_in, W_out, theta_a, decay_a, s, bp) for s in eval_seqs])
+    post_acc = np.mean([eval_accuracy_classic(mask_a, H, input_projection, output_projection, theta_a, decay_a, s, bp) for s in eval_seqs])
     print(f"  Post-crystal: {post_acc*100:.2f}% acc, {post_crystal} edges "
           f"(removed {removed}, {removed/max(pre_crystal,1)*100:.0f}%) {crystal_time:.0f}s")
     sys.stdout.flush()
 
     # Phase 3: Grow again
-    grow_phase("GROW-2", mask_a, theta_a, decay_a, bp, ALL_DATA, bigram, eval_seqs, H, W_in, W_out,
+    grow_phase("GROW-2", mask_a, theta_a, decay_a, bp, ALL_DATA, bigram, eval_seqs, H, input_projection, output_projection,
                n_steps=100)
 
     final_a_edges = int(np.count_nonzero(mask_a))
-    final_a_acc = np.mean([eval_accuracy_classic(mask_a, H, W_in, W_out, theta_a, decay_a, s, bp) for s in eval_seqs])
+    final_a_acc = np.mean([eval_accuracy_classic(mask_a, H, input_projection, output_projection, theta_a, decay_a, s, bp) for s in eval_seqs])
 
     # ===== CONFIG B: Straight 200 steps (no crystal) =====
     print(f"\n{'='*60}")
@@ -312,11 +312,11 @@ if __name__ == "__main__":
     theta_b = np.full(H, 0.03, dtype=np.float32)
     decay_b = np.full(H, 0.15, dtype=np.float32)
 
-    grow_phase("GROW-200", mask_b, theta_b, decay_b, bp, ALL_DATA, bigram, eval_seqs, H, W_in, W_out,
+    grow_phase("GROW-200", mask_b, theta_b, decay_b, bp, ALL_DATA, bigram, eval_seqs, H, input_projection, output_projection,
                n_steps=200)
 
     final_b_edges = int(np.count_nonzero(mask_b))
-    final_b_acc = np.mean([eval_accuracy_classic(mask_b, H, W_in, W_out, theta_b, decay_b, s, bp) for s in eval_seqs])
+    final_b_acc = np.mean([eval_accuracy_classic(mask_b, H, input_projection, output_projection, theta_b, decay_b, s, bp) for s in eval_seqs])
 
     total_time = time.time() - t0_total
 

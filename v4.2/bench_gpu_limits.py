@@ -25,7 +25,7 @@ for H in [256, 512, 1024, 2048, 4096, 8192, 16384, 32768]:
     # charge + act buffers per batch
     batch18_bytes = 18 * N * 4 * 3  # charge, act, out (3 buffers)
     batch64_bytes = 64 * N * 4 * 3
-    # W_in + W_out
+    # input_projection + output_projection
     io_bytes = 2 * N * V * 4
     total_64 = w_bytes + batch64_bytes + io_bytes
     fits = total_64 < 16e9
@@ -65,8 +65,8 @@ for H, n_edges in [(256, 2000), (512, 5000), (1024, 20000), (2048, 50000), (4096
 
         theta = torch.rand(N, device=device) * 0.3
         decay = torch.rand(N, device=device) * 0.3
-        W_in = torch.randn(N, V, device=device) * 0.01
-        W_out = torch.randn(V, N, device=device) * 0.01
+        input_projection = torch.randn(N, V, device=device) * 0.01
+        output_projection = torch.randn(V, N, device=device) * 0.01
         inputs = torch.randint(0, V, (n_seqs, seq_len), device=device)
         eye = torch.eye(V, device=device)
 
@@ -74,7 +74,7 @@ for H, n_edges in [(256, 2000), (512, 5000), (1024, 20000), (2048, 50000), (4096
         charge = torch.zeros(n_seqs, N, device=device)
         for b in range(min(10, seq_len)):
             inp = eye[inputs[:, b]]
-            charge = charge + inp @ W_in.T
+            charge = charge + inp @ input_projection.T
             for t in range(ticks):
                 act = torch.clamp(charge - theta, min=0.0)
                 charge = charge * (1.0 - decay) + act @ W.T
@@ -87,7 +87,7 @@ for H, n_edges in [(256, 2000), (512, 5000), (1024, 20000), (2048, 50000), (4096
             charge = torch.zeros(n_seqs, N, device=device)
             for b in range(seq_len):
                 inp = eye[inputs[:, b]]
-                charge = charge + inp @ W_in.T
+                charge = charge + inp @ input_projection.T
                 for t in range(ticks):
                     act = torch.clamp(charge - theta, min=0.0)
                     charge = charge * (1.0 - decay) + act @ W.T
@@ -100,7 +100,7 @@ for H, n_edges in [(256, 2000), (512, 5000), (1024, 20000), (2048, 50000), (4096
         label = f"{H}H ({N}N) / {n_edges//1000}K edges"
         print(f"{label:>30} {elapsed*1000:>9.0f}ms {seq_per_sec:>9.1f} {vram:>9.2f}G")
 
-        del W, theta, decay, W_in, W_out, inputs, charge
+        del W, theta, decay, input_projection, output_projection, inputs, charge
 
     except torch.cuda.OutOfMemoryError:
         label = f"{H}H ({N}N) / {n_edges//1000}K edges"
@@ -125,8 +125,8 @@ dst = torch.randint(0, N, (n_edges,))
 W[dst, src] = torch.randn(n_edges).to(device) * 0.1
 theta = torch.rand(N, device=device) * 0.3
 decay = torch.rand(N, device=device) * 0.3
-W_in = torch.randn(N, V, device=device) * 0.01
-W_out = torch.randn(V, N, device=device) * 0.01
+input_projection = torch.randn(N, V, device=device) * 0.01
+output_projection = torch.randn(V, N, device=device) * 0.01
 eye = torch.eye(V, device=device)
 
 base_sps = None
@@ -140,7 +140,7 @@ for batch in [1, 4, 8, 16, 32, 64, 128, 256, 512]:
         charge = torch.zeros(batch, N, device=device)
         for b in range(10):
             inp = eye[inputs[:, b]]
-            charge = charge + inp @ W_in.T
+            charge = charge + inp @ input_projection.T
             for t in range(ticks):
                 act = torch.clamp(charge - theta, min=0.0)
                 charge = charge * (1.0 - decay) + act @ W.T
@@ -151,7 +151,7 @@ for batch in [1, 4, 8, 16, 32, 64, 128, 256, 512]:
             charge = torch.zeros(batch, N, device=device)
             for b in range(seq_len):
                 inp = eye[inputs[:, b]]
-                charge = charge + inp @ W_in.T
+                charge = charge + inp @ input_projection.T
                 for t in range(ticks):
                     act = torch.clamp(charge - theta, min=0.0)
                     charge = charge * (1.0 - decay) + act @ W.T

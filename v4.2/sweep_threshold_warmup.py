@@ -11,12 +11,12 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "model"))
 from graph import SelfWiringGraph
 
 _bp = None; _all_data = None; _seq_len = 200; _n_train = 2
-_W_in = None; _W_out = None; _bigram = None
+_input_projection = None; _output_projection = None; _bigram = None
 
 def init_w(b, d, sl, nt, wi, wo, bg):
-    global _bp, _all_data, _seq_len, _n_train, _W_in, _W_out, _bigram
+    global _bp, _all_data, _seq_len, _n_train, _input_projection, _output_projection, _bigram
     _bp, _all_data, _seq_len, _n_train = b, d, sl, nt
-    _W_in, _W_out, _bigram = wi, wo, bg
+    _input_projection, _output_projection, _bigram = wi, wo, bg
 
 def make_bp(io_dim, seed=12345):
     rng = np.random.RandomState(seed)
@@ -38,7 +38,7 @@ def _eval_on_seqs(mask, H, theta, decay, seqs):
             act = state.copy()
             for t in range(6):
                 if t == 0:
-                    act = act + _bp[text_bytes[i]] @ _W_in
+                    act = act + _bp[text_bytes[i]] @ _input_projection
                 raw = np.zeros(H, dtype=np.float32)
                 if len(rs):
                     np.add.at(raw, cs, act[rs] * sp_vals)
@@ -46,7 +46,7 @@ def _eval_on_seqs(mask, H, theta, decay, seqs):
                 act = np.maximum(charge - theta, 0.0)
                 charge = np.clip(charge, -1.0, 1.0)
             state = act.copy()
-            out = charge @ _W_out
+            out = charge @ _output_projection
             out_n = out / (np.linalg.norm(out) + 1e-8)
             sims = out_n @ pat_norm.T
             e = np.exp(sims - sims.max())
@@ -95,7 +95,7 @@ def worker_eval(args):
             'new_mask_flat': new_mask.flatten() if new_score > old_score else None,
             'new_theta': new_theta if proposal_type == 'theta' else None}
 
-def eval_accuracy_classic(mask, H, W_in, W_out, theta, decay, text_bytes, bp):
+def eval_accuracy_classic(mask, H, input_projection, output_projection, theta, decay, text_bytes, bp):
     pat_norm = bp / (np.linalg.norm(bp, axis=1, keepdims=True) + 1e-8)
     rs, cs = np.where(mask != 0); sp_vals = mask[rs, cs]
     ret = 1.0 - decay
@@ -104,14 +104,14 @@ def eval_accuracy_classic(mask, H, W_in, W_out, theta, decay, text_bytes, bp):
     for i in range(len(text_bytes)-1):
         act = state.copy()
         for t in range(6):
-            if t == 0: act = act + bp[text_bytes[i]] @ W_in
+            if t == 0: act = act + bp[text_bytes[i]] @ input_projection
             raw = np.zeros(H, dtype=np.float32)
             if len(rs): np.add.at(raw, cs, act[rs] * sp_vals)
             charge += raw; charge *= ret
             act = np.maximum(charge - theta, 0.0)
             charge = np.clip(charge, -1.0, 1.0)
         state = act.copy()
-        out = charge @ W_out
+        out = charge @ output_projection
         out_n = out / (np.linalg.norm(out) + 1e-8)
         sims = out_n @ pat_norm.T
         if np.argmax(sims) == text_bytes[i+1]: correct += 1
@@ -140,7 +140,7 @@ def get_threshold(step, n_steps, schedule):
     return 0.0005
 
 
-def run_config(name, schedule, bp, ALL_DATA, bigram, eval_seqs, H, W_in, W_out,
+def run_config(name, schedule, bp, ALL_DATA, bigram, eval_seqs, H, input_projection, output_projection,
                n_steps=100, n_workers=18):
     mask = np.zeros((H, H), dtype=np.float32)
     theta = np.full(H, 0.03, dtype=np.float32)
@@ -154,7 +154,7 @@ def run_config(name, schedule, bp, ALL_DATA, bigram, eval_seqs, H, W_in, W_out,
     t0 = time.time()
 
     pool = Pool(n_workers, initializer=init_w,
-                initargs=(bp, ALL_DATA, 200, 2, W_in, W_out, bigram))
+                initargs=(bp, ALL_DATA, 200, 2, input_projection, output_projection, bigram))
     try:
         for step in range(1, n_steps+1):
             ptype = sched[(step-1) % len(sched)]
@@ -178,7 +178,7 @@ def run_config(name, schedule, bp, ALL_DATA, bigram, eval_seqs, H, W_in, W_out,
             if step % 25 == 0:
                 elapsed = time.time() - t0
                 edges = int(np.count_nonzero(mask))
-                ea = np.mean([eval_accuracy_classic(mask, H, W_in, W_out, theta, decay, s, bp)
+                ea = np.mean([eval_accuracy_classic(mask, H, input_projection, output_projection, theta, decay, s, bp)
                               for s in eval_seqs])
                 tot = sum(accepts.values())
                 cur_thresh = get_threshold(step, n_steps, schedule)
@@ -190,7 +190,7 @@ def run_config(name, schedule, bp, ALL_DATA, bigram, eval_seqs, H, W_in, W_out,
         pool.terminate(); pool.join()
 
     edges = int(np.count_nonzero(mask))
-    ea = np.mean([eval_accuracy_classic(mask, H, W_in, W_out, theta, decay, s, bp)
+    ea = np.mean([eval_accuracy_classic(mask, H, input_projection, output_projection, theta, decay, s, bp)
                   for s in eval_seqs])
     elapsed = time.time() - t0
     print(f"  FINAL: acc={ea*100:.2f}% edges={edges} accepts={sum(accepts.values())} "
@@ -220,32 +220,32 @@ if __name__ == "__main__":
 
     random.seed(42); np.random.seed(42)
     proj_rng = np.random.RandomState(np.random.randint(0, 2**31))
-    W_in = proj_rng.randn(IO, H).astype(np.float32)
-    W_in /= np.linalg.norm(W_in, axis=1, keepdims=True)
-    W_out = proj_rng.randn(H, IO).astype(np.float32)
-    W_out /= np.linalg.norm(W_out, axis=0, keepdims=True)
+    input_projection = proj_rng.randn(IO, H).astype(np.float32)
+    input_projection /= np.linalg.norm(input_projection, axis=1, keepdims=True)
+    output_projection = proj_rng.randn(H, IO).astype(np.float32)
+    output_projection /= np.linalg.norm(output_projection, axis=0, keepdims=True)
 
     results = []
 
     # A: Fix threshold 0.0005 (previous baseline)
     results.append(run_config("FIX 0.0005", 'fix_mid',
-                              bp, ALL_DATA, bigram, eval_seqs, H, W_in, W_out))
+                              bp, ALL_DATA, bigram, eval_seqs, H, input_projection, output_projection))
 
     # B: Fix very low (almost everything accepted)
     results.append(run_config("FIX 0.0001", 'fix_low',
-                              bp, ALL_DATA, bigram, eval_seqs, H, W_in, W_out))
+                              bp, ALL_DATA, bigram, eval_seqs, H, input_projection, output_projection))
 
     # C: Warmup 0.0001 → 0.001
     results.append(run_config("WARM 0.0001->0.001", 'warmup_low_high',
-                              bp, ALL_DATA, bigram, eval_seqs, H, W_in, W_out))
+                              bp, ALL_DATA, bigram, eval_seqs, H, input_projection, output_projection))
 
     # D: Warmup 0.0 → 0.0005
     results.append(run_config("WARM 0->0.0005", 'warmup_zero_mid',
-                              bp, ALL_DATA, bigram, eval_seqs, H, W_in, W_out))
+                              bp, ALL_DATA, bigram, eval_seqs, H, input_projection, output_projection))
 
     # E: Warmup 0.0 → 0.001
     results.append(run_config("WARM 0->0.001", 'warmup_zero_high',
-                              bp, ALL_DATA, bigram, eval_seqs, H, W_in, W_out))
+                              bp, ALL_DATA, bigram, eval_seqs, H, input_projection, output_projection))
 
     print(f"\n{'='*70}")
     print(f"  SUMMARY — THRESHOLD WARMUP + BIGRAM 2seq")

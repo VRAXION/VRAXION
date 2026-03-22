@@ -148,7 +148,7 @@ def puzzle_all_different_per_row():
     return grid
 
 
-def puzzle_constant_row_inc_col():
+def puzzle_constant_roinput_projectionc_col():
     """Each row = one shape repeated with same count. Count increases down.
     △×1  △×1  △×1
     □×2  □×2  □×2
@@ -201,7 +201,7 @@ PUZZLE_TYPES = [
     ("count-rows/shape-cols",  puzzle_count_rows_shape_cols),
     ("diagonal-shift",         puzzle_diagonal_shift),
     ("latin-square",           puzzle_all_different_per_row),
-    ("constant-row",           puzzle_constant_row_inc_col),
+    ("constant-row",           puzzle_constant_roinput_projectionc_col),
     ("checkerboard",           puzzle_checkerboard),
     ("row-progression",        puzzle_row_progression),
 ]

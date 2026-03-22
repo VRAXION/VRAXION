@@ -14,14 +14,14 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "model"))
 from graph import SelfWiringGraph
 
 _bp = None; _all_data = None; _seq_len = 200; _n_train = 2
-_W_in = None; _W_out = None; _bigram = None
+_input_projection = None; _output_projection = None; _bigram = None
 _max_ticks = 16
 _budget = None  # per-neuron int array
 
 def init_w(b, d, sl, nt, wi, wo, bg, mt, bud):
-    global _bp, _all_data, _seq_len, _n_train, _W_in, _W_out, _bigram, _max_ticks, _budget
+    global _bp, _all_data, _seq_len, _n_train, _input_projection, _output_projection, _bigram, _max_ticks, _budget
     _bp, _all_data, _seq_len, _n_train = b, d, sl, nt
-    _W_in, _W_out, _bigram = wi, wo, bg
+    _input_projection, _output_projection, _bigram = wi, wo, bg
     _max_ticks, _budget = mt, bud
 
 def make_bp(io_dim, seed=12345):
@@ -45,7 +45,7 @@ def _eval_bigram(mask, H, theta, decay, budget, seqs):
             act = state.copy()
             for t in range(mt):
                 if t == 0:
-                    act = act + _bp[text_bytes[i]] @ _W_in
+                    act = act + _bp[text_bytes[i]] @ _input_projection
                 raw = np.zeros(H, dtype=np.float32)
                 if len(rs):
                     np.add.at(raw, cs, act[rs] * sp_vals)
@@ -56,7 +56,7 @@ def _eval_bigram(mask, H, theta, decay, budget, seqs):
                 act = np.maximum(charge - theta, 0.0)
                 charge = np.maximum(charge, 0.0)
             state = act.copy()
-            out = charge @ _W_out
+            out = charge @ _output_projection
             out_n = out / (np.linalg.norm(out) + 1e-8)
             sims = out_n @ pat_norm.T
             e = np.exp(sims - sims.max())
@@ -113,7 +113,7 @@ def worker_eval(args):
             'new_theta': new_theta if proposal_type == 'theta' else None,
             'new_budget': new_budget if proposal_type == 'budget' else None}
 
-def eval_accuracy_classic(mask, H, W_in, W_out, theta, decay, budget, text_bytes, bp):
+def eval_accuracy_classic(mask, H, input_projection, output_projection, theta, decay, budget, text_bytes, bp):
     pat_norm = bp / (np.linalg.norm(bp, axis=1, keepdims=True) + 1e-8)
     rs, cs = np.where(mask != 0); sp_vals = mask[rs, cs]
     ret = 1.0 - decay
@@ -123,7 +123,7 @@ def eval_accuracy_classic(mask, H, W_in, W_out, theta, decay, budget, text_bytes
     for i in range(len(text_bytes)-1):
         act = state.copy()
         for t in range(mt):
-            if t == 0: act = act + bp[text_bytes[i]] @ W_in
+            if t == 0: act = act + bp[text_bytes[i]] @ input_projection
             raw = np.zeros(H, dtype=np.float32)
             if len(rs): np.add.at(raw, cs, act[rs] * sp_vals)
             active = (budget > t).astype(np.float32)
@@ -132,7 +132,7 @@ def eval_accuracy_classic(mask, H, W_in, W_out, theta, decay, budget, text_bytes
             act = np.maximum(charge - theta, 0.0)
             charge = np.maximum(charge, 0.0)
         state = act.copy()
-        out = charge @ W_out
+        out = charge @ output_projection
         out_n = out / (np.linalg.norm(out) + 1e-8)
         sims = out_n @ pat_norm.T
         if np.argmax(sims) == text_bytes[i+1]: correct += 1
@@ -141,7 +141,7 @@ def eval_accuracy_classic(mask, H, W_in, W_out, theta, decay, budget, text_bytes
 
 
 def run_config(name, init_budget, learnable_budget,
-               bp, ALL_DATA, bigram, eval_seqs, H, W_in, W_out,
+               bp, ALL_DATA, bigram, eval_seqs, H, input_projection, output_projection,
                max_steps=1500, n_workers=18, threshold=0.00005):
     mask = np.zeros((H, H), dtype=np.float32)
     theta = np.full(H, 0.03, dtype=np.float32)
@@ -168,7 +168,7 @@ def run_config(name, init_budget, learnable_budget,
     t0 = time.time()
 
     pool = Pool(n_workers, initializer=init_w,
-                initargs=(bp, ALL_DATA, 200, 2, W_in, W_out, bigram, 16, budget))
+                initargs=(bp, ALL_DATA, 200, 2, input_projection, output_projection, bigram, 16, budget))
     try:
         for step in range(1, max_steps+1):
             ptype = schedule[(step-1) % len(schedule)]
@@ -195,7 +195,7 @@ def run_config(name, init_budget, learnable_budget,
             if step % 100 == 0:
                 elapsed = time.time() - t0
                 edges = int(np.count_nonzero(mask))
-                ea = np.mean([eval_accuracy_classic(mask, H, W_in, W_out, theta, decay, budget, s, bp)
+                ea = np.mean([eval_accuracy_classic(mask, H, input_projection, output_projection, theta, decay, budget, s, bp)
                               for s in eval_seqs])
                 acc_history.append((step, ea))
                 quality = ea / max(edges, 1) * 100
@@ -219,7 +219,7 @@ def run_config(name, init_budget, learnable_budget,
         pool.terminate(); pool.join()
 
     edges = int(np.count_nonzero(mask))
-    ea = np.mean([eval_accuracy_classic(mask, H, W_in, W_out, theta, decay, budget, s, bp)
+    ea = np.mean([eval_accuracy_classic(mask, H, input_projection, output_projection, theta, decay, budget, s, bp)
                   for s in eval_seqs])
     elapsed = time.time() - t0
     quality = ea / max(edges, 1) * 100
@@ -259,36 +259,36 @@ if __name__ == "__main__":
 
     random.seed(42); np.random.seed(42)
     ref = SelfWiringGraph(IO)
-    W_in = ref.W_in / ref.INJ_SCALE * 1.0
-    W_out = ref.W_out / ref.INJ_SCALE * 1.0
+    input_projection = ref.input_projection / ref.INJ_SCALE * 1.0
+    output_projection = ref.output_projection / ref.INJ_SCALE * 1.0
 
     results = []
 
     # A: FIX 8 (current baseline)
     results.append(run_config("FIX budget=8", 8, False,
-                              bp, ALL_DATA, bigram, eval_seqs, H, W_in, W_out))
+                              bp, ALL_DATA, bigram, eval_seqs, H, input_projection, output_projection))
 
     # B: FIX 4 (cheap)
     results.append(run_config("FIX budget=4", 4, False,
-                              bp, ALL_DATA, bigram, eval_seqs, H, W_in, W_out))
+                              bp, ALL_DATA, bigram, eval_seqs, H, input_projection, output_projection))
 
     # C: FIX 15 (max, expensive)
     results.append(run_config("FIX budget=15", 15, False,
-                              bp, ALL_DATA, bigram, eval_seqs, H, W_in, W_out))
+                              bp, ALL_DATA, bigram, eval_seqs, H, input_projection, output_projection))
 
     # D: LEARN from 8
     results.append(run_config("LEARN init=8", 8, True,
-                              bp, ALL_DATA, bigram, eval_seqs, H, W_in, W_out))
+                              bp, ALL_DATA, bigram, eval_seqs, H, input_projection, output_projection))
 
     # E: LEARN from 4
     results.append(run_config("LEARN init=4", 4, True,
-                              bp, ALL_DATA, bigram, eval_seqs, H, W_in, W_out))
+                              bp, ALL_DATA, bigram, eval_seqs, H, input_projection, output_projection))
 
     # F: LEARN from random 1-15
     rng_init = np.random.RandomState(123)
     random_budget = rng_init.randint(1, 16, size=H).astype(np.int32)
     results.append(run_config("LEARN init=random", random_budget, True,
-                              bp, ALL_DATA, bigram, eval_seqs, H, W_in, W_out))
+                              bp, ALL_DATA, bigram, eval_seqs, H, input_projection, output_projection))
 
     print(f"\n{'='*75}")
     print(f"  SUMMARY -- TICK BUDGET (bigram 2seq, charge ReLU)")

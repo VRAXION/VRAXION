@@ -16,13 +16,13 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "model"))
 from graph import SelfWiringGraph
 
 _bp = None; _all_data = None; _seq_len = 200; _n_train = 2
-_W_in = None; _W_out = None; _bigram = None
+_input_projection = None; _output_projection = None; _bigram = None
 _use_int_mask = False
 
 def init_w(b, d, sl, nt, wi, wo, bg, uim):
-    global _bp, _all_data, _seq_len, _n_train, _W_in, _W_out, _bigram, _use_int_mask
+    global _bp, _all_data, _seq_len, _n_train, _input_projection, _output_projection, _bigram, _use_int_mask
     _bp, _all_data, _seq_len, _n_train = b, d, sl, nt
-    _W_in, _W_out, _bigram = wi, wo, bg
+    _input_projection, _output_projection, _bigram = wi, wo, bg
     _use_int_mask = uim
 
 def make_bp(io_dim, seed=12345):
@@ -46,7 +46,7 @@ def _eval_bigram(mask_param, H, ret, seqs):
         seq_score = 0.0; n = 0
         for i in range(len(text_bytes)-1):
             act = state.copy()
-            injection = _bp[text_bytes[i]] @ _W_in
+            injection = _bp[text_bytes[i]] @ _input_projection
             for t in range(8):
                 if t < 2: act = act + injection
                 raw = np.zeros(H, dtype=np.float32)
@@ -55,7 +55,7 @@ def _eval_bigram(mask_param, H, ret, seqs):
                 act = np.maximum(charge, 0.0)
                 charge = np.maximum(charge, 0.0)
             state = act.copy()
-            out = charge @ _W_out
+            out = charge @ _output_projection
             out_n = out / (np.linalg.norm(out) + 1e-8)
             sims = out_n @ pat_norm.T
             e = np.exp(sims - sims.max())
@@ -124,7 +124,7 @@ def worker_eval(args):
     return {'delta': new_score - old_score, 'type': proposal_type,
             'new_mask_flat': new_mask.flatten() if new_score > old_score else None}
 
-def eval_accuracy(mask, H, W_in, W_out, use_int, text_bytes, bp):
+def eval_accuracy(mask, H, input_projection, output_projection, use_int, text_bytes, bp):
     pat_norm = bp / (np.linalg.norm(bp, axis=1, keepdims=True) + 1e-8)
     if use_int:
         rs, cs = np.where(mask != 0)
@@ -137,7 +137,7 @@ def eval_accuracy(mask, H, W_in, W_out, use_int, text_bytes, bp):
     correct = 0; total = 0
     for i in range(len(text_bytes)-1):
         act = state.copy()
-        injection = bp[text_bytes[i]] @ W_in
+        injection = bp[text_bytes[i]] @ input_projection
         for t in range(8):
             if t < 2: act = act + injection
             raw = np.zeros(H, dtype=np.float32)
@@ -146,7 +146,7 @@ def eval_accuracy(mask, H, W_in, W_out, use_int, text_bytes, bp):
             act = np.maximum(charge, 0.0)
             charge = np.maximum(charge, 0.0)
         state = act.copy()
-        out = charge @ W_out
+        out = charge @ output_projection
         out_n = out / (np.linalg.norm(out) + 1e-8)
         sims = out_n @ pat_norm.T
         if np.argmax(sims) == text_bytes[i+1]: correct += 1
@@ -154,7 +154,7 @@ def eval_accuracy(mask, H, W_in, W_out, use_int, text_bytes, bp):
     return correct/total if total else 0
 
 
-def run_config(name, use_int, schedule, bp, ALL_DATA, bigram, eval_seqs, H, W_in, W_out,
+def run_config(name, use_int, schedule, bp, ALL_DATA, bigram, eval_seqs, H, input_projection, output_projection,
                max_steps=500, n_workers=18, threshold=0.00005):
     if use_int:
         mask = np.zeros((H, H), dtype=np.int32)
@@ -168,7 +168,7 @@ def run_config(name, use_int, schedule, bp, ALL_DATA, bigram, eval_seqs, H, W_in
     t0 = time.time()
 
     pool = Pool(n_workers, initializer=init_w,
-                initargs=(bp, ALL_DATA, 200, 2, W_in, W_out, bigram, use_int))
+                initargs=(bp, ALL_DATA, 200, 2, input_projection, output_projection, bigram, use_int))
     try:
         for step in range(1, max_steps+1):
             ptype = schedule[(step-1) % len(schedule)]
@@ -190,7 +190,7 @@ def run_config(name, use_int, schedule, bp, ALL_DATA, bigram, eval_seqs, H, W_in
             if step % 100 == 0:
                 elapsed = time.time() - t0
                 edges = int(np.count_nonzero(mask))
-                ea = np.mean([eval_accuracy(mask, H, W_in, W_out, use_int, s, bp)
+                ea = np.mean([eval_accuracy(mask, H, input_projection, output_projection, use_int, s, bp)
                               for s in eval_seqs])
                 quality = ea / max(edges, 1) * 100
                 if use_int:
@@ -207,7 +207,7 @@ def run_config(name, use_int, schedule, bp, ALL_DATA, bigram, eval_seqs, H, W_in
         pool.terminate(); pool.join()
 
     edges = int(np.count_nonzero(mask))
-    ea = np.mean([eval_accuracy(mask, H, W_in, W_out, use_int, s, bp)
+    ea = np.mean([eval_accuracy(mask, H, input_projection, output_projection, use_int, s, bp)
                   for s in eval_seqs])
     elapsed = time.time() - t0
     quality = ea / max(edges, 1) * 100
@@ -237,25 +237,25 @@ if __name__ == "__main__":
 
     random.seed(42); np.random.seed(42)
     ref = SelfWiringGraph(IO)
-    W_in = ref.W_in / ref.INJ_SCALE * 1.0
-    W_out = ref.W_out / ref.INJ_SCALE * 1.0
+    input_projection = ref.input_projection / ref.INJ_SCALE * 1.0
+    output_projection = ref.output_projection / ref.INJ_SCALE * 1.0
 
     results = []
 
     # A: Float ternary +-0.6 (current baseline)
     results.append(run_config("FLOAT +-0.6", False,
                               ['add', 'add', 'flip', 'add'],
-                              bp, ALL_DATA, bigram, eval_seqs, H, W_in, W_out))
+                              bp, ALL_DATA, bigram, eval_seqs, H, input_projection, output_projection))
 
     # B: Int8 +-77 (= +-0.60, same as ternary but int)
     results.append(run_config("INT8 +-77 (ternary)", True,
                               ['add', 'add', 'flip', 'add'],
-                              bp, ALL_DATA, bigram, eval_seqs, H, W_in, W_out))
+                              bp, ALL_DATA, bigram, eval_seqs, H, input_projection, output_projection))
 
     # C: Int8 +-77 + weight step +-1 (can the int weights evolve?)
     results.append(run_config("INT8 + weight step", True,
                               ['add', 'add', 'flip', 'weight'],
-                              bp, ALL_DATA, bigram, eval_seqs, H, W_in, W_out))
+                              bp, ALL_DATA, bigram, eval_seqs, H, input_projection, output_projection))
 
     print(f"\n{'='*65}")
     print(f"  SUMMARY -- INT8 MASK (500 steps, ret=217)")

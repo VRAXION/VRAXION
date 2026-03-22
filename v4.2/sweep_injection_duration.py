@@ -14,14 +14,14 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "model"))
 from graph import SelfWiringGraph
 
 _bp = None; _all_data = None; _seq_len = 200; _n_train = 2
-_W_in = None; _W_out = None; _bigram = None
+_input_projection = None; _output_projection = None; _bigram = None
 _inj_dur = None  # per-neuron int array or None (=all same)
 _inj_dur_fixed = 1  # used when _inj_dur is None
 
 def init_w(b, d, sl, nt, wi, wo, bg, idur, idur_fixed):
-    global _bp, _all_data, _seq_len, _n_train, _W_in, _W_out, _bigram, _inj_dur, _inj_dur_fixed
+    global _bp, _all_data, _seq_len, _n_train, _input_projection, _output_projection, _bigram, _inj_dur, _inj_dur_fixed
     _bp, _all_data, _seq_len, _n_train = b, d, sl, nt
-    _W_in, _W_out, _bigram = wi, wo, bg
+    _input_projection, _output_projection, _bigram = wi, wo, bg
     _inj_dur, _inj_dur_fixed = idur, idur_fixed
 
 def make_bp(io_dim, seed=12345):
@@ -42,7 +42,7 @@ def _eval_bigram(mask, H, theta, decay, inj_dur, seqs):
         seq_score = 0.0; n = 0
         for i in range(len(text_bytes)-1):
             act = state.copy()
-            injection = _bp[text_bytes[i]] @ _W_in
+            injection = _bp[text_bytes[i]] @ _input_projection
             for t in range(8):
                 # Inject input for first inj_dur ticks per neuron
                 if inj_dur is not None:
@@ -58,7 +58,7 @@ def _eval_bigram(mask, H, theta, decay, inj_dur, seqs):
                 act = np.maximum(charge - theta, 0.0)
                 charge = np.maximum(charge, 0.0)
             state = act.copy()
-            out = charge @ _W_out
+            out = charge @ _output_projection
             out_n = out / (np.linalg.norm(out) + 1e-8)
             sims = out_n @ pat_norm.T
             e = np.exp(sims - sims.max())
@@ -76,7 +76,7 @@ def worker_eval(args):
     np_rng = np.random.RandomState(seed)
     mask = mask_flat.reshape(H, H)
     new_mask = mask; new_theta = theta; new_decay = decay
-    new_inj = inj_dur
+    neinput_projectionj = inj_dur
 
     if proposal_type == 'add':
         r = rng.randint(0, H-1); c = rng.randint(0, H-1)
@@ -101,8 +101,8 @@ def worker_eval(args):
     elif proposal_type == 'inj_dur':
         if inj_dur is not None:
             idx = rng.randint(0, H-1)
-            new_inj = inj_dur.copy()
-            new_inj[idx] = rng.randint(1, 8)
+            neinput_projectionj = inj_dur.copy()
+            neinput_projectionj[idx] = rng.randint(1, 8)
 
     seqs = []
     data_len = len(_all_data)
@@ -111,15 +111,15 @@ def worker_eval(args):
         seqs.append(_all_data[off:off+_seq_len])
 
     old_score = _eval_bigram(mask, H, theta, decay, inj_dur, seqs)
-    new_score = _eval_bigram(new_mask, H, new_theta, new_decay, new_inj, seqs)
+    new_score = _eval_bigram(new_mask, H, new_theta, new_decay, neinput_projectionj, seqs)
 
     return {'delta': new_score - old_score, 'type': proposal_type,
             'new_mask_flat': new_mask.flatten() if new_score > old_score else None,
             'new_theta': new_theta if proposal_type == 'theta' else None,
             'new_decay': new_decay if proposal_type == 'decay' else None,
-            'new_inj': new_inj if proposal_type == 'inj_dur' else None}
+            'neinput_projectionj': neinput_projectionj if proposal_type == 'inj_dur' else None}
 
-def eval_accuracy_classic(mask, H, W_in, W_out, theta, decay, inj_dur, inj_dur_fixed, text_bytes, bp):
+def eval_accuracy_classic(mask, H, input_projection, output_projection, theta, decay, inj_dur, inj_dur_fixed, text_bytes, bp):
     pat_norm = bp / (np.linalg.norm(bp, axis=1, keepdims=True) + 1e-8)
     rs, cs = np.where(mask != 0); sp_vals = mask[rs, cs]
     ret = 1.0 - decay
@@ -127,7 +127,7 @@ def eval_accuracy_classic(mask, H, W_in, W_out, theta, decay, inj_dur, inj_dur_f
     correct = 0; total = 0
     for i in range(len(text_bytes)-1):
         act = state.copy()
-        injection = bp[text_bytes[i]] @ W_in
+        injection = bp[text_bytes[i]] @ input_projection
         for t in range(8):
             if inj_dur is not None:
                 inject_mask = (inj_dur > t).astype(np.float32)
@@ -141,7 +141,7 @@ def eval_accuracy_classic(mask, H, W_in, W_out, theta, decay, inj_dur, inj_dur_f
             act = np.maximum(charge - theta, 0.0)
             charge = np.maximum(charge, 0.0)
         state = act.copy()
-        out = charge @ W_out
+        out = charge @ output_projection
         out_n = out / (np.linalg.norm(out) + 1e-8)
         sims = out_n @ pat_norm.T
         if np.argmax(sims) == text_bytes[i+1]: correct += 1
@@ -150,7 +150,7 @@ def eval_accuracy_classic(mask, H, W_in, W_out, theta, decay, inj_dur, inj_dur_f
 
 
 def run_config(name, inj_dur, inj_dur_fixed, learnable,
-               bp, ALL_DATA, bigram, eval_seqs, H, W_in, W_out,
+               bp, ALL_DATA, bigram, eval_seqs, H, input_projection, output_projection,
                max_steps=800, n_workers=18, threshold=0.00005):
     mask = np.zeros((H, H), dtype=np.float32)
     theta = np.full(H, 0.03, dtype=np.float32)
@@ -171,7 +171,7 @@ def run_config(name, inj_dur, inj_dur_fixed, learnable,
     t0 = time.time()
 
     pool = Pool(n_workers, initializer=init_w,
-                initargs=(bp, ALL_DATA, 200, 2, W_in, W_out, bigram, inj_dur, inj_dur_fixed))
+                initargs=(bp, ALL_DATA, 200, 2, input_projection, output_projection, bigram, inj_dur, inj_dur_fixed))
     try:
         for step in range(1, max_steps+1):
             ptype = schedule[(step-1) % len(schedule)]
@@ -195,14 +195,14 @@ def run_config(name, inj_dur, inj_dur_fixed, learnable,
                 elif best_r['type'] == 'decay' and best_r['new_decay'] is not None:
                     decay = best_r['new_decay']
                     accepts['decay'] += 1
-                elif best_r['type'] == 'inj_dur' and best_r['new_inj'] is not None:
-                    inj_dur = best_r['new_inj']
+                elif best_r['type'] == 'inj_dur' and best_r['neinput_projectionj'] is not None:
+                    inj_dur = best_r['neinput_projectionj']
                     accepts['inj_dur'] += 1
 
             if step % 100 == 0:
                 elapsed = time.time() - t0
                 edges = int(np.count_nonzero(mask))
-                ea = np.mean([eval_accuracy_classic(mask, H, W_in, W_out, theta, decay,
+                ea = np.mean([eval_accuracy_classic(mask, H, input_projection, output_projection, theta, decay,
                               inj_dur, inj_dur_fixed, s, bp) for s in eval_seqs])
                 acc_history.append((step, ea))
                 quality = ea / max(edges, 1) * 100
@@ -222,7 +222,7 @@ def run_config(name, inj_dur, inj_dur_fixed, learnable,
         pool.terminate(); pool.join()
 
     edges = int(np.count_nonzero(mask))
-    ea = np.mean([eval_accuracy_classic(mask, H, W_in, W_out, theta, decay,
+    ea = np.mean([eval_accuracy_classic(mask, H, input_projection, output_projection, theta, decay,
                   inj_dur, inj_dur_fixed, s, bp) for s in eval_seqs])
     elapsed = time.time() - t0
     quality = ea / max(edges, 1) * 100
@@ -258,37 +258,37 @@ if __name__ == "__main__":
 
     random.seed(42); np.random.seed(42)
     ref = SelfWiringGraph(IO)
-    W_in = ref.W_in / ref.INJ_SCALE * 1.0
-    W_out = ref.W_out / ref.INJ_SCALE * 1.0
+    input_projection = ref.input_projection / ref.INJ_SCALE * 1.0
+    output_projection = ref.output_projection / ref.INJ_SCALE * 1.0
 
     results = []
 
     # A: Fix 1 tick (current baseline)
     results.append(run_config("FIX dur=1", None, 1, False,
-                              bp, ALL_DATA, bigram, eval_seqs, H, W_in, W_out))
+                              bp, ALL_DATA, bigram, eval_seqs, H, input_projection, output_projection))
 
     # B: Fix 2 ticks
     results.append(run_config("FIX dur=2", None, 2, False,
-                              bp, ALL_DATA, bigram, eval_seqs, H, W_in, W_out))
+                              bp, ALL_DATA, bigram, eval_seqs, H, input_projection, output_projection))
 
     # C: Fix 4 ticks
     results.append(run_config("FIX dur=4", None, 4, False,
-                              bp, ALL_DATA, bigram, eval_seqs, H, W_in, W_out))
+                              bp, ALL_DATA, bigram, eval_seqs, H, input_projection, output_projection))
 
     # D: Fix 8 ticks (all ticks get input)
     results.append(run_config("FIX dur=8", None, 8, False,
-                              bp, ALL_DATA, bigram, eval_seqs, H, W_in, W_out))
+                              bp, ALL_DATA, bigram, eval_seqs, H, input_projection, output_projection))
 
     # E: Learnable init=1
     results.append(run_config("LEARN init=1",
                               np.full(H, 1, dtype=np.int32), 1, True,
-                              bp, ALL_DATA, bigram, eval_seqs, H, W_in, W_out))
+                              bp, ALL_DATA, bigram, eval_seqs, H, input_projection, output_projection))
 
     # F: Learnable init=random [1,8]
     rng_f = np.random.RandomState(55)
     results.append(run_config("LEARN init=rand",
                               rng_f.randint(1, 9, size=H).astype(np.int32), 1, True,
-                              bp, ALL_DATA, bigram, eval_seqs, H, W_in, W_out))
+                              bp, ALL_DATA, bigram, eval_seqs, H, input_projection, output_projection))
 
     print(f"\n{'='*75}")
     print(f"  SUMMARY -- INJECTION DURATION (8t, bigram 2seq, ReLU, decay [.08,.24])")

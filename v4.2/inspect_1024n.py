@@ -8,7 +8,7 @@ IO = 256; H = IO * 4
 SelfWiringGraph.NV_RATIO = 4
 np.random.seed(42)
 net = SelfWiringGraph(IO)
-W_in = net.W_in; W_out = net.W_out
+input_projection = net.input_projection; output_projection = net.output_projection
 
 CKPT_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "checkpoints")
 ckpts = sorted(glob.glob(os.path.join(CKPT_DIR, "english_1024n_step*.npz")),
@@ -95,11 +95,11 @@ for r, c in zip(rows, cols):
         reciprocal += 1
 print(f"  Reciprocal pairs (A->B AND B->A): {reciprocal//2}")
 
-# W_in sensitivity: which neurons get the strongest input signal?
-w_in_norm = np.linalg.norm(W_in, axis=0)  # per neuron input strength
-print(f"\n--- INPUT SENSITIVITY (W_in norm per neuron) ---")
-print(f"  Mean={w_in_norm.mean():.3f}, Std={w_in_norm.std():.3f}")
-top_input = np.argsort(w_in_norm)[-10:][::-1]
+# input_projection sensitivity: which neurons get the strongest input signal?
+input_projection_norm = np.linalg.norm(input_projection, axis=0)  # per neuron input strength
+print(f"\n--- INPUT SENSITIVITY (input_projection norm per neuron) ---")
+print(f"  Mean={input_projection_norm.mean():.3f}, Std={input_projection_norm.std():.3f}")
+top_input = np.argsort(input_projection_norm)[-10:][::-1]
 print(f"  Top 10 input-sensitive neurons: {top_input}")
 print(f"  Are they hubs? Overlap with top20 hubs: {len(set(top_input) & set(hubs))}/10")
 
