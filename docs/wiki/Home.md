@@ -44,7 +44,9 @@ INSTNCT core anatomy at a glance:
 
 > In a stable loop, structure emerges.
 
-VRAXION is pursuing a stronger long-horizon goal than model efficiency alone: engineered machine consciousness framed as recursive verification, self-checking, and self-refinement that can be instrumented rather than treated as a black box.
+VRAXION exists to advance machine consciousness as an engineering reality, and to ensure that the underlying mechanisms can endure beyond any single institution, deployment, or era.
+
+In public technical terms, that long-horizon goal is framed as recursive verification, self-checking, and self-refinement that can be instrumented rather than treated as a black box.
 
 This is an ambition and a research direction, not a claim of achieved sentience. The active public standard remains the same: architecture claims, evidence claims, and shipped code must stay distinguishable.
 
