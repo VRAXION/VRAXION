@@ -1,20 +1,23 @@
-"""Sweep neuron count with ACTUAL parallel Pool training pattern.
-Runs 20 steps at each size, measures real step/s with 18 workers.
+"""
+Neuron Count Sweep — does more neurons help?
+==============================================
+Current: 1024 neurons (NV=4). Test: 512, 1024, 2048.
+All with int8 pipeline, sign+mag mask, 1000 steps.
 """
 import sys, os, time, random
 import numpy as np
 from multiprocessing import Pool
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "model"))
+from graph import SelfWiringGraph
 
-_bp = None
-_all_data = None
-_seq_len = 200
-_n_train = 5
+_bp = None; _all_data = None; _seq_len = 200; _n_train = 2
+_W_out_f = None; _bigram = None; _inj_table = None; _H = 1024
 
-def init_w(b, d, sl, nt):
-    global _bp, _all_data, _seq_len, _n_train
+def init_w(b, d, sl, nt, wof, bg, it, h):
+    global _bp, _all_data, _seq_len, _n_train, _W_out_f, _bigram, _inj_table, _H
     _bp, _all_data, _seq_len, _n_train = b, d, sl, nt
+    _W_out_f, _bigram, _inj_table, _H = wof, bg, it, h
 
 def make_bp(io_dim, seed=12345):
     rng = np.random.RandomState(seed)
@@ -22,148 +25,188 @@ def make_bp(io_dim, seed=12345):
     p /= np.linalg.norm(p, axis=1, keepdims=True)
     return p
 
-def _eval_on_seqs(mask, H, W_in, W_out, theta, decay, seqs):
-    rs, cs = np.where(mask != 0)
-    sp_vals = mask[rs, cs]
-    ret = 1.0 - decay
+def _eval_bigram(msign, mmag, H, seqs):
+    rs, cs = np.where(mmag > 0)
+    s = msign[rs, cs].astype(np.float32) * 2 - 1
+    sp_vals = s * mmag[rs, cs].astype(np.float32) / 128.0
+    pat_norm = _bp / (np.linalg.norm(_bp, axis=1, keepdims=True) + 1e-8)
+    ret = 217.0 / 256.0
     total = 0.0
     for text_bytes in seqs:
         state = np.zeros(H, dtype=np.float32)
         charge = np.zeros(H, dtype=np.float32)
-        correct = 0; prob_sum = 0.0; n = 0
+        seq_score = 0.0; n = 0
         for i in range(len(text_bytes)-1):
             act = state.copy()
-            for t in range(6):
-                if t == 0:
-                    act = act + _bp[text_bytes[i]] @ W_in
+            for t in range(8):
+                if t < 2:
+                    act = act + _inj_table[text_bytes[i]].astype(np.float32) / 128.0
                 raw = np.zeros(H, dtype=np.float32)
                 if len(rs):
                     np.add.at(raw, cs, act[rs] * sp_vals)
                 charge += raw; charge *= ret
-                act = np.maximum(charge - theta, 0.0)
-                charge = np.clip(charge, -1.0, 1.0)
+                act = np.maximum(charge, 0.0)
+                charge = np.maximum(charge, 0.0)
             state = act.copy()
-            pat_norm = _bp / (np.linalg.norm(_bp, axis=1, keepdims=True) + 1e-8)
-            out = charge @ W_out
+            out = charge @ _W_out_f
             out_n = out / (np.linalg.norm(out) + 1e-8)
             sims = out_n @ pat_norm.T
             e = np.exp(sims - sims.max())
-            probs = e / e.sum()
-            target = text_bytes[i+1]
-            if np.argmax(probs) == target: correct += 1
-            prob_sum += probs[target]; n += 1
-        acc = correct/n if n else 0
-        avg_p = prob_sum/n if n else 0
-        total += 0.5*acc + 0.5*avg_p
+            pred = e / e.sum()
+            target_dist = _bigram[text_bytes[i]]
+            cos = np.dot(pred, target_dist) / (np.linalg.norm(pred) * np.linalg.norm(target_dist) + 1e-8)
+            seq_score += cos
+            n += 1
+        total += seq_score / n if n else 0
     return total / len(seqs)
 
 def worker_eval(args):
-    mask_flat, theta, decay, H, W_in, W_out, seed, proposal_type = args
+    msign_flat, mmag_flat, H, seed, ptype = args
     rng = random.Random(seed)
     np_rng = np.random.RandomState(seed)
-    mask = mask_flat.reshape(H, H)
-    new_mask = mask
-    new_theta = theta
-    new_decay = decay
+    msign = msign_flat.reshape(H, H); mmag = mmag_flat.reshape(H, H)
+    new_s = msign.copy(); new_m = mmag.copy()
 
-    if proposal_type == 'add':
-        r = rng.randint(0, H-1)
-        c = rng.randint(0, H-1)
-        if r == c or mask[r, c] != 0:
-            return {'delta': -1e9, 'type': 'add'}
-        val = 0.6 if rng.random() < 0.5 else -0.6
-        new_mask = mask.copy()
-        new_mask[r, c] = val
+    if ptype == 'add':
+        r = rng.randint(0, H-1); c = rng.randint(0, H-1)
+        if r == c or mmag[r, c] > 0: return {'delta': -1e9, 'type': 'add'}
+        new_s[r, c] = rng.random() < 0.5
+        new_m[r, c] = rng.randint(1, 255)
+    elif ptype == 'flip':
+        rs, cs = np.where(mmag > 0)
+        if len(rs) == 0: return {'delta': -1e9, 'type': 'flip'}
+        idx = rng.randint(0, len(rs)-1)
+        new_s[rs[idx], cs[idx]] = not msign[rs[idx], cs[idx]]
+    elif ptype == 'mag_resample':
+        rs, cs = np.where(mmag > 0)
+        if len(rs) == 0: return {'delta': -1e9, 'type': 'mag_resample'}
+        idx = rng.randint(0, len(rs)-1)
+        new_m[rs[idx], cs[idx]] = rng.randint(1, 255)
 
-    data_len = len(_all_data)
     seqs = []
     for _ in range(_n_train):
-        off = np_rng.randint(0, data_len - _seq_len)
+        off = np_rng.randint(0, len(_all_data) - _seq_len)
         seqs.append(_all_data[off:off+_seq_len])
 
-    old_score = _eval_on_seqs(mask, H, W_in, W_out, theta, decay, seqs)
-    new_score = _eval_on_seqs(new_mask, H, W_in, W_out, new_theta, new_decay, seqs)
-    return {'delta': new_score - old_score, 'type': proposal_type}
+    old = _eval_bigram(msign, mmag, H, seqs)
+    new = _eval_bigram(new_s, new_m, H, seqs)
+    return {'delta': new - old, 'type': ptype,
+            'new_s': new_s.flatten() if new > old else None,
+            'new_m': new_m.flatten() if new > old else None}
+
+def eval_accuracy(msign, mmag, H, W_out_f, text_bytes, bp, inj_table):
+    pat_norm = bp / (np.linalg.norm(bp, axis=1, keepdims=True) + 1e-8)
+    rs, cs = np.where(mmag > 0)
+    s = msign[rs, cs].astype(np.float32) * 2 - 1
+    sp_vals = s * mmag[rs, cs].astype(np.float32) / 128.0
+    ret = 217.0 / 256.0
+    state = np.zeros(H, dtype=np.float32); charge = np.zeros(H, dtype=np.float32)
+    correct = 0; total = 0
+    for i in range(len(text_bytes)-1):
+        act = state.copy()
+        for t in range(8):
+            if t < 2: act = act + inj_table[text_bytes[i]].astype(np.float32) / 128.0
+            raw = np.zeros(H, dtype=np.float32)
+            if len(rs): np.add.at(raw, cs, act[rs] * sp_vals)
+            charge += raw; charge *= ret
+            act = np.maximum(charge, 0.0); charge = np.maximum(charge, 0.0)
+        state = act.copy()
+        out = charge @ W_out_f
+        out_n = out / (np.linalg.norm(out) + 1e-8)
+        sims = out_n @ pat_norm.T
+        if np.argmax(sims) == text_bytes[i+1]: correct += 1
+        total += 1
+    return correct/total if total else 0
+
+
+def run_config(name, nv_ratio, bp, ALL_DATA, bigram, eval_seqs,
+               max_steps=1000, n_workers=18, threshold=0.00005):
+    IO = 256; H = IO * nv_ratio
+
+    random.seed(42); np.random.seed(42)
+    SelfWiringGraph.NV_RATIO = nv_ratio
+    ref = SelfWiringGraph(IO)
+    W_in = ref.W_in / ref.INJ_SCALE * 1.0
+    W_out = ref.W_out / ref.INJ_SCALE * 1.0
+    inj_table = np.clip(bp @ W_in * 128, -128, 127).astype(np.int8)
+    W_out_int8 = np.clip(W_out * 128, -128, 127).astype(np.int8)
+    W_out_f = W_out_int8.astype(np.float32) / 128.0
+
+    msign = np.zeros((H, H), dtype=np.bool_)
+    mmag = np.zeros((H, H), dtype=np.uint8)
+    schedule = ['add', 'add', 'flip', 'mag_resample', 'add', 'add']
+
+    print(f"\n--- {name} (H={H}, NV={nv_ratio}) ---")
+    sys.stdout.flush()
+
+    accepts = {'add': 0, 'flip': 0, 'mag_resample': 0}
+    t0 = time.time()
+
+    pool = Pool(n_workers, initializer=init_w,
+                initargs=(bp, ALL_DATA, 200, 2, W_out_f, bigram, inj_table, H))
+    try:
+        for step in range(1, max_steps+1):
+            ptype = schedule[(step-1) % len(schedule)]
+            if ptype in ('flip', 'mag_resample') and (mmag > 0).sum() == 0: ptype = 'add'
+
+            args = [(msign.flatten(), mmag.flatten(), H,
+                     43000+step*50+w, ptype) for w in range(n_workers)]
+            results = pool.map(worker_eval, args)
+
+            best = max(results, key=lambda x: x['delta'])
+            if best['delta'] > threshold and best.get('new_s') is not None:
+                msign = best['new_s'].reshape(H, H)
+                mmag = best['new_m'].reshape(H, H)
+                accepts[best['type']] += 1
+
+            if step % 200 == 0:
+                elapsed = time.time() - t0
+                edges = int((mmag > 0).sum())
+                ea = np.mean([eval_accuracy(msign, mmag, H, W_out_f, s, bp, inj_table)
+                              for s in eval_seqs])
+                sps = step / elapsed
+                print(f"  [{step:4d}] acc={ea*100:.2f}% edges={edges} "
+                      f"A={accepts['add']}|F={accepts['flip']}|M={accepts['mag_resample']} "
+                      f"{sps:.1f} step/s {elapsed:.0f}s")
+                sys.stdout.flush()
+    finally:
+        pool.terminate(); pool.join()
+
+    edges = int((mmag > 0).sum())
+    ea = np.mean([eval_accuracy(msign, mmag, H, W_out_f, s, bp, inj_table)
+                  for s in eval_seqs])
+    elapsed = time.time() - t0
+    print(f"  FINAL: acc={ea*100:.2f}% edges={edges} {elapsed:.0f}s")
+    sys.stdout.flush()
+    return {'name': name, 'acc': ea, 'edges': edges, 'H': H, 'time': elapsed}
 
 
 if __name__ == "__main__":
     IO = 256
-    N_WORKERS = 18
-    N_STEPS = 20  # steps per config
-
     bp = make_bp(IO)
 
     DATA = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                         "..", "Diamond Code", "data", "traindat", "fineweb_edu.traindat")
     with open(DATA, 'rb') as f:
         ALL_DATA = np.frombuffer(f.read(), dtype=np.uint8)
+    print(f"Loaded {len(ALL_DATA)/1e6:.1f} MB text")
 
-    print("=" * 65)
-    print("Neuron Count Sweep (18 workers, Pool, 20 steps each)")
-    print("=" * 65)
-    print(f"{'Neurons':>8} {'H':>6} {'Edges':>7} {'step/s':>8} {'sec/step':>10} {'verdict':>10}")
+    bigram = np.load(os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                   "data", "bigram_table.npy"))
 
-    # Sweep: neurons = IO * multiplier
-    for mult in [3, 4, 5, 6, 8, 10, 12, 16]:
-        H = IO * mult
-        neurons = H
+    eval_rng = np.random.RandomState(9999)
+    eval_seqs = [ALL_DATA[off:off+200] for off in
+                 [eval_rng.randint(0, len(ALL_DATA)-200) for _ in range(10)]]
 
-        # Create network with some edges (simulate mid-training ~5K edges)
-        np.random.seed(42)
-        mask = np.zeros((H, H), dtype=np.float32)
-        n_target_edges = min(5000, H * H // 10)
-        placed = 0
-        while placed < n_target_edges:
-            r, c = np.random.randint(0, H), np.random.randint(0, H)
-            if r != c and mask[r, c] == 0:
-                mask[r, c] = 0.6 if np.random.random() < 0.5 else -0.6
-                placed += 1
+    results = []
 
-        theta = np.full(H, 0.1, dtype=np.float32)
-        decay = np.full(H, 0.15, dtype=np.float32)
+    results.append(run_config("512 neurons", 2, bp, ALL_DATA, bigram, eval_seqs))
+    results.append(run_config("1024 neurons", 4, bp, ALL_DATA, bigram, eval_seqs))
+    results.append(run_config("2048 neurons", 8, bp, ALL_DATA, bigram, eval_seqs))
 
-        proj_rng = np.random.RandomState(42)
-        W_in = proj_rng.randn(IO, H).astype(np.float32)
-        W_in /= np.linalg.norm(W_in, axis=0, keepdims=True)
-        W_in *= 3.0
-        W_out = proj_rng.randn(H, IO).astype(np.float32)
-        W_out /= np.linalg.norm(W_out, axis=0, keepdims=True)
-        W_out *= 3.0
-
-        pool = Pool(N_WORKERS, initializer=init_w, initargs=(bp, ALL_DATA, 200, 5))
-
-        # Warmup 1 step
-        mask_flat = mask.flatten()
-        args = [(mask_flat, theta.copy(), decay.copy(), H, W_in, W_out,
-                 1000+w, 'add') for w in range(N_WORKERS)]
-        pool.map(worker_eval, args)
-
-        # Benchmark N_STEPS
-        t0 = time.perf_counter()
-        for step in range(N_STEPS):
-            args = [(mask_flat, theta.copy(), decay.copy(), H, W_in, W_out,
-                     2000+step*50+w, 'add') for w in range(N_WORKERS)]
-            pool.map(worker_eval, args)
-        elapsed = time.perf_counter() - t0
-
-        pool.terminate()
-        pool.join()
-
-        sps = N_STEPS / elapsed
-        sec_per = elapsed / N_STEPS
-
-        if sps > 1.0:
-            verdict = "FAST"
-        elif sps > 0.5:
-            verdict = "OK"
-        elif sps > 0.2:
-            verdict = "SLOW"
-        else:
-            verdict = "TOO SLOW"
-
-        print(f"{neurons:>8} {H:>6} {n_target_edges:>7} {sps:>7.2f} {sec_per:>9.2f}s {verdict:>10}")
-        sys.stdout.flush()
-
-    print("\n" + "=" * 65)
-    print("FAST >1 step/s | OK 0.5-1 | SLOW 0.2-0.5 | TOO SLOW <0.2")
-    print("=" * 65)
+    print(f"\n{'='*55}")
+    print(f"  NEURON COUNT (1000 steps, int8 pipeline)")
+    print(f"{'='*55}")
+    for r in results:
+        print(f"  {r['name']:<15} {r['acc']*100:6.2f}% {r['edges']} edges H={r['H']} {r['time']:.0f}s")
+    sys.stdout.flush()
