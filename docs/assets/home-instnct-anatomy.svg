@@ -1,51 +1,51 @@
-<svg width="760" height="240" viewBox="0 0 760 240" fill="none" xmlns="http://www.w3.org/2000/svg">
+<svg width="760" height="236" viewBox="0 0 760 236" fill="none" xmlns="http://www.w3.org/2000/svg">
   <defs>
-    <linearGradient id="panelFill" x1="52" y1="54" x2="707" y2="184" gradientUnits="userSpaceOnUse">
+    <linearGradient id="panelFill" x1="32" y1="48" x2="728" y2="188" gradientUnits="userSpaceOnUse">
       <stop offset="0" stop-color="#0A1730" stop-opacity="0.96"/>
       <stop offset="1" stop-color="#12355F" stop-opacity="0.96"/>
     </linearGradient>
-    <linearGradient id="centerFill" x1="275" y1="44" x2="487" y2="192" gradientUnits="userSpaceOnUse">
+    <linearGradient id="centerFill" x1="280" y1="38" x2="480" y2="196" gradientUnits="userSpaceOnUse">
       <stop offset="0" stop-color="#173D8D"/>
       <stop offset="0.55" stop-color="#1E57D7"/>
       <stop offset="1" stop-color="#20D2FF"/>
     </linearGradient>
-    <linearGradient id="arrowStroke" x1="162" y1="118" x2="600" y2="118" gradientUnits="userSpaceOnUse">
+    <linearGradient id="arrowStroke" x1="200" y1="118" x2="560" y2="118" gradientUnits="userSpaceOnUse">
       <stop offset="0" stop-color="#79EAFF" stop-opacity="0.58"/>
       <stop offset="0.55" stop-color="#2F88FF" stop-opacity="0.48"/>
       <stop offset="1" stop-color="#F1FDFF" stop-opacity="0.54"/>
     </linearGradient>
-    <radialGradient id="coreGlow" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(380 118) rotate(90) scale(66 66)">
+    <radialGradient id="coreGlow" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(380 118) rotate(90) scale(58 58)">
       <stop offset="0" stop-color="#FFF2C8"/>
-      <stop offset="0.26" stop-color="#FFE5B8" stop-opacity="0.88"/>
-      <stop offset="0.58" stop-color="#76E6FF" stop-opacity="0.24"/>
+      <stop offset="0.26" stop-color="#FFE5B8" stop-opacity="0.86"/>
+      <stop offset="0.58" stop-color="#76E6FF" stop-opacity="0.20"/>
       <stop offset="1" stop-color="#76E6FF" stop-opacity="0"/>
     </radialGradient>
-    <radialGradient id="haloGlow" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(380 118) rotate(90) scale(100 100)">
-      <stop offset="0" stop-color="#78EAFF" stop-opacity="0.18"/>
-      <stop offset="0.65" stop-color="#2F88FF" stop-opacity="0.08"/>
+    <radialGradient id="haloGlow" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(380 118) rotate(90) scale(90 90)">
+      <stop offset="0" stop-color="#78EAFF" stop-opacity="0.14"/>
+      <stop offset="0.65" stop-color="#2F88FF" stop-opacity="0.06"/>
       <stop offset="1" stop-color="#2F88FF" stop-opacity="0"/>
     </radialGradient>
     <filter id="softGlow" x="-35%" y="-35%" width="170%" height="170%">
-      <feGaussianBlur stdDeviation="10"/>
+      <feGaussianBlur stdDeviation="9"/>
     </filter>
     <filter id="panelShadow" x="-20%" y="-20%" width="140%" height="140%">
       <feDropShadow dx="0" dy="8" stdDeviation="14" flood-color="#04111E" flood-opacity="0.32"/>
     </filter>
     <style>
-      .label {
+      .sideLabel {
         font-family: Arial, Helvetica, sans-serif;
-        font-size: 16px;
+        font-size: 15px;
         font-weight: 700;
-        letter-spacing: 0.01em;
+        letter-spacing: 0.008em;
         fill: #F8FCFF;
         text-anchor: middle;
         dominant-baseline: middle;
       }
-      .sub {
+      .sideSub {
         font-family: Arial, Helvetica, sans-serif;
-        font-size: 11px;
+        font-size: 10.2px;
         font-weight: 600;
-        letter-spacing: 0.03em;
+        letter-spacing: 0.018em;
         fill: #9DEFFF;
         text-anchor: middle;
         dominant-baseline: middle;
@@ -59,9 +59,18 @@
         text-anchor: middle;
         dominant-baseline: middle;
       }
+      .centerSub {
+        font-family: Arial, Helvetica, sans-serif;
+        font-size: 11.2px;
+        font-weight: 600;
+        letter-spacing: 0.022em;
+        fill: #B5F6FF;
+        text-anchor: middle;
+        dominant-baseline: middle;
+      }
       .dot {
         fill: #88EDFF;
-        opacity: 0.78;
+        opacity: 0.74;
       }
       .edge {
         stroke: #B5FCFF;
@@ -71,56 +80,61 @@
   </defs>
 
   <g opacity="0.88">
-    <path d="M180 118H278" stroke="url(#arrowStroke)" stroke-width="2.4" stroke-linecap="round"/>
-    <path d="M482 118H580" stroke="url(#arrowStroke)" stroke-width="2.4" stroke-linecap="round"/>
-    <path d="M274 118L265 112" stroke="url(#arrowStroke)" stroke-width="2.4" stroke-linecap="round"/>
-    <path d="M274 118L265 124" stroke="url(#arrowStroke)" stroke-width="2.4" stroke-linecap="round"/>
-    <path d="M576 118L567 112" stroke="url(#arrowStroke)" stroke-width="2.4" stroke-linecap="round"/>
-    <path d="M576 118L567 124" stroke="url(#arrowStroke)" stroke-width="2.4" stroke-linecap="round"/>
+    <path d="M208 118H280" stroke="url(#arrowStroke)" stroke-width="2.4" stroke-linecap="round"/>
+    <path d="M480 118H552" stroke="url(#arrowStroke)" stroke-width="2.4" stroke-linecap="round"/>
+    <path d="M276 118L267 112" stroke="url(#arrowStroke)" stroke-width="2.4" stroke-linecap="round"/>
+    <path d="M276 118L267 124" stroke="url(#arrowStroke)" stroke-width="2.4" stroke-linecap="round"/>
+    <path d="M548 118L539 112" stroke="url(#arrowStroke)" stroke-width="2.4" stroke-linecap="round"/>
+    <path d="M548 118L539 124" stroke="url(#arrowStroke)" stroke-width="2.4" stroke-linecap="round"/>
   </g>
 
   <g opacity="0.94">
-    <circle cx="380" cy="118" r="82" fill="url(#haloGlow)" filter="url(#softGlow)"/>
-    <circle cx="380" cy="118" r="42" fill="url(#coreGlow)"/>
-    <path d="M338 102C350 83 372 74 394 77C411 79 426 88 436 101" stroke="#8CEEFF" stroke-opacity="0.32" stroke-width="1.5" stroke-linecap="round"/>
-    <path d="M341 138C355 154 379 160 400 155C415 152 428 144 437 132" stroke="#2F88FF" stroke-opacity="0.34" stroke-width="1.5" stroke-linecap="round"/>
-    <circle class="dot" cx="337" cy="93" r="3.1"/>
-    <circle class="dot" cx="428" cy="84" r="2.9"/>
-    <circle class="dot" cx="441" cy="144" r="2.7"/>
-    <circle class="dot" cx="352" cy="157" r="2.6"/>
+    <circle cx="380" cy="118" r="74" fill="url(#haloGlow)" filter="url(#softGlow)"/>
+    <circle cx="380" cy="118" r="34" fill="url(#coreGlow)"/>
+    <path d="M342 91C354 79 372 73 390 74C406 75 421 82 432 94" stroke="#8CEEFF" stroke-opacity="0.28" stroke-width="1.4" stroke-linecap="round"/>
+    <path d="M343 144C355 154 373 159 390 158C405 157 419 151 430 141" stroke="#2F88FF" stroke-opacity="0.30" stroke-width="1.4" stroke-linecap="round"/>
+    <circle class="dot" cx="341" cy="83" r="2.8"/>
+    <circle class="dot" cx="422" cy="79" r="2.6"/>
+    <circle class="dot" cx="436" cy="147" r="2.4"/>
+    <circle class="dot" cx="348" cy="153" r="2.3"/>
   </g>
 
   <g filter="url(#panelShadow)">
-    <rect x="52" y="70" width="128" height="96" rx="24" fill="url(#panelFill)" class="edge"/>
-    <rect x="276" y="44" width="208" height="148" rx="32" fill="url(#centerFill)" stroke="#C1FCFF" stroke-opacity="0.58"/>
-    <rect x="580" y="70" width="128" height="96" rx="24" fill="url(#panelFill)" class="edge"/>
+    <rect x="32" y="64" width="176" height="108" rx="26" fill="url(#panelFill)" class="edge"/>
+    <rect x="280" y="40" width="200" height="156" rx="32" fill="url(#centerFill)" stroke="#C1FCFF" stroke-opacity="0.58"/>
+    <rect x="552" y="64" width="176" height="108" rx="26" fill="url(#panelFill)" class="edge"/>
   </g>
 
-  <g id="io-projections">
+  <g id="io-projections" data-label="Passive I/O Projections" data-role="input and output edges">
     <title>Passive I/O Projections</title>
-    <text class="label" x="116" y="102">Passive I/O</text>
-    <text class="label" x="116" y="124">Projections</text>
-    <text class="sub" x="116" y="146">input and output edges</text>
+    <text class="sideLabel" x="120" y="100">
+      <tspan x="120" dy="0">Passive I/O</tspan>
+      <tspan x="120" dy="20">Projections</tspan>
+    </text>
+    <text class="sideSub" x="120" y="146">input and output edges</text>
   </g>
 
-  <g id="hidden-graph">
+  <g id="hidden-graph" data-label="Self-Wiring Hidden Graph" data-role="persistent internal state">
     <title>Self-Wiring Hidden Graph</title>
-    <text class="centerLabel" x="380" y="102">Self-Wiring</text>
-    <text class="centerLabel" x="380" y="124">Hidden Graph</text>
-    <text class="sub" x="380" y="148">persistent internal state</text>
-    <circle cx="333" cy="118" r="4" fill="#F8FCFF"/>
-    <circle cx="356" cy="91" r="4.4" fill="#77E7FF"/>
-    <circle cx="357" cy="146" r="3.7" fill="#2F88FF"/>
-    <circle cx="390" cy="82" r="4.2" fill="#F8FCFF"/>
-    <circle cx="404" cy="118" r="4.8" fill="#77E7FF"/>
-    <circle cx="429" cy="104" r="3.8" fill="#2F88FF"/>
-    <circle cx="419" cy="146" r="4.1" fill="#F8FCFF"/>
+    <text class="centerLabel" x="380" y="98">
+      <tspan x="380" dy="0">Self-Wiring</tspan>
+      <tspan x="380" dy="24">Hidden Graph</tspan>
+    </text>
+    <text class="centerSub" x="380" y="153">persistent internal state</text>
+    <circle cx="322" cy="118" r="3.6" fill="#F8FCFF"/>
+    <circle cx="346" cy="92" r="3.8" fill="#77E7FF"/>
+    <circle cx="350" cy="145" r="3.2" fill="#2F88FF"/>
+    <circle cx="412" cy="90" r="3.7" fill="#F8FCFF"/>
+    <circle cx="438" cy="118" r="4.0" fill="#77E7FF"/>
+    <circle cx="414" cy="145" r="3.4" fill="#F8FCFF"/>
   </g>
 
-  <g id="training-method">
+  <g id="training-method" data-label="Mutation-Selection Training" data-role="not fixed-graph backprop">
     <title>Mutation-Selection Training</title>
-    <text class="label" x="644" y="102">Mutation-Selection</text>
-    <text class="label" x="644" y="124">Training</text>
-    <text class="sub" x="644" y="146">not fixed-graph backprop</text>
+    <text class="sideLabel" x="640" y="100">
+      <tspan x="640" dy="0">Mutation-Selection</tspan>
+      <tspan x="640" dy="20">Training</tspan>
+    </text>
+    <text class="sideSub" x="640" y="146">not fixed-graph backprop</text>
   </g>
 </svg>
