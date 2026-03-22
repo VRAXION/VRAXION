@@ -33,10 +33,12 @@ WIKI_FOOTER_SRC = WIKI_SOURCE_DIR / "_Footer.md"
 ENGLISH_RECIPE = ROOT / "v4.2" / "english_1024n_18w.py"
 HOME_ANATOMY_FILE = ROOT / "docs" / "assets" / "instnct-at-a-glance-core.png"
 HOME_ANATOMY_SOURCE_FILE = ROOT / "docs" / "assets" / "source" / "wiki-home-graphics.drawio"
+HOME_MISSION_ILLUSTRATION_FILE = ROOT / "docs" / "assets" / "long-horizon-mission.jpg"
 ARCH_TRAINING_LOOP_FILE = ROOT / "docs" / "assets" / "instnct-at-a-glance-training.png"
 HOME_LOGO_ASSET = "https://raw.githubusercontent.com/VRAXION/VRAXION/main/docs/assets/vraxion-instnct-spiral.png"
 HOME_STACK_MAP_ASSET = "https://raw.githubusercontent.com/VRAXION/VRAXION/main/docs/assets/vraxion-public-stack-map.png"
 HOME_ANATOMY_ASSET = "https://raw.githubusercontent.com/VRAXION/VRAXION/main/docs/assets/instnct-at-a-glance-core.png"
+HOME_MISSION_ILLUSTRATION_ASSET = "https://raw.githubusercontent.com/VRAXION/VRAXION/main/docs/assets/long-horizon-mission.jpg"
 ARCH_TRAINING_LOOP_ASSET = "https://raw.githubusercontent.com/VRAXION/VRAXION/main/docs/assets/instnct-at-a-glance-training.png"
 REMOVED_WIKI_SOURCE_FILES = [
     WIKI_GOVERNANCE_SRC,
@@ -302,6 +304,26 @@ def check_home_anatomy_graphic(errors: list[str]) -> None:
     for path in other_primary_pages:
         if HOME_ANATOMY_ASSET in read(path):
             fail(f"{path.name}: home-instnct-anatomy.svg should stay on Home only", errors)
+
+
+def check_home_mission_illustration(errors: list[str]) -> None:
+    home_text = read(WIKI_HOME_SRC)
+    if HOME_MISSION_ILLUSTRATION_ASSET not in home_text:
+        fail("Home.md: missing long-horizon mission illustration", errors)
+    if 'alt="Long-horizon mission illustration"' not in home_text:
+        fail("Home.md: missing long-horizon mission illustration alt text", errors)
+    if not HOME_MISSION_ILLUSTRATION_FILE.exists():
+        fail(f"Missing long-horizon mission asset: {HOME_MISSION_ILLUSTRATION_FILE}", errors)
+
+    other_primary_pages = [
+        WIKI_SWG_SRC,
+        WIKI_FINDINGS_SRC,
+        WIKI_ENGINEERING_SRC,
+        WIKI_RELEASE_NOTES_SRC,
+    ]
+    for path in other_primary_pages:
+        if HOME_MISSION_ILLUSTRATION_ASSET in read(path):
+            fail(f"{path.name}: long-horizon mission illustration should stay on Home only", errors)
 
 
 def check_architecture_training_graphic(errors: list[str]) -> None:
@@ -583,6 +605,7 @@ def main() -> int:
     check_primary_editorial_shape(errors)
     check_home_orientation_graphic(errors)
     check_home_anatomy_graphic(errors)
+    check_home_mission_illustration(errors)
     check_architecture_training_graphic(errors)
     check_meta_copy_boundaries(errors)
     check_removed_wiki_sources(errors)
