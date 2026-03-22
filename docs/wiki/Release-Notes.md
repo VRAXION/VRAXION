@@ -124,6 +124,9 @@ The run and evidence contract for VRAXION experiments: how runs are executed, va
 **LCX (Latent Context Exchange)**
 An earlier external-memory system from the Diamond Code era, not part of the current INSTNCT public line.
 
+**`v4`, `v22_ternary`, `v23_instnct_lm`**
+Older local/archive line names that may still appear in notes, screenshots, or local workspaces. Treat them as historical context, not as active tracked public lines on `main`.
+
 **Zoom gate / bottleneck projection / C19 activation / score margin**
 Historical Diamond Code-era terms that still appear in older issues, notes, or screenshots. Treat them as legacy context, not as current INSTNCT defaults.
 

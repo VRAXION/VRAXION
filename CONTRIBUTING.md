@@ -22,14 +22,11 @@ If a setting or training recipe is not in the canonical code path, do **not** de
 - `VALIDATED_FINDINGS.md`: canonical evidence summary for public-facing claims
 - `VERSION.json`: public release identity source of truth
 
-Historical code lines remain in-repo for reference only:
+Historical tracked area still present on `main`:
 
-- `Diamond Code/`
-- `v4/`
-- `v22_ternary/`
-- `v23_instnct_lm/`
+- `Diamond Code/` remains only as a historical dependency area for some `v4.2` runners that still reference its local data path.
 
-Treat them as historical or archive material, not as equal-current public lines.
+Treat older line names and local historical folders as timeline/archive context, not as equal-current public repo surfaces.
 
 Edit `docs/wiki/` when changing mirrored wiki content. Do not treat `VRAXION.wiki/` as hand-edited doctrine.
 

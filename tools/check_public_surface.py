@@ -6,6 +6,7 @@ import re
 import sys
 import ast
 import json
+import subprocess
 from pathlib import Path
 
 
@@ -17,6 +18,7 @@ CONTRIBUTING = ROOT / "CONTRIBUTING.md"
 FINDINGS = ROOT / "VALIDATED_FINDINGS.md"
 LANDING = ROOT / "docs" / "index.html"
 VERSION_FILE = ROOT / "VERSION.json"
+DIAMOND_TOKEN = ROOT / "Diamond Code" / ".influx_token"
 LANDING_STACK_MAP = ROOT / "docs" / "assets" / "vraxion-public-stack-map.png"
 ARCHIVE = ROOT / "ARCHIVE.md"
 PR_TEMPLATE = ROOT / ".github" / "pull_request_template.md"
@@ -159,6 +161,16 @@ def read(path: Path) -> str:
 
 def fail(msg: str, errors: list[str]) -> None:
     errors.append(msg)
+
+
+def is_tracked(relpath: str) -> bool:
+    result = subprocess.run(
+        ["git", "-C", str(ROOT), "ls-files", "--error-unmatch", relpath],
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+        check=False,
+    )
+    return result.returncode == 0
 
 
 def load_version_info(errors: list[str]) -> dict[str, str]:
@@ -521,12 +533,26 @@ def check_contributing(errors: list[str]) -> None:
         "VERSION.json",
         "CITATION.cff",
         "Diamond Code/",
-        "v4/",
-        "v22_ternary/",
-        "v23_instnct_lm/",
     ]:
         if term not in text:
             fail(f"CONTRIBUTING.md: missing governance term {term!r}", errors)
+
+
+def check_front_door_history_truth(errors: list[str]) -> None:
+    for path in [README, CONTRIBUTING]:
+        text = read(path)
+        if "Historical code lines remain in-repo for reference only" in text:
+            fail(f"{path.name}: should not claim retired historical lines remain tracked in-repo", errors)
+        for stale in ["`v4/`", "`v22_ternary/`", "`v23_instnct_lm/`"]:
+            if stale in text:
+                fail(f"{path.name}: stale historical path {stale} should not appear on front-door/governance surfaces", errors)
+
+
+def check_diamond_token_hygiene(errors: list[str]) -> None:
+    if is_tracked("Diamond Code/.influx_token"):
+        fail("Diamond Code/.influx_token: historical telemetry token must not remain tracked on main", errors)
+    if "**/.influx_token" not in read(ROOT / ".gitignore"):
+        fail(".gitignore: missing .influx_token ignore protection", errors)
 
 
 def check_ch01_stub(errors: list[str]) -> None:
@@ -567,6 +593,9 @@ def check_release_notes_page(errors: list[str]) -> None:
             fail(f"Release-Notes.md: beta-prep framing should not claim {banned!r}", errors)
     if "VERSION.json" not in text:
         fail("Release-Notes.md: missing VERSION.json source-of-truth reference", errors)
+    for term in ["`v4`, `v22_ternary`, `v23_instnct_lm`", "not as active tracked public lines on `main`"]:
+        if term not in text:
+            fail(f"Release-Notes.md: missing historical line-context term {term!r}", errors)
 
 
 def check_release_framing(version_info: dict[str, str], errors: list[str]) -> None:
@@ -715,6 +744,8 @@ def main() -> int:
     check_archive(errors)
     check_templates(errors)
     check_contributing(errors)
+    check_front_door_history_truth(errors)
+    check_diamond_token_hygiene(errors)
     check_release_framing(version_info, errors)
     check_ch01_stub(errors)
     check_release_notes_page(errors)

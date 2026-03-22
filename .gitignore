@@ -72,3 +72,6 @@ v4.2/*_probe_results.json
 v4.2/network_viz_data.json
 v4.2/english_1024n_gpu.py
 v4.2/test_thresh0.py
+
+# Local telemetry credentials
+**/.influx_token
