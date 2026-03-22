@@ -30,6 +30,8 @@ WIKI_GOVERNANCE_SRC = WIKI_SOURCE_DIR / "Governance.md"
 WIKI_SIDEBAR_SRC = WIKI_SOURCE_DIR / "_Sidebar.md"
 WIKI_FOOTER_SRC = WIKI_SOURCE_DIR / "_Footer.md"
 ENGLISH_RECIPE = ROOT / "v4.2" / "english_1024n_18w.py"
+HOME_LOGO_ASSET = "https://raw.githubusercontent.com/VRAXION/VRAXION/main/docs/assets/vraxion-instnct-spiral.png"
+HOME_STACK_MAP_ASSET = "https://raw.githubusercontent.com/VRAXION/VRAXION/main/docs/assets/home-public-stack.svg"
 REMOVED_WIKI_SOURCE_FILES = [
     WIKI_GOVERNANCE_SRC,
     WIKI_SOURCE_DIR / "Chapter-11---Roadmap.md",
@@ -231,6 +233,26 @@ def check_primary_editorial_shape(errors: list[str]) -> None:
 
     findings_text = read(WIKI_FINDINGS_SRC)
     require_details_section(WIKI_FINDINGS_SRC, findings_text, "Historical Context", errors)
+
+
+def check_home_orientation_graphic(errors: list[str]) -> None:
+    home_text = read(WIKI_HOME_SRC)
+    if HOME_LOGO_ASSET not in home_text:
+        fail("Home.md: top spiral logo reference must remain intact", errors)
+    if HOME_STACK_MAP_ASSET not in home_text:
+        fail("Home.md: missing home-public-stack.svg orientation graphic", errors)
+    if "Use this stack map to jump by intent." not in home_text:
+        fail("Home.md: missing lead-in line for the public stack map", errors)
+
+    other_primary_pages = [
+        WIKI_SWG_SRC,
+        WIKI_FINDINGS_SRC,
+        WIKI_ENGINEERING_SRC,
+        WIKI_RELEASE_NOTES_SRC,
+    ]
+    for path in other_primary_pages:
+        if HOME_STACK_MAP_ASSET in read(path):
+            fail(f"{path.name}: home-public-stack.svg should stay on Home only", errors)
 
 
 def check_meta_copy_boundaries(errors: list[str]) -> None:
@@ -463,6 +485,7 @@ def main() -> int:
     check_ch01_stub(errors)
     check_release_notes_page(errors)
     check_primary_editorial_shape(errors)
+    check_home_orientation_graphic(errors)
     check_meta_copy_boundaries(errors)
     check_removed_wiki_sources(errors)
     check_wiki_sources(errors)

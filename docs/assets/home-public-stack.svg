@@ -1,0 +1,111 @@
+<svg width="760" height="430" viewBox="0 0 760 430" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="linkStroke" x1="140" y1="60" x2="624" y2="370" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#85F2FF" stop-opacity="0.58"/>
+      <stop offset="0.5" stop-color="#2F88FF" stop-opacity="0.42"/>
+      <stop offset="1" stop-color="#EAFDFF" stop-opacity="0.5"/>
+    </linearGradient>
+    <radialGradient id="coreGlow" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(380 214) rotate(90) scale(98 98)">
+      <stop offset="0" stop-color="#FFF4CF"/>
+      <stop offset="0.28" stop-color="#FFE1B8" stop-opacity="0.92"/>
+      <stop offset="0.62" stop-color="#5DC5FF" stop-opacity="0.34"/>
+      <stop offset="1" stop-color="#5DC5FF" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="haloGlow" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(380 214) rotate(90) scale(154 154)">
+      <stop offset="0" stop-color="#7BEAFF" stop-opacity="0.22"/>
+      <stop offset="0.6" stop-color="#267BFF" stop-opacity="0.12"/>
+      <stop offset="1" stop-color="#267BFF" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="homeFill" x1="295" y1="182" x2="465" y2="246" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#123B7A"/>
+      <stop offset="0.52" stop-color="#1854C8"/>
+      <stop offset="1" stop-color="#1DCBFF"/>
+    </linearGradient>
+    <linearGradient id="nodeFill" x1="100" y1="70" x2="652" y2="338" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#0A1733" stop-opacity="0.9"/>
+      <stop offset="1" stop-color="#12315E" stop-opacity="0.9"/>
+    </linearGradient>
+    <filter id="softGlow" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur stdDeviation="15"/>
+    </filter>
+    <filter id="nodeShadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="10" stdDeviation="18" flood-color="#05111F" flood-opacity="0.34"/>
+    </filter>
+    <style>
+      .label {
+        font-family: Arial, Helvetica, sans-serif;
+        font-size: 22px;
+        font-weight: 700;
+        letter-spacing: 0.02em;
+        fill: #F8FCFF;
+        text-anchor: middle;
+        dominant-baseline: middle;
+      }
+      .label-sm {
+        font-family: Arial, Helvetica, sans-serif;
+        font-size: 19px;
+        font-weight: 650;
+        letter-spacing: 0.015em;
+        fill: #EAF8FF;
+        text-anchor: middle;
+        dominant-baseline: middle;
+      }
+      .subtle {
+        fill: #8FEFFF;
+        opacity: 0.65;
+      }
+    </style>
+  </defs>
+
+  <g opacity="0.82">
+    <path d="M196 110C240 132 274 171 286 214C298 257 286 304 252 334" stroke="url(#linkStroke)" stroke-width="1.5" stroke-linecap="round"/>
+    <path d="M564 110C518 133 486 171 474 214C462 257 474 299 508 334" stroke="url(#linkStroke)" stroke-width="1.5" stroke-linecap="round"/>
+    <path d="M236 94C292 132 324 163 336 214" stroke="url(#linkStroke)" stroke-width="2" stroke-linecap="round"/>
+    <path d="M524 94C469 132 437 163 424 214" stroke="url(#linkStroke)" stroke-width="2" stroke-linecap="round"/>
+    <path d="M236 336C292 298 324 267 336 216" stroke="url(#linkStroke)" stroke-width="2" stroke-linecap="round"/>
+    <path d="M524 336C469 298 437 267 424 216" stroke="url(#linkStroke)" stroke-width="2" stroke-linecap="round"/>
+  </g>
+
+  <g opacity="0.95">
+    <circle cx="380" cy="214" r="124" fill="url(#haloGlow)" filter="url(#softGlow)"/>
+    <circle cx="380" cy="214" r="70" fill="url(#coreGlow)"/>
+    <path d="M300 194C325 152 379 130 429 144C463 154 491 179 503 214" stroke="#72EDFF" stroke-opacity="0.4" stroke-width="1.8" stroke-linecap="round"/>
+    <path d="M310 244C338 277 389 289 431 276C459 267 484 247 497 219" stroke="#2F88FF" stroke-opacity="0.42" stroke-width="1.8" stroke-linecap="round"/>
+    <path d="M332 160C358 143 392 139 421 149" stroke="#F4FCFF" stroke-opacity="0.56" stroke-width="1.5" stroke-linecap="round"/>
+    <circle cx="317" cy="170" r="4.2" fill="#7CEAFF"/>
+    <circle cx="452" cy="153" r="4.8" fill="#F8FCFF"/>
+    <circle cx="477" cy="251" r="3.8" fill="#2F88FF"/>
+    <circle cx="326" cy="265" r="3.8" fill="#F8FCFF"/>
+    <circle cx="401" cy="128" r="2.8" fill="#7CEAFF"/>
+    <circle cx="291" cy="220" r="2.8" fill="#2F88FF"/>
+    <circle cx="467" cy="194" r="2.8" fill="#7CEAFF"/>
+  </g>
+
+  <g filter="url(#nodeShadow)">
+    <rect x="298" y="182" width="164" height="64" rx="28" fill="url(#homeFill)" stroke="#B5FCFF" stroke-opacity="0.62"/>
+    <rect x="112" y="72" width="142" height="56" rx="24" fill="url(#nodeFill)" stroke="#72EDFF" stroke-opacity="0.34"/>
+    <rect x="508" y="72" width="164" height="56" rx="24" fill="url(#nodeFill)" stroke="#72EDFF" stroke-opacity="0.34"/>
+    <rect x="86" y="304" width="170" height="56" rx="24" fill="url(#nodeFill)" stroke="#72EDFF" stroke-opacity="0.34"/>
+    <rect x="502" y="304" width="148" height="56" rx="24" fill="url(#nodeFill)" stroke="#72EDFF" stroke-opacity="0.34"/>
+  </g>
+
+  <g>
+    <text class="label" x="380" y="214">Home</text>
+    <text class="label-sm" x="183" y="100">Timeline</text>
+    <text class="label-sm" x="590" y="100">Architecture</text>
+    <text class="label-sm" x="171" y="332">Engineering</text>
+    <text class="label-sm" x="576" y="332">Findings</text>
+  </g>
+
+  <g opacity="0.7">
+    <circle class="subtle" cx="132" cy="157" r="3.6"/>
+    <circle class="subtle" cx="197" cy="46" r="2.6"/>
+    <circle class="subtle" cx="265" cy="96" r="2.8"/>
+    <circle class="subtle" cx="631" cy="46" r="2.6"/>
+    <circle class="subtle" cx="687" cy="155" r="3.6"/>
+    <circle class="subtle" cx="673" cy="286" r="3.1"/>
+    <circle class="subtle" cx="640" cy="382" r="2.6"/>
+    <circle class="subtle" cx="164" cy="388" r="2.6"/>
+    <circle class="subtle" cx="92" cy="279" r="3.1"/>
+  </g>
+</svg>
