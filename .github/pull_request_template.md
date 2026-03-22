@@ -15,8 +15,8 @@ Commands run (or N/A):
 
 ```bash
 # example
-python -m compileall v4.2 tools
-python v4.2/tests/test_model.py
+python -m compileall instnct tools
+python instnct/tests/test_model.py
 python tools/check_public_surface.py
 ```
 

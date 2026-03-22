@@ -26,11 +26,11 @@ jobs:
 
       - name: Compile sanity
         run: |
-          python -m compileall v4.2 tools
+          python -m compileall instnct tools
 
       - name: Reference stress test
         run: |
-          python v4.2/tests/test_model.py
+          python instnct/tests/test_model.py
 
       - name: Public surface consistency
         run: |

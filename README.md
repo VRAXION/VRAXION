@@ -14,8 +14,8 @@ This repository is meant to be a credible front door for technical buyers and en
 
 - **Current canonical public release:** [`v4.2.0`](https://github.com/VRAXION/VRAXION/releases/tag/v4.2.0) (`stable`)
 - **Next public milestone:** preparation toward `v5.0.0 Public Beta`
-- **Internal code path:** [`v4.2/`](v4.2/) (repo path, not the public release label)
-- **Current mainline code path:** [`v4.2/model/graph.py`](v4.2/model/graph.py)
+- **Internal code path:** [`instnct/`](instnct/) (repo path, not the public release label)
+- **Current mainline code path:** [`instnct/model/graph.py`](instnct/model/graph.py)
 
 ## Why This Architecture Is Different
 
@@ -26,7 +26,7 @@ INSTNCT is built around a small set of unusual choices:
 - **Persistent internal state**: neurons keep charge and state across ticks instead of acting as one-shot activations.
 - **Mutation + selection**: training is done by graph edits and acceptance tests, not gradient descent through the graph.
 
-The canonical reference implementation is [`v4.2/model/graph.py`](v4.2/model/graph.py).
+The canonical reference implementation is [`instnct/model/graph.py`](instnct/model/graph.py).
 
 ## Status Taxonomy
 
@@ -50,9 +50,9 @@ Retired line names and older local folders belong in [Project Timeline](https://
 
 ### Current mainline
 
-- The live canonical path is [`v4.2/model/graph.py`](v4.2/model/graph.py).
+- The live canonical path is [`instnct/model/graph.py`](instnct/model/graph.py).
 - The stable reference is the NumPy self-wiring graph with passive I/O, a signed hidden edge mask, co-evolved per-neuron `theta` / `decay`, and nonnegative charge dynamics.
-- The current English recipe candidate on `main` is [`v4.2/english_1024n_18w.py`](v4.2/english_1024n_18w.py); it currently uses an `8`-tick triangle-derived `2 add / 1 flip / 5 decay` schedule, but it is still a candidate training script, not the canonical architecture default.
+- The current English recipe candidate on `main` is [`instnct/recipes/english_1024n_18w.py`](instnct/recipes/english_1024n_18w.py); it currently uses an `8`-tick triangle-derived `2 add / 1 flip / 5 decay` schedule, but it is still a candidate training script, not the canonical architecture default.
 - Recent English sweeps around low-theta training and signal scaling are **not** described here as baked defaults until they land in that code path.
 
 ### Evidence snapshot
@@ -84,8 +84,8 @@ python -m venv .venv
 # macOS/Linux: source .venv/bin/activate
 pip install -r requirements.txt
 
-python -m compileall v4.2 tools
-python v4.2/tests/test_model.py
+python -m compileall instnct tools
+python instnct/tests/test_model.py
 python tools/check_public_surface.py
 ```
 
@@ -98,8 +98,8 @@ These commands verify:
 ## Read Next
 
 - [`VALIDATED_FINDINGS.md`](VALIDATED_FINDINGS.md) — canonical evidence summary
-- [`v4.2/README.md`](v4.2/README.md) — architecture-line map and technical entry points
-- [VRAXION architecture page (INSTNCT)](https://github.com/VRAXION/VRAXION/wiki/SWG-v4.2-Architecture)
+- [`instnct/README.md`](instnct/README.md) — architecture-line map and technical entry points
+- [VRAXION architecture page (INSTNCT)](https://github.com/VRAXION/VRAXION/wiki/INSTNCT-Architecture)
 - [Issue #114](https://github.com/VRAXION/VRAXION/issues/114) — current next build target
 
 ## License

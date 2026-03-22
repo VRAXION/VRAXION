@@ -11,9 +11,9 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
-GRAPH = ROOT / "v4.2" / "model" / "graph.py"
+GRAPH = ROOT / "instnct" / "model" / "graph.py"
 README = ROOT / "README.md"
-V42_README = ROOT / "v4.2" / "README.md"
+V42_README = ROOT / "instnct" / "README.md"
 CONTRIBUTING = ROOT / "CONTRIBUTING.md"
 FINDINGS = ROOT / "VALIDATED_FINDINGS.md"
 LANDING = ROOT / "docs" / "index.html"
@@ -28,13 +28,13 @@ WIKI_FLOWCHART_SRC = WIKI_SOURCE_DIR / "AI-Logic-Flowchart.md"
 WIKI_HOME_SRC = WIKI_SOURCE_DIR / "Home.md"
 WIKI_CH01_SRC = WIKI_SOURCE_DIR / "Chapter-01---Vision-and-Scope.md"
 WIKI_RELEASE_NOTES_SRC = WIKI_SOURCE_DIR / "Release-Notes.md"
-WIKI_SWG_SRC = WIKI_SOURCE_DIR / "SWG-v4.2-Architecture.md"
+WIKI_SWG_SRC = WIKI_SOURCE_DIR / "INSTNCT-Architecture.md"
 WIKI_FINDINGS_SRC = WIKI_SOURCE_DIR / "Validated-Findings.md"
 WIKI_ENGINEERING_SRC = WIKI_SOURCE_DIR / "Engineering.md"
 WIKI_GOVERNANCE_SRC = WIKI_SOURCE_DIR / "Governance.md"
 WIKI_SIDEBAR_SRC = WIKI_SOURCE_DIR / "_Sidebar.md"
 WIKI_FOOTER_SRC = WIKI_SOURCE_DIR / "_Footer.md"
-ENGLISH_RECIPE = ROOT / "v4.2" / "english_1024n_18w.py"
+ENGLISH_RECIPE = ROOT / "instnct" / "recipes" / "english_1024n_18w.py"
 HOME_ANATOMY_FILE = ROOT / "docs" / "assets" / "instnct-at-a-glance-core.png"
 HOME_ANATOMY_SOURCE_FILE = ROOT / "docs" / "assets" / "source" / "wiki-home-graphics.drawio"
 HOME_MISSION_ILLUSTRATION_FILE = ROOT / "docs" / "assets" / "long-horizon-mission.jpg"
@@ -93,7 +93,7 @@ WIKI_MIRROR_MAP = {
     WIKI_HOME_SRC: WIKI_MIRROR_DIR / "Home.md",
     WIKI_CH01_SRC: WIKI_MIRROR_DIR / "Chapter-01---Vision-and-Scope.md",
     WIKI_RELEASE_NOTES_SRC: WIKI_MIRROR_DIR / "Release-Notes.md",
-    WIKI_SWG_SRC: WIKI_MIRROR_DIR / "SWG-v4.2-Architecture.md",
+    WIKI_SWG_SRC: WIKI_MIRROR_DIR / "INSTNCT-Architecture.md",
     WIKI_FINDINGS_SRC: WIKI_MIRROR_DIR / "Validated-Findings.md",
     WIKI_ENGINEERING_SRC: WIKI_MIRROR_DIR / "Engineering.md",
     WIKI_SIDEBAR_SRC: WIKI_MIRROR_DIR / "_Sidebar.md",
@@ -102,7 +102,7 @@ WIKI_MIRROR_MAP = {
 WIKI_HOME_LABEL = "VRAXION Home"
 WIKI_ARCH_LABEL = "INSTNCT Architecture"
 OLD_WIKI_ARCH_LABEL = "VRAXION Architecture (INSTNCT)"
-PRIMARY_NAV_TARGETS = ["Home", "SWG-v4.2-Architecture", "Validated-Findings", "Engineering", "Release-Notes"]
+PRIMARY_NAV_TARGETS = ["Home", "INSTNCT-Architecture", "Validated-Findings", "Engineering", "Release-Notes"]
 LANDING_CTA_LABELS = [
     "VRAXION Home",
     "INSTNCT Architecture",
@@ -132,7 +132,7 @@ FOOTER_ONLY_META_PHRASES = [
     "if the GitHub wiki render is incomplete",
 ]
 REQUIRED_LOCAL_LINK_TARGETS = {
-    README: ["VALIDATED_FINDINGS.md", "v4.2/README.md"],
+    README: ["VALIDATED_FINDINGS.md", "instnct/README.md"],
     V42_README: ["../VALIDATED_FINDINGS.md"],
 }
 BANNED_ANYWHERE = {
@@ -202,8 +202,8 @@ def load_version_info(errors: list[str]) -> dict[str, str]:
         fail("VERSION.json: next_milestone must be 'v5.0.0 Public Beta'", errors)
     if data.get("next_channel") != "preparation":
         fail("VERSION.json: next_channel must be 'preparation'", errors)
-    if data.get("internal_code_path") != "v4.2/":
-        fail("VERSION.json: internal_code_path must be 'v4.2/'", errors)
+    if data.get("internal_code_path") != "instnct/":
+        fail("VERSION.json: internal_code_path must be 'instnct/'", errors)
 
     return data
 
@@ -286,8 +286,8 @@ def check_landing(text: str, errors: list[str]) -> None:
         fail("docs/index.html: missing current release framing for v4.2.0", errors)
     if "v5.0.0 Public Beta" not in text:
         fail("docs/index.html: missing next milestone framing for v5.0.0 Public Beta", errors)
-    if "v4.2/" not in text:
-        fail("docs/index.html: missing internal code path framing for v4.2/", errors)
+    if "instnct/" not in text:
+        fail("docs/index.html: missing internal code path framing for instnct/", errors)
 
 
 def require_sections(path: Path, text: str, sections: list[str], errors: list[str]) -> None:
@@ -399,17 +399,17 @@ def check_home_mission_illustration(errors: list[str]) -> None:
 def check_architecture_training_graphic(errors: list[str]) -> None:
     swg_text = read(WIKI_SWG_SRC)
     if HOME_LOGO_ASSET not in swg_text:
-        fail("SWG-v4.2-Architecture.md: missing INSTNCT spiral logo", errors)
+        fail("INSTNCT-Architecture.md: missing INSTNCT spiral logo", errors)
     if 'alt="INSTNCT spiral logo"' not in swg_text:
-        fail("SWG-v4.2-Architecture.md: missing INSTNCT spiral logo alt text", errors)
+        fail("INSTNCT-Architecture.md: missing INSTNCT spiral logo alt text", errors)
     if HOME_HERO_ASSET in swg_text:
-        fail("SWG-v4.2-Architecture.md: Home front-door hero should stay on Home only", errors)
+        fail("INSTNCT-Architecture.md: Home front-door hero should stay on Home only", errors)
     if ARCH_TRAINING_LOOP_ASSET not in swg_text:
-        fail("SWG-v4.2-Architecture.md: missing instnct-at-a-glance-training.png training graphic", errors)
+        fail("INSTNCT-Architecture.md: missing instnct-at-a-glance-training.png training graphic", errors)
     if "Mutation-selection loop at a glance:" not in swg_text:
-        fail("SWG-v4.2-Architecture.md: missing training-graphic lead-in line", errors)
+        fail("INSTNCT-Architecture.md: missing training-graphic lead-in line", errors)
     if "Mutation-selection training loop at a glance" not in swg_text:
-        fail("SWG-v4.2-Architecture.md: missing training-graphic alt text", errors)
+        fail("INSTNCT-Architecture.md: missing training-graphic alt text", errors)
     if not ARCH_TRAINING_LOOP_FILE.exists():
         fail(f"Missing architecture training asset: {ARCH_TRAINING_LOOP_FILE}", errors)
 
@@ -659,7 +659,7 @@ def check_wiki_sources(errors: list[str]) -> None:
             fail(f"_Sidebar.md: missing markdown navigation link target {href!r}", errors)
     if not re.search(rf"\[{re.escape(WIKI_HOME_LABEL)}\]\(Home\)", sidebar_text):
         fail(f"_Sidebar.md: missing primary navigation label {WIKI_HOME_LABEL!r}", errors)
-    if not re.search(rf"\[{re.escape(WIKI_ARCH_LABEL)}\]\(SWG-v4\.2-Architecture\)", sidebar_text):
+    if not re.search(rf"\[{re.escape(WIKI_ARCH_LABEL)}\]\(INSTNCT-Architecture\)", sidebar_text):
         fail(f"_Sidebar.md: missing primary navigation label {WIKI_ARCH_LABEL!r}", errors)
     if "Project Timeline" not in sidebar_text:
         fail("_Sidebar.md: missing primary navigation label 'Project Timeline'", errors)
@@ -696,7 +696,7 @@ def check_wiki_sources(errors: list[str]) -> None:
             fail(f"_Footer.md: missing footer markdown navigation link target {href!r}", errors)
     if not re.search(rf"\[{re.escape(WIKI_HOME_LABEL)}\]\(Home\)", footer_text):
         fail(f"_Footer.md: missing footer navigation label {WIKI_HOME_LABEL!r}", errors)
-    if not re.search(rf"\[{re.escape(WIKI_ARCH_LABEL)}\]\(SWG-v4\.2-Architecture\)", footer_text):
+    if not re.search(rf"\[{re.escape(WIKI_ARCH_LABEL)}\]\(INSTNCT-Architecture\)", footer_text):
         fail(f"_Footer.md: missing footer navigation label {WIKI_ARCH_LABEL!r}", errors)
     if "Project Timeline" not in footer_text:
         fail("_Footer.md: missing footer navigation label 'Project Timeline'", errors)

@@ -14,7 +14,7 @@ FILES = [
     "Home.md",
     "Chapter-01---Vision-and-Scope.md",
     "Release-Notes.md",
-    "SWG-v4.2-Architecture.md",
+    "INSTNCT-Architecture.md",
     "Validated-Findings.md",
     "Engineering.md",
     "_Sidebar.md",

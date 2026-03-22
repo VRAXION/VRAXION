@@ -11,23 +11,23 @@ This page is the single primary timeline and lookup surface for VRAXION. Use it 
 - Start with `Current Snapshot` if the question is what is live right now.
 - Use `Project Timeline` if the question is what changed and why it mattered.
 - Use `Open Questions and Promotion Gates` for the unresolved lines that still need proof before promotion.
-- Use [Validated Findings](Validated-Findings) for evidence and [INSTNCT Architecture](SWG-v4.2-Architecture) for the active technical line.
+- Use [Validated Findings](Validated-Findings) for evidence and [INSTNCT Architecture](INSTNCT-Architecture) for the active technical line.
 
 ## Current Snapshot
 
 - Version source of truth: [`VERSION.json`](https://github.com/VRAXION/VRAXION/blob/main/VERSION.json)
 - Current canonical public release: [`v4.2.0`](https://github.com/VRAXION/VRAXION/releases/tag/v4.2.0) (stable, published `2026-03-16`)
-- Internal code path remains [`v4.2/`](https://github.com/VRAXION/VRAXION/tree/main/v4.2); that repo path is not the public release label.
-- Current mainline code path: [`v4.2/model/graph.py`](https://github.com/VRAXION/VRAXION/blob/main/v4.2/model/graph.py)
+- Internal code path remains [`instnct/`](https://github.com/VRAXION/VRAXION/tree/main/instnct); that repo path is not the public release label.
+- Current mainline code path: [`instnct/model/graph.py`](https://github.com/VRAXION/VRAXION/blob/main/instnct/model/graph.py)
 - Current strongest schedule result in the public evidence layer: voltage medium leak at `22.11%` peak / `21.46%` plateau
 - Current strongest compact learnable schedule result: the 3-angle decision-tree schedule at `20.05%`
-- Current English recipe candidate on `main`: [`v4.2/english_1024n_18w.py`](https://github.com/VRAXION/VRAXION/blob/main/v4.2/english_1024n_18w.py) with an `8`-tick triangle-derived `2 add / 1 flip / 5 decay` schedule; it still uses the existing float signed edge representation.
+- Current English recipe candidate on `main`: [`instnct/recipes/english_1024n_18w.py`](https://github.com/VRAXION/VRAXION/blob/main/instnct/recipes/english_1024n_18w.py) with an `8`-tick triangle-derived `2 add / 1 flip / 5 decay` schedule; it still uses the existing float signed edge representation.
 - Current strongest edge-representation quality result: sign+mag + magnitude resample reached `18.69%` at `155` edges (`q=0.121`), but it remains validated evidence rather than the current recipe candidate.
 - Current next public build target: context-dependent task learning, with input-window injection, evaluation-path changes, and associative-memory probes under active evaluation
 
 ## What Matters Now
 
-- The active public architecture line is [INSTNCT Architecture](SWG-v4.2-Architecture); earlier architecture lines are historical context only.
+- The active public architecture line is [INSTNCT Architecture](INSTNCT-Architecture); earlier architecture lines are historical context only.
 - The Diamond Code era is preserved on archive branch `archive/diamond-code-era-20260322`; it is not part of active `main`.
 - The strongest schedule and mutation results live in [Validated Findings](Validated-Findings) until code on `main` actually adopts them.
 - The main unresolved public targets are context-dependent task learning, schedule-policy promotion, edge-representation promotion, and re-checking low-theta / low-scale against today’s stronger recipe stack.
@@ -53,9 +53,9 @@ This page is the single primary timeline and lookup surface for VRAXION. Use it 
 
 | Date | Turn | Why it mattered | Where to go now |
 |---|---|---|---|
-| Early 2026 | Diamond Code / LCX dominated the public architecture story | The earlier line centered on external memory, dreaming, observability, and Goldilocks-style probes before INSTNCT became the active center. | [INSTNCT Architecture](SWG-v4.2-Architecture) |
+| Early 2026 | Diamond Code / LCX dominated the public architecture story | The earlier line centered on external memory, dreaming, observability, and Goldilocks-style probes before INSTNCT became the active center. | [INSTNCT Architecture](INSTNCT-Architecture) |
 | 2026-02-17 | Engineering doctrine and contributor policy were split into stable homes | Reproducibility and provenance stopped depending on scattered theory leaves and lab notes. | [Engineering Protocol](Engineering), [`CONTRIBUTING.md`](https://github.com/VRAXION/VRAXION/blob/main/CONTRIBUTING.md) |
-| 2026-02-17 | Front-door terminology and architecture drift started getting cleaned out | Readers no longer needed a chain of legacy pages to understand the current system. | [VRAXION Home](Home), [INSTNCT Architecture](SWG-v4.2-Architecture) |
+| 2026-02-17 | Front-door terminology and architecture drift started getting cleaned out | Readers no longer needed a chain of legacy pages to understand the current system. | [VRAXION Home](Home), [INSTNCT Architecture](INSTNCT-Architecture) |
 | 2026-02-17 to 2026-02-22 | Evidence discipline hardened around findings instead of page-local claims | Schedule, depth, and mutation results moved into an explicit evidence layer instead of being implied as shipped defaults. | [Validated Findings](Validated-Findings) |
 | 2026-03-21 | Repo-tracked docs became canonical and the GitHub wiki became a mirror | Public truth stopped drifting between README, Pages, findings, and ad hoc wiki edits. | [VRAXION Home](Home), [`CONTRIBUTING.md`](https://github.com/VRAXION/VRAXION/blob/main/CONTRIBUTING.md) |
 | 2026-03-21 | Schedule-control work became the main live research frontier | `8` ticks, decay-aware scheduling, voltage/leak control, and compact learnable policies became the strongest present-tense recipe questions. | [Validated Findings](Validated-Findings) |
@@ -76,9 +76,9 @@ This page is the single primary timeline and lookup surface for VRAXION. Use it 
 | `Glossary` | Standalone terminology page | The useful live terms were short enough to live inline with the timeline and status surface. | `Key Terms` on this page |
 | `Legacy Vault` | Archive index / historical directory | The archive index role was more useful as a curated timeline than as a standalone vault page. | `Project Timeline` and this table |
 | `Hypotheses` | Open-question tracker | Active public open questions were already coupled to current status and promotion gates. | `Open Questions and Promotion Gates` on this page |
-| `Theory of Thought` | Legacy theory / hypothesis ledger | It no longer described the active public architecture or the live open-question surface. | [VRAXION Home](Home), [INSTNCT Architecture](SWG-v4.2-Architecture), and this page |
+| `Theory of Thought` | Legacy theory / hypothesis ledger | It no longer described the active public architecture or the live open-question surface. | [VRAXION Home](Home), [INSTNCT Architecture](INSTNCT-Architecture), and this page |
 | `Chapter 11 - Roadmap` | Public roadmap/status page | The project needed one timeline page, not a separate roadmap surface. | This page |
-| `Diamond Code v3 Architecture` | Earlier architecture hub | It no longer described the active VRAXION architecture line. | [INSTNCT Architecture](SWG-v4.2-Architecture) and this page |
+| `Diamond Code v3 Architecture` | Earlier architecture hub | It no longer described the active VRAXION architecture line. | [INSTNCT Architecture](INSTNCT-Architecture) and this page |
 | `Proven Findings` | Earlier evidence hub | The active evidence layer now lives in one explicit findings page for the INSTNCT-era stack. | [Validated Findings](Validated-Findings) |
 
 </details>
@@ -146,6 +146,6 @@ Older sprint bundles, prerelease notes, and retired page histories are now summa
 ## Read Next
 
 - [VRAXION Home](Home)
-- [INSTNCT Architecture](SWG-v4.2-Architecture)
+- [INSTNCT Architecture](INSTNCT-Architecture)
 - [Validated Findings](Validated-Findings)
 - [Engineering Protocol](Engineering)

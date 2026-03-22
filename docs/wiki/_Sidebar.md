@@ -3,7 +3,7 @@
 ## Primary
 
 - [VRAXION Home](Home)
-- [INSTNCT Architecture](SWG-v4.2-Architecture)
+- [INSTNCT Architecture](INSTNCT-Architecture)
 - [Validated Findings](Validated-Findings)
 - [Engineering Protocol](Engineering)
 - [Project Timeline](Release-Notes)

@@ -6,10 +6,10 @@ This repository keeps the default branch intentionally small.
 
 Only the active self-wiring graph line belongs on `main`:
 
-- `v4.2/model/graph.py`
-- `v4.2/model/graph_v3.c`
-- `v4.2/lib/`
-- `v4.2/tests/` benchmark and stress harnesses that still support the current line
+- `instnct/model/graph.py`
+- `instnct/model/graph_v3.c`
+- `instnct/lib/`
+- `instnct/tests/` benchmark and stress harnesses that still support the current line
 - public documentation for the current self-wiring direction
 
 ## What does not stay on `main`

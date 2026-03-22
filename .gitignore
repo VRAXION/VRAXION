@@ -64,14 +64,17 @@ v4/data_test/
 *.drawio.bkp
 *.o
 
-# v4.2 local live/lab scratch artifacts
-v4.2/*_live.txt
-v4.2/*_live_data.json
-v4.2/*_chart_data.json
-v4.2/*_probe_results.json
-v4.2/network_viz_data.json
-v4.2/english_1024n_gpu.py
-v4.2/test_thresh0.py
+# instnct local live/lab scratch artifacts
+instnct/*_live.txt
+instnct/*_live_data.json
+instnct/*_chart_data.json
+instnct/*_probe_results.json
+instnct/network_viz_data.json
+instnct/network_*.html
+instnct/training_live.html
+instnct/overnight_log.json
+instnct/english_1024n_gpu.py
+instnct/test_thresh0.py
 
 # Local telemetry credentials
 **/.influx_token

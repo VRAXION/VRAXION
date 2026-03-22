@@ -71,6 +71,6 @@ Use those labels consistently across the repo front door, the architecture page,
 ## Read Next
 
 - [VRAXION Home](Home)
-- [INSTNCT Architecture](SWG-v4.2-Architecture)
+- [INSTNCT Architecture](INSTNCT-Architecture)
 - [Validated Findings](Validated-Findings)
 - [Project Timeline](Release-Notes)

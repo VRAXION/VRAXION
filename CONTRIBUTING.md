@@ -14,9 +14,9 @@ If a setting or training recipe is not in the canonical code path, do **not** de
 
 ## Repo Map
 
-- `v4.2/model/`: self-wiring graph implementations
-- `v4.2/lib/`: shared scoring, data, and logging helpers
-- `v4.2/tests/`: stress tests, sweeps, probes, and benchmark scripts
+- `instnct/model/`: self-wiring graph implementations
+- `instnct/lib/`: shared scoring, data, and logging helpers
+- `instnct/tests/`: stress tests, sweeps, probes, and benchmark scripts
 - `docs/`: GitHub Pages landing page
 - `docs/wiki/`: canonical source files for mirrored wiki pages
 - `VALIDATED_FINDINGS.md`: canonical evidence summary for public-facing claims
@@ -63,10 +63,10 @@ Versioning and provenance:
 
 ## Where To Put Things
 
-- Core model changes: `v4.2/model/`
-- Shared training helpers: `v4.2/lib/`
-- Local corpora for the active line: `v4.2/data/traindat/` (`.traindat` stays local-only and ignored)
-- CPU and GPU experiments: `v4.2/tests/`
+- Core model changes: `instnct/model/`
+- Shared training helpers: `instnct/lib/`
+- Local corpora for the active line: `instnct/data/traindat/` (`.traindat` stays local-only and ignored)
+- CPU and GPU experiments: `instnct/tests/`
 - Public-facing repo text: root docs plus `docs/`
 
 ## Pull Request Requirements
@@ -89,8 +89,8 @@ Guardrails:
 Recommended verification commands:
 
 ```bash
-python -m compileall v4.2 tools
-python v4.2/tests/test_model.py
+python -m compileall instnct tools
+python instnct/tests/test_model.py
 python tools/check_public_surface.py
 ```
 

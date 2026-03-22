@@ -8,8 +8,8 @@ Repo-tracked docs are canonical. The GitHub wiki is treated as a mirrored second
 
 ## What Matters Most Right Now
 
-- **Current mainline:** [`v4.2/model/graph.py`](v4.2/model/graph.py) still ships `THRESHOLD = 0.5`, `INJ_SCALE = 3.0`, `DRIVE = 0.6`, plus co-evolved per-neuron `theta` / `decay` and nonnegative charge dynamics.
-- **Current recipe candidate on `main`:** [`v4.2/english_1024n_18w.py`](v4.2/english_1024n_18w.py) now uses `8` ticks with a triangle-derived `2 add / 1 flip / 5 decay` schedule; it still uses the existing float signed edge mask.
+- **Current mainline:** [`instnct/model/graph.py`](instnct/model/graph.py) still ships `THRESHOLD = 0.5`, `INJ_SCALE = 3.0`, `DRIVE = 0.6`, plus co-evolved per-neuron `theta` / `decay` and nonnegative charge dynamics.
+- **Current recipe candidate on `main`:** [`instnct/recipes/english_1024n_18w.py`](instnct/recipes/english_1024n_18w.py) now uses `8` ticks with a triangle-derived `2 add / 1 flip / 5 decay` schedule; it still uses the existing float signed edge mask.
 - **Strongest schedule result so far:** voltage medium leak reached `22.11%` peak / `21.46%` plateau.
 - **Best compact learnable control policy so far:** the 3-angle decision-tree schedule reached `20.05%` at `156` edges.
 - **Best edge-representation quality result so far:** sign+mag + magnitude resample reached `18.69%` at `155` edges (`q=0.121`), but it is not promoted into the current recipe candidate or `graph.py` defaults.
@@ -24,7 +24,7 @@ Repo-tracked docs are canonical. The GitHub wiki is treated as a mirrored second
 
 ## Current Mainline
 
-The canonical code path for `main` is [`v4.2/model/graph.py`](v4.2/model/graph.py).
+The canonical code path for `main` is [`instnct/model/graph.py`](instnct/model/graph.py).
 
 Current mainline constants in that file:
 
@@ -36,7 +36,7 @@ Current mainline constants in that file:
 
 Anything that differs from those settings should be described as a **Validated finding** or **Experimental branch**, not as the live default.
 
-The current English recipe candidate on `main` is [`v4.2/english_1024n_18w.py`](v4.2/english_1024n_18w.py). It currently uses the triangle-derived `2 add / 1 flip / 5 decay` schedule with the older float signed edge mask. It is useful evidence, but it is not the canonical architecture default.
+The current English recipe candidate on `main` is [`instnct/recipes/english_1024n_18w.py`](instnct/recipes/english_1024n_18w.py). It currently uses the triangle-derived `2 add / 1 flip / 5 decay` schedule with the older float signed edge mask. It is useful evidence, but it is not the canonical architecture default.
 
 ## Evidence Table
 
@@ -68,5 +68,5 @@ Those historical findings are useful context, not current mainline claims.
 ## How To Read This Repo
 
 - If a result is in an issue but not in the canonical code path, treat it as a **Validated finding** or **Experimental branch**.
-- If a page claims a setting is a live mainline default, that claim should be verifiable in [`v4.2/model/graph.py`](v4.2/model/graph.py).
+- If a page claims a setting is a live mainline default, that claim should be verifiable in [`instnct/model/graph.py`](instnct/model/graph.py).
 - If code and narrative disagree, the code wins for “Current mainline,” and the narrative should be fixed.
