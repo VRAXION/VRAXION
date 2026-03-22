@@ -50,6 +50,12 @@ These findings are important, but none of them should be described as a shipped 
 - [`tests/benchmark_ab.py`](tests/benchmark_ab.py) — benchmark comparison harness
 - [`tests/gpu_experimental/`](tests/gpu_experimental/) — isolated GPU research branch notes and probes
 
+## Local Data Placement
+
+- Canonical local corpus home for active runners: [`data/traindat/`](data/traindat/)
+- Large `.traindat` corpora remain local-only and stay ignored by git
+- Active `v4.2` runners prefer `data/traindat/fineweb_edu.traindat` and only fall back to the old `Diamond Code` path during the transition
+
 ## Quick Verification
 
 ```bash

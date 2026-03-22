@@ -66,10 +66,9 @@ def worker_eval(args):
 if __name__ == "__main__":
     IO = 256; H = IO * 3
     bp = make_bp(IO)
-    DATA = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                        "..", "Diamond Code", "data", "traindat", "fineweb_edu.traindat")
-    with open(DATA, 'rb') as f:
-        raw = np.frombuffer(f.read(3000), dtype=np.uint8)
+    from lib.data import load_fineweb_bytes, resolve_fineweb_path
+    DATA = resolve_fineweb_path()
+    raw = load_fineweb_bytes(max_bytes=3000)
     train_seqs = [raw[i*80:(i+1)*80] for i in range(3)]
 
     net = SelfWiringGraph(IO)

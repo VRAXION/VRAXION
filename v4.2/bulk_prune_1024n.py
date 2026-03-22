@@ -33,10 +33,9 @@ net = SelfWiringGraph(IO)
 input_projection = net.input_projection; output_projection = net.output_projection
 
 # Load eval data
-DATA = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                    "..", "Diamond Code", "data", "traindat", "fineweb_edu.traindat")
-with open(DATA, 'rb') as f:
-    ALL_DATA = np.frombuffer(f.read(), dtype=np.uint8)
+from lib.data import load_fineweb_bytes, resolve_fineweb_path
+DATA = resolve_fineweb_path()
+ALL_DATA = load_fineweb_bytes()
 
 # Use more eval seqs for stable measurement
 eval_rng = np.random.RandomState(9999)

@@ -40,10 +40,9 @@ net = SelfWiringGraph(IO)
 input_projection = net.input_projection; output_projection = net.output_projection
 
 # Eval data — same seqs every time for consistency
-DATA = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                    "..", "Diamond Code", "data", "traindat", "fineweb_edu.traindat")
-with open(DATA, 'rb') as f:
-    ALL_DATA = np.frombuffer(f.read(), dtype=np.uint8)
+from lib.data import load_fineweb_bytes, resolve_fineweb_path
+DATA = resolve_fineweb_path()
+ALL_DATA = load_fineweb_bytes()
 
 N_EVAL_SEQS = 30  # 30 seqs × 199 pred = ~5970 predictions → 0.017% resolution
 eval_rng = np.random.RandomState(9999)

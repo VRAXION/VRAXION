@@ -239,9 +239,9 @@ if __name__ == "__main__":
     bp = make_bp(IO)
     BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
-    DATA = os.path.join(BASE_DIR, "..", "Diamond Code", "data", "traindat", "fineweb_edu.traindat")
-    with open(DATA, 'rb') as f:
-        ALL_DATA = np.frombuffer(f.read(), dtype=np.uint8)
+    from lib.data import load_fineweb_bytes, resolve_fineweb_path
+    DATA = resolve_fineweb_path()
+    ALL_DATA = load_fineweb_bytes()
     bigram = np.load(os.path.join(BASE_DIR, "data", "bigram_table.npy"))
 
     eval_rng = np.random.RandomState(9999)

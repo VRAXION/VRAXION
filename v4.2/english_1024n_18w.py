@@ -162,9 +162,9 @@ if __name__ == "__main__":
     BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
     # Load training data
-    DATA = os.path.join(BASE_DIR, "..", "Diamond Code", "data", "traindat", "fineweb_edu.traindat")
-    with open(DATA, 'rb') as f:
-        ALL_DATA = np.frombuffer(f.read(), dtype=np.uint8)
+    from lib.data import load_fineweb_bytes, resolve_fineweb_path
+    DATA = resolve_fineweb_path()
+    ALL_DATA = load_fineweb_bytes()
     print(f"Loaded {len(ALL_DATA)/1e6:.1f} MB text")
 
     # Load bigram table

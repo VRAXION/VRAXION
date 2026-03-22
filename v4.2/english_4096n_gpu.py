@@ -136,10 +136,9 @@ if __name__ == "__main__":
     bp_torch = torch.from_numpy(bp).to(DEVICE)
 
     # Load training data
-    DATA = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                        "..", "Diamond Code", "data", "traindat", "fineweb_edu.traindat")
-    with open(DATA, 'rb') as f:
-        ALL_DATA = np.frombuffer(f.read(), dtype=np.uint8)
+    from lib.data import load_fineweb_bytes, resolve_fineweb_path
+    DATA = resolve_fineweb_path()
+    ALL_DATA = load_fineweb_bytes()
     DATA_LEN = len(ALL_DATA)
     ALL_DATA_TORCH = torch.from_numpy(ALL_DATA.copy()).to(DEVICE)
     print(f"Loaded {DATA_LEN / 1e6:.1f} MB text")

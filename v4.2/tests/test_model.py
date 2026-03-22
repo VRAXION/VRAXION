@@ -1,14 +1,20 @@
 """
-Adversarial Stress Test — 14 probes for SelfWiringGraph
+Adversarial Stress Test — 19 probes for SelfWiringGraph
 =========================================================
 All probes must stay green or warning-only for the model to be considered valid.
 """
 
-import sys, os, tempfile
+import sys, os, subprocess, tempfile
+from pathlib import Path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
 import numpy as np
 import random
+from lib.data import (
+    fineweb_candidate_paths,
+    load_fineweb_bytes,
+    resolve_fineweb_path,
+)
 from model.graph import SelfWiringGraph, softmax
 
 SEED = 42
@@ -350,6 +356,77 @@ def main():
     except Exception as ex:
         r = result(FAIL, f"Crashed: {ex}")
     results.append(("Forced mutate API", r))
+
+    # PROBE 18: Fineweb resolver semantics
+    header(18, "Fineweb resolver semantics")
+    env_var = "VRAXION_TEST_FINEWEB_PATH"
+    old_env = os.environ.pop(env_var, None)
+    try:
+        with tempfile.TemporaryDirectory() as td:
+            repo_root = Path(td)
+            canonical, legacy = fineweb_candidate_paths(repo_root)
+            canonical_hint = str(canonical)
+
+            canonical.parent.mkdir(parents=True, exist_ok=True)
+            canonical.write_bytes(bytes([1, 2, 3, 4]))
+            resolved_canonical = resolve_fineweb_path(repo_root=repo_root, env_var=env_var)
+            sample = load_fineweb_bytes(max_bytes=2, repo_root=repo_root, env_var=env_var)
+
+            canonical.unlink()
+            legacy.parent.mkdir(parents=True, exist_ok=True)
+            legacy.write_bytes(bytes([5, 6, 7]))
+            resolved_legacy = resolve_fineweb_path(repo_root=repo_root, env_var=env_var)
+
+            missing_ok = False
+            legacy.unlink()
+            try:
+                resolve_fineweb_path(repo_root=repo_root, env_var=env_var)
+            except FileNotFoundError as ex:
+                missing_ok = canonical_hint in str(ex)
+
+            ok = (
+                resolved_canonical == canonical and
+                resolved_legacy == legacy and
+                sample.tolist() == [1, 2] and
+                missing_ok
+            )
+            r = result(PASS if ok else FAIL,
+                       f"canonical={resolved_canonical == canonical}, "
+                       f"legacy={resolved_legacy == legacy}, "
+                       f"sample={sample.tolist()}, missing_hint={missing_ok}")
+    except Exception as ex:
+        r = result(FAIL, f"Crashed: {ex}")
+    finally:
+        if old_env is not None:
+            os.environ[env_var] = old_env
+    results.append(("Fineweb resolver", r))
+
+    # PROBE 19: Active v4.2 tree must not hardcode Diamond Code corpus paths
+    header(19, "No hardcoded Diamond Code corpus paths in active v4.2")
+    repo_root = Path(__file__).resolve().parents[2]
+    tracked = subprocess.check_output(
+        ["git", "-C", str(repo_root), "ls-files", "v4.2"],
+        text=True,
+    ).splitlines()
+    forbidden_hits = []
+    for rel in tracked:
+        if not rel.endswith(".py"):
+            continue
+        if rel == "v4.2/lib/data.py":
+            continue
+        if rel == "v4.2/tests/test_model.py":
+            continue
+        if rel.startswith("v4.2/tests/archive/"):
+            continue
+        if rel.startswith("v4.2/tests/gpu_experimental/"):
+            continue
+        text = (repo_root / rel).read_text(encoding="utf-8")
+        if "Diamond Code/data/traindat" in text or "../Diamond Code" in text:
+            forbidden_hits.append(rel)
+    ok = not forbidden_hits
+    hit_text = ", ".join(forbidden_hits[:3]) if forbidden_hits else "none"
+    r = result(PASS if ok else FAIL, f"hardcoded hits: {hit_text}")
+    results.append(("No hardcoded Diamond path", r))
 
     # SUMMARY
     print(f"\n{'='*60}")

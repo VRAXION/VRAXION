@@ -4,7 +4,7 @@ INSTNCT Adaptive Schedule — learnable mutation weights
 Each mutation type gets an int4 weight (0-15).
 Schedule is built from weights: type appears weight times per cycle.
 
-Mutation types: add, remove, flip, mag_resample, ret
+Mutation types: add, flip, mag_resample, ret (remove is AUTO)
 Schedule mutation: pick random type, set weight to random(0-15).
 
 A/B: fixed schedule vs adaptive, 3000 steps, word pairs, LL eval, w=2.
@@ -88,12 +88,6 @@ def worker_eval(args):
             return {'delta': -1e9, 'type': ptype}
         new_s[r, c] = rng.random() < 0.5
         new_m[r, c] = rng.randint(1, 255)
-    elif ptype == 'remove':
-        rs, cs = np.where(mmag > 0)
-        if len(rs) == 0: return {'delta': -1e9, 'type': ptype}
-        idx = rng.randint(0, len(rs)-1)
-        new_m[rs[idx], cs[idx]] = 0
-        new_s[rs[idx], cs[idx]] = False
     elif ptype == 'flip':
         rs, cs = np.where(mmag > 0)
         if len(rs) == 0: return {'delta': -1e9, 'type': ptype}
@@ -121,6 +115,91 @@ def worker_eval(args):
             'new_s': new_s.flatten() if improved else None,
             'new_m': new_m.flatten() if improved else None,
             'new_ret': new_ret if improved else None}
+
+
+def compute_edge_alignment(msign, mmag, ret_int4, H, wof, bp, bigram, inj_table, eval_seqs):
+    """Score each edge by alignment with target. 1 forward pass."""
+    rs, cs = np.where(mmag > 0)
+    n = len(rs)
+    if n == 0: return np.array([]), rs, cs
+    s = msign[rs, cs].astype(np.float32) * 2 - 1
+    sp_vals = s * mmag[rs, cs].astype(np.float32) / 128.0
+    target_vecs = bigram @ bp
+    target_norms = target_vecs / (np.linalg.norm(target_vecs, axis=1, keepdims=True) + 1e-8)
+    w_align = wof @ target_norms.T
+    ret_vec = 1.0 - ret_int4.astype(np.float32) * 0.01
+    edge_scores = np.zeros(n, dtype=np.float64)
+    n_pos = 0
+    for text_bytes in eval_seqs:
+        state = np.zeros(H, dtype=np.float32)
+        charge = np.zeros(H, dtype=np.float32)
+        for i in range(len(text_bytes)-1):
+            act = state.copy()
+            inj = inj_table[text_bytes[i]].astype(np.float32) / 128.0
+            if i > 0: inj = inj + inj_table[text_bytes[i-1]].astype(np.float32) / 128.0 * 0.5
+            byte_align = w_align[:, text_bytes[i]]
+            for t in range(8):
+                if t < 2: act = act + inj
+                edge_act = act[rs] * sp_vals
+                edge_scores += edge_act * byte_align[cs]
+                raw = np.zeros(H, dtype=np.float32)
+                if n: np.add.at(raw, cs, edge_act)
+                charge += raw; charge *= ret_vec
+                act = np.maximum(charge, 0.0); charge = np.maximum(charge, 0.0)
+            state = act.copy()
+            n_pos += 1
+    if n_pos: edge_scores /= n_pos
+    return edge_scores, rs, cs
+
+
+def find_knee(scores):
+    """Find the knee: biggest gap in sorted scores. Returns cutoff index."""
+    if len(scores) < 3: return 0
+    sorted_s = np.sort(scores)
+    gaps = np.diff(sorted_s)
+    # Knee = biggest gap in bottom half (we want to cut the weak tail)
+    half = len(gaps) // 2
+    if half == 0: return 0
+    knee_idx = int(np.argmax(gaps[:half]))
+    return knee_idx + 1  # number of edges below the knee
+
+
+def soft_decay(msign, mmag, ret_int4, H, wof, bp, bigram, inj_table, eval_seqs):
+    """Remove bottom 10% edges by alignment score."""
+    scores, e_rs, e_cs = compute_edge_alignment(
+        msign, mmag, ret_int4, H, wof, bp, bigram, inj_table, eval_seqs)
+    if len(scores) < 10: return msign, mmag, 0
+    n_remove = max(1, len(scores) // 10)
+    worst_idx = np.argsort(scores)[:n_remove]
+    for idx in worst_idx:
+        mmag[e_rs[idx], e_cs[idx]] = 0
+        msign[e_rs[idx], e_cs[idx]] = False
+    return msign, mmag, n_remove
+
+
+def hard_prune(msign, mmag, ret_int4, H, wof, bp, bigram, inj_table, eval_seqs):
+    """Find knee in score distribution, kill everything below."""
+    scores, e_rs, e_cs = compute_edge_alignment(
+        msign, mmag, ret_int4, H, wof, bp, bigram, inj_table, eval_seqs)
+    if len(scores) < 5: return msign, mmag, 0, 0
+    # Remove harmful first
+    harmful = scores < 0
+    n_harmful = int(harmful.sum())
+    mmag[e_rs[harmful], e_cs[harmful]] = 0
+    msign[e_rs[harmful], e_cs[harmful]] = False
+    # Find knee in remaining
+    keep = ~harmful
+    if keep.sum() < 3: return msign, mmag, n_harmful, 0
+    kept_scores = scores[keep]
+    kept_rs = e_rs[keep]; kept_cs = e_cs[keep]
+    n_below_knee = find_knee(kept_scores)
+    # Kill below knee
+    if n_below_knee > 0:
+        weak_idx = np.argsort(kept_scores)[:n_below_knee]
+        for idx in weak_idx:
+            mmag[kept_rs[idx], kept_cs[idx]] = 0
+            msign[kept_rs[idx], kept_cs[idx]] = False
+    return msign, mmag, n_harmful, n_below_knee
 
 
 FACTS = [
@@ -177,7 +256,7 @@ def eval_facts(msign, mmag, ret_int4, H, wof, bp, it):
     return tc/ta if ta else 0
 
 
-MUT_TYPES = ['add', 'remove', 'flip', 'mag', 'ret']
+MUT_TYPES = ['add', 'flip', 'mag', 'ret']
 
 def build_schedule(weights):
     """Build schedule from int4 weights. Each type appears weight times."""
@@ -189,7 +268,7 @@ def build_schedule(weights):
     return schedule
 
 
-def run_config(name, adaptive, H, bp, inj_table, wof, ALL_DATA, n_steps, n_workers):
+def run_config(name, adaptive, H, bp, inj_table, wof, ALL_DATA, bigram, n_steps, n_workers):
     print(f"\n{'='*60}")
     print(f"  {name}")
     print(f"{'='*60}")
@@ -201,9 +280,9 @@ def run_config(name, adaptive, H, bp, inj_table, wof, ALL_DATA, n_steps, n_worke
 
     # Schedule weights: int4 per type
     if adaptive:
-        sched_weights = np.array([4, 0, 1, 1, 1], dtype=np.uint8)  # start: 4a/0r/1f/1m/1ret
+        sched_weights = np.array([4, 1, 1, 1], dtype=np.uint8)  # start: 4a/1f/1m/1ret
     else:
-        sched_weights = np.array([4, 0, 1, 1, 0], dtype=np.uint8)  # fixed: 4a/0r/1f/1m/0ret
+        sched_weights = np.array([4, 1, 1, 0], dtype=np.uint8)  # fixed: 4a/1f/1m/0ret
 
     schedule = build_schedule(sched_weights)
     accepts = {t: 0 for t in MUT_TYPES}
@@ -227,7 +306,7 @@ def run_config(name, adaptive, H, bp, inj_table, wof, ALL_DATA, n_steps, n_worke
                 accepts['sched'] += 1
 
             ptype = schedule[(step-1) % len(schedule)]
-            if ptype in ('flip', 'mag', 'remove') and (mmag > 0).sum() == 0:
+            if ptype in ('flip', 'mag') and (mmag > 0).sum() == 0:
                 ptype = 'add'
 
             args = [(msign.flatten(), mmag.flatten(), ret_int4.copy(), H,
@@ -242,13 +321,35 @@ def run_config(name, adaptive, H, bp, inj_table, wof, ALL_DATA, n_steps, n_worke
                     ret_int4 = best['new_ret']
                 accepts[best['type']] += 1
 
+            # AUTO DECAY: every 100 steps, kill bottom 10%
+            if step % 100 == 0 and (mmag > 0).sum() > 10:
+                eval_rng2 = np.random.RandomState(step)
+                decay_seqs = [ALL_DATA[off:off+120] for off in
+                              [eval_rng2.randint(0, len(ALL_DATA)-120) for _ in range(3)]]
+                msign, mmag, n_decayed = soft_decay(
+                    msign, mmag, ret_int4, H, wof, bp, bigram, inj_table, decay_seqs)
+                accepts['decay'] = accepts.get('decay', 0) + n_decayed
+
+            # HARD PRUNE: every 5000 steps, knee detection
+            if step % 5000 == 0 and (mmag > 0).sum() > 10:
+                eval_rng2 = np.random.RandomState(step + 99999)
+                prune_seqs = [ALL_DATA[off:off+120] for off in
+                              [eval_rng2.randint(0, len(ALL_DATA)-120) for _ in range(5)]]
+                msign, mmag, n_harm, n_knee = hard_prune(
+                    msign, mmag, ret_int4, H, wof, bp, bigram, inj_table, prune_seqs)
+                accepts['hard_prune'] = accepts.get('hard_prune', 0) + 1
+                edges_after = int((mmag > 0).sum())
+                print(f"  [HARD PRUNE @{step}] removed {n_harm} harmful + {n_knee} below knee = {n_harm+n_knee} total, {edges_after} remain")
+                sys.stdout.flush()
+
             if step % 500 == 0:
                 elapsed = time.time() - t0
                 edges = int((mmag > 0).sum())
                 overall = eval_facts(msign, mmag, ret_int4, H, wof, bp, inj_table)
-                w_str = '/'.join(f"{MUT_TYPES[i][0]}={sched_weights[i]}" for i in range(5))
+                decay_total = accepts.get('decay', 0)
+                w_str = '/'.join(f"{MUT_TYPES[i][0]}={sched_weights[i]}" for i in range(len(MUT_TYPES)))
                 acc_str = '/'.join(f"{t[0]}={accepts[t]}" for t in MUT_TYPES)
-                print(f"  [{step:4d}] answer={overall*100:.1f}% edges={edges} "
+                print(f"  [{step:4d}] answer={overall*100:.1f}% edges={edges} decayed={decay_total} "
                       f"weights=[{w_str}] accepts=[{acc_str}] {elapsed:.0f}s")
                 sys.stdout.flush()
     finally:
@@ -268,7 +369,7 @@ if __name__ == "__main__":
     lines = [f"{k}={v}\n" for k, v in FACTS]
     random.seed(42)
     corpus_text = ''
-    while len(corpus_text) < 80_000:
+    while len(corpus_text) < 50_000:
         random.shuffle(lines)
         corpus_text += ''.join(lines)
     ALL_DATA = np.frombuffer(corpus_text.encode('ascii'), dtype=np.uint8).copy()
@@ -282,23 +383,33 @@ if __name__ == "__main__":
     woi = np.clip(outp * 128, -128, 127).astype(np.int8)
     wof = woi.astype(np.float32) / 128.0
 
-    print(f"ADAPTIVE SCHEDULE TEST")
-    print(f"Types: {MUT_TYPES}")
-    print(f"A: fixed [4a/0r/1f/1m/0ret]")
-    print(f"B: adaptive (starts 4a/0r/1f/1m/1ret, mutates every 50 steps)")
+    # Bigram for alignment scoring
+    bigram = np.zeros((256, 256), dtype=np.float64)
+    for i in range(len(ALL_DATA) - 1):
+        bigram[ALL_DATA[i], ALL_DATA[i+1]] += 1
+    row_sums = bigram.sum(axis=1, keepdims=True)
+    row_sums[row_sums == 0] = 1
+    bigram = (bigram / row_sums).astype(np.float32)
+
+    print(f"ADAPTIVE SCHEDULE + AUTO DECAY/PRUNE")
+    print(f"Types: {MUT_TYPES} (remove is AUTO)")
+    print(f"Soft decay: bottom 10% every 100 steps")
+    print(f"Hard prune: knee detection every 5000 steps")
+    print(f"A: fixed [4a/1f/1m/0ret] + auto decay/prune")
+    print(f"B: adaptive (starts 4a/1f/1m/1ret) + auto decay/prune")
     print(f"{BUDGET} steps, LL eval, w=2, PNR, threshold=0.00005")
 
     results = []
-    results.append(run_config("A: fixed schedule", False, H, bp, inj_table, wof,
-                              ALL_DATA, BUDGET, N_WORKERS))
-    results.append(run_config("B: adaptive schedule", True, H, bp, inj_table, wof,
-                              ALL_DATA, BUDGET, N_WORKERS))
+    results.append(run_config("A: fixed + auto prune", False, H, bp, inj_table, wof,
+                              ALL_DATA, bigram, BUDGET, N_WORKERS))
+    results.append(run_config("B: adaptive + auto prune", True, H, bp, inj_table, wof,
+                              ALL_DATA, bigram, BUDGET, N_WORKERS))
 
     print(f"\n{'='*60}")
-    print(f"  ADAPTIVE SCHEDULE RESULTS")
+    print(f"  ADAPTIVE + AUTO PRUNE RESULTS")
     print(f"{'='*60}")
     for r in results:
-        w_str = '/'.join(f"{MUT_TYPES[i][0]}={r['weights'][i]}" for i in range(5))
+        w_str = '/'.join(f"{MUT_TYPES[i][0]}={r['weights'][i]}" for i in range(len(MUT_TYPES)))
         print(f"  {r['name']:<25} acc={r['acc']*100:.2f}% edges={r['edges']} "
               f"final_weights=[{w_str}] {r['time']:.0f}s")
     delta = (results[1]['acc'] - results[0]['acc']) * 100

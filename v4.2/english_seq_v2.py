@@ -71,14 +71,9 @@ def eval_accuracy(net, bp, text_bytes, ticks=6):
 
 
 def main():
-    DATA = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                        "..", "Diamond Code", "data", "traindat", "fineweb_edu.traindat")
-    if not os.path.exists(DATA):
-        DATA = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data", "alice.txt")
-
-    with open(DATA, "rb") as f:
-        raw = f.read(10000)
-    raw = np.frombuffer(raw, dtype=np.uint8)
+    from lib.data import load_fineweb_bytes, resolve_fineweb_path
+    DATA = resolve_fineweb_path()
+    raw = load_fineweb_bytes(max_bytes=10000)
 
     # 5 short train sequences, 2 eval sequences (non-overlapping)
     SEQ_LEN = 100

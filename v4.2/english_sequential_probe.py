@@ -162,10 +162,8 @@ def train_sequential(net, byte_patterns, train_bytes, eval_bytes,
 # ─── Main ─────────────────────────────────────────────────
 
 def main():
-    DATA = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                        "..", "Diamond Code", "data", "traindat", "fineweb_edu.traindat")
-    if not os.path.exists(DATA):
-        DATA = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data", "alice.txt")
+    from lib.data import resolve_fineweb_path
+    DATA = resolve_fineweb_path()
 
     # Short sequences for tractable eval (sequential is slow per-byte)
     print(f"Data: {DATA}")

@@ -3,6 +3,9 @@ Small corpus and bigram helpers for self-wiring graph toy evaluations.
 Lazy-loaded: the bigram distribution is computed on first access, not at import.
 """
 
+import os
+from pathlib import Path
+
 import numpy as np
 from collections import Counter
 
@@ -39,6 +42,60 @@ VOCAB = len(chars)
 
 # Lazy bigram cache
 _bigram_cache = {}
+
+FINEWEB_FILENAME = "fineweb_edu.traindat"
+REPO_ROOT = Path(__file__).resolve().parents[2]
+V42_ROOT = REPO_ROOT / "v4.2"
+CANONICAL_TRAINDAT_DIR = V42_ROOT / "data" / "traindat"
+CANONICAL_FINEWEB_PATH = CANONICAL_TRAINDAT_DIR / FINEWEB_FILENAME
+LEGACY_FINEWEB_PATH = REPO_ROOT / "Diamond Code" / "data" / "traindat" / FINEWEB_FILENAME
+FINEWEB_ENV_VAR = "VRAXION_FINEWEB_PATH"
+
+
+def fineweb_candidate_paths(repo_root: str | os.PathLike | None = None) -> list[Path]:
+    root = Path(repo_root).resolve() if repo_root is not None else REPO_ROOT
+    return [
+        root / "v4.2" / "data" / "traindat" / FINEWEB_FILENAME,
+        root / "Diamond Code" / "data" / "traindat" / FINEWEB_FILENAME,
+    ]
+
+
+def resolve_fineweb_path(
+    repo_root: str | os.PathLike | None = None,
+    env_var: str = FINEWEB_ENV_VAR,
+) -> Path:
+    override = os.environ.get(env_var)
+    if override:
+        override_path = Path(override).expanduser().resolve()
+        if override_path.exists():
+            return override_path
+        raise FileNotFoundError(
+            f"{env_var} points to a missing corpus file: {override_path}. "
+            f"Preferred canonical local path: {CANONICAL_FINEWEB_PATH}"
+        )
+
+    candidates = fineweb_candidate_paths(repo_root)
+    for candidate in candidates:
+        if candidate.exists():
+            return candidate
+
+    raise FileNotFoundError(
+        "Could not find fineweb_edu.traindat. "
+        f"Preferred canonical local path: {candidates[0]}. "
+        f"Legacy fallback checked: {candidates[1]}. "
+        f"Optional override: set {env_var} to the corpus path."
+    )
+
+
+def load_fineweb_bytes(
+    max_bytes: int | None = None,
+    repo_root: str | os.PathLike | None = None,
+    env_var: str = FINEWEB_ENV_VAR,
+) -> np.ndarray:
+    path = resolve_fineweb_path(repo_root=repo_root, env_var=env_var)
+    with path.open("rb") as handle:
+        raw = handle.read() if max_bytes is None else handle.read(max_bytes)
+    return np.frombuffer(raw, dtype=np.uint8)
 
 
 def compute_bigram_dist():

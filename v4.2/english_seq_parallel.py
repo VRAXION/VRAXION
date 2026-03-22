@@ -134,14 +134,9 @@ def eval_accuracy_stateless(mask, H, V, input_projection, output_projection, ret
 # ─── Main ────────────────────────────────────────────────
 
 def main():
-    DATA = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                        "..", "Diamond Code", "data", "traindat", "fineweb_edu.traindat")
-    if not os.path.exists(DATA):
-        DATA = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data", "alice.txt")
-
-    with open(DATA, "rb") as f:
-        raw = f.read(5000)
-    raw = np.frombuffer(raw, dtype=np.uint8)
+    from lib.data import load_fineweb_bytes, resolve_fineweb_path
+    DATA = resolve_fineweb_path()
+    raw = load_fineweb_bytes(max_bytes=5000)
 
     SEQ_LEN = 80
     train_seqs = [raw[i*SEQ_LEN:(i+1)*SEQ_LEN] for i in range(3)]

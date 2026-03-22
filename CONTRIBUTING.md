@@ -65,6 +65,7 @@ Versioning and provenance:
 
 - Core model changes: `v4.2/model/`
 - Shared training helpers: `v4.2/lib/`
+- Local corpora for the active line: `v4.2/data/traindat/` (`.traindat` stays local-only and ignored)
 - CPU and GPU experiments: `v4.2/tests/`
 - Public-facing repo text: root docs plus `docs/`
 
