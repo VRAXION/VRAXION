@@ -14,6 +14,9 @@ This is the lean technical reference for the public stack. Use [Pages](https://v
 
 ## At a Glance
 
+- **Current canonical public release:** [`v4.2.0`](https://github.com/VRAXION/VRAXION/releases/tag/v4.2.0) (`stable`)
+- **Next public milestone:** preparation toward `v5.0.0 Public Beta`
+- **Internal code path:** [`v4.2/`](https://github.com/VRAXION/VRAXION/tree/main/v4.2) (repo path, not the release label)
 - **Current mainline:** [`v4.2/model/graph.py`](https://github.com/VRAXION/VRAXION/blob/main/v4.2/model/graph.py) is the canonical shipped code path on `main`.
 - **Best validated evidence right now:** voltage medium leak remains the strongest schedule result at `22.11%` peak / `21.46%` plateau.
 - **Current next target:** context-dependent task learning is now the main active build target, especially windowed input injection and word-pair memory probes.
@@ -58,6 +61,9 @@ This is an ambition and a research direction, not a claim of achieved sentience.
 
 ## Current Mainline
 
+- Current canonical public release: [`v4.2.0`](https://github.com/VRAXION/VRAXION/releases/tag/v4.2.0)
+- Next public milestone: preparation toward `v5.0.0 Public Beta`
+- Internal code path: [`v4.2/`](https://github.com/VRAXION/VRAXION/tree/main/v4.2) (repo path, not the public release label)
 - Canonical code path: [`v4.2/model/graph.py`](https://github.com/VRAXION/VRAXION/blob/main/v4.2/model/graph.py)
 - Architecture line: `INSTNCT`
 - Current English recipe candidate on `main`: [`v4.2/english_1024n_18w.py`](https://github.com/VRAXION/VRAXION/blob/main/v4.2/english_1024n_18w.py) (`8` ticks, triangle-derived `2 add / 1 flip / 5 decay`)

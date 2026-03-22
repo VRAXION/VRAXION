@@ -15,6 +15,7 @@ This page is the single primary timeline and lookup surface for VRAXION. Use it 
 
 ## Current Snapshot
 
+- Version source of truth: [`VERSION.json`](https://github.com/VRAXION/VRAXION/blob/main/VERSION.json)
 - Current canonical public release: [`v4.2.0`](https://github.com/VRAXION/VRAXION/releases/tag/v4.2.0) (stable, published `2026-03-16`)
 - Internal code path remains [`v4.2/`](https://github.com/VRAXION/VRAXION/tree/main/v4.2); that repo path is not the public release label.
 - Current mainline code path: [`v4.2/model/graph.py`](https://github.com/VRAXION/VRAXION/blob/main/v4.2/model/graph.py)
@@ -36,13 +37,13 @@ This page is the single primary timeline and lookup surface for VRAXION. Use it 
 ### Already in place
 
 - [`v4.2.0`](https://github.com/VRAXION/VRAXION/releases/tag/v4.2.0) exists as the current latest stable GitHub release on `main`.
+- [`VERSION.json`](https://github.com/VRAXION/VRAXION/blob/main/VERSION.json) now anchors the public release identity in the repo-tracked source layer.
+- The README, Pages front door, and wiki Home surface now use the same explicit release framing for the current canon, the next milestone, and the internal code path.
 - CI already runs compile sanity, the reference stress test, public-surface checks, wiki mirror dry-run, and a tiny cyclic smoke test.
 - Contributor and safety posture already exist through [`CONTRIBUTING.md`](https://github.com/VRAXION/VRAXION/blob/main/CONTRIBUTING.md), [`CODE_OF_CONDUCT.md`](https://github.com/VRAXION/VRAXION/blob/main/CODE_OF_CONDUCT.md), [`LICENSE`](https://github.com/VRAXION/VRAXION/blob/main/LICENSE), [`COMMERCIAL_LICENSE.md`](https://github.com/VRAXION/VRAXION/blob/main/COMMERCIAL_LICENSE.md), [`SECURITY.md`](https://github.com/VRAXION/VRAXION/blob/main/SECURITY.md), [Discussions](https://github.com/VRAXION/VRAXION/discussions), and private security reporting.
 
 ### Still planned before Public Beta
 
-- Centralize public release identity in a repo-tracked version source instead of letting `v4.2` path naming carry public meaning.
-- Add clearer public release framing across the README, Pages, and wiki Home surface.
 - Tighten the newcomer path with a beta-grade quickstart and explicit known-limitations language.
 - Improve public intake so bug reports, usage questions, and security reports route cleanly under higher traffic.
 - Keep canonical code, validated evidence, and experimental work visibly separated as outside traffic increases.

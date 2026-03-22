@@ -20,6 +20,16 @@ If a setting or training recipe is not in the canonical code path, do **not** de
 - `docs/`: GitHub Pages landing page
 - `docs/wiki/`: canonical source files for mirrored wiki pages
 - `VALIDATED_FINDINGS.md`: canonical evidence summary for public-facing claims
+- `VERSION.json`: public release identity source of truth
+
+Historical code lines remain in-repo for reference only:
+
+- `Diamond Code/`
+- `v4/`
+- `v22_ternary/`
+- `v23_instnct_lm/`
+
+Treat them as historical or archive material, not as equal-current public lines.
 
 Edit `docs/wiki/` when changing mirrored wiki content. Do not treat `VRAXION.wiki/` as hand-edited doctrine.
 

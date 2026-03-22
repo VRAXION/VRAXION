@@ -10,6 +10,13 @@ This repository is meant to be a credible front door for technical buyers and en
 4. what the current canonical code path is,
 5. how to verify one claim in minutes.
 
+## Release Snapshot
+
+- **Current canonical public release:** [`v4.2.0`](https://github.com/VRAXION/VRAXION/releases/tag/v4.2.0) (`stable`)
+- **Next public milestone:** preparation toward `v5.0.0 Public Beta`
+- **Internal code path:** [`v4.2/`](v4.2/) (repo path, not the public release label)
+- **Current mainline code path:** [`v4.2/model/graph.py`](v4.2/model/graph.py)
+
 ## Why This Architecture Is Different
 
 INSTNCT is built around a small set of unusual choices:
@@ -32,6 +39,15 @@ To keep the public story truthful, this repo uses three labels consistently:
 If code and docs disagree, **code wins for “Current mainline.”**
 
 The repo-tracked docs are the canonical public source. The GitHub wiki is a secondary mirror, not an independent source of truth.
+
+Historical code lines remain in-repo for reference only:
+
+- `Diamond Code/`
+- `v4/`
+- `v22_ternary/`
+- `v23_instnct_lm/`
+
+They are historical architecture lines, not equal-current public defaults.
 
 ## Current State
 

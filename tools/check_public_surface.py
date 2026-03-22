@@ -5,6 +5,7 @@ from __future__ import annotations
 import re
 import sys
 import ast
+import json
 from pathlib import Path
 
 
@@ -15,6 +16,7 @@ V42_README = ROOT / "v4.2" / "README.md"
 CONTRIBUTING = ROOT / "CONTRIBUTING.md"
 FINDINGS = ROOT / "VALIDATED_FINDINGS.md"
 LANDING = ROOT / "docs" / "index.html"
+VERSION_FILE = ROOT / "VERSION.json"
 LANDING_STACK_MAP = ROOT / "docs" / "assets" / "vraxion-public-stack-map.png"
 ARCHIVE = ROOT / "ARCHIVE.md"
 PR_TEMPLATE = ROOT / ".github" / "pull_request_template.md"
@@ -159,6 +161,41 @@ def fail(msg: str, errors: list[str]) -> None:
     errors.append(msg)
 
 
+def load_version_info(errors: list[str]) -> dict[str, str]:
+    if not VERSION_FILE.exists():
+        fail(f"Missing version source of truth: {VERSION_FILE}", errors)
+        return {}
+    try:
+        data = json.loads(read(VERSION_FILE))
+    except Exception as exc:
+        fail(f"VERSION.json: failed to parse JSON ({exc})", errors)
+        return {}
+
+    required = [
+        "current_release",
+        "current_channel",
+        "next_milestone",
+        "next_channel",
+        "internal_code_path",
+    ]
+    for key in required:
+        if key not in data:
+            fail(f"VERSION.json: missing required field {key!r}", errors)
+
+    if data.get("current_release") != "v4.2.0":
+        fail("VERSION.json: current_release must be 'v4.2.0'", errors)
+    if data.get("current_channel") != "stable":
+        fail("VERSION.json: current_channel must be 'stable'", errors)
+    if data.get("next_milestone") != "v5.0.0 Public Beta":
+        fail("VERSION.json: next_milestone must be 'v5.0.0 Public Beta'", errors)
+    if data.get("next_channel") != "preparation":
+        fail("VERSION.json: next_channel must be 'preparation'", errors)
+    if data.get("internal_code_path") != "v4.2/":
+        fail("VERSION.json: internal_code_path must be 'v4.2/'", errors)
+
+    return data
+
+
 def extract_constant(name: str, text: str) -> str:
     match = re.search(rf"^\s*{name}\s*=\s*([0-9.]+)", text, re.MULTILINE)
     if not match:
@@ -233,6 +270,12 @@ def check_landing(text: str, errors: list[str]) -> None:
         fail("docs/index.html: missing public stack map alt text", errors)
     if CURRENT_NEXT_TARGET_PHRASE not in text.lower():
         fail(f"docs/index.html: current-next-target card should mention {CURRENT_NEXT_TARGET_PHRASE!r}", errors)
+    if "v4.2.0" not in text:
+        fail("docs/index.html: missing current release framing for v4.2.0", errors)
+    if "v5.0.0 Public Beta" not in text:
+        fail("docs/index.html: missing next milestone framing for v5.0.0 Public Beta", errors)
+    if "v4.2/" not in text:
+        fail("docs/index.html: missing internal code path framing for v4.2/", errors)
 
 
 def require_sections(path: Path, text: str, sections: list[str], errors: list[str]) -> None:
@@ -477,6 +520,10 @@ def check_contributing(errors: list[str]) -> None:
         "tools/check_public_surface.py",
         "VERSION.json",
         "CITATION.cff",
+        "Diamond Code/",
+        "v4/",
+        "v22_ternary/",
+        "v23_instnct_lm/",
     ]:
         if term not in text:
             fail(f"CONTRIBUTING.md: missing governance term {term!r}", errors)
@@ -518,6 +565,40 @@ def check_release_notes_page(errors: list[str]) -> None:
     ]:
         if banned in text:
             fail(f"Release-Notes.md: beta-prep framing should not claim {banned!r}", errors)
+    if "VERSION.json" not in text:
+        fail("Release-Notes.md: missing VERSION.json source-of-truth reference", errors)
+
+
+def check_release_framing(version_info: dict[str, str], errors: list[str]) -> None:
+    if not version_info:
+        return
+    release = version_info["current_release"]
+    milestone = version_info["next_milestone"]
+    path = version_info["internal_code_path"]
+
+    readme_text = read(README)
+    if not re.search(rf"\*{{0,2}}Current canonical public release:\*{{0,2}}\s*(?:\[[^\]]+\]\([^)]+\)|`?{re.escape(release)}`?)", readme_text):
+        fail(f"README.md: missing current canonical public release framing for {release}", errors)
+    if not re.search(rf"\*{{0,2}}Next public milestone:\*{{0,2}}\s*preparation toward\s*`?{re.escape(milestone)}`?", readme_text):
+        fail(f"README.md: missing next public milestone framing for {milestone}", errors)
+    if not re.search(rf"\*{{0,2}}Internal code path:\*{{0,2}}\s*(?:\[[^\]]+\]\([^)]+\)|`?{re.escape(path)}`?)", readme_text):
+        fail(f"README.md: missing internal code path framing for {path}", errors)
+
+    home_text = read(WIKI_HOME_SRC)
+    if not re.search(rf"Current canonical public release:\s*(?:\[[^\]]+\]\([^)]+\)|`?{re.escape(release)}`?)", home_text):
+        fail(f"Home.md: missing current canonical public release framing for {release}", errors)
+    if not re.search(rf"Next public milestone:\s*preparation toward\s*`?{re.escape(milestone)}`?", home_text):
+        fail(f"Home.md: missing next public milestone framing for {milestone}", errors)
+    if not re.search(rf"Internal code path:\s*(?:\[[^\]]+\]\([^)]+\)|`?{re.escape(path)}`?)", home_text):
+        fail(f"Home.md: missing internal code path framing for {path}", errors)
+
+    contributing_text = read(CONTRIBUTING)
+    if "VERSION.json" in contributing_text and not VERSION_FILE.exists():
+        fail("CONTRIBUTING.md: claims VERSION.json is canonical but VERSION.json is missing", errors)
+
+    release_notes_text = read(WIKI_RELEASE_NOTES_SRC)
+    if "VERSION.json" in release_notes_text and not VERSION_FILE.exists():
+        fail("Release-Notes.md: claims VERSION.json is canonical but VERSION.json is missing", errors)
 
 
 def check_removed_wiki_sources(errors: list[str]) -> None:
@@ -605,6 +686,7 @@ def check_wiki_mirror(errors: list[str]) -> None:
 
 def main() -> int:
     errors: list[str] = []
+    version_info = load_version_info(errors)
 
     graph_text = read(GRAPH)
     threshold = extract_constant("THRESHOLD", graph_text)
@@ -633,6 +715,7 @@ def main() -> int:
     check_archive(errors)
     check_templates(errors)
     check_contributing(errors)
+    check_release_framing(version_info, errors)
     check_ch01_stub(errors)
     check_release_notes_page(errors)
     check_primary_editorial_shape(errors)

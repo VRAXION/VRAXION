@@ -63,3 +63,12 @@ v4/data_test/
 *.mask
 *.drawio.bkp
 *.o
+
+# v4.2 local live/lab scratch artifacts
+v4.2/*_live.txt
+v4.2/*_live_data.json
+v4.2/*_chart_data.json
+v4.2/*_probe_results.json
+v4.2/network_viz_data.json
+v4.2/english_1024n_gpu.py
+v4.2/test_thresh0.py

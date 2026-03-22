@@ -108,6 +108,29 @@
       gap: 14px;
       margin-top: 16px;
     }
+    .release-strip {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 12px;
+      margin-top: 18px;
+    }
+    .release-chip {
+      background: var(--panel-strong);
+      border: 1px solid var(--line);
+      padding: 14px 16px;
+    }
+    .release-chip strong {
+      display: block;
+      margin-bottom: 6px;
+      font: 700 0.85rem/1.2 var(--mono);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+    .release-chip span {
+      display: block;
+      font-size: 0.95rem;
+      line-height: 1.45;
+    }
     .section {
       margin-top: 18px;
     }
@@ -253,11 +276,27 @@
         </p>
       </article>
       <aside class="hero-aside">
+        <div class="metric"><span>Current release</span><span><code>v4.2.0</code></span></div>
+        <div class="metric"><span>Next milestone</span><span><code>v5.0.0 beta prep</code></span></div>
         <div class="metric"><span>Current mainline</span><span><code>graph.py</code></span></div>
-        <div class="metric"><span>Best validated evidence</span><span><code>22.11 / 21.46</code></span></div>
-        <div class="metric"><span>Current next target</span><span><code>task learning</code></span></div>
+        <div class="metric"><span>Internal code path</span><span><code>v4.2/</code></span></div>
         <div class="metric"><span>Architecture line</span><span><code>INSTNCT</code></span></div>
       </aside>
+    </section>
+
+    <section class="release-strip" aria-label="Release snapshot">
+      <article class="release-chip">
+        <strong>Current canonical release</strong>
+        <span><code>v4.2.0</code> stable</span>
+      </article>
+      <article class="release-chip">
+        <strong>Next public milestone</strong>
+        <span>Preparation toward <code>v5.0.0 Public Beta</code></span>
+      </article>
+      <article class="release-chip">
+        <strong>Internal code path</strong>
+        <span><code>v4.2/</code> is the repo path, not the release label.</span>
+      </article>
     </section>
 
     <section class="grid">
@@ -270,11 +309,11 @@
         <p>The only settings that count as live defaults are the ones actually shipped in <code>v4.2/model/graph.py</code>. That mainline currently includes per-neuron <code>theta</code>/<code>decay</code> and nonnegative charge dynamics.</p>
       </article>
       <article class="card">
-        <h2>Best Validated Evidence</h2>
+        <h2>Best validated evidence</h2>
         <p>The strongest schedule result so far is voltage medium leak at <code>22.11%</code> peak and <code>21.46%</code> plateau. The strongest compact learnable controller so far is the 3-angle decision-tree schedule at <code>20.05%</code>.</p>
       </article>
       <article class="card">
-        <h2>Current Next Target</h2>
+        <h2>Current next target</h2>
         <p>The main live target is context-dependent task learning: windowed input injection, associative memory, and stronger evaluation for nontrivial tasks.</p>
       </article>
     </section>
