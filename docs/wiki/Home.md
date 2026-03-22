@@ -44,9 +44,7 @@ INSTNCT core anatomy at a glance:
 
 <p align="center">
   <img src="https://raw.githubusercontent.com/VRAXION/VRAXION/main/docs/assets/long-horizon-mission.jpg" alt="Long-horizon mission illustration" width="592">
-</p>
-
-<p align="center">
+  <br>
   <em>In a stable loop, structure emerges.</em>
 </p>
 
