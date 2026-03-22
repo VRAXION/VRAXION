@@ -31,17 +31,11 @@ WIKI_GOVERNANCE_SRC = WIKI_SOURCE_DIR / "Governance.md"
 WIKI_SIDEBAR_SRC = WIKI_SOURCE_DIR / "_Sidebar.md"
 WIKI_FOOTER_SRC = WIKI_SOURCE_DIR / "_Footer.md"
 ENGLISH_RECIPE = ROOT / "v4.2" / "english_1024n_18w.py"
-HOME_ANATOMY_FILE = ROOT / "docs" / "assets" / "home-instnct-anatomy.svg"
+HOME_ANATOMY_FILE = ROOT / "docs" / "assets" / "instnct-at-a-glance-core.png"
+HOME_ANATOMY_SOURCE_FILE = ROOT / "docs" / "assets" / "source" / "wiki-home-graphics.drawio"
 HOME_LOGO_ASSET = "https://raw.githubusercontent.com/VRAXION/VRAXION/main/docs/assets/vraxion-instnct-spiral.png"
 HOME_STACK_MAP_ASSET = "https://raw.githubusercontent.com/VRAXION/VRAXION/main/docs/assets/vraxion-public-stack-map.png"
-HOME_ANATOMY_ASSET = "https://raw.githubusercontent.com/VRAXION/VRAXION/main/docs/assets/home-instnct-anatomy.svg"
-HOME_ANATOMY_LABELS = [
-    "Passive I/O Projections",
-    "Self-Wiring Hidden Graph",
-    "persistent internal state",
-    "Mutation-Selection Training",
-    "not fixed-graph backprop",
-]
+HOME_ANATOMY_ASSET = "https://raw.githubusercontent.com/VRAXION/VRAXION/main/docs/assets/instnct-at-a-glance-core.png"
 REMOVED_WIKI_SOURCE_FILES = [
     WIKI_GOVERNANCE_SRC,
     WIKI_SOURCE_DIR / "Chapter-11---Roadmap.md",
@@ -284,14 +278,18 @@ def check_home_orientation_graphic(errors: list[str]) -> None:
 
 def check_home_anatomy_graphic(errors: list[str]) -> None:
     home_text = read(WIKI_HOME_SRC)
-    asset_text = read(HOME_ANATOMY_FILE)
     if HOME_ANATOMY_ASSET not in home_text:
-        fail("Home.md: missing home-instnct-anatomy.svg anatomy graphic", errors)
-    if "INSTNCT in one glance:" not in home_text:
+        fail("Home.md: missing instnct-at-a-glance-core.png anatomy graphic", errors)
+    if "INSTNCT core anatomy at a glance:" not in home_text:
         fail("Home.md: missing anatomy-graphic lead-in line", errors)
-    for label in HOME_ANATOMY_LABELS:
-        if label not in asset_text:
-            fail(f"home-instnct-anatomy.svg: missing anatomy label {label!r}", errors)
+    if "home-instnct-anatomy.svg" in home_text:
+        fail("Home.md: old home-instnct-anatomy.svg reference should not remain", errors)
+    if not HOME_ANATOMY_FILE.exists():
+        fail(f"Missing home anatomy asset: {HOME_ANATOMY_FILE}", errors)
+    if not HOME_ANATOMY_SOURCE_FILE.exists():
+        fail(f"Missing editable source for home anatomy asset: {HOME_ANATOMY_SOURCE_FILE}", errors)
+    if (ROOT / "docs" / "assets" / "home-instnct-anatomy.svg").exists():
+        fail("docs/assets/home-instnct-anatomy.svg: retired anatomy SVG should be deleted", errors)
 
     other_primary_pages = [
         WIKI_SWG_SRC,

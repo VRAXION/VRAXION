@@ -34,10 +34,10 @@ VRAXION is both a company and an engineering effort built around one architectur
 
 The current architecture page is [INSTNCT Architecture](SWG-v4.2-Architecture).
 
-INSTNCT in one glance:
+INSTNCT core anatomy at a glance:
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/VRAXION/VRAXION/main/docs/assets/home-instnct-anatomy.svg" alt="INSTNCT in one glance" width="740">
+  <img src="https://raw.githubusercontent.com/VRAXION/VRAXION/main/docs/assets/instnct-at-a-glance-core.png" alt="INSTNCT core anatomy at a glance" width="740">
 </p>
 
 ## Long-Horizon Mission
