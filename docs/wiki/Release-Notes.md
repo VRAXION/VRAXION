@@ -29,6 +29,7 @@ This page is the single primary timeline and lookup surface for VRAXION. Use it 
 
 - The active public architecture line is [INSTNCT Architecture](INSTNCT-Architecture); earlier architecture lines are historical context only.
 - The Diamond Code era is preserved on archive branch `archive/diamond-code-era-20260322`; it is not part of active `main`.
+- The pre-beta surface freeze is preserved on archive branch `archive/instnct-surface-freeze-20260322`; raw result dumps, archived sweeps, and retired exploratory probes no longer live on active `main`.
 - The strongest schedule and mutation results live in [Validated Findings](Validated-Findings) until code on `main` actually adopts them.
 - The main unresolved public targets are context-dependent task learning, schedule-policy promotion, edge-representation promotion, and re-checking low-theta / low-scale against today’s stronger recipe stack.
 - History, terminology, and page retirements now live here instead of being spread across separate glossary, roadmap, theory, and archive leaves.
@@ -41,6 +42,7 @@ This page is the single primary timeline and lookup surface for VRAXION. Use it 
 - [`VERSION.json`](https://github.com/VRAXION/VRAXION/blob/main/VERSION.json) now anchors the public release identity in the repo-tracked source layer.
 - The README, Pages front door, and wiki Home surface now use the same explicit release framing for the current canon, the next milestone, and the internal code path.
 - CI already runs compile sanity, the reference stress test, public-surface checks, wiki mirror dry-run, and a tiny cyclic smoke test.
+- The active tracked surface is being narrowed so English remains the single first-class public lane while task-memory and GPU stay as secondary validation surfaces.
 - Contributor and safety posture already exist through [`CONTRIBUTING.md`](https://github.com/VRAXION/VRAXION/blob/main/CONTRIBUTING.md), [`CODE_OF_CONDUCT.md`](https://github.com/VRAXION/VRAXION/blob/main/CODE_OF_CONDUCT.md), [`LICENSE`](https://github.com/VRAXION/VRAXION/blob/main/LICENSE), [`COMMERCIAL_LICENSE.md`](https://github.com/VRAXION/VRAXION/blob/main/COMMERCIAL_LICENSE.md), [`SECURITY.md`](https://github.com/VRAXION/VRAXION/blob/main/SECURITY.md), [Discussions](https://github.com/VRAXION/VRAXION/discussions), and private security reporting.
 
 ### Still planned before Public Beta
@@ -64,6 +66,7 @@ This page is the single primary timeline and lookup surface for VRAXION. Use it 
 | 2026-03-22 | Task-learning experiments displaced the older swarm line as the main active frontier | Window=2 input superposition, word-pair memory, and log-likelihood evaluation opened a more credible path for context-dependent tasks than the older mixed-swarm target. | [Validated Findings](Validated-Findings), [VRAXION Home](Home) |
 | 2026-03-22 | Explicit preparation for `v5.0.0 Public Beta` started | The public story is being reorganized around stable release identity, clearer onboarding, and higher outside traffic rather than only internal experiment cadence. | This page, [VRAXION Home](Home), and [`CONTRIBUTING.md`](https://github.com/VRAXION/VRAXION/blob/main/CONTRIBUTING.md) |
 | 2026-03-22 | The tracked Diamond Code era was extracted from `main` | The current self-wiring line no longer carries the older Diamond Code tree in the default branch; that era now lives on `archive/diamond-code-era-20260322`. | This page and [`ARCHIVE.md`](https://github.com/VRAXION/VRAXION/blob/main/ARCHIVE.md) |
+| 2026-03-22 | The pre-beta INSTNCT surface was frozen down to one first-class public lane | English remained the only first-class public lane on `main`, while bulky raw result dumps, sweeps, and retired exploratory probes moved off the default branch into `archive/instnct-surface-freeze-20260322`. | This page, [Validated Findings](Validated-Findings), and [`ARCHIVE.md`](https://github.com/VRAXION/VRAXION/blob/main/ARCHIVE.md) |
 | 2026-03-21 | Roadmap, theory, archive, glossary, and old architecture leaves were collapsed into one timeline surface | History, terminology, open questions, and retirement lookup now live in one place instead of multiple smaller pages. | This page |
 
 ## Retired Surfaces and Replacements

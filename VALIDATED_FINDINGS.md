@@ -15,6 +15,7 @@ Repo-tracked docs are canonical. The GitHub wiki is treated as a mirrored second
 - **Best edge-representation quality result so far:** sign+mag + magnitude resample reached `18.69%` at `155` edges (`q=0.121`), but it is not promoted into the current recipe candidate or `graph.py` defaults.
 - **Strongest current task-learning input result so far:** window=2 superposition reached `21.8%`, beating the `w=1` baseline by `+72%`.
 - **Strongest current task-memory evaluation result so far:** word-pair log-likelihood eval reached `23.8%`, beating bigram cosine at `18.8%`.
+- **Surface policy on `main`:** English remains the only first-class public lane; task-memory and GPU remain tracked only as secondary validation surfaces.
 
 ## How To Read This Page
 
@@ -37,6 +38,10 @@ Current mainline defaults in that file:
 Anything that differs from those settings should be described as a **Validated finding** or **Experimental branch**, not as the live default.
 
 The current English recipe candidate on `main` is [`instnct/recipes/english_1024n_18w.py`](instnct/recipes/english_1024n_18w.py). It currently uses the triangle-derived `2 add / 1 flip / 5 decay` schedule with the older float signed edge mask. It is useful evidence, but it is not the canonical architecture default.
+
+The current secondary validation recipe on `main` is [`instnct/recipes/train_wordpairs_ll.py`](instnct/recipes/train_wordpairs_ll.py). It remains important for task-memory evaluation, but it is not a second front-door default.
+
+Raw experiment dumps, retired sweeps, and archived exploratory probes now live on `archive/instnct-surface-freeze-20260322`, not on active `main`.
 
 ## Evidence Table
 

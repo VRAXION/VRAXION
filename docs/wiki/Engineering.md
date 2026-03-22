@@ -40,6 +40,8 @@ Results outside that contract can still be useful probes, but they should not be
 
 Optional extras such as checkpoints, plots, CSV exports, or live logs are useful, but they do not replace the core evidence bundle.
 
+For public `main`, bulky raw run dumps should not remain tracked indefinitely once their conclusions are captured in canonical findings. Preserve them on an archive branch instead of treating `main` as a results warehouse.
+
 ## Fail Gates
 
 | Gate | Trigger |

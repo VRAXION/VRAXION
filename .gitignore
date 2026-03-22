@@ -69,6 +69,9 @@ instnct/*_live.txt
 instnct/*_live_data.json
 instnct/*_chart_data.json
 instnct/*_probe_results.json
+instnct/tests/results/
+instnct/tests/viz/
+instnct/tests/viz_interference/
 instnct/network_viz_data.json
 instnct/network_*.html
 instnct/training_live.html

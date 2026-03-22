@@ -44,7 +44,7 @@ jobs:
         run: |
           python - <<'PY'
           import sys
-          sys.path.insert(0, "v4.2")
+          sys.path.insert(0, "instnct")
           import numpy as np
           from model.graph import SelfWiringGraph
           from lib.utils import score_batch, train_cyclic

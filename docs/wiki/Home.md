@@ -16,8 +16,9 @@ This is the lean technical reference for the public stack. Use [Pages](https://v
 
 - **Current canonical public release:** [`v4.2.0`](https://github.com/VRAXION/VRAXION/releases/tag/v4.2.0) (`stable`)
 - **Next public milestone:** preparation toward `v5.0.0 Public Beta`
-- **Internal code path:** [`instnct/`](https://github.com/VRAXION/VRAXION/tree/main/v4.2) (repo path, not the release label)
+- **Internal code path:** [`instnct/`](https://github.com/VRAXION/VRAXION/tree/main/instnct) (repo path, not the release label)
 - **Current mainline:** [`instnct/model/graph.py`](https://github.com/VRAXION/VRAXION/blob/main/instnct/model/graph.py) is the canonical shipped code path on `main`.
+- **Public lane policy:** English is the only first-class public lane on `main`; task-memory and GPU remain secondary validation surfaces.
 - **Best validated evidence right now:** voltage medium leak remains the strongest schedule result at `22.11%` peak / `21.46%` plateau.
 - **Current next target:** context-dependent task learning is now the main active build target, especially windowed input injection and word-pair memory probes.
 
@@ -63,14 +64,17 @@ This is an ambition and a research direction, not a claim of achieved sentience.
 
 - Current canonical public release: [`v4.2.0`](https://github.com/VRAXION/VRAXION/releases/tag/v4.2.0)
 - Next public milestone: preparation toward `v5.0.0 Public Beta`
-- Internal code path: [`instnct/`](https://github.com/VRAXION/VRAXION/tree/main/v4.2) (repo path, not the public release label)
+- Internal code path: [`instnct/`](https://github.com/VRAXION/VRAXION/tree/main/instnct) (repo path, not the public release label)
 - Canonical code path: [`instnct/model/graph.py`](https://github.com/VRAXION/VRAXION/blob/main/instnct/model/graph.py)
 - Architecture line: `INSTNCT`
-- Current English recipe candidate on `main`: [`instnct/recipes/english_1024n_18w.py`](https://github.com/VRAXION/VRAXION/blob/main/instnct/recipes/english_1024n_18w.py) (`8` ticks, triangle-derived `2 add / 1 flip / 5 decay`)
+- Current first-class public recipe on `main`: [`instnct/recipes/english_1024n_18w.py`](https://github.com/VRAXION/VRAXION/blob/main/instnct/recipes/english_1024n_18w.py) (`8` ticks, triangle-derived `2 add / 1 flip / 5 decay`)
+- Current secondary validation recipe on `main`: [`instnct/recipes/train_wordpairs_ll.py`](https://github.com/VRAXION/VRAXION/blob/main/instnct/recipes/train_wordpairs_ll.py)
 - Canonical public evidence summary: [Validated Findings](Validated-Findings)
 - Mainline implementation includes per-neuron `theta` / `decay` and nonnegative charge dynamics.
 
 Anything not actually shipped in that code path must be labeled as a **Validated finding** or **Experimental branch**, not as a live default.
+
+Bulky raw run dumps and retired exploratory surfaces now live on `archive/instnct-surface-freeze-20260322`, not on active `main`.
 
 ## Strongest Current Signals
 

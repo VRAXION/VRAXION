@@ -153,6 +153,16 @@ EDGE_FORMAT_RESULT_PHRASE = "`18.69%` at `155` edges (`q=0.121`)"
 STALE_NEXT_TARGET_PHRASE = "18-worker swarm"
 CURRENT_NEXT_TARGET_PHRASE = "context-dependent task learning"
 DIAMOND_ARCHIVE_BRANCH = "archive/diamond-code-era-20260322"
+SURFACE_FREEZE_BRANCH = "archive/instnct-surface-freeze-20260322"
+EXPECTED_ACTIVE_RECIPES = {"english_1024n_18w.py", "train_wordpairs_ll.py"}
+EXPECTED_ACTIVE_PROBES = {"generate_text.py"}
+BANNED_TRACKED_GLOBS = [
+    "instnct/sweeps/**",
+    "instnct/tests/archive/**",
+    "instnct/tests/results/**",
+    "instnct/tests/viz/**",
+    "instnct/tests/viz_interference/**",
+]
 
 
 def read(path: Path) -> str:
@@ -171,6 +181,16 @@ def is_tracked(relpath: str) -> bool:
         check=False,
     )
     return result.returncode == 0
+
+
+def tracked_glob(pattern: str) -> list[str]:
+    result = subprocess.run(
+        ["git", "-C", str(ROOT), "ls-files", "--", pattern],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    return [line.strip() for line in result.stdout.splitlines() if line.strip()]
 
 
 def load_version_info(errors: list[str]) -> dict[str, str]:
@@ -506,10 +526,39 @@ def check_archive(errors: list[str]) -> None:
         "public documentation for the current self-wiring direction",
         "If a line is not part of the current self-wiring mainline doctrine, archive it.",
         DIAMOND_ARCHIVE_BRANCH,
+        SURFACE_FREEZE_BRANCH,
     ]
     for term in required:
         if term not in text:
             fail(f"ARCHIVE.md: missing expected archive-policy term {term!r}", errors)
+
+
+def check_surface_freeze(errors: list[str]) -> None:
+    for pattern in BANNED_TRACKED_GLOBS:
+        hits = tracked_glob(pattern)
+        if hits:
+            fail(f"{pattern}: retired research surface must not remain tracked on main", errors)
+
+    recipe_hits = {Path(path).name for path in tracked_glob("instnct/recipes/*.py")}
+    if recipe_hits != EXPECTED_ACTIVE_RECIPES:
+        fail(
+            "instnct/recipes: tracked active recipe set must be exactly "
+            f"{sorted(EXPECTED_ACTIVE_RECIPES)} (found {sorted(recipe_hits)})",
+            errors,
+        )
+
+    probe_hits = {Path(path).name for path in tracked_glob("instnct/probes/*.py")}
+    if probe_hits != EXPECTED_ACTIVE_PROBES:
+        fail(
+            "instnct/probes: tracked active probe set must be exactly "
+            f"{sorted(EXPECTED_ACTIVE_PROBES)} (found {sorted(probe_hits)})",
+            errors,
+        )
+
+    gitignore_text = read(ROOT / ".gitignore")
+    for term in ["instnct/tests/results/", "instnct/tests/viz/", "instnct/tests/viz_interference/"]:
+        if term not in gitignore_text:
+            fail(f".gitignore: missing surface-freeze ignore protection {term!r}", errors)
 
 
 def check_templates(errors: list[str]) -> None:
@@ -766,6 +815,7 @@ def main() -> int:
     check_edge_representation_sync(errors)
     check_current_next_target_sync(errors)
     check_archive(errors)
+    check_surface_freeze(errors)
     check_templates(errors)
     check_contributing(errors)
     check_front_door_history_truth(errors)

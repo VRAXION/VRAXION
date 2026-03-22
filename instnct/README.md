@@ -12,7 +12,8 @@ This directory contains the active architecture line behind VRAXION.
 
 - Canonical reference: [`model/graph.py`](model/graph.py)
 - Scaling/parity path: [`model/graph_v3.c`](model/graph_v3.c)
-- Current English recipe candidate on `main`: [`recipes/english_1024n_18w.py`](recipes/english_1024n_18w.py) (`8` ticks, triangle-derived `2 add / 1 flip / 5 decay`)
+- Current first-class public recipe on `main`: [`recipes/english_1024n_18w.py`](recipes/english_1024n_18w.py) (`8` ticks, triangle-derived `2 add / 1 flip / 5 decay`)
+- Secondary validation recipe on `main`: [`recipes/train_wordpairs_ll.py`](recipes/train_wordpairs_ll.py) (task-memory eval lane, not an equal front-door default)
 - Core behavior:
   - fixed random passive I/O projections
   - signed hidden-to-hidden edge mask
@@ -37,6 +38,8 @@ This is the only code path that should be described as the live default.
 
 These findings are important, but none of them should be described as a shipped default until `model/graph.py` actually adopts them.
 
+Bulky raw experiment dumps, archived sweeps, and retired exploratory probes are preserved on `archive/instnct-surface-freeze-20260322`, not on active `main`.
+
 ## Experimental Next Target
 
 - The current next build target is context-dependent task learning: windowed input injection, word-pair memory, and stronger evaluation for nontrivial tasks.
@@ -46,9 +49,12 @@ These findings are important, but none of them should be described as a shipped 
 
 - [`model/graph.py`](model/graph.py) — canonical Python reference
 - [`model/graph_v3.c`](model/graph_v3.c) — C scaling/parity path
+- [`recipes/english_1024n_18w.py`](recipes/english_1024n_18w.py) — canonical public English lane
+- [`recipes/train_wordpairs_ll.py`](recipes/train_wordpairs_ll.py) — secondary task-memory validation lane
+- [`probes/generate_text.py`](probes/generate_text.py) — canonical inference/probe tool
 - [`tests/test_model.py`](tests/test_model.py) — adversarial stress test
 - [`tests/benchmark_ab.py`](tests/benchmark_ab.py) — benchmark comparison harness
-- [`tests/gpu_experimental/`](tests/gpu_experimental/) — isolated GPU research branch notes and probes
+- [`tests/test_gpu_eval_smoke.py`](tests/test_gpu_eval_smoke.py) — secondary GPU validation smoke
 
 ## Local Data Placement
 

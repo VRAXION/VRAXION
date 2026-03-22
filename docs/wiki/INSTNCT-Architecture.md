@@ -54,8 +54,9 @@ Mutation-selection loop at a glance:
 | Topic | Current state |
 |---|---|
 | Canonical code path | [`instnct/model/graph.py`](https://github.com/VRAXION/VRAXION/blob/main/instnct/model/graph.py) |
-| Current English recipe candidate on `main` | [`instnct/recipes/english_1024n_18w.py`](https://github.com/VRAXION/VRAXION/blob/main/instnct/recipes/english_1024n_18w.py) (`8` ticks, triangle-derived `2 add / 1 flip / 5 decay`) |
-| Shipped constants on `main` | `THRESHOLD = 0.5`, `INJ_SCALE = 3.0`, `DRIVE = 0.6` |
+| Current first-class public recipe on `main` | [`instnct/recipes/english_1024n_18w.py`](https://github.com/VRAXION/VRAXION/blob/main/instnct/recipes/english_1024n_18w.py) (`8` ticks, triangle-derived `2 add / 1 flip / 5 decay`) |
+| Current secondary validation recipe on `main` | [`instnct/recipes/train_wordpairs_ll.py`](https://github.com/VRAXION/VRAXION/blob/main/instnct/recipes/train_wordpairs_ll.py) |
+| Shipped defaults on `main` | `DEFAULT_THETA = 0.1`, `DEFAULT_PROJECTION_SCALE = 3.0`, `DEFAULT_EDGE_MAGNITUDE = 0.6` |
 | Mainline runtime behavior | per-neuron `theta` / `decay` and nonnegative charge dynamics |
 
 ## What Is Fixed vs Learnable
@@ -81,6 +82,8 @@ Mutation-selection loop at a glance:
 | context-dependent task learning | Current next build target: windowed input injection, word-pair memory, and stronger evaluation for nontrivial tasks | Experimental branch |
 
 For the full evidence summary, use [Validated Findings](Validated-Findings).
+
+Raw sweep dumps and retired exploratory surfaces no longer live on active `main`; they are preserved on `archive/instnct-surface-freeze-20260322`.
 
 ## How To Verify Quickly
 

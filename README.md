@@ -43,6 +43,7 @@ The repo-tracked docs are the canonical public source. The GitHub wiki is a seco
 Historical archive branch:
 
 - The Diamond Code era is preserved on `archive/diamond-code-era-20260322`; it is not part of active `main`.
+- The pre-beta research surface freeze is preserved on `archive/instnct-surface-freeze-20260322`; bulky raw experiment dumps and retired exploratory surfaces no longer live on `main`.
 
 Retired line names and older local folders belong in [Project Timeline](https://github.com/VRAXION/VRAXION/wiki/Release-Notes), not in the current front-door stack.
 
@@ -53,6 +54,7 @@ Retired line names and older local folders belong in [Project Timeline](https://
 - The live canonical path is [`instnct/model/graph.py`](instnct/model/graph.py).
 - The stable reference is the NumPy self-wiring graph with passive I/O, a signed hidden edge mask, co-evolved per-neuron `theta` / `decay`, and nonnegative charge dynamics.
 - The current English recipe candidate on `main` is [`instnct/recipes/english_1024n_18w.py`](instnct/recipes/english_1024n_18w.py); it currently uses an `8`-tick triangle-derived `2 add / 1 flip / 5 decay` schedule, but it is still a candidate training script, not the canonical architecture default.
+- English is the only first-class public lane on `main`; task-memory and GPU remain secondary validation surfaces rather than equal front-door lanes.
 - Recent English sweeps around low-theta training and signal scaling are **not** described here as baked defaults until they land in that code path.
 
 ### Evidence snapshot
@@ -66,6 +68,8 @@ Retired line names and older local folders belong in [Project Timeline](https://
 - **Schedule-control experiments** now have two validated lines: a higher-accuracy voltage/leak recipe (`22.11%` peak / `21.46%` plateau) and a simpler 3-angle decision tree (`20.05%` at `156` edges with better edge quality) ([b971613](https://github.com/VRAXION/VRAXION/commit/b971613550d881a7298690a2016339486e4c8244), [f7e6185](https://github.com/VRAXION/VRAXION/commit/f7e618511217d9b2905d93b30d7523a0be1fd79d)).
 - **Window=2 input superposition** is the strongest current task-learning injection result so far: `21.8%` vs `12.7%` at `w=1`, making it the current leading context-window line for nontrivial task probes ([48f2657](https://github.com/VRAXION/VRAXION/commit/48f26579fe882f5ae9e5eab4bbe1264963b4685a)).
 - **Word-pair log-likelihood eval** beat bigram cosine on associative-memory probes (`23.8%` vs `18.8%`), showing that context-dependent tasks need a stronger scoring path than pure bigram cosine ([48f2657](https://github.com/VRAXION/VRAXION/commit/48f26579fe882f5ae9e5eab4bbe1264963b4685a)).
+
+Raw run dumps, archived sweeps, and older exploratory surfaces now live on `archive/instnct-surface-freeze-20260322`, not on active `main`.
 
 The canonical evidence summary lives in [`VALIDATED_FINDINGS.md`](VALIDATED_FINDINGS.md).
 
