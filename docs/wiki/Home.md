@@ -3,7 +3,9 @@
 # VRAXION Wiki
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/VRAXION/VRAXION/main/docs/assets/vraxion-instnct-spiral.png" alt="INSTNCT spiral logo" width="360">
+  <img src="https://raw.githubusercontent.com/VRAXION/VRAXION/main/docs/assets/vraxion-home-hero.jpg" alt="VRAXION front-door illustration" width="740">
+  <br>
+  <em>The engineering of the "I"</em>
 </p>
 
 VRAXION is building **INSTNCT**: a gradient-free self-wiring architecture that learns by changing its own directed graph instead of running backpropagation through a fixed topology.

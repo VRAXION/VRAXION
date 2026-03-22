@@ -2,6 +2,10 @@
 
 # VRAXION Architecture
 
+<p align="center">
+  <img src="https://raw.githubusercontent.com/VRAXION/VRAXION/main/docs/assets/vraxion-instnct-spiral.png" alt="INSTNCT spiral logo" width="320">
+</p>
+
 **Architecture line:** `INSTNCT`
 
 VRAXION is building **INSTNCT**: a gradient-free self-wiring architecture that learns by changing its own graph instead of using backpropagation through a fixed layer stack.

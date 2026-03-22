@@ -34,8 +34,10 @@ ENGLISH_RECIPE = ROOT / "v4.2" / "english_1024n_18w.py"
 HOME_ANATOMY_FILE = ROOT / "docs" / "assets" / "instnct-at-a-glance-core.png"
 HOME_ANATOMY_SOURCE_FILE = ROOT / "docs" / "assets" / "source" / "wiki-home-graphics.drawio"
 HOME_MISSION_ILLUSTRATION_FILE = ROOT / "docs" / "assets" / "long-horizon-mission.jpg"
+HOME_HERO_FILE = ROOT / "docs" / "assets" / "vraxion-home-hero.jpg"
 ARCH_TRAINING_LOOP_FILE = ROOT / "docs" / "assets" / "instnct-at-a-glance-training.png"
 HOME_LOGO_ASSET = "https://raw.githubusercontent.com/VRAXION/VRAXION/main/docs/assets/vraxion-instnct-spiral.png"
+HOME_HERO_ASSET = "https://raw.githubusercontent.com/VRAXION/VRAXION/main/docs/assets/vraxion-home-hero.jpg"
 HOME_STACK_MAP_ASSET = "https://raw.githubusercontent.com/VRAXION/VRAXION/main/docs/assets/vraxion-public-stack-map.png"
 HOME_ANATOMY_ASSET = "https://raw.githubusercontent.com/VRAXION/VRAXION/main/docs/assets/instnct-at-a-glance-core.png"
 HOME_MISSION_ILLUSTRATION_ASSET = "https://raw.githubusercontent.com/VRAXION/VRAXION/main/docs/assets/long-horizon-mission.jpg"
@@ -256,8 +258,16 @@ def check_primary_editorial_shape(errors: list[str]) -> None:
 
 def check_home_orientation_graphic(errors: list[str]) -> None:
     home_text = read(WIKI_HOME_SRC)
-    if HOME_LOGO_ASSET not in home_text:
-        fail("Home.md: top spiral logo reference must remain intact", errors)
+    if HOME_HERO_ASSET not in home_text:
+        fail("Home.md: top front-door hero reference must remain intact", errors)
+    if 'alt="VRAXION front-door illustration"' not in home_text:
+        fail("Home.md: missing front-door hero alt text", errors)
+    if '<em>The engineering of the "I"</em>' not in home_text:
+        fail('Home.md: missing front-door hero quote "The engineering of the \\"I\\""', errors)
+    if not HOME_HERO_FILE.exists():
+        fail(f"Missing Home hero asset: {HOME_HERO_FILE}", errors)
+    if HOME_LOGO_ASSET in home_text:
+        fail("Home.md: spiral logo should no longer be the top Home visual", errors)
     if HOME_STACK_MAP_ASSET not in home_text:
         fail("Home.md: missing PNG public-stack orientation graphic", errors)
     if "home-public-stack.svg" in home_text:
@@ -328,6 +338,12 @@ def check_home_mission_illustration(errors: list[str]) -> None:
 
 def check_architecture_training_graphic(errors: list[str]) -> None:
     swg_text = read(WIKI_SWG_SRC)
+    if HOME_LOGO_ASSET not in swg_text:
+        fail("SWG-v4.2-Architecture.md: missing INSTNCT spiral logo", errors)
+    if 'alt="INSTNCT spiral logo"' not in swg_text:
+        fail("SWG-v4.2-Architecture.md: missing INSTNCT spiral logo alt text", errors)
+    if HOME_HERO_ASSET in swg_text:
+        fail("SWG-v4.2-Architecture.md: Home front-door hero should stay on Home only", errors)
     if ARCH_TRAINING_LOOP_ASSET not in swg_text:
         fail("SWG-v4.2-Architecture.md: missing instnct-at-a-glance-training.png training graphic", errors)
     if "Mutation-selection loop at a glance:" not in swg_text:
