@@ -15,7 +15,7 @@ This directory contains the active architecture line behind VRAXION.
 - Current English recipe candidate on `main`: [`english_1024n_18w.py`](english_1024n_18w.py) (`8` ticks, triangle-derived `2 add / 1 flip / 5 decay`)
 - Core behavior:
   - fixed random passive I/O projections
-  - ternary hidden-to-hidden mask
+  - signed hidden-to-hidden edge mask
   - co-evolved per-neuron `theta` and `decay`
   - nonnegative charge dynamics in the forward pass
   - persistent charge and state dynamics
@@ -32,13 +32,15 @@ This is the only code path that should be described as the live default.
 - [Decay resample for per-neuron tuning](../VALIDATED_FINDINGS.md) beat local perturbation and produced differentiated decay rates instead of leaving decay flat.
 - [Voltage medium leak scheduling](../VALIDATED_FINDINGS.md) is the strongest current schedule finding by accuracy (`22.11%` peak / `21.46%` plateau).
 - [The 3-angle decision-tree schedule](../VALIDATED_FINDINGS.md) is the strongest compact learnable control policy so far by edge quality.
+- [Window=2 input superposition](../VALIDATED_FINDINGS.md) is the strongest current task-learning injection line so far at `21.8%`.
+- [Word-pair log-likelihood evaluation](../VALIDATED_FINDINGS.md) beat bigram cosine on short associative-memory probes (`23.8%` vs `18.8%`).
 
 These findings are important, but none of them should be described as a shipped default until `model/graph.py` actually adopts them.
 
 ## Experimental Next Target
 
-- The current next build target is the mixed 18-worker swarm tracked in [issue #114](https://github.com/VRAXION/VRAXION/issues/114).
-- It is a candidate training recipe, not the current canonical line.
+- The current next build target is context-dependent task learning: windowed input injection, word-pair memory, and stronger evaluation for nontrivial tasks.
+- It is an experimental direction, not the current canonical line.
 
 ## Recommended Entry Points
 

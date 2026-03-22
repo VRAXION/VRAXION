@@ -28,12 +28,12 @@ This page explains the active technical line in plain terms: what the system is,
 
 Most neural systems learn by adjusting lots of weights inside a fixed topology. INSTNCT changes that. Here, the thing being learned is the hidden graph itself.
 
-Input enters through fixed random projections, moves through a self-wiring hidden graph, and is read out through another fixed projection. The graph changes by mutation + selection, while neurons keep charge/state across ticks. In short: the model learns structure and state dynamics, not just layer weights.
+Input enters through fixed random projections, moves through a self-wiring hidden graph with a signed sparse edge mask, and is read out through another fixed projection. The graph changes by mutation + selection, while neurons keep charge/state across ticks. In short: the model learns structure and state dynamics, not just layer weights.
 
 ## Architecture In One Screen
 
 ```text
-input -> input_projection -> hidden ternary graph -> output_projection -> output
+input -> input_projection -> hidden signed graph -> output_projection -> output
               persistent charge/state across ticks
 ```
 
@@ -44,7 +44,7 @@ Mutation-selection loop at a glance:
 </p>
 
 - `input_projection` and `output_projection` are fixed random projections.
-- The hidden graph is directed, ternary, and can rewire itself over time.
+- The hidden graph is directed, uses a signed sparse edge mask, and can rewire itself over time.
 - Per-neuron `theta` and `decay` are co-evolved with the graph.
 - Charge/state persists across ticks instead of resetting after one pass.
 - Training happens by mutation + selection, not backpropagation through the graph.
@@ -77,7 +77,8 @@ Mutation-selection loop at a glance:
 | triangle-derived `2 add / 1 flip / 5 decay` schedule | The current English recipe candidate already uses the winning fixed schedule line | Validated finding |
 | sign+mag + magnitude resample | Best edge-format quality result so far: `18.69%` at `155` edges (`q=0.121`), but still unpromoted | Validated finding |
 | voltage medium leak schedule | Strongest schedule result so far: `22.11%` peak / `21.46%` plateau | Validated finding |
-| mixed 18-worker swarm | Current next build target for English training | Experimental branch |
+| window=2 input superposition | Strongest current task-learning injection result so far: `21.8%`, but still unpromoted | Validated finding |
+| context-dependent task learning | Current next build target: windowed input injection, word-pair memory, and stronger evaluation for nontrivial tasks | Experimental branch |
 
 For the full evidence summary, use [Validated Findings](Validated-Findings).
 

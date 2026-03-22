@@ -147,6 +147,8 @@ STALE_RECIPE_SLOT_TEXT = "decay slot"
 CURRENT_CANDIDATE_PHRASE = "triangle-derived `2 add / 1 flip / 5 decay` schedule"
 EDGE_FORMAT_FINDING_PHRASE = "sign+mag + magnitude resample"
 EDGE_FORMAT_RESULT_PHRASE = "`18.69%` at `155` edges (`q=0.121`)"
+STALE_NEXT_TARGET_PHRASE = "18-worker swarm"
+CURRENT_NEXT_TARGET_PHRASE = "context-dependent task learning"
 
 
 def read(path: Path) -> str:
@@ -229,8 +231,8 @@ def check_landing(text: str, errors: list[str]) -> None:
         fail("docs/index.html: missing public stack map asset reference", errors)
     if "VRAXION public stack hierarchy" not in text:
         fail("docs/index.html: missing public stack map alt text", errors)
-    if "mutation policy, and edge representation still under active review" not in text:
-        fail("docs/index.html: current-next-target card should mention edge representation review", errors)
+    if CURRENT_NEXT_TARGET_PHRASE not in text.lower():
+        fail(f"docs/index.html: current-next-target card should mention {CURRENT_NEXT_TARGET_PHRASE!r}", errors)
 
 
 def require_sections(path: Path, text: str, sections: list[str], errors: list[str]) -> None:
@@ -422,6 +424,17 @@ def check_edge_representation_sync(errors: list[str]) -> None:
             fail(f"{path.name}: missing sign+mag edge-representation finding", errors)
         if EDGE_FORMAT_RESULT_PHRASE not in text:
             fail(f"{path.name}: missing sign+mag result metrics {EDGE_FORMAT_RESULT_PHRASE}", errors)
+
+
+def check_current_next_target_sync(errors: list[str]) -> None:
+    current_target_surfaces = [README, V42_README, LANDING, WIKI_HOME_SRC, WIKI_SWG_SRC, WIKI_FINDINGS_SRC, WIKI_RELEASE_NOTES_SRC]
+    for path in current_target_surfaces:
+        text = read(path)
+        lowered = text.lower()
+        if STALE_NEXT_TARGET_PHRASE in lowered:
+            fail(f"{path.name}: stale next-target phrasing {STALE_NEXT_TARGET_PHRASE!r} should not appear on active public surfaces", errors)
+        if CURRENT_NEXT_TARGET_PHRASE not in lowered:
+            fail(f"{path.name}: current next-target framing should mention {CURRENT_NEXT_TARGET_PHRASE!r}", errors)
 
 
 def check_archive(errors: list[str]) -> None:
@@ -616,6 +629,7 @@ def main() -> int:
     check_findings_constants(threshold, inj_scale, errors)
     check_recipe_candidate_sync(errors)
     check_edge_representation_sync(errors)
+    check_current_next_target_sync(errors)
     check_archive(errors)
     check_templates(errors)
     check_contributing(errors)

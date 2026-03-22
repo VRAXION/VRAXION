@@ -16,7 +16,7 @@ This is the lean technical reference for the public stack. Use [Pages](https://v
 
 - **Current mainline:** [`v4.2/model/graph.py`](https://github.com/VRAXION/VRAXION/blob/main/v4.2/model/graph.py) is the canonical shipped code path on `main`.
 - **Best validated evidence right now:** voltage medium leak remains the strongest schedule result at `22.11%` peak / `21.46%` plateau.
-- **Current next target:** mixed 18-worker swarm remains the main active build target.
+- **Current next target:** context-dependent task learning is now the main active build target, especially windowed input injection and word-pair memory probes.
 
 ## Use This Page When
 
@@ -32,7 +32,7 @@ Use this stack map to jump by question, not by page name.
 
 ## What VRAXION Is
 
-VRAXION is both a company and an engineering effort built around one architecture line: passive I/O projections, a self-wiring ternary hidden graph, persistent internal state across ticks, and mutation-selection training instead of backpropagation through the graph.
+VRAXION is both a company and an engineering effort built around one architecture line: passive I/O projections, a self-wiring signed hidden graph, persistent internal state across ticks, and mutation-selection training instead of backpropagation through the graph.
 
 The current architecture page is [INSTNCT Architecture](SWG-v4.2-Architecture).
 
@@ -74,7 +74,8 @@ Anything not actually shipped in that code path must be labeled as a **Validated
 | triangle-derived `2 add / 1 flip / 5 decay` schedule | Validated finding | Promoted into the current English recipe candidate on `main`, not `graph.py` defaults |
 | sign+mag + magnitude resample | Validated finding | Best edge-quality result in the current edge-format sweep; not yet promoted into the current recipe candidate |
 | voltage medium leak schedule | Validated finding | Strongest schedule result so far |
-| mixed 18-worker swarm | Experimental branch | Main active build target, not current mainline |
+| window=2 input superposition | Validated finding | Strongest current task-learning input result so far; not yet promoted into the canonical recipe |
+| context-dependent task learning | Experimental branch | Main active build target now, not current mainline |
 
 See [Validated Findings](Validated-Findings) for the full evidence board.
 
