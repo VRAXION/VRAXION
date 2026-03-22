@@ -15,6 +15,8 @@ This page is the single primary timeline and lookup surface for VRAXION. Use it 
 
 ## Current Snapshot
 
+- Current canonical public release: [`v4.2.0`](https://github.com/VRAXION/VRAXION/releases/tag/v4.2.0) (stable, published `2026-03-16`)
+- Internal code path remains [`v4.2/`](https://github.com/VRAXION/VRAXION/tree/main/v4.2); that repo path is not the public release label.
 - Current mainline code path: [`v4.2/model/graph.py`](https://github.com/VRAXION/VRAXION/blob/main/v4.2/model/graph.py)
 - Current strongest schedule result in the public evidence layer: voltage medium leak at `22.11%` peak / `21.46%` plateau
 - Current strongest compact learnable schedule result: the 3-angle decision-tree schedule at `20.05%`
@@ -28,6 +30,22 @@ This page is the single primary timeline and lookup surface for VRAXION. Use it 
 - The main unresolved public targets are mixed 18-worker swarm evaluation, schedule-policy promotion, and re-checking low-theta / low-scale against today’s stronger recipe stack.
 - History, terminology, and page retirements now live here instead of being spread across separate glossary, roadmap, theory, and archive leaves.
 
+## Preparing for v5.0.0 Public Beta
+
+### Already in place
+
+- [`v4.2.0`](https://github.com/VRAXION/VRAXION/releases/tag/v4.2.0) exists as the current latest stable GitHub release on `main`.
+- CI already runs compile sanity, the reference stress test, public-surface checks, wiki mirror dry-run, and a tiny cyclic smoke test.
+- Contributor and safety posture already exist through [`CONTRIBUTING.md`](https://github.com/VRAXION/VRAXION/blob/main/CONTRIBUTING.md), [`CODE_OF_CONDUCT.md`](https://github.com/VRAXION/VRAXION/blob/main/CODE_OF_CONDUCT.md), [`LICENSE`](https://github.com/VRAXION/VRAXION/blob/main/LICENSE), [`COMMERCIAL_LICENSE.md`](https://github.com/VRAXION/VRAXION/blob/main/COMMERCIAL_LICENSE.md), [`SECURITY.md`](https://github.com/VRAXION/VRAXION/blob/main/SECURITY.md), [Discussions](https://github.com/VRAXION/VRAXION/discussions), and private security reporting.
+
+### Still planned before Public Beta
+
+- Centralize public release identity in a repo-tracked version source instead of letting `v4.2` path naming carry public meaning.
+- Add clearer public release framing across the README, Pages, and wiki Home surface.
+- Tighten the newcomer path with a beta-grade quickstart and explicit known-limitations language.
+- Improve public intake so bug reports, usage questions, and security reports route cleanly under higher traffic.
+- Keep canonical code, validated evidence, and experimental work visibly separated as outside traffic increases.
+
 ## Project Timeline
 
 | Date | Turn | Why it mattered | Where to go now |
@@ -39,6 +57,7 @@ This page is the single primary timeline and lookup surface for VRAXION. Use it 
 | 2026-03-21 | Repo-tracked docs became canonical and the GitHub wiki became a mirror | Public truth stopped drifting between README, Pages, findings, and ad hoc wiki edits. | [VRAXION Home](Home), [`CONTRIBUTING.md`](https://github.com/VRAXION/VRAXION/blob/main/CONTRIBUTING.md) |
 | 2026-03-21 | Schedule-control work became the main live research frontier | `8` ticks, decay-aware scheduling, voltage/leak control, and compact learnable policies became the strongest present-tense recipe questions. | [Validated Findings](Validated-Findings) |
 | 2026-03-22 | Triangle convergence was distilled into the current fixed English recipe candidate | The current candidate on `main` now uses an `8`-tick, decay-dominant `2 add / 1 flip / 5 decay` schedule without changing the canonical `graph.py` defaults. | [Validated Findings](Validated-Findings) |
+| 2026-03-22 | Explicit preparation for `v5.0.0 Public Beta` started | The public story is being reorganized around stable release identity, clearer onboarding, and higher outside traffic rather than only internal experiment cadence. | This page, [VRAXION Home](Home), and [`CONTRIBUTING.md`](https://github.com/VRAXION/VRAXION/blob/main/CONTRIBUTING.md) |
 | 2026-03-21 | Roadmap, theory, archive, glossary, and old architecture leaves were collapsed into one timeline surface | History, terminology, open questions, and retirement lookup now live in one place instead of multiple smaller pages. | This page |
 
 ## Retired Surfaces and Replacements
@@ -106,6 +125,8 @@ Historical Diamond Code-era terms that still appear in older issues, notes, or s
 
 ## Published Releases
 
+- Current canonical public release: [`v4.2.0`](https://github.com/VRAXION/VRAXION/releases/tag/v4.2.0)
+- Next public milestone: preparation toward `v5.0.0 Public Beta`
 - GitHub Releases: [VRAXION releases](https://github.com/VRAXION/VRAXION/releases)
 - Public update issues: [public-update label](https://github.com/VRAXION/VRAXION/issues?q=label%3Apublic-update)
 

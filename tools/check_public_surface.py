@@ -133,6 +133,7 @@ PRIMARY_PAGE_SECTION_RULES = {
     WIKI_RELEASE_NOTES_SRC: [
         "Current Snapshot",
         "What Matters Now",
+        "Preparing for v5.0.0 Public Beta",
         "Project Timeline",
         "Open Questions and Promotion Gates",
         "Key Terms",
@@ -428,6 +429,7 @@ def check_release_notes_page(errors: list[str]) -> None:
         "How To Read It",
         "Current Snapshot",
         "What Matters Now",
+        "Preparing for v5.0.0 Public Beta",
         "Project Timeline",
         "Retired Surfaces and Replacements",
         "Open Questions and Promotion Gates",
@@ -437,6 +439,16 @@ def check_release_notes_page(errors: list[str]) -> None:
     ]:
         if term not in text:
             fail(f"Release-Notes.md: missing expected project-timeline section {term!r}", errors)
+    if not re.search(r"Current canonical public release:\s*(?:\[[^\]]+\]\([^)]+\)|`?v4\.2\.0`?)", text):
+        fail("Release-Notes.md: missing current canonical public release framing for v4.2.0", errors)
+    if not re.search(r"Next public milestone:\s*preparation toward\s*`?v5\.0\.0 Public Beta`?", text):
+        fail("Release-Notes.md: missing next public milestone framing for v5.0.0 Public Beta", errors)
+    for banned in [
+        "v5.0.0 Public Beta is live",
+        "v5.0.0 is the current release",
+    ]:
+        if banned in text:
+            fail(f"Release-Notes.md: beta-prep framing should not claim {banned!r}", errors)
 
 
 def check_removed_wiki_sources(errors: list[str]) -> None:
