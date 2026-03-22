@@ -31,32 +31,10 @@ WIKI_GOVERNANCE_SRC = WIKI_SOURCE_DIR / "Governance.md"
 WIKI_SIDEBAR_SRC = WIKI_SOURCE_DIR / "_Sidebar.md"
 WIKI_FOOTER_SRC = WIKI_SOURCE_DIR / "_Footer.md"
 ENGLISH_RECIPE = ROOT / "v4.2" / "english_1024n_18w.py"
-HOME_STACK_MAP_FILE = ROOT / "docs" / "assets" / "home-public-stack.svg"
 HOME_ANATOMY_FILE = ROOT / "docs" / "assets" / "home-instnct-anatomy.svg"
 HOME_LOGO_ASSET = "https://raw.githubusercontent.com/VRAXION/VRAXION/main/docs/assets/vraxion-instnct-spiral.png"
-HOME_STACK_MAP_ASSET = "https://raw.githubusercontent.com/VRAXION/VRAXION/main/docs/assets/home-public-stack.svg"
+HOME_STACK_MAP_ASSET = "https://raw.githubusercontent.com/VRAXION/VRAXION/main/docs/assets/vraxion-public-stack-map.png"
 HOME_ANATOMY_ASSET = "https://raw.githubusercontent.com/VRAXION/VRAXION/main/docs/assets/home-instnct-anatomy.svg"
-HOME_STACK_MAP_LABELS = [
-    "VRAXION Home",
-    "INSTNCT Architecture",
-    "Validated Findings",
-    "Engineering Protocol",
-    "Project Timeline",
-]
-HOME_STACK_MAP_DESCRIPTORS = [
-    "orientation hub",
-    "active technical line",
-    "evidence board",
-    "run contract",
-    "changes and terms",
-]
-HOME_STACK_MAP_BANNED_GENERIC_LABELS = [
-    r">\s*Timeline\s*<",
-    r">\s*Architecture\s*<",
-    r">\s*Findings\s*<",
-    r">\s*Engineering\s*<",
-    r">\s*Home\s*<",
-]
 HOME_ANATOMY_LABELS = [
     "Passive I/O Projections",
     "Self-Wiring Hidden Graph",
@@ -280,25 +258,18 @@ def check_primary_editorial_shape(errors: list[str]) -> None:
 
 def check_home_orientation_graphic(errors: list[str]) -> None:
     home_text = read(WIKI_HOME_SRC)
-    asset_text = read(HOME_STACK_MAP_FILE)
     if HOME_LOGO_ASSET not in home_text:
         fail("Home.md: top spiral logo reference must remain intact", errors)
     if HOME_STACK_MAP_ASSET not in home_text:
-        fail("Home.md: missing home-public-stack.svg orientation graphic", errors)
+        fail("Home.md: missing PNG public-stack orientation graphic", errors)
+    if "home-public-stack.svg" in home_text:
+        fail("Home.md: old home-public-stack.svg reference should not remain", errors)
+    if "VRAXION public stack hierarchy" not in home_text:
+        fail("Home.md: missing updated public-stack image alt text", errors)
     if "Use this stack map to jump by question, not by page name." not in home_text:
         fail("Home.md: missing refined lead-in line for the public stack map", errors)
     if "Use this stack map to jump by intent." in home_text:
         fail("Home.md: old stack-map lead-in should not remain", errors)
-
-    for label in HOME_STACK_MAP_LABELS:
-        if label not in asset_text:
-            fail(f"home-public-stack.svg: missing exact public label {label!r}", errors)
-    for descriptor in HOME_STACK_MAP_DESCRIPTORS:
-        if descriptor not in asset_text:
-            fail(f"home-public-stack.svg: missing intent descriptor {descriptor!r}", errors)
-    for pattern in HOME_STACK_MAP_BANNED_GENERIC_LABELS:
-        if re.search(pattern, asset_text):
-            fail(f"home-public-stack.svg: old generic standalone label pattern {pattern!r} should not remain", errors)
 
     other_primary_pages = [
         WIKI_SWG_SRC,
@@ -308,7 +279,7 @@ def check_home_orientation_graphic(errors: list[str]) -> None:
     ]
     for path in other_primary_pages:
         if HOME_STACK_MAP_ASSET in read(path):
-            fail(f"{path.name}: home-public-stack.svg should stay on Home only", errors)
+            fail(f"{path.name}: PNG public-stack graphic should stay on Home only", errors)
 
 
 def check_home_anatomy_graphic(errors: list[str]) -> None:

@@ -25,7 +25,7 @@ This is the lean technical reference for the public stack. Use [Pages](https://v
 Use this stack map to jump by question, not by page name.
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/VRAXION/VRAXION/main/docs/assets/home-public-stack.svg" alt="VRAXION public stack map" width="740">
+  <img src="https://raw.githubusercontent.com/VRAXION/VRAXION/main/docs/assets/vraxion-public-stack-map.png" alt="VRAXION public stack hierarchy" width="740">
 </p>
 
 ## What VRAXION Is
