@@ -42,17 +42,17 @@ INSTNCT core anatomy at a glance:
 
 ## Long-Horizon Mission
 
-<p align="center">
-  <img src="https://raw.githubusercontent.com/VRAXION/VRAXION/main/docs/assets/long-horizon-mission.jpg" alt="Long-horizon mission illustration" width="592">
-  <br>
-  <em>In a stable loop, structure emerges.</em>
-</p>
-
 VRAXION exists to advance machine consciousness as an engineering reality, and to ensure that the underlying mechanisms can endure beyond any single institution, deployment, or era.
 
 In public technical terms, that long-horizon goal is framed as recursive verification, self-checking, and self-refinement that can be instrumented rather than treated as a black box.
 
 This is an ambition and a research direction, not a claim of achieved sentience. The active public standard remains the same: architecture claims, evidence claims, and shipped code must stay distinguishable.
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/VRAXION/VRAXION/main/docs/assets/long-horizon-mission.jpg" alt="Long-horizon mission illustration" width="592">
+  <br>
+  <em>In a stable loop, structure emerges.</em>
+</p>
 
 ## Current Mainline
 
