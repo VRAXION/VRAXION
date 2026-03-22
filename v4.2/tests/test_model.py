@@ -1,5 +1,5 @@
 """
-Adversarial Stress Test — 19 probes for SelfWiringGraph
+Adversarial Stress Test — 20 probes for SelfWiringGraph
 =========================================================
 All probes must stay green or warning-only for the model to be considered valid.
 """
@@ -403,8 +403,32 @@ def main():
             os.environ[env_var] = old_env
     results.append(("Fineweb resolver", r))
 
-    # PROBE 19: Active v4.2 tree must not hardcode Diamond Code corpus paths
-    header(19, "No hardcoded Diamond Code corpus paths in active v4.2")
+    # PROBE 19: Removed compat surface must stay removed
+    header(19, "Removed compat surface stays absent")
+    net = SelfWiringGraph(32, 8)
+    removed = [
+        "N",
+        "out_start",
+        "signal",
+        "grow",
+        "intensity",
+        "mood",
+        "mood_x",
+        "mood_z",
+        "clip_factor",
+        "self_conn",
+        "charge_rate",
+        "gain",
+        "W_strong",
+        "mutate_with_" + "mood",
+    ]
+    present = [name for name in removed if hasattr(net, name)]
+    ok = not present
+    r = result(PASS if ok else FAIL, f"present compat members: {present or 'none'}")
+    results.append(("Compat surface removed", r))
+
+    # PROBE 20: Active v4.2 tree must not hardcode Diamond Code corpus paths
+    header(20, "No hardcoded Diamond Code corpus paths in active v4.2")
     repo_root = Path(__file__).resolve().parents[2]
     tracked = subprocess.check_output(
         ["git", "-C", str(repo_root), "ls-files", "v4.2"],
@@ -422,7 +446,10 @@ def main():
             continue
         if rel.startswith("v4.2/tests/gpu_experimental/"):
             continue
-        text = (repo_root / rel).read_text(encoding="utf-8")
+        path = repo_root / rel
+        if not path.exists():
+            continue
+        text = path.read_text(encoding="utf-8")
         if "Diamond Code/data/traindat" in text or "../Diamond Code" in text:
             forbidden_hits.append(rel)
     ok = not forbidden_hits

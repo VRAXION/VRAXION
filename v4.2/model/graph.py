@@ -34,7 +34,6 @@ class SelfWiringGraph:
     INJ_SCALE = 3.0    # TEMPORARY: projection amplitude to overcome threshold
     DEFAULT_THETA = 0.1
     DEFAULT_DECAY = 0.15
-    LEGACY_CLIP_FACTOR = 1.0
     # Mutation int fractions: PATIENCE 7/20, LOSS_DRIFT 1/5, SHRINK 7/10, LOSS_STEP +-3
 
     def __init__(self, *args, density=None, threshold=None, leak=None):
@@ -43,8 +42,6 @@ class SelfWiringGraph:
         hidden, vocab = self._parse_init_args(*args)
         self.V = vocab
         self.H = hidden
-        self.N = hidden  # compat alias
-        self._init_legacy_compat()
 
         # Passive I/O projections (fixed, not learned)
         # Separate RNG so mask init stays deterministic regardless of projection
@@ -107,26 +104,6 @@ class SelfWiringGraph:
             density /= 100.0
         return float(np.clip(density, 0.0, 1.0))
 
-    def _init_legacy_compat(self):
-        # Older sweeps still probe these fields directly. Keep them as no-op
-        # compatibility shims instead of letting the tracked tree explode.
-        self.clip_factor = np.float32(self.LEGACY_CLIP_FACTOR)
-        self.self_conn = np.float32(0.0)
-        self.signal = 0
-        self.grow = 0
-        self.intensity = 0
-        self.mood = 0
-        self.mood_x = np.float32(0.0)
-        self.mood_z = np.float32(0.0)
-        self.gain = np.float32(self.DRIVE)
-        self.charge_rate = np.float32(1.0)
-        self.W_strong = np.float32(self.DRIVE)
-
-    @property
-    def out_start(self):
-        """Compat shim for old tests that reference out_start."""
-        return 0
-
     def reset(self):
         self.state *= 0
         self.charge *= 0
@@ -172,6 +149,22 @@ class SelfWiringGraph:
                       acts[:, self._sp_rows] * self._sp_vals)
         return raw
 
+    def readout(self, hidden_state):
+        """Project one hidden-state vector into output-logit space."""
+        hidden = np.asarray(hidden_state, dtype=np.float32)
+        if hidden.shape != (self.H,):
+            raise ValueError(f"readout expects shape {(self.H,)}, got {hidden.shape}")
+        return hidden @ self.output_projection
+
+    def readout_batch(self, hidden_states):
+        """Project a batch of hidden-state vectors into output-logit space."""
+        hidden = np.asarray(hidden_states, dtype=np.float32)
+        if hidden.ndim != 2 or hidden.shape[1] != self.H:
+            raise ValueError(
+                f"readout_batch expects shape (batch, {self.H}), got {hidden.shape}"
+            )
+        return hidden @ self.output_projection
+
     def forward(self, world, ticks=6):
         """Single-input forward pass. Passive I/O: inject via input_projection, read via output_projection."""
         act = self.state.copy()
@@ -187,7 +180,7 @@ class SelfWiringGraph:
             act = np.maximum(self.charge - self.theta, 0.0)
             self.charge = np.maximum(self.charge, 0.0)  # ReLU on charge (sweep: +6% vs clip)
         self.state = act.copy()
-        return self.charge @ self.output_projection
+        return self.readout(self.charge)
 
     def forward_batch(self, ticks=6):
         """Batch forward: all V inputs simultaneously. Returns (V, V) logits."""
@@ -207,7 +200,7 @@ class SelfWiringGraph:
             charges *= ret  # element-wise per-neuron
             acts = np.maximum(charges - th, 0.0)
             charges = np.maximum(charges, 0.0)  # ReLU on charge
-        return charges @ self.output_projection
+        return self.readout_batch(charges)
 
     def resync_alive(self):
         """Rebuild alive list+set from mask. Call after direct mask writes."""
@@ -337,8 +330,6 @@ class SelfWiringGraph:
         net = object.__new__(cls)
         net.V = V
         net.H = H
-        net.N = H
-        net._init_legacy_compat()
         net.input_projection = input_projection
         net.output_projection = output_projection
         net.mask = np.zeros((H, H), dtype=np.float32)
@@ -450,10 +441,6 @@ class SelfWiringGraph:
             self._rewire(undo)
         self._sync_sparse_idx()
         return undo
-
-    def mutate_with_mood(self):
-        """Compatibility alias for older training utilities."""
-        return self.mutate()
 
     def _add(self, undo):
         cap = self.V * self.NV_RATIO * self.CAP_RATIO

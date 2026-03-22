@@ -75,7 +75,7 @@ def train_loop(net, targets, V, score_fn, mutate_fn=None,
         if mutate_fn:
             mutate_fn(net)
         else:
-            net.mutate_with_mood()
+            net.mutate()
 
         sc, acc = score_fn(net, targets, V, ticks)
 

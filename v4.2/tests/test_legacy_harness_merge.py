@@ -3,12 +3,15 @@
 from __future__ import annotations
 
 from pathlib import Path
+import re
 import sys
 
 
 ROOT = Path(__file__).resolve().parent
+V42_ROOT = ROOT.parent
 ARCHIVE = ROOT / "archive" / "legacy_harness"
 CPU_ARCHIVE = ROOT / "archive" / "legacy_cpu_controller"
+OUTPUT_BAND_ARCHIVE = ROOT / "archive" / "legacy_output_band"
 ACTIVE = [
     ROOT / "mutation_policy_ab.py",
     ROOT / "permutation_curve_sweeps.py",
@@ -79,6 +82,24 @@ FORBIDDEN = [
     "net.mood_z",
     "mutate_with_mood",
 ]
+FORBIDDEN_PATTERNS = {
+    r"\b[A-Za-z_][A-Za-z0-9_]*\.N\b": ".N",
+    r"\b[A-Za-z_][A-Za-z0-9_]*\.out_start\b": ".out_start",
+    r"\b[A-Za-z_][A-Za-z0-9_]*\.clip_factor\b": ".clip_factor",
+    r"\b[A-Za-z_][A-Za-z0-9_]*\.self_conn\b": ".self_conn",
+    r"\b[A-Za-z_][A-Za-z0-9_]*\.charge_rate\b": ".charge_rate",
+    r"\b[A-Za-z_][A-Za-z0-9_]*\.gain\b": ".gain",
+    r"\b[A-Za-z_][A-Za-z0-9_]*\.W_strong\b": ".W_strong",
+}
+
+
+def scan_forbidden_tokens(path: Path, text: str, errors: list[str]) -> None:
+    for forbidden in FORBIDDEN:
+        if forbidden in text:
+            errors.append(f"{path.name} still contains forbidden legacy surface: {forbidden}")
+    for pattern, label in FORBIDDEN_PATTERNS.items():
+        if re.search(pattern, text):
+            errors.append(f"{path.name} still contains forbidden canon-breaker: {label}")
 
 
 def main():
@@ -90,6 +111,10 @@ def main():
     for path in ACTIVE_CPU_SWEEPS:
         if not path.exists():
             errors.append(f"Missing expected active CPU sweep: {path.name}")
+    if not OUTPUT_BAND_ARCHIVE.exists():
+        errors.append("Missing legacy_output_band archive")
+    elif not any(OUTPUT_BAND_ARCHIVE.glob("*.py")):
+        errors.append("legacy_output_band archive is unexpectedly empty")
 
     for name in ARCHIVED_BASENAMES:
         active_path = ROOT / name
@@ -110,9 +135,7 @@ def main():
         text = path.read_text(encoding="utf-8")
         if "tests.harness" not in text:
             errors.append(f"{path.name} does not import the shared harness package")
-        for forbidden in FORBIDDEN:
-            if forbidden in text:
-                errors.append(f"{path.name} still contains forbidden legacy mutation surface: {forbidden}")
+        scan_forbidden_tokens(path, text, errors)
 
     for path in ACTIVE_CPU_SWEEPS:
         text = path.read_text(encoding="utf-8")
@@ -120,27 +143,28 @@ def main():
             errors.append(f"{path.name} does not import the shared harness package")
         if "def eval_b" in text:
             errors.append(f"{path.name} still defines a local eval_b loop")
-        for forbidden in FORBIDDEN:
-            if forbidden in text:
-                errors.append(f"{path.name} still contains forbidden legacy mutation surface: {forbidden}")
+        scan_forbidden_tokens(path, text, errors)
 
     for path in CANON_CPU_SUPPORT:
         text = path.read_text(encoding="utf-8")
-        for forbidden in FORBIDDEN:
-            if forbidden in text:
-                errors.append(f"{path.name} still contains forbidden legacy mutation surface: {forbidden}")
-                break
+        scan_forbidden_tokens(path, text, errors)
 
-    for path in ROOT.glob("*.py"):
-        if path.name in {"test_legacy_harness_merge.py", "test_model.py", "graph_baseline_loader.py"}:
+    for path in V42_ROOT.rglob("*.py"):
+        rel = path.relative_to(V42_ROOT).as_posix()
+        if rel.startswith("tests/archive/"):
             continue
-        if path.name.startswith("gpu_"):
+        if rel.startswith("tests/gpu_experimental/"):
+            continue
+        if rel.startswith("viz/"):
+            continue
+        if rel == "model/passive_io.py":
+            continue
+        if rel == "train_adaptive_schedule.py":
+            continue
+        if path.name == "test_legacy_harness_merge.py":
             continue
         text = path.read_text(encoding="utf-8")
-        for forbidden in FORBIDDEN:
-            if forbidden in text:
-                errors.append(f"{path.name} still contains forbidden active CPU legacy surface: {forbidden}")
-                break
+        scan_forbidden_tokens(path, text, errors)
 
     if errors:
         for err in errors:

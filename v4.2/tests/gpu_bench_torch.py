@@ -1,10 +1,6 @@
-"""Torch CUDA parity + speed benchmark for v4.2 baselines.
+"""Torch CUDA parity + speed benchmark for the projection-based SWG forward path."""
 
-This forward-only probe freezes two CPU baselines explicitly:
-  - CPU_DENSE_COMMITTED: exact origin/v4.2 graph.py
-  - CPU_SPARSE_LOCAL: current local graph.py
-  - CUDA_DENSE: dense Torch implementation on the current device
-"""
+from __future__ import annotations
 
 import time
 from dataclasses import dataclass
@@ -37,64 +33,30 @@ WARMUP = 50
 
 
 def torch_forward_batch(
-    mask_i8: torch.Tensor,
-    vocab: int,
-    out_start: int,
-    threshold: float,
-    clip_factor: float,
-    self_conn: float,
-    charge_rate: float,
-    leak: float,
-    gain: float,
+    mask: torch.Tensor,
+    input_projection: torch.Tensor,
+    output_projection: torch.Tensor,
+    theta: torch.Tensor,
+    decay: torch.Tensor,
     ticks: int,
 ) -> torch.Tensor:
-    weff = mask_i8.to(torch.float32) * gain
-    n = mask_i8.shape[0]
-    clip_bound = threshold * clip_factor
-    charges = torch.zeros((vocab, n), dtype=torch.float32, device=mask_i8.device)
-    acts = torch.zeros((vocab, n), dtype=torch.float32, device=mask_i8.device)
-    eye = torch.eye(vocab, dtype=torch.float32, device=mask_i8.device)
+    vocab, hidden = input_projection.shape
+    charges = torch.zeros((vocab, hidden), dtype=torch.float32, device=mask.device)
+    acts = torch.zeros((vocab, hidden), dtype=torch.float32, device=mask.device)
+    projected = input_projection
+    retention = 1.0 - decay
 
     for t in range(ticks):
         if t == 0:
-            acts[:, :vocab] = eye
-        raw = acts @ weff + acts * self_conn
+            acts = acts + projected
+        raw = acts @ mask
         raw = torch.nan_to_num(raw, nan=0.0, posinf=0.0, neginf=0.0)
-        charges = charges + raw * charge_rate
-        charges = charges * leak
-        acts = torch.clamp(charges - threshold, min=0.0)
-        charges = torch.clamp(charges, -clip_bound, clip_bound)
+        charges = charges + raw
+        charges = charges * retention
+        acts = torch.clamp(charges - theta, min=0.0)
+        charges = torch.clamp(charges, min=0.0)
 
-    return charges[:, out_start : out_start + vocab]
-
-
-def numpy_dense_forward_batch(net, ticks: int) -> np.ndarray:
-    v, n = net.V, net.N
-    weff = net.mask.astype(np.float32) * net.gain
-    clip_bound = net.threshold * net.clip_factor
-    charges = np.zeros((v, n), dtype=np.float32)
-    acts = np.zeros((v, n), dtype=np.float32)
-
-    for t in range(ticks):
-        if t == 0:
-            acts[:, :v] = np.eye(v, dtype=np.float32)
-        raw = acts @ weff + acts * net.self_conn
-        np.nan_to_num(raw, copy=False, nan=0.0, posinf=0.0, neginf=0.0)
-        charges += raw * net.charge_rate
-        charges *= net.leak
-        acts = np.maximum(charges - net.threshold, 0.0)
-        charges = np.clip(charges, -clip_bound, clip_bound)
-
-    return charges[:, net.out_start : net.out_start + v]
-
-
-def bench_dense_numpy(net, iters: int) -> tuple[np.ndarray, float]:
-    out = numpy_dense_forward_batch(net, TICKS)
-    t0 = time.perf_counter()
-    for _ in range(iters):
-        out = numpy_dense_forward_batch(net, TICKS)
-    dt = time.perf_counter() - t0
-    return out, dt
+    return charges @ output_projection
 
 
 def bench_cpu_impl(net, iters: int) -> tuple[np.ndarray, float]:
@@ -108,19 +70,19 @@ def bench_cpu_impl(net, iters: int) -> tuple[np.ndarray, float]:
 
 def bench_gpu(net, iters: int) -> tuple[np.ndarray, float]:
     device = torch.device("cuda")
-    mask_i8 = torch.from_numpy(net.mask).to(device=device, dtype=torch.int8)
+    mask_t = torch.from_numpy(net.mask).to(device=device, dtype=torch.float32)
+    input_projection_t = torch.from_numpy(net.input_projection).to(device=device, dtype=torch.float32)
+    output_projection_t = torch.from_numpy(net.output_projection).to(device=device, dtype=torch.float32)
+    theta_t = torch.from_numpy(net.theta).to(device=device, dtype=torch.float32)
+    decay_t = torch.from_numpy(net.decay).to(device=device, dtype=torch.float32)
 
     for _ in range(WARMUP):
         out = torch_forward_batch(
-            mask_i8,
-            net.V,
-            net.out_start,
-            net.threshold,
-            net.clip_factor,
-            net.self_conn,
-            net.charge_rate,
-            net.leak,
-            net.gain,
+            mask_t,
+            input_projection_t,
+            output_projection_t,
+            theta_t,
+            decay_t,
             TICKS,
         )
     torch.cuda.synchronize()
@@ -128,15 +90,11 @@ def bench_gpu(net, iters: int) -> tuple[np.ndarray, float]:
     t0 = time.perf_counter()
     for _ in range(iters):
         out = torch_forward_batch(
-            mask_i8,
-            net.V,
-            net.out_start,
-            net.threshold,
-            net.clip_factor,
-            net.self_conn,
-            net.charge_rate,
-            net.leak,
-            net.gain,
+            mask_t,
+            input_projection_t,
+            output_projection_t,
+            theta_t,
+            decay_t,
             TICKS,
         )
     torch.cuda.synchronize()
@@ -164,7 +122,7 @@ def main() -> int:
 
     for cfg in CONFIGS:
         _, dense_net, _, sparse_net = build_paired_nets(cfg.vocab, cfg.neurons, cfg.density, SEED)
-        dense_out, dense_dt = bench_dense_numpy(dense_net, CPU_ITERS)
+        dense_out, dense_dt = bench_cpu_impl(dense_net, CPU_ITERS)
         sparse_out, sparse_dt = bench_cpu_impl(sparse_net, CPU_ITERS)
         gpu_out, gpu_dt = bench_gpu(dense_net, GPU_ITERS)
 

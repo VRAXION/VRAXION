@@ -15,18 +15,20 @@ def main() -> int:
 
     cfg = BenchConfig("V128_N384", 128, 384, 0.06)
     _, dense_net, _, _, targets, candidates = generate_candidates(cfg)
-    mask, leak = candidates[0]
+    candidate = candidates[0]
     device = torch.device("cuda")
-    mask_i8 = torch.from_numpy(mask).to(device=device, dtype=torch.int8)
+    mask_t = torch.from_numpy(candidate["mask"]).to(device=device, dtype=torch.float32)
+    input_projection_t = torch.from_numpy(dense_net.input_projection).to(device=device, dtype=torch.float32)
+    output_projection_t = torch.from_numpy(dense_net.output_projection).to(device=device, dtype=torch.float32)
+    theta_t = torch.from_numpy(candidate["theta"]).to(device=device, dtype=torch.float32)
+    decay_t = torch.from_numpy(candidate["decay"]).to(device=device, dtype=torch.float32)
     targets_t = torch.from_numpy(targets).to(device=device, dtype=torch.long)
 
     logits1, score1 = torch_eval_candidate(
-        mask_i8, leak, dense_net.V, dense_net.N, dense_net.threshold, dense_net.clip_factor,
-        dense_net.self_conn, dense_net.charge_rate, dense_net.gain, dense_net.out_start, targets_t
+        mask_t, input_projection_t, output_projection_t, theta_t, decay_t, targets_t
     )
     logits2, score2 = torch_eval_candidate(
-        mask_i8, leak, dense_net.V, dense_net.N, dense_net.threshold, dense_net.clip_factor,
-        dense_net.self_conn, dense_net.charge_rate, dense_net.gain, dense_net.out_start, targets_t
+        mask_t, input_projection_t, output_projection_t, theta_t, decay_t, targets_t
     )
     torch.cuda.synchronize()
 
