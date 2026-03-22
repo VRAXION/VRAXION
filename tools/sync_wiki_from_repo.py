@@ -10,6 +10,7 @@ ROOT = Path(__file__).resolve().parents[1]
 SOURCE_DIR = ROOT / "docs" / "wiki"
 WIKI_DIR = ROOT / "VRAXION.wiki"
 FILES = [
+    "AI-Logic-Flowchart.md",
     "Home.md",
     "Chapter-01---Vision-and-Scope.md",
     "Release-Notes.md",
