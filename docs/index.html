@@ -193,6 +193,22 @@
       gap: 10px 16px;
       font: 600 0.85rem/1.4 var(--mono);
     }
+    .surface-map-intro {
+      margin-top: 4px;
+      max-width: 70ch;
+    }
+    .surface-map-wrap {
+      margin-top: 16px;
+      padding: 16px;
+      background: #06111c;
+      border: 1px solid rgba(15, 93, 118, 0.24);
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,0.04);
+    }
+    .surface-map {
+      display: block;
+      width: 100%;
+      height: auto;
+    }
     @keyframes heroSpin {
       from { transform: rotate(0deg) scale(1); }
       50% { transform: rotate(180deg) scale(1.02); }
@@ -259,7 +275,7 @@
       </article>
       <article class="card">
         <h2>Current Next Target</h2>
-        <p>The main live target is mixed 18-worker swarm evaluation, with schedule policy and mutation-policy promotion still under active review.</p>
+        <p>The main live target is mixed 18-worker swarm evaluation, with schedule policy, mutation policy, and edge representation still under active review.</p>
       </article>
     </section>
 
@@ -286,6 +302,10 @@ python tools/check_public_surface.py</pre>
 
     <section class="section">
       <h2>Public Surfaces</h2>
+      <p class="surface-map-intro">The public stack is intentionally shallow: use <code>VRAXION Home</code> for orientation, then jump to architecture, evidence, engineering, or timeline by question.</p>
+      <div class="surface-map-wrap">
+        <img class="surface-map" src="./assets/vraxion-public-stack-map.png" alt="VRAXION public stack hierarchy" />
+      </div>
       <div class="cta-grid">
         <a class="cta" href="https://github.com/VRAXION/VRAXION/wiki/Home">
           <strong>VRAXION Home</strong>

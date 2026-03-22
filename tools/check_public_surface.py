@@ -15,6 +15,7 @@ V42_README = ROOT / "v4.2" / "README.md"
 CONTRIBUTING = ROOT / "CONTRIBUTING.md"
 FINDINGS = ROOT / "VALIDATED_FINDINGS.md"
 LANDING = ROOT / "docs" / "index.html"
+LANDING_STACK_MAP = ROOT / "docs" / "assets" / "vraxion-public-stack-map.png"
 ARCHIVE = ROOT / "ARCHIVE.md"
 PR_TEMPLATE = ROOT / ".github" / "pull_request_template.md"
 PUBLIC_UPDATE = ROOT / ".github" / "ISSUE_TEMPLATE" / "public_update.md"
@@ -243,6 +244,12 @@ def check_landing(text: str, errors: list[str]) -> None:
     for label in LANDING_CTA_LABELS:
         if label not in text:
             fail(f"docs/index.html: missing CTA label {label!r}", errors)
+    if "./assets/vraxion-public-stack-map.png" not in text:
+        fail("docs/index.html: missing public stack map asset reference", errors)
+    if "VRAXION public stack hierarchy" not in text:
+        fail("docs/index.html: missing public stack map alt text", errors)
+    if "mutation policy, and edge representation still under active review" not in text:
+        fail("docs/index.html: current-next-target card should mention edge representation review", errors)
 
 
 def require_sections(path: Path, text: str, sections: list[str], errors: list[str]) -> None:
@@ -566,6 +573,8 @@ def main() -> int:
             check_front_door_phrases(path, text, errors)
 
     landing_text = read(LANDING)
+    if not LANDING_STACK_MAP.exists():
+        fail(f"Missing landing stack-map asset: {LANDING_STACK_MAP}", errors)
     check_landing(landing_text, errors)
     check_banned_phrases(LANDING, landing_text, errors)
     check_front_door_phrases(LANDING, landing_text, errors)
