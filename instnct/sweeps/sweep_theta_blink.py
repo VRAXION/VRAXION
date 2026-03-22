@@ -95,7 +95,7 @@ def _eval_on_seqs(mask, H, theta, decay, seqs):
                 # Use effective theta (blink/phi for dark neurons)
                 th_eff = get_effective_theta(theta, has_incoming, t + i*6, H)
                 act = np.maximum(charge - th_eff, 0.0)
-                charge = np.clip(charge, -1.0, 1.0)
+                charge = np.maximum(charge, 0.0)
             state = act.copy()
             out = charge @ _output_projection
             out_n = out / (np.linalg.norm(out) + 1e-8)
@@ -177,7 +177,7 @@ def eval_accuracy_with_blink(mask, H, input_projection, output_projection, theta
                 dark_idx = np.where(dark)[0]
                 th_eff[dark_idx] = np.random.uniform(tmin, tmax, len(dark_idx)).astype(np.float32)
             act = np.maximum(charge - th_eff, 0.0)
-            charge = np.clip(charge, -1.0, 1.0)
+            charge = np.maximum(charge, 0.0)
         state = act.copy()
         out = charge @ output_projection
         out_n = out / (np.linalg.norm(out) + 1e-8)
@@ -246,7 +246,6 @@ def run_config(name, mode, theta_init, theta_min, theta_max,
 
 if __name__ == "__main__":
     IO = 256; NV = 4; H = IO * NV
-    SelfWiringGraph.NV_RATIO = NV
     bp = make_bp(IO)
 
     from lib.data import load_fineweb_bytes, resolve_fineweb_path
@@ -298,3 +297,5 @@ if __name__ == "__main__":
     for r in results:
         print(f"  {r['name']:<22} {r['eval']*100:6.2f} {r['edges']:6d} {r['time']:5.0f}s")
     sys.stdout.flush()
+
+

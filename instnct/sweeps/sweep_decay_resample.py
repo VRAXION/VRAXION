@@ -223,7 +223,6 @@ def run_config(name, decay_mode, bp, ALL_DATA, bigram, eval_seqs, H, input_proje
 
 if __name__ == "__main__":
     IO = 256; NV = 4; H = IO * NV
-    SelfWiringGraph.NV_RATIO = NV
     bp = make_bp(IO)
 
     from lib.data import load_fineweb_bytes, resolve_fineweb_path
@@ -239,9 +238,9 @@ if __name__ == "__main__":
                  [eval_rng.randint(0, len(ALL_DATA)-200) for _ in range(10)]]
 
     random.seed(42); np.random.seed(42)
-    ref = SelfWiringGraph(IO)
-    input_projection = ref.input_projection / ref.INJ_SCALE * 1.0
-    output_projection = ref.output_projection / ref.INJ_SCALE * 1.0
+    ref = SelfWiringGraph(IO, hidden_ratio=NV, projection_scale=1.0)
+    input_projection = ref.input_projection
+    output_projection = ref.output_projection
 
     results = []
 
@@ -267,3 +266,4 @@ if __name__ == "__main__":
               f"{r['decay_mean']:.4f}+/-{r['decay_std']:.4f} "
               f"[{r['decay_min']:.3f}-{r['decay_max']:.3f}]")
     sys.stdout.flush()
+

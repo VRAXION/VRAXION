@@ -238,7 +238,6 @@ if __name__ == "__main__":
     N_CYCLES = 2
     SCHEDULE = ['add', 'add', 'flip', 'mag_resample', 'add', 'add']
 
-    SelfWiringGraph.NV_RATIO = NV
     bp = make_bp(IO)
     BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -252,9 +251,9 @@ if __name__ == "__main__":
                  [eval_rng.randint(0, len(ALL_DATA)-200) for _ in range(10)]]
 
     random.seed(42); np.random.seed(42)
-    ref = SelfWiringGraph(IO)
-    input_projection = ref.input_projection / ref.INJ_SCALE * 1.0
-    output_projection = ref.output_projection / ref.INJ_SCALE * 1.0
+    ref = SelfWiringGraph(IO, hidden_ratio=NV, projection_scale=1.0)
+    input_projection = ref.input_projection
+    output_projection = ref.output_projection
 
     inj_table = np.clip(bp @ input_projection * 128, -128, 127).astype(np.int8)
     output_projection_int8 = np.clip(output_projection * 128, -128, 127).astype(np.int8)
@@ -424,3 +423,4 @@ if __name__ == "__main__":
         f.write(f"Baseline: {ea_a*100:.2f}% {edges_a}e {qa_a:.3f}q {elapsed_a:.0f}s\n")
         f.write(f"Alignment: {ea_b*100:.2f}% {edges_b}e {qa_b:.3f}q {total_time_b:.0f}s\n")
         f.write(f"Delta: {delta:+.2f}%\n")
+

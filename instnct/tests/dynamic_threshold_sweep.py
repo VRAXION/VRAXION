@@ -60,14 +60,14 @@ def run_one(mode, theta_init, seed, budget, log_q=None):
     label = f"{mode}_theta={theta_init:.2f}"
     log_msg(
         log_q,
-        f"{label:20s} seed={seed:3d} acc={outcome.best_acc*100:5.1f}% theta={net.threshold:.3f}",
+        f"{label:20s} seed={seed:3d} acc={outcome.best_acc*100:5.1f}% theta={net.theta_mean:.3f}",
     )
     return {
         'mode': mode,
         'theta_init': theta_init,
         'seed': seed,
         'acc': outcome.best_acc,
-        'theta_final': net.threshold,
+        'theta_final': net.theta_mean,
     }
 
 
@@ -122,3 +122,4 @@ def main():
 if __name__ == '__main__':
     multiprocessing.freeze_support()
     main()
+

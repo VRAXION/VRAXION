@@ -21,7 +21,7 @@ import numpy as np
 
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-LOCAL_GRAPH_PATH = REPO_ROOT / "v4.2" / "model" / "graph.py"
+LOCAL_GRAPH_PATH = REPO_ROOT / "instnct" / "model" / "graph.py"
 COMMITTED_GRAPH_REF = "origin/main"
 COMMITTED_GRAPH_REPO_PATH = "instnct/model/graph.py"
 
@@ -83,8 +83,10 @@ def clone_common_state(src_net, dst_net) -> None:
             dst_net.decay[:] = src_net.decay
     if hasattr(src_net, "loss_pct") and hasattr(dst_net, "loss_pct"):
         dst_net.loss_pct = np.int8(src_net.loss_pct)
-    if hasattr(src_net, "drive") and hasattr(dst_net, "drive"):
-        dst_net.drive = np.int8(src_net.drive)
+    if hasattr(src_net, "mutation_drive") and hasattr(dst_net, "mutation_drive"):
+        dst_net.mutation_drive = np.int8(src_net.mutation_drive)
+    elif hasattr(src_net, "drive") and hasattr(dst_net, "mutation_drive"):
+        dst_net.mutation_drive = np.int8(src_net.mutation_drive)
     if hasattr(dst_net, "_weff_dirty"):
         dst_net._weff_dirty = True
 
@@ -96,11 +98,12 @@ def build_paired_nets(vocab: int, neurons: int, density: float, seed: int):
 
     dense_mod.np.random.seed(seed)
     dense_mod.random.seed(seed)
-    dense_net = dense_mod.SelfWiringGraph(neurons, vocab, density=density)
+    dense_net = dense_mod.SelfWiringGraph(vocab, hidden=neurons, density=density)
 
     sparse_mod.np.random.seed(seed)
     sparse_mod.random.seed(seed)
-    sparse_net = sparse_mod.SelfWiringGraph(neurons, vocab, density=density)
+    sparse_net = sparse_mod.SelfWiringGraph(vocab, hidden=neurons, density=density)
     clone_common_state(dense_net, sparse_net)
 
     return dense_mod, dense_net, sparse_mod, sparse_net
+

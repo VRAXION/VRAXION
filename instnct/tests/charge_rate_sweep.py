@@ -140,7 +140,7 @@ def run_one(
         budget=budget,
     )
     net, perm = build_sweep_net(config, seed)
-    net.leak = 0.85
+    net.retention_mean = 0.85
     context = {"charge_rate": float(cr_init)}
 
     def propose(net, context):
@@ -148,7 +148,7 @@ def run_one(
         if random.random() < 0.20:
             net.mutate(forced_op="theta")
         if random.random() < 0.20:
-            net.leak = float(np.clip(net.leak + random.gauss(0, 0.03), 0.50, 0.99))
+            net.retention_mean = float(np.clip(net.retention_mean + random.gauss(0, 0.03), 0.50, 0.99))
         if learnable and random.random() < 0.20:
             context["charge_rate"] = float(np.clip(context["charge_rate"] + random.gauss(0, 0.03), 0.01, 1.0))
 
@@ -163,14 +163,14 @@ def run_one(
     log_msg(
         log_q,
         f"{net_name:12s} {mode_name:10s} seed={seed:3d} "
-        f"acc={outcome.best_acc*100:5.1f}% leak={net.leak:.3f} cr={outcome.context['charge_rate']:.3f}",
+        f"acc={outcome.best_acc*100:5.1f}% leak={net.retention_mean:.3f} cr={outcome.context['charge_rate']:.3f}",
     )
     return {
         "net": net_name,
         "mode": mode_name,
         "seed": seed,
         "acc": outcome.best_acc,
-        "leak": net.leak,
+        "leak": net.retention_mean,
         "cr": outcome.context["charge_rate"],
     }
 
@@ -262,3 +262,4 @@ def main():
 if __name__ == "__main__":
     multiprocessing.freeze_support()
     main()
+

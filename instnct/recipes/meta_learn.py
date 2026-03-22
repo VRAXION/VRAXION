@@ -84,7 +84,7 @@ def swg_rule_batch(swg, edge_features, lr=0.1, ticks=4):
     projected = inp @ swg.input_projection
     charges = np.zeros((n, H), dtype=np.float32)
     acts = np.zeros((n, H), dtype=np.float32)
-    retain = float(swg.retention)
+    retain = float(swg.retention_mean)
     for t in range(ticks):
         if t == 0:
             acts = acts + projected
@@ -92,7 +92,7 @@ def swg_rule_batch(swg, edge_features, lr=0.1, ticks=4):
         np.nan_to_num(raw, copy=False, nan=0.0, posinf=0.0, neginf=0.0)
         charges += raw
         charges *= retain
-        acts = np.maximum(charges - swg.THRESHOLD, 0.0)
+        acts = np.maximum(charges - swg.theta_mean, 0.0)
         charges = np.clip(charges, -1.0, 1.0)
     out = charges @ swg.output_projection
     # Use tanh to bound output, then scale by lr
@@ -187,7 +187,7 @@ def main():
             cpu_throttle(CPU_MAX)
 
         old_loss = int(swg.loss_pct)
-        old_drive = int(swg.drive)
+        old_drive = int(swg.mutation_drive)
         undo = swg.mutate()
         new_score = fitness(swg, inner_steps=INNER_STEPS, mlp_h=MLP_H, lr=LR, seeds=SEEDS)
 
@@ -213,14 +213,14 @@ def main():
                     f.write(json.dumps({
                         "att": att, "score": round(score, 4), "best": round(best, 4),
                         "xor_acc": round(xor_acc, 3),
-                        "conns": swg.count_connections(), "drive": int(swg.drive),
+                        "conns": swg.count_connections(), "drive": int(swg.mutation_drive),
                         "loss_pct": int(swg.loss_pct), "accepts": accepts,
                         "elapsed": round(time.time() - t0, 1), "event": "new_best"
                     }) + "\n")
         else:
             swg.replay(undo)
             swg.loss_pct = np.int8(old_loss)
-            swg.drive = np.int8(old_drive)
+            swg.mutation_drive = np.int8(old_drive)
             stale += 1
 
         if att % 100 == 0:
@@ -268,3 +268,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+

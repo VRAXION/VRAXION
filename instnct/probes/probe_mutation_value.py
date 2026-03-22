@@ -10,8 +10,6 @@ sys.path.insert(0, str(ROOT / "model"))
 from graph import SelfWiringGraph
 
 IO = 256; H = IO * 4
-SelfWiringGraph.NV_RATIO = 4
-
 def make_bp(io_dim, seed=12345):
     rng = np.random.RandomState(seed)
     p = rng.randn(256, io_dim).astype(np.float32)
@@ -39,7 +37,7 @@ mask[rows, cols] = vals
 n_edges = len(rows)
 
 np.random.seed(42)
-net = SelfWiringGraph(IO)
+net = SelfWiringGraph(IO, hidden_ratio=4)
 input_projection = net.input_projection; output_projection = net.output_projection
 
 _bp = bp
@@ -68,7 +66,7 @@ def _eval_on_seqs(mask, theta, decay, seqs):
                     np.add.at(raw, cs, act[rs] * sp_vals)
                 charge += raw; charge *= ret
                 act = np.maximum(charge - theta, 0.0)
-                charge = np.clip(charge, -1.0, 1.0)
+                charge = np.maximum(charge, 0.0)
             state = act.copy()
             out = charge @ output_projection
             out_n = out / (np.linalg.norm(out) + 1e-8)
@@ -195,3 +193,5 @@ print(f"  Best mutation type: {best}")
 print(f"  Remove accept rate shows how many current edges are harmful")
 if results['remove']['accept_rate'] > 30:
     print(f"  WARNING: {results['remove']['accept_rate']:.0f}% of edges are harmful! Need pruning.")
+
+

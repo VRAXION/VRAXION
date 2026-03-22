@@ -37,10 +37,10 @@ def build_sweep_net(config: ParameterSweepConfig, seed: int):
     np.random.seed(seed)
     random.seed(seed)
     net = SelfWiringGraph(
-        config.neurons,
         config.vocab,
+        hidden=config.neurons,
         density=config.density,
-        threshold=config.threshold,
+        theta_init=config.threshold,
     )
     targets = np.random.permutation(config.vocab)
     return net, targets

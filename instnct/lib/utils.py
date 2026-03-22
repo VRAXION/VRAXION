@@ -11,6 +11,68 @@ def softmax(x):
     return e / e.sum()
 
 
+def train(net, targets, vocab, max_attempts=8000, ticks=6,
+          stale_limit=6000, verbose=True, save_path=None):
+    """Train via mutation + selection. Saves winner to save_path if provided."""
+
+    def evaluate():
+        logits = net.forward_batch(ticks)
+        e = np.exp(logits - logits.max(axis=1, keepdims=True))
+        probs = e / e.sum(axis=1, keepdims=True)
+        V = min(vocab, net.V)
+        acc = (np.argmax(probs, axis=1)[:V] == targets[:V]).mean()
+        tp = probs[np.arange(V), targets[:V]].mean()
+        return 0.5 * acc + 0.5 * tp
+
+    score = evaluate()
+    best = score
+    stale = 0
+
+    rewire_threshold = stale_limit // 3
+
+    for att in range(max_attempts):
+        undo = net.mutate()
+        new_score = evaluate()
+
+        if new_score > score:
+            score = new_score
+            if score > best:
+                best = score
+                if save_path:
+                    net.save(save_path)
+            stale = 0
+        else:
+            net.replay(undo)
+            stale += 1
+
+            if stale > rewire_threshold:
+                rw_undo = []
+                net._rewire(rw_undo)
+                rw_score = evaluate()
+                if rw_score > score:
+                    score = rw_score
+                    best = max(best, score)
+                    stale = 0
+                else:
+                    net.replay(rw_undo)
+
+        if verbose and (att + 1) % 1000 == 0:
+            print(f"  [{att+1:5d}] Score: {best*100:5.1f}% | "
+                  f"Conns: {net.count_connections():4d} | "
+                  f"mutation_drive={int(net.mutation_drive):+d} | "
+                  f"Loss: {int(net.loss_pct)}%")
+
+        if best >= 0.99 or stale >= stale_limit:
+            break
+
+    if save_path:
+        net.save(save_path)
+        if verbose:
+            print(f"  Winner saved -> {save_path}")
+
+    return best
+
+
 def score_combined(net, targets, vocab, ticks=8):
     """0.5*accuracy + 0.5*mean_target_prob. Uses 2-pass sequential eval."""
     net.reset()

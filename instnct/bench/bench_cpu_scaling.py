@@ -3,6 +3,13 @@ Multiply by ~1.1 for wall time (18 workers parallel on 24 cores, slight contenti
 """
 import numpy as np
 import time
+import sys
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT))
+sys.path.insert(0, str(ROOT / "model"))
+from graph import SelfWiringGraph
 
 def make_bp(io_dim, seed=12345):
     rng = np.random.RandomState(seed)
@@ -40,6 +47,8 @@ for neurons, edge_list in configs:
         rows = rng.randint(0, H, n_edges).astype(np.intp)
         cols = rng.randint(0, H, n_edges).astype(np.intp)
         vals = rng.choice([-0.6, 0.6], n_edges).astype(np.float32)
+        mask = np.zeros((H, H), dtype=np.float32)
+        mask[rows, cols] = vals
         theta = rng.uniform(0, 0.3, H).astype(np.float32)
         decay = rng.uniform(0.01, 0.3, H).astype(np.float32)
         ret = (1.0 - decay).astype(np.float32)
@@ -52,18 +61,19 @@ for neurons, edge_list in configs:
                 text = rng.randint(0, 256, SEQ_LEN, dtype=np.uint8)
                 state = np.zeros(H, dtype=np.float32)
                 charge = np.zeros(H, dtype=np.float32)
+                sparse_cache = (rows, cols, vals)
                 for i in range(SEQ_LEN - 1):
-                    act = state.copy()
-                    for t in range(TICKS):
-                        if t == 0:
-                            act = act + bp[text[i]] @ input_projection
-                        raw = np.zeros(H, dtype=np.float32)
-                        np.add.at(raw, cols, act[rows] * vals)
-                        charge += raw
-                        charge *= ret
-                        act = np.maximum(charge - theta, 0.0)
-                        charge = np.clip(charge, -1.0, 1.0)
-                    state = act.copy()
+                    injected = bp[text[i]] @ input_projection
+                    state, charge = SelfWiringGraph.rollout_token(
+                        injected,
+                        mask=mask,
+                        theta=theta,
+                        decay=decay,
+                        ticks=TICKS,
+                        state=state,
+                        charge=charge,
+                        sparse_cache=sparse_cache,
+                    )
         worker_time = time.perf_counter() - t0
         sps = 1.0 / (worker_time * 1.1)  # ~10% overhead for parallel contention
 

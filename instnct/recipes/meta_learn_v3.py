@@ -160,7 +160,7 @@ class SWGRule:
         projected = inp @ self.swg.input_projection
         charges = np.zeros((n, H), dtype=np.float32)
         acts = np.zeros((n, H), dtype=np.float32)
-        retain = float(self.swg.retention)
+        retain = float(self.swg.retention_mean)
         for t in range(4):
             if t == 0:
                 acts = acts + projected
@@ -168,7 +168,7 @@ class SWGRule:
             np.nan_to_num(raw, copy=False, nan=0.0, posinf=0.0, neginf=0.0)
             charges += raw
             charges *= retain
-            acts = np.maximum(charges - self.swg.THRESHOLD, 0.0)
+            acts = np.maximum(charges - self.swg.theta_mean, 0.0)
             charges = np.clip(charges, -1.0, 1.0)
         out = charges @ self.swg.output_projection
         return np.tanh(out[:, 0]) * self.lr
@@ -344,3 +344,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+

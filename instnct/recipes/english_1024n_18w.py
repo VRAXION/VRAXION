@@ -158,7 +158,6 @@ if __name__ == "__main__":
     # Triangle converged: add=22%/flip=16%/decay=62% → approx 2a/1f/5d
     SCHEDULE = ['add', 'add', 'flip', 'decay', 'decay', 'decay', 'decay', 'decay']  # ~22/12/63%
 
-    SelfWiringGraph.NV_RATIO = NV
     H = IO * NV  # 1024
 
     bp = make_bp(IO)
@@ -181,15 +180,15 @@ if __name__ == "__main__":
 
     # Build network with deterministic projections
     random.seed(42); np.random.seed(42)
-    net = SelfWiringGraph(IO)
+    net = SelfWiringGraph(IO, hidden_ratio=NV)
     # Override INJ_SCALE: use 1.0 instead of default 3.0
     proj_rng = np.random.RandomState(42)
     # Reconstruct input_projection/output_projection at scale=1.0 using same seed as SelfWiringGraph
     # (SelfWiringGraph uses its own proj_rng, so we replicate)
     random.seed(42); np.random.seed(42)
-    ref = SelfWiringGraph(IO)
-    input_projection = ref.input_projection / ref.INJ_SCALE * INJ_SCALE  # undo 3.0, apply 1.0
-    output_projection = ref.output_projection / ref.INJ_SCALE * INJ_SCALE
+    ref = SelfWiringGraph(IO, hidden_ratio=NV, projection_scale=INJ_SCALE)
+    input_projection = ref.input_projection  # undo 3.0, apply 1.0
+    output_projection = ref.output_projection
 
     # Empty start
     net.mask[:] = 0; net.alive = []; net.alive_set = set(); net._sync_sparse_idx()
@@ -293,3 +292,4 @@ if __name__ == "__main__":
                         for s in eval_seqs])
     print(f"\nFINAL: eval={final_ea*100:.1f}% edges={net.count_connections()} "
           f"accepts={accepts} {elapsed:.0f}s ({BUDGET/elapsed:.2f} step/s)")
+

@@ -49,7 +49,7 @@ def _eval_on_seqs(mask, H, input_projection, output_projection, theta, decay, se
                     np.add.at(raw, cs, act[rs] * sp_vals)
                 charge += raw; charge *= ret
                 act = np.maximum(charge - theta, 0.0)
-                charge = np.clip(charge, -1.0, 1.0)
+                charge = np.maximum(charge, 0.0)
             state = act.copy()
             out = charge @ output_projection
             out_n = out / (np.linalg.norm(out) + 1e-8)
@@ -126,7 +126,7 @@ def eval_accuracy(mask, H, input_projection, output_projection, theta, decay, te
                 np.add.at(raw, cs, act[rs] * sp_vals)
             charge += raw; charge *= ret
             act = np.maximum(charge - theta, 0.0)
-            charge = np.clip(charge, -1.0, 1.0)
+            charge = np.maximum(charge, 0.0)
         state = act.copy()
         out = charge @ output_projection
         out_n = out / (np.linalg.norm(out) + 1e-8)
@@ -251,3 +251,4 @@ if __name__ == "__main__":
                         for s in eval_seqs])
     print(f"\nFINAL: eval={final_ea*100:.1f}% edges={net.count_connections()} "
           f"accepts={accepts} {elapsed:.0f}s")
+

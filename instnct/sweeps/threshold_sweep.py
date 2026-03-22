@@ -72,7 +72,7 @@ def eval_mask(mask, H, input_projection, output_projection, seqs, cfg):
                     act = np.maximum(charge - thresh, 0.0)
                 else:
                     act = np.maximum(charge - threshold, 0.0)
-                charge = np.clip(charge, -1.0, 1.0)
+                charge = np.maximum(charge, 0.0)
 
                 cmax = float(np.abs(charge).max())
                 if cmax > charge_stats['max']:
@@ -156,7 +156,7 @@ def eval_accuracy(mask, H, input_projection, output_projection, eval_seqs, cfg, 
                     act = np.maximum(charge - thresh, 0.0)
                 else:
                     act = np.maximum(charge - threshold, 0.0)
-                charge = np.clip(charge, -1.0, 1.0)
+                charge = np.maximum(charge, 0.0)
             state = act.copy()
             out = charge @ output_projection
             out_n = out / (np.linalg.norm(out) + 1e-8)
@@ -309,3 +309,4 @@ if __name__ == "__main__":
     with open(RESULTS_FILE, "w") as f:
         json.dump(all_results, f, indent=2)
     print(f"  Saved: {RESULTS_FILE}")
+

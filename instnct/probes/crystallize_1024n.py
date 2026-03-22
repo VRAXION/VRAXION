@@ -8,8 +8,6 @@ sys.path.insert(0, str(ROOT / "model"))
 from graph import SelfWiringGraph
 
 IO = 256; H = IO * 4
-SelfWiringGraph.NV_RATIO = 4
-
 def make_bp(io_dim, seed=12345):
     rng = np.random.RandomState(seed)
     p = rng.randn(256, io_dim).astype(np.float32)
@@ -32,7 +30,7 @@ print(f"Edges: {n_edges}")
 
 # Recreate input_projection/output_projection
 np.random.seed(42)
-net = SelfWiringGraph(IO)
+net = SelfWiringGraph(IO, hidden_ratio=4)
 input_projection = net.input_projection; output_projection = net.output_projection
 
 # Load eval data
@@ -63,7 +61,7 @@ def eval_score(rs, cs, vs, theta, decay):
                     np.add.at(raw, cs, act[rs] * vs)
                 charge += raw; charge *= ret
                 act = np.maximum(charge - theta, 0.0)
-                charge = np.clip(charge, -1.0, 1.0)
+                charge = np.maximum(charge, 0.0)
             state = act.copy()
             out = charge @ output_projection
             out_n = out / (np.linalg.norm(out) + 1e-8)
@@ -154,3 +152,5 @@ for pct in [10, 25, 50, 75]:
     pruned_score = eval_score(rows[keep], cols[keep], vals[keep], theta, decay)
     print(f"  Remove {pct}% ({n_remove} edges): {pruned_score*100:.2f}% "
           f"(delta={pruned_score*100 - baseline*100:+.2f}%)")
+
+

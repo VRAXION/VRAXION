@@ -50,7 +50,7 @@ def _eval_on_seqs(mask, H, theta, decay, seqs):
                     np.add.at(raw, cs, act[rs] * sp_vals)
                 charge += raw; charge *= ret
                 act = np.maximum(charge - theta, 0.0)
-                charge = np.clip(charge, -1.0, 1.0)
+                charge = np.maximum(charge, 0.0)
             state = act.copy()
             out = charge @ _output_projection
             out_n = out / (np.linalg.norm(out) + 1e-8)
@@ -115,7 +115,7 @@ def eval_accuracy_classic(mask, H, input_projection, output_projection, theta, d
             if len(rs): np.add.at(raw, cs, act[rs] * sp_vals)
             charge += raw; charge *= ret
             act = np.maximum(charge - theta, 0.0)
-            charge = np.clip(charge, -1.0, 1.0)
+            charge = np.maximum(charge, 0.0)
         state = act.copy()
         out = charge @ output_projection
         out_n = out / (np.linalg.norm(out) + 1e-8)
@@ -133,7 +133,6 @@ if __name__ == "__main__":
     WINDOW = 25
     ADJUST_RATE = 0.15  # how fast threshold adapts
 
-    SelfWiringGraph.NV_RATIO = NV
     bp = make_bp(IO)
 
     from lib.data import load_fineweb_bytes, resolve_fineweb_path
@@ -240,3 +239,5 @@ if __name__ == "__main__":
     print(f"  Final threshold: {threshold:.7f}")
     print(f"  Time: {elapsed:.0f}s ({N_STEPS/elapsed:.1f} step/s)")
     sys.stdout.flush()
+
+

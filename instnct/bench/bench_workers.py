@@ -23,7 +23,7 @@ def make_bp(io_dim, seed=12345):
     return p
 
 def worker_eval(args):
-    mask_flat, H, input_projection, output_projection, retention, threshold, seed = args
+    mask_flat, H, input_projection, output_projection, theta, decay, seed = args
     rng = random.Random(seed)
     mask = mask_flat.reshape(H, H)
     r = rng.randint(0, H-1)
@@ -35,6 +35,7 @@ def worker_eval(args):
     new_mask[r, c] = val
     rs, cs = np.where(new_mask != 0)
     sp_vals = new_mask[rs, cs]
+    sparse_cache = (rs.astype(np.intp), cs.astype(np.intp), sp_vals.astype(np.float32))
     pat_norm = _bp / (np.linalg.norm(_bp, axis=1, keepdims=True) + 1e-8)
     total = 0.0
     for text_bytes in _seqs:
@@ -42,17 +43,17 @@ def worker_eval(args):
         charge = np.zeros(H, dtype=np.float32)
         correct = 0; prob_sum = 0.0; n = 0
         for i in range(len(text_bytes)-1):
-            act = state.copy()
-            for t in range(6):
-                if t == 0:
-                    act = act + _bp[text_bytes[i]] @ input_projection
-                raw = np.zeros(H, dtype=np.float32)
-                if len(rs):
-                    np.add.at(raw, cs, act[rs] * sp_vals)
-                charge += raw; charge *= retention
-                act = np.maximum(charge - threshold, 0.0)
-                charge = np.clip(charge, -1.0, 1.0)
-            state = act.copy()
+            injected = _bp[text_bytes[i]] @ input_projection
+            state, charge = SelfWiringGraph.rollout_token(
+                injected,
+                mask=new_mask,
+                theta=theta,
+                decay=decay,
+                ticks=6,
+                state=state,
+                charge=charge,
+                sparse_cache=sparse_cache,
+            )
             out = charge @ output_projection
             out_n = out / (np.linalg.norm(out) + 1e-8)
             sims = out_n @ pat_norm.T
@@ -77,7 +78,8 @@ if __name__ == "__main__":
     net = SelfWiringGraph(IO)
     net.mask[:]=0; net.alive=[]; net.alive_set=set(); net._sync_sparse_idx()
     input_projection=net.input_projection; output_projection=net.output_projection
-    retention=float(net.retention); threshold=float(net.THRESHOLD)
+    theta = net.theta.copy()
+    decay = net.decay.copy()
 
     print(f'{H} neurons (I/O={IO}), 3x80 byte seqs')
     print(f'Workers | Steps | Time  | Steps/s | Candidates/s')
@@ -92,7 +94,7 @@ if __name__ == "__main__":
         t0 = time.time()
         for step in range(STEPS):
             mask_flat = net.mask.flatten()
-            args = [(mask_flat, H, input_projection, output_projection, retention, threshold, seed_c+step*50+w)
+            args = [(mask_flat, H, input_projection, output_projection, theta, decay, seed_c+step*50+w)
                     for w in range(n_workers)]
             results = pool.map(worker_eval, args)
             best = max(results, key=lambda x: x[0])

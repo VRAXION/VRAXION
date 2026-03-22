@@ -48,7 +48,7 @@ def _eval_on_seqs(mask, H, input_projection, output_projection, theta, decay, se
                     np.add.at(raw, cs, act[rs] * sp_vals)
                 charge += raw; charge *= ret
                 act = np.maximum(charge - theta, 0.0)
-                charge = np.clip(charge, -1.0, 1.0)
+                charge = np.maximum(charge, 0.0)
             state = act.copy()
             out = charge @ output_projection
             out_n = out / (np.linalg.norm(out) + 1e-8)
@@ -81,7 +81,7 @@ def eval_accuracy(mask, H, input_projection, output_projection, theta, decay, te
                 np.add.at(raw, cs, act[rs] * sp_vals)
             charge += raw; charge *= ret
             act = np.maximum(charge - theta, 0.0)
-            charge = np.clip(charge, -1.0, 1.0)
+            charge = np.maximum(charge, 0.0)
         state = act.copy()
         out = charge @ output_projection
         out_n = out / (np.linalg.norm(out) + 1e-8)
@@ -225,7 +225,6 @@ if __name__ == "__main__":
     N_STEPS = 200
     THRESHOLD = 0.001  # middle ground
 
-    SelfWiringGraph.NV_RATIO = NV
     bp = make_bp(IO)
 
     from lib.data import load_fineweb_bytes, resolve_fineweb_path
@@ -243,7 +242,7 @@ if __name__ == "__main__":
 
     # Build reference net with SAME seed as original training → identical input_projection/output_projection
     random.seed(42); np.random.seed(42)
-    ref_net = SelfWiringGraph(IO)
+    ref_net = SelfWiringGraph(IO, hidden_ratio=NV, projection_scale=1.0)
     input_projection = ref_net.input_projection; output_projection = ref_net.output_projection
 
     def load_fresh_net():
@@ -297,3 +296,5 @@ if __name__ == "__main__":
               f"{(r['post']-r['pre'])*100:+7.2f} {r['accepts']:>4}/{r['steps']:<3} "
               f"{r['time']:5.0f}s")
     sys.stdout.flush()
+
+

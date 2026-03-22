@@ -38,9 +38,8 @@ print(f"Edges: {n_edges}, theta mean={theta.mean():.3f}, decay mean={decay.mean(
 
 # Recreate input_projection, output_projection with same seed as training
 from graph import SelfWiringGraph
-SelfWiringGraph.NV_RATIO = 4
 np.random.seed(42)
-net = SelfWiringGraph(IO)
+net = SelfWiringGraph(IO, hidden_ratio=4)
 input_projection = net.input_projection
 output_projection = net.output_projection
 
@@ -63,7 +62,7 @@ def generate(prompt_bytes, n_generate=200, temperature=1.0):
                 np.add.at(raw, cs, act[rs] * sp_vals)
             charge += raw; charge *= ret
             act = np.maximum(charge - theta, 0.0)
-            charge = np.clip(charge, -1.0, 1.0)
+            charge = np.maximum(charge, 0.0)
         state = act.copy()
 
     # Generate
@@ -80,7 +79,7 @@ def generate(prompt_bytes, n_generate=200, temperature=1.0):
                 np.add.at(raw, cs, act[rs] * sp_vals)
             charge += raw; charge *= ret
             act = np.maximum(charge - theta, 0.0)
-            charge = np.clip(charge, -1.0, 1.0)
+            charge = np.maximum(charge, 0.0)
         state = act.copy()
 
         out = charge @ output_projection
@@ -142,7 +141,7 @@ for ch in [ord(' '), ord('e'), ord('t'), ord('\n'), ord('.')]:
             np.add.at(raw, cs, act[rs] * sp_vals)
         charge += raw; charge *= ret
         act = np.maximum(charge - theta, 0.0)
-        charge = np.clip(charge, -1.0, 1.0)
+        charge = np.maximum(charge, 0.0)
     out = charge @ output_projection
     out_n = out / (np.linalg.norm(out) + 1e-8)
     sims = out_n @ pat_norm.T
@@ -152,3 +151,5 @@ for ch in [ord(' '), ord('e'), ord('t'), ord('\n'), ord('.')]:
     ch_str = repr(chr(ch))
     preds = ", ".join([f"{chr(b) if 32<=b<127 else f'x{b:02x}'}({probs[b]*100:.1f}%)" for b in top5])
     print(f"  After {ch_str:>5}: {preds}")
+
+

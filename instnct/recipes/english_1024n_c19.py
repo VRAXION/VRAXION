@@ -65,7 +65,7 @@ def _eval_on_seqs(mask, H, input_projection, output_projection, theta, decay, C_
                 charge += raw; charge *= ret
                 # C19 activation: c19(charge - theta, C)
                 act = c19_activation(charge - theta, C_param)
-                charge = np.clip(charge, -1.0, 1.0)
+                charge = np.maximum(charge, 0.0)
             state = act.copy()
             out = charge @ output_projection
             out_n = out / (np.linalg.norm(out) + 1e-8)
@@ -149,7 +149,7 @@ def eval_accuracy(mask, H, input_projection, output_projection, theta, decay, C_
                 np.add.at(raw, cs, act[rs] * sp_vals)
             charge += raw; charge *= ret
             act = c19_activation(charge - theta, C_param)
-            charge = np.clip(charge, -1.0, 1.0)
+            charge = np.maximum(charge, 0.0)
         state = act.copy()
         out = charge @ output_projection
         out_n = out / (np.linalg.norm(out) + 1e-8)
@@ -167,7 +167,6 @@ if __name__ == "__main__":
     N_TRAIN_SEQS = 5
     N_EVAL_SEQS = 3
 
-    SelfWiringGraph.NV_RATIO = NV
     H = IO * NV
 
     bp = make_bp(IO)
@@ -189,7 +188,7 @@ if __name__ == "__main__":
     sys.stdout.flush()
 
     random.seed(42); np.random.seed(42)
-    net = SelfWiringGraph(IO)
+    net = SelfWiringGraph(IO, hidden_ratio=NV)
 
     net.mask[:]=0; net.alive=[]; net.alive_set=set(); net._sync_sparse_idx()
     # Per-neuron C parameter, init 1.0 (unit scale)
@@ -301,3 +300,5 @@ if __name__ == "__main__":
                         for s in eval_seqs])
     print(f"\nFINAL: eval={final_ea*100:.1f}% edges={net.count_connections()} "
           f"accepts={accepts} {elapsed:.0f}s ({BUDGET/elapsed:.2f} step/s)")
+
+

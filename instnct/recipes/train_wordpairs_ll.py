@@ -209,13 +209,12 @@ if __name__ == "__main__":
         corpus_text += ''.join(lines)
     ALL_DATA = np.frombuffer(corpus_text.encode('ascii'), dtype=np.uint8).copy()
 
-    SelfWiringGraph.NV_RATIO = 4
     bp = make_bp(IO)
 
     random.seed(42); np.random.seed(42)
-    ref = SelfWiringGraph(IO)
-    input_projection = ref.input_projection / ref.INJ_SCALE * 1.0
-    output_projection = ref.output_projection / ref.INJ_SCALE * 1.0
+    ref = SelfWiringGraph(IO, hidden_ratio=4, projection_scale=1.0)
+    input_projection = ref.input_projection
+    output_projection = ref.output_projection
 
     inj_table = np.clip(bp @ input_projection * 128, -128, 127).astype(np.int8)
     output_projection_int8 = np.clip(output_projection * 128, -128, 127).astype(np.int8)
@@ -301,3 +300,4 @@ if __name__ == "__main__":
         msign=msign, mmag=mmag, inj_table=inj_table,
         output_projection_int8=output_projection_int8)
     sys.stdout.flush()
+

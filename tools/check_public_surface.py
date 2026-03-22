@@ -441,12 +441,19 @@ def check_meta_copy_boundaries(errors: list[str]) -> None:
                 fail(f"{path.name}: GitHub render fallback note should stay in the footer only", errors)
 
 
-def check_findings_constants(threshold: str, inj_scale: str, errors: list[str]) -> None:
+def check_findings_constants(
+    theta_default: str,
+    projection_scale_default: str,
+    edge_magnitude_default: str,
+    errors: list[str],
+) -> None:
     findings_text = read(FINDINGS)
-    if f"`THRESHOLD = {threshold}`" not in findings_text:
-        fail("VALIDATED_FINDINGS.md: threshold line is not aligned to graph.py", errors)
-    if f"`INJ_SCALE = {inj_scale}`" not in findings_text:
-        fail("VALIDATED_FINDINGS.md: INJ_SCALE line is not aligned to graph.py", errors)
+    if f"`DEFAULT_THETA = {theta_default}`" not in findings_text:
+        fail("VALIDATED_FINDINGS.md: DEFAULT_THETA line is not aligned to graph.py", errors)
+    if f"`DEFAULT_PROJECTION_SCALE = {projection_scale_default}`" not in findings_text:
+        fail("VALIDATED_FINDINGS.md: DEFAULT_PROJECTION_SCALE line is not aligned to graph.py", errors)
+    if f"`DEFAULT_EDGE_MAGNITUDE = {edge_magnitude_default}`" not in findings_text:
+        fail("VALIDATED_FINDINGS.md: DEFAULT_EDGE_MAGNITUDE line is not aligned to graph.py", errors)
 
 
 def check_recipe_candidate_sync(errors: list[str]) -> None:
@@ -729,8 +736,9 @@ def main() -> int:
     version_info = load_version_info(errors)
 
     graph_text = read(GRAPH)
-    threshold = extract_constant("THRESHOLD", graph_text)
-    inj_scale = extract_constant("INJ_SCALE", graph_text)
+    theta_default = extract_constant("DEFAULT_THETA", graph_text)
+    projection_scale_default = extract_constant("DEFAULT_PROJECTION_SCALE", graph_text)
+    edge_magnitude_default = extract_constant("DEFAULT_EDGE_MAGNITUDE", graph_text)
 
     for path in MARKDOWN_FILES:
         text = read(path)
@@ -748,7 +756,12 @@ def main() -> int:
     check_banned_phrases(LANDING, landing_text, errors)
     check_front_door_phrases(LANDING, landing_text, errors)
 
-    check_findings_constants(threshold, inj_scale, errors)
+    check_findings_constants(
+        theta_default,
+        projection_scale_default,
+        edge_magnitude_default,
+        errors,
+    )
     check_recipe_candidate_sync(errors)
     check_edge_representation_sync(errors)
     check_current_next_target_sync(errors)
@@ -777,7 +790,12 @@ def main() -> int:
         return 1
 
     print("Public surface check passed.")
-    print(f"Current mainline constants: THRESHOLD={threshold}, INJ_SCALE={inj_scale}")
+    print(
+        "Current mainline defaults: "
+        f"DEFAULT_THETA={theta_default}, "
+        f"DEFAULT_PROJECTION_SCALE={projection_scale_default}, "
+        f"DEFAULT_EDGE_MAGNITUDE={edge_magnitude_default}"
+    )
     return 0
 
 

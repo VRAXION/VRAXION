@@ -40,10 +40,10 @@ def set_seeds(seed: int) -> None:
 def build_net_and_targets(config: PermutationHarnessConfig, seed: int):
     set_seeds(seed)
     net = SelfWiringGraph(
-        config.neurons,
         config.vocab,
+        hidden=config.neurons,
         density=config.density,
-        threshold=config.threshold,
+        theta_init=config.threshold,
     )
     targets = np.random.permutation(config.vocab)
     return net, targets
@@ -149,4 +149,3 @@ def run_budgeted_search(
         curve=curve,
         policy_state=adapter.describe_state(),
     )
-

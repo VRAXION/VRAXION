@@ -16,7 +16,8 @@ import sys, os, time, argparse
 import numpy as np
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
-from model.graph import SelfWiringGraph, train
+from lib.utils import train
+from model.graph import SelfWiringGraph
 
 
 # ── RNG implementations ──────────────────────────────────────────────

@@ -50,7 +50,7 @@ def _eval_on_seqs(mask, H, theta, decay, seqs):
                     np.add.at(raw, cs, act[rs] * sp_vals)
                 charge += raw; charge *= ret
                 act = np.maximum(charge - theta, 0.0)
-                charge = np.clip(charge, -1.0, 1.0)
+                charge = np.maximum(charge, 0.0)
             state = act.copy()
             out = charge @ _output_projection
 
@@ -143,7 +143,7 @@ def eval_accuracy_classic(mask, H, input_projection, output_projection, theta, d
             if len(rs): np.add.at(raw, cs, act[rs] * sp_vals)
             charge += raw; charge *= ret
             act = np.maximum(charge - theta, 0.0)
-            charge = np.clip(charge, -1.0, 1.0)
+            charge = np.maximum(charge, 0.0)
         state = act.copy()
         out = charge @ output_projection
         out_n = out / (np.linalg.norm(out) + 1e-8)
@@ -212,7 +212,6 @@ def run_config(name, mode, bp, ALL_DATA, bigram, eval_seqs, H, input_projection,
 
 if __name__ == "__main__":
     IO = 256; NV = 4; H = IO * NV
-    SelfWiringGraph.NV_RATIO = NV
     bp = make_bp(IO)
 
     from lib.data import load_fineweb_bytes, resolve_fineweb_path
@@ -261,3 +260,5 @@ if __name__ == "__main__":
         tot = sum(r['accepts'].values())
         print(f"  {r['name']:<22} {r['acc']*100:6.2f} {r['edges']:6d} {tot:8d} {r['time']:5.0f}s")
     sys.stdout.flush()
+
+

@@ -16,7 +16,8 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
 import numpy as np
 import random as pyrandom
-from model.graph import SelfWiringGraph, train as swg_train
+from lib.utils import train as swg_train
+from model.graph import SelfWiringGraph
 
 # ── Reproducible seed helper ──
 
@@ -32,7 +33,7 @@ def set_seeds(seed):
 def run_swg(V, targets, seed, max_attempts, stale_limit):
     set_seeds(seed)
     N = V * 3
-    net = SelfWiringGraph(N, V)
+    net = SelfWiringGraph(V, hidden=N)
     t0 = time.time()
     best_combined = swg_train(net, targets, V, max_attempts=max_attempts,
                               ticks=8, stale_limit=stale_limit, verbose=False)

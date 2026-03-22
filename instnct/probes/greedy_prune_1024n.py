@@ -10,8 +10,6 @@ sys.path.insert(0, str(ROOT / "model"))
 from graph import SelfWiringGraph
 
 IO = 256; H = IO * 4
-SelfWiringGraph.NV_RATIO = 4
-
 def make_bp(io_dim, seed=12345):
     rng = np.random.RandomState(seed)
     p = rng.randn(256, io_dim).astype(np.float32)
@@ -39,7 +37,7 @@ print(f"Starting edges: {n_start}")
 
 # input_projection/output_projection
 np.random.seed(42)
-net = SelfWiringGraph(IO)
+net = SelfWiringGraph(IO, hidden_ratio=4)
 input_projection = net.input_projection; output_projection = net.output_projection
 
 # Eval data — same seqs every time for consistency
@@ -71,7 +69,7 @@ def eval_score(rs, cs, vs):
                     np.add.at(raw, cs_a, act[rs_a] * vs_a)
                 charge += raw; charge *= ret
                 act = np.maximum(charge - theta, 0.0)
-                charge = np.clip(charge, -1.0, 1.0)
+                charge = np.maximum(charge, 0.0)
             state = act.copy()
             out = charge @ output_projection
             out_n = out / (np.linalg.norm(out) + 1e-8)
@@ -168,3 +166,5 @@ np.savez(save_path,
          theta=theta, decay=decay)
 print(f"\n  SAVED: {save_path}")
 print(f"  {len(final_rows)} edges (was {n_start})")
+
+

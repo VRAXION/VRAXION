@@ -1,17 +1,19 @@
 """
-Adversarial Stress Test — 21 probes for SelfWiringGraph
+Adversarial Stress Test — 22 probes for SelfWiringGraph
 =========================================================
 All probes must stay green or warning-only for the model to be considered valid.
 """
 
 import sys, os, subprocess, tempfile
+import re
 from pathlib import Path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
 import numpy as np
 import random
 from lib.data import fineweb_candidate_paths, load_fineweb_bytes, resolve_fineweb_path
-from model.graph import SelfWiringGraph, softmax
+from lib.utils import softmax
+from model.graph import SelfWiringGraph
 
 SEED = 42
 PASS = "PASS"
@@ -42,7 +44,7 @@ def graph_signature(net):
         "output_projection": net.output_projection.copy(),
         "alive": list(net.alive),
         "alive_set": set(net.alive_set),
-        "drive": int(net.drive),
+        "mutation_drive": int(net.mutation_drive),
         "loss_pct": int(net.loss_pct),
     }
 
@@ -56,7 +58,7 @@ def same_graph_signature(left, right):
         np.array_equal(left["output_projection"], right["output_projection"]) and
         left["alive"] == right["alive"] and
         left["alive_set"] == right["alive_set"] and
-        left["drive"] == right["drive"] and
+        left["mutation_drive"] == right["mutation_drive"] and
         left["loss_pct"] == right["loss_pct"]
     )
 
@@ -68,7 +70,7 @@ def main():
     header(1, "Zero internal neurons (V=N=16)")
     np.random.seed(SEED); random.seed(SEED)
     try:
-        net = SelfWiringGraph(16, 16)
+        net = SelfWiringGraph(16, hidden=16)
         perm = np.random.permutation(16)
         score_best = 0.0
         for att in range(2000):
@@ -92,7 +94,7 @@ def main():
     # PROBE 2: Identity permutation
     header(2, "Identity permutation")
     np.random.seed(SEED); random.seed(SEED)
-    net = SelfWiringGraph(80, 16)
+    net = SelfWiringGraph(16, hidden=80)
     identity = np.arange(16)
     acc_best = 0.0
     for att in range(3000):
@@ -117,7 +119,7 @@ def main():
         ('swap_pairs', np.array([1,0,3,2,5,4,7,6,9,8,11,10,13,12,15,14])),
     ]:
         np.random.seed(SEED); random.seed(SEED)
-        net = SelfWiringGraph(80, 16)
+        net = SelfWiringGraph(16, hidden=80)
         for att in range(2000):
             snapshot = net.save_state()
             net.mutate()
@@ -134,7 +136,7 @@ def main():
     # PROBE 4: NaN/Inf injection
     header(4, "NaN/Inf injection")
     np.random.seed(SEED); random.seed(SEED)
-    net = SelfWiringGraph(32, 8)
+    net = SelfWiringGraph(8, hidden=32)
     net.reset()
     logits_nan = net.forward(np.full(8, np.nan, dtype=np.float32), ticks=8)
     net.reset()
@@ -150,7 +152,7 @@ def main():
     # PROBE 5: Empty network
     header(5, "Empty network (density=0)")
     np.random.seed(SEED); random.seed(SEED)
-    net = SelfWiringGraph(32, 8, density=0.0)
+    net = SelfWiringGraph(8, hidden=32, density=0.0)
     net.reset()
     logits = net.forward(np.zeros(8, dtype=np.float32), ticks=8)
     logits_b = net.forward_batch(ticks=8)
@@ -164,7 +166,7 @@ def main():
     # PROBE 6: Fully connected
     header(6, "Fully connected (density=1.0)")
     np.random.seed(SEED); random.seed(SEED)
-    net = SelfWiringGraph(48, 16, density=1.0)
+    net = SelfWiringGraph(16, hidden=48, density=1.0)
     net.reset()
     logits = net.forward(np.zeros(16, dtype=np.float32), ticks=8)
     expected_edges = net.H * (net.H - 1)
@@ -176,7 +178,7 @@ def main():
     # PROBE 7: Single neuron
     header(7, "Single neuron (V=1, N=1)")
     try:
-        net = SelfWiringGraph(1, 1)
+        net = SelfWiringGraph(1, hidden=1)
         net.reset()
         logits = net.forward(np.array([1.0], dtype=np.float32), ticks=8)
         logits_b = net.forward_batch(ticks=8)
@@ -190,7 +192,7 @@ def main():
     # PROBE 8: Batch vs Sequential consistency
     header(8, "Batch vs Sequential consistency")
     np.random.seed(SEED); random.seed(SEED)
-    net = SelfWiringGraph(64, 16)
+    net = SelfWiringGraph(16, hidden=64)
     seq_logits = np.zeros((16, 16), dtype=np.float32)
     for i in range(16):
         net.reset()
@@ -206,10 +208,10 @@ def main():
     # PROBE 9: Mutation determinism
     header(9, "Mutation determinism")
     np.random.seed(99); random.seed(99)
-    net1 = SelfWiringGraph(48, 16)
+    net1 = SelfWiringGraph(16, hidden=48)
     for _ in range(100): net1.mutate()
     np.random.seed(99); random.seed(99)
-    net2 = SelfWiringGraph(48, 16)
+    net2 = SelfWiringGraph(16, hidden=48)
     for _ in range(100): net2.mutate()
     ok = np.array_equal(net1.mask, net2.mask)
     r = result(PASS if ok else FAIL, f"Deterministic: {ok}")
@@ -218,7 +220,7 @@ def main():
     # PROBE 10: State leak after reset
     header(10, "State leak after reset()")
     np.random.seed(SEED); random.seed(SEED)
-    net = SelfWiringGraph(64, 16)
+    net = SelfWiringGraph(16, hidden=64)
     world = np.zeros(16, dtype=np.float32); world[0] = 1.0
     net.reset()
     logits_a = net.forward(world, ticks=8).copy()
@@ -231,7 +233,7 @@ def main():
     # PROBE 11: Charge explosion
     header(11, "Charge explosion -- 1000 ticks")
     np.random.seed(SEED); random.seed(SEED)
-    net = SelfWiringGraph(64, 16, density=0.3)
+    net = SelfWiringGraph(16, hidden=64, density=0.3)
     net.reset()
     logits = net.forward(np.zeros(16, dtype=np.float32), ticks=1000)
     ok = np.all(np.isfinite(logits)) and np.abs(net.charge).max() <= 1.01
@@ -241,14 +243,14 @@ def main():
     # PROBE 12: Save/restore fidelity
     header(12, "Save/restore exact fidelity")
     np.random.seed(SEED); random.seed(SEED)
-    net = SelfWiringGraph(64, 16)
+    net = SelfWiringGraph(16, hidden=64)
     net.forward(np.zeros(16, dtype=np.float32), ticks=8)
     state = net.save_state()
     net.mask[:] = -1
     net.state[:] = 42
     net.charge[:] = 100
     net.loss_pct = 50
-    net.drive = -7
+    net.mutation_drive = -7
     net.theta[:] = 0.91
     net.decay[:] = 0.73
     net.restore_state(state)
@@ -259,7 +261,7 @@ def main():
         np.array_equal(net.state, state['state']) and
         np.array_equal(net.charge, state['charge']) and
         net.loss_pct == state['loss_pct'] and
-        net.drive == state['drive'] and
+        net.mutation_drive == state['mutation_drive'] and
         net.alive == state['alive'] and
         net.alive_set == state['alive_set'] and
         np.array_equal(net.theta, state['theta']) and
@@ -278,8 +280,8 @@ def main():
     # PROBE 13: Default mutation reject restores all learned params
     header(13, "Default mutation reject restores theta/drive/loss/cache")
     np.random.seed(SEED); random.seed(SEED)
-    net = SelfWiringGraph(64, 16)
-    net.drive = np.int8(-1)
+    net = SelfWiringGraph(16, hidden=64)
+    net.mutation_drive = np.int8(-1)
     before = net.save_state()
     old_randint = random.randint
     old_random = random.random
@@ -299,7 +301,7 @@ def main():
         np.array_equal(net.theta, before['theta']) and
         np.array_equal(net.decay, before['decay']) and
         net.loss_pct == before['loss_pct'] and
-        net.drive == before['drive'] and
+        net.mutation_drive == before['mutation_drive'] and
         net.alive == before['alive'] and
         net.alive_set == before['alive_set'] and
         alive_set == mask_set and
@@ -311,7 +313,7 @@ def main():
     # PROBE 14: Alive cache coherence after direct mask restore
     header(14, "Alive cache coherence after direct mask restore")
     np.random.seed(SEED); random.seed(SEED)
-    net = SelfWiringGraph(64, 16)
+    net = SelfWiringGraph(16, hidden=64)
     sm = net.mask.copy()
     for _ in range(32):
         net.mutate()
@@ -328,10 +330,10 @@ def main():
     # PROBE 15: Constructor kwarg semantics
     header(15, "Constructor kwarg semantics")
     np.random.seed(SEED); random.seed(SEED)
-    net_a = SelfWiringGraph(8, threshold=0.33, leak=0.90)
-    net_b = SelfWiringGraph(32, 8, density=0.0, threshold=0.44, leak=0.80)
+    net_a = SelfWiringGraph(8, theta_init=0.33, decay_init=0.10)
+    net_b = SelfWiringGraph(8, hidden=32, density=0.0, theta_init=0.44, decay_init=0.20)
     ok = (
-        net_a.H == 8 * net_a.NV_RATIO and
+        net_a.H == 8 * net_a.DEFAULT_HIDDEN_RATIO and
         np.allclose(net_a.theta, 0.33) and
         np.allclose(net_a.decay, 0.10) and
         net_b.H == 32 and
@@ -346,7 +348,7 @@ def main():
     # PROBE 16: Disk roundtrip exact fidelity
     header(16, "Disk save/load exact fidelity")
     np.random.seed(SEED); random.seed(SEED)
-    net = SelfWiringGraph(64, 16, density=0.15, threshold=0.41, leak=0.82)
+    net = SelfWiringGraph(16, hidden=64, density=0.15, theta_init=0.41, decay_init=0.18)
     for _ in range(8):
         net.mutate()
     logits_before = net.forward_batch(ticks=8)
@@ -373,13 +375,13 @@ def main():
     # PROBE 17: Same-state mutate trajectory after replay/load
     header(17, "Same-state mutate trajectory after replay/load")
     np.random.seed(SEED); random.seed(SEED)
-    base = SelfWiringGraph(64, 16, density=0.15, threshold=0.41, leak=0.82)
+    base = SelfWiringGraph(16, hidden=64, density=0.15, theta_init=0.41, decay_init=0.18)
     for _ in range(8):
         base.mutate()
     base_sig = graph_signature(base)
 
     np.random.seed(SEED); random.seed(SEED)
-    replay_net = SelfWiringGraph(64, 16, density=0.15, threshold=0.41, leak=0.82)
+    replay_net = SelfWiringGraph(16, hidden=64, density=0.15, theta_init=0.41, decay_init=0.18)
     for _ in range(8):
         replay_net.mutate()
     replay_undo = replay_net.mutate(forced_op='remove', n_changes=1, freeze_params=True)
@@ -419,7 +421,7 @@ def main():
     header(18, "Forced mutation API compatibility")
     np.random.seed(SEED); random.seed(SEED)
     try:
-        net = SelfWiringGraph(32, 8)
+        net = SelfWiringGraph(8, hidden=32)
         before = net.count_connections()
         undo = net.mutate(forced_op='add', n_changes=2, freeze_params=True)
         after_add = net.count_connections()
@@ -484,7 +486,7 @@ def main():
 
     # PROBE 20: Removed compat surface must stay removed
     header(20, "Removed compat surface stays absent")
-    net = SelfWiringGraph(32, 8)
+    net = SelfWiringGraph(8, hidden=32)
     removed = [
         "N",
         "out_start",
@@ -535,6 +537,58 @@ def main():
     hit_text = ", ".join(forbidden_hits[:3]) if forbidden_hits else "none"
     r = result(PASS if ok else FAIL, f"hardcoded hits: {hit_text}")
     results.append(("No hardcoded Diamond path", r))
+
+    # PROBE 22: Active tree must stay on the new graph contract
+    header(22, "Active tree stays on the new graph contract")
+    tracked = subprocess.check_output(
+        ["git", "-C", str(repo_root), "ls-files", "instnct"],
+        text=True,
+    ).splitlines()
+    forbidden_substrings = [
+        "SelfWiringGraph.NV_RATIO =",
+        "SelfWiringGraph.THRESHOLD",
+        "SelfWiringGraph.INJ_SCALE",
+        "SelfWiringGraph.DRIVE",
+        "ref.INJ_SCALE",
+        "from model.graph import train",
+        "from graph import train",
+        "from model.graph import SelfWiringGraph, softmax",
+        "from graph import SelfWiringGraph, softmax",
+        "np.clip(charge, -1.0, 1.0)",
+    ]
+    forbidden_regexes = [
+        re.compile(r"\b(?:net|swg|self\.swg)\.drive\b"),
+        re.compile(r"\bnet\.leak\b"),
+        re.compile(r"\b(?:net|swg|self\.swg)\.retention\b"),
+        re.compile(r"\b(?:net|swg|self\.swg)\.threshold\b"),
+    ]
+    contract_hits = []
+    for rel in tracked:
+        if not rel.endswith(".py"):
+            continue
+        if rel.startswith("instnct/tests/archive/"):
+            continue
+        if rel.startswith("instnct/tests/gpu_experimental/"):
+            continue
+        if rel == "instnct/tests/test_model.py":
+            continue
+        if rel == "instnct/model/passive_io.py":
+            continue
+        if rel == "instnct/tests/graph_baseline_loader.py":
+            continue
+        path = repo_root / rel
+        if not path.exists():
+            continue
+        text = path.read_text(encoding="utf-8")
+        hit = next((needle for needle in forbidden_substrings if needle in text), None)
+        if hit is None:
+            hit = next((rx.pattern for rx in forbidden_regexes if rx.search(text)), None)
+        if hit is not None:
+            contract_hits.append(f"{rel}:{hit}")
+    ok = not contract_hits
+    hit_text = ", ".join(contract_hits[:3]) if contract_hits else "none"
+    r = result(PASS if ok else FAIL, f"contract hits: {hit_text}")
+    results.append(("Active graph contract", r))
 
     # SUMMARY
     print(f"\n{'='*60}")

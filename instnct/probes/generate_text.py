@@ -64,7 +64,7 @@ def generate(net, bp, prompt_bytes, gen_len=200, temperature=1.0, top_k=0):
                 np.add.at(raw, cs, act[rs] * sp_vals)
             charge += raw; charge *= ret
             act = np.maximum(charge - theta, 0.0)
-            charge = np.clip(charge, -1.0, 1.0)
+            charge = np.maximum(charge, 0.0)
         state = act.copy()
 
     # Generate
@@ -79,7 +79,7 @@ def generate(net, bp, prompt_bytes, gen_len=200, temperature=1.0, top_k=0):
                 np.add.at(raw, cs, act[rs] * sp_vals)
             charge += raw; charge *= ret
             act = np.maximum(charge - theta, 0.0)
-            charge = np.clip(charge, -1.0, 1.0)
+            charge = np.maximum(charge, 0.0)
         state = act.copy()
 
         out = charge @ output_projection
@@ -125,3 +125,4 @@ if __name__ == "__main__":
             text = ''.join(chr(b) if 32 <= b < 127 or b == 10 else '.' for b in result)
             print(f"\nPrompt: {p.decode()!r}")
             print(f"Output: {text}")
+

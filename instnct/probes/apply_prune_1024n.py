@@ -15,8 +15,6 @@ sys.path.insert(0, str(ROOT / "model"))
 from graph import SelfWiringGraph
 
 IO = 256; H = IO * 4
-SelfWiringGraph.NV_RATIO = 4
-
 CKPT_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "checkpoints")
 
 # Load the crystallize importance data (saved by bulk_prune)
@@ -75,3 +73,4 @@ np.savez(save_path,
          theta=theta, decay=decay)
 print(f"\nSAVED: {save_path}")
 print(f"  {len(pruned_rows)} edges (removed {n_removed})")
+

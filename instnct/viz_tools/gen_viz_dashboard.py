@@ -128,7 +128,7 @@ vals_s = net.mask[rows_s, cols_s]
 activations_per_tick = []
 charge_sim = np.zeros(H, dtype=np.float32)
 act = np.zeros(H, dtype=np.float32)
-retain = float(net.retention)
+retain = float(net.retention_mean)
 for t in range(6):
     if t == 0:
         act = act + bp[116] @ net.input_projection  # 't'
@@ -137,7 +137,7 @@ for t in range(6):
         np.add.at(raw, cols_s, act[rows_s] * vals_s)
     charge_sim += raw
     charge_sim *= retain
-    act = np.maximum(charge_sim - net.THRESHOLD, 0.0)
+    act = np.maximum(charge_sim - net.theta_mean, 0.0)
     charge_sim = np.clip(charge_sim, -1.0, 1.0)
     # Record neurons by charge magnitude (before threshold)
     tick_data = [(int(i), round(float(abs(charge_sim[i])), 4)) for i in range(H) if abs(charge_sim[i]) > 0.01]
@@ -480,3 +480,4 @@ with (ROOT / 'network_dashboard.html').open('w', encoding='utf-8') as f:
     f.write(html)
 
 print(f"Saved network_dashboard.html ({len(html)} bytes)")
+

@@ -127,10 +127,9 @@ def run_config(name, nv_ratio, bp, ALL_DATA, bigram, eval_seqs,
     IO = 256; H = IO * nv_ratio
 
     random.seed(42); np.random.seed(42)
-    SelfWiringGraph.NV_RATIO = nv_ratio
-    ref = SelfWiringGraph(IO)
-    input_projection = ref.input_projection / ref.INJ_SCALE * 1.0
-    output_projection = ref.output_projection / ref.INJ_SCALE * 1.0
+    ref = SelfWiringGraph(IO, hidden_ratio=nv_ratio, projection_scale=1.0)
+    input_projection = ref.input_projection
+    output_projection = ref.output_projection
     inj_table = np.clip(bp @ input_projection * 128, -128, 127).astype(np.int8)
     output_projection_int8 = np.clip(output_projection * 128, -128, 127).astype(np.int8)
     output_projection_f = output_projection_int8.astype(np.float32) / 128.0
@@ -212,3 +211,4 @@ if __name__ == "__main__":
     for r in results:
         print(f"  {r['name']:<15} {r['acc']*100:6.2f}% {r['edges']} edges H={r['H']} {r['time']:.0f}s")
     sys.stdout.flush()
+

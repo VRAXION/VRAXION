@@ -13,7 +13,8 @@ This forces all computation through the hidden layer.
 import numpy as np
 import random
 
-from model.graph import SelfWiringGraph, train as _orig_train
+from lib.utils import train as _orig_train
+from model.graph import SelfWiringGraph
 
 
 class PassiveIOGraph:
@@ -55,8 +56,8 @@ class PassiveIOGraph:
         d = self.DENSITY / 100
         r = np.random.rand(self.H, self.H)
         self.mask = np.zeros((self.H, self.H), dtype=np.float32)
-        self.mask[r < d / 2] = -self.DRIVE
-        self.mask[r > 1 - d / 2] = self.DRIVE
+        self.mask[r < d / 2] = -self.mutation_drive
+        self.mask[r > 1 - d / 2] = self.mutation_drive
         np.fill_diagonal(self.mask, 0)
 
         # Alive edges
@@ -70,7 +71,7 @@ class PassiveIOGraph:
 
         # Co-evolved params
         self.loss_pct = np.int8(15)
-        self.drive = np.int8(1)
+        self.mutation_drive = np.int8(1)
 
     @staticmethod
     def _hadamard_like(V, H):
@@ -94,7 +95,7 @@ class PassiveIOGraph:
     def forward(self, world, ticks=8):
         """Single input forward pass."""
         act = self.state.copy()
-        retain = float(self.retention)
+        retain = float(self.retention_mean)
         for t in range(ticks):
             if t == 0:
                 # Project input into hidden space (additive injection)
@@ -114,7 +115,7 @@ class PassiveIOGraph:
         V, H = self.V, self.H
         charges = np.zeros((V, H), dtype=np.float32)
         acts = np.zeros((V, H), dtype=np.float32)
-        retain = float(self.retention)
+        retain = float(self.retention_mean)
         eye = np.eye(V, dtype=np.float32)
         projected_inputs = eye @ self.input_projection  # (V, H) — precompute
         for t in range(ticks):
@@ -150,7 +151,7 @@ class PassiveIOGraph:
             'state': self.state.copy(),
             'charge': self.charge.copy(),
             'loss_pct': np.int8(self.loss_pct),
-            'drive': np.int8(self.drive),
+            'drive': np.int8(self.mutation_drive),
         }
 
     def restore_state(self, s):
@@ -160,7 +161,7 @@ class PassiveIOGraph:
         self.state[:] = s['state']
         self.charge[:] = s['charge']
         self.loss_pct = np.int8(s['loss_pct'])
-        self.drive = np.int8(s['drive'])
+        self.mutation_drive = np.int8(s['drive'])
 
     def replay(self, log):
         has_structural = False
@@ -203,10 +204,10 @@ class PassiveIOGraph:
         if random.randint(1, 5) == 1 and not freeze_params:
             self.loss_pct = np.int8(max(1, min(50, int(self.loss_pct) + random.randint(-3, 3))))
         if random.randint(1, 20) <= 7 and not freeze_params:
-            self.drive = np.int8(max(-15, min(15, int(self.drive) + random.choice([-1, 1]))))
+            self.mutation_drive = np.int8(max(-15, min(15, int(self.mutation_drive) + random.choice([-1, 1]))))
 
         undo = []
-        d = int(self.drive)
+        d = int(self.mutation_drive)
         if d > 0:
             for _ in range(d):
                 self._add(undo)
@@ -223,7 +224,7 @@ class PassiveIOGraph:
             return
         r, c = random.randint(0, self.H-1), random.randint(0, self.H-1)
         if r != c and self.mask[r, c] == 0:
-            self.mask[r, c] = self.DRIVE if random.randint(0, 1) else -self.DRIVE
+            self.mask[r, c] = self.mutation_drive if random.randint(0, 1) else -self.mutation_drive
             self.alive.append((r, c))
             self.alive_set.add((r, c))
             undo.append(('A', r, c))
@@ -281,7 +282,7 @@ def train_passive(net, targets, vocab, max_attempts=8000, ticks=8,
 
     for att in range(max_attempts):
         old_loss = int(net.loss_pct)
-        old_drive = int(net.drive)
+        old_drive = int(net.mutation_drive)
         undo = net.mutate()
         new_score = evaluate()
 
@@ -292,7 +293,7 @@ def train_passive(net, targets, vocab, max_attempts=8000, ticks=8,
         else:
             net.replay(undo)
             net.loss_pct = np.int8(old_loss)
-            net.drive = np.int8(old_drive)
+            net.mutation_drive = np.int8(old_drive)
             stale += 1
 
             if stale > rewire_threshold:
@@ -308,10 +309,11 @@ def train_passive(net, targets, vocab, max_attempts=8000, ticks=8,
 
         if verbose and (att + 1) % 1000 == 0:
             print(f"  [{att+1:5d}] Score: {best*100:5.1f}% | "
-                  f"Conns: {net.count_connections():4d} | drive={int(net.drive):+d} | "
+                  f"Conns: {net.count_connections():4d} | drive={int(net.mutation_drive):+d} | "
                   f"Loss: {int(net.loss_pct)}%")
 
         if best >= 0.99 or stale >= stale_limit:
             break
 
     return best
+

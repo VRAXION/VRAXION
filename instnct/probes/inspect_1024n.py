@@ -8,9 +8,8 @@ sys.path.insert(0, str(ROOT / "model"))
 from graph import SelfWiringGraph
 
 IO = 256; H = IO * 4
-SelfWiringGraph.NV_RATIO = 4
 np.random.seed(42)
-net = SelfWiringGraph(IO)
+net = SelfWiringGraph(IO, hidden_ratio=4)
 input_projection = net.input_projection; output_projection = net.output_projection
 
 CKPT_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "checkpoints")
@@ -134,3 +133,4 @@ for i in range(blocks):
 total_per_block = density_map.sum() / (blocks * blocks)
 print(f"  Avg edges per block: {total_per_block:.1f}")
 print(f"  Empty blocks: {np.sum(density_map == 0)}/{blocks*blocks}")
+

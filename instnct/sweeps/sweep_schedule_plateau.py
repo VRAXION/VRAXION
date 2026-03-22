@@ -246,7 +246,6 @@ def run_config(name, init_counts, bp, ALL_DATA, bigram, eval_seqs, H, input_proj
 
 if __name__ == "__main__":
     IO = 256; NV = 4; H = IO * NV
-    SelfWiringGraph.NV_RATIO = NV
     bp = make_bp(IO)
 
     from lib.data import load_fineweb_bytes, resolve_fineweb_path
@@ -262,9 +261,9 @@ if __name__ == "__main__":
                  [eval_rng.randint(0, len(ALL_DATA)-200) for _ in range(10)]]
 
     random.seed(42); np.random.seed(42)
-    ref = SelfWiringGraph(IO)
-    input_projection = ref.input_projection / ref.INJ_SCALE * 1.0
-    output_projection = ref.output_projection / ref.INJ_SCALE * 1.0
+    ref = SelfWiringGraph(IO, hidden_ratio=NV, projection_scale=1.0)
+    input_projection = ref.input_projection
+    output_projection = ref.output_projection
 
     # Config 1: Standard (no decay)
     run_config("LEARN STANDARD (3a/1f/1t)", {'add': 3, 'flip': 1, 'theta': 1},
@@ -273,3 +272,4 @@ if __name__ == "__main__":
     # Config 2: With decay
     run_config("LEARN DECAY (3a/1f/1t/1d)", {'add': 3, 'flip': 1, 'theta': 1, 'decay': 1},
                bp, ALL_DATA, bigram, eval_seqs, H, input_projection, output_projection)
+

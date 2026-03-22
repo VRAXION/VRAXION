@@ -63,7 +63,7 @@ def make_empty_net(V, seed):
     net.state *= 0
     net.charge *= 0
     net.loss_pct = np.int8(15)
-    net.drive = np.int8(0)
+    net.mutation_drive = np.int8(0)
     return net
 
 
@@ -288,3 +288,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+

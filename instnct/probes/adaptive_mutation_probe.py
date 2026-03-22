@@ -23,7 +23,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "model"))
-from graph import SelfWiringGraph, softmax
+from graph import SelfWiringGraph
 
 
 def evaluate(net, targets, ticks=6):
@@ -54,14 +54,14 @@ def multi_mutate(net, n_changes):
     """Apply n_changes mutations, return combined undo log."""
     undo_all = []
     old_loss = int(net.loss_pct)
-    old_drive = int(net.drive)
+    old_mutation_drive = int(net.mutation_drive)
 
     for i in range(n_changes):
         op = random.choice(['add', 'remove', 'rewire', 'flip'])
         undo = net.mutate(forced_op=op)
         undo_all.extend(undo)
 
-    return undo_all, old_loss, old_drive
+    return undo_all, old_loss, old_mutation_drive
 
 
 def run_trial(V, seed, budget, mode, ticks=6):
@@ -93,13 +93,13 @@ def run_trial(V, seed, budget, mode, ticks=6):
                 stale = 0
                 resets += 1
                 continue
-            undo, old_loss, old_drive = multi_mutate(net, n_ch)
+            undo, old_loss, old_mutation_drive = multi_mutate(net, n_ch)
         else:
             # Fixed: use default mutate (drive-based)
             old_loss = int(net.loss_pct)
-            old_drive = int(net.drive)
+            old_mutation_drive = int(net.mutation_drive)
             undo = net.mutate()
-            n_ch = max(1, abs(int(net.drive)))
+            n_ch = max(1, abs(int(net.mutation_drive)))
 
         new_score = evaluate(net, targets, ticks)
 
@@ -113,7 +113,7 @@ def run_trial(V, seed, budget, mode, ticks=6):
         else:
             net.replay(undo)
             net.loss_pct = np.int8(old_loss)
-            net.drive = np.int8(old_drive)
+            net.mutation_drive = np.int8(old_mutation_drive)
             stale += 1
 
             # Fixed mode: also do stale rewire (matching current train())

@@ -244,11 +244,11 @@ if __name__ == "__main__":
     row_sums[row_sums == 0] = 1
     bigram = (bigram / row_sums).astype(np.float32)
 
-    SelfWiringGraph.NV_RATIO = 4; bp = make_bp(IO)
+    bp = make_bp(IO)
     random.seed(42); np.random.seed(42)
-    ref = SelfWiringGraph(IO)
-    inp = ref.input_projection / ref.INJ_SCALE * 1.0
-    outp = ref.output_projection / ref.INJ_SCALE * 1.0
+    ref = SelfWiringGraph(IO, hidden_ratio=4, projection_scale=1.0)
+    inp = ref.input_projection
+    outp = ref.output_projection
     inj_table = np.clip(bp @ inp * 128, -128, 127).astype(np.int8)
     woi = np.clip(outp * 128, -128, 127).astype(np.int8)
     wof = woi.astype(np.float32) / 128.0
@@ -405,3 +405,4 @@ if __name__ == "__main__":
         inj_table=inj_table, output_projection_int8=woi,
         sched_weights=sched_weights, prune_rate=prune_rate)
     sys.stdout.flush()
+

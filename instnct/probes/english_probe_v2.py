@@ -55,7 +55,7 @@ def evaluate(net, byte_patterns, targets, ticks=6):
     charges = np.zeros((256, H), dtype=np.float32)
     acts = np.zeros((256, H), dtype=np.float32)
     projected = byte_patterns @ net.input_projection  # (256, H)
-    retain = float(net.retention)
+    retain = float(net.retention_mean)
 
     for t in range(ticks):
         if t == 0:
@@ -64,7 +64,7 @@ def evaluate(net, byte_patterns, targets, ticks=6):
         np.nan_to_num(raw, copy=False, nan=0.0, posinf=0.0, neginf=0.0)
         charges += raw
         charges *= retain
-        acts = np.maximum(charges - net.THRESHOLD, 0.0)
+        acts = np.maximum(charges - net.theta_mean, 0.0)
         charges = np.clip(charges, -1.0, 1.0)
 
     out = charges @ net.output_projection  # (256, io_dim)
@@ -215,3 +215,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+

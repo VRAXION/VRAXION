@@ -168,7 +168,6 @@ def run_config(name, output_projection_f, bp, ALL_DATA, bigram, eval_seqs, H, in
 
 if __name__ == "__main__":
     IO = 256; NV = 4; H = IO * NV
-    SelfWiringGraph.NV_RATIO = NV
     bp = make_bp(IO)
 
     from lib.data import load_fineweb_bytes, resolve_fineweb_path
@@ -184,9 +183,9 @@ if __name__ == "__main__":
                  [eval_rng.randint(0, len(ALL_DATA)-200) for _ in range(10)]]
 
     random.seed(42); np.random.seed(42)
-    ref = SelfWiringGraph(IO)
-    input_projection = ref.input_projection / ref.INJ_SCALE * 1.0
-    output_projection = ref.output_projection / ref.INJ_SCALE * 1.0
+    ref = SelfWiringGraph(IO, hidden_ratio=NV, projection_scale=1.0)
+    input_projection = ref.input_projection
+    output_projection = ref.output_projection
 
     inj_table = np.clip(bp @ input_projection * 128, -128, 127).astype(np.int8)
     print(f"Inj table: [{inj_table.min()},{inj_table.max()}]")
@@ -214,3 +213,4 @@ if __name__ == "__main__":
     for r in results:
         print(f"  {r['name']:<15} {r['acc']*100:6.2f}% {r['edges']} edges {r['time']:.0f}s")
     sys.stdout.flush()
+

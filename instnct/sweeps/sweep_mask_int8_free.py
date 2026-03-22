@@ -200,7 +200,6 @@ def run_config(name, add_mode, schedule, bp, ALL_DATA, bigram, eval_seqs, H, inp
 
 if __name__ == "__main__":
     IO = 256; NV = 4; H = IO * NV
-    SelfWiringGraph.NV_RATIO = NV
     bp = make_bp(IO)
 
     from lib.data import load_fineweb_bytes, resolve_fineweb_path
@@ -216,9 +215,9 @@ if __name__ == "__main__":
                  [eval_rng.randint(0, len(ALL_DATA)-200) for _ in range(10)]]
 
     random.seed(42); np.random.seed(42)
-    ref = SelfWiringGraph(IO)
-    input_projection = ref.input_projection / ref.INJ_SCALE * 1.0
-    output_projection = ref.output_projection / ref.INJ_SCALE * 1.0
+    ref = SelfWiringGraph(IO, hidden_ratio=NV, projection_scale=1.0)
+    input_projection = ref.input_projection
+    output_projection = ref.output_projection
 
     results = []
 
@@ -245,3 +244,4 @@ if __name__ == "__main__":
     for r in results:
         print(f"  {r['name']:<25} {r['acc']*100:6.2f} {r['edges']:6d} {r['quality']:8.3f} {r['time']:5.0f}s")
     sys.stdout.flush()
+

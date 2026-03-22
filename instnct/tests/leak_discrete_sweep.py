@@ -45,7 +45,7 @@ def run_one(vocab, neurons, density, budget, seed):
         budget=budget,
     )
     net, perm = build_sweep_net(config, seed)
-    net.leak = 0.85
+    net.retention_mean = 0.85
 
     # Track every accepted leak value (quantized to 2 decimals)
     leak_accepts = Counter()
@@ -56,19 +56,19 @@ def run_one(vocab, neurons, density, budget, seed):
         if random.random() < 0.20:
             net.mutate(forced_op="theta")
         if random.random() < 0.25:
-            net.leak = quantized_step(
-                net.leak,
+            net.retention_mean = quantized_step(
+                net.retention_mean,
                 step=0.01,
                 min_value=0.50,
                 max_value=0.99,
             )
 
     def on_accept(net, context, step, trial):
-        lk_int = int(round(net.leak * 100))
+        lk_int = int(round(net.retention_mean * 100))
         leak_accepts[lk_int] += 1
         if step % 4000 == 0:
-            leak_trajectory.append((step, round(net.leak, 3)))
-        return (step, round(net.leak, 3), trial["acc"])
+            leak_trajectory.append((step, round(net.retention_mean, 3)))
+        return (step, round(net.retention_mean, 3), trial["acc"])
 
     outcome = run_parameter_search(
         net,
@@ -78,8 +78,8 @@ def run_one(vocab, neurons, density, budget, seed):
         on_accept=on_accept,
     )
 
-    leak_trajectory.append((outcome.steps, round(net.leak, 3)))
-    return outcome.best_acc, net.leak, leak_accepts, leak_trajectory
+    leak_trajectory.append((outcome.steps, round(net.retention_mean, 3)))
+    return outcome.best_acc, net.retention_mean, leak_accepts, leak_trajectory
 
 
 def print_histogram(all_accepts):
@@ -145,3 +145,4 @@ def main():
 
 if __name__ == '__main__':
     main()
+

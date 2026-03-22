@@ -8,7 +8,7 @@ Repo-tracked docs are canonical. The GitHub wiki is treated as a mirrored second
 
 ## What Matters Most Right Now
 
-- **Current mainline:** [`instnct/model/graph.py`](instnct/model/graph.py) still ships `THRESHOLD = 0.5`, `INJ_SCALE = 3.0`, `DRIVE = 0.6`, plus co-evolved per-neuron `theta` / `decay` and nonnegative charge dynamics.
+- **Current mainline:** [`instnct/model/graph.py`](instnct/model/graph.py) now ships explicit per-instance defaults `DEFAULT_THETA = 0.1`, `DEFAULT_PROJECTION_SCALE = 3.0`, `DEFAULT_EDGE_MAGNITUDE = 0.6`, plus co-evolved per-neuron `theta` / `decay` and nonnegative charge dynamics.
 - **Current recipe candidate on `main`:** [`instnct/recipes/english_1024n_18w.py`](instnct/recipes/english_1024n_18w.py) now uses `8` ticks with a triangle-derived `2 add / 1 flip / 5 decay` schedule; it still uses the existing float signed edge mask.
 - **Strongest schedule result so far:** voltage medium leak reached `22.11%` peak / `21.46%` plateau.
 - **Best compact learnable control policy so far:** the 3-angle decision-tree schedule reached `20.05%` at `156` edges.
@@ -26,11 +26,11 @@ Repo-tracked docs are canonical. The GitHub wiki is treated as a mirrored second
 
 The canonical code path for `main` is [`instnct/model/graph.py`](instnct/model/graph.py).
 
-Current mainline constants in that file:
+Current mainline defaults in that file:
 
-- `THRESHOLD = 0.5`
-- `INJ_SCALE = 3.0`
-- `DRIVE = 0.6`
+- `DEFAULT_THETA = 0.1`
+- `DEFAULT_PROJECTION_SCALE = 3.0`
+- `DEFAULT_EDGE_MAGNITUDE = 0.6`
 - per-neuron `theta` and `decay` are part of the mainline implementation
 - charge uses nonnegative ReLU-style dynamics in the forward pass
 
@@ -44,7 +44,7 @@ The current English recipe candidate on `main` is [`instnct/recipes/english_1024
 |---|---|---|---|
 | Charge ReLU ([66ce511](https://github.com/VRAXION/VRAXION/commit/66ce511d58b71cecbd92adc04f307299b3fc414b)) | Current mainline | Replacing symmetric clip with nonnegative charge unlocked flip accepts and improved English eval by about `+6%` | Promoted into `graph.py` forward paths |
 | Flip mutation ([#112](https://github.com/VRAXION/VRAXION/issues/112)) | Validated finding | `flip` beat float weight perturbation by `+1.89%` on English 1024n | Not promoted into `graph.py` defaults; candidate for the mixed swarm implementation |
-| Low theta + `INJ_SCALE=1.0` ([#113](https://github.com/VRAXION/VRAXION/issues/113)) | Validated finding | `scale=1.0 + theta=0.03` beat `scale=3.0 + theta=0.1` (`12.91%` vs `11.01%`) | Not promoted into `graph.py` defaults |
+| Low theta + `projection_scale=1.0` ([#113](https://github.com/VRAXION/VRAXION/issues/113)) | Validated finding | `scale=1.0 + theta=0.03` beat `scale=3.0 + theta=0.1` (`12.91%` vs `11.01%`) | Not promoted into `graph.py` defaults |
 | 8 ticks + current English candidate schedule ([2b4de88](https://github.com/VRAXION/VRAXION/commit/2b4de887656d5061a944d7f85b0bb2a875f767e4), [36086a0](https://github.com/VRAXION/VRAXION/commit/36086a0a58b02dad3413f883fdfd7d153108ed66), [fdae6d6](https://github.com/VRAXION/VRAXION/commit/fdae6d6cd79a3554f23fbe94ab5412cea3e216d1)) | Validated finding | `8` ticks beat `6`, and the current candidate on `main` now uses the triangle-derived `2 add / 1 flip / 5 decay` schedule | Promoted into the current English recipe candidate on `main`, not into `graph.py` defaults |
 | Decay resample mutation ([a5419e2](https://github.com/VRAXION/VRAXION/commit/a5419e22795af522afa2e2d8e292dd495f6c909f)) | Validated finding | Single-neuron resample in `[0.01, 0.5]` beat local decay perturbation and produced differentiated decay rates `[0.081-0.235]` | Not promoted into the current recipe or `graph.py` defaults |
 | Voltage medium leak schedule ([b971613](https://github.com/VRAXION/VRAXION/commit/b971613550d881a7298690a2016339486e4c8244)) | Validated finding | Strongest schedule result so far: `22.11%` peak / `21.46%` plateau | Not promoted into the current recipe or `graph.py` defaults |
