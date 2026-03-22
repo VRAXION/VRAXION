@@ -22,7 +22,7 @@ This is the lean technical reference for the public stack. Use [Pages](https://v
 - you need the distinction between shipped code, validated evidence, and active experimental work
 - you need the right next page without reconstructing it from issue traffic
 
-Use this stack map to jump by intent.
+Use this stack map to jump by question, not by page name.
 
 <p align="center">
   <img src="https://raw.githubusercontent.com/VRAXION/VRAXION/main/docs/assets/home-public-stack.svg" alt="VRAXION public stack map" width="740">
