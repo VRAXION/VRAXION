@@ -42,10 +42,12 @@ INSTNCT core anatomy at a glance:
 
 ## Long-Horizon Mission
 
-> In a stable loop, structure emerges.
+<p align="center">
+  <img src="https://raw.githubusercontent.com/VRAXION/VRAXION/main/docs/assets/long-horizon-mission.jpg" alt="Long-horizon mission illustration" width="592">
+</p>
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/VRAXION/VRAXION/main/docs/assets/long-horizon-mission.jpg" alt="Long-horizon mission illustration" width="740">
+  <em>In a stable loop, structure emerges.</em>
 </p>
 
 VRAXION exists to advance machine consciousness as an engineering reality, and to ensure that the underlying mechanisms can endure beyond any single institution, deployment, or era.
