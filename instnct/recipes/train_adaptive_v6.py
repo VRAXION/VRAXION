@@ -198,19 +198,22 @@ FACTS = [
     ("london is in", "england"), ("rome is in", "italy"),
 ]
 
-def eval_facts(msign, mmag, ret_int4, H, wof, bp, it):
+def eval_facts(msign, mmag, ret_int4, H, wof, bp, it, ALL_DATA):
     pat_norm = bp / (np.linalg.norm(bp, axis=1, keepdims=True) + 1e-8)
     rs, cs = np.where(mmag > 0)
     if len(rs) == 0: return 0.0
     s = msign[rs, cs].astype(np.float32) * 2 - 1
     sp = s * mmag[rs, cs].astype(np.float32) / 128.0
     ret_vec = 1.0 - ret_int4.astype(np.float32) * 0.01
-    tc = 0; ta = 0
-    for key, val in FACTS:
-        text = (key + '=' + val + '\n').encode('ascii')
-        tb = np.frombuffer(text, dtype=np.uint8)
+    # Eval on random windows, measure accuracy on bytes after '='
+    EQ = ord('=')
+    tc_all = 0; ta_all = 0; tc_ans = 0; ta_ans = 0
+    eval_rng = np.random.RandomState(7777)
+    for _ in range(10):
+        off = eval_rng.randint(0, len(ALL_DATA) - 200)
+        tb = ALL_DATA[off:off+200]
         st = np.zeros(H, dtype=np.float32); ch = np.zeros(H, dtype=np.float32)
-        eq = len(key)
+        in_answer = False
         for i in range(len(tb)-1):
             act = st.copy()
             inj = it[tb[i]].astype(np.float32) / 128.0
@@ -222,16 +225,21 @@ def eval_facts(msign, mmag, ret_int4, H, wof, bp, it):
                 ch += raw; ch *= ret_vec
                 act = np.maximum(ch, 0.0); ch = np.maximum(ch, 0.0)
             st = act.copy()
-            if i >= eq:
-                out = ch @ wof
-                out_n = out / (np.linalg.norm(out) + 1e-8)
-                sims = out_n @ pat_norm.T
-                pb = int(np.argmax(sims))
-                actual = int(tb[i+1])
-                if actual != ord('\n'):
-                    ta += 1
-                    if pb == actual: tc += 1
-    return tc/ta if ta else 0
+            out = ch @ wof
+            out_n = out / (np.linalg.norm(out) + 1e-8)
+            sims = out_n @ pat_norm.T
+            pb = int(np.argmax(sims))
+            actual = int(tb[i+1])
+            if pb == actual: tc_all += 1
+            ta_all += 1
+            if tb[i] == EQ: in_answer = True
+            elif tb[i] == ord('>') or tb[i] == ord('\n'): in_answer = False
+            if in_answer:
+                ta_ans += 1
+                if pb == actual: tc_ans += 1
+    all_acc = tc_all / ta_all if ta_all else 0
+    ans_acc = tc_ans / ta_ans if ta_ans else 0
+    return all_acc, ans_acc
 
 
 def compute_importance(msign, mmag, ret_int4, H, inj_table, eval_seqs):
@@ -294,17 +302,13 @@ if __name__ == "__main__":
     PRUNE_EVERY = 250
     HARD_PRUNE_EVERY = 1000
 
-    lines = [f"{k}={v}\n" for k, v in FACTS]
-    random.seed(42)
-    corpus_text = ''
-    while len(corpus_text) < 50_000:
-        random.shuffle(lines)
-        corpus_text += ''.join(lines)
-    ALL_DATA = np.frombuffer(corpus_text.encode('ascii'), dtype=np.uint8).copy()
-
-    bigram = np.zeros((256, 256), dtype=np.float64)
-    for i in range(len(ALL_DATA) - 1):
-        bigram[ALL_DATA[i], ALL_DATA[i+1]] += 1
+    # Load Alpaca chatbot data
+    data_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'data', 'alpaca_chat.traindat')
+    bigram_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'data', 'alpaca_chat_bigram.npy')
+    with open(data_path, 'rb') as f:
+        ALL_DATA = np.frombuffer(f.read(), dtype=np.uint8).copy()
+    bigram = np.load(bigram_path)
+    print(f"Loaded Alpaca chatbot: {len(ALL_DATA)/1024:.0f} KB")
     row_sums = bigram.sum(axis=1, keepdims=True)
     row_sums[row_sums == 0] = 1
     bigram = (bigram / row_sums).astype(np.float32)
@@ -448,15 +452,16 @@ if __name__ == "__main__":
             # NO HARD PRUNE in v4 — soft prune handles removal
 
             # REPORT
-            if step % 500 == 0:
+            if step % 50 == 0:
                 elapsed = time.time() - t0
                 edges = int((mmag > 0).sum())
-                overall = eval_facts(msign, mmag, ret_int4, H, wof, bp, inj_table)
+                all_acc, ans_acc = eval_facts(msign, mmag, ret_int4, H, wof, bp, inj_table, ALL_DATA)
+                overall = all_acc
                 n_mem = int((ret_int4 <= 5).sum())
                 w_str = '/'.join(f"{MUT_TYPES[i][0]}={sched_weights[i]}" for i in range(len(MUT_TYPES)))
                 acc_str = '/'.join(f"{t[0]}={accepts[t]}" for t in MUT_TYPES)
                 n_imp = int((importance > 0).sum())
-                print(f"  [{step:4d}] acc={overall*100:.1f}% edges={edges} imp={n_imp} prune={int(prune_rate)}% "
+                print(f"  [{step:4d}] all={all_acc*100:.1f}% ans={ans_acc*100:.1f}% edges={edges} imp={n_imp} prune={int(prune_rate)}% "
                       f"mem={n_mem} w=[{w_str}] [{acc_str}] {elapsed:.0f}s")
                 sys.stdout.flush()
 
@@ -475,7 +480,8 @@ if __name__ == "__main__":
 
     elapsed = time.time() - t0
     edges = int((mmag > 0).sum())
-    overall = eval_facts(msign, mmag, ret_int4, H, wof, bp, inj_table)
+    all_acc, ans_acc = eval_facts(msign, mmag, ret_int4, H, wof, bp, inj_table, ALL_DATA)
+    overall = all_acc
     n_mem = int((ret_int4 <= 5).sum())
 
     print(f"\n{'='*70}")
