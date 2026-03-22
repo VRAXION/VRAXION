@@ -25,6 +25,7 @@ The following are archived instead of kept in the active branch list:
 
 These remain as branches because they represent older repository eras that are still worth browsing directly:
 
+- `archive/diamond-code-era-20260322`
 - `archive/pre-self-wiring-main-20260317`
 - `archive/pre-self-wiring-claude-20260317`
 
@@ -52,6 +53,8 @@ Benefits:
 - safer preservation of older work without mixing it into the active default branch
 
 Canonical public docs live in repo-tracked files. The GitHub wiki is a mirrored secondary surface, not a separate doctrine layer.
+
+The Diamond Code era now lives on `archive/diamond-code-era-20260322`, not on active `main`.
 
 ## Practical rule
 

@@ -40,9 +40,9 @@ If code and docs disagree, **code wins for “Current mainline.”**
 
 The repo-tracked docs are the canonical public source. The GitHub wiki is a secondary mirror, not an independent source of truth.
 
-Historical tracked area still present on `main`:
+Historical archive branch:
 
-- `Diamond Code/` remains only as a historical dependency area for some `v4.2` runners that still point into its local data path.
+- The Diamond Code era is preserved on `archive/diamond-code-era-20260322`; it is not part of active `main`.
 
 Retired line names and older local folders belong in [Project Timeline](https://github.com/VRAXION/VRAXION/wiki/Release-Notes), not in the current front-door stack.
 

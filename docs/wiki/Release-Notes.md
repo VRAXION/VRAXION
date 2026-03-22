@@ -28,6 +28,7 @@ This page is the single primary timeline and lookup surface for VRAXION. Use it 
 ## What Matters Now
 
 - The active public architecture line is [INSTNCT Architecture](SWG-v4.2-Architecture); earlier architecture lines are historical context only.
+- The Diamond Code era is preserved on archive branch `archive/diamond-code-era-20260322`; it is not part of active `main`.
 - The strongest schedule and mutation results live in [Validated Findings](Validated-Findings) until code on `main` actually adopts them.
 - The main unresolved public targets are context-dependent task learning, schedule-policy promotion, edge-representation promotion, and re-checking low-theta / low-scale against today’s stronger recipe stack.
 - History, terminology, and page retirements now live here instead of being spread across separate glossary, roadmap, theory, and archive leaves.
@@ -62,6 +63,7 @@ This page is the single primary timeline and lookup surface for VRAXION. Use it 
 | 2026-03-22 | Sign+mag edge representation with magnitude resample became the strongest compact edge-format line | The edge-format frontier gained a new quality-per-edge winner at `18.69%` and `155` edges (`q=0.121`), without yet displacing the current recipe candidate or the best raw-accuracy schedule line. | [Validated Findings](Validated-Findings) |
 | 2026-03-22 | Task-learning experiments displaced the older swarm line as the main active frontier | Window=2 input superposition, word-pair memory, and log-likelihood evaluation opened a more credible path for context-dependent tasks than the older mixed-swarm target. | [Validated Findings](Validated-Findings), [VRAXION Home](Home) |
 | 2026-03-22 | Explicit preparation for `v5.0.0 Public Beta` started | The public story is being reorganized around stable release identity, clearer onboarding, and higher outside traffic rather than only internal experiment cadence. | This page, [VRAXION Home](Home), and [`CONTRIBUTING.md`](https://github.com/VRAXION/VRAXION/blob/main/CONTRIBUTING.md) |
+| 2026-03-22 | The tracked Diamond Code era was extracted from `main` | The current self-wiring line no longer carries the older Diamond Code tree in the default branch; that era now lives on `archive/diamond-code-era-20260322`. | This page and [`ARCHIVE.md`](https://github.com/VRAXION/VRAXION/blob/main/ARCHIVE.md) |
 | 2026-03-21 | Roadmap, theory, archive, glossary, and old architecture leaves were collapsed into one timeline surface | History, terminology, open questions, and retirement lookup now live in one place instead of multiple smaller pages. | This page |
 
 ## Retired Surfaces and Replacements
@@ -122,7 +124,7 @@ The run and evidence contract for VRAXION experiments: how runs are executed, va
 ### Legacy Terms
 
 **LCX (Latent Context Exchange)**
-An earlier external-memory system from the Diamond Code era, not part of the current INSTNCT public line.
+An earlier external-memory system from the Diamond Code era, preserved in `archive/diamond-code-era-20260322`, not part of the current INSTNCT public line.
 
 **`v4`, `v22_ternary`, `v23_instnct_lm`**
 Older local/archive line names that may still appear in notes, screenshots, or local workspaces. Treat them as historical context, not as active tracked public lines on `main`.

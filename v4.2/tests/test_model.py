@@ -10,11 +10,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
 import numpy as np
 import random
-from lib.data import (
-    fineweb_candidate_paths,
-    load_fineweb_bytes,
-    resolve_fineweb_path,
-)
+from lib.data import fineweb_candidate_paths, load_fineweb_bytes, resolve_fineweb_path
 from model.graph import SelfWiringGraph, softmax
 
 SEED = 42
@@ -357,43 +353,49 @@ def main():
         r = result(FAIL, f"Crashed: {ex}")
     results.append(("Forced mutate API", r))
 
-    # PROBE 18: Fineweb resolver semantics
+    # PROBE 18: Fineweb resolver semantics (canonical path + env override only)
     header(18, "Fineweb resolver semantics")
     env_var = "VRAXION_TEST_FINEWEB_PATH"
     old_env = os.environ.pop(env_var, None)
     try:
         with tempfile.TemporaryDirectory() as td:
             repo_root = Path(td)
-            canonical, legacy = fineweb_candidate_paths(repo_root)
+            canonical = fineweb_candidate_paths(repo_root)[0]
             canonical_hint = str(canonical)
+            override = repo_root / "elsewhere" / "fineweb_override.traindat"
 
             canonical.parent.mkdir(parents=True, exist_ok=True)
             canonical.write_bytes(bytes([1, 2, 3, 4]))
             resolved_canonical = resolve_fineweb_path(repo_root=repo_root, env_var=env_var)
-            sample = load_fineweb_bytes(max_bytes=2, repo_root=repo_root, env_var=env_var)
+            sample_canonical = load_fineweb_bytes(max_bytes=2, repo_root=repo_root, env_var=env_var)
 
-            canonical.unlink()
-            legacy.parent.mkdir(parents=True, exist_ok=True)
-            legacy.write_bytes(bytes([5, 6, 7]))
-            resolved_legacy = resolve_fineweb_path(repo_root=repo_root, env_var=env_var)
+            override.parent.mkdir(parents=True, exist_ok=True)
+            override.write_bytes(bytes([9, 8, 7]))
+            os.environ[env_var] = str(override)
+            resolved_override = resolve_fineweb_path(repo_root=repo_root, env_var=env_var)
+            sample_override = load_fineweb_bytes(max_bytes=2, repo_root=repo_root, env_var=env_var)
 
             missing_ok = False
-            legacy.unlink()
+            os.environ.pop(env_var, None)
+            canonical.unlink()
             try:
                 resolve_fineweb_path(repo_root=repo_root, env_var=env_var)
             except FileNotFoundError as ex:
-                missing_ok = canonical_hint in str(ex)
+                missing_text = str(ex)
+                missing_ok = canonical_hint in missing_text and env_var in missing_text
 
             ok = (
                 resolved_canonical == canonical and
-                resolved_legacy == legacy and
-                sample.tolist() == [1, 2] and
+                resolved_override == override and
+                sample_canonical.tolist() == [1, 2] and
+                sample_override.tolist() == [9, 8] and
                 missing_ok
             )
             r = result(PASS if ok else FAIL,
                        f"canonical={resolved_canonical == canonical}, "
-                       f"legacy={resolved_legacy == legacy}, "
-                       f"sample={sample.tolist()}, missing_hint={missing_ok}")
+                       f"override={resolved_override == override}, "
+                       f"sample={sample_canonical.tolist()}/{sample_override.tolist()}, "
+                       f"missing_hint={missing_ok}")
     except Exception as ex:
         r = result(FAIL, f"Crashed: {ex}")
     finally:

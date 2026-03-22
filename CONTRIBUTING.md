@@ -22,9 +22,9 @@ If a setting or training recipe is not in the canonical code path, do **not** de
 - `VALIDATED_FINDINGS.md`: canonical evidence summary for public-facing claims
 - `VERSION.json`: public release identity source of truth
 
-Historical tracked area still present on `main`:
+Historical archive branch:
 
-- `Diamond Code/` remains only as a historical dependency area for some `v4.2` runners that still reference its local data path.
+- The Diamond Code era is preserved on `archive/diamond-code-era-20260322`; it is not part of active `main`.
 
 Treat older line names and local historical folders as timeline/archive context, not as equal-current public repo surfaces.
 

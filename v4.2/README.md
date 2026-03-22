@@ -54,7 +54,8 @@ These findings are important, but none of them should be described as a shipped 
 
 - Canonical local corpus home for active runners: [`data/traindat/`](data/traindat/)
 - Large `.traindat` corpora remain local-only and stay ignored by git
-- Active `v4.2` runners prefer `data/traindat/fineweb_edu.traindat` and only fall back to the old `Diamond Code` path during the transition
+- Active `v4.2` runners read `data/traindat/fineweb_edu.traindat` by default
+- Optional override: set `VRAXION_FINEWEB_PATH` if your local corpus lives elsewhere
 
 ## Quick Verification
 

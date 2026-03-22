@@ -75,3 +75,6 @@ v4.2/test_thresh0.py
 
 # Local telemetry credentials
 **/.influx_token
+
+# Local historical workspace extracted from main
+Diamond Code/

@@ -18,7 +18,6 @@ CONTRIBUTING = ROOT / "CONTRIBUTING.md"
 FINDINGS = ROOT / "VALIDATED_FINDINGS.md"
 LANDING = ROOT / "docs" / "index.html"
 VERSION_FILE = ROOT / "VERSION.json"
-DIAMOND_TOKEN = ROOT / "Diamond Code" / ".influx_token"
 LANDING_STACK_MAP = ROOT / "docs" / "assets" / "vraxion-public-stack-map.png"
 ARCHIVE = ROOT / "ARCHIVE.md"
 PR_TEMPLATE = ROOT / ".github" / "pull_request_template.md"
@@ -153,6 +152,7 @@ EDGE_FORMAT_FINDING_PHRASE = "sign+mag + magnitude resample"
 EDGE_FORMAT_RESULT_PHRASE = "`18.69%` at `155` edges (`q=0.121`)"
 STALE_NEXT_TARGET_PHRASE = "18-worker swarm"
 CURRENT_NEXT_TARGET_PHRASE = "context-dependent task learning"
+DIAMOND_ARCHIVE_BRANCH = "archive/diamond-code-era-20260322"
 
 
 def read(path: Path) -> str:
@@ -498,6 +498,7 @@ def check_archive(errors: list[str]) -> None:
         "Only the active self-wiring graph line belongs on `main`:",
         "public documentation for the current self-wiring direction",
         "If a line is not part of the current self-wiring mainline doctrine, archive it.",
+        DIAMOND_ARCHIVE_BRANCH,
     ]
     for term in required:
         if term not in text:
@@ -532,27 +533,37 @@ def check_contributing(errors: list[str]) -> None:
         "tools/check_public_surface.py",
         "VERSION.json",
         "CITATION.cff",
-        "Diamond Code/",
     ]:
         if term not in text:
             fail(f"CONTRIBUTING.md: missing governance term {term!r}", errors)
 
 
 def check_front_door_history_truth(errors: list[str]) -> None:
-    for path in [README, CONTRIBUTING]:
+    for path in [README, CONTRIBUTING, V42_README]:
         text = read(path)
         if "Historical code lines remain in-repo for reference only" in text:
             fail(f"{path.name}: should not claim retired historical lines remain tracked in-repo", errors)
         for stale in ["`v4/`", "`v22_ternary/`", "`v23_instnct_lm/`"]:
             if stale in text:
                 fail(f"{path.name}: stale historical path {stale} should not appear on front-door/governance surfaces", errors)
+        if "Diamond Code/" in text:
+            fail(f"{path.name}: should not describe Diamond Code/ as a live path on main", errors)
 
 
-def check_diamond_token_hygiene(errors: list[str]) -> None:
-    if is_tracked("Diamond Code/.influx_token"):
-        fail("Diamond Code/.influx_token: historical telemetry token must not remain tracked on main", errors)
+def check_diamond_extraction(errors: list[str]) -> None:
+    tracked = subprocess.run(
+        ["git", "-C", str(ROOT), "ls-files", "--", "Diamond Code/**"],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    tracked_files = [line for line in tracked.stdout.splitlines() if line.strip()]
+    if tracked_files:
+        fail("Diamond Code/**: historical tree must not remain tracked on main", errors)
     if "**/.influx_token" not in read(ROOT / ".gitignore"):
         fail(".gitignore: missing .influx_token ignore protection", errors)
+    if "Diamond Code/" not in read(ROOT / ".gitignore"):
+        fail(".gitignore: missing local Diamond Code ignore after extraction", errors)
 
 
 def check_ch01_stub(errors: list[str]) -> None:
@@ -745,7 +756,7 @@ def main() -> int:
     check_templates(errors)
     check_contributing(errors)
     check_front_door_history_truth(errors)
-    check_diamond_token_hygiene(errors)
+    check_diamond_extraction(errors)
     check_release_framing(version_info, errors)
     check_ch01_stub(errors)
     check_release_notes_page(errors)
