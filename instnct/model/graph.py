@@ -153,40 +153,83 @@ class SelfWiringGraph:
 
     @staticmethod
     def build_sparse_cache(mask, edge_magnitude=1.0):
-        rows, cols = np.where(mask != 0)
-        if len(rows) == 0:
-            return (
-                np.empty(0, dtype=np.intp),
-                np.empty(0, dtype=np.intp),
-                np.empty(0, dtype=np.float32),
-            )
-        vals = mask[rows, cols].astype(np.float32) * np.float32(edge_magnitude)
-        return rows.astype(np.intp), cols.astype(np.intp), vals
+        """Build boolean sparse cache: separate pos/neg index arrays.
+
+        Returns (pos_rows, pos_cols, neg_rows, neg_cols) for multiply-free
+        sparse forward pass. Legacy callers using (rows, cols, vals) should
+        migrate to the boolean format.
+
+        For backward compat with static rollout methods that still accept
+        edge_magnitude, the old 3-tuple format is returned when
+        edge_magnitude != 1.0.
+        """
+        if edge_magnitude != 1.0:
+            # Legacy path: float multiplication
+            rows, cols = np.where(mask != 0)
+            if len(rows) == 0:
+                return (
+                    np.empty(0, dtype=np.intp),
+                    np.empty(0, dtype=np.intp),
+                    np.empty(0, dtype=np.float32),
+                )
+            vals = mask[rows, cols].astype(np.float32) * np.float32(edge_magnitude)
+            return rows.astype(np.intp), cols.astype(np.intp), vals
+
+        # Boolean path: no float multiply needed
+        pos = mask == 1
+        neg = mask == -1
+        pr, pc = np.where(pos)
+        nr, nc = np.where(neg)
+        return (
+            pr.astype(np.intp), pc.astype(np.intp),
+            nr.astype(np.intp), nc.astype(np.intp),
+        )
 
     @staticmethod
     def _sparse_mul_1d_from_cache(H, act, sparse_cache):
-        """Sparse act @ mask for 1D act vector. O(edges) instead of O(H^2)."""
-        rows, cols, vals = sparse_cache
+        """Sparse act @ mask for 1D act vector. O(edges) instead of O(H^2).
+
+        Supports both boolean 4-tuple (pos_r, pos_c, neg_r, neg_c) and
+        legacy 3-tuple (rows, cols, vals) cache formats.
+        """
         raw = np.zeros(H, dtype=np.float32)
-        if len(rows):
-            np.add.at(raw, cols, act[rows] * vals)
+        if len(sparse_cache) == 4:
+            pr, pc, nr, nc = sparse_cache
+            if len(pr):
+                np.add.at(raw, pc, act[pr])
+            if len(nr):
+                np.subtract.at(raw, nc, act[nr])
+        else:
+            rows, cols, vals = sparse_cache
+            if len(rows):
+                np.add.at(raw, cols, act[rows] * vals)
         return raw
 
     @staticmethod
     def _sparse_mul_2d_from_cache(H, acts, sparse_cache):
-        """Sparse acts @ mask for 2D batch. O(batch * edges) instead of O(batch * H^2)."""
-        rows, cols, vals = sparse_cache
+        """Sparse acts @ mask for 2D batch. O(batch * edges) instead of O(batch * H^2).
+
+        Supports both boolean 4-tuple and legacy 3-tuple cache formats.
+        """
         B = acts.shape[0]
         raw = np.zeros((B, H), dtype=np.float32)
-        if len(rows):
-            np.add.at(raw, (slice(None), cols), acts[:, rows] * vals)
+        if len(sparse_cache) == 4:
+            pr, pc, nr, nc = sparse_cache
+            if len(pr):
+                np.add.at(raw, (slice(None), pc), acts[:, pr])
+            if len(nr):
+                np.subtract.at(raw, (slice(None), nc), acts[:, nr])
+        else:
+            rows, cols, vals = sparse_cache
+            if len(rows):
+                np.add.at(raw, (slice(None), cols), acts[:, rows] * vals)
         return raw
 
     def _sparse_mul_1d(self, act):
-        return self._sparse_mul_1d_from_cache(self.H, act, (self._sp_rows, self._sp_cols, self._sp_vals))
+        return self._sparse_mul_1d_from_cache(self.H, act, self._sp_cache)
 
     def _sparse_mul_2d(self, acts):
-        return self._sparse_mul_2d_from_cache(self.H, acts, (self._sp_rows, self._sp_cols, self._sp_vals))
+        return self._sparse_mul_2d_from_cache(self.H, acts, self._sp_cache)
 
     @staticmethod
     def rollout_token(
@@ -324,7 +367,7 @@ class SelfWiringGraph:
             ticks=ticks,
             state=self.state,
             charge=self.charge,
-            sparse_cache=(self._sp_rows, self._sp_cols, self._sp_vals),
+            sparse_cache=self._sp_cache,
             edge_magnitude=self.edge_magnitude,
         )
         return self.readout(self.charge)
@@ -339,7 +382,7 @@ class SelfWiringGraph:
             theta=self.theta,
             decay=self.decay,
             ticks=ticks,
-            sparse_cache=(self._sp_rows, self._sp_cols, self._sp_vals),
+            sparse_cache=self._sp_cache,
             edge_magnitude=self.edge_magnitude,
         )
         return self.readout_batch(charges)
@@ -352,17 +395,30 @@ class SelfWiringGraph:
         self._sync_sparse_idx()
 
     def _sync_sparse_idx(self):
-        """Precompute numpy index arrays for sparse forward pass.
+        """Precompute boolean sparse cache for multiply-free forward pass.
 
-        Converts int8 mask values {-1, 0, +1} to float32 with
-        ``edge_magnitude`` baked in (default 1.0 → direct ±1.0 weights).
+        Splits alive edges into positive and negative index arrays.
+        The forward pass uses add/subtract instead of float multiplication.
         """
         if self.alive:
-            self._sp_rows = np.array([r for r, c in self.alive], dtype=np.intp)
-            self._sp_cols = np.array([c for r, c in self.alive], dtype=np.intp)
-            raw = self.mask[self._sp_rows, self._sp_cols].astype(np.float32)
-            self._sp_vals = raw * self.edge_magnitude
+            rows = np.array([r for r, c in self.alive], dtype=np.intp)
+            cols = np.array([c for r, c in self.alive], dtype=np.intp)
+            signs = self.mask[rows, cols]
+            pos = signs > 0
+            neg = signs < 0
+            self._sp_cache = (
+                rows[pos], cols[pos],
+                rows[neg], cols[neg],
+            )
+            # Legacy accessors (backward compat for external callers)
+            self._sp_rows = rows
+            self._sp_cols = cols
+            self._sp_vals = signs.astype(np.float32) * self.edge_magnitude
         else:
+            self._sp_cache = (
+                np.empty(0, dtype=np.intp), np.empty(0, dtype=np.intp),
+                np.empty(0, dtype=np.intp), np.empty(0, dtype=np.intp),
+            )
             self._sp_rows = np.empty(0, dtype=np.intp)
             self._sp_cols = np.empty(0, dtype=np.intp)
             self._sp_vals = np.empty(0, dtype=np.float32)
