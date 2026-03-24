@@ -85,14 +85,17 @@ def worker_eval(args):
         r = rng.randint(0, H-1); c = rng.randint(0, H-1)
         if r == c or mask[r, c] != 0:
             return {'delta': -1e9, 'type': 'add'}
-        val = 1.0 if rng.random() < 0.5 else -1.0
-        new_mask = mask.copy(); new_mask[r, c] = val
+        new_mask = mask.copy(); new_mask[r, c] = 1.0
     elif proposal_type == 'flip':
+        # Binary mask: flip = rewire (move edge to random target)
         alive = list(zip(*np.where(mask != 0)))
         if not alive:
             return {'delta': -1e9, 'type': 'flip'}
         r, c = alive[rng.randint(0, len(alive)-1)]
-        new_mask = mask.copy(); new_mask[r, c] = -mask[r, c]
+        nc = rng.randint(0, H-1)
+        if nc == r or nc == c or mask[r, nc] != 0:
+            return {'delta': -1e9, 'type': 'flip'}
+        new_mask = mask.copy(); new_mask[r, c] = 0.0; new_mask[r, nc] = 1.0
     elif proposal_type == 'theta':
         idx = rng.randint(0, H-1)
         new_theta = theta.copy()

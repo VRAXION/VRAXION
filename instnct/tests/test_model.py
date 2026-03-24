@@ -246,7 +246,7 @@ def main():
     net = SelfWiringGraph(16, hidden=64)
     net.forward(np.zeros(16, dtype=np.float32), ticks=8)
     state = net.save_state()
-    net.mask[:] = -1
+    net.mask[:] = 1
     net.state[:] = 42
     net.charge[:] = 100
     net.loss_pct = 50

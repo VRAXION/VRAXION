@@ -2,14 +2,13 @@
 INSTNCT — Self-Wiring Graph kernel
 ==================================
 Hidden-only recurrent substrate with fixed passive I/O projections.
-Gradient-free learning happens by mutating the ternary hidden mask and the
+Gradient-free learning happens by mutating the binary hidden mask and the
 per-neuron theta / decay vectors, then keeping only improved candidates.
 
 Runtime contract:
   - input_projection  (V × H): fixed projection from vocab-space into hidden space
   - output_projection (H × V): fixed projection from hidden charge into vocab logits
-  - mask             (H × H): learnable hidden graph, int8 {-1, 0, +1}
-  - edge_magnitude   float32: scalar multiplied into sparse cache at sync time
+  - mask             (H × H): learnable hidden graph, binary {0, 1}
   - theta            (H,): per-neuron firing threshold
   - decay            (H,): per-neuron decay rate
   - state            (H,): hidden activation after thresholding
@@ -85,12 +84,11 @@ class SelfWiringGraph:
         self.input_projection = input_projection * self.projection_scale
         self.output_projection = output_projection * self.projection_scale
 
-        # Mask: H × H hidden-only, int8 ternary {-1, 0, +1}.
-        # edge_magnitude is applied at sparse-cache sync time, not stored in mask.
+        # Mask: H × H hidden-only, binary {0, 1}.
+        # Topology carries all information; no sign or magnitude needed.
         r = init_rand(hidden, hidden)
         self.mask = np.zeros((hidden, hidden), dtype=np.int8)
-        self.mask[r < self.density_fraction / 2] = -1
-        self.mask[r > 1 - self.density_fraction / 2] = 1
+        self.mask[r < self.density_fraction] = 1
         np.fill_diagonal(self.mask, 0)
 
         # Alive edges: canonical row-major cache + set for O(1) undo membership.
@@ -153,19 +151,16 @@ class SelfWiringGraph:
 
     @staticmethod
     def build_sparse_cache(mask, edge_magnitude=1.0):
-        """Build boolean sparse cache: separate pos/neg index arrays.
+        """Build binary sparse cache: (rows, cols) index arrays.
 
-        Returns (pos_rows, pos_cols, neg_rows, neg_cols) for multiply-free
-        sparse forward pass. Legacy callers using (rows, cols, vals) should
-        migrate to the boolean format.
+        Binary mask {0, 1}: forward pass is pure addition, no multiply.
+        Returns a 2-tuple (rows, cols).
 
-        For backward compat with static rollout methods that still accept
-        edge_magnitude, the old 3-tuple format is returned when
-        edge_magnitude != 1.0.
+        Legacy 3-tuple (rows, cols, vals) returned when edge_magnitude != 1.0
+        for backward compat with old callers.
         """
+        rows, cols = np.where(mask != 0)
         if edge_magnitude != 1.0:
-            # Legacy path: float multiplication
-            rows, cols = np.where(mask != 0)
             if len(rows) == 0:
                 return (
                     np.empty(0, dtype=np.intp),
@@ -174,31 +169,20 @@ class SelfWiringGraph:
                 )
             vals = mask[rows, cols].astype(np.float32) * np.float32(edge_magnitude)
             return rows.astype(np.intp), cols.astype(np.intp), vals
-
-        # Boolean path: no float multiply needed
-        pos = mask == 1
-        neg = mask == -1
-        pr, pc = np.where(pos)
-        nr, nc = np.where(neg)
-        return (
-            pr.astype(np.intp), pc.astype(np.intp),
-            nr.astype(np.intp), nc.astype(np.intp),
-        )
+        return rows.astype(np.intp), cols.astype(np.intp)
 
     @staticmethod
     def _sparse_mul_1d_from_cache(H, act, sparse_cache):
         """Sparse act @ mask for 1D act vector. O(edges) instead of O(H^2).
 
-        Supports both boolean 4-tuple (pos_r, pos_c, neg_r, neg_c) and
-        legacy 3-tuple (rows, cols, vals) cache formats.
+        Binary 2-tuple (rows, cols): pure add, no multiply.
+        Legacy 3-tuple (rows, cols, vals): multiply path.
         """
         raw = np.zeros(H, dtype=np.float32)
-        if len(sparse_cache) == 4:
-            pr, pc, nr, nc = sparse_cache
-            if len(pr):
-                np.add.at(raw, pc, act[pr])
-            if len(nr):
-                np.subtract.at(raw, nc, act[nr])
+        if len(sparse_cache) == 2:
+            rows, cols = sparse_cache
+            if len(rows):
+                np.add.at(raw, cols, act[rows])
         else:
             rows, cols, vals = sparse_cache
             if len(rows):
@@ -209,16 +193,14 @@ class SelfWiringGraph:
     def _sparse_mul_2d_from_cache(H, acts, sparse_cache):
         """Sparse acts @ mask for 2D batch. O(batch * edges) instead of O(batch * H^2).
 
-        Supports both boolean 4-tuple and legacy 3-tuple cache formats.
+        Binary 2-tuple: pure add. Legacy 3-tuple: multiply path.
         """
         B = acts.shape[0]
         raw = np.zeros((B, H), dtype=np.float32)
-        if len(sparse_cache) == 4:
-            pr, pc, nr, nc = sparse_cache
-            if len(pr):
-                np.add.at(raw, (slice(None), pc), acts[:, pr])
-            if len(nr):
-                np.subtract.at(raw, (slice(None), nc), acts[:, nr])
+        if len(sparse_cache) == 2:
+            rows, cols = sparse_cache
+            if len(rows):
+                np.add.at(raw, (slice(None), cols), acts[:, rows])
         else:
             rows, cols, vals = sparse_cache
             if len(rows):
@@ -395,28 +377,21 @@ class SelfWiringGraph:
         self._sync_sparse_idx()
 
     def _sync_sparse_idx(self):
-        """Precompute boolean sparse cache for multiply-free forward pass.
+        """Precompute binary sparse cache for multiply-free forward pass.
 
-        Splits alive edges into positive and negative index arrays.
-        The forward pass uses add/subtract instead of float multiplication.
+        Binary mask {0, 1}: stores (rows, cols) only. Forward pass is pure
+        addition — no sign, no magnitude, no float multiply.
         """
         if self.alive:
             rows = np.array([r for r, c in self.alive], dtype=np.intp)
             cols = np.array([c for r, c in self.alive], dtype=np.intp)
-            signs = self.mask[rows, cols]
-            pos = signs > 0
-            neg = signs < 0
-            self._sp_cache = (
-                rows[pos], cols[pos],
-                rows[neg], cols[neg],
-            )
+            self._sp_cache = (rows, cols)
             # Legacy accessors (backward compat for external callers)
             self._sp_rows = rows
             self._sp_cols = cols
-            self._sp_vals = signs.astype(np.float32) * self.edge_magnitude
+            self._sp_vals = np.ones(len(rows), dtype=np.float32) * self.edge_magnitude
         else:
             self._sp_cache = (
-                np.empty(0, dtype=np.intp), np.empty(0, dtype=np.intp),
                 np.empty(0, dtype=np.intp), np.empty(0, dtype=np.intp),
             )
             self._sp_rows = np.empty(0, dtype=np.intp)
@@ -427,8 +402,8 @@ class SelfWiringGraph:
         return len(self.alive)
 
     def pos_neg_ratio(self):
-        pos = int(np.sum(self.mask > 0))
-        return pos, len(self.alive) - pos
+        """Return (pos, neg) edge counts. Binary mask: all edges are positive."""
+        return len(self.alive), 0
 
     # --- State management ---
 
@@ -450,7 +425,7 @@ class SelfWiringGraph:
         """Revert all state including mutation drive."""
         saved_mask = s['mask']
         if saved_mask.dtype != self.mask.dtype:
-            saved_mask = np.sign(saved_mask).astype(np.int8)
+            saved_mask = (saved_mask != 0).astype(np.int8)
         self.mask[:] = saved_mask
         if 'alive' in s:
             self.alive = s['alive'].copy()
@@ -474,31 +449,24 @@ class SelfWiringGraph:
 
     @classmethod
     def breed(cls, parent_a, parent_b, *, fitness_a=None, fitness_b=None, seed=None):
-        """Breed two parent graphs via union with sign-only edges.
+        """Breed two parent graphs via binary union.
 
-        Takes all edges from both parents. Where both parents independently
-        evolved the same edge with the same sign, the child keeps ±1 (no
-        magnitude boost — topology carries importance, not weight magnitude).
-        Where only one parent has an edge, it's kept. No pruning.
+        Child gets every edge that either parent has. Binary mask {0, 1}:
+        no sign, no magnitude — topology is the only learnable structure.
 
         Parameters
         ----------
         parent_a, parent_b : SelfWiringGraph
             Parents with identical V, H, and projections.
         fitness_a, fitness_b : float, optional
-            Fitness scores. When both parents have an edge but disagree on
-            sign, the fitter parent's value is kept.
+            Accepted for API compat; unused in binary union.
         seed : int, optional
-            RNG seed for reproducible tie-breaking.
+            RNG seed (accepted for API compat; union is deterministic).
         """
         if parent_a.V != parent_b.V or parent_a.H != parent_b.H:
             raise ValueError("Parents must have same V and H")
         if not np.array_equal(parent_a.input_projection, parent_b.input_projection):
             raise ValueError("Parents must share the same input projection")
-
-        rng = np.random.RandomState(seed)
-        fa = fitness_a if fitness_a is not None else 1.0
-        fb = fitness_b if fitness_b is not None else 1.0
 
         # Build child via object.__new__ to skip __init__ random generation
         child = object.__new__(cls)
@@ -512,29 +480,8 @@ class SelfWiringGraph:
         child.input_projection = parent_a.input_projection.copy()
         child.output_projection = parent_a.output_projection.copy()
 
-        a_mask = parent_a.mask
-        b_mask = parent_b.mask
-        a_has = a_mask != 0
-        b_has = b_mask != 0
-        both = a_has & b_has
-        same_sign = both & (np.sign(a_mask) == np.sign(b_mask))
-        disagree = both & ~same_sign
-        only_a = a_has & ~b_has
-        only_b = ~a_has & b_has
-
-        child.mask = np.zeros((child.H, child.H), dtype=np.int8)
-        child.mask[only_a] = a_mask[only_a]
-        child.mask[only_b] = b_mask[only_b]
-
-        # Agreement edges: same sign → keep ±1 (no magnitude boost).
-        # Topology (fan-in/fan-out) carries importance, not weight magnitude.
-        child.mask[same_sign] = np.sign(a_mask[same_sign]).astype(np.int8)
-
-        # Disagreement edges: fitness-weighted pick, normal magnitude (±1)
-        if np.any(disagree):
-            pick_a = rng.rand(child.H, child.H) < (fa / (fa + fb + 1e-10))
-            child.mask[disagree] = np.where(
-                pick_a[disagree], a_mask[disagree], b_mask[disagree]).astype(np.int8)
+        # Binary union: child has edge wherever either parent has one
+        child.mask = ((parent_a.mask != 0) | (parent_b.mask != 0)).astype(np.int8)
 
         np.fill_diagonal(child.mask, 0)
         child.resync_alive()
@@ -594,11 +541,9 @@ class SelfWiringGraph:
             rows = np.array(d['rows'], dtype=np.int32)
             cols = np.array(d['cols'], dtype=np.int32)
             raw_vals = np.array(d['vals'])
-            # Backward compat: old checkpoints stored float vals with baked magnitude
-            if raw_vals.dtype in (np.float32, np.float64):
-                vals = np.sign(raw_vals).astype(np.int8)
-            else:
-                vals = raw_vals.astype(np.int8)
+            # Backward compat: old checkpoints stored float or int8 ternary vals.
+            # Convert any nonzero value to 1 (binary mask).
+            vals = (raw_vals != 0).astype(np.int8)
             input_projection = np.array(d['input_projection'], dtype=np.float32)
             output_projection = np.array(d['output_projection'], dtype=np.float32)
             theta = np.array(d['theta'], dtype=np.float32)
@@ -651,12 +596,13 @@ class SelfWiringGraph:
 
     def replay(self, log):
         """Repeat logged ops in reverse = undo. O(changes) + O(alive) list rebuild.
-        Flip = repeat (mask only). Structural ops update mask + set, list rebuilt once."""
+        Structural ops update mask + set, list rebuilt once."""
         has_structural = False
         for entry in reversed(log):
             op = entry[0]
             if op == 'F':
-                self.mask[entry[1], entry[2]] *= np.int8(-1)
+                # Legacy ternary flip: no-op for binary (flip was redirected to rewire)
+                pass
             elif op == 'A':
                 r, c = entry[1], entry[2]
                 self.mask[r, c] = np.int8(0)
@@ -664,14 +610,13 @@ class SelfWiringGraph:
                 has_structural = True
             elif op == 'R':
                 r, c = entry[1], entry[2]
-                self.mask[r, c] = np.int8(entry[3])
+                self.mask[r, c] = np.int8(1)
                 self.alive_set.add((r, c))
                 has_structural = True
             elif op == 'W':
                 _, r, c_old, c_new = entry
-                sign = self.mask[r, c_new]
                 self.mask[r, c_new] = np.int8(0)
-                self.mask[r, c_old] = sign
+                self.mask[r, c_old] = np.int8(1)
                 self.alive_set.discard((r, c_new))
                 self.alive_set.add((r, c_old))
                 has_structural = True
@@ -754,28 +699,25 @@ class SelfWiringGraph:
             return
         r, c = random.randint(0, self.H-1), random.randint(0, self.H-1)
         if r != c and self.mask[r, c] == 0:
-            self.mask[r, c] = np.int8(1) if random.randint(0, 1) else np.int8(-1)
+            self.mask[r, c] = np.int8(1)
             self.alive.append((r, c))
             self.alive_set.add((r, c))
             undo.append(('A', r, c))
 
     def _flip(self, undo):
-        if self.alive:
-            idx = random.randint(0, len(self.alive)-1)
-            r, c = self.alive[idx]
-            self.mask[r, c] *= -1
-            undo.append(('F', r, c))
+        """Legacy flip: rewire to a random target (sign flip is meaningless in binary)."""
+        self._rewire(undo)
 
     def _remove(self, undo):
         if self.alive:
             idx = random.randint(0, len(self.alive)-1)
             r, c = self.alive[idx]
-            old_sign = int(self.mask[r, c])
+            old_val = int(self.mask[r, c])
             self.mask[r, c] = np.int8(0)
             self.alive[idx] = self.alive[-1]
             self.alive.pop()
             self.alive_set.discard((r, c))
-            undo.append(('R', r, c, old_sign))
+            undo.append(('R', r, c, old_val))
 
     def _rewire(self, undo):
         if self.alive:
@@ -783,9 +725,8 @@ class SelfWiringGraph:
             r, c = self.alive[idx]
             nc = random.randint(0, self.H-1)
             if nc != r and nc != c and self.mask[r, nc] == 0:
-                old = self.mask[r, c]
                 self.mask[r, c] = np.int8(0)
-                self.mask[r, nc] = old
+                self.mask[r, nc] = np.int8(1)
                 self.alive[idx] = (r, nc)
                 self.alive_set.discard((r, c))
                 self.alive_set.add((r, nc))
