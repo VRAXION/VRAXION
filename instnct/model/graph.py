@@ -11,6 +11,7 @@ Runtime contract:
   - mask             (H × H): learnable hidden graph, boolean (True/False)
   - theta            (H,): per-neuron firing threshold
   - decay            (H,): per-neuron decay rate
+  - polarity         (H,): per-neuron polarity (+1 excitatory, -1 inhibitory)
   - state            (H,): hidden activation after thresholding
   - charge           (H,): hidden pre-threshold charge, clamped to nonnegative values
 """
@@ -28,6 +29,8 @@ class SelfWiringGraph:
     DEFAULT_PROJECTION_SCALE = 3.0
     DEFAULT_THETA = 0.1
     DEFAULT_DECAY = 0.15
+    DEFAULT_INHIBITORY_FRACTION = 0.20
+    POLARITY_FLIP_PROB = 10  # 1-in-N chance per mutate step
 
     def __init__(
         self,
@@ -105,6 +108,13 @@ class SelfWiringGraph:
         self.mutation_drive = np.int8(1)  # signed: +N=add N, -N=remove N, 0=rewire
         self.theta = np.full(self.H, float(theta_init), dtype=np.float32)
         self.decay = np.full(self.H, float(decay_init), dtype=np.float32)
+
+        # Polarity: +1 excitatory, -1 inhibitory. Dale's Law integration.
+        # Initial 20% inhibitory fraction based on research results.
+        self.polarity = np.ones(self.H, dtype=np.int8)
+        inhib_mask = init_rand(self.H) < self.DEFAULT_INHIBITORY_FRACTION
+        self.polarity[inhib_mask] = -1
+        self._polarity_f32 = self.polarity.astype(np.float32)
 
     @staticmethod
     def _density_to_fraction(density):
@@ -225,6 +235,7 @@ class SelfWiringGraph:
         charge=None,
         sparse_cache=None,
         edge_magnitude=1.0,
+        polarity=None,
     ):
         mask = np.asarray(mask)
         # Support both int8 ternary mask and legacy float32 mask.
@@ -263,6 +274,8 @@ class SelfWiringGraph:
             cur_charge += raw
             cur_charge *= ret
             act = np.maximum(cur_charge - theta, 0.0)
+            if polarity is not None:
+                act = act * polarity
             cur_charge = np.maximum(cur_charge, 0.0)
         return act, cur_charge
 
@@ -279,6 +292,7 @@ class SelfWiringGraph:
         charges=None,
         sparse_cache=None,
         edge_magnitude=1.0,
+        polarity=None,
     ):
         mask = np.asarray(mask)
         if mask.dtype != np.float32:
@@ -316,6 +330,8 @@ class SelfWiringGraph:
             cur_charges += raw
             cur_charges *= ret
             cur_acts = np.maximum(cur_charges - theta, 0.0)
+            if polarity is not None:
+                cur_acts = cur_acts * polarity
             cur_charges = np.maximum(cur_charges, 0.0)
         return cur_acts, cur_charges
 
@@ -350,6 +366,7 @@ class SelfWiringGraph:
             charge=self.charge,
             sparse_cache=self._sp_cache,
             edge_magnitude=self.edge_magnitude,
+            polarity=self._polarity_f32,
         )
         return self.readout(self.charge)
 
@@ -365,6 +382,7 @@ class SelfWiringGraph:
             ticks=ticks,
             sparse_cache=self._sp_cache,
             edge_magnitude=self.edge_magnitude,
+            polarity=self._polarity_f32,
         )
         return self.readout_batch(charges)
 
@@ -418,6 +436,7 @@ class SelfWiringGraph:
             'mutation_drive': np.int8(self.mutation_drive),
             'theta': self.theta.copy(),
             'decay': self.decay.copy(),
+            'polarity': self.polarity.copy(),
         }
 
     def restore_state(self, s):
@@ -443,6 +462,9 @@ class SelfWiringGraph:
             self.theta[:] = s['theta']
         if 'decay' in s:
             self.decay[:] = s['decay']
+        if 'polarity' in s:
+            self.polarity[:] = s['polarity']
+            self._polarity_f32[:] = self.polarity.astype(np.float32)
 
     # --- Breeding / crossover ---
 
@@ -485,6 +507,12 @@ class SelfWiringGraph:
         np.fill_diagonal(child.mask, 0)
         child.resync_alive()
 
+        # Polarity: random mix from parents
+        child.polarity = parent_a.polarity.copy()
+        mix_mask = np.random.rand(child.H) < 0.5
+        child.polarity[mix_mask] = parent_b.polarity[mix_mask]
+        child._polarity_f32 = child.polarity.astype(np.float32)
+
         # Average meta-params with small noise
         child.theta = ((parent_a.theta + parent_b.theta) / 2.0).astype(np.float32)
         child.decay = ((parent_a.decay + parent_b.decay) / 2.0).astype(np.float32)
@@ -513,6 +541,7 @@ class SelfWiringGraph:
             mutation_drive=int(self.mutation_drive),
             theta=self.theta,
             decay=self.decay,
+            polarity=self.polarity,
             projection_scale=np.float32(self.projection_scale),
             edge_magnitude=np.float32(self.edge_magnitude),
             cap_ratio=np.int32(self.cap_ratio),
@@ -547,6 +576,11 @@ class SelfWiringGraph:
             output_projection = np.array(d['output_projection'], dtype=np.float32)
             theta = np.array(d['theta'], dtype=np.float32)
             decay = np.array(d['decay'], dtype=np.float32)
+            if 'polarity' in d.files:
+                polarity = np.array(d['polarity'], dtype=np.int8)
+            else:
+                # Handle legacy checkpoints by assuming all excitatory
+                polarity = np.ones(H, dtype=np.int8)
             loss_pct = np.int8(int(d['loss_pct']))
             mutation_drive = np.int8(int(d['mutation_drive'])) if 'mutation_drive' in d.files else np.int8(int(d['drive']))
             hidden_ratio = int(d['hidden_ratio']) if 'hidden_ratio' in d.files else max(1, H // max(V, 1))
@@ -590,6 +624,8 @@ class SelfWiringGraph:
         net.mutation_drive = mutation_drive
         net.theta = theta
         net.decay = decay
+        net.polarity = polarity
+        net._polarity_f32 = net.polarity.astype(np.float32)
         net.resync_alive()
         return net
 
@@ -627,6 +663,9 @@ class SelfWiringGraph:
                 self.loss_pct = np.int8(entry[1])
             elif op == 'G':
                 self.mutation_drive = np.int8(entry[1])
+            elif op == 'P':
+                self.polarity[entry[1]] = np.int8(entry[2])
+                self._polarity_f32[entry[1]] = np.float32(entry[2])
         if has_structural:
             self.resync_alive()
         else:
@@ -654,6 +693,7 @@ class SelfWiringGraph:
                 'flip': self._flip,
                 'theta': self._theta_mutate,
                 'decay': self._decay_mutate,
+                'polarity': self._polarity_mutate,
             }
             op_fn = op_map.get(forced_op)
             if op_fn is None:
@@ -678,6 +718,10 @@ class SelfWiringGraph:
         # Theta (threshold) drift — 1/5 chance, 1 random neuron, random value [0, 1]
         if random.randint(1, 5) == 1 and not freeze_params:
             self._theta_mutate(undo)
+
+        # Polarity flip drift: 1-in-N chance, reverts on reject
+        if random.randint(1, self.POLARITY_FLIP_PROB) == 1 and not freeze_params:
+            self._polarity_mutate(undo)
 
         # Execute drive: +N=add, -N=remove, 0=rewire
         d = int(self.mutation_drive)
@@ -744,6 +788,14 @@ class SelfWiringGraph:
         old_val = float(self.decay[idx])
         self.decay[idx] = np.float32(random.uniform(0.01, 0.5))
         undo.append(('D', idx, old_val))
+
+    def _polarity_mutate(self, undo):
+        """Flip one random neuron's polarity."""
+        idx = random.randint(0, self.H - 1)
+        old_pol = int(self.polarity[idx])
+        self.polarity[idx] *= -1
+        self._polarity_f32[idx] *= -1
+        undo.append(('P', idx, old_pol))
 
     def crystallize(self, evaluate_fn, eps=1e-6, verbose=False):
         """Pass-based crystal pruning. Remove dead-weight edges without hurting score.
