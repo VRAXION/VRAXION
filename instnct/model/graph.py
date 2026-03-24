@@ -8,7 +8,8 @@ per-neuron theta / decay vectors, then keeping only improved candidates.
 Runtime contract:
   - input_projection  (V × H): fixed projection from vocab-space into hidden space
   - output_projection (H × V): fixed projection from hidden charge into vocab logits
-  - mask             (H × H): learnable hidden graph {-edge_magnitude, 0, +edge_magnitude}
+  - mask             (H × H): learnable hidden graph, int8 {-1, 0, +1}
+  - edge_magnitude   float32: scalar multiplied into sparse cache at sync time
   - theta            (H,): per-neuron firing threshold
   - decay            (H,): per-neuron decay rate
   - state            (H,): hidden activation after thresholding
@@ -84,11 +85,12 @@ class SelfWiringGraph:
         self.input_projection = input_projection * self.projection_scale
         self.output_projection = output_projection * self.projection_scale
 
-        # Mask: H × H hidden-only, float32 with baked edge magnitude.
+        # Mask: H × H hidden-only, int8 ternary {-1, 0, +1}.
+        # edge_magnitude is applied at sparse-cache sync time, not stored in mask.
         r = init_rand(hidden, hidden)
-        self.mask = np.zeros((hidden, hidden), dtype=np.float32)
-        self.mask[r < self.density_fraction / 2] = -self.edge_magnitude
-        self.mask[r > 1 - self.density_fraction / 2] = self.edge_magnitude
+        self.mask = np.zeros((hidden, hidden), dtype=np.int8)
+        self.mask[r < self.density_fraction / 2] = -1
+        self.mask[r > 1 - self.density_fraction / 2] = 1
         np.fill_diagonal(self.mask, 0)
 
         # Alive edges: canonical row-major cache + set for O(1) undo membership.
@@ -150,7 +152,7 @@ class SelfWiringGraph:
         self.decay.fill(np.float32(value))
 
     @staticmethod
-    def build_sparse_cache(mask):
+    def build_sparse_cache(mask, edge_magnitude=1.0):
         rows, cols = np.where(mask != 0)
         if len(rows) == 0:
             return (
@@ -158,7 +160,7 @@ class SelfWiringGraph:
                 np.empty(0, dtype=np.intp),
                 np.empty(0, dtype=np.float32),
             )
-        vals = np.asarray(mask[rows, cols], dtype=np.float32)
+        vals = mask[rows, cols].astype(np.float32) * np.float32(edge_magnitude)
         return rows.astype(np.intp), cols.astype(np.intp), vals
 
     @staticmethod
@@ -198,8 +200,15 @@ class SelfWiringGraph:
         state=None,
         charge=None,
         sparse_cache=None,
+        edge_magnitude=1.0,
     ):
-        mask = np.asarray(mask, dtype=np.float32)
+        mask = np.asarray(mask)
+        # Support both int8 ternary mask and legacy float32 mask.
+        # For dense path, always produce float32 with magnitude baked in.
+        if mask.dtype != np.float32:
+            mask_f32 = mask.astype(np.float32) * np.float32(edge_magnitude)
+        else:
+            mask_f32 = mask
         theta = np.asarray(theta, dtype=np.float32)
         decay = np.asarray(decay, dtype=np.float32)
         H = mask.shape[0]
@@ -224,7 +233,7 @@ class SelfWiringGraph:
                 act = act + injected
             raw = (
                 SelfWiringGraph._sparse_mul_1d_from_cache(H, act, sparse_cache)
-                if use_sparse else act @ mask
+                if use_sparse else act @ mask_f32
             )
             np.nan_to_num(raw, copy=False, nan=0.0, posinf=0.0, neginf=0.0)
             cur_charge += raw
@@ -245,8 +254,13 @@ class SelfWiringGraph:
         acts=None,
         charges=None,
         sparse_cache=None,
+        edge_magnitude=1.0,
     ):
-        mask = np.asarray(mask, dtype=np.float32)
+        mask = np.asarray(mask)
+        if mask.dtype != np.float32:
+            mask_f32 = mask.astype(np.float32) * np.float32(edge_magnitude)
+        else:
+            mask_f32 = mask
         theta = np.asarray(theta, dtype=np.float32)
         decay = np.asarray(decay, dtype=np.float32)
         H = mask.shape[0]
@@ -272,7 +286,7 @@ class SelfWiringGraph:
                 cur_acts = cur_acts + injected_batch
             raw = (
                 SelfWiringGraph._sparse_mul_2d_from_cache(H, cur_acts, sparse_cache)
-                if use_sparse else cur_acts @ mask
+                if use_sparse else cur_acts @ mask_f32
             )
             np.nan_to_num(raw, copy=False, nan=0.0, posinf=0.0, neginf=0.0)
             cur_charges += raw
@@ -311,6 +325,7 @@ class SelfWiringGraph:
             state=self.state,
             charge=self.charge,
             sparse_cache=(self._sp_rows, self._sp_cols, self._sp_vals),
+            edge_magnitude=self.edge_magnitude,
         )
         return self.readout(self.charge)
 
@@ -325,6 +340,7 @@ class SelfWiringGraph:
             decay=self.decay,
             ticks=ticks,
             sparse_cache=(self._sp_rows, self._sp_cols, self._sp_vals),
+            edge_magnitude=self.edge_magnitude,
         )
         return self.readout_batch(charges)
 
@@ -336,11 +352,17 @@ class SelfWiringGraph:
         self._sync_sparse_idx()
 
     def _sync_sparse_idx(self):
-        """Precompute numpy index arrays for sparse forward pass."""
+        """Precompute numpy index arrays for sparse forward pass.
+
+        Converts int8 mask values to float32 with ``edge_magnitude`` baked in.
+        Mask values of ±1 get ±edge_magnitude; values of ±N (from breed
+        agreement boost) get ±N*edge_magnitude.
+        """
         if self.alive:
             self._sp_rows = np.array([r for r, c in self.alive], dtype=np.intp)
             self._sp_cols = np.array([c for r, c in self.alive], dtype=np.intp)
-            self._sp_vals = self.mask[self._sp_rows, self._sp_cols]
+            raw = self.mask[self._sp_rows, self._sp_cols].astype(np.float32)
+            self._sp_vals = raw * self.edge_magnitude
         else:
             self._sp_rows = np.empty(0, dtype=np.intp)
             self._sp_cols = np.empty(0, dtype=np.intp)
@@ -350,7 +372,7 @@ class SelfWiringGraph:
         return len(self.alive)
 
     def pos_neg_ratio(self):
-        pos = sum(1 for r, c in self.alive if self.mask[r, c] > 0)
+        pos = int(np.sum(self.mask > 0))
         return pos, len(self.alive) - pos
 
     # --- State management ---
@@ -371,7 +393,10 @@ class SelfWiringGraph:
 
     def restore_state(self, s):
         """Revert all state including mutation drive."""
-        self.mask[:] = s['mask']
+        saved_mask = s['mask']
+        if saved_mask.dtype != self.mask.dtype:
+            saved_mask = np.sign(saved_mask).astype(np.int8)
+        self.mask[:] = saved_mask
         if 'alive' in s:
             self.alive = s['alive'].copy()
             self.alive_set = s.get('alive_set', set(self.alive)).copy()
@@ -446,19 +471,20 @@ class SelfWiringGraph:
         only_a = a_has & ~b_has
         only_b = ~a_has & b_has
 
-        child.mask = np.zeros((child.H, child.H), dtype=np.float32)
+        child.mask = np.zeros((child.H, child.H), dtype=np.int8)
         child.mask[only_a] = a_mask[only_a]
         child.mask[only_b] = b_mask[only_b]
 
-        # Agreement edges: same sign → boosted magnitude
-        child.mask[same_sign] = (np.sign(a_mask[same_sign])
-                                 * child.edge_magnitude * boost).astype(np.float32)
+        # Agreement edges: same sign → boosted magnitude via ±2 in int8 mask.
+        # _sync_sparse_idx treats abs(val) as the magnitude multiplier.
+        boost_int = np.int8(max(1, min(127, int(round(boost)))))
+        child.mask[same_sign] = (np.sign(a_mask[same_sign]) * boost_int).astype(np.int8)
 
-        # Disagreement edges: fitness-weighted pick, normal magnitude
+        # Disagreement edges: fitness-weighted pick, normal magnitude (±1)
         if np.any(disagree):
             pick_a = rng.rand(child.H, child.H) < (fa / (fa + fb + 1e-10))
             child.mask[disagree] = np.where(
-                pick_a[disagree], a_mask[disagree], b_mask[disagree])
+                pick_a[disagree], a_mask[disagree], b_mask[disagree]).astype(np.int8)
 
         np.fill_diagonal(child.mask, 0)
         child.resync_alive()
@@ -478,9 +504,9 @@ class SelfWiringGraph:
     def save(self, path):
         """Save winner graph to disk (.npz) with exact forward-path projections."""
         rows, cols = np.where(self.mask != 0)
-        vals = self.mask[rows, cols]
+        vals = self.mask[rows, cols].astype(np.int8)
         np.savez_compressed(path,
-            schema_version=np.int16(2),
+            schema_version=np.int16(3),
             V=self.V,
             H=self.H,
             hidden_ratio=np.int32(self.hidden_ratio),
@@ -517,7 +543,12 @@ class SelfWiringGraph:
             H = int(d['H'])
             rows = np.array(d['rows'], dtype=np.int32)
             cols = np.array(d['cols'], dtype=np.int32)
-            vals = np.array(d['vals'], dtype=np.float32)
+            raw_vals = np.array(d['vals'])
+            # Backward compat: old checkpoints stored float vals with baked magnitude
+            if raw_vals.dtype in (np.float32, np.float64):
+                vals = np.sign(raw_vals).astype(np.int8)
+            else:
+                vals = raw_vals.astype(np.int8)
             input_projection = np.array(d['input_projection'], dtype=np.float32)
             output_projection = np.array(d['output_projection'], dtype=np.float32)
             theta = np.array(d['theta'], dtype=np.float32)
@@ -556,9 +587,9 @@ class SelfWiringGraph:
         net.density_fraction = 0.0
         net.input_projection = input_projection
         net.output_projection = output_projection
-        net.mask = np.zeros((H, H), dtype=np.float32)
+        net.mask = np.zeros((H, H), dtype=np.int8)
         net.mask[rows, cols] = vals
-        np.fill_diagonal(net.mask, 0.0)
+        np.fill_diagonal(net.mask, 0)
         net.state = np.zeros(H, dtype=np.float32)
         net.charge = np.zeros(H, dtype=np.float32)
         net.loss_pct = loss_pct
@@ -575,21 +606,21 @@ class SelfWiringGraph:
         for entry in reversed(log):
             op = entry[0]
             if op == 'F':
-                self.mask[entry[1], entry[2]] *= -1
+                self.mask[entry[1], entry[2]] *= np.int8(-1)
             elif op == 'A':
                 r, c = entry[1], entry[2]
-                self.mask[r, c] = 0
+                self.mask[r, c] = np.int8(0)
                 self.alive_set.discard((r, c))
                 has_structural = True
             elif op == 'R':
                 r, c = entry[1], entry[2]
-                self.mask[r, c] = entry[3]
+                self.mask[r, c] = np.int8(entry[3])
                 self.alive_set.add((r, c))
                 has_structural = True
             elif op == 'W':
                 _, r, c_old, c_new = entry
                 sign = self.mask[r, c_new]
-                self.mask[r, c_new] = 0
+                self.mask[r, c_new] = np.int8(0)
                 self.mask[r, c_old] = sign
                 self.alive_set.discard((r, c_new))
                 self.alive_set.add((r, c_old))
@@ -673,7 +704,7 @@ class SelfWiringGraph:
             return
         r, c = random.randint(0, self.H-1), random.randint(0, self.H-1)
         if r != c and self.mask[r, c] == 0:
-            self.mask[r, c] = self.edge_magnitude if random.randint(0, 1) else -self.edge_magnitude
+            self.mask[r, c] = np.int8(1) if random.randint(0, 1) else np.int8(-1)
             self.alive.append((r, c))
             self.alive_set.add((r, c))
             undo.append(('A', r, c))
@@ -689,8 +720,8 @@ class SelfWiringGraph:
         if self.alive:
             idx = random.randint(0, len(self.alive)-1)
             r, c = self.alive[idx]
-            old_sign = self.mask[r, c]
-            self.mask[r, c] = 0
+            old_sign = int(self.mask[r, c])
+            self.mask[r, c] = np.int8(0)
             self.alive[idx] = self.alive[-1]
             self.alive.pop()
             self.alive_set.discard((r, c))
@@ -703,7 +734,7 @@ class SelfWiringGraph:
             nc = random.randint(0, self.H-1)
             if nc != r and nc != c and self.mask[r, nc] == 0:
                 old = self.mask[r, c]
-                self.mask[r, c] = 0
+                self.mask[r, c] = np.int8(0)
                 self.mask[r, nc] = old
                 self.alive[idx] = (r, nc)
                 self.alive_set.discard((r, c))
@@ -748,7 +779,7 @@ class SelfWiringGraph:
                 if self.mask[r, c] == 0:
                     continue
                 old_val = self.mask[r, c]
-                self.mask[r, c] = 0.0
+                self.mask[r, c] = np.int8(0)
                 self.alive_set.discard((r, c))
                 new_score = evaluate_fn()
                 if new_score >= score - eps:
