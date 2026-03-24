@@ -27,8 +27,9 @@ class SelfWiringGraph:
     DEFAULT_EDGE_MAGNITUDE = 1.0
     DEFAULT_CAP_RATIO = 120
     DEFAULT_PROJECTION_SCALE = 3.0
-    DEFAULT_THETA = 0.1
-    DEFAULT_DECAY = 0.15
+    DEFAULT_THETA = 15.0
+    DEFAULT_DECAY = 1.0
+    MAX_CHARGE = 15.0
     DEFAULT_INHIBITORY_FRACTION = 0.20
     POLARITY_FLIP_PROB = 10  # 1-in-N chance per mutate step
 
@@ -270,36 +271,39 @@ class SelfWiringGraph:
         use_sparse = len(sparse_cache[0]) < H * H * 0.1
 
         for tick in range(int(ticks)):
+            # 1. FIXED SUBTRACTIVE LEAK (Int4 style)
+            cur_charge = np.maximum(cur_charge - decay, 0.0)
+            
+            # 2. INPUT
             if tick < int(input_duration):
                 act = act + injected
+            
+            # 3. PROPAGATE
             raw = (
                 SelfWiringGraph._sparse_mul_1d_from_cache(H, act, sparse_cache)
                 if use_sparse else act @ mask_f32
             )
             np.nan_to_num(raw, copy=False, nan=0.0, posinf=0.0, neginf=0.0)
             cur_charge += raw
-            # NOTE: Research candidate - current order is (charge + raw) * ret. 
-            # Future A/B might test (charge * ret) + raw or fix-amount subtractive leak.
-            cur_charge *= ret
             
-            # Spike Decision with Refractory Period
+            # 4. CLAMP
+            np.clip(cur_charge, 0.0, SelfWiringGraph.MAX_CHARGE, out=cur_charge)
+            
+            # 5. SPIKE DECISION with Refractory
             if refractory is not None:
                 can_fire = (refractory == 0)
-                fired = (cur_charge > theta) & can_fire
-                # Countdown refractory
+                fired = (cur_charge >= theta) & can_fire
                 refractory[refractory > 0] -= 1
-                # Mark newly fired
                 refractory[fired] = 1 
             else:
-                fired = (cur_charge > theta)
+                fired = (cur_charge >= theta)
 
-            act = np.where(fired, cur_charge - theta, 0.0)
+            act = fired.astype(np.float32) # Digital spike: always 1.0
             if polarity is not None:
                 act = act * polarity
             
-            # Partial Reset: subtract threshold from fired neurons
-            cur_charge[fired] -= theta[fired]
-            cur_charge = np.maximum(cur_charge, 0.0)
+            # 6. RESET FIRED NEURONS
+            cur_charge[fired] = 0.0 # Hard reset for now, matching Int4 Brain win
         return act, cur_charge
 
     @staticmethod
@@ -344,33 +348,32 @@ class SelfWiringGraph:
         use_sparse = len(sparse_cache[0]) < H * H * 0.1
 
         for tick in range(int(ticks)):
+            # 1. LEAK
+            cur_charges = np.maximum(cur_charges - decay, 0.0)
+            
+            # 2. INPUT
             if tick < int(input_duration):
                 cur_acts = cur_acts + injected_batch
+            
+            # 3. PROPAGATE
             raw = (
                 SelfWiringGraph._sparse_mul_2d_from_cache(H, cur_acts, sparse_cache)
                 if use_sparse else cur_acts @ mask_f32
             )
             np.nan_to_num(raw, copy=False, nan=0.0, posinf=0.0, neginf=0.0)
             cur_charges += raw
-            cur_charges *= ret
             
-            # Spike Decision with Refractory
-            if refractory is not None:
-                # refractory has shape (H,) but batch has (B, H).
-                # We need per-batch refractory state or just skip it for batch-eval simplicity.
-                # In VRAXION, batch is usually independent tokens (eye matrix), 
-                # so refractory state doesn't carry across batch members.
-                fired = (cur_charges > theta)
-            else:
-                fired = (cur_charges > theta)
-
-            cur_acts = np.where(fired, cur_charges - theta, 0.0)
+            # 4. CLAMP
+            np.clip(cur_charges, 0.0, SelfWiringGraph.MAX_CHARGE, out=cur_charges)
+            
+            # 5. SPIKE
+            fired = (cur_charges >= theta)
+            cur_acts = fired.astype(np.float32)
             if polarity is not None:
                 cur_acts = cur_acts * polarity
             
-            # Partial Reset: subtract theta from charged neurons (broadcasted)
-            cur_charges = np.where(fired, cur_charges - theta, cur_charges)
-            cur_charges = np.maximum(cur_charges, 0.0)
+            # 6. RESET
+            cur_charges[fired] = 0.0
         return cur_acts, cur_charges
 
     def readout(self, hidden_state):
@@ -816,17 +819,18 @@ class SelfWiringGraph:
                 undo.append(('W', r, c, nc))
 
     def _theta_mutate(self, undo):
-        """Mutate one random neuron's threshold to a random value [0, 1]."""
+        """Mutate one random neuron's threshold to a value in [1, MAX_CHARGE]."""
         idx = random.randint(0, self.H - 1)
         old_val = float(self.theta[idx])
-        self.theta[idx] = np.float32(random.random())
+        self.theta[idx] = np.float32(random.randint(1, int(self.MAX_CHARGE)))
         undo.append(('T', idx, old_val))
 
     def _decay_mutate(self, undo):
-        """Mutate one random neuron's decay rate to a random value [0.01, 0.5]."""
+        """Mutate one random neuron's decay rate to a value in [0, 2]."""
         idx = random.randint(0, self.H - 1)
         old_val = float(self.decay[idx])
-        self.decay[idx] = np.float32(random.uniform(0.01, 0.5))
+        # Simple integer-like decay steps for int4 dynamics
+        self.decay[idx] = np.float32(random.choice([0.5, 1.0, 2.0]))
         undo.append(('D', idx, old_val))
 
     def _polarity_mutate(self, undo):
