@@ -24,7 +24,7 @@ class SelfWiringGraph:
 
     DEFAULT_HIDDEN_RATIO = 3
     DEFAULT_DENSITY = 4
-    DEFAULT_EDGE_MAGNITUDE = 0.6
+    DEFAULT_EDGE_MAGNITUDE = 1.0
     DEFAULT_CAP_RATIO = 120
     DEFAULT_PROJECTION_SCALE = 3.0
     DEFAULT_THETA = 0.1
@@ -354,9 +354,8 @@ class SelfWiringGraph:
     def _sync_sparse_idx(self):
         """Precompute numpy index arrays for sparse forward pass.
 
-        Converts int8 mask values to float32 with ``edge_magnitude`` baked in.
-        Mask values of ±1 get ±edge_magnitude; values of ±N (from breed
-        agreement boost) get ±N*edge_magnitude.
+        Converts int8 mask values {-1, 0, +1} to float32 with
+        ``edge_magnitude`` baked in (default 1.0 → direct ±1.0 weights).
         """
         if self.alive:
             self._sp_rows = np.array([r for r, c in self.alive], dtype=np.intp)
@@ -417,17 +416,14 @@ class SelfWiringGraph:
 
     # --- Breeding / crossover ---
 
-    BREED_AGREEMENT_BOOST = 2.0
-
     @classmethod
     def breed(cls, parent_a, parent_b, *, fitness_a=None, fitness_b=None, seed=None):
-        """Breed two parent graphs via union with agreement boosting.
+        """Breed two parent graphs via union with sign-only edges.
 
         Takes all edges from both parents. Where both parents independently
-        evolved the same edge with the same sign, the edge magnitude is
-        boosted by BREED_AGREEMENT_BOOST (2x) — convergent evolution signals
-        importance. Where only one parent has an edge, it's kept at normal
-        magnitude. No pruning.
+        evolved the same edge with the same sign, the child keeps ±1 (no
+        magnitude boost — topology carries importance, not weight magnitude).
+        Where only one parent has an edge, it's kept. No pruning.
 
         Parameters
         ----------
@@ -447,7 +443,6 @@ class SelfWiringGraph:
         rng = np.random.RandomState(seed)
         fa = fitness_a if fitness_a is not None else 1.0
         fb = fitness_b if fitness_b is not None else 1.0
-        boost = cls.BREED_AGREEMENT_BOOST
 
         # Build child via object.__new__ to skip __init__ random generation
         child = object.__new__(cls)
@@ -475,10 +470,9 @@ class SelfWiringGraph:
         child.mask[only_a] = a_mask[only_a]
         child.mask[only_b] = b_mask[only_b]
 
-        # Agreement edges: same sign → boosted magnitude via ±2 in int8 mask.
-        # _sync_sparse_idx treats abs(val) as the magnitude multiplier.
-        boost_int = np.int8(max(1, min(127, int(round(boost)))))
-        child.mask[same_sign] = (np.sign(a_mask[same_sign]) * boost_int).astype(np.int8)
+        # Agreement edges: same sign → keep ±1 (no magnitude boost).
+        # Topology (fan-in/fan-out) carries importance, not weight magnitude.
+        child.mask[same_sign] = np.sign(a_mask[same_sign]).astype(np.int8)
 
         # Disagreement edges: fitness-weighted pick, normal magnitude (±1)
         if np.any(disagree):

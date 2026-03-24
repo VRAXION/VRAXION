@@ -56,7 +56,7 @@ Mutation-selection loop at a glance:
 | Canonical code path | [`instnct/model/graph.py`](https://github.com/VRAXION/VRAXION/blob/main/instnct/model/graph.py) |
 | Current first-class public recipe on `main` | [`instnct/recipes/english_1024n_18w.py`](https://github.com/VRAXION/VRAXION/blob/main/instnct/recipes/english_1024n_18w.py) (`8` ticks, triangle-derived `2 add / 1 flip / 5 decay`) |
 | Current secondary validation recipe on `main` | [`instnct/recipes/train_wordpairs_ll.py`](https://github.com/VRAXION/VRAXION/blob/main/instnct/recipes/train_wordpairs_ll.py) |
-| Shipped defaults on `main` | `DEFAULT_THETA = 0.1`, `DEFAULT_PROJECTION_SCALE = 3.0`, `DEFAULT_EDGE_MAGNITUDE = 0.6` |
+| Shipped defaults on `main` | `DEFAULT_THETA = 0.1`, `DEFAULT_PROJECTION_SCALE = 3.0`, `DEFAULT_EDGE_MAGNITUDE = 1.0` |
 | Mainline runtime behavior | per-neuron `theta` / `decay` and nonnegative charge dynamics |
 
 ## What Is Fixed vs Learnable

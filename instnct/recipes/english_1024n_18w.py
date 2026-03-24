@@ -85,7 +85,7 @@ def worker_eval(args):
         r = rng.randint(0, H-1); c = rng.randint(0, H-1)
         if r == c or mask[r, c] != 0:
             return {'delta': -1e9, 'type': 'add'}
-        val = 0.6 if rng.random() < 0.5 else -0.6
+        val = 1.0 if rng.random() < 0.5 else -1.0
         new_mask = mask.copy(); new_mask[r, c] = val
     elif proposal_type == 'flip':
         alive = list(zip(*np.where(mask != 0)))

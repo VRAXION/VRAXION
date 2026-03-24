@@ -8,7 +8,7 @@ Repo-tracked docs are canonical. The GitHub wiki is treated as a mirrored second
 
 ## What Matters Most Right Now
 
-- **Current mainline:** [`instnct/model/graph.py`](instnct/model/graph.py) now ships explicit per-instance defaults `DEFAULT_THETA = 0.1`, `DEFAULT_PROJECTION_SCALE = 3.0`, `DEFAULT_EDGE_MAGNITUDE = 0.6`, plus co-evolved per-neuron `theta` / `decay` and nonnegative charge dynamics.
+- **Current mainline:** [`instnct/model/graph.py`](instnct/model/graph.py) now ships explicit per-instance defaults `DEFAULT_THETA = 0.1`, `DEFAULT_PROJECTION_SCALE = 3.0`, `DEFAULT_EDGE_MAGNITUDE = 1.0`, plus co-evolved per-neuron `theta` / `decay` and nonnegative charge dynamics.
 - **Current recipe candidate on `main`:** [`instnct/recipes/english_1024n_18w.py`](instnct/recipes/english_1024n_18w.py) now uses `8` ticks with a triangle-derived `2 add / 1 flip / 5 decay` schedule; it still uses the existing float signed edge mask.
 - **Strongest schedule result so far:** voltage medium leak reached `22.11%` peak / `21.46%` plateau.
 - **Best compact learnable control policy so far:** the 3-angle decision-tree schedule reached `20.05%` at `156` edges.
@@ -31,7 +31,7 @@ Current mainline defaults in that file:
 
 - `DEFAULT_THETA = 0.1`
 - `DEFAULT_PROJECTION_SCALE = 3.0`
-- `DEFAULT_EDGE_MAGNITUDE = 0.6`
+- `DEFAULT_EDGE_MAGNITUDE = 1.0`
 - per-neuron `theta` and `decay` are part of the mainline implementation
 - charge uses nonnegative ReLU-style dynamics in the forward pass
 

@@ -6,7 +6,7 @@ This page is the public evidence board for VRAXION. Use it for the strongest rep
 
 ## Best Current Evidence
 
-- **Current mainline reference point:** [`instnct/model/graph.py`](https://github.com/VRAXION/VRAXION/blob/main/instnct/model/graph.py) now ships explicit per-instance defaults `DEFAULT_THETA = 0.1`, `DEFAULT_PROJECTION_SCALE = 3.0`, `DEFAULT_EDGE_MAGNITUDE = 0.6`, plus per-neuron `theta` / `decay` and nonnegative charge dynamics.
+- **Current mainline reference point:** [`instnct/model/graph.py`](https://github.com/VRAXION/VRAXION/blob/main/instnct/model/graph.py) now ships explicit per-instance defaults `DEFAULT_THETA = 0.1`, `DEFAULT_PROJECTION_SCALE = 3.0`, `DEFAULT_EDGE_MAGNITUDE = 1.0`, plus per-neuron `theta` / `decay` and nonnegative charge dynamics.
 - **Current recipe candidate on `main`:** [`instnct/recipes/english_1024n_18w.py`](https://github.com/VRAXION/VRAXION/blob/main/instnct/recipes/english_1024n_18w.py) now uses `8` ticks with a triangle-derived `2 add / 1 flip / 5 decay` schedule; it still uses the existing float signed edge mask.
 - **Strongest schedule result so far:** voltage medium leak reached `22.11%` peak / `21.46%` plateau.
 - **Best compact learnable control policy so far:** the 3-angle decision-tree schedule reached `20.05%` at `156` edges.
