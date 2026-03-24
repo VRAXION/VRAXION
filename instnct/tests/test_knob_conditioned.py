@@ -787,79 +787,153 @@ def _run_bitmask_ternary_learning(seed, generations=300):
     return best, improvements, hit, pred_h, pred_l, scores_over_time
 
 
+def _run_int_ternary_learning(seed, generations=300):
+    """Ternary via int8 array: values in {-1, 0, +1}, pick randomly.
+    Effective mask value: int_val * scale.
+    """
+    kg = KnobConditionedGraph(vocab=32, knob_names=["control"], seed=seed)
+    knob_id = 0
+    H = kg.graph.H
+    rng = np.random.RandomState(seed + 1000)
+    scale = kg.graph.edge_magnitude
+
+    TARGET_HIGH, TARGET_LOW = 0, 15
+
+    # int8 ternary storage
+    edges = np.zeros(H, dtype=np.int8)  # {-1, 0, +1}
+
+    def apply_edges():
+        kg.graph.mask[knob_id, :] = edges.astype(np.float32) * scale
+        kg.graph.mask[knob_id, knob_id] = 0.0
+        kg.graph.resync_alive()
+
+    # Zero out knob edges to start fresh
+    for t in range(H):
+        kg.knob_magnitudes[knob_id, t] = 0
+    kg._sync_knob_mask()
+    apply_edges()
+
+    def score():
+        s = 0.0
+        kg.set_knobs(control=1.0); kg.reset()
+        out = kg.forward_token(5)
+        s += out[TARGET_HIGH] - np.max(np.delete(out, TARGET_HIGH))
+        kg.set_knobs(control=0.0); kg.reset()
+        out = kg.forward_token(5)
+        s += out[TARGET_LOW] - np.max(np.delete(out, TARGET_LOW))
+        return float(s)
+
+    best = score()
+    improvements = 0
+    scores_over_time = [best]
+
+    for gen in range(generations):
+        target = rng.randint(1, H)
+        old_val = int(edges[target])
+
+        # Pick random from {-1, 0, +1}
+        new_val = rng.choice([-1, 0, 1])
+        if new_val == old_val:
+            scores_over_time.append(best)
+            continue
+
+        edges[target] = np.int8(new_val)
+        apply_edges()
+
+        s = score()
+        if s > best:
+            best = s
+            improvements += 1
+        else:
+            edges[target] = np.int8(old_val)
+            apply_edges()
+        scores_over_time.append(best)
+
+    kg.set_knobs(control=1.0); kg.reset()
+    pred_h = int(np.argmax(kg.forward_token(5)))
+    kg.set_knobs(control=0.0); kg.reset()
+    pred_l = int(np.argmax(kg.forward_token(5)))
+    hit = int(pred_h == TARGET_HIGH) + int(pred_l == TARGET_LOW)
+
+    return best, improvements, hit, pred_h, pred_l, scores_over_time
+
+
 def test_ab_ternary_vs_uint8():
-    """3-way A/B: float ternary vs bitmask ternary vs uint8+sign."""
+    """4-way A/B: float ternary vs int ternary vs bitmask ternary vs uint8."""
     print("\n" + "=" * 60)
-    print("TEST 9: A/B — Float Ternary vs Bitmask Ternary vs uint8")
+    print("TEST 9: A/B — flt_tern vs int_tern vs bit_tern vs uint8")
     print("=" * 60)
 
     n_trials = 10
     generations = 2000
 
-    results_by_method = {
-        "float_tern": {"scores": [], "hits": [], "imps": []},
-        "bit_tern":   {"scores": [], "hits": [], "imps": []},
-        "uint8":      {"scores": [], "hits": [], "imps": []},
+    methods = ["flt_tern", "int_tern", "bit_tern", "uint8"]
+    runners = {
+        "flt_tern": _run_ternary_learning,
+        "int_tern": _run_int_ternary_learning,
+        "bit_tern": _run_bitmask_ternary_learning,
+        "uint8":    _run_uint8_learning,
     }
+    results_by_method = {m: {"scores": [], "hits": [], "imps": []} for m in methods}
 
-    print(f"\n  {'seed':>6s}  {'flt_tern':>10s}  {'bit_tern':>10s}  {'uint8':>10s}  winner")
-    print("  " + "-" * 55)
+    header = f"  {'seed':>6s}"
+    for m in methods:
+        header += f"  {m:>10s}"
+    header += "  winner"
+    print(f"\n{header}")
+    print("  " + "-" * (len(header) - 2))
 
     for trial in range(n_trials):
         seed = 100 + trial * 7
+        trial_scores = {}
 
-        ft_score, ft_imp, ft_hit, _, _, _ = _run_ternary_learning(seed, generations)
-        bt_score, bt_imp, bt_hit, _, _, _ = _run_bitmask_ternary_learning(seed, generations)
-        u_score, u_imp, u_hit, _, _, _ = _run_uint8_learning(seed, generations)
+        for m in methods:
+            sc, imp, hit, _, _, _ = runners[m](seed, generations)
+            results_by_method[m]["scores"].append(sc)
+            results_by_method[m]["hits"].append(hit)
+            results_by_method[m]["imps"].append(imp)
+            trial_scores[m] = sc
 
-        results_by_method["float_tern"]["scores"].append(ft_score)
-        results_by_method["float_tern"]["hits"].append(ft_hit)
-        results_by_method["float_tern"]["imps"].append(ft_imp)
-        results_by_method["bit_tern"]["scores"].append(bt_score)
-        results_by_method["bit_tern"]["hits"].append(bt_hit)
-        results_by_method["bit_tern"]["imps"].append(bt_imp)
-        results_by_method["uint8"]["scores"].append(u_score)
-        results_by_method["uint8"]["hits"].append(u_hit)
-        results_by_method["uint8"]["imps"].append(u_imp)
-
-        scores = {"flt_tern": ft_score, "bit_tern": bt_score, "uint8": u_score}
-        winner = max(scores, key=scores.get)
-        print(f"  {seed:6d}  {ft_score:+10.4f}  {bt_score:+10.4f}  {u_score:+10.4f}  {winner}")
+        winner = max(trial_scores, key=trial_scores.get)
+        line = f"  {seed:6d}"
+        for m in methods:
+            line += f"  {trial_scores[m]:+10.4f}"
+        line += f"  {winner}"
+        print(line)
 
     # Summary
     print(f"\n  SUMMARY ({n_trials} trials, {generations} generations each):")
-    print(f"  {'':20s}  {'flt_tern':>10s}  {'bit_tern':>10s}  {'uint8':>10s}")
+    header2 = f"  {'':20s}"
+    for m in methods:
+        header2 += f"  {m:>10s}"
+    print(header2)
 
-    means = {}
-    for name, data in results_by_method.items():
-        means[name] = np.mean(data["scores"])
-
-    print(f"  {'Mean score':20s}  {means['float_tern']:+10.4f}  {means['bit_tern']:+10.4f}  {means['uint8']:+10.4f}")
-    print(f"  {'Mean hits':20s}  {np.mean(results_by_method['float_tern']['hits']):10.2f}  "
-          f"{np.mean(results_by_method['bit_tern']['hits']):10.2f}  "
-          f"{np.mean(results_by_method['uint8']['hits']):10.2f}")
-    print(f"  {'Mean improvements':20s}  {np.mean(results_by_method['float_tern']['imps']):10.1f}  "
-          f"{np.mean(results_by_method['bit_tern']['imps']):10.1f}  "
-          f"{np.mean(results_by_method['uint8']['imps']):10.1f}")
+    means = {m: np.mean(results_by_method[m]["scores"]) for m in methods}
+    line_score = f"  {'Mean score':20s}"
+    line_hits = f"  {'Mean hits':20s}"
+    line_imps = f"  {'Mean improvements':20s}"
+    for m in methods:
+        line_score += f"  {means[m]:+10.4f}"
+        line_hits += f"  {np.mean(results_by_method[m]['hits']):10.2f}"
+        line_imps += f"  {np.mean(results_by_method[m]['imps']):10.1f}"
+    print(line_score)
+    print(line_hits)
+    print(line_imps)
 
     # Win count
-    ft_wins = bt_wins = u_wins = 0
+    wins = {m: 0 for m in methods}
     for i in range(n_trials):
-        scores = [
-            results_by_method["float_tern"]["scores"][i],
-            results_by_method["bit_tern"]["scores"][i],
-            results_by_method["uint8"]["scores"][i],
-        ]
-        best_idx = int(np.argmax(scores))
-        if best_idx == 0: ft_wins += 1
-        elif best_idx == 1: bt_wins += 1
-        else: u_wins += 1
-    print(f"  {'Wins':20s}  {ft_wins:10d}  {bt_wins:10d}  {u_wins:10d}")
+        trial_sc = {m: results_by_method[m]["scores"][i] for m in methods}
+        wins[max(trial_sc, key=trial_sc.get)] += 1
+    line_wins = f"  {'Wins':20s}"
+    for m in methods:
+        line_wins += f"  {wins[m]:10d}"
+    print(line_wins)
 
     overall = max(means, key=means.get)
     print(f"\n  Overall winner: {overall} (score={means[overall]:+.4f})")
 
-    return overall != "float_tern"
+    return overall
 
 
 # ===========================================================================
