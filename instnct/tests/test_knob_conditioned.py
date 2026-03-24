@@ -33,12 +33,12 @@ class KnobConditionedGraph:
     explicit parameter values. The knob neurons are part of the hidden
     layer but get clamped to knob values each step.
 
-    Knob edges use int8 weights (-128..+127) stored in a separate array.
-    A scale factor converts int8 → float when writing to the graph mask.
-    Default init value: ±1 (matching int8 granularity).
+    Knob edges use uint8 magnitude (0..255) + binary sign flag.
+    Scale factor converts uint8 → float when writing to the graph mask.
+    Default init value: 1 (matching uint8 granularity).
     """
 
-    INT8_SCALE = 1.0 / 127.0  # int8 → float: 1 → ~0.00787, 127 → 1.0
+    UINT8_SCALE = 1.0 / 255.0  # uint8 → float: 1 → ~0.00392, 255 → 1.0
 
     def __init__(self, vocab, knob_names, *, hidden_ratio=3, seed=42, **kwargs):
         self.knob_names = list(knob_names)
@@ -53,42 +53,44 @@ class KnobConditionedGraph:
         self.knob_neuron_ids = list(range(self.n_knobs))
         self.knob_values = np.zeros(self.n_knobs, dtype=np.float32)
 
-        # Int8 knob edge storage: magnitude (0..127) + sign (±1)
-        # Matches the main model pattern: mask = magnitude * sign, flip toggles sign
+        # Knob edge storage: magnitude (uint8 0..255) + sign (bool: False=pos, True=neg)
         H = self.graph.H
-        self.knob_magnitudes = np.zeros((self.n_knobs, H), dtype=np.uint8)  # 0..127
-        self.knob_signs = np.ones((self.n_knobs, H), dtype=np.int8)         # +1 or -1
+        self.knob_magnitudes = np.zeros((self.n_knobs, H), dtype=np.uint8)   # 0..255
+        self.knob_signs = np.zeros((self.n_knobs, H), dtype=np.bool_)        # False=+, True=-
 
-        # Initialize from existing mask (convert float → int8 magnitude + sign)
+        # Initialize from existing mask (convert float → uint8 magnitude + binary sign)
         for k in range(self.n_knobs):
             row = self.graph.mask[k, :]
-            self.knob_signs[k, :] = np.where(row >= 0, 1, -1).astype(np.int8)
+            self.knob_signs[k, :] = row < 0
             self.knob_magnitudes[k, :] = np.clip(
-                np.round(np.abs(row) / self.INT8_SCALE), 0, 127
+                np.round(np.abs(row) / self.UINT8_SCALE), 0, 255
             ).astype(np.uint8)
 
-        # Write back to ensure mask matches int8 representation exactly
+        # Write back to ensure mask matches uint8 representation exactly
         self._sync_knob_mask()
 
+    def _sign_mul(self, sign):
+        """Binary sign → float multiplier: False → +1.0, True → -1.0"""
+        return -1.0 if sign else 1.0
+
     def _sync_knob_mask(self):
-        """Write int8 magnitude*sign knob edges back to the float32 graph mask."""
+        """Write uint8 magnitude * binary sign back to the float32 graph mask."""
         for k in range(self.n_knobs):
+            sign_mul = np.where(self.knob_signs[k, :], -1.0, 1.0).astype(np.float32)
             self.graph.mask[k, :] = (
-                self.knob_magnitudes[k, :].astype(np.float32)
-                * self.knob_signs[k, :].astype(np.float32)
-                * self.INT8_SCALE
+                self.knob_magnitudes[k, :].astype(np.float32) * sign_mul * self.UINT8_SCALE
             )
             self.graph.mask[k, k] = 0.0  # no self-loops
         self.graph.resync_alive()
 
     def set_knob_edge(self, knob_id, target, magnitude, sign=None):
-        """Set a single knob edge: magnitude (0..127) and optional sign (±1)."""
-        self.knob_magnitudes[knob_id, target] = np.uint8(min(magnitude, 127))
+        """Set a single knob edge: magnitude (0..255) and optional sign (bool)."""
+        self.knob_magnitudes[knob_id, target] = np.uint8(min(magnitude, 255))
         if sign is not None:
-            self.knob_signs[knob_id, target] = np.int8(1 if sign >= 0 else -1)
+            self.knob_signs[knob_id, target] = bool(sign)
         val = (float(self.knob_magnitudes[knob_id, target])
-               * float(self.knob_signs[knob_id, target])
-               * self.INT8_SCALE)
+               * self._sign_mul(self.knob_signs[knob_id, target])
+               * self.UINT8_SCALE)
         self.graph.mask[knob_id, target] = val
         if target == knob_id:
             self.graph.mask[knob_id, target] = 0.0
@@ -97,19 +99,19 @@ class KnobConditionedGraph:
         """Mutate magnitude by +1..+5, returns (old_mag, old_sign) for undo."""
         _rng = rng if rng is not None else np.random
         old_mag = int(self.knob_magnitudes[knob_id, target])
-        old_sign = int(self.knob_signs[knob_id, target])
+        old_sign = bool(self.knob_signs[knob_id, target])
         step = _rng.choice([1, 2, 3, 4, 5])
-        new_mag = min(old_mag + step, 127)
+        new_mag = min(old_mag + step, 255)
         self.set_knob_edge(knob_id, target, new_mag)
         return old_mag, old_sign
 
     def flip_knob_edge(self, knob_id, target):
-        """Flip the sign of a knob edge (like the main model's _flip)."""
-        old_sign = int(self.knob_signs[knob_id, target])
-        self.knob_signs[knob_id, target] = np.int8(-old_sign)
+        """Flip the binary sign of a knob edge (like the main model's _flip)."""
+        old_sign = bool(self.knob_signs[knob_id, target])
+        self.knob_signs[knob_id, target] = not old_sign
         val = (float(self.knob_magnitudes[knob_id, target])
-               * float(self.knob_signs[knob_id, target])
-               * self.INT8_SCALE)
+               * self._sign_mul(not old_sign)
+               * self.UINT8_SCALE)
         self.graph.mask[knob_id, target] = val
         return old_sign
 
@@ -152,7 +154,7 @@ class KnobConditionedGraph:
 
     @property
     def knob_edge_strength(self):
-        """Total int8 magnitude across all knob edges."""
+        """Total uint8 magnitude across all knob edges."""
         total = 0
         for k in range(self.n_knobs):
             total += int(np.sum(self.knob_magnitudes[k, :]))
@@ -168,8 +170,8 @@ class KnobConditionedGraph:
                 "n_targets": len(targets),
                 "mean_magnitude": float(np.mean(mags[targets])) if len(targets) > 0 else 0.0,
                 "total_magnitude": int(np.sum(mags)),
-                "pos_edges": int(np.sum((mags > 0) & (signs > 0))),
-                "neg_edges": int(np.sum((mags > 0) & (signs < 0))),
+                "pos_edges": int(np.sum((mags > 0) & ~signs)),   # sign=False → positive
+                "neg_edges": int(np.sum((mags > 0) & signs)),    # sign=True → negative
             }
         return influence
 
@@ -463,10 +465,10 @@ def test_knob_learning():
             best_score = new_score
             improvements += 1
             new_mag = int(kg.knob_magnitudes[knob_id, target])
-            new_sign = int(kg.knob_signs[knob_id, target])
+            new_neg = bool(kg.knob_signs[knob_id, target])
             if improvements <= 10 or improvements % 20 == 0:
                 print(f"  Gen {gen:4d}: score {best_score:+.4f} "
-                      f"(edge [{knob_id}→{target}] mag={new_mag} sign={new_sign:+d})")
+                      f"(edge [{knob_id}→{target}] mag={new_mag} {'neg' if new_neg else 'pos'})")
         else:
             kg.set_knob_edge(knob_id, target, old_mag, old_sign)
             kg.graph.resync_alive()
