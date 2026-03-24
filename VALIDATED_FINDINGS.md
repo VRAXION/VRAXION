@@ -15,6 +15,7 @@ Repo-tracked docs are canonical. The GitHub wiki is treated as a mirrored second
 - **Best edge-representation quality result so far:** sign+mag + magnitude resample reached `18.69%` at `155` edges (`q=0.121`), but it is not promoted into the current recipe candidate or `graph.py` defaults.
 - **Strongest current task-learning input result so far:** window=2 superposition reached `21.8%`, beating the `w=1` baseline by `+72%`.
 - **Strongest current task-memory evaluation result so far:** word-pair log-likelihood eval reached `23.8%`, beating bigram cosine at `18.8%`.
+- **Binary Mask Finding:** Ternary masks (`{-1, 0, +1}`) are redundant; pure binary masks (`{0, 1}`) achieve equal accuracy (`86.5%`) because inhibition is implicitly handled by the input projection's negative values and per-neuron decay. This enables a **multiply-free forward pass**, which is `1.5x` to `3.4x` faster on edge hardware.
 - **Surface policy on `main`:** English remains the only first-class public lane; task-memory and GPU remain tracked only as secondary validation surfaces.
 
 ## How To Read This Page
@@ -57,6 +58,7 @@ Raw experiment dumps, retired sweeps, and archived exploratory probes now live o
 | Sign+mag + magnitude resample ([41f3622](https://github.com/VRAXION/VRAXION/commit/41f3622e654a79ffba0c95421b5e8a5c0f354364)) | Validated finding | Bool sign + uint8 magnitude with full magnitude resample reached `18.69%` at `155` edges (`q=0.121`), beating sign+mag free and delivering the best quality-per-edge result in the edge-format sweep without taking the best raw accuracy overall | Not promoted into the current recipe candidate or `graph.py` defaults |
 | Window=2 input superposition ([48f2657](https://github.com/VRAXION/VRAXION/commit/48f26579fe882f5ae9e5eab4bbe1264963b4685a)) | Validated finding | `w=2` reached `21.8%`, beating `w=1` at `12.7%` and all wider tested windows on the current task-learning sweep | Not promoted into the current recipe or `graph.py` defaults |
 | Word-pair log-likelihood eval ([48f2657](https://github.com/VRAXION/VRAXION/commit/48f26579fe882f5ae9e5eab4bbe1264963b4685a)) | Validated finding | `23.8%` on short associative-memory probes, beating bigram cosine at `18.8%` | Not part of the canonical mainline yet |
+| Binary Mask ([0f9eba0](https://github.com/VRAXION/VRAXION/commit/0f9eba0a340f1a94165d21096054817d23f79038)) | Validated finding | Binary `{0, 1}` mask matches ternary accuracy (`86.5%`) because inhibition is handled by the input projection. Enables multiply-free forward pass (`3.4x` faster). | Promoted to `graph.py` multiply-free path |
 | Context-dependent task learning ([48f2657](https://github.com/VRAXION/VRAXION/commit/48f26579fe882f5ae9e5eab4bbe1264963b4685a)) | Experimental branch | Current next build target: input-window injection, word-pair memory, and stronger evaluation for nontrivial tasks | Not part of the canonical mainline yet |
 
 ## Historical Context
