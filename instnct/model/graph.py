@@ -8,7 +8,7 @@ per-neuron theta / decay vectors, then keeping only improved candidates.
 Runtime contract:
   - input_projection  (V × H): fixed projection from vocab-space into hidden space
   - output_projection (H × V): fixed projection from hidden charge into vocab logits
-  - mask             (H × H): learnable hidden graph, binary {0, 1}
+  - mask             (H × H): learnable hidden graph, boolean (True/False)
   - theta            (H,): per-neuron firing threshold
   - decay            (H,): per-neuron decay rate
   - state            (H,): hidden activation after thresholding
@@ -84,12 +84,11 @@ class SelfWiringGraph:
         self.input_projection = input_projection * self.projection_scale
         self.output_projection = output_projection * self.projection_scale
 
-        # Mask: H × H hidden-only, binary {0, 1}.
+        # Mask: H × H hidden-only, boolean.
         # Topology carries all information; no sign or magnitude needed.
         r = init_rand(hidden, hidden)
-        self.mask = np.zeros((hidden, hidden), dtype=np.int8)
-        self.mask[r < self.density_fraction] = 1
-        np.fill_diagonal(self.mask, 0)
+        self.mask = r < self.density_fraction
+        np.fill_diagonal(self.mask, False)
 
         # Alive edges: canonical row-major cache + set for O(1) undo membership.
         rows, cols = np.where(self.mask != 0)
