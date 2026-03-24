@@ -96,12 +96,16 @@ class KnobConditionedGraph:
             self.graph.mask[knob_id, target] = 0.0
 
     def mutate_knob_edge(self, knob_id, target, rng=None):
-        """Mutate magnitude by +1..+5, returns (old_mag, old_sign) for undo."""
+        """Mutate magnitude, returns (old_mag, old_sign) for undo.
+
+        Full-range random: pick any value 0..255. The selection pressure
+        (keep-if-better) finds the right magnitude. This gives uint8 the
+        same bold exploration as ternary, plus 256x finer resolution.
+        """
         _rng = rng if rng is not None else np.random
         old_mag = int(self.knob_magnitudes[knob_id, target])
         old_sign = bool(self.knob_signs[knob_id, target])
-        step = _rng.choice([1, 2, 3, 4, 5])
-        new_mag = min(old_mag + step, 255)
+        new_mag = int(_rng.randint(0, 256))
         self.set_knob_edge(knob_id, target, new_mag)
         return old_mag, old_sign
 
@@ -573,6 +577,183 @@ def test_multi_knob_learning():
     return unique >= 2
 
 
+# ---------------------------------------------------------------------------
+# Test 9: A/B — ternary vs uint8 knob edges
+# ---------------------------------------------------------------------------
+
+def _run_ternary_learning(seed, generations=300):
+    """Old-style ternary knob learning (baseline)."""
+    kg = KnobConditionedGraph(vocab=32, knob_names=["control"], seed=seed)
+    knob_id = 0
+    H = kg.graph.H
+    rng = np.random.RandomState(seed + 1000)
+    edge_mag = kg.graph.edge_magnitude
+
+    TARGET_HIGH, TARGET_LOW = 0, 15
+
+    # Zero out knob edges to start fresh (fair comparison)
+    for t in range(H):
+        kg.knob_magnitudes[knob_id, t] = 0
+    kg._sync_knob_mask()
+
+    def score():
+        s = 0.0
+        kg.set_knobs(control=1.0); kg.reset()
+        out = kg.forward_token(5)
+        s += out[TARGET_HIGH] - np.max(np.delete(out, TARGET_HIGH))
+        kg.set_knobs(control=0.0); kg.reset()
+        out = kg.forward_token(5)
+        s += out[TARGET_LOW] - np.max(np.delete(out, TARGET_LOW))
+        return float(s)
+
+    best = score()
+    improvements = 0
+    scores_over_time = [best]
+
+    for gen in range(generations):
+        target = rng.randint(1, H)
+        old_val = float(kg.graph.mask[knob_id, target])
+
+        # Ternary: pick from {-edge_mag, 0, +edge_mag}
+        options = [-edge_mag, 0.0, edge_mag]
+        new_val = float(rng.choice(options))
+        if new_val == old_val:
+            scores_over_time.append(best)
+            continue
+
+        kg.graph.mask[knob_id, target] = np.float32(new_val)
+        kg.graph.resync_alive()
+
+        s = score()
+        if s > best:
+            best = s
+            improvements += 1
+        else:
+            kg.graph.mask[knob_id, target] = np.float32(old_val)
+            kg.graph.resync_alive()
+        scores_over_time.append(best)
+
+    kg.set_knobs(control=1.0); kg.reset()
+    pred_h = int(np.argmax(kg.forward_token(5)))
+    kg.set_knobs(control=0.0); kg.reset()
+    pred_l = int(np.argmax(kg.forward_token(5)))
+    hit = int(pred_h == TARGET_HIGH) + int(pred_l == TARGET_LOW)
+
+    return best, improvements, hit, pred_h, pred_l, scores_over_time
+
+
+def _run_uint8_learning(seed, generations=300):
+    """New uint8 magnitude + binary sign knob learning."""
+    kg = KnobConditionedGraph(vocab=32, knob_names=["control"], seed=seed)
+    knob_id = 0
+    H = kg.graph.H
+    rng = np.random.RandomState(seed + 1000)
+
+    TARGET_HIGH, TARGET_LOW = 0, 15
+
+    # Zero out knob edges to start fresh (fair comparison)
+    for t in range(H):
+        kg.knob_magnitudes[knob_id, t] = 0
+        kg.knob_signs[knob_id, t] = False
+    kg._sync_knob_mask()
+
+    def score():
+        s = 0.0
+        kg.set_knobs(control=1.0); kg.reset()
+        out = kg.forward_token(5)
+        s += out[TARGET_HIGH] - np.max(np.delete(out, TARGET_HIGH))
+        kg.set_knobs(control=0.0); kg.reset()
+        out = kg.forward_token(5)
+        s += out[TARGET_LOW] - np.max(np.delete(out, TARGET_LOW))
+        return float(s)
+
+    best = score()
+    improvements = 0
+    scores_over_time = [best]
+
+    for gen in range(generations):
+        target = rng.randint(1, H)
+
+        if rng.rand() < 0.7:
+            old_mag, old_sign = kg.mutate_knob_edge(knob_id, target, rng)
+        else:
+            old_sign = kg.flip_knob_edge(knob_id, target)
+            old_mag = int(kg.knob_magnitudes[knob_id, target])
+        kg.graph.resync_alive()
+
+        s = score()
+        if s > best:
+            best = s
+            improvements += 1
+        else:
+            kg.set_knob_edge(knob_id, target, old_mag, old_sign)
+            kg.graph.resync_alive()
+        scores_over_time.append(best)
+
+    kg.set_knobs(control=1.0); kg.reset()
+    pred_h = int(np.argmax(kg.forward_token(5)))
+    kg.set_knobs(control=0.0); kg.reset()
+    pred_l = int(np.argmax(kg.forward_token(5)))
+    hit = int(pred_h == TARGET_HIGH) + int(pred_l == TARGET_LOW)
+
+    return best, improvements, hit, pred_h, pred_l, scores_over_time
+
+
+def test_ab_ternary_vs_uint8():
+    """A/B comparison: ternary knob edges vs uint8+sign knob edges."""
+    print("\n" + "=" * 60)
+    print("TEST 9: A/B — Ternary vs uint8 Knob Edges")
+    print("=" * 60)
+
+    n_trials = 10
+    generations = 2000
+
+    ternary_scores = []
+    uint8_scores = []
+    ternary_hits = []
+    uint8_hits = []
+    ternary_imps = []
+    uint8_imps = []
+
+    print(f"\n  {'seed':>6s}  {'ternary':>10s}  {'uint8':>10s}  "
+          f"{'t_hits':>6s}  {'u_hits':>6s}  {'t_imp':>5s}  {'u_imp':>5s}  winner")
+    print("  " + "-" * 70)
+
+    for trial in range(n_trials):
+        seed = 100 + trial * 7
+
+        t_score, t_imp, t_hit, t_h, t_l, _ = _run_ternary_learning(seed, generations)
+        u_score, u_imp, u_hit, u_h, u_l, _ = _run_uint8_learning(seed, generations)
+
+        ternary_scores.append(t_score)
+        uint8_scores.append(u_score)
+        ternary_hits.append(t_hit)
+        uint8_hits.append(u_hit)
+        ternary_imps.append(t_imp)
+        uint8_imps.append(u_imp)
+
+        winner = "uint8" if u_score > t_score else ("ternary" if t_score > u_score else "tie")
+        print(f"  {seed:6d}  {t_score:+10.4f}  {u_score:+10.4f}  "
+              f"{t_hit:6d}  {u_hit:6d}  {t_imp:5d}  {u_imp:5d}  {winner}")
+
+    # Summary
+    t_mean = np.mean(ternary_scores)
+    u_mean = np.mean(uint8_scores)
+    t_wins = sum(1 for t, u in zip(ternary_scores, uint8_scores) if t > u)
+    u_wins = sum(1 for t, u in zip(ternary_scores, uint8_scores) if u > t)
+
+    print(f"\n  SUMMARY ({n_trials} trials, {generations} generations each):")
+    print(f"  {'':20s}  {'Ternary':>10s}  {'uint8':>10s}")
+    print(f"  {'Mean score':20s}  {t_mean:+10.4f}  {u_mean:+10.4f}")
+    print(f"  {'Mean hits':20s}  {np.mean(ternary_hits):10.2f}  {np.mean(uint8_hits):10.2f}")
+    print(f"  {'Mean improvements':20s}  {np.mean(ternary_imps):10.1f}  {np.mean(uint8_imps):10.1f}")
+    print(f"  {'Wins':20s}  {t_wins:10d}  {u_wins:10d}")
+    print(f"\n  Overall winner: {'uint8' if u_mean > t_mean else 'ternary'} "
+          f"(delta={abs(u_mean - t_mean):.4f})")
+
+    return u_mean >= t_mean
+
+
 # ===========================================================================
 
 if __name__ == "__main__":
@@ -593,6 +774,7 @@ if __name__ == "__main__":
     results["2d_sweep"] = test_2d_knob_sweep()
     results["learning"] = test_knob_learning()
     results["multi_knob"] = test_multi_knob_learning()
+    results["ab_ternary_vs_uint8"] = test_ab_ternary_vs_uint8()
 
     elapsed = time.time() - t0
     print("\n" + "=" * 60)
