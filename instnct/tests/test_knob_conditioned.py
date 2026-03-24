@@ -858,6 +858,87 @@ def _run_int_ternary_learning(seed, generations=300):
     return best, improvements, hit, pred_h, pred_l, scores_over_time
 
 
+def _run_lut4_learning(seed, generations=300):
+    """int4 with baked lookup table — 16 hand-picked values.
+    Index 0..15 maps to a float via LUT. Values are log-spaced,
+    dense at extremes (where evolution converges).
+
+    LUT (16 entries, symmetric around 0):
+      idx:  0     1     2     3     4     5     6     7
+      val: -1000 -500  -250  -100  -50   -10   -1     0
+      idx:  8     9    10    11    12    13    14    15
+      val:  0    +1   +10   +50  +100  +250  +500  +1000
+    """
+    LUT = np.array([
+        -1000, -500, -250, -100, -50, -10, -1, 0,
+        0, 1, 10, 50, 100, 250, 500, 1000,
+    ], dtype=np.float32)
+    LUT_SCALE = 1.0 / 1000.0  # normalize so max = 1.0
+
+    kg = KnobConditionedGraph(vocab=32, knob_names=["control"], seed=seed)
+    knob_id = 0
+    H = kg.graph.H
+    rng = np.random.RandomState(seed + 1000)
+
+    TARGET_HIGH, TARGET_LOW = 0, 15
+
+    # int4 index storage (0..15)
+    indices = np.full(H, 7, dtype=np.uint8)  # init to index 7 = zero
+
+    def apply_edges():
+        kg.graph.mask[knob_id, :] = LUT[indices] * LUT_SCALE
+        kg.graph.mask[knob_id, knob_id] = 0.0
+        kg.graph.resync_alive()
+
+    for t in range(H):
+        kg.knob_magnitudes[knob_id, t] = 0
+    kg._sync_knob_mask()
+    apply_edges()
+
+    def score():
+        s = 0.0
+        kg.set_knobs(control=1.0); kg.reset()
+        out = kg.forward_token(5)
+        s += out[TARGET_HIGH] - np.max(np.delete(out, TARGET_HIGH))
+        kg.set_knobs(control=0.0); kg.reset()
+        out = kg.forward_token(5)
+        s += out[TARGET_LOW] - np.max(np.delete(out, TARGET_LOW))
+        return float(s)
+
+    best = score()
+    improvements = 0
+    scores_over_time = [best]
+
+    for gen in range(generations):
+        target = rng.randint(1, H)
+        old_idx = int(indices[target])
+
+        new_idx = rng.randint(0, 16)
+        if new_idx == old_idx:
+            scores_over_time.append(best)
+            continue
+
+        indices[target] = np.uint8(new_idx)
+        apply_edges()
+
+        s = score()
+        if s > best:
+            best = s
+            improvements += 1
+        else:
+            indices[target] = np.uint8(old_idx)
+            apply_edges()
+        scores_over_time.append(best)
+
+    kg.set_knobs(control=1.0); kg.reset()
+    pred_h = int(np.argmax(kg.forward_token(5)))
+    kg.set_knobs(control=0.0); kg.reset()
+    pred_l = int(np.argmax(kg.forward_token(5)))
+    hit = int(pred_h == TARGET_HIGH) + int(pred_l == TARGET_LOW)
+
+    return best, improvements, hit, pred_h, pred_l, scores_over_time
+
+
 def _run_int4_learning(seed, generations=300):
     """int4 signed: values in {-8..+7}, 16 options, random pick.
     Effective mask value: int4_val * scale / 7  (so ±7 maps to ±scale).
@@ -935,12 +1016,11 @@ def test_ab_ternary_vs_uint8():
     n_trials = 10
     generations = 2000
 
-    methods = ["flt_tern", "int_tern", "int4", "bit_tern", "uint8"]
+    methods = ["flt_tern", "int4", "lut4", "uint8"]
     runners = {
         "flt_tern": _run_ternary_learning,
-        "int_tern": _run_int_ternary_learning,
         "int4":     _run_int4_learning,
-        "bit_tern": _run_bitmask_ternary_learning,
+        "lut4":     _run_lut4_learning,
         "uint8":    _run_uint8_learning,
     }
     results_by_method = {m: {"scores": [], "hits": [], "imps": []} for m in methods}
