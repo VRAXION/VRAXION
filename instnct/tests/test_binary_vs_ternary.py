@@ -30,8 +30,8 @@ def make_data(vocab):
 def eval_accuracy(net, data, ticks=TICKS):
     correct = 0
     total = 0
-    net.state *= 0
-    net.charge *= 0
+    net.state.fill(0)
+    net.charge.fill(0)
     for i in range(len(data) - 1):
         world = np.zeros(net.V, dtype=np.float32)
         world[data[i]] = 1.0
@@ -76,8 +76,8 @@ def run_evo(seed, steps=STEPS, binary_only=False):
             if flipped:
                 net.resync_alive()
 
-        net.state *= 0
-        net.charge *= 0
+        net.state.fill(0)
+        net.charge.fill(0)
         acc = eval_accuracy(net, data)
         if acc >= best_acc:
             best_acc = acc
@@ -136,8 +136,8 @@ def test_check_activations():
         undo = net.mutate()
         net.replay(undo)  # just exercise the network
 
-    net.state *= 0
-    net.charge *= 0
+    net.state.fill(0)
+    net.charge.fill(0)
 
     act_mins = []
     charge_mins = []
