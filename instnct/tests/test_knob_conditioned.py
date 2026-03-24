@@ -858,6 +858,74 @@ def _run_int_ternary_learning(seed, generations=300):
     return best, improvements, hit, pred_h, pred_l, scores_over_time
 
 
+def _run_int4_learning(seed, generations=300):
+    """int4 signed: values in {-8..+7}, 16 options, random pick.
+    Effective mask value: int4_val * scale / 7  (so ±7 maps to ±scale).
+    """
+    kg = KnobConditionedGraph(vocab=32, knob_names=["control"], seed=seed)
+    knob_id = 0
+    H = kg.graph.H
+    rng = np.random.RandomState(seed + 1000)
+    scale = kg.graph.edge_magnitude
+
+    TARGET_HIGH, TARGET_LOW = 0, 15
+
+    edges = np.zeros(H, dtype=np.int8)  # only use -8..+7
+
+    def apply_edges():
+        kg.graph.mask[knob_id, :] = edges.astype(np.float32) * (scale / 7.0)
+        kg.graph.mask[knob_id, knob_id] = 0.0
+        kg.graph.resync_alive()
+
+    for t in range(H):
+        kg.knob_magnitudes[knob_id, t] = 0
+    kg._sync_knob_mask()
+    apply_edges()
+
+    def score():
+        s = 0.0
+        kg.set_knobs(control=1.0); kg.reset()
+        out = kg.forward_token(5)
+        s += out[TARGET_HIGH] - np.max(np.delete(out, TARGET_HIGH))
+        kg.set_knobs(control=0.0); kg.reset()
+        out = kg.forward_token(5)
+        s += out[TARGET_LOW] - np.max(np.delete(out, TARGET_LOW))
+        return float(s)
+
+    best = score()
+    improvements = 0
+    scores_over_time = [best]
+
+    for gen in range(generations):
+        target = rng.randint(1, H)
+        old_val = int(edges[target])
+
+        new_val = rng.randint(-8, 8)  # -8..+7
+        if new_val == old_val:
+            scores_over_time.append(best)
+            continue
+
+        edges[target] = np.int8(new_val)
+        apply_edges()
+
+        s = score()
+        if s > best:
+            best = s
+            improvements += 1
+        else:
+            edges[target] = np.int8(old_val)
+            apply_edges()
+        scores_over_time.append(best)
+
+    kg.set_knobs(control=1.0); kg.reset()
+    pred_h = int(np.argmax(kg.forward_token(5)))
+    kg.set_knobs(control=0.0); kg.reset()
+    pred_l = int(np.argmax(kg.forward_token(5)))
+    hit = int(pred_h == TARGET_HIGH) + int(pred_l == TARGET_LOW)
+
+    return best, improvements, hit, pred_h, pred_l, scores_over_time
+
+
 def test_ab_ternary_vs_uint8():
     """4-way A/B: float ternary vs int ternary vs bitmask ternary vs uint8."""
     print("\n" + "=" * 60)
@@ -867,10 +935,11 @@ def test_ab_ternary_vs_uint8():
     n_trials = 10
     generations = 2000
 
-    methods = ["flt_tern", "int_tern", "bit_tern", "uint8"]
+    methods = ["flt_tern", "int_tern", "int4", "bit_tern", "uint8"]
     runners = {
         "flt_tern": _run_ternary_learning,
         "int_tern": _run_int_ternary_learning,
+        "int4":     _run_int4_learning,
         "bit_tern": _run_bitmask_ternary_learning,
         "uint8":    _run_uint8_learning,
     }
