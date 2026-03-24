@@ -390,23 +390,27 @@ class SelfWiringGraph:
         if 'decay' in s:
             self.decay[:] = s['decay']
 
-    # --- Disk persistence ---
+    # --- Breeding / crossover ---
+
+    BREED_AGREEMENT_BOOST = 2.0
 
     @classmethod
     def breed(cls, parent_a, parent_b, *, fitness_a=None, fitness_b=None, seed=None):
-        """Breed two parent graphs into a child via union (no prune).
+        """Breed two parent graphs via union with agreement boosting.
 
-        Takes all edges from both parents. Where both have an edge at the
-        same position, the fitter parent's value is kept. No pruning — the
-        child inherits the full union of both parents' connectivity.
+        Takes all edges from both parents. Where both parents independently
+        evolved the same edge with the same sign, the edge magnitude is
+        boosted by BREED_AGREEMENT_BOOST (2x) — convergent evolution signals
+        importance. Where only one parent has an edge, it's kept at normal
+        magnitude. No pruning.
 
         Parameters
         ----------
         parent_a, parent_b : SelfWiringGraph
             Parents with identical V, H, and projections.
         fitness_a, fitness_b : float, optional
-            Fitness scores. When both parents have an edge at the same
-            position, the fitter parent's value is kept.
+            Fitness scores. When both parents have an edge but disagree on
+            sign, the fitter parent's value is kept.
         seed : int, optional
             RNG seed for reproducible tie-breaking.
         """
@@ -418,6 +422,7 @@ class SelfWiringGraph:
         rng = np.random.RandomState(seed)
         fa = fitness_a if fitness_a is not None else 1.0
         fb = fitness_b if fitness_b is not None else 1.0
+        boost = cls.BREED_AGREEMENT_BOOST
 
         # Build child via object.__new__ to skip __init__ random generation
         child = object.__new__(cls)
@@ -431,23 +436,29 @@ class SelfWiringGraph:
         child.input_projection = parent_a.input_projection.copy()
         child.output_projection = parent_a.output_projection.copy()
 
-        # Union mask: where both have an edge, keep the fitter parent's value;
-        # where only one has an edge, keep it.
         a_mask = parent_a.mask
         b_mask = parent_b.mask
         a_has = a_mask != 0
         b_has = b_mask != 0
         both = a_has & b_has
+        same_sign = both & (np.sign(a_mask) == np.sign(b_mask))
+        disagree = both & ~same_sign
         only_a = a_has & ~b_has
         only_b = ~a_has & b_has
 
         child.mask = np.zeros((child.H, child.H), dtype=np.float32)
         child.mask[only_a] = a_mask[only_a]
         child.mask[only_b] = b_mask[only_b]
-        # Where both have an edge: fitness-weighted pick
-        if np.any(both):
+
+        # Agreement edges: same sign → boosted magnitude
+        child.mask[same_sign] = (np.sign(a_mask[same_sign])
+                                 * child.edge_magnitude * boost).astype(np.float32)
+
+        # Disagreement edges: fitness-weighted pick, normal magnitude
+        if np.any(disagree):
             pick_a = rng.rand(child.H, child.H) < (fa / (fa + fb + 1e-10))
-            child.mask[both] = np.where(pick_a[both], a_mask[both], b_mask[both])
+            child.mask[disagree] = np.where(
+                pick_a[disagree], a_mask[disagree], b_mask[disagree])
 
         np.fill_diagonal(child.mask, 0)
         child.resync_alive()
