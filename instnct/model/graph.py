@@ -392,6 +392,78 @@ class SelfWiringGraph:
 
     # --- Disk persistence ---
 
+    @classmethod
+    def breed(cls, parent_a, parent_b, *, fitness_a=None, fitness_b=None, seed=None):
+        """Breed two parent graphs into a child via union (no prune).
+
+        Takes all edges from both parents. Where both have an edge at the
+        same position, the fitter parent's value is kept. No pruning — the
+        child inherits the full union of both parents' connectivity.
+
+        Parameters
+        ----------
+        parent_a, parent_b : SelfWiringGraph
+            Parents with identical V, H, and projections.
+        fitness_a, fitness_b : float, optional
+            Fitness scores. When both parents have an edge at the same
+            position, the fitter parent's value is kept.
+        seed : int, optional
+            RNG seed for reproducible tie-breaking.
+        """
+        if parent_a.V != parent_b.V or parent_a.H != parent_b.H:
+            raise ValueError("Parents must have same V and H")
+        if not np.array_equal(parent_a.input_projection, parent_b.input_projection):
+            raise ValueError("Parents must share the same input projection")
+
+        rng = np.random.RandomState(seed)
+        fa = fitness_a if fitness_a is not None else 1.0
+        fb = fitness_b if fitness_b is not None else 1.0
+
+        # Build child via object.__new__ to skip __init__ random generation
+        child = object.__new__(cls)
+        child.V = parent_a.V
+        child.H = parent_a.H
+        child.hidden_ratio = parent_a.hidden_ratio
+        child.projection_scale = parent_a.projection_scale
+        child.edge_magnitude = parent_a.edge_magnitude
+        child.cap_ratio = parent_a.cap_ratio
+        child.density_fraction = 0.0
+        child.input_projection = parent_a.input_projection.copy()
+        child.output_projection = parent_a.output_projection.copy()
+
+        # Union mask: where both have an edge, keep the fitter parent's value;
+        # where only one has an edge, keep it.
+        a_mask = parent_a.mask
+        b_mask = parent_b.mask
+        a_has = a_mask != 0
+        b_has = b_mask != 0
+        both = a_has & b_has
+        only_a = a_has & ~b_has
+        only_b = ~a_has & b_has
+
+        child.mask = np.zeros((child.H, child.H), dtype=np.float32)
+        child.mask[only_a] = a_mask[only_a]
+        child.mask[only_b] = b_mask[only_b]
+        # Where both have an edge: fitness-weighted pick
+        if np.any(both):
+            pick_a = rng.rand(child.H, child.H) < (fa / (fa + fb + 1e-10))
+            child.mask[both] = np.where(pick_a[both], a_mask[both], b_mask[both])
+
+        np.fill_diagonal(child.mask, 0)
+        child.resync_alive()
+
+        # Average meta-params with small noise
+        child.theta = ((parent_a.theta + parent_b.theta) / 2.0).astype(np.float32)
+        child.decay = ((parent_a.decay + parent_b.decay) / 2.0).astype(np.float32)
+        child.loss_pct = np.int8((int(parent_a.loss_pct) + int(parent_b.loss_pct)) // 2)
+        child.mutation_drive = np.int8((int(parent_a.mutation_drive) + int(parent_b.mutation_drive)) // 2)
+
+        # Fresh state
+        child.state = np.zeros(child.H, dtype=np.float32)
+        child.charge = np.zeros(child.H, dtype=np.float32)
+
+        return child
+
     def save(self, path):
         """Save winner graph to disk (.npz) with exact forward-path projections."""
         rows, cols = np.where(self.mask != 0)
