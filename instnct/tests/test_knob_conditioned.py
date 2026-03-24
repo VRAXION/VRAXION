@@ -10,6 +10,9 @@ This:         input = [data, add_rate=10, coupling=0.3] → [network learns edge
 
 The network doesn't learn WHAT the parameter is — it learns what to DO with it.
 Change the knob → output changes instantly through learned edges.
+
+Knob edges use int8 weights (-128..+127) with a scale factor to convert to
+float for the mask. This matches the int8 weight scheme used in the main model.
 """
 
 import numpy as np
@@ -29,7 +32,13 @@ class KnobConditionedGraph:
     Extends SelfWiringGraph with dedicated 'knob' neurons that receive
     explicit parameter values. The knob neurons are part of the hidden
     layer but get clamped to knob values each step.
+
+    Knob edges use int8 weights (-128..+127) stored in a separate array.
+    A scale factor converts int8 → float when writing to the graph mask.
+    Default init value: ±1 (matching int8 granularity).
     """
+
+    INT8_SCALE = 1.0 / 127.0  # int8 → float: 1 → ~0.00787, 127 → 1.0
 
     def __init__(self, vocab, knob_names, *, hidden_ratio=3, seed=42, **kwargs):
         self.knob_names = list(knob_names)
@@ -43,6 +52,66 @@ class KnobConditionedGraph:
         # Reserve first N hidden neurons as knob neurons
         self.knob_neuron_ids = list(range(self.n_knobs))
         self.knob_values = np.zeros(self.n_knobs, dtype=np.float32)
+
+        # Int8 knob edge storage: magnitude (0..127) + sign (±1)
+        # Matches the main model pattern: mask = magnitude * sign, flip toggles sign
+        H = self.graph.H
+        self.knob_magnitudes = np.zeros((self.n_knobs, H), dtype=np.uint8)  # 0..127
+        self.knob_signs = np.ones((self.n_knobs, H), dtype=np.int8)         # +1 or -1
+
+        # Initialize from existing mask (convert float → int8 magnitude + sign)
+        for k in range(self.n_knobs):
+            row = self.graph.mask[k, :]
+            self.knob_signs[k, :] = np.where(row >= 0, 1, -1).astype(np.int8)
+            self.knob_magnitudes[k, :] = np.clip(
+                np.round(np.abs(row) / self.INT8_SCALE), 0, 127
+            ).astype(np.uint8)
+
+        # Write back to ensure mask matches int8 representation exactly
+        self._sync_knob_mask()
+
+    def _sync_knob_mask(self):
+        """Write int8 magnitude*sign knob edges back to the float32 graph mask."""
+        for k in range(self.n_knobs):
+            self.graph.mask[k, :] = (
+                self.knob_magnitudes[k, :].astype(np.float32)
+                * self.knob_signs[k, :].astype(np.float32)
+                * self.INT8_SCALE
+            )
+            self.graph.mask[k, k] = 0.0  # no self-loops
+        self.graph.resync_alive()
+
+    def set_knob_edge(self, knob_id, target, magnitude, sign=None):
+        """Set a single knob edge: magnitude (0..127) and optional sign (±1)."""
+        self.knob_magnitudes[knob_id, target] = np.uint8(min(magnitude, 127))
+        if sign is not None:
+            self.knob_signs[knob_id, target] = np.int8(1 if sign >= 0 else -1)
+        val = (float(self.knob_magnitudes[knob_id, target])
+               * float(self.knob_signs[knob_id, target])
+               * self.INT8_SCALE)
+        self.graph.mask[knob_id, target] = val
+        if target == knob_id:
+            self.graph.mask[knob_id, target] = 0.0
+
+    def mutate_knob_edge(self, knob_id, target, rng=None):
+        """Mutate magnitude by +1..+5, returns (old_mag, old_sign) for undo."""
+        _rng = rng if rng is not None else np.random
+        old_mag = int(self.knob_magnitudes[knob_id, target])
+        old_sign = int(self.knob_signs[knob_id, target])
+        step = _rng.choice([1, 2, 3, 4, 5])
+        new_mag = min(old_mag + step, 127)
+        self.set_knob_edge(knob_id, target, new_mag)
+        return old_mag, old_sign
+
+    def flip_knob_edge(self, knob_id, target):
+        """Flip the sign of a knob edge (like the main model's _flip)."""
+        old_sign = int(self.knob_signs[knob_id, target])
+        self.knob_signs[knob_id, target] = np.int8(-old_sign)
+        val = (float(self.knob_magnitudes[knob_id, target])
+               * float(self.knob_signs[knob_id, target])
+               * self.INT8_SCALE)
+        self.graph.mask[knob_id, target] = val
+        return old_sign
 
     def set_knobs(self, **kwargs):
         for name, val in kwargs.items():
@@ -77,28 +146,30 @@ class KnobConditionedGraph:
     @property
     def knob_edge_count(self):
         count = 0
-        for kid in self.knob_neuron_ids:
-            count += int(np.count_nonzero(self.graph.mask[kid, :]))
+        for k in range(self.n_knobs):
+            count += int(np.count_nonzero(self.knob_magnitudes[k, :]))
         return count
 
     @property
     def knob_edge_strength(self):
-        total = 0.0
-        for kid in self.knob_neuron_ids:
-            total += float(np.sum(np.abs(self.graph.mask[kid, :])))
+        """Total int8 magnitude across all knob edges."""
+        total = 0
+        for k in range(self.n_knobs):
+            total += int(np.sum(self.knob_magnitudes[k, :]))
         return total
 
     def knob_influence_map(self):
         influence = {}
         for name, idx in self.knob_index.items():
-            kid = self.knob_neuron_ids[idx]
-            row = self.graph.mask[kid, :]
-            targets = np.where(row != 0)[0]
-            weights = row[targets]
+            mags = self.knob_magnitudes[idx, :]
+            signs = self.knob_signs[idx, :]
+            targets = np.where(mags > 0)[0]
             influence[name] = {
                 "n_targets": len(targets),
-                "mean_weight": float(np.mean(weights)) if len(weights) > 0 else 0.0,
-                "abs_strength": float(np.sum(np.abs(weights))),
+                "mean_magnitude": float(np.mean(mags[targets])) if len(targets) > 0 else 0.0,
+                "total_magnitude": int(np.sum(mags)),
+                "pos_edges": int(np.sum((mags > 0) & (signs > 0))),
+                "neg_edges": int(np.sum((mags > 0) & (signs < 0))),
             }
         return influence
 
@@ -228,14 +299,15 @@ def test_knob_wiring():
     print(f"  Hidden size: {kg.graph.H}")
     print(f"  Knob neurons: {kg.knob_neuron_ids}")
     print(f"  Total edges from knobs: {kg.knob_edge_count}")
-    print(f"  Total edge strength: {kg.knob_edge_strength:.2f}")
+    print(f"  Total edge strength (int8 sum): {kg.knob_edge_strength}")
 
     influence = kg.knob_influence_map()
     for name, info in influence.items():
         print(f"\n  {name}:")
         print(f"    targets: {info['n_targets']} neurons")
-        print(f"    mean weight: {info['mean_weight']:.4f}")
-        print(f"    abs strength: {info['abs_strength']:.2f}")
+        print(f"    mean magnitude (int8): {info['mean_magnitude']:.1f}")
+        print(f"    total magnitude (int8): {info['total_magnitude']}")
+        print(f"    pos/neg edges: {info['pos_edges']}/{info['neg_edges']}")
 
     has_wiring = kg.knob_edge_count > 0
     print(f"\n  Status: {'PASS' if has_wiring else 'FAIL - no edges from knobs'}")
@@ -265,23 +337,19 @@ def test_instant_feedback():
 
     for trial in range(n_mutations):
         target = rng.randint(kg.n_knobs, H)
-        old_val = kg.graph.mask[knob_id, target]
-
-        new_val = kg.graph.edge_magnitude if old_val <= 0 else -kg.graph.edge_magnitude
-        kg.graph.mask[knob_id, target] = new_val
-        kg.graph._sync_sparse_idx()
-        kg.graph.alive = list(zip(*np.where(kg.graph.mask != 0)))
-        kg.graph.alive_set = set(kg.graph.alive)
+        old_mag, old_sign = kg.mutate_knob_edge(knob_id, target, rng)
+        new_mag = int(kg.knob_magnitudes[knob_id, target])
+        kg.graph.resync_alive()
 
         kg.reset()
         out = kg.forward_token(5)
         shift = float(np.sum(np.abs(out - base)))
         shifts.append(shift)
         print(f"  Mutation {trial+1:2d}: edge [{knob_id}→{target:3d}] "
-              f"{old_val:+.1f}→{new_val:+.1f}  output_shift={shift:.4f}")
+              f"mag {old_mag}→{new_mag}  output_shift={shift:.4f}")
 
         # Restore
-        kg.graph.mask[knob_id, target] = old_val
+        kg.set_knob_edge(knob_id, target, old_mag, old_sign)
 
     kg.graph.resync_alive()
 
@@ -379,25 +447,28 @@ def test_knob_learning():
 
     for gen in range(generations):
         target = rng.randint(kg.n_knobs, H)
-        old_val = float(kg.graph.mask[knob_id, target])
 
-        options = [-kg.graph.edge_magnitude, 0.0, kg.graph.edge_magnitude]
-        new_val = float(rng.choice(options))
-        if new_val == old_val:
-            continue
-
-        kg.graph.mask[knob_id, target] = np.float32(new_val)
+        # Randomly choose: mutate magnitude or flip sign
+        if rng.rand() < 0.7:
+            # Mutate magnitude (increase by 1..5)
+            old_mag, old_sign = kg.mutate_knob_edge(knob_id, target, rng)
+        else:
+            # Flip sign
+            old_sign = kg.flip_knob_edge(knob_id, target)
+            old_mag = int(kg.knob_magnitudes[knob_id, target])
         kg.graph.resync_alive()
 
         new_score = score()
         if new_score > best_score:
             best_score = new_score
             improvements += 1
+            new_mag = int(kg.knob_magnitudes[knob_id, target])
+            new_sign = int(kg.knob_signs[knob_id, target])
             if improvements <= 10 or improvements % 20 == 0:
                 print(f"  Gen {gen:4d}: score {best_score:+.4f} "
-                      f"(edge [{knob_id}→{target}] = {new_val:+.1f})")
+                      f"(edge [{knob_id}→{target}] mag={new_mag} sign={new_sign:+d})")
         else:
-            kg.graph.mask[knob_id, target] = np.float32(old_val)
+            kg.set_knob_edge(knob_id, target, old_mag, old_sign)
             kg.graph.resync_alive()
 
     elapsed = time.time() - t0
@@ -467,14 +538,12 @@ def test_multi_knob_learning():
     for gen in range(generations):
         knob_id = rng.randint(0, 2)
         target = rng.randint(2, H)
-        old_val = float(kg.graph.mask[knob_id, target])
 
-        options = [-kg.graph.edge_magnitude, 0.0, kg.graph.edge_magnitude]
-        new_val = float(rng.choice(options))
-        if new_val == old_val:
-            continue
-
-        kg.graph.mask[knob_id, target] = np.float32(new_val)
+        if rng.rand() < 0.7:
+            old_mag, old_sign = kg.mutate_knob_edge(knob_id, target, rng)
+        else:
+            old_sign = kg.flip_knob_edge(knob_id, target)
+            old_mag = int(kg.knob_magnitudes[knob_id, target])
         kg.graph.resync_alive()
 
         new_score = score()
@@ -482,7 +551,7 @@ def test_multi_knob_learning():
             best_score = new_score
             improvements += 1
         else:
-            kg.graph.mask[knob_id, target] = np.float32(old_val)
+            kg.set_knob_edge(knob_id, target, old_mag, old_sign)
             kg.graph.resync_alive()
 
     combos = [(0, 0), (1, 0), (0, 1), (1, 1)]
