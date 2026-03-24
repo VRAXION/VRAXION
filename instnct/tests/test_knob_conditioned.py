@@ -699,59 +699,167 @@ def _run_uint8_learning(seed, generations=300):
     return best, improvements, hit, pred_h, pred_l, scores_over_time
 
 
+def _run_bitmask_ternary_learning(seed, generations=300):
+    """Ternary via 2 boolean masks: exists (0/1) + sign (+1/-1).
+    Effective values: {-scale, 0, +scale}
+    Mutation: flip one bit at a time (exists or sign).
+    """
+    kg = KnobConditionedGraph(vocab=32, knob_names=["control"], seed=seed)
+    knob_id = 0
+    H = kg.graph.H
+    rng = np.random.RandomState(seed + 1000)
+    scale = kg.graph.edge_magnitude  # same scale as float ternary
+
+    TARGET_HIGH, TARGET_LOW = 0, 15
+
+    # 2 boolean masks for knob edges
+    exists = np.zeros(H, dtype=np.bool_)   # is edge present?
+    sign = np.zeros(H, dtype=np.bool_)     # False=+1, True=-1
+
+    def apply_masks():
+        """Write bitmask ternary to graph mask."""
+        for t in range(H):
+            if exists[t] and t != knob_id:
+                kg.graph.mask[knob_id, t] = scale * (-1.0 if sign[t] else 1.0)
+            else:
+                kg.graph.mask[knob_id, t] = 0.0
+        kg.graph.resync_alive()
+
+    # Zero out knob edges to start fresh
+    for t in range(H):
+        kg.knob_magnitudes[knob_id, t] = 0
+    kg._sync_knob_mask()
+    apply_masks()
+
+    def score():
+        s = 0.0
+        kg.set_knobs(control=1.0); kg.reset()
+        out = kg.forward_token(5)
+        s += out[TARGET_HIGH] - np.max(np.delete(out, TARGET_HIGH))
+        kg.set_knobs(control=0.0); kg.reset()
+        out = kg.forward_token(5)
+        s += out[TARGET_LOW] - np.max(np.delete(out, TARGET_LOW))
+        return float(s)
+
+    best = score()
+    improvements = 0
+    scores_over_time = [best]
+
+    for gen in range(generations):
+        target = rng.randint(1, H)
+
+        # Flip one bit: 50% exists, 50% sign
+        if rng.rand() < 0.5:
+            # Toggle exists
+            old_exists = bool(exists[target])
+            exists[target] = not old_exists
+            apply_masks()
+
+            s = score()
+            if s > best:
+                best = s
+                improvements += 1
+            else:
+                exists[target] = old_exists
+                apply_masks()
+        else:
+            # Flip sign
+            old_sign = bool(sign[target])
+            sign[target] = not old_sign
+            apply_masks()
+
+            s = score()
+            if s > best:
+                best = s
+                improvements += 1
+            else:
+                sign[target] = old_sign
+                apply_masks()
+
+        scores_over_time.append(best)
+
+    kg.set_knobs(control=1.0); kg.reset()
+    pred_h = int(np.argmax(kg.forward_token(5)))
+    kg.set_knobs(control=0.0); kg.reset()
+    pred_l = int(np.argmax(kg.forward_token(5)))
+    hit = int(pred_h == TARGET_HIGH) + int(pred_l == TARGET_LOW)
+
+    return best, improvements, hit, pred_h, pred_l, scores_over_time
+
+
 def test_ab_ternary_vs_uint8():
-    """A/B comparison: ternary knob edges vs uint8+sign knob edges."""
+    """3-way A/B: float ternary vs bitmask ternary vs uint8+sign."""
     print("\n" + "=" * 60)
-    print("TEST 9: A/B — Ternary vs uint8 Knob Edges")
+    print("TEST 9: A/B — Float Ternary vs Bitmask Ternary vs uint8")
     print("=" * 60)
 
     n_trials = 10
     generations = 2000
 
-    ternary_scores = []
-    uint8_scores = []
-    ternary_hits = []
-    uint8_hits = []
-    ternary_imps = []
-    uint8_imps = []
+    results_by_method = {
+        "float_tern": {"scores": [], "hits": [], "imps": []},
+        "bit_tern":   {"scores": [], "hits": [], "imps": []},
+        "uint8":      {"scores": [], "hits": [], "imps": []},
+    }
 
-    print(f"\n  {'seed':>6s}  {'ternary':>10s}  {'uint8':>10s}  "
-          f"{'t_hits':>6s}  {'u_hits':>6s}  {'t_imp':>5s}  {'u_imp':>5s}  winner")
-    print("  " + "-" * 70)
+    print(f"\n  {'seed':>6s}  {'flt_tern':>10s}  {'bit_tern':>10s}  {'uint8':>10s}  winner")
+    print("  " + "-" * 55)
 
     for trial in range(n_trials):
         seed = 100 + trial * 7
 
-        t_score, t_imp, t_hit, t_h, t_l, _ = _run_ternary_learning(seed, generations)
-        u_score, u_imp, u_hit, u_h, u_l, _ = _run_uint8_learning(seed, generations)
+        ft_score, ft_imp, ft_hit, _, _, _ = _run_ternary_learning(seed, generations)
+        bt_score, bt_imp, bt_hit, _, _, _ = _run_bitmask_ternary_learning(seed, generations)
+        u_score, u_imp, u_hit, _, _, _ = _run_uint8_learning(seed, generations)
 
-        ternary_scores.append(t_score)
-        uint8_scores.append(u_score)
-        ternary_hits.append(t_hit)
-        uint8_hits.append(u_hit)
-        ternary_imps.append(t_imp)
-        uint8_imps.append(u_imp)
+        results_by_method["float_tern"]["scores"].append(ft_score)
+        results_by_method["float_tern"]["hits"].append(ft_hit)
+        results_by_method["float_tern"]["imps"].append(ft_imp)
+        results_by_method["bit_tern"]["scores"].append(bt_score)
+        results_by_method["bit_tern"]["hits"].append(bt_hit)
+        results_by_method["bit_tern"]["imps"].append(bt_imp)
+        results_by_method["uint8"]["scores"].append(u_score)
+        results_by_method["uint8"]["hits"].append(u_hit)
+        results_by_method["uint8"]["imps"].append(u_imp)
 
-        winner = "uint8" if u_score > t_score else ("ternary" if t_score > u_score else "tie")
-        print(f"  {seed:6d}  {t_score:+10.4f}  {u_score:+10.4f}  "
-              f"{t_hit:6d}  {u_hit:6d}  {t_imp:5d}  {u_imp:5d}  {winner}")
+        scores = {"flt_tern": ft_score, "bit_tern": bt_score, "uint8": u_score}
+        winner = max(scores, key=scores.get)
+        print(f"  {seed:6d}  {ft_score:+10.4f}  {bt_score:+10.4f}  {u_score:+10.4f}  {winner}")
 
     # Summary
-    t_mean = np.mean(ternary_scores)
-    u_mean = np.mean(uint8_scores)
-    t_wins = sum(1 for t, u in zip(ternary_scores, uint8_scores) if t > u)
-    u_wins = sum(1 for t, u in zip(ternary_scores, uint8_scores) if u > t)
-
     print(f"\n  SUMMARY ({n_trials} trials, {generations} generations each):")
-    print(f"  {'':20s}  {'Ternary':>10s}  {'uint8':>10s}")
-    print(f"  {'Mean score':20s}  {t_mean:+10.4f}  {u_mean:+10.4f}")
-    print(f"  {'Mean hits':20s}  {np.mean(ternary_hits):10.2f}  {np.mean(uint8_hits):10.2f}")
-    print(f"  {'Mean improvements':20s}  {np.mean(ternary_imps):10.1f}  {np.mean(uint8_imps):10.1f}")
-    print(f"  {'Wins':20s}  {t_wins:10d}  {u_wins:10d}")
-    print(f"\n  Overall winner: {'uint8' if u_mean > t_mean else 'ternary'} "
-          f"(delta={abs(u_mean - t_mean):.4f})")
+    print(f"  {'':20s}  {'flt_tern':>10s}  {'bit_tern':>10s}  {'uint8':>10s}")
 
-    return u_mean >= t_mean
+    means = {}
+    for name, data in results_by_method.items():
+        means[name] = np.mean(data["scores"])
+
+    print(f"  {'Mean score':20s}  {means['float_tern']:+10.4f}  {means['bit_tern']:+10.4f}  {means['uint8']:+10.4f}")
+    print(f"  {'Mean hits':20s}  {np.mean(results_by_method['float_tern']['hits']):10.2f}  "
+          f"{np.mean(results_by_method['bit_tern']['hits']):10.2f}  "
+          f"{np.mean(results_by_method['uint8']['hits']):10.2f}")
+    print(f"  {'Mean improvements':20s}  {np.mean(results_by_method['float_tern']['imps']):10.1f}  "
+          f"{np.mean(results_by_method['bit_tern']['imps']):10.1f}  "
+          f"{np.mean(results_by_method['uint8']['imps']):10.1f}")
+
+    # Win count
+    ft_wins = bt_wins = u_wins = 0
+    for i in range(n_trials):
+        scores = [
+            results_by_method["float_tern"]["scores"][i],
+            results_by_method["bit_tern"]["scores"][i],
+            results_by_method["uint8"]["scores"][i],
+        ]
+        best_idx = int(np.argmax(scores))
+        if best_idx == 0: ft_wins += 1
+        elif best_idx == 1: bt_wins += 1
+        else: u_wins += 1
+    print(f"  {'Wins':20s}  {ft_wins:10d}  {bt_wins:10d}  {u_wins:10d}")
+
+    overall = max(means, key=means.get)
+    print(f"\n  Overall winner: {overall} (score={means[overall]:+.4f})")
+
+    return overall != "float_tern"
 
 
 # ===========================================================================
