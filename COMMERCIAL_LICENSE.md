@@ -16,3 +16,6 @@ Notes:
   direct or indirect commercial advantage.
 - This file is **not** a grant of commercial rights. Commercial rights are
   granted only under a separate written agreement.
+- The software license and any separate commercial license do **not** grant
+  rights to use the **VRAXION** or **INSTNCT** names, logos, or brand assets
+  except as described in [TRADEMARKS.md](TRADEMARKS.md).

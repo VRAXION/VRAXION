@@ -116,4 +116,7 @@ These commands verify:
 
 - Noncommercial: [LICENSE](LICENSE)
 - Commercial terms: [COMMERCIAL_LICENSE.md](COMMERCIAL_LICENSE.md)
+- Brand and trademark notice: [TRADEMARKS.md](TRADEMARKS.md)
 - Citation: [CITATION.cff](CITATION.cff)
+
+The software license does not grant rights to use the **VRAXION** or **INSTNCT** names, logos, or brand assets except as described in [TRADEMARKS.md](TRADEMARKS.md).
