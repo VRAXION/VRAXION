@@ -94,14 +94,23 @@ def score_combined(net, targets, vocab, ticks=8):
 
 
 def score_batch(net, targets, V, ticks=8):
-    """Batch scoring using forward_batch. Returns (combined_score, accuracy)."""
+    """Batch scoring using forward_batch. Returns (combined_score, accuracy).
+    Incorporates 'potential-aware' scoring: mean target logit helps guide
+    evolution even when accuracy is unchanged."""
     logits_all = net.forward_batch(ticks)
-    e = np.exp(logits_all - logits_all.max(axis=1, keepdims=True))
-    probs_all = e / e.sum(axis=1, keepdims=True)
-    preds = np.argmax(probs_all, axis=1)
+    # 1. Hard accuracy
+    preds = np.argmax(logits_all, axis=1)
     acc = (preds == targets[:V]).mean()
-    target_probs = probs_all[np.arange(V), targets[:V]]
-    score = 0.5 * acc + 0.5 * target_probs.mean()
+    
+    # 2. Potential Score (hidden gradient)
+    # Use raw logits for potential to avoid softmax flattening out early progress
+    target_logits = logits_all[np.arange(V), targets[:V]]
+    mean_target_logit = target_logits.mean()
+    
+    # Combine: accuracy + scaled potential
+    # This ensures accuracy dominates, but potential guides the micro-steps
+    score = acc + 0.05 * mean_target_logit
+    
     return score, acc
 
 
