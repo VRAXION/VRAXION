@@ -1,0 +1,596 @@
+[
+  {
+    "step": 0,
+    "time": 0.2,
+    "best_acc": 0.0,
+    "edges": 10467,
+    "firing_rate": 0.0,
+    "avg_charge": 0.0,
+    "theta_mean": 15.0
+  },
+  {
+    "step": 1000,
+    "time": 263.8,
+    "best_acc": 0.0005,
+    "edges": 19502,
+    "firing_rate": 0.0,
+    "avg_charge": 0.0,
+    "theta_mean": 12.61
+  },
+  {
+    "step": 2000,
+    "time": 589.9,
+    "best_acc": 0.0024,
+    "edges": 26235,
+    "firing_rate": 0.0,
+    "avg_charge": 0.0003,
+    "theta_mean": 11.13
+  },
+  {
+    "step": 3000,
+    "time": 1022.5,
+    "best_acc": 0.097,
+    "edges": 24547,
+    "firing_rate": 0.0005,
+    "avg_charge": 0.0566,
+    "theta_mean": 10.79
+  },
+  {
+    "step": 4000,
+    "time": 1465.4,
+    "best_acc": 0.0989,
+    "edges": 23961,
+    "firing_rate": 0.0055,
+    "avg_charge": 0.2052,
+    "theta_mean": 10.78
+  },
+  {
+    "step": 5000,
+    "time": 1893.3,
+    "best_acc": 0.1058,
+    "edges": 23318,
+    "firing_rate": 0.004,
+    "avg_charge": 0.1455,
+    "theta_mean": 10.77
+  },
+  {
+    "step": 6000,
+    "time": 2312.8,
+    "best_acc": 0.1141,
+    "edges": 22650,
+    "firing_rate": 0.0058,
+    "avg_charge": 0.2065,
+    "theta_mean": 10.72
+  },
+  {
+    "step": 7000,
+    "time": 2720.6,
+    "best_acc": 0.1213,
+    "edges": 22122,
+    "firing_rate": 0.0018,
+    "avg_charge": 0.1055,
+    "theta_mean": 10.68
+  },
+  {
+    "step": 8000,
+    "time": 3121.3,
+    "best_acc": 0.1234,
+    "edges": 21747,
+    "firing_rate": 0.0022,
+    "avg_charge": 0.0965,
+    "theta_mean": 10.67
+  },
+  {
+    "step": 9000,
+    "time": 3514.0,
+    "best_acc": 0.1237,
+    "edges": 21421,
+    "firing_rate": 0.0047,
+    "avg_charge": 0.1642,
+    "theta_mean": 10.62
+  },
+  {
+    "step": 10000,
+    "time": 3901.1,
+    "best_acc": 0.1221,
+    "edges": 20964,
+    "firing_rate": 0.0019,
+    "avg_charge": 0.0675,
+    "theta_mean": 10.54
+  },
+  {
+    "step": 11000,
+    "time": 4269.5,
+    "best_acc": 0.1462,
+    "edges": 19957,
+    "firing_rate": 0.0047,
+    "avg_charge": 0.1623,
+    "theta_mean": 10.48
+  },
+  {
+    "step": 12000,
+    "time": 4630.3,
+    "best_acc": 0.165,
+    "edges": 19715,
+    "firing_rate": 0.0108,
+    "avg_charge": 0.2857,
+    "theta_mean": 10.41
+  },
+  {
+    "step": 13000,
+    "time": 4984.0,
+    "best_acc": 0.1787,
+    "edges": 19520,
+    "firing_rate": 0.0117,
+    "avg_charge": 0.3273,
+    "theta_mean": 10.31
+  },
+  {
+    "step": 14000,
+    "time": 5333.7,
+    "best_acc": 0.193,
+    "edges": 19414,
+    "firing_rate": 0.013,
+    "avg_charge": 0.3501,
+    "theta_mean": 10.33
+  },
+  {
+    "step": 15000,
+    "time": 5683.3,
+    "best_acc": 0.1979,
+    "edges": 19378,
+    "firing_rate": 0.0123,
+    "avg_charge": 0.3492,
+    "theta_mean": 10.33
+  },
+  {
+    "step": 16000,
+    "time": 6031.9,
+    "best_acc": 0.1992,
+    "edges": 19369,
+    "firing_rate": 0.0128,
+    "avg_charge": 0.3697,
+    "theta_mean": 10.33
+  },
+  {
+    "step": 17000,
+    "time": 6380.2,
+    "best_acc": 0.201,
+    "edges": 19315,
+    "firing_rate": 0.0118,
+    "avg_charge": 0.3229,
+    "theta_mean": 10.32
+  },
+  {
+    "step": 18000,
+    "time": 6728.7,
+    "best_acc": 0.1997,
+    "edges": 19234,
+    "firing_rate": 0.0128,
+    "avg_charge": 0.3515,
+    "theta_mean": 10.32
+  },
+  {
+    "step": 19000,
+    "time": 7074.1,
+    "best_acc": 0.2033,
+    "edges": 19180,
+    "firing_rate": 0.008,
+    "avg_charge": 0.2425,
+    "theta_mean": 10.33
+  },
+  {
+    "step": 20000,
+    "time": 7417.2,
+    "best_acc": 0.2002,
+    "edges": 19113,
+    "firing_rate": 0.0135,
+    "avg_charge": 0.3646,
+    "theta_mean": 10.33
+  },
+  {
+    "step": 21000,
+    "time": 7759.2,
+    "best_acc": 0.2043,
+    "edges": 18961,
+    "firing_rate": 0.0164,
+    "avg_charge": 0.4449,
+    "theta_mean": 10.31
+  },
+  {
+    "step": 22000,
+    "time": 8097.9,
+    "best_acc": 0.2061,
+    "edges": 18848,
+    "firing_rate": 0.0155,
+    "avg_charge": 0.4146,
+    "theta_mean": 10.29
+  },
+  {
+    "step": 23000,
+    "time": 8434.4,
+    "best_acc": 0.2151,
+    "edges": 18690,
+    "firing_rate": 0.0162,
+    "avg_charge": 0.4559,
+    "theta_mean": 10.29
+  },
+  {
+    "step": 24000,
+    "time": 8767.9,
+    "best_acc": 0.2158,
+    "edges": 18623,
+    "firing_rate": 0.0137,
+    "avg_charge": 0.3856,
+    "theta_mean": 10.32
+  },
+  {
+    "step": 25000,
+    "time": 9101.2,
+    "best_acc": 0.2153,
+    "edges": 18609,
+    "firing_rate": 0.0161,
+    "avg_charge": 0.4436,
+    "theta_mean": 10.32
+  },
+  {
+    "step": 26000,
+    "time": 9433.7,
+    "best_acc": 0.2166,
+    "edges": 18508,
+    "firing_rate": 0.0169,
+    "avg_charge": 0.4543,
+    "theta_mean": 10.3
+  },
+  {
+    "step": 27000,
+    "time": 9764.7,
+    "best_acc": 0.223,
+    "edges": 18466,
+    "firing_rate": 0.0164,
+    "avg_charge": 0.4302,
+    "theta_mean": 10.3
+  },
+  {
+    "step": 28000,
+    "time": 10096.1,
+    "best_acc": 0.2254,
+    "edges": 18424,
+    "firing_rate": 0.0163,
+    "avg_charge": 0.4468,
+    "theta_mean": 10.3
+  },
+  {
+    "step": 29000,
+    "time": 10426.4,
+    "best_acc": 0.2255,
+    "edges": 18409,
+    "firing_rate": 0.0184,
+    "avg_charge": 0.484,
+    "theta_mean": 10.3
+  },
+  {
+    "step": 30000,
+    "time": 10756.0,
+    "best_acc": 0.2272,
+    "edges": 18394,
+    "firing_rate": 0.0165,
+    "avg_charge": 0.4471,
+    "theta_mean": 10.3
+  },
+  {
+    "step": 31000,
+    "time": 11085.8,
+    "best_acc": 0.2243,
+    "edges": 18334,
+    "firing_rate": 0.0162,
+    "avg_charge": 0.429,
+    "theta_mean": 10.3
+  },
+  {
+    "step": 32000,
+    "time": 11415.5,
+    "best_acc": 0.2243,
+    "edges": 18334,
+    "firing_rate": 0.0137,
+    "avg_charge": 0.3576,
+    "theta_mean": 10.3
+  },
+  {
+    "step": 33000,
+    "time": 11744.3,
+    "best_acc": 0.227,
+    "edges": 18304,
+    "firing_rate": 0.0143,
+    "avg_charge": 0.3697,
+    "theta_mean": 10.3
+  },
+  {
+    "step": 34000,
+    "time": 12072.1,
+    "best_acc": 0.2283,
+    "edges": 18259,
+    "firing_rate": 0.0146,
+    "avg_charge": 0.383,
+    "theta_mean": 10.3
+  },
+  {
+    "step": 35000,
+    "time": 12398.9,
+    "best_acc": 0.2265,
+    "edges": 18229,
+    "firing_rate": 0.0131,
+    "avg_charge": 0.3449,
+    "theta_mean": 10.29
+  },
+  {
+    "step": 36000,
+    "time": 12724.6,
+    "best_acc": 0.2257,
+    "edges": 18200,
+    "firing_rate": 0.016,
+    "avg_charge": 0.4016,
+    "theta_mean": 10.29
+  },
+  {
+    "step": 37000,
+    "time": 13050.9,
+    "best_acc": 0.2273,
+    "edges": 18171,
+    "firing_rate": 0.0153,
+    "avg_charge": 0.3829,
+    "theta_mean": 10.29
+  },
+  {
+    "step": 38000,
+    "time": 13375.6,
+    "best_acc": 0.2257,
+    "edges": 18141,
+    "firing_rate": 0.0134,
+    "avg_charge": 0.362,
+    "theta_mean": 10.29
+  },
+  {
+    "step": 39000,
+    "time": 13700.8,
+    "best_acc": 0.226,
+    "edges": 18096,
+    "firing_rate": 0.0173,
+    "avg_charge": 0.4565,
+    "theta_mean": 10.29
+  },
+  {
+    "step": 40000,
+    "time": 14024.9,
+    "best_acc": 0.2244,
+    "edges": 18023,
+    "firing_rate": 0.0159,
+    "avg_charge": 0.4163,
+    "theta_mean": 10.29
+  },
+  {
+    "step": 41000,
+    "time": 14347.4,
+    "best_acc": 0.2244,
+    "edges": 18023,
+    "firing_rate": 0.0159,
+    "avg_charge": 0.3943,
+    "theta_mean": 10.29
+  },
+  {
+    "step": 42000,
+    "time": 14670.5,
+    "best_acc": 0.2246,
+    "edges": 18009,
+    "firing_rate": 0.0163,
+    "avg_charge": 0.4156,
+    "theta_mean": 10.29
+  },
+  {
+    "step": 43000,
+    "time": 14993.5,
+    "best_acc": 0.2248,
+    "edges": 17995,
+    "firing_rate": 0.0217,
+    "avg_charge": 0.5522,
+    "theta_mean": 10.32
+  },
+  {
+    "step": 44000,
+    "time": 15315.5,
+    "best_acc": 0.2248,
+    "edges": 17995,
+    "firing_rate": 0.023,
+    "avg_charge": 0.5811,
+    "theta_mean": 10.32
+  },
+  {
+    "step": 45000,
+    "time": 15637.5,
+    "best_acc": 0.2248,
+    "edges": 17995,
+    "firing_rate": 0.0203,
+    "avg_charge": 0.4969,
+    "theta_mean": 10.32
+  },
+  {
+    "step": 46000,
+    "time": 15959.6,
+    "best_acc": 0.2248,
+    "edges": 17995,
+    "firing_rate": 0.0242,
+    "avg_charge": 0.5956,
+    "theta_mean": 10.32
+  },
+  {
+    "step": 47000,
+    "time": 16281.7,
+    "best_acc": 0.2248,
+    "edges": 17995,
+    "firing_rate": 0.022,
+    "avg_charge": 0.5407,
+    "theta_mean": 10.32
+  },
+  {
+    "step": 48000,
+    "time": 16604.7,
+    "best_acc": 0.2242,
+    "edges": 17981,
+    "firing_rate": 0.0204,
+    "avg_charge": 0.4896,
+    "theta_mean": 10.32
+  },
+  {
+    "step": 49000,
+    "time": 16928.0,
+    "best_acc": 0.2242,
+    "edges": 17981,
+    "firing_rate": 0.0284,
+    "avg_charge": 0.6901,
+    "theta_mean": 10.32
+  },
+  {
+    "step": 50000,
+    "time": 17250.5,
+    "best_acc": 0.2244,
+    "edges": 17967,
+    "firing_rate": 0.0218,
+    "avg_charge": 0.5195,
+    "theta_mean": 10.32
+  },
+  {
+    "step": 51000,
+    "time": 17572.4,
+    "best_acc": 0.2244,
+    "edges": 17967,
+    "firing_rate": 0.0252,
+    "avg_charge": 0.6131,
+    "theta_mean": 10.32
+  },
+  {
+    "step": 52000,
+    "time": 17893.9,
+    "best_acc": 0.2244,
+    "edges": 17967,
+    "firing_rate": 0.0236,
+    "avg_charge": 0.5877,
+    "theta_mean": 10.32
+  },
+  {
+    "step": 53000,
+    "time": 18215.9,
+    "best_acc": 0.2238,
+    "edges": 17953,
+    "firing_rate": 0.0204,
+    "avg_charge": 0.5298,
+    "theta_mean": 10.32
+  },
+  {
+    "step": 54000,
+    "time": 18538.0,
+    "best_acc": 0.2241,
+    "edges": 17940,
+    "firing_rate": 0.0191,
+    "avg_charge": 0.4972,
+    "theta_mean": 10.32
+  },
+  {
+    "step": 55000,
+    "time": 18859.1,
+    "best_acc": 0.2241,
+    "edges": 17940,
+    "firing_rate": 0.0184,
+    "avg_charge": 0.4793,
+    "theta_mean": 10.32
+  },
+  {
+    "step": 56000,
+    "time": 19181.8,
+    "best_acc": 0.2267,
+    "edges": 17927,
+    "firing_rate": 0.0143,
+    "avg_charge": 0.4275,
+    "theta_mean": 10.32
+  },
+  {
+    "step": 57000,
+    "time": 19503.5,
+    "best_acc": 0.2267,
+    "edges": 17914,
+    "firing_rate": 0.0146,
+    "avg_charge": 0.4431,
+    "theta_mean": 10.32
+  },
+  {
+    "step": 58000,
+    "time": 19823.9,
+    "best_acc": 0.2267,
+    "edges": 17914,
+    "firing_rate": 0.0186,
+    "avg_charge": 0.5447,
+    "theta_mean": 10.32
+  },
+  {
+    "step": 59000,
+    "time": 20144.6,
+    "best_acc": 0.2267,
+    "edges": 17901,
+    "firing_rate": 0.0168,
+    "avg_charge": 0.5052,
+    "theta_mean": 10.32
+  },
+  {
+    "step": 60000,
+    "time": 20464.5,
+    "best_acc": 0.2267,
+    "edges": 17888,
+    "firing_rate": 0.0179,
+    "avg_charge": 0.5397,
+    "theta_mean": 10.32
+  },
+  {
+    "step": 61000,
+    "time": 20783.8,
+    "best_acc": 0.2252,
+    "edges": 17863,
+    "firing_rate": 0.0289,
+    "avg_charge": 0.7961,
+    "theta_mean": 10.32
+  },
+  {
+    "step": 62000,
+    "time": 21104.5,
+    "best_acc": 0.2245,
+    "edges": 17851,
+    "firing_rate": 0.018,
+    "avg_charge": 0.5272,
+    "theta_mean": 10.32
+  },
+  {
+    "step": 63000,
+    "time": 21425.0,
+    "best_acc": 0.2241,
+    "edges": 17828,
+    "firing_rate": 0.0177,
+    "avg_charge": 0.5249,
+    "theta_mean": 10.32
+  },
+  {
+    "step": 64000,
+    "time": 21745.1,
+    "best_acc": 0.2238,
+    "edges": 17806,
+    "firing_rate": 0.018,
+    "avg_charge": 0.5205,
+    "theta_mean": 10.32
+  },
+  {
+    "step": 65000,
+    "time": 22081.4,
+    "best_acc": 0.2236,
+    "edges": 17781,
+    "firing_rate": 0.0164,
+    "avg_charge": 0.4438,
+    "theta_mean": 10.32
+  }
+]
