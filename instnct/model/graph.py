@@ -11,9 +11,11 @@ Runtime contract:
   - mask             (H × H): learnable hidden graph, boolean (True/False)
   - theta            (H,): per-neuron firing threshold
   - decay            (H,): per-neuron decay rate
+  - freq             (H,): per-neuron firing frequency (Musical Gating)
+  - phase            (H,): per-neuron firing phase (Musical Gating)
   - polarity         (H,): per-neuron polarity (+1 excitatory, -1 inhibitory)
-  - state            (H,): hidden activation after thresholding
-  - charge           (H,): hidden pre-threshold charge, clamped to nonnegative values
+  - state            (H,): hidden activation (binary spikes) after gating
+  - charge           (H,): hidden pre-threshold charge (0-15)
 """
 
 import numpy as np
@@ -120,6 +122,11 @@ class SelfWiringGraph:
         # Refractory period: 1-tick resting state after firing.
         # Proven +7.5% win in A/B testing.
         self.refractory = np.zeros(self.H, dtype=np.int8)
+
+        # Musical Gating: Freq and Phase
+        # Every neuron has its own internal clock.
+        self.freq = init_rand(self.H).astype(np.float32) * 1.5 + 0.5
+        self.phase = init_rand(self.H).astype(np.float32) * 2.0 * np.pi
 
     @staticmethod
     def _density_to_fraction(density):
@@ -243,6 +250,8 @@ class SelfWiringGraph:
         edge_magnitude=1.0,
         polarity=None,
         refractory=None,
+        freq=None,
+        phase=None,
     ):
         mask = np.asarray(mask)
         # Support both int8 ternary mask and legacy float32 mask.
@@ -289,10 +298,15 @@ class SelfWiringGraph:
             # 4. CLAMP
             np.clip(cur_charge, 0.0, SelfWiringGraph.MAX_CHARGE, out=cur_charge)
             
-            # 5. SPIKE DECISION with Refractory
+            # 5. SPIKE DECISION with Refractory and Musical Gating
             if refractory is not None:
                 can_fire = (refractory == 0)
-                fired = (cur_charge >= theta) & can_fire
+                is_rhythm_turn = True
+                if freq is not None and phase is not None:
+                    gate = np.sin(tick * freq + phase)
+                    is_rhythm_turn = (gate > 0.7) # Only top 30% of wave can fire
+                
+                fired = (cur_charge >= theta) & can_fire & is_rhythm_turn
                 refractory[refractory > 0] -= 1
                 refractory[fired] = 1 
             else:
@@ -321,6 +335,8 @@ class SelfWiringGraph:
         edge_magnitude=1.0,
         polarity=None,
         refractory=None,
+        freq=None,
+        phase=None,
     ):
         mask = np.asarray(mask)
         if mask.dtype != np.float32:
@@ -366,8 +382,13 @@ class SelfWiringGraph:
             # 4. CLAMP
             np.clip(cur_charges, 0.0, SelfWiringGraph.MAX_CHARGE, out=cur_charges)
             
-            # 5. SPIKE
-            fired = (cur_charges >= theta)
+            # 5. SPIKE with Gating
+            is_rhythm_turn = True
+            if freq is not None and phase is not None:
+                gate = np.sin(tick * freq + phase)
+                is_rhythm_turn = (gate > 0.7)
+            
+            fired = (cur_charges >= theta) & is_rhythm_turn
             cur_acts = fired.astype(np.float32)
             if polarity is not None:
                 cur_acts = cur_acts * polarity
@@ -409,14 +430,17 @@ class SelfWiringGraph:
             edge_magnitude=self.edge_magnitude,
             polarity=self._polarity_f32,
             refractory=self.refractory,
+            freq=self.freq,
+            phase=self.phase,
         )
-        return self.readout(self.charge)
+        # SPIKE READOUT: source is state, not charge.
+        return self.readout(self.state)
 
     def forward_batch(self, ticks=6):
         """Batch forward: all V inputs simultaneously. Returns (V, V) logits."""
         V = self.V
         projected = np.eye(V, dtype=np.float32) @ self.input_projection
-        _, charges = self.rollout_token_batch(
+        acts, charges = self.rollout_token_batch(
             projected,
             mask=self.mask,
             theta=self.theta,
@@ -426,8 +450,11 @@ class SelfWiringGraph:
             edge_magnitude=self.edge_magnitude,
             polarity=self._polarity_f32,
             refractory=self.refractory,
+            freq=self.freq,
+            phase=self.phase,
         )
-        return self.readout_batch(charges)
+        # SPIKE READOUT
+        return self.readout_batch(acts)
 
     def resync_alive(self):
         """Rebuild alive list+set from mask. Call after direct mask writes."""
@@ -480,6 +507,8 @@ class SelfWiringGraph:
             'theta': self.theta.copy(),
             'decay': self.decay.copy(),
             'polarity': self.polarity.copy(),
+            'freq': self.freq.copy(),
+            'phase': self.phase.copy(),
         }
 
     def restore_state(self, s):
@@ -508,6 +537,10 @@ class SelfWiringGraph:
         if 'polarity' in s:
             self.polarity[:] = s['polarity']
             self._polarity_f32[:] = self.polarity.astype(np.float32)
+        if 'freq' in s:
+            self.freq[:] = s['freq']
+        if 'phase' in s:
+            self.phase[:] = s['phase']
 
     # --- Breeding / crossover ---
 
@@ -559,6 +592,8 @@ class SelfWiringGraph:
         # Average meta-params with small noise
         child.theta = ((parent_a.theta + parent_b.theta) / 2.0).astype(np.float32)
         child.decay = ((parent_a.decay + parent_b.decay) / 2.0).astype(np.float32)
+        child.freq = ((parent_a.freq + parent_b.freq) / 2.0).astype(np.float32)
+        child.phase = ((parent_a.phase + parent_b.phase) / 2.0).astype(np.float32)
         child.loss_pct = np.int8((int(parent_a.loss_pct) + int(parent_b.loss_pct)) // 2)
         child.mutation_drive = np.int8((int(parent_a.mutation_drive) + int(parent_b.mutation_drive)) // 2)
 
@@ -585,6 +620,8 @@ class SelfWiringGraph:
             theta=self.theta,
             decay=self.decay,
             polarity=self.polarity,
+            freq=self.freq,
+            phase=self.phase,
             projection_scale=np.float32(self.projection_scale),
             edge_magnitude=np.float32(self.edge_magnitude),
             cap_ratio=np.int32(self.cap_ratio),
@@ -619,6 +656,14 @@ class SelfWiringGraph:
             output_projection = np.array(d['output_projection'], dtype=np.float32)
             theta = np.array(d['theta'], dtype=np.float32)
             decay = np.array(d['decay'], dtype=np.float32)
+            if 'freq' in d.files:
+                freq = np.array(d['freq'], dtype=np.float32)
+                phase = np.array(d['phase'], dtype=np.float32)
+            else:
+                # Legacy: default 1.0 freq (always top phase)
+                freq = np.ones(H, dtype=np.float32)
+                phase = np.zeros(H, dtype=np.float32)
+            
             if 'polarity' in d.files:
                 polarity = np.array(d['polarity'], dtype=np.int8)
             else:
@@ -667,8 +712,11 @@ class SelfWiringGraph:
         net.mutation_drive = mutation_drive
         net.theta = theta
         net.decay = decay
+        net.freq = freq
+        net.phase = phase
         net.polarity = polarity
         net._polarity_f32 = net.polarity.astype(np.float32)
+        net.refractory = np.zeros(H, dtype=np.int8)
         net.resync_alive()
         return net
 
@@ -709,6 +757,10 @@ class SelfWiringGraph:
             elif op == 'P':
                 self.polarity[entry[1]] = np.int8(entry[2])
                 self._polarity_f32[entry[1]] = np.float32(entry[2])
+            elif op == 'FR':
+                self.freq[entry[1]] = np.float32(entry[2])
+            elif op == 'PH':
+                self.phase[entry[1]] = np.float32(entry[2])
         if has_structural:
             self.resync_alive()
         else:
@@ -765,6 +817,16 @@ class SelfWiringGraph:
         # Polarity flip drift: 1-in-N chance, reverts on reject
         if random.randint(1, self.POLARITY_FLIP_PROB) == 1 and not freeze_params:
             self._polarity_mutate(undo)
+
+        # Musical Gating drift: 1-in-10 chance
+        if random.randint(1, 10) == 1 and not freeze_params:
+            idx = random.randint(0, self.H - 1)
+            if random.random() < 0.5:
+                undo.append(('FR', idx, float(self.freq[idx])))
+                self.freq[idx] = np.float32(random.uniform(0.5, 2.0))
+            else:
+                undo.append(('PH', idx, float(self.phase[idx])))
+                self.phase[idx] = np.float32(random.uniform(0, 2*np.pi))
 
         # Execute drive: +N=add, -N=remove, 0=rewire
         d = int(self.mutation_drive)
