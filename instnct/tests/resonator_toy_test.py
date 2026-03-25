@@ -26,14 +26,21 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 def run_dynamics(adj_matrix, polarity, input_vec, ticks=8, decay=0.10, theta=1.5):
     """Run spike dynamics on a small network. Returns per-tick state.
 
-    adj_matrix: (H, H) binary connectivity
-    polarity: (H,) +1 excitatory, -1 inhibitory
-    input_vec: (H,) input injection
-    Returns: list of (charge, spikes) per tick
+    Args:
+        adj_matrix: (H, H) binary connectivity matrix
+        polarity: (H,) per-neuron sign (+1 excitatory, -1 inhibitory)
+        input_vec: (H,) input current injection
+        ticks: number of simulation steps (default 8 ≈ 1× diameter for H=32)
+        decay: charge leak per tick (subtractive)
+        theta: firing threshold
+
+    Returns:
+        list of dicts per tick with keys: charge, spikes, spike_pattern,
+        energy, n_active
     """
     H = adj_matrix.shape[0]
     charge = np.zeros(H, dtype=np.float64)
-    act = np.zeros(H, dtype=np.float64)
+    state = np.zeros(H, dtype=np.float64)  # binary firing state per neuron
     history = []
 
     for tick in range(ticks):
@@ -42,19 +49,19 @@ def run_dynamics(adj_matrix, polarity, input_vec, ticks=8, decay=0.10, theta=1.5
 
         # Inject input first 2 ticks
         if tick < 2:
-            act = act + input_vec
+            state = state + input_vec
 
-        # Propagate: act * polarity through adjacency
-        signal = (act * polarity) @ adj_matrix.astype(np.float64)
+        # Propagate: state * polarity through adjacency
+        signal = (state * polarity) @ adj_matrix.astype(np.float64)
         charge += signal
         charge = np.clip(charge, 0.0, 15.0)
 
         # Spike decision
         fired = charge >= theta
-        act = fired.astype(np.float64)
+        state = fired.astype(np.float64)
         charge[fired] = 0.0  # hard reset
 
-        spike_pattern = act * polarity
+        spike_pattern = state * polarity
         history.append({
             'charge': charge.copy(),
             'spikes': fired.copy(),
@@ -223,8 +230,8 @@ def pattern_consistency(adj, polarity, input_vec, n_runs=5, ticks=8):
 if __name__ == "__main__":
     H = 32
     N_EDGES = 120  # ~3.75 edges/neuron
-    TICKS = 8
-    N_INPUTS = 8  # different input patterns to test
+    TICKS = 8      # ≈ 1× diameter for H=32 (see RESONATOR_THEORY.md Finding 3)
+    N_INPUTS = 8   # different input patterns to test
 
     print("=" * 70)
     print("  RESONATOR CHAMBER — DETERMINISTIC TOY TEST")

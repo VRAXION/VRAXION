@@ -30,18 +30,18 @@ def run_dynamics(adj_matrix, polarity, input_vec, ticks=8, decay=0.10, theta=1.5
     """Minimal spike dynamics."""
     H = adj_matrix.shape[0]
     charge = np.zeros(H, dtype=np.float64)
-    act = np.zeros(H, dtype=np.float64)
+    state = np.zeros(H, dtype=np.float64)  # binary firing state
     history = []
 
     for tick in range(ticks):
         charge = np.maximum(charge - decay, 0.0)
         if tick < 2:
-            act = act + input_vec
-        signal = (act * polarity) @ adj_matrix
+            state = state + input_vec
+        signal = (state * polarity) @ adj_matrix
         charge += signal
         charge = np.clip(charge, 0.0, 15.0)
         fired = charge >= theta
-        act = fired.astype(np.float64)
+        state = fired.astype(np.float64)
         charge[fired] = 0.0
         history.append({
             'spikes': fired.copy(),
@@ -106,9 +106,10 @@ def make_topology_graded(H, n_edges, inhib_frac, recip_frac, scheme,
         e = excit[rng.randint(0, len(excit))]
         i = inhib[rng.randint(0, len(inhib))]
         if adj[e, i] == 0 and adj[i, e] == 0:
-            # E→I: full strength, draw from distribution
+            # E→I: draw from [0.5, 1.0] — excludes very weak connections
+            # (matching FlyWire: median connection ~3 synapses out of max ~2400)
             w_ei = rng.uniform(0.5, 1.0)
-            # I→E: modulated by ei_weight_ratio
+            # I→E: same range, scaled by ei_weight_ratio
             w_ie = rng.uniform(0.5, 1.0) * ei_weight_ratio
             adj[e, i] = w_ei
             adj[i, e] = w_ie

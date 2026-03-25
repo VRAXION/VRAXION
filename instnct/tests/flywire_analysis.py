@@ -22,13 +22,35 @@ from collections import defaultdict, deque, Counter
 import time
 import os
 
-DATA_DIR = os.path.join(os.path.dirname(__file__), "..", "data", "flywire")
+DATA_DIR = os.environ.get(
+    'FLYWIRE_DATA_DIR',
+    os.path.join(os.path.dirname(__file__), "..", "data", "flywire"),
+)
 CONN_FILE = os.path.join(DATA_DIR, "proofread_connections_783.feather")
+
+_REQUIRED_COLS = {'pre_pt_root_id', 'post_pt_root_id', 'syn_count'}
 
 
 def load_graph(threshold=5):
-    """Load connectivity and build adjacency (edges >= threshold synapses)."""
+    """Load FlyWire connectivity and build directed adjacency dict.
+
+    Args:
+        threshold: minimum synapse count per connection to include (default 5).
+            FlyWire has many 1-synapse connections that are likely noise.
+            At threshold=5, keeps ~2.7M of 16.8M raw connections.
+
+    Returns:
+        (df, strong, adj, rev_adj, weight) where:
+        - df: raw DataFrame (all connections)
+        - strong: filtered DataFrame (syn_count >= threshold)
+        - adj: dict[int, set[int]] — forward adjacency (pre → post)
+        - rev_adj: dict[int, set[int]] — reverse adjacency (post → pre)
+        - weight: dict[(pre, post), int] — synapse count per edge
+    """
     df = pd.read_feather(CONN_FILE)
+    missing = _REQUIRED_COLS - set(df.columns)
+    if missing:
+        raise ValueError(f"FlyWire data missing columns: {missing}")
     agg = df.groupby(['pre_pt_root_id', 'post_pt_root_id'])['syn_count'].sum().reset_index()
     strong = agg[agg['syn_count'] >= threshold]
 
@@ -48,7 +70,18 @@ def load_graph(threshold=5):
 
 
 def compute_scc(adj, neuron_set):
-    """Kosaraju's SCC algorithm."""
+    """Find strongly connected components using Kosaraju's algorithm.
+
+    Uses iterative (non-recursive) DFS to avoid stack overflow on large
+    graphs. Operates on the dict-of-sets adjacency representation.
+
+    Args:
+        adj: dict[int, set[int]] — forward adjacency (pre → post)
+        neuron_set: set[int] — restrict to this subset of neurons
+
+    Returns:
+        list[list[int]]: SCCs sorted by decreasing size.
+    """
     visited = set()
     finish_order = []
     rev_adj = defaultdict(set)

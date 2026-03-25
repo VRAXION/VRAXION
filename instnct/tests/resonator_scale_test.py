@@ -20,18 +20,18 @@ def run_dynamics(adj_matrix, polarity, input_vec, ticks=8, decay=0.10, theta=1.5
     """Minimal spike dynamics."""
     H = adj_matrix.shape[0]
     charge = np.zeros(H, dtype=np.float64)
-    act = np.zeros(H, dtype=np.float64)
+    state = np.zeros(H, dtype=np.float64)  # binary firing state
     history = []
 
     for tick in range(ticks):
         charge = np.maximum(charge - decay, 0.0)
         if tick < 2:
-            act = act + input_vec
-        signal = (act * polarity) @ adj_matrix.astype(np.float64)
+            state = state + input_vec
+        signal = (state * polarity) @ adj_matrix.astype(np.float64)
         charge += signal
         charge = np.clip(charge, 0.0, 15.0)
         fired = charge >= theta
-        act = fired.astype(np.float64)
+        state = fired.astype(np.float64)
         charge[fired] = 0.0
         history.append({
             'spikes': fired.copy(),
@@ -134,6 +134,8 @@ def run_sweep_at_scale(H, edges_per_neuron=4, n_inputs=8, ticks=8):
 
 
 if __name__ == "__main__":
+    # Powers of 2 from 32 to 512 — covers toy (32) through INSTNCT-scale (512).
+    # 1024 omitted for runtime; see RESONATOR_THEORY.md Finding 4 for extrapolation.
     SCALES = [32, 64, 128, 256, 512]
     N_INPUTS = 8
 
