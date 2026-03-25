@@ -804,6 +804,7 @@ class SelfWiringGraph:
             undo = []
             op_map = {
                 'add': self._add,
+                'add_loop': self._add_loop,
                 'remove': self._remove,
                 'rewire': self._rewire,
                 'flip': self._flip,
@@ -921,6 +922,37 @@ class SelfWiringGraph:
         # Simple integer-like decay steps for int4 dynamics
         self.decay[idx] = np.float32(random.choice([0.5, 1.0, 2.0]))
         undo.append(('D', idx, old_val))
+
+    def _add_loop(self, undo, max_len=6):
+        """Add a complete loop of random length [2, max_len].
+
+        Picks a random start neuron, chains through random distinct neurons,
+        then closes the loop back to start.  All edges are added atomically.
+        If any edge in the chain already exists or nodes collide, bail out.
+        """
+        cap = self.H * self.cap_ratio
+        loop_len = random.randint(2, max(2, max_len))
+        if len(self.alive) + loop_len > cap:
+            return
+        nodes = [random.randint(0, self.H - 1)]
+        for _ in range(loop_len - 1):
+            n = random.randint(0, self.H - 1)
+            if n in nodes:
+                return  # collision, bail
+            nodes.append(n)
+        # Check all edges are free
+        edges = []
+        for i in range(loop_len):
+            r, c = nodes[i], nodes[(i + 1) % loop_len]
+            if self.mask[r, c] != 0:
+                return  # edge exists, bail
+            edges.append((r, c))
+        # Commit all edges atomically
+        for r, c in edges:
+            self.mask[r, c] = np.int8(1)
+            self.alive.append((r, c))
+            self.alive_set.add((r, c))
+            undo.append(('A', r, c))
 
     def _polarity_mutate(self, undo):
         """Flip one random neuron's polarity."""

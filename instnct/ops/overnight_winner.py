@@ -83,26 +83,28 @@ def worker_eval(args):
             return {'delta': -1e9, 'type': 'add'}
         new_s[r, c] = rng.random() < 0.5
         new_m[r, c] = rng.randint(1, 255)
-    elif ptype == 'add_loop2':
-        a = rng.randint(0, H-1); b = rng.randint(0, H-1)
-        if a == b or mmag[a, b] > 0 or mmag[b, a] > 0:
-            return {'delta': -1e9, 'type': 'add_loop2'}
-        new_s[a, b] = rng.random() < 0.5
-        new_m[a, b] = rng.randint(1, 255)
-        new_s[b, a] = rng.random() < 0.5
-        new_m[b, a] = rng.randint(1, 255)
-    elif ptype == 'add_loop3':
-        a = rng.randint(0, H-1); b = rng.randint(0, H-1); c = rng.randint(0, H-1)
-        if len({a, b, c}) < 3:
-            return {'delta': -1e9, 'type': 'add_loop3'}
-        if mmag[a, b] > 0 or mmag[b, c] > 0 or mmag[c, a] > 0:
-            return {'delta': -1e9, 'type': 'add_loop3'}
-        new_s[a, b] = rng.random() < 0.5
-        new_m[a, b] = rng.randint(1, 255)
-        new_s[b, c] = rng.random() < 0.5
-        new_m[b, c] = rng.randint(1, 255)
-        new_s[c, a] = rng.random() < 0.5
-        new_m[c, a] = rng.randint(1, 255)
+    elif ptype == 'add_loop':
+        loop_len = rng.randint(2, 6)
+        nodes = [rng.randint(0, H-1)]
+        ok = True
+        for _ in range(loop_len - 1):
+            n = rng.randint(0, H-1)
+            if n in nodes:
+                ok = False; break
+            nodes.append(n)
+        if not ok:
+            return {'delta': -1e9, 'type': 'add_loop'}
+        edges = []
+        for i in range(loop_len):
+            r, c = nodes[i], nodes[(i + 1) % loop_len]
+            if mmag[r, c] > 0:
+                ok = False; break
+            edges.append((r, c))
+        if not ok:
+            return {'delta': -1e9, 'type': 'add_loop'}
+        for r, c in edges:
+            new_s[r, c] = rng.random() < 0.5
+            new_m[r, c] = rng.randint(1, 255)
     elif ptype == 'flip':
         rs, cs = np.where(mmag > 0)
         if len(rs) == 0: return {'delta': -1e9, 'type': 'flip'}
@@ -155,7 +157,7 @@ if __name__ == "__main__":
     N_WORKERS = 18
     BUDGET = 10000
     THRESHOLD = 0.00005
-    SCHEDULE = ['add', 'add_loop2', 'flip', 'mag_resample', 'add', 'add_loop3']
+    SCHEDULE = ['add', 'add_loop', 'flip', 'mag_resample', 'add', 'add_loop']
 
     bp = make_bp(IO)
     BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -199,7 +201,7 @@ if __name__ == "__main__":
     with open(LOG, "w") as f:
         f.write(f"--- OVERNIGHT START {time.strftime('%Y-%m-%d %H:%M:%S')} ---\n")
 
-    accepts = {'add': 0, 'flip': 0, 'mag_resample': 0, 'add_loop2': 0, 'add_loop3': 0}
+    accepts = {'add': 0, 'flip': 0, 'mag_resample': 0, 'add_loop': 0}
     log_data = []
     t0 = time.time()
 
@@ -210,7 +212,7 @@ if __name__ == "__main__":
             ptype = SCHEDULE[(step-1) % len(SCHEDULE)]
             if ptype in ('flip', 'mag_resample') and (mmag > 0).sum() == 0:
                 ptype = 'add'
-            if ptype in ('add_loop2', 'add_loop3') and (mmag > 0).sum() == 0:
+            if ptype == 'add_loop' and (mmag > 0).sum() == 0:
                 ptype = 'add'
 
             args = [(msign.flatten(), mmag.flatten(), H,
@@ -234,7 +236,7 @@ if __name__ == "__main__":
 
                 line = (f"[{step:5d}] eval={ea*100:.1f}% edges={edges} q={quality:.3f}%/e "
                         f"A={accepts['add']}|F={accepts['flip']}|M={accepts['mag_resample']}"
-                        f"|L2={accepts['add_loop2']}|L3={accepts['add_loop3']} "
+                        f"|LP={accepts['add_loop']} "
                         f"mag=[{vals.min()},{vals.max()}] {elapsed:.0f}s ({sps:.2f} step/s)")
                 print(f"  {line}")
                 with open(LOG, "a") as f:
@@ -271,6 +273,6 @@ if __name__ == "__main__":
                   for s in eval_seqs])
     print(f"\nFINAL: eval={ea*100:.1f}% edges={edges} "
           f"A={accepts['add']}|F={accepts['flip']}|M={accepts['mag_resample']}"
-          f"|L2={accepts['add_loop2']}|L3={accepts['add_loop3']} "
+          f"|LP={accepts['add_loop']} "
           f"{elapsed:.0f}s ({BUDGET/elapsed:.2f} step/s)")
 
