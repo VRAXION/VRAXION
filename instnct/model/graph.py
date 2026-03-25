@@ -34,7 +34,7 @@ class SelfWiringGraph:
     DEFAULT_DECAY = 1.0
     MAX_CHARGE = 15.0
     DEFAULT_RHO = 0.3  # Starting modulation depth
-    DEFAULT_INHIBITORY_FRACTION = 0.20
+    DEFAULT_INHIBITORY_FRACTION = 0.10  # Fly-realistic: fewer but broader I-neurons
     POLARITY_FLIP_PROB = 10  # 1-in-N chance per mutate step
 
     def __init__(
@@ -92,10 +92,18 @@ class SelfWiringGraph:
         self.input_projection = input_projection * self.projection_scale
         self.output_projection = output_projection * self.projection_scale
 
+        # Polarity: 10% inhibitory. 
+        self.polarity = np.ones(self.H, dtype=np.int8)
+        inhib_mask = init_rand(self.H) < self.DEFAULT_INHIBITORY_FRACTION
+        self.polarity[inhib_mask] = -1
+        self._polarity_f32 = self.polarity.astype(np.float32)
+
         # Mask: H × H hidden-only, boolean.
-        # Topology carries all information; no sign or magnitude needed.
+        # Fly-realistic topology: Inhibitory neurons have 2x out-degree (hub-property)
         r = init_rand(hidden, hidden)
-        self.mask = r < self.density_fraction
+        effective_density = np.full(hidden, self.density_fraction)
+        effective_density[self.polarity == -1] *= 2.0 
+        self.mask = r < effective_density[:, np.newaxis]
         np.fill_diagonal(self.mask, False)
 
         # Alive edges: canonical row-major cache + set for O(1) undo membership.
@@ -113,13 +121,6 @@ class SelfWiringGraph:
         self.mutation_drive = np.int8(1)  # signed: +N=add N, -N=remove N, 0=rewire
         self.theta = np.full(self.H, float(theta_init), dtype=np.float32)
         self.decay = np.full(self.H, float(decay_init), dtype=np.float32)
-
-        # Polarity: +1 excitatory, -1 inhibitory. Dale's Law integration.
-        # Initial 20% inhibitory fraction based on research results.
-        self.polarity = np.ones(self.H, dtype=np.int8)
-        inhib_mask = init_rand(self.H) < self.DEFAULT_INHIBITORY_FRACTION
-        self.polarity[inhib_mask] = -1
-        self._polarity_f32 = self.polarity.astype(np.float32)
 
         # Refractory period: 1-tick resting state after firing.
         # Proven +7.5% win in A/B testing.
@@ -433,7 +434,7 @@ class SelfWiringGraph:
             )
         return hidden @ self.output_projection
 
-    def forward(self, world, ticks=6):
+    def forward(self, world, ticks=12):
         """Single-input forward pass. Passive I/O: inject via input_projection, read via output_projection."""
         world_vec = np.asarray(world, dtype=np.float32).copy()
         np.nan_to_num(world_vec, copy=False, nan=0.0, posinf=0.0, neginf=0.0)
@@ -457,7 +458,7 @@ class SelfWiringGraph:
         # SPIKE READOUT: source is state, not charge.
         return self.readout(self.state)
 
-    def forward_batch(self, ticks=6):
+    def forward_batch(self, ticks=12):
         """Batch forward: all V inputs simultaneously. Returns (V, V) logits."""
         V = self.V
         projected = np.eye(V, dtype=np.float32) @ self.input_projection
@@ -876,6 +877,12 @@ class SelfWiringGraph:
         if len(self.alive) >= cap:
             return
         r, c = random.randint(0, self.H-1), random.randint(0, self.H-1)
+        
+        # Fly-realistic bias: if source is excitatory, maybe skip adding 
+        # to maintain the 2x ratio for inhibitory neurons.
+        if self.polarity[r] == 1 and random.random() < 0.5:
+            return
+
         if r != c and self.mask[r, c] == 0:
             self.mask[r, c] = np.int8(1)
             self.alive.append((r, c))
