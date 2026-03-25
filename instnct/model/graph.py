@@ -32,6 +32,7 @@ class SelfWiringGraph:
     DEFAULT_THETA = 15.0
     DEFAULT_DECAY = 1.0
     MAX_CHARGE = 15.0
+    DEFAULT_RHO = 0.5  # C19 Wave modulation depth
     DEFAULT_INHIBITORY_FRACTION = 0.20
     POLARITY_FLIP_PROB = 10  # 1-in-N chance per mutate step
 
@@ -298,19 +299,19 @@ class SelfWiringGraph:
             # 4. CLAMP
             np.clip(cur_charge, 0.0, SelfWiringGraph.MAX_CHARGE, out=cur_charge)
             
-            # 5. SPIKE DECISION with Refractory and Musical Gating
+            # 5. SPIKE DECISION with Refractory and C19 Soft-Wave Modulation
+            effective_theta = theta
+            if freq is not None and phase is not None:
+                wave = np.sin(tick * freq + phase)
+                effective_theta = theta * (1.0 + SelfWiringGraph.DEFAULT_RHO * wave)
+
             if refractory is not None:
                 can_fire = (refractory == 0)
-                is_rhythm_turn = True
-                if freq is not None and phase is not None:
-                    gate = np.sin(tick * freq + phase)
-                    is_rhythm_turn = (gate > 0.7) # Only top 30% of wave can fire
-                
-                fired = (cur_charge >= theta) & can_fire & is_rhythm_turn
+                fired = (cur_charge >= effective_theta) & can_fire
                 refractory[refractory > 0] -= 1
                 refractory[fired] = 1 
             else:
-                fired = (cur_charge >= theta)
+                fired = (cur_charge >= effective_theta)
 
             act = fired.astype(np.float32) # Digital spike: always 1.0
             if polarity is not None:
@@ -382,13 +383,13 @@ class SelfWiringGraph:
             # 4. CLAMP
             np.clip(cur_charges, 0.0, SelfWiringGraph.MAX_CHARGE, out=cur_charges)
             
-            # 5. SPIKE with Gating
-            is_rhythm_turn = True
+            # 5. SPIKE with C19 Soft-Wave Gating
+            effective_theta = theta
             if freq is not None and phase is not None:
-                gate = np.sin(tick * freq + phase)
-                is_rhythm_turn = (gate > 0.7)
+                wave = np.sin(tick * freq + phase)
+                effective_theta = theta * (1.0 + SelfWiringGraph.DEFAULT_RHO * wave)
             
-            fired = (cur_charges >= theta) & is_rhythm_turn
+            fired = (cur_charges >= effective_theta)
             cur_acts = fired.astype(np.float32)
             if polarity is not None:
                 cur_acts = cur_acts * polarity
