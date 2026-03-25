@@ -311,7 +311,10 @@ class SelfWiringGraph:
                 wave = np.sin(tick * freq + phase)
                 # Use per-neuron learnable rho if provided, else use default.
                 curr_rho = rho if rho is not None else SelfWiringGraph.DEFAULT_RHO
-                effective_theta = theta * (1.0 + curr_rho * wave)
+                effective_theta = np.clip(
+                    theta * (1.0 + curr_rho * wave),
+                    1.0, SelfWiringGraph.MAX_CHARGE
+                )
 
             if refractory is not None:
                 can_fire = (refractory == 0)
@@ -398,7 +401,10 @@ class SelfWiringGraph:
                 wave = np.sin(tick * freq + phase)
                 # Use per-neuron learnable rho if provided, else use default.
                 curr_rho = rho if rho is not None else SelfWiringGraph.DEFAULT_RHO
-                effective_theta = theta * (1.0 + curr_rho * wave)
+                effective_theta = np.clip(
+                    theta * (1.0 + curr_rho * wave),
+                    1.0, SelfWiringGraph.MAX_CHARGE
+                )
             
             fired = (cur_charges >= effective_theta)
             cur_acts = fired.astype(np.float32)
