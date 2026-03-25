@@ -131,6 +131,9 @@ class SelfWiringGraph:
         self.phase = init_rand(self.H).astype(np.float32) * 2.0 * np.pi
         self.rho = np.full(self.H, self.DEFAULT_RHO, dtype=np.float32)
 
+        # C19 Learnable rho: per-neuron wave modulation depth [0, 1]
+        self.rho = np.full(self.H, self.DEFAULT_RHO, dtype=np.float32)
+
     @staticmethod
     def _density_to_fraction(density):
         density = float(density)
@@ -681,7 +684,7 @@ class SelfWiringGraph:
                 freq = np.ones(H, dtype=np.float32)
                 phase = np.zeros(H, dtype=np.float32)
                 rho = np.zeros(H, dtype=np.float32) # No wave modulation for legacy
-            
+
             if 'polarity' in d.files:
                 polarity = np.array(d['polarity'], dtype=np.int8)
             else:
