@@ -5,10 +5,16 @@
 <p align="center">
   <img src="https://raw.githubusercontent.com/VRAXION/VRAXION/main/docs/assets/vraxion-home-hero.jpg" alt="VRAXION front-door illustration" width="740">
   <br>
-  <em>The engineering of the "I"</em>
+  <em>The engineering of the \"I\"</em>
 </p>
 
 VRAXION is building **INSTNCT**: a gradient-free self-wiring architecture that learns by changing its own directed graph instead of running backpropagation through a fixed topology.
+
+> **Core thesis**
+>
+> **Through destructive topological interference, signal resolves into inference.**
+>
+> This is the current theoretical framing for the active line on `main`: signal enters a structured recurrent substrate, incompatible propagation paths cancel, and the surviving pattern is read out as inference. It generalizes the older loop-era slogan without claiming that every result on `main` has already proved the full thesis.
 
 This is the lean technical reference for the public stack. Use [Pages](https://vraxion.github.io/VRAXION/) for the polished front door, the repo [README.md](https://github.com/VRAXION/VRAXION/blob/main/README.md) for the code-facing front door, and this page for the fastest orientation to what is current. Repo-tracked docs are canonical and this wiki is their mirrored secondary surface.
 
@@ -57,7 +63,7 @@ This is an ambition and a research direction, not a claim of achieved sentience.
 <p align="center">
   <img src="https://raw.githubusercontent.com/VRAXION/VRAXION/main/docs/assets/long-horizon-mission.jpg" alt="Long-horizon mission illustration" width="592">
   <br>
-  <em>In a stable loop, structure emerges.</em>
+  <em>Through destructive topological interference, signal resolves into inference.</em>
 </p>
 
 ## Current Mainline

@@ -10,6 +10,12 @@
 
 VRAXION is building **INSTNCT**: a gradient-free self-wiring architecture that learns by changing its own graph instead of using backpropagation through a fixed layer stack.
 
+> **Core thesis**
+>
+> **Through destructive topological interference, signal resolves into inference.**
+>
+> In current INSTNCT terms, signal enters through fixed projections, propagates through a structured recurrent substrate, and competing paths are suppressed until a surviving pattern is read out as inference. This is the active theoretical framing for the architecture line, not a claim that every sub-part of the thesis has already been promoted into shipped defaults.
+
 This page explains the active technical line in plain terms: what the system is, what is actually shipped on `main`, and what makes the current architecture different from a fixed-topology model.
 
 ## At a Glance
@@ -29,6 +35,8 @@ This page explains the active technical line in plain terms: what the system is,
 Most neural systems learn by adjusting lots of weights inside a fixed topology. INSTNCT changes that. Here, the thing being learned is the hidden graph itself.
 
 Input enters through fixed random projections, moves through a self-wiring hidden graph with a signed sparse edge mask, and is read out through another fixed projection. The graph changes by mutation + selection, while neurons keep charge/state across ticks. In short: the model learns structure and state dynamics, not just layer weights.
+
+Under the current thesis, that structure is not just storage. It acts as a filter on propagation. Incompatible paths cancel, compatible paths persist, and inference is read out from what survives.
 
 ## Architecture In One Screen
 

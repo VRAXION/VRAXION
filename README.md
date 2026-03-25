@@ -2,6 +2,12 @@
 
 VRAXION is building **INSTNCT**: a gradient-free self-wiring architecture that learns by changing its own directed graph instead of running backpropagation through a fixed topology.
 
+> **Core thesis**
+>
+> **Through destructive topological interference, signal resolves into inference.**
+>
+> This is the current theoretical framing for the active line on `main`: signal enters a structured recurrent substrate, incompatible propagation paths cancel, and the surviving pattern is read out as inference. It is a research thesis for the architecture line, not a separate claim of achieved sentience.
+
 This repository is meant to be a credible front door for technical buyers and engineers. It should let a first-time reader answer five things quickly:
 
 1. what VRAXION is,
@@ -84,7 +90,7 @@ Create an environment, install the minimal dependencies, and run the same checks
 
 ```bash
 python -m venv .venv
-# Windows PowerShell: .venv\Scripts\Activate.ps1
+# Windows PowerShell: .venv\\Scripts\\Activate.ps1
 # macOS/Linux: source .venv/bin/activate
 pip install -r requirements.txt
 
