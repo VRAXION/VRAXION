@@ -37,6 +37,11 @@ class SelfWiringGraph:
     DEFAULT_INHIBITORY_FRACTION = 0.10  # Fly-realistic: fewer but broader I-neurons
     POLARITY_FLIP_PROB = 10  # 1-in-N chance per mutate step
 
+    @staticmethod
+    def _checkpoint_index_dtype(hidden_size):
+        """Use the smallest safe integer dtype for edge indices on disk."""
+        return np.uint16 if int(hidden_size) <= np.iinfo(np.uint16).max else np.uint32
+
     def __init__(
         self,
         vocab,
@@ -533,7 +538,7 @@ class SelfWiringGraph:
         """Revert all state including mutation drive."""
         saved_mask = s['mask']
         if saved_mask.dtype != self.mask.dtype:
-            saved_mask = (saved_mask != 0).astype(np.int8)
+            saved_mask = (saved_mask != 0)
         self.mask[:] = saved_mask
         if 'alive' in s:
             self.alive = s['alive'].copy()
@@ -598,9 +603,9 @@ class SelfWiringGraph:
         child.output_projection = parent_a.output_projection.copy()
 
         # Binary union: child has edge wherever either parent has one
-        child.mask = ((parent_a.mask != 0) | (parent_b.mask != 0)).astype(np.int8)
+        child.mask = ((parent_a.mask != 0) | (parent_b.mask != 0))
 
-        np.fill_diagonal(child.mask, 0)
+        np.fill_diagonal(child.mask, False)
         child.resync_alive()
 
         # Polarity: random mix from parents
@@ -627,14 +632,15 @@ class SelfWiringGraph:
     def save(self, path):
         """Save winner graph to disk (.npz) with exact forward-path projections."""
         rows, cols = np.where(self.mask != 0)
-        vals = self.mask[rows, cols].astype(np.int8)
+        index_dtype = self._checkpoint_index_dtype(self.H)
+        vals = np.ones(rows.shape[0], dtype=np.bool_)
         np.savez_compressed(path,
-            schema_version=np.int16(3),
+            schema_version=np.int16(4),
             V=self.V,
             H=self.H,
             hidden_ratio=np.int32(self.hidden_ratio),
-            rows=rows.astype(np.int32),
-            cols=cols.astype(np.int32),
+            rows=rows.astype(index_dtype, copy=False),
+            cols=cols.astype(index_dtype, copy=False),
             vals=vals,
             loss_pct=int(self.loss_pct),
             mutation_drive=int(self.mutation_drive),
@@ -673,7 +679,7 @@ class SelfWiringGraph:
             raw_vals = np.array(d['vals'])
             # Backward compat: old checkpoints stored float or int8 ternary vals.
             # Convert any nonzero value to 1 (binary mask).
-            vals = (raw_vals != 0).astype(np.int8)
+            vals = (raw_vals != 0)
             input_projection = np.array(d['input_projection'], dtype=np.float32)
             output_projection = np.array(d['output_projection'], dtype=np.float32)
             theta = np.array(d['theta'], dtype=np.float32)
@@ -727,9 +733,9 @@ class SelfWiringGraph:
         net.density_fraction = 0.0
         net.input_projection = input_projection
         net.output_projection = output_projection
-        net.mask = np.zeros((H, H), dtype=np.int8)
+        net.mask = np.zeros((H, H), dtype=np.bool_)
         net.mask[rows, cols] = vals
-        np.fill_diagonal(net.mask, 0)
+        np.fill_diagonal(net.mask, False)
         net.state = np.zeros(H, dtype=np.float32)
         net.charge = np.zeros(H, dtype=np.float32)
         net.loss_pct = loss_pct
@@ -753,18 +759,18 @@ class SelfWiringGraph:
             op = entry[0]
             if op == 'A':
                 r, c = entry[1], entry[2]
-                self.mask[r, c] = np.int8(0)
+                self.mask[r, c] = False
                 self.alive_set.discard((r, c))
                 has_structural = True
             elif op == 'R':
                 r, c = entry[1], entry[2]
-                self.mask[r, c] = np.int8(1)
+                self.mask[r, c] = True
                 self.alive_set.add((r, c))
                 has_structural = True
             elif op == 'W':
                 _, r, c_old, c_new = entry
-                self.mask[r, c_new] = np.int8(0)
-                self.mask[r, c_old] = np.int8(1)
+                self.mask[r, c_new] = False
+                self.mask[r, c_old] = True
                 self.alive_set.discard((r, c_new))
                 self.alive_set.add((r, c_old))
                 has_structural = True
@@ -884,7 +890,7 @@ class SelfWiringGraph:
             return
 
         if r != c and self.mask[r, c] == 0:
-            self.mask[r, c] = np.int8(1)
+            self.mask[r, c] = True
             self.alive.append((r, c))
             self.alive_set.add((r, c))
             undo.append(('A', r, c))
@@ -897,8 +903,8 @@ class SelfWiringGraph:
         if self.alive:
             idx = random.randint(0, len(self.alive)-1)
             r, c = self.alive[idx]
-            old_val = int(self.mask[r, c])
-            self.mask[r, c] = np.int8(0)
+            old_val = bool(self.mask[r, c])
+            self.mask[r, c] = False
             self.alive[idx] = self.alive[-1]
             self.alive.pop()
             self.alive_set.discard((r, c))
@@ -910,8 +916,8 @@ class SelfWiringGraph:
             r, c = self.alive[idx]
             nc = random.randint(0, self.H-1)
             if nc != r and nc != c and self.mask[r, nc] == 0:
-                self.mask[r, c] = np.int8(0)
-                self.mask[r, nc] = np.int8(1)
+                self.mask[r, c] = False
+                self.mask[r, nc] = True
                 self.alive[idx] = (r, nc)
                 self.alive_set.discard((r, c))
                 self.alive_set.add((r, nc))
@@ -958,7 +964,7 @@ class SelfWiringGraph:
             edges.append((r, c))
         # Commit all edges atomically
         for r, c in edges:
-            self.mask[r, c] = np.int8(1)
+            self.mask[r, c] = True
             self.alive.append((r, c))
             self.alive_set.add((r, c))
             undo.append(('A', r, c))
@@ -995,7 +1001,7 @@ class SelfWiringGraph:
                 if self.mask[r, c] == 0:
                     continue
                 old_val = self.mask[r, c]
-                self.mask[r, c] = np.int8(0)
+                self.mask[r, c] = False
                 self.alive_set.discard((r, c))
                 new_score = evaluate_fn()
                 if new_score >= score - eps:
