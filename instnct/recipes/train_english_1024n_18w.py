@@ -297,9 +297,25 @@ if __name__ == "__main__":
                 edges = net.count_connections()
                 sps = step / elapsed
 
+                # Neuron distribution stats
+                inh_count = int(np.sum(polarity_f32 < 0))
+                exc_count = H - inh_count
+                rho_nz = int(np.sum(ref.rho > 0.01))
+                rho_max = float(ref.rho.max())
+                freq_m = float(ref.freq.mean())
+                freq_std = float(ref.freq.std())
+                theta_min = float(net.theta.min())
+                theta_max = float(net.theta.max())
+                decay_min = float(net.decay.min())
+                decay_max = float(net.decay.max())
+
                 line = (f"[{step:5d}] eval={ea*100:.1f}% edges={edges} "
                         f"[A={add_acc}|F={flip_acc}|T={theta_acc}|D={decay_acc}] "
-                        f"theta={net.theta.mean():.4f} decay={net.decay.mean():.4f} "
+                        f"theta={net.theta.mean():.4f}[{theta_min:.3f},{theta_max:.3f}] "
+                        f"decay={net.decay.mean():.4f}[{decay_min:.3f},{decay_max:.3f}] "
+                        f"rho_nz={rho_nz} rho_max={rho_max:.4f} "
+                        f"freq={freq_m:.4f}±{freq_std:.4f} "
+                        f"inh={inh_count}/exc={exc_count} "
                         f"{elapsed:.0f}s ({sps:.2f} step/s)")
                 print(f"  {line}")
                 with open(LOG, "a") as f:
@@ -309,7 +325,12 @@ if __name__ == "__main__":
                     'step': step, 'eval': round(ea * 100, 2), 'edges': edges,
                     'A': add_acc, 'F': flip_acc, 'T': theta_acc, 'D': decay_acc,
                     'theta_m': round(float(net.theta.mean()), 4),
+                    'theta_min': round(theta_min, 4), 'theta_max': round(theta_max, 4),
                     'decay_m': round(float(net.decay.mean()), 4),
+                    'decay_min': round(decay_min, 4), 'decay_max': round(decay_max, 4),
+                    'rho_nz': rho_nz, 'rho_max': round(rho_max, 4),
+                    'freq_m': round(freq_m, 4), 'freq_std': round(freq_std, 4),
+                    'inh': inh_count, 'exc': exc_count,
                     'sps': round(sps, 2), 'time': int(elapsed)
                 })
                 with open(JSON_LOG, 'w') as f:
