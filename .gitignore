@@ -88,3 +88,7 @@ proofread_connections_783.feather
 proofread_root_ids_783.npy
 instnct/checkpoints/*.npz
 instnct/checkpoints/*.npz.json
+
+# Training data
+instnct/data/*.txt
+instnct/data/*.npy
