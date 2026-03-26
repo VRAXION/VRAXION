@@ -1,0 +1,18 @@
+# Training run artifacts
+recipes/data/
+recipes/*.log
+recipes/*.txt
+recipes/*_live_data.json
+recipes/*_results.json
+checkpoints/
+logs/
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Generated data files
+*.npy
+*.npz
+*.traindat
