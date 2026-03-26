@@ -32,7 +32,7 @@ If a setting or training recipe is not in the canonical code path, do **not** de
 
 ## Documentation Governance
 
-Repo-tracked docs are the **canonical public source**. The GitHub wiki is a mirrored secondary surface, not an independent source of truth.
+Repo-tracked docs are the **canonical public source**. The GitHub wiki checkout at `VRAXION.wiki/` is mirror output only, not an independent source of truth.
 
 When public-facing docs change:
 

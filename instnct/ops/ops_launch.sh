@@ -18,4 +18,4 @@ done
 
 echo ""
 echo "Starting training from pruned checkpoint..."
-python recipes/english_1024n_18w.py
+python recipes/train_english_1024n_18w.py

@@ -35,7 +35,7 @@ WIKI_RESONATOR_SRC = WIKI_SOURCE_DIR / "Resonator-Theory.md"
 WIKI_GOVERNANCE_SRC = WIKI_SOURCE_DIR / "Governance.md"
 WIKI_SIDEBAR_SRC = WIKI_SOURCE_DIR / "_Sidebar.md"
 WIKI_FOOTER_SRC = WIKI_SOURCE_DIR / "_Footer.md"
-ENGLISH_RECIPE = ROOT / "instnct" / "recipes" / "english_1024n_18w.py"
+ENGLISH_RECIPE = ROOT / "instnct" / "recipes" / "train_english_1024n_18w.py"
 HOME_ANATOMY_FILE = ROOT / "docs" / "assets" / "instnct-at-a-glance-core.png"
 HOME_ANATOMY_SOURCE_FILE = ROOT / "docs" / "assets" / "source" / "wiki-home-graphics.drawio"
 HOME_MISSION_ILLUSTRATION_FILE = ROOT / "docs" / "assets" / "long-horizon-mission.jpg"
@@ -158,8 +158,12 @@ STALE_NEXT_TARGET_PHRASE = "18-worker swarm"
 CURRENT_NEXT_TARGET_PHRASE = "context-dependent task learning"
 DIAMOND_ARCHIVE_BRANCH = "archive/diamond-code-era-20260322"
 SURFACE_FREEZE_BRANCH = "archive/instnct-surface-freeze-20260322"
-EXPECTED_ACTIVE_RECIPES = {"english_1024n_18w.py", "train_wordpairs_ll.py"}
-EXPECTED_ACTIVE_PROBES = {"generate_text.py"}
+EXPECTED_ACTIVE_RECIPES = {
+    "train_english_1024n_18w.py",
+    "train_english_c19_truth_probe.py",
+    "train_wordpairs_loglik.py",
+}
+EXPECTED_ACTIVE_PROBES = {"probe_generate_text.py"}
 BANNED_TRACKED_GLOBS = [
     "instnct/sweeps/**",
     "instnct/tests/archive/**",
@@ -487,10 +491,10 @@ def check_recipe_candidate_sync(errors: list[str]) -> None:
     header_phrase = "Schedule: triangle-derived 2 add / 1 flip / 5 decay (8-step fixed approximation)"
 
     if schedule != ['add', 'add', 'flip', 'decay', 'decay', 'decay', 'decay', 'decay']:
-        fail(f"english_1024n_18w.py: unexpected current candidate schedule {schedule_counts}", errors)
+        fail(f"train_english_1024n_18w.py: unexpected current candidate schedule {schedule_counts}", errors)
 
     if header_phrase not in recipe_text:
-        fail("english_1024n_18w.py: header schedule description is not aligned to the current SCHEDULE", errors)
+        fail("train_english_1024n_18w.py: header schedule description is not aligned to the current SCHEDULE", errors)
 
     current_candidate_surfaces = [README, V42_README, FINDINGS, WIKI_HOME_SRC, WIKI_SWG_SRC, WIKI_FINDINGS_SRC, WIKI_RELEASE_NOTES_SRC]
     for path in current_candidate_surfaces:

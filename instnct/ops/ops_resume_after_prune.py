@@ -22,7 +22,7 @@ print(f"Schedule: [A,A,T,A,A,D,A,R] (with remove!)")
 print(f"Eval: 10 seqs per checkpoint")
 sys.stdout.flush()
 
-train_script = ROOT / "recipes" / "english_1024n_18w.py"
+train_script = ROOT / "recipes" / "train_english_1024n_18w.py"
 result = subprocess.run([sys.executable, train_script],
                        cwd=ROOT, timeout=None)
 print(f"\nTraining finished with exit code {result.returncode}")

@@ -11,9 +11,9 @@ This directory contains the active architecture line behind VRAXION.
 ## Current Mainline
 
 - Canonical reference: [`model/graph.py`](model/graph.py)
-- Scaling/parity path: [`model/graph_v3.c`](model/graph_v3.c)
-- Current first-class public recipe on `main`: [`recipes/english_1024n_18w.py`](recipes/english_1024n_18w.py) (`8` ticks, triangle-derived `2 add / 1 flip / 5 decay`)
-- Secondary validation recipe on `main`: [`recipes/train_wordpairs_ll.py`](recipes/train_wordpairs_ll.py) (task-memory eval lane, not an equal front-door default)
+- Legacy compiled parity artifact: `model/graph_v3.exe` (Windows-only, not the canonical Python reference)
+- Current first-class public recipe on `main`: [`recipes/train_english_1024n_18w.py`](recipes/train_english_1024n_18w.py) (`8` ticks, triangle-derived `2 add / 1 flip / 5 decay`)
+- Secondary validation recipe on `main`: [`recipes/train_wordpairs_loglik.py`](recipes/train_wordpairs_loglik.py) (task-memory eval lane, not an equal front-door default)
 - Core behavior:
   - fixed random passive I/O projections
   - signed hidden-to-hidden edge mask
@@ -53,6 +53,7 @@ Bulky raw experiment dumps, archived sweeps, and retired exploratory probes are 
 
 - [`model/graph.py`](model/graph.py) — canonical Python reference
 - [`recipes/train_english_1024n_18w.py`](recipes/train_english_1024n_18w.py) — canonical public English lane
+- [`recipes/train_english_c19_truth_probe.py`](recipes/train_english_c19_truth_probe.py) — temporary side proof for C19 `rho` bake decisions
 - [`recipes/train_wordpairs_loglik.py`](recipes/train_wordpairs_loglik.py) — secondary task-memory validation lane
 - [`probes/probe_generate_text.py`](probes/probe_generate_text.py) — canonical inference/probe tool
 - [`tests/test_model.py`](tests/test_model.py) — adversarial stress test

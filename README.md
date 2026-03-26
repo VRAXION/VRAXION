@@ -59,7 +59,7 @@ Retired line names and older local folders belong in [Project Timeline](https://
 
 - The live canonical path is [`instnct/model/graph.py`](instnct/model/graph.py).
 - The stable reference is the NumPy self-wiring graph with passive I/O, a signed hidden edge mask, co-evolved per-neuron `theta` / `decay`, and nonnegative charge dynamics.
-- The current English recipe candidate on `main` is [`instnct/recipes/english_1024n_18w.py`](instnct/recipes/english_1024n_18w.py); it currently uses an `8`-tick triangle-derived `2 add / 1 flip / 5 decay` schedule, but it is still a candidate training script, not the canonical architecture default.
+- The current English recipe candidate on `main` is [`instnct/recipes/train_english_1024n_18w.py`](instnct/recipes/train_english_1024n_18w.py); it currently uses an `8`-tick triangle-derived `2 add / 1 flip / 5 decay` schedule, but it is still a candidate training script, not the canonical architecture default.
 - English is the only first-class public lane on `main`; task-memory and GPU remain secondary validation surfaces rather than equal front-door lanes.
 - Recent English sweeps around low-theta training and signal scaling are **not** described here as baked defaults until they land in that code path.
 
@@ -115,8 +115,8 @@ These commands verify:
 ## License
 
 - Noncommercial: [LICENSE](LICENSE)
-- Commercial terms: [COMMERCIAL_LICENSE.md](COMMERCIAL_LICENSE.md)
-- Brand and trademark notice: [TRADEMARKS.md](TRADEMARKS.md)
+- Commercial terms: [legal/LEGAL.md](legal/LEGAL.md)
+- Brand and trademark notice: [legal/LEGAL.md](legal/LEGAL.md)
 - Citation: [CITATION.cff](CITATION.cff)
 
-The software license does not grant rights to use the **VRAXION** or **INSTNCT** names, logos, or brand assets except as described in [TRADEMARKS.md](TRADEMARKS.md).
+The software license does not grant rights to use the **VRAXION** or **INSTNCT** names, logos, or brand assets except as described in [legal/LEGAL.md](legal/LEGAL.md).

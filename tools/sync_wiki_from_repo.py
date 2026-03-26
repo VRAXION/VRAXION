@@ -17,6 +17,7 @@ FILES = [
     "INSTNCT-Architecture.md",
     "Validated-Findings.md",
     "Engineering.md",
+    "Resonator-Theory.md",
     "_Sidebar.md",
     "_Footer.md",
 ]

@@ -73,8 +73,8 @@ This is an ambition and a research direction, not a claim of achieved sentience.
 - Internal code path: [`instnct/`](https://github.com/VRAXION/VRAXION/tree/main/instnct) (repo path, not the public release label)
 - Canonical code path: [`instnct/model/graph.py`](https://github.com/VRAXION/VRAXION/blob/main/instnct/model/graph.py)
 - Architecture line: `INSTNCT`
-- Current first-class public recipe on `main`: [`instnct/recipes/english_1024n_18w.py`](https://github.com/VRAXION/VRAXION/blob/main/instnct/recipes/english_1024n_18w.py) (`8` ticks, triangle-derived `2 add / 1 flip / 5 decay`)
-- Current secondary validation recipe on `main`: [`instnct/recipes/train_wordpairs_ll.py`](https://github.com/VRAXION/VRAXION/blob/main/instnct/recipes/train_wordpairs_ll.py)
+- Current first-class public recipe on `main`: [`instnct/recipes/train_english_1024n_18w.py`](https://github.com/VRAXION/VRAXION/blob/main/instnct/recipes/train_english_1024n_18w.py) (`8` ticks, triangle-derived `2 add / 1 flip / 5 decay`)
+- Current secondary validation recipe on `main`: [`instnct/recipes/train_wordpairs_loglik.py`](https://github.com/VRAXION/VRAXION/blob/main/instnct/recipes/train_wordpairs_loglik.py)
 - Canonical public evidence summary: [Validated Findings](Validated-Findings)
 - Mainline implementation includes per-neuron `theta` / `decay` and nonnegative charge dynamics.
 
