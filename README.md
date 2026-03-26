@@ -4,9 +4,9 @@ VRAXION is building **INSTNCT**: a gradient-free self-wiring architecture that l
 
 > **Core thesis**
 >
-> **Through destructive topological interference, signal resolves into inference.**
+> **Inference emerges as the fixed point of destructive interference.**
 >
-> This is the current theoretical framing for the active line on `main`: signal enters a structured recurrent substrate, incompatible propagation paths cancel, and the surviving pattern is read out as inference. It is a research thesis for the architecture line, not a separate claim of achieved sentience.
+> Signal enters a structured recurrent substrate, incompatible propagation paths cancel through destructive interference, and the surviving pattern — the fixed point — is read out as inference. This is a research thesis for the architecture line, not a separate claim of achieved sentience.
 
 This repository is meant to be a credible front door for technical buyers and engineers. It should let a first-time reader answer five things quickly:
 

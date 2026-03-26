@@ -12,9 +12,9 @@ VRAXION is building **INSTNCT**: a gradient-free self-wiring architecture that l
 
 > **Core thesis**
 >
-> **Through destructive topological interference, signal resolves into inference.**
+> **Inference emerges as the fixed point of destructive interference.**
 >
-> In current INSTNCT terms, signal enters through fixed projections, propagates through a structured recurrent substrate, and competing paths are suppressed until a surviving pattern is read out as inference. This is the active theoretical framing for the architecture line, not a claim that every sub-part of the thesis has already been promoted into shipped defaults.
+> Signal enters through fixed projections, propagates through a structured recurrent substrate, and competing paths are suppressed through destructive interference until a surviving pattern — the fixed point — is read out as inference. This is the active theoretical framing for the architecture line, not a claim that every sub-part of the thesis has already been promoted into shipped defaults.
 
 This page explains the active technical line in plain terms: what the system is, what is actually shipped on `main`, and what makes the current architecture different from a fixed-topology model.
 
@@ -37,6 +37,19 @@ Most neural systems learn by adjusting lots of weights inside a fixed topology. 
 Input enters through fixed random projections, moves through a self-wiring hidden graph with a signed sparse edge mask, and is read out through another fixed projection. The graph changes by mutation + selection, while neurons keep charge/state across ticks. In short: the model learns structure and state dynamics, not just layer weights.
 
 Under the current thesis, that structure is not just storage. It acts as a filter on propagation. Incompatible paths cancel, compatible paths persist, and inference is read out from what survives.
+
+## Computational Theory
+
+INSTNCT is built on the **Resonator Chamber hypothesis**: the network acts as a wave-interference medium. Input signals enter through fixed projections, propagate as spike waves through the hidden graph, and destructive interference eliminates most paths. What survives at readout is the computation — the fixed point of the interference process.
+
+Key empirical findings (validated against the FlyWire fly brain connectome, 139K neurons):
+
+- **10% hub-inhibitors** with 2× fan-out is the optimal inhibitory architecture — not 40% uniform
+- **Binary weights are sufficient** — topology determines computation, not edge precision
+- **Optimal ticks ≈ network diameter** — signal needs exactly one full traversal
+- **Diameter scales as log₂(N)** — 86B neurons needs only ~43 ticks
+
+For the full technical treatment with toy model validation and biology cross-checks: [`instnct/RESONATOR_THEORY.md`](https://github.com/VRAXION/VRAXION/blob/main/instnct/RESONATOR_THEORY.md). For the public summary: [Resonator Theory](Resonator-Theory).
 
 ## Architecture In One Screen
 
@@ -64,7 +77,7 @@ Mutation-selection loop at a glance:
 | Canonical code path | [`instnct/model/graph.py`](https://github.com/VRAXION/VRAXION/blob/main/instnct/model/graph.py) |
 | Current first-class public recipe on `main` | [`instnct/recipes/english_1024n_18w.py`](https://github.com/VRAXION/VRAXION/blob/main/instnct/recipes/english_1024n_18w.py) (`8` ticks, triangle-derived `2 add / 1 flip / 5 decay`) |
 | Current secondary validation recipe on `main` | [`instnct/recipes/train_wordpairs_ll.py`](https://github.com/VRAXION/VRAXION/blob/main/instnct/recipes/train_wordpairs_ll.py) |
-| Shipped defaults on `main` | `DEFAULT_THETA = 0.1`, `DEFAULT_PROJECTION_SCALE = 3.0`, `DEFAULT_EDGE_MAGNITUDE = 1.0` |
+| Shipped defaults on `main` | `DEFAULT_THETA = 15.0`, `DEFAULT_PROJECTION_SCALE = 3.0`, `DEFAULT_EDGE_MAGNITUDE = 1.0` |
 | Mainline runtime behavior | per-neuron `theta` / `decay` and nonnegative charge dynamics |
 
 ## What Is Fixed vs Learnable

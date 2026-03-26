@@ -5,16 +5,16 @@
 <p align="center">
   <img src="https://raw.githubusercontent.com/VRAXION/VRAXION/main/docs/assets/vraxion-home-hero.jpg" alt="VRAXION front-door illustration" width="740">
   <br>
-  <em>The engineering of the \"I\"</em>
+  <em>The engineering of the "I"</em>
 </p>
 
 VRAXION is building **INSTNCT**: a gradient-free self-wiring architecture that learns by changing its own directed graph instead of running backpropagation through a fixed topology.
 
 > **Core thesis**
 >
-> **Through destructive topological interference, signal resolves into inference.**
+> **Inference emerges as the fixed point of destructive interference.**
 >
-> This is the current theoretical framing for the active line on `main`: signal enters a structured recurrent substrate, incompatible propagation paths cancel, and the surviving pattern is read out as inference. It generalizes the older loop-era slogan without claiming that every result on `main` has already proved the full thesis.
+> Signal enters a structured recurrent substrate, incompatible propagation paths cancel through destructive interference, and the surviving pattern — the fixed point — is read out as inference. This generalizes the older loop-era framing without claiming that every result on `main` has already proved the full thesis.
 
 This is the lean technical reference for the public stack. Use [Pages](https://vraxion.github.io/VRAXION/) for the polished front door, the repo [README.md](https://github.com/VRAXION/VRAXION/blob/main/README.md) for the code-facing front door, and this page for the fastest orientation to what is current. Repo-tracked docs are canonical and this wiki is their mirrored secondary surface.
 
@@ -119,6 +119,7 @@ python tools/check_public_surface.py
 ## Start Here
 
 - [INSTNCT Architecture](INSTNCT-Architecture) — architecture line and public status
+- [Resonator Theory](Resonator-Theory) — computational theory and FlyWire validation
 - [Project Timeline](Release-Notes) — current snapshot, major turns, retirements, and key terms
 - [`README.md`](https://github.com/VRAXION/VRAXION/blob/main/README.md) — repo front door
 - [Validated Findings](Validated-Findings) — canonical evidence summary
