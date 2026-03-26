@@ -131,9 +131,6 @@ class SelfWiringGraph:
         self.phase = init_rand(self.H).astype(np.float32) * 2.0 * np.pi
         self.rho = np.full(self.H, self.DEFAULT_RHO, dtype=np.float32)
 
-        # C19 Learnable rho: per-neuron wave modulation depth [0, 1]
-        self.rho = np.full(self.H, self.DEFAULT_RHO, dtype=np.float32)
-
     @staticmethod
     def _density_to_fraction(density):
         density = float(density)
@@ -508,10 +505,6 @@ class SelfWiringGraph:
     def count_connections(self):
         return len(self.alive)
 
-    def pos_neg_ratio(self):
-        """Return (pos, neg) edge counts. Binary mask: all edges are positive."""
-        return len(self.alive), 0
-
     # --- State management ---
 
     def save_state(self):
@@ -754,10 +747,7 @@ class SelfWiringGraph:
         has_structural = False
         for entry in reversed(log):
             op = entry[0]
-            if op == 'F':
-                # Legacy ternary flip: no-op for binary (flip was redirected to rewire)
-                pass
-            elif op == 'A':
+            if op == 'A':
                 r, c = entry[1], entry[2]
                 self.mask[r, c] = np.int8(0)
                 self.alive_set.discard((r, c))
