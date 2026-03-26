@@ -86,3 +86,5 @@ instnct/test_thresh0.py
 Diamond Code/
 proofread_connections_783.feather
 proofread_root_ids_783.npy
+instnct/checkpoints/*.npz
+instnct/checkpoints/*.npz.json
