@@ -73,11 +73,11 @@ def test_edge_magnitude_1_0_vs_0_6():
         acc_10 = run_evo(1.0, seed)
         results_06.append(acc_06)
         results_10.append(acc_10)
-        print(f"  trial {trial+1}: em=0.6 → {acc_06*100:.1f}%  |  em=1.0 → {acc_10*100:.1f}%")
+        print(f"  trial {trial+1}: em=0.6 -> {acc_06*100:.1f}%  |  em=1.0 -> {acc_10*100:.1f}%")
 
     mean_06 = np.mean(results_06)
     mean_10 = np.mean(results_10)
-    print(f"\n  MEAN: em=0.6 → {mean_06*100:.1f}%  |  em=1.0 → {mean_10*100:.1f}%")
+    print(f"\n  MEAN: em=0.6 -> {mean_06*100:.1f}%  |  em=1.0 -> {mean_10*100:.1f}%")
     print(f"  delta: {(mean_10 - mean_06)*100:+.1f}%")
 
     # 1.0 should not be materially worse (allow 2% tolerance)
@@ -88,7 +88,7 @@ def test_edge_magnitude_1_0_vs_0_6():
 
 
 def test_breed_no_boost():
-    """Verify breed produces strict ternary {-1, 0, +1} mask (no boost)."""
+    """Verify breed produces binary {0, 1} mask (union of parents, no boost)."""
     np.random.seed(42)
     a = SelfWiringGraph(VOCAB, hidden_ratio=HIDDEN_RATIO, seed=10)
     b = SelfWiringGraph(VOCAB, hidden_ratio=HIDDEN_RATIO, seed=10)
@@ -98,10 +98,10 @@ def test_breed_no_boost():
 
     child = SelfWiringGraph.breed(a, b, seed=99)
     unique_vals = set(np.unique(child.mask).tolist())
-    assert unique_vals.issubset({-1, 0, 1}), (
-        f"breed mask should only contain {{-1, 0, 1}}, got {unique_vals}"
+    assert unique_vals.issubset({0, 1}), (
+        f"breed mask should only contain {{0, 1}}, got {unique_vals}"
     )
-    print(f"  breed mask unique values: {sorted(unique_vals)} ✓")
+    print(f"  breed mask unique values: {sorted(unique_vals)} OK")
 
 
 if __name__ == "__main__":
