@@ -119,8 +119,8 @@ if __name__ == "__main__":
                  [eval_rng.randint(0, len(ALL_DATA)-200) for _ in range(10)]]
     random.seed(42); np.random.seed(42)
     ref = SelfWiringGraph(IO, hidden_ratio=NV)
-    W_in = ref.W_in / ref.INJ_SCALE * 1.0
-    W_out = ref.W_out / ref.INJ_SCALE * 1.0
+    W_in = ref.input_projection / ref.projection_scale * 1.0
+    W_out = ref.output_projection / ref.projection_scale * 1.0
     inj_table = np.clip(bp @ W_in * 128, -128, 127).astype(np.int8)
     W_out_int8 = np.clip(W_out * 128, -128, 127).astype(np.int8)
     W_out_f = W_out_int8.astype(np.float32) / 128.0
