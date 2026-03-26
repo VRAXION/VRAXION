@@ -9,7 +9,7 @@ Repo-tracked docs are canonical. The GitHub wiki is treated as a mirrored second
 ## What Matters Most Right Now
 
 - **Current mainline:** [`instnct/model/graph.py`](instnct/model/graph.py) ships per-neuron `theta`, `decay`, `polarity`, `freq`, `phase`, `rho` with nonnegative charge dynamics, C19 Soft-Wave gating, Dale's Law inhibitory fraction, and refractory period — all active in both the single-token and batch forward paths.
-- **Current recipe candidate on `main`:** [`instnct/recipes/english_1024n_18w.py`](instnct/recipes/english_1024n_18w.py) uses `8` ticks with a triangle-derived `2 add / 1 flip / 5 decay` schedule.
+- **Current recipe candidate on `main`:** [`instnct/recipes/train_english_1024n_18w.py`](instnct/recipes/train_english_1024n_18w.py) uses `8` ticks with a triangle-derived `2 add / 1 flip / 5 decay` schedule.
 - **Strongest schedule result so far:** voltage medium leak reached `22.11%` peak / `21.46%` plateau.
 - **Best compact learnable control policy so far:** the 3-angle decision-tree schedule reached `20.05%` at `156` edges.
 - **Best edge-representation quality result so far:** sign+mag + magnitude resample reached `18.69%` at `155` edges (`q=0.121`), but it is not promoted into the current recipe candidate or `graph.py` defaults.
@@ -43,9 +43,9 @@ Current mainline defaults in that file:
 
 Anything that differs from those settings should be described as a **Validated finding** or **Experimental branch**, not as the live default.
 
-The current English recipe candidate on `main` is [`instnct/recipes/english_1024n_18w.py`](instnct/recipes/english_1024n_18w.py). It currently uses the triangle-derived `2 add / 1 flip / 5 decay` schedule with the binary edge mask. It is useful evidence, but it is not the canonical architecture default.
+The current English recipe candidate on `main` is [`instnct/recipes/train_english_1024n_18w.py`](instnct/recipes/train_english_1024n_18w.py). It currently uses the triangle-derived `2 add / 1 flip / 5 decay` schedule with the binary edge mask. It is useful evidence, but it is not the canonical architecture default.
 
-The current secondary validation recipe on `main` is [`instnct/recipes/train_wordpairs_ll.py`](instnct/recipes/train_wordpairs_ll.py). It remains important for task-memory evaluation, but it is not a second front-door default.
+The current secondary validation recipe on `main` is [`instnct/recipes/train_wordpairs_loglik.py`](instnct/recipes/train_wordpairs_loglik.py). It remains important for task-memory evaluation, but it is not a second front-door default.
 
 ## Evidence Table
 
