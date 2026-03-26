@@ -8,8 +8,8 @@ Repo-tracked docs are canonical. The GitHub wiki is treated as a mirrored second
 
 ## What Matters Most Right Now
 
-- **Current mainline:** [`instnct/model/graph.py`](instnct/model/graph.py) now ships explicit per-instance defaults `DEFAULT_THETA = 15.0`, `DEFAULT_PROJECTION_SCALE = 3.0`, `DEFAULT_EDGE_MAGNITUDE = 1.0`, plus co-evolved per-neuron `theta` / `decay` and nonnegative charge dynamics.
-- **Current recipe candidate on `main`:** [`instnct/recipes/english_1024n_18w.py`](instnct/recipes/english_1024n_18w.py) now uses `8` ticks with a triangle-derived `2 add / 1 flip / 5 decay` schedule; it still uses the existing float signed edge mask.
+- **Current mainline:** [`instnct/model/graph.py`](instnct/model/graph.py) ships per-neuron `theta`, `decay`, `polarity`, `freq`, `phase`, `rho` with nonnegative charge dynamics, C19 Soft-Wave gating, Dale's Law inhibitory fraction, and refractory period — all active in both the single-token and batch forward paths.
+- **Current recipe candidate on `main`:** [`instnct/recipes/english_1024n_18w.py`](instnct/recipes/english_1024n_18w.py) uses `8` ticks with a triangle-derived `2 add / 1 flip / 5 decay` schedule.
 - **Strongest schedule result so far:** voltage medium leak reached `22.11%` peak / `21.46%` plateau.
 - **Best compact learnable control policy so far:** the 3-angle decision-tree schedule reached `20.05%` at `156` edges.
 - **Best edge-representation quality result so far:** sign+mag + magnitude resample reached `18.69%` at `155` edges (`q=0.121`), but it is not promoted into the current recipe candidate or `graph.py` defaults.
@@ -33,16 +33,19 @@ Current mainline defaults in that file:
 - `DEFAULT_THETA = 15.0`
 - `DEFAULT_PROJECTION_SCALE = 3.0`
 - `DEFAULT_EDGE_MAGNITUDE = 1.0`
-- per-neuron `theta` and `decay` are part of the mainline implementation
+- `DEFAULT_DECAY = 1.0`
+- `DEFAULT_RHO = 0.3` (C19 Soft-Wave modulation depth)
+- `DEFAULT_INHIBITORY_FRACTION = 0.20` (Dale's Law)
+- per-neuron `theta`, `decay`, `polarity`, `freq`, `phase`, `rho` — all co-evolved
 - charge uses nonnegative ReLU-style dynamics in the forward pass
+- C19 Soft-Wave gating active on spike decision in both forward paths
+- refractory period enforced in both `rollout_token()` and `rollout_token_batch()`
 
 Anything that differs from those settings should be described as a **Validated finding** or **Experimental branch**, not as the live default.
 
-The current English recipe candidate on `main` is [`instnct/recipes/english_1024n_18w.py`](instnct/recipes/english_1024n_18w.py). It currently uses the triangle-derived `2 add / 1 flip / 5 decay` schedule with the older float signed edge mask. It is useful evidence, but it is not the canonical architecture default.
+The current English recipe candidate on `main` is [`instnct/recipes/english_1024n_18w.py`](instnct/recipes/english_1024n_18w.py). It currently uses the triangle-derived `2 add / 1 flip / 5 decay` schedule with the binary edge mask. It is useful evidence, but it is not the canonical architecture default.
 
 The current secondary validation recipe on `main` is [`instnct/recipes/train_wordpairs_ll.py`](instnct/recipes/train_wordpairs_ll.py). It remains important for task-memory evaluation, but it is not a second front-door default.
-
-Raw experiment dumps, retired sweeps, and archived exploratory probes now live on `archive/instnct-surface-freeze-20260322`, not on active `main`.
 
 ## Evidence Table
 
@@ -63,6 +66,11 @@ Raw experiment dumps, retired sweeps, and archived exploratory probes now live o
 | Binary weight sufficiency — FlyWire validation ([bd90845](https://github.com/VRAXION/VRAXION/commit/bd90845)) | Validated finding | Binary edges match float at all tested scales; topology determines computation, not edge precision | Consistent with existing Binary Mask finding |
 | Tick = diameter rule ([65f07be](https://github.com/VRAXION/VRAXION/commit/65f07be)) | Validated finding | Optimal ticks ≈ 1.0x network diameter; too few = trivial, too many = dead network. Diameter scales as log₂(N). | Current recipe uses 8 ticks (near-optimal for H=1024) |
 | Context-dependent task learning ([48f2657](https://github.com/VRAXION/VRAXION/commit/48f26579fe882f5ae9e5eab4bbe1264963b4685a)) | Experimental branch | Current next build target: input-window injection, word-pair memory, and stronger evaluation for nontrivial tasks | Not part of the canonical mainline yet |
+| Dale's Law neuron polarity ([03b5952](https://github.com/VRAXION/VRAXION/commit/03b5952)) | Current mainline | 20% inhibitory neurons with fixed polarity (`-1`) achieved `+6.2%` accuracy win; matches the FlyWire-validated 10–20% I-neuron ratio | Promoted into `graph.py` — `polarity` per-neuron, `DEFAULT_INHIBITORY_FRACTION = 0.20` |
+| Refractory Period + Partial Spike Reset ([774b6c6](https://github.com/VRAXION/VRAXION/commit/774b6c6), [899d27e](https://github.com/VRAXION/VRAXION/commit/899d27e)) | Current mainline | Per-neuron refractory gating achieved `+7.5%` accuracy win; single-token and batch forward paths now both enforce it | Promoted into `graph.py` — `refractory` per-neuron, active in both forward paths |
+| Musical Spiking — Learned Freq + Phase ([cf08d58](https://github.com/VRAXION/VRAXION/commit/cf08d58)) | Current mainline | Per-neuron `freq` and `phase` co-evolved with C19 Soft-Wave gating; enables oscillatory resonance in the spike decision | Promoted into `graph.py` — `freq`, `phase` per-neuron, wired into both forward paths |
+| C19 Soft-Wave activation ([947004e](https://github.com/VRAXION/VRAXION/commit/947004e)) | Current mainline | Continuous threshold modulation via phase-recurring wave; replaces hard threshold with soft gating on spike probability | Promoted into `graph.py` spike decision path |
+| Learnable Rho — C19 modulation depth ([471dbc8](https://github.com/VRAXION/VRAXION/commit/471dbc8)) | Current mainline | Per-neuron `rho` controls C19 Soft-Wave modulation depth; `+1.6%` accuracy win over fixed rho | Promoted into `graph.py` — `rho` per-neuron, `DEFAULT_RHO = 0.3` |
 
 ## Historical Context
 
