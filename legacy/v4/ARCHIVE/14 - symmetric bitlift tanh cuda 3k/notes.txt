@@ -1,0 +1,26 @@
+Run 14 — symmetric bitlift tanh (input + output), cuda, 3390 steps
+Date: 2026-02-27
+
+Config:
+  embed_encoding: bitlift (Linear(8, 2048) + tanh)
+  output_encoding: bitlift (Linear(2048, 8) + tanh → @bit_patterns.T → 256 logits)
+  hidden_dim: 2048, slot_dim: 64, M: 1024, N: 2
+  lr: 0.001, warmup: 100, batch_size: 256, seq_len: 64
+
+Total params: 567,434
+At step 1000: masked_loss=4.217, masked_acc=10.3%
+Final (step 3390): masked_loss=4.105, masked_acc=17.8%
+
+Comparison at step 1000:
+  Symmetric bitlift (this):  10.3%   ← output bitlift is the bottleneck
+  Bitlift input only  (13):  30.2%   (3× better with learned output)
+  Learned embed        (11):  45.2%  (4.4× better)
+
+Conclusion: Output bitlift is a severe bottleneck. Linear(2048→8) + fixed
+bit_patterns decoder produces rank-8 logit vectors — insufficient for
+256-class CE loss. The model learns slowly (~18% at 3.3K steps) but
+cannot compete with learned output (45% at 1K steps).
+
+The output side needs at minimum 256 independent logit values.
+A low-rank factored head (Linear(H→r) + Linear(r→256)) with learned
+second layer is the next experiment (output rank sweep).

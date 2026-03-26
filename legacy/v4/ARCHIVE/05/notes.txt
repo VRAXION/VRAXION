@@ -1,0 +1,1 @@
+echo, hadamard I/O, slot_dim=128, LR too low (1e-4)

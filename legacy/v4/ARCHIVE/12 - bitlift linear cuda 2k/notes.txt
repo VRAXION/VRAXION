@@ -1,0 +1,29 @@
+Run 12 — bitlift linear (no activation), cuda, 2110 steps
+Date: 2026-02-27
+
+Config:
+  embed_encoding: bitlift (Linear(8, 2048), no activation)
+  output_encoding: learned
+  hidden_dim: 2048, slot_dim: 64, M: 1024, N: 2
+  lr: 0.001, warmup: 100, batch_size: 256, seq_len: 64
+  device: cuda
+
+Total params: 1,077,634 (input: 18K, output: 524K, core: 534K)
+Best loss: ~2.30
+Final (step 2110): masked_loss=2.300, masked_acc=34.5%
+
+Data: wikitext-103 (3 shards, 521 MB)
+Eval: wikitext eval split only (echo256 removed from eval_data)
+
+Comparison at step 1000:
+  Bitlift linear: masked_loss=2.493, masked_acc=29.1%
+  Learned embed:  masked_loss=1.934, masked_acc=45.2%
+  Gap: ~16% accuracy — bitlift linear is not expressive enough
+
+Checkpoints saved:
+  ckpt_step_001000.pt  (1K benchmark)
+  ckpt_step_002110.pt  (final)
+
+Context: First bitlift experiment. Linear(8→2048) without activation
+is too constrained — 8 bits map to 8-dim linear subspace of 2048-dim space.
+Next: try tanh activation, then MLP.

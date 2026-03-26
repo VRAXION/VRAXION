@@ -1,0 +1,4 @@
+# Generated training data — do not commit
+# Regenerate with: python datagen/generate.py
+*
+!.gitignore

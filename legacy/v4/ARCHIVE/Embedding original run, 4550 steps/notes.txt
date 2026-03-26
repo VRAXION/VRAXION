@@ -1,0 +1,1 @@
+echo, learned I/O, slot_dim=32, baseline
