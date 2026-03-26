@@ -15,7 +15,7 @@ This page is the single primary timeline and lookup surface for VRAXION. Use it 
 
 ## Current Snapshot
 
-- Version source of truth: [`VERSION.json`](https://github.com/VRAXION/VRAXION/blob/main/VERSION.json)
+- Version source of truth: [`docs/VERSION.json`](https://github.com/VRAXION/VRAXION/blob/main/docs/VERSION.json)
 - Current canonical public release: [`v4.2.0`](https://github.com/VRAXION/VRAXION/releases/tag/v4.2.0) (stable, published `2026-03-16`)
 - Internal code path remains [`instnct/`](https://github.com/VRAXION/VRAXION/tree/main/instnct); that repo path is not the public release label.
 - Current mainline code path: [`instnct/model/graph.py`](https://github.com/VRAXION/VRAXION/blob/main/instnct/model/graph.py)
@@ -39,7 +39,7 @@ This page is the single primary timeline and lookup surface for VRAXION. Use it 
 ### Already in place
 
 - [`v4.2.0`](https://github.com/VRAXION/VRAXION/releases/tag/v4.2.0) exists as the current latest stable GitHub release on `main`.
-- [`VERSION.json`](https://github.com/VRAXION/VRAXION/blob/main/VERSION.json) now anchors the public release identity in the repo-tracked source layer.
+- [`docs/VERSION.json`](https://github.com/VRAXION/VRAXION/blob/main/docs/VERSION.json) now anchors the public release identity in the repo-tracked source layer.
 - The README, Pages front door, and wiki Home surface now use the same explicit release framing for the current canon, the next milestone, and the internal code path.
 - CI already runs compile sanity, the reference stress test, public-surface checks, wiki mirror dry-run, and a tiny cyclic smoke test.
 - The active tracked surface is being narrowed so English remains the single first-class public lane while task-memory and GPU stay as secondary validation surfaces.

@@ -20,7 +20,7 @@ If a setting or training recipe is not in the canonical code path, do **not** de
 - `instnct/ops/`: overnight training and sweep runners
 - `docs/wiki/`: canonical source files for mirrored wiki pages
 - `VALIDATED_FINDINGS.md`: canonical evidence summary for public-facing claims
-- `VERSION.json`: public release identity source of truth
+- `docs/VERSION.json`: public release identity source of truth
 
 ## Where To Put Things
 
@@ -41,7 +41,7 @@ When public-facing docs change:
 3. Run `python tools/check_public_surface.py`
 4. Only then treat the update as stable public truth
 
-Versioning source of truth: `VERSION.json`. Citation source of truth: `CITATION.cff`.
+Versioning source of truth: `docs/VERSION.json`. Citation source of truth: `CITATION.cff`.
 
 ## Pull Request Requirements
 
