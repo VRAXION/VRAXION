@@ -210,7 +210,7 @@ def test_knob_sensitivity():
     any_effect = any(d > 1e-6 for d in results.values())
     print(f"\n  Any knob has effect: {any_effect}")
     print(f"  Status: {'PASS' if any_effect else 'FAIL'}")
-    return any_effect
+    assert any_effect
 
 
 # ---------------------------------------------------------------------------
@@ -243,7 +243,7 @@ def test_knob_linearity():
     if deltas[2] > 1e-10:
         print(f"  Ratio 10x/1x: {deltas[-1] / deltas[2]:.2f}x")
     print(f"  Status: {'PASS' if monotonic else 'WARN - non-monotonic'}")
-    return monotonic
+    assert monotonic
 
 
 # ---------------------------------------------------------------------------
@@ -287,7 +287,7 @@ def test_knob_independence():
     all_identical = all(c > 0.999 for c in cosines)
     print(f"\n  All effects identical: {all_identical}")
     print(f"  Status: {'FAIL - knobs not distinguishable' if all_identical else 'PASS'}")
-    return not all_identical
+    assert not all_identical
 
 
 # ---------------------------------------------------------------------------
@@ -317,7 +317,7 @@ def test_knob_wiring():
 
     has_wiring = kg.knob_edge_count > 0
     print(f"\n  Status: {'PASS' if has_wiring else 'FAIL - no edges from knobs'}")
-    return has_wiring
+    assert has_wiring
 
 
 # ---------------------------------------------------------------------------
@@ -365,7 +365,7 @@ def test_instant_feedback():
     print(f"  Max shift: {max_shift:.4f}")
     responsive = max_shift > 1e-4
     print(f"  Status: {'PASS' if responsive else 'FAIL - mutations have no effect'}")
-    return responsive
+    assert responsive
 
 
 # ---------------------------------------------------------------------------
@@ -405,7 +405,7 @@ def test_2d_knob_sweep():
     unique_vals = len(np.unique(grid))
     print(f"\n  Unique output tokens: {unique_vals}")
     print(f"  Status: {'PASS' if unique_vals > 1 else 'NEUTRAL - uniform output'}")
-    return unique_vals > 1
+    assert unique_vals > 1
 
 
 # ---------------------------------------------------------------------------
@@ -500,7 +500,7 @@ def test_knob_learning():
     print(f"  Outputs differ by knob: {different}")
     print(f"  At least one target hit: {learned}")
     print(f"  Status: {'PASS' if different else 'PARTIAL'}")
-    return different
+    assert different
 
 
 # ---------------------------------------------------------------------------
@@ -574,7 +574,7 @@ def test_multi_knob_learning():
     unique = len(set(results))
     print(f"\n  Unique outputs: {unique}/4")
     print(f"  Status: {'PASS' if unique >= 2 else 'FAIL'}")
-    return unique >= 2
+    assert unique >= 2
 
 
 # ---------------------------------------------------------------------------
@@ -1082,7 +1082,6 @@ def test_ab_ternary_vs_uint8():
     overall = max(means, key=means.get)
     print(f"\n  Overall winner: {overall} (score={means[overall]:+.4f})")
 
-    return overall
 
 
 # ===========================================================================

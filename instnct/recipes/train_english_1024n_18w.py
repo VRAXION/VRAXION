@@ -172,8 +172,21 @@ if __name__ == "__main__":
     ALL_DATA = load_fineweb_bytes()
     print(f"Loaded {len(ALL_DATA)/1e6:.1f} MB text")
 
-    # Load bigram table
-    bigram = np.load(os.path.join(BASE_DIR, "data", "bigram_table.npy"))
+    # Load or generate bigram table
+    bigram_path = os.path.join(BASE_DIR, "data", "bigram_table.npy")
+    if os.path.exists(bigram_path):
+        bigram = np.load(bigram_path)
+    else:
+        print("bigram_table.npy not found — generating from training data...")
+        os.makedirs(os.path.join(BASE_DIR, "data"), exist_ok=True)
+        counts = np.zeros((256, 256), dtype=np.float64)
+        for i in range(len(ALL_DATA) - 1):
+            counts[ALL_DATA[i], ALL_DATA[i + 1]] += 1
+        row_sums = counts.sum(axis=1, keepdims=True)
+        row_sums[row_sums == 0] = 1
+        bigram = (counts / row_sums).astype(np.float32)
+        np.save(bigram_path, bigram)
+        print(f"Generated and saved bigram_table.npy")
     print(f"Bigram table: {bigram.shape}")
 
     # Fixed eval sequences

@@ -5,8 +5,7 @@ import sys, os, time, random
 import numpy as np
 from multiprocessing import Pool
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "model"))
-from graph import SelfWiringGraph
+from model.graph import SelfWiringGraph
 
 _bp = None; _all_data = None; _seq_len = 200; _n_train = 2
 _W_out_f = None; _bigram = None; _inj_table = None
