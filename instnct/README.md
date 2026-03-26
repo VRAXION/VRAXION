@@ -45,6 +45,10 @@ Bulky raw experiment dumps, archived sweeps, and retired exploratory probes are 
 - The current next build target is context-dependent task learning: windowed input injection, word-pair memory, and stronger evaluation for nontrivial tasks.
 - It is an experimental direction, not the current canonical line.
 
+## Theory
+
+- [`RESONATOR_THEORY.md`](RESONATOR_THEORY.md) — Resonator Chamber hypothesis with FlyWire validation
+
 ## Recommended Entry Points
 
 - [`model/graph.py`](model/graph.py) — canonical Python reference
