@@ -279,12 +279,11 @@ class SelfWiringGraph:
 
         act = np.zeros(H, dtype=np.float32) if state is None else np.asarray(state, dtype=np.float32).copy()
         cur_charge = np.zeros(H, dtype=np.float32) if charge is None else np.asarray(charge, dtype=np.float32).copy()
-        ret = 1.0 - decay
         sparse_cache = sparse_cache or SelfWiringGraph.build_sparse_cache(mask)
         use_sparse = len(sparse_cache[0]) < H * H * 0.1
 
         for tick in range(int(ticks)):
-            # 1. FIXED SUBTRACTIVE LEAK (Int4 style)
+            # 1. DECAY
             cur_charge = np.maximum(cur_charge - decay, 0.0)
             
             # 2. INPUT
@@ -369,7 +368,6 @@ class SelfWiringGraph:
             np.zeros((batch, H), dtype=np.float32)
             if charges is None else np.asarray(charges, dtype=np.float32).copy()
         )
-        ret = 1.0 - decay
         sparse_cache = sparse_cache or SelfWiringGraph.build_sparse_cache(mask)
         use_sparse = len(sparse_cache[0]) < H * H * 0.1
         batch_refractory = np.zeros((batch, H), dtype=np.int32) if refractory is not None else None
