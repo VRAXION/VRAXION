@@ -52,13 +52,11 @@ Bulky raw experiment dumps, archived sweeps, and retired exploratory probes are 
 ## Recommended Entry Points
 
 - [`model/graph.py`](model/graph.py) — canonical Python reference
-- [`model/graph_v3.c`](model/graph_v3.c) — C scaling/parity path
-- [`recipes/english_1024n_18w.py`](recipes/english_1024n_18w.py) — canonical public English lane
-- [`recipes/train_wordpairs_ll.py`](recipes/train_wordpairs_ll.py) — secondary task-memory validation lane
-- [`probes/generate_text.py`](probes/generate_text.py) — canonical inference/probe tool
+- [`recipes/train_english_1024n_18w.py`](recipes/train_english_1024n_18w.py) — canonical public English lane
+- [`recipes/train_wordpairs_loglik.py`](recipes/train_wordpairs_loglik.py) — secondary task-memory validation lane
+- [`probes/probe_generate_text.py`](probes/probe_generate_text.py) — canonical inference/probe tool
 - [`tests/test_model.py`](tests/test_model.py) — adversarial stress test
 - [`tests/benchmark_ab.py`](tests/benchmark_ab.py) — benchmark comparison harness
-- [`tests/test_gpu_eval_smoke.py`](tests/test_gpu_eval_smoke.py) — secondary GPU validation smoke
 
 ## Local Data Placement
 

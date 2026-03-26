@@ -33,7 +33,6 @@ Results are recorded in commit messages and `RESONATOR_THEORY.md`.
 | `test_binary_vs_ternary.py` | Binary {0,1} masks viable; negative edges not critical |
 | `test_c19_vs_relu_nonlinearity.py` | C19 wave vs ReLU on XOR/parity tasks |
 | `test_edge_magnitude_ab.py` | Edge magnitude learning A/B |
-| `test_knob_conditioned.py` | Knob-conditioned training A/B |
 
 ## Running Tests
 

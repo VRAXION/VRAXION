@@ -7,7 +7,7 @@ Validated recipe candidate from the 2026-03-21 sweep session.
 Config:
   - Bigram cosine eval (2 seq per worker, 3x faster than classic)
   - Threshold: 0.00005 (from adaptive sweep convergence)
-  - Scale: 1.0 (no INJ_SCALE hack)
+  - Scale: 1.0 (projection_scale, sweep confirmed optimal)
   - Theta: 0 fix (redundant with charge ReLU, sweep confirmed)
   - Ticks: 8 (sweep: 8 > 6 > 4)
   - Injection: 2 ticks (sweep: 2 > 4 > 1 > 8, +3.26% vs tick-0-only)
@@ -153,7 +153,7 @@ if __name__ == "__main__":
     N_TRAIN_SEQS = 2    # bigram eval needs only 2 seqs (3x faster)
     N_EVAL_SEQS = 10    # classic accuracy for reporting
     THRESHOLD = 0.00005 # from adaptive sweep convergence
-    INJ_SCALE = 1.0     # no hack (sweep confirmed)
+    PROJECTION_SCALE = 1.0  # sweep confirmed optimal
     THETA_INIT = 0.0    # redundant with charge ReLU (sweep: theta=0 = theta=3)
     DECAY_INIT_LO = 0.08   # random init range (sweep: [0.08,0.24] > fix 0.15)
     DECAY_INIT_HI = 0.24
@@ -197,12 +197,12 @@ if __name__ == "__main__":
     # Build network with deterministic projections
     random.seed(42); np.random.seed(42)
     net = SelfWiringGraph(IO, hidden_ratio=NV)
-    # Override INJ_SCALE: use 1.0 instead of default 3.0
+    # projection_scale=1.0 (sweep confirmed: beats default 3.0)
     proj_rng = np.random.RandomState(42)
     # Reconstruct input_projection/output_projection at scale=1.0 using same seed as SelfWiringGraph
     # (SelfWiringGraph uses its own proj_rng, so we replicate)
     random.seed(42); np.random.seed(42)
-    ref = SelfWiringGraph(IO, hidden_ratio=NV, projection_scale=INJ_SCALE)
+    ref = SelfWiringGraph(IO, hidden_ratio=NV, projection_scale=PROJECTION_SCALE)
     input_projection = ref.input_projection  # undo 3.0, apply 1.0
     output_projection = ref.output_projection
 
@@ -216,7 +216,7 @@ if __name__ == "__main__":
     print(f"\n{'='*60}")
     print(f"  INSTNCT — English Recipe Candidate")
     print(f"  {H}n, {N_WORKERS}w, bigram {N_TRAIN_SEQS}seq, thresh={THRESHOLD}")
-    print(f"  scale={INJ_SCALE}, theta={THETA_INIT}, decay=[{DECAY_INIT_LO},{DECAY_INIT_HI}]")
+    print(f"  scale={PROJECTION_SCALE}, theta={THETA_INIT}, decay=[{DECAY_INIT_LO},{DECAY_INIT_HI}]")
     print(f"  schedule={SCHEDULE}")
     print(f"  budget={BUDGET} steps")
     print(f"{'='*60}")
@@ -230,7 +230,7 @@ if __name__ == "__main__":
     with open(LOG, "w") as f:
         f.write(f"--- START {time.strftime('%Y-%m-%d %H:%M:%S')} ---\n")
         f.write(f"INSTNCT candidate: {H}n, {N_WORKERS}w, bigram {N_TRAIN_SEQS}seq, "
-                f"thresh={THRESHOLD}, scale={INJ_SCALE}\n")
+                f"thresh={THRESHOLD}, scale={PROJECTION_SCALE}\n")
 
     add_acc = 0; flip_acc = 0; theta_acc = 0; decay_acc = 0
     accepts = 0

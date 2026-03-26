@@ -498,14 +498,12 @@ class SelfWiringGraph:
             # Legacy accessors (backward compat for external callers)
             self._sp_rows = rows
             self._sp_cols = cols
-            self._sp_vals = np.ones(len(rows), dtype=np.float32) * self.edge_magnitude
         else:
             self._sp_cache = (
                 np.empty(0, dtype=np.intp), np.empty(0, dtype=np.intp),
             )
             self._sp_rows = np.empty(0, dtype=np.intp)
             self._sp_cols = np.empty(0, dtype=np.intp)
-            self._sp_vals = np.empty(0, dtype=np.float32)
 
     def count_connections(self):
         return len(self.alive)
