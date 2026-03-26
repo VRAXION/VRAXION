@@ -372,6 +372,7 @@ class SelfWiringGraph:
         ret = 1.0 - decay
         sparse_cache = sparse_cache or SelfWiringGraph.build_sparse_cache(mask)
         use_sparse = len(sparse_cache[0]) < H * H * 0.1
+        batch_refractory = np.zeros((batch, H), dtype=np.int32) if refractory is not None else None
 
         for tick in range(int(ticks)):
             # 1. LEAK
@@ -403,7 +404,13 @@ class SelfWiringGraph:
                     1.0, SelfWiringGraph.MAX_CHARGE
                 )
             
-            fired = (cur_charges >= effective_theta)
+            if refractory is not None:
+                can_fire = (batch_refractory == 0)
+                fired = (cur_charges >= effective_theta) & can_fire
+                batch_refractory[batch_refractory > 0] -= 1
+                batch_refractory[fired] = 1
+            else:
+                fired = (cur_charges >= effective_theta)
             cur_acts = fired.astype(np.float32)
             if polarity is not None:
                 cur_acts = cur_acts * polarity
