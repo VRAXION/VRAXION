@@ -8,12 +8,13 @@ Config:
   - Bigram cosine eval (2 seq per worker, 3x faster than classic)
   - Threshold: 0.00005 (from adaptive sweep convergence)
   - Scale: 1.0 (projection_scale, sweep confirmed optimal)
-  - Theta: 0 fix (redundant with charge ReLU, sweep confirmed)
+  - Theta: 0 init (C19 additive formula: effective_theta = max(0, theta + rho*sin(t*freq+phase)))
   - Ticks: 8 (sweep: 8 > 6 > 4)
   - Injection: 2 ticks (sweep: 2 > 4 > 1 > 8, +3.26% vs tick-0-only)
   - Decay init: random [0.08, 0.24] per-neuron (23.72% peak vs 21.96% fix)
   - Schedule: triangle-derived 2 add / 1 flip / 5 decay (8-step fixed approximation)
   - Empty start (no checkpoint needed)
+  - Forward pass matches graph.py: binary spikes, polarity, C19 soft-wave, MAX_CHARGE clamp
 """
 import sys, os, time, random, json
 import numpy as np
@@ -27,11 +28,17 @@ from graph import SelfWiringGraph
 
 _bp = None; _all_data = None; _seq_len = 200; _n_train = 2
 _input_projection = None; _output_projection = None; _bigram = None
+_polarity = None   # per-neuron polarity float32 (+1 excitatory, -1 inhibitory)
+_freq_g   = None   # per-neuron oscillation frequency (Musical Gating)
+_phase_g  = None   # per-neuron oscillation phase (Musical Gating)
+_rho_g    = None   # per-neuron modulation depth (Musical Gating)
 
-def init_w(b, d, sl, nt, wi, wo, bg):
+def init_w(b, d, sl, nt, wi, wo, bg, pol, fr, ph, rh):
     global _bp, _all_data, _seq_len, _n_train, _input_projection, _output_projection, _bigram
+    global _polarity, _freq_g, _phase_g, _rho_g
     _bp, _all_data, _seq_len, _n_train = b, d, sl, nt
     _input_projection, _output_projection, _bigram = wi, wo, bg
+    _polarity, _freq_g, _phase_g, _rho_g = pol, fr, ph, rh
 
 def make_bp(io_dim, seed=12345):
     rng = np.random.RandomState(seed)
@@ -40,9 +47,10 @@ def make_bp(io_dim, seed=12345):
     return p
 
 def _eval_bigram(mask, H, theta, decay, seqs):
-    """Bigram cosine eval: compare output distribution to English bigram."""
+    """Bigram cosine eval — forward pass matches graph.py rollout_token():
+    binary spikes, polarity-signed edges, C19 soft-wave threshold, MAX_CHARGE clamp."""
     rs, cs = np.where(mask != 0)
-    sp_vals = mask[rs, cs]
+    sp_vals = mask[rs, cs] * _polarity[rs]   # signed: inhibitory sources send -1
     pat_norm = _bp / (np.linalg.norm(_bp, axis=1, keepdims=True) + 1e-8)
     ret = 1.0 - decay
     total = 0.0
@@ -58,9 +66,15 @@ def _eval_bigram(mask, H, theta, decay, seqs):
                 raw = np.zeros(H, dtype=np.float32)
                 if len(rs):
                     np.add.at(raw, cs, act[rs] * sp_vals)
-                charge += raw; charge *= ret
-                act = np.maximum(charge - theta, 0.0)
-                charge = np.maximum(charge, 0.0)
+                charge += raw
+                np.clip(charge, 0.0, 15.0, out=charge)   # MAX_CHARGE clamp
+                charge *= ret
+                # C19 soft-wave: additive threshold modulation per tick
+                wave = np.sin(np.float32(t) * _freq_g + _phase_g)
+                effective_theta = np.maximum(0.0, theta + _rho_g * wave)
+                # Binary spike + polarity output (matches rollout_token)
+                fired = charge >= effective_theta
+                act = fired.astype(np.float32) * _polarity
             state = act.copy()
             out = charge @ _output_projection
             out_n = out / (np.linalg.norm(out) + 1e-8)
@@ -119,10 +133,12 @@ def worker_eval(args):
             'new_theta': new_theta if proposal_type == 'theta' else None,
             'new_decay': new_decay if proposal_type == 'decay' else None}
 
-def eval_accuracy(mask, H, input_projection, output_projection, theta, decay, text_bytes, bp):
-    """Classic accuracy for reporting (not used in training)."""
+def eval_accuracy(mask, H, input_projection, output_projection, theta, decay,
+                  polarity, freq, phase, rho, text_bytes, bp):
+    """Classic accuracy for reporting — same forward pass as _eval_bigram."""
     pat_norm = bp / (np.linalg.norm(bp, axis=1, keepdims=True) + 1e-8)
-    rs, cs = np.where(mask != 0); sp_vals = mask[rs, cs]
+    rs, cs = np.where(mask != 0)
+    sp_vals = mask[rs, cs] * polarity[rs]
     ret = 1.0 - decay
     state = np.zeros(H, dtype=np.float32); charge = np.zeros(H, dtype=np.float32)
     correct = 0; total = 0
@@ -132,9 +148,13 @@ def eval_accuracy(mask, H, input_projection, output_projection, theta, decay, te
             if t < 2: act = act + bp[text_bytes[i]] @ input_projection
             raw = np.zeros(H, dtype=np.float32)
             if len(rs): np.add.at(raw, cs, act[rs] * sp_vals)
-            charge += raw; charge *= ret
-            act = np.maximum(charge - theta, 0.0)
-            charge = np.maximum(charge, 0.0)
+            charge += raw
+            np.clip(charge, 0.0, 15.0, out=charge)
+            charge *= ret
+            wave = np.sin(np.float32(t) * freq + phase)
+            effective_theta = np.maximum(0.0, theta + rho * wave)
+            fired = charge >= effective_theta
+            act = fired.astype(np.float32) * polarity
         state = act.copy()
         out = charge @ output_projection
         out_n = out / (np.linalg.norm(out) + 1e-8)
@@ -213,6 +233,9 @@ if __name__ == "__main__":
     net.decay[:] = decay_rng.uniform(DECAY_INIT_LO, DECAY_INIT_HI, H).astype(np.float32)
     net.state *= 0; net.charge *= 0
 
+    # Canonical biological parameters from graph.py (fixed — not mutated in this recipe)
+    polarity_f32 = ref.polarity.astype(np.float32)  # ±1 per neuron (10% inhibitory)
+
     print(f"\n{'='*60}")
     print(f"  INSTNCT — English Recipe Candidate")
     print(f"  {H}n, {N_WORKERS}w, bigram {N_TRAIN_SEQS}seq, thresh={THRESHOLD}")
@@ -238,7 +261,8 @@ if __name__ == "__main__":
     t0 = time.time()
 
     pool = Pool(N_WORKERS, initializer=init_w,
-                initargs=(bp, ALL_DATA, SEQ_LEN, N_TRAIN_SEQS, input_projection, output_projection, bigram))
+                initargs=(bp, ALL_DATA, SEQ_LEN, N_TRAIN_SEQS, input_projection, output_projection, bigram,
+                          polarity_f32, ref.freq, ref.phase, ref.rho))
     try:
         for step in range(1, BUDGET+1):
             ptype = SCHEDULE[(step - 1) % len(SCHEDULE)]
@@ -267,7 +291,8 @@ if __name__ == "__main__":
 
             if step % 50 == 0:
                 elapsed = time.time() - t0
-                ea = np.mean([eval_accuracy(net.mask, H, input_projection, output_projection, net.theta, net.decay, s, bp)
+                ea = np.mean([eval_accuracy(net.mask, H, input_projection, output_projection,
+                              net.theta, net.decay, polarity_f32, ref.freq, ref.phase, ref.rho, s, bp)
                               for s in eval_seqs])
                 edges = net.count_connections()
                 sps = step / elapsed
@@ -304,7 +329,8 @@ if __name__ == "__main__":
         print(f"  SAVED FINAL: {final_ckpt}")
 
     elapsed = time.time() - t0
-    final_ea = np.mean([eval_accuracy(net.mask, H, input_projection, output_projection, net.theta, net.decay, s, bp)
+    final_ea = np.mean([eval_accuracy(net.mask, H, input_projection, output_projection,
+                        net.theta, net.decay, polarity_f32, ref.freq, ref.phase, ref.rho, s, bp)
                         for s in eval_seqs])
     print(f"\nFINAL: eval={final_ea*100:.1f}% edges={net.count_connections()} "
           f"accepts={accepts} {elapsed:.0f}s ({BUDGET/elapsed:.2f} step/s)")
