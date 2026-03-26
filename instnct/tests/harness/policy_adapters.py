@@ -21,6 +21,8 @@ def _apply_ops(net, ops):
     for op in ops:
         if op == "add":
             net._add(undo)
+        elif op == "add_loop":
+            net._add_loop(undo)
         elif op == "remove":
             net._remove(undo)
         elif op == "rewire":
@@ -264,6 +266,36 @@ class WindowReviewStrategyAdapter(LegacyFlipOnRejectStrategyAdapter):
         return state
 
 
+class LoopPolicyAdapter(BasePolicyAdapter):
+    """Mutation policy that adds loop circuits alongside single edges.
+
+    Every step: with 50% chance does add_loop (random length 2-6),
+    otherwise falls back to the base drive behavior.
+    """
+    name = "loop"
+
+    def __init__(self, loop_prob=0.5, max_loop_len=6):
+        super().__init__()
+        self.loop_prob = loop_prob
+        self.max_loop_len = max_loop_len
+        self._state.update({"loops_proposed": 0, "single_proposed": 0})
+
+    def propose(self, net):
+        if random.random() < self.loop_prob:
+            self._state["loops_proposed"] += 1
+            _apply_ops(net, ["add_loop"])
+        else:
+            self._state["single_proposed"] += 1
+            net.mutate()
+        return None
+
+    def describe_state(self):
+        return {
+            "loops_proposed": self._state["loops_proposed"],
+            "single_proposed": self._state["single_proposed"],
+        }
+
+
 def build_policy(name: str):
     if name == "drive":
         return DrivePolicyAdapter()
@@ -277,6 +309,14 @@ def build_policy(name: str):
         return LegacyFlipOnRejectStrategyAdapter()
     if name == "darwinian":
         return DarwinianStrategyAdapter()
+    if name == "loop":
+        return LoopPolicyAdapter()
+    if name.startswith("loop_"):
+        # loop_0.3 → loop_prob=0.3, loop_0.3_8 → prob=0.3, max_len=8
+        parts = name.split("_")[1:]
+        prob = float(parts[0]) if parts else 0.5
+        ml = int(parts[1]) if len(parts) > 1 else 6
+        return LoopPolicyAdapter(loop_prob=prob, max_loop_len=ml)
     if name.startswith("window_"):
         return WindowReviewStrategyAdapter(int(name.split("_", 1)[1]))
     raise ValueError(f"Unknown mutation policy: {name}")

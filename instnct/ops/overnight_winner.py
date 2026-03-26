@@ -1,10 +1,15 @@
 """
-INSTNCT Overnight Run — all winners baked in
-==============================================
+INSTNCT Overnight Run — with loop macro-mutations
+===================================================
 sign+mag mask (free weight), int8 injection table, int8 output_projection,
 int8 retention=217, charge ReLU, theta=0, 8 ticks, dur=2,
-bigram 2seq eval, 2a/1f/5d schedule, thresh=0.00005.
-10000 steps — let it run overnight.
+bigram 2seq eval, schedule with add_loop2/add_loop3 macro-mutations,
+thresh=0.00005. 10000 steps.
+
+Loop mutations add 2-3 edges atomically forming a cycle (A->B+B->A or
+A->B+B->C+C->A) so the eval sees the full reverberating circuit benefit.
+Without this, loops only form as accidental side-effects since a partial
+loop (one edge of a 2-cycle) may not improve eval on its own.
 """
 import sys, os, time, random, json
 import numpy as np
@@ -78,6 +83,28 @@ def worker_eval(args):
             return {'delta': -1e9, 'type': 'add'}
         new_s[r, c] = rng.random() < 0.5
         new_m[r, c] = rng.randint(1, 255)
+    elif ptype == 'add_loop':
+        loop_len = rng.randint(2, 6)
+        nodes = [rng.randint(0, H-1)]
+        ok = True
+        for _ in range(loop_len - 1):
+            n = rng.randint(0, H-1)
+            if n in nodes:
+                ok = False; break
+            nodes.append(n)
+        if not ok:
+            return {'delta': -1e9, 'type': 'add_loop'}
+        edges = []
+        for i in range(loop_len):
+            r, c = nodes[i], nodes[(i + 1) % loop_len]
+            if mmag[r, c] > 0:
+                ok = False; break
+            edges.append((r, c))
+        if not ok:
+            return {'delta': -1e9, 'type': 'add_loop'}
+        for r, c in edges:
+            new_s[r, c] = rng.random() < 0.5
+            new_m[r, c] = rng.randint(1, 255)
     elif ptype == 'flip':
         rs, cs = np.where(mmag > 0)
         if len(rs) == 0: return {'delta': -1e9, 'type': 'flip'}
@@ -130,7 +157,7 @@ if __name__ == "__main__":
     N_WORKERS = 18
     BUDGET = 10000
     THRESHOLD = 0.00005
-    SCHEDULE = ['add', 'add', 'flip', 'mag_resample', 'add', 'add']
+    SCHEDULE = ['add', 'add_loop', 'flip', 'mag_resample', 'add', 'add_loop']
 
     bp = make_bp(IO)
     BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -174,7 +201,7 @@ if __name__ == "__main__":
     with open(LOG, "w") as f:
         f.write(f"--- OVERNIGHT START {time.strftime('%Y-%m-%d %H:%M:%S')} ---\n")
 
-    accepts = {'add': 0, 'flip': 0, 'mag_resample': 0}
+    accepts = {'add': 0, 'flip': 0, 'mag_resample': 0, 'add_loop': 0}
     log_data = []
     t0 = time.time()
 
@@ -184,6 +211,8 @@ if __name__ == "__main__":
         for step in range(1, BUDGET+1):
             ptype = SCHEDULE[(step-1) % len(SCHEDULE)]
             if ptype in ('flip', 'mag_resample') and (mmag > 0).sum() == 0:
+                ptype = 'add'
+            if ptype == 'add_loop' and (mmag > 0).sum() == 0:
                 ptype = 'add'
 
             args = [(msign.flatten(), mmag.flatten(), H,
@@ -206,7 +235,8 @@ if __name__ == "__main__":
                 quality = ea / max(edges, 1) * 100
 
                 line = (f"[{step:5d}] eval={ea*100:.1f}% edges={edges} q={quality:.3f}%/e "
-                        f"A={accepts['add']}|F={accepts['flip']}|M={accepts['mag_resample']} "
+                        f"A={accepts['add']}|F={accepts['flip']}|M={accepts['mag_resample']}"
+                        f"|LP={accepts['add_loop']} "
                         f"mag=[{vals.min()},{vals.max()}] {elapsed:.0f}s ({sps:.2f} step/s)")
                 print(f"  {line}")
                 with open(LOG, "a") as f:
@@ -242,6 +272,7 @@ if __name__ == "__main__":
     ea = np.mean([eval_accuracy(msign, mmag, H, output_projection_f, s, bp, inj_table)
                   for s in eval_seqs])
     print(f"\nFINAL: eval={ea*100:.1f}% edges={edges} "
-          f"A={accepts['add']}|F={accepts['flip']}|M={accepts['mag_resample']} "
+          f"A={accepts['add']}|F={accepts['flip']}|M={accepts['mag_resample']}"
+          f"|LP={accepts['add_loop']} "
           f"{elapsed:.0f}s ({BUDGET/elapsed:.2f} step/s)")
 

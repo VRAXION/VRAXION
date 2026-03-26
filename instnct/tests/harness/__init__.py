@@ -22,6 +22,7 @@ from .policy_adapters import (
     BoolMoodPolicyAdapter,
     DarwinianStrategyAdapter,
     DrivePolicyAdapter,
+    LoopPolicyAdapter,
     ModePolicyAdapter,
     WindowReviewStrategyAdapter,
     build_policy,

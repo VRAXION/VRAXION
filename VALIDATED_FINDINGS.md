@@ -8,7 +8,7 @@ Repo-tracked docs are canonical. The GitHub wiki is treated as a mirrored second
 
 ## What Matters Most Right Now
 
-- **Current mainline:** [`instnct/model/graph.py`](instnct/model/graph.py) now ships explicit per-instance defaults `DEFAULT_THETA = 0.1`, `DEFAULT_PROJECTION_SCALE = 3.0`, `DEFAULT_EDGE_MAGNITUDE = 1.0`, plus co-evolved per-neuron `theta` / `decay` and nonnegative charge dynamics.
+- **Current mainline:** [`instnct/model/graph.py`](instnct/model/graph.py) now ships explicit per-instance defaults `DEFAULT_THETA = 15.0`, `DEFAULT_PROJECTION_SCALE = 3.0`, `DEFAULT_EDGE_MAGNITUDE = 1.0`, plus co-evolved per-neuron `theta` / `decay` and nonnegative charge dynamics.
 - **Current recipe candidate on `main`:** [`instnct/recipes/english_1024n_18w.py`](instnct/recipes/english_1024n_18w.py) now uses `8` ticks with a triangle-derived `2 add / 1 flip / 5 decay` schedule; it still uses the existing float signed edge mask.
 - **Strongest schedule result so far:** voltage medium leak reached `22.11%` peak / `21.46%` plateau.
 - **Best compact learnable control policy so far:** the 3-angle decision-tree schedule reached `20.05%` at `156` edges.
@@ -30,7 +30,7 @@ The canonical code path for `main` is [`instnct/model/graph.py`](instnct/model/g
 
 Current mainline defaults in that file:
 
-- `DEFAULT_THETA = 0.1`
+- `DEFAULT_THETA = 15.0`
 - `DEFAULT_PROJECTION_SCALE = 3.0`
 - `DEFAULT_EDGE_MAGNITUDE = 1.0`
 - per-neuron `theta` and `decay` are part of the mainline implementation
@@ -59,6 +59,9 @@ Raw experiment dumps, retired sweeps, and archived exploratory probes now live o
 | Window=2 input superposition ([48f2657](https://github.com/VRAXION/VRAXION/commit/48f26579fe882f5ae9e5eab4bbe1264963b4685a)) | Validated finding | `w=2` reached `21.8%`, beating `w=1` at `12.7%` and all wider tested windows on the current task-learning sweep | Not promoted into the current recipe or `graph.py` defaults |
 | Word-pair log-likelihood eval ([48f2657](https://github.com/VRAXION/VRAXION/commit/48f26579fe882f5ae9e5eab4bbe1264963b4685a)) | Validated finding | `23.8%` on short associative-memory probes, beating bigram cosine at `18.8%` | Not part of the canonical mainline yet |
 | Binary Mask ([0f9eba0](https://github.com/VRAXION/VRAXION/commit/0f9eba0a340f1a94165d21096054817d23f79038)) | Validated finding | Binary `{0, 1}` mask matches ternary accuracy (`86.5%`) because inhibition is handled by the input projection. Enables multiply-free forward pass (`3.4x` faster). | Promoted to `graph.py` multiply-free path |
+| Hub-inhibitor architecture — FlyWire validation ([6823ce7](https://github.com/VRAXION/VRAXION/commit/6823ce7)) | Validated finding | 10% I neurons with 2x fan-out achieves 8/8 separation at H=64+; matches FlyWire 10.2% I ratio and 2x out-degree | Not promoted into `graph.py` defaults |
+| Binary weight sufficiency — FlyWire validation ([bd90845](https://github.com/VRAXION/VRAXION/commit/bd90845)) | Validated finding | Binary edges match float at all tested scales; topology determines computation, not edge precision | Consistent with existing Binary Mask finding |
+| Tick = diameter rule ([65f07be](https://github.com/VRAXION/VRAXION/commit/65f07be)) | Validated finding | Optimal ticks ≈ 1.0x network diameter; too few = trivial, too many = dead network. Diameter scales as log₂(N). | Current recipe uses 8 ticks (near-optimal for H=1024) |
 | Context-dependent task learning ([48f2657](https://github.com/VRAXION/VRAXION/commit/48f26579fe882f5ae9e5eab4bbe1264963b4685a)) | Experimental branch | Current next build target: input-window injection, word-pair memory, and stronger evaluation for nontrivial tasks | Not part of the canonical mainline yet |
 
 ## Historical Context
