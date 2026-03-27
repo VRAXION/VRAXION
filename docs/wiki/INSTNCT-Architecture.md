@@ -66,7 +66,14 @@ input -> first V neurons -> hidden graph -> last V neurons -> output
                              learn routing)
 ```
 
-> **Tentacle I/O finding (2026-03-27):** A/B/C sweep showed tentacle I/O (4.7% peak) beats holographic projection (1.2% peak) by 3.9x. When I/O routing is part of the evolvable mask instead of frozen in random projections, the network learns which inputs to attend to and which outputs to drive. Not yet promoted to mainline. See `instnct/recipes/ab_projection_vs_tentacles.py`.
+> **Tentacle I/O finding (2026-03-27):** A/B/C/D sweep showed tentacle I/O (4.7% peak) beats holographic projection (1.2% peak) by 3.9x. When I/O routing is part of the evolvable mask instead of frozen in random projections, the network learns which inputs to attend to and which outputs to drive. A biologically-informed "resonator init" (ring backbone + triangle seeding + inhibitory hubs from FlyWire data) peaked at only 2.4% — random init + evolution outperforms structured init at H=256. Not yet promoted to mainline. See `instnct/recipes/ab_projection_vs_tentacles.py`.
+>
+> | Mode | Init strategy | Peak eval |
+> |------|--------------|-----------|
+> | A HOLOGRAPHIC | Random 3%, fixed V×H projection | 1.2% |
+> | B TENTACLES_IO | Random 3% + structured I/O seeding | 4.4% |
+> | **C TENTACLES_RANDOM** | **Random 5% + BFS connectivity** | **4.7%** |
+> | D RESONATOR_INIT | Random 3% + ring/triangles/hubs | 2.4% |
 
 Mutation-selection loop at a glance:
 

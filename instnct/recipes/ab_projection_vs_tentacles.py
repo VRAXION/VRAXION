@@ -58,6 +58,7 @@ MODE_LABELS = {
     'A': 'HOLOGRAPHIC',
     'B': 'TENTACLES_IO',
     'C': 'TENTACLES_RANDOM',
+    'D': 'RESONATOR_INIT',
 }
 
 # --- Worker globals ---
@@ -381,6 +382,104 @@ def run_one(mode, bp, ALL_DATA, bigram, eval_seqs):
                 if nodes[j] != nodes[j + 1]:
                     mask[nodes[j], nodes[j + 1]] = True
 
+    if mode == 'D':
+        # === RESONATOR INIT ===
+        # Biologically informed topology from FlyWire connectome + Resonator Theory
+        # Start with 3% random base (like C), then overlay resonator structure
+        res_rng = np.random.RandomState(42)
+        mask = (res_rng.rand(H, H) < INIT_DENSITY_AB).astype(bool)
+        np.fill_diagonal(mask, False)
+        hidden_start = IO
+        hidden_end = H - IO
+        hidden_count = hidden_end - hidden_start
+        hidden_neurons = np.arange(hidden_start, hidden_end)
+        all_neurons = np.arange(H)
+
+        # 1. RING BACKBONE: each hidden neuron → next 2 neighbors (creates local loops)
+        for i in range(hidden_count):
+            ni = hidden_start + i
+            n1 = hidden_start + (i + 1) % hidden_count
+            n2 = hidden_start + (i + 2) % hidden_count
+            mask[ni, n1] = True
+            mask[ni, n2] = True
+            # 30% bidirectional (FlyWire: reciprocal 171x above random)
+            if res_rng.random() < 0.30:
+                mask[n1, ni] = True
+
+        # 2. TRIANGLE SEEDING: ~H/3 random closed triangles (FlyWire: clustering 38x)
+        for _ in range(H // 3):
+            tri = res_rng.choice(hidden_neurons, 3, replace=False)
+            mask[tri[0], tri[1]] = True
+            mask[tri[1], tri[2]] = True
+            mask[tri[2], tri[0]] = True
+
+        # 3. SMALL-WORLD SHORTCUTS: ~2% random long-range (FlyWire: sigma=1188)
+        n_shortcuts = int(hidden_count * hidden_count * 0.02)
+        for _ in range(n_shortcuts):
+            s = res_rng.choice(hidden_neurons)
+            t = res_rng.choice(hidden_neurons)
+            if s != t:
+                mask[s, t] = True
+
+        # 4. INHIBITORY HUBS: 10% hidden neurons, 2x fan-out (FlyWire: 10.2%, 2x degree)
+        n_inhib = max(1, int(hidden_count * 0.10))
+        inhib_indices = res_rng.choice(hidden_neurons, size=n_inhib, replace=False)
+        # Override polarity for these neurons
+        custom_polarity = polarity_f32.copy()
+        custom_polarity[:] = 1.0  # reset all to excitatory
+        custom_polarity[inhib_indices] = -1.0
+        polarity_f32 = custom_polarity  # override for this run
+
+        for hub in inhib_indices:
+            # Extra outgoing (2x fan-out)
+            extra_out = res_rng.choice(hidden_neurons, size=4, replace=True)
+            for t in extra_out:
+                if t != hub:
+                    mask[hub, t] = True
+            # Extra incoming (hubs receive more too)
+            extra_in = res_rng.choice(hidden_neurons, size=4, replace=True)
+            for s in extra_in:
+                if s != hub:
+                    mask[s, hub] = True
+
+        # 5. I/O GRADIENT: input preferentially to early hidden, late hidden to output
+        early_third = hidden_neurons[:hidden_count // 3]
+        late_third = hidden_neurons[2 * hidden_count // 3:]
+        for inp in range(IO):
+            # 80% to early hidden, 20% random
+            n_early = res_rng.randint(2, 4)
+            targets_early = res_rng.choice(early_third, size=n_early, replace=True)
+            for t in targets_early:
+                mask[inp, t] = True
+            if res_rng.random() < 0.20:
+                wild = res_rng.choice(hidden_neurons)
+                mask[inp, wild] = True
+        for out_n in range(H - IO, H):
+            # 80% from late hidden, 20% random
+            n_late = res_rng.randint(2, 4)
+            sources_late = res_rng.choice(late_third, size=n_late, replace=True)
+            for s in sources_late:
+                mask[s, out_n] = True
+            if res_rng.random() < 0.20:
+                wild = res_rng.choice(hidden_neurons)
+                mask[wild, out_n] = True
+
+        np.fill_diagonal(mask, False)
+
+        # BFS connectivity check
+        bridges = ensure_connectivity(mask, res_rng)
+
+        # Stats
+        recip_count = int(np.sum(mask & mask.T) // 2)
+        total_edges = int(mask.sum())
+        recip_frac = recip_count / max(total_edges, 1)
+        n_inhib_actual = int((polarity_f32 < 0).sum())
+        print(f"  [D] Resonator init: {total_edges} edges, "
+              f"{bridges} bridge repairs")
+        print(f"  [D] Reciprocal: {recip_count} pairs ({recip_frac*100:.1f}%)")
+        print(f"  [D] Inhibitory hubs: {n_inhib_actual} "
+              f"({n_inhib_actual/H*100:.1f}%)")
+
     theta = np.full(H, THETA_INIT, dtype=np.float32)
     decay_rng = np.random.RandomState(99)
     decay = decay_rng.uniform(DECAY_INIT_LO, DECAY_INIT_HI, H).astype(np.float32)
@@ -596,7 +695,7 @@ def run_one(mode, bp, ALL_DATA, bigram, eval_seqs):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="A/B/C I/O architecture sweep")
-    parser.add_argument('--mode', choices=['A', 'B', 'C', 'all'], default='all')
+    parser.add_argument('--mode', choices=['A', 'B', 'C', 'D', 'all'], default='all')
     parser.add_argument('--budget', type=int, default=BUDGET)
     args = parser.parse_args()
     BUDGET = args.budget
@@ -627,7 +726,7 @@ if __name__ == "__main__":
     eval_seqs = [ALL_DATA[off:off + SEQ_LEN] for off in
                  [eval_rng.randint(0, len(ALL_DATA) - SEQ_LEN) for _ in range(N_EVAL_SEQS)]]
 
-    modes = ['A', 'B', 'C'] if args.mode == 'all' else [args.mode]
+    modes = ['A', 'B', 'C', 'D'] if args.mode == 'all' else [args.mode]
     results = []
     for m in modes:
         r = run_one(m, bp, ALL_DATA, bigram, eval_seqs)
