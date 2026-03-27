@@ -14,7 +14,7 @@ Config:
   - Decay init: random [0.08, 0.24] per-neuron (23.72% peak vs 21.96% fix)
   - Schedule: triangle-derived 2 add / 1 flip / 5 decay (8-step fixed approximation)
   - Empty start (no checkpoint needed)
-  - Forward pass matches graph.py: binary spikes, polarity, C19 soft-wave, MAX_CHARGE clamp
+  - Forward pass delegates to SelfWiringGraph.rollout_token() (canonical, no hardcoded loop)
 """
 import sys, os, time, random, json
 import numpy as np
@@ -47,35 +47,23 @@ def make_bp(io_dim, seed=12345):
     return p
 
 def _eval_bigram(mask, H, theta, decay, seqs):
-    """Bigram cosine eval — forward pass matches graph.py rollout_token():
-    binary spikes, polarity-signed edges, C19 soft-wave threshold, MAX_CHARGE clamp."""
-    rs, cs = np.where(mask)
-    sp_vals = _polarity[rs]   # signed: inhibitory sources send -1
+    """Bigram cosine eval — delegates to SelfWiringGraph.rollout_token() for
+    canonical forward pass (subtractive decay, multiplicative C19, hard reset)."""
     pat_norm = _bp / (np.linalg.norm(_bp, axis=1, keepdims=True) + 1e-8)
-    ret = 1.0 - decay
+    sparse_cache = SelfWiringGraph.build_sparse_cache(mask)
     total = 0.0
     for text_bytes in seqs:
         state = np.zeros(H, dtype=np.float32)
         charge = np.zeros(H, dtype=np.float32)
         seq_score = 0.0; n = 0
         for i in range(len(text_bytes)-1):
-            act = state.copy()
-            for t in range(8):
-                if t < 2:
-                    act = act + _bp[text_bytes[i]] @ _input_projection
-                raw = np.zeros(H, dtype=np.float32)
-                if len(rs):
-                    np.add.at(raw, cs, act[rs] * sp_vals)
-                charge += raw
-                np.clip(charge, 0.0, 15.0, out=charge)   # MAX_CHARGE clamp
-                charge *= ret
-                # C19 soft-wave: additive threshold modulation per tick
-                wave = np.sin(np.float32(t) * _freq_g + _phase_g)
-                effective_theta = np.maximum(0.0, theta + _rho_g * wave)
-                # Binary spike + polarity output (matches rollout_token)
-                fired = charge >= effective_theta
-                act = fired.astype(np.float32) * _polarity
-            state = act.copy()
+            injected = _bp[text_bytes[i]] @ _input_projection
+            state, charge = SelfWiringGraph.rollout_token(
+                injected, mask=mask, theta=theta, decay=decay,
+                ticks=8, input_duration=2, state=state, charge=charge,
+                sparse_cache=sparse_cache, polarity=_polarity,
+                freq=_freq_g, phase=_phase_g, rho=_rho_g,
+            )
             out = charge @ _output_projection
             out_n = out / (np.linalg.norm(out) + 1e-8)
             sims = out_n @ pat_norm.T
@@ -135,27 +123,19 @@ def worker_eval(args):
 
 def eval_accuracy(mask, H, input_projection, output_projection, theta, decay,
                   polarity, freq, phase, rho, text_bytes, bp):
-    """Classic accuracy for reporting — same forward pass as _eval_bigram."""
+    """Classic accuracy for reporting — delegates to SelfWiringGraph.rollout_token()."""
     pat_norm = bp / (np.linalg.norm(bp, axis=1, keepdims=True) + 1e-8)
-    rs, cs = np.where(mask)
-    sp_vals = polarity[rs]
-    ret = 1.0 - decay
+    sparse_cache = SelfWiringGraph.build_sparse_cache(mask)
     state = np.zeros(H, dtype=np.float32); charge = np.zeros(H, dtype=np.float32)
     correct = 0; total = 0
     for i in range(len(text_bytes)-1):
-        act = state.copy()
-        for t in range(8):
-            if t < 2: act = act + bp[text_bytes[i]] @ input_projection
-            raw = np.zeros(H, dtype=np.float32)
-            if len(rs): np.add.at(raw, cs, act[rs] * sp_vals)
-            charge += raw
-            np.clip(charge, 0.0, 15.0, out=charge)
-            charge *= ret
-            wave = np.sin(np.float32(t) * freq + phase)
-            effective_theta = np.maximum(0.0, theta + rho * wave)
-            fired = charge >= effective_theta
-            act = fired.astype(np.float32) * polarity
-        state = act.copy()
+        injected = bp[text_bytes[i]] @ input_projection
+        state, charge = SelfWiringGraph.rollout_token(
+            injected, mask=mask, theta=theta, decay=decay,
+            ticks=8, input_duration=2, state=state, charge=charge,
+            sparse_cache=sparse_cache, polarity=polarity,
+            freq=freq, phase=phase, rho=rho,
+        )
         out = charge @ output_projection
         out_n = out / (np.linalg.norm(out) + 1e-8)
         sims = out_n @ pat_norm.T
