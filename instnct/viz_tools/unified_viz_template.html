@@ -571,34 +571,38 @@ function initDropOverlay() {
   if (DATA) {
     overlay.classList.add('hidden');
   }
-  // Full overlay drag-drop
-  ['dragenter','dragover'].forEach(evt => {
-    overlay.addEventListener(evt, e => { e.preventDefault(); overlay.classList.add('dragover'); });
+
+  // Prevent browser from opening dropped files — must be on document level
+  document.addEventListener('dragover', e => {
+    e.preventDefault();
+    e.stopPropagation();
   });
-  ['dragleave','drop'].forEach(evt => {
-    overlay.addEventListener(evt, e => { e.preventDefault(); overlay.classList.remove('dragover'); });
+  document.addEventListener('dragenter', e => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!overlay.classList.contains('hidden')) overlay.classList.add('dragover');
   });
-  overlay.addEventListener('drop', e => {
-    const file = e.dataTransfer.files[0];
-    if (file) loadFile(file);
+  document.addEventListener('dragleave', e => {
+    e.preventDefault();
+    // Only remove dragover if leaving the window entirely
+    if (e.relatedTarget === null) overlay.classList.remove('dragover');
+  });
+  document.addEventListener('drop', e => {
+    e.preventDefault();
+    e.stopPropagation();
+    overlay.classList.remove('dragover');
+    const file = (e.dataTransfer && e.dataTransfer.files) ? e.dataTransfer.files[0] : null;
+    if (file && file.name.endsWith('.json')) {
+      loadFile(file);
+    }
   });
 
-  // Header mini drop zone
+  // Header mini drop zone visual feedback
   const hdz = $('#header-drop-zone');
-  ['dragenter','dragover'].forEach(evt => {
-    hdz.addEventListener(evt, e => { e.preventDefault(); hdz.classList.add('dragover'); });
-  });
-  ['dragleave','drop'].forEach(evt => {
-    hdz.addEventListener(evt, e => { e.preventDefault(); hdz.classList.remove('dragover'); });
-  });
-  hdz.addEventListener('drop', e => {
-    const file = e.dataTransfer.files[0];
-    if (file) loadFile(file);
-  });
-
-  // Also prevent default on body to avoid browser opening the file
-  document.body.addEventListener('dragover', e => e.preventDefault());
-  document.body.addEventListener('drop', e => e.preventDefault());
+  if (hdz) {
+    hdz.addEventListener('dragenter', () => hdz.classList.add('dragover'));
+    hdz.addEventListener('dragleave', () => hdz.classList.remove('dragover'));
+  }
 }
 
 function loadFile(file) {

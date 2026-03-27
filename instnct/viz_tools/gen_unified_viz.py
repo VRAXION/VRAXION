@@ -23,7 +23,7 @@ import numpy as np
 
 ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_OUTPUT = ROOT / "instnct_viz.html"
-TEMPLATE_MARKER = "/*__DATA__*/"
+TEMPLATE_MARKER = "/*__DATA__*/ null"
 
 
 def parse_args() -> argparse.Namespace:
