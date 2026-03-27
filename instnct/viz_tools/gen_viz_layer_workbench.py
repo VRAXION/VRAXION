@@ -72,26 +72,113 @@ def build_scalar_layer(path: Path, field: str) -> dict[str, object] | None:
     }
 
 
+def build_scalar_layer_from_values(field: str, label: str, values: np.ndarray) -> dict[str, object]:
+    values = np.asarray(values, dtype=np.float32)
+    lo = float(values.min()) if values.size else 0.0
+    hi = float(values.max()) if values.size else 0.0
+    mean = float(values.mean()) if values.size else 0.0
+    std = float(values.std()) if values.size else 0.0
+    nonzero = int((values != 0).sum())
+    return {
+        "kind": "scalar",
+        "id": field,
+        "label": label,
+        "count": int(values.shape[0]),
+        "values": values.tolist(),
+        "min": lo,
+        "max": hi,
+        "mean": mean,
+        "std": std,
+        "nonzero": nonzero,
+        "argmin": int(values.argmin()) if values.size else -1,
+        "argmax": int(values.argmax()) if values.size else -1,
+    }
+
+
+def build_matrix_layer(layer_id: str, label: str, hidden_size: int, rows: np.ndarray, cols: np.ndarray, out_degree: np.ndarray, in_degree: np.ndarray, blocked_self_edges: int = 0) -> dict[str, object]:
+    rows = np.asarray(rows, dtype=np.int32)
+    cols = np.asarray(cols, dtype=np.int32)
+    edge_set = set(zip(rows.tolist(), cols.tolist()))
+    reciprocal_pairs = sum(1 for r, c in edge_set if r < c and (c, r) in edge_set)
+    edge_count = int(rows.size)
+    sink = int(((out_degree == 0) & (in_degree > 0)).sum())
+    source_only = int(((out_degree > 0) & (in_degree == 0)).sum())
+    isolated = int(((out_degree == 0) & (in_degree == 0)).sum())
+    return {
+        "kind": "matrix",
+        "id": layer_id,
+        "label": label,
+        "description": f"Binary matrix layer: {layer_id}",
+        "hidden_size": int(hidden_size),
+        "rows": rows.tolist(),
+        "cols": cols.tolist(),
+        "edge_count": edge_count,
+        "density": (edge_count / (hidden_size * (hidden_size - 1))) if hidden_size > 1 else 0.0,
+        "reciprocal_pairs": reciprocal_pairs,
+        "sink_count": sink,
+        "source_only_count": source_only,
+        "isolated_count": isolated,
+        "blocked_self_edges": int(blocked_self_edges),
+        "out_degree": out_degree.astype(np.int32, copy=False).tolist(),
+        "in_degree": in_degree.astype(np.int32, copy=False).tolist(),
+    }
+
+
 def build_payload(path: Path, title: str) -> dict[str, object]:
     connection = build_connection_payload(path, title)
-    layers: list[dict[str, object]] = [{
-        "kind": "matrix",
-        "id": "connection_presence",
-        "label": "CONNECTION",
-        "description": connection["description"],
-        "hidden_size": connection["hidden_size"],
-        "rows": connection["rows"],
-        "cols": connection["cols"],
-        "edge_count": connection["edge_count"],
-        "density": connection["density"],
-        "reciprocal_pairs": connection["reciprocal_pairs"],
-        "sink_count": connection["sink_count"],
-        "source_only_count": connection["source_only_count"],
-        "isolated_count": connection["isolated_count"],
-        "blocked_self_edges": connection["blocked_self_edges"],
-        "out_degree": connection["out_degree"],
-        "in_degree": connection["in_degree"],
-    }]
+    rows = np.asarray(connection["rows"], dtype=np.int32)
+    cols = np.asarray(connection["cols"], dtype=np.int32)
+    hidden_size = int(connection["hidden_size"])
+    out_degree = np.asarray(connection["out_degree"], dtype=np.int32)
+    in_degree = np.asarray(connection["in_degree"], dtype=np.int32)
+
+    layers: list[dict[str, object]] = [build_matrix_layer(
+        "connection_presence",
+        "CONNECTION",
+        hidden_size,
+        rows,
+        cols,
+        out_degree,
+        in_degree,
+        blocked_self_edges=int(connection["blocked_self_edges"]),
+    )]
+
+    edge_set = set(zip(rows.tolist(), cols.tolist()))
+    reciprocal_pairs = sorted((r, c) for r, c in edge_set if (c, r) in edge_set)
+    reciprocal_rows = np.asarray([r for r, _ in reciprocal_pairs], dtype=np.int32)
+    reciprocal_cols = np.asarray([c for _, c in reciprocal_pairs], dtype=np.int32)
+    reciprocal_out = np.bincount(reciprocal_rows, minlength=hidden_size).astype(np.int32)
+    reciprocal_in = np.bincount(reciprocal_cols, minlength=hidden_size).astype(np.int32)
+    layers.append(build_matrix_layer(
+        "reciprocal_edges",
+        "RECIPROCAL",
+        hidden_size,
+        reciprocal_rows,
+        reciprocal_cols,
+        reciprocal_out,
+        reciprocal_in,
+    ))
+
+    layers.append(build_scalar_layer_from_values(
+        "active_neuron",
+        "ACTIVE",
+        ((out_degree + in_degree) > 0).astype(np.float32),
+    ))
+    layers.append(build_scalar_layer_from_values(
+        "sink_neuron",
+        "SINK",
+        ((out_degree == 0) & (in_degree > 0)).astype(np.float32),
+    ))
+    layers.append(build_scalar_layer_from_values(
+        "source_only_neuron",
+        "SOURCE_ONLY",
+        ((out_degree > 0) & (in_degree == 0)).astype(np.float32),
+    ))
+    layers.append(build_scalar_layer_from_values(
+        "isolated_neuron",
+        "ISOLATED",
+        ((out_degree == 0) & (in_degree == 0)).astype(np.float32),
+    ))
 
     for field in SCALAR_FIELDS:
         layer = build_scalar_layer(path, field)
