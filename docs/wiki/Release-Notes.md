@@ -25,6 +25,7 @@ This page is the single primary timeline and lookup surface for VRAXION. Use it 
 - Current strongest edge-representation quality result: sign+mag + magnitude resample reached `18.69%` at `155` edges (`q=0.121`), but it remains validated evidence rather than the current recipe candidate.
 - Current I/O architecture finding: tentacle I/O (4.7%) beats holographic projection (1.2%) by 3.9x — not yet promoted to mainline. 8-bit binary I/O (0.2%) rejected; high-dimensional spreading is load-bearing.
 - Current best input encoding: SDR_64 (sparse 20%, peak 7.3%) — baked into `graph.py` as `input_mode='sdr'` option.
+- Current best eval result: `14.1%` with learnable theta (full resample [0,16], converges ~6-7), SDR input, tentacle I/O (H=256 test scale).
 - Current next public build target: context-dependent task learning, with input-window injection, evaluation-path changes, and associative-memory probes under active evaluation
 
 ## What Matters Now
@@ -74,6 +75,8 @@ This page is the single primary timeline and lookup surface for VRAXION. Use it 
 | 2026-03-27 | A/B/C/D I/O architecture sweep — tentacle I/O validated | Four-way sweep (H=256): tentacle I/O (Mode C, random 5% + BFS, peak 4.7%) beat holographic projection (Mode A, 1.2%) by 3.9x. Structured resonator init (Mode D, 2.4%) underperformed random. Mutation+selection sculpts topology better from chaos than from pre-structured order. | [Validated Findings](Validated-Findings), [INSTNCT Architecture](INSTNCT-Architecture) |
 | 2026-03-27 | 8-bit binary I/O tested and rejected | A/B test: 8 binary neurons per I/O (0.2% peak) vs 64-dim random projection (4.4% peak). 8-bit encoding provides too little signal richness despite freeing 112 extra hidden neurons. High-dimensional spreading is load-bearing for the architecture. | [Validated Findings](Validated-Findings) |
 | 2026-03-27 | Input encoding sweep — SDR validated as best input representation | Sweep (H=256): SDR_64 (7.3%) > MULTISCALE (7.1%) > RANDOM_64 (4.4%) > FOURIER_64 (3.6%). Sparse 20% activation beats dense encodings by 66%. SDR `input_mode='sdr'` baked into `graph.py` as optional mode. | [Validated Findings](Validated-Findings), [INSTNCT Architecture](INSTNCT-Architecture) |
+| 2026-03-27 | Output encoding sweep — random projection confirmed for output | SDR on output (3.4%) worse than random (7.3%). Input=sparse, output=dense is the optimal asymmetric pairing. | [Validated Findings](Validated-Findings) |
+| 2026-03-27 | Learnable theta converges to ~6-7 — 14.1% new peak | Full resample [0,16] per-neuron theta from init=1.0 reached 14.1% (prev best 7.3%). Sweet spot ~6-7 confirmed from 3 starting points (1.0->6.12, 6.18->7.02, 15.0->9.74). Low start recommended — topology co-evolves with rising threshold. | [Validated Findings](Validated-Findings) |
 | 2026-03-21 | Roadmap, theory, archive, glossary, and old architecture leaves were collapsed into one timeline surface | History, terminology, open questions, and retirement lookup now live in one place instead of multiple smaller pages. | This page |
 
 ## Retired Surfaces and Replacements
