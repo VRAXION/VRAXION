@@ -69,6 +69,8 @@ instnct/*_live.txt
 instnct/*_live_data.json
 instnct/*_chart_data.json
 instnct/*_probe_results.json
+instnct/tests/*_live.txt
+instnct/tests/*_results.json
 instnct/tests/results/
 instnct/tests/viz/
 instnct/tests/viz_interference/
