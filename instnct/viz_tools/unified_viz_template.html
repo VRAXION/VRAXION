@@ -1087,33 +1087,48 @@ const graphRenderer = {
       if (!ioSet.has(i)) centerNodes.push(i);
     }
 
-    // Layout dimensions
-    const margin = 60;
-    const colWidth = 50;
-    const leftX = margin;
-    const rightX = margin + colWidth * 2 + Math.ceil(Math.sqrt(centerNodes.length)) * 20 + 60;
-    const centerStartX = margin + colWidth + 30;
-    this.layoutW = rightX + margin;
+    // Use canvas size as the reference for layout
+    const cw = this.canvas.width || 800;
+    const ch = this.canvas.height || 600;
+    const pad = 20; // padding from edges
 
-    // Left column: input-proximal
-    const leftSpacing = Math.max(16, 500 / Math.max(1, topIn.length));
-    const leftStartY = margin;
-
-    // Right column: output-proximal
-    const rightSpacing = Math.max(16, 500 / Math.max(1, topOut.length));
-    const rightStartY = margin;
-
-    // Center grid
+    // Center grid dimensions
     const centerGridCols = Math.ceil(Math.sqrt(centerNodes.length));
     const centerGridRows = Math.ceil(centerNodes.length / centerGridCols);
-    const cellSize = 20;
-    const centerStartY = margin;
 
-    this.layoutH = Math.max(
-      leftStartY + topIn.length * leftSpacing,
-      rightStartY + topOut.length * rightSpacing,
-      centerStartY + centerGridRows * cellSize
-    ) + margin;
+    // Allocate horizontal space: 12% left col, 76% center grid, 12% right col
+    const leftColW = cw * 0.10;
+    const rightColW = cw * 0.10;
+    const centerW = cw - leftColW - rightColW - pad * 2;
+    const centerH = ch - pad * 2;
+
+    // Cell size: fit the grid into the center area
+    const cellW = centerW / centerGridCols;
+    const cellH = centerH / centerGridRows;
+    const cellSize = Math.min(cellW, cellH);
+
+    // Center the grid within its area
+    const gridTotalW = centerGridCols * cellSize;
+    const gridTotalH = centerGridRows * cellSize;
+    const centerStartX = pad + leftColW + (centerW - gridTotalW) / 2;
+    const centerStartY = pad + (centerH - gridTotalH) / 2;
+
+    // Uniform height for all 3 columns = grid height
+    const uniformH = gridTotalH;
+    const uniformTop = centerStartY;
+
+    // Left column: input-proximal, same height as grid
+    const leftX = pad + leftColW / 2;
+    const leftSpacing = topIn.length > 1 ? uniformH / (topIn.length - 1) : 0;
+    const leftStartY = uniformTop;
+
+    // Right column: output-proximal, same height as grid
+    const rightX = cw - pad - rightColW / 2;
+    const rightSpacing = topOut.length > 1 ? uniformH / (topOut.length - 1) : 0;
+    const rightStartY = uniformTop;
+
+    this.layoutW = cw;
+    this.layoutH = ch;
 
     // Build node positions
     this.nodes = new Array(H);
@@ -1129,7 +1144,11 @@ const graphRenderer = {
       const idx = centerNodes[i];
       const row = Math.floor(i / centerGridCols);
       const col = i % centerGridCols;
-      this.nodes[idx] = { x: centerStartX + col * cellSize, y: centerStartY + row * cellSize, idx };
+      this.nodes[idx] = {
+        x: centerStartX + col * cellSize + cellSize / 2,
+        y: centerStartY + row * cellSize + cellSize / 2,
+        idx
+      };
     }
 
     // Compute radius, color, opacity for each node
@@ -1211,6 +1230,10 @@ const graphRenderer = {
     if (w <= 0 || h <= 0) return;
     this.canvas.width = w;
     this.canvas.height = h;
+    this.computeLayout();
+    this.ox = 0;
+    this.oy = 0;
+    this.zoom = 1;
     this.draw();
   },
 
@@ -1223,7 +1246,7 @@ const graphRenderer = {
       const my = e.clientY - rect.top;
       const oldZ = this.zoom;
       const factor = e.deltaY < 0 ? 1.15 : 1 / 1.15;
-      this.zoom = Math.max(0.05, Math.min(50, this.zoom * factor));
+      this.zoom = Math.max(0.1, Math.min(50, this.zoom * factor));
       this.ox = mx - (mx - this.ox) * (this.zoom / oldZ);
       this.oy = my - (my - this.oy) * (this.zoom / oldZ);
       this.draw();
@@ -1362,7 +1385,7 @@ const graphRenderer = {
       ctx.strokeStyle = isExcitatory
         ? `rgba(0,204,136,${alpha})`
         : `rgba(255,80,100,${alpha})`;
-      ctx.lineWidth = 0.8 / this.zoom;
+      ctx.lineWidth = Math.max(0.5, 1.5 / this.zoom);
       ctx.beginPath();
       ctx.moveTo(nsrc.x, nsrc.y);
       ctx.lineTo(ndst.x, ndst.y);
