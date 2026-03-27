@@ -24,6 +24,7 @@ This page is the single primary timeline and lookup surface for VRAXION. Use it 
 - Current English recipe candidate on `main`: [`instnct/recipes/train_english_1024n_18w.py`](https://github.com/VRAXION/VRAXION/blob/main/instnct/recipes/train_english_1024n_18w.py) with an `8`-tick triangle-derived `2 add / 1 flip / 5 decay` schedule; it still uses the existing float signed edge representation.
 - Current strongest edge-representation quality result: sign+mag + magnitude resample reached `18.69%` at `155` edges (`q=0.121`), but it remains validated evidence rather than the current recipe candidate.
 - Current I/O architecture finding: tentacle I/O (4.7%) beats holographic projection (1.2%) by 3.9x — not yet promoted to mainline. 8-bit binary I/O (0.2%) rejected; high-dimensional spreading is load-bearing.
+- Current best input encoding: SDR_64 (sparse 20%, peak 7.3%) — baked into `graph.py` as `input_mode='sdr'` option.
 - Current next public build target: context-dependent task learning, with input-window injection, evaluation-path changes, and associative-memory probes under active evaluation
 
 ## What Matters Now
@@ -72,6 +73,7 @@ This page is the single primary timeline and lookup surface for VRAXION. Use it 
 | 2026-03-27 | V5 forward-pass mismatch fixed — recipe now delegates to canonical rollout_token() | The English recipe had a hardcoded v4.2 forward pass diverging from graph.py (wrong decay, C19, no hard reset). A/B smoke test verified the fix is bit-identical with canonical. This removes the ~18% plateau bottleneck. | [Validated Findings](Validated-Findings) |
 | 2026-03-27 | A/B/C/D I/O architecture sweep — tentacle I/O validated | Four-way sweep (H=256): tentacle I/O (Mode C, random 5% + BFS, peak 4.7%) beat holographic projection (Mode A, 1.2%) by 3.9x. Structured resonator init (Mode D, 2.4%) underperformed random. Mutation+selection sculpts topology better from chaos than from pre-structured order. | [Validated Findings](Validated-Findings), [INSTNCT Architecture](INSTNCT-Architecture) |
 | 2026-03-27 | 8-bit binary I/O tested and rejected | A/B test: 8 binary neurons per I/O (0.2% peak) vs 64-dim random projection (4.4% peak). 8-bit encoding provides too little signal richness despite freeing 112 extra hidden neurons. High-dimensional spreading is load-bearing for the architecture. | [Validated Findings](Validated-Findings) |
+| 2026-03-27 | Input encoding sweep — SDR validated as best input representation | Sweep (H=256): SDR_64 (7.3%) > MULTISCALE (7.1%) > RANDOM_64 (4.4%) > FOURIER_64 (3.6%). Sparse 20% activation beats dense encodings by 66%. SDR `input_mode='sdr'` baked into `graph.py` as optional mode. | [Validated Findings](Validated-Findings), [INSTNCT Architecture](INSTNCT-Architecture) |
 | 2026-03-21 | Roadmap, theory, archive, glossary, and old architecture leaves were collapsed into one timeline surface | History, terminology, open questions, and retirement lookup now live in one place instead of multiple smaller pages. | This page |
 
 ## Retired Surfaces and Replacements

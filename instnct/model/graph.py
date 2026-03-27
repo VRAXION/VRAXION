@@ -36,6 +36,18 @@ class SelfWiringGraph:
     DEFAULT_RHO = 0.3  # Starting modulation depth
     DEFAULT_INHIBITORY_FRACTION = 0.10  # Fly-realistic: fewer but broader I-neurons
     POLARITY_FLIP_PROB = 10  # 1-in-N chance per mutate step
+    DEFAULT_INPUT_MODE = 'projection'  # 'projection' (legacy) or 'sdr'
+    DEFAULT_SDR_K = 13                 # active neurons per byte (20% of 64)
+    DEFAULT_SDR_DIM = 64               # SDR input dimension
+
+    def _build_sdr_table(self, rng=None):
+        """Build sparse distributed representation: 256 x sdr_dim, K active per row."""
+        if rng is None:
+            rng = np.random.RandomState(42)
+        self.sdr_table = np.zeros((256, self.sdr_dim), dtype=np.float32)
+        for v in range(256):
+            active = rng.choice(self.sdr_dim, size=self.sdr_k, replace=False)
+            self.sdr_table[v, active] = 1.0
 
     @staticmethod
     def _checkpoint_index_dtype(hidden_size):
@@ -55,6 +67,9 @@ class SelfWiringGraph:
         projection_scale=DEFAULT_PROJECTION_SCALE,
         cap_ratio=DEFAULT_CAP_RATIO,
         seed=None,
+        input_mode=None,
+        sdr_k=None,
+        sdr_dim=None,
     ):
         self.V = int(vocab)
         if self.V <= 0:
@@ -97,7 +112,15 @@ class SelfWiringGraph:
         self.input_projection = input_projection * self.projection_scale
         self.output_projection = output_projection * self.projection_scale
 
-        # Polarity: 10% inhibitory. 
+        # SDR input mode: sparse distributed byte representation
+        self.input_mode = input_mode or self.DEFAULT_INPUT_MODE
+        self.sdr_table = None
+        self.sdr_k = sdr_k or self.DEFAULT_SDR_K
+        self.sdr_dim = sdr_dim or self.DEFAULT_SDR_DIM
+        if self.input_mode == 'sdr':
+            self._build_sdr_table(proj_rng)
+
+        # Polarity: 10% inhibitory.
         self.polarity = np.ones(self.H, dtype=np.int8)
         inhib_mask = init_rand(self.H) < self.DEFAULT_INHIBITORY_FRACTION
         self.polarity[inhib_mask] = -1
@@ -443,7 +466,12 @@ class SelfWiringGraph:
         """Single-input forward pass. Passive I/O: inject via input_projection, read via output_projection."""
         world_vec = np.asarray(world, dtype=np.float32).copy()
         np.nan_to_num(world_vec, copy=False, nan=0.0, posinf=0.0, neginf=0.0)
-        injected = world_vec @ self.input_projection
+        if self.input_mode == 'sdr' and self.sdr_table is not None:
+            byte_idx = int(np.argmax(world_vec))
+            injected = np.zeros(self.H, dtype=np.float32)
+            injected[0:self.sdr_dim] = self.sdr_table[byte_idx]
+        else:
+            injected = world_vec @ self.input_projection
         self.state, self.charge = self.rollout_token(
             injected,
             mask=self.mask,
@@ -466,7 +494,11 @@ class SelfWiringGraph:
     def forward_batch(self, ticks=12):
         """Batch forward: all V inputs simultaneously. Returns (V, V) logits."""
         V = self.V
-        projected = np.eye(V, dtype=np.float32) @ self.input_projection
+        if self.input_mode == 'sdr' and self.sdr_table is not None:
+            projected = np.zeros((V, self.H), dtype=np.float32)
+            projected[:, 0:self.sdr_dim] = self.sdr_table[:V]
+        else:
+            projected = np.eye(V, dtype=np.float32) @ self.input_projection
         acts, charges = self.rollout_token_batch(
             projected,
             mask=self.mask,
@@ -623,6 +655,12 @@ class SelfWiringGraph:
         child.loss_pct = np.int8((int(parent_a.loss_pct) + int(parent_b.loss_pct)) // 2)
         child.mutation_drive = np.int8((int(parent_a.mutation_drive) + int(parent_b.mutation_drive)) // 2)
 
+        # SDR mode propagation
+        child.input_mode = parent_a.input_mode
+        child.sdr_k = parent_a.sdr_k
+        child.sdr_dim = parent_a.sdr_dim
+        child.sdr_table = parent_a.sdr_table.copy() if parent_a.sdr_table is not None else None
+
         # Fresh state
         child.state = np.zeros(child.H, dtype=np.float32)
         child.charge = np.zeros(child.H, dtype=np.float32)
@@ -655,6 +693,14 @@ class SelfWiringGraph:
             cap_ratio=np.int32(self.cap_ratio),
             input_projection=self.input_projection,
             output_projection=self.output_projection,
+            **(  # SDR fields (optional, backward compatible)
+                {'input_mode': np.array([ord(c) for c in self.input_mode], dtype=np.uint8),
+                 'sdr_table': self.sdr_table,
+                 'sdr_k': np.int32(self.sdr_k),
+                 'sdr_dim': np.int32(self.sdr_dim)}
+                if self.input_mode == 'sdr' and self.sdr_table is not None
+                else {}
+            ),
         )
 
     @classmethod
@@ -706,6 +752,12 @@ class SelfWiringGraph:
             edge_magnitude = np.float32(d['edge_magnitude']) if 'edge_magnitude' in d.files else np.float32(cls.DEFAULT_EDGE_MAGNITUDE)
             cap_ratio = int(d['cap_ratio']) if 'cap_ratio' in d.files else int(cls.DEFAULT_CAP_RATIO)
 
+            # Extract SDR fields while npz is still open (optional, backward compatible)
+            _sdr_input_mode = ''.join(chr(c) for c in d['input_mode']) if 'input_mode' in d else 'projection'
+            _sdr_table = np.array(d['sdr_table'], dtype=np.float32) if 'sdr_table' in d else None
+            _sdr_k = int(d['sdr_k']) if 'sdr_k' in d else cls.DEFAULT_SDR_K
+            _sdr_dim = int(d['sdr_dim']) if 'sdr_dim' in d else cls.DEFAULT_SDR_DIM
+
         if input_projection.shape != (V, H):
             raise ValueError(
                 f"input_projection shape mismatch: expected {(V, H)}, got {input_projection.shape}"
@@ -748,6 +800,13 @@ class SelfWiringGraph:
         net.polarity = polarity
         net._polarity_f32 = net.polarity.astype(np.float32)
         net.refractory = np.zeros(H, dtype=np.int8)
+
+        # SDR mode (from locals extracted inside the with-block above)
+        net.input_mode = _sdr_input_mode
+        net.sdr_table = _sdr_table
+        net.sdr_k = _sdr_k
+        net.sdr_dim = _sdr_dim
+
         net.resync_alive()
         return net
 

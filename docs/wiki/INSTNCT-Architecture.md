@@ -101,7 +101,7 @@ Mutation-selection loop at a glance:
 
 | Component | What it does |
 |---|---|
-| `input_projection` | Fixed random projection (current mainline) |
+| `input_projection` | Fixed random projection (current mainline). SDR validated: `input_mode='sdr'` uses sparse 20% activation (7.3% vs 4.4% random). |
 | `output_projection` | Fixed random projection (current mainline) |
 | Hidden-to-hidden mask | Learnable graph structure |
 | `theta` | Learnable per-neuron firing threshold |
