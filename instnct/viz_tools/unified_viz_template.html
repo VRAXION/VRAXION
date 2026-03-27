@@ -359,6 +359,11 @@ body {
   <!-- TRAINING -->
   <div id="tab-training" class="tab-panel">
     <div id="training-panel">
+      <div id="training-mode-bar" style="display:none;padding:8px 12px;background:var(--bg2);border-bottom:1px solid var(--border);font-size:12px;color:var(--muted);display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+        <span style="margin-right:4px">MODES:</span>
+        <span id="training-mode-buttons"></span>
+        <span style="margin-left:auto;font-size:10px;opacity:0.5">click to toggle</span>
+      </div>
       <div class="train-chart-wrap">
         <div class="chart-title">EVAL ACCURACY (%)</div>
         <canvas id="tc-eval"></canvas>
@@ -368,12 +373,20 @@ body {
         <canvas id="tc-edges"></canvas>
       </div>
       <div class="train-chart-wrap">
-        <div class="chart-title">ACCEPT COUNTS (A / T / D)</div>
+        <div class="chart-title">ACCEPT RATE (%)</div>
         <canvas id="tc-accepts"></canvas>
       </div>
       <div class="train-chart-wrap">
-        <div class="chart-title">THETA MEAN</div>
-        <canvas id="tc-theta"></canvas>
+        <div class="chart-title">DECAY MEAN</div>
+        <canvas id="tc-decay"></canvas>
+      </div>
+      <div class="train-chart-wrap">
+        <div class="chart-title">CHARGE MEAN</div>
+        <canvas id="tc-charge"></canvas>
+      </div>
+      <div class="train-chart-wrap">
+        <div class="chart-title">FIRING RATE (%)</div>
+        <canvas id="tc-firing"></canvas>
       </div>
     </div>
   </div>
@@ -1452,35 +1465,106 @@ const trainingRenderer = {
     this.startPoll();
   },
 
+  MODE_COLORS: {
+    'A': '#ff4466', 'B': '#ffaa00', 'C': '#00ff88', 'D': '#aa66ff',
+    'E': '#44aaff', 'F': '#ff88cc', '_default': '#00ff88'
+  },
+  MODE_NAMES: {
+    'A': 'HOLOGRAPHIC', 'B': 'TENTACLES_IO', 'C': 'TENTACLES_RANDOM', 'D': 'RESONATOR_INIT'
+  },
+  activeModes: new Set(),
+  allModes: [],
+
   buildCharts() {
     const t = DATA.training;
     if (!t || t.length === 0) return;
 
-    this.charts = [
-      {
-        canvas: $('#tc-eval'),
-        title: 'Eval Accuracy (%)',
-        series: [{ data: t.map(r => ({ x: r.step, y: r.eval * 100 })), color: '#00ff88', label: 'eval' }]
-      },
-      {
-        canvas: $('#tc-edges'),
-        title: 'Edge Count',
-        series: [{ data: t.map(r => ({ x: r.step, y: r.edges })), color: '#4488ff', label: 'edges' }]
-      },
-      {
-        canvas: $('#tc-accepts'),
-        title: 'Accept Counts',
-        series: [
-          { data: t.map(r => ({ x: r.step, y: r.A })), color: '#00ff88', label: 'A' },
-          { data: t.map(r => ({ x: r.step, y: r.T })), color: '#ffaa00', label: 'T' },
-          { data: t.map(r => ({ x: r.step, y: r.D })), color: '#ff3355', label: 'D' }
-        ]
-      },
-      {
-        canvas: $('#tc-theta'),
-        title: 'Theta Mean',
-        series: [{ data: t.map(r => ({ x: r.step, y: r.theta_m })), color: '#cc88ff', label: 'theta_m' }]
+    // Detect multi-mode sweep data
+    const modes = [...new Set(t.map(r => r.mode).filter(Boolean))];
+    this.allModes = modes;
+    const isMultiMode = modes.length > 1;
+    const isSweep = modes.length > 0;
+
+    // Init active modes (all on by default)
+    if (this.activeModes.size === 0) {
+      modes.forEach(m => this.activeModes.add(m));
+    }
+
+    // Build mode toggle buttons
+    const modeBar = document.getElementById('training-mode-bar');
+    const modeButtons = document.getElementById('training-mode-buttons');
+    if (modeBar && isMultiMode) {
+      modeBar.style.display = 'flex';
+      modeButtons.innerHTML = modes.map(m => {
+        const c = this.MODE_COLORS[m] || this.MODE_COLORS._default;
+        const name = this.MODE_NAMES[m] || m;
+        const active = this.activeModes.has(m);
+        return '<button data-mode="' + m + '" style="'
+          + 'background:' + (active ? c : 'transparent') + ';'
+          + 'color:' + (active ? '#000' : c) + ';'
+          + 'border:2px solid ' + c + ';'
+          + 'padding:3px 10px;border-radius:4px;cursor:pointer;'
+          + 'font-family:inherit;font-size:11px;font-weight:bold;'
+          + 'opacity:' + (active ? '1' : '0.4') + ';'
+          + 'margin-right:6px;transition:all 0.15s'
+          + '">' + m + ' ' + name + '</button>';
+      }).join('');
+      // Attach click handlers
+      modeButtons.querySelectorAll('button').forEach(btn => {
+        btn.onclick = () => {
+          const m = btn.dataset.mode;
+          if (this.activeModes.has(m)) this.activeModes.delete(m);
+          else this.activeModes.add(m);
+          this.buildCharts();
+          this.drawAll();
+        };
+      });
+    }
+
+    // Active modes filter
+    const visibleModes = isMultiMode ? modes.filter(m => this.activeModes.has(m)) : modes;
+
+    // Helper: create per-mode series for a given field
+    const perModeSeries = (field, fallback) => {
+      if (isMultiMode) {
+        return visibleModes.map(m => {
+          const c = this.MODE_COLORS[m] || this.MODE_COLORS._default;
+          const modeData = t.filter(r => r.mode === m);
+          return { data: modeData.map(r => ({ x: r.step, y: r[field] != null ? r[field] : (fallback || 0) })), color: c, label: m };
+        });
       }
+      const c = isSweep ? (this.MODE_COLORS[modes[0]] || this.MODE_COLORS._default) : '#00ff88';
+      const label = isSweep ? modes[0] : field;
+      return [{ data: t.map(r => ({ x: r.step, y: r[field] != null ? r[field] : (fallback || 0) })), color: c, label: label }];
+    };
+
+    // Eval series
+    const evalSeries = isMultiMode
+      ? visibleModes.map(m => {
+          const c = this.MODE_COLORS[m] || this.MODE_COLORS._default;
+          const modeData = t.filter(r => r.mode === m);
+          return { data: modeData.map(r => ({ x: r.step, y: r.eval != null ? (r.eval > 1 ? r.eval : r.eval * 100) : 0 })), color: c, label: m };
+        })
+      : [{ data: t.map(r => ({ x: r.step, y: r.eval != null ? (r.eval > 1 ? r.eval : r.eval * 100) : 0 })), color: '#00ff88', label: 'eval' }];
+
+    // Accept rate: accepts/step * 100
+    const acceptSeries = isMultiMode
+      ? visibleModes.map(m => {
+          const c = this.MODE_COLORS[m] || this.MODE_COLORS._default;
+          const modeData = t.filter(r => r.mode === m);
+          return { data: modeData.map(r => ({ x: r.step, y: r.step > 0 ? (r.accepts || 0) / r.step * 100 : 0 })), color: c, label: m };
+        })
+      : [{ data: t.map(r => ({ x: r.step, y: r.step > 0 ? ((r.A||0)+(r.T||0)+(r.D||0)) : 0 })), color: '#00ff88', label: 'accepts' }];
+
+    this.charts = [
+      { canvas: $('#tc-eval'), title: 'Eval Accuracy (%)', series: evalSeries },
+      { canvas: $('#tc-edges'), title: 'Edge Count', series: perModeSeries('edges') },
+      { canvas: $('#tc-accepts'), title: 'Accept Rate (%)', series: acceptSeries },
+      { canvas: $('#tc-decay'), title: 'Decay Mean', series: perModeSeries('decay_m', 0.16) },
+      { canvas: $('#tc-charge'), title: 'Charge Mean', series: perModeSeries('charge_mean', 0) },
+      { canvas: $('#tc-firing'), title: 'Firing Rate (%)', series: perModeSeries('firing_rate', 0).map(s => ({
+        ...s, data: s.data.map(p => ({ x: p.x, y: p.y * 100 }))
+      })) },
     ];
   },
 
@@ -1581,17 +1665,17 @@ const trainingRenderer = {
       ctx.stroke();
     }
 
-    // Legend
+    // Legend (always show if >1 series)
     if (chart.series.length > 1) {
       let lx = padL + 8;
       const ly = padT + 14;
-      ctx.font = '9px monospace';
+      ctx.font = '10px monospace';
       for (const s of chart.series) {
         ctx.fillStyle = s.color;
-        ctx.fillRect(lx, ly - 6, 12, 3);
-        lx += 16;
+        ctx.fillRect(lx, ly - 6, 14, 3);
+        lx += 18;
         ctx.fillText(s.label, lx, ly);
-        lx += ctx.measureText(s.label).width + 12;
+        lx += ctx.measureText(s.label).width + 14;
       }
     }
   },

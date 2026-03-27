@@ -499,6 +499,15 @@ def run_one(mode, bp, ALL_DATA, bigram, eval_seqs):
     LOG = os.path.join(BASE_DIR, f"ab_{mode}_live.txt")
     JSON_LOG = os.path.join(ROOT, f"training_live_data.json")
 
+    # Load existing JSON log to append (multi-mode support)
+    _existing_log = []
+    if os.path.exists(JSON_LOG):
+        try:
+            with open(JSON_LOG) as f:
+                _existing_log = [e for e in json.load(f) if e.get('mode') != mode]
+        except Exception:
+            _existing_log = []
+
     with open(LOG, "w") as f:
         f.write(f"--- {label} START {time.strftime('%Y-%m-%d %H:%M:%S')} ---\n")
         f.write(f"H={H} V={IO} budget={BUDGET} init_edges={init_edges}\n")
@@ -649,7 +658,7 @@ def run_one(mode, bp, ALL_DATA, bigram, eval_seqs):
                 eval_history.append(entry)
 
                 with open(JSON_LOG, 'w') as f:
-                    json.dump(log_data, f, separators=(',', ':'))
+                    json.dump(_existing_log + log_data, f, separators=(',', ':'))
                 sys.stdout.flush()
 
                 # Plateau detection
