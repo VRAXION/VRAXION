@@ -107,8 +107,8 @@ def softmax(scores: np.ndarray) -> np.ndarray:
 
 def run_recipe_rollout(mask, theta, decay, rho, text_bytes):
     """Current canonical recipe semantics."""
-    rs, cs = np.where(mask != 0)
-    sp_vals = mask[rs, cs] * _polarity[rs]
+    rs, cs = np.where(mask)
+    sp_vals = _polarity[rs]
     ret = 1.0 - decay
     state = np.zeros(mask.shape[0], dtype=np.float32)
     charge = np.zeros(mask.shape[0], dtype=np.float32)
@@ -235,21 +235,21 @@ def worker_eval(args):
     if proposal_type == "add":
         r = rng.randint(0, H - 1)
         c = rng.randint(0, H - 1)
-        if r == c or mask[r, c] != 0:
+        if r == c or mask[r, c]:
             return {"delta": -1e9, "type": "add"}
         new_mask = mask.copy()
-        new_mask[r, c] = 1.0
+        new_mask[r, c] = True
     elif proposal_type == "flip":
-        alive = list(zip(*np.where(mask != 0)))
+        alive = list(zip(*np.where(mask)))
         if not alive:
             return {"delta": -1e9, "type": "flip"}
         r, c = alive[rng.randint(0, len(alive) - 1)]
         nc = rng.randint(0, H - 1)
-        if nc == r or nc == c or mask[r, nc] != 0:
+        if nc == r or nc == c or mask[r, nc]:
             return {"delta": -1e9, "type": "flip"}
         new_mask = mask.copy()
-        new_mask[r, c] = 0.0
-        new_mask[r, nc] = 1.0
+        new_mask[r, c] = False
+        new_mask[r, nc] = True
     elif proposal_type == "decay":
         idx = rng.randint(0, H - 1)
         new_decay = decay.copy()
@@ -279,7 +279,7 @@ def worker_eval(args):
 
 
 def structure_stats(mask: np.ndarray) -> dict[str, int]:
-    present = mask != 0
+    present = mask
     out_deg = np.sum(present, axis=1)
     in_deg = np.sum(present, axis=0)
     reciprocal_pairs = int(np.triu(present & present.T, k=1).sum())
@@ -488,7 +488,7 @@ def train_mode(mode_key, label, schedule, learn_rho, input_projection, output_pr
             ptype = schedule[(step - 1) % len(schedule)]
             if ptype == "rho" and not learn_rho:
                 ptype = "decay"
-            if ptype in ("flip", "decay", "rho") and int((mask != 0).sum()) == 0:
+            if ptype in ("flip", "decay", "rho") and int(mask.sum()) == 0:
                 ptype = "add"
 
             mask_flat = mask.flatten()
@@ -521,7 +521,7 @@ def train_mode(mode_key, label, schedule, learn_rho, input_projection, output_pr
                     accs.append(acc)
                     nonfinite_eval += bad
                 eval_pct = float(np.mean(accs) * 100.0)
-                edges = int((mask != 0).sum())
+                edges = int(mask.sum())
                 struct = structure_stats(mask)
                 gate = additive_gate_stats(theta, rho, freq, phase, args.ticks) if mode_key != "graph_exact_rho" else graph_gate_stats(theta, rho, freq, phase, args.ticks)
                 line, detail, report_entry = format_report_line(
@@ -555,7 +555,7 @@ def train_mode(mode_key, label, schedule, learn_rho, input_projection, output_pr
     final_eval = float(np.mean(accs))
     final_struct = structure_stats(mask)
     final_gate = additive_gate_stats(theta, rho, freq, phase, args.ticks) if mode_key != "graph_exact_rho" else graph_gate_stats(theta, rho, freq, phase, args.ticks)
-    summary = summarize_mode(mode_key, label, reports, init_rho, final_eval, int((mask != 0).sum()), nonfinite_final, final_struct, final_gate, elapsed)
+    summary = summarize_mode(mode_key, label, reports, init_rho, final_eval, int(mask.sum()), nonfinite_final, final_struct, final_gate, elapsed)
     payload["modes"][mode_key]["summary"] = summary
     dump_json(json_log, payload)
     append_log(live_log, f"FINAL {mode_key}: eval={summary['final_eval_pct']:.2f}% edges={summary['final_edges']} nonfinite={summary['final_nonfinite_events']} elapsed={summary['elapsed_sec']}s")
@@ -570,7 +570,7 @@ def build_initial_state(io_dim, hidden_ratio, projection_scale, theta_init, deca
     decay_rng = np.random.RandomState(99)
     return {
         "H": H,
-        "mask": np.zeros((H, H), dtype=np.float32),
+        "mask": np.zeros((H, H), dtype=np.bool_),
         "theta": np.full(H, theta_init, dtype=np.float32),
         "decay": decay_rng.uniform(decay_lo, decay_hi, H).astype(np.float32),
         "polarity": ref.polarity.astype(np.float32),

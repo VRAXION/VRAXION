@@ -95,6 +95,26 @@ def build_scalar_layer_from_values(field: str, label: str, values: np.ndarray) -
     }
 
 
+def build_binary_strip_layer(field: str, label: str, flags: np.ndarray) -> dict[str, object]:
+    flags = np.asarray(flags, dtype=np.bool_)
+    values = flags.astype(np.uint8, copy=False)
+    nonzero = int(values.sum())
+    return {
+        "kind": "binary_strip",
+        "id": field,
+        "label": label,
+        "count": int(values.shape[0]),
+        "values": values.tolist(),
+        "min": int(values.min()) if values.size else 0,
+        "max": int(values.max()) if values.size else 0,
+        "mean": float(values.mean()) if values.size else 0.0,
+        "std": float(values.std()) if values.size else 0.0,
+        "nonzero": nonzero,
+        "argmin": int(values.argmin()) if values.size else -1,
+        "argmax": int(values.argmax()) if values.size else -1,
+    }
+
+
 def build_matrix_layer(layer_id: str, label: str, hidden_size: int, rows: np.ndarray, cols: np.ndarray, out_degree: np.ndarray, in_degree: np.ndarray, blocked_self_edges: int = 0) -> dict[str, object]:
     rows = np.asarray(rows, dtype=np.int32)
     cols = np.asarray(cols, dtype=np.int32)
@@ -159,25 +179,25 @@ def build_payload(path: Path, title: str) -> dict[str, object]:
         reciprocal_in,
     ))
 
-    layers.append(build_scalar_layer_from_values(
+    layers.append(build_binary_strip_layer(
         "active_neuron",
         "ACTIVE",
-        ((out_degree + in_degree) > 0).astype(np.float32),
+        (out_degree + in_degree) > 0,
     ))
-    layers.append(build_scalar_layer_from_values(
+    layers.append(build_binary_strip_layer(
         "sink_neuron",
         "SINK",
-        ((out_degree == 0) & (in_degree > 0)).astype(np.float32),
+        (out_degree == 0) & (in_degree > 0),
     ))
-    layers.append(build_scalar_layer_from_values(
+    layers.append(build_binary_strip_layer(
         "source_only_neuron",
         "SOURCE_ONLY",
-        ((out_degree > 0) & (in_degree == 0)).astype(np.float32),
+        (out_degree > 0) & (in_degree == 0),
     ))
-    layers.append(build_scalar_layer_from_values(
+    layers.append(build_binary_strip_layer(
         "isolated_neuron",
         "ISOLATED",
-        ((out_degree == 0) & (in_degree == 0)).astype(np.float32),
+        (out_degree == 0) & (in_degree == 0),
     ))
 
     for field in SCALAR_FIELDS:
@@ -308,6 +328,18 @@ function updateHeader(){
       "green = connection present",
       "red = blocked diagonal",
       "orange = hover row / column",
+    ]);
+  } else if (activeLayer.kind === "binary_strip") {
+    setSummary([
+      `count ${activeLayer.count}`,
+      `active ${activeLayer.nonzero}`,
+      `inactive ${activeLayer.count - activeLayer.nonzero}`,
+      `mean ${(activeLayer.mean * 100).toFixed(2)}% on`,
+    ]);
+    setLegend([
+      "green = active binary flag",
+      "dim = inactive binary flag",
+      "one binary strip per neuron",
     ]);
   } else {
     setSummary([
@@ -497,9 +529,54 @@ function renderScalar(){
   }
 }
 
+function renderBinaryStrip(){
+  const stripX = Math.max(370, W * 0.40);
+  const stripW = Math.min(220, Math.max(80, W * 0.12));
+  cx.fillStyle = "#05080e";
+  cx.fillRect(stripX, panY, stripW, activeLayer.count * scale);
+
+  for (let i = 0; i < activeLayer.count; i += 1){
+    const y = panY + i * scale;
+    if (y + scale < 0 || y > H) continue;
+    cx.fillStyle = activeLayer.values[i] ? "#00ff88" : "rgba(68,85,102,0.55)";
+    cx.fillRect(stripX, y, stripW, Math.max(1, scale));
+  }
+
+  if (showGuides && hover !== null){
+    const y = panY + hover * scale;
+    cx.fillStyle = "rgba(255,255,255,0.12)";
+    cx.fillRect(stripX - 18, y, stripW + 36, Math.max(1, scale));
+    cx.strokeStyle = "#ffffff";
+    cx.lineWidth = 2;
+    cx.strokeRect(stripX - 1, y - 1, stripW + 2, Math.max(1, scale) + 2);
+    cx.fillStyle = "#ff8844";
+    cx.font = "11px JetBrains Mono";
+    cx.fillText(String(hover), stripX + stripW + 12, y + Math.max(11, scale * 0.8));
+  }
+
+  cx.strokeStyle = "rgba(0,255,136,0.30)";
+  cx.lineWidth = 1;
+  cx.strokeRect(stripX, panY, stripW, activeLayer.count * scale);
+
+  if (hover !== null){
+    const v = !!activeLayer.values[hover];
+    setHover(
+      `neuron ${hover}`,
+      [
+        `${activeLayer.id} = ${v ? "on" : "off"}`,
+        v ? "binary flag active" : "binary flag inactive",
+        v ? "member of current mask" : "outside current mask",
+      ]
+    );
+  } else {
+    setHover("hover a neuron", null);
+  }
+}
+
 function render(){
   cx.clearRect(0, 0, W, H);
   if (activeLayer.kind === "matrix") renderMatrix();
+  else if (activeLayer.kind === "binary_strip") renderBinaryStrip();
   else renderScalar();
 }
 

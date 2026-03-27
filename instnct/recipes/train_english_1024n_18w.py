@@ -49,8 +49,8 @@ def make_bp(io_dim, seed=12345):
 def _eval_bigram(mask, H, theta, decay, seqs):
     """Bigram cosine eval — forward pass matches graph.py rollout_token():
     binary spikes, polarity-signed edges, C19 soft-wave threshold, MAX_CHARGE clamp."""
-    rs, cs = np.where(mask != 0)
-    sp_vals = mask[rs, cs] * _polarity[rs]   # signed: inhibitory sources send -1
+    rs, cs = np.where(mask)
+    sp_vals = _polarity[rs]   # signed: inhibitory sources send -1
     pat_norm = _bp / (np.linalg.norm(_bp, axis=1, keepdims=True) + 1e-8)
     ret = 1.0 - decay
     total = 0.0
@@ -97,19 +97,19 @@ def worker_eval(args):
 
     if proposal_type == 'add':
         r = rng.randint(0, H-1); c = rng.randint(0, H-1)
-        if r == c or mask[r, c] != 0:
+        if r == c or mask[r, c]:
             return {'delta': -1e9, 'type': 'add'}
-        new_mask = mask.copy(); new_mask[r, c] = 1.0
+        new_mask = mask.copy(); new_mask[r, c] = True
     elif proposal_type == 'flip':
         # Binary mask: flip = rewire (move edge to random target)
-        alive = list(zip(*np.where(mask != 0)))
+        alive = list(zip(*np.where(mask)))
         if not alive:
             return {'delta': -1e9, 'type': 'flip'}
         r, c = alive[rng.randint(0, len(alive)-1)]
         nc = rng.randint(0, H-1)
-        if nc == r or nc == c or mask[r, nc] != 0:
+        if nc == r or nc == c or mask[r, nc]:
             return {'delta': -1e9, 'type': 'flip'}
-        new_mask = mask.copy(); new_mask[r, c] = 0.0; new_mask[r, nc] = 1.0
+        new_mask = mask.copy(); new_mask[r, c] = False; new_mask[r, nc] = True
     elif proposal_type == 'theta':
         idx = rng.randint(0, H-1)
         new_theta = theta.copy()
@@ -137,8 +137,8 @@ def eval_accuracy(mask, H, input_projection, output_projection, theta, decay,
                   polarity, freq, phase, rho, text_bytes, bp):
     """Classic accuracy for reporting — same forward pass as _eval_bigram."""
     pat_norm = bp / (np.linalg.norm(bp, axis=1, keepdims=True) + 1e-8)
-    rs, cs = np.where(mask != 0)
-    sp_vals = mask[rs, cs] * polarity[rs]
+    rs, cs = np.where(mask)
+    sp_vals = polarity[rs]
     ret = 1.0 - decay
     state = np.zeros(H, dtype=np.float32); charge = np.zeros(H, dtype=np.float32)
     correct = 0; total = 0
