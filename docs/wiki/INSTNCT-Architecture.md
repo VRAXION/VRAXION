@@ -53,10 +53,20 @@ For the full technical treatment with toy model validation and biology cross-che
 
 ## Architecture In One Screen
 
+**Current mainline (holographic projection):**
 ```text
 input -> input_projection -> hidden signed graph -> output_projection -> output
               persistent charge/state across ticks
 ```
+
+**Validated alternative (tentacle I/O):**
+```text
+input -> first V neurons -> hidden graph -> last V neurons -> output
+         (1:1 inject)       (mask edges     (charge = logits)
+                             learn routing)
+```
+
+> **Tentacle I/O finding (2026-03-27):** A/B/C sweep showed tentacle I/O (4.7% peak) beats holographic projection (1.2% peak) by 3.9x. When I/O routing is part of the evolvable mask instead of frozen in random projections, the network learns which inputs to attend to and which outputs to drive. Not yet promoted to mainline. See `instnct/recipes/ab_projection_vs_tentacles.py`.
 
 Mutation-selection loop at a glance:
 
@@ -84,12 +94,16 @@ Mutation-selection loop at a glance:
 
 | Component | What it does |
 |---|---|
-| `input_projection` | Fixed random projection |
-| `output_projection` | Fixed random projection |
+| `input_projection` | Fixed random projection (current mainline) |
+| `output_projection` | Fixed random projection (current mainline) |
 | Hidden-to-hidden mask | Learnable graph structure |
 | `theta` | Learnable per-neuron firing threshold |
 | `decay` | Learnable per-neuron decay rate |
+| `polarity` | Per-neuron excitatory/inhibitory sign (+1/-1), co-evolved |
+| `freq`, `phase`, `rho` | Per-neuron Musical Gating / C19 Soft-Wave parameters, co-evolved |
 | Charge / state | Runtime state that changes while the model runs |
+
+> **Note:** The tentacle I/O validated finding replaces `input_projection` / `output_projection` with dedicated I/O neurons whose connectivity is part of the learnable mask. This is not yet shipped on mainline.
 
 ## Evidence Around This Line
 
