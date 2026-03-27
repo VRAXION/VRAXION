@@ -16,3 +16,7 @@ __pycache__/
 *.npy
 *.npz
 *.traindat
+
+# Generated visualization output
+instnct_viz.html
+instnct_viz.json
