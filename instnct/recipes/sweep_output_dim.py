@@ -1,11 +1,8 @@
 """
-Quick test: SDR_64 input + 8-bit binary output
-===============================================
-A: SDR_64 in + random_64 out (baseline, 14.1%)
-B: SDR_64 in + 8-bit binary out (new test)
-
-B has 184 hidden neurons (vs A's 128) — more compute capacity.
-Learnable theta, same params as everything else.
+Output dimension sweep: 16, 32, 48, 64, 96
+============================================
+SDR_64 input, random N output, learnable theta, H=256.
+Less output dim = more hidden neurons.
 """
 import sys, os, time, random
 import numpy as np
@@ -29,40 +26,14 @@ def build_sdr(n, dim, k, seed):
         t[v, rng.choice(dim, size=k, replace=False)] = 1.0
     return t
 
-def build_binary8():
-    t = np.zeros((256, 8), np.float32)
-    for v in range(256):
-        for b in range(8):
-            t[v, b] = float((v >> b) & 1)
-    return t
-
-def build_random(dim, seed=12345):
-    rng = np.random.RandomState(seed)
-    p = rng.randn(256, dim).astype(np.float32)
-    p /= np.linalg.norm(p, axis=1, keepdims=True)
-    return p
-
 BP_IN = build_sdr(256, IN_DIM, IN_K, 42)
-
-def build_repeated_binary(repeats=8):
-    """8-bit pattern repeated N times = 8*N neurons, structured but rich."""
-    base = build_binary8()  # (256, 8)
-    return np.tile(base, (1, repeats)), 8 * repeats  # (256, 64)
-
-bp_rep64, _ = build_repeated_binary(8)
-
-CONFIGS = {
-    'A': {'label': 'SDR64_in + RAND64_out',    'bp_out': build_random(64), 'out_dim': 64},
-    'B': {'label': 'SDR64_in + BIN8_out',      'bp_out': build_binary8(),  'out_dim': 8},
-    'C': {'label': 'SDR64_in + BIN8x8_out',    'bp_out': bp_rep64,         'out_dim': 64},
-}
 
 _bp_out=None;_all_data=None;_bigram=None
 _pol=None;_freq=None;_phase=None;_rho=None;_out_dim=None
 
-def init_w(bpo,data,bg,pol,fr,ph,rh,outd):
+def init_w(bpo,data,bg,pol,fr,ph,rh,od):
     global _bp_out,_all_data,_bigram,_pol,_freq,_phase,_rho,_out_dim
-    _bp_out=bpo;_all_data=data;_bigram=bg;_pol=pol;_freq=fr;_phase=ph;_rho=rh;_out_dim=outd
+    _bp_out=bpo;_all_data=data;_bigram=bg;_pol=pol;_freq=fr;_phase=ph;_rho=rh;_out_dim=od
 
 def _eval_bigram(mask, theta, decay, seqs):
     sc = SelfWiringGraph.build_sparse_cache(mask)
@@ -75,7 +46,7 @@ def _eval_bigram(mask, theta, decay, seqs):
             state,charge=SelfWiringGraph.rollout_token(inj,mask=mask,theta=theta,decay=decay,
                 ticks=TICKS,input_duration=INPUT_DURATION,state=state,charge=charge,
                 sparse_cache=sc,polarity=_pol,freq=_freq,phase=_phase,rho=_rho)
-            logits=np.dot(_bp_out, charge[H-_out_dim:])
+            logits=np.dot(_bp_out,charge[H-_out_dim:])
             e=np.exp(logits-logits.max());pred=e/e.sum()
             tgt=_bigram[tb[i]]
             cos=np.dot(pred,tgt)/(np.linalg.norm(pred)*np.linalg.norm(tgt)+1e-8)
@@ -103,7 +74,7 @@ def worker_eval(args):
         nm=mask.copy();nm[r,c]=False;nm[r,nc]=True
     elif pt=='theta':
         idx=rng.randint(0,H-1);nt=theta.copy()
-        nt[idx]=rng.uniform(0.0, 16.0)
+        nt[idx]=rng.uniform(0.0,16.0)
     elif pt=='decay':
         idx=rng.randint(0,H-1);nd=decay.copy()
         nd[idx]=max(0.01,min(0.5,decay[idx]+rng.uniform(-0.03,0.03)))
@@ -129,13 +100,17 @@ if __name__ == "__main__":
     eval_rng = np.random.RandomState(9999)
     eval_seqs = [ALL_DATA[o:o+100] for o in [eval_rng.randint(0,len(ALL_DATA)-100) for _ in range(5)]]
 
-    all_results = []
-    for mk in ['A','C']:
-        cfg = CONFIGS[mk]
-        out_dim = cfg['out_dim']
-        hidden = H - IN_DIM - out_dim
+    OUT_DIMS = [96, 112, 128, 144, 160, 176]
+    results = []
+
+    for od in OUT_DIMS:
+        hidden = H - IN_DIM - od
+        rng_out = np.random.RandomState(12345)
+        bp_out = rng_out.randn(256, od).astype(np.float32)
+        bp_out /= np.linalg.norm(bp_out, axis=1, keepdims=True)
+
         print(f"\n{'='*60}")
-        print(f"  {mk}: {cfg['label']}  (hidden={hidden})")
+        print(f"  OUT_DIM={od}, hidden={hidden}")
         print(f"{'='*60}")
 
         random.seed(42); np.random.seed(42)
@@ -148,7 +123,7 @@ if __name__ == "__main__":
         decay = np.random.RandomState(99).uniform(0.08, 0.24, H).astype(np.float32)
 
         pool = Pool(N_WORKERS, initializer=init_w,
-            initargs=(cfg['bp_out'], ALL_DATA, bigram, pol, ref.freq, ref.phase, ref.rho, out_dim))
+            initargs=(bp_out, ALL_DATA, bigram, pol, ref.freq, ref.phase, ref.rho, od))
 
         best_eval=0;stall=0;accepts=0;t_acc=0;t0=time.time()
         try:
@@ -176,7 +151,7 @@ if __name__ == "__main__":
                             st,ch=SelfWiringGraph.rollout_token(inj,mask=mask,theta=theta,decay=decay,
                                 ticks=TICKS,input_duration=INPUT_DURATION,state=st,charge=ch,
                                 sparse_cache=sc,polarity=pol,freq=ref.freq,phase=ref.phase,rho=ref.rho)
-                            logits=np.dot(cfg['bp_out'],ch[H-out_dim:])
+                            logits=np.dot(bp_out,ch[H-od:])
                             if np.argmax(logits)==s[i+1]:cor+=1
                             tot+=1
                         ea_list.append(cor/tot if tot else 0)
@@ -184,18 +159,24 @@ if __name__ == "__main__":
                     if ea>best_eval: best_eval=ea; stall=0
                     else: stall+=EVAL_EVERY
                     if step % 200 == 0:
-                        print(f"  [{mk}][{step:4d}] eval={ea*100:.1f}% best={best_eval*100:.1f}% "
-                              f"theta={theta.mean():.2f} t_acc={t_acc} acc={accepts} {el:.0f}s")
+                        print(f"  [od={od}][{step:4d}] eval={ea*100:.1f}% best={best_eval*100:.1f}% "
+                              f"theta={theta.mean():.2f} acc={accepts} {el:.0f}s")
                     sys.stdout.flush()
                     if stall >= 800 and step >= 600:
                         print(f"  ** STALL"); break
         finally:
             pool.terminate(); pool.join()
+
         elapsed=time.time()-t0
-        all_results.append({'mode':mk,'label':cfg['label'],'best':best_eval,'hidden':hidden,'time':elapsed})
-        print(f"  [{mk}] DONE: best={best_eval*100:.1f}% hidden={hidden} {elapsed:.0f}s")
+        results.append({'od':od,'hidden':hidden,'best':best_eval,'acc':accepts,'time':elapsed})
+        print(f"  DONE: od={od} hidden={hidden} best={best_eval*100:.1f}% acc={accepts} {elapsed:.0f}s")
 
     print(f"\n{'='*60}")
-    for r in all_results:
-        print(f"  {r['mode']}: {r['label']:28s} hidden={r['hidden']:3d} best={r['best']*100:5.1f}%")
+    print(f"  OUTPUT DIM SWEEP RESULTS")
+    print(f"{'='*60}")
+    print(f"  {'OutDim':>6} {'Hidden':>6} {'Best':>6} {'Accept':>7}")
+    for r in results:
+        print(f"  {r['od']:6d} {r['hidden']:6d} {r['best']*100:5.1f}% {r['acc']:7d}")
+    best = max(results, key=lambda x: x['best'])
+    print(f"\n  SWEET SPOT: out_dim={best['od']} (hidden={best['hidden']}) -- {best['best']*100:.1f}%")
     print(f"{'='*60}")

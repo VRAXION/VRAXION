@@ -25,7 +25,7 @@ This page is the single primary timeline and lookup surface for VRAXION. Use it 
 - Current strongest edge-representation quality result: sign+mag + magnitude resample reached `18.69%` at `155` edges (`q=0.121`), but it remains validated evidence rather than the current recipe candidate.
 - Current I/O architecture finding: tentacle I/O (4.7%) beats holographic projection (1.2%) by 3.9x — not yet promoted to mainline. 8-bit binary I/O (0.2%) rejected; high-dimensional spreading is load-bearing.
 - Current best input encoding: SDR_64 (sparse 20%, peak 7.3%) — baked into `graph.py` as `input_mode='sdr'` option.
-- Current best eval result: `14.1%` with learnable theta (full resample [0,16], converges ~6-7), SDR input, tentacle I/O (H=256 test scale).
+- Current best eval result: `20.0%` with out_dim=160, learnable theta, SDR_64 input, charge readout (H=256 test scale).
 - Current next public build target: context-dependent task learning, with input-window injection, evaluation-path changes, and associative-memory probes under active evaluation
 
 ## What Matters Now
@@ -116,6 +116,9 @@ This page is the single primary timeline and lookup surface for VRAXION. Use it 
 - **Potential-aware fitness REJECTED** — Gemini's proposal: `score + w * target_logit`. Standard `14.1%` > potential w=0.05 `11.3%` > w=0.10 `8.3%`. False positives via 64-to-256 random projection. May work with direct 256 output.
 - **Zero-theta trap CONFIRMED** — cross-validated with Gemini. `THETA_INIT=0.0` nullifies C19 Soft-Wave. Already fixed by learnable theta.
 - **Claude vs Gemini graph.py A/B** — same params: Claude `14.1%` > Gemini `11.3%`. C19 clip and batch refractory are load-bearing. Gemini branch not merged.
+- **Output dim sweep: 20.0% NEW PEAK** — out_dim=160 (hidden=32) beats out_dim=64 (hidden=128, 14.1%). Richer readout matters more than hidden neuron count. Non-monotonic: dip at 128, peak at 160.
+- **Direct 256 output (H=384)** — `7.1%`, too slow and too few hidden. Random projection is more practical.
+- **8-bit / repeated binary output** — confirmed dead. Need 48+ random dims to separate 256 classes.
 
 ## Retired Surfaces and Replacements
 
