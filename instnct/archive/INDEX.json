@@ -1,0 +1,52 @@
+[
+  {
+    "name": "phi_overlap_demo",
+    "date": "2026-03-28 14:11",
+    "H": 256,
+    "edges": 3247,
+    "file": "phi_overlap_demo.npz",
+    "size_kb": 6.6,
+    "config": {
+      "H": 256,
+      "phi_overlap": true
+    },
+    "result": {
+      "best": 0.0,
+      "note": "random init, not trained"
+    }
+  },
+  {
+    "name": "phi_overlap_trained",
+    "date": "2026-03-28 14:11",
+    "H": 256,
+    "edges": 5,
+    "file": "phi_overlap_trained.npz",
+    "size_kb": 1.6,
+    "config": {
+      "H": 256,
+      "phi_overlap": true
+    },
+    "result": {
+      "best": 0.042,
+      "edges": 5,
+      "note": "empty start, fixed schedule"
+    }
+  },
+  {
+    "name": "phi_learnable_sched",
+    "date": "2026-03-28 14:11",
+    "H": 256,
+    "edges": 89,
+    "file": "phi_learnable_sched.npz",
+    "size_kb": 2.0,
+    "config": {
+      "H": 256,
+      "phi_overlap": true
+    },
+    "result": {
+      "best": 0.149,
+      "edges": 89,
+      "note": "empty start, learnable schedule"
+    }
+  }
+]
