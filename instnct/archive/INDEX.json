@@ -1,5 +1,47 @@
 [
   {
+    "name": "theta_binary_1_2",
+    "date": "2026-03-28 19:07",
+    "H": 256,
+    "edges": 3247,
+    "file": "theta_binary_1_2.npz",
+    "size_kb": 77.7,
+    "config": {
+      "H": 256,
+      "theta_low": 1.0,
+      "theta_high": 2.0
+    },
+    "result": {
+      "best": 0,
+      "edges": 3247,
+      "n_low": 256,
+      "n_high": 0,
+      "acc": 0,
+      "t_acc": 0
+    }
+  },
+  {
+    "name": "theta_binary_1_6",
+    "date": "2026-03-28 19:02",
+    "H": 256,
+    "edges": 3247,
+    "file": "theta_binary_1_6.npz",
+    "size_kb": 77.7,
+    "config": {
+      "H": 256,
+      "theta_low": 1.0,
+      "theta_high": 6.0
+    },
+    "result": {
+      "best": 0.0162,
+      "edges": 3247,
+      "n_low": 254,
+      "n_high": 2,
+      "acc": 3,
+      "t_acc": 2
+    }
+  },
+  {
     "name": "binary_control",
     "date": "2026-03-28 16:48",
     "H": 256,
