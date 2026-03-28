@@ -1,5 +1,30 @@
 [
   {
+    "name": "onehot256_freq158",
+    "date": "2026-03-28 14:32",
+    "H": 256,
+    "edges": 3245,
+    "file": "onehot256_freq158.npz",
+    "size_kb": 78.2,
+    "config": {
+      "H": 256,
+      "in_dim": 256,
+      "out_dim": 158,
+      "input": "one-hot",
+      "output": "freq_order"
+    },
+    "result": {
+      "best": 0.0949,
+      "edges": 3245,
+      "accepts": 882,
+      "add": 123,
+      "remove": 125,
+      "flip": 143,
+      "theta_acc": 477,
+      "decay_acc": 14
+    }
+  },
+  {
     "name": "phi_overlap_demo",
     "date": "2026-03-28 14:11",
     "H": 256,
