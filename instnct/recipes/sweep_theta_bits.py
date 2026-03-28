@@ -38,6 +38,7 @@ MODES = {
     'F': {'label': 'binary [1,15]',    'values': [1, 15]},
     'G': {'label': 'ternary [1,7,15]', 'values': [1, 7, 15]},
     'H': {'label': 'int8 [1-255]',    'values': list(range(1, 256))},
+    'K': {'label': 'quad [1,5,10,15]','values': [1, 5, 10, 15]},
     'I': {'label': 'trit [1,6,10]',  'values': [1, 6, 10]},
     'J': {'label': 'quad [1,6,10,15]','values': [1, 6, 10, 15]},
 }
@@ -139,7 +140,7 @@ if __name__ == "__main__":
     print(f"{'='*60}")
 
     results = []
-    for mk in ['I','J']:
+    for mk in ['K']:
         cfg = MODES[mk]
         vals = cfg['values']
         print(f"\n  {mk}: {cfg['label']} ({len(vals)} levels: {vals})")
