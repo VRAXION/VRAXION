@@ -35,6 +35,8 @@ MODES = {
     'C': {'label': 'int2 [1-3]',      'values': [1, 2, 3]},
     'D': {'label': 'trit [1,4,7]',    'values': [1, 4, 7]},
     'E': {'label': '5-val [1,2,4,7,13]', 'values': [1, 2, 4, 7, 13]},
+    'F': {'label': 'binary [1,15]',    'values': [1, 15]},
+    'G': {'label': 'ternary [1,7,15]', 'values': [1, 7, 15]},
 }
 
 def build_sdr(n, dim, k, seed):
@@ -134,7 +136,7 @@ if __name__ == "__main__":
     print(f"{'='*60}")
 
     results = []
-    for mk in ['B','C','D','E']:
+    for mk in ['D','E','F','G']:
         cfg = MODES[mk]
         vals = cfg['values']
         print(f"\n  {mk}: {cfg['label']} ({len(vals)} levels: {vals})")
