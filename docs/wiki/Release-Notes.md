@@ -124,7 +124,8 @@ This page is the single primary timeline and lookup surface for VRAXION. Use it 
 - **Scale sweep confirms phi ratio** — 0.625 output ratio tested at H=128 (17.2%), H=192 (19.2%), H=256 (20.0%), H=384 (19.4%). Phi nested downshift (`H/phi` output, `remainder/phi` input) predicts optimum within 2-4 neurons. Theta converges ~5-7 at every scale. Architecture follows golden ratio proportioning.
 - **Phi overlap: 20.8% NEW PEAK** — in=out=`round(H/phi)`=158, overlap zone=60, pure hidden=0. The network operates without dedicated hidden neurons — the I/O overlap zone IS the processing substrate. `phi_overlap=True` baked into `graph.py`.
 - **Empty start: fixed schedule = 4.2%** (5 edges) — the network barely builds anything without prefill.
-- **Theta: int4 (0-15) beats float32** — int4 `15.6%` > float32 `13.5%`. Smaller search space (16 values) accelerates evolution + 9% faster. Distribution confirms trit hypothesis: theta=1 (relay, 25%) + theta=6 (compute, 8%) + high theta (gate).
+- **Theta=0 is redundant** — clip(0 × anything, 1.0, 15.0) = 1.0 always. Same as theta=1. Remove 0 from search space.
+- **Theta: int4 (1-15) beats float32** — int4 `15.6%` > float32 `13.5%`. Smaller search space (16 values) accelerates evolution + 9% faster. Distribution confirms trit hypothesis: theta=1 (relay, 25%) + theta=6 (compute, 8%) + high theta (gate).
 - **Connection mask + polarity optimized to native bool** — lazy float32 cast, 21% forward speedup.
 - **Control neurons / binary toggles all fail** — linear ctrl 15.8%, binary ON/OFF 14.9% (968 toggle changes, never converged). Fix schedule (22.4%) remains unbeaten. Meta-learning mutation strategy doesn't work — evolution should focus on byte prediction, not self-regulation.
 - **Tree-wired scaffold = 15.6%** — 4-way frequency tournament tree init < random 5% (22.4%). Third structured init to lose to random (after resonator 2.4%, structured I/O seeding). Evolution prefers chaos.
