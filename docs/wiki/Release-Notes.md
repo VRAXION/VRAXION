@@ -25,7 +25,7 @@ This page is the single primary timeline and lookup surface for VRAXION. Use it 
 - Current strongest edge-representation quality result: sign+mag + magnitude resample reached `18.69%` at `155` edges (`q=0.121`), but it remains validated evidence rather than the current recipe candidate.
 - Current I/O architecture finding: tentacle I/O (4.7%) beats holographic projection (1.2%) by 3.9x — not yet promoted to mainline. 8-bit binary I/O (0.2%) rejected; high-dimensional spreading is load-bearing.
 - Current best input encoding: SDR_64 (sparse 20%, peak 7.3%) — baked into `graph.py` as `input_mode='sdr'` option.
-- Current best eval result: `20.8%` with phi overlap (in=out=H/phi=158, overlap=60, 0 hidden), learnable theta, charge readout (H=256 test scale).
+- Current best eval result: `22.4%` with phi overlap + freq-ordered output projection, learnable theta, charge readout (H=256 test scale).
 - Current next public build target: context-dependent task learning, with input-window injection, evaluation-path changes, and associative-memory probes under active evaluation
 
 ## What Matters Now
@@ -124,6 +124,7 @@ This page is the single primary timeline and lookup surface for VRAXION. Use it 
 - **Scale sweep confirms phi ratio** — 0.625 output ratio tested at H=128 (17.2%), H=192 (19.2%), H=256 (20.0%), H=384 (19.4%). Phi nested downshift (`H/phi` output, `remainder/phi` input) predicts optimum within 2-4 neurons. Theta converges ~5-7 at every scale. Architecture follows golden ratio proportioning.
 - **Phi overlap: 20.8% NEW PEAK** — in=out=`round(H/phi)`=158, overlap zone=60, pure hidden=0. The network operates without dedicated hidden neurons — the I/O overlap zone IS the processing substrate. `phi_overlap=True` baked into `graph.py`.
 - **Empty start: fixed schedule = 4.2%** (5 edges) — the network barely builds anything without prefill.
+- **Output projection sweep: FREQ_ORDER = 22.4% NEW PEAK** — bytes on smooth frequency curve > bigram SVD (21.8%) > random (20.8%) > rival pairs (19.0%). Key insight: output space topology must match target distribution topology — smooth and frequency-hierarchical. Next: bigram matrix as projection, pyramid readout.
 - **Full overlap (100%) = 14.7%** — worse than phi overlap (20.8%). Every neuron as both I/O is too noisy. Phi ratio is the optimal overlap, not maximum.
 - **Learnable schedule: 14.9% from nothing** (89 edges) — schedule budgets evolve: flip dominates (6), heavy pruning (remove=10), theta drops to 0. Quality/edge 26x better than prefill. Ultra-sparse self-organized topology.
 
