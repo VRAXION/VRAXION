@@ -123,6 +123,8 @@ This page is the single primary timeline and lookup surface for VRAXION. Use it 
 - **Multi-seed confirmation** — od=160 across 3 seeds: mean=18.2% std=0.6% [17.4-18.8%]. Theta converges ~6.2 every time. `DEFAULT_OUTPUT_DIM=160` baked into `graph.py`.
 - **Scale sweep confirms phi ratio** — 0.625 output ratio tested at H=128 (17.2%), H=192 (19.2%), H=256 (20.0%), H=384 (19.4%). Phi nested downshift (`H/phi` output, `remainder/phi` input) predicts optimum within 2-4 neurons. Theta converges ~5-7 at every scale. Architecture follows golden ratio proportioning.
 - **Phi overlap: 20.8% NEW PEAK** — in=out=`round(H/phi)`=158, overlap zone=60, pure hidden=0. The network operates without dedicated hidden neurons — the I/O overlap zone IS the processing substrate. `phi_overlap=True` baked into `graph.py`.
+- **Empty start: fixed schedule = 4.2%** (5 edges) — the network barely builds anything without prefill.
+- **Learnable schedule: 14.9% from nothing** (89 edges) — schedule budgets evolve: flip dominates (6), heavy pruning (remove=10), theta drops to 0. Quality/edge 26x better than prefill. Ultra-sparse self-organized topology.
 
 ## Retired Surfaces and Replacements
 
