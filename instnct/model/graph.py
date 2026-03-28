@@ -31,7 +31,8 @@ class SelfWiringGraph:
     DEFAULT_CAP_RATIO = 120
     DEFAULT_PROJECTION_SCALE = 3.0
     DEFAULT_THETA = 6  # int4 [1-15], converges ~6 (validated sweep)
-    DEFAULT_DECAY = 1.0
+    DEFAULT_DECAY = 0.16  # legacy float default
+    DECAY_PERIOD = 6      # int decay: subtract 1 every N ticks (1/6 ≈ 0.167 ≈ phi/10)
     MAX_CHARGE = 15.0
     DEFAULT_RHO = 0.3  # Starting modulation depth
     DEFAULT_INHIBITORY_FRACTION = 0.10  # Fly-realistic: fewer but broader I-neurons
@@ -352,10 +353,11 @@ class SelfWiringGraph:
         H = mask.shape[0]
         if mask.shape != (H, H):
             raise ValueError(f"mask must be square, got {mask.shape}")
-        if theta.shape != (H,) or decay.shape != (H,):
-            raise ValueError(
-                f"theta and decay must both be shape {(H,)}, got {theta.shape} and {decay.shape}"
-            )
+        if theta.shape != (H,):
+            raise ValueError(f"theta must have shape {(H,)}, got {theta.shape}")
+        # decay: scalar (fix int mode) or per-neuron array (legacy)
+        if decay.ndim > 0 and decay.shape != (H,):
+            raise ValueError(f"decay must be scalar or shape {(H,)}, got {decay.shape}")
         injected = np.asarray(injected, dtype=np.float32)
         if injected.shape != (H,):
             raise ValueError(f"injected must have shape {(H,)}, got {injected.shape}")
@@ -365,10 +367,21 @@ class SelfWiringGraph:
         sparse_cache = sparse_cache or SelfWiringGraph.build_sparse_cache(mask)
         use_sparse = len(sparse_cache[0]) < H * H * 0.1
 
+        # Detect int decay mode: if decay is scalar, use period-based int subtract
+        _decay_scalar = np.isscalar(decay) or (hasattr(decay, 'ndim') and decay.ndim == 0) or (hasattr(decay, 'shape') and decay.shape == ())
+        if _decay_scalar:
+            _dp = max(1, int(round(1.0 / max(float(decay), 0.001))))
+        else:
+            _dp = 0  # per-neuron float mode (legacy)
+
         for tick in range(int(ticks)):
-            # 1. DECAY
-            cur_charge = np.maximum(cur_charge - decay, 0.0)
-            
+            # 1. DECAY (int mode: -1 every N ticks; float mode: -decay every tick)
+            if _dp > 0:
+                if tick % _dp == 0:
+                    cur_charge = np.maximum(cur_charge - 1.0, 0.0)
+            else:
+                cur_charge = np.maximum(cur_charge - decay, 0.0)
+
             # 2. INPUT
             if tick < int(input_duration):
                 act = act + injected
@@ -459,9 +472,16 @@ class SelfWiringGraph:
         use_sparse = len(sparse_cache[0]) < H * H * 0.1
         batch_refractory = np.zeros((batch, H), dtype=np.int32) if refractory is not None else None
 
+        _decay_scalar_b = np.isscalar(decay) or (hasattr(decay, 'ndim') and decay.ndim == 0) or (hasattr(decay, 'shape') and decay.shape == ())
+        _dp_b = max(1, int(round(1.0 / max(float(decay), 0.001)))) if _decay_scalar_b else 0
+
         for tick in range(int(ticks)):
-            # 1. LEAK
-            cur_charges = np.maximum(cur_charges - decay, 0.0)
+            # 1. LEAK (int mode: -1 every N ticks; float mode: -decay every tick)
+            if _dp_b > 0:
+                if tick % _dp_b == 0:
+                    cur_charges = np.maximum(cur_charges - 1.0, 0.0)
+            else:
+                cur_charges = np.maximum(cur_charges - decay, 0.0)
 
             # 2. INPUT
             if tick < int(input_duration):
