@@ -56,33 +56,66 @@ This page is the single primary timeline and lookup surface for VRAXION. Use it 
 
 ## Project Timeline
 
-| Date | Turn | Why it mattered | Where to go now |
-|---|---|---|---|
-| Early 2026 | Diamond Code / LCX dominated the public architecture story | The earlier line centered on external memory, dreaming, observability, and Goldilocks-style probes before INSTNCT became the active center. | [INSTNCT Architecture](INSTNCT-Architecture) |
-| 2026-02-17 | Engineering doctrine and contributor policy were split into stable homes | Reproducibility and provenance stopped depending on scattered theory leaves and lab notes. | [Engineering Protocol](Engineering), [`CONTRIBUTING.md`](https://github.com/VRAXION/VRAXION/blob/main/CONTRIBUTING.md) |
-| 2026-02-17 | Front-door terminology and architecture drift started getting cleaned out | Readers no longer needed a chain of legacy pages to understand the current system. | [VRAXION Home](Home), [INSTNCT Architecture](INSTNCT-Architecture) |
-| 2026-02-17 to 2026-02-22 | Evidence discipline hardened around findings instead of page-local claims | Schedule, depth, and mutation results moved into an explicit evidence layer instead of being implied as shipped defaults. | [Validated Findings](Validated-Findings) |
-| 2026-03-21 | Repo-tracked docs became canonical and the GitHub wiki became a mirror | Public truth stopped drifting between README, Pages, findings, and ad hoc wiki edits. | [VRAXION Home](Home), [`CONTRIBUTING.md`](https://github.com/VRAXION/VRAXION/blob/main/CONTRIBUTING.md) |
-| 2026-03-21 | Schedule-control work became the main live research frontier | `8` ticks, decay-aware scheduling, voltage/leak control, and compact learnable policies became the strongest present-tense recipe questions. | [Validated Findings](Validated-Findings) |
-| 2026-03-22 | Triangle convergence was distilled into the current fixed English recipe candidate | The current candidate on `main` now uses an `8`-tick, decay-dominant `2 add / 1 flip / 5 decay` schedule without changing the canonical `graph.py` defaults. | [Validated Findings](Validated-Findings) |
-| 2026-03-22 | Sign+mag edge representation with magnitude resample became the strongest compact edge-format line | The edge-format frontier gained a new quality-per-edge winner at `18.69%` and `155` edges (`q=0.121`), without yet displacing the current recipe candidate or the best raw-accuracy schedule line. | [Validated Findings](Validated-Findings) |
-| 2026-03-22 | Task-learning experiments displaced the older swarm line as the main active frontier | Window=2 input superposition, word-pair memory, and log-likelihood evaluation opened a more credible path for context-dependent tasks than the older mixed-swarm target. | [Validated Findings](Validated-Findings), [VRAXION Home](Home) |
-| 2026-03-22 | Explicit preparation for `v5.0.0 Public Beta` started | The public story is being reorganized around stable release identity, clearer onboarding, and higher outside traffic rather than only internal experiment cadence. | This page, [VRAXION Home](Home), and [`CONTRIBUTING.md`](https://github.com/VRAXION/VRAXION/blob/main/CONTRIBUTING.md) |
-| 2026-03-22 | The tracked Diamond Code era was extracted from `main` | The current self-wiring line no longer carries the older Diamond Code tree in the default branch; that era now lives on `archive/diamond-code-era-20260322`. | This page and [`ARCHIVE.md`](https://github.com/VRAXION/VRAXION/blob/main/ARCHIVE.md) |
-| 2026-03-22 | The pre-beta INSTNCT surface was frozen down to one first-class public lane | English remained the only first-class public lane on `main`, while bulky raw result dumps, sweeps, and retired exploratory probes moved off the default branch into `archive/instnct-surface-freeze-20260322`. | This page, [Validated Findings](Validated-Findings), and [`ARCHIVE.md`](https://github.com/VRAXION/VRAXION/blob/main/ARCHIVE.md) |
-| 2026-03-25 | Resonator Chamber theory formalized with FlyWire validation | The wave-interference model of neural computation was validated against the complete FlyWire fly brain connectome (139K neurons, 16.8M connections), producing 6 empirical findings about inhibitory architecture, weight resolution, tick scaling, and reciprocal connectivity. Core thesis refined to: *Inference emerges as the fixed point of destructive interference.* | [Resonator Theory](Resonator-Theory), [Validated Findings](Validated-Findings) |
-| 2026-03-27 | V5 forward-pass mismatch fixed — recipe now delegates to canonical rollout_token() | The English recipe had a hardcoded v4.2 forward pass diverging from graph.py (wrong decay, C19, no hard reset). A/B smoke test verified the fix is bit-identical with canonical. This removes the ~18% plateau bottleneck. | [Validated Findings](Validated-Findings) |
-| 2026-03-27 | A/B/C/D I/O architecture sweep — tentacle I/O validated | Four-way sweep (H=256): tentacle I/O (Mode C, random 5% + BFS, peak 4.7%) beat holographic projection (Mode A, 1.2%) by 3.9x. Structured resonator init (Mode D, 2.4%) underperformed random. Mutation+selection sculpts topology better from chaos than from pre-structured order. | [Validated Findings](Validated-Findings), [INSTNCT Architecture](INSTNCT-Architecture) |
-| 2026-03-27 | 8-bit binary I/O tested and rejected | A/B test: 8 binary neurons per I/O (0.2% peak) vs 64-dim random projection (4.4% peak). 8-bit encoding provides too little signal richness despite freeing 112 extra hidden neurons. High-dimensional spreading is load-bearing for the architecture. | [Validated Findings](Validated-Findings) |
-| 2026-03-27 | Input encoding sweep — SDR validated as best input representation | Sweep (H=256): SDR_64 (7.3%) > MULTISCALE (7.1%) > RANDOM_64 (4.4%) > FOURIER_64 (3.6%). Sparse 20% activation beats dense encodings by 66%. SDR `input_mode='sdr'` baked into `graph.py` as optional mode. | [Validated Findings](Validated-Findings), [INSTNCT Architecture](INSTNCT-Architecture) |
-| 2026-03-27 | Output encoding sweep — random projection confirmed for output | SDR on output (3.4%) worse than random (7.3%). Input=sparse, output=dense is the optimal asymmetric pairing. | [Validated Findings](Validated-Findings) |
-| 2026-03-27 | Learnable theta converges to ~6-7 — 14.1% new peak | Full resample [0,16] per-neuron theta from init=1.0 reached 14.1% (prev best 7.3%). Sweet spot ~6-7 confirmed from 3 starting points (1.0->6.12, 6.18->7.02, 15.0->9.74). Low start recommended — topology co-evolves with rising threshold. | [Validated Findings](Validated-Findings) |
-| 2026-03-27 | Charge readout beats state readout for tentacle I/O | Charge (14.1%) vs canonical state/spike readout (10.3%). Continuous charge signal is richer for 256-class prediction. Spikes still drive internal dynamics. | [Validated Findings](Validated-Findings) |
-| 2026-03-27 | 8-bit binary I/O v2 — binary input partially rehabilitated | With learnable theta: 8-bit in + dense 64 out = 9.1% (was 0.2% with fix theta). Full binary (8+8) still dead. SDR (14.1%) remains superior but binary input is viable with dense output. | [Validated Findings](Validated-Findings) |
-| 2026-03-28 | Potential-aware fitness tested and rejected | Gemini proposed adding `w * mean_target_logit` to fitness to reward partial progress. Standard (14.1%) > potential w=0.05 (11.3%) > potential w=0.10 (8.3%). The bonus accepts false positives via the 64>256 random projection — target logit is not a clean signal. Might work with direct 256 output neurons (untested at scale). | [Validated Findings](Validated-Findings) |
-| 2026-03-28 | Zero-theta trap confirmed independently | Gemini identified: THETA_INIT=0.0 nullifies C19 Soft-Wave (`0 * anything = 0`), blocking freq/rho learning. Already fixed in our learnable theta sweep (init=1.0, full resample [0,16], converges ~6-7). The recipe on main still uses THETA_INIT=0.0 — promotion pending. | [Validated Findings](Validated-Findings) |
-| 2026-03-28 | Claude vs Gemini graph.py A/B test | Same params, same data: Claude's graph.py (clip + refractory + SDR) = 14.1%, Gemini's (no clip, no batch refractory, int8 mask) = 11.3%. Clip and refractory are load-bearing. Gemini branch `feature/axonal-delay-v5.0` not merged. | [Validated Findings](Validated-Findings) |
-| 2026-03-21 | Roadmap, theory, archive, glossary, and old architecture leaves were collapsed into one timeline surface | History, terminology, open questions, and retirement lookup now live in one place instead of multiple smaller pages. | This page |
+---
+
+### Early 2026 — Diamond Code Era
+
+- **Diamond Code / LCX** dominated the public architecture story. External memory, dreaming, observability, and Goldilocks-style probes before INSTNCT became the active center. See [INSTNCT Architecture](INSTNCT-Architecture).
+
+---
+
+### 2026-02-17 to 2026-02-22 — Foundation & Evidence Discipline
+
+- **Engineering doctrine** and contributor policy split into stable homes. See [Engineering Protocol](Engineering).
+- **Terminology cleanup** — readers no longer need legacy page chains.
+- **Evidence discipline** hardened — schedule, depth, and mutation results moved into explicit evidence layer. See [Validated Findings](Validated-Findings).
+
+---
+
+### 2026-03-21 — Canonical Docs & Schedule Research
+
+- **Repo-tracked docs became canonical**, GitHub wiki became mirror.
+- **Schedule-control work** became the main live research frontier: 8 ticks, decay-aware scheduling, voltage/leak control.
+- **Roadmap, theory, archive, glossary** collapsed into one timeline surface.
+
+---
+
+### 2026-03-22 — Recipe Consolidation & Surface Freeze
+
+- **Triangle convergence** distilled into current fixed English recipe: `2 add / 1 flip / 5 decay`.
+- **Sign+mag edge representation** — best quality-per-edge: `18.69%` at 155 edges (`q=0.121`).
+- **Task-learning experiments** displaced older swarm line: window=2 superposition (`21.8%`), word-pair memory (`23.8%`).
+- **v5.0.0 Public Beta** preparation started.
+- **Diamond Code era** extracted to `archive/diamond-code-era-20260322`.
+- **Pre-beta surface freeze** — English only first-class lane, bulky dumps moved to `archive/instnct-surface-freeze-20260322`.
+
+---
+
+### 2026-03-25 — Resonator Theory
+
+- **Resonator Chamber theory** formalized with FlyWire validation (139K neurons, 16.8M connections). 6 empirical findings: 10% hub-inhibitors, binary weights sufficient, ticks = diameter, log2(N) scaling. Core thesis: *Inference emerges as the fixed point of destructive interference.* See [Resonator Theory](Resonator-Theory).
+
+---
+
+### 2026-03-27 — I/O Architecture Overhaul (11 experiments)
+
+- **V5 forward-pass mismatch FIXED** — recipe had hardcoded v4.2 forward pass (wrong decay, C19, no hard reset). Now delegates to canonical `rollout_token()`. A/B smoke test: bit-identical.
+- **Tentacle I/O validated (A/B/C/D sweep)** — tentacle I/O `4.7%` beats holographic projection `1.2%` by 3.9x. Random init > structured resonator init. See [INSTNCT Architecture](INSTNCT-Architecture).
+- **8-bit binary I/O REJECTED** — `0.2%` vs random 64-dim `4.4%`. Too little signal richness.
+- **SDR input encoding VALIDATED** — SDR_64 `7.3%` > multiscale `7.1%` > random `4.4%` > Fourier `3.6%`. Sparse 20% activation wins. **Baked into `graph.py`** as `input_mode='sdr'`.
+- **Output encoding: random CONFIRMED** — SDR on output `3.4%` worse than random `7.3%`. Asymmetric I/O optimal: sparse in, dense out.
+- **Learnable theta: 14.1% NEW PEAK** — full resample [0,16] converges to ~6-7. Init from 1.0 recommended.
+- **Charge readout > state readout** — charge `14.1%` vs spike state `10.3%`. Continuous signal richer for 256-class prediction.
+- **8-bit binary I/O v2** — with learnable theta: 8-bit in + dense out = `9.1%`. Binary input viable but SDR superior.
+- **Unified visualization** shipped — replaces 7 scattered generators with single self-contained HTML.
+
+---
+
+### 2026-03-28 — Cross-validation & Gemini Collaboration
+
+- **Potential-aware fitness REJECTED** — Gemini's proposal: `score + w * target_logit`. Standard `14.1%` > potential w=0.05 `11.3%` > w=0.10 `8.3%`. False positives via 64-to-256 random projection. May work with direct 256 output.
+- **Zero-theta trap CONFIRMED** — cross-validated with Gemini. `THETA_INIT=0.0` nullifies C19 Soft-Wave. Already fixed by learnable theta.
+- **Claude vs Gemini graph.py A/B** — same params: Claude `14.1%` > Gemini `11.3%`. C19 clip and batch refractory are load-bearing. Gemini branch not merged.
 
 ## Retired Surfaces and Replacements
 
