@@ -50,6 +50,7 @@ This page is the public evidence board for VRAXION. Use it for the strongest rep
 | 8-bit Binary I/O v2 (with learnable theta) | Validated finding | Retested with learnable theta: 8-bit in + 8-bit out still dead (`0.0%`). But 8-bit in + random 64 out reached `9.1%` — binary input works when paired with dense output. SDR input (`14.1%`) still superior. | Recipe at `instnct/recipes/ab_binary_io_v2.py` |
 | Potential-Aware Fitness (Gemini proposal) | Validated finding | Adding `w * mean_target_logit` to fitness: standard (`14.1%`) > potential w=0.05 (`11.3%`) > potential w=0.10 (`8.3%`). False positives via 64-to-256 random projection. May work with direct 256 output. | Recipe at `instnct/recipes/ab_potential_fitness.py` |
 | Zero-Theta Trap (cross-validated with Gemini) | Validated finding | `THETA_INIT=0.0` nullifies C19 Soft-Wave, blocking freq/rho learning. Independently confirmed by Claude (theta sweep) and Gemini (multiplicative analysis). Fix: learnable theta from 1.0 with full resample [0,16]. | Recipe fix pending promotion |
+| Claude vs Gemini graph.py A/B | Validated finding | Same test: Claude (`14.1%`) > Gemini (`11.3%`). C19 clip and batch refractory are load-bearing. Gemini branch not merged. | `instnct/recipes/ab_claude_vs_gemini.py` |
 
 Raw run dumps, archived sweeps, and retired exploratory probes now live on `archive/instnct-surface-freeze-20260322`, not on active `main`.
 
