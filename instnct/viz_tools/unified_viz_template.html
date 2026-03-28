@@ -330,13 +330,16 @@ body {
     <div id="graph-panel">
       <canvas id="graph-canvas"></canvas>
       <div id="graph-controls">
-        <label><input type="checkbox" id="gc-edges" checked> Show edges</label>
-        <div class="ctrl-label">EDGE FILTER</div>
-        <select id="gc-edge-filter">
-          <option value="all">All</option>
-          <option value="excitatory">Excitatory</option>
-          <option value="inhibitory">Inhibitory</option>
+        <div class="ctrl-label">LAYOUT</div>
+        <select id="gc-layout">
+          <option value="grid">Grid (zones)</option>
+          <option value="spiral">Phi Spiral</option>
+          <option value="circular">Circular</option>
         </select>
+        <label><input type="checkbox" id="gc-edges" checked> Show edges</label>
+        <div class="ctrl-label">EDGE DENSITY</div>
+        <input type="range" id="gc-edge-pct" min="0" max="100" value="15" style="width:80px">
+        <span id="gc-edge-pct-label" style="font-size:10px">15%</span>
         <div class="ctrl-label">COLOR BY</div>
         <select id="gc-color-by">
           <option value="polarity">Polarity</option>
@@ -1089,84 +1092,129 @@ const graphRenderer = {
     this.bindControls();
   },
 
-  computeLayout() {
-    if (!DATA) return;
+  classifyZones() {
     const H = DATA.meta.H;
-    const phi = (1 + Math.sqrt(5)) / 2;
     const sdrDim = DATA.meta.sdr_dim || 0;
     const outDim = DATA.meta.output_dim || 0;
-
-    // Classify neurons into zones
-    // input zone: [0, sdrDim), output zone: [H-outDim, H)
     const inputEnd = sdrDim;
     const outputStart = H - outDim;
-    const inputOnly = [];   // input but NOT output
-    const overlap = [];     // both input AND output
-    const outputOnly = [];  // output but NOT input
-    const hidden = [];      // neither
-
+    const zones = {inputOnly:[], overlap:[], outputOnly:[], hidden:[], inputEnd, outputStart};
     for (let i = 0; i < H; i++) {
       const isIn = i < inputEnd;
       const isOut = i >= outputStart;
-      if (isIn && isOut) overlap.push(i);
-      else if (isIn) inputOnly.push(i);
-      else if (isOut) outputOnly.push(i);
-      else hidden.push(i);
+      if (isIn && isOut) zones.overlap.push(i);
+      else if (isIn) zones.inputOnly.push(i);
+      else if (isOut) zones.outputOnly.push(i);
+      else zones.hidden.push(i);
     }
+    return zones;
+  },
 
+  getZone(idx) {
+    const sdrDim = DATA.meta.sdr_dim || 0;
+    const outDim = DATA.meta.output_dim || 0;
+    const isIn = idx < sdrDim;
+    const isOut = idx >= DATA.meta.H - outDim;
+    if (isIn && isOut) return 'overlap';
+    if (isIn) return 'input';
+    if (isOut) return 'output';
+    return 'hidden';
+  },
+
+  computeLayout() {
+    if (!DATA) return;
+    const mode = document.getElementById('gc-layout') ? document.getElementById('gc-layout').value : 'grid';
+    if (mode === 'spiral') this.computeSpiralLayout();
+    else if (mode === 'circular') this.computeCircularLayout();
+    else this.computeGridLayout();
+    this.updateNodeAppearance();
+  },
+
+  computeGridLayout() {
+    const H = DATA.meta.H;
+    const z = this.classifyZones();
     const cw = this.canvas.width || 800;
     const ch = this.canvas.height || 600;
     const pad = 30;
     const usableW = cw - pad * 2;
     const usableH = ch - pad * 2;
-
-    // 3-zone horizontal layout: input-only | overlap+hidden | output-only
-    // Proportional widths based on neuron counts
     const total = H;
-    const leftCount = inputOnly.length;
-    const midCount = overlap.length + hidden.length;
-    const rightCount = outputOnly.length;
-    const leftW = usableW * (leftCount / total);
-    const midW = usableW * (midCount / total);
-    const rightW = usableW * (rightCount / total);
+    const leftW = usableW * (z.inputOnly.length / total);
+    const midW = usableW * ((z.overlap.length + z.hidden.length) / total);
+    const rightW = usableW * (z.outputOnly.length / total);
 
-    this.layoutW = cw;
-    this.layoutH = ch;
+    this.layoutW = cw; this.layoutH = ch;
     this.nodes = new Array(H);
 
-    // Helper: lay out a list of neuron indices in a grid within a rectangle
     const layoutGrid = (indices, x0, y0, w, h) => {
-      if (indices.length === 0) return;
-      const cols = Math.ceil(Math.sqrt(indices.length * (w / Math.max(h, 1))));
+      if (!indices.length) return;
+      const cols = Math.max(1, Math.ceil(Math.sqrt(indices.length * (w / Math.max(h, 1)))));
       const rows = Math.ceil(indices.length / cols);
-      const cellW = w / cols;
-      const cellH = h / rows;
+      const cW = w / cols, cH = h / rows;
       for (let i = 0; i < indices.length; i++) {
         const idx = indices[i];
-        const row = Math.floor(i / cols);
-        const col = i % cols;
         this.nodes[idx] = {
-          x: x0 + col * cellW + cellW / 2,
-          y: y0 + row * cellH + cellH / 2,
-          idx,
-          zone: (idx < inputEnd && idx >= outputStart) ? 'overlap'
-              : (idx < inputEnd) ? 'input'
-              : (idx >= outputStart) ? 'output'
-              : 'hidden'
+          x: x0 + (i % cols) * cW + cW / 2,
+          y: y0 + Math.floor(i / cols) * cH + cH / 2,
+          idx, zone: this.getZone(idx)
         };
       }
     };
+    layoutGrid(z.inputOnly, pad, pad, leftW, usableH);
+    const midTotal = z.overlap.length + z.hidden.length;
+    const oH = midTotal > 0 ? usableH * (z.overlap.length / midTotal) : 0;
+    layoutGrid(z.overlap, pad + leftW, pad, midW, oH);
+    layoutGrid(z.hidden, pad + leftW, pad + oH, midW, usableH - oH);
+    layoutGrid(z.outputOnly, pad + leftW + midW, pad, rightW, usableH);
+  },
 
-    // Layout each zone
-    layoutGrid(inputOnly,  pad, pad, leftW, usableH);
-    // Middle: overlap first (top), hidden below
-    const overlapH = midCount > 0 ? usableH * (overlap.length / midCount) : 0;
-    const hiddenH = usableH - overlapH;
-    layoutGrid(overlap, pad + leftW, pad, midW, overlapH);
-    layoutGrid(hidden,  pad + leftW, pad + overlapH, midW, hiddenH);
-    layoutGrid(outputOnly, pad + leftW + midW, pad, rightW, usableH);
+  computeSpiralLayout() {
+    const H = DATA.meta.H;
+    const cw = this.canvas.width || 800;
+    const ch = this.canvas.height || 600;
+    const cx = cw / 2, cy = ch / 2;
+    const maxR = Math.min(cw, ch) * 0.45;
+    const goldenAngle = Math.PI * 2 / ((1 + Math.sqrt(5)) / 2 + 1); // ~2.4 rad
 
-    this.updateNodeAppearance();
+    this.layoutW = cw; this.layoutH = ch;
+    this.nodes = new Array(H);
+
+    // Sort: input-only first, then hidden, then overlap, then output-only
+    // This puts input on outside, output on inside of spiral
+    const z = this.classifyZones();
+    const order = [...z.inputOnly, ...z.hidden, ...z.overlap, ...z.outputOnly];
+
+    for (let i = 0; i < order.length; i++) {
+      const idx = order[i];
+      const t = i / (H - 1); // 0..1
+      const r = maxR * Math.sqrt(t); // sunflower spiral
+      const angle = i * goldenAngle;
+      this.nodes[idx] = {
+        x: cx + r * Math.cos(angle),
+        y: cy + r * Math.sin(angle),
+        idx, zone: this.getZone(idx)
+      };
+    }
+  },
+
+  computeCircularLayout() {
+    const H = DATA.meta.H;
+    const cw = this.canvas.width || 800;
+    const ch = this.canvas.height || 600;
+    const cx = cw / 2, cy = ch / 2;
+    const R = Math.min(cw, ch) * 0.42;
+
+    this.layoutW = cw; this.layoutH = ch;
+    this.nodes = new Array(H);
+
+    for (let i = 0; i < H; i++) {
+      const angle = (i / H) * Math.PI * 2 - Math.PI / 2; // start top
+      this.nodes[i] = {
+        x: cx + R * Math.cos(angle),
+        y: cy + R * Math.sin(angle),
+        idx: i, zone: this.getZone(i)
+      };
+    }
   },
 
   updateNodeAppearance() {
@@ -1291,8 +1339,16 @@ const graphRenderer = {
       this.updateNodeAppearance();
       this.draw();
     };
+    const relayout = () => {
+      this.computeLayout();
+      this.draw();
+    };
+    $('#gc-layout').addEventListener('change', relayout);
     $('#gc-edges').addEventListener('change', () => this.draw());
-    $('#gc-edge-filter').addEventListener('change', () => this.draw());
+    $('#gc-edge-pct').addEventListener('input', () => {
+      $('#gc-edge-pct-label').textContent = $('#gc-edge-pct').value + '%';
+      this.draw();
+    });
     $('#gc-color-by').addEventListener('change', update);
     $('#gc-size-by').addEventListener('change', update);
   },
@@ -1365,16 +1421,25 @@ const graphRenderer = {
 
   drawEdges(ctx) {
     if (!DATA.mask) return;
-    const filter = $('#gc-edge-filter').value;
     const rows = DATA.mask.rows;
     const cols = DATA.mask.cols;
     const H = DATA.meta.H;
     const hoverIdx = this.hoverIdx;
     const polVals = DATA.scalars.polarity ? DATA.scalars.polarity.values : null;
     const drawArrows = this.zoom > 1.5;
+    const edgePct = parseInt($('#gc-edge-pct').value) / 100;
 
-    // If a neuron is hovered, only draw its edges at high alpha; skip others
-    // Otherwise draw all at low alpha
+    // Compute per-node degree for edge filtering
+    const degree = new Float32Array(H);
+    for (let k = 0; k < rows.length; k++) {
+      degree[rows[k]]++;
+      degree[cols[k]]++;
+    }
+    // Find degree threshold: show edges where src OR dst has top N% degree
+    const sortedDeg = [...degree].sort((a, b) => b - a);
+    const cutoffIdx = Math.max(0, Math.floor(H * edgePct) - 1);
+    const degThresh = sortedDeg[cutoffIdx] || 0;
+
     for (let k = 0; k < rows.length; k++) {
       const src = rows[k], dst = cols[k];
       const nsrc = this.nodes[src], ndst = this.nodes[dst];
@@ -1382,18 +1447,20 @@ const graphRenderer = {
 
       const isExcitatory = polVals ? polVals[src] >= 0 : true;
 
-      if (filter === 'excitatory' && !isExcitatory) continue;
-      if (filter === 'inhibitory' && isExcitatory) continue;
+      // Edge density filter: only show edges to/from high-degree nodes
+      if (hoverIdx < 0 && edgePct < 1.0) {
+        if (degree[src] < degThresh && degree[dst] < degThresh) continue;
+      }
 
       let alpha;
       if (hoverIdx >= 0) {
         if (src === hoverIdx || dst === hoverIdx) {
           alpha = 0.8;
         } else {
-          continue; // Skip non-hover edges when hovering
+          continue;
         }
       } else {
-        alpha = 0.04;
+        alpha = Math.min(0.3, 0.02 + 0.1 * (degree[src] + degree[dst]) / (sortedDeg[0] * 2 + 1));
       }
 
       ctx.strokeStyle = isExcitatory
