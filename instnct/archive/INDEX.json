@@ -1,5 +1,28 @@
 [
   {
+    "name": "tree_wiring_freq_output",
+    "date": "2026-03-28 14:57",
+    "H": 256,
+    "edges": 2272,
+    "file": "tree_wiring_freq_output.npz",
+    "size_kb": 77.0,
+    "config": {
+      "H": 256,
+      "in_dim": 158,
+      "out_dim": 158,
+      "init": "tree_scaffold+3%random"
+    },
+    "result": {
+      "best": 0.1556,
+      "edges": 2272,
+      "add": 149,
+      "remove": 138,
+      "flip": 169,
+      "theta_acc": 502,
+      "decay_acc": 21
+    }
+  },
+  {
     "name": "onehot256_freq158",
     "date": "2026-03-28 14:32",
     "H": 256,
