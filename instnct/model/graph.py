@@ -150,16 +150,17 @@ class SelfWiringGraph:
         self.polarity[inhib_mask] = -1
         self._polarity_f32 = self.polarity.astype(np.float32)
 
-        # Mask: H × H hidden-only, boolean.
+        # Mask: H × H boolean (native bool, minimal dtype).
         # Fly-realistic topology: Inhibitory neurons have 2x out-degree (hub-property)
         r = init_rand(hidden, hidden)
         effective_density = np.full(hidden, self.density_fraction)
-        effective_density[self.polarity == -1] *= 2.0 
-        self.mask = r < effective_density[:, np.newaxis]
+        effective_density[self.polarity == -1] *= 2.0
+        self.mask = (r < effective_density[:, np.newaxis])  # dtype=bool, 1 byte/elem
         np.fill_diagonal(self.mask, False)
+        self._mask_f32_cache = None  # lazy precomputed float32 for dense matmul
 
         # Alive edges: canonical row-major cache + set for O(1) undo membership.
-        rows, cols = np.where(self.mask != 0)
+        rows, cols = np.where(self.mask)
         self.alive = list(zip(rows.tolist(), cols.tolist()))
         self.alive_set = set(self.alive)
         self._sync_sparse_idx()
@@ -311,12 +312,14 @@ class SelfWiringGraph:
         rho=None,
     ):
         mask = np.asarray(mask)
-        # Support both int8 ternary mask and legacy float32 mask.
-        # For dense path, always produce float32 with magnitude baked in.
-        if mask.dtype != np.float32:
-            mask_f32 = mask.astype(np.float32) * np.float32(edge_magnitude)
-        else:
+        # Dense path needs float32. Accept precomputed or compute once.
+        if mask.dtype == np.float32:
             mask_f32 = mask
+        elif mask.dtype == np.bool_:
+            # Bool → float32 only when dense path needed (sparse skips this)
+            mask_f32 = None  # lazy — only computed if dense path used
+        else:
+            mask_f32 = mask.astype(np.float32) * np.float32(edge_magnitude)
         theta = np.asarray(theta, dtype=np.float32)
         decay = np.asarray(decay, dtype=np.float32)
         H = mask.shape[0]
@@ -344,10 +347,12 @@ class SelfWiringGraph:
                 act = act + injected
             
             # 3. PROPAGATE
-            raw = (
-                SelfWiringGraph._sparse_mul_1d_from_cache(H, act, sparse_cache)
-                if use_sparse else act @ mask_f32
-            )
+            if use_sparse:
+                raw = SelfWiringGraph._sparse_mul_1d_from_cache(H, act, sparse_cache)
+            else:
+                if mask_f32 is None:
+                    mask_f32 = mask.astype(np.float32) * np.float32(edge_magnitude)
+                raw = act @ mask_f32
             np.nan_to_num(raw, copy=False, nan=0.0, posinf=0.0, neginf=0.0)
             cur_charge += raw
             
@@ -401,10 +406,12 @@ class SelfWiringGraph:
         rho=None,
     ):
         mask = np.asarray(mask)
-        if mask.dtype != np.float32:
-            mask_f32 = mask.astype(np.float32) * np.float32(edge_magnitude)
-        else:
+        if mask.dtype == np.float32:
             mask_f32 = mask
+        elif mask.dtype == np.bool_:
+            mask_f32 = None  # lazy
+        else:
+            mask_f32 = mask.astype(np.float32) * np.float32(edge_magnitude)
         theta = np.asarray(theta, dtype=np.float32)
         decay = np.asarray(decay, dtype=np.float32)
         H = mask.shape[0]
@@ -428,16 +435,18 @@ class SelfWiringGraph:
         for tick in range(int(ticks)):
             # 1. LEAK
             cur_charges = np.maximum(cur_charges - decay, 0.0)
-            
+
             # 2. INPUT
             if tick < int(input_duration):
                 cur_acts = cur_acts + injected_batch
-            
+
             # 3. PROPAGATE
-            raw = (
-                SelfWiringGraph._sparse_mul_2d_from_cache(H, cur_acts, sparse_cache)
-                if use_sparse else cur_acts @ mask_f32
-            )
+            if use_sparse:
+                raw = SelfWiringGraph._sparse_mul_2d_from_cache(H, cur_acts, sparse_cache)
+            else:
+                if mask_f32 is None:
+                    mask_f32 = mask.astype(np.float32) * np.float32(edge_magnitude)
+                raw = cur_acts @ mask_f32
             np.nan_to_num(raw, copy=False, nan=0.0, posinf=0.0, neginf=0.0)
             cur_charges += raw
             
@@ -553,9 +562,10 @@ class SelfWiringGraph:
 
     def resync_alive(self):
         """Rebuild alive list+set from mask. Call after direct mask writes."""
-        rows, cols = np.where(self.mask != 0)
+        rows, cols = np.where(self.mask)
         self.alive = list(zip(rows.tolist(), cols.tolist()))
         self.alive_set = set(self.alive)
+        self._mask_f32_cache = None  # invalidate dense matmul cache
         self._sync_sparse_idx()
 
     def _sync_sparse_idx(self):
@@ -670,9 +680,9 @@ class SelfWiringGraph:
         child.output_projection = parent_a.output_projection.copy()
 
         # Binary union: child has edge wherever either parent has one
-        child.mask = ((parent_a.mask != 0) | (parent_b.mask != 0))
-
+        child.mask = ((parent_a.mask != 0) | (parent_b.mask != 0))  # bool dtype
         np.fill_diagonal(child.mask, False)
+        child._mask_f32_cache = None
         child.resync_alive()
 
         # Polarity: random mix from parents
@@ -707,7 +717,7 @@ class SelfWiringGraph:
 
     def save(self, path):
         """Save winner graph to disk (.npz) with exact forward-path projections."""
-        rows, cols = np.where(self.mask != 0)
+        rows, cols = np.where(self.mask)
         index_dtype = self._checkpoint_index_dtype(self.H)
         vals = np.ones(rows.shape[0], dtype=np.bool_)
         np.savez_compressed(path,
@@ -832,6 +842,7 @@ class SelfWiringGraph:
         net.mask = np.zeros((H, H), dtype=np.bool_)
         net.mask[rows, cols] = vals
         np.fill_diagonal(net.mask, False)
+        net._mask_f32_cache = None
         net.state = np.zeros(H, dtype=np.float32)
         net.charge = np.zeros(H, dtype=np.float32)
         net.loss_pct = loss_pct
