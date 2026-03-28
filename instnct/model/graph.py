@@ -144,17 +144,17 @@ class SelfWiringGraph:
             tp /= np.linalg.norm(tp, axis=0, keepdims=True)
             self._output_proj_tentacle = tp * self.projection_scale
 
-        # Polarity: 10% inhibitory.
-        self.polarity = np.ones(self.H, dtype=np.int8)
+        # Polarity: bool (True=excitatory, False=inhibitory). 10% inhibitory.
+        self.polarity = np.ones(self.H, dtype=np.bool_)
         inhib_mask = init_rand(self.H) < self.DEFAULT_INHIBITORY_FRACTION
-        self.polarity[inhib_mask] = -1
-        self._polarity_f32 = self.polarity.astype(np.float32)
+        self.polarity[inhib_mask] = False
+        self._polarity_f32 = np.where(self.polarity, 1.0, -1.0).astype(np.float32)
 
         # Mask: H × H boolean (native bool, minimal dtype).
         # Fly-realistic topology: Inhibitory neurons have 2x out-degree (hub-property)
         r = init_rand(hidden, hidden)
         effective_density = np.full(hidden, self.density_fraction)
-        effective_density[self.polarity == -1] *= 2.0
+        effective_density[~self.polarity] *= 2.0
         self.mask = (r < effective_density[:, np.newaxis])  # dtype=bool, 1 byte/elem
         np.fill_diagonal(self.mask, False)
         self._mask_f32_cache = None  # lazy precomputed float32 for dense matmul
@@ -635,8 +635,9 @@ class SelfWiringGraph:
         if 'decay' in s:
             self.decay[:] = s['decay']
         if 'polarity' in s:
-            self.polarity[:] = s['polarity']
-            self._polarity_f32[:] = self.polarity.astype(np.float32)
+            raw_pol = s['polarity']
+            self.polarity[:] = raw_pol if raw_pol.dtype == np.bool_ else (raw_pol > 0)
+            self._polarity_f32[:] = np.where(self.polarity, 1.0, -1.0)
         if 'freq' in s:
             self.freq[:] = s['freq']
         if 'phase' in s:
@@ -689,7 +690,7 @@ class SelfWiringGraph:
         child.polarity = parent_a.polarity.copy()
         mix_mask = np.random.rand(child.H) < 0.5
         child.polarity[mix_mask] = parent_b.polarity[mix_mask]
-        child._polarity_f32 = child.polarity.astype(np.float32)
+        child._polarity_f32 = np.where(child.polarity, 1.0, -1.0).astype(np.float32)
 
         # Average meta-params with small noise
         child.theta = ((parent_a.theta + parent_b.theta) / 2.0).astype(np.float32)
@@ -732,7 +733,7 @@ class SelfWiringGraph:
             mutation_drive=int(self.mutation_drive),
             theta=self.theta,
             decay=self.decay,
-            polarity=self.polarity,
+            polarity=np.where(self.polarity, np.int8(1), np.int8(-1)),  # save as int8 for compat
             freq=self.freq,
             phase=self.phase,
             rho=self.rho,
@@ -792,10 +793,10 @@ class SelfWiringGraph:
                 rho = np.zeros(H, dtype=np.float32) # No wave modulation for legacy
 
             if 'polarity' in d.files:
-                polarity = np.array(d['polarity'], dtype=np.int8)
+                raw_pol = np.array(d['polarity'])
+                polarity = (raw_pol > 0) if raw_pol.dtype != np.bool_ else raw_pol
             else:
-                # Handle legacy checkpoints by assuming all excitatory
-                polarity = np.ones(H, dtype=np.int8)
+                polarity = np.ones(H, dtype=np.bool_)
             loss_pct = np.int8(int(d['loss_pct']))
             mutation_drive = np.int8(int(d['mutation_drive'])) if 'mutation_drive' in d.files else np.int8(int(d['drive']))
             hidden_ratio = int(d['hidden_ratio']) if 'hidden_ratio' in d.files else max(1, H // max(V, 1))
@@ -852,8 +853,8 @@ class SelfWiringGraph:
         net.freq = freq
         net.phase = phase
         net.rho = rho
-        net.polarity = polarity
-        net._polarity_f32 = net.polarity.astype(np.float32)
+        net.polarity = polarity.astype(np.bool_) if polarity.dtype != np.bool_ else polarity
+        net._polarity_f32 = np.where(net.polarity, 1.0, -1.0).astype(np.float32)
         net.refractory = np.zeros(H, dtype=np.int8)
 
         # SDR mode (from locals extracted inside the with-block above)
@@ -900,8 +901,9 @@ class SelfWiringGraph:
             elif op == 'G':
                 self.mutation_drive = np.int8(entry[1])
             elif op == 'P':
-                self.polarity[entry[1]] = np.int8(entry[2])
-                self._polarity_f32[entry[1]] = np.float32(entry[2])
+                old_val = entry[2]
+                self.polarity[entry[1]] = bool(old_val > 0) if not isinstance(old_val, bool) else old_val
+                self._polarity_f32[entry[1]] = 1.0 if self.polarity[entry[1]] else -1.0
             elif op == 'FR':
                 self.freq[entry[1]] = np.float32(entry[2])
             elif op == 'PH':
@@ -1089,9 +1091,9 @@ class SelfWiringGraph:
     def _polarity_mutate(self, undo):
         """Flip one random neuron's polarity."""
         idx = random.randint(0, self.H - 1)
-        old_pol = int(self.polarity[idx])
-        self.polarity[idx] *= -1
-        self._polarity_f32[idx] *= -1
+        old_pol = bool(self.polarity[idx])
+        self.polarity[idx] = ~self.polarity[idx]  # bool NOT
+        self._polarity_f32[idx] = 1.0 if self.polarity[idx] else -1.0
         undo.append(('P', idx, old_pol))
 
     def crystallize(self, evaluate_fn, eps=1e-6, verbose=False):
