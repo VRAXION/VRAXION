@@ -39,6 +39,7 @@ class SelfWiringGraph:
     DEFAULT_INPUT_MODE = 'projection'  # 'projection' (legacy) or 'sdr'
     DEFAULT_SDR_K = 13                 # active neurons per byte (20% of 64)
     DEFAULT_SDR_DIM = 64               # SDR input dimension
+    DEFAULT_OUTPUT_DIM = 160           # optimal output readout dim (multi-seed: 18.2%+-0.6%)
 
     def _build_sdr_table(self, rng=None):
         """Build sparse distributed representation: 256 x sdr_dim, K active per row."""

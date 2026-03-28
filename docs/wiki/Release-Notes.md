@@ -119,7 +119,8 @@ This page is the single primary timeline and lookup surface for VRAXION. Use it 
 - **Output dim sweep: 20.0% NEW PEAK** — out_dim=160 (hidden=32) beats out_dim=64 (hidden=128, 14.1%). Richer readout matters more than hidden neuron count. Non-monotonic: dip at 128, peak at 160.
 - **Direct 256 output (H=384)** — `7.1%`, too slow and too few hidden. Random projection is more practical.
 - **8-bit / repeated binary output** — confirmed dead. Need 48+ random dims to separate 256 classes.
-- **Fine output dim sweep** — confirmed 160 as peak: 144=16.6%, 152=18.0%, **160=20.0%**, 168=19.6%, 176=18.0%. Clean peak, not noise. Multi-seed confirmation pending.
+- **Fine output dim sweep** — confirmed 160 as peak: 144=16.6%, 152=18.0%, **160=20.0%**, 168=19.6%, 176=18.0%.
+- **Multi-seed confirmation** — od=160 across 3 seeds: mean=18.2% std=0.6% [17.4-18.8%]. Theta converges ~6.2 every time. `DEFAULT_OUTPUT_DIM=160` baked into `graph.py`.
 
 ## Retired Surfaces and Replacements
 

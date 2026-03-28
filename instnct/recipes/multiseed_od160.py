@@ -1,8 +1,7 @@
 """
-Output dimension sweep: 16, 32, 48, 64, 96
-============================================
-SDR_64 input, random N output, learnable theta, H=256.
-Less output dim = more hidden neurons.
+Multi-seed confirmation: od=160 with 3 different seeds
+======================================================
+Confirm that 20.0% at out_dim=160 is not seed noise.
 """
 import sys, os, time, random
 import numpy as np
@@ -13,7 +12,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT)); sys.path.insert(0, str(ROOT / "model"))
 from graph import SelfWiringGraph
 
-H = 256; IN_DIM = 64; IN_K = 13
+H = 256; IN_DIM = 64; IN_K = 13; OUT_DIM = 160
 N_WORKERS = 18; TICKS = 8; INPUT_DURATION = 2
 THRESHOLD = 0.00005; EVAL_EVERY = 20
 SCHEDULE = ['add', 'remove', 'flip', 'theta', 'theta', 'theta', 'decay', 'decay']
@@ -26,14 +25,12 @@ def build_sdr(n, dim, k, seed):
         t[v, rng.choice(dim, size=k, replace=False)] = 1.0
     return t
 
-BP_IN = build_sdr(256, IN_DIM, IN_K, 42)
+_bp_in=None;_bp_out=None;_all_data=None;_bigram=None
+_pol=None;_freq=None;_phase=None;_rho=None
 
-_bp_out=None;_all_data=None;_bigram=None
-_pol=None;_freq=None;_phase=None;_rho=None;_out_dim=None
-
-def init_w(bpo,data,bg,pol,fr,ph,rh,od):
-    global _bp_out,_all_data,_bigram,_pol,_freq,_phase,_rho,_out_dim
-    _bp_out=bpo;_all_data=data;_bigram=bg;_pol=pol;_freq=fr;_phase=ph;_rho=rh;_out_dim=od
+def init_w(bpi,bpo,data,bg,pol,fr,ph,rh):
+    global _bp_in,_bp_out,_all_data,_bigram,_pol,_freq,_phase,_rho
+    _bp_in=bpi;_bp_out=bpo;_all_data=data;_bigram=bg;_pol=pol;_freq=fr;_phase=ph;_rho=rh
 
 def _eval_bigram(mask, theta, decay, seqs):
     sc = SelfWiringGraph.build_sparse_cache(mask)
@@ -42,11 +39,11 @@ def _eval_bigram(mask, theta, decay, seqs):
         state=np.zeros(H,np.float32);charge=np.zeros(H,np.float32)
         s=0.0;n=0
         for i in range(len(tb)-1):
-            inj=np.zeros(H,np.float32);inj[0:IN_DIM]=BP_IN[tb[i]]
+            inj=np.zeros(H,np.float32);inj[0:IN_DIM]=_bp_in[tb[i]]
             state,charge=SelfWiringGraph.rollout_token(inj,mask=mask,theta=theta,decay=decay,
                 ticks=TICKS,input_duration=INPUT_DURATION,state=state,charge=charge,
                 sparse_cache=sc,polarity=_pol,freq=_freq,phase=_phase,rho=_rho)
-            logits=np.dot(_bp_out,charge[H-_out_dim:])
+            logits=np.dot(_bp_out,charge[H-OUT_DIM:])
             e=np.exp(logits-logits.max());pred=e/e.sum()
             tgt=_bigram[tb[i]]
             cos=np.dot(pred,tgt)/(np.linalg.norm(pred)*np.linalg.norm(tgt)+1e-8)
@@ -100,37 +97,37 @@ if __name__ == "__main__":
     eval_rng = np.random.RandomState(9999)
     eval_seqs = [ALL_DATA[o:o+100] for o in [eval_rng.randint(0,len(ALL_DATA)-100) for _ in range(5)]]
 
-    OUT_DIMS = [144, 152, 160, 168, 176, 184]
+    SEEDS = [42, 123, 7777]
     results = []
 
-    for od in OUT_DIMS:
-        hidden = H - IN_DIM - od
-        rng_out = np.random.RandomState(12345)
-        bp_out = rng_out.randn(256, od).astype(np.float32)
+    for seed in SEEDS:
+        bp_in = build_sdr(256, IN_DIM, IN_K, seed)
+        rng_out = np.random.RandomState(seed + 1000)
+        bp_out = rng_out.randn(256, OUT_DIM).astype(np.float32)
         bp_out /= np.linalg.norm(bp_out, axis=1, keepdims=True)
 
         print(f"\n{'='*60}")
-        print(f"  OUT_DIM={od}, hidden={hidden}")
+        print(f"  SEED={seed}, od=160, hidden=32")
         print(f"{'='*60}")
 
-        random.seed(42); np.random.seed(42)
-        ref = SelfWiringGraph(max(IN_DIM,16), hidden=H, projection_scale=1.0)
+        random.seed(seed); np.random.seed(seed)
+        ref = SelfWiringGraph(max(IN_DIM,16), hidden=H, projection_scale=1.0, seed=seed)
         pol = ref.polarity.astype(np.float32)
-        irng = np.random.RandomState(42)
+        irng = np.random.RandomState(seed)
         mask = (irng.rand(H,H) < INIT_DENSITY).astype(bool)
         np.fill_diagonal(mask, False)
         theta = np.full(H, THETA_INIT, np.float32)
-        decay = np.random.RandomState(99).uniform(0.08, 0.24, H).astype(np.float32)
+        decay = np.random.RandomState(seed+99).uniform(0.08, 0.24, H).astype(np.float32)
 
         pool = Pool(N_WORKERS, initializer=init_w,
-            initargs=(bp_out, ALL_DATA, bigram, pol, ref.freq, ref.phase, ref.rho, od))
+            initargs=(bp_in, bp_out, ALL_DATA, bigram, pol, ref.freq, ref.phase, ref.rho))
 
         best_eval=0;stall=0;accepts=0;t_acc=0;t0=time.time()
         try:
             for step in range(1, 2001):
                 pt = SCHEDULE[(step-1) % len(SCHEDULE)]
                 if pt in ('flip','remove','decay','theta') and mask.sum()==0: pt='add'
-                args = [(mask.flatten(),theta.copy(),decay.copy(),1000+step*50+w,pt) for w in range(N_WORKERS)]
+                args = [(mask.flatten(),theta.copy(),decay.copy(),seed*1000+step*50+w,pt) for w in range(N_WORKERS)]
                 res = pool.map(worker_eval, args)
                 br = max(res, key=lambda x: x['delta'])
                 if br['delta'] > THRESHOLD:
@@ -147,11 +144,11 @@ if __name__ == "__main__":
                         sc=SelfWiringGraph.build_sparse_cache(mask)
                         st=np.zeros(H,np.float32);ch=np.zeros(H,np.float32);cor=0;tot=0
                         for i in range(len(s)-1):
-                            inj=np.zeros(H,np.float32);inj[0:IN_DIM]=BP_IN[s[i]]
+                            inj=np.zeros(H,np.float32);inj[0:IN_DIM]=bp_in[s[i]]
                             st,ch=SelfWiringGraph.rollout_token(inj,mask=mask,theta=theta,decay=decay,
                                 ticks=TICKS,input_duration=INPUT_DURATION,state=st,charge=ch,
                                 sparse_cache=sc,polarity=pol,freq=ref.freq,phase=ref.phase,rho=ref.rho)
-                            logits=np.dot(bp_out,ch[H-od:])
+                            logits=np.dot(bp_out,ch[H-OUT_DIM:])
                             if np.argmax(logits)==s[i+1]:cor+=1
                             tot+=1
                         ea_list.append(cor/tot if tot else 0)
@@ -159,7 +156,7 @@ if __name__ == "__main__":
                     if ea>best_eval: best_eval=ea; stall=0
                     else: stall+=EVAL_EVERY
                     if step % 200 == 0:
-                        print(f"  [od={od}][{step:4d}] eval={ea*100:.1f}% best={best_eval*100:.1f}% "
+                        print(f"  [s={seed}][{step:4d}] eval={ea*100:.1f}% best={best_eval*100:.1f}% "
                               f"theta={theta.mean():.2f} acc={accepts} {el:.0f}s")
                     sys.stdout.flush()
                     if stall >= 800 and step >= 600:
@@ -168,15 +165,16 @@ if __name__ == "__main__":
             pool.terminate(); pool.join()
 
         elapsed=time.time()-t0
-        results.append({'od':od,'hidden':hidden,'best':best_eval,'acc':accepts,'time':elapsed})
-        print(f"  DONE: od={od} hidden={hidden} best={best_eval*100:.1f}% acc={accepts} {elapsed:.0f}s")
+        results.append({'seed':seed,'best':best_eval,'acc':accepts,'time':elapsed,
+                        'theta':float(theta.mean())})
+        print(f"  DONE: seed={seed} best={best_eval*100:.1f}% acc={accepts} {elapsed:.0f}s")
 
     print(f"\n{'='*60}")
-    print(f"  OUTPUT DIM SWEEP RESULTS")
+    print(f"  MULTI-SEED RESULTS (od=160, H=256)")
     print(f"{'='*60}")
-    print(f"  {'OutDim':>6} {'Hidden':>6} {'Best':>6} {'Accept':>7}")
+    bests = [r['best']*100 for r in results]
     for r in results:
-        print(f"  {r['od']:6d} {r['hidden']:6d} {r['best']*100:5.1f}% {r['acc']:7d}")
-    best = max(results, key=lambda x: x['best'])
-    print(f"\n  SWEET SPOT: out_dim={best['od']} (hidden={best['hidden']}) -- {best['best']*100:.1f}%")
+        print(f"  seed={r['seed']:5d}  best={r['best']*100:5.1f}%  theta={r['theta']:.2f}  acc={r['acc']}")
+    print(f"\n  Mean={np.mean(bests):.1f}%  Std={np.std(bests):.1f}%  "
+          f"Min={min(bests):.1f}%  Max={max(bests):.1f}%")
     print(f"{'='*60}")
