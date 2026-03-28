@@ -45,6 +45,30 @@ class SelfWiringGraph:
     # Overlap zone = 2*(H/phi) - H neurons are both input and output
     # Validated: 20.8% at H=256 (beats non-overlap 20.0%)
 
+    # --- Int4 bitpacked helpers (2 neurons per byte) ---
+    @staticmethod
+    def _pack_int4(arr):
+        """Pack uint8 [1-15] array into int4 bitpacked (2 values per byte)."""
+        n = len(arr)
+        packed_len = (n + 1) // 2
+        packed = np.zeros(packed_len, dtype=np.uint8)
+        for i in range(0, n - 1, 2):
+            packed[i // 2] = (arr[i] << 4) | arr[i + 1]
+        if n % 2:
+            packed[-1] = arr[-1] << 4
+        return packed
+
+    @staticmethod
+    def _unpack_int4(packed, n):
+        """Unpack int4 bitpacked to uint8 array of length n."""
+        arr = np.zeros(n, dtype=np.uint8)
+        for i in range(0, n - 1, 2):
+            arr[i] = packed[i // 2] >> 4
+            arr[i + 1] = packed[i // 2] & 0x0F
+        if n % 2:
+            arr[-1] = packed[-1] >> 4
+        return arr
+
     def _build_sdr_table(self, rng=None):
         """Build sparse distributed representation: 256 x sdr_dim, K active per row."""
         if rng is None:
@@ -737,7 +761,7 @@ class SelfWiringGraph:
             vals=vals,
             loss_pct=int(self.loss_pct),
             mutation_drive=int(self.mutation_drive),
-            theta=self._theta_f32,
+            theta=self._pack_int4(self.theta),  # int4 bitpacked
             decay=self.decay,
             polarity=np.where(self.polarity, np.int8(1), np.int8(-1)),  # save as int8 for compat
             freq=self.freq,
@@ -787,7 +811,14 @@ class SelfWiringGraph:
             input_projection = np.array(d['input_projection'], dtype=np.float32)
             output_projection = np.array(d['output_projection'], dtype=np.float32)
             raw_theta = np.array(d['theta'])
-            theta = np.clip(np.round(raw_theta), 1, 15).astype(np.uint8)
+            if raw_theta.dtype == np.float32 or raw_theta.dtype == np.float64:
+                # Legacy float checkpoint
+                theta = np.clip(np.round(raw_theta), 1, 15).astype(np.uint8)
+            elif len(raw_theta) < H:
+                # Int4 bitpacked (half the length)
+                theta = cls._unpack_int4(raw_theta, H)
+            else:
+                theta = np.clip(raw_theta, 1, 15).astype(np.uint8)
             decay = np.array(d['decay'], dtype=np.float32)
             if 'freq' in d.files:
                 freq = np.array(d['freq'], dtype=np.float32)
