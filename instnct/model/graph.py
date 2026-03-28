@@ -71,6 +71,7 @@ class SelfWiringGraph:
         input_mode=None,
         sdr_k=None,
         sdr_dim=None,
+        output_dim=None,
     ):
         self.V = int(vocab)
         if self.V <= 0:
@@ -120,6 +121,14 @@ class SelfWiringGraph:
         self.sdr_dim = sdr_dim or self.DEFAULT_SDR_DIM
         if self.input_mode == 'sdr':
             self._build_sdr_table(proj_rng)
+
+        # Tentacle output projection (output_dim × V, smaller than full H × V)
+        self.output_dim = output_dim or self.DEFAULT_OUTPUT_DIM
+        self._output_proj_tentacle = None
+        if self.input_mode == 'sdr':
+            tp = proj_rng.randn(self.output_dim, self.V).astype(np.float32)
+            tp /= np.linalg.norm(tp, axis=0, keepdims=True)
+            self._output_proj_tentacle = tp * self.projection_scale
 
         # Polarity: 10% inhibitory.
         self.polarity = np.ones(self.H, dtype=np.int8)
@@ -447,21 +456,27 @@ class SelfWiringGraph:
             cur_charges[fired] = 0.0
         return cur_acts, cur_charges
 
-    def readout(self, hidden_state):
-        """Project one hidden-state vector into output-logit space."""
-        hidden = np.asarray(hidden_state, dtype=np.float32)
-        if hidden.shape != (self.H,):
-            raise ValueError(f"readout expects shape {(self.H,)}, got {hidden.shape}")
-        return hidden @ self.output_projection
+    def readout(self, vec):
+        """Project one state/charge vector into output-logit space."""
+        v = np.asarray(vec, dtype=np.float32)
+        if v.shape != (self.H,):
+            raise ValueError(f"readout expects shape {(self.H,)}, got {v.shape}")
+        if self.input_mode == 'sdr' and self._output_proj_tentacle is not None:
+            out_slice = v[self.H - self.output_dim:]
+            return out_slice @ self._output_proj_tentacle
+        return v @ self.output_projection
 
-    def readout_batch(self, hidden_states):
-        """Project a batch of hidden-state vectors into output-logit space."""
-        hidden = np.asarray(hidden_states, dtype=np.float32)
-        if hidden.ndim != 2 or hidden.shape[1] != self.H:
+    def readout_batch(self, vecs):
+        """Project a batch of state/charge vectors into output-logit space."""
+        v = np.asarray(vecs, dtype=np.float32)
+        if v.ndim != 2 or v.shape[1] != self.H:
             raise ValueError(
-                f"readout_batch expects shape (batch, {self.H}), got {hidden.shape}"
+                f"readout_batch expects shape (batch, {self.H}), got {v.shape}"
             )
-        return hidden @ self.output_projection
+        if self.input_mode == 'sdr' and self._output_proj_tentacle is not None:
+            out_slice = v[:, self.H - self.output_dim:]
+            return out_slice @ self._output_proj_tentacle
+        return v @ self.output_projection
 
     def forward(self, world, ticks=12):
         """Single-input forward pass. Passive I/O: inject via input_projection, read via output_projection."""
@@ -489,7 +504,10 @@ class SelfWiringGraph:
             phase=self.phase,
             rho=self.rho,
         )
-        # SPIKE READOUT: source is state, not charge.
+        # SDR mode: charge readout (validated 14.1% vs 10.3% state)
+        # Legacy mode: state readout (original design)
+        if self.input_mode == 'sdr':
+            return self.readout(self.charge)
         return self.readout(self.state)
 
     def forward_batch(self, ticks=12):
@@ -514,7 +532,9 @@ class SelfWiringGraph:
             phase=self.phase,
             rho=self.rho,
         )
-        # SPIKE READOUT
+        # SDR mode: charge readout; Legacy: spike readout
+        if self.input_mode == 'sdr':
+            return self.readout_batch(charges)
         return self.readout_batch(acts)
 
     def resync_alive(self):
@@ -656,11 +676,13 @@ class SelfWiringGraph:
         child.loss_pct = np.int8((int(parent_a.loss_pct) + int(parent_b.loss_pct)) // 2)
         child.mutation_drive = np.int8((int(parent_a.mutation_drive) + int(parent_b.mutation_drive)) // 2)
 
-        # SDR mode propagation
+        # SDR + tentacle mode propagation
         child.input_mode = parent_a.input_mode
         child.sdr_k = parent_a.sdr_k
         child.sdr_dim = parent_a.sdr_dim
         child.sdr_table = parent_a.sdr_table.copy() if parent_a.sdr_table is not None else None
+        child.output_dim = parent_a.output_dim
+        child._output_proj_tentacle = parent_a._output_proj_tentacle.copy() if parent_a._output_proj_tentacle is not None else None
 
         # Fresh state
         child.state = np.zeros(child.H, dtype=np.float32)
@@ -694,11 +716,13 @@ class SelfWiringGraph:
             cap_ratio=np.int32(self.cap_ratio),
             input_projection=self.input_projection,
             output_projection=self.output_projection,
-            **(  # SDR fields (optional, backward compatible)
+            **(  # SDR + tentacle fields (optional, backward compatible)
                 {'input_mode': np.array([ord(c) for c in self.input_mode], dtype=np.uint8),
                  'sdr_table': self.sdr_table,
                  'sdr_k': np.int32(self.sdr_k),
-                 'sdr_dim': np.int32(self.sdr_dim)}
+                 'sdr_dim': np.int32(self.sdr_dim),
+                 'output_dim': np.int32(self.output_dim),
+                 'output_proj_tentacle': self._output_proj_tentacle}
                 if self.input_mode == 'sdr' and self.sdr_table is not None
                 else {}
             ),
@@ -758,6 +782,8 @@ class SelfWiringGraph:
             _sdr_table = np.array(d['sdr_table'], dtype=np.float32) if 'sdr_table' in d else None
             _sdr_k = int(d['sdr_k']) if 'sdr_k' in d else cls.DEFAULT_SDR_K
             _sdr_dim = int(d['sdr_dim']) if 'sdr_dim' in d else cls.DEFAULT_SDR_DIM
+            _output_dim = int(d['output_dim']) if 'output_dim' in d else cls.DEFAULT_OUTPUT_DIM
+            _output_proj_tentacle = np.array(d['output_proj_tentacle'], dtype=np.float32) if 'output_proj_tentacle' in d else None
 
         if input_projection.shape != (V, H):
             raise ValueError(
@@ -807,6 +833,8 @@ class SelfWiringGraph:
         net.sdr_table = _sdr_table
         net.sdr_k = _sdr_k
         net.sdr_dim = _sdr_dim
+        net.output_dim = _output_dim
+        net._output_proj_tentacle = _output_proj_tentacle
 
         net.resync_alive()
         return net
