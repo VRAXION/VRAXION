@@ -25,7 +25,7 @@ This page is the single primary timeline and lookup surface for VRAXION. Use it 
 - Current strongest edge-representation quality result: sign+mag + magnitude resample reached `18.69%` at `155` edges (`q=0.121`), but it remains validated evidence rather than the current recipe candidate.
 - Current I/O architecture finding: tentacle I/O (4.7%) beats holographic projection (1.2%) by 3.9x — not yet promoted to mainline. 8-bit binary I/O (0.2%) rejected; high-dimensional spreading is load-bearing.
 - Current best input encoding: SDR_64 (sparse 20%, peak 7.3%) — baked into `graph.py` as `input_mode='sdr'` option.
-- Current best eval result: `20.0%` with out_dim=160, learnable theta, SDR_64 input, charge readout (H=256 test scale).
+- Current best eval result: `20.8%` with phi overlap (in=out=H/phi=158, overlap=60, 0 hidden), learnable theta, charge readout (H=256 test scale).
 - Current next public build target: context-dependent task learning, with input-window injection, evaluation-path changes, and associative-memory probes under active evaluation
 
 ## What Matters Now
@@ -122,6 +122,7 @@ This page is the single primary timeline and lookup surface for VRAXION. Use it 
 - **Fine output dim sweep** — confirmed 160 as peak: 144=16.6%, 152=18.0%, **160=20.0%**, 168=19.6%, 176=18.0%.
 - **Multi-seed confirmation** — od=160 across 3 seeds: mean=18.2% std=0.6% [17.4-18.8%]. Theta converges ~6.2 every time. `DEFAULT_OUTPUT_DIM=160` baked into `graph.py`.
 - **Scale sweep confirms phi ratio** — 0.625 output ratio tested at H=128 (17.2%), H=192 (19.2%), H=256 (20.0%), H=384 (19.4%). Phi nested downshift (`H/phi` output, `remainder/phi` input) predicts optimum within 2-4 neurons. Theta converges ~5-7 at every scale. Architecture follows golden ratio proportioning.
+- **Phi overlap: 20.8% NEW PEAK** — in=out=`round(H/phi)`=158, overlap zone=60, pure hidden=0. The network operates without dedicated hidden neurons — the I/O overlap zone IS the processing substrate. `phi_overlap=True` baked into `graph.py`.
 
 ## Retired Surfaces and Replacements
 

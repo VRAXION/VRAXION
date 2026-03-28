@@ -53,6 +53,7 @@ This page is the public evidence board for VRAXION. Use it for the strongest rep
 | Claude vs Gemini graph.py A/B | Validated finding | Same test: Claude (`14.1%`) > Gemini (`11.3%`). C19 clip and batch refractory are load-bearing. Gemini branch not merged. | `instnct/recipes/ab_claude_vs_gemini.py` |
 | Output Dimension Sweep (multi-seed confirmed) | Validated finding | Sweet spot: out_dim=160 = `20.0%` peak, multi-seed mean=`18.2%` std=`0.6%`. Theta converges ~6.2. 160/256=0.625 near golden ratio complement. Baked into `graph.py`. | `instnct/recipes/sweep_output_dim.py`, `multiseed_od160.py` |
 | Scale Sweep (phi ratio across H sizes) | Validated finding | 0.625 output ratio scales: H=128 `17.2%`, H=192 `19.2%`, H=256 `20.0%`, H=384 `19.4%`. Matches phi nested downshift. Theta ~5-7 at every scale. | `instnct/recipes/sweep_scale.py` |
+| Phi Overlap I/O (new best) | Validated finding | **`20.8%` new peak** at H=256: in=out=158 (H/phi), overlap=60, pure hidden=0. Zero dedicated hidden neurons needed. Baked as `phi_overlap=True`. | `instnct/recipes/test_phi_overlap.py` |
 | Direct 256 Output | Validated finding | 256 direct neurons (H=384): `7.1%`, only 6 accepts. Slow + too few hidden. Random projection more practical. | `instnct/recipes/test_direct256_learnable.py` |
 
 Raw run dumps, archived sweeps, and retired exploratory probes now live on `archive/instnct-surface-freeze-20260322`, not on active `main`.

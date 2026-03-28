@@ -37,9 +37,13 @@ class SelfWiringGraph:
     DEFAULT_INHIBITORY_FRACTION = 0.10  # Fly-realistic: fewer but broader I-neurons
     POLARITY_FLIP_PROB = 10  # 1-in-N chance per mutate step
     DEFAULT_INPUT_MODE = 'projection'  # 'projection' (legacy) or 'sdr'
-    DEFAULT_SDR_K = 13                 # active neurons per byte (20% of 64)
-    DEFAULT_SDR_DIM = 64               # SDR input dimension
-    DEFAULT_OUTPUT_DIM = 160           # optimal output readout dim (multi-seed: 18.2%+-0.6%)
+    DEFAULT_SDR_K = 13                 # active neurons per byte (20% of sdr_dim)
+    DEFAULT_SDR_DIM = 64               # SDR input dimension (legacy default)
+    DEFAULT_OUTPUT_DIM = 160           # output readout dim (legacy default)
+    PHI = (1 + 5**0.5) / 2            # golden ratio 1.618...
+    # Phi overlap mode: in_dim = out_dim = round(H/phi), K = 20% of in_dim
+    # Overlap zone = 2*(H/phi) - H neurons are both input and output
+    # Validated: 20.8% at H=256 (beats non-overlap 20.0%)
 
     def _build_sdr_table(self, rng=None):
         """Build sparse distributed representation: 256 x sdr_dim, K active per row."""
@@ -72,6 +76,7 @@ class SelfWiringGraph:
         sdr_k=None,
         sdr_dim=None,
         output_dim=None,
+        phi_overlap=False,
     ):
         self.V = int(vocab)
         if self.V <= 0:
@@ -113,6 +118,15 @@ class SelfWiringGraph:
         output_projection /= np.linalg.norm(output_projection, axis=0, keepdims=True)
         self.input_projection = input_projection * self.projection_scale
         self.output_projection = output_projection * self.projection_scale
+
+        # Phi overlap: auto-compute I/O dims from H using golden ratio
+        self.phi_overlap = phi_overlap
+        if phi_overlap:
+            input_mode = input_mode or 'sdr'
+            phi_dim = int(round(self.H / self.PHI))
+            sdr_dim = sdr_dim or phi_dim
+            output_dim = output_dim or phi_dim
+            sdr_k = sdr_k or max(1, int(round(phi_dim * 0.20)))
 
         # SDR input mode: sparse distributed byte representation
         self.input_mode = input_mode or self.DEFAULT_INPUT_MODE
@@ -683,6 +697,7 @@ class SelfWiringGraph:
         child.sdr_table = parent_a.sdr_table.copy() if parent_a.sdr_table is not None else None
         child.output_dim = parent_a.output_dim
         child._output_proj_tentacle = parent_a._output_proj_tentacle.copy() if parent_a._output_proj_tentacle is not None else None
+        child.phi_overlap = parent_a.phi_overlap
 
         # Fresh state
         child.state = np.zeros(child.H, dtype=np.float32)
@@ -722,7 +737,8 @@ class SelfWiringGraph:
                  'sdr_k': np.int32(self.sdr_k),
                  'sdr_dim': np.int32(self.sdr_dim),
                  'output_dim': np.int32(self.output_dim),
-                 'output_proj_tentacle': self._output_proj_tentacle}
+                 'output_proj_tentacle': self._output_proj_tentacle,
+                 'phi_overlap': np.bool_(self.phi_overlap)}
                 if self.input_mode == 'sdr' and self.sdr_table is not None
                 else {}
             ),
@@ -784,6 +800,7 @@ class SelfWiringGraph:
             _sdr_dim = int(d['sdr_dim']) if 'sdr_dim' in d else cls.DEFAULT_SDR_DIM
             _output_dim = int(d['output_dim']) if 'output_dim' in d else cls.DEFAULT_OUTPUT_DIM
             _output_proj_tentacle = np.array(d['output_proj_tentacle'], dtype=np.float32) if 'output_proj_tentacle' in d else None
+            _phi_overlap = bool(d['phi_overlap']) if 'phi_overlap' in d else False
 
         if input_projection.shape != (V, H):
             raise ValueError(
@@ -835,6 +852,7 @@ class SelfWiringGraph:
         net.sdr_dim = _sdr_dim
         net.output_dim = _output_dim
         net._output_proj_tentacle = _output_proj_tentacle
+        net.phi_overlap = _phi_overlap
 
         net.resync_alive()
         return net
