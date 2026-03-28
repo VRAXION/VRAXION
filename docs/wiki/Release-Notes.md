@@ -121,6 +121,7 @@ This page is the single primary timeline and lookup surface for VRAXION. Use it 
 - **8-bit / repeated binary output** — confirmed dead. Need 48+ random dims to separate 256 classes.
 - **Fine output dim sweep** — confirmed 160 as peak: 144=16.6%, 152=18.0%, **160=20.0%**, 168=19.6%, 176=18.0%.
 - **Multi-seed confirmation** — od=160 across 3 seeds: mean=18.2% std=0.6% [17.4-18.8%]. Theta converges ~6.2 every time. `DEFAULT_OUTPUT_DIM=160` baked into `graph.py`.
+- **Scale sweep confirms phi ratio** — 0.625 output ratio tested at H=128 (17.2%), H=192 (19.2%), H=256 (20.0%), H=384 (19.4%). Phi nested downshift (`H/phi` output, `remainder/phi` input) predicts optimum within 2-4 neurons. Theta converges ~5-7 at every scale. Architecture follows golden ratio proportioning.
 
 ## Retired Surfaces and Replacements
 
