@@ -104,7 +104,7 @@ Mutation-selection loop at a glance:
 | `input_projection` | Fixed random projection (current mainline). SDR validated: `input_mode='sdr'` uses sparse 20% activation (7.3% vs 4.4% random). |
 | `output_projection` | Fixed random projection (current mainline) |
 | Hidden-to-hidden mask | Learnable graph structure |
-| `theta` | Learnable per-neuron firing threshold (validated: full resample [0,16] converges to ~6-7, init from 1.0 recommended) |
+| `theta` | Learnable per-neuron firing threshold. **uint8 int4 [1-15]**, converges ~6. 15 configs tested: int4 beats float32 (15.6% vs 13.5%). Natural zones: relay(1-4), compute(6-10), gate(12-15). |
 | `decay` | Learnable per-neuron decay rate |
 | `polarity` | Per-neuron excitatory/inhibitory sign (+1/-1), co-evolved |
 | `freq`, `phase`, `rho` | Per-neuron Musical Gating / C19 Soft-Wave parameters, co-evolved |

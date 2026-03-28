@@ -30,7 +30,7 @@ class SelfWiringGraph:
     DEFAULT_EDGE_MAGNITUDE = 1.0
     DEFAULT_CAP_RATIO = 120
     DEFAULT_PROJECTION_SCALE = 3.0
-    DEFAULT_THETA = 15.0
+    DEFAULT_THETA = 6  # int4 [1-15], converges ~6 (validated sweep)
     DEFAULT_DECAY = 1.0
     MAX_CHARGE = 15.0
     DEFAULT_RHO = 0.3  # Starting modulation depth
@@ -172,7 +172,8 @@ class SelfWiringGraph:
         # Co-evolved learned params
         self.loss_pct = np.int8(15)
         self.mutation_drive = np.int8(1)  # signed: +N=add N, -N=remove N, 0=rewire
-        self.theta = np.full(self.H, float(theta_init), dtype=np.float32)
+        self.theta = np.full(self.H, int(np.clip(theta_init, 1, 15)), dtype=np.uint8)
+        self._theta_f32 = self.theta.astype(np.float32)
         self.decay = np.full(self.H, float(decay_init), dtype=np.float32)
 
         # Refractory period: 1-tick resting state after firing.
@@ -205,7 +206,9 @@ class SelfWiringGraph:
 
     @theta_mean.setter
     def theta_mean(self, value):
-        self.theta.fill(np.float32(value))
+        v = int(np.clip(round(value), 1, 15))
+        self.theta.fill(np.uint8(v))
+        self._theta_f32.fill(float(v))
 
     @property
     def retention_vec(self):
@@ -514,7 +517,7 @@ class SelfWiringGraph:
         self.state, self.charge = self.rollout_token(
             injected,
             mask=self.mask,
-            theta=self.theta,
+            theta=self._theta_f32,
             decay=self.decay,
             ticks=ticks,
             state=self.state,
@@ -544,7 +547,7 @@ class SelfWiringGraph:
         acts, charges = self.rollout_token_batch(
             projected,
             mask=self.mask,
-            theta=self.theta,
+            theta=self._theta_f32,
             decay=self.decay,
             ticks=ticks,
             sparse_cache=self._sp_cache,
@@ -631,7 +634,9 @@ class SelfWiringGraph:
         elif 'drive' in s:
             self.mutation_drive = np.int8(s['drive'])
         if 'theta' in s:
-            self.theta[:] = s['theta']
+            raw = s['theta']
+            self.theta[:] = np.clip(np.round(raw), 1, 15).astype(np.uint8) if raw.dtype != np.uint8 else raw
+            self._theta_f32[:] = self.theta.astype(np.float32)
         if 'decay' in s:
             self.decay[:] = s['decay']
         if 'polarity' in s:
@@ -693,7 +698,8 @@ class SelfWiringGraph:
         child._polarity_f32 = np.where(child.polarity, 1.0, -1.0).astype(np.float32)
 
         # Average meta-params with small noise
-        child.theta = ((parent_a.theta + parent_b.theta) / 2.0).astype(np.float32)
+        child.theta = np.clip(np.round((parent_a.theta.astype(int) + parent_b.theta.astype(int)) / 2), 1, 15).astype(np.uint8)
+        child._theta_f32 = child.theta.astype(np.float32)
         child.decay = ((parent_a.decay + parent_b.decay) / 2.0).astype(np.float32)
         child.freq = ((parent_a.freq + parent_b.freq) / 2.0).astype(np.float32)
         child.phase = ((parent_a.phase + parent_b.phase) / 2.0).astype(np.float32)
@@ -731,7 +737,7 @@ class SelfWiringGraph:
             vals=vals,
             loss_pct=int(self.loss_pct),
             mutation_drive=int(self.mutation_drive),
-            theta=self.theta,
+            theta=self._theta_f32,
             decay=self.decay,
             polarity=np.where(self.polarity, np.int8(1), np.int8(-1)),  # save as int8 for compat
             freq=self.freq,
@@ -780,7 +786,8 @@ class SelfWiringGraph:
             vals = (raw_vals != 0)
             input_projection = np.array(d['input_projection'], dtype=np.float32)
             output_projection = np.array(d['output_projection'], dtype=np.float32)
-            theta = np.array(d['theta'], dtype=np.float32)
+            raw_theta = np.array(d['theta'])
+            theta = np.clip(np.round(raw_theta), 1, 15).astype(np.uint8)
             decay = np.array(d['decay'], dtype=np.float32)
             if 'freq' in d.files:
                 freq = np.array(d['freq'], dtype=np.float32)
@@ -848,7 +855,8 @@ class SelfWiringGraph:
         net.charge = np.zeros(H, dtype=np.float32)
         net.loss_pct = loss_pct
         net.mutation_drive = mutation_drive
-        net.theta = theta
+        net.theta = theta.astype(np.uint8) if theta.dtype != np.uint8 else theta
+        net._theta_f32 = net.theta.astype(np.float32)
         net.decay = decay
         net.freq = freq
         net.phase = phase
@@ -893,7 +901,8 @@ class SelfWiringGraph:
                 self.alive_set.add((r, c_old))
                 has_structural = True
             elif op == 'T':
-                self.theta[entry[1]] = np.float32(entry[2])
+                self.theta[entry[1]] = np.uint8(int(np.clip(entry[2], 1, 15)))
+                self._theta_f32[entry[1]] = float(self.theta[entry[1]])
             elif op == 'D':
                 self.decay[entry[1]] = np.float32(entry[2])
             elif op == 'L':
@@ -1043,10 +1052,11 @@ class SelfWiringGraph:
                 undo.append(('W', r, c, nc))
 
     def _theta_mutate(self, undo):
-        """Mutate one random neuron's threshold to a value in [1, MAX_CHARGE]."""
+        """Mutate one random neuron's threshold to int4 value in [1, 15]."""
         idx = random.randint(0, self.H - 1)
-        old_val = float(self.theta[idx])
-        self.theta[idx] = np.float32(random.randint(1, int(self.MAX_CHARGE)))
+        old_val = int(self.theta[idx])
+        self.theta[idx] = np.uint8(random.randint(1, 15))
+        self._theta_f32[idx] = float(self.theta[idx])
         undo.append(('T', idx, old_val))
 
     def _decay_mutate(self, undo):

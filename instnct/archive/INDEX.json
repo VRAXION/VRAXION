@@ -1,5 +1,42 @@
 [
   {
+    "name": "theta_nested_binary",
+    "date": "2026-03-28 21:47",
+    "H": 256,
+    "edges": 3249,
+    "file": "theta_nested_binary.npz",
+    "size_kb": 77.8,
+    "config": {
+      "H": 256,
+      "values": [
+        1.0,
+        5.0,
+        10.0,
+        15.0
+      ],
+      "schedule": [
+        "add",
+        "remove",
+        "flip",
+        "theta_fine",
+        "theta_big",
+        "decay",
+        "decay",
+        "decay"
+      ]
+    },
+    "result": {
+      "best": 0.0768,
+      "edges": 3249,
+      "fine_acc": 39,
+      "big_acc": 63,
+      "n1": 197,
+      "n5": 19,
+      "n10": 25,
+      "n15": 15
+    }
+  },
+  {
     "name": "theta_binary_1_2",
     "date": "2026-03-28 19:07",
     "H": 256,
