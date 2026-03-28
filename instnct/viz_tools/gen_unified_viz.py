@@ -55,6 +55,9 @@ def load_checkpoint(path: Path) -> dict:
         files = set(d.files)
         H = int(d["H"]) if "H" in files else int(np.asarray(d["theta"]).shape[0])
         V = int(d["V"]) if "V" in files else 256
+        _sdr_dim = int(d['sdr_dim']) if 'sdr_dim' in files else 0
+        _output_dim = int(d['output_dim']) if 'output_dim' in files else 0
+        _phi_overlap = bool(d['phi_overlap']) if 'phi_overlap' in files else False
 
         rows = np.asarray(d["rows"], dtype=np.int32) if "rows" in files else np.array([], dtype=np.int32)
         cols = np.asarray(d["cols"], dtype=np.int32) if "cols" in files else np.array([], dtype=np.int32)
@@ -103,6 +106,9 @@ def load_checkpoint(path: Path) -> dict:
             "edges": int(len(rows)),
             "density": round(len(rows) / max(H * H, 1), 6),
             "checkpoint": path.name,
+            "sdr_dim": _sdr_dim,
+            "output_dim": _output_dim,
+            "phi_overlap": _phi_overlap,
         },
         "mask": {
             "rows": rows.tolist(),
@@ -180,7 +186,7 @@ def generate_demo_data(H=256, V=32, density=0.04, seed=42) -> dict:
     ]
 
     return {
-        "meta": {"H": H, "V": V, "edges": len(rows), "density": round(len(rows) / (H * H), 6), "checkpoint": "demo_random"},
+        "meta": {"H": H, "V": V, "edges": len(rows), "density": round(len(rows) / (H * H), 6), "checkpoint": "demo_random", "sdr_dim": 0, "output_dim": 0, "phi_overlap": False},
         "mask": {"rows": rows.tolist(), "cols": cols.tolist()},
         "scalars": {
             name: {

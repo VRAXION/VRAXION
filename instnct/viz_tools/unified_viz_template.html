@@ -1092,79 +1092,80 @@ const graphRenderer = {
   computeLayout() {
     if (!DATA) return;
     const H = DATA.meta.H;
-    const topIn = DATA.io_energy.top_input;
-    const topOut = DATA.io_energy.top_output;
-    const ioSet = new Set([...topIn, ...topOut]);
-    const centerNodes = [];
+    const phi = (1 + Math.sqrt(5)) / 2;
+    const sdrDim = DATA.meta.sdr_dim || 0;
+    const outDim = DATA.meta.output_dim || 0;
+
+    // Classify neurons into zones
+    // input zone: [0, sdrDim), output zone: [H-outDim, H)
+    const inputEnd = sdrDim;
+    const outputStart = H - outDim;
+    const inputOnly = [];   // input but NOT output
+    const overlap = [];     // both input AND output
+    const outputOnly = [];  // output but NOT input
+    const hidden = [];      // neither
+
     for (let i = 0; i < H; i++) {
-      if (!ioSet.has(i)) centerNodes.push(i);
+      const isIn = i < inputEnd;
+      const isOut = i >= outputStart;
+      if (isIn && isOut) overlap.push(i);
+      else if (isIn) inputOnly.push(i);
+      else if (isOut) outputOnly.push(i);
+      else hidden.push(i);
     }
 
-    // Use canvas size as the reference for layout
     const cw = this.canvas.width || 800;
     const ch = this.canvas.height || 600;
-    const pad = 20; // padding from edges
+    const pad = 30;
+    const usableW = cw - pad * 2;
+    const usableH = ch - pad * 2;
 
-    // Center grid dimensions
-    const centerGridCols = Math.ceil(Math.sqrt(centerNodes.length));
-    const centerGridRows = Math.ceil(centerNodes.length / centerGridCols);
-
-    // Allocate horizontal space: 12% left col, 76% center grid, 12% right col
-    const leftColW = cw * 0.10;
-    const rightColW = cw * 0.10;
-    const centerW = cw - leftColW - rightColW - pad * 2;
-    const centerH = ch - pad * 2;
-
-    // Cell size: fit the grid into the center area
-    const cellW = centerW / centerGridCols;
-    const cellH = centerH / centerGridRows;
-    const cellSize = Math.min(cellW, cellH);
-
-    // Center the grid within its area
-    const gridTotalW = centerGridCols * cellSize;
-    const gridTotalH = centerGridRows * cellSize;
-    const centerStartX = pad + leftColW + (centerW - gridTotalW) / 2;
-    const centerStartY = pad + (centerH - gridTotalH) / 2;
-
-    // Uniform height for all 3 columns = grid height
-    const uniformH = gridTotalH;
-    const uniformTop = centerStartY;
-
-    // Left column: input-proximal, same height as grid
-    const leftX = pad + leftColW / 2;
-    const leftSpacing = topIn.length > 1 ? uniformH / (topIn.length - 1) : 0;
-    const leftStartY = uniformTop;
-
-    // Right column: output-proximal, same height as grid
-    const rightX = cw - pad - rightColW / 2;
-    const rightSpacing = topOut.length > 1 ? uniformH / (topOut.length - 1) : 0;
-    const rightStartY = uniformTop;
+    // 3-zone horizontal layout: input-only | overlap+hidden | output-only
+    // Proportional widths based on neuron counts
+    const total = H;
+    const leftCount = inputOnly.length;
+    const midCount = overlap.length + hidden.length;
+    const rightCount = outputOnly.length;
+    const leftW = usableW * (leftCount / total);
+    const midW = usableW * (midCount / total);
+    const rightW = usableW * (rightCount / total);
 
     this.layoutW = cw;
     this.layoutH = ch;
-
-    // Build node positions
     this.nodes = new Array(H);
-    for (let i = 0; i < topIn.length; i++) {
-      const idx = topIn[i];
-      this.nodes[idx] = { x: leftX, y: leftStartY + i * leftSpacing, idx };
-    }
-    for (let i = 0; i < topOut.length; i++) {
-      const idx = topOut[i];
-      this.nodes[idx] = { x: rightX, y: rightStartY + i * rightSpacing, idx };
-    }
-    for (let i = 0; i < centerNodes.length; i++) {
-      const idx = centerNodes[i];
-      const row = Math.floor(i / centerGridCols);
-      const col = i % centerGridCols;
-      this.nodes[idx] = {
-        x: centerStartX + col * cellSize + cellSize / 2,
-        y: centerStartY + row * cellSize + cellSize / 2,
-        idx
-      };
-    }
 
-    // Compute radius, color, opacity for each node
+    // Helper: lay out a list of neuron indices in a grid within a rectangle
+    const layoutGrid = (indices, x0, y0, w, h) => {
+      if (indices.length === 0) return;
+      const cols = Math.ceil(Math.sqrt(indices.length * (w / Math.max(h, 1))));
+      const rows = Math.ceil(indices.length / cols);
+      const cellW = w / cols;
+      const cellH = h / rows;
+      for (let i = 0; i < indices.length; i++) {
+        const idx = indices[i];
+        const row = Math.floor(i / cols);
+        const col = i % cols;
+        this.nodes[idx] = {
+          x: x0 + col * cellW + cellW / 2,
+          y: y0 + row * cellH + cellH / 2,
+          idx,
+          zone: (idx < inputEnd && idx >= outputStart) ? 'overlap'
+              : (idx < inputEnd) ? 'input'
+              : (idx >= outputStart) ? 'output'
+              : 'hidden'
+        };
+      }
+    };
+
+    // Layout each zone
+    layoutGrid(inputOnly,  pad, pad, leftW, usableH);
+    // Middle: overlap first (top), hidden below
+    const overlapH = midCount > 0 ? usableH * (overlap.length / midCount) : 0;
+    const hiddenH = usableH - overlapH;
+    layoutGrid(overlap, pad + leftW, pad, midW, overlapH);
+    layoutGrid(hidden,  pad + leftW, pad + overlapH, midW, hiddenH);
+    layoutGrid(outputOnly, pad + leftW + midW, pad, rightW, usableH);
+
     this.updateNodeAppearance();
   },
 
@@ -1435,9 +1436,40 @@ const graphRenderer = {
       if (!n) continue;
       ctx.globalAlpha = n.opacity;
       ctx.fillStyle = n.color;
-      ctx.beginPath();
-      ctx.arc(n.x, n.y, n.radius, 0, Math.PI * 2);
-      ctx.fill();
+      const r = n.radius;
+      const zone = n.zone || 'hidden';
+
+      if (zone === 'input') {
+        // Left-pointing triangle
+        ctx.beginPath();
+        ctx.moveTo(n.x - r, n.y);
+        ctx.lineTo(n.x + r * 0.7, n.y - r * 0.8);
+        ctx.lineTo(n.x + r * 0.7, n.y + r * 0.8);
+        ctx.closePath();
+        ctx.fill();
+      } else if (zone === 'output') {
+        // Right-pointing triangle
+        ctx.beginPath();
+        ctx.moveTo(n.x + r, n.y);
+        ctx.lineTo(n.x - r * 0.7, n.y - r * 0.8);
+        ctx.lineTo(n.x - r * 0.7, n.y + r * 0.8);
+        ctx.closePath();
+        ctx.fill();
+      } else if (zone === 'overlap') {
+        // Circle (dual-role neuron)
+        ctx.beginPath();
+        ctx.arc(n.x, n.y, r, 0, Math.PI * 2);
+        ctx.fill();
+      } else {
+        // Diamond (pure hidden)
+        ctx.beginPath();
+        ctx.moveTo(n.x, n.y - r);
+        ctx.lineTo(n.x + r, n.y);
+        ctx.lineTo(n.x, n.y + r);
+        ctx.lineTo(n.x - r, n.y);
+        ctx.closePath();
+        ctx.fill();
+      }
 
       // Highlight hovered neuron
       if (i === this.hoverIdx) {
