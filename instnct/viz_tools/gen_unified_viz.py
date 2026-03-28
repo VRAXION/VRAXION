@@ -217,6 +217,78 @@ def load_training_data(path: Path) -> list | None:
     return None
 
 
+def load_all_archive_presets() -> dict:
+    """Load all archive checkpoints as lightweight presets for embedding in HTML."""
+    archive_dir = ROOT / "archive"
+    index_path = archive_dir / "INDEX.json"
+    if not index_path.exists():
+        return {}
+    with open(index_path) as f:
+        index = json.load(f)
+
+    presets = {}
+    for entry in index:
+        fpath = archive_dir / entry['file']
+        if not fpath.exists():
+            continue
+        try:
+            with np.load(fpath, allow_pickle=True) as d:
+                H = int(d['H'])
+                rows = np.array(d['rows'], dtype=np.int32)
+                cols = np.array(d['cols'], dtype=np.int32)
+                theta = np.array(d['theta'], dtype=np.float32)
+                decay = np.array(d['decay'], dtype=np.float32)
+                polarity = np.array(d['polarity'], dtype=np.int8) if 'polarity' in d else np.ones(H, dtype=np.int8)
+
+                # Scalars
+                scalars = {}
+                for name, arr in [('theta', theta), ('decay', decay), ('polarity', polarity.astype(np.float32))]:
+                    scalars[name] = {
+                        'values': [round(float(x), 4) for x in arr],
+                        'min': round(float(arr.min()), 4),
+                        'max': round(float(arr.max()), 4),
+                    }
+                for extra in ['freq', 'phase', 'rho']:
+                    if extra in d:
+                        arr = np.array(d[extra], dtype=np.float32)
+                        scalars[extra] = {
+                            'values': [round(float(x), 4) for x in arr],
+                            'min': round(float(arr.min()), 4),
+                            'max': round(float(arr.max()), 4),
+                        }
+
+                # Degrees
+                out_deg = np.zeros(H, dtype=np.int32)
+                in_deg = np.zeros(H, dtype=np.int32)
+                for r, c in zip(rows, cols):
+                    out_deg[r] += 1
+                    in_deg[c] += 1
+
+                preset = {
+                    'meta': {
+                        'H': H,
+                        'V': 256,
+                        'edges': int(len(rows)),
+                        'density': round(len(rows) / max(H * H, 1), 6),
+                        'checkpoint': entry['name'],
+                        'sdr_dim': entry.get('config', {}).get('sdr_dim', 0),
+                        'output_dim': entry.get('config', {}).get('output_dim', 0),
+                        'phi_overlap': entry.get('config', {}).get('phi_overlap', False),
+                    },
+                    'mask': {'rows': rows.tolist(), 'cols': cols.tolist()},
+                    'scalars': scalars,
+                    'degrees': {'out': out_deg.tolist(), 'in': in_deg.tolist()},
+                    'label': entry['name'],
+                    'date': entry.get('date', ''),
+                    'result': entry.get('result', {}),
+                    'config': entry.get('config', {}),
+                }
+                presets[entry['name']] = preset
+        except Exception as e:
+            print(f"  Warning: skip {entry['name']}: {e}")
+    return presets
+
+
 def build_html(payload: dict) -> str:
     template = (Path(__file__).parent / "unified_viz_template.html").read_text(encoding="utf-8")
     data_json = json.dumps(payload, separators=(",", ":"))
@@ -244,6 +316,12 @@ def main():
         if td_path is None:
             td_path = ROOT / "training_live_data.json"
         payload["training"] = load_training_data(td_path)
+
+    # Archive presets — all checkpoints embedded for instant switching
+    presets = load_all_archive_presets()
+    if presets:
+        payload["presets"] = presets
+        print(f"Embedded {len(presets)} archive presets")
 
     if args.export_json:
         json_path = args.output.with_suffix(".json")

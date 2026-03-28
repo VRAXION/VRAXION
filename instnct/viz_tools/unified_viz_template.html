@@ -299,6 +299,9 @@ body {
   <button class="tab-btn active" data-tab="masks">MASKS</button>
   <button class="tab-btn" data-tab="graph">GRAPH</button>
   <button class="tab-btn" data-tab="training" id="training-tab-btn" style="display:none">TRAINING</button>
+  <select id="preset-select" style="display:none;margin-left:auto;background:var(--bg);color:var(--accent);border:1px solid var(--border);padding:2px 8px;font-family:inherit;font-size:11px;border-radius:3px;cursor:pointer" title="Switch experiment checkpoint">
+    <option value="">-- checkpoint --</option>
+  </select>
   <div id="header-meta"></div>
   <div id="header-drop-zone" title="Drop .json to reload">+</div>
 </div>
@@ -1824,10 +1827,48 @@ function onResize() {
 
 window.addEventListener('resize', onResize);
 
+// Preset switching
+function initPresets() {
+  if (!DATA || !DATA.presets) return;
+  const sel = document.getElementById('preset-select');
+  sel.style.display = '';
+  const names = Object.keys(DATA.presets);
+  // Current loaded checkpoint
+  const current = DATA.meta ? DATA.meta.checkpoint : '';
+  for (const name of names) {
+    const p = DATA.presets[name];
+    const label = name + ' (' + (p.result && p.result.best != null
+      ? (typeof p.result.best === 'number' ? (p.result.best * 100).toFixed(1) + '%' : p.result.best)
+      : p.meta.edges + ' edges') + ')';
+    const opt = document.createElement('option');
+    opt.value = name;
+    opt.textContent = label;
+    if (name === current) opt.selected = true;
+    sel.appendChild(opt);
+  }
+  sel.addEventListener('change', () => {
+    const chosen = sel.value;
+    if (!chosen || !DATA.presets[chosen]) return;
+    const preset = DATA.presets[chosen];
+    // Swap DATA fields with preset data
+    DATA.meta = preset.meta;
+    DATA.mask = preset.mask;
+    DATA.scalars = preset.scalars;
+    DATA.degrees = preset.degrees;
+    // Keep training data and presets
+    // Re-init renderers
+    buildEdgeLookup();
+    initHeader();
+    masksRenderer.init();
+    graphRenderer.init();
+  });
+}
+
 // Boot
 initDropOverlay();
 if (DATA) {
   initAll();
+  initPresets();
 }
 
 })();
