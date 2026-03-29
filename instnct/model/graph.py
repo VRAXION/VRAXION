@@ -46,14 +46,14 @@ class SelfWiringGraph:
     # Overlap zone = 2*(H/phi) - H neurons are both input and output
     # Validated: 20.8% at H=256 (beats non-overlap 20.0%)
 
-    # C19 Wave Gating LUT: 8 channels x 8 ticks, cos-shaped
-    # Each channel peaks (easiest firing) at its corresponding tick.
+    # C19 Wave Gating LUT: channels 1-8, ticks 0-7, cos-shaped
+    # Channel N peaks (easiest firing) at tick N-1. Stored as 9x8 (row 0 unused).
     # Replaces sin(tick*freq+phase)*rho with a single LUT lookup.
     # Learnable channel (23.8%) > sin binary (21.4%) > uint8 frozen (16.2%) > none (6.7%)
-    WAVE_LUT = np.zeros((8, 8), dtype=np.float32)
-    for _ch in range(8):
+    WAVE_LUT = np.ones((9, 8), dtype=np.float32)  # row 0 = neutral (unused)
+    for _ch in range(1, 9):
         for _t in range(8):
-            WAVE_LUT[_ch, _t] = 1.0 - 0.3 * np.cos(2 * np.pi * (_t - _ch) / 8.0)
+            WAVE_LUT[_ch, _t] = 1.0 - 0.3 * np.cos(2 * np.pi * (_t - (_ch - 1)) / 8.0)
     del _ch, _t  # cleanup class-scope loop vars
 
     # --- Int4 bitpacked helpers (2 neurons per byte) ---
@@ -215,11 +215,11 @@ class SelfWiringGraph:
         # Proven +7.5% win in A/B testing.
         self.refractory = np.zeros(self.H, dtype=np.int8)
 
-        # C19 Wave Gating: learnable channel [0-7] per neuron
-        # Each channel = tick specialization. Cos-shaped LUT, no sin() at runtime.
+        # C19 Wave Gating: learnable channel [1-8] per neuron
+        # Channel N = tick N specialist. Cos-shaped LUT, no sin() at runtime.
         # Validated: learnable channel 23.8% > sin binary 21.4%
-        self.channel = init_rand(self.H).astype(np.float64) * 8
-        self.channel = np.clip(self.channel.astype(np.uint8), 0, 7)
+        self.channel = (init_rand(self.H) * 8).astype(np.uint8) + 1  # [1-8]
+        self.channel = np.clip(self.channel, 1, 8)
 
     @staticmethod
     def _density_to_fraction(density):
@@ -853,9 +853,9 @@ class SelfWiringGraph:
                 theta = np.clip(raw_theta, 1, 15).astype(np.uint8)
             decay = np.array(d['decay'], dtype=np.float32)
             if 'channel' in d.files:
-                channel = np.clip(np.array(d['channel'], dtype=np.uint8), 0, 7)
+                channel = np.clip(np.array(d['channel'], dtype=np.uint8), 1, 8)
             elif 'freq' in d.files:
-                # Legacy: convert freq/phase to nearest channel
+                # Legacy: convert freq/phase to nearest channel (1-8)
                 freq_raw = np.array(d['freq'], dtype=np.float32)
                 phase_raw = np.array(d['phase'], dtype=np.float32)
                 best_tick = np.zeros(H, dtype=np.uint8)
@@ -865,9 +865,9 @@ class SelfWiringGraph:
                     better = wave < best_val
                     best_tick[better] = t
                     best_val[better] = wave[better]
-                channel = best_tick
+                channel = best_tick + 1  # 0-7 → 1-8
             else:
-                channel = np.random.RandomState(42).randint(0, 8, size=H).astype(np.uint8)
+                channel = np.random.RandomState(42).randint(1, 9, size=H).astype(np.uint8)
 
             if 'polarity' in d.files:
                 raw_pol = np.array(d['polarity'])
@@ -982,7 +982,7 @@ class SelfWiringGraph:
                 self.polarity[entry[1]] = bool(old_val > 0) if not isinstance(old_val, bool) else old_val
                 self._polarity_f32[entry[1]] = 1.0 if self.polarity[entry[1]] else -1.0
             elif op == 'CH':
-                self.channel[entry[1]] = np.uint8(int(np.clip(entry[2], 0, 7)))
+                self.channel[entry[1]] = np.uint8(int(np.clip(entry[2], 1, 8)))
             elif op in ('FR', 'PH', 'RH'):
                 pass  # Legacy: silently ignore old freq/phase/rho undo ops
         if has_structural:
@@ -1047,7 +1047,7 @@ class SelfWiringGraph:
         if random.randint(1, 5) == 1 and not freeze_params:
             idx = random.randint(0, self.H - 1)
             undo.append(('CH', idx, int(self.channel[idx])))
-            self.channel[idx] = np.uint8(random.randint(0, 7))
+            self.channel[idx] = np.uint8(random.randint(1, 8))
 
         # Execute drive: +N=add, -N=remove, 0=rewire
         d = int(self.mutation_drive)
