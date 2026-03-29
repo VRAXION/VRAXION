@@ -312,4 +312,41 @@ if __name__ == "__main__":
     rates = ' '.join(f"{op}={op_accepts[op]/max(op_counts[op],1)*100:.0f}%" for op in ALL_OPS)
     print(f"  Accept rates: {rates}")
     print(f"  Final probs: {' '.join(f'{ALL_OPS[i]}={probs[i]:.0%}' for i in range(N_OPS))}")
+
+    # Save controller weights + sparsity analysis
+    ckpt_dir = os.path.join(BASE_DIR, "data")
+    np.savez_compressed(os.path.join(ckpt_dir, "big_relu_ctrl_weights.npz"),
+        W1=ctrl.W1, b1=ctrl.b1, W2=ctrl.W2, b2=ctrl.b2,
+        W3=ctrl.W3, b3=ctrl.b3, Wo=ctrl.Wo, bo=ctrl.bo)
+    np.savez_compressed(os.path.join(ckpt_dir, "big_relu_main_network.npz"),
+        mask=mask, theta=theta, channel=channel, pol_f32=pol_f32)
+
+    # Sparsity analysis
+    print(f"\n  SPARSITY ANALYSIS:")
+    for name, W in [('W1',ctrl.W1),('W2',ctrl.W2),('W3',ctrl.W3),('Wo',ctrl.Wo)]:
+        total = W.size
+        near_zero = (np.abs(W) < 0.01).sum()
+        small = (np.abs(W) < 0.1).sum()
+        large = (np.abs(W) > 0.5).sum()
+        print(f"    {name} {W.shape}: zero(<0.01)={near_zero}/{total}({near_zero/total*100:.0f}%) "
+              f"small(<0.1)={small/total*100:.0f}% large(>0.5)={large/total*100:.0f}%")
+
+    # Dead ReLU analysis
+    print(f"\n  DEAD RELU ANALYSIS:")
+    test_features = np.random.rand(100, 10).astype(np.float32)
+    for i in range(100):
+        ctrl.forward(test_features[i])
+    # Check which neurons never activated
+    activations = np.zeros((3, 128))
+    for i in range(100):
+        ctrl.forward(test_features[i])
+        activations[0] += (ctrl.h1 > 0).astype(float)
+        activations[1] += (ctrl.h2 > 0).astype(float)
+        activations[2] += (ctrl.h3 > 0).astype(float)
+    for layer, name in enumerate(['h1','h2','h3']):
+        dead = (activations[layer] == 0).sum()
+        active = (activations[layer] > 0).sum()
+        print(f"    {name}: {dead}/128 dead ({dead/128*100:.0f}%), {active} active")
+
+    print(f"\n  Saved: big_relu_ctrl_weights.npz + big_relu_main_network.npz")
     print(f"  baselines: fixed=23.8%, Swish=18.8%")
