@@ -94,8 +94,8 @@ Mutation-selection loop at a glance:
 | Canonical code path | [`instnct/model/graph.py`](https://github.com/VRAXION/VRAXION/blob/main/instnct/model/graph.py) |
 | Current first-class public recipe on `main` | [`instnct/recipes/train_english_1024n_18w.py`](https://github.com/VRAXION/VRAXION/blob/main/instnct/recipes/train_english_1024n_18w.py) (`8` ticks, triangle-derived `2 add / 1 flip / 5 decay`) |
 | Current secondary validation recipe on `main` | [`instnct/recipes/train_wordpairs_loglik.py`](https://github.com/VRAXION/VRAXION/blob/main/instnct/recipes/train_wordpairs_loglik.py) |
-| Shipped defaults on `main` | `DEFAULT_THETA = 15.0`, `DEFAULT_PROJECTION_SCALE = 3.0`, `DEFAULT_EDGE_MAGNITUDE = 1.0` |
-| Mainline runtime behavior | per-neuron `theta` / `decay` and nonnegative charge dynamics |
+| Shipped defaults on `main` | `DEFAULT_THETA = 6` (uint8 int4), `DEFAULT_DECAY = 0.16` (fix, int mode: -1 every 6th tick), `DEFAULT_RHO = 0.3` (fix, C port: ×77>>8), `DEFAULT_PROJECTION_SCALE = 3.0`, `DEFAULT_EDGE_MAGNITUDE = 1.0` |
+| Mainline runtime behavior | per-neuron `theta` (int4 [1-15]) / nonnegative charge / C19 Soft-Wave modulation |
 
 ## What Is Fixed vs Learnable
 
@@ -105,9 +105,9 @@ Mutation-selection loop at a glance:
 | `output_projection` | Fixed random projection (current mainline) |
 | Hidden-to-hidden mask | Learnable graph structure |
 | `theta` | Learnable per-neuron firing threshold. **uint8 int4 [1-15]**, converges ~6. 15 configs tested: int4 beats float32 (15.6% vs 13.5%). Natural zones: relay(1-4), compute(6-10), gate(12-15). |
-| `decay` | Learnable per-neuron decay rate |
+| `decay` | **Fix constant 0.16** (phi/10). Int mode: subtract 1 every 6th tick. Validated: fix 19.4% vs learnable 20.8% (-1.4%). 0 bytes, 0 schedule cost. |
 | `polarity` | Per-neuron excitatory/inhibitory sign (+1/-1), co-evolved |
-| `freq`, `phase` | Per-neuron Musical Gating / C19 Soft-Wave oscillation parameters (TODO: int4 test) |
+| `freq`, `phase` | Per-neuron C19 Soft-Wave oscillation parameters. float32. **Never trained in prior recipes** (not in schedule). Active sweep in progress: none vs frozen vs learnable. |
 | `rho` | C19 wave modulation depth. **Fix constant 0.3** (validated: fix 14.5% > float 14.1%, -0.7% vs int4 15.2%). 0 bytes. |
 | Charge / state | Runtime state that changes while the model runs |
 

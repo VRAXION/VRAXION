@@ -136,6 +136,16 @@ This page is the single primary timeline and lookup surface for VRAXION. Use it 
 - **Full overlap (100%) = 14.7%** — worse than phi overlap (20.8%). Every neuron as both I/O is too noisy. Phi ratio is the optimal overlap, not maximum.
 - **Learnable schedule: 14.9% from nothing** (89 edges) — schedule budgets evolve: flip dominates (6), heavy pruning (remove=10), theta drops to 0. Quality/edge 26x better than prefill. Ultra-sparse self-organized topology.
 
+---
+
+### 2026-03-29 — Layer-by-Layer Minmax & Freq/Phase Discovery
+
+- **Decay: fix 0.16 baked** — fix 19.4% vs learnable 20.8% (-1.4% tradeoff). Phi/10 ratio. Int mode: subtract 1 every 6th tick = zero float ops. 0 bytes, 0 schedule cost.
+- **Rho: fix 0.3 baked** — int4(15.2%) > fix(14.5%) > float(14.1%). C port: `(wave * 77) >> 8` = integer multiply+shift. 0 bytes.
+- **Freq+Phase NEVER TRAINED** — discovered that freq/phase were never in any recipe schedule. All checkpoints contain random init values. Wave gating was random noise in all prior experiments.
+- **Wave gating sweep in progress** — A (no wave)=6.7%, B (frozen random)=13.3%+ (still running), C (learnable) pending. Frozen random wave already +6.6% over none — the feature is load-bearing even without learning.
+- **Layer optimization status:** mask(bool/1bit), polarity(bool/1bit), theta(int4/4bit), decay(fix/0bit), rho(fix/0bit) all baked. freq+phase(float32/32bit) = last two remaining.
+
 ## Retired Surfaces and Replacements
 
 <details>
