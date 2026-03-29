@@ -125,7 +125,7 @@ This page is the single primary timeline and lookup surface for VRAXION. Use it 
 - **Phi overlap: 20.8% NEW PEAK** — in=out=`round(H/phi)`=158, overlap zone=60, pure hidden=0. The network operates without dedicated hidden neurons — the I/O overlap zone IS the processing substrate. `phi_overlap=True` baked into `graph.py`.
 - **Empty start: fixed schedule = 4.2%** (5 edges) — the network barely builds anything without prefill.
 - **Theta bit-width Pareto frontier (15 configs tested)** — Final 3 winners: binary[1,15]=10.1%/32B(1bit), quad[1,5,10,15]=12.7%/64B(2bit), int4[1-15]=15.6%/128B(4bit). Float32 13.5%/1024B DOMINATED. Int8[1-255]=7.1% (lazy mode, mean=110, 96% dead). Value 15 is CRITICAL (without: max 7.5%). Range>levels. Cap at MAX_CHARGE=15 is a feature. Natural zones: R(1-4,44%), C(6-10,30%), G(12-15,13%) with valleys at 5,11. Relay/gate ratio near phi^2.
-- **Rho: fix 0.3 constant** — int4(15.2%) > fix(14.5%) > float(14.1%). Fix chosen for 0 bytes + 0 schedule cost. Same pattern as decay: fix constant > learnable float.
+- **Rho: fix 0.3 constant** — int4(15.2%) > fix(14.5%) > float(14.1%). Fix chosen: 0 bytes, 0 schedule cost. Smoke: 0.3 vs 77/256 (0.3008) = seed noise only. C port: `(wave * 77) >> 8` = integer multiply+shift, no float needed.
 - **Theta=0 is redundant** — clip(0 × anything, 1.0, 15.0) = 1.0 always. Same as theta=1. Remove 0 from search space.
 - **Theta: int4 (1-15) beats float32** — int4 `15.6%` > float32 `13.5%`. Smaller search space (16 values) accelerates evolution + 9% faster. Distribution confirms trit hypothesis: theta=1 (relay, 25%) + theta=6 (compute, 8%) + high theta (gate).
 - **Connection mask + polarity optimized to native bool** — lazy float32 cast, 21% forward speedup.

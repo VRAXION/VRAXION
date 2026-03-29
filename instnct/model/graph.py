@@ -34,7 +34,7 @@ class SelfWiringGraph:
     DEFAULT_DECAY = 0.16  # legacy float default
     DECAY_PERIOD = 6      # int decay: subtract 1 every N ticks (1/6 ≈ 0.167 ≈ phi/10)
     MAX_CHARGE = 15.0
-    DEFAULT_RHO = 0.3  # Starting modulation depth
+    DEFAULT_RHO = 0.3  # Fix constant (validated: fix=14.5% > float=14.1%). C port: (wave * 77) >> 8
     DEFAULT_INHIBITORY_FRACTION = 0.10  # Fly-realistic: fewer but broader I-neurons
     POLARITY_FLIP_PROB = 10  # 1-in-N chance per mutate step
     DEFAULT_INPUT_MODE = 'projection'  # 'projection' (legacy) or 'sdr'
