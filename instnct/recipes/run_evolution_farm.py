@@ -287,7 +287,8 @@ if __name__ == "__main__":
         top3 = sorted(db['individuals'], key=lambda x: x['score'], reverse=True)[:3]
         print(f"\n  Gen {gen+1}: A={score_a*100:.1f}% B={score_b*100:.1f}% "
               f"global_best={db['global_best']*100:.1f}% {elapsed:.0f}s")
-        print(f"  Top 3: {', '.join(f'{t['name']}={t['score']*100:.1f}%' for t in top3)}")
+        top_str = ', '.join(f"{t['name']}={t['score']*100:.1f}%" for t in top3)
+        print(f"  Top 3: {top_str}")
         print(f"  DB: {len(db['individuals'])} individuals")
         sys.stdout.flush()
 
