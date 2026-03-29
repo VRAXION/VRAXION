@@ -143,8 +143,9 @@ This page is the single primary timeline and lookup surface for VRAXION. Use it 
 - **Decay: fix 0.16 baked** — fix 19.4% vs learnable 20.8% (-1.4% tradeoff). Phi/10 ratio. Int mode: subtract 1 every 6th tick = zero float ops. 0 bytes, 0 schedule cost.
 - **Rho: fix 0.3 baked** — int4(15.2%) > fix(14.5%) > float(14.1%). C port: `(wave * 77) >> 8` = integer multiply+shift. 0 bytes.
 - **Freq+Phase NEVER TRAINED** — discovered that freq/phase were never in any recipe schedule. All checkpoints contain random init values. Wave gating was random noise in all prior experiments.
-- **Wave gating sweep in progress** — A (no wave)=6.7%, B (frozen random)=13.3%+ (still running), C (learnable) pending. Frozen random wave already +6.6% over none — the feature is load-bearing even without learning.
-- **Layer optimization status:** mask(bool/1bit), polarity(bool/1bit), theta(int4/4bit), decay(fix/0bit), rho(fix/0bit) all baked. freq+phase(float32/32bit) = last two remaining.
+- **Wave gating sweep DONE** — A (no wave)=`6.7%`, **B (frozen random)=`16.2%`**, C (learnable)=`12.9%`. Frozen random beats learnable because 2 wave schedule slots steal theta budget. Random init diversity is sufficient — no learning needed. Wave gating is load-bearing (+142% vs none) but costs 0 learnable bytes.
+- **Freq+phase: FIX random init** — random `uniform[0.5,2.0]` freq + `uniform[0,2pi]` phase frozen at init. Learnable values barely moved from init after 2000 steps (freq mean 1.23->1.23, phase std 1.88->1.81). The feature provides temporal diversity, not learnable signal.
+- **Layer optimization status:** mask(bool/1bit), polarity(bool/1bit), theta(int4/4bit), decay(fix/0bit), rho(fix/0bit), freq(fix-random/0bit), phase(fix-random/0bit) — **ALL layers optimized**. Total learnable: mask + polarity + theta only.
 
 ## Retired Surfaces and Replacements
 

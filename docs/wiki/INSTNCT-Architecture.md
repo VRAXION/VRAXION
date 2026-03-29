@@ -107,7 +107,7 @@ Mutation-selection loop at a glance:
 | `theta` | Learnable per-neuron firing threshold. **uint8 int4 [1-15]**, converges ~6. 15 configs tested: int4 beats float32 (15.6% vs 13.5%). Natural zones: relay(1-4), compute(6-10), gate(12-15). |
 | `decay` | **Fix constant 0.16** (phi/10). Int mode: subtract 1 every 6th tick. Validated: fix 19.4% vs learnable 20.8% (-1.4%). 0 bytes, 0 schedule cost. |
 | `polarity` | Per-neuron excitatory/inhibitory sign (+1/-1), co-evolved |
-| `freq`, `phase` | Per-neuron C19 Soft-Wave oscillation parameters. float32. **Never trained in prior recipes** (not in schedule). Active sweep in progress: none vs frozen vs learnable. |
+| `freq`, `phase` | Per-neuron C19 Soft-Wave oscillation parameters. **Fix random init** (freq `uniform[0.5,2.0]`, phase `uniform[0,2pi]`). Frozen random=`16.2%` > learnable=`12.9%` > none=`6.7%`. Wave gating is load-bearing (+142%) but random diversity suffices — no learning needed. 0 learnable bytes. |
 | `rho` | C19 wave modulation depth. **Fix constant 0.3** (validated: fix 14.5% > float 14.1%, -0.7% vs int4 15.2%). 0 bytes. |
 | Charge / state | Runtime state that changes while the model runs |
 
