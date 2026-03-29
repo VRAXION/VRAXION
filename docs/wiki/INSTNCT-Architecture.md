@@ -107,8 +107,8 @@ Mutation-selection loop at a glance:
 | `theta` | Learnable per-neuron firing threshold. **uint8 int4 [1-15]**, converges ~6. 15 configs tested: int4 beats float32 (15.6% vs 13.5%). Natural zones: relay(1-4), compute(6-10), gate(12-15). |
 | `decay` | **Fix constant 0.16** (phi/10). Int mode: subtract 1 every 6th tick. Validated: fix 19.4% vs learnable 20.8% (-1.4%). 0 bytes, 0 schedule cost. |
 | `polarity` | Per-neuron excitatory/inhibitory sign (+1/-1), co-evolved |
-| `wave_type` | Per-neuron C19 Soft-Wave type. **2-bit** (4 types): binary freq × binary phase = 4 orthogonal temporal channels in 8 ticks. Binary(21.4%) > uint8(16.2%) > none(6.7%). Replaces float32 freq+phase with LUT: `WAVE_LUT[type][tick]`, zero sin() at runtime. 64 bytes (H=256). |
-| `rho` | C19 wave modulation depth. **Fix constant 0.3** (validated: fix 14.5% > float 14.1%, -0.7% vs int4 15.2%). 0 bytes. |
+| `channel` | Per-neuron temporal channel. **uint8 [0-7], learnable**. Each channel = tick specialization via cos-shaped 8×8 LUT. Learnable(23.8%) > sin binary(21.4%) > uint8 frozen(16.2%) > none(6.7%). Zero sin() at runtime: `WAVE_LUT[channel][tick]`. 3 bit effective, baked into graph.py. |
+| `rho` | C19 wave modulation depth. **Baked into WAVE_LUT** as ±0.3 range [0.7, 1.3]. No longer a separate parameter. |
 | Charge / state | Runtime state that changes while the model runs |
 
 > **Note:** The tentacle I/O validated finding replaces `input_projection` / `output_projection` with dedicated I/O neurons whose connectivity is part of the learnable mask. This is not yet shipped on mainline.

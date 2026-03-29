@@ -11,9 +11,9 @@ Runtime contract:
   - mask             (H × H): learnable hidden graph, boolean (True/False)
   - theta            (H,): per-neuron firing threshold
   - decay            (H,): per-neuron decay rate
-  - freq             (H,): per-neuron firing frequency (Musical Gating)
-  - phase            (H,): per-neuron firing phase (Musical Gating)
-  - rho              (H,): per-neuron modulation depth (Musical Gating)
+  - channel          (H,): per-neuron temporal channel [0-7] (C19 Wave Gating)
+                           Each channel = tick specialization via cos-shaped LUT.
+                           Replaces freq/phase/rho (23.8% > sin binary 21.4%).
   - polarity         (H,): per-neuron polarity (+1 excitatory, -1 inhibitory)
   - state            (H,): hidden activation (binary spikes) after gating
   - charge           (H,): hidden pre-threshold charge (0-15)
@@ -34,7 +34,7 @@ class SelfWiringGraph:
     DEFAULT_DECAY = 0.16  # legacy float default
     DECAY_PERIOD = 6      # int decay: subtract 1 every N ticks (1/6 ≈ 0.167 ≈ phi/10)
     MAX_CHARGE = 15.0
-    DEFAULT_RHO = 0.3  # Fix constant (validated: fix=14.5% > float=14.1%). C port: (wave * 77) >> 8
+    DEFAULT_RHO = 0.3  # Baked into WAVE_LUT. Legacy recipes still reference this.
     DEFAULT_INHIBITORY_FRACTION = 0.10  # Fly-realistic: fewer but broader I-neurons
     POLARITY_FLIP_PROB = 10  # 1-in-N chance per mutate step
     DEFAULT_INPUT_MODE = 'projection'  # 'projection' (legacy) or 'sdr'
@@ -45,6 +45,16 @@ class SelfWiringGraph:
     # Phi overlap mode: in_dim = out_dim = round(H/phi), K = 20% of in_dim
     # Overlap zone = 2*(H/phi) - H neurons are both input and output
     # Validated: 20.8% at H=256 (beats non-overlap 20.0%)
+
+    # C19 Wave Gating LUT: 8 channels x 8 ticks, cos-shaped
+    # Each channel peaks (easiest firing) at its corresponding tick.
+    # Replaces sin(tick*freq+phase)*rho with a single LUT lookup.
+    # Learnable channel (23.8%) > sin binary (21.4%) > uint8 frozen (16.2%) > none (6.7%)
+    WAVE_LUT = np.zeros((8, 8), dtype=np.float32)
+    for _ch in range(8):
+        for _t in range(8):
+            WAVE_LUT[_ch, _t] = 1.0 - 0.3 * np.cos(2 * np.pi * (_t - _ch) / 8.0)
+    del _ch, _t  # cleanup class-scope loop vars
 
     # --- Int4 bitpacked helpers (2 neurons per byte) ---
     @staticmethod
@@ -205,11 +215,11 @@ class SelfWiringGraph:
         # Proven +7.5% win in A/B testing.
         self.refractory = np.zeros(self.H, dtype=np.int8)
 
-        # Musical Gating: Freq, Phase and Learnable Rho
-        # Every neuron has its own internal clock and sensitivity to it.
-        self.freq = init_rand(self.H).astype(np.float32) * 1.5 + 0.5
-        self.phase = init_rand(self.H).astype(np.float32) * 2.0 * np.pi
-        self.rho = np.full(self.H, self.DEFAULT_RHO, dtype=np.float32)
+        # C19 Wave Gating: learnable channel [0-7] per neuron
+        # Each channel = tick specialization. Cos-shaped LUT, no sin() at runtime.
+        # Validated: learnable channel 23.8% > sin binary 21.4%
+        self.channel = init_rand(self.H).astype(np.float64) * 8
+        self.channel = np.clip(self.channel.astype(np.uint8), 0, 7)
 
     @staticmethod
     def _density_to_fraction(density):
@@ -335,6 +345,7 @@ class SelfWiringGraph:
         edge_magnitude=1.0,
         polarity=None,
         refractory=None,
+        channel=None,
         freq=None,
         phase=None,
         rho=None,
@@ -399,11 +410,18 @@ class SelfWiringGraph:
             # 4. CLAMP
             np.clip(cur_charge, 0.0, SelfWiringGraph.MAX_CHARGE, out=cur_charge)
             
-            # 5. SPIKE DECISION with Refractory and C19 Soft-Wave Modulation
+            # 5. SPIKE DECISION with Refractory and C19 Wave Gating
             effective_theta = theta
-            if freq is not None and phase is not None:
+            if channel is not None:
+                # Channel LUT path: no sin(), just table lookup
+                theta_mult = SelfWiringGraph.WAVE_LUT[channel, tick % 8]
+                effective_theta = np.clip(
+                    theta * theta_mult,
+                    1.0, SelfWiringGraph.MAX_CHARGE
+                )
+            elif freq is not None and phase is not None:
+                # Legacy sin() path for old recipes
                 wave = np.sin(tick * freq + phase)
-                # Use per-neuron learnable rho if provided, else use default.
                 curr_rho = rho if rho is not None else SelfWiringGraph.DEFAULT_RHO
                 effective_theta = np.clip(
                     theta * (1.0 + curr_rho * wave),
@@ -414,14 +432,14 @@ class SelfWiringGraph:
                 can_fire = (refractory == 0)
                 fired = (cur_charge >= effective_theta) & can_fire
                 refractory[refractory > 0] -= 1
-                refractory[fired] = 1 
+                refractory[fired] = 1
             else:
                 fired = (cur_charge >= effective_theta)
 
             act = fired.astype(np.float32) # Digital spike: always 1.0
             if polarity is not None:
                 act = act * polarity
-            
+
             # 6. RESET FIRED NEURONS
             cur_charge[fired] = 0.0 # Hard reset for now, matching Int4 Brain win
         return act, cur_charge
@@ -441,6 +459,7 @@ class SelfWiringGraph:
         edge_magnitude=1.0,
         polarity=None,
         refractory=None,
+        channel=None,
         freq=None,
         phase=None,
         rho=None,
@@ -500,11 +519,16 @@ class SelfWiringGraph:
             # 4. CLAMP
             np.clip(cur_charges, 0.0, SelfWiringGraph.MAX_CHARGE, out=cur_charges)
             
-            # 5. SPIKE with C19 Soft-Wave Gating
+            # 5. SPIKE with C19 Wave Gating
             effective_theta = theta
-            if freq is not None and phase is not None:
+            if channel is not None:
+                theta_mult = SelfWiringGraph.WAVE_LUT[channel, tick % 8]
+                effective_theta = np.clip(
+                    theta * theta_mult,
+                    1.0, SelfWiringGraph.MAX_CHARGE
+                )
+            elif freq is not None and phase is not None:
                 wave = np.sin(tick * freq + phase)
-                # Use per-neuron learnable rho if provided, else use default.
                 curr_rho = rho if rho is not None else SelfWiringGraph.DEFAULT_RHO
                 effective_theta = np.clip(
                     theta * (1.0 + curr_rho * wave),
@@ -570,9 +594,7 @@ class SelfWiringGraph:
             edge_magnitude=self.edge_magnitude,
             polarity=self._polarity_f32,
             refractory=self.refractory,
-            freq=self.freq,
-            phase=self.phase,
-            rho=self.rho,
+            channel=self.channel,
         )
         # SDR mode: charge readout (validated 14.1% vs 10.3% state)
         # Legacy mode: state readout (original design)
@@ -598,9 +620,7 @@ class SelfWiringGraph:
             edge_magnitude=self.edge_magnitude,
             polarity=self._polarity_f32,
             refractory=self.refractory,
-            freq=self.freq,
-            phase=self.phase,
-            rho=self.rho,
+            channel=self.channel,
         )
         # SDR mode: charge readout; Legacy: spike readout
         if self.input_mode == 'sdr':
@@ -653,9 +673,7 @@ class SelfWiringGraph:
             'theta': self.theta.copy(),
             'decay': self.decay.copy(),
             'polarity': self.polarity.copy(),
-            'freq': self.freq.copy(),
-            'phase': self.phase.copy(),
-            'rho': self.rho.copy(),
+            'channel': self.channel.copy(),
         }
 
     def restore_state(self, s):
@@ -687,12 +705,8 @@ class SelfWiringGraph:
             raw_pol = s['polarity']
             self.polarity[:] = raw_pol if raw_pol.dtype == np.bool_ else (raw_pol > 0)
             self._polarity_f32[:] = np.where(self.polarity, 1.0, -1.0)
-        if 'freq' in s:
-            self.freq[:] = s['freq']
-        if 'phase' in s:
-            self.phase[:] = s['phase']
-        if 'rho' in s:
-            self.rho[:] = s['rho']
+        if 'channel' in s:
+            self.channel[:] = s['channel']
 
     # --- Breeding / crossover ---
 
@@ -745,9 +759,9 @@ class SelfWiringGraph:
         child.theta = np.clip(np.round((parent_a.theta.astype(int) + parent_b.theta.astype(int)) / 2), 1, 15).astype(np.uint8)
         child._theta_f32 = child.theta.astype(np.float32)
         child.decay = ((parent_a.decay + parent_b.decay) / 2.0).astype(np.float32)
-        child.freq = ((parent_a.freq + parent_b.freq) / 2.0).astype(np.float32)
-        child.phase = ((parent_a.phase + parent_b.phase) / 2.0).astype(np.float32)
-        child.rho = ((parent_a.rho + parent_b.rho) / 2.0).astype(np.float32)
+        # Channel: random parent pick per neuron (averaging integers is lossy)
+        pick = np.random.rand(child.H) < 0.5
+        child.channel = np.where(pick, parent_a.channel, parent_b.channel).astype(np.uint8)
         child.loss_pct = np.int8((int(parent_a.loss_pct) + int(parent_b.loss_pct)) // 2)
         child.mutation_drive = np.int8((int(parent_a.mutation_drive) + int(parent_b.mutation_drive)) // 2)
 
@@ -784,9 +798,7 @@ class SelfWiringGraph:
             theta=self._pack_int4(self.theta),  # int4 bitpacked
             decay=self.decay,
             polarity=np.where(self.polarity, np.int8(1), np.int8(-1)),  # save as int8 for compat
-            freq=self.freq,
-            phase=self.phase,
-            rho=self.rho,
+            channel=self.channel,
             projection_scale=np.float32(self.projection_scale),
             edge_magnitude=np.float32(self.edge_magnitude),
             cap_ratio=np.int32(self.cap_ratio),
@@ -840,15 +852,22 @@ class SelfWiringGraph:
             else:
                 theta = np.clip(raw_theta, 1, 15).astype(np.uint8)
             decay = np.array(d['decay'], dtype=np.float32)
-            if 'freq' in d.files:
-                freq = np.array(d['freq'], dtype=np.float32)
-                phase = np.array(d['phase'], dtype=np.float32)
-                rho = np.array(d['rho'], dtype=np.float32) if 'rho' in d.files else np.full(H, cls.DEFAULT_RHO, dtype=np.float32)
+            if 'channel' in d.files:
+                channel = np.clip(np.array(d['channel'], dtype=np.uint8), 0, 7)
+            elif 'freq' in d.files:
+                # Legacy: convert freq/phase to nearest channel
+                freq_raw = np.array(d['freq'], dtype=np.float32)
+                phase_raw = np.array(d['phase'], dtype=np.float32)
+                best_tick = np.zeros(H, dtype=np.uint8)
+                best_val = np.ones(H, dtype=np.float32)
+                for t in range(8):
+                    wave = np.sin(t * freq_raw + phase_raw)
+                    better = wave < best_val
+                    best_tick[better] = t
+                    best_val[better] = wave[better]
+                channel = best_tick
             else:
-                # Legacy: default 1.0 freq (always top phase)
-                freq = np.ones(H, dtype=np.float32)
-                phase = np.zeros(H, dtype=np.float32)
-                rho = np.zeros(H, dtype=np.float32) # No wave modulation for legacy
+                channel = np.random.RandomState(42).randint(0, 8, size=H).astype(np.uint8)
 
             if 'polarity' in d.files:
                 raw_pol = np.array(d['polarity'])
@@ -909,9 +928,7 @@ class SelfWiringGraph:
         net.theta = theta.astype(np.uint8) if theta.dtype != np.uint8 else theta
         net._theta_f32 = net.theta.astype(np.float32)
         net.decay = decay
-        net.freq = freq
-        net.phase = phase
-        net.rho = rho
+        net.channel = channel
         net.polarity = polarity.astype(np.bool_) if polarity.dtype != np.bool_ else polarity
         net._polarity_f32 = np.where(net.polarity, 1.0, -1.0).astype(np.float32)
         net.refractory = np.zeros(H, dtype=np.int8)
@@ -964,12 +981,10 @@ class SelfWiringGraph:
                 old_val = entry[2]
                 self.polarity[entry[1]] = bool(old_val > 0) if not isinstance(old_val, bool) else old_val
                 self._polarity_f32[entry[1]] = 1.0 if self.polarity[entry[1]] else -1.0
-            elif op == 'FR':
-                self.freq[entry[1]] = np.float32(entry[2])
-            elif op == 'PH':
-                self.phase[entry[1]] = np.float32(entry[2])
-            elif op == 'RH':
-                self.rho[entry[1]] = np.float32(entry[2])
+            elif op == 'CH':
+                self.channel[entry[1]] = np.uint8(int(np.clip(entry[2], 0, 7)))
+            elif op in ('FR', 'PH', 'RH'):
+                pass  # Legacy: silently ignore old freq/phase/rho undo ops
         if has_structural:
             self.resync_alive()
         else:
@@ -1028,21 +1043,11 @@ class SelfWiringGraph:
         if random.randint(1, self.POLARITY_FLIP_PROB) == 1 and not freeze_params:
             self._polarity_mutate(undo)
 
-        # Musical Gating drift: 1-in-10 chance
-        if random.randint(1, 10) == 1 and not freeze_params:
+        # Channel drift: 1-in-5 chance (replaces freq+phase+rho drift)
+        if random.randint(1, 5) == 1 and not freeze_params:
             idx = random.randint(0, self.H - 1)
-            if random.random() < 0.5:
-                undo.append(('FR', idx, float(self.freq[idx])))
-                self.freq[idx] = np.float32(random.uniform(0.5, 2.0))
-            else:
-                undo.append(('PH', idx, float(self.phase[idx])))
-                self.phase[idx] = np.float32(random.uniform(0, 2*np.pi))
-
-        # Rho (modulation depth) drift: 1-in-10 chance
-        if random.randint(1, 10) == 1 and not freeze_params:
-            idx = random.randint(0, self.H - 1)
-            undo.append(('RH', idx, float(self.rho[idx])))
-            self.rho[idx] = np.clip(self.rho[idx] + random.uniform(-0.1, 0.1), 0.0, 1.0)
+            undo.append(('CH', idx, int(self.channel[idx])))
+            self.channel[idx] = np.uint8(random.randint(0, 7))
 
         # Execute drive: +N=add, -N=remove, 0=rewire
         d = int(self.mutation_drive)
@@ -1156,6 +1161,22 @@ class SelfWiringGraph:
         self.polarity[idx] = ~self.polarity[idx]  # bool NOT
         self._polarity_f32[idx] = 1.0 if self.polarity[idx] else -1.0
         undo.append(('P', idx, old_pol))
+
+    # --- Deprecated property accessors for old recipe compat ---
+    @property
+    def freq(self):
+        """Deprecated: use self.channel + WAVE_LUT instead."""
+        return np.ones(self.H, dtype=np.float32)
+
+    @property
+    def phase(self):
+        """Deprecated: use self.channel + WAVE_LUT instead."""
+        return np.zeros(self.H, dtype=np.float32)
+
+    @property
+    def rho(self):
+        """Deprecated: use self.channel + WAVE_LUT instead."""
+        return np.full(self.H, 0.3, dtype=np.float32)
 
     def crystallize(self, evaluate_fn, eps=1e-6, verbose=False):
         """Pass-based crystal pruning. Remove dead-weight edges without hurting score.
