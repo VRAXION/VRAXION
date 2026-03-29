@@ -245,128 +245,121 @@ if __name__ == "__main__":
     op_accepts = {op: 0 for op in ALL_OPS}
     ctrl_mutations=0;ctrl_improvements=0;ctrl_reverts=0
 
-    def run_n_steps(n, ctrl_instance):
-        """Run n steps with given controller, return accept count."""
-        nonlocal mask, theta, channel, pol_f32, acc, step, best, stall
-        nonlocal current_accuracy, last_delta, op_counts, op_accepts
-        accepts_this = 0
-        for _ in range(n):
-            step += 1
-            progress = step / MAX_STEPS
-            votes = ctrl_instance.vote(tool_rates, current_accuracy, progress, last_delta)
+    # Helper: run N steps, return accepts count (modifies mask/theta/etc in place)
+    def do_steps(n_steps, ctrl_ref, m, th, ch, pf):
+        """Run n steps, return (accepts, final_m, final_th, final_ch, final_pf)."""
+        local_acc = 0
+        for _ in range(n_steps):
+            votes = ctrl_ref.vote(tool_rates, current_accuracy, step/MAX_STEPS, last_delta)
             if votes.sum() > 0:
-                logits = votes / 1.5; logits -= logits.max()
-                probs = np.exp(logits) / (np.exp(logits).sum() + 1e-8)
+                lg = votes / 1.5; lg -= lg.max()
+                pr = np.exp(lg) / (np.exp(lg).sum() + 1e-8)
             else:
-                probs = np.ones(N_OPS) / N_OPS
+                pr = np.ones(N_OPS) / N_OPS
             if random.random() < 0.08:
                 pt = random.choice(ALL_OPS)
             else:
-                pt = ALL_OPS[np.random.choice(N_OPS, p=probs)]
-            if mask.sum()==0: pt='add'
-            op_counts[pt] += 1
+                pt = ALL_OPS[np.random.choice(N_OPS, p=pr)]
+            if m.sum()==0: pt='add'
 
-            args=[(mask.flatten(),theta.copy(),channel.copy(),pol_f32.copy(),
-                   1000+step*50+w,pt) for w in range(N_WORKERS)]
+            args=[(m.flatten(),th.copy(),ch.copy(),pf.copy(),
+                   1000+(step+_)*50+w,pt) for w in range(N_WORKERS)]
             res=pool.map(worker_eval,args);br=max(res,key=lambda x:x['delta'])
+            if br['delta'] > THRESHOLD:
+                if br['new_mask_flat'] is not None: m[:]=br['new_mask_flat'].reshape(H,H)
+                if br['new_theta'] is not None: th[:]=br['new_theta']
+                if br['new_channel'] is not None: ch[:]=br['new_channel']
+                if br['new_pol_f'] is not None: pf[:]=br['new_pol_f']
+                local_acc += 1
+        return local_acc, m, th, ch, pf
 
-            accepted = br['delta'] > THRESHOLD
-            if accepted:
-                if br['new_mask_flat'] is not None: mask[:]=br['new_mask_flat'].reshape(H,H)
-                if br['new_theta'] is not None: theta[:]=br['new_theta']
-                if br['new_channel'] is not None: channel[:]=br['new_channel']
-                if br['new_pol_f'] is not None: pol_f32[:]=br['new_pol_f']
-                acc+=1; op_accepts[br['type']]+=1; accepts_this+=1
-                last_delta = br['delta']
-            else:
-                last_delta = 0.0
-
-            ctrl_instance.update_fitness(accepted)
-            op_history[pt].append(1.0 if accepted else 0.0)
-            if len(op_history[pt]) > 100: op_history[pt] = op_history[pt][-100:]
-            tool_rates[pt] = np.mean(op_history[pt])
-
-            if step%EVAL_EVERY==0:
-                ea_list=[]
-                for s in eval_seqs:
-                    sc=SelfWiringGraph.build_sparse_cache(mask)
-                    st=np.zeros(H,np.float32);ch=np.zeros(H,np.float32);cor=0;tot=0
-                    for i in range(len(s)-1):
-                        inj=np.zeros(H,np.float32);inj[0:IN_DIM]=BP_IN[s[i]]
-                        st,ch=SelfWiringGraph.rollout_token(inj,mask=mask,theta=theta,
-                            decay=np.float32(0.16),ticks=TICKS,input_duration=INPUT_DURATION,
-                            state=st,charge=ch,sparse_cache=sc,polarity=pol_f32,channel=channel)
-                        logits_e=np.dot(bp_out,ch[H-OUT_DIM:])
-                        if np.argmax(logits_e)==s[i+1]:cor+=1
-                        tot+=1
-                    ea_list.append(cor/tot if tot else 0)
-                ea=np.mean(ea_list)
-                current_accuracy = ea
-                if ea>best: best=ea;stall=0
-                else: stall+=EVAL_EVERY
-        return accepts_this
-
-    # Main loop: proper A/B controller evolution
+    # Main loop
     while step < MAX_STEPS:
-        # Phase 1: run 50 steps with CURRENT controller
+        # Save state
         saved_ctrl = ctrl.save_state()
-        saved_main = {'mask':mask.copy(),'theta':theta.copy(),'channel':channel.copy(),'pol_f32':pol_f32.copy()}
-        old_accepts = run_n_steps(CTRL_AB_HALF, ctrl)
+        m_save = mask.copy(); th_save = theta.copy()
+        ch_save = channel.copy(); pf_save = pol_f32.copy()
 
-        # Phase 2: mutate controller, run 50 steps with NEW controller
-        # But first restore main network to same state (fair comparison)
-        mask[:]=saved_main['mask'];theta[:]=saved_main['theta']
-        channel[:]=saved_main['channel'];pol_f32[:]=saved_main['pol_f32']
-        step -= CTRL_AB_HALF  # rewind step counter for fair comparison
+        # Phase A: 50 steps with CURRENT controller
+        m_a = m_save.copy(); th_a = th_save.copy()
+        ch_a = ch_save.copy(); pf_a = pf_save.copy()
+        old_accepts, m_a, th_a, ch_a, pf_a = do_steps(CTRL_AB_HALF, ctrl, m_a, th_a, ch_a, pf_a)
 
+        # Phase B: mutate controller, 50 steps with NEW
         ctrl.mutate()
         ctrl_mutations += 1
-        new_accepts = run_n_steps(CTRL_AB_HALF, ctrl)
+        m_b = m_save.copy(); th_b = th_save.copy()
+        ch_b = ch_save.copy(); pf_b = pf_save.copy()
+        new_accepts, m_b, th_b, ch_b, pf_b = do_steps(CTRL_AB_HALF, ctrl, m_b, th_b, ch_b, pf_b)
 
-        # Decision: keep or revert
+        step += CTRL_AB_HALF  # only count once (both ran same 50 steps worth)
+
+        # Decision
         if new_accepts > old_accepts:
-            ctrl_improvements += 1
-            verdict = "KEEP"
+            ctrl_improvements += 1; verdict = "KEEP"
+            mask[:]=m_b; theta[:]=th_b; channel[:]=ch_b; pol_f32[:]=pf_b
         elif new_accepts == old_accepts:
-            # Tie: keep with 50% chance
             if random.random() < 0.5:
-                ctrl_improvements += 1
-                verdict = "KEEP(tie)"
+                ctrl_improvements += 1; verdict = "KEEP(tie)"
+                mask[:]=m_b; theta[:]=th_b; channel[:]=ch_b; pol_f32[:]=pf_b
             else:
-                ctrl.restore_state(saved_ctrl)
-                ctrl_reverts += 1
-                verdict = "REVERT(tie)"
+                ctrl.restore_state(saved_ctrl); ctrl_reverts += 1; verdict = "REVERT(tie)"
+                mask[:]=m_a; theta[:]=th_a; channel[:]=ch_a; pol_f32[:]=pf_a
         else:
-            ctrl.restore_state(saved_ctrl)
-            ctrl_reverts += 1
-            verdict = "REVERT"
+            ctrl.restore_state(saved_ctrl); ctrl_reverts += 1; verdict = "REVERT"
+            mask[:]=m_a; theta[:]=th_a; channel[:]=ch_a; pol_f32[:]=pf_a
 
-        # Report every 500 steps
-        if step % 500 < CTRL_AB_HALF * 2:
-            votes = ctrl.vote(tool_rates, current_accuracy, step/MAX_STEPS, last_delta)
-            if votes.sum() > 0:
-                logits = votes / 1.5; logits -= logits.max()
-                probs = np.exp(logits) / (np.exp(logits).sum() + 1e-8)
-            else:
-                probs = np.ones(N_OPS) / N_OPS
-            v_str=' '.join(f"{ALL_OPS[i]}={votes[i]:.0f}" for i in range(N_OPS))
-            p_str=' '.join(f"{ALL_OPS[i]}={probs[i]:.0%}" for i in range(N_OPS))
-            print(f"  [{step:5d}] eval={current_accuracy*100:.1f}% best={best*100:.1f}% th={theta.mean():.1f} stall={stall}")
-            print(f"    Spikes: {v_str}")
-            print(f"    Probs: {p_str}")
-            print(f"    AB: old={old_accepts} new={new_accepts} -> {verdict}")
-            print(f"    Ctrl: fit={ctrl.fitness:.0%} edges={ctrl.mask.sum()} mut={ctrl_mutations} imp={ctrl_improvements} rev={ctrl_reverts}")
-            print(f"    {time.time()-t0:.0f}s")
-            sys.stdout.flush()
+        acc += max(old_accepts, new_accepts)
+
+        # Eval
+        ea_list=[]
+        for s in eval_seqs:
+            sc=SelfWiringGraph.build_sparse_cache(mask)
+            st=np.zeros(H,np.float32);ch_e=np.zeros(H,np.float32);cor=0;tot=0
+            for i in range(len(s)-1):
+                inj=np.zeros(H,np.float32);inj[0:IN_DIM]=BP_IN[s[i]]
+                st,ch_e=SelfWiringGraph.rollout_token(inj,mask=mask,theta=theta,
+                    decay=np.float32(0.16),ticks=TICKS,input_duration=INPUT_DURATION,
+                    state=st,charge=ch_e,sparse_cache=sc,polarity=pol_f32,channel=channel)
+                logits_e=np.dot(bp_out,ch_e[H-OUT_DIM:])
+                if np.argmax(logits_e)==s[i+1]:cor+=1
+                tot+=1
+            ea_list.append(cor/tot if tot else 0)
+        ea=np.mean(ea_list)
+        current_accuracy = ea
+        if ea>best: best=ea;stall=0
+        else: stall+=CTRL_AB_HALF
+
+        # Update tool rates from winner
+        for op in ALL_OPS:
+            op_history[op].append(tool_rates.get(op, 0.5))
+            if len(op_history[op]) > 100: op_history[op] = op_history[op][-100:]
+            tool_rates[op] = np.mean(op_history[op])
+
+        # Report
+        votes = ctrl.vote(tool_rates, current_accuracy, step/MAX_STEPS, last_delta)
+        if votes.sum() > 0:
+            lg = votes / 1.5; lg -= lg.max()
+            probs = np.exp(lg) / (np.exp(lg).sum() + 1e-8)
+        else:
+            probs = np.ones(N_OPS) / N_OPS
+        v_str=' '.join(f"{ALL_OPS[i]}={votes[i]:.0f}" for i in range(N_OPS))
+        p_str=' '.join(f"{ALL_OPS[i]}={probs[i]:.0%}" for i in range(N_OPS))
+        print(f"  [{step:5d}] eval={ea*100:.1f}% best={best*100:.1f}% th={theta.mean():.1f} stall={stall}")
+        print(f"    Spikes: {v_str}")
+        print(f"    Probs: {p_str}")
+        print(f"    AB: old={old_accepts} new={new_accepts} -> {verdict}")
+        print(f"    Ctrl: fit={ctrl.fitness:.0%} edges={ctrl.mask.sum()} mut={ctrl_mutations} imp={ctrl_improvements} rev={ctrl_reverts}")
+        print(f"    {time.time()-t0:.0f}s")
+        sys.stdout.flush()
 
         # Checkpoint
-        if step % CKPT_EVERY < CTRL_AB_HALF * 2:
+        if step % CKPT_EVERY < CTRL_AB_HALF + 1:
             ckpt_path = os.path.join(BASE_DIR, f"data/meta_ctrl_step{step}.npz")
             ctrl.save_checkpoint(ckpt_path)
             print(f"    CHECKPOINT: {ckpt_path}")
-            sys.stdout.flush()
 
-        # Plateau detection
+        # Plateau
         if stall >= PLATEAU_LIMIT and step >= 3000:
             print(f"    PLATEAU at step {step} (stall={stall})")
             break
