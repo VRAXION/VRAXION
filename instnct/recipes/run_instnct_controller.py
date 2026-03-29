@@ -45,7 +45,7 @@ CH = 32  # controller hidden size
 C_TICKS = 8
 C_IN = 9   # accuracy + pain + reward + 6 tool rates
 C_OUT = 6  # one per tool
-C_RHO = 0.4  # original C19 rho
+C_RHO = 0.5  # original C19 Canon rho (commit 947004e)
 ALL_OPS = ['add','flip','theta','channel','reverse','remove']
 N_OPS = len(ALL_OPS)
 
