@@ -211,7 +211,8 @@ if __name__ == "__main__":
 
     MAX_STEPS = 10000
     PLATEAU_LIMIT = 2000
-    CTRL_MUTATE_EVERY = 20
+    CTRL_AB_EVERY = 100  # A/B test controller every 100 steps
+    CTRL_AB_HALF = 50    # 50 steps per half (new vs old)
     CKPT_EVERY = 1000
 
     print(f"\n{'='*60}")
@@ -239,94 +240,127 @@ if __name__ == "__main__":
     init_w(bp_out, ALL_DATA, bigram, pol_f32)
     pool = Pool(N_WORKERS, initializer=init_w, initargs=(bp_out, ALL_DATA, bigram, pol_f32))
 
-    best=0;acc=0;t0=time.time();stall=0
+    best=0;acc=0;t0=time.time();stall=0;step=0
     op_counts = {op: 0 for op in ALL_OPS}
     op_accepts = {op: 0 for op in ALL_OPS}
-    ctrl_mutations=0;ctrl_improvements=0
+    ctrl_mutations=0;ctrl_improvements=0;ctrl_reverts=0
 
-    for step in range(1, MAX_STEPS+1):
-        progress = step / MAX_STEPS
-        votes = ctrl.vote(tool_rates, current_accuracy, progress, last_delta)
-
-        if votes.sum() > 0:
-            logits = votes / 1.5; logits -= logits.max()
-            probs = np.exp(logits) / (np.exp(logits).sum() + 1e-8)
-        else:
-            probs = np.ones(N_OPS) / N_OPS
-
-        if random.random() < 0.08:
-            pt = random.choice(ALL_OPS)
-        else:
-            pt = ALL_OPS[np.random.choice(N_OPS, p=probs)]
-
-        if mask.sum()==0: pt='add'
-        op_counts[pt] += 1
-
-        args=[(mask.flatten(),theta.copy(),channel.copy(),pol_f32.copy(),
-               1000+step*50+w,pt) for w in range(N_WORKERS)]
-        res=pool.map(worker_eval,args);br=max(res,key=lambda x:x['delta'])
-
-        accepted = br['delta'] > THRESHOLD
-        if accepted:
-            if br['new_mask_flat'] is not None: mask[:]=br['new_mask_flat'].reshape(H,H)
-            if br['new_theta'] is not None: theta[:]=br['new_theta']
-            if br['new_channel'] is not None: channel[:]=br['new_channel']
-            if br['new_pol_f'] is not None: pol_f32[:]=br['new_pol_f']
-            acc+=1; op_accepts[br['type']]+=1
-            last_delta = br['delta']
-        else:
-            last_delta = 0.0
-
-        ctrl.update_fitness(accepted)
-
-        op_history[pt].append(1.0 if accepted else 0.0)
-        if len(op_history[pt]) > 100: op_history[pt] = op_history[pt][-100:]
-        tool_rates[pt] = np.mean(op_history[pt])
-
-        # Evolve controller
-        if step % CTRL_MUTATE_EVERY == 0:
-            old_fitness = ctrl.fitness
-            saved = ctrl.save_state()
-            ctrl.mutate()
-            ctrl_mutations += 1
-            if ctrl.fitness < old_fitness - 0.05:
-                ctrl.restore_state(saved)
+    def run_n_steps(n, ctrl_instance):
+        """Run n steps with given controller, return accept count."""
+        nonlocal mask, theta, channel, pol_f32, acc, step, best, stall
+        nonlocal current_accuracy, last_delta, op_counts, op_accepts
+        accepts_this = 0
+        for _ in range(n):
+            step += 1
+            progress = step / MAX_STEPS
+            votes = ctrl_instance.vote(tool_rates, current_accuracy, progress, last_delta)
+            if votes.sum() > 0:
+                logits = votes / 1.5; logits -= logits.max()
+                probs = np.exp(logits) / (np.exp(logits).sum() + 1e-8)
             else:
+                probs = np.ones(N_OPS) / N_OPS
+            if random.random() < 0.08:
+                pt = random.choice(ALL_OPS)
+            else:
+                pt = ALL_OPS[np.random.choice(N_OPS, p=probs)]
+            if mask.sum()==0: pt='add'
+            op_counts[pt] += 1
+
+            args=[(mask.flatten(),theta.copy(),channel.copy(),pol_f32.copy(),
+                   1000+step*50+w,pt) for w in range(N_WORKERS)]
+            res=pool.map(worker_eval,args);br=max(res,key=lambda x:x['delta'])
+
+            accepted = br['delta'] > THRESHOLD
+            if accepted:
+                if br['new_mask_flat'] is not None: mask[:]=br['new_mask_flat'].reshape(H,H)
+                if br['new_theta'] is not None: theta[:]=br['new_theta']
+                if br['new_channel'] is not None: channel[:]=br['new_channel']
+                if br['new_pol_f'] is not None: pol_f32[:]=br['new_pol_f']
+                acc+=1; op_accepts[br['type']]+=1; accepts_this+=1
+                last_delta = br['delta']
+            else:
+                last_delta = 0.0
+
+            ctrl_instance.update_fitness(accepted)
+            op_history[pt].append(1.0 if accepted else 0.0)
+            if len(op_history[pt]) > 100: op_history[pt] = op_history[pt][-100:]
+            tool_rates[pt] = np.mean(op_history[pt])
+
+            if step%EVAL_EVERY==0:
+                ea_list=[]
+                for s in eval_seqs:
+                    sc=SelfWiringGraph.build_sparse_cache(mask)
+                    st=np.zeros(H,np.float32);ch=np.zeros(H,np.float32);cor=0;tot=0
+                    for i in range(len(s)-1):
+                        inj=np.zeros(H,np.float32);inj[0:IN_DIM]=BP_IN[s[i]]
+                        st,ch=SelfWiringGraph.rollout_token(inj,mask=mask,theta=theta,
+                            decay=np.float32(0.16),ticks=TICKS,input_duration=INPUT_DURATION,
+                            state=st,charge=ch,sparse_cache=sc,polarity=pol_f32,channel=channel)
+                        logits_e=np.dot(bp_out,ch[H-OUT_DIM:])
+                        if np.argmax(logits_e)==s[i+1]:cor+=1
+                        tot+=1
+                    ea_list.append(cor/tot if tot else 0)
+                ea=np.mean(ea_list)
+                current_accuracy = ea
+                if ea>best: best=ea;stall=0
+                else: stall+=EVAL_EVERY
+        return accepts_this
+
+    # Main loop: proper A/B controller evolution
+    while step < MAX_STEPS:
+        # Phase 1: run 50 steps with CURRENT controller
+        saved_ctrl = ctrl.save_state()
+        saved_main = {'mask':mask.copy(),'theta':theta.copy(),'channel':channel.copy(),'pol_f32':pol_f32.copy()}
+        old_accepts = run_n_steps(CTRL_AB_HALF, ctrl)
+
+        # Phase 2: mutate controller, run 50 steps with NEW controller
+        # But first restore main network to same state (fair comparison)
+        mask[:]=saved_main['mask'];theta[:]=saved_main['theta']
+        channel[:]=saved_main['channel'];pol_f32[:]=saved_main['pol_f32']
+        step -= CTRL_AB_HALF  # rewind step counter for fair comparison
+
+        ctrl.mutate()
+        ctrl_mutations += 1
+        new_accepts = run_n_steps(CTRL_AB_HALF, ctrl)
+
+        # Decision: keep or revert
+        if new_accepts > old_accepts:
+            ctrl_improvements += 1
+            verdict = "KEEP"
+        elif new_accepts == old_accepts:
+            # Tie: keep with 50% chance
+            if random.random() < 0.5:
                 ctrl_improvements += 1
-
-        # Eval
-        if step%EVAL_EVERY==0:
-            ea_list=[]
-            for s in eval_seqs:
-                sc=SelfWiringGraph.build_sparse_cache(mask)
-                st=np.zeros(H,np.float32);ch=np.zeros(H,np.float32);cor=0;tot=0
-                for i in range(len(s)-1):
-                    inj=np.zeros(H,np.float32);inj[0:IN_DIM]=BP_IN[s[i]]
-                    st,ch=SelfWiringGraph.rollout_token(inj,mask=mask,theta=theta,
-                        decay=np.float32(0.16),ticks=TICKS,input_duration=INPUT_DURATION,
-                        state=st,charge=ch,sparse_cache=sc,polarity=pol_f32,channel=channel)
-                    logits_e=np.dot(bp_out,ch[H-OUT_DIM:])
-                    if np.argmax(logits_e)==s[i+1]:cor+=1
-                    tot+=1
-                ea_list.append(cor/tot if tot else 0)
-            ea=np.mean(ea_list)
-            current_accuracy = ea
-            if ea>best:
-                best=ea;stall=0
+                verdict = "KEEP(tie)"
             else:
-                stall+=EVAL_EVERY
-            if step%500==0:
-                v_str=' '.join(f"{ALL_OPS[i]}={votes[i]:.0f}" for i in range(N_OPS))
-                p_str=' '.join(f"{ALL_OPS[i]}={probs[i]:.0%}" for i in range(N_OPS))
-                print(f"  [{step:5d}] eval={ea*100:.1f}% best={best*100:.1f}% th={theta.mean():.1f} stall={stall}")
-                print(f"    Spikes: {v_str}")
-                print(f"    Probs: {p_str}")
-                print(f"    Ctrl: fit={ctrl.fitness:.0%} edges={ctrl.mask.sum()} mut={ctrl_mutations} imp={ctrl_improvements}")
-                print(f"    {time.time()-t0:.0f}s")
-                sys.stdout.flush()
+                ctrl.restore_state(saved_ctrl)
+                ctrl_reverts += 1
+                verdict = "REVERT(tie)"
+        else:
+            ctrl.restore_state(saved_ctrl)
+            ctrl_reverts += 1
+            verdict = "REVERT"
+
+        # Report every 500 steps
+        if step % 500 < CTRL_AB_HALF * 2:
+            votes = ctrl.vote(tool_rates, current_accuracy, step/MAX_STEPS, last_delta)
+            if votes.sum() > 0:
+                logits = votes / 1.5; logits -= logits.max()
+                probs = np.exp(logits) / (np.exp(logits).sum() + 1e-8)
+            else:
+                probs = np.ones(N_OPS) / N_OPS
+            v_str=' '.join(f"{ALL_OPS[i]}={votes[i]:.0f}" for i in range(N_OPS))
+            p_str=' '.join(f"{ALL_OPS[i]}={probs[i]:.0%}" for i in range(N_OPS))
+            print(f"  [{step:5d}] eval={current_accuracy*100:.1f}% best={best*100:.1f}% th={theta.mean():.1f} stall={stall}")
+            print(f"    Spikes: {v_str}")
+            print(f"    Probs: {p_str}")
+            print(f"    AB: old={old_accepts} new={new_accepts} -> {verdict}")
+            print(f"    Ctrl: fit={ctrl.fitness:.0%} edges={ctrl.mask.sum()} mut={ctrl_mutations} imp={ctrl_improvements} rev={ctrl_reverts}")
+            print(f"    {time.time()-t0:.0f}s")
+            sys.stdout.flush()
 
         # Checkpoint
-        if step % CKPT_EVERY == 0:
+        if step % CKPT_EVERY < CTRL_AB_HALF * 2:
             ckpt_path = os.path.join(BASE_DIR, f"data/meta_ctrl_step{step}.npz")
             ctrl.save_checkpoint(ckpt_path)
             print(f"    CHECKPOINT: {ckpt_path}")
