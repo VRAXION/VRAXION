@@ -107,7 +107,8 @@ Mutation-selection loop at a glance:
 | `theta` | Learnable per-neuron firing threshold. **uint8 int4 [1-15]**, converges ~6. 15 configs tested: int4 beats float32 (15.6% vs 13.5%). Natural zones: relay(1-4), compute(6-10), gate(12-15). |
 | `decay` | Learnable per-neuron decay rate |
 | `polarity` | Per-neuron excitatory/inhibitory sign (+1/-1), co-evolved |
-| `freq`, `phase`, `rho` | Per-neuron Musical Gating / C19 Soft-Wave parameters, co-evolved |
+| `freq`, `phase` | Per-neuron Musical Gating / C19 Soft-Wave oscillation parameters (TODO: int4 test) |
+| `rho` | C19 wave modulation depth. **Fix constant 0.3** (validated: fix 14.5% > float 14.1%, -0.7% vs int4 15.2%). 0 bytes. |
 | Charge / state | Runtime state that changes while the model runs |
 
 > **Note:** The tentacle I/O validated finding replaces `input_projection` / `output_projection` with dedicated I/O neurons whose connectivity is part of the learnable mask. This is not yet shipped on mainline.
