@@ -341,15 +341,15 @@ def main():
     # PROBE 15: Constructor kwarg semantics
     header(15, "Constructor kwarg semantics")
     np.random.seed(SEED); random.seed(SEED)
-    net_a = SelfWiringGraph(8, theta_init=0.33, decay_init=0.10)
-    net_b = SelfWiringGraph(8, hidden=32, density=0.0, theta_init=0.44, decay_init=0.20)
+    net_a = SelfWiringGraph(8, theta_init=3, decay_init=0.10)
+    net_b = SelfWiringGraph(8, hidden=32, density=0.0, theta_init=5, decay_init=0.20)
     ok = (
         net_a.H == 8 * net_a.DEFAULT_HIDDEN_RATIO and
-        np.allclose(net_a.theta, 0.33) and
+        np.all(net_a.theta == 3) and
         np.allclose(net_a.decay, 0.10) and
         net_b.H == 32 and
         net_b.count_connections() == 0 and
-        np.allclose(net_b.theta, 0.44) and
+        np.all(net_b.theta == 5) and
         np.allclose(net_b.decay, 0.20)
     )
     r = result(PASS if ok else FAIL,
