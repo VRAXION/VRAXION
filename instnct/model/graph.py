@@ -37,6 +37,11 @@ class SelfWiringGraph:
     DEFAULT_RHO = 0.3  # Baked into WAVE_LUT. Legacy recipes still reference this.
     DEFAULT_INHIBITORY_FRACTION = 0.10  # Fly-realistic: fewer but broader I-neurons
     POLARITY_FLIP_PROB = 10  # 1-in-N chance per mutate step
+    DEFAULT_STAMINA = 15    # per-edge stamina [0-15], int4
+    STAMINA_DRAIN = 3       # stamina lost per use (fast fatigue)
+    STAMINA_REGEN_PERIOD = 4  # regen +1 every N ticks (slow recovery)
+    # Stamina → charge multiplier: 11-15=1.0, 5-10=0.5, 0-4=0.0
+    STAMINA_THRESHOLDS = (5, 11)  # (low, high) boundaries
     DEFAULT_INPUT_MODE = 'projection'  # 'projection' (legacy) or 'sdr'
     DEFAULT_SDR_K = 13                 # active neurons per byte (20% of sdr_dim)
     DEFAULT_SDR_DIM = 64               # SDR input dimension (legacy default)
@@ -204,6 +209,10 @@ class SelfWiringGraph:
         self.state = np.zeros(self.H, dtype=np.float32)
         self.charge = np.zeros(self.H, dtype=np.float32)
 
+        # Per-edge stamina: starts full (15), drains on use, regens on rest.
+        # Stored as flat array aligned with self.alive edge list.
+        self._stamina = None  # lazy init on first rollout with stamina=True
+
         # Co-evolved learned params
         self.loss_pct = np.int8(15)
         self.mutation_drive = np.int8(1)  # signed: +N=add N, -N=remove N, 0=rewire
@@ -330,6 +339,27 @@ class SelfWiringGraph:
     def _sparse_mul_2d(self, acts):
         return self._sparse_mul_2d_from_cache(self.H, acts, self._sp_cache)
 
+    def _init_stamina(self):
+        """Initialize per-edge stamina array aligned with alive list."""
+        n = len(self.alive)
+        self._stamina = np.full(n, self.DEFAULT_STAMINA, dtype=np.uint8)
+
+    def _get_stamina_multipliers(self, stamina):
+        """Convert stamina [0-15] to charge multiplier {0.0, 0.5, 1.0}."""
+        lo, hi = self.STAMINA_THRESHOLDS
+        m = np.ones(len(stamina), dtype=np.float32)
+        m[stamina < hi] = 0.5
+        m[stamina < lo] = 0.0
+        return m
+
+    @staticmethod
+    def _sparse_mul_1d_stamina(H, act, rows, cols, stamina_mults):
+        """Sparse propagation with per-edge stamina multipliers."""
+        raw = np.zeros(H, dtype=np.float32)
+        if len(rows):
+            np.add.at(raw, cols, act[rows] * stamina_mults)
+        return raw
+
     @staticmethod
     def rollout_token(
         injected,
@@ -349,6 +379,7 @@ class SelfWiringGraph:
         freq=None,
         phase=None,
         rho=None,
+        stamina=None,
     ):
         mask = np.asarray(mask)
         # Dense path needs float32. Accept precomputed or compute once.
@@ -397,8 +428,30 @@ class SelfWiringGraph:
             if tick < int(input_duration):
                 act = act + injected
             
-            # 3. PROPAGATE
-            if use_sparse:
+            # 3. PROPAGATE (with optional stamina)
+            if stamina is not None and use_sparse and len(sparse_cache) == 2:
+                rows_sp, cols_sp = sparse_cache
+                if len(rows_sp):
+                    # Stamina regen: all edges +1 every N ticks (slow recovery)
+                    if tick % SelfWiringGraph.STAMINA_REGEN_PERIOD == 0:
+                        np.clip(stamina + 1, 0, 15, out=stamina)
+                    # Compute stamina multipliers
+                    lo, hi = SelfWiringGraph.STAMINA_THRESHOLDS
+                    s_mult = np.ones(len(rows_sp), dtype=np.float32)
+                    s_mult[stamina < hi] = 0.5
+                    s_mult[stamina < lo] = 0.0
+                    # Find which edges have active source neurons
+                    active_mask = act[rows_sp] != 0
+                    # Drain stamina on active edges
+                    stamina[active_mask] = np.clip(
+                        stamina[active_mask].astype(np.int16) - SelfWiringGraph.STAMINA_DRAIN,
+                        0, 15).astype(np.uint8)
+                    # Propagate with stamina
+                    raw = np.zeros(H, dtype=np.float32)
+                    np.add.at(raw, cols_sp, act[rows_sp] * s_mult)
+                else:
+                    raw = np.zeros(H, dtype=np.float32)
+            elif use_sparse:
                 raw = SelfWiringGraph._sparse_mul_1d_from_cache(H, act, sparse_cache)
             else:
                 if mask_f32 is None:
@@ -406,10 +459,10 @@ class SelfWiringGraph:
                 raw = act @ mask_f32
             np.nan_to_num(raw, copy=False, nan=0.0, posinf=0.0, neginf=0.0)
             cur_charge += raw
-            
+
             # 4. CLAMP
             np.clip(cur_charge, 0.0, SelfWiringGraph.MAX_CHARGE, out=cur_charge)
-            
+
             # 5. SPIKE DECISION with Refractory and C19 Wave Gating
             effective_theta = theta
             if channel is not None:
