@@ -292,10 +292,9 @@ def main():
     #   4.   _theta_mutate: randint(0,H-1) → 3 (neuron idx)
     #   5.   _theta_mutate: randint(1,15)  → 5 (new theta)
     #   6. polarity flip randint(1,10) → 5 = skip
-    #   7. musical gating randint(1,10) → 5 = skip
-    #   8. rho drift randint(1,10) → 5 = skip
-    #   9. _remove: randint(0, len(alive)-1) → 0
-    seq = iter([2, 20, 1, 3, 5, 5, 5, 5, 0])
+    #   7. channel drift randint(1,5) → 5 = skip
+    #   8. _remove: randint(0, len(alive)-1) → 0
+    seq = iter([2, 20, 1, 3, 5, 5, 5, 0])
     random.randint = lambda a, b: next(seq)
     random.random = lambda: 0.73
     try:
@@ -311,9 +310,7 @@ def main():
         np.array_equal(net.theta, before['theta']) and
         np.array_equal(net.decay, before['decay']) and
         np.array_equal(net.polarity, before['polarity']) and
-        np.array_equal(net.freq, before['freq']) and
-        np.array_equal(net.phase, before['phase']) and
-        np.array_equal(net.rho, before['rho']) and
+        np.array_equal(net.channel, before['channel']) and
         net.loss_pct == before['loss_pct'] and
         net.mutation_drive == before['mutation_drive'] and
         net.alive == before['alive'] and
@@ -344,15 +341,15 @@ def main():
     # PROBE 15: Constructor kwarg semantics
     header(15, "Constructor kwarg semantics")
     np.random.seed(SEED); random.seed(SEED)
-    net_a = SelfWiringGraph(8, theta_init=0.33, decay_init=0.10)
-    net_b = SelfWiringGraph(8, hidden=32, density=0.0, theta_init=0.44, decay_init=0.20)
+    net_a = SelfWiringGraph(8, theta_init=3, decay_init=0.10)
+    net_b = SelfWiringGraph(8, hidden=32, density=0.0, theta_init=5, decay_init=0.20)
     ok = (
         net_a.H == 8 * net_a.DEFAULT_HIDDEN_RATIO and
-        np.allclose(net_a.theta, 0.33) and
+        np.all(net_a.theta == 3) and
         np.allclose(net_a.decay, 0.10) and
         net_b.H == 32 and
         net_b.count_connections() == 0 and
-        np.allclose(net_b.theta, 0.44) and
+        np.all(net_b.theta == 5) and
         np.allclose(net_b.decay, 0.20)
     )
     r = result(PASS if ok else FAIL,
