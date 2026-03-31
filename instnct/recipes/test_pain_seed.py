@@ -26,15 +26,15 @@ VOCAB = 256
 INIT_HIDDEN = 32
 THETA_INIT = 2
 DECAY_INIT = 0.10
+DENSITY = 4              # same 4% as mainline — start with real edges
 TICKS = 8
 INPUT_DURATION = 2
 TARGET_FIRING_RATE = 0.15
 N_PROBE_TOKENS = 8
 TOTAL_STEPS = 2000
 GROWTH_SCHEDULE = {801: 64, 1401: 128}
-# Phase-aware: heavy add early, balanced later
-MUTATION_SCHEDULE_SEED = ['add', 'add', 'add', 'add', 'rewire', 'add', 'theta', 'decay']
-MUTATION_SCHEDULE_GROW = ['add', 'add', 'rewire', 'theta', 'decay', 'add', 'rewire', 'decay']
+# Rewire-heavy: don't hoard edges, reorganize what's there
+MUTATION_SCHEDULE = ['rewire', 'rewire', 'add', 'rewire', 'theta', 'decay', 'rewire', 'rewire']
 PRINT_EVERY = 100
 SEED = 42
 
@@ -98,12 +98,11 @@ def grow_network(old_net, new_H, rng):
     """Transplant old graph into top-left corner of a larger empty network."""
     old_H = old_net.H
     new_net = SelfWiringGraph(
-        vocab=VOCAB, hidden=new_H,
+        vocab=VOCAB, hidden=new_H, density=DENSITY,
         theta_init=THETA_INIT, decay_init=DECAY_INIT,
         seed=int(rng.randint(0, 2**31)),
     )
-    # Clear mask, transplant old topology
-    new_net.mask[:] = False
+    # Keep random edges for new neurons, transplant evolved topology for old ones
     new_net.mask[:old_H, :old_H] = old_net.mask[:old_H, :old_H]
 
     # Copy per-neuron params for old neurons
@@ -114,19 +113,9 @@ def grow_network(old_net, new_H, rng):
     new_net._polarity_f32[:old_H] = old_net._polarity_f32
     new_net.channel[:old_H] = old_net.channel
 
-    # Bridge edges: proportional to new neuron count
-    # old→new and new→old so new neurons can both receive and send
-    n_new = new_H - old_H
-    n_bridges = max(4, n_new // 2)
-    for _ in range(n_bridges):
-        src = int(rng.randint(0, old_H))
-        dst = int(rng.randint(old_H, new_H))
-        new_net.mask[src, dst] = True
-        # Reverse bridge: new→old (so new neurons can fire back)
-        src2 = int(rng.randint(old_H, new_H))
-        dst2 = int(rng.randint(0, old_H))
-        new_net.mask[src2, dst2] = True
-
+    # New neurons already have random edges from init at DENSITY%.
+    # Cross-zone edges (old↔new) also exist from the random init.
+    # We only override the old↔old quadrant with evolved topology.
     new_net.resync_alive()
     new_net.reset()
     return new_net
@@ -155,7 +144,7 @@ def main():
     probe_bytes = rng.randint(0, 256, size=N_PROBE_TOKENS)
 
     net = SelfWiringGraph(
-        vocab=VOCAB, hidden=INIT_HIDDEN, density=4,
+        vocab=VOCAB, hidden=INIT_HIDDEN, density=DENSITY,
         theta_init=THETA_INIT, decay_init=DECAY_INIT, seed=SEED,
     )
 
@@ -186,8 +175,7 @@ def main():
             print_header()
 
         # --- Mutation ---
-        sched = MUTATION_SCHEDULE_SEED if net.H <= INIT_HIDDEN else MUTATION_SCHEDULE_GROW
-        op = sched[(step - 1) % len(sched)]
+        op = MUTATION_SCHEDULE[(step - 1) % len(MUTATION_SCHEDULE)]
         if op in ('rewire', 'theta', 'decay') and len(net.alive) == 0:
             op = 'add'
 
@@ -221,29 +209,20 @@ def main():
     matched_density = evolved_edges / (net.H * net.H) * 100  # as percentage
 
     print(f"\n--- Comparison: Pain-evolved vs Fresh Random (H={net.H}) ---\n")
-    print(f"  A) Same density (4%): random gets more edges naturally")
-    fresh_4 = SelfWiringGraph(
-        vocab=VOCAB, hidden=net.H, density=4,
+    # Fair comparison: same H, same density, same theta/decay — only difference is pain evolution
+    fresh = SelfWiringGraph(
+        vocab=VOCAB, hidden=net.H, density=DENSITY,
         theta_init=THETA_INIT, decay_init=DECAY_INIT,
         seed=int(rng.randint(0, 2**31)),
     )
-    fs4, fh4, fm4, fi4, ffr4, fch4 = compute_pain(fresh_4, probe_bytes)
-
-    print(f"  B) Matched edges (~{evolved_edges}): fair comparison")
-    fresh_m = SelfWiringGraph(
-        vocab=VOCAB, hidden=net.H, density=matched_density,
-        theta_init=THETA_INIT, decay_init=DECAY_INIT,
-        seed=int(rng.randint(0, 2**31)),
-    )
-    fsm, fhm, fmm, fim, ffrm, fchm = compute_pain(fresh_m, probe_bytes)
+    fs, fh, fm, fi, ffr, fch = compute_pain(fresh, probe_bytes)
 
     hdr = f"  {'':>16} | {'score':>7} | {'homeo':>7} | {'metab':>7} | {'insght':>7} | {'fire_rt':>7} | {'mean_ch':>7} | {'edges':>5}"
     print(hdr)
     print(f"  {'Pain-evolved':>16} | {best_score:7.4f} | {homeo:7.4f} | {metab:7.4f} | {insight:7.4f} | {avg_fr:7.3f} | {avg_chg:7.2f} | {evolved_edges:5d}")
-    print(f"  {'Random (4%)':>16} | {fs4:7.4f} | {fh4:7.4f} | {fm4:7.4f} | {fi4:7.4f} | {ffr4:7.3f} | {fch4:7.2f} | {len(fresh_4.alive):5d}")
-    print(f"  {'Random (matched)':>16} | {fsm:7.4f} | {fhm:7.4f} | {fmm:7.4f} | {fim:7.4f} | {ffrm:7.3f} | {fchm:7.2f} | {len(fresh_m.alive):5d}")
-    diff_fair = best_score - fsm
-    print(f"\n  Fair delta (evolved - matched random): {diff_fair:+.4f} {'(EVOLVED WINS)' if diff_fair > 0 else '(RANDOM WINS)' if diff_fair < 0 else '(TIE)'}")
+    print(f"  {'Fresh random':>16} | {fs:7.4f} | {fh:7.4f} | {fm:7.4f} | {fi:7.4f} | {ffr:7.3f} | {fch:7.2f} | {len(fresh.alive):5d}")
+    diff = best_score - fs
+    print(f"\n  Delta (evolved - random): {diff:+.4f} {'(EVOLVED WINS)' if diff > 0 else '(RANDOM WINS)' if diff < 0 else '(TIE)'}")
 
 
 if __name__ == "__main__":
