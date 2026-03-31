@@ -292,10 +292,9 @@ def main():
     #   4.   _theta_mutate: randint(0,H-1) → 3 (neuron idx)
     #   5.   _theta_mutate: randint(1,15)  → 5 (new theta)
     #   6. polarity flip randint(1,10) → 5 = skip
-    #   7. musical gating randint(1,10) → 5 = skip
-    #   8. rho drift randint(1,10) → 5 = skip
-    #   9. _remove: randint(0, len(alive)-1) → 0
-    seq = iter([2, 20, 1, 3, 5, 5, 5, 5, 0])
+    #   7. channel drift randint(1,5) → 5 = skip
+    #   8. _remove: randint(0, len(alive)-1) → 0
+    seq = iter([2, 20, 1, 3, 5, 5, 5, 0])
     random.randint = lambda a, b: next(seq)
     random.random = lambda: 0.73
     try:
@@ -311,9 +310,7 @@ def main():
         np.array_equal(net.theta, before['theta']) and
         np.array_equal(net.decay, before['decay']) and
         np.array_equal(net.polarity, before['polarity']) and
-        np.array_equal(net.freq, before['freq']) and
-        np.array_equal(net.phase, before['phase']) and
-        np.array_equal(net.rho, before['rho']) and
+        np.array_equal(net.channel, before['channel']) and
         net.loss_pct == before['loss_pct'] and
         net.mutation_drive == before['mutation_drive'] and
         net.alive == before['alive'] and
