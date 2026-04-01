@@ -1,0 +1,42 @@
+[
+  {
+    "id": "ll_current",
+    "variant": "LL",
+    "hidden_dim": 128,
+    "slot_dim": 32,
+    "M": 64,
+    "seq": 8,
+    "batch": 8
+  },
+  {
+    "id": "sgg_p0_k4",
+    "variant": "SGG",
+    "hidden_dim": 128,
+    "slot_dim": 32,
+    "M": 64,
+    "seq": 8,
+    "batch": 8,
+    "use_pointer_phase": false,
+    "write_topk_K": 4
+  },
+  {
+    "id": "sgs_p0",
+    "variant": "SGS",
+    "hidden_dim": 128,
+    "slot_dim": 32,
+    "M": 64,
+    "seq": 8,
+    "batch": 8,
+    "use_pointer_phase": false
+  },
+  {
+    "id": "sgs_phase_on",
+    "variant": "SGS",
+    "hidden_dim": 128,
+    "slot_dim": 32,
+    "M": 64,
+    "seq": 8,
+    "batch": 8,
+    "use_pointer_phase": true
+  }
+]

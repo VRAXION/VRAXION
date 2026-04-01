@@ -1,0 +1,39 @@
+[
+  {
+    "id": "ll_current",
+    "variant": "LL",
+    "hidden_dim": 128,
+    "slot_dim": 32,
+    "M": 64,
+    "seq": 8,
+    "batch": 8
+  },
+  {
+    "id": "gl_current",
+    "variant": "GL",
+    "hidden_dim": 128,
+    "slot_dim": 32,
+    "M": 64,
+    "seq": 8,
+    "batch": 8
+  },
+  {
+    "id": "gg_current",
+    "variant": "GG",
+    "hidden_dim": 128,
+    "slot_dim": 32,
+    "M": 64,
+    "seq": 8,
+    "batch": 8
+  },
+  {
+    "id": "gg_phase_off",
+    "variant": "GG",
+    "hidden_dim": 128,
+    "slot_dim": 32,
+    "M": 64,
+    "seq": 8,
+    "batch": 8,
+    "use_pointer_phase": false
+  }
+]

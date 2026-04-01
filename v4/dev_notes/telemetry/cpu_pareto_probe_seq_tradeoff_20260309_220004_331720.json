@@ -1,0 +1,39 @@
+{
+  "script": "cpu_pareto_probe.py",
+  "timestamp": "2026-03-09T22:01:03.646311",
+  "surface": "wikitext_sequential_carry",
+  "variant": "LL",
+  "preset": "seq_tradeoff",
+  "thread_limit": 4,
+  "probe_steps": 150,
+  "time_budget_s": 45,
+  "results": [
+    {
+      "id": "deck_balanced",
+      "candidate": {
+        "id": "deck_balanced",
+        "hidden_dim": 128,
+        "slot_dim": 32,
+        "M": 64,
+        "seq": 8,
+        "batch": 8
+      },
+      "probe_steps": 150,
+      "probe_time_s": 4.989506244659424,
+      "probe_s_per_step": 0.03326337496439616,
+      "target_steps": 1400,
+      "final_acc": 0.40109375,
+      "best_acc": 0.734375,
+      "final_bpc": 3.353594674934149,
+      "final_loss": 2.3245267033576966,
+      "time_s": 47.3196337223053,
+      "s_per_step": 0.03379973837307521,
+      "carry_eval_acc": 0.33496571988246815,
+      "fresh_eval_acc": 0.3117042115572968,
+      "carry_minus_reset_pp": 2.3261508325171376,
+      "variant": "LL",
+      "probe_json": "/home/deck/work/vraxion/v4/dev_notes/telemetry/cpu_pareto_probe_deck_balanced_probe_20260309_220004_331720.json",
+      "full_json": "/home/deck/work/vraxion/v4/dev_notes/telemetry/cpu_pareto_probe_deck_balanced_full_20260309_220004_331720.json"
+    }
+  ]
+}

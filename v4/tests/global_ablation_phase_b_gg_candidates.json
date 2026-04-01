@@ -1,0 +1,38 @@
+[
+  {
+    "id": "ggp0_k2",
+    "variant": "GG",
+    "hidden_dim": 128,
+    "slot_dim": 32,
+    "M": 64,
+    "seq": 8,
+    "batch": 8,
+    "use_pointer_phase": false,
+    "read_topk_K": 2,
+    "write_topk_K": 2
+  },
+  {
+    "id": "ggp0_k4",
+    "variant": "GG",
+    "hidden_dim": 128,
+    "slot_dim": 32,
+    "M": 64,
+    "seq": 8,
+    "batch": 8,
+    "use_pointer_phase": false,
+    "read_topk_K": 4,
+    "write_topk_K": 4
+  },
+  {
+    "id": "ggp0_k8",
+    "variant": "GG",
+    "hidden_dim": 128,
+    "slot_dim": 32,
+    "M": 64,
+    "seq": 8,
+    "batch": 8,
+    "use_pointer_phase": false,
+    "read_topk_K": 8,
+    "write_topk_K": 8
+  }
+]

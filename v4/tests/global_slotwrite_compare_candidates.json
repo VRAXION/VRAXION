@@ -1,0 +1,65 @@
+[
+  {
+    "id": "sgg_p0_k4",
+    "variant": "SGG",
+    "hidden_dim": 128,
+    "slot_dim": 32,
+    "M": 64,
+    "seq": 8,
+    "batch": 8,
+    "use_pointer_phase": false,
+    "write_topk_K": 4
+  },
+  {
+    "id": "slot_soft_tau1",
+    "variant": "SGS",
+    "hidden_dim": 128,
+    "slot_dim": 32,
+    "M": 64,
+    "seq": 8,
+    "batch": 8,
+    "use_pointer_phase": false,
+    "write_address_mode": "slot_softmax",
+    "write_softmax_tau": 1.0,
+    "write_content_mix": 0.0
+  },
+  {
+    "id": "slot_content_025",
+    "variant": "SGS",
+    "hidden_dim": 128,
+    "slot_dim": 32,
+    "M": 64,
+    "seq": 8,
+    "batch": 8,
+    "use_pointer_phase": false,
+    "write_address_mode": "slot_content_softmax",
+    "write_softmax_tau": 1.0,
+    "write_content_mix": 0.25
+  },
+  {
+    "id": "slot_content_05",
+    "variant": "SGS",
+    "hidden_dim": 128,
+    "slot_dim": 32,
+    "M": 64,
+    "seq": 8,
+    "batch": 8,
+    "use_pointer_phase": false,
+    "write_address_mode": "slot_content_softmax",
+    "write_softmax_tau": 1.0,
+    "write_content_mix": 0.5
+  },
+  {
+    "id": "slot_content_10",
+    "variant": "SGS",
+    "hidden_dim": 128,
+    "slot_dim": 32,
+    "M": 64,
+    "seq": 8,
+    "batch": 8,
+    "use_pointer_phase": false,
+    "write_address_mode": "slot_content_softmax",
+    "write_softmax_tau": 1.0,
+    "write_content_mix": 1.0
+  }
+]
