@@ -37,11 +37,11 @@ class SelfWiringGraph:
     DEFAULT_RHO = 0.3  # Baked into WAVE_LUT. Legacy recipes still reference this.
     DEFAULT_INHIBITORY_FRACTION = 0.10  # Fly-realistic: fewer but broader I-neurons
     POLARITY_FLIP_PROB = 10  # 1-in-N chance per mutate step
-    DEFAULT_STAMINA = 15    # per-edge stamina [0-15], int4
-    STAMINA_DRAIN = 3       # stamina lost per use (fast fatigue)
-    STAMINA_REGEN_PERIOD = 4  # regen +1 every N ticks (slow recovery)
-    # Stamina → charge multiplier: 11-15=1.0, 5-10=0.5, 0-4=0.0
-    STAMINA_THRESHOLDS = (5, 11)  # (low, high) boundaries
+    DEFAULT_STAMINA = 255   # per-edge stamina [0-255], uint8
+    # Drain: -1 per active fire (deterministic)
+    # Regen: +1 on decay tick (every DECAY_PERIOD=6 ticks) — decay does double duty
+    # Stamina → charge multiplier: 171-255=1.0, 85-170=0.5, 0-84=0.0
+    STAMINA_THRESHOLDS = (85, 171)  # (low, high) — thirds of 255
     DEFAULT_INPUT_MODE = 'projection'  # 'projection' (legacy) or 'sdr'
     DEFAULT_SDR_K = 13                 # active neurons per byte (20% of sdr_dim)
     DEFAULT_SDR_DIM = 64               # SDR input dimension (legacy default)
@@ -340,9 +340,9 @@ class SelfWiringGraph:
         return self._sparse_mul_2d_from_cache(self.H, acts, self._sp_cache)
 
     def _init_stamina(self):
-        """Initialize per-edge stamina array aligned with alive list."""
+        """Initialize per-edge stamina array aligned with alive list. uint8 [0-255]."""
         n = len(self.alive)
-        self._stamina = np.full(n, self.DEFAULT_STAMINA, dtype=np.uint8)
+        self._stamina = np.full(n, self.DEFAULT_STAMINA, dtype=np.uint8)  # 255 = full
 
     def _get_stamina_multipliers(self, stamina):
         """Convert stamina [0-15] to charge multiplier {0.0, 0.5, 1.0}."""
@@ -432,20 +432,14 @@ class SelfWiringGraph:
             if stamina is not None and use_sparse and len(sparse_cache) == 2:
                 rows_sp, cols_sp = sparse_cache
                 if len(rows_sp):
-                    # Stamina regen: all edges +1 every N ticks (slow recovery)
-                    if tick % SelfWiringGraph.STAMINA_REGEN_PERIOD == 0:
-                        np.clip(stamina + 1, 0, 15, out=stamina)
+                    # Stamina regen: +1 every DECAY_PERIOD ticks (fixed, not _dp dependent)
+                    if tick % SelfWiringGraph.DECAY_PERIOD == 0:
+                        stamina[:] = np.clip(stamina.astype(np.int16) + 1, 0, 255).astype(np.uint8)
                     # Compute stamina multipliers
                     lo, hi = SelfWiringGraph.STAMINA_THRESHOLDS
                     s_mult = np.ones(len(rows_sp), dtype=np.float32)
                     s_mult[stamina < hi] = 0.5
                     s_mult[stamina < lo] = 0.0
-                    # Find which edges have active source neurons
-                    active_mask = act[rows_sp] != 0
-                    # Drain stamina on active edges
-                    stamina[active_mask] = np.clip(
-                        stamina[active_mask].astype(np.int16) - SelfWiringGraph.STAMINA_DRAIN,
-                        0, 15).astype(np.uint8)
                     # Propagate with stamina
                     raw = np.zeros(H, dtype=np.float32)
                     np.add.at(raw, cols_sp, act[rows_sp] * s_mult)
@@ -495,6 +489,16 @@ class SelfWiringGraph:
 
             # 6. RESET FIRED NEURONS
             cur_charge[fired] = 0.0 # Hard reset for now, matching Int4 Brain win
+
+            # 7. STAMINA DRAIN: -1 for each edge whose source FIRED this tick
+            if stamina is not None and use_sparse and len(sparse_cache) == 2:
+                rows_sp, cols_sp = sparse_cache
+                if len(rows_sp):
+                    fired_sources = fired[rows_sp]
+                    if np.any(fired_sources):
+                        stamina[fired_sources] = np.clip(
+                            stamina[fired_sources].astype(np.int16) - 1,
+                            0, 255).astype(np.uint8)
         return act, cur_charge
 
     @staticmethod
