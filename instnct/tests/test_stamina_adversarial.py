@@ -11,52 +11,40 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'model'))
 from graph import SelfWiringGraph
 
 
-def test_stamina_shape_mismatch():
-    """BUG CHECK: stamina array must match sparse_cache (rows/cols) length.
-    If alive list changes (mutation) but stamina doesn't resize → index error.
-    """
+def test_stamina_resync_after_mutate():
+    """After fix: resync_alive auto-resizes stamina. Should not crash."""
     net = SelfWiringGraph(vocab=16, hidden=32, density=4, seed=42, theta_init=2)
     net._init_stamina()
     n_edges_before = len(net.alive)
     assert len(net._stamina) == n_edges_before, "stamina size != alive size after init"
 
-    # Mutate: adds/removes edges → alive list changes
-    net.mutate(forced_op='add')
+    # Mutate: adds/removes edges → resync_alive should resize stamina
+    for _ in range(5):  # multiple mutations to ensure size changes
+        net.mutate(forced_op='add')
+
     n_edges_after = len(net.alive)
+    stamina_len = len(net._stamina)
 
-    # stamina is now STALE — wrong length
-    if n_edges_after != n_edges_before:
-        assert len(net._stamina) != n_edges_after, \
-            "Expected stamina to be stale after mutation (no auto-resize)"
-        print(f"  [!] CONFIRMED: stamina stale after mutate ({len(net._stamina)} vs {n_edges_after} alive)")
+    if stamina_len == n_edges_after:
+        print(f"  [+] Stamina auto-resized: {n_edges_before} → {stamina_len} (alive={n_edges_after})")
     else:
-        print(f"  [i] Edge count didn't change, inconclusive")
+        print(f"  [!] BUG: stamina={stamina_len} != alive={n_edges_after}")
+        return "BUG_NO_RESIZE"
 
-    # Now try rollout with stale stamina → should this crash?
+    # Rollout should work now
     sc = SelfWiringGraph.build_sparse_cache(net.mask)
-    rows, cols = sc
     try:
         injected = np.random.randn(32).astype(np.float32)
         state, charge = SelfWiringGraph.rollout_token(
             injected, mask=net.mask, theta=net._theta_f32,
-            decay=net.decay, ticks=8, state=None, charge=None,
-            sparse_cache=sc, polarity=net._polarity_f32,
-            refractory=net.refractory, channel=net.channel,
-            stamina=net._stamina,  # STALE!
+            decay=net.decay, ticks=8, sparse_cache=sc,
+            polarity=net._polarity_f32, refractory=net.refractory,
+            channel=net.channel, stamina=net._stamina,
         )
-        # If it didn't crash, check for index-out-of-bounds silently
-        if len(net._stamina) < len(rows):
-            print(f"  [!] BUG: rollout didn't crash but stamina shorter than edges")
-            print(f"      stamina={len(net._stamina)}, rows={len(rows)}")
-            return "BUG_SILENT"
-        elif len(net._stamina) > len(rows):
-            print(f"  [!] WARN: stamina longer than edges (wasted memory, no crash)")
-            return "WARN"
-        else:
-            print(f"  [+] OK: sizes match by luck")
-            return "PASS"
+        print(f"  [+] PASS: rollout with resized stamina works")
+        return "PASS"
     except (IndexError, ValueError) as e:
-        print(f"  [!] CRASH with stale stamina: {e}")
+        print(f"  [!] CRASH even after resize: {e}")
         return "CRASH"
 
 
@@ -79,48 +67,48 @@ def test_stamina_regen_overflow():
     return "PASS"
 
 
-def test_stamina_drain_missing():
-    """BUG CHECK: the stamina code in rollout_token does REGEN but where is DRAIN?
-    Looking at the code: stamina regen happens every DECAY_PERIOD ticks,
-    but there's NO drain when edges fire. This means stamina never decreases!
+def test_stamina_drain_works():
+    """Check that drain fires when source neurons spike.
+    Drain is -1 per fired source edge per tick.
+    Regen is +1 every DECAY_PERIOD ticks (=6).
+    With high firing, drain should cause VARIANCE in stamina
+    (active edges drain more, inactive stay high).
     """
-    net = SelfWiringGraph(vocab=16, hidden=32, density=4, seed=42, theta_init=2)
+    net = SelfWiringGraph(vocab=16, hidden=32, density=4, seed=42, theta_init=1)
     sc = SelfWiringGraph.build_sparse_cache(net.mask)
     rows, cols = sc
     n_edges = len(rows)
 
-    stamina = np.full(n_edges, 200, dtype=np.uint8)  # start at 200
-    stamina_before = stamina.copy()
+    # Start all at same value — after rollout, variance proves drain happened
+    stamina = np.full(n_edges, 150, dtype=np.uint8)
 
-    injected = net.input_projection[5]  # inject something to cause activity
+    injected = np.ones(32, dtype=np.float32) * 5.0
     state, charge = SelfWiringGraph.rollout_token(
         injected, mask=net.mask, theta=net._theta_f32,
-        decay=net.decay, ticks=8, state=None, charge=None,
+        decay=net.decay, ticks=16, state=None, charge=None,
         sparse_cache=sc, polarity=net._polarity_f32,
         refractory=net.refractory, channel=net.channel,
         stamina=stamina,
     )
 
-    # Check if stamina decreased at all
-    decreased = np.sum(stamina < stamina_before)
-    increased = np.sum(stamina > stamina_before)
-    same = np.sum(stamina == stamina_before)
+    min_val = int(np.min(stamina))
+    max_val = int(np.max(stamina))
+    std_val = float(np.std(stamina))
+    unique_vals = len(np.unique(stamina))
 
-    print(f"  Stamina after 8 ticks: decreased={decreased}, increased={increased}, same={same}")
+    print(f"  Stamina after 16 ticks: range=[{min_val}, {max_val}], std={std_val:.2f}, unique={unique_vals}")
 
-    if decreased == 0:
-        # With regen every 6 ticks and 8 ticks total: tick 0 and tick 6 = +2 regen
-        # No drain → stamina only goes UP
-        if increased > 0:
-            print(f"  [!] BUG CONFIRMED: stamina only regens, never drains!")
-            print(f"      Docstring says 'Drain: -1 per active fire' but code doesn't implement it")
-            return "BUG_NO_DRAIN"
-        else:
-            print(f"  [i] Stamina unchanged (start=200, no regen at this level)")
-            return "INCONCLUSIVE"
-    else:
-        print(f"  [+] Drain working: {decreased} edges drained")
+    # Key check: if drain works, edges connected to active neurons have LOWER stamina
+    # than edges connected to quiet neurons → variance > 0
+    if unique_vals > 1:
+        print(f"  [+] PASS: drain creates variance ({unique_vals} unique values)")
         return "PASS"
+    elif unique_vals == 1:
+        # All edges same stamina = no differential drain = drain not working
+        print(f"  [!] BUG: all edges identical stamina — drain has no effect")
+        return "BUG_NO_DRAIN"
+    else:
+        return "INCONCLUSIVE"
 
 
 def test_stamina_dense_path_ignored():
@@ -264,20 +252,46 @@ def test_rollout_with_without_stamina_consistency():
         return "PASS"
 
 
+def test_stamina_save_restore():
+    """Stamina must survive save_state/restore_state round-trip."""
+    net = SelfWiringGraph(vocab=16, hidden=32, density=4, seed=42, theta_init=2)
+    net._init_stamina()
+    # Set some non-trivial stamina values
+    net._stamina[0] = 50
+    net._stamina[1] = 100
+    net._stamina[2] = 200
+
+    snap = net.save_state()
+
+    # Trash stamina
+    net._stamina[:] = 0
+
+    # Restore
+    net.restore_state(snap)
+
+    if net._stamina[0] == 50 and net._stamina[1] == 100 and net._stamina[2] == 200:
+        print(f"  [+] PASS: stamina round-trips through save/restore")
+        return "PASS"
+    else:
+        print(f"  [!] BUG: stamina not restored (got {net._stamina[:3]})")
+        return "BUG_NOT_RESTORED"
+
+
 if __name__ == "__main__":
     print("=" * 70)
     print("  Adversarial Stamina Tests")
     print("=" * 70)
 
     tests = [
-        ("Shape mismatch after mutate", test_stamina_shape_mismatch),
+        ("Resync after mutate", test_stamina_resync_after_mutate),
         ("Regen overflow/underflow", test_stamina_regen_overflow),
-        ("Drain missing in rollout", test_stamina_drain_missing),
+        ("Drain works", test_stamina_drain_works),
         ("Dense path ignores stamina", test_stamina_dense_path_ignored),
         ("3-tuple cache ignores stamina", test_stamina_3tuple_cache),
         ("Multiplier boundaries", test_stamina_multiplier_boundaries),
-        ("Docstring range mismatch", test_docstring_mismatch),
+        ("Docstring range", test_docstring_mismatch),
         ("Full stamina ≡ no stamina", test_rollout_with_without_stamina_consistency),
+        ("Save/restore round-trip", test_stamina_save_restore),
     ]
 
     results = []
