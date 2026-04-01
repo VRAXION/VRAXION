@@ -345,7 +345,7 @@ class SelfWiringGraph:
         self._stamina = np.full(n, self.DEFAULT_STAMINA, dtype=np.uint8)  # 255 = full
 
     def _get_stamina_multipliers(self, stamina):
-        """Convert stamina [0-15] to charge multiplier {0.0, 0.5, 1.0}."""
+        """Convert stamina [0-255] to charge multiplier {0.0, 0.5, 1.0}."""
         lo, hi = self.STAMINA_THRESHOLDS
         m = np.ones(len(stamina), dtype=np.float32)
         m[stamina < hi] = 0.5
@@ -692,6 +692,18 @@ class SelfWiringGraph:
         self._mask_f32_cache = None  # invalidate dense matmul cache
         self._sync_sparse_idx()
 
+        # Resize stamina to match new alive count (new edges start at full stamina)
+        if self._stamina is not None:
+            n_old = len(self._stamina)
+            n_new = len(self.alive)
+            if n_new > n_old:
+                self._stamina = np.concatenate([
+                    self._stamina,
+                    np.full(n_new - n_old, self.DEFAULT_STAMINA, dtype=np.uint8)
+                ])
+            elif n_new < n_old:
+                self._stamina = self._stamina[:n_new]
+
     def _sync_sparse_idx(self):
         """Precompute binary sparse cache for multiply-free forward pass.
 
@@ -731,6 +743,7 @@ class SelfWiringGraph:
             'decay': self.decay.copy(),
             'polarity': self.polarity.copy(),
             'channel': self.channel.copy(),
+            '_stamina': self._stamina.copy() if self._stamina is not None else None,
         }
 
     def restore_state(self, s):
@@ -764,6 +777,12 @@ class SelfWiringGraph:
             self._polarity_f32[:] = np.where(self.polarity, 1.0, -1.0)
         if 'channel' in s:
             self.channel[:] = s['channel']
+        if '_stamina' in s:
+            saved_stam = s['_stamina']
+            if saved_stam is not None:
+                self._stamina = saved_stam.copy()
+            else:
+                self._stamina = None
 
     # --- Breeding / crossover ---
 
@@ -834,6 +853,7 @@ class SelfWiringGraph:
         # Fresh state
         child.state = np.zeros(child.H, dtype=np.float32)
         child.charge = np.zeros(child.H, dtype=np.float32)
+        child._stamina = None  # lazy init — matches __init__ contract
 
         return child
 
@@ -989,6 +1009,7 @@ class SelfWiringGraph:
         net.polarity = polarity.astype(np.bool_) if polarity.dtype != np.bool_ else polarity
         net._polarity_f32 = np.where(net.polarity, 1.0, -1.0).astype(np.float32)
         net.refractory = np.zeros(H, dtype=np.int8)
+        net._stamina = None  # lazy init — matches __init__ contract
 
         # SDR mode (from locals extracted inside the with-block above)
         net.input_mode = _sdr_input_mode
