@@ -30,13 +30,13 @@ The canonical code path for `main` is [`instnct/model/graph.py`](instnct/model/g
 
 Current mainline defaults in that file:
 
-- `DEFAULT_THETA = 15.0`
+- `DEFAULT_THETA = 6`  # int4 [1-15], converges ~6 (validated sweep)
 - `DEFAULT_PROJECTION_SCALE = 3.0`
 - `DEFAULT_EDGE_MAGNITUDE = 1.0`
-- `DEFAULT_DECAY = 1.0`
-- `DEFAULT_RHO = 0.3` (C19 Soft-Wave modulation depth)
-- `DEFAULT_INHIBITORY_FRACTION = 0.20` (Dale's Law)
-- per-neuron `theta`, `decay`, `polarity`, `freq`, `phase`, `rho` — all co-evolved
+- `DEFAULT_DECAY = 0.16`  # legacy float default; int decay period=6
+- `DEFAULT_RHO = 0.3` (baked into WAVE_LUT)
+- `DEFAULT_INHIBITORY_FRACTION = 0.10` (Fly-realistic: fewer but broader I-neurons)
+- per-neuron `theta`, `decay`, `polarity`, `channel` — all co-evolved
 - charge uses nonnegative ReLU-style dynamics in the forward pass
 - C19 Soft-Wave gating active on spike decision in both forward paths
 - refractory period enforced in both `rollout_token()` and `rollout_token_batch()`
