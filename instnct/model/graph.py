@@ -1086,7 +1086,6 @@ class SelfWiringGraph:
             op_map = {
                 'add': self._add,
                 'add_loop': self._add_loop,
-                'add_affinity': self._add_affinity,
                 'remove': self._remove,
                 'rewire': self._rewire,
                 'flip': self._flip,
