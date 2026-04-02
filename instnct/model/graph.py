@@ -690,8 +690,6 @@ class SelfWiringGraph:
         self.alive = list(zip(rows.tolist(), cols.tolist()))
         self.alive_set = set(self.alive)
         self._mask_f32_cache = None  # invalidate dense matmul cache
-        self._sync_sparse_idx()
-
         # Resize stamina to match new alive count (new edges start at full stamina)
         if self._stamina is not None:
             n_old = len(self._stamina)
@@ -703,6 +701,7 @@ class SelfWiringGraph:
                 ])
             elif n_new < n_old:
                 self._stamina = self._stamina[:n_new]
+        self._sync_sparse_idx()
 
     def _sync_sparse_idx(self):
         """Precompute binary sparse cache for multiply-free forward pass.
@@ -823,6 +822,7 @@ class SelfWiringGraph:
         child.mask = ((parent_a.mask != 0) | (parent_b.mask != 0))  # bool dtype
         np.fill_diagonal(child.mask, False)
         child._mask_f32_cache = None
+        child._stamina = None  # lazy init — matches __init__ contract
         child.resync_alive()
 
         # Polarity: random mix from parents
