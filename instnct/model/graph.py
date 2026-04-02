@@ -8,7 +8,8 @@ per-neuron theta / decay vectors, then keeping only improved candidates.
 Runtime contract:
   - input_projection  (V × H): fixed projection from vocab-space into hidden space
   - output_projection (H × V): fixed projection from hidden charge into vocab logits
-  - mask             (H × H): learnable hidden graph, boolean (True/False)
+  - mask             (H × H): learnable hidden graph, quaternary upper-triangle (canonical)
+                           Backward compat: .mask property returns H×H bool view
   - theta            (H,): per-neuron firing threshold
   - decay            (H,): per-neuron decay rate
   - channel          (H,): per-neuron temporal channel [0-7] (C19 Wave Gating)
@@ -21,6 +22,12 @@ Runtime contract:
 
 import numpy as np
 import random
+import os, sys
+# Ensure quaternary_mask is importable regardless of how graph.py is loaded
+_model_dir = os.path.dirname(os.path.abspath(__file__))
+if _model_dir not in sys.path:
+    sys.path.insert(0, _model_dir)
+from quaternary_mask import QuaternaryMask
 
 
 class SelfWiringGraph:
@@ -190,19 +197,15 @@ class SelfWiringGraph:
         self.polarity[inhib_mask] = False
         self._polarity_f32 = np.where(self.polarity, 1.0, -1.0).astype(np.float32)
 
-        # Mask: H × H boolean (native bool, minimal dtype).
+        # Mask: quaternary upper-triangle (2 bits/pair, half memory of bool H×H).
         # Fly-realistic topology: Inhibitory neurons have 2x out-degree (hub-property)
         r = init_rand(hidden, hidden)
         effective_density = np.full(hidden, self.density_fraction)
         effective_density[~self.polarity] *= 2.0
-        self.mask = (r < effective_density[:, np.newaxis])  # dtype=bool, 1 byte/elem
-        np.fill_diagonal(self.mask, False)
+        bool_mask = (r < effective_density[:, np.newaxis])  # temp bool for init
+        np.fill_diagonal(bool_mask, False)
+        self.qmask = QuaternaryMask.from_bool_mask(bool_mask)
         self._mask_f32_cache = None  # lazy precomputed float32 for dense matmul
-
-        # Alive edges: canonical row-major cache + set for O(1) undo membership.
-        rows, cols = np.where(self.mask)
-        self.alive = list(zip(rows.tolist(), cols.tolist()))
-        self.alive_set = set(self.alive)
         self._sync_sparse_idx()
 
         # Persistent state (hidden only)
@@ -639,9 +642,11 @@ class SelfWiringGraph:
             injected[0:self.sdr_dim] = self.sdr_table[byte_idx]
         else:
             injected = world_vec @ self.input_projection
+        # Pass dummy H×H mask — sparse_cache is always used at typical density
+        _dummy_mask = np.zeros((self.H, self.H), dtype=bool)
         self.state, self.charge = self.rollout_token(
             injected,
-            mask=self.mask,
+            mask=_dummy_mask,
             theta=self._theta_f32,
             decay=self.decay,
             ticks=ticks,
@@ -667,9 +672,10 @@ class SelfWiringGraph:
             projected[:, 0:self.sdr_dim] = self.sdr_table[:V]
         else:
             projected = np.eye(V, dtype=np.float32) @ self.input_projection
+        _dummy_mask = np.zeros((self.H, self.H), dtype=bool)
         acts, charges = self.rollout_token_batch(
             projected,
-            mask=self.mask,
+            mask=_dummy_mask,
             theta=self._theta_f32,
             decay=self.decay,
             ticks=ticks,
@@ -684,16 +690,46 @@ class SelfWiringGraph:
             return self.readout_batch(charges)
         return self.readout_batch(acts)
 
+    # --- Mask property: backward compat for external code that reads .mask ---
+
+    @property
+    def mask(self):
+        """Backward compat: return H×H bool view from quaternary mask."""
+        return self.qmask.to_bool_mask()
+
+    @mask.setter
+    def mask(self, value):
+        """Backward compat: accept H×H bool array, convert to quaternary."""
+        self.qmask = QuaternaryMask.from_bool_mask(np.asarray(value, dtype=bool))
+
+    @property
+    def alive(self):
+        """Delegate to qmask alive tracking (pair indices → (r,c) tuples)."""
+        # Convert qmask pair indices to (r,c) directed edges for backward compat
+        rows, cols = self.qmask.to_directed_edges()
+        return list(zip(rows.tolist(), cols.tolist()))
+
+    @alive.setter
+    def alive(self, value):
+        pass  # no-op: qmask manages its own alive tracking
+
+    @property
+    def alive_set(self):
+        rows, cols = self.qmask.to_directed_edges()
+        return set(zip(rows.tolist(), cols.tolist()))
+
+    @alive_set.setter
+    def alive_set(self, value):
+        pass  # no-op: qmask manages its own alive tracking
+
     def resync_alive(self):
-        """Rebuild alive list+set from mask. Call after direct mask writes."""
-        rows, cols = np.where(self.mask)
-        self.alive = list(zip(rows.tolist(), cols.tolist()))
-        self.alive_set = set(self.alive)
-        self._mask_f32_cache = None  # invalidate dense matmul cache
+        """Rebuild qmask alive tracking + sparse cache."""
+        self.qmask._rebuild_alive()
+        self._mask_f32_cache = None
         # Resize stamina to match new alive count (new edges start at full stamina)
         if self._stamina is not None:
             n_old = len(self._stamina)
-            n_new = len(self.alive)
+            n_new = self.qmask.count_edges()
             if n_new > n_old:
                 self._stamina = np.concatenate([
                     self._stamina,
@@ -704,16 +740,10 @@ class SelfWiringGraph:
         self._sync_sparse_idx()
 
     def _sync_sparse_idx(self):
-        """Precompute binary sparse cache for multiply-free forward pass.
-
-        Binary mask {0, 1}: stores (rows, cols) only. Forward pass is pure
-        addition — no sign, no magnitude, no float multiply.
-        """
-        if self.alive:
-            rows = np.array([r for r, c in self.alive], dtype=np.intp)
-            cols = np.array([c for r, c in self.alive], dtype=np.intp)
+        """Build sparse cache directly from quaternary mask. O(pairs) not O(H²)."""
+        rows, cols = self.qmask.to_directed_edges()
+        if len(rows):
             self._sp_cache = (rows, cols)
-            # Legacy accessors (backward compat for external callers)
             self._sp_rows = rows
             self._sp_cols = cols
         else:
@@ -724,16 +754,19 @@ class SelfWiringGraph:
             self._sp_cols = np.empty(0, dtype=np.intp)
 
     def count_connections(self):
-        return len(self.alive)
+        return self.qmask.count_edges()
 
     # --- State management ---
 
     def save_state(self):
-        """Save everything that reverts on reject: mask, charge, loss, mutation drive, theta."""
+        """Save everything that reverts on reject: qmask, charge, loss, mutation drive, theta."""
         return {
-            'mask': self.mask.copy(),
-            'alive': self.alive.copy(),
-            'alive_set': self.alive_set.copy(),
+            'qmask_data': self.qmask.data.copy(),
+            # Backward compat keys for external code that reads state dicts:
+            'mask': self.mask,
+            'alive': self.alive,
+            'alive_set': self.alive_set,
+            'freq': self.freq, 'phase': self.phase, 'rho': self.rho,
             'state': self.state.copy(),
             'charge': self.charge.copy(),
             'loss_pct': np.int8(self.loss_pct),
@@ -747,15 +780,14 @@ class SelfWiringGraph:
 
     def restore_state(self, s):
         """Revert all state including mutation drive."""
-        saved_mask = s['mask']
-        if saved_mask.dtype != self.mask.dtype:
-            saved_mask = (saved_mask != 0)
-        self.mask[:] = saved_mask
-        if 'alive' in s:
-            self.alive = s['alive'].copy()
-            self.alive_set = s.get('alive_set', set(self.alive)).copy()
-        else:
-            self.resync_alive()
+        if 'qmask_data' in s:
+            self.qmask = QuaternaryMask(self.H, s['qmask_data'].copy())
+        elif 'mask' in s:
+            # Legacy: bool mask checkpoint
+            saved_mask = s['mask']
+            if saved_mask.dtype != np.bool_:
+                saved_mask = (saved_mask != 0)
+            self.qmask = QuaternaryMask.from_bool_mask(saved_mask)
         self._sync_sparse_idx()
         self.state[:] = s['state']
         self.charge[:] = s['charge']
@@ -859,7 +891,7 @@ class SelfWiringGraph:
 
     def save(self, path):
         """Save winner graph to disk (.npz) with exact forward-path projections."""
-        rows, cols = np.where(self.mask)
+        rows, cols = self.qmask.to_directed_edges()
         index_dtype = self._checkpoint_index_dtype(self.H)
         vals = np.ones(rows.shape[0], dtype=np.bool_)
         np.savez_compressed(path,
@@ -994,9 +1026,10 @@ class SelfWiringGraph:
         net.density_fraction = 0.0
         net.input_projection = input_projection
         net.output_projection = output_projection
-        net.mask = np.zeros((H, H), dtype=np.bool_)
-        net.mask[rows, cols] = vals
-        np.fill_diagonal(net.mask, False)
+        bool_mask = np.zeros((H, H), dtype=np.bool_)
+        bool_mask[rows, cols] = vals
+        np.fill_diagonal(bool_mask, False)
+        net.qmask = QuaternaryMask.from_bool_mask(bool_mask)
         net._mask_f32_cache = None
         net.state = np.zeros(H, dtype=np.float32)
         net.charge = np.zeros(H, dtype=np.float32)
@@ -1024,27 +1057,23 @@ class SelfWiringGraph:
         return net
 
     def replay(self, log):
-        """Repeat logged ops in reverse = undo. O(changes) + O(alive) list rebuild.
-        Structural ops update mask + set, list rebuilt once."""
+        """Repeat logged ops in reverse = undo. O(changes) + sparse cache rebuild.
+        Structural ops update qmask directly."""
         has_structural = False
         for entry in reversed(log):
             op = entry[0]
             if op == 'A':
                 r, c = entry[1], entry[2]
-                self.mask[r, c] = False
-                self.alive_set.discard((r, c))
+                self.qmask.set_pair(r, c, 0)
                 has_structural = True
             elif op == 'R':
                 r, c = entry[1], entry[2]
-                self.mask[r, c] = True
-                self.alive_set.add((r, c))
+                self.qmask.set_pair(r, c, 1)  # restore as forward (r→c)
                 has_structural = True
             elif op == 'W':
                 _, r, c_old, c_new = entry
-                self.mask[r, c_new] = False
-                self.mask[r, c_old] = True
-                self.alive_set.discard((r, c_new))
-                self.alive_set.add((r, c_old))
+                self.qmask.set_pair(r, c_new, 0)
+                self.qmask.set_pair(r, c_old, 1)  # restore as forward (r→c_old)
                 has_structural = True
             elif op == 'T':
                 self.theta[entry[1]] = np.uint8(int(np.clip(entry[2], 1, 15)))
@@ -1063,6 +1092,22 @@ class SelfWiringGraph:
                 self.channel[entry[1]] = np.uint8(int(np.clip(entry[2], 1, 8)))
             elif op in ('FR', 'PH', 'RH'):
                 pass  # Legacy: silently ignore old freq/phase/rho undo ops
+            # QuaternaryMask native undo ops
+            elif op in ('QA', 'QR', 'QF', 'QU', 'QD'):
+                _, idx, old_val = entry
+                self.qmask.data[idx] = old_val
+                if old_val == 0:
+                    self.qmask._remove_alive(idx)
+                else:
+                    self.qmask._add_alive(idx)
+                has_structural = True
+            elif op == 'QW':
+                _, idx_old, old_val, idx_new = entry
+                self.qmask.data[idx_new] = 0
+                self.qmask._remove_alive(idx_new)
+                self.qmask.data[idx_old] = old_val
+                self.qmask._add_alive(idx_old)
+                has_structural = True
         if has_structural:
             self.resync_alive()
         else:
@@ -1142,25 +1187,20 @@ class SelfWiringGraph:
 
     def _add(self, undo):
         cap = self.H * self.cap_ratio
-        if len(self.alive) >= cap:
+        if self.qmask.count_edges() >= cap:
             return
         r, c = random.randint(0, self.H-1), random.randint(0, self.H-1)
-
         # Fly-realistic bias: if source is excitatory, maybe skip adding
-        # to maintain the 2x ratio for inhibitory neurons.
         if self.polarity[r] == 1 and random.random() < 0.5:
             return
-
-        if r != c and self.mask[r, c] == 0:
-            self.mask[r, c] = True
-            self.alive.append((r, c))
-            self.alive_set.add((r, c))
+        if r != c and self.qmask.get_pair(r, c) == 0:
+            self.qmask.set_pair(r, c, 1)  # forward: r→c
             undo.append(('A', r, c))
 
     def _add_affinity(self, undo):
-        """Add edge preferring same-channel target (fire together → wire together)."""
+        """Add edge preferring same-channel target (fire together -> wire together)."""
         cap = self.H * self.cap_ratio
-        if len(self.alive) >= cap:
+        if self.qmask.count_edges() >= cap:
             return
         r = random.randint(0, self.H - 1)
         same_ch = np.where(self.channel == self.channel[r])[0]
@@ -1168,39 +1208,19 @@ class SelfWiringGraph:
             c = int(same_ch[random.randint(0, len(same_ch) - 1)])
         else:
             c = random.randint(0, self.H - 1)
-        if r != c and self.mask[r, c] == 0:
-            self.mask[r, c] = True
-            self.alive.append((r, c))
-            self.alive_set.add((r, c))
+        if r != c and self.qmask.get_pair(r, c) == 0:
+            self.qmask.set_pair(r, c, 1)  # forward: r→c
             undo.append(('A', r, c))
 
     def _flip(self, undo):
-        """Legacy flip: rewire to a random target (sign flip is meaningless in binary)."""
-        self._rewire(undo)
+        """Atomic direction reversal via quaternary encoding."""
+        self.qmask.mutate_flip(random, undo)
 
     def _remove(self, undo):
-        if self.alive:
-            idx = random.randint(0, len(self.alive)-1)
-            r, c = self.alive[idx]
-            old_val = bool(self.mask[r, c])
-            self.mask[r, c] = False
-            self.alive[idx] = self.alive[-1]
-            self.alive.pop()
-            self.alive_set.discard((r, c))
-            undo.append(('R', r, c, old_val))
+        self.qmask.mutate_remove(random, undo)
 
     def _rewire(self, undo):
-        if self.alive:
-            idx = random.randint(0, len(self.alive)-1)
-            r, c = self.alive[idx]
-            nc = random.randint(0, self.H-1)
-            if nc != r and nc != c and self.mask[r, nc] == 0:
-                self.mask[r, c] = False
-                self.mask[r, nc] = True
-                self.alive[idx] = (r, nc)
-                self.alive_set.discard((r, c))
-                self.alive_set.add((r, nc))
-                undo.append(('W', r, c, nc))
+        self.qmask.mutate_rewire(random, undo)
 
     def _theta_mutate(self, undo):
         """Mutate one random neuron's threshold to int4 value in [1, 15]."""
@@ -1227,7 +1247,7 @@ class SelfWiringGraph:
         """
         cap = self.H * self.cap_ratio
         loop_len = random.randint(2, max(2, max_len))
-        if len(self.alive) + loop_len > cap:
+        if self.qmask.count_edges() + loop_len > cap:
             return
         nodes = [random.randint(0, self.H - 1)]
         for _ in range(loop_len - 1):
@@ -1239,14 +1259,12 @@ class SelfWiringGraph:
         edges = []
         for i in range(loop_len):
             r, c = nodes[i], nodes[(i + 1) % loop_len]
-            if self.mask[r, c] != 0:
+            if self.qmask.get_pair(r, c) != 0:
                 return  # edge exists, bail
             edges.append((r, c))
         # Commit all edges atomically
         for r, c in edges:
-            self.mask[r, c] = True
-            self.alive.append((r, c))
-            self.alive_set.add((r, c))
+            self.qmask.set_pair(r, c, 1)  # forward: r→c
             undo.append(('A', r, c))
 
     def _polarity_mutate(self, undo):
@@ -1290,23 +1308,25 @@ class SelfWiringGraph:
         total_removed = 0
         pass_num = 0
         while True:
-            alive_snapshot = list(self.alive)
+            alive_snapshot = list(zip(
+                self.qmask._triu_i[self.qmask.data != 0].tolist(),
+                self.qmask._triu_j[self.qmask.data != 0].tolist(),
+            ))
             random.shuffle(alive_snapshot)
             removed_this_pass = 0
-            for r, c in alive_snapshot:
-                if self.mask[r, c] == 0:
+            for i, j in alive_snapshot:
+                old_val = self.qmask.get_pair(i, j)
+                if old_val == 0:
                     continue
-                old_val = self.mask[r, c]
-                self.mask[r, c] = False
-                self.alive_set.discard((r, c))
+                self.qmask.set_pair(i, j, 0)
+                self._sync_sparse_idx()
                 new_score = evaluate_fn()
                 if new_score >= score - eps:
                     score = new_score
                     removed_this_pass += 1
                     total_removed += 1
                 else:
-                    self.mask[r, c] = old_val
-                    self.alive_set.add((r, c))
+                    self.qmask.set_pair(i, j, old_val)
             self.resync_alive()
             pass_num += 1
             if verbose:
