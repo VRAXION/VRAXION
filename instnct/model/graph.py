@@ -1086,6 +1086,7 @@ class SelfWiringGraph:
             op_map = {
                 'add': self._add,
                 'add_loop': self._add_loop,
+                'add_affinity': self._add_affinity,
                 'remove': self._remove,
                 'rewire': self._rewire,
                 'flip': self._flip,
@@ -1145,12 +1146,29 @@ class SelfWiringGraph:
         if len(self.alive) >= cap:
             return
         r, c = random.randint(0, self.H-1), random.randint(0, self.H-1)
-        
-        # Fly-realistic bias: if source is excitatory, maybe skip adding 
+
+        # Fly-realistic bias: if source is excitatory, maybe skip adding
         # to maintain the 2x ratio for inhibitory neurons.
         if self.polarity[r] == 1 and random.random() < 0.5:
             return
 
+        if r != c and self.mask[r, c] == 0:
+            self.mask[r, c] = True
+            self.alive.append((r, c))
+            self.alive_set.add((r, c))
+            undo.append(('A', r, c))
+
+    def _add_affinity(self, undo):
+        """Add edge preferring same-channel target (fire together → wire together)."""
+        cap = self.H * self.cap_ratio
+        if len(self.alive) >= cap:
+            return
+        r = random.randint(0, self.H - 1)
+        same_ch = np.where(self.channel == self.channel[r])[0]
+        if len(same_ch) > 1:
+            c = int(same_ch[random.randint(0, len(same_ch) - 1)])
+        else:
+            c = random.randint(0, self.H - 1)
         if r != c and self.mask[r, c] == 0:
             self.mask[r, c] = True
             self.alive.append((r, c))
