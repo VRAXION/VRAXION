@@ -112,8 +112,7 @@ pub const PHI_DENOMINATOR: u32 = 1000;
 /// `io_dim(H) = round(H / PHI) = (H * 1000 + 809) / 1618`
 #[inline]
 pub fn io_dimension(neuron_count: u32) -> u32 {
-    (neuron_count as u64 * PHI_DENOMINATOR as u64 + PHI_NUMERATOR as u64 / 2) as u32
-        / PHI_NUMERATOR
+    (neuron_count as u64 * PHI_DENOMINATOR as u64 + PHI_NUMERATOR as u64 / 2) as u32 / PHI_NUMERATOR
 }
 
 /// SDR active neuron percentage (20 = 20%).

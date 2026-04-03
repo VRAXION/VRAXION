@@ -142,9 +142,12 @@ impl ConnectionGraph {
 
     /// Add a directed edge. Returns `true` if the edge was new.
     ///
-    /// Silently rejects self-connections (source == target) and duplicates.
+    /// Rejects self-connections, duplicates, and out-of-range endpoints.
     pub fn add_edge(&mut self, source: u16, target: u16) -> bool {
-        if source == target {
+        if source == target
+            || source as usize >= self.neuron_count
+            || target as usize >= self.neuron_count
+        {
             return false;
         }
         if self.edge_set.insert((source, target)) {
@@ -160,7 +163,11 @@ impl ConnectionGraph {
     /// Uses swap-remove for O(1) removal from the edge vector.
     pub fn remove_edge(&mut self, source: u16, target: u16) -> bool {
         if self.edge_set.remove(&(source, target)) {
-            if let Some(pos) = self.edges.iter().position(|e| e.source == source && e.target == target) {
+            if let Some(pos) = self
+                .edges
+                .iter()
+                .position(|e| e.source == source && e.target == target)
+            {
                 self.edges.swap_remove(pos);
             }
             true
@@ -191,7 +198,11 @@ impl ConnectionGraph {
         }
         self.edge_set.remove(&(source, target));
         self.edge_set.insert((target, source));
-        if let Some(edge) = self.edges.iter_mut().find(|e| e.source == source && e.target == target) {
+        if let Some(edge) = self
+            .edges
+            .iter_mut()
+            .find(|e| e.source == source && e.target == target)
+        {
             edge.source = target;
             edge.target = source;
         }
@@ -282,8 +293,8 @@ mod tests {
     fn bidirectional_count() {
         let mut graph = ConnectionGraph::new(256);
         graph.add_edge(1, 5);
-        graph.add_edge(5, 1);  // bidir pair
-        graph.add_edge(2, 7);  // one-way
+        graph.add_edge(5, 1); // bidir pair
+        graph.add_edge(2, 7); // one-way
         assert_eq!(graph.bidirectional_pair_count(), 1);
     }
 
@@ -300,13 +311,25 @@ mod tests {
     #[test]
     fn edge_list_is_cache_friendly() {
         let mut graph = ConnectionGraph::new(64);
-        for i in 0..10 { graph.add_edge(i, i + 1); }
+        for i in 0..10 {
+            graph.add_edge(i, i + 1);
+        }
         let sources = graph.sources();
         let targets = graph.targets();
         assert_eq!(sources.len(), 10);
         assert_eq!(targets.len(), 10);
         assert_eq!(sources[0], 0);
         assert_eq!(targets[0], 1);
+    }
+
+    #[test]
+    fn out_of_range_endpoints_rejected() {
+        let mut graph = ConnectionGraph::new(4);
+        assert!(!graph.add_edge(99, 1)); // source out of range
+        assert!(!graph.add_edge(1, 99)); // target out of range
+        assert!(!graph.add_edge(4, 0)); // exactly at boundary
+        assert!(graph.add_edge(3, 0)); // max valid index
+        assert_eq!(graph.edge_count(), 1);
     }
 
     #[test]

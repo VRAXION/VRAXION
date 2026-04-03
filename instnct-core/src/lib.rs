@@ -34,5 +34,5 @@
 //! | [`propagation`] | Spiking forward pass — the performance-critical inner loop |
 
 pub mod parameters;
-pub mod topology;
 pub mod propagation;
+pub mod topology;
