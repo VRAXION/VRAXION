@@ -12,20 +12,9 @@
 // Modules
 // ---------------------------------------------------------------------------
 //
-// `mod name;` tells the compiler to look for `name.rs` (or `name/mod.rs`)
-// and compile it as part of this crate. Without `pub`, the module is
-// crate-private — its contents are accessible within instnct-core but
-// invisible to anyone who depends on the crate.
-//
-// We deliberately keep all three private and selectively re-export below.
-// This lets us refactor internals (rename structs, split files, move
-// functions between modules) without breaking downstream code.
-//
-// | Module        | Responsibility                                          |
-// |---------------|---------------------------------------------------------|
-// | `parameters`  | Centralized hyperparameter registry (LIMIT_/NEURON_/GLOBAL_*) |
-// | `propagation` | Integer-only spiking forward pass (the hot path)        |
-// | `topology`    | Sparse directed edge list (`ConnectionGraph`)           |
+// Keep implementation modules private and expose only the curated crate-root
+// beta surface below. This preserves freedom to refactor internals without
+// changing downstream import paths.
 
 mod parameters;
 mod propagation;
@@ -35,17 +24,7 @@ mod topology;
 // Public beta surface — re-exports
 // ---------------------------------------------------------------------------
 //
-// The three modules above are private (`mod`, not `pub mod`).
-// Only the names listed here are visible to downstream crates.
-//
-// `pub use` re-exports each name at the crate root so users write
-//     use instnct_core::ConnectionGraph;
-// instead of
-//     use instnct_core::topology::ConnectionGraph;   // would require `pub mod`
-//
-// `#[doc(inline)]` tells rustdoc to render the full documentation of each
-// item directly on the crate root page rather than showing a bare hyperlink.
-// This keeps docs.rs browsable without extra clicks.
+// Only these re-exports are part of the supported public beta API.
 
 #[doc(inline)]
 pub use topology::{ConnectionGraph, DirectedEdge};
@@ -60,34 +39,14 @@ pub use propagation::{
 // Benchmark internals (feature-gated, unstable)
 // ---------------------------------------------------------------------------
 //
-// Three layers of protection keep this out of normal builds and docs:
-//
-// 1. `#[cfg(feature = "benchmarks")]` — conditional compilation.
-//    The module only exists in the binary when built with
-//    `cargo bench --features benchmarks`. Normal builds skip it entirely.
-//
-// 2. `#[doc(hidden)]` — hidden from rustdoc / docs.rs.
-//    Even with the feature on, users won't discover it by browsing docs.
-//
-// 3. `pub mod __internal` — the `__` prefix is a Rust convention for
-//    "hands off". The `pub` is required because `benches/forward_bench.rs`
-//    is an external binary that can only reach crate items through `pub`.
-//
-// The function inside (`propagate_token_unchecked`) is the same forward
-// pass as the public `propagate_token`, but skips input validation
-// (slice lengths, workspace size). Benchmarks measure raw propagation
-// speed without paying for the checked boundary.
-//
-// `#[inline(always)]` guarantees the compiler eliminates this 1:1
-// wrapper — the bench calls the inner function directly.
+// This hidden module exists only for benchmark binaries. It bridges the
+// visibility gap to the unchecked fast path without widening the stable
+// public beta contract.
 
 /// Benchmark-only internal hooks — not part of the public beta surface.
 #[cfg(feature = "benchmarks")]
 #[doc(hidden)]
 pub mod __internal {
-    // Import the private `propagation` module (for the unchecked fn) plus
-    // every public type the wrapper signature needs.  These resolve through
-    // `crate::` because `__internal` is a child module of the crate root.
     use crate::{
         propagation, ConnectionGraph, PropagationConfig, PropagationParameters, PropagationState,
         PropagationWorkspace,
@@ -95,16 +54,8 @@ pub mod __internal {
 
     /// Fast-path propagation for benchmark binaries.
     ///
-    /// Skips public API validation — assumes graph, workspace, and slice
-    /// shapes are already verified by the caller.
-    //
-    // This is a thin 1:1 wrapper that exists only to bridge the visibility
-    // gap: `propagation::propagate_token_unchecked` is `pub(crate)`, so
-    // the external `benches/forward_bench.rs` binary cannot call it
-    // directly.  This `pub fn` in a `pub mod` makes it reachable.
-    //
-    // `#[inline(always)]` ensures the wrapper compiles away — the bench
-    // binary calls the inner function with zero overhead.
+    /// Skips checked input validation and assumes the caller already
+    /// verified graph, workspace, and slice shapes.
     #[inline(always)]
     pub fn propagate_token_unchecked(
         input: &[i32],
