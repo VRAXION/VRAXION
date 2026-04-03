@@ -42,14 +42,15 @@
 //! suppressing firing. This mechanism was validated to outperform explicit
 //! sine-wave gating (23.8% vs 21.4% on English bigram prediction).
 
-/// Maximum charge a neuron can accumulate before clamping.
-pub const MAX_CHARGE: f32 = 15.0;
-
-/// Number of distinct wave channels (1 through 8).
-pub const CHANNEL_COUNT: usize = 8;
-
-/// Number of ticks in one wave period.
-pub const TICKS_PER_PERIOD: usize = 8;
+use crate::parameters::{
+    MAX_CHARGE,
+    WAVE_CHANNEL_COUNT,
+    WAVE_TICKS_PER_PERIOD,
+    WAVE_AMPLITUDE,
+    DEFAULT_TICKS_PER_TOKEN,
+    DEFAULT_INPUT_DURATION,
+    DEFAULT_CHARGE_DECAY_PERIOD,
+};
 
 /// Precomputed wave gating lookup table.
 ///
@@ -58,13 +59,13 @@ pub const TICKS_PER_PERIOD: usize = 8;
 /// multiplier for that channel at that tick.
 ///
 /// Generated once at program start; all forward passes reference the same table.
-pub fn build_wave_gating_table() -> [[f32; TICKS_PER_PERIOD]; CHANNEL_COUNT + 1] {
-    let mut table = [[1.0f32; TICKS_PER_PERIOD]; CHANNEL_COUNT + 1];
+pub fn build_wave_gating_table() -> [[f32; WAVE_TICKS_PER_PERIOD]; WAVE_CHANNEL_COUNT + 1] {
+    let mut table = [[1.0f32; WAVE_TICKS_PER_PERIOD]; WAVE_CHANNEL_COUNT + 1];
     for (channel, row) in table.iter_mut().enumerate().skip(1) {
         for (tick, entry) in row.iter_mut().enumerate() {
             let phase_offset = tick as f32 - (channel - 1) as f32;
-            let angle = 2.0 * std::f32::consts::PI * phase_offset / TICKS_PER_PERIOD as f32;
-            *entry = 1.0 - 0.3 * angle.cos();
+            let angle = 2.0 * std::f32::consts::PI * phase_offset / WAVE_TICKS_PER_PERIOD as f32;
+            *entry = 1.0 - WAVE_AMPLITUDE * angle.cos();
         }
     }
     table
@@ -121,9 +122,9 @@ pub struct PropagationConfig {
 impl Default for PropagationConfig {
     fn default() -> Self {
         Self {
-            ticks: 12,
-            input_duration: 2,
-            decay_period: 6,
+            ticks: DEFAULT_TICKS_PER_TOKEN,
+            input_duration: DEFAULT_INPUT_DURATION,
+            decay_period: DEFAULT_CHARGE_DECAY_PERIOD,
         }
     }
 }
@@ -186,8 +187,8 @@ pub fn propagate_token(
         // Step 4: Wave-gated spike decision
         for neuron_idx in 0..neuron_count {
             let channel = params.channel[neuron_idx] as usize;
-            let wave_multiplier = if channel <= CHANNEL_COUNT {
-                wave_table[channel][tick % TICKS_PER_PERIOD]
+            let wave_multiplier = if channel <= WAVE_CHANNEL_COUNT {
+                wave_table[channel][tick % WAVE_TICKS_PER_PERIOD]
             } else {
                 1.0
             };

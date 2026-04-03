@@ -29,8 +29,10 @@
 //!
 //! | Module | Purpose |
 //! |--------|---------|
+//! | [`parameters`] | Centralized hyperparameter registry — single source of truth |
 //! | [`topology`] | Quaternary connection mask — the learnable graph structure |
 //! | [`propagation`] | Spiking forward pass — the performance-critical inner loop |
 
+pub mod parameters;
 pub mod topology;
 pub mod propagation;
