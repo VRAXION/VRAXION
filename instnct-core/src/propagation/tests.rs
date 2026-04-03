@@ -1,0 +1,651 @@
+use super::*;
+use crate::topology::DirectedEdge;
+
+fn default_config() -> PropagationConfig {
+    PropagationConfig {
+        ticks: 8,
+        input_duration: 2,
+        decay_period: 6,
+    }
+}
+
+fn graph_with_edges(neuron_count: usize, pairs: &[(u16, u16)]) -> ConnectionGraph {
+    ConnectionGraph::from_pairs(neuron_count, pairs)
+}
+
+#[test]
+fn isolated_neurons_remain_charge_bounded() {
+    let neuron_count = 16;
+    let graph = ConnectionGraph::new(neuron_count);
+    let mut activation = vec![0i32; neuron_count];
+    let mut charge = vec![0u32; neuron_count];
+    let input = vec![1i32; neuron_count];
+    let threshold = vec![6u32; neuron_count];
+    let channel = vec![1u8; neuron_count];
+    let polarity = vec![1i32; neuron_count];
+    let mut workspace = PropagationWorkspace::new(neuron_count);
+
+    propagate_token(
+        &input,
+        &graph,
+        &PropagationParameters {
+            threshold: &threshold,
+            channel: &channel,
+            polarity: &polarity,
+        },
+        &mut PropagationState {
+            activation: &mut activation,
+            charge: &mut charge,
+        },
+        &default_config(),
+        &mut workspace,
+    )
+    .unwrap();
+
+    assert!(charge.iter().all(|&value| value <= LIMIT_MAX_CHARGE));
+}
+
+#[test]
+fn excitatory_chain_propagates_signal() {
+    let neuron_count = 3;
+    let graph = graph_with_edges(neuron_count, &[(0, 1), (1, 2)]);
+    let mut activation = vec![0i32; neuron_count];
+    let mut charge = vec![0u32; neuron_count];
+    let mut input = vec![0i32; neuron_count];
+    input[0] = 10;
+    let threshold = vec![1u32; neuron_count];
+    let channel = vec![1u8; neuron_count];
+    let polarity = vec![1i32; neuron_count];
+    let mut workspace = PropagationWorkspace::new(neuron_count);
+
+    propagate_token(
+        &input,
+        &graph,
+        &PropagationParameters {
+            threshold: &threshold,
+            channel: &channel,
+            polarity: &polarity,
+        },
+        &mut PropagationState {
+            activation: &mut activation,
+            charge: &mut charge,
+        },
+        &PropagationConfig {
+            ticks: 3,
+            input_duration: 2,
+            decay_period: 100,
+        },
+        &mut workspace,
+    )
+    .unwrap();
+
+    let any_downstream_activity =
+        charge[1] > 0 || charge[2] > 0 || activation[1] != 0 || activation[2] != 0;
+    assert!(
+        any_downstream_activity,
+        "excitatory chain must propagate: c1={} a1={} c2={} a2={}",
+        charge[1], activation[1], charge[2], activation[2]
+    );
+}
+
+#[test]
+fn inhibitory_spike_suppresses_downstream_charge() {
+    let neuron_count = 3;
+    let graph = graph_with_edges(neuron_count, &[(0, 1)]);
+    let mut activation = vec![0i32; neuron_count];
+    let mut charge = vec![0u32; neuron_count];
+    let mut input = vec![0i32; neuron_count];
+    input[0] = 10;
+    let threshold = vec![2u32; neuron_count];
+    let channel = vec![1u8; neuron_count];
+    let polarity = vec![-1i32, 1, 1];
+    let mut workspace = PropagationWorkspace::new(neuron_count);
+
+    charge[1] = 5;
+
+    propagate_token(
+        &input,
+        &graph,
+        &PropagationParameters {
+            threshold: &threshold,
+            channel: &channel,
+            polarity: &polarity,
+        },
+        &mut PropagationState {
+            activation: &mut activation,
+            charge: &mut charge,
+        },
+        &PropagationConfig {
+            ticks: 4,
+            input_duration: 2,
+            decay_period: 100,
+        },
+        &mut workspace,
+    )
+    .unwrap();
+
+    assert!(
+        charge[1] < 5,
+        "inhibitory spike should suppress downstream charge, got {}",
+        charge[1]
+    );
+}
+
+#[test]
+fn extreme_input_does_not_overflow_charge() {
+    let neuron_count = 8;
+    let graph = ConnectionGraph::new(neuron_count);
+    let mut activation = vec![0i32; neuron_count];
+    let mut charge = vec![0u32; neuron_count];
+    let input = vec![100i32; neuron_count];
+    let threshold = vec![1u32; neuron_count];
+    let channel = vec![1u8; neuron_count];
+    let polarity = vec![1i32; neuron_count];
+    let mut workspace = PropagationWorkspace::new(neuron_count);
+
+    propagate_token(
+        &input,
+        &graph,
+        &PropagationParameters {
+            threshold: &threshold,
+            channel: &channel,
+            polarity: &polarity,
+        },
+        &mut PropagationState {
+            activation: &mut activation,
+            charge: &mut charge,
+        },
+        &PropagationConfig {
+            ticks: 100,
+            input_duration: 2,
+            decay_period: 6,
+        },
+        &mut workspace,
+    )
+    .unwrap();
+
+    for &charge_level in &charge {
+        assert!(
+            charge_level <= LIMIT_MAX_CHARGE,
+            "charge out of bounds: {charge_level}"
+        );
+    }
+}
+
+#[test]
+fn workspace_reuse_produces_identical_results() {
+    let neuron_count = 4;
+    let graph = graph_with_edges(neuron_count, &[(0, 1), (1, 2), (2, 3)]);
+    let input = vec![8i32, 0, 0, 0];
+    let threshold = vec![2u32; neuron_count];
+    let channel = vec![1u8; neuron_count];
+    let polarity = vec![1i32; neuron_count];
+    let config = PropagationConfig {
+        ticks: 4,
+        input_duration: 2,
+        decay_period: 100,
+    };
+    let mut workspace = PropagationWorkspace::new(neuron_count);
+
+    let mut activation_a = vec![0i32; neuron_count];
+    let mut charge_a = vec![0u32; neuron_count];
+    propagate_token(
+        &input,
+        &graph,
+        &PropagationParameters {
+            threshold: &threshold,
+            channel: &channel,
+            polarity: &polarity,
+        },
+        &mut PropagationState {
+            activation: &mut activation_a,
+            charge: &mut charge_a,
+        },
+        &config,
+        &mut workspace,
+    )
+    .unwrap();
+
+    let mut activation_b = vec![0i32; neuron_count];
+    let mut charge_b = vec![0u32; neuron_count];
+    propagate_token(
+        &input,
+        &graph,
+        &PropagationParameters {
+            threshold: &threshold,
+            channel: &channel,
+            polarity: &polarity,
+        },
+        &mut PropagationState {
+            activation: &mut activation_b,
+            charge: &mut charge_b,
+        },
+        &config,
+        &mut workspace,
+    )
+    .unwrap();
+
+    assert_eq!(activation_a, activation_b);
+    assert_eq!(charge_a, charge_b);
+}
+
+#[test]
+fn activation_length_mismatch_returns_error() {
+    let graph = ConnectionGraph::new(4);
+    let mut activation = vec![0i32; 3];
+    let mut charge = vec![0u32; 4];
+    let mut workspace = PropagationWorkspace::new(4);
+
+    let err = propagate_token(
+        &[1; 4],
+        &graph,
+        &PropagationParameters {
+            threshold: &[1; 4],
+            channel: &[1; 4],
+            polarity: &[1; 4],
+        },
+        &mut PropagationState {
+            activation: &mut activation,
+            charge: &mut charge,
+        },
+        &PropagationConfig {
+            ticks: 1,
+            input_duration: 1,
+            decay_period: 0,
+        },
+        &mut workspace,
+    )
+    .unwrap_err();
+
+    assert_eq!(
+        err,
+        PropagationError::ActivationLengthMismatch {
+            expected: 4,
+            actual: 3,
+        }
+    );
+}
+
+#[test]
+fn short_input_returns_error() {
+    let graph = ConnectionGraph::new(4);
+    let mut activation = vec![0i32; 4];
+    let mut charge = vec![0u32; 4];
+    let mut workspace = PropagationWorkspace::new(4);
+
+    let err = propagate_token(
+        &[1, 1],
+        &graph,
+        &PropagationParameters {
+            threshold: &[1; 4],
+            channel: &[1; 4],
+            polarity: &[1; 4],
+        },
+        &mut PropagationState {
+            activation: &mut activation,
+            charge: &mut charge,
+        },
+        &PropagationConfig {
+            ticks: 1,
+            input_duration: 1,
+            decay_period: 0,
+        },
+        &mut workspace,
+    )
+    .unwrap_err();
+
+    assert_eq!(
+        err,
+        PropagationError::InputLengthMismatch {
+            expected: 4,
+            actual: 2,
+        }
+    );
+}
+
+#[test]
+fn charge_length_mismatch_returns_error() {
+    let graph = ConnectionGraph::new(4);
+    let mut activation = vec![0i32; 4];
+    let mut charge = vec![0u32; 3];
+    let mut workspace = PropagationWorkspace::new(4);
+
+    let err = propagate_token(
+        &[1; 4],
+        &graph,
+        &PropagationParameters {
+            threshold: &[1; 4],
+            channel: &[1; 4],
+            polarity: &[1; 4],
+        },
+        &mut PropagationState {
+            activation: &mut activation,
+            charge: &mut charge,
+        },
+        &PropagationConfig {
+            ticks: 1,
+            input_duration: 1,
+            decay_period: 0,
+        },
+        &mut workspace,
+    )
+    .unwrap_err();
+
+    assert_eq!(
+        err,
+        PropagationError::ChargeLengthMismatch {
+            expected: 4,
+            actual: 3,
+        }
+    );
+}
+
+#[test]
+fn threshold_length_mismatch_returns_error() {
+    let graph = ConnectionGraph::new(4);
+    let mut activation = vec![0i32; 4];
+    let mut charge = vec![0u32; 4];
+    let mut workspace = PropagationWorkspace::new(4);
+
+    let err = propagate_token(
+        &[1; 4],
+        &graph,
+        &PropagationParameters {
+            threshold: &[1; 3],
+            channel: &[1; 4],
+            polarity: &[1; 4],
+        },
+        &mut PropagationState {
+            activation: &mut activation,
+            charge: &mut charge,
+        },
+        &PropagationConfig {
+            ticks: 1,
+            input_duration: 1,
+            decay_period: 0,
+        },
+        &mut workspace,
+    )
+    .unwrap_err();
+
+    assert_eq!(
+        err,
+        PropagationError::ThresholdLengthMismatch {
+            expected: 4,
+            actual: 3,
+        }
+    );
+}
+
+#[test]
+fn channel_length_mismatch_returns_error() {
+    let graph = ConnectionGraph::new(4);
+    let mut activation = vec![0i32; 4];
+    let mut charge = vec![0u32; 4];
+    let mut workspace = PropagationWorkspace::new(4);
+
+    let err = propagate_token(
+        &[1; 4],
+        &graph,
+        &PropagationParameters {
+            threshold: &[1; 4],
+            channel: &[1; 3],
+            polarity: &[1; 4],
+        },
+        &mut PropagationState {
+            activation: &mut activation,
+            charge: &mut charge,
+        },
+        &PropagationConfig {
+            ticks: 1,
+            input_duration: 1,
+            decay_period: 0,
+        },
+        &mut workspace,
+    )
+    .unwrap_err();
+
+    assert_eq!(
+        err,
+        PropagationError::ChannelLengthMismatch {
+            expected: 4,
+            actual: 3,
+        }
+    );
+}
+
+#[test]
+fn polarity_length_mismatch_returns_error() {
+    let graph = ConnectionGraph::new(4);
+    let mut activation = vec![0i32; 4];
+    let mut charge = vec![0u32; 4];
+    let mut workspace = PropagationWorkspace::new(4);
+
+    let err = propagate_token(
+        &[1; 4],
+        &graph,
+        &PropagationParameters {
+            threshold: &[1; 4],
+            channel: &[1; 4],
+            polarity: &[1; 3],
+        },
+        &mut PropagationState {
+            activation: &mut activation,
+            charge: &mut charge,
+        },
+        &PropagationConfig {
+            ticks: 1,
+            input_duration: 1,
+            decay_period: 0,
+        },
+        &mut workspace,
+    )
+    .unwrap_err();
+
+    assert_eq!(
+        err,
+        PropagationError::PolarityLengthMismatch {
+            expected: 4,
+            actual: 3,
+        }
+    );
+}
+
+#[test]
+fn edge_length_mismatch_returns_error() {
+    let graph = ConnectionGraph::from_raw_parts_for_tests(
+        4,
+        vec![
+            DirectedEdge {
+                source: 0,
+                target: 1,
+            },
+            DirectedEdge {
+                source: 1,
+                target: 2,
+            },
+        ],
+        vec![0, 1],
+        vec![1],
+    );
+    let mut activation = vec![0i32; 4];
+    let mut charge = vec![0u32; 4];
+    let mut workspace = PropagationWorkspace::new(4);
+
+    let err = propagate_token(
+        &[1; 4],
+        &graph,
+        &PropagationParameters {
+            threshold: &[1; 4],
+            channel: &[1; 4],
+            polarity: &[1; 4],
+        },
+        &mut PropagationState {
+            activation: &mut activation,
+            charge: &mut charge,
+        },
+        &PropagationConfig {
+            ticks: 1,
+            input_duration: 1,
+            decay_period: 0,
+        },
+        &mut workspace,
+    )
+    .unwrap_err();
+
+    assert_eq!(
+        err,
+        PropagationError::EdgeLengthMismatch {
+            sources: 2,
+            targets: 1,
+        }
+    );
+}
+
+#[test]
+fn out_of_range_edge_source_returns_error() {
+    let graph = ConnectionGraph::from_raw_parts_for_tests(
+        4,
+        vec![DirectedEdge {
+            source: 0,
+            target: 1,
+        }],
+        vec![4],
+        vec![1],
+    );
+    let mut activation = vec![0i32; 4];
+    let mut charge = vec![0u32; 4];
+    let mut workspace = PropagationWorkspace::new(4);
+
+    let err = propagate_token(
+        &[1; 4],
+        &graph,
+        &PropagationParameters {
+            threshold: &[1; 4],
+            channel: &[1; 4],
+            polarity: &[1; 4],
+        },
+        &mut PropagationState {
+            activation: &mut activation,
+            charge: &mut charge,
+        },
+        &PropagationConfig {
+            ticks: 1,
+            input_duration: 1,
+            decay_period: 0,
+        },
+        &mut workspace,
+    )
+    .unwrap_err();
+
+    assert_eq!(
+        err,
+        PropagationError::EdgeSourceOutOfBounds {
+            index: 0,
+            value: 4,
+            neuron_count: 4,
+        }
+    );
+}
+
+#[test]
+fn out_of_range_edge_target_returns_error() {
+    let graph = ConnectionGraph::from_raw_parts_for_tests(
+        4,
+        vec![DirectedEdge {
+            source: 0,
+            target: 1,
+        }],
+        vec![0],
+        vec![4],
+    );
+    let mut activation = vec![0i32; 4];
+    let mut charge = vec![0u32; 4];
+    let mut workspace = PropagationWorkspace::new(4);
+
+    let err = propagate_token(
+        &[1; 4],
+        &graph,
+        &PropagationParameters {
+            threshold: &[1; 4],
+            channel: &[1; 4],
+            polarity: &[1; 4],
+        },
+        &mut PropagationState {
+            activation: &mut activation,
+            charge: &mut charge,
+        },
+        &PropagationConfig {
+            ticks: 1,
+            input_duration: 1,
+            decay_period: 0,
+        },
+        &mut workspace,
+    )
+    .unwrap_err();
+
+    assert_eq!(
+        err,
+        PropagationError::EdgeTargetOutOfBounds {
+            index: 0,
+            value: 4,
+            neuron_count: 4,
+        }
+    );
+}
+
+#[test]
+fn scratch_too_small_returns_error() {
+    let graph = ConnectionGraph::new(4);
+    let mut activation = vec![0i32; 4];
+    let mut charge = vec![0u32; 4];
+    let mut workspace = PropagationWorkspace::from_parts(build_wave_gating_table(), vec![0; 3]);
+
+    let err = propagate_token(
+        &[1; 4],
+        &graph,
+        &PropagationParameters {
+            threshold: &[1; 4],
+            channel: &[1; 4],
+            polarity: &[1; 4],
+        },
+        &mut PropagationState {
+            activation: &mut activation,
+            charge: &mut charge,
+        },
+        &PropagationConfig {
+            ticks: 1,
+            input_duration: 1,
+            decay_period: 0,
+        },
+        &mut workspace,
+    )
+    .unwrap_err();
+
+    assert_eq!(
+        err,
+        PropagationError::ScratchTooSmall {
+            required: 4,
+            actual: 3,
+        }
+    );
+}
+
+#[test]
+fn wave_table_range_is_valid() {
+    let table = build_wave_gating_table();
+    for (channel, row) in table
+        .iter()
+        .enumerate()
+        .take(GLOBAL_WAVE_CHANNEL_COUNT + 1)
+        .skip(1)
+    {
+        for (tick, &value) in row.iter().enumerate() {
+            assert!(
+                (600..=1400).contains(&value),
+                "wave_table[{channel}][{tick}] = {value}"
+            );
+        }
+    }
+    assert!(table[0].iter().all(|&value| value == 1000));
+}
