@@ -85,6 +85,9 @@ pub use propagation::{
 #[cfg(feature = "benchmarks")]
 #[doc(hidden)]
 pub mod __internal {
+    // Import the private `propagation` module (for the unchecked fn) plus
+    // every public type the wrapper signature needs.  These resolve through
+    // `crate::` because `__internal` is a child module of the crate root.
     use crate::{
         propagation, ConnectionGraph, PropagationConfig, PropagationParameters, PropagationState,
         PropagationWorkspace,
@@ -94,6 +97,14 @@ pub mod __internal {
     ///
     /// Skips public API validation — assumes graph, workspace, and slice
     /// shapes are already verified by the caller.
+    //
+    // This is a thin 1:1 wrapper that exists only to bridge the visibility
+    // gap: `propagation::propagate_token_unchecked` is `pub(crate)`, so
+    // the external `benches/forward_bench.rs` binary cannot call it
+    // directly.  This `pub fn` in a `pub mod` makes it reachable.
+    //
+    // `#[inline(always)]` ensures the wrapper compiles away — the bench
+    // binary calls the inner function with zero overhead.
     #[inline(always)]
     pub fn propagate_token_unchecked(
         input: &[i32],
