@@ -18,51 +18,55 @@
 
 use crate::parameters::*;
 
-/// Precomputed wave gating table in fixed-point (×1000).
-///
-/// `wave_table[channel][tick]` is the threshold multiplier × 1000.
-/// Range: [700, 1300] for amplitude=300 permille.
-/// Channel 0 is neutral (all 1000).
-///
-/// This should be computed **once** and passed into [`propagate_token`],
-/// not rebuilt per call. The convenience function is provided for setup.
-pub fn build_wave_gating_table() -> [[u32; WAVE_TICKS_PER_PERIOD]; WAVE_CHANNEL_COUNT + 1] {
-    let mut table = [[1000u32; WAVE_TICKS_PER_PERIOD]; WAVE_CHANNEL_COUNT + 1];
-    for (channel, row) in table.iter_mut().enumerate().skip(1) {
-        for (tick, entry) in row.iter_mut().enumerate() {
-            let phase_offset = tick as f64 - (channel - 1) as f64;
-            let angle = 2.0 * std::f64::consts::PI * phase_offset / WAVE_TICKS_PER_PERIOD as f64;
-            let amplitude = WAVE_AMPLITUDE_PERMILLE as f64 / 1000.0;
-            *entry = ((1.0 - amplitude * angle.cos()) * 1000.0).round() as u32;
-        }
-    }
-    table
-}
+// =========================================================================
+// 1. DATA TYPES — what the network is made of
+// =========================================================================
 
-/// Per-neuron learned parameters.
+/// Per-neuron learned parameters — evolved during training, fixed during inference.
+///
+/// Each neuron has three co-evolved properties that determine its firing behavior.
+/// These are stored as flat slices of length `neuron_count`.
 pub struct NeuronParameters<'a> {
     /// Firing threshold per neuron. Range: [1, 15].
+    /// Higher = harder to fire. Evolved via `theta` mutation.
     pub threshold: &'a [u32],
+
     /// Wave gating channel per neuron. Range: [1, 8].
+    /// Determines which tick in the 8-tick period is the neuron's "preferred" firing time.
+    /// See [Wave Gating](#wave-gating) below.
     pub channel: &'a [u8],
+
     /// Polarity per neuron: +1 (excitatory) or -1 (inhibitory).
-    /// Inhibitory spikes subtract from downstream charge.
+    /// Excitatory spikes add charge downstream; inhibitory spikes subtract.
+    /// ~90% excitatory, ~10% inhibitory (fly-realistic ratio).
     pub polarity: &'a [i32],
 }
 
-/// Persistent internal state carried across tokens.
+/// Persistent internal state — carried across tokens, mutated each tick.
+///
+/// Unlike feedforward networks, INSTNCT neurons retain state between inputs.
+/// The network's response to token N depends on residual charge from tokens 0..N-1.
 pub struct NeuronState<'a> {
     /// Activation per neuron: +1 (excitatory fire), -1 (inhibitory fire), 0 (silent).
     /// Signed to support inhibitory subtraction in scatter-add.
     pub activation: &'a mut [i32],
+
     /// Accumulated charge per neuron. Range: [0, MAX_CHARGE]. Always non-negative.
+    /// Incoming signals add to charge; firing resets to zero; decay subtracts periodically.
     pub charge: &'a mut [u32],
 }
 
-/// Configuration for one forward pass.
+/// Timing configuration for one forward pass.
 pub struct PropagationConfig {
+    /// Simulation ticks per token. More ticks = deeper signal propagation.
+    /// Typical: 12 (H=256), 16 (H=1024+). A loop of length N needs N ticks.
     pub ticks: usize,
+
+    /// Ticks during which external input is injected. Typical: 2.
     pub input_duration: usize,
+
+    /// Subtract 1 from all charges every N ticks. Typical: 6.
+    /// Prevents runaway charge in high-in-degree neurons.
     pub decay_period: usize,
 }
 
@@ -76,12 +80,36 @@ impl Default for PropagationConfig {
     }
 }
 
+// =========================================================================
+// 2. FORWARD PASS — the hot path, what happens every token
+// =========================================================================
+
 /// Propagate one token through the spiking network.
+///
+/// This runs the 5-step tick loop that is the core of INSTNCT:
+///
+/// ```text
+/// For each tick:
+///   1. DECAY    — leak charge (every decay_period ticks)
+///   2. INPUT    — inject external signal (first input_duration ticks)
+///   3. SCATTER  — propagate spikes along edges (the hot inner loop)
+///   4. ACCUMULATE — add incoming signals to charge (clamp to [0, 15])
+///   5. SPIKE    — fire if charge exceeds wave-gated threshold, reset charge
+/// ```
+///
+/// # Arguments
+///
+/// * `input` — External signal to inject (length: neuron_count)
+/// * `edge_sources`, `edge_targets` — Sparse edge list from `ConnectionGraph`
+/// * `params` — Per-neuron threshold, channel, polarity
+/// * `state` — Mutable activation + charge (persists across tokens)
+/// * `config` — Ticks, input duration, decay period
+/// * `wave_table` — Precomputed threshold modulation (build once, reuse)
+/// * `scratch` — Pre-allocated temp buffer (length >= neuron_count)
 ///
 /// # Panics
 ///
-/// Debug-asserts that all slices have consistent length `neuron_count`,
-/// and that edge indices are within bounds.
+/// Panics if slice lengths are inconsistent or edge arrays differ in length.
 pub fn propagate_token(
     input: &[i32],
     edge_sources: &[usize],
@@ -94,7 +122,7 @@ pub fn propagate_token(
 ) {
     let neuron_count = state.activation.len();
 
-    // --- Shape guards (active in ALL builds, not just debug) ---
+    // --- Shape guards (active in ALL builds) ---
     assert_eq!(state.charge.len(), neuron_count, "charge length mismatch");
     assert_eq!(input.len(), neuron_count, "input length mismatch");
     assert_eq!(
@@ -118,9 +146,6 @@ pub fn propagate_token(
         edge_targets.len(),
         "edge source/target length mismatch"
     );
-    // Edge index bounds: O(n) check, guarded behind debug to keep release hot path clean.
-    // The topology layer (ConnectionGraph) guarantees valid indices at insert time,
-    // so this is a defense-in-depth check, not a primary invariant.
     debug_assert!(
         edge_sources.iter().all(|&s| s < neuron_count),
         "edge source index out of bounds"
@@ -132,37 +157,41 @@ pub fn propagate_token(
 
     let edge_count = edge_sources.len();
 
+    // --- Tick loop ---
     for tick in 0..config.ticks {
-        // Step 1: Periodic charge decay
+        // Step 1: DECAY — periodic charge leak
         if config.decay_period > 0 && tick % config.decay_period == 0 {
             for charge in state.charge.iter_mut() {
                 *charge = charge.saturating_sub(1);
             }
         }
 
-        // Step 2: Input injection
+        // Step 2: INPUT — inject external signal into activation
         if tick < config.input_duration {
             for (activation, &input_val) in state.activation.iter_mut().zip(input.iter()) {
                 *activation += input_val;
             }
         }
 
-        // Step 3: Scatter-add propagation (THE HOT INNER LOOP)
-        // Uses i32 scratch buffer — inhibitory spikes contribute -1,
-        // genuinely suppressing downstream charge.
+        // Step 3: SCATTER-ADD — propagate spikes along edges
+        // This is THE HOT INNER LOOP. For each edge, the source neuron's
+        // activation (+1, -1, or 0) is added to the target's incoming buffer.
+        // Inhibitory neurons contribute -1, genuinely suppressing downstream charge.
         let incoming = &mut scratch[..neuron_count];
         incoming.fill(0);
         for edge_idx in 0..edge_count {
             incoming[edge_targets[edge_idx]] += state.activation[edge_sources[edge_idx]];
         }
 
-        // Accumulate into charge (clamped to [0, MAX_CHARGE])
+        // Step 4: ACCUMULATE — add incoming signals to charge
         for (charge, &signal) in state.charge.iter_mut().zip(incoming.iter()) {
             let new_charge = *charge as i32 + signal;
             *charge = new_charge.clamp(0, MAX_CHARGE as i32) as u32;
         }
 
-        // Step 4: Wave-gated spike decision
+        // Step 5: SPIKE — wave-gated threshold comparison
+        // Each neuron fires if: charge × 1000 >= threshold × wave_multiplier
+        // (integer comparison avoids division)
         for neuron_idx in 0..neuron_count {
             let channel = params.channel[neuron_idx] as usize;
             let wave_mult = if channel <= WAVE_CHANNEL_COUNT {
@@ -170,12 +199,10 @@ pub fn propagate_token(
             } else {
                 1000
             };
-            // Compare without division: charge×1000 >= theta×wave_mult
             let charge_scaled = state.charge[neuron_idx] * 1000;
             let threshold_scaled = params.threshold[neuron_idx] * wave_mult;
 
             if charge_scaled >= threshold_scaled {
-                // Fire: emit spike with polarity (+1 excitatory, -1 inhibitory)
                 state.activation[neuron_idx] = params.polarity[neuron_idx];
                 state.charge[neuron_idx] = 0;
             } else {
@@ -185,9 +212,45 @@ pub fn propagate_token(
     }
 }
 
-// ---------------------------------------------------------------------------
-// Tests
-// ---------------------------------------------------------------------------
+// =========================================================================
+// 3. WAVE GATING — temporal specialization via cosine-modulated thresholds
+// =========================================================================
+//
+// Each neuron is assigned a "channel" (1-8) that determines when in the
+// 8-tick period it fires most easily. Channel N peaks at tick N-1.
+//
+// The lookup table stores threshold multipliers × 1000 (fixed-point):
+//   - 700  = 0.7× threshold (easiest to fire)
+//   - 1000 = 1.0× threshold (neutral)
+//   - 1300 = 1.3× threshold (hardest to fire)
+//
+// This creates temporal structure: different neurons respond at different
+// times, letting the network process sequential information within the
+// tick window of a single token.
+//
+// Validated: wave gating (23.8%) > sine-wave gating (21.4%) > none (6.7%).
+
+/// Build the wave gating lookup table. Call once at startup.
+///
+/// Returns a `[9][8]` array: `table[channel][tick]` is the threshold
+/// multiplier × 1000. Channel 0 is neutral (all 1000), channels 1-8
+/// follow cosine curves offset by their channel number.
+pub fn build_wave_gating_table() -> [[u32; WAVE_TICKS_PER_PERIOD]; WAVE_CHANNEL_COUNT + 1] {
+    let mut table = [[1000u32; WAVE_TICKS_PER_PERIOD]; WAVE_CHANNEL_COUNT + 1];
+    for (channel, row) in table.iter_mut().enumerate().skip(1) {
+        for (tick, entry) in row.iter_mut().enumerate() {
+            let phase_offset = tick as f64 - (channel - 1) as f64;
+            let angle = 2.0 * std::f64::consts::PI * phase_offset / WAVE_TICKS_PER_PERIOD as f64;
+            let amplitude = WAVE_AMPLITUDE_PERMILLE as f64 / 1000.0;
+            *entry = ((1.0 - amplitude * angle.cos()) * 1000.0).round() as u32;
+        }
+    }
+    table
+}
+
+// =========================================================================
+// 4. TESTS
+// =========================================================================
 
 #[cfg(test)]
 mod tests {
@@ -238,19 +301,19 @@ mod tests {
     }
 
     #[test]
-    fn excitatory_spike_increases_downstream_charge() {
+    fn excitatory_chain_propagates_signal() {
         let h = 3;
         let mut activation = vec![0i32; h];
         let mut charge = vec![0u32; h];
         let mut scratch = vec![0i32; h];
         let mut input = vec![0i32; h];
-        input[0] = 10; // strong input to neuron 0
-                       // Chain: 0 -> 1 -> 2
+        input[0] = 10;
+
         let sources = vec![0, 1];
         let targets = vec![1, 2];
-        let threshold = vec![1u32; h]; // low threshold so everything fires
+        let threshold = vec![1u32; h];
         let channel = vec![1u8; h];
-        let polarity = vec![1i32; h]; // all excitatory
+        let polarity = vec![1i32; h];
 
         let wt = make_wave_table();
         propagate_token(
@@ -270,26 +333,14 @@ mod tests {
                 ticks: 3,
                 input_duration: 2,
                 decay_period: 100,
-            }, // 3 ticks: signal reaches neuron 2 by tick 2
+            },
             &wt,
             &mut scratch,
         );
-        // Neuron 0 fires from input (+10 > theta=1), sends +1 to neuron 1.
-        // Neuron 1 accumulates charge, fires, sends +1 to neuron 2.
-        // We check neuron 1 received signal (closer to source, more reliable).
-        // Note: by the last tick, neurons may have fired and reset to 0.
-        // So we check that the chain conducted at all by verifying neuron 1 fired
-        // at some point — which means it must have sent signal onward.
-        // Neuron 1 at theta=1 fires whenever charge >= ~0.7, so any +1 triggers it.
-        // After firing, charge resets to 0 and act = polarity.
-        // The fact that neuron 2 has any non-zero state proves propagation.
-        // With low theta, all neurons fire every tick after getting input,
-        // so by tick 8, charge oscillates between 0 (just fired) and 1 (just received).
-        // Assert: at least one downstream neuron was affected.
-        let any_downstream_activity =
+        let any_downstream =
             charge[1] > 0 || charge[2] > 0 || activation[1] != 0 || activation[2] != 0;
         assert!(
-            any_downstream_activity,
+            any_downstream,
             "excitatory chain must propagate: c1={} a1={} c2={} a2={}",
             charge[1], activation[1], charge[2], activation[2]
         );
@@ -302,7 +353,7 @@ mod tests {
         let mut charge = vec![0u32; h];
         let mut scratch = vec![0i32; h];
         let mut input = vec![0i32; h];
-        input[0] = 10; // strong input to neuron 0
+        input[0] = 10;
 
         let sources = vec![0];
         let targets = vec![1];
@@ -310,8 +361,7 @@ mod tests {
         let channel = vec![1u8; h];
         let polarity = vec![-1i32, 1, 1]; // neuron 0 is INHIBITORY
 
-        // Pre-charge neuron 1 so we can see suppression
-        charge[1] = 5;
+        charge[1] = 5; // pre-charge so we can see suppression
 
         let wt = make_wave_table();
         propagate_token(
@@ -331,11 +381,10 @@ mod tests {
                 ticks: 4,
                 input_duration: 2,
                 decay_period: 100,
-            }, // no decay
+            },
             &wt,
             &mut scratch,
         );
-        // Neuron 0 fires inhibitory (-1), should REDUCE neuron 1's charge
         assert!(
             charge[1] < 5,
             "inhibitory spike should suppress downstream charge, got {}",
