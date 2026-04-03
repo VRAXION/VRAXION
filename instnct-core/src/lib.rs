@@ -11,6 +11,21 @@
 // ---------------------------------------------------------------------------
 // Modules
 // ---------------------------------------------------------------------------
+//
+// `mod name;` tells the compiler to look for `name.rs` (or `name/mod.rs`)
+// and compile it as part of this crate. Without `pub`, the module is
+// crate-private — its contents are accessible within instnct-core but
+// invisible to anyone who depends on the crate.
+//
+// We deliberately keep all three private and selectively re-export below.
+// This lets us refactor internals (rename structs, split files, move
+// functions between modules) without breaking downstream code.
+//
+// | Module        | Responsibility                                          |
+// |---------------|---------------------------------------------------------|
+// | `parameters`  | Centralized hyperparameter registry (LIMIT_/NEURON_/GLOBAL_*) |
+// | `propagation` | Integer-only spiking forward pass (the hot path)        |
+// | `topology`    | Sparse directed edge list (`ConnectionGraph`)           |
 
 mod parameters;
 mod propagation;
