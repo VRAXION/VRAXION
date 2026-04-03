@@ -1,38 +1,96 @@
+#![forbid(unsafe_code)]
+#![deny(missing_docs)]
+#![deny(rustdoc::broken_intra_doc_links)]
+#![deny(unreachable_pub)]
+
 //! # INSTNCT Core
 //!
-//! Gradient-free self-wiring spiking network engine.
+//! `instnct-core` is the low-level recurrent spiking substrate behind VRAXION v5.
+//! The public beta surface is intentionally small and rooted at the crate level.
 //!
-//! ## Architectural Overview
+//! ## Quickstart
 //!
-//! INSTNCT learns by **mutating its own directed graph topology** rather than
-//! adjusting continuous weights via backpropagation. The network is a recurrent
-//! substrate of spiking neurons connected by directed binary edges. At each
-//! time step ("tick"), neurons accumulate incoming charge via scatter-add,
-//! compare against a per-neuron wave-gated threshold, and emit binary spikes
-//! that propagate along outgoing edges.
+//! ```
+//! use instnct_core::{
+//!     propagate_token, ConnectionGraph, PropagationConfig, PropagationParameters,
+//!     PropagationState, PropagationWorkspace,
+//! };
 //!
-//! ### Key Design Choices
+//! let mut graph = ConnectionGraph::new(2);
+//! assert!(graph.add_edge(0, 1));
 //!
-//! - **Passive I/O**: Input and output projections are fixed random matrices,
-//!   not learned. All learning occurs in the hidden graph.
-//! - **Quaternary edge encoding**: Each neuron pair stores one of four states
-//!   (none / forward / backward / bidirectional) in 2 bits, halving memory
-//!   compared to a full boolean adjacency matrix.
-//! - **Multiply-free propagation**: Spikes are binary (+1/-1 via polarity),
-//!   so the forward pass core loop is pure scatter-add with no floating-point
-//!   multiplies.
-//! - **Evolution, not gradient descent**: Training proceeds by proposing
-//!   single-edge mutations, evaluating fitness on text data, and accepting
-//!   improvements. Crystallization (greedy pruning) removes dead-weight edges.
+//! let input = [4, 0];
+//! let threshold = [1, 1];
+//! let channel = [1, 1];
+//! let polarity = [1, 1];
+//! let mut activation = [0, 0];
+//! let mut charge = [0, 0];
+//! let mut workspace = PropagationWorkspace::new(2);
 //!
-//! ## Module Index
+//! propagate_token(
+//!     &input,
+//!     &graph,
+//!     &PropagationParameters {
+//!         threshold: &threshold,
+//!         channel: &channel,
+//!         polarity: &polarity,
+//!     },
+//!     &mut PropagationState {
+//!         activation: &mut activation,
+//!         charge: &mut charge,
+//!     },
+//!     &PropagationConfig {
+//!         ticks: 2,
+//!         input_duration: 1,
+//!         decay_period: 0,
+//!     },
+//!     &mut workspace,
+//! )?;
 //!
-//! | Module | Purpose |
-//! |--------|---------|
-//! | [`parameters`] | Centralized hyperparameter registry — single source of truth |
-//! | [`topology`] | Quaternary connection mask — the learnable graph structure |
-//! | [`propagation`] | Spiking forward pass — the performance-critical inner loop |
+//! # Ok::<(), instnct_core::PropagationError>(())
+//! ```
+//!
+//! ## Stable Beta Surface
+//!
+//! - [`ConnectionGraph`] stores sparse directed topology with checked mutation methods.
+//! - [`PropagationWorkspace`] owns reusable buffers for repeated forward passes.
+//! - [`PropagationParameters`], [`PropagationState`], and [`PropagationConfig`] describe one propagation run.
+//! - [`propagate_token`] is the checked public propagation entrypoint.
 
-pub mod parameters;
-pub mod propagation;
-pub mod topology;
+mod parameters;
+mod propagation;
+mod topology;
+
+pub use propagation::{
+    propagate_token, PropagationConfig, PropagationError, PropagationParameters, PropagationState,
+    PropagationWorkspace,
+};
+pub use topology::{ConnectionGraph, DirectedEdge};
+
+/// Benchmark-only internal hooks.
+///
+/// This module is not part of the stable public beta compatibility promise.
+#[cfg(feature = "benchmarks")]
+#[doc(hidden)]
+pub mod __internal {
+    use crate::{
+        propagation, ConnectionGraph, PropagationConfig, PropagationParameters, PropagationState,
+        PropagationWorkspace,
+    };
+
+    /// Fast-path propagation for internal benchmark binaries.
+    ///
+    /// This entrypoint skips public API validation and assumes the graph,
+    /// workspace, and slice shapes are already valid.
+    #[inline]
+    pub fn propagate_token_unchecked(
+        input: &[i32],
+        graph: &ConnectionGraph,
+        params: &PropagationParameters<'_>,
+        state: &mut PropagationState<'_>,
+        config: &PropagationConfig,
+        workspace: &mut PropagationWorkspace,
+    ) {
+        propagation::propagate_token_unchecked(input, graph, params, state, config, workspace);
+    }
+}
