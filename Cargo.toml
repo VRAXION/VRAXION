@@ -1,0 +1,10 @@
+[workspace]
+members = ["instnct-core"]
+resolver = "2"
+
+[workspace.package]
+version = "5.0.0-beta.1"
+edition = "2021"
+license = "MIT"
+authors = ["VRAXION"]
+description = "INSTNCT: gradient-free self-wiring spiking network"
