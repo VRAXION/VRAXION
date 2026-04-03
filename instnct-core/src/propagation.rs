@@ -27,18 +27,19 @@ use crate::parameters::*;
 /// Each neuron has three co-evolved properties that determine its firing behavior.
 /// These are stored as flat slices of length `neuron_count`.
 pub struct NeuronParameters<'a> {
-    /// Firing threshold per neuron. Range: [1, 15].
+    /// **[per-neuron, learnable]** Firing threshold. Range: [1, 15].
     /// Higher = harder to fire. Evolved via `theta` mutation.
     pub threshold: &'a [u32],
 
-    /// Wave gating channel per neuron. Range: [1, 8].
+    /// **[per-neuron, learnable]** Wave gating channel. Range: [1, 8].
     /// Determines which tick in the 8-tick period is the neuron's "preferred" firing time.
-    /// See [Wave Gating](#wave-gating) below.
+    /// Evolved via `channel` mutation. See [Wave Gating](#wave-gating) below.
     pub channel: &'a [u8],
 
-    /// Polarity per neuron: +1 (excitatory) or -1 (inhibitory).
+    /// **[per-neuron, learnable]** Polarity: +1 (excitatory) or -1 (inhibitory).
     /// Excitatory spikes add charge downstream; inhibitory spikes subtract.
     /// ~90% excitatory, ~10% inhibitory (fly-realistic ratio).
+    /// Evolved via `flip` mutation.
     pub polarity: &'a [i32],
 }
 
@@ -47,25 +48,25 @@ pub struct NeuronParameters<'a> {
 /// Unlike feedforward networks, INSTNCT neurons retain state between inputs.
 /// The network's response to token N depends on residual charge from tokens 0..N-1.
 pub struct NeuronState<'a> {
-    /// Activation per neuron: +1 (excitatory fire), -1 (inhibitory fire), 0 (silent).
-    /// Signed to support inhibitory subtraction in scatter-add.
+    /// **[per-neuron, runtime]** Activation: +1 (excitatory fire), -1 (inhibitory fire), 0 (silent).
+    /// Changes every tick. Signed to support inhibitory subtraction in scatter-add.
     pub activation: &'a mut [i32],
 
-    /// Accumulated charge per neuron. Range: [0, MAX_CHARGE]. Always non-negative.
-    /// Incoming signals add to charge; firing resets to zero; decay subtracts periodically.
+    /// **[per-neuron, runtime]** Accumulated charge. Range: [0, MAX_CHARGE].
+    /// Changes every tick. Incoming signals add; firing resets to zero; decay subtracts.
     pub charge: &'a mut [u32],
 }
 
 /// Timing configuration for one forward pass.
 pub struct PropagationConfig {
-    /// Simulation ticks per token. More ticks = deeper signal propagation.
+    /// **[global, fixed]** Simulation ticks per token. More ticks = deeper signal propagation.
     /// Typical: 12 (H=256), 16 (H=1024+). A loop of length N needs N ticks.
     pub ticks: usize,
 
-    /// Ticks during which external input is injected. Typical: 2.
+    /// **[global, fixed]** Ticks during which external input is injected. Typical: 2.
     pub input_duration: usize,
 
-    /// Subtract 1 from all charges every N ticks. Typical: 6.
+    /// **[global, fixed]** Subtract 1 from all charges every N ticks. Typical: 6.
     /// Prevents runaway charge in high-in-degree neurons.
     pub decay_period: usize,
 }
