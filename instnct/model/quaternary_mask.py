@@ -295,6 +295,33 @@ class QuaternaryMask:
         self._remove_alive(idx)
         undo.append(('QR', idx, old))
 
+    def mutate_remove_smart(self, rng, undo, tri_neurons=None):
+        """Remove edge, preferring dead-end (non-loop) edges.
+
+        If tri_neurons is provided (bool array from loop_levels()),
+        try to pick an edge where at least one endpoint is NOT in a triangle.
+        Falls back to random remove after max_tries.
+        """
+        if not self._alive:
+            return
+        ii, jj = self._triu_i, self._triu_j
+        # Try to find a non-loop edge first
+        if tri_neurons is not None:
+            for _ in range(30):
+                idx = self._alive[rng.randint(0, len(self._alive) - 1)]
+                if self.data[idx] not in (1, 2):
+                    continue
+                i, j = int(ii[idx]), int(jj[idx])
+                if not tri_neurons[i] or not tri_neurons[j]:
+                    # At least one endpoint is not in a triangle = dead-end
+                    old = int(self.data[idx])
+                    self.data[idx] = 0
+                    self._remove_alive(idx)
+                    undo.append(('QR', idx, old))
+                    return
+        # Fallback: regular random remove
+        self.mutate_remove(rng, undo)
+
     def mutate_flip(self, rng, undo):
         """Atomic direction reversal: 1 <-> 2."""
         idx = self._random_with_val(rng, {1, 2})

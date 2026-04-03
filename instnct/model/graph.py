@@ -1130,11 +1130,22 @@ class SelfWiringGraph:
             undo = []
             op_map = {
                 'add': self._add,
+                'add_affinity': self._add_affinity,
                 'add_loop': self._add_loop,
+                'loop3': self._loop3,
+                'loop4': self._loop4,
+                'loop5': self._loop5,
+                'loop6': self._loop6,
+                'loop7': self._loop7,
+                'loop8': self._loop8,
+                'enhance': self._enhance,
+                'reverse': self._reverse,
+                'mirror': self._mirror,
                 'remove': self._remove,
                 'rewire': self._rewire,
                 'flip': self._flip,
                 'theta': self._theta_mutate,
+                'channel': self._channel_mutate,
                 'decay': self._decay_mutate,
                 'polarity': self._polarity_mutate,
             }
@@ -1212,9 +1223,42 @@ class SelfWiringGraph:
             self.qmask.set_pair(r, c, 1)  # forward: r→c
             undo.append(('A', r, c))
 
-    def _flip(self, undo):
-        """Atomic direction reversal via quaternary encoding."""
+    def _enhance(self, undo):
+        """Add edge targeting high in-degree neuron (top 25%)."""
+        cap = self.H * self.cap_ratio
+        if self.qmask.count_edges() >= cap:
+            return
+        bool_mask = self.qmask.to_bool_mask()
+        in_deg = bool_mask.sum(axis=0).astype(np.float64) + 1.0
+        top = np.argsort(in_deg)[::-1][:self.H // 4]
+        c = int(top[random.randint(0, len(top) - 1)])
+        r = random.randint(0, self.H - 1)
+        if r != c and self.qmask.get_pair(r, c) == 0:
+            self.qmask.set_pair(r, c, 1)
+            undo.append(('A', r, c))
+
+    def _reverse(self, undo):
+        """Reverse edge direction: r->c becomes c->r. Atomic via quaternary flip."""
         self.qmask.mutate_flip(random, undo)
+
+    def _mirror(self, undo):
+        """Create bidirectional pair: if r->c exists, add c->r.
+        If same polarity, flip target polarity (push/pull dynamic)."""
+        self.qmask.mutate_upgrade(random, undo)
+        # Polarity logic: if both neurons have same polarity, flip one
+        if undo and undo[-1][0] == 'QU':
+            idx = undo[-1][1]
+            ii, jj = self.qmask._triu_i, self.qmask._triu_j
+            i, j = int(ii[idx]), int(jj[idx])
+            if self.polarity[i] == self.polarity[j]:
+                old_pol = bool(self.polarity[j])
+                self.polarity[j] = ~self.polarity[j]
+                self._polarity_f32[j] = 1.0 if self.polarity[j] else -1.0
+                undo.append(('P', j, old_pol))
+
+    def _flip(self, undo):
+        """Polarity flip on a random neuron."""
+        self._polarity_mutate(undo)
 
     def _remove(self, undo):
         self.qmask.mutate_remove(random, undo)
@@ -1230,6 +1274,13 @@ class SelfWiringGraph:
         self._theta_f32[idx] = float(self.theta[idx])
         undo.append(('T', idx, old_val))
 
+    def _channel_mutate(self, undo):
+        """Mutate one random neuron's wave channel to [1, 8]."""
+        idx = random.randint(0, self.H - 1)
+        old_val = int(self.channel[idx])
+        self.channel[idx] = np.uint8(random.randint(1, 8))
+        undo.append(('CH', idx, old_val))
+
     def _decay_mutate(self, undo):
         """Mutate one random neuron's decay rate to a value in [0, 2]."""
         idx = random.randint(0, self.H - 1)
@@ -1239,33 +1290,42 @@ class SelfWiringGraph:
         undo.append(('D', idx, old_val))
 
     def _add_loop(self, undo, max_len=6):
-        """Add a complete loop of random length [2, max_len].
+        """Add a complete loop of random length [2, max_len]."""
+        loop_len = random.randint(2, max(2, max_len))
+        self._add_loop_exact(undo, loop_len)
 
-        Picks a random start neuron, chains through random distinct neurons,
-        then closes the loop back to start.  All edges are added atomically.
-        If any edge in the chain already exists or nodes collide, bail out.
+    def _add_loop_exact(self, undo, loop_len):
+        """Add a complete directed loop of exactly loop_len neurons.
+
+        Picks random distinct neurons, chains them, closes the loop.
+        All edges added atomically. Bails if collision or edge exists.
         """
         cap = self.H * self.cap_ratio
-        loop_len = random.randint(2, max(2, max_len))
         if self.qmask.count_edges() + loop_len > cap:
             return
         nodes = [random.randint(0, self.H - 1)]
         for _ in range(loop_len - 1):
             n = random.randint(0, self.H - 1)
             if n in nodes:
-                return  # collision, bail
+                return
             nodes.append(n)
-        # Check all edges are free
         edges = []
         for i in range(loop_len):
             r, c = nodes[i], nodes[(i + 1) % loop_len]
             if self.qmask.get_pair(r, c) != 0:
-                return  # edge exists, bail
+                return
             edges.append((r, c))
-        # Commit all edges atomically
         for r, c in edges:
-            self.qmask.set_pair(r, c, 1)  # forward: r→c
+            self.qmask.set_pair(r, c, 1)
             undo.append(('A', r, c))
+
+    # Fixed-size loop ops for schedule use
+    def _loop3(self, undo): self._add_loop_exact(undo, 3)
+    def _loop4(self, undo): self._add_loop_exact(undo, 4)
+    def _loop5(self, undo): self._add_loop_exact(undo, 5)
+    def _loop6(self, undo): self._add_loop_exact(undo, 6)
+    def _loop7(self, undo): self._add_loop_exact(undo, 7)
+    def _loop8(self, undo): self._add_loop_exact(undo, 8)
 
     def _polarity_mutate(self, undo):
         """Flip one random neuron's polarity."""
