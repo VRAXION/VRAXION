@@ -21,11 +21,18 @@
 //! | Topology | Initial density, connection capacity |
 //! | I/O geometry | Golden-ratio dimensioning, sparse distributed representations |
 
+// `dead_code` is expected here — not every constant is consumed yet.
+// As new modules (mutations, crystal, eval) land, they will pull from
+// this registry. Removing the allow would force premature deletions.
 #![allow(dead_code)]
 
 // =========================================================================
 // LIMIT_* — hard constraints, enforced everywhere
 // =========================================================================
+//
+// These are absolute ceilings that no runtime path may exceed.
+// Code that clamps or validates uses these, not magic numbers.
+// If a LIMIT ever changes, every consumer adjusts automatically.
 
 /// Hard upper bound on accumulated charge per neuron.
 ///
@@ -37,6 +44,10 @@ pub(crate) const LIMIT_MAX_CHARGE: u32 = 15;
 // =========================================================================
 // NEURON_* — per-neuron defaults (learnable, each neuron can diverge)
 // =========================================================================
+//
+// These are initialization defaults only. Once a network is built, each
+// neuron carries its own copy that evolves independently via mutations
+// (theta, flip, channel). The constants here define the starting point.
 
 /// Default per-neuron firing threshold.
 ///
@@ -55,6 +66,11 @@ pub(crate) const NEURON_INHIBITORY_PERCENT: u32 = 10;
 // =========================================================================
 // GLOBAL_* — network-wide settings (same for all neurons)
 // =========================================================================
+//
+// Unlike NEURON_* values, these do not diverge per neuron. They define
+// the simulation schedule (how many ticks, when to decay) and the wave
+// gating geometry (channels, period, amplitude). Changing one value here
+// affects every forward pass uniformly.
 
 /// Number of distinct temporal channels.
 ///
@@ -92,6 +108,13 @@ pub(crate) const GLOBAL_INITIAL_DENSITY_PERCENT: u32 = 5;
 // =========================================================================
 // I/O Geometry
 // =========================================================================
+//
+// Input and output dimensions are derived from the neuron count using the
+// golden ratio (phi ≈ 1.618). This gives a natural overlap ratio that
+// avoids both under-utilization (too few I/O neurons) and saturation
+// (too many). The SDR percentage controls how many neurons are active
+// per input token — sparse enough to avoid interference, dense enough
+// to carry information.
 
 /// Golden ratio as an integer ratio for phi-overlap I/O computation.
 pub(crate) const GLOBAL_PHI_NUMERATOR: u32 = 1618;
@@ -101,6 +124,9 @@ pub(crate) const GLOBAL_PHI_DENOMINATOR: u32 = 1000;
 /// Compute input/output dimension for a given neuron count.
 ///
 /// `io_dim(H) = round(H / PHI)`
+//
+// Uses u64 intermediate to avoid overflow at large H values.
+// The `+ NUMERATOR/2` term implements rounding (not truncation).
 #[inline]
 pub(crate) fn io_dimension(neuron_count: u32) -> u32 {
     (neuron_count as u64 * GLOBAL_PHI_DENOMINATOR as u64 + GLOBAL_PHI_NUMERATOR as u64 / 2) as u32
