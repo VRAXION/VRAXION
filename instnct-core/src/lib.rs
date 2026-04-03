@@ -44,6 +44,27 @@ pub use propagation::{
 // ---------------------------------------------------------------------------
 // Benchmark internals (feature-gated, unstable)
 // ---------------------------------------------------------------------------
+//
+// Three layers of protection keep this out of normal builds and docs:
+//
+// 1. `#[cfg(feature = "benchmarks")]` — conditional compilation.
+//    The module only exists in the binary when built with
+//    `cargo bench --features benchmarks`. Normal builds skip it entirely.
+//
+// 2. `#[doc(hidden)]` — hidden from rustdoc / docs.rs.
+//    Even with the feature on, users won't discover it by browsing docs.
+//
+// 3. `pub mod __internal` — the `__` prefix is a Rust convention for
+//    "hands off". The `pub` is required because `benches/forward_bench.rs`
+//    is an external binary that can only reach crate items through `pub`.
+//
+// The function inside (`propagate_token_unchecked`) is the same forward
+// pass as the public `propagate_token`, but skips input validation
+// (slice lengths, workspace size). Benchmarks measure raw propagation
+// speed without paying for the checked boundary.
+//
+// `#[inline(always)]` guarantees the compiler eliminates this 1:1
+// wrapper — the bench calls the inner function directly.
 
 /// Benchmark-only internal hooks — not part of the public beta surface.
 #[cfg(feature = "benchmarks")]
