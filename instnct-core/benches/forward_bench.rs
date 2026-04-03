@@ -1,33 +1,34 @@
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use instnct_core::propagation::{propagate_token, NeuronParameters, NeuronState, PropagationConfig};
-use instnct_core::topology::ConnectionMask;
+use instnct_core::topology::ConnectionGraph;
 
 fn bench_propagation_h256(c: &mut Criterion) {
     let h = 256;
-    let mut mask = ConnectionMask::new(h);
-    // Deterministic 5% density initialization
+    let mut graph = ConnectionGraph::new(h);
     let mut rng_state: u64 = 42;
-    for idx in 0..mask.pair_count() {
+    for i in 0..h { for j in 0..h {
+        if i == j { continue; }
         rng_state = rng_state.wrapping_mul(6364136223846793005).wrapping_add(1);
         if (rng_state >> 32) % 100 < 5 {
-            mask.pairs[idx] = 1; // forward edge
+            graph.add_edge(i as u16, j as u16);
         }
-    }
-    let (sources, targets) = mask.to_directed_edges();
-    let threshold = vec![6.0f32; h];
+    }}
+    let sources = graph.sources();
+    let targets = graph.targets();
+    let threshold = vec![6u32; h];
     let channel = vec![1u8; h];
-    let polarity = vec![1.0f32; h];
-    let mut input = vec![0.0f32; h];
-    input[0] = 1.0;
+    let excitatory = vec![true; h];
+    let mut input = vec![0u32; h];
+    input[0] = 1;
 
-    c.bench_function("propagate_h256_12ticks", |b| {
+    c.bench_function("propagate_h256_12ticks_u32", |b| {
         b.iter(|| {
-            let mut activation = vec![0.0f32; h];
-            let mut charge = vec![0.0f32; h];
+            let mut activation = vec![0u32; h];
+            let mut charge = vec![0u32; h];
             propagate_token(
                 black_box(&input),
                 &sources, &targets,
-                &NeuronParameters { threshold: &threshold, channel: &channel, polarity: &polarity },
+                &NeuronParameters { threshold: &threshold, channel: &channel, excitatory: &excitatory },
                 &mut NeuronState { activation: &mut activation, charge: &mut charge },
                 &PropagationConfig { ticks: 12, input_duration: 2, decay_period: 6 },
             );
@@ -37,29 +38,31 @@ fn bench_propagation_h256(c: &mut Criterion) {
 
 fn bench_propagation_h1024(c: &mut Criterion) {
     let h = 1024;
-    let mut mask = ConnectionMask::new(h);
+    let mut graph = ConnectionGraph::new(h);
     let mut rng_state: u64 = 42;
-    for idx in 0..mask.pair_count() {
+    for i in 0..h { for j in 0..h {
+        if i == j { continue; }
         rng_state = rng_state.wrapping_mul(6364136223846793005).wrapping_add(1);
         if (rng_state >> 32) % 100 < 2 {
-            mask.pairs[idx] = 1;
+            graph.add_edge(i as u16, j as u16);
         }
-    }
-    let (sources, targets) = mask.to_directed_edges();
-    let threshold = vec![6.0f32; h];
+    }}
+    let sources = graph.sources();
+    let targets = graph.targets();
+    let threshold = vec![6u32; h];
     let channel = vec![1u8; h];
-    let polarity = vec![1.0f32; h];
-    let mut input = vec![0.0f32; h];
-    input[0] = 1.0;
+    let excitatory = vec![true; h];
+    let mut input = vec![0u32; h];
+    input[0] = 1;
 
-    c.bench_function("propagate_h1024_16ticks", |b| {
+    c.bench_function("propagate_h1024_16ticks_u32", |b| {
         b.iter(|| {
-            let mut activation = vec![0.0f32; h];
-            let mut charge = vec![0.0f32; h];
+            let mut activation = vec![0u32; h];
+            let mut charge = vec![0u32; h];
             propagate_token(
                 black_box(&input),
                 &sources, &targets,
-                &NeuronParameters { threshold: &threshold, channel: &channel, polarity: &polarity },
+                &NeuronParameters { threshold: &threshold, channel: &channel, excitatory: &excitatory },
                 &mut NeuronState { activation: &mut activation, charge: &mut charge },
                 &PropagationConfig { ticks: 16, input_duration: 2, decay_period: 6 },
             );
