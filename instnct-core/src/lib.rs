@@ -19,6 +19,18 @@ mod topology;
 // ---------------------------------------------------------------------------
 // Public beta surface — re-exports
 // ---------------------------------------------------------------------------
+//
+// The three modules above are private (`mod`, not `pub mod`).
+// Only the names listed here are visible to downstream crates.
+//
+// `pub use` re-exports each name at the crate root so users write
+//     use instnct_core::ConnectionGraph;
+// instead of
+//     use instnct_core::topology::ConnectionGraph;   // would require `pub mod`
+//
+// `#[doc(inline)]` tells rustdoc to render the full documentation of each
+// item directly on the crate root page rather than showing a bare hyperlink.
+// This keeps docs.rs browsable without extra clicks.
 
 #[doc(inline)]
 pub use topology::{ConnectionGraph, DirectedEdge};
