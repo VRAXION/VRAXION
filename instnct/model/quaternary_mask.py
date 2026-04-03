@@ -240,6 +240,56 @@ class QuaternaryMask:
 
         return has_bidir, in_tri
 
+    def find_triangles(self):
+        """Find all directed 3-cycles. Returns list of (i,j,k) where i->j->k->i.
+
+        Used by crystallize_loop_aware to group edges into atomic loop units.
+        """
+        H = self.H
+        d = self.data
+        ii, jj = self._triu_i, self._triu_j
+        fwd = (d == 1) | (d == 3)
+        bwd = (d == 2) | (d == 3)
+        src = np.concatenate([ii[fwd], jj[bwd]])
+        tgt = np.concatenate([jj[fwd], ii[bwd]])
+
+        neighbors = [[] for _ in range(H)]
+        for s, t in zip(src.tolist(), tgt.tolist()):
+            neighbors[s].append(t)
+        incoming = [set() for _ in range(H)]
+        for s, t in zip(src.tolist(), tgt.tolist()):
+            incoming[t].add(s)
+
+        triangles = []
+        seen = set()
+        nbr_sets = [set(n) for n in neighbors]
+        for i in range(H):
+            inc_i = incoming[i]
+            if not inc_i:
+                continue
+            for j in neighbors[i]:
+                overlap = nbr_sets[j] & inc_i
+                overlap.discard(i)
+                for k in overlap:
+                    tri = tuple(sorted([i, j, k]))
+                    if tri not in seen:
+                        seen.add(tri)
+                        triangles.append((i, j, k))
+        return triangles
+
+    def edge_in_triangle(self):
+        """For each directed edge, is it part of any triangle?
+
+        Returns a set of (src, tgt) tuples that are triangle members.
+        """
+        triangles = self.find_triangles()
+        loop_edges = set()
+        for i, j, k in triangles:
+            loop_edges.add((i, j))
+            loop_edges.add((j, k))
+            loop_edges.add((k, i))
+        return loop_edges
+
     def loop_levels_brute(self):
         """Reference implementation via M³ diagonal. O(H³). For validation only."""
         m = self.to_bool_mask().astype(np.float32)

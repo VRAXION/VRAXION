@@ -1395,3 +1395,98 @@ class SelfWiringGraph:
             if removed_this_pass == 0:
                 break
         return total_removed
+
+    def crystallize_loop_aware(self, evaluate_fn, eps=1e-6, verbose=False):
+        """Two-phase crystal: pipeline edges first, then loops atomically.
+
+        Phase 1: Prune non-loop edges (greedy, one by one)
+        Phase 2: Prune loops atomically (all edges of a triangle or none)
+
+        Returns total edges removed.
+        """
+        score = evaluate_fn()
+        total_removed = 0
+
+        # --- Phase 1: Non-loop edges ---
+        loop_edges = self.qmask.edge_in_triangle()
+        rows, cols = self.qmask.to_directed_edges()
+        all_edges = set(zip(rows.tolist(), cols.tolist()))
+        pipeline_edges = all_edges - loop_edges
+
+        if verbose:
+            print(f"    loop-aware: {len(pipeline_edges)} pipeline + "
+                  f"{len(loop_edges)} loop edges ({len(self.qmask.find_triangles())} triangles)")
+
+        # Phase 1: greedy prune pipeline edges (repeating passes)
+        phase1_removed = 0
+        pass_num = 0
+        while True:
+            pipe_list = [(i, j) for i, j in pipeline_edges
+                         if self.qmask.get_pair(i, j) != 0]
+            random.shuffle(pipe_list)
+            removed_this_pass = 0
+            for i, j in pipe_list:
+                old_val = self.qmask.get_pair(i, j)
+                if old_val == 0:
+                    continue
+                self.qmask.set_pair(i, j, 0)
+                self._sync_sparse_idx()
+                new_score = evaluate_fn()
+                if new_score >= score - eps:
+                    score = new_score
+                    removed_this_pass += 1
+                    phase1_removed += 1
+                else:
+                    self.qmask.set_pair(i, j, old_val)
+            pass_num += 1
+            if verbose:
+                print(f"    phase1 pass {pass_num}: removed {removed_this_pass} pipeline edges")
+            if removed_this_pass == 0:
+                break
+        total_removed += phase1_removed
+
+        # --- Phase 2: Loop edges, tested per-triangle ---
+        # Recompute triangles after phase 1 (some may have broken)
+        triangles = self.qmask.find_triangles()
+        phase2_removed = 0
+        random.shuffle(triangles)
+
+        for i, j, k in triangles:
+            # Save all 3 edge values
+            edges = [(i, j), (j, k), (k, i)]
+            old_vals = []
+            all_alive = True
+            for a, b in edges:
+                v = self.qmask.get_pair(a, b)
+                old_vals.append(v)
+                if v == 0:
+                    all_alive = False
+            if not all_alive:
+                continue  # triangle already partially broken
+
+            # Remove all 3 atomically
+            for a, b in edges:
+                self.qmask.set_pair(a, b, 0)
+            self._sync_sparse_idx()
+            new_score = evaluate_fn()
+
+            if new_score >= score - eps:
+                # Loop was noise — keep it removed
+                score = new_score
+                phase2_removed += 3
+            else:
+                # Loop was useful — restore all 3
+                for (a, b), v in zip(edges, old_vals):
+                    self.qmask.set_pair(a, b, v)
+
+        total_removed += phase2_removed
+        self.resync_alive()
+
+        if verbose:
+            bidir_s, tri_s = self.qmask.loop_levels()
+            print(f"    phase2: removed {phase2_removed} loop edges "
+                  f"({phase2_removed // 3} triangles)")
+            print(f"    total: {total_removed} removed, {self.qmask.count_edges()} remaining, "
+                  f"{tri_s.sum()} tri neurons")
+
+        return total_removed
