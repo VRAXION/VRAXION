@@ -2,74 +2,26 @@
 #![deny(missing_docs)]
 #![deny(rustdoc::broken_intra_doc_links)]
 #![deny(unreachable_pub)]
-
-//! # INSTNCT Core
-//!
-//! `instnct-core` is the low-level recurrent spiking substrate behind VRAXION v5.
-//! The public beta surface is intentionally small and rooted at the crate level.
-//!
-//! ## Quickstart
-//!
-//! ```
-//! use instnct_core::{
-//!     propagate_token, ConnectionGraph, PropagationConfig, PropagationParameters,
-//!     PropagationState, PropagationWorkspace,
-//! };
-//!
-//! let mut graph = ConnectionGraph::new(2);
-//! assert!(graph.add_edge(0, 1));
-//!
-//! let input = [4, 0];
-//! let threshold = [1, 1];
-//! let channel = [1, 1];
-//! let polarity = [1, 1];
-//! let mut activation = [0, 0];
-//! let mut charge = [0, 0];
-//! let mut workspace = PropagationWorkspace::new(2);
-//!
-//! propagate_token(
-//!     &input,
-//!     &graph,
-//!     &PropagationParameters {
-//!         threshold: &threshold,
-//!         channel: &channel,
-//!         polarity: &polarity,
-//!     },
-//!     &mut PropagationState {
-//!         activation: &mut activation,
-//!         charge: &mut charge,
-//!     },
-//!     &PropagationConfig {
-//!         ticks: 2,
-//!         input_duration: 1,
-//!         decay_period: 0,
-//!     },
-//!     &mut workspace,
-//! )?;
-//!
-//! # Ok::<(), instnct_core::PropagationError>(())
-//! ```
-//!
-//! ## Stable Beta Surface
-//!
-//! - [`ConnectionGraph`] stores sparse directed topology with checked mutation methods.
-//! - [`PropagationWorkspace`] owns reusable buffers for repeated forward passes.
-//! - [`PropagationParameters`], [`PropagationState`], and [`PropagationConfig`] describe one propagation run.
-//! - [`propagate_token`] is the checked public propagation entrypoint.
+#![doc = include_str!("../../README.md")]
+#![doc = "\n## Internal Benchmark Hook\n\nThe hidden `__internal` module is only available with the `benchmarks` feature. It exists solely for benchmark binaries, is unstable, and is excluded from the public beta compatibility promise.\n"]
 
 mod parameters;
 mod propagation;
 mod topology;
 
+#[doc(inline)]
+pub use topology::{ConnectionGraph, DirectedEdge};
+
+#[doc(inline)]
 pub use propagation::{
     propagate_token, PropagationConfig, PropagationError, PropagationParameters, PropagationState,
     PropagationWorkspace,
 };
-pub use topology::{ConnectionGraph, DirectedEdge};
 
 /// Benchmark-only internal hooks.
 ///
-/// This module is not part of the stable public beta compatibility promise.
+/// Available only with the `benchmarks` feature. This module is unstable and
+/// not part of the public beta compatibility promise.
 #[cfg(feature = "benchmarks")]
 #[doc(hidden)]
 pub mod __internal {

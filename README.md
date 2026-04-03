@@ -40,11 +40,7 @@ propagate_token(
         activation: &mut activation,
         charge: &mut charge,
     },
-    &PropagationConfig {
-        ticks: 2,
-        input_duration: 1,
-        decay_period: 0,
-    },
+    &PropagationConfig::default(),
     &mut workspace,
 )?;
 
