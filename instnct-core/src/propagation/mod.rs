@@ -9,6 +9,14 @@
 //! `u32` charge (always non-negative). The wave gating lookup table is fixed
 //! point (`x1000` scale). No floating-point arithmetic appears in the hot path.
 
+// =========================================================================
+// Imports
+// =========================================================================
+//
+// All tunable constants come from `parameters` — no magic numbers here.
+// `ConnectionGraph` provides the sparse edge topology iterated by the
+// scatter-add loop.  `Error` + `fmt` support the public `PropagationError`.
+
 use crate::parameters::{
     GLOBAL_CHARGE_DECAY_INTERVAL_TICKS, GLOBAL_INPUT_DURATION_TICKS, GLOBAL_TICKS_PER_TOKEN,
     GLOBAL_WAVE_AMPLITUDE_PERMILLE, GLOBAL_WAVE_CHANNEL_COUNT, GLOBAL_WAVE_TICKS_PER_PERIOD,
@@ -18,7 +26,36 @@ use crate::topology::ConnectionGraph;
 use std::error::Error;
 use std::fmt;
 
+// =========================================================================
+// Wave gating lookup table
+// =========================================================================
+//
+// Fixed-size 2D array: [channel][tick] -> threshold multiplier (x1000).
+// Channel 0 is "no gating" (all 1000s). Channels 1..=8 each have a
+// cosine curve phase-shifted by their channel index, so different
+// channels prefer different ticks within the period.
+//
+// The x1000 scale is a fixed-point trick: the hot path stays integer-
+// only while preserving three decimal digits of precision.
+// 1000 = "no change", 700 = "30% lower threshold" (fires easier),
+// 1300 = "30% higher threshold" (fires harder).
+//
+// Built once at workspace creation, then read-only during propagation.
+
 type WaveGatingTable = [[u32; GLOBAL_WAVE_TICKS_PER_PERIOD]; GLOBAL_WAVE_CHANNEL_COUNT + 1];
+
+// =========================================================================
+// Workspace — pre-allocated hot-path buffers
+// =========================================================================
+//
+// `propagate_token` is called hundreds of thousands of times (every
+// token, every worker, every eval step).  Allocating buffers inside
+// the function would mean a heap alloc + drop per call.  The workspace
+// moves allocation to construction time: create once, reuse forever.
+//
+// Two things live here:
+//   wave_table  — the cosine LUT above (stack-allocated, [9][8] u32)
+//   scratch     — per-neuron incoming-signal accumulator (heap Vec<i32>)
 
 /// Precomputed and reusable buffers for repeated propagation calls.
 ///
@@ -58,6 +95,17 @@ impl PropagationWorkspace {
     }
 }
 
+// Builds the cosine-modulated wave gating LUT.
+//
+// Formula per entry:
+//   multiplier = round((1 - A * cos(2*PI*(tick - (ch-1)) / P)) * 1000)
+//
+// where A = GLOBAL_WAVE_AMPLITUDE_PERMILLE / 1000 (0.3 at default)
+// and   P = GLOBAL_WAVE_TICKS_PER_PERIOD (8 at default).
+//
+// Channel 0 is skipped (stays all-1000) — it means "no wave gating".
+// Float math is acceptable here because this runs once at startup,
+// never in the hot path.
 fn build_wave_gating_table() -> WaveGatingTable {
     let mut table = [[1000u32; GLOBAL_WAVE_TICKS_PER_PERIOD]; GLOBAL_WAVE_CHANNEL_COUNT + 1];
     for (channel, row) in table.iter_mut().enumerate().skip(1) {
