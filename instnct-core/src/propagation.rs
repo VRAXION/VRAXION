@@ -10,7 +10,7 @@
 //! point (`x1000` scale). No floating-point arithmetic appears in the hot path.
 
 use crate::parameters::{
-    GLOBAL_CHARGE_DECAY_PERIOD, GLOBAL_INPUT_DURATION, GLOBAL_TICKS_PER_TOKEN,
+    GLOBAL_CHARGE_DECAY_INTERVAL_TICKS, GLOBAL_INPUT_DURATION_TICKS, GLOBAL_TICKS_PER_TOKEN,
     GLOBAL_WAVE_AMPLITUDE_PERMILLE, GLOBAL_WAVE_CHANNEL_COUNT, GLOBAL_WAVE_TICKS_PER_PERIOD,
     LIMIT_MAX_CHARGE,
 };
@@ -105,8 +105,8 @@ impl Default for PropagationConfig {
     fn default() -> Self {
         Self {
             ticks: GLOBAL_TICKS_PER_TOKEN,
-            input_duration: GLOBAL_INPUT_DURATION,
-            decay_period: GLOBAL_CHARGE_DECAY_PERIOD,
+            input_duration: GLOBAL_INPUT_DURATION_TICKS,
+            decay_period: GLOBAL_CHARGE_DECAY_INTERVAL_TICKS,
         }
     }
 }

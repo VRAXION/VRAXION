@@ -7,7 +7,7 @@
 //!
 //! | Prefix | Meaning | Example |
 //! |--------|---------|---------|
-//! | `NEURON_*` | Per-neuron default (learnable, can diverge per neuron) | `NEURON_DEFAULT_THRESHOLD` |
+//! | `NEURON_*` | Per-neuron default (learnable, can diverge per neuron) | `NEURON_INIT_THRESHOLD` |
 //! | `GLOBAL_*` | Network-wide setting (same for all neurons) | `GLOBAL_TICKS_PER_TOKEN` |
 //! | `LIMIT_*` | Hard constraint (never exceeded, enforced in code) | `LIMIT_MAX_CHARGE` |
 //!
@@ -54,7 +54,7 @@ pub(crate) const LIMIT_MAX_CHARGE: u32 = 15;
 /// Range: `[1, 15]`. A neuron fires when its charge exceeds
 /// `threshold * wave_multiplier`. Validated sweep converged to ~6 as optimal.
 /// Each neuron's threshold evolves independently via `theta` mutation.
-pub(crate) const NEURON_DEFAULT_THRESHOLD: u32 = 6;
+pub(crate) const NEURON_INIT_THRESHOLD: u32 = 6;
 
 /// Percentage of neurons initialized as inhibitory (polarity = -1).
 ///
@@ -95,12 +95,12 @@ pub(crate) const GLOBAL_WAVE_AMPLITUDE_PERMILLE: u32 = 300;
 pub(crate) const GLOBAL_TICKS_PER_TOKEN: usize = 12;
 
 /// Default number of initial ticks during which the input is injected.
-pub(crate) const GLOBAL_INPUT_DURATION: usize = 2;
+pub(crate) const GLOBAL_INPUT_DURATION_TICKS: usize = 2;
 
 /// Default charge decay interval: subtract 1 from all charges every `N` ticks.
 ///
 /// Prevents unbounded charge accumulation in high-in-degree neurons.
-pub(crate) const GLOBAL_CHARGE_DECAY_PERIOD: usize = 6;
+pub(crate) const GLOBAL_CHARGE_DECAY_INTERVAL_TICKS: usize = 6;
 
 /// Default initial connection density as percentage (`5 = 5%`).
 pub(crate) const GLOBAL_INITIAL_DENSITY_PERCENT: u32 = 5;
