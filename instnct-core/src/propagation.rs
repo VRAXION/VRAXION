@@ -94,25 +94,33 @@ pub fn propagate_token(
 ) {
     let neuron_count = state.activation.len();
 
-    // --- Shape guards ---
-    debug_assert_eq!(state.charge.len(), neuron_count, "charge length mismatch");
-    debug_assert_eq!(input.len(), neuron_count, "input length mismatch");
-    debug_assert_eq!(
+    // --- Shape guards (active in ALL builds, not just debug) ---
+    assert_eq!(state.charge.len(), neuron_count, "charge length mismatch");
+    assert_eq!(input.len(), neuron_count, "input length mismatch");
+    assert_eq!(
         params.threshold.len(),
         neuron_count,
         "threshold length mismatch"
     );
-    debug_assert_eq!(
+    assert_eq!(
         params.channel.len(),
         neuron_count,
         "channel length mismatch"
     );
-    debug_assert_eq!(
+    assert_eq!(
         params.polarity.len(),
         neuron_count,
         "polarity length mismatch"
     );
-    debug_assert!(scratch.len() >= neuron_count, "scratch buffer too small");
+    assert!(scratch.len() >= neuron_count, "scratch buffer too small");
+    assert_eq!(
+        edge_sources.len(),
+        edge_targets.len(),
+        "edge source/target length mismatch"
+    );
+    // Edge index bounds: O(n) check, guarded behind debug to keep release hot path clean.
+    // The topology layer (ConnectionGraph) guarantees valid indices at insert time,
+    // so this is a defense-in-depth check, not a primary invariant.
     debug_assert!(
         edge_sources.iter().all(|&s| s < neuron_count),
         "edge source index out of bounds"
