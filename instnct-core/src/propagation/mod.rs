@@ -45,23 +45,20 @@ use std::fmt;
 type PhaseGatingTable = [[u32; GLOBAL_PHASE_TICKS_PER_PERIOD]; GLOBAL_PHASE_CHANNEL_COUNT + 1];
 
 // =========================================================================
-// Workspace — pre-allocated hot-path buffers
+// Workspace — reusable hot-path state
 // =========================================================================
 //
-// `propagate_token` is called hundreds of thousands of times (every
-// token, every worker, every eval step).  Allocating buffers inside
-// the function would mean a heap alloc + drop per call.  The workspace
-// moves allocation to construction time: create once, reuse forever.
+// Keeps phase-table construction and scratch-buffer allocation out of
+// repeated propagation calls.
 //
-// Two things live here:
-//   phase_table  — the cosine LUT above (stack-allocated, [9][8] u32)
-//   scratch     — per-neuron incoming-signal accumulator (heap Vec<i32>)
+//   phase_table — precomputed cosine LUT, fixed [9][8] u32 inline
+//   scratch     — per-neuron incoming-signal accumulator, Vec<i32>
 
-/// Precomputed and reusable buffers for repeated propagation calls.
+/// Reusable buffers for repeated propagation calls.
 ///
-/// This keeps lookup-table construction and scratch allocation out of the
-/// hot path while giving callers explicit control over workspace reuse.
-#[derive(Clone, Debug)]
+/// Stores the precomputed phase LUT and the per-neuron scratch buffer.
+/// Allocate once, pass to every `propagate_token` call.
+#[derive(Debug)]
 pub struct PropagationWorkspace {
     phase_table: PhaseGatingTable,
     scratch: Vec<i32>,
