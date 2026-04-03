@@ -14,9 +14,13 @@
 //! Excitatory neurons fire as `+1`, inhibitory neurons fire as `-1`.
 //! The scatter-add accumulates into a signed `i32` buffer, so inhibitory
 //! spikes genuinely suppress downstream charge. Charge is clamped to
-//! `[0, MAX_CHARGE]` after accumulation, preventing negative charge.
+//! `[0, LIMIT_MAX_CHARGE]` after accumulation, preventing negative charge.
 
-use crate::parameters::*;
+use crate::parameters::{
+    GLOBAL_CHARGE_DECAY_PERIOD, GLOBAL_INPUT_DURATION, GLOBAL_TICKS_PER_TOKEN,
+    GLOBAL_WAVE_AMPLITUDE_PERMILLE, GLOBAL_WAVE_CHANNEL_COUNT, GLOBAL_WAVE_TICKS_PER_PERIOD,
+    LIMIT_MAX_CHARGE,
+};
 
 // =========================================================================
 // 1. DATA TYPES — what the network is made of
@@ -52,7 +56,7 @@ pub struct NeuronState<'a> {
     /// Changes every tick. Signed to support inhibitory subtraction in scatter-add.
     pub activation: &'a mut [i32],
 
-    /// **[per-neuron, runtime]** Accumulated charge. Range: [0, MAX_CHARGE].
+    /// **[per-neuron, runtime]** Accumulated charge. Range: [0, LIMIT_MAX_CHARGE].
     /// Changes every tick. Incoming signals add; firing resets to zero; decay subtracts.
     pub charge: &'a mut [u32],
 }
@@ -74,9 +78,9 @@ pub struct PropagationConfig {
 impl Default for PropagationConfig {
     fn default() -> Self {
         Self {
-            ticks: DEFAULT_TICKS_PER_TOKEN,
-            input_duration: DEFAULT_INPUT_DURATION,
-            decay_period: DEFAULT_CHARGE_DECAY_PERIOD,
+            ticks: GLOBAL_TICKS_PER_TOKEN,
+            input_duration: GLOBAL_INPUT_DURATION,
+            decay_period: GLOBAL_CHARGE_DECAY_PERIOD,
         }
     }
 }
@@ -118,7 +122,7 @@ pub fn propagate_token(
     params: &NeuronParameters,
     state: &mut NeuronState,
     config: &PropagationConfig,
-    wave_table: &[[u32; WAVE_TICKS_PER_PERIOD]; WAVE_CHANNEL_COUNT + 1],
+    wave_table: &[[u32; GLOBAL_WAVE_TICKS_PER_PERIOD]; GLOBAL_WAVE_CHANNEL_COUNT + 1],
     scratch: &mut [i32],
 ) {
     let neuron_count = state.activation.len();
@@ -187,7 +191,7 @@ pub fn propagate_token(
         // Step 4: ACCUMULATE — add incoming signals to charge
         for (charge, &signal) in state.charge.iter_mut().zip(incoming.iter()) {
             let new_charge = *charge as i32 + signal;
-            *charge = new_charge.clamp(0, MAX_CHARGE as i32) as u32;
+            *charge = new_charge.clamp(0, LIMIT_MAX_CHARGE as i32) as u32;
         }
 
         // Step 5: SPIKE — wave-gated threshold comparison
@@ -195,8 +199,8 @@ pub fn propagate_token(
         // (integer comparison avoids division)
         for neuron_idx in 0..neuron_count {
             let channel = params.channel[neuron_idx] as usize;
-            let wave_mult = if channel <= WAVE_CHANNEL_COUNT {
-                wave_table[channel][tick % WAVE_TICKS_PER_PERIOD]
+            let wave_mult = if channel <= GLOBAL_WAVE_CHANNEL_COUNT {
+                wave_table[channel][tick % GLOBAL_WAVE_TICKS_PER_PERIOD]
             } else {
                 1000
             };
@@ -236,13 +240,15 @@ pub fn propagate_token(
 /// Returns a `[9][8]` array: `table[channel][tick]` is the threshold
 /// multiplier × 1000. Channel 0 is neutral (all 1000), channels 1-8
 /// follow cosine curves offset by their channel number.
-pub fn build_wave_gating_table() -> [[u32; WAVE_TICKS_PER_PERIOD]; WAVE_CHANNEL_COUNT + 1] {
-    let mut table = [[1000u32; WAVE_TICKS_PER_PERIOD]; WAVE_CHANNEL_COUNT + 1];
+pub fn build_wave_gating_table(
+) -> [[u32; GLOBAL_WAVE_TICKS_PER_PERIOD]; GLOBAL_WAVE_CHANNEL_COUNT + 1] {
+    let mut table = [[1000u32; GLOBAL_WAVE_TICKS_PER_PERIOD]; GLOBAL_WAVE_CHANNEL_COUNT + 1];
     for (channel, row) in table.iter_mut().enumerate().skip(1) {
         for (tick, entry) in row.iter_mut().enumerate() {
             let phase_offset = tick as f64 - (channel - 1) as f64;
-            let angle = 2.0 * std::f64::consts::PI * phase_offset / WAVE_TICKS_PER_PERIOD as f64;
-            let amplitude = WAVE_AMPLITUDE_PERMILLE as f64 / 1000.0;
+            let angle =
+                2.0 * std::f64::consts::PI * phase_offset / GLOBAL_WAVE_TICKS_PER_PERIOD as f64;
+            let amplitude = GLOBAL_WAVE_AMPLITUDE_PERMILLE as f64 / 1000.0;
             *entry = ((1.0 - amplitude * angle.cos()) * 1000.0).round() as u32;
         }
     }
@@ -257,7 +263,7 @@ pub fn build_wave_gating_table() -> [[u32; WAVE_TICKS_PER_PERIOD]; WAVE_CHANNEL_
 mod tests {
     use super::*;
 
-    fn make_wave_table() -> [[u32; WAVE_TICKS_PER_PERIOD]; WAVE_CHANNEL_COUNT + 1] {
+    fn make_wave_table() -> [[u32; GLOBAL_WAVE_TICKS_PER_PERIOD]; GLOBAL_WAVE_CHANNEL_COUNT + 1] {
         build_wave_gating_table()
     }
 
@@ -298,7 +304,7 @@ mod tests {
             &wt,
             &mut scratch,
         );
-        assert!(charge.iter().all(|&c| c <= MAX_CHARGE));
+        assert!(charge.iter().all(|&c| c <= LIMIT_MAX_CHARGE));
     }
 
     #[test]
@@ -424,15 +430,15 @@ mod tests {
             &mut scratch,
         );
         for &c in charge.iter() {
-            assert!(c <= MAX_CHARGE, "charge out of bounds: {c}");
+            assert!(c <= LIMIT_MAX_CHARGE, "charge out of bounds: {c}");
         }
     }
 
     #[test]
     fn wave_table_range_is_valid() {
         let table = build_wave_gating_table();
-        for ch in 1..=WAVE_CHANNEL_COUNT {
-            for tick in 0..WAVE_TICKS_PER_PERIOD {
+        for ch in 1..=GLOBAL_WAVE_CHANNEL_COUNT {
+            for tick in 0..GLOBAL_WAVE_TICKS_PER_PERIOD {
                 let v = table[ch][tick];
                 assert!(v >= 600 && v <= 1400, "wave_table[{ch}][{tick}] = {v}");
             }
