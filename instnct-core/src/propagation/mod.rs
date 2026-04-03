@@ -6,7 +6,7 @@
 //! ## Integer-Only Design
 //!
 //! The forward pass uses `i32` activations (supports inhibitory `-1`) and
-//! `u32` charge (always non-negative). The wave gating lookup table is fixed
+//! `u32` charge (always non-negative). The phase gating lookup table is fixed
 //! point (`x1000` scale). No floating-point arithmetic appears in the hot path.
 
 // =========================================================================
@@ -19,7 +19,7 @@
 
 use crate::parameters::{
     GLOBAL_CHARGE_DECAY_INTERVAL_TICKS, GLOBAL_INPUT_DURATION_TICKS, GLOBAL_TICKS_PER_TOKEN,
-    GLOBAL_WAVE_AMPLITUDE_PERMILLE, GLOBAL_WAVE_CHANNEL_COUNT, GLOBAL_WAVE_TICKS_PER_PERIOD,
+    GLOBAL_PHASE_AMPLITUDE_PERMILLE, GLOBAL_PHASE_CHANNEL_COUNT, GLOBAL_PHASE_TICKS_PER_PERIOD,
     LIMIT_MAX_CHARGE,
 };
 use crate::topology::ConnectionGraph;
@@ -27,7 +27,7 @@ use std::error::Error;
 use std::fmt;
 
 // =========================================================================
-// Wave gating lookup table
+// Phase gating lookup table
 // =========================================================================
 //
 // Fixed-size 2D array: [channel][tick] -> threshold multiplier (x1000).
@@ -42,7 +42,7 @@ use std::fmt;
 //
 // Built once at workspace creation, then read-only during propagation.
 
-type WaveGatingTable = [[u32; GLOBAL_WAVE_TICKS_PER_PERIOD]; GLOBAL_WAVE_CHANNEL_COUNT + 1];
+type PhaseGatingTable = [[u32; GLOBAL_PHASE_TICKS_PER_PERIOD]; GLOBAL_PHASE_CHANNEL_COUNT + 1];
 
 // =========================================================================
 // Workspace — pre-allocated hot-path buffers
@@ -54,7 +54,7 @@ type WaveGatingTable = [[u32; GLOBAL_WAVE_TICKS_PER_PERIOD]; GLOBAL_WAVE_CHANNEL
 // moves allocation to construction time: create once, reuse forever.
 //
 // Two things live here:
-//   wave_table  — the cosine LUT above (stack-allocated, [9][8] u32)
+//   phase_table  — the cosine LUT above (stack-allocated, [9][8] u32)
 //   scratch     — per-neuron incoming-signal accumulator (heap Vec<i32>)
 
 /// Precomputed and reusable buffers for repeated propagation calls.
@@ -63,7 +63,7 @@ type WaveGatingTable = [[u32; GLOBAL_WAVE_TICKS_PER_PERIOD]; GLOBAL_WAVE_CHANNEL
 /// hot path while giving callers explicit control over workspace reuse.
 #[derive(Clone, Debug)]
 pub struct PropagationWorkspace {
-    wave_table: WaveGatingTable,
+    phase_table: PhaseGatingTable,
     scratch: Vec<i32>,
 }
 
@@ -71,7 +71,7 @@ impl PropagationWorkspace {
     /// Create a workspace sized for `neuron_count` neurons.
     pub fn new(neuron_count: usize) -> Self {
         Self {
-            wave_table: build_wave_gating_table(),
+            phase_table: build_phase_gating_table(),
             scratch: vec![0; neuron_count],
         }
     }
@@ -87,33 +87,33 @@ impl PropagationWorkspace {
     }
 
     #[cfg(test)]
-    fn from_parts(wave_table: WaveGatingTable, scratch: Vec<i32>) -> Self {
+    fn from_parts(phase_table: PhaseGatingTable, scratch: Vec<i32>) -> Self {
         Self {
-            wave_table,
+            phase_table,
             scratch,
         }
     }
 }
 
-// Builds the cosine-modulated wave gating LUT.
+// Builds the cosine-modulated phase gating LUT.
 //
 // Formula per entry:
 //   multiplier = round((1 - A * cos(2*PI*(tick - (ch-1)) / P)) * 1000)
 //
-// where A = GLOBAL_WAVE_AMPLITUDE_PERMILLE / 1000 (0.3 at default)
-// and   P = GLOBAL_WAVE_TICKS_PER_PERIOD (8 at default).
+// where A = GLOBAL_PHASE_AMPLITUDE_PERMILLE / 1000 (0.3 at default)
+// and   P = GLOBAL_PHASE_TICKS_PER_PERIOD (8 at default).
 //
-// Channel 0 is skipped (stays all-1000) — it means "no wave gating".
+// Channel 0 is skipped (stays all-1000) — it means "no phase gating".
 // Float math is acceptable here because this runs once at startup,
 // never in the hot path.
-fn build_wave_gating_table() -> WaveGatingTable {
-    let mut table = [[1000u32; GLOBAL_WAVE_TICKS_PER_PERIOD]; GLOBAL_WAVE_CHANNEL_COUNT + 1];
+fn build_phase_gating_table() -> PhaseGatingTable {
+    let mut table = [[1000u32; GLOBAL_PHASE_TICKS_PER_PERIOD]; GLOBAL_PHASE_CHANNEL_COUNT + 1];
     for (channel, row) in table.iter_mut().enumerate().skip(1) {
         for (tick, entry) in row.iter_mut().enumerate() {
             let phase_offset = tick as f64 - (channel - 1) as f64;
             let angle =
-                2.0 * std::f64::consts::PI * phase_offset / GLOBAL_WAVE_TICKS_PER_PERIOD as f64;
-            let amplitude = GLOBAL_WAVE_AMPLITUDE_PERMILLE as f64 / 1000.0;
+                2.0 * std::f64::consts::PI * phase_offset / GLOBAL_PHASE_TICKS_PER_PERIOD as f64;
+            let amplitude = GLOBAL_PHASE_AMPLITUDE_PERMILLE as f64 / 1000.0;
             *entry = ((1.0 - amplitude * angle.cos()) * 1000.0).round() as u32;
         }
     }
@@ -124,7 +124,7 @@ fn build_wave_gating_table() -> WaveGatingTable {
 pub struct PropagationParameters<'a> {
     /// Firing threshold per neuron. Range: `[1, 15]`.
     pub threshold: &'a [u32],
-    /// Wave gating channel per neuron. Range: `[1, 8]`.
+    /// Phase gating channel per neuron. Range: `[1, 8]`.
     pub channel: &'a [u8],
     /// Polarity per neuron: `+1` (excitatory) or `-1` (inhibitory).
     pub polarity: &'a [i32],
@@ -190,7 +190,7 @@ pub enum PropagationError {
         /// Actual threshold slice length.
         actual: usize,
     },
-    /// The wave-channel slice length does not match the graph neuron count.
+    /// The phase-channel slice length does not match the graph neuron count.
     ChannelLengthMismatch {
         /// Expected channel slice length.
         expected: usize,
@@ -425,7 +425,7 @@ pub(crate) fn propagate_token_unchecked(
     debug_assert_eq!(edge_sources.len(), edge_targets.len());
     debug_assert!(workspace.scratch.len() >= neuron_count);
 
-    let wave_table = &workspace.wave_table;
+    let phase_table = &workspace.phase_table;
 
     for tick in 0..config.ticks {
         if config.decay_period > 0 && tick % config.decay_period == 0 {
@@ -453,16 +453,16 @@ pub(crate) fn propagate_token_unchecked(
             *charge = new_charge.clamp(0, LIMIT_MAX_CHARGE as i32) as u32;
         }
 
-        let tick_in_period = tick % GLOBAL_WAVE_TICKS_PER_PERIOD;
+        let tick_in_period = tick % GLOBAL_PHASE_TICKS_PER_PERIOD;
         for neuron_idx in 0..neuron_count {
             let channel = params.channel[neuron_idx] as usize;
-            let wave_multiplier = if channel <= GLOBAL_WAVE_CHANNEL_COUNT {
-                wave_table[channel][tick_in_period]
+            let phase_multiplier = if channel <= GLOBAL_PHASE_CHANNEL_COUNT {
+                phase_table[channel][tick_in_period]
             } else {
                 1000
             };
             let charge_scaled = state.charge[neuron_idx] * 1000;
-            let threshold_scaled = params.threshold[neuron_idx] * wave_multiplier;
+            let threshold_scaled = params.threshold[neuron_idx] * phase_multiplier;
 
             if charge_scaled >= threshold_scaled {
                 state.activation[neuron_idx] = params.polarity[neuron_idx];

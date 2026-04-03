@@ -599,7 +599,7 @@ fn scratch_too_small_returns_error() {
     let graph = ConnectionGraph::new(4);
     let mut activation = vec![0i32; 4];
     let mut charge = vec![0u32; 4];
-    let mut workspace = PropagationWorkspace::from_parts(build_wave_gating_table(), vec![0; 3]);
+    let mut workspace = PropagationWorkspace::from_parts(build_phase_gating_table(), vec![0; 3]);
 
     let err = propagate_token(
         &[1; 4],
@@ -632,18 +632,18 @@ fn scratch_too_small_returns_error() {
 }
 
 #[test]
-fn wave_table_range_is_valid() {
-    let table = build_wave_gating_table();
+fn phase_table_range_is_valid() {
+    let table = build_phase_gating_table();
     for (channel, row) in table
         .iter()
         .enumerate()
-        .take(GLOBAL_WAVE_CHANNEL_COUNT + 1)
+        .take(GLOBAL_PHASE_CHANNEL_COUNT + 1)
         .skip(1)
     {
         for (tick, &value) in row.iter().enumerate() {
             assert!(
                 (600..=1400).contains(&value),
-                "wave_table[{channel}][{tick}] = {value}"
+                "phase_table[{channel}][{tick}] = {value}"
             );
         }
     }

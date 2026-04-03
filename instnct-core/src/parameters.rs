@@ -43,20 +43,20 @@ pub(crate) const NEURON_INHIBITORY_PERCENT: u32 = 10;
 //
 // Shared defaults that apply uniformly across propagation and topology.
 
-/// Number of wave-gating channels.
+/// Number of phase-gating channels.
 ///
 /// Unit: distinct channel slots assigned across neurons.
-pub(crate) const GLOBAL_WAVE_CHANNEL_COUNT: usize = 8;
+pub(crate) const GLOBAL_PHASE_CHANNEL_COUNT: usize = 8;
 
-/// Length of one wave-gating period.
+/// Length of one phase-gating period.
 ///
 /// Unit: ticks per period.
-pub(crate) const GLOBAL_WAVE_TICKS_PER_PERIOD: usize = 8;
+pub(crate) const GLOBAL_PHASE_TICKS_PER_PERIOD: usize = 8;
 
-/// Wave-gating threshold amplitude.
+/// Phase-gating threshold amplitude.
 ///
 /// Unit: permille of the cosine coefficient (`300 = 0.3`).
-pub(crate) const GLOBAL_WAVE_AMPLITUDE_PERMILLE: u32 = 300;
+pub(crate) const GLOBAL_PHASE_AMPLITUDE_PERMILLE: u32 = 300;
 
 /// Default simulation length for one token.
 ///
