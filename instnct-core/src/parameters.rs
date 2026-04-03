@@ -1,137 +1,109 @@
-//! # Network Parameters — Centralized Hyperparameter Registry
+//! # Network Parameters
 //!
-//! Every tunable constant and default value lives here. No magic numbers
-//! in other modules — they all import from this single source of truth.
-//!
-//! ## Naming Convention
-//!
-//! | Prefix | Meaning | Example |
-//! |--------|---------|---------|
-//! | `NEURON_*` | Per-neuron default (learnable, can diverge per neuron) | `NEURON_INIT_THRESHOLD` |
-//! | `GLOBAL_*` | Network-wide setting (same for all neurons) | `GLOBAL_TICKS_PER_TOKEN` |
-//! | `LIMIT_*` | Hard constraint (never exceeded, enforced in code) | `LIMIT_MAX_CHARGE` |
-//!
-//! ## Categories
-//!
-//! | Category | What it controls |
-//! |----------|-----------------|
-//! | Neuron dynamics | Charge bounds, firing threshold, polarity ratio |
-//! | Wave gating | Temporal specialization via cosine-modulated thresholds |
-//! | Propagation timing | Ticks per token, input duration, decay schedule |
-//! | Topology | Initial density, connection capacity |
-//! | I/O geometry | Golden-ratio dimensioning, sparse distributed representations |
+//! Canonical constant registry for `instnct-core`.
+//! Prefixes:
+//! - `LIMIT_*`: hard bounds enforced in code
+//! - `NEURON_*`: per-neuron initialization defaults
+//! - `GLOBAL_*`: network-wide defaults shared across forward passes
 
-// `dead_code` is expected here — not every constant is consumed yet.
-// As new modules (mutations, crystal, eval) land, they will pull from
-// this registry. Removing the allow would force premature deletions.
+// Some registry entries are reserved for upcoming modules and are
+// intentionally unused for now.
 #![allow(dead_code)]
 
 // =========================================================================
-// LIMIT_* — hard constraints, enforced everywhere
+// LIMIT_* — hard bounds
 // =========================================================================
 //
-// These are absolute ceilings that no runtime path may exceed.
-// Code that clamps or validates uses these, not magic numbers.
-// If a LIMIT ever changes, every consumer adjusts automatically.
+// Absolute ceilings consumed by validation and clamp paths.
 
-/// Hard upper bound on accumulated charge per neuron.
+/// Maximum accumulated charge per neuron.
 ///
-/// Charge is clamped to `[0, LIMIT_MAX_CHARGE]` after each propagation step.
-/// Fits in 4 bits (int4). The forward pass uses `u32` for speed but the
-/// value never exceeds 15.
+/// Range: `[0, LIMIT_MAX_CHARGE]`. Fits in 4 bits; runtime stores it as `u32`.
 pub(crate) const LIMIT_MAX_CHARGE: u32 = 15;
 
 // =========================================================================
-// NEURON_* — per-neuron defaults (learnable, each neuron can diverge)
+// NEURON_* — per-neuron initialization defaults
 // =========================================================================
 //
-// These are initialization defaults only. Once a network is built, each
-// neuron carries its own copy that evolves independently via mutations
-// (theta, flip, channel). The constants here define the starting point.
+// Construction-time defaults that fan out into per-neuron mutable state.
 
-/// Default per-neuron firing threshold.
+/// Initial firing threshold for a neuron.
 ///
-/// Range: `[1, 15]`. A neuron fires when its charge exceeds
-/// `threshold * wave_multiplier`. Validated sweep converged to ~6 as optimal.
-/// Each neuron's threshold evolves independently via `theta` mutation.
+/// Range: `[1, 15]`. Serves as the default starting point before mutation.
 pub(crate) const NEURON_INIT_THRESHOLD: u32 = 6;
 
-/// Percentage of neurons initialized as inhibitory (polarity = -1).
+/// Initial share of inhibitory neurons.
 ///
-/// Each neuron's polarity is learnable via `flip` mutation.
-/// Fly-realistic: inhibitory neurons are fewer (~10%) but have higher
-/// out-degree (2x), acting as broad-range hubs. Matches FlyWire connectome data.
+/// Unit: percent of neurons at network construction time.
 pub(crate) const NEURON_INHIBITORY_PERCENT: u32 = 10;
 
 // =========================================================================
-// GLOBAL_* — network-wide settings (same for all neurons)
+// GLOBAL_* — network-wide defaults
 // =========================================================================
 //
-// Unlike NEURON_* values, these do not diverge per neuron. They define
-// the simulation schedule (how many ticks, when to decay) and the wave
-// gating geometry (channels, period, amplitude). Changing one value here
-// affects every forward pass uniformly.
+// Shared defaults that apply uniformly across propagation and topology.
 
-/// Number of distinct temporal channels.
+/// Number of wave-gating channels.
 ///
-/// Each neuron is assigned a channel in `[1, GLOBAL_WAVE_CHANNEL_COUNT]`
-/// that determines its preferred firing tick.
+/// Unit: distinct channel slots assigned across neurons.
 pub(crate) const GLOBAL_WAVE_CHANNEL_COUNT: usize = 8;
 
-/// Ticks per wave period. The cosine modulation repeats every this many ticks.
+/// Length of one wave-gating period.
+///
+/// Unit: ticks per period.
 pub(crate) const GLOBAL_WAVE_TICKS_PER_PERIOD: usize = 8;
 
-/// Amplitude of the cosine threshold modulation, as permille (parts per 1000).
+/// Wave-gating threshold amplitude.
 ///
-/// At 300 permille (0.3): threshold range is `[0.7x, 1.3x]`, giving 1.86x
-/// selectivity. Used only during LUT precomputation; the runtime forward pass
-/// is integer-only.
+/// Unit: permille of the cosine coefficient (`300 = 0.3`).
 pub(crate) const GLOBAL_WAVE_AMPLITUDE_PERMILLE: u32 = 300;
 
-/// Default simulation ticks per token.
+/// Default simulation length for one token.
 ///
-/// More ticks allow signals to traverse longer paths through the graph.
-/// A loop of length `N` needs at least `N` ticks for one full revolution.
+/// Unit: ticks. Longer recurrent paths require more ticks to propagate.
 pub(crate) const GLOBAL_TICKS_PER_TOKEN: usize = 12;
 
-/// Default number of initial ticks during which the input is injected.
+/// Duration of external input injection.
+///
+/// Unit: initial ticks per token.
 pub(crate) const GLOBAL_INPUT_DURATION_TICKS: usize = 2;
 
-/// Default charge decay interval: subtract 1 from all charges every `N` ticks.
+/// Charge leak interval.
 ///
-/// Prevents unbounded charge accumulation in high-in-degree neurons.
+/// Unit: ticks between `-1` decay steps.
 pub(crate) const GLOBAL_CHARGE_DECAY_INTERVAL_TICKS: usize = 6;
 
-/// Default initial connection density as percentage (`5 = 5%`).
+/// Initial edge density target.
+///
+/// Unit: percent of possible directed edges at network initialization.
 pub(crate) const GLOBAL_INITIAL_DENSITY_PERCENT: u32 = 5;
 
 // =========================================================================
-// I/O Geometry
+// I/O geometry
 // =========================================================================
 //
-// Input and output dimensions are derived from the neuron count using the
-// golden ratio (phi ≈ 1.618). This gives a natural overlap ratio that
-// avoids both under-utilization (too few I/O neurons) and saturation
-// (too many). The SDR percentage controls how many neurons are active
-// per input token — sparse enough to avoid interference, dense enough
-// to carry information.
+// Phi-derived sizing and SDR sparsity defaults for input/output layout.
 
-/// Golden ratio as an integer ratio for phi-overlap I/O computation.
+/// Phi numerator for integer I/O sizing.
+///
+/// Used with `GLOBAL_PHI_DENOMINATOR` to approximate `1.618`.
 pub(crate) const GLOBAL_PHI_NUMERATOR: u32 = 1618;
-/// Golden ratio denominator for phi-overlap I/O computation.
+
+/// Phi denominator for integer I/O sizing.
+///
+/// Used with `GLOBAL_PHI_NUMERATOR` to approximate `1.618`.
 pub(crate) const GLOBAL_PHI_DENOMINATOR: u32 = 1000;
 
-/// Compute input/output dimension for a given neuron count.
+/// Compute the phi-derived input/output dimension.
 ///
-/// `io_dim(H) = round(H / PHI)`
-//
-// Uses u64 intermediate to avoid overflow at large H values.
-// The `+ NUMERATOR/2` term implements rounding (not truncation).
+/// Returns `round(neuron_count / PHI)`. Uses a `u64` intermediate for headroom.
 #[inline]
 pub(crate) fn io_dimension(neuron_count: u32) -> u32 {
     (neuron_count as u64 * GLOBAL_PHI_DENOMINATOR as u64 + GLOBAL_PHI_NUMERATOR as u64 / 2) as u32
         / GLOBAL_PHI_NUMERATOR
 }
 
-/// SDR active neuron percentage (`20 = 20%`).
+/// Default SDR activation density.
+///
+/// Unit: percent of I/O neurons active per token representation.
 pub(crate) const GLOBAL_SDR_ACTIVE_PERCENT: u32 = 20;
