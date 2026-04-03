@@ -8,3 +8,7 @@ edition = "2021"
 license = "MIT"
 authors = ["VRAXION"]
 description = "INSTNCT: gradient-free self-wiring spiking network"
+repository = "https://github.com/VRAXION/VRAXION"
+homepage = "https://github.com/VRAXION/VRAXION"
+documentation = "https://docs.rs/instnct-core"
+rust-version = "1.94"

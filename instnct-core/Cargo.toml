@@ -3,15 +3,25 @@ name = "instnct-core"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
+authors.workspace = true
 description = "Core spiking network engine: quaternary mask, forward pass, evolution, crystal"
+repository.workspace = true
+homepage.workspace = true
+documentation.workspace = true
+rust-version.workspace = true
+readme = "../README.md"
+keywords = ["ai", "spiking", "neural-network", "evolution", "graph"]
+categories = ["algorithms", "science"]
+
+[features]
+default = []
+benchmarks = []
 
 [dependencies]
 rand = "0.8"
 rayon = "1.10"
 
-[dev-dependencies]
-criterion = { version = "0.5", features = ["html_reports"] }
-
 [[bench]]
 name = "forward_bench"
 harness = false
+required-features = ["benchmarks"]
