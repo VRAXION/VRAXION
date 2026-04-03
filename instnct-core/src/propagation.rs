@@ -200,10 +200,16 @@ impl fmt::Display for PropagationError {
                 )
             }
             Self::InputLengthMismatch { expected, actual } => {
-                write!(f, "input length mismatch: expected {expected}, got {actual}")
+                write!(
+                    f,
+                    "input length mismatch: expected {expected}, got {actual}"
+                )
             }
             Self::ChargeLengthMismatch { expected, actual } => {
-                write!(f, "charge length mismatch: expected {expected}, got {actual}")
+                write!(
+                    f,
+                    "charge length mismatch: expected {expected}, got {actual}"
+                )
             }
             Self::ThresholdLengthMismatch { expected, actual } => {
                 write!(
@@ -212,7 +218,10 @@ impl fmt::Display for PropagationError {
                 )
             }
             Self::ChannelLengthMismatch { expected, actual } => {
-                write!(f, "channel length mismatch: expected {expected}, got {actual}")
+                write!(
+                    f,
+                    "channel length mismatch: expected {expected}, got {actual}"
+                )
             }
             Self::PolarityLengthMismatch { expected, actual } => {
                 write!(
@@ -505,10 +514,7 @@ mod tests {
         assert!(
             any_downstream_activity,
             "excitatory chain must propagate: c1={} a1={} c2={} a2={}",
-            charge[1],
-            activation[1],
-            charge[2],
-            activation[2]
+            charge[1], activation[1], charge[2], activation[2]
         );
     }
 
@@ -1023,8 +1029,7 @@ mod tests {
         let graph = ConnectionGraph::new(4);
         let mut activation = vec![0i32; 4];
         let mut charge = vec![0u32; 4];
-        let mut workspace =
-            PropagationWorkspace::from_parts(build_wave_gating_table(), vec![0; 3]);
+        let mut workspace = PropagationWorkspace::from_parts(build_wave_gating_table(), vec![0; 3]);
 
         let err = propagate_token(
             &[1; 4],

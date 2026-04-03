@@ -103,8 +103,7 @@ pub(crate) const GLOBAL_PHI_DENOMINATOR: u32 = 1000;
 /// `io_dim(H) = round(H / PHI)`
 #[inline]
 pub(crate) fn io_dimension(neuron_count: u32) -> u32 {
-    (neuron_count as u64 * GLOBAL_PHI_DENOMINATOR as u64
-        + GLOBAL_PHI_NUMERATOR as u64 / 2) as u32
+    (neuron_count as u64 * GLOBAL_PHI_DENOMINATOR as u64 + GLOBAL_PHI_NUMERATOR as u64 / 2) as u32
         / GLOBAL_PHI_NUMERATOR
 }
 
