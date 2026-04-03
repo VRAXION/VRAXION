@@ -179,39 +179,38 @@ pub fn propagate_token(
         }
 
         // Step 3: SCATTER-ADD — propagate spikes along edges
-        // This is THE HOT INNER LOOP. For each edge, the source neuron's
-        // activation (+1, -1, or 0) is added to the target's incoming buffer.
+        // THE HOT INNER LOOP. Chunks(4) enables SIMD vectorization.
         // Inhibitory neurons contribute -1, genuinely suppressing downstream charge.
         let incoming = &mut scratch[..neuron_count];
         incoming.fill(0);
-        for edge_idx in 0..edge_count {
-            incoming[edge_targets[edge_idx]] += state.activation[edge_sources[edge_idx]];
+        for (s_chunk, t_chunk) in edge_sources.chunks(4).zip(edge_targets.chunks(4)) {
+            for i in 0..s_chunk.len() {
+                incoming[t_chunk[i]] += state.activation[s_chunk[i]];
+            }
         }
 
         // Step 4: ACCUMULATE — add incoming signals to charge
+        // Iterator zip: compiler elides bounds checks, enables auto-vectorization.
         for (charge, &signal) in state.charge.iter_mut().zip(incoming.iter()) {
             let new_charge = *charge as i32 + signal;
             *charge = new_charge.clamp(0, LIMIT_MAX_CHARGE as i32) as u32;
         }
 
         // Step 5: SPIKE — wave-gated threshold comparison
+        // Index loop: simpler than 5-way zip, compiler optimizes better at large H.
         // Each neuron fires if: charge × 1000 >= threshold × wave_multiplier
-        // (integer comparison avoids division)
-        for neuron_idx in 0..neuron_count {
-            let channel = params.channel[neuron_idx] as usize;
-            let wave_mult = if channel <= GLOBAL_WAVE_CHANNEL_COUNT {
-                wave_table[channel][tick % GLOBAL_WAVE_TICKS_PER_PERIOD]
+        let tick_in_period = tick % GLOBAL_WAVE_TICKS_PER_PERIOD;
+        for i in 0..neuron_count {
+            let wave_mult = if (params.channel[i] as usize) <= GLOBAL_WAVE_CHANNEL_COUNT {
+                wave_table[params.channel[i] as usize][tick_in_period]
             } else {
                 1000
             };
-            let charge_scaled = state.charge[neuron_idx] * 1000;
-            let threshold_scaled = params.threshold[neuron_idx] * wave_mult;
-
-            if charge_scaled >= threshold_scaled {
-                state.activation[neuron_idx] = params.polarity[neuron_idx];
-                state.charge[neuron_idx] = 0;
+            if state.charge[i] * 1000 >= params.threshold[i] * wave_mult {
+                state.activation[i] = params.polarity[i];
+                state.charge[i] = 0;
             } else {
-                state.activation[neuron_idx] = 0;
+                state.activation[i] = 0;
             }
         }
     }
