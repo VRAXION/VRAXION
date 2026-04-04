@@ -258,6 +258,23 @@ impl Network {
         self.graph.add_edge(source, target)
     }
 
+    /// Remove a random existing edge.
+    ///
+    /// Picks a random index from the edge list and swap-removes it. O(1).
+    /// Returns `true` if an edge was removed, `false` if the graph is empty.
+    ///
+    /// In a mutation schedule, remove should come **last** — after add/rewire
+    /// have built structure, pruning removes what doesn't help.
+    pub fn mutate_remove_edge(&mut self, rng: &mut impl Rng) -> bool {
+        let edge_count = self.graph.edge_count();
+        if edge_count == 0 {
+            return false;
+        }
+        let index = rng.gen_range(0..edge_count);
+        self.graph.remove_edge_at(index);
+        true
+    }
+
     // ---- Queries ----
 
     /// Number of neurons in the network.
@@ -997,5 +1014,93 @@ mod tests {
 
         net.restore_state(&snap);
         assert_eq!(net.edge_count(), 0, "rollback should remove mutated edges");
+    }
+
+    // --- mutate_remove_edge tests ---
+
+    #[test]
+    fn mutate_remove_edge_decreases_count() {
+        use rand::rngs::StdRng;
+        use rand::SeedableRng;
+        let mut net = Network::new(8);
+        net.graph_mut().add_edge(0, 1);
+        net.graph_mut().add_edge(1, 2);
+        net.graph_mut().add_edge(2, 3);
+        assert_eq!(net.edge_count(), 3);
+
+        let mut rng = StdRng::seed_from_u64(42);
+        assert!(net.mutate_remove_edge(&mut rng));
+        assert_eq!(net.edge_count(), 2);
+    }
+
+    #[test]
+    fn mutate_remove_edge_empty_graph() {
+        use rand::rngs::StdRng;
+        use rand::SeedableRng;
+        let mut net = Network::new(8);
+        let mut rng = StdRng::seed_from_u64(42);
+        assert!(
+            !net.mutate_remove_edge(&mut rng),
+            "empty graph should return false"
+        );
+    }
+
+    #[test]
+    fn mutate_remove_edge_drains_all() {
+        use rand::rngs::StdRng;
+        use rand::SeedableRng;
+        let mut net = Network::new(4);
+        net.graph_mut().add_edge(0, 1);
+        net.graph_mut().add_edge(1, 2);
+        net.graph_mut().add_edge(2, 3);
+        let mut rng = StdRng::seed_from_u64(7);
+        for _ in 0..3 {
+            assert!(net.mutate_remove_edge(&mut rng));
+        }
+        assert_eq!(net.edge_count(), 0);
+        assert!(
+            !net.mutate_remove_edge(&mut rng),
+            "should return false when empty"
+        );
+    }
+
+    #[test]
+    fn mutate_remove_edge_rollback() {
+        use rand::rngs::StdRng;
+        use rand::SeedableRng;
+        let mut net = Network::new(8);
+        net.graph_mut().add_edge(0, 1);
+        net.graph_mut().add_edge(1, 2);
+        let snap = net.save_state();
+
+        let mut rng = StdRng::seed_from_u64(42);
+        net.mutate_remove_edge(&mut rng);
+        assert_eq!(net.edge_count(), 1);
+
+        net.restore_state(&snap);
+        assert_eq!(net.edge_count(), 2, "rollback should restore removed edge");
+        assert!(net.graph().has_edge(0, 1));
+        assert!(net.graph().has_edge(1, 2));
+    }
+
+    #[test]
+    fn mutate_add_then_remove_net_zero() {
+        use rand::rngs::StdRng;
+        use rand::SeedableRng;
+        let mut net = Network::new(8);
+        let mut rng = StdRng::seed_from_u64(42);
+
+        // Add 5 edges
+        for _ in 0..10 {
+            net.mutate_add_edge(&mut rng);
+        }
+        let edges_after_add = net.edge_count();
+        assert!(edges_after_add > 0);
+
+        // Remove all
+        while net.edge_count() > 0 {
+            net.mutate_remove_edge(&mut rng);
+        }
+        assert_eq!(net.edge_count(), 0);
     }
 }
