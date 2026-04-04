@@ -16,6 +16,7 @@
 // beta surface below. This preserves freedom to refactor internals without
 // changing downstream import paths.
 
+mod network;
 mod parameters;
 mod propagation;
 mod topology;
@@ -25,6 +26,9 @@ mod topology;
 // ---------------------------------------------------------------------------
 //
 // Only these re-exports are part of the supported public beta API.
+
+#[doc(inline)]
+pub use network::{Network, NetworkError};
 
 #[doc(inline)]
 pub use topology::{ConnectionGraph, DirectedEdge};
