@@ -53,7 +53,8 @@ impl From<PropagationError> for NetworkError {
 /// Frozen copy of a [`Network`]'s mutable state for rollback.
 ///
 /// Cheaper than a full `Network` clone — does not allocate a workspace buffer.
-/// Created by [`Network::save_state`], consumed by [`Network::restore_state`].
+/// Created by [`Network::save_state`], borrowed by [`Network::restore_state`].
+/// A single snapshot can be restored from multiple times.
 #[derive(Clone, Debug)]
 pub struct NetworkSnapshot {
     graph: ConnectionGraph,
