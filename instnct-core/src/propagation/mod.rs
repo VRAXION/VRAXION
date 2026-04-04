@@ -168,7 +168,7 @@ fn validate_propagation_inputs(
     // Value range checks (single pass over neurons)
     for i in 0..n {
         if params.threshold[i] > 15 { return Err(PropagationError::ThresholdOutOfRange { index: i, value: params.threshold[i] }); }
-        if !(1..=8).contains(&params.channel[i]) { return Err(PropagationError::ChannelOutOfRange { index: i, value: params.channel[i] }); }
+        if !(1..=GLOBAL_PHASE_CHANNEL_COUNT as u8).contains(&params.channel[i]) { return Err(PropagationError::ChannelOutOfRange { index: i, value: params.channel[i] }); }
         let p = params.polarity[i];
         if p != 1 && p != -1 { return Err(PropagationError::PolarityOutOfRange { index: i, value: p }); }
     }
