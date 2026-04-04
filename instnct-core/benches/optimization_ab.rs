@@ -12,7 +12,23 @@ use std::hint::black_box;
 use std::time::Instant;
 
 const WARMUP: usize = 100;
+const RUNS: usize = 7;
 const PHASE_BASE: [u8; 8] = [7, 8, 10, 12, 13, 12, 10, 8];
+
+// Pin to core 0 + HIGH priority for stable measurements
+#[cfg(target_os = "windows")]
+fn pin_and_boost() {
+    extern "system" {
+        fn SetThreadAffinityMask(hThread: isize, dwThreadAffinityMask: usize) -> usize;
+        fn GetCurrentThread() -> isize;
+        fn SetPriorityClass(hProcess: isize, dwPriorityClass: u32) -> i32;
+        fn GetCurrentProcess() -> isize;
+    }
+    unsafe {
+        SetThreadAffinityMask(GetCurrentThread(), 1);
+        SetPriorityClass(GetCurrentProcess(), 0x00000080); // HIGH_PRIORITY_CLASS
+    }
+}
 
 fn build_graph(neuron_count: usize, edge_prob_pct: u64) -> ConnectionGraph {
     let mut graph = ConnectionGraph::new(neuron_count);
@@ -46,12 +62,12 @@ fn build_params(n: usize) -> (Vec<u32>, Vec<u8>, Vec<i32>, Vec<i32>) {
     (threshold, channel, polarity, input)
 }
 
-fn timed_run(name: &str, iters: usize, mut body: impl FnMut()) {
+fn timed_run(name: &str, iters: usize, mut body: impl FnMut()) -> f64 {
     for _ in 0..WARMUP {
         body();
     }
     let mut times = Vec::new();
-    for _ in 0..3 {
+    for _ in 0..RUNS {
         let start = Instant::now();
         for _ in 0..iters {
             body();
@@ -59,9 +75,29 @@ fn timed_run(name: &str, iters: usize, mut body: impl FnMut()) {
         times.push(start.elapsed().as_nanos() as f64 / iters as f64);
     }
     times.sort_by(|a, b| a.partial_cmp(b).unwrap());
+    let median = times[RUNS / 2];
+    let mean: f64 = times.iter().sum::<f64>() / RUNS as f64;
+    let stddev = (times.iter().map(|t| (t - mean).powi(2)).sum::<f64>() / RUNS as f64).sqrt();
+    let cv = stddev / mean * 100.0;
     println!(
-        "  {name:45} median={:>10.0} ns  min={:.0}  max={:.0}",
-        times[1], times[0], times[2]
+        "  {name:45} median={:>10.0} ns  sd={:>6.0}  cv={:>4.1}%  [{:.0}..{:.0}]",
+        median, stddev, cv, times[0], times[RUNS - 1]
+    );
+    median
+}
+
+fn compare(label: &str, baseline: f64, candidate: f64, noise_pct: f64) {
+    let delta_pct = (candidate - baseline) / baseline * 100.0;
+    let sig = if delta_pct.abs() > noise_pct * 3.0 {
+        "SIGNIFICANT"
+    } else if delta_pct.abs() > noise_pct {
+        "borderline"
+    } else {
+        "WITHIN NOISE"
+    };
+    println!(
+        "    {label:40} {:+.1}%  ({sig}, noise floor={:.1}%)",
+        delta_pct, noise_pct
     );
 }
 
@@ -212,6 +248,13 @@ unsafe fn propagate_avx2(inputs: &BenchInputs<'_>, scratch: &mut BenchScratch) {
 }
 
 fn main() {
+    #[cfg(target_os = "windows")]
+    pin_and_boost();
+    println!(
+        "Deterministic harness: core 0 pinned, HIGH priority, {} runs/test\n",
+        RUNS
+    );
+
     let config = PropagationConfig {
         ticks_per_token: 12,
         input_duration_ticks: 2,
@@ -237,14 +280,35 @@ fn main() {
         };
         println!("  edges: {}", graph.edge_count());
 
+        // --- NOISE FLOOR: scalar vs scalar (identical code, separate runs) ---
+        let ctrl_a;
+        let ctrl_b;
+        {
+            let mut scratch = BenchScratch::new(h);
+            ctrl_a = timed_run("CTRL-1 (scalar #1)", iters, || {
+                scratch.reset();
+                propagate_inline(black_box(&inputs), black_box(&mut scratch), false);
+            });
+        }
+        {
+            let mut scratch = BenchScratch::new(h);
+            ctrl_b = timed_run("CTRL-2 (scalar #2)", iters, || {
+                scratch.reset();
+                propagate_inline(black_box(&inputs), black_box(&mut scratch), false);
+            });
+        }
+        let noise_pct = ((ctrl_b - ctrl_a) / ctrl_a * 100.0).abs();
+        println!("    --> NOISE FLOOR: {noise_pct:.1}%\n");
+
         // A: Edge sort by target
         let mut graph_sorted = graph.clone();
         graph_sorted.sort_edges_by_target();
+        let a_unsorted;
         {
             let mut act = vec![0i32; h];
             let mut chg = vec![0u32; h];
             let mut ws = PropagationWorkspace::new(h);
-            timed_run("A-baseline (unsorted)", iters, || {
+            a_unsorted = timed_run("A-baseline (unsorted)", iters, || {
                 act.fill(0);
                 chg.fill(0);
                 propagate_token_unchecked(
@@ -264,11 +328,12 @@ fn main() {
                 );
             });
         }
+        let a_sorted;
         {
             let mut act = vec![0i32; h];
             let mut chg = vec![0u32; h];
             let mut ws = PropagationWorkspace::new(h);
-            timed_run("A-sorted (edges by target)", iters, || {
+            a_sorted = timed_run("A-sorted (edges by target)", iters, || {
                 act.fill(0);
                 chg.fill(0);
                 propagate_token_unchecked(
@@ -288,37 +353,51 @@ fn main() {
                 );
             });
         }
+        compare("sorted vs unsorted", a_unsorted, a_sorted, noise_pct);
+        println!();
 
-        // B: Branchless spike (both use same pre-allocated buffers)
+        // B: Branchless spike
+        let b_branching;
         {
             let mut scratch = BenchScratch::new(h);
-            timed_run("B-branching (if/else spike)", iters, || {
+            b_branching = timed_run("B-branching (if/else spike)", iters, || {
                 scratch.reset();
                 propagate_inline(black_box(&inputs), black_box(&mut scratch), false);
             });
         }
+        let b_branchless;
         {
             let mut scratch = BenchScratch::new(h);
-            timed_run("B-branchless (select_unpredictable)", iters, || {
+            b_branchless = timed_run("B-branchless (select_unpredictable)", iters, || {
                 scratch.reset();
                 propagate_inline(black_box(&inputs), black_box(&mut scratch), true);
             });
         }
+        compare("branchless vs branching", b_branching, b_branchless, noise_pct);
+        println!();
 
         // C: AVX2 — SAME if/else logic, only target_feature differs
         #[cfg(target_arch = "x86_64")]
         if is_x86_feature_detected!("avx2") {
-            let mut scratch = BenchScratch::new(h);
-            timed_run("C-scalar (if/else, no target_feature)", iters, || {
-                scratch.reset();
-                propagate_inline(black_box(&inputs), black_box(&mut scratch), false);
-            });
-            timed_run("C-avx2   (if/else, target_feature avx2)", iters, || {
-                scratch.reset();
-                unsafe {
-                    propagate_avx2(black_box(&inputs), black_box(&mut scratch));
-                }
-            });
+            let c_scalar;
+            let c_avx2;
+            {
+                let mut scratch = BenchScratch::new(h);
+                c_scalar = timed_run("C-scalar (if/else, no target_feature)", iters, || {
+                    scratch.reset();
+                    propagate_inline(black_box(&inputs), black_box(&mut scratch), false);
+                });
+            }
+            {
+                let mut scratch = BenchScratch::new(h);
+                c_avx2 = timed_run("C-avx2   (if/else, target_feature avx2)", iters, || {
+                    scratch.reset();
+                    unsafe {
+                        propagate_avx2(black_box(&inputs), black_box(&mut scratch));
+                    }
+                });
+            }
+            compare("avx2 vs scalar", c_scalar, c_avx2, noise_pct);
         }
 
         println!();
