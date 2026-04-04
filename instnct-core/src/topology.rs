@@ -16,8 +16,8 @@
 //!
 //! ## Forward Pass Integration
 //!
-//! The propagation scatter-add loop consumes `sources()` and `targets()` directly —
-//! contiguous, cache-friendly `usize` slices. No conversion needed at runtime.
+//! The propagation scatter-add loop consumes `edge_endpoints()` directly —
+//! paired contiguous `usize` slices. No conversion needed at runtime.
 
 use std::collections::HashSet;
 
@@ -120,6 +120,7 @@ impl ConnectionGraph {
 
     /// Public edge endpoints for benchmarks. Same as `edge_endpoints`.
     #[cfg(feature = "benchmarks")]
+    #[doc(hidden)]
     #[inline]
     pub fn edge_endpoints_pub(&self) -> (&[usize], &[usize]) {
         (&self.sources, &self.targets)
@@ -258,6 +259,7 @@ impl ConnectionGraph {
     /// Sort edges by target index for cache-friendly scatter-add writes.
     /// Does not affect correctness (addition is commutative), only performance.
     #[cfg(feature = "benchmarks")]
+    #[doc(hidden)]
     pub fn sort_edges_by_target(&mut self) {
         let mut indices: Vec<usize> = (0..self.sources.len()).collect();
         indices.sort_by_key(|&i| self.targets[i]);
