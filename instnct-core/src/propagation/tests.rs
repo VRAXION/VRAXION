@@ -664,3 +664,60 @@ fn phase_rotation_peaks_at_correct_tick() {
         assert_eq!(min_val, 7, "peak value should be 7 (0.7x threshold)");
     }
 }
+
+#[test]
+fn threshold_out_of_range_returns_error() {
+    let graph = ConnectionGraph::new(4);
+    let mut activation = vec![0i32; 4];
+    let mut charge = vec![0u32; 4];
+    let mut workspace = PropagationWorkspace::new(4);
+
+    let err = propagate_token(
+        &[1; 4],
+        &graph,
+        &PropagationParameters { threshold: &[1, 1, 16, 1], channel: &[1; 4], polarity: &[1; 4] },
+        &mut PropagationState { activation: &mut activation, charge: &mut charge },
+        &PropagationConfig { ticks_per_token: 1, input_duration_ticks: 1, decay_interval_ticks: 0 },
+        &mut workspace,
+    ).unwrap_err();
+
+    assert_eq!(err, PropagationError::ThresholdOutOfRange { index: 2, value: 16 });
+}
+
+#[test]
+fn channel_out_of_range_returns_error() {
+    let graph = ConnectionGraph::new(4);
+    let mut activation = vec![0i32; 4];
+    let mut charge = vec![0u32; 4];
+    let mut workspace = PropagationWorkspace::new(4);
+
+    let err = propagate_token(
+        &[1; 4],
+        &graph,
+        &PropagationParameters { threshold: &[1; 4], channel: &[1, 1, 0, 1], polarity: &[1; 4] },
+        &mut PropagationState { activation: &mut activation, charge: &mut charge },
+        &PropagationConfig { ticks_per_token: 1, input_duration_ticks: 1, decay_interval_ticks: 0 },
+        &mut workspace,
+    ).unwrap_err();
+
+    assert_eq!(err, PropagationError::ChannelOutOfRange { index: 2, value: 0 });
+}
+
+#[test]
+fn polarity_out_of_range_returns_error() {
+    let graph = ConnectionGraph::new(4);
+    let mut activation = vec![0i32; 4];
+    let mut charge = vec![0u32; 4];
+    let mut workspace = PropagationWorkspace::new(4);
+
+    let err = propagate_token(
+        &[1; 4],
+        &graph,
+        &PropagationParameters { threshold: &[1; 4], channel: &[1; 4], polarity: &[1, 1, 2, 1] },
+        &mut PropagationState { activation: &mut activation, charge: &mut charge },
+        &PropagationConfig { ticks_per_token: 1, input_duration_ticks: 1, decay_interval_ticks: 0 },
+        &mut workspace,
+    ).unwrap_err();
+
+    assert_eq!(err, PropagationError::PolarityOutOfRange { index: 2, value: 2 });
+}

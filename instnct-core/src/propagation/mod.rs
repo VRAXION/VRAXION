@@ -103,6 +103,9 @@ pub enum PropagationError {
     EdgeLengthMismatch       { sources: usize, targets: usize }, // sources.len() != targets.len()
     EdgeSourceOutOfBounds    { index: usize, value: usize, neuron_count: usize }, // source >= n
     EdgeTargetOutOfBounds    { index: usize, value: usize, neuron_count: usize }, // target >= n
+    ThresholdOutOfRange      { index: usize, value: u32 },  // threshold > 15
+    ChannelOutOfRange        { index: usize, value: u8 },   // channel not in 1..=8
+    PolarityOutOfRange       { index: usize, value: i32 },  // polarity not ±1
 }
 
 impl fmt::Display for PropagationError {
@@ -128,6 +131,12 @@ impl fmt::Display for PropagationError {
                 write!(f, "edge source out of bounds at edge {index}: {value} >= {neuron_count}"),
             Self::EdgeTargetOutOfBounds { index, value, neuron_count } =>
                 write!(f, "edge target out of bounds at edge {index}: {value} >= {neuron_count}"),
+            Self::ThresholdOutOfRange { index, value } =>
+                write!(f, "threshold out of range at neuron {index}: {value} > 15"),
+            Self::ChannelOutOfRange { index, value } =>
+                write!(f, "channel out of range at neuron {index}: {value} not in 1..=8"),
+            Self::PolarityOutOfRange { index, value } =>
+                write!(f, "polarity out of range at neuron {index}: {value} not in {{-1, +1}}"),
         }
     }
 }
@@ -142,10 +151,11 @@ fn validate_propagation_inputs(
     params: &PropagationParameters<'_>,
     state: &PropagationState<'_>,
     workspace: &PropagationWorkspace,
-) -> Result<usize, PropagationError> {
+) -> Result<(), PropagationError> {
     let n = graph.neuron_count();
     let (edge_src, edge_tgt) = graph.edge_endpoints();
 
+    // Slice length checks
     if state.activation.len() != n { return Err(PropagationError::ActivationLengthMismatch { expected: n, actual: state.activation.len() }); }
     if state.charge.len() != n     { return Err(PropagationError::ChargeLengthMismatch { expected: n, actual: state.charge.len() }); }
     if input.len() != n            { return Err(PropagationError::InputLengthMismatch { expected: n, actual: input.len() }); }
@@ -155,14 +165,21 @@ fn validate_propagation_inputs(
     if workspace.incoming_scratch.len() < n { return Err(PropagationError::ScratchTooSmall { required: n, actual: workspace.incoming_scratch.len() }); }
     if edge_src.len() != edge_tgt.len() { return Err(PropagationError::EdgeLengthMismatch { sources: edge_src.len(), targets: edge_tgt.len() }); }
 
-    for (i, &s) in edge_src.iter().enumerate() {
-        if s >= n { return Err(PropagationError::EdgeSourceOutOfBounds { index: i, value: s, neuron_count: n }); }
+    // Value range checks (single pass over neurons)
+    for i in 0..n {
+        if params.threshold[i] > 15 { return Err(PropagationError::ThresholdOutOfRange { index: i, value: params.threshold[i] }); }
+        if !(1..=8).contains(&params.channel[i]) { return Err(PropagationError::ChannelOutOfRange { index: i, value: params.channel[i] }); }
+        let p = params.polarity[i];
+        if p != 1 && p != -1 { return Err(PropagationError::PolarityOutOfRange { index: i, value: p }); }
     }
-    for (i, &t) in edge_tgt.iter().enumerate() {
+
+    // Edge endpoint bounds
+    for (i, (&s, &t)) in edge_src.iter().zip(edge_tgt.iter()).enumerate() {
+        if s >= n { return Err(PropagationError::EdgeSourceOutOfBounds { index: i, value: s, neuron_count: n }); }
         if t >= n { return Err(PropagationError::EdgeTargetOutOfBounds { index: i, value: t, neuron_count: n }); }
     }
 
-    Ok(n)
+    Ok(())
 }
 
 // ---- Public API ----
@@ -218,15 +235,20 @@ pub(crate) fn propagate_token_unchecked(
         // Scatter-add: accumulate incoming signals per neuron
         let incoming = &mut workspace.incoming_scratch[..neuron_count];
         incoming.fill(0);
-        for (source_chunk, target_chunk) in edge_sources.chunks(4).zip(edge_targets.chunks(4)) {
-            for chunk_idx in 0..source_chunk.len() {
-                incoming[target_chunk[chunk_idx]] += state.activation[source_chunk[chunk_idx]];
-            }
+        for (sc, tc) in edge_sources.chunks_exact(4).zip(edge_targets.chunks_exact(4)) {
+            incoming[tc[0]] += state.activation[sc[0]]; // unrolled — LLVM drops bounds checks
+            incoming[tc[1]] += state.activation[sc[1]]; // because chunks_exact guarantees len==4
+            incoming[tc[2]] += state.activation[sc[2]];
+            incoming[tc[3]] += state.activation[sc[3]];
+        }
+        let rem_start = edge_sources.len() / 4 * 4; // remainder (0-3 edges)
+        for i in rem_start..edge_sources.len() {
+            incoming[edge_targets[i]] += state.activation[edge_sources[i]];
         }
 
         // Charge accumulation: clamp to [0, MAX_CHARGE]
         for (charge, &signal) in state.charge.iter_mut().zip(incoming.iter()) {
-            *charge = (*charge as i32 + signal).clamp(0, LIMIT_MAX_CHARGE as i32) as u32;
+            *charge = charge.saturating_add_signed(signal).min(LIMIT_MAX_CHARGE);
         }
 
         // Spike stage: charge*10 >= (theta+1) * PHASE_BASE  (max 150 vs 208, fits u16)
