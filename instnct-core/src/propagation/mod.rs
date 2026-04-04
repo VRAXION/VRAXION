@@ -24,10 +24,15 @@ use std::fmt;
 // Amplitude 0.3 baked in. Damping experiments (2026-04-04) confirmed optimal.
 const PHASE_BASE: [u8; GLOBAL_PHASE_TICKS_PER_PERIOD] = [7, 8, 10, 12, 13, 12, 10, 8];
 
+// Compile-time safety: spike stage uses u16 arithmetic.
+// charge * 10 must fit u16 (max 150), and (threshold+1) * max_phase must fit u16 (max 208).
+const _: () = assert!(LIMIT_MAX_CHARGE as u64 * 10 <= u16::MAX as u64);
+const _: () = assert!((LIMIT_MAX_CHARGE as u64 + 1) * 13 <= u16::MAX as u64);
+
 // ---- Workspace ----
 
 /// Reusable scratch buffer. Allocate once, pass to every `propagate_token` call.
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct PropagationWorkspace {
     incoming_scratch: Vec<i32>, // per-neuron incoming-signal accumulator
 }

@@ -81,7 +81,11 @@ fn timed_run(name: &str, iters: usize, mut body: impl FnMut()) -> f64 {
     let cv = stddev / mean * 100.0;
     println!(
         "  {name:45} median={:>10.0} ns  sd={:>6.0}  cv={:>4.1}%  [{:.0}..{:.0}]",
-        median, stddev, cv, times[0], times[RUNS - 1]
+        median,
+        stddev,
+        cv,
+        times[0],
+        times[RUNS - 1]
     );
     median
 }
@@ -373,7 +377,12 @@ fn main() {
                 propagate_inline(black_box(&inputs), black_box(&mut scratch), true);
             });
         }
-        compare("branchless vs branching", b_branching, b_branchless, noise_pct);
+        compare(
+            "branchless vs branching",
+            b_branching,
+            b_branchless,
+            noise_pct,
+        );
         println!();
 
         // C: AVX2 — SAME if/else logic, only target_feature differs

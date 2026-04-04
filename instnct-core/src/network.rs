@@ -20,6 +20,7 @@ use std::fmt;
 
 /// Errors from [`Network`] operations.
 #[derive(Clone, Debug, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum NetworkError {
     /// Propagation validation failed (slice lengths, value ranges, edge bounds).
     Propagation(PropagationError),
@@ -62,7 +63,7 @@ impl From<PropagationError> for NetworkError {
 /// let input = vec![0i32; 256];
 /// net.propagate(&input, &PropagationConfig::default()).unwrap();
 /// ```
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct Network {
     graph: ConnectionGraph,
 
@@ -215,7 +216,7 @@ impl Network {
         &self.activation
     }
 
-    /// Current charge values (read-only). Range: `[0, 15]`.
+    /// Current charge values (read-only). Range: `[0, LIMIT_MAX_CHARGE]` (currently 15).
     #[inline]
     pub fn charge(&self) -> &[u32] {
         &self.charge
@@ -265,7 +266,13 @@ mod tests {
         let short_input = vec![0i32; 100];
         let err = net.propagate(&short_input, &default_config()).unwrap_err();
         assert!(
-            matches!(err, NetworkError::Propagation(PropagationError::InputLengthMismatch { expected: 256, actual: 100 })),
+            matches!(
+                err,
+                NetworkError::Propagation(PropagationError::InputLengthMismatch {
+                    expected: 256,
+                    actual: 100
+                })
+            ),
             "expected InputLengthMismatch, got: {err}"
         );
     }
@@ -372,7 +379,11 @@ mod tests {
         // Excitatory: neuron 2 receives +1 → fires → activation=1
         // Inhibitory: neuron 2 receives -1 → charge stays 0 → silent → activation=0
         assert_eq!(exc.activation()[2], 1, "excitatory neuron 2 should fire");
-        assert_eq!(inh.activation()[2], 0, "inhibitory signal should prevent neuron 2 from firing");
+        assert_eq!(
+            inh.activation()[2],
+            0,
+            "inhibitory signal should prevent neuron 2 from firing"
+        );
     }
 
     #[test]
@@ -446,7 +457,10 @@ mod tests {
         fresh.propagate(&input, &config).unwrap();
         let after_fresh = (fresh.activation().to_vec(), fresh.charge().to_vec());
 
-        assert_eq!(after_reset, after_fresh, "reset should restore to fresh state");
+        assert_eq!(
+            after_reset, after_fresh,
+            "reset should restore to fresh state"
+        );
     }
 
     #[test]
@@ -459,5 +473,108 @@ mod tests {
         let msg = format!("{err}");
         assert!(msg.contains("256"), "should mention expected length");
         assert!(msg.contains("100"), "should mention actual length");
+    }
+
+    // --- Adversarial review findings (#16): invalid _mut() + propagate round-trip ---
+
+    #[test]
+    fn propagate_rejects_invalid_threshold() {
+        let mut net = Network::new(4);
+        net.threshold_mut()[0] = 999; // out of [0,15]
+        let input = vec![0i32; 4];
+        let err = net.propagate(&input, &default_config()).unwrap_err();
+        assert!(
+            matches!(
+                err,
+                NetworkError::Propagation(PropagationError::ThresholdOutOfRange {
+                    index: 0,
+                    value: 999
+                })
+            ),
+            "expected ThresholdOutOfRange, got: {err}"
+        );
+    }
+
+    #[test]
+    fn propagate_rejects_invalid_channel() {
+        let mut net = Network::new(4);
+        net.channel_mut()[2] = 0; // out of [1,8]
+        let input = vec![0i32; 4];
+        let err = net.propagate(&input, &default_config()).unwrap_err();
+        assert!(
+            matches!(
+                err,
+                NetworkError::Propagation(PropagationError::ChannelOutOfRange {
+                    index: 2,
+                    value: 0
+                })
+            ),
+            "expected ChannelOutOfRange, got: {err}"
+        );
+    }
+
+    #[test]
+    fn propagate_rejects_invalid_polarity() {
+        let mut net = Network::new(4);
+        net.polarity_mut()[1] = 42; // not ±1
+        let input = vec![0i32; 4];
+        let err = net.propagate(&input, &default_config()).unwrap_err();
+        assert!(
+            matches!(
+                err,
+                NetworkError::Propagation(PropagationError::PolarityOutOfRange {
+                    index: 1,
+                    value: 42
+                })
+            ),
+            "expected PolarityOutOfRange, got: {err}"
+        );
+    }
+
+    // --- Adversarial review finding #19: 0-neuron propagate ---
+
+    #[test]
+    fn zero_neuron_propagate_succeeds() {
+        let mut net = Network::new(0);
+        let input: Vec<i32> = vec![];
+        assert!(net.propagate(&input, &default_config()).is_ok());
+    }
+
+    // --- Adversarial review finding #15: ticks_per_token = 0 ---
+
+    #[test]
+    fn zero_ticks_propagate_is_noop() {
+        let mut net = Network::new(4);
+        net.graph_mut().add_edge(0, 1);
+        let input = vec![1i32, 0, 0, 0];
+        let config = PropagationConfig {
+            ticks_per_token: 0,
+            input_duration_ticks: 0,
+            decay_interval_ticks: 0,
+        };
+        net.propagate(&input, &config).unwrap();
+        // Zero ticks = no simulation, state unchanged
+        assert!(net.activation().iter().all(|&a| a == 0));
+        assert!(net.charge().iter().all(|&c| c == 0));
+    }
+
+    // --- Deep research finding: Network should be Clone ---
+
+    #[test]
+    fn network_clone_is_independent() {
+        let mut net = Network::new(4);
+        net.graph_mut().add_edge(0, 1);
+        net.threshold_mut()[0] = 5;
+
+        let mut cloned = net.clone();
+        cloned.threshold_mut()[0] = 10;
+        cloned.graph_mut().add_edge(2, 3);
+
+        // Original unaffected
+        assert_eq!(net.threshold()[0], 5);
+        assert_eq!(net.edge_count(), 1);
+        // Clone has its own state
+        assert_eq!(cloned.threshold()[0], 10);
+        assert_eq!(cloned.edge_count(), 2);
     }
 }
