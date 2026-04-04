@@ -61,9 +61,11 @@ pub(crate) const GLOBAL_PHASE_CHANNEL_COUNT: usize = 8;
 /// Unit: ticks per period.
 pub(crate) const GLOBAL_PHASE_TICKS_PER_PERIOD: usize = 8;
 
-/// Phase-gating threshold amplitude.
+/// Phase-gating threshold amplitude (reference only).
 ///
 /// Unit: permille of the cosine coefficient (`300 = 0.3`).
+/// This value is baked into the `PHASE_BASE` constant in `propagation/mod.rs`.
+/// Kept here for documentation; not referenced at runtime.
 pub(crate) const GLOBAL_PHASE_AMPLITUDE_PERMILLE: u32 = 300;
 
 /// Default simulation length for one token.

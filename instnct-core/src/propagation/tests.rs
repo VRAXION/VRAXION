@@ -599,7 +599,7 @@ fn scratch_too_small_returns_error() {
     let graph = ConnectionGraph::new(4);
     let mut activation = vec![0i32; 4];
     let mut charge = vec![0u32; 4];
-    let mut workspace = PropagationWorkspace::from_parts(build_phase_gating_table(), vec![0; 3]);
+    let mut workspace = PropagationWorkspace::with_scratch(vec![0; 3]);
 
     let err = propagate_token(
         &[1; 4],
@@ -632,20 +632,35 @@ fn scratch_too_small_returns_error() {
 }
 
 #[test]
-fn phase_table_range_is_valid() {
-    let table = build_phase_gating_table();
-    for (channel, row) in table
-        .iter()
-        .enumerate()
-        .take(GLOBAL_PHASE_CHANNEL_COUNT + 1)
-        .skip(1)
-    {
-        for (tick, &value) in row.iter().enumerate() {
-            assert!(
-                (600..=1400).contains(&value),
-                "phase_table[{channel}][{tick}] = {value}"
-            );
-        }
+fn phase_base_values_are_valid() {
+    // PHASE_BASE must contain exactly the x10 cosine values
+    assert_eq!(PHASE_BASE, [7, 8, 10, 12, 13, 12, 10, 8]);
+    // All values in valid range
+    for &v in &PHASE_BASE {
+        assert!((7..=13).contains(&v), "PHASE_BASE value out of range: {v}");
     }
-    assert!(table[0].iter().all(|&value| value == 1000));
+    // Circular symmetry: PHASE_BASE[i] == PHASE_BASE[(8-i) % 8]
+    for i in 0..8 {
+        assert_eq!(PHASE_BASE[i], PHASE_BASE[(8 - i) % 8],
+            "PHASE_BASE not circularly symmetric at {i}");
+    }
+}
+
+#[test]
+fn phase_rotation_peaks_at_correct_tick() {
+    // Channel N should have easiest firing (lowest multiplier) at tick N-1
+    for ch in 1..=GLOBAL_PHASE_CHANNEL_COUNT {
+        let mut min_val = u8::MAX;
+        let mut min_tick = 0;
+        for tick in 0..GLOBAL_PHASE_TICKS_PER_PERIOD {
+            let val = PHASE_BASE[(tick + 9 - ch) & 7];
+            if val < min_val {
+                min_val = val;
+                min_tick = tick;
+            }
+        }
+        assert_eq!(min_tick, ch - 1,
+            "channel {ch} peaks at tick {min_tick}, expected {}", ch - 1);
+        assert_eq!(min_val, 7, "peak value should be 7 (0.7x threshold)");
+    }
 }

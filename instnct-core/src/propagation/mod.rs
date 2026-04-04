@@ -6,8 +6,9 @@
 //! ## Integer-Only Design
 //!
 //! The forward pass uses `i32` activations (supports inhibitory `-1`) and
-//! `u32` charge (always non-negative). The phase gating lookup table is fixed
-//! point (`x1000` scale). No floating-point arithmetic appears in the hot path.
+//! `u32` charge (always non-negative). Phase gating uses an 8-byte cosine
+//! base pattern with `x10` fixed-point scale. No floating-point arithmetic
+//! appears in the hot path.
 
 // =========================================================================
 // Imports
@@ -19,50 +20,49 @@
 
 use crate::parameters::{
     GLOBAL_CHARGE_DECAY_INTERVAL_TICKS, GLOBAL_INPUT_DURATION_TICKS, GLOBAL_TICKS_PER_TOKEN,
-    GLOBAL_PHASE_AMPLITUDE_PERMILLE, GLOBAL_PHASE_CHANNEL_COUNT, GLOBAL_PHASE_TICKS_PER_PERIOD,
-    LIMIT_MAX_CHARGE,
+    GLOBAL_PHASE_CHANNEL_COUNT, GLOBAL_PHASE_TICKS_PER_PERIOD, LIMIT_MAX_CHARGE,
 };
 use crate::topology::ConnectionGraph;
 use std::error::Error;
 use std::fmt;
 
 // =========================================================================
-// Phase gating lookup table
+// Phase gating — 8-byte cosine base pattern
 // =========================================================================
 //
-// Fixed-size 2D array: [channel][tick] -> threshold multiplier (x1000).
-// Channel 0 is "no gating" (all 1000s). Channels 1..=8 each have a
-// cosine curve phase-shifted by their channel index, so different
-// channels prefer different ticks within the period.
+// Cosine-derived threshold multipliers at x10 fixed-point scale.
+// Channel N (1-8) rotates this pattern so the easiest tick (7) aligns
+// with tick N-1, giving each channel a distinct temporal preference.
 //
-// The x1000 scale is a fixed-point trick: the hot path stays integer-
-// only while preserving three decimal digits of precision.
-// 1000 = "no change", 700 = "30% lower threshold" (fires easier),
-// 1300 = "30% higher threshold" (fires harder).
+//   7  = 0.7x threshold (fires easiest)
+//   10 = 1.0x threshold (neutral)
+//   13 = 1.3x threshold (fires hardest)
 //
-// Built once at workspace creation, then read-only during propagation.
+// Amplitude 0.3 is baked in. Damping experiments (2026-04-04) confirmed:
+// this 8-byte LUT + 3-bit channel is optimal. Per-tick learnable
+// multipliers, damping scores, and other extensions all failed to
+// improve over this minimal design.
 
-/// Phase gating lookup table: `[channel][tick] -> threshold multiplier (×1000)`.
-/// Values range 700-1300, fitting comfortably in u16 (max 65,535).
-type PhaseGatingTable = [[u16; GLOBAL_PHASE_TICKS_PER_PERIOD]; GLOBAL_PHASE_CHANNEL_COUNT + 1];
+/// Cosine phase gating base pattern (x10 fixed-point).
+/// Index with `PHASE_BASE[(tick + 9 - channel) & 7]` for channels 1-8.
+const PHASE_BASE: [u8; GLOBAL_PHASE_TICKS_PER_PERIOD] = [7, 8, 10, 12, 13, 12, 10, 8];
 
 // =========================================================================
 // Workspace — reusable hot-path state
 // =========================================================================
 //
-// Keeps phase-table construction and scratch-buffer allocation out of
-// repeated propagation calls.
+// Keeps scratch-buffer allocation out of repeated propagation calls.
+// Phase gating uses the static PHASE_BASE constant (no precomputation).
 //
-//   phase_table — precomputed cosine LUT, fixed [9][8] u32 inline
-//   scratch     — per-neuron incoming-signal accumulator, Vec<i32>
+//   scratch — per-neuron incoming-signal accumulator, Vec<i32>
 
 /// Reusable buffers for repeated propagation calls.
 ///
-/// Stores the precomputed phase LUT and the per-neuron scratch buffer.
+/// Stores the per-neuron scratch buffer. Phase gating reads directly
+/// from the static `PHASE_BASE` constant (8 bytes, no allocation).
 /// Allocate once, pass to every `propagate_token` call.
 #[derive(Debug)]
 pub struct PropagationWorkspace {
-    phase_table: PhaseGatingTable,
     scratch: Vec<i32>,
 }
 
@@ -70,7 +70,6 @@ impl PropagationWorkspace {
     /// Create a workspace sized for `neuron_count` neurons.
     pub fn new(neuron_count: usize) -> Self {
         Self {
-            phase_table: build_phase_gating_table(),
             scratch: vec![0; neuron_count],
         }
     }
@@ -86,37 +85,9 @@ impl PropagationWorkspace {
     }
 
     #[cfg(test)]
-    fn from_parts(phase_table: PhaseGatingTable, scratch: Vec<i32>) -> Self {
-        Self {
-            phase_table,
-            scratch,
-        }
+    fn with_scratch(scratch: Vec<i32>) -> Self {
+        Self { scratch }
     }
-}
-
-// Builds the cosine-modulated phase gating LUT.
-//
-// Formula per entry:
-//   multiplier = round((1 - A * cos(2*PI*(tick - (ch-1)) / P)) * 1000)
-//
-// where A = GLOBAL_PHASE_AMPLITUDE_PERMILLE / 1000 (0.3 at default)
-// and   P = GLOBAL_PHASE_TICKS_PER_PERIOD (8 at default).
-//
-// Channel 0 is skipped (stays all-1000) — it means "no phase gating".
-// Float math is acceptable here because this runs once at startup,
-// never in the hot path.
-fn build_phase_gating_table() -> PhaseGatingTable {
-    let mut table = [[1000u16; GLOBAL_PHASE_TICKS_PER_PERIOD]; GLOBAL_PHASE_CHANNEL_COUNT + 1];
-    for (channel, row) in table.iter_mut().enumerate().skip(1) {
-        for (tick, entry) in row.iter_mut().enumerate() {
-            let phase_offset = tick as f64 - (channel - 1) as f64;
-            let angle =
-                2.0 * std::f64::consts::PI * phase_offset / GLOBAL_PHASE_TICKS_PER_PERIOD as f64;
-            let amplitude = GLOBAL_PHASE_AMPLITUDE_PERMILLE as f64 / 1000.0;
-            *entry = ((1.0 - amplitude * angle.cos()) * 1000.0).round() as u16;
-        }
-    }
-    table
 }
 
 /// Per-neuron learned parameters for one propagation run.
@@ -425,8 +396,6 @@ pub(crate) fn propagate_token_unchecked(
     debug_assert_eq!(edge_sources.len(), edge_targets.len());
     debug_assert!(workspace.scratch.len() >= neuron_count);
 
-    let phase_table = &workspace.phase_table;
-
     for tick in 0..config.ticks {
         if config.decay_period > 0 && tick % config.decay_period == 0 {
             for charge in state.charge.iter_mut() {
@@ -454,31 +423,31 @@ pub(crate) fn propagate_token_unchecked(
         }
 
         // =============================================================
-        // Spike stage: phase-gated threshold comparison in u16 space.
+        // Spike stage: phase-gated threshold comparison (x10 scale).
         //
         // Both sides are promoted to u16 for the comparison:
-        //   charge_stage = charge * 1000       (max 15*1000 = 15,000)
-        //   threshold_stage = (theta+1) * LUT  (max 16*1300 = 20,800)
+        //   charge_x10     = charge * 10              (max 15*10 = 150)
+        //   threshold_x10  = (theta+1) * PHASE_BASE   (max 16*13 = 208)
         //
-        // Max value 20,800 fits comfortably in u16 (max 65,535).
-        // The ×1000 scale preserves the full cosine LUT precision
-        // (700, 788, 1000, 1212, 1300) without any rounding.
+        // Max value 208 fits in u8, but u16 is used for safety headroom.
+        // The x10 scale matches the PHASE_BASE values [7,8,10,12,13].
         // =============================================================
-        let tick_in_period = tick % GLOBAL_PHASE_TICKS_PER_PERIOD;
+        let tip = tick % GLOBAL_PHASE_TICKS_PER_PERIOD;
         for neuron_idx in 0..neuron_count {
-            let channel = params.channel[neuron_idx] as usize;
-            let phase_multiplier = if channel <= GLOBAL_PHASE_CHANNEL_COUNT {
-                phase_table[channel][tick_in_period]
+            let ch = params.channel[neuron_idx] as usize;
+            let phase_mult: u16 = if ch >= 1 && ch <= GLOBAL_PHASE_CHANNEL_COUNT {
+                // Rotate PHASE_BASE by channel: ch=1 peaks at tick 0, ch=2 at tick 1, etc.
+                PHASE_BASE[(tip + 9 - ch) & 7] as u16
             } else {
-                1000
+                10 // neutral (no gating)
             };
-            let charge_stage: u16 = state.charge[neuron_idx] as u16 * 1000;
+            let charge_x10: u16 = state.charge[neuron_idx] as u16 * 10;
             // +1 shift: stored threshold 0-15, effective 1-16.
-            // Uses full int4 range; stored=15 → effective=16 (supergate).
-            let threshold_stage: u16 =
-                (params.threshold[neuron_idx] + 1) as u16 * phase_multiplier as u16;
+            // Uses full int4 range; stored=15 -> effective=16 (supergate).
+            let threshold_x10: u16 =
+                (params.threshold[neuron_idx] as u16 + 1) * phase_mult;
 
-            if charge_stage >= threshold_stage {
+            if charge_x10 >= threshold_x10 {
                 state.activation[neuron_idx] = params.polarity[neuron_idx];
                 state.charge[neuron_idx] = 0;
             } else {
