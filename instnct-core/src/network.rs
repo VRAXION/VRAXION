@@ -13,6 +13,7 @@ use crate::propagation::{
     PropagationWorkspace,
 };
 use crate::topology::ConnectionGraph;
+use rand::Rng;
 use std::error::Error;
 use std::fmt;
 
@@ -238,6 +239,23 @@ impl Network {
         self.charge.copy_from_slice(&snapshot.charge);
         self.workspace
             .ensure_neuron_count(self.graph.neuron_count());
+    }
+
+    // ---- Mutations ----
+
+    /// Add a random directed edge between two neurons.
+    ///
+    /// Picks a random source and target uniformly. Returns `true` if an edge
+    /// was added, `false` if the pick was a self-loop, duplicate, or the
+    /// network has fewer than 2 neurons.
+    pub fn mutate_add_edge(&mut self, rng: &mut impl Rng) -> bool {
+        let neuron_count = self.graph.neuron_count();
+        if neuron_count < 2 {
+            return false;
+        }
+        let source = rng.gen_range(0..neuron_count) as u16;
+        let target = rng.gen_range(0..neuron_count) as u16;
+        self.graph.add_edge(source, target)
     }
 
     // ---- Queries ----
@@ -886,5 +904,98 @@ mod tests {
         assert_eq!(net.polarity()[5], -1);
         assert!(net.activation().iter().all(|&a| a == 0));
         assert!(net.charge().iter().all(|&c| c == 0));
+    }
+
+    // --- Mutation tests (deterministic, fixed seed) ---
+
+    #[test]
+    fn mutate_add_edge_increases_count() {
+        use rand::rngs::StdRng;
+        use rand::SeedableRng;
+        let mut net = Network::new(64);
+        let mut rng = StdRng::seed_from_u64(1);
+        for _ in 0..10 {
+            net.mutate_add_edge(&mut rng);
+        }
+        assert!(
+            net.edge_count() > 0,
+            "10 attempts on 64 neurons should add edges"
+        );
+    }
+
+    #[test]
+    fn mutate_add_edge_deterministic() {
+        use rand::rngs::StdRng;
+        use rand::SeedableRng;
+        let mut net = Network::new(8);
+        let mut rng = StdRng::seed_from_u64(42);
+        for _ in 0..5 {
+            net.mutate_add_edge(&mut rng);
+        }
+        // seed=42, 8 neurons, 5 attempts: 1 self-loop rejected, 4 edges added
+        assert_eq!(net.edge_count(), 4);
+        assert!(net.graph().has_edge(5, 3));
+        assert!(net.graph().has_edge(0, 3));
+        assert!(net.graph().has_edge(1, 0));
+        assert!(net.graph().has_edge(7, 4));
+    }
+
+    #[test]
+    fn mutate_add_edge_no_self_loops() {
+        use rand::rngs::StdRng;
+        use rand::SeedableRng;
+        let mut net = Network::new(16);
+        let mut rng = StdRng::seed_from_u64(7);
+        for _ in 0..100 {
+            net.mutate_add_edge(&mut rng);
+        }
+        for edge in net.graph().iter_edges() {
+            assert_ne!(edge.source, edge.target, "self-loop found: {}", edge.source);
+        }
+    }
+
+    #[test]
+    fn mutate_add_edge_saturates_small_graph() {
+        use rand::rngs::StdRng;
+        use rand::SeedableRng;
+        let mut net = Network::new(4); // max edges = 4 * 3 = 12
+        let mut rng = StdRng::seed_from_u64(99);
+        for _ in 0..200 {
+            net.mutate_add_edge(&mut rng);
+        }
+        assert_eq!(
+            net.edge_count(),
+            12,
+            "4-neuron graph should saturate at 12 edges"
+        );
+    }
+
+    #[test]
+    fn mutate_add_edge_single_neuron() {
+        use rand::rngs::StdRng;
+        use rand::SeedableRng;
+        let mut net = Network::new(1);
+        let mut rng = StdRng::seed_from_u64(0);
+        assert!(
+            !net.mutate_add_edge(&mut rng),
+            "1-neuron network cannot add edges"
+        );
+        assert_eq!(net.edge_count(), 0);
+    }
+
+    #[test]
+    fn mutate_add_edge_rollback() {
+        use rand::rngs::StdRng;
+        use rand::SeedableRng;
+        let mut net = Network::new(8);
+        let snap = net.save_state();
+
+        let mut rng = StdRng::seed_from_u64(42);
+        net.mutate_add_edge(&mut rng);
+        net.mutate_add_edge(&mut rng);
+        assert!(net.edge_count() > 0);
+
+        net.restore_state(&snap);
+        assert_eq!(net.edge_count(), 0, "rollback should remove mutated edges");
     }
 }
