@@ -93,31 +93,30 @@ impl PropagationWorkspace {
 
 /// Per-neuron learned parameters for one propagation run.
 pub struct PropagationParameters<'a> {
-    /// Stored firing threshold per neuron. Range: `[0, 15]` (full int4).
-    /// Effective threshold = stored + 1, giving range `[1, 16]`.
+    /// Stored [0,15], effective = stored+1 -> [1,16].
     pub threshold: &'a [u32],
-    /// Phase gating channel per neuron. Range: `[1, 8]`.
+    /// Phase gating channel [1,8].
     pub channel: &'a [u8],
-    /// Polarity per neuron: `+1` (excitatory) or `-1` (inhibitory).
+    /// +1 excitatory, -1 inhibitory.
     pub polarity: &'a [i32],
 }
 
 /// Mutable neuron state carried across tokens.
 pub struct PropagationState<'a> {
-    /// Activation per neuron: `+1`, `-1`, or `0`.
+    /// +1, -1, or 0.
     pub activation: &'a mut [i32],
-    /// Accumulated charge per neuron. Range: `[0, LIMIT_MAX_CHARGE]`.
+    /// [0, LIMIT_MAX_CHARGE].
     pub charge: &'a mut [u32],
 }
 
 /// Timing configuration for one forward pass.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct PropagationConfig {
-    /// Total simulation ticks to execute for one token.
+    /// Total simulation ticks per token.
     pub ticks_per_token: usize,
-    /// Number of initial ticks during which the external input is injected.
+    /// Injection window at start.
     pub input_duration_ticks: usize,
-    /// Charge decay interval. Every N ticks, each neuron loses one charge.
+    /// Charge -= 1 every N ticks.
     pub decay_interval_ticks: usize,
 }
 
