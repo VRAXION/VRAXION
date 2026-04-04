@@ -257,6 +257,7 @@ impl ConnectionGraph {
 
     /// Sort edges by target index for cache-friendly scatter-add writes.
     /// Does not affect correctness (addition is commutative), only performance.
+    #[cfg(feature = "benchmarks")]
     pub fn sort_edges_by_target(&mut self) {
         let mut indices: Vec<usize> = (0..self.sources.len()).collect();
         indices.sort_by_key(|&i| self.targets[i]);
