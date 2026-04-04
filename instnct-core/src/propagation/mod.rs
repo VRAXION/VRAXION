@@ -11,8 +11,8 @@
 //! appears in the hot path.
 
 use crate::parameters::{
-    GLOBAL_CHARGE_DECAY_INTERVAL_TICKS, GLOBAL_INPUT_DURATION_TICKS, GLOBAL_TICKS_PER_TOKEN,
-    GLOBAL_PHASE_CHANNEL_COUNT, GLOBAL_PHASE_TICKS_PER_PERIOD, LIMIT_MAX_CHARGE,
+    GLOBAL_CHARGE_DECAY_INTERVAL_TICKS, GLOBAL_INPUT_DURATION_TICKS, GLOBAL_PHASE_CHANNEL_COUNT,
+    GLOBAL_PHASE_TICKS_PER_PERIOD, GLOBAL_TICKS_PER_TOKEN, LIMIT_MAX_CHARGE,
 };
 use crate::topology::ConnectionGraph;
 use std::error::Error;
@@ -35,7 +35,9 @@ pub struct PropagationWorkspace {
 impl PropagationWorkspace {
     /// Create a workspace sized for `neuron_count` neurons.
     pub fn new(neuron_count: usize) -> Self {
-        Self { incoming_scratch: vec![0; neuron_count] }
+        Self {
+            incoming_scratch: vec![0; neuron_count],
+        }
     }
 
     /// Grow buffer to fit `neuron_count`. Only grows, never shrinks.
@@ -57,22 +59,22 @@ impl PropagationWorkspace {
 #[allow(missing_docs)]
 pub struct PropagationParameters<'a> {
     pub threshold: &'a [u32], // stored [0,15], effective = stored+1 -> [1,16]
-    pub channel:   &'a [u8],  // phase gating channel [1,8]
-    pub polarity:  &'a [i32], // +1 excitatory, -1 inhibitory
+    pub channel: &'a [u8],    // phase gating channel [1,8]
+    pub polarity: &'a [i32],  // +1 excitatory, -1 inhibitory
 }
 
 /// Mutable neuron state carried across tokens.
 #[allow(missing_docs)]
 pub struct PropagationState<'a> {
     pub activation: &'a mut [i32], // +1, -1, or 0
-    pub charge:     &'a mut [u32], // [0, LIMIT_MAX_CHARGE]
+    pub charge: &'a mut [u32],     // [0, LIMIT_MAX_CHARGE]
 }
 
 /// Timing configuration for one forward pass.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 #[allow(missing_docs)]
 pub struct PropagationConfig {
-    pub ticks_per_token:      usize, // total simulation ticks per token
+    pub ticks_per_token: usize,      // total simulation ticks per token
     pub input_duration_ticks: usize, // injection window at start
     pub decay_interval_ticks: usize, // charge -= 1 every N ticks
 }
@@ -93,50 +95,123 @@ impl Default for PropagationConfig {
 #[derive(Clone, Debug, PartialEq, Eq)]
 #[allow(missing_docs)] // variant names + field names are self-evident
 pub enum PropagationError {
-    ActivationLengthMismatch { expected: usize, actual: usize }, // activation.len() != neuron_count
-    InputLengthMismatch      { expected: usize, actual: usize }, // input.len() != neuron_count
-    ChargeLengthMismatch     { expected: usize, actual: usize }, // charge.len() != neuron_count
-    ThresholdLengthMismatch  { expected: usize, actual: usize }, // threshold.len() != neuron_count
-    ChannelLengthMismatch    { expected: usize, actual: usize }, // channel.len() != neuron_count
-    PolarityLengthMismatch   { expected: usize, actual: usize }, // polarity.len() != neuron_count
-    ScratchTooSmall          { required: usize, actual: usize }, // workspace buffer < neuron_count
-    EdgeLengthMismatch       { sources: usize, targets: usize }, // sources.len() != targets.len()
-    EdgeSourceOutOfBounds    { index: usize, value: usize, neuron_count: usize }, // source >= n
-    EdgeTargetOutOfBounds    { index: usize, value: usize, neuron_count: usize }, // target >= n
-    ThresholdOutOfRange      { index: usize, value: u32 },  // threshold > 15
-    ChannelOutOfRange        { index: usize, value: u8 },   // channel not in 1..=8
-    PolarityOutOfRange       { index: usize, value: i32 },  // polarity not ±1
+    ActivationLengthMismatch {
+        expected: usize,
+        actual: usize,
+    }, // activation.len() != neuron_count
+    InputLengthMismatch {
+        expected: usize,
+        actual: usize,
+    }, // input.len() != neuron_count
+    ChargeLengthMismatch {
+        expected: usize,
+        actual: usize,
+    }, // charge.len() != neuron_count
+    ThresholdLengthMismatch {
+        expected: usize,
+        actual: usize,
+    }, // threshold.len() != neuron_count
+    ChannelLengthMismatch {
+        expected: usize,
+        actual: usize,
+    }, // channel.len() != neuron_count
+    PolarityLengthMismatch {
+        expected: usize,
+        actual: usize,
+    }, // polarity.len() != neuron_count
+    ScratchTooSmall {
+        required: usize,
+        actual: usize,
+    }, // workspace buffer < neuron_count
+    EdgeLengthMismatch {
+        sources: usize,
+        targets: usize,
+    }, // sources.len() != targets.len()
+    EdgeSourceOutOfBounds {
+        index: usize,
+        value: usize,
+        neuron_count: usize,
+    }, // source >= n
+    EdgeTargetOutOfBounds {
+        index: usize,
+        value: usize,
+        neuron_count: usize,
+    }, // target >= n
+    ThresholdOutOfRange {
+        index: usize,
+        value: u32,
+    }, // threshold > 15
+    ChannelOutOfRange {
+        index: usize,
+        value: u8,
+    }, // channel not in 1..=8
+    PolarityOutOfRange {
+        index: usize,
+        value: i32,
+    }, // polarity not ±1
 }
 
 impl fmt::Display for PropagationError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Self::ActivationLengthMismatch { expected, actual } =>
-                write!(f, "activation length mismatch: expected {expected}, got {actual}"),
-            Self::InputLengthMismatch { expected, actual } =>
-                write!(f, "input length mismatch: expected {expected}, got {actual}"),
-            Self::ChargeLengthMismatch { expected, actual } =>
-                write!(f, "charge length mismatch: expected {expected}, got {actual}"),
-            Self::ThresholdLengthMismatch { expected, actual } =>
-                write!(f, "threshold length mismatch: expected {expected}, got {actual}"),
-            Self::ChannelLengthMismatch { expected, actual } =>
-                write!(f, "channel length mismatch: expected {expected}, got {actual}"),
-            Self::PolarityLengthMismatch { expected, actual } =>
-                write!(f, "polarity length mismatch: expected {expected}, got {actual}"),
-            Self::ScratchTooSmall { required, actual } =>
-                write!(f, "scratch buffer too small: need {required}, got {actual}"),
-            Self::EdgeLengthMismatch { sources, targets } =>
-                write!(f, "edge length mismatch: {sources} sources vs {targets} targets"),
-            Self::EdgeSourceOutOfBounds { index, value, neuron_count } =>
-                write!(f, "edge source out of bounds at edge {index}: {value} >= {neuron_count}"),
-            Self::EdgeTargetOutOfBounds { index, value, neuron_count } =>
-                write!(f, "edge target out of bounds at edge {index}: {value} >= {neuron_count}"),
-            Self::ThresholdOutOfRange { index, value } =>
-                write!(f, "threshold out of range at neuron {index}: {value} > 15"),
-            Self::ChannelOutOfRange { index, value } =>
-                write!(f, "channel out of range at neuron {index}: {value} not in 1..=8"),
-            Self::PolarityOutOfRange { index, value } =>
-                write!(f, "polarity out of range at neuron {index}: {value} not in {{-1, +1}}"),
+            Self::ActivationLengthMismatch { expected, actual } => write!(
+                f,
+                "activation length mismatch: expected {expected}, got {actual}"
+            ),
+            Self::InputLengthMismatch { expected, actual } => write!(
+                f,
+                "input length mismatch: expected {expected}, got {actual}"
+            ),
+            Self::ChargeLengthMismatch { expected, actual } => write!(
+                f,
+                "charge length mismatch: expected {expected}, got {actual}"
+            ),
+            Self::ThresholdLengthMismatch { expected, actual } => write!(
+                f,
+                "threshold length mismatch: expected {expected}, got {actual}"
+            ),
+            Self::ChannelLengthMismatch { expected, actual } => write!(
+                f,
+                "channel length mismatch: expected {expected}, got {actual}"
+            ),
+            Self::PolarityLengthMismatch { expected, actual } => write!(
+                f,
+                "polarity length mismatch: expected {expected}, got {actual}"
+            ),
+            Self::ScratchTooSmall { required, actual } => {
+                write!(f, "scratch buffer too small: need {required}, got {actual}")
+            }
+            Self::EdgeLengthMismatch { sources, targets } => write!(
+                f,
+                "edge length mismatch: {sources} sources vs {targets} targets"
+            ),
+            Self::EdgeSourceOutOfBounds {
+                index,
+                value,
+                neuron_count,
+            } => write!(
+                f,
+                "edge source out of bounds at edge {index}: {value} >= {neuron_count}"
+            ),
+            Self::EdgeTargetOutOfBounds {
+                index,
+                value,
+                neuron_count,
+            } => write!(
+                f,
+                "edge target out of bounds at edge {index}: {value} >= {neuron_count}"
+            ),
+            Self::ThresholdOutOfRange { index, value } => {
+                write!(f, "threshold out of range at neuron {index}: {value} > 15")
+            }
+            Self::ChannelOutOfRange { index, value } => write!(
+                f,
+                "channel out of range at neuron {index}: {value} not in 1..=8"
+            ),
+            Self::PolarityOutOfRange { index, value } => write!(
+                f,
+                "polarity out of range at neuron {index}: {value} not in {{-1, +1}}"
+            ),
         }
     }
 }
@@ -156,27 +231,91 @@ fn validate_propagation_inputs(
     let (edge_src, edge_tgt) = graph.edge_endpoints();
 
     // Slice length checks
-    if state.activation.len() != n { return Err(PropagationError::ActivationLengthMismatch { expected: n, actual: state.activation.len() }); }
-    if state.charge.len() != n     { return Err(PropagationError::ChargeLengthMismatch { expected: n, actual: state.charge.len() }); }
-    if input.len() != n            { return Err(PropagationError::InputLengthMismatch { expected: n, actual: input.len() }); }
-    if params.threshold.len() != n { return Err(PropagationError::ThresholdLengthMismatch { expected: n, actual: params.threshold.len() }); }
-    if params.channel.len() != n   { return Err(PropagationError::ChannelLengthMismatch { expected: n, actual: params.channel.len() }); }
-    if params.polarity.len() != n  { return Err(PropagationError::PolarityLengthMismatch { expected: n, actual: params.polarity.len() }); }
-    if workspace.incoming_scratch.len() < n { return Err(PropagationError::ScratchTooSmall { required: n, actual: workspace.incoming_scratch.len() }); }
-    if edge_src.len() != edge_tgt.len() { return Err(PropagationError::EdgeLengthMismatch { sources: edge_src.len(), targets: edge_tgt.len() }); }
+    if state.activation.len() != n {
+        return Err(PropagationError::ActivationLengthMismatch {
+            expected: n,
+            actual: state.activation.len(),
+        });
+    }
+    if state.charge.len() != n {
+        return Err(PropagationError::ChargeLengthMismatch {
+            expected: n,
+            actual: state.charge.len(),
+        });
+    }
+    if input.len() != n {
+        return Err(PropagationError::InputLengthMismatch {
+            expected: n,
+            actual: input.len(),
+        });
+    }
+    if params.threshold.len() != n {
+        return Err(PropagationError::ThresholdLengthMismatch {
+            expected: n,
+            actual: params.threshold.len(),
+        });
+    }
+    if params.channel.len() != n {
+        return Err(PropagationError::ChannelLengthMismatch {
+            expected: n,
+            actual: params.channel.len(),
+        });
+    }
+    if params.polarity.len() != n {
+        return Err(PropagationError::PolarityLengthMismatch {
+            expected: n,
+            actual: params.polarity.len(),
+        });
+    }
+    if workspace.incoming_scratch.len() < n {
+        return Err(PropagationError::ScratchTooSmall {
+            required: n,
+            actual: workspace.incoming_scratch.len(),
+        });
+    }
+    if edge_src.len() != edge_tgt.len() {
+        return Err(PropagationError::EdgeLengthMismatch {
+            sources: edge_src.len(),
+            targets: edge_tgt.len(),
+        });
+    }
 
     // Value range checks (single pass over neurons)
     for i in 0..n {
-        if params.threshold[i] > 15 { return Err(PropagationError::ThresholdOutOfRange { index: i, value: params.threshold[i] }); }
-        if !(1..=GLOBAL_PHASE_CHANNEL_COUNT as u8).contains(&params.channel[i]) { return Err(PropagationError::ChannelOutOfRange { index: i, value: params.channel[i] }); }
+        if params.threshold[i] > 15 {
+            return Err(PropagationError::ThresholdOutOfRange {
+                index: i,
+                value: params.threshold[i],
+            });
+        }
+        if !(1..=GLOBAL_PHASE_CHANNEL_COUNT as u8).contains(&params.channel[i]) {
+            return Err(PropagationError::ChannelOutOfRange {
+                index: i,
+                value: params.channel[i],
+            });
+        }
         let p = params.polarity[i];
-        if p != 1 && p != -1 { return Err(PropagationError::PolarityOutOfRange { index: i, value: p }); }
+        if p != 1 && p != -1 {
+            return Err(PropagationError::PolarityOutOfRange { index: i, value: p });
+        }
     }
 
     // Edge endpoint bounds
     for (i, (&s, &t)) in edge_src.iter().zip(edge_tgt.iter()).enumerate() {
-        if s >= n { return Err(PropagationError::EdgeSourceOutOfBounds { index: i, value: s, neuron_count: n }); }
-        if t >= n { return Err(PropagationError::EdgeTargetOutOfBounds { index: i, value: t, neuron_count: n }); }
+        if s >= n {
+            return Err(PropagationError::EdgeSourceOutOfBounds {
+                index: i,
+                value: s,
+                neuron_count: n,
+            });
+        }
+        if t >= n {
+            return Err(PropagationError::EdgeTargetOutOfBounds {
+                index: i,
+                value: t,
+                neuron_count: n,
+            });
+        }
     }
 
     Ok(())
@@ -222,7 +361,9 @@ pub(crate) fn propagate_token_unchecked(
     for tick in 0..config.ticks_per_token {
         // Charge decay: subtract 1 every N ticks
         if config.decay_interval_ticks > 0 && tick % config.decay_interval_ticks == 0 {
-            for charge in state.charge.iter_mut() { *charge = charge.saturating_sub(1); }
+            for charge in state.charge.iter_mut() {
+                *charge = charge.saturating_sub(1);
+            }
         }
 
         // Input injection: first N ticks only
@@ -235,7 +376,10 @@ pub(crate) fn propagate_token_unchecked(
         // Scatter-add: accumulate incoming signals per neuron
         let incoming = &mut workspace.incoming_scratch[..neuron_count];
         incoming.fill(0);
-        for (sc, tc) in edge_sources.chunks_exact(4).zip(edge_targets.chunks_exact(4)) {
+        for (sc, tc) in edge_sources
+            .chunks_exact(4)
+            .zip(edge_targets.chunks_exact(4))
+        {
             incoming[tc[0]] += state.activation[sc[0]]; // unrolled — LLVM drops bounds checks
             incoming[tc[1]] += state.activation[sc[1]]; // because chunks_exact guarantees len==4
             incoming[tc[2]] += state.activation[sc[2]];
