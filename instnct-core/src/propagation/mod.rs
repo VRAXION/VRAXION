@@ -42,7 +42,9 @@ use std::fmt;
 //
 // Built once at workspace creation, then read-only during propagation.
 
-type PhaseGatingTable = [[u32; GLOBAL_PHASE_TICKS_PER_PERIOD]; GLOBAL_PHASE_CHANNEL_COUNT + 1];
+/// Phase gating lookup table: `[channel][tick] -> threshold multiplier (×1000)`.
+/// Values range 700-1300, fitting comfortably in u16 (max 65,535).
+type PhaseGatingTable = [[u16; GLOBAL_PHASE_TICKS_PER_PERIOD]; GLOBAL_PHASE_CHANNEL_COUNT + 1];
 
 // =========================================================================
 // Workspace — reusable hot-path state
@@ -104,14 +106,14 @@ impl PropagationWorkspace {
 // Float math is acceptable here because this runs once at startup,
 // never in the hot path.
 fn build_phase_gating_table() -> PhaseGatingTable {
-    let mut table = [[1000u32; GLOBAL_PHASE_TICKS_PER_PERIOD]; GLOBAL_PHASE_CHANNEL_COUNT + 1];
+    let mut table = [[1000u16; GLOBAL_PHASE_TICKS_PER_PERIOD]; GLOBAL_PHASE_CHANNEL_COUNT + 1];
     for (channel, row) in table.iter_mut().enumerate().skip(1) {
         for (tick, entry) in row.iter_mut().enumerate() {
             let phase_offset = tick as f64 - (channel - 1) as f64;
             let angle =
                 2.0 * std::f64::consts::PI * phase_offset / GLOBAL_PHASE_TICKS_PER_PERIOD as f64;
             let amplitude = GLOBAL_PHASE_AMPLITUDE_PERMILLE as f64 / 1000.0;
-            *entry = ((1.0 - amplitude * angle.cos()) * 1000.0).round() as u32;
+            *entry = ((1.0 - amplitude * angle.cos()) * 1000.0).round() as u16;
         }
     }
     table
@@ -451,6 +453,17 @@ pub(crate) fn propagate_token_unchecked(
             *charge = new_charge.clamp(0, LIMIT_MAX_CHARGE as i32) as u32;
         }
 
+        // =============================================================
+        // Spike stage: phase-gated threshold comparison in u16 space.
+        //
+        // Both sides are promoted to u16 for the comparison:
+        //   charge_stage = charge * 1000       (max 15*1000 = 15,000)
+        //   threshold_stage = (theta+1) * LUT  (max 16*1300 = 20,800)
+        //
+        // Max value 20,800 fits comfortably in u16 (max 65,535).
+        // The ×1000 scale preserves the full cosine LUT precision
+        // (700, 788, 1000, 1212, 1300) without any rounding.
+        // =============================================================
         let tick_in_period = tick % GLOBAL_PHASE_TICKS_PER_PERIOD;
         for neuron_idx in 0..neuron_count {
             let channel = params.channel[neuron_idx] as usize;
@@ -459,12 +472,13 @@ pub(crate) fn propagate_token_unchecked(
             } else {
                 1000
             };
-            let charge_scaled = state.charge[neuron_idx] * 1000;
+            let charge_stage: u16 = state.charge[neuron_idx] as u16 * 1000;
             // +1 shift: stored threshold 0-15, effective 1-16.
             // Uses full int4 range; stored=15 → effective=16 (supergate).
-            let threshold_scaled = (params.threshold[neuron_idx] + 1) * phase_multiplier;
+            let threshold_stage: u16 =
+                (params.threshold[neuron_idx] + 1) as u16 * phase_multiplier as u16;
 
-            if charge_scaled >= threshold_scaled {
+            if charge_stage >= threshold_stage {
                 state.activation[neuron_idx] = params.polarity[neuron_idx];
                 state.charge[neuron_idx] = 0;
             } else {
