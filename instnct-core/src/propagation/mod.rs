@@ -233,7 +233,7 @@ pub(crate) fn propagate_token_unchecked(
         let tip = tick % GLOBAL_PHASE_TICKS_PER_PERIOD;
         for neuron_idx in 0..neuron_count {
             let ch = params.channel[neuron_idx] as usize;
-            let phase_mult: u16 = if ch >= 1 && ch <= GLOBAL_PHASE_CHANNEL_COUNT {
+            let phase_mult: u16 = if (1..=GLOBAL_PHASE_CHANNEL_COUNT).contains(&ch) {
                 PHASE_BASE[(tip + 9 - ch) & 7] as u16 // rotate: ch=1 peaks at tick 0
             } else {
                 10 // neutral (no gating)
