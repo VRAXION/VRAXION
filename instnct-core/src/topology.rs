@@ -118,6 +118,13 @@ impl ConnectionGraph {
         (&self.sources, &self.targets)
     }
 
+    /// Public edge endpoints for benchmarks. Same as `edge_endpoints`.
+    #[cfg(feature = "benchmarks")]
+    #[inline]
+    pub fn edge_endpoints_pub(&self) -> (&[usize], &[usize]) {
+        (&self.sources, &self.targets)
+    }
+
     /// Iterate over directed edges without allocating.
     #[inline]
     pub fn iter_edges(&self) -> impl Iterator<Item = DirectedEdge> + '_ {
@@ -246,6 +253,19 @@ impl ConnectionGraph {
         }
         self.debug_assert_invariants();
         true
+    }
+
+    /// Sort edges by target index for cache-friendly scatter-add writes.
+    /// Does not affect correctness (addition is commutative), only performance.
+    pub fn sort_edges_by_target(&mut self) {
+        let mut indices: Vec<usize> = (0..self.sources.len()).collect();
+        indices.sort_by_key(|&i| self.targets[i]);
+        let old_sources = self.sources.clone();
+        let old_targets = self.targets.clone();
+        for (new_pos, &old_pos) in indices.iter().enumerate() {
+            self.sources[new_pos] = old_sources[old_pos];
+            self.targets[new_pos] = old_targets[old_pos];
+        }
     }
 
     /// Construct from a list of `(source, target)` pairs.

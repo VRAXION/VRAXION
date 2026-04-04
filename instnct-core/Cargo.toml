@@ -25,3 +25,8 @@ rayon = "1.10"
 name = "forward_bench"
 harness = false
 required-features = ["benchmarks"]
+
+[[bench]]
+name = "optimization_ab"
+harness = false
+required-features = ["benchmarks"]
