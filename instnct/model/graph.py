@@ -62,6 +62,9 @@ class SelfWiringGraph:
     # Channel N peaks (easiest firing) at tick N-1. Stored as 9x8 (row 0 unused).
     # Replaces sin(tick*freq+phase)*rho with a single LUT lookup.
     # Learnable channel (23.8%) > sin binary (21.4%) > uint8 frozen (16.2%) > none (6.7%)
+    # Damping experiments (2026-04-04) confirmed: this LUT + 3-bit channel is optimal.
+    # Tested & rejected: damping score, per-tick signed, per-tick threshold multiplier.
+    # Rust equivalent: PHASE_BASE = [7,8,10,12,13,12,10,8] (x10 scale, 8 bytes)
     WAVE_LUT = np.ones((9, 8), dtype=np.float32)  # row 0 = neutral (unused)
     for _ch in range(1, 9):
         for _t in range(8):
