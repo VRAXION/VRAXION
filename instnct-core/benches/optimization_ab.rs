@@ -3,49 +3,16 @@
 //! Tests: A (edge sort), B (branchless spike), C (AVX2 auto-vectorize)
 //! Run: cargo bench --bench optimization_ab --features benchmarks
 
+mod common;
+
+use common::{build_graph, print_harness_header, timed_run};
 use instnct_core::__internal::propagate_token_unchecked;
 use instnct_core::{
     ConnectionGraph, PropagationConfig, PropagationParameters, PropagationState,
     PropagationWorkspace,
 };
 use std::hint::black_box;
-use std::time::Instant;
-
-const WARMUP: usize = 100;
-const RUNS: usize = 7;
 const PHASE_BASE: [u8; 8] = [7, 8, 10, 12, 13, 12, 10, 8];
-
-// Pin to core 0 + HIGH priority for stable measurements
-#[cfg(target_os = "windows")]
-fn pin_and_boost() {
-    extern "system" {
-        fn SetThreadAffinityMask(hThread: isize, dwThreadAffinityMask: usize) -> usize;
-        fn GetCurrentThread() -> isize;
-        fn SetPriorityClass(hProcess: isize, dwPriorityClass: u32) -> i32;
-        fn GetCurrentProcess() -> isize;
-    }
-    unsafe {
-        SetThreadAffinityMask(GetCurrentThread(), 1);
-        SetPriorityClass(GetCurrentProcess(), 0x00000080); // HIGH_PRIORITY_CLASS
-    }
-}
-
-fn build_graph(neuron_count: usize, edge_prob_pct: u64) -> ConnectionGraph {
-    let mut graph = ConnectionGraph::new(neuron_count);
-    let mut rng: u64 = 42;
-    for i in 0..neuron_count {
-        for j in 0..neuron_count {
-            if i == j {
-                continue;
-            }
-            rng = rng.wrapping_mul(6364136223846793005).wrapping_add(1);
-            if (rng >> 32) % 100 < edge_prob_pct {
-                graph.add_edge(i as u16, j as u16);
-            }
-        }
-    }
-    graph
-}
 
 fn build_params(n: usize) -> (Vec<u32>, Vec<u8>, Vec<i32>, Vec<i32>) {
     let threshold = vec![6u32; n];
@@ -60,34 +27,6 @@ fn build_params(n: usize) -> (Vec<u32>, Vec<u8>, Vec<i32>, Vec<i32>) {
     let mut input = vec![0i32; n];
     input[0] = 1;
     (threshold, channel, polarity, input)
-}
-
-fn timed_run(name: &str, iters: usize, mut body: impl FnMut()) -> f64 {
-    for _ in 0..WARMUP {
-        body();
-    }
-    let mut times = Vec::new();
-    for _ in 0..RUNS {
-        let start = Instant::now();
-        for _ in 0..iters {
-            body();
-        }
-        times.push(start.elapsed().as_nanos() as f64 / iters as f64);
-    }
-    times.sort_by(|a, b| a.partial_cmp(b).unwrap());
-    let median = times[RUNS / 2];
-    let mean: f64 = times.iter().sum::<f64>() / RUNS as f64;
-    let stddev = (times.iter().map(|t| (t - mean).powi(2)).sum::<f64>() / RUNS as f64).sqrt();
-    let cv = stddev / mean * 100.0;
-    println!(
-        "  {name:45} median={:>10.0} ns  sd={:>6.0}  cv={:>4.1}%  [{:.0}..{:.0}]",
-        median,
-        stddev,
-        cv,
-        times[0],
-        times[RUNS - 1]
-    );
-    median
 }
 
 fn compare(label: &str, baseline: f64, candidate: f64, noise_pct: f64) {
@@ -252,12 +191,7 @@ unsafe fn propagate_avx2(inputs: &BenchInputs<'_>, scratch: &mut BenchScratch) {
 }
 
 fn main() {
-    #[cfg(target_os = "windows")]
-    pin_and_boost();
-    println!(
-        "Deterministic harness: core 0 pinned, HIGH priority, {} runs/test\n",
-        RUNS
-    );
+    print_harness_header();
 
     let config = PropagationConfig {
         ticks_per_token: 12,
@@ -301,7 +235,7 @@ fn main() {
                 propagate_inline(black_box(&inputs), black_box(&mut scratch), false);
             });
         }
-        let noise_pct = ((ctrl_b - ctrl_a) / ctrl_a * 100.0).abs();
+        let noise_pct = ((ctrl_b.median_ns - ctrl_a.median_ns) / ctrl_a.median_ns * 100.0).abs();
         println!("    --> NOISE FLOOR: {noise_pct:.1}%\n");
 
         // A: Edge sort by target
@@ -357,7 +291,12 @@ fn main() {
                 );
             });
         }
-        compare("sorted vs unsorted", a_unsorted, a_sorted, noise_pct);
+        compare(
+            "sorted vs unsorted",
+            a_unsorted.median_ns,
+            a_sorted.median_ns,
+            noise_pct,
+        );
         println!();
 
         // B: Branchless spike
@@ -379,8 +318,8 @@ fn main() {
         }
         compare(
             "branchless vs branching",
-            b_branching,
-            b_branchless,
+            b_branching.median_ns,
+            b_branchless.median_ns,
             noise_pct,
         );
         println!();
@@ -406,7 +345,12 @@ fn main() {
                     }
                 });
             }
-            compare("avx2 vs scalar", c_scalar, c_avx2, noise_pct);
+            compare(
+                "avx2 vs scalar",
+                c_scalar.median_ns,
+                c_avx2.median_ns,
+                noise_pct,
+            );
         }
 
         println!();
