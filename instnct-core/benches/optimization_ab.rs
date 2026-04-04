@@ -31,7 +31,7 @@ fn build_bench_fixture(neuron_count: usize) -> (Vec<u32>, Vec<u8>, Vec<i32>, Vec
 
 fn compare(label: &str, baseline: f64, candidate: f64, noise_pct: f64) {
     let delta_pct = (candidate - baseline) / baseline * 100.0;
-    let sig = if delta_pct.abs() > noise_pct * 3.0 {
+    let significance = if delta_pct.abs() > noise_pct * 3.0 {
         "SIGNIFICANT"
     } else if delta_pct.abs() > noise_pct {
         "borderline"
@@ -39,7 +39,7 @@ fn compare(label: &str, baseline: f64, candidate: f64, noise_pct: f64) {
         "WITHIN NOISE"
     };
     println!(
-        "    {label:40} {:+.1}%  ({sig}, noise floor={:.1}%)",
+        "    {label:40} {:+.1}%  ({significance}, noise floor={:.1}%)",
         delta_pct, noise_pct
     );
 }
@@ -224,34 +224,36 @@ fn main() {
         println!("  edges: {}", graph.edge_count());
 
         // --- NOISE FLOOR: scalar vs scalar (identical code, separate runs) ---
-        let ctrl_a;
-        let ctrl_b;
+        let control_run_a;
+        let control_run_b;
         {
             let mut scratch = BenchScratch::new(neuron_count);
-            ctrl_a = timed_run("CTRL-1 (scalar #1)", iterations, || {
+            control_run_a = timed_run("CTRL-1 (scalar #1)", iterations, || {
                 scratch.reset();
                 propagate_inline(black_box(&inputs), black_box(&mut scratch), false);
             });
         }
         {
             let mut scratch = BenchScratch::new(neuron_count);
-            ctrl_b = timed_run("CTRL-2 (scalar #2)", iterations, || {
+            control_run_b = timed_run("CTRL-2 (scalar #2)", iterations, || {
                 scratch.reset();
                 propagate_inline(black_box(&inputs), black_box(&mut scratch), false);
             });
         }
-        let noise_pct = ((ctrl_b.median_ns - ctrl_a.median_ns) / ctrl_a.median_ns * 100.0).abs();
+        let noise_pct =
+            ((control_run_b.median_ns - control_run_a.median_ns) / control_run_a.median_ns * 100.0)
+                .abs();
         println!("    --> NOISE FLOOR: {noise_pct:.1}%\n");
 
         // A: Edge sort by target
         let mut graph_sorted = graph.clone();
         graph_sorted.sort_edges_by_target();
-        let a_unsorted;
+        let unsorted_stats;
         {
             let mut activation = vec![0i32; neuron_count];
             let mut charge = vec![0u32; neuron_count];
             let mut workspace = PropagationWorkspace::new(neuron_count);
-            a_unsorted = timed_run("A-baseline (unsorted)", iterations, || {
+            unsorted_stats = timed_run("A-baseline (unsorted)", iterations, || {
                 activation.fill(0);
                 charge.fill(0);
                 propagate_token_unchecked(
@@ -271,12 +273,12 @@ fn main() {
                 );
             });
         }
-        let a_sorted;
+        let sorted_stats;
         {
             let mut activation = vec![0i32; neuron_count];
             let mut charge = vec![0u32; neuron_count];
             let mut workspace = PropagationWorkspace::new(neuron_count);
-            a_sorted = timed_run("A-sorted (edges by target)", iterations, || {
+            sorted_stats = timed_run("A-sorted (edges by target)", iterations, || {
                 activation.fill(0);
                 charge.fill(0);
                 propagate_token_unchecked(
@@ -298,33 +300,33 @@ fn main() {
         }
         compare(
             "sorted vs unsorted",
-            a_unsorted.median_ns,
-            a_sorted.median_ns,
+            unsorted_stats.median_ns,
+            sorted_stats.median_ns,
             noise_pct,
         );
         println!();
 
         // B: Branchless spike
-        let b_branching;
+        let branching_stats;
         {
             let mut scratch = BenchScratch::new(neuron_count);
-            b_branching = timed_run("B-branching (if/else spike)", iterations, || {
+            branching_stats = timed_run("B-branching (if/else spike)", iterations, || {
                 scratch.reset();
                 propagate_inline(black_box(&inputs), black_box(&mut scratch), false);
             });
         }
-        let b_branchless;
+        let branchless_stats;
         {
             let mut scratch = BenchScratch::new(neuron_count);
-            b_branchless = timed_run("B-branchless (select_unpredictable)", iterations, || {
+            branchless_stats = timed_run("B-branchless (select_unpredictable)", iterations, || {
                 scratch.reset();
                 propagate_inline(black_box(&inputs), black_box(&mut scratch), true);
             });
         }
         compare(
             "branchless vs branching",
-            b_branching.median_ns,
-            b_branchless.median_ns,
+            branching_stats.median_ns,
+            branchless_stats.median_ns,
             noise_pct,
         );
         println!();
@@ -332,18 +334,19 @@ fn main() {
         // C: AVX2 — SAME if/else logic, only target_feature differs
         #[cfg(target_arch = "x86_64")]
         if is_x86_feature_detected!("avx2") {
-            let c_scalar;
-            let c_avx2;
+            let scalar_stats;
+            let avx2_stats;
             {
                 let mut scratch = BenchScratch::new(neuron_count);
-                c_scalar = timed_run("C-scalar (if/else, no target_feature)", iterations, || {
-                    scratch.reset();
-                    propagate_inline(black_box(&inputs), black_box(&mut scratch), false);
-                });
+                scalar_stats =
+                    timed_run("C-scalar (if/else, no target_feature)", iterations, || {
+                        scratch.reset();
+                        propagate_inline(black_box(&inputs), black_box(&mut scratch), false);
+                    });
             }
             {
                 let mut scratch = BenchScratch::new(neuron_count);
-                c_avx2 = timed_run(
+                avx2_stats = timed_run(
                     "C-avx2   (if/else, target_feature avx2)",
                     iterations,
                     || {
@@ -356,8 +359,8 @@ fn main() {
             }
             compare(
                 "avx2 vs scalar",
-                c_scalar.median_ns,
-                c_avx2.median_ns,
+                scalar_stats.median_ns,
+                avx2_stats.median_ns,
                 noise_pct,
             );
         }

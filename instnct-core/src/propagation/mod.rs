@@ -401,11 +401,11 @@ pub(crate) fn propagate_token_unchecked(
         }
 
         // Spike stage: charge*10 >= (theta+1) * PHASE_BASE  (max 150 vs 208, fits u16)
-        let tip = tick % GLOBAL_PHASE_TICKS_PER_PERIOD;
+        let phase_tick = tick % GLOBAL_PHASE_TICKS_PER_PERIOD;
         for neuron_idx in 0..neuron_count {
-            let ch = params.channel[neuron_idx] as usize;
-            let phase_mult: u16 = if (1..=GLOBAL_PHASE_CHANNEL_COUNT).contains(&ch) {
-                PHASE_BASE[(tip + 9 - ch) & 7] as u16 // rotate: ch=1 peaks at tick 0
+            let channel_idx = params.channel[neuron_idx] as usize;
+            let phase_mult: u16 = if (1..=GLOBAL_PHASE_CHANNEL_COUNT).contains(&channel_idx) {
+                PHASE_BASE[(phase_tick + 9 - channel_idx) & 7] as u16 // rotate: channel 1 peaks at tick 0
             } else {
                 10 // neutral (no gating)
             };
