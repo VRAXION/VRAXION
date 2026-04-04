@@ -66,18 +66,12 @@ impl From<PropagationError> for NetworkError {
 #[derive(Clone, Debug)]
 pub struct Network {
     graph: ConnectionGraph,
-
-    // per-neuron learned parameters
-    threshold: Vec<u32>, // stored [0,15]; effective = stored+1 → [1,16]
-    channel: Vec<u8>,    // phase gating channel [1,8]
-    polarity: Vec<i32>,  // +1 excitatory, -1 inhibitory
-
-    // ephemeral state (mutated every tick)
-    activation: Vec<i32>, // +1, -1, or 0
-    charge: Vec<u32>,     // [0, LIMIT_MAX_CHARGE]
-
-    // reusable scratch buffer
-    workspace: PropagationWorkspace,
+    threshold: Vec<u32>, // per-neuron, stored [0,15]; effective = stored+1 → [1,16]
+    channel: Vec<u8>,    // per-neuron, phase gating channel [1,8]
+    polarity: Vec<i32>,  // per-neuron, +1 excitatory, -1 inhibitory
+    activation: Vec<i32>, // ephemeral, +1, -1, or 0
+    charge: Vec<u32>,    // ephemeral, [0, LIMIT_MAX_CHARGE]
+    workspace: PropagationWorkspace, // reusable scratch buffer
 }
 
 impl Network {
