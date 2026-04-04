@@ -24,7 +24,7 @@ impl RunStats {
 }
 
 #[cfg(target_os = "windows")]
-fn pin_and_boost() {
+fn pin_and_boost() -> (bool, bool) {
     unsafe extern "system" {
         fn SetThreadAffinityMask(h_thread: isize, dw_thread_affinity_mask: usize) -> usize;
         fn GetCurrentThread() -> isize;
@@ -33,21 +33,32 @@ fn pin_and_boost() {
     }
 
     unsafe {
-        SetThreadAffinityMask(GetCurrentThread(), 1);
-        SetPriorityClass(GetCurrentProcess(), 0x00000080);
+        let pinned = SetThreadAffinityMask(GetCurrentThread(), 1) != 0;
+        let boosted = SetPriorityClass(GetCurrentProcess(), 0x00000080) != 0;
+        (pinned, boosted)
     }
 }
 
 pub fn print_harness_header() {
     #[cfg(target_os = "windows")]
     {
-        pin_and_boost();
-        println!("Deterministic harness: core 0 pinned, HIGH priority, {RUNS} runs/test\n");
+        let (pinned, boosted) = pin_and_boost();
+        let pin_status = if pinned {
+            "core 0 pinned"
+        } else {
+            "affinity FAILED"
+        };
+        let prio_status = if boosted {
+            "HIGH priority"
+        } else {
+            "priority FAILED"
+        };
+        println!("Deterministic harness: {pin_status}, {prio_status}, {RUNS} runs/test\n");
     }
 
     #[cfg(not(target_os = "windows"))]
     {
-        println!("Deterministic harness: best-effort fallback, {RUNS} runs/test\n");
+        println!("Deterministic harness: best-effort (no affinity/priority), {RUNS} runs/test\n");
     }
 }
 
