@@ -119,7 +119,8 @@ fn build_phase_gating_table() -> PhaseGatingTable {
 
 /// Per-neuron learned parameters for one propagation run.
 pub struct PropagationParameters<'a> {
-    /// Firing threshold per neuron. Range: `[1, 15]`.
+    /// Stored firing threshold per neuron. Range: `[0, 15]` (full int4).
+    /// Effective threshold = stored + 1, giving range `[1, 16]`.
     pub threshold: &'a [u32],
     /// Phase gating channel per neuron. Range: `[1, 8]`.
     pub channel: &'a [u8],
@@ -459,7 +460,9 @@ pub(crate) fn propagate_token_unchecked(
                 1000
             };
             let charge_scaled = state.charge[neuron_idx] * 1000;
-            let threshold_scaled = params.threshold[neuron_idx] * phase_multiplier;
+            // +1 shift: stored threshold 0-15, effective 1-16.
+            // Uses full int4 range; stored=15 → effective=16 (supergate).
+            let threshold_scaled = (params.threshold[neuron_idx] + 1) * phase_multiplier;
 
             if charge_scaled >= threshold_scaled {
                 state.activation[neuron_idx] = params.polarity[neuron_idx];

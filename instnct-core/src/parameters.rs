@@ -27,10 +27,18 @@ pub(crate) const LIMIT_MAX_CHARGE: u32 = 15;
 //
 // Construction-time defaults that fan out into per-neuron mutable state.
 
-/// Initial firing threshold for a neuron.
+/// Initial stored threshold for a neuron.
 ///
-/// Range: `[1, 15]`. Serves as the default starting point before mutation.
-pub(crate) const NEURON_INIT_THRESHOLD: u32 = 6;
+/// Stored range: `[0, 15]` (full int4). Effective threshold = stored + 1,
+/// giving an effective range of `[1, 16]`. This uses the full 4-bit range
+/// while guaranteeing effective threshold >= 1.
+///
+/// The +1 shift means:
+///   stored=0  → effective=1  (relay: fires easily, init default)
+///   stored=5  → effective=6  (compute zone)
+///   stored=14 → effective=15 (gate zone)
+///   stored=15 → effective=16 (supergate: fires only in easiest phase)
+pub(crate) const NEURON_INIT_THRESHOLD: u32 = 0;
 
 /// Initial share of inhibitory neurons.
 ///
