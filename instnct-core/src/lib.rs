@@ -28,7 +28,7 @@ mod topology;
 // Only these re-exports are part of the supported public beta API.
 
 #[doc(inline)]
-pub use network::{Network, NetworkError};
+pub use network::{Network, NetworkError, NetworkSnapshot};
 
 #[doc(inline)]
 pub use topology::{ConnectionGraph, DirectedEdge};

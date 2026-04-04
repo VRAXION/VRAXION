@@ -48,6 +48,72 @@ impl From<PropagationError> for NetworkError {
     }
 }
 
+// ---- Snapshot ----
+
+/// Frozen copy of a [`Network`]'s mutable state for rollback.
+///
+/// Cheaper than a full `Network` clone — does not allocate a workspace buffer.
+/// Created by [`Network::save_state`], consumed by [`Network::restore_state`].
+#[derive(Clone, Debug)]
+pub struct NetworkSnapshot {
+    graph: ConnectionGraph,
+    threshold: Vec<u32>,
+    channel: Vec<u8>,
+    polarity: Vec<i32>,
+    activation: Vec<i32>,
+    charge: Vec<u32>,
+}
+
+impl NetworkSnapshot {
+    /// Number of neurons in the snapshot.
+    #[inline]
+    pub fn neuron_count(&self) -> usize {
+        self.graph.neuron_count()
+    }
+
+    /// Number of directed edges in the snapshot.
+    #[inline]
+    pub fn edge_count(&self) -> usize {
+        self.graph.edge_count()
+    }
+
+    /// Immutable reference to the snapshot's connection graph.
+    #[inline]
+    pub fn graph(&self) -> &ConnectionGraph {
+        &self.graph
+    }
+
+    /// Snapshot threshold values.
+    #[inline]
+    pub fn threshold(&self) -> &[u32] {
+        &self.threshold
+    }
+
+    /// Snapshot channel values.
+    #[inline]
+    pub fn channel(&self) -> &[u8] {
+        &self.channel
+    }
+
+    /// Snapshot polarity values.
+    #[inline]
+    pub fn polarity(&self) -> &[i32] {
+        &self.polarity
+    }
+
+    /// Snapshot activation values.
+    #[inline]
+    pub fn activation(&self) -> &[i32] {
+        &self.activation
+    }
+
+    /// Snapshot charge values.
+    #[inline]
+    pub fn charge(&self) -> &[u32] {
+        &self.charge
+    }
+}
+
 // ---- Network ----
 
 /// Self-contained spiking network owning topology, parameters, and state.
@@ -134,6 +200,43 @@ impl Network {
     pub fn reset(&mut self) {
         self.activation.fill(0);
         self.charge.fill(0);
+    }
+
+    /// Snapshot the current topology, parameters, and state for later rollback.
+    /// Does not copy the workspace (it is scratch space, zeroed every tick).
+    #[must_use]
+    pub fn save_state(&self) -> NetworkSnapshot {
+        NetworkSnapshot {
+            graph: self.graph.clone(),
+            threshold: self.threshold.clone(),
+            channel: self.channel.clone(),
+            polarity: self.polarity.clone(),
+            activation: self.activation.clone(),
+            charge: self.charge.clone(),
+        }
+    }
+
+    /// Restore topology, parameters, and state from a previous snapshot.
+    ///
+    /// # Panics
+    ///
+    /// Panics if `snapshot.neuron_count() != self.neuron_count()`.
+    pub fn restore_state(&mut self, snapshot: &NetworkSnapshot) {
+        assert_eq!(
+            self.graph.neuron_count(),
+            snapshot.graph.neuron_count(),
+            "snapshot neuron_count mismatch: network={}, snapshot={}",
+            self.graph.neuron_count(),
+            snapshot.graph.neuron_count(),
+        );
+        self.graph.clone_from(&snapshot.graph);
+        self.threshold.copy_from_slice(&snapshot.threshold);
+        self.channel.copy_from_slice(&snapshot.channel);
+        self.polarity.copy_from_slice(&snapshot.polarity);
+        self.activation.copy_from_slice(&snapshot.activation);
+        self.charge.copy_from_slice(&snapshot.charge);
+        self.workspace
+            .ensure_neuron_count(self.graph.neuron_count());
     }
 
     // ---- Queries ----
@@ -570,5 +673,217 @@ mod tests {
         // Clone has its own state
         assert_eq!(cloned.threshold()[0], 10);
         assert_eq!(cloned.edge_count(), 2);
+    }
+
+    // --- Snapshot/rollback tests (step 2) ---
+
+    #[test]
+    fn save_captures_defaults() {
+        let net = Network::new(16);
+        let snap = net.save_state();
+        assert_eq!(snap.neuron_count(), 16);
+        assert_eq!(snap.edge_count(), 0);
+        assert!(snap.threshold().iter().all(|&t| t == 0));
+        assert!(snap.channel().iter().all(|&c| c == 1));
+        assert!(snap.polarity().iter().all(|&p| p == 1));
+        assert!(snap.activation().iter().all(|&a| a == 0));
+        assert!(snap.charge().iter().all(|&c| c == 0));
+    }
+
+    #[test]
+    fn save_captures_modified_params() {
+        let mut net = Network::new(8);
+        net.threshold_mut()[0] = 12;
+        net.channel_mut()[1] = 7;
+        net.polarity_mut()[2] = -1;
+        let snap = net.save_state();
+        assert_eq!(snap.threshold()[0], 12);
+        assert_eq!(snap.channel()[1], 7);
+        assert_eq!(snap.polarity()[2], -1);
+    }
+
+    #[test]
+    fn save_captures_edges() {
+        let mut net = Network::new(8);
+        net.graph_mut().add_edge(0, 1);
+        net.graph_mut().add_edge(2, 3);
+        let snap = net.save_state();
+        assert_eq!(snap.edge_count(), 2);
+        assert!(snap.graph().has_edge(0, 1));
+        assert!(snap.graph().has_edge(2, 3));
+    }
+
+    #[test]
+    fn save_captures_propagated_state() {
+        let mut net = Network::new(4);
+        net.graph_mut().add_edge(0, 1);
+        let input = vec![1i32, 0, 0, 0];
+        let config = PropagationConfig {
+            ticks_per_token: 2,
+            input_duration_ticks: 2,
+            decay_interval_ticks: 0,
+        };
+        net.propagate(&input, &config).unwrap();
+        let snap = net.save_state();
+        assert_eq!(snap.activation(), net.activation());
+        assert_eq!(snap.charge(), net.charge());
+    }
+
+    #[test]
+    fn restore_reverts_params() {
+        let mut net = Network::new(8);
+        net.threshold_mut()[3] = 10;
+        let snap = net.save_state();
+
+        net.threshold_mut()[3] = 0;
+        assert_eq!(net.threshold()[3], 0);
+
+        net.restore_state(&snap);
+        assert_eq!(net.threshold()[3], 10);
+    }
+
+    #[test]
+    fn restore_reverts_edges() {
+        let mut net = Network::new(8);
+        net.graph_mut().add_edge(0, 1);
+        let snap = net.save_state();
+
+        net.graph_mut().add_edge(2, 3);
+        assert_eq!(net.edge_count(), 2);
+
+        net.restore_state(&snap);
+        assert_eq!(net.edge_count(), 1);
+        assert!(net.graph().has_edge(0, 1));
+        assert!(!net.graph().has_edge(2, 3));
+    }
+
+    #[test]
+    fn restore_reverts_state() {
+        let mut net = Network::new(4);
+        net.graph_mut().add_edge(0, 1);
+        let snap = net.save_state(); // activation=0, charge=0
+
+        let input = vec![1i32, 0, 0, 0];
+        net.propagate(&input, &default_config()).unwrap();
+
+        net.restore_state(&snap);
+        assert!(net.activation().iter().all(|&a| a == 0));
+        assert!(net.charge().iter().all(|&c| c == 0));
+    }
+
+    #[test]
+    fn restore_twice_from_same_snapshot() {
+        let mut net = Network::new(4);
+        net.threshold_mut()[0] = 8;
+        let snap = net.save_state();
+
+        net.threshold_mut()[0] = 0;
+        net.restore_state(&snap);
+        assert_eq!(net.threshold()[0], 8);
+
+        net.threshold_mut()[0] = 15;
+        net.restore_state(&snap);
+        assert_eq!(net.threshold()[0], 8);
+    }
+
+    #[test]
+    fn snapshot_independent_of_network() {
+        let mut net = Network::new(4);
+        net.threshold_mut()[0] = 5;
+        let snap = net.save_state();
+
+        net.threshold_mut()[0] = 99;
+        net.graph_mut().add_edge(0, 1);
+
+        assert_eq!(snap.threshold()[0], 5);
+        assert_eq!(snap.edge_count(), 0);
+    }
+
+    #[test]
+    fn restore_then_propagate_matches_original() {
+        let mut net = Network::new(4);
+        net.graph_mut().add_edge(0, 1);
+        net.graph_mut().add_edge(1, 2);
+        let snap = net.save_state();
+
+        let input = vec![1i32, 0, 0, 0];
+        let config = PropagationConfig {
+            ticks_per_token: 2,
+            input_duration_ticks: 2,
+            decay_interval_ticks: 0,
+        };
+        net.propagate(&input, &config).unwrap();
+        let first_result = (net.activation().to_vec(), net.charge().to_vec());
+
+        // Dirty the state with a different input
+        net.propagate(&[0, 1, 0, 0], &config).unwrap();
+
+        // Restore and re-propagate with original input
+        net.restore_state(&snap);
+        net.propagate(&input, &config).unwrap();
+        let second_result = (net.activation().to_vec(), net.charge().to_vec());
+
+        assert_eq!(first_result, second_result);
+    }
+
+    #[test]
+    #[should_panic(expected = "snapshot neuron_count mismatch")]
+    fn restore_panics_wrong_neuron_count() {
+        let net_big = Network::new(256);
+        let snap = net_big.save_state();
+
+        let mut net_small = Network::new(128);
+        net_small.restore_state(&snap);
+    }
+
+    #[test]
+    fn snapshot_clone_is_independent() {
+        let mut net = Network::new(4);
+        net.threshold_mut()[0] = 7;
+        let snap = net.save_state();
+        let snap_clone = snap.clone();
+
+        net.threshold_mut()[0] = 0;
+        net.restore_state(&snap);
+        assert_eq!(net.threshold()[0], 7);
+        assert_eq!(snap_clone.threshold()[0], 7);
+    }
+
+    #[test]
+    fn mixed_rollback_restores_everything() {
+        let mut net = Network::new(8);
+        net.graph_mut().add_edge(0, 1);
+        net.graph_mut().add_edge(1, 2);
+        net.threshold_mut()[3] = 10;
+        net.channel_mut()[4] = 5;
+        net.polarity_mut()[5] = -1;
+        let snap = net.save_state();
+
+        // Mutate EVERYTHING at once
+        net.graph_mut().add_edge(3, 4);
+        net.graph_mut().remove_edge(0, 1);
+        net.threshold_mut()[3] = 0;
+        net.channel_mut()[4] = 8;
+        net.polarity_mut()[5] = 1;
+        let input = vec![1i32; 8];
+        let config = PropagationConfig {
+            ticks_per_token: 2,
+            input_duration_ticks: 2,
+            decay_interval_ticks: 0,
+        };
+        net.propagate(&input, &config).unwrap();
+
+        // Restore
+        net.restore_state(&snap);
+
+        // Everything reverted
+        assert_eq!(net.edge_count(), 2);
+        assert!(net.graph().has_edge(0, 1));
+        assert!(!net.graph().has_edge(3, 4));
+        assert_eq!(net.threshold()[3], 10);
+        assert_eq!(net.channel()[4], 5);
+        assert_eq!(net.polarity()[5], -1);
+        assert!(net.activation().iter().all(|&a| a == 0));
+        assert!(net.charge().iter().all(|&c| c == 0));
     }
 }
