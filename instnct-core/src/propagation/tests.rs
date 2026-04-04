@@ -3,9 +3,9 @@ use crate::topology::DirectedEdge;
 
 fn default_config() -> PropagationConfig {
     PropagationConfig {
-        ticks: 8,
-        input_duration: 2,
-        decay_period: 6,
+        ticks_per_token: 8,
+        input_duration_ticks: 2,
+        decay_interval_ticks: 6,
     }
 }
 
@@ -71,9 +71,9 @@ fn excitatory_chain_propagates_signal() {
             charge: &mut charge,
         },
         &PropagationConfig {
-            ticks: 3,
-            input_duration: 2,
-            decay_period: 100,
+            ticks_per_token: 3,
+            input_duration_ticks: 2,
+            decay_interval_ticks: 100,
         },
         &mut workspace,
     )
@@ -116,9 +116,9 @@ fn inhibitory_spike_suppresses_downstream_charge() {
             charge: &mut charge,
         },
         &PropagationConfig {
-            ticks: 4,
-            input_duration: 2,
-            decay_period: 100,
+            ticks_per_token: 4,
+            input_duration_ticks: 2,
+            decay_interval_ticks: 100,
         },
         &mut workspace,
     )
@@ -156,9 +156,9 @@ fn extreme_input_does_not_overflow_charge() {
             charge: &mut charge,
         },
         &PropagationConfig {
-            ticks: 100,
-            input_duration: 2,
-            decay_period: 6,
+            ticks_per_token: 100,
+            input_duration_ticks: 2,
+            decay_interval_ticks: 6,
         },
         &mut workspace,
     )
@@ -181,9 +181,9 @@ fn workspace_reuse_produces_identical_results() {
     let channel = vec![1u8; neuron_count];
     let polarity = vec![1i32; neuron_count];
     let config = PropagationConfig {
-        ticks: 4,
-        input_duration: 2,
-        decay_period: 100,
+        ticks_per_token: 4,
+        input_duration_ticks: 2,
+        decay_interval_ticks: 100,
     };
     let mut workspace = PropagationWorkspace::new(neuron_count);
 
@@ -249,9 +249,9 @@ fn activation_length_mismatch_returns_error() {
             charge: &mut charge,
         },
         &PropagationConfig {
-            ticks: 1,
-            input_duration: 1,
-            decay_period: 0,
+            ticks_per_token: 1,
+            input_duration_ticks: 1,
+            decay_interval_ticks: 0,
         },
         &mut workspace,
     )
@@ -286,9 +286,9 @@ fn short_input_returns_error() {
             charge: &mut charge,
         },
         &PropagationConfig {
-            ticks: 1,
-            input_duration: 1,
-            decay_period: 0,
+            ticks_per_token: 1,
+            input_duration_ticks: 1,
+            decay_interval_ticks: 0,
         },
         &mut workspace,
     )
@@ -323,9 +323,9 @@ fn charge_length_mismatch_returns_error() {
             charge: &mut charge,
         },
         &PropagationConfig {
-            ticks: 1,
-            input_duration: 1,
-            decay_period: 0,
+            ticks_per_token: 1,
+            input_duration_ticks: 1,
+            decay_interval_ticks: 0,
         },
         &mut workspace,
     )
@@ -360,9 +360,9 @@ fn threshold_length_mismatch_returns_error() {
             charge: &mut charge,
         },
         &PropagationConfig {
-            ticks: 1,
-            input_duration: 1,
-            decay_period: 0,
+            ticks_per_token: 1,
+            input_duration_ticks: 1,
+            decay_interval_ticks: 0,
         },
         &mut workspace,
     )
@@ -397,9 +397,9 @@ fn channel_length_mismatch_returns_error() {
             charge: &mut charge,
         },
         &PropagationConfig {
-            ticks: 1,
-            input_duration: 1,
-            decay_period: 0,
+            ticks_per_token: 1,
+            input_duration_ticks: 1,
+            decay_interval_ticks: 0,
         },
         &mut workspace,
     )
@@ -434,9 +434,9 @@ fn polarity_length_mismatch_returns_error() {
             charge: &mut charge,
         },
         &PropagationConfig {
-            ticks: 1,
-            input_duration: 1,
-            decay_period: 0,
+            ticks_per_token: 1,
+            input_duration_ticks: 1,
+            decay_interval_ticks: 0,
         },
         &mut workspace,
     )
@@ -485,9 +485,9 @@ fn edge_length_mismatch_returns_error() {
             charge: &mut charge,
         },
         &PropagationConfig {
-            ticks: 1,
-            input_duration: 1,
-            decay_period: 0,
+            ticks_per_token: 1,
+            input_duration_ticks: 1,
+            decay_interval_ticks: 0,
         },
         &mut workspace,
     )
@@ -530,9 +530,9 @@ fn out_of_range_edge_source_returns_error() {
             charge: &mut charge,
         },
         &PropagationConfig {
-            ticks: 1,
-            input_duration: 1,
-            decay_period: 0,
+            ticks_per_token: 1,
+            input_duration_ticks: 1,
+            decay_interval_ticks: 0,
         },
         &mut workspace,
     )
@@ -576,9 +576,9 @@ fn out_of_range_edge_target_returns_error() {
             charge: &mut charge,
         },
         &PropagationConfig {
-            ticks: 1,
-            input_duration: 1,
-            decay_period: 0,
+            ticks_per_token: 1,
+            input_duration_ticks: 1,
+            decay_interval_ticks: 0,
         },
         &mut workspace,
     )
@@ -614,9 +614,9 @@ fn scratch_too_small_returns_error() {
             charge: &mut charge,
         },
         &PropagationConfig {
-            ticks: 1,
-            input_duration: 1,
-            decay_period: 0,
+            ticks_per_token: 1,
+            input_duration_ticks: 1,
+            decay_interval_ticks: 0,
         },
         &mut workspace,
     )

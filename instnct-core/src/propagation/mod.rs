@@ -54,39 +54,40 @@ const PHASE_BASE: [u8; GLOBAL_PHASE_TICKS_PER_PERIOD] = [7, 8, 10, 12, 13, 12, 1
 // Keeps scratch-buffer allocation out of repeated propagation calls.
 // Phase gating uses the static PHASE_BASE constant (no precomputation).
 //
-//   scratch — per-neuron incoming-signal accumulator, Vec<i32>
+//   incoming_scratch — per-neuron incoming-signal accumulator, Vec<i32>
 
 /// Reusable buffers for repeated propagation calls.
 ///
-/// Stores the per-neuron scratch buffer. Phase gating reads directly
+/// Stores the per-neuron incoming-signal scratch buffer. Phase gating reads directly
 /// from the static `PHASE_BASE` constant (8 bytes, no allocation).
 /// Allocate once, pass to every `propagate_token` call.
 #[derive(Debug)]
 pub struct PropagationWorkspace {
-    scratch: Vec<i32>,
+    incoming_scratch: Vec<i32>,
 }
 
 impl PropagationWorkspace {
     /// Create a workspace sized for `neuron_count` neurons.
     pub fn new(neuron_count: usize) -> Self {
         Self {
-            scratch: vec![0; neuron_count],
+            incoming_scratch: vec![0; neuron_count],
         }
     }
 
-    /// Ensure the scratch buffer can hold `neuron_count` entries.
+    /// Grow the scratch buffer to fit `neuron_count` neurons.
     ///
-    /// Use this after growing a graph so the checked public API does not
-    /// reject the workspace as undersized.
-    pub fn ensure_neuron_capacity(&mut self, neuron_count: usize) {
-        if self.scratch.len() < neuron_count {
-            self.scratch.resize(neuron_count, 0);
+    /// Only grows, never shrinks. Preserves existing allocation when
+    /// already large enough. Call after growing a graph so the checked
+    /// public API does not reject the workspace as undersized.
+    pub fn ensure_neuron_count(&mut self, neuron_count: usize) {
+        if self.incoming_scratch.len() < neuron_count {
+            self.incoming_scratch.resize(neuron_count, 0);
         }
     }
 
     #[cfg(test)]
-    fn with_scratch(scratch: Vec<i32>) -> Self {
-        Self { scratch }
+    fn with_scratch(incoming_scratch: Vec<i32>) -> Self {
+        Self { incoming_scratch }
     }
 }
 
@@ -112,20 +113,20 @@ pub struct PropagationState<'a> {
 /// Timing configuration for one forward pass.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct PropagationConfig {
-    /// Total number of simulation ticks to execute for one token.
-    pub ticks: usize,
+    /// Total simulation ticks to execute for one token.
+    pub ticks_per_token: usize,
     /// Number of initial ticks during which the external input is injected.
-    pub input_duration: usize,
-    /// Charge decay period. Every `decay_period` ticks, each neuron loses one charge.
-    pub decay_period: usize,
+    pub input_duration_ticks: usize,
+    /// Charge decay interval. Every N ticks, each neuron loses one charge.
+    pub decay_interval_ticks: usize,
 }
 
 impl Default for PropagationConfig {
     fn default() -> Self {
         Self {
-            ticks: GLOBAL_TICKS_PER_TOKEN,
-            input_duration: GLOBAL_INPUT_DURATION_TICKS,
-            decay_period: GLOBAL_CHARGE_DECAY_INTERVAL_TICKS,
+            ticks_per_token: GLOBAL_TICKS_PER_TOKEN,
+            input_duration_ticks: GLOBAL_INPUT_DURATION_TICKS,
+            decay_interval_ticks: GLOBAL_CHARGE_DECAY_INTERVAL_TICKS,
         }
     }
 }
@@ -325,10 +326,10 @@ fn validate_propagation_inputs(
             actual: params.polarity.len(),
         });
     }
-    if workspace.scratch.len() < neuron_count {
+    if workspace.incoming_scratch.len() < neuron_count {
         return Err(PropagationError::ScratchTooSmall {
             required: neuron_count,
-            actual: workspace.scratch.len(),
+            actual: workspace.incoming_scratch.len(),
         });
     }
     if edge_sources.len() != edge_targets.len() {
@@ -394,22 +395,22 @@ pub(crate) fn propagate_token_unchecked(
     debug_assert_eq!(params.channel.len(), neuron_count);
     debug_assert_eq!(params.polarity.len(), neuron_count);
     debug_assert_eq!(edge_sources.len(), edge_targets.len());
-    debug_assert!(workspace.scratch.len() >= neuron_count);
+    debug_assert!(workspace.incoming_scratch.len() >= neuron_count);
 
-    for tick in 0..config.ticks {
-        if config.decay_period > 0 && tick % config.decay_period == 0 {
+    for tick in 0..config.ticks_per_token {
+        if config.decay_interval_ticks > 0 && tick % config.decay_interval_ticks == 0 {
             for charge in state.charge.iter_mut() {
                 *charge = charge.saturating_sub(1);
             }
         }
 
-        if tick < config.input_duration {
+        if tick < config.input_duration_ticks {
             for (activation, &input_value) in state.activation.iter_mut().zip(input.iter()) {
                 *activation += input_value;
             }
         }
 
-        let incoming = &mut workspace.scratch[..neuron_count];
+        let incoming = &mut workspace.incoming_scratch[..neuron_count];
         incoming.fill(0);
         for (source_chunk, target_chunk) in edge_sources.chunks(4).zip(edge_targets.chunks(4)) {
             for chunk_idx in 0..source_chunk.len() {

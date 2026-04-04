@@ -30,9 +30,9 @@ fn root_api_propagates_through_graph() {
             charge: &mut charge,
         },
         &PropagationConfig {
-            ticks: 3,
-            input_duration: 2,
-            decay_period: 100,
+            ticks_per_token: 3,
+            input_duration_ticks: 2,
+            decay_interval_ticks: 100,
         },
         &mut workspace,
     )

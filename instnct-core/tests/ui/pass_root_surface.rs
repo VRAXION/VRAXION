@@ -28,9 +28,9 @@ fn main() -> Result<(), instnct_core::PropagationError> {
             charge: &mut charge,
         },
         &PropagationConfig {
-            ticks: 2,
-            input_duration: 1,
-            decay_period: 0,
+            ticks_per_token: 2,
+            input_duration_ticks: 1,
+            decay_interval_ticks: 0,
         },
         &mut workspace,
     )?;

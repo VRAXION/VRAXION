@@ -77,9 +77,9 @@ fn main() {
         256,
         5,
         PropagationConfig {
-            ticks: 12,
-            input_duration: 2,
-            decay_period: 6,
+            ticks_per_token: 12,
+            input_duration_ticks: 2,
+            decay_interval_ticks: 6,
         },
     );
     bench_case(
@@ -87,9 +87,9 @@ fn main() {
         1024,
         2,
         PropagationConfig {
-            ticks: 16,
-            input_duration: 2,
-            decay_period: 6,
+            ticks_per_token: 16,
+            input_duration_ticks: 2,
+            decay_interval_ticks: 6,
         },
     );
 }
