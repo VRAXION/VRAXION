@@ -14,7 +14,7 @@ use instnct_core::{
 use std::hint::black_box;
 const PHASE_BASE: [u8; 8] = [7, 8, 10, 12, 13, 12, 10, 8];
 
-fn build_params(neuron_count: usize) -> (Vec<u32>, Vec<u8>, Vec<i32>, Vec<i32>) {
+fn build_bench_fixture(neuron_count: usize) -> (Vec<u32>, Vec<u8>, Vec<i32>, Vec<i32>) {
     let threshold = vec![6u32; neuron_count];
     let mut channel = vec![1u8; neuron_count];
     let mut polarity = vec![1i32; neuron_count];
@@ -76,7 +76,11 @@ impl BenchScratch {
 
 // Shared inline propagation — exact same logic as mod.rs, used for B and C tests.
 // The ONLY difference between scalar/branchless/avx2 variants is the spike decision.
-fn propagate_inline(inputs: &BenchInputs<'_>, scratch: &mut BenchScratch, branchless: bool) {
+fn propagate_inline(
+    inputs: &BenchInputs<'_>,
+    scratch: &mut BenchScratch,
+    use_branchless_spike: bool,
+) {
     let neuron_count = inputs.graph.neuron_count();
     let (edge_src, edge_tgt) = inputs.graph.edge_endpoints_pub();
     for tick in 0..inputs.config.ticks_per_token {
@@ -93,11 +97,11 @@ fn propagate_inline(inputs: &BenchInputs<'_>, scratch: &mut BenchScratch, branch
         }
         let incoming = &mut scratch.incoming[..neuron_count];
         incoming.fill(0);
-        for (sc, tc) in edge_src.chunks_exact(4).zip(edge_tgt.chunks_exact(4)) {
-            incoming[tc[0]] += scratch.activation[sc[0]];
-            incoming[tc[1]] += scratch.activation[sc[1]];
-            incoming[tc[2]] += scratch.activation[sc[2]];
-            incoming[tc[3]] += scratch.activation[sc[3]];
+        for (src_chunk, tgt_chunk) in edge_src.chunks_exact(4).zip(edge_tgt.chunks_exact(4)) {
+            incoming[tgt_chunk[0]] += scratch.activation[src_chunk[0]];
+            incoming[tgt_chunk[1]] += scratch.activation[src_chunk[1]];
+            incoming[tgt_chunk[2]] += scratch.activation[src_chunk[2]];
+            incoming[tgt_chunk[3]] += scratch.activation[src_chunk[3]];
         }
         for i in (edge_src.len() / 4 * 4)..edge_src.len() {
             incoming[edge_tgt[i]] += scratch.activation[edge_src[i]];
@@ -105,12 +109,12 @@ fn propagate_inline(inputs: &BenchInputs<'_>, scratch: &mut BenchScratch, branch
         for (charge, &signal) in scratch.charge.iter_mut().zip(incoming.iter()) {
             *charge = charge.saturating_add_signed(signal).min(15);
         }
-        let tip = tick % 8;
-        if branchless {
+        let phase_tick = tick % 8;
+        if use_branchless_spike {
             for i in 0..neuron_count {
-                let ch = inputs.channel[i] as usize;
-                let phase_mult: u16 = if (1..=8).contains(&ch) {
-                    PHASE_BASE[(tip + 9 - ch) & 7] as u16
+                let channel_idx = inputs.channel[i] as usize;
+                let phase_mult: u16 = if (1..=8).contains(&channel_idx) {
+                    PHASE_BASE[(phase_tick + 9 - channel_idx) & 7] as u16
                 } else {
                     10
                 };
@@ -122,9 +126,9 @@ fn propagate_inline(inputs: &BenchInputs<'_>, scratch: &mut BenchScratch, branch
             }
         } else {
             for i in 0..neuron_count {
-                let ch = inputs.channel[i] as usize;
-                let phase_mult: u16 = if (1..=8).contains(&ch) {
-                    PHASE_BASE[(tip + 9 - ch) & 7] as u16
+                let channel_idx = inputs.channel[i] as usize;
+                let phase_mult: u16 = if (1..=8).contains(&channel_idx) {
+                    PHASE_BASE[(phase_tick + 9 - channel_idx) & 7] as u16
                 } else {
                     10
                 };
@@ -139,7 +143,7 @@ fn propagate_inline(inputs: &BenchInputs<'_>, scratch: &mut BenchScratch, branch
     }
 }
 
-// C: AVX2 variant — IDENTICAL logic to propagate_inline(branchless=false),
+// C: AVX2 variant — IDENTICAL logic to propagate_inline(use_branchless_spike=false),
 // only difference is #[target_feature] letting LLVM use 256-bit SIMD.
 #[cfg(target_arch = "x86_64")]
 #[target_feature(enable = "avx2")]
@@ -160,11 +164,11 @@ unsafe fn propagate_avx2(inputs: &BenchInputs<'_>, scratch: &mut BenchScratch) {
         }
         let incoming = &mut scratch.incoming[..neuron_count];
         incoming.fill(0);
-        for (sc, tc) in edge_src.chunks_exact(4).zip(edge_tgt.chunks_exact(4)) {
-            incoming[tc[0]] += scratch.activation[sc[0]];
-            incoming[tc[1]] += scratch.activation[sc[1]];
-            incoming[tc[2]] += scratch.activation[sc[2]];
-            incoming[tc[3]] += scratch.activation[sc[3]];
+        for (src_chunk, tgt_chunk) in edge_src.chunks_exact(4).zip(edge_tgt.chunks_exact(4)) {
+            incoming[tgt_chunk[0]] += scratch.activation[src_chunk[0]];
+            incoming[tgt_chunk[1]] += scratch.activation[src_chunk[1]];
+            incoming[tgt_chunk[2]] += scratch.activation[src_chunk[2]];
+            incoming[tgt_chunk[3]] += scratch.activation[src_chunk[3]];
         }
         for i in (edge_src.len() / 4 * 4)..edge_src.len() {
             incoming[edge_tgt[i]] += scratch.activation[edge_src[i]];
@@ -172,12 +176,12 @@ unsafe fn propagate_avx2(inputs: &BenchInputs<'_>, scratch: &mut BenchScratch) {
         for (charge, &signal) in scratch.charge.iter_mut().zip(incoming.iter()) {
             *charge = charge.saturating_add_signed(signal).min(15);
         }
-        // SAME if/else spike logic as propagate_inline(branchless=false)
-        let tip = tick % 8;
+        // SAME if/else spike logic as propagate_inline(use_branchless_spike=false)
+        let phase_tick = tick % 8;
         for i in 0..neuron_count {
-            let ch = inputs.channel[i] as usize;
-            let phase_mult: u16 = if (1..=8).contains(&ch) {
-                PHASE_BASE[(tip + 9 - ch) & 7] as u16
+            let channel_idx = inputs.channel[i] as usize;
+            let phase_mult: u16 = if (1..=8).contains(&channel_idx) {
+                PHASE_BASE[(phase_tick + 9 - channel_idx) & 7] as u16
             } else {
                 10
             };
@@ -208,7 +212,7 @@ fn main() {
     ] {
         println!("\n=== H={neuron_count}, {edge_prob_pct}% density, {iterations} iterations ===");
         let graph = build_graph(neuron_count, edge_prob_pct);
-        let (threshold, channel, polarity, input) = build_params(neuron_count);
+        let (threshold, channel, polarity, input) = build_bench_fixture(neuron_count);
         let inputs = BenchInputs {
             input: &input,
             graph: &graph,
