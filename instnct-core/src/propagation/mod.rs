@@ -96,28 +96,18 @@ impl Default for PropagationConfig {
 
 /// Propagation input validation failure.
 #[derive(Clone, Debug, PartialEq, Eq)]
-#[allow(missing_docs)] // variant field names are self-evident (expected/actual, etc.)
+#[allow(missing_docs)] // variant names + field names are self-evident
 pub enum PropagationError {
-    /// Activation buffer length != neuron count.
-    ActivationLengthMismatch { expected: usize, actual: usize },
-    /// Input slice length != neuron count.
-    InputLengthMismatch { expected: usize, actual: usize },
-    /// Charge buffer length != neuron count.
-    ChargeLengthMismatch { expected: usize, actual: usize },
-    /// Threshold slice length != neuron count.
-    ThresholdLengthMismatch { expected: usize, actual: usize },
-    /// Channel slice length != neuron count.
-    ChannelLengthMismatch { expected: usize, actual: usize },
-    /// Polarity slice length != neuron count.
-    PolarityLengthMismatch { expected: usize, actual: usize },
-    /// Workspace scratch buffer too small.
-    ScratchTooSmall { required: usize, actual: usize },
-    /// Edge source/target caches have different lengths.
-    EdgeLengthMismatch { sources: usize, targets: usize },
-    /// Edge source index >= neuron count.
-    EdgeSourceOutOfBounds { index: usize, value: usize, neuron_count: usize },
-    /// Edge target index >= neuron count.
-    EdgeTargetOutOfBounds { index: usize, value: usize, neuron_count: usize },
+    ActivationLengthMismatch { expected: usize, actual: usize }, // activation.len() != neuron_count
+    InputLengthMismatch      { expected: usize, actual: usize }, // input.len() != neuron_count
+    ChargeLengthMismatch     { expected: usize, actual: usize }, // charge.len() != neuron_count
+    ThresholdLengthMismatch  { expected: usize, actual: usize }, // threshold.len() != neuron_count
+    ChannelLengthMismatch    { expected: usize, actual: usize }, // channel.len() != neuron_count
+    PolarityLengthMismatch   { expected: usize, actual: usize }, // polarity.len() != neuron_count
+    ScratchTooSmall          { required: usize, actual: usize }, // workspace buffer < neuron_count
+    EdgeLengthMismatch       { sources: usize, targets: usize }, // sources.len() != targets.len()
+    EdgeSourceOutOfBounds    { index: usize, value: usize, neuron_count: usize }, // source >= n
+    EdgeTargetOutOfBounds    { index: usize, value: usize, neuron_count: usize }, // target >= n
 }
 
 impl fmt::Display for PropagationError {
