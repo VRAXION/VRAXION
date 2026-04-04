@@ -1,37 +1,23 @@
 //! # Network Topology — Sparse Edge List
 //!
-//! Stores the directed graph structure as a compact list of edges rather than
-//! a dense adjacency matrix. For sparse networks (1-5% density), this uses
-//! **2-12x less memory** than a full H x H matrix at H=1024+.
+//! Stores the directed graph as a compact edge list rather than a dense
+//! adjacency matrix. For sparse networks (1-5% density), this uses
+//! **2-12x less memory** at H=1024+.
 //!
 //! ## Representation
 //!
-//! Each directed edge is a `(source, target)` pair of `u16` neuron indices,
-//! consuming 4 bytes per edge. A parallel `HashSet` provides O(1) existence
-//! checks for mutation operations ("does edge A->B exist?").
-//!
-//! ## Memory Comparison (at typical densities)
-//!
-//! | H | Density | Edges | Edge list | Dense matrix | Savings |
-//! |---|---------|-------|-----------|-------------|---------|
-//! | 256 | 5% | 3,200 | 63 KB | 32 KB | dense wins |
-//! | 1024 | 1% | 10,000 | 204 KB | 512 KB | **2.5x** |
-//! | 4096 | 0.2% | 33,000 | 655 KB | 8,190 KB | **12.5x** |
-//!
-//! For H >= 512 with typical sparsity, the edge list is strictly superior.
+//! Each directed edge is a `(source, target)` pair of `u16` neuron indices (4 bytes).
+//! A parallel `HashSet` provides O(1) existence checks for mutations.
+//! Separate `sources`/`targets` `Vec<usize>` caches feed the propagation hot path.
 //!
 //! ## Forward Pass Integration
 //!
-//! The propagation step iterates directly over the edge vectors — no
-//! conversion step needed. The `sources()` and `targets()` slices are
-//! cache-friendly contiguous arrays consumed by the scatter-add loop.
+//! The propagation scatter-add loop consumes `sources()` and `targets()` directly —
+//! contiguous, cache-friendly `usize` slices. No conversion needed at runtime.
 
 use std::collections::HashSet;
 
 /// A single directed connection between two neurons.
-///
-/// Uses `u16` indices, supporting networks up to 65,535 neurons.
-/// At 4 bytes per edge, a 10,000-edge network costs 40 KB for edges alone.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub struct DirectedEdge {
     /// Source neuron index.
@@ -42,9 +28,10 @@ pub struct DirectedEdge {
 
 /// Sparse directed graph storing the network's connection topology.
 ///
-/// The primary representation is a `Vec<DirectedEdge>` for cache-friendly
-/// iteration during the forward pass, backed by a `HashSet` for O(1)
-/// existence checks during mutations.
+/// Three parallel structures, each optimized for a different access pattern:
+/// - `edges: Vec<DirectedEdge>` — canonical list, iterated by mutations
+/// - `edge_set: HashSet` — O(1) existence check (`has_edge`)
+/// - `sources/targets: Vec<usize>` — hot path scatter-add (propagation)
 ///
 /// # Example
 ///
@@ -61,20 +48,11 @@ pub struct DirectedEdge {
 /// ```
 #[derive(Clone, Debug)]
 pub struct ConnectionGraph {
-    /// Ordered list of directed edges. Iterated by the forward pass.
-    edges: Vec<DirectedEdge>,
-
-    /// O(1) lookup set for mutation existence checks.
-    edge_set: HashSet<(u16, u16)>,
-
-    /// Number of neurons in the network.
+    edges: Vec<DirectedEdge>,      // canonical edge list (4 bytes/edge)
+    edge_set: HashSet<(u16, u16)>, // O(1) lookup for mutations (~16 bytes/edge)
     neuron_count: usize,
-
-    /// Cached source endpoint view for propagation.
-    sources: Vec<usize>,
-
-    /// Cached target endpoint view for propagation.
-    targets: Vec<usize>,
+    sources: Vec<usize>,           // hot path cache (8 bytes/edge, usize for scatter-add)
+    targets: Vec<usize>,           // hot path cache (8 bytes/edge, usize for scatter-add)
 }
 
 impl ConnectionGraph {
@@ -104,17 +82,13 @@ impl ConnectionGraph {
 
     /// Total number of neurons in the graph.
     #[inline]
-    pub fn neuron_count(&self) -> usize {
-        self.neuron_count
-    }
+    pub fn neuron_count(&self) -> usize { self.neuron_count }
 
     /// Total number of directed edges.
     #[inline]
-    pub fn edge_count(&self) -> usize {
-        self.edges.len()
-    }
+    pub fn edge_count(&self) -> usize { self.edges.len() }
 
-    /// Check whether a specific directed edge exists. O(1).
+    /// Check whether a specific directed edge exists. O(1) HashSet lookup.
     #[inline]
     pub fn has_edge(&self, source: u16, target: u16) -> bool {
         self.edge_set.contains(&(source, target))
@@ -123,16 +97,12 @@ impl ConnectionGraph {
     /// Source neuron indices as a contiguous slice (for scatter-add).
     #[inline]
     #[cfg(test)]
-    pub(crate) fn sources(&self) -> &[usize] {
-        &self.sources
-    }
+    pub(crate) fn sources(&self) -> &[usize] { &self.sources }
 
     /// Target neuron indices as a contiguous slice (for scatter-add).
     #[inline]
     #[cfg(test)]
-    pub(crate) fn targets(&self) -> &[usize] {
-        &self.targets
-    }
+    pub(crate) fn targets(&self) -> &[usize] { &self.targets }
 
     /// Paired source/target slices used by the propagation core.
     #[inline]
@@ -142,40 +112,32 @@ impl ConnectionGraph {
 
     /// Direct access to the edge list.
     #[inline]
-    pub fn edges(&self) -> &[DirectedEdge] {
-        &self.edges
-    }
+    pub fn edges(&self) -> &[DirectedEdge] { &self.edges }
 
-    /// Count bidirectional pairs (both A->B and B->A exist).
+    /// Count bidirectional pairs (both A->B and B->A exist). O(edges).
     pub fn bidirectional_pair_count(&self) -> usize {
-        let mut count = 0;
-        for edge in &self.edges {
-            if edge.source < edge.target && self.has_edge(edge.target, edge.source) {
-                count += 1;
-            }
-        }
-        count
+        self.edges.iter()
+            .filter(|e| e.source < e.target && self.has_edge(e.target, e.source))
+            .count()
     }
 
     /// Approximate memory footprint in bytes.
     pub fn memory_bytes(&self) -> usize {
-        // Vec<DirectedEdge>: 4 bytes per edge
-        // HashSet<(u16,u16)>: ~16 bytes per entry (key + hash + metadata)
-        self.edges.len() * 4 + self.edge_set.len() * 16
+        let edge_list = self.edges.len() * 4;           // Vec<DirectedEdge>: 4 bytes/edge
+        let hash_set = self.edge_set.len() * 16;        // HashSet: ~16 bytes/entry
+        let endpoint_cache = (self.sources.len() + self.targets.len()) * size_of::<usize>(); // 8 bytes/edge each
+        edge_list + hash_set + endpoint_cache
     }
 
     // ----- Mutations -----
 
     /// Add a directed edge. Returns `true` if the edge was new.
-    ///
-    /// Rejects self-connections, duplicates, and out-of-range endpoints.
+    /// Rejects self-connections, duplicates, and out-of-range endpoints. O(1).
     pub fn add_edge(&mut self, source: u16, target: u16) -> bool {
         if source == target
             || source as usize >= self.neuron_count
             || target as usize >= self.neuron_count
-        {
-            return false;
-        }
+        { return false; }
         if self.edge_set.insert((source, target)) {
             self.edges.push(DirectedEdge { source, target });
             self.sources.push(source as usize);
@@ -187,13 +149,10 @@ impl ConnectionGraph {
     }
 
     /// Remove a directed edge by value. Returns `true` if found and removed.
-    ///
-    /// Uses swap-remove for O(1) removal from the edge vector.
+    /// O(n) linear scan to find the edge index, then O(1) swap-remove.
     pub fn remove_edge(&mut self, source: u16, target: u16) -> bool {
         if self.edge_set.remove(&(source, target)) {
-            if let Some(pos) = self
-                .edges
-                .iter()
+            if let Some(pos) = self.edges.iter()
                 .position(|e| e.source == source && e.target == target)
             {
                 self.edges.swap_remove(pos);
@@ -207,12 +166,8 @@ impl ConnectionGraph {
     }
 
     /// Remove an edge by its index in the edge list. O(1) via swap-remove.
-    ///
-    /// Returns the removed edge, or `None` if the index is out of bounds.
     pub fn remove_edge_at(&mut self, index: usize) -> Option<DirectedEdge> {
-        if index >= self.edges.len() {
-            return None;
-        }
+        if index >= self.edges.len() { return None; }
         let edge = self.edges.swap_remove(index);
         self.sources.swap_remove(index);
         self.targets.swap_remove(index);
@@ -220,25 +175,21 @@ impl ConnectionGraph {
         Some(edge)
     }
 
-    /// Reverse an edge's direction: A->B becomes B->A. O(1).
-    ///
-    /// Returns `true` if the reversal was performed. Fails if the reverse
-    /// edge already exists (would create a duplicate).
+    /// Reverse an edge's direction: A->B becomes B->A.
+    /// O(n) linear scan to find the edge index, then O(1) swap.
+    /// Fails if the reverse edge already exists (would create a duplicate).
     pub fn reverse_edge(&mut self, source: u16, target: u16) -> bool {
         if !self.has_edge(source, target) || self.has_edge(target, source) {
             return false;
         }
         self.edge_set.remove(&(source, target));
         self.edge_set.insert((target, source));
-        if let Some(edge) = self
-            .edges
-            .iter()
+        if let Some(pos) = self.edges.iter()
             .position(|e| e.source == source && e.target == target)
         {
-            self.edges[edge].source = target;
-            self.edges[edge].target = source;
-            self.sources[edge] = target as usize;
-            self.targets[edge] = source as usize;
+            self.edges[pos] = DirectedEdge { source: target, target: source };
+            self.sources[pos] = target as usize;
+            self.targets[pos] = source as usize;
         }
         true
     }
@@ -246,9 +197,7 @@ impl ConnectionGraph {
     /// Construct from a list of `(source, target)` pairs.
     pub fn from_pairs(neuron_count: usize, pairs: &[(u16, u16)]) -> Self {
         let mut graph = Self::with_capacity(neuron_count, pairs.len());
-        for &(s, t) in pairs {
-            graph.add_edge(s, t);
-        }
+        for &(s, t) in pairs { graph.add_edge(s, t); }
         graph
     }
 
@@ -259,23 +208,10 @@ impl ConnectionGraph {
         sources: Vec<usize>,
         targets: Vec<usize>,
     ) -> Self {
-        let edge_set = edges
-            .iter()
-            .map(|edge| (edge.source, edge.target))
-            .collect();
-        Self {
-            edges,
-            edge_set,
-            neuron_count,
-            sources,
-            targets,
-        }
+        let edge_set = edges.iter().map(|e| (e.source, e.target)).collect();
+        Self { edges, edge_set, neuron_count, sources, targets }
     }
 }
-
-// ---------------------------------------------------------------------------
-// Tests
-// ---------------------------------------------------------------------------
 
 #[cfg(test)]
 mod tests {
@@ -301,7 +237,7 @@ mod tests {
     fn duplicate_edge_rejected() {
         let mut graph = ConnectionGraph::new(256);
         assert!(graph.add_edge(5, 9));
-        assert!(!graph.add_edge(5, 9)); // duplicate
+        assert!(!graph.add_edge(5, 9));
         assert_eq!(graph.edge_count(), 1);
     }
 
@@ -318,11 +254,10 @@ mod tests {
         graph.add_edge(3, 8);
         graph.add_edge(8, 3);
         assert_eq!(graph.edge_count(), 2);
-
         assert!(graph.remove_edge(3, 8));
         assert_eq!(graph.edge_count(), 1);
         assert!(!graph.has_edge(3, 8));
-        assert!(graph.has_edge(8, 3)); // other direction unaffected
+        assert!(graph.has_edge(8, 3));
     }
 
     #[test]
@@ -349,15 +284,14 @@ mod tests {
     fn bidirectional_count() {
         let mut graph = ConnectionGraph::new(256);
         graph.add_edge(1, 5);
-        graph.add_edge(5, 1); // bidir pair
-        graph.add_edge(2, 7); // one-way
+        graph.add_edge(5, 1);
+        graph.add_edge(2, 7); // one-way only
         assert_eq!(graph.bidirectional_pair_count(), 1);
     }
 
     #[test]
     fn from_pairs_builds_graph() {
-        let pairs = vec![(0, 3), (3, 0), (2, 5)];
-        let graph = ConnectionGraph::from_pairs(256, &pairs);
+        let graph = ConnectionGraph::from_pairs(256, &[(0, 3), (3, 0), (2, 5)]);
         assert_eq!(graph.edge_count(), 3);
         assert!(graph.has_edge(0, 3));
         assert!(graph.has_edge(3, 0));
@@ -367,15 +301,12 @@ mod tests {
     #[test]
     fn edge_list_is_cache_friendly() {
         let mut graph = ConnectionGraph::new(64);
-        for i in 0..10 {
-            graph.add_edge(i, i + 1);
-        }
-        let sources = graph.sources();
-        let targets = graph.targets();
-        assert_eq!(sources.len(), 10);
-        assert_eq!(targets.len(), 10);
-        assert_eq!(sources[0], 0);
-        assert_eq!(targets[0], 1);
+        for i in 0..10 { graph.add_edge(i, i + 1); }
+        let (src, tgt) = (graph.sources(), graph.targets());
+        assert_eq!(src.len(), 10);
+        assert_eq!(tgt.len(), 10);
+        assert_eq!(src[0], 0);
+        assert_eq!(tgt[0], 1);
     }
 
     #[test]
@@ -384,19 +315,13 @@ mod tests {
         graph.add_edge(0, 1);
         graph.add_edge(1, 2);
         graph.add_edge(2, 3);
-
         assert!(graph.remove_edge(1, 2));
-
         assert_eq!(graph.edge_count(), graph.sources().len());
         assert_eq!(graph.edge_count(), graph.targets().len());
         assert!(!graph.has_edge(1, 2));
-        assert!(graph
-            .edges()
-            .iter()
+        assert!(graph.edges().iter()
             .zip(graph.sources().iter().zip(graph.targets().iter()))
-            .all(|(edge, (&source, &target))| {
-                edge.source as usize == source && edge.target as usize == target
-            }));
+            .all(|(edge, (&s, &t))| edge.source as usize == s && edge.target as usize == t));
     }
 
     #[test]
@@ -404,16 +329,14 @@ mod tests {
         let mut graph = ConnectionGraph::new(4);
         assert!(!graph.add_edge(99, 1)); // source out of range
         assert!(!graph.add_edge(1, 99)); // target out of range
-        assert!(!graph.add_edge(4, 0)); // exactly at boundary
-        assert!(graph.add_edge(3, 0)); // max valid index
+        assert!(!graph.add_edge(4, 0));  // exactly at boundary
+        assert!(graph.add_edge(3, 0));   // max valid index
         assert_eq!(graph.edge_count(), 1);
     }
 
     #[test]
     fn memory_scales_with_edges_not_neurons() {
-        let sparse = ConnectionGraph::with_capacity(4096, 10000);
-        // Edge list: 10K * 4 = 40KB + HashSet ~160KB = ~200KB
-        // vs dense matrix: 4096*4095/2 = 8MB
-        assert!(sparse.memory_bytes() < 300_000); // well under 300KB
+        let graph = ConnectionGraph::with_capacity(4096, 10000);
+        assert!(graph.memory_bytes() < 300_000); // well under 300KB vs 8MB dense
     }
 }
