@@ -35,6 +35,7 @@ struct ForwardInputs<'a> {
 struct ForwardScratch {
     activation: Vec<i32>,
     charge: Vec<u32>,
+    refractory: Vec<u8>,
     workspace: PropagationWorkspace,
 }
 
@@ -43,6 +44,7 @@ impl ForwardScratch {
         Self {
             activation: vec![0; neuron_count],
             charge: vec![0; neuron_count],
+            refractory: vec![0; neuron_count],
             workspace: PropagationWorkspace::new(neuron_count),
         }
     }
@@ -50,6 +52,7 @@ impl ForwardScratch {
     fn reset(&mut self) {
         self.activation.fill(0);
         self.charge.fill(0);
+        self.refractory.fill(0);
     }
 }
 
@@ -88,6 +91,7 @@ fn run_forward(inputs: &ForwardInputs<'_>, scratch: &mut ForwardScratch) {
     let mut state = PropagationState {
         activation: &mut scratch.activation,
         charge: &mut scratch.charge,
+        refractory: &mut scratch.refractory,
     };
 
     propagate_token_unchecked(
@@ -170,6 +174,7 @@ fn main() {
                 ticks_per_token: 12,
                 input_duration_ticks: 2,
                 decay_interval_ticks: 6,
+                use_refractory: false,
             },
         },
         ForwardCase {
@@ -181,6 +186,7 @@ fn main() {
                 ticks_per_token: 16,
                 input_duration_ticks: 2,
                 decay_interval_ticks: 6,
+                use_refractory: false,
             },
         },
     ];

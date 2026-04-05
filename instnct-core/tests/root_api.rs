@@ -15,6 +15,7 @@ fn root_api_propagates_through_graph() {
     let polarity = [1, 1, 1];
     let mut activation = [0, 0, 0];
     let mut charge = [0, 0, 0];
+    let mut refractory = [0u8; 3];
     let mut workspace = PropagationWorkspace::new(3);
 
     propagate_token(
@@ -28,11 +29,13 @@ fn root_api_propagates_through_graph() {
         &mut PropagationState {
             activation: &mut activation,
             charge: &mut charge,
+            refractory: &mut refractory,
         },
         &PropagationConfig {
             ticks_per_token: 3,
             input_duration_ticks: 2,
             decay_interval_ticks: 100,
+            use_refractory: false,
         },
         &mut workspace,
     )
@@ -49,6 +52,7 @@ fn root_api_rejects_malformed_input() {
     let polarity = [1, 1, 1, 1];
     let mut activation = [0, 0, 0, 0];
     let mut charge = [0, 0, 0, 0];
+    let mut refractory = [0u8; 4];
     let mut workspace = PropagationWorkspace::new(4);
 
     let err = propagate_token(
@@ -62,6 +66,7 @@ fn root_api_rejects_malformed_input() {
         &mut PropagationState {
             activation: &mut activation,
             charge: &mut charge,
+            refractory: &mut refractory,
         },
         &PropagationConfig::default(),
         &mut workspace,

@@ -13,6 +13,7 @@ fn main() -> Result<(), instnct_core::PropagationError> {
     let polarity = [1, 1];
     let mut activation = [0, 0];
     let mut charge = [0, 0];
+    let mut refractory = [0u8; 2];
     let mut workspace = PropagationWorkspace::new(2);
 
     propagate_token(
@@ -26,11 +27,13 @@ fn main() -> Result<(), instnct_core::PropagationError> {
         &mut PropagationState {
             activation: &mut activation,
             charge: &mut charge,
+            refractory: &mut refractory,
         },
         &PropagationConfig {
             ticks_per_token: 2,
             input_duration_ticks: 1,
             decay_interval_ticks: 0,
+            use_refractory: false,
         },
         &mut workspace,
     )?;

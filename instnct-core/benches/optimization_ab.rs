@@ -202,6 +202,7 @@ fn main() {
         ticks_per_token: 12,
         input_duration_ticks: 2,
         decay_interval_ticks: 6,
+        use_refractory: false,
     };
 
     for &(neuron_count, edge_prob_pct, iterations) in &[
@@ -252,10 +253,12 @@ fn main() {
         {
             let mut activation = vec![0i32; neuron_count];
             let mut charge = vec![0u32; neuron_count];
+            let mut refractory = vec![0u8; neuron_count];
             let mut workspace = PropagationWorkspace::new(neuron_count);
             unsorted_stats = timed_run("A-baseline (unsorted)", iterations, || {
                 activation.fill(0);
                 charge.fill(0);
+                refractory.fill(0);
                 propagate_token_unchecked(
                     black_box(&input),
                     black_box(&graph),
@@ -267,6 +270,7 @@ fn main() {
                     black_box(&mut PropagationState {
                         activation: &mut activation,
                         charge: &mut charge,
+                        refractory: &mut refractory,
                     }),
                     black_box(&config),
                     black_box(&mut workspace),
@@ -277,10 +281,12 @@ fn main() {
         {
             let mut activation = vec![0i32; neuron_count];
             let mut charge = vec![0u32; neuron_count];
+            let mut refractory = vec![0u8; neuron_count];
             let mut workspace = PropagationWorkspace::new(neuron_count);
             sorted_stats = timed_run("A-sorted (edges by target)", iterations, || {
                 activation.fill(0);
                 charge.fill(0);
+                refractory.fill(0);
                 propagate_token_unchecked(
                     black_box(&input),
                     black_box(&graph_sorted),
@@ -292,6 +298,7 @@ fn main() {
                     black_box(&mut PropagationState {
                         activation: &mut activation,
                         charge: &mut charge,
+                        refractory: &mut refractory,
                     }),
                     black_box(&config),
                     black_box(&mut workspace),

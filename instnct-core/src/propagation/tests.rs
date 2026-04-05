@@ -6,6 +6,7 @@ fn default_config() -> PropagationConfig {
         ticks_per_token: 8,
         input_duration_ticks: 2,
         decay_interval_ticks: 6,
+        use_refractory: false,
     }
 }
 
@@ -19,6 +20,7 @@ fn isolated_neurons_remain_charge_bounded() {
     let graph = ConnectionGraph::new(neuron_count);
     let mut activation = vec![0i32; neuron_count];
     let mut charge = vec![0u32; neuron_count];
+    let mut refractory = vec![0u8; neuron_count];
     let input = vec![1i32; neuron_count];
     let threshold = vec![6u32; neuron_count];
     let channel = vec![1u8; neuron_count];
@@ -36,6 +38,7 @@ fn isolated_neurons_remain_charge_bounded() {
         &mut PropagationState {
             activation: &mut activation,
             charge: &mut charge,
+            refractory: &mut refractory,
         },
         &default_config(),
         &mut workspace,
@@ -51,6 +54,7 @@ fn excitatory_chain_propagates_signal() {
     let graph = graph_with_edges(neuron_count, &[(0, 1), (1, 2)]);
     let mut activation = vec![0i32; neuron_count];
     let mut charge = vec![0u32; neuron_count];
+    let mut refractory = vec![0u8; neuron_count];
     let mut input = vec![0i32; neuron_count];
     input[0] = 10;
     let threshold = vec![1u32; neuron_count];
@@ -69,11 +73,13 @@ fn excitatory_chain_propagates_signal() {
         &mut PropagationState {
             activation: &mut activation,
             charge: &mut charge,
+            refractory: &mut refractory,
         },
         &PropagationConfig {
             ticks_per_token: 3,
             input_duration_ticks: 2,
             decay_interval_ticks: 100,
+            use_refractory: false,
         },
         &mut workspace,
     )
@@ -94,6 +100,7 @@ fn inhibitory_spike_suppresses_downstream_charge() {
     let graph = graph_with_edges(neuron_count, &[(0, 1)]);
     let mut activation = vec![0i32; neuron_count];
     let mut charge = vec![0u32; neuron_count];
+    let mut refractory = vec![0u8; neuron_count];
     let mut input = vec![0i32; neuron_count];
     input[0] = 10;
     let threshold = vec![2u32; neuron_count];
@@ -114,11 +121,13 @@ fn inhibitory_spike_suppresses_downstream_charge() {
         &mut PropagationState {
             activation: &mut activation,
             charge: &mut charge,
+            refractory: &mut refractory,
         },
         &PropagationConfig {
             ticks_per_token: 4,
             input_duration_ticks: 2,
             decay_interval_ticks: 100,
+            use_refractory: false,
         },
         &mut workspace,
     )
@@ -137,6 +146,7 @@ fn extreme_input_does_not_overflow_charge() {
     let graph = ConnectionGraph::new(neuron_count);
     let mut activation = vec![0i32; neuron_count];
     let mut charge = vec![0u32; neuron_count];
+    let mut refractory = vec![0u8; neuron_count];
     let input = vec![100i32; neuron_count];
     let threshold = vec![1u32; neuron_count];
     let channel = vec![1u8; neuron_count];
@@ -154,11 +164,13 @@ fn extreme_input_does_not_overflow_charge() {
         &mut PropagationState {
             activation: &mut activation,
             charge: &mut charge,
+            refractory: &mut refractory,
         },
         &PropagationConfig {
             ticks_per_token: 100,
             input_duration_ticks: 2,
             decay_interval_ticks: 6,
+            use_refractory: false,
         },
         &mut workspace,
     )
@@ -184,11 +196,13 @@ fn workspace_reuse_produces_identical_results() {
         ticks_per_token: 4,
         input_duration_ticks: 2,
         decay_interval_ticks: 100,
+        use_refractory: false,
     };
     let mut workspace = PropagationWorkspace::new(neuron_count);
 
     let mut activation_a = vec![0i32; neuron_count];
     let mut charge_a = vec![0u32; neuron_count];
+    let mut refractory_a = vec![0u8; neuron_count];
     propagate_token(
         &input,
         &graph,
@@ -200,6 +214,7 @@ fn workspace_reuse_produces_identical_results() {
         &mut PropagationState {
             activation: &mut activation_a,
             charge: &mut charge_a,
+            refractory: &mut refractory_a,
         },
         &config,
         &mut workspace,
@@ -208,6 +223,7 @@ fn workspace_reuse_produces_identical_results() {
 
     let mut activation_b = vec![0i32; neuron_count];
     let mut charge_b = vec![0u32; neuron_count];
+    let mut refractory_b = vec![0u8; neuron_count];
     propagate_token(
         &input,
         &graph,
@@ -219,6 +235,7 @@ fn workspace_reuse_produces_identical_results() {
         &mut PropagationState {
             activation: &mut activation_b,
             charge: &mut charge_b,
+            refractory: &mut refractory_b,
         },
         &config,
         &mut workspace,
@@ -234,6 +251,7 @@ fn activation_length_mismatch_returns_error() {
     let graph = ConnectionGraph::new(4);
     let mut activation = vec![0i32; 3];
     let mut charge = vec![0u32; 4];
+    let mut refractory = vec![0u8; 4];
     let mut workspace = PropagationWorkspace::new(4);
 
     let err = propagate_token(
@@ -247,11 +265,13 @@ fn activation_length_mismatch_returns_error() {
         &mut PropagationState {
             activation: &mut activation,
             charge: &mut charge,
+            refractory: &mut refractory,
         },
         &PropagationConfig {
             ticks_per_token: 1,
             input_duration_ticks: 1,
             decay_interval_ticks: 0,
+            use_refractory: false,
         },
         &mut workspace,
     )
@@ -271,6 +291,7 @@ fn short_input_returns_error() {
     let graph = ConnectionGraph::new(4);
     let mut activation = vec![0i32; 4];
     let mut charge = vec![0u32; 4];
+    let mut refractory = vec![0u8; 4];
     let mut workspace = PropagationWorkspace::new(4);
 
     let err = propagate_token(
@@ -284,11 +305,13 @@ fn short_input_returns_error() {
         &mut PropagationState {
             activation: &mut activation,
             charge: &mut charge,
+            refractory: &mut refractory,
         },
         &PropagationConfig {
             ticks_per_token: 1,
             input_duration_ticks: 1,
             decay_interval_ticks: 0,
+            use_refractory: false,
         },
         &mut workspace,
     )
@@ -308,6 +331,7 @@ fn charge_length_mismatch_returns_error() {
     let graph = ConnectionGraph::new(4);
     let mut activation = vec![0i32; 4];
     let mut charge = vec![0u32; 3];
+    let mut refractory = vec![0u8; 4];
     let mut workspace = PropagationWorkspace::new(4);
 
     let err = propagate_token(
@@ -321,11 +345,13 @@ fn charge_length_mismatch_returns_error() {
         &mut PropagationState {
             activation: &mut activation,
             charge: &mut charge,
+            refractory: &mut refractory,
         },
         &PropagationConfig {
             ticks_per_token: 1,
             input_duration_ticks: 1,
             decay_interval_ticks: 0,
+            use_refractory: false,
         },
         &mut workspace,
     )
@@ -345,6 +371,7 @@ fn threshold_length_mismatch_returns_error() {
     let graph = ConnectionGraph::new(4);
     let mut activation = vec![0i32; 4];
     let mut charge = vec![0u32; 4];
+    let mut refractory = vec![0u8; 4];
     let mut workspace = PropagationWorkspace::new(4);
 
     let err = propagate_token(
@@ -358,11 +385,13 @@ fn threshold_length_mismatch_returns_error() {
         &mut PropagationState {
             activation: &mut activation,
             charge: &mut charge,
+            refractory: &mut refractory,
         },
         &PropagationConfig {
             ticks_per_token: 1,
             input_duration_ticks: 1,
             decay_interval_ticks: 0,
+            use_refractory: false,
         },
         &mut workspace,
     )
@@ -382,6 +411,7 @@ fn channel_length_mismatch_returns_error() {
     let graph = ConnectionGraph::new(4);
     let mut activation = vec![0i32; 4];
     let mut charge = vec![0u32; 4];
+    let mut refractory = vec![0u8; 4];
     let mut workspace = PropagationWorkspace::new(4);
 
     let err = propagate_token(
@@ -395,11 +425,13 @@ fn channel_length_mismatch_returns_error() {
         &mut PropagationState {
             activation: &mut activation,
             charge: &mut charge,
+            refractory: &mut refractory,
         },
         &PropagationConfig {
             ticks_per_token: 1,
             input_duration_ticks: 1,
             decay_interval_ticks: 0,
+            use_refractory: false,
         },
         &mut workspace,
     )
@@ -419,6 +451,7 @@ fn polarity_length_mismatch_returns_error() {
     let graph = ConnectionGraph::new(4);
     let mut activation = vec![0i32; 4];
     let mut charge = vec![0u32; 4];
+    let mut refractory = vec![0u8; 4];
     let mut workspace = PropagationWorkspace::new(4);
 
     let err = propagate_token(
@@ -432,11 +465,13 @@ fn polarity_length_mismatch_returns_error() {
         &mut PropagationState {
             activation: &mut activation,
             charge: &mut charge,
+            refractory: &mut refractory,
         },
         &PropagationConfig {
             ticks_per_token: 1,
             input_duration_ticks: 1,
             decay_interval_ticks: 0,
+            use_refractory: false,
         },
         &mut workspace,
     )
@@ -470,6 +505,7 @@ fn edge_length_mismatch_returns_error() {
     );
     let mut activation = vec![0i32; 4];
     let mut charge = vec![0u32; 4];
+    let mut refractory = vec![0u8; 4];
     let mut workspace = PropagationWorkspace::new(4);
 
     let err = propagate_token(
@@ -483,11 +519,13 @@ fn edge_length_mismatch_returns_error() {
         &mut PropagationState {
             activation: &mut activation,
             charge: &mut charge,
+            refractory: &mut refractory,
         },
         &PropagationConfig {
             ticks_per_token: 1,
             input_duration_ticks: 1,
             decay_interval_ticks: 0,
+            use_refractory: false,
         },
         &mut workspace,
     )
@@ -515,6 +553,7 @@ fn out_of_range_edge_source_returns_error() {
     );
     let mut activation = vec![0i32; 4];
     let mut charge = vec![0u32; 4];
+    let mut refractory = vec![0u8; 4];
     let mut workspace = PropagationWorkspace::new(4);
 
     let err = propagate_token(
@@ -528,11 +567,13 @@ fn out_of_range_edge_source_returns_error() {
         &mut PropagationState {
             activation: &mut activation,
             charge: &mut charge,
+            refractory: &mut refractory,
         },
         &PropagationConfig {
             ticks_per_token: 1,
             input_duration_ticks: 1,
             decay_interval_ticks: 0,
+            use_refractory: false,
         },
         &mut workspace,
     )
@@ -561,6 +602,7 @@ fn out_of_range_edge_target_returns_error() {
     );
     let mut activation = vec![0i32; 4];
     let mut charge = vec![0u32; 4];
+    let mut refractory = vec![0u8; 4];
     let mut workspace = PropagationWorkspace::new(4);
 
     let err = propagate_token(
@@ -574,11 +616,13 @@ fn out_of_range_edge_target_returns_error() {
         &mut PropagationState {
             activation: &mut activation,
             charge: &mut charge,
+            refractory: &mut refractory,
         },
         &PropagationConfig {
             ticks_per_token: 1,
             input_duration_ticks: 1,
             decay_interval_ticks: 0,
+            use_refractory: false,
         },
         &mut workspace,
     )
@@ -599,6 +643,7 @@ fn scratch_too_small_returns_error() {
     let graph = ConnectionGraph::new(4);
     let mut activation = vec![0i32; 4];
     let mut charge = vec![0u32; 4];
+    let mut refractory = vec![0u8; 4];
     let mut workspace = PropagationWorkspace::with_scratch(vec![0; 3]);
 
     let err = propagate_token(
@@ -612,11 +657,13 @@ fn scratch_too_small_returns_error() {
         &mut PropagationState {
             activation: &mut activation,
             charge: &mut charge,
+            refractory: &mut refractory,
         },
         &PropagationConfig {
             ticks_per_token: 1,
             input_duration_ticks: 1,
             decay_interval_ticks: 0,
+            use_refractory: false,
         },
         &mut workspace,
     )
@@ -677,6 +724,7 @@ fn threshold_out_of_range_returns_error() {
     let graph = ConnectionGraph::new(4);
     let mut activation = vec![0i32; 4];
     let mut charge = vec![0u32; 4];
+    let mut refractory = vec![0u8; 4];
     let mut workspace = PropagationWorkspace::new(4);
 
     let err = propagate_token(
@@ -690,11 +738,13 @@ fn threshold_out_of_range_returns_error() {
         &mut PropagationState {
             activation: &mut activation,
             charge: &mut charge,
+            refractory: &mut refractory,
         },
         &PropagationConfig {
             ticks_per_token: 1,
             input_duration_ticks: 1,
             decay_interval_ticks: 0,
+            use_refractory: false,
         },
         &mut workspace,
     )
@@ -714,6 +764,7 @@ fn channel_out_of_range_returns_error() {
     let graph = ConnectionGraph::new(4);
     let mut activation = vec![0i32; 4];
     let mut charge = vec![0u32; 4];
+    let mut refractory = vec![0u8; 4];
     let mut workspace = PropagationWorkspace::new(4);
 
     let err = propagate_token(
@@ -727,11 +778,13 @@ fn channel_out_of_range_returns_error() {
         &mut PropagationState {
             activation: &mut activation,
             charge: &mut charge,
+            refractory: &mut refractory,
         },
         &PropagationConfig {
             ticks_per_token: 1,
             input_duration_ticks: 1,
             decay_interval_ticks: 0,
+            use_refractory: false,
         },
         &mut workspace,
     )
@@ -748,6 +801,7 @@ fn polarity_out_of_range_returns_error() {
     let graph = ConnectionGraph::new(4);
     let mut activation = vec![0i32; 4];
     let mut charge = vec![0u32; 4];
+    let mut refractory = vec![0u8; 4];
     let mut workspace = PropagationWorkspace::new(4);
 
     let err = propagate_token(
@@ -761,11 +815,13 @@ fn polarity_out_of_range_returns_error() {
         &mut PropagationState {
             activation: &mut activation,
             charge: &mut charge,
+            refractory: &mut refractory,
         },
         &PropagationConfig {
             ticks_per_token: 1,
             input_duration_ticks: 1,
             decay_interval_ticks: 0,
+            use_refractory: false,
         },
         &mut workspace,
     )

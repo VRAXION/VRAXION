@@ -64,6 +64,7 @@ pub struct NetworkSnapshot {
     polarity: Vec<i32>,
     activation: Vec<i32>,
     charge: Vec<u32>,
+    refractory: Vec<u8>,
 }
 
 impl NetworkSnapshot {
@@ -137,8 +138,9 @@ pub struct Network {
     threshold: Vec<u32>, // per-neuron, stored [0,15]; effective = stored+1 → [1,16]
     channel: Vec<u8>,    // per-neuron, phase gating channel [1,8]
     polarity: Vec<i32>,  // per-neuron, +1 excitatory, -1 inhibitory
-    activation: Vec<i32>, // ephemeral, +1, -1, or 0
-    charge: Vec<u32>,    // ephemeral, [0, LIMIT_MAX_CHARGE]
+    activation: Vec<i32>,  // ephemeral, +1, -1, or 0
+    charge: Vec<u32>,     // ephemeral, [0, LIMIT_MAX_CHARGE]
+    refractory: Vec<u8>,  // per-neuron, 0 = ready, 1 = cooling (1-tick refractory after fire)
     workspace: PropagationWorkspace, // reusable scratch buffer
     csr_offsets: Vec<u32>, // CSR: per-neuron edge start index
     csr_targets: Vec<u16>, // CSR: compact target indices
@@ -160,6 +162,7 @@ impl Network {
             polarity: vec![1i32; neuron_count],
             activation: vec![0i32; neuron_count],
             charge: vec![0u32; neuron_count],
+            refractory: vec![0u8; neuron_count],
             workspace: PropagationWorkspace::new(neuron_count),
             csr_offsets: vec![0u32; neuron_count + 1],
             csr_targets: Vec::new(),
@@ -290,6 +293,12 @@ impl Network {
 
             let phase_tick = tick % GLOBAL_PHASE_TICKS_PER_PERIOD;
             for neuron_idx in 0..neuron_count {
+                // Refractory gate: neuron in cooldown cannot fire
+                if config.use_refractory && self.refractory[neuron_idx] > 0 {
+                    self.refractory[neuron_idx] -= 1;
+                    self.activation[neuron_idx] = 0;
+                    continue;
+                }
                 let channel_idx = self.channel[neuron_idx] as usize;
                 let phase_mult: u16 = if (1..=GLOBAL_PHASE_CHANNEL_COUNT).contains(&channel_idx) {
                     phase_base[(phase_tick + 9 - channel_idx) & 7] as u16
@@ -301,6 +310,9 @@ impl Network {
                 if charge_x10 >= threshold_x10 {
                     self.activation[neuron_idx] = self.polarity[neuron_idx];
                     self.charge[neuron_idx] = 0;
+                    if config.use_refractory {
+                        self.refractory[neuron_idx] = 1;
+                    }
                 } else {
                     self.activation[neuron_idx] = 0;
                 }
@@ -315,6 +327,7 @@ impl Network {
     pub fn reset(&mut self) {
         self.activation.fill(0);
         self.charge.fill(0);
+        self.refractory.fill(0);
     }
 
     /// Snapshot the current topology, parameters, and state for later rollback.
@@ -328,6 +341,7 @@ impl Network {
             polarity: self.polarity.clone(),
             activation: self.activation.clone(),
             charge: self.charge.clone(),
+            refractory: self.refractory.clone(),
         }
     }
 
@@ -350,6 +364,7 @@ impl Network {
         self.polarity.copy_from_slice(&snapshot.polarity);
         self.activation.copy_from_slice(&snapshot.activation);
         self.charge.copy_from_slice(&snapshot.charge);
+        self.refractory.copy_from_slice(&snapshot.refractory);
         self.workspace
             .ensure_neuron_count(self.graph.neuron_count());
         self.csr_dirty = true;
@@ -661,6 +676,9 @@ impl Network {
 }
 
 #[cfg(test)]
+mod audit;
+
+#[cfg(test)]
 mod tests {
     use super::*;
     use crate::parameters::LIMIT_MAX_CHARGE;
@@ -781,6 +799,7 @@ mod tests {
             ticks_per_token: 2,
             input_duration_ticks: 2,
             decay_interval_ticks: 6,
+            use_refractory: false,
         };
         net.propagate(&input, &config).unwrap();
 
@@ -797,6 +816,7 @@ mod tests {
             ticks_per_token: 2,
             input_duration_ticks: 2,
             decay_interval_ticks: 0,
+            use_refractory: false,
         };
         let input = vec![1i32, 0, 0];
 
@@ -835,6 +855,7 @@ mod tests {
             ticks_per_token: 24,
             input_duration_ticks: 24,
             decay_interval_ticks: 0, // no decay
+            use_refractory: false,
         };
         net.propagate(&input, &config).unwrap();
 
@@ -857,6 +878,7 @@ mod tests {
             ticks_per_token: 2,
             input_duration_ticks: 2,
             decay_interval_ticks: 0,
+            use_refractory: false,
         };
 
         net.propagate(&input, &config).unwrap();
@@ -988,6 +1010,7 @@ mod tests {
             ticks_per_token: 0,
             input_duration_ticks: 0,
             decay_interval_ticks: 0,
+            use_refractory: false,
         };
         net.propagate(&input, &config).unwrap();
         // Zero ticks = no simulation, state unchanged
@@ -1062,6 +1085,7 @@ mod tests {
             ticks_per_token: 2,
             input_duration_ticks: 2,
             decay_interval_ticks: 0,
+            use_refractory: false,
         };
         net.propagate(&input, &config).unwrap();
         let snap = net.save_state();
@@ -1151,6 +1175,7 @@ mod tests {
             ticks_per_token: 2,
             input_duration_ticks: 2,
             decay_interval_ticks: 0,
+            use_refractory: false,
         };
         net.propagate(&input, &config).unwrap();
         let first_result = (net.activation().to_vec(), net.charge().to_vec());
@@ -1210,6 +1235,7 @@ mod tests {
             ticks_per_token: 2,
             input_duration_ticks: 2,
             decay_interval_ticks: 0,
+            use_refractory: false,
         };
         net.propagate(&input, &config).unwrap();
 

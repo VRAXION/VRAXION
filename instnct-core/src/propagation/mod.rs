@@ -78,6 +78,7 @@ pub struct PropagationParameters<'a> {
 pub struct PropagationState<'a> {
     pub activation: &'a mut [i32], // +1, -1, or 0
     pub charge: &'a mut [u32],     // [0, LIMIT_MAX_CHARGE]
+    pub refractory: &'a mut [u8],  // 0 = ready, >0 = ticks remaining in cooldown
 }
 
 /// Timing configuration for one forward pass.
@@ -87,6 +88,7 @@ pub struct PropagationConfig {
     pub ticks_per_token: usize,      // total simulation ticks per token
     pub input_duration_ticks: usize, // injection window at start
     pub decay_interval_ticks: usize, // charge -= 1 every N ticks
+    pub use_refractory: bool,        // 1-tick cooldown after firing (matches Python)
 }
 
 impl Default for PropagationConfig {
@@ -95,6 +97,7 @@ impl Default for PropagationConfig {
             ticks_per_token: GLOBAL_TICKS_PER_TOKEN,
             input_duration_ticks: GLOBAL_INPUT_DURATION_TICKS,
             decay_interval_ticks: GLOBAL_CHARGE_DECAY_INTERVAL_TICKS,
+            use_refractory: false,
         }
     }
 }
@@ -117,6 +120,13 @@ pub enum PropagationError {
         expected: usize,
         actual: usize,
     }, // charge.len() != neuron_count
+    /// refractory.len() != neuron_count
+    RefractoryLengthMismatch {
+        /// Expected length.
+        expected: usize,
+        /// Actual length.
+        actual: usize,
+    },
     ThresholdLengthMismatch {
         expected: usize,
         actual: usize,
@@ -175,6 +185,10 @@ impl fmt::Display for PropagationError {
             Self::ChargeLengthMismatch { expected, actual } => write!(
                 f,
                 "charge length mismatch: expected {expected}, got {actual}"
+            ),
+            Self::RefractoryLengthMismatch { expected, actual } => write!(
+                f,
+                "refractory length mismatch: expected {expected}, got {actual}"
             ),
             Self::ThresholdLengthMismatch { expected, actual } => write!(
                 f,
@@ -251,6 +265,12 @@ fn validate_propagation_inputs(
         return Err(PropagationError::ChargeLengthMismatch {
             expected: n,
             actual: state.charge.len(),
+        });
+    }
+    if state.refractory.len() != n {
+        return Err(PropagationError::RefractoryLengthMismatch {
+            expected: n,
+            actual: state.refractory.len(),
         });
     }
     if input.len() != n {
@@ -361,6 +381,7 @@ pub(crate) fn propagate_token_unchecked(
 
     debug_assert_eq!(state.activation.len(), neuron_count);
     debug_assert_eq!(state.charge.len(), neuron_count);
+    debug_assert_eq!(state.refractory.len(), neuron_count);
     debug_assert_eq!(input.len(), neuron_count);
     debug_assert_eq!(params.threshold.len(), neuron_count);
     debug_assert_eq!(params.channel.len(), neuron_count);
@@ -408,6 +429,12 @@ pub(crate) fn propagate_token_unchecked(
         // Spike stage: charge*10 >= (theta+1) * PHASE_BASE  (max 150 vs 208, fits u16)
         let phase_tick = tick % GLOBAL_PHASE_TICKS_PER_PERIOD;
         for neuron_idx in 0..neuron_count {
+            // Refractory gate: neuron in cooldown cannot fire
+            if config.use_refractory && state.refractory[neuron_idx] > 0 {
+                state.refractory[neuron_idx] -= 1;
+                state.activation[neuron_idx] = 0;
+                continue;
+            }
             let channel_idx = params.channel[neuron_idx] as usize;
             let phase_mult: u16 = if (1..=GLOBAL_PHASE_CHANNEL_COUNT).contains(&channel_idx) {
                 PHASE_BASE[(phase_tick + 9 - channel_idx) & 7] as u16 // rotate: channel 1 peaks at tick 0
@@ -420,6 +447,9 @@ pub(crate) fn propagate_token_unchecked(
             if charge_x10 >= threshold_x10 {
                 state.activation[neuron_idx] = params.polarity[neuron_idx]; // fire
                 state.charge[neuron_idx] = 0; // reset
+                if config.use_refractory {
+                    state.refractory[neuron_idx] = 1; // 1-tick cooldown
+                }
             } else {
                 state.activation[neuron_idx] = 0; // silent
             }
