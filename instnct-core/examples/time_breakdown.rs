@@ -19,8 +19,7 @@ fn main() {
     for &(neuron_count, density_pct) in sizes {
         let mut net = Network::new(neuron_count);
         let mut rng = StdRng::seed_from_u64(42);
-        let target_edges =
-            (neuron_count as u64 * neuron_count as u64 * density_pct / 100) as usize;
+        let target_edges = (neuron_count as u64 * neuron_count as u64 * density_pct / 100) as usize;
         for _ in 0..target_edges * 3 {
             net.mutate_add_edge(&mut rng);
             if net.edge_count() >= target_edges {
@@ -53,8 +52,8 @@ fn main() {
             for edge in net.graph().iter_edges() {
                 counts[edge.source as usize] += 1;
             }
-            let mut offset = 0u32;
-            for &count in &counts {
+            let offset = 0u32;
+            for &_count in &counts {
                 csr_offsets.push(offset); // this is wrong, we already have zeros
             }
             // Redo properly
@@ -98,7 +97,9 @@ fn main() {
                 inc.fill(0);
                 for neuron in 0..neuron_count {
                     let a = act[neuron];
-                    if a == 0 { continue; }
+                    if a == 0 {
+                        continue;
+                    }
                     let start = csr_offsets[neuron] as usize;
                     let end = csr_offsets[neuron + 1] as usize;
                     for &t in &csr_targets[start..end] {
@@ -113,7 +114,9 @@ fn main() {
                     let ch = channel[i] as usize;
                     let pm: u16 = if (1..=8).contains(&ch) {
                         PHASE_BASE[(pt + 9 - ch) & 7] as u16
-                    } else { 10 };
+                    } else {
+                        10
+                    };
                     if chg[i] as u16 * 10 >= (threshold[i] as u16 + 1) * pm {
                         act[i] = polarity[i];
                         chg[i] = 0;
@@ -160,7 +163,9 @@ fn main() {
                 black_box(&mut incoming).fill(0);
                 for neuron in 0..neuron_count {
                     let a = black_box(&activation)[neuron];
-                    if a == 0 { continue; }
+                    if a == 0 {
+                        continue;
+                    }
                     let s = csr_offsets[neuron] as usize;
                     let e = csr_offsets[neuron + 1] as usize;
                     for &t in &csr_targets[s..e] {
@@ -180,7 +185,9 @@ fn main() {
                     let ch = black_box(&channel)[i] as usize;
                     let pm: u16 = if (1..=8).contains(&ch) {
                         PHASE_BASE[(pt + 9 - ch) & 7] as u16
-                    } else { 10 };
+                    } else {
+                        10
+                    };
                     if black_box(&charge)[i] as u16 * 10 >= (threshold[i] as u16 + 1) * pm {
                         black_box(&mut activation)[i] = polarity[i];
                         black_box(&mut charge)[i] = 0;
@@ -197,13 +204,32 @@ fn main() {
         let active = activation.iter().filter(|&&a| a != 0).count();
 
         println!("\n=== H={neuron_count}, {edges} edges, {density_pct}% density ===");
-        println!("  Active neurons: {active}/{neuron_count} ({:.0}%)", active as f64 / neuron_count as f64 * 100.0);
+        println!(
+            "  Active neurons: {active}/{neuron_count} ({:.0}%)",
+            active as f64 / neuron_count as f64 * 100.0
+        );
         println!("  FULL propagate:   {:>10.0} ns", full_ns);
         println!("  --- per phase (12 ticks) ---");
-        println!("  decay:            {:>10.0} ns  ({:>4.1}%)", decay_ns, decay_ns / full_ns * 100.0);
-        println!("  scatter-add:      {:>10.0} ns  ({:>4.1}%)", scatter_ns, scatter_ns / full_ns * 100.0);
-        println!("  spike decision:   {:>10.0} ns  ({:>4.1}%)", spike_ns, spike_ns / full_ns * 100.0);
+        println!(
+            "  decay:            {:>10.0} ns  ({:>4.1}%)",
+            decay_ns,
+            decay_ns / full_ns * 100.0
+        );
+        println!(
+            "  scatter-add:      {:>10.0} ns  ({:>4.1}%)",
+            scatter_ns,
+            scatter_ns / full_ns * 100.0
+        );
+        println!(
+            "  spike decision:   {:>10.0} ns  ({:>4.1}%)",
+            spike_ns,
+            spike_ns / full_ns * 100.0
+        );
         let other_ns = full_ns - decay_ns - scatter_ns - spike_ns;
-        println!("  other (input+charge): {:>6.0} ns  ({:>4.1}%)", other_ns, other_ns / full_ns * 100.0);
+        println!(
+            "  other (input+charge): {:>6.0} ns  ({:>4.1}%)",
+            other_ns,
+            other_ns / full_ns * 100.0
+        );
     }
 }

@@ -206,8 +206,8 @@ impl Network {
 
     /// Run one token's forward pass using CSR skip-inactive scatter-add.
     ///
-    /// Validates input length and parameter ranges via the checked path first,
-    /// then runs the optimized propagation loop that skips silent neurons.
+    /// Validates input length and parameter ranges inline, then runs the
+    /// optimized propagation loop that skips silent neurons.
     ///
     /// # Errors
     ///
@@ -1584,7 +1584,7 @@ mod tests {
         let mut rng = StdRng::seed_from_u64(42);
         net.mutate_polarity(&mut rng);
         assert!(
-            net.polarity().iter().any(|&p| p == -1),
+            net.polarity().contains(&-1),
             "one neuron should flip to inhibitory"
         );
     }

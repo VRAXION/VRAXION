@@ -2,7 +2,7 @@
 //!
 //! Run: cargo run --example csr_benchmark --release
 
-use instnct_core::{Network, PropagationConfig};
+use instnct_core::Network;
 use rand::rngs::StdRng;
 use rand::{Rng, SeedableRng};
 use std::time::Instant;
@@ -14,8 +14,8 @@ const ITERS: usize = 100;
 // ---- CSR builder ----
 
 struct CsrGraph {
-    offsets: Vec<u32>,  // H+1 entries: neuron i's edges are targets[offsets[i]..offsets[i+1]]
-    targets: Vec<u16>,  // compact target indices
+    offsets: Vec<u32>, // H+1 entries: neuron i's edges are targets[offsets[i]..offsets[i+1]]
+    targets: Vec<u16>, // compact target indices
     neuron_count: usize,
 }
 
@@ -52,6 +52,7 @@ impl CsrGraph {
 // ---- Propagation variants ----
 
 /// A: Current approach — scan all edges, usize sources/targets
+#[allow(clippy::too_many_arguments)]
 fn propagate_current(
     activation: &mut [i32],
     charge: &mut [u32],
@@ -129,6 +130,7 @@ fn propagate_skip_inactive(
         }
         incoming.fill(0);
         // SKIP-INACTIVE: only process edges from neurons that fired
+        #[allow(clippy::needless_range_loop)]
         for neuron in 0..neuron_count {
             let act = activation[neuron];
             if act == 0 {
@@ -188,6 +190,7 @@ fn propagate_csr_scan_all(
         }
         incoming.fill(0);
         // CSR scan-all: same work as current, but u16 targets + CSR layout
+        #[allow(clippy::needless_range_loop)]
         for neuron in 0..neuron_count {
             let act = activation[neuron];
             let start = csr.offsets[neuron] as usize;
@@ -238,8 +241,7 @@ fn main() {
     for &(neuron_count, density_pct) in sizes {
         let mut net = Network::new(neuron_count);
         let mut rng = StdRng::seed_from_u64(42);
-        let target_edges =
-            (neuron_count as u64 * neuron_count as u64 * density_pct / 100) as usize;
+        let target_edges = (neuron_count as u64 * neuron_count as u64 * density_pct / 100) as usize;
         for _ in 0..target_edges * 3 {
             net.mutate_add_edge(&mut rng);
             if net.edge_count() >= target_edges {
@@ -257,8 +259,16 @@ fn main() {
         let csr = CsrGraph::from_network(&net);
 
         // Extract raw edge arrays for current variant
-        let edge_src: Vec<usize> = net.graph().iter_edges().map(|e| e.source as usize).collect();
-        let edge_tgt: Vec<usize> = net.graph().iter_edges().map(|e| e.target as usize).collect();
+        let edge_src: Vec<usize> = net
+            .graph()
+            .iter_edges()
+            .map(|e| e.source as usize)
+            .collect();
+        let edge_tgt: Vec<usize> = net
+            .graph()
+            .iter_edges()
+            .map(|e| e.target as usize)
+            .collect();
 
         let threshold = net.threshold().to_vec();
         let channel = net.channel().to_vec();

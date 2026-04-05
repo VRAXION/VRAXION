@@ -126,6 +126,12 @@ fn main() {
         other as f64 / loop_total as f64 * 100.0
     );
 
-    println!("\n  Steps/sec: {:.0}", STEPS as f64 / loop_total as f64 * 1e9);
-    println!("  Final: edges={}, score={best_score}/{NUM_TOKENS}", net.edge_count());
+    println!(
+        "\n  Steps/sec: {:.0}",
+        STEPS as f64 / loop_total as f64 * 1e9
+    );
+    println!(
+        "  Final: edges={}, score={best_score}/{NUM_TOKENS}",
+        net.edge_count()
+    );
 }
