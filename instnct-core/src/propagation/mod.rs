@@ -52,6 +52,11 @@ impl PropagationWorkspace {
         }
     }
 
+    /// Mutable access to the scratch buffer (used by Network CSR propagation).
+    pub(crate) fn incoming_scratch_mut(&mut self) -> &mut [i32] {
+        &mut self.incoming_scratch
+    }
+
     #[cfg(test)]
     fn with_scratch(incoming_scratch: Vec<i32>) -> Self {
         Self { incoming_scratch }

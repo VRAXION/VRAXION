@@ -8,10 +8,10 @@
 //! wire edges via [`graph_mut()`](Network::graph_mut), adjust parameters,
 //! then call [`propagate()`](Network::propagate) to simulate one token.
 
-use crate::propagation::{
-    propagate_token, PropagationConfig, PropagationError, PropagationParameters, PropagationState,
-    PropagationWorkspace,
+use crate::parameters::{
+    GLOBAL_PHASE_CHANNEL_COUNT, GLOBAL_PHASE_TICKS_PER_PERIOD, LIMIT_MAX_CHARGE,
 };
+use crate::propagation::{PropagationConfig, PropagationError, PropagationWorkspace};
 use crate::topology::ConnectionGraph;
 use rand::Rng;
 use std::error::Error;
@@ -140,6 +140,9 @@ pub struct Network {
     activation: Vec<i32>, // ephemeral, +1, -1, or 0
     charge: Vec<u32>,    // ephemeral, [0, LIMIT_MAX_CHARGE]
     workspace: PropagationWorkspace, // reusable scratch buffer
+    csr_offsets: Vec<u32>, // CSR: per-neuron edge start index
+    csr_targets: Vec<u16>, // CSR: compact target indices
+    csr_dirty: bool,     // true when graph changed since last CSR rebuild
 }
 
 impl Network {
@@ -158,16 +161,53 @@ impl Network {
             activation: vec![0i32; neuron_count],
             charge: vec![0u32; neuron_count],
             workspace: PropagationWorkspace::new(neuron_count),
+            csr_offsets: vec![0u32; neuron_count + 1],
+            csr_targets: Vec::new(),
+            csr_dirty: true,
         }
     }
 
     // ---- Propagation ----
 
-    /// Run one token's forward pass through the spiking network.
+    /// Rebuild CSR (Compressed Sparse Row) cache from the connection graph.
+    /// Called automatically by [`propagate`](Self::propagate) when dirty.
+    fn rebuild_csr(&mut self) {
+        let neuron_count = self.graph.neuron_count();
+        self.csr_offsets.clear();
+        self.csr_offsets.reserve(neuron_count + 1);
+        self.csr_targets.clear();
+        self.csr_targets.reserve(self.graph.edge_count());
+
+        // Count outgoing edges per neuron
+        let mut counts = vec![0u32; neuron_count];
+        for edge in self.graph.iter_edges() {
+            counts[edge.source as usize] += 1;
+        }
+        // Build offsets (prefix sum)
+        let mut offset = 0u32;
+        for &count in &counts {
+            self.csr_offsets.push(offset);
+            offset += count;
+        }
+        self.csr_offsets.push(offset);
+
+        // Fill targets
+        self.csr_targets.resize(self.graph.edge_count(), 0);
+        let mut write_pos = self.csr_offsets.clone();
+        for edge in self.graph.iter_edges() {
+            let src = edge.source as usize;
+            let pos = write_pos[src] as usize;
+            self.csr_targets[pos] = edge.target;
+            write_pos[src] += 1;
+        }
+
+        self.csr_dirty = false;
+    }
+
+    /// Run one token's forward pass using CSR skip-inactive scatter-add.
     ///
-    /// Delegates to the checked [`propagate_token`](crate::propagate_token),
-    /// which validates all slice lengths, parameter ranges, and edge bounds.
-    /// This ensures safety even when parameters are modified via `_mut()` accessors.
+    /// Validates input length and parameter ranges via the checked path first,
+    /// then runs the optimized propagation loop that skips silent neurons.
     ///
     /// # Errors
     ///
@@ -178,21 +218,94 @@ impl Network {
         input: &[i32],
         config: &PropagationConfig,
     ) -> Result<(), NetworkError> {
-        propagate_token(
-            input,
-            &self.graph,
-            &PropagationParameters {
-                threshold: &self.threshold,
-                channel: &self.channel,
-                polarity: &self.polarity,
-            },
-            &mut PropagationState {
-                activation: &mut self.activation,
-                charge: &mut self.charge,
-            },
-            config,
-            &mut self.workspace,
-        )?;
+        // Validate input length and parameter ranges
+        let neuron_count = self.graph.neuron_count();
+        if input.len() != neuron_count {
+            return Err(PropagationError::InputLengthMismatch {
+                expected: neuron_count,
+                actual: input.len(),
+            }
+            .into());
+        }
+        for i in 0..neuron_count {
+            if self.threshold[i] > 15 {
+                return Err(PropagationError::ThresholdOutOfRange {
+                    index: i,
+                    value: self.threshold[i],
+                }
+                .into());
+            }
+            if !(1..=GLOBAL_PHASE_CHANNEL_COUNT as u8).contains(&self.channel[i]) {
+                return Err(PropagationError::ChannelOutOfRange {
+                    index: i,
+                    value: self.channel[i],
+                }
+                .into());
+            }
+            let p = self.polarity[i];
+            if p != 1 && p != -1 {
+                return Err(PropagationError::PolarityOutOfRange { index: i, value: p }.into());
+            }
+        }
+
+        // Rebuild CSR if graph changed
+        if self.csr_dirty {
+            self.rebuild_csr();
+        }
+
+        // CSR skip-inactive propagation (the actual computation)
+        let neuron_count = self.graph.neuron_count();
+        let phase_base: [u8; GLOBAL_PHASE_TICKS_PER_PERIOD] = [7, 8, 10, 12, 13, 12, 10, 8];
+        let incoming = &mut self.workspace.incoming_scratch_mut()[..neuron_count];
+
+        for tick in 0..config.ticks_per_token {
+            if config.decay_interval_ticks > 0 && tick % config.decay_interval_ticks == 0 {
+                for charge in self.charge.iter_mut() {
+                    *charge = charge.saturating_sub(1);
+                }
+            }
+            if tick < config.input_duration_ticks {
+                for (act, &input_val) in self.activation.iter_mut().zip(input.iter()) {
+                    *act += input_val;
+                }
+            }
+
+            // Skip-inactive scatter-add: only process edges from firing neurons
+            incoming.fill(0);
+            for neuron in 0..neuron_count {
+                let act = self.activation[neuron];
+                if act == 0 {
+                    continue;
+                }
+                let start = self.csr_offsets[neuron] as usize;
+                let end = self.csr_offsets[neuron + 1] as usize;
+                for &target in &self.csr_targets[start..end] {
+                    incoming[target as usize] += act;
+                }
+            }
+
+            for (charge, &signal) in self.charge.iter_mut().zip(incoming.iter()) {
+                *charge = charge.saturating_add_signed(signal).min(LIMIT_MAX_CHARGE);
+            }
+
+            let phase_tick = tick % GLOBAL_PHASE_TICKS_PER_PERIOD;
+            for neuron_idx in 0..neuron_count {
+                let channel_idx = self.channel[neuron_idx] as usize;
+                let phase_mult: u16 = if (1..=GLOBAL_PHASE_CHANNEL_COUNT).contains(&channel_idx) {
+                    phase_base[(phase_tick + 9 - channel_idx) & 7] as u16
+                } else {
+                    10
+                };
+                let charge_x10 = self.charge[neuron_idx] as u16 * 10;
+                let threshold_x10 = (self.threshold[neuron_idx] as u16 + 1) * phase_mult;
+                if charge_x10 >= threshold_x10 {
+                    self.activation[neuron_idx] = self.polarity[neuron_idx];
+                    self.charge[neuron_idx] = 0;
+                } else {
+                    self.activation[neuron_idx] = 0;
+                }
+            }
+        }
         Ok(())
     }
 
@@ -239,6 +352,7 @@ impl Network {
         self.charge.copy_from_slice(&snapshot.charge);
         self.workspace
             .ensure_neuron_count(self.graph.neuron_count());
+        self.csr_dirty = true;
     }
 
     // ---- Mutations ----
@@ -255,7 +369,11 @@ impl Network {
         }
         let source = rng.gen_range(0..neuron_count) as u16;
         let target = rng.gen_range(0..neuron_count) as u16;
-        self.graph.add_edge(source, target)
+        let added = self.graph.add_edge(source, target);
+        if added {
+            self.csr_dirty = true;
+        }
+        added
     }
 
     /// Remove a random existing edge.
@@ -272,6 +390,7 @@ impl Network {
         }
         let index = rng.gen_range(0..edge_count);
         self.graph.remove_edge_at(index);
+        self.csr_dirty = true;
         true
     }
 
@@ -291,10 +410,10 @@ impl Network {
         let old_edge = self.graph.remove_edge_at(index).unwrap();
         let new_target = rng.gen_range(0..neuron_count) as u16;
         if !self.graph.add_edge(old_edge.source, new_target) {
-            // new target was self-loop or duplicate — restore the old edge
             self.graph.add_edge(old_edge.source, old_edge.target);
             return false;
         }
+        self.csr_dirty = true;
         true
     }
 
@@ -310,7 +429,11 @@ impl Network {
         let index = rng.gen_range(0..edge_count);
         let edges: Vec<_> = self.graph.iter_edges().collect();
         let edge = edges[index];
-        self.graph.reverse_edge(edge.source, edge.target)
+        let reversed = self.graph.reverse_edge(edge.source, edge.target);
+        if reversed {
+            self.csr_dirty = true;
+        }
+        reversed
     }
 
     /// Mirror a random edge: if A->B exists, also add B->A (bidirectional pair).
@@ -325,7 +448,11 @@ impl Network {
         let index = rng.gen_range(0..edge_count);
         let edges: Vec<_> = self.graph.iter_edges().collect();
         let edge = edges[index];
-        self.graph.add_edge(edge.target, edge.source) // add reverse
+        let added = self.graph.add_edge(edge.target, edge.source);
+        if added {
+            self.csr_dirty = true;
+        }
+        added
     }
 
     /// Add an edge targeting a high in-degree neuron (top 25%).
@@ -362,7 +489,11 @@ impl Network {
         }
         let target = targets[rng.gen_range(0..targets.len())];
         let source = rng.gen_range(0..neuron_count) as u16;
-        self.graph.add_edge(source, target)
+        let added = self.graph.add_edge(source, target);
+        if added {
+            self.csr_dirty = true;
+        }
+        added
     }
 
     /// Add an edge preferring a same-channel target (fire together, wire together).
@@ -390,7 +521,11 @@ impl Network {
         } else {
             same_ch[rng.gen_range(0..same_ch.len())]
         };
-        self.graph.add_edge(source_idx as u16, target)
+        let added = self.graph.add_edge(source_idx as u16, target);
+        if added {
+            self.csr_dirty = true;
+        }
+        added
     }
 
     /// Mutate one random neuron's threshold to a random value in `[0, 15]`.
@@ -465,8 +600,10 @@ impl Network {
     }
 
     /// Mutable reference to the connection graph for adding/removing edges.
+    /// Marks the CSR cache as dirty (rebuilt on next propagate).
     #[inline]
     pub fn graph_mut(&mut self) -> &mut ConnectionGraph {
+        self.csr_dirty = true;
         &mut self.graph
     }
 
