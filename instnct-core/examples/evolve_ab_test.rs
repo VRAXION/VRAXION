@@ -126,6 +126,34 @@ fn strategy_full_phased(net: &mut Network, rng: &mut StdRng) -> bool {
     }
 }
 
+/// Strategy E: full Python schedule — all 10 mutations, phased.
+fn strategy_full_schedule(net: &mut Network, rng: &mut StdRng) -> bool {
+    let build_phase = net.edge_count() < NEURON_COUNT;
+    let roll = rng.gen_range(0..100u32);
+    if build_phase {
+        match roll {
+            0..60 => net.mutate_add_edge(rng),      // 60% add
+            60..70 => net.mutate_enhance(rng),      // 10% enhance (hub targeting)
+            70..80 => net.mutate_add_affinity(rng), // 10% affinity (same channel)
+            80..90 => net.mutate_mirror(rng),       // 10% mirror
+            _ => net.mutate_theta(rng),             // 10% theta
+        }
+    } else {
+        match roll {
+            0..20 => net.mutate_add_edge(rng),      // 20% add
+            20..30 => net.mutate_remove_edge(rng),  // 10% remove
+            30..40 => net.mutate_rewire(rng),       // 10% rewire
+            40..50 => net.mutate_reverse(rng),      // 10% reverse
+            50..60 => net.mutate_mirror(rng),       // 10% mirror
+            60..70 => net.mutate_enhance(rng),      // 10% enhance
+            70..80 => net.mutate_add_affinity(rng), // 10% affinity
+            80..90 => net.mutate_theta(rng),        // 10% theta
+            90..95 => net.mutate_channel(rng),      //  5% channel
+            _ => net.mutate_polarity(rng),          //  5% polarity
+        }
+    }
+}
+
 // ---- Reporting ----
 
 struct StrategyResult {
@@ -175,6 +203,7 @@ fn main() {
         run_strategy("simple-70/30", strategy_simple),
         run_strategy("add+rem+rewire", strategy_with_rewire),
         run_strategy("full-phased", strategy_full_phased),
+        run_strategy("full-schedule", strategy_full_schedule),
     ];
 
     println!(

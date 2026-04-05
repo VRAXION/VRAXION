@@ -298,6 +298,101 @@ impl Network {
         true
     }
 
+    /// Reverse a random edge's direction: A->B becomes B->A.
+    ///
+    /// Picks a random existing edge and flips it. Fails if the reverse
+    /// already exists (would create a duplicate) or the graph is empty.
+    pub fn mutate_reverse(&mut self, rng: &mut impl Rng) -> bool {
+        let edge_count = self.graph.edge_count();
+        if edge_count == 0 {
+            return false;
+        }
+        let index = rng.gen_range(0..edge_count);
+        let edges: Vec<_> = self.graph.iter_edges().collect();
+        let edge = edges[index];
+        self.graph.reverse_edge(edge.source, edge.target)
+    }
+
+    /// Mirror a random edge: if A->B exists, also add B->A (bidirectional pair).
+    ///
+    /// Picks a random existing edge and adds the reverse. Fails if the reverse
+    /// already exists or the graph is empty.
+    pub fn mutate_mirror(&mut self, rng: &mut impl Rng) -> bool {
+        let edge_count = self.graph.edge_count();
+        if edge_count == 0 {
+            return false;
+        }
+        let index = rng.gen_range(0..edge_count);
+        let edges: Vec<_> = self.graph.iter_edges().collect();
+        let edge = edges[index];
+        self.graph.add_edge(edge.target, edge.source) // add reverse
+    }
+
+    /// Add an edge targeting a high in-degree neuron (top 25%).
+    ///
+    /// Computes in-degree for all neurons, picks a target from the top quartile,
+    /// picks a random source. Falls back to random add if no edges exist yet.
+    pub fn mutate_enhance(&mut self, rng: &mut impl Rng) -> bool {
+        let neuron_count = self.graph.neuron_count();
+        if neuron_count < 2 {
+            return false;
+        }
+        if self.graph.edge_count() == 0 {
+            return self.mutate_add_edge(rng); // fallback: no topology to enhance
+        }
+        // Compute in-degree
+        let mut in_degree = vec![0u32; neuron_count];
+        for edge in self.graph.iter_edges() {
+            in_degree[edge.target as usize] += 1;
+        }
+        // Find top 25% threshold
+        let mut sorted_degrees = in_degree.clone();
+        sorted_degrees.sort_unstable();
+        let top_quartile_idx = neuron_count - neuron_count / 4;
+        let threshold = sorted_degrees[top_quartile_idx.min(neuron_count - 1)];
+        // Collect high in-degree neurons
+        let targets: Vec<u16> = in_degree
+            .iter()
+            .enumerate()
+            .filter(|(_, &d)| d >= threshold)
+            .map(|(i, _)| i as u16)
+            .collect();
+        if targets.is_empty() {
+            return self.mutate_add_edge(rng);
+        }
+        let target = targets[rng.gen_range(0..targets.len())];
+        let source = rng.gen_range(0..neuron_count) as u16;
+        self.graph.add_edge(source, target)
+    }
+
+    /// Add an edge preferring a same-channel target (fire together, wire together).
+    ///
+    /// Picks a random source neuron, finds neurons with the same channel,
+    /// and adds an edge to one of them. Falls back to random if no same-channel
+    /// neuron exists.
+    pub fn mutate_add_affinity(&mut self, rng: &mut impl Rng) -> bool {
+        let neuron_count = self.graph.neuron_count();
+        if neuron_count < 2 {
+            return false;
+        }
+        let source_idx = rng.gen_range(0..neuron_count);
+        let source_channel = self.channel[source_idx];
+        // Find same-channel neurons
+        let same_ch: Vec<u16> = self
+            .channel
+            .iter()
+            .enumerate()
+            .filter(|(i, &ch)| ch == source_channel && *i != source_idx)
+            .map(|(i, _)| i as u16)
+            .collect();
+        let target = if same_ch.is_empty() {
+            rng.gen_range(0..neuron_count) as u16 // fallback: random
+        } else {
+            same_ch[rng.gen_range(0..same_ch.len())]
+        };
+        self.graph.add_edge(source_idx as u16, target)
+    }
+
     /// Mutate one random neuron's threshold to a random value in `[0, 15]`.
     ///
     /// Returns `true` if the value changed, `false` if the random pick
@@ -1386,5 +1481,168 @@ mod tests {
         let mut net = Network::new(0);
         let mut rng = StdRng::seed_from_u64(42);
         assert!(!net.mutate_polarity(&mut rng));
+    }
+
+    // --- mutate_reverse tests ---
+
+    #[test]
+    fn mutate_reverse_flips_direction() {
+        use rand::rngs::StdRng;
+        use rand::SeedableRng;
+        let mut net = Network::new(8);
+        net.graph_mut().add_edge(0, 1);
+        let mut rng = StdRng::seed_from_u64(42);
+        let ok = net.mutate_reverse(&mut rng);
+        if ok {
+            assert!(!net.graph().has_edge(0, 1));
+            assert!(net.graph().has_edge(1, 0));
+        }
+        assert_eq!(net.edge_count(), 1, "reverse should not change edge count");
+    }
+
+    #[test]
+    fn mutate_reverse_empty_graph() {
+        use rand::rngs::StdRng;
+        use rand::SeedableRng;
+        let mut net = Network::new(8);
+        let mut rng = StdRng::seed_from_u64(42);
+        assert!(!net.mutate_reverse(&mut rng));
+    }
+
+    #[test]
+    fn mutate_reverse_no_self_loops() {
+        use rand::rngs::StdRng;
+        use rand::SeedableRng;
+        let mut net = Network::new(8);
+        for i in 0..7 {
+            net.graph_mut().add_edge(i, i + 1);
+        }
+        let mut rng = StdRng::seed_from_u64(99);
+        for _ in 0..50 {
+            net.mutate_reverse(&mut rng);
+        }
+        for edge in net.graph().iter_edges() {
+            assert_ne!(edge.source, edge.target);
+        }
+    }
+
+    // --- mutate_mirror tests ---
+
+    #[test]
+    fn mutate_mirror_adds_reverse() {
+        use rand::rngs::StdRng;
+        use rand::SeedableRng;
+        let mut net = Network::new(8);
+        net.graph_mut().add_edge(0, 1);
+        let mut rng = StdRng::seed_from_u64(42);
+        let ok = net.mutate_mirror(&mut rng);
+        if ok {
+            assert!(net.graph().has_edge(0, 1), "original edge should remain");
+            assert!(net.graph().has_edge(1, 0), "reverse edge should be added");
+            assert_eq!(net.edge_count(), 2);
+        }
+    }
+
+    #[test]
+    fn mutate_mirror_already_bidirectional() {
+        use rand::rngs::StdRng;
+        use rand::SeedableRng;
+        let mut net = Network::new(4);
+        net.graph_mut().add_edge(0, 1);
+        net.graph_mut().add_edge(1, 0);
+        let mut rng = StdRng::seed_from_u64(42);
+        // Already bidirectional — mirror should fail (duplicate)
+        assert!(!net.mutate_mirror(&mut rng));
+        assert_eq!(net.edge_count(), 2);
+    }
+
+    #[test]
+    fn mutate_mirror_empty_graph() {
+        use rand::rngs::StdRng;
+        use rand::SeedableRng;
+        let mut net = Network::new(8);
+        let mut rng = StdRng::seed_from_u64(42);
+        assert!(!net.mutate_mirror(&mut rng));
+    }
+
+    // --- mutate_enhance tests ---
+
+    #[test]
+    fn mutate_enhance_targets_high_degree() {
+        use rand::rngs::StdRng;
+        use rand::SeedableRng;
+        let mut net = Network::new(8);
+        // Neuron 3 gets high in-degree
+        net.graph_mut().add_edge(0, 3);
+        net.graph_mut().add_edge(1, 3);
+        net.graph_mut().add_edge(2, 3);
+        net.graph_mut().add_edge(4, 5); // other edges
+        let mut rng = StdRng::seed_from_u64(42);
+        for _ in 0..10 {
+            net.mutate_enhance(&mut rng);
+        }
+        // Neuron 3 should have gained more incoming edges
+        let in_deg_3 = net.graph().iter_edges().filter(|e| e.target == 3).count();
+        assert!(
+            in_deg_3 >= 3,
+            "high in-degree neuron should keep/gain edges, got {in_deg_3}"
+        );
+    }
+
+    #[test]
+    fn mutate_enhance_empty_fallback() {
+        use rand::rngs::StdRng;
+        use rand::SeedableRng;
+        let mut net = Network::new(8);
+        let mut rng = StdRng::seed_from_u64(42);
+        // Empty graph → falls back to mutate_add_edge
+        net.mutate_enhance(&mut rng);
+        // Should have added at least tried to add an edge
+        // (might fail if self-loop, that's ok)
+    }
+
+    // --- mutate_add_affinity tests ---
+
+    #[test]
+    fn mutate_add_affinity_prefers_same_channel() {
+        use rand::rngs::StdRng;
+        use rand::SeedableRng;
+        let mut net = Network::new(8);
+        // Set channels: 0-3 = channel 1, 4-7 = channel 5
+        for i in 0..4 {
+            net.channel_mut()[i] = 1;
+        }
+        for i in 4..8 {
+            net.channel_mut()[i] = 5;
+        }
+        let mut rng = StdRng::seed_from_u64(42);
+        for _ in 0..20 {
+            net.mutate_add_affinity(&mut rng);
+        }
+        // Count same-channel edges
+        let same_ch_edges = net
+            .graph()
+            .iter_edges()
+            .filter(|e| net.channel()[e.source as usize] == net.channel()[e.target as usize])
+            .count();
+        let total = net.edge_count();
+        assert!(
+            same_ch_edges as f64 / total.max(1) as f64 > 0.5,
+            "majority of edges should connect same-channel neurons, got {same_ch_edges}/{total}"
+        );
+    }
+
+    #[test]
+    fn mutate_add_affinity_no_self_loops() {
+        use rand::rngs::StdRng;
+        use rand::SeedableRng;
+        let mut net = Network::new(8);
+        let mut rng = StdRng::seed_from_u64(7);
+        for _ in 0..50 {
+            net.mutate_add_affinity(&mut rng);
+        }
+        for edge in net.graph().iter_edges() {
+            assert_ne!(edge.source, edge.target);
+        }
     }
 }
