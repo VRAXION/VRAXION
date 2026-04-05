@@ -38,7 +38,7 @@ fn main() {
     run("A3: Multi-tick chain delay", test_a3_multi_tick_chain, &mut pass, &mut fail);
     run("A4: Charge decay", test_a4_charge_decay, &mut pass, &mut fail);
     run("A5: Phase gating (8 channels)", test_a5_phase_gating, &mut pass, &mut fail);
-    run("A6: Output prediction (predict_i8)", test_a6_output_prediction, &mut pass, &mut fail);
+    run("A6: Output prediction (predict_projection)", test_a6_output_prediction, &mut pass, &mut fail);
     run("A7: Snapshot/restore round-trip", test_a7_snapshot_restore, &mut pass, &mut fail);
 
     println!("\n=== CIRCUIT TRACE SUMMARY ===");
@@ -316,9 +316,9 @@ fn test_a5_phase_gating() -> bool {
 }
 
 // ============================================================================
-// A6: Output prediction (predict_i8)
+// A6: Output prediction (predict_projection)
 // ============================================================================
-fn predict_i8(charge_slice: &[u32], w: &[i8], num_classes: usize) -> u8 {
+fn predict_projection(charge_slice: &[u32], w: &[i8], num_classes: usize) -> u8 {
     let mut scores = vec![0i32; num_classes];
     for (i, &c) in charge_slice.iter().enumerate() {
         if c == 0 { continue; }
@@ -357,7 +357,7 @@ fn test_a6_output_prediction() -> bool {
          0,  0,  0,  // row 4
     ];
 
-    let pred = predict_i8(&charge, &w, 3);
+    let pred = predict_projection(&charge, &w, 3);
     let ok = pred == 0;
     if !ok {
         println!("    predicted class {pred} (expected 0)");
