@@ -2024,4 +2024,28 @@ mod tests {
         let err = format!("{}", result.unwrap_err());
         assert!(err.contains("source 99"), "error should mention source 99: {err}");
     }
+
+    #[test]
+    fn genome_load_rejects_duplicate_edge() {
+        let dto = disk::NetworkDiskV1 {
+            version: disk::CURRENT_VERSION,
+            graph: disk::ConnectionGraphDiskV1 {
+                neuron_count: 4,
+                sources: vec![0, 0],
+                targets: vec![1, 1], // duplicate (0,1)
+            },
+            threshold: vec![0; 4],
+            channel: vec![1; 4],
+            polarity: vec![1; 4],
+        };
+        let bytes = bincode::serialize(&dto).unwrap();
+        let path = std::env::temp_dir().join("instnct_test_dup_edge.bin");
+        std::fs::write(&path, bytes).unwrap();
+
+        let result = Network::load_genome(&path);
+        let _ = std::fs::remove_file(&path);
+        assert!(result.is_err());
+        let err = format!("{}", result.unwrap_err());
+        assert!(err.contains("duplicate"), "error should mention duplicate: {err}");
+    }
 }

@@ -5,6 +5,7 @@
 //! even if internal runtime layouts change.
 
 use serde::{Deserialize, Serialize};
+use std::collections::HashSet;
 
 /// Current wire format version. Bump on breaking layout changes.
 pub(crate) const CURRENT_VERSION: u8 = 1;
@@ -42,7 +43,8 @@ pub(crate) fn validate(disk: &NetworkDiskV1) -> Result<(), String> {
         ));
     }
 
-    // Edge endpoint bounds + no self-loops
+    // Edge endpoint bounds + no self-loops + no duplicates
+    let mut seen = HashSet::with_capacity(disk.graph.sources.len());
     for (i, (&s, &t)) in disk.graph.sources.iter().zip(&disk.graph.targets).enumerate() {
         if s >= n {
             return Err(format!("edge {i}: source {s} >= neuron_count {n}"));
@@ -52,6 +54,9 @@ pub(crate) fn validate(disk: &NetworkDiskV1) -> Result<(), String> {
         }
         if s == t {
             return Err(format!("edge {i}: self-loop at neuron {s}"));
+        }
+        if !seen.insert((s, t)) {
+            return Err(format!("edge {i}: duplicate ({s}, {t})"));
         }
     }
 
