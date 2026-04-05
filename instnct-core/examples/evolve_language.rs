@@ -7,7 +7,7 @@
 //!
 //! Run: cargo run --example evolve_language --release -- <corpus-path>
 
-use instnct_core::{Network, PropagationConfig};
+use instnct_core::{Int8Projection, Network, PropagationConfig};
 use rand::rngs::StdRng;
 use rand::{Rng, SeedableRng};
 use rayon::prelude::*;
@@ -63,12 +63,6 @@ fn build_sdr_table(rng: &mut StdRng) -> Vec<Vec<i32>> {
     table
 }
 
-fn build_projection_i8(rng: &mut StdRng) -> Vec<i8> {
-    (0..PHI_DIM * CHARS)
-        .map(|_| rng.gen_range(-127..=127i8))
-        .collect()
-}
-
 fn sample_eval_offset(corpus_len: usize, len: usize, rng: &mut StdRng) -> Option<usize> {
     // Need len+1 chars: len inputs + 1 target. Valid offsets: [0, corpus_len - len - 1].
     if corpus_len <= len {
@@ -76,26 +70,6 @@ fn sample_eval_offset(corpus_len: usize, len: usize, rng: &mut StdRng) -> Option
     }
     let max_offset = corpus_len - len - 1; // inclusive upper bound
     Some(rng.gen_range(0..=max_offset))
-}
-
-fn predict_i8(net: &Network, projection_weights: &[i8]) -> u8 {
-    let mut scores = [0i32; CHARS];
-    for (i, &c) in net.charge()[OUTPUT_START..NEURON_COUNT].iter().enumerate() {
-        if c == 0 {
-            continue;
-        }
-        let charge_value = c as i32;
-        let row = &projection_weights[i * CHARS..(i + 1) * CHARS];
-        for (score, &weight) in scores.iter_mut().zip(row.iter()) {
-            *score += charge_value * weight as i32;
-        }
-    }
-    scores
-        .iter()
-        .enumerate()
-        .max_by_key(|&(_, &s)| s)
-        .map(|(i, _)| i as u8)
-        .unwrap_or(0)
 }
 
 fn build_network(rng: &mut StdRng) -> Network {
@@ -132,7 +106,7 @@ fn char_label(c: u8) -> char {
 
 fn eval_accuracy(
     net: &mut Network,
-    projection_weights: &[i8],
+    projection: &Int8Projection,
     corpus: &[u8],
     len: usize,
     rng: &mut StdRng,
@@ -148,7 +122,7 @@ fn eval_accuracy(
     let mut correct = 0u32;
     for i in 0..len {
         net.propagate(&sdr[seg[i] as usize], config).unwrap();
-        if predict_i8(net, projection_weights) == seg[i + 1] {
+        if projection.predict(&net.charge()[OUTPUT_START..NEURON_COUNT]) == seg[i + 1] {
             correct += 1;
         }
     }
@@ -167,7 +141,7 @@ fn run_evolution(steps: usize, seed: u64, corpus: &[u8], full_len: usize) -> Evo
     let mut rng = StdRng::seed_from_u64(seed);
     let mut net = build_network(&mut rng);
     let mut projection_rng = StdRng::seed_from_u64(seed + 200);
-    let mut projection_weights = build_projection_i8(&mut projection_rng);
+    let mut projection = Int8Projection::new(PHI_DIM, CHARS, &mut projection_rng);
     let mut eval_rng = StdRng::seed_from_u64(seed + 1000);
     let mut sdr_rng = StdRng::seed_from_u64(seed + 100);
     let sdr = build_sdr_table(&mut sdr_rng);
@@ -178,51 +152,24 @@ fn run_evolution(steps: usize, seed: u64, corpus: &[u8], full_len: usize) -> Evo
     for step in 0..steps {
         // Paired eval: same segment before and after mutation
         let eval_rng_snapshot = eval_rng.clone();
-        let before = eval_accuracy(&mut net, &projection_weights, corpus, 100, &mut eval_rng, &sdr, &config);
+        let before = eval_accuracy(&mut net, &projection, corpus, 100, &mut eval_rng, &sdr, &config);
         eval_rng = eval_rng_snapshot;
 
         let snapshot = net.save_state();
-        let weight_backup: Option<(usize, i8)>;
+        let mut weight_backup: Option<instnct_core::WeightBackup> = None;
         let roll = rng.gen_range(0..100u32);
         let mutated;
         match roll { // 8-op schedule + 10% projection mutation
-            0..25 => {
-                mutated = net.mutate_add_edge(&mut rng);
-                weight_backup = None;
-            }
-            25..40 => {
-                mutated = net.mutate_remove_edge(&mut rng);
-                weight_backup = None;
-            }
-            40..50 => {
-                mutated = net.mutate_rewire(&mut rng);
-                weight_backup = None;
-            }
-            50..65 => {
-                mutated = net.mutate_reverse(&mut rng);
-                weight_backup = None;
-            }
-            65..72 => {
-                mutated = net.mutate_mirror(&mut rng);
-                weight_backup = None;
-            }
-            72..80 => {
-                mutated = net.mutate_enhance(&mut rng);
-                weight_backup = None;
-            }
-            80..85 => {
-                mutated = net.mutate_theta(&mut rng);
-                weight_backup = None;
-            }
-            85..90 => {
-                mutated = net.mutate_channel(&mut rng);
-                weight_backup = None;
-            }
+            0..25 => { mutated = net.mutate_add_edge(&mut rng); }
+            25..40 => { mutated = net.mutate_remove_edge(&mut rng); }
+            40..50 => { mutated = net.mutate_rewire(&mut rng); }
+            50..65 => { mutated = net.mutate_reverse(&mut rng); }
+            65..72 => { mutated = net.mutate_mirror(&mut rng); }
+            72..80 => { mutated = net.mutate_enhance(&mut rng); }
+            80..85 => { mutated = net.mutate_theta(&mut rng); }
+            85..90 => { mutated = net.mutate_channel(&mut rng); }
             _ => {
-                let idx = rng.gen_range(0..projection_weights.len());
-                let old_val = projection_weights[idx];
-                projection_weights[idx] = rng.gen_range(-127..=127i8);
-                weight_backup = Some((idx, old_val));
+                weight_backup = Some(projection.mutate_one(&mut rng));
                 mutated = true;
             }
         }
@@ -231,7 +178,7 @@ fn run_evolution(steps: usize, seed: u64, corpus: &[u8], full_len: usize) -> Evo
             continue;
         }
 
-        let after = eval_accuracy(&mut net, &projection_weights, corpus, 100, &mut eval_rng, &sdr, &config);
+        let after = eval_accuracy(&mut net, &projection, corpus, 100, &mut eval_rng, &sdr, &config);
 
         // Density-capped acceptance: >= when lean, > when dense
         let dominated = if net.edge_count() < EDGE_CAP {
@@ -243,14 +190,14 @@ fn run_evolution(steps: usize, seed: u64, corpus: &[u8], full_len: usize) -> Evo
             accepted += 1;
         } else {
             net.restore_state(&snapshot);
-            if let Some((idx, old_val)) = weight_backup {
-                projection_weights[idx] = old_val;
+            if let Some(backup) = weight_backup {
+                projection.rollback(backup);
             }
             rejected += 1;
         }
 
         if (step + 1) % 5000 == 0 {
-            let full = eval_accuracy(&mut net, &projection_weights, corpus, full_len, &mut eval_rng, &sdr, &config);
+            let full = eval_accuracy(&mut net, &projection, corpus, full_len, &mut eval_rng, &sdr, &config);
             let tot = accepted + rejected;
             let rate = if tot > 0 {
                 accepted as f64 / tot as f64 * 100.0
@@ -268,7 +215,7 @@ fn run_evolution(steps: usize, seed: u64, corpus: &[u8], full_len: usize) -> Evo
         }
     }
 
-    let final_acc = eval_accuracy(&mut net, &projection_weights, corpus, 5000, &mut eval_rng, &sdr, &config);
+    let final_acc = eval_accuracy(&mut net, &projection, corpus, 5000, &mut eval_rng, &sdr, &config);
     let rate = accepted as f64 / (accepted + rejected).max(1) as f64 * 100.0;
     println!(
         "  [seed={seed}] FINAL: {:.1}%  edges={}  accept={:.0}%",
@@ -385,21 +332,6 @@ mod tests {
     }
 
     #[test]
-    fn projection_weight_reject_restore_is_exact() {
-        let mut rng = StdRng::seed_from_u64(7);
-        let original = build_projection_i8(&mut rng);
-        let mut trial = original.clone();
-
-        for _ in 0..1024 {
-            let idx = rng.gen_range(0..trial.len());
-            let old_val = trial[idx];
-            trial[idx] = rng.gen_range(-127..=127i8);
-            trial[idx] = old_val;
-            assert_eq!(trial, original, "projection rollback leaked weight drift");
-        }
-    }
-
-    #[test]
     fn paired_eval_noop_is_exactly_stable() {
         let corpus: Vec<u8> = (0..256).map(|i| (i % CHARS) as u8).collect();
         let config = PropagationConfig {
@@ -411,13 +343,13 @@ mod tests {
         let mut sdr_rng = StdRng::seed_from_u64(123);
         let sdr = build_sdr_table(&mut sdr_rng);
         let mut net = build_network(&mut StdRng::seed_from_u64(321));
-        let projection_weights = build_projection_i8(&mut StdRng::seed_from_u64(654));
+        let projection = Int8Projection::new(PHI_DIM, CHARS, &mut StdRng::seed_from_u64(654));
         let mut eval_rng = StdRng::seed_from_u64(999);
         let eval_rng_snapshot = eval_rng.clone();
 
-        let before = eval_accuracy(&mut net, &projection_weights, &corpus, 64, &mut eval_rng, &sdr, &config);
+        let before = eval_accuracy(&mut net, &projection, &corpus, 64, &mut eval_rng, &sdr, &config);
         eval_rng = eval_rng_snapshot;
-        let after = eval_accuracy(&mut net, &projection_weights, &corpus, 64, &mut eval_rng, &sdr, &config);
+        let after = eval_accuracy(&mut net, &projection, &corpus, 64, &mut eval_rng, &sdr, &config);
 
         assert_eq!(
             before, after,

@@ -18,6 +18,7 @@
 
 mod network;
 mod parameters;
+mod projection;
 mod propagation;
 mod topology;
 
@@ -29,6 +30,9 @@ mod topology;
 
 #[doc(inline)]
 pub use network::{Network, NetworkError, NetworkSnapshot};
+
+#[doc(inline)]
+pub use projection::{Int8Projection, WeightBackup};
 
 #[doc(inline)]
 pub use topology::{ConnectionGraph, DirectedEdge};
