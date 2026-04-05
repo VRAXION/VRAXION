@@ -40,8 +40,8 @@ fn evaluate(net: &mut Network, config: &PropagationConfig) -> u32 {
 
 struct RunResult {
     name: &'static str,
-    scores: Vec<u32>,     // score at each eval step
-    edges: Vec<usize>,    // edge count at each eval step
+    scores: Vec<u32>,  // score at each eval step
+    edges: Vec<usize>, // edge count at each eval step
     accepted: u32,
     rejected: u32,
 }
@@ -98,7 +98,57 @@ fn run_simple(add_pct: u32) -> RunResult {
     }
 }
 
-/// Strategy B: adaptive burst — N mutations per evaluation, N adapts.
+/// Strategy B: add + remove + rewire (50/20/30 split).
+fn run_with_rewire() -> RunResult {
+    let config = PropagationConfig::default();
+    let mut net = Network::new(NEURON_COUNT);
+    let mut rng = StdRng::seed_from_u64(SEED);
+
+    let mut best_score = evaluate(&mut net, &config);
+    let mut accepted = 0u32;
+    let mut rejected = 0u32;
+    let mut scores = vec![best_score];
+    let mut edges = vec![0usize];
+
+    for _ in 0..EVALUATIONS {
+        let snapshot = net.save_state();
+
+        let roll = rng.gen_range(0..100u32);
+        let mutated = if net.edge_count() == 0 || roll < 50 {
+            net.mutate_add_edge(&mut rng)
+        } else if roll < 70 {
+            net.mutate_remove_edge(&mut rng)
+        } else {
+            net.mutate_rewire(&mut rng)
+        };
+        if !mutated {
+            scores.push(best_score);
+            edges.push(net.edge_count());
+            continue;
+        }
+
+        let score = evaluate(&mut net, &config);
+        if score >= best_score {
+            best_score = score;
+            accepted += 1;
+        } else {
+            net.restore_state(&snapshot);
+            rejected += 1;
+        }
+        scores.push(best_score);
+        edges.push(net.edge_count());
+    }
+
+    RunResult {
+        name: "add+rem+rewire",
+        scores,
+        edges,
+        accepted,
+        rejected,
+    }
+}
+
+/// Strategy C: adaptive burst — N mutations per evaluation, N adapts.
 fn run_adaptive_burst() -> RunResult {
     let config = PropagationConfig::default();
     let mut net = Network::new(NEURON_COUNT);
@@ -217,14 +267,13 @@ fn print_timeline(result: &RunResult) {
 }
 
 fn main() {
-    println!(
-        "A/B Test: H={NEURON_COUNT}, {NUM_TOKENS} tokens, {EVALUATIONS} evals, seed={SEED}\n"
-    );
+    println!("A/B Test: H={NEURON_COUNT}, {NUM_TOKENS} tokens, {EVALUATIONS} evals, seed={SEED}\n");
 
     let results = [
         run_simple(50),
         run_simple(70),
         run_simple(90),
+        run_with_rewire(),
         run_adaptive_burst(),
     ];
 

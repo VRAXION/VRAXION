@@ -275,6 +275,29 @@ impl Network {
         true
     }
 
+    /// Rewire a random edge to a new random target. Keeps the source, changes the target.
+    ///
+    /// Picks a random existing edge, removes it, then adds a new edge from the
+    /// same source to a random different target. Returns `true` if the rewire
+    /// succeeded, `false` if the graph is empty or the new target was invalid
+    /// (self-loop, duplicate).
+    pub fn mutate_rewire(&mut self, rng: &mut impl Rng) -> bool {
+        let edge_count = self.graph.edge_count();
+        let neuron_count = self.graph.neuron_count();
+        if edge_count == 0 || neuron_count < 2 {
+            return false;
+        }
+        let index = rng.gen_range(0..edge_count);
+        let old_edge = self.graph.remove_edge_at(index).unwrap();
+        let new_target = rng.gen_range(0..neuron_count) as u16;
+        if !self.graph.add_edge(old_edge.source, new_target) {
+            // new target was self-loop or duplicate — restore the old edge
+            self.graph.add_edge(old_edge.source, old_edge.target);
+            return false;
+        }
+        true
+    }
+
     // ---- Queries ----
 
     /// Number of neurons in the network.
@@ -1102,5 +1125,92 @@ mod tests {
             net.mutate_remove_edge(&mut rng);
         }
         assert_eq!(net.edge_count(), 0);
+    }
+
+    // --- mutate_rewire tests ---
+
+    #[test]
+    fn mutate_rewire_changes_target() {
+        use rand::rngs::StdRng;
+        use rand::SeedableRng;
+        let mut net = Network::new(8);
+        net.graph_mut().add_edge(0, 1);
+        let mut rng = StdRng::seed_from_u64(42);
+        let rewired = net.mutate_rewire(&mut rng);
+        // Either rewired successfully (target changed) or failed (self-loop/dup)
+        assert_eq!(net.edge_count(), 1, "rewire should not change edge count");
+        if rewired {
+            assert!(
+                !net.graph().has_edge(0, 1),
+                "old edge should be gone after rewire"
+            );
+        }
+    }
+
+    #[test]
+    fn mutate_rewire_preserves_edge_count() {
+        use rand::rngs::StdRng;
+        use rand::SeedableRng;
+        let mut net = Network::new(16);
+        for i in 0..5 {
+            net.graph_mut().add_edge(i, i + 1);
+        }
+        assert_eq!(net.edge_count(), 5);
+        let mut rng = StdRng::seed_from_u64(7);
+        for _ in 0..20 {
+            net.mutate_rewire(&mut rng);
+        }
+        assert_eq!(
+            net.edge_count(),
+            5,
+            "rewire should never change total edge count"
+        );
+    }
+
+    #[test]
+    fn mutate_rewire_empty_graph() {
+        use rand::rngs::StdRng;
+        use rand::SeedableRng;
+        let mut net = Network::new(8);
+        let mut rng = StdRng::seed_from_u64(42);
+        assert!(
+            !net.mutate_rewire(&mut rng),
+            "empty graph should return false"
+        );
+    }
+
+    #[test]
+    fn mutate_rewire_no_self_loops() {
+        use rand::rngs::StdRng;
+        use rand::SeedableRng;
+        let mut net = Network::new(8);
+        for i in 0..7 {
+            net.graph_mut().add_edge(i, i + 1);
+        }
+        let mut rng = StdRng::seed_from_u64(99);
+        for _ in 0..100 {
+            net.mutate_rewire(&mut rng);
+        }
+        for edge in net.graph().iter_edges() {
+            assert_ne!(edge.source, edge.target, "self-loop found after rewire");
+        }
+    }
+
+    #[test]
+    fn mutate_rewire_rollback() {
+        use rand::rngs::StdRng;
+        use rand::SeedableRng;
+        let mut net = Network::new(8);
+        net.graph_mut().add_edge(0, 1);
+        net.graph_mut().add_edge(2, 3);
+        let snap = net.save_state();
+
+        let mut rng = StdRng::seed_from_u64(42);
+        net.mutate_rewire(&mut rng);
+
+        net.restore_state(&snap);
+        assert!(net.graph().has_edge(0, 1));
+        assert!(net.graph().has_edge(2, 3));
+        assert_eq!(net.edge_count(), 2);
     }
 }
