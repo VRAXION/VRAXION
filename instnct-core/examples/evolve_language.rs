@@ -70,11 +70,12 @@ fn build_projection_i8(rng: &mut StdRng) -> Vec<i8> {
 }
 
 fn sample_eval_offset(corpus_len: usize, len: usize, rng: &mut StdRng) -> Option<usize> {
-    let max_s = corpus_len.saturating_sub(len + 1);
-    if max_s == 0 {
+    // Need len+1 chars: len inputs + 1 target. Valid offsets: [0, corpus_len - len - 1].
+    if corpus_len <= len {
         return None;
     }
-    Some(rng.gen_range(0..max_s))
+    let max_offset = corpus_len - len - 1; // inclusive upper bound
+    Some(rng.gen_range(0..=max_offset))
 }
 
 fn predict_i8(net: &Network, projection_weights: &[i8]) -> u8 {
@@ -373,10 +374,14 @@ mod tests {
     #[test]
     fn sample_eval_offset_boundary() {
         let mut rng = StdRng::seed_from_u64(1);
-        // max_s = 102 - 100 - 1 = 1 → Some(0)
-        assert_eq!(sample_eval_offset(102, 100, &mut rng), Some(0));
-        // max_s = 101 - 100 - 1 = 0 → None
-        assert_eq!(sample_eval_offset(101, 100, &mut rng), None);
+        // corpus=102, len=100: need 101 chars, max_offset=1, valid offsets [0,1]
+        let off = sample_eval_offset(102, 100, &mut rng);
+        assert!(off.is_some());
+        assert!(off.unwrap() <= 1);
+        // corpus=101, len=100: exact fit, max_offset=0, only offset 0 valid
+        assert_eq!(sample_eval_offset(101, 100, &mut rng), Some(0));
+        // corpus=100, len=100: too short (need 101 chars)
+        assert_eq!(sample_eval_offset(100, 100, &mut rng), None);
     }
 
     #[test]
