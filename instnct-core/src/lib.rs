@@ -16,6 +16,7 @@
 // beta surface below. This preserves freedom to refactor internals without
 // changing downstream import paths.
 
+mod evolution;
 mod network;
 mod parameters;
 mod projection;
@@ -28,6 +29,9 @@ mod topology;
 // ---------------------------------------------------------------------------
 //
 // Only these re-exports are part of the supported public beta API.
+
+#[doc(inline)]
+pub use evolution::{evolution_step, EvolutionConfig, StepOutcome};
 
 #[doc(inline)]
 pub use network::{Network, NetworkError, NetworkSnapshot};

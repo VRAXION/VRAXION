@@ -7,7 +7,10 @@
 //!
 //! Run: cargo run --example evolve_language --release -- <corpus-path>
 
-use instnct_core::{Int8Projection, Network, PropagationConfig, SdrTable};
+use instnct_core::{
+    evolution_step, EvolutionConfig, Int8Projection, Network, PropagationConfig, SdrTable,
+    StepOutcome,
+};
 use rand::rngs::StdRng;
 use rand::{Rng, SeedableRng};
 use rayon::prelude::*;
@@ -130,52 +133,23 @@ fn run_evolution(steps: usize, seed: u64, corpus: &[u8], full_len: usize) -> Evo
 
     let mut accepted = 0u32;
     let mut rejected = 0u32;
+    let evo_config = EvolutionConfig { edge_cap: EDGE_CAP };
 
     for step in 0..steps {
-        // Paired eval: same segment before and after mutation
-        let eval_rng_snapshot = eval_rng.clone();
-        let before = eval_accuracy(&mut net, &projection, corpus, 100, &mut eval_rng, &sdr, &config);
-        eval_rng = eval_rng_snapshot;
-
-        let snapshot = net.save_state();
-        let mut weight_backup: Option<instnct_core::WeightBackup> = None;
-        let roll = rng.gen_range(0..100u32);
-        let mutated;
-        match roll { // 8-op schedule + 10% projection mutation
-            0..25 => { mutated = net.mutate_add_edge(&mut rng); }
-            25..40 => { mutated = net.mutate_remove_edge(&mut rng); }
-            40..50 => { mutated = net.mutate_rewire(&mut rng); }
-            50..65 => { mutated = net.mutate_reverse(&mut rng); }
-            65..72 => { mutated = net.mutate_mirror(&mut rng); }
-            72..80 => { mutated = net.mutate_enhance(&mut rng); }
-            80..85 => { mutated = net.mutate_theta(&mut rng); }
-            85..90 => { mutated = net.mutate_channel(&mut rng); }
-            _ => {
-                weight_backup = Some(projection.mutate_one(&mut rng));
-                mutated = true;
-            }
-        }
-        if !mutated {
-            let _ = eval_rng.gen_range(0..1u32);
-            continue;
-        }
-
-        let after = eval_accuracy(&mut net, &projection, corpus, 100, &mut eval_rng, &sdr, &config);
-
-        // Density-capped acceptance: >= when lean, > when dense
-        let dominated = if net.edge_count() < EDGE_CAP {
-            after >= before
-        } else {
-            after > before
-        };
-        if dominated {
-            accepted += 1;
-        } else {
-            net.restore_state(&snapshot);
-            if let Some(backup) = weight_backup {
-                projection.rollback(backup);
-            }
-            rejected += 1;
+        let outcome = evolution_step(
+            &mut net,
+            &mut projection,
+            &mut rng,
+            &mut eval_rng,
+            |net, proj, eval_rng| {
+                eval_accuracy(net, proj, corpus, 100, eval_rng, &sdr, &config)
+            },
+            &evo_config,
+        );
+        match outcome {
+            StepOutcome::Accepted => accepted += 1,
+            StepOutcome::Rejected => rejected += 1,
+            StepOutcome::Skipped => {}
         }
 
         if (step + 1) % 5000 == 0 {
