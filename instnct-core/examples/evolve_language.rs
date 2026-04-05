@@ -1,130 +1,50 @@
-//! Evolution with trigram distribution loss on real English.
+//! Language evolution: sequential next-char prediction on real English text.
 //!
-//! - Builds trigram table from embedded English corpus
-//! - Input: 2 context chars → activate input neurons
-//! - Output: read 26 output neuron charges → distribution
-//! - Loss: cross-entropy(target_distribution, predicted_distribution)
+//! Multi-seed test with the best known config:
+//! - H=256, phi overlap I/O, SDR 20% input, learnable int8 projection
+//! - Density-capped paired eval (>= when lean, > when dense)
+//! - 8-op mutation schedule + 10% projection weight mutations
 //!
 //! Run: cargo run --example evolve_language --release
 
 use instnct_core::{Network, PropagationConfig};
 use rand::rngs::StdRng;
 use rand::{Rng, SeedableRng};
+use std::fs;
 
-const ALPHABET: usize = 26;
-const SPACE: usize = 26; // treat space as 27th "letter" for context
-const CHARS: usize = 27; // A-Z + space
-const SMOOTH_ALPHA: f64 = 1.0; // Laplace smoothing for predictions
-const SMOOTH_BETA: f64 = 0.5; // Laplace smoothing for targets
+const CHARS: usize = 27; // a-z (0..25) + space (26)
+const SDR_ACTIVE_PCT: usize = 20;
+const NEURON_COUNT: usize = 256;
+const PHI_DIM: usize = 158; // round(256 / phi)
+const INPUT_END: usize = PHI_DIM; // input zone: 0..158
+const OUTPUT_START: usize = NEURON_COUNT - PHI_DIM; // output zone: 98..256
+const EDGE_CAP: usize = NEURON_COUNT * NEURON_COUNT * 7 / 100; // ~4587
 
-// I/O layout: SDR input over all neurons, last 26 = output readout
-const SDR_ACTIVE_PCT: usize = 20; // 20% of neurons active per letter
-const OUTPUT_START: usize = 0; // output = first 26 neurons (overlap with input is OK)
-const MIN_NEURONS: usize = 64;
-
-// Embedded English corpus (lowercase, letters + space only)
-const CORPUS: &str = "the quick brown fox jumps over the lazy dog \
-a the cat sat on the mat and looked at the birds outside the window \
-she said that the weather was getting better and they should go for a walk \
-it is important to understand that language follows patterns and these patterns \
-can be learned by observing the frequency of letter combinations in text \
-the most common words in english are the and to of a in that it is for \
-when thinking about how letters combine we notice that certain pairs appear \
-much more often than others for example th is extremely common while zx almost \
-never occurs this statistical regularity is what makes language predictable \
-the brain exploits these regularities to process language efficiently and \
-a spiking network can learn to do the same by evolving its connection topology \
-to match the statistical structure of the input signal that flows through it \
-the interference patterns that emerge from this process are the basis of thought";
-
-// ---- Trigram table ----
-
-struct TrigramTable {
-    counts: Vec<u32>, // [prev2][prev1][next] flattened, CHARS × CHARS × ALPHABET
+fn load_corpus(path: &str) -> Vec<u8> {
+    let raw = fs::read(path).expect("cannot read corpus file");
+    raw.iter()
+        .filter_map(|&b| {
+            if b.is_ascii_lowercase() {
+                Some(b - b'a')
+            } else if b.is_ascii_uppercase() {
+                Some(b.to_ascii_lowercase() - b'a')
+            } else if b == b' ' || b == b'\n' || b == b'\t' {
+                Some(26)
+            } else {
+                None
+            }
+        })
+        .collect()
 }
 
-impl TrigramTable {
-    fn new() -> Self {
-        Self {
-            counts: vec![0u32; CHARS * CHARS * ALPHABET],
-        }
-    }
-
-    fn index(prev2: usize, prev1: usize, next: usize) -> usize {
-        prev2 * CHARS * ALPHABET + prev1 * ALPHABET + next
-    }
-
-    fn build_from_corpus(corpus: &str) -> Self {
-        let mut table = Self::new();
-        let chars: Vec<usize> = corpus
-            .chars()
-            .filter_map(|c| {
-                if c.is_ascii_lowercase() {
-                    Some((c as usize) - ('a' as usize))
-                } else if c == ' ' {
-                    Some(SPACE)
-                } else {
-                    None
-                }
-            })
-            .collect();
-
-        for window in chars.windows(3) {
-            let prev2 = window[0];
-            let prev1 = window[1];
-            let next = window[2];
-            if next < ALPHABET {
-                // only predict letters, not space
-                table.counts[Self::index(prev2, prev1, next)] += 1;
-            }
-        }
-        table
-    }
-
-    /// Get smoothed target distribution for a context pair.
-    fn target_distribution(&self, prev2: usize, prev1: usize) -> [f64; ALPHABET] {
-        let mut dist = [0.0f64; ALPHABET];
-        let mut sum = 0.0;
-        for (next, slot) in dist.iter_mut().enumerate() {
-            let count = self.counts[Self::index(prev2, prev1, next)] as f64;
-            let smoothed = count + SMOOTH_BETA;
-            *slot = smoothed;
-            sum += smoothed;
-        }
-        for d in dist.iter_mut() {
-            *d /= sum;
-        }
-        dist
-    }
-
-    /// Get all unique contexts that have at least `min_count` observations.
-    fn contexts(&self, min_count: u32) -> Vec<(usize, usize)> {
-        let mut result = vec![];
-        for prev2 in 0..CHARS {
-            for prev1 in 0..CHARS {
-                let total: u32 = (0..ALPHABET)
-                    .map(|next| self.counts[Self::index(prev2, prev1, next)])
-                    .sum();
-                if total >= min_count {
-                    result.push((prev2, prev1));
-                }
-            }
-        }
-        result
-    }
-}
-
-// ---- SDR encoding ----
-
-/// Build SDR table: each of 27 chars gets a unique random sparse pattern.
-fn build_sdr_table(neuron_count: usize, rng: &mut StdRng) -> Vec<Vec<i32>> {
-    let active_count = neuron_count * SDR_ACTIVE_PCT / 100;
+fn build_sdr_table(rng: &mut StdRng) -> Vec<Vec<i32>> {
+    let active_count = INPUT_END * SDR_ACTIVE_PCT / 100;
     let mut table = Vec::with_capacity(CHARS);
     for _ in 0..CHARS {
-        let mut pattern = vec![0i32; neuron_count];
+        let mut pattern = vec![0i32; NEURON_COUNT];
         let mut activated = 0;
         while activated < active_count {
-            let idx = rng.gen_range(0..neuron_count);
+            let idx = rng.gen_range(0..INPUT_END);
             if pattern[idx] == 0 {
                 pattern[idx] = 1;
                 activated += 1;
@@ -135,272 +55,191 @@ fn build_sdr_table(neuron_count: usize, rng: &mut StdRng) -> Vec<Vec<i32>> {
     table
 }
 
-// ---- Cross-entropy ----
-
-fn cross_entropy(target: &[f64; ALPHABET], predicted: &[f64; ALPHABET]) -> f64 {
-    let mut loss = 0.0;
-    for (&t, &p) in target.iter().zip(predicted.iter()) {
-        if t > 0.0 {
-            loss -= t * p.ln();
-        }
-    }
-    loss
+fn build_projection_i8(rng: &mut StdRng) -> Vec<i8> {
+    (0..PHI_DIM * CHARS).map(|_| rng.gen_range(-127..=127i8)).collect()
 }
 
-/// Read output neuron activations and convert to smoothed distribution.
-/// Uses absolute activation values: +1 and -1 both count as "active".
-fn output_distribution(net: &Network) -> [f64; ALPHABET] {
-    let mut dist = [0.0f64; ALPHABET];
-    let mut sum = 0.0;
-    for (i, slot) in dist.iter_mut().enumerate() {
-        // Use absolute activation — both excitatory and inhibitory firing = signal
-        let act = net.activation()[OUTPUT_START + i].unsigned_abs() as f64;
-        let charge = net.charge()[OUTPUT_START + i] as f64;
-        let signal = act + charge * 0.5; // activation + partial charge
-        let smoothed = signal + SMOOTH_ALPHA;
-        *slot = smoothed;
-        sum += smoothed;
+fn predict_i8(net: &Network, w: &[i8]) -> u8 {
+    let mut scores = [0i32; CHARS];
+    for (i, &c) in net.charge()[OUTPUT_START..NEURON_COUNT].iter().enumerate() {
+        if c == 0 { continue; }
+        let x = c as i32;
+        let row = &w[i * CHARS..(i + 1) * CHARS];
+        for (s, &wt) in scores.iter_mut().zip(row.iter()) { *s += x * wt as i32; }
     }
-    for d in dist.iter_mut() {
-        *d /= sum;
-    }
-    dist
+    scores.iter().enumerate().max_by_key(|&(_, &s)| s)
+        .map(|(i, _)| i as u8).unwrap_or(0)
 }
 
-// ---- Evaluation ----
-
-fn evaluate(
-    net: &mut Network,
-    config: &PropagationConfig,
-    trigrams: &TrigramTable,
-    contexts: &[(usize, usize)],
-    sdr: &[Vec<i32>],
-    max_contexts: usize,
-    rng: &mut StdRng,
-) -> f64 {
-    let num_contexts = contexts.len().min(max_contexts);
-    if num_contexts == 0 {
-        return f64::MAX;
-    }
-
-    let mut total_loss = 0.0;
-
-    for _ in 0..num_contexts {
-        let &(prev2, prev1) = &contexts[rng.gen_range(0..contexts.len())];
-        let target = trigrams.target_distribution(prev2, prev1);
-
-        // Reset and inject SDR context
-        net.reset();
-        net.propagate(&sdr[prev2], config).unwrap(); // first context char
-        net.propagate(&sdr[prev1], config).unwrap(); // second context char
-
-        let predicted = output_distribution(net);
-        total_loss += cross_entropy(&target, &predicted);
-    }
-
-    total_loss / num_contexts as f64
+fn mutate_projection(w: &mut [i8], rng: &mut impl Rng) {
+    let idx = rng.gen_range(0..w.len());
+    w[idx] = rng.gen_range(-127..=127i8);
 }
 
-// ---- Main ----
-
-fn main() {
-    let neuron_count = 128; // small but enough for 27 input + 26 output + 75 hidden
-    let steps = 2000;
-    let seed = 42u64;
-    let quick_contexts = 5; // quick eval: 5 random contexts
-    let full_contexts = 50; // full eval: 50 random contexts
-
-    assert!(
-        neuron_count >= MIN_NEURONS,
-        "need at least {MIN_NEURONS} neurons for I/O"
-    );
-
-    println!("Building trigram table from embedded corpus...");
-    let trigrams = TrigramTable::build_from_corpus(CORPUS);
-    let contexts = trigrams.contexts(2); // contexts with at least 2 observations
-    println!(
-        "  corpus: {} chars, {} active contexts\n",
-        CORPUS.len(),
-        contexts.len()
-    );
-
-    let config = PropagationConfig {
-        ticks_per_token: 6,
-        input_duration_ticks: 2,
-        decay_interval_ticks: 6,
-    };
-    let mut net = Network::new(neuron_count);
-    let mut rng = StdRng::seed_from_u64(seed);
-
-    // Random init: 5% density so the network has signal flow from the start
-    let target_edges = neuron_count * neuron_count * 5 / 100;
+fn build_network(rng: &mut StdRng) -> Network {
+    let mut net = Network::new(NEURON_COUNT);
+    let target_edges = NEURON_COUNT * NEURON_COUNT * 5 / 100;
     for _ in 0..target_edges * 3 {
-        net.mutate_add_edge(&mut rng);
-        if net.edge_count() >= target_edges {
-            break;
-        }
+        net.mutate_add_edge(rng);
+        if net.edge_count() >= target_edges { break; }
     }
-    // Randomize params
-    for i in 0..neuron_count {
-        net.threshold_mut()[i] = rng.gen_range(0..=3); // low threshold for relay-heavy init
+    for i in 0..NEURON_COUNT {
+        net.threshold_mut()[i] = rng.gen_range(0..=7);
         net.channel_mut()[i] = rng.gen_range(1..=8);
-        if rng.gen_ratio(1, 10) {
-            net.polarity_mut()[i] = -1;
-        }
+        if rng.gen_ratio(1, 10) { net.polarity_mut()[i] = -1; }
     }
+    net
+}
 
-    // Build SDR table
-    let sdr = build_sdr_table(neuron_count, &mut rng);
-    println!(
-        "Init: {} edges, {} neurons, SDR {}% active ({} per char)",
-        net.edge_count(),
-        neuron_count,
-        SDR_ACTIVE_PCT,
-        neuron_count * SDR_ACTIVE_PCT / 100
-    );
+fn bar(val: f64, max_val: f64, width: usize) -> String {
+    let filled = ((val / max_val) * width as f64).round().min(width as f64) as usize;
+    format!("{}{}", "#".repeat(filled), ".".repeat(width - filled))
+}
 
-    // Initial eval
+fn char_label(c: u8) -> char {
+    if c < 26 { (b'a' + c) as char } else { '_' }
+}
+
+/// Run one evolution with density-capped paired eval.
+fn run_evolution(
+    steps: usize, seed: u64, corpus: &[u8], full_len: usize,
+) -> f64 {
+    let config = PropagationConfig {
+        ticks_per_token: 6, input_duration_ticks: 2, decay_interval_ticks: 6,
+    };
+
+    let mut rng = StdRng::seed_from_u64(seed);
+    let mut net = build_network(&mut rng);
+    let mut w_rng = StdRng::seed_from_u64(seed + 200);
+    let mut w = build_projection_i8(&mut w_rng);
     let mut eval_rng = StdRng::seed_from_u64(seed + 1000);
-    let mut best_loss = evaluate(
-        &mut net,
-        &config,
-        &trigrams,
-        &contexts,
-        &sdr,
-        full_contexts,
-        &mut eval_rng,
-    );
+    let mut sdr_rng = StdRng::seed_from_u64(seed + 100);
+    let sdr = build_sdr_table(&mut sdr_rng);
+
+    let eval_fn = |net: &mut Network, w: &[i8], len: usize, erng: &mut StdRng| -> f64 {
+        let max_s = corpus.len().saturating_sub(len + 1);
+        if max_s == 0 { return 0.0; }
+        let off = erng.gen_range(0..max_s);
+        let seg = &corpus[off..off + len + 1];
+        net.reset();
+        let mut correct = 0u32;
+        for i in 0..len {
+            net.propagate(&sdr[seg[i] as usize], &config).unwrap();
+            if predict_i8(net, w) == seg[i + 1] { correct += 1; }
+        }
+        correct as f64 / len as f64
+    };
+
     let mut accepted = 0u32;
     let mut rejected = 0u32;
 
-    println!(
-        "Evolve: H={neuron_count}, {steps} steps, seed={seed}, quick={quick_contexts}, full={full_contexts}"
-    );
-    println!("Initial: edges={}, loss={best_loss:.4}\n", net.edge_count());
-
     for step in 0..steps {
+        // Paired eval: same segment before and after mutation
+        let snap = eval_rng.clone();
+        let before = (eval_fn)(&mut net, &w, 100, &mut eval_rng);
+        eval_rng = snap;
+
         let snapshot = net.save_state();
-
-        // Mutate: add(50%) / remove(20%) / rewire(15%) / theta(10%) / channel(5%)
+        let w_backup: Option<(usize, i8)>;
         let roll = rng.gen_range(0..100u32);
-        let mutated = match roll {
-            0..50 => net.mutate_add_edge(&mut rng),
-            50..70 => net.mutate_remove_edge(&mut rng),
-            70..85 => net.mutate_rewire(&mut rng),
-            85..95 => net.mutate_theta(&mut rng),
-            _ => net.mutate_channel(&mut rng),
-        };
-        if !mutated {
-            continue;
+        let mutated;
+        match roll {
+            0..25 => { mutated = net.mutate_add_edge(&mut rng); w_backup = None; }
+            25..40 => { mutated = net.mutate_remove_edge(&mut rng); w_backup = None; }
+            40..50 => { mutated = net.mutate_rewire(&mut rng); w_backup = None; }
+            50..65 => { mutated = net.mutate_reverse(&mut rng); w_backup = None; }
+            65..72 => { mutated = net.mutate_mirror(&mut rng); w_backup = None; }
+            72..80 => { mutated = net.mutate_enhance(&mut rng); w_backup = None; }
+            80..85 => { mutated = net.mutate_theta(&mut rng); w_backup = None; }
+            85..90 => { mutated = net.mutate_channel(&mut rng); w_backup = None; }
+            _ => {
+                let idx = rng.gen_range(0..w.len());
+                let old_val = w[idx];
+                mutate_projection(&mut w, &mut rng);
+                w_backup = Some((idx, old_val));
+                mutated = true;
+            }
         }
+        if !mutated { let _ = eval_rng.gen_range(0..1u32); continue; }
 
-        // Quick eval (cheap, frequent)
-        let loss = evaluate(
-            &mut net,
-            &config,
-            &trigrams,
-            &contexts,
-            &sdr,
-            quick_contexts,
-            &mut eval_rng,
-        );
+        let after = (eval_fn)(&mut net, &w, 100, &mut eval_rng);
 
-        if loss <= best_loss {
-            best_loss = loss;
+        // Density-capped acceptance: >= when lean, > when dense
+        let dominated = if net.edge_count() < EDGE_CAP {
+            after >= before
+        } else {
+            after > before
+        };
+        if dominated {
             accepted += 1;
         } else {
             net.restore_state(&snapshot);
+            if let Some((idx, old_val)) = w_backup { w[idx] = old_val; }
             rejected += 1;
         }
 
-        if (step + 1) % 200 == 0 {
-            // Full eval for reporting
-            let full_loss = evaluate(
-                &mut net,
-                &config,
-                &trigrams,
-                &contexts,
-                &sdr,
-                full_contexts,
-                &mut eval_rng,
-            );
-            let total = accepted + rejected;
-            let rate = if total > 0 {
-                accepted as f64 / total as f64 * 100.0
-            } else {
-                0.0
-            };
-            println!(
-                "  step {:>4}: edges={:>4}  quick_loss={:.4}  full_loss={:.4}  accept={:.0}%",
-                step + 1,
-                net.edge_count(),
-                best_loss,
-                full_loss,
-                rate
-            );
+        if (step + 1) % 5000 == 0 {
+            let full = (eval_fn)(&mut net, &w, full_len, &mut eval_rng);
+            let tot = accepted + rejected;
+            let rate = if tot > 0 { accepted as f64 / tot as f64 * 100.0 } else { 0.0 };
+            println!("  step {:>5}: |{}| {:.1}%  accept={:.0}%  edges={}",
+                step+1, bar(full, 0.30, 30), full*100.0, rate, net.edge_count());
         }
     }
 
-    // Final full eval
-    let final_loss = evaluate(
-        &mut net,
-        &config,
-        &trigrams,
-        &contexts,
-        &sdr,
-        full_contexts,
-        &mut eval_rng,
-    );
-    println!(
-        "\nFinal: edges={}  loss={:.4}  accept_rate={:.0}%",
-        net.edge_count(),
-        final_loss,
-        accepted as f64 / (accepted + rejected).max(1) as f64 * 100.0
-    );
+    let final_acc = (eval_fn)(&mut net, &w, 5000, &mut eval_rng);
+    let rate = accepted as f64 / (accepted + rejected).max(1) as f64 * 100.0;
+    println!("  FINAL: {:.1}%  edges={}  accept={:.0}%\n", final_acc*100.0, net.edge_count(), rate);
+    final_acc
+}
 
-    // Baseline: random distribution loss (uniform prediction)
-    let uniform = [1.0 / ALPHABET as f64; ALPHABET];
-    let mut baseline_loss = 0.0;
-    for &(prev2, prev1) in contexts.iter().take(50) {
-        let target = trigrams.target_distribution(prev2, prev1);
-        baseline_loss += cross_entropy(&target, &uniform);
+fn main() {
+    let full_len = 2000;
+    let steps = 15000;
+    let seeds = [42u64, 123, 7];
+
+    let corpus_path = "S:/AI/work/VRAXION_DEV/instnct/data/traindat/fineweb_edu.traindat";
+    println!("Loading corpus...");
+    let corpus = load_corpus(corpus_path);
+    println!("  {} chars", corpus.len());
+
+    // Baselines
+    let mut freq = [0u64; CHARS];
+    for &c in &corpus { freq[c as usize] += 1; }
+    let most_common = freq.iter().enumerate().max_by_key(|&(_, &c)| c).map(|(i, _)| i).unwrap_or(0);
+    let freq_base = freq[most_common] as f64 / corpus.len() as f64;
+    let mut bigram = vec![0u64; CHARS * CHARS];
+    for bw in corpus.windows(2) { bigram[bw[0] as usize * CHARS + bw[1] as usize] += 1; }
+    let mut bigram_ok = 0u64;
+    for bw in corpus.windows(2) {
+        let best = (0..CHARS).max_by_key(|&n| bigram[bw[0] as usize * CHARS + n]).unwrap_or(0);
+        if best == bw[1] as usize { bigram_ok += 1; }
     }
-    baseline_loss /= 50.0f64.min(contexts.len() as f64);
-    println!("Baseline (uniform): loss={baseline_loss:.4}");
-    println!(
-        "Improvement vs uniform: {:.1}%",
-        (1.0 - final_loss / baseline_loss) * 100.0
-    );
+    let bigram_base = bigram_ok as f64 / (corpus.len() - 1) as f64;
+    println!("  Random: {:.1}%  Freq('{}'): {:.1}%  Bigram: {:.1}%",
+        100.0/CHARS as f64, char_label(most_common as u8), freq_base*100.0, bigram_base*100.0);
 
-    // Debug: show what the network actually outputs for "th?" context
-    println!("\n--- Debug: output for context 'th' ---");
-    net.reset();
-    net.propagate(&sdr[19], &config).unwrap(); // T
-    net.propagate(&sdr[7], &config).unwrap(); // H
+    println!("\n=== Multi-seed: density-capped paired eval, learnable int8 W ===");
+    println!("H={NEURON_COUNT}, {steps} steps, {} seeds, edge_cap={EDGE_CAP}\n", seeds.len());
 
-    print!("  Output charges: ");
-    let mut nonzero = 0;
-    for i in 0..ALPHABET {
-        let c = net.charge()[OUTPUT_START + i];
-        if c > 0 {
-            print!("{}={} ", (b'A' + i as u8) as char, c);
-            nonzero += 1;
-        }
+    let mut results = Vec::new();
+    for &s in &seeds {
+        println!("--- seed={s} ---");
+        let acc = run_evolution(steps, s, &corpus, full_len);
+        results.push((s, acc));
     }
-    println!("\n  Non-zero outputs: {nonzero}/{ALPHABET}");
 
-    print!("  Output activations: ");
-    for i in 0..ALPHABET {
-        let a = net.activation()[OUTPUT_START + i];
-        if a != 0 {
-            print!("{}={} ", (b'A' + i as u8) as char, a);
-        }
+    let mean = results.iter().map(|(_, a)| a).sum::<f64>() / results.len() as f64;
+    let max_acc = results.iter().map(|(_, a)| *a).fold(0.0f64, f64::max);
+    let min_acc = results.iter().map(|(_, a)| *a).fold(1.0f64, f64::min);
+
+    println!("=== SUMMARY ===");
+    println!("  Random:    {:.1}%", 100.0/CHARS as f64);
+    println!("  Frequency: {:.1}%", freq_base*100.0);
+    println!("  Bigram:    {:.1}%", bigram_base*100.0);
+    for (s, acc) in &results {
+        println!("  seed={:<4}  {:.1}%", s, acc * 100.0);
     }
-    println!();
-
-    // Also check: are ANY neurons active after propagation?
-    let total_active = net.activation().iter().filter(|&&a| a != 0).count();
-    let total_charged = net.charge().iter().filter(|&&c| c > 0).count();
-    println!("  Total active neurons: {total_active}/{neuron_count}");
-    println!("  Total charged neurons: {total_charged}/{neuron_count}");
+    println!("  Mean:      {:.1}%", mean * 100.0);
+    println!("  Range:     {:.1}% - {:.1}%  (spread={:.1}pp)", min_acc*100.0, max_acc*100.0, (max_acc-min_acc)*100.0);
 }
