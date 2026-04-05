@@ -46,7 +46,7 @@ fn load_corpus(path: &str) -> Vec<u8> {
 }
 
 fn build_sdr_table(rng: &mut StdRng) -> Vec<Vec<i32>> {
-    let active_count = INPUT_END * SDR_ACTIVE_PCT / 100; // 158 * 20 / 100 = 31 active bits
+    let active_count = INPUT_END * SDR_ACTIVE_PCT / 100; // active SDR bits from input-zone width × density
     let mut table = Vec::with_capacity(CHARS);
     for _ in 0..CHARS {
         let mut pattern = vec![0i32; NEURON_COUNT];

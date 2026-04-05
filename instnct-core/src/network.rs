@@ -151,7 +151,7 @@ pub struct Network {
     threshold: Vec<u32>, // per-neuron, stored [0,15]; effective = stored+1 → [1,16]
     channel: Vec<u8>,    // per-neuron, phase gating channel [1,8]
     polarity: Vec<i32>,  // per-neuron, +1 excitatory, -1 inhibitory
-    activation: Vec<i32>,  // ephemeral, +1, -1, or 0
+    activation: Vec<i32>,  // ephemeral, set to polarity or 0 by spike stage; transient mid-tick
     charge: Vec<u32>,     // ephemeral, [0, LIMIT_MAX_CHARGE]
     refractory: Vec<u8>,  // per-neuron, 0 = ready, 1 = cooling (1-tick refractory after fire)
     workspace: PropagationWorkspace, // reusable scratch buffer
