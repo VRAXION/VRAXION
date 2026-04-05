@@ -119,12 +119,12 @@ impl Int8Projection {
             self.input_dim
         );
         let mut scores = vec![0i32; self.output_classes];
-        for (i, &charge) in charge_slice.iter().enumerate() {
+        for (neuron_idx, &charge) in charge_slice.iter().enumerate() {
             if charge == 0 {
                 continue;
             }
             let charge_value = charge as i32;
-            let row_start = i * self.output_classes;
+            let row_start = neuron_idx * self.output_classes;
             let row = &self.weights[row_start..row_start + self.output_classes];
             for (score, &weight) in scores.iter_mut().zip(row.iter()) {
                 *score += charge_value * weight as i32;

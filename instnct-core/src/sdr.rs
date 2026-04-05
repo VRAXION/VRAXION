@@ -120,9 +120,9 @@ impl SdrTable {
             let mut pattern = vec![0i32; neuron_count];
             let mut activated = 0;
             while activated < active_bits {
-                let idx = rng.gen_range(0..input_dim);
-                if pattern[idx] == 0 {
-                    pattern[idx] = 1;
+                let neuron_idx = rng.gen_range(0..input_dim);
+                if pattern[neuron_idx] == 0 {
+                    pattern[neuron_idx] = 1;
                     activated += 1;
                 }
             }
