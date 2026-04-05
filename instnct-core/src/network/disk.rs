@@ -32,7 +32,7 @@ pub(crate) struct ConnectionGraphDiskV1 {
 ///
 /// Returns `Ok(())` if all invariants hold, or a descriptive error string.
 pub(crate) fn validate(disk: &NetworkDiskV1) -> Result<(), String> {
-    let n = disk.graph.neuron_count;
+    let neuron_count = disk.graph.neuron_count;
 
     // Edge array length match
     if disk.graph.sources.len() != disk.graph.targets.len() {
@@ -46,11 +46,11 @@ pub(crate) fn validate(disk: &NetworkDiskV1) -> Result<(), String> {
     // Edge endpoint bounds + no self-loops + no duplicates
     let mut seen = HashSet::with_capacity(disk.graph.sources.len()); // reject duplicate edges
     for (i, (&s, &t)) in disk.graph.sources.iter().zip(&disk.graph.targets).enumerate() {
-        if s >= n {
-            return Err(format!("edge {i}: source {s} >= neuron_count {n}"));
+        if s >= neuron_count {
+            return Err(format!("edge {i}: source {s} >= neuron_count {neuron_count}"));
         }
-        if t >= n {
-            return Err(format!("edge {i}: target {t} >= neuron_count {n}"));
+        if t >= neuron_count {
+            return Err(format!("edge {i}: target {t} >= neuron_count {neuron_count}"));
         }
         if s == t {
             return Err(format!("edge {i}: self-loop at neuron {s}"));
@@ -61,21 +61,21 @@ pub(crate) fn validate(disk: &NetworkDiskV1) -> Result<(), String> {
     }
 
     // Param array lengths
-    if disk.threshold.len() != n {
+    if disk.threshold.len() != neuron_count {
         return Err(format!(
-            "threshold length {}, expected {n}",
+            "threshold length {}, expected {neuron_count}",
             disk.threshold.len()
         ));
     }
-    if disk.channel.len() != n {
+    if disk.channel.len() != neuron_count {
         return Err(format!(
-            "channel length {}, expected {n}",
+            "channel length {}, expected {neuron_count}",
             disk.channel.len()
         ));
     }
-    if disk.polarity.len() != n {
+    if disk.polarity.len() != neuron_count {
         return Err(format!(
-            "polarity length {}, expected {n}",
+            "polarity length {}, expected {neuron_count}",
             disk.polarity.len()
         ));
     }

@@ -407,14 +407,14 @@ pub(crate) fn propagate_token_unchecked(
         // Scatter-add: accumulate incoming signals per neuron
         let incoming = &mut workspace.incoming_scratch[..neuron_count];
         incoming.fill(0);
-        for (sc, tc) in edge_sources
+        for (source_chunk, target_chunk) in edge_sources
             .chunks_exact(4)
             .zip(edge_targets.chunks_exact(4))
         {
-            incoming[tc[0]] += state.activation[sc[0]]; // unrolled — LLVM drops bounds checks
-            incoming[tc[1]] += state.activation[sc[1]]; // because chunks_exact guarantees len==4
-            incoming[tc[2]] += state.activation[sc[2]];
-            incoming[tc[3]] += state.activation[sc[3]];
+            incoming[target_chunk[0]] += state.activation[source_chunk[0]]; // unrolled — LLVM drops bounds checks
+            incoming[target_chunk[1]] += state.activation[source_chunk[1]]; // because chunks_exact guarantees len==4
+            incoming[target_chunk[2]] += state.activation[source_chunk[2]];
+            incoming[target_chunk[3]] += state.activation[source_chunk[3]];
         }
         let rem_start = edge_sources.len() / 4 * 4; // remainder (0-3 edges)
         for i in rem_start..edge_sources.len() {

@@ -195,13 +195,13 @@ impl Network {
         self.csr_targets.reserve(self.graph.edge_count());
 
         // Count outgoing edges per neuron
-        let mut counts = vec![0u32; neuron_count];
+        let mut outgoing_edge_counts = vec![0u32; neuron_count];
         for edge in self.graph.iter_edges() {
-            counts[edge.source as usize] += 1;
+            outgoing_edge_counts[edge.source as usize] += 1;
         }
         // Build offsets (prefix sum)
         let mut offset = 0u32;
-        for &count in &counts {
+        for &count in &outgoing_edge_counts {
             self.csr_offsets.push(offset);
             offset += count;
         }
@@ -574,16 +574,16 @@ impl Network {
         let top_quartile_idx = neuron_count - neuron_count / 4;
         let threshold = sorted_degrees[top_quartile_idx.min(neuron_count - 1)];
         // Collect high in-degree neurons
-        let targets: Vec<u16> = in_degree
+        let high_indegree_neurons: Vec<u16> = in_degree
             .iter()
             .enumerate()
             .filter(|(_, &d)| d >= threshold)
             .map(|(i, _)| i as u16)
             .collect();
-        if targets.is_empty() {
+        if high_indegree_neurons.is_empty() {
             return self.mutate_add_edge(rng);
         }
-        let target = targets[rng.gen_range(0..targets.len())];
+        let target = high_indegree_neurons[rng.gen_range(0..high_indegree_neurons.len())];
         let source = rng.gen_range(0..neuron_count) as u16;
         let added = self.graph.add_edge(source, target);
         if added {
