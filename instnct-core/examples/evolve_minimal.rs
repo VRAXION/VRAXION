@@ -44,7 +44,10 @@ fn main() {
     let mut rejected = 0u32;
 
     println!("Evolve: H={neuron_count}, {num_tokens} tokens, {steps} steps, seed={seed}");
-    println!("Initial: edges={}, score={best_score}/{num_tokens}\n", net.edge_count());
+    println!(
+        "Initial: edges={}, score={best_score}/{num_tokens}\n",
+        net.edge_count()
+    );
 
     for step in 0..steps {
         let snapshot = net.save_state();
@@ -71,7 +74,11 @@ fn main() {
 
         if (step + 1) % 100 == 0 {
             let total = accepted + rejected;
-            let rate = if total > 0 { accepted as f64 / total as f64 * 100.0 } else { 0.0 };
+            let rate = if total > 0 {
+                accepted as f64 / total as f64 * 100.0
+            } else {
+                0.0
+            };
             println!(
                 "  step {:>3}: edges={:>3}  score={:>2}/{}  accepted={:<3} rejected={:<3} rate={:.0}%",
                 step + 1, net.edge_count(), best_score, num_tokens, accepted, rejected, rate

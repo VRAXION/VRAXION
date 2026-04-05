@@ -18,7 +18,10 @@ fn main() {
         "{:>6} {:>8} {:>12} {:>12} {:>12} {:>10}",
         "H", "edges", "ns/token", "ns/eval(26)", "evals/sec", "tokens/sec"
     );
-    println!("{:-<6} {:-<8} {:-<12} {:-<12} {:-<12} {:-<10}", "", "", "", "", "", "");
+    println!(
+        "{:-<6} {:-<8} {:-<12} {:-<12} {:-<12} {:-<10}",
+        "", "", "", "", "", ""
+    );
 
     for &neuron_count in &sizes {
         let mut net = Network::new(neuron_count);

@@ -78,9 +78,18 @@ fn main() {
     // Detailed breakdown for H=4096
     let h = 4096;
     let edges = 839_000usize; // approximate
-    println!("  edge arrays:    {} KB  (sources + targets)", edges * 16 / 1024);
-    println!("  neuron arrays:  {} KB  (act + charge + threshold + channel + polarity)", h * 17 / 1024);
+    println!(
+        "  edge arrays:    {} KB  (sources + targets)",
+        edges * 16 / 1024
+    );
+    println!(
+        "  neuron arrays:  {} KB  (act + charge + threshold + channel + polarity)",
+        h * 17 / 1024
+    );
     println!("  incoming buf:   {} KB", h * 4 / 1024);
     println!("  total:          {} KB", (edges * 16 + h * 21) / 1024);
-    println!("  x12 ticks =     {} MB streamed per token", (edges * 16 * 12) / 1024 / 1024);
+    println!(
+        "  x12 ticks =     {} MB streamed per token",
+        (edges * 16 * 12) / 1024 / 1024
+    );
 }
