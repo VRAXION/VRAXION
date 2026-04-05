@@ -85,15 +85,15 @@ where
     let roll = mutation_rng.gen_range(0..100u32);
     let mut weight_backup: Option<WeightBackup> = None;
     let mutated = match roll {
-        0..25 => net.mutate_add_edge(mutation_rng),
-        25..40 => net.mutate_remove_edge(mutation_rng),
-        40..50 => net.mutate_rewire(mutation_rng),
-        50..65 => net.mutate_reverse(mutation_rng),
-        65..72 => net.mutate_mirror(mutation_rng),
-        72..80 => net.mutate_enhance(mutation_rng),
-        80..85 => net.mutate_theta(mutation_rng),
-        85..90 => net.mutate_channel(mutation_rng),
-        _ => {
+        0..25 => net.mutate_add_edge(mutation_rng),     // 25% topology growth
+        25..40 => net.mutate_remove_edge(mutation_rng),  // 15% topology pruning
+        40..50 => net.mutate_rewire(mutation_rng),       // 10% rewire existing edge
+        50..65 => net.mutate_reverse(mutation_rng),      // 15% flip edge direction
+        65..72 => net.mutate_mirror(mutation_rng),       // 7% add reverse of existing
+        72..80 => net.mutate_enhance(mutation_rng),      // 8% connect to high-degree neuron
+        80..85 => net.mutate_theta(mutation_rng),        // 5% threshold perturbation
+        85..90 => net.mutate_channel(mutation_rng),      // 5% phase channel perturbation
+        _ => {                                           // 10% projection weight perturbation
             weight_backup = Some(projection.mutate_one(mutation_rng));
             true
         }

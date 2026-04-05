@@ -42,9 +42,9 @@ pub struct Int8Projection {
 /// Private wire DTO for serialization. Validated on deserialize.
 #[derive(Serialize, Deserialize)]
 struct ProjectionDisk {
-    weights: Vec<i8>,
-    input_dim: usize,
-    output_classes: usize,
+    weights: Vec<i8>,      // input_dim × output_classes, row-major
+    input_dim: usize,      // output zone neuron count
+    output_classes: usize, // prediction class count
 }
 
 impl Serialize for Int8Projection {
