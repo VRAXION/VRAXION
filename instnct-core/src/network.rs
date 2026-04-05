@@ -271,7 +271,7 @@ impl Network {
 
         // CSR skip-inactive propagation (the actual computation)
         let neuron_count = self.graph.neuron_count();
-        let phase_base: [u8; GLOBAL_PHASE_TICKS_PER_PERIOD] = [7, 8, 10, 12, 13, 12, 10, 8];
+        let phase_base: [u8; GLOBAL_PHASE_TICKS_PER_PERIOD] = [7, 8, 10, 12, 13, 12, 10, 8]; // cosine gating curve (x10 scale, peak at ch offset)
         let incoming = &mut self.workspace.incoming_scratch_mut()[..neuron_count];
 
         for tick in 0..config.ticks_per_token {
@@ -291,7 +291,7 @@ impl Network {
             for neuron in 0..neuron_count {
                 let act = self.activation[neuron];
                 if act == 0 {
-                    continue;
+                    continue; // skip silent neurons (CSR scatter-add optimization)
                 }
                 let start = self.csr_offsets[neuron] as usize;
                 let end = self.csr_offsets[neuron + 1] as usize;
@@ -318,7 +318,7 @@ impl Network {
                 } else {
                     10
                 };
-                let charge_x10 = self.charge[neuron_idx] as u16 * 10;
+                let charge_x10 = self.charge[neuron_idx] as u16 * 10; // x10 fixed-point for integer threshold comparison
                 let threshold_x10 = (self.threshold[neuron_idx] as u16 + 1) * phase_mult;
                 if charge_x10 >= threshold_x10 {
                     self.activation[neuron_idx] = self.polarity[neuron_idx];

@@ -46,7 +46,7 @@ fn load_corpus(path: &str) -> Vec<u8> {
 }
 
 fn build_sdr_table(rng: &mut StdRng) -> Vec<Vec<i32>> {
-    let active_count = INPUT_END * SDR_ACTIVE_PCT / 100;
+    let active_count = INPUT_END * SDR_ACTIVE_PCT / 100; // 158 * 20 / 100 = 31 active bits
     let mut table = Vec::with_capacity(CHARS);
     for _ in 0..CHARS {
         let mut pattern = vec![0i32; NEURON_COUNT];
@@ -184,7 +184,7 @@ fn run_evolution(steps: usize, seed: u64, corpus: &[u8], full_len: usize) -> Evo
         let w_backup: Option<(usize, i8)>;
         let roll = rng.gen_range(0..100u32);
         let mutated;
-        match roll {
+        match roll { // 8-op schedule + 10% projection mutation
             0..25 => {
                 mutated = net.mutate_add_edge(&mut rng);
                 w_backup = None;

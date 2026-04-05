@@ -13,19 +13,19 @@ pub(crate) const CURRENT_VERSION: u8 = 1;
 /// On-disk representation of a network genome.
 #[derive(Serialize, Deserialize)]
 pub(crate) struct NetworkDiskV1 {
-    pub version: u8,
-    pub graph: ConnectionGraphDiskV1,
-    pub threshold: Vec<u32>,
-    pub channel: Vec<u8>,
-    pub polarity: Vec<i32>,
+    pub version: u8,               // wire format version
+    pub graph: ConnectionGraphDiskV1, // topology (edges)
+    pub threshold: Vec<u32>,       // per-neuron firing thresholds [0,15]
+    pub channel: Vec<u8>,          // per-neuron phase channels [1,8]
+    pub polarity: Vec<i32>,        // per-neuron polarity ±1
 }
 
 /// On-disk representation of the connection graph.
 #[derive(Serialize, Deserialize)]
 pub(crate) struct ConnectionGraphDiskV1 {
-    pub neuron_count: usize,
-    pub sources: Vec<usize>,
-    pub targets: Vec<usize>,
+    pub neuron_count: usize,       // H (number of neurons)
+    pub sources: Vec<usize>,       // edge source neuron indices
+    pub targets: Vec<usize>,       // edge target neuron indices
 }
 
 /// Validate a deserialized genome before constructing runtime types.
@@ -44,7 +44,7 @@ pub(crate) fn validate(disk: &NetworkDiskV1) -> Result<(), String> {
     }
 
     // Edge endpoint bounds + no self-loops + no duplicates
-    let mut seen = HashSet::with_capacity(disk.graph.sources.len());
+    let mut seen = HashSet::with_capacity(disk.graph.sources.len()); // reject duplicate edges
     for (i, (&s, &t)) in disk.graph.sources.iter().zip(&disk.graph.targets).enumerate() {
         if s >= n {
             return Err(format!("edge {i}: source {s} >= neuron_count {n}"));
