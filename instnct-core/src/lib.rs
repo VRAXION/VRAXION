@@ -20,6 +20,7 @@ mod network;
 mod parameters;
 mod projection;
 mod propagation;
+mod sdr;
 mod topology;
 
 // ---------------------------------------------------------------------------
@@ -33,6 +34,9 @@ pub use network::{Network, NetworkError, NetworkSnapshot};
 
 #[doc(inline)]
 pub use projection::{Int8Projection, WeightBackup};
+
+#[doc(inline)]
+pub use sdr::{SdrError, SdrTable};
 
 #[doc(inline)]
 pub use topology::{ConnectionGraph, DirectedEdge};

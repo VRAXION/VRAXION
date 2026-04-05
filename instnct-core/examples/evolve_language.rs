@@ -7,7 +7,7 @@
 //!
 //! Run: cargo run --example evolve_language --release -- <corpus-path>
 
-use instnct_core::{Int8Projection, Network, PropagationConfig};
+use instnct_core::{Int8Projection, Network, PropagationConfig, SdrTable};
 use rand::rngs::StdRng;
 use rand::{Rng, SeedableRng};
 use rayon::prelude::*;
@@ -43,24 +43,6 @@ fn load_corpus(path: &str) -> Vec<u8> {
             }
         })
         .collect()
-}
-
-fn build_sdr_table(rng: &mut StdRng) -> Vec<Vec<i32>> {
-    let active_count = INPUT_END * SDR_ACTIVE_PCT / 100; // active SDR bits from input-zone width × density
-    let mut table = Vec::with_capacity(CHARS);
-    for _ in 0..CHARS {
-        let mut pattern = vec![0i32; NEURON_COUNT];
-        let mut activated = 0;
-        while activated < active_count {
-            let idx = rng.gen_range(0..INPUT_END);
-            if pattern[idx] == 0 {
-                pattern[idx] = 1;
-                activated += 1;
-            }
-        }
-        table.push(pattern);
-    }
-    table
 }
 
 fn sample_eval_offset(corpus_len: usize, len: usize, rng: &mut StdRng) -> Option<usize> {
@@ -110,7 +92,7 @@ fn eval_accuracy(
     corpus: &[u8],
     len: usize,
     rng: &mut StdRng,
-    sdr: &[Vec<i32>],
+    sdr: &SdrTable,
     config: &PropagationConfig,
 ) -> f64 {
     let Some(off) = sample_eval_offset(corpus.len(), len, rng) else {
@@ -121,7 +103,7 @@ fn eval_accuracy(
     net.reset();
     let mut correct = 0u32;
     for i in 0..len {
-        net.propagate(&sdr[seg[i] as usize], config).unwrap();
+        net.propagate(sdr.pattern(seg[i] as usize), config).unwrap();
         if projection.predict(&net.charge()[OUTPUT_START..NEURON_COUNT]) == seg[i + 1] as usize {
             correct += 1;
         }
@@ -144,7 +126,7 @@ fn run_evolution(steps: usize, seed: u64, corpus: &[u8], full_len: usize) -> Evo
     let mut projection = Int8Projection::new(PHI_DIM, CHARS, &mut projection_rng);
     let mut eval_rng = StdRng::seed_from_u64(seed + 1000);
     let mut sdr_rng = StdRng::seed_from_u64(seed + 100);
-    let sdr = build_sdr_table(&mut sdr_rng);
+    let sdr = SdrTable::new(CHARS, NEURON_COUNT, INPUT_END, SDR_ACTIVE_PCT, &mut sdr_rng).unwrap();
 
     let mut accepted = 0u32;
     let mut rejected = 0u32;
@@ -341,7 +323,7 @@ mod tests {
             use_refractory: false,
         };
         let mut sdr_rng = StdRng::seed_from_u64(123);
-        let sdr = build_sdr_table(&mut sdr_rng);
+        let sdr = SdrTable::new(CHARS, NEURON_COUNT, INPUT_END, SDR_ACTIVE_PCT, &mut sdr_rng).unwrap();
         let mut net = build_network(&mut StdRng::seed_from_u64(321));
         let projection = Int8Projection::new(PHI_DIM, CHARS, &mut StdRng::seed_from_u64(654));
         let mut eval_rng = StdRng::seed_from_u64(999);

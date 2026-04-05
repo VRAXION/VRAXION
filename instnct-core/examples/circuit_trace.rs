@@ -7,7 +7,7 @@
 
 use instnct_core::{
     propagate_token, ConnectionGraph, Network, PropagationConfig, PropagationParameters,
-    PropagationState, PropagationWorkspace,
+    PropagationState, PropagationWorkspace, SdrTable,
 };
 use rand::rngs::StdRng;
 use rand::{Rng, SeedableRng};
@@ -53,31 +53,14 @@ fn main() {
 // ============================================================================
 // A1: SDR Encoding
 // ============================================================================
-fn build_sdr_table(rng: &mut StdRng) -> Vec<Vec<i32>> {
-    let active_count = INPUT_END * SDR_ACTIVE_PCT / 100; // 158 * 20 / 100 = 31
-    let mut table = Vec::with_capacity(CHARS);
-    for _ in 0..CHARS {
-        let mut pattern = vec![0i32; NEURON_COUNT];
-        let mut activated = 0;
-        while activated < active_count {
-            let idx = rng.gen_range(0..INPUT_END);
-            if pattern[idx] == 0 {
-                pattern[idx] = 1;
-                activated += 1;
-            }
-        }
-        table.push(pattern);
-    }
-    table
-}
-
 fn test_a1_sdr_encoding() -> bool {
     let mut rng = StdRng::seed_from_u64(42);
-    let sdr = build_sdr_table(&mut rng);
+    let sdr = SdrTable::new(CHARS, NEURON_COUNT, INPUT_END, SDR_ACTIVE_PCT, &mut rng).unwrap();
 
-    let expected_active = INPUT_END * SDR_ACTIVE_PCT / 100; // 31
+    let expected_active = sdr.active_bits(); // 31
 
-    for (ci, pattern) in sdr.iter().enumerate() {
+    for ci in 0..CHARS {
+        let pattern = sdr.pattern(ci);
         // Check total length
         if pattern.len() != NEURON_COUNT {
             println!("    char {ci}: wrong length {} (expected {NEURON_COUNT})", pattern.len());
