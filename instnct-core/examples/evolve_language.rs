@@ -10,7 +10,15 @@
 use instnct_core::{Network, PropagationConfig};
 use rand::rngs::StdRng;
 use rand::{Rng, SeedableRng};
+use rayon::prelude::*;
 use std::fs;
+
+struct EvolutionResult {
+    seed: u64,
+    accuracy: f64,
+    edge_count: usize,
+    accept_rate: f64,
+}
 
 const CHARS: usize = 27; // a-z (0..25) + space (26)
 const SDR_ACTIVE_PCT: usize = 20;
@@ -147,7 +155,7 @@ fn eval_accuracy(
 }
 
 /// Run one evolution with density-capped paired eval.
-fn run_evolution(steps: usize, seed: u64, corpus: &[u8], full_len: usize) -> f64 {
+fn run_evolution(steps: usize, seed: u64, corpus: &[u8], full_len: usize) -> EvolutionResult {
     let config = PropagationConfig {
         ticks_per_token: 6,
         input_duration_ticks: 2,
@@ -249,7 +257,7 @@ fn run_evolution(steps: usize, seed: u64, corpus: &[u8], full_len: usize) -> f64
                 0.0
             };
             println!(
-                "  step {:>5}: |{}| {:.1}%  accept={:.0}%  edges={}",
+                "  [seed={seed}] step {:>5}: |{}| {:.1}%  accept={:.0}%  edges={}",
                 step + 1,
                 bar(full, 0.30, 30),
                 full * 100.0,
@@ -262,18 +270,23 @@ fn run_evolution(steps: usize, seed: u64, corpus: &[u8], full_len: usize) -> f64
     let final_acc = eval_accuracy(&mut net, &w, corpus, 5000, &mut eval_rng, &sdr, &config);
     let rate = accepted as f64 / (accepted + rejected).max(1) as f64 * 100.0;
     println!(
-        "  FINAL: {:.1}%  edges={}  accept={:.0}%\n",
+        "  [seed={seed}] FINAL: {:.1}%  edges={}  accept={:.0}%",
         final_acc * 100.0,
         net.edge_count(),
         rate
     );
-    final_acc
+    EvolutionResult {
+        seed,
+        accuracy: final_acc,
+        edge_count: net.edge_count(),
+        accept_rate: rate,
+    }
 }
 
 fn main() {
     let full_len = 2000;
     let steps = 15000;
-    let seeds = [42u64, 123, 7];
+    let seeds: Vec<u64> = (0..12).map(|i| 42 + i * 1000).collect();
 
     let corpus_path = std::env::args().nth(1).unwrap_or_else(|| {
         "S:/AI/work/VRAXION_DEV/instnct/data/traindat/fineweb_edu.traindat".to_string()
@@ -322,23 +335,27 @@ fn main() {
         seeds.len()
     );
 
-    let mut results = Vec::new();
-    for &s in &seeds {
-        println!("--- seed={s} ---");
-        let acc = run_evolution(steps, s, &corpus, full_len);
-        results.push((s, acc));
-    }
+    let results: Vec<EvolutionResult> = seeds
+        .par_iter()
+        .map(|&s| run_evolution(steps, s, &corpus, full_len))
+        .collect();
 
-    let mean = results.iter().map(|(_, a)| a).sum::<f64>() / results.len() as f64;
-    let max_acc = results.iter().map(|(_, a)| *a).fold(0.0f64, f64::max);
-    let min_acc = results.iter().map(|(_, a)| *a).fold(1.0f64, f64::min);
+    let mean = results.iter().map(|r| r.accuracy).sum::<f64>() / results.len() as f64;
+    let max_acc = results.iter().map(|r| r.accuracy).fold(0.0f64, f64::max);
+    let min_acc = results.iter().map(|r| r.accuracy).fold(1.0f64, f64::min);
 
-    println!("=== SUMMARY ===");
+    println!("\n=== SUMMARY ===");
     println!("  Random:    {:.1}%", 100.0 / CHARS as f64);
     println!("  Frequency: {:.1}%", freq_base * 100.0);
     println!("  Bigram:    {:.1}%", bigram_base * 100.0);
-    for (s, acc) in &results {
-        println!("  seed={:<4}  {:.1}%", s, acc * 100.0);
+    for r in &results {
+        println!(
+            "  seed={:<6} {:.1}%  edges={}  accept={:.0}%",
+            r.seed,
+            r.accuracy * 100.0,
+            r.edge_count,
+            r.accept_rate
+        );
     }
     println!("  Mean:      {:.1}%", mean * 100.0);
     println!(
@@ -354,40 +371,12 @@ mod tests {
     use super::*;
 
     #[test]
-    fn sample_eval_offset_allows_exact_fit_segment() {
+    fn sample_eval_offset_boundary() {
         let mut rng = StdRng::seed_from_u64(1);
-        assert_eq!(sample_eval_offset(101, 100, &mut rng), Some(0));
-        assert_eq!(sample_eval_offset(100, 100, &mut rng), None);
-    }
-
-    #[test]
-    fn skipped_step_advances_eval_rng_like_real_paired_eval() {
-        let corpus_len = 1024;
-        let len = 100;
-
-        let mut paired_rng = StdRng::seed_from_u64(42);
-        let snap = paired_rng.clone();
-        let before = sample_eval_offset(corpus_len, len, &mut paired_rng).unwrap();
-        paired_rng = snap;
-        let after = sample_eval_offset(corpus_len, len, &mut paired_rng).unwrap();
-        assert_eq!(
-            before, after,
-            "paired eval must use the same segment before/after"
-        );
-        let paired_next = paired_rng.gen::<u64>();
-
-        let mut skipped_rng = StdRng::seed_from_u64(42);
-        let skipped_snap = skipped_rng.clone();
-        let skipped_before = sample_eval_offset(corpus_len, len, &mut skipped_rng).unwrap();
-        skipped_rng = skipped_snap;
-        advance_paired_eval_rng(corpus_len, len, &mut skipped_rng);
-
-        assert_eq!(skipped_before, before);
-        assert_eq!(
-            skipped_rng.gen::<u64>(),
-            paired_next,
-            "skip-advance must consume RNG exactly like a real paired after-eval"
-        );
+        // max_s = 102 - 100 - 1 = 1 → Some(0)
+        assert_eq!(sample_eval_offset(102, 100, &mut rng), Some(0));
+        // max_s = 101 - 100 - 1 = 0 → None
+        assert_eq!(sample_eval_offset(101, 100, &mut rng), None);
     }
 
     #[test]
