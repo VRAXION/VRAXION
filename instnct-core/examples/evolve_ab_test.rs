@@ -1,6 +1,6 @@
-//! A/B test: compare mutation strategies on identical networks.
+//! A/B test: compare mutation strategies across multiple seeds.
 //!
-//! Each strategy gets the same seed, same network size, same number of
+//! Each strategy gets the same seeds, same network size, same number of
 //! evaluations. Only the mutation policy differs.
 //!
 //! Run: cargo run --example evolve_ab_test --release
@@ -12,9 +12,7 @@ use rand::{Rng, SeedableRng};
 const NEURON_COUNT: usize = 64;
 const NUM_TOKENS: usize = 16;
 const EVALUATIONS: usize = 500;
-const SEED: u64 = 42;
-
-// ---- Evaluation ----
+const SEEDS: [u64; 5] = [42, 123, 7, 999, 2026];
 
 fn evaluate(net: &mut Network, config: &PropagationConfig) -> u32 {
     let neuron_count = net.neuron_count();
@@ -36,254 +34,177 @@ fn evaluate(net: &mut Network, config: &PropagationConfig) -> u32 {
     score
 }
 
-// ---- Strategies ----
-
 struct RunResult {
-    name: &'static str,
-    scores: Vec<u32>,  // score at each eval step
-    edges: Vec<usize>, // edge count at each eval step
+    score: u32,
+    edges: usize,
     accepted: u32,
     rejected: u32,
+    converged_at: usize,
 }
 
-/// Strategy A: 1 mutation per evaluation, fixed 70/30 add/remove ratio.
-fn run_simple(add_pct: u32) -> RunResult {
+fn evolve(
+    seed: u64,
+    mut pick_mutation: impl FnMut(&mut Network, &mut StdRng) -> bool,
+) -> RunResult {
     let config = PropagationConfig::default();
     let mut net = Network::new(NEURON_COUNT);
-    let mut rng = StdRng::seed_from_u64(SEED);
+    let mut rng = StdRng::seed_from_u64(seed);
 
     let mut best_score = evaluate(&mut net, &config);
     let mut accepted = 0u32;
     let mut rejected = 0u32;
-    let mut scores = vec![best_score];
-    let mut edges = vec![0usize];
+    let mut converged_at = 0usize;
 
-    for _ in 0..EVALUATIONS {
+    for step in 0..EVALUATIONS {
         let snapshot = net.save_state();
 
-        let mutated = if net.edge_count() == 0 || rng.gen_range(0..100) < add_pct {
-            net.mutate_add_edge(&mut rng)
-        } else {
-            net.mutate_remove_edge(&mut rng)
-        };
-        if !mutated {
-            scores.push(best_score);
-            edges.push(net.edge_count());
+        if !pick_mutation(&mut net, &mut rng) {
             continue;
         }
 
         let score = evaluate(&mut net, &config);
         if score >= best_score {
-            best_score = score;
-            accepted += 1;
-        } else {
-            net.restore_state(&snapshot);
-            rejected += 1;
-        }
-        scores.push(best_score);
-        edges.push(net.edge_count());
-    }
-
-    RunResult {
-        name: match add_pct {
-            50 => "simple-50/50",
-            70 => "simple-70/30",
-            90 => "simple-90/10",
-            _ => "simple-??/??",
-        },
-        scores,
-        edges,
-        accepted,
-        rejected,
-    }
-}
-
-/// Strategy B: add + remove + rewire (50/20/30 split).
-fn run_with_rewire() -> RunResult {
-    let config = PropagationConfig::default();
-    let mut net = Network::new(NEURON_COUNT);
-    let mut rng = StdRng::seed_from_u64(SEED);
-
-    let mut best_score = evaluate(&mut net, &config);
-    let mut accepted = 0u32;
-    let mut rejected = 0u32;
-    let mut scores = vec![best_score];
-    let mut edges = vec![0usize];
-
-    for _ in 0..EVALUATIONS {
-        let snapshot = net.save_state();
-
-        let roll = rng.gen_range(0..100u32);
-        let mutated = if net.edge_count() == 0 || roll < 50 {
-            net.mutate_add_edge(&mut rng)
-        } else if roll < 70 {
-            net.mutate_remove_edge(&mut rng)
-        } else {
-            net.mutate_rewire(&mut rng)
-        };
-        if !mutated {
-            scores.push(best_score);
-            edges.push(net.edge_count());
-            continue;
-        }
-
-        let score = evaluate(&mut net, &config);
-        if score >= best_score {
-            best_score = score;
-            accepted += 1;
-        } else {
-            net.restore_state(&snapshot);
-            rejected += 1;
-        }
-        scores.push(best_score);
-        edges.push(net.edge_count());
-    }
-
-    RunResult {
-        name: "add+rem+rewire",
-        scores,
-        edges,
-        accepted,
-        rejected,
-    }
-}
-
-/// Strategy C: adaptive burst — N mutations per evaluation, N adapts.
-fn run_adaptive_burst() -> RunResult {
-    let config = PropagationConfig::default();
-    let mut net = Network::new(NEURON_COUNT);
-    let mut rng = StdRng::seed_from_u64(SEED);
-
-    let mut best_score = evaluate(&mut net, &config);
-    let mut accepted = 0u32;
-    let mut rejected = 0u32;
-    let mut scores = vec![best_score];
-    let mut edges = vec![0usize];
-
-    // Burst controller state
-    let mut burst: f64 = 1.0;
-    let mut accept_ema: f64 = 0.5; // start neutral
-    let mut rounds_since_improve: u32 = 0;
-
-    for _ in 0..EVALUATIONS {
-        let snapshot = net.save_state();
-
-        // Apply burst mutations
-        let burst_size = (burst as usize).max(1);
-        let mut any_mutated = false;
-        for _ in 0..burst_size {
-            let mutated = if net.edge_count() == 0 || rng.gen_ratio(7, 10) {
-                net.mutate_add_edge(&mut rng)
-            } else {
-                net.mutate_remove_edge(&mut rng)
-            };
-            if mutated {
-                any_mutated = true;
+            if score > best_score {
+                converged_at = step;
             }
-        }
-
-        if !any_mutated {
-            scores.push(best_score);
-            edges.push(net.edge_count());
-            continue;
-        }
-
-        // Evaluate
-        let score = evaluate(&mut net, &config);
-        let improved = score > best_score;
-
-        if score >= best_score {
             best_score = score;
             accepted += 1;
-            rounds_since_improve = 0;
         } else {
             net.restore_state(&snapshot);
             rejected += 1;
-            rounds_since_improve += 1;
         }
-
-        // Update burst controller (GPT 3-signal policy)
-        accept_ema = 0.9 * accept_ema + 0.1 * if improved { 1.0 } else { 0.0 };
-        let accuracy = best_score as f64 / NUM_TOKENS as f64;
-        let accuracy_cap = 1.0 + (1.0 - accuracy) * 7.0; // max burst scales with remaining slack
-
-        if accept_ema < 0.10 {
-            burst = (burst / 2.0).max(1.0); // too aggressive, slow down
-        } else if accept_ema > 0.30 {
-            burst = (burst + 1.0).min(accuracy_cap); // too cautious, speed up
-        }
-
-        if rounds_since_improve > 50 {
-            burst = (burst * 2.0).max(2.0).min(accuracy_cap); // stagnation escape
-        }
-
-        scores.push(best_score);
-        edges.push(net.edge_count());
     }
 
     RunResult {
-        name: "adaptive-burst",
-        scores,
-        edges,
+        score: best_score,
+        edges: net.edge_count(),
         accepted,
         rejected,
+        converged_at,
+    }
+}
+
+// ---- Strategies ----
+
+fn strategy_simple(net: &mut Network, rng: &mut StdRng) -> bool {
+    if net.edge_count() == 0 || rng.gen_ratio(7, 10) {
+        net.mutate_add_edge(rng)
+    } else {
+        net.mutate_remove_edge(rng)
+    }
+}
+
+fn strategy_with_rewire(net: &mut Network, rng: &mut StdRng) -> bool {
+    let roll = rng.gen_range(0..100u32);
+    if net.edge_count() == 0 || roll < 50 {
+        net.mutate_add_edge(rng)
+    } else if roll < 70 {
+        net.mutate_remove_edge(rng)
+    } else {
+        net.mutate_rewire(rng)
+    }
+}
+
+fn strategy_full_phased(net: &mut Network, rng: &mut StdRng) -> bool {
+    let build_phase = net.edge_count() < NEURON_COUNT;
+    let roll = rng.gen_range(0..100u32);
+    if build_phase {
+        match roll {
+            0..80 => net.mutate_add_edge(rng),
+            80..90 => net.mutate_rewire(rng),
+            _ => net.mutate_theta(rng),
+        }
+    } else {
+        match roll {
+            0..30 => net.mutate_add_edge(rng),
+            30..45 => net.mutate_remove_edge(rng),
+            45..60 => net.mutate_rewire(rng),
+            60..75 => net.mutate_theta(rng),
+            75..90 => net.mutate_channel(rng),
+            _ => net.mutate_polarity(rng),
+        }
     }
 }
 
 // ---- Reporting ----
 
-fn print_result(result: &RunResult) {
-    let total = result.accepted + result.rejected;
-    let rate = if total > 0 {
-        result.accepted as f64 / total as f64 * 100.0
-    } else {
-        0.0
-    };
-    let final_score = result.scores.last().copied().unwrap_or(0);
-    let final_edges = result.edges.last().copied().unwrap_or(0);
-
-    // Find first eval where max score reached
-    let max_score = *result.scores.iter().max().unwrap_or(&0);
-    let converged_at = result
-        .scores
-        .iter()
-        .position(|&s| s == max_score)
-        .unwrap_or(0);
-
-    println!(
-        "  {:<20} score={:>2}/{}  edges={:>3}  accept={:.0}%  converged_at=eval#{}",
-        result.name, final_score, NUM_TOKENS, final_edges, rate, converged_at
-    );
+struct StrategyResult {
+    name: &'static str,
+    runs: Vec<RunResult>,
 }
 
-fn print_timeline(result: &RunResult) {
-    print!("  {:<20} ", result.name);
-    for (i, &score) in result.scores.iter().enumerate() {
-        if i % 100 == 0 && i > 0 {
-            print!(" {:>2}", score);
+impl StrategyResult {
+    fn avg_score(&self) -> f64 {
+        self.runs.iter().map(|r| r.score as f64).sum::<f64>() / self.runs.len() as f64
+    }
+    fn avg_edges(&self) -> f64 {
+        self.runs.iter().map(|r| r.edges as f64).sum::<f64>() / self.runs.len() as f64
+    }
+    fn avg_accept_rate(&self) -> f64 {
+        let total_acc: u32 = self.runs.iter().map(|r| r.accepted).sum();
+        let total_all: u32 = self.runs.iter().map(|r| r.accepted + r.rejected).sum();
+        if total_all == 0 {
+            0.0
+        } else {
+            total_acc as f64 / total_all as f64 * 100.0
         }
     }
-    println!(" -> {:>2}", result.scores.last().unwrap_or(&0));
+    fn avg_convergence(&self) -> f64 {
+        self.runs.iter().map(|r| r.converged_at as f64).sum::<f64>() / self.runs.len() as f64
+    }
+    fn min_score(&self) -> u32 {
+        self.runs.iter().map(|r| r.score).min().unwrap_or(0)
+    }
+}
+
+fn run_strategy(
+    name: &'static str,
+    strategy: fn(&mut Network, &mut StdRng) -> bool,
+) -> StrategyResult {
+    let runs: Vec<RunResult> = SEEDS.iter().map(|&seed| evolve(seed, strategy)).collect();
+    StrategyResult { name, runs }
 }
 
 fn main() {
-    println!("A/B Test: H={NEURON_COUNT}, {NUM_TOKENS} tokens, {EVALUATIONS} evals, seed={SEED}\n");
+    println!(
+        "A/B Test: H={NEURON_COUNT}, {NUM_TOKENS} tokens, {EVALUATIONS} evals, {} seeds\n",
+        SEEDS.len()
+    );
 
-    let results = [
-        run_simple(50),
-        run_simple(70),
-        run_simple(90),
-        run_with_rewire(),
-        run_adaptive_burst(),
+    let strategies: Vec<StrategyResult> = vec![
+        run_strategy("simple-70/30", strategy_simple),
+        run_strategy("add+rem+rewire", strategy_with_rewire),
+        run_strategy("full-phased", strategy_full_phased),
     ];
 
-    println!("=== Results ===\n");
-    for result in &results {
-        print_result(result);
+    println!(
+        "  {:<20} {:>9} {:>9} {:>7} {:>9} {:>9}",
+        "strategy", "avg_score", "min_score", "edges", "accept%", "converge"
+    );
+    println!(
+        "  {:-<20} {:-<9} {:-<9} {:-<7} {:-<9} {:-<9}",
+        "", "", "", "", "", ""
+    );
+    for s in &strategies {
+        println!(
+            "  {:<20} {:>5.1}/{:<3} {:>5}/{:<3} {:>7.0} {:>8.0}% {:>9.0}",
+            s.name,
+            s.avg_score(),
+            NUM_TOKENS,
+            s.min_score(),
+            NUM_TOKENS,
+            s.avg_edges(),
+            s.avg_accept_rate(),
+            s.avg_convergence()
+        );
     }
 
-    println!("\n=== Score timeline (every 100 evals) ===\n");
-    for result in &results {
-        print_timeline(result);
+    println!("\n  Per-seed detail:");
+    for s in &strategies {
+        print!("  {:<20}", s.name);
+        for run in &s.runs {
+            print!("  {:>2}/{}", run.score, NUM_TOKENS);
+        }
+        println!();
     }
 }

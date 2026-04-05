@@ -298,6 +298,55 @@ impl Network {
         true
     }
 
+    /// Mutate one random neuron's threshold to a random value in `[0, 15]`.
+    ///
+    /// Returns `true` if the value changed, `false` if the random pick
+    /// landed on the same value or the network is empty.
+    pub fn mutate_theta(&mut self, rng: &mut impl Rng) -> bool {
+        let neuron_count = self.graph.neuron_count();
+        if neuron_count == 0 {
+            return false;
+        }
+        let index = rng.gen_range(0..neuron_count);
+        let new_value = rng.gen_range(0..=15u32);
+        if self.threshold[index] == new_value {
+            return false;
+        }
+        self.threshold[index] = new_value;
+        true
+    }
+
+    /// Mutate one random neuron's channel to a random value in `[1, 8]`.
+    ///
+    /// Returns `true` if the value changed, `false` if the random pick
+    /// landed on the same value or the network is empty.
+    pub fn mutate_channel(&mut self, rng: &mut impl Rng) -> bool {
+        let neuron_count = self.graph.neuron_count();
+        if neuron_count == 0 {
+            return false;
+        }
+        let index = rng.gen_range(0..neuron_count);
+        let new_value = rng.gen_range(1..=8u8);
+        if self.channel[index] == new_value {
+            return false;
+        }
+        self.channel[index] = new_value;
+        true
+    }
+
+    /// Flip one random neuron's polarity: +1 becomes -1, -1 becomes +1.
+    ///
+    /// Always returns `true` unless the network is empty.
+    pub fn mutate_polarity(&mut self, rng: &mut impl Rng) -> bool {
+        let neuron_count = self.graph.neuron_count();
+        if neuron_count == 0 {
+            return false;
+        }
+        let index = rng.gen_range(0..neuron_count);
+        self.polarity[index] = -self.polarity[index];
+        true
+    }
+
     // ---- Queries ----
 
     /// Number of neurons in the network.
@@ -1212,5 +1261,130 @@ mod tests {
         assert!(net.graph().has_edge(0, 1));
         assert!(net.graph().has_edge(2, 3));
         assert_eq!(net.edge_count(), 2);
+    }
+
+    // --- mutate_theta tests ---
+
+    #[test]
+    fn mutate_theta_changes_value() {
+        use rand::rngs::StdRng;
+        use rand::SeedableRng;
+        let mut net = Network::new(8);
+        assert!(net.threshold().iter().all(|&t| t == 0)); // default
+        let mut rng = StdRng::seed_from_u64(42);
+        net.mutate_theta(&mut rng);
+        assert!(
+            net.threshold().iter().any(|&t| t != 0),
+            "at least one theta should change"
+        );
+    }
+
+    #[test]
+    fn mutate_theta_stays_in_range() {
+        use rand::rngs::StdRng;
+        use rand::SeedableRng;
+        let mut net = Network::new(16);
+        let mut rng = StdRng::seed_from_u64(7);
+        for _ in 0..200 {
+            net.mutate_theta(&mut rng);
+        }
+        assert!(
+            net.threshold().iter().all(|&t| t <= 15),
+            "theta must stay in [0,15]"
+        );
+    }
+
+    #[test]
+    fn mutate_theta_rollback() {
+        use rand::rngs::StdRng;
+        use rand::SeedableRng;
+        let mut net = Network::new(8);
+        let snap = net.save_state();
+        let mut rng = StdRng::seed_from_u64(42);
+        for _ in 0..10 {
+            net.mutate_theta(&mut rng);
+        }
+        net.restore_state(&snap);
+        assert!(net.threshold().iter().all(|&t| t == 0));
+    }
+
+    // --- mutate_channel tests ---
+
+    #[test]
+    fn mutate_channel_changes_value() {
+        use rand::rngs::StdRng;
+        use rand::SeedableRng;
+        let mut net = Network::new(8);
+        assert!(net.channel().iter().all(|&c| c == 1)); // default
+        let mut rng = StdRng::seed_from_u64(42);
+        for _ in 0..10 {
+            net.mutate_channel(&mut rng);
+        }
+        assert!(
+            net.channel().iter().any(|&c| c != 1),
+            "at least one channel should change"
+        );
+    }
+
+    #[test]
+    fn mutate_channel_stays_in_range() {
+        use rand::rngs::StdRng;
+        use rand::SeedableRng;
+        let mut net = Network::new(16);
+        let mut rng = StdRng::seed_from_u64(99);
+        for _ in 0..200 {
+            net.mutate_channel(&mut rng);
+        }
+        assert!(
+            net.channel().iter().all(|&c| (1..=8).contains(&c)),
+            "channel must stay in [1,8]"
+        );
+    }
+
+    // --- mutate_polarity tests ---
+
+    #[test]
+    fn mutate_polarity_flips() {
+        use rand::rngs::StdRng;
+        use rand::SeedableRng;
+        let mut net = Network::new(8);
+        assert!(net.polarity().iter().all(|&p| p == 1)); // default: all excitatory
+        let mut rng = StdRng::seed_from_u64(42);
+        net.mutate_polarity(&mut rng);
+        assert!(
+            net.polarity().iter().any(|&p| p == -1),
+            "one neuron should flip to inhibitory"
+        );
+    }
+
+    #[test]
+    fn mutate_polarity_double_flip_restores() {
+        use rand::rngs::StdRng;
+        use rand::SeedableRng;
+        let mut net = Network::new(4);
+        // Use seed that picks the same neuron twice
+        let mut rng = StdRng::seed_from_u64(0);
+        let idx1 = {
+            let mut r = StdRng::seed_from_u64(0);
+            r.gen_range(0..4usize)
+        };
+        net.mutate_polarity(&mut rng); // flip once
+        assert_eq!(net.polarity()[idx1], -1);
+        // Manually flip back the same neuron
+        net.polarity_mut()[idx1] = -net.polarity()[idx1];
+        assert_eq!(
+            net.polarity()[idx1],
+            1,
+            "double flip should restore original"
+        );
+    }
+
+    #[test]
+    fn mutate_polarity_empty_network() {
+        use rand::rngs::StdRng;
+        use rand::SeedableRng;
+        let mut net = Network::new(0);
+        let mut rng = StdRng::seed_from_u64(42);
+        assert!(!net.mutate_polarity(&mut rng));
     }
 }
