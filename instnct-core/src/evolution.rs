@@ -100,7 +100,9 @@ where
     };
 
     if !mutated {
-        let _ = eval_rng.gen_range(0..1u32); // RNG sync: advance eval_rng by 1 step
+        // RNG sync: run the "after" eval to advance eval_rng by the same amount
+        // as a successful step. This works for any fitness_fn draw count.
+        let _ = fitness_fn(net, projection, eval_rng);
         return StepOutcome::Skipped;
     }
 
