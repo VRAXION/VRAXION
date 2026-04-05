@@ -32,11 +32,51 @@ use serde::{Deserialize, Serialize};
 /// // ... evaluate fitness ...
 /// proj.rollback(backup); // undo if rejected
 /// ```
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug)]
 pub struct Int8Projection {
     weights: Vec<i8>,      // input_dim × output_classes, row-major
     input_dim: usize,      // output zone neuron count (e.g. 158)
     output_classes: usize,  // number of prediction classes (e.g. 27)
+}
+
+/// Private wire DTO for serialization. Validated on deserialize.
+#[derive(Serialize, Deserialize)]
+struct ProjectionDisk {
+    weights: Vec<i8>,
+    input_dim: usize,
+    output_classes: usize,
+}
+
+impl Serialize for Int8Projection {
+    fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        ProjectionDisk {
+            weights: self.weights.clone(),
+            input_dim: self.input_dim,
+            output_classes: self.output_classes,
+        }
+        .serialize(serializer)
+    }
+}
+
+impl<'de> Deserialize<'de> for Int8Projection {
+    fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        let disk = ProjectionDisk::deserialize(deserializer)?;
+        let expected_len = disk.input_dim * disk.output_classes;
+        if disk.weights.len() != expected_len {
+            return Err(serde::de::Error::custom(format!(
+                "weights length {} != input_dim {} * output_classes {} = {}",
+                disk.weights.len(),
+                disk.input_dim,
+                disk.output_classes,
+                expected_len
+            )));
+        }
+        Ok(Self {
+            weights: disk.weights,
+            input_dim: disk.input_dim,
+            output_classes: disk.output_classes,
+        })
+    }
 }
 
 /// Backup token returned by [`Int8Projection::mutate_one`].
@@ -70,7 +110,7 @@ impl Int8Projection {
     /// # Panics
     ///
     /// Panics if `charge_slice.len() != input_dim`.
-    pub fn predict(&self, charge_slice: &[u32]) -> u8 {
+    pub fn predict(&self, charge_slice: &[u32]) -> usize {
         assert_eq!(
             charge_slice.len(),
             self.input_dim,
@@ -94,7 +134,7 @@ impl Int8Projection {
             .iter()
             .enumerate()
             .max_by_key(|&(_, &s)| s)
-            .map(|(i, _)| i as u8)
+            .map(|(i, _)| i)
             .unwrap_or(0)
     }
 
@@ -202,5 +242,29 @@ mod tests {
             .filter(|(a, b)| a != b)
             .count();
         assert!(diffs <= 1, "mutate_one changed {diffs} weights, expected 0 or 1");
+    }
+
+    #[test]
+    fn deserialize_rejects_dimension_mismatch() {
+        // Craft a payload where weights.len() != input_dim * output_classes
+        let bad_bytes = bincode::serialize(&ProjectionDisk {
+            weights: vec![1, 2, 3],
+            input_dim: 4,
+            output_classes: 2,
+        })
+        .unwrap();
+        let result: Result<Int8Projection, _> = bincode::deserialize(&bad_bytes);
+        assert!(result.is_err(), "should reject mismatched dimensions");
+    }
+
+    #[test]
+    fn predict_supports_more_than_256_classes() {
+        let mut rng = StdRng::seed_from_u64(42);
+        let proj = Int8Projection::new(4, 300, &mut rng);
+        let charge = vec![1u32; 4];
+        let class = proj.predict(&charge);
+        assert!(class < 300, "predicted class {class} >= 300");
+        // Specifically: result should NOT be truncated to u8 range
+        // (old bug: 299 as u8 == 43)
     }
 }

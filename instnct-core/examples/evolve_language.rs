@@ -122,7 +122,7 @@ fn eval_accuracy(
     let mut correct = 0u32;
     for i in 0..len {
         net.propagate(&sdr[seg[i] as usize], config).unwrap();
-        if projection.predict(&net.charge()[OUTPUT_START..NEURON_COUNT]) == seg[i + 1] {
+        if projection.predict(&net.charge()[OUTPUT_START..NEURON_COUNT]) == seg[i + 1] as usize {
             correct += 1;
         }
     }
