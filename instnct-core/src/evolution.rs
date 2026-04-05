@@ -26,7 +26,8 @@ pub enum StepOutcome {
     Accepted,
     /// Mutation rejected — network/projection restored to pre-mutation state.
     Rejected,
-    /// Mutation attempt failed (e.g. self-loop, duplicate edge) — no eval performed.
+    /// Mutation attempt failed (e.g. self-loop, duplicate edge) — fitness_fn still
+    /// runs once for eval_rng parity, but state is unchanged.
     Skipped,
 }
 
