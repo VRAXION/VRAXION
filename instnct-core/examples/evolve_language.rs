@@ -71,11 +71,6 @@ fn predict_i8(net: &Network, w: &[i8]) -> u8 {
         .map(|(i, _)| i as u8).unwrap_or(0)
 }
 
-fn mutate_projection(w: &mut [i8], rng: &mut impl Rng) {
-    let idx = rng.gen_range(0..w.len());
-    w[idx] = rng.gen_range(-127..=127i8);
-}
-
 fn build_network(rng: &mut StdRng) -> Network {
     let mut net = Network::new(NEURON_COUNT);
     let target_edges = NEURON_COUNT * NEURON_COUNT * 5 / 100;
@@ -155,7 +150,7 @@ fn run_evolution(
             _ => {
                 let idx = rng.gen_range(0..w.len());
                 let old_val = w[idx];
-                mutate_projection(&mut w, &mut rng);
+                w[idx] = rng.gen_range(-127..=127i8);
                 w_backup = Some((idx, old_val));
                 mutated = true;
             }
@@ -198,9 +193,11 @@ fn main() {
     let steps = 15000;
     let seeds = [42u64, 123, 7];
 
-    let corpus_path = "S:/AI/work/VRAXION_DEV/instnct/data/traindat/fineweb_edu.traindat";
+    let corpus_path = std::env::args().nth(1).unwrap_or_else(|| {
+        "S:/AI/work/VRAXION_DEV/instnct/data/traindat/fineweb_edu.traindat".to_string()
+    });
     println!("Loading corpus...");
-    let corpus = load_corpus(corpus_path);
+    let corpus = load_corpus(&corpus_path);
     println!("  {} chars", corpus.len());
 
     // Baselines
