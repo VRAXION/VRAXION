@@ -271,6 +271,27 @@ impl ConnectionGraph {
         }
     }
 
+    /// Construct from pre-validated edge vectors (used by genome deserialization).
+    ///
+    /// The caller must guarantee: `sources.len() == targets.len()`, all endpoints
+    /// `< neuron_count`, no self-loops. These are NOT checked here.
+    pub(crate) fn from_validated_edges(
+        neuron_count: usize,
+        sources: Vec<usize>,
+        targets: Vec<usize>,
+    ) -> Self {
+        let mut edge_set = HashSet::with_capacity(sources.len());
+        for (&s, &t) in sources.iter().zip(&targets) {
+            edge_set.insert((s as u16, t as u16));
+        }
+        Self {
+            edge_set,
+            neuron_count,
+            sources,
+            targets,
+        }
+    }
+
     /// Construct from a list of `(source, target)` pairs.
     pub fn from_pairs(neuron_count: usize, pairs: &[(u16, u16)]) -> Self {
         let mut graph = Self::with_capacity(neuron_count, pairs.len());

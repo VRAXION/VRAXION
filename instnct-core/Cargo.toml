@@ -20,6 +20,8 @@ benchmarks = []
 [dependencies]
 rand = "0.8"
 rayon = "1.10"
+serde = { version = "1", features = ["derive"] }
+bincode = "1.3"
 
 [[bench]]
 name = "forward_bench"

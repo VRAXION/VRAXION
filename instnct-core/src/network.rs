@@ -16,21 +16,32 @@ use crate::topology::ConnectionGraph;
 use rand::Rng;
 use std::error::Error;
 use std::fmt;
+use std::fs;
+use std::io;
+use std::path::Path;
+
+mod disk;
 
 // ---- Error ----
 
 /// Errors from [`Network`] operations.
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Debug)]
 #[non_exhaustive]
 pub enum NetworkError {
     /// Propagation validation failed (slice lengths, value ranges, edge bounds).
     Propagation(PropagationError),
+    /// File I/O error during genome save/load.
+    Io(io::Error),
+    /// Malformed genome file (invalid edges, parameters, or version).
+    Genome(String),
 }
 
 impl fmt::Display for NetworkError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::Propagation(e) => write!(f, "propagation error: {e}"),
+            Self::Io(e) => write!(f, "I/O error: {e}"),
+            Self::Genome(msg) => write!(f, "malformed genome: {msg}"),
         }
     }
 }
@@ -39,6 +50,8 @@ impl Error for NetworkError {
     fn source(&self) -> Option<&(dyn Error + 'static)> {
         match self {
             Self::Propagation(e) => Some(e),
+            Self::Io(e) => Some(e),
+            Self::Genome(_) => None,
         }
     }
 }
@@ -370,6 +383,74 @@ impl Network {
         self.csr_dirty = true;
     }
 
+    // ---- Genome persistence ----
+
+    /// Save network genome (topology + learned parameters) to disk.
+    ///
+    /// Ephemeral state (activation, charge, refractory) is **not** saved.
+    /// The file is written atomically (temp + rename) to avoid corruption.
+    pub fn save_genome(&self, path: impl AsRef<Path>) -> io::Result<()> {
+        let (sources, targets) = self.graph.edge_endpoints();
+        let dto = disk::NetworkDiskV1 {
+            version: disk::CURRENT_VERSION,
+            graph: disk::ConnectionGraphDiskV1 {
+                neuron_count: self.graph.neuron_count(),
+                sources: sources.to_vec(),
+                targets: targets.to_vec(),
+            },
+            threshold: self.threshold.clone(),
+            channel: self.channel.clone(),
+            polarity: self.polarity.clone(),
+        };
+        let bytes =
+            bincode::serialize(&dto).map_err(io::Error::other)?;
+        let path = path.as_ref();
+        let tmp = path.with_extension("tmp");
+        fs::write(&tmp, bytes)?;
+        fs::rename(&tmp, path)?;
+        Ok(())
+    }
+
+    /// Load network genome from disk. Returns a fresh network with zeroed
+    /// ephemeral state (activation, charge, refractory), like after [`reset()`](Self::reset).
+    ///
+    /// # Errors
+    ///
+    /// Returns [`NetworkError::Io`] on file errors or deserialization failure.
+    /// Returns [`NetworkError::Genome`] if the file contents are malformed
+    /// (edge bounds, parameter ranges, array lengths).
+    pub fn load_genome(path: impl AsRef<Path>) -> Result<Self, NetworkError> {
+        let bytes = fs::read(path).map_err(NetworkError::Io)?;
+        let dto: disk::NetworkDiskV1 =
+            bincode::deserialize(&bytes).map_err(|e| NetworkError::Genome(e.to_string()))?;
+        if dto.version != disk::CURRENT_VERSION {
+            return Err(NetworkError::Genome(format!(
+                "unsupported version {}, expected {}",
+                dto.version,
+                disk::CURRENT_VERSION
+            )));
+        }
+        disk::validate(&dto).map_err(NetworkError::Genome)?;
+
+        let n = dto.graph.neuron_count;
+        let graph =
+            ConnectionGraph::from_validated_edges(n, dto.graph.sources, dto.graph.targets);
+
+        Ok(Self {
+            graph,
+            threshold: dto.threshold,
+            channel: dto.channel,
+            polarity: dto.polarity,
+            activation: vec![0; n],
+            charge: vec![0; n],
+            refractory: vec![0; n],
+            workspace: PropagationWorkspace::new(n),
+            csr_offsets: vec![0u32; n + 1],
+            csr_targets: Vec::new(),
+            csr_dirty: true,
+        })
+    }
+
     // ---- Mutations ----
 
     /// Add a random directed edge between two neurons.
@@ -683,6 +764,8 @@ mod tests {
     use super::*;
     use crate::parameters::LIMIT_MAX_CHARGE;
     use crate::propagation::PropagationError;
+    use rand::rngs::StdRng;
+    use rand::SeedableRng;
 
     fn default_config() -> PropagationConfig {
         PropagationConfig::default()
@@ -1807,5 +1890,138 @@ mod tests {
         for edge in net.graph().iter_edges() {
             assert_ne!(edge.source, edge.target);
         }
+    }
+
+    // ---- Genome persistence tests ----
+
+    #[test]
+    fn genome_roundtrip_preserves_topology_and_params() {
+        let mut net = Network::new(16);
+        let mut rng = StdRng::seed_from_u64(42);
+        for _ in 0..20 {
+            net.mutate_add_edge(&mut rng);
+        }
+        for i in 0..16 {
+            net.threshold_mut()[i] = rng.gen_range(0..=15);
+            net.channel_mut()[i] = rng.gen_range(1..=8);
+            if rng.gen_ratio(1, 4) {
+                net.polarity_mut()[i] = -1;
+            }
+        }
+
+        let path = std::env::temp_dir().join("instnct_test_roundtrip.bin");
+        net.save_genome(&path).unwrap();
+        let loaded = Network::load_genome(&path).unwrap();
+        let _ = std::fs::remove_file(&path);
+
+        assert_eq!(loaded.edge_count(), net.edge_count());
+        assert_eq!(loaded.threshold(), net.threshold());
+        assert_eq!(loaded.channel(), net.channel());
+        assert_eq!(loaded.polarity(), net.polarity());
+        assert_eq!(loaded.neuron_count(), net.neuron_count());
+        // Verify edges match
+        let mut orig: Vec<_> = net.graph().iter_edges().map(|e| (e.source, e.target)).collect();
+        let mut load: Vec<_> = loaded.graph().iter_edges().map(|e| (e.source, e.target)).collect();
+        orig.sort();
+        load.sort();
+        assert_eq!(orig, load);
+    }
+
+    #[test]
+    fn genome_roundtrip_zeroes_ephemeral_state() {
+        let mut net = Network::new(8);
+        let mut rng = StdRng::seed_from_u64(99);
+        for _ in 0..5 {
+            net.mutate_add_edge(&mut rng);
+        }
+        // Propagate to create non-zero state; use high threshold so charge accumulates
+        for i in 0..8 { net.threshold_mut()[i] = 15; } // effective 16, won't fire
+        let input: Vec<i32> = (0..8).map(|i| if i < 3 { 2 } else { 0 }).collect();
+        net.propagate(&input, &PropagationConfig::default()).unwrap();
+        // At least charge or activation should be non-zero
+        let has_state = net.charge().iter().any(|&c| c > 0) || net.activation().iter().any(|&a| a != 0);
+        assert!(has_state, "propagation should leave some non-zero state");
+
+        let path = std::env::temp_dir().join("instnct_test_ephemeral.bin");
+        net.save_genome(&path).unwrap();
+        let loaded = Network::load_genome(&path).unwrap();
+        let _ = std::fs::remove_file(&path);
+
+        assert!(loaded.activation().iter().all(|&a| a == 0));
+        assert!(loaded.charge().iter().all(|&c| c == 0));
+    }
+
+    #[test]
+    fn genome_load_then_propagate_matches_fresh() {
+        let mut net = Network::new(8);
+        let mut rng = StdRng::seed_from_u64(77);
+        for _ in 0..10 {
+            net.mutate_add_edge(&mut rng);
+        }
+        net.threshold_mut()[0] = 2;
+        net.channel_mut()[1] = 3;
+
+        let path = std::env::temp_dir().join("instnct_test_propagate.bin");
+        net.save_genome(&path).unwrap();
+        let mut loaded = Network::load_genome(&path).unwrap();
+        let _ = std::fs::remove_file(&path);
+
+        let input: Vec<i32> = (0..8).map(|i| if i < 3 { 1 } else { 0 }).collect();
+        let config = PropagationConfig::default();
+        net.reset();
+        net.propagate(&input, &config).unwrap();
+        loaded.propagate(&input, &config).unwrap();
+
+        assert_eq!(loaded.charge(), net.charge());
+        assert_eq!(loaded.activation(), net.activation());
+    }
+
+    #[test]
+    fn genome_load_rejects_edge_length_mismatch() {
+        // Craft a malformed file: sources.len != targets.len
+        let dto = disk::NetworkDiskV1 {
+            version: disk::CURRENT_VERSION,
+            graph: disk::ConnectionGraphDiskV1 {
+                neuron_count: 4,
+                sources: vec![0, 1],
+                targets: vec![1],  // mismatch!
+            },
+            threshold: vec![0; 4],
+            channel: vec![1; 4],
+            polarity: vec![1; 4],
+        };
+        let bytes = bincode::serialize(&dto).unwrap();
+        let path = std::env::temp_dir().join("instnct_test_malformed.bin");
+        std::fs::write(&path, bytes).unwrap();
+
+        let result = Network::load_genome(&path);
+        let _ = std::fs::remove_file(&path);
+        assert!(result.is_err());
+        let err = format!("{}", result.unwrap_err());
+        assert!(err.contains("mismatch"), "error should mention mismatch: {err}");
+    }
+
+    #[test]
+    fn genome_load_rejects_out_of_bounds_endpoint() {
+        let dto = disk::NetworkDiskV1 {
+            version: disk::CURRENT_VERSION,
+            graph: disk::ConnectionGraphDiskV1 {
+                neuron_count: 4,
+                sources: vec![0, 99],  // 99 >= 4
+                targets: vec![1, 2],
+            },
+            threshold: vec![0; 4],
+            channel: vec![1; 4],
+            polarity: vec![1; 4],
+        };
+        let bytes = bincode::serialize(&dto).unwrap();
+        let path = std::env::temp_dir().join("instnct_test_oob.bin");
+        std::fs::write(&path, bytes).unwrap();
+
+        let result = Network::load_genome(&path);
+        let _ = std::fs::remove_file(&path);
+        assert!(result.is_err());
+        let err = format!("{}", result.unwrap_err());
+        assert!(err.contains("source 99"), "error should mention source 99: {err}");
     }
 }
