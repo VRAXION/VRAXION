@@ -14,9 +14,14 @@ use rand::Rng;
 
 /// Configuration for the evolution step.
 pub struct EvolutionConfig {
-    /// Edge count above which acceptance requires strict improvement (>).
-    /// Below this, ties are accepted (>=) to encourage exploration.
+    /// Hard edge count limit. Mutations that INCREASE edge count above
+    /// this are rejected regardless of fitness quality.
     pub edge_cap: usize,
+
+    /// Whether to accept mutations that produce equal fitness (ties).
+    /// `true`  → `after >= before` (permissive, encourages exploration)
+    /// `false` → `after > before`  (strict, only real improvements)
+    pub accept_ties: bool,
 }
 
 /// Outcome of a single evolution step.
@@ -31,11 +36,16 @@ pub enum StepOutcome {
     Skipped,
 }
 
-/// Run one evolution step with paired evaluation and density-capped acceptance.
+/// Run one evolution step with paired evaluation, edge cap, and quality gate.
 ///
 /// The `fitness_fn` receives `(&mut Network, &Int8Projection, &mut StdRng)` and
 /// must return a fitness score (higher is better). The `eval_rng` is passed through
 /// so the library can enforce paired evaluation (same RNG state for before/after).
+///
+/// **Edge cap:** mutations that increase edge count above `edge_cap` are rejected
+/// regardless of fitness. Non-edge-growing mutations are unaffected by the cap.
+///
+/// **Quality gate:** `accept_ties` controls whether equal fitness (ties) are accepted.
 ///
 /// Mutation schedule (hardcoded, matching proven overnight config):
 /// - 25% add_edge, 15% remove_edge, 10% rewire, 15% reverse
@@ -52,7 +62,7 @@ pub enum StepOutcome {
 /// let mut rng = StdRng::seed_from_u64(42);
 /// let mut proj = Int8Projection::new(40, 10, &mut rng);
 /// let mut eval_rng = StdRng::seed_from_u64(99);
-/// let config = EvolutionConfig { edge_cap: 300 };
+/// let config = EvolutionConfig { edge_cap: 300, accept_ties: true };
 ///
 /// let outcome = evolution_step(
 ///     &mut net, &mut proj, &mut rng, &mut eval_rng,
@@ -80,6 +90,7 @@ where
     *eval_rng = eval_rng_snapshot;
 
     // Snapshot network state for rollback
+    let edges_before_mutation = net.edge_count();
     let net_snapshot = net.save_state();
 
     // Mutate: 8-op topology schedule (90%) + projection weight (10%)
@@ -110,12 +121,18 @@ where
     // Paired eval: evaluate AFTER mutation (same corpus segment via restored eval_rng)
     let after = fitness_fn(net, projection, eval_rng);
 
-    // Density-capped acceptance: >= when lean (explore), > when dense (exploit)
-    let accepted = if net.edge_count() < config.edge_cap {
+    // Quality gate: did the mutation improve (or at least tie) fitness?
+    let dominated = if config.accept_ties {
         after >= before
     } else {
         after > before
     };
+
+    // Edge cap gate: reject if mutation grew edges beyond the hard cap
+    let edge_grew = net.edge_count() > edges_before_mutation;
+    let within_cap = !edge_grew || net.edge_count() <= config.edge_cap;
+
+    let accepted = dominated && within_cap;
 
     if accepted {
         StepOutcome::Accepted
@@ -152,7 +169,7 @@ mod tests {
         let mut net = make_test_network(&mut rng);
         let mut proj = Int8Projection::new(10, 5, &mut rng);
         let mut eval_rng = StdRng::seed_from_u64(99);
-        let config = EvolutionConfig { edge_cap: 1000 };
+        let config = EvolutionConfig { edge_cap: 1000, accept_ties: true };
 
         let edges_before = net.edge_count();
         let threshold_before: Vec<u32> = net.threshold().to_vec();
@@ -187,7 +204,7 @@ mod tests {
         let mut net = make_test_network(&mut rng);
         let mut proj = Int8Projection::new(10, 5, &mut rng);
         let mut eval_rng = StdRng::seed_from_u64(99);
-        let config = EvolutionConfig { edge_cap: 1000 };
+        let config = EvolutionConfig { edge_cap: 1000, accept_ties: true };
 
         // Run many steps with fitness that always improves → always accept
         let mut accepted_any = false;
@@ -220,7 +237,7 @@ mod tests {
         let mut rng = StdRng::seed_from_u64(42);
         let proj = Int8Projection::new(1, 2, &mut rng);
         let mut eval_rng = StdRng::seed_from_u64(99);
-        let config = EvolutionConfig { edge_cap: 1000 };
+        let config = EvolutionConfig { edge_cap: 1000, accept_ties: true };
 
         let mut skipped = 0u32;
         for _ in 0..200 {
@@ -253,7 +270,7 @@ mod tests {
         let mut net = make_test_network(&mut rng);
         let mut proj = Int8Projection::new(10, 5, &mut rng);
         let mut eval_rng = StdRng::seed_from_u64(99);
-        let config = EvolutionConfig { edge_cap: 1000 };
+        let config = EvolutionConfig { edge_cap: 1000, accept_ties: true };
 
         // Track the eval_rng value at start of each fitness_fn call
         let mut rng_values = Vec::new();

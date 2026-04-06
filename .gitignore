@@ -1,1 +1,6 @@
 /target
+instnct-core/checkpoints/
+instnct-core/results/
+instnct/
+**/__pycache__/
+*.pyc

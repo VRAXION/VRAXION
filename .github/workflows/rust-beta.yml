@@ -1,0 +1,41 @@
+name: Rust Beta Surface
+
+on:
+  push:
+    branches:
+      - main
+      - v5.0.0-beta
+  pull_request:
+    branches:
+      - main
+      - v5.0.0-beta
+
+jobs:
+  rust-beta-surface:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache cargo artifacts
+        uses: Swatinem/rust-cache@v2
+
+      - name: Cargo check all targets
+        run: cargo check --all-targets
+
+      - name: Cargo test instnct-core
+        run: cargo test -p instnct-core
+
+      - name: Canonical beta smoke run
+        run: |
+          cargo run --release --example evolve_language -- instnct-core/tests/fixtures/beta_smoke_corpus.txt --steps 10 --seed-count 1 --seed-base 42 --full-len 128 --report-dir target/beta-smoke-report
+
+      - name: Verify beta report bundle
+        run: |
+          test -f target/beta-smoke-report/run_cmd.txt
+          test -f target/beta-smoke-report/env.json
+          test -f target/beta-smoke-report/metrics.json
+          test -f target/beta-smoke-report/summary.md

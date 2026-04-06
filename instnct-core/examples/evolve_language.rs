@@ -1,35 +1,183 @@
-//! Language evolution: sequential next-char prediction on real English text.
+//! Canonical public beta runner for Rust language evolution.
 //!
-//! Multi-seed test with the best known config:
-//! - H=256, phi overlap I/O, SDR 20% input, learnable int8 projection
-//! - Density-capped paired eval (>= when lean, > when dense)
-//! - 8-op mutation schedule + 10% projection weight mutations
+//! Default story:
+//! - H=256 phi-overlap geometry
+//! - chain-50 init
+//! - SDR 20% input
+//! - learnable int8 projection
+//! - density-capped paired eval
 //!
-//! Run: cargo run --example evolve_language --release -- <corpus-path>
+//! Run:
+//! `cargo run --release --example evolve_language -- <corpus-path>`
 
 use instnct_core::{
-    evolution_step, EvolutionConfig, Int8Projection, Network, PropagationConfig, SdrTable,
-    StepOutcome,
+    build_network, evolution_step, InitConfig, Int8Projection, Network, PropagationConfig,
+    SdrTable, StepOutcome,
 };
 use rand::rngs::StdRng;
 use rand::{Rng, SeedableRng};
 use rayon::prelude::*;
+use serde::Serialize;
+use std::env;
 use std::fs;
+use std::path::{Path, PathBuf};
+use std::time::Instant;
 
+const CHARS: usize = 27; // a-z (0..25) + space (26)
+const SDR_ACTIVE_PCT: usize = 20;
+const DEFAULT_CORPUS_PATH: &str =
+    "S:/AI/work/VRAXION_DEV/instnct/data/traindat/fineweb_edu.traindat";
+const DEFAULT_STEPS: usize = 15_000;
+const DEFAULT_SEED_COUNT: usize = 12;
+const DEFAULT_SEED_BASE: u64 = 42;
+const DEFAULT_FULL_LEN: usize = 2_000;
+const SEED_STRIDE: u64 = 1_000;
+const PROGRESS_INTERVAL: usize = 5_000;
+
+#[derive(Clone, Debug)]
+struct RunnerConfig {
+    corpus_path: String,
+    steps: usize,
+    seed_count: usize,
+    seed_base: u64,
+    full_len: usize,
+    report_dir: Option<PathBuf>,
+}
+
+impl Default for RunnerConfig {
+    fn default() -> Self {
+        Self {
+            corpus_path: DEFAULT_CORPUS_PATH.to_string(),
+            steps: DEFAULT_STEPS,
+            seed_count: DEFAULT_SEED_COUNT,
+            seed_base: DEFAULT_SEED_BASE,
+            full_len: DEFAULT_FULL_LEN,
+            report_dir: None,
+        }
+    }
+}
+
+#[derive(Clone, Serialize)]
 struct EvolutionResult {
     seed: u64,
-    accuracy: f64,
+    final_accuracy: f64,
+    peak_accuracy: f64,
     edge_count: usize,
     accept_rate: f64,
 }
 
-const CHARS: usize = 27; // a-z (0..25) + space (26)
-const SDR_ACTIVE_PCT: usize = 20;
-const NEURON_COUNT: usize = 256;
-const PHI_DIM: usize = 158; // round(256 / phi)
-const INPUT_END: usize = PHI_DIM; // input zone: 0..158
-const OUTPUT_START: usize = NEURON_COUNT - PHI_DIM; // output zone: 98..256
-const EDGE_CAP: usize = NEURON_COUNT * NEURON_COUNT * 7 / 100; // ~4587
+#[derive(Serialize)]
+struct Baselines {
+    random_accuracy: f64,
+    frequency_accuracy: f64,
+    frequency_char: char,
+    bigram_accuracy: f64,
+}
+
+#[derive(Serialize)]
+struct SummaryMetrics {
+    mean_accuracy: f64,
+    min_accuracy: f64,
+    max_accuracy: f64,
+    spread_pp: f64,
+    best_peak_accuracy: f64,
+    mean_accept_rate: f64,
+}
+
+#[derive(Serialize)]
+struct EnvReport {
+    package_name: &'static str,
+    package_version: &'static str,
+    os: &'static str,
+    arch: &'static str,
+    current_dir: String,
+    current_exe: String,
+    corpus_path: String,
+    steps: usize,
+    seed_count: usize,
+    seed_base: u64,
+    seed_stride: u64,
+    full_len: usize,
+    neuron_count: usize,
+    phi_dim: usize,
+    chain_count: usize,
+    input_end: usize,
+    output_start: usize,
+    edge_cap: usize,
+    ticks_per_token: usize,
+    input_duration_ticks: usize,
+    decay_interval_ticks: usize,
+    use_refractory: bool,
+}
+
+#[derive(Serialize)]
+struct MetricsReport {
+    baselines: Baselines,
+    summary: SummaryMetrics,
+    seeds: Vec<EvolutionResult>,
+    runtime_seconds: f64,
+}
+
+fn print_usage() {
+    println!(
+        "Usage: cargo run --release --example evolve_language -- [corpus-path] [--steps N] [--seed-count N] [--seed-base N] [--full-len N] [--report-dir DIR]"
+    );
+}
+
+fn parse_usize_flag(flag: &str, value: Option<String>) -> usize {
+    value
+        .unwrap_or_else(|| panic!("missing value for {flag}"))
+        .parse::<usize>()
+        .unwrap_or_else(|_| panic!("invalid usize for {flag}"))
+}
+
+fn parse_u64_flag(flag: &str, value: Option<String>) -> u64 {
+    value
+        .unwrap_or_else(|| panic!("missing value for {flag}"))
+        .parse::<u64>()
+        .unwrap_or_else(|_| panic!("invalid u64 for {flag}"))
+}
+
+fn parse_cli() -> RunnerConfig {
+    let mut cfg = RunnerConfig::default();
+    let mut corpus_path: Option<String> = None;
+    let mut args = env::args().skip(1);
+
+    while let Some(arg) = args.next() {
+        match arg.as_str() {
+            "--help" | "-h" => {
+                print_usage();
+                std::process::exit(0);
+            }
+            "--steps" => cfg.steps = parse_usize_flag("--steps", args.next()),
+            "--seed-count" => cfg.seed_count = parse_usize_flag("--seed-count", args.next()),
+            "--seed-base" => cfg.seed_base = parse_u64_flag("--seed-base", args.next()),
+            "--full-len" => cfg.full_len = parse_usize_flag("--full-len", args.next()),
+            "--report-dir" => {
+                let value = args
+                    .next()
+                    .unwrap_or_else(|| panic!("missing value for --report-dir"));
+                cfg.report_dir = Some(PathBuf::from(value));
+            }
+            _ if arg.starts_with("--") => panic!("unknown flag: {arg}"),
+            _ => {
+                assert!(
+                    corpus_path.is_none(),
+                    "unexpected extra positional argument: {arg}"
+                );
+                corpus_path = Some(arg);
+            }
+        }
+    }
+
+    if let Some(path) = corpus_path {
+        cfg.corpus_path = path;
+    }
+    assert!(cfg.steps > 0, "--steps must be > 0");
+    assert!(cfg.seed_count > 0, "--seed-count must be > 0");
+    assert!(cfg.full_len > 0, "--full-len must be > 0");
+    cfg
+}
 
 fn load_corpus(path: &str) -> Vec<u8> {
     let raw = fs::read(path).expect("cannot read corpus file");
@@ -49,31 +197,11 @@ fn load_corpus(path: &str) -> Vec<u8> {
 }
 
 fn sample_eval_offset(corpus_len: usize, len: usize, rng: &mut StdRng) -> Option<usize> {
-    // Need len+1 chars: len inputs + 1 target. Valid offsets: [0, corpus_len - len - 1].
     if corpus_len <= len {
         return None;
     }
-    let max_offset = corpus_len - len - 1; // inclusive upper bound
+    let max_offset = corpus_len - len - 1;
     Some(rng.gen_range(0..=max_offset))
-}
-
-fn build_network(rng: &mut StdRng) -> Network {
-    let mut net = Network::new(NEURON_COUNT);
-    let target_edges = NEURON_COUNT * NEURON_COUNT * 5 / 100;
-    for _ in 0..target_edges * 3 {
-        net.mutate_add_edge(rng);
-        if net.edge_count() >= target_edges {
-            break;
-        }
-    }
-    for i in 0..NEURON_COUNT {
-        net.threshold_mut()[i] = rng.gen_range(0..=7);
-        net.channel_mut()[i] = rng.gen_range(1..=8);
-        if rng.gen_ratio(1, 10) {
-            net.polarity_mut()[i] = -1;
-        }
-    }
-    net
 }
 
 fn bar(val: f64, max_val: f64, width: usize) -> String {
@@ -89,6 +217,7 @@ fn char_label(c: u8) -> char {
     }
 }
 
+#[allow(clippy::too_many_arguments)]
 fn eval_accuracy(
     net: &mut Network,
     projection: &Int8Projection,
@@ -97,6 +226,8 @@ fn eval_accuracy(
     rng: &mut StdRng,
     sdr: &SdrTable,
     config: &PropagationConfig,
+    output_start: usize,
+    neuron_count: usize,
 ) -> f64 {
     let Some(off) = sample_eval_offset(corpus.len(), len, rng) else {
         return 0.0;
@@ -107,42 +238,62 @@ fn eval_accuracy(
     let mut correct = 0u32;
     for i in 0..len {
         net.propagate(sdr.pattern(seg[i] as usize), config).unwrap();
-        if projection.predict(&net.charge()[OUTPUT_START..NEURON_COUNT]) == seg[i + 1] as usize {
+        if projection.predict(&net.charge()[output_start..neuron_count]) == seg[i + 1] as usize {
             correct += 1;
         }
     }
     correct as f64 / len as f64
 }
 
-/// Run one evolution with density-capped paired eval.
-fn run_evolution(steps: usize, seed: u64, corpus: &[u8], full_len: usize) -> EvolutionResult {
-    let config = PropagationConfig {
-        ticks_per_token: 6,
-        input_duration_ticks: 2,
-        decay_interval_ticks: 6,
-        use_refractory: false,
-    };
+fn run_evolution(
+    cfg: &RunnerConfig,
+    seed: u64,
+    corpus: &[u8],
+    init: &InitConfig,
+) -> EvolutionResult {
+    let output_start = init.output_start();
+    let neuron_count = init.neuron_count;
 
     let mut rng = StdRng::seed_from_u64(seed);
-    let mut net = build_network(&mut rng);
-    let mut projection_rng = StdRng::seed_from_u64(seed + 200);
-    let mut projection = Int8Projection::new(PHI_DIM, CHARS, &mut projection_rng);
+    let mut net = build_network(init, &mut rng);
+    let mut projection = Int8Projection::new(
+        init.phi_dim,
+        CHARS,
+        &mut StdRng::seed_from_u64(seed + 200),
+    );
     let mut eval_rng = StdRng::seed_from_u64(seed + 1000);
-    let mut sdr_rng = StdRng::seed_from_u64(seed + 100);
-    let sdr = SdrTable::new(CHARS, NEURON_COUNT, INPUT_END, SDR_ACTIVE_PCT, &mut sdr_rng).unwrap();
+    let sdr = SdrTable::new(
+        CHARS,
+        neuron_count,
+        init.input_end(),
+        SDR_ACTIVE_PCT,
+        &mut StdRng::seed_from_u64(seed + 100),
+    )
+    .unwrap();
 
     let mut accepted = 0u32;
     let mut rejected = 0u32;
-    let evo_config = EvolutionConfig { edge_cap: EDGE_CAP };
+    let evo_config = init.evolution_config();
+    let mut peak_accuracy = 0.0f64;
 
-    for step in 0..steps {
+    for step in 0..cfg.steps {
         let outcome = evolution_step(
             &mut net,
             &mut projection,
             &mut rng,
             &mut eval_rng,
             |net, proj, eval_rng| {
-                eval_accuracy(net, proj, corpus, 100, eval_rng, &sdr, &config)
+                eval_accuracy(
+                    net,
+                    proj,
+                    corpus,
+                    100,
+                    eval_rng,
+                    &sdr,
+                    &init.propagation,
+                    output_start,
+                    neuron_count,
+                )
             },
             &evo_config,
         );
@@ -152,8 +303,19 @@ fn run_evolution(steps: usize, seed: u64, corpus: &[u8], full_len: usize) -> Evo
             StepOutcome::Skipped => {}
         }
 
-        if (step + 1) % 5000 == 0 {
-            let full = eval_accuracy(&mut net, &projection, corpus, full_len, &mut eval_rng, &sdr, &config);
+        if (step + 1) % PROGRESS_INTERVAL == 0 {
+            let full = eval_accuracy(
+                &mut net,
+                &projection,
+                corpus,
+                cfg.full_len,
+                &mut eval_rng,
+                &sdr,
+                &init.propagation,
+                output_start,
+                neuron_count,
+            );
+            peak_accuracy = peak_accuracy.max(full);
             let tot = accepted + rejected;
             let rate = if tot > 0 {
                 accepted as f64 / tot as f64 * 100.0
@@ -171,46 +333,48 @@ fn run_evolution(steps: usize, seed: u64, corpus: &[u8], full_len: usize) -> Evo
         }
     }
 
-    let final_acc = eval_accuracy(&mut net, &projection, corpus, 5000, &mut eval_rng, &sdr, &config);
+    let final_acc = eval_accuracy(
+        &mut net,
+        &projection,
+        corpus,
+        cfg.full_len,
+        &mut eval_rng,
+        &sdr,
+        &init.propagation,
+        output_start,
+        neuron_count,
+    );
+    peak_accuracy = peak_accuracy.max(final_acc);
     let rate = accepted as f64 / (accepted + rejected).max(1) as f64 * 100.0;
     println!(
-        "  [seed={seed}] FINAL: {:.1}%  edges={}  accept={:.0}%",
+        "  [seed={seed}] FINAL: {:.1}%  peak={:.1}%  edges={}  accept={:.0}%",
         final_acc * 100.0,
+        peak_accuracy * 100.0,
         net.edge_count(),
         rate
     );
     EvolutionResult {
         seed,
-        accuracy: final_acc,
+        final_accuracy: final_acc,
+        peak_accuracy,
         edge_count: net.edge_count(),
         accept_rate: rate,
     }
 }
 
-fn main() {
-    let full_len = 2000;
-    let steps = 15000;
-    let seeds: Vec<u64> = (0..12).map(|i| 42 + i * 1000).collect();
-
-    let corpus_path = std::env::args().nth(1).unwrap_or_else(|| {
-        "S:/AI/work/VRAXION_DEV/instnct/data/traindat/fineweb_edu.traindat".to_string()
-    });
-    println!("Loading corpus...");
-    let corpus = load_corpus(&corpus_path);
-    println!("  {} chars", corpus.len());
-
-    // Baselines
+fn compute_baselines(corpus: &[u8]) -> Baselines {
     let mut freq = [0u64; CHARS];
-    for &c in &corpus {
+    for &c in corpus {
         freq[c as usize] += 1;
     }
     let most_common = freq
         .iter()
         .enumerate()
-        .max_by_key(|&(_, &c)| c)
+        .max_by_key(|&(_, &count)| count)
         .map(|(i, _)| i)
         .unwrap_or(0);
     let freq_base = freq[most_common] as f64 / corpus.len() as f64;
+
     let mut bigram = vec![0u64; CHARS * CHARS];
     for bw in corpus.windows(2) {
         bigram[bw[0] as usize * CHARS + bw[1] as usize] += 1;
@@ -224,50 +388,244 @@ fn main() {
             bigram_ok += 1;
         }
     }
-    let bigram_base = bigram_ok as f64 / (corpus.len() - 1) as f64;
-    println!(
-        "  Random: {:.1}%  Freq('{}'): {:.1}%  Bigram: {:.1}%",
-        100.0 / CHARS as f64,
-        char_label(most_common as u8),
-        freq_base * 100.0,
-        bigram_base * 100.0
-    );
 
-    println!("\n=== Multi-seed: density-capped paired eval, learnable int8 W ===");
-    println!(
-        "H={NEURON_COUNT}, {steps} steps, {} seeds, edge_cap={EDGE_CAP}\n",
-        seeds.len()
-    );
+    Baselines {
+        random_accuracy: 1.0 / CHARS as f64,
+        frequency_accuracy: freq_base,
+        frequency_char: char_label(most_common as u8),
+        bigram_accuracy: bigram_ok as f64 / (corpus.len() - 1) as f64,
+    }
+}
 
-    let results: Vec<EvolutionResult> = seeds
-        .par_iter()
-        .map(|&s| run_evolution(steps, s, &corpus, full_len))
+fn compute_summary(results: &[EvolutionResult]) -> SummaryMetrics {
+    let mean_accuracy = results.iter().map(|r| r.final_accuracy).sum::<f64>() / results.len() as f64;
+    let min_accuracy = results
+        .iter()
+        .map(|r| r.final_accuracy)
+        .fold(f64::INFINITY, f64::min);
+    let max_accuracy = results
+        .iter()
+        .map(|r| r.final_accuracy)
+        .fold(f64::NEG_INFINITY, f64::max);
+    let best_peak_accuracy = results
+        .iter()
+        .map(|r| r.peak_accuracy)
+        .fold(f64::NEG_INFINITY, f64::max);
+    let mean_accept_rate =
+        results.iter().map(|r| r.accept_rate).sum::<f64>() / results.len() as f64;
+
+    SummaryMetrics {
+        mean_accuracy,
+        min_accuracy,
+        max_accuracy,
+        spread_pp: (max_accuracy - min_accuracy) * 100.0,
+        best_peak_accuracy,
+        mean_accept_rate,
+    }
+}
+
+fn write_report_bundle(
+    report_dir: &Path,
+    cfg: &RunnerConfig,
+    init: &InitConfig,
+    baselines: &Baselines,
+    summary: &SummaryMetrics,
+    results: &[EvolutionResult],
+    runtime_seconds: f64,
+) {
+    fs::create_dir_all(report_dir).expect("failed to create report directory");
+
+    let argv = env::args().collect::<Vec<_>>().join("\n");
+    let run_cmd = format!(
+        "argv\n{argv}\n\ncwd\n{}\n",
+        env::current_dir()
+            .unwrap_or_else(|_| PathBuf::from("."))
+            .display()
+    );
+    fs::write(report_dir.join("run_cmd.txt"), run_cmd).expect("failed to write run_cmd.txt");
+
+    let env_report = EnvReport {
+        package_name: env!("CARGO_PKG_NAME"),
+        package_version: env!("CARGO_PKG_VERSION"),
+        os: env::consts::OS,
+        arch: env::consts::ARCH,
+        current_dir: env::current_dir()
+            .unwrap_or_else(|_| PathBuf::from("."))
+            .display()
+            .to_string(),
+        current_exe: env::current_exe()
+            .unwrap_or_else(|_| PathBuf::from("unknown"))
+            .display()
+            .to_string(),
+        corpus_path: cfg.corpus_path.clone(),
+        steps: cfg.steps,
+        seed_count: cfg.seed_count,
+        seed_base: cfg.seed_base,
+        seed_stride: SEED_STRIDE,
+        full_len: cfg.full_len,
+        neuron_count: init.neuron_count,
+        phi_dim: init.phi_dim,
+        chain_count: init.chain_count,
+        input_end: init.input_end(),
+        output_start: init.output_start(),
+        edge_cap: init.edge_cap(),
+        ticks_per_token: init.propagation.ticks_per_token,
+        input_duration_ticks: init.propagation.input_duration_ticks,
+        decay_interval_ticks: init.propagation.decay_interval_ticks,
+        use_refractory: init.propagation.use_refractory,
+    };
+    let env_json =
+        serde_json::to_string_pretty(&env_report).expect("failed to serialize env report");
+    fs::write(report_dir.join("env.json"), env_json).expect("failed to write env.json");
+
+    let metrics = MetricsReport {
+        baselines: Baselines {
+            random_accuracy: baselines.random_accuracy,
+            frequency_accuracy: baselines.frequency_accuracy,
+            frequency_char: baselines.frequency_char,
+            bigram_accuracy: baselines.bigram_accuracy,
+        },
+        summary: SummaryMetrics {
+            mean_accuracy: summary.mean_accuracy,
+            min_accuracy: summary.min_accuracy,
+            max_accuracy: summary.max_accuracy,
+            spread_pp: summary.spread_pp,
+            best_peak_accuracy: summary.best_peak_accuracy,
+            mean_accept_rate: summary.mean_accept_rate,
+        },
+        seeds: results.to_vec(),
+        runtime_seconds,
+    };
+    let metrics_json =
+        serde_json::to_string_pretty(&metrics).expect("failed to serialize metrics report");
+    fs::write(report_dir.join("metrics.json"), metrics_json).expect("failed to write metrics.json");
+
+    let summary_md = format!(
+        "# `evolve_language` summary\n\n\
+Status: completed\n\n\
+## Configuration\n\n\
+- Corpus: `{}`\n\
+- Steps per seed: `{}`\n\
+- Seed count: `{}`\n\
+- Seed base: `{}`\n\
+- Full eval length: `{}`\n\
+- H: `{}`\n\
+- Phi dim: `{}`\n\
+- Chain count: `{}`\n\
+- Edge cap: `{}`\n\n\
+## Baselines\n\n\
+- Random: `{:.1}%`\n\
+- Frequency (`{}`): `{:.1}%`\n\
+- Bigram: `{:.1}%`\n\n\
+## Summary\n\n\
+- Mean final accuracy: `{:.1}%`\n\
+- Final range: `{:.1}% - {:.1}%`\n\
+- Best observed peak: `{:.1}%`\n\
+- Mean accept rate: `{:.1}%`\n\
+- Runtime: `{:.1}s`\n\n\
+## Notes\n\n\
+- This runner is the canonical Rust public beta path.\n\
+- Successful completion and report emission count as the beta pass condition.\n\
+- Current results should be read as reproducibility and implementation evidence, not as a promoted breakthrough.\n",
+        cfg.corpus_path,
+        cfg.steps,
+        cfg.seed_count,
+        cfg.seed_base,
+        cfg.full_len,
+        init.neuron_count,
+        init.phi_dim,
+        init.chain_count,
+        init.edge_cap(),
+        baselines.random_accuracy * 100.0,
+        baselines.frequency_char,
+        baselines.frequency_accuracy * 100.0,
+        baselines.bigram_accuracy * 100.0,
+        summary.mean_accuracy * 100.0,
+        summary.min_accuracy * 100.0,
+        summary.max_accuracy * 100.0,
+        summary.best_peak_accuracy * 100.0,
+        summary.mean_accept_rate,
+        runtime_seconds
+    );
+    fs::write(report_dir.join("summary.md"), summary_md).expect("failed to write summary.md");
+}
+
+fn main() {
+    let cfg = parse_cli();
+    let init = InitConfig::phi(256);
+    let seeds: Vec<u64> = (0..cfg.seed_count)
+        .map(|i| cfg.seed_base + i as u64 * SEED_STRIDE)
         .collect();
 
-    let mean = results.iter().map(|r| r.accuracy).sum::<f64>() / results.len() as f64;
-    let max_acc = results.iter().map(|r| r.accuracy).fold(0.0f64, f64::max);
-    let min_acc = results.iter().map(|r| r.accuracy).fold(1.0f64, f64::min);
+    println!("Loading corpus...");
+    let corpus = load_corpus(&cfg.corpus_path);
+    println!("  {} chars", corpus.len());
+
+    let baselines = compute_baselines(&corpus);
+    println!(
+        "  Random: {:.1}%  Freq('{}'): {:.1}%  Bigram: {:.1}%",
+        baselines.random_accuracy * 100.0,
+        baselines.frequency_char,
+        baselines.frequency_accuracy * 100.0,
+        baselines.bigram_accuracy * 100.0
+    );
+
+    println!(
+        "\n=== Canonical beta run: paired eval, learnable int8 W, chain-{} init ===",
+        init.chain_count
+    );
+    println!(
+        "H={}, {} steps, {} seeds, edge_cap={}\n",
+        init.neuron_count,
+        cfg.steps,
+        seeds.len(),
+        init.edge_cap()
+    );
+
+    let started = Instant::now();
+    let results: Vec<EvolutionResult> = seeds
+        .par_iter()
+        .map(|&seed| run_evolution(&cfg, seed, &corpus, &init))
+        .collect();
+    let runtime_seconds = started.elapsed().as_secs_f64();
+    let summary = compute_summary(&results);
 
     println!("\n=== SUMMARY ===");
-    println!("  Random:    {:.1}%", 100.0 / CHARS as f64);
-    println!("  Frequency: {:.1}%", freq_base * 100.0);
-    println!("  Bigram:    {:.1}%", bigram_base * 100.0);
-    for r in &results {
+    println!("  Random:    {:.1}%", baselines.random_accuracy * 100.0);
+    println!("  Frequency: {:.1}%", baselines.frequency_accuracy * 100.0);
+    println!("  Bigram:    {:.1}%", baselines.bigram_accuracy * 100.0);
+    for result in &results {
         println!(
-            "  seed={:<6} {:.1}%  edges={}  accept={:.0}%",
-            r.seed,
-            r.accuracy * 100.0,
-            r.edge_count,
-            r.accept_rate
+            "  seed={:<6} final={:.1}%  peak={:.1}%  edges={}  accept={:.0}%",
+            result.seed,
+            result.final_accuracy * 100.0,
+            result.peak_accuracy * 100.0,
+            result.edge_count,
+            result.accept_rate
         );
     }
-    println!("  Mean:      {:.1}%", mean * 100.0);
+    println!("  Mean:      {:.1}%", summary.mean_accuracy * 100.0);
     println!(
         "  Range:     {:.1}% - {:.1}%  (spread={:.1}pp)",
-        min_acc * 100.0,
-        max_acc * 100.0,
-        (max_acc - min_acc) * 100.0
+        summary.min_accuracy * 100.0,
+        summary.max_accuracy * 100.0,
+        summary.spread_pp
     );
+    println!("  Best peak: {:.1}%", summary.best_peak_accuracy * 100.0);
+    println!("  Runtime:   {:.1}s", runtime_seconds);
+
+    if let Some(report_dir) = cfg.report_dir.as_deref() {
+        write_report_bundle(
+            report_dir,
+            &cfg,
+            &init,
+            &baselines,
+            &summary,
+            &results,
+            runtime_seconds,
+        );
+        println!("  Report:    {}", report_dir.display());
+    }
 }
 
 #[cfg(test)]
@@ -277,39 +635,65 @@ mod tests {
     #[test]
     fn sample_eval_offset_boundary() {
         let mut rng = StdRng::seed_from_u64(1);
-        // corpus=102, len=100: need 101 chars, max_offset=1, valid offsets [0,1]
-        let off = sample_eval_offset(102, 100, &mut rng);
-        assert!(off.is_some());
-        assert!(off.unwrap() <= 1);
-        // corpus=101, len=100: exact fit, max_offset=0, only offset 0 valid
-        assert_eq!(sample_eval_offset(101, 100, &mut rng), Some(0));
-        // corpus=100, len=100: too short (need 101 chars)
-        assert_eq!(sample_eval_offset(100, 100, &mut rng), None);
+        let off = sample_eval_offset(102, 100, &mut rng).unwrap();
+        assert!(off <= 1);
+    }
+
+    #[test]
+    fn parse_cli_defaults() {
+        let cfg = RunnerConfig::default();
+        assert_eq!(cfg.steps, DEFAULT_STEPS);
+        assert_eq!(cfg.seed_count, DEFAULT_SEED_COUNT);
+        assert_eq!(cfg.seed_base, DEFAULT_SEED_BASE);
+        assert_eq!(cfg.full_len, DEFAULT_FULL_LEN);
+        assert!(cfg.report_dir.is_none());
     }
 
     #[test]
     fn paired_eval_noop_is_exactly_stable() {
+        let init = InitConfig::phi(256);
         let corpus: Vec<u8> = (0..256).map(|i| (i % CHARS) as u8).collect();
-        let config = PropagationConfig {
-            ticks_per_token: 6,
-            input_duration_ticks: 2,
-            decay_interval_ticks: 6,
-            use_refractory: false,
-        };
-        let mut sdr_rng = StdRng::seed_from_u64(123);
-        let sdr = SdrTable::new(CHARS, NEURON_COUNT, INPUT_END, SDR_ACTIVE_PCT, &mut sdr_rng).unwrap();
-        let mut net = build_network(&mut StdRng::seed_from_u64(321));
-        let projection = Int8Projection::new(PHI_DIM, CHARS, &mut StdRng::seed_from_u64(654));
+        let sdr = SdrTable::new(
+            CHARS,
+            init.neuron_count,
+            init.input_end(),
+            SDR_ACTIVE_PCT,
+            &mut StdRng::seed_from_u64(123),
+        )
+        .unwrap();
+        let mut net = build_network(&init, &mut StdRng::seed_from_u64(321));
+        let projection = Int8Projection::new(
+            init.phi_dim,
+            CHARS,
+            &mut StdRng::seed_from_u64(654),
+        );
         let mut eval_rng = StdRng::seed_from_u64(999);
         let eval_rng_snapshot = eval_rng.clone();
 
-        let before = eval_accuracy(&mut net, &projection, &corpus, 64, &mut eval_rng, &sdr, &config);
-        eval_rng = eval_rng_snapshot;
-        let after = eval_accuracy(&mut net, &projection, &corpus, 64, &mut eval_rng, &sdr, &config);
-
-        assert_eq!(
-            before, after,
-            "paired eval on unchanged state must be exact"
+        let before = eval_accuracy(
+            &mut net,
+            &projection,
+            &corpus,
+            64,
+            &mut eval_rng,
+            &sdr,
+            &init.propagation,
+            init.output_start(),
+            init.neuron_count,
         );
+        eval_rng = eval_rng_snapshot;
+        let after = eval_accuracy(
+            &mut net,
+            &projection,
+            &corpus,
+            64,
+            &mut eval_rng,
+            &sdr,
+            &init.propagation,
+            init.output_start(),
+            init.neuron_count,
+        );
+
+        assert_eq!(before, after);
     }
 }

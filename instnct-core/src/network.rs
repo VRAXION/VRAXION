@@ -385,11 +385,11 @@ impl Network {
 
     // ---- Genome persistence ----
 
-    /// Save network genome (topology + learned parameters) to disk.
+    /// Serialize network genome to bytes (bincode format).
     ///
-    /// Ephemeral state (activation, charge, refractory) is **not** saved.
-    /// The file is written atomically (temp + rename) to avoid corruption.
-    pub fn save_genome(&self, path: impl AsRef<Path>) -> io::Result<()> {
+    /// Ephemeral state (activation, charge, refractory) is **not** included.
+    /// Use [`genome_from_bytes`](Self::genome_from_bytes) to reconstruct.
+    pub fn genome_to_bytes(&self) -> Vec<u8> {
         let (sources, targets) = self.graph.edge_endpoints();
         let dto = disk::NetworkDiskV1 {
             version: disk::CURRENT_VERSION,
@@ -402,27 +402,20 @@ impl Network {
             channel: self.channel.clone(),
             polarity: self.polarity.clone(),
         };
-        let bytes =
-            bincode::serialize(&dto).map_err(io::Error::other)?;
-        let path = path.as_ref();
-        let tmp = path.with_extension("tmp");
-        fs::write(&tmp, bytes)?;
-        fs::rename(&tmp, path)?;
-        Ok(())
+        bincode::serialize(&dto).expect("genome serialization cannot fail")
     }
 
-    /// Load network genome from disk. Returns a fresh network with zeroed
-    /// ephemeral state (activation, charge, refractory), like after [`reset()`](Self::reset).
+    /// Deserialize network genome from bytes.
+    ///
+    /// Returns a fresh network with zeroed ephemeral state, like after
+    /// [`reset()`](Self::reset).
     ///
     /// # Errors
     ///
-    /// Returns [`NetworkError::Io`] on file errors or deserialization failure.
-    /// Returns [`NetworkError::Genome`] if the file contents are malformed
-    /// (edge bounds, parameter ranges, array lengths).
-    pub fn load_genome(path: impl AsRef<Path>) -> Result<Self, NetworkError> {
-        let bytes = fs::read(path).map_err(NetworkError::Io)?;
+    /// Returns [`NetworkError::Genome`] if the bytes are malformed.
+    pub fn genome_from_bytes(bytes: &[u8]) -> Result<Self, NetworkError> {
         let dto: disk::NetworkDiskV1 =
-            bincode::deserialize(&bytes).map_err(|e| NetworkError::Genome(e.to_string()))?;
+            bincode::deserialize(bytes).map_err(|e| NetworkError::Genome(e.to_string()))?;
         if dto.version != disk::CURRENT_VERSION {
             return Err(NetworkError::Genome(format!(
                 "unsupported version {}, expected {}",
@@ -448,6 +441,35 @@ impl Network {
             csr_offsets: vec![0u32; n + 1],
             csr_targets: Vec::new(),
             csr_dirty: true,
+        })
+    }
+
+    /// Save network genome (topology + learned parameters) to disk.
+    ///
+    /// Ephemeral state (activation, charge, refractory) is **not** saved.
+    /// The file is written atomically (temp + rename) to avoid corruption.
+    pub fn save_genome(&self, path: impl AsRef<Path>) -> io::Result<()> {
+        let bytes = self.genome_to_bytes();
+        let path = path.as_ref();
+        let tmp = path.with_extension("tmp");
+        fs::write(&tmp, bytes)?;
+        fs::rename(&tmp, path)?;
+        Ok(())
+    }
+
+    /// Load network genome from disk. Returns a fresh network with zeroed
+    /// ephemeral state (activation, charge, refractory), like after [`reset()`](Self::reset).
+    ///
+    /// # Errors
+    ///
+    /// Returns [`NetworkError::Io`] on file errors or deserialization failure.
+    /// Returns [`NetworkError::Genome`] if the file contents are malformed
+    /// (edge bounds, parameter ranges, array lengths).
+    pub fn load_genome(path: impl AsRef<Path>) -> Result<Self, NetworkError> {
+        let bytes = fs::read(path).map_err(NetworkError::Io)?;
+        Self::genome_from_bytes(&bytes).map_err(|e| match e {
+            NetworkError::Genome(msg) => NetworkError::Genome(msg),
+            other => other,
         })
     }
 

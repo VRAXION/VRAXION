@@ -170,6 +170,26 @@ impl Int8Projection {
     pub fn output_classes(&self) -> usize {
         self.output_classes
     }
+
+    /// Count weights with non-zero value.
+    #[inline]
+    pub fn nonzero_count(&self) -> usize {
+        self.weights.iter().filter(|&&w| w != 0).count()
+    }
+
+    /// Zero weights with absolute value at or below `threshold`. Returns count zeroed.
+    ///
+    /// Used during crystallize phases to prune weak projection weights.
+    pub fn sparsify(&mut self, threshold: u8) -> usize {
+        let mut count = 0usize;
+        for w in self.weights.iter_mut() {
+            if w.unsigned_abs() <= threshold {
+                *w = 0;
+                count += 1;
+            }
+        }
+        count
+    }
 }
 
 #[cfg(test)]
@@ -266,5 +286,39 @@ mod tests {
         assert!(class < 300, "predicted class {class} >= 300");
         // Specifically: result should NOT be truncated to u8 range
         // (old bug: 299 as u8 == 43)
+    }
+
+    #[test]
+    fn sparsify_zeroes_small_weights() {
+        let mut proj = Int8Projection {
+            weights: vec![0, 1, -1, 2, -2, 127, -127, 0],
+            input_dim: 4,
+            output_classes: 2,
+        };
+        let zeroed = proj.sparsify(1);
+        assert_eq!(zeroed, 4); // 0, 1, -1, 0
+        assert_eq!(proj.weights, vec![0, 0, 0, 2, -2, 127, -127, 0]);
+    }
+
+    #[test]
+    fn sparsify_zero_threshold_only_existing_zeros() {
+        let mut proj = Int8Projection {
+            weights: vec![0, 1, -1, 0],
+            input_dim: 2,
+            output_classes: 2,
+        };
+        let zeroed = proj.sparsify(0);
+        assert_eq!(zeroed, 2);
+        assert_eq!(proj.weights, vec![0, 1, -1, 0]);
+    }
+
+    #[test]
+    fn nonzero_count_correct() {
+        let proj = Int8Projection {
+            weights: vec![0, 1, -1, 0, 5, 0],
+            input_dim: 3,
+            output_classes: 2,
+        };
+        assert_eq!(proj.nonzero_count(), 3);
     }
 }
