@@ -1,0 +1,14 @@
+[workspace]
+members = ["instnct-core"]
+resolver = "2"
+
+[workspace.package]
+version = "5.0.0-beta.1"
+edition = "2021"
+license = "PolyForm-Noncommercial-1.0.0"
+authors = ["VRAXION"]
+description = "INSTNCT: gradient-free self-wiring spiking network"
+repository = "https://github.com/VRAXION/VRAXION"
+homepage = "https://github.com/VRAXION/VRAXION"
+documentation = "https://docs.rs/instnct-core"
+rust-version = "1.94"

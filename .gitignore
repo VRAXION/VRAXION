@@ -92,3 +92,8 @@ instnct/checkpoints/*.npz.json
 # Training data
 instnct/data/*.txt
 instnct/data/*.npy
+
+# Rust build artifacts
+/target
+instnct-core/checkpoints/
+instnct-core/results/
