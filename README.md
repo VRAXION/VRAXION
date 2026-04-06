@@ -18,7 +18,7 @@ This repository is meant to be a credible front door for technical buyers and en
 
 ## Release Snapshot
 
-- **Current canonical public release:** [`v4.2.0`](https://github.com/VRAXION/VRAXION/releases/tag/v4.2.0) (`stable`)
+- **Current public release:** [`v5.0.0-beta.1`](https://github.com/VRAXION/VRAXION/releases/tag/v5.0.0-beta.1) (Rust beta, 24.6% peak)
 - **Next public milestone:** preparation toward `v5.0.0 Public Beta`
 - **Internal code path:** [`instnct/`](instnct/) (repo path, not the public release label)
 - **Current mainline code path:** [`instnct/model/graph.py`](instnct/model/graph.py)
