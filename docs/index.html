@@ -1,379 +1,169 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>VRAXION // INSTNCT</title>
-  <style>
-    :root {
-      --panel: rgba(249, 246, 240, 0.94);
-      --panel-strong: rgba(255, 255, 255, 0.76);
-      --ink: #171717;
-      --accent: #bf4b2c;
-      --accent-2: #0f5d76;
-      --line: rgba(23, 23, 23, 0.12);
-      --mono: "IBM Plex Mono", Consolas, monospace;
-      --display: "Avenir Next Condensed", "Franklin Gothic Medium", "Arial Narrow", sans-serif;
-      --body: "Avenir Next", "Segoe UI", sans-serif;
-    }
-    * { box-sizing: border-box; }
-    body {
-      margin: 0;
-      min-height: 100vh;
-      color: var(--ink);
-      background:
-        radial-gradient(circle at 12% 18%, rgba(191, 75, 44, 0.22), transparent 24%),
-        radial-gradient(circle at 84% 16%, rgba(15, 93, 118, 0.18), transparent 20%),
-        linear-gradient(135deg, #071018 0%, #13232f 38%, #281711 100%);
-      font-family: var(--body);
-    }
-    main {
-      width: min(1160px, calc(100vw - 28px));
-      margin: 18px auto;
-      padding: 28px;
-      background: var(--panel);
-      border: 1px solid rgba(255,255,255,0.28);
-      box-shadow: 0 28px 90px rgba(0,0,0,0.34);
-      backdrop-filter: blur(10px);
-    }
-    .eyebrow {
-      font: 700 12px/1 var(--mono);
-      letter-spacing: 0.26em;
-      text-transform: uppercase;
-      color: var(--accent);
-      margin-bottom: 16px;
-    }
-    .hero {
-      display: grid;
-      grid-template-columns: minmax(0, 1.4fr) minmax(280px, 0.85fr);
-      gap: 18px;
-      align-items: stretch;
-    }
-    .hero-copy {
-      position: relative;
-      overflow: hidden;
-      isolation: isolate;
-    }
-    .hero-field {
-      position: absolute;
-      inset: -8% -12% -18% 36%;
-      width: auto;
-      height: 132%;
-      opacity: 0.42;
-      pointer-events: none;
-      z-index: 0;
-      transform-origin: 58% 48%;
-      animation: heroSpin 54s linear infinite;
-    }
-    .hero-field svg {
-      width: 100%;
-      height: 100%;
-      display: block;
-    }
-    .hero-copy > :not(.hero-field) {
-      position: relative;
-      z-index: 1;
-    }
-    .hero-copy, .hero-aside, .section, .card {
-      background: var(--panel-strong);
-      border: 1px solid var(--line);
-      padding: 20px;
-    }
-    h1 {
-      margin: 0;
-      font-family: var(--display);
-      font-size: clamp(2.9rem, 7vw, 5.6rem);
-      line-height: 0.9;
-      letter-spacing: -0.045em;
-      max-width: 11ch;
-    }
-    .lede {
-      margin: 20px 0 0;
-      max-width: 64ch;
-      font-size: clamp(1rem, 1.7vw, 1.18rem);
-      line-height: 1.68;
-    }
-    .metric {
-      display: flex;
-      justify-content: space-between;
-      gap: 16px;
-      padding: 10px 0;
-      border-bottom: 1px solid var(--line);
-      font: 600 0.95rem/1.45 var(--mono);
-    }
-    .metric:last-child { border-bottom: 0; }
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
-      gap: 14px;
-      margin-top: 16px;
-    }
-    .release-strip {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-      gap: 12px;
-      margin-top: 18px;
-    }
-    .release-chip {
-      background: var(--panel-strong);
-      border: 1px solid var(--line);
-      padding: 14px 16px;
-    }
-    .release-chip strong {
-      display: block;
-      margin-bottom: 6px;
-      font: 700 0.85rem/1.2 var(--mono);
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-    }
-    .release-chip span {
-      display: block;
-      font-size: 0.95rem;
-      line-height: 1.45;
-    }
-    .section {
-      margin-top: 18px;
-    }
-    h2 {
-      margin: 0 0 10px;
-      font: 700 0.88rem/1.2 var(--mono);
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
-    }
-    p, li {
-      font-size: 0.97rem;
-      line-height: 1.58;
-      margin: 0;
-    }
-    ul {
-      margin: 0;
-      padding-left: 18px;
-    }
-    .links {
-      margin-top: 18px;
-      padding-top: 16px;
-      border-top: 1px solid var(--line);
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px 16px;
-      font: 600 0.9rem/1.4 var(--mono);
-    }
-    a {
-      color: var(--accent);
-      text-decoration: none;
-    }
-    a:hover { text-decoration: underline; }
-    code {
-      font-family: var(--mono);
-      background: rgba(0,0,0,0.06);
-      padding: 0.12rem 0.35rem;
-      border-radius: 4px;
-    }
-    pre {
-      margin: 12px 0 0;
-      padding: 14px 16px;
-      overflow-x: auto;
-      background: rgba(0,0,0,0.06);
-      border: 1px solid var(--line);
-      font: 0.88rem/1.55 var(--mono);
-    }
-    .note {
-      margin-top: 16px;
-      padding: 14px 16px;
-      background: rgba(15, 93, 118, 0.08);
-      border-left: 4px solid var(--accent-2);
-      font-size: 0.98rem;
-      line-height: 1.6;
-    }
-    .cta-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-      gap: 12px;
-      margin-top: 14px;
-    }
-    .cta {
-      display: block;
-      padding: 16px;
-      background: var(--panel-strong);
-      border: 1px solid var(--line);
-    }
-    .cta strong {
-      display: block;
-      margin-bottom: 6px;
-      font: 700 0.95rem/1.25 var(--mono);
-      color: var(--ink);
-    }
-    .cta span {
-      display: block;
-      font-size: 0.93rem;
-      line-height: 1.45;
-      color: var(--ink);
-    }
-    .sub-links {
-      margin-top: 14px;
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px 16px;
-      font: 600 0.85rem/1.4 var(--mono);
-    }
-    .surface-map-intro {
-      margin-top: 4px;
-      max-width: 70ch;
-    }
-    .surface-map-wrap {
-      margin-top: 16px;
-      padding: 16px;
-      background: #06111c;
-      border: 1px solid rgba(15, 93, 118, 0.24);
-      box-shadow: inset 0 0 0 1px rgba(255,255,255,0.04);
-    }
-    .surface-map {
-      display: block;
-      width: 100%;
-      height: auto;
-    }
-    @keyframes heroSpin {
-      from { transform: rotate(0deg) scale(1); }
-      50% { transform: rotate(180deg) scale(1.02); }
-      to { transform: rotate(360deg) scale(1); }
-    }
-    @media (max-width: 860px) {
-      .hero { grid-template-columns: 1fr; }
-      .hero-field {
-        inset: -12% -18% 6% 44%;
-        height: 118%;
-        opacity: 0.3;
-      }
-    }
-    @media (max-width: 700px) {
-      main { padding: 18px; }
-      .links { flex-direction: column; gap: 6px; }
-      .hero-field {
-        inset: -8% -30% 12% 30%;
-        height: 96%;
-        opacity: 0.24;
-      }
-    }
-    @media (prefers-reduced-motion: reduce) {
-      .hero-field {
-        animation: none;
-      }
-    }
-  </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vraxion</title>
+  <meta name="description" content="Vraxion builds INSTNCT, a gradient-free self-wiring architecture aimed at durable intelligence and machine consciousness as an engineering reality.">
+  <meta property="og:title" content="Vraxion">
+  <meta property="og:description" content="Mission-first front door for INSTNCT, research, and the Rust implementation lane.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://vraxion.github.io/VRAXION/">
+  <meta property="og:image" content="https://vraxion.github.io/VRAXION/assets/vraxion-home-hero.jpg">
+  <link rel="canonical" href="https://vraxion.github.io/VRAXION/">
+  <link rel="icon" href="./assets/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="./assets/site.css">
 </head>
-<body>
-  <main>
-    <div class="eyebrow">VRAXION / Current Architecture Line</div>
+<body data-root="." data-page="home">
+  <div class="site-shell">
+    <header class="site-header">
+      <div class="brand">
+        <div class="eyebrow">Mission-first front door</div>
+        <a class="brand-title" href="./">Vraxion</a>
+      </div>
+      <nav class="site-nav" aria-label="Primary">
+        <a class="is-active" href="./">Home</a>
+        <a href="./instnct/">INSTNCT</a>
+        <a href="./research/">Research</a>
+        <a href="./rust/">Rust</a>
+        <a href="https://github.com/VRAXION/VRAXION/wiki/Home">Wiki</a>
+        <a href="https://github.com/VRAXION/VRAXION">GitHub</a>
+      </nav>
+    </header>
 
-    <section class="hero">
-      <article class="hero-copy">
-        <div class="hero-field" aria-hidden="true">
-          <img src="./assets/hero-instnct-field.svg" alt="" />
+    <main>
+      <section class="hero">
+        <div class="hero-copy">
+          <div class="eyebrow">Durable intelligence, public evidence</div>
+          <h1 class="hero-title">Vraxion</h1>
+          <p class="hero-lede">
+            Vraxion is building <code>INSTNCT</code>: a gradient-free self-wiring architecture that learns by changing its own directed graph instead of training a fixed layer stack with backpropagation.
+          </p>
+          <p class="hero-lede">
+            The project exists to advance machine consciousness as an engineering reality, and to build forms of intelligence and consciousness that can endure beyond any single institution, deployment, or era.
+          </p>
         </div>
-        <h1>INSTNCT</h1>
-        <p class="lede">
-          VRAXION is building a gradient-free self-wiring architecture called <code>INSTNCT</code>. The learnable object is the graph itself, not a fixed layer stack, and the public story stays organized around one contract: what is shipped on <code>main</code>, what is validated but not promoted yet, and what is still experimental.
-        </p>
-      </article>
-      <aside class="hero-aside">
-        <div class="metric"><span>Current release</span><span><code>v4.2.0</code></span></div>
-        <div class="metric"><span>Next milestone</span><span><code>v5.0.0 beta prep</code></span></div>
-        <div class="metric"><span>Current mainline</span><span><code>graph.py</code></span></div>
-        <div class="metric"><span>Internal code path</span><span><code>instnct/</code></span></div>
-        <div class="metric"><span>Architecture line</span><span><code>INSTNCT</code></span></div>
-      </aside>
-    </section>
+        <div class="hero-media">
+          <div class="hero-frame">
+            <img src="./assets/vraxion-home-hero.jpg" alt="Vraxion mission artwork">
+          </div>
+        </div>
+      </section>
 
-    <section class="release-strip" aria-label="Release snapshot">
-      <article class="release-chip">
-        <strong>Current canonical release</strong>
-        <span><code>v4.2.0</code> stable</span>
-      </article>
-      <article class="release-chip">
-        <strong>Next public milestone</strong>
-        <span>Preparation toward <code>v5.0.0 Public Beta</code></span>
-      </article>
-      <article class="release-chip">
-        <strong>Internal code path</strong>
-        <span><code>instnct/</code> is the repo path, not the release label.</span>
-      </article>
-    </section>
+      <section class="section">
+        <div class="section-head">
+          <h2>Current state</h2>
+          <p>The site stays high-level on purpose. Deep theory, chronology, and proof live in the wiki.</p>
+        </div>
+        <div class="stat-grid">
+          <article class="stat-card">
+            <div class="stat-label">Architecture line</div>
+            <div class="stat-value">INSTNCT</div>
+            <p>Self-wiring recurrent computation with explicit boundary surfaces and mutation-selection training.</p>
+          </article>
+          <article class="stat-card">
+            <div class="stat-label">Stable release</div>
+            <div class="stat-value" data-version-field="current_release">v4.2.0</div>
+            <p>Public release baseline while the next implementation surfaces harden in parallel.</p>
+          </article>
+          <article class="stat-card">
+            <div class="stat-label">Implementation momentum</div>
+            <div class="stat-value">Python + Rust</div>
+            <p>Python remains the shipped reference path; Rust is now a serious public implementation lane.</p>
+          </article>
+          <article class="stat-card">
+            <div class="stat-label">Current frontier</div>
+            <div class="stat-value">Language + task memory</div>
+            <p>Robust language evaluation, seed stability, and context-dependent task learning are still the main unresolved lines.</p>
+          </article>
+        </div>
+      </section>
 
-    <section class="grid">
-      <article class="card">
-        <h2>What VRAXION Is Now</h2>
-        <p>VRAXION is a company and engineering program centered on one active architecture line: passive I/O, a signed self-wiring hidden graph, persistent internal state, and mutation-selection training.</p>
-      </article>
-      <article class="card">
-        <h2>Current Mainline</h2>
-        <p>The only settings that count as live defaults are the ones actually shipped in <code>instnct/model/graph.py</code>. That mainline currently includes per-neuron <code>theta</code>/<code>decay</code> and nonnegative charge dynamics.</p>
-      </article>
-      <article class="card">
-        <h2>Best validated evidence</h2>
-        <p>The strongest schedule result so far is voltage medium leak at <code>22.11%</code> peak and <code>21.46%</code> plateau. The strongest compact learnable controller so far is the 3-angle decision-tree schedule at <code>20.05%</code>.</p>
-      </article>
-      <article class="card">
-        <h2>Current next target</h2>
-        <p>The main live target is context-dependent task learning: windowed input injection, associative memory, and stronger evaluation for nontrivial tasks.</p>
-      </article>
-    </section>
+      <section class="section">
+        <div class="section-head">
+          <h2>Mission and method</h2>
+          <p>Ambition stays explicit, but public claims stay disciplined.</p>
+        </div>
+        <div class="split-grid">
+          <article class="quote-card">
+            <blockquote>
+              Inference emerges as the fixed point of destructive interference.
+            </blockquote>
+            <p>That thesis guides the architecture, but theory, implementation, and proof stay separate on purpose.</p>
+          </article>
+          <article class="page-card">
+            <h3>Public discipline</h3>
+            <ul class="kicker-list">
+              <li>Shipped code, reproducible results, and experimental work are labeled separately.</li>
+              <li>Theory does not automatically count as implementation status.</li>
+              <li>Chronology and retained proof live on a dedicated research surface.</li>
+            </ul>
+          </article>
+        </div>
+      </section>
 
-    <section class="section">
-      <h2>Status Taxonomy</h2>
-      <ul>
-        <li><strong>Current mainline</strong>: what is actually shipped in code on <code>main</code>.</li>
-        <li><strong>Validated finding</strong>: an experimentally supported result that has not been promoted into the canonical code path yet.</li>
-        <li><strong>Experimental branch</strong>: an active build target or design direction, not a live default.</li>
-      </ul>
-    </section>
+      <section class="section">
+        <div class="section-head">
+          <h2>Read the project</h2>
+          <p>Use the website for orientation, then jump to the right technical surface.</p>
+        </div>
+        <div class="cta-grid">
+          <article class="cta-panel">
+            <div>
+              <h3>INSTNCT</h3>
+              <p>The public architecture explainer: what makes the line different, what is shipped, and what is still only validated.</p>
+            </div>
+            <a class="cta-link" href="./instnct/">Open architecture</a>
+          </article>
+          <article class="cta-panel">
+            <div>
+              <h3>Research</h3>
+              <p>The public research/process snapshot: how Vraxion judges claims, what changed recently, and which gates still matter.</p>
+            </div>
+            <a class="cta-link" href="./research/">Open research</a>
+          </article>
+          <article class="cta-panel">
+            <div>
+              <h3>Rust</h3>
+              <p>The public Rust implementation surface: validated runtime decisions, current implementation status, and the active frontier.</p>
+            </div>
+            <a class="cta-link" href="./rust/">Open Rust surface</a>
+          </article>
+          <article class="cta-panel">
+            <div>
+              <h3>Wiki</h3>
+              <p>The deep technical record: architecture notes, theory, chronology, retained proof trail, and archived experimental material.</p>
+            </div>
+            <a class="cta-link" href="https://github.com/VRAXION/VRAXION/wiki/Home">Open wiki</a>
+          </article>
+        </div>
+      </section>
 
-    <section class="section">
-      <h2>5-Minute Proof</h2>
-      <p>These are the quick checks that keep the public story aligned with the code.</p>
-      <pre>python -m compileall instnct tools
-python instnct/tests/test_model.py
-python tools/check_public_surface.py</pre>
-    </section>
+      <section class="section">
+        <div class="section-head">
+          <h2>Site map</h2>
+          <p>Small public site. Deep archive stays out of the landing page.</p>
+        </div>
+        <div class="pill-row">
+          <div class="pill"><strong>Release</strong> <span data-version-field="current_release">v4.2.0</span></div>
+          <div class="pill"><strong>Next milestone</strong> <span data-version-field="next_milestone">v5.0.0 Public Beta</span></div>
+          <div class="pill"><strong>Architecture</strong> <span data-version-field="architecture_line">INSTNCT</span></div>
+          <div class="pill"><strong>Rust label</strong> <span data-version-field="rust_surface">Rust Implementation Surface</span></div>
+        </div>
+      </section>
+    </main>
 
-    <div class="note">
-      Pages is the polished front door. The wiki remains the lean technical reference for readers who want architecture, findings, engineering discipline, and project history in plain markdown.
-    </div>
-
-    <section class="section">
-      <h2>Public Surfaces</h2>
-      <p class="surface-map-intro">The public stack is intentionally shallow: use <code>VRAXION Home</code> for orientation, then jump to architecture, evidence, engineering, or timeline by question.</p>
-      <div class="surface-map-wrap">
-        <img class="surface-map" src="./assets/vraxion-public-stack-map.png" alt="VRAXION public stack hierarchy" />
+    <footer class="site-footer">
+      <div class="footer-copy">
+        Vraxion keeps the public story split cleanly: website for orientation, wiki for proof, repo for code.
       </div>
-      <div class="cta-grid">
-        <a class="cta" href="https://github.com/VRAXION/VRAXION/wiki/Home">
-          <strong>VRAXION Home</strong>
-          <span>Fast orientation to the current public stack.</span>
-        </a>
-        <a class="cta" href="https://github.com/VRAXION/VRAXION/wiki/INSTNCT-Architecture">
-          <strong>INSTNCT Architecture</strong>
-          <span>The active technical line in one screen.</span>
-        </a>
-        <a class="cta" href="https://github.com/VRAXION/VRAXION/wiki/Validated-Findings">
-          <strong>Validated Findings</strong>
-          <span>The strongest reproducible evidence board.</span>
-        </a>
-        <a class="cta" href="https://github.com/VRAXION/VRAXION/wiki/Engineering">
-          <strong>Engineering Protocol</strong>
-          <span>The run contract behind public claims.</span>
-        </a>
-        <a class="cta" href="https://github.com/VRAXION/VRAXION/wiki/Release-Notes">
-          <strong>Project Timeline</strong>
-          <span>Current snapshot, major turns, and open gates.</span>
-        </a>
+      <div class="footer-links">
+        <a href="https://github.com/VRAXION/VRAXION/wiki/Home">Wiki</a>
+        <a href="https://github.com/VRAXION/VRAXION/blob/main/README.md">README</a>
+        <a href="https://github.com/VRAXION/VRAXION">Repository</a>
       </div>
-      <div class="sub-links">
-        <span><a href="https://github.com/VRAXION/VRAXION">Repository</a></span>
-        <span><a href="https://github.com/VRAXION/VRAXION/blob/main/README.md">README</a></span>
-        <span><a href="https://github.com/VRAXION/VRAXION/tree/main/v4.2">v4.2</a></span>
-        <span><a href="https://github.com/VRAXION/VRAXION/issues/114">Issue #114</a></span>
-      </div>
-    </section>
-  </main>
+    </footer>
+  </div>
+  <script src="./assets/site.js"></script>
 </body>
 </html>

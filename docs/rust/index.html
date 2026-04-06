@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Rust Implementation Surface</title>
+  <meta name="description" content="Public Rust implementation surface for INSTNCT: what the port has already validated, current implementation status, and the active frontier.">
+  <meta property="og:title" content="Rust Implementation Surface">
+  <meta property="og:description" content="Validated runtime decisions, implementation status, and the active Rust frontier.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://vraxion.github.io/VRAXION/rust/">
+  <meta property="og:image" content="https://vraxion.github.io/VRAXION/assets/vraxion-instnct-spiral.png">
+  <link rel="canonical" href="https://vraxion.github.io/VRAXION/rust/">
+  <link rel="icon" href="../assets/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="../assets/site.css">
+</head>
+<body data-root=".." data-page="rust">
+  <div class="site-shell">
+    <header class="site-header">
+      <div class="brand">
+        <div class="eyebrow">Public implementation lane</div>
+        <a class="brand-title" href="../">Vraxion</a>
+      </div>
+      <nav class="site-nav" aria-label="Primary">
+        <a href="../">Home</a>
+        <a href="../instnct/">INSTNCT</a>
+        <a href="../research/">Research</a>
+        <a class="is-active" href="./">Rust</a>
+        <a href="https://github.com/VRAXION/VRAXION/wiki/Home">Wiki</a>
+        <a href="https://github.com/VRAXION/VRAXION">GitHub</a>
+      </nav>
+    </header>
+
+    <main>
+      <section class="hero">
+        <div class="hero-copy">
+          <div class="eyebrow">Rust Implementation Surface</div>
+          <h1 class="hero-title compact">Rust</h1>
+          <p class="hero-lede">
+            The Rust lane is now a serious parallel implementation surface for <code>INSTNCT</code>, not just a fast forward-pass port.
+          </p>
+          <p class="hero-lede">
+            Core systems work is largely in place. The live frontier is language-eval robustness, seed stability, and breaking the stable <code>17-18%</code> convergence band of the tested 1+1 ES setup.
+          </p>
+        </div>
+        <div class="hero-media">
+          <div class="quote-card">
+            <h3>What is already solid</h3>
+            <p>Owned <code>Network</code>, rollback snapshots, mutation API, CSR acceleration, checkpoint persistence, and a learnable int8 readout are all already real in the public Rust line.</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="section-head">
+          <h2>Validation checkpoints</h2>
+          <p>Performance claims and evolution claims are kept separate on purpose.</p>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Topic</th>
+                <th>Status</th>
+                <th>Why it matters</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>CSR skip-inactive</td>
+                <td>Current mainline</td>
+                <td>Sparse runtime no longer scans every silent neuron.</td>
+              </tr>
+              <tr>
+                <td>Topology over parameter mutation</td>
+                <td>Validated finding</td>
+                <td>The Rust lane first needed structural search more than a heavyweight operator stack.</td>
+              </tr>
+              <tr>
+                <td>Binary activation alone</td>
+                <td>Validated finding</td>
+                <td>Pure binary voting cannot carry believable language readout by itself.</td>
+              </tr>
+              <tr>
+                <td>Theta floor</td>
+                <td>Validated finding</td>
+                <td>Zero-theta collapse confirmed the lane still needs a relay floor for differentiation.</td>
+              </tr>
+              <tr>
+                <td>Learnable int8 <code>W</code></td>
+                <td>Current mainline</td>
+                <td>The readout surface is load-bearing, not a cosmetic add-on.</td>
+              </tr>
+              <tr>
+                <td>Multi-window seed audit</td>
+                <td>Experimental branch</td>
+                <td>Single-window winners can mis-rank a rugged search landscape.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="section-head">
+          <h2>Implementation status</h2>
+          <p>The library is already beyond "forward-pass demo" status.</p>
+        </div>
+        <div class="card-grid">
+          <article class="page-card">
+            <h3>Core substrate</h3>
+            <p>Owned topology, reusable state, CSR cache, propagation, and mutation-selection now live inside one coherent library surface.</p>
+          </article>
+          <article class="page-card">
+            <h3>Persistence</h3>
+            <p>Genome save/load and checkpoint bundles allow resumable, adversarially testable longer runs.</p>
+          </article>
+          <article class="page-card">
+            <h3>Readout and input</h3>
+            <p>Learnable int8 projection and SDR table are already integrated into the live implementation lane.</p>
+          </article>
+          <article class="page-card">
+            <h3>What still remains</h3>
+            <p>Full English recipe parity, stronger exploration than plain 1+1 ES, and better constrained depth lines such as pocket chains.</p>
+          </article>
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="section-head">
+          <h2>Performance and frontier</h2>
+          <p>The current problem is no longer "can Rust be fast?" but "what actually breaks the search ceiling?"</p>
+        </div>
+        <div class="split-grid">
+          <article class="page-card">
+            <h3>Current decisions</h3>
+            <ul class="kicker-list">
+              <li><code>u32</code>/<code>i32</code> hot path, compact indices, and SoA layout remain the best tested runtime choices.</li>
+              <li>CSR skip-inactive and deterministic benchmark policy are accepted defaults.</li>
+              <li>Bitpacking, AVX2 shortcuts, and other micro-optimization narratives are not promoted unless they survive deterministic reruns.</li>
+            </ul>
+          </article>
+          <article class="quote-card">
+            <h3>Current frontier</h3>
+            <p>Stable <code>17-18%</code> behavior looks like a structural exploration limit of the tested setup, not a missing one-line hyperparameter fix.</p>
+          </article>
+        </div>
+        <div class="notice">
+          <p>Depth lines such as pocket chains, better exploration than plain 1+1 ES, and recipe-level English parity remain the active paths that could change the public Rust story.</p>
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="section-head">
+          <h2>Read deeper</h2>
+          <p>The full Rust archive stays in the wiki, not on the website.</p>
+        </div>
+        <div class="cta-grid">
+          <article class="cta-panel">
+            <h3>Rust Implementation Surface</h3>
+            <p>Detailed validation checkpoints, archived experiments, and the current frontier in the wiki.</p>
+            <a class="cta-link" href="https://github.com/VRAXION/VRAXION/wiki/v5-Rust-Port-Benchmarks">Open Rust wiki page</a>
+          </article>
+          <article class="cta-panel">
+            <h3>Research Process &amp; Archive</h3>
+            <p>Cross-surface chronology, reversals, and the latest milestone rail.</p>
+            <a class="cta-link" href="https://github.com/VRAXION/VRAXION/wiki/Timeline-Archive">Open archive</a>
+          </article>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div class="footer-copy">
+        Rust is the serious parallel implementation lane. The wiki keeps the richer validation tables and experimental archive.
+      </div>
+      <div class="footer-links">
+        <a href="../research/">Research</a>
+        <a href="https://github.com/VRAXION/VRAXION/wiki/v5-Rust-Port-Benchmarks">Rust wiki</a>
+        <a href="https://github.com/VRAXION/VRAXION">Repository</a>
+      </div>
+    </footer>
+  </div>
+  <script src="../assets/site.js"></script>
+</body>
+</html>

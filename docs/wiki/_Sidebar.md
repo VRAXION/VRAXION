@@ -1,14 +1,7 @@
-<!-- Canonical source for the mirrored GitHub wiki sidebar. Sync with tools/sync_wiki_from_repo.py. -->
+# Moved
 
-## Primary
+This legacy sidebar file is no longer used by the website.
 
-- [VRAXION Home](Home)
-- [INSTNCT Architecture](INSTNCT-Architecture)
-- [Validated Findings](Validated-Findings)
-- [Engineering Protocol](Engineering)
-- [Project Timeline](Release-Notes)
+Use the live GitHub wiki navigation instead:
 
-## Public
-
-- [Pages](https://vraxion.github.io/VRAXION/)
-- [Repo](https://github.com/VRAXION/VRAXION)
+- https://github.com/VRAXION/VRAXION/wiki/Home

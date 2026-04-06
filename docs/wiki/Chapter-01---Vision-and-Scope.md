@@ -1,11 +1,7 @@
-<!-- Canonical source for the mirrored GitHub wiki page. Sync with tools/sync_wiki_from_repo.py. -->
+# Moved
 
-# Chapter 01 - Vision and Scope
+This legacy surface is no longer maintained under `docs/wiki`.
 
-This page has been retired as a standalone doctrine page.
+Use the current GitHub wiki instead:
 
-The active vision now lives in [VRAXION Home](Home).
-
-Architecture details live in [INSTNCT Architecture](INSTNCT-Architecture).
-
-This page remains only to preserve the old URL for historical links.
+- https://github.com/VRAXION/VRAXION/wiki/Home

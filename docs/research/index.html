@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Research</title>
+  <meta name="description" content="Public research/process snapshot for Vraxion: claim discipline, current open gates, and the latest research turns that still matter.">
+  <meta property="og:title" content="Vraxion Research">
+  <meta property="og:description" content="Claim discipline, current gates, and the latest research turns that still matter.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://vraxion.github.io/VRAXION/research/">
+  <meta property="og:image" content="https://vraxion.github.io/VRAXION/assets/vraxion-home-hero.jpg">
+  <link rel="canonical" href="https://vraxion.github.io/VRAXION/research/">
+  <link rel="icon" href="../assets/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="../assets/site.css">
+</head>
+<body data-root=".." data-page="research">
+  <div class="site-shell">
+    <header class="site-header">
+      <div class="brand">
+        <div class="eyebrow">Public research snapshot</div>
+        <a class="brand-title" href="../">Vraxion</a>
+      </div>
+      <nav class="site-nav" aria-label="Primary">
+        <a href="../">Home</a>
+        <a href="../instnct/">INSTNCT</a>
+        <a class="is-active" href="./">Research</a>
+        <a href="../rust/">Rust</a>
+        <a href="https://github.com/VRAXION/VRAXION/wiki/Home">Wiki</a>
+        <a href="https://github.com/VRAXION/VRAXION">GitHub</a>
+      </nav>
+    </header>
+
+    <main>
+      <section class="hero">
+        <div class="hero-copy">
+          <div class="eyebrow">Research process and current gates</div>
+          <h1 class="hero-title compact">Research</h1>
+          <p class="hero-lede">
+            This surface is the public research snapshot for Vraxion: what the project is trying to prove now, how claims are judged, and which recent turns still matter.
+          </p>
+          <p class="hero-lede">
+            It is not the full archive. The deep chronology, retained reversals, and protocol residue stay on the wiki's <a href="https://github.com/VRAXION/VRAXION/wiki/Timeline-Archive">Research Process &amp; Archive</a>.
+          </p>
+        </div>
+        <div class="hero-media">
+          <div class="quote-card">
+            <h3>Current frame</h3>
+            <p>The stable public release is still <code data-version-field="current_release">v4.2.0</code>. The biggest unresolved pressure is no longer basic trainability, but whether language evaluation, seed variance, and context-dependent task learning survive repeated adversarial reruns.</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="section-head">
+          <h2>How claims are judged</h2>
+          <p>Public discipline matters as much as raw result headlines.</p>
+        </div>
+        <div class="card-grid">
+          <article class="page-card">
+            <h3>Current mainline</h3>
+            <p>Only what matches shipped code on <code>main</code> counts as default.</p>
+          </article>
+          <article class="page-card">
+            <h3>Validated finding</h3>
+            <p>Reproducible result that matters, but has not been promoted into the canonical path.</p>
+          </article>
+          <article class="page-card">
+            <h3>Experimental branch</h3>
+            <p>Active direction that should not be described as a default.</p>
+          </article>
+          <article class="page-card">
+            <h3>Evidence minimum</h3>
+            <p><code>run_cmd.txt</code>, <code>env.json</code>, <code>metrics.json</code>, and <code>summary.md</code> remain the minimum bundle behind meaningful claims.</p>
+          </article>
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="section-head">
+          <h2>Current open gates</h2>
+          <p>These are the gates that still separate promising lines from stronger public promotion.</p>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Gate</th>
+                <th>Why it is still open</th>
+                <th>Current pressure</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Language robustness</td>
+                <td>Single strong runs are not enough if the band collapses under reruns or multi-window evaluation.</td>
+                <td>Repeated adversarial reruns, cleaner eval contracts, and clearer public metrics.</td>
+              </tr>
+              <tr>
+                <td>Seed stability</td>
+                <td>The landscape is visibly rugged, which means single-seed stories overstate certainty.</td>
+                <td>Seed audits, reranking, and multi-window discipline.</td>
+              </tr>
+              <tr>
+                <td>Context-dependent task learning</td>
+                <td>The architecture claim is stronger if task memory survives outside toy or fragile settings.</td>
+                <td>Windowed input injection, associative memory, and stronger nontrivial task eval.</td>
+              </tr>
+              <tr>
+                <td>Rust search ceiling</td>
+                <td>The tested 1+1 ES setup still converges into a stable band instead of a durable breakthrough.</td>
+                <td>Depth lines, different exploration regimes, and recipe parity.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="section-head">
+          <h2>Milestone rail</h2>
+          <p>Latest-first turns that still shape the public story.</p>
+        </div>
+        <div class="timeline">
+          <article class="timeline-item">
+            <div class="timeline-kicker">2026-04-06</div>
+            <p>Hyperparameter exhaustion clarified that the remaining Rust problem looks more like a search-regime limit than a missing tuning knob.</p>
+          </article>
+          <article class="timeline-item">
+            <div class="timeline-kicker">2026-04-02 to 2026-04-05</div>
+            <p>Rust v5 beta became a real evolution substrate with snapshots, mutation API, persistence, CSR acceleration, and richer seed evidence.</p>
+          </article>
+          <article class="timeline-item">
+            <div class="timeline-kicker">2026-03-27 to 2026-03-29</div>
+            <p>Tentacle I/O, SDR input, compact channel results, and architecture compressions clarified the current public line.</p>
+          </article>
+          <article class="timeline-item">
+            <div class="timeline-kicker">2026-03-22</div>
+            <p>Canon consolidation narrowed the public story around English, evidence discipline, and cleaner architecture boundaries.</p>
+          </article>
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="section-head">
+          <h2>Read deeper</h2>
+          <p>The full archive stays intentionally out of the website.</p>
+        </div>
+        <div class="cta-grid">
+          <article class="cta-panel">
+            <h3>Research Process &amp; Archive</h3>
+            <p>Protocol, chronology, reversals, and retained carry-over findings.</p>
+            <a class="cta-link" href="https://github.com/VRAXION/VRAXION/wiki/Timeline-Archive">Open archive</a>
+          </article>
+          <article class="cta-panel">
+            <h3>INSTNCT Architecture</h3>
+            <p>Implementation-facing architecture explainer for the current line.</p>
+            <a class="cta-link" href="../instnct/">Open architecture</a>
+          </article>
+          <article class="cta-panel">
+            <h3>Rust surface</h3>
+            <p>Detailed Rust validation and the current implementation frontier.</p>
+            <a class="cta-link" href="../rust/">Open Rust surface</a>
+          </article>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div class="footer-copy">
+        Research on the website stays condensed. The wiki keeps the canon archive, chronology, and rawer residue.
+      </div>
+      <div class="footer-links">
+        <a href="https://github.com/VRAXION/VRAXION/wiki/Timeline-Archive">Archive</a>
+        <a href="https://github.com/VRAXION/VRAXION/wiki/INSTNCT-Architecture">Architecture</a>
+        <a href="../rust/">Rust</a>
+      </div>
+    </footer>
+  </div>
+  <script src="../assets/site.js"></script>
+</body>
+</html>
