@@ -6,11 +6,10 @@
 //!
 //! Run: cargo run --example burst_sweep --release -- <corpus-path>
 
-use instnct_core::{build_network, InitConfig, Int8Projection, Network, PropagationConfig, SdrTable};
+use instnct_core::{load_corpus, build_network, InitConfig, Int8Projection, Network, PropagationConfig, SdrTable};
 use rand::rngs::StdRng;
 use rand::{Rng, SeedableRng};
 use rayon::prelude::*;
-use std::fs;
 
 const CHARS: usize = 27; // a-z (0..25) + space (26)
 const SDR_ACTIVE_PCT: usize = 20;
@@ -77,22 +76,6 @@ struct RunResult {
 
 // ---- Corpus loader ----
 
-fn load_corpus(path: &str) -> Vec<u8> {
-    let raw = fs::read(path).expect("cannot read corpus file");
-    raw.iter()
-        .filter_map(|&b| {
-            if b.is_ascii_lowercase() {
-                Some(b - b'a')
-            } else if b.is_ascii_uppercase() {
-                Some(b.to_ascii_lowercase() - b'a')
-            } else if b == b' ' || b == b'\n' || b == b'\t' {
-                Some(26)
-            } else {
-                None
-            }
-        })
-        .collect()
-}
 
 // ---- Eval ----
 
@@ -355,7 +338,7 @@ fn main() {
         "S:/AI/work/VRAXION_DEV/instnct/data/traindat/fineweb_edu.traindat".to_string()
     });
     println!("Loading corpus...");
-    let corpus = load_corpus(&corpus_path);
+    let corpus = load_corpus(&corpus_path).expect("cannot read corpus");
     println!("  {} chars", corpus.len());
 
     // Build config matrix

@@ -6,28 +6,16 @@
 //!
 //! Run: cargo run --example ensemble_scored --release -- <corpus-path>
 
-use instnct_core::{
+use instnct_core::{load_corpus, 
     build_network, evolution_step, InitConfig, Int8Projection, Network, SdrTable,
 };
 use rand::rngs::StdRng;
 use rand::{Rng, SeedableRng};
 use rayon::prelude::*;
-use std::fs;
 
 const CHARS: usize = 27;
 const SDR_ACTIVE_PCT: usize = 20;
 
-fn load_corpus(path: &str) -> Vec<u8> {
-    let raw = fs::read(path).expect("cannot read corpus");
-    raw.iter()
-        .filter_map(|&b| {
-            if b.is_ascii_lowercase() { Some(b - b'a') }
-            else if b.is_ascii_uppercase() { Some(b.to_ascii_lowercase() - b'a') }
-            else if b == b' ' || b == b'\n' || b == b'\t' { Some(26) }
-            else { None }
-        })
-        .collect()
-}
 
 fn train_one(
     seed: u64, steps: usize, corpus: &[u8], init: &InitConfig, sdr: &SdrTable,
@@ -77,7 +65,7 @@ fn main() {
         "S:/AI/work/VRAXION_DEV/instnct/data/traindat/fineweb_edu.traindat".to_string()
     });
     println!("Loading corpus...");
-    let corpus = load_corpus(&corpus_path);
+    let corpus = load_corpus(&corpus_path).expect("cannot read corpus");
     println!("  {} chars\n", corpus.len());
 
     let init = InitConfig::phi(256);

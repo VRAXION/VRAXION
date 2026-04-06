@@ -12,36 +12,19 @@
 //!
 //! Run: cargo run --example ab_fitness --release -- <corpus-path>
 
-use instnct_core::{
+use instnct_core::{load_corpus, 
     build_network, evolution_step, EvolutionConfig, InitConfig, Int8Projection, Network,
     SdrTable, StepOutcome,
 };
 use rand::rngs::StdRng;
 use rand::{Rng, SeedableRng};
 use rayon::prelude::*;
-use std::fs;
 use std::time::Instant;
 
 const CHARS: usize = 27;
 const SDR_ACTIVE_PCT: usize = 20;
 const STEPS: usize = 30_000;
 
-fn load_corpus(path: &str) -> Vec<u8> {
-    let raw = fs::read(path).expect("cannot read corpus");
-    raw.iter()
-        .filter_map(|&b| {
-            if b.is_ascii_lowercase() {
-                Some(b - b'a')
-            } else if b.is_ascii_uppercase() {
-                Some(b.to_ascii_lowercase() - b'a')
-            } else if b == b' ' || b == b'\n' || b == b'\t' {
-                Some(26)
-            } else {
-                None
-            }
-        })
-        .collect()
-}
 
 /// Build 27×27 bigram probability table from corpus.
 /// bigram[i][j] = P(next=j | current=i)
@@ -324,7 +307,7 @@ fn main() {
     println!("  B: Smooth (cosine similarity to bigram distribution)");
     println!("  Everything else IDENTICAL: init, mutations, W evolution, seeds\n");
 
-    let corpus = load_corpus(&corpus_path);
+    let corpus = load_corpus(&corpus_path).expect("cannot read corpus");
     println!("  {} chars", corpus.len());
 
     let bigram = build_bigram(&corpus);

@@ -6,13 +6,12 @@
 //!
 //! Run: cargo run --example pocket_breed --release -- <corpus-path>
 
-use instnct_core::{
+use instnct_core::{load_corpus, 
     save_checkpoint, CheckpointMeta, Int8Projection, Network, PropagationConfig, SdrTable,
 };
 use rand::rngs::StdRng;
 use rand::{Rng, SeedableRng};
 use std::collections::HashSet;
-use std::fs;
 use std::time::Instant;
 
 // ---------------------------------------------------------------------------
@@ -87,22 +86,6 @@ fn out_dim() -> usize {
 // Corpus loading
 // ---------------------------------------------------------------------------
 
-fn load_corpus(path: &str) -> Vec<u8> {
-    let raw = fs::read(path).expect("cannot read corpus");
-    raw.iter()
-        .filter_map(|&b| {
-            if b.is_ascii_lowercase() {
-                Some(b - b'a')
-            } else if b.is_ascii_uppercase() {
-                Some(b.to_ascii_lowercase() - b'a')
-            } else if b == b' ' || b == b'\n' || b == b'\t' {
-                Some(26)
-            } else {
-                None
-            }
-        })
-        .collect()
-}
 
 // ---------------------------------------------------------------------------
 // Pocket mutations (from pocket_chain.rs)
@@ -913,7 +896,7 @@ fn main() {
     println!();
 
     println!("Loading corpus from: {}", corpus_path);
-    let corpus = load_corpus(&corpus_path);
+    let corpus = load_corpus(&corpus_path).expect("cannot read corpus");
     println!("  {} chars loaded\n", corpus.len());
 
     let h = total_neurons();

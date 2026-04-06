@@ -6,11 +6,10 @@
 //!
 //! Run: cargo run --example pocket_diag --release -- <corpus-path>
 
-use instnct_core::{load_checkpoint, Int8Projection, Network, PropagationConfig, SdrTable};
+use instnct_core::{load_corpus, load_checkpoint, Int8Projection, Network, PropagationConfig, SdrTable};
 use rand::rngs::StdRng;
 use rand::{RngCore, SeedableRng};
 use std::collections::HashSet;
-use std::fs;
 
 const MASTER_SEED: u64 = 1337;
 const H: usize = 256;
@@ -40,17 +39,6 @@ fn jaccard(a: &HashSet<(u16, u16)>, b: &HashSet<(u16, u16)>) -> f64 {
     if union == 0 { 0.0 } else { inter as f64 / union as f64 }
 }
 
-fn load_corpus(path: &str) -> Vec<u8> {
-    let raw = fs::read(path).expect("cannot read corpus");
-    raw.iter()
-        .filter_map(|&b| {
-            if b.is_ascii_lowercase() { Some(b - b'a') }
-            else if b.is_ascii_uppercase() { Some(b.to_ascii_lowercase() - b'a') }
-            else if b == b' ' || b == b'\n' || b == b'\t' { Some(26) }
-            else { None }
-        })
-        .collect()
-}
 
 /// Run chain, return per-token: (charge at interface, charge at male output, prediction)
 #[allow(clippy::type_complexity)]
@@ -148,7 +136,7 @@ fn main() {
         decay_interval_ticks: 6, use_refractory: false,
     };
 
-    let corpus = load_corpus(&corpus_path);
+    let corpus = load_corpus(&corpus_path).expect("cannot read corpus");
 
     let mut seed_gen = StdRng::seed_from_u64(MASTER_SEED);
     let sdr_seed = seed_gen.next_u64();

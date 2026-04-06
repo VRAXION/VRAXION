@@ -9,11 +9,10 @@
 //!
 //! Run: cargo run --example adaptive_butterfly --release -- <corpus-path>
 
-use instnct_core::{InitConfig, Int8Projection, Network, SdrTable};
+use instnct_core::{load_corpus, InitConfig, Int8Projection, Network, SdrTable};
 use rand::rngs::StdRng;
 use rand::{Rng, SeedableRng};
 use rayon::prelude::*;
-use std::fs;
 use std::time::Instant;
 
 const CHARS: usize = 27;
@@ -77,17 +76,6 @@ fn constrained_rewire(net: &mut Network, max_bits: u32, rng: &mut impl Rng) -> b
     false
 }
 
-fn load_corpus(path: &str) -> Vec<u8> {
-    let raw = fs::read(path).expect("cannot read corpus");
-    raw.iter()
-        .filter_map(|&b| {
-            if b.is_ascii_lowercase() { Some(b - b'a') }
-            else if b.is_ascii_uppercase() { Some(b.to_ascii_lowercase() - b'a') }
-            else if b == b' ' || b == b'\n' || b == b'\t' { Some(26) }
-            else { None }
-        })
-        .collect()
-}
 
 #[allow(clippy::too_many_arguments)]
 fn eval_accuracy(
@@ -237,7 +225,7 @@ fn main() {
         "S:/AI/work/VRAXION_DEV/instnct/data/traindat/fineweb_edu.traindat".to_string()
     });
     println!("Loading corpus...");
-    let corpus = load_corpus(&corpus_path);
+    let corpus = load_corpus(&corpus_path).expect("cannot read corpus");
     println!("  {} chars\n", corpus.len());
 
     let sizes = [256, 512, 1024, 2048];

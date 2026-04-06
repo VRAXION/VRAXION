@@ -12,11 +12,10 @@
 //!
 //! Run: cargo run --example pocket_empty --release -- <corpus-path>
 
-use instnct_core::{Int8Projection, Network, SdrTable, PropagationConfig};
+use instnct_core::{load_corpus, Int8Projection, Network, SdrTable, PropagationConfig};
 use rand::rngs::StdRng;
 use rand::{Rng, SeedableRng};
 use rayon::prelude::*;
-use std::fs;
 use std::time::Instant;
 
 const H: usize = 256;
@@ -31,17 +30,6 @@ type BigramTable = Vec<[f64; CHARS]>;
 
 fn output_start() -> usize { H - PHI_DIM } // 98
 
-fn load_corpus(path: &str) -> Vec<u8> {
-    let raw = fs::read(path).expect("cannot read corpus");
-    raw.iter()
-        .filter_map(|&b| {
-            if b.is_ascii_lowercase() { Some(b - b'a') }
-            else if b.is_ascii_uppercase() { Some(b.to_ascii_lowercase() - b'a') }
-            else if b == b' ' || b == b'\n' || b == b'\t' { Some(26) }
-            else { None }
-        })
-        .collect()
-}
 
 fn build_bigram_table(corpus: &[u8]) -> BigramTable {
     let mut counts = vec![[0u64; CHARS]; CHARS];
@@ -402,7 +390,7 @@ fn main() {
     println!("  CrystalFirst: prefill → crystallize → evolve (smart sparse)");
     println!("  Prefilled: prefill → evolve (control)\n");
 
-    let corpus = load_corpus(&corpus_path);
+    let corpus = load_corpus(&corpus_path).expect("cannot read corpus");
     println!("  {} chars", corpus.len());
     let bigram = build_bigram_table(&corpus);
     println!();

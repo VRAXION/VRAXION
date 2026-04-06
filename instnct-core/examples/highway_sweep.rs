@@ -5,7 +5,7 @@
 //!
 //! Run: cargo run --example highway_sweep --release
 
-use instnct_core::{
+use instnct_core::{load_corpus, 
     evolution_step, EvolutionConfig, Int8Projection, Network, PropagationConfig, SdrTable,
     StepOutcome,
 };
@@ -13,7 +13,6 @@ use rand::rngs::StdRng;
 use rand::{Rng, SeedableRng};
 use rayon::prelude::*;
 use std::collections::HashSet;
-use std::fs;
 
 const PHI: f64 = 1.618033988749895;
 const CHARS: usize = 27;
@@ -71,17 +70,6 @@ impl HighwayStrategy {
     }
 }
 
-fn load_corpus(path: &str) -> Vec<u8> {
-    let raw = fs::read(path).expect("cannot read corpus");
-    raw.iter()
-        .filter_map(|&b| {
-            if b.is_ascii_lowercase() { Some(b - b'a') }
-            else if b.is_ascii_uppercase() { Some(b.to_ascii_lowercase() - b'a') }
-            else if b == b' ' || b == b'\n' || b == b'\t' { Some(26) }
-            else { None }
-        })
-        .collect()
-}
 
 fn build_network_with_highways(
     dims: &Dims,
@@ -293,7 +281,7 @@ fn main() {
         "S:/AI/work/VRAXION_DEV/instnct/data/traindat/fineweb_edu.traindat".to_string()
     });
     println!("Loading corpus...");
-    let corpus = load_corpus(&corpus_path);
+    let corpus = load_corpus(&corpus_path).expect("cannot read corpus");
     println!("  {} chars\n", corpus.len());
 
     // Build configs: H=256 forest topology experiment

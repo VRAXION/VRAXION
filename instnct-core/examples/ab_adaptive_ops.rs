@@ -8,11 +8,10 @@
 //!
 //! Run: cargo run --example ab_adaptive_ops --release -- <corpus-path>
 
-use instnct_core::{build_network, InitConfig, Int8Projection, Network, SdrTable};
+use instnct_core::{load_corpus, build_network, InitConfig, Int8Projection, Network, SdrTable};
 use rand::rngs::StdRng;
 use rand::{Rng, SeedableRng};
 use rayon::prelude::*;
-use std::fs;
 use std::time::Instant;
 
 const CHARS: usize = 27;
@@ -22,22 +21,6 @@ const WINDOW: usize = 200;
 
 type BigramTable = Vec<[f64; CHARS]>;
 
-fn load_corpus(path: &str) -> Vec<u8> {
-    let raw = fs::read(path).expect("cannot read corpus");
-    raw.iter()
-        .filter_map(|&b| {
-            if b.is_ascii_lowercase() {
-                Some(b - b'a')
-            } else if b.is_ascii_uppercase() {
-                Some(b.to_ascii_lowercase() - b'a')
-            } else if b == b' ' || b == b'\n' || b == b'\t' {
-                Some(26)
-            } else {
-                None
-            }
-        })
-        .collect()
-}
 
 fn build_bigram_table(corpus: &[u8]) -> BigramTable {
     let mut counts = vec![[0u64; CHARS]; CHARS];
@@ -369,7 +352,7 @@ fn main() {
     println!("  B: Adaptive (rolling accept rate picks operators, floor=1%)");
     println!("  Both use smooth cosine-bigram fitness\n");
 
-    let corpus = load_corpus(&corpus_path);
+    let corpus = load_corpus(&corpus_path).expect("cannot read corpus");
     println!("  {} chars", corpus.len());
     let bigram = build_bigram_table(&corpus);
     println!();

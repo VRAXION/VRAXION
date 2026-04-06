@@ -5,7 +5,7 @@
 //!
 //! Run: cargo run --example pocket_shared --release -- <corpus-path>
 
-use instnct_core::{
+use instnct_core::{load_corpus, 
     load_checkpoint, save_checkpoint, CheckpointMeta, Int8Projection, Network,
     PropagationConfig, SdrTable,
 };
@@ -166,17 +166,6 @@ fn bar(val: f64, max_val: f64, width: usize) -> String {
     format!("{}{}", "#".repeat(filled), ".".repeat(width - filled))
 }
 
-fn load_corpus(path: &str) -> Vec<u8> {
-    let raw = fs::read(path).expect("cannot read corpus");
-    raw.iter()
-        .filter_map(|&b| {
-            if b.is_ascii_lowercase() { Some(b - b'a') }
-            else if b.is_ascii_uppercase() { Some(b.to_ascii_lowercase() - b'a') }
-            else if b == b' ' || b == b'\n' || b == b'\t' { Some(26) }
-            else { None }
-        })
-        .collect()
-}
 
 fn edge_set(net: &Network) -> HashSet<(u16, u16)> {
     net.graph().iter_edges().map(|e| (e.source, e.target)).collect()
@@ -258,7 +247,7 @@ fn main() {
     println!("  Female: {} edges, label: {}, acc: {:.2}%\n",
         shared_female.edge_count(), meta.label, meta.accuracy * 100.0);
 
-    let corpus = load_corpus(&corpus_path);
+    let corpus = load_corpus(&corpus_path).expect("cannot read corpus");
     println!("  Corpus: {} chars\n", corpus.len());
 
     fs::create_dir_all(CHECKPOINT_DIR).ok();

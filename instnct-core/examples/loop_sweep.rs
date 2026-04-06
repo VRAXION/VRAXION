@@ -8,13 +8,12 @@
 //!
 //! Run: cargo run --example loop_sweep --release -- <corpus-path>
 
-use instnct_core::{
+use instnct_core::{load_corpus, 
     build_network, InitConfig, Int8Projection, Network, PropagationConfig, SdrTable,
 };
 use rand::rngs::StdRng;
 use rand::{Rng, SeedableRng};
 use rayon::prelude::*;
-use std::fs;
 
 const CHARS: usize = 27;
 const SDR_ACTIVE_PCT: usize = 20;
@@ -23,17 +22,6 @@ const EVAL_LEN_SHORT: usize = 100;
 const EVAL_LEN_LONG: usize = 2000;
 const LOG_INTERVAL: usize = 10_000;
 
-fn load_corpus(path: &str) -> Vec<u8> {
-    let raw = fs::read(path).expect("cannot read corpus");
-    raw.iter()
-        .filter_map(|&b| {
-            if b.is_ascii_lowercase() { Some(b - b'a') }
-            else if b.is_ascii_uppercase() { Some(b.to_ascii_lowercase() - b'a') }
-            else if b == b' ' || b == b'\n' || b == b'\t' { Some(26) }
-            else { None }
-        })
-        .collect()
-}
 
 // ---------------------------------------------------------------------------
 // Loop mutations
@@ -305,7 +293,7 @@ fn main() {
     });
     println!("=== Loop Mutation Sweep ===\n");
 
-    let corpus = load_corpus(&corpus_path);
+    let corpus = load_corpus(&corpus_path).expect("cannot read corpus");
     println!("  {} chars\n", corpus.len());
 
     let seeds = [42u64, 123, 7, 1042, 555, 8042];

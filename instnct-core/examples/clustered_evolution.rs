@@ -14,14 +14,13 @@
 //!
 //! Run: cargo run --example clustered_evolution --release -- <corpus-path>
 
-use instnct_core::{
+use instnct_core::{load_corpus, 
     build_network, evolution_step, InitConfig, Int8Projection, Network, PropagationConfig,
     SdrTable, StepOutcome,
 };
 use rand::rngs::StdRng;
 use rand::{Rng, SeedableRng};
 use rayon::prelude::*;
-use std::fs;
 use std::time::Instant;
 
 const CHARS: usize = 27;
@@ -36,17 +35,6 @@ const WORKER_NAMES: [&str; N_WORKERS] = [
 // Helpers
 // ---------------------------------------------------------------------------
 
-fn load_corpus(path: &str) -> Vec<u8> {
-    let raw = fs::read(path).expect("cannot read corpus");
-    raw.iter()
-        .filter_map(|&b| {
-            if b.is_ascii_lowercase() { Some(b - b'a') }
-            else if b.is_ascii_uppercase() { Some(b.to_ascii_lowercase() - b'a') }
-            else if b == b' ' || b == b'\n' || b == b'\t' { Some(26) }
-            else { None }
-        })
-        .collect()
-}
 
 fn sample_eval_offset(corpus_len: usize, len: usize, rng: &mut StdRng) -> Option<usize> {
     if corpus_len <= len { return None; }
@@ -289,7 +277,7 @@ fn main() {
         "S:/AI/work/VRAXION_DEV/instnct/data/traindat/fineweb_edu.traindat".to_string()
     });
     println!("Loading corpus...");
-    let corpus = load_corpus(&corpus_path);
+    let corpus = load_corpus(&corpus_path).expect("cannot read corpus");
     println!("  {} chars\n", corpus.len());
 
     let sdr = SdrTable::new(CHARS, init.neuron_count, init.input_end(), SDR_ACTIVE_PCT,

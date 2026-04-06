@@ -3,11 +3,10 @@
 //!
 //! Run: cargo run --example butterfly_knee --release -- <corpus-path>
 
-use instnct_core::{InitConfig, Int8Projection, Network, SdrTable};
+use instnct_core::{load_corpus, InitConfig, Int8Projection, Network, SdrTable};
 use rand::rngs::StdRng;
 use rand::{Rng, SeedableRng};
 use rayon::prelude::*;
-use std::fs;
 
 const CHARS: usize = 27;
 const SDR_ACTIVE_PCT: usize = 20;
@@ -49,17 +48,6 @@ fn constrained_rewire(net: &mut Network, max_bits: u32, rng: &mut impl Rng) -> b
     false
 }
 
-fn load_corpus(path: &str) -> Vec<u8> {
-    let raw = fs::read(path).expect("cannot read corpus");
-    raw.iter()
-        .filter_map(|&b| {
-            if b.is_ascii_lowercase() { Some(b - b'a') }
-            else if b.is_ascii_uppercase() { Some(b.to_ascii_lowercase() - b'a') }
-            else if b == b' ' || b == b'\n' || b == b'\t' { Some(26) }
-            else { None }
-        })
-        .collect()
-}
 
 fn sample_eval_offset(corpus_len: usize, len: usize, rng: &mut StdRng) -> Option<usize> {
     if corpus_len <= len { return None; }
@@ -187,7 +175,7 @@ fn main() {
         "S:/AI/work/VRAXION_DEV/instnct/data/traindat/fineweb_edu.traindat".to_string()
     });
     println!("Loading corpus...");
-    let corpus = load_corpus(&corpus_path);
+    let corpus = load_corpus(&corpus_path).expect("cannot read corpus");
     println!("  {} chars\n", corpus.len());
 
     let bit_limits: Vec<u32> = vec![1, 2, 3, 4, 5, 6, 8]; // 8 = random

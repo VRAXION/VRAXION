@@ -7,7 +7,7 @@
 //!
 //! Run: cargo run --example pocket_pair --release -- <corpus-path>
 
-use instnct_core::{
+use instnct_core::{load_corpus, 
     save_checkpoint, CheckpointMeta, Int8Projection, Network, PropagationConfig, SdrTable,
 };
 use rand::rngs::StdRng;
@@ -198,17 +198,6 @@ struct Unit {
     total_tried: u32,
 }
 
-fn load_corpus(path: &str) -> Vec<u8> {
-    let raw = fs::read(path).expect("cannot read corpus");
-    raw.iter()
-        .filter_map(|&b| {
-            if b.is_ascii_lowercase() { Some(b - b'a') }
-            else if b.is_ascii_uppercase() { Some(b.to_ascii_lowercase() - b'a') }
-            else if b == b' ' || b == b'\n' || b == b'\t' { Some(26) }
-            else { None }
-        })
-        .collect()
-}
 
 fn evolve_unit(unit: &mut Unit, corpus: &[u8], prop: &PropagationConfig) {
     let mut last_log_accepted = 0u32;
@@ -326,7 +315,7 @@ fn main() {
     println!();
 
     println!("Loading corpus...");
-    let corpus = load_corpus(&corpus_path);
+    let corpus = load_corpus(&corpus_path).expect("cannot read corpus");
     println!("  {} chars\n", corpus.len());
 
     fs::create_dir_all(CHECKPOINT_DIR).ok();
