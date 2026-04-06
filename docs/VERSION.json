@@ -3,6 +3,7 @@
   "current_channel": "stable",
   "next_milestone": "v5.0.0 Public Beta",
   "next_channel": "preparation",
+  "internal_code_path": "instnct/",
   "architecture_line": "INSTNCT",
   "rust_surface": "Rust Implementation Surface"
 }
