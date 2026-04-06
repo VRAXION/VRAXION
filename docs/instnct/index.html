@@ -18,8 +18,11 @@
   <div class="site-shell">
     <header class="site-header">
       <div class="brand">
-        <div class="eyebrow">Public architecture explainer</div>
-        <a class="brand-title" href="../">Vraxion</a>
+        <div class="brand-mark" aria-hidden="true"></div>
+        <div class="brand-copy">
+          <div class="eyebrow">Public architecture explainer</div>
+          <a class="brand-title" href="../">Vraxion</a>
+        </div>
       </div>
       <nav class="site-nav" aria-label="Primary">
         <a href="../">Home</a>
@@ -35,169 +38,149 @@
       <section class="hero">
         <div class="hero-copy">
           <div class="eyebrow">Architecture line</div>
-          <h1 class="hero-title compact">INSTNCT</h1>
+          <h1 class="hero-title compact">INSTNCT treats topology as part of the learnable object.</h1>
           <p class="hero-lede">
             INSTNCT is Vraxion's current architecture line: a gradient-free self-wiring system that changes its own directed graph instead of learning inside a fixed layer stack.
           </p>
           <p class="hero-lede">
-            The public architecture claim is narrow and explicit: fixed I/O surfaces, a sparse signed recurrent graph, persistent state across ticks, and mutation-selection training.
+            The public architecture claim is intentionally narrow: explicit I/O boundaries, a sparse signed recurrent graph, persistent state across ticks, and mutation-selection training.
           </p>
+          <div class="hero-actions">
+            <a class="button-link" href="https://github.com/VRAXION/VRAXION/wiki/INSTNCT-Architecture">Open the full architecture page</a>
+            <a class="button-link-ghost" href="https://github.com/VRAXION/VRAXION/wiki/Theory-of-Thought">Read the theory</a>
+          </div>
         </div>
-        <div class="hero-media">
-          <div class="hero-frame page-image">
-            <img src="../assets/vraxion-instnct-spiral.png" alt="INSTNCT spiral mark">
+        <aside class="hero-visual">
+          <img src="../assets/vraxion-instnct-spiral.png" alt="INSTNCT spiral mark">
+          <div class="hero-note">
+            <div class="mini-label">Why this matters</div>
+            <p>Most neural systems keep topology fixed and learn within it. INSTNCT moves the learnable burden into the graph itself while still keeping the public boundary explicit.</p>
+          </div>
+        </aside>
+      </section>
+
+      <section class="section-block">
+        <div class="section-head">
+          <div>
+            <div class="section-label">How the line is built</div>
+            <h2 class="section-title">Fixed boundary, learnable substrate, persistent runtime.</h2>
+          </div>
+          <p class="section-intro">The line is best understood as an architecture essay, not a list of knobs.</p>
+        </div>
+        <div class="feature-grid">
+          <article class="feature-block">
+            <h3>Boundary surfaces stay explicit</h3>
+            <p>Projection-style I/O keeps the public interface readable and comparable even while the hidden computation changes aggressively.</p>
+          </article>
+          <article class="feature-block">
+            <h3>The hidden graph is the main search object</h3>
+            <p>Evolution rewires sparse routing and compact neuron roles instead of only nudging dense internal weights.</p>
+          </article>
+          <article class="feature-block">
+            <h3>Runtime state persists across ticks</h3>
+            <p>Charge and state survive long enough for computation to unfold across a recurrent substrate rather than collapsing into one pass.</p>
+          </article>
+          <article class="feature-block">
+            <h3>Public status stays split</h3>
+            <p>Shipped defaults, validated alternatives, and still-experimental branches do not get mixed together in the public story.</p>
+          </article>
+        </div>
+      </section>
+
+      <section class="section-block">
+        <div class="section-head">
+          <div>
+            <div class="section-label">Main architectural fork</div>
+            <h2 class="section-title">One shipped line, one serious non-default alternative.</h2>
+          </div>
+          <p class="section-intro">The key comparison is not a zoo of equal options. It is the default line against the strongest validated alternative.</p>
+        </div>
+        <div class="comparison-shell">
+          <div class="comparison-grid">
+            <article class="comparison-card">
+              <div class="mini-label">Shipped current mainline</div>
+              <h3>Projection-style boundary</h3>
+              <pre class="diagram">input -> input_projection -> hidden signed graph -> output_projection -> output
+                persistent charge and state across ticks</pre>
+            </article>
+            <article class="comparison-card">
+              <div class="mini-label">Strongest validated alternative</div>
+              <h3>Tentacle I/O</h3>
+              <pre class="diagram">input -> first V neurons -> hidden graph -> last V neurons -> output
+         direct boundary inject            terminal charge as logits</pre>
+            </article>
+          </div>
+          <div class="table-shell">
+            <table>
+              <thead>
+                <tr>
+                  <th>Aspect</th>
+                  <th>Shipped line</th>
+                  <th>Validated alternative</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Boundary handling</td>
+                  <td>Fixed projection-style input and output interfaces.</td>
+                  <td>Boundary neurons act directly as the I/O surface.</td>
+                </tr>
+                <tr>
+                  <td>What stays fixed</td>
+                  <td>Boundary interface shape remains explicit.</td>
+                  <td>Boundary placement stays fixed, but routing becomes more direct.</td>
+                </tr>
+                <tr>
+                  <td>What is learnable</td>
+                  <td>Hidden graph plus compact neuron controls.</td>
+                  <td>Hidden graph plus routing behavior closer to the boundary.</td>
+                </tr>
+                <tr>
+                  <td>Current status</td>
+                  <td>Canonical line.</td>
+                  <td>Strongest validated alternative, not the default.</td>
+                </tr>
+              </tbody>
+            </table>
           </div>
         </div>
       </section>
 
-      <section class="section">
-        <div class="section-head">
-          <h2>What makes INSTNCT different</h2>
-          <p>The learnable object is the hidden graph itself, not only weights inside a frozen topology.</p>
-        </div>
-        <div class="card-grid">
-          <article class="page-card">
-            <h3>Self-wiring graph</h3>
-            <p>Topology is part of the search space. Evolution changes sparse routing instead of only tuning dense internal weights.</p>
-          </article>
-          <article class="page-card">
-            <h3>Persistent runtime state</h3>
-            <p>Charge and state survive across ticks, so computation unfolds over time instead of collapsing into a single pass.</p>
-          </article>
-          <article class="page-card">
-            <h3>Compact neuron controls</h3>
-            <p>Controls such as <code>theta</code>, <code>channel</code>, and polarity shape selectivity and timing without exploding the search space.</p>
-          </article>
-          <article class="page-card">
-            <h3>Explicit public boundary</h3>
-            <p>Shipped defaults, validated alternatives, and still-experimental lines remain distinct in the public story.</p>
-          </article>
+      <section class="section-block">
+        <div class="editorial-split">
+          <div class="section-band body-copy">
+            <div class="section-label">Fixed versus learnable</div>
+            <p>The architecture rule stays simple: keep the public boundary explicit and let the recurrent substrate carry the learnable burden.</p>
+            <ul>
+              <li>Input and output interfaces stay explicit.</li>
+              <li>The hidden graph and compact neuron controls remain learnable.</li>
+              <li>Charge and state are runtime dynamics, not just stored parameters.</li>
+            </ul>
+          </div>
+          <aside class="hero-visual">
+            <img src="../assets/instnct-at-a-glance-core.png" alt="INSTNCT core anatomy diagram">
+          </aside>
         </div>
       </section>
 
-      <section class="section">
-        <div class="section-head">
-          <h2>Shipped line vs validated alternative</h2>
-          <p>The main fork is not many equal branches. It is one shipped line and one serious non-default alternative.</p>
-        </div>
-        <div class="card-grid">
-          <article class="page-card">
-            <h3>Shipped current mainline</h3>
-            <pre class="text-diagram">input -> input_projection -> hidden signed graph -> output_projection -> output
-                persistent charge and state across ticks</pre>
-          </article>
-          <article class="page-card">
-            <h3>Strongest validated alternative</h3>
-            <pre class="text-diagram">input -> first V neurons -> hidden graph -> last V neurons -> output
-         direct boundary inject            terminal charge as logits</pre>
-          </article>
-        </div>
-        <div class="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>Aspect</th>
-                <th>Shipped line</th>
-                <th>Validated alternative</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td>Boundary handling</td>
-                <td>Fixed projection-style input and output interfaces.</td>
-                <td>Boundary neurons act directly as the I/O surface.</td>
-              </tr>
-              <tr>
-                <td>What stays fixed</td>
-                <td>Boundary interface shape remains explicit.</td>
-                <td>Boundary placement stays fixed, but routing becomes more direct.</td>
-              </tr>
-              <tr>
-                <td>What is learnable</td>
-                <td>Hidden graph plus compact neuron controls.</td>
-                <td>Hidden graph plus routing behavior closer to the boundary.</td>
-              </tr>
-              <tr>
-                <td>Current status</td>
-                <td>Canonical line.</td>
-                <td>Strongest validated alternative, not the default.</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </section>
-
-      <section class="section">
-        <div class="section-head">
-          <h2>Fixed vs learnable</h2>
-          <p>The architecture rule stays simple: keep the recurrent substrate learnable, and keep the public boundary explicit.</p>
-        </div>
-        <div class="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>Component</th>
-                <th>Status</th>
-                <th>Why it matters</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td>Input interface</td>
-                <td>Fixed</td>
-                <td>Public boundary stays readable and comparable across experiments.</td>
-              </tr>
-              <tr>
-                <td>Output interface</td>
-                <td>Fixed</td>
-                <td>Readout remains explicit instead of dissolving into the hidden graph.</td>
-              </tr>
-              <tr>
-                <td>Hidden graph / mask</td>
-                <td>Learnable</td>
-                <td>Core object that mutation-selection changes.</td>
-              </tr>
-              <tr>
-                <td><code>theta</code>, <code>channel</code>, polarity</td>
-                <td>Learnable</td>
-                <td>Compact neuron roles change timing, thresholding, and sign behavior.</td>
-              </tr>
-              <tr>
-                <td>Charge / state</td>
-                <td>Runtime state</td>
-                <td>Computation persists across ticks rather than acting like a one-pass feedforward cascade.</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-        <div class="page-image">
-          <img src="../assets/instnct-at-a-glance-core.png" alt="INSTNCT core anatomy diagram">
-        </div>
-      </section>
-
-      <section class="section">
-        <div class="section-head">
-          <h2>Theory capsule</h2>
-          <p>Architecture and theory stay connected, but not collapsed into each other.</p>
-        </div>
-        <div class="split-grid">
-          <article class="quote-card">
-            <blockquote>Inference emerges as the fixed point of destructive interference.</blockquote>
-            <p>Signal enters a recurrent substrate, incompatible paths cancel, and the surviving residue is read out as inference.</p>
-          </article>
-          <article class="cta-panel">
-            <h3>Read deeper</h3>
-            <p>Theory, chronology, and retained proof live on separate surfaces so the architecture page can stay architecture-first.</p>
-            <a class="cta-link" href="https://github.com/VRAXION/VRAXION/wiki/INSTNCT-Architecture">Wiki architecture page</a>
-            <a class="cta-link" href="https://github.com/VRAXION/VRAXION/wiki/Theory-of-Thought">Theory of Thought</a>
-          </article>
+      <section class="section-block">
+        <div class="cta-band">
+          <div>
+            <div class="section-label">Theory capsule</div>
+            <h3>Inference emerges as the fixed point of destructive interference.</h3>
+            <p>Signal enters a recurrent substrate, incompatible paths suppress one another, and the surviving residue is read out as inference. The theory explains the line, but it does not replace architecture status or proof.</p>
+          </div>
+          <div class="cta-actions">
+            <a class="button-link" href="https://github.com/VRAXION/VRAXION/wiki/INSTNCT-Architecture">Wiki architecture</a>
+            <a class="button-link-ghost" href="https://github.com/VRAXION/VRAXION/wiki/Theory-of-Thought">Theory of Thought</a>
+          </div>
         </div>
       </section>
     </main>
 
     <footer class="site-footer">
       <div class="footer-copy">
-        INSTNCT is the public implementation line. Theory, chronology, and archived evidence remain deeper wiki surfaces.
+        INSTNCT is the public implementation line. The wiki remains the authoritative place for theory, chronology, and retained proof.
       </div>
       <div class="footer-links">
         <a href="../research/">Research</a>

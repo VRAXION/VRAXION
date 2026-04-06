@@ -18,8 +18,11 @@
   <div class="site-shell">
     <header class="site-header">
       <div class="brand">
-        <div class="eyebrow">Public research snapshot</div>
-        <a class="brand-title" href="../">Vraxion</a>
+        <div class="brand-mark" aria-hidden="true"></div>
+        <div class="brand-copy">
+          <div class="eyebrow">Live research frame</div>
+          <a class="brand-title" href="../">Vraxion</a>
+        </div>
       </div>
       <nav class="site-nav" aria-label="Primary">
         <a href="../">Home</a>
@@ -35,140 +38,125 @@
       <section class="hero">
         <div class="hero-copy">
           <div class="eyebrow">Research process and current gates</div>
-          <h1 class="hero-title compact">Research</h1>
+          <h1 class="hero-title compact">Research is where claims get earned.</h1>
           <p class="hero-lede">
             This surface is the public research snapshot for Vraxion: what the project is trying to prove now, how claims are judged, and which recent turns still matter.
           </p>
           <p class="hero-lede">
-            It is not the full archive. The deep chronology, retained reversals, and protocol residue stay on the wiki's <a href="https://github.com/VRAXION/VRAXION/wiki/Timeline-Archive">Research Process &amp; Archive</a>.
+            It is not the full archive. The deep chronology, reversals, and retained residue stay in the wiki's Research Process &amp; Archive.
           </p>
-        </div>
-        <div class="hero-media">
-          <div class="quote-card">
-            <h3>Current frame</h3>
-            <p>The stable public release is still <code data-version-field="current_release">v4.2.0</code>. The biggest unresolved pressure is no longer basic trainability, but whether language evaluation, seed variance, and context-dependent task learning survive repeated adversarial reruns.</p>
+          <div class="hero-actions">
+            <a class="button-link" href="https://github.com/VRAXION/VRAXION/wiki/Timeline-Archive">Open the archive</a>
+            <a class="button-link-ghost" href="../rust/">See the Rust frontier</a>
           </div>
         </div>
+        <aside class="hero-visual">
+          <div class="hero-note">
+            <div class="mini-label">Current frame</div>
+            <p><span data-version-field="current_release">v4.2.0</span> is still the stable public release. The biggest unresolved pressure is no longer basic trainability, but whether language evaluation, seed variance, and context-dependent task learning survive repeated adversarial reruns.</p>
+          </div>
+        </aside>
       </section>
 
-      <section class="section">
+      <section class="section-block">
         <div class="section-head">
-          <h2>How claims are judged</h2>
-          <p>Public discipline matters as much as raw result headlines.</p>
+          <div>
+            <div class="section-label">Claim discipline</div>
+            <h2 class="section-title">The public story is governed by one contract.</h2>
+          </div>
+          <p class="section-intro">The same result can be interesting, reproducible, or canonical. Those are not the same thing.</p>
         </div>
-        <div class="card-grid">
-          <article class="page-card">
-            <h3>Current mainline</h3>
+        <div class="focus-grid">
+          <article class="focus-panel">
+            <strong>Current mainline</strong>
             <p>Only what matches shipped code on <code>main</code> counts as default.</p>
           </article>
-          <article class="page-card">
-            <h3>Validated finding</h3>
-            <p>Reproducible result that matters, but has not been promoted into the canonical path.</p>
+          <article class="focus-panel">
+            <strong>Validated finding</strong>
+            <p>Reproducible result that matters, but has not yet been promoted into the canonical path.</p>
           </article>
-          <article class="page-card">
-            <h3>Experimental branch</h3>
-            <p>Active direction that should not be described as a default.</p>
-          </article>
-          <article class="page-card">
-            <h3>Evidence minimum</h3>
-            <p><code>run_cmd.txt</code>, <code>env.json</code>, <code>metrics.json</code>, and <code>summary.md</code> remain the minimum bundle behind meaningful claims.</p>
+          <article class="focus-panel">
+            <strong>Experimental branch</strong>
+            <p>Active direction that may be promising, but should not be described as a default.</p>
           </article>
         </div>
       </section>
 
-      <section class="section">
+      <section class="section-block">
         <div class="section-head">
-          <h2>Current open gates</h2>
-          <p>These are the gates that still separate promising lines from stronger public promotion.</p>
+          <div>
+            <div class="section-label">What matters now</div>
+            <h2 class="section-title">Three gates still separate momentum from stronger proof.</h2>
+          </div>
+          <p class="section-intro">The live research problem is no longer "can the line do anything at all?" It is whether the strongest signals survive harder discipline.</p>
         </div>
-        <div class="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>Gate</th>
-                <th>Why it is still open</th>
-                <th>Current pressure</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td>Language robustness</td>
-                <td>Single strong runs are not enough if the band collapses under reruns or multi-window evaluation.</td>
-                <td>Repeated adversarial reruns, cleaner eval contracts, and clearer public metrics.</td>
-              </tr>
-              <tr>
-                <td>Seed stability</td>
-                <td>The landscape is visibly rugged, which means single-seed stories overstate certainty.</td>
-                <td>Seed audits, reranking, and multi-window discipline.</td>
-              </tr>
-              <tr>
-                <td>Context-dependent task learning</td>
-                <td>The architecture claim is stronger if task memory survives outside toy or fragile settings.</td>
-                <td>Windowed input injection, associative memory, and stronger nontrivial task eval.</td>
-              </tr>
-              <tr>
-                <td>Rust search ceiling</td>
-                <td>The tested 1+1 ES setup still converges into a stable band instead of a durable breakthrough.</td>
-                <td>Depth lines, different exploration regimes, and recipe parity.</td>
-              </tr>
-            </tbody>
-          </table>
+        <div class="feature-grid">
+          <article class="feature-block">
+            <h3>Language robustness</h3>
+            <p>Single strong runs do not count for much if the band collapses under reruns or multi-window evaluation.</p>
+          </article>
+          <article class="feature-block">
+            <h3>Seed stability</h3>
+            <p>The landscape is rugged enough that single-seed stories overstate certainty.</p>
+          </article>
+          <article class="feature-block">
+            <h3>Context-dependent task learning</h3>
+            <p>The architecture claim gets stronger only if task memory survives outside toy or fragile settings.</p>
+          </article>
+          <article class="feature-block">
+            <h3>Rust search ceiling</h3>
+            <p>The tested 1+1 ES setup still converges into a stable band instead of a durable breakthrough.</p>
+          </article>
         </div>
       </section>
 
-      <section class="section">
+      <section class="section-block">
         <div class="section-head">
-          <h2>Milestone rail</h2>
-          <p>Latest-first turns that still shape the public story.</p>
+          <div>
+            <div class="section-label">Milestone rail</div>
+            <h2 class="section-title">Latest-first turns that still shape the current public line.</h2>
+          </div>
+          <p class="section-intro">This is the short rail. The full chronology stays in the archive.</p>
         </div>
-        <div class="timeline">
-          <article class="timeline-item">
-            <div class="timeline-kicker">2026-04-06</div>
+        <div class="rail">
+          <article class="rail-item">
+            <div class="rail-kicker">2026-04-06</div>
             <p>Hyperparameter exhaustion clarified that the remaining Rust problem looks more like a search-regime limit than a missing tuning knob.</p>
           </article>
-          <article class="timeline-item">
-            <div class="timeline-kicker">2026-04-02 to 2026-04-05</div>
+          <article class="rail-item">
+            <div class="rail-kicker">2026-04-02 to 2026-04-05</div>
             <p>Rust v5 beta became a real evolution substrate with snapshots, mutation API, persistence, CSR acceleration, and richer seed evidence.</p>
           </article>
-          <article class="timeline-item">
-            <div class="timeline-kicker">2026-03-27 to 2026-03-29</div>
+          <article class="rail-item">
+            <div class="rail-kicker">2026-03-27 to 2026-03-29</div>
             <p>Tentacle I/O, SDR input, compact channel results, and architecture compressions clarified the current public line.</p>
           </article>
-          <article class="timeline-item">
-            <div class="timeline-kicker">2026-03-22</div>
+          <article class="rail-item">
+            <div class="rail-kicker">2026-03-22</div>
             <p>Canon consolidation narrowed the public story around English, evidence discipline, and cleaner architecture boundaries.</p>
           </article>
         </div>
       </section>
 
-      <section class="section">
-        <div class="section-head">
-          <h2>Read deeper</h2>
-          <p>The full archive stays intentionally out of the website.</p>
-        </div>
-        <div class="cta-grid">
-          <article class="cta-panel">
-            <h3>Research Process &amp; Archive</h3>
-            <p>Protocol, chronology, reversals, and retained carry-over findings.</p>
-            <a class="cta-link" href="https://github.com/VRAXION/VRAXION/wiki/Timeline-Archive">Open archive</a>
-          </article>
-          <article class="cta-panel">
-            <h3>INSTNCT Architecture</h3>
-            <p>Implementation-facing architecture explainer for the current line.</p>
-            <a class="cta-link" href="../instnct/">Open architecture</a>
-          </article>
-          <article class="cta-panel">
-            <h3>Rust surface</h3>
-            <p>Detailed Rust validation and the current implementation frontier.</p>
-            <a class="cta-link" href="../rust/">Open Rust surface</a>
-          </article>
+      <section class="section-block">
+        <div class="cta-band">
+          <div>
+            <div class="section-label">Go deeper</div>
+            <h3>The website frames the research. The wiki keeps the canon record.</h3>
+            <p>Use the full archive for protocol, chronology, reversals, retained carry-over findings, and cross-surface context.</p>
+          </div>
+          <div class="cta-actions">
+            <a class="button-link" href="https://github.com/VRAXION/VRAXION/wiki/Timeline-Archive">Open Research Process &amp; Archive</a>
+            <a class="button-link-ghost" href="../instnct/">See INSTNCT</a>
+            <a class="button-link-ghost" href="../rust/">See Rust</a>
+          </div>
         </div>
       </section>
     </main>
 
     <footer class="site-footer">
       <div class="footer-copy">
-        Research on the website stays condensed. The wiki keeps the canon archive, chronology, and rawer residue.
+        Research on the website stays compressed by design. The deep chronology and retained archive remain in the wiki.
       </div>
       <div class="footer-links">
         <a href="https://github.com/VRAXION/VRAXION/wiki/Timeline-Archive">Archive</a>
