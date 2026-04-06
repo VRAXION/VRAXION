@@ -646,6 +646,57 @@ impl Network {
         added
     }
 
+    /// Add a complete directed loop of `len` random neurons as a single atomic mutation.
+    ///
+    /// A loop of length N creates N edges: A→B→C→...→A.
+    /// All edges must be new (no duplicates) and no self-loops.
+    /// If any edge collides, the entire loop is aborted (returns `false`).
+    ///
+    /// Loop mutations are valuable for sparse/empty networks because they create
+    /// recurrent circuits in one step — a single `add_edge` cannot form a cycle.
+    ///
+    /// `len` is clamped to `[2, neuron_count]`. Returns `true` if all edges were added.
+    pub fn mutate_add_loop(&mut self, rng: &mut impl Rng, len: usize) -> bool {
+        let neuron_count = self.graph.neuron_count();
+        if neuron_count < 2 || len < 2 {
+            return false;
+        }
+        let len = len.min(neuron_count);
+
+        // Pick `len` distinct random neurons
+        let mut nodes = Vec::with_capacity(len);
+        for _ in 0..len * 10 {
+            let n = rng.gen_range(0..neuron_count) as u16;
+            if !nodes.contains(&n) {
+                nodes.push(n);
+            }
+            if nodes.len() == len {
+                break;
+            }
+        }
+        if nodes.len() < len {
+            return false; // couldn't find enough distinct neurons
+        }
+
+        // Check all edges are free
+        for i in 0..len {
+            let src = nodes[i];
+            let tgt = nodes[(i + 1) % len];
+            if self.graph.has_edge(src, tgt) {
+                return false; // collision, abort
+            }
+        }
+
+        // Commit all edges atomically
+        for i in 0..len {
+            let src = nodes[i];
+            let tgt = nodes[(i + 1) % len];
+            self.graph.add_edge(src, tgt);
+        }
+        self.csr_dirty = true;
+        true
+    }
+
     /// Mutate one random neuron's threshold to a random value in `[0, 15]`.
     ///
     /// Returns `true` if the value changed, `false` if the random pick

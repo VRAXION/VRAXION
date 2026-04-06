@@ -114,7 +114,7 @@ These commands verify:
 
 ## License
 
-- Noncommercial: [LICENSE](LICENSE)
+- Noncommercial: [LICENSE](https://github.com/VRAXION/VRAXION/blob/main/LICENSE)
 - Commercial terms: [legal/LEGAL.md](legal/LEGAL.md)
 - Brand and trademark notice: [legal/LEGAL.md](legal/LEGAL.md)
 - Citation: [CITATION.cff](CITATION.cff)

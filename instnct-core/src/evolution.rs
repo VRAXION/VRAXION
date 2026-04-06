@@ -93,20 +93,21 @@ where
     let edges_before_mutation = net.edge_count();
     let net_snapshot = net.save_state();
 
-    // Mutate: 8-op topology schedule (95%) + projection weight (5%)
-    // W mutation reduced from 10% to 5%: adaptive ops test showed 0% accept rate
-    // across all seeds — W mutations almost never improve fitness.
+    // Mutate: topology (90%) + loop (5%) + projection weight (5%)
+    // Loop mutations create recurrent circuits atomically — critical for sparse networks.
     let roll = mutation_rng.gen_range(0..100u32);
     let mut weight_backup: Option<WeightBackup> = None;
     let mutated = match roll {
-        0..25 => net.mutate_add_edge(mutation_rng),     // 25% topology growth
-        25..40 => net.mutate_remove_edge(mutation_rng),  // 15% topology pruning
-        40..50 => net.mutate_rewire(mutation_rng),       // 10% rewire existing edge
-        50..65 => net.mutate_reverse(mutation_rng),      // 15% flip edge direction
-        65..72 => net.mutate_mirror(mutation_rng),       // 7% add reverse of existing
-        72..80 => net.mutate_enhance(mutation_rng),      // 8% connect to high-degree neuron
-        80..85 => net.mutate_theta(mutation_rng),        // 5% threshold perturbation
-        85..95 => net.mutate_channel(mutation_rng),      // 10% phase channel perturbation
+        0..22 => net.mutate_add_edge(mutation_rng),     // 22% topology growth
+        22..35 => net.mutate_remove_edge(mutation_rng),  // 13% topology pruning
+        35..44 => net.mutate_rewire(mutation_rng),       // 9% rewire existing edge
+        44..57 => net.mutate_reverse(mutation_rng),      // 13% flip edge direction
+        57..63 => net.mutate_mirror(mutation_rng),       // 6% add reverse of existing
+        63..70 => net.mutate_enhance(mutation_rng),      // 7% connect to high-degree neuron
+        70..75 => net.mutate_theta(mutation_rng),        // 5% threshold perturbation
+        75..85 => net.mutate_channel(mutation_rng),      // 10% phase channel perturbation
+        85..90 => net.mutate_add_loop(mutation_rng, 2),  // 5% loop-2 (bidirectional pair)
+        90..95 => net.mutate_add_loop(mutation_rng, 3),  // 5% loop-3 (triangle circuit)
         _ => {                                           // 5% projection weight perturbation
             weight_backup = Some(projection.mutate_one(mutation_rng));
             true
@@ -200,18 +201,20 @@ where
         net.restore_state(&parent_snapshot);
         *projection = parent_projection.clone();
 
-        // Mutate (same 95/5 schedule as evolution_step)
+        // Mutate (same 90/5/5 schedule as evolution_step)
         let roll = mutation_rng.gen_range(0..100u32);
         let mut _weight_backup: Option<WeightBackup> = None;
         let mutated = match roll {
-            0..25 => net.mutate_add_edge(mutation_rng),
-            25..40 => net.mutate_remove_edge(mutation_rng),
-            40..50 => net.mutate_rewire(mutation_rng),
-            50..65 => net.mutate_reverse(mutation_rng),
-            65..72 => net.mutate_mirror(mutation_rng),
-            72..80 => net.mutate_enhance(mutation_rng),
-            80..85 => net.mutate_theta(mutation_rng),
-            85..95 => net.mutate_channel(mutation_rng),
+            0..22 => net.mutate_add_edge(mutation_rng),
+            22..35 => net.mutate_remove_edge(mutation_rng),
+            35..44 => net.mutate_rewire(mutation_rng),
+            44..57 => net.mutate_reverse(mutation_rng),
+            57..63 => net.mutate_mirror(mutation_rng),
+            63..70 => net.mutate_enhance(mutation_rng),
+            70..75 => net.mutate_theta(mutation_rng),
+            75..85 => net.mutate_channel(mutation_rng),
+            85..90 => net.mutate_add_loop(mutation_rng, 2),
+            90..95 => net.mutate_add_loop(mutation_rng, 3),
             _ => {
                 _weight_backup = Some(projection.mutate_one(mutation_rng));
                 true

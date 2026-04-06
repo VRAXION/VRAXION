@@ -17,7 +17,10 @@
 // changing downstream import paths.
 
 mod checkpoint;
+mod corpus;
+mod eval;
 mod evolution;
+mod fitness;
 mod init;
 mod network;
 mod parameters;
@@ -34,6 +37,15 @@ mod topology;
 
 #[doc(inline)]
 pub use checkpoint::{load_checkpoint, save_checkpoint, CheckpointMeta};
+
+#[doc(inline)]
+pub use corpus::{build_bigram_table, load_corpus};
+
+#[doc(inline)]
+pub use eval::{eval_accuracy, eval_smooth};
+
+#[doc(inline)]
+pub use fitness::{cosine_similarity, cosine_to_onehot, softmax};
 
 #[doc(inline)]
 pub use evolution::{evolution_step, evolution_step_jackpot, EvolutionConfig, StepOutcome};

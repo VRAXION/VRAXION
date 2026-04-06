@@ -71,17 +71,6 @@ fn cosine_27(a: &[f64; CHARS], b: &[f64; CHARS]) -> f64 {
     if d < 1e-12 { 0.0 } else { dot / d }
 }
 
-/// Build empty pocket (0 edges, random params only).
-fn build_empty_pocket(rng: &mut StdRng) -> Network {
-    let mut net = Network::new(H);
-    for i in 0..H {
-        net.threshold_mut()[i] = rng.gen_range(0..=7u32);
-        net.channel_mut()[i] = rng.gen_range(1..=8u8);
-        if rng.gen_ratio(1, 10) { net.polarity_mut()[i] = -1; }
-    }
-    net
-}
-
 /// Build prefilled pocket (chain-50 + 5% density + random params).
 fn build_prefilled_pocket(rng: &mut StdRng) -> Network {
     let mut net = Network::new(H);
@@ -110,6 +99,61 @@ fn build_prefilled_pocket(rng: &mut StdRng) -> Network {
         if rng.gen_ratio(1, 10) { net.polarity_mut()[i] = -1; }
     }
     net
+}
+
+/// Adaptive batch crystallize: remove edge batches, keep if accuracy holds.
+#[allow(clippy::too_many_arguments)]
+fn crystallize_pocket(
+    female: &mut Network, male: &mut Network, proj: &Int8Projection,
+    corpus: &[u8], sdr: &SdrTable, prop: &PropagationConfig,
+    bigram: &BigramTable, rng: &mut StdRng, target_pocket_is_male: bool,
+) -> usize {
+    let net = if target_pocket_is_male { &*male } else { &*female };
+    let edges_before = net.edge_count();
+    if edges_before < 20 { return 0; }
+
+    let mut removal_pct = 0.30f64;
+    let mut removed_total = 0usize;
+
+    for _round in 0..12 {
+        let target = if target_pocket_is_male { &*male } else { &*female };
+        let edges_now = target.edge_count();
+        if edges_now < 20 { break; }
+
+        // Baseline
+        let snap = rng.clone();
+        let baseline = eval_smooth_chain(female, male, proj, corpus, 200, rng, sdr, prop, bigram);
+        *rng = snap;
+
+        // Pick random batch to remove
+        let batch_size = ((edges_now as f64 * removal_pct) as usize).max(1);
+        let target_mut = if target_pocket_is_male { &mut *male } else { &mut *female };
+        let all_edges: Vec<_> = target_mut.graph().iter_edges().collect();
+        let mut indices: Vec<usize> = (0..all_edges.len()).collect();
+        for i in (1..indices.len()).rev() {
+            let j = rng.gen_range(0..=i);
+            indices.swap(i, j);
+        }
+        let batch: Vec<(u16, u16)> = indices[..batch_size.min(indices.len())]
+            .iter().map(|&i| (all_edges[i].source, all_edges[i].target)).collect();
+
+        for &(s, t) in &batch { target_mut.graph_mut().remove_edge(s, t); }
+
+        let snap2 = rng.clone();
+        let after = eval_smooth_chain(female, male, proj, corpus, 200, rng, sdr, prop, bigram);
+        *rng = snap2;
+
+        let target_check = if target_pocket_is_male { &mut *male } else { &mut *female };
+        if after >= baseline - 0.01 {
+            removal_pct = (removal_pct * 1.5).min(0.70);
+            removed_total += batch.len();
+        } else {
+            for &(s, t) in &batch { target_check.graph_mut().add_edge(s, t); }
+            removal_pct /= 2.0;
+            if removal_pct < 0.03 { break; }
+        }
+    }
+    removed_total
 }
 
 fn charge_transfer(female: &Network) -> Vec<i32> {
@@ -170,25 +214,30 @@ fn eval_accuracy_chain(
 fn mutate_pocket(net: &mut Network, proj: &mut Int8Projection, is_male: bool, rng: &mut impl Rng) -> bool {
     let roll = rng.gen_range(0..100u32);
     match roll {
-        0..28 => net.mutate_add_edge(rng),
-        28..44 => net.mutate_remove_edge(rng),
-        44..55 => net.mutate_rewire(rng),
-        55..72 => net.mutate_reverse(rng),
-        72..80 => net.mutate_mirror(rng),
-        80..85 => net.mutate_enhance(rng),
-        85..90 => net.mutate_theta(rng),
-        90..97 => net.mutate_channel(rng),
+        0..22 => net.mutate_add_edge(rng),
+        22..35 => net.mutate_remove_edge(rng),
+        35..44 => net.mutate_rewire(rng),
+        44..57 => net.mutate_reverse(rng),
+        57..63 => net.mutate_mirror(rng),
+        63..70 => net.mutate_enhance(rng),
+        70..75 => net.mutate_theta(rng),
+        75..85 => net.mutate_channel(rng),
+        85..90 => net.mutate_add_loop(rng, 2),  // bidirectional pair
+        90..95 => net.mutate_add_loop(rng, 3),  // triangle circuit
         _ => {
             if is_male { let _ = proj.mutate_one(rng); true }
-            else { net.mutate_theta(rng) } // no W mutation on female
+            else { net.mutate_theta(rng) }
         }
     }
 }
 
 #[derive(Clone, Copy)]
-enum Variant { Empty, Prefilled }
+enum Variant {
+    CrystalFirst,  // prefill → crystallize → evolve (smart sparse start)
+    Prefilled,     // prefill → evolve (control)
+}
 impl Variant {
-    fn name(&self) -> &str { match self { Self::Empty => "empty", Self::Prefilled => "prefill" } }
+    fn name(&self) -> &str { match self { Self::CrystalFirst => "crystal1st", Self::Prefilled => "prefill" } }
 }
 
 struct Config { variant: Variant, seed: u64 }
@@ -207,18 +256,34 @@ fn run_one(cfg: &Config, corpus: &[u8], bigram: &BigramTable) -> RunResult {
     };
 
     let mut rng = StdRng::seed_from_u64(cfg.seed);
-    let mut female = match cfg.variant {
-        Variant::Empty => build_empty_pocket(&mut rng),
-        Variant::Prefilled => build_prefilled_pocket(&mut rng),
-    };
-    let mut male = match cfg.variant {
-        Variant::Empty => build_empty_pocket(&mut rng),
-        Variant::Prefilled => build_prefilled_pocket(&mut rng),
-    };
+    // Both variants start prefilled; CrystalFirst then prunes immediately.
+    let mut female = build_prefilled_pocket(&mut rng);
+    let mut male = build_prefilled_pocket(&mut rng);
     let mut proj = Int8Projection::new(PHI_DIM, CHARS, &mut StdRng::seed_from_u64(cfg.seed + 200));
     let mut eval_rng = StdRng::seed_from_u64(cfg.seed + 1000);
     let sdr = SdrTable::new(CHARS, H, PHI_DIM, SDR_ACTIVE_PCT,
         &mut StdRng::seed_from_u64(cfg.seed + 100)).unwrap();
+
+    // CrystalFirst: prefill both pockets, then crystallize to keep only useful edges.
+    // This gives the network a smart sparse start — prefill provides paths,
+    // crystallize removes what doesn't contribute.
+    if matches!(cfg.variant, Variant::CrystalFirst) {
+        let f_before = female.edge_count();
+        let m_before = male.edge_count();
+
+        let mut cryst_rng = StdRng::seed_from_u64(cfg.seed + 5000);
+        let f_removed = crystallize_pocket(
+            &mut female, &mut male, &proj, corpus, &sdr, &prop, bigram,
+            &mut cryst_rng, false);
+        let m_removed = crystallize_pocket(
+            &mut female, &mut male, &proj, corpus, &sdr, &prop, bigram,
+            &mut cryst_rng, true);
+
+        println!("  {} seed={} crystallize: F={}→{} (-{}) M={}→{} (-{})",
+            cfg.variant.name(), cfg.seed,
+            f_before, female.edge_count(), f_removed,
+            m_before, male.edge_count(), m_removed);
+    }
 
     let init_f = female.edge_count();
     let init_m = male.edge_count();
@@ -332,9 +397,10 @@ fn main() {
         "S:/AI/work/VRAXION_DEV/instnct/data/traindat/fineweb_edu.traindat".to_string()
     });
 
-    println!("=== Pocket Pair: Empty vs Prefilled ===");
+    println!("=== Pocket Pair: Crystal-First vs Prefilled ===");
     println!("  Both: smooth cosine-bigram fitness + jackpot=9");
-    println!("  Empty: 0+0 edges, Prefilled: ~3300+3300 edges\n");
+    println!("  CrystalFirst: prefill → crystallize → evolve (smart sparse)");
+    println!("  Prefilled: prefill → evolve (control)\n");
 
     let corpus = load_corpus(&corpus_path);
     println!("  {} chars", corpus.len());
@@ -344,7 +410,7 @@ fn main() {
     let seeds = [42u64, 123, 7, 1042, 555, 8042];
 
     let mut configs: Vec<Config> = Vec::new();
-    for &v in &[Variant::Empty, Variant::Prefilled] {
+    for &v in &[Variant::CrystalFirst, Variant::Prefilled] {
         for &s in &seeds { configs.push(Config { variant: v, seed: s }); }
     }
     println!("  {} configs: 2 variants x {} seeds\n", configs.len(), seeds.len());
@@ -360,7 +426,7 @@ fn main() {
         "Variant", "Mean%", "Best%", "Peak%", "F_edg", "M_edg", "Accepted");
     println!("{}", "-".repeat(62));
 
-    for v in &[Variant::Empty, Variant::Prefilled] {
+    for v in &[Variant::CrystalFirst, Variant::Prefilled] {
         let g: Vec<_> = results.iter().filter(|r| r.variant_name == v.name()).collect();
         let n = g.len() as f64;
         let mean = g.iter().map(|r| r.final_acc).sum::<f64>() / n;

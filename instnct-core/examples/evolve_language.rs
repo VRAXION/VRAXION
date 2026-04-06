@@ -13,11 +13,11 @@
 //! `cargo run --release --example evolve_language -- <corpus-path>`
 
 use instnct_core::{
-    build_network, evolution_step_jackpot, InitConfig, Int8Projection, Network, PropagationConfig,
-    SdrTable, StepOutcome,
+    build_bigram_table, build_network, eval_accuracy, eval_smooth, evolution_step_jackpot,
+    load_corpus, InitConfig, Int8Projection, SdrTable, StepOutcome,
 };
 use rand::rngs::StdRng;
-use rand::{Rng, SeedableRng};
+use rand::SeedableRng;
 use rayon::prelude::*;
 use serde::Serialize;
 use std::env;
@@ -35,65 +35,6 @@ const DEFAULT_SEED_BASE: u64 = 42;
 const DEFAULT_FULL_LEN: usize = 2_000;
 const SEED_STRIDE: u64 = 1_000;
 const PROGRESS_INTERVAL: usize = 5_000;
-
-// ---------------------------------------------------------------------------
-// Bigram table + smooth fitness helpers
-// ---------------------------------------------------------------------------
-
-/// 27×27 bigram probability table: bigram\[i\]\[j\] = P(next=j | current=i).
-type BigramTable = Vec<[f64; CHARS]>;
-
-fn build_bigram_table(corpus: &[u8]) -> BigramTable {
-    let mut counts = vec![[0u64; CHARS]; CHARS];
-    for pair in corpus.windows(2) {
-        counts[pair[0] as usize][pair[1] as usize] += 1;
-    }
-    let mut bigram = vec![[0.0f64; CHARS]; CHARS];
-    for (i, row) in counts.iter().enumerate() {
-        let total: u64 = row.iter().sum();
-        if total > 0 {
-            for (j, &c) in row.iter().enumerate() {
-                bigram[i][j] = c as f64 / total as f64;
-            }
-        }
-    }
-    bigram
-}
-
-fn softmax_27(scores: &[i32]) -> [f64; CHARS] {
-    let max = scores.iter().copied().max().unwrap_or(0) as f64;
-    let mut out = [0.0f64; CHARS];
-    let mut sum = 0.0f64;
-    for (i, &s) in scores.iter().enumerate() {
-        let e = ((s as f64) - max).exp();
-        out[i] = e;
-        sum += e;
-    }
-    if sum < 1e-30 {
-        out.fill(1.0 / CHARS as f64);
-    } else {
-        for v in out.iter_mut() {
-            *v /= sum;
-        }
-    }
-    out
-}
-
-fn cosine_27(a: &[f64; CHARS], b: &[f64; CHARS]) -> f64 {
-    let mut dot = 0.0f64;
-    let mut na = 0.0f64;
-    let mut nb = 0.0f64;
-    for i in 0..CHARS {
-        dot += a[i] * b[i];
-        na += a[i] * a[i];
-        nb += b[i] * b[i];
-    }
-    let denom = na.sqrt() * nb.sqrt();
-    if denom < 1e-12 {
-        return 0.0;
-    }
-    dot / denom
-}
 
 #[derive(Clone, Debug)]
 struct RunnerConfig {
@@ -240,31 +181,6 @@ fn parse_cli() -> RunnerConfig {
     cfg
 }
 
-fn load_corpus(path: &str) -> Vec<u8> {
-    let raw = fs::read(path).expect("cannot read corpus file");
-    raw.iter()
-        .filter_map(|&b| {
-            if b.is_ascii_lowercase() {
-                Some(b - b'a')
-            } else if b.is_ascii_uppercase() {
-                Some(b.to_ascii_lowercase() - b'a')
-            } else if b == b' ' || b == b'\n' || b == b'\t' {
-                Some(26)
-            } else {
-                None
-            }
-        })
-        .collect()
-}
-
-fn sample_eval_offset(corpus_len: usize, len: usize, rng: &mut StdRng) -> Option<usize> {
-    if corpus_len <= len {
-        return None;
-    }
-    let max_offset = corpus_len - len - 1;
-    Some(rng.gen_range(0..=max_offset))
-}
-
 fn bar(val: f64, max_val: f64, width: usize) -> String {
     let filled = ((val / max_val) * width as f64).round().min(width as f64) as usize;
     format!("{}{}", "#".repeat(filled), ".".repeat(width - filled))
@@ -278,77 +194,12 @@ fn char_label(c: u8) -> char {
     }
 }
 
-#[allow(clippy::too_many_arguments)]
-fn eval_accuracy(
-    net: &mut Network,
-    projection: &Int8Projection,
-    corpus: &[u8],
-    len: usize,
-    rng: &mut StdRng,
-    sdr: &SdrTable,
-    config: &PropagationConfig,
-    output_start: usize,
-    neuron_count: usize,
-) -> f64 {
-    let Some(off) = sample_eval_offset(corpus.len(), len, rng) else {
-        return 0.0;
-    };
-
-    let seg = &corpus[off..off + len + 1];
-    net.reset();
-    let mut correct = 0u32;
-    for i in 0..len {
-        net.propagate(sdr.pattern(seg[i] as usize), config).unwrap();
-        if projection.predict(&net.charge()[output_start..neuron_count]) == seg[i + 1] as usize {
-            correct += 1;
-        }
-    }
-    correct as f64 / len as f64
-}
-
-/// Smooth fitness: mean cosine similarity between predicted distribution
-/// and the true bigram distribution P(next | current).
-///
-/// Unlike binary argmax accuracy, this gives continuous feedback —
-/// a mutation that shifts the output distribution TOWARD the correct
-/// answer is rewarded even if argmax doesn't flip yet.
-/// Proven +2.6pp peak over stepwise (21.7% vs 19.1%, A/B test 2026-04-06).
-#[allow(clippy::too_many_arguments)]
-fn eval_smooth(
-    net: &mut Network,
-    projection: &Int8Projection,
-    corpus: &[u8],
-    len: usize,
-    rng: &mut StdRng,
-    sdr: &SdrTable,
-    config: &PropagationConfig,
-    output_start: usize,
-    neuron_count: usize,
-    bigram: &BigramTable,
-) -> f64 {
-    let Some(off) = sample_eval_offset(corpus.len(), len, rng) else {
-        return 0.0;
-    };
-
-    let seg = &corpus[off..off + len + 1];
-    net.reset();
-    let mut total_cos = 0.0f64;
-    for i in 0..len {
-        net.propagate(sdr.pattern(seg[i] as usize), config).unwrap();
-        let scores = projection.raw_scores(&net.charge()[output_start..neuron_count]);
-        let probs = softmax_27(&scores);
-        let target = &bigram[seg[i] as usize];
-        total_cos += cosine_27(&probs, target);
-    }
-    total_cos / len as f64
-}
-
 fn run_evolution(
     cfg: &RunnerConfig,
     seed: u64,
     corpus: &[u8],
     init: &InitConfig,
-    bigram: &BigramTable,
+    bigram: &[Vec<f64>],
 ) -> EvolutionResult {
     let output_start = init.output_start();
     let neuron_count = init.neuron_count;
@@ -662,10 +513,10 @@ fn main() {
         .collect();
 
     println!("Loading corpus...");
-    let corpus = load_corpus(&cfg.corpus_path);
+    let corpus = load_corpus(&cfg.corpus_path).expect("cannot read corpus file");
     println!("  {} chars", corpus.len());
 
-    let bigram = build_bigram_table(&corpus);
+    let bigram = build_bigram_table(&corpus, CHARS);
 
     let baselines = compute_baselines(&corpus);
     println!(
