@@ -1,9 +1,9 @@
 {
-  "current_release": "v4.2.0",
-  "current_channel": "stable",
-  "next_milestone": "v5.0.0 Public Beta",
-  "next_channel": "preparation",
-  "internal_code_path": "instnct/",
+  "current_release": "v5.0.0-beta.1",
+  "current_channel": "beta",
+  "previous_stable": "v4.2.0",
+  "internal_code_path": "instnct-core/",
   "architecture_line": "INSTNCT",
-  "rust_surface": "Rust Implementation Surface"
+  "rust_surface": "instnct-core (Rust, primary)",
+  "python_surface": "instnct/ (Python, reference)"
 }

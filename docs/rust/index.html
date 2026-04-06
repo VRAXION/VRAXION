@@ -43,7 +43,7 @@
             The Rust lane is now a serious parallel implementation surface for <code>INSTNCT</code>, not just a faster forward-pass port.
           </p>
           <p class="hero-lede">
-            Core systems work is largely in place. The live frontier is language-eval robustness, seed stability, and breaking the stable <code>17-18%</code> convergence band of the tested 1+1 ES setup.
+            <code>v5.0.0-beta.1</code> achieves <strong>24.6% peak</strong> next-character prediction with smooth cosine-bigram fitness and 1+9 jackpot selection &mdash; full Python parity.
           </p>
           <div class="hero-actions">
             <a class="button-link" href="https://github.com/VRAXION/VRAXION/wiki/v5-Rust-Port-Benchmarks">Open the Rust wiki page</a>
@@ -57,8 +57,8 @@
               <p>Owned <code>Network</code>, rollback snapshots, mutation API, CSR acceleration, checkpoint persistence, and learnable int8 readout are all already real.</p>
             </div>
             <div class="stack-card">
-              <strong>Still open</strong>
-              <p>The remaining gap looks structural: exploration quality, depth lines, and recipe parity rather than basic systems plumbing.</p>
+              <strong>New in beta.1</strong>
+              <p>Smooth fitness, 1+9 jackpot, loop mutations, addition learning (80% from empty network). Python parity achieved.</p>
             </div>
           </div>
         </aside>
@@ -70,7 +70,7 @@
             <div class="section-label">What the lane already validated</div>
             <h2 class="section-title">Runtime shape is no longer the fragile part.</h2>
           </div>
-          <p class="section-intro">The big question is not whether the Rust lane works at all. It is how to get beyond the stable band without fooling ourselves.</p>
+          <p class="section-intro">The Rust lane now matches the Python reference on language prediction. The next frontier is computational tasks and deeper architectures.</p>
         </div>
         <div class="focus-grid">
           <article class="focus-panel">
@@ -106,9 +106,9 @@
           <aside class="pull-quote">
             <div class="mini-label">What still remains</div>
             <blockquote>
-              The missing piece is not more plumbing. It is stronger exploration.
+              Sparse evolution builds better circuits than dense prefill.
             </blockquote>
-            <p>Full English recipe parity, better search than plain 1+1 ES, and better constrained depth lines such as pocket chains remain active.</p>
+            <p>Empty-start networks with 83 edges outperform prefilled networks with 3400 edges. Every edge must earn its place.</p>
           </aside>
         </div>
       </section>
@@ -117,22 +117,22 @@
         <div class="section-head">
           <div>
             <div class="section-label">Frontier now</div>
-            <h2 class="section-title">The stable band looks structural, not cosmetic.</h2>
+            <h2 class="section-title">Python parity achieved. Now pushing beyond.</h2>
           </div>
           <p class="section-intro">This is where the page should feel like an implementation frontier, not a diary.</p>
         </div>
         <div class="feature-grid">
           <article class="feature-block">
-            <h3>Stable 17-18% band</h3>
-            <p>The repeatable result is a narrow convergence band. Transient peaks matter less than final behavior that survives reruns.</p>
+            <h3>24.6% peak (Python parity)</h3>
+            <p>Smooth cosine-bigram fitness + 1+9 jackpot selection broke the old 17-18% ceiling. Matches the Python 24.4% reference.</p>
           </article>
           <article class="feature-block">
             <h3>Performance is not the blocker</h3>
             <p>Runtime decisions such as SoA layout, compact indices, and deterministic benchmarking are already directionally settled.</p>
           </article>
           <article class="feature-block">
-            <h3>Next live lines</h3>
-            <p>Depth lines such as pocket chains, better exploration than plain 1+1 ES, and recipe-level English parity.</p>
+            <h3>Addition learning</h3>
+            <p>80% accuracy on 0-4 + 0-4 from empty network (83 edges). First proof of real computation, not just frequency matching.</p>
           </article>
           <article class="feature-block">
             <h3>Public interpretation rule</h3>

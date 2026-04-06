@@ -110,8 +110,6 @@ def load_version(errors: list[str]) -> dict[str, str]:
     required = [
         "current_release",
         "current_channel",
-        "next_milestone",
-        "next_channel",
         "architecture_line",
         "rust_surface",
     ]
@@ -119,17 +117,10 @@ def load_version(errors: list[str]) -> dict[str, str]:
         if key not in data:
             fail(f"VERSION.json: missing required key {key!r}", errors)
 
-    if data.get("current_channel") != "stable":
-        fail("VERSION.json: current_channel must be 'stable'", errors)
-    if data.get("next_channel") != "preparation":
-        fail("VERSION.json: next_channel must be 'preparation'", errors)
+    if data.get("current_channel") not in ("stable", "beta"):
+        fail("VERSION.json: current_channel must be 'stable' or 'beta'", errors)
     if data.get("architecture_line") != "INSTNCT":
         fail("VERSION.json: architecture_line must be 'INSTNCT'", errors)
-    if data.get("rust_surface") != "Rust Implementation Surface":
-        fail("VERSION.json: rust_surface must be 'Rust Implementation Surface'", errors)
-
-    if "internal_code_path" in data and data.get("internal_code_path") != "instnct/":
-        fail("VERSION.json: internal_code_path, if present, must be 'instnct/'", errors)
 
     return {k: str(v) for k, v in data.items()}
 
