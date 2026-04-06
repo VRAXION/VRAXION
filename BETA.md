@@ -17,7 +17,7 @@ cargo run --release --example evolve_language -- <corpus-path> `
 
 Arguments:
 
-- `<corpus-path>`: positional corpus path; if omitted, the runner falls back to the current local Fineweb path
+- `<corpus-path>`: positional corpus path; if omitted, falls back to `instnct-core/tests/fixtures/beta_smoke_corpus.txt`
 - `--steps`: evolution steps per seed
 - `--seed-count`: number of parallel seeds
 - `--seed-base`: base seed; later seeds use a fixed stride
@@ -45,6 +45,24 @@ A canonical beta run counts as passing when:
 - the run is reproducible under the same command and corpus
 
 The canonical runner now uses **smooth cosine-bigram fitness** and **1+9 jackpot selection** (9 candidate mutations per step, best wins). Peak accuracy: **24.6%** next-character prediction on English text.
+
+## Mutation schedule
+
+The default schedule (hardcoded in `evolution_step` / `evolution_step_jackpot`):
+
+| Operator | % | Notes |
+|---|---|---|
+| add_edge | 22% | Topology growth |
+| remove_edge | 13% | Topology pruning |
+| rewire | 9% | Move edge target |
+| reverse | 13% | Flip edge direction |
+| mirror | 6% | Add reverse of existing |
+| enhance | 7% | Connect to high-degree neuron |
+| theta | 5% | Threshold perturbation |
+| channel | 10% | Phase channel perturbation |
+| add_loop(2) | 5% | Bidirectional pair (atomic) |
+| add_loop(3) | 5% | Triangle circuit (atomic) |
+| W projection | 5% | Readout weight perturbation |
 
 ## Known limitations
 

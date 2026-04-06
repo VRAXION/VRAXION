@@ -86,7 +86,16 @@ The canonical evidence summary lives in [`VALIDATED_FINDINGS.md`](VALIDATED_FIND
 
 ## 5-Minute Proof
 
-Create an environment, install the minimal dependencies, and run the same checks used to keep the public repo honest:
+### Rust (primary surface)
+
+```bash
+cargo test -p instnct-core
+cargo run --release --example evolve_language -- \
+  instnct-core/tests/fixtures/beta_smoke_corpus.txt \
+  --steps 10 --seed-count 1 --report-dir target/smoke
+```
+
+### Python (reference surface)
 
 ```bash
 python -m venv .venv
@@ -101,9 +110,10 @@ python tools/check_public_surface.py
 
 These commands verify:
 
-- the reference code compiles,
-- the reference self-wiring model passes its stress test,
-- the public-facing docs still agree with the canonical code path.
+- the Rust library compiles and all 175 tests pass,
+- the canonical beta runner produces a valid evidence bundle,
+- the Python reference surface compiles and passes its stress test,
+- the public-facing docs agree with the canonical code path.
 
 ## Read Next
 

@@ -101,7 +101,7 @@ fn run_one(accept_ties: bool, seed: u64, steps: usize, corpus: &[u8]) -> RunResu
 
 fn main() {
     let corpus_path = std::env::args().nth(1).unwrap_or_else(|| {
-        "S:/AI/work/VRAXION_DEV/instnct/data/traindat/fineweb_edu.traindat".to_string()
+        "instnct-core/tests/fixtures/beta_smoke_corpus.txt".to_string()
     });
     println!("Loading corpus...");
     let corpus = load_corpus(&corpus_path).expect("cannot read corpus");

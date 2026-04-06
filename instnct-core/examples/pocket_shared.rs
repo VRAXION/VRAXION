@@ -229,7 +229,7 @@ fn evolve_male_unit(u: &mut MaleUnit, corpus: &[u8], prop: &PropagationConfig) {
 
 fn main() {
     let corpus_path = std::env::args().nth(1).unwrap_or_else(|| {
-        "S:/AI/work/VRAXION_DEV/instnct/data/traindat/fineweb_edu.traindat".to_string()
+        "instnct-core/tests/fixtures/beta_smoke_corpus.txt".to_string()
     });
     let prop = PropagationConfig {
         ticks_per_token: 6, input_duration_ticks: 2,

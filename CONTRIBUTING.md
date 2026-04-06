@@ -14,21 +14,33 @@ If a setting or training recipe is not in the canonical code path, do **not** de
 
 ## Repo Map
 
-- `instnct/model/`: self-wiring graph implementation
+### Rust (primary surface — `instnct-core/`)
+
+- `instnct-core/src/`: library crate — network, propagation, evolution, fitness, eval, corpus
+- `instnct-core/examples/evolve_language.rs`: canonical beta runner
+- `instnct-core/examples/`: experimental research examples (not part of compatibility promise)
+- `instnct-core/tests/fixtures/`: test corpora and fixtures
+
+### Python (reference surface — `instnct/`)
+
+- `instnct/model/`: self-wiring graph reference implementation
 - `instnct/lib/`: shared scoring, data, and logging helpers
 - `instnct/tests/`: stress tests, sweeps, probes, and benchmark scripts
-- `instnct/ops/`: overnight training and sweep runners
-- `docs/wiki/`: canonical source files for mirrored wiki pages
-- `VALIDATED_FINDINGS.md`: canonical evidence summary for public-facing claims
+- `instnct/recipes/`: training recipes and A/B experiments
+
+### Shared
+
+- `docs/`: GitHub Pages website
+- `VALIDATED_FINDINGS.md`: canonical evidence summary
 - `docs/VERSION.json`: public release identity source of truth
 
 ## Where To Put Things
 
-- Core model changes: `instnct/model/`
-- Shared training helpers: `instnct/lib/`
-- CPU and GPU experiments: `instnct/tests/`
-- Public-facing repo text: root docs plus `docs/`
-- Local corpora: `instnct/data/traindat/` (`.traindat` stays local-only and ignored)
+- **Rust core changes**: `instnct-core/src/` (run `cargo test --lib` and `cargo clippy`)
+- **Rust experiments**: `instnct-core/examples/` (not part of API contract)
+- **Python model changes**: `instnct/model/`
+- **Public-facing docs**: root docs plus `docs/`
+- **Local corpora**: `.traindat` files stay local-only and gitignored
 
 ## Documentation Governance
 
@@ -60,8 +72,16 @@ Guardrails:
 Recommended verification commands:
 
 ```bash
+# Rust (primary surface)
+cargo test -p instnct-core
+cargo clippy --all-targets -- -D warnings
+cargo doc --no-deps
+
+# Python (reference surface)
 python -m compileall instnct tools
 python instnct/tests/test_model.py
+
+# Public surface consistency
 python tools/check_public_surface.py
 ```
 

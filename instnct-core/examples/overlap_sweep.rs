@@ -123,7 +123,7 @@ fn run_one(cfg: &OverlapConfig, corpus: &[u8]) -> OverlapResult {
 
 fn main() {
     let corpus_path = std::env::args().nth(1).unwrap_or_else(|| {
-        "S:/AI/work/VRAXION_DEV/instnct/data/traindat/fineweb_edu.traindat".to_string()
+        "instnct-core/tests/fixtures/beta_smoke_corpus.txt".to_string()
     });
     println!("Loading corpus...");
     let corpus = load_corpus(&corpus_path).expect("cannot read corpus");

@@ -27,8 +27,7 @@ use std::time::Instant;
 
 const CHARS: usize = 27; // a-z (0..25) + space (26)
 const SDR_ACTIVE_PCT: usize = 20;
-const DEFAULT_CORPUS_PATH: &str =
-    "S:/AI/work/VRAXION_DEV/instnct/data/traindat/fineweb_edu.traindat";
+const DEFAULT_CORPUS_PATH: &str = "instnct-core/tests/fixtures/beta_smoke_corpus.txt";
 const DEFAULT_STEPS: usize = 30_000;
 const DEFAULT_SEED_COUNT: usize = 6;
 const DEFAULT_SEED_BASE: u64 = 42;

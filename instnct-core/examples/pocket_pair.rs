@@ -297,7 +297,7 @@ fn bar(val: f64, max_val: f64, width: usize) -> String {
 
 fn main() {
     let corpus_path = std::env::args().nth(1).unwrap_or_else(|| {
-        "S:/AI/work/VRAXION_DEV/instnct/data/traindat/fineweb_edu.traindat".to_string()
+        "instnct-core/tests/fixtures/beta_smoke_corpus.txt".to_string()
     });
 
     let prop = PropagationConfig {
