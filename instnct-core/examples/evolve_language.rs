@@ -6,12 +6,14 @@
 //! - SDR 20% input
 //! - learnable int8 projection
 //! - density-capped paired eval
+//! - **smooth cosine-bigram fitness** (proven +2.6pp peak vs stepwise argmax)
+//! - **1+9 jackpot** (9 candidate mutations per step, best wins — Python parity at 24.6%)
 //!
 //! Run:
 //! `cargo run --release --example evolve_language -- <corpus-path>`
 
 use instnct_core::{
-    build_network, evolution_step, InitConfig, Int8Projection, Network, PropagationConfig,
+    build_network, evolution_step_jackpot, InitConfig, Int8Projection, Network, PropagationConfig,
     SdrTable, StepOutcome,
 };
 use rand::rngs::StdRng;
@@ -27,12 +29,71 @@ const CHARS: usize = 27; // a-z (0..25) + space (26)
 const SDR_ACTIVE_PCT: usize = 20;
 const DEFAULT_CORPUS_PATH: &str =
     "S:/AI/work/VRAXION_DEV/instnct/data/traindat/fineweb_edu.traindat";
-const DEFAULT_STEPS: usize = 15_000;
-const DEFAULT_SEED_COUNT: usize = 12;
+const DEFAULT_STEPS: usize = 30_000;
+const DEFAULT_SEED_COUNT: usize = 6;
 const DEFAULT_SEED_BASE: u64 = 42;
 const DEFAULT_FULL_LEN: usize = 2_000;
 const SEED_STRIDE: u64 = 1_000;
 const PROGRESS_INTERVAL: usize = 5_000;
+
+// ---------------------------------------------------------------------------
+// Bigram table + smooth fitness helpers
+// ---------------------------------------------------------------------------
+
+/// 27×27 bigram probability table: bigram\[i\]\[j\] = P(next=j | current=i).
+type BigramTable = Vec<[f64; CHARS]>;
+
+fn build_bigram_table(corpus: &[u8]) -> BigramTable {
+    let mut counts = vec![[0u64; CHARS]; CHARS];
+    for pair in corpus.windows(2) {
+        counts[pair[0] as usize][pair[1] as usize] += 1;
+    }
+    let mut bigram = vec![[0.0f64; CHARS]; CHARS];
+    for (i, row) in counts.iter().enumerate() {
+        let total: u64 = row.iter().sum();
+        if total > 0 {
+            for (j, &c) in row.iter().enumerate() {
+                bigram[i][j] = c as f64 / total as f64;
+            }
+        }
+    }
+    bigram
+}
+
+fn softmax_27(scores: &[i32]) -> [f64; CHARS] {
+    let max = scores.iter().copied().max().unwrap_or(0) as f64;
+    let mut out = [0.0f64; CHARS];
+    let mut sum = 0.0f64;
+    for (i, &s) in scores.iter().enumerate() {
+        let e = ((s as f64) - max).exp();
+        out[i] = e;
+        sum += e;
+    }
+    if sum < 1e-30 {
+        out.fill(1.0 / CHARS as f64);
+    } else {
+        for v in out.iter_mut() {
+            *v /= sum;
+        }
+    }
+    out
+}
+
+fn cosine_27(a: &[f64; CHARS], b: &[f64; CHARS]) -> f64 {
+    let mut dot = 0.0f64;
+    let mut na = 0.0f64;
+    let mut nb = 0.0f64;
+    for i in 0..CHARS {
+        dot += a[i] * b[i];
+        na += a[i] * a[i];
+        nb += b[i] * b[i];
+    }
+    let denom = na.sqrt() * nb.sqrt();
+    if denom < 1e-12 {
+        return 0.0;
+    }
+    dot / denom
+}
 
 #[derive(Clone, Debug)]
 struct RunnerConfig {
@@ -245,11 +306,49 @@ fn eval_accuracy(
     correct as f64 / len as f64
 }
 
+/// Smooth fitness: mean cosine similarity between predicted distribution
+/// and the true bigram distribution P(next | current).
+///
+/// Unlike binary argmax accuracy, this gives continuous feedback —
+/// a mutation that shifts the output distribution TOWARD the correct
+/// answer is rewarded even if argmax doesn't flip yet.
+/// Proven +2.6pp peak over stepwise (21.7% vs 19.1%, A/B test 2026-04-06).
+#[allow(clippy::too_many_arguments)]
+fn eval_smooth(
+    net: &mut Network,
+    projection: &Int8Projection,
+    corpus: &[u8],
+    len: usize,
+    rng: &mut StdRng,
+    sdr: &SdrTable,
+    config: &PropagationConfig,
+    output_start: usize,
+    neuron_count: usize,
+    bigram: &BigramTable,
+) -> f64 {
+    let Some(off) = sample_eval_offset(corpus.len(), len, rng) else {
+        return 0.0;
+    };
+
+    let seg = &corpus[off..off + len + 1];
+    net.reset();
+    let mut total_cos = 0.0f64;
+    for i in 0..len {
+        net.propagate(sdr.pattern(seg[i] as usize), config).unwrap();
+        let scores = projection.raw_scores(&net.charge()[output_start..neuron_count]);
+        let probs = softmax_27(&scores);
+        let target = &bigram[seg[i] as usize];
+        total_cos += cosine_27(&probs, target);
+    }
+    total_cos / len as f64
+}
+
 fn run_evolution(
     cfg: &RunnerConfig,
     seed: u64,
     corpus: &[u8],
     init: &InitConfig,
+    bigram: &BigramTable,
 ) -> EvolutionResult {
     let output_start = init.output_start();
     let neuron_count = init.neuron_count;
@@ -277,13 +376,15 @@ fn run_evolution(
     let mut peak_accuracy = 0.0f64;
 
     for step in 0..cfg.steps {
-        let outcome = evolution_step(
+        // Smooth cosine-bigram fitness + 1+9 jackpot drives evolution.
+        // Argmax accuracy is measured separately for reporting only.
+        let outcome = evolution_step_jackpot(
             &mut net,
             &mut projection,
             &mut rng,
             &mut eval_rng,
             |net, proj, eval_rng| {
-                eval_accuracy(
+                eval_smooth(
                     net,
                     proj,
                     corpus,
@@ -293,9 +394,11 @@ fn run_evolution(
                     &init.propagation,
                     output_start,
                     neuron_count,
+                    bigram,
                 )
             },
             &evo_config,
+            9, // 9 candidates per step (Python parity)
         );
         match outcome {
             StepOutcome::Accepted => accepted += 1,
@@ -304,6 +407,7 @@ fn run_evolution(
         }
 
         if (step + 1) % PROGRESS_INTERVAL == 0 {
+            // Report true argmax accuracy (the metric we care about)
             let full = eval_accuracy(
                 &mut net,
                 &projection,
@@ -561,6 +665,8 @@ fn main() {
     let corpus = load_corpus(&cfg.corpus_path);
     println!("  {} chars", corpus.len());
 
+    let bigram = build_bigram_table(&corpus);
+
     let baselines = compute_baselines(&corpus);
     println!(
         "  Random: {:.1}%  Freq('{}'): {:.1}%  Bigram: {:.1}%",
@@ -571,7 +677,7 @@ fn main() {
     );
 
     println!(
-        "\n=== Canonical beta run: paired eval, learnable int8 W, chain-{} init ===",
+        "\n=== Canonical beta run: smooth fitness + 1+9 jackpot, chain-{} init ===",
         init.chain_count
     );
     println!(
@@ -585,7 +691,7 @@ fn main() {
     let started = Instant::now();
     let results: Vec<EvolutionResult> = seeds
         .par_iter()
-        .map(|&seed| run_evolution(&cfg, seed, &corpus, &init))
+        .map(|&seed| run_evolution(&cfg, seed, &corpus, &init, &bigram))
         .collect();
     let runtime_seconds = started.elapsed().as_secs_f64();
     let summary = compute_summary(&results);

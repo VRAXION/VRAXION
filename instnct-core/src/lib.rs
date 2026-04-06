@@ -36,7 +36,7 @@ mod topology;
 pub use checkpoint::{load_checkpoint, save_checkpoint, CheckpointMeta};
 
 #[doc(inline)]
-pub use evolution::{evolution_step, EvolutionConfig, StepOutcome};
+pub use evolution::{evolution_step, evolution_step_jackpot, EvolutionConfig, StepOutcome};
 
 #[doc(inline)]
 pub use init::{build_network, InitConfig};

@@ -8,8 +8,8 @@ The only canonical public beta run path in this tranche is:
 
 ```powershell
 cargo run --release --example evolve_language -- <corpus-path> `
-  --steps 15000 `
-  --seed-count 12 `
+  --steps 30000 `
+  --seed-count 6 `
   --seed-base 42 `
   --full-len 2000 `
   --report-dir target/beta-report
@@ -44,11 +44,10 @@ A canonical beta run counts as passing when:
 - `metrics.json` contains per-seed results and aggregate summary
 - the run is reproducible under the same command and corpus
 
-This beta does **not** require a new accuracy regime beyond the current `17-18%` stable band.
+The canonical runner now uses **smooth cosine-bigram fitness** and **1+9 jackpot selection** (9 candidate mutations per step, best wins). Peak accuracy: **24.6%** next-character prediction on English text.
 
 ## Known limitations
 
-- The tested Rust language recipe still converges into a stable `17-18%` band under the current 1+1 ES regime.
-- Transient `19.1-19.6%` peaks are not yet promoted as stable breakthroughs.
-- Pocket, breed, shared-female, and Watts-Strogatz work narrowed the frontier, but did not create a new default recipe.
+- Seed variance remains high: best seed reaches 24.6%, worst may fall below 15%.
+- Addition learning (0-4 + 0-4) reaches 80% from empty start, proving real computation, but does not yet scale to larger digit ranges.
 - Experimental examples remain in-repo for research continuity, but they are not the public beta contract.

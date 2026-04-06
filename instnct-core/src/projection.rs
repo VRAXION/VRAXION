@@ -138,6 +138,37 @@ impl Int8Projection {
             .unwrap_or(0)
     }
 
+    /// Compute raw scores for all output classes (before argmax).
+    ///
+    /// Returns `scores[c] = sum(charge[i] * weight[i][c])` for each class `c`.
+    /// Useful when you need the full score distribution (e.g., for soft fitness).
+    ///
+    /// # Panics
+    ///
+    /// Panics if `charge_slice.len() != input_dim`.
+    pub fn raw_scores(&self, charge_slice: &[u32]) -> Vec<i32> {
+        assert_eq!(
+            charge_slice.len(),
+            self.input_dim,
+            "charge_slice length {} != input_dim {}",
+            charge_slice.len(),
+            self.input_dim
+        );
+        let mut scores = vec![0i32; self.output_classes];
+        for (neuron_idx, &charge) in charge_slice.iter().enumerate() {
+            if charge == 0 {
+                continue;
+            }
+            let charge_value = charge as i32;
+            let row_start = neuron_idx * self.output_classes;
+            let row = &self.weights[row_start..row_start + self.output_classes];
+            for (score, &weight) in scores.iter_mut().zip(row.iter()) {
+                *score += charge_value * weight as i32;
+            }
+        }
+        scores
+    }
+
     /// Mutate one random weight. Returns a [`WeightBackup`] for rollback.
     ///
     /// The new weight is sampled uniformly from `[-127, 127]`.

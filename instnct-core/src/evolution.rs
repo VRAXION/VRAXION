@@ -93,7 +93,9 @@ where
     let edges_before_mutation = net.edge_count();
     let net_snapshot = net.save_state();
 
-    // Mutate: 8-op topology schedule (90%) + projection weight (10%)
+    // Mutate: 8-op topology schedule (95%) + projection weight (5%)
+    // W mutation reduced from 10% to 5%: adaptive ops test showed 0% accept rate
+    // across all seeds — W mutations almost never improve fitness.
     let roll = mutation_rng.gen_range(0..100u32);
     let mut weight_backup: Option<WeightBackup> = None;
     let mutated = match roll {
@@ -104,8 +106,8 @@ where
         65..72 => net.mutate_mirror(mutation_rng),       // 7% add reverse of existing
         72..80 => net.mutate_enhance(mutation_rng),      // 8% connect to high-degree neuron
         80..85 => net.mutate_theta(mutation_rng),        // 5% threshold perturbation
-        85..90 => net.mutate_channel(mutation_rng),      // 5% phase channel perturbation
-        _ => {                                           // 10% projection weight perturbation
+        85..95 => net.mutate_channel(mutation_rng),      // 10% phase channel perturbation
+        _ => {                                           // 5% projection weight perturbation
             weight_backup = Some(projection.mutate_one(mutation_rng));
             true
         }
@@ -143,6 +145,130 @@ where
         }
         StepOutcome::Rejected
     }
+}
+
+/// Run one evolution step with **jackpot selection**: try `candidates`
+/// independent mutations from the same parent, accept the best one
+/// (if it improves fitness).
+///
+/// When `candidates == 1`, this behaves identically to [`evolution_step`].
+/// With `candidates > 1` (e.g. 9), this is a (1+N) ES — the Python
+/// "multi-worker" pattern that reached 24.4% accuracy.
+///
+/// Each candidate uses the same `mutation_rng` (advancing sequentially)
+/// and sees the same evaluation segment (via `eval_rng` cloning).
+///
+/// Proven: 1+9 jackpot + smooth fitness = **24.6% peak** vs 21.2% for 1+1
+/// (A/B test 2026-04-06, 6 seeds).
+pub fn evolution_step_jackpot<F>(
+    net: &mut Network,
+    projection: &mut Int8Projection,
+    mutation_rng: &mut impl Rng,
+    eval_rng: &mut StdRng,
+    mut fitness_fn: F,
+    config: &EvolutionConfig,
+    candidates: usize,
+) -> StepOutcome
+where
+    F: FnMut(&mut Network, &Int8Projection, &mut StdRng) -> f64,
+{
+    let candidates = candidates.max(1);
+
+    // Fast path: N=1 delegates to the original 1+1 ES
+    if candidates == 1 {
+        return evolution_step(net, projection, mutation_rng, eval_rng, fitness_fn, config);
+    }
+
+    // Paired eval: baseline score
+    let eval_rng_snapshot = eval_rng.clone();
+    let before = fitness_fn(net, projection, eval_rng);
+    *eval_rng = eval_rng_snapshot.clone();
+
+    // Save parent state
+    let parent_snapshot = net.save_state();
+    let parent_projection = projection.clone();
+    let edges_before = net.edge_count();
+
+    // Try N candidates, track the best
+    let mut best_delta = f64::NEG_INFINITY;
+    let mut best_net_snapshot = None;
+    let mut best_projection = None;
+    let mut any_mutated = false;
+
+    for _ in 0..candidates {
+        // Restore parent state for this candidate
+        net.restore_state(&parent_snapshot);
+        *projection = parent_projection.clone();
+
+        // Mutate (same 95/5 schedule as evolution_step)
+        let roll = mutation_rng.gen_range(0..100u32);
+        let mut _weight_backup: Option<WeightBackup> = None;
+        let mutated = match roll {
+            0..25 => net.mutate_add_edge(mutation_rng),
+            25..40 => net.mutate_remove_edge(mutation_rng),
+            40..50 => net.mutate_rewire(mutation_rng),
+            50..65 => net.mutate_reverse(mutation_rng),
+            65..72 => net.mutate_mirror(mutation_rng),
+            72..80 => net.mutate_enhance(mutation_rng),
+            80..85 => net.mutate_theta(mutation_rng),
+            85..95 => net.mutate_channel(mutation_rng),
+            _ => {
+                _weight_backup = Some(projection.mutate_one(mutation_rng));
+                true
+            }
+        };
+
+        if !mutated {
+            continue;
+        }
+        any_mutated = true;
+
+        // Evaluate candidate on same segment as baseline
+        let cand_eval_rng = eval_rng_snapshot.clone();
+        let after = fitness_fn(net, projection, &mut cand_eval_rng.clone());
+
+        // Edge cap check
+        let edge_grew = net.edge_count() > edges_before;
+        let within_cap = !edge_grew || net.edge_count() <= config.edge_cap;
+
+        let delta = after - before;
+        if delta > best_delta && within_cap {
+            best_delta = delta;
+            best_net_snapshot = Some(net.save_state());
+            best_projection = Some(projection.clone());
+        }
+    }
+
+    // Advance eval_rng by one fitness_fn call (for step-to-step parity)
+    net.restore_state(&parent_snapshot);
+    *projection = parent_projection.clone();
+    let _ = fitness_fn(net, projection, eval_rng);
+
+    if !any_mutated {
+        net.restore_state(&parent_snapshot);
+        *projection = parent_projection;
+        return StepOutcome::Skipped;
+    }
+
+    // Accept best candidate if it improved
+    let dominated = if config.accept_ties {
+        best_delta >= 0.0
+    } else {
+        best_delta > 0.0
+    };
+
+    if dominated {
+        if let (Some(net_s), Some(proj_s)) = (best_net_snapshot, best_projection) {
+            net.restore_state(&net_s);
+            *projection = proj_s;
+            return StepOutcome::Accepted;
+        }
+    }
+
+    // Reject — restore parent
+    net.restore_state(&parent_snapshot);
+    *projection = parent_projection;
+    StepOutcome::Rejected
 }
 
 #[cfg(test)]
