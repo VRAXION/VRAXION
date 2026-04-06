@@ -1,2 +1,0 @@
-activation,rank,seed,out_params,total_params,best_loss,final_loss,final_acc,elapsed,timestamp
-c19_learn,64,42,147840,1204738,1.835736870765686,1.86593496799469,0.4741862118244171,507.24300259997835,2026-02-27T22:42:09.002539+00:00

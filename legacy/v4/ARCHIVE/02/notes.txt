@@ -1,1 +1,0 @@
-echo, hadamard input + learned output, slot_dim=32

@@ -1,0 +1,387 @@
+//! Pocket pair from EMPTY start + smooth fitness + jackpot.
+//!
+//! Two H=256 pockets (Female + Male) chained via charge transfer.
+//! Both start from 0 edges. Smooth cosine-bigram fitness. Jackpot=9.
+//!
+//! This combines every finding from today's session:
+//! - Empty start: 80% addition with 83 edges (vs 64% with 3400)
+//! - Smooth fitness: +2.6pp over stepwise
+//! - Jackpot: +3.4pp over 1+1 ES
+//!
+//! Control: prefilled (chain-50 + 5%) with same smooth+jackpot.
+//!
+//! Run: cargo run --example pocket_empty --release -- <corpus-path>
+
+use instnct_core::{Int8Projection, Network, SdrTable, PropagationConfig};
+use rand::rngs::StdRng;
+use rand::{Rng, SeedableRng};
+use rayon::prelude::*;
+use std::fs;
+use std::time::Instant;
+
+const H: usize = 256;
+const PHI_DIM: usize = 158;
+const CHARS: usize = 27;
+const SDR_ACTIVE_PCT: usize = 20;
+const STEPS: usize = 30_000;
+const JACKPOT: usize = 9;
+const EDGE_CAP_PER_POCKET: usize = H * H * 7 / 100;
+
+type BigramTable = Vec<[f64; CHARS]>;
+
+fn output_start() -> usize { H - PHI_DIM } // 98
+
+fn load_corpus(path: &str) -> Vec<u8> {
+    let raw = fs::read(path).expect("cannot read corpus");
+    raw.iter()
+        .filter_map(|&b| {
+            if b.is_ascii_lowercase() { Some(b - b'a') }
+            else if b.is_ascii_uppercase() { Some(b.to_ascii_lowercase() - b'a') }
+            else if b == b' ' || b == b'\n' || b == b'\t' { Some(26) }
+            else { None }
+        })
+        .collect()
+}
+
+fn build_bigram_table(corpus: &[u8]) -> BigramTable {
+    let mut counts = vec![[0u64; CHARS]; CHARS];
+    for pair in corpus.windows(2) { counts[pair[0] as usize][pair[1] as usize] += 1; }
+    let mut bigram = vec![[0.0f64; CHARS]; CHARS];
+    for (i, row) in counts.iter().enumerate() {
+        let total: u64 = row.iter().sum();
+        if total > 0 { for (j, &c) in row.iter().enumerate() { bigram[i][j] = c as f64 / total as f64; } }
+    }
+    bigram
+}
+
+fn softmax_27(scores: &[i32]) -> [f64; CHARS] {
+    let max = scores.iter().copied().max().unwrap_or(0) as f64;
+    let mut out = [0.0f64; CHARS];
+    let mut sum = 0.0f64;
+    for (i, &s) in scores.iter().enumerate() { let e = ((s as f64) - max).exp(); out[i] = e; sum += e; }
+    if sum < 1e-30 { let u = 1.0 / CHARS as f64; out.fill(u); }
+    else { for v in out.iter_mut() { *v /= sum; } }
+    out
+}
+
+fn cosine_27(a: &[f64; CHARS], b: &[f64; CHARS]) -> f64 {
+    let mut dot = 0.0f64; let mut na = 0.0f64; let mut nb = 0.0f64;
+    for i in 0..CHARS { dot += a[i] * b[i]; na += a[i] * a[i]; nb += b[i] * b[i]; }
+    let d = na.sqrt() * nb.sqrt();
+    if d < 1e-12 { 0.0 } else { dot / d }
+}
+
+/// Build empty pocket (0 edges, random params only).
+fn build_empty_pocket(rng: &mut StdRng) -> Network {
+    let mut net = Network::new(H);
+    for i in 0..H {
+        net.threshold_mut()[i] = rng.gen_range(0..=7u32);
+        net.channel_mut()[i] = rng.gen_range(1..=8u8);
+        if rng.gen_ratio(1, 10) { net.polarity_mut()[i] = -1; }
+    }
+    net
+}
+
+/// Build prefilled pocket (chain-50 + 5% density + random params).
+fn build_prefilled_pocket(rng: &mut StdRng) -> Network {
+    let mut net = Network::new(H);
+    let os = output_start();
+    let ie = PHI_DIM;
+    let mid = (os + ie) / 2;
+    for _ in 0..50 {
+        let s = rng.gen_range(0..os) as u16;
+        let h1 = rng.gen_range(os..mid) as u16;
+        let h2 = rng.gen_range(mid..ie) as u16;
+        let t = rng.gen_range(ie..H) as u16;
+        net.graph_mut().add_edge(s, h1);
+        net.graph_mut().add_edge(h1, h2);
+        net.graph_mut().add_edge(h2, t);
+    }
+    let target = H * H * 5 / 100;
+    for _ in 0..target * 3 {
+        let s = rng.gen_range(0..H) as u16;
+        let t = rng.gen_range(0..H) as u16;
+        if s != t { net.graph_mut().add_edge(s, t); }
+        if net.edge_count() >= target { break; }
+    }
+    for i in 0..H {
+        net.threshold_mut()[i] = rng.gen_range(0..=7u32);
+        net.channel_mut()[i] = rng.gen_range(1..=8u8);
+        if rng.gen_ratio(1, 10) { net.polarity_mut()[i] = -1; }
+    }
+    net
+}
+
+fn charge_transfer(female: &Network) -> Vec<i32> {
+    let os = output_start();
+    let mut input = vec![0i32; H];
+    for (i, &c) in female.charge()[os..H].iter().enumerate() {
+        if i < PHI_DIM { input[i] = c as i32; }
+    }
+    input
+}
+
+/// Smooth fitness: cosine to bigram over the full Female→Male chain.
+#[allow(clippy::too_many_arguments)]
+fn eval_smooth_chain(
+    female: &mut Network, male: &mut Network, proj: &Int8Projection,
+    corpus: &[u8], len: usize, rng: &mut StdRng,
+    sdr: &SdrTable, prop: &PropagationConfig, bigram: &BigramTable,
+) -> f64 {
+    if corpus.len() <= len { return 0.0; }
+    let off = rng.gen_range(0..=corpus.len() - len - 1);
+    let seg = &corpus[off..off + len + 1];
+    let os = output_start();
+    female.reset(); male.reset();
+    let mut total_cos = 0.0f64;
+    for i in 0..len {
+        female.propagate(sdr.pattern(seg[i] as usize), prop).unwrap();
+        let transfer = charge_transfer(female);
+        male.propagate(&transfer, prop).unwrap();
+        let scores = proj.raw_scores(&male.charge()[os..H]);
+        let probs = softmax_27(&scores);
+        total_cos += cosine_27(&probs, &bigram[seg[i] as usize]);
+    }
+    total_cos / len as f64
+}
+
+/// Argmax accuracy for reporting.
+#[allow(clippy::too_many_arguments)]
+fn eval_accuracy_chain(
+    female: &mut Network, male: &mut Network, proj: &Int8Projection,
+    corpus: &[u8], len: usize, rng: &mut StdRng,
+    sdr: &SdrTable, prop: &PropagationConfig,
+) -> f64 {
+    if corpus.len() <= len { return 0.0; }
+    let off = rng.gen_range(0..=corpus.len() - len - 1);
+    let seg = &corpus[off..off + len + 1];
+    let os = output_start();
+    female.reset(); male.reset();
+    let mut correct = 0u32;
+    for i in 0..len {
+        female.propagate(sdr.pattern(seg[i] as usize), prop).unwrap();
+        let transfer = charge_transfer(female);
+        male.propagate(&transfer, prop).unwrap();
+        if proj.predict(&male.charge()[os..H]) == seg[i + 1] as usize { correct += 1; }
+    }
+    correct as f64 / len as f64
+}
+
+fn mutate_pocket(net: &mut Network, proj: &mut Int8Projection, is_male: bool, rng: &mut impl Rng) -> bool {
+    let roll = rng.gen_range(0..100u32);
+    match roll {
+        0..28 => net.mutate_add_edge(rng),
+        28..44 => net.mutate_remove_edge(rng),
+        44..55 => net.mutate_rewire(rng),
+        55..72 => net.mutate_reverse(rng),
+        72..80 => net.mutate_mirror(rng),
+        80..85 => net.mutate_enhance(rng),
+        85..90 => net.mutate_theta(rng),
+        90..97 => net.mutate_channel(rng),
+        _ => {
+            if is_male { let _ = proj.mutate_one(rng); true }
+            else { net.mutate_theta(rng) } // no W mutation on female
+        }
+    }
+}
+
+#[derive(Clone, Copy)]
+enum Variant { Empty, Prefilled }
+impl Variant {
+    fn name(&self) -> &str { match self { Self::Empty => "empty", Self::Prefilled => "prefill" } }
+}
+
+struct Config { variant: Variant, seed: u64 }
+
+#[allow(dead_code)]
+struct RunResult {
+    variant_name: String, seed: u64,
+    final_acc: f64, peak_acc: f64,
+    f_edges: usize, m_edges: usize, accepted: u32,
+}
+
+fn run_one(cfg: &Config, corpus: &[u8], bigram: &BigramTable) -> RunResult {
+    let prop = PropagationConfig {
+        ticks_per_token: 6, input_duration_ticks: 2,
+        decay_interval_ticks: 6, use_refractory: false,
+    };
+
+    let mut rng = StdRng::seed_from_u64(cfg.seed);
+    let mut female = match cfg.variant {
+        Variant::Empty => build_empty_pocket(&mut rng),
+        Variant::Prefilled => build_prefilled_pocket(&mut rng),
+    };
+    let mut male = match cfg.variant {
+        Variant::Empty => build_empty_pocket(&mut rng),
+        Variant::Prefilled => build_prefilled_pocket(&mut rng),
+    };
+    let mut proj = Int8Projection::new(PHI_DIM, CHARS, &mut StdRng::seed_from_u64(cfg.seed + 200));
+    let mut eval_rng = StdRng::seed_from_u64(cfg.seed + 1000);
+    let sdr = SdrTable::new(CHARS, H, PHI_DIM, SDR_ACTIVE_PCT,
+        &mut StdRng::seed_from_u64(cfg.seed + 100)).unwrap();
+
+    let init_f = female.edge_count();
+    let init_m = male.edge_count();
+    let mut peak_acc = 0.0f64;
+    let mut accepted = 0u32;
+
+    for step in 0..STEPS {
+        // Paired eval
+        let snap = eval_rng.clone();
+        let before = eval_smooth_chain(&mut female, &mut male, &proj, corpus, 100,
+            &mut eval_rng, &sdr, &prop, bigram);
+        eval_rng = snap;
+
+        let f_state = female.save_state();
+        let m_state = male.save_state();
+        let proj_backup = proj.clone();
+        let f_edges_before = female.edge_count();
+        let m_edges_before = male.edge_count();
+
+        // Jackpot: 9 candidates
+        let mut best_delta = f64::NEG_INFINITY;
+        let mut best_f = None;
+        let mut best_m = None;
+        let mut best_p = None;
+        let mut any = false;
+
+        for c in 0..JACKPOT {
+            female.restore_state(&f_state);
+            male.restore_state(&m_state);
+            proj = proj_backup.clone();
+
+            let mut cr = StdRng::seed_from_u64(
+                cfg.seed.wrapping_add(300).wrapping_add(step as u64 * 100 + c as u64));
+
+            // Mutate one pocket (50/50 female/male)
+            let target_male = cr.gen_bool(0.5);
+            let mutated = if target_male {
+                mutate_pocket(&mut male, &mut proj, true, &mut cr)
+            } else {
+                mutate_pocket(&mut female, &mut proj, false, &mut cr)
+            };
+            if !mutated { continue; }
+            any = true;
+
+            // Edge cap check per pocket
+            let f_over = female.edge_count() > f_edges_before && female.edge_count() > EDGE_CAP_PER_POCKET;
+            let m_over = male.edge_count() > m_edges_before && male.edge_count() > EDGE_CAP_PER_POCKET;
+            if f_over || m_over { continue; }
+
+            let cs = eval_rng.clone();
+            let after = eval_smooth_chain(&mut female, &mut male, &proj, corpus, 100,
+                &mut eval_rng, &sdr, &prop, bigram);
+            eval_rng = cs;
+
+            let delta = after - before;
+            if delta > best_delta {
+                best_delta = delta;
+                best_f = Some(female.save_state());
+                best_m = Some(male.save_state());
+                best_p = Some(proj.clone());
+            }
+        }
+
+        // Advance eval_rng
+        female.restore_state(&f_state); male.restore_state(&m_state); proj = proj_backup.clone();
+        let _ = eval_smooth_chain(&mut female, &mut male, &proj, corpus, 100,
+            &mut eval_rng, &sdr, &prop, bigram);
+
+        if !any { female.restore_state(&f_state); male.restore_state(&m_state); proj = proj_backup; continue; }
+
+        if best_delta > 0.0 {
+            if let (Some(fs), Some(ms), Some(ps)) = (best_f, best_m, best_p) {
+                female.restore_state(&fs); male.restore_state(&ms); proj = ps;
+                accepted += 1;
+            }
+        } else {
+            female.restore_state(&f_state); male.restore_state(&m_state); proj = proj_backup;
+        }
+
+        if (step + 1) % 5_000 == 0 {
+            let mut cr = StdRng::seed_from_u64(cfg.seed + 6000 + step as u64);
+            let acc = eval_accuracy_chain(&mut female, &mut male, &proj, corpus, 2000,
+                &mut cr, &sdr, &prop);
+            if acc > peak_acc { peak_acc = acc; }
+            println!("  {} seed={} step {:>5}: acc={:.1}% F={} M={} accepted={} (init F={} M={})",
+                cfg.variant.name(), cfg.seed, step + 1, acc * 100.0,
+                female.edge_count(), male.edge_count(), accepted, init_f, init_m);
+        }
+    }
+
+    let mut fr = StdRng::seed_from_u64(cfg.seed + 9999);
+    let final_acc = eval_accuracy_chain(&mut female, &mut male, &proj, corpus, 5000,
+        &mut fr, &sdr, &prop);
+    if final_acc > peak_acc { peak_acc = final_acc; }
+
+    println!("  {} seed={} FINAL: acc={:.1}% peak={:.1}% F={} M={} accepted={}",
+        cfg.variant.name(), cfg.seed, final_acc * 100.0, peak_acc * 100.0,
+        female.edge_count(), male.edge_count(), accepted);
+
+    RunResult {
+        variant_name: cfg.variant.name().to_string(), seed: cfg.seed,
+        final_acc, peak_acc,
+        f_edges: female.edge_count(), m_edges: male.edge_count(), accepted,
+    }
+}
+
+fn main() {
+    rayon::ThreadPoolBuilder::new().num_threads(4).build_global().ok();
+
+    let corpus_path = std::env::args().nth(1).unwrap_or_else(|| {
+        "S:/AI/work/VRAXION_DEV/instnct/data/traindat/fineweb_edu.traindat".to_string()
+    });
+
+    println!("=== Pocket Pair: Empty vs Prefilled ===");
+    println!("  Both: smooth cosine-bigram fitness + jackpot=9");
+    println!("  Empty: 0+0 edges, Prefilled: ~3300+3300 edges\n");
+
+    let corpus = load_corpus(&corpus_path);
+    println!("  {} chars", corpus.len());
+    let bigram = build_bigram_table(&corpus);
+    println!();
+
+    let seeds = [42u64, 123, 7, 1042, 555, 8042];
+
+    let mut configs: Vec<Config> = Vec::new();
+    for &v in &[Variant::Empty, Variant::Prefilled] {
+        for &s in &seeds { configs.push(Config { variant: v, seed: s }); }
+    }
+    println!("  {} configs: 2 variants x {} seeds\n", configs.len(), seeds.len());
+
+    let start = Instant::now();
+    let results: Vec<RunResult> = configs.par_iter()
+        .map(|cfg| run_one(cfg, &corpus, &bigram))
+        .collect();
+    let elapsed = start.elapsed().as_secs_f64();
+
+    println!("\n=== SUMMARY ===\n");
+    println!("{:<10} {:>7} {:>7} {:>7} {:>7} {:>7} {:>8}",
+        "Variant", "Mean%", "Best%", "Peak%", "F_edg", "M_edg", "Accepted");
+    println!("{}", "-".repeat(62));
+
+    for v in &[Variant::Empty, Variant::Prefilled] {
+        let g: Vec<_> = results.iter().filter(|r| r.variant_name == v.name()).collect();
+        let n = g.len() as f64;
+        let mean = g.iter().map(|r| r.final_acc).sum::<f64>() / n;
+        let best = g.iter().map(|r| r.final_acc).fold(0.0f64, f64::max);
+        let peak = g.iter().map(|r| r.peak_acc).fold(0.0f64, f64::max);
+        let fe = g.iter().map(|r| r.f_edges).sum::<usize>() / g.len();
+        let me = g.iter().map(|r| r.m_edges).sum::<usize>() / g.len();
+        let ac = g.iter().map(|r| r.accepted as f64).sum::<f64>() / n;
+        println!("{:<10} {:>6.1}% {:>6.1}% {:>6.1}% {:>7} {:>7} {:>8.0}",
+            v.name(), mean * 100.0, best * 100.0, peak * 100.0, fe, me, ac);
+    }
+
+    println!("\nPer-seed:");
+    println!("{:<10} {:>6} {:>7} {:>7} {:>7} {:>7} {:>8}",
+        "Variant", "Seed", "Acc%", "Peak%", "F_edg", "M_edg", "Accepted");
+    println!("{}", "-".repeat(58));
+    for r in &results {
+        println!("{:<10} {:>6} {:>6.1}% {:>6.1}% {:>7} {:>7} {:>8}",
+            r.variant_name, r.seed, r.final_acc * 100.0, r.peak_acc * 100.0,
+            r.f_edges, r.m_edges, r.accepted);
+    }
+
+    println!("\n  Total time: {:.0}s", elapsed);
+}
