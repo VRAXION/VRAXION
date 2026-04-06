@@ -73,7 +73,7 @@ PAGE_EXPECTATIONS = {
     RUST: [
         "Rust is no longer the experiment. It is the implementation frontier.",
         "Open the Rust wiki page",
-        "17-18%",
+        "24.6%",
     ],
     WIKI_STUB: [
         "Legacy docs/wiki moved",
