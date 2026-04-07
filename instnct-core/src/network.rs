@@ -178,6 +178,8 @@ pub struct Network {
     csr_targets: Vec<u16>, // CSR: compact target indices
     csr_dirty: bool,     // true when graph changed since last CSR rebuild
     active_neurons: Vec<u16>, // scratch: indices of neurons with charge > 0 (spike skip-inactive)
+    dirty_set: Vec<u16>,   // sparse tick: indices of neurons that may have charge>0 or activation!=0
+    dirty_member: Vec<bool>, // dirty_member[i] == true iff i is in dirty_set
 }
 
 impl Network {
@@ -199,6 +201,8 @@ impl Network {
             csr_targets: Vec::new(),
             csr_dirty: true,
             active_neurons: Vec::with_capacity(neuron_count),
+            dirty_set: Vec::new(),
+            dirty_member: vec![false; neuron_count],
         }
     }
 
@@ -294,55 +298,73 @@ impl Network {
         let incoming = &mut self.workspace.incoming_scratch_mut()[..neuron_count];
 
         for tick in 0..config.ticks_per_token {
+            // 1. Charge decay — O(dirty) instead of O(H)
             if config.decay_interval_ticks > 0 && tick % config.decay_interval_ticks == 0 {
-                for s in self.spike.iter_mut() {
-                    s.charge = s.charge.saturating_sub(1);
-                }
-            }
-            if tick < config.input_duration_ticks {
-                for (act, &input_val) in self.activation.iter_mut().zip(input.iter()) {
-                    *act = act.saturating_add(input_val as i8);
+                for &idx in &self.dirty_set {
+                    self.spike[idx as usize].charge = self.spike[idx as usize].charge.saturating_sub(1);
                 }
             }
 
-            // Skip-inactive scatter-add: only process edges from firing neurons
-            incoming.fill(0i16);
-            for neuron in 0..neuron_count {
-                let act = self.activation[neuron];
-                if act == 0 {
-                    continue; // skip silent neurons (CSR scatter-add optimization)
+            // 2. Input injection — O(H) only during input ticks (unavoidable)
+            //    BUT: add injected neurons to dirty set
+            if tick < config.input_duration_ticks {
+                for i in 0..neuron_count {
+                    if input[i] != 0 {
+                        self.activation[i] = self.activation[i].saturating_add(input[i] as i8);
+                        if !self.dirty_member[i] {
+                            self.dirty_member[i] = true;
+                            self.dirty_set.push(i as u16);
+                        }
+                    }
                 }
-                let start = self.csr_offsets[neuron] as usize;
-                let end = self.csr_offsets[neuron + 1] as usize;
+            }
+
+            // 3. CSR scatter-add — iterate dirty_set (not 0..neuron_count)
+            //    Add targets to dirty set during scatter
+            let scatter_end = self.dirty_set.len(); // snapshot before new additions
+            for di in 0..scatter_end {
+                let idx = self.dirty_set[di] as usize;
+                let act = self.activation[idx];
+                if act == 0 { continue; }
+                let start = self.csr_offsets[idx] as usize;
+                let end = self.csr_offsets[idx + 1] as usize;
                 for &target in &self.csr_targets[start..end] {
                     incoming[target as usize] += act as i16;
+                    if !self.dirty_member[target as usize] {
+                        self.dirty_member[target as usize] = true;
+                        self.dirty_set.push(target);
+                    }
                 }
             }
 
-            for (s, &sig) in self.spike.iter_mut().zip(incoming.iter()) {
-                let val = (s.charge as i16) + sig;
-                s.charge = val.clamp(0, LIMIT_MAX_CHARGE as i16) as u8;
+            // 4. Charge accumulation — O(dirty)
+            for &idx in &self.dirty_set {
+                let i = idx as usize;
+                let val = (self.spike[i].charge as i16) + incoming[i];
+                self.spike[i].charge = val.clamp(0, LIMIT_MAX_CHARGE as i16) as u8;
             }
 
-            // Build active set: only neurons with charge > 0 can possibly fire
-            // (charge_x10=0 < threshold_x10 which is always >= 7, so charge=0 never fires)
+            // 5. Build active set — O(dirty)
             self.active_neurons.clear();
-            for idx in 0..neuron_count {
-                if self.spike[idx].charge > 0 {
-                    self.active_neurons.push(idx as u16);
+            for &idx in &self.dirty_set {
+                if self.spike[idx as usize].charge > 0 {
+                    self.active_neurons.push(idx);
                 }
             }
 
-            // Clear all activation (silent by default), then only update active neurons
-            self.activation.fill(0);
+            // 6. Clear activation — O(dirty)
+            for &idx in &self.dirty_set {
+                self.activation[idx as usize] = 0;
+            }
 
+            // 7. Spike decision — O(active), existing logic unchanged
             let phase_tick = tick % GLOBAL_PHASE_TICKS_PER_PERIOD;
             for i in 0..self.active_neurons.len() {
                 let neuron_idx = self.active_neurons[i] as usize;
                 // Refractory gate: neuron in cooldown cannot fire
                 if config.use_refractory && self.refractory[neuron_idx] > 0 {
                     self.refractory[neuron_idx] -= 1;
-                    continue; // activation already 0 from fill
+                    continue;
                 }
                 let channel_idx = self.spike[neuron_idx].channel as usize;
                 let phase_mult: u16 = if (1..=GLOBAL_PHASE_CHANNEL_COUNT).contains(&channel_idx) {
@@ -350,7 +372,7 @@ impl Network {
                 } else {
                     10
                 };
-                let charge_x10: u16 = self.spike[neuron_idx].charge as u16 * 10; // x10 fixed-point for integer threshold comparison
+                let charge_x10: u16 = self.spike[neuron_idx].charge as u16 * 10;
                 let threshold_x10: u16 = (self.spike[neuron_idx].threshold as u16 + 1) * phase_mult;
                 if charge_x10 >= threshold_x10 {
                     self.activation[neuron_idx] = self.polarity[neuron_idx];
@@ -359,7 +381,27 @@ impl Network {
                         self.refractory[neuron_idx] = 1;
                     }
                 }
-                // else: activation already 0 from fill
+            }
+
+            // 8. Sparse clear incoming — O(dirty)
+            for &idx in &self.dirty_set {
+                incoming[idx as usize] = 0;
+            }
+
+            // 9. Prune dirty set — remove quiescent neurons
+            {
+                let spike = &self.spike;
+                let activation = &self.activation;
+                let dirty_member = &mut self.dirty_member;
+                self.dirty_set.retain(|&idx| {
+                    let i = idx as usize;
+                    if spike[i].charge > 0 || activation[i] != 0 {
+                        true
+                    } else {
+                        dirty_member[i] = false;
+                        false
+                    }
+                });
             }
         }
         Ok(())
@@ -374,6 +416,10 @@ impl Network {
             s.charge = 0;
         }
         self.refractory.fill(0);
+        for &idx in &self.dirty_set {
+            self.dirty_member[idx as usize] = false;
+        }
+        self.dirty_set.clear();
     }
 
     /// Snapshot the current topology, parameters, and state for later rollback.
@@ -410,6 +456,17 @@ impl Network {
         self.workspace
             .ensure_neuron_count(self.graph.neuron_count());
         self.csr_dirty = true;
+        // Rebuild dirty set from restored state
+        for &idx in &self.dirty_set {
+            self.dirty_member[idx as usize] = false;
+        }
+        self.dirty_set.clear();
+        for i in 0..self.graph.neuron_count() {
+            if self.spike[i].charge > 0 || self.activation[i] != 0 {
+                self.dirty_member[i] = true;
+                self.dirty_set.push(i as u16);
+            }
+        }
     }
 
     // ---- Genome persistence ----
@@ -478,6 +535,8 @@ impl Network {
             csr_targets: Vec::new(),
             csr_dirty: true,
             active_neurons: Vec::with_capacity(n),
+            dirty_set: Vec::new(),
+            dirty_member: vec![false; n],
         })
     }
 
@@ -901,6 +960,12 @@ impl Network {
     #[inline]
     pub fn activation(&self) -> &[i8] {
         &self.activation
+    }
+
+    /// Length of the dirty set (for testing/diagnostics).
+    #[cfg(test)]
+    pub(crate) fn dirty_set_len(&self) -> usize {
+        self.dirty_set.len()
     }
 }
 
@@ -2370,5 +2435,196 @@ mod tests {
         // Neuron 0 received input, should have fired and entered refractory
         // All charges must be within bounds
         assert!(net.spike_data().iter().all(|s| s.charge <= LIMIT_MAX_CHARGE));
+    }
+
+    // ---- Sparse tick adversarial tests ----
+
+    #[test]
+    fn sparse_tick_matches_dense_on_random_networks() {
+        // Proves sparse tick (CSR path) produces identical results to dense
+        // standalone propagate_token across many random configurations.
+        use crate::propagation::{propagate_token, PropagationParameters, PropagationState};
+        use rand::Rng;
+
+        for seed in 0..50u64 {
+            let mut rng = StdRng::seed_from_u64(seed);
+            let neuron_count = rng.gen_range(4..=200);
+            let mut net = Network::new(neuron_count);
+
+            // Random edges (sparse to dense)
+            let edge_count = rng.gen_range(0..neuron_count * 2);
+            for _ in 0..edge_count {
+                net.mutate_add_edge(&mut rng);
+            }
+
+            // Random parameters
+            for i in 0..neuron_count {
+                net.spike_data_mut()[i].threshold = rng.gen_range(0..=15);
+                net.spike_data_mut()[i].channel = rng.gen_range(1..=8);
+            }
+            for i in 0..neuron_count {
+                if rng.gen_bool(0.2) {
+                    net.polarity_mut()[i] = -1;
+                }
+            }
+
+            // Random input
+            let input: Vec<i32> = (0..neuron_count).map(|_| rng.gen_range(-1..=1)).collect();
+            let config = PropagationConfig {
+                ticks_per_token: rng.gen_range(1..=12),
+                input_duration_ticks: rng.gen_range(0..=3),
+                decay_interval_ticks: rng.gen_range(0..=8),
+                use_refractory: rng.gen_bool(0.3),
+            };
+
+            // Run Network::propagate (uses sparse tick + CSR)
+            let mut net_sparse = net.clone();
+            net_sparse.propagate(&input, &config).unwrap();
+
+            // Run standalone propagate_token (reference implementation)
+            let threshold: Vec<u8> = net.spike_data().iter().map(|s| s.threshold).collect();
+            let channel: Vec<u8> = net.spike_data().iter().map(|s| s.channel).collect();
+            let mut act_ref = vec![0i8; neuron_count];
+            let mut charge_ref = vec![0u8; neuron_count];
+            let mut refr_ref = vec![0u8; neuron_count];
+            let mut ws = PropagationWorkspace::new(neuron_count);
+
+            propagate_token(
+                &input,
+                net.graph(),
+                &PropagationParameters {
+                    threshold: &threshold,
+                    channel: &channel,
+                    polarity: net.polarity(),
+                },
+                &mut PropagationState {
+                    activation: &mut act_ref,
+                    charge: &mut charge_ref,
+                    refractory: &mut refr_ref,
+                },
+                &config,
+                &mut ws,
+            )
+            .unwrap();
+
+            // MUST MATCH EXACTLY
+            assert_eq!(
+                net_sparse.activation(),
+                &act_ref[..],
+                "activation diverged at seed={seed}, H={neuron_count}, E={}",
+                net.edge_count()
+            );
+            let sparse_charge: Vec<u8> =
+                net_sparse.spike_data().iter().map(|s| s.charge).collect();
+            assert_eq!(
+                sparse_charge, charge_ref,
+                "charge diverged at seed={seed}, H={neuron_count}, E={}",
+                net.edge_count()
+            );
+        }
+    }
+
+    #[test]
+    fn dirty_set_shrinks_when_activity_stops() {
+        let mut net = Network::new(1000);
+        let mut rng = StdRng::seed_from_u64(42);
+        for _ in 0..100 {
+            net.mutate_add_edge(&mut rng);
+        }
+
+        // Inject input once
+        let mut input = vec![0i32; 1000];
+        input[0] = 1;
+        input[50] = 1;
+        input[100] = 1;
+        let config = PropagationConfig {
+            ticks_per_token: 1,
+            input_duration_ticks: 1,
+            decay_interval_ticks: 1,
+            use_refractory: false,
+        };
+
+        // First propagation creates activity
+        net.propagate(&input, &config).unwrap();
+
+        // Subsequent propagations with zero input should let activity die
+        let zero_input = vec![0i32; 1000];
+        for _ in 0..50 {
+            net.propagate(&zero_input, &config).unwrap();
+        }
+
+        // After 50 tokens with no input and decay=1, dirty set should be empty
+        assert_eq!(
+            net.dirty_set_len(),
+            0,
+            "dirty set should be empty after extended quiescence, got {}",
+            net.dirty_set_len()
+        );
+    }
+
+    #[test]
+    fn sparse_tick_empty_network() {
+        let mut net = Network::new(0);
+        let config = PropagationConfig::default();
+        net.propagate(&[], &config).unwrap();
+        // Should not panic
+    }
+
+    #[test]
+    fn sparse_tick_all_neurons_fire() {
+        let mut net = Network::new(100);
+        let mut rng = StdRng::seed_from_u64(0xF);
+        // Dense: add lots of edges
+        for _ in 0..5000 {
+            net.mutate_add_edge(&mut rng);
+        }
+        // Low threshold so everyone fires
+        for i in 0..100 {
+            net.spike_data_mut()[i].threshold = 0;
+        }
+
+        let input: Vec<i32> = vec![1; 100];
+        let config = PropagationConfig::default();
+        net.propagate(&input, &config).unwrap();
+
+        // Most neurons should be active
+        let active = net.activation().iter().filter(|&&a| a != 0).count();
+        assert!(
+            active > 50,
+            "expected most neurons active in dense network, got {}",
+            active
+        );
+    }
+
+    #[test]
+    fn decay_only_affects_charged_neurons_sparse() {
+        let mut net = Network::new(100);
+
+        let mut input = vec![0i32; 100];
+        input[5] = 1;
+        let config = PropagationConfig {
+            ticks_per_token: 1,
+            input_duration_ticks: 1,
+            decay_interval_ticks: 1,
+            use_refractory: false,
+        };
+
+        // Propagate to establish activity at neuron 5
+        net.propagate(&input, &config).unwrap();
+
+        // Now run with zero input, charge should decay
+        let zero_input = vec![0i32; 100];
+        for _ in 0..20 {
+            net.propagate(&zero_input, &config).unwrap();
+        }
+
+        // All charge should be 0 after enough decay
+        for i in 0..100 {
+            assert_eq!(
+                net.spike_data()[i].charge, 0,
+                "neuron {} should have charge 0 after decay",
+                i
+            );
+        }
     }
 }

@@ -36,6 +36,10 @@ const _: () = assert!((LIMIT_MAX_CHARGE as u64 + 1) * 13 <= u16::MAX as u64);
 pub struct PropagationWorkspace {
     incoming_scratch: Vec<i16>, // per-neuron incoming-signal accumulator
     active_scratch: Vec<u16>,   // scratch: indices of neurons with charge > 0 (spike skip-inactive)
+    #[allow(dead_code)] // used by Network CSR path; reserved for future standalone sparse tick
+    dirty_set: Vec<u16>,        // sparse tick: indices of neurons that may have charge>0 or activation!=0
+    #[allow(dead_code)] // used by Network CSR path; reserved for future standalone sparse tick
+    dirty_member: Vec<bool>,    // dirty_member[i] == true iff i is in dirty_set
 }
 
 impl PropagationWorkspace {
@@ -44,6 +48,8 @@ impl PropagationWorkspace {
         Self {
             incoming_scratch: vec![0; neuron_count],
             active_scratch: Vec::with_capacity(neuron_count),
+            dirty_set: Vec::new(),
+            dirty_member: vec![false; neuron_count],
         }
     }
 
@@ -55,6 +61,9 @@ impl PropagationWorkspace {
         if self.active_scratch.capacity() < neuron_count {
             self.active_scratch.reserve(neuron_count - self.active_scratch.capacity());
         }
+        if self.dirty_member.len() < neuron_count {
+            self.dirty_member.resize(neuron_count, false);
+        }
     }
 
     /// Mutable access to the scratch buffer (used by Network CSR propagation).
@@ -65,7 +74,12 @@ impl PropagationWorkspace {
     #[cfg(test)]
     fn with_scratch(incoming_scratch: Vec<i16>) -> Self {
         let cap = incoming_scratch.len();
-        Self { incoming_scratch, active_scratch: Vec::with_capacity(cap) }
+        Self {
+            incoming_scratch,
+            active_scratch: Vec::with_capacity(cap),
+            dirty_set: Vec::new(),
+            dirty_member: vec![false; cap],
+        }
     }
 }
 

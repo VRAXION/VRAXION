@@ -100,6 +100,11 @@ fn random_network(rng: &mut StdRng, neuron_count: usize) -> Network {
         net.polarity[idx] = if rng.gen_bool(0.25) { -1 } else { 1 };
         net.activation[idx] = rng.gen_range(-1..=1);
         net.spike[idx].charge = rng.gen_range(0..=LIMIT_MAX_CHARGE);
+        // Track non-zero state in dirty set for sparse tick correctness
+        if (net.activation[idx] != 0 || net.spike[idx].charge > 0) && !net.dirty_member[idx] {
+            net.dirty_member[idx] = true;
+            net.dirty_set.push(idx as u16);
+        }
     }
 
     net
