@@ -68,3 +68,8 @@ required-features = ["benchmarks"]
 name = "bitmask_ab"
 harness = false
 required-features = ["benchmarks"]
+
+[[bench]]
+name = "prebake_thresh_ab"
+harness = false
+required-features = ["benchmarks"]
