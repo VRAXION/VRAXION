@@ -38,3 +38,8 @@ required-features = ["benchmarks"]
 name = "prefetch_ab"
 harness = false
 required-features = ["benchmarks"]
+
+[[bench]]
+name = "phase_breakdown"
+harness = false
+required-features = ["benchmarks"]
