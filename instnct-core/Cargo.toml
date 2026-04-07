@@ -63,3 +63,8 @@ required-features = ["benchmarks"]
 name = "spike_pack_ab"
 harness = false
 required-features = ["benchmarks"]
+
+[[bench]]
+name = "bitmask_ab"
+harness = false
+required-features = ["benchmarks"]
