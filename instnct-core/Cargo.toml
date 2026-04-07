@@ -33,3 +33,8 @@ required-features = ["benchmarks"]
 name = "optimization_ab"
 harness = false
 required-features = ["benchmarks"]
+
+[[bench]]
+name = "prefetch_ab"
+harness = false
+required-features = ["benchmarks"]
