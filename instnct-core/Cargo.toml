@@ -83,3 +83,8 @@ required-features = ["benchmarks"]
 name = "spike_skip_ab"
 harness = false
 required-features = ["benchmarks"]
+
+[[bench]]
+name = "bitset_ab"
+harness = false
+required-features = ["benchmarks"]
