@@ -43,3 +43,8 @@ required-features = ["benchmarks"]
 name = "phase_breakdown"
 harness = false
 required-features = ["benchmarks"]
+
+[[bench]]
+name = "scatter_breakdown"
+harness = false
+required-features = ["benchmarks"]
