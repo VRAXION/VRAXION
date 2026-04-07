@@ -89,7 +89,7 @@ fn eval_voting_accuracy(
     let mut correct = 0u32;
     for i in 0..len {
         net.propagate(sdr.pattern(seg[i] as usize), config).unwrap();
-        if predict_voting(net.charge(), output_start, neurons_per_char) == seg[i + 1] as usize {
+        if predict_voting(&net.charge_vec(0..net.neuron_count()), output_start, neurons_per_char) == seg[i + 1] as usize {
             correct += 1;
         }
     }
@@ -142,8 +142,8 @@ fn run_one(cfg: &RunConfig, corpus: &[u8]) -> RunResult {
 
     // Random params
     for i in 0..h {
-        net.threshold_mut()[i] = rng.gen_range(0..=7u8);
-        net.channel_mut()[i] = rng.gen_range(1..=8u8);
+        net.spike_data_mut()[i].threshold = rng.gen_range(0..=7u8);
+        net.spike_data_mut()[i].channel = rng.gen_range(1..=8u8);
         if rng.gen_ratio(1, 10) { net.polarity_mut()[i] = -1; }
     }
 
@@ -246,7 +246,7 @@ fn eval_margin_fitness(
     let mut total_margin = 0.0f64;
     for i in 0..len {
         net.propagate(sdr.pattern(seg[i] as usize), config).unwrap();
-        total_margin += margin_fitness(net.charge(), output_start, neurons_per_char, seg[i + 1] as usize);
+        total_margin += margin_fitness(&net.charge_vec(0..net.neuron_count()), output_start, neurons_per_char, seg[i + 1] as usize);
     }
     total_margin / len as f64
 }

@@ -59,7 +59,7 @@ fn eval_accuracy(
     let mut correct = 0u32;
     for i in 0..len {
         net.propagate(sdr.pattern(seg[i] as usize), config).unwrap();
-        if projection.predict(&net.charge()[OUTPUT_START..NEURON_COUNT]) == seg[i + 1] as usize {
+        if projection.predict(&net.charge_vec(OUTPUT_START..NEURON_COUNT)) == seg[i + 1] as usize {
             correct += 1;
         }
     }
@@ -67,14 +67,14 @@ fn eval_accuracy(
 }
 
 fn measure_health(net: &Network) -> NetworkHealth {
-    let charge = net.charge();
+    let spike = net.spike_data();
     let activation = net.activation();
-    let silent = charge.iter().filter(|&&c| c == 0).count();
+    let silent = spike.iter().filter(|s| s.charge == 0).count();
     let firing = activation.iter().filter(|&&a| a != 0).count();
-    let mean_charge = if charge.is_empty() {
+    let mean_charge = if spike.is_empty() {
         0.0
     } else {
-        charge.iter().map(|&c| c as f64).sum::<f64>() / charge.len() as f64
+        spike.iter().map(|s| s.charge as f64).sum::<f64>() / spike.len() as f64
     };
     NetworkHealth {
         silent_neurons: silent,
@@ -127,8 +127,8 @@ fn build_network(rng: &mut StdRng) -> Network {
         if net.edge_count() >= target_edges { break; }
     }
     for i in 0..NEURON_COUNT {
-        net.threshold_mut()[i] = rng.gen_range(0..=7);
-        net.channel_mut()[i] = rng.gen_range(1..=8);
+        net.spike_data_mut()[i].threshold = rng.gen_range(0..=7);
+        net.spike_data_mut()[i].channel = rng.gen_range(1..=8);
         if rng.gen_ratio(1, 10) { net.polarity_mut()[i] = -1; }
     }
     net

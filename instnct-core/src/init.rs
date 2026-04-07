@@ -195,8 +195,8 @@ pub fn build_network(config: &InitConfig, rng: &mut impl Rng) -> Network {
 
     // Phase 3: randomize neuron parameters
     for i in 0..h {
-        net.threshold_mut()[i] = rng.gen_range(0..=config.threshold_max);
-        net.channel_mut()[i] = rng.gen_range(1..=config.channel_max);
+        net.spike_data_mut()[i].threshold = rng.gen_range(0..=config.threshold_max);
+        net.spike_data_mut()[i].channel = rng.gen_range(1..=config.channel_max);
         if config.inhibitory_pct > 0 && rng.gen_ratio(config.inhibitory_pct, 100) {
             net.polarity_mut()[i] = -1;
         }
@@ -246,10 +246,10 @@ mod tests {
         let mut rng = StdRng::seed_from_u64(42);
         let net = build_network(&cfg, &mut rng);
 
-        let distinct_thresholds: HashSet<u8> = net.threshold().iter().copied().collect();
+        let distinct_thresholds: HashSet<u8> = net.spike_data().iter().map(|s| s.threshold).collect();
         assert!(distinct_thresholds.len() > 1, "threshold not randomized");
 
-        let distinct_channels: HashSet<u8> = net.channel().iter().copied().collect();
+        let distinct_channels: HashSet<u8> = net.spike_data().iter().map(|s| s.channel).collect();
         assert!(distinct_channels.len() > 1, "channel not randomized");
 
         let inhibitory = net.polarity().iter().filter(|&&p| p == -1).count();
@@ -272,8 +272,7 @@ mod tests {
         let net1 = build_network(&cfg, &mut StdRng::seed_from_u64(42));
         let net2 = build_network(&cfg, &mut StdRng::seed_from_u64(42));
         assert_eq!(net1.edge_count(), net2.edge_count());
-        assert_eq!(net1.threshold(), net2.threshold());
-        assert_eq!(net1.channel(), net2.channel());
+        assert_eq!(net1.spike_data(), net2.spike_data());
         assert_eq!(net1.polarity(), net2.polarity());
     }
 
@@ -306,7 +305,7 @@ mod tests {
 
         net.propagate(&input, &cfg.propagation).unwrap();
 
-        let total_charge: u32 = net.charge().iter().map(|&c| c as u32).sum();
+        let total_charge: u32 = net.spike_data().iter().map(|s| s.charge as u32).sum();
         assert!(total_charge > 0, "network is dead after propagation");
     }
 }

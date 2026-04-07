@@ -39,7 +39,7 @@ fn train_pocket(
                 let mut c = 0u32;
                 for i in 0..100 {
                     n.propagate(sdr.pattern(seg[i] as usize), &init.propagation).unwrap();
-                    if p.predict(&n.charge()[os..nc]) == seg[i + 1] as usize { c += 1; }
+                    if p.predict(&n.charge_vec(os..nc)) == seg[i + 1] as usize { c += 1; }
                 }
                 c as f64 / 100.0
             }, &evo);
@@ -107,7 +107,7 @@ fn main() {
         let mut preds = Vec::with_capacity(eval_len);
         for i in 0..eval_len {
             n.propagate(sdr.pattern(seg[i] as usize), &init.propagation).unwrap();
-            let pred = proj.predict(&n.charge()[os..nc]);
+            let pred = proj.predict(&n.charge_vec(os..nc));
             preds.push(pred);
             if pred == seg[i + 1] as usize { correct += 1; }
         }
@@ -142,13 +142,13 @@ fn main() {
 
             // Chain: each subsequent pocket gets previous pocket's output as input
             for p in 1..N_POCKETS {
-                let input = charge_to_input(nets[p-1].charge(), os, nc, ie, threshold);
+                let input = charge_to_input(&nets[p-1].charge_vec(0..nc), os, nc, ie, threshold);
                 nets[p].propagate(&input, &init.propagation).unwrap();
             }
 
             // Readout from last pocket
             let last_proj = &pockets[N_POCKETS - 1].1;
-            let pred = last_proj.predict(&nets[N_POCKETS - 1].charge()[os..nc]);
+            let pred = last_proj.predict(&nets[N_POCKETS - 1].charge_vec(os..nc));
             if pred == seg[i + 1] as usize { chain_correct += 1; }
         }
         let chain_acc = chain_correct as f64 / eval_len as f64;
@@ -165,11 +165,11 @@ fn main() {
         for i in 0..eval_len {
             nets[0].propagate(sdr.pattern(seg[i] as usize), &init.propagation).unwrap();
             for p in 1..N_POCKETS {
-                let input = charge_to_input(nets[p-1].charge(), os, nc, ie, 3);
+                let input = charge_to_input(&nets[p-1].charge_vec(0..nc), os, nc, ie, 3);
                 nets[p].propagate(&input, &init.propagation).unwrap();
             }
             for (p, (_, proj)) in pockets.iter().enumerate() {
-                let pred = proj.predict(&nets[p].charge()[os..nc]);
+                let pred = proj.predict(&nets[p].charge_vec(os..nc));
                 if pred == seg[i + 1] as usize { per_pocket_correct[p] += 1; }
             }
         }

@@ -146,11 +146,11 @@ fn pocket_param(net: &mut Network, zone: &PocketZone, rng: &mut impl Rng) -> boo
     let roll = rng.gen_range(0..3u32);
     match roll {
         0 => {
-            net.threshold_mut()[idx] = rng.gen_range(0..=7);
+            net.spike_data_mut()[idx].threshold = rng.gen_range(0..=7);
             true
         }
         1 => {
-            net.channel_mut()[idx] = rng.gen_range(1..=8);
+            net.spike_data_mut()[idx].channel = rng.gen_range(1..=8);
             true
         }
         _ => {
@@ -214,7 +214,7 @@ fn eval_accuracy(
     let mut correct = 0u32;
     for i in 0..len {
         net.propagate(sdr.pattern(seg[i] as usize), config).unwrap();
-        if proj.predict(&net.charge()[OUTPUT_START..TOTAL_H]) == seg[i + 1] as usize {
+        if proj.predict(&net.charge_vec(OUTPUT_START..TOTAL_H)) == seg[i + 1] as usize {
             correct += 1;
         }
     }
@@ -236,7 +236,7 @@ fn eval_predictions(
     let mut preds = Vec::with_capacity(len);
     for &token in &seg[..len] {
         net.propagate(sdr.pattern(token as usize), config).unwrap();
-        preds.push(proj.predict(&net.charge()[OUTPUT_START..TOTAL_H]));
+        preds.push(proj.predict(&net.charge_vec(OUTPUT_START..TOTAL_H)));
     }
     preds
 }
@@ -287,7 +287,7 @@ fn pocket_mean_thresholds(net: &Network) -> Vec<f64> {
     (0..N_POCKETS)
         .map(|p| {
             let zone = pocket_zone(p);
-            let sum: u32 = net.threshold()[zone.start..zone.end].iter().map(|&t| t as u32).sum();
+            let sum: u32 = net.spike_data()[zone.start..zone.end].iter().map(|s| s.threshold as u32).sum();
             sum as f64 / (zone.end - zone.start) as f64
         })
         .collect()
@@ -359,8 +359,8 @@ impl Individual {
 
             // Random params
             for i in zone.start..zone.end {
-                net.threshold_mut()[i] = init_rng.gen_range(0..=7u8);
-                net.channel_mut()[i] = init_rng.gen_range(1..=8u8);
+                net.spike_data_mut()[i].threshold = init_rng.gen_range(0..=7u8);
+                net.spike_data_mut()[i].channel = init_rng.gen_range(1..=8u8);
                 if init_rng.gen_ratio(1, 10) {
                     net.polarity_mut()[i] = -1;
                 }

@@ -22,6 +22,23 @@ use std::path::Path;
 
 mod disk;
 
+// ---- SpikeData ----
+
+/// Per-neuron spike-decision data packed for cache locality.
+/// 4 bytes per neuron (padded to power-of-2 stride for fast indexing).
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[repr(C)]
+pub struct SpikeData {
+    /// Accumulated charge [0,15]. Reset to 0 on fire.
+    pub charge: u8,
+    /// Firing threshold, stored [0,15], effective = stored+1 → [1,16].
+    pub threshold: u8,
+    /// Phase gating channel [1,8].
+    pub channel: u8,
+    /// Padding to 4-byte alignment for efficient indexing.
+    pub _pad: u8,
+}
+
 // ---- Error ----
 
 /// Errors from [`Network`] operations.
@@ -72,11 +89,9 @@ impl From<PropagationError> for NetworkError {
 #[derive(Clone, Debug)]
 pub struct NetworkSnapshot {
     graph: ConnectionGraph,
-    threshold: Vec<u8>,
-    channel: Vec<u8>,
+    spike: Vec<SpikeData>,
     polarity: Vec<i8>,
     activation: Vec<i8>,
-    charge: Vec<u8>,
     refractory: Vec<u8>,
 }
 
@@ -99,16 +114,10 @@ impl NetworkSnapshot {
         &self.graph
     }
 
-    /// Snapshot threshold values.
+    /// Snapshot spike data (charge, threshold, channel per neuron).
     #[inline]
-    pub fn threshold(&self) -> &[u8] {
-        &self.threshold
-    }
-
-    /// Snapshot channel values.
-    #[inline]
-    pub fn channel(&self) -> &[u8] {
-        &self.channel
+    pub fn spike_data(&self) -> &[SpikeData] {
+        &self.spike
     }
 
     /// Snapshot polarity values.
@@ -123,10 +132,22 @@ impl NetworkSnapshot {
         &self.activation
     }
 
-    /// Snapshot charge values.
+    /// Snapshot threshold value at `idx`.
     #[inline]
-    pub fn charge(&self) -> &[u8] {
-        &self.charge
+    pub fn threshold_at(&self, idx: usize) -> u8 {
+        self.spike[idx].threshold
+    }
+
+    /// Snapshot channel value at `idx`.
+    #[inline]
+    pub fn channel_at(&self, idx: usize) -> u8 {
+        self.spike[idx].channel
+    }
+
+    /// Snapshot charge value at `idx`.
+    #[inline]
+    pub fn charge_at(&self, idx: usize) -> u8 {
+        self.spike[idx].charge
     }
 }
 
@@ -148,11 +169,9 @@ impl NetworkSnapshot {
 #[derive(Clone, Debug)]
 pub struct Network {
     graph: ConnectionGraph,
-    threshold: Vec<u8>,  // per-neuron, stored [0,15]; effective = stored+1 → [1,16]
-    channel: Vec<u8>,    // per-neuron, phase gating channel [1,8]
+    spike: Vec<SpikeData>, // per-neuron AoS: charge, threshold, channel (cache-hot)
     polarity: Vec<i8>,   // per-neuron, +1 excitatory, -1 inhibitory
     activation: Vec<i8>,   // ephemeral, set to polarity or 0 by spike stage; transient mid-tick
-    charge: Vec<u8>,      // ephemeral, [0, LIMIT_MAX_CHARGE]
     refractory: Vec<u8>,  // per-neuron, 0 = ready, 1 = cooling (1-tick refractory after fire)
     workspace: PropagationWorkspace, // reusable scratch buffer
     csr_offsets: Vec<u32>, // CSR: per-neuron edge start index
@@ -170,11 +189,9 @@ impl Network {
     pub fn new(neuron_count: usize) -> Self {
         Self {
             graph: ConnectionGraph::new(neuron_count),
-            threshold: vec![0u8; neuron_count],
-            channel: vec![1u8; neuron_count],
+            spike: vec![SpikeData { charge: 0, threshold: 0, channel: 1, _pad: 0 }; neuron_count],
             polarity: vec![1i8; neuron_count],
             activation: vec![0i8; neuron_count],
-            charge: vec![0u8; neuron_count],
             refractory: vec![0u8; neuron_count],
             workspace: PropagationWorkspace::new(neuron_count),
             csr_offsets: vec![0u32; neuron_count + 1],
@@ -244,17 +261,17 @@ impl Network {
             .into());
         }
         for i in 0..neuron_count {
-            if self.threshold[i] > 15 {
+            if self.spike[i].threshold > 15 {
                 return Err(PropagationError::ThresholdOutOfRange {
                     index: i,
-                    value: self.threshold[i],
+                    value: self.spike[i].threshold,
                 }
                 .into());
             }
-            if !(1..=GLOBAL_PHASE_CHANNEL_COUNT as u8).contains(&self.channel[i]) {
+            if !(1..=GLOBAL_PHASE_CHANNEL_COUNT as u8).contains(&self.spike[i].channel) {
                 return Err(PropagationError::ChannelOutOfRange {
                     index: i,
-                    value: self.channel[i],
+                    value: self.spike[i].channel,
                 }
                 .into());
             }
@@ -276,8 +293,8 @@ impl Network {
 
         for tick in 0..config.ticks_per_token {
             if config.decay_interval_ticks > 0 && tick % config.decay_interval_ticks == 0 {
-                for charge in self.charge.iter_mut() {
-                    *charge = charge.saturating_sub(1);
+                for s in self.spike.iter_mut() {
+                    s.charge = s.charge.saturating_sub(1);
                 }
             }
             if tick < config.input_duration_ticks {
@@ -300,9 +317,9 @@ impl Network {
                 }
             }
 
-            for (ch, &sig) in self.charge.iter_mut().zip(incoming.iter()) {
-                let val = (*ch as i16) + sig;
-                *ch = val.clamp(0, LIMIT_MAX_CHARGE as i16) as u8;
+            for (s, &sig) in self.spike.iter_mut().zip(incoming.iter()) {
+                let val = (s.charge as i16) + sig;
+                s.charge = val.clamp(0, LIMIT_MAX_CHARGE as i16) as u8;
             }
 
             let phase_tick = tick % GLOBAL_PHASE_TICKS_PER_PERIOD;
@@ -313,17 +330,17 @@ impl Network {
                     self.activation[neuron_idx] = 0;
                     continue;
                 }
-                let channel_idx = self.channel[neuron_idx] as usize;
+                let channel_idx = self.spike[neuron_idx].channel as usize;
                 let phase_mult: u16 = if (1..=GLOBAL_PHASE_CHANNEL_COUNT).contains(&channel_idx) {
                     phase_base[(phase_tick + 9 - channel_idx) & 7] as u16
                 } else {
                     10
                 };
-                let charge_x10: u16 = self.charge[neuron_idx] as u16 * 10; // x10 fixed-point for integer threshold comparison
-                let threshold_x10: u16 = (self.threshold[neuron_idx] as u16 + 1) * phase_mult;
+                let charge_x10: u16 = self.spike[neuron_idx].charge as u16 * 10; // x10 fixed-point for integer threshold comparison
+                let threshold_x10: u16 = (self.spike[neuron_idx].threshold as u16 + 1) * phase_mult;
                 if charge_x10 >= threshold_x10 {
                     self.activation[neuron_idx] = self.polarity[neuron_idx];
-                    self.charge[neuron_idx] = 0;
+                    self.spike[neuron_idx].charge = 0;
                     if config.use_refractory {
                         self.refractory[neuron_idx] = 1;
                     }
@@ -340,7 +357,9 @@ impl Network {
     /// Zero all activation and charge values. Does not touch topology or learned parameters.
     pub fn reset(&mut self) {
         self.activation.fill(0);
-        self.charge.fill(0);
+        for s in self.spike.iter_mut() {
+            s.charge = 0;
+        }
         self.refractory.fill(0);
     }
 
@@ -350,11 +369,9 @@ impl Network {
     pub fn save_state(&self) -> NetworkSnapshot {
         NetworkSnapshot {
             graph: self.graph.clone(),
-            threshold: self.threshold.clone(),
-            channel: self.channel.clone(),
+            spike: self.spike.clone(),
             polarity: self.polarity.clone(),
             activation: self.activation.clone(),
-            charge: self.charge.clone(),
             refractory: self.refractory.clone(),
         }
     }
@@ -373,11 +390,9 @@ impl Network {
             snapshot.graph.neuron_count(),
         );
         self.graph.clone_from(&snapshot.graph);
-        self.threshold.copy_from_slice(&snapshot.threshold);
-        self.channel.copy_from_slice(&snapshot.channel);
+        self.spike.copy_from_slice(&snapshot.spike);
         self.polarity.copy_from_slice(&snapshot.polarity);
         self.activation.copy_from_slice(&snapshot.activation);
-        self.charge.copy_from_slice(&snapshot.charge);
         self.refractory.copy_from_slice(&snapshot.refractory);
         self.workspace
             .ensure_neuron_count(self.graph.neuron_count());
@@ -399,8 +414,8 @@ impl Network {
                 sources: sources.iter().map(|&s| s as usize).collect(),
                 targets: targets.iter().map(|&t| t as usize).collect(),
             },
-            threshold: self.threshold.iter().map(|&t| t as u32).collect(),
-            channel: self.channel.clone(),
+            threshold: self.spike.iter().map(|s| s.threshold as u32).collect(),
+            channel: self.spike.iter().map(|s| s.channel).collect(),
             polarity: self.polarity.iter().map(|&p| p as i32).collect(),
         };
         bincode::serialize(&dto).expect("genome serialization cannot fail")
@@ -431,13 +446,19 @@ impl Network {
         let targets: Vec<u16> = dto.graph.targets.iter().map(|&t| t as u16).collect();
         let graph = ConnectionGraph::from_validated_edges(n, sources, targets);
 
+        let threshold_vec: Vec<u8> = dto.threshold.iter().map(|&t| t as u8).collect();
+        let channel_vec: Vec<u8> = dto.channel;
+        let spike: Vec<SpikeData> = threshold_vec
+            .iter()
+            .zip(channel_vec.iter())
+            .map(|(&t, &c)| SpikeData { charge: 0, threshold: t, channel: c, _pad: 0 })
+            .collect();
+
         Ok(Self {
             graph,
-            threshold: dto.threshold.iter().map(|&t| t as u8).collect(),
-            channel: dto.channel,
+            spike,
             polarity: dto.polarity.iter().map(|&p| p as i8).collect(),
             activation: vec![0; n],
-            charge: vec![0; n],
             refractory: vec![0; n],
             workspace: PropagationWorkspace::new(n),
             csr_offsets: vec![0u32; n + 1],
@@ -627,13 +648,13 @@ impl Network {
             return false;
         }
         let source_idx = rng.gen_range(0..neuron_count);
-        let source_channel = self.channel[source_idx];
+        let source_channel = self.spike[source_idx].channel;
         // Find same-channel neurons
         let same_ch: Vec<u16> = self
-            .channel
+            .spike
             .iter()
             .enumerate()
-            .filter(|(i, &ch)| ch == source_channel && *i != source_idx)
+            .filter(|(i, s)| s.channel == source_channel && *i != source_idx)
             .map(|(i, _)| i as u16)
             .collect();
         let target = if same_ch.is_empty() {
@@ -710,10 +731,10 @@ impl Network {
         }
         let index = rng.gen_range(0..neuron_count);
         let new_value = rng.gen_range(0..=15u8);
-        if self.threshold[index] == new_value {
+        if self.spike[index].threshold == new_value {
             return false;
         }
-        self.threshold[index] = new_value;
+        self.spike[index].threshold = new_value;
         true
     }
 
@@ -728,10 +749,10 @@ impl Network {
         }
         let index = rng.gen_range(0..neuron_count);
         let new_value = rng.gen_range(1..=8u8);
-        if self.channel[index] == new_value {
+        if self.spike[index].channel == new_value {
             return false;
         }
-        self.channel[index] = new_value;
+        self.spike[index].channel = new_value;
         true
     }
 
@@ -778,31 +799,75 @@ impl Network {
         &mut self.graph
     }
 
-    // ---- Parameter access ----
+    // ---- Spike data access (AoS: charge, threshold, channel) ----
 
-    /// Per-neuron threshold values (stored range `[0,15]`, effective = stored+1).
+    /// Per-neuron spike-decision data (charge, threshold, channel).
     #[inline]
-    pub fn threshold(&self) -> &[u8] {
-        &self.threshold
+    pub fn spike_data(&self) -> &[SpikeData] {
+        &self.spike
     }
 
-    /// Mutable access to per-neuron thresholds. Valid range: `[0,15]`.
+    /// Mutable access to per-neuron spike-decision data.
     #[inline]
-    pub fn threshold_mut(&mut self) -> &mut [u8] {
-        &mut self.threshold
+    pub fn spike_data_mut(&mut self) -> &mut [SpikeData] {
+        &mut self.spike
     }
 
-    /// Per-neuron phase gating channel. Valid range: `[1,8]`.
+    /// Threshold value for neuron at `idx` (stored `[0,15]`, effective = stored+1).
     #[inline]
-    pub fn channel(&self) -> &[u8] {
-        &self.channel
+    pub fn threshold_at(&self, idx: usize) -> u8 {
+        self.spike[idx].threshold
     }
 
-    /// Mutable access to per-neuron channels. Valid range: `[1,8]`.
+    /// Set threshold for neuron at `idx`. Valid range: `[0,15]`.
     #[inline]
-    pub fn channel_mut(&mut self) -> &mut [u8] {
-        &mut self.channel
+    pub fn set_threshold(&mut self, idx: usize, val: u8) {
+        self.spike[idx].threshold = val;
     }
+
+    /// Set all neuron thresholds to `val`.
+    #[inline]
+    pub fn set_all_threshold(&mut self, val: u8) {
+        for s in self.spike.iter_mut() {
+            s.threshold = val;
+        }
+    }
+
+    /// Channel value for neuron at `idx`. Range: `[1,8]`.
+    #[inline]
+    pub fn channel_at(&self, idx: usize) -> u8 {
+        self.spike[idx].channel
+    }
+
+    /// Set channel for neuron at `idx`. Valid range: `[1,8]`.
+    #[inline]
+    pub fn set_channel(&mut self, idx: usize, val: u8) {
+        self.spike[idx].channel = val;
+    }
+
+    /// Set all neuron channels to `val`.
+    #[inline]
+    pub fn set_all_channel(&mut self, val: u8) {
+        for s in self.spike.iter_mut() {
+            s.channel = val;
+        }
+    }
+
+    /// Charge value for neuron at `idx`. Range: `[0, LIMIT_MAX_CHARGE]`.
+    #[inline]
+    pub fn charge_at(&self, idx: usize) -> u8 {
+        self.spike[idx].charge
+    }
+
+    /// Collect charge values for a range of neurons into a `Vec<u8>`.
+    ///
+    /// Useful for feeding output-zone charges to a projection layer.
+    #[inline]
+    pub fn charge_vec(&self, range: std::ops::Range<usize>) -> Vec<u8> {
+        self.spike[range].iter().map(|s| s.charge).collect()
+    }
+
+    // ---- Parameter access (polarity stays separate) ----
 
     /// Per-neuron polarity (`+1` excitatory, `-1` inhibitory).
     #[inline]
@@ -822,12 +887,6 @@ impl Network {
     #[inline]
     pub fn activation(&self) -> &[i8] {
         &self.activation
-    }
-
-    /// Current charge values (read-only). Range: `[0, LIMIT_MAX_CHARGE]` (currently 15).
-    #[inline]
-    pub fn charge(&self) -> &[u8] {
-        &self.charge
     }
 }
 
@@ -851,11 +910,11 @@ mod tests {
         let net = Network::new(256);
         assert_eq!(net.neuron_count(), 256);
         assert_eq!(net.edge_count(), 0);
-        assert!(net.threshold().iter().all(|&t| t == 0));
-        assert!(net.channel().iter().all(|&c| c == 1));
+        assert!(net.spike_data().iter().all(|s| s.threshold == 0));
+        assert!(net.spike_data().iter().all(|s| s.channel == 1));
         assert!(net.polarity().iter().all(|&p| p == 1));
         assert!(net.activation().iter().all(|&a| a == 0));
-        assert!(net.charge().iter().all(|&c| c == 0));
+        assert!(net.spike_data().iter().all(|s| s.charge == 0));
     }
 
     #[test]
@@ -863,7 +922,7 @@ mod tests {
         let net = Network::new(0);
         assert_eq!(net.neuron_count(), 0);
         assert_eq!(net.edge_count(), 0);
-        assert!(net.threshold().is_empty());
+        assert!(net.spike_data().is_empty());
     }
 
     #[test]
@@ -901,7 +960,7 @@ mod tests {
     fn reset_zeros_state() {
         let mut net = Network::new(64);
         net.graph_mut().add_edge(0, 1);
-        net.threshold_mut()[0] = 5;
+        net.set_threshold(0, 5);
 
         let mut input = vec![0i32; 64];
         input[0] = 1;
@@ -909,9 +968,9 @@ mod tests {
 
         net.reset();
         assert!(net.activation().iter().all(|&a| a == 0));
-        assert!(net.charge().iter().all(|&c| c == 0));
+        assert!(net.spike_data().iter().all(|s| s.charge == 0));
         // parameters and edges untouched
-        assert_eq!(net.threshold()[0], 5);
+        assert_eq!(net.threshold_at(0), 5);
         assert_eq!(net.edge_count(), 1);
     }
 
@@ -925,17 +984,17 @@ mod tests {
     }
 
     #[test]
-    fn threshold_mut_works() {
+    fn set_threshold_works() {
         let mut net = Network::new(16);
-        net.threshold_mut()[5] = 12;
-        assert_eq!(net.threshold()[5], 12);
+        net.set_threshold(5, 12);
+        assert_eq!(net.threshold_at(5), 12);
     }
 
     #[test]
-    fn channel_mut_works() {
+    fn set_channel_works() {
         let mut net = Network::new(16);
-        net.channel_mut()[3] = 7;
-        assert_eq!(net.channel()[3], 7);
+        net.set_channel(3, 7);
+        assert_eq!(net.channel_at(3), 7);
     }
 
     #[test]
@@ -1018,7 +1077,7 @@ mod tests {
         net.propagate(&input, &config).unwrap();
 
         assert!(
-            net.charge().iter().all(|&c| c <= LIMIT_MAX_CHARGE),
+            net.spike_data().iter().all(|s| s.charge <= LIMIT_MAX_CHARGE),
             "charge must not exceed LIMIT_MAX_CHARGE"
         );
     }
@@ -1029,7 +1088,7 @@ mod tests {
         // After 2 ticks with edge 0→1 and input at 0: charge[1] increases by 2 per propagate.
         let mut net = Network::new(4);
         net.graph_mut().add_edge(0, 1);
-        net.threshold_mut().fill(5); // effective = 6
+        net.set_all_threshold(5); // effective = 6
 
         let input = vec![1i32, 0, 0, 0];
         let config = PropagationConfig {
@@ -1040,11 +1099,11 @@ mod tests {
         };
 
         net.propagate(&input, &config).unwrap();
-        let charge_after_one = net.charge()[1];
+        let charge_after_one = net.charge_at(1);
 
         // Second propagation without reset — charge carries over
         net.propagate(&input, &config).unwrap();
-        let charge_after_two = net.charge()[1];
+        let charge_after_two = net.charge_at(1);
 
         assert!(
             charge_after_two > charge_after_one,
@@ -1065,14 +1124,14 @@ mod tests {
         net.propagate(&input, &config).unwrap();
         net.reset();
         net.propagate(&input, &config).unwrap();
-        let after_reset = (net.activation().to_vec(), net.charge().to_vec());
+        let after_reset = (net.activation().to_vec(), net.spike_data().to_vec());
 
         // Second: fresh network, propagate once
         let mut fresh = Network::new(4);
         fresh.graph_mut().add_edge(0, 1);
         fresh.graph_mut().add_edge(1, 2);
         fresh.propagate(&input, &config).unwrap();
-        let after_fresh = (fresh.activation().to_vec(), fresh.charge().to_vec());
+        let after_fresh = (fresh.activation().to_vec(), fresh.spike_data().to_vec());
 
         assert_eq!(
             after_reset, after_fresh,
@@ -1097,7 +1156,7 @@ mod tests {
     #[test]
     fn propagate_rejects_invalid_threshold() {
         let mut net = Network::new(4);
-        net.threshold_mut()[0] = 99; // out of [0,15]
+        net.spike_data_mut()[0].threshold = 99; // out of [0,15]
         let input = vec![0i32; 4];
         let err = net.propagate(&input, &default_config()).unwrap_err();
         assert!(
@@ -1115,7 +1174,7 @@ mod tests {
     #[test]
     fn propagate_rejects_invalid_channel() {
         let mut net = Network::new(4);
-        net.channel_mut()[2] = 0; // out of [1,8]
+        net.spike_data_mut()[2].channel = 0; // out of [1,8]
         let input = vec![0i32; 4];
         let err = net.propagate(&input, &default_config()).unwrap_err();
         assert!(
@@ -1173,7 +1232,7 @@ mod tests {
         net.propagate(&input, &config).unwrap();
         // Zero ticks = no simulation, state unchanged
         assert!(net.activation().iter().all(|&a| a == 0));
-        assert!(net.charge().iter().all(|&c| c == 0));
+        assert!(net.spike_data().iter().all(|s| s.charge == 0));
     }
 
     // --- Deep research finding: Network should be Clone ---
@@ -1182,17 +1241,17 @@ mod tests {
     fn network_clone_is_independent() {
         let mut net = Network::new(4);
         net.graph_mut().add_edge(0, 1);
-        net.threshold_mut()[0] = 5;
+        net.set_threshold(0, 5);
 
         let mut cloned = net.clone();
-        cloned.threshold_mut()[0] = 10;
+        cloned.set_threshold(0, 10);
         cloned.graph_mut().add_edge(2, 3);
 
         // Original unaffected
-        assert_eq!(net.threshold()[0], 5);
+        assert_eq!(net.threshold_at(0), 5);
         assert_eq!(net.edge_count(), 1);
         // Clone has its own state
-        assert_eq!(cloned.threshold()[0], 10);
+        assert_eq!(cloned.threshold_at(0), 10);
         assert_eq!(cloned.edge_count(), 2);
     }
 
@@ -1204,22 +1263,22 @@ mod tests {
         let snap = net.save_state();
         assert_eq!(snap.neuron_count(), 16);
         assert_eq!(snap.edge_count(), 0);
-        assert!(snap.threshold().iter().all(|&t| t == 0));
-        assert!(snap.channel().iter().all(|&c| c == 1));
+        assert!(snap.spike_data().iter().all(|s| s.threshold == 0));
+        assert!(snap.spike_data().iter().all(|s| s.channel == 1));
         assert!(snap.polarity().iter().all(|&p| p == 1));
         assert!(snap.activation().iter().all(|&a| a == 0));
-        assert!(snap.charge().iter().all(|&c| c == 0));
+        assert!(snap.spike_data().iter().all(|s| s.charge == 0));
     }
 
     #[test]
     fn save_captures_modified_params() {
         let mut net = Network::new(8);
-        net.threshold_mut()[0] = 12;
-        net.channel_mut()[1] = 7;
+        net.set_threshold(0, 12);
+        net.set_channel(1, 7);
         net.polarity_mut()[2] = -1;
         let snap = net.save_state();
-        assert_eq!(snap.threshold()[0], 12);
-        assert_eq!(snap.channel()[1], 7);
+        assert_eq!(snap.threshold_at(0), 12);
+        assert_eq!(snap.channel_at(1), 7);
         assert_eq!(snap.polarity()[2], -1);
     }
 
@@ -1248,20 +1307,20 @@ mod tests {
         net.propagate(&input, &config).unwrap();
         let snap = net.save_state();
         assert_eq!(snap.activation(), net.activation());
-        assert_eq!(snap.charge(), net.charge());
+        assert_eq!(snap.spike_data(), net.spike_data());
     }
 
     #[test]
     fn restore_reverts_params() {
         let mut net = Network::new(8);
-        net.threshold_mut()[3] = 10;
+        net.set_threshold(3, 10);
         let snap = net.save_state();
 
-        net.threshold_mut()[3] = 0;
-        assert_eq!(net.threshold()[3], 0);
+        net.set_threshold(3, 0);
+        assert_eq!(net.threshold_at(3), 0);
 
         net.restore_state(&snap);
-        assert_eq!(net.threshold()[3], 10);
+        assert_eq!(net.threshold_at(3), 10);
     }
 
     #[test]
@@ -1290,34 +1349,34 @@ mod tests {
 
         net.restore_state(&snap);
         assert!(net.activation().iter().all(|&a| a == 0));
-        assert!(net.charge().iter().all(|&c| c == 0));
+        assert!(net.spike_data().iter().all(|s| s.charge == 0));
     }
 
     #[test]
     fn restore_twice_from_same_snapshot() {
         let mut net = Network::new(4);
-        net.threshold_mut()[0] = 8;
+        net.set_threshold(0, 8);
         let snap = net.save_state();
 
-        net.threshold_mut()[0] = 0;
+        net.set_threshold(0, 0);
         net.restore_state(&snap);
-        assert_eq!(net.threshold()[0], 8);
+        assert_eq!(net.threshold_at(0), 8);
 
-        net.threshold_mut()[0] = 15;
+        net.set_threshold(0, 15);
         net.restore_state(&snap);
-        assert_eq!(net.threshold()[0], 8);
+        assert_eq!(net.threshold_at(0), 8);
     }
 
     #[test]
     fn snapshot_independent_of_network() {
         let mut net = Network::new(4);
-        net.threshold_mut()[0] = 5;
+        net.set_threshold(0, 5);
         let snap = net.save_state();
 
-        net.threshold_mut()[0] = 99;
+        net.set_threshold(0, 99);
         net.graph_mut().add_edge(0, 1);
 
-        assert_eq!(snap.threshold()[0], 5);
+        assert_eq!(snap.threshold_at(0), 5);
         assert_eq!(snap.edge_count(), 0);
     }
 
@@ -1336,7 +1395,7 @@ mod tests {
             use_refractory: false,
         };
         net.propagate(&input, &config).unwrap();
-        let first_result = (net.activation().to_vec(), net.charge().to_vec());
+        let first_result = (net.activation().to_vec(), net.spike_data().to_vec());
 
         // Dirty the state with a different input
         net.propagate(&[0, 1, 0, 0], &config).unwrap();
@@ -1344,7 +1403,7 @@ mod tests {
         // Restore and re-propagate with original input
         net.restore_state(&snap);
         net.propagate(&input, &config).unwrap();
-        let second_result = (net.activation().to_vec(), net.charge().to_vec());
+        let second_result = (net.activation().to_vec(), net.spike_data().to_vec());
 
         assert_eq!(first_result, second_result);
     }
@@ -1362,14 +1421,14 @@ mod tests {
     #[test]
     fn snapshot_clone_is_independent() {
         let mut net = Network::new(4);
-        net.threshold_mut()[0] = 7;
+        net.set_threshold(0, 7);
         let snap = net.save_state();
         let snap_clone = snap.clone();
 
-        net.threshold_mut()[0] = 0;
+        net.set_threshold(0, 0);
         net.restore_state(&snap);
-        assert_eq!(net.threshold()[0], 7);
-        assert_eq!(snap_clone.threshold()[0], 7);
+        assert_eq!(net.threshold_at(0), 7);
+        assert_eq!(snap_clone.threshold_at(0), 7);
     }
 
     #[test]
@@ -1377,16 +1436,16 @@ mod tests {
         let mut net = Network::new(8);
         net.graph_mut().add_edge(0, 1);
         net.graph_mut().add_edge(1, 2);
-        net.threshold_mut()[3] = 10;
-        net.channel_mut()[4] = 5;
+        net.set_threshold(3, 10);
+        net.set_channel(4, 5);
         net.polarity_mut()[5] = -1;
         let snap = net.save_state();
 
         // Mutate EVERYTHING at once
         net.graph_mut().add_edge(3, 4);
         net.graph_mut().remove_edge(0, 1);
-        net.threshold_mut()[3] = 0;
-        net.channel_mut()[4] = 8;
+        net.set_threshold(3, 0);
+        net.set_channel(4, 8);
         net.polarity_mut()[5] = 1;
         let input = vec![1i32; 8];
         let config = PropagationConfig {
@@ -1404,11 +1463,11 @@ mod tests {
         assert_eq!(net.edge_count(), 2);
         assert!(net.graph().has_edge(0, 1));
         assert!(!net.graph().has_edge(3, 4));
-        assert_eq!(net.threshold()[3], 10);
-        assert_eq!(net.channel()[4], 5);
+        assert_eq!(net.threshold_at(3), 10);
+        assert_eq!(net.channel_at(4), 5);
         assert_eq!(net.polarity()[5], -1);
         assert!(net.activation().iter().all(|&a| a == 0));
-        assert!(net.charge().iter().all(|&c| c == 0));
+        assert!(net.spike_data().iter().all(|s| s.charge == 0));
     }
 
     // --- Mutation tests (deterministic, fixed seed) ---
@@ -1686,11 +1745,11 @@ mod tests {
         use rand::rngs::StdRng;
         use rand::SeedableRng;
         let mut net = Network::new(8);
-        assert!(net.threshold().iter().all(|&t| t == 0)); // default
+        assert!(net.spike_data().iter().all(|s| s.threshold == 0)); // default
         let mut rng = StdRng::seed_from_u64(42);
         net.mutate_theta(&mut rng);
         assert!(
-            net.threshold().iter().any(|&t| t != 0),
+            net.spike_data().iter().any(|s| s.threshold != 0),
             "at least one theta should change"
         );
     }
@@ -1705,7 +1764,7 @@ mod tests {
             net.mutate_theta(&mut rng);
         }
         assert!(
-            net.threshold().iter().all(|&t| t <= 15),
+            net.spike_data().iter().all(|s| s.threshold <= 15),
             "theta must stay in [0,15]"
         );
     }
@@ -1721,7 +1780,7 @@ mod tests {
             net.mutate_theta(&mut rng);
         }
         net.restore_state(&snap);
-        assert!(net.threshold().iter().all(|&t| t == 0));
+        assert!(net.spike_data().iter().all(|s| s.threshold == 0));
     }
 
     // --- mutate_channel tests ---
@@ -1731,13 +1790,13 @@ mod tests {
         use rand::rngs::StdRng;
         use rand::SeedableRng;
         let mut net = Network::new(8);
-        assert!(net.channel().iter().all(|&c| c == 1)); // default
+        assert!(net.spike_data().iter().all(|s| s.channel == 1)); // default
         let mut rng = StdRng::seed_from_u64(42);
         for _ in 0..10 {
             net.mutate_channel(&mut rng);
         }
         assert!(
-            net.channel().iter().any(|&c| c != 1),
+            net.spike_data().iter().any(|s| s.channel != 1),
             "at least one channel should change"
         );
     }
@@ -1752,7 +1811,7 @@ mod tests {
             net.mutate_channel(&mut rng);
         }
         assert!(
-            net.channel().iter().all(|&c| (1..=8).contains(&c)),
+            net.spike_data().iter().all(|s| (1..=8).contains(&s.channel)),
             "channel must stay in [1,8]"
         );
     }
@@ -1931,10 +1990,10 @@ mod tests {
         let mut net = Network::new(8);
         // Set channels: 0-3 = channel 1, 4-7 = channel 5
         for i in 0..4 {
-            net.channel_mut()[i] = 1;
+            net.set_channel(i, 1);
         }
         for i in 4..8 {
-            net.channel_mut()[i] = 5;
+            net.set_channel(i, 5);
         }
         let mut rng = StdRng::seed_from_u64(42);
         for _ in 0..20 {
@@ -1944,7 +2003,7 @@ mod tests {
         let same_ch_edges = net
             .graph()
             .iter_edges()
-            .filter(|e| net.channel()[e.source as usize] == net.channel()[e.target as usize])
+            .filter(|e| net.channel_at(e.source as usize) == net.channel_at(e.target as usize))
             .count();
         let total = net.edge_count();
         assert!(
@@ -1977,8 +2036,8 @@ mod tests {
             net.mutate_add_edge(&mut rng);
         }
         for i in 0..16 {
-            net.threshold_mut()[i] = rng.gen_range(0..=15);
-            net.channel_mut()[i] = rng.gen_range(1..=8);
+            net.spike_data_mut()[i].threshold = rng.gen_range(0..=15);
+            net.spike_data_mut()[i].channel = rng.gen_range(1..=8);
             if rng.gen_ratio(1, 4) {
                 net.polarity_mut()[i] = -1;
             }
@@ -1990,8 +2049,7 @@ mod tests {
         let _ = std::fs::remove_file(&path);
 
         assert_eq!(loaded.edge_count(), net.edge_count());
-        assert_eq!(loaded.threshold(), net.threshold());
-        assert_eq!(loaded.channel(), net.channel());
+        assert_eq!(loaded.spike_data(), net.spike_data());
         assert_eq!(loaded.polarity(), net.polarity());
         assert_eq!(loaded.neuron_count(), net.neuron_count());
         // Verify edges match
@@ -2010,11 +2068,11 @@ mod tests {
             net.mutate_add_edge(&mut rng);
         }
         // Propagate to create non-zero state; use high threshold so charge accumulates
-        for i in 0..8 { net.threshold_mut()[i] = 15; } // effective 16, won't fire
+        net.set_all_threshold(15); // effective 16, won't fire
         let input: Vec<i32> = (0..8).map(|i| if i < 3 { 2 } else { 0 }).collect();
         net.propagate(&input, &PropagationConfig::default()).unwrap();
         // At least charge or activation should be non-zero
-        let has_state = net.charge().iter().any(|&c| c > 0) || net.activation().iter().any(|&a| a != 0);
+        let has_state = net.spike_data().iter().any(|s| s.charge > 0) || net.activation().iter().any(|&a| a != 0);
         assert!(has_state, "propagation should leave some non-zero state");
 
         let path = std::env::temp_dir().join("instnct_test_ephemeral.bin");
@@ -2023,7 +2081,7 @@ mod tests {
         let _ = std::fs::remove_file(&path);
 
         assert!(loaded.activation().iter().all(|&a| a == 0));
-        assert!(loaded.charge().iter().all(|&c| c == 0));
+        assert!(loaded.spike_data().iter().all(|s| s.charge == 0));
     }
 
     #[test]
@@ -2033,8 +2091,8 @@ mod tests {
         for _ in 0..10 {
             net.mutate_add_edge(&mut rng);
         }
-        net.threshold_mut()[0] = 2;
-        net.channel_mut()[1] = 3;
+        net.set_threshold(0, 2);
+        net.set_channel(1, 3);
 
         let path = std::env::temp_dir().join("instnct_test_propagate.bin");
         net.save_genome(&path).unwrap();
@@ -2047,7 +2105,7 @@ mod tests {
         net.propagate(&input, &config).unwrap();
         loaded.propagate(&input, &config).unwrap();
 
-        assert_eq!(loaded.charge(), net.charge());
+        assert_eq!(loaded.spike_data(), net.spike_data());
         assert_eq!(loaded.activation(), net.activation());
     }
 

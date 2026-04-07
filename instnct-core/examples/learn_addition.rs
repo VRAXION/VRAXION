@@ -51,7 +51,7 @@ fn evaluate(
         net.propagate(sdr.pattern(b), &init.propagation).unwrap();
 
         // Read prediction from output zone
-        let charge = &net.charge()[init.output_start()..init.neuron_count];
+        let charge = &net.charge_vec(init.output_start()..init.neuron_count);
         let predicted = proj.predict(charge);
         if predicted == sum {
             correct += 1;
@@ -108,7 +108,7 @@ fn eval_fitness(
         net.propagate(sdr.pattern(a), &init.propagation).unwrap();
         net.propagate(sdr.pattern(b), &init.propagation).unwrap();
 
-        let scores = proj.raw_scores(&net.charge()[init.output_start()..init.neuron_count]);
+        let scores = proj.raw_scores(&net.charge_vec(init.output_start()..init.neuron_count));
         total_cos += cosine_to_onehot(&scores, sum);
     }
     total_cos / sample_size as f64
@@ -245,7 +245,7 @@ fn run_one(cfg: &Config, problems: &[(usize, usize, usize)]) -> RunResult {
                 net.reset();
                 net.propagate(sdr.pattern(a), &init.propagation).unwrap();
                 net.propagate(sdr.pattern(b), &init.propagation).unwrap();
-                let predicted = proj.predict(&net.charge()[init.output_start()..init.neuron_count]);
+                let predicted = proj.predict(&net.charge_vec(init.output_start()..init.neuron_count));
                 digit_total[a] += 1;
                 if predicted == sum { digit_correct[a] += 1; }
             }

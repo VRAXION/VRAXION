@@ -29,8 +29,8 @@ fn main() {
             }
         }
         for i in 0..h {
-            net.threshold_mut()[i] = rng.gen_range(0..=15);
-            net.channel_mut()[i] = rng.gen_range(1..=8);
+            net.spike_data_mut()[i].threshold = rng.gen_range(0..=15);
+            net.spike_data_mut()[i].channel = rng.gen_range(1..=8);
         }
 
         let config = PropagationConfig::default();

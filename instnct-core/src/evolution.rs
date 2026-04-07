@@ -277,6 +277,7 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::network::SpikeData;
     use rand::rngs::StdRng;
     use rand::SeedableRng;
 
@@ -286,8 +287,8 @@ mod tests {
             net.mutate_add_edge(rng);
         }
         for i in 0..16 {
-            net.threshold_mut()[i] = rng.gen_range(0..=7);
-            net.channel_mut()[i] = rng.gen_range(1..=8);
+            net.spike_data_mut()[i].threshold = rng.gen_range(0..=7);
+            net.spike_data_mut()[i].channel = rng.gen_range(1..=8);
         }
         net
     }
@@ -301,7 +302,7 @@ mod tests {
         let config = EvolutionConfig { edge_cap: 1000, accept_ties: true };
 
         let edges_before = net.edge_count();
-        let threshold_before: Vec<u8> = net.threshold().to_vec();
+        let spike_before: Vec<SpikeData> = net.spike_data().to_vec();
         let proj_before = proj.weight_count(); // just check it doesn't crash
 
         // fitness_fn that always returns worse score after mutation → always reject
@@ -322,7 +323,7 @@ mod tests {
         // Could be Rejected or Skipped (if mutation failed)
         if outcome == StepOutcome::Rejected {
             assert_eq!(net.edge_count(), edges_before, "edge count should restore");
-            assert_eq!(net.threshold(), threshold_before.as_slice(), "threshold should restore");
+            assert_eq!(net.spike_data(), spike_before.as_slice(), "spike data should restore");
         }
         assert_eq!(proj.weight_count(), proj_before);
     }

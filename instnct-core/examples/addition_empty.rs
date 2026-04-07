@@ -51,7 +51,7 @@ fn eval_fitness(
         net.reset();
         net.propagate(sdr.pattern(a), &init.propagation).unwrap();
         net.propagate(sdr.pattern(b), &init.propagation).unwrap();
-        let scores = proj.raw_scores(&net.charge()[init.output_start()..init.neuron_count]);
+        let scores = proj.raw_scores(&net.charge_vec(init.output_start()..init.neuron_count));
         total += cosine_to_onehot(&scores, sum);
     }
     total / 20.0
@@ -67,7 +67,7 @@ fn evaluate_full(
         net.reset();
         net.propagate(sdr.pattern(a), &init.propagation).unwrap();
         net.propagate(sdr.pattern(b), &init.propagation).unwrap();
-        let ok = proj.predict(&net.charge()[init.output_start()..init.neuron_count]) == sum;
+        let ok = proj.predict(&net.charge_vec(init.output_start()..init.neuron_count)) == sum;
         if ok { correct += 1; }
         results.push(ok);
     }
@@ -209,7 +209,7 @@ fn run_one(cfg: &Config) -> RunResult {
             net.reset();
             net.propagate(sdr.pattern(a), &init.propagation).unwrap();
             net.propagate(sdr.pattern(b), &init.propagation).unwrap();
-            let pred = proj.predict(&net.charge()[init.output_start()..init.neuron_count]);
+            let pred = proj.predict(&net.charge_vec(init.output_start()..init.neuron_count));
             print!("  {:>2}{}", pred, mark);
         }
         println!();

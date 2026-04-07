@@ -82,8 +82,8 @@ fn build_prefilled_pocket(rng: &mut StdRng) -> Network {
         if net.edge_count() >= target { break; }
     }
     for i in 0..H {
-        net.threshold_mut()[i] = rng.gen_range(0..=7u8);
-        net.channel_mut()[i] = rng.gen_range(1..=8u8);
+        net.spike_data_mut()[i].threshold = rng.gen_range(0..=7u8);
+        net.spike_data_mut()[i].channel = rng.gen_range(1..=8u8);
         if rng.gen_ratio(1, 10) { net.polarity_mut()[i] = -1; }
     }
     net
@@ -147,7 +147,7 @@ fn crystallize_pocket(
 fn charge_transfer(female: &Network) -> Vec<i32> {
     let os = output_start();
     let mut input = vec![0i32; H];
-    for (i, &c) in female.charge()[os..H].iter().enumerate() {
+    for (i, &c) in female.charge_vec(os..H).iter().enumerate() {
         if i < PHI_DIM { input[i] = c as i32; }
     }
     input
@@ -170,7 +170,7 @@ fn eval_smooth_chain(
         female.propagate(sdr.pattern(seg[i] as usize), prop).unwrap();
         let transfer = charge_transfer(female);
         male.propagate(&transfer, prop).unwrap();
-        let scores = proj.raw_scores(&male.charge()[os..H]);
+        let scores = proj.raw_scores(&male.charge_vec(os..H));
         let probs = softmax_27(&scores);
         total_cos += cosine_27(&probs, &bigram[seg[i] as usize]);
     }
@@ -194,7 +194,7 @@ fn eval_accuracy_chain(
         female.propagate(sdr.pattern(seg[i] as usize), prop).unwrap();
         let transfer = charge_transfer(female);
         male.propagate(&transfer, prop).unwrap();
-        if proj.predict(&male.charge()[os..H]) == seg[i + 1] as usize { correct += 1; }
+        if proj.predict(&male.charge_vec(os..H)) == seg[i + 1] as usize { correct += 1; }
     }
     correct as f64 / len as f64
 }

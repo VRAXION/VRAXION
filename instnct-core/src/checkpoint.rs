@@ -142,8 +142,7 @@ mod tests {
         }
 
         // Parameters: bit-exact
-        assert_eq!(net.threshold(), net2.threshold());
-        assert_eq!(net.channel(), net2.channel());
+        assert_eq!(net.spike_data(), net2.spike_data());
         assert_eq!(net.polarity(), net2.polarity());
 
         // Projection: compare raw genome bytes (catches ALL weight differences)
@@ -174,8 +173,8 @@ mod tests {
         let mut preds_orig = Vec::new();
         for &t in &tokens {
             net.propagate(sdr.pattern(t as usize), &cfg.propagation).unwrap();
-            charges_orig.push(net.charge().to_vec());
-            preds_orig.push(proj.predict(&net.charge()[cfg.output_start()..cfg.neuron_count]));
+            charges_orig.push(net.charge_vec(0..net.neuron_count()));
+            preds_orig.push(proj.predict(&net.charge_vec(cfg.output_start()..cfg.neuron_count)));
         }
 
         // Save + load
@@ -192,9 +191,9 @@ mod tests {
         for (i, &t) in tokens.iter().enumerate() {
             net.propagate(sdr.pattern(t as usize), &cfg.propagation).unwrap();
             net2.propagate(sdr.pattern(t as usize), &cfg.propagation).unwrap();
-            assert_eq!(net.charge(), net2.charge(), "charge mismatch at token {i}");
-            let p1 = proj.predict(&net.charge()[cfg.output_start()..cfg.neuron_count]);
-            let p2 = proj2.predict(&net2.charge()[cfg.output_start()..cfg.neuron_count]);
+            assert_eq!(net.charge_vec(0..net.neuron_count()), net2.charge_vec(0..net2.neuron_count()), "charge mismatch at token {i}");
+            let p1 = proj.predict(&net.charge_vec(cfg.output_start()..cfg.neuron_count));
+            let p2 = proj2.predict(&net2.charge_vec(cfg.output_start()..cfg.neuron_count));
             assert_eq!(p1, p2, "prediction mismatch at token {i}");
         }
 

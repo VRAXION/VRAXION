@@ -28,7 +28,7 @@ fn eval_single(
     let mut predictions = Vec::with_capacity(len);
     for i in 0..len {
         net.propagate(sdr.pattern(seg[i] as usize), config).unwrap();
-        let pred = proj.predict(&net.charge()[os..nc]);
+        let pred = proj.predict(&net.charge_vec(os..nc));
         predictions.push(pred);
         if pred == seg[i + 1] as usize { correct += 1; }
     }
@@ -56,7 +56,7 @@ fn train_one(
                 let mut c = 0u32;
                 for i in 0..100 {
                     n.propagate(sdr.pattern(seg[i] as usize), &init.propagation).unwrap();
-                    if p.predict(&n.charge()[os..nc]) == seg[i + 1] as usize { c += 1; }
+                    if p.predict(&n.charge_vec(os..nc)) == seg[i + 1] as usize { c += 1; }
                 }
                 c as f64 / 100.0
             },

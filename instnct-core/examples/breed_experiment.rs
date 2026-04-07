@@ -39,7 +39,7 @@ fn eval_accuracy(
     let mut correct = 0u32;
     for i in 0..len {
         net.propagate(sdr.pattern(seg[i] as usize), config).unwrap();
-        if proj.predict(&net.charge()[output_start..neuron_count]) == seg[i + 1] as usize {
+        if proj.predict(&net.charge_vec(output_start..neuron_count)) == seg[i + 1] as usize {
             correct += 1;
         }
     }
@@ -114,8 +114,8 @@ fn breed_consensus(
 
     // Copy parameters from parent_a (the better parent)
     for i in 0..neuron_count {
-        offspring.threshold_mut()[i] = parent_a.threshold()[i];
-        offspring.channel_mut()[i] = parent_a.channel()[i];
+        offspring.spike_data_mut()[i].threshold = parent_a.threshold_at(i);
+        offspring.spike_data_mut()[i].channel = parent_a.channel_at(i);
         offspring.polarity_mut()[i] = parent_a.polarity()[i];
     }
 

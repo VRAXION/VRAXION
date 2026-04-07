@@ -31,7 +31,7 @@ fn output_start() -> usize { H - PHI_DIM }
 fn charge_transfer(female: &Network) -> Vec<i32> {
     let os = output_start();
     let mut input = vec![0i32; H];
-    for (i, &c) in female.charge()[os..H].iter().enumerate() {
+    for (i, &c) in female.charge_vec(os..H).iter().enumerate() {
         if i < PHI_DIM { input[i] = c as i32; }
     }
     input
@@ -54,7 +54,7 @@ fn eval_chain(
         female.propagate(sdr.pattern(seg[i] as usize), config).unwrap();
         let transfer = charge_transfer(female);
         male.propagate(&transfer, config).unwrap();
-        if proj.predict(&male.charge()[os..H]) == seg[i + 1] as usize { correct += 1; }
+        if proj.predict(&male.charge_vec(os..H)) == seg[i + 1] as usize { correct += 1; }
     }
     correct as f64 / len as f64
 }
@@ -109,8 +109,8 @@ fn mutate_unit(
         70..85 => {
             let idx = rng.gen_range(0..H);
             match rng.gen_range(0..3u32) {
-                0 => { net.threshold_mut()[idx] = rng.gen_range(0..=7); true }
-                1 => { net.channel_mut()[idx] = rng.gen_range(1..=8); true }
+                0 => { net.spike_data_mut()[idx].threshold = rng.gen_range(0..=7); true }
+                1 => { net.spike_data_mut()[idx].channel = rng.gen_range(1..=8); true }
                 _ => { net.polarity_mut()[idx] *= -1; true }
             }
         }
@@ -118,7 +118,7 @@ fn mutate_unit(
             if target_male { let _ = proj.mutate_one(rng); true }
             else {
                 let idx = rng.gen_range(0..H);
-                net.threshold_mut()[idx] = rng.gen_range(0..=7);
+                net.spike_data_mut()[idx].threshold = rng.gen_range(0..=7);
                 true
             }
         }

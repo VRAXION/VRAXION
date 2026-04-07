@@ -38,7 +38,7 @@ fn train_one(
                 let mut c = 0u32;
                 for i in 0..100 {
                     n.propagate(sdr.pattern(seg[i] as usize), &init.propagation).unwrap();
-                    if p.predict(&n.charge()[os..nc]) == seg[i + 1] as usize { c += 1; }
+                    if p.predict(&n.charge_vec(os..nc)) == seg[i + 1] as usize { c += 1; }
                 }
                 c as f64 / 100.0
             },
@@ -53,7 +53,7 @@ fn train_one(
     let mut correct = 0u32;
     for i in 0..5000 {
         net2.propagate(sdr.pattern(seg[i] as usize), &init.propagation).unwrap();
-        if proj.predict(&net2.charge()[os..nc]) == seg[i + 1] as usize { correct += 1; }
+        if proj.predict(&net2.charge_vec(os..nc)) == seg[i + 1] as usize { correct += 1; }
     }
     let acc = correct as f64 / 5000.0;
     println!("  trained seed={}: {:.1}%", seed, acc * 100.0);
@@ -119,7 +119,7 @@ fn main() {
         let mut preds = Vec::with_capacity(eval_len);
         for (i, &ch) in seg[..eval_len].iter().enumerate() {
             n.propagate(sdr.pattern(ch as usize), &init.propagation).unwrap();
-            preds.push(proj.predict(&n.charge()[os..nc]));
+            preds.push(proj.predict(&n.charge_vec(os..nc)));
             let _ = i;
         }
         (*seed, *train_acc, preds)

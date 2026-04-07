@@ -6,11 +6,9 @@ use rand::{Rng, SeedableRng};
 #[derive(Debug, Clone, PartialEq, Eq)]
 struct SemanticState {
     edges: Vec<(u16, u16)>,
-    threshold: Vec<u8>,
-    channel: Vec<u8>,
+    spike: Vec<SpikeData>,
     polarity: Vec<i8>,
     activation: Vec<i8>,
-    charge: Vec<u8>,
 }
 
 fn capture_semantic(net: &Network) -> SemanticState {
@@ -23,11 +21,9 @@ fn capture_semantic(net: &Network) -> SemanticState {
 
     SemanticState {
         edges,
-        threshold: net.threshold.clone(),
-        channel: net.channel.clone(),
+        spike: net.spike.clone(),
         polarity: net.polarity.clone(),
         activation: net.activation.clone(),
-        charge: net.charge.clone(),
     }
 }
 
@@ -99,11 +95,11 @@ fn random_network(rng: &mut StdRng, neuron_count: usize) -> Network {
     }
 
     for idx in 0..neuron_count {
-        net.threshold[idx] = rng.gen_range(0..=15);
-        net.channel[idx] = rng.gen_range(1..=8);
+        net.spike[idx].threshold = rng.gen_range(0..=15);
+        net.spike[idx].channel = rng.gen_range(1..=8);
         net.polarity[idx] = if rng.gen_bool(0.25) { -1 } else { 1 };
         net.activation[idx] = rng.gen_range(-1..=1);
-        net.charge[idx] = rng.gen_range(0..=LIMIT_MAX_CHARGE);
+        net.spike[idx].charge = rng.gen_range(0..=LIMIT_MAX_CHARGE);
     }
 
     net
@@ -114,17 +110,21 @@ fn assert_network_matches_shared_path(mut net: Network, input: &[i32], config: &
 
     net.propagate(input, config).unwrap();
 
+    let ref_threshold: Vec<u8> = reference.spike.iter().map(|s| s.threshold).collect();
+    let ref_channel: Vec<u8> = reference.spike.iter().map(|s| s.channel).collect();
+    let mut ref_charge: Vec<u8> = reference.spike.iter().map(|s| s.charge).collect();
+
     propagate_token(
         input,
         &reference.graph,
         &PropagationParameters {
-            threshold: &reference.threshold,
-            channel: &reference.channel,
+            threshold: &ref_threshold,
+            channel: &ref_channel,
             polarity: &reference.polarity,
         },
         &mut PropagationState {
             activation: &mut reference.activation,
-            charge: &mut reference.charge,
+            charge: &mut ref_charge,
             refractory: &mut reference.refractory,
         },
         config,
@@ -136,8 +136,9 @@ fn assert_network_matches_shared_path(mut net: Network, input: &[i32], config: &
         net.activation, reference.activation,
         "CSR path diverged from shared path activation for input={input:?}, config={config:?}"
     );
+    let net_charge: Vec<u8> = net.spike.iter().map(|s| s.charge).collect();
     assert_eq!(
-        net.charge, reference.charge,
+        net_charge, ref_charge,
         "CSR path diverged from shared path charge for input={input:?}, config={config:?}"
     );
     let graph_rows = capture_graph_rows(&net);
@@ -153,7 +154,7 @@ fn csr_path_matches_shared_kernel_on_controlled_fixtures() {
     let mut chain = Network::new(4);
     chain.graph_mut().add_edge(0, 1);
     chain.graph_mut().add_edge(1, 2);
-    chain.threshold_mut().fill(1);
+    chain.set_all_threshold(1);
     assert_network_matches_shared_path(
         chain,
         &[1, 0, 0, 0],
@@ -169,7 +170,7 @@ fn csr_path_matches_shared_kernel_on_controlled_fixtures() {
     fan_in.graph_mut().add_edge(0, 2);
     fan_in.graph_mut().add_edge(1, 2);
     fan_in.graph_mut().add_edge(2, 3);
-    fan_in.threshold_mut().fill(1);
+    fan_in.set_all_threshold(1);
     fan_in.polarity_mut()[1] = -1;
     assert_network_matches_shared_path(
         fan_in,
@@ -184,8 +185,8 @@ fn csr_path_matches_shared_kernel_on_controlled_fixtures() {
 
     let mut phase_gate = Network::new(3);
     phase_gate.graph_mut().add_edge(0, 1);
-    phase_gate.threshold_mut()[1] = 4;
-    phase_gate.channel_mut()[1] = 8;
+    phase_gate.set_threshold(1, 4);
+    phase_gate.set_channel(1, 8);
     assert_network_matches_shared_path(
         phase_gate,
         &[1, 0, 0],
@@ -257,7 +258,7 @@ fn repeated_reject_only_mutations_leave_no_semantic_drift() {
     let control_config = random_config(&mut rng);
     let mut control = net.clone();
     control.propagate(&control_input, &control_config).unwrap();
-    let expected_after = (control.activation.clone(), control.charge.clone());
+    let expected_after = (control.activation.clone(), control.spike.clone());
 
     for _ in 0..1000 {
         let snapshot = net.save_state();
@@ -279,7 +280,7 @@ fn repeated_reject_only_mutations_leave_no_semantic_drift() {
 
     net.propagate(&control_input, &control_config).unwrap();
     assert_eq!(
-        (net.activation.clone(), net.charge.clone()),
+        (net.activation.clone(), net.spike.clone()),
         expected_after,
         "reject-only mutation loop changed later propagation semantics"
     );

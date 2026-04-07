@@ -42,7 +42,7 @@ fn eval_accuracy(
     let mut correct = 0u32;
     for i in 0..len {
         net.propagate(sdr.pattern(seg[i] as usize), config).unwrap();
-        if projection.predict(&net.charge()[OUTPUT_START..NEURON_COUNT]) == seg[i + 1] as usize {
+        if projection.predict(&net.charge_vec(OUTPUT_START..NEURON_COUNT)) == seg[i + 1] as usize {
             correct += 1;
         }
     }
@@ -98,8 +98,8 @@ fn build_network(rng: &mut StdRng) -> Network {
         if net.edge_count() >= target_edges { break; }
     }
     for i in 0..NEURON_COUNT {
-        net.threshold_mut()[i] = rng.gen_range(0..=7);
-        net.channel_mut()[i] = rng.gen_range(1..=8);
+        net.spike_data_mut()[i].threshold = rng.gen_range(0..=7);
+        net.spike_data_mut()[i].channel = rng.gen_range(1..=8);
         if rng.gen_ratio(1, 10) { net.polarity_mut()[i] = -1; }
     }
     net

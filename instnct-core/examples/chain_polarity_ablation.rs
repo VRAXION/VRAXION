@@ -41,7 +41,7 @@ fn eval_accuracy(
     let mut correct = 0u32;
     for i in 0..len {
         net.propagate(sdr.pattern(seg[i] as usize), config).unwrap();
-        if proj.predict(&net.charge()[output_start..neuron_count]) == seg[i + 1] as usize {
+        if proj.predict(&net.charge_vec(output_start..neuron_count)) == seg[i + 1] as usize {
             correct += 1;
         }
     }
@@ -80,8 +80,8 @@ fn build_net(init: &InitConfig, use_chains: bool, rng: &mut impl Rng) -> Network
 
     // Phase 3: random params
     for i in 0..h {
-        net.threshold_mut()[i] = rng.gen_range(0..=init.threshold_max);
-        net.channel_mut()[i] = rng.gen_range(1..=init.channel_max);
+        net.spike_data_mut()[i].threshold = rng.gen_range(0..=init.threshold_max);
+        net.spike_data_mut()[i].channel = rng.gen_range(1..=init.channel_max);
         if init.inhibitory_pct > 0 && rng.gen_ratio(init.inhibitory_pct, 100) {
             net.polarity_mut()[i] = -1;
         }

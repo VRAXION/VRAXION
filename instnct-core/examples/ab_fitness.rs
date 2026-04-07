@@ -102,7 +102,7 @@ fn eval_stepwise(
     for i in 0..len {
         net.propagate(sdr.pattern(seg[i] as usize), &init.propagation)
             .unwrap();
-        if proj.predict(&net.charge()[init.output_start()..init.neuron_count])
+        if proj.predict(&net.charge_vec(init.output_start()..init.neuron_count))
             == seg[i + 1] as usize
         {
             correct += 1;
@@ -133,7 +133,7 @@ fn eval_smooth(
     for i in 0..len {
         net.propagate(sdr.pattern(seg[i] as usize), &init.propagation)
             .unwrap();
-        let scores = proj.raw_scores(&net.charge()[init.output_start()..init.neuron_count]);
+        let scores = proj.raw_scores(&net.charge_vec(init.output_start()..init.neuron_count));
         let probs = softmax_27(&scores);
         let target = &bigram[seg[i] as usize];
         total_cos += cosine_27(&probs, target);

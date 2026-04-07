@@ -54,7 +54,7 @@ pub use evolution::{evolution_step, evolution_step_jackpot, EvolutionConfig, Ste
 pub use init::{build_network, InitConfig};
 
 #[doc(inline)]
-pub use network::{Network, NetworkError, NetworkSnapshot};
+pub use network::{Network, NetworkError, NetworkSnapshot, SpikeData};
 
 #[doc(inline)]
 pub use projection::{Int8Projection, WeightBackup};

@@ -61,7 +61,7 @@ pub fn eval_accuracy(
     for i in 0..len {
         net.propagate(sdr.pattern(seg[i] as usize), propagation)
             .unwrap();
-        if proj.predict(&net.charge()[output_start..neuron_count]) == seg[i + 1] as usize {
+        if proj.predict(&net.charge_vec(output_start..neuron_count)) == seg[i + 1] as usize {
             correct += 1;
         }
     }
@@ -100,7 +100,7 @@ pub fn eval_smooth(
     for i in 0..len {
         net.propagate(sdr.pattern(seg[i] as usize), propagation)
             .unwrap();
-        let scores = proj.raw_scores(&net.charge()[output_start..neuron_count]);
+        let scores = proj.raw_scores(&net.charge_vec(output_start..neuron_count));
         let probs = softmax(&scores);
         let target = &bigram[seg[i] as usize];
         total_cos += cosine_similarity(&probs, target);

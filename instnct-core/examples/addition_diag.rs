@@ -50,7 +50,7 @@ fn eval_fitness(
         net.reset();
         net.propagate(sdr.pattern(a), &init.propagation).unwrap();
         net.propagate(sdr.pattern(b), &init.propagation).unwrap();
-        let scores = proj.raw_scores(&net.charge()[init.output_start()..init.neuron_count]);
+        let scores = proj.raw_scores(&net.charge_vec(init.output_start()..init.neuron_count));
         total += cosine_to_onehot(&scores, sum);
     }
     total / 20.0
@@ -137,7 +137,7 @@ fn main() {
                 net.reset();
                 net.propagate(sdr.pattern(a), &init.propagation).unwrap();
                 net.propagate(sdr.pattern(b), &init.propagation).unwrap();
-                if proj.predict(&net.charge()[init.output_start()..init.neuron_count]) == sum { correct += 1; }
+                if proj.predict(&net.charge_vec(init.output_start()..init.neuron_count)) == sum { correct += 1; }
             }
             println!("  step {:>5}: acc={}/25 ({:.0}%) edges={} accepted={}",
                 step + 1, correct, correct as f64 / 25.0 * 100.0, net.edge_count(), accepted);
@@ -172,7 +172,7 @@ fn main() {
             net.reset();
             net.propagate(sdr.pattern(a), &init.propagation).unwrap();
             net.propagate(sdr.pattern(b), &init.propagation).unwrap();
-            let pred = proj.predict(&net.charge()[init.output_start()..init.neuron_count]);
+            let pred = proj.predict(&net.charge_vec(init.output_start()..init.neuron_count));
             let ok = pred == a + b;
             if ok { grid_correct += 1; }
             let mark = if ok { "+" } else { "X" };
@@ -196,7 +196,7 @@ fn main() {
             net.reset();
             net.propagate(sdr.pattern(a), &init.propagation).unwrap();
             net.propagate(sdr.pattern(b), &init.propagation).unwrap();
-            charges.push(net.charge()[os..nc].to_vec());
+            charges.push(net.charge_vec(os..nc).to_vec());
         }
     }
 
@@ -270,7 +270,7 @@ fn main() {
         net.reset();
         net.propagate(sdr.pattern(a), &init.propagation).unwrap();
         net.propagate(sdr.pattern(0), &init.propagation).unwrap();
-        a_traces.push(net.charge()[os..nc].to_vec());
+        a_traces.push(net.charge_vec(os..nc).to_vec());
     }
 
     println!("  Pairwise cosine of charge(A, B=0):");

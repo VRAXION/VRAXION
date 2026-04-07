@@ -23,7 +23,7 @@ fn output_start() -> usize { H - PHI_DIM } // 98
 fn charge_transfer(female: &Network) -> Vec<i32> {
     let os = output_start();
     let mut input = vec![0i32; H];
-    for (i, &c) in female.charge()[os..H].iter().enumerate() {
+    for (i, &c) in female.charge_vec(os..H).iter().enumerate() {
         if i < PHI_DIM { input[i] = c as i32; }
     }
     input
@@ -60,17 +60,17 @@ fn trace_chain(
         female.propagate(sdr.pattern(segment[i] as usize), prop).unwrap();
 
         // Capture female output zone charge (the interface signal)
-        let f_out_charge: Vec<u8> = female.charge()[os..H].to_vec();
+        let f_out_charge: Vec<u8> = female.charge_vec(os..H).to_vec();
         interface_charges.push(f_out_charge);
 
         let transfer = charge_transfer(female);
         male.propagate(&transfer, prop).unwrap();
 
         // Capture male output zone charge
-        let m_out_charge: Vec<u8> = male.charge()[os..H].to_vec();
+        let m_out_charge: Vec<u8> = male.charge_vec(os..H).to_vec();
         output_charges.push(m_out_charge);
 
-        let pred = proj.predict(&male.charge()[os..H]);
+        let pred = proj.predict(&male.charge_vec(os..H));
         predictions.push(pred);
         if pred == segment[i + 1] as usize { correct += 1; }
     }
@@ -337,7 +337,7 @@ fn main() {
         let mut correct = 0u32;
         for i in 0..EVAL_LEN {
             s.female.propagate(sdr.pattern(segment[i] as usize), &prop).unwrap();
-            if s.proj.predict(&s.female.charge()[os..H]) == segment[i + 1] as usize {
+            if s.proj.predict(&s.female.charge_vec(os..H)) == segment[i + 1] as usize {
                 correct += 1;
             }
         }

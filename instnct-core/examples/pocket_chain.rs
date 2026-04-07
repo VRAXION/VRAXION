@@ -116,8 +116,8 @@ fn pocket_param(net: &mut Network, zone: &PocketZone, rng: &mut impl Rng) -> boo
     let idx = zone.start + rng.gen_range(0..range);
     let roll = rng.gen_range(0..3u32);
     match roll {
-        0 => { net.threshold_mut()[idx] = rng.gen_range(0..=7); true }
-        1 => { net.channel_mut()[idx] = rng.gen_range(1..=8); true }
+        0 => { net.spike_data_mut()[idx].threshold = rng.gen_range(0..=7); true }
+        1 => { net.spike_data_mut()[idx].channel = rng.gen_range(1..=8); true }
         _ => { net.polarity_mut()[idx] *= -1; true }
     }
 }
@@ -151,7 +151,7 @@ fn eval_accuracy(
     let mut correct = 0u32;
     for i in 0..len {
         net.propagate(sdr.pattern(seg[i] as usize), config).unwrap();
-        if proj.predict(&net.charge()[out_start..total_h]) == seg[i + 1] as usize {
+        if proj.predict(&net.charge_vec(out_start..total_h)) == seg[i + 1] as usize {
             correct += 1;
         }
     }
@@ -223,8 +223,8 @@ fn run_one(n_pockets: usize, seed: u64, steps: usize, corpus: &[u8]) -> RunResul
 
         // Random params
         for i in zone.start..zone.end {
-            net.threshold_mut()[i] = rng.gen_range(0..=7u8);
-            net.channel_mut()[i] = rng.gen_range(1..=8u8);
+            net.spike_data_mut()[i].threshold = rng.gen_range(0..=7u8);
+            net.spike_data_mut()[i].channel = rng.gen_range(1..=8u8);
             if rng.gen_ratio(1, 10) { net.polarity_mut()[i] = -1; }
         }
     }

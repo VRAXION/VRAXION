@@ -100,7 +100,7 @@ fn run_one(cfg: &Config) -> RunResult {
                 net.reset();
                 net.propagate(sdr.pattern(a), &init.propagation).unwrap();
                 net.propagate(sdr.pattern(b), &init.propagation).unwrap();
-                let scores = proj.raw_scores(&net.charge()[init.output_start()..init.neuron_count]);
+                let scores = proj.raw_scores(&net.charge_vec(init.output_start()..init.neuron_count));
                 t += cosine_to_onehot(&scores, sum);
             }
             t / 20.0
@@ -133,7 +133,7 @@ fn run_one(cfg: &Config) -> RunResult {
                     net.reset();
                     net.propagate(sdr.pattern(a), &init.propagation).unwrap();
                     net.propagate(sdr.pattern(b), &init.propagation).unwrap();
-                    let scores = proj.raw_scores(&net.charge()[init.output_start()..init.neuron_count]);
+                    let scores = proj.raw_scores(&net.charge_vec(init.output_start()..init.neuron_count));
                     t += cosine_to_onehot(&scores, sum);
                 }
                 t / 20.0
@@ -158,7 +158,7 @@ fn run_one(cfg: &Config) -> RunResult {
                 net.reset();
                 net.propagate(sdr.pattern(a), &init.propagation).unwrap();
                 net.propagate(sdr.pattern(b), &init.propagation).unwrap();
-                if proj.predict(&net.charge()[init.output_start()..init.neuron_count]) == sum { correct += 1; }
+                if proj.predict(&net.charge_vec(init.output_start()..init.neuron_count)) == sum { correct += 1; }
             }
             let acc = correct as f64 / problems.len() as f64;
             if acc > peak_acc { peak_acc = acc; }
@@ -173,7 +173,7 @@ fn run_one(cfg: &Config) -> RunResult {
         net.reset();
         net.propagate(sdr.pattern(a), &init.propagation).unwrap();
         net.propagate(sdr.pattern(b), &init.propagation).unwrap();
-        if proj.predict(&net.charge()[init.output_start()..init.neuron_count]) == sum { correct += 1; }
+        if proj.predict(&net.charge_vec(init.output_start()..init.neuron_count)) == sum { correct += 1; }
     }
     let final_acc = correct as f64 / problems.len() as f64;
     if final_acc > peak_acc { peak_acc = final_acc; }

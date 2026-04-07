@@ -32,7 +32,7 @@ fn eval_accuracy(
     let mut correct = 0u32;
     for i in 0..len {
         net.propagate(sdr.pattern(seg[i] as usize), config).unwrap();
-        if proj.predict(&net.charge()[read_start..read_end]) == seg[i + 1] as usize {
+        if proj.predict(&net.charge_vec(read_start..read_end)) == seg[i + 1] as usize {
             correct += 1;
         }
     }

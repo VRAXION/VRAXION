@@ -109,7 +109,7 @@ fn eval_accuracy(
     let mut correct = 0u32;
     for i in 0..len {
         net.propagate(sdr.pattern(seg[i] as usize), prop).unwrap();
-        if proj.predict(&net.charge()[output_start..neuron_count]) == seg[i + 1] as usize {
+        if proj.predict(&net.charge_vec(output_start..neuron_count)) == seg[i + 1] as usize {
             correct += 1;
         }
     }
@@ -177,8 +177,8 @@ fn run_one(cfg: &Config, corpus: &[u8]) -> RunResult {
         // Empty network with random params only (no edges)
         let mut n = Network::new(nc);
         for i in 0..nc {
-            n.threshold_mut()[i] = rng.gen_range(0..=7u8);
-            n.channel_mut()[i] = rng.gen_range(1..=8u8);
+            n.spike_data_mut()[i].threshold = rng.gen_range(0..=7u8);
+            n.spike_data_mut()[i].channel = rng.gen_range(1..=8u8);
             if rng.gen_ratio(1, 10) { n.polarity_mut()[i] = -1; }
         }
         n

@@ -27,16 +27,16 @@ fn main() {
             }
         }
         for i in 0..neuron_count {
-            net.threshold_mut()[i] = rng.gen_range(0..=15);
-            net.channel_mut()[i] = rng.gen_range(1..=8);
+            net.spike_data_mut()[i].threshold = rng.gen_range(0..=15);
+            net.spike_data_mut()[i].channel = rng.gen_range(1..=8);
             if rng.gen_ratio(1, 10) {
                 net.polarity_mut()[i] = -1;
             }
         }
 
         let edges = net.edge_count();
-        let threshold = net.threshold().to_vec();
-        let channel = net.channel().to_vec();
+        let threshold: Vec<u8> = net.spike_data().iter().map(|s| s.threshold).collect();
+        let channel: Vec<u8> = net.spike_data().iter().map(|s| s.channel).collect();
         let polarity = net.polarity().to_vec();
         let input = {
             let mut v = vec![0i32; neuron_count];

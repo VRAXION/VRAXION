@@ -387,8 +387,8 @@ fn test_a7_snapshot_restore() -> bool {
         net.mutate_add_edge(&mut rng);
     }
     for i in 0..8 {
-        net.threshold_mut()[i] = rng.gen_range(0..=7);
-        net.channel_mut()[i] = rng.gen_range(1..=8);
+        net.spike_data_mut()[i].threshold = rng.gen_range(0..=7);
+        net.spike_data_mut()[i].channel = rng.gen_range(1..=8);
         if rng.gen_ratio(1, 3) {
             net.polarity_mut()[i] = -1;
         }
@@ -407,16 +407,16 @@ fn test_a7_snapshot_restore() -> bool {
     // Snapshot
     let snapshot = net.save_state();
     let saved_edges = net.edge_count();
-    let saved_charge: Vec<u8> = net.charge().to_vec();
+    let saved_charge: Vec<u8> = net.spike_data().iter().map(|s| s.charge).collect();
     let saved_activation: Vec<i8> = net.activation().to_vec();
-    let saved_threshold: Vec<u8> = net.threshold().to_vec();
+    let saved_threshold: Vec<u8> = net.spike_data().iter().map(|s| s.threshold).collect();
 
     // Mutate heavily
     for _ in 0..20 {
         net.mutate_add_edge(&mut rng);
     }
-    net.threshold_mut()[0] = 15;
-    net.channel_mut()[0] = 8;
+    net.spike_data_mut()[0].threshold = 15;
+    net.spike_data_mut()[0].channel = 8;
     net.polarity_mut()[0] = -1;
     // Propagate again to change state
     let input2: Vec<i32> = (0..8).map(|i| if i >= 5 { 1 } else { 0 }).collect();
@@ -424,8 +424,8 @@ fn test_a7_snapshot_restore() -> bool {
 
     // Verify state HAS changed
     let changed = net.edge_count() != saved_edges
-        || net.charge() != saved_charge.as_slice()
-        || net.threshold()[0] != saved_threshold[0];
+        || net.charge_vec(0..net.neuron_count()) != saved_charge
+        || net.threshold_at(0) != saved_threshold[0];
     if !changed {
         println!("    state did not change after mutations (test is invalid)");
         return false;
@@ -436,9 +436,9 @@ fn test_a7_snapshot_restore() -> bool {
 
     // Verify all state matches snapshot
     let edges_ok = net.edge_count() == saved_edges;
-    let charge_ok = net.charge() == saved_charge.as_slice();
+    let charge_ok = net.charge_vec(0..net.neuron_count()) == saved_charge;
     let act_ok = net.activation() == saved_activation.as_slice();
-    let thr_ok = net.threshold() == saved_threshold.as_slice();
+    let thr_ok: bool = net.spike_data().iter().map(|s| s.threshold).collect::<Vec<_>>() == saved_threshold;
 
     if !edges_ok {
         println!("    edges: {} (expected {})", net.edge_count(), saved_edges);

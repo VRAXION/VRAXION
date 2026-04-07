@@ -53,8 +53,8 @@ fn build_ws_network(h: usize, k: usize, rewire_p: f64, rng: &mut StdRng) -> Netw
 
     // Phase 3: Random params (same as build_network)
     for i in 0..h {
-        net.threshold_mut()[i] = rng.gen_range(0..=7u8);
-        net.channel_mut()[i] = rng.gen_range(1..=8u8);
+        net.spike_data_mut()[i].threshold = rng.gen_range(0..=7u8);
+        net.spike_data_mut()[i].channel = rng.gen_range(1..=8u8);
         if rng.gen_ratio(1, 10) { net.polarity_mut()[i] = -1; }
     }
 
@@ -75,7 +75,7 @@ fn eval_accuracy(
     let mut correct = 0u32;
     for i in 0..len {
         net.propagate(sdr.pattern(seg[i] as usize), &init.propagation).unwrap();
-        if proj.predict(&net.charge()[init.output_start()..init.neuron_count]) == seg[i + 1] as usize {
+        if proj.predict(&net.charge_vec(init.output_start()..init.neuron_count)) == seg[i + 1] as usize {
             correct += 1;
         }
     }

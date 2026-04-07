@@ -44,7 +44,7 @@ fn main() {
                 let mut correct = 0u32;
                 for i in 0..100 {
                     net.propagate(sdr.pattern(seg[i] as usize), &init.propagation).unwrap();
-                    if proj.predict(&net.charge()[output_start..h]) == seg[i + 1] as usize {
+                    if proj.predict(&net.charge_vec(output_start..h)) == seg[i + 1] as usize {
                         correct += 1;
                     }
                 }
@@ -76,13 +76,13 @@ fn main() {
     for i in 0..1000 {
         net.propagate(sdr.pattern(seg[i] as usize), &init.propagation).unwrap();
 
-        let charge = net.charge();
+        let spike = net.spike_data();
         let activation = net.activation();
 
         // Zone charges
-        let c_input: u64 = charge[..output_start].iter().map(|&c| c as u64).sum();
-        let c_overlap: u64 = charge[output_start..input_end].iter().map(|&c| c as u64).sum();
-        let c_output: u64 = charge[input_end..h].iter().map(|&c| c as u64).sum();
+        let c_input: u64 = spike[..output_start].iter().map(|s| s.charge as u64).sum();
+        let c_overlap: u64 = spike[output_start..input_end].iter().map(|s| s.charge as u64).sum();
+        let c_output: u64 = spike[input_end..h].iter().map(|s| s.charge as u64).sum();
         zone_charge_sum[0] += c_input;
         zone_charge_sum[1] += c_overlap;
         zone_charge_sum[2] += c_output;
@@ -98,7 +98,7 @@ fn main() {
         zone_active_sum[3] += a_input + a_overlap + a_output;
 
         // Correct vs wrong overlap charge
-        let predicted = proj.predict(&charge[output_start..h]);
+        let predicted = proj.predict(&net.charge_vec(output_start..h));
         if predicted == seg[i + 1] as usize {
             correct += 1;
             correct_overlap_charge += c_overlap;
@@ -143,8 +143,8 @@ fn main() {
     let mut per_neuron_charge = vec![0u64; h];
     for &ch in seg.iter().take(1000) {
         net.propagate(sdr.pattern(ch as usize), &init.propagation).unwrap();
-        for (n, &c) in net.charge().iter().enumerate() {
-            per_neuron_charge[n] += c as u64;
+        for (n, s) in net.spike_data().iter().enumerate() {
+            per_neuron_charge[n] += s.charge as u64;
         }
     }
 

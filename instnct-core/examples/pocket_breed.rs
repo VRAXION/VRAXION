@@ -169,11 +169,11 @@ fn pocket_param(net: &mut Network, zone: &PocketZone, rng: &mut impl Rng) -> boo
     let roll = rng.gen_range(0..3u32);
     match roll {
         0 => {
-            net.threshold_mut()[idx] = rng.gen_range(0..=7);
+            net.spike_data_mut()[idx].threshold = rng.gen_range(0..=7);
             true
         }
         1 => {
-            net.channel_mut()[idx] = rng.gen_range(1..=8);
+            net.spike_data_mut()[idx].channel = rng.gen_range(1..=8);
             true
         }
         _ => {
@@ -233,7 +233,7 @@ fn eval_accuracy(
     let mut correct = 0u32;
     for i in 0..len {
         net.propagate(sdr.pattern(seg[i] as usize), config).unwrap();
-        if proj.predict(&net.charge()[os..h]) == seg[i + 1] as usize {
+        if proj.predict(&net.charge_vec(os..h)) == seg[i + 1] as usize {
             correct += 1;
         }
     }
@@ -260,7 +260,7 @@ fn eval_accuracy_segment(
     for i in 0..len {
         net.propagate(sdr.pattern(segment[i] as usize), config)
             .unwrap();
-        if proj.predict(&net.charge()[os..h]) == segment[i + 1] as usize {
+        if proj.predict(&net.charge_vec(os..h)) == segment[i + 1] as usize {
             correct += 1;
         }
     }
@@ -323,13 +323,13 @@ fn pocket_param_stats(net: &Network) -> PocketParamStats {
         if net.polarity()[i] == -1 {
             inh_a += 1;
         }
-        sum_th_a += net.threshold()[i] as u64;
+        sum_th_a += net.threshold_at(i) as u64;
     }
     for i in zb.start..zb.end {
         if net.polarity()[i] == -1 {
             inh_b += 1;
         }
-        sum_th_b += net.threshold()[i] as u64;
+        sum_th_b += net.threshold_at(i) as u64;
     }
     PocketParamStats {
         inhibitory_a: inh_a,
@@ -414,8 +414,8 @@ fn init_network(seed: u64, rng: &mut StdRng) -> Network {
 
         // Random params
         for i in zone.start..zone.end {
-            net.threshold_mut()[i] = rng.gen_range(0..=7u8);
-            net.channel_mut()[i] = rng.gen_range(1..=8u8);
+            net.spike_data_mut()[i].threshold = rng.gen_range(0..=7u8);
+            net.spike_data_mut()[i].channel = rng.gen_range(1..=8u8);
             if rng.gen_ratio(1, 10) {
                 net.polarity_mut()[i] = -1;
             }
@@ -650,8 +650,8 @@ fn breed(
 
     // --- Step 2: Copy Woman's parameters ---
     for i in 0..h {
-        child.threshold_mut()[i] = woman.threshold()[i];
-        child.channel_mut()[i] = woman.channel()[i];
+        child.spike_data_mut()[i].threshold = woman.threshold_at(i);
+        child.spike_data_mut()[i].channel = woman.channel_at(i);
         child.polarity_mut()[i] = woman.polarity()[i];
     }
     println!("  Copied Woman's neuron parameters (threshold/channel/polarity)");

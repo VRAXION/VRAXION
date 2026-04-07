@@ -61,8 +61,8 @@ fn build_pocket(rng: &mut StdRng) -> Network {
 
     // Random params
     for i in 0..H {
-        net.threshold_mut()[i] = rng.gen_range(0..=7u8);
-        net.channel_mut()[i] = rng.gen_range(1..=8u8);
+        net.spike_data_mut()[i].threshold = rng.gen_range(0..=7u8);
+        net.spike_data_mut()[i].channel = rng.gen_range(1..=8u8);
         if rng.gen_ratio(1, 10) { net.polarity_mut()[i] = -1; }
     }
     net
@@ -74,7 +74,7 @@ fn charge_transfer(female: &Network) -> Vec<i32> {
     let os = output_start();
     let mut input = vec![0i32; H];
     // Female output zone [98..256] → Male input zone [0..158]
-    for (i, &c) in female.charge()[os..H].iter().enumerate() {
+    for (i, &c) in female.charge_vec(os..H).iter().enumerate() {
         if i < PHI_DIM {
             input[i] = c as i32;
         }
@@ -104,7 +104,7 @@ fn eval_chain(
         let transfer = charge_transfer(female);
         male.propagate(&transfer, config).unwrap();
         // Predict from Male output zone
-        if proj.predict(&male.charge()[os..H]) == seg[i + 1] as usize {
+        if proj.predict(&male.charge_vec(os..H)) == seg[i + 1] as usize {
             correct += 1;
         }
     }
@@ -163,8 +163,8 @@ fn mutate_unit(
         70..85 => { // param mutation
             let idx = rng.gen_range(0..H);
             match rng.gen_range(0..3u32) {
-                0 => { net.threshold_mut()[idx] = rng.gen_range(0..=7); true }
-                1 => { net.channel_mut()[idx] = rng.gen_range(1..=8); true }
+                0 => { net.spike_data_mut()[idx].threshold = rng.gen_range(0..=7); true }
+                1 => { net.spike_data_mut()[idx].channel = rng.gen_range(1..=8); true }
                 _ => { net.polarity_mut()[idx] *= -1; true }
             }
         }
@@ -175,7 +175,7 @@ fn mutate_unit(
             } else {
                 // param mutation on female instead
                 let idx = rng.gen_range(0..H);
-                net.threshold_mut()[idx] = rng.gen_range(0..=7);
+                net.spike_data_mut()[idx].threshold = rng.gen_range(0..=7);
                 true
             }
         }
@@ -439,8 +439,8 @@ fn main() {
     // Copy best male's params as base
     let best_male_idx = male_indices[0];
     for i in 0..H {
-        a_male.threshold_mut()[i] = units[best_male_idx].male.threshold()[i];
-        a_male.channel_mut()[i] = units[best_male_idx].male.channel()[i];
+        a_male.spike_data_mut()[i].threshold = units[best_male_idx].male.threshold_at(i);
+        a_male.spike_data_mut()[i].channel = units[best_male_idx].male.channel_at(i);
         a_male.polarity_mut()[i] = units[best_male_idx].male.polarity()[i];
     }
 
@@ -501,7 +501,7 @@ fn main() {
             f_clone.propagate(sdr.pattern(cryst_seg[i] as usize), &prop).unwrap();
             let transfer = charge_transfer(&f_clone);
             male.propagate(&transfer, &prop).unwrap();
-            if proj.predict(&male.charge()[os..H]) == cryst_seg[i + 1] as usize {
+            if proj.predict(&male.charge_vec(os..H)) == cryst_seg[i + 1] as usize {
                 correct += 1;
             }
         }

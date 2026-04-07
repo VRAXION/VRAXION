@@ -158,7 +158,7 @@ fn evaluate(
         for &inp in &p.inputs {
             net.propagate(sdr.pattern(inp), &init.propagation).unwrap();
         }
-        let charge = &net.charge()[init.output_start()..init.neuron_count];
+        let charge = &net.charge_vec(init.output_start()..init.neuron_count);
         if proj.predict(charge) == p.target { correct += 1; }
         total_cos += cosine_to_onehot(&proj.raw_scores(charge), p.target);
     }
@@ -176,7 +176,7 @@ fn eval_fitness(
         for &inp in &p.inputs {
             net.propagate(sdr.pattern(inp), &init.propagation).unwrap();
         }
-        let scores = proj.raw_scores(&net.charge()[init.output_start()..init.neuron_count]);
+        let scores = proj.raw_scores(&net.charge_vec(init.output_start()..init.neuron_count));
         total += cosine_to_onehot(&scores, p.target);
     }
     total / sample as f64
