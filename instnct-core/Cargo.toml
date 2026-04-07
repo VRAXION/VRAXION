@@ -48,3 +48,8 @@ required-features = ["benchmarks"]
 name = "scatter_breakdown"
 harness = false
 required-features = ["benchmarks"]
+
+[[bench]]
+name = "edge_compact_ab"
+harness = false
+required-features = ["benchmarks"]
