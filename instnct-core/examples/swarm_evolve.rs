@@ -48,7 +48,7 @@ struct Agent {
 
 impl Agent {
     fn new(id: usize, h: usize, corpus: &[u8], seed: u64) -> Self {
-        let init = InitConfig::empty(h);  // start empty, evolve from scratch
+        let init = InitConfig::phi(h);  // start with proven defaults (chains + density)
         let mut rng = StdRng::seed_from_u64(seed);
         let net = build_network(&init, &mut rng);
         let proj = Int8Projection::new(init.phi_dim, CHARS, &mut StdRng::seed_from_u64(seed + 200));
@@ -58,9 +58,10 @@ impl Agent {
         ).unwrap();
 
         // Each agent gets a DIFFERENT slice of the corpus (specialist)
-        let slice_size = corpus.len() / 8;  // ~12.5% each
-        let start = (id * slice_size / 2) % (corpus.len() - slice_size);
-        let corpus_slice = corpus[start..start + slice_size].to_vec();
+        // Use 50% overlap — enough data to learn, but different enough to specialize
+        let slice_size = (corpus.len() * 3 / 4).max(200);
+        let start = (id * corpus.len() / (8 * 2)) % corpus.len().saturating_sub(slice_size);
+        let corpus_slice = corpus[start..start + slice_size.min(corpus.len() - start)].to_vec();
         let bigram = build_bigram_table(&corpus_slice, CHARS);
 
         Agent {
@@ -81,10 +82,9 @@ impl Agent {
             let outcome = evolution_step_jackpot(
                 &mut self.net, &mut self.proj, &mut self.rng, &mut self.eval_rng,
                 |net, proj, eval_rng| {
-                    eval_smooth(
+                    eval_accuracy(
                         net, proj, &self.corpus_slice, 100, eval_rng,
                         &self.sdr, &self.init.propagation, output_start, h,
-                        &self.bigram,
                     )
                 },
                 &evo_config, 3,
@@ -176,9 +176,9 @@ impl Agent {
 fn main() {
     let corpus = load_corpus(CORPUS_PATH).expect("failed to load corpus");
     let n_agents = 6;
-    let h = 2048;
-    let rounds = 8;
-    let steps_per_round = 500;
+    let h = 256;
+    let rounds = 10;
+    let steps_per_round = 1000;
 
     println!("╔═══════════════════════════════════════════════════════════════════╗");
     println!("║  P2P SWARM EVOLUTION PROTOTYPE                                  ║");
