@@ -35,6 +35,7 @@ const _: () = assert!((LIMIT_MAX_CHARGE as u64 + 1) * 13 <= u16::MAX as u64);
 #[derive(Clone, Debug)]
 pub struct PropagationWorkspace {
     incoming_scratch: Vec<i16>, // per-neuron incoming-signal accumulator
+    active_scratch: Vec<u16>,   // scratch: indices of neurons with charge > 0 (spike skip-inactive)
 }
 
 impl PropagationWorkspace {
@@ -42,6 +43,7 @@ impl PropagationWorkspace {
     pub fn new(neuron_count: usize) -> Self {
         Self {
             incoming_scratch: vec![0; neuron_count],
+            active_scratch: Vec::with_capacity(neuron_count),
         }
     }
 
@@ -49,6 +51,9 @@ impl PropagationWorkspace {
     pub fn ensure_neuron_count(&mut self, neuron_count: usize) {
         if self.incoming_scratch.len() < neuron_count {
             self.incoming_scratch.resize(neuron_count, 0);
+        }
+        if self.active_scratch.capacity() < neuron_count {
+            self.active_scratch.reserve(neuron_count - self.active_scratch.capacity());
         }
     }
 
@@ -59,7 +64,8 @@ impl PropagationWorkspace {
 
     #[cfg(test)]
     fn with_scratch(incoming_scratch: Vec<i16>) -> Self {
-        Self { incoming_scratch }
+        let cap = incoming_scratch.len();
+        Self { incoming_scratch, active_scratch: Vec::with_capacity(cap) }
     }
 }
 
@@ -427,14 +433,26 @@ pub(crate) fn propagate_token_unchecked(
             *ch = val.clamp(0, LIMIT_MAX_CHARGE as i16) as u8;
         }
 
+        // Build active set: only neurons with charge > 0 can possibly fire
+        // (charge_x10=0 < threshold_x10 which is always >= 7, so charge=0 never fires)
+        workspace.active_scratch.clear();
+        for idx in 0..neuron_count {
+            if state.charge[idx] > 0 {
+                workspace.active_scratch.push(idx as u16);
+            }
+        }
+
+        // Clear all activation (silent by default), then only update active neurons
+        state.activation.fill(0);
+
         // Spike stage: charge*10 >= (theta+1) * PHASE_BASE  (max 150 vs 208, fits u16)
         let phase_tick = tick % GLOBAL_PHASE_TICKS_PER_PERIOD;
-        for neuron_idx in 0..neuron_count {
+        for i in 0..workspace.active_scratch.len() {
+            let neuron_idx = workspace.active_scratch[i] as usize;
             // Refractory gate: neuron in cooldown cannot fire
             if config.use_refractory && state.refractory[neuron_idx] > 0 {
                 state.refractory[neuron_idx] -= 1;
-                state.activation[neuron_idx] = 0;
-                continue;
+                continue; // activation already 0 from fill
             }
             let channel_idx = params.channel[neuron_idx] as usize;
             let phase_mult: u16 = if (1..=GLOBAL_PHASE_CHANNEL_COUNT).contains(&channel_idx) {
@@ -451,9 +469,8 @@ pub(crate) fn propagate_token_unchecked(
                 if config.use_refractory {
                     state.refractory[neuron_idx] = 1; // 1-tick cooldown
                 }
-            } else {
-                state.activation[neuron_idx] = 0; // silent
             }
+            // else: activation already 0 from fill
         }
     }
 }

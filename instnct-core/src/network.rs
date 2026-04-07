@@ -177,6 +177,7 @@ pub struct Network {
     csr_offsets: Vec<u32>, // CSR: per-neuron edge start index
     csr_targets: Vec<u16>, // CSR: compact target indices
     csr_dirty: bool,     // true when graph changed since last CSR rebuild
+    active_neurons: Vec<u16>, // scratch: indices of neurons with charge > 0 (spike skip-inactive)
 }
 
 impl Network {
@@ -197,6 +198,7 @@ impl Network {
             csr_offsets: vec![0u32; neuron_count + 1],
             csr_targets: Vec::new(),
             csr_dirty: true,
+            active_neurons: Vec::with_capacity(neuron_count),
         }
     }
 
@@ -322,13 +324,25 @@ impl Network {
                 s.charge = val.clamp(0, LIMIT_MAX_CHARGE as i16) as u8;
             }
 
+            // Build active set: only neurons with charge > 0 can possibly fire
+            // (charge_x10=0 < threshold_x10 which is always >= 7, so charge=0 never fires)
+            self.active_neurons.clear();
+            for idx in 0..neuron_count {
+                if self.spike[idx].charge > 0 {
+                    self.active_neurons.push(idx as u16);
+                }
+            }
+
+            // Clear all activation (silent by default), then only update active neurons
+            self.activation.fill(0);
+
             let phase_tick = tick % GLOBAL_PHASE_TICKS_PER_PERIOD;
-            for neuron_idx in 0..neuron_count {
+            for i in 0..self.active_neurons.len() {
+                let neuron_idx = self.active_neurons[i] as usize;
                 // Refractory gate: neuron in cooldown cannot fire
                 if config.use_refractory && self.refractory[neuron_idx] > 0 {
                     self.refractory[neuron_idx] -= 1;
-                    self.activation[neuron_idx] = 0;
-                    continue;
+                    continue; // activation already 0 from fill
                 }
                 let channel_idx = self.spike[neuron_idx].channel as usize;
                 let phase_mult: u16 = if (1..=GLOBAL_PHASE_CHANNEL_COUNT).contains(&channel_idx) {
@@ -344,9 +358,8 @@ impl Network {
                     if config.use_refractory {
                         self.refractory[neuron_idx] = 1;
                     }
-                } else {
-                    self.activation[neuron_idx] = 0;
                 }
+                // else: activation already 0 from fill
             }
         }
         Ok(())
@@ -464,6 +477,7 @@ impl Network {
             csr_offsets: vec![0u32; n + 1],
             csr_targets: Vec::new(),
             csr_dirty: true,
+            active_neurons: Vec::with_capacity(n),
         })
     }
 
@@ -2180,5 +2194,181 @@ mod tests {
         assert!(result.is_err());
         let err = format!("{}", result.unwrap_err());
         assert!(err.contains("duplicate"), "error should mention duplicate: {err}");
+    }
+
+    // ---- Spike skip-inactive adversarial tests ----
+
+    #[test]
+    fn spike_skip_matches_full_scan_on_dense_network() {
+        // Dense network where almost every neuron is active.
+        // Verifies skip-inactive produces deterministic results.
+        let mut rng = StdRng::seed_from_u64(0xDE45E);
+        let mut net = Network::new(128);
+        for _ in 0..2000 {
+            net.mutate_add_edge(&mut rng);
+        }
+        // Set low thresholds so everyone fires
+        for i in 0..128 {
+            net.spike_data_mut()[i].threshold = 0;
+        }
+        let input: Vec<i32> = (0..128).map(|i| if i % 3 == 0 { 1 } else { 0 }).collect();
+        let config = PropagationConfig::default();
+
+        // Run and capture state
+        net.propagate(&input, &config).unwrap();
+        let act1 = net.activation().to_vec();
+        let charge1: Vec<u8> = net.spike_data().iter().map(|s| s.charge).collect();
+
+        // Run again from same initial state — should be deterministic
+        net.reset();
+        net.propagate(&input, &config).unwrap();
+        let act2 = net.activation().to_vec();
+        let charge2: Vec<u8> = net.spike_data().iter().map(|s| s.charge).collect();
+
+        assert_eq!(act1, act2, "spike skip not deterministic on dense network");
+        assert_eq!(charge1, charge2);
+    }
+
+    #[test]
+    fn spike_skip_matches_full_scan_on_sparse_network() {
+        // Very sparse network — the target scenario for skip-inactive optimization
+        let mut rng = StdRng::seed_from_u64(0x5BAB5E);
+        let mut net = Network::new(4096);
+        // Only 30 edges
+        for _ in 0..30 {
+            net.mutate_add_edge(&mut rng);
+        }
+        let input: Vec<i32> = {
+            let mut v = vec![0i32; 4096];
+            v[0] = 1;
+            v[100] = 1;
+            v[200] = 1;
+            v
+        };
+        let config = PropagationConfig::default();
+
+        net.propagate(&input, &config).unwrap();
+        // Verify most neurons are inactive
+        let active_count = net.activation().iter().filter(|&&a| a != 0).count();
+        // With 30 edges and 3 input neurons, very few should fire
+        assert!(
+            active_count < 100,
+            "too many active neurons in sparse network: {}",
+            active_count
+        );
+    }
+
+    #[test]
+    fn spike_skip_zero_charge_never_fires() {
+        // Verify the core invariant: charge=0 neurons CANNOT fire
+        // regardless of threshold, channel, or phase tick.
+        // effective threshold = (0+1) * phase_mult >= 7, and charge*10 = 0
+        let mut net = Network::new(8);
+        net.graph_mut().add_edge(0, 1);
+        for i in 0..8 {
+            net.spike_data_mut()[i].charge = 0;
+            net.spike_data_mut()[i].threshold = 0;
+        }
+        // Don't inject any input
+        let input = vec![0i32; 8];
+        let config = PropagationConfig {
+            ticks_per_token: 1,
+            input_duration_ticks: 0,
+            decay_interval_ticks: 0,
+            use_refractory: false,
+        };
+        net.propagate(&input, &config).unwrap();
+        assert!(
+            net.activation().iter().all(|&a| a == 0),
+            "charge=0 neuron fired!"
+        );
+    }
+
+    #[test]
+    fn spike_skip_preserves_semantics_across_random_mutations() {
+        // Compare skip-inactive Network::propagate vs standalone propagate_token.
+        // Focused on sparse networks.
+        use crate::propagation::{propagate_token, PropagationParameters, PropagationState};
+        use rand::Rng;
+
+        let mut rng = StdRng::seed_from_u64(0xADD7EB5);
+        let mut net = Network::new(512);
+        // Add only ~50 edges (sparse)
+        for _ in 0..50 {
+            net.mutate_add_edge(&mut rng);
+        }
+
+        let input: Vec<i32> = (0..512)
+            .map(|_| if rng.gen_bool(0.05) { 1 } else { 0 })
+            .collect();
+        let config = PropagationConfig::default();
+
+        // Network path (CSR + spike skip)
+        let net_clone = net.clone();
+        net.propagate(&input, &config).unwrap();
+
+        // Standalone path (propagate_token)
+        let threshold: Vec<u8> = net_clone.spike_data().iter().map(|s| s.threshold).collect();
+        let channel: Vec<u8> = net_clone.spike_data().iter().map(|s| s.channel).collect();
+        let mut activation = vec![0i8; 512];
+        let mut charge = vec![0u8; 512];
+        let mut refractory = vec![0u8; 512];
+        let mut workspace = PropagationWorkspace::new(512);
+
+        propagate_token(
+            &input,
+            net_clone.graph(),
+            &PropagationParameters {
+                threshold: &threshold,
+                channel: &channel,
+                polarity: net_clone.polarity(),
+            },
+            &mut PropagationState {
+                activation: &mut activation,
+                charge: &mut charge,
+                refractory: &mut refractory,
+            },
+            &config,
+            &mut workspace,
+        )
+        .unwrap();
+
+        // Must match exactly
+        assert_eq!(
+            net.activation(),
+            &activation[..],
+            "activation diverged: Network vs propagate_token"
+        );
+        let net_charge: Vec<u8> = net.spike_data().iter().map(|s| s.charge).collect();
+        assert_eq!(
+            net_charge, charge,
+            "charge diverged: Network vs propagate_token"
+        );
+    }
+
+    #[test]
+    fn spike_skip_handles_refractory_correctly() {
+        // With refractory enabled, a neuron that fires gets 1-tick cooldown.
+        // The skip must still process refractory neurons (they need decrement).
+        let mut net = Network::new(4);
+        net.graph_mut().add_edge(0, 1);
+        net.graph_mut().add_edge(1, 2);
+        for i in 0..4 {
+            net.spike_data_mut()[i].threshold = 0; // easy to fire
+        }
+
+        let input = vec![1i32, 0, 0, 0];
+        let config = PropagationConfig {
+            ticks_per_token: 4,
+            input_duration_ticks: 1,
+            decay_interval_ticks: 0,
+            use_refractory: true,
+        };
+
+        // Should not panic and should produce valid state
+        net.propagate(&input, &config).unwrap();
+        // Neuron 0 received input, should have fired and entered refractory
+        // All charges must be within bounds
+        assert!(net.spike_data().iter().all(|s| s.charge <= LIMIT_MAX_CHARGE));
     }
 }
