@@ -58,3 +58,8 @@ required-features = ["benchmarks"]
 name = "compact_neuron_ab"
 harness = false
 required-features = ["benchmarks"]
+
+[[bench]]
+name = "spike_pack_ab"
+harness = false
+required-features = ["benchmarks"]
