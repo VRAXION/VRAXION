@@ -14,10 +14,10 @@ use instnct_core::{
 use std::hint::black_box;
 const PHASE_BASE: [u8; 8] = [7, 8, 10, 12, 13, 12, 10, 8];
 
-fn build_bench_fixture(neuron_count: usize) -> (Vec<u32>, Vec<u8>, Vec<i32>, Vec<i32>) {
-    let threshold = vec![6u32; neuron_count];
+fn build_bench_fixture(neuron_count: usize) -> (Vec<u8>, Vec<u8>, Vec<i8>, Vec<i32>) {
+    let threshold = vec![6u8; neuron_count];
     let mut channel = vec![1u8; neuron_count];
-    let mut polarity = vec![1i32; neuron_count];
+    let mut polarity = vec![1i8; neuron_count];
     for i in 0..neuron_count {
         channel[i] = (i % 8 + 1) as u8;
         if i % 10 == 0 {
@@ -47,16 +47,16 @@ fn compare(label: &str, baseline: f64, candidate: f64, noise_pct: f64) {
 struct BenchInputs<'a> {
     input: &'a [i32],
     graph: &'a ConnectionGraph,
-    threshold: &'a [u32],
+    threshold: &'a [u8],
     channel: &'a [u8],
-    polarity: &'a [i32],
+    polarity: &'a [i8],
     config: &'a PropagationConfig,
 }
 
 struct BenchScratch {
-    activation: Vec<i32>,
-    charge: Vec<u32>,
-    incoming: Vec<i32>,
+    activation: Vec<i8>,
+    charge: Vec<u8>,
+    incoming: Vec<i16>,
 }
 
 impl BenchScratch {
@@ -92,22 +92,23 @@ fn propagate_inline(
         }
         if tick < inputs.config.input_duration_ticks {
             for (act, &input_val) in scratch.activation.iter_mut().zip(inputs.input.iter()) {
-                *act += input_val;
+                *act = act.saturating_add(input_val as i8);
             }
         }
         let incoming = &mut scratch.incoming[..neuron_count];
-        incoming.fill(0);
+        incoming.fill(0i16);
         for (src_chunk, tgt_chunk) in edge_src.chunks_exact(4).zip(edge_tgt.chunks_exact(4)) {
-            incoming[tgt_chunk[0]] += scratch.activation[src_chunk[0]];
-            incoming[tgt_chunk[1]] += scratch.activation[src_chunk[1]];
-            incoming[tgt_chunk[2]] += scratch.activation[src_chunk[2]];
-            incoming[tgt_chunk[3]] += scratch.activation[src_chunk[3]];
+            incoming[tgt_chunk[0] as usize] += scratch.activation[src_chunk[0] as usize] as i16;
+            incoming[tgt_chunk[1] as usize] += scratch.activation[src_chunk[1] as usize] as i16;
+            incoming[tgt_chunk[2] as usize] += scratch.activation[src_chunk[2] as usize] as i16;
+            incoming[tgt_chunk[3] as usize] += scratch.activation[src_chunk[3] as usize] as i16;
         }
         for i in (edge_src.len() / 4 * 4)..edge_src.len() {
-            incoming[edge_tgt[i]] += scratch.activation[edge_src[i]];
+            incoming[edge_tgt[i] as usize] += scratch.activation[edge_src[i] as usize] as i16;
         }
-        for (charge, &signal) in scratch.charge.iter_mut().zip(incoming.iter()) {
-            *charge = charge.saturating_add_signed(signal).min(15);
+        for (ch, &sig) in scratch.charge.iter_mut().zip(incoming.iter()) {
+            let val = (*ch as i16) + sig;
+            *ch = val.clamp(0, 15) as u8;
         }
         let phase_tick = tick % 8;
         if use_branchless_spike {
@@ -159,22 +160,23 @@ unsafe fn propagate_avx2(inputs: &BenchInputs<'_>, scratch: &mut BenchScratch) {
         }
         if tick < inputs.config.input_duration_ticks {
             for (act, &input_val) in scratch.activation.iter_mut().zip(inputs.input.iter()) {
-                *act += input_val;
+                *act = act.saturating_add(input_val as i8);
             }
         }
         let incoming = &mut scratch.incoming[..neuron_count];
-        incoming.fill(0);
+        incoming.fill(0i16);
         for (src_chunk, tgt_chunk) in edge_src.chunks_exact(4).zip(edge_tgt.chunks_exact(4)) {
-            incoming[tgt_chunk[0]] += scratch.activation[src_chunk[0]];
-            incoming[tgt_chunk[1]] += scratch.activation[src_chunk[1]];
-            incoming[tgt_chunk[2]] += scratch.activation[src_chunk[2]];
-            incoming[tgt_chunk[3]] += scratch.activation[src_chunk[3]];
+            incoming[tgt_chunk[0] as usize] += scratch.activation[src_chunk[0] as usize] as i16;
+            incoming[tgt_chunk[1] as usize] += scratch.activation[src_chunk[1] as usize] as i16;
+            incoming[tgt_chunk[2] as usize] += scratch.activation[src_chunk[2] as usize] as i16;
+            incoming[tgt_chunk[3] as usize] += scratch.activation[src_chunk[3] as usize] as i16;
         }
         for i in (edge_src.len() / 4 * 4)..edge_src.len() {
-            incoming[edge_tgt[i]] += scratch.activation[edge_src[i]];
+            incoming[edge_tgt[i] as usize] += scratch.activation[edge_src[i] as usize] as i16;
         }
-        for (charge, &signal) in scratch.charge.iter_mut().zip(incoming.iter()) {
-            *charge = charge.saturating_add_signed(signal).min(15);
+        for (ch, &sig) in scratch.charge.iter_mut().zip(incoming.iter()) {
+            let val = (*ch as i16) + sig;
+            *ch = val.clamp(0, 15) as u8;
         }
         // SAME if/else spike logic as propagate_inline(use_branchless_spike=false)
         let phase_tick = tick % 8;
@@ -251,8 +253,8 @@ fn main() {
         graph_sorted.sort_edges_by_target();
         let unsorted_stats;
         {
-            let mut activation = vec![0i32; neuron_count];
-            let mut charge = vec![0u32; neuron_count];
+            let mut activation = vec![0i8; neuron_count];
+            let mut charge = vec![0u8; neuron_count];
             let mut refractory = vec![0u8; neuron_count];
             let mut workspace = PropagationWorkspace::new(neuron_count);
             unsorted_stats = timed_run("A-baseline (unsorted)", iterations, || {
@@ -279,8 +281,8 @@ fn main() {
         }
         let sorted_stats;
         {
-            let mut activation = vec![0i32; neuron_count];
-            let mut charge = vec![0u32; neuron_count];
+            let mut activation = vec![0i8; neuron_count];
+            let mut charge = vec![0u8; neuron_count];
             let mut refractory = vec![0u8; neuron_count];
             let mut workspace = PropagationWorkspace::new(neuron_count);
             sorted_stats = timed_run("A-sorted (edges by target)", iterations, || {

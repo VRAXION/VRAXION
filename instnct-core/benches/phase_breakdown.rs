@@ -17,17 +17,17 @@ const DECAY_INT: usize = 6;
 
 struct Fixture {
     graph: ConnectionGraph,
-    threshold: Vec<u32>,
+    threshold: Vec<u8>,
     channel: Vec<u8>,
-    polarity: Vec<i32>,
+    polarity: Vec<i8>,
     input: Vec<i32>,
     n: usize,
 }
 
 struct Scratch {
-    activation: Vec<i32>,
-    charge: Vec<u32>,
-    incoming: Vec<i32>,
+    activation: Vec<i8>,
+    charge: Vec<u8>,
+    incoming: Vec<i16>,
 }
 
 impl Scratch {
@@ -52,9 +52,9 @@ fn build_fixture(neuron_count: usize, edge_prob_pct: u64) -> Fixture {
     }
     Fixture {
         graph,
-        threshold: vec![6u32; neuron_count],
+        threshold: vec![6u8; neuron_count],
         channel: vec![1u8; neuron_count],
-        polarity: vec![1i32; neuron_count],
+        polarity: vec![1i8; neuron_count],
         input,
         n: neuron_count,
     }
@@ -81,16 +81,16 @@ fn phase_scatter(f: &Fixture, s: &mut Scratch) {
     let n = f.n;
     for _tick in 0..TICKS {
         let incoming = &mut s.incoming[..n];
-        incoming.fill(0);
+        incoming.fill(0i16);
         for (sc, tc) in edge_src.chunks_exact(4).zip(edge_tgt.chunks_exact(4)) {
-            incoming[tc[0]] += s.activation[sc[0]];
-            incoming[tc[1]] += s.activation[sc[1]];
-            incoming[tc[2]] += s.activation[sc[2]];
-            incoming[tc[3]] += s.activation[sc[3]];
+            incoming[tc[0] as usize] += s.activation[sc[0] as usize] as i16;
+            incoming[tc[1] as usize] += s.activation[sc[1] as usize] as i16;
+            incoming[tc[2] as usize] += s.activation[sc[2] as usize] as i16;
+            incoming[tc[3] as usize] += s.activation[sc[3] as usize] as i16;
         }
         let rem = edge_src.len() / 4 * 4;
         for i in rem..edge_src.len() {
-            incoming[edge_tgt[i]] += s.activation[edge_src[i]];
+            incoming[edge_tgt[i] as usize] += s.activation[edge_src[i] as usize] as i16;
         }
     }
 }
@@ -100,7 +100,7 @@ fn phase_charge_accum(f: &Fixture, s: &mut Scratch) {
     let n = f.n;
     for _tick in 0..TICKS {
         for (ch, &sig) in s.charge[..n].iter_mut().zip(s.incoming[..n].iter()) {
-            *ch = ch.saturating_add_signed(sig).min(MAX_CHARGE);
+            *ch = { let val = (*ch as i16) + sig; val.clamp(0, MAX_CHARGE as i16) as u8 };
         }
     }
 }
@@ -142,25 +142,25 @@ fn full_pass(f: &Fixture, s: &mut Scratch) {
         }
         if tick < INPUT_DUR {
             for (act, &inp) in s.activation.iter_mut().zip(f.input.iter()) {
-                *act += inp;
+                *act = act.saturating_add(inp as i8);
             }
         }
 
         let incoming = &mut s.incoming[..n];
-        incoming.fill(0);
+        incoming.fill(0i16);
         for (sc, tc) in edge_src.chunks_exact(4).zip(edge_tgt.chunks_exact(4)) {
-            incoming[tc[0]] += s.activation[sc[0]];
-            incoming[tc[1]] += s.activation[sc[1]];
-            incoming[tc[2]] += s.activation[sc[2]];
-            incoming[tc[3]] += s.activation[sc[3]];
+            incoming[tc[0] as usize] += s.activation[sc[0] as usize] as i16;
+            incoming[tc[1] as usize] += s.activation[sc[1] as usize] as i16;
+            incoming[tc[2] as usize] += s.activation[sc[2] as usize] as i16;
+            incoming[tc[3] as usize] += s.activation[sc[3] as usize] as i16;
         }
         let rem = edge_src.len() / 4 * 4;
         for i in rem..edge_src.len() {
-            incoming[edge_tgt[i]] += s.activation[edge_src[i]];
+            incoming[edge_tgt[i] as usize] += s.activation[edge_src[i] as usize] as i16;
         }
 
         for (ch, &sig) in s.charge[..n].iter_mut().zip(incoming[..n].iter()) {
-            *ch = ch.saturating_add_signed(sig).min(MAX_CHARGE);
+            *ch = { let val = (*ch as i16) + sig; val.clamp(0, MAX_CHARGE as i16) as u8 };
         }
 
         let phase_tick = tick % 8;

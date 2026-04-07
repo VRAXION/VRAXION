@@ -11,8 +11,8 @@
 
 /// Maximum accumulated charge per neuron.
 ///
-/// Range: `[0, LIMIT_MAX_CHARGE]`. Fits in 4 bits; runtime stores it as `u32`.
-pub(crate) const LIMIT_MAX_CHARGE: u32 = 15;
+/// Range: `[0, LIMIT_MAX_CHARGE]`. Fits in 4 bits; runtime stores it as `u8`.
+pub(crate) const LIMIT_MAX_CHARGE: u8 = 15;
 
 // =========================================================================
 // GLOBAL_* — network-wide defaults

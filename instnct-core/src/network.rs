@@ -72,11 +72,11 @@ impl From<PropagationError> for NetworkError {
 #[derive(Clone, Debug)]
 pub struct NetworkSnapshot {
     graph: ConnectionGraph,
-    threshold: Vec<u32>,
+    threshold: Vec<u8>,
     channel: Vec<u8>,
-    polarity: Vec<i32>,
-    activation: Vec<i32>,
-    charge: Vec<u32>,
+    polarity: Vec<i8>,
+    activation: Vec<i8>,
+    charge: Vec<u8>,
     refractory: Vec<u8>,
 }
 
@@ -101,7 +101,7 @@ impl NetworkSnapshot {
 
     /// Snapshot threshold values.
     #[inline]
-    pub fn threshold(&self) -> &[u32] {
+    pub fn threshold(&self) -> &[u8] {
         &self.threshold
     }
 
@@ -113,19 +113,19 @@ impl NetworkSnapshot {
 
     /// Snapshot polarity values.
     #[inline]
-    pub fn polarity(&self) -> &[i32] {
+    pub fn polarity(&self) -> &[i8] {
         &self.polarity
     }
 
     /// Snapshot activation values.
     #[inline]
-    pub fn activation(&self) -> &[i32] {
+    pub fn activation(&self) -> &[i8] {
         &self.activation
     }
 
     /// Snapshot charge values.
     #[inline]
-    pub fn charge(&self) -> &[u32] {
+    pub fn charge(&self) -> &[u8] {
         &self.charge
     }
 }
@@ -148,11 +148,11 @@ impl NetworkSnapshot {
 #[derive(Clone, Debug)]
 pub struct Network {
     graph: ConnectionGraph,
-    threshold: Vec<u32>, // per-neuron, stored [0,15]; effective = stored+1 → [1,16]
+    threshold: Vec<u8>,  // per-neuron, stored [0,15]; effective = stored+1 → [1,16]
     channel: Vec<u8>,    // per-neuron, phase gating channel [1,8]
-    polarity: Vec<i32>,  // per-neuron, +1 excitatory, -1 inhibitory
-    activation: Vec<i32>,  // ephemeral, set to polarity or 0 by spike stage; transient mid-tick
-    charge: Vec<u32>,     // ephemeral, [0, LIMIT_MAX_CHARGE]
+    polarity: Vec<i8>,   // per-neuron, +1 excitatory, -1 inhibitory
+    activation: Vec<i8>,   // ephemeral, set to polarity or 0 by spike stage; transient mid-tick
+    charge: Vec<u8>,      // ephemeral, [0, LIMIT_MAX_CHARGE]
     refractory: Vec<u8>,  // per-neuron, 0 = ready, 1 = cooling (1-tick refractory after fire)
     workspace: PropagationWorkspace, // reusable scratch buffer
     csr_offsets: Vec<u32>, // CSR: per-neuron edge start index
@@ -170,11 +170,11 @@ impl Network {
     pub fn new(neuron_count: usize) -> Self {
         Self {
             graph: ConnectionGraph::new(neuron_count),
-            threshold: vec![0u32; neuron_count],
+            threshold: vec![0u8; neuron_count],
             channel: vec![1u8; neuron_count],
-            polarity: vec![1i32; neuron_count],
-            activation: vec![0i32; neuron_count],
-            charge: vec![0u32; neuron_count],
+            polarity: vec![1i8; neuron_count],
+            activation: vec![0i8; neuron_count],
+            charge: vec![0u8; neuron_count],
             refractory: vec![0u8; neuron_count],
             workspace: PropagationWorkspace::new(neuron_count),
             csr_offsets: vec![0u32; neuron_count + 1],
@@ -258,7 +258,7 @@ impl Network {
                 }
                 .into());
             }
-            let p = self.polarity[i];
+            let p: i8 = self.polarity[i];
             if p != 1 && p != -1 {
                 return Err(PropagationError::PolarityOutOfRange { index: i, value: p }.into());
             }
@@ -282,12 +282,12 @@ impl Network {
             }
             if tick < config.input_duration_ticks {
                 for (act, &input_val) in self.activation.iter_mut().zip(input.iter()) {
-                    *act += input_val;
+                    *act = act.saturating_add(input_val as i8);
                 }
             }
 
             // Skip-inactive scatter-add: only process edges from firing neurons
-            incoming.fill(0);
+            incoming.fill(0i16);
             for neuron in 0..neuron_count {
                 let act = self.activation[neuron];
                 if act == 0 {
@@ -296,12 +296,13 @@ impl Network {
                 let start = self.csr_offsets[neuron] as usize;
                 let end = self.csr_offsets[neuron + 1] as usize;
                 for &target in &self.csr_targets[start..end] {
-                    incoming[target as usize] += act;
+                    incoming[target as usize] += act as i16;
                 }
             }
 
-            for (charge, &signal) in self.charge.iter_mut().zip(incoming.iter()) {
-                *charge = charge.saturating_add_signed(signal).min(LIMIT_MAX_CHARGE);
+            for (ch, &sig) in self.charge.iter_mut().zip(incoming.iter()) {
+                let val = (*ch as i16) + sig;
+                *ch = val.clamp(0, LIMIT_MAX_CHARGE as i16) as u8;
             }
 
             let phase_tick = tick % GLOBAL_PHASE_TICKS_PER_PERIOD;
@@ -318,8 +319,8 @@ impl Network {
                 } else {
                     10
                 };
-                let charge_x10 = self.charge[neuron_idx] as u16 * 10; // x10 fixed-point for integer threshold comparison
-                let threshold_x10 = (self.threshold[neuron_idx] as u16 + 1) * phase_mult;
+                let charge_x10: u16 = self.charge[neuron_idx] as u16 * 10; // x10 fixed-point for integer threshold comparison
+                let threshold_x10: u16 = (self.threshold[neuron_idx] as u16 + 1) * phase_mult;
                 if charge_x10 >= threshold_x10 {
                     self.activation[neuron_idx] = self.polarity[neuron_idx];
                     self.charge[neuron_idx] = 0;
@@ -395,12 +396,12 @@ impl Network {
             version: disk::CURRENT_VERSION,
             graph: disk::ConnectionGraphDiskV1 {
                 neuron_count: self.graph.neuron_count(),
-                sources: sources.to_vec(),
-                targets: targets.to_vec(),
+                sources: sources.iter().map(|&s| s as usize).collect(),
+                targets: targets.iter().map(|&t| t as usize).collect(),
             },
-            threshold: self.threshold.clone(),
+            threshold: self.threshold.iter().map(|&t| t as u32).collect(),
             channel: self.channel.clone(),
-            polarity: self.polarity.clone(),
+            polarity: self.polarity.iter().map(|&p| p as i32).collect(),
         };
         bincode::serialize(&dto).expect("genome serialization cannot fail")
     }
@@ -426,14 +427,15 @@ impl Network {
         disk::validate(&dto).map_err(NetworkError::Genome)?;
 
         let n = dto.graph.neuron_count;
-        let graph =
-            ConnectionGraph::from_validated_edges(n, dto.graph.sources, dto.graph.targets);
+        let sources: Vec<u16> = dto.graph.sources.iter().map(|&s| s as u16).collect();
+        let targets: Vec<u16> = dto.graph.targets.iter().map(|&t| t as u16).collect();
+        let graph = ConnectionGraph::from_validated_edges(n, sources, targets);
 
         Ok(Self {
             graph,
-            threshold: dto.threshold,
+            threshold: dto.threshold.iter().map(|&t| t as u8).collect(),
             channel: dto.channel,
-            polarity: dto.polarity,
+            polarity: dto.polarity.iter().map(|&p| p as i8).collect(),
             activation: vec![0; n],
             charge: vec![0; n],
             refractory: vec![0; n],
@@ -707,7 +709,7 @@ impl Network {
             return false;
         }
         let index = rng.gen_range(0..neuron_count);
-        let new_value = rng.gen_range(0..=15u32);
+        let new_value = rng.gen_range(0..=15u8);
         if self.threshold[index] == new_value {
             return false;
         }
@@ -780,13 +782,13 @@ impl Network {
 
     /// Per-neuron threshold values (stored range `[0,15]`, effective = stored+1).
     #[inline]
-    pub fn threshold(&self) -> &[u32] {
+    pub fn threshold(&self) -> &[u8] {
         &self.threshold
     }
 
     /// Mutable access to per-neuron thresholds. Valid range: `[0,15]`.
     #[inline]
-    pub fn threshold_mut(&mut self) -> &mut [u32] {
+    pub fn threshold_mut(&mut self) -> &mut [u8] {
         &mut self.threshold
     }
 
@@ -804,13 +806,13 @@ impl Network {
 
     /// Per-neuron polarity (`+1` excitatory, `-1` inhibitory).
     #[inline]
-    pub fn polarity(&self) -> &[i32] {
+    pub fn polarity(&self) -> &[i8] {
         &self.polarity
     }
 
     /// Mutable access to per-neuron polarity. Valid values: `+1` or `-1`.
     #[inline]
-    pub fn polarity_mut(&mut self) -> &mut [i32] {
+    pub fn polarity_mut(&mut self) -> &mut [i8] {
         &mut self.polarity
     }
 
@@ -818,13 +820,13 @@ impl Network {
 
     /// Current activation values (read-only). Values: `+1`, `-1`, or `0`.
     #[inline]
-    pub fn activation(&self) -> &[i32] {
+    pub fn activation(&self) -> &[i8] {
         &self.activation
     }
 
     /// Current charge values (read-only). Range: `[0, LIMIT_MAX_CHARGE]` (currently 15).
     #[inline]
-    pub fn charge(&self) -> &[u32] {
+    pub fn charge(&self) -> &[u8] {
         &self.charge
     }
 }
@@ -1095,7 +1097,7 @@ mod tests {
     #[test]
     fn propagate_rejects_invalid_threshold() {
         let mut net = Network::new(4);
-        net.threshold_mut()[0] = 999; // out of [0,15]
+        net.threshold_mut()[0] = 99; // out of [0,15]
         let input = vec![0i32; 4];
         let err = net.propagate(&input, &default_config()).unwrap_err();
         assert!(
@@ -1103,7 +1105,7 @@ mod tests {
                 err,
                 NetworkError::Propagation(PropagationError::ThresholdOutOfRange {
                     index: 0,
-                    value: 999
+                    value: 99
                 })
             ),
             "expected ThresholdOutOfRange, got: {err}"
@@ -1131,7 +1133,7 @@ mod tests {
     #[test]
     fn propagate_rejects_invalid_polarity() {
         let mut net = Network::new(4);
-        net.polarity_mut()[1] = 42; // not ±1
+        net.polarity_mut()[1] = 2; // not ±1
         let input = vec![0i32; 4];
         let err = net.propagate(&input, &default_config()).unwrap_err();
         assert!(
@@ -1139,7 +1141,7 @@ mod tests {
                 err,
                 NetworkError::Propagation(PropagationError::PolarityOutOfRange {
                     index: 1,
-                    value: 42
+                    value: 2
                 })
             ),
             "expected PolarityOutOfRange, got: {err}"

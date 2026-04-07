@@ -287,7 +287,7 @@ fn pocket_mean_thresholds(net: &Network) -> Vec<f64> {
     (0..N_POCKETS)
         .map(|p| {
             let zone = pocket_zone(p);
-            let sum: u32 = net.threshold()[zone.start..zone.end].iter().sum();
+            let sum: u32 = net.threshold()[zone.start..zone.end].iter().map(|&t| t as u32).sum();
             sum as f64 / (zone.end - zone.start) as f64
         })
         .collect()
@@ -359,7 +359,7 @@ impl Individual {
 
             // Random params
             for i in zone.start..zone.end {
-                net.threshold_mut()[i] = init_rng.gen_range(0..=7u32);
+                net.threshold_mut()[i] = init_rng.gen_range(0..=7u8);
                 net.channel_mut()[i] = init_rng.gen_range(1..=8u8);
                 if init_rng.gen_ratio(1, 10) {
                     net.polarity_mut()[i] = -1;

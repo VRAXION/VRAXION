@@ -5,8 +5,8 @@
 //!
 //! ## Integer-Only Design
 //!
-//! The forward pass uses `i32` activations (supports inhibitory `-1`) and
-//! `u32` charge (always non-negative). Phase gating uses an 8-byte cosine
+//! The forward pass uses `i8` activations (supports inhibitory `-1`) and
+//! `u8` charge (always non-negative). Phase gating uses an 8-byte cosine
 //! base pattern with `x10` fixed-point scale. No floating-point arithmetic
 //! appears in the hot path.
 
@@ -34,7 +34,7 @@ const _: () = assert!((LIMIT_MAX_CHARGE as u64 + 1) * 13 <= u16::MAX as u64);
 /// Reusable scratch buffer. Allocate once, pass to every `propagate_token` call.
 #[derive(Clone, Debug)]
 pub struct PropagationWorkspace {
-    incoming_scratch: Vec<i32>, // per-neuron incoming-signal accumulator
+    incoming_scratch: Vec<i16>, // per-neuron incoming-signal accumulator
 }
 
 impl PropagationWorkspace {
@@ -53,12 +53,12 @@ impl PropagationWorkspace {
     }
 
     /// Mutable access to the scratch buffer (used by Network CSR propagation).
-    pub(crate) fn incoming_scratch_mut(&mut self) -> &mut [i32] {
+    pub(crate) fn incoming_scratch_mut(&mut self) -> &mut [i16] {
         &mut self.incoming_scratch
     }
 
     #[cfg(test)]
-    fn with_scratch(incoming_scratch: Vec<i32>) -> Self {
+    fn with_scratch(incoming_scratch: Vec<i16>) -> Self {
         Self { incoming_scratch }
     }
 }
@@ -68,17 +68,17 @@ impl PropagationWorkspace {
 /// Per-neuron learned parameters for one propagation run.
 #[allow(missing_docs)]
 pub struct PropagationParameters<'a> {
-    pub threshold: &'a [u32], // stored [0,15], effective = stored+1 -> [1,16]
-    pub channel: &'a [u8],    // phase gating channel [1,8]
-    pub polarity: &'a [i32],  // +1 excitatory, -1 inhibitory
+    pub threshold: &'a [u8], // stored [0,15], effective = stored+1 -> [1,16]
+    pub channel: &'a [u8],   // phase gating channel [1,8]
+    pub polarity: &'a [i8],  // +1 excitatory, -1 inhibitory
 }
 
 /// Mutable neuron state carried across tokens.
 #[allow(missing_docs)]
 pub struct PropagationState<'a> {
-    pub activation: &'a mut [i32], // +1, -1, or 0
-    pub charge: &'a mut [u32],     // [0, LIMIT_MAX_CHARGE]
-    pub refractory: &'a mut [u8],  // 0 = ready, >0 = ticks remaining in cooldown
+    pub activation: &'a mut [i8], // +1, -1, or 0
+    pub charge: &'a mut [u8],     // [0, LIMIT_MAX_CHARGE]
+    pub refractory: &'a mut [u8], // 0 = ready, >0 = ticks remaining in cooldown
 }
 
 /// Timing configuration for one forward pass.
@@ -149,17 +149,17 @@ pub enum PropagationError {
     }, // sources.len() != targets.len()
     EdgeSourceOutOfBounds {
         index: usize,
-        value: usize,
+        value: u16,
         neuron_count: usize,
     }, // source >= n
     EdgeTargetOutOfBounds {
         index: usize,
-        value: usize,
+        value: u16,
         neuron_count: usize,
     }, // target >= n
     ThresholdOutOfRange {
         index: usize,
-        value: u32,
+        value: u8,
     }, // threshold > 15
     ChannelOutOfRange {
         index: usize,
@@ -167,7 +167,7 @@ pub enum PropagationError {
     }, // channel not in 1..=8
     PolarityOutOfRange {
         index: usize,
-        value: i32,
+        value: i8,
     }, // polarity not ±1
 }
 
@@ -332,14 +332,14 @@ fn validate_propagation_inputs(
 
     // Edge endpoint bounds
     for (i, (&s, &t)) in edge_src.iter().zip(edge_tgt.iter()).enumerate() {
-        if s >= n {
+        if s as usize >= n {
             return Err(PropagationError::EdgeSourceOutOfBounds {
                 index: i,
                 value: s,
                 neuron_count: n,
             });
         }
-        if t >= n {
+        if t as usize >= n {
             return Err(PropagationError::EdgeTargetOutOfBounds {
                 index: i,
                 value: t,
@@ -400,30 +400,31 @@ pub(crate) fn propagate_token_unchecked(
         // Input injection: first N ticks only
         if tick < config.input_duration_ticks {
             for (activation, &input_value) in state.activation.iter_mut().zip(input.iter()) {
-                *activation += input_value;
+                *activation = activation.saturating_add(input_value as i8);
             }
         }
 
         // Scatter-add: accumulate incoming signals per neuron
         let incoming = &mut workspace.incoming_scratch[..neuron_count];
-        incoming.fill(0);
+        incoming.fill(0i16);
         for (source_chunk, target_chunk) in edge_sources
             .chunks_exact(4)
             .zip(edge_targets.chunks_exact(4))
         {
-            incoming[target_chunk[0]] += state.activation[source_chunk[0]]; // unrolled — LLVM drops bounds checks
-            incoming[target_chunk[1]] += state.activation[source_chunk[1]]; // because chunks_exact guarantees len==4
-            incoming[target_chunk[2]] += state.activation[source_chunk[2]];
-            incoming[target_chunk[3]] += state.activation[source_chunk[3]];
+            incoming[target_chunk[0] as usize] += state.activation[source_chunk[0] as usize] as i16; // unrolled — LLVM drops bounds checks
+            incoming[target_chunk[1] as usize] += state.activation[source_chunk[1] as usize] as i16; // because chunks_exact guarantees len==4
+            incoming[target_chunk[2] as usize] += state.activation[source_chunk[2] as usize] as i16;
+            incoming[target_chunk[3] as usize] += state.activation[source_chunk[3] as usize] as i16;
         }
         let rem_start = edge_sources.len() / 4 * 4; // remainder (0-3 edges)
         for i in rem_start..edge_sources.len() {
-            incoming[edge_targets[i]] += state.activation[edge_sources[i]];
+            incoming[edge_targets[i] as usize] += state.activation[edge_sources[i] as usize] as i16;
         }
 
         // Charge accumulation: clamp to [0, MAX_CHARGE]
-        for (charge, &signal) in state.charge.iter_mut().zip(incoming.iter()) {
-            *charge = charge.saturating_add_signed(signal).min(LIMIT_MAX_CHARGE);
+        for (ch, &sig) in state.charge.iter_mut().zip(incoming.iter()) {
+            let val = (*ch as i16) + sig;
+            *ch = val.clamp(0, LIMIT_MAX_CHARGE as i16) as u8;
         }
 
         // Spike stage: charge*10 >= (theta+1) * PHASE_BASE  (max 150 vs 208, fits u16)

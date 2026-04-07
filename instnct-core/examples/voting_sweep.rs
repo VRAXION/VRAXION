@@ -20,13 +20,13 @@ const INPUT_DIM: usize = 158; // fixed, proven SDR input
 // Voting readout: group output neurons, sum charge per group
 // ---------------------------------------------------------------------------
 
-fn predict_voting(charge: &[u32], output_start: usize, neurons_per_char: usize) -> usize {
+fn predict_voting(charge: &[u8], output_start: usize, neurons_per_char: usize) -> usize {
     let mut best_char = 0;
     let mut best_vote: u32 = 0;
     for c in 0..CHARS {
         let group_start = output_start + c * neurons_per_char;
         let group_end = group_start + neurons_per_char;
-        let vote: u32 = charge[group_start..group_end].iter().sum();
+        let vote: u32 = charge[group_start..group_end].iter().map(|&v| v as u32).sum();
         if vote > best_vote {
             best_vote = vote;
             best_char = c;
@@ -35,12 +35,12 @@ fn predict_voting(charge: &[u32], output_start: usize, neurons_per_char: usize) 
     best_char
 }
 
-fn margin_fitness(charge: &[u32], output_start: usize, neurons_per_char: usize, correct: usize) -> f64 {
+fn margin_fitness(charge: &[u8], output_start: usize, neurons_per_char: usize, correct: usize) -> f64 {
     let mut votes = Vec::with_capacity(CHARS);
     for c in 0..CHARS {
         let group_start = output_start + c * neurons_per_char;
         let group_end = group_start + neurons_per_char;
-        let vote: u32 = charge[group_start..group_end].iter().sum();
+        let vote: u32 = charge[group_start..group_end].iter().map(|&v| v as u32).sum();
         votes.push(vote);
     }
     let correct_vote = votes[correct] as f64;
@@ -142,7 +142,7 @@ fn run_one(cfg: &RunConfig, corpus: &[u8]) -> RunResult {
 
     // Random params
     for i in 0..h {
-        net.threshold_mut()[i] = rng.gen_range(0..=7u32);
+        net.threshold_mut()[i] = rng.gen_range(0..=7u8);
         net.channel_mut()[i] = rng.gen_range(1..=8u8);
         if rng.gen_ratio(1, 10) { net.polarity_mut()[i] = -1; }
     }

@@ -17,7 +17,7 @@ const SEEDS: [u64; 5] = [42, 123, 7, 999, 2026];
 fn evaluate(net: &mut Network, config: &PropagationConfig) -> u32 {
     let neuron_count = net.neuron_count();
     let mut score = 0u32;
-    let mut prev_pattern: Vec<i32> = vec![];
+    let mut prev_pattern: Vec<i8> = vec![];
 
     for token in 0..NUM_TOKENS {
         net.reset();

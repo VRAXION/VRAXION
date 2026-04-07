@@ -18,13 +18,13 @@ fn graph_with_edges(neuron_count: usize, pairs: &[(u16, u16)]) -> ConnectionGrap
 fn isolated_neurons_remain_charge_bounded() {
     let neuron_count = 16;
     let graph = ConnectionGraph::new(neuron_count);
-    let mut activation = vec![0i32; neuron_count];
-    let mut charge = vec![0u32; neuron_count];
+    let mut activation = vec![0i8; neuron_count];
+    let mut charge = vec![0u8; neuron_count];
     let mut refractory = vec![0u8; neuron_count];
     let input = vec![1i32; neuron_count];
-    let threshold = vec![6u32; neuron_count];
+    let threshold = vec![6u8; neuron_count];
     let channel = vec![1u8; neuron_count];
-    let polarity = vec![1i32; neuron_count];
+    let polarity = vec![1i8; neuron_count];
     let mut workspace = PropagationWorkspace::new(neuron_count);
 
     propagate_token(
@@ -52,14 +52,14 @@ fn isolated_neurons_remain_charge_bounded() {
 fn excitatory_chain_propagates_signal() {
     let neuron_count = 3;
     let graph = graph_with_edges(neuron_count, &[(0, 1), (1, 2)]);
-    let mut activation = vec![0i32; neuron_count];
-    let mut charge = vec![0u32; neuron_count];
+    let mut activation = vec![0i8; neuron_count];
+    let mut charge = vec![0u8; neuron_count];
     let mut refractory = vec![0u8; neuron_count];
     let mut input = vec![0i32; neuron_count];
     input[0] = 10;
-    let threshold = vec![1u32; neuron_count];
+    let threshold = vec![1u8; neuron_count];
     let channel = vec![1u8; neuron_count];
-    let polarity = vec![1i32; neuron_count];
+    let polarity = vec![1i8; neuron_count];
     let mut workspace = PropagationWorkspace::new(neuron_count);
 
     propagate_token(
@@ -98,14 +98,14 @@ fn excitatory_chain_propagates_signal() {
 fn inhibitory_spike_suppresses_downstream_charge() {
     let neuron_count = 3;
     let graph = graph_with_edges(neuron_count, &[(0, 1)]);
-    let mut activation = vec![0i32; neuron_count];
-    let mut charge = vec![0u32; neuron_count];
+    let mut activation = vec![0i8; neuron_count];
+    let mut charge = vec![0u8; neuron_count];
     let mut refractory = vec![0u8; neuron_count];
     let mut input = vec![0i32; neuron_count];
     input[0] = 10;
-    let threshold = vec![2u32; neuron_count];
+    let threshold = vec![2u8; neuron_count];
     let channel = vec![1u8; neuron_count];
-    let polarity = vec![-1i32, 1, 1];
+    let polarity = vec![-1i8, 1, 1];
     let mut workspace = PropagationWorkspace::new(neuron_count);
 
     charge[1] = 5;
@@ -144,13 +144,13 @@ fn inhibitory_spike_suppresses_downstream_charge() {
 fn extreme_input_does_not_overflow_charge() {
     let neuron_count = 8;
     let graph = ConnectionGraph::new(neuron_count);
-    let mut activation = vec![0i32; neuron_count];
-    let mut charge = vec![0u32; neuron_count];
+    let mut activation = vec![0i8; neuron_count];
+    let mut charge = vec![0u8; neuron_count];
     let mut refractory = vec![0u8; neuron_count];
     let input = vec![100i32; neuron_count];
-    let threshold = vec![1u32; neuron_count];
+    let threshold = vec![1u8; neuron_count];
     let channel = vec![1u8; neuron_count];
-    let polarity = vec![1i32; neuron_count];
+    let polarity = vec![1i8; neuron_count];
     let mut workspace = PropagationWorkspace::new(neuron_count);
 
     propagate_token(
@@ -189,9 +189,9 @@ fn workspace_reuse_produces_identical_results() {
     let neuron_count = 4;
     let graph = graph_with_edges(neuron_count, &[(0, 1), (1, 2), (2, 3)]);
     let input = vec![8i32, 0, 0, 0];
-    let threshold = vec![2u32; neuron_count];
+    let threshold = vec![2u8; neuron_count];
     let channel = vec![1u8; neuron_count];
-    let polarity = vec![1i32; neuron_count];
+    let polarity = vec![1i8; neuron_count];
     let config = PropagationConfig {
         ticks_per_token: 4,
         input_duration_ticks: 2,
@@ -200,8 +200,8 @@ fn workspace_reuse_produces_identical_results() {
     };
     let mut workspace = PropagationWorkspace::new(neuron_count);
 
-    let mut activation_a = vec![0i32; neuron_count];
-    let mut charge_a = vec![0u32; neuron_count];
+    let mut activation_a = vec![0i8; neuron_count];
+    let mut charge_a = vec![0u8; neuron_count];
     let mut refractory_a = vec![0u8; neuron_count];
     propagate_token(
         &input,
@@ -221,8 +221,8 @@ fn workspace_reuse_produces_identical_results() {
     )
     .unwrap();
 
-    let mut activation_b = vec![0i32; neuron_count];
-    let mut charge_b = vec![0u32; neuron_count];
+    let mut activation_b = vec![0i8; neuron_count];
+    let mut charge_b = vec![0u8; neuron_count];
     let mut refractory_b = vec![0u8; neuron_count];
     propagate_token(
         &input,
@@ -249,8 +249,8 @@ fn workspace_reuse_produces_identical_results() {
 #[test]
 fn activation_length_mismatch_returns_error() {
     let graph = ConnectionGraph::new(4);
-    let mut activation = vec![0i32; 3];
-    let mut charge = vec![0u32; 4];
+    let mut activation = vec![0i8; 3];
+    let mut charge = vec![0u8; 4];
     let mut refractory = vec![0u8; 4];
     let mut workspace = PropagationWorkspace::new(4);
 
@@ -289,8 +289,8 @@ fn activation_length_mismatch_returns_error() {
 #[test]
 fn short_input_returns_error() {
     let graph = ConnectionGraph::new(4);
-    let mut activation = vec![0i32; 4];
-    let mut charge = vec![0u32; 4];
+    let mut activation = vec![0i8; 4];
+    let mut charge = vec![0u8; 4];
     let mut refractory = vec![0u8; 4];
     let mut workspace = PropagationWorkspace::new(4);
 
@@ -329,8 +329,8 @@ fn short_input_returns_error() {
 #[test]
 fn charge_length_mismatch_returns_error() {
     let graph = ConnectionGraph::new(4);
-    let mut activation = vec![0i32; 4];
-    let mut charge = vec![0u32; 3];
+    let mut activation = vec![0i8; 4];
+    let mut charge = vec![0u8; 3];
     let mut refractory = vec![0u8; 4];
     let mut workspace = PropagationWorkspace::new(4);
 
@@ -369,8 +369,8 @@ fn charge_length_mismatch_returns_error() {
 #[test]
 fn threshold_length_mismatch_returns_error() {
     let graph = ConnectionGraph::new(4);
-    let mut activation = vec![0i32; 4];
-    let mut charge = vec![0u32; 4];
+    let mut activation = vec![0i8; 4];
+    let mut charge = vec![0u8; 4];
     let mut refractory = vec![0u8; 4];
     let mut workspace = PropagationWorkspace::new(4);
 
@@ -409,8 +409,8 @@ fn threshold_length_mismatch_returns_error() {
 #[test]
 fn channel_length_mismatch_returns_error() {
     let graph = ConnectionGraph::new(4);
-    let mut activation = vec![0i32; 4];
-    let mut charge = vec![0u32; 4];
+    let mut activation = vec![0i8; 4];
+    let mut charge = vec![0u8; 4];
     let mut refractory = vec![0u8; 4];
     let mut workspace = PropagationWorkspace::new(4);
 
@@ -449,8 +449,8 @@ fn channel_length_mismatch_returns_error() {
 #[test]
 fn polarity_length_mismatch_returns_error() {
     let graph = ConnectionGraph::new(4);
-    let mut activation = vec![0i32; 4];
-    let mut charge = vec![0u32; 4];
+    let mut activation = vec![0i8; 4];
+    let mut charge = vec![0u8; 4];
     let mut refractory = vec![0u8; 4];
     let mut workspace = PropagationWorkspace::new(4);
 
@@ -500,11 +500,11 @@ fn edge_length_mismatch_returns_error() {
                 target: 2,
             },
         ],
-        vec![0, 1],
-        vec![1],
+        vec![0u16, 1],
+        vec![1u16],
     );
-    let mut activation = vec![0i32; 4];
-    let mut charge = vec![0u32; 4];
+    let mut activation = vec![0i8; 4];
+    let mut charge = vec![0u8; 4];
     let mut refractory = vec![0u8; 4];
     let mut workspace = PropagationWorkspace::new(4);
 
@@ -548,11 +548,11 @@ fn out_of_range_edge_source_returns_error() {
             source: 0,
             target: 1,
         }],
-        vec![4],
-        vec![1],
+        vec![4u16],
+        vec![1u16],
     );
-    let mut activation = vec![0i32; 4];
-    let mut charge = vec![0u32; 4];
+    let mut activation = vec![0i8; 4];
+    let mut charge = vec![0u8; 4];
     let mut refractory = vec![0u8; 4];
     let mut workspace = PropagationWorkspace::new(4);
 
@@ -597,11 +597,11 @@ fn out_of_range_edge_target_returns_error() {
             source: 0,
             target: 1,
         }],
-        vec![0],
-        vec![4],
+        vec![0u16],
+        vec![4u16],
     );
-    let mut activation = vec![0i32; 4];
-    let mut charge = vec![0u32; 4];
+    let mut activation = vec![0i8; 4];
+    let mut charge = vec![0u8; 4];
     let mut refractory = vec![0u8; 4];
     let mut workspace = PropagationWorkspace::new(4);
 
@@ -641,8 +641,8 @@ fn out_of_range_edge_target_returns_error() {
 #[test]
 fn scratch_too_small_returns_error() {
     let graph = ConnectionGraph::new(4);
-    let mut activation = vec![0i32; 4];
-    let mut charge = vec![0u32; 4];
+    let mut activation = vec![0i8; 4];
+    let mut charge = vec![0u8; 4];
     let mut refractory = vec![0u8; 4];
     let mut workspace = PropagationWorkspace::with_scratch(vec![0; 3]);
 
@@ -722,8 +722,8 @@ fn phase_rotation_peaks_at_correct_tick() {
 #[test]
 fn threshold_out_of_range_returns_error() {
     let graph = ConnectionGraph::new(4);
-    let mut activation = vec![0i32; 4];
-    let mut charge = vec![0u32; 4];
+    let mut activation = vec![0i8; 4];
+    let mut charge = vec![0u8; 4];
     let mut refractory = vec![0u8; 4];
     let mut workspace = PropagationWorkspace::new(4);
 
@@ -762,8 +762,8 @@ fn threshold_out_of_range_returns_error() {
 #[test]
 fn channel_out_of_range_returns_error() {
     let graph = ConnectionGraph::new(4);
-    let mut activation = vec![0i32; 4];
-    let mut charge = vec![0u32; 4];
+    let mut activation = vec![0i8; 4];
+    let mut charge = vec![0u8; 4];
     let mut refractory = vec![0u8; 4];
     let mut workspace = PropagationWorkspace::new(4);
 
@@ -799,8 +799,8 @@ fn channel_out_of_range_returns_error() {
 #[test]
 fn polarity_out_of_range_returns_error() {
     let graph = ConnectionGraph::new(4);
-    let mut activation = vec![0i32; 4];
-    let mut charge = vec![0u32; 4];
+    let mut activation = vec![0i8; 4];
+    let mut charge = vec![0u8; 4];
     let mut refractory = vec![0u8; 4];
     let mut workspace = PropagationWorkspace::new(4);
 

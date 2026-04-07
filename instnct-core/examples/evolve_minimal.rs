@@ -12,7 +12,7 @@ use rand::{Rng, SeedableRng};
 fn evaluate(net: &mut Network, config: &PropagationConfig, num_tokens: usize) -> u32 {
     let neuron_count = net.neuron_count();
     let mut score = 0u32;
-    let mut prev_pattern: Vec<i32> = vec![];
+    let mut prev_pattern: Vec<i8> = vec![];
 
     for token in 0..num_tokens {
         net.reset();

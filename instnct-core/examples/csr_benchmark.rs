@@ -54,18 +54,18 @@ impl CsrGraph {
 /// A: Current approach — scan all edges, usize sources/targets
 #[allow(clippy::too_many_arguments)]
 fn propagate_current(
-    activation: &mut [i32],
-    charge: &mut [u32],
+    activation: &mut [i8],
+    charge: &mut [u8],
     input: &[i32],
     edge_src: &[usize],
     edge_tgt: &[usize],
-    threshold: &[u32],
+    threshold: &[u8],
     channel: &[u8],
-    polarity: &[i32],
+    polarity: &[i8],
     neuron_count: usize,
 ) {
     let phase_base: [u8; 8] = [7, 8, 10, 12, 13, 12, 10, 8];
-    let mut incoming = vec![0i32; neuron_count];
+    let mut incoming = vec![0i16; neuron_count];
 
     for tick in 0..TICKS {
         if tick % 6 == 0 {
@@ -75,15 +75,16 @@ fn propagate_current(
         }
         if tick < 2 {
             for (a, &iv) in activation.iter_mut().zip(input.iter()) {
-                *a += iv;
+                *a = a.saturating_add(iv as i8);
             }
         }
-        incoming.fill(0);
+        incoming.fill(0i16);
         for i in 0..edge_src.len() {
-            incoming[edge_tgt[i]] += activation[edge_src[i]];
+            incoming[edge_tgt[i]] += activation[edge_src[i]] as i16;
         }
         for (c, &s) in charge.iter_mut().zip(incoming.iter()) {
-            *c = c.saturating_add_signed(s).min(15);
+            let val = (*c as i16) + s;
+            *c = val.clamp(0, 15) as u8;
         }
         let phase_tick = tick % 8;
         for i in 0..neuron_count {
@@ -105,17 +106,17 @@ fn propagate_current(
 
 /// B: Skip-inactive only (still usize edges, but skip zero activation sources)
 fn propagate_skip_inactive(
-    activation: &mut [i32],
-    charge: &mut [u32],
+    activation: &mut [i8],
+    charge: &mut [u8],
     input: &[i32],
     csr: &CsrGraph,
-    threshold: &[u32],
+    threshold: &[u8],
     channel: &[u8],
-    polarity: &[i32],
+    polarity: &[i8],
 ) {
     let phase_base: [u8; 8] = [7, 8, 10, 12, 13, 12, 10, 8];
     let neuron_count = csr.neuron_count;
-    let mut incoming = vec![0i32; neuron_count];
+    let mut incoming = vec![0i16; neuron_count];
 
     for tick in 0..TICKS {
         if tick % 6 == 0 {
@@ -125,10 +126,10 @@ fn propagate_skip_inactive(
         }
         if tick < 2 {
             for (a, &iv) in activation.iter_mut().zip(input.iter()) {
-                *a += iv;
+                *a = a.saturating_add(iv as i8);
             }
         }
-        incoming.fill(0);
+        incoming.fill(0i16);
         // SKIP-INACTIVE: only process edges from neurons that fired
         #[allow(clippy::needless_range_loop)]
         for neuron in 0..neuron_count {
@@ -139,11 +140,12 @@ fn propagate_skip_inactive(
             let start = csr.offsets[neuron] as usize;
             let end = csr.offsets[neuron + 1] as usize;
             for &target in &csr.targets[start..end] {
-                incoming[target as usize] += act;
+                incoming[target as usize] += act as i16;
             }
         }
         for (c, &s) in charge.iter_mut().zip(incoming.iter()) {
-            *c = c.saturating_add_signed(s).min(15);
+            let val = (*c as i16) + s;
+            *c = val.clamp(0, 15) as u8;
         }
         let phase_tick = tick % 8;
         for i in 0..neuron_count {
@@ -165,17 +167,17 @@ fn propagate_skip_inactive(
 
 /// C: CSR u16 only (compact storage, but scan ALL edges including inactive)
 fn propagate_csr_scan_all(
-    activation: &mut [i32],
-    charge: &mut [u32],
+    activation: &mut [i8],
+    charge: &mut [u8],
     input: &[i32],
     csr: &CsrGraph,
-    threshold: &[u32],
+    threshold: &[u8],
     channel: &[u8],
-    polarity: &[i32],
+    polarity: &[i8],
 ) {
     let phase_base: [u8; 8] = [7, 8, 10, 12, 13, 12, 10, 8];
     let neuron_count = csr.neuron_count;
-    let mut incoming = vec![0i32; neuron_count];
+    let mut incoming = vec![0i16; neuron_count];
 
     for tick in 0..TICKS {
         if tick % 6 == 0 {
@@ -185,10 +187,10 @@ fn propagate_csr_scan_all(
         }
         if tick < 2 {
             for (a, &iv) in activation.iter_mut().zip(input.iter()) {
-                *a += iv;
+                *a = a.saturating_add(iv as i8);
             }
         }
-        incoming.fill(0);
+        incoming.fill(0i16);
         // CSR scan-all: same work as current, but u16 targets + CSR layout
         #[allow(clippy::needless_range_loop)]
         for neuron in 0..neuron_count {
@@ -196,11 +198,12 @@ fn propagate_csr_scan_all(
             let start = csr.offsets[neuron] as usize;
             let end = csr.offsets[neuron + 1] as usize;
             for &target in &csr.targets[start..end] {
-                incoming[target as usize] += act;
+                incoming[target as usize] += act as i16;
             }
         }
         for (c, &s) in charge.iter_mut().zip(incoming.iter()) {
-            *c = c.saturating_add_signed(s).min(15);
+            let val = (*c as i16) + s;
+            *c = val.clamp(0, 15) as u8;
         }
         let phase_tick = tick % 8;
         for i in 0..neuron_count {
@@ -294,8 +297,8 @@ fn main() {
         );
 
         let baseline = bench("A: current (usize, scan all)", ITERS, || {
-            let mut act = vec![0i32; neuron_count];
-            let mut chg = vec![0u32; neuron_count];
+            let mut act = vec![0i8; neuron_count];
+            let mut chg = vec![0u8; neuron_count];
             propagate_current(
                 &mut act,
                 &mut chg,
@@ -310,16 +313,16 @@ fn main() {
         });
 
         let skip = bench("B: skip-inactive (CSR, skip zero)", ITERS, || {
-            let mut act = vec![0i32; neuron_count];
-            let mut chg = vec![0u32; neuron_count];
+            let mut act = vec![0i8; neuron_count];
+            let mut chg = vec![0u8; neuron_count];
             propagate_skip_inactive(
                 &mut act, &mut chg, &input, &csr, &threshold, &channel, &polarity,
             );
         });
 
         let csr_all = bench("C: CSR u16 (scan all, compact mem)", ITERS, || {
-            let mut act = vec![0i32; neuron_count];
-            let mut chg = vec![0u32; neuron_count];
+            let mut act = vec![0i8; neuron_count];
+            let mut chg = vec![0u8; neuron_count];
             propagate_csr_scan_all(
                 &mut act, &mut chg, &input, &csr, &threshold, &channel, &polarity,
             );

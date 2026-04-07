@@ -1,6 +1,6 @@
 //! A/B benchmark: scatter-add with vs without software prefetch.
 //!
-//! The propagation hot loop does `incoming[target] += activation[source]`
+//! The propagation hot loop does `incoming[target] += activation as i16; //[source]`
 //! over a sparse edge list. When the network is large enough that neuron
 //! arrays spill out of L1/L2, prefetching the next chunk's activation
 //! values can hide DRAM latency.
@@ -26,17 +26,17 @@ struct BenchConfig {
 
 struct Fixture {
     graph: ConnectionGraph,
-    threshold: Vec<u32>,
+    threshold: Vec<u8>,
     channel: Vec<u8>,
-    polarity: Vec<i32>,
+    polarity: Vec<i8>,
     input: Vec<i32>,
     neuron_count: usize,
 }
 
 struct Scratch {
-    activation: Vec<i32>,
-    charge: Vec<u32>,
-    incoming: Vec<i32>,
+    activation: Vec<i8>,
+    charge: Vec<u8>,
+    incoming: Vec<i16>,
 }
 
 impl Scratch {
@@ -61,9 +61,9 @@ fn build_fixture(neuron_count: usize, edge_prob_pct: u64) -> Fixture {
     }
     Fixture {
         graph,
-        threshold: vec![6u32; neuron_count],
+        threshold: vec![6u8; neuron_count],
         channel: vec![1u8; neuron_count],
-        polarity: vec![1i32; neuron_count],
+        polarity: vec![1i8; neuron_count],
         input,
         neuron_count,
     }
@@ -85,25 +85,25 @@ fn propagate_baseline(f: &Fixture, s: &mut Scratch, cfg: &BenchConfig) {
         }
         if tick < cfg.input_duration_ticks {
             for (act, &inp) in s.activation.iter_mut().zip(f.input.iter()) {
-                *act += inp;
+                *act = act.saturating_add(inp as i8);
             }
         }
 
         let incoming = &mut s.incoming[..n];
-        incoming.fill(0);
+        incoming.fill(0i16);
         for (sc, tc) in edge_src.chunks_exact(4).zip(edge_tgt.chunks_exact(4)) {
-            incoming[tc[0]] += s.activation[sc[0]];
-            incoming[tc[1]] += s.activation[sc[1]];
-            incoming[tc[2]] += s.activation[sc[2]];
-            incoming[tc[3]] += s.activation[sc[3]];
+            incoming[tc[0] as usize] += s.activation[sc[0] as usize] as i16;
+            incoming[tc[1] as usize] += s.activation[sc[1] as usize] as i16;
+            incoming[tc[2] as usize] += s.activation[sc[2] as usize] as i16;
+            incoming[tc[3] as usize] += s.activation[sc[3] as usize] as i16;
         }
         let rem = edge_src.len() / 4 * 4;
         for i in rem..edge_src.len() {
-            incoming[edge_tgt[i]] += s.activation[edge_src[i]];
+            incoming[edge_tgt[i] as usize] += s.activation[edge_src[i] as usize] as i16;
         }
 
         for (ch, &sig) in s.charge.iter_mut().zip(incoming.iter()) {
-            *ch = ch.saturating_add_signed(sig).min(MAX_CHARGE);
+            *ch = { let val = (*ch as i16) + sig; val.clamp(0, MAX_CHARGE as i16) as u8 };
         }
 
         let phase_tick = tick % 8;
@@ -132,7 +132,7 @@ fn propagate_baseline(f: &Fixture, s: &mut Scratch, cfg: &BenchConfig) {
 
 /// Software prefetch for read (T0 = all cache levels).
 #[inline(always)]
-unsafe fn prefetch_read(ptr: *const i32) {
+unsafe fn prefetch_read(ptr: *const i8) {
     #[cfg(target_arch = "x86_64")]
     {
         use std::arch::x86_64::_mm_prefetch;
@@ -162,12 +162,12 @@ fn propagate_prefetch(f: &Fixture, s: &mut Scratch, cfg: &BenchConfig) {
         }
         if tick < cfg.input_duration_ticks {
             for (act, &inp) in s.activation.iter_mut().zip(f.input.iter()) {
-                *act += inp;
+                *act = act.saturating_add(inp as i8);
             }
         }
 
         let incoming = &mut s.incoming[..n];
-        incoming.fill(0);
+        incoming.fill(0i16);
 
         // Prefetch variant: use peekable chunks_exact to prefetch 1 chunk ahead
         // while keeping LLVM bounds-check elision from chunks_exact.
@@ -179,25 +179,25 @@ fn propagate_prefetch(f: &Fixture, s: &mut Scratch, cfg: &BenchConfig) {
             // Prefetch next chunk's activation reads
             if let Some(&next_sc) = src_iter.peek() {
                 unsafe {
-                    prefetch_read(act_ptr.add(next_sc[0]));
-                    prefetch_read(act_ptr.add(next_sc[1]));
-                    prefetch_read(act_ptr.add(next_sc[2]));
-                    prefetch_read(act_ptr.add(next_sc[3]));
+                    prefetch_read(act_ptr.add(next_sc[0] as usize));
+                    prefetch_read(act_ptr.add(next_sc[1] as usize));
+                    prefetch_read(act_ptr.add(next_sc[2] as usize));
+                    prefetch_read(act_ptr.add(next_sc[3] as usize));
                 }
             }
 
-            incoming[tc[0]] += s.activation[sc[0]];
-            incoming[tc[1]] += s.activation[sc[1]];
-            incoming[tc[2]] += s.activation[sc[2]];
-            incoming[tc[3]] += s.activation[sc[3]];
+            incoming[tc[0] as usize] += s.activation[sc[0] as usize] as i16;
+            incoming[tc[1] as usize] += s.activation[sc[1] as usize] as i16;
+            incoming[tc[2] as usize] += s.activation[sc[2] as usize] as i16;
+            incoming[tc[3] as usize] += s.activation[sc[3] as usize] as i16;
         }
         let rem = edge_src.len() / 4 * 4;
         for i in rem..edge_src.len() {
-            incoming[edge_tgt[i]] += s.activation[edge_src[i]];
+            incoming[edge_tgt[i] as usize] += s.activation[edge_src[i] as usize] as i16;
         }
 
         for (ch, &sig) in s.charge.iter_mut().zip(incoming.iter()) {
-            *ch = ch.saturating_add_signed(sig).min(MAX_CHARGE);
+            *ch = { let val = (*ch as i16) + sig; val.clamp(0, MAX_CHARGE as i16) as u8 };
         }
 
         let phase_tick = tick % 8;
@@ -236,12 +236,12 @@ fn propagate_prefetch_2ahead(f: &Fixture, s: &mut Scratch, cfg: &BenchConfig) {
         }
         if tick < cfg.input_duration_ticks {
             for (act, &inp) in s.activation.iter_mut().zip(f.input.iter()) {
-                *act += inp;
+                *act = act.saturating_add(inp as i8);
             }
         }
 
         let incoming = &mut s.incoming[..n];
-        incoming.fill(0);
+        incoming.fill(0i16);
 
         // Prefetch variant 2: index-based with manual bounds elimination, 2 chunks ahead
         let n_full = edge_src.len() / 4 * 4;
@@ -250,26 +250,26 @@ fn propagate_prefetch_2ahead(f: &Fixture, s: &mut Scratch, cfg: &BenchConfig) {
         while ci + 8 < n_full {
             // Prefetch 2 chunks (8 edges) ahead
             unsafe {
-                prefetch_read(act_ptr.add(edge_src[ci + 8]));
-                prefetch_read(act_ptr.add(edge_src[ci + 9]));
-                prefetch_read(act_ptr.add(edge_src[ci + 10]));
-                prefetch_read(act_ptr.add(edge_src[ci + 11]));
+                prefetch_read(act_ptr.add(edge_src[ci + 8] as usize));
+                prefetch_read(act_ptr.add(edge_src[ci + 9] as usize));
+                prefetch_read(act_ptr.add(edge_src[ci + 10] as usize));
+                prefetch_read(act_ptr.add(edge_src[ci + 11] as usize));
             }
 
-            incoming[edge_tgt[ci]]     += s.activation[edge_src[ci]];
-            incoming[edge_tgt[ci + 1]] += s.activation[edge_src[ci + 1]];
-            incoming[edge_tgt[ci + 2]] += s.activation[edge_src[ci + 2]];
-            incoming[edge_tgt[ci + 3]] += s.activation[edge_src[ci + 3]];
+            incoming[edge_tgt[ci] as usize]     += s.activation[edge_src[ci] as usize] as i16;
+            incoming[edge_tgt[ci + 1] as usize] += s.activation[edge_src[ci + 1] as usize] as i16;
+            incoming[edge_tgt[ci + 2] as usize] += s.activation[edge_src[ci + 2] as usize] as i16;
+            incoming[edge_tgt[ci + 3] as usize] += s.activation[edge_src[ci + 3] as usize] as i16;
             ci += 4;
         }
         // Remaining edges (no prefetch)
         while ci < edge_src.len() {
-            incoming[edge_tgt[ci]] += s.activation[edge_src[ci]];
+            incoming[edge_tgt[ci] as usize] += s.activation[edge_src[ci] as usize] as i16;
             ci += 1;
         }
 
         for (ch, &sig) in s.charge.iter_mut().zip(incoming.iter()) {
-            *ch = ch.saturating_add_signed(sig).min(MAX_CHARGE);
+            *ch = { let val = (*ch as i16) + sig; val.clamp(0, MAX_CHARGE as i16) as u8 };
         }
 
         let phase_tick = tick % 8;

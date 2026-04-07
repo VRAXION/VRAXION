@@ -177,7 +177,7 @@ fn run_one(cfg: &Config, corpus: &[u8]) -> RunResult {
         // Empty network with random params only (no edges)
         let mut n = Network::new(nc);
         for i in 0..nc {
-            n.threshold_mut()[i] = rng.gen_range(0..=7u32);
+            n.threshold_mut()[i] = rng.gen_range(0..=7u8);
             n.channel_mut()[i] = rng.gen_range(1..=8u8);
             if rng.gen_ratio(1, 10) { n.polarity_mut()[i] = -1; }
         }

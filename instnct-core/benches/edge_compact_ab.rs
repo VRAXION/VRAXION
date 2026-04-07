@@ -32,12 +32,12 @@ struct Fixture {
     packed_u32: Vec<u32>,
 
     // Neuron data (shared)
-    activation: Vec<i32>,
-    charge: Vec<u32>,
-    incoming: Vec<i32>,
-    threshold: Vec<u32>,
+    activation: Vec<i8>,
+    charge: Vec<u8>,
+    incoming: Vec<i16>,
+    threshold: Vec<u8>,
     channel: Vec<u8>,
-    polarity: Vec<i32>,
+    polarity: Vec<i8>,
     input: Vec<i32>,
     n: usize,
 }
@@ -46,10 +46,10 @@ fn build_fixture(neuron_count: usize, edge_prob_pct: u64) -> Fixture {
     let graph = common::build_graph(neuron_count, edge_prob_pct);
     let (src, tgt) = graph.edge_endpoints_pub();
 
-    let sources_usize = src.to_vec();
-    let targets_usize = tgt.to_vec();
-    let sources_u16: Vec<u16> = src.iter().map(|&s| s as u16).collect();
-    let targets_u16: Vec<u16> = tgt.iter().map(|&t| t as u16).collect();
+    let sources_usize: Vec<usize> = src.iter().map(|&s| s as usize).collect();
+    let targets_usize: Vec<usize> = tgt.iter().map(|&t| t as usize).collect();
+    let sources_u16: Vec<u16> = src.to_vec();
+    let targets_u16: Vec<u16> = tgt.to_vec();
     let packed_u32: Vec<u32> = src
         .iter()
         .zip(tgt.iter())
@@ -67,12 +67,12 @@ fn build_fixture(neuron_count: usize, edge_prob_pct: u64) -> Fixture {
         sources_u16,
         targets_u16,
         packed_u32,
-        activation: vec![0i32; neuron_count],
+        activation: vec![0i8; neuron_count],
         charge: vec![0; neuron_count],
         incoming: vec![0; neuron_count],
-        threshold: vec![6u32; neuron_count],
+        threshold: vec![6u8; neuron_count],
         channel: vec![1u8; neuron_count],
-        polarity: vec![1i32; neuron_count],
+        polarity: vec![1i8; neuron_count],
         input,
         n: neuron_count,
     }
@@ -95,25 +95,25 @@ fn propagate_baseline(f: &mut Fixture) {
         }
         if tick < 2 {
             for (act, &inp) in f.activation.iter_mut().zip(f.input.iter()) {
-                *act += inp;
+                *act = act.saturating_add(inp as i8);
             }
         }
 
         let incoming = &mut f.incoming[..n];
-        incoming.fill(0);
+        incoming.fill(0i16);
         for (sc, tc) in edge_src.chunks_exact(4).zip(edge_tgt.chunks_exact(4)) {
-            incoming[tc[0]] += f.activation[sc[0]];
-            incoming[tc[1]] += f.activation[sc[1]];
-            incoming[tc[2]] += f.activation[sc[2]];
-            incoming[tc[3]] += f.activation[sc[3]];
+            incoming[tc[0]] += f.activation[sc[0]] as i16;
+            incoming[tc[1]] += f.activation[sc[1]] as i16;
+            incoming[tc[2]] += f.activation[sc[2]] as i16;
+            incoming[tc[3]] += f.activation[sc[3]] as i16;
         }
         let rem = edge_src.len() / 4 * 4;
         for i in rem..edge_src.len() {
-            incoming[edge_tgt[i]] += f.activation[edge_src[i]];
+            incoming[edge_tgt[i] as usize] += f.activation[edge_src[i] as usize] as i16;
         }
 
         for (ch, &sig) in f.charge[..n].iter_mut().zip(incoming.iter()) {
-            *ch = ch.saturating_add_signed(sig).min(MAX_CHARGE);
+            *ch = { let val = (*ch as i16) + sig; val.clamp(0, MAX_CHARGE as i16) as u8 };
         }
 
         let phase_tick = tick % 8;
@@ -153,26 +153,26 @@ fn propagate_u16_split(f: &mut Fixture) {
         }
         if tick < 2 {
             for (act, &inp) in f.activation.iter_mut().zip(f.input.iter()) {
-                *act += inp;
+                *act = act.saturating_add(inp as i8);
             }
         }
 
         let incoming = &mut f.incoming[..n];
-        incoming.fill(0);
+        incoming.fill(0i16);
         for (sc, tc) in edge_src.chunks_exact(4).zip(edge_tgt.chunks_exact(4)) {
             incoming[sc[0] as usize]; // hint bounds — help LLVM
-            incoming[tc[0] as usize] += f.activation[sc[0] as usize];
-            incoming[tc[1] as usize] += f.activation[sc[1] as usize];
-            incoming[tc[2] as usize] += f.activation[sc[2] as usize];
-            incoming[tc[3] as usize] += f.activation[sc[3] as usize];
+            incoming[tc[0] as usize] += f.activation[sc[0] as usize] as i16;
+            incoming[tc[1] as usize] += f.activation[sc[1] as usize] as i16;
+            incoming[tc[2] as usize] += f.activation[sc[2] as usize] as i16;
+            incoming[tc[3] as usize] += f.activation[sc[3] as usize] as i16;
         }
         let rem = edge_src.len() / 4 * 4;
         for i in rem..edge_src.len() {
-            incoming[edge_tgt[i] as usize] += f.activation[edge_src[i] as usize];
+            incoming[edge_tgt[i] as usize] += f.activation[edge_src[i] as usize] as i16;
         }
 
         for (ch, &sig) in f.charge[..n].iter_mut().zip(incoming.iter()) {
-            *ch = ch.saturating_add_signed(sig).min(MAX_CHARGE);
+            *ch = { let val = (*ch as i16) + sig; val.clamp(0, MAX_CHARGE as i16) as u8 };
         }
 
         let phase_tick = tick % 8;
@@ -211,30 +211,30 @@ fn propagate_packed_u32(f: &mut Fixture) {
         }
         if tick < 2 {
             for (act, &inp) in f.activation.iter_mut().zip(f.input.iter()) {
-                *act += inp;
+                *act = act.saturating_add(inp as i8);
             }
         }
 
         let incoming = &mut f.incoming[..n];
-        incoming.fill(0);
+        incoming.fill(0i16);
         for chunk in packed.chunks_exact(4) {
             let e0 = chunk[0];
             let e1 = chunk[1];
             let e2 = chunk[2];
             let e3 = chunk[3];
-            incoming[(e0 & 0xFFFF) as usize] += f.activation[(e0 >> 16) as usize];
-            incoming[(e1 & 0xFFFF) as usize] += f.activation[(e1 >> 16) as usize];
-            incoming[(e2 & 0xFFFF) as usize] += f.activation[(e2 >> 16) as usize];
-            incoming[(e3 & 0xFFFF) as usize] += f.activation[(e3 >> 16) as usize];
+            incoming[(e0 & 0xFFFF) as usize] += f.activation[(e0 >> 16) as usize] as i16;
+            incoming[(e1 & 0xFFFF) as usize] += f.activation[(e1 >> 16) as usize] as i16;
+            incoming[(e2 & 0xFFFF) as usize] += f.activation[(e2 >> 16) as usize] as i16;
+            incoming[(e3 & 0xFFFF) as usize] += f.activation[(e3 >> 16) as usize] as i16;
         }
         let rem = packed.len() / 4 * 4;
         for i in rem..packed.len() {
             let e = packed[i];
-            incoming[(e & 0xFFFF) as usize] += f.activation[(e >> 16) as usize];
+            incoming[(e & 0xFFFF) as usize] += f.activation[(e >> 16) as usize] as i16;
         }
 
         for (ch, &sig) in f.charge[..n].iter_mut().zip(incoming.iter()) {
-            *ch = ch.saturating_add_signed(sig).min(MAX_CHARGE);
+            *ch = { let val = (*ch as i16) + sig; val.clamp(0, MAX_CHARGE as i16) as u8 };
         }
 
         let phase_tick = tick % 8;

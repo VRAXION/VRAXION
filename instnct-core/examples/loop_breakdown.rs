@@ -14,7 +14,7 @@ const STEPS: usize = 1000;
 
 fn evaluate(net: &mut Network, config: &PropagationConfig) -> u32 {
     let mut score = 0u32;
-    let mut prev_pattern: Vec<i32> = vec![];
+    let mut prev_pattern: Vec<i8> = vec![];
     for token in 0..NUM_TOKENS {
         net.reset();
         let mut input = vec![0i32; NEURON_COUNT];

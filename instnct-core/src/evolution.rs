@@ -301,7 +301,7 @@ mod tests {
         let config = EvolutionConfig { edge_cap: 1000, accept_ties: true };
 
         let edges_before = net.edge_count();
-        let threshold_before: Vec<u32> = net.threshold().to_vec();
+        let threshold_before: Vec<u8> = net.threshold().to_vec();
         let proj_before = proj.weight_count(); // just check it doesn't crash
 
         // fitness_fn that always returns worse score after mutation → always reject

@@ -114,11 +114,11 @@ fn test_a2_single_tick_scatter() -> bool {
 
     let n = 4;
     let graph = ConnectionGraph::from_pairs(n, &[(0, 1), (0, 2), (2, 3)]);
-    let threshold = vec![0u32; n];
+    let threshold = vec![0u8; n];
     let channel = vec![1u8; n];
-    let polarity = vec![1i32; n];
-    let mut activation = vec![0i32; n];
-    let mut charge = vec![0u32; n];
+    let polarity = vec![1i8; n];
+    let mut activation = vec![0i8; n];
+    let mut charge = vec![0u8; n];
     let config = PropagationConfig {
         ticks_per_token: 1,
         input_duration_ticks: 1,
@@ -185,11 +185,11 @@ fn test_a3_multi_tick_chain() -> bool {
 
     let n = 3;
     let graph = ConnectionGraph::from_pairs(n, &[(0, 1), (1, 2)]);
-    let threshold = vec![1u32; n]; // stored=1, effective=2
+    let threshold = vec![1u8; n]; // stored=1, effective=2
     let channel = vec![1u8; n];
-    let polarity = vec![1i32; n];
-    let mut activation = vec![0i32; n];
-    let mut charge = vec![0u32; n];
+    let polarity = vec![1i8; n];
+    let mut activation = vec![0i8; n];
+    let mut charge = vec![0u8; n];
     let config = PropagationConfig {
         ticks_per_token: 4,
         input_duration_ticks: 2,
@@ -234,11 +234,11 @@ fn test_a4_charge_decay() -> bool {
 
     let n = 2;
     let graph = ConnectionGraph::new(n);
-    let threshold = vec![15u32; n]; // stored=15, effective=16
+    let threshold = vec![15u8; n]; // stored=15, effective=16
     let channel = vec![1u8; n];
-    let polarity = vec![1i32; n];
-    let mut activation = vec![0i32; n];
-    let mut charge = vec![5u32, 0]; // PRE-SET charge
+    let polarity = vec![1i8; n];
+    let mut activation = vec![0i8; n];
+    let mut charge = vec![5u8, 0]; // PRE-SET charge
     let config = PropagationConfig {
         ticks_per_token: 13,
         input_duration_ticks: 0,
@@ -282,11 +282,11 @@ fn test_a5_phase_gating() -> bool {
 
     let n = 8;
     let graph = ConnectionGraph::new(n);
-    let threshold = vec![4u32; n];
+    let threshold = vec![4u8; n];
     let channel: Vec<u8> = (1..=8).collect();
-    let polarity = vec![1i32; n];
-    let mut activation = vec![0i32; n];
-    let mut charge = vec![4u32; n]; // PRE-SET
+    let polarity = vec![1i8; n];
+    let mut activation = vec![0i8; n];
+    let mut charge = vec![4u8; n]; // PRE-SET
     let config = PropagationConfig {
         ticks_per_token: 1,
         input_duration_ticks: 0,
@@ -302,7 +302,7 @@ fn test_a5_phase_gating() -> bool {
     propagate_token(&input, &graph, &params, &mut state, &config, &mut ws).unwrap();
 
     let expected_act = [1, 1, 0, 0, 0, 0, 0, 1];
-    let expected_chg = [0u32, 0, 4, 4, 4, 4, 4, 0];
+    let expected_chg = [0u8, 0, 4, 4, 4, 4, 4, 0];
 
     let act_ok = activation == expected_act;
     let chg_ok = charge == expected_chg;
@@ -318,7 +318,7 @@ fn test_a5_phase_gating() -> bool {
 // ============================================================================
 // A6: Output prediction (predict_projection)
 // ============================================================================
-fn predict_projection(charge_slice: &[u32], w: &[i8], num_classes: usize) -> u8 {
+fn predict_projection(charge_slice: &[u8], w: &[i8], num_classes: usize) -> u8 {
     let mut scores = vec![0i32; num_classes];
     for (i, &c) in charge_slice.iter().enumerate() {
         if c == 0 { continue; }
@@ -348,7 +348,7 @@ fn test_a6_output_prediction() -> bool {
     //
     // argmax = class 0 (score 13)
 
-    let charge: Vec<u32> = vec![0, 2, 0, 3, 0];
+    let charge: Vec<u8> = vec![0, 2, 0, 3, 0];
     let w: Vec<i8> = vec![
         10, -5,  3,  // row 0
          5,  2, -1,  // row 1
@@ -407,9 +407,9 @@ fn test_a7_snapshot_restore() -> bool {
     // Snapshot
     let snapshot = net.save_state();
     let saved_edges = net.edge_count();
-    let saved_charge: Vec<u32> = net.charge().to_vec();
-    let saved_activation: Vec<i32> = net.activation().to_vec();
-    let saved_threshold: Vec<u32> = net.threshold().to_vec();
+    let saved_charge: Vec<u8> = net.charge().to_vec();
+    let saved_activation: Vec<i8> = net.activation().to_vec();
+    let saved_threshold: Vec<u8> = net.threshold().to_vec();
 
     // Mutate heavily
     for _ in 0..20 {

@@ -6,11 +6,11 @@ use rand::{Rng, SeedableRng};
 #[derive(Debug, Clone, PartialEq, Eq)]
 struct SemanticState {
     edges: Vec<(u16, u16)>,
-    threshold: Vec<u32>,
+    threshold: Vec<u8>,
     channel: Vec<u8>,
-    polarity: Vec<i32>,
-    activation: Vec<i32>,
-    charge: Vec<u32>,
+    polarity: Vec<i8>,
+    activation: Vec<i8>,
+    charge: Vec<u8>,
 }
 
 fn capture_semantic(net: &Network) -> SemanticState {

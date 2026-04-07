@@ -14,22 +14,22 @@ use std::hint::black_box;
 
 struct Fixture {
     graph: ConnectionGraph,
-    activation: Vec<i32>,
-    incoming: Vec<i32>,
+    activation: Vec<i8>,
+    incoming: Vec<i16>,
     n: usize,
 }
 
 fn build_fixture(neuron_count: usize, edge_prob_pct: u64) -> Fixture {
     let graph = build_graph(neuron_count, edge_prob_pct);
     // Seed activation with some nonzero values so reads aren't trivially optimized out
-    let mut activation = vec![0i32; neuron_count];
+    let mut activation = vec![0i8; neuron_count];
     for i in 0..neuron_count {
-        activation[i] = (i as i32 % 3) - 1; // -1, 0, 1 pattern
+        activation[i] = ((i % 3) as i8) - 1; // -1, 0, 1 pattern
     }
     Fixture {
         graph,
         activation,
-        incoming: vec![0i32; neuron_count],
+        incoming: vec![0i16; neuron_count],
         n: neuron_count,
     }
 }
@@ -54,14 +54,14 @@ fn bench_read_only(f: &mut Fixture) -> i32 {
     let mut sink: i32 = 0;
     for _tick in 0..TICKS {
         for (sc, _tc) in edge_src.chunks_exact(4).zip(edge_tgt.chunks_exact(4)) {
-            sink = sink.wrapping_add(f.activation[sc[0]]);
-            sink = sink.wrapping_add(f.activation[sc[1]]);
-            sink = sink.wrapping_add(f.activation[sc[2]]);
-            sink = sink.wrapping_add(f.activation[sc[3]]);
+            sink = sink.wrapping_add(f.activation[sc[0] as usize] as i32);
+            sink = sink.wrapping_add(f.activation[sc[1] as usize] as i32);
+            sink = sink.wrapping_add(f.activation[sc[2] as usize] as i32);
+            sink = sink.wrapping_add(f.activation[sc[3] as usize] as i32);
         }
         let rem = edge_src.len() / 4 * 4;
         for i in rem..edge_src.len() {
-            sink = sink.wrapping_add(f.activation[edge_src[i]]);
+            sink = sink.wrapping_add(f.activation[edge_src[i] as usize] as i32);
         }
     }
     sink
@@ -74,15 +74,15 @@ fn bench_write_only(f: &mut Fixture) {
     let n = f.n;
     for _tick in 0..TICKS {
         f.incoming[..n].fill(0);
-        for (sc, tc) in edge_src.chunks_exact(4).zip(edge_tgt.chunks_exact(4)) {
-            f.incoming[tc[0]] += 1;
-            f.incoming[tc[1]] += 1;
-            f.incoming[tc[2]] += 1;
-            f.incoming[tc[3]] += 1;
+        for (_sc, tc) in edge_src.chunks_exact(4).zip(edge_tgt.chunks_exact(4)) {
+            f.incoming[tc[0] as usize] += 1;
+            f.incoming[tc[1] as usize] += 1;
+            f.incoming[tc[2] as usize] += 1;
+            f.incoming[tc[3] as usize] += 1;
         }
         let rem = edge_src.len() / 4 * 4;
         for i in rem..edge_src.len() {
-            f.incoming[edge_tgt[i]] += 1;
+            f.incoming[edge_tgt[i] as usize] += 1;
         }
     }
 }
@@ -94,10 +94,10 @@ fn bench_seq_iterate(f: &mut Fixture) -> usize {
     let mut sink: usize = 0;
     for _tick in 0..TICKS {
         for (sc, tc) in edge_src.chunks_exact(4).zip(edge_tgt.chunks_exact(4)) {
-            sink = sink.wrapping_add(sc[0]).wrapping_add(tc[0]);
-            sink = sink.wrapping_add(sc[1]).wrapping_add(tc[1]);
-            sink = sink.wrapping_add(sc[2]).wrapping_add(tc[2]);
-            sink = sink.wrapping_add(sc[3]).wrapping_add(tc[3]);
+            sink = sink.wrapping_add(sc[0] as usize).wrapping_add(tc[0] as usize);
+            sink = sink.wrapping_add(sc[1] as usize).wrapping_add(tc[1] as usize);
+            sink = sink.wrapping_add(sc[2] as usize).wrapping_add(tc[2] as usize);
+            sink = sink.wrapping_add(sc[3] as usize).wrapping_add(tc[3] as usize);
         }
     }
     sink
@@ -110,14 +110,14 @@ fn bench_full_scatter(f: &mut Fixture) {
     for _tick in 0..TICKS {
         f.incoming[..n].fill(0);
         for (sc, tc) in edge_src.chunks_exact(4).zip(edge_tgt.chunks_exact(4)) {
-            f.incoming[tc[0]] += f.activation[sc[0]];
-            f.incoming[tc[1]] += f.activation[sc[1]];
-            f.incoming[tc[2]] += f.activation[sc[2]];
-            f.incoming[tc[3]] += f.activation[sc[3]];
+            f.incoming[tc[0] as usize] += f.activation[sc[0] as usize] as i16;
+            f.incoming[tc[1] as usize] += f.activation[sc[1] as usize] as i16;
+            f.incoming[tc[2] as usize] += f.activation[sc[2] as usize] as i16;
+            f.incoming[tc[3] as usize] += f.activation[sc[3] as usize] as i16;
         }
         let rem = edge_src.len() / 4 * 4;
         for i in rem..edge_src.len() {
-            f.incoming[edge_tgt[i]] += f.activation[edge_src[i]];
+            f.incoming[edge_tgt[i] as usize] += f.activation[edge_src[i] as usize] as i16;
         }
     }
 }

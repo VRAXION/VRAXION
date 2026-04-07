@@ -75,12 +75,12 @@ fn main() {
         }
 
         // Allocate buffers
-        let mut activation = vec![0i32; neuron_count];
-        let mut charge = vec![0u32; neuron_count];
-        let mut incoming = vec![0i32; neuron_count];
+        let mut activation = vec![0i8; neuron_count];
+        let mut charge = vec![0u8; neuron_count];
+        let mut incoming = vec![0i16; neuron_count];
 
         // Helper: run full propagation to get realistic activation pattern
-        let run_full = |act: &mut [i32], chg: &mut [u32], inc: &mut [i32]| {
+        let run_full = |act: &mut [i8], chg: &mut [u8], inc: &mut [i16]| {
             act.fill(0);
             chg.fill(0);
             for tick in 0..TICKS {
@@ -91,10 +91,10 @@ fn main() {
                 }
                 if tick < 2 {
                     for (a, &iv) in act.iter_mut().zip(input.iter()) {
-                        *a += iv;
+                        *a = a.saturating_add(iv as i8);
                     }
                 }
-                inc.fill(0);
+                inc.fill(0i16);
                 for neuron in 0..neuron_count {
                     let a = act[neuron];
                     if a == 0 {
@@ -103,11 +103,12 @@ fn main() {
                     let start = csr_offsets[neuron] as usize;
                     let end = csr_offsets[neuron + 1] as usize;
                     for &t in &csr_targets[start..end] {
-                        inc[t as usize] += a;
+                        inc[t as usize] += a as i16;
                     }
                 }
                 for (c, &s) in chg.iter_mut().zip(inc.iter()) {
-                    *c = c.saturating_add_signed(s).min(15);
+                    let val = (*c as i16) + s;
+                    *c = val.clamp(0, 15) as u8;
                 }
                 let pt = tick % 8;
                 for i in 0..neuron_count {
@@ -169,7 +170,7 @@ fn main() {
                     let s = csr_offsets[neuron] as usize;
                     let e = csr_offsets[neuron + 1] as usize;
                     for &t in &csr_targets[s..e] {
-                        incoming[t as usize] += a;
+                        incoming[t as usize] += a as i16;
                     }
                 }
             }

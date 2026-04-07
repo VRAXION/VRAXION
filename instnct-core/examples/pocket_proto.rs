@@ -50,8 +50,8 @@ fn train_pocket(
 
 /// Convert output zone charge to input signal for next pocket.
 /// Neurons with charge > threshold get activation +1 in the input signal.
-fn charge_to_input(charge: &[u32], output_start: usize, neuron_count: usize,
-                   input_end: usize, threshold: u32) -> Vec<i32> {
+fn charge_to_input(charge: &[u8], output_start: usize, neuron_count: usize,
+                   input_end: usize, threshold: u8) -> Vec<i32> {
     let mut input = vec![0i32; neuron_count];
     let output_zone = &charge[output_start..neuron_count];
     // Map output zone → input zone (wrap if sizes differ)
@@ -131,7 +131,7 @@ fn main() {
     // Only the LAST pocket's W projection is used for prediction.
     println!("\n=== Chain eval (A → B → C → D, readout from D) ===\n");
 
-    for &threshold in &[1u32, 3, 5, 7] {
+    for &threshold in &[1u8, 3, 5, 7] {
         let mut nets: Vec<Network> = pockets.iter().map(|(n, _)| n.clone()).collect();
         for n in &mut nets { n.reset(); }
 

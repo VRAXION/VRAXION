@@ -45,14 +45,14 @@ fn jaccard(a: &HashSet<(u16, u16)>, b: &HashSet<(u16, u16)>) -> f64 {
 fn trace_chain(
     female: &mut Network, male: &mut Network, proj: &Int8Projection,
     segment: &[u8], sdr: &SdrTable, prop: &PropagationConfig,
-) -> (Vec<Vec<u32>>, Vec<Vec<u32>>, Vec<usize>, u32) {
+) -> (Vec<Vec<u8>>, Vec<Vec<u8>>, Vec<usize>, u32) {
     let os = output_start();
     let len = segment.len() - 1;
     female.reset();
     male.reset();
 
-    let mut interface_charges: Vec<Vec<u32>> = Vec::new(); // female output zone charge per token
-    let mut output_charges: Vec<Vec<u32>> = Vec::new();    // male output zone charge per token
+    let mut interface_charges: Vec<Vec<u8>> = Vec::new(); // female output zone charge per token
+    let mut output_charges: Vec<Vec<u8>> = Vec::new();    // male output zone charge per token
     let mut predictions: Vec<usize> = Vec::new();
     let mut correct = 0u32;
 
@@ -60,14 +60,14 @@ fn trace_chain(
         female.propagate(sdr.pattern(segment[i] as usize), prop).unwrap();
 
         // Capture female output zone charge (the interface signal)
-        let f_out_charge: Vec<u32> = female.charge()[os..H].to_vec();
+        let f_out_charge: Vec<u8> = female.charge()[os..H].to_vec();
         interface_charges.push(f_out_charge);
 
         let transfer = charge_transfer(female);
         male.propagate(&transfer, prop).unwrap();
 
         // Capture male output zone charge
-        let m_out_charge: Vec<u32> = male.charge()[os..H].to_vec();
+        let m_out_charge: Vec<u8> = male.charge()[os..H].to_vec();
         output_charges.push(m_out_charge);
 
         let pred = proj.predict(&male.charge()[os..H]);
@@ -79,14 +79,14 @@ fn trace_chain(
 }
 
 /// Stats about charge vectors
-fn charge_stats(charges: &[Vec<u32>]) -> (f64, f64, usize, f64) {
+fn charge_stats(charges: &[Vec<u8>]) -> (f64, f64, usize, f64) {
     let n = charges.len();
     if n == 0 { return (0.0, 0.0, 0, 0.0); }
     let dim = charges[0].len();
 
     // Mean total charge per token
     let mean_total: f64 = charges.iter()
-        .map(|c| c.iter().sum::<u32>() as f64)
+        .map(|c| c.iter().map(|&v| v as u32).sum::<u32>() as f64)
         .sum::<f64>() / n as f64;
 
     // Mean nonzero neurons per token
@@ -95,7 +95,7 @@ fn charge_stats(charges: &[Vec<u32>]) -> (f64, f64, usize, f64) {
         .sum::<f64>() / n as f64;
 
     // How many unique charge patterns? (distinct fingerprints)
-    let fingerprints: HashSet<Vec<u32>> = charges.iter().cloned().collect();
+    let fingerprints: HashSet<Vec<u8>> = charges.iter().cloned().collect();
     let unique = fingerprints.len();
 
     // Mean per-neuron charge across all tokens (for neuron utilization)
@@ -113,7 +113,7 @@ fn w_cosine(a: &Int8Projection, b: &Int8Projection) -> f64 {
     let total = 1000;
     let mut rng = StdRng::seed_from_u64(12345);
     for _ in 0..total {
-        let test: Vec<u32> = (0..PHI_DIM).map(|_| (rng.next_u64() % 16) as u32).collect();
+        let test: Vec<u8> = (0..PHI_DIM).map(|_| (rng.next_u64() % 16) as u8).collect();
         if a.predict(&test) == b.predict(&test) { agree += 1; }
     }
     agree as f64 / total as f64
@@ -232,8 +232,8 @@ fn main() {
     println!("\n=== 2. CHAIN ACCURACY (same {} chars) ===\n", EVAL_LEN);
 
     let mut all_preds: Vec<Vec<usize>> = Vec::new();
-    let mut all_interface: Vec<Vec<Vec<u32>>> = Vec::new();
-    let mut all_output: Vec<Vec<Vec<u32>>> = Vec::new();
+    let mut all_interface: Vec<Vec<Vec<u8>>> = Vec::new();
+    let mut all_output: Vec<Vec<Vec<u8>>> = Vec::new();
 
     for s in &mut states {
         let (interface, output, preds, correct) =

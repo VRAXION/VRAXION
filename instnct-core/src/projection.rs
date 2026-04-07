@@ -24,7 +24,7 @@ use serde::{Deserialize, Serialize};
 /// let mut rng = StdRng::seed_from_u64(42);
 /// let mut proj = Int8Projection::new(158, 27, &mut rng);
 ///
-/// let charge = vec![0u32; 158]; // output zone charge
+/// let charge = vec![0u8; 158]; // output zone charge
 /// let predicted_class = proj.predict(&charge);
 /// assert!(predicted_class < 27);
 ///
@@ -110,7 +110,7 @@ impl Int8Projection {
     /// # Panics
     ///
     /// Panics if `charge_slice.len() != input_dim`.
-    pub fn predict(&self, charge_slice: &[u32]) -> usize {
+    pub fn predict(&self, charge_slice: &[u8]) -> usize {
         assert_eq!(
             charge_slice.len(),
             self.input_dim,
@@ -146,7 +146,7 @@ impl Int8Projection {
     /// # Panics
     ///
     /// Panics if `charge_slice.len() != input_dim`.
-    pub fn raw_scores(&self, charge_slice: &[u32]) -> Vec<i32> {
+    pub fn raw_scores(&self, charge_slice: &[u8]) -> Vec<i32> {
         assert_eq!(
             charge_slice.len(),
             self.input_dim,
@@ -242,7 +242,7 @@ mod tests {
     fn predict_returns_valid_class() {
         let mut rng = StdRng::seed_from_u64(42);
         let proj = Int8Projection::new(16, 5, &mut rng);
-        let charge = vec![3u32; 16];
+        let charge = vec![3u8; 16];
         let class = proj.predict(&charge);
         assert!(class < 5, "predicted class {class} >= 5");
     }
@@ -259,7 +259,7 @@ mod tests {
             input_dim: 3,
             output_classes: 2,
         };
-        let charge = vec![2u32, 0, 3]; // neuron 1 silent
+        let charge = vec![2u8, 0, 3]; // neuron 1 silent
         // scores[0] = 2*10 + 3*(-2) = 20 - 6 = 14
         // scores[1] = 2*(-5) + 3*4 = -10 + 12 = 2
         assert_eq!(proj.predict(&charge), 0); // class 0 wins with 14
@@ -312,7 +312,7 @@ mod tests {
     fn predict_supports_more_than_256_classes() {
         let mut rng = StdRng::seed_from_u64(42);
         let proj = Int8Projection::new(4, 300, &mut rng);
-        let charge = vec![1u32; 4];
+        let charge = vec![1u8; 4];
         let class = proj.predict(&charge);
         assert!(class < 300, "predicted class {class} >= 300");
         // Specifically: result should NOT be truncated to u8 range

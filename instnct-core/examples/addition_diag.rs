@@ -190,7 +190,7 @@ fn main() {
     // Collect charge vectors for all 25 problems
     let os = init.output_start();
     let nc = init.neuron_count;
-    let mut charges: Vec<Vec<u32>> = Vec::new();
+    let mut charges: Vec<Vec<u8>> = Vec::new();
     for a in 0..5 {
         for b in 0..5 {
             net.reset();
@@ -265,7 +265,7 @@ fn main() {
     println!("  Does the charge after (A, B=0) differ by A?");
 
     // Charge after A,0 for each A
-    let mut a_traces: Vec<Vec<u32>> = Vec::new();
+    let mut a_traces: Vec<Vec<u8>> = Vec::new();
     for a in 0..5 {
         net.reset();
         net.propagate(sdr.pattern(a), &init.propagation).unwrap();
@@ -336,7 +336,7 @@ fn main() {
             // raw_scores computes sum(charge * weight), so we need the weight column for this class
             // Weights are row-major: weight[neuron][class]
             // We can get them indirectly: set charge to one-hot and read raw_scores
-            let mut onehot = vec![0u32; init.phi_dim];
+            let mut onehot = vec![0u8; init.phi_dim];
             onehot[n] = 1;
             let scores = proj.raw_scores(&onehot);
             neuron_weights.push((n, scores[cls] as i8));

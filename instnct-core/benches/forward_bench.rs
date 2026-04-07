@@ -9,9 +9,9 @@ use instnct_core::{
 use std::hint::black_box;
 
 struct UniformFixture {
-    threshold: Vec<u32>,
+    threshold: Vec<u8>,
     channel: Vec<u8>,
-    polarity: Vec<i32>,
+    polarity: Vec<i8>,
     input: Vec<i32>,
 }
 
@@ -26,15 +26,15 @@ struct ForwardCase {
 struct ForwardInputs<'a> {
     input: &'a [i32],
     graph: &'a ConnectionGraph,
-    threshold: &'a [u32],
+    threshold: &'a [u8],
     channel: &'a [u8],
-    polarity: &'a [i32],
+    polarity: &'a [i8],
     config: &'a PropagationConfig,
 }
 
 struct ForwardScratch {
-    activation: Vec<i32>,
-    charge: Vec<u32>,
+    activation: Vec<i8>,
+    charge: Vec<u8>,
     refractory: Vec<u8>,
     workspace: PropagationWorkspace,
 }
@@ -63,9 +63,9 @@ fn build_uniform_fixture(neuron_count: usize) -> UniformFixture {
     }
 
     UniformFixture {
-        threshold: vec![6u32; neuron_count],
+        threshold: vec![6u8; neuron_count],
         channel: vec![1u8; neuron_count],
-        polarity: vec![1i32; neuron_count],
+        polarity: vec![1i8; neuron_count],
         input,
     }
 }

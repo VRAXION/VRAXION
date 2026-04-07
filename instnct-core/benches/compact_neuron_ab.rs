@@ -28,12 +28,12 @@ struct Fixture {
     n: usize,
 
     // Baseline neuron data (wide)
-    w_activation: Vec<i32>,
-    w_charge: Vec<u32>,
-    w_incoming: Vec<i32>,
-    w_threshold: Vec<u32>,
-    w_polarity: Vec<i32>,
-    w_input: Vec<i32>,
+    w_activation: Vec<i8>,
+    w_charge: Vec<u8>,
+    w_incoming: Vec<i16>,
+    w_threshold: Vec<u8>,
+    w_polarity: Vec<i8>,
+    w_input: Vec<i32>, // baseline uses i32 input
 
     // Compact neuron data (narrow)
     c_activation: Vec<i8>,
@@ -59,10 +59,10 @@ fn build_fixture(neuron_count: usize, edge_prob_pct: u64) -> Fixture {
     }
 
     Fixture {
-        sources_usize: src.to_vec(),
-        targets_usize: tgt.to_vec(),
-        sources_u16: src.iter().map(|&s| s as u16).collect(),
-        targets_u16: tgt.iter().map(|&t| t as u16).collect(),
+        sources_usize: src.iter().map(|&s| s as usize).collect(),
+        targets_usize: tgt.iter().map(|&t| t as usize).collect(),
+        sources_u16: src.to_vec(),
+        targets_u16: tgt.to_vec(),
         n: neuron_count,
 
         w_activation: vec![0; neuron_count],
@@ -100,25 +100,26 @@ fn propagate_baseline(f: &mut Fixture) {
         }
         if tick < 2 {
             for (act, &inp) in f.w_activation.iter_mut().zip(f.w_input.iter()) {
-                *act += inp;
+                *act = act.saturating_add(inp as i8);
             }
         }
 
         let incoming = &mut f.w_incoming[..n];
-        incoming.fill(0);
+        incoming.fill(0i16);
         for (sc, tc) in edge_src.chunks_exact(4).zip(edge_tgt.chunks_exact(4)) {
-            incoming[tc[0]] += f.w_activation[sc[0]];
-            incoming[tc[1]] += f.w_activation[sc[1]];
-            incoming[tc[2]] += f.w_activation[sc[2]];
-            incoming[tc[3]] += f.w_activation[sc[3]];
+            incoming[tc[0]] += f.w_activation[sc[0]] as i16;
+            incoming[tc[1]] += f.w_activation[sc[1]] as i16;
+            incoming[tc[2]] += f.w_activation[sc[2]] as i16;
+            incoming[tc[3]] += f.w_activation[sc[3]] as i16;
         }
         let rem = edge_src.len() / 4 * 4;
         for i in rem..edge_src.len() {
-            incoming[edge_tgt[i]] += f.w_activation[edge_src[i]];
+            incoming[edge_tgt[i]] += f.w_activation[edge_src[i]] as i16;
         }
 
         for (ch, &sig) in f.w_charge[..n].iter_mut().zip(incoming.iter()) {
-            *ch = ch.saturating_add_signed(sig).min(15);
+            let val = (*ch as i16) + sig;
+            *ch = val.clamp(0, MAX_CHARGE as i16) as u8;
         }
 
         let phase_tick = tick % 8;
@@ -163,7 +164,7 @@ fn propagate_compact(f: &mut Fixture) {
         }
 
         let incoming = &mut f.c_incoming[..n];
-        incoming.fill(0);
+        incoming.fill(0i16);
         for (sc, tc) in edge_src.chunks_exact(4).zip(edge_tgt.chunks_exact(4)) {
             incoming[tc[0]] += f.c_activation[sc[0]] as i16;
             incoming[tc[1]] += f.c_activation[sc[1]] as i16;
@@ -172,7 +173,7 @@ fn propagate_compact(f: &mut Fixture) {
         }
         let rem = edge_src.len() / 4 * 4;
         for i in rem..edge_src.len() {
-            incoming[edge_tgt[i]] += f.c_activation[edge_src[i]] as i16;
+            incoming[edge_tgt[i] as usize] += f.c_activation[edge_src[i] as usize] as i16;
         }
 
         for (ch, &sig) in f.c_charge[..n].iter_mut().zip(incoming.iter()) {
@@ -223,7 +224,7 @@ fn propagate_compact_u16e(f: &mut Fixture) {
         }
 
         let incoming = &mut f.c_incoming[..n];
-        incoming.fill(0);
+        incoming.fill(0i16);
         for (sc, tc) in edge_src.chunks_exact(4).zip(edge_tgt.chunks_exact(4)) {
             incoming[tc[0] as usize] += f.c_activation[sc[0] as usize] as i16;
             incoming[tc[1] as usize] += f.c_activation[sc[1] as usize] as i16;

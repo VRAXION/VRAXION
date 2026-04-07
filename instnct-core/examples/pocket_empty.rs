@@ -82,7 +82,7 @@ fn build_prefilled_pocket(rng: &mut StdRng) -> Network {
         if net.edge_count() >= target { break; }
     }
     for i in 0..H {
-        net.threshold_mut()[i] = rng.gen_range(0..=7u32);
+        net.threshold_mut()[i] = rng.gen_range(0..=7u8);
         net.channel_mut()[i] = rng.gen_range(1..=8u8);
         if rng.gen_ratio(1, 10) { net.polarity_mut()[i] = -1; }
     }

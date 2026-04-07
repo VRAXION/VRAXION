@@ -224,7 +224,7 @@ fn run_one(cfg: &SweepConfig, corpus: &[u8]) -> SweepResult {
 
     // Random params
     for i in 0..h {
-        net.threshold_mut()[i] = rng.gen_range(0..=7u32);
+        net.threshold_mut()[i] = rng.gen_range(0..=7u8);
         net.channel_mut()[i] = rng.gen_range(1..=8u8);
         if rng.gen_ratio(1, 10) { net.polarity_mut()[i] = -1; }
     }

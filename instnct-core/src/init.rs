@@ -48,7 +48,7 @@ pub struct InitConfig {
     pub density_pct: usize,
 
     /// Inclusive upper bound for random threshold init. Range \[0, max\].
-    pub threshold_max: u32,
+    pub threshold_max: u8,
     /// Inclusive upper bound for random channel init. Range \[1, max\].
     pub channel_max: u8,
     /// Percentage of neurons initialized as inhibitory (0–100).
@@ -246,7 +246,7 @@ mod tests {
         let mut rng = StdRng::seed_from_u64(42);
         let net = build_network(&cfg, &mut rng);
 
-        let distinct_thresholds: HashSet<u32> = net.threshold().iter().copied().collect();
+        let distinct_thresholds: HashSet<u8> = net.threshold().iter().copied().collect();
         assert!(distinct_thresholds.len() > 1, "threshold not randomized");
 
         let distinct_channels: HashSet<u8> = net.channel().iter().copied().collect();
@@ -306,7 +306,7 @@ mod tests {
 
         net.propagate(&input, &cfg.propagation).unwrap();
 
-        let total_charge: u32 = net.charge().iter().sum();
+        let total_charge: u32 = net.charge().iter().map(|&c| c as u32).sum();
         assert!(total_charge > 0, "network is dead after propagation");
     }
 }
