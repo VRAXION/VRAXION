@@ -53,3 +53,8 @@ required-features = ["benchmarks"]
 name = "edge_compact_ab"
 harness = false
 required-features = ["benchmarks"]
+
+[[bench]]
+name = "compact_neuron_ab"
+harness = false
+required-features = ["benchmarks"]
