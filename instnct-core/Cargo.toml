@@ -73,3 +73,8 @@ required-features = ["benchmarks"]
 name = "prebake_thresh_ab"
 harness = false
 required-features = ["benchmarks"]
+
+[[bench]]
+name = "aos_spike_ab"
+harness = false
+required-features = ["benchmarks"]
