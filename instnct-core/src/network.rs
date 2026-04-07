@@ -151,6 +151,80 @@ impl NetworkSnapshot {
     }
 }
 
+// ---- Mutation Undo ----
+
+/// Lightweight undo token for a single mutation. O(1) storage.
+///
+/// Instead of cloning the entire network (O(H) spike vec + O(E) graph),
+/// each mutation records only what it changed. On reject, [`Network::apply_undo`]
+/// reverses that one change. Since `eval_accuracy` calls [`Network::reset()`]
+/// at the start, ephemeral state (charge, activation, refractory) does not
+/// need to be saved — only topology and learned parameters.
+///
+/// This makes save = O(1) and restore = O(1), vs O(H+E) for full snapshots.
+/// Since ~99% of mutations are rejected, this eliminates nearly all clone overhead.
+#[derive(Clone, Debug)]
+pub enum MutationUndo {
+    /// An edge was added — undo by removing it.
+    AddedEdge {
+        /// Source neuron of the added edge.
+        source: u16,
+        /// Target neuron of the added edge.
+        target: u16,
+    },
+    /// An edge was removed — undo by re-adding it.
+    RemovedEdge {
+        /// Source neuron of the removed edge.
+        source: u16,
+        /// Target neuron of the removed edge.
+        target: u16,
+    },
+    /// An edge was reversed (A->B became B->A) — undo by reversing back.
+    ReversedEdge {
+        /// Source neuron after the reversal.
+        new_source: u16,
+        /// Target neuron after the reversal.
+        new_target: u16,
+    },
+    /// An edge was rewired: old edge removed, new edge added.
+    Rewired {
+        /// Source of the original edge.
+        old_source: u16,
+        /// Target of the original edge.
+        old_target: u16,
+        /// Source of the replacement edge.
+        new_source: u16,
+        /// Target of the replacement edge.
+        new_target: u16,
+    },
+    /// A loop of edges was added — undo by removing all of them.
+    AddedLoop {
+        /// The (source, target) pairs of all edges in the loop.
+        edges: Vec<(u16, u16)>,
+    },
+    /// A neuron's threshold was changed.
+    Theta {
+        /// Neuron index whose threshold was changed.
+        index: usize,
+        /// Threshold value before the mutation.
+        old_value: u8,
+    },
+    /// A neuron's channel was changed.
+    Channel {
+        /// Neuron index whose channel was changed.
+        index: usize,
+        /// Channel value before the mutation.
+        old_value: u8,
+    },
+    /// A neuron's polarity was flipped.
+    Polarity {
+        /// Neuron index whose polarity was flipped.
+        index: usize,
+    },
+    /// No mutation was applied (mutation returned false).
+    Noop,
+}
+
 // ---- Network ----
 
 /// Self-contained spiking network owning topology, parameters, and state.
@@ -407,6 +481,180 @@ impl Network {
         Ok(())
     }
 
+    /// Run one token's forward pass using sparse input injection.
+    ///
+    /// Identical to [`propagate()`](Self::propagate) except the input is provided
+    /// as sparse `(indices, values)` pairs instead of a dense `&[i32]` slice.
+    /// Only iterates the provided indices during input injection (step 2),
+    /// making it O(k) instead of O(H) where k = number of active neurons.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`NetworkError::Propagation`] if any validation check fails.
+    pub fn propagate_sparse(
+        &mut self,
+        indices: &[u16],
+        values: &[i8],
+        config: &PropagationConfig,
+    ) -> Result<(), NetworkError> {
+        let neuron_count = self.graph.neuron_count();
+
+        // Validate sparse input
+        if indices.len() != values.len() {
+            return Err(PropagationError::InputLengthMismatch {
+                expected: indices.len(),
+                actual: values.len(),
+            }
+            .into());
+        }
+        for &idx in indices {
+            if idx as usize >= neuron_count {
+                return Err(PropagationError::InputLengthMismatch {
+                    expected: neuron_count,
+                    actual: idx as usize + 1,
+                }
+                .into());
+            }
+        }
+
+        // Validate neuron parameters (same as propagate)
+        for i in 0..neuron_count {
+            if self.spike[i].threshold > 15 {
+                return Err(PropagationError::ThresholdOutOfRange {
+                    index: i,
+                    value: self.spike[i].threshold,
+                }
+                .into());
+            }
+            if !(1..=GLOBAL_PHASE_CHANNEL_COUNT as u8).contains(&self.spike[i].channel) {
+                return Err(PropagationError::ChannelOutOfRange {
+                    index: i,
+                    value: self.spike[i].channel,
+                }
+                .into());
+            }
+            let p: i8 = self.polarity[i];
+            if p != 1 && p != -1 {
+                return Err(PropagationError::PolarityOutOfRange { index: i, value: p }.into());
+            }
+        }
+
+        // Rebuild CSR if graph changed
+        if self.csr_dirty {
+            self.rebuild_csr();
+        }
+
+        // CSR skip-inactive propagation (identical to propagate except step 2)
+        let neuron_count = self.graph.neuron_count();
+        let phase_base: [u8; GLOBAL_PHASE_TICKS_PER_PERIOD] = [7, 8, 10, 12, 13, 12, 10, 8];
+        let incoming = &mut self.workspace.incoming_scratch_mut()[..neuron_count];
+
+        for tick in 0..config.ticks_per_token {
+            // 1. Charge decay — O(dirty)
+            if config.decay_interval_ticks > 0 && tick % config.decay_interval_ticks == 0 {
+                for &idx in &self.dirty_set {
+                    self.spike[idx as usize].charge = self.spike[idx as usize].charge.saturating_sub(1);
+                }
+            }
+
+            // 2. Sparse input injection — O(k) instead of O(H)
+            if tick < config.input_duration_ticks {
+                for (&idx, &val) in indices.iter().zip(values.iter()) {
+                    let i = idx as usize;
+                    self.activation[i] = self.activation[i].saturating_add(val);
+                    if !self.dirty_member[i] {
+                        self.dirty_member[i] = true;
+                        self.dirty_set.push(idx);
+                    }
+                }
+            }
+
+            // 3. CSR scatter-add — iterate dirty_set
+            let scatter_end = self.dirty_set.len();
+            for di in 0..scatter_end {
+                let idx = self.dirty_set[di] as usize;
+                let act = self.activation[idx];
+                if act == 0 { continue; }
+                let start = self.csr_offsets[idx] as usize;
+                let end = self.csr_offsets[idx + 1] as usize;
+                for &target in &self.csr_targets[start..end] {
+                    incoming[target as usize] += act as i16;
+                    if !self.dirty_member[target as usize] {
+                        self.dirty_member[target as usize] = true;
+                        self.dirty_set.push(target);
+                    }
+                }
+            }
+
+            // 4. Charge accumulation — O(dirty)
+            for &idx in &self.dirty_set {
+                let i = idx as usize;
+                let val = (self.spike[i].charge as i16) + incoming[i];
+                self.spike[i].charge = val.clamp(0, LIMIT_MAX_CHARGE as i16) as u8;
+            }
+
+            // 5. Build active set — O(dirty)
+            self.active_neurons.clear();
+            for &idx in &self.dirty_set {
+                if self.spike[idx as usize].charge > 0 {
+                    self.active_neurons.push(idx);
+                }
+            }
+
+            // 6. Clear activation — O(dirty)
+            for &idx in &self.dirty_set {
+                self.activation[idx as usize] = 0;
+            }
+
+            // 7. Spike decision — O(active)
+            let phase_tick = tick % GLOBAL_PHASE_TICKS_PER_PERIOD;
+            for i in 0..self.active_neurons.len() {
+                let neuron_idx = self.active_neurons[i] as usize;
+                if config.use_refractory && self.refractory[neuron_idx] > 0 {
+                    self.refractory[neuron_idx] -= 1;
+                    continue;
+                }
+                let channel_idx = self.spike[neuron_idx].channel as usize;
+                let phase_mult: u16 = if (1..=GLOBAL_PHASE_CHANNEL_COUNT).contains(&channel_idx) {
+                    phase_base[(phase_tick + 9 - channel_idx) & 7] as u16
+                } else {
+                    10
+                };
+                let charge_x10: u16 = self.spike[neuron_idx].charge as u16 * 10;
+                let threshold_x10: u16 = (self.spike[neuron_idx].threshold as u16 + 1) * phase_mult;
+                if charge_x10 >= threshold_x10 {
+                    self.activation[neuron_idx] = self.polarity[neuron_idx];
+                    self.spike[neuron_idx].charge = 0;
+                    if config.use_refractory {
+                        self.refractory[neuron_idx] = 1;
+                    }
+                }
+            }
+
+            // 8. Sparse clear incoming — O(dirty)
+            for &idx in &self.dirty_set {
+                incoming[idx as usize] = 0;
+            }
+
+            // 9. Prune dirty set
+            {
+                let spike = &self.spike;
+                let activation = &self.activation;
+                let dirty_member = &mut self.dirty_member;
+                self.dirty_set.retain(|&idx| {
+                    let i = idx as usize;
+                    if spike[i].charge > 0 || activation[i] != 0 {
+                        true
+                    } else {
+                        dirty_member[i] = false;
+                        false
+                    }
+                });
+            }
+        }
+        Ok(())
+    }
+
     // ---- State management ----
 
     /// Zero all activation and charge values. Does not touch topology or learned parameters.
@@ -467,6 +715,295 @@ impl Network {
                 self.dirty_set.push(i as u16);
             }
         }
+    }
+
+    // ---- Mutation undo ----
+
+    /// Reverse a single mutation using a lightweight undo token.
+    ///
+    /// After calling this, call [`reset()`](Self::reset) to zero ephemeral state
+    /// (the undo only restores topology and learned parameters).
+    pub fn apply_undo(&mut self, undo: &MutationUndo) {
+        match undo {
+            MutationUndo::AddedEdge { source, target } => {
+                self.graph.remove_edge(*source, *target);
+                self.csr_dirty = true;
+            }
+            MutationUndo::RemovedEdge { source, target } => {
+                self.graph.add_edge(*source, *target);
+                self.csr_dirty = true;
+            }
+            MutationUndo::ReversedEdge {
+                new_source,
+                new_target,
+            } => {
+                // The mutation turned old→ into new_source→new_target,
+                // so reverse it back.
+                self.graph.reverse_edge(*new_source, *new_target);
+                self.csr_dirty = true;
+            }
+            MutationUndo::Rewired {
+                old_source,
+                old_target,
+                new_source,
+                new_target,
+            } => {
+                // Remove the new edge, re-add the old edge
+                self.graph.remove_edge(*new_source, *new_target);
+                self.graph.add_edge(*old_source, *old_target);
+                self.csr_dirty = true;
+            }
+            MutationUndo::AddedLoop { edges } => {
+                for &(src, tgt) in edges {
+                    self.graph.remove_edge(src, tgt);
+                }
+                self.csr_dirty = true;
+            }
+            MutationUndo::Theta { index, old_value } => {
+                self.spike[*index].threshold = *old_value;
+            }
+            MutationUndo::Channel { index, old_value } => {
+                self.spike[*index].channel = *old_value;
+            }
+            MutationUndo::Polarity { index } => {
+                self.polarity[*index] = -self.polarity[*index];
+            }
+            MutationUndo::Noop => {}
+        }
+    }
+
+    /// Add a random edge, returning an undo token.
+    pub fn mutate_add_edge_undo(&mut self, rng: &mut impl Rng) -> (bool, MutationUndo) {
+        let neuron_count = self.graph.neuron_count();
+        if neuron_count < 2 {
+            return (false, MutationUndo::Noop);
+        }
+        let source = rng.gen_range(0..neuron_count) as u16;
+        let target = rng.gen_range(0..neuron_count) as u16;
+        let added = self.graph.add_edge(source, target);
+        if added {
+            self.csr_dirty = true;
+            (true, MutationUndo::AddedEdge { source, target })
+        } else {
+            (false, MutationUndo::Noop)
+        }
+    }
+
+    /// Remove a random edge, returning an undo token.
+    pub fn mutate_remove_edge_undo(&mut self, rng: &mut impl Rng) -> (bool, MutationUndo) {
+        let edge_count = self.graph.edge_count();
+        if edge_count == 0 {
+            return (false, MutationUndo::Noop);
+        }
+        let index = rng.gen_range(0..edge_count);
+        let edge = self.graph.remove_edge_at(index).unwrap();
+        self.csr_dirty = true;
+        (
+            true,
+            MutationUndo::RemovedEdge {
+                source: edge.source,
+                target: edge.target,
+            },
+        )
+    }
+
+    /// Rewire a random edge, returning an undo token.
+    pub fn mutate_rewire_undo(&mut self, rng: &mut impl Rng) -> (bool, MutationUndo) {
+        let edge_count = self.graph.edge_count();
+        let neuron_count = self.graph.neuron_count();
+        if edge_count == 0 || neuron_count < 2 {
+            return (false, MutationUndo::Noop);
+        }
+        let index = rng.gen_range(0..edge_count);
+        let old_edge = self.graph.remove_edge_at(index).unwrap();
+        let new_target = rng.gen_range(0..neuron_count) as u16;
+        if !self.graph.add_edge(old_edge.source, new_target) {
+            self.graph.add_edge(old_edge.source, old_edge.target);
+            return (false, MutationUndo::Noop);
+        }
+        self.csr_dirty = true;
+        (
+            true,
+            MutationUndo::Rewired {
+                old_source: old_edge.source,
+                old_target: old_edge.target,
+                new_source: old_edge.source,
+                new_target,
+            },
+        )
+    }
+
+    /// Reverse a random edge, returning an undo token.
+    pub fn mutate_reverse_undo(&mut self, rng: &mut impl Rng) -> (bool, MutationUndo) {
+        let edge_count = self.graph.edge_count();
+        if edge_count == 0 {
+            return (false, MutationUndo::Noop);
+        }
+        let index = rng.gen_range(0..edge_count);
+        let edges: Vec<_> = self.graph.iter_edges().collect();
+        let edge = edges[index];
+        let reversed = self.graph.reverse_edge(edge.source, edge.target);
+        if reversed {
+            self.csr_dirty = true;
+            (
+                true,
+                MutationUndo::ReversedEdge {
+                    new_source: edge.target,
+                    new_target: edge.source,
+                },
+            )
+        } else {
+            (false, MutationUndo::Noop)
+        }
+    }
+
+    /// Mirror a random edge (add its reverse), returning an undo token.
+    pub fn mutate_mirror_undo(&mut self, rng: &mut impl Rng) -> (bool, MutationUndo) {
+        let edge_count = self.graph.edge_count();
+        if edge_count == 0 {
+            return (false, MutationUndo::Noop);
+        }
+        let index = rng.gen_range(0..edge_count);
+        let edges: Vec<_> = self.graph.iter_edges().collect();
+        let edge = edges[index];
+        let added = self.graph.add_edge(edge.target, edge.source);
+        if added {
+            self.csr_dirty = true;
+            (
+                true,
+                MutationUndo::AddedEdge {
+                    source: edge.target,
+                    target: edge.source,
+                },
+            )
+        } else {
+            (false, MutationUndo::Noop)
+        }
+    }
+
+    /// Enhance (add edge to high-degree neuron), returning an undo token.
+    pub fn mutate_enhance_undo(&mut self, rng: &mut impl Rng) -> (bool, MutationUndo) {
+        let neuron_count = self.graph.neuron_count();
+        if neuron_count < 2 {
+            return (false, MutationUndo::Noop);
+        }
+        if self.graph.edge_count() == 0 {
+            return self.mutate_add_edge_undo(rng);
+        }
+        let mut in_degree = vec![0u32; neuron_count];
+        for edge in self.graph.iter_edges() {
+            in_degree[edge.target as usize] += 1;
+        }
+        let mut sorted_degrees = in_degree.clone();
+        sorted_degrees.sort_unstable();
+        let top_quartile_idx = neuron_count - neuron_count / 4;
+        let threshold = sorted_degrees[top_quartile_idx.min(neuron_count - 1)];
+        let high_indegree_neurons: Vec<u16> = in_degree
+            .iter()
+            .enumerate()
+            .filter(|(_, &d)| d >= threshold)
+            .map(|(i, _)| i as u16)
+            .collect();
+        if high_indegree_neurons.is_empty() {
+            return self.mutate_add_edge_undo(rng);
+        }
+        let target = high_indegree_neurons[rng.gen_range(0..high_indegree_neurons.len())];
+        let source = rng.gen_range(0..neuron_count) as u16;
+        let added = self.graph.add_edge(source, target);
+        if added {
+            self.csr_dirty = true;
+            (true, MutationUndo::AddedEdge { source, target })
+        } else {
+            (false, MutationUndo::Noop)
+        }
+    }
+
+    /// Add a loop of edges, returning an undo token.
+    pub fn mutate_add_loop_undo(
+        &mut self,
+        rng: &mut impl Rng,
+        len: usize,
+    ) -> (bool, MutationUndo) {
+        let neuron_count = self.graph.neuron_count();
+        if neuron_count < 2 || len < 2 {
+            return (false, MutationUndo::Noop);
+        }
+        let len = len.min(neuron_count);
+
+        let mut nodes = Vec::with_capacity(len);
+        for _ in 0..len * 10 {
+            let n = rng.gen_range(0..neuron_count) as u16;
+            if !nodes.contains(&n) {
+                nodes.push(n);
+            }
+            if nodes.len() == len {
+                break;
+            }
+        }
+        if nodes.len() < len {
+            return (false, MutationUndo::Noop);
+        }
+
+        for i in 0..len {
+            let src = nodes[i];
+            let tgt = nodes[(i + 1) % len];
+            if self.graph.has_edge(src, tgt) {
+                return (false, MutationUndo::Noop);
+            }
+        }
+
+        let mut edges = Vec::with_capacity(len);
+        for i in 0..len {
+            let src = nodes[i];
+            let tgt = nodes[(i + 1) % len];
+            self.graph.add_edge(src, tgt);
+            edges.push((src, tgt));
+        }
+        self.csr_dirty = true;
+        (true, MutationUndo::AddedLoop { edges })
+    }
+
+    /// Mutate threshold, returning an undo token.
+    pub fn mutate_theta_undo(&mut self, rng: &mut impl Rng) -> (bool, MutationUndo) {
+        let neuron_count = self.graph.neuron_count();
+        if neuron_count == 0 {
+            return (false, MutationUndo::Noop);
+        }
+        let index = rng.gen_range(0..neuron_count);
+        let new_value = rng.gen_range(0..=15u8);
+        let old_value = self.spike[index].threshold;
+        if old_value == new_value {
+            return (false, MutationUndo::Noop);
+        }
+        self.spike[index].threshold = new_value;
+        (true, MutationUndo::Theta { index, old_value })
+    }
+
+    /// Mutate channel, returning an undo token.
+    pub fn mutate_channel_undo(&mut self, rng: &mut impl Rng) -> (bool, MutationUndo) {
+        let neuron_count = self.graph.neuron_count();
+        if neuron_count == 0 {
+            return (false, MutationUndo::Noop);
+        }
+        let index = rng.gen_range(0..neuron_count);
+        let new_value = rng.gen_range(1..=8u8);
+        let old_value = self.spike[index].channel;
+        if old_value == new_value {
+            return (false, MutationUndo::Noop);
+        }
+        self.spike[index].channel = new_value;
+        (true, MutationUndo::Channel { index, old_value })
+    }
+
+    /// Flip polarity, returning an undo token.
+    pub fn mutate_polarity_undo(&mut self, rng: &mut impl Rng) -> (bool, MutationUndo) {
+        let neuron_count = self.graph.neuron_count();
+        if neuron_count == 0 {
+            return (false, MutationUndo::Noop);
+        }
+        let index = rng.gen_range(0..neuron_count);
+        self.polarity[index] = -self.polarity[index];
+        (true, MutationUndo::Polarity { index })
     }
 
     // ---- Genome persistence ----
@@ -2625,6 +3162,146 @@ mod tests {
                 "neuron {} should have charge 0 after decay",
                 i
             );
+        }
+    }
+
+    #[test]
+    fn sparse_propagate_matches_dense() {
+        // Build a network with some edges and varied parameters
+        let mut rng = StdRng::seed_from_u64(42);
+        let neuron_count = 64;
+        let mut net = Network::new(neuron_count);
+        for _ in 0..50 {
+            net.mutate_add_edge(&mut rng);
+        }
+        for i in 0..neuron_count {
+            net.spike_data_mut()[i].threshold = rng.gen_range(0..=7);
+            net.spike_data_mut()[i].channel = rng.gen_range(1..=8);
+        }
+
+        // Build a dense input pattern with some active neurons
+        let mut dense_input = vec![0i32; neuron_count];
+        let active_indices: Vec<u16> = vec![3, 7, 12, 25, 40, 55];
+        let active_values: Vec<i8> = vec![1, 1, 1, 1, 1, 1];
+        for (&idx, &val) in active_indices.iter().zip(active_values.iter()) {
+            dense_input[idx as usize] = val as i32;
+        }
+
+        let config = default_config();
+
+        // Run dense propagation
+        let mut net_dense = net.clone();
+        net_dense.propagate(&dense_input, &config).unwrap();
+        let dense_charges: Vec<u8> = net_dense.spike_data().iter().map(|s| s.charge).collect();
+        let dense_activation: Vec<i8> = net_dense.activation().to_vec();
+
+        // Run sparse propagation on a fresh clone
+        let mut net_sparse = net.clone();
+        net_sparse
+            .propagate_sparse(&active_indices, &active_values, &config)
+            .unwrap();
+        let sparse_charges: Vec<u8> = net_sparse.spike_data().iter().map(|s| s.charge).collect();
+        let sparse_activation: Vec<i8> = net_sparse.activation().to_vec();
+
+        // They must be identical
+        assert_eq!(
+            dense_charges, sparse_charges,
+            "sparse propagation produced different charges than dense"
+        );
+        assert_eq!(
+            dense_activation, sparse_activation,
+            "sparse propagation produced different activation than dense"
+        );
+    }
+
+    #[test]
+    fn mutation_undo_restores_topology_and_params() {
+        let mut rng = StdRng::seed_from_u64(42);
+        let neuron_count = 64;
+        let mut net = Network::new(neuron_count);
+        // Seed with some edges
+        for _ in 0..50 {
+            net.mutate_add_edge(&mut rng);
+        }
+        for i in 0..neuron_count {
+            net.spike_data_mut()[i].threshold = rng.gen_range(0..=7);
+            net.spike_data_mut()[i].channel = rng.gen_range(1..=8);
+        }
+
+        // Test each undo mutation type
+        let mutation_fns: Vec<Box<dyn Fn(&mut Network, &mut StdRng) -> (bool, MutationUndo)>> = vec![
+            Box::new(|net, rng| net.mutate_add_edge_undo(rng)),
+            Box::new(|net, rng| net.mutate_remove_edge_undo(rng)),
+            Box::new(|net, rng| net.mutate_rewire_undo(rng)),
+            Box::new(|net, rng| net.mutate_reverse_undo(rng)),
+            Box::new(|net, rng| net.mutate_mirror_undo(rng)),
+            Box::new(|net, rng| net.mutate_enhance_undo(rng)),
+            Box::new(|net, rng| net.mutate_add_loop_undo(rng, 2)),
+            Box::new(|net, rng| net.mutate_add_loop_undo(rng, 3)),
+            Box::new(|net, rng| net.mutate_theta_undo(rng)),
+            Box::new(|net, rng| net.mutate_channel_undo(rng)),
+            Box::new(|net, rng| net.mutate_polarity_undo(rng)),
+        ];
+
+        for (fn_idx, mutate_fn) in mutation_fns.iter().enumerate() {
+            // Try several times to get a successful mutation
+            for attempt in 0..20 {
+                let mut test_net = net.clone();
+                let edges_before: Vec<_> = test_net.graph().iter_edges().collect();
+                let spike_before: Vec<SpikeData> = test_net.spike_data().to_vec();
+                let polarity_before: Vec<i8> = test_net.polarity().to_vec();
+
+                let mut attempt_rng = StdRng::seed_from_u64(1000 + fn_idx as u64 * 100 + attempt);
+                let (mutated, undo) = mutate_fn(&mut test_net, &mut attempt_rng);
+                if !mutated {
+                    continue;
+                }
+
+                // Apply undo
+                test_net.apply_undo(&undo);
+
+                // Verify topology restored
+                let edges_after: Vec<_> = test_net.graph().iter_edges().collect();
+                assert_eq!(
+                    edges_before.len(),
+                    edges_after.len(),
+                    "mutation fn {fn_idx}: edge count mismatch after undo"
+                );
+                // Edge sets should match (order may differ for swap-remove mutations)
+                let mut before_sorted: Vec<_> = edges_before
+                    .iter()
+                    .map(|e| (e.source, e.target))
+                    .collect();
+                let mut after_sorted: Vec<_> = edges_after
+                    .iter()
+                    .map(|e| (e.source, e.target))
+                    .collect();
+                before_sorted.sort();
+                after_sorted.sort();
+                assert_eq!(
+                    before_sorted, after_sorted,
+                    "mutation fn {fn_idx}: edge set mismatch after undo"
+                );
+
+                // Verify parameters restored
+                assert_eq!(
+                    test_net.spike_data().iter().map(|s| s.threshold).collect::<Vec<_>>(),
+                    spike_before.iter().map(|s| s.threshold).collect::<Vec<_>>(),
+                    "mutation fn {fn_idx}: threshold mismatch after undo"
+                );
+                assert_eq!(
+                    test_net.spike_data().iter().map(|s| s.channel).collect::<Vec<_>>(),
+                    spike_before.iter().map(|s| s.channel).collect::<Vec<_>>(),
+                    "mutation fn {fn_idx}: channel mismatch after undo"
+                );
+                assert_eq!(
+                    test_net.polarity(),
+                    polarity_before.as_slice(),
+                    "mutation fn {fn_idx}: polarity mismatch after undo"
+                );
+
+                break; // success — move to next mutation type
+            }
         }
     }
 }

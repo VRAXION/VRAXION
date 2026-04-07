@@ -26,6 +26,8 @@ use std::fmt;
 /// ```
 pub struct SdrTable {
     patterns: Vec<Vec<i32>>, // num_symbols × neuron_count, values 0 or 1
+    sparse_indices: Vec<Vec<u16>>, // per-symbol: indices of active neurons
+    sparse_values: Vec<Vec<i8>>,   // per-symbol: values at those indices (always 1 for SDR)
     neuron_count: usize,
     input_dim: usize,        // active bits confined to [0, input_dim)
     active_bits: usize,      // K active bits per pattern
@@ -129,8 +131,26 @@ impl SdrTable {
             patterns.push(pattern);
         }
 
+        // Pre-compute sparse representations
+        let mut sparse_indices = Vec::with_capacity(num_symbols);
+        let mut sparse_values = Vec::with_capacity(num_symbols);
+        for pattern in &patterns {
+            let mut indices = Vec::with_capacity(active_bits);
+            let mut values = Vec::with_capacity(active_bits);
+            for (i, &v) in pattern.iter().enumerate() {
+                if v != 0 {
+                    indices.push(i as u16);
+                    values.push(v as i8);
+                }
+            }
+            sparse_indices.push(indices);
+            sparse_values.push(values);
+        }
+
         Ok(Self {
             patterns,
+            sparse_indices,
+            sparse_values,
             neuron_count,
             input_dim,
             active_bits,
@@ -147,6 +167,18 @@ impl SdrTable {
     /// Panics if `symbol >= num_symbols`.
     pub fn pattern(&self, symbol: usize) -> &[i32] {
         &self.patterns[symbol]
+    }
+
+    /// Sparse pattern: returns only the indices of active neurons and their values.
+    ///
+    /// O(k) where k = number of active neurons (~5% of H for SDR 20%).
+    /// The returned slices have the same length (equal to `active_bits`).
+    ///
+    /// # Panics
+    ///
+    /// Panics if `symbol >= num_symbols`.
+    pub fn sparse_pattern(&self, symbol: usize) -> (&[u16], &[i8]) {
+        (&self.sparse_indices[symbol], &self.sparse_values[symbol])
     }
 
     /// Number of symbols in the table.
