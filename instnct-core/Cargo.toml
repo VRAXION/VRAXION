@@ -88,3 +88,8 @@ required-features = ["benchmarks"]
 name = "bitset_ab"
 harness = false
 required-features = ["benchmarks"]
+
+[[bench]]
+name = "sparse_input_ab"
+harness = false
+required-features = ["benchmarks"]
