@@ -147,3 +147,12 @@ This is like needing attention (Q×K^T) where both Q and K come from input.
 - a==b?: needs exact match detection (nonlinear comparison)
 - MIN: very close (93%), might need 4+ ticks or more neurons
 - SUB: signed output difficult with unsigned readout
+
+## Late Night: MUL architecture limits (PROVEN)
+
+- **Square activation = 81% MUL** (best ever, 1-tick). Cross-term 2ab in (a+b)². Overflow at 2+ ticks.
+- **Full input (every neuron sees A,B)**: WORSE than thermometer (56% vs 68%).
+- **Per-connection bias + gradient descent**: N=5 = 15/16 max. ARCHITECTURE LIMIT not search.
+- **Newton 2nd order**: N=4 = 12/16 max. Same ceiling.
+- **PROVEN: MUL is UNSOLVABLE** with (act+bias)×weight + signed square + linear readout.
+- Needs: bilinear layer, input-dependent ticks, or fundamentally different architecture.
