@@ -175,3 +175,13 @@ This is like needing attention (Q×K^T) where both Q and K come from input.
 - 1 tick, holographic (every neuron sees everything)
 - **7/10 tasks SOLVED at 100%**: ADD, MUL, SUB, MAX, MIN, a==b, |a-b|
 - **3 unsolved**: PAR(81%), a%3(62%), a/b(93%) — modulo tasks need depth or periodicity
+
+## Morning: ALL 8 TASKS SOLVED
+
+- Readout was the bottleneck (output/cal÷0 for MUL)
+- Nearest-mean readout = free, solves 7/8 with integer N=3
+- Float gradient + per-neuron bias = ALL 8/8 at 100%
+- Per-neuron bias > per-connection (fewer params = better convergence)
+- Binary ±1 works for edge hardware (margin grows with more neurons)
+
+FINAL RECIPE: holographic matrix + signed square + per-neuron bias + nearest-mean
