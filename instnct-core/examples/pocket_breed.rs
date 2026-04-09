@@ -6,7 +6,7 @@
 //!
 //! Run: cargo run --example pocket_breed --release -- <corpus-path>
 
-use instnct_core::{load_corpus, 
+use instnct_core::{eval_accuracy, load_corpus,
     save_checkpoint, CheckpointMeta, Int8Projection, Network, PropagationConfig, SdrTable,
 };
 use rand::rngs::StdRng;
@@ -211,34 +211,6 @@ fn pocket_mutate(
 // ---------------------------------------------------------------------------
 // Evaluation
 // ---------------------------------------------------------------------------
-
-#[allow(clippy::too_many_arguments)]
-fn eval_accuracy(
-    net: &mut Network,
-    proj: &Int8Projection,
-    corpus: &[u8],
-    len: usize,
-    rng: &mut StdRng,
-    sdr: &SdrTable,
-    config: &PropagationConfig,
-    os: usize,
-    h: usize,
-) -> f64 {
-    if corpus.len() <= len {
-        return 0.0;
-    }
-    let off = rng.gen_range(0..=corpus.len() - len - 1);
-    let seg = &corpus[off..off + len + 1];
-    net.reset();
-    let mut correct = 0u32;
-    for i in 0..len {
-        net.propagate(sdr.pattern(seg[i] as usize), config).unwrap();
-        if proj.predict(&net.charge()[os..h]) == seg[i + 1] as usize {
-            correct += 1;
-        }
-    }
-    correct as f64 / len as f64
-}
 
 /// Evaluate on a fixed corpus segment (for crystallize — deterministic).
 #[allow(clippy::too_many_arguments)]

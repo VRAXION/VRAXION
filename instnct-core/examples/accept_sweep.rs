@@ -7,36 +7,16 @@
 //!
 //! Run: cargo run --example accept_sweep --release -- <corpus-path>
 
-use instnct_core::{load_corpus, 
-    build_network, evolution_step, EvolutionConfig, InitConfig, Int8Projection, Network,
+use instnct_core::{load_corpus,
+    build_network, eval_accuracy, evolution_step, EvolutionConfig, InitConfig, Int8Projection,
     SdrTable, StepOutcome,
 };
 use rand::rngs::StdRng;
-use rand::{Rng, SeedableRng};
+use rand::SeedableRng;
 use rayon::prelude::*;
 
 const CHARS: usize = 27;
 const SDR_ACTIVE_PCT: usize = 20;
-
-
-#[allow(clippy::too_many_arguments)]
-fn eval_accuracy(
-    net: &mut Network, proj: &Int8Projection, corpus: &[u8], len: usize,
-    rng: &mut StdRng, sdr: &SdrTable, init: &InitConfig,
-) -> f64 {
-    if corpus.len() <= len { return 0.0; }
-    let off = rng.gen_range(0..=corpus.len() - len - 1);
-    let seg = &corpus[off..off + len + 1];
-    net.reset();
-    let mut correct = 0u32;
-    for i in 0..len {
-        net.propagate(sdr.pattern(seg[i] as usize), &init.propagation).unwrap();
-        if proj.predict(&net.charge()[init.output_start()..init.neuron_count]) == seg[i + 1] as usize {
-            correct += 1;
-        }
-    }
-    correct as f64 / len as f64
-}
 
 #[allow(dead_code)]
 struct RunResult {
@@ -68,7 +48,7 @@ fn run_one(accept_ties: bool, seed: u64, steps: usize, corpus: &[u8]) -> RunResu
     for step in 0..steps {
         let outcome = evolution_step(
             &mut net, &mut proj, &mut rng, &mut eval_rng,
-            |n, p, e| eval_accuracy(n, p, corpus, 100, e, &sdr, &init),
+            |n, p, e| eval_accuracy(n, p, corpus, 100, e, &sdr, &init.propagation, init.output_start(), init.neuron_count),
             &evo,
         );
         match outcome {
@@ -79,7 +59,7 @@ fn run_one(accept_ties: bool, seed: u64, steps: usize, corpus: &[u8]) -> RunResu
 
         if (step + 1) % 10_000 == 0 {
             let mut cr = StdRng::seed_from_u64(seed + 6000 + step as u64);
-            let acc = eval_accuracy(&mut net, &proj, corpus, 2000, &mut cr, &sdr, &init);
+            let acc = eval_accuracy(&mut net, &proj, corpus, 2000, &mut cr, &sdr, &init.propagation, init.output_start(), init.neuron_count);
             if acc > peak_acc { peak_acc = acc; peak_step = step + 1; }
             let rate = if total > 0 { accepted as f64 / total as f64 * 100.0 } else { 0.0 };
             let label = if accept_ties { "ties=yes" } else { "ties=no " };
@@ -89,7 +69,7 @@ fn run_one(accept_ties: bool, seed: u64, steps: usize, corpus: &[u8]) -> RunResu
     }
 
     let mut fr = StdRng::seed_from_u64(seed + 9999);
-    let final_acc = eval_accuracy(&mut net, &proj, corpus, 5000, &mut fr, &sdr, &init);
+    let final_acc = eval_accuracy(&mut net, &proj, corpus, 5000, &mut fr, &sdr, &init.propagation, init.output_start(), init.neuron_count);
     let rate = if total > 0 { accepted as f64 / total as f64 * 100.0 } else { 0.0 };
     let label = if accept_ties { "ties=yes" } else { "ties=no " };
     println!("  {} seed={:<4} FINAL: {:.1}%  peak={:.1}% @{}  edges={}  accept={:.0}%",

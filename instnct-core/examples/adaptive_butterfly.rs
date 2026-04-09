@@ -9,7 +9,7 @@
 //!
 //! Run: cargo run --example adaptive_butterfly --release -- <corpus-path>
 
-use instnct_core::{load_corpus, InitConfig, Int8Projection, Network, SdrTable};
+use instnct_core::{eval_accuracy, load_corpus, InitConfig, Int8Projection, Network, SdrTable};
 use rand::rngs::StdRng;
 use rand::{Rng, SeedableRng};
 use rayon::prelude::*;
@@ -76,25 +76,6 @@ fn constrained_rewire(net: &mut Network, max_bits: u32, rng: &mut impl Rng) -> b
     false
 }
 
-
-#[allow(clippy::too_many_arguments)]
-fn eval_accuracy(
-    net: &mut Network, proj: &Int8Projection, corpus: &[u8], len: usize,
-    rng: &mut StdRng, sdr: &SdrTable, init: &InitConfig,
-) -> f64 {
-    if corpus.len() <= len { return 0.0; }
-    let off = rng.gen_range(0..=corpus.len() - len - 1);
-    let seg = &corpus[off..off + len + 1];
-    net.reset();
-    let mut correct = 0u32;
-    for i in 0..len {
-        net.propagate(sdr.pattern(seg[i] as usize), &init.propagation).unwrap();
-        if proj.predict(&net.charge()[init.output_start()..init.neuron_count]) == seg[i + 1] as usize {
-            correct += 1;
-        }
-    }
-    correct as f64 / len as f64
-}
 
 fn measure_prop_speed(net: &mut Network, sdr: &SdrTable, init: &InitConfig) -> u64 {
     let iters = 200u64;
@@ -179,7 +160,7 @@ fn run_one(h: usize, topo: Topology, seed: u64, corpus: &[u8]) -> Res {
     let steps = 15000;
     for _ in 0..steps {
         let snap = eval_rng.clone();
-        let before = eval_accuracy(&mut net, &proj, corpus, 100, &mut eval_rng, &sdr, &init);
+        let before = eval_accuracy(&mut net, &proj, corpus, 100, &mut eval_rng, &sdr, &init.propagation, init.output_start(), init.neuron_count);
         eval_rng = snap;
 
         let state = net.save_state();
@@ -199,10 +180,10 @@ fn run_one(h: usize, topo: Topology, seed: u64, corpus: &[u8]) -> Res {
             _ => { wb = Some(proj.mutate_one(&mut rng)); true }
         };
         if !ok {
-            let _ = eval_accuracy(&mut net, &proj, corpus, 100, &mut eval_rng, &sdr, &init);
+            let _ = eval_accuracy(&mut net, &proj, corpus, 100, &mut eval_rng, &sdr, &init.propagation, init.output_start(), init.neuron_count);
             continue;
         }
-        let after = eval_accuracy(&mut net, &proj, corpus, 100, &mut eval_rng, &sdr, &init);
+        let after = eval_accuracy(&mut net, &proj, corpus, 100, &mut eval_rng, &sdr, &init.propagation, init.output_start(), init.neuron_count);
         let accepted = if net.edge_count() < edge_cap { after >= before } else { after > before };
         if !accepted {
             net.restore_state(&state);
@@ -211,7 +192,7 @@ fn run_one(h: usize, topo: Topology, seed: u64, corpus: &[u8]) -> Res {
     }
 
     let prop_ns = measure_prop_speed(&mut net, &sdr, &init);
-    let acc = eval_accuracy(&mut net, &proj, corpus, 5000, &mut eval_rng, &sdr, &init);
+    let acc = eval_accuracy(&mut net, &proj, corpus, 5000, &mut eval_rng, &sdr, &init.propagation, init.output_start(), init.neuron_count);
 
     println!("  H={:<5} {:<10} ≤{}bit  seed={:<5} -> {:.1}%  edges={}  prop={}ns  space={:.1}%",
         h, topo_label, bits, seed, acc * 100.0, net.edge_count(), prop_ns, search_pct);

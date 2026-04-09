@@ -48,7 +48,7 @@ pub use eval::{eval_accuracy, eval_smooth};
 pub use fitness::{cosine_similarity, cosine_to_onehot, softmax};
 
 #[doc(inline)]
-pub use evolution::{evolution_step, evolution_step_jackpot, EvolutionConfig, StepOutcome};
+pub use evolution::{apply_mutation, evolution_step, evolution_step_jackpot, EvolutionConfig, StepOutcome};
 
 #[doc(inline)]
 pub use init::{build_network, InitConfig};

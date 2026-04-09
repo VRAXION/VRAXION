@@ -8,7 +8,9 @@
 //!
 //! Run: cargo run --example addition_empty --release
 
-use instnct_core::{build_network, InitConfig, Int8Projection, Network, SdrTable};
+use instnct_core::{
+    apply_mutation, build_network, cosine_to_onehot, InitConfig, Int8Projection, Network, SdrTable,
+};
 use rand::rngs::StdRng;
 use rand::{Rng, SeedableRng};
 use rayon::prelude::*;
@@ -23,22 +25,6 @@ fn all_problems() -> Vec<(usize, usize, usize)> {
     let mut p = Vec::new();
     for a in 0..5 { for b in 0..5 { p.push((a, b, a + b)); } }
     p
-}
-
-fn softmax(scores: &[i32]) -> Vec<f64> {
-    let max = scores.iter().copied().max().unwrap_or(0) as f64;
-    let mut out: Vec<f64> = scores.iter().map(|&s| ((s as f64) - max).exp()).collect();
-    let sum: f64 = out.iter().sum();
-    if sum < 1e-30 { let u = 1.0 / out.len() as f64; out.fill(u); }
-    else { for v in out.iter_mut() { *v /= sum; } }
-    out
-}
-
-fn cosine_to_onehot(scores: &[i32], target: usize) -> f64 {
-    let probs = softmax(scores);
-    let norm_sq: f64 = probs.iter().map(|p| p * p).sum();
-    if norm_sq < 1e-30 { return 0.0; }
-    probs[target] / norm_sq.sqrt()
 }
 
 fn eval_fitness(
@@ -72,21 +58,6 @@ fn evaluate_full(
         results.push(ok);
     }
     (correct, results)
-}
-
-fn apply_mutation(net: &mut Network, proj: &mut Int8Projection, rng: &mut impl Rng) -> bool {
-    let roll = rng.gen_range(0..100u32);
-    match roll {
-        0..25 => net.mutate_add_edge(rng),
-        25..40 => net.mutate_remove_edge(rng),
-        40..50 => net.mutate_rewire(rng),
-        50..65 => net.mutate_reverse(rng),
-        65..72 => net.mutate_mirror(rng),
-        72..80 => net.mutate_enhance(rng),
-        80..85 => net.mutate_theta(rng),
-        85..95 => net.mutate_channel(rng),
-        _ => { let _ = proj.mutate_one(rng); true }
-    }
 }
 
 #[derive(Clone, Copy)]

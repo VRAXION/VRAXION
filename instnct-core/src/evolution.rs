@@ -36,6 +36,55 @@ pub enum StepOutcome {
     Skipped,
 }
 
+/// Apply a single random mutation using the canonical mutation schedule.
+///
+/// This is the same schedule used internally by [`evolution_step`] and
+/// [`evolution_step_jackpot`].  Use this when you need manual control
+/// over the evolution loop (e.g. custom fitness or acceptance logic)
+/// while keeping the standard operator mix.
+///
+/// Returns `true` if the mutation was applied, `false` if it failed
+/// (e.g. tried to add a duplicate edge).
+///
+/// ## Mutation schedule (v5.0)
+///
+/// | Weight | Operator |
+/// |-------:|----------|
+/// |   22 % | `add_edge` — topology growth |
+/// |   13 % | `remove_edge` — topology pruning |
+/// |    9 % | `rewire` — move one endpoint of an existing edge |
+/// |   13 % | `reverse` — flip edge direction |
+/// |    6 % | `mirror` — add reverse copy of an existing edge |
+/// |    7 % | `enhance` — connect to high-degree neuron |
+/// |    5 % | `theta` — threshold perturbation |
+/// |   10 % | `channel` — phase channel perturbation |
+/// |    5 % | `add_loop(2)` — bidirectional pair |
+/// |    5 % | `add_loop(3)` — triangle circuit |
+/// |    5 % | projection weight perturbation |
+pub fn apply_mutation(
+    net: &mut Network,
+    projection: &mut Int8Projection,
+    rng: &mut impl Rng,
+) -> bool {
+    let roll = rng.gen_range(0..100u32);
+    match roll {
+        0..22 => net.mutate_add_edge(rng),
+        22..35 => net.mutate_remove_edge(rng),
+        35..44 => net.mutate_rewire(rng),
+        44..57 => net.mutate_reverse(rng),
+        57..63 => net.mutate_mirror(rng),
+        63..70 => net.mutate_enhance(rng),
+        70..75 => net.mutate_theta(rng),
+        75..85 => net.mutate_channel(rng),
+        85..90 => net.mutate_add_loop(rng, 2),
+        90..95 => net.mutate_add_loop(rng, 3),
+        _ => {
+            let _ = projection.mutate_one(rng);
+            true
+        }
+    }
+}
+
 /// Run one evolution step with paired evaluation, edge cap, and quality gate.
 ///
 /// The `fitness_fn` receives `(&mut Network, &Int8Projection, &mut StdRng)` and
@@ -47,9 +96,10 @@ pub enum StepOutcome {
 ///
 /// **Quality gate:** `accept_ties` controls whether equal fitness (ties) are accepted.
 ///
-/// Mutation schedule (hardcoded, matching proven overnight config):
-/// - 25% add_edge, 15% remove_edge, 10% rewire, 15% reverse
-/// - 7% mirror, 8% enhance, 5% theta, 5% channel, 10% projection weight
+/// Mutation schedule (v5.0, matches [`apply_mutation`]):
+/// - 22% add_edge, 13% remove_edge, 9% rewire, 13% reverse
+/// - 6% mirror, 7% enhance, 5% theta, 10% channel
+/// - 5% loop-2, 5% loop-3, 5% projection weight
 ///
 /// # Example
 ///

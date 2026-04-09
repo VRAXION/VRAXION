@@ -11,9 +11,13 @@ The primary implementation surface is now **Rust** (`instnct-core`). The Python 
 | Finding | Result | Status |
 |---|---|---|
 | **Smooth cosine-bigram fitness** | 21.7% peak with 1+1 ES (+2.6pp over stepwise argmax) | **Current mainline** — default in `evolve_language.rs` |
-| **1+9 jackpot selection** | 24.6% peak (+3.4pp over 1+1 ES). Python parity achieved. | **Current mainline** — `evolution_step_jackpot()` in library |
+| **1+9 jackpot selection** | **25.8% peak** (prefill seed=123, 30K steps). Previous: 24.6%. | **Current mainline** — `evolution_step_jackpot()` in library |
+| **SDR density 20% optimal** | 7-density sweep (5–80%): 20% = 22.3% mean / 24.6% peak. 40% second. Very sparse and dense both worse. | **Validated finding** — default confirmed |
+| **Ticks=6 optimal** | Tick sweep v2 (4/6/8/12/18): ticks=6 = 24.6% peak. ticks=12 = 23.0%. ticks=4 = 20.1%. | **Validated finding** — default confirmed |
+| **Prefill > empty for language** | Prefill: 25.8% peak (167 edges avg). Empty: 23.2% peak. Complex tasks need initial capacity. | **Validated finding** |
 | **Addition learning** | 80% on 0-4 + 0-4 from empty network (83 edges). Freq baseline 20%. | **Validated finding** |
-| **Empty start >> prefilled** | 80% with 83 edges vs 64% with 3400 prefilled edges on addition task | **Validated finding** |
+| **Empty start >> prefilled (addition)** | 80% with 83 edges vs 64% with 3400 prefilled edges on addition task | **Validated finding** |
+| **10×10 addition doesn't scale** | 5×5 = 78% mean. 10×10 ≈ 10% (freq baseline). 100 input combinations too many for sequential processing. | **Validated finding** |
 | **W mutation nearly useless** | Adaptive ops test: 0% accept rate for projection mutations across all seeds | **Validated finding** — W reduced to 5% in schedule |
 | **Loop mutations** | `mutate_add_loop(len=2/3)` added to library. Critical for sparse/empty network bootstrap. | **Current mainline** — 10% of mutation schedule |
 | **Charge pattern similarity** | Trained addition networks: same-sum charge cosine ~0.91, cross-sum ~0.92. Topology is under-differentiated. | **Validated finding** |
@@ -26,7 +30,7 @@ The primary implementation surface is now **Rust** (`instnct-core`). The Python 
 
 | Finding | Result | Notes |
 |---|---|---|
-| Breed + crystallize | 24.4% | Consensus structure + pruning (2026-03-29) |
+| Breed + crystallize | 24.4% | Consensus structure + pruning (2026-03-29). Rust now exceeds this (25.8%). |
 | Learnable channel (C19 Wave Gating) | 23.8% | Cos-shaped LUT, replaces sin/phase/rho |
 | Voltage medium leak schedule | 22.11% peak / 21.46% plateau | Fixed schedule, not promoted to defaults |
 | Word-pair log-likelihood eval | 23.8% | Task-memory evaluation, not canonical mainline |

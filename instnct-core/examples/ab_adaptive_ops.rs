@@ -8,7 +8,10 @@
 //!
 //! Run: cargo run --example ab_adaptive_ops --release -- <corpus-path>
 
-use instnct_core::{load_corpus, build_network, InitConfig, Int8Projection, Network, SdrTable};
+use instnct_core::{
+    build_bigram_table, build_network, eval_accuracy, eval_smooth, load_corpus, InitConfig,
+    Int8Projection, Network, SdrTable,
+};
 use rand::rngs::StdRng;
 use rand::{Rng, SeedableRng};
 use rayon::prelude::*;
@@ -18,96 +21,6 @@ const CHARS: usize = 27;
 const SDR_ACTIVE_PCT: usize = 20;
 const STEPS: usize = 30_000;
 const WINDOW: usize = 200;
-
-type BigramTable = Vec<[f64; CHARS]>;
-
-
-fn build_bigram_table(corpus: &[u8]) -> BigramTable {
-    let mut counts = vec![[0u64; CHARS]; CHARS];
-    for pair in corpus.windows(2) {
-        counts[pair[0] as usize][pair[1] as usize] += 1;
-    }
-    let mut bigram = vec![[0.0f64; CHARS]; CHARS];
-    for (i, row) in counts.iter().enumerate() {
-        let total: u64 = row.iter().sum();
-        if total > 0 {
-            for (j, &c) in row.iter().enumerate() {
-                bigram[i][j] = c as f64 / total as f64;
-            }
-        }
-    }
-    bigram
-}
-
-fn softmax_27(scores: &[i32]) -> [f64; CHARS] {
-    let max = scores.iter().copied().max().unwrap_or(0) as f64;
-    let mut out = [0.0f64; CHARS];
-    let mut sum = 0.0f64;
-    for (i, &s) in scores.iter().enumerate() {
-        let e = ((s as f64) - max).exp();
-        out[i] = e;
-        sum += e;
-    }
-    if sum < 1e-30 {
-        out.fill(1.0 / CHARS as f64);
-    } else {
-        for v in out.iter_mut() {
-            *v /= sum;
-        }
-    }
-    out
-}
-
-fn cosine_27(a: &[f64; CHARS], b: &[f64; CHARS]) -> f64 {
-    let mut dot = 0.0f64;
-    let mut na = 0.0f64;
-    let mut nb = 0.0f64;
-    for i in 0..CHARS {
-        dot += a[i] * b[i];
-        na += a[i] * a[i];
-        nb += b[i] * b[i];
-    }
-    let denom = na.sqrt() * nb.sqrt();
-    if denom < 1e-12 { 0.0 } else { dot / denom }
-}
-
-#[allow(clippy::too_many_arguments)]
-fn eval_smooth(
-    net: &mut Network, proj: &Int8Projection, corpus: &[u8], len: usize,
-    rng: &mut StdRng, sdr: &SdrTable, init: &InitConfig, bigram: &BigramTable,
-) -> f64 {
-    if corpus.len() <= len { return 0.0; }
-    let off = rng.gen_range(0..=corpus.len() - len - 1);
-    let seg = &corpus[off..off + len + 1];
-    net.reset();
-    let mut total_cos = 0.0f64;
-    for i in 0..len {
-        net.propagate(sdr.pattern(seg[i] as usize), &init.propagation).unwrap();
-        let scores = proj.raw_scores(&net.charge()[init.output_start()..init.neuron_count]);
-        let probs = softmax_27(&scores);
-        total_cos += cosine_27(&probs, &bigram[seg[i] as usize]);
-    }
-    total_cos / len as f64
-}
-
-#[allow(clippy::too_many_arguments)]
-fn eval_accuracy(
-    net: &mut Network, proj: &Int8Projection, corpus: &[u8], len: usize,
-    rng: &mut StdRng, sdr: &SdrTable, init: &InitConfig,
-) -> f64 {
-    if corpus.len() <= len { return 0.0; }
-    let off = rng.gen_range(0..=corpus.len() - len - 1);
-    let seg = &corpus[off..off + len + 1];
-    net.reset();
-    let mut correct = 0u32;
-    for i in 0..len {
-        net.propagate(sdr.pattern(seg[i] as usize), &init.propagation).unwrap();
-        if proj.predict(&net.charge()[init.output_start()..init.neuron_count]) == seg[i + 1] as usize {
-            correct += 1;
-        }
-    }
-    correct as f64 / len as f64
-}
 
 // ---- Operator definitions ----
 
@@ -254,7 +167,7 @@ struct RunResult {
     op_summary: String,
 }
 
-fn run_one(cfg: &Config, corpus: &[u8], bigram: &BigramTable) -> RunResult {
+fn run_one(cfg: &Config, corpus: &[u8], bigram: &[Vec<f64>]) -> RunResult {
     let init = InitConfig::phi(256);
     let edge_cap = init.edge_cap();
 
@@ -274,7 +187,7 @@ fn run_one(cfg: &Config, corpus: &[u8], bigram: &BigramTable) -> RunResult {
     for step in 0..STEPS {
         // Paired eval
         let snap = eval_rng.clone();
-        let before = eval_smooth(&mut net, &proj, corpus, 100, &mut eval_rng, &sdr, &init, bigram);
+        let before = eval_smooth(&mut net, &proj, corpus, 100, &mut eval_rng, &sdr, &init.propagation, init.output_start(), init.neuron_count, bigram);
         eval_rng = snap;
 
         // Snapshot
@@ -291,13 +204,13 @@ fn run_one(cfg: &Config, corpus: &[u8], bigram: &BigramTable) -> RunResult {
         let mutated = apply_op(op, &mut net, &mut proj, &mut rng);
 
         if !mutated {
-            let _ = eval_smooth(&mut net, &proj, corpus, 100, &mut eval_rng, &sdr, &init, bigram);
+            let _ = eval_smooth(&mut net, &proj, corpus, 100, &mut eval_rng, &sdr, &init.propagation, init.output_start(), init.neuron_count, bigram);
             tracker.record(op, false);
             continue;
         }
 
         total += 1;
-        let after = eval_smooth(&mut net, &proj, corpus, 100, &mut eval_rng, &sdr, &init, bigram);
+        let after = eval_smooth(&mut net, &proj, corpus, 100, &mut eval_rng, &sdr, &init.propagation, init.output_start(), init.neuron_count, bigram);
 
         let edge_grew = net.edge_count() > edges_before;
         let within_cap = !edge_grew || net.edge_count() <= edge_cap;
@@ -313,7 +226,7 @@ fn run_one(cfg: &Config, corpus: &[u8], bigram: &BigramTable) -> RunResult {
 
         if (step + 1) % 10_000 == 0 {
             let mut cr = StdRng::seed_from_u64(cfg.seed + 6000 + step as u64);
-            let acc = eval_accuracy(&mut net, &proj, corpus, 2000, &mut cr, &sdr, &init);
+            let acc = eval_accuracy(&mut net, &proj, corpus, 2000, &mut cr, &sdr, &init.propagation, init.output_start(), init.neuron_count);
             if acc > peak_acc { peak_acc = acc; }
             let rate = if total > 0 { accepted as f64 / total as f64 * 100.0 } else { 0.0 };
             println!("  {} seed={} step {:>5}: acc={:.1}% edges={} accept={:.1}% | {}",
@@ -323,10 +236,10 @@ fn run_one(cfg: &Config, corpus: &[u8], bigram: &BigramTable) -> RunResult {
     }
 
     let mut fr = StdRng::seed_from_u64(cfg.seed + 9999);
-    let final_acc = eval_accuracy(&mut net, &proj, corpus, 5000, &mut fr, &sdr, &init);
+    let final_acc = eval_accuracy(&mut net, &proj, corpus, 5000, &mut fr, &sdr, &init.propagation, init.output_start(), init.neuron_count);
     if final_acc > peak_acc { peak_acc = final_acc; }
     let mut sr = StdRng::seed_from_u64(cfg.seed + 9998);
-    let final_cosine = eval_smooth(&mut net, &proj, corpus, 5000, &mut sr, &sdr, &init, bigram);
+    let final_cosine = eval_smooth(&mut net, &proj, corpus, 5000, &mut sr, &sdr, &init.propagation, init.output_start(), init.neuron_count, bigram);
     let rate = if total > 0 { accepted as f64 / total as f64 * 100.0 } else { 0.0 };
     let op_summary = tracker.summary();
 
@@ -354,7 +267,7 @@ fn main() {
 
     let corpus = load_corpus(&corpus_path).expect("cannot read corpus");
     println!("  {} chars", corpus.len());
-    let bigram = build_bigram_table(&corpus);
+    let bigram = build_bigram_table(&corpus, CHARS);
     println!();
 
     let seeds = [42u64, 123, 7, 1042, 555, 8042];

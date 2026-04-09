@@ -8,7 +8,7 @@
 //!
 //! Run: cargo run --example deep_tune --release
 
-use instnct_core::{load_corpus, Int8Projection, Network, PropagationConfig, SdrTable, StepOutcome};
+use instnct_core::{eval_accuracy, load_corpus, Int8Projection, Network, PropagationConfig, SdrTable, StepOutcome};
 use rand::rngs::StdRng;
 use rand::{Rng, SeedableRng};
 
@@ -20,34 +20,6 @@ const OUTPUT_START: usize = NEURON_COUNT - PHI_DIM;
 const SDR_ACTIVE_PCT: usize = 20;
 const EDGE_CAP: usize = NEURON_COUNT * NEURON_COUNT * 7 / 100;
 
-
-fn sample_eval_offset(corpus_len: usize, len: usize, rng: &mut StdRng) -> Option<usize> {
-    if corpus_len <= len { return None; }
-    let max_offset = corpus_len - len - 1;
-    Some(rng.gen_range(0..=max_offset))
-}
-
-fn eval_accuracy(
-    net: &mut Network,
-    projection: &Int8Projection,
-    corpus: &[u8],
-    len: usize,
-    rng: &mut StdRng,
-    sdr: &SdrTable,
-    config: &PropagationConfig,
-) -> f64 {
-    let Some(off) = sample_eval_offset(corpus.len(), len, rng) else { return 0.0; };
-    let seg = &corpus[off..off + len + 1];
-    net.reset();
-    let mut correct = 0u32;
-    for i in 0..len {
-        net.propagate(sdr.pattern(seg[i] as usize), config).unwrap();
-        if projection.predict(&net.charge()[OUTPUT_START..NEURON_COUNT]) == seg[i + 1] as usize {
-            correct += 1;
-        }
-    }
-    correct as f64 / len as f64
-}
 
 /// One paired-eval step with a specific mutation.
 #[allow(clippy::too_many_arguments)]
@@ -63,18 +35,18 @@ fn paired_step(
 ) -> StepOutcome {
     // Paired eval: before
     let eval_snapshot = eval_rng.clone();
-    let before = eval_accuracy(net, projection, corpus, 100, eval_rng, sdr, prop_config);
+    let before = eval_accuracy(net, projection, corpus, 100, eval_rng, sdr, prop_config, OUTPUT_START, NEURON_COUNT);
     *eval_rng = eval_snapshot;
 
     let net_snapshot = net.save_state();
     let mutated = mutation_fn(net, projection, mutation_rng);
 
     if !mutated {
-        let _ = eval_accuracy(net, projection, corpus, 100, eval_rng, sdr, prop_config);
+        let _ = eval_accuracy(net, projection, corpus, 100, eval_rng, sdr, prop_config, OUTPUT_START, NEURON_COUNT);
         return StepOutcome::Skipped;
     }
 
-    let after = eval_accuracy(net, projection, corpus, 100, eval_rng, sdr, prop_config);
+    let after = eval_accuracy(net, projection, corpus, 100, eval_rng, sdr, prop_config, OUTPUT_START, NEURON_COUNT);
 
     let accepted = if net.edge_count() < EDGE_CAP {
         after >= before
@@ -202,7 +174,7 @@ fn main() {
 
         // Report every 200 cycles
         if (cycle + 1) % 200 == 0 {
-            let full = eval_accuracy(&mut net, &projection, &corpus, 2000, &mut eval_rng, &sdr, &prop_config);
+            let full = eval_accuracy(&mut net, &projection, &corpus, 2000, &mut eval_rng, &sdr, &prop_config, OUTPUT_START, NEURON_COUNT);
             let step = (cycle + 1) * (param_steps_per_cycle + 1);
             let param_total = param_accepted + param_rejected;
             let param_rate = if param_total > 0 { param_accepted as f64 / param_total as f64 * 100.0 } else { 0.0 };
@@ -216,7 +188,7 @@ fn main() {
         }
     }
 
-    let final_acc = eval_accuracy(&mut net, &projection, &corpus, 5000, &mut eval_rng, &sdr, &prop_config);
+    let final_acc = eval_accuracy(&mut net, &projection, &corpus, 5000, &mut eval_rng, &sdr, &prop_config, OUTPUT_START, NEURON_COUNT);
     println!("\n=== FINAL ===");
     println!("  Accuracy: {:.1}%  (5K chars)", final_acc * 100.0);
     println!("  Edges: {}", net.edge_count());

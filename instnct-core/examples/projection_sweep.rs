@@ -8,8 +8,8 @@
 //!
 //! Run: cargo run --example projection_sweep --release -- <corpus-path>
 
-use instnct_core::{load_corpus, 
-    build_network, InitConfig, Int8Projection, Network, PropagationConfig, SdrTable,
+use instnct_core::{load_corpus,
+    build_network, eval_accuracy, InitConfig, Int8Projection, SdrTable,
 };
 use rand::rngs::StdRng;
 use rand::{Rng, SeedableRng};
@@ -18,26 +18,6 @@ use rayon::prelude::*;
 const CHARS: usize = 27;
 const SDR_ACTIVE_PCT: usize = 20;
 
-
-#[allow(clippy::too_many_arguments)]
-fn eval_accuracy(
-    net: &mut Network, proj: &Int8Projection, corpus: &[u8], len: usize,
-    rng: &mut StdRng, sdr: &SdrTable, config: &PropagationConfig,
-    read_start: usize, read_end: usize,
-) -> f64 {
-    if corpus.len() <= len { return 0.0; }
-    let off = rng.gen_range(0..=corpus.len() - len - 1);
-    let seg = &corpus[off..off + len + 1];
-    net.reset();
-    let mut correct = 0u32;
-    for i in 0..len {
-        net.propagate(sdr.pattern(seg[i] as usize), config).unwrap();
-        if proj.predict(&net.charge()[read_start..read_end]) == seg[i + 1] as usize {
-            correct += 1;
-        }
-    }
-    correct as f64 / len as f64
-}
 
 #[allow(dead_code)]
 struct RunResult {

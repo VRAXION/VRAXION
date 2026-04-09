@@ -11,8 +11,8 @@
 //!
 //! Run: cargo run --example chain_polarity_ablation --release -- <corpus-path>
 
-use instnct_core::{load_corpus, 
-    InitConfig, Int8Projection, Network, PropagationConfig, SdrTable,
+use instnct_core::{load_corpus,
+    eval_accuracy, InitConfig, Int8Projection, Network, SdrTable,
 };
 use rand::rngs::StdRng;
 use rand::{Rng, SeedableRng};
@@ -20,33 +20,6 @@ use rayon::prelude::*;
 
 const CHARS: usize = 27;
 const SDR_ACTIVE_PCT: usize = 20;
-
-
-#[allow(clippy::too_many_arguments)]
-fn eval_accuracy(
-    net: &mut Network,
-    proj: &Int8Projection,
-    corpus: &[u8],
-    len: usize,
-    rng: &mut StdRng,
-    sdr: &SdrTable,
-    config: &PropagationConfig,
-    output_start: usize,
-    neuron_count: usize,
-) -> f64 {
-    if corpus.len() <= len { return 0.0; }
-    let off = rng.gen_range(0..=corpus.len() - len - 1);
-    let seg = &corpus[off..off + len + 1];
-    net.reset();
-    let mut correct = 0u32;
-    for i in 0..len {
-        net.propagate(sdr.pattern(seg[i] as usize), config).unwrap();
-        if proj.predict(&net.charge()[output_start..neuron_count]) == seg[i + 1] as usize {
-            correct += 1;
-        }
-    }
-    correct as f64 / len as f64
-}
 
 /// Build network with optional chain-50 init.
 fn build_net(init: &InitConfig, use_chains: bool, rng: &mut impl Rng) -> Network {

@@ -12,7 +12,7 @@
 //!
 //! Run: cargo run --example pocket_empty --release -- <corpus-path>
 
-use instnct_core::{load_corpus, Int8Projection, Network, SdrTable, PropagationConfig};
+use instnct_core::{build_bigram_table, cosine_similarity, load_corpus, softmax, Int8Projection, Network, SdrTable, PropagationConfig};
 use rand::rngs::StdRng;
 use rand::{Rng, SeedableRng};
 use rayon::prelude::*;
@@ -26,38 +26,7 @@ const STEPS: usize = 30_000;
 const JACKPOT: usize = 9;
 const EDGE_CAP_PER_POCKET: usize = H * H * 7 / 100;
 
-type BigramTable = Vec<[f64; CHARS]>;
-
 fn output_start() -> usize { H - PHI_DIM } // 98
-
-
-fn build_bigram_table(corpus: &[u8]) -> BigramTable {
-    let mut counts = vec![[0u64; CHARS]; CHARS];
-    for pair in corpus.windows(2) { counts[pair[0] as usize][pair[1] as usize] += 1; }
-    let mut bigram = vec![[0.0f64; CHARS]; CHARS];
-    for (i, row) in counts.iter().enumerate() {
-        let total: u64 = row.iter().sum();
-        if total > 0 { for (j, &c) in row.iter().enumerate() { bigram[i][j] = c as f64 / total as f64; } }
-    }
-    bigram
-}
-
-fn softmax_27(scores: &[i32]) -> [f64; CHARS] {
-    let max = scores.iter().copied().max().unwrap_or(0) as f64;
-    let mut out = [0.0f64; CHARS];
-    let mut sum = 0.0f64;
-    for (i, &s) in scores.iter().enumerate() { let e = ((s as f64) - max).exp(); out[i] = e; sum += e; }
-    if sum < 1e-30 { let u = 1.0 / CHARS as f64; out.fill(u); }
-    else { for v in out.iter_mut() { *v /= sum; } }
-    out
-}
-
-fn cosine_27(a: &[f64; CHARS], b: &[f64; CHARS]) -> f64 {
-    let mut dot = 0.0f64; let mut na = 0.0f64; let mut nb = 0.0f64;
-    for i in 0..CHARS { dot += a[i] * b[i]; na += a[i] * a[i]; nb += b[i] * b[i]; }
-    let d = na.sqrt() * nb.sqrt();
-    if d < 1e-12 { 0.0 } else { dot / d }
-}
 
 /// Build prefilled pocket (chain-50 + 5% density + random params).
 fn build_prefilled_pocket(rng: &mut StdRng) -> Network {
@@ -94,7 +63,7 @@ fn build_prefilled_pocket(rng: &mut StdRng) -> Network {
 fn crystallize_pocket(
     female: &mut Network, male: &mut Network, proj: &Int8Projection,
     corpus: &[u8], sdr: &SdrTable, prop: &PropagationConfig,
-    bigram: &BigramTable, rng: &mut StdRng, target_pocket_is_male: bool,
+    bigram: &[Vec<f64>], rng: &mut StdRng, target_pocket_is_male: bool,
 ) -> usize {
     let net = if target_pocket_is_male { &*male } else { &*female };
     let edges_before = net.edge_count();
@@ -158,7 +127,7 @@ fn charge_transfer(female: &Network) -> Vec<i32> {
 fn eval_smooth_chain(
     female: &mut Network, male: &mut Network, proj: &Int8Projection,
     corpus: &[u8], len: usize, rng: &mut StdRng,
-    sdr: &SdrTable, prop: &PropagationConfig, bigram: &BigramTable,
+    sdr: &SdrTable, prop: &PropagationConfig, bigram: &[Vec<f64>],
 ) -> f64 {
     if corpus.len() <= len { return 0.0; }
     let off = rng.gen_range(0..=corpus.len() - len - 1);
@@ -171,8 +140,8 @@ fn eval_smooth_chain(
         let transfer = charge_transfer(female);
         male.propagate(&transfer, prop).unwrap();
         let scores = proj.raw_scores(&male.charge()[os..H]);
-        let probs = softmax_27(&scores);
-        total_cos += cosine_27(&probs, &bigram[seg[i] as usize]);
+        let probs = softmax(&scores);
+        total_cos += cosine_similarity(&probs, &bigram[seg[i] as usize]);
     }
     total_cos / len as f64
 }
@@ -237,7 +206,7 @@ struct RunResult {
     f_edges: usize, m_edges: usize, accepted: u32,
 }
 
-fn run_one(cfg: &Config, corpus: &[u8], bigram: &BigramTable) -> RunResult {
+fn run_one(cfg: &Config, corpus: &[u8], bigram: &[Vec<f64>]) -> RunResult {
     let prop = PropagationConfig {
         ticks_per_token: 6, input_duration_ticks: 2,
         decay_interval_ticks: 6, use_refractory: false,
@@ -392,7 +361,7 @@ fn main() {
 
     let corpus = load_corpus(&corpus_path).expect("cannot read corpus");
     println!("  {} chars", corpus.len());
-    let bigram = build_bigram_table(&corpus);
+    let bigram = build_bigram_table(&corpus, CHARS);
     println!();
 
     let seeds = [42u64, 123, 7, 1042, 555, 8042];

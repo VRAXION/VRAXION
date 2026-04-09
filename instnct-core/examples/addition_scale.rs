@@ -7,7 +7,9 @@
 //!
 //! Run: cargo run --example addition_scale --release
 
-use instnct_core::{build_network, InitConfig, Int8Projection, Network, SdrTable};
+use instnct_core::{
+    apply_mutation, build_network, cosine_to_onehot, InitConfig, Int8Projection, SdrTable,
+};
 use rand::rngs::StdRng;
 use rand::{Rng, SeedableRng};
 use rayon::prelude::*;
@@ -15,40 +17,6 @@ use std::time::Instant;
 
 const SDR_ACTIVE_PCT: usize = 20;
 const STEPS: usize = 50_000;
-
-fn softmax(scores: &[i32]) -> Vec<f64> {
-    let max = scores.iter().copied().max().unwrap_or(0) as f64;
-    let mut out: Vec<f64> = scores.iter().map(|&s| ((s as f64) - max).exp()).collect();
-    let sum: f64 = out.iter().sum();
-    if sum < 1e-30 { let u = 1.0 / out.len() as f64; out.fill(u); }
-    else { for v in out.iter_mut() { *v /= sum; } }
-    out
-}
-
-fn cosine_to_onehot(scores: &[i32], target: usize) -> f64 {
-    let probs = softmax(scores);
-    if probs.is_empty() || target >= probs.len() { return 0.0; }
-    let norm_sq: f64 = probs.iter().map(|p| p * p).sum();
-    if norm_sq < 1e-30 { return 0.0; }
-    probs[target] / norm_sq.sqrt()
-}
-
-fn apply_mutation(net: &mut Network, proj: &mut Int8Projection, rng: &mut impl Rng) -> bool {
-    let roll = rng.gen_range(0..100u32);
-    match roll {
-        0..22 => net.mutate_add_edge(rng),
-        22..35 => net.mutate_remove_edge(rng),
-        35..44 => net.mutate_rewire(rng),
-        44..57 => net.mutate_reverse(rng),
-        57..63 => net.mutate_mirror(rng),
-        63..70 => net.mutate_enhance(rng),
-        70..75 => net.mutate_theta(rng),
-        75..85 => net.mutate_channel(rng),
-        85..90 => net.mutate_add_loop(rng, 2),
-        90..95 => net.mutate_add_loop(rng, 3),
-        _ => { let _ = proj.mutate_one(rng); true }
-    }
-}
 
 #[derive(Clone, Copy)]
 enum Scale { Small, Large }

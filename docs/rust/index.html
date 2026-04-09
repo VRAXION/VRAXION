@@ -43,7 +43,7 @@
             The Rust lane is now a serious parallel implementation surface for <code>INSTNCT</code>, not just a faster forward-pass port.
           </p>
           <p class="hero-lede">
-            <code>v5.0.0-beta.1</code> achieves <strong>24.6% peak</strong> next-character prediction (best seed; mean varies) with smooth cosine-bigram fitness and 1+9 jackpot selection &mdash; full Python parity.
+            <code>v5.0.0-beta.1</code> achieves <strong>25.8% peak</strong> next-character prediction (prefill seed=123; mean varies across seeds) with smooth cosine-bigram fitness and 1+9 jackpot selection &mdash; surpassing Python parity.
           </p>
           <div class="hero-actions">
             <a class="button-link" href="https://github.com/VRAXION/VRAXION/wiki/v5-Rust-Port-Benchmarks">Open the Rust wiki page</a>
@@ -123,8 +123,8 @@
         </div>
         <div class="feature-grid">
           <article class="feature-block">
-            <h3>24.6% peak (Python parity)</h3>
-            <p>Smooth cosine-bigram fitness + 1+9 jackpot selection broke the old 17-18% ceiling. Matches the Python 24.4% reference.</p>
+            <h3>25.8% peak (beyond Python parity)</h3>
+            <p>Smooth cosine-bigram fitness + 1+9 jackpot selection broke the old 17-18% ceiling. Surpasses the Python 24.4% reference.</p>
           </article>
           <article class="feature-block">
             <h3>Performance is not the blocker</h3>

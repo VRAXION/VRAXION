@@ -3,7 +3,7 @@
 //!
 //! Run: cargo run --example butterfly_knee --release -- <corpus-path>
 
-use instnct_core::{load_corpus, InitConfig, Int8Projection, Network, SdrTable};
+use instnct_core::{eval_accuracy, load_corpus, InitConfig, Int8Projection, Network, SdrTable};
 use rand::rngs::StdRng;
 use rand::{Rng, SeedableRng};
 use rayon::prelude::*;
@@ -48,36 +48,6 @@ fn constrained_rewire(net: &mut Network, max_bits: u32, rng: &mut impl Rng) -> b
     false
 }
 
-
-fn sample_eval_offset(corpus_len: usize, len: usize, rng: &mut StdRng) -> Option<usize> {
-    if corpus_len <= len { return None; }
-    Some(rng.gen_range(0..=corpus_len - len - 1))
-}
-
-#[allow(clippy::too_many_arguments)]
-fn eval_accuracy(
-    net: &mut Network,
-    projection: &Int8Projection,
-    corpus: &[u8],
-    len: usize,
-    rng: &mut StdRng,
-    sdr: &SdrTable,
-    output_start: usize,
-    neuron_count: usize,
-    prop_config: &instnct_core::PropagationConfig,
-) -> f64 {
-    let Some(off) = sample_eval_offset(corpus.len(), len, rng) else { return 0.0; };
-    let seg = &corpus[off..off + len + 1];
-    net.reset();
-    let mut correct = 0u32;
-    for i in 0..len {
-        net.propagate(sdr.pattern(seg[i] as usize), prop_config).unwrap();
-        if projection.predict(&net.charge()[output_start..neuron_count]) == seg[i + 1] as usize {
-            correct += 1;
-        }
-    }
-    correct as f64 / len as f64
-}
 
 fn run_one(max_bits: u32, seed: u64, corpus: &[u8]) -> (f64, usize) {
     let init = InitConfig::phi(256);
@@ -131,7 +101,7 @@ fn run_one(max_bits: u32, seed: u64, corpus: &[u8]) -> (f64, usize) {
         let eval_snapshot = eval_rng.clone();
         let before = eval_accuracy(
             &mut net, &proj, corpus, 100, &mut eval_rng,
-            &sdr, output_start, h, &init.propagation,
+            &sdr, &init.propagation, output_start, h,
         );
         eval_rng = eval_snapshot;
 
@@ -152,11 +122,11 @@ fn run_one(max_bits: u32, seed: u64, corpus: &[u8]) -> (f64, usize) {
         };
 
         if !mutated {
-            let _ = eval_accuracy(&mut net, &proj, corpus, 100, &mut eval_rng, &sdr, output_start, h, &init.propagation);
+            let _ = eval_accuracy(&mut net, &proj, corpus, 100, &mut eval_rng, &sdr, &init.propagation, output_start, h);
             continue;
         }
 
-        let after = eval_accuracy(&mut net, &proj, corpus, 100, &mut eval_rng, &sdr, output_start, h, &init.propagation);
+        let after = eval_accuracy(&mut net, &proj, corpus, 100, &mut eval_rng, &sdr, &init.propagation, output_start, h);
         let accepted = if net.edge_count() < edge_cap { after >= before } else { after > before };
         if !accepted {
             net.restore_state(&snapshot);
@@ -164,7 +134,7 @@ fn run_one(max_bits: u32, seed: u64, corpus: &[u8]) -> (f64, usize) {
         }
     }
 
-    let acc = eval_accuracy(&mut net, &proj, corpus, 5000, &mut eval_rng, &sdr, output_start, h, &init.propagation);
+    let acc = eval_accuracy(&mut net, &proj, corpus, 5000, &mut eval_rng, &sdr, &init.propagation, output_start, h);
     (acc, net.edge_count())
 }
 

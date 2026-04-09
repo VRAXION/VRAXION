@@ -6,7 +6,7 @@
 //!
 //! Run: cargo run --example burst_sweep --release -- <corpus-path>
 
-use instnct_core::{load_corpus, build_network, InitConfig, Int8Projection, Network, PropagationConfig, SdrTable};
+use instnct_core::{eval_accuracy, load_corpus, build_network, InitConfig, Int8Projection, Network, SdrTable};
 use rand::rngs::StdRng;
 use rand::{Rng, SeedableRng};
 use rayon::prelude::*;
@@ -76,44 +76,6 @@ struct RunResult {
 
 // ---- Corpus loader ----
 
-
-// ---- Eval ----
-
-fn sample_eval_offset(corpus_len: usize, len: usize, rng: &mut StdRng) -> Option<usize> {
-    if corpus_len <= len {
-        return None;
-    }
-    let max_offset = corpus_len - len - 1;
-    Some(rng.gen_range(0..=max_offset))
-}
-
-#[allow(clippy::too_many_arguments)]
-fn eval_accuracy(
-    net: &mut Network,
-    projection: &Int8Projection,
-    corpus: &[u8],
-    len: usize,
-    rng: &mut StdRng,
-    sdr: &SdrTable,
-    config: &PropagationConfig,
-    output_start: usize,
-    neuron_count: usize,
-) -> f64 {
-    let Some(off) = sample_eval_offset(corpus.len(), len, rng) else {
-        return 0.0;
-    };
-
-    let seg = &corpus[off..off + len + 1];
-    net.reset();
-    let mut correct = 0u32;
-    for i in 0..len {
-        net.propagate(sdr.pattern(seg[i] as usize), config).unwrap();
-        if projection.predict(&net.charge()[output_start..neuron_count]) == seg[i + 1] as usize {
-            correct += 1;
-        }
-    }
-    correct as f64 / len as f64
-}
 
 // ---- Mixed mutation (library schedule replica) ----
 

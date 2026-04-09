@@ -5,8 +5,9 @@
 //!
 //! Run: cargo run --example ws_init_test --release -- <corpus-path>
 
-use instnct_core::{load_corpus, 
-    build_network, evolution_step, InitConfig, Int8Projection, Network, SdrTable,
+use instnct_core::{load_corpus,
+    build_network, eval_accuracy, evolution_step, InitConfig, Int8Projection, Network,
+    SdrTable,
 };
 use rand::rngs::StdRng;
 use rand::{Rng, SeedableRng};
@@ -63,25 +64,6 @@ fn build_ws_network(h: usize, k: usize, rewire_p: f64, rng: &mut StdRng) -> Netw
     net
 }
 
-#[allow(clippy::too_many_arguments)]
-fn eval_accuracy(
-    net: &mut Network, proj: &Int8Projection, corpus: &[u8], len: usize,
-    rng: &mut StdRng, sdr: &SdrTable, init: &InitConfig,
-) -> f64 {
-    if corpus.len() <= len { return 0.0; }
-    let off = rng.gen_range(0..=corpus.len() - len - 1);
-    let seg = &corpus[off..off + len + 1];
-    net.reset();
-    let mut correct = 0u32;
-    for i in 0..len {
-        net.propagate(sdr.pattern(seg[i] as usize), &init.propagation).unwrap();
-        if proj.predict(&net.charge()[init.output_start()..init.neuron_count]) == seg[i + 1] as usize {
-            correct += 1;
-        }
-    }
-    correct as f64 / len as f64
-}
-
 struct Config {
     label: String,
     init_type: InitType,
@@ -123,13 +105,13 @@ fn run_one(cfg: &Config, corpus: &[u8]) -> RunResult {
     for step in 0..STEPS {
         let _ = evolution_step(
             &mut net, &mut proj, &mut rng, &mut eval_rng,
-            |n, p, e| eval_accuracy(n, p, corpus, 100, e, &sdr, &init),
+            |n, p, e| eval_accuracy(n, p, corpus, 100, e, &sdr, &init.propagation, init.output_start(), init.neuron_count),
             &evo,
         );
 
         if (step + 1) % 10_000 == 0 {
             let mut cr = StdRng::seed_from_u64(cfg.seed + 6000 + step as u64);
-            let acc = eval_accuracy(&mut net, &proj, corpus, 2000, &mut cr, &sdr, &init);
+            let acc = eval_accuracy(&mut net, &proj, corpus, 2000, &mut cr, &sdr, &init.propagation, init.output_start(), init.neuron_count);
             if acc > peak { peak = acc; }
             println!("  {} seed={:<4} step {:>5}: {:.1}%  edges={}",
                 cfg.label, cfg.seed, step + 1, acc * 100.0, net.edge_count());
@@ -137,7 +119,7 @@ fn run_one(cfg: &Config, corpus: &[u8]) -> RunResult {
     }
 
     let mut fr = StdRng::seed_from_u64(cfg.seed + 9999);
-    let final_acc = eval_accuracy(&mut net, &proj, corpus, 5000, &mut fr, &sdr, &init);
+    let final_acc = eval_accuracy(&mut net, &proj, corpus, 5000, &mut fr, &sdr, &init.propagation, init.output_start(), init.neuron_count);
     if final_acc > peak { peak = final_acc; }
     println!("  {} seed={:<4} FINAL: {:.1}%  peak={:.1}%  edges={}",
         cfg.label, cfg.seed, final_acc * 100.0, peak * 100.0, net.edge_count());

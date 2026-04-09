@@ -5,7 +5,7 @@
 //!
 //! Run: cargo run --example highway_sweep --release
 
-use instnct_core::{load_corpus, 
+use instnct_core::{eval_accuracy, load_corpus,
     evolution_step, EvolutionConfig, Int8Projection, Network, PropagationConfig, SdrTable,
     StepOutcome,
 };
@@ -179,36 +179,6 @@ fn build_network_with_highways(
     (net, protected)
 }
 
-fn sample_eval_offset(corpus_len: usize, len: usize, rng: &mut StdRng) -> Option<usize> {
-    if corpus_len <= len { return None; }
-    let max_offset = corpus_len - len - 1;
-    Some(rng.gen_range(0..=max_offset))
-}
-
-#[allow(clippy::too_many_arguments)]
-fn eval_accuracy(
-    net: &mut Network,
-    projection: &Int8Projection,
-    corpus: &[u8],
-    len: usize,
-    rng: &mut StdRng,
-    sdr: &SdrTable,
-    config: &PropagationConfig,
-    dims: &Dims,
-) -> f64 {
-    let Some(off) = sample_eval_offset(corpus.len(), len, rng) else { return 0.0; };
-    let seg = &corpus[off..off + len + 1];
-    net.reset();
-    let mut correct = 0u32;
-    for i in 0..len {
-        net.propagate(sdr.pattern(seg[i] as usize), config).unwrap();
-        if projection.predict(&net.charge()[dims.output_start..dims.neuron_count]) == seg[i + 1] as usize {
-            correct += 1;
-        }
-    }
-    correct as f64 / len as f64
-}
-
 struct RunConfig {
     h: usize,
     strategy: HighwayStrategy,
@@ -248,7 +218,7 @@ fn run_one(cfg: &RunConfig, corpus: &[u8]) -> RunResult {
 
         let outcome = evolution_step(
             &mut net, &mut projection, &mut rng, &mut eval_rng,
-            |net, proj, eval_rng| eval_accuracy(net, proj, corpus, 100, eval_rng, &sdr, &prop_config, &dims),
+            |net, proj, eval_rng| eval_accuracy(net, proj, corpus, 100, eval_rng, &sdr, &prop_config, dims.output_start, dims.neuron_count),
             &evo_config,
         );
 
@@ -261,7 +231,7 @@ fn run_one(cfg: &RunConfig, corpus: &[u8]) -> RunResult {
         }
     }
 
-    let final_acc = eval_accuracy(&mut net, &projection, corpus, 5000, &mut eval_rng, &sdr, &prop_config, &dims);
+    let final_acc = eval_accuracy(&mut net, &projection, corpus, 5000, &mut eval_rng, &sdr, &prop_config, dims.output_start, dims.neuron_count);
     let label = cfg.strategy.label();
     println!("  H={:<5} {:<14} seed={:<5} -> {:.1}%  edges={}", cfg.h, label, cfg.seed, final_acc * 100.0, net.edge_count());
 

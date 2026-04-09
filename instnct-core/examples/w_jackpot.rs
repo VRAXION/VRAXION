@@ -8,8 +8,8 @@
 //!
 //! Run: cargo run --example w_jackpot --release -- <corpus-path>
 
-use instnct_core::{load_corpus, 
-    build_network, InitConfig, Int8Projection, Network, SdrTable,
+use instnct_core::{load_corpus,
+    build_network, eval_accuracy, InitConfig, Int8Projection, Network, SdrTable,
 };
 use rand::rngs::StdRng;
 use rand::{Rng, SeedableRng};
@@ -20,25 +20,6 @@ const CHARS: usize = 27;
 const SDR_ACTIVE_PCT: usize = 20;
 const STEPS: usize = 30_000;
 
-
-#[allow(clippy::too_many_arguments)]
-fn eval_accuracy(
-    net: &mut Network, proj: &Int8Projection, corpus: &[u8], len: usize,
-    rng: &mut StdRng, sdr: &SdrTable, init: &InitConfig,
-) -> f64 {
-    if corpus.len() <= len { return 0.0; }
-    let off = rng.gen_range(0..=corpus.len() - len - 1);
-    let seg = &corpus[off..off + len + 1];
-    net.reset();
-    let mut correct = 0u32;
-    for i in 0..len {
-        net.propagate(sdr.pattern(seg[i] as usize), &init.propagation).unwrap();
-        if proj.predict(&net.charge()[init.output_start()..init.neuron_count]) == seg[i + 1] as usize {
-            correct += 1;
-        }
-    }
-    correct as f64 / len as f64
-}
 
 fn apply_topology_mutation(net: &mut Network, rng: &mut impl Rng) -> bool {
     let roll = rng.gen_range(0..100u32);
@@ -106,7 +87,7 @@ fn run_one(cfg: &Config, corpus: &[u8]) -> RunResult {
     for step in 0..STEPS {
         // Paired eval — get baseline
         let snap = eval_rng.clone();
-        let before = eval_accuracy(&mut net, &proj, corpus, 100, &mut eval_rng, &sdr, &init);
+        let before = eval_accuracy(&mut net, &proj, corpus, 100, &mut eval_rng, &sdr, &init.propagation, init.output_start(), init.neuron_count);
         eval_rng = snap;
 
         match cfg.mode {
@@ -121,7 +102,7 @@ fn run_one(cfg: &Config, corpus: &[u8]) -> RunResult {
 
                     let eval_snap = eval_rng.clone();
                     let score = eval_accuracy(&mut net, &candidate, corpus, 100,
-                        &mut eval_rng, &sdr, &init);
+                        &mut eval_rng, &sdr, &init.propagation, init.output_start(), init.neuron_count);
                     eval_rng = eval_snap;
 
                     if score > best_score {
@@ -132,7 +113,7 @@ fn run_one(cfg: &Config, corpus: &[u8]) -> RunResult {
 
                 // Advance eval_rng once for the "real" step
                 let _ = eval_accuracy(&mut net, &best_proj, corpus, 100,
-                    &mut eval_rng, &sdr, &init);
+                    &mut eval_rng, &sdr, &init.propagation, init.output_start(), init.neuron_count);
 
                 if best_score > before {
                     proj = best_proj;
@@ -161,7 +142,7 @@ fn run_one(cfg: &Config, corpus: &[u8]) -> RunResult {
 
                     let eval_snap = eval_rng.clone();
                     let score = eval_accuracy(&mut net, &candidate_proj, corpus, 100,
-                        &mut eval_rng, &sdr, &init);
+                        &mut eval_rng, &sdr, &init.propagation, init.output_start(), init.neuron_count);
                     eval_rng = eval_snap;
 
                     // Edge cap check
@@ -177,7 +158,7 @@ fn run_one(cfg: &Config, corpus: &[u8]) -> RunResult {
 
                 // Advance eval_rng
                 net.restore_state(&net_state);
-                let _ = eval_accuracy(&mut net, &proj, corpus, 100, &mut eval_rng, &sdr, &init);
+                let _ = eval_accuracy(&mut net, &proj, corpus, 100, &mut eval_rng, &sdr, &init.propagation, init.output_start(), init.neuron_count);
 
                 if best_score > before {
                     net.restore_state(&best_net_state);
@@ -202,7 +183,7 @@ fn run_one(cfg: &Config, corpus: &[u8]) -> RunResult {
                 if topo_ok && within_cap {
                     let topo_score_snap = eval_rng.clone();
                     let topo_score = eval_accuracy(&mut net, &proj, corpus, 100,
-                        &mut eval_rng, &sdr, &init);
+                        &mut eval_rng, &sdr, &init.propagation, init.output_start(), init.neuron_count);
                     eval_rng = topo_score_snap;
 
                     if topo_score <= before {
@@ -222,7 +203,7 @@ fn run_one(cfg: &Config, corpus: &[u8]) -> RunResult {
 
                     let eval_snap = eval_rng.clone();
                     let score = eval_accuracy(&mut net, &candidate, corpus, 100,
-                        &mut eval_rng, &sdr, &init);
+                        &mut eval_rng, &sdr, &init.propagation, init.output_start(), init.neuron_count);
                     eval_rng = eval_snap;
 
                     if score > best_score {
@@ -232,7 +213,7 @@ fn run_one(cfg: &Config, corpus: &[u8]) -> RunResult {
                 }
 
                 let _ = eval_accuracy(&mut net, &best_proj, corpus, 100,
-                    &mut eval_rng, &sdr, &init);
+                    &mut eval_rng, &sdr, &init.propagation, init.output_start(), init.neuron_count);
 
                 if best_score > before {
                     proj = best_proj;
@@ -261,14 +242,14 @@ fn run_one(cfg: &Config, corpus: &[u8]) -> RunResult {
 
                 if !mutated {
                     let _ = eval_accuracy(&mut net, &proj, corpus, 100,
-                        &mut eval_rng, &sdr, &init);
+                        &mut eval_rng, &sdr, &init.propagation, init.output_start(), init.neuron_count);
                     continue;
                 }
 
                 let edge_grew = net.edge_count() > edges_before;
                 let within_cap = !edge_grew || net.edge_count() <= edge_cap;
                 let after = eval_accuracy(&mut net, &proj, corpus, 100,
-                    &mut eval_rng, &sdr, &init);
+                    &mut eval_rng, &sdr, &init.propagation, init.output_start(), init.neuron_count);
 
                 if after > before && within_cap {
                     accepted += 1;
@@ -281,7 +262,7 @@ fn run_one(cfg: &Config, corpus: &[u8]) -> RunResult {
 
         if (step + 1) % 10_000 == 0 {
             let mut cr = StdRng::seed_from_u64(cfg.seed + 6000 + step as u64);
-            let acc = eval_accuracy(&mut net, &proj, corpus, 2000, &mut cr, &sdr, &init);
+            let acc = eval_accuracy(&mut net, &proj, corpus, 2000, &mut cr, &sdr, &init.propagation, init.output_start(), init.neuron_count);
             if acc > peak { peak = acc; }
             println!("  {} seed={} step {:>5}: {:.1}% edges={} accepted={}",
                 cfg.mode.name(), cfg.seed, step + 1, acc * 100.0,
@@ -290,7 +271,7 @@ fn run_one(cfg: &Config, corpus: &[u8]) -> RunResult {
     }
 
     let mut fr = StdRng::seed_from_u64(cfg.seed + 9999);
-    let final_acc = eval_accuracy(&mut net, &proj, corpus, 5000, &mut fr, &sdr, &init);
+    let final_acc = eval_accuracy(&mut net, &proj, corpus, 5000, &mut fr, &sdr, &init.propagation, init.output_start(), init.neuron_count);
     if final_acc > peak { peak = final_acc; }
 
     println!("  {} seed={} FINAL: {:.1}% peak={:.1}% edges={} accepted={}",
