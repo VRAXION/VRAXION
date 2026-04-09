@@ -156,3 +156,22 @@ This is like needing attention (Q×K^T) where both Q and K come from input.
 - **Newton 2nd order**: N=4 = 12/16 max. Same ceiling.
 - **PROVEN: MUL is UNSOLVABLE** with (act+bias)×weight + signed square + linear readout.
 - Needs: bilinear layer, input-dependent ticks, or fundamentally different architecture.
+
+## Late Night: Float + gradient results
+
+- Float N=100 + try-keep-revert: FAILS (too many params, too few perturbations)
+- Float N=10 + numerical gradient: ADD ✓, SUB ✓, MUL 13/16 (worse than integer!)
+- Newton 2nd order: no improvement over gradient (local minima)
+- **Readout was the bottleneck all along**: changing from output/cal→round to nearest-mean unlocked MUL
+
+## FINAL VERDICT
+
+**The winning recipe:**
+- Integer weights ±2 (5 values)
+- N=3 neurons, full input (A,B)
+- Signed square activation (x²×sign(x))
+- Nearest-mean readout (NOT output/calibration)
+- Random search (5M samples in 5^12=244M space)
+- 1 tick, holographic (every neuron sees everything)
+- **7/10 tasks SOLVED at 100%**: ADD, MUL, SUB, MAX, MIN, a==b, |a-b|
+- **3 unsolved**: PAR(81%), a%3(62%), a/b(93%) — modulo tasks need depth or periodicity
