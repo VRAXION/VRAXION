@@ -156,13 +156,75 @@ impl Net {
         (all_pre, all_act, softmax(&logits))
     }
 
+    fn backward(&self, input: &[f32], all_pre: &[Vec<f32>], all_act: &[Vec<f32>],
+                 probs: &[f32], target: u8) -> (Vec<f32>, Vec<f32>, Vec<f32>, Vec<f32>, Vec<f32>, Vec<f32>) {
+        let h = self.h;
+        let mut d_logits = probs.to_vec();
+        d_logits[target as usize] -= 1.0;
+
+        // Output grads
+        let final_state = all_act.last().unwrap();
+        let mut g_w_out = vec![0.0f32; N_BYTES * h];
+        let mut g_b_out = vec![0.0f32; N_BYTES];
+        let mut d_state = vec![0.0f32; h];
+        for b in 0..N_BYTES {
+            g_b_out[b] = d_logits[b];
+            for i in 0..h {
+                g_w_out[b * h + i] = d_logits[b] * final_state[i];
+                d_state[i] += d_logits[b] * self.w_out[b * h + i];
+            }
+        }
+
+        let mut g_w_in = vec![0.0f32; h * IN];
+        let mut g_b = vec![0.0f32; h];
+        let mut g_w_rec = vec![0.0f32; h * h];
+        let mut g_rho = vec![0.0f32; h];
+
+        // BPTT through ticks
+        for t in (0..self.ticks).rev() {
+            let prev_state = if t > 0 { &all_act[t-1] } else { &vec![0.0f32; h] };
+
+            // d_state -> d_activation (residual: d_act = d_state)
+            let d_act = d_state.clone();
+            // d_state flows through residual identity to previous tick
+            let mut d_prev = if self.ticks > 1 { d_state.clone() } else { vec![0.0f32; h] };
+
+            // d_act -> d_pre (through activation derivative)
+            for i in 0..h {
+                let deriv = act_deriv(all_pre[t][i], &self.act, self.rho[i]);
+                let d_pre = d_act[i] * deriv;
+                g_b[i] += d_pre;
+                // w_in grads
+                for j in 0..IN { g_w_in[i * IN + j] += d_pre * input[j]; }
+                // w_rec grads (if recurrent)
+                if self.ticks > 1 {
+                    for j in 0..h {
+                        if j != i {
+                            g_w_rec[i * h + j] += d_pre * prev_state[j];
+                            d_prev[j] += d_pre * self.w_rec[i * h + j];
+                        }
+                    }
+                }
+                // rho grad for c19
+                if self.has_rho() {
+                    let s = all_pre[t][i]; let c = 1.0f32; let l = 6.0 * c;
+                    if s > -l && s < l {
+                        let sc = s / c; let ft = sc - sc.floor(); let hh = ft * (1.0 - ft);
+                        g_rho[i] += d_act[i] * c * hh * hh;
+                    }
+                }
+            }
+            d_state = d_prev;
+        }
+        (g_w_in, g_b, g_w_rec, g_w_out, g_b_out, g_rho)
+    }
+
     fn train_adam(&mut self, data: &[(Vec<f32>, u8)], test: &[(Vec<f32>, u8)],
                   steps: usize, batch_size: usize) {
         let h = self.h;
-        let eps = 1e-3f32;
         let np = self.params();
-        let mut m = vec![0.0f32; np];
-        let mut v = vec![0.0f32; np];
+        let mut mv = vec![0.0f32; np];
+        let mut vv = vec![0.0f32; np];
         let mut rng = StdRng::seed_from_u64(99);
         let mut sh: Vec<usize> = (0..data.len()).collect();
         let test_sub = if test.len() > 2000 { &test[..2000] } else { test };
@@ -170,68 +232,65 @@ impl Net {
         for step in 1..=steps {
             sh.shuffle(&mut rng);
             let batch = &sh[..batch_size.min(data.len())];
+            let bs = batch.len() as f32;
 
-            // Numerical gradient (fast enough for these sizes with 1-hidden MLP)
-            // For t=1 this is simple; for t>1 BPTT would be better but numerical works
-            let base_loss: f64 = batch.iter().map(|&idx| {
-                let (_, _, probs) = self.forward(&data[idx].0);
-                -(probs[data[idx].1 as usize].max(1e-10) as f64).ln()
-            }).sum::<f64>() / batch.len() as f64;
+            let mut g_win = vec![0.0f32; h*IN];
+            let mut g_b = vec![0.0f32; h];
+            let mut g_wrec = vec![0.0f32; h*h];
+            let mut g_wout = vec![0.0f32; N_BYTES*h];
+            let mut g_bout = vec![0.0f32; N_BYTES];
+            let mut g_rho = vec![0.0f32; h];
 
-            // Gather params
+            for &idx in batch {
+                let (pre, act, probs) = self.forward(&data[idx].0);
+                let (gw, gb, gr, go, gbo, grho) = self.backward(&data[idx].0, &pre, &act, &probs, data[idx].1);
+                for i in 0..gw.len() { g_win[i] += gw[i]; }
+                for i in 0..gb.len() { g_b[i] += gb[i]; }
+                for i in 0..gr.len() { g_wrec[i] += gr[i]; }
+                for i in 0..go.len() { g_wout[i] += go[i]; }
+                for i in 0..gbo.len() { g_bout[i] += gbo[i]; }
+                for i in 0..grho.len() { g_rho[i] += grho[i]; }
+            }
+
+            // Flatten grad + params, apply Adam
+            let mut grad = Vec::with_capacity(np);
+            for g in &g_win { grad.push(g / bs); }
+            for g in &g_b { grad.push(g / bs); }
+            if self.ticks > 1 { for g in &g_wrec { grad.push(g / bs); } }
+            for g in &g_wout { grad.push(g / bs); }
+            for g in &g_bout { grad.push(g / bs); }
+            if self.has_rho() { for g in &g_rho { grad.push(g / bs); } }
+
             let mut pv = Vec::with_capacity(np);
             pv.extend(&self.w_in); pv.extend(&self.b);
             if self.ticks > 1 { pv.extend(&self.w_rec); }
             pv.extend(&self.w_out); pv.extend(&self.b_out);
             if self.has_rho() { pv.extend(&self.rho); }
 
-            // Stochastic param sampling for numerical grad
-            let sample = 400.min(np);
-            let mut indices: Vec<usize> = (0..np).collect();
-            indices.shuffle(&mut rng);
-
-            let mut grad = vec![0.0f32; np];
-            for &pi in indices[..sample].iter() {
-                let orig = pv[pi];
-                self.set_param(pi, orig + eps);
-                let lp: f64 = batch.iter().map(|&idx| {
-                    let (_, _, probs) = self.forward(&data[idx].0);
-                    -(probs[data[idx].1 as usize].max(1e-10) as f64).ln()
-                }).sum::<f64>() / batch.len() as f64;
-                self.set_param(pi, orig);
-                grad[pi] = ((lp - base_loss) / eps as f64) as f32;
-            }
-
-            // Adam update
             let t = step as f32;
             let b1c = 1.0 - 0.9f32.powf(t);
             let b2c = 1.0 - 0.999f32.powf(t);
-            for &pi in indices[..sample].iter() {
-                m[pi] = 0.9 * m[pi] + 0.1 * grad[pi];
-                v[pi] = 0.999 * v[pi] + 0.001 * grad[pi] * grad[pi];
-                let mh = m[pi] / b1c;
-                let vh = v[pi] / b2c;
-                let new_val = pv[pi] - 0.001 * mh / (vh.sqrt() + 1e-8);
-                self.set_param(pi, new_val);
+            for i in 0..np {
+                mv[i] = 0.9 * mv[i] + 0.1 * grad[i];
+                vv[i] = 0.999 * vv[i] + 0.001 * grad[i] * grad[i];
+                pv[i] -= 0.001 * (mv[i] / b1c) / ((vv[i] / b2c).sqrt() + 1e-8);
             }
-            // Clamp rho
-            if self.has_rho() { for r in &mut self.rho { *r = r.max(0.0); } }
 
-            if step % 500 == 0 || step == steps {
-                let te = test_sub.iter().filter(|(inp, t)| {
-                    let (_, _, p) = self.forward(inp);
-                    p.iter().enumerate().max_by(|a,b| a.1.partial_cmp(b.1).unwrap()).unwrap().0 == *t as usize
-                }).count() as f64 / test_sub.len() as f64;
-                let t5 = {
-                    let mut ok = 0;
-                    for (inp, tgt) in test_sub {
-                        let (_, _, p) = self.forward(inp);
-                        let mut idx: Vec<(usize,f32)> = p.iter().enumerate().map(|(i,&v)|(i,v)).collect();
-                        idx.sort_by(|a,b| b.1.partial_cmp(&a.1).unwrap());
-                        if idx.iter().take(5).any(|(i,_)| *i == *tgt as usize) { ok += 1; }
-                    }
-                    ok as f64 / test_sub.len() as f64
-                };
+            // Write back
+            let mut o = 0;
+            self.w_in.copy_from_slice(&pv[o..o+h*IN]); o += h*IN;
+            self.b.copy_from_slice(&pv[o..o+h]); o += h;
+            if self.ticks > 1 { self.w_rec.copy_from_slice(&pv[o..o+h*h]); o += h*h; }
+            self.w_out.copy_from_slice(&pv[o..o+N_BYTES*h]); o += N_BYTES*h;
+            self.b_out.copy_from_slice(&pv[o..o+N_BYTES]); o += N_BYTES;
+            if self.has_rho() {
+                self.rho.copy_from_slice(&pv[o..o+h]);
+                for r in &mut self.rho { *r = r.max(0.0); }
+            }
+
+            if step % 1000 == 0 || step == steps {
+                let te = self.accuracy(test_sub);
+                let t5 = self.top5(test_sub);
                 println!("    step {:>5}: test={:.1}% top5={:.1}%", step, te*100.0, t5*100.0);
             }
         }
@@ -301,8 +360,8 @@ sys.stdout.buffer.write(bytes([b for b in text.encode('ascii', errors='ignore') 
     println!("  Train: {}, Test: {}\n", train_oh.len(), test_oh.len());
 
     let h = 19; // ~12K params to match previous experiments
-    let steps = 3000; // numerical grad is slower, fewer steps
-    let batch = 100;
+    let steps = 10000;
+    let batch = 200;
     let mut results: Vec<(String, usize, f64, f64)> = Vec::new();
 
     // =========================================================
