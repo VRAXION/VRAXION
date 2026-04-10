@@ -1,0 +1,698 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Sparse-Dense Recurrent Architecture</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { background: #0a0a0f; color: #e0e0e0; font-family: 'Segoe UI', system-ui, sans-serif; overflow: hidden; }
+canvas { display: block; }
+
+.controls {
+    position: fixed;
+    top: 12px;
+    right: 12px;
+    background: rgba(20,20,30,0.95);
+    border: 1px solid #333;
+    border-radius: 8px;
+    padding: 16px;
+    width: 260px;
+    z-index: 10;
+}
+.controls h3 { color: #88ccff; margin-bottom: 10px; font-size: 14px; }
+.controls label { display: block; font-size: 12px; color: #aaa; margin-top: 8px; }
+.controls input[type=range] { width: 100%; margin: 4px 0; }
+.controls .val { float: right; color: #88ccff; font-weight: bold; }
+.controls button {
+    width: 100%;
+    margin-top: 12px;
+    padding: 8px;
+    background: #1a4a2a;
+    border: 1px solid #2a7a3a;
+    color: #4f4;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 13px;
+}
+.controls button:hover { background: #2a5a3a; }
+.controls button.active { background: #3a2a1a; border-color: #aa7a2a; color: #fa2; }
+
+.legend {
+    position: fixed;
+    bottom: 12px;
+    left: 12px;
+    background: rgba(20,20,30,0.95);
+    border: 1px solid #333;
+    border-radius: 8px;
+    padding: 12px 16px;
+    font-size: 12px;
+    z-index: 10;
+}
+.legend div { margin: 4px 0; display: flex; align-items: center; gap: 8px; }
+.legend .dot { width: 12px; height: 12px; border-radius: 50%; display: inline-block; }
+
+.tick-display {
+    position: fixed;
+    top: 12px;
+    left: 12px;
+    background: rgba(20,20,30,0.95);
+    border: 1px solid #333;
+    border-radius: 8px;
+    padding: 12px 16px;
+    z-index: 10;
+    font-size: 13px;
+}
+.tick-display .tick-num { font-size: 28px; color: #88ccff; font-weight: bold; }
+.tick-display .layer-name { font-size: 16px; margin-top: 4px; }
+.tick-display .sparse-label { color: #ff8844; }
+.tick-display .dense-label { color: #44aaff; }
+</style>
+</head>
+<body>
+
+<div class="tick-display" id="tickDisplay">
+    <div>Tick: <span class="tick-num" id="tickNum">-</span></div>
+    <div class="layer-name" id="layerName">Paused</div>
+</div>
+
+<div class="controls">
+    <h3>Sparse-Dense Recurrent</h3>
+
+    <label>Sparse neurons <span class="val" id="vSparse">4</span></label>
+    <input type="range" id="nSparse" min="2" max="8" value="4">
+
+    <label>Dense neurons <span class="val" id="vDense">4</span></label>
+    <input type="range" id="nDense" min="2" max="8" value="4">
+
+    <label>Connectome slots <span class="val" id="vConn">3</span></label>
+    <input type="range" id="nConn" min="2" max="6" value="3">
+
+    <label>Total ticks <span class="val" id="vTicks">8</span></label>
+    <input type="range" id="nTicks" min="2" max="16" value="8" step="2">
+
+    <label>Input sparsity % <span class="val" id="vSparsity">40</span></label>
+    <input type="range" id="sparsity" min="10" max="100" value="40" step="10">
+
+    <label>Speed <span class="val" id="vSpeed">1.0</span></label>
+    <input type="range" id="speed" min="0.2" max="3.0" value="1.0" step="0.1">
+
+    <button id="btnAnimate" onclick="toggleAnimate()">Animate Signal Flow</button>
+    <button id="btnStep" onclick="stepTick()">Step 1 Tick</button>
+</div>
+
+<div class="legend">
+    <div><span class="dot" style="background:#ff8844"></span> Sparse layer (input selection)</div>
+    <div><span class="dot" style="background:#44aaff"></span> Dense layer (holographic all-to-all)</div>
+    <div><span class="dot" style="background:#44ff88"></span> Connectome (passive relay)</div>
+    <div><span class="dot" style="background:#ffcc44"></span> Input / Output</div>
+    <div style="color:#888; margin-top:6px;">Sparse: sees few inputs + connectome</div>
+    <div style="color:#888;">Dense: sees ALL dense neighbors + connectome</div>
+    <div style="color:#888;">Same weights every cycle!</div>
+</div>
+
+<canvas id="canvas"></canvas>
+
+<script>
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+
+let W, H;
+function resize() {
+    W = canvas.width = window.innerWidth;
+    H = canvas.height = window.innerHeight;
+}
+resize();
+window.addEventListener('resize', resize);
+
+// State
+let animating = false;
+let currentTick = -1;
+let animPhase = 0; // 0-1 within a tick
+let lastTime = 0;
+let pulses = [];
+
+// Params
+function getParams() {
+    return {
+        nSparse: +document.getElementById('nSparse').value,
+        nDense: +document.getElementById('nDense').value,
+        nConn: +document.getElementById('nConn').value,
+        nTicks: +document.getElementById('nTicks').value,
+        sparsity: +document.getElementById('sparsity').value / 100,
+        speed: +document.getElementById('speed').value,
+    };
+}
+
+// Update displays
+document.querySelectorAll('input[type=range]').forEach(el => {
+    el.addEventListener('input', () => {
+        document.getElementById('vSparse').textContent = document.getElementById('nSparse').value;
+        document.getElementById('vDense').textContent = document.getElementById('nDense').value;
+        document.getElementById('vConn').textContent = document.getElementById('nConn').value;
+        document.getElementById('vTicks').textContent = document.getElementById('nTicks').value;
+        document.getElementById('vSparsity').textContent = document.getElementById('sparsity').value;
+        document.getElementById('vSpeed').textContent = (+document.getElementById('speed').value).toFixed(1);
+        currentTick = -1;
+        pulses = [];
+    });
+});
+
+// Layout positions
+function getLayout(p) {
+    const cx = W / 2;
+    const cy = H / 2;
+    const layout = {};
+
+    // Input (left)
+    layout.inputs = [];
+    const inputCount = 8;
+    const inputStartY = cy - (inputCount - 1) * 22;
+    for (let i = 0; i < inputCount; i++) {
+        layout.inputs.push({ x: 80, y: inputStartY + i * 44, label: `in[${i}]` });
+    }
+
+    // Sparse layer (left-center)
+    layout.sparse = [];
+    const sparseX = cx - 180;
+    const sparseStartY = cy - (p.nSparse - 1) * 30;
+    for (let i = 0; i < p.nSparse; i++) {
+        layout.sparse.push({ x: sparseX, y: sparseStartY + i * 60 });
+    }
+
+    // Connectome (center)
+    layout.conn = [];
+    const connStartY = cy - (p.nConn - 1) * 30;
+    for (let i = 0; i < p.nConn; i++) {
+        layout.conn.push({ x: cx, y: connStartY + i * 60 });
+    }
+
+    // Dense layer (right-center)
+    layout.dense = [];
+    const denseX = cx + 180;
+    const denseStartY = cy - (p.nDense - 1) * 30;
+    for (let i = 0; i < p.nDense; i++) {
+        layout.dense.push({ x: denseX, y: denseStartY + i * 60 });
+    }
+
+    // Output (right)
+    layout.output = { x: W - 80, y: cy };
+
+    return layout;
+}
+
+// Sparse input connections (which inputs each sparse neuron sees)
+function getSparseInputMask(p) {
+    const masks = [];
+    for (let s = 0; s < p.nSparse; s++) {
+        const mask = [];
+        for (let i = 0; i < 8; i++) {
+            // Deterministic pseudo-random based on neuron index
+            const hash = Math.sin(s * 7.3 + i * 13.7) * 0.5 + 0.5;
+            mask.push(hash < p.sparsity);
+        }
+        masks.push(mask);
+    }
+    return masks;
+}
+
+function draw(timestamp) {
+    const p = getParams();
+    const layout = getLayout(p);
+    const masks = getSparseInputMask(p);
+
+    // Animation
+    if (animating && lastTime) {
+        const dt = (timestamp - lastTime) / 1000;
+        animPhase += dt * p.speed * 0.8;
+        if (animPhase >= 1.0) {
+            animPhase -= 1.0;
+            currentTick++;
+            if (currentTick >= p.nTicks) currentTick = 0;
+            // Add new pulses for this tick
+            addTickPulses(p, layout, masks);
+        }
+    }
+    lastTime = timestamp;
+
+    ctx.clearRect(0, 0, W, H);
+
+    // Determine active layer
+    const isSparseActive = currentTick >= 0 && currentTick % 2 === 0;
+    const isDenseActive = currentTick >= 0 && currentTick % 2 === 1;
+
+    // Update tick display
+    if (currentTick >= 0) {
+        document.getElementById('tickNum').textContent = (currentTick + 1) + '/' + p.nTicks;
+        const ln = document.getElementById('layerName');
+        if (isSparseActive) {
+            ln.innerHTML = '<span class="sparse-label">SPARSE layer</span> fires';
+        } else {
+            ln.innerHTML = '<span class="dense-label">DENSE layer</span> fires';
+        }
+    } else {
+        document.getElementById('tickNum').textContent = '-';
+        document.getElementById('layerName').textContent = 'Paused';
+    }
+
+    // Draw connections
+
+    // 1. Input → Sparse (sparse connections)
+    for (let s = 0; s < p.nSparse; s++) {
+        for (let i = 0; i < 8; i++) {
+            if (masks[s][i]) {
+                const alpha = isSparseActive ? 0.5 : 0.12;
+                ctx.beginPath();
+                ctx.moveTo(layout.inputs[i].x + 12, layout.inputs[i].y);
+                ctx.lineTo(layout.sparse[s].x - 16, layout.sparse[s].y);
+                ctx.strokeStyle = `rgba(255,136,68,${alpha})`;
+                ctx.lineWidth = isSparseActive ? 1.5 : 0.5;
+                ctx.stroke();
+            }
+        }
+    }
+
+    // 2. Sparse → Connectome
+    for (let s = 0; s < p.nSparse; s++) {
+        const slot = s % p.nConn;
+        const alpha = isSparseActive ? 0.5 : 0.12;
+        ctx.beginPath();
+        ctx.moveTo(layout.sparse[s].x + 16, layout.sparse[s].y);
+        ctx.lineTo(layout.conn[slot].x - 14, layout.conn[slot].y);
+        ctx.strokeStyle = `rgba(68,255,136,${alpha})`;
+        ctx.lineWidth = isSparseActive ? 1.5 : 0.5;
+        ctx.stroke();
+    }
+
+    // 3. Connectome → Dense
+    for (let d = 0; d < p.nDense; d++) {
+        for (let c = 0; c < p.nConn; c++) {
+            const alpha = isDenseActive ? 0.5 : 0.12;
+            ctx.beginPath();
+            ctx.moveTo(layout.conn[c].x + 14, layout.conn[c].y);
+            ctx.lineTo(layout.dense[d].x - 16, layout.dense[d].y);
+            ctx.strokeStyle = `rgba(68,170,255,${alpha})`;
+            ctx.lineWidth = isDenseActive ? 1.5 : 0.5;
+            ctx.stroke();
+        }
+    }
+
+    // 4. Dense ↔ Dense (all-to-all holographic)
+    for (let i = 0; i < p.nDense; i++) {
+        for (let j = i + 1; j < p.nDense; j++) {
+            const alpha = isDenseActive ? 0.35 : 0.06;
+            ctx.beginPath();
+            const midX = layout.dense[i].x + 30 + (j - i) * 12;
+            ctx.moveTo(layout.dense[i].x + 12, layout.dense[i].y);
+            ctx.quadraticCurveTo(midX, (layout.dense[i].y + layout.dense[j].y) / 2,
+                                layout.dense[j].x + 12, layout.dense[j].y);
+            ctx.strokeStyle = `rgba(100,150,255,${alpha})`;
+            ctx.lineWidth = isDenseActive ? 2 : 0.5;
+            ctx.stroke();
+        }
+    }
+
+    // 5. Dense → Connectome (feedback)
+    for (let d = 0; d < p.nDense; d++) {
+        const slot = d % p.nConn;
+        const alpha = isDenseActive ? 0.4 : 0.08;
+        ctx.beginPath();
+        ctx.moveTo(layout.dense[d].x - 16, layout.dense[d].y + 6);
+        ctx.quadraticCurveTo(layout.dense[d].x - 60, layout.dense[d].y + 20,
+                            layout.conn[slot].x + 14, layout.conn[slot].y + 6);
+        ctx.strokeStyle = `rgba(68,255,136,${alpha})`;
+        ctx.lineWidth = isDenseActive ? 1.5 : 0.5;
+        ctx.setLineDash([4, 4]);
+        ctx.stroke();
+        ctx.setLineDash([]);
+    }
+
+    // 6. Connectome → Sparse (feedback for next tick)
+    for (let s = 0; s < p.nSparse; s++) {
+        for (let c = 0; c < p.nConn; c++) {
+            const alpha = isSparseActive ? 0.3 : 0.06;
+            ctx.beginPath();
+            ctx.moveTo(layout.conn[c].x - 14, layout.conn[c].y + 6);
+            ctx.quadraticCurveTo(layout.conn[c].x - 50, layout.conn[c].y + 15,
+                                layout.sparse[s].x + 16, layout.sparse[s].y + 6);
+            ctx.strokeStyle = `rgba(255,136,68,${alpha})`;
+            ctx.lineWidth = isSparseActive ? 1 : 0.3;
+            ctx.setLineDash([3, 3]);
+            ctx.stroke();
+            ctx.setLineDash([]);
+        }
+    }
+
+    // 7. Dense → Output
+    for (let d = 0; d < p.nDense; d++) {
+        const alpha = isDenseActive ? 0.4 : 0.1;
+        ctx.beginPath();
+        ctx.moveTo(layout.dense[d].x + 16, layout.dense[d].y);
+        ctx.lineTo(layout.output.x - 16, layout.output.y);
+        ctx.strokeStyle = `rgba(255,204,68,${alpha})`;
+        ctx.lineWidth = isDenseActive ? 1.5 : 0.5;
+        ctx.stroke();
+    }
+
+    // Draw pulses
+    for (let i = pulses.length - 1; i >= 0; i--) {
+        const pulse = pulses[i];
+        pulse.t += (timestamp - (pulse.lastT || timestamp)) / 1000 * p.speed;
+        pulse.lastT = timestamp;
+
+        if (pulse.t > 1.0) {
+            pulses.splice(i, 1);
+            continue;
+        }
+
+        const t = pulse.t;
+        const x = pulse.x0 + (pulse.x1 - pulse.x0) * t;
+        const y = pulse.y0 + (pulse.y1 - pulse.y0) * t;
+
+        // Use quadratic if control point exists
+        let px = x, py = y;
+        if (pulse.cx !== undefined) {
+            px = (1-t)*(1-t)*pulse.x0 + 2*(1-t)*t*pulse.cx + t*t*pulse.x1;
+            py = (1-t)*(1-t)*pulse.y0 + 2*(1-t)*t*pulse.cy + t*t*pulse.y1;
+        }
+
+        const alpha = Math.sin(t * Math.PI) * 0.9;
+        const r = 4 + Math.sin(t * Math.PI) * 3;
+        ctx.beginPath();
+        ctx.arc(px, py, r, 0, Math.PI * 2);
+        ctx.fillStyle = pulse.color.replace('1.0)', `${alpha})`);
+        ctx.fill();
+
+        // Glow
+        ctx.beginPath();
+        ctx.arc(px, py, r * 2.5, 0, Math.PI * 2);
+        ctx.fillStyle = pulse.color.replace('1.0)', `${alpha * 0.3})`);
+        ctx.fill();
+    }
+
+    // Draw nodes
+
+    // Inputs
+    for (let i = 0; i < 8; i++) {
+        const inp = layout.inputs[i];
+        ctx.beginPath();
+        ctx.arc(inp.x, inp.y, 8, 0, Math.PI * 2);
+        ctx.fillStyle = '#332200';
+        ctx.fill();
+        ctx.strokeStyle = '#ffcc44';
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+        ctx.fillStyle = '#ffcc44';
+        ctx.font = '9px monospace';
+        ctx.textAlign = 'right';
+        ctx.fillText(inp.label, inp.x - 14, inp.y + 3);
+    }
+
+    // Sparse neurons
+    for (let i = 0; i < p.nSparse; i++) {
+        const n = layout.sparse[i];
+        const active = isSparseActive;
+        const glow = active ? 12 : 0;
+
+        if (glow > 0) {
+            ctx.beginPath();
+            ctx.arc(n.x, n.y, 14 + glow, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(255,136,68,0.15)';
+            ctx.fill();
+        }
+
+        ctx.beginPath();
+        ctx.arc(n.x, n.y, 14, 0, Math.PI * 2);
+        ctx.fillStyle = active ? '#442200' : '#221100';
+        ctx.fill();
+        ctx.strokeStyle = active ? '#ff8844' : '#663311';
+        ctx.lineWidth = active ? 2.5 : 1.5;
+        ctx.stroke();
+
+        ctx.fillStyle = active ? '#ff8844' : '#884422';
+        ctx.font = 'bold 10px monospace';
+        ctx.textAlign = 'center';
+        ctx.fillText('S' + i, n.x, n.y + 4);
+    }
+
+    // Connectome
+    // Draw connectome band
+    const connTop = layout.conn[0].y - 20;
+    const connBot = layout.conn[p.nConn - 1].y + 20;
+    ctx.fillStyle = 'rgba(20,60,30,0.3)';
+    ctx.strokeStyle = 'rgba(68,255,136,0.3)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.roundRect(layout.conn[0].x - 20, connTop, 40, connBot - connTop, 8);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.save();
+    ctx.translate(layout.conn[0].x - 28, (connTop + connBot) / 2);
+    ctx.rotate(-Math.PI / 2);
+    ctx.fillStyle = '#44ff88';
+    ctx.font = '10px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('CONNECTOME', 0, 0);
+    ctx.restore();
+
+    for (let i = 0; i < p.nConn; i++) {
+        const c = layout.conn[i];
+        ctx.beginPath();
+        ctx.arc(c.x, c.y, 10, 0, Math.PI * 2);
+        ctx.fillStyle = '#0a2a1a';
+        ctx.fill();
+        ctx.strokeStyle = '#44ff88';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        ctx.fillStyle = '#44ff88';
+        ctx.font = '9px monospace';
+        ctx.textAlign = 'center';
+        ctx.fillText('C' + i, c.x, c.y + 3);
+    }
+
+    // Dense neurons
+    // Draw dense cluster background
+    if (p.nDense > 1) {
+        const dTop = layout.dense[0].y - 28;
+        const dBot = layout.dense[p.nDense - 1].y + 28;
+        ctx.fillStyle = 'rgba(15,25,50,0.4)';
+        ctx.strokeStyle = 'rgba(68,170,255,0.2)';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.roundRect(layout.dense[0].x - 24, dTop, 70, dBot - dTop, 12);
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.fillStyle = isDenseActive ? 'rgba(68,170,255,0.6)' : 'rgba(68,170,255,0.3)';
+        ctx.font = '10px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('HOLOGRAPHIC', layout.dense[0].x + 11, dTop - 6);
+        ctx.fillText('ALL-TO-ALL', layout.dense[0].x + 11, dTop + 6);
+    }
+
+    for (let i = 0; i < p.nDense; i++) {
+        const n = layout.dense[i];
+        const active = isDenseActive;
+        const glow = active ? 12 : 0;
+
+        if (glow > 0) {
+            ctx.beginPath();
+            ctx.arc(n.x, n.y, 14 + glow, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(68,170,255,0.15)';
+            ctx.fill();
+        }
+
+        ctx.beginPath();
+        ctx.arc(n.x, n.y, 14, 0, Math.PI * 2);
+        ctx.fillStyle = active ? '#0a2244' : '#051122';
+        ctx.fill();
+        ctx.strokeStyle = active ? '#44aaff' : '#1a3355';
+        ctx.lineWidth = active ? 2.5 : 1.5;
+        ctx.stroke();
+
+        ctx.fillStyle = active ? '#44aaff' : '#224488';
+        ctx.font = 'bold 10px monospace';
+        ctx.textAlign = 'center';
+        ctx.fillText('D' + i, n.x, n.y + 4);
+    }
+
+    // Output
+    const out = layout.output;
+    ctx.beginPath();
+    ctx.arc(out.x, out.y, 14, 0, Math.PI * 2);
+    ctx.fillStyle = '#332200';
+    ctx.fill();
+    ctx.strokeStyle = '#ffcc44';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    ctx.fillStyle = '#ffcc44';
+    ctx.font = 'bold 11px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('OUT', out.x, out.y + 4);
+
+    // Labels
+    ctx.fillStyle = '#ff8844';
+    ctx.font = 'bold 13px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('SPARSE LAYER', layout.sparse[0].x, layout.sparse[0].y - 35);
+    ctx.font = '10px sans-serif';
+    ctx.fillStyle = '#886644';
+    ctx.fillText('(feature selection)', layout.sparse[0].x, layout.sparse[0].y - 22);
+
+    ctx.fillStyle = '#44aaff';
+    ctx.font = 'bold 13px sans-serif';
+    ctx.fillText('DENSE LAYER', layout.dense[0].x, layout.dense[p.nDense-1].y + 45);
+    ctx.font = '10px sans-serif';
+    ctx.fillStyle = '#446688';
+    ctx.fillText('(computation)', layout.dense[0].x, layout.dense[p.nDense-1].y + 58);
+
+    // Tick flow diagram at bottom
+    drawTickFlow(p);
+
+    requestAnimationFrame(draw);
+}
+
+function drawTickFlow(p) {
+    const y = H - 60;
+    const startX = 300;
+    const tickW = Math.min(50, (W - 600) / p.nTicks);
+
+    ctx.fillStyle = '#666';
+    ctx.font = '11px sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillText('Tick flow:', startX - 80, y + 5);
+
+    for (let t = 0; t < p.nTicks; t++) {
+        const x = startX + t * tickW;
+        const isSparse = t % 2 === 0;
+        const isActive = t === currentTick;
+
+        ctx.beginPath();
+        ctx.roundRect(x, y - 14, tickW - 4, 28, 4);
+
+        if (isActive) {
+            ctx.fillStyle = isSparse ? 'rgba(255,136,68,0.4)' : 'rgba(68,170,255,0.4)';
+            ctx.strokeStyle = isSparse ? '#ff8844' : '#44aaff';
+            ctx.lineWidth = 2;
+        } else {
+            ctx.fillStyle = isSparse ? 'rgba(255,136,68,0.1)' : 'rgba(68,170,255,0.1)';
+            ctx.strokeStyle = isSparse ? 'rgba(255,136,68,0.3)' : 'rgba(68,170,255,0.3)';
+            ctx.lineWidth = 1;
+        }
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.fillStyle = isActive ? '#fff' : '#888';
+        ctx.font = isActive ? 'bold 10px monospace' : '10px monospace';
+        ctx.textAlign = 'center';
+        ctx.fillText(isSparse ? 'S' : 'D', x + tickW / 2 - 2, y + 5);
+    }
+
+    // Label
+    ctx.fillStyle = '#555';
+    ctx.font = '10px sans-serif';
+    ctx.textAlign = 'center';
+    const totalX = startX + p.nTicks * tickW / 2;
+    ctx.fillText(`${p.nTicks} ticks = ${p.nTicks/2} S-D cycles (same weights reused!)`, totalX, y + 28);
+}
+
+function addTickPulses(p, layout, masks) {
+    const isSparse = currentTick % 2 === 0;
+
+    if (isSparse) {
+        // Input → Sparse
+        for (let s = 0; s < p.nSparse; s++) {
+            for (let i = 0; i < 8; i++) {
+                if (masks[s][i] && Math.random() < 0.5) {
+                    pulses.push({
+                        x0: layout.inputs[i].x + 12, y0: layout.inputs[i].y,
+                        x1: layout.sparse[s].x - 16, y1: layout.sparse[s].y,
+                        t: 0, color: 'rgba(255,136,68,1.0)',
+                    });
+                }
+            }
+        }
+        // Sparse → Connectome
+        for (let s = 0; s < p.nSparse; s++) {
+            const slot = s % p.nConn;
+            pulses.push({
+                x0: layout.sparse[s].x + 16, y0: layout.sparse[s].y,
+                x1: layout.conn[slot].x - 14, y1: layout.conn[slot].y,
+                t: -0.3, color: 'rgba(68,255,136,1.0)',
+            });
+        }
+    } else {
+        // Connectome → Dense
+        for (let d = 0; d < p.nDense; d++) {
+            const c = d % p.nConn;
+            pulses.push({
+                x0: layout.conn[c].x + 14, y0: layout.conn[c].y,
+                x1: layout.dense[d].x - 16, y1: layout.dense[d].y,
+                t: 0, color: 'rgba(68,170,255,1.0)',
+            });
+        }
+        // Dense ↔ Dense
+        for (let i = 0; i < p.nDense; i++) {
+            const j = (i + 1) % p.nDense;
+            const midX = layout.dense[i].x + 30;
+            pulses.push({
+                x0: layout.dense[i].x + 12, y0: layout.dense[i].y,
+                x1: layout.dense[j].x + 12, y1: layout.dense[j].y,
+                cx: midX, cy: (layout.dense[i].y + layout.dense[j].y) / 2,
+                t: -0.2, color: 'rgba(100,150,255,1.0)',
+            });
+        }
+        // Dense → Connectome feedback
+        for (let d = 0; d < p.nDense; d++) {
+            const slot = d % p.nConn;
+            pulses.push({
+                x0: layout.dense[d].x - 16, y0: layout.dense[d].y + 6,
+                x1: layout.conn[slot].x + 14, y1: layout.conn[slot].y + 6,
+                cx: layout.dense[d].x - 60, cy: layout.dense[d].y + 20,
+                t: -0.4, color: 'rgba(68,255,136,1.0)',
+            });
+        }
+        // Dense → Output
+        for (let d = 0; d < p.nDense; d++) {
+            if (Math.random() < 0.4) {
+                pulses.push({
+                    x0: layout.dense[d].x + 16, y0: layout.dense[d].y,
+                    x1: layout.output.x - 16, y1: layout.output.y,
+                    t: -0.3, color: 'rgba(255,204,68,1.0)',
+                });
+            }
+        }
+    }
+}
+
+function toggleAnimate() {
+    animating = !animating;
+    const btn = document.getElementById('btnAnimate');
+    if (animating) {
+        btn.textContent = 'Stop Animation';
+        btn.classList.add('active');
+        if (currentTick < 0) currentTick = 0;
+        animPhase = 0;
+        const p = getParams();
+        const layout = getLayout(p);
+        const masks = getSparseInputMask(p);
+        addTickPulses(p, layout, masks);
+    } else {
+        btn.textContent = 'Animate Signal Flow';
+        btn.classList.remove('active');
+    }
+}
+
+function stepTick() {
+    const p = getParams();
+    currentTick++;
+    if (currentTick >= p.nTicks) currentTick = 0;
+    const layout = getLayout(p);
+    const masks = getSparseInputMask(p);
+    addTickPulses(p, layout, masks);
+}
+
+requestAnimationFrame(draw);
+</script>
+</body>
+</html>
