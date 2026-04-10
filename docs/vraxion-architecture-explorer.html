@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>VRAXION Architecture Explorer</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { background: #0a0a0f; color: #e0e0e0; font-family: 'Segoe UI', system-ui, sans-serif; }
+canvas { display: block; position: fixed; top: 0; left: 0; z-index: 0; }
+
+.panel {
+    position: fixed;
+    background: rgba(12,12,20,0.97);
+    border: 1px solid #333;
+    border-radius: 8px;
+    padding: 14px;
+    z-index: 10;
+    font-size: 12px;
+}
+
+.controls {
+    top: 10px; right: 10px; width: 280px;
+    max-height: calc(100vh - 20px);
+    overflow-y: auto;
+}
+.controls h3 { color: #88ccff; margin-bottom: 8px; font-size: 13px; border-bottom: 1px solid #333; padding-bottom: 4px; }
+.controls label { display: block; color: #aaa; margin-top: 6px; font-size: 11px; }
+.controls .val { float: right; color: #88ccff; font-weight: bold; }
+.controls input[type=range] { width: 100%; margin: 2px 0; accent-color: #44aaff; }
+.controls select { width: 100%; margin: 2px 0; background: #1a1a2a; color: #ccc; border: 1px solid #444; padding: 3px; border-radius: 3px; }
+.controls button {
+    width: 100%; margin-top: 8px; padding: 7px;
+    background: #1a4a2a; border: 1px solid #2a7a3a; color: #4f4;
+    border-radius: 4px; cursor: pointer; font-size: 12px;
+}
+.controls button:hover { background: #2a5a3a; }
+.controls button.active { background: #3a2a1a; border-color: #aa7a2a; color: #fa2; }
+.controls .section { margin-top: 10px; padding-top: 8px; border-top: 1px solid #222; }
+
+.stats {
+    top: 10px; left: 10px; width: 260px;
+}
+.stats h3 { color: #ffcc44; margin-bottom: 6px; font-size: 13px; }
+.stats .row { display: flex; justify-content: space-between; padding: 2px 0; border-bottom: 1px solid #1a1a2a; }
+.stats .label { color: #888; }
+.stats .value { color: #88ccff; font-weight: bold; font-family: monospace; }
+.stats .highlight { color: #44ff88; }
+.stats .warn { color: #ff8844; }
+.stats .section-title { color: #666; margin-top: 8px; font-size: 10px; text-transform: uppercase; }
+
+.legend {
+    bottom: 10px; left: 10px; width: 280px;
+}
+.legend div { margin: 3px 0; display: flex; align-items: center; gap: 6px; }
+.legend .dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; flex-shrink: 0; }
+
+.tick-bar {
+    bottom: 10px; left: 300px; right: 300px; height: 50px;
+    display: flex; align-items: center; gap: 0;
+    padding: 8px 16px;
+}
+.tick-bar .tick-box {
+    flex: 1; height: 28px; display: flex; align-items: center; justify-content: center;
+    border: 1px solid #333; font-size: 10px; font-weight: bold;
+    transition: all 0.15s;
+}
+.tick-bar .tick-box.sparse { background: rgba(255,136,68,0.1); color: #ff8844; border-color: rgba(255,136,68,0.3); }
+.tick-bar .tick-box.dense { background: rgba(68,170,255,0.1); color: #44aaff; border-color: rgba(68,170,255,0.3); }
+.tick-bar .tick-box.active { box-shadow: 0 0 12px rgba(255,255,255,0.3); transform: scaleY(1.15); }
+.tick-bar .tick-box.sparse.active { background: rgba(255,136,68,0.5); }
+.tick-bar .tick-box.dense.active { background: rgba(68,170,255,0.5); }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+
+<div class="panel controls" id="controls">
+    <h3>VRAXION Architecture</h3>
+
+    <label>Mode <span class="val" id="vMode">AB Sandwich</span></label>
+    <select id="mode">
+        <option value="ab_sandwich">AB Sandwich (sparse→dense per tick)</option>
+        <option value="ba_sandwich">BA Sandwich (dense→sparse per tick)</option>
+        <option value="alternating">Alternating (one layer per tick)</option>
+    </select>
+
+    <div class="section">
+    <h3>Sparse Layer (C19, exhaustive)</h3>
+    <label>Neurons <span class="val" id="vNS">8</span></label>
+    <input type="range" id="nSparse" min="2" max="200" value="8">
+    <label>K (reads from dense) <span class="val" id="vK">4</span></label>
+    <input type="range" id="kConn" min="1" max="20" value="4">
+    </div>
+
+    <div class="section">
+    <h3>Dense Layer (C19, backprop)</h3>
+    <label>Neurons <span class="val" id="vND">4</span></label>
+    <input type="range" id="nDense" min="1" max="200" value="4">
+    <label>Internal connectivity % <span class="val" id="vDensity">100</span></label>
+    <input type="range" id="density" min="1" max="100" value="100">
+    </div>
+
+    <div class="section">
+    <h3>Recurrence</h3>
+    <label>Ticks <span class="val" id="vTicks">2</span></label>
+    <input type="range" id="nTicks" min="1" max="16" value="2">
+    </div>
+
+    <div class="section">
+    <label>Speed <span class="val" id="vSpeed">1.0</span></label>
+    <input type="range" id="speed" min="0.2" max="3.0" value="1.0" step="0.1">
+    </div>
+
+    <button id="btnAnim" onclick="toggleAnim()">Animate</button>
+</div>
+
+<div class="panel stats" id="stats"></div>
+
+<div class="panel legend">
+    <div><span class="dot" style="background:#ff8844"></span> Sparse neuron (C19, exhaustive search)</div>
+    <div><span class="dot" style="background:#44aaff"></span> Dense neuron (C19, backprop/gradient)</div>
+    <div><span class="dot" style="background:#ffcc44"></span> Input (thermometer encoded)</div>
+    <div style="color:#666; margin-top:6px; font-size:10px">
+        Thin lines = sparse cross-layer (K connections)<br>
+        Curved lines = dense all-to-all (holographic)<br>
+        Dashed = feedback path
+    </div>
+</div>
+
+<div class="panel tick-bar" id="tickBar"></div>
+
+<script>
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+let W, H;
+function resize() { W = canvas.width = window.innerWidth; H = canvas.height = window.innerHeight; }
+resize(); window.addEventListener('resize', resize);
+
+let animating = false, animTick = -1, animPhase = 0, lastT = 0;
+let pulses = [];
+
+function P() {
+    return {
+        mode: document.getElementById('mode').value,
+        nS: +document.getElementById('nSparse').value,
+        nD: +document.getElementById('nDense').value,
+        k: +document.getElementById('kConn').value,
+        density: +document.getElementById('density').value,
+        ticks: +document.getElementById('nTicks').value,
+        speed: +document.getElementById('speed').value,
+    };
+}
+
+// Update displays
+document.querySelectorAll('input,select').forEach(el => el.addEventListener('input', () => {
+    document.getElementById('vNS').textContent = document.getElementById('nSparse').value;
+    document.getElementById('vND').textContent = document.getElementById('nDense').value;
+    document.getElementById('vK').textContent = document.getElementById('kConn').value;
+    document.getElementById('vDensity').textContent = document.getElementById('density').value;
+    document.getElementById('vTicks').textContent = document.getElementById('nTicks').value;
+    document.getElementById('vSpeed').textContent = (+document.getElementById('speed').value).toFixed(1);
+    const m = document.getElementById('mode').value;
+    document.getElementById('vMode').textContent =
+        m === 'ab_sandwich' ? 'AB Sandwich' : m === 'ba_sandwich' ? 'BA Sandwich' : 'Alternating';
+    animTick = -1; pulses = [];
+    updateStats();
+    updateTickBar();
+}));
+
+function updateStats() {
+    const p = P();
+    const kEff = Math.min(p.k, p.nD);
+    const sparseParams = 8 + kEff + 1;
+    const searchSpace = Math.pow(2, sparseParams) * 50;
+    const timePerNeuron = searchSpace < 1e6 ? '<0.1s' : searchSpace < 1e7 ? '~5s' : searchSpace < 1e8 ? '~30s' : '~2min+';
+    const sparseTotal = p.nS;
+    const sparseTime = searchSpace < 1e6 ? `${(p.nS*0.1).toFixed(0)}s` :
+                       searchSpace < 1e7 ? `${(p.nS*5/60).toFixed(1)}min` : `${(p.nS*30/60).toFixed(0)}min`;
+
+    const denseConn = Math.ceil(p.nD * p.density / 100);
+    const denseParamsPerN = kEff + denseConn + 3; // K + neighbors + C + rho + bias
+    const totalDenseParams = p.nD * denseParamsPerN;
+    const fwdOps = p.nD * (kEff + denseConn) * p.ticks * 25;
+    const trainSteps = 10000;
+    const totalOps = fwdOps * trainSteps * 3; // fw + bw + update
+    const cpuGflops = 8; // ~8 GFLOPS for 8-core CPU with SIMD
+    const gpuGflops = 5000; // ~5 TFLOPS for RTX 3060
+    const cpuTime = totalOps / (cpuGflops * 1e9);
+    const gpuTime = totalOps / (gpuGflops * 1e9);
+
+    const ratio = (p.nS / p.nD).toFixed(1);
+    const totalNeurons = p.nS + p.nD;
+    const totalParams = p.nS * sparseParams + totalDenseParams;
+
+    const cpuClass = cpuTime < 60 ? 'highlight' : cpuTime < 600 ? 'value' : 'warn';
+    const gpuClass = gpuTime < 60 ? 'highlight' : 'value';
+
+    document.getElementById('stats').innerHTML = `
+        <h3>Architecture Stats</h3>
+        <div class="section-title">overview</div>
+        <div class="row"><span class="label">Total neurons</span><span class="value">${totalNeurons}</span></div>
+        <div class="row"><span class="label">Sparse : Dense ratio</span><span class="value">${ratio} : 1</span></div>
+        <div class="row"><span class="label">Total parameters</span><span class="value">${totalParams.toLocaleString()}</span></div>
+        <div class="row"><span class="label">Ticks (depth)</span><span class="value">${p.ticks}</span></div>
+
+        <div class="section-title">sparse layer (exhaustive)</div>
+        <div class="row"><span class="label">Params / neuron</span><span class="value">${sparseParams} (2^${sparseParams})</span></div>
+        <div class="row"><span class="label">Search space</span><span class="value">${(searchSpace/1e6).toFixed(1)}M configs</span></div>
+        <div class="row"><span class="label">Time / neuron</span><span class="value">${timePerNeuron}</span></div>
+        <div class="row"><span class="label">Total sparse time</span><span class="${searchSpace<1e7?'highlight':'warn'}">${sparseTime}</span></div>
+
+        <div class="section-title">dense layer (backprop)</div>
+        <div class="row"><span class="label">Connections / neuron</span><span class="value">${denseConn} (${p.density}%)</span></div>
+        <div class="row"><span class="label">Params / neuron</span><span class="value">${denseParamsPerN}</span></div>
+        <div class="row"><span class="label">Total dense params</span><span class="value">${totalDenseParams.toLocaleString()}</span></div>
+        <div class="row"><span class="label">FLOPs / step</span><span class="value">${(fwdOps*3/1e6).toFixed(1)}M</span></div>
+
+        <div class="section-title">training time (10K steps)</div>
+        <div class="row"><span class="label">CPU (8-core Rust)</span><span class="${cpuClass}">${cpuTime<60?(cpuTime.toFixed(1)+'s'):(cpuTime/60).toFixed(1)+'min'}</span></div>
+        <div class="row"><span class="label">GPU (RTX 3060)</span><span class="${gpuClass}">${gpuTime<1?(gpuTime*1000).toFixed(0)+'ms':gpuTime<60?gpuTime.toFixed(1)+'s':(gpuTime/60).toFixed(1)+'min'}</span></div>
+
+        <div class="section-title">hardware footprint (deploy)</div>
+        <div class="row"><span class="label">Weight storage</span><span class="value">${(totalParams*1).toLocaleString()} bytes (i8)</span></div>
+        <div class="row"><span class="label">Inference / tick</span><span class="value">${((p.nS*(8+kEff)+p.nD*(kEff+denseConn))/1000).toFixed(1)}K ops</span></div>
+    `;
+}
+
+function updateTickBar() {
+    const p = P();
+    const bar = document.getElementById('tickBar');
+    let html = '';
+    for (let t = 0; t < p.ticks; t++) {
+        if (p.mode === 'alternating') {
+            const isSparse = t % 2 === 0;
+            const cls = isSparse ? 'sparse' : 'dense';
+            const active = t === animTick ? ' active' : '';
+            html += `<div class="tick-box ${cls}${active}">${isSparse?'S':'D'}${t+1}</div>`;
+        } else {
+            // Sandwich: each tick has both
+            const active = t === animTick;
+            const first = p.mode === 'ab_sandwich' ? 'S' : 'D';
+            const second = p.mode === 'ab_sandwich' ? 'D' : 'S';
+            html += `<div class="tick-box sparse${active?' active':''}" style="flex:0.5">${first}</div>`;
+            html += `<div class="tick-box dense${active?' active':''}" style="flex:0.5">${second}</div>`;
+            if (t < p.ticks - 1) html += `<div style="width:2px"></div>`;
+        }
+    }
+    bar.innerHTML = html;
+}
+
+function layout(p) {
+    const cx = W / 2, cy = H / 2 - 20;
+    const L = {};
+
+    // Inputs (far left)
+    L.inputs = [];
+    for (let i = 0; i < 8; i++) {
+        L.inputs.push({ x: 60, y: cy - 7*22 + i*44 });
+    }
+
+    // Sparse (left)
+    L.sparse = [];
+    const maxVisS = Math.min(p.nS, 20);
+    const sSpacing = Math.min(36, (H-200) / maxVisS);
+    const sX = cx - 200;
+    for (let i = 0; i < maxVisS; i++) {
+        L.sparse.push({ x: sX, y: cy - (maxVisS-1)*sSpacing/2 + i*sSpacing });
+    }
+
+    // Dense (right)
+    L.dense = [];
+    const maxVisD = Math.min(p.nD, 16);
+    const dSpacing = Math.min(44, (H-200) / maxVisD);
+    const dX = cx + 200;
+    for (let i = 0; i < maxVisD; i++) {
+        L.dense.push({ x: dX, y: cy - (maxVisD-1)*dSpacing/2 + i*dSpacing });
+    }
+
+    // Output (far right)
+    L.output = { x: W - 60, y: cy };
+
+    return L;
+}
+
+function draw(ts) {
+    const p = P();
+    const L = layout(p);
+
+    if (animating && lastT) {
+        animPhase += (ts - lastT) / 1000 * p.speed * 0.6;
+        if (animPhase >= 1) {
+            animPhase -= 1;
+            animTick++;
+            if (animTick >= p.ticks) animTick = 0;
+            spawnPulses(p, L);
+            updateTickBar();
+        }
+    }
+    lastT = ts;
+
+    // Determine active layer
+    let sparseActive = false, denseActive = false;
+    if (animTick >= 0) {
+        if (p.mode === 'alternating') {
+            sparseActive = animTick % 2 === 0;
+            denseActive = animTick % 2 === 1;
+        } else {
+            sparseActive = true; denseActive = true;
+        }
+    }
+
+    ctx.clearRect(0, 0, W, H);
+
+    const kEff = Math.min(p.k, L.dense.length);
+
+    // Draw connections: input → sparse
+    for (let s = 0; s < L.sparse.length; s++) {
+        const nConn = Math.max(2, Math.floor(8 * 0.4));
+        for (let i = 0; i < 8; i++) {
+            const hash = Math.sin(s*7.3+i*13.7)*0.5+0.5;
+            if (hash < 0.4) {
+                ctx.beginPath();
+                ctx.moveTo(L.inputs[i].x+8, L.inputs[i].y);
+                ctx.lineTo(L.sparse[s].x-12, L.sparse[s].y);
+                ctx.strokeStyle = `rgba(255,136,68,${sparseActive?0.3:0.06})`;
+                ctx.lineWidth = sparseActive ? 1 : 0.3;
+                ctx.stroke();
+            }
+        }
+    }
+
+    // Draw connections: sparse → dense (K connections)
+    for (let d = 0; d < L.dense.length; d++) {
+        for (let k = 0; k < kEff && k < L.sparse.length; k++) {
+            const si = (d * 3 + k * 7) % L.sparse.length;
+            const alpha = denseActive ? 0.25 : 0.05;
+            ctx.beginPath();
+            ctx.moveTo(L.sparse[si].x+12, L.sparse[si].y);
+            ctx.lineTo(L.dense[d].x-14, L.dense[d].y);
+            ctx.strokeStyle = `rgba(100,200,150,${alpha})`;
+            ctx.lineWidth = denseActive ? 1 : 0.4;
+            ctx.stroke();
+        }
+    }
+
+    // Draw connections: dense → sparse feedback (dashed)
+    for (let s = 0; s < L.sparse.length; s++) {
+        for (let k = 0; k < kEff && k < L.dense.length; k++) {
+            const di = (s * 5 + k * 11) % L.dense.length;
+            ctx.beginPath();
+            ctx.moveTo(L.dense[di].x-10, L.dense[di].y+4);
+            const midX = (L.sparse[s].x + L.dense[di].x) / 2;
+            const midY = Math.max(L.sparse[s].y, L.dense[di].y) + 30;
+            ctx.quadraticCurveTo(midX, midY, L.sparse[s].x+10, L.sparse[s].y+4);
+            ctx.strokeStyle = `rgba(255,136,68,${sparseActive?0.15:0.03})`;
+            ctx.lineWidth = 0.5;
+            ctx.setLineDash([3,3]);
+            ctx.stroke();
+            ctx.setLineDash([]);
+        }
+    }
+
+    // Draw dense all-to-all
+    const denseConns = Math.ceil(L.dense.length * p.density / 100);
+    for (let i = 0; i < L.dense.length; i++) {
+        for (let j = i+1; j < L.dense.length && j-i <= denseConns; j++) {
+            ctx.beginPath();
+            const curveX = L.dense[i].x + 25 + (j-i)*8;
+            ctx.moveTo(L.dense[i].x+10, L.dense[i].y);
+            ctx.quadraticCurveTo(curveX, (L.dense[i].y+L.dense[j].y)/2, L.dense[j].x+10, L.dense[j].y);
+            ctx.strokeStyle = `rgba(68,170,255,${denseActive?0.2:0.04})`;
+            ctx.lineWidth = denseActive ? 1.5 : 0.4;
+            ctx.stroke();
+        }
+    }
+
+    // Draw dense → output
+    for (let d = 0; d < L.dense.length; d++) {
+        ctx.beginPath();
+        ctx.moveTo(L.dense[d].x+14, L.dense[d].y);
+        ctx.lineTo(L.output.x-14, L.output.y);
+        ctx.strokeStyle = `rgba(255,204,68,${denseActive?0.2:0.04})`;
+        ctx.lineWidth = denseActive ? 1 : 0.3;
+        ctx.stroke();
+    }
+
+    // Draw pulses
+    for (let i = pulses.length-1; i >= 0; i--) {
+        const pl = pulses[i];
+        pl.t += (ts-(pl.lt||ts))/1000 * p.speed;
+        pl.lt = ts;
+        if (pl.t > 1) { pulses.splice(i,1); continue; }
+        let px, py;
+        if (pl.cx !== undefined) {
+            const t = pl.t;
+            px = (1-t)*(1-t)*pl.x0+2*(1-t)*t*pl.cx+t*t*pl.x1;
+            py = (1-t)*(1-t)*pl.y0+2*(1-t)*t*pl.cy+t*t*pl.y1;
+        } else {
+            px = pl.x0+(pl.x1-pl.x0)*pl.t;
+            py = pl.y0+(pl.y1-pl.y0)*pl.t;
+        }
+        const a = Math.sin(pl.t*Math.PI)*0.8;
+        ctx.beginPath(); ctx.arc(px,py,3+a*3,0,Math.PI*2);
+        ctx.fillStyle = pl.col.replace('1)',a+')');
+        ctx.fill();
+        ctx.beginPath(); ctx.arc(px,py,8+a*4,0,Math.PI*2);
+        ctx.fillStyle = pl.col.replace('1)',a*0.2+')');
+        ctx.fill();
+    }
+
+    // Draw nodes: inputs
+    for (let i = 0; i < 8; i++) {
+        ctx.beginPath(); ctx.arc(L.inputs[i].x, L.inputs[i].y, 6, 0, Math.PI*2);
+        ctx.fillStyle = '#221800'; ctx.fill();
+        ctx.strokeStyle = '#ffcc44'; ctx.lineWidth = 1.2; ctx.stroke();
+    }
+
+    // Draw nodes: sparse
+    for (let i = 0; i < L.sparse.length; i++) {
+        const glow = sparseActive ? 8 : 0;
+        if (glow) { ctx.beginPath(); ctx.arc(L.sparse[i].x,L.sparse[i].y,10+glow,0,Math.PI*2); ctx.fillStyle='rgba(255,136,68,0.1)'; ctx.fill(); }
+        ctx.beginPath(); ctx.arc(L.sparse[i].x, L.sparse[i].y, 10, 0, Math.PI*2);
+        ctx.fillStyle = sparseActive?'#331800':'#1a0c00'; ctx.fill();
+        ctx.strokeStyle = sparseActive?'#ff8844':'#553311'; ctx.lineWidth = sparseActive?2:1; ctx.stroke();
+        if (L.sparse.length <= 12) { ctx.fillStyle=sparseActive?'#ff8844':'#773322'; ctx.font='bold 8px monospace'; ctx.textAlign='center'; ctx.fillText('S'+i,L.sparse[i].x,L.sparse[i].y+3); }
+    }
+    // Overflow indicator
+    if (p.nS > L.sparse.length) {
+        ctx.fillStyle = '#ff8844'; ctx.font = '11px sans-serif'; ctx.textAlign = 'center';
+        ctx.fillText(`+${p.nS - L.sparse.length} more`, L.sparse[0].x, L.sparse[L.sparse.length-1].y + 24);
+    }
+
+    // Dense cluster bg
+    if (L.dense.length > 1) {
+        const dt = L.dense[0].y-22, db = L.dense[L.dense.length-1].y+22;
+        ctx.fillStyle = 'rgba(10,20,40,0.4)'; ctx.strokeStyle = 'rgba(68,170,255,0.15)'; ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.roundRect(L.dense[0].x-20, dt, 60, db-dt, 10); ctx.fill(); ctx.stroke();
+        ctx.fillStyle = denseActive?'rgba(68,170,255,0.5)':'rgba(68,170,255,0.2)';
+        ctx.font = '9px sans-serif'; ctx.textAlign = 'center';
+        ctx.fillText(`HOLOGRAPHIC ${p.density}%`, L.dense[0].x+10, dt-4);
+    }
+
+    // Draw nodes: dense
+    for (let i = 0; i < L.dense.length; i++) {
+        const glow = denseActive ? 8 : 0;
+        if (glow) { ctx.beginPath(); ctx.arc(L.dense[i].x,L.dense[i].y,12+glow,0,Math.PI*2); ctx.fillStyle='rgba(68,170,255,0.1)'; ctx.fill(); }
+        ctx.beginPath(); ctx.arc(L.dense[i].x, L.dense[i].y, 12, 0, Math.PI*2);
+        ctx.fillStyle = denseActive?'#0a2244':'#050f22'; ctx.fill();
+        ctx.strokeStyle = denseActive?'#44aaff':'#1a3355'; ctx.lineWidth = denseActive?2:1; ctx.stroke();
+        if (L.dense.length <= 12) { ctx.fillStyle=denseActive?'#44aaff':'#224488'; ctx.font='bold 8px monospace'; ctx.textAlign='center'; ctx.fillText('D'+i,L.dense[i].x,L.dense[i].y+3); }
+    }
+    if (p.nD > L.dense.length) {
+        ctx.fillStyle = '#44aaff'; ctx.font = '11px sans-serif'; ctx.textAlign = 'center';
+        ctx.fillText(`+${p.nD - L.dense.length} more`, L.dense[0].x, L.dense[L.dense.length-1].y + 28);
+    }
+
+    // Output
+    ctx.beginPath(); ctx.arc(L.output.x, L.output.y, 12, 0, Math.PI*2);
+    ctx.fillStyle = '#221800'; ctx.fill(); ctx.strokeStyle = '#ffcc44'; ctx.lineWidth = 2; ctx.stroke();
+    ctx.fillStyle = '#ffcc44'; ctx.font = 'bold 10px monospace'; ctx.textAlign = 'center';
+    ctx.fillText('OUT', L.output.x, L.output.y+4);
+
+    // Labels
+    ctx.fillStyle = '#ff8844'; ctx.font = 'bold 12px sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText('SPARSE', L.sparse[0].x, L.sparse[0].y - (L.sparse.length<=12?24:18));
+    ctx.font = '9px sans-serif'; ctx.fillStyle = '#884422';
+    ctx.fillText('exhaustive C19', L.sparse[0].x, L.sparse[0].y - (L.sparse.length<=12?13:8));
+
+    ctx.fillStyle = '#44aaff'; ctx.font = 'bold 12px sans-serif';
+    ctx.fillText('DENSE', L.dense[0].x, L.dense[L.dense.length-1].y + (L.dense.length<=12?42:32));
+    ctx.font = '9px sans-serif'; ctx.fillStyle = '#446688';
+    ctx.fillText('backprop C19', L.dense[0].x, L.dense[L.dense.length-1].y + (L.dense.length<=12?53:42));
+
+    ctx.fillStyle = '#ffcc44'; ctx.font = '10px sans-serif'; ctx.textAlign = 'left';
+    ctx.fillText('INPUT [8]', 20, L.inputs[0].y - 20);
+
+    requestAnimationFrame(draw);
+}
+
+function spawnPulses(p, L) {
+    const kEff = Math.min(p.k, L.dense.length);
+    const isSandwich = p.mode !== 'alternating';
+    const sparsePhase = isSandwich || animTick % 2 === 0;
+    const densePhase = isSandwich || animTick % 2 === 1;
+
+    if (sparsePhase) {
+        for (let s = 0; s < Math.min(L.sparse.length, 8); s++) {
+            const ii = Math.floor(Math.random()*8);
+            pulses.push({x0:L.inputs[ii].x+8,y0:L.inputs[ii].y,x1:L.sparse[s].x-12,y1:L.sparse[s].y,t:0,col:'rgba(255,136,68,1)',lt:0});
+        }
+    }
+    if (densePhase) {
+        for (let d = 0; d < Math.min(L.dense.length, 6); d++) {
+            const si = Math.floor(Math.random()*L.sparse.length);
+            pulses.push({x0:L.sparse[si].x+12,y0:L.sparse[si].y,x1:L.dense[d].x-14,y1:L.dense[d].y,t:isSandwich?-0.3:0,col:'rgba(100,220,160,1)',lt:0});
+        }
+        // Dense internal
+        if (L.dense.length > 1) {
+            const i = Math.floor(Math.random()*(L.dense.length-1));
+            const j = i+1;
+            const cx = L.dense[i].x+25;
+            pulses.push({x0:L.dense[i].x+10,y0:L.dense[i].y,x1:L.dense[j].x+10,y1:L.dense[j].y,cx,cy:(L.dense[i].y+L.dense[j].y)/2,t:isSandwich?-0.4:-0.1,col:'rgba(68,170,255,1)',lt:0});
+        }
+    }
+}
+
+function toggleAnim() {
+    animating = !animating;
+    const btn = document.getElementById('btnAnim');
+    if (animating) { btn.textContent='Stop'; btn.classList.add('active'); if(animTick<0)animTick=0; animPhase=0; }
+    else { btn.textContent='Animate'; btn.classList.remove('active'); }
+}
+
+updateStats(); updateTickBar();
+requestAnimationFrame(draw);
+</script>
+</body>
+</html>
