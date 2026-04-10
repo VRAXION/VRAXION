@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VRAXION Connectome Explorer</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: system-ui, -apple-system, sans-serif; background: #0a0a0f; color: #e0e0e0; display: flex; height: 100vh; overflow: hidden; }
+
+/* Controls panel */
+.controls {
+  width: 300px; min-width: 300px; background: #12121a; border-right: 1px solid #2a2a3a;
+  padding: 16px; overflow-y: auto; display: flex; flex-direction: column; gap: 16px;
+}
+.controls h1 { font-size: 16px; color: #fbbf24; letter-spacing: 1px; margin-bottom: 4px; }
+.controls h2 { font-size: 11px; color: #888; font-weight: 400; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 8px; }
+.control-group { background: #1a1a25; border-radius: 8px; padding: 12px; }
+.control-group label { display: flex; justify-content: space-between; align-items: center; font-size: 13px; margin-bottom: 6px; }
+.control-group label span.val { color: #fbbf24; font-family: monospace; font-size: 14px; }
+input[type="range"] { width: 100%; accent-color: #fbbf24; cursor: pointer; }
+.presets { display: flex; gap: 6px; flex-wrap: wrap; }
+.preset-btn {
+  padding: 5px 10px; border-radius: 6px; border: 1px solid #3a3a4a; background: #1a1a25;
+  color: #ccc; font-size: 11px; cursor: pointer; transition: all 0.15s;
+}
+.preset-btn:hover { border-color: #fbbf24; color: #fbbf24; }
+.preset-btn.active { background: #fbbf24; color: #0a0a0f; border-color: #fbbf24; font-weight: 600; }
+
+.animate-btn {
+  width: 100%; padding: 10px; border-radius: 8px; border: 2px solid #fbbf24;
+  background: transparent; color: #fbbf24; font-size: 14px; font-weight: 600;
+  cursor: pointer; transition: all 0.2s; letter-spacing: 1px;
+}
+.animate-btn:hover { background: #fbbf24; color: #0a0a0f; }
+.animate-btn.running { background: #ef4444; border-color: #ef4444; color: white; }
+
+.legend { font-size: 11px; display: flex; flex-direction: column; gap: 4px; }
+.legend-item { display: flex; align-items: center; gap: 8px; }
+.legend-dot { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; }
+.legend-line { width: 20px; height: 3px; flex-shrink: 0; border-radius: 2px; }
+
+.stats { font-family: monospace; font-size: 11px; color: #888; line-height: 1.6; }
+.stats .highlight { color: #fbbf24; }
+
+/* Canvas area */
+.canvas-area { flex: 1; display: flex; flex-direction: column; }
+svg { flex: 1; }
+
+/* Prompt area */
+.prompt-area {
+  background: #12121a; border-top: 1px solid #2a2a3a; padding: 12px 16px;
+  display: flex; align-items: flex-start; gap: 12px; max-height: 120px;
+}
+.prompt-text {
+  flex: 1; font-family: monospace; font-size: 12px; color: #aaa;
+  white-space: pre-wrap; overflow-y: auto; max-height: 96px; line-height: 1.4;
+}
+.copy-btn {
+  padding: 6px 14px; border-radius: 6px; border: 1px solid #3a3a4a;
+  background: #1a1a25; color: #ccc; font-size: 12px; cursor: pointer;
+  white-space: nowrap; transition: all 0.15s;
+}
+.copy-btn:hover { border-color: #fbbf24; color: #fbbf24; }
+</style>
+</head>
+<body>
+
+<div class="controls">
+  <div>
+    <h1>VRAXION</h1>
+    <h2>Connectome Explorer</h2>
+  </div>
+
+  <div class="control-group">
+    <h2>Presets</h2>
+    <div class="presets">
+      <button class="preset-btn" onclick="applyPreset('shallow')">Shallow Net</button>
+      <button class="preset-btn active" onclick="applyPreset('mixed')">Mixed Depth</button>
+      <button class="preset-btn" onclick="applyPreset('deep')">Deep Cities</button>
+      <button class="preset-btn" onclick="applyPreset('highway')">Wide Highway</button>
+      <button class="preset-btn" onclick="applyPreset('mega')">Mega Grid</button>
+    </div>
+  </div>
+
+  <div class="control-group">
+    <h2>Global</h2>
+    <label>Cities <span class="val" id="v-cities">3</span></label>
+    <input type="range" id="s-cities" min="2" max="6" value="3" oninput="updateState()">
+    <label>Connectome neurons <span class="val" id="v-conn">3</span></label>
+    <input type="range" id="s-conn" min="2" max="6" value="3" oninput="updateState()">
+    <label>Ticks (iterations) <span class="val" id="v-ticks">3</span></label>
+    <input type="range" id="s-ticks" min="1" max="6" value="3" oninput="updateState()">
+  </div>
+
+  <div class="control-group">
+    <h2>Per-City Config</h2>
+    <div id="city-controls"></div>
+  </div>
+
+  <div class="control-group">
+    <button class="animate-btn" id="anim-btn" onclick="toggleAnimation()">SIGNAL FLOW</button>
+  </div>
+
+  <div class="control-group">
+    <h2>Legend</h2>
+    <div class="legend">
+      <div class="legend-item"><div class="legend-dot" style="background:#fbbf24"></div> Connectome relay (passive)</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#f97316"></div> On-ramp neuron (highway access)</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#3b82f6"></div> Inner neuron (local only)</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#10b981"></div> Deep neuron (needs relay)</div>
+      <div class="legend-item"><div class="legend-line" style="background:#fbbf24"></div> Highway connection</div>
+      <div class="legend-item"><div class="legend-line" style="background:#3b82f6"></div> Local connection</div>
+    </div>
+  </div>
+
+  <div class="control-group">
+    <h2>Architecture Stats</h2>
+    <div class="stats" id="stats"></div>
+  </div>
+</div>
+
+<div class="canvas-area">
+  <svg id="svg" xmlns="http://www.w3.org/2000/svg"></svg>
+  <div class="prompt-area">
+    <div class="prompt-text" id="prompt"></div>
+    <button class="copy-btn" onclick="copyPrompt()">Copy</button>
+  </div>
+</div>
+
+<script>
+const DEFAULTS = { cities: 3, conn: 3, ticks: 3 };
+const state = {
+  cities: 3, conn: 3, ticks: 3,
+  cityConfigs: [],
+  animating: false, animPhase: 0, animTimer: null
+};
+
+const PRESETS = {
+  shallow: { cities: 3, conn: 3, ticks: 2, depths: [1, 1, 1], sizes: [4, 4, 4], acts: ['ReLU','ReLU','ReLU'] },
+  mixed:   { cities: 3, conn: 3, ticks: 3, depths: [1, 3, 2], sizes: [4, 7, 5], acts: ['C19','ReLU','C19'] },
+  deep:    { cities: 4, conn: 4, ticks: 4, depths: [4, 3, 4, 3], sizes: [8, 7, 8, 7], acts: ['C19','C19','C19','C19'] },
+  highway: { cities: 4, conn: 6, ticks: 3, depths: [1, 1, 1, 1], sizes: [5, 5, 5, 5], acts: ['ReLU','ReLU','ReLU','ReLU'] },
+  mega:    { cities: 6, conn: 5, ticks: 5, depths: [2, 4, 1, 3, 5, 2], sizes: [5, 9, 4, 7, 10, 6], acts: ['C19','C19','ReLU','C19','C19','ReLU'] },
+};
+
+function applyPreset(name) {
+  const p = PRESETS[name];
+  document.getElementById('s-cities').value = p.cities;
+  document.getElementById('s-conn').value = p.conn;
+  document.getElementById('s-ticks').value = p.ticks;
+  state.cities = p.cities; state.conn = p.conn; state.ticks = p.ticks;
+  state.cityConfigs = [];
+  for (let i = 0; i < p.cities; i++) {
+    state.cityConfigs.push({ size: p.sizes[i], depth: p.depths[i], activation: p.acts[i] });
+  }
+  document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
+  document.querySelector(`[onclick="applyPreset('${name}')"]`).classList.add('active');
+  buildCityControls();
+  render();
+}
+
+function buildCityControls() {
+  const container = document.getElementById('city-controls');
+  container.innerHTML = '';
+  while (state.cityConfigs.length < state.cities) {
+    state.cityConfigs.push({ size: 5, depth: 2, activation: 'C19' });
+  }
+  for (let i = 0; i < state.cities; i++) {
+    const c = state.cityConfigs[i];
+    const div = document.createElement('div');
+    div.style.cssText = 'margin-bottom:10px;padding:8px;background:#12121a;border-radius:6px;border:1px solid #2a2a3a;';
+    div.innerHTML = `
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+        <span style="font-size:12px;color:#f97316;font-weight:600;">City ${i+1}</span>
+        <select onchange="state.cityConfigs[${i}].activation=this.value;render()" style="background:#1a1a25;color:#ccc;border:1px solid #3a3a4a;border-radius:4px;padding:2px 6px;font-size:11px;">
+          <option value="C19" ${c.activation==='C19'?'selected':''}>C19</option>
+          <option value="ReLU" ${c.activation==='ReLU'?'selected':''}>ReLU</option>
+        </select>
+      </div>
+      <label style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:2px;">Neurons <span class="val">${c.size}</span></label>
+      <input type="range" min="3" max="10" value="${c.size}" oninput="state.cityConfigs[${i}].size=+this.value;this.previousElementSibling.querySelector('.val').textContent=this.value;render()">
+      <label style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:2px;">Depth <span class="val">${c.depth}</span></label>
+      <input type="range" min="1" max="5" value="${c.depth}" oninput="state.cityConfigs[${i}].depth=+this.value;this.previousElementSibling.querySelector('.val').textContent=this.value;render()">
+    `;
+    container.appendChild(div);
+  }
+}
+
+function updateState() {
+  state.cities = +document.getElementById('s-cities').value;
+  state.conn = +document.getElementById('s-conn').value;
+  state.ticks = +document.getElementById('s-ticks').value;
+  document.getElementById('v-cities').textContent = state.cities;
+  document.getElementById('v-conn').textContent = state.conn;
+  document.getElementById('v-ticks').textContent = state.ticks;
+  document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
+  buildCityControls();
+  render();
+}
+
+function render() {
+  const svg = document.getElementById('svg');
+  const W = svg.clientWidth || 900;
+  const H = svg.clientHeight || 600;
+  let html = '';
+
+  // Defs
+  html += `<defs>
+    <marker id="ah-gold" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#fbbf24" opacity="0.5"/></marker>
+    <marker id="ah-blue" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#3b82f6" opacity="0.5"/></marker>
+    <filter id="glow"><feGaussianBlur stdDeviation="3" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+  </defs>`;
+
+  // Highway band
+  const hwY = 60;
+  const hwH = 50;
+  const hwPad = 80;
+  html += `<rect x="${hwPad}" y="${hwY-hwH/2}" width="${W-hwPad*2}" height="${hwH}" rx="25" fill="#1a1a10" stroke="#fbbf2440" stroke-width="2"/>`;
+  html += `<text x="${hwPad+10}" y="${hwY-hwH/2-8}" fill="#fbbf24" font-size="10" font-family="monospace" opacity="0.6">CONNECTOME HIGHWAY</text>`;
+
+  // Connectome neurons
+  const connNeurons = [];
+  const connSpacing = (W - hwPad*2) / (state.conn + 1);
+  for (let i = 0; i < state.conn; i++) {
+    const cx = hwPad + connSpacing * (i + 1);
+    const cy = hwY;
+    connNeurons.push({ x: cx, y: cy, id: `conn-${i}` });
+    const pulse = state.animating && state.animPhase === 2 ? 'opacity:1;' : 'opacity:0.8;';
+    html += `<circle cx="${cx}" cy="${cy}" r="14" fill="#fbbf24" opacity="0.15" stroke="#fbbf24" stroke-width="2"/>`;
+    html += `<circle cx="${cx}" cy="${cy}" r="8" fill="#fbbf24" style="${pulse}"/>`;
+    html += `<text x="${cx}" y="${cy+4}" text-anchor="middle" fill="#0a0a0f" font-size="9" font-weight="bold" font-family="monospace">R${i}</text>`;
+  }
+
+  // Cities
+  const cityMargin = 30;
+  const cityGap = 20;
+  const availW = W - cityMargin * 2;
+  const cityW = (availW - cityGap * (state.cities - 1)) / state.cities;
+  const cityTopY = hwY + hwH/2 + 40;
+
+  let totalNeurons = state.conn;
+  let totalOnRamp = 0;
+  let totalInner = 0;
+  let totalDeep = 0;
+  let totalConnections = 0;
+
+  for (let ci = 0; ci < state.cities; ci++) {
+    const cfg = state.cityConfigs[ci] || { size: 5, depth: 2, activation: 'C19' };
+    const cx = cityMargin + ci * (cityW + cityGap);
+    const neurons = cfg.size;
+    const depth = cfg.depth;
+
+    // Classify neurons
+    const onRampCount = Math.max(1, Math.ceil(neurons / (depth + 1)));
+    const innerCount = Math.min(neurons - onRampCount, Math.floor(neurons * 0.4));
+    const deepCount = neurons - onRampCount - innerCount;
+
+    totalNeurons += neurons;
+    totalOnRamp += onRampCount;
+    totalInner += innerCount;
+    totalDeep += deepCount;
+
+    // City box
+    const layers = Math.min(depth + 1, 4);
+    const cityH = 60 + layers * 50;
+    const isAnimPhase = state.animating ? state.animPhase : -1;
+
+    html += `<rect x="${cx}" y="${cityTopY}" width="${cityW}" height="${cityH}" rx="12" fill="#0f0f18" stroke="#3a3a4a" stroke-width="1.5"/>`;
+
+    // City label
+    const actColor = cfg.activation === 'C19' ? '#a78bfa' : '#34d399';
+    html += `<text x="${cx+cityW/2}" y="${cityTopY+16}" text-anchor="middle" fill="#e0e0e0" font-size="11" font-weight="600" font-family="system-ui">City ${ci+1}</text>`;
+    html += `<rect x="${cx+cityW/2-20}" y="${cityTopY+20}" width="40" height="14" rx="3" fill="${actColor}20" stroke="${actColor}" stroke-width="1"/>`;
+    html += `<text x="${cx+cityW/2}" y="${cityTopY+30}" text-anchor="middle" fill="${actColor}" font-size="9" font-weight="600" font-family="monospace">${cfg.activation}</text>`;
+
+    // Place neurons in layers
+    const neuronPositions = [];
+    let placed = 0;
+
+    // Layer 0: On-ramp (top, closest to highway)
+    const layerY0 = cityTopY + 50;
+    const onRampCols = Math.min(onRampCount, Math.floor(cityW / 30));
+    for (let n = 0; n < onRampCount && placed < neurons; n++) {
+      const nx = cx + 15 + (n % onRampCols) * ((cityW - 30) / Math.max(onRampCols - 1, 1));
+      const ny = layerY0 + Math.floor(n / onRampCols) * 28;
+      neuronPositions.push({ x: nx, y: ny, type: 'onramp', idx: placed });
+      placed++;
+    }
+
+    // Layer 1+: Inner and deep neurons
+    let layerIdx = 1;
+    const remaining = neurons - onRampCount;
+    const perLayer = Math.max(1, Math.ceil(remaining / Math.max(layers - 1, 1)));
+    for (let n = 0; n < remaining && placed < neurons; n++) {
+      const li = Math.floor(n / perLayer) + 1;
+      const inLayer = n % perLayer;
+      const layerCount = Math.min(perLayer, remaining - Math.floor(n / perLayer) * perLayer);
+      const nx = cx + 15 + inLayer * ((cityW - 30) / Math.max(layerCount - 1, 1));
+      const ny = layerY0 + li * 45;
+      const type = li >= layers - 1 && depth >= 3 ? 'deep' : 'inner';
+      neuronPositions.push({ x: nx, y: ny, type, idx: placed });
+      placed++;
+    }
+
+    // Draw local connections (within city)
+    for (let n = 1; n < neuronPositions.length; n++) {
+      const from = neuronPositions[n];
+      const to = neuronPositions[Math.max(0, n - 1)];
+      const opacity = state.animating && (isAnimPhase === 1 || isAnimPhase === 3) ? 0.6 : 0.2;
+      html += `<line x1="${from.x}" y1="${from.y}" x2="${to.x}" y2="${to.y}" stroke="#3b82f6" stroke-width="1" opacity="${opacity}" marker-end="url(#ah-blue)"/>`;
+      totalConnections++;
+      // Extra local connections for depth
+      if (n >= 2 && depth >= 2) {
+        const to2 = neuronPositions[Math.max(0, n - 2)];
+        html += `<line x1="${from.x}" y1="${from.y}" x2="${to2.x}" y2="${to2.y}" stroke="#3b82f6" stroke-width="0.5" opacity="${opacity * 0.5}"/>`;
+        totalConnections++;
+      }
+    }
+
+    // Draw highway connections (on-ramp neurons to connectome)
+    for (let n = 0; n < neuronPositions.length; n++) {
+      const np = neuronPositions[n];
+      if (np.type !== 'onramp') continue;
+      // Connect to nearest connectome neuron(s)
+      const nearestConn = connNeurons[ci % connNeurons.length];
+      const secondConn = connNeurons[(ci + 1) % connNeurons.length];
+      const hwOpacity = state.animating && (isAnimPhase === 1 || isAnimPhase === 2) ? 0.8 : 0.3;
+      html += `<line x1="${np.x}" y1="${np.y}" x2="${nearestConn.x}" y2="${nearestConn.y+14}" stroke="#fbbf24" stroke-width="1.5" opacity="${hwOpacity}" stroke-dasharray="4,3" marker-end="url(#ah-gold)"/>`;
+      if (connNeurons.length > 1) {
+        html += `<line x1="${np.x}" y1="${np.y}" x2="${secondConn.x}" y2="${secondConn.y+14}" stroke="#fbbf24" stroke-width="0.8" opacity="${hwOpacity*0.5}" stroke-dasharray="4,3"/>`;
+      }
+      totalConnections += 2;
+    }
+
+    // Draw neurons (on top of connections)
+    for (const np of neuronPositions) {
+      let fill, stroke, r;
+      if (np.type === 'onramp') { fill = '#f9731640'; stroke = '#f97316'; r = 10; }
+      else if (np.type === 'deep') { fill = '#10b98140'; stroke = '#10b981'; r = 8; }
+      else { fill = '#3b82f640'; stroke = '#3b82f6'; r = 9; }
+
+      // Animation pulse
+      let extra = '';
+      if (state.animating) {
+        if (np.type === 'onramp' && (isAnimPhase === 1 || isAnimPhase === 3)) extra = `<circle cx="${np.x}" cy="${np.y}" r="${r+4}" fill="none" stroke="${stroke}" stroke-width="2" opacity="0.6"><animate attributeName="r" from="${r}" to="${r+8}" dur="0.5s" repeatCount="indefinite"/><animate attributeName="opacity" from="0.6" to="0" dur="0.5s" repeatCount="indefinite"/></circle>`;
+        if (np.type !== 'onramp' && isAnimPhase === 0) extra = `<circle cx="${np.x}" cy="${np.y}" r="${r+4}" fill="none" stroke="${stroke}" stroke-width="2" opacity="0.6"><animate attributeName="r" from="${r}" to="${r+8}" dur="0.5s" repeatCount="indefinite"/><animate attributeName="opacity" from="0.6" to="0" dur="0.5s" repeatCount="indefinite"/></circle>`;
+      }
+
+      html += extra;
+      html += `<circle cx="${np.x}" cy="${np.y}" r="${r}" fill="${fill}" stroke="${stroke}" stroke-width="1.5"/>`;
+      html += `<circle cx="${np.x}" cy="${np.y}" r="${r*0.5}" fill="${stroke}" opacity="0.8"/>`;
+    }
+
+    // Input arrow
+    const inputY = cityTopY + cityH;
+    html += `<line x1="${cx+cityW/2}" y1="${inputY+20}" x2="${cx+cityW/2}" y2="${inputY}" stroke="#6b7280" stroke-width="1.5" marker-end="url(#ah-blue)"/>`;
+    html += `<text x="${cx+cityW/2}" y="${inputY+34}" text-anchor="middle" fill="#6b7280" font-size="10" font-family="monospace">input_${String.fromCharCode(97+ci)}</text>`;
+  }
+
+  // Animation phase indicator
+  if (state.animating) {
+    const phases = ['Input processing', 'Write to highway', 'Highway relay', 'Read + compute'];
+    html += `<rect x="${W/2-100}" y="${H-40}" width="200" height="28" rx="14" fill="#fbbf2420" stroke="#fbbf24" stroke-width="1"/>`;
+    html += `<text x="${W/2}" y="${H-22}" text-anchor="middle" fill="#fbbf24" font-size="12" font-weight="600" font-family="monospace">Tick: ${phases[state.animPhase]}</text>`;
+  }
+
+  svg.innerHTML = html;
+
+  // Stats
+  document.getElementById('stats').innerHTML =
+    `Total neurons: <span class="highlight">${totalNeurons}</span>\n` +
+    `  Connectome: <span class="highlight">${state.conn}</span>\n` +
+    `  On-ramp: <span class="highlight">${totalOnRamp}</span>\n` +
+    `  Inner: <span class="highlight">${totalInner}</span>\n` +
+    `  Deep: <span class="highlight">${totalDeep}</span>\n` +
+    `Connections: <span class="highlight">~${totalConnections}</span>\n` +
+    `Bottleneck: <span class="highlight">${state.conn} channels</span>\n` +
+    `Ticks needed: <span class="highlight">${state.ticks}</span>`;
+
+  updatePrompt();
+}
+
+function toggleAnimation() {
+  const btn = document.getElementById('anim-btn');
+  if (state.animating) {
+    state.animating = false;
+    clearInterval(state.animTimer);
+    btn.textContent = 'SIGNAL FLOW';
+    btn.classList.remove('running');
+    render();
+  } else {
+    state.animating = true;
+    state.animPhase = 0;
+    btn.textContent = 'STOP';
+    btn.classList.add('running');
+    render();
+    state.animTimer = setInterval(() => {
+      state.animPhase = (state.animPhase + 1) % 4;
+      render();
+    }, 800);
+  }
+}
+
+function updatePrompt() {
+  const parts = [];
+  parts.push(`VRAXION connectome architecture with ${state.cities} neighborhoods connected through ${state.conn}-channel passive relay highway.`);
+
+  for (let i = 0; i < state.cities; i++) {
+    const c = state.cityConfigs[i] || { size: 5, depth: 2, activation: 'C19' };
+    const onRamp = Math.max(1, Math.ceil(c.size / (c.depth + 1)));
+    parts.push(`City ${i+1}: ${c.size} neurons (${onRamp} on-ramp, ${c.size-onRamp} internal), depth=${c.depth}, activation=${c.activation}.`);
+  }
+
+  if (state.ticks !== 3) parts.push(`Uses ${state.ticks} ticks for signal propagation.`);
+
+  const c19Cities = state.cityConfigs.slice(0, state.cities).filter(c => c.activation === 'C19').length;
+  const reluCities = state.cities - c19Cities;
+  if (c19Cities > 0 && reluCities > 0) {
+    parts.push(`Mixed activation: ${c19Cities} C19 + ${reluCities} ReLU neighborhoods.`);
+  }
+
+  document.getElementById('prompt').textContent = parts.join('\n');
+}
+
+function copyPrompt() {
+  const text = document.getElementById('prompt').textContent;
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = document.querySelector('.copy-btn');
+    btn.textContent = 'Copied!';
+    setTimeout(() => btn.textContent = 'Copy', 1500);
+  });
+}
+
+// Init
+applyPreset('mixed');
+window.addEventListener('resize', render);
+</script>
+</body>
+</html>
