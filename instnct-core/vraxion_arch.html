@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>VRAXION — Winning Architecture</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body { background:#0a0a0f; color:#c8c8d0; font-family:'Consolas','Fira Code',monospace; overflow-x:hidden; }
+
+.header {
+  text-align:center; padding:18px 0 10px;
+  border-bottom:1px solid #1a1a2e;
+  background:linear-gradient(180deg,#0e0e18 0%,#0a0a0f 100%);
+}
+.header h1 { font-size:22px; color:#e0e0ff; letter-spacing:6px; font-weight:400; }
+.header .sub { font-size:11px; color:#6a6a8a; margin-top:4px; letter-spacing:2px; }
+
+.stats-bar {
+  display:flex; justify-content:center; gap:32px; padding:12px 0;
+  background:#0c0c14; border-bottom:1px solid #1a1a2e;
+}
+.stat { text-align:center; }
+.stat .val { font-size:20px; font-weight:700; }
+.stat .lbl { font-size:9px; color:#6a6a8a; text-transform:uppercase; letter-spacing:1px; margin-top:2px; }
+.stat.compute .val { color:#4fc3f7; }
+.stat.abstract .val { color:#ce93d8; }
+.stat.memory .val { color:#81c784; }
+.stat.total .val { color:#fff176; }
+
+.main { display:flex; height:calc(100vh - 120px); }
+
+.pipeline {
+  flex:1; padding:20px; overflow-y:auto;
+  display:flex; flex-direction:column; gap:12px;
+}
+
+.sidebar {
+  width:320px; background:#0c0c16; border-left:1px solid #1a1a2e;
+  padding:16px; overflow-y:auto;
+}
+.sidebar h3 { color:#8a8aaa; font-size:11px; text-transform:uppercase; letter-spacing:2px; margin-bottom:12px; }
+.sidebar .detail-title { color:#e0e0ff; font-size:15px; margin-bottom:8px; }
+.sidebar .detail-type { font-size:10px; padding:2px 8px; border-radius:3px; display:inline-block; margin-bottom:10px; }
+.sidebar .detail-type.compute { background:#1a3a4a; color:#4fc3f7; }
+.sidebar .detail-type.abstract { background:#2a1a3a; color:#ce93d8; }
+.sidebar .detail-type.memory { background:#1a2a1a; color:#81c784; }
+.sidebar .detail-neurons { color:#fff176; font-size:13px; margin-bottom:10px; }
+.sidebar .detail-desc { color:#9a9ab0; font-size:11px; line-height:1.6; }
+.sidebar .detail-proof { margin-top:10px; padding:8px; background:#0a1a0a; border:1px solid #2a4a2a; border-radius:4px; font-size:10px; color:#81c784; }
+.sidebar .detail-proof .proof-title { color:#a5d6a7; font-weight:700; margin-bottom:4px; }
+
+/* Pipeline stages */
+.stage {
+  background:#0e0e18; border:1px solid #1a1a2e; border-radius:6px;
+  padding:12px 16px; cursor:pointer; transition:all 0.2s;
+  display:flex; align-items:stretch; gap:12px; min-height:80px;
+}
+.stage:hover { border-color:#2a2a4e; background:#10101c; }
+.stage.selected { border-color:#4a4a7e; background:#12122a; }
+
+.stage-label {
+  writing-mode:vertical-rl; text-orientation:mixed;
+  font-size:9px; letter-spacing:3px; text-transform:uppercase;
+  color:#5a5a7a; display:flex; align-items:center; justify-content:center;
+  min-width:20px; border-right:1px solid #1a1a2e; padding-right:10px;
+}
+.stage-label .tick { color:#fff176; font-size:11px; writing-mode:horizontal-tb; margin-bottom:6px; }
+
+.stage-content { flex:1; display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
+
+.component {
+  padding:8px 12px; border-radius:4px; font-size:11px;
+  cursor:pointer; transition:all 0.15s; position:relative;
+  border:1px solid transparent;
+}
+.component:hover { transform:translateY(-1px); }
+.component.selected { border-color:#fff !important; }
+
+.component.compute {
+  background:linear-gradient(135deg,#0d2a3a,#0a1e2e);
+  border-color:#1a4a5a; color:#4fc3f7;
+}
+.component.compute:hover { background:linear-gradient(135deg,#0f3248,#0c2438); }
+
+.component.abstract {
+  background:linear-gradient(135deg,#2a1040,#1e0a30);
+  border-color:#4a2a6a; color:#ce93d8;
+}
+.component.abstract:hover { background:linear-gradient(135deg,#341450,#28103e); }
+
+.component.memory-type {
+  background:linear-gradient(135deg,#0a2a1a,#081e12);
+  border-color:#1a4a2a; color:#81c784;
+}
+.component.memory-type:hover { background:linear-gradient(135deg,#0e3420,#0a2816); }
+
+.component .c-name { font-weight:700; font-size:12px; }
+.component .c-neurons { font-size:9px; opacity:0.7; margin-top:2px; }
+.component .c-ops { font-size:9px; opacity:0.5; margin-top:1px; }
+
+/* Flow arrows between stages */
+.flow-arrow {
+  text-align:center; color:#2a2a4e; font-size:16px; line-height:12px;
+  margin:-4px 0;
+}
+
+/* Legend */
+.legend {
+  display:flex; gap:16px; justify-content:center; padding:8px 0;
+  margin-bottom:8px;
+}
+.legend-item { display:flex; align-items:center; gap:6px; font-size:10px; color:#6a6a8a; }
+.legend-dot { width:10px; height:10px; border-radius:2px; }
+.legend-dot.compute { background:#1a4a5a; }
+.legend-dot.abstract { background:#4a2a6a; }
+.legend-dot.mem { background:#1a4a2a; }
+
+/* Data flow canvas */
+.flow-section {
+  margin-top:16px; padding-top:12px; border-top:1px solid #1a1a2e;
+}
+.flow-section h3 { color:#8a8aaa; font-size:11px; text-transform:uppercase; letter-spacing:2px; margin-bottom:10px; }
+
+.flow-diagram {
+  background:#08080e; border:1px solid #1a1a2e; border-radius:4px;
+  padding:16px; font-size:10px; line-height:1.8; color:#7a7a9a;
+  white-space:pre; overflow-x:auto;
+}
+.flow-diagram .highlight { color:#fff176; }
+.flow-diagram .compute-c { color:#4fc3f7; }
+.flow-diagram .abstract-c { color:#ce93d8; }
+.flow-diagram .memory-c { color:#81c784; }
+
+/* Bottom bar */
+.bottom-bar {
+  position:fixed; bottom:0; left:0; right:0;
+  background:#08080e; border-top:1px solid #1a1a2e;
+  padding:6px 20px; font-size:9px; color:#4a4a6a;
+  display:flex; justify-content:space-between;
+}
+
+/* Animation for selected */
+@keyframes pulse-border {
+  0%,100% { box-shadow:0 0 0 0 rgba(255,255,255,0); }
+  50% { box-shadow:0 0 8px 1px rgba(255,255,255,0.1); }
+}
+.component.selected { animation: pulse-border 2s infinite; }
+
+/* Responsive */
+@media (max-width:900px) {
+  .main { flex-direction:column; }
+  .sidebar { width:100%; border-left:none; border-top:1px solid #1a1a2e; max-height:300px; }
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>V R A X I O N</h1>
+  <div class="sub">WINNING ARCHITECTURE — ALL PROVEN COMPONENTS</div>
+</div>
+
+<div class="stats-bar">
+  <div class="stat compute"><div class="val" id="s-compute">0</div><div class="lbl">Compute Neurons</div></div>
+  <div class="stat abstract"><div class="val" id="s-abstract">0</div><div class="lbl">Abstract Neurons</div></div>
+  <div class="stat memory"><div class="val" id="s-memory">0</div><div class="lbl">Memory Neurons</div></div>
+  <div class="stat total"><div class="val" id="s-total">0</div><div class="lbl">Total Neurons</div></div>
+</div>
+
+<div class="main">
+  <div class="pipeline" id="pipeline"></div>
+  <div class="sidebar" id="sidebar">
+    <h3>Component Details</h3>
+    <div style="color:#4a4a6a; font-size:11px; margin-top:40px; text-align:center;">
+      Click any component<br>to see details
+    </div>
+  </div>
+</div>
+
+<div class="bottom-bar">
+  <span>VRAXION C19 LutGate Processor — All neurons are C19 LutGate primitives</span>
+  <span>Compute=Frozen Verified | Abstract=EP-Trained+Frozen | Memory=SDM Gates</span>
+</div>
+
+<script>
+const COMPONENTS = {
+  // Stage 0: FETCH
+  pc: {
+    name:"Program Counter", neurons:8, type:"compute",
+    ops:"8-bit increment, branch load",
+    desc:"8-bites számláló, minden tick-ben +1 vagy branch target betöltés. Egyszerű incrementer C19 full-adder chain-ből.",
+    proof:"Implicit a CPU-ban — cpu8bit.rs 21 teszt PASS",
+    file:"cpu8bit.rs"
+  },
+  rom: {
+    name:"Instruction ROM", neurons:24, type:"compute",
+    ops:"64×16-bit read, address decode",
+    desc:"64 soros utasítás-memória. Address decoder (6→64 one-hot) + 16-bit output MUX. Jelenleg ROM, később RAM-ra cserélhető.",
+    proof:"cpu8bit.rs — 6 program hiba nélkül futott",
+    file:"cpu8bit.rs"
+  },
+
+  // Stage 1: DECODE
+  decoder: {
+    name:"Instruction Decode", neurons:80, type:"compute",
+    ops:"[OP:4][Rd:3][Rs1:3][Rs2:3][func:3] → control signals",
+    desc:"16-bites utasításból kinyeri: opcode, destination reg, source regek, function code. Generálja az ALU control jeleket, reg write enable-t, branch enable-t.",
+    proof:"cpu8bit.rs — 16 opcode mind helyes dekódolás",
+    file:"cpu8bit.rs"
+  },
+  branchpred: {
+    name:"Branch Predictor", neurons:17, type:"abstract",
+    ops:"EP-trained, 5-bit history → taken/not-taken",
+    desc:"17 neuronos EP-trained hálózat. Input: 5-bit branch history + opcode + flags. Output: taken/not-taken predikció. 100% accuracy 207 branch event-en, 5 különböző programon. Freeze int8-ra: 0% accuracy loss.",
+    proof:"branch_predictor.rs — 100% acc vs 85.5% (2-bit counter), freeze=0% loss",
+    file:"branch_predictor.rs"
+  },
+
+  // Stage 2: EXECUTE — hetero ALU
+  arith_a: {
+    name:"ARITH_A", neurons:40, type:"compute",
+    ops:"ADD, SUB (8-bit)",
+    desc:"Első aritmetikai egység. ADD=16 neuron (8× full adder carry chain), SUB=24 neuron (2's complement + adder). EP router megtanulta load-balancingolni ARITH_A és ARITH_B között (96.6% egyensúly).",
+    proof:"alu8bit.rs — exhaustive verified, hetero_alu.rs — 0 dispatch error",
+    file:"alu8bit.rs, hetero_alu.rs"
+  },
+  arith_b: {
+    name:"ARITH_B", neurons:40, type:"compute",
+    ops:"ADD, SUB (8-bit)",
+    desc:"Második aritmetikai egység, azonos az ARITH_A-val. Redundáns unit a throughput növeléséért — a két ARITH unit parallel dolgozhat különböző ADD/SUB taskokon.",
+    proof:"alu8bit.rs — exhaustive verified, hetero_alu.rs — 96.6% load balance",
+    file:"alu8bit.rs, hetero_alu.rs"
+  },
+  mul: {
+    name:"MUL", neurons:176, type:"compute",
+    ops:"4×4→8 bit multiply",
+    desc:"Array multiplier: 16 AND gate (partial products) + 3 half adder + 8 full adder = 38 neuron per 4×4. Két 4×4-es egységből épül a 8-bit MUL. 3 tick latency (legdrágább művelet).",
+    proof:"mul4x4.rs — 256/256 = 100%, alu8bit.rs — exhaustive",
+    file:"mul4x4.rs, alu8bit.rs"
+  },
+  logic: {
+    name:"LOGIC", neurons:32, type:"compute",
+    ops:"AND, OR, XOR, NOT (8-bit)",
+    desc:"Bitenkénti logikai műveletek. Minden gate = 1 C19 LutGate neuron. AND: 8n, OR: 8n, XOR: 8n, NOT: 8n. A legolcsóbb compute egység.",
+    proof:"alu8bit.rs — exhaustive verified, hetero_alu.rs — 0 error",
+    file:"alu8bit.rs"
+  },
+  cmp: {
+    name:"CMP/MIN/MAX", neurons:80, type:"compute",
+    ops:"CMP, MIN, MAX (8-bit)",
+    desc:"Összehasonlító + szelektáló egység. CMP: 32 neuron (subtractor + flag extract), MIN: 57 neuron (CMP + MUX), MAX: 57 neuron. 2 tick latency.",
+    proof:"alu8bit.rs — exhaustive, cpu8bit.rs — bubble sort helyes",
+    file:"alu8bit.rs, cpu8bit.rs"
+  },
+  router: {
+    name:"EP Router", neurons:42, type:"abstract",
+    ops:"Task → Unit dispatch, learned load balancing",
+    desc:"EP-trained router hálózat: [26]→[16 C19 rho=8]→[5]. 98% kategória-pontosság (MUL→MUL unit, ADD→ARITH unit stb). Megtanult load-balancingolni (96.6% egyensúly két ARITH között). Freeze int8-ra: 0% throughput loss. Priority-Q kis előnnyel jobb burst workload-on, de EP a tanulási képesség miatt értékesebb.",
+    proof:"hetero_alu.rs — 98% cat acc, 0% throughput loss on freeze, 0 wrong dispatch",
+    file:"hetero_alu.rs"
+  },
+
+  // Stage 2.5: Hazard (needed for pipeline)
+  hazard: {
+    name:"Hazard Detect", neurons:60, type:"compute",
+    ops:"RAW dependency check, stall/forward control",
+    desc:"Read-After-Write hazard detection: összehasonlítja a decode.dst regisztert az execute és memory stage source regisztereivel. Ha match → forwarding vagy pipeline stall. 3× 3-bit comparator per check.",
+    proof:"TERV — még nem implementált, de standard pipeline logika",
+    file:"—"
+  },
+  forward: {
+    name:"Forwarding MUX", neurons:40, type:"compute",
+    ops:"Bypass path selection",
+    desc:"Adat-forwarding multiplexer: a result forrása lehet (1) register file, (2) execute stage bypass, (3) memory stage bypass. 2-bit select × 8-bit = 16 MUX gate, 2 source port.",
+    proof:"TERV — standard pipeline forwarding",
+    file:"—"
+  },
+
+  // Stage 3: MEMORY
+  sdm: {
+    name:"SDM Memory", neurons:3904, type:"memory-type",
+    ops:"Associative WRITE/READ, pattern completion",
+    desc:"Kanerva Sparse Distributed Memory: 16-bit address, 64 hard locations, 8-bit words, radius=4. XOR address matching + popcount Hamming distance + threshold → activated locations. Integer counters for read aggregation. 100% recall at 1 pattern, 75% at 16. Természetesen tűri a zajos/részleges címeket (asszociatív recall).",
+    proof:"sdm_memory.rs — SdmDirect és SdmGated bit-identical, 100% at 1 pattern",
+    file:"sdm_memory.rs"
+  },
+  regfile: {
+    name:"Register File", neurons:64, type:"compute",
+    ops:"8×8-bit, dual read + write port",
+    desc:"8 regiszter (R0=hardwired 0, R1-R7 general purpose). Dual read port (két source operandus egyidőben) + single write port. R0 mindig 0-t ad vissza (RISC konvenció).",
+    proof:"cpu8bit.rs — 21 teszt PASS, bubble sort helyes reg használat",
+    file:"cpu8bit.rs"
+  },
+
+  // Stage 4: WRITEBACK
+  wbmux: {
+    name:"Writeback MUX", neurons:24, type:"compute",
+    ops:"Result source selection → register write",
+    desc:"Kiválasztja a writeback forrást: ALU result, memory read, immediate value, PC+1 (CALL return address). 2-bit select × 8-bit MUX.",
+    proof:"Implicit cpu8bit.rs — minden eredmény helyes regiszterbe íródott",
+    file:"cpu8bit.rs"
+  },
+  flags: {
+    name:"Flags (Z,N,C)", neurons:12, type:"compute",
+    ops:"Zero, Negative, Carry flag compute",
+    desc:"ALU eredményből flag-ek: Z (result==0, 8-input NOR), N (result bit 7), C (carry out from adder). Branch utasítások ezek alapján döntenek.",
+    proof:"cpu8bit.rs — BEQ/BNE helyes flag-alapú branching",
+    file:"cpu8bit.rs"
+  }
+};
+
+const STAGES = [
+  {
+    name:"FETCH", tick:0,
+    components:["pc","rom"],
+    desc:"Utasítás betöltése ROM-ból"
+  },
+  {
+    name:"DECODE", tick:1,
+    components:["decoder","branchpred"],
+    desc:"Dekódolás + branch predikció"
+  },
+  {
+    name:"EXECUTE", tick:2,
+    components:["router","arith_a","arith_b","mul","logic","cmp","hazard","forward"],
+    desc:"ALU végrehajtás (specializált egységek)"
+  },
+  {
+    name:"MEMORY", tick:3,
+    components:["sdm","regfile"],
+    desc:"SDM read/write + register file"
+  },
+  {
+    name:"WRITEBACK", tick:4,
+    components:["wbmux","flags"],
+    desc:"Eredmény visszaírás + flag update"
+  }
+];
+
+let selected = null;
+
+function render() {
+  const pipeline = document.getElementById('pipeline');
+  pipeline.innerHTML = '';
+
+  // Legend
+  const legend = document.createElement('div');
+  legend.className = 'legend';
+  legend.innerHTML = `
+    <div class="legend-item"><div class="legend-dot compute"></div>Compute (frozen, verified)</div>
+    <div class="legend-item"><div class="legend-dot abstract"></div>Abstract (EP-trained, frozen)</div>
+    <div class="legend-item"><div class="legend-dot mem"></div>Memory (SDM gates)</div>
+  `;
+  pipeline.appendChild(legend);
+
+  STAGES.forEach((stage, si) => {
+    if (si > 0) {
+      const arrow = document.createElement('div');
+      arrow.className = 'flow-arrow';
+      arrow.textContent = '▼';
+      pipeline.appendChild(arrow);
+    }
+
+    const div = document.createElement('div');
+    div.className = 'stage';
+
+    const label = document.createElement('div');
+    label.className = 'stage-label';
+    label.innerHTML = `<div class="tick">T${stage.tick}</div>${stage.name}`;
+
+    const content = document.createElement('div');
+    content.className = 'stage-content';
+
+    stage.components.forEach(cid => {
+      const c = COMPONENTS[cid];
+      const el = document.createElement('div');
+      const typeClass = c.type === 'memory-type' ? 'memory-type' : c.type;
+      el.className = `component ${typeClass}` + (selected === cid ? ' selected' : '');
+      el.innerHTML = `
+        <div class="c-name">${c.name}</div>
+        <div class="c-neurons">${c.neurons} neurons</div>
+        <div class="c-ops">${c.ops}</div>
+      `;
+      el.onclick = (e) => { e.stopPropagation(); selectComponent(cid); };
+      content.appendChild(el);
+    });
+
+    div.appendChild(label);
+    div.appendChild(content);
+    pipeline.appendChild(div);
+  });
+
+  // Flow section
+  const flowDiv = document.createElement('div');
+  flowDiv.className = 'flow-section';
+  flowDiv.innerHTML = `
+    <h3>Pipeline Data Flow — 5 Instructions In-Flight</h3>
+    <div class="flow-diagram">Tick 5 example (5 instructions simultaneously):
+────────────────────────────────────────────────────────
+  <span class="compute-c">T0 FETCH</span>    │ <span class="compute-c">T1 DECODE</span>   │ <span class="compute-c">T2 EXECUTE</span>  │ <span class="memory-c">T3 MEMORY</span>   │ <span class="compute-c">T4 WRITEBACK</span>
+  Instr #5   │ Instr #4   │ Instr #3   │ Instr #2   │ Instr #1
+  PC→ROM     │ Decode     │ ALU op     │ SDM r/w    │ Reg write
+             │ <span class="abstract-c">+BrPred</span>    │ <span class="abstract-c">+Router</span>    │            │ +Flags
+────────────────────────────────────────────────────────
+Throughput: <span class="highlight">~1 instruction / tick</span>  (vs sequential: 1 instruction / 5 ticks)
+
+Hazard example:  ADD R3, R1, R2  →  SUB R4, R3, R5
+                                       ↑ R3 not yet written!
+                 Solution: <span class="compute-c">Forward MUX</span> bypasses R3 from execute stage
+</div>
+  `;
+  pipeline.appendChild(flowDiv);
+
+  // Proof summary
+  const proofDiv = document.createElement('div');
+  proofDiv.className = 'flow-section';
+  proofDiv.innerHTML = `
+    <h3>Proof Status</h3>
+    <div class="flow-diagram"><span class="highlight">PROVEN (kísérletekkel bizonyított):</span>
+  <span class="compute-c">✓</span> ALU 12 op — 590,592 exhaustive test ALL PASS
+  <span class="compute-c">✓</span> 4×4 MUL — 256/256 = 100%
+  <span class="compute-c">✓</span> CPU 8-bit — 21 test PASS (sort, GCD, MAC)
+  <span class="abstract-c">✓</span> Branch Pred — 100% acc, freeze 0% loss
+  <span class="abstract-c">✓</span> EP Router — 98% cat acc, freeze 0% loss
+  <span class="memory-c">✓</span> SDM Memory — bit-identical, 100% recall @1 pattern
+  <span class="compute-c">✓</span> FPGA synth — C19 ALU 258 LUT4 < standard 267 LUT4
+
+<span class="highlight">PLANNED (standard logic, not yet built):</span>
+  ○ Pipeline staging registers
+  ○ Hazard detection + forwarding
+  ○ Stack pointer + CALL/RET
+  ○ Data RAM (or SDM as RAM)
+
+<span class="highlight">KEY PROPERTY:</span>
+  ALL neurons = C19 LutGate primitive
+  Compute layers: exhaustive verified → frozen int LUT
+  Abstract layers: EP-trained → frozen int LUT
+  Deploy: <span class="highlight">ZERO floating point, pure integer LUT eval</span></div>
+  `;
+  pipeline.appendChild(proofDiv);
+
+  updateStats();
+}
+
+function selectComponent(cid) {
+  selected = cid;
+  render();
+  showDetail(cid);
+}
+
+function showDetail(cid) {
+  const c = COMPONENTS[cid];
+  const sb = document.getElementById('sidebar');
+  const typeLabel = c.type === 'memory-type' ? 'memory' : c.type;
+  const typeDisplay = {compute:'COMPUTE — Frozen Verified', abstract:'ABSTRACT — EP Trained', 'memory':'MEMORY — SDM Gates'}[typeLabel];
+
+  sb.innerHTML = `
+    <h3>Component Details</h3>
+    <div class="detail-title">${c.name}</div>
+    <div class="detail-type ${typeLabel}">${typeDisplay}</div>
+    <div class="detail-neurons">⬡ ${c.neurons} C19 neurons</div>
+    <div class="detail-desc">
+      <strong>Ops:</strong> ${c.ops}<br><br>
+      ${c.desc}<br><br>
+      <strong>File:</strong> <code>${c.file}</code>
+    </div>
+    <div class="detail-proof">
+      <div class="proof-title">✓ PROOF STATUS</div>
+      ${c.proof}
+    </div>
+  `;
+}
+
+function updateStats() {
+  let compute=0, abstract_n=0, memory=0;
+  // Count unique components across all stages
+  const seen = new Set();
+  STAGES.forEach(s => s.components.forEach(cid => {
+    if (seen.has(cid)) return;
+    seen.add(cid);
+    const c = COMPONENTS[cid];
+    if (c.type === 'compute') compute += c.neurons;
+    else if (c.type === 'abstract') abstract_n += c.neurons;
+    else memory += c.neurons;
+  }));
+  document.getElementById('s-compute').textContent = compute.toLocaleString();
+  document.getElementById('s-abstract').textContent = abstract_n.toLocaleString();
+  document.getElementById('s-memory').textContent = memory.toLocaleString();
+  document.getElementById('s-total').textContent = (compute + abstract_n + memory).toLocaleString();
+}
+
+render();
+// Auto-select router to show something interesting on load
+selectComponent('router');
+</script>
+</body>
+</html>
