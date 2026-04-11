@@ -97,3 +97,11 @@ instnct/data/*.npy
 /target
 instnct-core/checkpoints/
 instnct-core/results/
+
+# instnct-core runtime logs and temp outputs
+instnct-core/*_log.txt
+instnct-core/*_console.txt
+instnct-core/*_ckpt.json
+
+# Claude Code local config/research
+.claude/
