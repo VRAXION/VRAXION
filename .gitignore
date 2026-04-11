@@ -102,6 +102,9 @@ instnct-core/results/
 instnct-core/*_log.txt
 instnct-core/*_console.txt
 instnct-core/*_ckpt.json
+instnct-core/checkpoint_*.json
+instnct-core/grow_*.json
+instnct-core/*_playground.html
 
 # Claude Code local config/research
 .claude/
