@@ -583,3 +583,30 @@
 [22:55:07] 
 Total time: 442.4s
 [22:55:07] === ALL DONE ===
+[17:45:33] ========================================
+[17:45:33] === 3-INPUT GATE EXHAUSTIVE SEARCH ===
+[17:45:33] ========================================
+[17:45:33] Checkpoint: 6 gates already done: ["AND3", "OR3", "NOR3", "MUX", "XOR3", "MAJ"]
+[17:45:33] SKIP AND3 (already in checkpoint)
+[17:45:33] SKIP OR3 (already in checkpoint)
+[17:45:33] SKIP NOR3 (already in checkpoint)
+[17:45:33] SKIP MUX (already in checkpoint)
+[17:45:33] SKIP XOR3 (already in checkpoint)
+[17:45:33] SKIP MAJ (already in checkpoint)
+[17:45:33] 
+[17:45:33] ===========================================
+[17:45:33]            FINAL SUMMARY
+[17:45:33] ===========================================
+[17:45:33]   AND3   | 127551483 solutions | C19(+8.00*x1++8.00*x2++8.00*x3+-10.00, rho=0.0)>+4.00 margin=4.0000
+[17:45:33]   OR3    | 310952579 solutions | C19(+8.75*x1++8.75*x2++8.75*x3++5.50, rho=0.0)>+4.00 margin=4.2500
+[17:45:33]   NOR3   | 317920724 solutions | C19(-9.75*x1+-9.75*x2+-9.75*x3+-5.50, rho=16.0)>-4.00 margin=5.2500
+[17:45:33]   MUX    | 1986378 solutions | C19(-0.50*x1++5.25*x2++8.75*x3+-6.25, rho=16.0)>+0.60 margin=0.6000
+[17:45:33]   XOR3   | 1885256 solutions | C19(+1.50*x1++1.50*x2++1.50*x3++3.00, rho=16.0)>+0.60 margin=0.6000
+[17:45:33]   MAJ    | 90315766 solutions | C19(+8.50*x1++8.50*x2++8.50*x3+-2.75, rho=0.0)>+4.00 margin=4.1875
+[17:45:33] 
+[17:45:33] >>> XOR3 + MAJ BOTH WORK! Full adder = 2 neurons! <<<
+[17:45:33] >>> 4-bit adder = 8 neurons (was 20) <<<
+[17:45:33] >>> 8-bit adder = 16 neurons (was 40) <<<
+[17:45:33] 
+Total time: 0.0s
+[17:45:33] === ALL DONE ===

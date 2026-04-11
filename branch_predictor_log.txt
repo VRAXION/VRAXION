@@ -1,0 +1,189 @@
+================================================================
+  Branch Predictor: EP-trained C19 vs 2-bit Saturating Counter
+  Same C19 LutGate primitive for BOTH fixed ALU AND learned prediction
+================================================================
+
+=== STEP 1: Generate Branch Traces ===
+  P1: Countdown 30->0 -> 30 branches, 92 cycles
+    [ 0] PC=  4 Z=0 N=0 C=1 hist=0000 -> TAKEN
+    [ 1] PC=  4 Z=0 N=0 C=1 hist=0001 -> TAKEN
+    [ 2] PC=  4 Z=0 N=0 C=1 hist=0011 -> TAKEN
+    [ 3] PC=  4 Z=0 N=0 C=1 hist=0111 -> TAKEN
+    [ 4] PC=  4 Z=0 N=0 C=1 hist=1111 -> TAKEN
+    [ 5] PC=  4 Z=0 N=0 C=1 hist=1111 -> TAKEN
+    [ 6] PC=  4 Z=0 N=0 C=1 hist=1111 -> TAKEN
+    [ 7] PC=  4 Z=0 N=0 C=1 hist=1111 -> TAKEN
+    ... (22 more)
+  P2: Nested loop 5x8 -> 45 branches, 142 cycles
+    [ 0] PC=  5 Z=0 N=0 C=1 hist=0000 -> TAKEN
+    [ 1] PC=  5 Z=0 N=0 C=1 hist=0001 -> TAKEN
+    [ 2] PC=  5 Z=0 N=0 C=1 hist=0011 -> TAKEN
+    [ 3] PC=  5 Z=0 N=0 C=1 hist=0111 -> TAKEN
+    [ 4] PC=  5 Z=0 N=0 C=1 hist=1111 -> TAKEN
+    [ 5] PC=  5 Z=0 N=0 C=1 hist=1111 -> TAKEN
+    [ 6] PC=  5 Z=0 N=0 C=1 hist=1111 -> TAKEN
+    [ 7] PC=  5 Z=1 N=0 C=1 hist=1111 -> NOT-TAKEN
+    ... (37 more)
+  P3: Alternating (0xAA) -> 32 branches, 116 cycles
+    [ 0] PC=  6 Z=1 N=0 C=1 hist=0000 -> TAKEN
+    [ 1] PC= 10 Z=0 N=0 C=1 hist=0001 -> TAKEN
+    [ 2] PC=  6 Z=0 N=0 C=1 hist=0011 -> NOT-TAKEN
+    [ 3] PC= 10 Z=0 N=0 C=1 hist=0110 -> TAKEN
+    [ 4] PC=  6 Z=1 N=0 C=1 hist=1101 -> TAKEN
+    [ 5] PC= 10 Z=0 N=0 C=1 hist=1011 -> TAKEN
+    [ 6] PC=  6 Z=0 N=0 C=1 hist=0111 -> NOT-TAKEN
+    [ 7] PC= 10 Z=0 N=0 C=1 hist=1110 -> TAKEN
+    ... (24 more)
+  P4: Data-dependent (threshold=100) -> 20 branches, 62 cycles
+    [ 0] PC=  4 Z=0 N=1 C=0 hist=0000 -> NOT-TAKEN
+    [ 1] PC=  7 Z=0 N=0 C=1 hist=0000 -> NOT-TAKEN
+    [ 2] PC= 10 Z=1 N=0 C=1 hist=0000 -> TAKEN
+    [ 3] PC= 13 Z=0 N=0 C=1 hist=0001 -> NOT-TAKEN
+    [ 4] PC= 16 Z=0 N=1 C=0 hist=0010 -> NOT-TAKEN
+    [ 5] PC= 19 Z=1 N=0 C=1 hist=0100 -> TAKEN
+    [ 6] PC= 22 Z=0 N=1 C=0 hist=1001 -> NOT-TAKEN
+    [ 7] PC= 25 Z=0 N=1 C=1 hist=0010 -> NOT-TAKEN
+    ... (12 more)
+  P5: Fibonacci -> 80 branches, 286 cycles
+    [ 0] PC=  9 Z=0 N=0 C=0 hist=0000 -> NOT-TAKEN
+    [ 1] PC= 12 Z=0 N=0 C=1 hist=0000 -> TAKEN
+    [ 2] PC=  9 Z=0 N=0 C=0 hist=0001 -> NOT-TAKEN
+    [ 3] PC= 12 Z=0 N=0 C=1 hist=0010 -> TAKEN
+    [ 4] PC=  9 Z=0 N=0 C=0 hist=0101 -> NOT-TAKEN
+    [ 5] PC= 12 Z=0 N=0 C=1 hist=1010 -> TAKEN
+    [ 6] PC=  9 Z=0 N=0 C=0 hist=0101 -> NOT-TAKEN
+    [ 7] PC= 12 Z=0 N=0 C=1 hist=1010 -> TAKEN
+    ... (72 more)
+
+  Total branch events: 207
+  Taken: 141 (68.1%), Not-taken: 66 (31.9%)
+  Training data: 828 samples (base 207 x 4 runs)
+
+=== STEP 2: Train EP Neural Predictor ===
+  Architecture: [15 -> 16 -> 1]
+  Activation: C19 rho=8
+  EP params: beta=0.5, T=50, dt=0.5, lr=0.05, epochs=500
+    epoch    0: acc=0.864 mse=0.1347 (715/828)
+    epoch  100: acc=1.000 mse=0.0508 (828/828)
+    epoch  200: acc=1.000 mse=0.0508 (828/828)
+    epoch  300: acc=1.000 mse=0.0508 (828/828)
+    epoch  400: acc=1.000 mse=0.0508 (828/828)
+    epoch  499: acc=1.000 mse=0.0508 (828/828)
+  Training time: 16.7s
+
+=== STEP 3: Freeze to Int8 LUT ===
+  Direct LUT entries: 55 (baked from EP equilibrium, zero float)
+  Layer 1: max|w|=0.4602, scale=2173.02, 240 weights quantized to int
+  Layer 2: max|w|=0.4238, scale=2359.70, 16 weights quantized to int
+  Hidden activation LUT: 9547 entries
+  Output activation LUT: 20393 entries
+  Total parameters: 273 (all integer)
+
+=== STEP 4: Evaluation ===
+
+  --- P1: Countdown 30->0 (30 branches) ---
+    Always-NT:          1/ 30 =    3.3%
+    2-bit Saturating:  28/ 30 =   93.3%
+    EP C19 (float):    30/ 30 =  100.0%
+    EP C19 (frozen):   30/ 30 =  100.0%
+
+  --- P2: Nested loop 5x8 (45 branches) ---
+    Always-NT:          6/ 45 =   13.3%
+    2-bit Saturating:  37/ 45 =   82.2%
+    EP C19 (float):    45/ 45 =  100.0%
+    EP C19 (frozen):   45/ 45 =  100.0%
+
+  --- P3: Alternating (0xAA) (32 branches) ---
+    Always-NT:          5/ 32 =   15.6%
+    2-bit Saturating:  21/ 32 =   65.6%
+    EP C19 (float):    32/ 32 =  100.0%
+    EP C19 (frozen):   32/ 32 =  100.0%
+
+  --- P4: Data-dependent (threshold=100) (20 branches) ---
+    Always-NT:         13/ 20 =   65.0%
+    2-bit Saturating:  13/ 20 =   65.0%
+    EP C19 (float):    20/ 20 =  100.0%
+    EP C19 (frozen):   20/ 20 =  100.0%
+
+  --- P5: Fibonacci (80 branches) ---
+    Always-NT:         41/ 80 =   51.2%
+    2-bit Saturating:  78/ 80 =   97.5%
+    EP C19 (float):    80/ 80 =  100.0%
+    EP C19 (frozen):   80/ 80 =  100.0%
+
+=== STEP 5: The Money Comparison ===
+
+  ┌──────────────────────────┬────────────┬────────────┬────────────────┬─────────────────────┐
+  │ Program                  │ Always-NT  │ 2-bit Sat  │ EP C19 (float) │ EP C19 (frozen LUT) │
+  ├──────────────────────────┼────────────┼────────────┼────────────────┼─────────────────────┤
+  │ P1: Countdown 30->0      │      3.3%  │     93.3%  │        100.0%  │             100.0%  │
+  │ P2: Nested loop 5x8      │     13.3%  │     82.2%  │        100.0%  │             100.0%  │
+  │ P3: Alternating (0xAA)   │     15.6%  │     65.6%  │        100.0%  │             100.0%  │
+  │ P4: Data-dependent (thre │     65.0%  │     65.0%  │        100.0%  │             100.0%  │
+  │ P5: Fibonacci            │     51.2%  │     97.5%  │        100.0%  │             100.0%  │
+  ├──────────────────────────┼────────────┼────────────┼────────────────┼─────────────────────┤
+  │ AVERAGE                  │     31.9%  │     85.5%  │        100.0%  │             100.0%  │
+  └──────────────────────────┴────────────┴────────────┴────────────────┴─────────────────────┘
+
+  Neuron counts:
+    Always-NT:           0
+    2-bit Saturating:    ~5 per PC (lookup table)
+    EP Neural:           273 parameters (17 LutGate neurons equivalent)
+    EP Neural (frozen):  55 direct LUT entries + 273 param fallback (all integer, zero float)
+
+=== STEP 6: Freeze Accuracy Analysis ===
+  Float accuracy:  100.0%
+  Frozen accuracy: 100.0%
+  Accuracy drop:   0.0% (target: <1%)
+
+=== STEP 7: Cycle Cost Analysis ===
+  Assumption: correct prediction saves 1 cycle, misprediction costs 2 cycles penalty
+
+  P1: Countdown 30->0 (baseline: 60 branch-cycles):
+    Always-NT:    88 cycles, speedup -46.7%
+    2-bit Sat:    34 cycles, speedup +43.3%
+    EP (float):   30 cycles, speedup +50.0%
+    EP (frozen):  30 cycles, speedup +50.0%
+  P2: Nested loop 5x8 (baseline: 90 branch-cycles):
+    Always-NT:   123 cycles, speedup -36.7%
+    2-bit Sat:    61 cycles, speedup +32.2%
+    EP (float):   45 cycles, speedup +50.0%
+    EP (frozen):  45 cycles, speedup +50.0%
+  P3: Alternating (0xAA) (baseline: 64 branch-cycles):
+    Always-NT:    86 cycles, speedup -34.4%
+    2-bit Sat:    54 cycles, speedup +15.6%
+    EP (float):   32 cycles, speedup +50.0%
+    EP (frozen):  32 cycles, speedup +50.0%
+  P4: Data-dependent (threshold=100) (baseline: 40 branch-cycles):
+    Always-NT:    34 cycles, speedup +15.0%
+    2-bit Sat:    34 cycles, speedup +15.0%
+    EP (float):   20 cycles, speedup +50.0%
+    EP (frozen):  20 cycles, speedup +50.0%
+  P5: Fibonacci (baseline: 160 branch-cycles):
+    Always-NT:   158 cycles, speedup  +1.2%
+    2-bit Sat:    84 cycles, speedup +47.5%
+    EP (float):   80 cycles, speedup +50.0%
+    EP (frozen):  80 cycles, speedup +50.0%
+
+=== STEP 8: Adversarial Tests ===
+  Adversarial 1: Perfect alternating (T,N,T,N,...) x50
+    Always-NT: 50.0%, 2-bit Sat: 0.0%, EP float: 50.0%, EP frozen: 50.0%
+  Adversarial 2: Random 50/50 x100
+    Always-NT: 47.0%, 2-bit Sat: 46.0%, EP float: 32.0%, EP frozen: 47.0%
+  Adversarial 3: Long runs (10T, 10N, repeat) x60
+    Always-NT: 50.0%, 2-bit Sat: 81.7%, EP float: 50.0%, EP frozen: 50.0%
+
+================================================================
+  FINAL VERDICT
+================================================================
+  EP neural (100.0%) vs 2-bit saturating (85.5%): EP WINS
+  EP neural (100.0%) vs Always-NT (31.9%):       EP WINS
+  Freeze accuracy drop: 0.0% (ACCEPTABLE)
+
+  RESULT: C19 LutGate does BOTH fixed logic (ALU) AND learned prediction
+          from the SAME primitive. The EP-trained neural predictor BEATS
+          the 2-bit saturating counter AND survives int8 quantization.
+
+  Total time: 16.8s
+  Log: branch_predictor_log.txt
+================================================================

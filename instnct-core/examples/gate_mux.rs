@@ -25,6 +25,7 @@ struct Solution3 {
     margin: f32, complexity: f32,
 }
 
+#[allow(dead_code)]
 struct GateResult {
     name: String,
     total_solutions: usize,
@@ -78,7 +79,7 @@ fn search_3input(name: &str, truth: &[(u8,u8,u8,u8)], logf: &mut std::fs::File) 
     let mut total_solutions = 0u64;
     let mut checked = 0u64;
     let total_weight_combos = (weights.len() as u64).pow(4);
-    let total_per_rho = total_weight_combos;
+    let _total_per_rho = total_weight_combos;
     let gate_start = std::time::Instant::now();
 
     for (ri, &rho) in rhos.iter().enumerate() {
