@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>EP Wave Propagation — Bidirectional Settling</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#080c12;color:#c8d0d8;font-family:'Courier New',monospace;font-size:12px;height:100vh;display:flex;flex-direction:column}
+.top{display:flex;gap:10px;padding:8px 14px;background:#0d1117;border-bottom:1px solid #1a2332;align-items:center;flex-wrap:wrap}
+.top label{color:#8b949e;font-size:11px}
+.top select,.top input[type=range]{background:#161b22;border:1px solid #30363d;color:#c9d1d9;padding:2px;border-radius:3px;font-size:11px}
+.top input[type=range]{width:70px;height:14px}
+.top .val{color:#58a6ff;font-size:11px;min-width:24px}
+.top .sep{border-left:1px solid #30363d;height:18px;margin:0 4px}
+.main-canvas{flex:1;width:100%}
+.slider-row{display:flex;align-items:center;gap:10px;padding:8px 14px;background:#0d1117;border-top:1px solid #1a2332}
+.slider-row input[type=range]{flex:1;height:22px;background:#161b22;-webkit-appearance:none;border-radius:3px;cursor:pointer}
+.slider-row input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;height:20px;border-radius:50%;background:#58a6ff;cursor:pointer;border:2px solid #080c12}
+.tick-lab{font-size:20px;color:#58a6ff;font-weight:bold;min-width:110px}
+.info{font-size:11px;color:#8b949e;flex:1;text-align:right}
+.info .g{color:#2ea043}.info .r{color:#f85149}.info .b{color:#58a6ff}.info .y{color:#e3b341}
+</style>
+</head>
+<body>
+
+<div class="top">
+  <label>Act:</label>
+  <select id="selAct" onchange="go()"><option value="c19">C19</option><option value="tanh">tanh</option><option value="relu">ReLU</option></select>
+  <label>rho:</label><input type="range" id="sRho" min="1" max="16" value="8" oninput="go()"><span class="val" id="vRho">8</span>
+  <div class="sep"></div>
+  <label>Layers:</label><input type="range" id="sLay" min="2" max="12" value="8" oninput="go()"><span class="val" id="vLay">8</span>
+  <label>Neurons/layer:</label><input type="range" id="sNeur" min="2" max="8" value="4" oninput="go()"><span class="val" id="vNeur">4</span>
+  <div class="sep"></div>
+  <label>dt:</label><input type="range" id="sDt" min="0.05" max="1" step="0.05" value="0.5" oninput="go()"><span class="val" id="vDt">.50</span>
+  <label>beta:</label><input type="range" id="sBeta" min="0" max="2" step="0.05" value="0.5" oninput="go()"><span class="val" id="vBeta">.50</span>
+  <label>Ticks:</label><input type="range" id="sTicks" min="10" max="80" value="40" oninput="go()"><span class="val" id="vTicks">40</span>
+  <div class="sep"></div>
+  <label>Init:</label><input type="range" id="sInit" min="0.05" max="1" step="0.05" value="0.3" oninput="go()"><span class="val" id="vInit">.30</span>
+  <label>Seed:</label><input type="range" id="sSeed" min="1" max="100" value="42" oninput="go()"><span class="val" id="vSeed">42</span>
+</div>
+
+<canvas id="cv" class="main-canvas"></canvas>
+
+<div class="slider-row">
+  <span class="tick-lab">TICK <span id="tickD">0</span> / <span id="tickMax">40</span></span>
+  <input type="range" id="timeSlider" min="0" max="40" value="0" oninput="scrub(+this.value)">
+  <div class="info" id="infoBar">-</div>
+</div>
+
+<script>
+// === C19 / activations ===
+function c19(x,rho){const l=6;if(x>=l)return x-l;if(x<=-l)return x+l;const n=Math.floor(x),t=x-n,h=t*(1-t),s=n%2===0?1:-1;return s*h+rho*h*h}
+function relu(x){return Math.max(0,x)}
+function tanhA(x){return Math.tanh(x)}
+function getAct(){const a=document.getElementById('selAct').value,r=+document.getElementById('sRho').value;if(a==='c19')return x=>c19(x,r);if(a==='relu')return relu;return tanhA}
+
+// === Simple RNG ===
+function Rng(seed){this.s=seed*6364136223846793005n+1n}
+Rng.prototype.next=function(){this.s=this.s*6364136223846793005n+1442695040888963407n;return this.s}
+Rng.prototype.f=function(){const v=Number((this.next()>>33n)%65536n)/65536;return v}
+Rng.prototype.rf=function(lo,hi){return lo+this.f()*(hi-lo)}
+
+// === Simulation state ===
+let SIM=null; // {layers, weights, states[tick][layer][neuron], fwd, bwd, delta, energy}
+let curTick=0;
+
+function go(){
+  // Read params
+  const nLay=+document.getElementById('sLay').value;
+  const nNeur=+document.getElementById('sNeur').value;
+  const dt=+document.getElementById('sDt').value;
+  const beta=+document.getElementById('sBeta').value;
+  const T=+document.getElementById('sTicks').value;
+  const initScale=+document.getElementById('sInit').value;
+  const seed=+document.getElementById('sSeed').value;
+  const act=getAct();
+
+  // Update labels
+  document.getElementById('vRho').textContent=document.getElementById('sRho').value;
+  document.getElementById('vLay').textContent=nLay;
+  document.getElementById('vNeur').textContent=nNeur;
+  document.getElementById('vDt').textContent=dt.toFixed(2);
+  document.getElementById('vBeta').textContent=beta.toFixed(2);
+  document.getElementById('vTicks').textContent=T;
+  document.getElementById('vInit').textContent=initScale.toFixed(2);
+  document.getElementById('vSeed').textContent=seed;
+
+  // Init weights: W[l] connects layer l to layer l+1, size nNeur×nNeur
+  // Symmetric: W[l] is used both forward and backward
+  const rng=new Rng(BigInt(seed));
+  const W=[];const B=[];
+  for(let l=0;l<nLay-1;l++){
+    const sc=initScale*Math.sqrt(2/nNeur);
+    const w=[];for(let i=0;i<nNeur*nNeur;i++)w.push(rng.rf(-sc,sc));
+    W.push(w);
+    const b=[];for(let i=0;i<nNeur;i++)b.push(0);
+    B.push(b);
+  }
+
+  // Input signal: first layer clamped to pattern, last layer gets "target" signal
+  // Blue input = simple pattern [1, 0.5, 0.2, 0.8, ...] based on seed
+  const inputSignal=[];for(let i=0;i<nNeur;i++)inputSignal.push(rng.rf(0,1));
+  const targetSignal=[];for(let i=0;i<nNeur;i++)targetSignal.push(rng.rf(0,1));
+
+  // State: s[layer][neuron], all start at 0 except input/output
+  const initState=()=>{const s=[];for(let l=0;l<nLay;l++){const r=[];for(let n=0;n<nNeur;n++)r.push(0);s.push(r);}return s;}
+
+  // Simulate
+  const states=[]; // states[tick] = s[layer][neuron]
+  const fwdDrives=[]; // fwd[tick][layer][neuron]
+  const bwdDrives=[];
+  const deltas=[];
+  const energies=[];
+
+  let s=initState();
+  // Clamp input
+  for(let n=0;n<nNeur;n++)s[0][n]=inputSignal[n];
+  states.push(s.map(l=>[...l]));
+
+  for(let t=0;t<T;t++){
+    const old=s.map(l=>[...l]);
+    const fwd=s.map(l=>l.map(()=>0));
+    const bwd=s.map(l=>l.map(()=>0));
+
+    // Compute drives for each non-clamped layer
+    for(let l=1;l<nLay-1;l++){
+      for(let j=0;j<nNeur;j++){
+        // Forward drive from layer l-1
+        let fd=B[l-1]?B[l-1][j]||0:0;
+        for(let i=0;i<nNeur;i++)fd+=W[l-1][j*nNeur+i]*act(s[l-1][i]);
+        fwd[l][j]=fd;
+        // Backward drive from layer l+1
+        let bd=0;
+        for(let k=0;k<nNeur;k++)bd+=W[l][k*nNeur+j]*act(s[l+1][k]);
+        bwd[l][j]=bd;
+        // Update
+        s[l][j]=s[l][j]+dt*(-s[l][j]+fd+bd);
+      }
+    }
+
+    // Last layer: forward drive from layer nLay-2 + nudge toward target
+    {const l=nLay-1;
+      for(let j=0;j<nNeur;j++){
+        let fd=0;
+        for(let i=0;i<nNeur;i++)fd+=W[l-1][j*nNeur+i]*act(s[l-1][i]);
+        fwd[l][j]=fd;
+        bwd[l][j]=0;
+        const nudge=-beta*(act(s[l][j])-targetSignal[j]);
+        s[l][j]=s[l][j]+dt*(-s[l][j]+fd+nudge);
+      }
+    }
+
+    // First layer stays clamped
+    for(let n=0;n<nNeur;n++){s[0][n]=inputSignal[n];fwd[0][n]=inputSignal[n];bwd[0][n]=0;}
+
+    fwdDrives.push(fwd.map(l=>[...l]));
+    bwdDrives.push(bwd.map(l=>[...l]));
+
+    // Delta
+    let mx=0;for(let l=0;l<nLay;l++)for(let n=0;n<nNeur;n++)mx=Math.max(mx,Math.abs(s[l][n]-old[l][n]));
+    deltas.push(mx);
+
+    // Energy (simplified)
+    let E=0;for(let l=1;l<nLay;l++)for(let n=0;n<nNeur;n++)E+=0.5*s[l][n]*s[l][n];
+    for(let l=0;l<nLay-1;l++)for(let j=0;j<nNeur;j++)for(let i=0;i<nNeur;i++)E-=W[l][j*nNeur+i]*act(s[l][i])*act(s[l+1][j]);
+    energies.push(E);
+
+    states.push(s.map(l=>[...l]));
+  }
+
+  SIM={nLay,nNeur,T,states,fwdDrives,bwdDrives,deltas,energies,inputSignal,targetSignal,W,act};
+
+  document.getElementById('timeSlider').max=T;
+  document.getElementById('timeSlider').value=0;
+  document.getElementById('tickMax').textContent=T;
+  curTick=0;
+  draw();
+}
+
+function scrub(t){curTick=t;draw();}
+
+function draw(){
+  if(!SIM)return;
+  document.getElementById('tickD').textContent=curTick;
+
+  const cv=document.getElementById('cv');
+  cv.width=cv.clientWidth;cv.height=cv.clientHeight;
+  const ctx=cv.getContext('2d');
+  const W=cv.width,H=cv.height;
+  ctx.clearRect(0,0,W,H);
+
+  const {nLay,nNeur,T,states,fwdDrives,bwdDrives,deltas,energies,inputSignal,targetSignal,act}=SIM;
+  const s=states[curTick];
+
+  const pad={l:60,r:60,t:40,b:100};
+  const pw=W-pad.l-pad.r;
+  const ph=H-pad.t-pad.b;
+
+  const cellW=pw/nLay;
+  const cellH=Math.min(ph/nNeur,60);
+  const gridH=cellH*nNeur;
+  const gridTop=pad.t+(ph-gridH)/2;
+
+  // === LAYER LABELS ===
+  ctx.font='10px monospace';ctx.textAlign='center';
+  for(let l=0;l<nLay;l++){
+    const cx=pad.l+cellW*l+cellW/2;
+    ctx.fillStyle=l===0?'#58a6ff':l===nLay-1?'#f85149':'#484f58';
+    ctx.fillText(l===0?'INPUT':l===nLay-1?'OUTPUT':'L'+l,cx,gridTop-10);
+  }
+
+  // === WAVE ARROWS ===
+  // Blue arrow (input side)
+  const blueSpread=Math.min(curTick,nLay);
+  const redSpread=Math.min(curTick,nLay);
+
+  // Blue glow: layers 0..blueSpread get blue tint
+  for(let l=0;l<Math.min(blueSpread,nLay);l++){
+    const cx=pad.l+cellW*l;
+    const alpha=Math.max(0.02,0.15*(1-l/nLay));
+    ctx.fillStyle=`rgba(88,166,255,${alpha})`;
+    ctx.fillRect(cx,gridTop-2,cellW,gridH+4);
+  }
+  // Red glow: layers from right
+  for(let l=nLay-1;l>=Math.max(0,nLay-redSpread);l--){
+    const cx=pad.l+cellW*l;
+    const alpha=Math.max(0.02,0.15*(1-(nLay-1-l)/nLay));
+    ctx.fillStyle=`rgba(248,81,73,${alpha})`;
+    ctx.fillRect(cx,gridTop-2,cellW,gridH+4);
+  }
+
+  // === NEURON CELLS ===
+  for(let l=0;l<nLay;l++){
+    for(let n=0;n<nNeur;n++){
+      const cx=pad.l+cellW*l;
+      const cy=gridTop+cellH*n;
+      const sv=s[l][n];
+      const av=act(sv);
+
+      // Cell background: intensity based on activation
+      const mag=Math.min(Math.abs(av)*4,1);
+
+      // Color mixing: blue if driven by forward, red if by backward
+      let fv=0,bv=0;
+      if(curTick>0&&fwdDrives[curTick-1]){
+        fv=Math.abs(fwdDrives[curTick-1][l][n]);
+        bv=Math.abs(bwdDrives[curTick-1][l][n]);
+      }
+      const total=fv+bv+0.001;
+      const blueRatio=fv/total;
+      const redRatio=bv/total;
+
+      const r=Math.round(40+redRatio*180*mag);
+      const g=Math.round(30+40*mag);
+      const b=Math.round(60+blueRatio*200*mag);
+
+      ctx.fillStyle=`rgb(${r},${g},${b})`;
+      ctx.fillRect(cx+2,cy+2,cellW-4,cellH-4);
+
+      // Border
+      ctx.strokeStyle=`rgba(255,255,255,${0.05+mag*0.15})`;
+      ctx.lineWidth=1;
+      ctx.strokeRect(cx+2,cy+2,cellW-4,cellH-4);
+
+      // Value text
+      if(cellW>50){
+        ctx.fillStyle=`rgba(255,255,255,${0.4+mag*0.5})`;
+        ctx.font=Math.min(10,cellW*0.15)+'px monospace';
+        ctx.textAlign='center';ctx.textBaseline='middle';
+        ctx.fillText(av.toFixed(3),cx+cellW/2,cy+cellH/2);
+      }
+    }
+  }
+
+  // === WAVE FLOW ARROWS ===
+  const arrowY=gridTop-25;
+  // Blue arrow
+  const blueEndX=pad.l+cellW*Math.min(blueSpread,nLay)*0.9;
+  ctx.strokeStyle='#58a6ff';ctx.lineWidth=2;ctx.setLineDash([5,3]);
+  ctx.beginPath();ctx.moveTo(pad.l,arrowY);ctx.lineTo(blueEndX,arrowY);ctx.stroke();
+  // Arrowhead
+  ctx.setLineDash([]);ctx.beginPath();ctx.moveTo(blueEndX,arrowY);ctx.lineTo(blueEndX-8,arrowY-4);ctx.lineTo(blueEndX-8,arrowY+4);ctx.fill();
+  ctx.fillStyle='#58a6ff';ctx.font='10px monospace';ctx.textAlign='left';
+  ctx.fillText('BLUE (forward)',pad.l,arrowY-8);
+
+  // Red arrow
+  const redEndX=pad.l+cellW*(nLay-Math.min(redSpread,nLay))*1.1;
+  ctx.strokeStyle='#f85149';ctx.setLineDash([5,3]);
+  ctx.beginPath();ctx.moveTo(pad.l+pw,arrowY);ctx.lineTo(Math.max(redEndX,pad.l),arrowY);ctx.stroke();
+  ctx.setLineDash([]);ctx.fillStyle='#f85149';ctx.beginPath();ctx.moveTo(Math.max(redEndX,pad.l),arrowY);ctx.lineTo(Math.max(redEndX,pad.l)+8,arrowY-4);ctx.lineTo(Math.max(redEndX,pad.l)+8,arrowY+4);ctx.fill();
+  ctx.font='10px monospace';ctx.textAlign='right';
+  ctx.fillText('RED (backward)',pad.l+pw,arrowY-8);
+
+  // === INPUT/TARGET INDICATORS ===
+  ctx.font='9px monospace';ctx.textAlign='right';
+  for(let n=0;n<nNeur;n++){
+    const cy=gridTop+cellH*n+cellH/2;
+    ctx.fillStyle='#58a6ff';
+    ctx.fillText(inputSignal[n].toFixed(2),pad.l-4,cy+3);
+  }
+  ctx.textAlign='left';
+  for(let n=0;n<nNeur;n++){
+    const cy=gridTop+cellH*n+cellH/2;
+    ctx.fillStyle='#f85149';
+    ctx.fillText(targetSignal[n].toFixed(2),pad.l+pw+4,cy+3);
+  }
+
+  // === NEURON ROW LABELS ===
+  ctx.fillStyle='#484f58';ctx.font='9px monospace';ctx.textAlign='right';
+  for(let n=0;n<nNeur;n++){
+    ctx.fillText('n'+n,pad.l-30,gridTop+cellH*n+cellH/2+3);
+  }
+
+  // === BOTTOM CHARTS ===
+  const chartTop=gridTop+gridH+20;
+  const chartH=H-chartTop-10;
+  if(chartH<30)return;
+
+  // Delta chart (left third)
+  const cw=pw/3-10;
+  drawMiniChart(ctx,pad.l,chartTop,cw,chartH,deltas,curTick,'DELTA','#58a6ff',0.001);
+
+  // Energy chart (middle third)
+  drawMiniChart(ctx,pad.l+pw/3,chartTop,cw,chartH,energies,curTick,'ENERGY','#e3b341');
+
+  // Per-layer activation magnitude (right third)
+  drawLayerBars(ctx,pad.l+pw*2/3+10,chartTop,cw,chartH,s,act,nLay,nNeur,fwdDrives,bwdDrives,curTick);
+
+  // Info
+  const delta=curTick>0?deltas[curTick-1]:'—';
+  const energy=curTick>0?energies[curTick-1]:'—';
+  const ci=deltas.findIndex(d=>d<0.001);
+  let info=`<span class="b">delta:</span> ${typeof delta==='number'?delta.toExponential(2):'—'}`;
+  info+=` | <span class="y">E:</span> ${typeof energy==='number'?energy.toFixed(3):'—'}`;
+  if(ci>=0)info+=` | <span class="g">CONV@tick${ci+1}</span>`;
+  else if(curTick>0)info+=` | <span class="r">settling...</span>`;
+  document.getElementById('infoBar').innerHTML=info;
+}
+
+function drawMiniChart(ctx,x,y,w,h,data,cur,label,color,threshold){
+  if(!data.length)return;
+  ctx.fillStyle='#0d1117';ctx.fillRect(x,y,w,h);ctx.strokeStyle='#1a2332';ctx.lineWidth=1;ctx.strokeRect(x,y,w,h);
+
+  const n=data.length;
+  let mn=Math.min(...data),mx=Math.max(...data);
+  if(mx===mn)mx=mn+1;
+  const rng=mx-mn;
+
+  // Line
+  ctx.strokeStyle=color;ctx.lineWidth=1.5;ctx.beginPath();
+  for(let i=0;i<Math.min(cur,n);i++){
+    const px=x+4+(i/(n-1||1))*(w-8);
+    const py=y+h-4-(h-8)*((data[i]-mn)/rng);
+    if(i===0)ctx.moveTo(px,py);else ctx.lineTo(px,py);
+  }
+  ctx.stroke();
+
+  // Threshold
+  if(threshold!==undefined){
+    const ty=y+h-4-(h-8)*((threshold-mn)/rng);
+    if(ty>y&&ty<y+h){
+      ctx.strokeStyle='#e3b341';ctx.lineWidth=1;ctx.setLineDash([3,3]);
+      ctx.beginPath();ctx.moveTo(x,ty);ctx.lineTo(x+w,ty);ctx.stroke();ctx.setLineDash([]);
+    }
+  }
+
+  // Cursor
+  if(cur>0&&cur<=n){
+    const cx=x+4+((cur-1)/(n-1||1))*(w-8);
+    ctx.strokeStyle='rgba(255,255,255,0.3)';ctx.lineWidth=1;
+    ctx.beginPath();ctx.moveTo(cx,y);ctx.lineTo(cx,y+h);ctx.stroke();
+  }
+
+  ctx.fillStyle=color;ctx.font='9px monospace';ctx.textAlign='left';
+  ctx.fillText(label,x+4,y+10);
+}
+
+function drawLayerBars(ctx,x,y,w,h,s,act,nLay,nNeur,fwdD,bwdD,cur){
+  ctx.fillStyle='#0d1117';ctx.fillRect(x,y,w,h);ctx.strokeStyle='#1a2332';ctx.lineWidth=1;ctx.strokeRect(x,y,w,h);
+
+  const barW=(w-20)/nLay;
+  const maxH=h-20;
+
+  for(let l=0;l<nLay;l++){
+    // Compute mean |activation| for this layer
+    let sumAct=0,sumFwd=0,sumBwd=0;
+    for(let n=0;n<nNeur;n++){
+      sumAct+=Math.abs(act(s[l][n]));
+      if(cur>0&&fwdD[cur-1])sumFwd+=Math.abs(fwdD[cur-1][l][n]);
+      if(cur>0&&bwdD[cur-1])sumBwd+=Math.abs(bwdD[cur-1][l][n]);
+    }
+    sumAct/=nNeur;sumFwd/=nNeur;sumBwd/=nNeur;
+
+    const bx=x+10+barW*l;
+
+    // Forward drive (blue, bottom-up)
+    const fH=Math.min(sumFwd*maxH*2,maxH*0.45);
+    ctx.fillStyle='rgba(88,166,255,0.5)';
+    ctx.fillRect(bx,y+h-10-fH,barW*0.4,fH);
+
+    // Backward drive (red, bottom-up)
+    const bH=Math.min(sumBwd*maxH*2,maxH*0.45);
+    ctx.fillStyle='rgba(248,81,73,0.5)';
+    ctx.fillRect(bx+barW*0.45,y+h-10-bH,barW*0.4,bH);
+  }
+
+  ctx.fillStyle='#8b949e';ctx.font='9px monospace';ctx.textAlign='left';
+  ctx.fillText('FWD/BWD per layer',x+4,y+10);
+}
+
+// === INIT ===
+window.addEventListener('resize',draw);
+go();
+</script>
+</body>
+</html>

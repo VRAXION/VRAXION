@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>EP Wave Scope — Settling Replay</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0a0e14;color:#c8d0d8;font-family:'Courier New',monospace;font-size:13px}
+.top{display:flex;gap:8px;padding:10px 14px;background:#0d1117;border-bottom:1px solid #1a2332;flex-wrap:wrap;align-items:center}
+.top label{color:#8b949e;font-size:11px;margin-right:2px}
+.top select,.top input[type=range]{background:#161b22;border:1px solid #30363d;color:#c9d1d9;padding:2px 4px;border-radius:3px;font-size:11px}
+.top select{width:90px}
+.top input[type=range]{width:80px;height:14px;vertical-align:middle}
+.top .val{color:#58a6ff;font-size:11px;min-width:28px;display:inline-block}
+.top .sep{border-left:1px solid #30363d;height:20px;margin:0 6px}
+.main{display:flex;flex-direction:column;height:calc(100vh - 46px)}
+.viz{flex:1;display:flex;gap:0;min-height:0}
+.panel{flex:1;padding:10px;display:flex;flex-direction:column;border-right:1px solid #1a2332}
+.panel:last-child{border-right:none}
+.panel-title{font-size:11px;color:#7ee787;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px}
+canvas{width:100%;flex:1;background:#0d1117;border:1px solid #1a2332;border-radius:3px}
+.slider-row{display:flex;align-items:center;gap:8px;padding:6px 14px;background:#0d1117;border-top:1px solid #1a2332}
+.slider-row input[type=range]{flex:1;height:20px;background:#161b22;-webkit-appearance:none;appearance:none;border-radius:3px;cursor:pointer}
+.slider-row input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;border-radius:50%;background:#58a6ff;cursor:pointer;border:2px solid #0d1117}
+.tick-label{font-size:22px;color:#58a6ff;font-weight:bold;min-width:100px;letter-spacing:1px}
+.info{font-size:11px;color:#8b949e;min-width:300px;text-align:right}
+.info .v{color:#c9d1d9}
+.info .ok{color:#2ea043}
+.info .miss{color:#f85149}
+</style>
+</head>
+<body>
+
+<div class="top">
+  <label>Sample:</label>
+  <select id="selInput" onchange="recompute()">
+    <option value="0,0">(0,0)→0</option>
+    <option value="0,1" selected>(0,1)→1</option>
+    <option value="1,0">(1,0)→1</option>
+    <option value="1,1">(1,1)→0</option>
+  </select>
+  <div class="sep"></div>
+  <label>Activation:</label>
+  <select id="selAct" onchange="recompute()">
+    <option value="c19">C19</option>
+    <option value="tanh">tanh</option>
+    <option value="relu">ReLU</option>
+  </select>
+  <label>rho:</label><input type="range" id="sRho" min="1" max="16" value="8" oninput="recompute()"><span class="val" id="vRho">8</span>
+  <div class="sep"></div>
+  <label>dt:</label><input type="range" id="sDt" min="0.05" max="1" step="0.05" value="0.5" oninput="recompute()"><span class="val" id="vDt">0.50</span>
+  <label>beta:</label><input type="range" id="sBeta" min="0" max="2" step="0.05" value="0" oninput="recompute()"><span class="val" id="vBeta">0.00</span>
+  <label>tgt:</label><select id="selTgt" onchange="recompute()"><option value="0">0</option><option value="1" selected>1</option></select>
+  <label>ticks:</label><input type="range" id="sTicks" min="10" max="100" step="5" value="40" oninput="recompute()"><span class="val" id="vTicks">40</span>
+</div>
+
+<div class="main">
+  <div class="viz">
+    <div class="panel">
+      <div class="panel-title">Network State at Tick <span id="curTickA">0</span></div>
+      <canvas id="cNet"></canvas>
+    </div>
+    <div class="panel">
+      <div class="panel-title">Settling Curves</div>
+      <canvas id="cSettle"></canvas>
+    </div>
+    <div class="panel">
+      <div class="panel-title">Energy & Drives</div>
+      <canvas id="cEnergy"></canvas>
+    </div>
+  </div>
+  <div class="slider-row">
+    <span class="tick-label">TICK <span id="tickDisp">0</span></span>
+    <input type="range" id="timeSlider" min="0" max="39" value="0" oninput="scrub(+this.value)">
+    <div class="info" id="infoBar">-</div>
+  </div>
+</div>
+
+<script>
+// === MATH ===
+function c19(x,rho){const l=6;if(x>=l)return x-l;if(x<=-l)return x+l;const n=Math.floor(x),t=x-n,h=t*(1-t),s=n%2===0?1:-1;return s*h+rho*h*h}
+function relu(x){return Math.max(0,x)}
+function tanhA(x){return Math.tanh(x)}
+function getAct(){const a=document.getElementById('selAct').value,r=+document.getElementById('sRho').value;if(a==='c19')return x=>c19(x,r);if(a==='relu')return relu;return tanhA}
+
+// Fixed weights (seed=42)
+const W1=[[-0.2612,0.4145],[-0.2287,-0.3992],[-0.0477,0.0237]];
+const W2=[[-0.1900,-0.2206,-0.1522]];
+const b1=[0,0,0],b2=[0];
+const IN=2,H=3,OUT=1;
+const XOR_T={'0,0':0,'0,1':1,'1,0':1,'1,1':0};
+
+// Precomputed history
+let hist={s_h:[],s_out:[],delta:[],energy:[],fwd:[],bwd:[]};
+let curTick=0;
+
+function recompute(){
+  // Read params
+  const x=document.getElementById('selInput').value.split(',').map(Number);
+  const act=getAct();
+  const dt=+document.getElementById('sDt').value;
+  const beta=+document.getElementById('sBeta').value;
+  const tgt=+document.getElementById('selTgt').value;
+  const T=+document.getElementById('sTicks').value;
+
+  // Labels
+  document.getElementById('vRho').textContent=document.getElementById('sRho').value;
+  document.getElementById('vDt').textContent=dt.toFixed(2);
+  document.getElementById('vBeta').textContent=beta.toFixed(2);
+  document.getElementById('vTicks').textContent=T;
+
+  // Auto-set target from XOR
+  if(document.getElementById('selAct').value!=='dummy'){
+    const at=XOR_T[document.getElementById('selInput').value];
+    if(at!==undefined){document.getElementById('selTgt').value=at;}
+  }
+
+  // Simulate all ticks
+  hist={s_h:[[0,0,0]],s_out:[[0]],delta:[],energy:[],fwd:[],bwd:[]};
+  let sh=[0,0,0],so=[0];
+
+  for(let t=0;t<T;t++){
+    const osh=[...sh],oso=[...so];
+    // Drives
+    const fwd=[0,0,0],bwd=[0,0,0];
+    for(let j=0;j<H;j++){fwd[j]=b1[j];for(let i=0;i<IN;i++)fwd[j]+=W1[j][i]*x[i];for(let k=0;k<OUT;k++)bwd[j]+=W2[k][j]*act(so[k]);}
+    hist.fwd.push([...fwd]);hist.bwd.push([...bwd]);
+    // Hidden
+    for(let j=0;j<H;j++){sh[j]=sh[j]+dt*(-sh[j]+fwd[j]+bwd[j]);}
+    // Output
+    for(let k=0;k<OUT;k++){let d=b2[k];for(let j=0;j<H;j++)d+=W2[k][j]*act(sh[j]);const nudge=-beta*(act(so[k])-tgt);so[k]=so[k]+dt*(-so[k]+d+nudge);}
+    // Delta
+    let mx=0;for(let j=0;j<H;j++)mx=Math.max(mx,Math.abs(sh[j]-osh[j]));for(let k=0;k<OUT;k++)mx=Math.max(mx,Math.abs(so[k]-oso[k]));
+    // Energy
+    let E=0;for(let j=0;j<H;j++)E+=0.5*sh[j]*sh[j];for(let k=0;k<OUT;k++)E+=0.5*so[k]*so[k];
+    for(let j=0;j<H;j++)for(let i=0;i<IN;i++)E-=W1[j][i]*x[i]*act(sh[j]);
+    for(let k=0;k<OUT;k++)for(let j=0;j<H;j++)E-=W2[k][j]*act(sh[j])*act(so[k]);
+    for(let j=0;j<H;j++)E-=b1[j]*act(sh[j]);for(let k=0;k<OUT;k++)E-=b2[k]*act(so[k]);
+
+    hist.s_h.push([...sh]);hist.s_out.push([...so]);hist.delta.push(mx);hist.energy.push(E);
+  }
+
+  // Update slider
+  document.getElementById('timeSlider').max=T;
+  document.getElementById('timeSlider').value=T;
+  curTick=T;
+  draw();
+}
+
+function scrub(t){curTick=t;draw();}
+
+function draw(){
+  document.getElementById('tickDisp').textContent=curTick;
+  document.getElementById('curTickA').textContent=curTick;
+  drawNet();drawSettle();drawEnergy();drawInfo();
+}
+
+function drawNet(){
+  const c=document.getElementById('cNet');c.width=c.clientWidth;c.height=c.clientHeight;
+  const ctx=c.getContext('2d'),w=c.width,h=c.height;
+  const act=getAct();
+  const x=document.getElementById('selInput').value.split(',').map(Number);
+  const tgt=+document.getElementById('selTgt').value;
+  const sh=hist.s_h[curTick]||[0,0,0],so=hist.s_out[curTick]||[0];
+  const R=Math.min(w,h)*0.08;
+
+  const inX=w*0.12,hidX=w*0.5,outX=w*0.88;
+  const inY=[h*0.35,h*0.65];
+  const hidY=[h*0.18,h*0.5,h*0.82];
+  const outY=[h*0.5];
+
+  // Connections
+  for(let j=0;j<H;j++)for(let i=0;i<IN;i++){
+    const wt=W1[j][i];ctx.strokeStyle=wt>0?'rgba(88,166,255,0.4)':'rgba(248,81,73,0.4)';ctx.lineWidth=Math.abs(wt)*8;
+    ctx.beginPath();ctx.moveTo(inX,inY[i]);ctx.lineTo(hidX,hidY[j]);ctx.stroke();
+  }
+  for(let k=0;k<OUT;k++)for(let j=0;j<H;j++){
+    const wt=W2[k][j];ctx.strokeStyle=wt>0?'rgba(88,166,255,0.4)':'rgba(248,81,73,0.4)';ctx.lineWidth=Math.abs(wt)*8;
+    ctx.beginPath();ctx.moveTo(hidX,hidY[j]);ctx.lineTo(outX,outY[k]);ctx.stroke();
+  }
+
+  // Drive arrows at current tick
+  if(curTick>0&&hist.fwd[curTick-1]){
+    const fwd=hist.fwd[curTick-1],bwd=hist.bwd[curTick-1];
+    // For each hidden: draw small colored arrows
+    for(let j=0;j<H;j++){
+      const fMag=Math.min(Math.abs(fwd[j])*150,40);
+      const bMag=Math.min(Math.abs(bwd[j])*150,40);
+      // Forward arrow (blue, from left)
+      ctx.strokeStyle='#58a6ff';ctx.lineWidth=2;ctx.setLineDash([3,2]);
+      ctx.beginPath();ctx.moveTo(hidX-R-fMag,hidY[j]);ctx.lineTo(hidX-R-2,hidY[j]);ctx.stroke();
+      // Backward arrow (red, from right)
+      ctx.strokeStyle='#f85149';
+      ctx.beginPath();ctx.moveTo(hidX+R+2,hidY[j]);ctx.lineTo(hidX+R+bMag,hidY[j]);ctx.stroke();
+      ctx.setLineDash([]);
+    }
+  }
+
+  // Input nodes
+  const fs=Math.max(10,R*0.55);
+  for(let i=0;i<IN;i++){
+    ctx.beginPath();ctx.arc(inX,inY[i],R,0,Math.PI*2);ctx.fillStyle='#1a3a5c';ctx.fill();ctx.strokeStyle='#58a6ff';ctx.lineWidth=2;ctx.stroke();
+    ctx.fillStyle='#58a6ff';ctx.font=fs+'px monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillText(x[i].toFixed(0),inX,inY[i]);
+    ctx.fillStyle='#484f58';ctx.font=(fs*0.7)+'px monospace';ctx.fillText('x'+i,inX,inY[i]-R-8);
+  }
+
+  // Hidden nodes
+  for(let j=0;j<H;j++){
+    const sv=sh[j],av=act(sv);
+    // Color intensity by activation magnitude
+    const mag=Math.min(Math.abs(av)*3,1);
+    ctx.beginPath();ctx.arc(hidX,hidY[j],R,0,Math.PI*2);
+    ctx.fillStyle=`rgba(${80+mag*80},${40+mag*30},${140+mag*60},${0.4+mag*0.4})`;ctx.fill();
+    ctx.strokeStyle=`rgba(180,130,255,${0.5+mag*0.4})`;ctx.lineWidth=2;ctx.stroke();
+    // State value
+    ctx.fillStyle='#c9b4ff';ctx.font=(fs*0.8)+'px monospace';ctx.textAlign='center';
+    ctx.fillText('s='+sv.toFixed(3),hidX,hidY[j]-5);
+    // Activated value
+    ctx.fillStyle='#e3b341';ctx.font=(fs*0.7)+'px monospace';
+    ctx.fillText('a='+av.toFixed(3),hidX,hidY[j]+10);
+    ctx.fillStyle='#484f58';ctx.font=(fs*0.6)+'px monospace';ctx.fillText('h'+j,hidX,hidY[j]-R-8);
+  }
+
+  // Output node
+  const sv=so[0],av=act(sv);
+  const correct=(av>0.5?1:0)===tgt;
+  ctx.beginPath();ctx.arc(outX,outY[0],R*1.1,0,Math.PI*2);
+  ctx.fillStyle=correct?'rgba(35,134,54,0.5)':'rgba(218,54,51,0.4)';ctx.fill();
+  ctx.strokeStyle=correct?'#2ea043':'#da3633';ctx.lineWidth=3;ctx.stroke();
+  ctx.fillStyle='#7ee787';ctx.font=(fs*0.9)+'px monospace';ctx.textAlign='center';
+  ctx.fillText('s='+sv.toFixed(3),outX,outY[0]-7);
+  ctx.fillStyle='#e3b341';ctx.font=(fs*0.8)+'px monospace';
+  ctx.fillText('a='+av.toFixed(4),outX,outY[0]+9);
+  ctx.fillStyle='#484f58';ctx.font=(fs*0.6)+'px monospace';
+  ctx.fillText('out',outX,outY[0]-R*1.1-8);
+  ctx.fillText('tgt='+tgt,outX,outY[0]+R*1.1+12);
+
+  // Beta nudge indicator
+  const beta=+document.getElementById('sBeta').value;
+  if(beta>0){
+    ctx.fillStyle='#f85149';ctx.font=(fs*0.6)+'px monospace';ctx.textAlign='center';
+    ctx.fillText('NUDGE β='+beta.toFixed(2),outX,outY[0]+R*1.1+24);
+    // Arrow from target toward output
+    ctx.strokeStyle='rgba(248,81,73,0.6)';ctx.lineWidth=2;ctx.setLineDash([4,3]);
+    ctx.beginPath();ctx.moveTo(outX+R*1.3,outY[0]-20);ctx.lineTo(outX+R*1.3,outY[0]+20);ctx.stroke();
+    ctx.setLineDash([]);
+  }
+}
+
+function drawSettle(){
+  const c=document.getElementById('cSettle');c.width=c.clientWidth;c.height=c.clientHeight;
+  const ctx=c.getContext('2d'),w=c.width,h=c.height;
+  const pad={l:50,r:10,t:25,b:25};
+  const pw=w-pad.l-pad.r,ph=h-pad.t-pad.b;
+  const T=hist.delta.length;if(!T){ctx.fillStyle='#484f58';ctx.font='11px monospace';ctx.textAlign='center';ctx.fillText('Adjust params above',w/2,h/2);return;}
+
+  // State trajectories + delta
+  const sh=hist.s_h,so=hist.s_out;
+
+  // Gather all values for Y range
+  let allV=[];
+  for(let t=0;t<=T;t++){if(sh[t])sh[t].forEach(v=>allV.push(v));if(so[t])so[t].forEach(v=>allV.push(v));}
+  let minY=Math.min(...allV,-0.1),maxY=Math.max(...allV,0.1);
+  const rng=maxY-minY||1;
+
+  // Grid
+  ctx.strokeStyle='#1a2332';ctx.lineWidth=1;
+  for(let i=0;i<=4;i++){const y=pad.t+ph*i/4;ctx.beginPath();ctx.moveTo(pad.l,y);ctx.lineTo(w-pad.r,y);ctx.stroke();
+    ctx.fillStyle='#484f58';ctx.font='9px monospace';ctx.textAlign='right';ctx.fillText((maxY-rng*i/4).toFixed(2),pad.l-4,y+3);}
+
+  // Zero line
+  const zy=pad.t+ph*(1-(0-minY)/rng);
+  ctx.strokeStyle='#30363d';ctx.lineWidth=1;ctx.setLineDash([2,2]);
+  ctx.beginPath();ctx.moveTo(pad.l,zy);ctx.lineTo(w-pad.r,zy);ctx.stroke();ctx.setLineDash([]);
+
+  const colors=['#c9b4ff','#d2a8ff','#a371f7','#7ee787'];
+  const labels=['h0','h1','h2','out'];
+
+  // Draw lines up to curTick
+  for(let s=0;s<4;s++){
+    ctx.strokeStyle=colors[s];ctx.lineWidth=1.5;ctx.beginPath();
+    for(let t=0;t<=Math.min(curTick,T);t++){
+      const v=s<3?(sh[t]||[0,0,0])[s]:(so[t]||[0])[0];
+      const px=pad.l+(t/T)*pw;
+      const py=pad.t+ph*(1-(v-minY)/rng);
+      if(t===0)ctx.moveTo(px,py);else ctx.lineTo(px,py);
+    }
+    ctx.stroke();
+  }
+
+  // Current tick marker
+  const tx=pad.l+(curTick/T)*pw;
+  ctx.strokeStyle='#58a6ff';ctx.lineWidth=1;ctx.setLineDash([2,2]);
+  ctx.beginPath();ctx.moveTo(tx,pad.t);ctx.lineTo(tx,pad.t+ph);ctx.stroke();ctx.setLineDash([]);
+
+  // Legend
+  let lx=pad.l+5;
+  for(let s=0;s<4;s++){
+    ctx.fillStyle=colors[s];ctx.font='9px monospace';ctx.textAlign='left';
+    ctx.fillRect(lx,pad.t+3,12,2);ctx.fillText(labels[s],lx+15,pad.t+6);lx+=50;
+  }
+
+  // Delta subplot (bottom 30%)
+  const dTop=pad.t+ph*0.72;
+  ctx.fillStyle='rgba(10,14,20,0.8)';ctx.fillRect(pad.l,dTop,pw,ph*0.28);
+  ctx.strokeStyle='#1a2332';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(pad.l,dTop);ctx.lineTo(w-pad.r,dTop);ctx.stroke();
+
+  const dH=ph*0.26;
+  let maxD=Math.max(...hist.delta,0.01);
+  ctx.strokeStyle='#58a6ff';ctx.lineWidth=1.5;ctx.beginPath();
+  for(let t=0;t<Math.min(curTick,T);t++){
+    const px=pad.l+((t+1)/T)*pw;
+    const py=dTop+dH*(1-Math.min(hist.delta[t]/maxD,1));
+    if(t===0)ctx.moveTo(px,py);else ctx.lineTo(px,py);
+  }
+  ctx.stroke();
+
+  // Epsilon line
+  const ey=dTop+dH*(1-0.001/maxD);
+  if(ey>dTop){ctx.strokeStyle='#e3b341';ctx.lineWidth=1;ctx.setLineDash([3,3]);ctx.beginPath();ctx.moveTo(pad.l,ey);ctx.lineTo(w-pad.r,ey);ctx.stroke();ctx.setLineDash([]);
+    ctx.fillStyle='#e3b341';ctx.font='8px monospace';ctx.textAlign='left';ctx.fillText('ε=0.001',pad.l+2,ey-3);}
+
+  ctx.fillStyle='#58a6ff';ctx.font='9px monospace';ctx.textAlign='left';ctx.fillText('delta',pad.l+2,dTop+10);
+
+  // X axis
+  ctx.fillStyle='#484f58';ctx.font='9px monospace';ctx.textAlign='center';ctx.fillText('tick →',w/2,h-4);
+}
+
+function drawEnergy(){
+  const c=document.getElementById('cEnergy');c.width=c.clientWidth;c.height=c.clientHeight;
+  const ctx=c.getContext('2d'),w=c.width,h=c.height;
+  const pad={l:50,r:10,t:25,b:25};
+  const pw=w-pad.l-pad.r,ph=h-pad.t-pad.b;
+  const T=hist.energy.length;if(!T)return;
+
+  // Energy top half
+  let minE=Math.min(...hist.energy),maxE=Math.max(...hist.energy);
+  const rngE=maxE-minE||1;
+
+  ctx.strokeStyle='#1a2332';ctx.lineWidth=1;
+  for(let i=0;i<=4;i++){const y=pad.t+ph*0.45*i/4;ctx.beginPath();ctx.moveTo(pad.l,y);ctx.lineTo(w-pad.r,y);ctx.stroke();
+    ctx.fillStyle='#484f58';ctx.font='9px monospace';ctx.textAlign='right';ctx.fillText((maxE-rngE*i/4).toFixed(3),pad.l-4,y+3);}
+
+  ctx.strokeStyle='#e3b341';ctx.lineWidth=1.5;ctx.beginPath();
+  for(let t=0;t<Math.min(curTick,T);t++){
+    const px=pad.l+((t+1)/T)*pw;
+    const py=pad.t+ph*0.45*(1-(hist.energy[t]-minE)/rngE);
+    if(t===0)ctx.moveTo(px,py);else ctx.lineTo(px,py);
+  }
+  ctx.stroke();
+
+  const tx=pad.l+(curTick/T)*pw;
+  ctx.strokeStyle='#58a6ff';ctx.lineWidth=1;ctx.setLineDash([2,2]);
+  ctx.beginPath();ctx.moveTo(tx,pad.t);ctx.lineTo(tx,pad.t+ph);ctx.stroke();ctx.setLineDash([]);
+
+  ctx.fillStyle='#e3b341';ctx.font='9px monospace';ctx.textAlign='left';ctx.fillText('Energy E(s)',pad.l+2,pad.t+10);
+
+  // Drives bottom half
+  const dTop=pad.t+ph*0.55;
+  ctx.fillStyle='rgba(10,14,20,0.6)';ctx.fillRect(pad.l-1,dTop-5,pw+2,ph*0.45+pad.b);
+
+  if(hist.fwd.length===0)return;
+  const dH=ph*0.4;
+
+  // Gather fwd/bwd ranges
+  let allD=[];hist.fwd.forEach(f=>f.forEach(v=>allD.push(v)));hist.bwd.forEach(b=>b.forEach(v=>allD.push(v)));
+  let minD=Math.min(...allD,-0.1),maxD=Math.max(...allD,0.1);const rngD=maxD-minD||1;
+
+  const fColors=['#3b82f6','#60a5fa','#93c5fd'];
+  const bColors=['#ef4444','#f87171','#fca5a5'];
+
+  for(let j=0;j<H;j++){
+    // Forward drive
+    ctx.strokeStyle=fColors[j];ctx.lineWidth=1;ctx.beginPath();
+    for(let t=0;t<Math.min(curTick,T);t++){
+      const px=pad.l+((t+1)/T)*pw;
+      const py=dTop+dH*(1-(hist.fwd[t][j]-minD)/rngD);
+      if(t===0)ctx.moveTo(px,py);else ctx.lineTo(px,py);
+    }
+    ctx.stroke();
+    // Backward drive
+    ctx.strokeStyle=bColors[j];ctx.setLineDash([3,2]);ctx.beginPath();
+    for(let t=0;t<Math.min(curTick,T);t++){
+      const px=pad.l+((t+1)/T)*pw;
+      const py=dTop+dH*(1-(hist.bwd[t][j]-minD)/rngD);
+      if(t===0)ctx.moveTo(px,py);else ctx.lineTo(px,py);
+    }
+    ctx.stroke();ctx.setLineDash([]);
+  }
+
+  // Legend
+  ctx.fillStyle='#3b82f6';ctx.font='8px monospace';ctx.textAlign='left';
+  ctx.fillText('— fwd (blue)',pad.l+2,dTop+8);
+  ctx.fillStyle='#ef4444';ctx.fillText('--- bwd (red)',pad.l+2,dTop+18);
+}
+
+function drawInfo(){
+  const act=getAct();
+  const sh=hist.s_h[curTick]||[0,0,0],so=hist.s_out[curTick]||[0];
+  const tgt=+document.getElementById('selTgt').value;
+  const av=act(so[0]);
+  const correct=(av>0.5?1:0)===tgt;
+  const delta=curTick>0?hist.delta[curTick-1]:'-';
+  const energy=curTick>0?hist.energy[curTick-1]:'-';
+  const ci=hist.delta.findIndex(d=>d<0.001);
+
+  let s=`h=[${sh.map(v=>v.toFixed(3)).join(', ')}]  out_s=${so[0].toFixed(4)}  `;
+  s+=`<span class="v">act(out)=${av.toFixed(4)}</span>  tgt=${tgt}  `;
+  s+=correct?'<span class="ok">CORRECT</span>':'<span class="miss">MISS</span>';
+  s+=`  |  delta=${typeof delta==='number'?delta.toExponential(2):'-'}`;
+  s+=`  E=${typeof energy==='number'?energy.toFixed(3):'-'}`;
+  if(ci>=0)s+=`  <span class="ok">CONV@${ci+1}</span>`;
+
+  document.getElementById('infoBar').innerHTML=s;
+}
+
+// Auto-set target on input change
+document.getElementById('selInput').addEventListener('change',()=>{
+  const t=XOR_T[document.getElementById('selInput').value];
+  document.getElementById('selTgt').value=t;
+});
+
+// Init
+recompute();
+</script>
+</body>
+</html>
