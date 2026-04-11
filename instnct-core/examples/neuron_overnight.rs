@@ -22,7 +22,7 @@ impl Rng {
     fn bool_p(&mut self, p: f32) -> bool { self.f32() < p }
 }
 
-fn sigmoid(x: f32) -> f32 { 1.0 / (1.0 + (-x).exp()) }
+fn _sigmoid(x: f32) -> f32 { 1.0 / (1.0 + (-x).exp()) }
 
 // ══════════════════════════════════════════════════════
 // 3×3 FONT
@@ -291,6 +291,7 @@ fn greedy_parents(
 // ══════════════════════════════════════════════════════
 // BUILD ONE TASK
 // ══════════════════════════════════════════════════════
+#[allow(dead_code)]
 struct TaskResult {
     name: String,
     n_neurons: usize,
@@ -316,7 +317,7 @@ fn build_task(
     let mut sw = vec![1.0 / data.train.len() as f32; data.train.len()];
     let mut best_val = 50.0f32;
     let mut stall = 0;
-    let mut dup_rejections = 0usize;
+    let dup_rejections = 0usize;
     let mut hidden_parent_neurons: Vec<usize> = Vec::new();
 
     let msg = format!("  ── {} (seed={}) ──", task_name, seed);
@@ -336,7 +337,7 @@ fn build_task(
         if val_acc >= 99.0 { log.push("    ✓ Target reached".into()); println!("    ✓ Target reached"); break; }
 
         let ranked = rank_signals(&data.train, &net, &sw);
-        let (parents, weights, bias, threshold, _wacc, train_outputs, combos) =
+        let (parents, weights, bias, threshold, _wacc, train_outputs, _combos) =
             greedy_parents(&data.train, &net, &ranked, &sw, top_k, max_fan, log);
 
         if parents.is_empty() { log.push("    ✗ No parents found".into()); println!("    ✗ No parents found"); break; }
