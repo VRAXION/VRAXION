@@ -102,6 +102,7 @@ instnct-core/results/
 
 # Grower / lab scratch that should never leak into the public mainline
 instnct-core/*_log.txt
+instnct-core/*_console.txt
 instnct-core/checkpoint*.json
 instnct-core/ckpt_v2_*.json
 instnct-core/grow_*.json
