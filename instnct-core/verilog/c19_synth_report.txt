@@ -1,0 +1,1326 @@
+
+ /----------------------------------------------------------------------------\
+ |  yosys -- Yosys Open SYnthesis Suite                                       |
+ |  Copyright (C) 2012 - 2024  Claire Xenia Wolf <claire@yosyshq.com>         |
+ |  Distributed under an ISC-like license, type "license" to see terms        |
+ \----------------------------------------------------------------------------/
+ Yosys 0.45+139 (git sha1 4d581a97d, x86_64-w64-mingw32-g++ 13.2.1 -O3)
+
+-- Running command `
+read_verilog S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v;
+synth -flatten -top alu8_c19;
+abc -lut 4;
+stat;
+' --
+
+1. Executing Verilog-2005 frontend: S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v
+Parsing Verilog input from `S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v' to AST representation.
+Generating RTLIL representation for module `\c19_and2'.
+Generating RTLIL representation for module `\c19_or2'.
+Generating RTLIL representation for module `\c19_xor2'.
+Generating RTLIL representation for module `\c19_not1'.
+Generating RTLIL representation for module `\c19_mux2'.
+Generating RTLIL representation for module `\c19_full_adder'.
+Generating RTLIL representation for module `\c19_add8'.
+Generating RTLIL representation for module `\c19_sub8'.
+Generating RTLIL representation for module `\c19_mul8'.
+Generating RTLIL representation for module `\c19_and8'.
+Generating RTLIL representation for module `\c19_or8'.
+Generating RTLIL representation for module `\c19_xor8'.
+Generating RTLIL representation for module `\c19_not8'.
+Generating RTLIL representation for module `\c19_cmp8'.
+Generating RTLIL representation for module `\c19_mux8'.
+Generating RTLIL representation for module `\c19_min8'.
+Generating RTLIL representation for module `\c19_max8'.
+Generating RTLIL representation for module `\alu8_c19'.
+Successfully finished Verilog frontend.
+
+2. Executing SYNTH pass.
+
+2.1. Executing HIERARCHY pass (managing design hierarchy).
+
+2.1.1. Analyzing design hierarchy..
+Top module:  \alu8_c19
+Used module:     \c19_not1
+Used module:     \c19_or2
+Used module:     \c19_max8
+Used module:         \c19_mux8
+Used module:             \c19_mux2
+Used module:         \c19_cmp8
+Used module:             \c19_sub8
+Used module:                 \c19_add8
+Used module:                     \c19_full_adder
+Used module:     \c19_min8
+Used module:     \c19_not8
+Used module:     \c19_xor8
+Used module:         \c19_xor2
+Used module:     \c19_or8
+Used module:     \c19_and8
+Used module:         \c19_and2
+Used module:     \c19_mul8
+
+2.1.2. Analyzing design hierarchy..
+Top module:  \alu8_c19
+Used module:     \c19_not1
+Used module:     \c19_or2
+Used module:     \c19_max8
+Used module:         \c19_mux8
+Used module:             \c19_mux2
+Used module:         \c19_cmp8
+Used module:             \c19_sub8
+Used module:                 \c19_add8
+Used module:                     \c19_full_adder
+Used module:     \c19_min8
+Used module:     \c19_not8
+Used module:     \c19_xor8
+Used module:         \c19_xor2
+Used module:     \c19_or8
+Used module:     \c19_and8
+Used module:         \c19_and2
+Used module:     \c19_mul8
+Removed 0 unused modules.
+
+2.2. Executing PROC pass (convert processes to netlists).
+
+2.2.1. Executing PROC_CLEAN pass (remove empty switches from decision trees).
+Cleaned up 0 empty switches.
+
+2.2.2. Executing PROC_RMDEAD pass (remove dead branches from decision trees).
+Marked 1 switch rules as full_case in process $proc$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:379$222 in module alu8_c19.
+Removed a total of 0 dead cases.
+
+2.2.3. Executing PROC_PRUNE pass (remove redundant assignments in processes).
+Removed 0 redundant assignments.
+Promoted 74 assignments to connections.
+
+2.2.4. Executing PROC_INIT pass (extract init attributes).
+
+2.2.5. Executing PROC_ARST pass (detect async resets in processes).
+
+2.2.6. Executing PROC_ROM pass (convert switches to ROMs).
+Converted 0 switches.
+<suppressed ~1 debug messages>
+
+2.2.7. Executing PROC_MUX pass (convert decision trees to multiplexers).
+Creating decoders for process `\alu8_c19.$proc$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:379$222'.
+     1/1: $1\result_r[7:0]
+Creating decoders for process `\c19_mul8.$proc$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:0$208'.
+
+2.2.8. Executing PROC_DLATCH pass (convert process syncs to latches).
+No latch inferred for signal `\alu8_c19.\result_r' from process `\alu8_c19.$proc$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:379$222'.
+No latch inferred for signal `\c19_mul8.\pp[0]' from process `\c19_mul8.$proc$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:0$208'.
+No latch inferred for signal `\c19_mul8.\pp[1]' from process `\c19_mul8.$proc$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:0$208'.
+No latch inferred for signal `\c19_mul8.\pp[2]' from process `\c19_mul8.$proc$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:0$208'.
+No latch inferred for signal `\c19_mul8.\pp[3]' from process `\c19_mul8.$proc$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:0$208'.
+No latch inferred for signal `\c19_mul8.\pp[4]' from process `\c19_mul8.$proc$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:0$208'.
+No latch inferred for signal `\c19_mul8.\pp[5]' from process `\c19_mul8.$proc$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:0$208'.
+No latch inferred for signal `\c19_mul8.\pp[6]' from process `\c19_mul8.$proc$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:0$208'.
+No latch inferred for signal `\c19_mul8.\pp[7]' from process `\c19_mul8.$proc$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:0$208'.
+No latch inferred for signal `\c19_mul8.\pp[8]' from process `\c19_mul8.$proc$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:0$208'.
+No latch inferred for signal `\c19_mul8.\pp[9]' from process `\c19_mul8.$proc$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:0$208'.
+No latch inferred for signal `\c19_mul8.\pp[10]' from process `\c19_mul8.$proc$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:0$208'.
+No latch inferred for signal `\c19_mul8.\pp[11]' from process `\c19_mul8.$proc$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:0$208'.
+No latch inferred for signal `\c19_mul8.\pp[12]' from process `\c19_mul8.$proc$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:0$208'.
+No latch inferred for signal `\c19_mul8.\pp[13]' from process `\c19_mul8.$proc$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:0$208'.
+No latch inferred for signal `\c19_mul8.\pp[14]' from process `\c19_mul8.$proc$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:0$208'.
+No latch inferred for signal `\c19_mul8.\pp[15]' from process `\c19_mul8.$proc$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:0$208'.
+No latch inferred for signal `\c19_mul8.\pp[16]' from process `\c19_mul8.$proc$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:0$208'.
+No latch inferred for signal `\c19_mul8.\pp[17]' from process `\c19_mul8.$proc$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:0$208'.
+No latch inferred for signal `\c19_mul8.\pp[18]' from process `\c19_mul8.$proc$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:0$208'.
+No latch inferred for signal `\c19_mul8.\pp[19]' from process `\c19_mul8.$proc$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:0$208'.
+No latch inferred for signal `\c19_mul8.\pp[20]' from process `\c19_mul8.$proc$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:0$208'.
+No latch inferred for signal `\c19_mul8.\pp[21]' from process `\c19_mul8.$proc$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:0$208'.
+No latch inferred for signal `\c19_mul8.\pp[22]' from process `\c19_mul8.$proc$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:0$208'.
+No latch inferred for signal `\c19_mul8.\pp[23]' from process `\c19_mul8.$proc$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:0$208'.
+No latch inferred for signal `\c19_mul8.\pp[24]' from process `\c19_mul8.$proc$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:0$208'.
+No latch inferred for signal `\c19_mul8.\pp[25]' from process `\c19_mul8.$proc$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:0$208'.
+No latch inferred for signal `\c19_mul8.\pp[26]' from process `\c19_mul8.$proc$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:0$208'.
+No latch inferred for signal `\c19_mul8.\pp[27]' from process `\c19_mul8.$proc$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:0$208'.
+No latch inferred for signal `\c19_mul8.\pp[28]' from process `\c19_mul8.$proc$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:0$208'.
+No latch inferred for signal `\c19_mul8.\pp[29]' from process `\c19_mul8.$proc$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:0$208'.
+No latch inferred for signal `\c19_mul8.\pp[30]' from process `\c19_mul8.$proc$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:0$208'.
+No latch inferred for signal `\c19_mul8.\pp[31]' from process `\c19_mul8.$proc$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:0$208'.
+No latch inferred for signal `\c19_mul8.\pp[32]' from process `\c19_mul8.$proc$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:0$208'.
+No latch inferred for signal `\c19_mul8.\pp[33]' from process `\c19_mul8.$proc$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:0$208'.
+No latch inferred for signal `\c19_mul8.\pp[34]' from process `\c19_mul8.$proc$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:0$208'.
+No latch inferred for signal `\c19_mul8.\pp[35]' from process `\c19_mul8.$proc$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:0$208'.
+No latch inferred for signal `\c19_mul8.\pp[36]' from process `\c19_mul8.$proc$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:0$208'.
+No latch inferred for signal `\c19_mul8.\pp[37]' from process `\c19_mul8.$proc$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:0$208'.
+No latch inferred for signal `\c19_mul8.\pp[38]' from process `\c19_mul8.$proc$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:0$208'.
+No latch inferred for signal `\c19_mul8.\pp[39]' from process `\c19_mul8.$proc$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:0$208'.
+No latch inferred for signal `\c19_mul8.\pp[40]' from process `\c19_mul8.$proc$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:0$208'.
+No latch inferred for signal `\c19_mul8.\pp[41]' from process `\c19_mul8.$proc$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:0$208'.
+No latch inferred for signal `\c19_mul8.\pp[42]' from process `\c19_mul8.$proc$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:0$208'.
+No latch inferred for signal `\c19_mul8.\pp[43]' from process `\c19_mul8.$proc$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:0$208'.
+No latch inferred for signal `\c19_mul8.\pp[44]' from process `\c19_mul8.$proc$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:0$208'.
+No latch inferred for signal `\c19_mul8.\pp[45]' from process `\c19_mul8.$proc$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:0$208'.
+No latch inferred for signal `\c19_mul8.\pp[46]' from process `\c19_mul8.$proc$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:0$208'.
+No latch inferred for signal `\c19_mul8.\pp[47]' from process `\c19_mul8.$proc$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:0$208'.
+No latch inferred for signal `\c19_mul8.\pp[48]' from process `\c19_mul8.$proc$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:0$208'.
+No latch inferred for signal `\c19_mul8.\pp[49]' from process `\c19_mul8.$proc$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:0$208'.
+No latch inferred for signal `\c19_mul8.\pp[50]' from process `\c19_mul8.$proc$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:0$208'.
+No latch inferred for signal `\c19_mul8.\pp[51]' from process `\c19_mul8.$proc$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:0$208'.
+No latch inferred for signal `\c19_mul8.\pp[52]' from process `\c19_mul8.$proc$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:0$208'.
+No latch inferred for signal `\c19_mul8.\pp[53]' from process `\c19_mul8.$proc$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:0$208'.
+No latch inferred for signal `\c19_mul8.\pp[54]' from process `\c19_mul8.$proc$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:0$208'.
+No latch inferred for signal `\c19_mul8.\pp[55]' from process `\c19_mul8.$proc$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:0$208'.
+No latch inferred for signal `\c19_mul8.\pp[56]' from process `\c19_mul8.$proc$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:0$208'.
+No latch inferred for signal `\c19_mul8.\pp[57]' from process `\c19_mul8.$proc$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:0$208'.
+No latch inferred for signal `\c19_mul8.\pp[58]' from process `\c19_mul8.$proc$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:0$208'.
+No latch inferred for signal `\c19_mul8.\pp[59]' from process `\c19_mul8.$proc$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:0$208'.
+No latch inferred for signal `\c19_mul8.\pp[60]' from process `\c19_mul8.$proc$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:0$208'.
+No latch inferred for signal `\c19_mul8.\pp[61]' from process `\c19_mul8.$proc$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:0$208'.
+No latch inferred for signal `\c19_mul8.\pp[62]' from process `\c19_mul8.$proc$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:0$208'.
+No latch inferred for signal `\c19_mul8.\pp[63]' from process `\c19_mul8.$proc$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:0$208'.
+No latch inferred for signal `\c19_mul8.\row[0]' from process `\c19_mul8.$proc$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:0$208'.
+No latch inferred for signal `\c19_mul8.\pp_shift[0]' from process `\c19_mul8.$proc$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:0$208'.
+No latch inferred for signal `\c19_mul8.\pp_shift[1]' from process `\c19_mul8.$proc$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:0$208'.
+No latch inferred for signal `\c19_mul8.\pp_shift[2]' from process `\c19_mul8.$proc$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:0$208'.
+No latch inferred for signal `\c19_mul8.\pp_shift[3]' from process `\c19_mul8.$proc$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:0$208'.
+No latch inferred for signal `\c19_mul8.\pp_shift[4]' from process `\c19_mul8.$proc$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:0$208'.
+No latch inferred for signal `\c19_mul8.\pp_shift[5]' from process `\c19_mul8.$proc$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:0$208'.
+No latch inferred for signal `\c19_mul8.\pp_shift[6]' from process `\c19_mul8.$proc$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:0$208'.
+No latch inferred for signal `\c19_mul8.\pp_shift[7]' from process `\c19_mul8.$proc$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:0$208'.
+
+2.2.9. Executing PROC_DFF pass (convert process syncs to FFs).
+
+2.2.10. Executing PROC_MEMWR pass (convert process memory writes to cells).
+
+2.2.11. Executing PROC_CLEAN pass (remove empty switches from decision trees).
+Found and cleaned up 1 empty switch in `\alu8_c19.$proc$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:379$222'.
+Removing empty process `alu8_c19.$proc$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:379$222'.
+Removing empty process `c19_mul8.$proc$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:0$208'.
+Cleaned up 1 empty switch.
+
+2.2.12. Executing OPT_EXPR pass (perform const folding).
+Optimizing module alu8_c19.
+<suppressed ~2 debug messages>
+Optimizing module c19_max8.
+Optimizing module c19_min8.
+Optimizing module c19_mux8.
+Optimizing module c19_cmp8.
+Optimizing module c19_not8.
+Optimizing module c19_xor8.
+Optimizing module c19_or8.
+Optimizing module c19_and8.
+Optimizing module c19_mul8.
+<suppressed ~8 debug messages>
+Optimizing module c19_sub8.
+Optimizing module c19_add8.
+Optimizing module c19_full_adder.
+Optimizing module c19_mux2.
+Optimizing module c19_not1.
+Optimizing module c19_xor2.
+Optimizing module c19_or2.
+Optimizing module c19_and2.
+
+2.3. Executing FLATTEN pass (flatten design).
+Deleting now unused module c19_max8.
+Deleting now unused module c19_min8.
+Deleting now unused module c19_mux8.
+Deleting now unused module c19_cmp8.
+Deleting now unused module c19_not8.
+Deleting now unused module c19_xor8.
+Deleting now unused module c19_or8.
+Deleting now unused module c19_and8.
+Deleting now unused module c19_mul8.
+Deleting now unused module c19_sub8.
+Deleting now unused module c19_add8.
+Deleting now unused module c19_full_adder.
+Deleting now unused module c19_mux2.
+Deleting now unused module c19_not1.
+Deleting now unused module c19_xor2.
+Deleting now unused module c19_or2.
+Deleting now unused module c19_and2.
+<suppressed ~153 debug messages>
+
+2.4. Executing OPT_EXPR pass (perform const folding).
+Optimizing module alu8_c19.
+<suppressed ~3 debug messages>
+
+2.5. Executing OPT_CLEAN pass (remove unused cells and wires).
+Finding unused cells or wires in module \alu8_c19..
+Removed 4 unused cells and 316 unused wires.
+<suppressed ~28 debug messages>
+
+2.6. Executing CHECK pass (checking for obvious problems).
+Checking module alu8_c19...
+Found and reported 0 problems.
+
+2.7. Executing OPT pass (performing simple optimizations).
+
+2.7.1. Executing OPT_EXPR pass (perform const folding).
+Optimizing module alu8_c19.
+
+2.7.2. Executing OPT_MERGE pass (detect identical cells).
+Finding identical cells in module `\alu8_c19'.
+<suppressed ~315 debug messages>
+Removed a total of 105 cells.
+
+2.7.3. Executing OPT_MUXTREE pass (detect dead branches in mux trees).
+Running muxtree optimizer on module \alu8_c19..
+  Creating internal representation of mux trees.
+  Evaluating internal representation of mux trees.
+  Analyzing evaluation results.
+Removed 0 multiplexer ports.
+<suppressed ~2 debug messages>
+
+2.7.4. Executing OPT_REDUCE pass (consolidate $*mux and $reduce_* inputs).
+  Optimizing cells in module \alu8_c19.
+Performed a total of 0 changes.
+
+2.7.5. Executing OPT_MERGE pass (detect identical cells).
+Finding identical cells in module `\alu8_c19'.
+Removed a total of 0 cells.
+
+2.7.6. Executing OPT_DFF pass (perform DFF optimizations).
+
+2.7.7. Executing OPT_CLEAN pass (remove unused cells and wires).
+Finding unused cells or wires in module \alu8_c19..
+Removed 0 unused cells and 100 unused wires.
+<suppressed ~1 debug messages>
+
+2.7.8. Executing OPT_EXPR pass (perform const folding).
+Optimizing module alu8_c19.
+
+2.7.9. Rerunning OPT passes. (Maybe there is more to do..)
+
+2.7.10. Executing OPT_MUXTREE pass (detect dead branches in mux trees).
+Running muxtree optimizer on module \alu8_c19..
+  Creating internal representation of mux trees.
+  Evaluating internal representation of mux trees.
+  Analyzing evaluation results.
+Removed 0 multiplexer ports.
+<suppressed ~2 debug messages>
+
+2.7.11. Executing OPT_REDUCE pass (consolidate $*mux and $reduce_* inputs).
+  Optimizing cells in module \alu8_c19.
+Performed a total of 0 changes.
+
+2.7.12. Executing OPT_MERGE pass (detect identical cells).
+Finding identical cells in module `\alu8_c19'.
+Removed a total of 0 cells.
+
+2.7.13. Executing OPT_DFF pass (perform DFF optimizations).
+
+2.7.14. Executing OPT_CLEAN pass (remove unused cells and wires).
+Finding unused cells or wires in module \alu8_c19..
+
+2.7.15. Executing OPT_EXPR pass (perform const folding).
+Optimizing module alu8_c19.
+
+2.7.16. Finished OPT passes. (There is nothing left to do.)
+
+2.8. Executing FSM pass (extract and optimize FSM).
+
+2.8.1. Executing FSM_DETECT pass (finding FSMs in design).
+
+2.8.2. Executing FSM_EXTRACT pass (extracting FSM from design).
+
+2.8.3. Executing FSM_OPT pass (simple optimizations of FSMs).
+
+2.8.4. Executing OPT_CLEAN pass (remove unused cells and wires).
+Finding unused cells or wires in module \alu8_c19..
+
+2.8.5. Executing FSM_OPT pass (simple optimizations of FSMs).
+
+2.8.6. Executing FSM_RECODE pass (re-assigning FSM state encoding).
+
+2.8.7. Executing FSM_INFO pass (dumping all available information on FSM cells).
+
+2.8.8. Executing FSM_MAP pass (mapping FSMs to basic logic).
+
+2.9. Executing OPT pass (performing simple optimizations).
+
+2.9.1. Executing OPT_EXPR pass (perform const folding).
+Optimizing module alu8_c19.
+
+2.9.2. Executing OPT_MERGE pass (detect identical cells).
+Finding identical cells in module `\alu8_c19'.
+Removed a total of 0 cells.
+
+2.9.3. Executing OPT_MUXTREE pass (detect dead branches in mux trees).
+Running muxtree optimizer on module \alu8_c19..
+  Creating internal representation of mux trees.
+  Evaluating internal representation of mux trees.
+  Analyzing evaluation results.
+Removed 0 multiplexer ports.
+<suppressed ~2 debug messages>
+
+2.9.4. Executing OPT_REDUCE pass (consolidate $*mux and $reduce_* inputs).
+  Optimizing cells in module \alu8_c19.
+Performed a total of 0 changes.
+
+2.9.5. Executing OPT_MERGE pass (detect identical cells).
+Finding identical cells in module `\alu8_c19'.
+Removed a total of 0 cells.
+
+2.9.6. Executing OPT_DFF pass (perform DFF optimizations).
+
+2.9.7. Executing OPT_CLEAN pass (remove unused cells and wires).
+Finding unused cells or wires in module \alu8_c19..
+
+2.9.8. Executing OPT_EXPR pass (perform const folding).
+Optimizing module alu8_c19.
+
+2.9.9. Finished OPT passes. (There is nothing left to do.)
+
+2.10. Executing WREDUCE pass (reducing word size of cells).
+Removed top 1 bits (of 4) from port B of cell alu8_c19.$procmux$229_CMP0 ($eq).
+Removed top 1 bits (of 4) from port B of cell alu8_c19.$procmux$230_CMP0 ($eq).
+Removed top 1 bits (of 4) from port B of cell alu8_c19.$procmux$231_CMP0 ($eq).
+Removed top 1 bits (of 4) from port B of cell alu8_c19.$procmux$232_CMP0 ($eq).
+Removed top 2 bits (of 4) from port B of cell alu8_c19.$procmux$233_CMP0 ($eq).
+Removed top 2 bits (of 4) from port B of cell alu8_c19.$procmux$234_CMP0 ($eq).
+Removed top 3 bits (of 4) from port B of cell alu8_c19.$procmux$235_CMP0 ($eq).
+Removed top 7 bits (of 8) from port Y of cell alu8_c19.$flatten\u_add.\fa_chain[7].fa_i.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:79$7 ($shr).
+Removed top 7 bits (of 8) from port Y of cell alu8_c19.$flatten\u_add.\fa_chain[6].fa_i.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:79$7 ($shr).
+Removed top 7 bits (of 8) from port Y of cell alu8_c19.$flatten\u_add.\fa_chain[5].fa_i.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:79$7 ($shr).
+Removed top 7 bits (of 8) from port Y of cell alu8_c19.$flatten\u_add.\fa_chain[4].fa_i.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:79$7 ($shr).
+Removed top 7 bits (of 8) from port Y of cell alu8_c19.$flatten\u_add.\fa_chain[3].fa_i.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:79$7 ($shr).
+Removed top 7 bits (of 8) from port Y of cell alu8_c19.$flatten\u_add.\fa_chain[2].fa_i.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:79$7 ($shr).
+Removed top 7 bits (of 8) from port Y of cell alu8_c19.$flatten\u_add.\fa_chain[1].fa_i.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:79$7 ($shr).
+Removed top 1 bits (of 3) from port B of cell alu8_c19.$flatten\u_add.\fa_chain[0].fa_i.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:79$7 ($shr).
+Removed top 7 bits (of 8) from port Y of cell alu8_c19.$flatten\u_add.\fa_chain[0].fa_i.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:79$7 ($shr).
+Removed top 7 bits (of 8) from port Y of cell alu8_c19.$flatten\u_add.\fa_chain[7].fa_i.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:77$6 ($shr).
+Removed top 7 bits (of 8) from port Y of cell alu8_c19.$flatten\u_add.\fa_chain[6].fa_i.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:77$6 ($shr).
+Removed top 7 bits (of 8) from port Y of cell alu8_c19.$flatten\u_add.\fa_chain[5].fa_i.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:77$6 ($shr).
+Removed top 7 bits (of 8) from port Y of cell alu8_c19.$flatten\u_add.\fa_chain[4].fa_i.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:77$6 ($shr).
+Removed top 7 bits (of 8) from port Y of cell alu8_c19.$flatten\u_add.\fa_chain[3].fa_i.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:77$6 ($shr).
+Removed top 7 bits (of 8) from port Y of cell alu8_c19.$flatten\u_add.\fa_chain[2].fa_i.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:77$6 ($shr).
+Removed top 7 bits (of 8) from port Y of cell alu8_c19.$flatten\u_add.\fa_chain[1].fa_i.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:77$6 ($shr).
+Removed top 1 bits (of 3) from port B of cell alu8_c19.$flatten\u_add.\fa_chain[0].fa_i.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:77$6 ($shr).
+Removed top 7 bits (of 8) from port Y of cell alu8_c19.$flatten\u_add.\fa_chain[0].fa_i.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:77$6 ($shr).
+Removed top 3 bits (of 4) from port Y of cell alu8_c19.$flatten\u_mul.\pp_row[7].pp_col[6].and_ij.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:19$1 ($shr).
+Removed top 3 bits (of 4) from port Y of cell alu8_c19.$flatten\u_mul.\pp_row[7].pp_col[5].and_ij.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:19$1 ($shr).
+Removed top 3 bits (of 4) from port Y of cell alu8_c19.$flatten\u_mul.\pp_row[7].pp_col[4].and_ij.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:19$1 ($shr).
+Removed top 3 bits (of 4) from port Y of cell alu8_c19.$flatten\u_mul.\pp_row[7].pp_col[3].and_ij.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:19$1 ($shr).
+Removed top 3 bits (of 4) from port Y of cell alu8_c19.$flatten\u_mul.\pp_row[7].pp_col[2].and_ij.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:19$1 ($shr).
+Removed top 3 bits (of 4) from port Y of cell alu8_c19.$flatten\u_mul.\pp_row[7].pp_col[1].and_ij.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:19$1 ($shr).
+Removed top 3 bits (of 4) from port Y of cell alu8_c19.$flatten\u_mul.\pp_row[7].pp_col[0].and_ij.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:19$1 ($shr).
+Removed top 3 bits (of 4) from port Y of cell alu8_c19.$flatten\u_mul.\pp_row[6].pp_col[7].and_ij.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:19$1 ($shr).
+Removed top 3 bits (of 4) from port Y of cell alu8_c19.$flatten\u_mul.\pp_row[6].pp_col[5].and_ij.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:19$1 ($shr).
+Removed top 3 bits (of 4) from port Y of cell alu8_c19.$flatten\u_mul.\pp_row[6].pp_col[4].and_ij.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:19$1 ($shr).
+Removed top 3 bits (of 4) from port Y of cell alu8_c19.$flatten\u_mul.\pp_row[6].pp_col[3].and_ij.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:19$1 ($shr).
+Removed top 3 bits (of 4) from port Y of cell alu8_c19.$flatten\u_mul.\pp_row[6].pp_col[2].and_ij.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:19$1 ($shr).
+Removed top 3 bits (of 4) from port Y of cell alu8_c19.$flatten\u_mul.\pp_row[6].pp_col[1].and_ij.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:19$1 ($shr).
+Removed top 3 bits (of 4) from port Y of cell alu8_c19.$flatten\u_mul.\pp_row[6].pp_col[0].and_ij.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:19$1 ($shr).
+Removed top 3 bits (of 4) from port Y of cell alu8_c19.$flatten\u_mul.\pp_row[5].pp_col[7].and_ij.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:19$1 ($shr).
+Removed top 3 bits (of 4) from port Y of cell alu8_c19.$flatten\u_mul.\pp_row[5].pp_col[6].and_ij.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:19$1 ($shr).
+Removed top 3 bits (of 4) from port Y of cell alu8_c19.$flatten\u_mul.\pp_row[5].pp_col[4].and_ij.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:19$1 ($shr).
+Removed top 3 bits (of 4) from port Y of cell alu8_c19.$flatten\u_mul.\pp_row[5].pp_col[3].and_ij.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:19$1 ($shr).
+Removed top 3 bits (of 4) from port Y of cell alu8_c19.$flatten\u_mul.\pp_row[5].pp_col[2].and_ij.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:19$1 ($shr).
+Removed top 3 bits (of 4) from port Y of cell alu8_c19.$flatten\u_mul.\pp_row[5].pp_col[1].and_ij.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:19$1 ($shr).
+Removed top 3 bits (of 4) from port Y of cell alu8_c19.$flatten\u_mul.\pp_row[5].pp_col[0].and_ij.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:19$1 ($shr).
+Removed top 3 bits (of 4) from port Y of cell alu8_c19.$flatten\u_mul.\pp_row[4].pp_col[7].and_ij.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:19$1 ($shr).
+Removed top 3 bits (of 4) from port Y of cell alu8_c19.$flatten\u_mul.\pp_row[4].pp_col[6].and_ij.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:19$1 ($shr).
+Removed top 3 bits (of 4) from port Y of cell alu8_c19.$flatten\u_mul.\pp_row[4].pp_col[5].and_ij.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:19$1 ($shr).
+Removed top 3 bits (of 4) from port Y of cell alu8_c19.$flatten\u_mul.\pp_row[4].pp_col[3].and_ij.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:19$1 ($shr).
+Removed top 3 bits (of 4) from port Y of cell alu8_c19.$flatten\u_mul.\pp_row[4].pp_col[2].and_ij.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:19$1 ($shr).
+Removed top 3 bits (of 4) from port Y of cell alu8_c19.$flatten\u_mul.\pp_row[4].pp_col[1].and_ij.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:19$1 ($shr).
+Removed top 3 bits (of 4) from port Y of cell alu8_c19.$flatten\u_mul.\pp_row[4].pp_col[0].and_ij.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:19$1 ($shr).
+Removed top 3 bits (of 4) from port Y of cell alu8_c19.$flatten\u_mul.\pp_row[3].pp_col[7].and_ij.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:19$1 ($shr).
+Removed top 3 bits (of 4) from port Y of cell alu8_c19.$flatten\u_mul.\pp_row[3].pp_col[6].and_ij.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:19$1 ($shr).
+Removed top 3 bits (of 4) from port Y of cell alu8_c19.$flatten\u_mul.\pp_row[3].pp_col[5].and_ij.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:19$1 ($shr).
+Removed top 3 bits (of 4) from port Y of cell alu8_c19.$flatten\u_mul.\pp_row[3].pp_col[4].and_ij.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:19$1 ($shr).
+Removed top 3 bits (of 4) from port Y of cell alu8_c19.$flatten\u_mul.\pp_row[3].pp_col[2].and_ij.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:19$1 ($shr).
+Removed top 3 bits (of 4) from port Y of cell alu8_c19.$flatten\u_mul.\pp_row[3].pp_col[1].and_ij.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:19$1 ($shr).
+Removed top 3 bits (of 4) from port Y of cell alu8_c19.$flatten\u_mul.\pp_row[3].pp_col[0].and_ij.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:19$1 ($shr).
+Removed top 3 bits (of 4) from port Y of cell alu8_c19.$flatten\u_mul.\pp_row[2].pp_col[7].and_ij.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:19$1 ($shr).
+Removed top 3 bits (of 4) from port Y of cell alu8_c19.$flatten\u_mul.\pp_row[2].pp_col[6].and_ij.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:19$1 ($shr).
+Removed top 3 bits (of 4) from port Y of cell alu8_c19.$flatten\u_mul.\pp_row[2].pp_col[5].and_ij.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:19$1 ($shr).
+Removed top 3 bits (of 4) from port Y of cell alu8_c19.$flatten\u_mul.\pp_row[2].pp_col[4].and_ij.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:19$1 ($shr).
+Removed top 3 bits (of 4) from port Y of cell alu8_c19.$flatten\u_mul.\pp_row[2].pp_col[3].and_ij.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:19$1 ($shr).
+Removed top 3 bits (of 4) from port Y of cell alu8_c19.$flatten\u_mul.\pp_row[2].pp_col[1].and_ij.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:19$1 ($shr).
+Removed top 3 bits (of 4) from port Y of cell alu8_c19.$flatten\u_mul.\pp_row[2].pp_col[0].and_ij.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:19$1 ($shr).
+Removed top 3 bits (of 4) from port Y of cell alu8_c19.$flatten\u_mul.\pp_row[1].pp_col[7].and_ij.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:19$1 ($shr).
+Removed top 3 bits (of 4) from port Y of cell alu8_c19.$flatten\u_mul.\pp_row[1].pp_col[6].and_ij.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:19$1 ($shr).
+Removed top 3 bits (of 4) from port Y of cell alu8_c19.$flatten\u_mul.\pp_row[1].pp_col[5].and_ij.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:19$1 ($shr).
+Removed top 3 bits (of 4) from port Y of cell alu8_c19.$flatten\u_mul.\pp_row[1].pp_col[4].and_ij.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:19$1 ($shr).
+Removed top 3 bits (of 4) from port Y of cell alu8_c19.$flatten\u_mul.\pp_row[1].pp_col[3].and_ij.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:19$1 ($shr).
+Removed top 3 bits (of 4) from port Y of cell alu8_c19.$flatten\u_mul.\pp_row[1].pp_col[2].and_ij.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:19$1 ($shr).
+Removed top 3 bits (of 4) from port Y of cell alu8_c19.$flatten\u_mul.\pp_row[1].pp_col[0].and_ij.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:19$1 ($shr).
+Removed top 3 bits (of 4) from port Y of cell alu8_c19.$flatten\u_mul.\pp_row[0].pp_col[7].and_ij.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:19$1 ($shr).
+Removed top 3 bits (of 4) from port Y of cell alu8_c19.$flatten\u_mul.\pp_row[0].pp_col[6].and_ij.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:19$1 ($shr).
+Removed top 3 bits (of 4) from port Y of cell alu8_c19.$flatten\u_mul.\pp_row[0].pp_col[5].and_ij.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:19$1 ($shr).
+Removed top 3 bits (of 4) from port Y of cell alu8_c19.$flatten\u_mul.\pp_row[0].pp_col[4].and_ij.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:19$1 ($shr).
+Removed top 3 bits (of 4) from port Y of cell alu8_c19.$flatten\u_mul.\pp_row[0].pp_col[3].and_ij.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:19$1 ($shr).
+Removed top 3 bits (of 4) from port Y of cell alu8_c19.$flatten\u_mul.\pp_row[0].pp_col[2].and_ij.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:19$1 ($shr).
+Removed top 3 bits (of 4) from port Y of cell alu8_c19.$flatten\u_mul.\pp_row[0].pp_col[1].and_ij.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:19$1 ($shr).
+Removed top 1 bits (of 16) from port B of cell alu8_c19.$flatten\u_mul.$add$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:212$207 ($add).
+Removed top 2 bits (of 16) from port B of cell alu8_c19.$flatten\u_mul.$add$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:212$206 ($add).
+Removed top 3 bits (of 16) from port B of cell alu8_c19.$flatten\u_mul.$add$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:212$205 ($add).
+Removed top 4 bits (of 16) from port B of cell alu8_c19.$flatten\u_mul.$add$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:212$204 ($add).
+Removed top 5 bits (of 16) from port B of cell alu8_c19.$flatten\u_mul.$add$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:212$203 ($add).
+Removed top 6 bits (of 16) from port B of cell alu8_c19.$flatten\u_mul.$add$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:212$202 ($add).
+Removed top 8 bits (of 16) from port A of cell alu8_c19.$flatten\u_mul.$add$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:212$201 ($add).
+Removed top 7 bits (of 16) from port B of cell alu8_c19.$flatten\u_mul.$add$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:212$201 ($add).
+Removed top 6 bits (of 16) from port Y of cell alu8_c19.$flatten\u_mul.$add$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:212$201 ($add).
+Removed top 3 bits (of 4) from port Y of cell alu8_c19.$flatten\u_and.\and_bits[7].g.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:19$1 ($shr).
+Removed top 3 bits (of 4) from port Y of cell alu8_c19.$flatten\u_and.\and_bits[6].g.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:19$1 ($shr).
+Removed top 3 bits (of 4) from port Y of cell alu8_c19.$flatten\u_and.\and_bits[5].g.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:19$1 ($shr).
+Removed top 3 bits (of 4) from port Y of cell alu8_c19.$flatten\u_and.\and_bits[4].g.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:19$1 ($shr).
+Removed top 3 bits (of 4) from port Y of cell alu8_c19.$flatten\u_and.\and_bits[3].g.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:19$1 ($shr).
+Removed top 3 bits (of 4) from port Y of cell alu8_c19.$flatten\u_and.\and_bits[2].g.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:19$1 ($shr).
+Removed top 3 bits (of 4) from port Y of cell alu8_c19.$flatten\u_and.\and_bits[1].g.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:19$1 ($shr).
+Removed top 3 bits (of 4) from port Y of cell alu8_c19.$flatten\u_and.\and_bits[0].g.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:19$1 ($shr).
+Removed top 3 bits (of 4) from port Y of cell alu8_c19.$flatten\u_or.\or_bits[7].g.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:27$2 ($shr).
+Removed top 3 bits (of 4) from port Y of cell alu8_c19.$flatten\u_or.\or_bits[6].g.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:27$2 ($shr).
+Removed top 3 bits (of 4) from port Y of cell alu8_c19.$flatten\u_or.\or_bits[5].g.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:27$2 ($shr).
+Removed top 3 bits (of 4) from port Y of cell alu8_c19.$flatten\u_or.\or_bits[4].g.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:27$2 ($shr).
+Removed top 3 bits (of 4) from port Y of cell alu8_c19.$flatten\u_or.\or_bits[3].g.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:27$2 ($shr).
+Removed top 3 bits (of 4) from port Y of cell alu8_c19.$flatten\u_or.\or_bits[2].g.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:27$2 ($shr).
+Removed top 3 bits (of 4) from port Y of cell alu8_c19.$flatten\u_or.\or_bits[1].g.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:27$2 ($shr).
+Removed top 3 bits (of 4) from port Y of cell alu8_c19.$flatten\u_or.\or_bits[0].g.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:27$2 ($shr).
+Removed top 1 bits (of 4) from port A of cell alu8_c19.$flatten\u_xor.\xor_bits[7].g.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:35$3 ($shr).
+Removed top 3 bits (of 4) from port Y of cell alu8_c19.$flatten\u_xor.\xor_bits[7].g.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:35$3 ($shr).
+Removed top 1 bits (of 4) from port A of cell alu8_c19.$flatten\u_xor.\xor_bits[6].g.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:35$3 ($shr).
+Removed top 3 bits (of 4) from port Y of cell alu8_c19.$flatten\u_xor.\xor_bits[6].g.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:35$3 ($shr).
+Removed top 1 bits (of 4) from port A of cell alu8_c19.$flatten\u_xor.\xor_bits[5].g.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:35$3 ($shr).
+Removed top 3 bits (of 4) from port Y of cell alu8_c19.$flatten\u_xor.\xor_bits[5].g.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:35$3 ($shr).
+Removed top 1 bits (of 4) from port A of cell alu8_c19.$flatten\u_xor.\xor_bits[4].g.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:35$3 ($shr).
+Removed top 3 bits (of 4) from port Y of cell alu8_c19.$flatten\u_xor.\xor_bits[4].g.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:35$3 ($shr).
+Removed top 1 bits (of 4) from port A of cell alu8_c19.$flatten\u_xor.\xor_bits[3].g.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:35$3 ($shr).
+Removed top 3 bits (of 4) from port Y of cell alu8_c19.$flatten\u_xor.\xor_bits[3].g.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:35$3 ($shr).
+Removed top 1 bits (of 4) from port A of cell alu8_c19.$flatten\u_xor.\xor_bits[2].g.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:35$3 ($shr).
+Removed top 3 bits (of 4) from port Y of cell alu8_c19.$flatten\u_xor.\xor_bits[2].g.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:35$3 ($shr).
+Removed top 1 bits (of 4) from port A of cell alu8_c19.$flatten\u_xor.\xor_bits[1].g.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:35$3 ($shr).
+Removed top 3 bits (of 4) from port Y of cell alu8_c19.$flatten\u_xor.\xor_bits[1].g.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:35$3 ($shr).
+Removed top 1 bits (of 4) from port A of cell alu8_c19.$flatten\u_xor.\xor_bits[0].g.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:35$3 ($shr).
+Removed top 3 bits (of 4) from port Y of cell alu8_c19.$flatten\u_xor.\xor_bits[0].g.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:35$3 ($shr).
+Removed top 1 bits (of 2) from port A of cell alu8_c19.$flatten\u_not.\not_bits[7].g.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:42$4 ($shr).
+Removed top 1 bits (of 2) from port Y of cell alu8_c19.$flatten\u_not.\not_bits[7].g.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:42$4 ($shr).
+Removed top 1 bits (of 2) from port A of cell alu8_c19.$flatten\u_not.\not_bits[6].g.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:42$4 ($shr).
+Removed top 1 bits (of 2) from port Y of cell alu8_c19.$flatten\u_not.\not_bits[6].g.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:42$4 ($shr).
+Removed top 1 bits (of 2) from port A of cell alu8_c19.$flatten\u_not.\not_bits[5].g.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:42$4 ($shr).
+Removed top 1 bits (of 2) from port Y of cell alu8_c19.$flatten\u_not.\not_bits[5].g.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:42$4 ($shr).
+Removed top 1 bits (of 2) from port A of cell alu8_c19.$flatten\u_not.\not_bits[4].g.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:42$4 ($shr).
+Removed top 1 bits (of 2) from port Y of cell alu8_c19.$flatten\u_not.\not_bits[4].g.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:42$4 ($shr).
+Removed top 1 bits (of 2) from port A of cell alu8_c19.$flatten\u_not.\not_bits[3].g.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:42$4 ($shr).
+Removed top 1 bits (of 2) from port Y of cell alu8_c19.$flatten\u_not.\not_bits[3].g.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:42$4 ($shr).
+Removed top 1 bits (of 2) from port A of cell alu8_c19.$flatten\u_not.\not_bits[2].g.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:42$4 ($shr).
+Removed top 1 bits (of 2) from port Y of cell alu8_c19.$flatten\u_not.\not_bits[2].g.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:42$4 ($shr).
+Removed top 1 bits (of 2) from port A of cell alu8_c19.$flatten\u_not.\not_bits[1].g.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:42$4 ($shr).
+Removed top 1 bits (of 2) from port Y of cell alu8_c19.$flatten\u_not.\not_bits[1].g.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:42$4 ($shr).
+Removed top 1 bits (of 2) from port A of cell alu8_c19.$flatten\u_not.\not_bits[0].g.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:42$4 ($shr).
+Removed top 1 bits (of 2) from port Y of cell alu8_c19.$flatten\u_not.\not_bits[0].g.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:42$4 ($shr).
+Removed top 1 bits (of 2) from port A of cell alu8_c19.$flatten\u_cmp.\sub.\inv_b[0].not_i.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:42$4 ($shr).
+Removed top 1 bits (of 2) from port Y of cell alu8_c19.$flatten\u_cmp.\sub.\inv_b[0].not_i.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:42$4 ($shr).
+Removed top 1 bits (of 2) from port A of cell alu8_c19.$flatten\u_cmp.\sub.\inv_b[1].not_i.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:42$4 ($shr).
+Removed top 1 bits (of 2) from port Y of cell alu8_c19.$flatten\u_cmp.\sub.\inv_b[1].not_i.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:42$4 ($shr).
+Removed top 1 bits (of 2) from port A of cell alu8_c19.$flatten\u_cmp.\sub.\inv_b[2].not_i.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:42$4 ($shr).
+Removed top 1 bits (of 2) from port Y of cell alu8_c19.$flatten\u_cmp.\sub.\inv_b[2].not_i.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:42$4 ($shr).
+Removed top 1 bits (of 2) from port A of cell alu8_c19.$flatten\u_cmp.\sub.\inv_b[3].not_i.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:42$4 ($shr).
+Removed top 1 bits (of 2) from port Y of cell alu8_c19.$flatten\u_cmp.\sub.\inv_b[3].not_i.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:42$4 ($shr).
+Removed top 1 bits (of 2) from port A of cell alu8_c19.$flatten\u_cmp.\sub.\inv_b[4].not_i.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:42$4 ($shr).
+Removed top 1 bits (of 2) from port Y of cell alu8_c19.$flatten\u_cmp.\sub.\inv_b[4].not_i.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:42$4 ($shr).
+Removed top 1 bits (of 2) from port A of cell alu8_c19.$flatten\u_cmp.\sub.\inv_b[5].not_i.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:42$4 ($shr).
+Removed top 1 bits (of 2) from port Y of cell alu8_c19.$flatten\u_cmp.\sub.\inv_b[5].not_i.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:42$4 ($shr).
+Removed top 1 bits (of 2) from port A of cell alu8_c19.$flatten\u_cmp.\sub.\inv_b[6].not_i.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:42$4 ($shr).
+Removed top 1 bits (of 2) from port Y of cell alu8_c19.$flatten\u_cmp.\sub.\inv_b[6].not_i.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:42$4 ($shr).
+Removed top 1 bits (of 2) from port A of cell alu8_c19.$flatten\u_cmp.\sub.\inv_b[7].not_i.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:42$4 ($shr).
+Removed top 1 bits (of 2) from port Y of cell alu8_c19.$flatten\u_cmp.\sub.\inv_b[7].not_i.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:42$4 ($shr).
+Removed top 7 bits (of 8) from port Y of cell alu8_c19.$flatten\u_cmp.\sub.\adder.\fa_chain[7].fa_i.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:79$7 ($shr).
+Removed top 7 bits (of 8) from port Y of cell alu8_c19.$flatten\u_cmp.\sub.\adder.\fa_chain[6].fa_i.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:79$7 ($shr).
+Removed top 7 bits (of 8) from port Y of cell alu8_c19.$flatten\u_cmp.\sub.\adder.\fa_chain[5].fa_i.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:79$7 ($shr).
+Removed top 7 bits (of 8) from port Y of cell alu8_c19.$flatten\u_cmp.\sub.\adder.\fa_chain[4].fa_i.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:79$7 ($shr).
+Removed top 7 bits (of 8) from port Y of cell alu8_c19.$flatten\u_cmp.\sub.\adder.\fa_chain[3].fa_i.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:79$7 ($shr).
+Removed top 7 bits (of 8) from port Y of cell alu8_c19.$flatten\u_cmp.\sub.\adder.\fa_chain[2].fa_i.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:79$7 ($shr).
+Removed top 7 bits (of 8) from port Y of cell alu8_c19.$flatten\u_cmp.\sub.\adder.\fa_chain[1].fa_i.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:79$7 ($shr).
+Removed top 7 bits (of 8) from port Y of cell alu8_c19.$flatten\u_cmp.\sub.\adder.\fa_chain[0].fa_i.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:79$7 ($shr).
+Removed top 7 bits (of 8) from port Y of cell alu8_c19.$flatten\u_cmp.\sub.\adder.\fa_chain[7].fa_i.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:77$6 ($shr).
+Removed top 7 bits (of 8) from port Y of cell alu8_c19.$flatten\u_cmp.\sub.\adder.\fa_chain[6].fa_i.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:77$6 ($shr).
+Removed top 7 bits (of 8) from port Y of cell alu8_c19.$flatten\u_cmp.\sub.\adder.\fa_chain[5].fa_i.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:77$6 ($shr).
+Removed top 7 bits (of 8) from port Y of cell alu8_c19.$flatten\u_cmp.\sub.\adder.\fa_chain[4].fa_i.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:77$6 ($shr).
+Removed top 7 bits (of 8) from port Y of cell alu8_c19.$flatten\u_cmp.\sub.\adder.\fa_chain[3].fa_i.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:77$6 ($shr).
+Removed top 7 bits (of 8) from port Y of cell alu8_c19.$flatten\u_cmp.\sub.\adder.\fa_chain[2].fa_i.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:77$6 ($shr).
+Removed top 7 bits (of 8) from port Y of cell alu8_c19.$flatten\u_cmp.\sub.\adder.\fa_chain[1].fa_i.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:77$6 ($shr).
+Removed top 3 bits (of 4) from port Y of cell alu8_c19.$flatten\u_cmp.\nz_6.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:27$2 ($shr).
+Removed top 3 bits (of 4) from port Y of cell alu8_c19.$flatten\u_cmp.\nz_5.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:27$2 ($shr).
+Removed top 3 bits (of 4) from port Y of cell alu8_c19.$flatten\u_cmp.\nz_4.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:27$2 ($shr).
+Removed top 3 bits (of 4) from port Y of cell alu8_c19.$flatten\u_cmp.\nz_3.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:27$2 ($shr).
+Removed top 3 bits (of 4) from port Y of cell alu8_c19.$flatten\u_cmp.\nz_2.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:27$2 ($shr).
+Removed top 3 bits (of 4) from port Y of cell alu8_c19.$flatten\u_cmp.\nz_1.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:27$2 ($shr).
+Removed top 3 bits (of 4) from port Y of cell alu8_c19.$flatten\u_cmp.\nz_0.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:27$2 ($shr).
+Removed top 7 bits (of 8) from port Y of cell alu8_c19.$flatten\u_cmp.\sub.\adder.\fa_chain[0].fa_i.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:77$6 ($shr).
+Removed top 7 bits (of 8) from port Y of cell alu8_c19.$flatten\u_min.\mux.\mux_bits[1].g.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:60$5 ($shr).
+Removed top 7 bits (of 8) from port Y of cell alu8_c19.$flatten\u_min.\mux.\mux_bits[2].g.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:60$5 ($shr).
+Removed top 7 bits (of 8) from port Y of cell alu8_c19.$flatten\u_min.\mux.\mux_bits[3].g.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:60$5 ($shr).
+Removed top 7 bits (of 8) from port Y of cell alu8_c19.$flatten\u_min.\mux.\mux_bits[4].g.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:60$5 ($shr).
+Removed top 7 bits (of 8) from port Y of cell alu8_c19.$flatten\u_min.\mux.\mux_bits[5].g.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:60$5 ($shr).
+Removed top 7 bits (of 8) from port Y of cell alu8_c19.$flatten\u_min.\mux.\mux_bits[6].g.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:60$5 ($shr).
+Removed top 7 bits (of 8) from port Y of cell alu8_c19.$flatten\u_min.\mux.\mux_bits[7].g.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:60$5 ($shr).
+Removed top 1 bits (of 2) from port A of cell alu8_c19.$flatten\u_min.\cmp.\eq_inv.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:42$4 ($shr).
+Removed top 1 bits (of 2) from port Y of cell alu8_c19.$flatten\u_min.\cmp.\eq_inv.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:42$4 ($shr).
+Removed top 7 bits (of 8) from port Y of cell alu8_c19.$flatten\u_min.\mux.\mux_bits[0].g.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:60$5 ($shr).
+Removed top 1 bits (of 2) from port A of cell alu8_c19.$flatten\u_min.\inv_lt.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:42$4 ($shr).
+Removed top 1 bits (of 2) from port Y of cell alu8_c19.$flatten\u_min.\inv_lt.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:42$4 ($shr).
+Removed top 7 bits (of 8) from port Y of cell alu8_c19.$flatten\u_max.\mux.\mux_bits[1].g.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:60$5 ($shr).
+Removed top 7 bits (of 8) from port Y of cell alu8_c19.$flatten\u_max.\mux.\mux_bits[2].g.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:60$5 ($shr).
+Removed top 7 bits (of 8) from port Y of cell alu8_c19.$flatten\u_max.\mux.\mux_bits[3].g.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:60$5 ($shr).
+Removed top 7 bits (of 8) from port Y of cell alu8_c19.$flatten\u_max.\mux.\mux_bits[4].g.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:60$5 ($shr).
+Removed top 7 bits (of 8) from port Y of cell alu8_c19.$flatten\u_max.\mux.\mux_bits[5].g.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:60$5 ($shr).
+Removed top 7 bits (of 8) from port Y of cell alu8_c19.$flatten\u_max.\mux.\mux_bits[6].g.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:60$5 ($shr).
+Removed top 7 bits (of 8) from port Y of cell alu8_c19.$flatten\u_max.\mux.\mux_bits[7].g.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:60$5 ($shr).
+Removed top 7 bits (of 8) from port Y of cell alu8_c19.$flatten\u_max.\mux.\mux_bits[0].g.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:60$5 ($shr).
+Removed top 3 bits (of 4) from port Y of cell alu8_c19.$flatten\f0.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:27$2 ($shr).
+Removed top 3 bits (of 4) from port Y of cell alu8_c19.$flatten\f1.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:27$2 ($shr).
+Removed top 3 bits (of 4) from port Y of cell alu8_c19.$flatten\f2.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:27$2 ($shr).
+Removed top 3 bits (of 4) from port Y of cell alu8_c19.$flatten\f3.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:27$2 ($shr).
+Removed top 3 bits (of 4) from port Y of cell alu8_c19.$flatten\f4.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:27$2 ($shr).
+Removed top 3 bits (of 4) from port Y of cell alu8_c19.$flatten\f5.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:27$2 ($shr).
+Removed top 3 bits (of 4) from port Y of cell alu8_c19.$flatten\f6.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:27$2 ($shr).
+Removed top 1 bits (of 2) from port A of cell alu8_c19.$flatten\zf.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:42$4 ($shr).
+Removed top 1 bits (of 2) from port Y of cell alu8_c19.$flatten\zf.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:42$4 ($shr).
+Removed top 6 bits (of 16) from wire alu8_c19.$flatten\u_mul.$add$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:212$201_Y.
+Removed top 5 bits (of 8) from wire alu8_c19.cmp_out.
+
+2.11. Executing PEEPOPT pass (run peephole optimizers).
+
+2.12. Executing OPT_CLEAN pass (remove unused cells and wires).
+Finding unused cells or wires in module \alu8_c19..
+Removed 0 unused cells and 163 unused wires.
+<suppressed ~1 debug messages>
+
+2.13. Executing ALUMACC pass (create $alu and $macc cells).
+Extracting $alu and $macc cells in module alu8_c19:
+  creating $macc model for $flatten\u_mul.$add$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:212$201 ($add).
+  creating $macc model for $flatten\u_mul.$add$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:212$202 ($add).
+  creating $macc model for $flatten\u_mul.$add$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:212$203 ($add).
+  creating $macc model for $flatten\u_mul.$add$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:212$204 ($add).
+  creating $macc model for $flatten\u_mul.$add$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:212$205 ($add).
+  creating $macc model for $flatten\u_mul.$add$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:212$206 ($add).
+  creating $macc model for $flatten\u_mul.$add$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:212$207 ($add).
+  merging $macc model for $flatten\u_mul.$add$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:212$206 into $flatten\u_mul.$add$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:212$207.
+  merging $macc model for $flatten\u_mul.$add$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:212$205 into $flatten\u_mul.$add$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:212$207.
+  merging $macc model for $flatten\u_mul.$add$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:212$204 into $flatten\u_mul.$add$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:212$207.
+  merging $macc model for $flatten\u_mul.$add$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:212$203 into $flatten\u_mul.$add$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:212$207.
+  merging $macc model for $flatten\u_mul.$add$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:212$202 into $flatten\u_mul.$add$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:212$207.
+  creating $alu model for $macc $flatten\u_mul.$add$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:212$201.
+  creating $macc cell for $flatten\u_mul.$add$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:212$207: $auto$alumacc.cc:365:replace_macc$392
+  creating $alu cell for $flatten\u_mul.$add$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:212$201: $auto$alumacc.cc:485:replace_alu$393
+  created 1 $alu and 1 $macc cells.
+
+2.14. Executing SHARE pass (SAT-based resource sharing).
+
+2.15. Executing OPT pass (performing simple optimizations).
+
+2.15.1. Executing OPT_EXPR pass (perform const folding).
+Optimizing module alu8_c19.
+
+2.15.2. Executing OPT_MERGE pass (detect identical cells).
+Finding identical cells in module `\alu8_c19'.
+Removed a total of 0 cells.
+
+2.15.3. Executing OPT_MUXTREE pass (detect dead branches in mux trees).
+Running muxtree optimizer on module \alu8_c19..
+  Creating internal representation of mux trees.
+  Evaluating internal representation of mux trees.
+  Analyzing evaluation results.
+Removed 0 multiplexer ports.
+<suppressed ~2 debug messages>
+
+2.15.4. Executing OPT_REDUCE pass (consolidate $*mux and $reduce_* inputs).
+  Optimizing cells in module \alu8_c19.
+Performed a total of 0 changes.
+
+2.15.5. Executing OPT_MERGE pass (detect identical cells).
+Finding identical cells in module `\alu8_c19'.
+Removed a total of 0 cells.
+
+2.15.6. Executing OPT_DFF pass (perform DFF optimizations).
+
+2.15.7. Executing OPT_CLEAN pass (remove unused cells and wires).
+Finding unused cells or wires in module \alu8_c19..
+Removed 5 unused cells and 5 unused wires.
+<suppressed ~6 debug messages>
+
+2.15.8. Executing OPT_EXPR pass (perform const folding).
+Optimizing module alu8_c19.
+
+2.15.9. Rerunning OPT passes. (Maybe there is more to do..)
+
+2.15.10. Executing OPT_MUXTREE pass (detect dead branches in mux trees).
+Running muxtree optimizer on module \alu8_c19..
+  Creating internal representation of mux trees.
+  Evaluating internal representation of mux trees.
+  Analyzing evaluation results.
+Removed 0 multiplexer ports.
+<suppressed ~2 debug messages>
+
+2.15.11. Executing OPT_REDUCE pass (consolidate $*mux and $reduce_* inputs).
+  Optimizing cells in module \alu8_c19.
+Performed a total of 0 changes.
+
+2.15.12. Executing OPT_MERGE pass (detect identical cells).
+Finding identical cells in module `\alu8_c19'.
+Removed a total of 0 cells.
+
+2.15.13. Executing OPT_DFF pass (perform DFF optimizations).
+
+2.15.14. Executing OPT_CLEAN pass (remove unused cells and wires).
+Finding unused cells or wires in module \alu8_c19..
+
+2.15.15. Executing OPT_EXPR pass (perform const folding).
+Optimizing module alu8_c19.
+
+2.15.16. Finished OPT passes. (There is nothing left to do.)
+
+2.16. Executing MEMORY pass.
+
+2.16.1. Executing OPT_MEM pass (optimize memories).
+Performed a total of 0 transformations.
+
+2.16.2. Executing OPT_MEM_PRIORITY pass (removing unnecessary memory write priority relations).
+Performed a total of 0 transformations.
+
+2.16.3. Executing OPT_MEM_FEEDBACK pass (finding memory read-to-write feedback paths).
+
+2.16.4. Executing MEMORY_BMUX2ROM pass (converting muxes to ROMs).
+
+2.16.5. Executing MEMORY_DFF pass (merging $dff cells to $memrd).
+
+2.16.6. Executing OPT_CLEAN pass (remove unused cells and wires).
+Finding unused cells or wires in module \alu8_c19..
+
+2.16.7. Executing MEMORY_SHARE pass (consolidating $memrd/$memwr cells).
+
+2.16.8. Executing OPT_MEM_WIDEN pass (optimize memories where all ports are wide).
+Performed a total of 0 transformations.
+
+2.16.9. Executing OPT_CLEAN pass (remove unused cells and wires).
+Finding unused cells or wires in module \alu8_c19..
+
+2.16.10. Executing MEMORY_COLLECT pass (generating $mem cells).
+
+2.17. Executing OPT_CLEAN pass (remove unused cells and wires).
+Finding unused cells or wires in module \alu8_c19..
+
+2.18. Executing OPT pass (performing simple optimizations).
+
+2.18.1. Executing OPT_EXPR pass (perform const folding).
+Optimizing module alu8_c19.
+<suppressed ~1 debug messages>
+
+2.18.2. Executing OPT_MERGE pass (detect identical cells).
+Finding identical cells in module `\alu8_c19'.
+Removed a total of 0 cells.
+
+2.18.3. Executing OPT_DFF pass (perform DFF optimizations).
+
+2.18.4. Executing OPT_CLEAN pass (remove unused cells and wires).
+Finding unused cells or wires in module \alu8_c19..
+
+2.18.5. Finished fast OPT passes.
+
+2.19. Executing MEMORY_MAP pass (converting memories to logic and flip-flops).
+
+2.20. Executing OPT pass (performing simple optimizations).
+
+2.20.1. Executing OPT_EXPR pass (perform const folding).
+Optimizing module alu8_c19.
+
+2.20.2. Executing OPT_MERGE pass (detect identical cells).
+Finding identical cells in module `\alu8_c19'.
+Removed a total of 0 cells.
+
+2.20.3. Executing OPT_MUXTREE pass (detect dead branches in mux trees).
+Running muxtree optimizer on module \alu8_c19..
+  Creating internal representation of mux trees.
+  Evaluating internal representation of mux trees.
+  Analyzing evaluation results.
+Removed 0 multiplexer ports.
+<suppressed ~2 debug messages>
+
+2.20.4. Executing OPT_REDUCE pass (consolidate $*mux and $reduce_* inputs).
+  Optimizing cells in module \alu8_c19.
+Performed a total of 0 changes.
+
+2.20.5. Executing OPT_MERGE pass (detect identical cells).
+Finding identical cells in module `\alu8_c19'.
+Removed a total of 0 cells.
+
+2.20.6. Executing OPT_SHARE pass.
+    Found cells that share an operand and can be merged by moving the $pmux $procmux$226 in front of them:
+        $flatten\u_max.\mux.\mux_bits[0].g.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:60$5
+        $flatten\u_min.\mux.\mux_bits[0].g.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:60$5
+
+    Found cells that share an operand and can be merged by moving the $pmux $procmux$226 in front of them:
+        $flatten\u_xor.\xor_bits[0].g.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:35$3
+        $flatten\u_or.\or_bits[0].g.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:27$2
+        $flatten\u_add.\fa_chain[0].fa_i.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:77$6
+
+    Found cells that share an operand and can be merged by moving the $pmux $procmux$226 in front of them:
+        $flatten\u_max.\mux.\mux_bits[1].g.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:60$5
+        $flatten\u_min.\mux.\mux_bits[1].g.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:60$5
+
+    Found cells that share an operand and can be merged by moving the $pmux $procmux$226 in front of them:
+        $flatten\u_xor.\xor_bits[1].g.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:35$3
+        $flatten\u_or.\or_bits[1].g.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:27$2
+
+    Found cells that share an operand and can be merged by moving the $pmux $procmux$226 in front of them:
+        $flatten\u_max.\mux.\mux_bits[2].g.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:60$5
+        $flatten\u_min.\mux.\mux_bits[2].g.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:60$5
+
+    Found cells that share an operand and can be merged by moving the $pmux $procmux$226 in front of them:
+        $flatten\u_xor.\xor_bits[2].g.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:35$3
+        $flatten\u_or.\or_bits[2].g.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:27$2
+
+    Found cells that share an operand and can be merged by moving the $pmux $procmux$226 in front of them:
+        $flatten\u_max.\mux.\mux_bits[3].g.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:60$5
+        $flatten\u_min.\mux.\mux_bits[3].g.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:60$5
+
+    Found cells that share an operand and can be merged by moving the $pmux $procmux$226 in front of them:
+        $flatten\u_xor.\xor_bits[3].g.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:35$3
+        $flatten\u_or.\or_bits[3].g.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:27$2
+
+    Found cells that share an operand and can be merged by moving the $pmux $procmux$226 in front of them:
+        $flatten\u_max.\mux.\mux_bits[4].g.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:60$5
+        $flatten\u_min.\mux.\mux_bits[4].g.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:60$5
+
+    Found cells that share an operand and can be merged by moving the $pmux $procmux$226 in front of them:
+        $flatten\u_xor.\xor_bits[4].g.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:35$3
+        $flatten\u_or.\or_bits[4].g.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:27$2
+
+    Found cells that share an operand and can be merged by moving the $pmux $procmux$226 in front of them:
+        $flatten\u_max.\mux.\mux_bits[5].g.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:60$5
+        $flatten\u_min.\mux.\mux_bits[5].g.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:60$5
+
+    Found cells that share an operand and can be merged by moving the $pmux $procmux$226 in front of them:
+        $flatten\u_xor.\xor_bits[5].g.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:35$3
+        $flatten\u_or.\or_bits[5].g.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:27$2
+
+    Found cells that share an operand and can be merged by moving the $pmux $procmux$226 in front of them:
+        $flatten\u_max.\mux.\mux_bits[6].g.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:60$5
+        $flatten\u_min.\mux.\mux_bits[6].g.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:60$5
+
+    Found cells that share an operand and can be merged by moving the $pmux $procmux$226 in front of them:
+        $flatten\u_xor.\xor_bits[6].g.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:35$3
+        $flatten\u_or.\or_bits[6].g.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:27$2
+
+    Found cells that share an operand and can be merged by moving the $pmux $procmux$226 in front of them:
+        $flatten\u_max.\mux.\mux_bits[7].g.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:60$5
+        $flatten\u_min.\mux.\mux_bits[7].g.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:60$5
+
+    Found cells that share an operand and can be merged by moving the $pmux $procmux$226 in front of them:
+        $flatten\u_xor.\xor_bits[7].g.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:35$3
+        $flatten\u_or.\or_bits[7].g.$shr$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:27$2
+
+2.20.7. Executing OPT_DFF pass (perform DFF optimizations).
+
+2.20.8. Executing OPT_CLEAN pass (remove unused cells and wires).
+Finding unused cells or wires in module \alu8_c19..
+Removed 0 unused cells and 42 unused wires.
+<suppressed ~42 debug messages>
+
+2.20.9. Executing OPT_EXPR pass (perform const folding).
+Optimizing module alu8_c19.
+<suppressed ~17 debug messages>
+
+2.20.10. Rerunning OPT passes. (Maybe there is more to do..)
+
+2.20.11. Executing OPT_MUXTREE pass (detect dead branches in mux trees).
+Running muxtree optimizer on module \alu8_c19..
+  Creating internal representation of mux trees.
+  Evaluating internal representation of mux trees.
+  Analyzing evaluation results.
+Removed 0 multiplexer ports.
+<suppressed ~18 debug messages>
+
+2.20.12. Executing OPT_REDUCE pass (consolidate $*mux and $reduce_* inputs).
+  Optimizing cells in module \alu8_c19.
+    Consolidated identical input bits for $mux cell $auto$opt_share.cc:246:merge_operators$397:
+      Old ports: A={ \u_min.inv_lt.y \b [0] \a [0] }, B={ \cmp_lt \b [0] \a [0] }, Y=$auto$rtlil.cc:2630:Pmux$398
+      New ports: A=\u_min.inv_lt.y, B=\cmp_lt, Y=$auto$rtlil.cc:2630:Pmux$398 [2]
+      New connections: $auto$rtlil.cc:2630:Pmux$398 [1:0] = { \b [0] \a [0] }
+    Consolidated identical input bits for $pmux cell $auto$opt_share.cc:246:merge_operators$400:
+      Old ports: A=8'10010110, B=16'0000111000000110, Y=$auto$rtlil.cc:2630:Pmux$401
+      New ports: A=2'10, B=4'0100, Y=$auto$rtlil.cc:2630:Pmux$401 [4:3]
+      New connections: { $auto$rtlil.cc:2630:Pmux$401 [7:5] $auto$rtlil.cc:2630:Pmux$401 [2:0] } = { $auto$rtlil.cc:2630:Pmux$401 [4] 5'00110 }
+    Consolidated identical input bits for $mux cell $auto$opt_share.cc:246:merge_operators$403:
+      Old ports: A={ \u_min.inv_lt.y \b [1] \a [1] }, B={ \cmp_lt \b [1] \a [1] }, Y=$auto$rtlil.cc:2630:Pmux$404
+      New ports: A=\u_min.inv_lt.y, B=\cmp_lt, Y=$auto$rtlil.cc:2630:Pmux$404 [2]
+      New connections: $auto$rtlil.cc:2630:Pmux$404 [1:0] = { \b [1] \a [1] }
+    Consolidated identical input bits for $mux cell $auto$opt_share.cc:246:merge_operators$406:
+      Old ports: A=4'1110, B=4'0110, Y=$auto$rtlil.cc:2630:Pmux$407
+      New ports: A=1'1, B=1'0, Y=$auto$rtlil.cc:2630:Pmux$407 [3]
+      New connections: $auto$rtlil.cc:2630:Pmux$407 [2:0] = 3'110
+    Consolidated identical input bits for $mux cell $auto$opt_share.cc:246:merge_operators$409:
+      Old ports: A={ \u_min.inv_lt.y \b [2] \a [2] }, B={ \cmp_lt \b [2] \a [2] }, Y=$auto$rtlil.cc:2630:Pmux$410
+      New ports: A=\u_min.inv_lt.y, B=\cmp_lt, Y=$auto$rtlil.cc:2630:Pmux$410 [2]
+      New connections: $auto$rtlil.cc:2630:Pmux$410 [1:0] = { \b [2] \a [2] }
+    Consolidated identical input bits for $mux cell $auto$opt_share.cc:246:merge_operators$412:
+      Old ports: A=4'1110, B=4'0110, Y=$auto$rtlil.cc:2630:Pmux$413
+      New ports: A=1'1, B=1'0, Y=$auto$rtlil.cc:2630:Pmux$413 [3]
+      New connections: $auto$rtlil.cc:2630:Pmux$413 [2:0] = 3'110
+    Consolidated identical input bits for $mux cell $auto$opt_share.cc:246:merge_operators$415:
+      Old ports: A={ \u_min.inv_lt.y \b [3] \a [3] }, B={ \cmp_lt \b [3] \a [3] }, Y=$auto$rtlil.cc:2630:Pmux$416
+      New ports: A=\u_min.inv_lt.y, B=\cmp_lt, Y=$auto$rtlil.cc:2630:Pmux$416 [2]
+      New connections: $auto$rtlil.cc:2630:Pmux$416 [1:0] = { \b [3] \a [3] }
+    Consolidated identical input bits for $mux cell $auto$opt_share.cc:246:merge_operators$418:
+      Old ports: A=4'1110, B=4'0110, Y=$auto$rtlil.cc:2630:Pmux$419
+      New ports: A=1'1, B=1'0, Y=$auto$rtlil.cc:2630:Pmux$419 [3]
+      New connections: $auto$rtlil.cc:2630:Pmux$419 [2:0] = 3'110
+    Consolidated identical input bits for $mux cell $auto$opt_share.cc:246:merge_operators$421:
+      Old ports: A={ \u_min.inv_lt.y \b [4] \a [4] }, B={ \cmp_lt \b [4] \a [4] }, Y=$auto$rtlil.cc:2630:Pmux$422
+      New ports: A=\u_min.inv_lt.y, B=\cmp_lt, Y=$auto$rtlil.cc:2630:Pmux$422 [2]
+      New connections: $auto$rtlil.cc:2630:Pmux$422 [1:0] = { \b [4] \a [4] }
+    Consolidated identical input bits for $mux cell $auto$opt_share.cc:246:merge_operators$424:
+      Old ports: A=4'1110, B=4'0110, Y=$auto$rtlil.cc:2630:Pmux$425
+      New ports: A=1'1, B=1'0, Y=$auto$rtlil.cc:2630:Pmux$425 [3]
+      New connections: $auto$rtlil.cc:2630:Pmux$425 [2:0] = 3'110
+    Consolidated identical input bits for $mux cell $auto$opt_share.cc:246:merge_operators$427:
+      Old ports: A={ \u_min.inv_lt.y \b [5] \a [5] }, B={ \cmp_lt \b [5] \a [5] }, Y=$auto$rtlil.cc:2630:Pmux$428
+      New ports: A=\u_min.inv_lt.y, B=\cmp_lt, Y=$auto$rtlil.cc:2630:Pmux$428 [2]
+      New connections: $auto$rtlil.cc:2630:Pmux$428 [1:0] = { \b [5] \a [5] }
+    Consolidated identical input bits for $mux cell $auto$opt_share.cc:246:merge_operators$430:
+      Old ports: A=4'1110, B=4'0110, Y=$auto$rtlil.cc:2630:Pmux$431
+      New ports: A=1'1, B=1'0, Y=$auto$rtlil.cc:2630:Pmux$431 [3]
+      New connections: $auto$rtlil.cc:2630:Pmux$431 [2:0] = 3'110
+    Consolidated identical input bits for $mux cell $auto$opt_share.cc:246:merge_operators$433:
+      Old ports: A={ \u_min.inv_lt.y \b [6] \a [6] }, B={ \cmp_lt \b [6] \a [6] }, Y=$auto$rtlil.cc:2630:Pmux$434
+      New ports: A=\u_min.inv_lt.y, B=\cmp_lt, Y=$auto$rtlil.cc:2630:Pmux$434 [2]
+      New connections: $auto$rtlil.cc:2630:Pmux$434 [1:0] = { \b [6] \a [6] }
+    Consolidated identical input bits for $mux cell $auto$opt_share.cc:246:merge_operators$436:
+      Old ports: A=4'1110, B=4'0110, Y=$auto$rtlil.cc:2630:Pmux$437
+      New ports: A=1'1, B=1'0, Y=$auto$rtlil.cc:2630:Pmux$437 [3]
+      New connections: $auto$rtlil.cc:2630:Pmux$437 [2:0] = 3'110
+    Consolidated identical input bits for $mux cell $auto$opt_share.cc:246:merge_operators$439:
+      Old ports: A={ \u_min.inv_lt.y \b [7] \a [7] }, B={ \cmp_lt \b [7] \a [7] }, Y=$auto$rtlil.cc:2630:Pmux$440
+      New ports: A=\u_min.inv_lt.y, B=\cmp_lt, Y=$auto$rtlil.cc:2630:Pmux$440 [2]
+      New connections: $auto$rtlil.cc:2630:Pmux$440 [1:0] = { \b [7] \a [7] }
+    Consolidated identical input bits for $mux cell $auto$opt_share.cc:246:merge_operators$442:
+      Old ports: A=4'1110, B=4'0110, Y=$auto$rtlil.cc:2630:Pmux$443
+      New ports: A=1'1, B=1'0, Y=$auto$rtlil.cc:2630:Pmux$443 [3]
+      New connections: $auto$rtlil.cc:2630:Pmux$443 [2:0] = 3'110
+    New ctrl vector for $pmux cell $procmux$226: { $eq$S:/Git/VRAXION/instnct-core/verilog/alu8_c19.v:410$223_Y $procmux$235_CMP $procmux$234_CMP $procmux$233_CMP $auto$opt_reduce.cc:134:opt_pmux$447 $procmux$230_CMP $procmux$229_CMP $auto$opt_reduce.cc:134:opt_pmux$445 }
+  Optimizing cells in module \alu8_c19.
+Performed a total of 17 changes.
+
+2.20.13. Executing OPT_MERGE pass (detect identical cells).
+Finding identical cells in module `\alu8_c19'.
+<suppressed ~39 debug messages>
+Removed a total of 13 cells.
+
+2.20.14. Executing OPT_SHARE pass.
+
+2.20.15. Executing OPT_DFF pass (perform DFF optimizations).
+
+2.20.16. Executing OPT_CLEAN pass (remove unused cells and wires).
+Finding unused cells or wires in module \alu8_c19..
+Removed 0 unused cells and 13 unused wires.
+<suppressed ~1 debug messages>
+
+2.20.17. Executing OPT_EXPR pass (perform const folding).
+Optimizing module alu8_c19.
+<suppressed ~1 debug messages>
+
+2.20.18. Rerunning OPT passes. (Maybe there is more to do..)
+
+2.20.19. Executing OPT_MUXTREE pass (detect dead branches in mux trees).
+Running muxtree optimizer on module \alu8_c19..
+  Creating internal representation of mux trees.
+  Evaluating internal representation of mux trees.
+  Analyzing evaluation results.
+Removed 0 multiplexer ports.
+<suppressed ~4 debug messages>
+
+2.20.20. Executing OPT_REDUCE pass (consolidate $*mux and $reduce_* inputs).
+  Optimizing cells in module \alu8_c19.
+Performed a total of 0 changes.
+
+2.20.21. Executing OPT_MERGE pass (detect identical cells).
+Finding identical cells in module `\alu8_c19'.
+Removed a total of 0 cells.
+
+2.20.22. Executing OPT_SHARE pass.
+
+2.20.23. Executing OPT_DFF pass (perform DFF optimizations).
+
+2.20.24. Executing OPT_CLEAN pass (remove unused cells and wires).
+Finding unused cells or wires in module \alu8_c19..
+
+2.20.25. Executing OPT_EXPR pass (perform const folding).
+Optimizing module alu8_c19.
+
+2.20.26. Finished OPT passes. (There is nothing left to do.)
+
+2.21. Executing TECHMAP pass (map to technology primitives).
+
+2.21.1. Executing Verilog-2005 frontend: C:\OSS-CA~1\OSS-CA~1\bin\../share/yosys/techmap.v
+Parsing Verilog input from `C:\OSS-CA~1\OSS-CA~1\bin\../share/yosys/techmap.v' to AST representation.
+Generating RTLIL representation for module `\_90_simplemap_bool_ops'.
+Generating RTLIL representation for module `\_90_simplemap_reduce_ops'.
+Generating RTLIL representation for module `\_90_simplemap_logic_ops'.
+Generating RTLIL representation for module `\_90_simplemap_compare_ops'.
+Generating RTLIL representation for module `\_90_simplemap_various'.
+Generating RTLIL representation for module `\_90_simplemap_registers'.
+Generating RTLIL representation for module `\_90_shift_ops_shr_shl_sshl_sshr'.
+Generating RTLIL representation for module `\_90_shift_shiftx'.
+Generating RTLIL representation for module `\_90_fa'.
+Generating RTLIL representation for module `\_90_lcu_brent_kung'.
+Generating RTLIL representation for module `\_90_alu'.
+Generating RTLIL representation for module `\_90_macc'.
+Generating RTLIL representation for module `\_90_alumacc'.
+Generating RTLIL representation for module `\$__div_mod_u'.
+Generating RTLIL representation for module `\$__div_mod_trunc'.
+Generating RTLIL representation for module `\_90_div'.
+Generating RTLIL representation for module `\_90_mod'.
+Generating RTLIL representation for module `\$__div_mod_floor'.
+Generating RTLIL representation for module `\_90_divfloor'.
+Generating RTLIL representation for module `\_90_modfloor'.
+Generating RTLIL representation for module `\_90_pow'.
+Generating RTLIL representation for module `\_90_pmux'.
+Generating RTLIL representation for module `\_90_demux'.
+Generating RTLIL representation for module `\_90_lut'.
+Successfully finished Verilog frontend.
+
+2.21.2. Continuing TECHMAP pass.
+Using extmapper simplemap for cells of type $logic_not.
+Using extmapper simplemap for cells of type $mux.
+Using extmapper simplemap for cells of type $eq.
+Using template $paramod$constmap:3bf49a536f1ce0f108e065ba4ff6497514e0319c$paramod$44983808df7f4fc0637cf823241fe6898ef5b7e3\_90_shift_ops_shr_shl_sshl_sshr for cells of type $shr.
+Using template $paramod$constmap:8f5a8cd7e0c7cd20b0bcae899429c9dc82470ea6$paramod$8f4efde60b9ce625ae75ae6bf4359569b033df62\_90_shift_ops_shr_shl_sshl_sshr for cells of type $shr.
+Analyzing pattern of constant bits for this cell:
+  Constant input on bit 0 of port A: 1'0
+  Constant input on bit 1 of port A: 1'1
+  Constant input on bit 2 of port A: 1'1
+  Constant input on bit 3 of port A: 1'0
+  Constant input on bit 4 of port A: 1'1
+  Constant input on bit 5 of port A: 1'0
+  Constant input on bit 6 of port A: 1'0
+  Constant input on bit 7 of port A: 1'1
+Creating constmapped module `$paramod$constmap:fbd610ee1e9c7535c42e967e6da1601956fd910b$paramod$8f4efde60b9ce625ae75ae6bf4359569b033df62\_90_shift_ops_shr_shl_sshl_sshr'.
+
+2.21.13. Executing OPT_MUXTREE pass (detect dead branches in mux trees).
+Running muxtree optimizer on module $paramod$constmap:fbd610ee1e9c7535c42e967e6da1601956fd910b$paramod$8f4efde60b9ce625ae75ae6bf4359569b033df62\_90_shift_ops_shr_shl_sshl_sshr..
+  Creating internal representation of mux trees.
+  No muxes found in this module.
+Removed 0 multiplexer ports.
+<suppressed ~438 debug messages>
+
+2.21.14. Executing OPT_EXPR pass (perform const folding).
+Optimizing module $paramod$constmap:fbd610ee1e9c7535c42e967e6da1601956fd910b$paramod$8f4efde60b9ce625ae75ae6bf4359569b033df62\_90_shift_ops_shr_shl_sshl_sshr.
+<suppressed ~53 debug messages>
+Removed 14 unused cells and 11 unused wires.
+Using template $paramod$constmap:fbd610ee1e9c7535c42e967e6da1601956fd910b$paramod$8f4efde60b9ce625ae75ae6bf4359569b033df62\_90_shift_ops_shr_shl_sshl_sshr for cells of type $shr.
+Using template $paramod$constmap:7b82132c1b895e8a171a2c10154f04951334a992$paramod$b73ff74bc0c5fc1214d99ceeb32fa1e470941ca6\_90_shift_ops_shr_shl_sshl_sshr for cells of type $shr.
+Analyzing pattern of constant bits for this cell:
+  Constant input on bit 0 of port A: 1'0
+  Constant input on bit 1 of port A: 1'1
+  Constant input on bit 2 of port A: 1'1
+Creating constmapped module `$paramod$constmap:fe8cdd016ebe43e219fb7f204df9539f6966923a$paramod$b73ff74bc0c5fc1214d99ceeb32fa1e470941ca6\_90_shift_ops_shr_shl_sshl_sshr'.
+
+2.21.20. Executing OPT_MUXTREE pass (detect dead branches in mux trees).
+Running muxtree optimizer on module $paramod$constmap:fe8cdd016ebe43e219fb7f204df9539f6966923a$paramod$b73ff74bc0c5fc1214d99ceeb32fa1e470941ca6\_90_shift_ops_shr_shl_sshl_sshr..
+  Creating internal representation of mux trees.
+  No muxes found in this module.
+Removed 0 multiplexer ports.
+<suppressed ~157 debug messages>
+
+2.21.21. Executing OPT_EXPR pass (perform const folding).
+Optimizing module $paramod$constmap:fe8cdd016ebe43e219fb7f204df9539f6966923a$paramod$b73ff74bc0c5fc1214d99ceeb32fa1e470941ca6\_90_shift_ops_shr_shl_sshl_sshr.
+<suppressed ~18 debug messages>
+Removed 4 unused cells and 9 unused wires.
+Using template $paramod$constmap:fe8cdd016ebe43e219fb7f204df9539f6966923a$paramod$b73ff74bc0c5fc1214d99ceeb32fa1e470941ca6\_90_shift_ops_shr_shl_sshl_sshr for cells of type $shr.
+Using template $paramod$521ce43182eecb9f60c72393a788160d2c356bf5\_90_pmux for cells of type $pmux.
+Analyzing pattern of constant bits for this cell:
+  Constant input on bit 0 of port A: 1'0
+  Constant input on bit 1 of port A: 1'1
+  Constant input on bit 2 of port A: 1'1
+  Constant input on bit 5 of port A: 1'0
+  Constant input on bit 6 of port A: 1'0
+  Bit 7 of port A and bit 4 of port A are connected.
+Creating constmapped module `$paramod$constmap:64e38e1fef7605a20bcc326c1683fc38d1c1e570$paramod$44983808df7f4fc0637cf823241fe6898ef5b7e3\_90_shift_ops_shr_shl_sshl_sshr'.
+
+2.21.24. Executing OPT_MUXTREE pass (detect dead branches in mux trees).
+Running muxtree optimizer on module $paramod$constmap:64e38e1fef7605a20bcc326c1683fc38d1c1e570$paramod$44983808df7f4fc0637cf823241fe6898ef5b7e3\_90_shift_ops_shr_shl_sshl_sshr..
+  Creating internal representation of mux trees.
+  No muxes found in this module.
+Removed 0 multiplexer ports.
+<suppressed ~21 debug messages>
+
+2.21.25. Executing OPT_EXPR pass (perform const folding).
+Optimizing module $paramod$constmap:64e38e1fef7605a20bcc326c1683fc38d1c1e570$paramod$44983808df7f4fc0637cf823241fe6898ef5b7e3\_90_shift_ops_shr_shl_sshl_sshr.
+<suppressed ~35 debug messages>
+Removed 11 unused cells and 9 unused wires.
+Using template $paramod$constmap:64e38e1fef7605a20bcc326c1683fc38d1c1e570$paramod$44983808df7f4fc0637cf823241fe6898ef5b7e3\_90_shift_ops_shr_shl_sshl_sshr for cells of type $shr.
+Using template $paramod$constmap:a365f9a47785657f27df39db6bd5c30de19d5136$paramod$0ef8bacf868b0a59c251036bdf734a9bc5523815\_90_shift_ops_shr_shl_sshl_sshr for cells of type $shr.
+Analyzing pattern of constant bits for this cell:
+  Constant input on bit 0 of port A: 1'0
+  Constant input on bit 1 of port A: 1'0
+  Constant input on bit 2 of port A: 1'0
+  Constant input on bit 3 of port A: 1'1
+  Constant input on bit 4 of port A: 1'0
+  Constant input on bit 5 of port A: 1'1
+  Constant input on bit 6 of port A: 1'1
+  Constant input on bit 7 of port A: 1'1
+  Constant input on bit 2 of port B: 1'1
+Creating constmapped module `$paramod$constmap:689d0647c4bf34fdc44456ed0f5aaca33693adbb$paramod$8f4efde60b9ce625ae75ae6bf4359569b033df62\_90_shift_ops_shr_shl_sshl_sshr'.
+
+2.21.31. Executing OPT_MUXTREE pass (detect dead branches in mux trees).
+Running muxtree optimizer on module $paramod$constmap:689d0647c4bf34fdc44456ed0f5aaca33693adbb$paramod$8f4efde60b9ce625ae75ae6bf4359569b033df62\_90_shift_ops_shr_shl_sshl_sshr..
+  Creating internal representation of mux trees.
+  No muxes found in this module.
+Removed 0 multiplexer ports.
+<suppressed ~132 debug messages>
+
+2.21.32. Executing OPT_EXPR pass (perform const folding).
+Optimizing module $paramod$constmap:689d0647c4bf34fdc44456ed0f5aaca33693adbb$paramod$8f4efde60b9ce625ae75ae6bf4359569b033df62\_90_shift_ops_shr_shl_sshl_sshr.
+<suppressed ~63 debug messages>
+Removed 8 unused cells and 13 unused wires.
+Using template $paramod$constmap:689d0647c4bf34fdc44456ed0f5aaca33693adbb$paramod$8f4efde60b9ce625ae75ae6bf4359569b033df62\_90_shift_ops_shr_shl_sshl_sshr for cells of type $shr.
+Analyzing pattern of constant bits for this cell:
+  Constant input on bit 0 of port A: 1'0
+  Constant input on bit 1 of port A: 1'1
+  Constant input on bit 2 of port A: 1'1
+  Constant input on bit 3 of port A: 1'0
+  Constant input on bit 4 of port A: 1'1
+  Constant input on bit 5 of port A: 1'0
+  Constant input on bit 6 of port A: 1'0
+  Constant input on bit 7 of port A: 1'1
+  Constant input on bit 2 of port B: 1'1
+Creating constmapped module `$paramod$constmap:ac4624ba09f40c4aae54fe9ae34d63abe4099627$paramod$8f4efde60b9ce625ae75ae6bf4359569b033df62\_90_shift_ops_shr_shl_sshl_sshr'.
+
+2.21.33. Executing OPT_MUXTREE pass (detect dead branches in mux trees).
+Running muxtree optimizer on module $paramod$constmap:ac4624ba09f40c4aae54fe9ae34d63abe4099627$paramod$8f4efde60b9ce625ae75ae6bf4359569b033df62\_90_shift_ops_shr_shl_sshl_sshr..
+  Creating internal representation of mux trees.
+  No muxes found in this module.
+Removed 0 multiplexer ports.
+<suppressed ~14 debug messages>
+
+2.21.34. Executing OPT_EXPR pass (perform const folding).
+Optimizing module $paramod$constmap:ac4624ba09f40c4aae54fe9ae34d63abe4099627$paramod$8f4efde60b9ce625ae75ae6bf4359569b033df62\_90_shift_ops_shr_shl_sshl_sshr.
+<suppressed ~61 debug messages>
+Removed 9 unused cells and 12 unused wires.
+Using template $paramod$constmap:ac4624ba09f40c4aae54fe9ae34d63abe4099627$paramod$8f4efde60b9ce625ae75ae6bf4359569b033df62\_90_shift_ops_shr_shl_sshl_sshr for cells of type $shr.
+Analyzing pattern of constant bits for this cell:
+  Constant input on bit 0 of port A: 1'0
+  Constant input on bit 1 of port A: 1'1
+  Constant input on bit 2 of port A: 1'1
+  Constant input on bit 3 of port A: 1'1
+Creating constmapped module `$paramod$constmap:0248b79bd9c41a0a99d1565ba5812df1950aedc3$paramod$b73ff74bc0c5fc1214d99ceeb32fa1e470941ca6\_90_shift_ops_shr_shl_sshl_sshr'.
+
+2.21.35. Executing OPT_MUXTREE pass (detect dead branches in mux trees).
+Running muxtree optimizer on module $paramod$constmap:0248b79bd9c41a0a99d1565ba5812df1950aedc3$paramod$b73ff74bc0c5fc1214d99ceeb32fa1e470941ca6\_90_shift_ops_shr_shl_sshl_sshr..
+  Creating internal representation of mux trees.
+  No muxes found in this module.
+Removed 0 multiplexer ports.
+<suppressed ~1 debug messages>
+
+2.21.36. Executing OPT_EXPR pass (perform const folding).
+Optimizing module $paramod$constmap:0248b79bd9c41a0a99d1565ba5812df1950aedc3$paramod$b73ff74bc0c5fc1214d99ceeb32fa1e470941ca6\_90_shift_ops_shr_shl_sshl_sshr.
+<suppressed ~19 debug messages>
+Removed 4 unused cells and 10 unused wires.
+Using template $paramod$constmap:0248b79bd9c41a0a99d1565ba5812df1950aedc3$paramod$b73ff74bc0c5fc1214d99ceeb32fa1e470941ca6\_90_shift_ops_shr_shl_sshl_sshr for cells of type $shr.
+Analyzing pattern of constant bits for this cell:
+  Constant input on bit 0 of port A: 1'0
+  Constant input on bit 1 of port A: 1'1
+  Constant input on bit 2 of port A: 1'0
+  Constant input on bit 3 of port A: 1'1
+  Constant input on bit 4 of port A: 1'0
+  Constant input on bit 5 of port A: 1'0
+  Constant input on bit 6 of port A: 1'1
+  Constant input on bit 7 of port A: 1'1
+Creating constmapped module `$paramod$constmap:9d6f2f22840c3caad12935151282a26acbe4a38b$paramod$8f4efde60b9ce625ae75ae6bf4359569b033df62\_90_shift_ops_shr_shl_sshl_sshr'.
+
+2.21.37. Executing OPT_MUXTREE pass (detect dead branches in mux trees).
+Running muxtree optimizer on module $paramod$constmap:9d6f2f22840c3caad12935151282a26acbe4a38b$paramod$8f4efde60b9ce625ae75ae6bf4359569b033df62\_90_shift_ops_shr_shl_sshl_sshr..
+  Creating internal representation of mux trees.
+  No muxes found in this module.
+Removed 0 multiplexer ports.
+<suppressed ~8 debug messages>
+
+2.21.38. Executing OPT_EXPR pass (perform const folding).
+Optimizing module $paramod$constmap:9d6f2f22840c3caad12935151282a26acbe4a38b$paramod$8f4efde60b9ce625ae75ae6bf4359569b033df62\_90_shift_ops_shr_shl_sshl_sshr.
+<suppressed ~55 debug messages>
+Removed 16 unused cells and 13 unused wires.
+Using template $paramod$constmap:9d6f2f22840c3caad12935151282a26acbe4a38b$paramod$8f4efde60b9ce625ae75ae6bf4359569b033df62\_90_shift_ops_shr_shl_sshl_sshr for cells of type $shr.
+Using template $paramod$72f7795a18b8bd21d2def9f98cbb7d0e4ff65a7f\_90_pmux for cells of type $pmux.
+Using template $paramod$4036cc4bf4f6a71988372ada8c45973510ae050c\_90_alu for cells of type $alu.
+Using extmapper simplemap for cells of type $not.
+Using extmapper simplemap for cells of type $and.
+Using extmapper simplemap for cells of type $reduce_or.
+Using extmapper maccmap for cells of type $macc.
+  add { $auto$wreduce.cc:461:run$390 [9:1] \u_and.and_bits[0].g.y } (10 bits, unsigned)
+  add { \u_and.and_bits[7].g.y \u_mul.pp[62] \u_mul.pp[61] \u_mul.pp[60] \u_mul.pp[59] \u_mul.pp[58] \u_mul.pp[57] \u_mul.pp[56] 7'0000000 } (15 bits, unsigned)
+  add { \u_mul.pp[55] \u_and.and_bits[6].g.y \u_mul.pp[53] \u_mul.pp[52] \u_mul.pp[51] \u_mul.pp[50] \u_mul.pp[49] \u_mul.pp[48] 6'000000 } (14 bits, unsigned)
+  add { \u_mul.pp[47] \u_mul.pp[46] \u_and.and_bits[5].g.y \u_mul.pp[44] \u_mul.pp[43] \u_mul.pp[42] \u_mul.pp[41] \u_mul.pp[40] 5'00000 } (13 bits, unsigned)
+  add { \u_mul.pp[39] \u_mul.pp[38] \u_mul.pp[37] \u_and.and_bits[4].g.y \u_mul.pp[35] \u_mul.pp[34] \u_mul.pp[33] \u_mul.pp[32] 4'0000 } (12 bits, unsigned)
+  add { \u_mul.pp[31] \u_mul.pp[30] \u_mul.pp[29] \u_mul.pp[28] \u_and.and_bits[3].g.y \u_mul.pp[26] \u_mul.pp[25] \u_mul.pp[24] 3'000 } (11 bits, unsigned)
+  add { \u_mul.pp[23] \u_mul.pp[22] \u_mul.pp[21] \u_mul.pp[20] \u_mul.pp[19] \u_and.and_bits[2].g.y \u_mul.pp[17] \u_mul.pp[16] 2'00 } (10 bits, unsigned)
+Using template $paramod\_90_fa\WIDTH=32'00000000000000000000000000001000 for cells of type $fa.
+Using template $paramod\_90_fa\WIDTH=32'00000000000000000000000000001111 for cells of type $fa.
+Using template $paramod\_90_fa\WIDTH=32'00000000000000000000000000010000 for cells of type $fa.
+Using template $paramod$6df0329addda9228fcc2546de2aaf14ad26c98e1\_90_alu for cells of type $alu.
+Using extmapper simplemap for cells of type $pos.
+Using template $paramod\_90_lcu_brent_kung\WIDTH=32'00000000000000000000000000001001 for cells of type $lcu.
+Using extmapper simplemap for cells of type $xor.
+Using extmapper simplemap for cells of type $or.
+Using template $paramod\_90_lcu_brent_kung\WIDTH=32'00000000000000000000000000010000 for cells of type $lcu.
+No more expansions possible.
+<suppressed ~579 debug messages>
+
+2.22. Executing OPT pass (performing simple optimizations).
+
+2.22.1. Executing OPT_EXPR pass (perform const folding).
+Optimizing module alu8_c19.
+<suppressed ~330 debug messages>
+
+2.22.2. Executing OPT_MERGE pass (detect identical cells).
+Finding identical cells in module `\alu8_c19'.
+<suppressed ~228 debug messages>
+Removed a total of 76 cells.
+
+2.22.3. Executing OPT_DFF pass (perform DFF optimizations).
+
+2.22.4. Executing OPT_CLEAN pass (remove unused cells and wires).
+Finding unused cells or wires in module \alu8_c19..
+Removed 44 unused cells and 1045 unused wires.
+<suppressed ~117 debug messages>
+
+2.22.5. Finished fast OPT passes.
+
+2.23. Executing ABC pass (technology mapping using ABC).
+
+2.23.1. Extracting gate netlist of module `\alu8_c19' to `<abc-temp-dir>/input.blif'..
+Extracted 640 gates and 662 wires to a netlist network with 20 inputs and 26 outputs.
+
+2.23.1.1. Executing ABC.
+Running ABC command: "<yosys-exe-dir>/yosys-abc" -s -f <abc-temp-dir>/abc.script 2>&1
+ABC: ABC command line: "source <abc-temp-dir>/abc.script".
+ABC: 
+ABC: + read_blif <abc-temp-dir>/input.blif 
+ABC: + read_library <abc-temp-dir>/stdcells.genlib 
+ABC: Entered genlib library with 13 gates from file "<abc-temp-dir>/stdcells.genlib".
+ABC: + strash 
+ABC: + dretime 
+ABC: + map 
+ABC: + write_blif <abc-temp-dir>/output.blif 
+
+2.23.1.2. Re-integrating ABC results.
+ABC RESULTS:               MUX cells:       45
+ABC RESULTS:               NOT cells:       52
+ABC RESULTS:               AND cells:       83
+ABC RESULTS:              NAND cells:       14
+ABC RESULTS:               XOR cells:       22
+ABC RESULTS:            ANDNOT cells:       46
+ABC RESULTS:              XNOR cells:      110
+ABC RESULTS:                OR cells:       14
+ABC RESULTS:             ORNOT cells:       71
+ABC RESULTS:               NOR cells:      208
+ABC RESULTS:        internal signals:      616
+ABC RESULTS:           input signals:       20
+ABC RESULTS:          output signals:       26
+Removing temp directory.
+
+2.24. Executing OPT pass (performing simple optimizations).
+
+2.24.1. Executing OPT_EXPR pass (perform const folding).
+Optimizing module alu8_c19.
+
+2.24.2. Executing OPT_MERGE pass (detect identical cells).
+Finding identical cells in module `\alu8_c19'.
+Removed a total of 0 cells.
+
+2.24.3. Executing OPT_DFF pass (perform DFF optimizations).
+
+2.24.4. Executing OPT_CLEAN pass (remove unused cells and wires).
+Finding unused cells or wires in module \alu8_c19..
+Removed 0 unused cells and 447 unused wires.
+<suppressed ~240 debug messages>
+
+2.24.5. Finished fast OPT passes.
+
+2.25. Executing HIERARCHY pass (managing design hierarchy).
+
+2.25.1. Analyzing design hierarchy..
+Top module:  \alu8_c19
+
+2.25.2. Analyzing design hierarchy..
+Top module:  \alu8_c19
+Removed 0 unused modules.
+
+2.26. Printing statistics.
+
+=== alu8_c19 ===
+
+   Number of wires:               1401
+   Number of wire bits:           2248
+   Number of public wires:         762
+   Number of public wire bits:    1609
+   Number of ports:                  8
+   Number of port bits:             47
+   Number of memories:               0
+   Number of memory bits:            0
+   Number of processes:              0
+   Number of cells:                903
+     $_ANDNOT_                      46
+     $_AND_                         83
+     $_MUX_                         45
+     $_NAND_                        14
+     $_NOR_                        208
+     $_NOT_                         52
+     $_ORNOT_                       71
+     $_OR_                          14
+     $_XNOR_                       110
+     $_XOR_                         22
+     $scopeinfo                    238
+
+2.27. Executing CHECK pass (checking for obvious problems).
+Checking module alu8_c19...
+Found and reported 0 problems.
+
+3. Executing ABC pass (technology mapping using ABC).
+
+3.1. Extracting gate netlist of module `\alu8_c19' to `<abc-temp-dir>/input.blif'..
+Extracted 665 gates and 685 wires to a netlist network with 20 inputs and 26 outputs.
+
+3.1.1. Executing ABC.
+Running ABC command: "<yosys-exe-dir>/yosys-abc" -s -f <abc-temp-dir>/abc.script 2>&1
+ABC: ABC command line: "source <abc-temp-dir>/abc.script".
+ABC: 
+ABC: + read_blif <abc-temp-dir>/input.blif 
+ABC: + read_lut <abc-temp-dir>/lutdefs.txt 
+ABC: + strash 
+ABC: + &get -n 
+ABC: + &fraig -x 
+ABC: + &put 
+ABC: + scorr 
+ABC: Warning: The network is combinational (run "fraig" or "fraig_sweep").
+ABC: + dc2 
+ABC: + dretime 
+ABC: + strash 
+ABC: + dch -f 
+ABC: + if 
+ABC: + mfs2 
+ABC: + lutpack -S 1 
+ABC: + write_blif <abc-temp-dir>/output.blif 
+
+3.1.2. Re-integrating ABC results.
+ABC RESULTS:              $lut cells:      258
+ABC RESULTS:        internal signals:      639
+ABC RESULTS:           input signals:       20
+ABC RESULTS:          output signals:       26
+Removing temp directory.
+
+4. Printing statistics.
+
+=== alu8_c19 ===
+
+   Number of wires:               1679
+   Number of wire bits:           2526
+   Number of public wires:         762
+   Number of public wire bits:    1609
+   Number of ports:                  8
+   Number of port bits:             47
+   Number of memories:               0
+   Number of memory bits:            0
+   Number of processes:              0
+   Number of cells:                496
+     $lut                          258
+     $scopeinfo                    238
+
+End of script. Logfile hash: 6bcc21c136
+Yosys 0.45+139 (git sha1 4d581a97d, x86_64-w64-mingw32-g++ 13.2.1 -O3)
+Time spent: 2% 36x opt_expr (0 sec), 2% 19x opt_muxtree (0 sec), ...
