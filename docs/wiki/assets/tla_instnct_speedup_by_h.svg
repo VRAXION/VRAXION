@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 400" width="720" height="400">
+  <style>
+    text { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif; }
+    .title { font-size: 17px; font-weight: 600; fill: #c9d1d9; }
+    .subtitle { font-size: 12px; fill: #8b949e; }
+    .axis { font-size: 12px; fill: #8b949e; }
+    .label { font-size: 13px; fill: #c9d1d9; }
+    .value { font-size: 12px; font-weight: 700; fill: #c9d1d9; }
+    .instnct { fill: #39d353; }
+    .listnet { fill: #ff7b72; }
+    .gridline { stroke: #30363d; stroke-width: 1; }
+    .zeroline { stroke: #484f58; stroke-width: 2; }
+  </style>
+
+  <!-- Title -->
+  <text x="360" y="26" class="title" text-anchor="middle">Fair 1+1 vs 1+1 — INSTNCT library speedup by H</text>
+  <text x="360" y="46" class="subtitle" text-anchor="middle">Corrects earlier "ListNet 6x" claim (unfair 1+1 ES vs 1+9 jackpot). INSTNCT wins at H &#8805; 512.</text>
+
+  <!-- Chart area: x=100-680, y=70-300 -->
+  <!-- Y axis: -20% to +140% speedup -->
+  <!-- 160 units over 230px -> 1.4375 px/%  -->
+  <!-- Zero at y = 70 + 140*1.4375 = 70 + 201.25 = 271.25 -->
+
+  <!-- Gridlines -->
+  <line x1="100" y1="70" x2="680" y2="70" class="gridline"/>
+  <line x1="100" y1="127.5" x2="680" y2="127.5" class="gridline"/>
+  <line x1="100" y1="185" x2="680" y2="185" class="gridline"/>
+  <line x1="100" y1="242.5" x2="680" y2="242.5" class="gridline"/>
+  <line x1="100" y1="271.25" x2="680" y2="271.25" class="zeroline"/>
+  <line x1="100" y1="300" x2="680" y2="300" class="gridline"/>
+
+  <text x="92" y="74" class="axis" text-anchor="end">+140%</text>
+  <text x="92" y="131" class="axis" text-anchor="end">+100%</text>
+  <text x="92" y="189" class="axis" text-anchor="end">+60%</text>
+  <text x="92" y="246" class="axis" text-anchor="end">+20%</text>
+  <text x="92" y="275" class="axis" text-anchor="end">0</text>
+  <text x="92" y="304" class="axis" text-anchor="end">-20%</text>
+
+  <!-- Y axis label -->
+  <text x="38" y="185" class="axis" text-anchor="middle" transform="rotate(-90, 38, 185)">INSTNCT speedup (%)</text>
+
+  <!-- 4 groups for H=256, 512, 1024, 2048 -->
+  <!-- Each 130 px. Bar width 70. Start at x=150 -->
+
+  <!-- H=256: -8% (ListNet wins by 8%). -8*1.4375=-11.5  => bar from y=271.25 down to y=282.75, height=11.5 -->
+  <rect x="140" y="271.25" width="80" height="11.5" class="listnet"/>
+  <text x="180" y="298" class="value" text-anchor="middle">-8%</text>
+  <text x="180" y="320" class="label" text-anchor="middle">H=256</text>
+  <text x="180" y="338" class="axis" text-anchor="middle">(ListNet wins)</text>
+
+  <!-- H=512: +26%. 26*1.4375 = 37.375 -> bar from y=271.25-37.375=233.875, height 37.375 -->
+  <rect x="270" y="233.875" width="80" height="37.375" class="instnct"/>
+  <text x="310" y="228" class="value" text-anchor="middle">+26%</text>
+  <text x="310" y="320" class="label" text-anchor="middle">H=512</text>
+
+  <!-- H=1024: +65%.  65*1.4375=93.44, y=271.25-93.44=177.81 -->
+  <rect x="400" y="177.81" width="80" height="93.44" class="instnct"/>
+  <text x="440" y="172" class="value" text-anchor="middle">+65%</text>
+  <text x="440" y="320" class="label" text-anchor="middle">H=1024</text>
+
+  <!-- H=2048: +130%. 130*1.4375=186.875, y=271.25-186.875=84.375 -->
+  <rect x="530" y="84.375" width="80" height="186.875" class="instnct"/>
+  <text x="570" y="78" class="value" text-anchor="middle">+130%</text>
+  <text x="570" y="320" class="label" text-anchor="middle">H=2048</text>
+
+  <!-- Legend -->
+  <g>
+    <rect x="200" y="358" width="16" height="12" class="instnct"/>
+    <text x="222" y="369" class="label">INSTNCT library faster</text>
+    <rect x="420" y="358" width="16" height="12" class="listnet"/>
+    <text x="442" y="369" class="label">ListNet faster</text>
+  </g>
+</svg>

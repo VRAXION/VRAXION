@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 400" width="720" height="400">
+  <style>
+    text { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif; }
+    .title { font-size: 17px; font-weight: 600; fill: #c9d1d9; }
+    .subtitle { font-size: 12px; fill: #8b949e; }
+    .axis { font-size: 12px; fill: #8b949e; }
+    .label { font-size: 13px; fill: #c9d1d9; }
+    .value { font-size: 11px; font-weight: 600; fill: #c9d1d9; }
+    .c19 { fill: #39d353; }
+    .relu { fill: #ff7b72; }
+    .gridline { stroke: #30363d; stroke-width: 1; }
+    .total { font-size: 13px; font-weight: 700; fill: #c9d1d9; }
+  </style>
+
+  <!-- Title -->
+  <text x="360" y="26" class="title" text-anchor="middle">C19 vs ReLU solve rate — 5 tasks x 50 seeds</text>
+  <text x="360" y="46" class="subtitle" text-anchor="middle">C19: 250/250 (100%)  vs  ReLU: 189/250 (75.6%)   |   +61/250 delta</text>
+
+  <!-- Chart area: 80 left, 40 right, 70 top, 70 bottom -->
+  <!-- Gridlines at 0, 25, 50 (seeds solved) -->
+  <line x1="80" y1="70" x2="680" y2="70" class="gridline"/>
+  <line x1="80" y1="180" x2="680" y2="180" class="gridline"/>
+  <line x1="80" y1="290" x2="680" y2="290" class="gridline"/>
+
+  <!-- Y-axis -->
+  <line x1="80" y1="70" x2="80" y2="290" stroke="#484f58" stroke-width="1"/>
+  <text x="72" y="74" class="axis" text-anchor="end">50</text>
+  <text x="72" y="184" class="axis" text-anchor="end">25</text>
+  <text x="72" y="294" class="axis" text-anchor="end">0</text>
+  <text x="30" y="180" class="axis" text-anchor="middle" transform="rotate(-90, 30, 180)">seeds solved (/50)</text>
+
+  <!-- X-axis -->
+  <line x1="80" y1="290" x2="680" y2="290" stroke="#484f58" stroke-width="1"/>
+
+  <!-- 5 groups. Each group spans 120px. Starting at x=90. Bar width 40, gap 8. -->
+  <!-- y-scale: 50 seeds -> 220px tall (290 - 70). So px-per-seed = 4.4 -->
+
+  <!-- Group 1: ADD, both 50 -->
+  <g>
+    <rect x="100" y="70" width="40" height="220" class="c19"/>
+    <rect x="148" y="70" width="40" height="220" class="relu"/>
+    <text x="120" y="64" class="value" text-anchor="middle">50</text>
+    <text x="168" y="64" class="value" text-anchor="middle">50</text>
+    <text x="144" y="310" class="label" text-anchor="middle">ADD</text>
+  </g>
+
+  <!-- Group 2: MAX, 50 vs 29 -->
+  <g>
+    <rect x="220" y="70" width="40" height="220" class="c19"/>
+    <rect x="268" y="197.4" width="40" height="92.6" class="relu"/>
+    <text x="240" y="64" class="value" text-anchor="middle">50</text>
+    <text x="288" y="191" class="value" text-anchor="middle">29</text>
+    <text x="264" y="310" class="label" text-anchor="middle">MAX</text>
+  </g>
+
+  <!-- Group 3: MIN, 50 vs 21 -->
+  <g>
+    <rect x="340" y="70" width="40" height="220" class="c19"/>
+    <rect x="388" y="197.6" width="40" height="92.4" class="relu"/>
+    <text x="360" y="64" class="value" text-anchor="middle">50</text>
+    <text x="408" y="191" class="value" text-anchor="middle">21</text>
+    <text x="384" y="310" class="label" text-anchor="middle">MIN</text>
+  </g>
+
+  <!-- Group 4: |a-b|, 50 vs 50 -->
+  <g>
+    <rect x="460" y="70" width="40" height="220" class="c19"/>
+    <rect x="508" y="70" width="40" height="220" class="relu"/>
+    <text x="480" y="64" class="value" text-anchor="middle">50</text>
+    <text x="528" y="64" class="value" text-anchor="middle">50</text>
+    <text x="504" y="310" class="label" text-anchor="middle">|a-b|</text>
+  </g>
+
+  <!-- Group 5: MUL, 50 vs 39 -->
+  <g>
+    <rect x="580" y="70" width="40" height="220" class="c19"/>
+    <rect x="628" y="118.4" width="40" height="171.6" class="relu"/>
+    <text x="600" y="64" class="value" text-anchor="middle">50</text>
+    <text x="648" y="112" class="value" text-anchor="middle">39</text>
+    <text x="624" y="310" class="label" text-anchor="middle">MUL</text>
+  </g>
+
+  <!-- Legend -->
+  <g>
+    <rect x="220" y="345" width="16" height="12" class="c19"/>
+    <text x="242" y="355" class="label">C19 (periodic parabolic)</text>
+    <rect x="420" y="345" width="16" height="12" class="relu"/>
+    <text x="442" y="355" class="label">ReLU</text>
+  </g>
+
+  <!-- Footer -->
+  <text x="360" y="385" class="subtitle" text-anchor="middle">C19's periodic wave helps cross-cluster transfer; ReLU fails on bottleneck tasks (MAX / MIN / MUL)</text>
+</svg>

@@ -237,18 +237,97 @@ The timeline is ordered latest-first. Each day is a self-contained H3 section wi
 > 50/50 — 40-point structural gap. C19's periodic wave materially helps
 > cross-cluster information transfer.
 
+**[Float gradient solve rates — 2026-04-10]**
+
+| Task | Workers | Solve rate |
+|---|---|---|
+| ADD | 3 | 200/200 |
+| \|a-b\| | 6 | 199/200 |
+| MUL | 6 | 158/200 |
+
+*Init scale=0.5 best. Loss landscape smooth — one valley, no local minima. Gradient converges in 50-100 steps.*
+
+**[C19 vs ReLU — 5 tasks × 50 seeds — 2026-04-10]**
+
+<img src="assets/tla_c19_vs_relu_sweep.svg" alt="C19 solve rate 250/250 vs ReLU 189/250 across ADD, MAX, MIN, |a-b|, MUL — grouped bar chart" width="720">
+
+**Learnable parameter convergence (not fixed 4.0):**
+- rho: ~5.1 for ADD/MUL; ~4.1 for \|a-b\|
+- C: ADD≈5.0, MAX≈3.0, MIN≈2.5, \|a-b\|≈1.5 (task-dependent)
+
+**Two-pool connectome (MIN task only):** ReLU 10/50 vs C19 50/50 — 40pp structural gap.
+
+**[Circuit reuse speedups — frozen ADD as pre-trained substrate — 2026-04-10]**
+
+| Compound task | Speedup | Pre-trained steps | Fresh steps |
+|---|---|---|---|
+| max(a+b,c) | 3.8x | 50 | 190 |
+| a+b+c | 2.1x | — | — |
+| 2a+b | 1.5x | — | — |
+| (a+b)>3 (binary output) | **slower** | — | — |
+
+*Circuit reuse helps only when output format is compatible. Binary-output tasks converge slower with a frozen float ADD substrate.*
+
+**[Overnight scaling sweep — 2026-04-10]**
+
+| Experiment | Depth | Workers | Result | Notes |
+|---|---|---|---|---|
+| EXP 1 (scaling) | 5d | — | 20/20 | full solve |
+| EXP 1 (scaling) | 10d | — | 15-20/20 | — |
+| EXP 1 (scaling) | 15d | 10w | 15/20 | overparam HURTS |
+| EXP 1 (scaling) | 15d | 20w | 7/20 | 20w worse than 10w |
+| EXP 1 (scaling) | 20d | — | partial | — |
+| EXP 2 (generalization) | 5d | — | 76% test | gap 24pp |
+| EXP 2 (generalization) | 20d | — | 96% test | gap 3pp |
+| EXP 3 (multi-task ADD+MAX) | — | 8w | 95% combined | — |
+| EXP 4 (all ops) | 10d | — | ADD/MAX/MIN 100%, \|a-b\| 85% | — |
+| EXP 5 (composition) | 2-input | — | 100% | — |
+| EXP 5 (composition) | 3-input | — | high | — |
+| EXP 5 (composition) | 4-5 input | — | partial | killed ~9.5h |
+
+*Overparameterization hurts at 15d (10w beats 20w). EXP 2 generalization gap shrinks from 24pp at 5d to 3pp at 20d.*
+
+**[Two-pool connectome — C19 vs ReLU bottleneck gap — 2026-04-10]**
+
+| Pool topology | Activation | MIN solve rate | Gap |
+|---|---|---|---|
+| Single-pool | ReLU | — | 61pp |
+| Single-pool | C19 | — | — |
+| Two-pool | ReLU | 10/50 | 80pp |
+| Two-pool | C19 | 50/50 | — |
+
+*C19 advantage GROWS with bottleneck severity: single-pool gap=61pp → two-pool gap=80pp. ReLU degrades with more ticks (overprocessing); C19 stays 50/50. Periodic wave genuinely helps cross-cluster information transfer.*
+
+**[Binary ±1 + C19 exhaustive sweep — 2026-04-10]**
+
+| Task | C19 workers | C19 result | ReLU binary result |
+|---|---|---|---|
+| ADD | 2 | 100% | — |
+| MAX | 7 | 100% | — |
+| MIN | 5 | 100% | — |
+| \|a-b\| | — | stuck at 92% | — |
+| MUL | — | stuck at 92% | best 88% |
+
+*ReLU binary: 0/5 solved (best=88% on MUL). C19's periodic wave makes binary search space viable; binary+ReLU was 0/8192 configurations.*
+
+**[Fraction extraction to integer weights — 2026-04-10]**
+
+<img src="assets/tla_fraction_extraction.svg" alt="Fraction extraction to integer weights: all 5 tasks near-100% solve rate with 4-6 bits per weight, MUL 18/20 at 6 bits" width="720">
+
+*All 5 tasks convert to integer; no search needed — float training finds ratios, denominator d∈[1,30] gives integer grid via weights = round(float×d)/d. C baked as LUT.*
+
 | Seq | Finding | Status | Source |
 |---|---|---|---|
 | 1 | SOLUTION DENSITY: Exhaustive scan of all 8192 binary configs for 1 worker shows ZERO achieve even 40% accuracy (native output). The gradient does ALL the work — binary search is just a random starting point. | BREAKTHROUGH / Confirmed | [Rust Implementation Surface](v5-Rust-Port-Benchmarks) |
-| 2 | FLOAT GRADIENT solve rates — random float init + gradient descent: ADD 200/200 (3 workers), \|a-b\| 199/200 (6 workers), MUL 158/200 (6 workers). Init scale=0.5 best. Loss landscape is smooth — one big valley, no local minima. Gradient converges in ~50-100 steps. | BREAKTHROUGH / Confirmed | [Rust Implementation Surface](v5-Rust-Port-Benchmarks) |
-| 3 | INT8 QUANTIZATION pipeline: Post-training quantization: int4 (16 levels) = 100% for ADD on single seed; int8 (256 levels) = 85/100 seeds survive for ADD. Step size 0.008 = max error 0.004. Pipeline: float gradient → i8 quantize → integer-only inference. Native Rust `i8` type, already used in `Int8Projection`. | BREAKTHROUGH / Confirmed | [Rust Implementation Surface](v5-Rust-Port-Benchmarks) |
+| 2 | FLOAT GRADIENT solve rates — random float init + gradient descent across ADD / \|a-b\| / MUL (200 seeds each). See table above. Init scale=0.5 best; loss landscape is smooth (one big valley, no local minima); gradient converges in ~50-100 steps. | BREAKTHROUGH / Confirmed | [Rust Implementation Surface](v5-Rust-Port-Benchmarks) |
+| 3 | INT8 QUANTIZATION pipeline. Post-training quantization results:<br>• **int4 (16 levels)**: 100% for ADD on single seed<br>• **int8 (256 levels)**: 85/100 seeds survive for ADD<br>Step size 0.008 = max error 0.004. Pipeline: float gradient → i8 quantize → integer-only inference. Native Rust `i8` type, already used in `Int8Projection`. | BREAKTHROUGH / Confirmed | [Rust Implementation Surface](v5-Rust-Port-Benchmarks) |
 | 4 | 2D LOSS LANDSCAPE: ASCII heatmap visualization confirms ADD landscape is one smooth funnel. Close-up: high-accuracy zone (96-99%) fills most of ±0.3 around solution. Wide view: small bright peak in noise. Very wide (±5): needle in haystack, but gradient ALWAYS finds it because the slope is consistent. | BREAKTHROUGH / Confirmed | [Rust Implementation Surface](v5-Rust-Port-Benchmarks) |
-| 5 | CIRCUIT REUSE: frozen ADD speeds up compatible tasks. Pre-trained ADD(a,b) frozen → train new workers on compound tasks. max(a+b,c): 3.8x speedup (pre-trained finds 100% in 50 steps vs 190 fresh). a+b+c: 2.1x speedup. 2a+b: 1.5x speedup. BUT (a+b)>3 (binary output, incompatible format): pre-trained is WORSE (slower convergence). Circuit reuse only helps when output format is compatible. | BREAKTHROUGH / Confirmed | [Rust Implementation Surface](v5-Rust-Port-Benchmarks) |
-| 6 | OVERNIGHT SCALING. EXP 1 (scaling): 5d=20/20 solved, 10d=15-20/20, 15d=10-15/20 (overparameterization HURTS: 10w=15/20 vs 20w=7/20), 20d=partial. EXP 2 (generalization): improves with scale — 5d: 76% test, 20d: 96% test, gap shrinks 24pp→3pp. EXP 3 (multi-task ADD+MAX): 8 workers = 95% combined. EXP 4 (all ops 10d): ADD/MAX/MIN 100%, \|a-b\| 85%. EXP 5 (composition depth): 2-input=100%, 3-input=high, 4-5 input partial (killed before completion, ~9.5h runtime). | BREAKTHROUGH / Confirmed | [Rust Implementation Surface](v5-Rust-Port-Benchmarks) |
-| 7 | C19 vs ReLU robustness sweep: C19 periodic parabolic activation (rho+C learnable per neuron) vs ReLU on 5 tasks × 50 seeds. C19: 250/250 total solve rate. ReLU: 189/250 (fails on MAX 29/50, MIN 21/50, MUL 39/50). Learnable rho converges to ~5.1 (ADD/MUL) and ~4.1 (\|a-b\|), not fixed 4.0. C converges task-dependent: ADD≈5.0, MAX≈3.0, MIN≈2.5, \|a-b\|≈1.5. | BREAKTHROUGH / Confirmed | [Rust Implementation Surface](v5-Rust-Port-Benchmarks) |
-| 8 | TWO-POOL CONNECTOME: Two isolated neighborhoods (A sees input_a, B sees input_b) communicate ONLY through connectome. ReLU MIN: 10/50, C19 MIN: 50/50 — 40-point gap. C19 advantage GROWS with bottleneck (single-pool gap=61, two-pool gap=80). ReLU degrades with more ticks (overprocessing); C19 stays 50/50. The periodic wave genuinely helps cross-cluster info transfer. | BREAKTHROUGH / Confirmed | [Rust Implementation Surface](v5-Rust-Port-Benchmarks) |
-| 9 | BINARY+C19 EXHAUSTIVE: Greedy constructive binary ±1 weights + C sweep (exhaustive, guaranteed). ADD: 100% with 2 workers; MAX: 100% (7w); MIN: 100% (5w). \|a-b\| and MUL stuck at 92%. ReLU binary: 0/5 solved (best=88% MUL). C19's periodic wave makes binary search space viable — binary+ReLU was 0/8192 solutions. | BREAKTHROUGH / Confirmed | [Rust Implementation Surface](v5-Rust-Port-Benchmarks) |
-| 10 | FRACTION EXTRACTION float→integer via common denominator: Float train → find denominator d (1-30) → weights = round(float×d) / d → test. ALL 5 tasks convert to integer: ADD 20/20, MAX 20/20, MIN 20/20, \|a-b\| 20/20, MUL 18/20. Bits per weight: ADD=4-5, MAX=4-5, MIN=5, \|a-b\|=5-6, MUL=6. No search needed — float training finds ratios, denominator gives integer grid. C baked as LUT. | BREAKTHROUGH / Confirmed | [Rust Implementation Surface](v5-Rust-Port-Benchmarks) |
+| 5 | CIRCUIT REUSE: frozen ADD speeds up compatible tasks. See table above. Pre-trained ADD(a,b) frozen → train new workers on compound tasks. BUT (a+b)>3 (binary output, incompatible format) is WORSE — circuit reuse only helps when output format is compatible. | BREAKTHROUGH / Confirmed | [Rust Implementation Surface](v5-Rust-Port-Benchmarks) |
+| 6 | OVERNIGHT SCALING — 5 experiments exploring depth / generalization / multi-task / op coverage / composition depth. See table above. Key takeaways: overparameterization HURTS at 15d (10w=15/20 vs 20w=7/20); generalization improves with scale (24pp→3pp gap); composition tops out at 3-input high / 4-5 input partial. | BREAKTHROUGH / Confirmed | [Rust Implementation Surface](v5-Rust-Port-Benchmarks) |
+| 7 | C19 vs ReLU robustness sweep across 5 tasks × 50 seeds. See table above. C19's periodic parabolic activation (rho+C learnable per neuron) materially beats ReLU on MAX / MIN / MUL while tying on ADD / \|a-b\|; ReLU failure is concentrated in the bottleneck tasks. | BREAKTHROUGH / Confirmed | [Rust Implementation Surface](v5-Rust-Port-Benchmarks) |
+| 8 | TWO-POOL CONNECTOME: two isolated neighborhoods (A sees input_a, B sees input_b) communicate ONLY through connectome. See table above. C19's structural advantage grows with bottleneck severity — ReLU degrades with more ticks (overprocessing) while C19 stays at 50/50. | BREAKTHROUGH / Confirmed | [Rust Implementation Surface](v5-Rust-Port-Benchmarks) |
+| 9 | BINARY+C19 EXHAUSTIVE — greedy constructive ±1 weight search plus C sweep. See table above. C19's periodic wave makes binary search space viable (binary+ReLU was 0/8192 configurations). | BREAKTHROUGH / Confirmed | [Rust Implementation Surface](v5-Rust-Port-Benchmarks) |
+| 10 | FRACTION EXTRACTION float→integer via common denominator: float train → find denominator d (1-30) → weights = round(float×d)/d → test. See table above. No search needed — float training finds ratios, denominator gives integer grid. C baked as LUT. | BREAKTHROUGH / Confirmed | [Rust Implementation Surface](v5-Rust-Port-Benchmarks) |
 | 11 | Current frontier: C19 + float gradient + fraction quantization = the pipeline. Train: float gradient (C19 rho+C learnable) → 100% all tasks. Deploy: fraction extraction (4-6 bit integer weights) + C19 baked as LUT → pure integer inference. No FPU needed on chip. Two-pool connectome validated for cross-cluster communication. Next: greedy freeze-per-layer construction, analytic backprop, scaling tests with integer pipeline. (see also [INSTNCT Architecture](INSTNCT-Architecture)) | Current frontier | [Rust Implementation Surface](v5-Rust-Port-Benchmarks) |
 
 ---
@@ -264,15 +343,32 @@ The timeline is ordered latest-first. Each day is a self-contained H3 section wi
 > neuron 4 onwards. Recurrent ADD through CP: 100% at all depths. CP provides a
 > 1-tick delayed shared register for inter-cluster communication.
 
+**[Holographic capability map — 2026-04-09]**
+
+| Task | Result |
+|---|---|
+| ADD | 100% solved |
+| MAX | 100% solved |
+| PARITY | 100% solved |
+| \|a-b\| | 100% solved |
+| MUL (area encoding) | 100% solved |
+| a÷b | 100% solved |
+| MUL (thermo) | 81% |
+| a==b | 87% |
+| MIN | 93% |
+| SUB | 75% (unsolved) |
+
+*Area encoding proves MUL is an ENCODING problem, not a network problem. Depth is task-specific: helps PARITY, hurts SUB. Width/weight scaling do not help.*
+
 | Seq | Finding | Status | Source |
 |---|---|---|---|
-| 1 | Overnight capability map + encoding breakthrough: Complete holographic task map: ADD/MAX/PARITY/\|a-b\|/MUL(area)/a÷b = 100% solved. MUL(thermo)=81%, a==b=87%, MIN=93%, SUB=75% unsolved. Area encoding proves MUL is an ENCODING problem not a network problem. Depth task-specific: helps PARITY, hurts SUB. Width/weight scaling don't help. | Confirmed | [Rust Implementation Surface](v5-Rust-Port-Benchmarks) |
+| 1 | Overnight capability map + encoding breakthrough: complete holographic task map across 10 operations. See table above. Area encoding proves MUL is an ENCODING problem not a network problem; depth is task-specific (helps PARITY, hurts SUB); width/weight scaling don't help. | Confirmed | [Rust Implementation Surface](v5-Rust-Port-Benchmarks) |
 | 2 | READOUT WAS THE BOTTLENECK — 7/10 tasks solved. Switching from output/calibration→round to nearest-mean readout unlocked MUL (100%), SUB, MIN, a==b, \|a-b\|. Output/cal readout divided by zero for MUL (1×0=0). 3 neurons + integer ±2 + signed square + nearest-mean = 7/10 tasks at 100%. | BREAKTHROUGH / Confirmed | [Rust Implementation Surface](v5-Rust-Port-Benchmarks) |
 | 3 | Float gradient solves ALL 8 tasks: Per-neuron bias + float weights + numerical gradient + nearest-mean readout → MUL OK, PAR OK, a==b OK (all previously unsolved tasks now 100%). Per-connection bias WORSE (overparameterized). N=8 neurons, 72 float params, 30 starts × 10K gradient steps. | BREAKTHROUGH / Confirmed | [Rust Implementation Surface](v5-Rust-Port-Benchmarks) |
 | 4 | Weight range scaling: Binary ±1 solves MUL at N=3 (margin=0.3). More neurons = bigger margin: N=15 binary margin=13; ±2 N=3 margin=30. Bits × neurons = constant quality tradeoff. | Confirmed | [Rust Implementation Surface](v5-Rust-Port-Benchmarks) |
 | 5 | CHIP COMPOSITION: 100% on 3-input addition. Frozen ADD chip (3 neurons) + searched wiring → 100% on ADD(a,b,c). Pipeline composition beats flat search (100% vs 92%). Perturbation finds solution in 14K steps. 4-input: 98.9% with 3 chained chips. | BREAKTHROUGH / Confirmed | [Rust Implementation Surface](v5-Rust-Port-Benchmarks) |
 | 6 | Recurrent chip: same W, multiple ticks. Same chip reused across ticks (one digit per tick). Signed square EXPLODES (7% at 3-input). Normalized: partial (78% 3→4). Key: activation function determines generalization. | Confirmed | [Rust Implementation Surface](v5-Rust-Port-Benchmarks) |
-| 7 | ReLU PERFECTLY GENERALIZES across tick depth. ReLU is the ONLY activation achieving 100% recurrent generalization. 3 neurons trained on 3-input → 100% on 2,3,4,5,6,7,8 inputs. 17/20 random seeds perfect. tanh=18%, sigmoid=3%, signed_square=0%. ReLU's max(0,x) is linear in positive range (preserves accumulation) and clamps negative drift. | BREAKTHROUGH / Confirmed | [Rust Implementation Surface](v5-Rust-Port-Benchmarks) |
+| 7 | ReLU PERFECTLY GENERALIZES across tick depth. ReLU is the ONLY activation achieving 100% recurrent generalization. 3 neurons trained on 3-input → 100% on 2,3,4,5,6,7,8 inputs; 17/20 random seeds perfect.<br>**Recurrent generalization by activation:**<br>• ReLU: 100% (17/20 seeds perfect)<br>• tanh: 18%<br>• sigmoid: 3%<br>• signed_square: 0%<br>ReLU's max(0,x) is linear in positive range (preserves accumulation) and clamps negative drift. | BREAKTHROUGH / Confirmed | [Rust Implementation Surface](v5-Rust-Port-Benchmarks) |
 | 8 | All ops work with per-neuron bias; per-connection unnecessary. Tested ADD/MUL/MAX/MIN/AND/OR/XOR/NAND: per-neuron bias = per-connection bias on all ops. XOR also 100% generalization. MUL collapses beyond 4-input (bilinear, non-accumulative). | Confirmed | [Rust Implementation Surface](v5-Rust-Port-Benchmarks) |
 | 9 | MINIMUM VIABLE CHIP: ADD = 1 neuron, binary, no bias. ADD works with 1 neuron, binary ±1 weights, ZERO bias. 5 bits total = 32 exhaustive configs. XOR needs 2 neurons minimum. MAX needs ternary + 2 neurons. Every config tested exhaustively. | BREAKTHROUGH / Confirmed | [Rust Implementation Surface](v5-Rust-Port-Benchmarks) |
 | 10 | NATIVE OUTPUT: charge IS the answer, no readout. 1-neuron ADD chip W=[1,1,1,1,1] bias=0 outputs charge = sum EXACTLY. No nearest-mean, no centroids, no calibration. 10-input (9.7M examples): 100% with just round(charge). COUNT chip also works natively: W=[1,1,0,0,0]. | BREAKTHROUGH / Confirmed | [Rust Implementation Surface](v5-Rust-Port-Benchmarks) |
@@ -306,35 +402,81 @@ The timeline is ordered latest-first. Each day is a self-contained H3 section wi
 > Train drops from 60-65% (with reset) to 10-30% (no reset). State carry becomes
 > noise, not procedural learning. Do not re-run unless the dynamics model changes.
 
-```text
-Held-out generalization solve rate (per approach)
-                                                     solved / total
- 04-08  All-at-once search, 256 neurons              0 / any
- 04-08  Incremental build, 10 neurons   (ADD only)   1 / 1
- 04-09  Readout fix + holographic                    7 / 10 tasks
- 04-09  Float gradient + per-neuron bias             8 / 8 tasks
- 04-10  Float gradient 200 seeds (ADD)             200 / 200
- 04-10  Float gradient 200 seeds (|a-b|)           199 / 200
- 04-10  Float gradient 200 seeds (MUL)             158 / 200
- 04-10  C19 + 50 seeds across 5 tasks              250 / 250
- 04-10  ReLU + 50 seeds across 5 tasks             189 / 250
- 04-10  Binary +/-1 + C19 exhaustive                 3 / 5 tasks
- 04-10  Binary +/-1 + ReLU exhaustive                0 / 5 tasks
- 04-10  Fraction extraction to integer               5 / 5 tasks (ADD/MAX/MIN/|a-b|/MUL)
-```
+**[Paradigm progression — held-out generalization solve rate]**
+
+<img src="assets/tla_paradigm_progression.svg" alt="Paradigm progression from 0/any (all-at-once search) to 250/250 (C19 + float gradient) in 2 days, 12-row horizontal bar chart" width="760">
+
+**[ListNet vs INSTNCT head-to-head — H=256 — 2026-04-08]**
+
+| Topology | Step/s | Accuracy | Speedup |
+|---|---|---|---|
+| ListNet | 3847 | 20.4% | 6.8x |
+| INSTNCT | 564 | 20.6% | 1x |
+
+*Accuracy noise-equivalent. At H=2048: ListNet gives 2.5x speedup with identical accuracy.*
+
+**[Edge cap sweep — H=1024 — 2026-04-08]**
+
+| Edge cap | Mean accuracy |
+|---|---|
+| 100 | 20.7% |
+| 300 | 20.6% |
+| 1000 | 19.8% |
+
+**[H=512 long stability run — 5 seeds × 300s — 2026-04-08]**
+
+| Metric | Value |
+|---|---|
+| Best | 20.8% |
+| Mean | 20.0% |
+| Spread | 1.4pp |
+| Throughput | 2.0 µs/token |
+
+**[Fair 1+1 vs 1+1 — INSTNCT library speedup by H — 2026-04-08]**
+
+<img src="assets/tla_instnct_speedup_by_h.svg" alt="Fair 1+1 vs 1+1 INSTNCT library speedup by H: ListNet wins -8% at H=256, INSTNCT wins +26% at H=512, +65% at H=1024, +130% at H=2048" width="720">
+
+*Corrects earlier "ListNet 6x faster" claim, which was an unfair 1+1 ES vs 1+9 jackpot comparison. Packed NeuronParams (threshold+channel+polarity in one 4-byte struct): 8-10% faster spike loop at all H.*
+
+**[Four alternative topology representations — H=256 — 2026-04-08]**
+
+| Topology | Step/s | Notes |
+|---|---|---|
+| ListNet (sorted Vec<Vec<u16>>) | 3917 | winner |
+| VarNet (fixed fan-in=3) | 3721 | degrades at H>1024 |
+| FireNet (fan-in gather, no scatter) | 3276 | activation clone overhead |
+| FlatNet (fixed [u16; 16] array) | 3740 | wastes memory |
+
+**[Edges matter for addition — INSTNCT vs ListNet — 2026-04-08]**
+
+*Task: a+b in 0-4 (25 examples), random baseline = 11.1%.*
+
+<img src="assets/tla_edges_matter_addition.svg" alt="Edges matter for addition: INSTNCT 56-60% with edges vs 4% without (delta +52-56pp), ListNet 24-44% vs 4% (delta +20-40pp)" width="720">
+
+*INSTNCT beats ListNet on addition (56-60% vs 24-44%) despite same edge count. Answers "do edges matter": task-dependent — bigram = lookup (phi-overlap short-circuit, 0pp); addition = computation (edge topology builds the computing circuit).*
+
+**[Incremental build growth trace — 2026-04-08]**
+
+<img src="assets/tla_incremental_build_trace.svg" alt="Incremental build growth trace: 0 neurons 0%, 1 neuron 60% test, 5 neurons 30% train 100% test, 9 neurons 100% train and 100% test" width="720">
+
+*Previous best with 256 neurons: 72% train, 0% test. Each step searches 3^19 instead of 3^90 (frozen layers + incremental expansion).*
+
+**[Approach comparison — held-out addition generalization]**
+
+<img src="assets/tla_approach_comparison_addition.svg" alt="Approach comparison: 10 incremental neurons hit 100/100 train/test, 256 INSTNCT hits 72/0, 256 ListNet hits 56/0, LIF and Hebbian both 5/0" width="720">
 
 | Seq | Finding | Status | Source |
 |---|---|---|---|
-| 1 | Overnight ListNet validation (5 sweeps, Steam Deck): ListNet (sorted `Vec<Vec<u16>>` topology) validated as production replacement for INSTNCT's HashSet+CSR. Head-to-head at H=256: ListNet 3847 step/s vs INSTNCT 564 step/s (6.8x), accuracy noise-equivalent (20.4% vs 20.6%). At H=2048: 2.5x speedup, identical accuracy. Edge cap sweep at H=1024: cap=100 (20.7% mean) > cap=300 (20.6%) > cap=1000 (19.8%). Long H=512 300s/seed 5-seed: best=20.8%, mean=20.0%, spread=1.4pp, 2.0 µs/token. Cache A/B/C/D sweep: smooth O(H) scaling with no discontinuities at L1/L2 boundaries (INSTNCT showed cliffs; ListNet does not). Promoted: ListNet as recommended topology; edge cap=100-300 optimal; H=512 recommended Steam Deck local config. Rejected: precompiled/CSR over `Vec<Vec<u16>>` at E≤300, FlatNet, FireNet. | Confirmed | [Rust Implementation Surface](v5-Rust-Port-Benchmarks) |
-| 2 | Fair comparison correction + memory layout profiling: Initial overnight "6x faster" ListNet claim was unfair (ListNet 1+1 ES vs INSTNCT 1+9 jackpot). Fair 1+1 vs 1+1: INSTNCT library wins at H≥512 — H=512 +26%, H=1024 +65%, H=2048 +130%. ListNet wins only at H=256 (+8%). Packed NeuronParams (threshold+channel+polarity in one 4-byte struct): 8-10% faster spike loop at all H. Charge+activation stay separate (packed state helps H≤512, hurts H≥2048 due to write-back cache pollution). Four alt reps: ListNet 3917 step/s at H=256, VarNet 3721 (degrades at H>1024), FireNet 3276 (activation clone overhead), FlatNet 3740 (wastes memory). Promoted: packed NeuronParams; interference reduction via low edge cap (100-300); 20% ceiling as confirmed 1+1 ES limit. Corrected: "ListNet 6x faster" → "ListNet simpler but not faster at H≥512 fair." Rejected: all-in-one rows (ListNet2), FireNet gather, FlatNet. | Confirmed (corrects prior) | [Rust Implementation Surface](v5-Rust-Port-Benchmarks) |
+| 1 | Overnight ListNet validation (5 sweeps, Steam Deck): ListNet (sorted `Vec<Vec<u16>>` topology) validated as production replacement for INSTNCT's HashSet+CSR. See tables above for head-to-head, edge cap sweep, and long H=512 stability. Cache A/B/C/D sweep: smooth O(H) scaling with no discontinuities at L1/L2 boundaries (INSTNCT showed cliffs; ListNet does not). Promoted: ListNet as recommended topology; edge cap=100-300 optimal; H=512 recommended Steam Deck local config. Rejected: precompiled/CSR over `Vec<Vec<u16>>` at E≤300, FlatNet, FireNet. | Confirmed | [Rust Implementation Surface](v5-Rust-Port-Benchmarks) |
+| 2 | Fair comparison correction + memory layout profiling. Initial overnight "6x faster" ListNet claim was unfair (ListNet 1+1 ES vs INSTNCT 1+9 jackpot). Fair 1+1 vs 1+1 result: see table above. Packed NeuronParams (threshold+channel+polarity in one 4-byte struct): 8-10% faster spike loop at all H; charge+activation stay separate (packed state helps H≤512, hurts H≥2048 due to write-back cache pollution). Four alt reps in separate table above. Promoted: packed NeuronParams; interference reduction via low edge cap (100-300); 20% ceiling as confirmed 1+1 ES limit. Corrected: "ListNet 6x faster" → "ListNet simpler but not faster at H≥512 fair." Rejected: all-in-one rows (ListNet2), FireNet gather, FlatNet. | Confirmed (corrects prior) | [Rust Implementation Surface](v5-Rust-Port-Benchmarks) |
 | 3 | Overnight ListNet sweeps + fair comparison summary: edge cap=100 > cap=1000 (interference reduction validated), 20% band is 1+1 ES ceiling, no cache cliff. | Confirmed | [Rust Implementation Surface](v5-Rust-Port-Benchmarks) |
-| 4 | EDGES DON'T MATTER on bigram (deterministic ablation proof): Deterministic ablation on H=512 network trained 50K steps on 100KB Alice corpus — trained (298 edges) = removed (0) = random (298) = params-only (0) = all 20.3% (20316/100000 for 4 configs, 20317 for params-only). Network achieves 20.3% using only neuron parameters (threshold, channel, polarity). Confirmed by three independent approaches: expensive 200-token eval rejected edges as noise, freeze-crystallize found no edges worth freezing, deterministic full-corpus ablation. Invalidates all topology reps (ListNet, VarNet, FireNet, FlatNet, INSTNCT CSR) as accuracy-relevant for this task. The bigram task is solvable via input→output direct projection through phi-overlap zone. Breaking past 20.3% requires a harder task or a learnable readout. Promoted: "edges don't matter on bigram" as confirmed finding. Rejected: all freeze-layer strategies. Freeze-layer, burst, prune all confirmed same ceiling. | BREAKTHROUGH / Confirmed | [Rust Implementation Surface](v5-Rust-Port-Benchmarks) |
-| 5 | Edges MATTER for computation tasks (addition +52pp ablation): Addition (a+b in 0-4, 25 examples, random=11.1%) — INSTNCT library: 56-60% with edges, 4% without (+52-56pp); ListNet sep I/O: 24-44% with edges, 4% without (+20-40pp). Answers "do edges matter": task-dependent. Bigram = lookup (phi-overlap short-circuit, 0pp). Addition = computation (edge topology builds the computing circuit). INSTNCT beats ListNet on addition (56-60% vs 24-44%) despite same edge count. Phi overlap short-circuits bigram: input charge directly visible at output, no propagation needed. Corrected: "edges don't matter" downgraded from universal to bigram-specific. Retained: phi-overlap short-circuit is a feature for language tasks, not a bug. | BREAKTHROUGH / Confirmed | [Rust Implementation Surface](v5-Rust-Port-Benchmarks) |
+| 4 | EDGES DON'T MATTER on bigram (deterministic ablation proof): Deterministic ablation on H=512 network trained 50K steps on 100KB Alice corpus. All four configs collapse to identical accuracy:<br>• **trained (298 edges)**: 20316/100000 (20.3%)<br>• **removed (0 edges)**: 20316/100000 (20.3%)<br>• **random (298 edges)**: 20316/100000 (20.3%)<br>• **params-only (0 edges)**: 20317/100000 (20.3%)<br>Network achieves 20.3% using only neuron parameters (threshold, channel, polarity). Confirmed by three independent approaches: expensive 200-token eval rejected edges as noise, freeze-crystallize found no edges worth freezing, deterministic full-corpus ablation. Invalidates all topology reps (ListNet, VarNet, FireNet, FlatNet, INSTNCT CSR) as accuracy-relevant for this task. The bigram task is solvable via input→output direct projection through phi-overlap zone. Breaking past 20.3% requires a harder task or a learnable readout. Promoted: "edges don't matter on bigram" as confirmed finding. Rejected: all freeze-layer strategies. Freeze-layer, burst, prune all confirmed same ceiling. | BREAKTHROUGH / Confirmed | [Rust Implementation Surface](v5-Rust-Port-Benchmarks) |
+| 5 | Edges MATTER for computation tasks (addition +52pp ablation): see table above. Answers "do edges matter": task-dependent. Bigram = lookup (phi-overlap short-circuit, 0pp). Addition = computation (edge topology builds the computing circuit). Phi overlap short-circuits bigram: input charge directly visible at output, no propagation needed. Corrected: "edges don't matter" downgraded from universal to bigram-specific. Retained: phi-overlap short-circuit is a feature for language tasks, not a bug. | BREAKTHROUGH / Confirmed | [Rust Implementation Surface](v5-Rust-Port-Benchmarks) |
 | 6 | INSTNCT memorizes, does NOT generalize: Generalization test: 0% test accuracy on held-out addition examples. Train/test split on 0-4 and 0-9 ranges all show pure memorization. Memorization capacity ≈ 1 example per edge. The spiking network builds lookup tables, not algorithms. | Confirmed | [Rust Implementation Surface](v5-Rust-Port-Benchmarks) |
 | 7 | 72% ceiling unbreakable + stateful training fails. Push100 (jackpot 1+9, 5min/seed, edge_cap 100/300/500): same seed-deterministic result. Seed 42=60%, seed 1042=72%, seed 2042=60%. Addition diagnose: predicts by memorizing input-output pairs. Sum=4 (5 input combos) worst at 20-40%; sum=0 and sum=8 (1 input each) easiest. Freeze-grow (prune-freeze cycles): flatlines after cycle 0; ~19 edges in first cycle, 0 beneficial mutations afterwards. Stateful training (no reset): state carry causes noise, not procedural learning; train drops from 60-65% (with reset) to 10-30% (no reset); edge count floods to cap (300); test still 0%. 0-9 addition (100 examples, 19 classes): only 27-30% at ~35 edges. Memorization capacity ≈ 1 example per edge. Rejected: jackpot as ceiling breaker, freeze-grow, stateful training, more ticks, higher edge cap. Limiting factor is architecture's inability to build compositional/algorithmic circuits. | Confirmed | [Rust Implementation Surface](v5-Rust-Port-Benchmarks) |
 | 8 | Spike erases amplitude, fly brain analysis, LIF/Hebbian dead ends. Micro traces showed binary spike destroys input amplitude. Fly LIF (dual g+v) too complex for mutation search (5% train). Hebbian on random topology = no signal. Fly brain (Shiu 2024) uses additive synapses + dual exponential decay — fundamentally different from single-charge INSTNCT. | Confirmed | [Rust Implementation Surface](v5-Rust-Port-Benchmarks) |
 | 9 | Exhaustive proof: only 2/6561 configs generalize. On 8-input thermometer addition, exactly 2 ternary weight configs achieve 100% generalization: [+1,+1,+1,+1,+1,+1,+1,+1] and [-1,-1,-1,-1,-1,-1,-1,-1]. Both = uniform weights = SUM neuron. The generalizing solution is 0.03% of the search space. | Confirmed | [Rust Implementation Surface](v5-Rust-Port-Benchmarks) |
-| 10 | INCREMENTAL BUILD: 100% generalization with 10 neurons. Build 1 neuron at a time, exhaustive (or large random sample) search over all ternary connections to existing neurons, keep best, freeze, add next. Growth trace: neuron 0 = 0%, neuron 1 = 60% test, neuron 5 = 100% test (30% train), neuron 9 = 100% both. 256-neuron previous best: 72% train, 0% test. Insight chain: (1) spike erases amplitude → need continuous charge; (2) only 2/6561 ternary configs generalize = 0.03%; (3) both winners = uniform SUM; (4) SUM abstracts perfectly but readout was wrong; (5) generalizing solution EXISTS but random/mutation can't find it; (6) incremental search reduces space from 3^90 to 3^19 per step; (7) frozen layers provide stable foundation. Evidence: 10 incremental → 100%/100%; 256 INSTNCT → 72%/0%; 256 ListNet → 56%/0%; 64 LIF → 5%/0%; 64 Hebbian → 5%/0%. First time project achieved generalization. Validates "brain development" hypothesis (incremental embryo → adult). Promoted: incremental neuron-by-neuron build; thermometer encoding; continuous charge readout (not binary spike); every-neuron-is-I/O topology. Rejected: all-at-once search, Hebbian on random topology, LIF + mutation search, stateful training, freeze-crystal cycles. | BREAKTHROUGH / Confirmed | [Rust Implementation Surface](v5-Rust-Port-Benchmarks) |
+| 10 | INCREMENTAL BUILD: 100% generalization with 10 neurons. Build 1 neuron at a time, exhaustive (or large random sample) search over all ternary connections to existing neurons, keep best, freeze, add next. See growth-trace and approach-comparison tables above. Insight chain: (1) spike erases amplitude → need continuous charge; (2) only 2/6561 ternary configs generalize = 0.03%; (3) both winners = uniform SUM; (4) SUM abstracts perfectly but readout was wrong; (5) generalizing solution EXISTS but random/mutation can't find it; (6) incremental search reduces space from 3^90 to 3^19 per step; (7) frozen layers provide stable foundation. First time project achieved generalization. Validates "brain development" hypothesis (incremental embryo → adult). Promoted: incremental neuron-by-neuron build; thermometer encoding; continuous charge readout (not binary spike); every-neuron-is-I/O topology. Rejected: all-at-once search, Hebbian on random topology, LIF + mutation search, stateful training, freeze-crystal cycles. | BREAKTHROUGH / Confirmed | [Rust Implementation Surface](v5-Rust-Port-Benchmarks) |
 | 11 | Tick robustness: circuit is tick=8 only. The 10-neuron circuit only works at tick=8. Other tick counts → 0% test. The circuit learned TIMING, not algorithm. No-decay version same problem. Need tick-variable training for true algorithm. | Confirmed | [Rust Implementation Surface](v5-Rust-Port-Benchmarks) |
 | 12 | Resting potential replaces BIAS neuron. Per-neuron resting potential (decay toward resting, not toward 0) replaces explicit BIAS neuron. ALL 9 logic gates (AND/OR/NOT/XOR/NAND/NOR/XNOR/IMPLY/BUF) work with just 2 neurons + resting param + ternary edges, ZERO hidden neurons. Turing-complete base confirmed. | Confirmed | [Rust Implementation Surface](v5-Rust-Port-Benchmarks) |
 | 13 | Holographic vs pathway: mathematical proof. Holographic (1-step matrix multiply) has 0.0025% generalizing solutions. Pathway (8-tick shared W) has 0% in 2M samples. Same W matrix — 1-step application generalizes, 8-tick recurrence does not. Holographic is fundamentally superior for generalization. | Confirmed | [Rust Implementation Surface](v5-Rust-Port-Benchmarks) |
@@ -348,13 +490,25 @@ Held-out generalization solve rate (per approach)
 
 **Theme:** Smoke-port branch merged (compact types, skip-inactive, sparse tick/input, CoW snapshots). Steam Deck benchmarking. ListNet = 6x INSTNCT at identical accuracy. Branch cleanup.
 
+**[Smoke-port branch — optimization performance deltas — 2026-04-07]**
+
+| Optimization | Delta | Context |
+|---|---|---|
+| Compact neuron types (i8/u8) | -30% | at H=4096 |
+| Skip-inactive spike | -49% | spike loop |
+| Fully sparse tick | O(active) | replaces O(H) |
+| Sparse input API | -62% to -72% | O(k), at H=4K-100K |
+| Copy-on-write evolution snapshots | — | new |
+
+*Prefetch, nibble packing, and bitset dirty_member correctly rejected with benchmarked evidence.*
+
 | Seq | Finding | Status | Source |
 |---|---|---|---|
-| 1 | Merged `claude/check-smoke-port-status` branch (22 commits) into `main`: compact neuron types (i8/u8, -30% at H=4096), skip-inactive spike (-49%), fully sparse tick O(active), sparse input API O(k) (-62-72% at H=4K-100K), copy-on-write evolution snapshots. Prefetch, nibble packing, bitset dirty_member correctly rejected with benchmarked evidence. | Confirmed | [Rust Implementation Surface](v5-Rust-Port-Benchmarks) |
+| 1 | Merged `claude/check-smoke-port-status` branch (22 commits) into `main`. See optimization table above. Prefetch, nibble packing, bitset dirty_member correctly rejected with benchmarked evidence. | Confirmed | [Rust Implementation Surface](v5-Rust-Port-Benchmarks) |
 | 2 | First local benchmarking session on Steam Deck (AMD Van Gogh APU, L1=32KB, L2=512KB, L3=4MB, 16GB RAM). Measured propagation and evolution step speed across H=128-8192 with 30-200 edges. | Confirmed | [Rust Implementation Surface](v5-Rust-Port-Benchmarks) |
 | 3 | Fixed-wall-clock (60s/seed, 3 seeds) accuracy comparison at H=256-4096 with empty init, edge_cap=300, 1+9 jackpot on 100KB Alice corpus. H=2048 won at 21.4% best / 20.1% mean with only 6K steps — confirming larger sparse networks find better circuits per step (interference reduction). More neurons + sparse edges = less interference per mutation = more valuable steps. | Confirmed | [Rust Implementation Surface](v5-Rust-Port-Benchmarks) |
-| 4 | Four alternative topology representations tested: ListNet (sorted `Vec<Vec<u16>>`, fan-out): 3917 step/s — 6x faster than INSTNCT (654), identical ~20% accuracy. VarNet (fixed fan-in=3): 3721, accuracy degrades at H>1024. FireNet (fan-in gather, no scatter): 3276 — slower due to per-tick activation clone. FlatNet (fixed `[u16; 16]` array): 3740 — wastes memory. | Confirmed | [Rust Implementation Surface](v5-Rust-Port-Benchmarks) |
-| 5 | ListNet speed advantage: eliminates HashSet (O(1) not needed at E≤300), CSR rebuild, parallel Vec bookkeeping. Simple sorted `Vec<Vec<u16>>` with linear scan is sufficient and cache-friendly. H=512: 2126 vs 360 (5.9x). H=1024: 1104 vs 192 (5.7x). 60s best-seed accuracy: ListNet 20.8% vs INSTNCT 20.4% (noise-equivalent). | Confirmed | [Rust Implementation Surface](v5-Rust-Port-Benchmarks) |
+| 4 | Four alternative topology representations tested — see **[Four alternative topology representations — H=256 — 2026-04-08]** table in the 2026-04-08 block. Summary: ListNet (sorted `Vec<Vec<u16>>`, fan-out) at 3917 step/s is 6x faster than INSTNCT (654), identical ~20% accuracy; VarNet degrades at H>1024; FireNet slower due to per-tick activation clone; FlatNet wastes memory. | Confirmed | [Rust Implementation Surface](v5-Rust-Port-Benchmarks) |
+| 5 | ListNet speed advantage: eliminates HashSet (O(1) not needed at E≤300), CSR rebuild, parallel Vec bookkeeping. Simple sorted `Vec<Vec<u16>>` with linear scan is sufficient and cache-friendly.<br>**ListNet vs INSTNCT throughput:**<br>• **H=512**: 2126 vs 360 step/s (5.9x)<br>• **H=1024**: 1104 vs 192 step/s (5.7x)<br>60s best-seed accuracy: ListNet 20.8% vs INSTNCT 20.4% (noise-equivalent). | Confirmed | [Rust Implementation Surface](v5-Rust-Port-Benchmarks) |
 | 6 | Branch cleanup: deleted all merged, stale, superseded remote/local branches. 18 remote + 10 local deleted. Repository now single `main`. | Confirmed | [Rust Implementation Surface](v5-Rust-Port-Benchmarks) |
 | 7 | Promoted: smoke-port performance branch merged (compact types, skip-inactive, sparse tick/input, CoW snapshots); ListNet topology rep validated as 6x faster drop-in. Rejected: FireNet gather, FlatNet fixed arrays, prefetch/nibble/bitset micro-opts. Experimental: ListNet integration into `instnct-core` as replacement for `ConnectionGraph`. | Confirmed | [Rust Implementation Surface](v5-Rust-Port-Benchmarks) |
 
@@ -389,7 +543,7 @@ Held-out generalization solve rate (per approach)
 |---|---|---|---|
 | 1 | The Rust port crossed from "fast forward pass" into "real evolution substrate": `NetworkSnapshot`, full 10-op mutation API, CSR skip-inactive, genome save/load, refractory support, and rayon-backed multi-seed evolution all landed in the active beta line. | Confirmed | [Rust Implementation Surface](v5-Rust-Port-Benchmarks) |
 | 2 | Language-eval work exposed seed variance as a first-class problem rather than anecdotal noise. | Confirmed | [Rust Implementation Surface](v5-Rust-Port-Benchmarks) |
-| 3 | GPT quick map of base seeds 1..100 showed a rugged landscape with weak and strong bands, not a simple seed formula. Baseline=16.9%, mean=9.1%, best=17.5% @ seed 17, worst=0.3% @ seed 24, spread=17.2pp. (figure: seed-sweep-check-2.png) | Confirmed | [Rust Implementation Surface](v5-Rust-Port-Benchmarks) |
+| 3 | GPT quick map of base seeds 1..100 showed a rugged landscape with weak and strong bands, not a simple seed formula.<br>**Summary stats (1..100 base seeds):**<br>• Baseline: 16.9%<br>• Mean: 9.1%<br>• Best: 17.5% @ seed 17<br>• Worst: 0.3% @ seed 24<br>• Spread: 17.2pp<br>(figure: seed-sweep-check-2.png; full per-seed grid in collapsible section below) | Confirmed | [Rust Implementation Surface](v5-Rust-Port-Benchmarks) |
 | 4 | Rayon 12-seed run: 1m57s on 12 cores. Best reported Rust next-char result: 18.5%. | Confirmed | [Rust Implementation Surface](v5-Rust-Port-Benchmarks) |
 | 5 | Multi-seed search became practical enough to treat seed quality as a search problem instead of luck. Evidence handling also changed: seed maps, charts, and log extracts now deserve stable archive leaves instead of only living inside transient benchmark prose. | Confirmed | [Rust Implementation Surface](v5-Rust-Port-Benchmarks) |
 | 6 | Promoted into active Rust beta line: genome persistence, rayon multi-seed evolution, archive-grade seed evidence. Not promoted: any claim of a simple "good seed" formula. | Confirmed | [Rust Implementation Surface](v5-Rust-Port-Benchmarks) |
@@ -480,8 +634,8 @@ Held-out generalization solve rate (per approach)
 | Seq | Finding | Status | Source |
 |---|---|---|---|
 | 1 | Output-dimension sweeps, phi-style proportioning, overlap experiments converged into strongest public architecture story of that week. Public framing shifted from "more hidden is always better" to "the overlap/readout geometry matters more." Representational bottleneck sits at I/O and overlap geometry, not just raw neuron count. | Confirmed | [INSTNCT Architecture](INSTNCT-Architecture) |
-| 2 | Output dim sweep found 20.0% at `out_dim=160`; multi-seed mean 18.2% with 0.6% std. | Confirmed | [INSTNCT Architecture](INSTNCT-Architecture) |
-| 3 | Phi overlap reached 20.8% at H=256 with in=out=158 and overlap=60; zero dedicated hidden neurons were needed. | Confirmed | [INSTNCT Architecture](INSTNCT-Architecture) |
+| 2 | Output dim sweep:<br>• **Best**: 20.0% at `out_dim=160`<br>• **Multi-seed mean**: 18.2% (std 0.6%) | Confirmed | [INSTNCT Architecture](INSTNCT-Architecture) |
+| 3 | Phi overlap:<br>• **H=256**, in=out=158, overlap=60<br>• **Accuracy**: 20.8%<br>• Zero dedicated hidden neurons were needed. | Confirmed | [INSTNCT Architecture](INSTNCT-Architecture) |
 | 4 | Scale sweep: 0.625 output ratio held across H=128/192/256/384, keeping the phi-style downshift alive beyond one size. | Confirmed | [INSTNCT Architecture](INSTNCT-Architecture) |
 | 5 | Language-aware output projection: `FREQ_ORDER=22.4%` beat `BIGRAM_SVD=21.8%` and random 20.8%; output topology had to respect target distribution. | Confirmed | [INSTNCT Architecture](INSTNCT-Architecture) |
 | 6 | Full overlap: 14.7% vs phi overlap 20.8%; too much overlap added noise instead of signal. | Confirmed | [INSTNCT Architecture](INSTNCT-Architecture) |
@@ -512,22 +666,9 @@ Held-out generalization solve rate (per approach)
 
 **Theme:** English line settled around a conservative public recipe while side branches competed on schedules, mutation rules, decay handling, and edge representation. Voltage medium leak, decision-tree control, and sign+mag magnitude resample emerge as strongest historical results.
 
-```text
-Accuracy ceiling across time (next-char / bigram, H~=256-512)
-                                                               %
- 03-22  Voltage medium leak schedule         ##############    22.1
- 03-27  SDR input (baseline)                 ####               7.3
- 03-27  Learnable theta                      ##########        14.1
- 03-28  out_dim=160                          #############     20.0
- 03-28  Phi overlap                          #############     20.8
- 03-29  Learnable channel                    ###############   23.8
- 03-29  Breed + crystallize                  ################  24.4
- 04-05  Rust port best                       ###########       18.5
- 04-06  Hyperparameter sweep ceiling         ###########       17-18
- 04-06  Pocket pair H=256 peak               ############      19.6
- 04-08  Full trained / edges removed         #############     20.3  (ablation identity)
-         scale: one # approx 1.5 percentage points
-```
+**[Accuracy ceiling across time — next-char / bigram (H≈256-512)]**
+
+<img src="assets/tla_accuracy_ceiling.svg" alt="Accuracy ceiling across time, 03-22 to 04-08, peak 24.4% on breed+crystallize, Rust stabilizes in 17-21% band" width="760">
 
 | Seq | Finding | Status | Source |
 |---|---|---|---|
@@ -589,6 +730,16 @@ Accuracy ceiling across time (next-char / bigram, H~=256-512)
 ### 2026-02-26 — Hidden/slot split and v4 precompute sprint
 
 **Theme:** Training-run analysis exposed v4 GPU bottlenecks. Locked v4 baseline around B=8, D=256, M=256-class ring sizing. Precomputed attention weights + hidden_dim/slot_dim split landed, reducing ring-clone VRAM.
+
+**[Input width sweep — D=256, GPU, echo task — 2026-02-26]**
+
+| B | D/B ratio | Best loss | Converged |
+|---|---|---|---|
+| 8 | 32x | 0.924 | yes |
+| 16 | 16x | 1.159 | no |
+| 32 | 8x | 1.298 | no |
+| 64 | 4x | 1.755 | no |
+| 128 | 2x | ~2.1 | no |
 
 | Seq | Finding | Status | Source |
 |---|---|---|---|

@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 520" width="760" height="520">
+  <style>
+    text { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif; }
+    .title { font-size: 17px; font-weight: 600; fill: #c9d1d9; }
+    .subtitle { font-size: 12px; fill: #8b949e; }
+    .row { font-size: 12px; fill: #c9d1d9; }
+    .date { font-size: 11px; fill: #8b949e; }
+    .value { font-size: 11px; font-weight: 700; fill: #c9d1d9; }
+    .peak { fill: #39d353; }
+    .band { fill: #58a6ff; }
+    .low { fill: #8b949e; }
+    .gridline { stroke: #30363d; stroke-width: 1; }
+    .peakline { stroke: #39d353; stroke-width: 1; stroke-dasharray: 4,4; }
+  </style>
+
+  <!-- Title -->
+  <text x="380" y="26" class="title" text-anchor="middle">Accuracy ceiling across time — next-char / bigram  (H ~ 256-512)</text>
+  <text x="380" y="46" class="subtitle" text-anchor="middle">Peak 24.4% on Python breed+crystallize (03-29);  Rust stabilizes in 17-21% band</text>
+
+  <!-- Chart area: bars 350-720, labels on left -->
+  <!-- Y axis: 0-30%, 0% at x=350, 30% at x=720 -> 12.33 px per percent -->
+
+  <!-- Gridlines at 0,5,10,15,20,25,30 -->
+  <line x1="350" y1="70" x2="350" y2="470" class="gridline"/>
+  <line x1="412" y1="70" x2="412" y2="470" class="gridline"/>
+  <line x1="473" y1="70" x2="473" y2="470" class="gridline"/>
+  <line x1="535" y1="70" x2="535" y2="470" class="gridline"/>
+  <line x1="597" y1="70" x2="597" y2="470" class="gridline"/>
+  <line x1="658" y1="70" x2="658" y2="470" class="gridline"/>
+  <line x1="720" y1="70" x2="720" y2="470" class="gridline"/>
+
+  <text x="350" y="62" class="subtitle" text-anchor="middle">0%</text>
+  <text x="412" y="62" class="subtitle" text-anchor="middle">5%</text>
+  <text x="473" y="62" class="subtitle" text-anchor="middle">10%</text>
+  <text x="535" y="62" class="subtitle" text-anchor="middle">15%</text>
+  <text x="597" y="62" class="subtitle" text-anchor="middle">20%</text>
+  <text x="658" y="62" class="subtitle" text-anchor="middle">25%</text>
+  <text x="720" y="62" class="subtitle" text-anchor="middle">30%</text>
+
+  <!-- Dashed line at peak 24.4% (x = 350 + 24.4*12.33 = 350 + 300.9 = 650.9) -->
+  <line x1="650.9" y1="78" x2="650.9" y2="462" class="peakline"/>
+  <text x="650.9" y="478" class="subtitle" text-anchor="middle">peak 24.4%</text>
+
+  <!-- 11 rows, y start 80, row height 34, bar height 20 -->
+
+  <!-- Row 1 03-22 Voltage medium leak 22.1% (22.1*12.33=272.5) -->
+  <text x="20" y="94" class="date">03-22</text>
+  <text x="60" y="94" class="row">Voltage medium leak schedule</text>
+  <rect x="350" y="82" width="272.5" height="20" class="peak"/>
+  <text x="628" y="97" class="value" text-anchor="start">22.1%</text>
+
+  <!-- Row 2 03-27 SDR input baseline 7.3% (90.0) -->
+  <text x="20" y="128" class="date">03-27</text>
+  <text x="60" y="128" class="row">SDR input (baseline)</text>
+  <rect x="350" y="116" width="90.0" height="20" class="low"/>
+  <text x="446" y="131" class="value" text-anchor="start">7.3%</text>
+
+  <!-- Row 3 03-27 Learnable theta 14.1% (173.9) -->
+  <text x="20" y="162" class="date">03-27</text>
+  <text x="60" y="162" class="row">Learnable theta</text>
+  <rect x="350" y="150" width="173.9" height="20" class="band"/>
+  <text x="529" y="165" class="value" text-anchor="start">14.1%</text>
+
+  <!-- Row 4 03-28 out_dim=160 20.0% (246.6) -->
+  <text x="20" y="196" class="date">03-28</text>
+  <text x="60" y="196" class="row">out_dim = 160</text>
+  <rect x="350" y="184" width="246.6" height="20" class="band"/>
+  <text x="602" y="199" class="value" text-anchor="start">20.0%</text>
+
+  <!-- Row 5 03-28 Phi overlap 20.8% (256.5) -->
+  <text x="20" y="230" class="date">03-28</text>
+  <text x="60" y="230" class="row">Phi overlap</text>
+  <rect x="350" y="218" width="256.5" height="20" class="band"/>
+  <text x="612" y="233" class="value" text-anchor="start">20.8%</text>
+
+  <!-- Row 6 03-29 Learnable channel 23.8% (293.5) -->
+  <text x="20" y="264" class="date">03-29</text>
+  <text x="60" y="264" class="row">Learnable channel</text>
+  <rect x="350" y="252" width="293.5" height="20" class="peak"/>
+  <text x="649" y="267" class="value" text-anchor="start">23.8%</text>
+
+  <!-- Row 7 03-29 Breed + crystallize 24.4% (300.9) -->
+  <text x="20" y="298" class="date">03-29</text>
+  <text x="60" y="298" class="row">Breed + crystallize  (peak)</text>
+  <rect x="350" y="286" width="300.9" height="20" class="peak"/>
+  <text x="656" y="301" class="value" text-anchor="start">24.4%</text>
+
+  <!-- Row 8 04-05 Rust port best 18.5% (228.1) -->
+  <text x="20" y="332" class="date">04-05</text>
+  <text x="60" y="332" class="row">Rust port best</text>
+  <rect x="350" y="320" width="228.1" height="20" class="band"/>
+  <text x="584" y="335" class="value" text-anchor="start">18.5%</text>
+
+  <!-- Row 9 04-06 Hyperparameter sweep ceiling 17-18% midpoint 17.5 -> 215.8 -->
+  <text x="20" y="366" class="date">04-06</text>
+  <text x="60" y="366" class="row">Hyperparam sweep ceiling (17-18%)</text>
+  <rect x="350" y="354" width="215.8" height="20" class="band"/>
+  <text x="572" y="369" class="value" text-anchor="start">17-18%</text>
+
+  <!-- Row 10 04-06 Pocket pair H=256 peak 19.6% (241.7) -->
+  <text x="20" y="400" class="date">04-06</text>
+  <text x="60" y="400" class="row">Pocket pair H=256 peak</text>
+  <rect x="350" y="388" width="241.7" height="20" class="band"/>
+  <text x="598" y="403" class="value" text-anchor="start">19.6%</text>
+
+  <!-- Row 11 04-08 Full trained / edges removed 20.3% (250.3) -->
+  <text x="20" y="434" class="date">04-08</text>
+  <text x="60" y="434" class="row">Full trained / edges removed (ablation)</text>
+  <rect x="350" y="422" width="250.3" height="20" class="band"/>
+  <text x="607" y="437" class="value" text-anchor="start">20.3%</text>
+
+  <!-- Legend -->
+  <rect x="60" y="492" width="14" height="12" class="peak"/>
+  <text x="80" y="502" class="row">&#8805;22% (peak era)</text>
+  <rect x="220" y="492" width="14" height="12" class="band"/>
+  <text x="240" y="502" class="row">14-21% (stable band)</text>
+  <rect x="400" y="492" width="14" height="12" class="low"/>
+  <text x="420" y="502" class="row">&lt;10% (early baseline)</text>
+</svg>

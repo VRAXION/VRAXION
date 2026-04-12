@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 400" width="720" height="400">
+  <style>
+    text { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif; }
+    .title { font-size: 17px; font-weight: 600; fill: #c9d1d9; }
+    .subtitle { font-size: 12px; fill: #8b949e; }
+    .axis { font-size: 12px; fill: #8b949e; }
+    .label { font-size: 13px; fill: #c9d1d9; }
+    .value { font-size: 11px; font-weight: 700; fill: #c9d1d9; }
+    .train { stroke: #58a6ff; stroke-width: 3; fill: none; }
+    .test { stroke: #39d353; stroke-width: 3; fill: none; }
+    .gridline { stroke: #30363d; stroke-width: 1; }
+    .trainpt { fill: #58a6ff; }
+    .testpt { fill: #39d353; }
+  </style>
+
+  <!-- Title -->
+  <text x="360" y="26" class="title" text-anchor="middle">Incremental build — growth trace</text>
+  <text x="360" y="46" class="subtitle" text-anchor="middle">9 neurons reach 100% train and 100% test on held-out addition.  Previous best (256 neurons): 72% / 0%.</text>
+
+  <!-- Chart area x=90-680, y=70-310. 0-100% -->
+  <!-- 240 px tall, 1% = 2.4 px  -->
+  <!-- X axis: 0,1,5,9 neurons -->
+
+  <line x1="90" y1="70" x2="680" y2="70" class="gridline"/>
+  <line x1="90" y1="130" x2="680" y2="130" class="gridline"/>
+  <line x1="90" y1="190" x2="680" y2="190" class="gridline"/>
+  <line x1="90" y1="250" x2="680" y2="250" class="gridline"/>
+  <line x1="90" y1="310" x2="680" y2="310" stroke="#484f58"/>
+  <line x1="90" y1="70" x2="90" y2="310" stroke="#484f58"/>
+
+  <text x="82" y="74" class="axis" text-anchor="end">100%</text>
+  <text x="82" y="134" class="axis" text-anchor="end">75%</text>
+  <text x="82" y="194" class="axis" text-anchor="end">50%</text>
+  <text x="82" y="254" class="axis" text-anchor="end">25%</text>
+  <text x="82" y="314" class="axis" text-anchor="end">0%</text>
+
+  <!-- X axis: 0 nn -> x=120, 9 nn -> x=660. Range 540px over 9 units. 60 px per neuron. -->
+  <!-- 0->120, 1->180, 5->420, 9->660 -->
+
+  <text x="120" y="330" class="axis" text-anchor="middle">0</text>
+  <text x="180" y="330" class="axis" text-anchor="middle">1</text>
+  <text x="420" y="330" class="axis" text-anchor="middle">5</text>
+  <text x="660" y="330" class="axis" text-anchor="middle">9</text>
+  <text x="380" y="356" class="label" text-anchor="middle">Neuron count</text>
+
+  <!-- Test curve: (0,0%), (1,60%), (5,100%), (9,100%) -->
+  <!-- y = 310 - pct*2.4 -->
+  <!-- (0,0%) -> (120, 310) -->
+  <!-- (1,60%) -> (180, 310-144=166) -->
+  <!-- (5,100%) -> (420, 70) -->
+  <!-- (9,100%) -> (660, 70) -->
+  <path d="M 120,310 L 180,166 L 420,70 L 660,70" class="test"/>
+
+  <!-- Train curve: (0,-), (1,-), (5,30%), (9,100%) -->
+  <!-- (5, 30%) -> (420, 310-72=238) -->
+  <!-- (9, 100%) -> (660, 70) -->
+  <path d="M 420,238 L 660,70" class="train"/>
+
+  <!-- Data points -->
+  <circle cx="120" cy="310" r="5" class="testpt"/>
+  <circle cx="180" cy="166" r="5" class="testpt"/>
+  <circle cx="420" cy="70" r="5" class="testpt"/>
+  <circle cx="660" cy="70" r="5" class="testpt"/>
+
+  <circle cx="420" cy="238" r="5" class="trainpt"/>
+  <circle cx="660" cy="70" r="5" class="trainpt"/>
+
+  <!-- Data labels -->
+  <text x="120" y="302" class="value" text-anchor="middle">0%</text>
+  <text x="180" y="158" class="value" text-anchor="middle">test 60%</text>
+  <text x="420" y="62" class="value" text-anchor="middle">test 100%</text>
+  <text x="660" y="62" class="value" text-anchor="end">train + test 100%</text>
+  <text x="420" y="258" class="value" text-anchor="middle">train 30%</text>
+
+  <!-- Legend -->
+  <g>
+    <line x1="220" y1="378" x2="250" y2="378" class="train"/>
+    <circle cx="235" cy="378" r="4" class="trainpt"/>
+    <text x="260" y="382" class="label">Train accuracy</text>
+    <line x1="400" y1="378" x2="430" y2="378" class="test"/>
+    <circle cx="415" cy="378" r="4" class="testpt"/>
+    <text x="440" y="382" class="label">Test accuracy</text>
+  </g>
+</svg>

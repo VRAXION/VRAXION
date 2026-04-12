@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 400" width="720" height="400">
+  <style>
+    text { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif; }
+    .title { font-size: 17px; font-weight: 600; fill: #c9d1d9; }
+    .subtitle { font-size: 12px; fill: #8b949e; }
+    .axis { font-size: 12px; fill: #8b949e; }
+    .label { font-size: 13px; font-weight: 600; fill: #c9d1d9; }
+    .value { font-size: 11px; font-weight: 700; fill: #c9d1d9; }
+    .bitval { font-size: 11px; font-weight: 700; fill: #58a6ff; }
+    .solve { fill: #39d353; }
+    .solve-partial { fill: #d29922; }
+    .bits { fill: #58a6ff; }
+    .gridline { stroke: #30363d; stroke-width: 1; }
+  </style>
+
+  <!-- Title -->
+  <text x="360" y="26" class="title" text-anchor="middle">Fraction extraction to integer weights</text>
+  <text x="360" y="46" class="subtitle" text-anchor="middle">Float training finds ratios; denominator d in [1,30] converts to integer grid — 4-6 bits / weight</text>
+
+  <!-- Two side-by-side charts: left = solve rate, right = bits/weight -->
+
+  <!-- ===== Left chart: solve rate /20 ===== -->
+  <!-- Area: x=70-340, y=80-300. Width=270, height=220 -->
+  <text x="205" y="74" class="label" text-anchor="middle">Solve rate (/20)</text>
+
+  <!-- Gridlines -->
+  <line x1="120" y1="80" x2="340" y2="80" class="gridline"/>
+  <line x1="120" y1="135" x2="340" y2="135" class="gridline"/>
+  <line x1="120" y1="190" x2="340" y2="190" class="gridline"/>
+  <line x1="120" y1="245" x2="340" y2="245" class="gridline"/>
+  <line x1="120" y1="300" x2="340" y2="300" stroke="#484f58"/>
+  <line x1="120" y1="80" x2="120" y2="300" stroke="#484f58"/>
+  <text x="114" y="84" class="axis" text-anchor="end">20</text>
+  <text x="114" y="139" class="axis" text-anchor="end">15</text>
+  <text x="114" y="194" class="axis" text-anchor="end">10</text>
+  <text x="114" y="249" class="axis" text-anchor="end">5</text>
+  <text x="114" y="304" class="axis" text-anchor="end">0</text>
+
+  <!-- 5 bars, 36 wide, gap 8 -->
+  <!-- 20 seeds -> 220px, 1 seed = 11 px -->
+  <!-- ADD 20/20 = 220px, starts at x=135 -->
+  <rect x="135" y="80" width="32" height="220" class="solve"/>
+  <text x="151" y="74" class="value" text-anchor="middle">20</text>
+  <text x="151" y="318" class="axis" text-anchor="middle">ADD</text>
+
+  <!-- MAX 20/20 -->
+  <rect x="175" y="80" width="32" height="220" class="solve"/>
+  <text x="191" y="74" class="value" text-anchor="middle">20</text>
+  <text x="191" y="318" class="axis" text-anchor="middle">MAX</text>
+
+  <!-- MIN 20/20 -->
+  <rect x="215" y="80" width="32" height="220" class="solve"/>
+  <text x="231" y="74" class="value" text-anchor="middle">20</text>
+  <text x="231" y="318" class="axis" text-anchor="middle">MIN</text>
+
+  <!-- |a-b| 20/20 -->
+  <rect x="255" y="80" width="32" height="220" class="solve"/>
+  <text x="271" y="74" class="value" text-anchor="middle">20</text>
+  <text x="271" y="318" class="axis" text-anchor="middle">|a-b|</text>
+
+  <!-- MUL 18/20 => 198px, y=102 -->
+  <rect x="295" y="102" width="32" height="198" class="solve-partial"/>
+  <text x="311" y="96" class="value" text-anchor="middle">18</text>
+  <text x="311" y="318" class="axis" text-anchor="middle">MUL</text>
+
+  <!-- ===== Right chart: bits/weight ===== -->
+  <text x="540" y="74" class="label" text-anchor="middle">Bits per weight</text>
+
+  <!-- Area x=400-680, y=80-300 -->
+  <!-- Range 0-8 bits. Height=220, 1 bit=27.5px -->
+  <line x1="430" y1="80" x2="680" y2="80" class="gridline"/>
+  <line x1="430" y1="135" x2="680" y2="135" class="gridline"/>
+  <line x1="430" y1="190" x2="680" y2="190" class="gridline"/>
+  <line x1="430" y1="245" x2="680" y2="245" class="gridline"/>
+  <line x1="430" y1="300" x2="680" y2="300" stroke="#484f58"/>
+  <line x1="430" y1="80" x2="430" y2="300" stroke="#484f58"/>
+  <text x="424" y="84" class="axis" text-anchor="end">8</text>
+  <text x="424" y="139" class="axis" text-anchor="end">6</text>
+  <text x="424" y="194" class="axis" text-anchor="end">4</text>
+  <text x="424" y="249" class="axis" text-anchor="end">2</text>
+  <text x="424" y="304" class="axis" text-anchor="end">0</text>
+
+  <!-- Bars show bit range (lo and hi): -->
+  <!-- ADD 4-5, MAX 4-5, MIN 5, |a-b| 5-6, MUL 6 -->
+  <!-- Use midpoint bars + range tick marks -->
+
+  <!-- ADD 4-5 -> midpoint 4.5 = 123.75 px = y 176.25 -->
+  <rect x="445" y="176.25" width="32" height="123.75" class="bits"/>
+  <text x="461" y="170" class="bitval" text-anchor="middle">4-5</text>
+  <text x="461" y="318" class="axis" text-anchor="middle">ADD</text>
+
+  <!-- MAX 4-5 -->
+  <rect x="485" y="176.25" width="32" height="123.75" class="bits"/>
+  <text x="501" y="170" class="bitval" text-anchor="middle">4-5</text>
+  <text x="501" y="318" class="axis" text-anchor="middle">MAX</text>
+
+  <!-- MIN 5 -> 137.5 px -> y 162.5 -->
+  <rect x="525" y="162.5" width="32" height="137.5" class="bits"/>
+  <text x="541" y="156" class="bitval" text-anchor="middle">5</text>
+  <text x="541" y="318" class="axis" text-anchor="middle">MIN</text>
+
+  <!-- |a-b| 5-6 -> midpoint 5.5 = 151.25 -> y 148.75 -->
+  <rect x="565" y="148.75" width="32" height="151.25" class="bits"/>
+  <text x="581" y="142" class="bitval" text-anchor="middle">5-6</text>
+  <text x="581" y="318" class="axis" text-anchor="middle">|a-b|</text>
+
+  <!-- MUL 6 -> 165 px -> y 135 -->
+  <rect x="605" y="135" width="32" height="165" class="bits"/>
+  <text x="621" y="128" class="bitval" text-anchor="middle">6</text>
+  <text x="621" y="318" class="axis" text-anchor="middle">MUL</text>
+
+  <text x="360" y="360" class="subtitle" text-anchor="middle">All 5 tasks convert to integer weights; no search needed — float gradient finds the ratio, rounding locks the grid.</text>
+  <text x="360" y="378" class="subtitle" text-anchor="middle">C19 activation baked as a LUT -> pure integer inference, no FPU on chip.</text>
+</svg>

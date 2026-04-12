@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 400" width="720" height="400">
+  <style>
+    text { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif; }
+    .title { font-size: 17px; font-weight: 600; fill: #c9d1d9; }
+    .subtitle { font-size: 12px; fill: #8b949e; }
+    .axis { font-size: 12px; fill: #8b949e; }
+    .label { font-size: 12px; fill: #c9d1d9; }
+    .labelbold { font-size: 12px; font-weight: 600; fill: #c9d1d9; }
+    .value { font-size: 11px; font-weight: 600; fill: #c9d1d9; }
+    .train { fill: #58a6ff; }
+    .test { fill: #39d353; }
+    .test-zero { fill: #ff7b72; }
+    .gridline { stroke: #30363d; stroke-width: 1; }
+  </style>
+
+  <!-- Title -->
+  <text x="360" y="26" class="title" text-anchor="middle">Approach comparison — held-out addition generalization</text>
+  <text x="360" y="46" class="subtitle" text-anchor="middle">10 incremental neurons hit 100/100 (train/test); 256-neuron all-at-once hits 72/0 — pure memorization</text>
+
+  <!-- Chart area: x=150-700, y=70-300. 0-100% -->
+  <!-- y scale: 100% -> 230px tall so y=300 is 0% and y=70 is 100% -->
+  <!-- 2.3 px per % -->
+
+  <!-- Gridlines 0, 25, 50, 75, 100 -->
+  <line x1="150" y1="70" x2="700" y2="70" class="gridline"/>
+  <line x1="150" y1="127.5" x2="700" y2="127.5" class="gridline"/>
+  <line x1="150" y1="185" x2="700" y2="185" class="gridline"/>
+  <line x1="150" y1="242.5" x2="700" y2="242.5" class="gridline"/>
+  <line x1="150" y1="300" x2="700" y2="300" stroke="#484f58" stroke-width="1"/>
+
+  <text x="142" y="74" class="axis" text-anchor="end">100%</text>
+  <text x="142" y="131" class="axis" text-anchor="end">75%</text>
+  <text x="142" y="189" class="axis" text-anchor="end">50%</text>
+  <text x="142" y="246" class="axis" text-anchor="end">25%</text>
+  <text x="142" y="304" class="axis" text-anchor="end">0%</text>
+
+  <!-- 5 groups, each 104px wide. Start x=165, group spacing 108 -->
+  <!-- Bar width 36, gap 8 -->
+
+  <!-- Group 1: 10 incremental  100/100  train=100 (230px), test=100 (230px) -->
+  <g>
+    <rect x="168" y="70" width="36" height="230" class="train"/>
+    <rect x="210" y="70" width="36" height="230" class="test"/>
+    <text x="186" y="64" class="value" text-anchor="middle">100%</text>
+    <text x="228" y="64" class="value" text-anchor="middle">100%</text>
+    <text x="207" y="320" class="labelbold" text-anchor="middle">10 incremental</text>
+    <text x="207" y="336" class="axis" text-anchor="middle">10 neurons</text>
+  </g>
+
+  <!-- Group 2: 256 INSTNCT  72/0 -->
+  <g>
+    <rect x="276" y="134.4" width="36" height="165.6" class="train"/>
+    <rect x="318" y="298" width="36" height="2" class="test-zero"/>
+    <text x="294" y="128" class="value" text-anchor="middle">72%</text>
+    <text x="336" y="292" class="value" text-anchor="middle">0%</text>
+    <text x="315" y="320" class="labelbold" text-anchor="middle">256 INSTNCT</text>
+    <text x="315" y="336" class="axis" text-anchor="middle">256 neurons</text>
+  </g>
+
+  <!-- Group 3: 256 ListNet  56/0 -->
+  <g>
+    <rect x="384" y="171.2" width="36" height="128.8" class="train"/>
+    <rect x="426" y="298" width="36" height="2" class="test-zero"/>
+    <text x="402" y="165" class="value" text-anchor="middle">56%</text>
+    <text x="444" y="292" class="value" text-anchor="middle">0%</text>
+    <text x="423" y="320" class="labelbold" text-anchor="middle">256 ListNet</text>
+    <text x="423" y="336" class="axis" text-anchor="middle">256 neurons</text>
+  </g>
+
+  <!-- Group 4: 64 LIF  5/0 -->
+  <g>
+    <rect x="492" y="288.5" width="36" height="11.5" class="train"/>
+    <rect x="534" y="298" width="36" height="2" class="test-zero"/>
+    <text x="510" y="282" class="value" text-anchor="middle">5%</text>
+    <text x="552" y="292" class="value" text-anchor="middle">0%</text>
+    <text x="531" y="320" class="labelbold" text-anchor="middle">64 LIF</text>
+    <text x="531" y="336" class="axis" text-anchor="middle">64 neurons</text>
+  </g>
+
+  <!-- Group 5: 64 Hebbian  5/0 -->
+  <g>
+    <rect x="600" y="288.5" width="36" height="11.5" class="train"/>
+    <rect x="642" y="298" width="36" height="2" class="test-zero"/>
+    <text x="618" y="282" class="value" text-anchor="middle">5%</text>
+    <text x="660" y="292" class="value" text-anchor="middle">0%</text>
+    <text x="639" y="320" class="labelbold" text-anchor="middle">64 Hebbian</text>
+    <text x="639" y="336" class="axis" text-anchor="middle">64 neurons</text>
+  </g>
+
+  <!-- Legend -->
+  <g>
+    <rect x="260" y="360" width="16" height="12" class="train"/>
+    <text x="282" y="371" class="label">Train accuracy</text>
+    <rect x="400" y="360" width="16" height="12" class="test"/>
+    <text x="422" y="371" class="label">Test accuracy</text>
+  </g>
+</svg>
