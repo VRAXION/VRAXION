@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 400" width="720" height="400">
+  <style>
+    text { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif; }
+    .title { font-size: 17px; font-weight: 600; fill: #c9d1d9; }
+    .subtitle { font-size: 12px; fill: #8b949e; }
+    .axis { font-size: 12px; fill: #8b949e; }
+    .label { font-size: 13px; font-weight: 600; fill: #c9d1d9; }
+    .value { font-size: 12px; font-weight: 700; fill: #c9d1d9; }
+    .best { fill: #39d353; }
+    .mid { fill: #58a6ff; }
+    .worse { fill: #d29922; }
+    .gridline { stroke: #30363d; stroke-width: 1; }
+    .note { font-size: 11px; fill: #8b949e; }
+  </style>
+
+  <!-- Title -->
+  <text x="360" y="26" class="title" text-anchor="middle">Edge cap sweep — H=1024, bigram task</text>
+  <text x="360" y="46" class="subtitle" text-anchor="middle">2026-04-08 — mean accuracy by edge cap (higher = better)</text>
+
+  <!-- Chart area: x 120-660, y 100-280 -->
+  <!-- Y axis: 18% to 22% (narrow range for readability). 4% -> 180 px = 45 px per 1% -->
+  <!-- zero-reference at 18% -> y=280 -->
+
+  <line x1="120" y1="100" x2="660" y2="100" class="gridline"/>
+  <line x1="120" y1="145" x2="660" y2="145" class="gridline"/>
+  <line x1="120" y1="190" x2="660" y2="190" class="gridline"/>
+  <line x1="120" y1="235" x2="660" y2="235" class="gridline"/>
+  <line x1="120" y1="280" x2="660" y2="280" stroke="#484f58"/>
+  <line x1="120" y1="100" x2="120" y2="280" stroke="#484f58"/>
+
+  <text x="114" y="104" class="axis" text-anchor="end">22%</text>
+  <text x="114" y="149" class="axis" text-anchor="end">21%</text>
+  <text x="114" y="194" class="axis" text-anchor="end">20%</text>
+  <text x="114" y="239" class="axis" text-anchor="end">19%</text>
+  <text x="114" y="284" class="axis" text-anchor="end">18%</text>
+
+  <text x="52" y="190" class="axis" text-anchor="middle" transform="rotate(-90, 52, 190)">mean accuracy</text>
+
+  <!-- 3 bars. Width 120, gap 40. Start x=170 -->
+  <!-- edge cap 100: 20.7% -> (20.7-18)*45 = 121.5 -> y=158.5 -->
+  <!-- edge cap 300: 20.6% -> (20.6-18)*45 = 117 -> y=163 -->
+  <!-- edge cap 1000: 19.8% -> (19.8-18)*45 = 81 -> y=199 -->
+
+  <rect x="170" y="158.5" width="120" height="121.5" class="best"/>
+  <text x="230" y="152" class="value" text-anchor="middle">20.7%</text>
+  <text x="230" y="302" class="label" text-anchor="middle">cap = 100</text>
+  <text x="230" y="320" class="note" text-anchor="middle">sparse, winner</text>
+
+  <rect x="330" y="163" width="120" height="117" class="mid"/>
+  <text x="390" y="157" class="value" text-anchor="middle">20.6%</text>
+  <text x="390" y="302" class="label" text-anchor="middle">cap = 300</text>
+  <text x="390" y="320" class="note" text-anchor="middle">within noise</text>
+
+  <rect x="490" y="199" width="120" height="81" class="worse"/>
+  <text x="550" y="193" class="value" text-anchor="middle">19.8%</text>
+  <text x="550" y="302" class="label" text-anchor="middle">cap = 1000</text>
+  <text x="550" y="320" class="note" text-anchor="middle">interference</text>
+
+  <!-- Footer -->
+  <text x="360" y="358" class="subtitle" text-anchor="middle">Sparse wiring beats dense on the bigram ceiling.</text>
+  <text x="360" y="376" class="subtitle" text-anchor="middle">cap = 1000 floods the network with interference; cap = 100-300 is the practical sweet spot at H=1024.</text>
+</svg>

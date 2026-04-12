@@ -1,0 +1,136 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 520" width="900" height="520">
+  <style>
+    text { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif; }
+    .title { font-size: 18px; font-weight: 600; fill: #c9d1d9; }
+    .subtitle { font-size: 12px; fill: #8b949e; }
+    .axis { font-size: 12px; fill: #8b949e; }
+    .label { font-size: 13px; font-weight: 600; fill: #c9d1d9; }
+    .value { font-size: 12px; font-weight: 700; fill: #c9d1d9; }
+    .win { fill: #39d353; }
+    .mid { fill: #58a6ff; }
+    .weak { fill: #d29922; }
+    .fail { fill: #ff7b72; }
+    .gridline { stroke: #30363d; stroke-width: 1; }
+    .panelbg { fill: #0b1118; stroke: #30363d; stroke-width: 1; }
+    .note { font-size: 11px; fill: #8b949e; }
+    .sectiontitle { font-size: 14px; font-weight: 600; fill: #58a6ff; }
+  </style>
+
+  <!-- Title -->
+  <text x="450" y="28" class="title" text-anchor="middle">Overnight scaling sweep — 2026-04-10</text>
+  <text x="450" y="48" class="subtitle" text-anchor="middle">5 experiments: depth scaling, generalization gap, multi-task, op coverage, composition depth</text>
+
+  <!-- ===== Left panel: EXP 1 — solve rate vs depth ===== -->
+  <rect x="40" y="75" width="400" height="200" class="panelbg" rx="4"/>
+  <text x="240" y="96" class="sectiontitle" text-anchor="middle">EXP 1 — depth scaling (ADD)</text>
+  <text x="240" y="112" class="axis" text-anchor="middle">solve rate /20 (higher = better)</text>
+
+  <!-- Chart inside: x=80-420, y=130-250. Height=120 (/20 seeds = 6 px/seed) -->
+  <line x1="80" y1="130" x2="420" y2="130" class="gridline"/>
+  <line x1="80" y1="160" x2="420" y2="160" class="gridline"/>
+  <line x1="80" y1="190" x2="420" y2="190" class="gridline"/>
+  <line x1="80" y1="220" x2="420" y2="220" class="gridline"/>
+  <line x1="80" y1="250" x2="420" y2="250" stroke="#484f58"/>
+  <line x1="80" y1="130" x2="80" y2="250" stroke="#484f58"/>
+  <text x="74" y="134" class="axis" text-anchor="end">20</text>
+  <text x="74" y="164" class="axis" text-anchor="end">15</text>
+  <text x="74" y="194" class="axis" text-anchor="end">10</text>
+  <text x="74" y="224" class="axis" text-anchor="end">5</text>
+  <text x="74" y="254" class="axis" text-anchor="end">0</text>
+
+  <!-- 5 bars: 5d (20), 10d (17 est midpoint of 15-20), 15d-10w (15), 15d-20w (7), 20d (partial -> 10) -->
+  <!-- Bar width 50, gap 15, start x=100 -->
+  <!-- 20 seeds -> 120 px -->
+
+  <!-- 5d: 20/20 -> 120 px, y=130 -->
+  <rect x="100" y="130" width="50" height="120" class="win"/>
+  <text x="125" y="124" class="value" text-anchor="middle">20</text>
+  <text x="125" y="270" class="label" text-anchor="middle">5d</text>
+
+  <!-- 10d: 17/20 midpoint of 15-20 -> 102 px, y=148 -->
+  <rect x="165" y="148" width="50" height="102" class="win"/>
+  <text x="190" y="142" class="value" text-anchor="middle">15-20</text>
+  <text x="190" y="270" class="label" text-anchor="middle">10d</text>
+
+  <!-- 15d 10w: 15/20 -> 90 px, y=160 -->
+  <rect x="230" y="160" width="50" height="90" class="mid"/>
+  <text x="255" y="154" class="value" text-anchor="middle">15</text>
+  <text x="255" y="270" class="label" text-anchor="middle">15d 10w</text>
+
+  <!-- 15d 20w: 7/20 -> 42 px, y=208 -->
+  <rect x="295" y="208" width="50" height="42" class="weak"/>
+  <text x="320" y="202" class="value" text-anchor="middle">7</text>
+  <text x="320" y="270" class="label" text-anchor="middle">15d 20w</text>
+
+  <!-- 20d partial: indicator only, short bar -->
+  <rect x="360" y="220" width="50" height="30" class="weak"/>
+  <text x="385" y="214" class="value" text-anchor="middle">partial</text>
+  <text x="385" y="270" class="label" text-anchor="middle">20d</text>
+
+  <!-- ===== Right panel: EXP 2 — generalization gap by depth ===== -->
+  <rect x="460" y="75" width="400" height="200" class="panelbg" rx="4"/>
+  <text x="660" y="96" class="sectiontitle" text-anchor="middle">EXP 2 — generalization gap shrinks with depth</text>
+  <text x="660" y="112" class="axis" text-anchor="middle">test accuracy (%) and train-test gap</text>
+
+  <!-- Chart inside: x=500-840, y=130-250. Height=120 for 0-100 -->
+  <line x1="500" y1="130" x2="840" y2="130" class="gridline"/>
+  <line x1="500" y1="160" x2="840" y2="160" class="gridline"/>
+  <line x1="500" y1="190" x2="840" y2="190" class="gridline"/>
+  <line x1="500" y1="220" x2="840" y2="220" class="gridline"/>
+  <line x1="500" y1="250" x2="840" y2="250" stroke="#484f58"/>
+  <line x1="500" y1="130" x2="500" y2="250" stroke="#484f58"/>
+  <text x="494" y="134" class="axis" text-anchor="end">100</text>
+  <text x="494" y="164" class="axis" text-anchor="end">75</text>
+  <text x="494" y="194" class="axis" text-anchor="end">50</text>
+  <text x="494" y="224" class="axis" text-anchor="end">25</text>
+  <text x="494" y="254" class="axis" text-anchor="end">0</text>
+
+  <!-- Two bars: 5d (76% test, 24pp gap), 20d (96% test, 3pp gap) -->
+  <!-- 100% -> 120 px -->
+
+  <!-- 5d test 76% -> 91.2 px, y=158.8 -->
+  <rect x="560" y="158.8" width="80" height="91.2" class="mid"/>
+  <text x="600" y="152" class="value" text-anchor="middle">76%</text>
+  <text x="600" y="270" class="label" text-anchor="middle">depth 5</text>
+  <text x="600" y="288" class="note" text-anchor="middle">gap 24pp</text>
+
+  <!-- 20d test 96% -> 115.2 px, y=134.8 -->
+  <rect x="700" y="134.8" width="80" height="115.2" class="win"/>
+  <text x="740" y="128" class="value" text-anchor="middle">96%</text>
+  <text x="740" y="270" class="label" text-anchor="middle">depth 20</text>
+  <text x="740" y="288" class="note" text-anchor="middle">gap 3pp</text>
+
+  <!-- ===== Bottom panel: EXP 3/4/5 summary as text rows ===== -->
+  <rect x="40" y="295" width="820" height="175" class="panelbg" rx="4"/>
+  <text x="450" y="316" class="sectiontitle" text-anchor="middle">EXP 3 / 4 / 5 — multi-task, op coverage, composition</text>
+
+  <!-- Row 1: EXP 3 multi-task ADD+MAX -->
+  <rect x="70" y="335" width="14" height="12" class="win"/>
+  <text x="92" y="346" class="label">EXP 3 — ADD + MAX multi-task (8 workers)</text>
+  <text x="840" y="346" class="value" text-anchor="end">95% combined</text>
+
+  <!-- Row 2: EXP 4 all ops at 10 depth -->
+  <rect x="70" y="360" width="14" height="12" class="win"/>
+  <text x="92" y="371" class="label">EXP 4 — all ops at depth 10 (ADD / MAX / MIN / |a-b|)</text>
+  <text x="840" y="371" class="value" text-anchor="end">100 / 100 / 100 / 85%</text>
+
+  <!-- Row 3: EXP 5 composition 2-input -->
+  <rect x="70" y="385" width="14" height="12" class="win"/>
+  <text x="92" y="396" class="label">EXP 5 — composition 2-input</text>
+  <text x="840" y="396" class="value" text-anchor="end">100%</text>
+
+  <!-- Row 4: EXP 5 composition 3-input -->
+  <rect x="70" y="410" width="14" height="12" class="mid"/>
+  <text x="92" y="421" class="label">EXP 5 — composition 3-input</text>
+  <text x="840" y="421" class="value" text-anchor="end">high</text>
+
+  <!-- Row 5: EXP 5 composition 4-5 input -->
+  <rect x="70" y="435" width="14" height="12" class="weak"/>
+  <text x="92" y="446" class="label">EXP 5 — composition 4-5 input (killed ~9.5h)</text>
+  <text x="840" y="446" class="value" text-anchor="end">partial</text>
+
+  <!-- Footer takeaway -->
+  <text x="450" y="492" class="subtitle" text-anchor="middle">Overparameterization HURTS at 15d (10w = 15/20 vs 20w = 7/20).</text>
+  <text x="450" y="508" class="subtitle" text-anchor="middle">Generalization gap shrinks 24pp -> 3pp as depth grows from 5 to 20.</text>
+</svg>

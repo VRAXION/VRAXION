@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 400" width="720" height="400">
+  <style>
+    text { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif; }
+    .title { font-size: 17px; font-weight: 600; fill: #c9d1d9; }
+    .subtitle { font-size: 12px; fill: #8b949e; }
+    .axis { font-size: 12px; fill: #8b949e; }
+    .label { font-size: 13px; font-weight: 600; fill: #c9d1d9; }
+    .value { font-size: 13px; font-weight: 700; fill: #c9d1d9; }
+    .faster { fill: #39d353; }
+    .mid { fill: #58a6ff; }
+    .slower { fill: #ff7b72; }
+    .gridline { stroke: #30363d; stroke-width: 1; }
+    .zeroline { stroke: #484f58; stroke-width: 2; }
+    .note { font-size: 11px; fill: #8b949e; }
+  </style>
+
+  <!-- Title -->
+  <text x="360" y="26" class="title" text-anchor="middle">Circuit reuse — frozen ADD as pre-trained substrate</text>
+  <text x="360" y="46" class="subtitle" text-anchor="middle">Speedup vs fresh training for 4 compound tasks built on top of a frozen ADD chip</text>
+
+  <!-- Chart area: y 80-280, x 80-680 -->
+  <!-- Scale: 0x at left, 4x at right. 600 px across -->
+  <!-- So 1x = 150 px. Zero line at x=80. 1x at x=230. 2x at x=380. 3x at x=530. 4x at x=680. -->
+
+  <!-- Gridlines at 0,1,2,3,4x -->
+  <line x1="80" y1="80" x2="80" y2="280" class="zeroline"/>
+  <line x1="230" y1="80" x2="230" y2="280" class="gridline"/>
+  <line x1="380" y1="80" x2="380" y2="280" class="gridline"/>
+  <line x1="530" y1="80" x2="530" y2="280" class="gridline"/>
+  <line x1="680" y1="80" x2="680" y2="280" class="gridline"/>
+  <text x="80" y="300" class="axis" text-anchor="middle">0x</text>
+  <text x="230" y="300" class="axis" text-anchor="middle">1x (fresh)</text>
+  <text x="380" y="300" class="axis" text-anchor="middle">2x</text>
+  <text x="530" y="300" class="axis" text-anchor="middle">3x</text>
+  <text x="680" y="300" class="axis" text-anchor="middle">4x</text>
+
+  <!-- Reference "fresh = 1x" line -->
+  <text x="236" y="74" class="note" text-anchor="start">1x baseline</text>
+
+  <!-- 4 horizontal bars. Row height 40. Bar height 24. -->
+  <!-- Row starts y=90 -->
+
+  <!-- Row 1: max(a+b,c)  3.8x -> 570 px from x=80, so width 570 -->
+  <text x="74" y="108" class="label" text-anchor="end">max(a+b, c)</text>
+  <rect x="80" y="94" width="570" height="28" class="faster"/>
+  <text x="660" y="112" class="value" text-anchor="end">3.8x</text>
+  <text x="85" y="134" class="note">pre-trained 50 steps vs fresh 190 steps</text>
+
+  <!-- Row 2: a+b+c  2.1x -> 315 px -->
+  <text x="74" y="164" class="label" text-anchor="end">a + b + c</text>
+  <rect x="80" y="150" width="315" height="28" class="faster"/>
+  <text x="405" y="168" class="value" text-anchor="start">2.1x</text>
+
+  <!-- Row 3: 2a+b  1.5x -> 225 px -->
+  <text x="74" y="206" class="label" text-anchor="end">2a + b</text>
+  <rect x="80" y="192" width="225" height="28" class="mid"/>
+  <text x="315" y="210" class="value" text-anchor="start">1.5x</text>
+
+  <!-- Row 4: (a+b) > 3 SLOWER -> visually show a short bar to left of 1x with "slower" callout -->
+  <!-- Show as a reddish bar going only to ~0.7x (105 px) to indicate <1x -->
+  <text x="74" y="248" class="label" text-anchor="end">(a+b) &gt; 3 (binary output)</text>
+  <rect x="80" y="234" width="105" height="28" class="slower"/>
+  <text x="195" y="252" class="value" text-anchor="start">slower</text>
+  <text x="200" y="268" class="note">binary-output format incompatible with float ADD substrate</text>
+
+  <!-- Footer -->
+  <text x="360" y="340" class="subtitle" text-anchor="middle">Circuit reuse helps only when output format is compatible.</text>
+  <text x="360" y="358" class="subtitle" text-anchor="middle">Binary-output tasks converge slower with a frozen float ADD substrate.</text>
+  <text x="360" y="382" class="note" text-anchor="middle">2026-04-10 — frozen ADD(a,b) + search new weights on top</text>
+</svg>

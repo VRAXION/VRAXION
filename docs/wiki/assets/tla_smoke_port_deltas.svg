@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 440" width="760" height="440">
+  <style>
+    text { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif; }
+    .title { font-size: 17px; font-weight: 600; fill: #c9d1d9; }
+    .subtitle { font-size: 12px; fill: #8b949e; }
+    .axis { font-size: 12px; fill: #8b949e; }
+    .label { font-size: 13px; font-weight: 600; fill: #c9d1d9; }
+    .value { font-size: 12px; font-weight: 700; fill: #c9d1d9; }
+    .gain { fill: #39d353; }
+    .bighit { fill: #58a6ff; }
+    .newfeat { fill: #f0883e; }
+    .gridline { stroke: #30363d; stroke-width: 1; }
+    .zeroline { stroke: #484f58; stroke-width: 2; }
+    .note { font-size: 11px; fill: #8b949e; }
+  </style>
+
+  <!-- Title -->
+  <text x="380" y="26" class="title" text-anchor="middle">Smoke-port branch — optimization deltas (2026-04-07)</text>
+  <text x="380" y="46" class="subtitle" text-anchor="middle">5 optimizations merged to main. Reported deltas are wall-time reductions (larger = faster).</text>
+
+  <!-- Chart area: x 320-720, y 80-310 -->
+  <!-- Bars extend leftward from a zero line; negative delta = faster -->
+  <!-- Range -80% to 0%. 80% -> 400 px. 1% = 5 px. Zero at x=720 -->
+
+  <line x1="720" y1="80" x2="720" y2="310" class="zeroline"/>
+  <line x1="620" y1="80" x2="620" y2="310" class="gridline"/>
+  <line x1="520" y1="80" x2="520" y2="310" class="gridline"/>
+  <line x1="420" y1="80" x2="420" y2="310" class="gridline"/>
+  <line x1="320" y1="80" x2="320" y2="310" class="gridline"/>
+
+  <text x="320" y="72" class="axis" text-anchor="middle">-80%</text>
+  <text x="420" y="72" class="axis" text-anchor="middle">-60%</text>
+  <text x="520" y="72" class="axis" text-anchor="middle">-40%</text>
+  <text x="620" y="72" class="axis" text-anchor="middle">-20%</text>
+  <text x="720" y="72" class="axis" text-anchor="middle">0 (baseline)</text>
+
+  <text x="520" y="332" class="axis" text-anchor="middle">wall-time delta (more negative = faster)</text>
+
+  <!-- 5 bars. Row height 45. Bar height 28. Start y=88 -->
+
+  <!-- Row 1: Compact neuron types i8/u8 -30%. 30*5 = 150 px. x=720-150=570 -->
+  <text x="310" y="106" class="label" text-anchor="end">Compact neuron types (i8/u8)</text>
+  <rect x="570" y="92" width="150" height="28" class="gain"/>
+  <text x="565" y="112" class="value" text-anchor="end">-30%</text>
+  <text x="310" y="122" class="note" text-anchor="end">at H=4096</text>
+
+  <!-- Row 2: Skip-inactive spike -49%. 49*5=245 px. x=475 -->
+  <text x="310" y="151" class="label" text-anchor="end">Skip-inactive spike loop</text>
+  <rect x="475" y="137" width="245" height="28" class="bighit"/>
+  <text x="470" y="157" class="value" text-anchor="end">-49%</text>
+  <text x="310" y="167" class="note" text-anchor="end">spike loop only</text>
+
+  <!-- Row 3: Fully sparse tick — shown as orange "new feature" bar, full width as a capability note -->
+  <text x="310" y="196" class="label" text-anchor="end">Fully sparse tick</text>
+  <rect x="325" y="182" width="395" height="28" class="newfeat"/>
+  <text x="520" y="201" class="value" text-anchor="middle">O(active) replaces O(H)</text>
+  <text x="310" y="212" class="note" text-anchor="end">new structural property</text>
+
+  <!-- Row 4: Sparse input API -62% to -72%. Show as a range bar from -72% to -62%. 72*5=360; 62*5=310 -->
+  <!-- Bar from x=360 (x=720-360=360) to x=410 (x=720-310=410). Width=50 (inner range). -->
+  <!-- Better approach: draw a full bar from 0 to -72% (width=360) with lighter color then overlay -62% marker -->
+  <text x="310" y="241" class="label" text-anchor="end">Sparse input API</text>
+  <rect x="360" y="227" width="360" height="28" class="bighit"/>
+  <text x="355" y="247" class="value" text-anchor="end">-62% to -72%</text>
+  <text x="310" y="257" class="note" text-anchor="end">at H=4K-100K, O(k)</text>
+
+  <!-- Row 5: CoW evolution snapshots — new feature, no delta -->
+  <text x="310" y="286" class="label" text-anchor="end">Copy-on-write evolution snapshots</text>
+  <rect x="325" y="272" width="395" height="28" class="newfeat"/>
+  <text x="520" y="291" class="value" text-anchor="middle">new capability (branch + fork)</text>
+  <text x="310" y="302" class="note" text-anchor="end">unlocks multi-seed search</text>
+
+  <!-- Legend -->
+  <rect x="80" y="352" width="14" height="12" class="gain"/>
+  <text x="100" y="362" class="label">speedup</text>
+  <rect x="180" y="352" width="14" height="12" class="bighit"/>
+  <text x="200" y="362" class="label">big speedup</text>
+  <rect x="310" y="352" width="14" height="12" class="newfeat"/>
+  <text x="330" y="362" class="label">new capability</text>
+
+  <!-- Footer -->
+  <text x="380" y="392" class="subtitle" text-anchor="middle">Prefetch, nibble packing, and bitset dirty_member were rejected under the same harness.</text>
+  <text x="380" y="412" class="note" text-anchor="middle">Merged as "smoke-port" branch (22 commits) into main on 2026-04-07.</text>
+</svg>

@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 540" width="760" height="540">
+  <style>
+    text { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif; }
+    .title { font-size: 17px; font-weight: 600; fill: #c9d1d9; }
+    .subtitle { font-size: 12px; fill: #8b949e; }
+    .axis { font-size: 12px; fill: #8b949e; }
+    .label { font-size: 13px; fill: #c9d1d9; }
+    .value { font-size: 12px; font-weight: 700; fill: #c9d1d9; }
+    .win { fill: #39d353; }
+    .partial { fill: #58a6ff; }
+    .weak { fill: #d29922; }
+    .fail { fill: #ff7b72; }
+    .gridline { stroke: #30363d; stroke-width: 1; }
+    .note { font-size: 11px; fill: #8b949e; }
+  </style>
+
+  <!-- Title -->
+  <text x="380" y="26" class="title" text-anchor="middle">Holographic capability map — 2026-04-09</text>
+  <text x="380" y="46" class="subtitle" text-anchor="middle">Complete task map across 10 arithmetic / logic operations — solve rate %</text>
+
+  <!-- Gridlines 0-100%, x 260-700, bar span 440 px -->
+  <line x1="260" y1="70" x2="260" y2="510" class="gridline"/>
+  <line x1="370" y1="70" x2="370" y2="510" class="gridline"/>
+  <line x1="480" y1="70" x2="480" y2="510" class="gridline"/>
+  <line x1="590" y1="70" x2="590" y2="510" class="gridline"/>
+  <line x1="700" y1="70" x2="700" y2="510" class="gridline"/>
+  <text x="260" y="62" class="axis" text-anchor="middle">0%</text>
+  <text x="370" y="62" class="axis" text-anchor="middle">25%</text>
+  <text x="480" y="62" class="axis" text-anchor="middle">50%</text>
+  <text x="590" y="62" class="axis" text-anchor="middle">75%</text>
+  <text x="700" y="62" class="axis" text-anchor="middle">100%</text>
+
+  <!-- 10 rows. Row height 38. Bar height 24. Start y=78. -->
+  <!-- 100% -> 440 px -->
+
+  <!-- Row 1: ADD  100% -->
+  <text x="250" y="92" class="label" text-anchor="end">ADD</text>
+  <rect x="260" y="80" width="440" height="24" class="win"/>
+  <text x="710" y="97" class="value" text-anchor="start">100%</text>
+
+  <!-- Row 2: MAX  100% -->
+  <text x="250" y="130" class="label" text-anchor="end">MAX</text>
+  <rect x="260" y="118" width="440" height="24" class="win"/>
+  <text x="710" y="135" class="value" text-anchor="start">100%</text>
+
+  <!-- Row 3: PARITY  100% -->
+  <text x="250" y="168" class="label" text-anchor="end">PARITY</text>
+  <rect x="260" y="156" width="440" height="24" class="win"/>
+  <text x="710" y="173" class="value" text-anchor="start">100%</text>
+
+  <!-- Row 4: |a-b|  100% -->
+  <text x="250" y="206" class="label" text-anchor="end">|a-b|</text>
+  <rect x="260" y="194" width="440" height="24" class="win"/>
+  <text x="710" y="211" class="value" text-anchor="start">100%</text>
+
+  <!-- Row 5: MUL (area encoding)  100% -->
+  <text x="250" y="244" class="label" text-anchor="end">MUL (area enc.)</text>
+  <rect x="260" y="232" width="440" height="24" class="win"/>
+  <text x="710" y="249" class="value" text-anchor="start">100%</text>
+
+  <!-- Row 6: a÷b  100% -->
+  <text x="250" y="282" class="label" text-anchor="end">a &#247; b</text>
+  <rect x="260" y="270" width="440" height="24" class="win"/>
+  <text x="710" y="287" class="value" text-anchor="start">100%</text>
+
+  <!-- Row 7: MIN  93% -> 409.2 -->
+  <text x="250" y="320" class="label" text-anchor="end">MIN</text>
+  <rect x="260" y="308" width="409.2" height="24" class="partial"/>
+  <text x="679" y="325" class="value" text-anchor="start">93%</text>
+
+  <!-- Row 8: a==b  87% -> 382.8 -->
+  <text x="250" y="358" class="label" text-anchor="end">a == b</text>
+  <rect x="260" y="346" width="382.8" height="24" class="partial"/>
+  <text x="653" y="363" class="value" text-anchor="start">87%</text>
+
+  <!-- Row 9: MUL (thermo)  81% -> 356.4 -->
+  <text x="250" y="396" class="label" text-anchor="end">MUL (thermo)</text>
+  <rect x="260" y="384" width="356.4" height="24" class="partial"/>
+  <text x="626" y="401" class="value" text-anchor="start">81%</text>
+
+  <!-- Row 10: SUB  75% (unsolved) -> 330 -->
+  <text x="250" y="434" class="label" text-anchor="end">SUB (unsolved)</text>
+  <rect x="260" y="422" width="330" height="24" class="weak"/>
+  <text x="600" y="439" class="value" text-anchor="start">75%</text>
+
+  <!-- Legend -->
+  <rect x="80" y="475" width="14" height="12" class="win"/>
+  <text x="100" y="485" class="label">95-100%</text>
+  <rect x="180" y="475" width="14" height="12" class="partial"/>
+  <text x="200" y="485" class="label">80-94%</text>
+  <rect x="280" y="475" width="14" height="12" class="weak"/>
+  <text x="300" y="485" class="label">50-79%</text>
+  <rect x="380" y="475" width="14" height="12" class="fail"/>
+  <text x="400" y="485" class="label">0-49%</text>
+
+  <!-- Footer takeaways -->
+  <text x="380" y="510" class="subtitle" text-anchor="middle">Area encoding proves MUL is an ENCODING problem, not a network problem.</text>
+  <text x="380" y="528" class="note" text-anchor="middle">Depth is task-specific — helps PARITY, hurts SUB. Width and weight scaling do not help.</text>
+</svg>

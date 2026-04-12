@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 420" width="720" height="420">
+  <style>
+    text { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif; }
+    .title { font-size: 17px; font-weight: 600; fill: #c9d1d9; }
+    .subtitle { font-size: 12px; fill: #8b949e; }
+    .axis { font-size: 12px; fill: #8b949e; }
+    .label { font-size: 13px; font-weight: 600; fill: #c9d1d9; }
+    .value { font-size: 12px; font-weight: 700; fill: #c9d1d9; }
+    .win { fill: #39d353; }
+    .weak { fill: #d29922; }
+    .fail { fill: #ff7b72; }
+    .converged-ok { fill: #39d353; font-size: 11px; font-weight: 700; }
+    .converged-no { fill: #ff7b72; font-size: 11px; font-weight: 700; }
+    .gridline { stroke: #30363d; stroke-width: 1; }
+    .note { font-size: 11px; fill: #8b949e; }
+  </style>
+
+  <!-- Title -->
+  <text x="360" y="26" class="title" text-anchor="middle">Input width sweep — D=256, GPU, echo task (v4 line)</text>
+  <text x="360" y="46" class="subtitle" text-anchor="middle">2026-02-26 — best loss vs byte-input width B (lower = better)</text>
+
+  <!-- Chart area: x 100-660, y 80-300. Height=220 -->
+  <!-- Y axis: 0 to 2.5 best_loss. 1 unit = 88 px -->
+
+  <line x1="100" y1="80" x2="660" y2="80" class="gridline"/>
+  <line x1="100" y1="124" x2="660" y2="124" class="gridline"/>
+  <line x1="100" y1="168" x2="660" y2="168" class="gridline"/>
+  <line x1="100" y1="212" x2="660" y2="212" class="gridline"/>
+  <line x1="100" y1="256" x2="660" y2="256" class="gridline"/>
+  <line x1="100" y1="300" x2="660" y2="300" stroke="#484f58"/>
+  <line x1="100" y1="80" x2="100" y2="300" stroke="#484f58"/>
+
+  <text x="94" y="84" class="axis" text-anchor="end">2.5</text>
+  <text x="94" y="128" class="axis" text-anchor="end">2.0</text>
+  <text x="94" y="172" class="axis" text-anchor="end">1.5</text>
+  <text x="94" y="216" class="axis" text-anchor="end">1.0</text>
+  <text x="94" y="260" class="axis" text-anchor="end">0.5</text>
+  <text x="94" y="304" class="axis" text-anchor="end">0</text>
+
+  <text x="36" y="190" class="axis" text-anchor="middle" transform="rotate(-90, 36, 190)">best_loss</text>
+
+  <!-- 5 bars -->
+  <!-- B=8 0.924 -> 81.3 px -> y=218.7 -->
+  <!-- B=16 1.159 -> 102 px -> y=198 -->
+  <!-- B=32 1.298 -> 114.2 px -> y=185.8 -->
+  <!-- B=64 1.755 -> 154.4 px -> y=145.6 -->
+  <!-- B=128 ~2.1 -> 184.8 px -> y=115.2 -->
+
+  <!-- Bar width 80, gap 20. Start x=130 -->
+  <rect x="130" y="218.7" width="80" height="81.3" class="win"/>
+  <text x="170" y="212" class="value" text-anchor="middle">0.924</text>
+  <text x="170" y="244" class="converged-ok" text-anchor="middle">converged</text>
+  <text x="170" y="322" class="label" text-anchor="middle">B=8</text>
+  <text x="170" y="340" class="note" text-anchor="middle">D/B = 32x</text>
+
+  <rect x="230" y="198" width="80" height="102" class="weak"/>
+  <text x="270" y="192" class="value" text-anchor="middle">1.159</text>
+  <text x="270" y="226" class="converged-no" text-anchor="middle">no</text>
+  <text x="270" y="322" class="label" text-anchor="middle">B=16</text>
+  <text x="270" y="340" class="note" text-anchor="middle">16x</text>
+
+  <rect x="330" y="185.8" width="80" height="114.2" class="weak"/>
+  <text x="370" y="179" class="value" text-anchor="middle">1.298</text>
+  <text x="370" y="213" class="converged-no" text-anchor="middle">no</text>
+  <text x="370" y="322" class="label" text-anchor="middle">B=32</text>
+  <text x="370" y="340" class="note" text-anchor="middle">8x</text>
+
+  <rect x="430" y="145.6" width="80" height="154.4" class="fail"/>
+  <text x="470" y="139" class="value" text-anchor="middle">1.755</text>
+  <text x="470" y="173" class="converged-no" text-anchor="middle">no</text>
+  <text x="470" y="322" class="label" text-anchor="middle">B=64</text>
+  <text x="470" y="340" class="note" text-anchor="middle">4x</text>
+
+  <rect x="530" y="115.2" width="80" height="184.8" class="fail"/>
+  <text x="570" y="109" class="value" text-anchor="middle">~2.1</text>
+  <text x="570" y="143" class="converged-no" text-anchor="middle">no</text>
+  <text x="570" y="322" class="label" text-anchor="middle">B=128</text>
+  <text x="570" y="340" class="note" text-anchor="middle">2x</text>
+
+  <!-- Footer -->
+  <text x="360" y="372" class="subtitle" text-anchor="middle">Byte-granular input (B=8) converged cleanly — wider byte groups all failed under the same step budget.</text>
+  <text x="360" y="392" class="subtitle" text-anchor="middle">Fixed v4 baseline at B=8 after this sweep.</text>
+</svg>

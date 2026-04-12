@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 400" width="720" height="400">
+  <style>
+    text { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif; }
+    .title { font-size: 17px; font-weight: 600; fill: #c9d1d9; }
+    .subtitle { font-size: 12px; fill: #8b949e; }
+    .axis { font-size: 12px; fill: #8b949e; }
+    .label { font-size: 13px; font-weight: 600; fill: #c9d1d9; }
+    .value { font-size: 12px; font-weight: 700; fill: #c9d1d9; }
+    .workers { font-size: 11px; fill: #58a6ff; }
+    .solve { fill: #39d353; }
+    .partial { fill: #d29922; }
+    .gridline { stroke: #30363d; stroke-width: 1; }
+  </style>
+
+  <!-- Title -->
+  <text x="360" y="26" class="title" text-anchor="middle">Float gradient solve rates — 2026-04-10</text>
+  <text x="360" y="46" class="subtitle" text-anchor="middle">Random float init + gradient descent on ADD, |a-b|, MUL — 200 seeds each</text>
+
+  <!-- Chart area: x 130-660, y 80-300, height 220 -->
+  <!-- 200 seeds -> 220px. 1 seed = 1.1 px -->
+
+  <!-- Gridlines -->
+  <line x1="130" y1="80" x2="660" y2="80" class="gridline"/>
+  <line x1="130" y1="135" x2="660" y2="135" class="gridline"/>
+  <line x1="130" y1="190" x2="660" y2="190" class="gridline"/>
+  <line x1="130" y1="245" x2="660" y2="245" class="gridline"/>
+  <line x1="130" y1="300" x2="660" y2="300" stroke="#484f58" stroke-width="1"/>
+  <line x1="130" y1="80" x2="130" y2="300" stroke="#484f58" stroke-width="1"/>
+
+  <text x="124" y="84" class="axis" text-anchor="end">200</text>
+  <text x="124" y="139" class="axis" text-anchor="end">150</text>
+  <text x="124" y="194" class="axis" text-anchor="end">100</text>
+  <text x="124" y="249" class="axis" text-anchor="end">50</text>
+  <text x="124" y="304" class="axis" text-anchor="end">0</text>
+
+  <text x="48" y="190" class="axis" text-anchor="middle" transform="rotate(-90, 48, 190)">seeds solved (/200)</text>
+
+  <!-- 3 bars. Width 120. Gap 50. Start x=180 -->
+  <!-- ADD: 200/200 -> 220 px, y=80 -->
+  <rect x="180" y="80" width="120" height="220" class="solve"/>
+  <text x="240" y="74" class="value" text-anchor="middle">200 / 200</text>
+  <text x="240" y="322" class="label" text-anchor="middle">ADD</text>
+  <text x="240" y="340" class="workers" text-anchor="middle">3 workers</text>
+  <text x="240" y="356" class="axis" text-anchor="middle">100.0%</text>
+
+  <!-- |a-b|: 199/200 -> 218.9 px, y=81.1 -->
+  <rect x="350" y="81.1" width="120" height="218.9" class="solve"/>
+  <text x="410" y="74" class="value" text-anchor="middle">199 / 200</text>
+  <text x="410" y="322" class="label" text-anchor="middle">|a-b|</text>
+  <text x="410" y="340" class="workers" text-anchor="middle">6 workers</text>
+  <text x="410" y="356" class="axis" text-anchor="middle">99.5%</text>
+
+  <!-- MUL: 158/200 -> 173.8 px, y=126.2 -->
+  <rect x="520" y="126.2" width="120" height="173.8" class="partial"/>
+  <text x="580" y="120" class="value" text-anchor="middle">158 / 200</text>
+  <text x="580" y="322" class="label" text-anchor="middle">MUL</text>
+  <text x="580" y="340" class="workers" text-anchor="middle">6 workers</text>
+  <text x="580" y="356" class="axis" text-anchor="middle">79.0%</text>
+
+  <!-- Footer -->
+  <text x="360" y="382" class="subtitle" text-anchor="middle">Init scale=0.5 best. Loss landscape smooth — one valley, no local minima. Gradient converges in 50-100 steps.</text>
+</svg>

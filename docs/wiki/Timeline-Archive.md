@@ -2,11 +2,22 @@
 
 This page is the canonical research record for Vraxion. It carries three things in one place: the run contract behind every public claim, a latest-first chronology of what changed, and the archive residue worth keeping after raw noise is stripped away. Read the top block as a standalone reference for how findings are graded and promoted; read the timeline below for the day-by-day trail that led to the current architecture line.
 
-[Vraxion Home](Home) is the mission-first front door, [INSTNCT Architecture](INSTNCT-Architecture) is the implementation explainer, [Website: Research](https://vraxion.github.io/VRAXION/research/) is the public website snapshot, and [Rust Implementation Surface](v5-Rust-Port-Benchmarks) carries detailed Rust validation.
+[Vraxion Home](Home) is the mission-first front door, [INSTNCT Architecture](INSTNCT-Architecture) is the implementation explainer, and [Rust Implementation Surface](v5-Rust-Port-Benchmarks) carries detailed Rust validation. All public URLs are collected once in [Core Surfaces](#core-surfaces); the rest of this record references them by name rather than repeating links inline.
+
+## Core Surfaces
+
+One list of live public surfaces for the project. Everywhere else in this record refers back to these by name instead of repeating URLs inline.
+
+- **Main repository:** https://github.com/VRAXION/VRAXION
+- **Latest release (v5.0.0-beta.2):** https://github.com/VRAXION/VRAXION/releases/tag/v5.0.0-beta.2
+- **All releases:** https://github.com/VRAXION/VRAXION/releases
+- **GitHub Pages site:** https://vraxion.github.io/VRAXION/
+- **Public wiki home:** https://github.com/VRAXION/VRAXION/wiki
+- **Key in-repo docs:** `README.md`, `BETA.md`, `CHANGELOG.md`, `VALIDATED_FINDINGS.md`, `docs/PUBLIC_BETA_TRAINING.md`, `docs/GROWER_RUN_CONTRACT.md`, `docs/BYTE_OPCODE_V1_CONTRACT.md`
 
 ## Current Frame
 
-- The stable public release is still [`v4.2.0`](https://github.com/VRAXION/VRAXION/releases/tag/v4.2.0); the active architecture line is [INSTNCT Architecture](INSTNCT-Architecture).
+- The stable public release is still `v4.2.0`; the active architecture line is [INSTNCT Architecture](INSTNCT-Architecture). See [Core Surfaces](#core-surfaces) for the release list.
 - The Rust `v5.0.0-beta` lane (`instnct-core`) is substantial enough to deserve rich chronology, but remains a beta implementation surface rather than the shipped default.
 - The biggest unresolved pressure is no longer basic trainability. It is whether language evaluation, seed variance, and context-dependent task learning survive repeated adversarial reruns, and whether the C19 + float-gradient + fraction-quantization pipeline generalizes beyond the current task suite.
 - The current frontier recipe: **C19 activation (learnable rho + C per neuron) + float gradient training + fraction extraction to 4-6 bit integer weights + C19 baked as LUT** — trained in float, deployed as pure integer inference.
@@ -239,11 +250,7 @@ The timeline is ordered latest-first. Each day is a self-contained H3 section wi
 
 **[Float gradient solve rates — 2026-04-10]**
 
-| Task | Workers | Solve rate |
-|---|---|---|
-| ADD | 3 | 200/200 |
-| \|a-b\| | 6 | 199/200 |
-| MUL | 6 | 158/200 |
+<img src="assets/tla_float_gradient_solve_rates.svg" alt="Float gradient solve rates across ADD 200/200 (3 workers), |a-b| 199/200 (6 workers), MUL 158/200 (6 workers) — vertical bar chart" width="720">
 
 *Init scale=0.5 best. Loss landscape smooth — one valley, no local minima. Gradient converges in 50-100 steps.*
 
@@ -259,31 +266,13 @@ The timeline is ordered latest-first. Each day is a self-contained H3 section wi
 
 **[Circuit reuse speedups — frozen ADD as pre-trained substrate — 2026-04-10]**
 
-| Compound task | Speedup | Pre-trained steps | Fresh steps |
-|---|---|---|---|
-| max(a+b,c) | 3.8x | 50 | 190 |
-| a+b+c | 2.1x | — | — |
-| 2a+b | 1.5x | — | — |
-| (a+b)>3 (binary output) | **slower** | — | — |
+<img src="assets/tla_circuit_reuse_speedups.svg" alt="Circuit reuse speedups with frozen ADD substrate: max(a+b,c) 3.8x, a+b+c 2.1x, 2a+b 1.5x, (a+b)>3 binary output slower — horizontal bar chart" width="720">
 
 *Circuit reuse helps only when output format is compatible. Binary-output tasks converge slower with a frozen float ADD substrate.*
 
 **[Overnight scaling sweep — 2026-04-10]**
 
-| Experiment | Depth | Workers | Result | Notes |
-|---|---|---|---|---|
-| EXP 1 (scaling) | 5d | — | 20/20 | full solve |
-| EXP 1 (scaling) | 10d | — | 15-20/20 | — |
-| EXP 1 (scaling) | 15d | 10w | 15/20 | overparam HURTS |
-| EXP 1 (scaling) | 15d | 20w | 7/20 | 20w worse than 10w |
-| EXP 1 (scaling) | 20d | — | partial | — |
-| EXP 2 (generalization) | 5d | — | 76% test | gap 24pp |
-| EXP 2 (generalization) | 20d | — | 96% test | gap 3pp |
-| EXP 3 (multi-task ADD+MAX) | — | 8w | 95% combined | — |
-| EXP 4 (all ops) | 10d | — | ADD/MAX/MIN 100%, \|a-b\| 85% | — |
-| EXP 5 (composition) | 2-input | — | 100% | — |
-| EXP 5 (composition) | 3-input | — | high | — |
-| EXP 5 (composition) | 4-5 input | — | partial | killed ~9.5h |
+<img src="assets/tla_overnight_scaling_depth.svg" alt="Overnight scaling sweep dual panel: EXP 1 depth scaling 5d to 20d showing overparameterization hurts at 15d (10w=15 vs 20w=7), EXP 2 generalization gap shrinks from 24pp at depth 5 to 3pp at depth 20, plus EXP 3/4/5 multi-task/op coverage/composition summary rows" width="900">
 
 *Overparameterization hurts at 15d (10w beats 20w). EXP 2 generalization gap shrinks from 24pp at 5d to 3pp at 20d.*
 
@@ -345,18 +334,7 @@ The timeline is ordered latest-first. Each day is a self-contained H3 section wi
 
 **[Holographic capability map — 2026-04-09]**
 
-| Task | Result |
-|---|---|
-| ADD | 100% solved |
-| MAX | 100% solved |
-| PARITY | 100% solved |
-| \|a-b\| | 100% solved |
-| MUL (area encoding) | 100% solved |
-| a÷b | 100% solved |
-| MUL (thermo) | 81% |
-| a==b | 87% |
-| MIN | 93% |
-| SUB | 75% (unsolved) |
+<img src="assets/tla_holographic_capability_map.svg" alt="Holographic capability map across 10 tasks: ADD, MAX, PARITY, |a-b|, MUL area, a/b all 100%; MIN 93%, a==b 87%, MUL thermo 81%, SUB 75% unsolved — horizontal bar chart" width="760">
 
 *Area encoding proves MUL is an ENCODING problem, not a network problem. Depth is task-specific: helps PARITY, hurts SUB. Width/weight scaling do not help.*
 
@@ -417,11 +395,7 @@ The timeline is ordered latest-first. Each day is a self-contained H3 section wi
 
 **[Edge cap sweep — H=1024 — 2026-04-08]**
 
-| Edge cap | Mean accuracy |
-|---|---|
-| 100 | 20.7% |
-| 300 | 20.6% |
-| 1000 | 19.8% |
+<img src="assets/tla_edge_cap_sweep.svg" alt="Edge cap sweep at H=1024 bigram task: cap=100 20.7% (sparse winner), cap=300 20.6% (within noise), cap=1000 19.8% (interference) — vertical bar chart on narrow 18-22% axis" width="720">
 
 **[H=512 long stability run — 5 seeds × 300s — 2026-04-08]**
 
@@ -440,12 +414,7 @@ The timeline is ordered latest-first. Each day is a self-contained H3 section wi
 
 **[Four alternative topology representations — H=256 — 2026-04-08]**
 
-| Topology | Step/s | Notes |
-|---|---|---|
-| ListNet (sorted Vec<Vec<u16>>) | 3917 | winner |
-| VarNet (fixed fan-in=3) | 3721 | degrades at H>1024 |
-| FireNet (fan-in gather, no scatter) | 3276 | activation clone overhead |
-| FlatNet (fixed [u16; 16] array) | 3740 | wastes memory |
+<img src="assets/tla_four_topology_reps.svg" alt="Four alternative topology representations at H=256 Steam Deck: ListNet 3917 step/s winner, FlatNet 3740 wastes memory, VarNet 3721 degrades at H>1024, FireNet 3276 activation clone overhead — horizontal bar chart" width="760">
 
 **[Edges matter for addition — INSTNCT vs ListNet — 2026-04-08]**
 
@@ -492,13 +461,7 @@ The timeline is ordered latest-first. Each day is a self-contained H3 section wi
 
 **[Smoke-port branch — optimization performance deltas — 2026-04-07]**
 
-| Optimization | Delta | Context |
-|---|---|---|
-| Compact neuron types (i8/u8) | -30% | at H=4096 |
-| Skip-inactive spike | -49% | spike loop |
-| Fully sparse tick | O(active) | replaces O(H) |
-| Sparse input API | -62% to -72% | O(k), at H=4K-100K |
-| Copy-on-write evolution snapshots | — | new |
+<img src="assets/tla_smoke_port_deltas.svg" alt="Smoke-port branch optimization deltas: compact neuron types (i8/u8) -30% at H=4096, skip-inactive spike -49%, fully sparse tick O(active) new capability, sparse input API -62% to -72% at H=4K-100K, CoW evolution snapshots new capability — horizontal bar chart" width="760">
 
 *Prefetch, nibble packing, and bitset dirty_member correctly rejected with benchmarked evidence.*
 
@@ -733,20 +696,14 @@ The timeline is ordered latest-first. Each day is a self-contained H3 section wi
 
 **[Input width sweep — D=256, GPU, echo task — 2026-02-26]**
 
-| B | D/B ratio | Best loss | Converged |
-|---|---|---|---|
-| 8 | 32x | 0.924 | yes |
-| 16 | 16x | 1.159 | no |
-| 32 | 8x | 1.298 | no |
-| 64 | 4x | 1.755 | no |
-| 128 | 2x | ~2.1 | no |
+<img src="assets/tla_input_width_sweep.svg" alt="Input width sweep at D=256 GPU echo task: B=8 best_loss 0.924 converged, B=16 1.159 not converged, B=32 1.298, B=64 1.755, B=128 ~2.1, byte-granular B=8 was the only size to converge — vertical bar chart" width="720">
 
 | Seq | Finding | Status | Source |
 |---|---|---|---|
 | 1 | Training-run analysis turned up major GPU bottlenecks in the v4 line. On 2026-02-24, parameter sweeps locked the byte-granular baseline around B=8, D=256, M=256-class ring sizing. Throughput was constrained by sequential T × N loop rather than raw VRAM. | Archived | [Timeline Archive](Timeline-Archive) |
 | 2 | Two optimizations landed: precomputed attention weights and hidden_dim / slot_dim split. Split dramatically reduced ring-clone VRAM pressure and reset next training configuration around a more explicit capacity model, separating expert-brain width from ring-memory width. | Archived | [Timeline Archive](Timeline-Archive) |
 | 3 | First clean bridge from sweep-heavy parameter tuning into explicit capacity budgeting in the v4 line — raw GPU systems work started feeding cleaner architecture budgeting instead of ad hoc scaling. Clarified that several apparent "scaling" questions were throughput and memory-layout questions, not evidence for widening the whole system. | Archived | [Timeline Archive](Timeline-Archive) |
-| 4 | Locked v4 baseline — Input width B=8 (byte-granular); Legacy width D=256 (sweep winner before hidden/slot split); Ring size M=256 for seq_len ≤ 128; Expert count N=6 sweep winner (later reduced to 2 after split for ~3x speed at <2% loss cost); hidden_dim=4096; slot_dim=32; R=2, S=0.05, Je=0.9, Jw=0.1. Tickets [#106](https://github.com/VRAXION/VRAXION/issues/106), [#107](https://github.com/VRAXION/VRAXION/issues/107), [#108](https://github.com/VRAXION/VRAXION/issues/108). Precomputed attention weights: ~40% speedup with bit-identical outputs. | Archived | [Timeline Archive](Timeline-Archive) |
+| 4 | Locked v4 baseline — Input width B=8 (byte-granular); Legacy width D=256 (sweep winner before hidden/slot split); Ring size M=256 for seq_len ≤ 128; Expert count N=6 sweep winner (later reduced to 2 after split for ~3x speed at <2% loss cost); hidden_dim=4096; slot_dim=32; R=2, S=0.05, Je=0.9, Jw=0.1. Tickets #106, #107, #108 (main repo issue tracker — see [Core Surfaces](#core-surfaces)). Precomputed attention weights: ~40% speedup with bit-identical outputs. | Archived | [Timeline Archive](Timeline-Archive) |
 | 5 | Input width sweep at D=256 (GPU, echo task): B=8 (D/B 32x) best_loss 0.924 converged; B=16 (16x) 1.159 no; B=32 (8x) 1.298 no; B=64 (4x) 1.755 no; B=128 (2x) ~2.1 no. | Archived | [Timeline Archive](Timeline-Archive) |
 | 6 | Slot-width sweep: D=256 was best loss point (0.304). D>256 still fit in VRAM but degraded under available step budget; memory was not the binding constraint. | Archived | [Timeline Archive](Timeline-Archive) |
 | 7 | Expert-count sweep: N=6 best_loss 0.2656 (best quality); N=2 0.2708 (close, ~3x faster). | Archived | [Timeline Archive](Timeline-Archive) |

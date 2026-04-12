@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 440" width="760" height="440">
+  <style>
+    text { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif; }
+    .title { font-size: 17px; font-weight: 600; fill: #c9d1d9; }
+    .subtitle { font-size: 12px; fill: #8b949e; }
+    .axis { font-size: 12px; fill: #8b949e; }
+    .label { font-size: 13px; font-weight: 600; fill: #c9d1d9; }
+    .value { font-size: 12px; font-weight: 700; fill: #c9d1d9; }
+    .winner { fill: #39d353; }
+    .ok { fill: #58a6ff; }
+    .weak { fill: #d29922; }
+    .fail { fill: #ff7b72; }
+    .gridline { stroke: #30363d; stroke-width: 1; }
+    .note { font-size: 11px; fill: #8b949e; }
+  </style>
+
+  <!-- Title -->
+  <text x="380" y="26" class="title" text-anchor="middle">Four alternative topology representations — H=256</text>
+  <text x="380" y="46" class="subtitle" text-anchor="middle">Steam Deck 2026-04-08 — step/s throughput (higher = better)</text>
+
+  <!-- Chart area: x 260-700, y 80-310 -->
+  <!-- Y axis labels for bar identities -->
+  <!-- Bar span: 4000 max -> 440 px -->
+
+  <line x1="260" y1="80" x2="260" y2="330" class="gridline"/>
+  <line x1="370" y1="80" x2="370" y2="330" class="gridline"/>
+  <line x1="480" y1="80" x2="480" y2="330" class="gridline"/>
+  <line x1="590" y1="80" x2="590" y2="330" class="gridline"/>
+  <line x1="700" y1="80" x2="700" y2="330" class="gridline"/>
+  <text x="260" y="72" class="axis" text-anchor="middle">0</text>
+  <text x="370" y="72" class="axis" text-anchor="middle">1000</text>
+  <text x="480" y="72" class="axis" text-anchor="middle">2000</text>
+  <text x="590" y="72" class="axis" text-anchor="middle">3000</text>
+  <text x="700" y="72" class="axis" text-anchor="middle">4000</text>
+  <text x="480" y="354" class="axis" text-anchor="middle">step / s</text>
+
+  <!-- 4 rows. Row height 55. Bar height 30. Start y=95 -->
+  <!-- Scale: 1 step/s = 440/4000 = 0.11 px -->
+
+  <!-- Row 1: ListNet (sorted Vec<Vec<u16>>) = 3917 -> 430.87 -->
+  <text x="250" y="112" class="label" text-anchor="end">ListNet</text>
+  <text x="250" y="126" class="note" text-anchor="end">sorted Vec&lt;Vec&lt;u16&gt;&gt;</text>
+  <rect x="260" y="100" width="430.87" height="30" class="winner"/>
+  <text x="700" y="120" class="value" text-anchor="end">3917 — winner</text>
+
+  <!-- Row 2: FlatNet [u16; 16] = 3740 -> 411.4 -->
+  <text x="250" y="167" class="label" text-anchor="end">FlatNet</text>
+  <text x="250" y="181" class="note" text-anchor="end">fixed [u16; 16] array</text>
+  <rect x="260" y="155" width="411.4" height="30" class="ok"/>
+  <text x="700" y="175" class="value" text-anchor="end">3740 — wastes memory</text>
+
+  <!-- Row 3: VarNet (fixed fan-in=3) = 3721 -> 409.31 -->
+  <text x="250" y="222" class="label" text-anchor="end">VarNet</text>
+  <text x="250" y="236" class="note" text-anchor="end">fixed fan-in = 3</text>
+  <rect x="260" y="210" width="409.31" height="30" class="ok"/>
+  <text x="700" y="230" class="value" text-anchor="end">3721 — degrades at H &gt; 1024</text>
+
+  <!-- Row 4: FireNet fan-in gather = 3276 -> 360.36 -->
+  <text x="250" y="277" class="label" text-anchor="end">FireNet</text>
+  <text x="250" y="291" class="note" text-anchor="end">fan-in gather, no scatter</text>
+  <rect x="260" y="265" width="360.36" height="30" class="weak"/>
+  <text x="700" y="285" class="value" text-anchor="end">3276 — activation clone overhead</text>
+
+  <!-- Accuracy note block -->
+  <rect x="60" y="370" width="640" height="54" fill="#0b1118" stroke="#30363d" stroke-width="1" rx="4"/>
+  <text x="380" y="392" class="subtitle" text-anchor="middle">ListNet wins on raw step/s but all four tie on 60s best-seed accuracy (~20.3% on bigram — edges do not matter there).</text>
+  <text x="380" y="412" class="note" text-anchor="middle">Simple sorted Vec&lt;Vec&lt;u16&gt;&gt; is cache-friendly enough that O(1) HashSet lookup is unnecessary at E &#8804; 300.</text>
+</svg>
