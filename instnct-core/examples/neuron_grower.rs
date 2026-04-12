@@ -89,19 +89,56 @@ const FONT: [[u8; 9]; 10] = [
     [1,1,1, 1,1,1, 1,1,1], [1,1,1, 1,1,1, 0,1,1],
 ];
 
+const BITS4: [[u8; 4]; 16] = [
+    [0,0,0,0],[0,0,0,1],[0,0,1,0],[0,0,1,1],
+    [0,1,0,0],[0,1,0,1],[0,1,1,0],[0,1,1,1],
+    [1,0,0,0],[1,0,0,1],[1,0,1,0],[1,0,1,1],
+    [1,1,0,0],[1,1,0,1],[1,1,1,0],[1,1,1,1],
+];
+
+#[derive(Clone, Copy, PartialEq)]
+enum DataDomain { Font9, Bits4 }
+
+fn task_n_in(task: &str) -> usize {
+    if task.starts_with("four_") { 4 } else { 9 }
+}
+
+fn task_domain(task: &str) -> DataDomain {
+    if task.starts_with("four_") { DataDomain::Bits4 } else { DataDomain::Font9 }
+}
+
 struct Data { train: Vec<(Vec<u8>, u8)>, val: Vec<(Vec<u8>, u8)>, test: Vec<(Vec<u8>, u8)> }
 
-fn gen_data(label_fn: &dyn Fn(usize, &[u8]) -> Option<u8>, noise: f32, n_per: usize, seed: u64) -> Data {
-    let mut rng = Rng::new(seed);
-    let (mut tr, mut va, mut te) = (Vec::new(), Vec::new(), Vec::new());
-    for d in 0..10 { for i in 0..n_per {
-        let mut px = FONT[d].to_vec();
-        for p in px.iter_mut() { if rng.bool_p(noise) { *p = 1 - *p; } }
-        if let Some(label) = label_fn(d, &px) {
-            match i % 5 { 0 => va.push((px, label)), 1 => te.push((px, label)), _ => tr.push((px, label)) }
+fn gen_data(
+    label_fn: &dyn Fn(usize, &[u8]) -> Option<u8>,
+    domain: DataDomain,
+    noise: f32,
+    n_per: usize,
+    seed: u64,
+) -> Data {
+    match domain {
+        DataDomain::Font9 => {
+            let mut rng = Rng::new(seed);
+            let (mut tr, mut va, mut te) = (Vec::new(), Vec::new(), Vec::new());
+            for d in 0..10 { for i in 0..n_per {
+                let mut px = FONT[d].to_vec();
+                for p in px.iter_mut() { if rng.bool_p(noise) { *p = 1 - *p; } }
+                if let Some(label) = label_fn(d, &px) {
+                    match i % 5 { 0 => va.push((px, label)), 1 => te.push((px, label)), _ => tr.push((px, label)) }
+                }
+            }}
+            Data { train: tr, val: va, test: te }
         }
-    }}
-    Data { train: tr, val: va, test: te }
+        DataDomain::Bits4 => {
+            let _ = (noise, n_per, seed); // ignored — exhaustive deterministic domain
+            let mut all = Vec::with_capacity(16);
+            for d in 0..16 {
+                let px = BITS4[d].to_vec();
+                if let Some(label) = label_fn(d, &px) { all.push((px, label)); }
+            }
+            Data { train: all.clone(), val: all.clone(), test: all }
+        }
+    }
 }
 
 // ══════════════════════════════════════════════════════
@@ -322,7 +359,9 @@ fn build_candidate_sets(
     }
 
     let mut rng = Rng::new(step as u64 * 6361 + n_sig as u64 * 17 + 99);
+    let mut stuck = 0;
     while sets.len() < cfg.n_proposals && !pool.is_empty() {
+        let before = sets.len();
         let target = 2 + rng.pick(max_fan - 1);
         let mut cand = Vec::new();
         for _ in 0..pool.len() * 3 {
@@ -331,9 +370,12 @@ fn build_candidate_sets(
             if !cand.contains(&p) { cand.push(p); }
         }
         push_candidate(&mut sets, &mut seen, cand);
+        if sets.len() == before { stuck += 1; if stuck > 32 { break; } } else { stuck = 0; }
     }
 
+    let mut stuck = 0;
     while sets.len() < cfg.n_proposals && n_sig >= 2 {
+        let before = sets.len();
         let target = 2 + rng.pick(max_fan - 1);
         let mut cand = Vec::new();
         for _ in 0..n_sig * 3 {
@@ -342,6 +384,7 @@ fn build_candidate_sets(
             if !cand.contains(&p) { cand.push(p); }
         }
         push_candidate(&mut sets, &mut seen, cand);
+        if sets.len() == before { stuck += 1; if stuck > 32 { break; } } else { stuck = 0; }
     }
     sets
 }
@@ -497,6 +540,9 @@ fn main() {
     let cfg = parse_args();
     let t0 = Instant::now();
 
+    let n_in = task_n_in(&cfg.task);
+    let domain = task_domain(&cfg.task);
+
     let label_fn: Box<dyn Fn(usize, &[u8]) -> Option<u8>> = match cfg.task.as_str() {
         "digit_parity" => Box::new(|_, px| { let p: usize = px.iter().map(|&v| v as usize).sum(); Some((p % 2) as u8) }),
         "is_symmetric" => Box::new(|_, px| { let s = px[0]==px[2] && px[3]==px[5] && px[6]==px[8]; Some(if s {1} else {0}) }),
@@ -512,7 +558,18 @@ fn main() {
         "has_center" => Box::new(|_, px| Some(px[4])),
         "digit_is_prime" => Box::new(|d, _| Some(if d == 2 || d == 3 || d == 5 || d == 7 { 1 } else { 0 })),
         "center_plus_corners" => Box::new(|_, px| Some(if (px[0]+px[2]+px[4]+px[6]+px[8]) as usize >= 3 { 1 } else { 0 })),
-        _ => Box::new(|_, px| { let p: usize = px.iter().map(|&v| v as usize).sum(); Some((p % 2) as u8) }),
+        // ─── 4-bit micro-patterns ───────────────────────────────────
+        // Bit indexing: px[0]=leftmost (bit3), px[3]=rightmost (bit0)
+        "four_edges_exact"     => Box::new(|_, px| Some(if px == [1u8,0,0,1].as_slice() { 1 } else { 0 })),
+        "four_middle_exact"    => Box::new(|_, px| Some(if px == [0u8,1,1,0].as_slice() { 1 } else { 0 })),
+        "four_alt_0101_exact"  => Box::new(|_, px| Some(if px == [0u8,1,0,1].as_slice() { 1 } else { 0 })),
+        "four_alt_1010_exact"  => Box::new(|_, px| Some(if px == [1u8,0,1,0].as_slice() { 1 } else { 0 })),
+        "four_edges_family"    => Box::new(|_, px| Some(if px[0]==1 && px[3]==1 { 1 } else { 0 })),
+        "four_middle_family"   => Box::new(|_, px| Some(if px[1]==1 && px[2]==1 { 1 } else { 0 })),
+        "four_shift_13_family" => Box::new(|_, px| Some(if px[1]==1 && px[3]==1 { 1 } else { 0 })),
+        "four_popcount_2"      => Box::new(|_, px| Some(if px.iter().map(|&v| v as usize).sum::<usize>() == 2 { 1 } else { 0 })),
+        "four_parity"          => Box::new(|_, px| Some(((px[0]^px[1]^px[2]^px[3]) & 1) as u8)),
+        other => panic!("unknown task: {}", other),
     };
 
     // Resolve data params from CLI, then potentially override from loaded state
@@ -534,6 +591,10 @@ fn main() {
                 eprintln!("ERROR: state task={} != cli task={}", head.task, cfg.task);
                 std::process::exit(2);
             }
+            if head.n_in != n_in {
+                eprintln!("ERROR: state n_in={} != task {} expected n_in={}", head.n_in, cfg.task, n_in);
+                std::process::exit(2);
+            }
             // State wins over CLI — AdaBoost sw is only valid on the data it was built on
             if data_seed != head.data_seed || (noise - head.noise).abs() > 1e-6 || n_per != head.n_per {
                 println!("  [load] state data params override CLI: seed {}→{} noise {}→{} n_per {}→{}",
@@ -547,7 +608,7 @@ fn main() {
         }
         Ok(None) => {
             println!("  [load] no prior state at {} — starting fresh", state_path);
-            (Net::new(9), false)
+            (Net::new(n_in), false)
         }
         Err(e) => {
             eprintln!("ERROR: {}", e);
@@ -555,7 +616,7 @@ fn main() {
         }
     };
 
-    let data = gen_data(label_fn.as_ref(), noise, n_per, data_seed);
+    let data = gen_data(label_fn.as_ref(), domain, noise, n_per, data_seed);
 
     // Replay AdaBoost to reconstruct sample weights consistent with the loaded network
     let mut sw = if loaded { replay_sw(&net, &data) }
@@ -761,7 +822,7 @@ fn main() {
             net.add(neuron);
             let new_val = net.accuracy(&data.val);
 
-            if new_val <= ens_val {
+            if new_val < ens_val {
                 net.sig_ticks.pop();
                 net.neurons.pop();
                 continue;
@@ -770,7 +831,7 @@ fn main() {
             // ACCEPTED
             let has_hidden = tp.parents.iter().any(|&p| p >= net.n_in);
             let pnames: Vec<String> = tp.parents.iter().map(|&p| {
-                if p < 9 { format!("x{}", p) } else { format!("N{}", p - 9) }
+                sig_name(p, net.n_in)
             }).collect();
             let wstr: String = bw.iter().map(|&v| match v { 1=>"+", -1=>"-", _=>"0" }).collect::<Vec<_>>().join("");
 
