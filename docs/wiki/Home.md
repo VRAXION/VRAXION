@@ -23,10 +23,10 @@ This page is the mission-first technical front door. Use [Pages](https://vraxion
 ## At a Glance
 
 - **Architecture line:** `INSTNCT`
-- **Stable public release:** [`v5.0.0-beta.1`](https://github.com/VRAXION/VRAXION/releases/tag/v5.0.0-beta.1) is the current Rust beta release; [`v4.2.0`](https://github.com/VRAXION/VRAXION/releases/tag/v4.2.0) remains the Python release baseline.
+- **Stable public release:** [`v5.0.0-beta.2`](https://github.com/VRAXION/VRAXION/releases/tag/v5.0.0-beta.2) is the current Rust public beta tag (grower-based, with the `neuron_infer` standalone CLI and the public beta training runbook); [`v5.0.0-beta.1`](https://github.com/VRAXION/VRAXION/releases/tag/v5.0.0-beta.1) remains the prior Rust language-evolution beta as a historical reference, and the legacy `v4.x` Python lane is preserved for context only.
 - **Public research lane:** English remains the first-class public lane; task-memory and GPU stay secondary validation surfaces.
-- **Implementation momentum:** Rust is now the primary implementation surface. Smooth cosine-bigram fitness + 1+9 jackpot reached **24.6% peak** (Python parity). Performance deep dive landed compact types, sparse tick, and CoW snapshots.
-- **Current frontier:** Recurrent ReLU chip = universal accumulator. 1 neuron, 5 binary weights, 0 bias = 5 bits total solves ADD at 100% with native output (charge=sum, no readout needed). ReLU is the ONLY activation that generalizes across tick depth (100% from 2→10+ inputs). Connection Point architecture validated: shared bulletin boards + local connections + incremental freeze = constant search space (3^12 exhaustive) at any network size. Next: bigram language task with CP architecture.
+- **Implementation momentum:** Rust is the primary implementation surface, and the current mainline path on `main` is the bias-free threshold grower (`instnct-core/examples/neuron_grower.rs`). The released language-evolution beta still records its **24.6% peak** smooth-fitness + 1+9 jackpot result as the historical Rust language line, but the active grower lane has moved past it: see [`docs/PUBLIC_BETA_TRAINING.md`](https://github.com/VRAXION/VRAXION/blob/main/docs/PUBLIC_BETA_TRAINING.md) for the canonical training runbook and [`docs/GROWER_RUN_CONTRACT.md`](https://github.com/VRAXION/VRAXION/blob/main/docs/GROWER_RUN_CONTRACT.md) for the frozen B0 engine contract.
+- **Current frontier:** the bias-free grower has frozen the B0 engine on a six-task regression matrix (mean val `88.417`, max test `100.0`, mean neurons `5.667`, max depth `6` per the golden fixture in `instnct-core/tests/fixtures/grower_regression_golden.json`), and the active promotion gate is **byte/opcode v1**: `1 byte data + 4 opcode -> 1 byte` over a frozen 8-bit-head latent + exact LUT translator. The B1 golden fixture records the direct bitbank negative control at `75.0%` and the exact translator at `100.0%` over the full `1024`-sample domain (`distinct_keys=1024`, `conflicting_keys=0`, `key_bits=61`, `total_neurons=61`). Earlier spiking-network and Connection Point lines are preserved as research history, not current mainline.
 
 ## What Vraxion Is
 
@@ -51,7 +51,7 @@ In practice, that means the project is run across four distinct surfaces:
 - theory is stated explicitly, not implied
 - implementation is described separately from the theory
 - chronology and protocol live on a dedicated research surface
-- the Rust implementation lane is allowed to mature in public without being confused for the canonical Python mainline
+- the Rust grower lane is the canonical public implementation surface, and the Python `graph.py` lane is preserved as a historical reference rather than the active default
 
 ## Read the Project
 

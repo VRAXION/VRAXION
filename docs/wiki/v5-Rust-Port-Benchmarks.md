@@ -4,11 +4,13 @@ This page is the public Rust-facing surface for the `instnct-core` lane: current
 
 ## Current Rust Frame
 
-- Rust is now a serious parallel implementation lane for **INSTNCT**, not just a forward-pass port.
+- Rust is the canonical public implementation surface for **INSTNCT**, not a parallel port. The current mainline path on `main` is the bias-free threshold grower in [`instnct-core/examples/neuron_grower.rs`](https://github.com/VRAXION/VRAXION/blob/main/instnct-core/examples/neuron_grower.rs).
 - The core systems substrate is in place: owned `Network`, rollback snapshots, mutation API, CSR acceleration, learnable int8 readout, SDR table, and checkpoint persistence.
-- **Smooth cosine-bigram fitness + 1+9 jackpot** reached **24.6% peak** — full Python parity (A/B tests 2026-04-06, 6 seeds each).
-- Root cause analysis (Python vs Rust deep dive, 2026-04-06) identified three key differences: (1) fitness function shape → +2.6pp, (2) multi-worker jackpot → +3.4pp, (3) fixed vs co-evolving W → mixed. Both winning factors are now the default in `evolve_language.rs`.
+- The current public release is [`v5.0.0-beta.2`](https://github.com/VRAXION/VRAXION/releases/tag/v5.0.0-beta.2) (grower-based, with the standalone [`neuron_infer`](https://github.com/VRAXION/VRAXION/blob/main/instnct-core/examples/neuron_infer.rs) inference CLI and the public beta training runbook at [`docs/PUBLIC_BETA_TRAINING.md`](https://github.com/VRAXION/VRAXION/blob/main/docs/PUBLIC_BETA_TRAINING.md)). The prior released tag [`v5.0.0-beta.1`](https://github.com/VRAXION/VRAXION/releases/tag/v5.0.0-beta.1) remains the historical Rust language-evolution beta — the **24.6% peak** smooth-fitness + 1+9 jackpot result still belongs to that line, but it is no longer the active mainline path on `main`.
+- The B0 engine-freeze contract lives in [`docs/GROWER_RUN_CONTRACT.md`](https://github.com/VRAXION/VRAXION/blob/main/docs/GROWER_RUN_CONTRACT.md), with the frozen golden snapshot at [`instnct-core/tests/fixtures/grower_regression_golden.json`](https://github.com/VRAXION/VRAXION/blob/main/instnct-core/tests/fixtures/grower_regression_golden.json) (six tasks, mean val `88.417`, max test `100.0`, mean neurons `5.667`, max depth `6`).
+- The B1 promotion gate is **byte/opcode v1**: `1 byte data + 4 opcode -> 1 byte` over a frozen 8-bit-head latent + exact LUT translator. The contract is [`docs/BYTE_OPCODE_V1_CONTRACT.md`](https://github.com/VRAXION/VRAXION/blob/main/docs/BYTE_OPCODE_V1_CONTRACT.md), the canonical builder is [`instnct-core/examples/byte_opcode_grower.rs`](https://github.com/VRAXION/VRAXION/blob/main/instnct-core/examples/byte_opcode_grower.rs), and the golden fixture at [`instnct-core/tests/fixtures/byte_opcode_golden.json`](https://github.com/VRAXION/VRAXION/blob/main/instnct-core/tests/fixtures/byte_opcode_golden.json) records the direct bitbank negative control at `75.0%` and the exact translator at `100.0%` over the full `1024`-sample domain (`distinct_keys=1024`, `conflicting_keys=0`, `key_bits=61`, `total_neurons=61`).
 - Detailed chronology, reversals, and cross-surface context live on [Research Process & Archive](Timeline-Archive). For the public website snapshot of this lane, see [Website: Rust](https://vraxion.github.io/VRAXION/rust/).
+- The benchmark tables and language-evolution data below are **historical evidence from the released `v5.0.0-beta.1` Rust language line** — they are preserved unchanged for chronology and proof-trail purposes, and they are not promises about the current grower mainline.
 
 ## Public Rust Validation Checkpoints
 
@@ -69,7 +71,7 @@ This page is the public Rust-facing surface for the `instnct-core` lane: current
 | **Connection Point architecture** | **BREAKTHROUGH** | Shared bulletin boards between neurons. Constant search space (3^12 = 531K) from neuron 4+, regardless of network size. CP validated: info flows, freeze works, ADD 100% through CP. 1-tick delayed shared register for inter-cluster communication. |
 | Hardware benchmarks | **Validated finding** | Ryzen 9 class: 36M ticks/sec (3n chip), 100K neurons = 0.1ms/tick on 12 cores. Training 33K chips: ~4h parallel. |
 
-The scaling path is now clear: recurrent ReLU chips with Connection Point architecture provide constant-cost incremental building at any network size. The next validation target is the bigram language task (currently 24.6% with spiking network).
+The rows above are preserved historical validation checkpoints from the released `v5.0.0-beta.1` Rust language-evolution line and the earlier spiking-network research. They are not the current grower mainline; for the active path on `main`, treat the bias-free grower contract in [`docs/GROWER_RUN_CONTRACT.md`](https://github.com/VRAXION/VRAXION/blob/main/docs/GROWER_RUN_CONTRACT.md) and the byte/opcode v1 contract in [`docs/BYTE_OPCODE_V1_CONTRACT.md`](https://github.com/VRAXION/VRAXION/blob/main/docs/BYTE_OPCODE_V1_CONTRACT.md) as the canonical surfaces, and use the golden fixtures (`grower_regression_golden.json`, `byte_opcode_golden.json`) as the only authoritative numbers.
 
 ## Implementation Status
 
@@ -86,7 +88,7 @@ The scaling path is now clear: recurrent ReLU chips with Connection Point archit
 | Pocket chains / depth lines | Active experimental branch | Pocket pair (2×H=256 via charge transfer) reached 19.6% peak at parity, but shared-interface tests did not produce a mergeable breakout path |
 | Full English recipe parity | Planned | Port the strongest Python English recipe into the Rust library lane |
 
-The remaining work for full English parity is not basic plumbing. It is recipe-level convergence: better exploration, stronger evaluation discipline, and only then deeper lines that earn another pass against the current Python English lane.
+The "Implementation Status" rows above are preserved from the released `v5.0.0-beta.1` Rust language-evolution lane. They are not the active grower mainline. The current canonical grower path on `main` is the bias-free threshold builder in [`instnct-core/examples/neuron_grower.rs`](https://github.com/VRAXION/VRAXION/blob/main/instnct-core/examples/neuron_grower.rs); the live B0 freeze is the grower regression bundle and its golden snapshot, and the active promotion gate is byte/opcode v1. The Python `graph.py` lane remains in-repo as a historical reference/support surface, not the canonical English lane.
 
 <details>
 <summary>Crate structure</summary>
@@ -187,6 +189,8 @@ Lint policy remains `#![forbid(unsafe_code)]` plus `#![deny(missing_docs, unreac
 The important systems result is no longer "Rust can be made fast in theory." It is that the Rust lane now has a deterministic benchmark policy, a real sparse-runtime advantage through CSR skip-inactive, and a stable set of accepted hot-path decisions.
 
 ## Language Evolution Frontier
+
+> **Historical framing.** The "Language Evolution Frontier" section below is preserved as the proof trail for the released `v5.0.0-beta.1` Rust language-evolution lane (smooth cosine-bigram fitness + 1+9 jackpot, **24.6% peak**). It is not the current mainline path on `main`. The current mainline is the bias-free threshold grower in [`instnct-core/examples/neuron_grower.rs`](https://github.com/VRAXION/VRAXION/blob/main/instnct-core/examples/neuron_grower.rs); the public release tag is [`v5.0.0-beta.2`](https://github.com/VRAXION/VRAXION/releases/tag/v5.0.0-beta.2). The grower lane does not run `evolve_language.rs`; treat all "now default in `evolve_language.rs`" claims below as defaults of the prior released beta line, not promises about the active grower path.
 
 ### Smooth fitness breakthrough (2026-04-06)
 
