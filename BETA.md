@@ -1,71 +1,65 @@
 # `v5.0.0 Public Beta` Contract
 
-This document defines the current Rust-first public beta surface for Vraxion.
+This document defines the current public-beta freeze target on `main`.
 
-## Canonical runner
+The key transition is simple:
 
-The only canonical public beta run path in this tranche is:
+- **released tag**: `v5.0.0-beta.1` remains the shipped language-evolution beta
+- **current mainline on `main`**: the bias-free Rust grower
+- **next public milestone**: grower-based `v5.0.0 Public Beta`
+
+## Current canonical path
+
+- Builder: [`instnct-core/examples/neuron_grower.rs`](instnct-core/examples/neuron_grower.rs)
+- Run contract: [`docs/GROWER_RUN_CONTRACT.md`](docs/GROWER_RUN_CONTRACT.md)
+- Canonical regression harness: [`tools/run_grower_regression.py`](tools/run_grower_regression.py)
+
+The grower is the only public mainline path on `main`. Python remains a support/reference lane.
+
+## B0 engine-freeze contract
+
+The current hard gate is the grower regression bundle:
 
 ```powershell
-cargo run --release --example evolve_language -- <corpus-path> `
-  --steps 30000 `
-  --seed-count 6 `
-  --seed-base 42 `
-  --full-len 2000 `
-  --report-dir target/beta-report
+python tools/run_grower_regression.py
 ```
 
-Arguments:
+This command must emit an append-only evidence bundle under `target/grower-regression/<timestamp>/`.
 
-- `<corpus-path>`: positional corpus path; if omitted, falls back to `instnct-core/tests/fixtures/beta_smoke_corpus.txt`
-- `--steps`: evolution steps per seed
-- `--seed-count`: number of parallel seeds
-- `--seed-base`: base seed; later seeds use a fixed stride
-- `--full-len`: evaluation length for public summaries
-- `--report-dir`: directory for the evidence bundle
-
-## Required artifacts
-
-Each canonical beta run should emit:
+### Required artifacts
 
 - `run_cmd.txt`
 - `env.json`
 - `metrics.json`
 - `summary.md`
+- `golden_check.json`
 
-These are the minimum public-beta evidence bundle. Extra logs, checkpoints, and plots are useful, but not required.
+### B0 pass conditions
 
-## What counts as a pass
+- the regression matrix completes without panic
+- the evidence bundle is written
+- the results match the golden snapshot
+- rerunning with the same seeds reproduces the same metrics
 
-A canonical beta run counts as passing when:
+## B1 promotion gate
 
-- the runner completes without panic
-- all four evidence files are written
-- `metrics.json` contains per-seed results and aggregate summary
-- the run is reproducible under the same command and corpus
+Public beta is **not** green until the grower also has a locked computation benchmark:
 
-The canonical runner now uses **smooth cosine-bigram fitness** and **1+9 jackpot selection** (9 candidate mutations per step, best wins). Peak accuracy: **24.6%** next-character prediction on English text.
+- `1 byte data + 4 opcode -> 1 byte`
+- ops: `COPY`, `NOT`, `INC`, `DEC`
+- structured output contract:
+  - `2 x nibble latent head`
+  - fixed 16-class prototype decoder
 
-## Mutation schedule
+B1 must also ship:
 
-The default schedule (hardcoded in `evolution_step` / `evolution_step_jackpot`):
+- readout A/B (direct vs prototype vs scalar/bucket baseline)
+- full truth-table + adversarial suite
+- frozen export/reload path for the chosen output stack
 
-| Operator | % | Notes |
-|---|---|---|
-| add_edge | 22% | Topology growth |
-| remove_edge | 13% | Topology pruning |
-| rewire | 9% | Move edge target |
-| reverse | 13% | Flip edge direction |
-| mirror | 6% | Add reverse of existing |
-| enhance | 7% | Connect to high-degree neuron |
-| theta | 5% | Threshold perturbation |
-| channel | 10% | Phase channel perturbation |
-| add_loop(2) | 5% | Bidirectional pair (atomic) |
-| add_loop(3) | 5% | Triangle circuit (atomic) |
-| W projection | 5% | Readout weight perturbation |
+## What does not count as public beta
 
-## Known limitations
-
-- Seed variance remains high: best seed reaches 24.6%, worst may fall below 15%.
-- Addition learning (0-4 + 0-4) reaches 80% from empty start, proving real computation, but does not yet scale to larger digit ranges.
-- Experimental examples remain in-repo for research continuity, but they are not the public beta contract.
+- ad hoc overnight logs without the evidence bundle
+- untracked scratch examples or playground HTML
+- claims based on the released beta.1 language runner alone
+- new benchmark lines without a frozen readout contract

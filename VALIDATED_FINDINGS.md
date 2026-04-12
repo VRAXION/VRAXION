@@ -2,11 +2,25 @@
 
 Canonical evidence summary. Repo-tracked docs are canonical; the GitHub wiki is a mirrored secondary surface.
 
-## Current State (v5.0.0-beta.1)
+## Current State
 
-The primary implementation surface is now **Rust** (`instnct-core`). The Python reference line (`instnct/model/graph.py`) remains in-repo for developers.
+The repo is in a transition state:
 
-### Rust lane: proven results
+- **Released public tag:** `v5.0.0-beta.1` — Rust language-evolution beta
+- **Current mainline on `main`:** Rust grower (`instnct-core/examples/neuron_grower.rs`)
+- **Reference/support lane:** Python `instnct/model/graph.py`
+
+### Grower lane: proven on `main`
+
+| Finding | Result | Status |
+|---|---|---|
+| **Bias-free threshold neuron** | Persistent grower now stores/evaluates neurons directly as `dot >= threshold`; redundant bias removed from search and state. | **Current mainline** |
+| **Scout oracle** | Mainline parent ranking now uses single-signal scores, connect-all probe weights, and pair-lift shortlist before ternary search. | **Current mainline** |
+| **Non-strict accept gate** | Compositional stepping-stones are no longer rejected on equal-val intermediate steps; `four_parity` now reaches 100%. | **Current mainline** |
+| **Persistent grower state** | Authoritative resume file is bias-free `state.tsv` with per-step JSON checkpoints. | **Current mainline** |
+| **4-bit curriculum entry** | Small exhaustive four-bit pattern tasks solve quickly and act as a compositional smoke floor for the grower. | **Validated finding** |
+
+### Released beta.1 Rust lane: historical peak results
 
 | Finding | Result | Status |
 |---|---|---|
@@ -22,7 +36,7 @@ The primary implementation surface is now **Rust** (`instnct-core`). The Python 
 | Theta floor / zero-theta collapse | Zero-theta networks collapse into indistinguishable activation patterns | **Validated finding** |
 | Chain-50 init | Raises worst-seed floor from 6.5% to 16.1% at H=256 | **Current mainline** for H<512 |
 
-### Python lane: historical peak results
+### Python lane: historical reference results
 
 | Finding | Result | Notes |
 |---|---|---|
@@ -43,7 +57,7 @@ The primary implementation surface is now **Rust** (`instnct-core`). The Python 
 
 ## How To Read This Page
 
-- **Current mainline**: shipped in code on `main`, part of `v5.0.0-beta.1`.
+- **Current mainline**: shipped in code on `main` right now.
 - **Validated finding**: experimentally supported, not yet promoted into canonical code path.
 - **Experimental branch**: active target or design direction, not yet validated as default.
 

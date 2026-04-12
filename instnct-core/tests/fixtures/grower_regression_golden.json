@@ -1,0 +1,79 @@
+{
+  "timestamp_utc": "20260412T131312Z",
+  "data_seed": 42,
+  "search_seed": 42,
+  "tasks": {
+    "four_parity": {
+      "neurons": 6,
+      "depth": 6,
+      "hidden": true,
+      "train": 100.0,
+      "val": 100.0,
+      "test": 100.0,
+      "seconds": 0.2,
+      "stalled": false
+    },
+    "four_popcount_2": {
+      "neurons": 7,
+      "depth": 6,
+      "hidden": true,
+      "train": 100.0,
+      "val": 100.0,
+      "test": 100.0,
+      "seconds": 0.2,
+      "stalled": false
+    },
+    "is_digit_gt_4": {
+      "neurons": 7,
+      "depth": 4,
+      "hidden": true,
+      "train": 77.2,
+      "val": 71.5,
+      "test": 76.5,
+      "seconds": 11.4,
+      "stalled": false
+    },
+    "diagonal_xor": {
+      "neurons": 1,
+      "depth": 1,
+      "hidden": false,
+      "train": 86.5,
+      "val": 88.5,
+      "test": 89.5,
+      "seconds": 22.1,
+      "stalled": false
+    },
+    "full_parity_4": {
+      "neurons": 1,
+      "depth": 1,
+      "hidden": false,
+      "train": 79.3,
+      "val": 80.5,
+      "test": 82.0,
+      "seconds": 33.0,
+      "stalled": false
+    },
+    "digit_parity": {
+      "neurons": 12,
+      "depth": 6,
+      "hidden": true,
+      "train": 94.3,
+      "val": 90.0,
+      "test": 89.5,
+      "seconds": 22.4,
+      "stalled": false
+    }
+  },
+  "summary": {
+    "task_count": 6,
+    "mean_val": 88.417,
+    "median_val": 89.25,
+    "max_val": 100.0,
+    "mean_test": 89.583,
+    "median_test": 89.5,
+    "max_test": 100.0,
+    "mean_neurons": 5.667,
+    "max_depth": 6,
+    "stall_count": 0
+  }
+}

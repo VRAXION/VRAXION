@@ -20,6 +20,7 @@ use std::collections::HashSet;
 // ══════════════════════════════════════════════════════
 struct Config {
     data_seed: u64,
+    search_seed: u64,
     task: String,
     max_neurons: usize,
     max_fan: usize,
@@ -31,20 +32,24 @@ struct Config {
     pair_top: usize,
     probe_epochs: usize,
     scout_only: bool,
+    out_dir: Option<String>,
 }
 
 fn parse_args() -> Config {
     let args: Vec<String> = std::env::args().collect();
     let mut cfg = Config {
+        search_seed: 42,
         data_seed: 42, task: "digit_parity".into(),
         max_neurons: 100, max_fan: 10, n_proposals: 20, stall_limit: 30,
         noise: 0.0, n_per: 0,
         scout_top: 12, pair_top: 8, probe_epochs: 400, scout_only: false,
+        out_dir: None,
     };
     let mut i = 1;
     while i < args.len() {
         match args[i].as_str() {
             "--data-seed" => { i += 1; cfg.data_seed = args[i].parse().unwrap_or(42); }
+            "--search-seed" => { i += 1; cfg.search_seed = args[i].parse().unwrap_or(42); }
             "--task" => { i += 1; cfg.task = args[i].clone(); }
             "--max-neurons" => { i += 1; cfg.max_neurons = args[i].parse().unwrap_or(100); }
             "--max-fan" => { i += 1; cfg.max_fan = args[i].parse().unwrap_or(10); }
@@ -55,6 +60,7 @@ fn parse_args() -> Config {
             "--scout-top" => { i += 1; cfg.scout_top = args[i].parse().unwrap_or(12); }
             "--pair-top" => { i += 1; cfg.pair_top = args[i].parse().unwrap_or(8); }
             "--probe-epochs" => { i += 1; cfg.probe_epochs = args[i].parse().unwrap_or(400); }
+            "--out-dir" => { i += 1; cfg.out_dir = Some(args[i].clone()); }
             "--scout-only" => { cfg.scout_only = true; }
             _ => {}
         }
@@ -358,7 +364,7 @@ fn build_candidate_sets(
         push_candidate(&mut sets, &mut seen, seeded);
     }
 
-    let mut rng = Rng::new(step as u64 * 6361 + n_sig as u64 * 17 + 99);
+    let mut rng = Rng::new(cfg.search_seed ^ (step as u64 * 6361 + n_sig as u64 * 17 + 99));
     let mut stuck = 0;
     while sets.len() < cfg.n_proposals && !pool.is_empty() {
         let before = sets.len();
@@ -557,6 +563,7 @@ fn main() {
         "full_parity_4" => Box::new(|_, px| { let s: usize = (0..4).map(|i| px[i] as usize).sum(); Some((s % 2) as u8) }),
         "has_center" => Box::new(|_, px| Some(px[4])),
         "digit_is_prime" => Box::new(|d, _| Some(if d == 2 || d == 3 || d == 5 || d == 7 { 1 } else { 0 })),
+        "is_digit_gt_4" => Box::new(|d, _| Some(if d > 4 { 1 } else { 0 })),
         "center_plus_corners" => Box::new(|_, px| Some(if (px[0]+px[2]+px[4]+px[6]+px[8]) as usize >= 3 { 1 } else { 0 })),
         // ─── 4-bit micro-patterns ───────────────────────────────────
         // Bit indexing: px[0]=leftmost (bit3), px[3]=rightmost (bit0)
@@ -580,7 +587,7 @@ fn main() {
     let mut data_seed = cfg.data_seed;
 
     // Persistent state dir: ONE growing network per task, seed-independent path
-    let out_dir = format!("results/neuron_grower_persistent/{}", cfg.task);
+    let out_dir = cfg.out_dir.clone().unwrap_or_else(|| format!("target/neuron_grower/{}", cfg.task));
     std::fs::create_dir_all(&out_dir).unwrap();
     let state_path = format!("{}/state.tsv", out_dir);
 
@@ -627,7 +634,7 @@ fn main() {
     let mut best_val = if loaded { net.accuracy(&data.val) } else { 50.0f32 };
 
     println!("===========================================================");
-    println!("  Neuron Grower — {} (data_seed={})", cfg.task, cfg.data_seed);
+    println!("  Neuron Grower — {} (data_seed={} search_seed={})", cfg.task, cfg.data_seed, cfg.search_seed);
     println!("  {} proposals/step, max_fan={}, stall={}, max_neurons={}",
         cfg.n_proposals, cfg.max_fan, cfg.stall_limit, cfg.max_neurons);
     println!("  scout_top={} pair_top={} probe_epochs={} scout_only={}",
@@ -666,7 +673,7 @@ fn main() {
         let mut proposals: Vec<(Vec<usize>, Vec<f32>, f32, f32)> = Vec::new();
         for (seed, parents) in proposal_sets.iter().enumerate() {
             let ni = parents.len();
-            let mut rng = Rng::new(seed as u64 * 7919 + 31 + step as u64 * 104729);
+                let mut rng = Rng::new(cfg.search_seed ^ (seed as u64 * 7919 + 31 + step as u64 * 104729));
             let w: Vec<f32> = parents.iter().map(|&p| {
                 let base = probe_w[p];
                 if base.abs() > 0.05 { base + rng.range(-0.15, 0.15) }
@@ -697,7 +704,7 @@ fn main() {
             let mut all_converged: Vec<(Vec<f32>, f32)> = Vec::new();
 
             for restart in 0..5u64 {
-                let mut rng = Rng::new(restart * 1000 + 77);
+                let mut rng = Rng::new(cfg.search_seed ^ (restart * 1000 + 77));
                 let mut w: Vec<f32> = if restart == 0 { init_w.clone() }
                     else { init_w.iter().map(|&v| v + rng.range(-0.5, 0.5)).collect() };
                 let mut b = if restart == 0 { init_b } else { init_b + rng.range(-0.3, 0.3) };
@@ -805,6 +812,15 @@ fn main() {
             if werr >= 0.499 { continue; }
             let alpha = 0.5 * ((1.0 - werr).max(1e-6) / werr.max(1e-6)).ln();
 
+            let qr_train = {
+                let c = data.train.iter().enumerate().filter(|(ti, (_, y))| {
+                    let mut d = 0i32;
+                    for (&w, &pidx) in bw.iter().zip(&tp.parents) { d += (w as i32) * (all_sigs[*ti][pidx] as i32); }
+                    (if d >= bt { 1u8 } else { 0 }) == *y
+                }).count();
+                c as f32 / data.train.len() as f32 * 100.0
+            };
+
             let qr_val = {
                 let c = data.val.iter().enumerate().filter(|(vi, (_, y))| {
                     let mut d = 0i32;
@@ -817,7 +833,7 @@ fn main() {
             let neuron = Neuron {
                 id: net.neurons.len(), parents: tp.parents.clone(), tick,
                 weights: bw.clone(), threshold: bt,
-                alpha, train_acc: qr_val, val_acc: qr_val,
+                alpha, train_acc: qr_train, val_acc: qr_val,
             };
             net.add(neuron);
             let new_val = net.accuracy(&data.val);

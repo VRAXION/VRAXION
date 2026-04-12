@@ -18,21 +18,21 @@ This repository is meant to be a credible front door for technical buyers and en
 
 ## Release Snapshot
 
-- **Current public release:** [`v5.0.0-beta.1`](https://github.com/VRAXION/VRAXION/releases/tag/v5.0.0-beta.1) (Rust beta, 24.6% peak)
-- **Next public milestone:** preparation toward `v5.0.0 Public Beta`
-- **Internal code path:** [`instnct/`](instnct/) (repo path, not the public release label)
-- **Current mainline code path:** [`instnct/model/graph.py`](instnct/model/graph.py)
+- **Current public release tag:** [`v5.0.0-beta.1`](https://github.com/VRAXION/VRAXION/releases/tag/v5.0.0-beta.1) (released Rust language-evolution beta, 24.6% peak)
+- **Next public milestone:** grower-based `v5.0.0 Public Beta`
+- **Current mainline code path on `main`:** [`instnct-core/examples/neuron_grower.rs`](instnct-core/examples/neuron_grower.rs)
+- **Reference/support lane:** [`instnct/model/graph.py`](instnct/model/graph.py)
 
 ## Why This Architecture Is Different
 
 INSTNCT is built around a small set of unusual choices:
 
-- **Passive I/O**: `input_projection` and `output_projection` are fixed random projections, not learned layers.
-- **Self-wiring core**: the primary learnable structure is a hidden-to-hidden signed edge mask, with co-evolved per-neuron `theta` and `decay`.
-- **Persistent internal state**: neurons keep charge and state across ticks instead of acting as one-shot activations.
-- **Mutation + selection**: training is done by graph edits and acceptance tests, not gradient descent through the graph.
+- **Stagewise self-wiring**: the graph grows neuron by neuron instead of optimizing a fixed dense topology.
+- **Scout-first search**: a cheap all-signal probe ranks promising parents and pair interactions before exhaustive ternary search.
+- **Bias-free threshold neurons**: the persistent grower now stores neurons directly as `dot >= threshold`, without redundant bias search.
+- **Append-only evidence**: canonical runs are expected to emit reproducible evidence bundles and resumable state, not just ad hoc logs.
 
-The canonical reference implementation is [`instnct/model/graph.py`](instnct/model/graph.py).
+The canonical grower contract is [`docs/GROWER_RUN_CONTRACT.md`](docs/GROWER_RUN_CONTRACT.md).
 
 ## Status Taxonomy
 
@@ -57,23 +57,18 @@ Retired line names and older local folders belong in [Project Timeline](https://
 
 ### Current mainline
 
-- The live canonical path is [`instnct/model/graph.py`](instnct/model/graph.py).
-- The stable reference is the NumPy self-wiring graph with passive I/O, a signed hidden edge mask, co-evolved per-neuron `theta` / `decay`, and nonnegative charge dynamics.
-- The current English recipe candidate on `main` is [`instnct/recipes/train_english_1024n_18w.py`](instnct/recipes/train_english_1024n_18w.py); it currently uses an `8`-tick triangle-derived `2 add / 1 flip / 5 decay` schedule, but it is still a candidate training script, not the canonical architecture default.
-- English is the only first-class public lane on `main`; task-memory and GPU remain secondary validation surfaces rather than equal front-door lanes.
-- Recent English sweeps around low-theta training and signal scaling are **not** described here as baked defaults until they land in that code path.
+- The live canonical path on `main` is [`instnct-core/examples/neuron_grower.rs`](instnct-core/examples/neuron_grower.rs).
+- The grower is a bias-free threshold builder with scout-ranked parent search, resumable state, and append-only checkpoint snapshots.
+- The old Rust language runner remains the latest released public tag, but it is no longer the current mainline code path on `main`.
+- The Python `graph.py` lane remains in-repo as historical reference/support, not the public mainline.
+- The next promotion gate is byte/opcode v1 with a structured output head; until that lands, the grower is the active mainline builder and beta-prep surface.
 
 ### Evidence snapshot
 
-- **Charge ReLU** is now part of the current mainline forward path; replacing symmetric clip with nonnegative charge unlocked flip accepts and materially improved English training ([66ce511](https://github.com/VRAXION/VRAXION/commit/66ce511d58b71cecbd92adc04f307299b3fc414b)).
-- **Flip mutation** is the strongest structural mutation found so far on English 1024n; float weight perturbation lost badly ([#112](https://github.com/VRAXION/VRAXION/issues/112)).
-- **`INJ_SCALE=1.0` + low theta** beat the older `scale=3.0` hack in empty-start English sweeps, but that result is still tracked as a validated finding rather than a shipped default ([#113](https://github.com/VRAXION/VRAXION/issues/113)).
-- **The current English recipe candidate** on `main` uses an `8`-tick triangle-derived `2 add / 1 flip / 5 decay` schedule, but that recipe is still not promoted into the canonical `graph.py` defaults ([fdae6d6](https://github.com/VRAXION/VRAXION/commit/fdae6d6cd79a3554f23fbe94ab5412cea3e216d1)).
-- **Sign+mag + magnitude resample** is the strongest edge-representation quality result so far: `18.69%` at `155` edges (`q=0.121`). It beat sign+mag free and delivered the best quality-per-edge result in that sweep, but it is still a validated finding rather than the live recipe candidate ([41f3622](https://github.com/VRAXION/VRAXION/commit/41f3622e654a79ffba0c95421b5e8a5c0f354364)).
-- **Decay resample** beat local perturbation for per-neuron decay tuning; resampling one neuron into `[0.01, 0.5]` reached `19.35%` and produced differentiated decay rates instead of leaving decay stuck at `0.15` ([a5419e2](https://github.com/VRAXION/VRAXION/commit/a5419e22795af522afa2e2d8e292dd495f6c909f)).
-- **Schedule-control experiments** now have two validated lines: a higher-accuracy voltage/leak recipe (`22.11%` peak / `21.46%` plateau) and a simpler 3-angle decision tree (`20.05%` at `156` edges with better edge quality) ([b971613](https://github.com/VRAXION/VRAXION/commit/b971613550d881a7298690a2016339486e4c8244), [f7e6185](https://github.com/VRAXION/VRAXION/commit/f7e618511217d9b2905d93b30d7523a0be1fd79d)).
-- **Window=2 input superposition** is the strongest current task-learning injection result so far: `21.8%` vs `12.7%` at `w=1`, making it the current leading context-window line for nontrivial task probes ([48f2657](https://github.com/VRAXION/VRAXION/commit/48f26579fe882f5ae9e5eab4bbe1264963b4685a)).
-- **Word-pair log-likelihood eval** beat bigram cosine on associative-memory probes (`23.8%` vs `18.8%`), showing that context-dependent tasks need a stronger scoring path than pure bigram cosine ([48f2657](https://github.com/VRAXION/VRAXION/commit/48f26579fe882f5ae9e5eab4bbe1264963b4685a)).
+- **Bias-free threshold grower** is the canonical persistent grower representation on `main`; redundant bias search was removed from state and search.
+- **Scout oracle** is part of the mainline builder: single-signal ranking, connect-all probe, and pair-lift shortlist all run before ternary search.
+- **Non-strict accept gate** unlocked compositional stepping-stones; `four_parity` now reaches 100% instead of stalling on equal-val intermediates.
+- **Released beta.1 language-evolution result** (`24.6%` next-character prediction) remains a shipped public result, but it is now a released reference lane rather than the active mainline path on `main`.
 
 Raw run dumps, archived sweeps, and older exploratory surfaces now live on `archive/instnct-surface-freeze-20260322`, not on active `main`.
 
@@ -81,8 +76,8 @@ The canonical evidence summary lives in [`VALIDATED_FINDINGS.md`](VALIDATED_FIND
 
 ### Experimental branch
 
-- The current next candidate is **context-dependent task learning**, especially windowed input injection, word-pair memory, and stronger evaluation for nontrivial tasks ([48f2657](https://github.com/VRAXION/VRAXION/commit/48f26579fe882f5ae9e5eab4bbe1264963b4685a)).
-- It is an active experimental target, not the live training path on `main`.
+- The current next candidate is **byte/opcode v1**: `1 byte + 4 opcode -> 1 byte` with a structured output head.
+- It is the main promotion gate to public beta, not yet frozen as the live contract.
 
 ## 5-Minute Proof
 
@@ -90,9 +85,7 @@ The canonical evidence summary lives in [`VALIDATED_FINDINGS.md`](VALIDATED_FIND
 
 ```bash
 cargo test -p instnct-core
-cargo run --release --example evolve_language -- \
-  instnct-core/tests/fixtures/beta_smoke_corpus.txt \
-  --steps 10 --seed-count 1 --report-dir target/smoke
+python tools/run_grower_regression.py
 ```
 
 ### Python (reference surface)
@@ -111,7 +104,7 @@ python tools/check_public_surface.py
 These commands verify:
 
 - the Rust library compiles and all 175 tests pass,
-- the canonical beta runner produces a valid evidence bundle,
+- the grower regression bundle is reproducible and public-facing,
 - the Python reference surface compiles and passes its stress test,
 - the public-facing docs agree with the canonical code path.
 

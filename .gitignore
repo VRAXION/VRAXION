@@ -97,3 +97,19 @@ instnct/data/*.npy
 /target
 instnct-core/checkpoints/
 instnct-core/results/
+/results/
+/.claude/
+
+# Grower / lab scratch that should never leak into the public mainline
+instnct-core/*_log.txt
+instnct-core/checkpoint*.json
+instnct-core/ckpt_v2_*.json
+instnct-core/grow_*.json
+instnct-core/*_playground.html
+instnct-core/overnight.sh
+instnct-core/overnight2.sh
+instnct-core/sweep_runner.sh
+instnct-core/examples/neuron_overnight_v2.rs
+instnct-core/examples/neuron_random_ab.rs
+instnct-core/benchmark_c19_ckpt.json
+instnct-core/gate_mux_console.txt
