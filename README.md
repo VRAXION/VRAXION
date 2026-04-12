@@ -61,7 +61,7 @@ Retired line names and older local folders belong in [Project Timeline](https://
 - The grower is a bias-free threshold builder with scout-ranked parent search, resumable state, and append-only checkpoint snapshots.
 - The old Rust language runner remains the latest released public tag, but it is no longer the current mainline code path on `main`.
 - The Python `graph.py` lane remains in-repo as historical reference/support, not the public mainline.
-- The next promotion gate is byte/opcode v1 with a structured output head; until that lands, the grower is the active mainline builder and beta-prep surface.
+- The next promotion gate is byte/opcode v1 with a frozen exact translator; until that lands, the grower is the active mainline builder and beta-prep surface.
 
 ### Evidence snapshot
 
@@ -76,7 +76,7 @@ The canonical evidence summary lives in [`VALIDATED_FINDINGS.md`](VALIDATED_FIND
 
 ### Experimental branch
 
-- The current next candidate is **byte/opcode v1**: `1 byte + 4 opcode -> 1 byte` with a structured output head.
+- The current next candidate is **byte/opcode v1**: `1 byte + 4 opcode -> 1 byte` with a frozen exact translator over grower latent.
 - It is the main promotion gate to public beta, not yet frozen as the live contract.
 
 ## 5-Minute Proof
@@ -86,6 +86,7 @@ The canonical evidence summary lives in [`VALIDATED_FINDINGS.md`](VALIDATED_FIND
 ```bash
 cargo test -p instnct-core
 python tools/run_grower_regression.py
+python tools/run_byte_opcode_acceptance.py
 ```
 
 ### Python (reference surface)
@@ -105,12 +106,14 @@ These commands verify:
 
 - the Rust library compiles and all 175 tests pass,
 - the grower regression bundle is reproducible and public-facing,
+- the byte/opcode v1 exact translator export/reload path is reproducible and exact,
 - the Python reference surface compiles and passes its stress test,
 - the public-facing docs agree with the canonical code path.
 
 ## Read Next
 
 - [`VALIDATED_FINDINGS.md`](VALIDATED_FINDINGS.md) — canonical evidence summary
+- [`docs/BYTE_OPCODE_V1_CONTRACT.md`](docs/BYTE_OPCODE_V1_CONTRACT.md) — byte/opcode v1 exact translator contract
 - [`instnct/README.md`](instnct/README.md) — architecture-line map and technical entry points
 - [VRAXION architecture page (INSTNCT)](https://github.com/VRAXION/VRAXION/wiki/INSTNCT-Architecture)
 - [Issue #114](https://github.com/VRAXION/VRAXION/issues/114) — current next build target

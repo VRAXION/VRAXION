@@ -47,19 +47,23 @@ Public beta is **not** green until the grower also has a locked computation benc
 
 - `1 byte data + 4 opcode -> 1 byte`
 - ops: `COPY`, `NOT`, `INC`, `DEC`
-- structured output contract:
-  - `2 x nibble latent head`
-  - fixed 16-class prototype decoder
+- exact translator contract:
+  - `8` frozen grower bit-heads remain the trunk
+  - translator key = concatenated hidden binary activations
+  - translator = fixed exact LUT
+  - no raw-input shortcut and no trainable beta-path readout
 
 B1 must also ship:
 
-- readout A/B (direct vs prototype vs scalar/bucket baseline)
+- direct bitbank negative control
 - full truth-table + adversarial suite
-- frozen export/reload path for the chosen output stack
+- frozen export/reload path for the exact translator stack
+
+The canonical contract is [`docs/BYTE_OPCODE_V1_CONTRACT.md`](docs/BYTE_OPCODE_V1_CONTRACT.md).
 
 ## What does not count as public beta
 
 - ad hoc overnight logs without the evidence bundle
 - untracked scratch examples or playground HTML
 - claims based on the released beta.1 language runner alone
-- new benchmark lines without a frozen readout contract
+- new benchmark lines without the exact translator freeze

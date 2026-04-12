@@ -1,0 +1,413 @@
+{
+  "direct_byte_acc": 75.0,
+  "direct_per_op": {
+    "copy": 75.0,
+    "not": 75.0,
+    "inc": 75.0,
+    "dec": 75.0
+  },
+  "translator_byte_acc": 100.0,
+  "translator_per_op": {
+    "copy": 100.0,
+    "not": 100.0,
+    "inc": 100.0,
+    "dec": 100.0
+  },
+  "distinct_keys": 1024,
+  "conflicting_keys": 0,
+  "key_bits": 61,
+  "total_neurons": 61,
+  "max_depth": 7,
+  "per_bit_acc": [
+    100.0,
+    87.5,
+    87.5,
+    92.1875,
+    96.875,
+    98.4375,
+    99.21875,
+    99.609375
+  ],
+  "neurons_per_bit": [
+    5,
+    8,
+    8,
+    8,
+    8,
+    8,
+    8,
+    8
+  ],
+  "depth_per_bit": [
+    5,
+    7,
+    5,
+    6,
+    4,
+    6,
+    5,
+    5
+  ],
+  "adversarial": [
+    {
+      "op": "COPY",
+      "input": "0x00",
+      "direct_pred": "0x00",
+      "translator_pred": "0x00",
+      "target": "0x00",
+      "direct_ok": true,
+      "translator_ok": true
+    },
+    {
+      "op": "NOT",
+      "input": "0x00",
+      "direct_pred": "0xFF",
+      "translator_pred": "0xFF",
+      "target": "0xFF",
+      "direct_ok": true,
+      "translator_ok": true
+    },
+    {
+      "op": "INC",
+      "input": "0x00",
+      "direct_pred": "0x01",
+      "translator_pred": "0x01",
+      "target": "0x01",
+      "direct_ok": true,
+      "translator_ok": true
+    },
+    {
+      "op": "DEC",
+      "input": "0x00",
+      "direct_pred": "0x03",
+      "translator_pred": "0xFF",
+      "target": "0xFF",
+      "direct_ok": false,
+      "translator_ok": true
+    },
+    {
+      "op": "COPY",
+      "input": "0x01",
+      "direct_pred": "0x03",
+      "translator_pred": "0x01",
+      "target": "0x01",
+      "direct_ok": false,
+      "translator_ok": true
+    },
+    {
+      "op": "NOT",
+      "input": "0x01",
+      "direct_pred": "0xFE",
+      "translator_pred": "0xFE",
+      "target": "0xFE",
+      "direct_ok": true,
+      "translator_ok": true
+    },
+    {
+      "op": "INC",
+      "input": "0x01",
+      "direct_pred": "0x02",
+      "translator_pred": "0x02",
+      "target": "0x02",
+      "direct_ok": true,
+      "translator_ok": true
+    },
+    {
+      "op": "DEC",
+      "input": "0x01",
+      "direct_pred": "0x00",
+      "translator_pred": "0x00",
+      "target": "0x00",
+      "direct_ok": true,
+      "translator_ok": true
+    },
+    {
+      "op": "COPY",
+      "input": "0x0F",
+      "direct_pred": "0x0F",
+      "translator_pred": "0x0F",
+      "target": "0x0F",
+      "direct_ok": true,
+      "translator_ok": true
+    },
+    {
+      "op": "NOT",
+      "input": "0x0F",
+      "direct_pred": "0xF2",
+      "translator_pred": "0xF0",
+      "target": "0xF0",
+      "direct_ok": false,
+      "translator_ok": true
+    },
+    {
+      "op": "INC",
+      "input": "0x0F",
+      "direct_pred": "0x0C",
+      "translator_pred": "0x10",
+      "target": "0x10",
+      "direct_ok": false,
+      "translator_ok": true
+    },
+    {
+      "op": "DEC",
+      "input": "0x0F",
+      "direct_pred": "0x0E",
+      "translator_pred": "0x0E",
+      "target": "0x0E",
+      "direct_ok": true,
+      "translator_ok": true
+    },
+    {
+      "op": "COPY",
+      "input": "0x10",
+      "direct_pred": "0x10",
+      "translator_pred": "0x10",
+      "target": "0x10",
+      "direct_ok": true,
+      "translator_ok": true
+    },
+    {
+      "op": "NOT",
+      "input": "0x10",
+      "direct_pred": "0xEF",
+      "translator_pred": "0xEF",
+      "target": "0xEF",
+      "direct_ok": true,
+      "translator_ok": true
+    },
+    {
+      "op": "INC",
+      "input": "0x10",
+      "direct_pred": "0x11",
+      "translator_pred": "0x11",
+      "target": "0x11",
+      "direct_ok": true,
+      "translator_ok": true
+    },
+    {
+      "op": "DEC",
+      "input": "0x10",
+      "direct_pred": "0x13",
+      "translator_pred": "0x0F",
+      "target": "0x0F",
+      "direct_ok": false,
+      "translator_ok": true
+    },
+    {
+      "op": "COPY",
+      "input": "0x55",
+      "direct_pred": "0x57",
+      "translator_pred": "0x55",
+      "target": "0x55",
+      "direct_ok": false,
+      "translator_ok": true
+    },
+    {
+      "op": "NOT",
+      "input": "0x55",
+      "direct_pred": "0xAA",
+      "translator_pred": "0xAA",
+      "target": "0xAA",
+      "direct_ok": true,
+      "translator_ok": true
+    },
+    {
+      "op": "INC",
+      "input": "0x55",
+      "direct_pred": "0x56",
+      "translator_pred": "0x56",
+      "target": "0x56",
+      "direct_ok": true,
+      "translator_ok": true
+    },
+    {
+      "op": "DEC",
+      "input": "0x55",
+      "direct_pred": "0x54",
+      "translator_pred": "0x54",
+      "target": "0x54",
+      "direct_ok": true,
+      "translator_ok": true
+    },
+    {
+      "op": "COPY",
+      "input": "0x7F",
+      "direct_pred": "0x7F",
+      "translator_pred": "0x7F",
+      "target": "0x7F",
+      "direct_ok": true,
+      "translator_ok": true
+    },
+    {
+      "op": "NOT",
+      "input": "0x7F",
+      "direct_pred": "0x82",
+      "translator_pred": "0x80",
+      "target": "0x80",
+      "direct_ok": false,
+      "translator_ok": true
+    },
+    {
+      "op": "INC",
+      "input": "0x7F",
+      "direct_pred": "0x7C",
+      "translator_pred": "0x80",
+      "target": "0x80",
+      "direct_ok": false,
+      "translator_ok": true
+    },
+    {
+      "op": "DEC",
+      "input": "0x7F",
+      "direct_pred": "0x7E",
+      "translator_pred": "0x7E",
+      "target": "0x7E",
+      "direct_ok": true,
+      "translator_ok": true
+    },
+    {
+      "op": "COPY",
+      "input": "0x80",
+      "direct_pred": "0x80",
+      "translator_pred": "0x80",
+      "target": "0x80",
+      "direct_ok": true,
+      "translator_ok": true
+    },
+    {
+      "op": "NOT",
+      "input": "0x80",
+      "direct_pred": "0x7F",
+      "translator_pred": "0x7F",
+      "target": "0x7F",
+      "direct_ok": true,
+      "translator_ok": true
+    },
+    {
+      "op": "INC",
+      "input": "0x80",
+      "direct_pred": "0x81",
+      "translator_pred": "0x81",
+      "target": "0x81",
+      "direct_ok": true,
+      "translator_ok": true
+    },
+    {
+      "op": "DEC",
+      "input": "0x80",
+      "direct_pred": "0x83",
+      "translator_pred": "0x7F",
+      "target": "0x7F",
+      "direct_ok": false,
+      "translator_ok": true
+    },
+    {
+      "op": "COPY",
+      "input": "0xAA",
+      "direct_pred": "0xAA",
+      "translator_pred": "0xAA",
+      "target": "0xAA",
+      "direct_ok": true,
+      "translator_ok": true
+    },
+    {
+      "op": "NOT",
+      "input": "0xAA",
+      "direct_pred": "0x55",
+      "translator_pred": "0x55",
+      "target": "0x55",
+      "direct_ok": true,
+      "translator_ok": true
+    },
+    {
+      "op": "INC",
+      "input": "0xAA",
+      "direct_pred": "0xAB",
+      "translator_pred": "0xAB",
+      "target": "0xAB",
+      "direct_ok": true,
+      "translator_ok": true
+    },
+    {
+      "op": "DEC",
+      "input": "0xAA",
+      "direct_pred": "0xA9",
+      "translator_pred": "0xA9",
+      "target": "0xA9",
+      "direct_ok": true,
+      "translator_ok": true
+    },
+    {
+      "op": "COPY",
+      "input": "0xFE",
+      "direct_pred": "0xFE",
+      "translator_pred": "0xFE",
+      "target": "0xFE",
+      "direct_ok": true,
+      "translator_ok": true
+    },
+    {
+      "op": "NOT",
+      "input": "0xFE",
+      "direct_pred": "0x01",
+      "translator_pred": "0x01",
+      "target": "0x01",
+      "direct_ok": true,
+      "translator_ok": true
+    },
+    {
+      "op": "INC",
+      "input": "0xFE",
+      "direct_pred": "0xFF",
+      "translator_pred": "0xFF",
+      "target": "0xFF",
+      "direct_ok": true,
+      "translator_ok": true
+    },
+    {
+      "op": "DEC",
+      "input": "0xFE",
+      "direct_pred": "0xFD",
+      "translator_pred": "0xFD",
+      "target": "0xFD",
+      "direct_ok": true,
+      "translator_ok": true
+    },
+    {
+      "op": "COPY",
+      "input": "0xFF",
+      "direct_pred": "0xFF",
+      "translator_pred": "0xFF",
+      "target": "0xFF",
+      "direct_ok": true,
+      "translator_ok": true
+    },
+    {
+      "op": "NOT",
+      "input": "0xFF",
+      "direct_pred": "0x02",
+      "translator_pred": "0x00",
+      "target": "0x00",
+      "direct_ok": false,
+      "translator_ok": true
+    },
+    {
+      "op": "INC",
+      "input": "0xFF",
+      "direct_pred": "0xFC",
+      "translator_pred": "0x00",
+      "target": "0x00",
+      "direct_ok": false,
+      "translator_ok": true
+    },
+    {
+      "op": "DEC",
+      "input": "0xFF",
+      "direct_pred": "0xFE",
+      "translator_pred": "0xFE",
+      "target": "0xFE",
+      "direct_ok": true,
+      "translator_ok": true
+    }
+  ]
+}

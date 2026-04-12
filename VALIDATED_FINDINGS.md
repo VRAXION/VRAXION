@@ -19,6 +19,7 @@ The repo is in a transition state:
 | **Non-strict accept gate** | Compositional stepping-stones are no longer rejected on equal-val intermediate steps; `four_parity` now reaches 100%. | **Current mainline** |
 | **Persistent grower state** | Authoritative resume file is bias-free `state.tsv` with per-step JSON checkpoints. | **Current mainline** |
 | **4-bit curriculum entry** | Small exhaustive four-bit pattern tasks solve quickly and act as a compositional smoke floor for the grower. | **Validated finding** |
+| **Exact byte readout via latent LUT** | On `1 byte + 4 opcode -> 1 byte`, direct bitbank stalls at `75%`, but the frozen hidden binary latent supports a collision-free LUT translator at `100%` exact over the full `1024`-sample domain. | **Validated finding** |
 
 ### Released beta.1 Rust lane: historical peak results
 

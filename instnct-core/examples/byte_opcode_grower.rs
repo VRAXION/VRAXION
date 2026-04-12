@@ -10,7 +10,10 @@
 //! Run:
 //!   cargo run --release --example byte_opcode_grower
 
+use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet};
+use std::fs;
+use std::path::PathBuf;
 
 const DATA_BITS: usize = 8;
 const OPCODES: usize = 4;
@@ -29,6 +32,9 @@ struct Config {
     translator_hidden: usize,
     translator_epochs: usize,
     translator_lr: f32,
+    export_json: Option<PathBuf>,
+    reload_json: Option<PathBuf>,
+    metrics_json: Option<PathBuf>,
 }
 
 fn parse_args() -> Config {
@@ -45,6 +51,9 @@ fn parse_args() -> Config {
         translator_hidden: 24,
         translator_epochs: 800,
         translator_lr: 0.03,
+        export_json: None,
+        reload_json: None,
+        metrics_json: None,
     };
     let mut i = 1;
     while i < args.len() {
@@ -60,6 +69,9 @@ fn parse_args() -> Config {
             "--translator-hidden" => { i += 1; cfg.translator_hidden = args[i].parse().unwrap_or(24); }
             "--translator-epochs" => { i += 1; cfg.translator_epochs = args[i].parse().unwrap_or(800); }
             "--translator-lr" => { i += 1; cfg.translator_lr = args[i].parse().unwrap_or(0.03); }
+            "--export-json" => { i += 1; cfg.export_json = Some(PathBuf::from(&args[i])); }
+            "--reload-json" => { i += 1; cfg.reload_json = Some(PathBuf::from(&args[i])); }
+            "--metrics-json" => { i += 1; cfg.metrics_json = Some(PathBuf::from(&args[i])); }
             _ => {}
         }
         i += 1;
@@ -67,7 +79,7 @@ fn parse_args() -> Config {
     cfg
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug, Serialize, Deserialize)]
 enum Opcode { Copy, Not, Inc, Dec }
 impl Opcode {
     fn all() -> [Self; 4] { [Self::Copy, Self::Not, Self::Inc, Self::Dec] }
@@ -147,7 +159,7 @@ impl Rng {
 
 fn sigmoid(x: f32) -> f32 { 1.0 / (1.0 + (-x).exp()) }
 
-#[derive(Clone)]
+#[derive(Clone, Serialize, Deserialize)]
 struct Neuron {
     parents: Vec<usize>,
     tick: u32,
@@ -207,6 +219,83 @@ impl Net {
     }
 }
 
+#[derive(Clone, Serialize, Deserialize)]
+struct FrozenHead {
+    neurons: Vec<Neuron>,
+}
+
+#[derive(Clone, Serialize, Deserialize)]
+struct FrozenLutEntry {
+    key: String,
+    output: u8,
+}
+
+#[derive(Clone, Serialize, Deserialize)]
+struct FrozenTranslator {
+    kind: String,
+    key_bits: usize,
+    entries: Vec<FrozenLutEntry>,
+}
+
+#[derive(Clone, Serialize, Deserialize)]
+struct FrozenConfig {
+    search_seed: u64,
+    max_neurons: usize,
+    max_fan: usize,
+    proposals: usize,
+    stall_limit: usize,
+    scout_top: usize,
+    pair_top: usize,
+    probe_epochs: usize,
+}
+
+#[derive(Clone, Serialize, Deserialize)]
+struct PerOpMetrics {
+    copy: f32,
+    not: f32,
+    inc: f32,
+    dec: f32,
+}
+
+#[derive(Clone, Serialize, Deserialize)]
+struct AdversarialCase {
+    op: String,
+    input: String,
+    direct_pred: String,
+    translator_pred: String,
+    target: String,
+    direct_ok: bool,
+    translator_ok: bool,
+}
+
+#[derive(Clone, Serialize, Deserialize)]
+struct RunMetrics {
+    direct_byte_acc: f32,
+    direct_per_op: PerOpMetrics,
+    translator_byte_acc: f32,
+    translator_per_op: PerOpMetrics,
+    distinct_keys: usize,
+    conflicting_keys: usize,
+    key_bits: usize,
+    total_neurons: usize,
+    max_depth: u32,
+    per_bit_acc: Vec<f32>,
+    neurons_per_bit: Vec<usize>,
+    depth_per_bit: Vec<u32>,
+    adversarial: Vec<AdversarialCase>,
+}
+
+#[derive(Clone, Serialize, Deserialize)]
+struct FrozenStack {
+    version: String,
+    domain: String,
+    translator_mode: String,
+    config: FrozenConfig,
+    heads: Vec<FrozenHead>,
+    translator: FrozenTranslator,
+    metrics: RunMetrics,
+}
+
 fn relu(x: f32) -> f32 { x.max(0.0) }
 
 #[derive(Clone)]
@@ -256,6 +345,46 @@ impl Mlp {
         }
         (hidden_raw, hidden, out)
     }
+}
+
+fn config_snapshot(cfg: &Config) -> FrozenConfig {
+    FrozenConfig {
+        search_seed: cfg.search_seed,
+        max_neurons: cfg.max_neurons,
+        max_fan: cfg.max_fan,
+        proposals: cfg.proposals,
+        stall_limit: cfg.stall_limit,
+        scout_top: cfg.scout_top,
+        pair_top: cfg.pair_top,
+        probe_epochs: cfg.probe_epochs,
+    }
+}
+
+fn net_from_frozen(head: &FrozenHead) -> Net {
+    Net {
+        n_in: INPUT_DIM,
+        neurons: head.neurons.clone(),
+        sig_ticks: vec![0; INPUT_DIM + head.neurons.len()],
+    }
+}
+
+fn per_op_metrics(values: [f32; 4]) -> PerOpMetrics {
+    PerOpMetrics {
+        copy: values[Opcode::Copy.idx()],
+        not: values[Opcode::Not.idx()],
+        inc: values[Opcode::Inc.idx()],
+        dec: values[Opcode::Dec.idx()],
+    }
+}
+
+fn write_json<T: Serialize>(path: &PathBuf, value: &T) {
+    if let Some(parent) = path.parent() {
+        if !parent.as_os_str().is_empty() {
+            fs::create_dir_all(parent).expect("failed to create parent directory");
+        }
+    }
+    let body = serde_json::to_string_pretty(value).expect("failed to serialize json");
+    fs::write(path, format!("{body}\n")).expect("failed to write json");
 }
 
 #[derive(Clone)]
@@ -614,6 +743,14 @@ fn binary_latent_signature(heads: &[Net], input: &[u8]) -> Vec<u8> {
     out
 }
 
+fn signature_key(bits: &[u8]) -> String {
+    let mut out = String::with_capacity(bits.len());
+    for &bit in bits {
+        out.push(if bit == 1 { '1' } else { '0' });
+    }
+    out
+}
+
 fn target_bits(byte: u8) -> [u8; 8] {
     let mut out = [0u8; 8];
     for (i, slot) in out.iter_mut().enumerate() {
@@ -678,7 +815,6 @@ fn translator_predict(model: &Mlp, features: &[f32]) -> u8 {
 
 struct TranslatorReport {
     exact_acc: f32,
-    per_op: [f32; 4],
     misses: Vec<(Opcode, u8, u8, u8)>,
 }
 
@@ -698,35 +834,30 @@ fn eval_translator(model: &Mlp, features: &[Vec<f32>], samples: &[Sample]) -> Tr
         per_op_ok[sample.opcode.idx()] += usize::from(pred == sample.target_byte);
         per_op_total[sample.opcode.idx()] += 1;
     }
-    let mut per_op = [0.0f32; 4];
-    for op in Opcode::all() {
-        per_op[op.idx()] = per_op_ok[op.idx()] as f32 / per_op_total[op.idx()] as f32 * 100.0;
-    }
     TranslatorReport {
         exact_acc: exact as f32 / samples.len() as f32 * 100.0,
-        per_op,
         misses,
     }
 }
 
 struct LutReport {
-    exact_acc: f32,
-    per_op: [f32; 4],
-    distinct_keys: usize,
     conflicting_keys: usize,
 }
 
-fn eval_lut_translator(heads: &[Net], samples: &[Sample]) -> LutReport {
-    let mut counts: HashMap<Vec<u8>, Vec<u16>> = HashMap::new();
+fn build_exact_lut(heads: &[Net], samples: &[Sample]) -> (FrozenTranslator, LutReport) {
+    let mut counts: HashMap<String, Vec<u16>> = HashMap::new();
+    let mut key_bits = 0usize;
     for sample in samples {
         let sig = binary_latent_signature(heads, &sample.input);
-        let bucket = counts.entry(sig).or_insert_with(|| vec![0u16; 256]);
+        key_bits = sig.len();
+        let key = signature_key(&sig);
+        let bucket = counts.entry(key).or_insert_with(|| vec![0u16; 256]);
         bucket[sample.target_byte as usize] += 1;
     }
 
-    let mut lut: HashMap<Vec<u8>, u8> = HashMap::new();
     let mut conflicting_keys = 0usize;
-    for (sig, bucket) in &counts {
+    let mut entries = Vec::with_capacity(counts.len());
+    for (key, bucket) in &counts {
         let mut best_idx = 0usize;
         let mut best_count = 0u16;
         let mut nonzero = 0usize;
@@ -742,39 +873,205 @@ fn eval_lut_translator(heads: &[Net], samples: &[Sample]) -> LutReport {
         if nonzero > 1 {
             conflicting_keys += 1;
         }
-        lut.insert(sig.clone(), best_idx as u8);
+        entries.push(FrozenLutEntry { key: key.clone(), output: best_idx as u8 });
     }
+    entries.sort_by(|a, b| a.key.cmp(&b.key));
+    let translator = FrozenTranslator {
+        kind: "exact_lut".to_string(),
+        key_bits,
+        entries,
+    };
+    (
+        translator,
+        LutReport {
+            conflicting_keys,
+        },
+    )
+}
 
-    let mut exact = 0usize;
-    let mut per_op_ok = [0usize; 4];
-    let mut per_op_total = [0usize; 4];
+fn lut_map(translator: &FrozenTranslator) -> HashMap<&str, u8> {
+    translator.entries.iter().map(|entry| (entry.key.as_str(), entry.output)).collect()
+}
+
+fn predict_lut_byte(heads: &[Net], translator: &FrozenTranslator, input: &[u8]) -> u8 {
+    let key = signature_key(&binary_latent_signature(heads, input));
+    let lut = lut_map(translator);
+    *lut.get(key.as_str()).unwrap_or(&0)
+}
+
+fn evaluate_stack(heads: &[Net], translator: &FrozenTranslator, samples: &[Sample], bit_stats: &[(f32, usize, u32)], conflicting_keys: usize) -> RunMetrics {
+    let mut direct_exact = 0usize;
+    let mut direct_per_op_ok = [0usize; 4];
+    let mut direct_per_op_total = [0usize; 4];
+    let mut translator_exact = 0usize;
+    let mut translator_per_op_ok = [0usize; 4];
+    let mut translator_per_op_total = [0usize; 4];
+    let mut adversarial = Vec::new();
+
     for sample in samples {
-        let sig = binary_latent_signature(heads, &sample.input);
-        let pred = *lut.get(&sig).unwrap_or(&0);
-        if pred == sample.target_byte { exact += 1; }
-        per_op_ok[sample.opcode.idx()] += usize::from(pred == sample.target_byte);
-        per_op_total[sample.opcode.idx()] += 1;
+        let direct_pred = predict_byte(heads, &sample.input);
+        let translator_pred = predict_lut_byte(heads, translator, &sample.input);
+        if direct_pred == sample.target_byte { direct_exact += 1; }
+        if translator_pred == sample.target_byte { translator_exact += 1; }
+        direct_per_op_ok[sample.opcode.idx()] += usize::from(direct_pred == sample.target_byte);
+        direct_per_op_total[sample.opcode.idx()] += 1;
+        translator_per_op_ok[sample.opcode.idx()] += usize::from(translator_pred == sample.target_byte);
+        translator_per_op_total[sample.opcode.idx()] += 1;
+
+        let input_byte = sample.input[..DATA_BITS].iter().enumerate()
+            .fold(0u8, |acc, (i, &b)| acc | ((b & 1) << i));
+        if ADV_CASES.contains(&input_byte) {
+            adversarial.push(AdversarialCase {
+                op: sample.opcode.name().to_string(),
+                input: format!("{:#04X}", input_byte),
+                direct_pred: format!("{:#04X}", direct_pred),
+                translator_pred: format!("{:#04X}", translator_pred),
+                target: format!("{:#04X}", sample.target_byte),
+                direct_ok: direct_pred == sample.target_byte,
+                translator_ok: translator_pred == sample.target_byte,
+            });
+        }
     }
 
-    let mut per_op = [0.0f32; 4];
+    let mut direct_per_op = [0.0f32; 4];
+    let mut translator_per_op = [0.0f32; 4];
     for op in Opcode::all() {
-        per_op[op.idx()] = per_op_ok[op.idx()] as f32 / per_op_total[op.idx()] as f32 * 100.0;
+        direct_per_op[op.idx()] = direct_per_op_ok[op.idx()] as f32 / direct_per_op_total[op.idx()] as f32 * 100.0;
+        translator_per_op[op.idx()] = translator_per_op_ok[op.idx()] as f32 / translator_per_op_total[op.idx()] as f32 * 100.0;
     }
-    LutReport {
-        exact_acc: exact as f32 / samples.len() as f32 * 100.0,
-        per_op,
-        distinct_keys: counts.len(),
+
+    RunMetrics {
+        direct_byte_acc: direct_exact as f32 / samples.len() as f32 * 100.0,
+        direct_per_op: per_op_metrics(direct_per_op),
+        translator_byte_acc: translator_exact as f32 / samples.len() as f32 * 100.0,
+        translator_per_op: per_op_metrics(translator_per_op),
+        distinct_keys: translator.entries.len(),
         conflicting_keys,
+        key_bits: translator.key_bits,
+        total_neurons: bit_stats.iter().map(|(_, neurons, _)| *neurons).sum(),
+        max_depth: bit_stats.iter().map(|(_, _, depth)| *depth).max().unwrap_or(0),
+        per_bit_acc: bit_stats.iter().map(|(acc, _, _)| *acc).collect(),
+        neurons_per_bit: bit_stats.iter().map(|(_, neurons, _)| *neurons).collect(),
+        depth_per_bit: bit_stats.iter().map(|(_, _, depth)| *depth).collect(),
+        adversarial,
+    }
+}
+
+fn metrics_match(a: &RunMetrics, b: &RunMetrics) -> bool {
+    let eps = 1e-6f32;
+    let close = |x: f32, y: f32| (x - y).abs() <= eps;
+    close(a.direct_byte_acc, b.direct_byte_acc)
+        && close(a.translator_byte_acc, b.translator_byte_acc)
+        && a.distinct_keys == b.distinct_keys
+        && a.conflicting_keys == b.conflicting_keys
+        && a.key_bits == b.key_bits
+        && a.total_neurons == b.total_neurons
+        && a.max_depth == b.max_depth
+        && close(a.direct_per_op.copy, b.direct_per_op.copy)
+        && close(a.direct_per_op.not, b.direct_per_op.not)
+        && close(a.direct_per_op.inc, b.direct_per_op.inc)
+        && close(a.direct_per_op.dec, b.direct_per_op.dec)
+        && close(a.translator_per_op.copy, b.translator_per_op.copy)
+        && close(a.translator_per_op.not, b.translator_per_op.not)
+        && close(a.translator_per_op.inc, b.translator_per_op.inc)
+        && close(a.translator_per_op.dec, b.translator_per_op.dec)
+        && a.per_bit_acc.len() == b.per_bit_acc.len()
+        && a.per_bit_acc.iter().zip(&b.per_bit_acc).all(|(&x, &y)| close(x, y))
+        && a.neurons_per_bit == b.neurons_per_bit
+        && a.depth_per_bit == b.depth_per_bit
+        && a.adversarial.len() == b.adversarial.len()
+        && a.adversarial.iter().zip(&b.adversarial).all(|(x, y)|
+            x.op == y.op
+                && x.input == y.input
+                && x.direct_pred == y.direct_pred
+                && x.translator_pred == y.translator_pred
+                && x.target == y.target
+                && x.direct_ok == y.direct_ok
+                && x.translator_ok == y.translator_ok
+        )
+}
+
+fn frozen_stack(cfg: &Config, heads: &[Net], translator: FrozenTranslator, metrics: RunMetrics) -> FrozenStack {
+    FrozenStack {
+        version: "byte_opcode_v1_exact_lut".to_string(),
+        domain: "1-byte-4-opcode-v1".to_string(),
+        translator_mode: "exact_lut".to_string(),
+        config: config_snapshot(cfg),
+        heads: heads.iter().map(|net| FrozenHead { neurons: net.neurons.clone() }).collect(),
+        translator,
+        metrics,
+    }
+}
+
+fn reload_stack(path: &PathBuf) -> FrozenStack {
+    let body = fs::read_to_string(path).expect("failed to read frozen stack json");
+    serde_json::from_str(&body).expect("failed to parse frozen stack json")
+}
+
+fn print_run_summary(metrics: &RunMetrics) {
+    println!("\n=== CANON BYTE RESULT ===");
+    println!("  direct bitbank: {:.1}%", metrics.direct_byte_acc);
+    println!("    COPY: {:.1}%", metrics.direct_per_op.copy);
+    println!("    NOT: {:.1}%", metrics.direct_per_op.not);
+    println!("    INC: {:.1}%", metrics.direct_per_op.inc);
+    println!("    DEC: {:.1}%", metrics.direct_per_op.dec);
+    println!(
+        "  exact LUT translator: {:.1}% (distinct_keys={} conflicting_keys={} key_bits={})",
+        metrics.translator_byte_acc, metrics.distinct_keys, metrics.conflicting_keys, metrics.key_bits
+    );
+    println!("    COPY: {:.1}%", metrics.translator_per_op.copy);
+    println!("    NOT: {:.1}%", metrics.translator_per_op.not);
+    println!("    INC: {:.1}%", metrics.translator_per_op.inc);
+    println!("    DEC: {:.1}%", metrics.translator_per_op.dec);
+    println!("  total neurons across heads: {}", metrics.total_neurons);
+    println!("  max head depth: {}", metrics.max_depth);
+    println!("  adversarial:");
+    for row in &metrics.adversarial {
+        println!(
+            "    {}({}) -> direct={} [{}] lut={} [{}] target={}",
+            row.op,
+            row.input,
+            row.direct_pred,
+            if row.direct_ok { "OK" } else { "MISS" },
+            row.translator_pred,
+            if row.translator_ok { "OK" } else { "MISS" },
+            row.target
+        );
     }
 }
 
 fn main() {
     let cfg = parse_args();
     let samples = dataset();
-    let mut heads = Vec::with_capacity(8);
 
     println!("=== BYTE + OPCODE GROWER ===");
     println!("Domain: 1 byte + 4 opcode -> 1 byte (exact 1024 samples)");
+
+    if let Some(path) = &cfg.reload_json {
+        let stack = reload_stack(path);
+        let heads: Vec<Net> = stack.heads.iter().map(net_from_frozen).collect();
+        let metrics = evaluate_stack(
+            &heads,
+            &stack.translator,
+            &samples,
+            &stack.metrics.per_bit_acc.iter().zip(&stack.metrics.neurons_per_bit).zip(&stack.metrics.depth_per_bit)
+                .map(|((&acc, &neurons), &depth)| (acc, neurons, depth))
+                .collect::<Vec<_>>(),
+            stack.metrics.conflicting_keys,
+        );
+        print_run_summary(&metrics);
+        if let Some(path) = &cfg.metrics_json {
+            write_json(path, &metrics);
+        }
+        if !metrics_match(&metrics, &stack.metrics) {
+            eprintln!("reload consistency check failed");
+            std::process::exit(1);
+        }
+        return;
+    }
+
+    let mut heads = Vec::with_capacity(8);
+    let mut bit_stats = Vec::with_capacity(8);
     println!(
         "Config: max_neurons={} max_fan={} proposals={} stall={} scout_top={} pair_top={} probe_epochs={} translator_hidden={} translator_epochs={} translator_lr={} search_seed={}",
         cfg.max_neurons, cfg.max_fan, cfg.proposals, cfg.stall_limit, cfg.scout_top, cfg.pair_top, cfg.probe_epochs,
@@ -794,58 +1091,12 @@ fn main() {
             depth,
             net.neurons.iter().any(|n| n.parents.iter().any(|&p| p >= INPUT_DIM))
         );
+        bit_stats.push((acc, net.neurons.len(), depth));
         heads.push(net);
     }
 
-    let mut exact = 0usize;
-    let mut per_op_ok = [0usize; 4];
-    let mut per_op_total = [0usize; 4];
-    for sample in &samples {
-        let pred = predict_byte(&heads, &sample.input);
-        if pred == sample.target_byte { exact += 1; }
-        per_op_ok[sample.opcode.idx()] += usize::from(pred == sample.target_byte);
-        per_op_total[sample.opcode.idx()] += 1;
-    }
-
-    println!("\n=== COMBINED BYTE RESULT ===");
-    println!("  exact byte acc: {:.1}%", exact as f32 / samples.len() as f32 * 100.0);
-    for op in Opcode::all() {
-        println!(
-            "  {}: {:.1}%",
-            op.name(),
-            per_op_ok[op.idx()] as f32 / per_op_total[op.idx()] as f32 * 100.0
-        );
-    }
-
-    println!("  adversarial:");
-    for &x in &ADV_CASES {
-        for op in Opcode::all() {
-            let mut input = Vec::with_capacity(INPUT_DIM);
-            input.extend(bits8(x));
-            for oi in 0..OPCODES {
-                input.push(if oi == op.idx() { 1 } else { 0 });
-            }
-            let pred = predict_byte(&heads, &input);
-            let target = op.apply(x);
-            println!(
-                "    {}({:#04X}) -> pred={:#04X} target={:#04X} {}",
-                op.name(),
-                x,
-                pred,
-                target,
-                if pred == target { "OK" } else { "MISS" }
-            );
-        }
-    }
-
-    let max_depth = heads.iter().flat_map(|n| n.neurons.iter().map(|nn| nn.tick)).max().unwrap_or(0);
-    let total_neurons: usize = heads.iter().map(|n| n.neurons.len()).sum();
-    println!("\n  total neurons across heads: {}", total_neurons);
-    println!("  max head depth: {}", max_depth);
-
     let charge_latents: Vec<Vec<f32>> = samples.iter().map(|s| charge_features(&heads, &s.input)).collect();
     let full_latents: Vec<Vec<f32>> = samples.iter().map(|s| full_latent_features(&heads, &s.input)).collect();
-
     let charge_model = train_translator(
         &charge_latents,
         &samples,
@@ -864,37 +1115,30 @@ fn main() {
     );
     let charge_report = eval_translator(&charge_model, &charge_latents, &samples);
     let full_report = eval_translator(&full_model, &full_latents, &samples);
-    let lut_report = eval_lut_translator(&heads, &samples);
 
-    println!("\n=== FROZEN TRANSLATOR HEADS ===");
+    println!("\n=== DIAGNOSTIC TRANSLATORS ===");
     println!("  charge-only translator: {:.1}%", charge_report.exact_acc);
-    for op in Opcode::all() {
-        println!("    {}: {:.1}%", op.name(), charge_report.per_op[op.idx()]);
-    }
     println!("  full-latent translator: {:.1}%", full_report.exact_acc);
-    for op in Opcode::all() {
-        println!("    {}: {:.1}%", op.name(), full_report.per_op[op.idx()]);
-    }
-    println!(
-        "  latent-LUT translator: {:.1}% (distinct_keys={} conflicting_keys={})",
-        lut_report.exact_acc,
-        lut_report.distinct_keys,
-        lut_report.conflicting_keys
-    );
-    for op in Opcode::all() {
-        println!("    {}: {:.1}%", op.name(), lut_report.per_op[op.idx()]);
-    }
-
     if !full_report.misses.is_empty() {
         println!("  full-latent misses (first {}):", full_report.misses.len());
         for (op, x, pred, target) in &full_report.misses {
-            println!(
-                "    {}({:#04X}) -> pred={:#04X} target={:#04X}",
-                op.name(),
-                x,
-                pred,
-                target
-            );
+            println!("    {}({:#04X}) -> pred={:#04X} target={:#04X}", op.name(), x, pred, target);
         }
+    }
+
+    let (translator, lut_report) = build_exact_lut(&heads, &samples);
+    let metrics = evaluate_stack(&heads, &translator, &samples, &bit_stats, lut_report.conflicting_keys);
+    print_run_summary(&metrics);
+
+    if let Some(path) = &cfg.metrics_json {
+        write_json(path, &metrics);
+    }
+    if let Some(path) = &cfg.export_json {
+        if lut_report.conflicting_keys != 0 || (metrics.translator_byte_acc - 100.0).abs() > 1e-6 {
+            eprintln!("refusing to export non-exact translator stack");
+            std::process::exit(1);
+        }
+        let stack = frozen_stack(&cfg, &heads, translator, metrics);
+        write_json(path, &stack);
     }
 }
