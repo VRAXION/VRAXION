@@ -112,6 +112,41 @@ If code and docs disagree about **Current mainline**, the code wins.
 
 ---
 
+### 2026-04-12 — Bias-free persistent grower consolidation (validated cleanup)
+
+**Status:** Current mainline
+
+**What changed**
+
+- `instnct-core/examples/neuron_grower.rs` was consolidated onto `main` as a bias-free threshold grower.
+- The grower neuron is now stored and evaluated in the direct form `dot >= threshold`; the old `bias + dot >= threshold` parameterization was removed from the persistent grower path.
+- The scout-guided ternary search was normalized to the same bias-free form, so there is no hidden `bias=-1` offset left in guided search, blind search, runtime eval, `state.tsv`, or per-step / final JSON checkpoints.
+- Persistent state is now intentionally **breaking** for this path: old bias-bearing `state.tsv` rows are rejected instead of being silently reinterpreted.
+
+**Why it mattered**
+
+- The old grower was searching a redundant degree of freedom. In the threshold neuron family, `bias + dot >= threshold` is algebraically the same as `dot >= threshold - bias`, so carrying both parameters only inflated the search and serialized state.
+- Removing `bias` reduces ops and state width on the edge-hardware deployment path without reducing the function class of the current threshold neuron.
+- The cleanup also makes later activation experiments easier to reason about: C19 `c` and `rho` are shape parameters, not hidden replacements for threshold bias, so the threshold grower and any future C19 grower now have a cleaner separation.
+
+**Evidence**
+
+| Check | Result |
+|---|---|
+| Formula equivalence | PASS on 200 random ternary weight vectors over the full 9-bit input space |
+| Search equivalence | PASS on `digit_parity`, `is_digit_gt_4`, `digit_2_vs_3`, `is_symmetric` across multiple parent sets |
+| Fresh grower smoke test | PASS: new bias-free `state.tsv` and `final.json` produced correctly |
+| Resume smoke test | PASS: resumed from the new state format and continued growth normally |
+| Old-state guardrail | PASS: old 10-column bias-bearing state is rejected explicitly |
+
+**Promotions / Rejections**
+
+- **Promoted:** Bias-free threshold neuron as the canonical persistent grower representation.
+- **Promoted:** Explicit schema break for `neuron_grower` persistent state instead of silent backward-compat shims.
+- **Rejected:** Treating C19 `c`/`rho` as implicit replacements for threshold bias in the current grower.
+
+---
+
 ### 2026-04-08 — INCREMENTAL BUILD: 100% generalization with 10 neurons (BREAKTHROUGH)
 
 **Status:** Confirmed
