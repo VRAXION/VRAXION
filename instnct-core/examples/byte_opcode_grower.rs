@@ -10,7 +10,7 @@
 //! Run:
 //!   cargo run --release --example byte_opcode_grower
 
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 
 const DATA_BITS: usize = 8;
 const OPCODES: usize = 4;
@@ -26,6 +26,9 @@ struct Config {
     scout_top: usize,
     pair_top: usize,
     probe_epochs: usize,
+    translator_hidden: usize,
+    translator_epochs: usize,
+    translator_lr: f32,
 }
 
 fn parse_args() -> Config {
@@ -39,6 +42,9 @@ fn parse_args() -> Config {
         scout_top: 12,
         pair_top: 8,
         probe_epochs: 200,
+        translator_hidden: 24,
+        translator_epochs: 800,
+        translator_lr: 0.03,
     };
     let mut i = 1;
     while i < args.len() {
@@ -51,6 +57,9 @@ fn parse_args() -> Config {
             "--scout-top" => { i += 1; cfg.scout_top = args[i].parse().unwrap_or(12); }
             "--pair-top" => { i += 1; cfg.pair_top = args[i].parse().unwrap_or(8); }
             "--probe-epochs" => { i += 1; cfg.probe_epochs = args[i].parse().unwrap_or(200); }
+            "--translator-hidden" => { i += 1; cfg.translator_hidden = args[i].parse().unwrap_or(24); }
+            "--translator-epochs" => { i += 1; cfg.translator_epochs = args[i].parse().unwrap_or(800); }
+            "--translator-lr" => { i += 1; cfg.translator_lr = args[i].parse().unwrap_or(0.03); }
             _ => {}
         }
         i += 1;
@@ -172,12 +181,20 @@ impl Net {
         for n in &self.neurons { s.push(n.eval(&s)); }
         s
     }
+    fn score_from_sigs(&self, sigs: &[u8]) -> f32 {
+        self.neurons.iter().enumerate()
+            .map(|(i, n)| n.alpha * if sigs[self.n_in + i] == 1 { 1.0 } else { -1.0 })
+            .sum()
+    }
+    fn score(&self, inp: &[u8]) -> f32 {
+        if self.neurons.is_empty() { return 0.0; }
+        let sigs = self.eval_all(inp);
+        self.score_from_sigs(&sigs)
+    }
     fn predict(&self, inp: &[u8]) -> u8 {
         if self.neurons.is_empty() { return 0; }
         let sigs = self.eval_all(inp);
-        let score: f32 = self.neurons.iter().enumerate()
-            .map(|(i, n)| n.alpha * if sigs[self.n_in + i] == 1 { 1.0 } else { -1.0 })
-            .sum();
+        let score = self.score_from_sigs(&sigs);
         if score >= 0.0 { 1 } else { 0 }
     }
     fn accuracy(&self, data: &[(Vec<u8>, u8)]) -> f32 {
@@ -187,6 +204,57 @@ impl Net {
     fn add(&mut self, n: Neuron) {
         self.sig_ticks.push(n.tick);
         self.neurons.push(n);
+    }
+}
+
+fn relu(x: f32) -> f32 { x.max(0.0) }
+
+#[derive(Clone)]
+struct Mlp {
+    w1: Vec<Vec<f32>>,
+    b1: Vec<f32>,
+    w2: Vec<Vec<f32>>,
+    b2: Vec<f32>,
+}
+
+impl Mlp {
+    fn new(input: usize, hidden: usize, output: usize, seed: u64) -> Self {
+        let mut rng = Rng::new(seed ^ 0x9E37_79B9_7F4A_7C15);
+        let mut w1 = vec![vec![0.0; input]; hidden];
+        let mut w2 = vec![vec![0.0; hidden]; output];
+        for row in &mut w1 {
+            for v in row {
+                *v = rng.range(-0.20, 0.20);
+            }
+        }
+        for row in &mut w2 {
+            for v in row {
+                *v = rng.range(-0.20, 0.20);
+            }
+        }
+        Self { w1, b1: vec![0.0; hidden], w2, b2: vec![0.0; output] }
+    }
+
+    fn forward(&self, x: &[f32]) -> (Vec<f32>, Vec<f32>, Vec<f32>) {
+        let mut hidden_raw = vec![0.0; self.w1.len()];
+        let mut hidden = vec![0.0; self.w1.len()];
+        for i in 0..self.w1.len() {
+            let mut s = self.b1[i];
+            for (j, &xj) in x.iter().enumerate() {
+                s += self.w1[i][j] * xj;
+            }
+            hidden_raw[i] = s;
+            hidden[i] = relu(s);
+        }
+        let mut out = vec![0.0; self.w2.len()];
+        for i in 0..self.w2.len() {
+            let mut s = self.b2[i];
+            for (j, &hj) in hidden.iter().enumerate() {
+                s += self.w2[i][j] * hj;
+            }
+            out[i] = s;
+        }
+        (hidden_raw, hidden, out)
     }
 }
 
@@ -523,6 +591,183 @@ fn predict_byte(heads: &[Net], input: &[u8]) -> u8 {
     out
 }
 
+fn charge_features(heads: &[Net], input: &[u8]) -> Vec<f32> {
+    heads.iter().map(|net| net.score(input)).collect()
+}
+
+fn full_latent_features(heads: &[Net], input: &[u8]) -> Vec<f32> {
+    let mut out = Vec::new();
+    for net in heads {
+        let sigs = net.eval_all(input);
+        out.push(net.score_from_sigs(&sigs));
+        out.extend(sigs[net.n_in..].iter().map(|&v| v as f32));
+    }
+    out
+}
+
+fn binary_latent_signature(heads: &[Net], input: &[u8]) -> Vec<u8> {
+    let mut out = Vec::new();
+    for net in heads {
+        let sigs = net.eval_all(input);
+        out.extend_from_slice(&sigs[net.n_in..]);
+    }
+    out
+}
+
+fn target_bits(byte: u8) -> [u8; 8] {
+    let mut out = [0u8; 8];
+    for (i, slot) in out.iter_mut().enumerate() {
+        *slot = (byte >> i) & 1;
+    }
+    out
+}
+
+fn train_translator(features: &[Vec<f32>], samples: &[Sample], hidden: usize, epochs: usize, lr: f32, seed: u64) -> Mlp {
+    let input_dim = features.first().map(|f| f.len()).unwrap_or(0);
+    let mut model = Mlp::new(input_dim, hidden, 8, seed);
+    let mut order: Vec<usize> = (0..features.len()).collect();
+    let mut rng = Rng::new(seed ^ 0xD1B5_4A32);
+    for _ in 0..epochs {
+        for i in (1..order.len()).rev() {
+            let j = rng.pick(i + 1);
+            order.swap(i, j);
+        }
+        for &idx in &order {
+            let x = &features[idx];
+            let target = target_bits(samples[idx].target_byte);
+            let (hidden_raw, hidden_act, out_raw) = model.forward(x);
+            let out_act: Vec<f32> = out_raw.iter().map(|&v| sigmoid(v)).collect();
+            let mut grad_out = vec![0.0f32; 8];
+            for i in 0..8 {
+                let err = out_act[i] - target[i] as f32;
+                grad_out[i] = err;
+            }
+            let mut grad_hidden = vec![0.0f32; hidden];
+            for h in 0..hidden {
+                let mut s = 0.0;
+                for o in 0..8 {
+                    s += grad_out[o] * model.w2[o][h];
+                }
+                grad_hidden[h] = if hidden_raw[h] > 0.0 { s } else { 0.0 };
+            }
+            for o in 0..8 {
+                for h in 0..hidden {
+                    model.w2[o][h] -= lr * grad_out[o] * hidden_act[h];
+                }
+                model.b2[o] -= lr * grad_out[o];
+            }
+            for h in 0..hidden {
+                for (j, &xj) in x.iter().enumerate() {
+                    model.w1[h][j] -= lr * grad_hidden[h] * xj;
+                }
+                model.b1[h] -= lr * grad_hidden[h];
+            }
+        }
+    }
+    model
+}
+
+fn translator_predict(model: &Mlp, features: &[f32]) -> u8 {
+    let (_, _, out_raw) = model.forward(features);
+    let mut out = 0u8;
+    for (bit, &logit) in out_raw.iter().enumerate().take(8) {
+        if sigmoid(logit) >= 0.5 { out |= 1 << bit; }
+    }
+    out
+}
+
+struct TranslatorReport {
+    exact_acc: f32,
+    per_op: [f32; 4],
+    misses: Vec<(Opcode, u8, u8, u8)>,
+}
+
+fn eval_translator(model: &Mlp, features: &[Vec<f32>], samples: &[Sample]) -> TranslatorReport {
+    let mut exact = 0usize;
+    let mut per_op_ok = [0usize; 4];
+    let mut per_op_total = [0usize; 4];
+    let mut misses = Vec::new();
+    for (idx, sample) in samples.iter().enumerate() {
+        let pred = translator_predict(model, &features[idx]);
+        if pred == sample.target_byte { exact += 1; }
+        else if misses.len() < 12 {
+            let input_byte = sample.input[..DATA_BITS].iter().enumerate()
+                .fold(0u8, |acc, (i, &b)| acc | ((b & 1) << i));
+            misses.push((sample.opcode, input_byte, pred, sample.target_byte));
+        }
+        per_op_ok[sample.opcode.idx()] += usize::from(pred == sample.target_byte);
+        per_op_total[sample.opcode.idx()] += 1;
+    }
+    let mut per_op = [0.0f32; 4];
+    for op in Opcode::all() {
+        per_op[op.idx()] = per_op_ok[op.idx()] as f32 / per_op_total[op.idx()] as f32 * 100.0;
+    }
+    TranslatorReport {
+        exact_acc: exact as f32 / samples.len() as f32 * 100.0,
+        per_op,
+        misses,
+    }
+}
+
+struct LutReport {
+    exact_acc: f32,
+    per_op: [f32; 4],
+    distinct_keys: usize,
+    conflicting_keys: usize,
+}
+
+fn eval_lut_translator(heads: &[Net], samples: &[Sample]) -> LutReport {
+    let mut counts: HashMap<Vec<u8>, Vec<u16>> = HashMap::new();
+    for sample in samples {
+        let sig = binary_latent_signature(heads, &sample.input);
+        let bucket = counts.entry(sig).or_insert_with(|| vec![0u16; 256]);
+        bucket[sample.target_byte as usize] += 1;
+    }
+
+    let mut lut: HashMap<Vec<u8>, u8> = HashMap::new();
+    let mut conflicting_keys = 0usize;
+    for (sig, bucket) in &counts {
+        let mut best_idx = 0usize;
+        let mut best_count = 0u16;
+        let mut nonzero = 0usize;
+        for (i, &count) in bucket.iter().enumerate() {
+            if count > 0 {
+                nonzero += 1;
+                if count > best_count {
+                    best_count = count;
+                    best_idx = i;
+                }
+            }
+        }
+        if nonzero > 1 {
+            conflicting_keys += 1;
+        }
+        lut.insert(sig.clone(), best_idx as u8);
+    }
+
+    let mut exact = 0usize;
+    let mut per_op_ok = [0usize; 4];
+    let mut per_op_total = [0usize; 4];
+    for sample in samples {
+        let sig = binary_latent_signature(heads, &sample.input);
+        let pred = *lut.get(&sig).unwrap_or(&0);
+        if pred == sample.target_byte { exact += 1; }
+        per_op_ok[sample.opcode.idx()] += usize::from(pred == sample.target_byte);
+        per_op_total[sample.opcode.idx()] += 1;
+    }
+
+    let mut per_op = [0.0f32; 4];
+    for op in Opcode::all() {
+        per_op[op.idx()] = per_op_ok[op.idx()] as f32 / per_op_total[op.idx()] as f32 * 100.0;
+    }
+    LutReport {
+        exact_acc: exact as f32 / samples.len() as f32 * 100.0,
+        per_op,
+        distinct_keys: counts.len(),
+        conflicting_keys,
+    }
+}
+
 fn main() {
     let cfg = parse_args();
     let samples = dataset();
@@ -531,8 +776,9 @@ fn main() {
     println!("=== BYTE + OPCODE GROWER ===");
     println!("Domain: 1 byte + 4 opcode -> 1 byte (exact 1024 samples)");
     println!(
-        "Config: max_neurons={} max_fan={} proposals={} stall={} scout_top={} pair_top={} probe_epochs={} search_seed={}",
-        cfg.max_neurons, cfg.max_fan, cfg.proposals, cfg.stall_limit, cfg.scout_top, cfg.pair_top, cfg.probe_epochs, cfg.search_seed
+        "Config: max_neurons={} max_fan={} proposals={} stall={} scout_top={} pair_top={} probe_epochs={} translator_hidden={} translator_epochs={} translator_lr={} search_seed={}",
+        cfg.max_neurons, cfg.max_fan, cfg.proposals, cfg.stall_limit, cfg.scout_top, cfg.pair_top, cfg.probe_epochs,
+        cfg.translator_hidden, cfg.translator_epochs, cfg.translator_lr, cfg.search_seed
     );
 
     for bit in 0..8 {
@@ -596,4 +842,59 @@ fn main() {
     let total_neurons: usize = heads.iter().map(|n| n.neurons.len()).sum();
     println!("\n  total neurons across heads: {}", total_neurons);
     println!("  max head depth: {}", max_depth);
+
+    let charge_latents: Vec<Vec<f32>> = samples.iter().map(|s| charge_features(&heads, &s.input)).collect();
+    let full_latents: Vec<Vec<f32>> = samples.iter().map(|s| full_latent_features(&heads, &s.input)).collect();
+
+    let charge_model = train_translator(
+        &charge_latents,
+        &samples,
+        cfg.translator_hidden,
+        cfg.translator_epochs,
+        cfg.translator_lr,
+        cfg.search_seed ^ 0xA11CE001,
+    );
+    let full_model = train_translator(
+        &full_latents,
+        &samples,
+        cfg.translator_hidden,
+        cfg.translator_epochs,
+        cfg.translator_lr,
+        cfg.search_seed ^ 0xA11CE002,
+    );
+    let charge_report = eval_translator(&charge_model, &charge_latents, &samples);
+    let full_report = eval_translator(&full_model, &full_latents, &samples);
+    let lut_report = eval_lut_translator(&heads, &samples);
+
+    println!("\n=== FROZEN TRANSLATOR HEADS ===");
+    println!("  charge-only translator: {:.1}%", charge_report.exact_acc);
+    for op in Opcode::all() {
+        println!("    {}: {:.1}%", op.name(), charge_report.per_op[op.idx()]);
+    }
+    println!("  full-latent translator: {:.1}%", full_report.exact_acc);
+    for op in Opcode::all() {
+        println!("    {}: {:.1}%", op.name(), full_report.per_op[op.idx()]);
+    }
+    println!(
+        "  latent-LUT translator: {:.1}% (distinct_keys={} conflicting_keys={})",
+        lut_report.exact_acc,
+        lut_report.distinct_keys,
+        lut_report.conflicting_keys
+    );
+    for op in Opcode::all() {
+        println!("    {}: {:.1}%", op.name(), lut_report.per_op[op.idx()]);
+    }
+
+    if !full_report.misses.is_empty() {
+        println!("  full-latent misses (first {}):", full_report.misses.len());
+        for (op, x, pred, target) in &full_report.misses {
+            println!(
+                "    {}({:#04X}) -> pred={:#04X} target={:#04X}",
+                op.name(),
+                x,
+                pred,
+                target
+            );
+        }
+    }
 }
