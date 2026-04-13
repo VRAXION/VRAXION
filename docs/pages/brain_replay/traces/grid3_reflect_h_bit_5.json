@@ -41,13 +41,43 @@
         0.963,
         0.0
       ]
+    },
+    {
+      "event": "neuron_added",
+      "tick": 2,
+      "id": 1,
+      "parents": [
+        3,
+        9
+      ],
+      "weights": [
+        1,
+        -1
+      ],
+      "threshold": 0,
+      "alpha": 0.4592,
+      "train_acc": 92.0,
+      "val_acc": 100.0,
+      "c_float": 3.0,
+      "rho_float": 0.0,
+      "c_quant": 3.0,
+      "rho_quant": 0.0,
+      "lut_min_dot": -2,
+      "lut_size": 5,
+      "lut": [
+        -0.6667,
+        -0.6667,
+        0.0,
+        0.6667,
+        0.6667
+      ]
     }
   ],
   "final": {
-    "best_val_acc": 81.0,
-    "best_test_acc": 77.5,
-    "total_neurons": 1,
-    "max_depth": 1,
+    "best_val_acc": 100.0,
+    "best_test_acc": 100.0,
+    "total_neurons": 2,
+    "max_depth": 2,
     "stall_count": 0
   }
 }

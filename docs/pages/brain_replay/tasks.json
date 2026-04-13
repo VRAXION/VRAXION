@@ -1,5 +1,5 @@
 {
-  "generated_utc": "2026-04-13T02:16:34Z",
+  "generated_utc": "2026-04-13T02:42:54Z",
   "tasks": [
     {
       "task": "grid3_center",
@@ -213,7 +213,14 @@
     },
     {
       "task": "grid3_reflect_h_bit_5",
-      "best_val_acc": 81.0,
+      "best_val_acc": 100.0,
+      "total_neurons": 2,
+      "max_depth": 2,
+      "winner_seed": 0
+    },
+    {
+      "task": "grid3_reflect_h_bit_6",
+      "best_val_acc": 79.5,
       "total_neurons": 1,
       "max_depth": 1,
       "winner_seed": 0
