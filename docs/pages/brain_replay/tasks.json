@@ -1,0 +1,320 @@
+{
+  "generated_utc": "2026-04-13T02:16:34Z",
+  "tasks": [
+    {
+      "task": "grid3_center",
+      "best_val_acc": 100.0,
+      "total_neurons": 2,
+      "max_depth": 2,
+      "winner_seed": 0
+    },
+    {
+      "task": "grid3_copy_bit_0",
+      "best_val_acc": 100.0,
+      "total_neurons": 2,
+      "max_depth": 2,
+      "winner_seed": 0
+    },
+    {
+      "task": "grid3_copy_bit_1",
+      "best_val_acc": 100.0,
+      "total_neurons": 2,
+      "max_depth": 2,
+      "winner_seed": 0
+    },
+    {
+      "task": "grid3_copy_bit_2",
+      "best_val_acc": 100.0,
+      "total_neurons": 2,
+      "max_depth": 2,
+      "winner_seed": 0
+    },
+    {
+      "task": "grid3_copy_bit_3",
+      "best_val_acc": 100.0,
+      "total_neurons": 2,
+      "max_depth": 2,
+      "winner_seed": 0
+    },
+    {
+      "task": "grid3_copy_bit_4",
+      "best_val_acc": 100.0,
+      "total_neurons": 2,
+      "max_depth": 2,
+      "winner_seed": 0
+    },
+    {
+      "task": "grid3_copy_bit_5",
+      "best_val_acc": 100.0,
+      "total_neurons": 2,
+      "max_depth": 2,
+      "winner_seed": 0
+    },
+    {
+      "task": "grid3_copy_bit_6",
+      "best_val_acc": 100.0,
+      "total_neurons": 2,
+      "max_depth": 2,
+      "winner_seed": 0
+    },
+    {
+      "task": "grid3_copy_bit_7",
+      "best_val_acc": 100.0,
+      "total_neurons": 2,
+      "max_depth": 2,
+      "winner_seed": 0
+    },
+    {
+      "task": "grid3_copy_bit_8",
+      "best_val_acc": 100.0,
+      "total_neurons": 2,
+      "max_depth": 2,
+      "winner_seed": 0
+    },
+    {
+      "task": "grid3_corner",
+      "best_val_acc": 100.0,
+      "total_neurons": 1,
+      "max_depth": 1,
+      "winner_seed": 1
+    },
+    {
+      "task": "grid3_diag_xor",
+      "best_val_acc": 100.0,
+      "total_neurons": 3,
+      "max_depth": 3,
+      "winner_seed": 2
+    },
+    {
+      "task": "grid3_diagonal",
+      "best_val_acc": 100.0,
+      "total_neurons": 1,
+      "max_depth": 1,
+      "winner_seed": 1
+    },
+    {
+      "task": "grid3_full_parity",
+      "best_val_acc": 76.2,
+      "total_neurons": 28,
+      "max_depth": 12,
+      "winner_seed": 4
+    },
+    {
+      "task": "grid3_horizontal_line",
+      "best_val_acc": 99.8,
+      "total_neurons": 10,
+      "max_depth": 6,
+      "winner_seed": 16
+    },
+    {
+      "task": "grid3_invert_bit_0",
+      "best_val_acc": 100.0,
+      "total_neurons": 1,
+      "max_depth": 1,
+      "winner_seed": 0
+    },
+    {
+      "task": "grid3_invert_bit_1",
+      "best_val_acc": 100.0,
+      "total_neurons": 1,
+      "max_depth": 1,
+      "winner_seed": 0
+    },
+    {
+      "task": "grid3_invert_bit_2",
+      "best_val_acc": 100.0,
+      "total_neurons": 1,
+      "max_depth": 1,
+      "winner_seed": 0
+    },
+    {
+      "task": "grid3_invert_bit_3",
+      "best_val_acc": 100.0,
+      "total_neurons": 1,
+      "max_depth": 1,
+      "winner_seed": 0
+    },
+    {
+      "task": "grid3_invert_bit_4",
+      "best_val_acc": 100.0,
+      "total_neurons": 1,
+      "max_depth": 1,
+      "winner_seed": 0
+    },
+    {
+      "task": "grid3_invert_bit_5",
+      "best_val_acc": 100.0,
+      "total_neurons": 1,
+      "max_depth": 1,
+      "winner_seed": 0
+    },
+    {
+      "task": "grid3_invert_bit_6",
+      "best_val_acc": 100.0,
+      "total_neurons": 1,
+      "max_depth": 1,
+      "winner_seed": 0
+    },
+    {
+      "task": "grid3_invert_bit_7",
+      "best_val_acc": 100.0,
+      "total_neurons": 1,
+      "max_depth": 1,
+      "winner_seed": 0
+    },
+    {
+      "task": "grid3_invert_bit_8",
+      "best_val_acc": 100.0,
+      "total_neurons": 1,
+      "max_depth": 1,
+      "winner_seed": 0
+    },
+    {
+      "task": "grid3_majority",
+      "best_val_acc": 100.0,
+      "total_neurons": 6,
+      "max_depth": 5,
+      "winner_seed": 7
+    },
+    {
+      "task": "grid3_reflect_h_bit_0",
+      "best_val_acc": 100.0,
+      "total_neurons": 2,
+      "max_depth": 2,
+      "winner_seed": 0
+    },
+    {
+      "task": "grid3_reflect_h_bit_1",
+      "best_val_acc": 100.0,
+      "total_neurons": 2,
+      "max_depth": 2,
+      "winner_seed": 0
+    },
+    {
+      "task": "grid3_reflect_h_bit_2",
+      "best_val_acc": 100.0,
+      "total_neurons": 2,
+      "max_depth": 2,
+      "winner_seed": 0
+    },
+    {
+      "task": "grid3_reflect_h_bit_3",
+      "best_val_acc": 100.0,
+      "total_neurons": 2,
+      "max_depth": 2,
+      "winner_seed": 0
+    },
+    {
+      "task": "grid3_reflect_h_bit_4",
+      "best_val_acc": 100.0,
+      "total_neurons": 2,
+      "max_depth": 2,
+      "winner_seed": 0
+    },
+    {
+      "task": "grid3_reflect_h_bit_5",
+      "best_val_acc": 81.0,
+      "total_neurons": 1,
+      "max_depth": 1,
+      "winner_seed": 0
+    },
+    {
+      "task": "grid3_shift_right_bit_0",
+      "best_val_acc": 100.0,
+      "total_neurons": 2,
+      "max_depth": 2,
+      "winner_seed": 0
+    },
+    {
+      "task": "grid3_shift_right_bit_1",
+      "best_val_acc": 100.0,
+      "total_neurons": 2,
+      "max_depth": 2,
+      "winner_seed": 0
+    },
+    {
+      "task": "grid3_shift_right_bit_2",
+      "best_val_acc": 100.0,
+      "total_neurons": 2,
+      "max_depth": 2,
+      "winner_seed": 0
+    },
+    {
+      "task": "grid3_shift_right_bit_3",
+      "best_val_acc": 100.0,
+      "total_neurons": 2,
+      "max_depth": 2,
+      "winner_seed": 0
+    },
+    {
+      "task": "grid3_shift_right_bit_4",
+      "best_val_acc": 100.0,
+      "total_neurons": 2,
+      "max_depth": 2,
+      "winner_seed": 0
+    },
+    {
+      "task": "grid3_shift_right_bit_5",
+      "best_val_acc": 100.0,
+      "total_neurons": 2,
+      "max_depth": 2,
+      "winner_seed": 0
+    },
+    {
+      "task": "grid3_shift_right_bit_6",
+      "best_val_acc": 100.0,
+      "total_neurons": 2,
+      "max_depth": 2,
+      "winner_seed": 0
+    },
+    {
+      "task": "grid3_shift_right_bit_7",
+      "best_val_acc": 100.0,
+      "total_neurons": 2,
+      "max_depth": 2,
+      "winner_seed": 0
+    },
+    {
+      "task": "grid3_shift_right_bit_8",
+      "best_val_acc": 100.0,
+      "total_neurons": 2,
+      "max_depth": 2,
+      "winner_seed": 0
+    },
+    {
+      "task": "grid3_symmetry_h",
+      "best_val_acc": 100.0,
+      "total_neurons": 13,
+      "max_depth": 9,
+      "winner_seed": 17
+    },
+    {
+      "task": "grid3_top_heavy",
+      "best_val_acc": 100.0,
+      "total_neurons": 1,
+      "max_depth": 1,
+      "winner_seed": 1
+    },
+    {
+      "task": "grid3_vertical_line",
+      "best_val_acc": 100.0,
+      "total_neurons": 10,
+      "max_depth": 5,
+      "winner_seed": 9
+    },
+    {
+      "task": "manual_c19_center_v1",
+      "best_val_acc": 100.0,
+      "total_neurons": 2,
+      "max_depth": 2,
+      "winner_seed": 0
+    },
+    {
+      "task": "manual_center_v1",
+      "best_val_acc": 100.0,
+      "total_neurons": 1,
+      "max_depth": 1,
+      "winner_seed": 0
+    }
+  ]
+}

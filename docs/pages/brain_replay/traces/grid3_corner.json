@@ -1,0 +1,18 @@
+{
+  "task": "grid3_corner",
+  "data_seed": 42,
+  "search_seed": 1,
+  "n_in": 9,
+  "n_per": 200,
+  "noise": 0.1,
+  "events": [
+    {"event":"neuron_added","tick":1,"id":0,"parents":[0,1,2,4,6,8],"weights":[1,0,1,0,1,1],"threshold":1,"alpha":6.907755,"train_acc":100.0,"val_acc":100.0}
+  ],
+  "final": {
+    "best_val_acc": 100.0,
+    "best_test_acc": 100.0,
+    "total_neurons": 1,
+    "max_depth": 1,
+    "stall_count": 0
+  }
+}

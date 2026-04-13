@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vraxion &middot; Brain Replay</title>
+  <link rel="icon" type="image/svg+xml" href="../../assets/favicon.svg">
+  <link rel="stylesheet" href="./style.css">
+</head>
+<body data-page="brain-replay">
+  <header class="hdr">
+    <a class="back" href="../../">&larr; Vraxion</a>
+    <h1>Brain Replay &middot; Grid3 Curriculum</h1>
+    <span id="header-count" class="muted"></span>
+  </header>
+
+  <main class="grid" id="task-grid">
+    <!-- populated by brain_replay.js :: fetchTasks() -->
+  </main>
+
+  <div id="empty-slot"></div>
+
+  <footer class="ftr">
+    <small>
+      10 tasks &middot; one grown network per task &middot; hover a card to inspect &middot;
+      traces from <code>target/grid3_curriculum/</code>
+    </small>
+  </footer>
+
+  <script src="./brain_replay.js"></script>
+  <script>
+    // Index page entrypoint — calls into brain_replay.js IIFE namespace.
+    document.addEventListener('DOMContentLoaded', function () {
+      if (window.BrainReplay && typeof window.BrainReplay.fetchTasks === 'function') {
+        window.BrainReplay.fetchTasks();
+      }
+    });
+  </script>
+</body>
+</html>
