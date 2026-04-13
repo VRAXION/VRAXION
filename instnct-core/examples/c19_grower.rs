@@ -57,6 +57,14 @@ struct Config {
     exhaustive: bool,
     verbose_search: bool,
     allow_task_switch: bool,
+    // Manual distribution-picker knobs:
+    //   --force-pick N   → skip interactive, bake trained[N] instead of top
+    //   --preview-only   → run STEP A-C, print the trained table, exit before
+    //                      baking (useful for a two-step manual workflow:
+    //                      preview to see the distribution, then re-run with
+    //                      --force-pick to commit a specific candidate).
+    force_pick: Option<usize>,
+    preview_only: bool,
 }
 
 fn parse_args() -> Config {
@@ -89,6 +97,8 @@ fn parse_args() -> Config {
     let mut exhaustive: bool = false;
     let mut verbose_search: bool = false;
     let mut allow_task_switch: bool = false;
+    let mut force_pick: Option<usize> = None;
+    let mut preview_only: bool = false;
 
     let mut i = 1;
     while i < args.len() {
@@ -137,6 +147,14 @@ fn parse_args() -> Config {
             "--exhaustive" => { exhaustive = true; }
             "--verbose-search" => { verbose_search = true; }
             "--allow-task-switch" => { allow_task_switch = true; }
+            "--force-pick" => {
+                i += 1;
+                force_pick = Some(args[i].parse().unwrap_or_else(|_| {
+                    eprintln!("ERROR: --force-pick expects a non-negative integer (0-based trained candidate idx)");
+                    std::process::exit(1);
+                }));
+            }
+            "--preview-only" => { preview_only = true; }
             _ => {}
         }
         i += 1;
@@ -190,6 +208,8 @@ fn parse_args() -> Config {
         exhaustive,
         verbose_search,
         allow_task_switch,
+        force_pick,
+        preview_only,
     }
 }
 
@@ -1434,8 +1454,9 @@ fn main() {
         cfg.finetune_seeds, cfg.finetune_steps, cfg.quant_tolerance, cfg.skip_finetune, cfg.skip_quant);
     println!("  i8 LUT: use_i8={} assert_tol={}pp (per-neuron absmax int8 + i16 alpha)",
         cfg.use_i8, cfg.i8_assert_tol_pp);
-    println!("  flags: interactive={} exhaustive={} verbose_search={} allow_task_switch={}",
-        cfg.interactive, cfg.exhaustive, cfg.verbose_search, cfg.allow_task_switch);
+    println!("  flags: interactive={} exhaustive={} verbose_search={} allow_task_switch={} force_pick={:?} preview_only={}",
+        cfg.interactive, cfg.exhaustive, cfg.verbose_search, cfg.allow_task_switch,
+        cfg.force_pick, cfg.preview_only);
     println!("===========================================================");
 
     // Carry the last-task data out of the task loop for the final report.
@@ -1576,9 +1597,13 @@ fn main() {
         }
         trained.sort_by(|a, b| b.val_acc.partial_cmp(&a.val_acc).unwrap());
 
-        // Pretty-print the trained candidate table — always on in verbose mode,
-        // always on in interactive mode, otherwise silent (matches old behavior).
-        if cfg.verbose_search || cfg.interactive {
+        // Pretty-print the trained candidate table whenever any manual-pick
+        // mode is on (verbose, interactive, preview-only, or force-pick), so
+        // the user always sees what they're choosing from. In pure auto mode
+        // stay silent to match the old overnight log format.
+        let show_table = cfg.verbose_search || cfg.interactive
+            || cfg.preview_only || cfg.force_pick.is_some();
+        if show_table {
             println!("  Trained candidates ({}):", trained.len());
             println!("    {:>3} | {:>6} | {:>2} | consensus | parents",
                 "idx", "val%", "ni");
@@ -1594,12 +1619,32 @@ fn main() {
             }
         }
 
-        // Interactive pick: ask the user which trained candidate to bake. In
-        // non-interactive mode the original behavior is preserved — iterate
-        // all trained in descending val_acc order and bake the first that
-        // passes the dedup + werr + val-drop gates.
+        // --preview-only short-circuits BEFORE the bake: useful for a two-step
+        // manual workflow. The first run prints the trained distribution and
+        // exits; the user picks an idx and re-runs with --force-pick N.
+        if cfg.preview_only {
+            println!("    (--preview-only) distribution printed; exiting without baking.");
+            let _ = std::io::stdout().flush();
+            std::process::exit(0);
+        }
+
+        // Decide which trained candidate(s) to try baking:
+        // 1. --interactive → stdin prompt
+        // 2. --force-pick N → only trained[N]
+        // 3. otherwise → auto-top order (existing behavior)
         let pick = if cfg.interactive {
             read_interactive_pick(trained.len())
+        } else if let Some(k) = cfg.force_pick {
+            if k < trained.len() {
+                println!("    (--force-pick {}) committing trained[{}]", k, k);
+                Pick::Only(k)
+            } else {
+                eprintln!(
+                    "WARN: --force-pick {} out of range (trained has {} candidates), falling back to auto",
+                    k, trained.len()
+                );
+                Pick::Auto
+            }
         } else {
             Pick::Auto
         };
