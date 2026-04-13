@@ -97,6 +97,8 @@ instnct/data/*.npy
 /target
 instnct-core/checkpoints/
 instnct-core/results/
+!instnct-core/results/c19_multihead_bit/
+!instnct-core/results/c19_multihead_bit/**
 /results/
 /.claude/
 

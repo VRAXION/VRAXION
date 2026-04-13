@@ -1,0 +1,24 @@
+{
+  "task": "grid3_invert_bit_3",
+  "activation": "c19",
+  "neurons": [
+    {
+      "parents": [
+        3
+      ],
+      "weights": [
+        -1
+      ],
+      "threshold": 0,
+      "c": 3.0,
+      "rho": 0.0,
+      "lut": [
+        -0.6666666666666666,
+        0.0,
+        0.6666666666666667
+      ],
+      "lut_min_dot": -1,
+      "alpha": 1.2211735176846021
+    }
+  ]
+}
