@@ -1111,6 +1111,10 @@ fn load_state(path: &str) -> Result<Option<(StateHead, Net)>, String> {
 /// Replay AdaBoost sample weights on the loaded network. Uses the stored
 /// `alpha` and the thresholded LUT output as the weak-learner prediction
 /// (consistent with the accept gate used at growth time).
+///
+/// Superseded by `refit_alphas()` for forever-network mode — kept for
+/// reference and possible single-task debug use.
+#[allow(dead_code)]
 fn replay_sw(net: &Net, data: &Data) -> Vec<f32> {
     let mut sw = vec![1.0 / data.train.len() as f32; data.train.len()];
     if net.neurons.is_empty() { return sw; }
@@ -1129,6 +1133,95 @@ fn replay_sw(net: &Net, data: &Data) -> Vec<f32> {
         if norm > 0.0 { for w in &mut sw { *w /= norm; } }
     }
     sw
+}
+
+/// Refit per-neuron AdaBoost alphas against the current task's labels.
+///
+/// This is the core "forever network" trick: the shared neuron body
+/// (parents, weights, threshold, c/rho, LUT) is frozen — it computes
+/// task-invariant features. Only the `alpha` coefficient — how much each
+/// feature contributes to the ensemble sum — is task-specific. On a task
+/// switch we recompute alphas from scratch so that the contribution of
+/// each existing neuron matches its usefulness on the new task:
+///
+///   - Useful features (low weighted error) get high alpha.
+///   - Useless or anti-correlated features (werr ≥ 0.499) get alpha = 0
+///     and effectively vanish from the ensemble sum.
+///   - Sample weights `sw` are overwritten in place via the same
+///     sequential AdaBoost reweight that happens during growth, so the
+///     result is identical to what `replay_sw` would give if the alphas
+///     on disk had been tuned to the current task.
+///
+/// After this returns, callers should call `quantize_alphas_i16(net)` to
+/// refresh the network-shared int16 alpha scale so the i8 runtime path
+/// stays consistent.
+fn refit_alphas(net: &mut Net, data: &Data, sw: &mut Vec<f32>) {
+    // Start from uniform sample weights and sequentially refit.
+    for w in sw.iter_mut() {
+        *w = 1.0 / data.train.len() as f32;
+    }
+    if net.neurons.is_empty() {
+        return;
+    }
+
+    // Precompute all per-sample signal outputs once. Safe because every
+    // neuron's spike output is a pure function of its inputs and the
+    // frozen topology — alpha only affects ensemble inference, not
+    // per-neuron spike.
+    let all_sigs: Vec<Vec<u8>> = data.train.iter().map(|(x, _)| net.eval_all(x)).collect();
+
+    let n_neurons = net.neurons.len();
+    let mut kept = 0usize;
+    let mut zeroed = 0usize;
+    for ni in 0..n_neurons {
+        let sig_idx = net.n_in + ni;
+
+        // Weighted error of this neuron on the current task.
+        let mut werr = 0.0f32;
+        for (pi, ((_, y), wt)) in data.train.iter().zip(sw.iter()).enumerate() {
+            let pred = all_sigs[pi][sig_idx];
+            if pred != *y {
+                werr += *wt;
+            }
+        }
+
+        // Alpha from the AdaBoost closed form, with the same ε clamp the
+        // normal accept path uses. If werr ≥ 0.499 the neuron is worse
+        // than random → alpha = 0 so it contributes nothing to the sum.
+        let new_alpha = if werr >= 0.499 {
+            zeroed += 1;
+            0.0f32
+        } else {
+            kept += 1;
+            0.5 * ((1.0 - werr).max(1e-6) / werr.max(1e-6)).ln()
+        };
+
+        net.neurons[ni].alpha = new_alpha;
+
+        // AdaBoost reweight of `sw` for the NEXT neuron in the chain. A
+        // zero-alpha neuron contributes no reweight (exp(0) = 1), which
+        // is the correct "pass-through" semantics.
+        if new_alpha != 0.0 {
+            let mut norm = 0.0f32;
+            for (pi, ((_, y), wt)) in data.train.iter().zip(sw.iter_mut()).enumerate() {
+                let pred = all_sigs[pi][sig_idx];
+                let ys = if *y == 1 { 1.0 } else { -1.0 };
+                let hs = if pred == 1 { 1.0 } else { -1.0 };
+                *wt *= (-new_alpha * ys * hs).exp();
+                norm += *wt;
+            }
+            if norm > 0.0 {
+                for w in sw.iter_mut() {
+                    *w /= norm;
+                }
+            }
+        }
+    }
+
+    println!(
+        "  [refit_alphas] {} neurons: {} kept (task-useful), {} zeroed (werr>=0.499)",
+        n_neurons, kept, zeroed
+    );
 }
 
 // ══════════════════════════════════════════════════════
@@ -1393,7 +1486,7 @@ fn main() {
     // check is still strict because a different input width would shift all
     // hidden-parent indices.
     let task_switch_ok = !cfg.task_list.is_empty() || cfg.allow_task_switch;
-    let (mut net, loaded) = match load_state(&state_path) {
+    let (mut net, _loaded) = match load_state(&state_path) {
         Ok(Some((head, net))) => {
             if head.task != cfg.task && !task_switch_ok {
                 eprintln!(
@@ -1476,15 +1569,20 @@ fn main() {
         let label_fn = make_label_fn(task_name).expect("task validated above");
         let data = gen_data(label_fn.as_ref(), noise, n_per, data_seed);
 
-        // AdaBoost sample weights: on first task with a loaded state, replay
-        // the existing weights so boosting continues smoothly. On every
-        // subsequent task (or a fresh start), reset to uniform — previous
-        // task's weights would steer proposals at the wrong objective.
-        let mut sw = if task_idx == 0 && loaded {
-            replay_sw(&net, &data)
-        } else {
-            vec![1.0 / data.train.len() as f32; data.train.len()]
-        };
+        // AdaBoost sample weights + alpha refit: the per-neuron alpha
+        // coefficients are task-specific, so on every task entry we
+        // refit them against the current task's labels. This also
+        // rebuilds sw (the sequential sample weights). After refit we
+        // requantize the network-shared i16 alpha scale so the i8
+        // runtime path reflects the new alphas. For a fresh (unloaded)
+        // net this is a no-op (no neurons to refit).
+        //
+        // Critical: without this step, old neurons' frozen alphas
+        // dominate the ensemble sum and pollute the new task's
+        // predictions. See the 2026-04-13 forever-network debug.
+        let mut sw = vec![1.0 / data.train.len() as f32; data.train.len()];
+        refit_alphas(&mut net, &data, &mut sw);
+        quantize_alphas_i16(&mut net);
 
         let mut stall: usize = 0;
         let mut best_val = net.accuracy(&data.val);
