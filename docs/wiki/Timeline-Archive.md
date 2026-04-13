@@ -174,6 +174,7 @@ The timeline is ordered latest-first. Each day is a self-contained H3 section wi
 <details>
 <summary>Jump to date</summary>
 
+- [2026-04-13 — Mirrored autoencoder: hierarchical byte preprocessing via tied-weight MLP + int8 quantization](#2026-04-13--mirrored-autoencoder-hierarchical-byte-preprocessing-via-tied-weight-mlp--int8-quantization)
 - [2026-04-12 — Bias-free persistent grower consolidation](#2026-04-12--bias-free-persistent-grower-consolidation)
 - [2026-04-10 — Connectome, gradient pipeline, and integer deploy](#2026-04-10--connectome-gradient-pipeline-and-integer-deploy)
 - [2026-04-09 — Capability map, readout fix, and float gradient](#2026-04-09--capability-map-readout-fix-and-float-gradient)
@@ -199,6 +200,22 @@ The timeline is ordered latest-first. Each day is a self-contained H3 section wi
 - [Early 2026 — Diamond Code Era](#early-2026--diamond-code-era)
 
 </details>
+
+---
+
+### 2026-04-13 — Mirrored autoencoder: hierarchical byte preprocessing via tied-weight MLP + int8 quantization
+
+**Theme:** Hierarchical byte preprocessing via mirrored autoencoder — explored tied-weight autoencoders, MLP backprop + int8 quantization, and bit-width sweep for the abstract-core preprocessor concept. Established that backprop-trained tied-weight MLP at H=12 achieves 100% lossless byte round-trip encoding through a 7-bit bottleneck, int8 quantization is lossless, and int5 (±15) is the minimum bit-width for perfect encoding at H=12. The total frozen preprocessor fits in 219 bytes (int8) — less than a single cache line.
+
+| Seq | Finding | Status | Source |
+|---|---|---|---|
+| 1 | Tied-weight threshold autoencoder (ternary, flat, random+perturbation search) achieves 72.4% (21/29) on Alice corpus byte round-trip at 8→7 bottleneck. Ablation: tied weights (72.4%) outperform untied (58.6%) — the tied constraint acts as regularization, not a bottleneck. Collisions cluster around similar ASCII bit patterns ('a'/'m', ' '/'b', 'l'/'n'). | Validated finding | `instnct-core/examples/mirror_autoencoder.rs` |
+| 2 | MLP backprop with tied weights (8→12 ReLU→7 sigmoid→12 ReLU W2ᵀ→8 sigmoid W1ᵀ) achieves 100% round-trip (29/29 unique bytes) at H=12 with seed 1 of 5. Int8 quantization is LOSSLESS — zero accuracy drop from float32. Backprop vastly outperforms random+perturbation search: 100% vs 72.4% on the same bottleneck task. | Validated finding | `instnct-core/examples/mlp_mirror_quant.rs` |
+| 3 | Quantization sweep — minimum bit-width for perfect 29-byte round-trip: H=12 needs int5 (±15), H=24 needs only int4 (±7). At H=12: int8=100%, int7=100%, int6=100%, int5=100%, int4=82.8%, int3=27.6%. Hard break at int4 for H=12. | Validated finding | `instnct-core/examples/quant_sweep.rs` |
+| 4 | Margin analysis: bottleneck neuron confidence (distance from 0.5 threshold) is identical across float32, int8, and int5. Code separation (Hamming distance between byte codes) identical: min=1, mean=3.17 at all bit-widths. Output reconstruction quality: int5 max_err=0.088 (excellent) vs int8 max_err=0.011 (excellent) vs int4 max_err=0.628 (BROKEN). No measurable quality benefit from int8 over int5 beyond hardware nativeness. | Validated finding | `instnct-core/examples/quant_margin.rs` |
+| 5 | Edge deployment spec: H=12 + int8 = 219 params = 219 bytes total model. Entire preprocessor fits in L1 cache. Native SIMD on all platforms (ARM NEON 16-wide, x86 AVX 32-wide). The int5 alternative saves 82 bytes but requires custom bit-packing with no SIMD benefit. | Inferred | quantization sweep + margin analysis |
+| 6 | Cascaded compression via chained mirrored autoencoders (8→7→6→5→4→3): round-trip accuracy degrades as 100%→72%→90%→62%→72%→76% at each level, with threshold non-linearity limiting flat ternary encoders. This cascade approach is superseded by the MLP backprop path which achieves 100% in a single step. | Rejected (superseded) | `instnct-core/examples/mirror_autoencoder.rs` |
+| 7 | Architectural direction: the abstract-core preprocessor concept (raw byte → learned bottleneck encoder → frozen abstract code → downstream INSTNCT core) is validated as feasible. The MLP backprop path provides the encoder; the int8 frozen weights integrate directly with INSTNCT's existing i8 weight representation. Next step: feed frozen encoder output into the language evolution core as a replacement for hand-crafted SDR input. | Experimental direction | all four experiments |
 
 ---
 
