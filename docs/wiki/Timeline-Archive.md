@@ -174,6 +174,7 @@ The timeline is ordered latest-first. Each day is a self-contained H3 section wi
 <details>
 <summary>Jump to date</summary>
 
+- [2026-04-13 — All-binary preprocessor deep dive: dense MLP to exhaustive-search {-1,+1} grower + language model baseline](#2026-04-13--all-binary-preprocessor-deep-dive-dense-mlp-to-exhaustive-search--11-grower--language-model-baseline)
 - [2026-04-13 — Mirrored autoencoder: hierarchical byte preprocessing via tied-weight MLP + int8 quantization](#2026-04-13--mirrored-autoencoder-hierarchical-byte-preprocessing-via-tied-weight-mlp--int8-quantization)
 - [2026-04-12 — Bias-free persistent grower consolidation](#2026-04-12--bias-free-persistent-grower-consolidation)
 - [2026-04-10 — Connectome, gradient pipeline, and integer deploy](#2026-04-10--connectome-gradient-pipeline-and-integer-deploy)
@@ -200,6 +201,24 @@ The timeline is ordered latest-first. Each day is a self-contained H3 section wi
 - [Early 2026 — Diamond Code Era](#early-2026--diamond-code-era)
 
 </details>
+
+---
+
+### 2026-04-13 — All-binary preprocessor deep dive: dense MLP to exhaustive-search {-1,+1} grower + language model baseline
+
+**Theme:** Abstract-core preprocessor deep dive — exhaustive architecture search from dense MLP to all-binary sparse grower. Validated the full pipeline from byte encoding through bottleneck compression, activation function comparison (C19 vs ReLU), quantization limits, and first language model test. Key result: all-binary {-1,+1} weights with C19 activation achieve 100% lossless byte encoding in just 77 bits (10 bytes), exhaustive-search guaranteed optimal. Language model float baseline reaches 34.5% next-char accuracy (vs INSTNCT 24.6%) but naïve binary quantization collapses; int8 or QAT quantization is the next step.
+
+| Seq | Finding | Status | Source |
+|---|---|---|---|
+| 1 | Bottleneck sweep: MLP backprop + C19 tied-weight autoencoder achieves 100% lossless round-trip at B=3 (3-bit bottleneck = 8 codes for 29 chars). The soft sigmoid activations carry extra info beyond the hard binary code, enabling reconstruction below the information-theoretic minimum of ceil(log2(29))=5 bits. | Validated finding | `instnct-core/examples/bottleneck_sweep.rs` |
+| 2 | C19 vs ReLU A/B: C19 activation needs 50% fewer hidden neurons than ReLU for equivalent accuracy across all bottleneck sizes. At B=2 (4 codes), C19 achieves 100% (H=12) where ReLU fails (28/29 at H=48). The learnable c,rho ripple activation provides expressiveness that a monotonic activation cannot match. | Validated finding | `instnct-core/examples/ab_relu_vs_c19_autoenc.rs` |
+| 3 | Minimum parameter search: smallest 100% C19 config is B=4, H=4 = 64 encoder params = 64 bytes int8. For B=2 the minimum is H=8 = 106 params. C19 c,rho values cluster at c=0.1/rho=0.0 (6/7 neurons, effectively linear) with one outlier needing real C19 ripple. | Validated finding | `instnct-core/examples/min_params_sweep.rs` |
+| 4 | Sparse grower autoencoder: INSTNCT-style neuron-by-neuron growth with C19 + mini-backprop achieves 100% with just 2 neurons, 10 edges, 16 params — 4× smaller than the best dense MLP (64 params). Sparse topology search finds the 10 most informative connections from 8 input bits. | Validated finding | `instnct-core/examples/sparse_grower_autoenc.rs` |
+| 5 | Signed binary {-1,+1} exhaustive: 100% round-trip in 7 neurons with all weights binary, exhaustive search guaranteed optimal, 24 seconds total search time. Without C19: 28/29 (C19 is necessary for the last byte). Total: 77 bits model + 8 bytes decoder bias = 18 bytes complete system. | Validated finding | `instnct-core/examples/binary_mirror_grow.rs`, `instnct-core/examples/binary_no_c19.rs` |
+| 6 | All-binary (every param 1 bit): weights {-1,+1}, bias {-1,+1}, c ∈ {1.0,10.0}, rho ∈ {0.0,2.0} — all selected from 2 values = 1 bit each. Best config: 7 neurons × 11 bits = 77 bits = 10 bytes. 2048 combos/neuron = instant exhaustive search. Entire preprocessor fits in a single u128 integer. | Validated finding | `instnct-core/examples/all_binary_mirror.rs` |
+| 7 | Ternary exhaustive: {-1,0,1} weights achieve 100% in 6 neurons (1 fewer than binary) because the zero weight provides implicit sparsity. But 40× slower search (1M combos/neuron vs 28K). Trade-off: 1 fewer neuron, 20× slower search. | Validated finding | `instnct-core/examples/exhaustive_mirror_grow.rs` |
+| 8 | 128-char context language model: MLP with backprop on Alice corpus (27 symbols) reaches 34.5% float accuracy at H1=512/H2=256 (466K params) vs INSTNCT 24.6% baseline at ~7.5K params. However, naïve binary quantization (sign of weights) collapses to 3.8-14.5% — below the 20.3% frequency baseline. The comparison is unfair: MLP uses 62× more params. Binary language models need int8 quantization or QAT, not naïve sign(). | Validated finding (float); Rejected (naïve binary quant) | `instnct-core/examples/binary_language_model.rs` |
+| 9 | Architectural direction: the preprocessor pipeline is validated end-to-end. All-binary byte encoding works perfectly. The next steps are: (a) fair param-matched comparison of MLP vs INSTNCT, (b) int8 or QAT quantization for the language model, (c) integration of frozen preprocessor into INSTNCT evolve_language.rs core. | Experimental direction | all experiments from this session |
 
 ---
 
