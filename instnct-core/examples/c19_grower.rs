@@ -979,12 +979,15 @@ fn rebake_all_i8(net: &mut Net) {
 
 struct StateHead { task: String, data_seed: u64, noise: f32, n_per: usize, n_in: usize }
 
-fn save_state(net: &Net, path: &str, head: &StateHead) {
-    if let Some(p) = std::path::Path::new(path).parent() { std::fs::create_dir_all(p).ok(); }
+fn save_state(net: &Net, path: &str, head: &StateHead) -> std::io::Result<()> {
+    if let Some(p) = std::path::Path::new(path).parent() { std::fs::create_dir_all(p)?; }
+    // Write-to-tmp + atomic rename: POSIX rename() is a single inode swap,
+    // so any failure / crash before the rename leaves the original state.tsv
+    // untouched. After the rename, the new file is fully visible.
     let tmp = format!("{}.tmp", path);
-    let mut f = std::fs::File::create(&tmp).unwrap();
+    let mut f = std::fs::File::create(&tmp)?;
     writeln!(f, "HEAD\t{}\t{}\t{}\t{}\t{}\tVER=2",
-        head.task, head.data_seed, head.noise, head.n_per, head.n_in).unwrap();
+        head.task, head.data_seed, head.noise, head.n_per, head.n_in)?;
     for n in &net.neurons {
         let ps: Vec<String> = n.parents.iter().map(|v| v.to_string()).collect();
         let ws: Vec<String> = n.weights.iter().map(|v| v.to_string()).collect();
@@ -995,10 +998,12 @@ fn save_state(net: &Net, path: &str, head: &StateHead) {
             n.alpha, n.train_acc, n.val_acc,
             n.c_float, n.rho_float, n.c_quant, n.rho_quant,
             n.lut_min_dot, lut.join(",")
-        ).unwrap();
+        )?;
     }
+    f.sync_all()?; // fsync data + metadata before the rename
     drop(f);
-    std::fs::rename(&tmp, path).unwrap();
+    std::fs::rename(&tmp, path)?;
+    Ok(())
 }
 
 fn load_state(path: &str) -> Result<Option<(StateHead, Net)>, String> {
@@ -1102,14 +1107,14 @@ fn replay_sw(net: &Net, data: &Data) -> Vec<f32> {
 // ══════════════════════════════════════════════════════
 // CHECKPOINT (per-step JSON snapshot — human-readable, not used for load)
 // ══════════════════════════════════════════════════════
-fn save_checkpoint(net: &Net, path: &str, task: &str, step: usize, data: &Data) {
-    if let Some(p) = std::path::Path::new(path).parent() { std::fs::create_dir_all(p).ok(); }
+fn save_checkpoint(net: &Net, path: &str, task: &str, step: usize, data: &Data) -> std::io::Result<()> {
+    if let Some(p) = std::path::Path::new(path).parent() { std::fs::create_dir_all(p)?; }
     let et = net.accuracy(&data.train); let ev = net.accuracy(&data.val); let ete = net.accuracy(&data.test);
-    let mut f = std::fs::File::create(path).unwrap();
-    writeln!(f, "{{").unwrap();
-    writeln!(f, "\"task\":\"{}\",\"step\":{},\"n_inputs\":{},", task, step, net.n_in).unwrap();
-    writeln!(f, "\"ensemble_train\":{:.2},\"ensemble_val\":{:.2},\"ensemble_test\":{:.2},", et, ev, ete).unwrap();
-    writeln!(f, "\"neurons\":[").unwrap();
+    let mut f = std::fs::File::create(path)?;
+    writeln!(f, "{{")?;
+    writeln!(f, "\"task\":\"{}\",\"step\":{},\"n_inputs\":{},", task, step, net.n_in)?;
+    writeln!(f, "\"ensemble_train\":{:.2},\"ensemble_val\":{:.2},\"ensemble_test\":{:.2},", et, ev, ete)?;
+    writeln!(f, "\"neurons\":[")?;
     for (i, n) in net.neurons.iter().enumerate() {
         let wj: Vec<String> = n.weights.iter().map(|v| v.to_string()).collect();
         let pj: Vec<String> = n.parents.iter().map(|v| v.to_string()).collect();
@@ -1118,9 +1123,11 @@ fn save_checkpoint(net: &Net, path: &str, task: &str, step: usize, data: &Data) 
             "{{\"id\":{},\"parents\":[{}],\"tick\":{},\"weights\":[{}],\"threshold\":{},\"alpha\":{:.6},\"train_acc\":{:.2},\"val_acc\":{:.2},\"c_float\":{:.6},\"rho_float\":{:.6},\"c_quant\":{:.6},\"rho_quant\":{:.6},\"lut_min_dot\":{},\"lut\":[{}]}}{}",
             n.id, pj.join(","), n.tick, wj.join(","), n.threshold, n.alpha, n.train_acc, n.val_acc,
             n.c_float, n.rho_float, n.c_quant, n.rho_quant, n.lut_min_dot, lutj.join(","),
-            if i < net.neurons.len()-1 { "," } else { "" }).unwrap();
+            if i < net.neurons.len()-1 { "," } else { "" })?;
     }
-    writeln!(f, "]}}").unwrap();
+    writeln!(f, "]}}")?;
+    f.sync_all()?;
+    Ok(())
 }
 
 // ══════════════════════════════════════════════════════
@@ -1907,10 +1914,36 @@ fn main() {
             }
             if norm > 0.0 { for w in &mut sw { *w /= norm; } }
 
-            // Persist
-            save_state(&net, &state_path, &head);
+            // Persist — order matters: state.tsv first (atomic rename, the
+            // source of truth), then the per-neuron checkpoint JSON, then an
+            // incremental trace.json flush so Brain Replay sees the full
+            // history up to NOW even if the process is killed mid-run. A
+            // trailing stdout flush makes sure the user actually sees the
+            // "N{} added" log line on a piped stdout.
+            //
+            // All three IO calls are non-fatal: on failure we warn but keep
+            // running. The previous atomic-renamed state.tsv is still the
+            // source of truth, so "save failure on neuron N" means "neuron N
+            // lives only in memory until the next successful save".
+            if let Err(e) = save_state(&net, &state_path, &head) {
+                eprintln!("WARN: save_state failed after N{}: {} (in-memory only)",
+                    net.neurons.len() - 1, e);
+            }
             let ckpt = format!("{}/checkpoints/n{:03}.json", cfg.out_dir, net.neurons.len());
-            save_checkpoint(&net, &ckpt, task_name, step, &data);
+            if let Err(e) = save_checkpoint(&net, &ckpt, task_name, step, &data) {
+                eprintln!("WARN: save_checkpoint failed after N{}: {}",
+                    net.neurons.len() - 1, e);
+            }
+            let cur_test = net.accuracy(&data.test);
+            let cur_depth = net.neurons.iter().map(|n| n.tick).max().unwrap_or(0);
+            if let Err(e) = write_trace_json(
+                &cfg.out_dir, &cfg, net.n_in, &trace_events,
+                new_val, cur_test, net.neurons.len(), cur_depth, stall,
+            ) {
+                eprintln!("WARN: trace.json flush failed after N{}: {}",
+                    net.neurons.len() - 1, e);
+            }
+            let _ = std::io::stdout().flush();
 
             if new_val > best_val + 0.5 { best_val = new_val; stall = 0; }
             else { stall += 1; }
@@ -1932,8 +1965,12 @@ fn main() {
 
         // End of this task's step loop — capture state for either the next
         // task or the final report, and persist one more time to flush the
-        // final state.tsv / trace for this task before moving on.
+        // final state.tsv / trace for this task before moving on. This
+        // matters most when a task exits via stall (mid-session) — we want
+        // the last trace.json on disk to reflect that task's full run.
         let task_done_val = net.accuracy(&data.val);
+        let task_done_test = net.accuracy(&data.test);
+        let task_done_depth = net.neurons.iter().map(|n| n.tick).max().unwrap_or(0);
         println!(
             "\n  TASK END [{}]: {} neurons total, val={:.1}%{}",
             task_name,
@@ -1941,7 +1978,16 @@ fn main() {
             task_done_val,
             if task_done_val >= 99.0 { " — 100% hit!" } else { " — moving on" },
         );
-        save_state(&net, &state_path, &head);
+        if let Err(e) = save_state(&net, &state_path, &head) {
+            eprintln!("WARN: save_state failed at task end [{}]: {}", task_name, e);
+        }
+        if let Err(e) = write_trace_json(
+            &cfg.out_dir, &cfg, net.n_in, &trace_events,
+            task_done_val, task_done_test, net.neurons.len(), task_done_depth, stall,
+        ) {
+            eprintln!("WARN: trace.json flush failed at task end [{}]: {}", task_name, e);
+        }
+        let _ = std::io::stdout().flush();
         final_stall = stall;
         final_data_opt = Some(data);
         // Fall through to next task in 'task_loop (implicit continue).
@@ -1966,8 +2012,12 @@ fn main() {
     println!("  Time: {:.1}s", t0.elapsed().as_secs_f64());
 
     let ckpt = format!("{}/final.json", cfg.out_dir);
-    save_checkpoint(&net, &ckpt, &head.task, net.neurons.len(), &data);
-    save_state(&net, &state_path, &head);
+    if let Err(e) = save_checkpoint(&net, &ckpt, &head.task, net.neurons.len(), &data) {
+        eprintln!("WARN: final save_checkpoint failed: {}", e);
+    }
+    if let Err(e) = save_state(&net, &state_path, &head) {
+        eprintln!("WARN: final save_state failed: {}", e);
+    }
 
     if let Err(e) = write_trace_json(
         &cfg.out_dir,
