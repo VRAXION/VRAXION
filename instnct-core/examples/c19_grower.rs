@@ -63,8 +63,12 @@ struct Config {
     //                      baking (useful for a two-step manual workflow:
     //                      preview to see the distribution, then re-run with
     //                      --force-pick to commit a specific candidate).
+    //   --bake-best      → bake every trained candidate tentatively, measure
+    //                      post-bake ensemble val, commit the candidate with
+    //                      the highest score (ties broken by smaller ni).
     force_pick: Option<usize>,
     preview_only: bool,
+    bake_best: bool,
 }
 
 fn parse_args() -> Config {
@@ -99,6 +103,7 @@ fn parse_args() -> Config {
     let mut allow_task_switch: bool = false;
     let mut force_pick: Option<usize> = None;
     let mut preview_only: bool = false;
+    let mut bake_best: bool = false;
 
     let mut i = 1;
     while i < args.len() {
@@ -155,6 +160,7 @@ fn parse_args() -> Config {
                 }));
             }
             "--preview-only" => { preview_only = true; }
+            "--bake-best" => { bake_best = true; }
             _ => {}
         }
         i += 1;
@@ -210,6 +216,7 @@ fn parse_args() -> Config {
         allow_task_switch,
         force_pick,
         preview_only,
+        bake_best,
     }
 }
 
@@ -1454,9 +1461,9 @@ fn main() {
         cfg.finetune_seeds, cfg.finetune_steps, cfg.quant_tolerance, cfg.skip_finetune, cfg.skip_quant);
     println!("  i8 LUT: use_i8={} assert_tol={}pp (per-neuron absmax int8 + i16 alpha)",
         cfg.use_i8, cfg.i8_assert_tol_pp);
-    println!("  flags: interactive={} exhaustive={} verbose_search={} allow_task_switch={} force_pick={:?} preview_only={}",
+    println!("  flags: interactive={} exhaustive={} verbose_search={} allow_task_switch={} force_pick={:?} preview_only={} bake_best={}",
         cfg.interactive, cfg.exhaustive, cfg.verbose_search, cfg.allow_task_switch,
-        cfg.force_pick, cfg.preview_only);
+        cfg.force_pick, cfg.preview_only, cfg.bake_best);
     println!("===========================================================");
 
     // Carry the last-task data out of the task loop for the final report.
@@ -1598,11 +1605,11 @@ fn main() {
         trained.sort_by(|a, b| b.val_acc.partial_cmp(&a.val_acc).unwrap());
 
         // Pretty-print the trained candidate table whenever any manual-pick
-        // mode is on (verbose, interactive, preview-only, or force-pick), so
-        // the user always sees what they're choosing from. In pure auto mode
-        // stay silent to match the old overnight log format.
+        // mode is on (verbose, interactive, preview-only, force-pick, or
+        // bake-best), so the user always sees what they're choosing from.
+        // In pure auto mode stay silent to match the old overnight log format.
         let show_table = cfg.verbose_search || cfg.interactive
-            || cfg.preview_only || cfg.force_pick.is_some();
+            || cfg.preview_only || cfg.force_pick.is_some() || cfg.bake_best;
         if show_table {
             println!("  Trained candidates ({}):", trained.len());
             println!("    {:>3} | {:>6} | {:>2} | consensus | parents",
@@ -1629,10 +1636,15 @@ fn main() {
         }
 
         // Decide which trained candidate(s) to try baking:
-        // 1. --interactive → stdin prompt
-        // 2. --force-pick N → only trained[N]
-        // 3. otherwise → auto-top order (existing behavior)
-        let pick = if cfg.interactive {
+        // 1. --bake-best → try ALL in tentative-bake mode, commit best after loop
+        // 2. --interactive → stdin prompt (single pick)
+        // 3. --force-pick N → only trained[N]
+        // 4. otherwise → auto-top order (existing behavior, first-accept wins)
+        let pick = if cfg.bake_best {
+            // Iterate every candidate; the in-loop gate below will do
+            // tentative add+measure+pop and track the best one externally.
+            Pick::Auto
+        } else if cfg.interactive {
             read_interactive_pick(trained.len())
         } else if let Some(k) = cfg.force_pick {
             if k < trained.len() {
@@ -1659,6 +1671,13 @@ fn main() {
 
         // STEP D+E+F: Ternary → c19 finetune → quant → LUT bake → accept gate
         let mut accepted = false;
+
+        // --bake-best accumulator: saves the (new_val, pick_i, Neuron, ft_loss,
+        // q_loss) of the best-baking candidate seen so far. Each successful
+        // tentative bake is pop-ed after measurement so the next candidate
+        // starts from the same step-start net state. After the loop, the
+        // winner is re-added permanently through a mirror of the accept path.
+        let mut best_baked: Option<(f32, usize, Neuron, f32, f32)> = None;
 
         for &pick_i in &pick_order {
             let tp = &trained[pick_i];
@@ -1875,6 +1894,40 @@ fn main() {
                 continue;
             }
 
+            // --bake-best: we've passed the val-drop gate with this candidate,
+            // but instead of committing it we save it, pop the tentative add,
+            // and continue so the next candidate gets a fair shot from the
+            // same step-start net state. The winner (highest new_val, ties
+            // broken by smaller ni) is re-added permanently after the loop.
+            if cfg.bake_best {
+                let saved = net.neurons.last().unwrap().clone();
+                net.sig_ticks.pop();
+                net.neurons.pop();
+                quantize_alphas_i16(&mut net);
+                let (replaces, note) = match &best_baked {
+                    None => (true, "new best"),
+                    Some((best_val, _, best_neuron, _, _)) => {
+                        if new_val > *best_val {
+                            (true, "new best (higher val)")
+                        } else if (new_val - *best_val).abs() < 1e-6
+                            && saved.parents.len() < best_neuron.parents.len()
+                        {
+                            (true, "new best (tie, smaller fan)")
+                        } else {
+                            (false, "not improving")
+                        }
+                    }
+                };
+                println!(
+                    "      [bake-best] idx={} new_val={:.2}% ni={} — {}",
+                    pick_i, new_val, saved.parents.len(), note
+                );
+                if replaces {
+                    best_baked = Some((new_val, pick_i, saved, ft_loss, q_loss));
+                }
+                continue;
+            }
+
             // ── Post-bake QAT verification ──────────────────────────
             // Compare i8 ensemble accuracy vs float ensemble accuracy on the
             // TRAIN set and assert the delta is within `cfg.i8_assert_tol_pp`.
@@ -1995,6 +2048,146 @@ fn main() {
 
             accepted = true;
             break;
+        }
+
+        // --bake-best commit: after the tentative-bake loop above, the best
+        // candidate (if any) is re-added permanently through a mirror of the
+        // normal accept path (QAT + trace + log + AdaBoost reweight + persist).
+        if cfg.bake_best && !accepted {
+            if let Some((winner_val, winner_pick_i, winner_neuron, winner_ft_loss, winner_q_loss)) = best_baked {
+                println!(
+                    "    [bake-best] WINNER: idx={} val={:.2}% ({} parents)",
+                    winner_pick_i, winner_val, winner_neuron.parents.len()
+                );
+                // Re-add the saved Neuron and re-derive the network-wide i16
+                // alpha scale. The i8 fields on the saved Neuron will be
+                // overwritten by quantize_alphas_i16 so they stay consistent.
+                net.add(winner_neuron);
+                quantize_alphas_i16(&mut net);
+                let new_val = winner_val;
+
+                // Post-bake QAT verification (same as the normal accept path).
+                if cfg.use_i8 {
+                    let acc_f32 = net.accuracy_f32(&data.train);
+                    let acc_i8 = net.accuracy_i8(&data.train);
+                    let delta_pp = (acc_f32 - acc_i8).abs();
+                    if delta_pp > cfg.i8_assert_tol_pp {
+                        eprintln!(
+                            "\nERROR: int8 QAT assertion failed at bake-best N{} — \
+                             acc_f32={:.3}% acc_i8={:.3}% delta={:.3}pp > tol={:.3}pp",
+                            net.neurons.len() - 1, acc_f32, acc_i8, delta_pp, cfg.i8_assert_tol_pp
+                        );
+                        std::process::exit(3);
+                    }
+                }
+
+                // Trace push, reading everything back from the re-added Neuron.
+                let accepted_neuron = net.neurons.last().unwrap();
+                trace_events.push(TraceEvent {
+                    event: "neuron_added",
+                    tick: accepted_neuron.tick,
+                    id: accepted_neuron.id,
+                    parents: accepted_neuron.parents.clone(),
+                    weights: accepted_neuron.weights.clone(),
+                    threshold: accepted_neuron.threshold,
+                    alpha: accepted_neuron.alpha,
+                    train_acc: accepted_neuron.train_acc,
+                    val_acc: accepted_neuron.val_acc,
+                    c_float: accepted_neuron.c_float,
+                    rho_float: accepted_neuron.rho_float,
+                    c_quant: accepted_neuron.c_quant,
+                    rho_quant: accepted_neuron.rho_quant,
+                    lut_min_dot: accepted_neuron.lut_min_dot,
+                    lut: accepted_neuron.lut.clone(),
+                    finetune_loss: if winner_ft_loss.is_finite() { winner_ft_loss } else { 0.0 },
+                    quant_loss: if winner_q_loss.is_finite() { winner_q_loss } else { 0.0 },
+                    lut_i8: accepted_neuron.lut_i8.clone(),
+                    lut_scale: accepted_neuron.lut_scale,
+                    alpha_i16: accepted_neuron.alpha_i16,
+                    alpha_scale: accepted_neuron.alpha_scale,
+                });
+
+                let has_hidden = accepted_neuron.parents.iter().any(|&p| p >= net.n_in);
+                let pnames: Vec<String> = accepted_neuron.parents.iter()
+                    .map(|&p| sig_name(p, net.n_in))
+                    .collect();
+                let wstr: String = accepted_neuron.weights.iter()
+                    .map(|&v| match v { 1 => "+", -1 => "-", _ => "0" })
+                    .collect::<Vec<_>>()
+                    .join("");
+                let i8_scale_disp = accepted_neuron.lut_scale;
+                let a16_disp = accepted_neuron.alpha_i16;
+                let a_scale_disp = accepted_neuron.alpha_scale;
+                let neuron_threshold = accepted_neuron.threshold;
+                let neuron_tick = accepted_neuron.tick;
+                let neuron_c_quant = accepted_neuron.c_quant;
+                let neuron_rho_quant = accepted_neuron.rho_quant;
+                let neuron_lut_len = accepted_neuron.lut.len();
+                let winner_alpha = accepted_neuron.alpha;
+
+                println!("    >> N{}: [{}] thr={} tick={} parents=[{}] c={:.2} rho={:.1} lut_sz={} val={:.1}->{:.1}% hidden={} | i8_scale={:.4e} a_i16={} a_scale={:.4e} ({:.0}ms) [bake-best idx={}]",
+                    net.neurons.len() - 1, wstr, neuron_threshold, neuron_tick, pnames.join(","),
+                    neuron_c_quant, neuron_rho_quant, neuron_lut_len,
+                    ens_val, new_val, has_hidden,
+                    i8_scale_disp, a16_disp, a_scale_disp,
+                    t_step.elapsed().as_millis(), winner_pick_i);
+
+                // AdaBoost sample-weight reweight: recompute bo_lut from the
+                // re-added Neuron's weights + parents + LUT, then apply the
+                // same exponential reweight as the normal accept path.
+                let winner_parents = accepted_neuron.parents.clone();
+                let winner_weights = accepted_neuron.weights.clone();
+                let winner_lut = accepted_neuron.lut.clone();
+                let winner_lut_min_dot = accepted_neuron.lut_min_dot;
+                let bo_lut: Vec<u8> = (0..data.train.len()).map(|pi| {
+                    let mut d = 0i32;
+                    for (&w, &p) in winner_weights.iter().zip(&winner_parents) {
+                        d += (w as i32) * (all_sigs[pi][p] as i32);
+                    }
+                    let idx = d - winner_lut_min_dot;
+                    let val = if idx < 0 { 0.0 }
+                        else if (idx as usize) >= winner_lut.len() { 0.0 }
+                        else { winner_lut[idx as usize] };
+                    if val >= 0.0 { 1u8 } else { 0 }
+                }).collect();
+
+                let mut norm = 0.0f32;
+                for ((pred, (_, y)), wt) in bo_lut.iter().zip(&data.train).zip(sw.iter_mut()) {
+                    let ys = if *y == 1 { 1.0 } else { -1.0 };
+                    let hs = if *pred == 1 { 1.0 } else { -1.0 };
+                    *wt *= (-winner_alpha * ys * hs).exp();
+                    norm += *wt;
+                }
+                if norm > 0.0 { for w in sw.iter_mut() { *w /= norm; } }
+
+                // Persist with the same crash-safe ordering as the normal path.
+                if let Err(e) = save_state(&net, &state_path, &head) {
+                    eprintln!("WARN: save_state failed after bake-best N{}: {} (in-memory only)",
+                        net.neurons.len() - 1, e);
+                }
+                let ckpt = format!("{}/checkpoints/n{:03}.json", cfg.out_dir, net.neurons.len());
+                if let Err(e) = save_checkpoint(&net, &ckpt, task_name, step, &data) {
+                    eprintln!("WARN: save_checkpoint failed after bake-best N{}: {}",
+                        net.neurons.len() - 1, e);
+                }
+                let cur_test = net.accuracy(&data.test);
+                let cur_depth = net.neurons.iter().map(|n| n.tick).max().unwrap_or(0);
+                if let Err(e) = write_trace_json(
+                    &cfg.out_dir, &cfg, net.n_in, &trace_events,
+                    new_val, cur_test, net.neurons.len(), cur_depth, stall,
+                ) {
+                    eprintln!("WARN: trace.json flush failed after bake-best N{}: {}",
+                        net.neurons.len() - 1, e);
+                }
+                let _ = std::io::stdout().flush();
+
+                if new_val > best_val + 0.5 { best_val = new_val; stall = 0; }
+                else { stall += 1; }
+
+                accepted = true;
+            } else {
+                println!("    [bake-best] no candidate passed the dedup+werr+val-drop gates");
+            }
         }
 
         if !accepted {
