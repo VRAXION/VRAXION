@@ -51,6 +51,12 @@ struct Config {
     // Integer inference knobs (int8 LUT + int16 alpha)
     use_i8: bool,
     i8_assert_tol_pp: f32,
+    // Forever-network knobs (opt-in; default = current behavior)
+    task_list: Vec<String>,
+    interactive: bool,
+    exhaustive: bool,
+    verbose_search: bool,
+    allow_task_switch: bool,
 }
 
 fn parse_args() -> Config {
@@ -76,6 +82,13 @@ fn parse_args() -> Config {
     // int8 LUT / int16 alpha quant defaults: on by default (fully integer path).
     let mut use_i8: bool = true;
     let mut i8_assert_tol_pp: f32 = 0.25;
+    // Forever-network knobs (all opt-in; empty task_list + false flags =
+    // bit-exact current behavior).
+    let mut task_list: Vec<String> = Vec::new();
+    let mut interactive: bool = false;
+    let mut exhaustive: bool = false;
+    let mut verbose_search: bool = false;
+    let mut allow_task_switch: bool = false;
 
     let mut i = 1;
     while i < args.len() {
@@ -111,6 +124,19 @@ fn parse_args() -> Config {
                 i += 1;
                 i8_assert_tol_pp = args[i].parse().unwrap_or(0.25);
             }
+            // Forever-network flags
+            "--task-list" => {
+                i += 1;
+                task_list = args[i]
+                    .split(',')
+                    .map(|s| s.trim().to_string())
+                    .filter(|s| !s.is_empty())
+                    .collect();
+            }
+            "--interactive" => { interactive = true; }
+            "--exhaustive" => { exhaustive = true; }
+            "--verbose-search" => { verbose_search = true; }
+            "--allow-task-switch" => { allow_task_switch = true; }
             _ => {}
         }
         i += 1;
@@ -118,7 +144,16 @@ fn parse_args() -> Config {
 
     let task = match task {
         Some(t) => t,
-        None => { eprintln!("ERROR: --task is required"); std::process::exit(2); }
+        None => {
+            // In task-list mode, --task is optional — we'll use task_list[0] as
+            // the initial task and bootstrap from there.
+            if !task_list.is_empty() {
+                task_list[0].clone()
+            } else {
+                eprintln!("ERROR: --task is required (or use --task-list t1,t2,...)");
+                std::process::exit(2);
+            }
+        }
     };
     let search_seed = match search_seed {
         Some(s) => s,
@@ -150,6 +185,11 @@ fn parse_args() -> Config {
         skip_quant,
         use_i8,
         i8_assert_tol_pp,
+        task_list,
+        interactive,
+        exhaustive,
+        verbose_search,
+        allow_task_switch,
     }
 }
 
@@ -1172,46 +1212,37 @@ fn write_trace_json(
 }
 
 // ══════════════════════════════════════════════════════
-// MAIN
+// LABEL FUNCTIONS (one per task)
 // ══════════════════════════════════════════════════════
-fn main() {
-    let cfg = parse_args();
-    let t0 = Instant::now();
-
-    let n_in = task_n_in(&cfg.task);
-
-    let label_fn: Box<dyn Fn(usize, &[u8]) -> Option<u8>> = match cfg.task.as_str() {
-
+//
+// Returns `None` on unknown task — caller decides whether to exit or just
+// skip (task-list mode prefers graceful skip with a warning over hard exit).
+fn make_label_fn(task: &str) -> Option<Box<dyn Fn(usize, &[u8]) -> Option<u8>>> {
+    Some(match task {
         "grid3_horizontal_line" => Box::new(|_, px| {
             let r0 = px[0] == 1 && px[1] == 1 && px[2] == 1;
             let r1 = px[3] == 1 && px[4] == 1 && px[5] == 1;
             let r2 = px[6] == 1 && px[7] == 1 && px[8] == 1;
             Some(if r0 || r1 || r2 { 1 } else { 0 })
         }),
-
         "grid3_vertical_line" => Box::new(|_, px| {
             let c0 = px[0] == 1 && px[3] == 1 && px[6] == 1;
             let c1 = px[1] == 1 && px[4] == 1 && px[7] == 1;
             let c2 = px[2] == 1 && px[5] == 1 && px[8] == 1;
             Some(if c0 || c1 || c2 { 1 } else { 0 })
         }),
-
         "grid3_diagonal" => Box::new(|_, px| {
             Some(if px[0] == 1 && px[4] == 1 && px[8] == 1 { 1 } else { 0 })
         }),
-
         "grid3_center" => Box::new(|_, px| Some(px[4])),
-
         "grid3_corner" => Box::new(|_, px| {
             let c = px[0] == 1 || px[2] == 1 || px[6] == 1 || px[8] == 1;
             Some(if c { 1 } else { 0 })
         }),
-
         "grid3_diag_xor" => Box::new(|_, px| {
             let parity = (px[0] ^ px[4] ^ px[8]) & 1;
             Some(parity)
         }),
-
         "grid3_full_parity" => Box::new(|_, px| {
             let parity =
                 (px[0] ^ px[1] ^ px[2] ^
@@ -1219,23 +1250,19 @@ fn main() {
                  px[6] ^ px[7] ^ px[8]) & 1;
             Some(parity)
         }),
-
         "grid3_majority" => Box::new(|_, px| {
             let s: usize = px.iter().map(|&v| v as usize).sum();
             Some(if s >= 5 { 1 } else { 0 })
         }),
-
         "grid3_symmetry_h" => Box::new(|_, px| {
             let sym = px[0] == px[2] && px[3] == px[5] && px[6] == px[8];
             Some(if sym { 1 } else { 0 })
         }),
-
         "grid3_top_heavy" => Box::new(|_, px| {
             let top: usize = (px[0] as usize) + (px[1] as usize) + (px[2] as usize);
             let bot: usize = (px[6] as usize) + (px[7] as usize) + (px[8] as usize);
             Some(if top > bot { 1 } else { 0 })
         }),
-
         "grid3_copy_bit_0" => Box::new(|_, px| Some(px[0])),
         "grid3_copy_bit_1" => Box::new(|_, px| Some(px[1])),
         "grid3_copy_bit_2" => Box::new(|_, px| Some(px[2])),
@@ -1245,12 +1272,76 @@ fn main() {
         "grid3_copy_bit_6" => Box::new(|_, px| Some(px[6])),
         "grid3_copy_bit_7" => Box::new(|_, px| Some(px[7])),
         "grid3_copy_bit_8" => Box::new(|_, px| Some(px[8])),
+        _ => return None,
+    })
+}
 
-        other => {
-            eprintln!("ERROR: unknown task '{}' (expected one of the grid3_* tasks)", other);
+// ══════════════════════════════════════════════════════
+// INTERACTIVE PICK (stdin prompt in --interactive mode)
+// ══════════════════════════════════════════════════════
+enum Pick { Auto, Only(usize), Skip }
+
+fn read_interactive_pick(n_candidates: usize) -> Pick {
+    use std::io::{self, Write};
+    if n_candidates == 0 { return Pick::Skip; }
+    print!(
+        "  pick [0-{}] / 'a' auto-top / 's' skip: ",
+        n_candidates - 1
+    );
+    let _ = io::stdout().flush();
+    let mut line = String::new();
+    if io::stdin().read_line(&mut line).is_err() {
+        return Pick::Auto;
+    }
+    let line = line.trim();
+    match line {
+        "" | "a" | "A" => Pick::Auto,
+        "s" | "S" => Pick::Skip,
+        _ => match line.parse::<usize>() {
+            Ok(k) if k < n_candidates => Pick::Only(k),
+            _ => {
+                println!("  (invalid input '{}' — falling back to auto)", line);
+                Pick::Auto
+            }
+        }
+    }
+}
+
+// ══════════════════════════════════════════════════════
+// MAIN
+// ══════════════════════════════════════════════════════
+fn main() {
+    let cfg = parse_args();
+    let t0 = Instant::now();
+
+    // Resolve the task schedule: either a single task (--task) or a list
+    // (--task-list t1,t2,t3) for forever-network mode. The list mode grows
+    // ONE network across all listed tasks; each task runs until 100% val
+    // accuracy or stall/cap, then the next task starts with the same net.
+    let tasks: Vec<String> = if cfg.task_list.is_empty() {
+        vec![cfg.task.clone()]
+    } else {
+        cfg.task_list.clone()
+    };
+
+    // All grid3_* tasks share n_in=9. The task_n_in check below enforces that
+    // every task in the list agrees — forever-network mode requires identical
+    // input width, otherwise the frozen hidden-parent indices would shift.
+    let n_in = task_n_in(&tasks[0]);
+    for t in &tasks {
+        let n_i = task_n_in(t);
+        if n_i != n_in {
+            eprintln!(
+                "ERROR: task-list has mixed n_in — {} has {}, {} has {}",
+                tasks[0], n_in, t, n_i
+            );
             std::process::exit(2);
         }
-    };
+        if make_label_fn(t).is_none() {
+            eprintln!("ERROR: unknown task '{}' (expected one of the grid3_* tasks)", t);
+            std::process::exit(2);
+        }
+    }
 
     let mut noise = cfg.noise;
     let mut n_per = cfg.n_per;
@@ -1262,14 +1353,23 @@ fn main() {
     });
     let state_path = format!("{}/state.tsv", cfg.out_dir);
 
+    // In forever-network mode (--task-list or --allow-task-switch) we permit
+    // loading a state whose task name differs from the CLI — the loaded
+    // neurons become frozen hidden parents for the new task(s). The n_in
+    // check is still strict because a different input width would shift all
+    // hidden-parent indices.
+    let task_switch_ok = !cfg.task_list.is_empty() || cfg.allow_task_switch;
     let (mut net, loaded) = match load_state(&state_path) {
         Ok(Some((head, net))) => {
-            if head.task != cfg.task {
-                eprintln!("ERROR: state task={} != cli task={}", head.task, cfg.task);
+            if head.task != cfg.task && !task_switch_ok {
+                eprintln!(
+                    "ERROR: state task={} != cli task={} (use --allow-task-switch or --task-list to override)",
+                    head.task, cfg.task
+                );
                 std::process::exit(2);
             }
             if head.n_in != n_in {
-                eprintln!("ERROR: state n_in={} != task {} expected n_in={}", head.n_in, cfg.task, n_in);
+                eprintln!("ERROR: state n_in={} != task {} expected n_in={}", head.n_in, tasks[0], n_in);
                 std::process::exit(2);
             }
             if data_seed != head.data_seed || (noise - head.noise).abs() > 1e-6 || n_per != head.n_per {
@@ -1279,7 +1379,8 @@ fn main() {
             data_seed = head.data_seed;
             noise = head.noise;
             n_per = head.n_per;
-            println!("  [load] {} neurons from {}", net.neurons.len(), state_path);
+            println!("  [load] {} neurons from {} (state.task={})",
+                net.neurons.len(), state_path, head.task);
             (net, true)
         }
         Ok(None) => {
@@ -1296,20 +1397,29 @@ fn main() {
     // with `use_i8: true`; we re-stamp here so the CLI override wins.
     net.use_i8 = cfg.use_i8;
 
-    let data = gen_data(label_fn.as_ref(), noise, n_per, data_seed);
-
-    let mut sw = if loaded { replay_sw(&net, &data) }
-        else { vec![1.0 / data.train.len() as f32; data.train.len()] };
-
-    let head = StateHead { task: cfg.task.clone(), data_seed, noise, n_per, n_in: net.n_in };
-    let mut stall: usize = 0;
-    let mut best_val = if loaded { net.accuracy(&data.val) } else { 50.0f32 };
-
+    // Head + trace state live across tasks: they describe the CURRENT task
+    // at save time, while the forever-network keeps growing underneath.
+    let mut head = StateHead {
+        task: tasks[0].clone(),
+        data_seed,
+        noise,
+        n_per,
+        n_in: net.n_in,
+    };
     let mut trace_events: Vec<TraceEvent> = Vec::new();
 
     println!("===========================================================");
-    println!("  c19_grower — {} (data_seed={} search_seed={})", cfg.task, cfg.data_seed, cfg.search_seed);
-    println!("  {} proposals/step, max_fan={}, stall={}, max_neurons={}",
+    if tasks.len() == 1 {
+        println!("  c19_grower — {} (data_seed={} search_seed={})",
+            tasks[0], cfg.data_seed, cfg.search_seed);
+    } else {
+        println!("  c19_grower FOREVER — {} tasks (data_seed={} search_seed={})",
+            tasks.len(), cfg.data_seed, cfg.search_seed);
+        for (i, t) in tasks.iter().enumerate() {
+            println!("    task[{:2}] = {}", i, t);
+        }
+    }
+    println!("  {} proposals/step, max_fan={}, stall={}, max_neurons={} (per task)",
         cfg.n_proposals, cfg.max_fan, cfg.stall_limit, cfg.max_neurons);
     println!("  scout_top={} pair_top={} probe_epochs={}",
         cfg.scout_top, cfg.pair_top, cfg.probe_epochs);
@@ -1317,10 +1427,45 @@ fn main() {
         cfg.finetune_seeds, cfg.finetune_steps, cfg.quant_tolerance, cfg.skip_finetune, cfg.skip_quant);
     println!("  i8 LUT: use_i8={} assert_tol={}pp (per-neuron absmax int8 + i16 alpha)",
         cfg.use_i8, cfg.i8_assert_tol_pp);
-    println!("  Data: {} train / {} val / {} test", data.train.len(), data.val.len(), data.test.len());
+    println!("  flags: interactive={} exhaustive={} verbose_search={} allow_task_switch={}",
+        cfg.interactive, cfg.exhaustive, cfg.verbose_search, cfg.allow_task_switch);
     println!("===========================================================");
 
-    for step in 0..cfg.max_neurons {
+    // Carry the last-task data out of the task loop for the final report.
+    let mut final_data_opt: Option<Data> = None;
+    let mut final_stall: usize = 0;
+
+    'task_loop: for (task_idx, task_name) in tasks.iter().enumerate() {
+        // Rebuild label_fn + data for this task. Previous task's neurons
+        // remain in `net` as frozen hidden parents — new neurons may pick them.
+        let label_fn = make_label_fn(task_name).expect("task validated above");
+        let data = gen_data(label_fn.as_ref(), noise, n_per, data_seed);
+
+        // AdaBoost sample weights: on first task with a loaded state, replay
+        // the existing weights so boosting continues smoothly. On every
+        // subsequent task (or a fresh start), reset to uniform — previous
+        // task's weights would steer proposals at the wrong objective.
+        let mut sw = if task_idx == 0 && loaded {
+            replay_sw(&net, &data)
+        } else {
+            vec![1.0 / data.train.len() as f32; data.train.len()]
+        };
+
+        let mut stall: usize = 0;
+        let mut best_val = net.accuracy(&data.val);
+
+        // Persist the CURRENT task name in the state file header so a
+        // restart with --allow-task-switch can locate where it left off.
+        head.task = task_name.clone();
+
+        println!("\n===========================================================");
+        println!("  TASK [{:2}/{:2}] {} | start: {} neurons, val={:.1}%",
+            task_idx + 1, tasks.len(), task_name, net.neurons.len(), best_val);
+        println!("  Data: {} train / {} val / {} test",
+            data.train.len(), data.val.len(), data.test.len());
+        println!("===========================================================");
+
+        for step in 0..cfg.max_neurons {
         let t_step = Instant::now();
         let ens_val = net.accuracy(&data.val);
         let ens_test = net.accuracy(&data.test);
@@ -1341,6 +1486,17 @@ fn main() {
         let pairs = pair_lifts_from_ranked(&ranked, &all_sigs, &data, &sw, cfg.pair_top);
         let proposal_sets = build_candidate_sets(&ranked, &pairs, n_sig, net.n_in, &cfg, step);
         print_scout(step, &ranked, &pairs, net.n_in, &proposal_sets);
+        if cfg.verbose_search {
+            println!("    [verbose] scout: {} ranked signals, {} pair lifts, {} proposal sets",
+                ranked.len(), pairs.len(), proposal_sets.len());
+            for (i, ps) in proposal_sets.iter().enumerate().take(10) {
+                let names: Vec<String> = ps.iter().map(|&p| sig_name(p, net.n_in)).collect();
+                println!("      proposal[{:2}] parents=[{}]", i, names.join(","));
+            }
+            if proposal_sets.len() > 10 {
+                println!("      ... ({} more)", proposal_sets.len() - 10);
+            }
+        }
 
         // STEP B: Rough proposal scoring (fractional weights, quick sigmoid eval)
         let mut proposals: Vec<(Vec<usize>, Vec<f32>, f32, f32)> = Vec::new();
@@ -1413,10 +1569,51 @@ fn main() {
         }
         trained.sort_by(|a, b| b.val_acc.partial_cmp(&a.val_acc).unwrap());
 
+        // Pretty-print the trained candidate table — always on in verbose mode,
+        // always on in interactive mode, otherwise silent (matches old behavior).
+        if cfg.verbose_search || cfg.interactive {
+            println!("  Trained candidates ({}):", trained.len());
+            println!("    {:>3} | {:>6} | {:>2} | consensus | parents",
+                "idx", "val%", "ni");
+            for (i, tp) in trained.iter().enumerate() {
+                let cs: String = tp.consensus.iter().map(|&s| match s {
+                    1 => '+', -1 => '-', _ => '?',
+                }).collect();
+                let pnames: Vec<String> = tp.parents.iter()
+                    .map(|&p| sig_name(p, net.n_in))
+                    .collect();
+                println!("    {:>3} | {:>5.1}% | {:>2} |   {:<7} | [{}]",
+                    i, tp.val_acc, tp.parents.len(), cs, pnames.join(","));
+            }
+        }
+
+        // Interactive pick: ask the user which trained candidate to bake. In
+        // non-interactive mode the original behavior is preserved — iterate
+        // all trained in descending val_acc order and bake the first that
+        // passes the dedup + werr + val-drop gates.
+        let pick = if cfg.interactive {
+            read_interactive_pick(trained.len())
+        } else {
+            Pick::Auto
+        };
+        let pick_order: Vec<usize> = match &pick {
+            Pick::Auto => (0..trained.len()).collect(),
+            Pick::Only(k) => vec![*k],
+            Pick::Skip => {
+                println!("    (skipped by user — no neuron added this step)");
+                Vec::new()
+            }
+        };
+
         // STEP D+E+F: Ternary → c19 finetune → quant → LUT bake → accept gate
         let mut accepted = false;
 
-        for tp in &trained {
+        for &pick_i in &pick_order {
+            let tp = &trained[pick_i];
+            if cfg.verbose_search {
+                println!("    [bake] trying candidate idx={} val={:.1}%",
+                    pick_i, tp.val_acc);
+            }
             let ni = tp.parents.len();
             let np = data.train.len();
 
@@ -1452,7 +1649,14 @@ fn main() {
             }
 
             let total_blind = 3u64.pow(ni as u32);
-            if total_blind <= 500_000 {
+            // --exhaustive lifts the 500K cap unconditionally; otherwise only
+            // run the blind ternary sweep when the combo space is tractable.
+            let run_blind = cfg.exhaustive || total_blind <= 500_000;
+            if cfg.verbose_search {
+                println!("    [ternary] ni={} total_blind=3^{}={} run_blind={} (cap=500K, exhaustive={})",
+                    ni, ni, total_blind, run_blind, cfg.exhaustive);
+            }
+            if run_blind {
                 for combo in 0..total_blind {
                     let mut w = vec![0i8; ni]; let mut r = combo;
                     for wi in w.iter_mut() { *wi = (r % 3) as i8 - 1; r /= 3; }
@@ -1534,12 +1738,22 @@ fn main() {
 
             // Dedup check on LUT predictions
             let is_dup = (net.n_in..n_sig).any(|e| output_match_rate(&bo_lut, &all_sigs, e) >= 0.999);
-            if is_dup { continue; }
+            if is_dup {
+                if cfg.verbose_search {
+                    println!("      [reject] idx={} duplicate of existing neuron (LUT output match >= 99.9%)", pick_i);
+                }
+                continue;
+            }
 
             let tick = tp.parents.iter().map(|&p| net.sig_ticks[p]).max().unwrap_or(0) + 1;
             let werr: f32 = bo_lut.iter().zip(&data.train).zip(&sw)
                 .map(|((&pred, (_, y)), &w)| if pred == *y { 0.0 } else { w }).sum();
-            if werr >= 0.499 { continue; }
+            if werr >= 0.499 {
+                if cfg.verbose_search {
+                    println!("      [reject] idx={} weighted error {:.4} >= 0.499 (AdaBoost fail)", pick_i, werr);
+                }
+                continue;
+            }
             let alpha = 0.5 * ((1.0 - werr).max(1e-6) / werr.max(1e-6)).ln();
 
             // Train / val accuracy from the LUT-thresholded predictions
@@ -1596,6 +1810,10 @@ fn main() {
             let new_val = net.accuracy(&data.val);
 
             if new_val < ens_val {
+                if cfg.verbose_search {
+                    println!("      [reject] idx={} ensemble val dropped {:.2}%→{:.2}% after adding neuron",
+                        pick_i, ens_val, new_val);
+                }
                 net.sig_ticks.pop();
                 net.neurons.pop();
                 // The removal changes the absmax of alpha across the remaining
@@ -1692,7 +1910,7 @@ fn main() {
             // Persist
             save_state(&net, &state_path, &head);
             let ckpt = format!("{}/checkpoints/n{:03}.json", cfg.out_dir, net.neurons.len());
-            save_checkpoint(&net, &ckpt, &cfg.task, step, &data);
+            save_checkpoint(&net, &ckpt, task_name, step, &data);
 
             if new_val > best_val + 0.5 { best_val = new_val; stall = 0; }
             else { stall += 1; }
@@ -1707,10 +1925,35 @@ fn main() {
         }
 
         if stall >= cfg.stall_limit {
-            println!("\n  Stalled {} steps.", cfg.stall_limit);
+            println!("\n  Stalled {} steps on task {}.", cfg.stall_limit, task_name);
             break;
         }
     }
+
+        // End of this task's step loop — capture state for either the next
+        // task or the final report, and persist one more time to flush the
+        // final state.tsv / trace for this task before moving on.
+        let task_done_val = net.accuracy(&data.val);
+        println!(
+            "\n  TASK END [{}]: {} neurons total, val={:.1}%{}",
+            task_name,
+            net.neurons.len(),
+            task_done_val,
+            if task_done_val >= 99.0 { " — 100% hit!" } else { " — moving on" },
+        );
+        save_state(&net, &state_path, &head);
+        final_stall = stall;
+        final_data_opt = Some(data);
+        // Fall through to next task in 'task_loop (implicit continue).
+        let _ = task_idx; // silence unused if task-list has a single task
+        if false { break 'task_loop; }
+    }
+
+    // Final report uses the LAST task's data view so the numbers match the
+    // last banner the user saw. If no tasks ran (empty list), the sanity
+    // check in main() at entry already exited.
+    let data = final_data_opt.expect("task loop must run at least once");
+    let stall = final_stall;
 
     let ft = net.accuracy(&data.train);
     let fv = net.accuracy(&data.val);
@@ -1719,11 +1962,11 @@ fn main() {
     let hid = net.neurons.iter().any(|n| n.parents.iter().any(|&p| p >= net.n_in));
 
     println!("\n  FINAL: {} neurons, depth={}, hidden={}", net.neurons.len(), mt, hid);
-    println!("  train={:.1}% val={:.1}% test={:.1}%", ft, fv, fte);
+    println!("  train={:.1}% val={:.1}% test={:.1}% (last task: {})", ft, fv, fte, head.task);
     println!("  Time: {:.1}s", t0.elapsed().as_secs_f64());
 
     let ckpt = format!("{}/final.json", cfg.out_dir);
-    save_checkpoint(&net, &ckpt, &cfg.task, net.neurons.len(), &data);
+    save_checkpoint(&net, &ckpt, &head.task, net.neurons.len(), &data);
     save_state(&net, &state_path, &head);
 
     if let Err(e) = write_trace_json(
