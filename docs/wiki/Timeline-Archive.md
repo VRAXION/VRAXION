@@ -85,6 +85,7 @@ Era-level summary of the research arc. Per-day detail lives in the timeline belo
 | Bias-free grower consolidation | 2026-04-12 | `neuron_grower.rs` consolidated on `main` as a bias-free threshold grower. Removed redundant `bias` parameter from persistent state and search; old bias-bearing state explicitly rejected. | [Rust Implementation Surface](v5-Rust-Port-Benchmarks) |
 | Abstract-core preprocessor validated | 2026-04-13 | All-binary {-1,+1} exhaustive grower with C19 achieves 100% lossless byte round-trip in 77 bits. Language model float baseline 34.5% (vs INSTNCT 24.6%). Int8 quantization lossless; naive binary quantization collapses. | [Timeline Archive](Timeline-Archive) |
 | Named-layer pipeline: L0-L2 built, overfitting discovered | 2026-04-14 | L0 Byte Interpreter: ternary 3 neurons = 100%. L1 Input Merger: linear 112->96, exact 100% (no sigmoid). L2 Feature Extractor: Conv1D(k=3,f=64)+MLP, 96.6% train but overfits (test 48.5%). Conv beats one-hot (+33pp train). Binary weights: perfect for encoding, FAIL for prediction. ReLU beats C19 in deep networks. Fair A/B: MLP backprop ~18x more parameter-efficient than evolution. | [Timeline Archive](Timeline-Archive) |
+| L0 CANONICAL: binary byte encoder frozen | 2026-04-14 | Exhaustive bitwidth sweep winner: 1-bit binary {-1,+1}, 4 neurons, 36 bits, pure POPCOUNT. Beats ternary (3n/43b) and 2-bit (2n/42b). Backprop STE validated (0.7s vs 194s exhaustive for 2-bit). Topology > weight precision for encoding. INSTNCT sparse edge-list unifies with binary deployment. | [Timeline Archive](Timeline-Archive) |
 
 ```mermaid
 timeline
@@ -133,6 +134,9 @@ timeline
                          : Conv pattern finder 96.6% train
                          : Overfitting discovered train 97% vs test 49%
                          : Named layer architecture L0-L3
+                         : L0 CANONICAL binary 4n 36b POPCOUNT
+                         : Bitwidth sweep 1b/ternary/2b
+                         : Backprop STE validates gradient path
 ```
 
 ## Active Research Gates
@@ -212,6 +216,20 @@ The timeline is ordered latest-first. Each day is a self-contained H3 section wi
 - [Early 2026 — Diamond Code Era](#early-2026--diamond-code-era)
 
 </details>
+
+---
+
+### 2026-04-14 — L0 CANONICAL: binary byte encoder frozen + bitwidth sweep + pipeline architecture diagram
+
+**Theme:** Exhaustive bitwidth sweep across 1-bit, ternary, and 2-bit weight precisions settles the L0 Byte Interpreter design. The 1-bit binary {-1,+1} encoder wins on total model size (36 bits), search speed (0.05s exhaustive), and hardware simplicity (pure POPCOUNT, no multiplications). Backprop STE validated as fast alternative to exhaustive search for higher bitwidths. Key architectural insight: topology matters more than weight precision for encoding tasks — binary weights suffice when the output space is small and discrete. INSTNCT's sparse edge-list format unifies naturally with binary-to-ternary deployment. Four-layer pipeline architecture diagram created.
+
+| Seq | Finding | Status | Source |
+|---|---|---|---|
+| 1 | **L0 Byte Interpreter CANONICAL**: 4 neurons, binary {-1,+1} weights, C19(c=5, rho=0), bias=-1 for all, 36 bits total model. Exhaustive search over all binary weight configurations guaranteed optimal — no smaller binary encoder exists for 27 symbols. Pure POPCOUNT hardware deployment: `dot = popcount(input AND pos_mask) - popcount(input AND neg_mask) + bias`. No multiplications, no MAC units. | CANONICAL / Frozen | `instnct-core/examples/canonical_byte_encoder.rs` |
+| 2 | **Bitwidth sweep results**: (a) 1-bit binary {-1,+1}: 4 neurons, 36 bits, 0.05s exhaustive search — WINNER on model size, search speed, and HW simplicity; (b) Ternary {-1,0,+1}: 3 neurons, 43 bits, fewer neurons but larger model and 40x slower search; (c) 2-bit {-2..+2}: 2 neurons, 42 bits, fewest neurons but requires multiply hardware and 194s exhaustive search. All three achieve 100% round-trip on 27 symbols. The 1-bit winner is smallest model, fastest to find, and simplest to deploy. | Validated finding | `instnct-core/examples/weight_bitwidth_sweep.rs`, `instnct-core/examples/canonical_byte_encoder.rs` |
+| 3 | **Backprop STE validates gradient path**: Straight-Through Estimator trains float weights, rounds to {-2,-1,0,+1,+2}, finds 100% 2-bit encoder in 0.7s vs exhaustive search 194s. Confirms backprop as viable fast alternative for weight discovery at higher bitwidths. For 1-bit binary, exhaustive search is already fast enough (0.05s) that backprop is unnecessary. | Validated finding | `instnct-core/examples/backprop_2bit_encoder.rs` |
+| 4 | **Topology vs weight precision insight**: Binary weights are sufficient for encoding because the task has a small discrete output space (27 symbols) where the topology (which bits connect to which neurons) determines separability, not weight magnitude. For prediction tasks (continuous output), binary weights fail — but binary + smart topology (sparse, evolved) may work. INSTNCT's sparse edge-list format unifies naturally with ternary-to-binary deployment: a ternary edge list with zero-weights pruned is equivalent to a binary edge list. | Validated finding | session synthesis |
+| 5 | **Named pipeline architecture (updated)**: L0 Byte Interpreter (CANONICAL: 4 neurons, binary, C19, 36 bits, POPCOUNT); L1 Input Merger (linear projection 112->96, 100% reconstruction); L2 Feature Extractor (Conv1D + MLP, overfits, needs work); L3 Brain (not yet built, target for INSTNCT evolution). Pipeline architecture diagram created at `docs/wiki/pipeline-architecture.svg`. | Current mainline | `docs/wiki/pipeline-architecture.svg` |
 
 ---
 

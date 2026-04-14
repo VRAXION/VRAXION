@@ -1,0 +1,113 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 520" font-family="monospace, Courier New, Courier" font-size="13">
+  <defs>
+    <marker id="arrow" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+      <path d="M0,0 L8,3 L0,6 Z" fill="#444"/>
+    </marker>
+    <linearGradient id="g0" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#1a5c2a"/>
+      <stop offset="100%" stop-color="#0d3318"/>
+    </linearGradient>
+    <linearGradient id="g1" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#1a3d5c"/>
+      <stop offset="100%" stop-color="#0d2033"/>
+    </linearGradient>
+    <linearGradient id="g2" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#5c3d1a"/>
+      <stop offset="100%" stop-color="#33200d"/>
+    </linearGradient>
+    <linearGradient id="g3" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#5c1a3d"/>
+      <stop offset="100%" stop-color="#330d20"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Title -->
+  <text x="400" y="30" text-anchor="middle" font-size="18" font-weight="bold" fill="#ddd">VRAXION Abstract-Core Pipeline</text>
+  <text x="400" y="50" text-anchor="middle" font-size="11" fill="#888">4-Layer Architecture (L0 Canonical, L1-L2 Validated, L3 Planned)</text>
+
+  <!-- Input -->
+  <rect x="30" y="70" width="120" height="50" rx="6" fill="#222" stroke="#666" stroke-width="1.5"/>
+  <text x="90" y="92" text-anchor="middle" fill="#ccc" font-size="12">Raw Bytes</text>
+  <text x="90" y="108" text-anchor="middle" fill="#888" font-size="10">8 bits / char</text>
+
+  <!-- Arrow: Input -> L0 -->
+  <line x1="150" y1="95" x2="195" y2="95" stroke="#444" stroke-width="2" marker-end="url(#arrow)"/>
+
+  <!-- L0: Byte Interpreter -->
+  <rect x="200" y="65" width="220" height="60" rx="8" fill="url(#g0)" stroke="#3a3" stroke-width="2"/>
+  <text x="310" y="84" text-anchor="middle" fill="#6f6" font-size="11" font-weight="bold">L0: Byte Interpreter</text>
+  <text x="310" y="100" text-anchor="middle" fill="#beb" font-size="10">4 neurons | binary {-1,+1} | C19</text>
+  <text x="310" y="114" text-anchor="middle" fill="#beb" font-size="10">36 bits | POPCOUNT | CANONICAL</text>
+
+  <!-- Arrow: L0 -> L1 -->
+  <line x1="310" y1="125" x2="310" y2="165" stroke="#444" stroke-width="2" marker-end="url(#arrow)"/>
+  <text x="325" y="150" fill="#888" font-size="9">4D code</text>
+
+  <!-- L1: Input Merger -->
+  <rect x="200" y="170" width="220" height="60" rx="8" fill="url(#g1)" stroke="#38c" stroke-width="2"/>
+  <text x="310" y="189" text-anchor="middle" fill="#6af" font-size="11" font-weight="bold">L1: Input Merger</text>
+  <text x="310" y="205" text-anchor="middle" fill="#bde" font-size="10">linear projection 112 -> 96</text>
+  <text x="310" y="219" text-anchor="middle" fill="#bde" font-size="10">100% reconstruction | int8</text>
+
+  <!-- Arrow: L1 -> L2 -->
+  <line x1="310" y1="230" x2="310" y2="270" stroke="#444" stroke-width="2" marker-end="url(#arrow)"/>
+  <text x="325" y="255" fill="#888" font-size="9">96D merged</text>
+
+  <!-- L2: Feature Extractor -->
+  <rect x="200" y="275" width="220" height="60" rx="8" fill="url(#g2)" stroke="#c83" stroke-width="2"/>
+  <text x="310" y="294" text-anchor="middle" fill="#fa6" font-size="11" font-weight="bold">L2: Feature Extractor</text>
+  <text x="310" y="310" text-anchor="middle" fill="#edb" font-size="10">Conv1D(k=3,f=64) + MLP | int8</text>
+  <text x="310" y="324" text-anchor="middle" fill="#edb" font-size="10">96.6% train | overfits | WIP</text>
+
+  <!-- Arrow: L2 -> L3 -->
+  <line x1="310" y1="335" x2="310" y2="375" stroke="#444" stroke-width="2" marker-end="url(#arrow)"/>
+  <text x="325" y="360" fill="#888" font-size="9">features</text>
+
+  <!-- L3: Brain -->
+  <rect x="200" y="380" width="220" height="60" rx="8" fill="url(#g3)" stroke="#c3a" stroke-width="2" stroke-dasharray="6,3"/>
+  <text x="310" y="399" text-anchor="middle" fill="#f6c" font-size="11" font-weight="bold">L3: Brain</text>
+  <text x="310" y="415" text-anchor="middle" fill="#ebd" font-size="10">INSTNCT evolution | sparse graph</text>
+  <text x="310" y="429" text-anchor="middle" fill="#ebd" font-size="10">not yet built | target</text>
+
+  <!-- Arrow: L3 -> Output -->
+  <line x1="310" y1="440" x2="310" y2="475" stroke="#444" stroke-width="2" marker-end="url(#arrow)"/>
+
+  <!-- Output -->
+  <rect x="250" y="478" width="120" height="35" rx="6" fill="#222" stroke="#666" stroke-width="1.5"/>
+  <text x="310" y="500" text-anchor="middle" fill="#ccc" font-size="12">Prediction</text>
+
+  <!-- Right side: specs panel -->
+  <rect x="480" y="65" width="290" height="375" rx="8" fill="#181818" stroke="#444" stroke-width="1"/>
+  <text x="625" y="88" text-anchor="middle" fill="#aaa" font-size="12" font-weight="bold">Bitwidth Sweep Results</text>
+  <line x1="495" y1="95" x2="755" y2="95" stroke="#333" stroke-width="1"/>
+
+  <!-- 1-bit row -->
+  <rect x="495" y="105" width="260" height="50" rx="4" fill="#1a2e1a" stroke="#3a3" stroke-width="1"/>
+  <text x="505" y="122" fill="#6f6" font-size="11" font-weight="bold">1-bit binary {-1,+1} WINNER</text>
+  <text x="505" y="138" fill="#beb" font-size="10">4 neurons | 36 bits | 0.05s search</text>
+  <text x="505" y="150" fill="#beb" font-size="10">Pure POPCOUNT | simplest HW</text>
+
+  <!-- ternary row -->
+  <rect x="495" y="165" width="260" height="45" rx="4" fill="#1a1a2e" stroke="#338" stroke-width="1"/>
+  <text x="505" y="182" fill="#88c" font-size="11">Ternary {-1,0,+1}</text>
+  <text x="505" y="198" fill="#aab" font-size="10">3 neurons | 43 bits | fewer n, larger model</text>
+
+  <!-- 2-bit row -->
+  <rect x="495" y="220" width="260" height="45" rx="4" fill="#2e1a1a" stroke="#833" stroke-width="1"/>
+  <text x="505" y="237" fill="#c88" font-size="11">2-bit {-2..+2}</text>
+  <text x="505" y="253" fill="#baa" font-size="10">2 neurons | 42 bits | needs multiply HW</text>
+
+  <line x1="495" y1="275" x2="755" y2="275" stroke="#333" stroke-width="1"/>
+  <text x="625" y="298" text-anchor="middle" fill="#aaa" font-size="12" font-weight="bold">Key Insights</text>
+
+  <text x="505" y="318" fill="#ccc" font-size="10">Topology > weight precision (encoding)</text>
+  <text x="505" y="336" fill="#ccc" font-size="10">Binary sufficient for discrete outputs</text>
+  <text x="505" y="354" fill="#ccc" font-size="10">INSTNCT sparse edges = binary deploy</text>
+  <text x="505" y="372" fill="#ccc" font-size="10">Backprop STE: 0.7s vs 194s (2-bit)</text>
+  <text x="505" y="390" fill="#ccc" font-size="10">C19(c=5, rho=0): power-of-2 compatible</text>
+  <text x="505" y="408" fill="#ccc" font-size="10">Int8 lossless across all layers</text>
+  <text x="505" y="426" fill="#ccc" font-size="10">100% round-trip on 27 symbols (a-z+space)</text>
+
+  <!-- Background -->
+  <rect x="0" y="0" width="800" height="520" rx="0" fill="none" stroke="none"/>
+</svg>
