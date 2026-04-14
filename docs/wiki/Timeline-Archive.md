@@ -83,6 +83,8 @@ Era-level summary of the research arc. Per-day detail lives in the timeline belo
 | Capability map and gradient era | 2026-04-09 | Readout fix unlocked 7/10 tasks. Float gradient solves all 8. **Connection Point architecture validated** for inter-cluster communication. **ReLU generalizes perfectly across tick depth.** Minimum viable chips: ADD = 1 neuron, binary, no bias. Native charge output: 1-neuron ADD reads the answer off a neuron's charge with no readout layer. Chip composition pipelines ADD into 3-input ADD at 100%. | [Rust Implementation Surface](v5-Rust-Port-Benchmarks) |
 | Connectome + integer-deploy pipeline | 2026-04-10 | **Passive relay connectome wins.** Float gradient 200/200 solve rate for ADD. 2D loss landscape smooth. All 5 tasks convert to 4-6 bit integer weights. Two-pool connectome proves C19 structural advantage (40-point gap vs ReLU on MIN). Circuit reuse speeds compatible compound tasks 3.8x. | [Rust Implementation Surface](v5-Rust-Port-Benchmarks) |
 | Bias-free grower consolidation | 2026-04-12 | `neuron_grower.rs` consolidated on `main` as a bias-free threshold grower. Removed redundant `bias` parameter from persistent state and search; old bias-bearing state explicitly rejected. | [Rust Implementation Surface](v5-Rust-Port-Benchmarks) |
+| Abstract-core preprocessor validated | 2026-04-13 | All-binary {-1,+1} exhaustive grower with C19 achieves 100% lossless byte round-trip in 77 bits. Language model float baseline 34.5% (vs INSTNCT 24.6%). Int8 quantization lossless; naive binary quantization collapses. | [Timeline Archive](Timeline-Archive) |
+| Named-layer pipeline: L0-L2 built, overfitting discovered | 2026-04-14 | L0 Byte Interpreter: ternary 3 neurons = 100%. L1 Input Merger: linear 112->96, exact 100% (no sigmoid). L2 Feature Extractor: Conv1D(k=3,f=64)+MLP, 96.6% train but overfits (test 48.5%). Conv beats one-hot (+33pp train). Binary weights: perfect for encoding, FAIL for prediction. ReLU beats C19 in deep networks. Fair A/B: MLP backprop ~18x more parameter-efficient than evolution. | [Timeline Archive](Timeline-Archive) |
 
 ```mermaid
 timeline
@@ -123,6 +125,14 @@ timeline
                          : Binary+C19 3/5 tasks
                          : Fraction extraction 4-6 bit integer
         2026-04-12       : Bias-free persistent grower
+    section Abstract-core pipeline
+        2026-04-13       : All-binary preprocessor 77 bits
+                         : Language model 34.5% float baseline
+        2026-04-14       : Ternary byte encoder 3 neurons = 100%
+                         : Linear merger 100% at 86% compression
+                         : Conv pattern finder 96.6% train
+                         : Overfitting discovered train 97% vs test 49%
+                         : Named layer architecture L0-L3
 ```
 
 ## Active Research Gates
@@ -174,6 +184,7 @@ The timeline is ordered latest-first. Each day is a self-contained H3 section wi
 <details>
 <summary>Jump to date</summary>
 
+- [2026-04-14 — Named-layer pipeline: L0 Byte Interpreter, L1 Input Merger, L2 Feature Extractor, overfitting discovered](#2026-04-14--named-layer-pipeline-l0-byte-interpreter-l1-input-merger-l2-feature-extractor-overfitting-discovered)
 - [2026-04-13 — All-binary preprocessor deep dive: dense MLP to exhaustive-search {-1,+1} grower + language model baseline](#2026-04-13--all-binary-preprocessor-deep-dive-dense-mlp-to-exhaustive-search--11-grower--language-model-baseline)
 - [2026-04-13 — Mirrored autoencoder: hierarchical byte preprocessing via tied-weight MLP + int8 quantization](#2026-04-13--mirrored-autoencoder-hierarchical-byte-preprocessing-via-tied-weight-mlp--int8-quantization)
 - [2026-04-12 — Bias-free persistent grower consolidation](#2026-04-12--bias-free-persistent-grower-consolidation)
@@ -201,6 +212,30 @@ The timeline is ordered latest-first. Each day is a self-contained H3 section wi
 - [Early 2026 — Diamond Code Era](#early-2026--diamond-code-era)
 
 </details>
+
+---
+
+### 2026-04-14 — Named-layer pipeline: L0 Byte Interpreter, L1 Input Merger, L2 Feature Extractor, overfitting discovered
+
+**Theme:** The abstract-core pipeline solidified into a named four-layer architecture (L0-L3). Three layers built and validated end-to-end. L0 Byte Interpreter: ternary {-1,0,+1} encoder achieves 100% byte encoding with only 3 neurons and 22 connections — a new record beating 4-neuron binary. L1 Input Merger: linear projection 112->96 achieves exact 100% reconstruction at 86% compression by removing sigmoid (was 99.98% ceiling). L2 Feature Extractor: Conv1D(k=3,f=64)+MLP hits 96.6% train accuracy (+33pp over one-hot 93.8%), but overfitting discovered (test 48.5% with 474K params, train 97% vs test 49%). Binary weights shown to be perfect for encoding but FAIL for prediction; int8 weights are lossless for prediction. ReLU beats C19 in deep networks (70% vs 42%); C19 beats ReLU in shallow networks. Fair A/B comparison: MLP backprop is ~18x more parameter-efficient than INSTNCT evolution. Minimum model: 1 hidden neuron (487 params) beats INSTNCT 24.6%. ctx=16 optimal for 100KB corpus. Merger scrambles spatial structure, hurting conv by -7pp. Ternary sparse list format unifies with INSTNCT ConnectionGraph.
+
+| Seq | Finding | Status | Source |
+|---|---|---|---|
+| 1 | **L0 Byte Interpreter** — ternary {-1,0,+1} encoder: 3 neurons, 22 connections, 100% byte encoding. New record: binary needed 4 neurons (7 with redundancy), ternary needs only 3. The zero weight provides implicit sparsity, enabling fewer neurons. Ternary sparse list format (neuron_id, input_id, weight) unifies naturally with INSTNCT ConnectionGraph representation. | BREAKTHROUGH / Validated finding | commit `cd4885b` |
+| 2 | **L1 Input Merger** — linear projection 112->96: exact 100% reconstruction at 86% compression ratio. Removing sigmoid was the key insight — sigmoid imposed a 99.98% ceiling because it cannot represent exact 0.0 or 1.0. Linear projection preserves full information. 7-neuron merger achieves 99.98% but NOT exact 100% (sigmoid ceiling). 4-neuron merger cannot compress at all (encoding is already too efficient for further compression). | BREAKTHROUGH / Validated finding | commits `cd29a24`, `a3bd97e`, `f1a4309` |
+| 3 | **L2 Feature Extractor** — Conv1D(k=3,f=64) + MLP: 96.6% train accuracy, +33pp improvement over previous best, beats one-hot baseline (93.8% on train). BUT overfits badly: test accuracy only 48.5% with 474K params. Conv pattern finder discovers local byte-sequence patterns that the pure MLP cannot see. | BREAKTHROUGH / Validated finding | commits `e3d7c6d`, `5046c8c` |
+| 4 | **Overfitting discovery** — full proven pipeline (L0+L1+L2) reveals train 97% vs test 49% gap. The 474K-param model memorizes training data instead of learning generalizable patterns. This is the first time train/test divergence was measured end-to-end in the abstract-core pipeline. Root cause: 100KB corpus is too small for 474K params. Fix: larger corpus, regularization, or BERT-style pretraining. | Validated finding | commit `7123323` |
+| 5 | **Binary weights: perfect for encoding, FAIL for prediction.** Binary {-1,+1} weights achieve 100% on byte encoding (L0) but collapse for prediction tasks. Int8 weights are lossless for prediction (within +/-0.3% of float). The encoding task has a small, discrete output space where binary suffices; prediction requires continuous-valued weights. | Validated finding | commits across session |
+| 6 | **ReLU beats C19 in deep networks** (70% vs 42%). Reversal of earlier shallow-network finding where C19 dominated. In deep stacked architectures, ReLU's monotonic gradient flow outperforms C19's periodic ripple, which causes vanishing/exploding signals through multiple layers. C19 remains superior for shallow networks and single-layer encoders. | Validated finding | commits across session |
+| 7 | **C19-mixed best preprocessor activation** (48.8%), Softplus 2nd (45.6%). Activation function sweep across the preprocessor layer confirms C19-mixed (blend of C19 and linear) as optimal for the single-layer encoder, consistent with earlier findings. | Validated finding | commit `bf3e17b` |
+| 8 | **Minimum model to beat INSTNCT**: 1 hidden neuron, 487 params, beats INSTNCT 24.6% baseline. Demonstrates that even a trivial MLP with backprop exceeds the evolutionary architecture on next-char prediction, underscoring the parameter-efficiency gap between gradient and evolution methods. | Validated finding | commit `5884c72` |
+| 9 | **Fair A/B: MLP backprop ~18x more parameter-efficient** than INSTNCT evolution. At matched parameter count, MLP with backprop reaches equivalent accuracy with ~18x fewer parameters. At matched accuracy, MLP needs ~18x fewer parameters. This is expected — backprop exploits exact gradient information that evolution must discover stochastically. | Validated finding | commit `79ecea7` |
+| 10 | **ctx=16 optimal for 100KB corpus.** Context window sweep shows diminishing returns beyond ctx=16 on the Alice corpus. Larger contexts increase parameters without improving accuracy, consistent with the overfitting finding — the corpus is too small to support long-range learning. | Validated finding | commits `f3cb173`, `d6ac2b4` |
+| 11 | **Merger scrambles spatial structure** — conv accuracy drops -7pp when fed through the 112->96 linear merger vs direct byte encoding. The merger optimizes for reconstruction loss, not spatial preservation, so adjacent-byte relationships are disrupted. Implication: conv-based L2 should receive spatially-ordered input, bypassing or constraining the merger. | Validated finding | commit `7123323` |
+| 12 | **Int8 quantization lossless everywhere** (+/-0.3%). Confirmed across L0 byte encoder, L1 merger, and L2 feature extractor — int8 quantized weights match float32 accuracy within noise. Extends the earlier preprocessor-only int8 finding to the full pipeline. | Validated finding | commit `07f3413` |
+| 13 | **4-neuron encoder cannot compress** — the ternary 3-neuron encoding is already near the information-theoretic limit. Attempting a 4-neuron encoder provides no compression benefit because the encoding has no redundancy to remove. 7-neuron encoder has redundancy (extra neurons carry redundant information). | Validated finding | commit `dfa342c` |
+| 14 | **Named architecture crystallized (L0-L3):** L0 Byte Interpreter (ternary, 3 neurons, 100%), L1 Input Merger (linear 112->96, 100%), L2 Feature Extractor (Conv1D+MLP, 96.6% train / 48.5% test), L3 Brain (not yet built — target for INSTNCT evolution on frozen L0-L2 features). | Experimental direction | session synthesis |
+| 15 | **Proposed next steps:** (a) BERT-style masked character pretraining for L2 to fix overfitting, (b) INSTNCT evolution as L3 brain on frozen L0-L2 features, (c) ternary training with sparse list deployment for all layers, (d) larger corpus to address train/test gap. | Experimental direction | session synthesis |
 
 ---
 

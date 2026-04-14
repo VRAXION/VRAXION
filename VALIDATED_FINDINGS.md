@@ -46,6 +46,23 @@ The repo is in a transition state:
 | Voltage medium leak schedule | 22.11% peak / 21.46% plateau | Fixed schedule, not promoted to defaults |
 | Word-pair log-likelihood eval | 23.8% | Task-memory evaluation, not canonical mainline |
 
+### Abstract-core pipeline: named-layer architecture (2026-04-13/14)
+
+| Finding | Result | Status |
+|---|---|---|
+| **L0 Byte Interpreter** | Ternary {-1,0,+1} encoder: 3 neurons, 22 connections, 100% byte encoding. New record (binary needed 4). | **Validated finding** |
+| **L1 Input Merger** | Linear projection 112->96: exact 100% reconstruction at 86% compression. Sigmoid removed (was 99.98% ceiling). | **Validated finding** |
+| **L2 Feature Extractor** | Conv1D(k=3,f=64)+MLP: 96.6% train (+33pp, beats one-hot 93.8%). Overfits: test 48.5% with 474K params. | **Validated finding** |
+| **Int8 quantization lossless** | +/-0.3% across all layers (L0, L1, L2). Extends preprocessor-only finding to full pipeline. | **Validated finding** |
+| **Binary weights: encode yes, predict no** | Binary {-1,+1} achieves 100% on encoding but collapses for prediction. Int8 needed for prediction. | **Validated finding** |
+| **ReLU beats C19 in deep networks** | 70% vs 42%. Reversal of shallow-network finding. C19 still superior for shallow/single-layer. | **Validated finding** |
+| **C19-mixed best preprocessor activation** | 48.8% accuracy. Softplus 2nd at 45.6%. | **Validated finding** |
+| **Minimum model beats INSTNCT** | 1 hidden neuron (487 params) exceeds INSTNCT 24.6% baseline. | **Validated finding** |
+| **MLP backprop ~18x more parameter-efficient** | Fair A/B vs INSTNCT evolution at matched param count. | **Validated finding** |
+| **ctx=16 optimal** | Diminishing returns beyond ctx=16 on 100KB corpus. | **Validated finding** |
+| **Merger scrambles spatial structure** | Conv accuracy drops -7pp through merger. Conv should bypass merger for spatial input. | **Validated finding** |
+| **Ternary sparse list unifies with INSTNCT** | Ternary -> sparse list format (neuron_id, input_id, weight) maps directly to ConnectionGraph. | **Validated finding** |
+
 ### Key architectural findings (cross-lane)
 
 | Finding | Evidence |
