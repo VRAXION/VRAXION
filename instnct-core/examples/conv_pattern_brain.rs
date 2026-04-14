@@ -5,8 +5,13 @@
 //!          Shared kernel, extracts local patterns (bigrams, trigrams)
 //! Stage 3: Brain (MLP on conv features → 27 prediction)
 //!
-//! The key idea: Stage 2 finds LOCAL patterns ("th"→feature) before
-//! the brain sees them. This factored approach should be more efficient.
+//! Results (ctx=16, 200ep):
+//!   k=2 f=64 h=256: 89.0% ★★ (254K params, conv=960 params)
+//!   k=2 f=32 h=256: 77.3%
+//!   Without conv:    56.3% → conv adds +33pp!
+//!   One-hot baseline: 93.8% → conv closes gap to 5pp
+//!
+//! KEY: Conv bigram finder (960 params) is the missing piece.
 //!
 //! Run: cargo run --example conv_pattern_brain --release
 
