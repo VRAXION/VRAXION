@@ -46,13 +46,20 @@ The repo is in a transition state:
 | Voltage medium leak schedule | 22.11% peak / 21.46% plateau | Fixed schedule, not promoted to defaults |
 | Word-pair log-likelihood eval | 23.8% | Task-memory evaluation, not canonical mainline |
 
-### Abstract-core pipeline: named-layer architecture (2026-04-13/14)
+### Abstract-core pipeline: named-layer architecture (2026-04-13/14/15)
 
 | Finding | Result | Status |
 |---|---|---|
-| **L0 Byte Interpreter** | Ternary {-1,0,+1} encoder: 3 neurons, 22 connections, 100% byte encoding. New record (binary needed 4). | **Validated finding** |
-| **L1 Input Merger** | Linear projection 112->96: exact 100% reconstruction at 86% compression. Sigmoid removed (was 99.98% ceiling). | **Validated finding** |
-| **L2 Feature Extractor** | Conv1D(k=3,f=64)+MLP: 96.6% train (+33pp, beats one-hot 93.8%). Overfits: test 48.5% with 474K params. | **Validated finding** |
+| **L0 Byte Interpreter (LOCKED)** | Flat 8->4 neurons, binary {-1,+1} weights, 36 bits total, 100% round-trip. Pure integer deployment: POPCOUNT -> int32 sum -> int8 output. NO C19 needed. NO float needed. NO multiply (binary = pass or negate). Exhaustive search guaranteed optimal (0.05s). | **CANONICAL / Frozen** |
+| **L0 bitwidth sweep** | 1-bit {-1,+1}: 4 neurons, 36 bits, fastest (0.05s); Ternary {-1,0,+1}: 3 neurons, 43 bits, fewest ops; 2-bit {-2..+2}: 2 neurons, 42 bits, fewest neurons (194s exhaustive, 0.7s STE). Winner for deployment: 1-bit (simplest HW, POPCOUNT native). | **CANONICAL / Frozen** |
+| **Multi-layer encoder WORSE than flat** | 8->wide->narrow architectures tested: bottleneck effect makes them worse. 8->6->3 = 75 params vs flat 8->4 = 36 params. Multi-layer useful for complex tasks (L1+), counterproductive for byte encoding. | **Validated finding** |
+| **Bitflip-only (no sum)** | Without summation, needs 5 output neurons (trivial: wire lower 5 bits). Sum is essential: aggregates multiple bits into richer codes, enabling 4-neuron encoding. | **Validated finding** |
+| **Backprop STE matches exhaustive** | Straight-Through Estimator finds identical 100% solutions. 0.7s vs 194s for 2-bit (278x faster). Multiple valid optima exist. Critical for L1+ where exhaustive is impossible. For byte encoder: exhaustive beats STE (0.05s vs 9s) because search space is tiny. | **Validated finding** |
+| **Pure integer pipeline** | No C19, no float: POPCOUNT -> integer sum -> int8 output. Binary weight = pass or negate. int32 accumulator -> int8 output. Standard HW support everywhere. | **CANONICAL / Frozen** |
+| **Ternary training -> binary deployment** | Train with ternary {-1,0,+1} for sparsity, deploy as binary via add_list + sub_list format (zero-weight edges pruned). | **Validated finding** |
+| **L1 Input Merger** | Linear projection 112->96: exact 100% reconstruction at 86% compression. Sigmoid removed (was 99.98% ceiling). Next design target. | **Validated finding** |
+| **L2 Feature Extractor** | Conv1D(k=3,f=64)+MLP: 96.6% train (+33pp, beats one-hot 93.8%). Overfits: test 48.5% with 474K params. Needs work. | **Validated finding** |
+| **L3 Brain** | INSTNCT sparse spiking network. Not yet built. | **Experimental direction** |
 | **Int8 quantization lossless** | +/-0.3% across all layers (L0, L1, L2). Extends preprocessor-only finding to full pipeline. | **Validated finding** |
 | **Binary weights: encode yes, predict no** | Binary {-1,+1} achieves 100% on encoding but collapses for prediction. Int8 needed for prediction. | **Validated finding** |
 | **ReLU beats C19 in deep networks** | 70% vs 42%. Reversal of shallow-network finding. C19 still superior for shallow/single-layer. | **Validated finding** |
@@ -62,6 +69,7 @@ The repo is in a transition state:
 | **ctx=16 optimal** | Diminishing returns beyond ctx=16 on 100KB corpus. | **Validated finding** |
 | **Merger scrambles spatial structure** | Conv accuracy drops -7pp through merger. Conv should bypass merger for spatial input. | **Validated finding** |
 | **Ternary sparse list unifies with INSTNCT** | Ternary -> sparse list format (neuron_id, input_id, weight) maps directly to ConnectionGraph. | **Validated finding** |
+| **Topology carries intelligence** | In sparse networks, which bits connect to which neurons determines separability, not weight magnitude. INSTNCT philosophy validated at L0. | **Validated finding** |
 
 ### Key architectural findings (cross-lane)
 

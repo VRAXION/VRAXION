@@ -20,7 +20,7 @@ One list of live public surfaces for the project. Everywhere else in this record
 - The stable public release is still `v4.2.0`; the active architecture line is [INSTNCT Architecture](INSTNCT-Architecture). See [Core Surfaces](#core-surfaces) for the release list.
 - The Rust `v5.0.0-beta` lane (`instnct-core`) is substantial enough to deserve rich chronology, but remains a beta implementation surface rather than the shipped default.
 - The biggest unresolved pressure is no longer basic trainability. It is whether language evaluation, seed variance, and context-dependent task learning survive repeated adversarial reruns, and whether the C19 + float-gradient + fraction-quantization pipeline generalizes beyond the current task suite.
-- The current frontier recipe: **C19 activation (learnable rho + C per neuron) + float gradient training + fraction extraction to 4-6 bit integer weights + C19 baked as LUT** — trained in float, deployed as pure integer inference.
+- The current frontier recipe: **L0 Byte Interpreter LOCKED** — flat 8->4 binary {-1,+1}, pure integer deployment (POPCOUNT -> int32 sum -> int8 output), no C19, no float, no multiply. L1 Input Merger is the next design target. The older C19 + float gradient + fraction extraction pipeline remains valid for the grower lane and L2+ prediction tasks where binary weights are insufficient.
 
 ## Research Protocol
 
@@ -86,6 +86,7 @@ Era-level summary of the research arc. Per-day detail lives in the timeline belo
 | Abstract-core preprocessor validated | 2026-04-13 | All-binary {-1,+1} exhaustive grower with C19 achieves 100% lossless byte round-trip in 77 bits. Language model float baseline 34.5% (vs INSTNCT 24.6%). Int8 quantization lossless; naive binary quantization collapses. | [Timeline Archive](Timeline-Archive) |
 | Named-layer pipeline: L0-L2 built, overfitting discovered | 2026-04-14 | L0 Byte Interpreter: ternary 3 neurons = 100%. L1 Input Merger: linear 112->96, exact 100% (no sigmoid). L2 Feature Extractor: Conv1D(k=3,f=64)+MLP, 96.6% train but overfits (test 48.5%). Conv beats one-hot (+33pp train). Binary weights: perfect for encoding, FAIL for prediction. ReLU beats C19 in deep networks. Fair A/B: MLP backprop ~18x more parameter-efficient than evolution. | [Timeline Archive](Timeline-Archive) |
 | L0 CANONICAL: binary byte encoder frozen | 2026-04-14 | Exhaustive bitwidth sweep winner: 1-bit binary {-1,+1}, 4 neurons, 36 bits, pure POPCOUNT. Beats ternary (3n/43b) and 2-bit (2n/42b). Backprop STE validated (0.7s vs 194s exhaustive for 2-bit). Topology > weight precision for encoding. INSTNCT sparse edge-list unifies with binary deployment. | [Timeline Archive](Timeline-Archive) |
+| Pure binary pipeline LOCKED | 2026-04-15 | L0 deployment pipeline finalized: no C19, no float, no multiply. POPCOUNT -> int32 sum -> int8 output. Multi-layer encoder WORSE than flat (bottleneck effect). Backprop STE validated but unnecessary at this scale. Architecture locked: L0 FROZEN, L1 next. Emergent INSTNCT topology baseline confirms designed encoder vastly outperforms random wiring. | [Timeline Archive](Timeline-Archive) |
 
 ```mermaid
 timeline
@@ -137,6 +138,11 @@ timeline
                          : L0 CANONICAL binary 4n 36b POPCOUNT
                          : Bitwidth sweep 1b/ternary/2b
                          : Backprop STE validates gradient path
+        2026-04-15       : Pure binary pipeline LOCKED
+                         : No C19 no float no multiply
+                         : POPCOUNT to int8 end-to-end
+                         : Multi-layer WORSE than flat
+                         : L0 FROZEN L1 next
 ```
 
 ## Active Research Gates
@@ -188,6 +194,8 @@ The timeline is ordered latest-first. Each day is a self-contained H3 section wi
 <details>
 <summary>Jump to date</summary>
 
+- [2026-04-15 — Pure binary pipeline LOCKED: no C19, no float, no multiply — POPCOUNT to int8 end-to-end](#2026-04-15--pure-binary-pipeline-locked-no-c19-no-float-no-multiply--popcount-to-int8-end-to-end)
+- [2026-04-14 — L0 CANONICAL: binary byte encoder frozen + bitwidth sweep + pipeline architecture diagram](#2026-04-14--l0-canonical-binary-byte-encoder-frozen--bitwidth-sweep--pipeline-architecture-diagram)
 - [2026-04-14 — Named-layer pipeline: L0 Byte Interpreter, L1 Input Merger, L2 Feature Extractor, overfitting discovered](#2026-04-14--named-layer-pipeline-l0-byte-interpreter-l1-input-merger-l2-feature-extractor-overfitting-discovered)
 - [2026-04-13 — All-binary preprocessor deep dive: dense MLP to exhaustive-search {-1,+1} grower + language model baseline](#2026-04-13--all-binary-preprocessor-deep-dive-dense-mlp-to-exhaustive-search--11-grower--language-model-baseline)
 - [2026-04-13 — Mirrored autoencoder: hierarchical byte preprocessing via tied-weight MLP + int8 quantization](#2026-04-13--mirrored-autoencoder-hierarchical-byte-preprocessing-via-tied-weight-mlp--int8-quantization)
@@ -216,6 +224,24 @@ The timeline is ordered latest-first. Each day is a self-contained H3 section wi
 - [Early 2026 — Diamond Code Era](#early-2026--diamond-code-era)
 
 </details>
+
+---
+
+### 2026-04-15 — Pure binary pipeline LOCKED: no C19, no float, no multiply — POPCOUNT to int8 end-to-end
+
+**Theme:** Final L0 byte encoder consolidation. The deployment pipeline eliminates C19, floats, and multiply instructions entirely: binary {-1,+1} weights mean each operation is pass-or-negate, POPCOUNT computes the dot product, int32 accumulator sums, and int8 output is the final code. Multi-layer binary encoders tested and confirmed WORSE than flat (hidden layer creates bottleneck, not benefit). Bitflip-only encoding (no sum) shown trivial but needs 5 outputs vs 4 with sum. Backprop STE validated as matching exhaustive search but unnecessary for byte encoder (exhaustive is faster at this scale). Architecture decisions locked: L0 is FROZEN, L1 Input Merger is the next design target.
+
+| Seq | Finding | Status | Source |
+|---|---|---|---|
+| 1 | **BYTE ENCODER FINAL (LOCKED)**: flat 8->4 neurons, binary {-1,+1} weights, 36 bits total, 100% round-trip on 27 symbols. Exhaustive search confirmed optimal — no better configuration exists. Pure integer pipeline: POPCOUNT -> SUM (int32 accumulator) -> int8 output. NO C19 activation needed. NO floating point needed. Binary weights mean each operation is pass (+1) or negate (-1) — no multiply hardware required. | CANONICAL / Frozen | commit `a1e2b2b` |
+| 2 | **Multi-layer binary encoder WORSE than flat**: 8->wide->narrow architectures tested (e.g. 8->6->3). Hidden layer creates information bottleneck, does not help. 8->6->3 needs 75 params for 100% vs flat 8->4 = 36 params (2.1x overhead). Multi-layer is useful for COMPLEX tasks (L1+) where feature composition matters, but counterproductive for simple byte encoding where flat projection suffices. | Validated finding | commit `a1e2b2b` |
+| 3 | **Bitflip-only encoding (no sum)**: without summation, each neuron produces only a single bit (flip or no-flip of each input bit). Achieves 100% but needs 5 output neurons instead of 4. Trivial implementation: just wire the lower 5 bits. Sum is essential for richer encodings: it aggregates multiple input bits into a single integer output, compressing the representation. | Validated finding | commit `a1e2b2b` |
+| 4 | **Weight bitwidth sweep FINAL**: (a) 1-bit {-1,+1}: 4 neurons, 36 bits — smallest storage, fastest exhaustive search (0.05s), POPCOUNT-native, WINNER for deployment; (b) Ternary {-1,0,+1}: 3 neurons, 43 bits — fewest ops per inference via sparse add/sub lists; (c) 2-bit {-2..+2}: 2 neurons, 42 bits — fewest neurons, found in 194s exhaustive or 0.7s backprop STE. All achieve 100%. Winner for deployment: 1-bit flat (simplest HW, no multiply, POPCOUNT native). | CANONICAL / Frozen | commit `434e86f` |
+| 5 | **Backprop STE validation FINAL**: Straight-Through Estimator matches exhaustive search results exactly. 0.7s vs 194s for 2-bit encoder (278x faster). Found multiple valid 100% configurations, proving many optima exist in the weight landscape. Critical for larger layers (L1+) where exhaustive search is combinatorially impossible. For byte encoder specifically: exhaustive beats backprop (0.05s vs 9s 1-bit STE) because the search space is tiny (2^32 for 4 neurons x 8 bits). | Validated finding | commit `6ad21fa` |
+| 6 | **Pure binary pipeline — no C19, no float**: POPCOUNT computes dot product (count matching bits in pos_mask, subtract matching bits in neg_mask). Integer sum accumulates in int32. Output is direct int8 sums (4 bytes per character). Alternative: bit-decompose the sums into 20 binary output bits for downstream binary processing. Either way: zero floating point, zero multiply, zero activation function. | CANONICAL / Frozen | commit `a1e2b2b` |
+| 7 | **Architecture decisions LOCKED**: L0 Byte Interpreter = flat 8->4, binary {-1,+1}, int8 sum output, FROZEN. L1 Input Merger = next to design (backprop STE for initial weight discovery, or INSTNCT evolution for sparse topology). L2 Feature Extractor = Conv+MLP, overfits, needs regularization or larger corpus. L3 Brain = INSTNCT sparse spiking network, not yet built. | Current mainline | session synthesis |
+| 8 | **Key deployment insights**: (a) Binary weight = pass or negate, NO multiply unit needed; (b) Sum accumulates in int32, scales back to int8 — standard HW support everywhere; (c) Topology carries intelligence in sparse networks (INSTNCT philosophy validated at L0); (d) Ternary training -> binary deployment via add_list + sub_list format (zero-weight edges pruned); (e) For byte encoder: exhaustive beats backprop because search space is tiny, but for L1+ backprop STE is essential. | Validated finding | session synthesis |
+| 9 | **Emergent byte encoder baseline**: Random INSTNCT spiking topology tested as negative control. At H=128 (128 neurons, 10% density), random topology produces only 17/27 unique patterns and 17/27 round-trips — far below the designed flat 8->4 encoder (27/27 in 0.05s). Confirms that designed/searched topology vastly outperforms random wiring for encoding, motivating evolution-based search for future layers. | Validated finding | `instnct-core/examples/emergent_byte_encoder.rs` |
 
 ---
 
