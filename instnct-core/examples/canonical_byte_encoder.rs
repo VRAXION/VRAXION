@@ -82,7 +82,8 @@ const NEG_MASKS: [u8; N_NEURONS] = [
 // byte → BYTE_LUT[byte] → 4 int8 values. Done.
 // ============================================================
 
-const BYTE_LUT: [[i8; 4]; 27] = [
+// --- 4-neuron LUT (original C19 c=5, exhaustive search) ---
+const BYTE_LUT_4N: [[i8; 4]; 27] = [
     [ -33, -33, -33, -33],  // 'a' (0)
     [   0,   0, -50,   0],  // 'b' (1)
     [   0, -50,   0,   0],  // 'c' (2)
@@ -112,9 +113,52 @@ const BYTE_LUT: [[i8; 4]; 27] = [
     [   0, -33, -50, -50],  // 'space' (26)
 ];
 
-/// Encode using frozen LUT — ZERO compute, just memory read
+// --- 2-neuron LUT (C19 c=20, backprop STE found) — RECOMMENDED ---
+// Half the downstream size: 2048 chunk × 2 = 4096 vs 8192
+// Weights: N0=[-2,2,1,0,-2,0,2,1] N1=[1,-2,-2,-2,-2,-2,-2,0] b=[-2,-2] c=20
+const BYTE_LUT_2N: [[i8; 2]; 27] = [
+    [  -2,  -4],  // 'a' (0)
+    [  -4,  -2],  // 'b' (1)
+    [   0,  -6],  // 'c' (2)
+    [  -2,  -5],  // 'd' (3)
+    [  -1,  -6],  // 'e' (4)
+    [  -3,  -5],  // 'f' (5)
+    [   1,  -8],  // 'g' (6)
+    [  -1,  -7],  // 'h' (7)
+    [  -2,  -6],  // 'i' (8)
+    [  -4,  -5],  // 'j' (9)
+    [   0,  -8],  // 'k' (10)
+    [  -2,  -7],  // 'l' (11)
+    [  -1,  -8],  // 'm' (12)
+    [  -3,  -7],  // 'n' (13)
+    [   1, -10],  // 'o' (14)
+    [  -1,  -9],  // 'p' (15)
+    [  -4,  -6],  // 'q' (16)
+    [  -6,  -5],  // 'r' (17)
+    [  -2,  -8],  // 's' (18)
+    [  -4,  -7],  // 't' (19)
+    [  -3,  -8],  // 'u' (20)
+    [  -5,  -7],  // 'v' (21)
+    [  -1, -10],  // 'w' (22)
+    [  -3,  -9],  // 'x' (23)
+    [  -4,  -8],  // 'y' (24)
+    [  -6,  -7],  // 'z' (25)
+    [  -2, -10],  // 'space' (26)
+];
+
+/// Encode using 4-neuron LUT
+fn encode_lut_4n(symbol: u8) -> [i8; 4] {
+    BYTE_LUT_4N[symbol as usize]
+}
+
+/// Encode using 2-neuron LUT — RECOMMENDED (half downstream size)
+fn encode_lut_2n(symbol: u8) -> [i8; 2] {
+    BYTE_LUT_2N[symbol as usize]
+}
+
+// Legacy alias
 fn encode_lut(symbol: u8) -> [i8; N_NEURONS] {
-    BYTE_LUT[symbol as usize]
+    BYTE_LUT_4N[symbol as usize]
 }
 
 // ============================================================
@@ -323,18 +367,20 @@ fn main() {
     println!();
 
     // --- LUT deploy verification ---
-    println!("  Frozen LUT deployment (108 bytes, zero compute)");
+    println!("  Frozen LUT deployment");
     println!("  ---------------------------------------------------------------");
-    let mut lut_unique = std::collections::HashSet::new();
+    let mut lut4_unique = std::collections::HashSet::new();
+    let mut lut2_unique = std::collections::HashSet::new();
     for i in 0..N_SYMBOLS {
-        let lut_code = encode_lut(i as u8);
-        lut_unique.insert(lut_code);
+        lut4_unique.insert(encode_lut_4n(i as u8));
+        lut2_unique.insert(encode_lut_2n(i as u8));
     }
-    println!("  LUT unique codes: {}/{} {}", lut_unique.len(), N_SYMBOLS,
-        if lut_unique.len() == N_SYMBOLS { "PASS ★★★" } else { "FAIL" });
-    println!("  LUT size: {} bytes (27 symbols × 4 int8)", 27 * 4);
-    println!("  Values used: only {{-50, -33, 0, +33, +50}} — 5 levels");
+    println!("  4-neuron LUT: {}/{} {} (108 bytes, 4 int8/symbol)",
+        lut4_unique.len(), N_SYMBOLS, if lut4_unique.len()==N_SYMBOLS{"PASS ★★★"}else{"FAIL"});
+    println!("  2-neuron LUT: {}/{} {} (54 bytes, 2 int8/symbol) ← RECOMMENDED",
+        lut2_unique.len(), N_SYMBOLS, if lut2_unique.len()==N_SYMBOLS{"PASS ★★★"}else{"FAIL"});
     println!("  Inference: 1 memory read, 0 compute, 0 float");
+    println!("  2048-byte chunk: 4N→8192 values, 2N→4096 values");
     println!();
 
     // --- Bitwidth comparison ---
