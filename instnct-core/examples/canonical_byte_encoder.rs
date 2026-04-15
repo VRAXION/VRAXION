@@ -10,10 +10,12 @@
 //!   C19 activation: c=5.0, rho=0.0 for all neurons
 //!   Total model: 36 bits (4 neurons x 9 params x 1 bit)
 //!
-//! Hardware deployment: pure POPCOUNT
-//!   Each neuron's weight vector is a bitmask.
-//!   dot = POPCOUNT(input AND pos_mask) - POPCOUNT(input AND neg_mask) + bias
-//!   No multiplications. No MAC units. Just bitwise AND + POPCOUNT.
+//! Hardware deployment (two options):
+//!   A) POPCOUNT path: dot = POPCOUNT(in AND pos_mask) - POPCOUNT(in AND neg_mask) + bias
+//!      No multiplications. Just bitwise AND + POPCOUNT. Sum in int32.
+//!   B) LUT path: byte → BYTE_LUT[byte] → 4 int8 values. 108 bytes total.
+//!      ZERO compute — just one memory read. C19 baked into the table.
+//!      Best for frozen deployment: no C19, no float, no POPCOUNT even.
 //!
 //! Encodes 27 symbols (a-z + space) with 100% round-trip fidelity.
 //! Search time: 0.05s exhaustive (vs ternary 3-neuron: fewer neurons but
@@ -73,6 +75,47 @@ const NEG_MASKS: [u8; N_NEURONS] = [
     0b11111001, // N2: bits 0,3,4,5,6,7 are -1
     0b11111100, // N3: bits 2,3,4,5,6,7 are -1
 ];
+
+// ============================================================
+// FROZEN LUT — deploy path B (zero compute, 108 bytes)
+// C19 outputs precomputed and quantized to int8.
+// byte → BYTE_LUT[byte] → 4 int8 values. Done.
+// ============================================================
+
+const BYTE_LUT: [[i8; 4]; 27] = [
+    [ -33, -33, -33, -33],  // 'a' (0)
+    [   0,   0, -50,   0],  // 'b' (1)
+    [   0, -50,   0,   0],  // 'c' (2)
+    [  33, -33, -33,  33],  // 'd' (3)
+    [   0,   0,   0, -50],  // 'e' (4)
+    [  33,  33, -33, -33],  // 'f' (5)
+    [  33, -33,  33, -33],  // 'g' (6)
+    [  50,   0,   0,   0],  // 'h' (7)
+    [   0, -50, -50, -50],  // 'i' (8)
+    [  33, -33, -50, -33],  // 'j' (9)
+    [  33, -50, -33, -33],  // 'k' (10)
+    [  50, -50, -50,   0],  // 'l' (11)
+    [  33, -33, -33, -50],  // 'm' (12)
+    [  50,   0, -50, -50],  // 'n' (13)
+    [  50, -50,   0, -50],  // 'o' (14)
+    [  50, -33, -33, -33],  // 'p' (15)
+    [ -50, -50, -50, -50],  // 'q' (16)
+    [ -33, -33, -50, -33],  // 'r' (17)
+    [ -33, -50, -33, -33],  // 's' (18)
+    [   0, -50, -50,   0],  // 't' (19)
+    [ -33, -33, -33, -50],  // 'u' (20)
+    [   0,   0, -50, -50],  // 'v' (21)
+    [   0, -50,   0, -50],  // 'w' (22)
+    [  33, -33, -33, -33],  // 'x' (23)
+    [ -33, -50, -50, -50],  // 'y' (24)
+    [   0, -50, -33, -50],  // 'z' (25)
+    [   0, -33, -50, -50],  // 'space' (26)
+];
+
+/// Encode using frozen LUT — ZERO compute, just memory read
+fn encode_lut(symbol: u8) -> [i8; N_NEURONS] {
+    BYTE_LUT[symbol as usize]
+}
 
 // ============================================================
 // C19 activation function
@@ -277,6 +320,21 @@ fn main() {
         println!("  '{}' (0x{:02x}): [{:>8.4}, {:>8.4}, {:>8.4}, {:>8.4}] {}",
             ch, byte, code[0], code[1], code[2], code[3], match_mark);
     }
+    println!();
+
+    // --- LUT deploy verification ---
+    println!("  Frozen LUT deployment (108 bytes, zero compute)");
+    println!("  ---------------------------------------------------------------");
+    let mut lut_unique = std::collections::HashSet::new();
+    for i in 0..N_SYMBOLS {
+        let lut_code = encode_lut(i as u8);
+        lut_unique.insert(lut_code);
+    }
+    println!("  LUT unique codes: {}/{} {}", lut_unique.len(), N_SYMBOLS,
+        if lut_unique.len() == N_SYMBOLS { "PASS ★★★" } else { "FAIL" });
+    println!("  LUT size: {} bytes (27 symbols × 4 int8)", 27 * 4);
+    println!("  Values used: only {{-50, -33, 0, +33, +50}} — 5 levels");
+    println!("  Inference: 1 memory read, 0 compute, 0 float");
     println!();
 
     // --- Bitwidth comparison ---
