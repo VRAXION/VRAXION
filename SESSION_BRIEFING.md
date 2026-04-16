@@ -27,8 +27,24 @@ fn beukers(x: f32, y: f32) -> f32 {
 swish k=5 nf=64:     77.4% (starting point)
 Beukers k=5 nf=96:   80.1% (+2.7%)
 Beukers k=7 nf=96:   82.1% (+4.7%)
-Beukers k=7 nf=128:  83.6% (+6.2%) ← CURRENT RECORD
+Beukers k=7 nf=128:  83.6% (+6.2%) ← CURRENT RECORD (2-proj)
 ```
+
+### NEW: Full Arithmetic Neuron (toy results, needs full-scale test!)
+```
+f(a,b,c) = a × b / (|c| + ε)    ← multiply + divide, 3 projections
+Toy nf=32: 79.1% (vs Beukers 2-proj 75.2%, vs swish 71.1%)
+UNTESTED at full scale (nf=128 k=7) — tonight's priority!
+```
+
+### Operations Tested
+- Multiply (Beukers ab): STRONGEST single op
+- Divide (a/|c|): strongest COMPLEMENT to multiply (+2.9%)
+- Exp gate (exp(-|ab|)): decent regularizer (+0.7%)
+- Sqrt, log, power, square: all WEAKER, don't help
+- Per-neuron gain (α): no effect (absorbs into weights)
+- 3-way/4-way multiply: helps but width > ways
+- SIMPLEST formula wins: ab/(|c|+ε), no fancy math needed
 
 ### What Was Tested (21 activations, 30+ configs)
 - **Winners:** Beukers gate (all sizes), multi_c19
