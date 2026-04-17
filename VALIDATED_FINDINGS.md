@@ -1,5 +1,7 @@
 # VRAXION Validated Findings
 
+_Last updated: 2026-04-17_
+
 Canonical evidence summary. Repo-tracked docs are canonical; the GitHub wiki is a mirrored secondary surface.
 
 ## Current State
@@ -80,6 +82,18 @@ The repo is in a transition state:
 | Hub-inhibitor architecture | 10% inhibitory neurons with 2x fan-out (matches FlyWire biological data) |
 | Sparse evolution > dense prefill | Evolution with few edges produces targeted circuits; dense prefill = noise |
 | Fitness function shape matters | Smooth (continuous) > discrete (step). The #1 bottleneck was not architecture but fitness signal quality. |
+
+### Beukers gate + quantization (2026-04-16/17)
+
+Char-LM task (FineWeb 30MB). Neuron activations and weight representations explored systematically against the B0 Beukers baseline.
+
+| Finding | Result | Status |
+|---|---|---|
+| **B0 Beukers gate = optimal char-LM activation** | `output = ab / (1 + |ab|)` 2-projection gate. Baseline 74.03 +/- 1.05 on FineWeb 30MB, nf=128, 3 seeds. Every one of 15+ variants tested LOST to B0. Multiplication detects correlation (bigram patterns) which is the core char-LM signal — B0 is near-optimal here. | **Validated finding** |
+| **Beukers variant sweep: B0 wins** | branch-budget (ab vs c) 73.07 +/- 0.17; 3-tower sum-of-products 72.13 +/- 0.29; alpha-modulated Beukers 72.10 +/- 0.22; delta group-norm / alpha+delta combos 71.60-73.47; margin-gate (sort-based) 73.57 +/- 0.29 (deterministic probe showed outlier-detector behavior, not general); range/hybrid gates 69-73; sharpen variants (m-space + raw) 67-70; residual Beukers (bounded + unbounded + learnable) 73.17-73.77. | **Validated finding** |
+| **Staged INQ int4 BEATS float32** | nf=64 B0 Beukers on FineWeb 30MB, seed=42. float32 baseline 66.50%; one-shot PTQ int4 64.30% (-1.80pp); one-shot QAT int4 62.80% (-3.30pp); **staged INQ int4 at 100% quantized = 67.90% (+1.40pp)** — CHAMPION. Round-by-round 67-69% (stable regularization effect). Mechanism: acts as weight regularization during retraining. Zhou et al. 2017 INQ (gradual easiest-to-grid-first). | **Validated finding** |
+| **Int4 = 8x smaller, matching-or-better accuracy** | 16k params: 64 KB (float32) -> 8 KB (int4), with staged INQ matching or beating full-precision on char-LM. | **Validated finding** |
+| **Ternary/binary staged INQ: floor at small scale** | nf=64, 100% quantized: ternary 41.20% (-25.30pp from float32), binary 46.70% (-19.80pp). Sweet spot: ternary at 50% frozen = 68.70% (best of all tested configs). At nf=64 char-LM, ternary/binary sit below a ~47% floor. BitNet b1.58 (Microsoft 2024) suggests this floor disappears at 3B+ params; on our small model the floor is real. Mixed-precision (some ternary, some int4/8) is the practical win. | **Validated finding** |
 
 ## How To Read This Page
 
