@@ -8,18 +8,19 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 SOURCE_DIR = ROOT / "docs" / "wiki"
-WIKI_DIR = ROOT / "VRAXION.wiki"
+# Canonical wiki is typically a sibling of the main repo (e.g. ../VRAXION.wiki/),
+# but fall back to the in-repo path if the sibling layout isn't present.
+_SIBLING_WIKI = ROOT.parent / "VRAXION.wiki"
+WIKI_DIR = _SIBLING_WIKI if _SIBLING_WIKI.exists() else (ROOT / "VRAXION.wiki")
 FILES = [
-    "AI-Logic-Flowchart.md",
     "Home.md",
-    "Chapter-01---Vision-and-Scope.md",
-    "Release-Notes.md",
     "INSTNCT-Architecture.md",
-    "Validated-Findings.md",
-    "Engineering.md",
-    "Resonator-Theory.md",
+    "Timeline-Archive.md",
+    "Theory-of-Thought.md",
+    "v5-Rust-Port-Benchmarks.md",
     "_Sidebar.md",
     "_Footer.md",
+    "pipeline-architecture.svg",
 ]
 
 
