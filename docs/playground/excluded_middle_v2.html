@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kizárt Harmadik — Terület Playground v2</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=JetBrains+Mono:wght@400;600&display=swap');
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: radial-gradient(ellipse at top, #1e293b 0%, #020617 100%);
+            min-height: 100vh;
+        }
+        .mono { font-family: 'JetBrains Mono', monospace; }
+
+        .glass {
+            background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(148, 163, 184, 0.1);
+        }
+
+        .slider {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 6px;
+            background: linear-gradient(90deg, #ef4444 0%, #1e293b 50%, #22c55e 100%);
+            border-radius: 3px;
+            outline: none;
+        }
+        .slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 22px; height: 22px;
+            background: linear-gradient(135deg, #38bdf8, #6366f1);
+            border-radius: 50%; cursor: pointer;
+            box-shadow: 0 0 16px rgba(56, 189, 248, 0.6);
+            border: 2px solid #e2e8f0;
+        }
+        .slider::-moz-range-thumb {
+            width: 22px; height: 22px;
+            background: linear-gradient(135deg, #38bdf8, #6366f1);
+            border-radius: 50%; cursor: pointer;
+            box-shadow: 0 0 16px rgba(56, 189, 248, 0.6);
+            border: 2px solid #e2e8f0;
+        }
+
+        .formula-btn { transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1); cursor: pointer; }
+        .formula-btn.active {
+            background: linear-gradient(135deg, #38bdf8, #6366f1);
+            color: #020617;
+            box-shadow: 0 0 24px rgba(56, 189, 248, 0.4);
+            transform: translateY(-2px);
+        }
+        .formula-btn:not(.active):hover {
+            background: rgba(56, 189, 248, 0.1);
+        }
+
+        rect.area, rect.zone, text.label, line.axis-tick, text.tick-label {
+            transition: all 0.3s ease;
+        }
+
+        @keyframes pulse-glow {
+            0%, 100% { filter: drop-shadow(0 0 6px currentColor); }
+            50% { filter: drop-shadow(0 0 16px currentColor); }
+        }
+        .pulsing { animation: pulse-glow 2.4s ease-in-out infinite; }
+
+        .hatched {
+            stroke-dasharray: 4 2;
+        }
+
+        .output-big {
+            font-variant-numeric: tabular-nums;
+            transition: color 0.3s ease;
+        }
+    </style>
+</head>
+<body class="p-4 md:p-8 text-slate-200">
+    <div class="max-w-6xl mx-auto">
+
+        <div class="text-center mb-6">
+            <h1 class="text-4xl md:text-5xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-sky-400 via-indigo-400 to-purple-400 mb-2">
+                Kizárt Harmadik — Terület Nézet
+            </h1>
+            <p class="text-slate-400 text-sm">
+                XY grid, területek, kizárás. Gemini stílusban — ahogy te látod.
+            </p>
+        </div>
+
+        <!-- Input controls -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+            <div class="glass rounded-2xl p-5">
+                <div class="flex justify-between items-baseline mb-3">
+                    <span class="text-xs text-slate-500 uppercase tracking-widest">A input</span>
+                    <span class="mono text-2xl text-sky-400 output-big" id="aValue">+3.0</span>
+                </div>
+                <input type="range" id="aSlider" class="slider" min="-10" max="10" step="0.1" value="3">
+            </div>
+            <div class="glass rounded-2xl p-5">
+                <div class="flex justify-between items-baseline mb-3">
+                    <span class="text-xs text-slate-500 uppercase tracking-widest">B input</span>
+                    <span class="mono text-2xl text-sky-400 output-big" id="bValue">+5.0</span>
+                </div>
+                <input type="range" id="bSlider" class="slider" min="-10" max="10" step="0.1" value="5">
+            </div>
+            <div class="glass rounded-2xl p-5">
+                <div class="flex justify-between items-baseline mb-3">
+                    <span class="text-xs text-slate-500 uppercase tracking-widest">C input</span>
+                    <span class="mono text-2xl text-sky-400 output-big" id="cValue">+9.0</span>
+                </div>
+                <input type="range" id="cSlider" class="slider" min="-10" max="10" step="0.1" value="9">
+            </div>
+        </div>
+
+        <!-- Formula selector -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-6">
+            <button class="formula-btn active glass rounded-xl p-4 text-left" data-formula="margin">
+                <div class="font-bold mb-1">MARGIN — Ágyazott</div>
+                <div class="text-xs opacity-70 leading-tight">C ⊇ B ⊇ A. Kimenet = C-nek a B-n kívüli pereme.</div>
+            </button>
+            <button class="formula-btn glass rounded-xl p-4 text-left" data-formula="notch">
+                <div class="font-bold mb-1">NOTCH — Szomszédos</div>
+                <div class="text-xs opacity-70 leading-tight">A|B|C egymás mellett. B kizárva, A és C átjut.</div>
+            </button>
+            <button class="formula-btn glass rounded-xl p-4 text-left" data-formula="hybrid">
+                <div class="font-bold mb-1">HYBRID — Gerjeszt/Gátol</div>
+                <div class="text-xs opacity-70 leading-tight">Közép = referencia. Legnagyobb gerjeszt, legkisebb gátol.</div>
+            </button>
+        </div>
+
+        <!-- Main visualization: XY grid with areas -->
+        <div class="glass rounded-2xl p-6 mb-6">
+            <div class="text-xs text-slate-500 uppercase tracking-widest mb-3" id="vizTitle">Margin — Ágyazott területek</div>
+            <svg id="viz" viewBox="0 0 900 480" class="w-full">
+                <!-- Grid background -->
+                <g id="grid"></g>
+                <!-- Areas (rectangles) -->
+                <g id="areas"></g>
+                <!-- Output highlight -->
+                <g id="output"></g>
+                <!-- Labels -->
+                <g id="labels"></g>
+                <!-- Axes drawn last so they're on top -->
+                <line x1="60" y1="420" x2="870" y2="420" stroke="#64748b" stroke-width="2"/>
+                <line x1="60" y1="40" x2="60" y2="420" stroke="#64748b" stroke-width="2"/>
+                <!-- Axis arrows -->
+                <defs>
+                    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto">
+                        <polygon points="0 0, 10 5, 0 10" fill="#64748b"/>
+                    </marker>
+                </defs>
+                <path d="M 870 420 L 885 420" stroke="#64748b" stroke-width="2" marker-end="url(#arrow)"/>
+                <path d="M 60 40 L 60 25" stroke="#64748b" stroke-width="2" marker-end="url(#arrow)"/>
+                <!-- Axis labels -->
+                <text x="885" y="425" fill="#94a3b8" font-size="13" class="mono">x</text>
+                <text x="55" y="22" fill="#94a3b8" font-size="13" text-anchor="end" class="mono">y</text>
+                <text x="50" y="425" fill="#94a3b8" font-size="13" text-anchor="end" class="mono">0</text>
+            </svg>
+        </div>
+
+        <!-- Output + explanation -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+            <div class="glass rounded-2xl p-6 border-sky-500/20">
+                <div class="text-xs text-slate-500 uppercase tracking-widest mb-2">Kimenet</div>
+                <div class="mono text-5xl font-bold output-big" id="outputValue">+4.00</div>
+                <div class="text-xs text-slate-600 mt-1" id="outputDesc">pozitív</div>
+            </div>
+            <div class="md:col-span-2 glass rounded-2xl p-6">
+                <div class="text-xs text-slate-500 uppercase tracking-widest mb-2">Geometriai magyarázat</div>
+                <div class="text-sm text-slate-300 leading-relaxed" id="explanation">...</div>
+            </div>
+        </div>
+
+        <!-- Presets -->
+        <div class="glass rounded-2xl p-5">
+            <div class="text-xs text-slate-500 uppercase tracking-widest mb-3">Próbálj pár szcenáriót</div>
+            <div class="flex flex-wrap gap-2">
+                <button class="preset px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs mono border border-slate-700" data-a="3" data-b="5" data-c="9">Szétszórt (3,5,9)</button>
+                <button class="preset px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs mono border border-slate-700" data-a="5" data-b="5" data-c="5">Egyforma (5,5,5)</button>
+                <button class="preset px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs mono border border-slate-700" data-a="1" data-b="2" data-c="9">Egy kiemelkedő</button>
+                <button class="preset px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs mono border border-slate-700" data-a="-3" data-b="5" data-c="9">Ellentétes előjel</button>
+                <button class="preset px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs mono border border-slate-700" data-a="8" data-b="9" data-c="10">Szoros hasonló</button>
+                <button class="preset px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs mono border border-slate-700" data-a="0" data-b="0" data-c="0">Mind nulla</button>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        const aSlider = document.getElementById('aSlider');
+        const bSlider = document.getElementById('bSlider');
+        const cSlider = document.getElementById('cSlider');
+        const aValueEl = document.getElementById('aValue');
+        const bValueEl = document.getElementById('bValue');
+        const cValueEl = document.getElementById('cValue');
+        const outputValue = document.getElementById('outputValue');
+        const outputDesc = document.getElementById('outputDesc');
+        const explanationEl = document.getElementById('explanation');
+        const vizTitle = document.getElementById('vizTitle');
+        const formulaBtns = document.querySelectorAll('.formula-btn');
+        const presetBtns = document.querySelectorAll('.preset');
+
+        let currentFormula = 'margin';
+
+        formulaBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                formulaBtns.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                currentFormula = btn.dataset.formula;
+                render();
+            });
+        });
+
+        presetBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                aSlider.value = btn.dataset.a;
+                bSlider.value = btn.dataset.b;
+                cSlider.value = btn.dataset.c;
+                render();
+            });
+        });
+
+        [aSlider, bSlider, cSlider].forEach(s => s.addEventListener('input', render));
+
+        function fmtSigned(v) { return (v >= 0 ? '+' : '') + v.toFixed(1); }
+
+        function render() {
+            const a = parseFloat(aSlider.value);
+            const b = parseFloat(bSlider.value);
+            const c = parseFloat(cSlider.value);
+
+            aValueEl.textContent = fmtSigned(a);
+            bValueEl.textContent = fmtSigned(b);
+            cValueEl.textContent = fmtSigned(c);
+
+            const inputs = [
+                { label: 'A', val: a, abs: Math.abs(a), color: '#ef4444' },
+                { label: 'B', val: b, abs: Math.abs(b), color: '#fbbf24' },
+                { label: 'C', val: c, abs: Math.abs(c), color: '#22c55e' }
+            ];
+            const sorted = [...inputs].sort((x, y) => x.abs - y.abs);
+            const smallest = sorted[0];
+            const middle = sorted[1];
+            const largest = sorted[2];
+
+            let out = 0, magnitude = 0, sign = 1, explText = '';
+
+            if (currentFormula === 'margin') {
+                magnitude = Math.max(0, largest.abs - middle.abs);
+                sign = Math.sign(largest.val) || 1;
+                out = sign * magnitude;
+                explText = `<strong>Ágyazott területek:</strong> C doboz tartalmazza B dobozt, B tartalmazza A-t (ha magnitúdó szerint rendezzük: ${largest.label} ⊇ ${middle.label} ⊇ ${smallest.label}).<br><br>
+                    <strong>Kimenet = C területéből B területe levonva</strong> = csak a <strong>perem</strong> ami B-n kívül van, de C-n belül.<br><br>
+                    Magnitúdó = |${largest.label}| − |${middle.label}| = ${largest.abs.toFixed(2)} − ${middle.abs.toFixed(2)} = <strong>${magnitude.toFixed(2)}</strong><br>
+                    Előjel = ${largest.label} eredeti értékéből (${fmtSigned(largest.val)}) → ${sign >= 0 ? '+' : '−'}`;
+            } else if (currentFormula === 'notch') {
+                magnitude = smallest.abs + largest.abs;
+                sign = Math.sign(largest.val) || 1;
+                out = sign * magnitude;
+                explText = `<strong>Szomszédos területek:</strong> A, B, C egymás mellett fekszenek az X-tengelyen, szélességük a magnitúdójuk.<br><br>
+                    <strong>B kizárva</strong> (középső = dead zone). A kimenet az A és C területeinek összege — mindkettő "tüzel", B "néma marad".<br><br>
+                    Magnitúdó = |${smallest.label}| + |${largest.label}| = ${smallest.abs.toFixed(2)} + ${largest.abs.toFixed(2)} = <strong>${magnitude.toFixed(2)}</strong><br>
+                    Előjel = ${largest.label} jelétől (${fmtSigned(largest.val)}) → ${sign >= 0 ? '+' : '−'}`;
+            } else if (currentFormula === 'hybrid') {
+                const excite = largest.abs - middle.abs;
+                const inhibit = middle.abs - smallest.abs;
+                magnitude = excite - inhibit;
+                sign = Math.sign(largest.val) || 1;
+                out = sign * magnitude;
+                explText = `<strong>Referencia-központú:</strong> közép (${middle.label}) a "nulla pont". A legnagyobb (${largest.label}) gerjeszt, a legkisebb (${smallest.label}) gátol.<br><br>
+                    Gerjeszt = |${largest.label}| − |${middle.label}| = ${excite.toFixed(2)}<br>
+                    Gátol = |${middle.label}| − |${smallest.label}| = ${inhibit.toFixed(2)}<br>
+                    Kimenet = gerjeszt − gátol = <strong>${magnitude.toFixed(2)}</strong>`;
+            }
+
+            outputValue.textContent = (out >= 0 ? '+' : '') + out.toFixed(2);
+            outputValue.style.color = out > 0.01 ? '#38bdf8' : out < -0.01 ? '#ef4444' : '#94a3b8';
+            outputDesc.textContent = out > 0.01 ? 'pozitív jel' : out < -0.01 ? 'negatív jel' : 'nincs jel (≈ 0)';
+            explanationEl.innerHTML = explText;
+
+            drawViz(inputs, smallest, middle, largest, magnitude, out);
+        }
+
+        function drawViz(inputs, smallest, middle, largest, magnitude, out) {
+            const grid = document.getElementById('grid');
+            const areas = document.getElementById('areas');
+            const outputG = document.getElementById('output');
+            const labels = document.getElementById('labels');
+
+            grid.innerHTML = '';
+            areas.innerHTML = '';
+            outputG.innerHTML = '';
+            labels.innerHTML = '';
+
+            const originX = 60;
+            const originY = 420;
+            const scaleX = 35; // pixels per unit on X
+            const scaleY = 32;
+            const maxUnit = 22;
+
+            // Grid
+            for (let x = 1; x <= maxUnit; x += 2) {
+                const px = originX + x * scaleX;
+                if (px > 870) break;
+                grid.innerHTML += `<line x1="${px}" y1="${originY}" x2="${px}" y2="${originY - 380}" stroke="#1e293b" stroke-width="1" stroke-dasharray="2 3"/>`;
+                grid.innerHTML += `<text x="${px}" y="${originY + 16}" fill="#475569" font-size="10" text-anchor="middle" class="mono">${x}</text>`;
+            }
+            for (let y = 2; y <= 12; y += 2) {
+                const py = originY - y * scaleY;
+                if (py < 40) break;
+                grid.innerHTML += `<line x1="${originX}" y1="${py}" x2="870" y2="${py}" stroke="#1e293b" stroke-width="1" stroke-dasharray="2 3"/>`;
+                grid.innerHTML += `<text x="${originX - 6}" y="${py + 4}" fill="#475569" font-size="10" text-anchor="end" class="mono">${y}</text>`;
+            }
+
+            // --- MARGIN view: nested rectangles ---
+            if (currentFormula === 'margin') {
+                vizTitle.textContent = 'MARGIN — ágyazott területek (C ⊇ B ⊇ A)';
+
+                // Draw C (outermost, largest), then B inside, then A inside B
+                // Each is a rectangle with width = magnitude, height = same for visualization
+                const baseHeight = 8; // y-units high
+                const boxH = baseHeight * scaleY;
+
+                // C (outermost) - largest magnitude
+                if (largest.abs > 0) {
+                    const cW = largest.abs * scaleX;
+                    areas.innerHTML += `
+                        <rect class="area" x="${originX + 10}" y="${originY - boxH}" width="${cW}" height="${boxH}"
+                              fill="#22c55e" fill-opacity="0.15" stroke="#22c55e" stroke-width="2" rx="6"/>
+                        <text class="label" x="${originX + 10 + cW / 2}" y="${originY - boxH - 10}" fill="#22c55e" font-size="13" text-anchor="middle" font-weight="bold" class="mono">${largest.label} (|${largest.abs.toFixed(1)}|) — LEGNAGYOBB</text>
+                    `;
+                }
+                // B (middle) - middle magnitude
+                if (middle.abs > 0) {
+                    const bW = middle.abs * scaleX;
+                    areas.innerHTML += `
+                        <rect class="area" x="${originX + 10}" y="${originY - boxH * 0.75}" width="${bW}" height="${boxH * 0.75}"
+                              fill="#fbbf24" fill-opacity="0.25" stroke="#fbbf24" stroke-width="2" rx="5"/>
+                        <text class="label" x="${originX + 10 + bW / 2}" y="${originY - boxH * 0.75 + 18}" fill="#fbbf24" font-size="12" text-anchor="middle" font-weight="bold" class="mono">${middle.label} (|${middle.abs.toFixed(1)}|) — KÖZÉP</text>
+                    `;
+                }
+                // A (innermost) - smallest magnitude
+                if (smallest.abs > 0) {
+                    const aW = smallest.abs * scaleX;
+                    areas.innerHTML += `
+                        <rect class="area" x="${originX + 10}" y="${originY - boxH * 0.5}" width="${aW}" height="${boxH * 0.5}"
+                              fill="#ef4444" fill-opacity="0.35" stroke="#ef4444" stroke-width="2" rx="4"/>
+                        <text class="label" x="${originX + 10 + aW / 2}" y="${originY - boxH * 0.5 + 16}" fill="#ef4444" font-size="11" text-anchor="middle" font-weight="bold" class="mono">${smallest.label} (|${smallest.abs.toFixed(1)}|)</text>
+                    `;
+                }
+
+                // Output highlight: the rim of C outside B
+                if (magnitude > 0) {
+                    const bW = middle.abs * scaleX;
+                    const cW = largest.abs * scaleX;
+                    outputG.innerHTML += `
+                        <rect class="zone pulsing" x="${originX + 10 + bW}" y="${originY - boxH}" width="${cW - bW}" height="${boxH}"
+                              fill="#38bdf8" fill-opacity="0.6" stroke="#7dd3fc" stroke-width="3" rx="3"
+                              style="color: #38bdf8"/>
+                        <text class="label" x="${originX + 10 + bW + (cW - bW) / 2}" y="${originY - boxH / 2 + 5}" fill="#fff" font-size="16" text-anchor="middle" font-weight="bold" class="mono">KIMENET</text>
+                        <text class="label" x="${originX + 10 + bW + (cW - bW) / 2}" y="${originY - boxH / 2 + 24}" fill="#fff" font-size="14" text-anchor="middle" class="mono">${(out >= 0 ? '+' : '') + magnitude.toFixed(2)}</text>
+                    `;
+                }
+            }
+
+            // --- NOTCH view: side-by-side rectangles ---
+            else if (currentFormula === 'notch') {
+                vizTitle.textContent = 'NOTCH — szomszédos területek, B kizárva';
+
+                const baseHeight = 10;
+                const boxH = baseHeight * scaleY;
+                let curX = originX + 20;
+
+                // Draw in sorted order left to right: smallest | middle | largest
+                const order = [smallest, middle, largest];
+                order.forEach((inp, idx) => {
+                    if (inp.abs <= 0) return;
+                    const w = inp.abs * scaleX;
+                    const isExcluded = idx === 1; // middle is excluded
+
+                    if (isExcluded) {
+                        // Hatched red exclusion box
+                        areas.innerHTML += `
+                            <defs>
+                                <pattern id="hatch" patternUnits="userSpaceOnUse" width="8" height="8" patternTransform="rotate(45)">
+                                    <line x1="0" y1="0" x2="0" y2="8" stroke="#ef4444" stroke-width="2" opacity="0.5"/>
+                                </pattern>
+                            </defs>
+                            <rect class="area hatched" x="${curX}" y="${originY - boxH}" width="${w}" height="${boxH}"
+                                  fill="url(#hatch)" stroke="#ef4444" stroke-width="2" stroke-dasharray="8 4" rx="4"/>
+                            <text class="label" x="${curX + w / 2}" y="${originY - boxH / 2 - 4}" fill="#ef4444" font-size="15" text-anchor="middle" font-weight="bold" class="mono">KIZÁRVA</text>
+                            <text class="label" x="${curX + w / 2}" y="${originY - boxH / 2 + 14}" fill="#ef4444" font-size="12" text-anchor="middle" class="mono">${inp.label} (|${inp.abs.toFixed(1)}|)</text>
+                        `;
+                    } else {
+                        // Kept zones: outputs
+                        areas.innerHTML += `
+                            <rect class="area zone pulsing" x="${curX}" y="${originY - boxH}" width="${w}" height="${boxH}"
+                                  fill="#38bdf8" fill-opacity="0.55" stroke="#7dd3fc" stroke-width="3" rx="4"
+                                  style="color: #38bdf8"/>
+                            <text class="label" x="${curX + w / 2}" y="${originY - boxH / 2 + 2}" fill="#fff" font-size="15" text-anchor="middle" font-weight="bold" class="mono">${inp.label}</text>
+                            <text class="label" x="${curX + w / 2}" y="${originY - boxH / 2 + 20}" fill="#fff" font-size="12" text-anchor="middle" class="mono">|${inp.abs.toFixed(1)}|</text>
+                            <text class="label" x="${curX + w / 2}" y="${originY - boxH - 10}" fill="#7dd3fc" font-size="11" text-anchor="middle" font-weight="bold" class="mono">${idx === 0 ? 'LEGKISEBB' : 'LEGNAGYOBB'}</text>
+                        `;
+                    }
+                    curX += w + 5;
+                });
+
+                // Total output label
+                if (magnitude > 0) {
+                    outputG.innerHTML += `
+                        <text x="450" y="70" fill="#38bdf8" font-size="18" text-anchor="middle" font-weight="bold" class="mono">Kimenet = |${smallest.label}| + |${largest.label}| = ${magnitude.toFixed(2)}</text>
+                    `;
+                }
+            }
+
+            // --- HYBRID view: excitation / inhibition zones ---
+            else if (currentFormula === 'hybrid') {
+                vizTitle.textContent = 'HYBRID — közép = referencia, szélek gerjesztnek/gátolnak';
+
+                const midY = originY - 200; // Reference line in middle of viz
+                const refX = originX + middle.abs * scaleX + 30;
+
+                // Draw reference line at middle
+                outputG.innerHTML += `
+                    <line x1="${originX}" y1="${midY}" x2="870" y2="${midY}" stroke="#fbbf24" stroke-width="3" stroke-dasharray="10 5"/>
+                    <text x="820" y="${midY - 6}" fill="#fbbf24" font-size="12" class="mono" font-weight="bold">REFERENCIA (közép = ${middle.abs.toFixed(1)})</text>
+                `;
+
+                // Excitation zone (above reference)
+                const excite = Math.max(0, largest.abs - middle.abs);
+                if (excite > 0) {
+                    const exciteH = excite * scaleY;
+                    areas.innerHTML += `
+                        <rect class="zone pulsing" x="${originX + 20}" y="${midY - exciteH}" width="350" height="${exciteH}"
+                              fill="#22c55e" fill-opacity="0.45" stroke="#4ade80" stroke-width="3" rx="4"
+                              style="color: #22c55e"/>
+                        <text x="${originX + 195}" y="${midY - exciteH / 2 + 4}" fill="#fff" font-size="14" text-anchor="middle" font-weight="bold" class="mono">GERJESZT +${excite.toFixed(2)}</text>
+                        <text x="${originX + 195}" y="${midY - exciteH - 8}" fill="#4ade80" font-size="11" text-anchor="middle" class="mono">${largest.label} fölénye a közép felett</text>
+                    `;
+                }
+
+                // Inhibition zone (below reference)
+                const inhibit = Math.max(0, middle.abs - smallest.abs);
+                if (inhibit > 0) {
+                    const inhibitH = inhibit * scaleY;
+                    areas.innerHTML += `
+                        <rect class="zone" x="${originX + 420}" y="${midY}" width="350" height="${inhibitH}"
+                              fill="#ef4444" fill-opacity="0.45" stroke="#f87171" stroke-width="3" stroke-dasharray="5 3" rx="4"/>
+                        <text x="${originX + 595}" y="${midY + inhibitH / 2 + 4}" fill="#fff" font-size="14" text-anchor="middle" font-weight="bold" class="mono">GÁTOL -${inhibit.toFixed(2)}</text>
+                        <text x="${originX + 595}" y="${midY + inhibitH + 18}" fill="#f87171" font-size="11" text-anchor="middle" class="mono">közép mínusz ${smallest.label}</text>
+                    `;
+                }
+
+                // Net output
+                outputG.innerHTML += `
+                    <text x="450" y="40" fill="#38bdf8" font-size="17" text-anchor="middle" font-weight="bold" class="mono">Nettó kimenet = ${(out >= 0 ? '+' : '') + magnitude.toFixed(2)}</text>
+                `;
+            }
+        }
+
+        render();
+    </script>
+</body>
+</html>

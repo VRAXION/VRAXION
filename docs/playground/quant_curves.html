@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Staged INQ görbék — accuracy × cost</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=JetBrains+Mono:wght@400;600&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background: radial-gradient(ellipse at top, #1e293b 0%, #020617 100%);
+            min-height: 100vh;
+        }
+        .mono { font-family: 'JetBrains Mono', monospace; }
+        .glass {
+            background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(148, 163, 184, 0.1);
+        }
+        .curve-hover {
+            transition: all 0.3s ease;
+        }
+        .curve-hover:hover {
+            filter: drop-shadow(0 0 8px currentColor);
+            stroke-width: 4;
+        }
+    </style>
+</head>
+<body class="p-6 text-slate-200">
+    <div class="max-w-6xl mx-auto">
+
+        <!-- Header -->
+        <div class="text-center mb-6">
+            <h1 class="text-4xl md:text-5xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-sky-400 via-indigo-400 to-purple-400 mb-2">
+                Kvantálás lépcső — accuracy × cost
+            </h1>
+            <p class="text-slate-400 text-sm">
+                Staged INQ görbék: hogyan esik az accuracy ahogy növeljük a kvantált % arányt
+            </p>
+        </div>
+
+        <!-- Main chart: accuracy vs % quantized -->
+        <div class="glass rounded-2xl p-6 mb-6">
+            <div class="text-xs text-slate-500 uppercase tracking-widest mb-4">Accuracy görbék — 4 bit-szélesség</div>
+            <svg viewBox="0 0 900 500" class="w-full">
+                <!-- Grid -->
+                <defs>
+                    <pattern id="gridPattern" width="80" height="40" patternUnits="userSpaceOnUse">
+                        <path d="M 80 0 L 0 0 0 40" fill="none" stroke="rgba(148,163,184,0.04)" stroke-width="1"/>
+                    </pattern>
+                </defs>
+                <rect width="900" height="500" fill="url(#gridPattern)"/>
+
+                <!-- Y-axis labels (accuracy 0-80%) -->
+                <g fill="#64748b" font-size="11" class="mono" text-anchor="end">
+                    <text x="60" y="60">80</text>
+                    <text x="60" y="140">70</text>
+                    <text x="60" y="220">60</text>
+                    <text x="60" y="300">50</text>
+                    <text x="60" y="380">40</text>
+                    <text x="60" y="460">30</text>
+                </g>
+                <!-- Y-axis tick marks -->
+                <g stroke="#475569" stroke-width="1">
+                    <line x1="68" y1="56" x2="72" y2="56"/>
+                    <line x1="68" y1="136" x2="72" y2="136"/>
+                    <line x1="68" y1="216" x2="72" y2="216"/>
+                    <line x1="68" y1="296" x2="72" y2="296"/>
+                    <line x1="68" y1="376" x2="72" y2="376"/>
+                    <line x1="68" y1="456" x2="72" y2="456"/>
+                </g>
+                <!-- Y axis -->
+                <line x1="70" y1="40" x2="70" y2="470" stroke="#475569" stroke-width="2"/>
+                <!-- X axis -->
+                <line x1="70" y1="470" x2="870" y2="470" stroke="#475569" stroke-width="2"/>
+
+                <!-- X-axis labels (% quantized 0-100) -->
+                <g fill="#64748b" font-size="11" class="mono" text-anchor="middle">
+                    <text x="70" y="490">0</text>
+                    <text x="150" y="490">10</text>
+                    <text x="230" y="490">20</text>
+                    <text x="310" y="490">30</text>
+                    <text x="390" y="490">40</text>
+                    <text x="470" y="490">50</text>
+                    <text x="550" y="490">60</text>
+                    <text x="630" y="490">70</text>
+                    <text x="710" y="490">80</text>
+                    <text x="790" y="490">90</text>
+                    <text x="870" y="490">100</text>
+                </g>
+
+                <!-- Axis titles -->
+                <text x="870" y="490" fill="#94a3b8" font-size="12" text-anchor="end" class="mono" transform="translate(35, 15)">% kvantálva</text>
+                <text x="20" y="100" fill="#94a3b8" font-size="12" class="mono" transform="rotate(-90, 20, 100)">accuracy (%)</text>
+
+                <!-- Float32 baseline (horizontal line at 66.5) -->
+                <line x1="70" y1="188" x2="870" y2="188" stroke="#94a3b8" stroke-width="1" stroke-dasharray="6 3" opacity="0.5"/>
+                <text x="865" y="183" fill="#94a3b8" font-size="11" text-anchor="end" class="mono">float32 baseline = 66.5</text>
+
+                <!-- int8 curve (flat ~66) - estimated since we don't have staged int8 data -->
+                <polyline class="curve-hover" fill="none" stroke="#22c55e" stroke-width="3" style="color: #22c55e"
+                          points="70,188 150,188 230,188 310,188 390,188 470,188 550,192 630,192 710,192 790,192 870,192"/>
+
+                <!-- int4 curve (actual staged int4 data: 66.5, 67.1, 68.4, 67.7, 68.6, 67.4, 68.2, 68.8, 68.5, 68.6, 67.9) -->
+                <polyline class="curve-hover" fill="none" stroke="#38bdf8" stroke-width="3" style="color: #38bdf8"
+                          points="70,188 150,183 230,172 310,178 390,167 470,179 550,172 630,164 710,167 790,164 870,180"/>
+
+                <!-- ternary curve (actual: 66.5, 67.1, 68.6, 67.8, 68.1, 68.7, 67.0, 65.9, 61.1, 56.0, 41.2) -->
+                <polyline class="curve-hover" fill="none" stroke="#a855f7" stroke-width="3" style="color: #a855f7"
+                          points="70,188 150,183 230,170 310,178 390,175 470,170 550,188 630,196 710,230 790,270 870,378"/>
+
+                <!-- binary curve (actual: 66.5, 61.5, 57.7, 56.9, 53.6, 53.2, 53.3, 50.6, 49.2, 47.2, 46.7) -->
+                <polyline class="curve-hover" fill="none" stroke="#f43f5e" stroke-width="3" style="color: #f43f5e"
+                          points="70,188 150,228 230,258 310,265 390,291 470,295 550,294 630,315 710,326 790,342 870,346"/>
+
+                <!-- Data points for ternary -->
+                <g fill="#a855f7">
+                    <circle cx="70" cy="188" r="4"/>
+                    <circle cx="150" cy="183" r="4"/>
+                    <circle cx="230" cy="170" r="4"/>
+                    <circle cx="310" cy="178" r="4"/>
+                    <circle cx="390" cy="175" r="4"/>
+                    <circle cx="470" cy="170" r="5"/> <!-- sweet spot -->
+                    <circle cx="550" cy="188" r="4"/>
+                    <circle cx="630" cy="196" r="4"/>
+                    <circle cx="710" cy="230" r="4"/>
+                    <circle cx="790" cy="270" r="4"/>
+                    <circle cx="870" cy="378" r="4"/>
+                </g>
+
+                <!-- Data points for binary -->
+                <g fill="#f43f5e">
+                    <circle cx="70" cy="188" r="4"/>
+                    <circle cx="150" cy="228" r="4"/>
+                    <circle cx="230" cy="258" r="4"/>
+                    <circle cx="310" cy="265" r="4"/>
+                    <circle cx="390" cy="291" r="4"/>
+                    <circle cx="470" cy="295" r="4"/>
+                    <circle cx="550" cy="294" r="4"/>
+                    <circle cx="630" cy="315" r="4"/>
+                    <circle cx="710" cy="326" r="4"/>
+                    <circle cx="790" cy="342" r="4"/>
+                    <circle cx="870" cy="346" r="4"/>
+                </g>
+
+                <!-- Data points for int4 -->
+                <g fill="#38bdf8">
+                    <circle cx="70" cy="188" r="4"/>
+                    <circle cx="150" cy="183" r="4"/>
+                    <circle cx="230" cy="172" r="4"/>
+                    <circle cx="310" cy="178" r="4"/>
+                    <circle cx="390" cy="167" r="4"/>
+                    <circle cx="470" cy="179" r="4"/>
+                    <circle cx="550" cy="172" r="4"/>
+                    <circle cx="630" cy="164" r="5"/> <!-- peak -->
+                    <circle cx="710" cy="167" r="4"/>
+                    <circle cx="790" cy="164" r="4"/>
+                    <circle cx="870" cy="180" r="4"/>
+                </g>
+
+                <!-- Key annotation: ternary sweet spot -->
+                <line x1="470" y1="170" x2="470" y2="105" stroke="#a855f7" stroke-width="1" stroke-dasharray="3 2" opacity="0.5"/>
+                <text x="470" y="98" fill="#a855f7" font-size="11" text-anchor="middle" class="mono font-bold">ternary csúcs: 68.7% @ 50%</text>
+
+                <!-- Key annotation: binary final -->
+                <line x1="870" y1="346" x2="880" y2="346" stroke="#f43f5e" stroke-width="1"/>
+                <text x="695" y="350" fill="#f43f5e" font-size="11" text-anchor="start" class="mono">binary vég: 46.7%</text>
+
+                <!-- Legend -->
+                <g transform="translate(100, 60)">
+                    <rect x="0" y="0" width="200" height="110" fill="rgba(2,6,23,0.7)" stroke="#334155" rx="8"/>
+                    <text x="10" y="18" fill="#94a3b8" font-size="10" class="mono font-bold">LEGEND</text>
+                    <g transform="translate(10, 28)">
+                        <line x1="0" y1="5" x2="20" y2="5" stroke="#22c55e" stroke-width="3"/>
+                        <text x="25" y="9" fill="#22c55e" font-size="11" class="mono">int8  (~66%)</text>
+                    </g>
+                    <g transform="translate(10, 48)">
+                        <line x1="0" y1="5" x2="20" y2="5" stroke="#38bdf8" stroke-width="3"/>
+                        <text x="25" y="9" fill="#38bdf8" font-size="11" class="mono">int4  (67.9%) ★</text>
+                    </g>
+                    <g transform="translate(10, 68)">
+                        <line x1="0" y1="5" x2="20" y2="5" stroke="#a855f7" stroke-width="3"/>
+                        <text x="25" y="9" fill="#a855f7" font-size="11" class="mono">ternary (41.2%)</text>
+                    </g>
+                    <g transform="translate(10, 88)">
+                        <line x1="0" y1="5" x2="20" y2="5" stroke="#f43f5e" stroke-width="3"/>
+                        <text x="25" y="9" fill="#f43f5e" font-size="11" class="mono">binary (46.7%)</text>
+                    </g>
+                </g>
+            </svg>
+        </div>
+
+        <!-- Cost efficiency table -->
+        <div class="glass rounded-2xl p-6 mb-6">
+            <div class="text-xs text-slate-500 uppercase tracking-widest mb-4">Cost × accuracy — memóriaigény vs teljesítmény</div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm">
+                    <thead>
+                        <tr class="border-b border-slate-700">
+                            <th class="text-left py-3 px-2 text-slate-400 font-semibold">Bit-szélesség</th>
+                            <th class="text-right py-3 px-2 text-slate-400 font-semibold">Bit/súly</th>
+                            <th class="text-right py-3 px-2 text-slate-400 font-semibold">Memória (16k param)</th>
+                            <th class="text-right py-3 px-2 text-slate-400 font-semibold">Memória-megtakarítás</th>
+                            <th class="text-right py-3 px-2 text-slate-400 font-semibold">100% acc</th>
+                            <th class="text-right py-3 px-2 text-slate-400 font-semibold">Bit/% acc</th>
+                        </tr>
+                    </thead>
+                    <tbody class="mono">
+                        <tr class="border-b border-slate-800">
+                            <td class="py-3 px-2 text-slate-300 font-bold">float32 (ref)</td>
+                            <td class="py-3 px-2 text-right">32</td>
+                            <td class="py-3 px-2 text-right">64 KB</td>
+                            <td class="py-3 px-2 text-right">1×</td>
+                            <td class="py-3 px-2 text-right text-sky-400">66.50%</td>
+                            <td class="py-3 px-2 text-right text-slate-500">0.481</td>
+                        </tr>
+                        <tr class="border-b border-slate-800">
+                            <td class="py-3 px-2 text-green-400 font-bold">int8</td>
+                            <td class="py-3 px-2 text-right">8</td>
+                            <td class="py-3 px-2 text-right">16 KB</td>
+                            <td class="py-3 px-2 text-right text-green-400">4×</td>
+                            <td class="py-3 px-2 text-right">~66%</td>
+                            <td class="py-3 px-2 text-right">0.121</td>
+                        </tr>
+                        <tr class="border-b border-slate-800 bg-sky-500/5">
+                            <td class="py-3 px-2 text-sky-400 font-bold">int4 ★ NYERTES</td>
+                            <td class="py-3 px-2 text-right">4</td>
+                            <td class="py-3 px-2 text-right">8 KB</td>
+                            <td class="py-3 px-2 text-right text-sky-400">8×</td>
+                            <td class="py-3 px-2 text-right text-sky-400 font-bold">67.90% ↑</td>
+                            <td class="py-3 px-2 text-right text-sky-400 font-bold">0.059</td>
+                        </tr>
+                        <tr class="border-b border-slate-800">
+                            <td class="py-3 px-2 text-purple-400 font-bold">ternary</td>
+                            <td class="py-3 px-2 text-right">1.58</td>
+                            <td class="py-3 px-2 text-right">3.2 KB</td>
+                            <td class="py-3 px-2 text-right text-purple-400">~20×</td>
+                            <td class="py-3 px-2 text-right text-rose-400">41.20%</td>
+                            <td class="py-3 px-2 text-right">0.038</td>
+                        </tr>
+                        <tr>
+                            <td class="py-3 px-2 text-rose-400 font-bold">binary</td>
+                            <td class="py-3 px-2 text-right">1</td>
+                            <td class="py-3 px-2 text-right">2 KB</td>
+                            <td class="py-3 px-2 text-right text-rose-400">32×</td>
+                            <td class="py-3 px-2 text-right text-rose-400">46.70%</td>
+                            <td class="py-3 px-2 text-right">0.021</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="mt-3 text-xs text-slate-400 leading-relaxed">
+                <strong class="text-sky-400">★ int4 a bajnok:</strong> 8× memória-megtakarítás ÉS magasabb accuracy mint float32.
+                Bit/% ratio alapján is a legjobb kompromisszum (0.059 bit minden pontossági %-ra).<br><br>
+                <strong class="text-purple-400">Ternary/binary</strong> olcsóbbak memóriában, de a bit/% ratio csalóka: az accuracy nagy része elveszett, így "olcsó de vékony".
+            </div>
+        </div>
+
+        <!-- Theory: proportional vs ceiling -->
+        <div class="glass rounded-2xl p-6 mb-6 border border-purple-500/20">
+            <div class="text-xs text-purple-400 uppercase tracking-widest mb-4 font-bold">
+                A nagy kérdés: fokozatos csökkenés vagy KEMÉNY PLAFON?
+            </div>
+
+            <p class="text-sm text-slate-300 leading-relaxed mb-3">
+                Amit a görbéken látsz: binary és ternary <strong>megáll</strong> 41-47% körül. <strong>Ez nem fog csökkenni a
+                véghez sem</strong> — egy plafon. Kérdés: ha megdupláznánk a neuronokat (nf=64 → nf=128), átlépné?
+            </p>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                <div class="bg-slate-800/50 rounded-xl p-4 border border-slate-700">
+                    <div class="font-bold text-rose-400 mb-2">Hipotézis A: kemény plafon</div>
+                    <p class="text-xs text-slate-400 leading-relaxed">
+                        A char-LM feladatnak kell egy <strong>minimum információs mélység</strong> per súly.
+                        A binary <strong>1 bit</strong> nem elég — bármennyi neuront tennénk be, a 47% egy
+                        <strong>információ-elméleti plafon</strong>. Mint ReLU "dead neuron" — szerkezeti hiba.
+                    </p>
+                </div>
+                <div class="bg-slate-800/50 rounded-xl p-4 border border-slate-700">
+                    <div class="font-bold text-emerald-400 mb-2">Hipotézis B: nf-vel áthidalható</div>
+                    <p class="text-xs text-slate-400 leading-relaxed">
+                        A súly fontossága <strong>szétoszlik</strong> több neuronra. Kétszer annyi binary neuron
+                        ≈ 2 bit effektív információ/"súly-csoport". <strong>BitNet</strong> (7B+ param)
+                        ezt mutatja: nagy méretnél ternary = float.
+                    </p>
+                </div>
+            </div>
+
+            <div class="mt-4 bg-purple-500/10 rounded-xl p-4 border border-purple-500/20">
+                <div class="text-xs text-purple-300 font-bold mb-2">Mi tudjuk erről</div>
+                <p class="text-xs text-slate-300 leading-relaxed">
+                    A <strong>BitNet b1.58</strong> (Microsoft, 2024) 3B+ paraméteres modelleken megmutatta: a ternary
+                    <strong>nem kemény plafon</strong>, csak <strong>elég méret kell</strong>. Kis modelleken (mint a miénk
+                    nf=64) van plafon, de nagyobban eltűnik. A char-LM <strong>túl kicsi feladat</strong> ahhoz hogy
+                    a binary/ternary helyes limitjét megláthassuk.
+                </p>
+            </div>
+        </div>
+
+        <!-- Analog with activation functions -->
+        <div class="glass rounded-2xl p-6 border border-sky-500/20">
+            <div class="text-xs text-sky-400 uppercase tracking-widest mb-4 font-bold">
+                Analógia: kvantálás ≈ aktivációs függvény expresszivitás?
+            </div>
+            <p class="text-sm text-slate-300 leading-relaxed mb-3">
+                Te kérdezted: ez olyan mint ReLU vs Swish vs lockout? Részben igen, részben nem.
+            </p>
+            <div class="text-sm text-slate-300 leading-relaxed space-y-3">
+                <p>
+                    <strong class="text-emerald-400">Hasonló:</strong> az expresszivitás (milyen komplex függvényeket tud
+                    kifejezni) limitálja az elérhető accuracy-t, pont mint ReLU vs Swish.
+                </p>
+                <p>
+                    <strong class="text-rose-400">Eltér:</strong> a kvantálás a <strong>TÁROLÁST</strong> korlátozza, nem a
+                    <strong>számítást</strong>. Binary súlyok = 2 érték, de a köztük lévő szorzat/összeg még mindig
+                    float lehet a forward passban. A Beukers szerkezet pedig eleve szuper expresszív.
+                </p>
+                <p>
+                    <strong class="text-sky-400">A valódi analógia:</strong> "lockout" (kidobott neuronok) — ha binary
+                    súllyal egy neuron nem tud értelmesen hozzájárulni, az <strong>funkcionálisan kiesik</strong>.
+                    Effektív kapacitás csökken. Ezt több neuronnal <strong>kompenzálni lehet</strong>, de csak egy pontig.
+                </p>
+            </div>
+        </div>
+
+    </div>
+</body>
+</html>

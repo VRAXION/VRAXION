@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kizárt Harmadik — Neuron Playground</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=JetBrains+Mono:wght@400;600&display=swap');
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: radial-gradient(ellipse at top, #1e293b 0%, #020617 100%);
+            min-height: 100vh;
+        }
+        .mono { font-family: 'JetBrains Mono', monospace; }
+
+        .glass {
+            background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(148, 163, 184, 0.1);
+        }
+
+        .slider {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 6px;
+            background: linear-gradient(90deg, #ef4444 0%, #1e293b 50%, #22c55e 100%);
+            border-radius: 3px;
+            outline: none;
+        }
+        .slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 22px;
+            height: 22px;
+            background: linear-gradient(135deg, #38bdf8, #6366f1);
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 0 16px rgba(56, 189, 248, 0.6), 0 2px 8px rgba(0,0,0,0.4);
+            border: 2px solid #e2e8f0;
+        }
+        .slider::-moz-range-thumb {
+            width: 22px;
+            height: 22px;
+            background: linear-gradient(135deg, #38bdf8, #6366f1);
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 0 16px rgba(56, 189, 248, 0.6);
+            border: 2px solid #e2e8f0;
+        }
+
+        .formula-btn {
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: pointer;
+        }
+        .formula-btn.active {
+            background: linear-gradient(135deg, #38bdf8, #6366f1);
+            color: #020617;
+            box-shadow: 0 0 24px rgba(56, 189, 248, 0.4), 0 4px 12px rgba(0,0,0,0.3);
+            transform: translateY(-2px);
+        }
+        .formula-btn:not(.active):hover {
+            background: rgba(56, 189, 248, 0.1);
+            border-color: rgba(56, 189, 248, 0.4);
+        }
+
+        /* smooth transitions on SVG rect heights */
+        rect.bar, rect.zone {
+            transition: x 0.3s ease, y 0.3s ease, width 0.3s ease, height 0.3s ease, fill 0.3s ease, opacity 0.3s ease;
+        }
+        line.cut {
+            transition: y1 0.3s ease, y2 0.3s ease, opacity 0.3s ease;
+        }
+        text.label {
+            transition: x 0.3s ease, y 0.3s ease, fill 0.3s ease;
+        }
+
+        @keyframes pulse-glow {
+            0%, 100% { filter: drop-shadow(0 0 6px currentColor); }
+            50% { filter: drop-shadow(0 0 14px currentColor); }
+        }
+        .pulsing { animation: pulse-glow 2.4s ease-in-out infinite; }
+
+        .cut-line {
+            stroke: #fbbf24;
+            stroke-width: 3;
+            stroke-dasharray: 10 6;
+        }
+
+        .output-big {
+            font-variant-numeric: tabular-nums;
+            transition: color 0.3s ease;
+        }
+    </style>
+</head>
+<body class="p-4 md:p-8 text-slate-200">
+    <div class="max-w-6xl mx-auto">
+
+        <!-- Header -->
+        <div class="text-center mb-8">
+            <h1 class="text-4xl md:text-5xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-sky-400 via-indigo-400 to-purple-400 mb-2">
+                Kizárt Harmadik
+            </h1>
+            <p class="text-slate-400 text-sm">
+                Három input (A, B, C) → egy kimenet. Csúszkákkal állítsd az értékeket, váltogass a formulák között, és nézd mi történik.
+            </p>
+        </div>
+
+        <!-- Input controls -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+            <div class="glass rounded-2xl p-5">
+                <div class="flex justify-between items-baseline mb-3">
+                    <span class="text-xs text-slate-500 uppercase tracking-widest">A input</span>
+                    <span class="mono text-2xl text-sky-400 output-big" id="aValue">+3.0</span>
+                </div>
+                <input type="range" id="aSlider" class="slider" min="-10" max="10" step="0.1" value="3">
+                <div class="text-[10px] text-slate-600 mt-2 flex justify-between mono">
+                    <span>-10</span><span>0</span><span>+10</span>
+                </div>
+            </div>
+            <div class="glass rounded-2xl p-5">
+                <div class="flex justify-between items-baseline mb-3">
+                    <span class="text-xs text-slate-500 uppercase tracking-widest">B input</span>
+                    <span class="mono text-2xl text-sky-400 output-big" id="bValue">+5.0</span>
+                </div>
+                <input type="range" id="bSlider" class="slider" min="-10" max="10" step="0.1" value="5">
+                <div class="text-[10px] text-slate-600 mt-2 flex justify-between mono">
+                    <span>-10</span><span>0</span><span>+10</span>
+                </div>
+            </div>
+            <div class="glass rounded-2xl p-5">
+                <div class="flex justify-between items-baseline mb-3">
+                    <span class="text-xs text-slate-500 uppercase tracking-widest">C input</span>
+                    <span class="mono text-2xl text-sky-400 output-big" id="cValue">+9.0</span>
+                </div>
+                <input type="range" id="cSlider" class="slider" min="-10" max="10" step="0.1" value="9">
+                <div class="text-[10px] text-slate-600 mt-2 flex justify-between mono">
+                    <span>-10</span><span>0</span><span>+10</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Formula selector -->
+        <div class="grid grid-cols-3 gap-3 mb-6">
+            <button class="formula-btn active glass rounded-xl p-4 text-left" data-formula="margin">
+                <div class="font-bold text-base mb-1">B) Margin</div>
+                <div class="text-xs opacity-70 leading-tight">Csak a legnagyobb fölénye a közepes felett</div>
+            </button>
+            <button class="formula-btn glass rounded-xl p-4 text-left" data-formula="range">
+                <div class="font-bold text-base mb-1">A) Range</div>
+                <div class="text-xs opacity-70 leading-tight">Teljes terjedelem: legnagyobb − legkisebb</div>
+            </button>
+            <button class="formula-btn glass rounded-xl p-4 text-left" data-formula="hybrid">
+                <div class="font-bold text-base mb-1">C) Hybrid</div>
+                <div class="text-xs opacity-70 leading-tight">Gerjeszt + Gátol (közép = referencia)</div>
+            </button>
+        </div>
+
+        <!-- Visualization -->
+        <div class="glass rounded-2xl p-6 mb-6">
+            <svg id="viz" viewBox="0 0 900 520" class="w-full">
+                <!-- Background grid -->
+                <g id="grid"></g>
+                <!-- Y-axis labels -->
+                <g id="yLabels"></g>
+                <!-- Axes -->
+                <line x1="80" y1="470" x2="850" y2="470" stroke="#334155" stroke-width="2"/>
+                <line x1="80" y1="40" x2="80" y2="470" stroke="#334155" stroke-width="2"/>
+                <!-- Arrow markers -->
+                <defs>
+                    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto">
+                        <polygon points="0 0, 10 5, 0 10" fill="#475569"/>
+                    </marker>
+                </defs>
+                <path d="M 850 470 L 865 470" stroke="#475569" stroke-width="2" marker-end="url(#arrow)"/>
+                <path d="M 80 40 L 80 25" stroke="#475569" stroke-width="2" marker-end="url(#arrow)"/>
+
+                <!-- Axis titles -->
+                <text x="870" y="475" fill="#64748b" font-size="13" class="mono">input</text>
+                <text x="80" y="18" fill="#64748b" font-size="13" class="mono" text-anchor="middle">|érték|</text>
+
+                <!-- Bars, cut line, output zones rendered by JS -->
+                <g id="bars"></g>
+                <g id="outputZone"></g>
+                <g id="cutLineGroup"></g>
+                <g id="barLabels"></g>
+            </svg>
+        </div>
+
+        <!-- Output + explanation -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+            <div class="glass rounded-2xl p-6 border-sky-500/20">
+                <div class="text-xs text-slate-500 uppercase tracking-widest mb-2">Kimenet</div>
+                <div class="mono text-5xl font-bold output-big" id="output">+4.00</div>
+                <div class="text-xs text-slate-600 mt-1" id="outputSign">pozitív</div>
+            </div>
+            <div class="md:col-span-2 glass rounded-2xl p-6">
+                <div class="text-xs text-slate-500 uppercase tracking-widest mb-2">Számítás</div>
+                <div class="text-sm text-slate-300 leading-relaxed mono" id="explanation">
+                    ...
+                </div>
+            </div>
+        </div>
+
+        <!-- Legend cards -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-6">
+            <div class="glass rounded-xl p-4 border-emerald-500/20">
+                <div class="flex items-center gap-2 mb-2">
+                    <div class="w-3 h-3 rounded bg-emerald-400"></div>
+                    <span class="font-semibold text-emerald-400 text-sm">Legnagyobb torony</span>
+                </div>
+                <div class="text-xs text-slate-400">A jel forrása. Ő adja az előjelt a kimenetnek.</div>
+            </div>
+            <div class="glass rounded-xl p-4 border-amber-500/20">
+                <div class="flex items-center gap-2 mb-2">
+                    <div class="w-3 h-3 rounded bg-amber-400"></div>
+                    <span class="font-semibold text-amber-400 text-sm">Középső (cut line)</span>
+                </div>
+                <div class="text-xs text-slate-400">A vágási vonal. Ő a referencia/küszöb.</div>
+            </div>
+            <div class="glass rounded-xl p-4 border-slate-500/20">
+                <div class="flex items-center gap-2 mb-2">
+                    <div class="w-3 h-3 rounded bg-slate-400 opacity-50"></div>
+                    <span class="font-semibold text-slate-400 text-sm">Legkisebb torony</span>
+                </div>
+                <div class="text-xs text-slate-400">Formulától függ: elveszik vagy ellenpólus lesz.</div>
+            </div>
+        </div>
+
+        <!-- Preset scenarios -->
+        <div class="glass rounded-2xl p-6 mb-4">
+            <div class="text-xs text-slate-500 uppercase tracking-widest mb-3">Próbálj pár szcenáriót</div>
+            <div class="flex flex-wrap gap-2">
+                <button class="preset px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs mono border border-slate-700" data-a="3" data-b="5" data-c="9">Normális (3, 5, 9)</button>
+                <button class="preset px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs mono border border-slate-700" data-a="5" data-b="5" data-c="5">Egyforma (5, 5, 5)</button>
+                <button class="preset px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs mono border border-slate-700" data-a="1" data-b="2" data-c="9">Egy kiemelkedő</button>
+                <button class="preset px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs mono border border-slate-700" data-a="-3" data-b="5" data-c="9">Ellentétes előjel</button>
+                <button class="preset px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs mono border border-slate-700" data-a="8" data-b="9" data-c="10">Mind hasonló nagy</button>
+                <button class="preset px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs mono border border-slate-700" data-a="0.1" data-b="0.2" data-c="0.3">Mind kicsi</button>
+                <button class="preset px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs mono border border-slate-700" data-a="-8" data-b="-5" data-c="-2">Mind negatív</button>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        const aSlider = document.getElementById('aSlider');
+        const bSlider = document.getElementById('bSlider');
+        const cSlider = document.getElementById('cSlider');
+        const aValueEl = document.getElementById('aValue');
+        const bValueEl = document.getElementById('bValue');
+        const cValueEl = document.getElementById('cValue');
+        const outputEl = document.getElementById('output');
+        const outputSignEl = document.getElementById('outputSign');
+        const explanationEl = document.getElementById('explanation');
+        const formulaBtns = document.querySelectorAll('.formula-btn');
+        const presetBtns = document.querySelectorAll('.preset');
+
+        let currentFormula = 'margin';
+
+        formulaBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                formulaBtns.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                currentFormula = btn.dataset.formula;
+                render();
+            });
+        });
+
+        presetBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                aSlider.value = btn.dataset.a;
+                bSlider.value = btn.dataset.b;
+                cSlider.value = btn.dataset.c;
+                render();
+            });
+        });
+
+        [aSlider, bSlider, cSlider].forEach(s => s.addEventListener('input', render));
+
+        function fmtSigned(v) {
+            return (v >= 0 ? '+' : '') + v.toFixed(1);
+        }
+
+        function render() {
+            const a = parseFloat(aSlider.value);
+            const b = parseFloat(bSlider.value);
+            const c = parseFloat(cSlider.value);
+
+            aValueEl.textContent = fmtSigned(a);
+            bValueEl.textContent = fmtSigned(b);
+            cValueEl.textContent = fmtSigned(c);
+
+            // Sort by magnitude (keep original index/label)
+            const inputs = [
+                { label: 'A', val: a, abs: Math.abs(a), x: 220 },
+                { label: 'B', val: b, abs: Math.abs(b), x: 450 },
+                { label: 'C', val: c, abs: Math.abs(c), x: 680 }
+            ];
+            const sorted = [...inputs].sort((x, y) => x.abs - y.abs);
+            const smallest = sorted[0];
+            const middle = sorted[1];
+            const largest = sorted[2];
+
+            // Compute output
+            let magnitude = 0, sign = 0, out = 0, explText = '';
+
+            if (currentFormula === 'margin') {
+                magnitude = Math.max(0, largest.abs - middle.abs);
+                sign = Math.sign(largest.val) || 1;
+                out = sign * magnitude;
+                explText = `|${largest.label}| - |${middle.label}| = ${largest.abs.toFixed(2)} - ${middle.abs.toFixed(2)} = ${magnitude.toFixed(2)}\npredjel: ${largest.label} = ${fmtSigned(largest.val)} → ${sign >= 0 ? '+' : '-'}\nkimenet = ${fmtSigned(out)}`;
+            } else if (currentFormula === 'range') {
+                magnitude = largest.abs - smallest.abs;
+                sign = Math.sign(largest.val) || 1;
+                out = sign * magnitude;
+                explText = `|${largest.label}| - |${smallest.label}| = ${largest.abs.toFixed(2)} - ${smallest.abs.toFixed(2)} = ${magnitude.toFixed(2)}\nközépső (${middle.label}) csak sorrendet adja\nkimenet = ${fmtSigned(out)}`;
+            } else if (currentFormula === 'hybrid') {
+                const excite = largest.abs - middle.abs;
+                const inhibit = middle.abs - smallest.abs;
+                magnitude = excite - inhibit;
+                sign = Math.sign(largest.val) || 1;
+                out = sign * magnitude;
+                explText = `gerjeszt: |${largest.label}| - |${middle.label}| = ${excite.toFixed(2)}\ngátol: |${middle.label}| - |${smallest.label}| = ${inhibit.toFixed(2)}\nkimenet = ${excite.toFixed(2)} - ${inhibit.toFixed(2)} = ${magnitude.toFixed(2)}`;
+            }
+
+            outputEl.textContent = (out >= 0 ? '+' : '') + out.toFixed(2);
+            outputEl.style.color = out > 0.01 ? '#38bdf8' : out < -0.01 ? '#ef4444' : '#94a3b8';
+            outputSignEl.textContent = out > 0.01 ? 'pozitív jel' : out < -0.01 ? 'negatív jel' : 'nincs jel (≈ 0)';
+            explanationEl.textContent = explText;
+
+            drawViz(inputs, smallest, middle, largest, magnitude, out);
+        }
+
+        function drawViz(inputs, smallest, middle, largest, magnitude, out) {
+            const bars = document.getElementById('bars');
+            const cutLineGroup = document.getElementById('cutLineGroup');
+            const outputZone = document.getElementById('outputZone');
+            const barLabels = document.getElementById('barLabels');
+            const yLabels = document.getElementById('yLabels');
+            const grid = document.getElementById('grid');
+
+            // Clear previous
+            bars.innerHTML = '';
+            cutLineGroup.innerHTML = '';
+            outputZone.innerHTML = '';
+            barLabels.innerHTML = '';
+            yLabels.innerHTML = '';
+            grid.innerHTML = '';
+
+            const baseY = 470;
+            const scale = 38;
+            const barWidth = 140;
+
+            // Y-axis grid lines and labels
+            for (let y = 0; y <= 10; y += 2) {
+                const py = baseY - y * scale;
+                if (py < 40) continue;
+                grid.innerHTML += `<line x1="80" y1="${py}" x2="850" y2="${py}" stroke="#1e293b" stroke-width="1" stroke-dasharray="2 4"/>`;
+                yLabels.innerHTML += `
+                    <line x1="75" y1="${py}" x2="85" y2="${py}" stroke="#475569" stroke-width="1.5"/>
+                    <text x="70" y="${py + 4}" fill="#64748b" font-size="11" text-anchor="end" class="mono">${y}</text>
+                `;
+            }
+
+            // Bars: A, B, C in fixed positions
+            inputs.forEach(inp => {
+                const h = Math.min(inp.abs, 10) * scale;
+                const bx = inp.x - barWidth/2;
+                const by = baseY - h;
+
+                // Color by role
+                let fill, stroke, opacity;
+                if (inp.label === smallest.label) {
+                    fill = '#64748b'; stroke = '#94a3b8'; opacity = 0.55;
+                } else if (inp.label === largest.label) {
+                    fill = '#22c55e'; stroke = '#4ade80'; opacity = 0.85;
+                } else { // middle
+                    fill = '#fbbf24'; stroke = '#fcd34d'; opacity = 0.75;
+                }
+
+                bars.innerHTML += `
+                    <rect class="bar" x="${bx}" y="${by}" width="${barWidth}" height="${h}"
+                          fill="${fill}" stroke="${stroke}" stroke-width="2" opacity="${opacity}" rx="4"/>
+                `;
+
+                // Input label below axis
+                const signColor = inp.val >= 0 ? '#38bdf8' : '#f87171';
+                barLabels.innerHTML += `
+                    <text x="${inp.x}" y="${baseY + 25}" fill="#e2e8f0" font-size="18" text-anchor="middle" font-weight="bold">${inp.label}</text>
+                    <text x="${inp.x}" y="${baseY + 46}" fill="${signColor}" font-size="13" text-anchor="middle" class="mono">${fmtSigned(inp.val)}</text>
+                `;
+
+                // Role tag above bar
+                let roleTag = inp.label === smallest.label ? 'legkisebb' :
+                              inp.label === largest.label ? 'LEGNAGYOBB' : 'középső';
+                const roleColor = inp.label === smallest.label ? '#94a3b8' :
+                                  inp.label === largest.label ? '#4ade80' : '#fcd34d';
+                barLabels.innerHTML += `
+                    <text class="label" x="${inp.x}" y="${by - 12}" fill="${roleColor}" font-size="11" text-anchor="middle" font-weight="bold" class="mono" letter-spacing="1">${roleTag}</text>
+                    <text class="label" x="${inp.x}" y="${by - 26}" fill="${roleColor}" font-size="10" text-anchor="middle" class="mono" opacity="0.7">|${inp.abs.toFixed(1)}|</text>
+                `;
+            });
+
+            // Cut line at middle height
+            const cutY = baseY - middle.abs * scale;
+            cutLineGroup.innerHTML += `
+                <line class="cut cut-line" x1="90" y1="${cutY}" x2="840" y2="${cutY}"/>
+                <rect x="770" y="${cutY - 11}" width="70" height="22" fill="#020617" stroke="#fbbf24" stroke-width="1.5" rx="4"/>
+                <text x="805" y="${cutY + 5}" fill="#fbbf24" font-size="11" text-anchor="middle" class="mono" font-weight="bold">CUT: ${middle.abs.toFixed(1)}</text>
+            `;
+
+            // Output zone overlay - different per formula
+            if (currentFormula === 'margin') {
+                // Highlight portion of largest ABOVE cut line
+                const lx = largest.x - barWidth/2 - 6;
+                const lw = barWidth + 12;
+                const ltop = baseY - largest.abs * scale;
+                const marginH = Math.max(0, (largest.abs - middle.abs) * scale);
+                if (marginH > 0) {
+                    outputZone.innerHTML += `
+                        <rect class="zone pulsing" x="${lx}" y="${ltop}" width="${lw}" height="${marginH}"
+                              fill="#38bdf8" opacity="0.55" stroke="#7dd3fc" stroke-width="2.5" rx="3"
+                              style="color: #38bdf8"/>
+                        <text x="${largest.x}" y="${ltop - 40}" fill="#38bdf8" font-size="13" text-anchor="middle" font-weight="bold" class="mono">ÁTJUT</text>
+                        <text x="${largest.x}" y="${ltop + marginH/2 + 4}" fill="#fff" font-size="14" text-anchor="middle" font-weight="bold" class="mono">+${magnitude.toFixed(1)}</text>
+                    `;
+                } else {
+                    outputZone.innerHTML += `
+                        <text x="450" y="250" fill="#f87171" font-size="16" text-anchor="middle" font-weight="bold" class="mono">NINCS ÁTJÁRÁS (largest = middle)</text>
+                    `;
+                }
+
+            } else if (currentFormula === 'range') {
+                // Highlight largest's full magnitude (positive) and smallest's (negative, subtracted)
+                const lx = largest.x - barWidth/2 - 6;
+                const lw = barWidth + 12;
+                const ltop = baseY - largest.abs * scale;
+                const sx = smallest.x - barWidth/2 - 6;
+                const stop = baseY - smallest.abs * scale;
+                const sh = smallest.abs * scale;
+
+                outputZone.innerHTML += `
+                    <rect class="zone pulsing" x="${lx}" y="${ltop}" width="${lw}" height="${largest.abs * scale}"
+                          fill="#22c55e" opacity="0.35" stroke="#4ade80" stroke-width="2.5" rx="3"
+                          style="color: #22c55e"/>
+                    <text x="${largest.x}" y="${ltop - 42}" fill="#4ade80" font-size="13" text-anchor="middle" font-weight="bold" class="mono">GERJESZT +${largest.abs.toFixed(1)}</text>
+                    <rect class="zone" x="${sx}" y="${stop}" width="${lw}" height="${sh}"
+                          fill="#ef4444" opacity="0.35" stroke="#f87171" stroke-width="2.5" rx="3" stroke-dasharray="5 3"/>
+                    <text x="${smallest.x}" y="${stop - 42}" fill="#f87171" font-size="13" text-anchor="middle" font-weight="bold" class="mono">GÁTOL -${smallest.abs.toFixed(1)}</text>
+                `;
+
+            } else if (currentFormula === 'hybrid') {
+                // Excitation: largest above middle | Inhibition: gap between smallest and middle
+                const lx = largest.x - barWidth/2 - 6;
+                const lw = barWidth + 12;
+                const ltop = baseY - largest.abs * scale;
+                const cutYPx = baseY - middle.abs * scale;
+                const exH = Math.max(0, (largest.abs - middle.abs) * scale);
+
+                const sx = smallest.x - barWidth/2 - 6;
+                const stop = baseY - smallest.abs * scale;
+                const inH = Math.max(0, (middle.abs - smallest.abs) * scale);
+
+                if (exH > 0) {
+                    outputZone.innerHTML += `
+                        <rect class="zone pulsing" x="${lx}" y="${ltop}" width="${lw}" height="${exH}"
+                              fill="#22c55e" opacity="0.5" stroke="#4ade80" stroke-width="2.5" rx="3"
+                              style="color: #22c55e"/>
+                        <text x="${largest.x}" y="${ltop - 42}" fill="#4ade80" font-size="12" text-anchor="middle" font-weight="bold" class="mono">+gerjeszt</text>
+                        <text x="${largest.x}" y="${ltop + exH/2 + 4}" fill="#fff" font-size="12" text-anchor="middle" font-weight="bold" class="mono">+${(largest.abs - middle.abs).toFixed(1)}</text>
+                    `;
+                }
+                if (inH > 0) {
+                    outputZone.innerHTML += `
+                        <rect class="zone" x="${sx}" y="${stop}" width="${lw}" height="${inH}"
+                              fill="#ef4444" opacity="0.5" stroke="#f87171" stroke-width="2.5" rx="3" stroke-dasharray="5 3"/>
+                        <text x="${smallest.x}" y="${stop - 42}" fill="#f87171" font-size="12" text-anchor="middle" font-weight="bold" class="mono">-gátol</text>
+                        <text x="${smallest.x}" y="${stop + inH/2 + 4}" fill="#fff" font-size="12" text-anchor="middle" font-weight="bold" class="mono">-${(middle.abs - smallest.abs).toFixed(1)}</text>
+                    `;
+                }
+            }
+        }
+
+        render();
+    </script>
+</body>
+</html>

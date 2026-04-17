@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Margin Gate — XY fordítás</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=JetBrains+Mono:wght@400;600&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background: radial-gradient(ellipse at top, #1e293b 0%, #020617 100%);
+            min-height: 100vh;
+        }
+        .mono { font-family: 'JetBrains Mono', monospace; }
+        .glass {
+            background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(148, 163, 184, 0.1);
+        }
+        .slider {
+            -webkit-appearance: none;
+            width: 100%; height: 6px;
+            background: linear-gradient(90deg, #ef4444 0%, #1e293b 50%, #22c55e 100%);
+            border-radius: 3px; outline: none;
+        }
+        .slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 22px; height: 22px;
+            background: linear-gradient(135deg, #38bdf8, #6366f1);
+            border-radius: 50%; cursor: pointer;
+            box-shadow: 0 0 16px rgba(56, 189, 248, 0.6);
+            border: 2px solid #e2e8f0;
+        }
+        rect, line, text, circle { transition: all 0.3s ease; }
+        @keyframes pulse-glow {
+            0%, 100% { filter: drop-shadow(0 0 6px currentColor); }
+            50% { filter: drop-shadow(0 0 16px currentColor); }
+        }
+        .pulsing { animation: pulse-glow 2s ease-in-out infinite; }
+        @keyframes flow {
+            0% { opacity: 0; transform: translateX(0); }
+            20% { opacity: 1; }
+            80% { opacity: 1; }
+            100% { opacity: 0; transform: translateX(150px); }
+        }
+        .flow-arrow { animation: flow 3s linear infinite; }
+    </style>
+</head>
+<body class="p-6 text-slate-200">
+    <div class="max-w-6xl mx-auto">
+
+        <!-- Header -->
+        <div class="text-center mb-6">
+            <h1 class="text-3xl md:text-4xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-sky-400 via-indigo-400 to-purple-400 mb-2">
+                Margin Gate — XY Fordítás
+            </h1>
+            <p class="text-slate-400 text-sm">
+                3 tanult szám az X-en (a, b, c) → 1 kimenet az Y-on
+            </p>
+        </div>
+
+        <!-- Three sliders -->
+        <div class="grid grid-cols-3 gap-4 mb-6">
+            <div class="glass rounded-2xl p-4">
+                <div class="flex justify-between items-baseline mb-2">
+                    <span class="text-xs text-slate-500 uppercase tracking-widest">a</span>
+                    <span class="mono text-xl text-sky-400" id="aValue">+3.0</span>
+                </div>
+                <input type="range" id="aSlider" class="slider" min="-10" max="10" step="0.1" value="3">
+            </div>
+            <div class="glass rounded-2xl p-4">
+                <div class="flex justify-between items-baseline mb-2">
+                    <span class="text-xs text-slate-500 uppercase tracking-widest">b</span>
+                    <span class="mono text-xl text-sky-400" id="bValue">+7.0</span>
+                </div>
+                <input type="range" id="bSlider" class="slider" min="-10" max="10" step="0.1" value="7">
+            </div>
+            <div class="glass rounded-2xl p-4">
+                <div class="flex justify-between items-baseline mb-2">
+                    <span class="text-xs text-slate-500 uppercase tracking-widest">c</span>
+                    <span class="mono text-xl text-sky-400" id="cValue">-5.0</span>
+                </div>
+                <input type="range" id="cSlider" class="slider" min="-10" max="10" step="0.1" value="-5">
+            </div>
+        </div>
+
+        <!-- Main visualization: XY grid -->
+        <div class="glass rounded-2xl p-6 mb-6">
+            <svg viewBox="0 0 900 500" class="w-full">
+                <defs>
+                    <pattern id="gridBig" width="50" height="40" patternUnits="userSpaceOnUse">
+                        <path d="M 50 0 L 0 0 0 40" fill="none" stroke="rgba(148,163,184,0.05)" stroke-width="1"/>
+                    </pattern>
+                    <marker id="arrowBlue" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto">
+                        <polygon points="0 0, 10 5, 0 10" fill="#38bdf8"/>
+                    </marker>
+                </defs>
+                <rect width="900" height="500" fill="url(#gridBig)"/>
+
+                <!-- Labels for zones -->
+                <text x="220" y="25" fill="#818cf8" font-size="11" text-anchor="middle" class="mono font-bold uppercase tracking-widest">BEMENETEK (az X-tengelyen)</text>
+                <text x="720" y="25" fill="#4ade80" font-size="11" text-anchor="middle" class="mono font-bold uppercase tracking-widest">KIMENET (az Y-tengelyen)</text>
+
+                <!-- Divider between input zone and output zone -->
+                <line x1="500" y1="40" x2="500" y2="470" stroke="#a855f7" stroke-width="1" stroke-dasharray="6 4" opacity="0.4"/>
+
+                <!-- X-axis (input zone) -->
+                <line x1="80" y1="420" x2="480" y2="420" stroke="#475569" stroke-width="2"/>
+                <!-- Y-axis (input zone - shared with output) -->
+                <line x1="80" y1="50" x2="80" y2="440" stroke="#475569" stroke-width="2"/>
+
+                <!-- Y-axis on output side -->
+                <line x1="540" y1="50" x2="540" y2="440" stroke="#475569" stroke-width="2"/>
+                <line x1="540" y1="420" x2="870" y2="420" stroke="#475569" stroke-width="2"/>
+
+                <!-- Y-axis labels on both sides -->
+                <g id="yLabels"></g>
+
+                <!-- X-axis labels (a, b, c positions) -->
+                <text x="160" y="445" fill="#e2e8f0" font-size="16" text-anchor="middle" font-weight="bold">a</text>
+                <text x="280" y="445" fill="#e2e8f0" font-size="16" text-anchor="middle" font-weight="bold">b</text>
+                <text x="400" y="445" fill="#e2e8f0" font-size="16" text-anchor="middle" font-weight="bold">c</text>
+                <text x="160" y="463" fill="#94a3b8" font-size="11" text-anchor="middle" class="mono" id="aLabelVal">+3.0</text>
+                <text x="280" y="463" fill="#94a3b8" font-size="11" text-anchor="middle" class="mono" id="bLabelVal">+7.0</text>
+                <text x="400" y="463" fill="#94a3b8" font-size="11" text-anchor="middle" class="mono" id="cLabelVal">-5.0</text>
+
+                <!-- Three bars (input magnitudes |a|, |b|, |c|) -->
+                <rect id="barA" x="120" y="300" width="80" height="120" rx="4"/>
+                <rect id="barB" x="240" y="200" width="80" height="220" rx="4"/>
+                <rect id="barC" x="360" y="220" width="80" height="200" rx="4"/>
+
+                <!-- Bar labels (role tags) -->
+                <text id="tagA" x="160" y="290" fill="#94a3b8" font-size="10" text-anchor="middle" class="mono" font-weight="bold"></text>
+                <text id="tagB" x="280" y="190" fill="#4ade80" font-size="10" text-anchor="middle" class="mono" font-weight="bold"></text>
+                <text id="tagC" x="400" y="210" fill="#fcd34d" font-size="10" text-anchor="middle" class="mono" font-weight="bold"></text>
+
+                <!-- Magnitude labels inside/above bars -->
+                <text id="magA" x="160" y="360" fill="#fff" font-size="13" text-anchor="middle" class="mono">3</text>
+                <text id="magB" x="280" y="260" fill="#fff" font-size="13" text-anchor="middle" class="mono">7</text>
+                <text id="magC" x="400" y="280" fill="#fff" font-size="13" text-anchor="middle" class="mono">5</text>
+
+                <!-- Cut line (at middle magnitude) - spans input zone -->
+                <line id="cutLine" x1="80" y1="220" x2="480" y2="220" stroke="#fbbf24" stroke-width="3" stroke-dasharray="10 5"/>
+                <rect x="440" y="209" width="60" height="22" fill="#020617" stroke="#fbbf24" stroke-width="1.5" rx="4"/>
+                <text id="cutLabel" x="470" y="225" fill="#fbbf24" font-size="11" text-anchor="middle" class="mono" font-weight="bold">CUT: 5</text>
+
+                <!-- Highlighted margin (the output) in input zone -->
+                <rect id="marginHighlight" x="240" y="200" width="80" height="20" fill="#38bdf8" fill-opacity="0.7" stroke="#7dd3fc" stroke-width="3" rx="3" class="pulsing" style="color: #38bdf8"/>
+                <text id="marginLabel" x="280" y="185" fill="#38bdf8" font-size="12" text-anchor="middle" font-weight="bold" class="mono">margin</text>
+
+                <!-- Flow arrow: input → output -->
+                <path d="M 455 200 Q 495 200 530 200" stroke="#38bdf8" stroke-width="2" fill="none" marker-end="url(#arrowBlue)" opacity="0.6"/>
+                <text x="495" y="190" fill="#38bdf8" font-size="10" text-anchor="middle" class="mono">→</text>
+
+                <!-- Output bar on right side (single bar representing the output Y value) -->
+                <rect id="outputBar" x="650" y="200" width="110" height="20" rx="4"/>
+                <text id="outputBarLabel" x="705" y="214" fill="#fff" font-size="14" text-anchor="middle" class="mono" font-weight="bold">+2.0</text>
+
+                <!-- Output value indicator on Y-axis -->
+                <line id="outputYLine" x1="540" y1="200" x2="650" y2="200" stroke="#4ade80" stroke-width="2" stroke-dasharray="4 2"/>
+                <circle id="outputDot" cx="540" cy="200" r="6" fill="#4ade80" stroke="#6ee7b7" stroke-width="2"/>
+                <text id="outputYNum" x="530" y="205" fill="#4ade80" font-size="12" text-anchor="end" class="mono font-bold">Y = +2.0</text>
+
+                <!-- Zero line annotation -->
+                <text x="75" y="425" fill="#64748b" font-size="10" text-anchor="end" class="mono">0</text>
+                <text x="535" y="425" fill="#64748b" font-size="10" text-anchor="end" class="mono">0</text>
+
+                <!-- X-axis labels for output side -->
+                <text x="650" y="445" fill="#e2e8f0" font-size="14" text-anchor="middle" font-weight="bold">output</text>
+                <text x="650" y="463" fill="#94a3b8" font-size="11" text-anchor="middle" class="mono" id="outputXLabel">Y</text>
+            </svg>
+        </div>
+
+        <!-- Explanation -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+            <div class="glass rounded-2xl p-5 border border-sky-500/20">
+                <div class="text-xs text-sky-400 font-bold uppercase tracking-widest mb-3">A lépések</div>
+                <ol class="text-sm text-slate-300 space-y-2 list-decimal list-inside">
+                    <li>3 tanult szám: <span class="mono text-sky-300" id="step1">a=+3.0, b=+7.0, c=-5.0</span></li>
+                    <li>Magnitúdó szerint sort: <span class="mono text-sky-300" id="step2">3 &lt; 5 &lt; 7</span></li>
+                    <li>CUT a középsőnél: <span class="mono text-fbbf24" style="color: #fbbf24" id="step3">Y = 5 (|c|)</span></li>
+                    <li>Legnagyobb fölénye: <span class="mono" style="color: #38bdf8" id="step4">|b| - |c| = 7 - 5 = 2</span></li>
+                    <li>Előjel legnagyobbtól: <span class="mono" id="step5">b=+7 → kimenet +2.0</span></li>
+                </ol>
+            </div>
+            <div class="glass rounded-2xl p-5 border border-emerald-500/20">
+                <div class="text-xs text-emerald-400 font-bold uppercase tracking-widest mb-2">Kimenet</div>
+                <div class="mono text-6xl font-bold" id="finalOutput" style="color: #38bdf8">+2.00</div>
+                <div class="text-xs text-slate-400 mt-2">= egy szám az Y tengelyen</div>
+                <div class="mt-3 flex items-center gap-2 bg-emerald-500/10 px-3 py-2 rounded-lg border border-emerald-500/20">
+                    <span style="color: #4ade80;" class="text-lg font-bold">✓</span>
+                    <span class="mono text-xs text-emerald-300">kizárt harmadik: éles döntés</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Presets -->
+        <div class="glass rounded-2xl p-5">
+            <div class="text-xs text-slate-500 uppercase tracking-widest mb-3">Próbálj pár szcenáriót</div>
+            <div class="flex flex-wrap gap-2">
+                <button class="preset px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs mono border border-slate-700" data-a="3" data-b="7" data-c="-5">Standard (3,7,-5)</button>
+                <button class="preset px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs mono border border-slate-700" data-a="5" data-b="5" data-c="5">Mind egyforma</button>
+                <button class="preset px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs mono border border-slate-700" data-a="1" data-b="2" data-c="9">Egy kiemelkedő</button>
+                <button class="preset px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs mono border border-slate-700" data-a="8" data-b="9" data-c="10">Szoros harc</button>
+                <button class="preset px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs mono border border-slate-700" data-a="-3" data-b="-5" data-c="2">Negatív dominál</button>
+                <button class="preset px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs mono border border-slate-700" data-a="0" data-b="0" data-c="7">Ketten halottak</button>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        const aSlider = document.getElementById('aSlider');
+        const bSlider = document.getElementById('bSlider');
+        const cSlider = document.getElementById('cSlider');
+        const presetBtns = document.querySelectorAll('.preset');
+
+        function fmtSigned(v) { return (v >= 0 ? '+' : '') + v.toFixed(1); }
+
+        function render() {
+            const a = parseFloat(aSlider.value);
+            const b = parseFloat(bSlider.value);
+            const c = parseFloat(cSlider.value);
+
+            document.getElementById('aValue').textContent = fmtSigned(a);
+            document.getElementById('bValue').textContent = fmtSigned(b);
+            document.getElementById('cValue').textContent = fmtSigned(c);
+            document.getElementById('aLabelVal').textContent = fmtSigned(a);
+            document.getElementById('bLabelVal').textContent = fmtSigned(b);
+            document.getElementById('cLabelVal').textContent = fmtSigned(c);
+
+            const inputs = [
+                { label: 'a', val: a, abs: Math.abs(a), x: 160, barId: 'barA', tagId: 'tagA', magId: 'magA' },
+                { label: 'b', val: b, abs: Math.abs(b), x: 280, barId: 'barB', tagId: 'tagB', magId: 'magB' },
+                { label: 'c', val: c, abs: Math.abs(c), x: 400, barId: 'barC', tagId: 'tagC', magId: 'magC' }
+            ];
+            const sorted = [...inputs].sort((x, y) => x.abs - y.abs);
+            const smallest = sorted[0];
+            const middle = sorted[1];
+            const largest = sorted[2];
+
+            const margin = Math.max(0, largest.abs - middle.abs);
+            const sign = Math.sign(largest.val) || 1;
+            const output = sign * margin;
+
+            // Scale: 0-10 magnitude maps to y 420 to 80 (pixels)
+            const baseY = 420;
+            const pxPerUnit = 34;
+
+            // Y-axis labels for input zone
+            const yLabels = document.getElementById('yLabels');
+            yLabels.innerHTML = '';
+            for (let y = 0; y <= 10; y += 2) {
+                const py = baseY - y * pxPerUnit;
+                if (py < 50) continue;
+                yLabels.innerHTML += `<text x="75" y="${py + 4}" fill="#64748b" font-size="10" text-anchor="end" class="mono">${y}</text>`;
+                yLabels.innerHTML += `<line x1="78" y1="${py}" x2="82" y2="${py}" stroke="#475569" stroke-width="1"/>`;
+            }
+            // Y-axis labels for output zone (negative and positive)
+            for (let y = -10; y <= 10; y += 2) {
+                const py = baseY - y * pxPerUnit - (y < 0 ? 0 : 0); // only positive side for simplicity
+                if (y < 0) continue; // simplify: show only positive side
+                if (py < 50 || py > 440) continue;
+                yLabels.innerHTML += `<text x="535" y="${py + 4}" fill="#64748b" font-size="10" text-anchor="end" class="mono">${y}</text>`;
+                yLabels.innerHTML += `<line x1="538" y1="${py}" x2="542" y2="${py}" stroke="#475569" stroke-width="1"/>`;
+            }
+
+            // Update bars
+            inputs.forEach(inp => {
+                const bar = document.getElementById(inp.barId);
+                const tag = document.getElementById(inp.tagId);
+                const mag = document.getElementById(inp.magId);
+                const h = Math.min(inp.abs, 10) * pxPerUnit;
+                const barY = baseY - h;
+
+                // Color by role
+                let fill, stroke, roleText, roleColor;
+                if (inp.label === smallest.label) {
+                    fill = '#64748b'; stroke = '#94a3b8'; roleText = 'legkisebb'; roleColor = '#94a3b8';
+                } else if (inp.label === largest.label) {
+                    fill = '#22c55e'; stroke = '#4ade80'; roleText = 'LEGNAGYOBB'; roleColor = '#4ade80';
+                } else {
+                    fill = '#fbbf24'; stroke = '#fcd34d'; roleText = 'KÖZÉP (cut)'; roleColor = '#fcd34d';
+                }
+
+                bar.setAttribute('x', inp.x - 40);
+                bar.setAttribute('y', barY);
+                bar.setAttribute('width', 80);
+                bar.setAttribute('height', h);
+                bar.setAttribute('fill', fill);
+                bar.setAttribute('fill-opacity', 0.7);
+                bar.setAttribute('stroke', stroke);
+                bar.setAttribute('stroke-width', 2);
+
+                tag.textContent = roleText;
+                tag.setAttribute('x', inp.x);
+                tag.setAttribute('y', barY - 8);
+                tag.setAttribute('fill', roleColor);
+
+                mag.textContent = inp.abs.toFixed(1);
+                mag.setAttribute('x', inp.x);
+                mag.setAttribute('y', barY + h / 2 + 5);
+            });
+
+            // Cut line at middle magnitude
+            const cutY = baseY - middle.abs * pxPerUnit;
+            const cutLine = document.getElementById('cutLine');
+            cutLine.setAttribute('y1', cutY);
+            cutLine.setAttribute('y2', cutY);
+            document.querySelector('rect[x="440"][y]').setAttribute('y', cutY - 11);
+            document.getElementById('cutLabel').setAttribute('y', cutY + 5);
+            document.getElementById('cutLabel').textContent = `CUT: ${middle.abs.toFixed(1)}`;
+
+            // Margin highlight (the output portion of largest bar)
+            const marginHighlight = document.getElementById('marginHighlight');
+            const marginLabel = document.getElementById('marginLabel');
+            if (margin > 0.01) {
+                const topY = baseY - largest.abs * pxPerUnit;
+                const h = margin * pxPerUnit;
+                marginHighlight.setAttribute('x', largest.x - 46);
+                marginHighlight.setAttribute('y', topY);
+                marginHighlight.setAttribute('width', 92);
+                marginHighlight.setAttribute('height', h);
+                marginHighlight.setAttribute('opacity', 1);
+                marginLabel.setAttribute('x', largest.x);
+                marginLabel.setAttribute('y', topY - 12);
+                marginLabel.textContent = `margin = ${margin.toFixed(2)}`;
+                marginLabel.setAttribute('opacity', 1);
+            } else {
+                marginHighlight.setAttribute('opacity', 0);
+                marginLabel.setAttribute('opacity', 0);
+            }
+
+            // Output indicator on Y-axis (output zone)
+            const outputY = baseY - Math.abs(output) * pxPerUnit;
+            const outputDot = document.getElementById('outputDot');
+            const outputYLine = document.getElementById('outputYLine');
+            const outputYNum = document.getElementById('outputYNum');
+            const outputBar = document.getElementById('outputBar');
+            const outputBarLabel = document.getElementById('outputBarLabel');
+
+            outputDot.setAttribute('cy', outputY);
+            outputYLine.setAttribute('y1', outputY);
+            outputYLine.setAttribute('y2', outputY);
+            outputYNum.setAttribute('y', outputY + 5);
+            outputYNum.textContent = `Y = ${fmtSigned(output)}`;
+
+            // Output bar
+            const outputH = Math.min(Math.abs(output), 10) * pxPerUnit;
+            outputBar.setAttribute('x', 650);
+            outputBar.setAttribute('y', outputY);
+            outputBar.setAttribute('width', 110);
+            outputBar.setAttribute('height', outputH > 5 ? outputH : 20);
+            outputBar.setAttribute('fill', output >= 0 ? '#38bdf8' : '#ef4444');
+            outputBar.setAttribute('fill-opacity', 0.5);
+            outputBar.setAttribute('stroke', output >= 0 ? '#7dd3fc' : '#fca5a5');
+            outputBar.setAttribute('stroke-width', 2);
+            outputBarLabel.setAttribute('y', outputY + Math.max(outputH / 2, 10) + 5);
+            outputBarLabel.textContent = fmtSigned(output);
+
+            // Final output display
+            const finalOut = document.getElementById('finalOutput');
+            finalOut.textContent = fmtSigned(output);
+            finalOut.style.color = output > 0.01 ? '#38bdf8' : output < -0.01 ? '#ef4444' : '#94a3b8';
+
+            // Steps
+            document.getElementById('step1').textContent = `a=${fmtSigned(a)}, b=${fmtSigned(b)}, c=${fmtSigned(c)}`;
+            document.getElementById('step2').textContent = `${smallest.abs.toFixed(1)} < ${middle.abs.toFixed(1)} < ${largest.abs.toFixed(1)}  (${smallest.label}, ${middle.label}, ${largest.label})`;
+            document.getElementById('step3').textContent = `Y = ${middle.abs.toFixed(1)} (|${middle.label}|)`;
+            document.getElementById('step4').textContent = `|${largest.label}| - |${middle.label}| = ${largest.abs.toFixed(1)} - ${middle.abs.toFixed(1)} = ${margin.toFixed(2)}`;
+            document.getElementById('step5').textContent = `${largest.label}=${fmtSigned(largest.val)} → kimenet ${fmtSigned(output)}`;
+        }
+
+        [aSlider, bSlider, cSlider].forEach(s => s.addEventListener('input', render));
+        presetBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                aSlider.value = btn.dataset.a;
+                bSlider.value = btn.dataset.b;
+                cSlider.value = btn.dataset.c;
+                render();
+            });
+        });
+
+        render();
+    </script>
+</body>
+</html>
