@@ -1,7 +1,23 @@
-# Moved
+<!-- Canonical source for the mirrored GitHub wiki sidebar. Sync with tools/sync_wiki_from_repo.py. -->
 
-This legacy sidebar file is no longer used by the website.
+## Core Surfaces
 
-Use the live GitHub wiki navigation instead:
+- [Vraxion Home](Home)
+- [INSTNCT Architecture](INSTNCT-Architecture)
+- [Research Process & Archive](Timeline-Archive)
 
-- https://github.com/VRAXION/VRAXION/wiki/Home
+## Theoretical Framework
+
+- [Theory of Thought](Theory-of-Thought)
+
+## Implementation
+
+- [Rust Implementation Surface](v5-Rust-Port-Benchmarks)
+
+## Public Links
+
+- [Vraxion Website](https://vraxion.github.io/VRAXION/)
+- [Website: INSTNCT](https://vraxion.github.io/VRAXION/instnct/)
+- [Website: Research](https://vraxion.github.io/VRAXION/research/)
+- [Website: Rust](https://vraxion.github.io/VRAXION/rust/)
+- [Vraxion Repository](https://github.com/VRAXION/VRAXION)

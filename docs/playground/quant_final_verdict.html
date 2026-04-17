@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quantization — Final Verdict</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=JetBrains+Mono:wght@400;600&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background: radial-gradient(ellipse at top, #1e293b 0%, #020617 100%);
+            min-height: 100vh;
+        }
+        .mono { font-family: 'JetBrains Mono', monospace; }
+        .glass {
+            background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(148, 163, 184, 0.1);
+        }
+        .medal-gold {
+            background: linear-gradient(135deg, #fbbf24, #d97706);
+            box-shadow: 0 0 40px rgba(251, 191, 36, 0.3);
+        }
+        .medal-silver {
+            background: linear-gradient(135deg, #cbd5e1, #64748b);
+            box-shadow: 0 0 30px rgba(203, 213, 225, 0.2);
+        }
+        .medal-bronze {
+            background: linear-gradient(135deg, #ea580c, #9a3412);
+            box-shadow: 0 0 30px rgba(234, 88, 12, 0.2);
+        }
+        .crown {
+            background: linear-gradient(135deg, #a855f7, #6366f1, #0ea5e9);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+    </style>
+</head>
+<body class="p-6 text-slate-200">
+    <div class="max-w-6xl mx-auto">
+
+        <!-- Header -->
+        <div class="text-center mb-8">
+            <div class="text-xs text-slate-500 uppercase tracking-[0.3em] mb-2">FINAL VERDICT</div>
+            <h1 class="text-5xl md:text-6xl font-extrabold crown mb-3">
+                Quantization Championship
+            </h1>
+            <p class="text-slate-400 text-sm max-w-2xl mx-auto">
+                Minden precíziós szintből a <strong class="text-amber-300">LEGJOBB</strong> — nem számít QAT vagy staged, csak az eredmény
+            </p>
+            <p class="text-slate-500 text-xs mt-2 mono">
+                50 futás · nf=1024 GPU · FineWeb + Code char-LM · RTX 4070 Ti Super
+            </p>
+        </div>
+
+        <!-- Top 3 Podium -->
+        <div class="mb-8">
+            <div class="text-xs text-slate-500 uppercase tracking-widest mb-4 text-center">🏆 A DOBOGÓ — best precision level overall</div>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+
+                <!-- Silver: float 86.20 -->
+                <div class="glass rounded-2xl p-5 border-2 border-slate-400/30 order-2 md:order-1">
+                    <div class="flex items-center justify-between mb-3">
+                        <div class="medal-silver w-12 h-12 rounded-full flex items-center justify-center text-2xl font-extrabold text-slate-900">2</div>
+                        <span class="text-xs text-slate-400 font-bold uppercase tracking-wider">FLOAT32</span>
+                    </div>
+                    <div class="text-4xl font-extrabold text-slate-200 mb-1">86.20<span class="text-lg text-slate-500">%</span></div>
+                    <div class="text-xs text-slate-400 mb-2 mono">1× memória · hosszú tanítás</div>
+                    <div class="text-xs text-slate-500 leading-relaxed">
+                        Baseline referencia. Nincs tömörítés — **minden** kvantált alternatíva ehhez hasonlítandó.
+                    </div>
+                </div>
+
+                <!-- Gold: int8 86.40 -->
+                <div class="glass rounded-2xl p-6 border-2 border-amber-400/60 order-1 md:order-2 transform md:scale-105">
+                    <div class="flex items-center justify-between mb-3">
+                        <div class="medal-gold w-14 h-14 rounded-full flex items-center justify-center text-3xl font-extrabold text-slate-900">1</div>
+                        <span class="text-xs text-amber-300 font-bold uppercase tracking-wider">INT8</span>
+                    </div>
+                    <div class="text-5xl font-extrabold text-amber-300 mb-1">86.40<span class="text-xl text-amber-500/70">%</span></div>
+                    <div class="text-xs text-amber-400 mb-2 mono font-bold">4× memória</div>
+                    <div class="text-xs text-slate-300 leading-relaxed">
+                        <strong class="text-amber-300">Még a float32-t is picit veri</strong> — és 4× kisebb a modell.
+                        <span class="text-slate-500">(A legjobb int8 módszer: QAT/STE.)</span>
+                    </div>
+                </div>
+
+                <!-- Bronze: int4 84.75 -->
+                <div class="glass rounded-2xl p-5 border-2 border-orange-500/30 order-3">
+                    <div class="flex items-center justify-between mb-3">
+                        <div class="medal-bronze w-12 h-12 rounded-full flex items-center justify-center text-2xl font-extrabold text-white">3</div>
+                        <span class="text-xs text-orange-400 font-bold uppercase tracking-wider">INT4</span>
+                    </div>
+                    <div class="text-4xl font-extrabold text-orange-300 mb-1">84.75<span class="text-lg text-orange-500/70">%</span></div>
+                    <div class="text-xs text-slate-400 mb-2 mono">8× memória</div>
+                    <div class="text-xs text-slate-500 leading-relaxed">
+                        Dupla tömörítés (8× vs 4×), alig 1.65pp áron. Sweet spot mobilra/edge-re.
+                        <span class="text-slate-600">(Best method: staged INQ.)</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Simplified verdict cards -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-8">
+
+            <!-- Best Accuracy/Compression -->
+            <div class="glass rounded-2xl p-5 border border-emerald-500/30">
+                <div class="text-xs text-emerald-400 uppercase tracking-widest mb-2 font-bold">⚖️ BEST TRADE-OFF</div>
+                <div class="text-2xl font-extrabold text-emerald-300 mb-1">int8</div>
+                <div class="text-xs text-slate-400 mb-3 mono">86.40% @ 4× compression</div>
+                <p class="text-xs text-slate-300 leading-relaxed">
+                    A Pareto-frontier tetején van: <strong class="text-emerald-400">jobb accuracy</strong> mint float, és <strong class="text-emerald-400">4× kisebb</strong>. Ha deploy-ra mész → ezt válaszd.
+                </p>
+            </div>
+
+            <!-- Minimum Memory -->
+            <div class="glass rounded-2xl p-5 border border-sky-500/30">
+                <div class="text-xs text-sky-400 uppercase tracking-widest mb-2 font-bold">📦 MINIMUM MEMORY</div>
+                <div class="text-2xl font-extrabold text-sky-300 mb-1">binary (1-bit)</div>
+                <div class="text-xs text-slate-400 mb-3 mono">71.50% @ 32× compression</div>
+                <p class="text-xs text-slate-300 leading-relaxed">
+                    1 bit/súly, 32× tömörítés. Accuracy áldozat: −14.9pp. IoT/embedded/FPGA kontextusban elfogadható ha a memória a szűk keresztmetszet.
+                </p>
+            </div>
+
+            <!-- Sweet Spot 8x -->
+            <div class="glass rounded-2xl p-5 border border-purple-500/30">
+                <div class="text-xs text-purple-400 uppercase tracking-widest mb-2 font-bold">🎯 SWEET SPOT 8×</div>
+                <div class="text-2xl font-extrabold text-purple-300 mb-1">int4</div>
+                <div class="text-xs text-slate-400 mb-3 mono">84.75% @ 8× compression</div>
+                <p class="text-xs text-slate-300 leading-relaxed">
+                    Dupla tömörítés mint az int8, csak 1.65pp áldozat. Mobil és edge deploy-ra az optimális választás.
+                </p>
+            </div>
+        </div>
+
+        <!-- Clean per-precision table -->
+        <div class="glass rounded-2xl p-5 mb-8 overflow-x-auto">
+            <div class="text-xs text-slate-500 uppercase tracking-widest mb-4 font-bold">
+                📊 Per-precision leaderboard — csak a legjobb minden szintből
+            </div>
+            <table class="w-full text-sm">
+                <thead class="text-slate-400 border-b border-slate-700">
+                    <tr>
+                        <th class="text-left p-3">Precision</th>
+                        <th class="text-right p-3">Compression</th>
+                        <th class="text-right p-3">FineWeb</th>
+                        <th class="text-right p-3">Code</th>
+                        <th class="text-right p-3">Best method</th>
+                        <th class="text-right p-3">Verdict</th>
+                    </tr>
+                </thead>
+                <tbody class="mono text-xs">
+                    <tr class="border-b border-slate-800">
+                        <td class="p-3 text-slate-300 font-bold text-base">float32</td>
+                        <td class="text-right p-3 text-slate-400">1×</td>
+                        <td class="text-right p-3 text-slate-300">86.20</td>
+                        <td class="text-right p-3 text-slate-300">91.90</td>
+                        <td class="text-right p-3 text-slate-500">long training</td>
+                        <td class="text-right p-3 text-slate-500">no compression</td>
+                    </tr>
+                    <tr class="border-b border-slate-800">
+                        <td class="p-3 text-slate-300 font-bold text-base">fp16</td>
+                        <td class="text-right p-3 text-emerald-400">2×</td>
+                        <td class="text-right p-3 text-slate-300">85.15</td>
+                        <td class="text-right p-3 text-slate-300">91.80</td>
+                        <td class="text-right p-3 text-slate-500">any</td>
+                        <td class="text-right p-3 text-slate-500">redundant vs int8</td>
+                    </tr>
+                    <tr class="border-b border-slate-800 bg-amber-500/10">
+                        <td class="p-3 text-amber-300 font-bold text-base">int8 🏆</td>
+                        <td class="text-right p-3 text-emerald-400 font-bold">4×</td>
+                        <td class="text-right p-3 text-amber-300 font-bold">86.40</td>
+                        <td class="text-right p-3 text-slate-300">92.00</td>
+                        <td class="text-right p-3 text-amber-400">QAT / STE</td>
+                        <td class="text-right p-3 text-amber-300 font-bold">GOLD</td>
+                    </tr>
+                    <tr class="border-b border-slate-800">
+                        <td class="p-3 text-slate-300 font-bold text-base">int5</td>
+                        <td class="text-right p-3 text-emerald-400">6.4×</td>
+                        <td class="text-right p-3 text-slate-300">84.90</td>
+                        <td class="text-right p-3 text-slate-300">92.05</td>
+                        <td class="text-right p-3 text-slate-500">staged INQ</td>
+                        <td class="text-right p-3 text-slate-500">marginal over int4</td>
+                    </tr>
+                    <tr class="border-b border-slate-800 bg-purple-500/10">
+                        <td class="p-3 text-purple-300 font-bold text-base">int4 🎯</td>
+                        <td class="text-right p-3 text-emerald-400 font-bold">8×</td>
+                        <td class="text-right p-3 text-purple-300 font-bold">84.75</td>
+                        <td class="text-right p-3 text-slate-300">91.90</td>
+                        <td class="text-right p-3 text-purple-400">staged INQ</td>
+                        <td class="text-right p-3 text-purple-300 font-bold">SWEET SPOT</td>
+                    </tr>
+                    <tr class="border-b border-slate-800">
+                        <td class="p-3 text-slate-300 font-bold text-base">ternary</td>
+                        <td class="text-right p-3 text-emerald-400">16×</td>
+                        <td class="text-right p-3 text-slate-300">71.50</td>
+                        <td class="text-right p-3 text-slate-300">82.95</td>
+                        <td class="text-right p-3 text-slate-500">QAT / STE <em>only</em></td>
+                        <td class="text-right p-3 text-slate-500">dominated by binary</td>
+                    </tr>
+                    <tr class="bg-sky-500/10">
+                        <td class="p-3 text-sky-300 font-bold text-base">binary 📦</td>
+                        <td class="text-right p-3 text-emerald-400 font-bold">32×</td>
+                        <td class="text-right p-3 text-sky-300 font-bold">71.50</td>
+                        <td class="text-right p-3 text-slate-300">83.15</td>
+                        <td class="text-right p-3 text-sky-400">QAT / STE</td>
+                        <td class="text-right p-3 text-sky-300 font-bold">MIN MEMORY</td>
+                    </tr>
+                </tbody>
+            </table>
+            <div class="mt-3 text-xs text-slate-500 leading-relaxed">
+                <strong>Módszertan:</strong> minden cellában a 4 protokoll (float-long / staged INQ / QAT STE / progressive) közül a legjobb szerepel.
+                A "best method" mutatja, melyikkel érte el.
+            </div>
+        </div>
+
+        <!-- Pareto Frontier Chart - simplified -->
+        <div class="glass rounded-2xl p-6 mb-8">
+            <div class="text-xs text-slate-500 uppercase tracking-widest mb-4 text-center">
+                Pareto Frontier — one point per precision (FineWeb nf=1024)
+            </div>
+            <svg viewBox="0 0 900 500" class="w-full">
+                <!-- Axes -->
+                <line x1="80" y1="40" x2="80" y2="440" stroke="#475569" stroke-width="2"/>
+                <line x1="80" y1="440" x2="860" y2="440" stroke="#475569" stroke-width="2"/>
+
+                <!-- Y axis: accuracy 50-90% -->
+                <g fill="#64748b" font-size="11" class="mono" text-anchor="end">
+                    <text x="74" y="444">50</text>
+                    <text x="74" y="384">55</text>
+                    <text x="74" y="324">60</text>
+                    <text x="74" y="264">65</text>
+                    <text x="74" y="204">70</text>
+                    <text x="74" y="144">75</text>
+                    <text x="74" y="84">80</text>
+                    <text x="74" y="44">85</text>
+                </g>
+                <g stroke="#1e293b" stroke-width="1" stroke-dasharray="2 3">
+                    <line x1="80" y1="384" x2="860" y2="384"/>
+                    <line x1="80" y1="324" x2="860" y2="324"/>
+                    <line x1="80" y1="264" x2="860" y2="264"/>
+                    <line x1="80" y1="204" x2="860" y2="204"/>
+                    <line x1="80" y1="144" x2="860" y2="144"/>
+                    <line x1="80" y1="84" x2="860" y2="84"/>
+                </g>
+
+                <!-- X axis: compression ratio (log-ish scale) -->
+                <g fill="#64748b" font-size="11" class="mono" text-anchor="middle">
+                    <text x="140" y="460">1×</text>
+                    <text x="260" y="460">2×</text>
+                    <text x="400" y="460">4×</text>
+                    <text x="540" y="460">6.4×</text>
+                    <text x="660" y="460">8×</text>
+                    <text x="790" y="460">16×</text>
+                    <text x="845" y="460">32×</text>
+                </g>
+                <text x="470" y="482" fill="#94a3b8" font-size="11" text-anchor="middle" class="mono">memory compression</text>
+                <text x="30" y="240" fill="#94a3b8" font-size="11" class="mono" transform="rotate(-90, 30, 240)">accuracy (%)</text>
+
+                <!-- Y mapping: 50→440, 90→40 (400px / 40pp = 10 px/pp)
+                     y(v) = 440 - (v-50)*10
+                     float 86.20 → 77.9  (we'll round to 78)
+                     fp16 85.15 → 88.5
+                     int8 86.40 → 76
+                     int5 84.90 → 91
+                     int4 84.75 → 92.5
+                     ternary 71.50 → 225
+                     binary 71.50 → 225
+                -->
+
+                <!-- Pareto frontier connecting line -->
+                <polyline fill="none" stroke="#fbbf24" stroke-width="3" stroke-dasharray="0" opacity="0.25"
+                          points="140,78 400,76 660,92.5 845,225"/>
+                <text x="500" y="62" fill="#fbbf24" font-size="11" class="mono font-bold" text-anchor="middle">↑ Pareto frontier (optimal trade-offs)</text>
+
+                <!-- FLOAT32 (86.20) -->
+                <circle cx="140" cy="78" r="10" fill="#22c55e" stroke="#4ade80" stroke-width="2"/>
+                <text x="140" y="63" fill="#22c55e" font-size="12" text-anchor="middle" font-weight="bold" class="mono">86.20</text>
+                <text x="140" y="113" fill="#86efac" font-size="11" text-anchor="middle" class="mono font-bold">float32</text>
+
+                <!-- FP16 (85.15) — slight below Pareto -->
+                <circle cx="260" cy="88.5" r="8" fill="#64748b" stroke="#94a3b8" stroke-width="1.5"/>
+                <text x="260" y="74" fill="#94a3b8" font-size="11" text-anchor="middle" font-weight="bold" class="mono">85.15</text>
+                <text x="260" y="121" fill="#64748b" font-size="10" text-anchor="middle" class="mono">fp16</text>
+
+                <!-- INT8 (86.40) - GOLD, Pareto optimal -->
+                <circle cx="400" cy="76" r="14" fill="#fbbf24" stroke="#fde047" stroke-width="3"/>
+                <text x="400" y="56" fill="#fbbf24" font-size="14" text-anchor="middle" font-weight="bold" class="mono">86.40 👑</text>
+                <text x="400" y="108" fill="#fde68a" font-size="12" text-anchor="middle" font-weight="bold" class="mono">int8</text>
+
+                <!-- INT5 (84.90) — slightly below Pareto -->
+                <circle cx="540" cy="91" r="8" fill="#64748b" stroke="#94a3b8" stroke-width="1.5"/>
+                <text x="540" y="77" fill="#94a3b8" font-size="11" text-anchor="middle" font-weight="bold" class="mono">84.90</text>
+                <text x="540" y="124" fill="#64748b" font-size="10" text-anchor="middle" class="mono">int5</text>
+
+                <!-- INT4 (84.75) - SWEET SPOT -->
+                <circle cx="660" cy="92.5" r="12" fill="#a855f7" stroke="#c084fc" stroke-width="2.5"/>
+                <text x="660" y="74" fill="#a855f7" font-size="13" text-anchor="middle" font-weight="bold" class="mono">84.75 🎯</text>
+                <text x="660" y="124" fill="#c084fc" font-size="12" text-anchor="middle" font-weight="bold" class="mono">int4</text>
+
+                <!-- TERNARY (71.50) — dominated by binary at 32x -->
+                <circle cx="790" cy="225" r="8" fill="#64748b" stroke="#94a3b8" stroke-width="1.5"/>
+                <text x="790" y="211" fill="#94a3b8" font-size="11" text-anchor="middle" font-weight="bold" class="mono">71.50</text>
+                <text x="790" y="255" fill="#64748b" font-size="10" text-anchor="middle" class="mono">ternary</text>
+
+                <!-- BINARY (71.50) - MIN MEMORY -->
+                <circle cx="845" cy="225" r="12" fill="#38bdf8" stroke="#7dd3fc" stroke-width="2.5"/>
+                <text x="845" y="207" fill="#38bdf8" font-size="13" text-anchor="middle" font-weight="bold" class="mono">71.50 📦</text>
+                <text x="845" y="255" fill="#7dd3fc" font-size="12" text-anchor="middle" font-weight="bold" class="mono">binary</text>
+
+                <!-- Labels for categories -->
+                <text x="180" y="30" fill="#22c55e" font-size="10" class="mono" opacity="0.6">📊 baseline</text>
+                <text x="400" y="30" fill="#fbbf24" font-size="10" class="mono font-bold" text-anchor="middle">🏆 absolute winner</text>
+                <text x="660" y="30" fill="#a855f7" font-size="10" class="mono font-bold" text-anchor="middle">🎯 sweet spot</text>
+                <text x="845" y="30" fill="#38bdf8" font-size="10" class="mono font-bold" text-anchor="middle">📦 minimum</text>
+
+                <!-- Annotation: dominated region explanation -->
+                <rect x="450" y="190" width="310" height="80" fill="#ef4444" fill-opacity="0.03" rx="4" stroke="#dc262666" stroke-dasharray="3 3"/>
+                <text x="605" y="215" fill="#f87171" font-size="10" class="mono font-bold" text-anchor="middle">↓ dominated zone</text>
+                <text x="605" y="232" fill="#fca5a5" font-size="9" class="mono" text-anchor="middle">ha itt vagy, létezik jobb alternatíva</text>
+                <text x="605" y="248" fill="#fca5a5" font-size="9" class="mono" text-anchor="middle">(pl. ternary-nek a binary azonos acc-cal, 2× jobb comp)</text>
+            </svg>
+            <div class="mt-4 text-xs text-slate-400 leading-relaxed text-center">
+                <strong class="text-fbbf24">4 Pareto-optimal pont:</strong>
+                float (1× baseline) → <strong class="text-amber-400">int8 (4×)</strong> → <strong class="text-purple-400">int4 (8×)</strong> → <strong class="text-sky-400">binary (32×)</strong>.
+                A fp16, int5, ternary dominált — létezik jobb alternatíva ugyanarra az accuracy szintre, kevesebb memóriával.
+            </div>
+        </div>
+
+        <!-- Method insights — condensed -->
+        <div class="glass rounded-2xl p-6 mb-8 border-2 border-purple-500/30 bg-purple-500/5">
+            <div class="text-xs text-purple-400 uppercase tracking-widest mb-3 font-bold">🔑 Módszertani felismerések (röviden)</div>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                <div class="bg-slate-950/40 rounded-lg p-4">
+                    <div class="text-amber-300 font-bold mb-2 text-base">QAT > staged</div>
+                    <p class="text-xs text-slate-400 leading-relaxed">
+                        Minden precíziós szinten a <strong class="text-amber-300">QAT / STE</strong> alapból jobb, kivéve int4-et ahol a staged INQ picit nyer.
+                        <strong>Ternary-nél +16.5pp a különbség</strong> — a staged egyszerűen nem működik ternary-re.
+                    </p>
+                </div>
+                <div class="bg-slate-950/40 rounded-lg p-4">
+                    <div class="text-rose-300 font-bold mb-2 text-base">"+1.4pp int4 win" = bug</div>
+                    <p class="text-xs text-slate-400 leading-relaxed">
+                        Az eredeti állítás <strong class="text-rose-400">protokoll-artefakt</strong> volt: a staged INQ 200 extra epoch-ot ad.
+                        Ugyanannyi epoch-kal <strong>float = int4 ±0.5pp</strong>.
+                    </p>
+                </div>
+                <div class="bg-slate-950/40 rounded-lg p-4">
+                    <div class="text-emerald-300 font-bold mb-2 text-base">Progressive ≠ jó</div>
+                    <p class="text-xs text-slate-400 leading-relaxed">
+                        Neuron-enkénti növelés + per-neuron int4 quant: <strong class="text-rose-400">−14.85pp rosszabb</strong> mint a batch-training + PTQ.
+                        Greedy lock-in = korai hibák halmozódnak.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Deploy Recommendation -->
+        <div class="glass rounded-2xl p-6 mb-8 border-2 border-emerald-500/40 bg-emerald-500/5">
+            <div class="text-xs text-emerald-400 uppercase tracking-widest mb-3 font-bold">✅ Deploy recommendation by use-case</div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                <div class="bg-slate-950/40 rounded-lg p-4">
+                    <div class="text-amber-300 font-bold mb-2">🎯 Cloud / Server</div>
+                    <div class="text-lg font-extrabold text-amber-200 mono mb-1">int8 (QAT)</div>
+                    <p class="text-xs text-slate-400">Float-szintű accuracy, 4× kisebb modell. TensorRT, llama.cpp Q8 alap-támogatás.</p>
+                </div>
+                <div class="bg-slate-950/40 rounded-lg p-4">
+                    <div class="text-purple-300 font-bold mb-2">📱 Mobile / Edge</div>
+                    <div class="text-lg font-extrabold text-purple-200 mono mb-1">int4 (staged INQ)</div>
+                    <p class="text-xs text-slate-400">8× tömörítés 1.65pp veszteségért. Mobilra a Pareto-optimal választás.</p>
+                </div>
+                <div class="bg-slate-950/40 rounded-lg p-4">
+                    <div class="text-sky-300 font-bold mb-2">⚙️ IoT / FPGA</div>
+                    <div class="text-lg font-extrabold text-sky-200 mono mb-1">binary (QAT) + LUT</div>
+                    <p class="text-xs text-slate-400">32× tömörítés, bit-ops, Beukers gate LUT-re leegyszerűsíthető. −14.9pp áldozat.</p>
+                </div>
+                <div class="bg-slate-950/40 rounded-lg p-4">
+                    <div class="text-emerald-300 font-bold mb-2">🔬 Research / Max acc</div>
+                    <div class="text-lg font-extrabold text-emerald-200 mono mb-1">float32 + long training</div>
+                    <p class="text-xs text-slate-400">Ha a memória/sebesség nem szempont. Nem mainstream deploy-ra való.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="text-center mt-8 text-xs text-slate-500">
+            <p>nf=1024 · RTX 4070 Ti Super · PyTorch 2.5 CUDA 12.1 · 50 futás · ~2.5h wallclock</p>
+            <p class="mt-1 mono">Per-precision best: int8 (QAT), int5 (staged), int4 (staged), ternary (QAT), binary (QAT)</p>
+        </div>
+
+    </div>
+</body>
+</html>

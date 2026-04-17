@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Azonosság Fraktál — 3 skála, 1 törvény</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=JetBrains+Mono:wght@400;600&display=swap');
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: radial-gradient(ellipse at top, #1e293b 0%, #020617 100%);
+            min-height: 100vh;
+        }
+        .mono { font-family: 'JetBrains Mono', monospace; }
+
+        .glass {
+            background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(148, 163, 184, 0.1);
+        }
+
+        .slider {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 6px;
+            background: linear-gradient(90deg, #ef4444 0%, #1e293b 50%, #22c55e 100%);
+            border-radius: 3px;
+            outline: none;
+        }
+        .slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 22px; height: 22px;
+            background: linear-gradient(135deg, #38bdf8, #6366f1);
+            border-radius: 50%; cursor: pointer;
+            box-shadow: 0 0 16px rgba(56, 189, 248, 0.6);
+            border: 2px solid #e2e8f0;
+        }
+
+        rect, circle, line, text { transition: all 0.3s ease; }
+
+        @keyframes pulse-glow {
+            0%, 100% { filter: drop-shadow(0 0 6px currentColor); }
+            50% { filter: drop-shadow(0 0 16px currentColor); }
+        }
+        .pulsing { animation: pulse-glow 2.4s ease-in-out infinite; }
+
+        .check-mark {
+            color: #4ade80;
+            text-shadow: 0 0 12px rgba(74, 222, 128, 0.6);
+        }
+
+        /* Forward packet: right → left (encode W) */
+        @keyframes packet-forward {
+            0% { cx: 330px; opacity: 0; }
+            10% { opacity: 1; }
+            90% { opacity: 1; }
+            100% { cx: 190px; opacity: 0; }
+        }
+        .packet-forward {
+            animation: packet-forward 2s linear infinite;
+        }
+
+        /* Backward packet: left → right (decode Wᵀ) */
+        @keyframes packet-backward {
+            0% { cx: 190px; opacity: 0; }
+            10% { opacity: 1; }
+            90% { opacity: 1; }
+            100% { cx: 330px; opacity: 0; }
+        }
+        .packet-backward {
+            animation: packet-backward 2s linear infinite;
+            animation-delay: 1s;
+        }
+
+        /* Reflection pulse in matrix */
+        @keyframes mirror-flip {
+            0%, 100% { opacity: 0.2; }
+            50% { opacity: 0.8; }
+        }
+        .mirror-diag { animation: mirror-flip 2s ease-in-out infinite; }
+    </style>
+</head>
+<body class="p-4 md:p-8 text-slate-200">
+    <div class="max-w-6xl mx-auto">
+
+        <!-- Header -->
+        <div class="text-center mb-6">
+            <h1 class="text-4xl md:text-5xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-sky-400 via-indigo-400 to-purple-400 mb-2">
+                Azonosság Fraktál
+            </h1>
+            <p class="text-slate-400 text-sm mb-1">
+                Ugyanaz a törvény (A ≡ A) három különböző skálán — mint a meteoritok, bolygók, galaxisok
+            </p>
+            <p class="text-slate-500 text-xs mono">
+                fraktál: minden szinten ott, de minden szinten más formában
+            </p>
+        </div>
+
+        <!-- Input -->
+        <div class="glass rounded-2xl p-5 mb-6">
+            <div class="flex justify-between items-baseline mb-3">
+                <span class="text-xs text-slate-500 uppercase tracking-widest">A érték (ugyanaz minden panelen)</span>
+                <span class="mono text-3xl text-sky-400" id="aValue">+5.0</span>
+            </div>
+            <input type="range" id="aSlider" class="slider" min="-10" max="10" step="0.1" value="5">
+            <div class="text-[10px] text-slate-600 mt-2 flex justify-between mono">
+                <span>-10</span><span>0</span><span>+10</span>
+            </div>
+        </div>
+
+        <!-- Three scale panels -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
+
+            <!-- PANEL 1: AREA -->
+            <div class="glass rounded-2xl p-5 border border-rose-500/20">
+                <div class="flex justify-between items-center mb-3">
+                    <div>
+                        <div class="text-xs text-rose-400 font-bold uppercase tracking-wider mb-1">1. skála</div>
+                        <div class="font-bold text-base">Terület-szint</div>
+                    </div>
+                    <div class="mono text-xs text-slate-500">spatial</div>
+                </div>
+                <svg viewBox="0 0 360 260" class="w-full">
+                    <defs>
+                        <pattern id="grid1" width="30" height="30" patternUnits="userSpaceOnUse">
+                            <path d="M 30 0 L 0 0 0 30" fill="none" stroke="rgba(148,163,184,0.05)" stroke-width="1"/>
+                        </pattern>
+                    </defs>
+                    <rect width="360" height="260" fill="url(#grid1)"/>
+                    <line x1="30" y1="230" x2="340" y2="230" stroke="#475569" stroke-width="1.5"/>
+                    <line x1="30" y1="20" x2="30" y2="230" stroke="#475569" stroke-width="1.5"/>
+                    <text x="335" y="246" fill="#64748b" font-size="10" class="mono">X</text>
+                    <text x="22" y="18" fill="#64748b" font-size="10" class="mono" text-anchor="end">Y</text>
+                    <text x="25" y="246" fill="#64748b" font-size="10" class="mono" text-anchor="end">0</text>
+                    <rect id="areaRect" x="80" y="100" width="100" height="80" fill="#f43f5e" fill-opacity="0.4" stroke="#fb7185" stroke-width="2" rx="4"/>
+                    <text id="areaLabel" x="130" y="145" fill="#fff" font-size="20" text-anchor="middle" font-weight="bold">A</text>
+                </svg>
+                <div class="mt-3 text-xs text-slate-400 leading-relaxed">
+                    <strong class="text-rose-400">A egy hely a rácson.</strong> Ott van ahová tettük. Ez az A.
+                </div>
+                <div class="mt-2 flex items-center gap-2 bg-emerald-500/10 px-3 py-2 rounded-lg border border-emerald-500/20">
+                    <span class="check-mark text-lg font-bold">✓</span>
+                    <span class="mono text-xs text-emerald-300">A ≡ A (itt van, nem máshol)</span>
+                </div>
+            </div>
+
+            <!-- PANEL 2: FUNCTION — U-shape round-trip -->
+            <div class="glass rounded-2xl p-5 border border-sky-500/20">
+                <div class="flex justify-between items-center mb-3">
+                    <div>
+                        <div class="text-xs text-sky-400 font-bold uppercase tracking-wider mb-1">2. skála</div>
+                        <div class="font-bold text-base">Függvény-szint</div>
+                    </div>
+                    <div class="mono text-xs text-slate-500">fel → át → le</div>
+                </div>
+                <svg viewBox="0 0 360 260" class="w-full">
+                    <defs>
+                        <pattern id="grid2" width="30" height="30" patternUnits="userSpaceOnUse">
+                            <path d="M 30 0 L 0 0 0 30" fill="none" stroke="rgba(148,163,184,0.05)" stroke-width="1"/>
+                        </pattern>
+                        <marker id="arrowUp" markerWidth="8" markerHeight="8" refX="4" refY="7" orient="auto">
+                            <polygon points="0 7, 4 0, 8 7" fill="#fbbf24"/>
+                        </marker>
+                        <marker id="arrowLeft" markerWidth="8" markerHeight="8" refX="0" refY="4" orient="auto">
+                            <polygon points="8 0, 0 4, 8 8" fill="#c084fc"/>
+                        </marker>
+                        <marker id="arrowDown" markerWidth="8" markerHeight="8" refX="4" refY="0" orient="auto">
+                            <polygon points="0 0, 4 7, 8 0" fill="#4ade80"/>
+                        </marker>
+                    </defs>
+                    <rect width="360" height="260" fill="url(#grid2)"/>
+
+                    <!-- X-axis spans left to right, origin in CENTER -->
+                    <line x1="20" y1="225" x2="340" y2="225" stroke="#475569" stroke-width="1.5"/>
+                    <line x1="180" y1="20" x2="180" y2="240" stroke="#475569" stroke-width="1.5"/>
+
+                    <!-- Left/Right labels on X-axis -->
+                    <text x="340" y="243" fill="#64748b" font-size="9" text-anchor="end" class="mono">X (jobb: bemenet)</text>
+                    <text x="20" y="243" fill="#64748b" font-size="9" text-anchor="start" class="mono">(bal: kimenet)</text>
+                    <text x="186" y="18" fill="#64748b" font-size="9" class="mono">Y (encoding)</text>
+                    <text x="176" y="243" fill="#64748b" font-size="9" text-anchor="end" class="mono">0</text>
+
+                    <!-- Tick marks on X axis -->
+                    <g stroke="#475569" stroke-width="1">
+                        <line x1="220" y1="220" x2="220" y2="230"/>
+                        <line x1="260" y1="220" x2="260" y2="230"/>
+                        <line x1="300" y1="220" x2="300" y2="230"/>
+                        <line x1="140" y1="220" x2="140" y2="230"/>
+                        <line x1="100" y1="220" x2="100" y2="230"/>
+                        <line x1="60" y1="220" x2="60" y2="230"/>
+                    </g>
+                    <g fill="#64748b" font-size="8" class="mono" text-anchor="middle">
+                        <text x="220" y="242">+2.5</text>
+                        <text x="260" y="242">+5</text>
+                        <text x="300" y="242">+7.5</text>
+                        <text x="140" y="242">-2.5</text>
+                        <text x="100" y="242">-5</text>
+                        <text x="60" y="242">-7.5</text>
+                    </g>
+
+                    <!-- Encoding ceiling reference (horizontal dashed line) -->
+                    <line id="ceilingLine" x1="20" y1="80" x2="340" y2="80" stroke="#a855f7" stroke-width="1" stroke-dasharray="3 3" opacity="0.4"/>
+                    <text x="340" y="77" fill="#a855f7" font-size="8" text-anchor="end" class="mono">encoding plafon</text>
+
+                    <!-- ROUND-TRIP PATH (U-shape) -->
+                    <!-- Up leg: from input position going up -->
+                    <line id="upLeg" x1="260" y1="225" x2="260" y2="120" stroke="#fbbf24" stroke-width="2.5" marker-end="url(#arrowUp)"/>
+                    <!-- Across leg: horizontal mirror right-to-left -->
+                    <line id="acrossLeg" x1="260" y1="120" x2="100" y2="120" stroke="#c084fc" stroke-width="2.5" stroke-dasharray="4 2" marker-end="url(#arrowLeft)"/>
+                    <!-- Down leg: from mirrored position coming down -->
+                    <line id="downLeg" x1="100" y1="120" x2="100" y2="225" stroke="#4ade80" stroke-width="2.5" marker-end="url(#arrowDown)"/>
+
+                    <!-- Label at top for mirror axis -->
+                    <text x="180" y="110" fill="#c084fc" font-size="9" text-anchor="middle" class="mono font-bold">← tükrözés (Y tengelyen át) →</text>
+
+                    <!-- Input point -->
+                    <circle id="inputPoint" cx="260" cy="225" r="6" fill="#fbbf24" stroke="#fde047" stroke-width="2"/>
+                    <text id="inputLabel" x="260" y="215" fill="#fbbf24" font-size="11" text-anchor="middle" class="mono font-bold">A</text>
+                    <text id="inputValLabel" x="260" y="260" fill="#fbbf24" font-size="10" text-anchor="middle" class="mono">+5.0</text>
+
+                    <!-- Top-right corner point (encoded) -->
+                    <circle id="upTopPoint" cx="260" cy="120" r="5" fill="#fbbf24" stroke="#fde047" stroke-width="1.5" opacity="0.7"/>
+
+                    <!-- Top-left corner point (mirrored) -->
+                    <circle id="upLeftPoint" cx="100" cy="120" r="5" fill="#4ade80" stroke="#6ee7b7" stroke-width="1.5" opacity="0.7"/>
+
+                    <!-- Output point -->
+                    <circle id="outputPoint" cx="100" cy="225" r="6" fill="#4ade80" stroke="#6ee7b7" stroke-width="2" class="pulsing" style="color: #4ade80"/>
+                    <text id="outputLabel" x="100" y="215" fill="#4ade80" font-size="11" text-anchor="middle" class="mono font-bold">A'</text>
+                    <text id="outputValLabel" x="100" y="260" fill="#4ade80" font-size="10" text-anchor="middle" class="mono">-5.0</text>
+
+                    <!-- Animated packet traveling U-shape path -->
+                    <circle r="4" fill="#38bdf8" filter="drop-shadow(0 0 6px #38bdf8)">
+                        <animateMotion id="packetMotion" dur="3s" repeatCount="indefinite" path="M 260 225 L 260 120 L 100 120 L 100 225"/>
+                    </circle>
+                </svg>
+                <div class="mt-3 text-xs text-slate-400 leading-relaxed">
+                    <strong class="text-sky-400">A bemenet felmegy, átugrik bal oldalra, lejön.</strong> A érték tükröződik, magnitúdó megmarad.
+                </div>
+                <div class="mt-2 flex items-center gap-2 bg-emerald-500/10 px-3 py-2 rounded-lg border border-emerald-500/20">
+                    <span class="check-mark text-lg font-bold">✓</span>
+                    <span class="mono text-xs text-emerald-300" id="funcCheck">|A_in| = |A_out| → magnitúdó ≡</span>
+                </div>
+            </div>
+
+            <!-- PANEL 3: MIRROR / NETWORK — UPDATED WITH LEFT-RIGHT REFLECTION -->
+            <div class="glass rounded-2xl p-5 border border-indigo-500/20">
+                <div class="flex justify-between items-center mb-3">
+                    <div>
+                        <div class="text-xs text-indigo-400 font-bold uppercase tracking-wider mb-1">3. skála</div>
+                        <div class="font-bold text-base">Hálózat-szint</div>
+                    </div>
+                    <div class="mono text-xs text-slate-500">tükörpár</div>
+                </div>
+
+                <svg viewBox="0 0 360 340" class="w-full">
+                    <defs>
+                        <marker id="arrowFwd" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+                            <polygon points="0 0, 8 4, 0 8" fill="#818cf8"/>
+                        </marker>
+                        <marker id="arrowBack" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+                            <polygon points="0 0, 8 4, 0 8" fill="#6ee7b7"/>
+                        </marker>
+                    </defs>
+
+                    <!-- Abstract "code space" indicator (left side) -->
+                    <rect x="15" y="25" width="170" height="140" fill="url(#codeGrad)" fill-opacity="0.1" rx="8" stroke="#a855f7" stroke-width="1" stroke-dasharray="3 3" opacity="0.5"/>
+                    <defs>
+                        <linearGradient id="codeGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                            <stop offset="0%" stop-color="#a855f7"/>
+                            <stop offset="100%" stop-color="#6366f1"/>
+                        </linearGradient>
+                    </defs>
+                    <text x="100" y="18" fill="#a855f7" font-size="9" text-anchor="middle" class="mono" font-weight="bold">BAL OLDAL: absztrakt kód tér</text>
+
+                    <!-- "Real" space indicator (right side) -->
+                    <rect x="200" y="25" width="150" height="140" fill="none" stroke="#fbbf24" stroke-width="1" stroke-dasharray="3 3" opacity="0.3" rx="8"/>
+                    <text x="275" y="18" fill="#fbbf24" font-size="9" text-anchor="middle" class="mono" font-weight="bold">JOBB OLDAL: valós tér</text>
+
+                    <!-- === TOP ROW: FORWARD (A → code) === -->
+                    <!-- Input A block (right, top) -->
+                    <rect id="inputBlockM" x="285" y="40" width="50" height="38" fill="#fbbf24" fill-opacity="0.3" stroke="#fcd34d" stroke-width="2" rx="4"/>
+                    <text x="310" y="63" fill="#fcd34d" font-size="14" text-anchor="middle" font-weight="bold">A</text>
+                    <text id="inputValNum" x="310" y="90" fill="#fbbf24" font-size="10" text-anchor="middle" class="mono">+5.0</text>
+
+                    <!-- Forward arrow (W) -->
+                    <path d="M 280 58 L 170 58" stroke="#818cf8" stroke-width="2" marker-end="url(#arrowFwd)"/>
+                    <text x="225" y="48" fill="#a5b4fc" font-size="11" text-anchor="middle" class="mono" font-weight="bold">× W</text>
+                    <text x="225" y="75" fill="#818cf8" font-size="8" text-anchor="middle" class="mono">encode (balra)</text>
+
+                    <!-- Code block (left, top) -->
+                    <rect x="30" y="40" width="130" height="38" fill="#a855f7" fill-opacity="0.2" stroke="#c084fc" stroke-width="2" rx="4"/>
+                    <text x="95" y="53" fill="#c084fc" font-size="9" text-anchor="middle" class="mono" font-weight="bold">absztrakt kód</text>
+                    <g id="codeBarsTop">
+                        <rect x="45" y="62" width="4" height="12" fill="#c084fc"/>
+                        <rect x="55" y="58" width="4" height="16" fill="#c084fc"/>
+                        <rect x="65" y="65" width="4" height="9" fill="#c084fc"/>
+                        <rect x="75" y="55" width="4" height="19" fill="#c084fc"/>
+                        <rect x="85" y="60" width="4" height="14" fill="#c084fc"/>
+                        <rect x="95" y="57" width="4" height="17" fill="#c084fc"/>
+                        <rect x="105" y="63" width="4" height="11" fill="#c084fc"/>
+                        <rect x="115" y="59" width="4" height="15" fill="#c084fc"/>
+                        <rect x="125" y="61" width="4" height="13" fill="#c084fc"/>
+                        <rect x="135" y="56" width="4" height="18" fill="#c084fc"/>
+                        <rect x="145" y="64" width="4" height="10" fill="#c084fc"/>
+                    </g>
+
+                    <!-- Forward-going packet (right → left) -->
+                    <circle class="packet-forward" cy="58" r="4" fill="#38bdf8" style="color: #38bdf8" filter="drop-shadow(0 0 6px #38bdf8)"/>
+
+                    <!-- Vertical connector (top to bottom — "code is reused") -->
+                    <path d="M 95 80 L 95 115" stroke="#64748b" stroke-width="1.5" stroke-dasharray="3 2" opacity="0.6"/>
+                    <text x="102" y="100" fill="#94a3b8" font-size="8" class="mono">↓ kód marad</text>
+
+                    <!-- === BOTTOM ROW: BACKWARD (code → A') === -->
+                    <!-- Code block (left, bottom) - same code -->
+                    <rect x="30" y="117" width="130" height="38" fill="#a855f7" fill-opacity="0.2" stroke="#c084fc" stroke-width="2" rx="4"/>
+                    <text x="95" y="130" fill="#c084fc" font-size="9" text-anchor="middle" class="mono" font-weight="bold">ugyanaz a kód</text>
+                    <g id="codeBarsBottom">
+                        <rect x="45" y="139" width="4" height="12" fill="#c084fc"/>
+                        <rect x="55" y="135" width="4" height="16" fill="#c084fc"/>
+                        <rect x="65" y="142" width="4" height="9" fill="#c084fc"/>
+                        <rect x="75" y="132" width="4" height="19" fill="#c084fc"/>
+                        <rect x="85" y="137" width="4" height="14" fill="#c084fc"/>
+                        <rect x="95" y="134" width="4" height="17" fill="#c084fc"/>
+                        <rect x="105" y="140" width="4" height="11" fill="#c084fc"/>
+                        <rect x="115" y="136" width="4" height="15" fill="#c084fc"/>
+                        <rect x="125" y="138" width="4" height="13" fill="#c084fc"/>
+                        <rect x="135" y="133" width="4" height="18" fill="#c084fc"/>
+                        <rect x="145" y="141" width="4" height="10" fill="#c084fc"/>
+                    </g>
+
+                    <!-- Backward arrow (Wᵀ) -->
+                    <path d="M 165 135 L 280 135" stroke="#6ee7b7" stroke-width="2" marker-end="url(#arrowBack)"/>
+                    <text x="222" y="125" fill="#86efac" font-size="11" text-anchor="middle" class="mono" font-weight="bold">× Wᵀ</text>
+                    <text x="222" y="152" fill="#6ee7b7" font-size="8" text-anchor="middle" class="mono">decode (jobbra)</text>
+
+                    <!-- Output block (right, bottom) -->
+                    <rect id="outputBlockM" x="285" y="117" width="50" height="38" fill="#4ade80" fill-opacity="0.3" stroke="#6ee7b7" stroke-width="2" rx="4"/>
+                    <text x="310" y="140" fill="#6ee7b7" font-size="14" text-anchor="middle" font-weight="bold">A'</text>
+                    <text id="outputValNum" x="310" y="168" fill="#6ee7b7" font-size="10" text-anchor="middle" class="mono">+5.0</text>
+
+                    <!-- Backward-going packet (left → right) -->
+                    <circle class="packet-backward" cy="135" r="4" fill="#4ade80" style="color: #4ade80" filter="drop-shadow(0 0 6px #4ade80)"/>
+
+                    <!-- === BOTTOM: W vs Wᵀ matrix comparison === -->
+                    <text x="180" y="195" fill="#a5b4fc" font-size="11" text-anchor="middle" class="mono" font-weight="bold">
+                        W és Wᵀ: egymás átlós-tükörképei
+                    </text>
+
+                    <!-- W matrix (left box) -->
+                    <g transform="translate(60, 210)">
+                        <text x="27" y="-4" fill="#818cf8" font-size="11" text-anchor="middle" class="mono" font-weight="bold">W (encode)</text>
+                        <!-- 3x3 grid -->
+                        <rect x="0" y="0" width="18" height="18" fill="#fca5a5" stroke="#475569" stroke-width="0.5"/>
+                        <rect x="18" y="0" width="18" height="18" fill="#fcd34d" stroke="#475569" stroke-width="0.5"/>
+                        <rect x="36" y="0" width="18" height="18" fill="#4ade80" stroke="#475569" stroke-width="0.5"/>
+                        <rect x="0" y="18" width="18" height="18" fill="#93c5fd" stroke="#475569" stroke-width="0.5"/>
+                        <rect x="18" y="18" width="18" height="18" fill="#c4b5fd" stroke="#475569" stroke-width="0.5"/>
+                        <rect x="36" y="18" width="18" height="18" fill="#fda4af" stroke="#475569" stroke-width="0.5"/>
+                        <rect x="0" y="36" width="18" height="18" fill="#67e8f9" stroke="#475569" stroke-width="0.5"/>
+                        <rect x="18" y="36" width="18" height="18" fill="#fb923c" stroke="#475569" stroke-width="0.5"/>
+                        <rect x="36" y="36" width="18" height="18" fill="#a78bfa" stroke="#475569" stroke-width="0.5"/>
+                        <!-- Diagonal indicator -->
+                        <line x1="0" y1="0" x2="54" y2="54" stroke="#a855f7" stroke-width="2" stroke-dasharray="3 2" class="mirror-diag"/>
+                    </g>
+
+                    <!-- Flip arrow -->
+                    <g transform="translate(140, 230)">
+                        <text x="40" y="0" fill="#c084fc" font-size="10" text-anchor="middle" class="mono">átló mentén</text>
+                        <text x="40" y="12" fill="#c084fc" font-size="10" text-anchor="middle" class="mono">tükrözés</text>
+                        <text x="40" y="32" fill="#c084fc" font-size="22" text-anchor="middle" font-weight="bold">⇋</text>
+                    </g>
+
+                    <!-- Wᵀ matrix (right box) - transposed: rows/cols swapped -->
+                    <g transform="translate(220, 210)">
+                        <text x="27" y="-4" fill="#818cf8" font-size="11" text-anchor="middle" class="mono" font-weight="bold">Wᵀ (decode)</text>
+                        <!-- Same colors but TRANSPOSED: rows become columns -->
+                        <rect x="0" y="0" width="18" height="18" fill="#fca5a5" stroke="#475569" stroke-width="0.5"/>
+                        <rect x="18" y="0" width="18" height="18" fill="#93c5fd" stroke="#475569" stroke-width="0.5"/>
+                        <rect x="36" y="0" width="18" height="18" fill="#67e8f9" stroke="#475569" stroke-width="0.5"/>
+                        <rect x="0" y="18" width="18" height="18" fill="#fcd34d" stroke="#475569" stroke-width="0.5"/>
+                        <rect x="18" y="18" width="18" height="18" fill="#c4b5fd" stroke="#475569" stroke-width="0.5"/>
+                        <rect x="36" y="18" width="18" height="18" fill="#fb923c" stroke="#475569" stroke-width="0.5"/>
+                        <rect x="0" y="36" width="18" height="18" fill="#4ade80" stroke="#475569" stroke-width="0.5"/>
+                        <rect x="18" y="36" width="18" height="18" fill="#fda4af" stroke="#475569" stroke-width="0.5"/>
+                        <rect x="36" y="36" width="18" height="18" fill="#a78bfa" stroke="#475569" stroke-width="0.5"/>
+                        <!-- Diagonal indicator -->
+                        <line x1="0" y1="0" x2="54" y2="54" stroke="#a855f7" stroke-width="2" stroke-dasharray="3 2" class="mirror-diag"/>
+                    </g>
+
+                    <text x="180" y="295" fill="#94a3b8" font-size="9" text-anchor="middle" class="mono italic">ugyanaz a mátrix, csak átlósan megfordítva — egy és ugyanaz, két irányból</text>
+
+                    <text id="roundTripCheck" x="180" y="320" fill="#4ade80" font-size="12" text-anchor="middle" font-weight="bold" class="mono check-mark">✓ Wᵀ(W(A)) ≡ A</text>
+                </svg>
+
+                <div class="mt-3 text-xs text-slate-400 leading-relaxed">
+                    <strong class="text-indigo-400">A jel jobbról megy balra, visszajön jobbra.</strong> W és Wᵀ mint egymással szembenéző tükörpár — átlós tengely mentén egymás képmásai.
+                </div>
+                <div class="mt-2 flex items-center gap-2 bg-emerald-500/10 px-3 py-2 rounded-lg border border-emerald-500/20">
+                    <span class="check-mark text-lg font-bold">✓</span>
+                    <span class="mono text-xs text-emerald-300">Wᵀ ∘ W ≈ I → A ≡ A'</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bottom: fractal insight -->
+        <div class="glass rounded-2xl p-6 mb-4 border border-purple-500/20">
+            <div class="text-xs text-purple-400 font-bold uppercase tracking-widest mb-3">fraktál felismerés</div>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-slate-300 leading-relaxed">
+                <div>
+                    <div class="font-semibold text-rose-400 mb-1">1. Terület-szint</div>
+                    A a rácson van. A lokális "ittés" szintje. Pont és alakzat.
+                </div>
+                <div>
+                    <div class="font-semibold text-sky-400 mb-1">2. Függvény-szint</div>
+                    A input = output. A funkcionális "megőrzés" szintje. Triviális de szükséges.
+                </div>
+                <div>
+                    <div class="font-semibold text-indigo-400 mb-1">3. Hálózat-szint</div>
+                    Jobbról balra encode-ol, balról jobbra decode-ol. W és Wᵀ átlós tükörpár.
+                </div>
+            </div>
+            <div class="mt-4 pt-4 border-t border-purple-500/10 text-sm text-slate-300 italic">
+                Mindhárom szint ugyanaz a törvény (A ≡ A), de másképp mutatkozik meg. Mint ahogy a meteorit alaktalan, a bolygó gömb, a galaxis lemez — mind ugyanazt a gravitációt követik.
+            </div>
+        </div>
+
+        <!-- Preset A values -->
+        <div class="glass rounded-2xl p-5">
+            <div class="text-xs text-slate-500 uppercase tracking-widest mb-3">Próbáld különböző értékekkel</div>
+            <div class="flex flex-wrap gap-2">
+                <button class="preset px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs mono border border-slate-700" data-a="0">A = 0</button>
+                <button class="preset px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs mono border border-slate-700" data-a="2">A = +2</button>
+                <button class="preset px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs mono border border-slate-700" data-a="5">A = +5</button>
+                <button class="preset px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs mono border border-slate-700" data-a="8">A = +8</button>
+                <button class="preset px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs mono border border-slate-700" data-a="-3">A = -3</button>
+                <button class="preset px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs mono border border-slate-700" data-a="-7">A = -7</button>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        const aSlider = document.getElementById('aSlider');
+        const aValueEl = document.getElementById('aValue');
+        const presetBtns = document.querySelectorAll('.preset');
+
+        const areaRect = document.getElementById('areaRect');
+        const areaLabel = document.getElementById('areaLabel');
+
+        const inputPoint = document.getElementById('inputPoint');
+        const diagPoint = document.getElementById('diagPoint');
+        const outputPoint = document.getElementById('outputPoint');
+        const dropLine = document.getElementById('dropLine');
+        const acrossLine = document.getElementById('acrossLine');
+        const inputLabel = document.getElementById('inputLabel');
+        const outputLabel = document.getElementById('outputLabel');
+        const funcCheck = document.getElementById('funcCheck');
+
+        const inputValNum = document.getElementById('inputValNum');
+        const outputValNum = document.getElementById('outputValNum');
+        const roundTripCheck = document.getElementById('roundTripCheck');
+        const codeBarsTop = document.getElementById('codeBarsTop');
+        const codeBarsBottom = document.getElementById('codeBarsBottom');
+
+        function fmtSigned(v) { return (v >= 0 ? '+' : '') + v.toFixed(1); }
+
+        function render() {
+            const a = parseFloat(aSlider.value);
+            aValueEl.textContent = fmtSigned(a);
+
+            // Panel 1: Area
+            const abs = Math.abs(a);
+            const size = 30 + abs * 6;
+            const cx = 80 + abs * 12;
+            const cy = a >= 0 ? 180 - abs * 8 : 180 + Math.min(abs * 4, 40);
+
+            areaRect.setAttribute('x', cx - size/2);
+            areaRect.setAttribute('y', cy - size/2);
+            areaRect.setAttribute('width', size);
+            areaRect.setAttribute('height', size);
+            areaRect.setAttribute('fill', a >= 0 ? '#38bdf8' : '#ef4444');
+            areaRect.setAttribute('stroke', a >= 0 ? '#7dd3fc' : '#fca5a5');
+            areaRect.setAttribute('fill-opacity', '0.4');
+            areaLabel.setAttribute('x', cx);
+            areaLabel.setAttribute('y', cy + 7);
+
+            // Panel 2: Function — U-shape round-trip
+            const xCenter = 180;
+            const xScale = 16; // pixels per unit
+            const inputX = xCenter + a * xScale;   // Input on right side (if a > 0)
+            const outputX = xCenter - a * xScale;  // Output mirrored to left side
+            const baseY = 225;                      // X-axis baseline
+            const encY = 120;                       // encoding height ceiling
+
+            // Update U-path segments
+            document.getElementById('upLeg').setAttribute('x1', inputX);
+            document.getElementById('upLeg').setAttribute('x2', inputX);
+            document.getElementById('acrossLeg').setAttribute('x1', inputX);
+            document.getElementById('acrossLeg').setAttribute('x2', outputX);
+            document.getElementById('downLeg').setAttribute('x1', outputX);
+            document.getElementById('downLeg').setAttribute('x2', outputX);
+
+            // Update points
+            document.getElementById('inputPoint').setAttribute('cx', inputX);
+            document.getElementById('inputLabel').setAttribute('x', inputX);
+            document.getElementById('inputValLabel').setAttribute('x', inputX);
+            document.getElementById('inputValLabel').textContent = fmtSigned(a);
+
+            document.getElementById('upTopPoint').setAttribute('cx', inputX);
+            document.getElementById('upLeftPoint').setAttribute('cx', outputX);
+
+            document.getElementById('outputPoint').setAttribute('cx', outputX);
+            document.getElementById('outputLabel').setAttribute('x', outputX);
+            document.getElementById('outputValLabel').setAttribute('x', outputX);
+            document.getElementById('outputValLabel').textContent = fmtSigned(-a);
+
+            // Update animated packet path
+            const uPath = `M ${inputX} ${baseY} L ${inputX} ${encY} L ${outputX} ${encY} L ${outputX} ${baseY}`;
+            document.getElementById('packetMotion').setAttribute('path', uPath);
+
+            funcCheck.textContent = `|A_in=${fmtSigned(a)}| = |A_out=${fmtSigned(-a)}| ≡ ${Math.abs(a).toFixed(1)}`;
+
+            // Panel 3: Mirror
+            inputValNum.textContent = fmtSigned(a);
+            outputValNum.textContent = fmtSigned(a);
+            roundTripCheck.textContent = `✓ Wᵀ(W(${fmtSigned(a)})) ≡ ${fmtSigned(a)}`;
+
+            // Animate code bars — same pattern for both top and bottom (since it's the SAME code)
+            const seed = Math.abs(a) * 13;
+            [codeBarsTop, codeBarsBottom].forEach(group => {
+                const bars = group.querySelectorAll('rect');
+                bars.forEach((bar, i) => {
+                    const h = 8 + Math.abs(Math.sin(seed + i * 1.7)) * 14;
+                    const baseY = group === codeBarsTop ? 74 : 151;
+                    bar.setAttribute('height', h);
+                    bar.setAttribute('y', baseY - h);
+                });
+            });
+        }
+
+        aSlider.addEventListener('input', render);
+        presetBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                aSlider.value = btn.dataset.a;
+                render();
+            });
+        });
+
+        render();
+    </script>
+</body>
+</html>

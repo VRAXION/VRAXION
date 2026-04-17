@@ -9,8 +9,9 @@ This page is the public Rust-facing surface for the `instnct-core` lane: current
 - The current public release is [`v5.0.0-beta.2`](https://github.com/VRAXION/VRAXION/releases/tag/v5.0.0-beta.2) (grower-based, with the standalone [`neuron_infer`](https://github.com/VRAXION/VRAXION/blob/main/instnct-core/examples/neuron_infer.rs) inference CLI and the public beta training runbook at [`docs/PUBLIC_BETA_TRAINING.md`](https://github.com/VRAXION/VRAXION/blob/main/docs/PUBLIC_BETA_TRAINING.md)). The prior released tag [`v5.0.0-beta.1`](https://github.com/VRAXION/VRAXION/releases/tag/v5.0.0-beta.1) remains the historical Rust language-evolution beta — the **24.6% peak** smooth-fitness + 1+9 jackpot result still belongs to that line, but it is no longer the active mainline path on `main`.
 - The B0 engine-freeze contract lives in [`docs/GROWER_RUN_CONTRACT.md`](https://github.com/VRAXION/VRAXION/blob/main/docs/GROWER_RUN_CONTRACT.md), with the frozen golden snapshot at [`instnct-core/tests/fixtures/grower_regression_golden.json`](https://github.com/VRAXION/VRAXION/blob/main/instnct-core/tests/fixtures/grower_regression_golden.json) (six tasks, mean val `88.417`, max test `100.0`, mean neurons `5.667`, max depth `6`).
 - The B1 promotion gate is **byte/opcode v1**: `1 byte data + 4 opcode -> 1 byte` over a frozen 8-bit-head latent + exact LUT translator. The contract is [`docs/BYTE_OPCODE_V1_CONTRACT.md`](https://github.com/VRAXION/VRAXION/blob/main/docs/BYTE_OPCODE_V1_CONTRACT.md), the canonical builder is [`instnct-core/examples/byte_opcode_grower.rs`](https://github.com/VRAXION/VRAXION/blob/main/instnct-core/examples/byte_opcode_grower.rs), and the golden fixture at [`instnct-core/tests/fixtures/byte_opcode_golden.json`](https://github.com/VRAXION/VRAXION/blob/main/instnct-core/tests/fixtures/byte_opcode_golden.json) records the direct bitbank negative control at `75.0%` and the exact translator at `100.0%` over the full `1024`-sample domain (`distinct_keys=1024`, `conflicting_keys=0`, `key_bits=61`, `total_neurons=61`).
+- Earlier Rust research lines (Equilibrium Propagation + C19 bidirectional learning, GPU ternary exhaustive search, the EP video upscaler POC, the recurrent ReLU chip and Connection Point work, and the released `v5.0.0-beta.1` smooth-fitness language line) are preserved in the validation checkpoints below as historical proof trail, not as the current grower mainline.
 - Detailed chronology, reversals, and cross-surface context live on [Research Process & Archive](Timeline-Archive). For the public website snapshot of this lane, see [Website: Rust](https://vraxion.github.io/VRAXION/rust/).
-- The benchmark tables and language-evolution data below are **historical evidence from the released `v5.0.0-beta.1` Rust language line** — they are preserved unchanged for chronology and proof-trail purposes, and they are not promises about the current grower mainline.
+- The benchmark tables and language-evolution data below are **historical evidence from earlier Rust research lines** — they are preserved unchanged for chronology and proof-trail purposes, and they are not promises about the current grower mainline.
 
 ## Public Rust Validation Checkpoints
 
@@ -60,18 +61,18 @@ This page is the public Rust-facing surface for the `instnct-core` lane: current
 | **ALL 8 tasks solved** | **BREAKTHROUGH** | Float gradient + per-neuron bias + signed square + nearest-mean: ADD, MUL, SUB, MAX, MIN, a==b, \|a-b\|, PAR = ALL 100%. N=8 neurons, 72 float params. Per-connection bias WORSE (overparameterized). |
 | Weight range scaling | **Validated finding** | Binary ±1 solves MUL at N=3 (margin=0.3, exhaustive 4K). ±2 margin=30. ±4 margin=73. More bits = bigger margin. More neurons compensate fewer bits. |
 | Per-neuron > per-connection bias | **Validated finding** | Per-neuron bias (72 params) beats per-connection bias (112 params) on MUL with gradient. Fewer params = better convergence. |
+| **C19 exhaustive ALU** | **Validated finding** | All 9 logic gates (AND/OR/NOT/XOR/NAND/NOR/XNOR/IMPLY/BUF) with 2 neurons + resting potential, zero hidden. 3-input: XOR3+MAJ = 1 neuron, full adder = 2. Complete 8-bit ALU + multiplier. Verilog synthesis: 6708 gates (~4× standard ALU). |
+| **EP + C19 bidirectional learning** | **BREAKTHROUGH** | Equilibrium Propagation with C19 rho=8: **100% on ALL byte-level tasks** (popcount, nibble class, byte add). Contrastive Hebbian (W += not -=), 18-tick convergence. EP trained weights: 100% settle, only 63% feedforward — bidirectional dynamics ARE the computation. |
+| **Cortex routing** | **Validated finding** | EP-trained cortex dispatches ALU ops at 100% float, 96.1% frozen. Non-math decisions: 99.6-100%. Full pipeline (256 scenarios): 83.6%. C19 > tanh for cortex tasks. |
+| **EP ≠ feedforward** | **BREAKTHROUGH** | EP-trained weights give 63% in feedforward LutGate bake vs 100% with bidirectional settle. The settle dynamics cannot be replaced by a single forward pass. This is architecturally fundamental: settle hardware IS the computation, not an optimization. |
+| **Greedy freeze** | **Validated finding** | Neuron-by-neuron int8 quantization with EP retraining: 100% with write-back (float eval). Weight quantization works — the int8 inference pipeline rescaling is the bottleneck, not the weights. Per-layer quantization > global. |
+| **Int16 settle** | **Validated finding** | Integer-only EP inference: 96.1% (popcount), 99.2% (nibble class) vs float. Zero overflow (>>7 accumulator shift fix), 9-18 tick convergence, zero float hardware needed. 6 adversarial attacks tested. |
+| **EP→Distill→LutGate** | **Validated finding** | EP trains oracle (all-input settle), random search builds feedforward LutGate neurons reproducing oracle. 100% on 8-bit popcount and nibble class. ByteAdd (16→5): 46% (search space too large for 5-bit output). |
+| **Functional LUT** | **Validated finding** | Run EP on ALL possible inputs, store results. 100% accuracy guaranteed but only scales to ≤14-bit input (GPU exhaustive). Beyond 14 bit: combinatorially impractical. |
+| **GPU ternary exhaustive** | **Validated finding** | RTX 4070 Ti SUPER: N=13 561K/s (8.5s), N=14 403K/s (36s), N=16 99K/s (22min est). GPU 31× faster than CPU (24 threads). VRAM-safe (1GB cap). Practical limit: N=14 per neuron. Sparse: 14 inputs/neuron, width unlimited. |
+| **Video upscaler POC** | **Validated finding (negative)** | EP temporal upscaler (32→64→16, YCbCr, 3.1 KB): -0.8 dB vs bilinear. EP regression fails — contrastive Hebbian too weak for pixel-level continuous values. 2-layer → NaN. EP = classification, not regression. |
 
-| **Chip composition** | **BREAKTHROUGH** | Frozen chip A (3n, 100% ADD) + searched wiring → 100% on ADD(a,b,c). Pipeline beats flat search (100% vs 92%). 4-input chain: 98.9%. Pipeline composition is the scaling path for non-accumulative ops. |
-| **Recurrent ReLU generalization** | **BREAKTHROUGH** | ReLU is the ONLY activation (of 12 tested) achieving 100% recurrent generalization. 3 neurons trained on 3-input → 100% on 2-8 inputs. 17/20 seeds perfect. tanh=18%, sigmoid=3%, signed_square=0%. |
-| **Minimum viable chip** | **BREAKTHROUGH** | ADD = 1 neuron, binary ±1, no bias = 5 bits. 32 exhaustive configs. XOR = 2 neurons binary. MAX = 2 neurons ternary. Per-connection bias adds nothing over per-neuron. |
-| **Native output** | **BREAKTHROUGH** | W=[1,1,1,1,1] bias=0: charge = sum EXACTLY. No readout needed. 10-input (9.7M examples): 100%. COUNT chip W=[1,1,0,0,0] also native. |
-| Byte ALU (binary encoding) | **REJECTED** | Binary in/out much harder than thermometer. ADD 28%, XOR 25%. Carry propagation requires cross-bit coordination that ReLU neurons can't learn efficiently. |
-| Readout method comparison | **Validated finding** | 5 readout methods tested (nearest-mean, threshold, boundary, minmax-gap, median). All give ~identical results. Readout is NOT the bottleneck — chip weights/seed selection is. |
-| Multi-seed search | **Validated finding** | OR generalization fixed by 8-seed search (100% all depths). The chip weight seed determines generalization quality, not the readout method. |
-| **Connection Point architecture** | **BREAKTHROUGH** | Shared bulletin boards between neurons. Constant search space (3^12 = 531K) from neuron 4+, regardless of network size. CP validated: info flows, freeze works, ADD 100% through CP. 1-tick delayed shared register for inter-cluster communication. |
-| Hardware benchmarks | **Validated finding** | Ryzen 9 class: 36M ticks/sec (3n chip), 100K neurons = 0.1ms/tick on 12 cores. Training 33K chips: ~4h parallel. |
-
-The rows above are preserved historical validation checkpoints from the released `v5.0.0-beta.1` Rust language-evolution line and the earlier spiking-network research. They are not the current grower mainline; for the active path on `main`, treat the bias-free grower contract in [`docs/GROWER_RUN_CONTRACT.md`](https://github.com/VRAXION/VRAXION/blob/main/docs/GROWER_RUN_CONTRACT.md) and the byte/opcode v1 contract in [`docs/BYTE_OPCODE_V1_CONTRACT.md`](https://github.com/VRAXION/VRAXION/blob/main/docs/BYTE_OPCODE_V1_CONTRACT.md) as the canonical surfaces, and use the golden fixtures (`grower_regression_golden.json`, `byte_opcode_golden.json`) as the only authoritative numbers.
+The rows above are preserved historical validation checkpoints from the released `v5.0.0-beta.1` Rust language-evolution line, the EP/C19 research, and the earlier spiking-network and Connection Point work. They are not the current grower mainline; for the active path on `main`, treat the bias-free grower contract in [`docs/GROWER_RUN_CONTRACT.md`](https://github.com/VRAXION/VRAXION/blob/main/docs/GROWER_RUN_CONTRACT.md) and the byte/opcode v1 contract in [`docs/BYTE_OPCODE_V1_CONTRACT.md`](https://github.com/VRAXION/VRAXION/blob/main/docs/BYTE_OPCODE_V1_CONTRACT.md) as the canonical surfaces, and use the golden fixtures (`grower_regression_golden.json`, `byte_opcode_golden.json`) as the only authoritative numbers.
 
 ## Implementation Status
 
@@ -522,6 +523,51 @@ The checkpoint format uses atomic temp-and-rename writes plus adversarial tests 
 - Several housekeeping passes clarified API naming, bench hooks, and public exports without changing the canonical runtime decisions.
 
 </details>
+
+## Quantization championship (2026-04-17/18)
+
+### Absolute winner: QAT int8 (Quantization-Aware Training with STE)
+
+- nf=1024 FineWeb char-LM: **86.40% eval** vs pure float 86.20%
+- 4× memory compression vs float32
+- Training cost: ~20 sec on RTX 4070 Ti Super
+- Beats pure float AND staged INQ in same task
+
+### Pareto frontier (one entry per precision level, best of any method)
+
+| Precision | Compression | FineWeb acc | Best method |
+|---|---|---|---|
+| float32 | 1× | 86.20% | long training |
+| int8 | 4× | **86.40%** | QAT STE |
+| int4 | 8× | 84.75% | staged INQ |
+| binary | 32× | 71.50% | QAT STE |
+
+### Protocol revelations (2026-04-17/18)
+
+- The earlier "int4 +1.4pp win" finding was a **protocol artifact** — staged INQ gives 200 extra training epochs vs the float baseline. Apples-to-apples comparison (same epoch count, no quant): float equals int4 at ~84.50%; float with more epochs reaches 86.20%.
+- Ternary's catastrophic 55% with staged INQ was a **protocol bug**, not a fundamental limit. QAT STE lifts ternary to 71.50% (+16.5pp). The staged scale/2 threshold over-prunes ternary; QAT avoids this.
+- Binary "info-ceiling" at 49% was a **capacity limit**, not information limit. At nf=1024 binary reaches 70-71%. BitNet b1.58 literature confirmed.
+
+### Failed approaches (documented negative results)
+
+- Progressive growing + per-neuron int4: −14.85pp vs batch training at same params
+- Generational cluster growth: −5.20pp vs single-shot
+- Random-rotation sparse training: dominated by QAT
+- Stacked exhaustive clusters: dominated by float+PTQ in every metric
+- True ternary exhaustive D=16: 21.25% vs float 30.25% (−9pp sparsity cost)
+
+### Deploy recommendations
+
+- Cloud/server: QAT int8
+- Mobile/edge: staged int4 (sweet spot at 8× compression, minimal accuracy loss)
+- IoT/FPGA: QAT binary + Beukers gate LUT (native bit-ops, 32× compression)
+- Micro-encoders only: true ternary exhaustive (guaranteed mathematical optimum, D ≤ 20 max)
+
+### Reproduction artifacts
+
+- Scripts: `tools/diag_quant_sweep_gpu.py`, `tools/diag_qat_ste.py`, `tools/diag_float_extended_control.py`, etc.
+- Visualization: `docs/playground/quant_final_verdict.html` (Pareto frontier + per-precision best)
+- Total evidence: 50+ experiment runs, ~2.5h total wallclock
 
 ## Read Next
 

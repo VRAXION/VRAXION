@@ -16,6 +16,11 @@ categories = ["algorithms", "science"]
 [features]
 default = []
 benchmarks = []
+# Parquet corpus pipeline (FineWeb-Edu and similar). Off by default so users
+# who just want the core spiking/grower experiments do not pay the arrow-rs
+# compile-time cost (~30s cold, ~40 transitive crates). Opt in with
+#   cargo run --example extract_fineweb_txt --release --features parquet
+parquet = ["dep:parquet", "dep:arrow-array", "dep:arrow-schema"]
 
 [dependencies]
 rand = "0.8"
@@ -23,6 +28,12 @@ rayon = "1.10"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 bincode = "1.3"
+# Parquet pipeline (feature-gated). Pin exact majors — arrow-rs bumps API
+# every quarter, so we do not want passive drift. 54.x is the current LTS
+# line that builds on rustc 1.78+; 58 exists but is more churn than we need.
+parquet = { version = "54", default-features = false, features = ["arrow", "snap", "brotli", "flate2", "zstd", "lz4"], optional = true }
+arrow-array = { version = "54", optional = true }
+arrow-schema = { version = "54", optional = true }
 
 [[bench]]
 name = "forward_bench"
@@ -93,3 +104,12 @@ required-features = ["benchmarks"]
 name = "sparse_input_ab"
 harness = false
 required-features = ["benchmarks"]
+
+# Parquet corpus pipeline examples — feature-gated, opt-in.
+[[example]]
+name = "extract_fineweb_txt"
+required-features = ["parquet"]
+
+[[example]]
+name = "diag_5way_fineweb"
+required-features = ["parquet"]
