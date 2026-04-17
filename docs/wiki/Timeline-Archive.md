@@ -203,6 +203,7 @@ The timeline is ordered latest-first. Each day is a self-contained H3 section wi
 <details>
 <summary>Jump to date</summary>
 
+- [2026-04-17/18 — Quantization championship + branch consolidation](#2026-04-1718--quantization-championship--branch-consolidation)
 - [2026-04-15/16 — Beukers gate discovery + brain-on-top validation + overnight consolidation](#2026-04-1516--beukers-gate-discovery--brain-on-top-validation--overnight-consolidation)
 - [2026-04-15 — Pure binary pipeline LOCKED: no C19, no float, no multiply — POPCOUNT to int8 end-to-end](#2026-04-15--pure-binary-pipeline-locked-no-c19-no-float-no-multiply--popcount-to-int8-end-to-end)
 - [2026-04-14 — L0 CANONICAL: binary byte encoder frozen + bitwidth sweep + pipeline architecture diagram](#2026-04-14--l0-canonical-binary-byte-encoder-frozen--bitwidth-sweep--pipeline-architecture-diagram)
@@ -234,6 +235,35 @@ The timeline is ordered latest-first. Each day is a self-contained H3 section wi
 - [Early 2026 — Diamond Code Era](#early-2026--diamond-code-era)
 
 </details>
+
+---
+
+### 2026-04-17/18 — Quantization championship + branch consolidation
+
+**Theme:** Comprehensive quantization sweep on RTX 4070 Ti Super. 50+ experiment runs across 4 protocols (staged INQ, QAT STE, progressive growing, random rotation) × 7 precision levels (binary/ternary/int4/int5/int8/fp16/float32) × 2 tasks (FineWeb 30MB + code corpus 2.9MB) × 4 network sizes (nf=32/64/96/128 CPU + nf=1024 GPU). Total wallclock ~2.5h. Revised the prior day's finding: the "+1.4pp int4 beats float" claim was a protocol artifact — the staged INQ protocol gives quantized runs 200 extra training epochs vs the float baseline. New absolute winner identified: **QAT int8 = 86.40% FineWeb at nf=1024**, beating pure float_long (86.20%) at 4× compression. Ternary's earlier catastrophic 55% was diagnosed as a protocol bug (staged scale/2 threshold over-prunes); QAT STE lifts ternary to 71.50% (+16.5pp). Binary "info-ceiling at 49%" was capacity-bound; at nf=1024 binary reaches 70.70% (staged) / 71.50% (QAT), reconfirming BitNet b1.58 scaling literature. Pareto frontier reduces to four precision points: float32 (1×, 86.20%), int8-QAT (4×, 86.40% — winner), int4-staged (8×, 84.75% — sweet spot), binary-QAT (32×, 71.50% — IoT niche with Beukers LUT). Failed alternatives documented: progressive per-neuron growth (−14.85pp), generational cluster stacking (−5.2pp), random-rotation sparse training (dominated), stacked exhaustive clusters (dominated by float+PTQ in every metric), true ternary exhaustive D=16 (21.25% vs float 30.25%, −9pp sparsity cost). Full playground visualization at `docs/playground/quant_final_verdict.html`. All scripts documented in `tools/README.md`. See `VALIDATED_FINDINGS.md` "Quantization championship (2026-04-17/18) — revised final story" section for the canonical table.
+
+| Seq | Finding | Status | Source |
+|-----|---------|--------|--------|
+| 1 | **QAT int8 = new absolute champion** — 86.40% FineWeb nf=1024 beats pure float 86.20%, 4× compression, essentially lossless | Validated | `tools/diag_qat_ste.py` |
+| 2 | **Prior "+1.4pp int4 win" = PROTOCOL ARTIFACT** — staged INQ gives 200 extra training epochs; matched-compute float matches or exceeds | Validated (supersedes) | `tools/diag_float_extended_control.py` |
+| 3 | **Staged ternary 55% = PROTOCOL BUG, not fundamental** — QAT STE lifts same config to 71.50% (+16.5pp) | Validated (supersedes) | `tools/diag_qat_ste.py` |
+| 4 | **Binary capacity-ceiling, not info-ceiling** — at nf=1024 binary reaches 70-71%, confirms BitNet b1.58 | Validated (supersedes) | `tools/diag_qat_ste.py` |
+| 5 | **Progressive growing + per-neuron quant FAILS** — −14.85pp vs batch+PTQ at nf=128 | Validated (negative) | `tools/diag_progressive_quant.py` |
+| 6 | **Generational cluster stacking underperforms single-shot** — Gen1+Gen2+Gen3 of 256 each = 79.50% vs nf=768 single-shot 84.70% (−5.20pp) | Validated (negative) | `tools/diag_generational_growth.py` |
+| 7 | **Stacked exhaustive clusters dominated** — 50 clusters of ternary exhaustive D=14 = 26.55% vs float+PTQ same-D = 32.20%. Dominated in accuracy AND memory AND time | Validated (negative) | `tools/diag_exhaustive_cluster_stack.py` |
+| 8 | **True ternary exhaustive D=16 = mathematical optimum but capacity-limited** — 21.25% vs float 30.25% same-D (−9pp sparsity cost); useful only for micro-components (D ≤ 20) | Validated | `tools/diag_true_exhaustive.py` |
+
+#### Branch consolidation (2026-04-18)
+
+Four branches merged or archived to leave `main` as the single canonical branch:
+
+- **`cleanup/wiki-examples-2026-04-17`** (PR #127 merged 2026-04-18) — 10 commits adding the quantization championship research artifacts (13 Python scripts, 3 Rust sweep examples, parquet feature, FineWeb code corpus fixture, final-verdict playground HTML, VALIDATED_FINDINGS + wiki updates). Successfully merged to main via PR with full merge history preserved.
+
+- **`origin/claude/review-main-branch-LL64D`** (dates: 2026-04-13, 5 unique commits, cherry-picked to main) — one-day growth-run on the persistent neuron grower adding forever-network mode, crash-safe incremental persist, manual neuron-pick overrides (`--force-pick`, `--preview-only`), ternary-bake-based candidate selection (`--bake-best`), and per-task alpha refit. All five commits cherry-picked cleanly onto main (only `instnct-core/examples/c19_grower.rs` modified, no conflicts). The crash-safe persist commit specifically implements the pattern in `feedback_persistent_state` memory note. Branch deleted.
+
+- **`origin/claude/check-progress-resume-vwFYv`** (dates: 2026-04-14, 3 unique commits, archive-only) — explored BERT-style MLM pretraining as an L2 feature extractor, then tried per-neuron learnable C19 rho, hitting 47.87% masked-char accuracy (+5.31pp over fixed C19). The result was obsoleted within a day when Beukers-gate work on main reached 80.1% then 83.6% on the same metric. Commits archived rather than cherry-picked because cherry-picking would add dead-end code that duplicates already-superseded functionality. Preserved in git history via reflog; branch label removed.
+
+- **`origin/experiment/connectome-gradient-pipeline`** (dates: 2026-04-10 → 2026-04-12, 25 unique commits, 1 cherry-picked + 24 archived) — 3-day exploration spike covering analytic backprop, holographic fully-connected nets, sparse-dense sandwich architectures, C19 logic-gate/ALU/CPU synthesis, Equilibrium Propagation, and canonical neuron builders. Produced the "C19 rho=8 WINS +2.2% vs ReLU" shallow-net result (later contradicted by deep-net finding on main, now captured in `project_activation_sweep_findings`) and an exhaustive-verified C19 ALU/CPU at 4-bit and 8-bit. Main subsequently pivoted to the binary-byte/Beukers-gate pipeline (43K+ lines of divergence since branch base), rendering these directions dormant rather than wrong. Only the `.gitignore` chore commit was cherry-picked (runtime-log exclusions); the 24 experimental commits are preserved in git history via reflog; branch label removed.
 
 ---
 
