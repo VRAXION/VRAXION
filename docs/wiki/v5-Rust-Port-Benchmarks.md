@@ -524,6 +524,51 @@ The checkpoint format uses atomic temp-and-rename writes plus adversarial tests 
 
 </details>
 
+## Quantization championship (2026-04-17/18)
+
+### Absolute winner: QAT int8 (Quantization-Aware Training with STE)
+
+- nf=1024 FineWeb char-LM: **86.40% eval** vs pure float 86.20%
+- 4× memory compression vs float32
+- Training cost: ~20 sec on RTX 4070 Ti Super
+- Beats pure float AND staged INQ in same task
+
+### Pareto frontier (one entry per precision level, best of any method)
+
+| Precision | Compression | FineWeb acc | Best method |
+|---|---|---|---|
+| float32 | 1× | 86.20% | long training |
+| int8 | 4× | **86.40%** | QAT STE |
+| int4 | 8× | 84.75% | staged INQ |
+| binary | 32× | 71.50% | QAT STE |
+
+### Protocol revelations (2026-04-17/18)
+
+- The earlier "int4 +1.4pp win" finding was a **protocol artifact** — staged INQ gives 200 extra training epochs vs the float baseline. Apples-to-apples comparison (same epoch count, no quant): float equals int4 at ~84.50%; float with more epochs reaches 86.20%.
+- Ternary's catastrophic 55% with staged INQ was a **protocol bug**, not a fundamental limit. QAT STE lifts ternary to 71.50% (+16.5pp). The staged scale/2 threshold over-prunes ternary; QAT avoids this.
+- Binary "info-ceiling" at 49% was a **capacity limit**, not information limit. At nf=1024 binary reaches 70-71%. BitNet b1.58 literature confirmed.
+
+### Failed approaches (documented negative results)
+
+- Progressive growing + per-neuron int4: −14.85pp vs batch training at same params
+- Generational cluster growth: −5.20pp vs single-shot
+- Random-rotation sparse training: dominated by QAT
+- Stacked exhaustive clusters: dominated by float+PTQ in every metric
+- True ternary exhaustive D=16: 21.25% vs float 30.25% (−9pp sparsity cost)
+
+### Deploy recommendations
+
+- Cloud/server: QAT int8
+- Mobile/edge: staged int4 (sweet spot at 8× compression, minimal accuracy loss)
+- IoT/FPGA: QAT binary + Beukers gate LUT (native bit-ops, 32× compression)
+- Micro-encoders only: true ternary exhaustive (guaranteed mathematical optimum, D ≤ 20 max)
+
+### Reproduction artifacts
+
+- Scripts: `tools/diag_quant_sweep_gpu.py`, `tools/diag_qat_ste.py`, `tools/diag_float_extended_control.py`, etc.
+- Visualization: `docs/playground/quant_final_verdict.html` (Pareto frontier + per-precision best)
+- Total evidence: 50+ experiment runs, ~2.5h total wallclock
+
 ## Read Next
 
 - [Vraxion Home](Home) — mission-level front door
