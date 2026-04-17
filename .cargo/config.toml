@@ -1,0 +1,15 @@
+# VRAXION repo-local cargo config.
+#
+# Windows-GNU note (parquet feature only):
+#   The arrow-rs crate tree pulls in getrandom 0.3 which imports symbols
+#   from bcryptprimitives.dll; rustc generates the import lib by shelling
+#   out to `dlltool` via PATH lookup. If your PATH has a legacy
+#   `C:\MinGW\bin\dlltool.exe` ahead of the rustup self-contained one, the
+#   build fails with "Invalid bfd target". Remove or re-order MinGW, or
+#   invoke cargo like:
+#     PATH="$(echo $PATH | tr ':' '\n' | grep -v MinGW | tr '\n' ':')" \
+#       cargo run --features parquet --release --example extract_fineweb_txt
+#
+# This file intentionally contains no linker overrides — the default gnu
+# toolchain is correct. Keeping the file so the above note lives next to
+# the build system.

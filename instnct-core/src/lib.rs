@@ -29,6 +29,9 @@ mod propagation;
 mod sdr;
 mod topology;
 
+#[cfg(feature = "parquet")]
+mod parquet_fineweb;
+
 // ---------------------------------------------------------------------------
 // Public beta surface — re-exports
 // ---------------------------------------------------------------------------
@@ -71,6 +74,13 @@ pub use topology::{ConnectionGraph, DirectedEdge};
 pub use propagation::{
     propagate_token, PropagationConfig, PropagationError, PropagationParameters, PropagationState,
     PropagationWorkspace,
+};
+
+#[cfg(feature = "parquet")]
+#[doc(inline)]
+pub use parquet_fineweb::{
+    extract_to_bytes, extract_to_file, extract_to_writer, find_parquet_files, ExtractConfig,
+    ExtractError, ExtractStats,
 };
 
 // ---------------------------------------------------------------------------
