@@ -15,6 +15,18 @@ preserved as a blueprint entry on the [Timeline-Archive wiki
 page](https://github.com/VRAXION/VRAXION/wiki/Timeline-Archive#archived-scripts-2026-04-18)
 under "Archived scripts (2026-04-18)". Git history retains the code itself.
 
+**Note (2026-04-18 byte-embedder batch):** a second archival batch ran the
+same day — 25 `diag_byte_*.py` / `diag_merger_telemetry.py` / `diag_word_unit_sweep.py`
+scripts from the L0 byte embedder training + L1 byte-pair merger ceiling
+sprint were removed from `tools/` after their findings were consolidated
+into the walkthrough deck at `docs/index.html` and the report at
+`docs/research/L1_MERGER_OVERNIGHT_REPORT.md`. Blueprint entries (Clusters 9
+and 10) are under the same Timeline-Archive wiki page. The 4 LUT data
+artifacts (`byte_embedder_lut.h`, `byte_embedder_lut_int8.json`,
+`byte_embedder_lut_int8_nozero.json`, `byte_unit_winner_int4.json`) remain
+in `tools/` for now; they'll relocate together with the walkthrough deck in
+a follow-up cleanup pass.
+
 ## Quick summary
 
 | Script | Category | Status | Headline |

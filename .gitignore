@@ -101,6 +101,9 @@ instnct-core/results/
 /results/
 /.claude/
 
+# Local playwright / browser-check outputs (screenshots + test specs)
+output/
+
 # Grower / lab scratch that should never leak into the public mainline
 instnct-core/*_log.txt
 instnct-core/*_console.txt

@@ -331,6 +331,20 @@ Files: `diag_byte_mirror_int8_qat.py`, `diag_byte_mirror_beukers.py`, `diag_byte
 - **Recreate:** standard PyTorch — Adam, 5000 epochs, LR=0.01, Int8STE with identity backward. No fancy scheduling. Tied weights: decoder = encoder.T.
 - **Status:** Exploratory (never committed — this wiki entry is the only record)
 
+**Cluster 9 — L0 byte embedder training & final LUT baking (shipped)** (2026-04-17/18)
+Files: `diag_byte_embed_dim_test.py`, `diag_byte_embed_zero_check.py`, `diag_byte_mirror_activations.py`, `diag_byte_pair_data_analysis.py`, `diag_byte_unit_bake_lut.py`, `diag_byte_unit_bitwidth.py`, `diag_byte_unit_c19_sweep.py`, `diag_byte_unit_deep.py`, `diag_byte_unit_extract_weights.py`, `diag_byte_unit_final_lut.py`, `diag_byte_unit_knee.py`, `diag_byte_unit_lbfgs.py`, `diag_byte_unit_lossless_fix.py`, `diag_byte_unit_nozero_lut.py`, `diag_byte_unit_staged_allbits.py`, `diag_byte_unit_staged_inq.py`, `diag_byte_unit_staged_int4.py`, `diag_byte_unit_sweep.py`, `diag_byte_unit_symmetric.py`
+- **Idea:** Train a 1-byte tied-weight autoencoder with C19 nonlinearity to produce a dim=16 lossless latent, bake into a 4.1 KB int8 LUT, and certify roundtrip. Covered bitwidth sweeps (1/2/3/4-bit weights), staged INQ variants (all-bits, INQ-style, pure int4), symmetric vs asymmetric mirror, knee detection, zero-clamping (fix for the 40 latent zeros caused by int8 rounding near the quant scale), L-BFGS baseline, embedding dim validation, and deep-vs-shallow encoder tests. `pair_data_analysis.py` characterized the LUT's neighbour structure before the L1 merger attempt.
+- **Outcome:** Shipped. Winner: 24 C19 neurons, dim=16, 288 B int4 weights, 4.1 KB int8 LUT, 100% lossless roundtrip across all 256 bytes. Walkthrough deck at `docs/index.html` documents the result end to end; LUT data remains in `tools/byte_embedder_lut*.json` and `tools/byte_embedder_lut.h` until the deck relocates to `docs/byte-embedder/`.
+- **Recreate:** L-BFGS or Adam with C19 activation on `input[8] → W[8×24] → C19 → W^T[24×16]`; int8 QAT STE on weights; zero-clamp post-quantization. Sign-preservation through quantization is the key constraint.
+- **Status:** Validated (shipped as canonical L0 byte unit; LUT artifacts kept in `tools/`)
+
+**Cluster 10 — L1 byte-pair merger ceiling + word unit sweep (negative result)** (2026-04-18/19)
+Files: `diag_byte_pair_merger_staged.py`, `diag_byte_pair_merger_sweep.py`, `diag_byte_pair_merger_sym.py`, `diag_byte_pair_merger_v2.py`, `diag_merger_telemetry.py`, `diag_word_unit_sweep.py`
+- **Idea:** extend the L0 byte unit into an L1 merger by tying two byte embeddings (32D input) through a compression latent. Variations: staged INQ, hidden-size sweep (48/64/96/128), symmetric C19 on both encoder+decoder, V2 loss-function search (MSE / sign-aware / margin / heavy-recon). `merger_telemetry.py` checked that different H values were actually training different models (not stuck on the same local optimum). `word_unit_sweep.py` ran the same recipe at word scale as a capacity reference.
+- **Outcome:** hard ceiling at 73.18% lossless on 65,536 byte pairs regardless of hidden size or loss function. Symmetric C19 on both sides did not break the ceiling either. Telemetry confirmed the ceiling is not a degenerate init artifact — every H value genuinely converged to the same ~73% plateau. The tied-mirror + C19 recipe that wins at 1-byte (8D → 16D lossless) does NOT scale to 2-byte (32D → compressed). Sprint closed; full number table in `docs/research/L1_MERGER_OVERNIGHT_REPORT.md`.
+- **Recreate:** `input[32] → W[32×H] → C19 → W^T[H×32]`; sweep H ∈ {48, 64, 96, 128}; compare MSE vs margin vs sign-aware loss; ceiling at ~73% is reproducible.
+- **Status:** Rejected (tied mirror + C19 is 1-byte-specific; L1 merger needs a different architecture class)
+
 </details>
 
 ---
