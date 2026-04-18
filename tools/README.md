@@ -27,6 +27,25 @@ artifacts (`byte_embedder_lut.h`, `byte_embedder_lut_int8.json`,
 in `tools/` for now; they'll relocate together with the walkthrough deck in
 a follow-up cleanup pass.
 
+**Note (2026-04-18 PM, L1 merger compression championship):** a third batch
+broke the Cluster 10 73% lossless ceiling by switching from single-representation
+quantization to a **3-tier hybrid weight storage** (lookup codebook + per-matrix
+int8 + float residual, with per-cell lossless-check + rollback). Champion
+pipeline at H=81 / 100.00% lossless / **7.14 KB deploy**. Three canonical
+scripts are kept in this directory as the reproducible pipeline:
+
+- `diag_byte_pair_merger_lookup_codebook.py` — gravity-driven codebook expansion
+- `diag_byte_pair_merger_free_int8.py` — per-cell int8 snap on still-float cells
+- `diag_byte_pair_merger_absorb_float.py` — champion (absorb remaining floats
+  into existing codebook/int8 categories)
+
+Seven exploratory variants (per-cell aggressive, grow-hidden, pure-int8-bake,
+plastic selective snap, density bucket snap, 2-layer baseline, residual
+density diagnostic) were removed after consolidating their findings as
+blueprint Cluster 11 on the Timeline-Archive wiki page. Git history retains
+neither — these scripts were never committed to `main`; the wiki entry is
+the only record.
+
 ## Quick summary
 
 | Script | Category | Status | Headline |
