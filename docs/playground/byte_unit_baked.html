@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Byte Embedder Unit — Baked Int4 Winner</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:system-ui,-apple-system,sans-serif;background:#0a0e1a;color:#e2e8f0;min-height:100vh;overflow-x:hidden}
+.mono{font-family:'JetBrains Mono','Consolas',monospace}
+.container{max-width:1200px;margin:0 auto;padding:16px}
+
+/* Header */
+.header{text-align:center;padding:20px 0 12px;border-bottom:1px solid #1e293b;margin-bottom:16px}
+.header h1{font-size:22px;background:linear-gradient(135deg,#38bdf8,#a78bfa,#4ade80);-webkit-background-clip:text;-webkit-text-fill-color:transparent;font-weight:800}
+.header .sub{color:#64748b;font-size:12px;margin-top:4px}
+.badges{display:flex;gap:8px;justify-content:center;margin-top:10px;flex-wrap:wrap}
+.badge{padding:4px 12px;border-radius:12px;font-size:11px;font-weight:700}
+.badge.green{background:#052e16;color:#4ade80;border:1px solid #166534}
+.badge.blue{background:#0c1e3a;color:#38bdf8;border:1px solid #1e40af}
+.badge.purple{background:#1e1040;color:#c084fc;border:1px solid #6b21a8}
+.badge.amber{background:#1c1200;color:#fbbf24;border:1px solid #92400e}
+
+/* Main layout */
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:800px){.grid{grid-template-columns:1fr}}
+
+/* Cards */
+.card{background:#111827;border:1px solid #1e293b;border-radius:10px;padding:14px;overflow:hidden}
+.card h2{font-size:13px;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:10px;display:flex;align-items:center;gap:6px}
+.card h2 .dot{width:8px;height:8px;border-radius:50%;display:inline-block}
+
+/* Weight heatmap */
+.heatmap{overflow-x:auto}
+.heatmap table{border-collapse:collapse;font-size:10px;width:100%}
+.heatmap td,.heatmap th{padding:2px 3px;text-align:center;min-width:20px}
+.heatmap th{color:#64748b;font-weight:600;position:sticky;top:0;background:#111827}
+.heatmap .row-label{color:#64748b;font-weight:600;text-align:right;padding-right:6px;position:sticky;left:0;background:#111827}
+
+/* Neuron cards */
+.neuron-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:6px}
+.neuron-card{background:#0f172a;border:1px solid #1e293b;border-radius:6px;padding:6px;text-align:center;font-size:10px;position:relative}
+.neuron-card .nid{color:#a78bfa;font-weight:700;font-size:11px}
+.neuron-card .c-val{color:#38bdf8;font-size:9px}
+.neuron-card .rho-val{color:#fbbf24;font-size:9px}
+.neuron-card canvas{display:block;margin:3px auto;border-radius:3px}
+
+/* Data flow diagram */
+.flow-svg{width:100%;height:auto}
+
+/* Stats */
+.stat-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:6px}
+.stat{background:#0f172a;border-radius:6px;padding:8px 10px}
+.stat .label{color:#64748b;font-size:10px}
+.stat .val{color:#e2e8f0;font-size:16px;font-weight:700}
+.stat .val.green{color:#4ade80}
+
+/* Weight distribution */
+.dist-bar{display:flex;align-items:end;gap:1px;height:60px;margin-top:6px}
+.dist-col{flex:1;background:#1e293b;border-radius:2px 2px 0 0;position:relative;min-width:0}
+.dist-col .tip{position:absolute;top:-14px;left:50%;transform:translateX(-50%);font-size:8px;color:#64748b;white-space:nowrap}
+.dist-col .cnt{position:absolute;bottom:-14px;left:50%;transform:translateX(-50%);font-size:7px;color:#475569}
+
+/* Test panel */
+.test-input{display:flex;gap:8px;align-items:center;margin-bottom:10px}
+.test-input input{background:#0f172a;border:1px solid #334155;color:#e2e8f0;padding:6px 10px;border-radius:6px;font-size:14px;width:60px;text-align:center}
+.test-input .arrow{color:#4ade80;font-size:18px}
+.bit-row{display:flex;gap:3px;flex-wrap:wrap}
+.bit{width:20px;height:20px;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700}
+.bit.on{background:#166534;color:#4ade80;border:1px solid #22c55e}
+.bit.off{background:#1e293b;color:#475569;border:1px solid #334155}
+.latent-row{display:flex;gap:2px;flex-wrap:wrap;margin-top:8px}
+.latent-val{background:#1e1040;color:#c084fc;border:1px solid #6b21a8;border-radius:3px;padding:2px 4px;font-size:9px;min-width:36px;text-align:center}
+</style>
+</head>
+<body>
+<div class="container">
+
+<div class="header">
+  <h1>Byte Embedder Unit — Baked Winner</h1>
+  <div class="sub">C19 + L-BFGS Staged Freeze | Int4 | Tied Mirror</div>
+  <div class="badges">
+    <span class="badge green">100% Lossless</span>
+    <span class="badge blue">288 byte int4</span>
+    <span class="badge purple">24 C19 neuron</span>
+    <span class="badge amber">40.72% downstream</span>
+  </div>
+</div>
+
+<!-- Architecture flow -->
+<div class="card" style="margin-bottom:16px">
+  <h2><span class="dot" style="background:#38bdf8"></span> Architektura</h2>
+  <svg class="flow-svg" viewBox="0 0 800 200" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <marker id="a1" markerWidth="6" markerHeight="4" refX="5" refY="2" orient="auto"><polygon points="0 0,6 2,0 4" fill="#38bdf8"/></marker>
+      <marker id="a2" markerWidth="6" markerHeight="4" refX="5" refY="2" orient="auto"><polygon points="0 0,6 2,0 4" fill="#a78bfa"/></marker>
+      <marker id="a3" markerWidth="6" markerHeight="4" refX="5" refY="2" orient="auto"><polygon points="0 0,6 2,0 4" fill="#4ade80"/></marker>
+      <marker id="a4" markerWidth="6" markerHeight="4" refX="5" refY="2" orient="auto"><polygon points="0 0,6 2,0 4" fill="#fbbf24"/></marker>
+    </defs>
+    <!-- Encoder path -->
+    <rect x="10" y="20" width="110" height="70" rx="8" fill="#0c1e3a" stroke="#38bdf8" stroke-width="1.5"/>
+    <text x="65" y="45" text-anchor="middle" fill="#38bdf8" font-size="13" font-weight="700">8 bit input</text>
+    <text x="65" y="62" text-anchor="middle" fill="#64748b" font-size="10">{-1, +1}</text>
+
+    <line x1="120" y1="55" x2="175" y2="55" stroke="#38bdf8" stroke-width="2" marker-end="url(#a1)"/>
+    <text x="148" y="48" text-anchor="middle" fill="#475569" font-size="9">W1 8x24</text>
+    <text x="148" y="68" text-anchor="middle" fill="#475569" font-size="8">int4</text>
+
+    <rect x="178" y="15" width="160" height="80" rx="8" fill="#1e1040" stroke="#a78bfa" stroke-width="1.5"/>
+    <text x="258" y="38" text-anchor="middle" fill="#a78bfa" font-size="13" font-weight="700">24 C19 neuron</text>
+    <text x="258" y="55" text-anchor="middle" fill="#64748b" font-size="9">c: 1.5-6.4 | rho: 2.5-5.8</text>
+    <text x="258" y="70" text-anchor="middle" fill="#64748b" font-size="9">bias: 24 float</text>
+    <!-- C19 wave -->
+    <path d="M210,78 q8,-12 16,0 q8,12 16,0 q8,-12 16,0 q8,12 16,0" stroke="#e879f9" stroke-width="1.5" fill="none" opacity="0.5"/>
+
+    <line x1="338" y1="55" x2="398" y2="55" stroke="#a78bfa" stroke-width="2" marker-end="url(#a2)"/>
+    <text x="368" y="48" text-anchor="middle" fill="#475569" font-size="9">W2 24x16</text>
+    <text x="368" y="68" text-anchor="middle" fill="#475569" font-size="8">int4</text>
+
+    <rect x="400" y="20" width="120" height="70" rx="8" fill="#052e16" stroke="#4ade80" stroke-width="1.5"/>
+    <text x="460" y="45" text-anchor="middle" fill="#4ade80" font-size="13" font-weight="700">16D latent</text>
+    <text x="460" y="62" text-anchor="middle" fill="#64748b" font-size="10">float output</text>
+
+    <!-- Decoder path -->
+    <rect x="560" y="20" width="230" height="70" rx="8" fill="#1c1200" stroke="#fbbf24" stroke-width="1" stroke-dasharray="4 3"/>
+    <text x="675" y="42" text-anchor="middle" fill="#fbbf24" font-size="11" font-weight="600">MIRROR DECODER</text>
+    <text x="675" y="58" text-anchor="middle" fill="#94a3b8" font-size="10">16D → W2^T → 24D → W1^T → 8 bit</text>
+    <text x="675" y="72" text-anchor="middle" fill="#64748b" font-size="9">tied weights (same W, transposed)</text>
+
+    <line x1="520" y1="55" x2="558" y2="55" stroke="#fbbf24" stroke-width="1.5" stroke-dasharray="4 3" marker-end="url(#a4)"/>
+
+    <!-- Labels -->
+    <text x="65" y="108" text-anchor="middle" fill="#334155" font-size="10">INPUT</text>
+    <text x="258" y="108" text-anchor="middle" fill="#334155" font-size="10">HIDDEN LAYER</text>
+    <text x="460" y="108" text-anchor="middle" fill="#334155" font-size="10">OUTPUT</text>
+    <text x="675" y="108" text-anchor="middle" fill="#334155" font-size="10">RECONSTRUCTION</text>
+
+    <!-- Param counts -->
+    <rect x="10" y="125" width="780" height="55" rx="6" fill="#0f172a" stroke="#1e293b"/>
+    <text x="20" y="145" fill="#64748b" font-size="10" font-weight="600">PARAM BUDGET:</text>
+    <text x="20" y="165" fill="#475569" font-size="10">W1: 192 int4 (96B) | W2: 384 int4 (192B) | bias: 40 float (160B) | C19 c,rho: 48 float (192B)</text>
+    <text x="650" y="145" fill="#4ade80" font-size="12" font-weight="700" text-anchor="end">Weights: 288 byte</text>
+    <text x="650" y="165" fill="#64748b" font-size="10" text-anchor="end">+ 352B float params = 640B total</text>
+  </svg>
+</div>
+
+<div class="grid">
+
+<!-- Stats card -->
+<div class="card">
+  <h2><span class="dot" style="background:#4ade80"></span> Specifikaciok</h2>
+  <div class="stat-grid">
+    <div class="stat"><div class="label">Lossless roundtrip</div><div class="val green">100%</div></div>
+    <div class="stat"><div class="label">Downstream char-LM</div><div class="val">40.72%</div></div>
+    <div class="stat"><div class="label">Weight storage</div><div class="val">288 B</div></div>
+    <div class="stat"><div class="label">Compression</div><div class="val">8x</div></div>
+    <div class="stat"><div class="label">Neuronok</div><div class="val">24 C19</div></div>
+    <div class="stat"><div class="label">Optimizer</div><div class="val">L-BFGS</div></div>
+    <div class="stat"><div class="label">Sparsity</div><div class="val">27.8%</div></div>
+    <div class="stat"><div class="label">Train time</div><div class="val">~6 min</div></div>
+  </div>
+</div>
+
+<!-- Weight distribution -->
+<div class="card">
+  <h2><span class="dot" style="background:#fbbf24"></span> Suly-eloszlas (int4: -7..+7)</h2>
+  <div class="dist-bar" id="distBar"></div>
+  <div style="display:flex;justify-content:space-between;margin-top:18px;font-size:9px;color:#475569">
+    <span>-7</span><span>-3</span><span>0</span><span>+3</span><span>+7</span>
+  </div>
+  <div style="margin-top:10px;font-size:11px;color:#94a3b8">
+    Haranggörbe: 0 korul csucsosodik, 27.8% nulla (sparse). Sulyok -7..+7 kozott, de a tobbseg -3..+3 sav.
+  </div>
+</div>
+
+<!-- Neuron cards -->
+<div class="card" style="grid-column:1/-1">
+  <h2><span class="dot" style="background:#a78bfa"></span> 24 C19 Neuron — egyenkent</h2>
+  <div class="neuron-grid" id="neuronGrid"></div>
+</div>
+
+<!-- W1 heatmap -->
+<div class="card">
+  <h2><span class="dot" style="background:#38bdf8"></span> W1 heatmap (8 bit → 24 neuron)</h2>
+  <div class="heatmap" id="w1heat"></div>
+</div>
+
+<!-- W2 heatmap -->
+<div class="card">
+  <h2><span class="dot" style="background:#4ade80"></span> W2 heatmap (24 neuron → 16D)</h2>
+  <div class="heatmap" id="w2heat"></div>
+</div>
+
+<!-- Live test -->
+<div class="card" style="grid-column:1/-1">
+  <h2><span class="dot" style="background:#e879f9"></span> Live teszt — irj be egy byte-ot (0-255)</h2>
+  <div class="test-input">
+    <input type="number" id="testByte" min="0" max="255" value="65" placeholder="0-255">
+    <span style="color:#64748b;font-size:12px">= '<span id="testChar">A</span>'</span>
+    <span class="arrow">→</span>
+    <span style="color:#38bdf8;font-size:12px">8 bit:</span>
+    <div class="bit-row" id="testBits"></div>
+  </div>
+  <div style="margin-top:4px">
+    <span style="color:#a78bfa;font-size:12px">→ 24 hidden (C19 output):</span>
+    <div class="latent-row" id="testHidden" style="margin-top:4px"></div>
+  </div>
+  <div style="margin-top:8px">
+    <span style="color:#4ade80;font-size:12px">→ 16D latent output:</span>
+    <div class="latent-row" id="testLatent" style="margin-top:4px"></div>
+  </div>
+  <div style="margin-top:8px">
+    <span style="color:#fbbf24;font-size:12px">← Mirror decode → reconstructed bits:</span>
+    <div class="bit-row" id="testRecon" style="margin-top:4px"></div>
+    <span style="font-size:12px;margin-left:8px" id="testResult"></span>
+  </div>
+</div>
+
+</div><!-- grid -->
+</div><!-- container -->
+
+<script>
+// Baked weights from winner
+const W1=[[3,-1,0,-1,1,1,0,1,0,5,1,1,-1,0,0,0,2,0,0,0,-1,-1,-1,5],[-2,-2,0,2,0,-1,0,1,1,1,-1,-1,-1,3,1,-1,-1,7,2,2,-1,0,1,1],[1,-1,-1,-1,-2,6,2,-2,-2,1,0,0,0,0,-1,5,-1,0,6,0,-1,-1,1,-2],[-1,-1,0,-1,-1,-1,-5,-1,2,-1,-4,1,-1,0,-1,-1,0,0,0,0,3,1,-3,-1],[-4,1,-2,1,0,2,-1,-3,3,-1,-1,3,0,4,-1,-2,-4,0,1,0,2,-3,-3,0],[-2,0,0,0,0,0,0,0,0,0,0,0,0,5,0,0,0,0,-1,7,0,-1,0,0],[0,1,6,3,0,-2,1,-1,1,-1,-1,0,-1,-1,-3,-1,-1,0,0,0,-1,0,1,0],[-4,-1,0,0,-6,0,0,0,-1,0,0,4,0,-3,0,0,-1,3,-4,0,0,0,-1,-1]];
+const W2=[[5,0,1,0,-1,-1,1,2,-1,-1,3,2,1,-1,0,0],[-2,1,1,1,1,0,0,0,0,0,-3,1,-1,-2,3,3],[0,1,2,-1,-2,0,2,3,1,0,-5,-4,1,1,3,-2],[0,-2,-2,-2,1,2,1,0,1,3,0,-1,0,3,2,1],[-1,0,-3,-6,-4,-1,-3,2,-4,-1,1,-1,0,1,-3,1],[-1,2,-3,0,1,-2,3,-1,0,0,-1,1,0,3,2,-2],[1,-1,-2,-2,1,1,1,0,3,1,-1,0,-1,3,2,2],[-1,-4,1,-1,0,-1,-2,1,1,-3,1,-2,-1,-2,2,-2],[0,2,1,-2,0,1,2,2,-1,0,-2,0,-2,1,-1,2],[2,2,1,0,2,-1,1,3,-1,5,1,2,0,0,-2,0],[1,-2,1,-2,0,1,-2,0,1,3,1,1,-2,0,0,5],[-2,3,2,1,-1,1,0,4,2,-1,-3,0,-1,0,0,0],[1,0,-2,1,4,1,0,-2,1,-1,-1,2,0,-3,-2,3],[0,-1,0,1,3,3,2,0,-3,-1,1,1,3,0,1,0],[-2,-4,0,2,0,0,4,-1,-3,1,0,0,-1,1,-2,0],[-1,5,-3,5,2,-1,1,4,0,-2,3,-1,-2,3,1,1],[1,-2,0,1,3,-2,-2,-2,-3,-2,-2,-2,-1,3,0,-1],[1,-1,1,2,2,2,-3,-4,-2,2,1,0,3,3,4,0],[-1,1,-2,-2,-3,0,0,-1,-4,3,0,-2,0,0,-1,-1],[0,0,0,0,-2,-1,0,3,0,-7,2,4,5,1,-1,1],[-4,3,1,1,4,1,-2,-2,0,1,-2,0,-2,1,-2,0],[1,-1,1,2,0,-4,-3,-3,0,-3,1,-1,1,1,1,-3],[-1,2,0,1,1,1,-3,3,1,-2,0,0,-3,0,2,0],[3,4,4,0,4,-3,0,-2,0,0,1,0,0,0,0,1]];
+const b1=[0.295,-1.301,-0.703,-0.202,0.523,0.313,-0.011,0.067,0.464,-0.400,0.747,-0.798,0.664,1.044,0.059,-0.969,1.241,-0.190,-0.254,-0.130,0.408,0.718,-0.160,0.233];
+const b2=[-0.454,0.774,0.680,0.479,-1.448,0.230,-0.215,-1.220,-0.352,1.268,-2.829,0.770,-3.903,0.018,-1.433,-1.676];
+const c19c=[1.531,2.543,4.301,2.051,6.032,3.649,4.120,3.058,3.556,3.480,4.488,3.913,4.829,1.959,4.159,5.948,2.023,6.321,1.953,5.187,4.589,6.438,3.398,4.427];
+const c19r=[5.038,4.528,5.772,5.603,4.437,4.961,4.059,4.434,3.454,2.898,4.059,4.367,4.903,5.065,3.427,3.294,5.306,3.049,5.282,3.600,4.351,3.339,3.102,2.494];
+const sW1=0.396094, sW2=0.514124;
+
+function c19(x,c,rho){
+  c=Math.max(c,0.1); rho=Math.max(rho,0);
+  const L=6*c;
+  if(x>=L) return x-L;
+  if(x<=-L) return x+L;
+  const s=x/c, n=Math.floor(s), t=s-n;
+  const h=t*(1-t), sgn=(n%2===0)?1:-1;
+  return c*(sgn*h+rho*h*h);
+}
+
+function encode(byteVal){
+  const bits=[];
+  for(let i=0;i<8;i++) bits.push(((byteVal>>i)&1)?1:-1);
+  // Layer 1: bits @ W1*sW1 + b1 → C19
+  const hidden=[];
+  for(let j=0;j<24;j++){
+    let sum=b1[j];
+    for(let i=0;i<8;i++) sum+=bits[i]*W1[i][j]*sW1;
+    hidden.push(c19(sum,c19c[j],c19r[j]));
+  }
+  // Layer 2: hidden @ W2*sW2 + b2
+  const latent=[];
+  for(let k=0;k<16;k++){
+    let sum=b2[k];
+    for(let j=0;j<24;j++) sum+=hidden[j]*W2[j][k]*sW2;
+    latent.push(sum);
+  }
+  return {bits,hidden,latent};
+}
+
+function decode(latent){
+  // W2^T then W1^T
+  const h2=[];
+  for(let j=0;j<24;j++){
+    let sum=0;
+    for(let k=0;k<16;k++) sum+=latent[k]*W2[j][k]*sW2;
+    h2.push(sum);
+  }
+  const recon=[];
+  for(let i=0;i<8;i++){
+    let sum=0;
+    for(let j=0;j<24;j++) sum+=h2[j]*W1[i][j]*sW1;
+    recon.push(sum>0?1:0);
+  }
+  return recon;
+}
+
+// Weight distribution
+const dist=new Array(15).fill(0);
+const allW=[...W1.flat(),...W2.flat()];
+allW.forEach(v=>dist[v+7]++);
+const maxCnt=Math.max(...dist);
+const distBar=document.getElementById('distBar');
+for(let i=0;i<15;i++){
+  const v=i-7;
+  const h=Math.max(2,dist[i]/maxCnt*100);
+  const hue=v===0?200:v>0?140:0;
+  const sat=Math.min(80,Math.abs(v)*12);
+  const col=dist[i]>0?`hsl(${hue},${sat}%,${30+dist[i]/maxCnt*30}%)`:'#1e293b';
+  distBar.innerHTML+=`<div class="dist-col" style="height:${h}%;background:${col}"><div class="tip">${dist[i]}</div><div class="cnt">${v}</div></div>`;
+}
+
+// Neuron cards
+const ng=document.getElementById('neuronGrid');
+for(let j=0;j<24;j++){
+  const card=document.createElement('div');
+  card.className='neuron-card';
+  const cv=document.createElement('canvas');
+  cv.width=50;cv.height=24;
+  const ctx=cv.getContext('2d');
+  // Draw C19 curve
+  ctx.strokeStyle='#c084fc';ctx.lineWidth=1.5;ctx.beginPath();
+  for(let px=0;px<50;px++){
+    const x=(px/50)*12*c19c[j]-6*c19c[j];
+    const y=c19(x,c19c[j],c19r[j]);
+    const py=12-y*2;
+    if(px===0)ctx.moveTo(px,Math.max(0,Math.min(24,py)));
+    else ctx.lineTo(px,Math.max(0,Math.min(24,py)));
+  }
+  ctx.stroke();
+  card.innerHTML=`<div class="nid">n${j.toString().padStart(2,'0')}</div>`;
+  card.appendChild(cv);
+  card.innerHTML+=`<div class="c-val">c=${c19c[j].toFixed(1)}</div><div class="rho-val">rho=${c19r[j].toFixed(1)}</div>`;
+  ng.appendChild(card);
+}
+
+// Heatmaps
+function renderHeatmap(containerId,data,rowLabels,colLabels){
+  const el=document.getElementById(containerId);
+  let html='<table><tr><td></td>';
+  colLabels.forEach(c=>html+=`<th>${c}</th>`);
+  html+='</tr>';
+  data.forEach((row,i)=>{
+    html+=`<tr><td class="row-label">${rowLabels[i]}</td>`;
+    row.forEach(v=>{
+      const intensity=Math.abs(v)/7;
+      const color=v>0?`rgba(74,222,128,${intensity*0.8})`
+                 :v<0?`rgba(248,113,113,${intensity*0.8})`
+                 :'rgba(100,116,139,0.15)';
+      html+=`<td style="background:${color};color:${Math.abs(v)>3?'#fff':'#94a3b8'};font-weight:${Math.abs(v)>4?700:400}">${v}</td>`;
+    });
+    html+='</tr>';
+  });
+  html+='</table>';
+  el.innerHTML=html;
+}
+renderHeatmap('w1heat',W1,
+  Array.from({length:8},(_,i)=>`b${i}`),
+  Array.from({length:24},(_,i)=>`n${i.toString().padStart(2,'0')}`));
+renderHeatmap('w2heat',W2,
+  Array.from({length:24},(_,i)=>`n${i.toString().padStart(2,'0')}`),
+  Array.from({length:16},(_,i)=>`z${i.toString().padStart(2,'0')}`));
+
+// Live test
+const testInput=document.getElementById('testByte');
+function updateTest(){
+  const v=Math.max(0,Math.min(255,parseInt(testInput.value)||0));
+  document.getElementById('testChar').textContent=v>=32&&v<127?String.fromCharCode(v):'?';
+  const {bits,hidden,latent}=encode(v);
+  const rawBits=[];for(let i=0;i<8;i++)rawBits.push((v>>i)&1);
+
+  document.getElementById('testBits').innerHTML=rawBits.map((b,i)=>
+    `<div class="bit ${b?'on':'off'}">${b}</div>`).join('');
+
+  document.getElementById('testHidden').innerHTML=hidden.map((h,i)=>
+    `<div class="latent-val" style="background:${h>0?'#1a2e1a':'#2e1a1a'};border-color:${h>0?'#166534':'#7f1d1d'}">${h.toFixed(2)}</div>`).join('');
+
+  document.getElementById('testLatent').innerHTML=latent.map((l,i)=>
+    `<div class="latent-val">${l.toFixed(3)}</div>`).join('');
+
+  const recon=decode(latent);
+  const match=rawBits.every((b,i)=>b===recon[i]);
+  document.getElementById('testRecon').innerHTML=recon.map((b,i)=>{
+    const ok=b===rawBits[i];
+    return `<div class="bit ${b?'on':'off'}" style="${ok?'':'border-color:#f87171;background:#7f1d1d'}">${b}</div>`;
+  }).join('');
+  document.getElementById('testResult').innerHTML=match?
+    '<span style="color:#4ade80;font-weight:700">MATCH</span>':
+    '<span style="color:#f87171;font-weight:700">MISMATCH</span>';
+}
+testInput.addEventListener('input',updateTest);
+updateTest();
+</script>
+</body>
+</html>

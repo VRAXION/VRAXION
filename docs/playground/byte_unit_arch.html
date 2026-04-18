@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Byte Tokenizer Unit — Architektura</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: system-ui, -apple-system, sans-serif; background: #0f172a; color: #e2e8f0; min-height: 100vh; display: flex; }
+  .mono { font-family: 'JetBrains Mono', 'Consolas', monospace; }
+
+  .sidebar { width: 300px; min-width: 300px; background: #1e293b; border-right: 1px solid #334155; padding: 16px; overflow-y: auto; display: flex; flex-direction: column; gap: 16px; }
+  .main { flex: 1; display: flex; flex-direction: column; }
+  .canvas-area { flex: 1; display: flex; align-items: center; justify-content: center; padding: 20px; }
+  .prompt-area { background: #1e293b; border-top: 1px solid #334155; padding: 16px; }
+
+  h1 { font-size: 16px; color: #38bdf8; font-weight: 700; }
+  h2 { font-size: 13px; color: #94a3b8; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px; }
+
+  .control-group { background: #0f172a; border-radius: 8px; padding: 12px; }
+
+  .radio-group { display: flex; flex-direction: column; gap: 6px; }
+  .radio-item { display: flex; align-items: center; gap: 8px; cursor: pointer; padding: 6px 8px; border-radius: 6px; transition: background 0.15s; }
+  .radio-item:hover { background: #1e293b; }
+  .radio-item.active { background: #1e3a5f; border: 1px solid #38bdf8; }
+  .radio-item input { display: none; }
+  .radio-dot { width: 14px; height: 14px; border-radius: 50%; border: 2px solid #475569; flex-shrink: 0; }
+  .radio-item.active .radio-dot { border-color: #38bdf8; background: #38bdf8; box-shadow: inset 0 0 0 3px #1e3a5f; }
+  .radio-label { font-size: 13px; flex: 1; }
+  .radio-stats { font-size: 11px; color: #64748b; }
+
+  .stat-row { display: flex; justify-content: space-between; padding: 4px 0; font-size: 13px; border-bottom: 1px solid #1e293b; }
+  .stat-label { color: #94a3b8; }
+  .stat-value { font-weight: 600; }
+  .stat-value.good { color: #4ade80; }
+  .stat-value.warn { color: #fbbf24; }
+  .stat-value.bad { color: #f87171; }
+
+  .slider-row { display: flex; align-items: center; gap: 8px; margin-top: 6px; }
+  .slider-row input[type=range] { flex: 1; accent-color: #38bdf8; }
+  .slider-val { font-size: 12px; color: #38bdf8; min-width: 28px; text-align: right; }
+
+  svg text { font-family: system-ui, -apple-system, sans-serif; }
+
+  .prompt-box { background: #0f172a; border: 1px solid #334155; border-radius: 6px; padding: 10px; font-size: 12px; line-height: 1.5; max-height: 80px; overflow-y: auto; white-space: pre-wrap; }
+  .copy-btn { margin-top: 8px; background: #38bdf8; color: #0f172a; border: none; padding: 6px 16px; border-radius: 4px; font-size: 12px; font-weight: 600; cursor: pointer; }
+  .copy-btn:hover { background: #7dd3fc; }
+
+  .legend { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 4px; }
+  .legend-item { display: flex; align-items: center; gap: 4px; font-size: 11px; color: #94a3b8; }
+  .legend-dot { width: 10px; height: 10px; border-radius: 2px; }
+</style>
+</head>
+<body>
+
+<div class="sidebar">
+  <h1>Byte Tokenizer Unit</h1>
+  <p style="font-size:12px;color:#64748b;margin-top:-8px;">2-layer tied-weight mirror autoencoder</p>
+
+  <div class="control-group">
+    <h2>Aktivacio</h2>
+    <div class="radio-group" id="actGroup"></div>
+  </div>
+
+  <div class="control-group">
+    <h2>Rejtett reteg szelesseg (H)</h2>
+    <div class="slider-row">
+      <input type="range" id="hSlider" min="16" max="64" step="8" value="32">
+      <span class="slider-val mono" id="hVal">32</span>
+    </div>
+  </div>
+
+  <div class="control-group">
+    <h2>Statisztikak</h2>
+    <div id="statsPanel"></div>
+  </div>
+
+  <div class="control-group">
+    <h2>Jelmagyarazat</h2>
+    <div class="legend">
+      <div class="legend-item"><div class="legend-dot" style="background:#38bdf8"></div> Input bitek</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#a78bfa"></div> Neuronok</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#4ade80"></div> Latent output</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#fbbf24"></div> Mirror decoder</div>
+    </div>
+  </div>
+</div>
+
+<div class="main">
+  <div class="canvas-area">
+    <svg id="diagram" width="750" height="520" viewBox="0 0 750 520"></svg>
+  </div>
+  <div class="prompt-area">
+    <h2>Unit leiras</h2>
+    <div class="prompt-box mono" id="promptBox"></div>
+    <button class="copy-btn" id="copyBtn">Masolas</button>
+  </div>
+</div>
+
+<script>
+const CONFIGS = {
+  c19_lbfgs:   { label: 'C19 + L-BFGS',     downstream: 41.46, lossless: 100.0, params_fn: (H) => 8*H + H + H*16 + 16 + H*2, opt: 'L-BFGS', badge: 'WINNER' },
+  silu_lbfgs:  { label: 'SiLU + L-BFGS',     downstream: 37.60, lossless: 100.0, params_fn: (H) => 8*H + H + H*16 + 16, opt: 'L-BFGS', badge: '100%' },
+  gelu_lbfgs:  { label: 'GELU + L-BFGS',     downstream: 37.66, lossless: 100.0, params_fn: (H) => 8*H + H + H*16 + 16, opt: 'L-BFGS', badge: '100%' },
+  gelu_adam:   { label: 'GELU + Adam',        downstream: 43.24, lossless: 97.7,  params_fn: (H) => 8*H + H + H*16 + 16, opt: 'Adam', badge: '' },
+  silu_adam:   { label: 'SiLU + Adam',        downstream: 42.56, lossless: 99.6,  params_fn: (H) => 8*H + H + H*16 + 16, opt: 'Adam', badge: '' },
+  relu_adam:   { label: 'ReLU + Adam',        downstream: 42.06, lossless: 96.9,  params_fn: (H) => 8*H + H + H*16 + 16, opt: 'Adam', badge: '' },
+  c19_adam:    { label: 'C19 + Adam',         downstream: 41.86, lossless: 67.6,  params_fn: (H) => 8*H + H + H*16 + 16 + H*2, opt: 'Adam', badge: 'stuck' },
+};
+
+const state = { act: 'c19_lbfgs', H: 32 };
+
+// Build radio buttons
+const actGroup = document.getElementById('actGroup');
+Object.entries(CONFIGS).forEach(([key, cfg]) => {
+  const div = document.createElement('div');
+  div.className = 'radio-item' + (key === state.act ? ' active' : '');
+  div.dataset.key = key;
+  const llColor = cfg.lossless === 100.0 ? '#4ade80' : cfg.lossless >= 99 ? '#fbbf24' : '#f87171';
+  const badgeHtml = cfg.badge ? `<span style="font-size:9px;background:${cfg.badge==='WINNER'?'#4ade80':cfg.badge==='100%'?'#38bdf8':'#f87171'};color:#0f172a;padding:1px 5px;border-radius:3px;margin-left:6px;font-weight:700">${cfg.badge}</span>` : '';
+  div.innerHTML = `<input type="radio" name="act" value="${key}" ${key===state.act?'checked':''}>
+    <div class="radio-dot"></div>
+    <div><div class="radio-label">${cfg.label}${badgeHtml}</div><div class="radio-stats" style="color:${llColor}">${cfg.lossless}% lossless / ${cfg.downstream}% downstream (${cfg.opt})</div></div>`;
+  div.addEventListener('click', () => { state.act = key; updateAll(); });
+  actGroup.appendChild(div);
+});
+
+document.getElementById('hSlider').addEventListener('input', e => {
+  state.H = parseInt(e.target.value);
+  updateAll();
+});
+
+function updateAll() {
+  // Update radio visuals
+  actGroup.querySelectorAll('.radio-item').forEach(el => {
+    el.classList.toggle('active', el.dataset.key === state.act);
+  });
+  document.getElementById('hVal').textContent = state.H;
+
+  const cfg = CONFIGS[state.act];
+  const H = state.H;
+  const params = cfg.params_fn(H);
+  const ll = cfg.lossless;
+  const ds = cfg.downstream;
+
+  // Stats panel
+  const sp = document.getElementById('statsPanel');
+  const llClass = ll === null ? '' : ll >= 99.5 ? 'good' : ll >= 95 ? 'warn' : 'bad';
+  const dsClass = ds === null ? '' : ds >= 43 ? 'good' : ds >= 41 ? 'warn' : 'bad';
+  const optLabel = cfg.opt || '?';
+  sp.innerHTML = `
+    <div class="stat-row"><span class="stat-label">Optimizer</span><span class="stat-value" style="color:${optLabel==='L-BFGS'?'#4ade80':'#fbbf24'}">${optLabel}</span></div>
+    <div class="stat-row"><span class="stat-label">Parameterek</span><span class="stat-value">${params.toLocaleString()}</span></div>
+    <div class="stat-row"><span class="stat-label">Int8 meret</span><span class="stat-value">${params} byte</span></div>
+    <div class="stat-row"><span class="stat-label">Lossless</span><span class="stat-value ${llClass}">${ll !== null ? ll + '%' : '?'}</span></div>
+    <div class="stat-row"><span class="stat-label">Downstream</span><span class="stat-value ${dsClass}">${ds !== null ? ds + '%' : '?'}</span></div>
+    <div class="stat-row"><span class="stat-label">Layer 1</span><span class="stat-value">8 → ${H} (${cfg.label.split('+')[0].trim()})</span></div>
+    <div class="stat-row"><span class="stat-label">Layer 2</span><span class="stat-value">${H} → 16 (linear)</span></div>
+    <div class="stat-row"><span class="stat-label">W1</span><span class="stat-value">${8*H} int8</span></div>
+    <div class="stat-row"><span class="stat-label">W2</span><span class="stat-value">${H*16} int8</span></div>
+  `;
+
+  renderDiagram(cfg, H, params);
+  updatePrompt(cfg, H, params);
+}
+
+function renderDiagram(cfg, H, params) {
+  const svg = document.getElementById('diagram');
+  const W = 750, HH = 520;
+  const midX = W / 2;
+
+  // Layer positions (y)
+  const yInput = 60, yHidden = 200, yOutput = 340, yDecoder = 460;
+  // Widths
+  const nInput = 8, nHidden = Math.min(H, 32), nOutput = 16;
+
+  function nodeX(i, count, spread) {
+    const totalW = (count - 1) * spread;
+    return midX - totalW/2 + i * spread;
+  }
+
+  let html = '';
+
+  // Defs
+  html += `<defs>
+    <marker id="arr-blue" markerWidth="7" markerHeight="5" refX="6" refY="2.5" orient="auto"><polygon points="0 0,7 2.5,0 5" fill="#38bdf8" opacity="0.5"/></marker>
+    <marker id="arr-green" markerWidth="7" markerHeight="5" refX="6" refY="2.5" orient="auto"><polygon points="0 0,7 2.5,0 5" fill="#4ade80" opacity="0.5"/></marker>
+    <marker id="arr-yellow" markerWidth="7" markerHeight="5" refX="6" refY="2.5" orient="auto"><polygon points="0 0,7 2.5,0 5" fill="#fbbf24" opacity="0.5"/></marker>
+    <linearGradient id="encGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#38bdf8" stop-opacity="0.15"/><stop offset="100%" stop-color="#a78bfa" stop-opacity="0.15"/></linearGradient>
+    <linearGradient id="decGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#4ade80" stop-opacity="0.1"/><stop offset="100%" stop-color="#fbbf24" stop-opacity="0.1"/></linearGradient>
+  </defs>`;
+
+  // Encoder box
+  html += `<rect x="40" y="25" width="${W-80}" height="${yOutput + 30 - 25}" rx="12" fill="url(#encGrad)" stroke="#334155" stroke-width="1"/>`;
+  html += `<text x="55" y="45" fill="#64748b" font-size="11" font-weight="600">ENCODER</text>`;
+
+  // Decoder box
+  html += `<rect x="40" y="${yOutput + 55}" width="${W-80}" height="90" rx="12" fill="url(#decGrad)" stroke="#334155" stroke-width="1" stroke-dasharray="4 3"/>`;
+  html += `<text x="55" y="${yOutput + 75}" fill="#64748b" font-size="11" font-weight="600">DECODER (mirror: W2^T → W1^T)</text>`;
+
+  // --- Input layer ---
+  const inSpread = 28;
+  html += `<text x="${midX}" y="${yInput - 22}" text-anchor="middle" fill="#38bdf8" font-size="13" font-weight="600">Input: 8 bit</text>`;
+  for (let i = 0; i < nInput; i++) {
+    const x = nodeX(i, nInput, inSpread);
+    html += `<circle cx="${x}" cy="${yInput}" r="10" fill="#1e3a5f" stroke="#38bdf8" stroke-width="2"/>`;
+    html += `<text x="${x}" y="${yInput + 4}" text-anchor="middle" fill="#38bdf8" font-size="9" font-weight="600">b${i}</text>`;
+  }
+
+  // --- Hidden layer ---
+  const hSpread = Math.min(22, (W - 140) / (nHidden - 1));
+  const actLabel = cfg.label;
+  html += `<text x="${midX}" y="${yHidden - 22}" text-anchor="middle" fill="#a78bfa" font-size="13" font-weight="600">Layer 1: ${H} neuron — ${actLabel}</text>`;
+  html += `<text x="${midX}" y="${yHidden - 8}" text-anchor="middle" fill="#64748b" font-size="10">W1: ${8}×${H} int8 | bias: ${H}</text>`;
+
+  const actType = state.act.split('_')[0]; // c19, silu, gelu, relu
+  for (let j = 0; j < nHidden; j++) {
+    const x = nodeX(j, nHidden, hSpread);
+    if (H > 32 && j === nHidden - 3) {
+      html += `<text x="${x}" y="${yHidden + 4}" text-anchor="middle" fill="#64748b" font-size="11">...</text>`;
+      continue;
+    }
+    if (H > 32 && j > nHidden - 3 && j < nHidden) { /* skip extras beyond ellipsis for wide */ }
+
+    // Neuron box
+    const nw = 20, nh = 24;
+    const isC19 = actType === 'c19';
+    const boxColor = isC19 ? '#1e1b4b' : '#2e1065';
+    const borderColor = isC19 ? '#c084fc' : '#a78bfa';
+    html += `<rect x="${x-nw/2}" y="${yHidden-nh/2}" width="${nw}" height="${nh}" rx="4" fill="${boxColor}" stroke="${borderColor}" stroke-width="1.5"/>`;
+
+    // Activation symbol inside neuron
+    const sy = yHidden;
+    if (isC19) {
+      // C19 oscillating wave (3 bumps)
+      html += `<path d="M${x-7},${sy} q2,-7 4,0 q2,7 4,0 q2,-5 3,0" stroke="#e879f9" stroke-width="1.5" fill="none"/>`;
+    } else if (actType === 'relu') {
+      html += `<path d="M${x-5},${sy+4} L${x-1},${sy+4} L${x+5},${sy-5}" stroke="#c084fc" stroke-width="1.5" fill="none"/>`;
+    } else if (actType === 'gelu') {
+      html += `<path d="M${x-5},${sy+3} Q${x-2},${sy+3} ${x},${sy} Q${x+2},${sy-4} ${x+5},${sy-4}" stroke="#c084fc" stroke-width="1.5" fill="none"/>`;
+    } else if (actType === 'silu') {
+      html += `<path d="M${x-5},${sy+2} Q${x-2},${sy+4} ${x},${sy} Q${x+2},${sy-5} ${x+5},${sy-4}" stroke="#c084fc" stroke-width="1.5" fill="none"/>`;
+    }
+
+    // C19 params indicator (tiny c,rho below neuron)
+    if (isC19 && j % 4 === 0 && j < nHidden - 2) {
+      html += `<text x="${x}" y="${yHidden + nh/2 + 10}" text-anchor="middle" fill="#a78bfa" font-size="7" opacity="0.6">c,rho</text>`;
+    }
+  }
+
+  // Connections input → hidden (sample lines)
+  for (let j = 0; j < Math.min(nHidden, 16); j += 2) {
+    const xh = nodeX(j, nHidden, hSpread);
+    for (let i = 0; i < nInput; i += 2) {
+      const xi = nodeX(i, nInput, inSpread);
+      html += `<line x1="${xi}" y1="${yInput+11}" x2="${xh}" y2="${yHidden-11}" stroke="#38bdf8" stroke-width="0.4" opacity="0.2" marker-end="url(#arr-blue)"/>`;
+    }
+  }
+
+  // --- Output layer ---
+  const outSpread = 26;
+  html += `<text x="${midX}" y="${yOutput - 22}" text-anchor="middle" fill="#4ade80" font-size="13" font-weight="600">Layer 2: 16D latent (linear)</text>`;
+  html += `<text x="${midX}" y="${yOutput - 8}" text-anchor="middle" fill="#64748b" font-size="10">W2: ${H}×16 int8 | bias: 16</text>`;
+
+  for (let k = 0; k < nOutput; k++) {
+    const x = nodeX(k, nOutput, outSpread);
+    html += `<circle cx="${x}" cy="${yOutput}" r="10" fill="#052e16" stroke="#4ade80" stroke-width="2"/>`;
+    html += `<text x="${x}" y="${yOutput + 4}" text-anchor="middle" fill="#4ade80" font-size="8" font-weight="600">z${k}</text>`;
+  }
+
+  // Connections hidden → output
+  for (let k = 0; k < nOutput; k += 2) {
+    const xo = nodeX(k, nOutput, outSpread);
+    for (let j = 0; j < Math.min(nHidden, 16); j += 3) {
+      const xh = nodeX(j, nHidden, hSpread);
+      html += `<line x1="${xh}" y1="${yHidden+11}" x2="${xo}" y2="${yOutput-11}" stroke="#4ade80" stroke-width="0.4" opacity="0.2" marker-end="url(#arr-green)"/>`;
+    }
+  }
+
+  // --- Decoder (mirror) ---
+  html += `<text x="${midX}" y="${yDecoder - 5}" text-anchor="middle" fill="#fbbf24" font-size="12">16D → W2^T → ${H}D → W1^T → 8 bit (tied, same W)</text>`;
+
+  // Decoder flow arrows
+  const decY = yDecoder + 10;
+  const steps = ['16D latent', `W2^T`, `${H}D`, `W1^T`, '8 bit'];
+  const stepW = (W - 120) / (steps.length - 1);
+  for (let s = 0; s < steps.length; s++) {
+    const sx = 70 + s * stepW;
+    const isW = steps[s].includes('W');
+    const col = isW ? '#fbbf24' : '#94a3b8';
+    html += `<text x="${sx}" y="${decY}" text-anchor="middle" fill="${col}" font-size="${isW ? 11 : 12}" font-weight="${isW ? 400 : 600}">${steps[s]}</text>`;
+    if (s < steps.length - 1) {
+      html += `<line x1="${sx + 30}" y1="${decY - 4}" x2="${sx + stepW - 30}" y2="${decY - 4}" stroke="#fbbf24" stroke-width="1.5" opacity="0.5" marker-end="url(#arr-yellow)"/>`;
+    }
+  }
+
+  // C19 extra params indicator
+  if (state.act === 'c19_learn' || state.act === 'c19_residual') {
+    const extraLabel = state.act === 'c19_residual' ? `+${H}×3 (c, rho, alpha per neuron)` : `+${H}×2 (c, rho per neuron)`;
+    html += `<text x="${W - 55}" y="${yHidden + 30}" text-anchor="end" fill="#c084fc" font-size="10" font-style="italic">${extraLabel}</text>`;
+  }
+
+  // Title params badge
+  html += `<rect x="${W - 150}" y="8" width="135" height="24" rx="6" fill="#334155"/>`;
+  html += `<text x="${W - 82}" y="24" text-anchor="middle" fill="#e2e8f0" font-size="11" font-weight="600">${params.toLocaleString()} params</text>`;
+
+  svg.innerHTML = html;
+}
+
+function updatePrompt(cfg, H, params) {
+  const ds = cfg.downstream !== null ? `${cfg.downstream}%` : 'ismeretlen';
+  const ll = cfg.lossless !== null ? `${cfg.lossless}%` : 'ismeretlen';
+  const text = `Byte tokenizer unit: 2-layer tied-weight mirror autoencoder.
+Encoder: 8 bit input → ${H} ${cfg.label} neuron (W1: 8×${H} int8) → 16D latent (W2: ${H}×16 int8, linear).
+Decoder: 16D → W2^T → ${H}D → W1^T → 8 bit (tied weights = same W mindket iranyba).
+Parameterek: ${params} (${params} byte int8). Downstream: ${ds}. Lossless: ${ll}.`;
+  document.getElementById('promptBox').textContent = text;
+}
+
+document.getElementById('copyBtn').addEventListener('click', function() {
+  navigator.clipboard.writeText(document.getElementById('promptBox').textContent);
+  this.textContent = 'Masolva!';
+  setTimeout(() => this.textContent = 'Masolas', 1500);
+});
+
+updateAll();
+</script>
+</body>
+</html>

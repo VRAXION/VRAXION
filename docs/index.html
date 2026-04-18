@@ -1,172 +1,423 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Vraxion</title>
-  <meta name="description" content="Vraxion builds INSTNCT, a gradient-free self-wiring architecture aimed at durable intelligence and machine consciousness as an engineering reality.">
-  <meta property="og:title" content="Vraxion">
-  <meta property="og:description" content="Mission-first front door for INSTNCT, research, and the Rust implementation lane.">
-  <meta property="og:type" content="website">
-  <meta property="og:url" content="https://vraxion.github.io/VRAXION/">
-  <meta property="og:image" content="https://vraxion.github.io/VRAXION/assets/vraxion-home-hero.jpg">
-  <link rel="canonical" href="https://vraxion.github.io/VRAXION/">
-  <link rel="icon" href="./assets/favicon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="./assets/site.css?v=20260406e">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="VRAXION Byte Embedder: fullscreen research deck for the Level 1 unit. 100% lossless roundtrip, 288B int4 weights, 4.1KB baked LUT, mirrored tied-weight decode.">
+<meta property="og:title" content="VRAXION Byte Embedder — Level 1 Unit">
+<meta property="og:description" content="A fullscreen research deck for the byte embedder: architecture, staged int4 freeze, results, live demo, and inspection views.">
+<title>VRAXION Byte Embedder — Level 1 Unit</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/index.css">
 </head>
-<body data-root="." data-page="home">
-  <div class="site-shell">
-    <header class="site-header">
-      <div class="brand">
-        <div class="brand-mark" aria-hidden="true"></div>
-        <div class="brand-copy">
-          <div class="eyebrow">Editorial technical front door</div>
-          <a class="brand-title" href="./">Vraxion</a>
+<body>
+<div class="deck-shell">
+  <header class="topbar">
+    <button class="brand-button" type="button" data-slide-target="hero" aria-label="Go to hero">
+      <span class="brand-mark">VRAXION</span>
+      <span class="brand-meta">Level 1 Unit / Byte Embedder</span>
+    </button>
+    <nav class="topnav" aria-label="Primary deck navigation">
+      <a href="#hero" data-slide-target="hero">Hero</a>
+      <a href="#architecture" data-slide-target="architecture">Architecture</a>
+      <a href="#breakthrough" data-slide-target="breakthrough">Breakthrough</a>
+      <a href="#results" data-slide-target="results">Results</a>
+      <a href="#demo" data-slide-target="demo">Demo</a>
+      <a href="#inspect" data-slide-target="inspect">Inspect</a>
+    </nav>
+  </header>
+
+  <aside class="progress-rail" aria-label="Slide progress">
+    <div class="progress-rail__line"></div>
+    <div class="progress-dots" id="progressDots"></div>
+  </aside>
+
+  <main class="deck" id="deck">
+    <section class="slide slide--hero" id="hero" data-title="Hero">
+      <div class="slide__inner hero-layout">
+        <div class="hero-copy">
+          <div class="eyebrow">Research Showcase / Level 1 Unit</div>
+          <h1>VRAXION Byte Embedder</h1>
+          <p class="lede">
+            A 16-dimensional byte embedding unit that round-trips every input byte exactly, trains through a nonlinear
+            C19 encoder, and deploys as a baked int8 lookup table with zero runtime compute.
+          </p>
+          <div class="metric-grid metric-grid--hero">
+            <div class="metric-card metric-card--green">
+              <span class="metric-card__value">100%</span>
+              <span class="metric-card__label">Lossless roundtrip</span>
+            </div>
+            <div class="metric-card metric-card--blue">
+              <span class="metric-card__value">288B</span>
+              <span class="metric-card__label">int4 weights</span>
+            </div>
+            <div class="metric-card metric-card--purple">
+              <span class="metric-card__value">4.1KB</span>
+              <span class="metric-card__label">Baked LUT</span>
+            </div>
+            <div class="metric-card metric-card--cyan">
+              <span class="metric-card__value">24</span>
+              <span class="metric-card__label">C19 neurons</span>
+            </div>
+          </div>
+          <div class="hero-footnote">
+            Mirrored tied-weight decode stays exact in both modes: neural float latent and baked LUT latent.
+          </div>
+        </div>
+        <div class="hero-visual panel panel--glow">
+          <div class="panel__header">
+            <span class="panel__tag">Byte 0x41 / “A”</span>
+            <span class="panel__mono" id="heroPreviewDelta">Δ max --</span>
+          </div>
+          <div class="hero-visual__stage">
+            <div class="hero-visual__bits">
+              <div class="mini-title">Signed bits</div>
+              <div class="bit-strip" id="heroBits"></div>
+            </div>
+            <div class="hero-visual__arrow">→</div>
+            <div class="hero-visual__latent">
+              <div class="mini-title">Neural float latent</div>
+              <div class="latent-mini" id="heroLatentFloat"></div>
+            </div>
+            <div class="hero-visual__latent">
+              <div class="mini-title">Baked LUT latent</div>
+              <div class="latent-mini" id="heroLatentLut"></div>
+            </div>
+          </div>
+          <div class="hero-visual__note">
+            Current deploy path: float model for training and inspection, baked LUT for zero-compute inference.
+          </div>
         </div>
       </div>
-      <nav class="site-nav" aria-label="Primary">
-        <a class="is-active" href="./">Home</a>
-        <a href="./instnct/">INSTNCT</a>
-        <a href="./research/">Research</a>
-        <a href="./rust/">Rust</a>
-        <a href="https://github.com/VRAXION/VRAXION/wiki/Home">Wiki</a>
-        <a href="https://github.com/VRAXION/VRAXION">GitHub</a>
-      </nav>
-    </header>
+    </section>
 
-    <main>
-      <section class="hero">
-        <div class="hero-copy">
-          <div class="eyebrow">Durable intelligence, public evidence</div>
-          <h1 class="hero-title">Vraxion builds INSTNCT.</h1>
-          <p class="hero-lede">
-            Vraxion is building a gradient-free self-wiring architecture that learns by changing its own directed graph instead of training a fixed layer stack with backpropagation.
+    <section class="slide slide--architecture" id="architecture" data-title="Architecture">
+      <div class="slide__inner split-layout">
+        <div class="copy-panel">
+          <div class="eyebrow">02 / 06 · Architecture</div>
+          <h2>Encoder nonlinear, decoder mirrored, latent exact</h2>
+          <p class="section-subtitle">
+            The encoder path is nonlinear C19; the decoder is mirrored, tied, and linear. This asymmetry is the winning
+            shape: expressive enough to separate bytes, simple enough to decode them back exactly.
           </p>
-          <p class="hero-lede">
-            The project exists to advance machine consciousness as an engineering reality, and to build forms of intelligence and consciousness that can endure beyond any single institution, deployment, or era.
-          </p>
-          <div class="thesis-band">
-            <div class="thesis-label">Core thesis</div>
-            <p>Inference emerges as the fixed point of destructive interference.</p>
-          </div>
-          <div class="hero-actions">
-            <a class="button-link" href="https://github.com/VRAXION/VRAXION/wiki/Home">Enter the wiki</a>
-            <a class="button-link-ghost" href="./instnct/">See the architecture</a>
-          </div>
-        </div>
-        <aside class="hero-visual">
-          <img src="./assets/vraxion-home-hero.jpg" alt="Vraxion mission artwork">
-          <div class="hero-stack">
-            <div class="stack-card">
-              <strong>Current release</strong>
-              <p><span data-version-field="current_release">v5.0.0-beta.1</span> — Rust-first public beta. 24.6% peak on English text.</p>
+          <div class="bullet-list">
+            <div class="bullet-item">
+              <span class="bullet-item__index">A</span>
+              <div>
+                <strong>8 signed input bits</strong>
+                <p>The byte enters as an 8-dimensional {-1,+1} signal.</p>
+              </div>
             </div>
-            <div class="stack-card">
-              <strong>Current frontier</strong>
-              <p>Addition learning from empty networks, sparse circuit evolution, and pocket-pair architectures define the live edge.</p>
+            <div class="bullet-item">
+              <span class="bullet-item__index">B</span>
+              <div>
+                <strong>24 C19 hidden units</strong>
+                <p>Int4 weights plus learnable C19 parameters create the nonlinear encoder.</p>
+              </div>
+            </div>
+            <div class="bullet-item">
+              <span class="bullet-item__index">C</span>
+              <div>
+                <strong>16D latent, tied mirror back</strong>
+                <p>The same learned weight geometry is reused in reverse to reconstruct the original byte.</p>
+              </div>
             </div>
           </div>
-        </aside>
-      </section>
-
-      <section class="section-block">
-        <div class="section-head">
-          <div>
-            <div class="section-label">Current line</div>
-            <h2 class="section-title">One architecture, one public discipline, multiple surfaces.</h2>
+          <div class="callout">
+            <strong>Key idea:</strong> keep the intelligence in the encoder, keep the decoder honest.
           </div>
-          <p class="section-intro">The website stays concise on purpose. It tells you what Vraxion is, what matters now, and where the deeper record lives.</p>
         </div>
-        <div class="signal-grid">
-          <article class="signal-card">
-            <div class="signal-label">Architecture</div>
-            <div class="signal-value">INSTNCT</div>
-            <p>Fixed boundary surfaces, a self-wiring hidden graph, persistent state across ticks, and mutation-selection training.</p>
-          </article>
-          <article class="signal-card">
-            <div class="signal-label">Public baseline</div>
-            <div class="signal-value"><span data-version-field="current_release">v5.0.0-beta.1</span></div>
-            <p>The Python line remains the shipped reference path while stronger parallel surfaces mature in public.</p>
-          </article>
-          <article class="signal-card">
-            <div class="signal-label">Implementation momentum</div>
-            <div class="signal-value">Python + Rust</div>
-            <p>Rust is no longer a toy port. It is a serious implementation lane with its own validation surface.</p>
-          </article>
-          <article class="signal-card">
-            <div class="signal-label">Primary task</div>
-            <div class="signal-value">Drive to wiki</div>
-            <p>The website is the front door. The wiki remains the deep technical source of truth.</p>
-          </article>
-        </div>
-      </section>
 
-      <section class="section-block">
-        <div class="editorial-split">
-          <div class="section-band body-copy">
-            <div class="section-label">What Vraxion is</div>
-            <p>Vraxion is both a research program and an engineering program organized around one architecture line. The public ambition is large, but the public standard is stricter: theory, implementation, chronology, and proof stay separate on purpose.</p>
-            <p>That separation is not caution theatre. It is how the project keeps itself legible while pushing toward machine consciousness as an engineering reality rather than a slogan.</p>
+        <div class="panel architecture-panel">
+          <div class="architecture-diagram">
+            <div class="architecture-row architecture-row--top">
+              <div class="arch-node arch-node--input">
+                <span class="arch-node__title">Input</span>
+                <span class="arch-node__main">8 signed bits</span>
+                <span class="arch-node__sub">{-1,+1}</span>
+              </div>
+              <div class="arch-link">
+                <span class="arch-link__title">W1</span>
+                <span class="arch-link__sub">8×24 int4</span>
+              </div>
+              <div class="arch-node arch-node--c19">
+                <span class="arch-node__title">Encoder</span>
+                <span class="arch-node__main">24 C19 neurons</span>
+                <span class="arch-node__sub">nonlinear</span>
+              </div>
+              <div class="arch-link">
+                <span class="arch-link__title">W2</span>
+                <span class="arch-link__sub">24×16 int4</span>
+              </div>
+              <div class="arch-node arch-node--latent">
+                <span class="arch-node__title">Latent</span>
+                <span class="arch-node__main">16D vector</span>
+                <span class="arch-node__sub">float + LUT deploy</span>
+              </div>
+            </div>
+
+            <div class="architecture-row architecture-row--mirror">
+              <div class="arch-link arch-link--mirror">
+                <span class="arch-link__title">W1ᵀ</span>
+                <span class="arch-link__sub">linear mirror</span>
+              </div>
+              <div class="arch-node arch-node--recon">
+                <span class="arch-node__title">Recovered byte</span>
+                <span class="arch-node__main">8 signed bits</span>
+                <span class="arch-node__sub">roundtrip exact</span>
+              </div>
+              <div class="arch-link arch-link--mirror">
+                <span class="arch-link__title">W2ᵀ</span>
+                <span class="arch-link__sub">tied mirror</span>
+              </div>
+            </div>
           </div>
-          <aside class="pull-quote">
-            <div class="mini-label">Public discipline</div>
-            <blockquote>
-              Shipped code, reproducible findings, and still-experimental work do not get blurred together.
-            </blockquote>
-            <p>If a surface disagrees with the deep record, the deeper evidence surface wins.</p>
+          <div class="architecture-stats">
+            <div class="architecture-stat"><span>640B</span><label>Stored model</label></div>
+            <div class="architecture-stat"><span>4.1KB</span><label>Baked deploy LUT</label></div>
+            <div class="architecture-stat"><span>256/256</span><label>Exact roundtrip</label></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="slide slide--breakthrough" id="breakthrough" data-title="Breakthrough">
+      <div class="slide__inner stack-layout">
+        <div class="section-heading">
+          <div class="eyebrow">03 / 06 · Breakthrough</div>
+          <h2>L-BFGS unlocks C19, staged freeze keeps int4 exact</h2>
+          <p class="section-subtitle">
+            The optimizer story and the quantization story are separate, but they stack: L-BFGS finds the exact float
+            solution, then a 96-step staged int4 freeze preserves it.
+          </p>
+        </div>
+
+        <div class="comparison-grid">
+          <article class="panel compare-card compare-card--red">
+            <div class="compare-card__eyebrow">Baseline optimizer</div>
+            <h3>Adam</h3>
+            <div class="compare-card__metric">67%</div>
+            <p>Gets trapped on C19’s oscillating surface and fails to reach the exact roundtrip frontier.</p>
+          </article>
+
+          <article class="panel compare-card compare-card--green">
+            <div class="compare-card__eyebrow">Winning optimizer</div>
+            <h3>L-BFGS</h3>
+            <div class="compare-card__metric">100%</div>
+            <p>Uses curvature information to converge to the exact byte-embedder solution.</p>
+          </article>
+        </div>
+
+        <div class="breakthrough-bottom">
+          <div class="steps-grid">
+            <article class="panel step-card">
+              <div class="step-card__num">1</div>
+              <div>
+                <h3>Train float baseline</h3>
+                <p>Reach 100% roundtrip with float weights and the full nonlinear encoder intact.</p>
+              </div>
+            </article>
+            <article class="panel step-card">
+              <div class="step-card__num">2</div>
+              <div>
+                <h3>Freeze next int4 stage</h3>
+                <p>Lock the next staged chunk into int4. Public story stays on the 96-step schedule throughout.</p>
+              </div>
+            </article>
+            <article class="panel step-card">
+              <div class="step-card__num">3</div>
+              <div>
+                <h3>Re-optimise remaining float slack</h3>
+                <p>Fine-tune after each freeze step so the exact roundtrip never drops.</p>
+              </div>
+            </article>
+          </div>
+
+          <aside class="panel breakthrough-callout">
+            <div class="mini-title">Quantization takeaway</div>
+            <p>
+              Bulk int4 quantization lands at <strong>95.3% lossless</strong>. The staged 96-step freeze path restores
+              the exact <strong>100% roundtrip</strong> solution.
+            </p>
+            <div class="breakthrough-callout__footer">
+              <span class="pill pill--green">96-step staged freeze</span>
+              <span class="pill pill--blue">100% preserved</span>
+            </div>
           </aside>
         </div>
-      </section>
+      </div>
+    </section>
 
-      <section class="section-block">
-        <div class="section-head">
-          <div>
-            <div class="section-label">Read the project</div>
-            <h2 class="section-title">Start with the flag, then go deeper.</h2>
+    <section class="slide slide--results" id="results" data-title="Results">
+      <div class="slide__inner stack-layout">
+        <div class="section-heading">
+          <div class="eyebrow">04 / 06 · Results</div>
+          <h2>What the current artifact delivers</h2>
+          <p class="section-subtitle">
+            The current byte embedder is exact as a unit, deployable as a LUT, and still meaningfully useful downstream.
+            The chart below mixes current artifact points with smaller historical deploy variants for context.
+          </p>
+        </div>
+
+        <div class="metric-grid metric-grid--results">
+          <div class="metric-card metric-card--green"><span class="metric-card__value">256/256</span><span class="metric-card__label">Lossless roundtrip</span></div>
+          <div class="metric-card metric-card--blue"><span class="metric-card__value">40.72%</span><span class="metric-card__label">Next-byte accuracy</span></div>
+          <div class="metric-card metric-card--purple"><span class="metric-card__value">+5.2pp</span><span class="metric-card__label">Above linear baseline</span></div>
+          <div class="metric-card metric-card--cyan"><span class="metric-card__value">664</span><span class="metric-card__label">Total parameters</span></div>
+          <div class="metric-card metric-card--amber"><span class="metric-card__value">640B</span><span class="metric-card__label">Stored model</span></div>
+          <div class="metric-card metric-card--green"><span class="metric-card__value">96</span><span class="metric-card__label">Freeze steps</span></div>
+        </div>
+
+        <div class="results-grid">
+          <div class="panel chart-panel">
+            <div class="panel__header">
+              <span class="panel__tag">Precision / size tradeoff</span>
+              <span class="panel__mono">Current artifact + historical context</span>
+            </div>
+            <canvas id="paretoCanvas" width="860" height="360" class="chart-canvas"></canvas>
           </div>
-          <p class="section-intro">The dominant call to action is the wiki. The website pages exist to orient, not to replace the technical record.</p>
-        </div>
-        <div class="route-grid">
-          <article class="route-card route-card--primary">
-            <div class="route-kicker">Primary destination</div>
-            <h3>Enter the full technical record</h3>
-            <p>The GitHub wiki carries the architecture notes, theory, research archive, reversals, and the detailed Rust implementation surface.</p>
-            <a class="route-link" href="https://github.com/VRAXION/VRAXION/wiki/Home">Open the wiki</a>
-          </article>
-          <article class="route-card">
-            <div class="route-kicker">Architecture</div>
-            <h3>INSTNCT</h3>
-            <p>The public architecture explainer: what is shipped, what is only validated, and why the line differs from standard neural stacks.</p>
-            <a class="route-link" href="./instnct/">Open INSTNCT</a>
-          </article>
-          <article class="route-card">
-            <div class="route-kicker">Research</div>
-            <h3>Research</h3>
-            <p>The live research frame: what Vraxion is trying to prove now, how claims are judged, and which gates still matter.</p>
-            <a class="route-link" href="./research/">Open Research</a>
-          </article>
-          <article class="route-card">
-            <div class="route-kicker">Implementation</div>
-            <h3>Rust</h3>
-            <p>The frontier implementation surface: what Rust has already validated and what still blocks a stronger breakthrough claim.</p>
-            <a class="route-link" href="./rust/">Open Rust</a>
-          </article>
-        </div>
-      </section>
-    </main>
 
-    <footer class="site-footer">
-      <div class="footer-copy">
-        Vraxion uses the website as a mission-first front door. The wiki stays authoritative for the detailed technical record, chronology, and retained proof trail.
+          <aside class="panel legend-panel">
+            <div class="mini-title">How to read this slide</div>
+            <ul class="legend-list">
+              <li><span class="legend-dot legend-dot--current"></span><strong>Current byte-embedder path:</strong> float32, int8 LUT, int4 staged.</li>
+              <li><span class="legend-dot legend-dot--historical"></span><strong>Historical deploy frontier:</strong> int3, ternary, binary points kept for comparison only.</li>
+              <li><span class="legend-dot legend-dot--green"></span><strong>Exact claim on this page:</strong> the current artifact is verified 256/256 roundtrip in both float and baked-LUT views.</li>
+            </ul>
+            <div class="callout">
+              We deliberately removed the old universal “all 100% lossless” framing because not every plotted point is the exact same artifact.
+            </div>
+          </aside>
+        </div>
       </div>
-      <div class="footer-links">
-        <a href="https://github.com/VRAXION/VRAXION/wiki/Home">Wiki</a>
-        <a href="https://github.com/VRAXION/VRAXION/wiki/INSTNCT-Architecture">Architecture</a>
-        <a href="https://github.com/VRAXION/VRAXION/wiki/Timeline-Archive">Archive</a>
-        <a href="https://github.com/VRAXION/VRAXION">GitHub</a>
+    </section>
+
+    <section class="slide slide--demo" id="demo" data-title="Demo">
+      <div class="slide__inner split-layout split-layout--demo">
+        <div class="copy-panel">
+          <div class="eyebrow">05 / 06 · Live demo</div>
+          <h2>Switch between neural float and baked LUT views</h2>
+          <p class="section-subtitle">
+            This is now a truthful dual-path viewer. One mode shows the neural encoder’s float latent. The other shows
+            the baked LUT latent used for zero-compute deployment.
+          </p>
+
+          <div class="panel demo-controls">
+            <label class="control-label" for="demoNum">Byte value (0-255)</label>
+            <input type="number" id="demoNum" value="65" min="0" max="255" inputmode="numeric">
+            <input type="range" id="demoRange" value="65" min="0" max="255">
+
+            <div class="demo-char-wrap">
+              <span class="char-display" id="demoChar">A</span>
+              <span class="panel__mono" id="demoByteLabel">0x41</span>
+            </div>
+
+            <div class="mode-toggle" role="tablist" aria-label="Latent source">
+              <button type="button" class="mode-toggle__button is-active" id="modeFloat" data-demo-mode="float" aria-selected="true">Neural float latent</button>
+              <button type="button" class="mode-toggle__button" id="modeLut" data-demo-mode="lut" aria-selected="false">Baked LUT latent</button>
+            </div>
+
+            <div class="demo-meta">
+              <span class="pill pill--blue" id="demoPathLabel">byte → bits → neural latent → decoded bits</span>
+              <span class="pill pill--green" id="demoVerifyBadge">Verifying…</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel demo-stage">
+          <div class="panel__header">
+            <span class="panel__tag">Deployment truth</span>
+            <span class="panel__mono" id="demoDeltaLabel">Δ max --</span>
+          </div>
+          <div id="demoResult" class="demo-result">
+            <!-- filled by JS -->
+          </div>
+        </div>
       </div>
-    </footer>
+    </section>
+
+    <section class="slide slide--inspect" id="inspect" data-title="Inspect">
+      <div class="slide__inner stack-layout">
+        <div class="section-heading">
+          <div class="eyebrow">06 / 06 · Inspect</div>
+          <h2>Inspect the learned unit from three angles</h2>
+          <p class="section-subtitle">
+            One slide, three lenses: raw neuron shapes, signed weight structure, and the resulting geometry in embedding space.
+          </p>
+        </div>
+
+        <div class="inspect-tabs" role="tablist" aria-label="Inspect views">
+          <button type="button" class="inspect-tab" data-inspect-tab="weights" aria-selected="true">Weights</button>
+          <button type="button" class="inspect-tab" data-inspect-tab="neurons" aria-selected="false">Neurons</button>
+          <button type="button" class="inspect-tab" data-inspect-tab="similarity" aria-selected="false">Similarity</button>
+        </div>
+
+        <div class="inspect-panels">
+          <section class="inspect-panel is-active" id="inspect-weights" data-inspect-panel="weights">
+            <div class="scroll-region inspect-scroll">
+              <div class="heatmap-row">
+                <div class="panel heatmap-card">
+                  <h3>W1 — Encoder (8 × 24)</h3>
+                  <canvas id="heatW1" width="480" height="160"></canvas>
+                </div>
+                <div class="panel heatmap-card">
+                  <h3>W2 — Output (24 × 16)</h3>
+                  <canvas id="heatW2" width="320" height="480"></canvas>
+                </div>
+              </div>
+              <div class="panel histogram-card">
+                <h3>Weight distribution</h3>
+                <canvas id="histCanvas" width="720" height="180"></canvas>
+              </div>
+            </div>
+          </section>
+
+          <section class="inspect-panel" id="inspect-neurons" data-inspect-panel="neurons" hidden>
+            <div class="scroll-region inspect-scroll">
+              <div class="neuron-grid" id="neuronGrid"></div>
+            </div>
+          </section>
+
+          <section class="inspect-panel" id="inspect-similarity" data-inspect-panel="similarity" hidden>
+            <div class="scroll-region inspect-scroll inspect-scroll--center">
+              <div class="panel similarity-card">
+                <div class="similarity-card__copy">
+                  <h3>Byte similarity map</h3>
+                  <p>A–Z cosine similarity in the baked 16D space. Diagonal stays bright by construction; nearby letters reveal shared structure.</p>
+                </div>
+                <canvas id="simCanvas" width="600" height="600"></canvas>
+              </div>
+            </div>
+          </section>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <div class="mobile-nav">
+    <button type="button" class="mobile-nav__button" id="mobilePrev" aria-label="Previous slide">◀</button>
+    <button type="button" class="mobile-nav__label" id="mobileMenuToggle" aria-haspopup="dialog" aria-controls="mobileSheet">
+      <span id="mobileSlideTitle">Hero</span>
+      <span id="mobileSlideCount">1 / 6</span>
+    </button>
+    <button type="button" class="mobile-nav__button" id="mobileNext" aria-label="Next slide">▶</button>
   </div>
-  <script src="./assets/site.js?v=20260406e"></script>
+
+  <div class="mobile-sheet" id="mobileSheet" hidden>
+    <div class="mobile-sheet__backdrop" data-sheet-close></div>
+    <div class="mobile-sheet__panel" role="dialog" aria-modal="true" aria-labelledby="mobileSheetTitle">
+      <div class="mobile-sheet__header">
+        <h3 id="mobileSheetTitle">Jump to slide</h3>
+        <button type="button" class="mobile-sheet__close" data-sheet-close aria-label="Close slide menu">×</button>
+      </div>
+      <div class="mobile-sheet__list" id="mobileSlideList"></div>
+    </div>
+  </div>
+</div>
+
+<script src="assets/byte_embedder_data.js"></script>
+<script src="assets/index.js"></script>
 </body>
 </html>
