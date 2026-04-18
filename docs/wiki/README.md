@@ -11,22 +11,44 @@ Keep the two surfaces in sync periodically so that repo-side tooling, website re
 - A full mirror of the GitHub wiki pages (`Home.md`, `INSTNCT-Architecture.md`, `Theory-of-Thought.md`, `Timeline-Archive.md`, `v5-Rust-Port-Benchmarks.md`, `_Sidebar.md`, `_Footer.md`)
 - Supporting assets referenced by wiki pages via relative links (`pipeline-architecture.svg`, `assets/` SVGs)
 - `index.html` — the GitHub Pages redirect for the legacy `docs/wiki/` URL path; not a wiki page
-- `archive/` — retired wiki pages kept for historical reference (pure "Moved" redirect stubs from the 2026-04 consolidation)
 
 ## What does NOT belong here
 
 - Per-run logs or ad-hoc reports (put those in `docs/runs/`)
 - Root-level canonical docs like `VALIDATED_FINDINGS.md` (that one lives at the repo root and is referenced from the wiki, not duplicated here)
+- Archived/retired wiki pages — these are removed from both the repo and the live wiki; git history retains anything needed. Ideas worth preserving migrate to blueprint entries on `Timeline-Archive.md` instead.
 
 ## Syncing
 
-The repo has `tools/sync_wiki_from_repo.py` which pushes from `docs/wiki/` into the adjacent `VRAXION.wiki/` checkout. Caveats as of 2026-04-17:
+The repo has `tools/sync_wiki_from_repo.py` which pushes from `docs/wiki/` into an adjacent `VRAXION.wiki/` checkout. The tool auto-detects the wiki clone at `<sibling>/VRAXION.wiki/` (typical layout) and falls back to `<repo>/VRAXION.wiki/` if the sibling path is absent.
 
-- The tool's `WIKI_DIR` constant points to `<repo>/VRAXION.wiki/` but the actual clone usually lives at `<sibling>/VRAXION.wiki/` (e.g. `S:/Git/VRAXION.wiki/`). Patch the path before running, or symlink.
-- The tool's `FILES` list is out of date — it still lists six retired pages (now in `archive/`) and omits `Timeline-Archive.md` / `v5-Rust-Port-Benchmarks.md` / `Theory-of-Thought.md` / `pipeline-architecture.svg`. Update that list before relying on the tool.
+**Workflow for a maintainer:**
 
-Manual sync (until the tool is fixed) is just `cp` in both directions. After reconciling, commit on both sides: `git commit` here, and `git push` inside `VRAXION.wiki/` to publish to GitHub.
+```bash
+# 1. Make sure the wiki clone exists sibling to the repo:
+#    S:/Git/VRAXION/     ← main repo
+#    S:/Git/VRAXION.wiki/  ← wiki clone
+#    If missing: git clone https://github.com/VRAXION/VRAXION.wiki.git
+
+# 2. Dry-run: validate sources exist and preview changes
+python tools/sync_wiki_from_repo.py --dry-run
+
+# 3. Actual sync (copies from docs/wiki/ into VRAXION.wiki/)
+python tools/sync_wiki_from_repo.py
+
+# 4. Commit + push in the wiki repo
+cd ../VRAXION.wiki
+git add -A
+git commit -m "Sync from main repo docs/wiki"
+git push
+```
+
+**Limitations (know before running):**
+
+- **Push-only.** The tool cannot pull changes from the online wiki. If someone edited the wiki online, manually reconcile before syncing (check `git status` in the wiki checkout first).
+- **No deletions or renames.** Only additions and content updates. To delete a page, `git rm` it manually in the wiki checkout.
 
 ## Last full reconcile
 
+- **2026-04-18** — cleaned archive stubs from both surfaces, added "Archived scripts (2026-04-18)" blueprint subsection to `Timeline-Archive.md`, updated cross-refs after `tools/*.py` mainline cleanup.
 - **2026-04-17** — pulled `v5-Rust-Port-Benchmarks.md`, `INSTNCT-Architecture.md`, `_Sidebar.md`, `_Footer.md`, `Theory-of-Thought.md` down from canonical; pushed `Home.md`, `Timeline-Archive.md`, `pipeline-architecture.svg` up to canonical; archived six redirect stubs.

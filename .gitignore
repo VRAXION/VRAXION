@@ -23,6 +23,7 @@ bench_vault/
 checkpoints/
 hibernation*/
 summaries/
+mlruns/
 
 # Local-only archives / run DB
 vault/

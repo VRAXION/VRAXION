@@ -23,3 +23,23 @@ First public beta release. Rust achieves Python parity at **24.6% peak** next-ch
 - **W mutation is nearly useless**: adaptive operator test showed 0% accept rate for projection mutations across all seeds.
 - **Empty-start networks outperform prefilled**: 80% accuracy on 0-4 addition with only 83 edges (vs 64% with 3400 prefilled edges). Sparse = better gradient signal for evolution.
 - **Addition learning works**: seq_5x5 reaches 53% mean, 64% peak (freq baseline 20%). First proof of real computation in the spiking network.
+- **Addition from empty network**: 80% accuracy on 0-4 + 0-4 from an empty network with just 83 edges (vs 64% with 3400 prefilled edges). Sparse evolution builds targeted circuits.
+
+### Public beta surface
+
+Rust `instnct-core` is the main public implementation surface for INSTNCT. Curated crate-root API covers network construction, propagation, evolution, SDR input, and checkpoint persistence. 150 tests, zero unsafe, full docs.
+
+### How to run the canonical beta
+
+```powershell
+cargo run --release --example evolve_language -- <corpus-path> `
+  --steps 30000 `
+  --seed-count 6 `
+  --report-dir target/beta-report
+```
+
+### Known limitations
+
+- Seed variance remains high (best seed 24.6%, worst may fall below 15%).
+- Addition learning works for small digits (0-4) but does not yet scale to larger ranges.
+- The Python reference line remains in-repo for developers; the stable beta contract is Rust.

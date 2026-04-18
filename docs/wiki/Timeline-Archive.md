@@ -248,10 +248,10 @@ The timeline is ordered latest-first. Each day is a self-contained H3 section wi
 | 2 | **Prior "+1.4pp int4 win" = PROTOCOL ARTIFACT** — staged INQ gives 200 extra training epochs; matched-compute float matches or exceeds | Validated (supersedes) | `tools/diag_float_extended_control.py` |
 | 3 | **Staged ternary 55% = PROTOCOL BUG, not fundamental** — QAT STE lifts same config to 71.50% (+16.5pp) | Validated (supersedes) | `tools/diag_qat_ste.py` |
 | 4 | **Binary capacity-ceiling, not info-ceiling** — at nf=1024 binary reaches 70-71%, confirms BitNet b1.58 | Validated (supersedes) | `tools/diag_qat_ste.py` |
-| 5 | **Progressive growing + per-neuron quant FAILS** — −14.85pp vs batch+PTQ at nf=128 | Validated (negative) | `tools/diag_progressive_quant.py` |
-| 6 | **Generational cluster stacking underperforms single-shot** — Gen1+Gen2+Gen3 of 256 each = 79.50% vs nf=768 single-shot 84.70% (−5.20pp) | Validated (negative) | `tools/diag_generational_growth.py` |
-| 7 | **Stacked exhaustive clusters dominated** — 50 clusters of ternary exhaustive D=14 = 26.55% vs float+PTQ same-D = 32.20%. Dominated in accuracy AND memory AND time | Validated (negative) | `tools/diag_exhaustive_cluster_stack.py` |
-| 8 | **True ternary exhaustive D=16 = mathematical optimum but capacity-limited** — 21.25% vs float 30.25% same-D (−9pp sparsity cost); useful only for micro-components (D ≤ 20) | Validated | `tools/diag_true_exhaustive.py` |
+| 5 | **Progressive growing + per-neuron quant FAILS** — −14.85pp vs batch+PTQ at nf=128 | Validated (negative) | `tools/diag_progressive_quant.py` (archived — see "Archived scripts (2026-04-18)" below) |
+| 6 | **Generational cluster stacking underperforms single-shot** — Gen1+Gen2+Gen3 of 256 each = 79.50% vs nf=768 single-shot 84.70% (−5.20pp) | Validated (negative) | `tools/diag_generational_growth.py` (archived — see "Archived scripts (2026-04-18)" below) |
+| 7 | **Stacked exhaustive clusters dominated** — 50 clusters of ternary exhaustive D=14 = 26.55% vs float+PTQ same-D = 32.20%. Dominated in accuracy AND memory AND time | Validated (negative) | `tools/diag_exhaustive_cluster_stack.py` (archived — see "Archived scripts (2026-04-18)" below) |
+| 8 | **True ternary exhaustive D=16 = mathematical optimum but capacity-limited** — 21.25% vs float 30.25% same-D (−9pp sparsity cost); useful only for micro-components (D ≤ 20) | Validated | `tools/diag_true_exhaustive.py` (archived — see "Archived scripts (2026-04-18)" below) |
 
 #### Branch consolidation (2026-04-18)
 
@@ -264,6 +264,74 @@ Four branches merged or archived to leave `main` as the single canonical branch:
 - **`origin/claude/check-progress-resume-vwFYv`** (dates: 2026-04-14, 3 unique commits, archive-only) — explored BERT-style MLM pretraining as an L2 feature extractor, then tried per-neuron learnable C19 rho, hitting 47.87% masked-char accuracy (+5.31pp over fixed C19). The result was obsoleted within a day when Beukers-gate work on main reached 80.1% then 83.6% on the same metric. Commits archived rather than cherry-picked because cherry-picking would add dead-end code that duplicates already-superseded functionality. Preserved in git history via reflog; branch label removed.
 
 - **`origin/experiment/connectome-gradient-pipeline`** (dates: 2026-04-10 → 2026-04-12, 25 unique commits, 1 cherry-picked + 24 archived) — 3-day exploration spike covering analytic backprop, holographic fully-connected nets, sparse-dense sandwich architectures, C19 logic-gate/ALU/CPU synthesis, Equilibrium Propagation, and canonical neuron builders. Produced the "C19 rho=8 WINS +2.2% vs ReLU" shallow-net result (later contradicted by deep-net finding on main, now captured in `project_activation_sweep_findings`) and an exhaustive-verified C19 ALU/CPU at 4-bit and 8-bit. Main subsequently pivoted to the binary-byte/Beukers-gate pipeline (43K+ lines of divergence since branch base), rendering these directions dormant rather than wrong. Only the `.gitignore` chore commit was cherry-picked (runtime-log exclusions); the 24 experimental commits are preserved in git history via reflog; branch label removed.
+
+#### Archived scripts (2026-04-18)
+
+Exploratory `tools/*.py` scripts deleted from disk on 2026-04-18 during mainline cleanup. Git history remains authoritative for the code itself; the entries below preserve the *idea* so each experiment can be recreated from scratch without re-reading commits. Scripts still shipping on main (e.g. `diag_qat_ste.py`, `diag_quant_sweep_gpu.py`, `run_grid3_curriculum.py`) are not listed here.
+
+<details>
+<summary>17 archived script groups — click to expand</summary>
+
+**Cluster 1 — Topology analysis & pruning** (2026-04-02)
+Files: `analyze_topology.py`, `analyze_topology_final.py`, `analyze_phase_transition.py`
+- **Idea:** characterize pruned neuromorphic brain topology: SCC counts, self-loops, reciprocal pairs, cycle lengths. Phase-transition threshold search for strongly-connected components in directed graphs.
+- **Outcome:** provided topology snapshots during the pruning era; superseded by crystallization (deterministic pruning) and later the grid3/c19 grower pipelines which bake structure decisions into the training loop.
+- **Recreate:** NetworkX `strongly_connected_components()` applied to saved `.npz` checkpoint adjacency matrices. Last commit via `git log -- tools/analyze_topology*.py`.
+- **Status:** Rejected (superseded)
+
+**Cluster 2 — Overnight Int4 training + crystallization pruning** (2026-03-xx)
+Files: `overnight_train.py`, `continue_train_pruned.py`, `run_crystallize.py`, `run_crystallize_fast.py`
+- **Idea:** train a large Int4 SelfWiringGraph (H=512, VOCAB=64) for 200k steps on alpaca_chat.txt, then compress via deterministic crystallization (systematic edge removal). Two prune variants: full exhaustive (slow) and block-based (fast).
+- **Outcome:** produced a working pruning pipeline but was superseded by grower architectures that use structure-preserving neural architecture search instead of post-hoc pruning.
+- **Recreate:** `SelfWiringGraph.mutate()` loop with validation scoring; block-based pruning processes N edges at a time vs. one-at-a-time exhaustive.
+- **Status:** Rejected (superseded by grower pipelines)
+
+**Cluster 3 — C19 activation gate exploration** (2026-04-13)
+Files: `run_c19_quick.py`, `c19_parity_sweep_aggregate.py`, `c19_i8_quant_analyze.py`, `c19_neuron_diversity.py`, `c19_theta_calibration.py`, `c19_copy_multihead_run.py`, `c19_copy_balanced_retry.py`, `baseline_grid3_copy_run.py`
+- **Idea:** C19 is a sinusoidally-modulated threshold activation: effective threshold = theta × (1 + 0.5 × sin(t×freq + phase)). Swept across 20 seeds on grid3_full_parity and 9 grid3_copy_bit_N heads (bits 3, 5, 6 retried with 8 seeds after stalling). Included per-neuron int8 quantization analysis, theta calibration, and ternary-threshold baseline for comparison.
+- **Outcome:** produced the valid shallow-net finding "C19 rho=8 beats ReLU +2.2pp" and 48-neuron lossless int8 quantization. Superseded 2026-04-15/16 by the Beukers gate `f(a,b) = ab/(1+|ab|)` which reached 83.6% on the same benchmark. C19 is dormant at shallow depth, dominated at deep depth.
+- **Recreate:** C19 activation still lives in `instnct-core/src/activation.rs`. Sweep harness: use `instnct-core/examples/char_embed_novel_sweep.rs` as baseline; grid rho over `[0.5, 1, 2, 4, 8, 16]`; evaluate depth-1 AND depth-2 (shallow finding does not transfer). Per-head bit decomposition scaffolding remains in `overnight_build_step.py` (active).
+- **Status:** Rejected (superseded by Beukers gate)
+
+**Cluster 4 — Progressive growing & generational stacking failures** (2026-04-17/18)
+Files: `diag_progressive_quant.py`, `diag_generational_growth.py`, `diag_random_rotation.py`
+- **Idea:** alternatives to single-shot training: (a) progressive neuron-by-neuron int4 growth, (b) stacked generations with LUT-frozen previous tiers, (c) random hot-buffer rotation on int4 backbone.
+- **Outcome:** all three failed as winning strategies. Progressive growing: −14.85pp vs batch+PTQ at nf=128. Generational stacking: −5.2pp (three generations of 256 = 79.50% vs nf=768 single-shot 84.70%). Random rotation: converged but dominated by QAT. Already documented in this date section's findings table (rows 5, 6).
+- **Recreate:** standard Adam + STE for int4 backward; progressive-growth loop adds one neuron per outer iteration with full re-quant; generational-growth freezes prior tier as LUT before next train pass.
+- **Status:** Rejected (negative results)
+
+**Cluster 5 — Sparse exhaustive search & true-ternary optima** (2026-04-17/18)
+Files: `diag_sparse_exhaustive.py`, `diag_sparse_exhaustive_v2.py`, `diag_true_exhaustive.py`
+- **Idea:** test whether exhaustive enumeration beats gradient training at small scale. Per-class K-sparse binary search (K=3/4/5) and true-ternary exhaustive (3^16 ≈ 43M configs at D=16 — topology + sign searched jointly).
+- **Outcome:** exhaustive wins at small K (3-5). K=4 is the memory-efficiency sweet spot; K=5 overfits 5k samples. True-ternary D=16 = 21.25% vs gradient float 30.25% (−9pp sparsity cost). Integer-dominated models plateau below dense float at this scale. Useful only for micro-components (D ≤ 20). Already in the findings table (row 8).
+- **Recreate:** C(D,K) × 2^K config enumeration with fused scoring; int4 activations; memory-chunked to fit in GPU VRAM.
+- **Status:** Validated (boundary finding — sparse exhaustive works at micro scale only)
+
+**Cluster 6 — Cluster stacking variants** (2026-04-17/18)
+Files: `diag_cluster_stacking.py`, `diag_beukers_cluster_stacking.py`, `diag_exhaustive_cluster_stack.py`
+- **Idea:** stack hundreds of small per-class predictors via residual boosting: (a) K=2 sparse clusters (200 of them), (b) joint 2-projection Beukers gates per cluster, (c) true-ternary clusters (3^14 per cluster).
+- **Outcome:** sparse: 31.70% vs dense baseline 34.2%. Beukers joint: stalled (same best cluster rediscovered repeatedly). True-ternary: dominated by float+PTQ on accuracy, memory, AND time. Cluster stacking is not a gradient-descent replacement. Already in the findings table (row 7).
+- **Recreate:** residual boosting loop; each cluster trains on prior residual; Beukers gate from `instnct-core/src/activation.rs`; exhaustive-config enumeration memory-chunked.
+- **Status:** Rejected (dominated by float+PTQ)
+
+**Cluster 7 — Early benchmark & precision-sweep tests** (2026-03-xx)
+Files: `bench_bincount.py`, `bench_storage_formats.py`, `test_potential_gradient.py`, `test_precision_sweep.py`, `v5_train_run.py`
+- **Idea:** benchmark sparse matrix storage formats (NumPy add.at vs bincount vs CSR vs COO vs bit-vector vs adjacency-list) at H=512-2048 densities 0.05. Test potential-gradient bonus in reward design. Sweep weight precision modes (binary / low_int / mid_int / float) on biologically-inspired "fly brain" topology (40% inhibitory, 50% reciprocal). Run V5.0 musical axonal brain (H=512, TICKS=12, 50k steps, axonal delays max 4 ticks).
+- **Outcome:** informed the storage format decision and polarity mechanism in the current Rust core; superseded by the grid3/c19 task-focused pipeline and the 2026-04-17/18 quantization championship.
+- **Recreate:** `np.bincount` / `scipy.sparse` / custom bit-vector; `SelfWiringGraph.forward` with ticks and inhibitory polarity.
+- **Status:** Rejected (superseded — but findings integrated into main)
+
+**Cluster 8 — Byte-mirror autoencoder probes (UNTRACKED — never committed)** (2026-04-xx)
+Files: `diag_byte_mirror_int8_qat.py`, `diag_byte_mirror_beukers.py`, `diag_byte_mirror_dual_loss.py`
+- **Idea:** 1-byte symmetric tied-weight autoencoder as a minimal testbed for nonlinearity + quantization. Three variants:
+  1. **int8_qat**: input[8] → W[8×latent] → latent → W^T[latent×8] → logits. Latent sweep {4,6,8,10,12,16}. Int8 QAT STE + binary cross-entropy. Target: 100% roundtrip on all 256 bytes. Float32 baseline 100% at latent=8; int8 ~97-100% depending on latent.
+  2. **beukers**: three nonlinearity modes — linear baseline, V1 self-soft-sign `x/(1+|x|)`, V2 full Beukers `(Wa×Wb)/(1+|Wa×Wb|)`. Int8 QAT STE on each. Result: nonlinearity gains are small; linear with latent=8 near-optimal.
+  3. **dual_loss**: deterministic byte tokenizer (32D latent), reconstruction + next-byte context prediction. `L = L_recon + 0.1 × L_context`. Evaluated both lossless roundtrip and semantic clustering (vowel/digit/case-pair/whitespace tightness via pairwise Euclidean). Marginal semantic gains.
+- **Outcome:** all three are exploratory probes of 1-byte capacity bounds under quantization; none advanced to deployment. Useful as sanity checks if someone later wants to characterize minimal-channel quant behavior.
+- **Recreate:** standard PyTorch — Adam, 5000 epochs, LR=0.01, Int8STE with identity backward. No fancy scheduling. Tied weights: decoder = encoder.T.
+- **Status:** Exploratory (never committed — this wiki entry is the only record)
+
+</details>
 
 ---
 
