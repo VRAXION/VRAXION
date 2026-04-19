@@ -362,7 +362,7 @@ body {
 #wire-svg {
   width: auto;
   height: 100%;
-  max-height: clamp(380px, calc(100vh - 320px), 820px);
+  max-height: clamp(440px, calc(100vh - 180px), 960px);
   max-width: 100%;
 }
 
@@ -2288,6 +2288,27 @@ body {
             </div>
           </div>
 
+          <div class="weights-block">
+            <p class="card-section-label" style="margin-bottom:7px;">Find the weights</p>
+            <div class="weights-pills">
+              <a href="https://github.com/VRAXION/VRAXION/blob/main/output/byte_unit_champion_binary_c19_h16/byte_unit_winner_binary.json"
+                 target="_blank" rel="noopener" class="code-pill weights-pill" aria-label="Binary training weights JSON, 6.5 KB">
+                <span class="code-pill-icon">{ }</span>
+                weights JSON · 6.5 KB
+              </a>
+              <a href="https://github.com/VRAXION/VRAXION/blob/main/output/byte_unit_champion_binary_c19_h16/byte_embedder_lut_int8.json"
+                 target="_blank" rel="noopener" class="code-pill weights-pill" aria-label="256-entry int8 lookup table, 4 KB">
+                <span class="code-pill-icon">#</span>
+                int8 LUT · 4 KB
+              </a>
+              <a href="https://github.com/VRAXION/VRAXION/blob/main/output/byte_unit_champion_binary_c19_h16/byte_embedder_lut.h"
+                 target="_blank" rel="noopener" class="code-pill weights-pill" aria-label="C header variant for deploy, 30 KB">
+                <span class="code-pill-icon">//</span>
+                C header · 30 KB
+              </a>
+            </div>
+          </div>
+
           <p class="card-arrow-hint" aria-hidden="true">
             <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5">
               <path d="M6 1v10M2 7l4 4 4-4"/>
@@ -2369,27 +2390,6 @@ body {
 
           </svg>
           <p class="diagram-sub">Same weights, reversed. One circuit — encode turns a byte into a 16-d latent, decode runs it backwards to recover the byte. Like a speaker that also works as a microphone.</p>
-
-          <div class="weights-block">
-            <p class="card-section-label" style="margin-bottom:7px; text-align:center;">Find the weights</p>
-            <div class="weights-pills">
-              <a href="https://github.com/VRAXION/VRAXION/blob/main/output/byte_unit_champion_binary_c19_h16/byte_unit_winner_binary.json"
-                 target="_blank" rel="noopener" class="code-pill weights-pill" aria-label="Binary training weights JSON, 6.5 KB">
-                <span class="code-pill-icon">{ }</span>
-                weights JSON · 6.5 KB
-              </a>
-              <a href="https://github.com/VRAXION/VRAXION/blob/main/output/byte_unit_champion_binary_c19_h16/byte_embedder_lut_int8.json"
-                 target="_blank" rel="noopener" class="code-pill weights-pill" aria-label="256-entry int8 lookup table, 4 KB">
-                <span class="code-pill-icon">#</span>
-                int8 LUT · 4 KB
-              </a>
-              <a href="https://github.com/VRAXION/VRAXION/blob/main/output/byte_unit_champion_binary_c19_h16/byte_embedder_lut.h"
-                 target="_blank" rel="noopener" class="code-pill weights-pill" aria-label="C header variant for deploy, 30 KB">
-                <span class="code-pill-icon">//</span>
-                C header · 30 KB
-              </a>
-            </div>
-          </div>
         </div>
       </div>
 
