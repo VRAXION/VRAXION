@@ -1,8 +1,8 @@
 """Widen sweep for the L0 byte unit under low-bit quantization.
 
 Question:
-  Can a wider 8 -> H -> 16 tied-mirror byte unit rescue lower bitwidths
-  (pure 2-bit / pure 3-bit), and does activation choice matter?
+  Can a wider 8 -> H -> 16 tied-mirror byte unit rescue lower-bit codebooks
+  (binary / ternary / 2-bit / 3-bit), and does activation choice matter?
 
 Protocol per config:
   1. Build float model (optionally warm-start C19 from shipped H=24 winner).
@@ -32,6 +32,8 @@ WINNER_PATH = Path(__file__).with_name("byte_unit_winner_int4.json")
 
 
 CODEBOOKS: dict[str, tuple[float, ...]] = {
+    "binary": (-1.0, 1.0),
+    "ternary": (-1.0, 0.0, 1.0),
     "2bit_sym13": (-3.0, -1.0, 1.0, 3.0),
     "3bit_sym1248": (-8.0, -4.0, -2.0, -1.0, 1.0, 2.0, 4.0, 8.0),
 }

@@ -1,9 +1,9 @@
-"""Minimum-hidden activation sweep for the pure 2-bit byte unit.
+"""Minimum-hidden activation sweep for the low-bit byte unit.
 
 Goal:
   For each activation, find the smallest hidden width H in the tested list
   where the 8 -> H -> 16 tied-mirror byte unit reaches 100% exact roundtrip
-  under the pure 2-bit codebook.
+  under the selected codebook.
 
 This reuses the bounded warmup + static alpha + fixed-alpha QAT recipe from
 diag_byte_unit_widen_sweep.py, but searches H in ascending order and stops at
@@ -50,7 +50,7 @@ def main() -> None:
     blob = mod.load_winner_blob()
 
     print("=" * 78)
-    print("BYTE UNIT ACTIVATION MIN SWEEP — PURE 2-BIT")
+    print("BYTE UNIT ACTIVATION MIN SWEEP")
     print("=" * 78)
     print(f"hiddens={hiddens}")
     print(f"activations={activations}")
