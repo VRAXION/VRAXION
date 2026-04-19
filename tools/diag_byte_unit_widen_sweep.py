@@ -75,11 +75,39 @@ class ReLUActivation(nn.Module):
         return torch.relu(x)
 
 
+class LeakyReLUActivation(nn.Module):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        return torch.where(x > 0, x, 0.01 * x)
+
+
+class SiLUActivation(nn.Module):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        return x * torch.sigmoid(x)
+
+
+class SoftplusActivation(nn.Module):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        return torch.nn.functional.softplus(x)
+
+
+class TanhActivation(nn.Module):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        return torch.tanh(x)
+
+
 def make_activation(name: str, hidden: int) -> nn.Module:
     if name == "c19":
         return C19Activation(hidden)
     if name == "relu":
         return ReLUActivation()
+    if name == "leaky_relu":
+        return LeakyReLUActivation()
+    if name == "silu":
+        return SiLUActivation()
+    if name == "softplus":
+        return SoftplusActivation()
+    if name == "tanh":
+        return TanhActivation()
     if name == "identity":
         return IdentityActivation()
     raise ValueError(f"unknown activation: {name}")
@@ -98,7 +126,7 @@ class FloatByteUnit(nn.Module):
         self.reset_parameters()
 
     def reset_parameters(self) -> None:
-        if self.activation_name == "relu":
+        if self.activation_name in {"relu", "leaky_relu"}:
             nn.init.kaiming_uniform_(self.W1, a=math.sqrt(5))
             nn.init.kaiming_uniform_(self.W2, a=math.sqrt(5))
         else:
@@ -267,6 +295,14 @@ def activation_np(kind: str, pre: np.ndarray, c: np.ndarray | None = None, rho: 
         return c19_np(pre, c, rho)
     if kind == "relu":
         return np.maximum(pre, 0.0)
+    if kind == "leaky_relu":
+        return np.where(pre > 0.0, pre, 0.01 * pre)
+    if kind == "silu":
+        return pre * (1.0 / (1.0 + np.exp(-pre)))
+    if kind == "softplus":
+        return np.log1p(np.exp(-np.abs(pre))) + np.maximum(pre, 0.0)
+    if kind == "tanh":
+        return np.tanh(pre)
     if kind == "identity":
         return pre
     raise ValueError(kind)
