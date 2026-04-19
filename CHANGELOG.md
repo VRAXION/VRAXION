@@ -1,6 +1,41 @@
 # Changelog
 
-## v5.0.0-beta.1 (2026-04-06)
+All notable changes to this project will be documented in this file.
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
+
+## [Unreleased]
+
+## [v5.0.0-beta.2] — 2026-04-19
+
+Grower persistence, byte-level pipeline, and L1 merger compression championship.
+
+### Added
+
+- **Neuron grower — forever-network mode**: task-list, interactive, and exhaustive grow modes with crash-safe incremental trace + fsync.
+- **Grower CLI flags**: `--bake-best` (pick ternary-bake winner), `--force-pick N`, `--preview-only`, `--refit-alphas` (per-task alpha refit for forever-network mode).
+- **L0 FINAL**: 2-neuron int8 LUT (54 bytes) — frozen deploy path for the first byte-level layer.
+- **L1 FINAL**: canonical 2-byte merger — linear int8, 729/729 lossless, 1458-byte LUT.
+- **L1 merger compression championship** (Clusters 11-13): single-W fp16 champion at 5.60 KB / 100% lossless (Cluster 12); Huffman-packed at 3.36 KB (Cluster 13).
+- **Exact Huffman packer** for single-W hybrid merger model.
+- **Byte-level L2 merger runner**: byte-roundtrip validation harness.
+- **Tokenizer V1**: word, parquet, and subword tokenizer — exact lossless, space-aware.
+- **FineWeb parquet pipeline** + code corpus fixture.
+- **Interactive playground visualizations**: L1 Byte-Pair Merger arch + baked visualizers.
+- **New public beta landing page**.
+
+### Changed
+
+- Grower persistent state now correctly loads checkpoint on startup (not just saves).
+- Byte-level L0+L1 pipeline is now the current documented pipeline; abstract-core docs archived.
+- Quantization championship findings revised: Beukers variant diagnostics + CPU/GPU multi-size sweep harness.
+
+### Fixed
+
+- Grower forever-network mode stall fixed by `refit_alphas` — per-task alpha refit prevents alpha saturation.
+
+---
+
+## [v5.0.0-beta.1] — 2026-04-06
 
 First public beta release. Rust achieves Python parity at **24.6% peak** next-character prediction accuracy on English text.
 
