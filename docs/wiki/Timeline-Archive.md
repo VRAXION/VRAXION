@@ -260,6 +260,36 @@ The timeline is ordered latest-first. Each day is a self-contained H3 section wi
 
 ---
 
+### 2026-04-20 — Output scratch tree cleanup: 45 MB of run-dumps pruned, 3 champions preserved
+
+**Theme:** The `output/` directory accumulated ~160 experimental run-dumps and ~60 log/txt files across Clusters 9–18 (merger architectures, bake probes, QAT sweeps, multiseed confirms, overnight loops, word tokenizer intermediates). All non-champion content was gitignored from the start (`output/*` with whitelist entries for the three champion folders), so nothing was ever exposed publicly. The physical tree was removed from the local disk as part of the 2026-04-20 public-release cleanup pass. Since the pruned content was gitignored in full, it is **not** recoverable from git history — only the 3 champion folders survive.
+
+**Kept (tracked + live, ~4.1 MB):**
+
+| Folder | Size | Role |
+|---|---|---|
+| `output/byte_unit_champion_binary_c19_h16/` | 93 KB | Block A champion: binary ±1 weights, H=16, C19 activation, 4 KB int8 LUT |
+| `output/merger_single_w_huffman_pack/` | 5 KB | Block B champion: single-W mirror-tied, fp16 → Huffman-packed, 3.36 KB |
+| `output/word_tokenizer_champion/` | 4.1 MB | Cluster 15 champion: word + subword FineWeb-EDU tokenizer vocab |
+
+**Removed — cluster rollup:**
+
+| Cluster era | Representative subfolders | Where numbers survive |
+|---|---|---|
+| Cluster 9-10 absorb / codebook-aware | `merger_absorb_float/`, `merger_codebook_aware/`, `merger_free_int8/`, `merger_halfscale_pentary/`, `merger_staged_ternary_grow/` (15 MB) | 2026-04-18 timeline entries |
+| Cluster 11-12 mirror-tied breakthrough + fp16 | `merger_single_w_*` family (~12 subfolders) | 2026-04-19 timeline entry |
+| Cluster 13 Huffman-packed | `merger_single_w_huffman_pack/` — **KEPT** | 2026-04-19 evening timeline entry |
+| Cluster 14 H81 exact pipeline | `merger_exact_*`, `merger_exhaustive_*`, `merger_strict_staged_int8_*` | superseded by Cluster 12 fp16 |
+| Cluster 15 word/subword tokenizer | `word_tokenizer_*`, `word_embedding_v1/` (9.9 MB), `subword_tokenizer_exact/` | champion preserved; `word_tokenizer_champion/` tracked |
+| Cluster 16-17 bake probe + per-channel + overnight loop | `loop_iter1` to `loop_iter35/` (35 iters), `merger_minimize_*/`, `merger_aux_quant_probe*/` | `docs/wiki/COMPRESSION_LOOP_DRAFT.md` + 2026-04-19 entries |
+| Cluster 18 native 7-bit identity | `verify_7bit_identity_h120_s*/` | `VALIDATED_FINDINGS.md` Block B row |
+| Slide prototypes | `slide_a_designs/` (proto_neural, proto_lego, proto_blueprint, proto_orbs HTML + rationale MDs) | Final design lives at `docs/blocks/a-byte-unit.html` |
+| Other | `browser-check/` (playwright), `nano_brain_v1/`, `merger_l2_phase0/`, `merger_l2_v1/` | L2 merger frontier deferred; scripts still in `tools/` |
+
+**Effect:** `output/` now contains only the 3 champion folders (~4.1 MB tracked). Local disk freed: ~45 MB. All removed content was gitignored — nothing was reachable from the public mainline; nothing leaks. The `tools/diag_byte_*.py` source scripts still live on `main` and can regenerate any of these run-dumps on demand.
+
+---
+
 ### 2026-04-20 — Docs site cleanup: legacy Pages archived, main nav narrowed to Blocks
 
 **Theme:** Six orphan pages under the old site-template (Home / INSTNCT / Research / Rust header nav) removed from `main`. The modern `docs/index.html` nav is now the Blocks ladder (A Byte Unit → E Brain) plus the Legacy detail view, and these older top-level page surfaces no longer have inbound links. Content is preserved in git history — each creation commit is named in the table below so the tree is reachable via `git show <hash>:<path>`.
