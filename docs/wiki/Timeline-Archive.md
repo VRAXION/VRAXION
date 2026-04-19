@@ -441,6 +441,7 @@ Files: `diag_byte_pair_merger_staged.py`, `diag_byte_pair_merger_sweep.py`, `dia
 - **Outcome:** hard ceiling at 73.18% lossless on 65,536 byte pairs regardless of hidden size or loss function. Symmetric C19 on both sides did not break the ceiling either. Telemetry confirmed the ceiling is not a degenerate init artifact — every H value genuinely converged to the same ~73% plateau. The tied-mirror + C19 recipe that wins at 1-byte (8D → 16D lossless) does NOT scale to 2-byte (32D → compressed). Sprint closed; full number table in `docs/research/L1_MERGER_OVERNIGHT_REPORT.md`.
 - **Recreate:** `input[32] → W[32×H] → C19 → W^T[H×32]`; sweep H ∈ {48, 64, 96, 128}; compare MSE vs margin vs sign-aware loss; ceiling at ~73% is reproducible.
 - **Status:** Rejected (tied mirror + C19 is 1-byte-specific; L1 merger needs a different architecture class — superseded by Cluster 11 hybrid representation)
+- **Reproducibility note:** The scripts listed above (`diag_byte_pair_merger_staged.py`, `diag_byte_pair_merger_sweep.py`, `diag_byte_pair_merger_sym.py`, `diag_byte_pair_merger_v2.py`, `diag_merger_telemetry.py`) were **never committed to git** — they are absent from git history. The nearest anchor commit is `3f02ce0` (2026-04-18 byte-embedder sprint). Full numeric results (H sweep table, ceiling convergence per seed, loss-function comparison) are preserved in `docs/research/L1_MERGER_OVERNIGHT_REPORT.md`. To reproduce, rewrite the tied-mirror + C19 sweep from scratch using the numbers recorded there (~6 scripts, `input[32] → W[32×H] → C19 → W^T[H×32]` form, sweep H over {48, 64, 96, 128}). Note that Cluster 12 later proved the 73% ceiling is a single-seed artifact at H=81 specifically — the ceiling holds for the compressed-output variants (OutDim < 32) but not for the full mirror-tied form.
 
 **Cluster 11 — L1 byte-pair merger compression championship (POSITIVE RESULT)** (2026-04-18 PM)
 Kept in `tools/` (canonical pipeline): `diag_byte_pair_merger_lookup_codebook.py`, `diag_byte_pair_merger_free_int8.py`, `diag_byte_pair_merger_absorb_float.py`
@@ -493,6 +494,25 @@ Kept in `tools/` (canonical): `diag_byte_single_w_huffman_pack.py`, `diag_byte_s
 - **Outcome:** **NEW OVERALL CHAMPION.** 3440 B (3.36 KB). −14% vs hybrid-K (3.91 KB), −40% vs Cluster 12 fp16 (5734 B), −70% vs fp32 baseline (11.20 KB). First custom-encoding champion to beat all general-purpose compressors.
 - **Recreate:** load `output/merger_single_w_fp16_all/final_fp16.json` (Cluster 12 artifact); run `diag_byte_single_w_huffman_pack.py` to fit generators, build Huffman tables, and write `packed_model.bin`; run `diag_byte_huffman_independent_verify.py` to confirm 5/5 checks.
 - **Status:** Validated (champion: `output/merger_single_w_huffman_pack/packed_model.bin` at 3440 B / 100% lossless; pipeline scripts kept in `tools/`)
+
+**Cluster 14 — Exact H81 intermediate pipeline (2026-04-18)** (commit `05514e2`)
+Files: `diag_byte_pair_merger_exact_h81_float.py`, `diag_byte_pair_merger_exact_pipeline.py`, `diag_byte_pair_merger_exact_utils.py`, `diag_byte_pair_merger_lookup_codebook_exact.py`, `diag_byte_pair_merger_strict_staged_int8.py`
+- **Idea:** After Cluster 11 proved that a 3-tier hybrid could reach 100% lossless, attempt an alternative "exact" formulation of the H=81 pipeline using a lookup codebook built on exact arithmetic (rather than KDE density peaks) combined with an int8 freeze stage. The `_exact_utils.py` module provides shared codebook arithmetic and lossless-check helpers reused downstream.
+- **Outcome:** Intermediate exploration between Clusters 11 and 12. The exact codebook + int8 freeze path did not improve on Cluster 11's 7.14 KB artifact in either size or robustness; the approach was superseded when Cluster 12 demonstrated that the single-W mirror-tied architecture at fp16 could beat both paths simultaneously. The `_exact_utils.py` utilities remain importable by other scripts in `tools/`.
+- **Recreate:** commit `05514e2` ("Add exact H81 merger quant pipeline") contains all five scripts verbatim.
+- **Status:** Archived — superseded by Cluster 12
+
+**Cluster 15 — Word/Subword Tokenizer V1 (2026-04-19)** (commit `e82a029`)
+Files: `tools/diag_word_tokenizer.py`, `tools/diag_word_tokenizer_parquet.py`, `tools/diag_subword_tokenizer_exact.py`
+- **Idea:** Build the lexical layer that will sit upstream of the Brain: a tokenizer that maps raw text to a compact integer stream. Three stages explored — whole-word vocabulary, Parquet-based frequency counting on large corpora, and a GPT-protocol subword+byte-fallback scheme that guarantees exact lossless reconstruction of any input byte.
+- **Outcome:** On FineWeb-EDU 100 MB with a 32k vocab, the whole-word tokenizer achieves 52.22% raw compression (fixed-width 15 bit/token) with a 34.6% byte fallback rate. The whole-word vocab hit a plateau on rare morphology: uncommon word forms and affixes land in the byte-fallback path, capping compression. The subword+byte-fallback architecture (exact lossless, space-aware) is the next step toward closing the fallback gap.
+- **Recreate:** commit `e82a029` ("feat(tokenizer): word + parquet + subword tokenizer V1 — exact lossless, space-aware"); run `diag_subword_tokenizer_exact.py` against a FineWeb-EDU slice for the compression numbers.
+- **Status:** Experimental / Active — under active iteration; part of the Brain-side pipeline (tokens → embeddings → Brain)
+
+**L2 merger — byte-roundtrip geometry probe** (commit `ed30073`)
+Scripts: `tools/diag_byte_l2_merger.py`, `tools/diag_byte_l2_phase0_geometry_probe.py`
+Preliminary investigation into an L2 layer above the L1 Huffman-packed champion: can two L1 merger outputs be further compressed with a second mirror-tied stage? Phase-0 geometry probe found 1.5% byte-exact window at a 384-dim bottleneck. Findings are still preliminary; no cluster designation yet.
+**Status: Open — active research.**
 
 </details>
 

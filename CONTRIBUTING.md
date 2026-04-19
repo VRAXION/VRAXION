@@ -96,3 +96,42 @@ If you report a metric, include at minimum: commit hash, exact command line, see
 **What does not stay on `main`:** superseded repo eras, half-ready research detours, ephemeral review branches, one-off experimental integration branches.
 
 **Practical rule:** if a line is not part of the current self-wiring mainline, archive it. If it still matters historically, keep a tag. If it neither matters historically nor supports the current line, delete it.
+
+---
+
+## Local Setup
+
+```bash
+# Rust (primary surface)
+cargo build --workspace
+
+# Python (reference surface)
+python -m venv .venv
+# Windows: .venv\Scripts\activate   |   macOS/Linux: source .venv/bin/activate
+pip install -r requirements.txt
+```
+
+## Testing
+
+```bash
+# Rust
+cargo test -p instnct-core
+cargo clippy --all-targets -- -D warnings
+
+# Python
+python -m compileall instnct tools
+python instnct/tests/test_model.py
+python tools/run_grower_regression.py
+python tools/run_byte_opcode_acceptance.py
+
+# Public surface consistency
+python tools/check_public_surface.py
+```
+
+## Filing an Issue
+
+Include: commit hash (`git rev-parse HEAD`), exact command line that reproduces the problem, OS + Python/Rust version, and a minimal reproducer. If the issue involves a metric claim, attach the raw output summary.
+
+## License
+
+Contributions are under the project's [PolyForm Noncommercial 1.0.0](LICENSE) license.
