@@ -1,0 +1,1219 @@
+{
+  "E1_add_sym": {
+    "config": "E1_add_sym",
+    "label": "Additive symmetric (-3..+3)",
+    "final_eval": 2.83,
+    "best_eval": 8.08,
+    "edges": 3635,
+    "elapsed_sec": 425.9,
+    "accepts": {
+      "mirror": 32,
+      "theta": 46,
+      "flip": 21,
+      "remove": 19,
+      "reverse": 42,
+      "channel": 67,
+      "loop5": 27,
+      "loop8": 18,
+      "add": 21,
+      "loop3": 20,
+      "enhance": 15
+    },
+    "history": [
+      {
+        "step": 50,
+        "eval": 8.08,
+        "best": 8.08
+      },
+      {
+        "step": 100,
+        "eval": 5.86,
+        "best": 8.08
+      },
+      {
+        "step": 150,
+        "eval": 6.06,
+        "best": 8.08
+      },
+      {
+        "step": 200,
+        "eval": 6.06,
+        "best": 8.08
+      },
+      {
+        "step": 250,
+        "eval": 6.06,
+        "best": 8.08
+      },
+      {
+        "step": 300,
+        "eval": 6.06,
+        "best": 8.08
+      },
+      {
+        "step": 350,
+        "eval": 6.06,
+        "best": 8.08
+      },
+      {
+        "step": 400,
+        "eval": 6.06,
+        "best": 8.08
+      },
+      {
+        "step": 450,
+        "eval": 6.06,
+        "best": 8.08
+      },
+      {
+        "step": 500,
+        "eval": 6.06,
+        "best": 8.08
+      },
+      {
+        "step": 550,
+        "eval": 6.06,
+        "best": 8.08
+      },
+      {
+        "step": 600,
+        "eval": 5.86,
+        "best": 8.08
+      },
+      {
+        "step": 650,
+        "eval": 6.06,
+        "best": 8.08
+      },
+      {
+        "step": 700,
+        "eval": 6.06,
+        "best": 8.08
+      },
+      {
+        "step": 750,
+        "eval": 1.82,
+        "best": 8.08
+      },
+      {
+        "step": 800,
+        "eval": 6.06,
+        "best": 8.08
+      },
+      {
+        "step": 850,
+        "eval": 6.06,
+        "best": 8.08
+      },
+      {
+        "step": 900,
+        "eval": 6.06,
+        "best": 8.08
+      },
+      {
+        "step": 950,
+        "eval": 6.06,
+        "best": 8.08
+      },
+      {
+        "step": 1000,
+        "eval": 5.86,
+        "best": 8.08
+      },
+      {
+        "step": 1050,
+        "eval": 6.46,
+        "best": 8.08
+      },
+      {
+        "step": 1100,
+        "eval": 6.46,
+        "best": 8.08
+      },
+      {
+        "step": 1150,
+        "eval": 5.66,
+        "best": 8.08
+      },
+      {
+        "step": 1200,
+        "eval": 4.85,
+        "best": 8.08
+      },
+      {
+        "step": 1250,
+        "eval": 5.25,
+        "best": 8.08
+      },
+      {
+        "step": 1300,
+        "eval": 5.25,
+        "best": 8.08
+      },
+      {
+        "step": 1350,
+        "eval": 4.44,
+        "best": 8.08
+      },
+      {
+        "step": 1400,
+        "eval": 4.85,
+        "best": 8.08
+      },
+      {
+        "step": 1450,
+        "eval": 5.86,
+        "best": 8.08
+      },
+      {
+        "step": 1500,
+        "eval": 3.64,
+        "best": 8.08
+      },
+      {
+        "step": 1550,
+        "eval": 5.66,
+        "best": 8.08
+      },
+      {
+        "step": 1600,
+        "eval": 5.25,
+        "best": 8.08
+      },
+      {
+        "step": 1650,
+        "eval": 3.23,
+        "best": 8.08
+      },
+      {
+        "step": 1700,
+        "eval": 3.23,
+        "best": 8.08
+      },
+      {
+        "step": 1750,
+        "eval": 4.24,
+        "best": 8.08
+      },
+      {
+        "step": 1800,
+        "eval": 2.83,
+        "best": 8.08
+      }
+    ]
+  },
+  "E2_add_pos": {
+    "config": "E2_add_pos",
+    "label": "Additive positive only (0..+5)",
+    "final_eval": 7.68,
+    "best_eval": 8.08,
+    "edges": 3866,
+    "elapsed_sec": 476.8,
+    "accepts": {
+      "mirror": 32,
+      "loop3": 59,
+      "flip": 27,
+      "theta": 58,
+      "channel": 157,
+      "reverse": 58,
+      "loop8": 26,
+      "remove": 53,
+      "add": 35,
+      "loop5": 38,
+      "enhance": 30
+    },
+    "history": [
+      {
+        "step": 50,
+        "eval": 8.08,
+        "best": 8.08
+      },
+      {
+        "step": 100,
+        "eval": 8.08,
+        "best": 8.08
+      },
+      {
+        "step": 150,
+        "eval": 8.08,
+        "best": 8.08
+      },
+      {
+        "step": 200,
+        "eval": 7.88,
+        "best": 8.08
+      },
+      {
+        "step": 250,
+        "eval": 4.24,
+        "best": 8.08
+      },
+      {
+        "step": 300,
+        "eval": 4.24,
+        "best": 8.08
+      },
+      {
+        "step": 350,
+        "eval": 4.65,
+        "best": 8.08
+      },
+      {
+        "step": 400,
+        "eval": 4.04,
+        "best": 8.08
+      },
+      {
+        "step": 450,
+        "eval": 4.04,
+        "best": 8.08
+      },
+      {
+        "step": 500,
+        "eval": 4.04,
+        "best": 8.08
+      },
+      {
+        "step": 550,
+        "eval": 4.04,
+        "best": 8.08
+      },
+      {
+        "step": 600,
+        "eval": 4.04,
+        "best": 8.08
+      },
+      {
+        "step": 650,
+        "eval": 4.04,
+        "best": 8.08
+      },
+      {
+        "step": 700,
+        "eval": 4.04,
+        "best": 8.08
+      },
+      {
+        "step": 750,
+        "eval": 4.04,
+        "best": 8.08
+      },
+      {
+        "step": 800,
+        "eval": 4.04,
+        "best": 8.08
+      },
+      {
+        "step": 850,
+        "eval": 4.04,
+        "best": 8.08
+      },
+      {
+        "step": 900,
+        "eval": 4.04,
+        "best": 8.08
+      },
+      {
+        "step": 950,
+        "eval": 4.04,
+        "best": 8.08
+      },
+      {
+        "step": 1000,
+        "eval": 3.84,
+        "best": 8.08
+      },
+      {
+        "step": 1050,
+        "eval": 3.84,
+        "best": 8.08
+      },
+      {
+        "step": 1100,
+        "eval": 3.84,
+        "best": 8.08
+      },
+      {
+        "step": 1150,
+        "eval": 3.84,
+        "best": 8.08
+      },
+      {
+        "step": 1200,
+        "eval": 3.84,
+        "best": 8.08
+      },
+      {
+        "step": 1250,
+        "eval": 3.84,
+        "best": 8.08
+      },
+      {
+        "step": 1300,
+        "eval": 3.84,
+        "best": 8.08
+      },
+      {
+        "step": 1350,
+        "eval": 3.84,
+        "best": 8.08
+      },
+      {
+        "step": 1400,
+        "eval": 3.84,
+        "best": 8.08
+      },
+      {
+        "step": 1450,
+        "eval": 3.84,
+        "best": 8.08
+      },
+      {
+        "step": 1500,
+        "eval": 3.84,
+        "best": 8.08
+      },
+      {
+        "step": 1550,
+        "eval": 3.84,
+        "best": 8.08
+      },
+      {
+        "step": 1600,
+        "eval": 3.84,
+        "best": 8.08
+      },
+      {
+        "step": 1650,
+        "eval": 2.63,
+        "best": 8.08
+      },
+      {
+        "step": 1700,
+        "eval": 3.84,
+        "best": 8.08
+      },
+      {
+        "step": 1750,
+        "eval": 3.84,
+        "best": 8.08
+      },
+      {
+        "step": 1800,
+        "eval": 7.68,
+        "best": 8.08
+      }
+    ]
+  },
+  "E3_add_neg": {
+    "config": "E3_add_neg",
+    "label": "Additive negative only (-5..0)",
+    "final_eval": 2.02,
+    "best_eval": 5.66,
+    "edges": 3619,
+    "elapsed_sec": 390.8,
+    "accepts": {
+      "theta": 44,
+      "mirror": 19,
+      "reverse": 18,
+      "loop5": 22,
+      "flip": 29,
+      "add": 15,
+      "enhance": 14,
+      "loop8": 21,
+      "remove": 5,
+      "loop3": 17,
+      "channel": 10
+    },
+    "history": [
+      {
+        "step": 50,
+        "eval": 0.0,
+        "best": 0
+      },
+      {
+        "step": 100,
+        "eval": 0.0,
+        "best": 0
+      },
+      {
+        "step": 150,
+        "eval": 0.0,
+        "best": 0
+      },
+      {
+        "step": 200,
+        "eval": 4.85,
+        "best": 4.85
+      },
+      {
+        "step": 250,
+        "eval": 4.44,
+        "best": 4.85
+      },
+      {
+        "step": 300,
+        "eval": 4.85,
+        "best": 4.85
+      },
+      {
+        "step": 350,
+        "eval": 5.05,
+        "best": 5.05
+      },
+      {
+        "step": 400,
+        "eval": 5.66,
+        "best": 5.66
+      },
+      {
+        "step": 450,
+        "eval": 5.66,
+        "best": 5.66
+      },
+      {
+        "step": 500,
+        "eval": 4.04,
+        "best": 5.66
+      },
+      {
+        "step": 550,
+        "eval": 3.64,
+        "best": 5.66
+      },
+      {
+        "step": 600,
+        "eval": 3.23,
+        "best": 5.66
+      },
+      {
+        "step": 650,
+        "eval": 3.43,
+        "best": 5.66
+      },
+      {
+        "step": 700,
+        "eval": 3.64,
+        "best": 5.66
+      },
+      {
+        "step": 750,
+        "eval": 3.23,
+        "best": 5.66
+      },
+      {
+        "step": 800,
+        "eval": 3.23,
+        "best": 5.66
+      },
+      {
+        "step": 850,
+        "eval": 4.04,
+        "best": 5.66
+      },
+      {
+        "step": 900,
+        "eval": 4.04,
+        "best": 5.66
+      },
+      {
+        "step": 950,
+        "eval": 2.63,
+        "best": 5.66
+      },
+      {
+        "step": 1000,
+        "eval": 2.22,
+        "best": 5.66
+      },
+      {
+        "step": 1050,
+        "eval": 3.43,
+        "best": 5.66
+      },
+      {
+        "step": 1100,
+        "eval": 4.04,
+        "best": 5.66
+      },
+      {
+        "step": 1150,
+        "eval": 2.83,
+        "best": 5.66
+      },
+      {
+        "step": 1200,
+        "eval": 4.04,
+        "best": 5.66
+      },
+      {
+        "step": 1250,
+        "eval": 4.04,
+        "best": 5.66
+      },
+      {
+        "step": 1300,
+        "eval": 4.04,
+        "best": 5.66
+      },
+      {
+        "step": 1350,
+        "eval": 4.04,
+        "best": 5.66
+      },
+      {
+        "step": 1400,
+        "eval": 4.04,
+        "best": 5.66
+      },
+      {
+        "step": 1450,
+        "eval": 3.84,
+        "best": 5.66
+      },
+      {
+        "step": 1500,
+        "eval": 4.44,
+        "best": 5.66
+      },
+      {
+        "step": 1550,
+        "eval": 3.43,
+        "best": 5.66
+      },
+      {
+        "step": 1600,
+        "eval": 2.42,
+        "best": 5.66
+      },
+      {
+        "step": 1650,
+        "eval": 4.04,
+        "best": 5.66
+      },
+      {
+        "step": 1700,
+        "eval": 2.42,
+        "best": 5.66
+      },
+      {
+        "step": 1750,
+        "eval": 5.05,
+        "best": 5.66
+      },
+      {
+        "step": 1800,
+        "eval": 2.02,
+        "best": 5.66
+      }
+    ]
+  },
+  "E4_mult": {
+    "config": "E4_mult",
+    "label": "Multiplicative cosine (0.7..1.3)",
+    "final_eval": 12.73,
+    "best_eval": 14.34,
+    "edges": 3894,
+    "elapsed_sec": 544.1,
+    "accepts": {
+      "theta": 68,
+      "flip": 40,
+      "add": 33,
+      "mirror": 37,
+      "loop3": 41,
+      "remove": 40,
+      "loop8": 34,
+      "channel": 91,
+      "reverse": 49,
+      "loop5": 39,
+      "enhance": 27
+    },
+    "history": [
+      {
+        "step": 50,
+        "eval": 3.64,
+        "best": 3.64
+      },
+      {
+        "step": 100,
+        "eval": 3.23,
+        "best": 3.64
+      },
+      {
+        "step": 150,
+        "eval": 4.04,
+        "best": 4.04
+      },
+      {
+        "step": 200,
+        "eval": 6.26,
+        "best": 6.26
+      },
+      {
+        "step": 250,
+        "eval": 5.05,
+        "best": 6.26
+      },
+      {
+        "step": 300,
+        "eval": 5.45,
+        "best": 6.26
+      },
+      {
+        "step": 350,
+        "eval": 5.45,
+        "best": 6.26
+      },
+      {
+        "step": 400,
+        "eval": 5.45,
+        "best": 6.26
+      },
+      {
+        "step": 450,
+        "eval": 6.87,
+        "best": 6.87
+      },
+      {
+        "step": 500,
+        "eval": 5.45,
+        "best": 6.87
+      },
+      {
+        "step": 550,
+        "eval": 5.86,
+        "best": 6.87
+      },
+      {
+        "step": 600,
+        "eval": 6.46,
+        "best": 6.87
+      },
+      {
+        "step": 650,
+        "eval": 6.06,
+        "best": 6.87
+      },
+      {
+        "step": 700,
+        "eval": 6.06,
+        "best": 6.87
+      },
+      {
+        "step": 750,
+        "eval": 4.65,
+        "best": 6.87
+      },
+      {
+        "step": 800,
+        "eval": 5.66,
+        "best": 6.87
+      },
+      {
+        "step": 850,
+        "eval": 10.71,
+        "best": 10.71
+      },
+      {
+        "step": 900,
+        "eval": 10.3,
+        "best": 10.71
+      },
+      {
+        "step": 950,
+        "eval": 11.31,
+        "best": 11.31
+      },
+      {
+        "step": 1000,
+        "eval": 8.08,
+        "best": 11.31
+      },
+      {
+        "step": 1050,
+        "eval": 9.9,
+        "best": 11.31
+      },
+      {
+        "step": 1100,
+        "eval": 9.7,
+        "best": 11.31
+      },
+      {
+        "step": 1150,
+        "eval": 11.92,
+        "best": 11.92
+      },
+      {
+        "step": 1200,
+        "eval": 8.69,
+        "best": 11.92
+      },
+      {
+        "step": 1250,
+        "eval": 9.09,
+        "best": 11.92
+      },
+      {
+        "step": 1300,
+        "eval": 9.49,
+        "best": 11.92
+      },
+      {
+        "step": 1350,
+        "eval": 9.9,
+        "best": 11.92
+      },
+      {
+        "step": 1400,
+        "eval": 13.13,
+        "best": 13.13
+      },
+      {
+        "step": 1450,
+        "eval": 10.71,
+        "best": 13.13
+      },
+      {
+        "step": 1500,
+        "eval": 11.31,
+        "best": 13.13
+      },
+      {
+        "step": 1550,
+        "eval": 10.3,
+        "best": 13.13
+      },
+      {
+        "step": 1600,
+        "eval": 10.71,
+        "best": 13.13
+      },
+      {
+        "step": 1650,
+        "eval": 10.91,
+        "best": 13.13
+      },
+      {
+        "step": 1700,
+        "eval": 10.91,
+        "best": 13.13
+      },
+      {
+        "step": 1750,
+        "eval": 14.34,
+        "best": 14.34
+      },
+      {
+        "step": 1800,
+        "eval": 12.73,
+        "best": 14.34
+      }
+    ]
+  },
+  "E5_exp": {
+    "config": "E5_exp",
+    "label": "Exponential offset (-4,0,+4)",
+    "final_eval": 0.0,
+    "best_eval": 9.09,
+    "edges": 3795,
+    "elapsed_sec": 356.5,
+    "accepts": {
+      "mirror": 35,
+      "flip": 29,
+      "theta": 54,
+      "loop8": 23,
+      "reverse": 37,
+      "channel": 69,
+      "loop5": 40,
+      "remove": 34,
+      "loop3": 38,
+      "add": 30,
+      "enhance": 19
+    },
+    "history": [
+      {
+        "step": 50,
+        "eval": 0.61,
+        "best": 0.61
+      },
+      {
+        "step": 100,
+        "eval": 4.44,
+        "best": 4.44
+      },
+      {
+        "step": 150,
+        "eval": 1.21,
+        "best": 4.44
+      },
+      {
+        "step": 200,
+        "eval": 1.21,
+        "best": 4.44
+      },
+      {
+        "step": 250,
+        "eval": 8.28,
+        "best": 8.28
+      },
+      {
+        "step": 300,
+        "eval": 7.68,
+        "best": 8.28
+      },
+      {
+        "step": 350,
+        "eval": 7.47,
+        "best": 8.28
+      },
+      {
+        "step": 400,
+        "eval": 8.28,
+        "best": 8.28
+      },
+      {
+        "step": 450,
+        "eval": 8.28,
+        "best": 8.28
+      },
+      {
+        "step": 500,
+        "eval": 7.27,
+        "best": 8.28
+      },
+      {
+        "step": 550,
+        "eval": 6.06,
+        "best": 8.28
+      },
+      {
+        "step": 600,
+        "eval": 5.05,
+        "best": 8.28
+      },
+      {
+        "step": 650,
+        "eval": 5.05,
+        "best": 8.28
+      },
+      {
+        "step": 700,
+        "eval": 5.05,
+        "best": 8.28
+      },
+      {
+        "step": 750,
+        "eval": 4.24,
+        "best": 8.28
+      },
+      {
+        "step": 800,
+        "eval": 4.24,
+        "best": 8.28
+      },
+      {
+        "step": 850,
+        "eval": 5.66,
+        "best": 8.28
+      },
+      {
+        "step": 900,
+        "eval": 3.64,
+        "best": 8.28
+      },
+      {
+        "step": 950,
+        "eval": 3.84,
+        "best": 8.28
+      },
+      {
+        "step": 1000,
+        "eval": 6.67,
+        "best": 8.28
+      },
+      {
+        "step": 1050,
+        "eval": 2.22,
+        "best": 8.28
+      },
+      {
+        "step": 1100,
+        "eval": 0.2,
+        "best": 8.28
+      },
+      {
+        "step": 1150,
+        "eval": 3.23,
+        "best": 8.28
+      },
+      {
+        "step": 1200,
+        "eval": 0.81,
+        "best": 8.28
+      },
+      {
+        "step": 1250,
+        "eval": 0.81,
+        "best": 8.28
+      },
+      {
+        "step": 1300,
+        "eval": 6.26,
+        "best": 8.28
+      },
+      {
+        "step": 1350,
+        "eval": 9.09,
+        "best": 9.09
+      },
+      {
+        "step": 1400,
+        "eval": 8.89,
+        "best": 9.09
+      },
+      {
+        "step": 1450,
+        "eval": 4.24,
+        "best": 9.09
+      },
+      {
+        "step": 1500,
+        "eval": 6.46,
+        "best": 9.09
+      },
+      {
+        "step": 1550,
+        "eval": 3.23,
+        "best": 9.09
+      },
+      {
+        "step": 1600,
+        "eval": 3.23,
+        "best": 9.09
+      },
+      {
+        "step": 1650,
+        "eval": 3.23,
+        "best": 9.09
+      },
+      {
+        "step": 1700,
+        "eval": 3.03,
+        "best": 9.09
+      },
+      {
+        "step": 1750,
+        "eval": 0.0,
+        "best": 9.09
+      },
+      {
+        "step": 1800,
+        "eval": 0.0,
+        "best": 9.09
+      }
+    ]
+  },
+  "E6_none": {
+    "config": "E6_none",
+    "label": "No gating (control)",
+    "final_eval": 3.84,
+    "best_eval": 4.85,
+    "edges": 4322,
+    "elapsed_sec": 397.7,
+    "accepts": {
+      "theta": 97,
+      "loop3": 55,
+      "mirror": 60,
+      "loop8": 63,
+      "flip": 78,
+      "add": 45,
+      "reverse": 67,
+      "loop5": 63,
+      "remove": 48,
+      "enhance": 34
+    },
+    "history": [
+      {
+        "step": 50,
+        "eval": 0.61,
+        "best": 0.61
+      },
+      {
+        "step": 100,
+        "eval": 3.43,
+        "best": 3.43
+      },
+      {
+        "step": 150,
+        "eval": 1.41,
+        "best": 3.43
+      },
+      {
+        "step": 200,
+        "eval": 2.42,
+        "best": 3.43
+      },
+      {
+        "step": 250,
+        "eval": 3.43,
+        "best": 3.43
+      },
+      {
+        "step": 300,
+        "eval": 2.83,
+        "best": 3.43
+      },
+      {
+        "step": 350,
+        "eval": 2.22,
+        "best": 3.43
+      },
+      {
+        "step": 400,
+        "eval": 3.43,
+        "best": 3.43
+      },
+      {
+        "step": 450,
+        "eval": 1.82,
+        "best": 3.43
+      },
+      {
+        "step": 500,
+        "eval": 2.22,
+        "best": 3.43
+      },
+      {
+        "step": 550,
+        "eval": 3.84,
+        "best": 3.84
+      },
+      {
+        "step": 600,
+        "eval": 4.85,
+        "best": 4.85
+      },
+      {
+        "step": 650,
+        "eval": 4.04,
+        "best": 4.85
+      },
+      {
+        "step": 700,
+        "eval": 3.43,
+        "best": 4.85
+      },
+      {
+        "step": 750,
+        "eval": 3.84,
+        "best": 4.85
+      },
+      {
+        "step": 800,
+        "eval": 0.61,
+        "best": 4.85
+      },
+      {
+        "step": 850,
+        "eval": 0.81,
+        "best": 4.85
+      },
+      {
+        "step": 900,
+        "eval": 1.01,
+        "best": 4.85
+      },
+      {
+        "step": 950,
+        "eval": 0.0,
+        "best": 4.85
+      },
+      {
+        "step": 1000,
+        "eval": 0.81,
+        "best": 4.85
+      },
+      {
+        "step": 1050,
+        "eval": 0.0,
+        "best": 4.85
+      },
+      {
+        "step": 1100,
+        "eval": 1.01,
+        "best": 4.85
+      },
+      {
+        "step": 1150,
+        "eval": 0.61,
+        "best": 4.85
+      },
+      {
+        "step": 1200,
+        "eval": 1.01,
+        "best": 4.85
+      },
+      {
+        "step": 1250,
+        "eval": 0.4,
+        "best": 4.85
+      },
+      {
+        "step": 1300,
+        "eval": 1.41,
+        "best": 4.85
+      },
+      {
+        "step": 1350,
+        "eval": 3.23,
+        "best": 4.85
+      },
+      {
+        "step": 1400,
+        "eval": 0.2,
+        "best": 4.85
+      },
+      {
+        "step": 1450,
+        "eval": 0.4,
+        "best": 4.85
+      },
+      {
+        "step": 1500,
+        "eval": 1.01,
+        "best": 4.85
+      },
+      {
+        "step": 1550,
+        "eval": 1.41,
+        "best": 4.85
+      },
+      {
+        "step": 1600,
+        "eval": 1.01,
+        "best": 4.85
+      },
+      {
+        "step": 1650,
+        "eval": 1.62,
+        "best": 4.85
+      },
+      {
+        "step": 1700,
+        "eval": 1.62,
+        "best": 4.85
+      },
+      {
+        "step": 1750,
+        "eval": 0.81,
+        "best": 4.85
+      },
+      {
+        "step": 1800,
+        "eval": 3.84,
+        "best": 4.85
+      }
+    ]
+  }
+}

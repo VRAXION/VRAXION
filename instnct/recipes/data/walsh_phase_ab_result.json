@@ -1,0 +1,609 @@
+{
+  "A_cosine": {
+    "config": "A_cosine",
+    "label": "Cosine LUT (current)",
+    "final_eval": 12.93,
+    "best_eval": 13.13,
+    "edges": 3766,
+    "elapsed_sec": 694.8,
+    "accepts": {
+      "theta": 76,
+      "channel": 57,
+      "flip": 45,
+      "mirror": 34,
+      "add": 25,
+      "reverse": 39,
+      "loop8": 24,
+      "loop3": 28,
+      "remove": 27,
+      "loop5": 38,
+      "enhance": 21
+    },
+    "history": [
+      {
+        "step": 50,
+        "eval": 1.01,
+        "best": 1.01
+      },
+      {
+        "step": 100,
+        "eval": 0.81,
+        "best": 1.01
+      },
+      {
+        "step": 150,
+        "eval": 0.2,
+        "best": 1.01
+      },
+      {
+        "step": 200,
+        "eval": 6.26,
+        "best": 6.26
+      },
+      {
+        "step": 250,
+        "eval": 5.86,
+        "best": 6.26
+      },
+      {
+        "step": 300,
+        "eval": 5.45,
+        "best": 6.26
+      },
+      {
+        "step": 350,
+        "eval": 5.05,
+        "best": 6.26
+      },
+      {
+        "step": 400,
+        "eval": 5.05,
+        "best": 6.26
+      },
+      {
+        "step": 450,
+        "eval": 5.66,
+        "best": 6.26
+      },
+      {
+        "step": 500,
+        "eval": 6.67,
+        "best": 6.67
+      },
+      {
+        "step": 550,
+        "eval": 5.45,
+        "best": 6.67
+      },
+      {
+        "step": 600,
+        "eval": 6.26,
+        "best": 6.67
+      },
+      {
+        "step": 650,
+        "eval": 6.87,
+        "best": 6.87
+      },
+      {
+        "step": 700,
+        "eval": 6.87,
+        "best": 6.87
+      },
+      {
+        "step": 750,
+        "eval": 6.26,
+        "best": 6.87
+      },
+      {
+        "step": 800,
+        "eval": 5.66,
+        "best": 6.87
+      },
+      {
+        "step": 850,
+        "eval": 5.66,
+        "best": 6.87
+      },
+      {
+        "step": 900,
+        "eval": 6.67,
+        "best": 6.87
+      },
+      {
+        "step": 950,
+        "eval": 7.07,
+        "best": 7.07
+      },
+      {
+        "step": 1000,
+        "eval": 6.06,
+        "best": 7.07
+      },
+      {
+        "step": 1050,
+        "eval": 4.04,
+        "best": 7.07
+      },
+      {
+        "step": 1100,
+        "eval": 5.05,
+        "best": 7.07
+      },
+      {
+        "step": 1150,
+        "eval": 6.87,
+        "best": 7.07
+      },
+      {
+        "step": 1200,
+        "eval": 7.68,
+        "best": 7.68
+      },
+      {
+        "step": 1250,
+        "eval": 11.31,
+        "best": 11.31
+      },
+      {
+        "step": 1300,
+        "eval": 10.3,
+        "best": 11.31
+      },
+      {
+        "step": 1350,
+        "eval": 12.12,
+        "best": 12.12
+      },
+      {
+        "step": 1400,
+        "eval": 12.93,
+        "best": 12.93
+      },
+      {
+        "step": 1450,
+        "eval": 12.53,
+        "best": 12.93
+      },
+      {
+        "step": 1500,
+        "eval": 12.32,
+        "best": 12.93
+      },
+      {
+        "step": 1550,
+        "eval": 13.13,
+        "best": 13.13
+      },
+      {
+        "step": 1600,
+        "eval": 11.92,
+        "best": 13.13
+      },
+      {
+        "step": 1650,
+        "eval": 12.32,
+        "best": 13.13
+      },
+      {
+        "step": 1700,
+        "eval": 11.92,
+        "best": 13.13
+      },
+      {
+        "step": 1750,
+        "eval": 12.12,
+        "best": 13.13
+      },
+      {
+        "step": 1800,
+        "eval": 12.93,
+        "best": 13.13
+      }
+    ]
+  },
+  "B_walsh3": {
+    "config": "B_walsh3",
+    "label": "Walsh 3-bool (8 combos)",
+    "final_eval": 5.86,
+    "best_eval": 7.47,
+    "edges": 3614,
+    "elapsed_sec": 688.1,
+    "accepts": {
+      "theta": 40,
+      "flip": 37,
+      "mirror": 28,
+      "loop5": 28,
+      "remove": 13,
+      "loop8": 17,
+      "channel": 18,
+      "loop3": 19,
+      "add": 10,
+      "enhance": 9,
+      "reverse": 18
+    },
+    "history": [
+      {
+        "step": 50,
+        "eval": 1.01,
+        "best": 1.01
+      },
+      {
+        "step": 100,
+        "eval": 6.06,
+        "best": 6.06
+      },
+      {
+        "step": 150,
+        "eval": 6.06,
+        "best": 6.06
+      },
+      {
+        "step": 200,
+        "eval": 6.06,
+        "best": 6.06
+      },
+      {
+        "step": 250,
+        "eval": 6.46,
+        "best": 6.46
+      },
+      {
+        "step": 300,
+        "eval": 4.85,
+        "best": 6.46
+      },
+      {
+        "step": 350,
+        "eval": 4.85,
+        "best": 6.46
+      },
+      {
+        "step": 400,
+        "eval": 4.85,
+        "best": 6.46
+      },
+      {
+        "step": 450,
+        "eval": 5.05,
+        "best": 6.46
+      },
+      {
+        "step": 500,
+        "eval": 5.05,
+        "best": 6.46
+      },
+      {
+        "step": 550,
+        "eval": 5.05,
+        "best": 6.46
+      },
+      {
+        "step": 600,
+        "eval": 5.45,
+        "best": 6.46
+      },
+      {
+        "step": 650,
+        "eval": 5.45,
+        "best": 6.46
+      },
+      {
+        "step": 700,
+        "eval": 5.25,
+        "best": 6.46
+      },
+      {
+        "step": 750,
+        "eval": 6.26,
+        "best": 6.46
+      },
+      {
+        "step": 800,
+        "eval": 6.26,
+        "best": 6.46
+      },
+      {
+        "step": 850,
+        "eval": 6.46,
+        "best": 6.46
+      },
+      {
+        "step": 900,
+        "eval": 4.44,
+        "best": 6.46
+      },
+      {
+        "step": 950,
+        "eval": 5.25,
+        "best": 6.46
+      },
+      {
+        "step": 1000,
+        "eval": 4.65,
+        "best": 6.46
+      },
+      {
+        "step": 1050,
+        "eval": 4.85,
+        "best": 6.46
+      },
+      {
+        "step": 1100,
+        "eval": 6.26,
+        "best": 6.46
+      },
+      {
+        "step": 1150,
+        "eval": 6.67,
+        "best": 6.67
+      },
+      {
+        "step": 1200,
+        "eval": 6.67,
+        "best": 6.67
+      },
+      {
+        "step": 1250,
+        "eval": 5.66,
+        "best": 6.67
+      },
+      {
+        "step": 1300,
+        "eval": 6.67,
+        "best": 6.67
+      },
+      {
+        "step": 1350,
+        "eval": 6.67,
+        "best": 6.67
+      },
+      {
+        "step": 1400,
+        "eval": 7.47,
+        "best": 7.47
+      },
+      {
+        "step": 1450,
+        "eval": 6.06,
+        "best": 7.47
+      },
+      {
+        "step": 1500,
+        "eval": 5.86,
+        "best": 7.47
+      },
+      {
+        "step": 1550,
+        "eval": 5.05,
+        "best": 7.47
+      },
+      {
+        "step": 1600,
+        "eval": 6.06,
+        "best": 7.47
+      },
+      {
+        "step": 1650,
+        "eval": 5.86,
+        "best": 7.47
+      },
+      {
+        "step": 1700,
+        "eval": 5.05,
+        "best": 7.47
+      },
+      {
+        "step": 1750,
+        "eval": 6.06,
+        "best": 7.47
+      },
+      {
+        "step": 1800,
+        "eval": 5.86,
+        "best": 7.47
+      }
+    ]
+  },
+  "C_walsh2": {
+    "config": "C_walsh2",
+    "label": "Walsh 2-bool (4 combos)",
+    "final_eval": 6.06,
+    "best_eval": 6.06,
+    "edges": 3331,
+    "elapsed_sec": 652.2,
+    "accepts": {
+      "theta": 17,
+      "reverse": 4,
+      "flip": 4,
+      "mirror": 7,
+      "add": 3,
+      "loop3": 3,
+      "loop5": 5,
+      "loop8": 5,
+      "channel": 1
+    },
+    "history": [
+      {
+        "step": 50,
+        "eval": 0.0,
+        "best": 0
+      },
+      {
+        "step": 100,
+        "eval": 0.0,
+        "best": 0
+      },
+      {
+        "step": 150,
+        "eval": 0.0,
+        "best": 0
+      },
+      {
+        "step": 200,
+        "eval": 6.06,
+        "best": 6.06
+      },
+      {
+        "step": 250,
+        "eval": 4.04,
+        "best": 6.06
+      },
+      {
+        "step": 300,
+        "eval": 4.04,
+        "best": 6.06
+      },
+      {
+        "step": 350,
+        "eval": 4.04,
+        "best": 6.06
+      },
+      {
+        "step": 400,
+        "eval": 4.04,
+        "best": 6.06
+      },
+      {
+        "step": 450,
+        "eval": 4.04,
+        "best": 6.06
+      },
+      {
+        "step": 500,
+        "eval": 4.04,
+        "best": 6.06
+      },
+      {
+        "step": 550,
+        "eval": 4.04,
+        "best": 6.06
+      },
+      {
+        "step": 600,
+        "eval": 4.04,
+        "best": 6.06
+      },
+      {
+        "step": 650,
+        "eval": 4.04,
+        "best": 6.06
+      },
+      {
+        "step": 700,
+        "eval": 4.04,
+        "best": 6.06
+      },
+      {
+        "step": 750,
+        "eval": 4.04,
+        "best": 6.06
+      },
+      {
+        "step": 800,
+        "eval": 4.04,
+        "best": 6.06
+      },
+      {
+        "step": 850,
+        "eval": 4.04,
+        "best": 6.06
+      },
+      {
+        "step": 900,
+        "eval": 4.04,
+        "best": 6.06
+      },
+      {
+        "step": 950,
+        "eval": 4.04,
+        "best": 6.06
+      },
+      {
+        "step": 1000,
+        "eval": 4.24,
+        "best": 6.06
+      },
+      {
+        "step": 1050,
+        "eval": 4.04,
+        "best": 6.06
+      },
+      {
+        "step": 1100,
+        "eval": 4.04,
+        "best": 6.06
+      },
+      {
+        "step": 1150,
+        "eval": 4.04,
+        "best": 6.06
+      },
+      {
+        "step": 1200,
+        "eval": 4.04,
+        "best": 6.06
+      },
+      {
+        "step": 1250,
+        "eval": 4.04,
+        "best": 6.06
+      },
+      {
+        "step": 1300,
+        "eval": 4.44,
+        "best": 6.06
+      },
+      {
+        "step": 1350,
+        "eval": 5.66,
+        "best": 6.06
+      },
+      {
+        "step": 1400,
+        "eval": 5.66,
+        "best": 6.06
+      },
+      {
+        "step": 1450,
+        "eval": 5.66,
+        "best": 6.06
+      },
+      {
+        "step": 1500,
+        "eval": 5.86,
+        "best": 6.06
+      },
+      {
+        "step": 1550,
+        "eval": 4.85,
+        "best": 6.06
+      },
+      {
+        "step": 1600,
+        "eval": 6.06,
+        "best": 6.06
+      },
+      {
+        "step": 1650,
+        "eval": 6.06,
+        "best": 6.06
+      },
+      {
+        "step": 1700,
+        "eval": 6.06,
+        "best": 6.06
+      },
+      {
+        "step": 1750,
+        "eval": 6.06,
+        "best": 6.06
+      },
+      {
+        "step": 1800,
+        "eval": 6.06,
+        "best": 6.06
+      }
+    ]
+  }
+}

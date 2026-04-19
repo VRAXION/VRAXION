@@ -21,7 +21,8 @@ This repository is meant to be a credible front door for technical buyers and en
 - **Current public release tag:** [`v5.0.0-beta.2`](https://github.com/VRAXION/VRAXION/releases/tag/v5.0.0-beta.2) (released Rust language-evolution beta, 24.6% peak)
 - **Next public milestone:** grower-based `v5.0.0 Public Beta`
 - **Current mainline code path on `main`:** [`instnct-core/examples/neuron_grower.rs`](instnct-core/examples/neuron_grower.rs)
-- **Reference/support lane:** [`instnct/model/graph.py`](instnct/model/graph.py)
+- **Python deploy SDK:** [`Python/`](Python/) — Block A + B, pure numpy, no ML framework dependency
+- **Historical Python research lane:** frozen at branch [`archive/python-research-2026-04-20`](https://github.com/VRAXION/VRAXION/tree/archive/python-research-2026-04-20) (was `instnct/` — archived 2026-04-20 after migration to Rust `instnct-core/`)
 
 ## Why This Architecture Is Different
 
@@ -97,24 +98,24 @@ python -m venv .venv
 # macOS/Linux: source .venv/bin/activate
 pip install -r requirements.txt
 
-python -m compileall instnct tools
-python instnct/tests/test_model.py
+python -m compileall Python tools
+python -m pytest Python/ -q
 python tools/check_public_surface.py
 ```
 
 These commands verify:
 
-- the Rust library compiles and all 175 tests pass,
+- the Rust library compiles and all tests pass,
 - the grower regression bundle is reproducible and public-facing,
 - the byte/opcode v1 exact translator export/reload path is reproducible and exact,
-- the Python reference surface compiles and passes its stress test,
+- the Python deploy SDK (`Python/` — Block A + B) runs lossless end-to-end,
 - the public-facing docs agree with the canonical code path.
 
 ## Read Next
 
 - [`VALIDATED_FINDINGS.md`](VALIDATED_FINDINGS.md) — canonical evidence summary
 - [`docs/BYTE_OPCODE_V1_CONTRACT.md`](docs/BYTE_OPCODE_V1_CONTRACT.md) — byte/opcode v1 exact translator contract
-- [`instnct/README.md`](instnct/README.md) — architecture-line map and technical entry points
+- [`Python/block_a_byte_unit/README.md`](Python/block_a_byte_unit/README.md) + [`Python/block_b_merger/README.md`](Python/block_b_merger/README.md) — deploy SDK per-block entry
 - [VRAXION architecture page (INSTNCT)](https://github.com/VRAXION/VRAXION/wiki/INSTNCT-Architecture)
 - [Issue #114](https://github.com/VRAXION/VRAXION/issues/114) — current next build target
 

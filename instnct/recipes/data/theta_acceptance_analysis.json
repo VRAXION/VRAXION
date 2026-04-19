@@ -1,0 +1,24 @@
+{
+  "total_proposals": 600,
+  "accepted_step_mean": 7.8125,
+  "rejected_step_mean": 6.795774647887324,
+  "final_theta_hist": [
+    0,
+    227,
+    0,
+    2,
+    2,
+    0,
+    2,
+    5,
+    2,
+    2,
+    4,
+    5,
+    1,
+    1,
+    1,
+    2
+  ],
+  "top_transitions": {
+    

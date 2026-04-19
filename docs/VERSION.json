@@ -5,5 +5,6 @@
   "internal_code_path": "instnct-core/",
   "architecture_line": "INSTNCT",
   "rust_surface": "instnct-core (Rust, primary)",
-  "python_surface": "instnct/ (Python, reference)"
+  "python_surface": "archived at branch archive/python-research-2026-04-20 (frozen 2026-04-20; was instnct/)",
+  "python_deploy_sdk": "Python/ (Block A + B numpy deploy SDK)"
 }

@@ -1,0 +1,408 @@
+{
+  "F1_float": {
+    "config": "F1_float",
+    "label": "Float cosine (current)",
+    "final_eval": 6.87,
+    "best_eval": 10.1,
+    "edges": 3573,
+    "elapsed_sec": 574.6,
+    "accepts": {
+      "theta": 55,
+      "flip": 29,
+      "loop3": 18,
+      "reverse": 20,
+      "channel": 42,
+      "remove": 16,
+      "add": 10,
+      "mirror": 24,
+      "loop8": 16,
+      "loop5": 23,
+      "enhance": 11
+    },
+    "history": [
+      {
+        "step": 50,
+        "eval": 6.67,
+        "best": 6.67
+      },
+      {
+        "step": 100,
+        "eval": 6.06,
+        "best": 6.67
+      },
+      {
+        "step": 150,
+        "eval": 6.06,
+        "best": 6.67
+      },
+      {
+        "step": 200,
+        "eval": 5.66,
+        "best": 6.67
+      },
+      {
+        "step": 250,
+        "eval": 6.06,
+        "best": 6.67
+      },
+      {
+        "step": 300,
+        "eval": 6.06,
+        "best": 6.67
+      },
+      {
+        "step": 350,
+        "eval": 7.47,
+        "best": 7.47
+      },
+      {
+        "step": 400,
+        "eval": 9.09,
+        "best": 9.09
+      },
+      {
+        "step": 450,
+        "eval": 8.28,
+        "best": 9.09
+      },
+      {
+        "step": 500,
+        "eval": 8.28,
+        "best": 9.09
+      },
+      {
+        "step": 550,
+        "eval": 7.27,
+        "best": 9.09
+      },
+      {
+        "step": 600,
+        "eval": 7.88,
+        "best": 9.09
+      },
+      {
+        "step": 650,
+        "eval": 7.27,
+        "best": 9.09
+      },
+      {
+        "step": 700,
+        "eval": 7.27,
+        "best": 9.09
+      },
+      {
+        "step": 750,
+        "eval": 7.27,
+        "best": 9.09
+      },
+      {
+        "step": 800,
+        "eval": 8.89,
+        "best": 9.09
+      },
+      {
+        "step": 850,
+        "eval": 8.48,
+        "best": 9.09
+      },
+      {
+        "step": 900,
+        "eval": 8.48,
+        "best": 9.09
+      },
+      {
+        "step": 950,
+        "eval": 8.89,
+        "best": 9.09
+      },
+      {
+        "step": 1000,
+        "eval": 8.28,
+        "best": 9.09
+      },
+      {
+        "step": 1050,
+        "eval": 9.7,
+        "best": 9.7
+      },
+      {
+        "step": 1100,
+        "eval": 7.88,
+        "best": 9.7
+      },
+      {
+        "step": 1150,
+        "eval": 9.9,
+        "best": 9.9
+      },
+      {
+        "step": 1200,
+        "eval": 9.49,
+        "best": 9.9
+      },
+      {
+        "step": 1250,
+        "eval": 10.1,
+        "best": 10.1
+      },
+      {
+        "step": 1300,
+        "eval": 9.7,
+        "best": 10.1
+      },
+      {
+        "step": 1350,
+        "eval": 9.7,
+        "best": 10.1
+      },
+      {
+        "step": 1400,
+        "eval": 8.89,
+        "best": 10.1
+      },
+      {
+        "step": 1450,
+        "eval": 6.87,
+        "best": 10.1
+      },
+      {
+        "step": 1500,
+        "eval": 7.27,
+        "best": 10.1
+      },
+      {
+        "step": 1550,
+        "eval": 7.47,
+        "best": 10.1
+      },
+      {
+        "step": 1600,
+        "eval": 7.47,
+        "best": 10.1
+      },
+      {
+        "step": 1650,
+        "eval": 7.68,
+        "best": 10.1
+      },
+      {
+        "step": 1700,
+        "eval": 7.47,
+        "best": 10.1
+      },
+      {
+        "step": 1750,
+        "eval": 8.28,
+        "best": 10.1
+      },
+      {
+        "step": 1800,
+        "eval": 6.87,
+        "best": 10.1
+      }
+    ]
+  },
+  "F2_int10": {
+    "config": "F2_int10",
+    "label": "Integer x10 (7,8,10,12,13)",
+    "final_eval": 2.83,
+    "best_eval": 9.09,
+    "edges": 3605,
+    "elapsed_sec": 370.2,
+    "accepts": {
+      "theta": 51,
+      "loop3": 26,
+      "channel": 26,
+      "remove": 18,
+      "mirror": 33,
+      "loop5": 22,
+      "add": 13,
+      "loop8": 17,
+      "flip": 28,
+      "reverse": 20,
+      "enhance": 6
+    },
+    "history": [
+      {
+        "step": 50,
+        "eval": 6.06,
+        "best": 6.06
+      },
+      {
+        "step": 100,
+        "eval": 6.06,
+        "best": 6.06
+      },
+      {
+        "step": 150,
+        "eval": 8.48,
+        "best": 8.48
+      },
+      {
+        "step": 200,
+        "eval": 9.09,
+        "best": 9.09
+      },
+      {
+        "step": 250,
+        "eval": 8.48,
+        "best": 9.09
+      },
+      {
+        "step": 300,
+        "eval": 8.08,
+        "best": 9.09
+      },
+      {
+        "step": 350,
+        "eval": 0.4,
+        "best": 9.09
+      },
+      {
+        "step": 400,
+        "eval": 6.06,
+        "best": 9.09
+      },
+      {
+        "step": 450,
+        "eval": 6.06,
+        "best": 9.09
+      },
+      {
+        "step": 500,
+        "eval": 6.06,
+        "best": 9.09
+      },
+      {
+        "step": 550,
+        "eval": 5.66,
+        "best": 9.09
+      },
+      {
+        "step": 600,
+        "eval": 6.87,
+        "best": 9.09
+      },
+      {
+        "step": 650,
+        "eval": 4.85,
+        "best": 9.09
+      },
+      {
+        "step": 700,
+        "eval": 5.25,
+        "best": 9.09
+      },
+      {
+        "step": 750,
+        "eval": 4.85,
+        "best": 9.09
+      },
+      {
+        "step": 800,
+        "eval": 4.85,
+        "best": 9.09
+      },
+      {
+        "step": 850,
+        "eval": 4.85,
+        "best": 9.09
+      },
+      {
+        "step": 900,
+        "eval": 4.85,
+        "best": 9.09
+      },
+      {
+        "step": 950,
+        "eval": 4.85,
+        "best": 9.09
+      },
+      {
+        "step": 1000,
+        "eval": 4.85,
+        "best": 9.09
+      },
+      {
+        "step": 1050,
+        "eval": 4.85,
+        "best": 9.09
+      },
+      {
+        "step": 1100,
+        "eval": 4.85,
+        "best": 9.09
+      },
+      {
+        "step": 1150,
+        "eval": 4.85,
+        "best": 9.09
+      },
+      {
+        "step": 1200,
+        "eval": 4.65,
+        "best": 9.09
+      },
+      {
+        "step": 1250,
+        "eval": 4.85,
+        "best": 9.09
+      },
+      {
+        "step": 1300,
+        "eval": 4.85,
+        "best": 9.09
+      },
+      {
+        "step": 1350,
+        "eval": 4.85,
+        "best": 9.09
+      },
+      {
+        "step": 1400,
+        "eval": 4.85,
+        "best": 9.09
+      },
+      {
+        "step": 1450,
+        "eval": 4.85,
+        "best": 9.09
+      },
+      {
+        "step": 1500,
+        "eval": 4.85,
+        "best": 9.09
+      },
+      {
+        "step": 1550,
+        "eval": 4.85,
+        "best": 9.09
+      },
+      {
+        "step": 1600,
+        "eval": 4.85,
+        "best": 9.09
+      },
+      {
+        "step": 1650,
+        "eval": 5.86,
+        "best": 9.09
+      },
+      {
+        "step": 1700,
+        "eval": 4.65,
+        "best": 9.09
+      },
+      {
+        "step": 1750,
+        "eval": 3.84,
+        "best": 9.09
+      },
+      {
+        "step": 1800,
+        "eval": 2.83,
+        "best": 9.09
+      }
+    ]
+  }
+}

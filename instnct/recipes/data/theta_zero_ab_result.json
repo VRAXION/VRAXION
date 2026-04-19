@@ -1,0 +1,50 @@
+[
+  {
+    "theta_min": 1,
+    "seed": 42,
+    "final": 17.98,
+    "best": 18.79,
+    "theta0_count": 0,
+    "elapsed": 349.1
+  },
+  {
+    "theta_min": 1,
+    "seed": 123,
+    "final": 16.77,
+    "best": 17.17,
+    "theta0_count": 0,
+    "elapsed": 311.6
+  },
+  {
+    "theta_min": 1,
+    "seed": 777,
+    "final": 16.57,
+    "best": 16.57,
+    "theta0_count": 0,
+    "elapsed": 305.5
+  },
+  {
+    "theta_min": 0,
+    "seed": 42,
+    "final": 16.16,
+    "best": 16.77,
+    "theta0_count": 0,
+    "elapsed": 218.6
+  },
+  {
+    "theta_min": 0,
+    "seed": 123,
+    "final": 18.59,
+    "best": 18.99,
+    "theta0_count": 0,
+    "elapsed": 227.0
+  },
+  {
+    "theta_min": 0,
+    "seed": 777,
+    "final": 5.66,
+    "best": 7.88,
+    "theta0_count": 2,
+    "elapsed": 273.0
+  }
+]

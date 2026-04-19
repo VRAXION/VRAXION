@@ -1,0 +1,18 @@
+{
+  "final": 7.47,
+  "best": 8.48,
+  "accepts": {
+    "tick_weight": 95,
+    "theta": 59,
+    "mirror": 35,
+    "loop3": 45,
+    "flip": 38,
+    "loop5": 41,
+    "loop8": 34,
+    "remove": 24,
+    "reverse": 43,
+    "add": 22,
+    "enhance": 17
+  },
+  "weight_mean": 0.834
+}

@@ -10,7 +10,8 @@ The repo is in a transition state:
 
 - **Released public tag:** `v5.0.0-beta.2` — Rust grower public beta (`v5.0.0-beta.1` remains as prior language-evolution beta, historical reference only)
 - **Current mainline on `main`:** Rust grower (`instnct-core/examples/neuron_grower.rs`)
-- **Reference/support lane:** Python `instnct/model/graph.py`
+- **Python deploy SDK:** `Python/` — Block A + B, pure numpy (256/256 + 65536/65536 lossless)
+- **Historical Python research lane:** frozen at branch `archive/python-research-2026-04-20` (was `instnct/`, migrated to Rust `instnct-core/` on 2026-04-13)
 - **Active research line:** Byte-level lexical-to-neural pipeline (L0 + L1 frozen; Tokenizer V2 champion; Embedder + Nano Brain scaffolds awaiting training)
 
 ### Grower lane: proven on `main`

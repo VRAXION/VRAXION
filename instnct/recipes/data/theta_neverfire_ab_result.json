@@ -1,0 +1,50 @@
+[
+  {
+    "neverfire": false,
+    "seed": 42,
+    "final": 16.57,
+    "best": 16.57,
+    "dead_neurons": 0,
+    "elapsed": 332.8
+  },
+  {
+    "neverfire": false,
+    "seed": 123,
+    "final": 16.57,
+    "best": 16.57,
+    "dead_neurons": 0,
+    "elapsed": 321.7
+  },
+  {
+    "neverfire": false,
+    "seed": 777,
+    "final": 18.59,
+    "best": 18.79,
+    "dead_neurons": 0,
+    "elapsed": 450.6
+  },
+  {
+    "neverfire": true,
+    "seed": 42,
+    "final": 16.16,
+    "best": 17.58,
+    "dead_neurons": 1,
+    "elapsed": 425.7
+  },
+  {
+    "neverfire": true,
+    "seed": 123,
+    "final": 14.75,
+    "best": 16.16,
+    "dead_neurons": 0,
+    "elapsed": 426.1
+  },
+  {
+    "neverfire": true,
+    "seed": 777,
+    "final": 6.87,
+    "best": 7.07,
+    "dead_neurons": 5,
+    "elapsed": 387.4
+  }
+]

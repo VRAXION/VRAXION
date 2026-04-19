@@ -1,0 +1,33 @@
+{
+  "final_hist": [
+    87,
+    16,
+    14,
+    13,
+    19,
+    10,
+    9,
+    22,
+    12,
+    9,
+    12,
+    6,
+    5,
+    8,
+    9,
+    5
+  ],
+  "final_eval": 17.17,
+  "best_eval": 19.19,
+  "accepts": {
+    "theta": 424,
+    "flip": 40,
+    "loop3": 94,
+    "loop5": 81,
+    "reverse": 100,
+    "channel": 154,
+    "remove": 67,
+    "add": 67
+  },
+  "supergate_count": 5
+}

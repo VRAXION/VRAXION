@@ -1,0 +1,27 @@
+{
+  "label": "D: Per-tick threshold multiplier",
+  "final": 4.24,
+  "best": 8.48,
+  "accepts": {
+    "theta": 108,
+    "mirror": 85,
+    "loop3": 85,
+    "remove": 78,
+    "add": 84,
+    "enhance": 56,
+    "loop5": 90,
+    "loop8": 83,
+    "flip": 90,
+    "reverse": 104,
+    "tick_mut": 109
+  },
+  "val_distribution": {
+    "7": 14,
+    "8": 17,
+    "9": 9,
+    "10": 1951,
+    "11": 19,
+    "12": 20,
+    "13": 18
+  }
+}
