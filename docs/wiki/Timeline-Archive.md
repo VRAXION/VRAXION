@@ -19,8 +19,9 @@ One list of live public surfaces for the project. Everywhere else in this record
 
 - The stable public release is still `v4.2.0`; the active architecture line is [INSTNCT Architecture](INSTNCT-Architecture). See [Core Surfaces](#core-surfaces) for the release list.
 - The Rust `v5.0.0-beta` lane (`instnct-core`) is substantial enough to deserve rich chronology, but remains a beta implementation surface rather than the shipped default.
-- The biggest unresolved pressure is no longer basic trainability. It is whether language evaluation, seed variance, and context-dependent task learning survive repeated adversarial reruns, and whether the C19 + float-gradient + fraction-quantization pipeline generalizes beyond the current task suite.
-- The current frontier recipe: **L0 Byte Interpreter LOCKED** — flat 8->4 binary {-1,+1}, pure integer deployment (POPCOUNT -> int32 sum -> int8 output), no C19, no float, no multiply. L1 Input Merger is the next design target. The older C19 + float gradient + fraction extraction pipeline remains valid for the grower lane and L2+ prediction tasks where binary weights are insufficient.
+- The biggest unresolved pressure is no longer basic trainability. It is whether language evaluation, seed variance, and context-dependent task learning survive repeated adversarial reruns, and whether the byte-level L0+L1 pipeline generalizes beyond the current task suite.
+- **Active pipeline (byte-level, as of 2026-04-18):** L0 Byte Unit LOCKED (C19 8→24→16 int4, 256-entry LUT, `tools/byte_embedder_lut.h`) + L1 Byte-Pair Merger CHAMPION (single-W mirror 3.36 KB Huffman-packed, `output/merger_single_w_huffman_pack/packed_model.bin`). Brain/higher layers are the active research frontier on top of frozen L0+L1 features.
+- **Earlier track (archived 2026-04-18):** The character-level abstract-core pipeline (L0 16-dim char LUT + L1 Beukers Conv, 83.6% masked char prediction) is a validated finding preserved in the timeline (2026-04-15/16 section). It is not the current pipeline; track transition recorded in the Milestone Rail below.
 
 ## Research Protocol
 
@@ -87,9 +88,10 @@ Era-level summary of the research arc. Per-day detail lives in the timeline belo
 | Named-layer pipeline: L0-L2 built, overfitting discovered | 2026-04-14 | L0 Byte Interpreter: ternary 3 neurons = 100%. L1 Input Merger: linear 112->96, exact 100% (no sigmoid). L2 Feature Extractor: Conv1D(k=3,f=64)+MLP, 96.6% train but overfits (test 48.5%). Conv beats one-hot (+33pp train). Binary weights: perfect for encoding, FAIL for prediction. ReLU beats C19 in deep networks. Fair A/B: MLP backprop ~18x more parameter-efficient than evolution. | [Timeline Archive](Timeline-Archive) |
 | L0 CANONICAL: binary byte encoder frozen | 2026-04-14 | Exhaustive bitwidth sweep winner: 1-bit binary {-1,+1}, 4 neurons, 36 bits, pure POPCOUNT. Beats ternary (3n/43b) and 2-bit (2n/42b). Backprop STE validated (0.7s vs 194s exhaustive for 2-bit). Topology > weight precision for encoding. INSTNCT sparse edge-list unifies with binary deployment. | [Timeline Archive](Timeline-Archive) |
 | Pure binary pipeline LOCKED | 2026-04-15 | L0 deployment pipeline finalized: no C19, no float, no multiply. POPCOUNT -> int32 sum -> int8 output. Multi-layer encoder WORSE than flat (bottleneck effect). Backprop STE validated but unnecessary at this scale. Architecture locked: L0 FROZEN, L1 next. Emergent INSTNCT topology baseline confirms designed encoder vastly outperforms random wiring. | [Timeline Archive](Timeline-Archive) |
-| Beukers gate + brain-on-top validation | 2026-04-15/16 | Overnight session: 10+ commits, 30+ configs, 21 activation functions swept. Pipeline re-architected: L0 Embedding (16-dim char lookup, LOCKED), L1 Conv (Beukers gate xy/(1+|xy|), k=7, novel discovery from zeta/number theory), Brain (validates on frozen features, +1.4% over end-to-end). Record progression: 77.4% -> 80.1% -> 82.1% -> 83.6% (Beukers). Key: single layer > deep (2-layer Beukers worse), k=7 optimal (14 chars = 2-3 words receptive field), embedding 100% lossless round-trip verified. | [Timeline Archive](Timeline-Archive) |
-| Single-W mirror fp16 champion | 2026-04-19 | Cluster 10's "73% ceiling" disproved: single-W mirror-tied architecture (one matrix, 2592 cells, half of Cluster 11's 5184-cell asymmetric champion) reaches 100.0000% lossless via 5-seed restarts + LBFGS + exhaustive 1-cell rescue. Float champion (11.20 KB) compressed to **pure fp16 with a single 1-ulp grid search** — zero retraining required. New deploy champion: **5.60 KB, −22% vs Cluster 11, −50% vs fp32**. Bonus: fp16 is natively faster on GPU Tensor Cores and ARM NEON. K=64 codebook, int8, int8+escape, SVD, GCD, and sparse-dict routes all tested and rejected before the fp16 ceiling test revealed only 2 bad pairs remained. | [Timeline Archive](Timeline-Archive) |
-| Huffman-packed champion | 2026-04-19 eve | Generator-based encoding (K=16/4 K-means atoms per component) + canonical Huffman on coef and gen-index streams separately. Beats fixed-width by ~14%. Standard compressors (lzma/bz2/gzip on raw fp16) all WORSE at this data size — general LZ does not exploit structured sign+coef+gen_idx encoding. **New champion: 3440 B (3.36 KB), −14% vs 3.91 KB hybrid-K, −40% vs 5.60 KB fp16, 100% lossless, 65536/65536 pairs.** Shannon topology floor: 2422 B (current is ~42% above floor). Independently verified: binary size, decode with no trailing bytes, fp16 bit-compare, 65536 pair sign match. | [Timeline Archive](Timeline-Archive) |
+| Beukers gate + brain-on-top validation **(EARLIER TRACK — char-level abstract-core)** | 2026-04-15/16 | Overnight session: 10+ commits, 30+ configs, 21 activation functions swept. Character-level pipeline peak: L0 Embedding (16-dim char lookup, LOCKED), L1 Conv (Beukers gate xy/(1+|xy|), k=7, novel discovery from zeta/number theory), Brain (+1.4% over end-to-end). Record progression: 77.4% → 80.1% → 82.1% → 83.6% (Beukers). Validated finding; superseded by byte-level track transition 2026-04-18. | [Timeline Archive](Timeline-Archive) |
+| **Track transition: character-level → byte-level pipeline** | 2026-04-18 | The character-level abstract-core track (Beukers Conv, 83.6%) is archived as a validated prior exploration. The byte-level pipeline (L0 Byte Unit + L1 Byte-Pair Merger) becomes the active project line. L0 already locked; L1 championship in progress. | [Timeline Archive](Timeline-Archive) |
+| Single-W mirror fp16 champion **(byte-level L1, current track)** | 2026-04-19 | Cluster 10's "73% ceiling" disproved: single-W mirror-tied architecture (one matrix, 2592 cells) reaches 100.0000% lossless via 5-seed restarts + LBFGS + exhaustive 1-cell rescue. Float champion (11.20 KB) compressed to **pure fp16 with a single 1-ulp grid search** — zero retraining required. Deploy champion: **5.60 KB, −22% vs Cluster 11, −50% vs fp32**. | [Timeline Archive](Timeline-Archive) |
+| Huffman-packed champion **(byte-level L1, current track)** | 2026-04-19 eve | Generator-based encoding (K=16/4 K-means atoms per component) + canonical Huffman on coef and gen-index streams separately. Beats fixed-width by ~14%. Standard compressors all WORSE at this data size. **New champion: 3440 B (3.36 KB), 100% lossless, 65536/65536 pairs.** Shannon floor: 2422 B (~42% gap remains). | [Timeline Archive](Timeline-Archive) |
 
 ```mermaid
 timeline
@@ -146,7 +148,7 @@ timeline
                          : POPCOUNT to int8 end-to-end
                          : Multi-layer WORSE than flat
                          : L0 FROZEN L1 next
-    section Beukers gate + brain validation
+    section Beukers gate + brain validation (char-level track, archived 2026-04-18)
         2026-04-15/16    : L0 Embedding 16-dim LOCKED
                          : Beukers gate xy/(1+|xy|) novel discovery
                          : k=7 optimal kernel 83.6% record
@@ -154,7 +156,8 @@ timeline
                          : Brain on frozen features +1.4%
                          : 21 activation functions tested
                          : Record 77.4 to 80.1 to 82.1 to 83.6
-    section L1 merger compression championship
+        2026-04-18       : Track transition char-level to byte-level
+    section L1 merger compression championship (byte-level current track)
         2026-04-17/18    : Quantization championship QAT int8 86.40%
                          : Cluster 10 73% ceiling disproved (seed artifact)
                          : Cluster 11 3-tier hybrid 7.14 KB 100% lossless
@@ -495,9 +498,11 @@ Kept in `tools/` (canonical): `diag_byte_single_w_huffman_pack.py`, `diag_byte_s
 
 ---
 
-### 2026-04-15/16 — Beukers gate discovery + brain-on-top validation + overnight consolidation
+### 2026-04-15/16 — Beukers gate discovery + brain-on-top validation + overnight consolidation *(EARLIER TRACK — character-level abstract-core, archived 2026-04-18)*
 
-**Theme:** Massive overnight session: 10+ commits, 30+ configs, 21 activation functions swept. The pipeline re-architected around a new three-stage design: L0 Embedding (16-dim char lookup table, 100% lossless, LOCKED), L1 Conv (Beukers gate activation xy/(1+|xy|), k=7, novel discovery from zeta/number theory), Brain (validates on frozen conv features with +1.4% improvement over end-to-end training). The Beukers gate is a novel 2-input activation function derived from number theory (Beukers' proof of Apery's theorem on zeta(3)), discovered during an exhaustive sweep of 21 candidate activations. Record accuracy progression: 77.4% -> 80.1% -> 82.1% -> 83.6% (all Beukers, final with k=7, nf=128). Key architectural findings: single conv layer strictly beats deep (2-layer Beukers is worse), k=7 is the optimal kernel size (14 chars = 2-3 words receptive field), embedding achieves 100% lossless round-trip.
+> **Note:** This session belongs to the character-level abstract-core track, which was superseded by the byte-level pipeline as the active project line on 2026-04-18. The findings below are validated and preserved; they are not the current frontier. For the active byte-level pipeline see Clusters 9, 12, and 13 above.
+
+**Theme:** Massive overnight session: 10+ commits, 30+ configs, 21 activation functions swept. The character-level pipeline re-architected around a new three-stage design: L0 Embedding (16-dim char lookup table, 100% lossless, LOCKED), L1 Conv (Beukers gate activation xy/(1+|xy|), k=7, novel discovery from zeta/number theory), Brain (validates on frozen conv features with +1.4% improvement over end-to-end training). The Beukers gate is a novel 2-input activation function derived from number theory (Beukers' proof of Apery's theorem on zeta(3)), discovered during an exhaustive sweep of 21 candidate activations. Record accuracy progression on the char-level task: 77.4% → 80.1% → 82.1% → 83.6% (all Beukers, final with k=7, nf=128). Key architectural findings: single conv layer strictly beats deep (2-layer Beukers is worse), k=7 is the optimal kernel size (14 chars = 2-3 words receptive field), embedding achieves 100% lossless round-trip.
 
 | Seq | Finding | Status | Source |
 |---|---|---|---|

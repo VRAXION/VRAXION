@@ -96,6 +96,24 @@ Sparse recurrent routing matters because incompatible paths can cancel while com
 
 This page also separates the shipped line from validated alternatives on purpose. The project benefits from serious side branches, but understanding the architecture requires knowing which line is actually default and which lines are still candidates.
 
+## Feature Pipeline: Current Byte-Level Implementation
+
+The INSTNCT brain runs on top of a two-layer byte-level feature pipeline. Both layers are locked and ship as deploy artifacts; the brain sits above them and is the active research frontier.
+
+### L0 — Byte Unit (LOCKED, shipped)
+
+A single byte enters as 8 bits and is mapped to a 16-dim embedding by a C19 tied mirror autoencoder (`8 → 24 → 16`). Int4 precision. 100% lossless on all 256 bytes. The 256-entry LUT (`tools/byte_embedder_lut.h`, 4.1 KB) is the deploy artifact; the weight file is `tools/byte_unit_winner_int4.json`.
+
+This replaced the earlier binary byte encoder (flat 8→4 neurons, binary {-1,+1}, 36 bits, POPCOUNT) which remains a validated finding for pure-integer paths, and the character-level 16-dim lookup table from the abstract-core track — both are preserved as research history, not current defaults.
+
+### L1 — Byte-Pair Merger (CHAMPION, shipped)
+
+Two L0 embeddings (32-dim total) pass through a single-W mirror-tied autoencoder (`C19(x @ W + b1) @ W.T + b2`, one 32×81 matrix = 2592 cells). Output: 32-dim merged representation. 100% lossless on all 65,536 byte pairs. Deploy champion: **3440 B (3.36 KB) Huffman-packed** (`output/merger_single_w_huffman_pack/packed_model.bin`, commit `f0ab75a`). Shannon floor is 2422 B (~42% gap remains).
+
+### Earlier Track — Character-Level Abstract-Core (archived 2026-04-18)
+
+The prior active track used a 16-dim character LUT as L0 and a Beukers-gate Conv1D (`xy/(1+|xy|)`, k=7, nf=128) as L1, reaching **83.6% masked character prediction**. This is a validated, positive result and is preserved in the [Timeline Archive](Timeline-Archive) (2026-04-15/16 section). It is not the current pipeline; the byte-level track superseded it as of the 2026-04-18 track transition.
+
 ## Read Next
 
 - [Vraxion Home](Home) — public front door and mission-level summary
