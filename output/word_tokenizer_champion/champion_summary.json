@@ -1,0 +1,62 @@
+{
+  "champion": {
+    "name": "v2-hybrid-wr0.9375",
+    "family": "space-aware hybrid (whole-word + subword + byte-fallback)",
+    "vocab_size": 32000,
+    "whole_ratio": 0.9375,
+    "training_corpus": "FineWeb-EDU (first 100 MB, 20 row-groups)",
+    "max_subword_len": 12,
+    "min_subword_count": 50,
+    "byte_base": 0,
+    "punct_base": 256,
+    "ws_base": 287,
+    "learned_base": 294
+  },
+  "frozen_at": "2026-04-19 12:32:51",
+  "artifacts": {
+    "vocab_json": "output/word_tokenizer_champion/champion_vocab.json",
+    "vocab_json_bytes": 4440802,
+    "source_cached_pickle": "output/subword_tokenizer_exact/hybrid_tokens_v32000_wr0.9375.pkl",
+    "training_script": "tools/diag_subword_tokenizer_exact.py",
+    "freeze_script": "tools/diag_word_tokenizer_champion_freeze.py"
+  },
+  "battery": {
+    "lossless_10mb": true,
+    "encode_bytes_per_second": 262721.8254568756,
+    "compression": {
+      "fixed_bytes": 4284170,
+      "fixed_pct": 42.8417,
+      "shannon_bytes": 3034432.4484545267,
+      "shannon_pct": 30.344324484545268,
+      "huffman_bytes": 3043223,
+      "huffman_pct": 30.43223
+    },
+    "kind_breakdown": {
+      "LEARNED": {
+        "input_bytes": 9589666,
+        "pct": 95.89666
+      },
+      "BYTE": {
+        "input_bytes": 125625,
+        "pct": 1.25625
+      },
+      "PUNCT": {
+        "input_bytes": 284657,
+        "pct": 2.84657
+      },
+      "WS_RUN": {
+        "input_bytes": 52,
+        "pct": 0.00052
+      }
+    },
+    "edge_cases": {
+      "total": 9,
+      "passed": 9
+    }
+  },
+  "baselines_10mb": {
+    "gzip-9": 37.62,
+    "bzip2-9": 29.97,
+    "lzma-preset-9e": 28.61
+  }
+}

@@ -129,7 +129,11 @@ instnct-core/results/
 /.claude/
 
 # Local playwright / browser-check outputs (screenshots + test specs)
-output/
+output/*
+!output/merger_single_w_huffman_pack/
+!output/merger_single_w_huffman_pack/**
+!output/word_tokenizer_champion/
+!output/word_tokenizer_champion/**
 
 # Grower / lab scratch that should never leak into the public mainline
 instnct-core/*_log.txt
