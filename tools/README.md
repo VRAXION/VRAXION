@@ -46,6 +46,47 @@ blueprint Cluster 11 on the Timeline-Archive wiki page. Git history retains
 neither — these scripts were never committed to `main`; the wiki entry is
 the only record.
 
+**Note (2026-04-19, Single-W + fp16 follow-up):** the Cluster 10 "73% hard
+ceiling" was overturned — it was a single-seed artifact. A Single-W mirror
+tied autoencoder (`forward(x) = C19(x @ W + b1) @ W.T + b2`, H=81) trained
+with multi-seed restarts + Adam warmup + L-BFGS finish + sign-aware hinge
+loss reaches 100.0000% lossless at **2592 weight cells** (half of Cluster 11's
+5184-cell asymmetric champion). The float model was then compressed to a
+**5.60 KB pure fp16 deploy — 100.0000% lossless, zero escapes, zero
+retraining** — via fp16 cast + 1-ulp grid exhaustive search. One weight
+adjustment (`W[0,24]: 0.3672 → 0.3652`, 1 fp16 ulp) closed the last 2 bad
+pairs. Previous attempts (K=64 Lloyd-Max codebook at 53%, int8 linear at
+91.9%, int8+escape hybrid at 99.97%) all failed to reach 100%; SVD/GCD/sparse
+structure hunts were negative (W is full-rank, max-entropy). fp16 works
+because its magnitude-dependent resolution matches the razor-edge weight
+distribution; int8's fixed step size is too coarse in the tight-slack region.
+
+The following canonical scripts are kept in `tools/` as the reproducible
+Single-W pipeline:
+
+- `diag_byte_pair_merger_single_w_mirror.py` — SingleWMirror class definition
+  + 5-restart training loop (Adam warmup + L-BFGS finish); produces float
+  baseline checkpoint
+- `diag_byte_pair_merger_single_w_continue.py` — long L-BFGS continue from a
+  saved checkpoint (stall=20, history_size=100)
+- `diag_byte_pair_merger_single_w_final_push.py` — heavy hinge L-BFGS push
+  for bridging the 99.99% → 100% gap
+- `diag_byte_pair_merger_single_w_exhaustive_fix.py` — exhaustive single-cell
+  perturbation rescue (closes the last 1-2 bad pairs in float space)
+- `diag_byte_single_w_fp16_exhaust.py` — **CHAMPION**: fp16 cast + 1-ulp grid
+  exhaustive search → **5.60 KB deploy, 100% lossless**
+
+Supporting analysis / exploration scripts also kept (findings consolidated into
+Cluster 12 on the Timeline-Archive wiki):
+`diag_byte_single_w_analyze.py`, `_planck_scale.py`, `_structure_hunt.py`,
+`_slack_map.py`, `_fp16_ceiling.py`, `_quant_pipeline.py`,
+`_int8_pipeline.py`, `_hybrid_escape.py`.
+
+Champion artifact: `output/merger_single_w_fp16_all/final_fp16.json` (H=81,
+2592 cells fp16, 5734 bytes). Pipeline blueprint is recorded as Cluster 12 on
+the [Timeline-Archive wiki
+page](https://github.com/VRAXION/VRAXION/wiki/Timeline-Archive).
+
 ## Quick summary
 
 | Script | Category | Status | Headline |

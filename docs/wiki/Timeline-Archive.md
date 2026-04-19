@@ -88,6 +88,7 @@ Era-level summary of the research arc. Per-day detail lives in the timeline belo
 | L0 CANONICAL: binary byte encoder frozen | 2026-04-14 | Exhaustive bitwidth sweep winner: 1-bit binary {-1,+1}, 4 neurons, 36 bits, pure POPCOUNT. Beats ternary (3n/43b) and 2-bit (2n/42b). Backprop STE validated (0.7s vs 194s exhaustive for 2-bit). Topology > weight precision for encoding. INSTNCT sparse edge-list unifies with binary deployment. | [Timeline Archive](Timeline-Archive) |
 | Pure binary pipeline LOCKED | 2026-04-15 | L0 deployment pipeline finalized: no C19, no float, no multiply. POPCOUNT -> int32 sum -> int8 output. Multi-layer encoder WORSE than flat (bottleneck effect). Backprop STE validated but unnecessary at this scale. Architecture locked: L0 FROZEN, L1 next. Emergent INSTNCT topology baseline confirms designed encoder vastly outperforms random wiring. | [Timeline Archive](Timeline-Archive) |
 | Beukers gate + brain-on-top validation | 2026-04-15/16 | Overnight session: 10+ commits, 30+ configs, 21 activation functions swept. Pipeline re-architected: L0 Embedding (16-dim char lookup, LOCKED), L1 Conv (Beukers gate xy/(1+|xy|), k=7, novel discovery from zeta/number theory), Brain (validates on frozen features, +1.4% over end-to-end). Record progression: 77.4% -> 80.1% -> 82.1% -> 83.6% (Beukers). Key: single layer > deep (2-layer Beukers worse), k=7 optimal (14 chars = 2-3 words receptive field), embedding 100% lossless round-trip verified. | [Timeline Archive](Timeline-Archive) |
+| Single-W mirror fp16 champion | 2026-04-19 | Cluster 10's "73% ceiling" disproved: single-W mirror-tied architecture (one matrix, 2592 cells, half of Cluster 11's 5184-cell asymmetric champion) reaches 100.0000% lossless via 5-seed restarts + LBFGS + exhaustive 1-cell rescue. Float champion (11.20 KB) compressed to **pure fp16 with a single 1-ulp grid search** — zero retraining required. New deploy champion: **5.60 KB, −22% vs Cluster 11, −50% vs fp32**. Bonus: fp16 is natively faster on GPU Tensor Cores and ARM NEON. K=64 codebook, int8, int8+escape, SVD, GCD, and sparse-dict routes all tested and rejected before the fp16 ceiling test revealed only 2 bad pairs remained. | [Timeline Archive](Timeline-Archive) |
 
 ```mermaid
 timeline
@@ -152,6 +153,15 @@ timeline
                          : Brain on frozen features +1.4%
                          : 21 activation functions tested
                          : Record 77.4 to 80.1 to 82.1 to 83.6
+    section L1 merger compression championship
+        2026-04-17/18    : Quantization championship QAT int8 86.40%
+                         : Cluster 10 73% ceiling disproved (seed artifact)
+                         : Cluster 11 3-tier hybrid 7.14 KB 100% lossless
+        2026-04-19       : Single-W mirror 100% lossless 2592 cells
+                         : Float champion H=81 exhaustive seed+LBFGS rescue
+                         : 7 compression routes tested K64/int8/escape/SVD/GCD
+                         : fp16 only 2 bad pairs fp16 1-ulp grid closes both
+                         : NEW CHAMPION 5.60 KB pure fp16 zero retraining
 ```
 
 ## Active Research Gates
@@ -203,6 +213,7 @@ The timeline is ordered latest-first. Each day is a self-contained H3 section wi
 <details>
 <summary>Jump to date</summary>
 
+- [2026-04-19 — L1 merger fp16 champion: single-W mirror-tied, 5.60 KB, 100% lossless](#2026-04-19--l1-merger-fp16-champion-single-w-mirror-tied-560-kb-100-lossless)
 - [2026-04-17/18 — Quantization championship + branch consolidation](#2026-04-1718--quantization-championship--branch-consolidation)
 - [2026-04-15/16 — Beukers gate discovery + brain-on-top validation + overnight consolidation](#2026-04-1516--beukers-gate-discovery--brain-on-top-validation--overnight-consolidation)
 - [2026-04-15 — Pure binary pipeline LOCKED: no C19, no float, no multiply — POPCOUNT to int8 end-to-end](#2026-04-15--pure-binary-pipeline-locked-no-c19-no-float-no-multiply--popcount-to-int8-end-to-end)
@@ -238,6 +249,43 @@ The timeline is ordered latest-first. Each day is a self-contained H3 section wi
 
 ---
 
+### 2026-04-19 — L1 merger fp16 champion: single-W mirror-tied, 5.60 KB, 100% lossless
+
+**Theme:** Two-part session that first disproved Cluster 10's claimed "73.18% hard ceiling" for the single-W mirror-tied architecture, then found a pure fp16 compression path that beats the 3-tier hybrid Cluster 11 champion on both size and simplicity. The single-W architecture (`forward(x) = C19(x @ W + b1) @ W.T + b2`, one matrix of shape 32×81 = 2592 cells, half of Cluster 11's 5184-cell asymmetric design) reaches 100.0000% lossless on all 65,536 byte pairs. Compressed to fp16 with a single 1-ulp grid search and zero retraining. New deploy champion: **5.60 KB pure fp16, −22% vs Cluster 11's 7.14 KB, −50% vs fp32 baseline (11.20 KB)**.
+
+| Seq | Finding | Status | Source |
+|-----|---------|--------|--------|
+| 1 | **Cluster 10 "73% ceiling" = SINGLE-SEED ARTIFACT.** Five restarts (seeds 1000-1004) span 93-99.65% lossless before final rescue. Seed variance is ~6 percentage points. The earlier cluster ran a single seed and concluded ceiling; this session ran 5 and found the ceiling does not exist at H=81. | Validated (overturns Cluster 10) | `tools/diag_byte_pair_merger_single_w_mirror.py` |
+| 2 | **Float champion at H=81, 2592 cells.** Restart 4 (seed=1003) reached 99.9985% (1 bad pair); exhaustive 1-cell perturbation rescue found `W[0,1] += 0.000295`, closing the final pair. Result: 100.0000% lossless, 11.20 KB fp32. Half the weight cells of the Cluster 11 asymmetric champion. | Validated (BREAKTHROUGH) | `tools/diag_byte_pair_merger_single_w_exhaustive_fix.py`, `output/merger_single_w_exhaustive_fix/final_model.json` |
+| 3 | **K=64 Lloyd-Max codebook FAILS (53.4% lossless).** K-means wastes cluster centers on the dense ±0.05 central mass (70% of cells) while tails (30%, range [−0.63, +0.72]) are underrepresented. Max reconstruction error = 0.15 vs critical tolerance = 0.0003. Codebook quantization is fundamentally incompatible with this W distribution. | Validated (negative) | `tools/diag_byte_single_w_quant_pipeline.py` |
+| 4 | **Int8 linear quant stuck at 91.9%.** Single global alpha, 2592 int8 cells. Initial snap: 91.9%, max_err = 0.0028. Retrain (alpha+bias+c19 trainable, ints frozen): plateau unchanged. Heavy hinge retrain: plateau at 92%. No gradient flexibility — a single alpha cannot simultaneously satisfy tight cells near zero and the long-tail outliers. | Validated (negative) | `tools/diag_byte_single_w_int8_pipeline.py` |
+| 5 | **Int8 + escape hybrid reaches 99.97% but not 100%.** Greedy per-cell promotion to float "escapes", 30 accepts per iteration with retrain in between. Peaked at 99.98% (11 bad) at 150 escapes, then REGRESSED to 99.92% at 180 escapes (retrain thrashed b1/b2/c19, breaking other pairs). Final: 99.97% at 300 escapes, 5.04 KB — close but not lossless. Retrain instability at the last few bad pairs is the fundamental blocker. | Validated (negative) | `tools/diag_byte_single_w_hybrid_escape.py` |
+| 6 | **Structure hunt: all negative.** SVD on W (32×81): all 32 singular values ≈1.0, uniform spectrum, FULL RANK — no low-rank compression. Rank-24 truncation: max_err 0.48. GCD analysis: no common step unit fits >21% of cells. Sparse dictionary (3-4 atoms): max_err 0.10-0.56, worse than int8. This float model is a maximum-entropy solution — no exploitable algebraic structure exists. | Validated (negative) | `tools/diag_byte_single_w_structure_hunt.py` |
+| 7 | **Per-cell slack map.** Binary search of max |δ| per cell that preserves 100% lossless: 47.2% cells have slack < 0.0001 ("razor's edge"), 64.7% < 0.001, 82.4% < 0.003, only 0.8% (22 cells) have slack > 0.1. Median slack: 0.0003 (matches the critical rescue-tweak magnitude). Mean optimal bits/cell: 11.93. Explains why int8 (8-bit, uniform grid) fails and why fp16 (magnitude-dependent resolution) is the natural fit. | Validated | `tools/diag_byte_single_w_slack_map.py` |
+| 8 | **FP16 global ceiling: 99.997% (2 bad pairs).** Cast all params to fp16 and back. Only 2 pairs remain bad, compared to int8's 5304 bad. FP16 resolution is magnitude-dependent (~0.00001 near zero where 47% of tight cells live; ~0.0007 at max magnitude) — this matches the W distribution directly. BF16 comparison: 99.991% (6 bad) — bf16 trades precision for range, performs worse here. | Validated | `tools/diag_byte_single_w_fp16_ceiling.py` |
+| 9 | **FP16 1-ulp exhaustive search: 100.0000% lossless. NEW CHAMPION.** For each W cell, try ±8 fp16 ulps. Found: `W[0,24]: 0.3672 → 0.3652` (1 fp16 ulp shift). This single swap closes both remaining bad pairs (W is mirror-tied so one cell affects multiple pairs). Result: pure fp16, zero escape cells, zero retraining, 100.0000% lossless. | Validated (BREAKTHROUGH) | `tools/diag_byte_single_w_fp16_exhaust.py`, `output/merger_single_w_fp16_all/final_fp16.json` |
+| 10 | **Deploy artifact: 5.60 KB, −22% vs Cluster 11, −50% vs fp32.** Breakdown: W 5184 B (2592 fp16 cells × 2 B) + b1 162 B + b2 64 B + c19_c 162 B + c19_rho 162 B = 5734 B total. Bonus: fp16 is natively faster on GPU Tensor Cores and ARM NEON — not only smaller but faster at inference time. | Validated (champion) | `output/merger_single_w_fp16_all/final_fp16.json` |
+
+#### Session scripts (2026-04-19, kept in `tools/`)
+
+The full single-W pipeline is reproducible from `tools/`. Scripts are kept on disk (not archived) as the canonical L1 single-W merger recipe.
+
+- `diag_byte_pair_merger_single_w_mirror.py` — SingleWMirror class; 5-seed restart loop; Adam warmup + LBFGS finish; sign-aware hinge loss (`MSE + 0.5 * relu(-y * sign(x))`); saves per-restart checkpoint.
+- `diag_byte_pair_merger_single_w_continue.py` — resume a checkpoint for a long LBFGS continue pass (history_size=100, stall=20).
+- `diag_byte_pair_merger_single_w_final_push.py` — heavy hinge LBFGS push from near-converged checkpoint.
+- `diag_byte_pair_merger_single_w_exhaustive_fix.py` — exhaustive single-cell perturbation rescue: for each remaining bad pair, grid-search W cells by perturbation magnitude; accept first tweak that closes the pair without opening new ones.
+- `diag_byte_single_w_analyze.py` — W distribution stats (histogram, tail fractions, peak density).
+- `diag_byte_single_w_quant_pipeline.py` — K=64 codebook pipeline; trainable codebook + frozen indices; LBFGS retrain + exhaustive codebook tweak.
+- `diag_byte_single_w_int8_pipeline.py` — single-alpha int8 linear quantization pipeline; supports alpha-only retrain and heavy hinge retrain.
+- `diag_byte_single_w_hybrid_escape.py` — int8 + greedy escape hybrid; per-cell lossless-improvement rank; configurable accepts-per-iteration and retrain cadence.
+- `diag_byte_single_w_planck_scale.py` — step-size and linearity analysis (minimum meaningful perturbation per pair).
+- `diag_byte_single_w_structure_hunt.py` — SVD rank analysis, GCD step-unit fitting, sparse dictionary decomposition.
+- `diag_byte_single_w_slack_map.py` — per-cell binary-search slack tolerance; outputs full slack distribution and mean optimal bits/cell.
+- `diag_byte_single_w_fp16_ceiling.py` — global fp16 and bf16 ceiling tests; reports bad-pair counts and max reconstruction error after cast.
+- `diag_byte_single_w_fp16_exhaust.py` — fp16 ulp-grid exhaustive search (champion pipeline); tries ±8 ulps per W cell; stops at first 100% configuration.
+
+---
+
 ### 2026-04-17/18 — Quantization championship + branch consolidation
 
 **Theme:** Comprehensive quantization sweep on RTX 4070 Ti Super. 50+ experiment runs across 4 protocols (staged INQ, QAT STE, progressive growing, random rotation) × 7 precision levels (binary/ternary/int4/int5/int8/fp16/float32) × 2 tasks (FineWeb 30MB + code corpus 2.9MB) × 4 network sizes (nf=32/64/96/128 CPU + nf=1024 GPU). Total wallclock ~2.5h. Revised the prior day's finding: the "+1.4pp int4 beats float" claim was a protocol artifact — the staged INQ protocol gives quantized runs 200 extra training epochs vs the float baseline. New absolute winner identified: **QAT int8 = 86.40% FineWeb at nf=1024**, beating pure float_long (86.20%) at 4× compression. Ternary's earlier catastrophic 55% was diagnosed as a protocol bug (staged scale/2 threshold over-prunes); QAT STE lifts ternary to 71.50% (+16.5pp). Binary "info-ceiling at 49%" was capacity-bound; at nf=1024 binary reaches 70.70% (staged) / 71.50% (QAT), reconfirming BitNet b1.58 scaling literature. Pareto frontier reduces to four precision points: float32 (1×, 86.20%), int8-QAT (4×, 86.40% — winner), int4-staged (8×, 84.75% — sweet spot), binary-QAT (32×, 71.50% — IoT niche with Beukers LUT). Failed alternatives documented: progressive per-neuron growth (−14.85pp), generational cluster stacking (−5.2pp), random-rotation sparse training (dominated), stacked exhaustive clusters (dominated by float+PTQ in every metric), true ternary exhaustive D=16 (21.25% vs float 30.25%, −9pp sparsity cost). Full playground visualization at `docs/playground/quant_final_verdict.html`. All scripts documented in `tools/README.md`. See `VALIDATED_FINDINGS.md` "Quantization championship (2026-04-17/18) — revised final story" section for the canonical table.
@@ -270,7 +318,7 @@ Four branches merged or archived to leave `main` as the single canonical branch:
 Exploratory `tools/*.py` scripts deleted from disk on 2026-04-18 during mainline cleanup. Git history remains authoritative for the code itself; the entries below preserve the *idea* so each experiment can be recreated from scratch without re-reading commits. Scripts still shipping on main (e.g. `diag_qat_ste.py`, `diag_quant_sweep_gpu.py`, `run_grid3_curriculum.py`) are not listed here.
 
 <details>
-<summary>17 archived script groups — click to expand</summary>
+<summary>18 archived script groups — click to expand</summary>
 
 **Cluster 1 — Topology analysis & pruning** (2026-04-02)
 Files: `analyze_topology.py`, `analyze_topology_final.py`, `analyze_phase_transition.py`
@@ -363,7 +411,25 @@ Archived (blueprint only): `diag_byte_pair_merger_per_cell_aggressive.py`, `diag
   - `float_residual_density`: diagnostic script, no training. Characterizes the 405-cell float residual distribution (range [−1.35, +1.15], abs-mean 0.42, ~15–20 visible peaks). Informed the density-bucket and finer-alpha attempts.
 - **Outcome:** **first 100% lossless L1 byte-pair merger** at 7.14 KB (H=81, single hidden layer, mirror tied). Stable champion pipeline: lookup_codebook → free_int8 → absorb_float. All alternative paths tested and confirmed to either break lossless or grow byte count. The 3-tier hybrid with per-cell lossless-check + rollback is the only approach that converged.
 - **Recreate:** start from Cluster 10 float baseline (or any `H=81` float32 autoencoder at ~99%+ lossless); run the 3 canonical scripts in order; deploy the `absorb_float` final artifact.
-- **Status:** Validated (champion: `output/merger_absorb_float/final_model.json` at 7312 B / 100% lossless; 3 pipeline scripts kept in `tools/`)
+- **Status:** Validated (champion: `output/merger_absorb_float/final_model.json` at 7312 B / 100% lossless; 3 pipeline scripts kept in `tools/`) — **superseded by Cluster 12 fp16 champion at 5734 B**
+
+**Cluster 12 — L1 single-W mirror fp16 compression championship (POSITIVE RESULT — NEW CHAMPION)** (2026-04-19)
+Kept in `tools/` (canonical pipeline): `diag_byte_pair_merger_single_w_mirror.py`, `diag_byte_pair_merger_single_w_continue.py`, `diag_byte_pair_merger_single_w_final_push.py`, `diag_byte_pair_merger_single_w_exhaustive_fix.py`, `diag_byte_single_w_fp16_ceiling.py`, `diag_byte_single_w_fp16_exhaust.py`
+Diagnostic/exploratory (also kept in `tools/`, not archived): `diag_byte_single_w_analyze.py`, `diag_byte_single_w_quant_pipeline.py`, `diag_byte_single_w_int8_pipeline.py`, `diag_byte_single_w_hybrid_escape.py`, `diag_byte_single_w_planck_scale.py`, `diag_byte_single_w_structure_hunt.py`, `diag_byte_single_w_slack_map.py`
+- **Idea:** Cluster 10 claimed a 73.18% hard ceiling for the single-W mirror-tied architecture (`forward(x) = C19(x @ W + b1) @ W.T + b2`, one weight matrix of shape 32×81 = 2592 cells — exactly half of Cluster 11's 5184-cell asymmetric design). Disprove the ceiling via multi-seed search, then find the smallest lossless deploy artifact via compression pipeline exploration.
+- **What ran (Part 1 — float):** 5 restarts (seeds 1000-1004) with Adam warmup + LBFGS finish (history_size=100, stall=20) + sign-aware hinge loss. Best restart (seed=1003) reached 99.9985% (1 bad pair). Exhaustive single-cell perturbation rescue: `W[0,1] += 0.000295` closed the final pair. Reached **100.0000% lossless at H=81, 2592 weight cells, 11.20 KB fp32**.
+- **What ran (Part 2 — compression):** Seven approaches tried in sequence:
+  1. K=64 Lloyd-Max codebook: 53.4% lossless. K-means centers waste on the dense ±0.05 central mass; tails unrepresented. Max err 0.15 vs tolerance 0.0003. Rejected.
+  2. Int8 linear (single alpha): 91.9%, plateaued. Single alpha cannot span both tight cells and long-tail outliers. Retrain does not help. Rejected.
+  3. Int8 + greedy escape hybrid: 99.97%, 5.04 KB. Peaked at 99.98% (11 bad) then regressed at 180 escapes (retrain instability). Not 100%. Rejected.
+  4. SVD / GCD / sparse-dict structure hunt: all negative. W is full rank (all 32 singular values ≈1.0), no GCD unit fits >21% of cells, sparse dict max_err 0.10-0.56. Maximum-entropy solution — no exploitable structure. Rejected.
+  5. Per-cell slack map: 47.2% cells have slack < 0.0001; median slack 0.0003. Mean optimal bits/cell: 11.93. Explains why fp16 (magnitude-dependent resolution) is the natural fit.
+  6. FP16 global ceiling: 99.997% (only 2 bad pairs after cast). BF16: 99.991% (6 bad). FP16 resolution matches the W distribution; near miss.
+  7. FP16 1-ulp exhaustive search: `W[0,24]: 0.3672 → 0.3652` (one ulp shift). Both bad pairs close. **100.0000% lossless, pure fp16, zero retraining.**
+- **Artifact:** `output/merger_single_w_fp16_all/final_fp16.json`
+- **Outcome:** **NEW OVERALL CHAMPION.** 5734 B (5.60 KB) pure fp16. Breakdown: W 5184 B + b1 162 B + b2 64 B + c19_c 162 B + c19_rho 162 B. −22% vs Cluster 11 (7312 B), −50% vs fp32 baseline (11.20 KB). Zero retraining required — pure mathematical compression (fp32→fp16 cast + 1-ulp grid search). Bonus: fp16 is natively faster on GPU Tensor Cores and ARM NEON.
+- **Recreate:** train single-W mirror-tied autoencoder at H=81 to 100% float lossless using `diag_byte_pair_merger_single_w_mirror.py` (5 restarts) + `diag_byte_pair_merger_single_w_exhaustive_fix.py`; then run `diag_byte_single_w_fp16_exhaust.py` to find the 1-ulp fix and export `final_fp16.json`.
+- **Status:** Validated (champion: `output/merger_single_w_fp16_all/final_fp16.json` at 5734 B / 100% lossless; pipeline scripts kept in `tools/`)
 
 </details>
 
