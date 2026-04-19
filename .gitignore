@@ -1,9 +1,15 @@
 __pycache__/
 *.py[cod]
 *.pyo
+*.pyc
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.tox/
 *.exe
 *.dll
 *.bin
+!output/merger_single_w_huffman_pack/packed_model.bin
 _probe_bins/
 
 # Compiled C binaries
@@ -37,8 +43,29 @@ reports/
 # Local Linear export snapshots (first-run fallback; do not commit)
 .vrx_sync_*export*.json
 
-# Checkpoint binaries
+# Checkpoint binaries / ML weight formats
 *.pt
+*.pth
+*.safetensors
+*.gguf
+*.h5
+*.ckpt
+
+# ML logs / tracking
+wandb/
+.mlflow/
+
+# OS cruft
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE / editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
 
 # Windows NUL artifacts
 NUL
