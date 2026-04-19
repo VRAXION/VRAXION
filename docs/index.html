@@ -4,9 +4,9 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>VRAXION · INSTNCT — Public Beta</title>
-<meta name="description" content="VRAXION is a gradient-free substrate that self-wires its own graph. Inference emerges as the fixed point of destructive interference. v5.0.0-β.1 public beta.">
+<meta name="description" content="VRAXION is a gradient-free substrate that self-wires its own graph. Inference emerges as the fixed point of destructive interference. v5.0.0-β.2 public beta.">
 <meta property="og:title" content="VRAXION · INSTNCT — Public Beta">
-<meta property="og:description" content="A gradient-free substrate that self-wires its own graph. v5.0.0-β.1 public beta.">
+<meta property="og:description" content="A gradient-free substrate that self-wires its own graph. v5.0.0-β.2 public beta.">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://vraxion.github.io/VRAXION/">
 <link rel="canonical" href="https://vraxion.github.io/VRAXION/">
@@ -922,17 +922,18 @@
     <div class="rail-label">Navigate</div>
     <ul class="rail-nav" id="rail-nav">
       <li><a href="#hero"      class="active"><span class="idx">00</span>Intro</a></li>
-      <li><a href="#thesis"><span class="idx">01</span>Thesis</a></li>
-      <li><a href="#grower"><span class="idx">02</span>Grower</a></li>
-      <li><a href="#quant"><span class="idx">03</span>Quantization</a></li>
-      <li><a href="#findings"><span class="idx">04</span>Findings</a></li>
-      <li><a href="#playground"><span class="idx">04b</span>Playground</a></li>
-      <li><a href="#gates"><span class="idx">05</span>Beta gates</a></li>
-      <li><a href="#cta"><span class="idx">06</span>Get the beta</a></li>
+      <li><a href="#blocks"><span class="idx">01</span>Building blocks</a></li>
+      <li><a href="#thesis"><span class="idx">02</span>Thesis</a></li>
+      <li><a href="#grower"><span class="idx">03</span>Grower</a></li>
+      <li><a href="#quant"><span class="idx">04</span>Quantization</a></li>
+      <li><a href="#findings"><span class="idx">05</span>Findings</a></li>
+      <li><a href="#playground"><span class="idx">05b</span>Playground</a></li>
+      <li><a href="#gates"><span class="idx">06</span>Beta gates</a></li>
+      <li><a href="#cta"><span class="idx">07</span>Get the beta</a></li>
     </ul>
 
     <div class="rail-foot">
-      <div class="row"><span class="k">version</span><span class="v">v5.0.0-β.1</span></div>
+      <div class="row"><span class="k">version</span><span class="v">v5.0.0-β.2</span></div>
       <div class="row"><span class="k">mainline</span><span class="v ok">● green</span></div>
       <div class="row"><span class="k">license</span><span class="v">Apache 2.0 NC</span></div>
 
@@ -950,7 +951,7 @@
     <section class="hero section" id="hero">
       <div class="hero-grid">
         <div>
-          <span class="hero-eyebrow"><span class="dot"></span>v5.0.0-β.1 · Public beta</span>
+          <span class="hero-eyebrow"><span class="dot"></span>v5.0.0-β.2 · Public beta · Block A done</span>
           <h1>The network <em>grows itself.</em></h1>
           <p class="hero-sub">
             VRAXION is a <b>gradient-free substrate</b> that self-wires its own graph.
@@ -1154,9 +1155,126 @@
     </section>
 
 
+    <!-- ============ BUILDING BLOCKS — pipeline status ============ -->
+    <section class="section" id="blocks">
+      <div class="s-label"><span class="num">§ 01</span><span class="dot"></span>Building blocks</div>
+      <h2 class="h2">The model stack — <em>one block at a time.</em></h2>
+      <p class="section-sub" style="max-width: 720px; color: var(--ink-2); margin: 0 0 24px;">
+        Each layer is <b>frozen as a public artifact</b> only after 100% lossless round-trip.
+        Block A is the first fundamental building block: raw byte in, 16-dim latent out,
+        decoder reconstructs the exact byte.
+      </p>
+
+      <div class="blocks-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; margin-bottom: 24px;">
+
+        <div class="block-card" style="border: 1px solid var(--border); background: var(--bg-2); border-radius: 10px; padding: 18px;">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+            <span style="font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.12em; color: var(--ink-3);">BLOCK A</span>
+            <span style="display: inline-flex; align-items: center; gap: 6px; font-size: 11px; color: var(--jade);">
+              <span style="width: 8px; height: 8px; border-radius: 50%; background: var(--jade);"></span>FROZEN
+            </span>
+          </div>
+          <h3 style="margin: 0 0 6px; font-size: 18px;">Byte Unit (L0)</h3>
+          <p style="color: var(--ink-2); font-size: 13px; margin: 0 0 12px;">
+            1 raw byte → 16-dim latent. Tied-mirror autoencoder. 100% lossless on all 256 bytes.
+          </p>
+          <div style="font-family: var(--font-mono); font-size: 12px; color: var(--ink-3); line-height: 1.8;">
+            <div>arch · <span style="color: var(--ink)">8 → 16 → 16, C19, binary weights</span></div>
+            <div>deploy · <span style="color: var(--ink)">4 KB int8 LUT + 6.5 KB JSON</span></div>
+            <div>status · <span style="color: var(--jade)">100.00% lossless · reload-verified</span></div>
+          </div>
+        </div>
+
+        <div class="block-card" style="border: 1px solid var(--border); background: var(--bg-2); border-radius: 10px; padding: 18px;">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+            <span style="font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.12em; color: var(--ink-3);">BLOCK B</span>
+            <span style="display: inline-flex; align-items: center; gap: 6px; font-size: 11px; color: var(--jade);">
+              <span style="width: 8px; height: 8px; border-radius: 50%; background: var(--jade);"></span>FROZEN
+            </span>
+          </div>
+          <h3 style="margin: 0 0 6px; font-size: 18px;">Byte-Pair Merger (L1)</h3>
+          <p style="color: var(--ink-2); font-size: 13px; margin: 0 0 12px;">
+            2 L0 outputs (32-dim) → single 32-dim merged. 100% lossless on all 65,536 pairs.
+          </p>
+          <div style="font-family: var(--font-mono); font-size: 12px; color: var(--ink-3); line-height: 1.8;">
+            <div>arch · <span style="color: var(--ink)">32 → 81 → 32, single-W mirror</span></div>
+            <div>deploy · <span style="color: var(--ink)">3.36 KB Huffman-packed</span></div>
+            <div>status · <span style="color: var(--jade)">100.00% lossless · 5/5 verified</span></div>
+          </div>
+        </div>
+
+        <div class="block-card" style="border: 1px solid var(--border); background: var(--bg-2); border-radius: 10px; padding: 18px;">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+            <span style="font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.12em; color: var(--ink-3);">BLOCK C</span>
+            <span style="display: inline-flex; align-items: center; gap: 6px; font-size: 11px; color: var(--jade);">
+              <span style="width: 8px; height: 8px; border-radius: 50%; background: var(--jade);"></span>FROZEN
+            </span>
+          </div>
+          <h3 style="margin: 0 0 6px; font-size: 18px;">Word Tokenizer V2</h3>
+          <p style="color: var(--ink-2); font-size: 13px; margin: 0 0 12px;">
+            UTF-8 bytes → token IDs. Space-aware hybrid: whole-word + subword + byte fallback.
+          </p>
+          <div style="font-family: var(--font-mono); font-size: 12px; color: var(--ink-3); line-height: 1.8;">
+            <div>vocab · <span style="color: var(--ink)">32,294 · FineWeb-EDU trained</span></div>
+            <div>deploy · <span style="color: var(--ink)">4.24 MB JSON vocab</span></div>
+            <div>status · <span style="color: var(--jade)">30.43% Huffman on 10 MB · lossless</span></div>
+          </div>
+        </div>
+
+        <div class="block-card" style="border: 1px solid var(--border); background: var(--bg-2); border-radius: 10px; padding: 18px;">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+            <span style="font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.12em; color: var(--ink-3);">BLOCK D</span>
+            <span style="display: inline-flex; align-items: center; gap: 6px; font-size: 11px; color: var(--amber);">
+              <span style="width: 8px; height: 8px; border-radius: 50%; background: var(--amber);"></span>SCAFFOLD
+            </span>
+          </div>
+          <h3 style="margin: 0 0 6px; font-size: 18px;">Word Embedder</h3>
+          <p style="color: var(--ink-2); font-size: 13px; margin: 0 0 12px;">
+            Token IDs → 64-dim vectors. Lookup table (random-init); trained end-to-end with Brain.
+          </p>
+          <div style="font-family: var(--font-mono); font-size: 12px; color: var(--ink-3); line-height: 1.8;">
+            <div>dim · <span style="color: var(--ink)">32,294 × 64 = 2.07M params</span></div>
+            <div>memory · <span style="color: var(--ink)">8.27 MB f32 / 2.07 MB int8</span></div>
+            <div>status · <span style="color: var(--amber)">shape verified · training pending</span></div>
+          </div>
+        </div>
+
+        <div class="block-card" style="border: 1px solid var(--border); background: var(--bg-2); border-radius: 10px; padding: 18px;">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+            <span style="font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.12em; color: var(--ink-3);">BLOCK E</span>
+            <span style="display: inline-flex; align-items: center; gap: 6px; font-size: 11px; color: var(--amber);">
+              <span style="width: 8px; height: 8px; border-radius: 50%; background: var(--amber);"></span>SCAFFOLD
+            </span>
+          </div>
+          <h3 style="margin: 0 0 6px; font-size: 18px;">Nano Brain</h3>
+          <p style="color: var(--ink-2); font-size: 13px; margin: 0 0 12px;">
+            [N, 64] → [N, vocab] next-token logits. Causal transformer, tied embedder/output head.
+          </p>
+          <div style="font-family: var(--font-mono); font-size: 12px; color: var(--ink-3); line-height: 1.8;">
+            <div>arch · <span style="color: var(--ink)">2 × (MHA + FFN), 64 dim, 4 heads</span></div>
+            <div>params · <span style="color: var(--ink)">2.18M tied (8.73 MB f32)</span></div>
+            <div>status · <span style="color: var(--amber)">forward verified · training pending</span></div>
+          </div>
+        </div>
+
+      </div>
+
+      <div style="display: flex; align-items: center; gap: 24px; font-size: 12px; color: var(--ink-3); font-family: var(--font-mono);">
+        <div style="display: inline-flex; align-items: center; gap: 8px;">
+          <span style="width: 8px; height: 8px; border-radius: 50%; background: var(--jade);"></span>
+          <span>FROZEN — public artifact, 100% lossless</span>
+        </div>
+        <div style="display: inline-flex; align-items: center; gap: 8px;">
+          <span style="width: 8px; height: 8px; border-radius: 50%; background: var(--amber);"></span>
+          <span>SCAFFOLD — shape verified, training pending</span>
+        </div>
+      </div>
+    </section>
+
+
     <!-- ============ THESIS — 4 stage cards ============ -->
     <section class="section" id="thesis">
-      <div class="s-label"><span class="num">§ 01</span><span class="dot"></span>Thesis</div>
+      <div class="s-label"><span class="num">§ 02</span><span class="dot"></span>Thesis</div>
       <h2 class="h2">Inference is what <em>survives</em> the interference.</h2>
       <p class="sub">Signal enters the substrate, incompatible paths cancel, and the surviving pattern is read out. Four stages, one fixed point, zero gradients.</p>
 
@@ -1288,7 +1406,7 @@
 
     <!-- ============ GROWER: split + timeline ============ -->
     <section class="section" id="grower">
-      <div class="s-label"><span class="num">§ 02</span><span class="dot"></span>The Grower</div>
+      <div class="s-label"><span class="num">§ 03</span><span class="dot"></span>The Grower</div>
       <div class="split">
         <div>
           <h2 class="h2">From empty. <em>To circuit.</em></h2>
@@ -1440,7 +1558,7 @@
 
     <!-- ============ QUANTIZATION ============ -->
     <section class="section" id="quant">
-      <div class="s-label"><span class="num">§ 03</span><span class="dot"></span>Quantization</div>
+      <div class="s-label"><span class="num">§ 04</span><span class="dot"></span>Quantization</div>
       <h2 class="h2">Champions at <em>every compression.</em></h2>
       <p class="sub">FineWeb char-LM benchmark · <code style="font-family:var(--font-mono);font-size:14px;color:var(--cyan)">nf=1024</code> · matched-compute controls applied.</p>
 
@@ -1489,7 +1607,7 @@
 
     <!-- ============ FINDINGS ============ -->
     <section class="section" id="findings">
-      <div class="s-label"><span class="num">§ 04</span><span class="dot"></span>Validated findings</div>
+      <div class="s-label"><span class="num">§ 05</span><span class="dot"></span>Validated findings</div>
       <div class="split rev">
         <div class="panel-a">
           <div class="viz-panel">
@@ -1569,7 +1687,7 @@
 
     <!-- ============ PLAYGROUND ============ -->
     <section class="section" id="playground">
-      <div class="s-label"><span class="num">§ 04b</span><span class="dot"></span>Interactive playground</div>
+      <div class="s-label"><span class="num">§ 05b</span><span class="dot"></span>Interactive playground</div>
       <h2 class="h2">Inspect the <em>baked models.</em></h2>
       <p class="sub">Live visualizers for the L0 Byte Unit and L1 Byte-Pair Merger champions. Architecture diagrams, weight heatmaps, C19 neuron curves, and live roundtrip tests — all running in-browser with the actual baked weights.</p>
 
@@ -1643,7 +1761,7 @@
 
     <!-- ============ GATES ============ -->
     <section class="section" id="gates">
-      <div class="s-label"><span class="num">§ 05</span><span class="dot"></span>Public beta contract</div>
+      <div class="s-label"><span class="num">§ 06</span><span class="dot"></span>Public beta contract</div>
       <h2 class="h2">Two gates. <em>Both reproducible.</em></h2>
       <p class="sub">Public beta isn't green on vibes. One engine-freeze gate, one computation benchmark.</p>
 
@@ -1765,7 +1883,7 @@
             <p>Clone, run the five-minute proof, file a finding — or an honest critique. Apache 2.0 noncommercial.</p>
             <div class="hero-ctas">
               <a href="https://github.com/VRAXION/VRAXION" class="btn btn-primary" target="_blank" rel="noopener">Clone repo <span class="arrow">→</span></a>
-              <a href="https://github.com/VRAXION/VRAXION/releases/tag/v5.0.0-beta.1" class="btn btn-ghost" target="_blank" rel="noopener">Release notes</a>
+              <a href="https://github.com/VRAXION/VRAXION/releases/tag/v5.0.0-beta.2" class="btn btn-ghost" target="_blank" rel="noopener">Release notes</a>
             </div>
           </div>
           <div class="cta-viz">
