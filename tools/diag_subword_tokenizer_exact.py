@@ -240,6 +240,116 @@ class LexicalTokenizer:
                 return tid, ln
         return None, 0
 
+    def _segment_word(self, word: bytes, has_prefix: bool) -> list[int]:
+        """Exact DP segmentation of a single word.
+
+        Objective:
+          1. minimize emitted token count
+          2. among ties, minimize BYTE fallback count
+          3. among ties, prefer longer learned pieces
+        """
+        n = len(word)
+        if n == 0:
+            return [self.BYTE_BASE + 0x20] if has_prefix else []
+
+        # best[(pos, need_space)] = (token_count, byte_count, learned_bonus, next_pos, next_need_space, tid)
+        best: dict[tuple[int, bool], tuple[int, int, int, int, bool, int]] = {
+            (n, False): (0, 0, 0, n, False, -1),
+            (n, True): (1, 1, 0, n, False, self.BYTE_BASE + 0x20),
+        }
+
+        for pos in range(n, -1, -1):
+            for need_space in (False, True):
+                if pos == n:
+                    continue
+                candidates: list[tuple[int, int, int, int, bool, int]] = []
+
+                if need_space:
+                    # Emit raw leading space, then continue from the same word position.
+                    tail = best.get((pos, False))
+                    if tail is not None:
+                        candidates.append(
+                            (
+                                1 + tail[0],
+                                1 + tail[1],
+                                tail[2],
+                                pos,
+                                False,
+                                self.BYTE_BASE + 0x20,
+                            )
+                        )
+
+                    # Or consume the leading space together with a prefix token.
+                    max_len = min(self.max_prefix_len, n - pos)
+                    for ln in range(max_len, 0, -1):
+                        tid = self.prefix_map.get(word[pos:pos + ln])
+                        if tid is None:
+                            continue
+                        tail = best.get((pos + ln, False))
+                        if tail is None:
+                            continue
+                        candidates.append(
+                            (
+                                1 + tail[0],
+                                tail[1],
+                                tail[2] - ln,
+                                pos + ln,
+                                False,
+                                tid,
+                            )
+                        )
+                else:
+                    max_len = min(self.max_normal_len, n - pos)
+                    for ln in range(max_len, 0, -1):
+                        tid = self.normal_map.get(word[pos:pos + ln])
+                        if tid is None:
+                            continue
+                        tail = best.get((pos + ln, False))
+                        if tail is None:
+                            continue
+                        candidates.append(
+                            (
+                                1 + tail[0],
+                                tail[1],
+                                tail[2] - ln,
+                                pos + ln,
+                                False,
+                                tid,
+                            )
+                        )
+
+                    tail = best.get((pos + 1, False))
+                    if tail is not None:
+                        candidates.append(
+                            (
+                                1 + tail[0],
+                                1 + tail[1],
+                                tail[2],
+                                pos + 1,
+                                False,
+                                self.BYTE_BASE + word[pos],
+                            )
+                        )
+
+                best[(pos, need_space)] = min(candidates)
+
+        out: list[int] = []
+        pos = 0
+        need_space = has_prefix
+        while True:
+            state = best.get((pos, need_space))
+            if state is None:
+                break
+            _, _, _, next_pos, next_need_space, tid = state
+            if tid >= 0:
+                out.append(tid)
+            if pos == n and next_pos == n and not next_need_space:
+                break
+            pos, need_space = next_pos, next_need_space
+            if pos == n and not need_space:
+                break
+        return out
+
     def encode(self, data: bytes | str) -> list[int]:
         if isinstance(data, str):
             data = data.encode("utf-8")
@@ -255,21 +365,7 @@ class LexicalTokenizer:
                 k = j
                 while k < n and is_word(data[k]):
                     k += 1
-                tid, ln = self._longest_match(data, j, k, prefix=True)
-                if tid is not None:
-                    ids.append(tid)
-                    pos = j + ln
-                else:
-                    ids.append(self.BYTE_BASE + 0x20)
-                    pos = j
-                while pos < k:
-                    tid2, ln2 = self._longest_match(data, pos, k, prefix=False)
-                    if tid2 is not None:
-                        ids.append(tid2)
-                        pos += ln2
-                    else:
-                        ids.append(self.BYTE_BASE + data[pos])
-                        pos += 1
+                ids.extend(self._segment_word(data[j:k], has_prefix=True))
                 i = k
                 continue
 
@@ -294,15 +390,7 @@ class LexicalTokenizer:
                 k = i
                 while k < n and is_word(data[k]):
                     k += 1
-                pos = i
-                while pos < k:
-                    tid, ln = self._longest_match(data, pos, k, prefix=False)
-                    if tid is not None:
-                        ids.append(tid)
-                        pos += ln
-                    else:
-                        ids.append(self.BYTE_BASE + data[pos])
-                        pos += 1
+                ids.extend(self._segment_word(data[i:k], has_prefix=False))
                 i = k
                 continue
 
@@ -398,6 +486,29 @@ def summarize_result(r: dict, raw_bytes: int) -> None:
     print(f"  encode wall        : {r['encode_wall_s']:.1f}s")
 
 
+def parse_ratio_list(text: str | None) -> list[float]:
+    if not text:
+        return []
+    out: list[float] = []
+    for part in text.split(","):
+        part = part.strip()
+        if not part:
+            continue
+        val = float(part)
+        if not (0.0 < val <= 1.0):
+            raise ValueError(f"whole_ratio out of range: {val}")
+        out.append(val)
+    # Preserve order, drop duplicates.
+    seen = set()
+    uniq: list[float] = []
+    for val in out:
+        if val in seen:
+            continue
+        uniq.append(val)
+        seen.add(val)
+    return uniq
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--parquet", type=str, default=DEFAULT_PARQUET)
@@ -406,7 +517,8 @@ def main() -> None:
     parser.add_argument("--vocab-size", type=int, default=32000)
     parser.add_argument("--max-sub-len", type=int, default=12)
     parser.add_argument("--min-count", type=int, default=50)
-    parser.add_argument("--whole-ratio", type=float, default=0.75)
+    parser.add_argument("--whole-ratio", type=float, default=0.9375)
+    parser.add_argument("--whole-ratios", type=str, default="")
     parser.add_argument("--demo", type=str, default="The cat sleeps peacefully on the warm mat.")
     args = parser.parse_args()
 
@@ -436,40 +548,53 @@ def main() -> None:
         max_sub_len=args.max_sub_len,
         min_count=args.min_count,
     )
-    hybrid_tokens = build_hybrid_tokens(
-        counter,
-        vocab_size=args.vocab_size,
-        whole_ratio=args.whole_ratio,
-        max_sub_len=args.max_sub_len,
-        min_count=args.min_count,
-    )
     whole = LexicalTokenizer(word_tokens)
     sub = LexicalTokenizer(sub_tokens)
-    hybrid = LexicalTokenizer(hybrid_tokens)
     print(f"    whole-word learned tokens : {len(word_tokens):,}")
-    print(f"    hybrid learned tokens     : {len(hybrid_tokens):,}  (whole_ratio={args.whole_ratio:.2f})")
     print(f"    subword learned tokens    : {len(sub_tokens):,}")
+
+    requested_hybrid_ratios = parse_ratio_list(args.whole_ratios)
+    if not requested_hybrid_ratios:
+        requested_hybrid_ratios = [args.whole_ratio]
+
+    hybrid_tokenizers: list[tuple[float, LexicalTokenizer]] = []
+    for ratio in requested_hybrid_ratios:
+        hybrid_tokens = build_hybrid_tokens(
+            counter,
+            vocab_size=args.vocab_size,
+            whole_ratio=ratio,
+            max_sub_len=args.max_sub_len,
+            min_count=args.min_count,
+        )
+        hybrid_tokenizers.append((ratio, LexicalTokenizer(hybrid_tokens)))
+        print(f"    hybrid learned tokens     : {len(hybrid_tokens):,}  (whole_ratio={ratio:.4f})")
     print(f"    ({time.time()-t0:.1f}s)")
 
     print(f"\n[4] Demo string: {args.demo!r}")
     whole_demo = whole.encode(args.demo.encode('utf-8'))
-    hybrid_demo = hybrid.encode(args.demo.encode('utf-8'))
     sub_demo = sub.encode(args.demo.encode('utf-8'))
     print(f"    whole-word ids: _{'_'.join(str(i) for i in whole_demo)}_")
-    print(f"    hybrid ids    : _{'_'.join(str(i) for i in hybrid_demo)}_")
+    for ratio, hybrid in hybrid_tokenizers:
+        hybrid_demo = hybrid.encode(args.demo.encode('utf-8'))
+        print(f"    hybrid {ratio:.4f} ids: _{'_'.join(str(i) for i in hybrid_demo)}_")
     print(f"    subword ids   : _{'_'.join(str(i) for i in sub_demo)}_")
 
     print(f"\n[5] Measuring exactness + compression...")
     whole_res = metrics_for_tokenizer("whole_word", whole, corpus, args.demo)
-    hybrid_res = metrics_for_tokenizer("hybrid", hybrid, corpus, args.demo)
     sub_res = metrics_for_tokenizer("subword", sub, corpus, args.demo)
+    hybrid_results: list[dict] = []
+    for ratio, hybrid in hybrid_tokenizers:
+        res = metrics_for_tokenizer(f"hybrid_{ratio:.4f}", hybrid, corpus, args.demo)
+        res["whole_ratio"] = ratio
+        hybrid_results.append(res)
 
     summarize_result(whole_res, len(corpus))
-    summarize_result(hybrid_res, len(corpus))
+    for res in hybrid_results:
+        summarize_result(res, len(corpus))
     summarize_result(sub_res, len(corpus))
 
     print(f"\n[6] Delta vs whole-word")
-    for label, res in [("hybrid", hybrid_res), ("subword", sub_res)]:
+    for label, res in [(f"hybrid_{r['whole_ratio']:.4f}", r) for r in hybrid_results] + [("subword", sub_res)]:
         print(f"  [{label}]")
         print(f"    token count delta   : {res['token_count'] - whole_res['token_count']:+,}")
         print(f"    fixed bytes delta   : {res['fixed_total_bytes'] - whole_res['fixed_total_bytes']:+,.0f} B")
@@ -477,11 +602,18 @@ def main() -> None:
         print(f"    BYTE share delta    : {100*(res['share_byte'] - whole_res['share_byte']):+.2f} pp")
         print(f"    LEARNED share delta : {100*(res['share_learned'] - whole_res['share_learned']):+.2f} pp")
 
+    if hybrid_results:
+        best_fixed = min(hybrid_results, key=lambda r: (r["fixed_total_bytes"], r["entropy_total_bytes"]))
+        best_entropy = min(hybrid_results, key=lambda r: (r["entropy_total_bytes"], r["fixed_total_bytes"]))
+        print(f"\n[7] Best hybrid ratios")
+        print(f"  fixed-width best  : whole_ratio={best_fixed['whole_ratio']:.4f}  -> {best_fixed['fixed_total_bytes']:,.0f} B")
+        print(f"  entropy best      : whole_ratio={best_entropy['whole_ratio']:.4f}  -> {best_entropy['entropy_total_bytes']:,.0f} B")
+
     out = {
         "raw_bytes": len(corpus),
         "vocab_size_learned": args.vocab_size,
         "whole_word": whole_res,
-        "hybrid": hybrid_res,
+        "hybrid": hybrid_results[0] if len(hybrid_results) == 1 else hybrid_results,
         "subword": sub_res,
     }
     summary_path = OUT_DIR / f"summary_{args.vocab_size}.json"
