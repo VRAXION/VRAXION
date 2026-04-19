@@ -329,6 +329,29 @@ body {
   opacity: 0.75;
 }
 
+.weights-block {
+  width: min(100%, 560px);
+  margin-top: 4px;
+}
+.weights-pills {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.weights-pill {
+  text-decoration: none;
+  color: var(--jade);
+  transition: border-color .15s, transform .15s;
+}
+.weights-pill:hover {
+  border-color: color-mix(in oklab, var(--jade) 35%, var(--border));
+  transform: translateY(-1px);
+}
+.weights-pill:focus-visible {
+  outline: 2px solid var(--jade);
+  outline-offset: 2px;
+}
+
 #wire-svg {
   width: auto;
   height: 100%;
@@ -2339,6 +2362,27 @@ body {
 
           </svg>
           <p class="diagram-sub">Same weights, reversed. One circuit — encode turns a byte into a 16-d latent, decode runs it backwards to recover the byte. Like a speaker that also works as a microphone.</p>
+
+          <div class="weights-block">
+            <p class="card-section-label" style="margin-bottom:7px; text-align:center;">Find the weights</p>
+            <div class="weights-pills">
+              <a href="https://github.com/VRAXION/VRAXION/blob/main/output/byte_unit_champion_binary_c19_h16/byte_unit_winner_binary.json"
+                 target="_blank" rel="noopener" class="code-pill weights-pill" aria-label="Binary training weights JSON, 6.5 KB">
+                <span class="code-pill-icon">{ }</span>
+                byte_unit_winner_binary.json · 6.5 KB
+              </a>
+              <a href="https://github.com/VRAXION/VRAXION/blob/main/output/byte_unit_champion_binary_c19_h16/byte_embedder_lut_int8.json"
+                 target="_blank" rel="noopener" class="code-pill weights-pill" aria-label="256-entry int8 lookup table, 4 KB">
+                <span class="code-pill-icon">#</span>
+                byte_embedder_lut_int8.json · 4 KB
+              </a>
+              <a href="https://github.com/VRAXION/VRAXION/blob/main/output/byte_unit_champion_binary_c19_h16/byte_embedder_lut.h"
+                 target="_blank" rel="noopener" class="code-pill weights-pill" aria-label="C header variant for deploy, 30 KB">
+                <span class="code-pill-icon">//</span>
+                byte_embedder_lut.h · 30 KB
+              </a>
+            </div>
+          </div>
         </div>
       </div>
 
