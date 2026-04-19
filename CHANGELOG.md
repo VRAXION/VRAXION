@@ -12,6 +12,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **Nano Brain V1 scaffold** (PR #132): 2-layer causal transformer, 64 dim, 4 heads, tied embedder/output head, 2.18M total params. Forward-pass verified end-to-end (text → logits). Untrained.
 - **Adversarial + sanity battery** for tokenizers (`tools/diag_word_tokenizer_adversarial.py`, `_v2.py`, `_champion_freeze.py`): round-trip on 10 MB, per-input-byte fallback rate, real Huffman compression, gzip/bzip2/lzma baselines, unreachable-token audit, edge-case battery.
 
+### Added — Cluster 17: low-bit byte-unit activation-precision sweep (2026-04-19)
+
+- Alternative L0 champion: **binary + C19 + H=16** (PR #137)
+
+GPT's exhaustive activation-precision sweep tested all (precision, activation) pairs across binary, ternary, 2-bit, and int4 widths combined with tanh, ReLU, and C19 activations. The sweep found that C19 + binary weights reaches 100% exact lossless byte reconstruction at H=16 — the smallest hidden width of any tested combination. The full sweep matrix: tanh + 2-bit @ H=12 (smallest for 2-bit); tanh + ternary @ H=32; C19 + binary @ H=16 (smallest overall). Weight-reload and LUT-based round-trip both verify 256/256. Artifacts at `output/byte_unit_champion_binary_c19_h16/`: weights JSON (6.5 KB, 26% smaller than the int4 champion's 8.9 KB), raw int8 LUT (4 KB), and C header (30 KB).
+
+This is an **alternative** champion — the int4 C19 H=24 model remains the proven production artifact (committed LUT at `tools/byte_embedder_lut.h`). The binary + C19 + H=16 result is a validated alternative for constrained-width deployments.
+
+Reproduce: `python tools/diag_byte_unit_champion_binary_freeze.py`
+
 ### Changed
 
 - **L2 reconstruction merger line deprioritized**: PCA geometry probe and neural ablation both under-fit on 16-byte windows; the direction does not scale within current capacity. Pivoted to the word-tokenizer pipeline (Cluster 16).
