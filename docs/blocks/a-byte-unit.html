@@ -330,25 +330,27 @@ body {
 }
 
 .weights-block {
-  width: min(100%, 620px);
-  margin-top: 2px;
+  width: 100%;
 }
 .weights-pills {
   display: flex;
-  flex-direction: row;
-  gap: 7px;
-  flex-wrap: wrap;
-  justify-content: center;
+  flex-direction: column;
+  gap: 6px;
 }
 .weights-pill {
   text-decoration: none;
   color: var(--jade);
-  transition: border-color .15s, transform .15s;
-  padding: 7px 11px;
-  font-size: clamp(10.5px, 0.76vw, 12px);
-  flex: 1 1 auto;
-  min-width: 0;
-  white-space: nowrap;
+  transition: border-color .15s, transform .15s, background .15s;
+  padding: 9px 12px;
+  font-size: clamp(11.5px, 0.85vw, 13px);
+  justify-content: space-between;
+  align-items: center;
+}
+.weights-pill .weights-pill-size {
+  color: var(--ink-3);
+  font-size: 0.88em;
+  font-weight: 400;
+  margin-left: auto;
 }
 .weights-pill:hover {
   border-color: color-mix(in oklab, var(--jade) 35%, var(--border));
@@ -2294,17 +2296,20 @@ body {
               <a href="https://github.com/VRAXION/VRAXION/blob/main/output/byte_unit_champion_binary_c19_h16/byte_unit_winner_binary.json"
                  target="_blank" rel="noopener" class="code-pill weights-pill" aria-label="Binary training weights JSON, 6.5 KB">
                 <span class="code-pill-icon">{ }</span>
-                weights JSON · 6.5 KB
+                <span>weights JSON</span>
+                <span class="weights-pill-size">6.5 KB</span>
               </a>
               <a href="https://github.com/VRAXION/VRAXION/blob/main/output/byte_unit_champion_binary_c19_h16/byte_embedder_lut_int8.json"
                  target="_blank" rel="noopener" class="code-pill weights-pill" aria-label="256-entry int8 lookup table, 4 KB">
                 <span class="code-pill-icon">#</span>
-                int8 LUT · 4 KB
+                <span>int8 LUT</span>
+                <span class="weights-pill-size">4 KB</span>
               </a>
               <a href="https://github.com/VRAXION/VRAXION/blob/main/output/byte_unit_champion_binary_c19_h16/byte_embedder_lut.h"
                  target="_blank" rel="noopener" class="code-pill weights-pill" aria-label="C header variant for deploy, 30 KB">
                 <span class="code-pill-icon">//</span>
-                C header · 30 KB
+                <span>C header</span>
+                <span class="weights-pill-size">30 KB</span>
               </a>
             </div>
           </div>
