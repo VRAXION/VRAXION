@@ -260,6 +260,23 @@ The timeline is ordered latest-first. Each day is a self-contained H3 section wi
 
 ---
 
+### 2026-04-20 — Docs site cleanup: legacy Pages archived, main nav narrowed to Blocks
+
+**Theme:** Six orphan pages under the old site-template (Home / INSTNCT / Research / Rust header nav) removed from `main`. The modern `docs/index.html` nav is now the Blocks ladder (A Byte Unit → E Brain) plus the Legacy detail view, and these older top-level page surfaces no longer have inbound links. Content is preserved in git history — each creation commit is named in the table below so the tree is reachable via `git show <hash>:<path>`.
+
+| Seq | Page | Origin commit | Notes |
+|---|---|---|---|
+| 1 | `docs/instnct/` | `a059922` | INSTNCT architecture explainer, Apr 6 site rebuild. Superseded by the wiki `INSTNCT-Architecture` surface. |
+| 2 | `docs/byte-embedder/` | `deb218e` | Block A v1 predecessor landing page, Apr 18. Superseded by `docs/blocks/a-byte-unit.html`. |
+| 3 | `docs/research/` | `a059922` + `ef3e43d` | Research landing page + L1 merger overnight report snapshot. Key numbers already folded into this timeline + `docs/wiki/COMPRESSION_LOOP_DRAFT.md`. |
+| 4 | `docs/rust/` | `a059922` | Rust implementation surface page. Superseded by `Rust/` deploy SDK + repo `README.md`. |
+| 5 | `docs/pages/brain_replay/` | `64a215c` / `12399fb` | C19 grower multi-head replay viewer + trace dumps. No wiki inbound link; retained only in git history. |
+| 6 | `docs/vraxion-connectome-explorer.html` | `4e0998b` | C19 two-pool connectome visualizer, linked only from `docs/legacy.html`. Superseded by the Blocks nav. |
+
+**Effect:** `docs/` now contains only the live surfaces — `index.html` + `legacy.html` + `blocks/` + `playground/` + `wiki/` + `assets/` — plus the `*.md` contracts (`GROWER_RUN_CONTRACT.md`, `BYTE_OPCODE_V1_CONTRACT.md`, `PUBLIC_BETA_TRAINING.md`) and `VERSION.json`. Follows the same pattern as the `instnct/` archival (commit `56575ab`, 2026-04-20): orphan content removed from `main`, full tree preserved in git history.
+
+---
+
 ### 2026-04-19 evening — L1 merger Huffman-packed champion: 3.36 KB / 100% lossless
 
 **Theme:** Evening session (GPT-side, commit `f0ab75a`) pushed the single-W mirror-tied deploy artifact from the Cluster 12 fp16 champion (5.60 KB) down to **3440 B (3.36 KB)** through a two-stage custom encoding: generator-based weight decomposition via K-means atoms, followed by canonical Huffman coding on the coefficient and generator-index streams separately. Standard general-purpose compressors (lzma, bz2, gzip) were tested as a comparison baseline and lost — they cannot exploit the structured sign+coef+gen_idx encoding at this data size. A Shannon entropy analysis established the theoretical floor at 2422 B; the champion sits ~42% above the floor. All results independently verified across five checks (binary size, decode completeness, fp16 bit-compare, sign match, deterministic re-decode).
