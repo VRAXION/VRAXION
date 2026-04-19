@@ -926,6 +926,7 @@
       <li><a href="#grower"><span class="idx">02</span>Grower</a></li>
       <li><a href="#quant"><span class="idx">03</span>Quantization</a></li>
       <li><a href="#findings"><span class="idx">04</span>Findings</a></li>
+      <li><a href="#playground"><span class="idx">04b</span>Playground</a></li>
       <li><a href="#gates"><span class="idx">05</span>Beta gates</a></li>
       <li><a href="#cta"><span class="idx">06</span>Get the beta</a></li>
     </ul>
@@ -1562,6 +1563,63 @@
             <li><span class="mk">★</span><div><b>L0 byte interpreter · locked.</b> 8 → 4 neurons, 36 bits, 100% round-trip.</div></li>
           </ul>
         </div>
+      </div>
+    </section>
+
+
+    <!-- ============ PLAYGROUND ============ -->
+    <section class="section" id="playground">
+      <div class="s-label"><span class="num">§ 04b</span><span class="dot"></span>Interactive playground</div>
+      <h2 class="h2">Inspect the <em>baked models.</em></h2>
+      <p class="sub">Live visualizers for the L0 Byte Unit and L1 Byte-Pair Merger champions. Architecture diagrams, weight heatmaps, C19 neuron curves, and live roundtrip tests — all running in-browser with the actual baked weights.</p>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+
+        <!-- L0 card -->
+        <div style="border:1px solid var(--border);border-radius:14px;padding:22px;background:var(--bg-2)">
+          <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:0.18em;color:var(--ink-4);text-transform:uppercase;margin-bottom:14px">L0 · Byte Unit</div>
+          <h3 style="font-size:20px;font-weight:500;letter-spacing:-0.02em;margin:0 0 8px">Byte Tokenizer Unit</h3>
+          <p style="font-size:13px;color:var(--ink-3);line-height:1.55;margin:0 0 16px">2-layer tied-weight mirror autoencoder. 8-bit input, 24 C19 neurons, 16D latent. 100% lossless. 288 byte int4.</p>
+          <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">
+            <span style="background:#052e16;color:#4ade80;border:1px solid #166534;border-radius:10px;font-size:10px;font-weight:700;padding:3px 10px">100% Lossless</span>
+            <span style="background:#0c1e3a;color:#38bdf8;border:1px solid #1e40af;border-radius:10px;font-size:10px;font-weight:700;padding:3px 10px">288 B int4</span>
+            <span style="background:#1e1040;color:#c084fc;border:1px solid #6b21a8;border-radius:10px;font-size:10px;font-weight:700;padding:3px 10px">24 C19</span>
+          </div>
+          <div style="display:flex;gap:10px;flex-wrap:wrap">
+            <a href="./playground/byte_unit_arch.html" style="display:inline-flex;align-items:center;gap:6px;background:var(--bg-3);border:1px solid var(--border-2);border-radius:6px;padding:8px 14px;font-size:13px;color:var(--ink-2);transition:border-color .15s,color .15s" onmouseover="this.style.color='var(--ink)';this.style.borderColor='var(--border-2)'" onmouseout="this.style.color='var(--ink-2)'">
+              <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1" y="1" width="14" height="14" rx="2"/><path d="M5 8h6M8 5v6"/></svg>
+              Architektura
+            </a>
+            <a href="./playground/byte_unit_baked.html" style="display:inline-flex;align-items:center;gap:6px;background:var(--bg-3);border:1px solid var(--border-2);border-radius:6px;padding:8px 14px;font-size:13px;color:var(--ink-2);transition:border-color .15s,color .15s" onmouseover="this.style.color='var(--ink)'" onmouseout="this.style.color='var(--ink-2)'">
+              <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="6"/><path d="M8 5v3l2 2"/></svg>
+              Baked Winner
+            </a>
+          </div>
+        </div>
+
+        <!-- L1 card -->
+        <div style="border:1px solid color-mix(in oklab,#e879f9 35%,var(--border));border-radius:14px;padding:22px;background:color-mix(in oklab,#e879f9 4%,var(--bg-2));position:relative">
+          <div style="position:absolute;top:16px;right:16px;background:#2e1065;border:1px solid #7c3aed;border-radius:8px;padding:3px 10px;font-size:9px;font-family:var(--font-mono);font-weight:700;color:#e879f9;letter-spacing:0.12em">CHAMPION</div>
+          <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:0.18em;color:var(--ink-4);text-transform:uppercase;margin-bottom:14px">L1 · Byte-Pair Merger</div>
+          <h3 style="font-size:20px;font-weight:500;letter-spacing:-0.02em;margin:0 0 8px">Byte-Pair Merger</h3>
+          <p style="font-size:13px;color:var(--ink-3);line-height:1.55;margin:0 0 16px">Single-W mirror tied autoencoder. 32-bit input (2 bytes), 81 C19 neurons, 3,36 KB Huffman-packed. 100% lossless on all 65 536 byte pairs.</p>
+          <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">
+            <span style="background:#052e16;color:#4ade80;border:1px solid #166534;border-radius:10px;font-size:10px;font-weight:700;padding:3px 10px">100% · 65 536 par</span>
+            <span style="background:#1c1200;color:#fbbf24;border:1px solid #92400e;border-radius:10px;font-size:10px;font-weight:700;padding:3px 10px">3 440 B Huffman</span>
+            <span style="background:#2e1065;color:#e879f9;border:1px solid #7c3aed;border-radius:10px;font-size:10px;font-weight:700;padding:3px 10px">2 867 param</span>
+          </div>
+          <div style="display:flex;gap:10px;flex-wrap:wrap">
+            <a href="./playground/byte_pair_merger_arch.html" style="display:inline-flex;align-items:center;gap:6px;background:color-mix(in oklab,#e879f9 8%,var(--bg-3));border:1px solid color-mix(in oklab,#e879f9 40%,var(--border));border-radius:6px;padding:8px 14px;font-size:13px;color:#e879f9;transition:background .15s">
+              <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1" y="1" width="14" height="14" rx="2"/><path d="M5 8h6M8 5v6"/></svg>
+              Architektura
+            </a>
+            <a href="./playground/byte_pair_merger_baked.html" style="display:inline-flex;align-items:center;gap:6px;background:color-mix(in oklab,#e879f9 8%,var(--bg-3));border:1px solid color-mix(in oklab,#e879f9 40%,var(--border));border-radius:6px;padding:8px 14px;font-size:13px;color:#e879f9;transition:background .15s">
+              <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="6"/><path d="M8 5v3l2 2"/></svg>
+              Baked · Huffman Artifact
+            </a>
+          </div>
+        </div>
+
       </div>
     </section>
 

@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>L1 Byte-Pair Merger — Architektura</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: system-ui, -apple-system, sans-serif; background: #0f172a; color: #e2e8f0; min-height: 100vh; display: flex; }
+  .mono { font-family: 'JetBrains Mono', 'Consolas', monospace; }
+
+  .sidebar { width: 300px; min-width: 300px; background: #1e293b; border-right: 1px solid #334155; padding: 16px; overflow-y: auto; display: flex; flex-direction: column; gap: 16px; }
+  .main { flex: 1; display: flex; flex-direction: column; }
+  .canvas-area { flex: 1; display: flex; align-items: center; justify-content: center; padding: 20px; }
+  .prompt-area { background: #1e293b; border-top: 1px solid #334155; padding: 16px; }
+
+  h1 { font-size: 16px; color: #38bdf8; font-weight: 700; }
+  h2 { font-size: 13px; color: #94a3b8; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px; }
+
+  .control-group { background: #0f172a; border-radius: 8px; padding: 12px; }
+
+  .tab-group { display: flex; gap: 4px; flex-wrap: wrap; }
+  .tab-item { display: flex; align-items: center; gap: 6px; cursor: pointer; padding: 6px 10px; border-radius: 6px; border: 1px solid #334155; transition: background 0.15s; font-size: 12px; }
+  .tab-item:hover { background: #1e293b; }
+  .tab-item.active { background: #1e3a5f; border-color: #38bdf8; color: #38bdf8; }
+
+  .stat-row { display: flex; justify-content: space-between; padding: 4px 0; font-size: 13px; border-bottom: 1px solid #1e293b; }
+  .stat-label { color: #94a3b8; }
+  .stat-value { font-weight: 600; }
+  .stat-value.good { color: #4ade80; }
+  .stat-value.warn { color: #fbbf24; }
+  .stat-value.champion { color: #e879f9; }
+
+  svg text { font-family: system-ui, -apple-system, sans-serif; }
+
+  .prompt-box { background: #0f172a; border: 1px solid #334155; border-radius: 6px; padding: 10px; font-size: 12px; line-height: 1.5; max-height: 80px; overflow-y: auto; white-space: pre-wrap; }
+  .copy-btn { margin-top: 8px; background: #38bdf8; color: #0f172a; border: none; padding: 6px 16px; border-radius: 4px; font-size: 12px; font-weight: 600; cursor: pointer; }
+  .copy-btn:hover { background: #7dd3fc; }
+
+  .legend { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 4px; }
+  .legend-item { display: flex; align-items: center; gap: 4px; font-size: 11px; color: #94a3b8; }
+  .legend-dot { width: 10px; height: 10px; border-radius: 2px; }
+
+  .champion-badge { background: #2e1065; border: 1px solid #e879f9; border-radius: 4px; padding: 4px 8px; font-size: 11px; color: #e879f9; font-weight: 700; display: inline-flex; align-items: center; gap: 6px; }
+</style>
+</head>
+<body>
+
+<div class="sidebar">
+  <h1>L1 Byte-Pair Merger</h1>
+  <p style="font-size:12px;color:#64748b;margin-top:-8px;">Single-W mirror tied autoencoder</p>
+
+  <div class="champion-badge">
+    <span style="font-size:14px">★</span> CHAMPION — Cluster 13
+  </div>
+
+  <div class="control-group">
+    <h2>Nezopont</h2>
+    <div class="tab-group" id="viewGroup">
+      <div class="tab-item active" data-view="overview">Attekintes</div>
+      <div class="tab-item" data-view="c19">C19 aktivacio</div>
+      <div class="tab-item" data-view="dims">Dimenzio folyam</div>
+      <div class="tab-item" data-view="cells">Sejt bontas</div>
+    </div>
+  </div>
+
+  <div class="control-group">
+    <h2>Architektura</h2>
+    <div id="archStats">
+      <div class="stat-row"><span class="stat-label">Keplet</span><span class="stat-value mono" style="font-size:10px">y=C19(xW+b1)W.T+b2</span></div>
+      <div class="stat-row"><span class="stat-label">in_dim</span><span class="stat-value">32</span></div>
+      <div class="stat-row"><span class="stat-label">H (rejtett)</span><span class="stat-value">81</span></div>
+      <div class="stat-row"><span class="stat-label">Osszes sejt</span><span class="stat-value">2 867</span></div>
+      <div class="stat-row"><span class="stat-label">Lossless</span><span class="stat-value good">100%</span></div>
+      <div class="stat-row"><span class="stat-label">Huffman csomag</span><span class="stat-value good">3 440 B</span></div>
+      <div class="stat-row"><span class="stat-label">Byte-par fedett</span><span class="stat-value good">65 536 / 65 536</span></div>
+    </div>
+  </div>
+
+  <div class="control-group">
+    <h2>Sejt bontas</h2>
+    <div>
+      <div class="stat-row"><span class="stat-label">W (32×81)</span><span class="stat-value">2 592</span></div>
+      <div class="stat-row"><span class="stat-label">b1 (encoder bias)</span><span class="stat-value">81</span></div>
+      <div class="stat-row"><span class="stat-label">b2 (decoder bias)</span><span class="stat-value">32</span></div>
+      <div class="stat-row"><span class="stat-label">C19 c param</span><span class="stat-value">81</span></div>
+      <div class="stat-row"><span class="stat-label">C19 rho param</span><span class="stat-value">81</span></div>
+      <div class="stat-row" style="border-top:1px solid #334155;margin-top:4px;padding-top:6px"><span class="stat-label" style="color:#e2e8f0;font-weight:600">Osszes</span><span class="stat-value champion">2 867</span></div>
+    </div>
+  </div>
+
+  <div class="control-group">
+    <h2>Progression (KB)</h2>
+    <div>
+      <div class="stat-row"><span class="stat-label">fp32 (Cluster 11)</span><span class="stat-value warn">11,20 KB</span></div>
+      <div class="stat-row"><span class="stat-label">fp16 (Cluster 12)</span><span class="stat-value warn">5,60 KB</span></div>
+      <div class="stat-row"><span class="stat-label">Huffman (Cluster 13)</span><span class="stat-value good">3,36 KB</span></div>
+      <div class="stat-row"><span class="stat-label">vs. asym. bajnok</span><span class="stat-value good">−45%</span></div>
+    </div>
+  </div>
+
+  <div class="control-group">
+    <h2>Jelmagyarazat</h2>
+    <div class="legend">
+      <div class="legend-item"><div class="legend-dot" style="background:#38bdf8"></div> 32D input (ket byte)</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#e879f9"></div> C19 neuronok (H=81)</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#4ade80"></div> 32D rekonstrukalt</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#fbbf24"></div> Mirror dekoder W.T</div>
+    </div>
+  </div>
+</div>
+
+<div class="main">
+  <div class="canvas-area">
+    <svg id="diagram" width="760" height="530" viewBox="0 0 760 530"></svg>
+  </div>
+  <div class="prompt-area">
+    <h2>Architektura leiras</h2>
+    <div class="prompt-box mono" id="promptBox"></div>
+    <button class="copy-btn" id="copyBtn">Masolas</button>
+  </div>
+</div>
+
+<script>
+const state = { view: 'overview' };
+
+document.getElementById('viewGroup').querySelectorAll('.tab-item').forEach(el => {
+  el.addEventListener('click', () => {
+    state.view = el.dataset.view;
+    document.getElementById('viewGroup').querySelectorAll('.tab-item').forEach(t => t.classList.toggle('active', t === el));
+    renderDiagram();
+    updatePrompt();
+  });
+});
+
+function renderDiagram() {
+  const svg = document.getElementById('diagram');
+  const W = 760, H = 530;
+  const midX = W / 2;
+  let html = '';
+
+  html += `<defs>
+    <marker id="arr-blue"   markerWidth="7" markerHeight="5" refX="6" refY="2.5" orient="auto"><polygon points="0 0,7 2.5,0 5" fill="#38bdf8" opacity="0.6"/></marker>
+    <marker id="arr-pink"   markerWidth="7" markerHeight="5" refX="6" refY="2.5" orient="auto"><polygon points="0 0,7 2.5,0 5" fill="#e879f9" opacity="0.6"/></marker>
+    <marker id="arr-green"  markerWidth="7" markerHeight="5" refX="6" refY="2.5" orient="auto"><polygon points="0 0,7 2.5,0 5" fill="#4ade80" opacity="0.6"/></marker>
+    <marker id="arr-yellow" markerWidth="7" markerHeight="5" refX="6" refY="2.5" orient="auto"><polygon points="0 0,7 2.5,0 5" fill="#fbbf24" opacity="0.6"/></marker>
+    <linearGradient id="encGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#38bdf8" stop-opacity="0.12"/><stop offset="100%" stop-color="#e879f9" stop-opacity="0.12"/></linearGradient>
+    <linearGradient id="decGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#4ade80" stop-opacity="0.08"/><stop offset="100%" stop-color="#fbbf24" stop-opacity="0.08"/></linearGradient>
+  </defs>`;
+
+  if (state.view === 'overview') {
+    renderOverview(html, svg, W, H, midX);
+  } else if (state.view === 'c19') {
+    renderC19(svg, W, H, midX);
+  } else if (state.view === 'dims') {
+    renderDims(svg, W, H, midX);
+  } else if (state.view === 'cells') {
+    renderCells(svg, W, H, midX);
+  }
+}
+
+function renderOverview(extraHtml, svg, W, H, midX) {
+  const yIn = 65, yHid = 215, yOut = 365, yDec = 480;
+  const nIn = 16, nHid = 27, nOut = 16;
+
+  function nodeX(i, count, spread) {
+    const totalW = (count - 1) * spread;
+    return midX - totalW / 2 + i * spread;
+  }
+
+  let html = extraHtml;
+
+  // Encoder box
+  html += `<rect x="40" y="28" width="${W-80}" height="${yOut + 35 - 28}" rx="12" fill="url(#encGrad)" stroke="#334155" stroke-width="1"/>`;
+  html += `<text x="58" y="48" fill="#64748b" font-size="11" font-weight="600">ENCODER — Single-W Mirror Tied</text>`;
+
+  // Decoder box
+  html += `<rect x="40" y="${yOut + 58}" width="${W-80}" height="90" rx="12" fill="url(#decGrad)" stroke="#334155" stroke-width="1" stroke-dasharray="4 3"/>`;
+  html += `<text x="58" y="${yOut + 78}" fill="#64748b" font-size="11" font-weight="600">DECODER (mirror: same W transposed)</text>`;
+
+  // Input layer — 32 bits shown as 2×16
+  html += `<text x="${midX}" y="${yIn - 24}" text-anchor="middle" fill="#38bdf8" font-size="13" font-weight="600">Input: 32 bit (byte_0 ‖ byte_1)</text>`;
+  html += `<text x="${midX}" y="${yIn - 10}" text-anchor="middle" fill="#64748b" font-size="10">bit0..15 = byte_0 · bit16..31 = byte_1 · {−1, +1}</text>`;
+  const inSpread = 26;
+  for (let i = 0; i < nIn; i++) {
+    const x = nodeX(i, nIn, inSpread);
+    const isByte1 = i >= 8;
+    html += `<circle cx="${x}" cy="${yIn}" r="9" fill="${isByte1 ? '#0c2240' : '#0c1e3a'}" stroke="#38bdf8" stroke-width="${isByte1 ? 1.2 : 2}"/>`;
+    html += `<text x="${x}" y="${yIn + 4}" text-anchor="middle" fill="#38bdf8" font-size="7" font-weight="600">b${i}</text>`;
+  }
+
+  // Hidden layer — show 27 representative neurons (81 total)
+  const hSpread = 22;
+  html += `<text x="${midX}" y="${yHid - 26}" text-anchor="middle" fill="#e879f9" font-size="13" font-weight="600">Hidden: 81 C19 neuron</text>`;
+  html += `<text x="${midX}" y="${yHid - 12}" text-anchor="middle" fill="#64748b" font-size="10">W: (32 × 81) fp16 | b1: 81 | c_i, rho_i per neuron</text>`;
+
+  for (let j = 0; j < nHid; j++) {
+    const x = nodeX(j, nHid, hSpread);
+    if (j === nHid - 4) {
+      html += `<text x="${x + 10}" y="${yHid + 4}" text-anchor="middle" fill="#64748b" font-size="12">···</text>`;
+      continue;
+    }
+    if (j > nHid - 4) continue;
+    const nw = 22, nh = 26;
+    html += `<rect x="${x - nw/2}" y="${yHid - nh/2}" width="${nw}" height="${nh}" rx="4" fill="#1e1040" stroke="#c084fc" stroke-width="1.5"/>`;
+    // C19 wave
+    html += `<path d="M${x-7},${yHid} q2,-6 4,0 q2,6 4,0 q1,-4 3,0" stroke="#e879f9" stroke-width="1.5" fill="none"/>`;
+    if (j % 5 === 0) {
+      html += `<text x="${x}" y="${yHid + nh/2 + 9}" text-anchor="middle" fill="#a78bfa" font-size="7" opacity="0.7">c,rho</text>`;
+    }
+  }
+
+  // Input → hidden connections (sampled)
+  for (let j = 0; j < nHid - 4; j += 3) {
+    const xh = nodeX(j, nHid, hSpread);
+    for (let i = 0; i < nIn; i += 4) {
+      const xi = nodeX(i, nIn, inSpread);
+      html += `<line x1="${xi}" y1="${yIn + 10}" x2="${xh}" y2="${yHid - 12}" stroke="#38bdf8" stroke-width="0.4" opacity="0.15" marker-end="url(#arr-blue)"/>`;
+    }
+  }
+
+  // Output layer
+  const outSpread = 26;
+  html += `<text x="${midX}" y="${yOut - 24}" text-anchor="middle" fill="#4ade80" font-size="13" font-weight="600">Output: 32D rekonstrualt</text>`;
+  html += `<text x="${midX}" y="${yOut - 10}" text-anchor="middle" fill="#64748b" font-size="10">hidden @ W.T + b2 → sign → byte_0 ‖ byte_1 visszakapva</text>`;
+
+  for (let k = 0; k < nOut; k++) {
+    const x = nodeX(k, nOut, outSpread);
+    const isByte1 = k >= 8;
+    html += `<circle cx="${x}" cy="${yOut}" r="9" fill="${isByte1 ? '#042010' : '#052e16'}" stroke="#4ade80" stroke-width="${isByte1 ? 1.2 : 2}"/>`;
+    html += `<text x="${x}" y="${yOut + 4}" text-anchor="middle" fill="#4ade80" font-size="7" font-weight="600">r${k}</text>`;
+  }
+
+  // Hidden → output connections (sampled)
+  for (let k = 0; k < nOut; k += 3) {
+    const xo = nodeX(k, nOut, outSpread);
+    for (let j = 0; j < nHid - 4; j += 5) {
+      const xh = nodeX(j, nHid, hSpread);
+      html += `<line x1="${xh}" y1="${yHid + 12}" x2="${xo}" y2="${yOut - 10}" stroke="#4ade80" stroke-width="0.4" opacity="0.15" marker-end="url(#arr-green)"/>`;
+    }
+  }
+
+  // Decoder flow
+  html += `<text x="${midX}" y="${yDec - 5}" text-anchor="middle" fill="#fbbf24" font-size="12">32D → W.T (tied, same W) → 81D → W.T → 32 bit · 100% lossless</text>`;
+  const steps = ['32D output', 'W.T', '81D', 'W.T', '32 bit'];
+  const stepW = (W - 130) / (steps.length - 1);
+  for (let s = 0; s < steps.length; s++) {
+    const sx = 70 + s * stepW;
+    const isW = steps[s] === 'W.T';
+    const col = isW ? '#fbbf24' : '#94a3b8';
+    html += `<text x="${sx}" y="${yDec + 14}" text-anchor="middle" fill="${col}" font-size="${isW ? 11 : 12}" font-weight="${isW ? 400 : 600}">${steps[s]}</text>`;
+    if (s < steps.length - 1) {
+      html += `<line x1="${sx + 32}" y1="${yDec + 9}" x2="${sx + stepW - 32}" y2="${yDec + 9}" stroke="#fbbf24" stroke-width="1.5" opacity="0.5" marker-end="url(#arr-yellow)"/>`;
+    }
+  }
+
+  // Params badge
+  html += `<rect x="${W - 148}" y="8" width="132" height="24" rx="6" fill="#334155"/>`;
+  html += `<text x="${W - 82}" y="24" text-anchor="middle" fill="#e2e8f0" font-size="11" font-weight="600">2 867 params · 3 440 B</text>`;
+
+  svg.innerHTML = html;
+}
+
+function renderC19(svg, W, H, midX) {
+  let html = `<defs>
+    <marker id="arr-blue" markerWidth="7" markerHeight="5" refX="6" refY="2.5" orient="auto"><polygon points="0 0,7 2.5,0 5" fill="#38bdf8" opacity="0.6"/></marker>
+  </defs>`;
+
+  html += `<text x="${midX}" y="32" text-anchor="middle" fill="#e879f9" font-size="15" font-weight="700">C19 Aktivacio — Per-neuron Tanult c es rho</text>`;
+  html += `<text x="${midX}" y="52" text-anchor="middle" fill="#64748b" font-size="11">Darabos cikk-cakk fuggveny: minden neuronnak sajat c (lancszem merete) es rho (gorbulet) van</text>`;
+
+  // Draw 6 sample C19 curves with different c/rho values
+  const samples = [
+    { c: 0.5,  rho: 8,  label: 'c=0.5 rho=8',  col: '#e879f9' },
+    { c: 1.0,  rho: 8,  label: 'c=1.0 rho=8',  col: '#a78bfa' },
+    { c: 2.0,  rho: 8,  label: 'c=2.0 rho=8',  col: '#38bdf8' },
+    { c: 0.5,  rho: 2,  label: 'c=0.5 rho=2',  col: '#4ade80' },
+    { c: 1.0,  rho: 0,  label: 'c=1.0 rho=0',  col: '#fbbf24' },
+    { c: 2.0,  rho: 16, label: 'c=2.0 rho=16', col: '#f87171' },
+  ];
+
+  function c19(x, c, rho) {
+    c = Math.max(c, 0.1); rho = Math.max(rho, 0);
+    const L = 6 * c;
+    if (x >= L)  return x - L;
+    if (x <= -L) return x + L;
+    const s = x / c, n = Math.floor(s), t = s - n;
+    const hh = t * (1 - t), sgn = (n % 2 === 0) ? 1 : -1;
+    return c * (sgn * hh + rho * hh * hh);
+  }
+
+  const cols = 3, rows = 2;
+  const cw = (W - 80) / cols, ch = (H - 110) / rows;
+  samples.forEach((s, idx) => {
+    const col = idx % cols, row = Math.floor(idx / cols);
+    const ox = 40 + col * cw + cw / 2, oy = 100 + row * ch + ch / 2;
+    const pxW = cw - 40, pxH = ch - 50;
+
+    // Box
+    html += `<rect x="${ox - pxW/2 - 4}" y="${oy - pxH/2 - 30}" width="${pxW + 8}" height="${pxH + 44}" rx="8" fill="#111827" stroke="#1e293b"/>`;
+    html += `<text x="${ox}" y="${oy - pxH/2 - 14}" text-anchor="middle" fill="${s.col}" font-size="12" font-weight="600">${s.label}</text>`;
+
+    // Axes
+    html += `<line x1="${ox - pxW/2}" y1="${oy}" x2="${ox + pxW/2}" y2="${oy}" stroke="#334155" stroke-width="1"/>`;
+    html += `<line x1="${ox}" y1="${oy - pxH/2}" x2="${ox}" y2="${oy + pxH/2}" stroke="#334155" stroke-width="1"/>`;
+
+    // Curve
+    const range = 3 * s.c;
+    let path = '';
+    for (let px = 0; px <= pxW; px++) {
+      const x = (px / pxW) * 2 * range - range;
+      const y = c19(x, s.c, s.rho);
+      const sx = ox - pxW/2 + px;
+      const sy = oy - (y / range) * (pxH / 2);
+      const clampedSy = Math.max(oy - pxH/2 - 2, Math.min(oy + pxH/2 + 2, sy));
+      path += (px === 0 ? 'M' : 'L') + `${sx.toFixed(1)},${clampedSy.toFixed(1)}`;
+    }
+    html += `<path d="${path}" stroke="${s.col}" stroke-width="2" fill="none" opacity="0.9"/>`;
+
+    // Label linear tails
+    html += `<text x="${ox - pxW/2 + 4}" y="${oy - pxH/2 + 12}" fill="#475569" font-size="9">linear tail</text>`;
+    html += `<text x="${ox + pxW/2 - 4}" y="${oy + pxH/2 - 4}" text-anchor="end" fill="#475569" font-size="9">linear tail</text>`;
+  });
+
+  // Bottom note
+  html += `<rect x="40" y="${H - 48}" width="${W - 80}" height="36" rx="6" fill="#0f172a" stroke="#334155"/>`;
+  html += `<text x="${midX}" y="${H - 32}" text-anchor="middle" fill="#94a3b8" font-size="11">c = "lancszem" merete (hogyan surun cikk-cakkol) · rho = gorbulet (mennyire hajlik a lancszem)  · rho=0: tisza cikk-cakk · rho&gt;0: ives gorbe</text>`;
+  html += `<text x="${midX}" y="${H - 18}" text-anchor="middle" fill="#64748b" font-size="10">Mindket param tanult (fp16) — L-BFGS optimalizalassal · H=81 neuronra = 162 extra parameter</text>`;
+
+  svg.innerHTML = html;
+}
+
+function renderDims(svg, W, H, midX) {
+  let html = ``;
+
+  html += `<text x="${midX}" y="32" text-anchor="middle" fill="#38bdf8" font-size="15" font-weight="700">Dimenzio Folyam — L1 Byte-Pair Merger</text>`;
+
+  const stages = [
+    { label: '2 byte input',    dim: '2×8=16 bit',   note: 'byte_0, byte_1', col: '#38bdf8', y: 90 },
+    { label: '32D ±1 vektor',   dim: 'in_dim=32',     note: '{-1,+1} jelkodolas', col: '#38bdf8', y: 160 },
+    { label: 'W @ x + b1',      dim: '(32×81)',        note: 'egyetlen W matrix, fp16', col: '#a78bfa', y: 230 },
+    { label: 'C19 aktivacio',   dim: '81D hidden',    note: 'per-neuron c,rho', col: '#e879f9', y: 300 },
+    { label: 'hidden @ W.T + b2', dim: '(81×32)',      note: 'UGYANAZ a W, atforditva', col: '#fbbf24', y: 370 },
+    { label: '32D kimenet',     dim: 'out_dim=32',    note: 'sign() → byte_0, byte_1', col: '#4ade80', y: 440 },
+  ];
+
+  const bx = midX - 160, bw = 320;
+
+  stages.forEach((s, i) => {
+    const y = s.y;
+    const isW = s.label.includes('W @') || s.label.includes('W.T');
+    html += `<rect x="${bx}" y="${y - 22}" width="${bw}" height="40" rx="8" fill="${isW ? '#1c1200' : '#111827'}" stroke="${s.col}" stroke-width="${isW ? 1.5 : 1}"/>`;
+    html += `<text x="${bx + 14}" y="${y - 4}" fill="${s.col}" font-size="13" font-weight="600">${s.label}</text>`;
+    html += `<text x="${bx + 14}" y="${y + 11}" fill="#64748b" font-size="11">${s.note}</text>`;
+    html += `<text x="${bx + bw - 12}" y="${y + 4}" text-anchor="end" fill="${isW ? '#fbbf24' : '#94a3b8'}" font-size="12" font-weight="700">${s.dim}</text>`;
+
+    if (i < stages.length - 1) {
+      const nextY = stages[i + 1].y;
+      html += `<line x1="${midX}" y1="${y + 18}" x2="${midX}" y2="${nextY - 24}" stroke="${s.col}" stroke-width="1.5" opacity="0.5" marker-end="url(#arr-blue)"/>`;
+    }
+  });
+
+  // Tie annotation
+  html += `<rect x="${bx + bw + 20}" y="218" width="130" height="160" rx="8" fill="#1c1200" stroke="#fbbf24" stroke-width="1" stroke-dasharray="4 3"/>`;
+  html += `<text x="${bx + bw + 85}" y="240" text-anchor="middle" fill="#fbbf24" font-size="11" font-weight="600">TIED WEIGHT</text>`;
+  html += `<text x="${bx + bw + 85}" y="258" text-anchor="middle" fill="#94a3b8" font-size="10">Encoder es decoder</text>`;
+  html += `<text x="${bx + bw + 85}" y="273" text-anchor="middle" fill="#94a3b8" font-size="10">ugyanazt a W-t</text>`;
+  html += `<text x="${bx + bw + 85}" y="288" text-anchor="middle" fill="#94a3b8" font-size="10">hasznaljak —</text>`;
+  html += `<text x="${bx + bw + 85}" y="303" text-anchor="middle" fill="#94a3b8" font-size="10">csak transzponalva.</text>`;
+  html += `<text x="${bx + bw + 85}" y="320" text-anchor="middle" fill="#e879f9" font-size="10">2592 parameter</text>`;
+  html += `<text x="${bx + bw + 85}" y="335" text-anchor="middle" fill="#e879f9" font-size="10">mindket iranyhoz</text>`;
+  html += `<text x="${bx + bw + 85}" y="350" text-anchor="middle" fill="#4ade80" font-size="11" font-weight="700">= takarekos!</text>`;
+
+  // Arrow from tied box to both W boxes
+  html += `<line x1="${bx + bw}" y1="230" x2="${bx + bw + 18}" y2="300" stroke="#fbbf24" stroke-width="1" opacity="0.4" stroke-dasharray="3 2"/>`;
+  html += `<line x1="${bx + bw}" y1="370" x2="${bx + bw + 18}" y2="340" stroke="#fbbf24" stroke-width="1" opacity="0.4" stroke-dasharray="3 2"/>`;
+
+  html += `<defs><marker id="arr-blue" markerWidth="7" markerHeight="5" refX="6" refY="2.5" orient="auto"><polygon points="0 0,7 2.5,0 5" fill="#94a3b8" opacity="0.6"/></marker></defs>`;
+
+  svg.innerHTML = html;
+}
+
+function renderCells(svg, W, Hh, midX) {
+  let html = ``;
+
+  html += `<text x="${midX}" y="32" text-anchor="middle" fill="#e2e8f0" font-size="15" font-weight="700">Sejt Bontas — 2 867 parameter osszes</text>`;
+  html += `<text x="${midX}" y="52" text-anchor="middle" fill="#64748b" font-size="11">fp16 tarolassal (2 byte/param) → 5 734 B nyers · Huffman kodolassal: 3 440 B</text>`;
+
+  const cells = [
+    { name: 'W (32×81)', count: 2592, pct: 2592/2867, col: '#38bdf8', desc: 'Fo matrix — encoder es decoder kozott megosztott (tied)' },
+    { name: 'b1 encoder bias', count: 81,   pct: 81/2867,   col: '#e879f9', desc: 'Encoder eltolasvektor, egy ertek neuronankent' },
+    { name: 'C19 c param',   count: 81,   pct: 81/2867,   col: '#a78bfa', desc: 'C19 lancszem merete, neuronankent tanult' },
+    { name: 'C19 rho param', count: 81,   pct: 81/2867,   col: '#c084fc', desc: 'C19 gorbulet, neuronankent tanult' },
+    { name: 'b2 decoder bias', count: 32,  pct: 32/2867,   col: '#4ade80', desc: 'Decoder eltolasvektor, egy ertek kimenetenkent' },
+  ];
+
+  let y = 80;
+  const barW = W - 200, barX = 100;
+
+  cells.forEach(c => {
+    const fillW = Math.max(4, c.pct * barW);
+    html += `<rect x="${barX}" y="${y}" width="${barW}" height="34" rx="4" fill="#111827" stroke="#1e293b"/>`;
+    html += `<rect x="${barX}" y="${y}" width="${fillW}" height="34" rx="4" fill="${c.col}" opacity="0.25"/>`;
+    html += `<text x="${barX + 10}" y="${y + 14}" fill="${c.col}" font-size="12" font-weight="700">${c.name}</text>`;
+    html += `<text x="${barX + 10}" y="${y + 27}" fill="#64748b" font-size="10">${c.desc}</text>`;
+    html += `<text x="${barX + barW - 8}" y="${y + 14}" text-anchor="end" fill="${c.col}" font-size="13" font-weight="700">${c.count.toLocaleString()}</text>`;
+    html += `<text x="${barX + barW - 8}" y="${y + 27}" text-anchor="end" fill="#64748b" font-size="10">${(c.pct * 100).toFixed(1)}%</text>`;
+    y += 46;
+  });
+
+  // Total row
+  y += 10;
+  html += `<rect x="${barX}" y="${y}" width="${barW}" height="38" rx="4" fill="#0f172a" stroke="#e879f9" stroke-width="1.5"/>`;
+  html += `<text x="${barX + 10}" y="${y + 16}" fill="#e2e8f0" font-size="13" font-weight="700">OSSZES</text>`;
+  html += `<text x="${barX + 10}" y="${y + 29}" fill="#64748b" font-size="10">fp16 = 5 734 B nyers · Huffman-packed = 3 440 B · megtakaritas = 40%</text>`;
+  html += `<text x="${barX + barW - 8}" y="${y + 22}" text-anchor="end" fill="#e879f9" font-size="16" font-weight="700">2 867</text>`;
+
+  // Size comparison bar
+  y += 68;
+  html += `<text x="${midX}" y="${y}" text-anchor="middle" fill="#94a3b8" font-size="12" font-weight="600">Merethasonlitas (KB)</text>`;
+  y += 16;
+  const sizes = [
+    { label: 'fp32 (Cluster 11)', kb: 11.20, col: '#f87171' },
+    { label: '7,14 KB asym. bajnok', kb: 7.14, col: '#fbbf24' },
+    { label: 'fp16 (Cluster 12)', kb: 5.60, col: '#fbbf24' },
+    { label: 'Huffman (Cluster 13)', kb: 3.36, col: '#4ade80' },
+  ];
+  const maxKb = 12;
+  const compBarW = W - 200;
+  sizes.forEach((s, i) => {
+    const bh = 24, by = y + i * 30;
+    const fw = (s.kb / maxKb) * compBarW;
+    html += `<rect x="${barX}" y="${by}" width="${compBarW}" height="${bh}" rx="3" fill="#111827" stroke="#1e293b"/>`;
+    html += `<rect x="${barX}" y="${by}" width="${fw}" height="${bh}" rx="3" fill="${s.col}" opacity="0.3"/>`;
+    html += `<text x="${barX + 8}" y="${by + 15}" fill="${s.col}" font-size="11" font-weight="600">${s.label}</text>`;
+    html += `<text x="${barX + compBarW - 8}" y="${by + 15}" text-anchor="end" fill="${s.col}" font-size="12" font-weight="700">${s.kb.toFixed(2)} KB</text>`;
+  });
+
+  svg.innerHTML = html;
+}
+
+function updatePrompt() {
+  const views = {
+    overview: `L1 Byte-Pair Merger — Single-W Mirror Tied Autoencoder (Champion, Cluster 13).
+Keplet: y = C19(x @ W + b1) @ W.T + b2
+Architektura: in_dim=32, H=81 (rejtett neuronok), out_dim=32
+W alakja: (32, 81) — ugyanaz a matrix encoder es decoder oldalon (tied weight), csak W.T a decoder.
+C19 aktivacio: darabos cikk-cakk, neuronankent tanult c es rho parameterrel.
+Teljesitmeny: 100% lossless osszes 65 536 byte-paron · 3 440 B Huffman-packed (3,36 KB).
+Osszes parameter: 2 867 (W 2592 + b1 81 + b2 32 + c19_c 81 + c19_rho 81).`,
+    c19: `C19 Aktivacio — Piecewise Zigzag fuggveny.
+Minden neuronnak sajat c (lancszem merete) es rho (gorbulet) van, L-BFGS-sel tanulva.
+c = kis: surun cikk-cakkol · c = nagy: ritkan cikk-cakkol.
+rho = 0: tiszta cikk-cakk (szimmetrikus) · rho > 0: hajtott lancszem (asszimmetrikus).
+H=81 neuronra = 162 extra C19 parameter (c es rho) az fp16 tarolt taultsagban.`,
+    dims: `Dimenzio Folyam — L1 Byte-Pair Merger.
+1. Ket byte (byte_0, byte_1) → 32 bites ±1 vektor (in_dim=32).
+2. Encoder: 32D @ W(32,81) + b1 → 81D pre-activacion.
+3. C19 aktivacio → 81D hidden representacio.
+4. Decoder: 81D @ W.T(81,32) + b2 → 32D output.
+5. sign(output) → visszakapott 32 bit → byte_0 es byte_1 hibamentesen.
+A "tied" azt jelenti: encoder es decoder ugyanazt a W-t hasznalja — csak transzponalva.`,
+    cells: `Sejt Bontas — 2 867 parameter osszes.
+W (32×81) = 2 592 parameter (90,4%) — a fo matrix, megosztott.
+b1 (encoder bias, 81) = 81 parameter (2,8%).
+C19 c param (81) = 81 parameter (2,8%) — lancszem merete.
+C19 rho param (81) = 81 parameter (2,8%) — gorbulet.
+b2 (decoder bias, 32) = 32 parameter (1,1%).
+fp16 tarolassal: 2867 × 2 byte = 5 734 B nyers.
+Huffman kodolassal: 3 440 B (40% megtakaritas a nyers fp16-hoz kepest).`,
+  };
+  document.getElementById('promptBox').textContent = views[state.view] || '';
+}
+
+document.getElementById('copyBtn').addEventListener('click', function() {
+  navigator.clipboard.writeText(document.getElementById('promptBox').textContent);
+  this.textContent = 'Masolva!';
+  setTimeout(() => this.textContent = 'Masolas', 1500);
+});
+
+renderDiagram();
+updatePrompt();
+</script>
+</body>
+</html>
