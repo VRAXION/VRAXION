@@ -22,6 +22,14 @@ This is an **alternative** champion — the int4 C19 H=24 model remains the prov
 
 Reproduce: `python tools/build_byte_unit.py`
 
+### Added — Cluster 18: L1 merger autonomous compression loop (2026-04-19)
+
+- **Native 7-bit identity merger candidate**: H=120 identity autoencoder + 7-bit integer weights + 3-bit `b1`/`b2` biases + fp32 alpha = **3,421 B (3.34 KB) exact lossless** — ~0.55% smaller than the Huffman-packed champion and **native** (no decode step). Seeds 7 and 42 both reach 100%.
+- **Codebook expressivity ladder (single-W H=81 bake probe)**: binary 0.25% → ternary 1.82% → 3-bit 17.47% → 4-bit 29.28% → 5-bit 50.19% → 6-bit 74.08% → 7-bit 89.17%. Below 4 bit/weight the problem is **not representable**, no amount of QAT or LBFGS rescues it — it is a representation-space ceiling, not an optimization failure.
+- **Confirmed negative results**: dual-W architecture does NOT rescue binary (all 10 dual-W binary multi-seed runs at H=48 → 0%); multi-seed binary at H=81/128/192/256 all < 10%; alpha scaling cannot be eliminated (seed 42 → 65,480 bad without alpha); C19 aux params (`c`, `rho`, biases) cannot be post-hoc quantized at int8 even on the float exact model.
+- **New tools**: `diag_byte_pair_merger_widen_sweep.py` (activation × codebook × H × single/dual-W sweep with Adam+LBFGS), `diag_byte_pair_merger_bake_probe.py` (codebook expressivity measurement), `diag_byte_pair_merger_perchannel_bake.py`, `diag_byte_pair_merger_minimize.py` (deploy-bytes ranker), `diag_byte_pair_merger_aux_quant_probe.py`, `diag_byte_pair_merger_float_aux_quant_probe.py`, `diag_byte_pair_merger_alpha_ablation.py`.
+- Full findings draft: `docs/wiki/COMPRESSION_LOOP_DRAFT.md`.
+
 ### Changed
 
 - **L2 reconstruction merger line deprioritized**: PCA geometry probe and neural ablation both under-fit on 16-byte windows; the direction does not scale within current capacity. Pivoted to the word-tokenizer pipeline (Cluster 16).

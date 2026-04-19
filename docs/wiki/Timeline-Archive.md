@@ -558,6 +558,35 @@ Scripts: `tools/diag_byte_l2_merger.py`, `tools/diag_byte_l2_phase0_geometry_pro
 Investigation into an L2 reconstruction layer above the L1 Huffman-packed champion: can 16-byte windows (eight L1-merger outputs = 648-dim) be further compressed with a second mirror-tied autoencoder? Phase-0 PCA geometry probe showed that even at D=128 the linear baseline only reached 97.6% per-dim sign-match and 2.6% exact-16-byte-window — meaning linear geometry is anisotropic on natural text. A tied-mirror neural ablation under-fit the linear PCA baseline (1.5% exact-window at D=384), confirming the reconstruction direction does not scale within current capacity. The L2 line was deprioritized in favor of the word-tokenizer pivot (Cluster 16) after the geometry probe surfaced. No champion, no deploy artifact.
 **Status: Deprioritized — geometry doesn't support linear reconstruction at the capacity we can afford; pivoted to lexical-layer pipeline (Cluster 16).**
 
+**Cluster 18 — L1 merger autonomous compression loop (2026-04-19 PM)** (commits `d13cb3b` research tooling + `891b1d7` GPT probes)
+Files: `tools/diag_byte_pair_merger_widen_sweep.py`, `tools/diag_byte_pair_merger_bake_probe.py`, `tools/diag_byte_pair_merger_perchannel_bake.py`, `tools/diag_byte_pair_merger_minimize.py`, `tools/diag_byte_pair_merger_aux_quant_probe.py`, `tools/diag_byte_pair_merger_float_aux_quant_probe.py`, `tools/diag_byte_pair_merger_alpha_ablation.py`. Full findings draft: `docs/wiki/COMPRESSION_LOOP_DRAFT.md`.
+- **Idea:** The Cluster 13 champion is 3,440 B Huffman-packed. Can a native (non-packed) weight representation reach the same or smaller footprint while staying 100% lossless? And what is the structural reason binary weights fail on the merger when they work on the byte unit (Cluster 17)?
+- **Methodology — 34 sweep iterations across five axes:**
+  1. Architecture: single-W mirror-tied vs dual-W (two independent matrices).
+  2. Activation: identity (linear), ReLU, C19, tanh.
+  3. Codebook: binary `{−1,+1}`, ternary `{−1,0,+1}`, 2-bit `{±1,±3}`, 3-bit `{±1,±2,±4,±8}`, 4/5/6/7/8-bit integer, 9/10-bit integer.
+  4. Hidden dim: H ∈ {32, 48, 64, 81, 96, 100, 110, 113, 115, 117, 118, 119, 120, 128, 192, 256}.
+  5. Seed: 7, 42, 123, 1000, 2024, 31337, plus extras.
+- **Bake probe (codebook expressivity ceiling)**: took the float-100% single-W H=81 identity model, snapped W to each codebook at hundreds of alpha values, measured lossless WITHOUT any polish. Result ladder: binary 0.25% / ternary 1.82% / 3-bit 17.47% / 4-bit 29.28% / 5-bit 50.19% / 6-bit 74.08% / 7-bit 89.17%. Below 4 bit/weight the problem is **not representable** — any optimizer, any seed, any architecture fails. Dual-W binary across 10 multi-seed runs at H=48: all 0.00% (identical pd=65.45% — model degenerates to near-constant output under STE quant). This is a representation-space fact, not an optimization failure.
+- **Native 7-bit alternative champion (identity H=120):** the linear autoencoder `y = (x @ W + b1) @ Wᵀ + b2` with 7-bit integer weights reaches 100% exact lossless at hidden width 120, seeds 7 and 42. Storage breakdown:
+
+  | component | shape / count | bits/entry | bytes |
+  |---|---|---|---|
+  | W (encode/decode tied) | 32 × 120 = 3,840 cells | 7 | 3,360 |
+  | b1 + b2 aux biases | 120 + 32 = 152 cells | 3 | 57 |
+  | alpha (fp32 scale) | 1 scalar | 32 | 4 |
+  | **Total** | | | **3,421 B = 3.34 KB** |
+
+  This is ~0.55% smaller than the 3,440 B Huffman-packed Cluster 13 champion and **native** — no Huffman decode step required at inference. GPT's aux-quant probe (seed 42) confirmed `b1+b2` stay exact at 3-bit; seed 7 stays exact even at 1-bit biases. The 3-bit choice is the conservative multi-seed-safe minimum.
+- **Confirmed negative findings from the loop:**
+  - Binary single-W at H=81/128/192/256 all collapse to <10% lossless despite float baseline 100%.
+  - Dual-W binary H=32/48/64 × identity/relu × 10 multi-seed runs all 0.00%.
+  - C19 dual-W binary/ternary H=32/48/64 × 6 configs all <1% (ran ~40 min, confirmed no rescue).
+  - Per-channel binary bake (separate alpha per column): 0.63% — only marginally better than global-alpha 0.25%.
+  - Alpha cannot be eliminated from STE: the `no_alpha` ablation drops to 0.085% (65,480 bad) at seed 42.
+  - C19 aux params (`c`, `rho`, biases) are not post-hoc quantizable at int8 on the exact float model — best `all_aux int8` post-hoc: 13 bad pairs.
+- **Status:** Native 7-bit identity H=120 is a **validated alternative** to the Cluster 13 Huffman-packed champion, pending a deploy-artifact pipeline (final packed `.bin` + reload-verify script). The Huffman-packed champion at `output/merger_single_w_huffman_pack/packed_model.bin` remains the currently shipped artifact.
+
 </details>
 
 ---

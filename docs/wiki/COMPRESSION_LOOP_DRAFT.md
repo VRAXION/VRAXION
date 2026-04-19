@@ -1,7 +1,15 @@
-# L1 Merger Compression Loop — Draft (2026-04-19, pending user review)
+# L1 Merger Compression Loop — Draft (2026-04-19, review pass done)
 
-**Status**: draft, NOT committed. User to review on return.
+**Status**: committed to main; integrated into `VALIDATED_FINDINGS.md` + `docs/wiki/Timeline-Archive.md` (Cluster 18) + `CHANGELOG.md`.
 **Goal**: compress the L1 merger to the smallest footprint while holding lossless roundtrip on all 65,536 byte pairs.
+
+## TL;DR — what came out of the loop
+
+- **Native 7-bit identity H=120 merger = 3,421 B (3.34 KB) exact lossless**, ~0.55% smaller than the 3,440 B Huffman-packed Cluster 13 champion and native (no decode step). Storage: `3840 × 7 bit W + 152 × 3 bit b1/b2 + 4 B fp32 alpha`. Seeds 7 and 42 both reach 100%.
+- **Binary / ternary / 2-bit / 3-bit are NOT representable** for the merger — bake probe ceiling <30% regardless of optimizer, architecture, or seed. The codebook expressivity ladder is monotone: 1-bit 0.25% / 2-bit 1.82% / 3-bit 17% / 4-bit 29% / 5-bit 50% / 6-bit 74% / 7-bit 89% / (+ QAT polish closes the 89→100 gap at 7-bit H=120).
+- **Dual-W architecture does NOT rescue binary** (10 multi-seed dual-W binary runs all 0.00%).
+- **Alpha cannot be removed** from STE (65,480 bad without alpha).
+- **C19 aux params (`c`, `rho`, biases) are not post-hoc int8 quantizable** on the float exact model.
 
 ## Champion baseline (current)
 
