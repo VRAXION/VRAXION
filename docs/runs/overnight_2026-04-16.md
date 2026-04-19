@@ -10,7 +10,7 @@ Migrated into the repo from a local session artifact and cross-checked against r
 
 ## Corpus and method
 
-- Corpus: `S:/AI/MESSY TRAINING DATA - INPUT ONLY/Fineweb edu 10B/fineweb_edu_30m.txt`
+- Corpus: `<local FineWeb-EDU sample, not included in repo>`
 - Train setup: 300 epochs, 2000 samples/epoch
 - Seeds: `42`, `1337`, `9999`
 - Comparison target:
@@ -77,8 +77,8 @@ Examples added in the working tree:
 Representative commands:
 
 ```powershell
-cargo run -p instnct-core --release --example diag_isoparam_multiseed -- "S:/AI/MESSY TRAINING DATA - INPUT ONLY/Fineweb edu 10B/fineweb_edu_30m.txt"
-cargo run -p instnct-core --release --example diag_alpha_delta_combo -- "S:/AI/MESSY TRAINING DATA - INPUT ONLY/Fineweb edu 10B/fineweb_edu_30m.txt"
+cargo run -p instnct-core --release --example diag_isoparam_multiseed -- "<local FineWeb-EDU sample, not included in repo>"
+cargo run -p instnct-core --release --example diag_alpha_delta_combo -- "<local FineWeb-EDU sample, not included in repo>"
 ```
 
 ## Bottom line

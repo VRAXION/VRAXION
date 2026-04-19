@@ -1573,7 +1573,7 @@
       <h2 class="h2">Inspect the <em>baked models.</em></h2>
       <p class="sub">Live visualizers for the L0 Byte Unit and L1 Byte-Pair Merger champions. Architecture diagrams, weight heatmaps, C19 neuron curves, and live roundtrip tests — all running in-browser with the actual baked weights.</p>
 
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:20px">
 
         <!-- L0 card -->
         <div style="border:1px solid var(--border);border-radius:14px;padding:22px;background:var(--bg-2)">
@@ -1616,6 +1616,23 @@
             <a href="./playground/byte_pair_merger_baked.html" style="display:inline-flex;align-items:center;gap:6px;background:color-mix(in oklab,#e879f9 8%,var(--bg-3));border:1px solid color-mix(in oklab,#e879f9 40%,var(--border));border-radius:6px;padding:8px 14px;font-size:13px;color:#e879f9;transition:background .15s">
               <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="6"/><path d="M8 5v3l2 2"/></svg>
               Baked · Huffman Artifact
+            </a>
+          </div>
+        </div>
+
+        <!-- Connectome Explorer card -->
+        <div style="border:1px solid var(--border);border-radius:14px;padding:22px;background:var(--bg-2)">
+          <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:0.18em;color:var(--ink-4);text-transform:uppercase;margin-bottom:14px">Architecture · Connectome</div>
+          <h3 style="font-size:20px;font-weight:500;letter-spacing:-0.02em;margin:0 0 8px">Connectome Explorer</h3>
+          <p style="font-size:13px;color:var(--ink-3);line-height:1.55;margin:0 0 16px">Interactive city-highway diagram. Configure city count, connectome relay width, neuron depth, and activation per city. Animated signal-flow walkthrough with live architecture stats and copyable prompt.</p>
+          <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">
+            <span style="background:#1a1a25;color:#fbbf24;border:1px solid #92400e;border-radius:10px;font-size:10px;font-weight:700;padding:3px 10px">Passive relay</span>
+            <span style="background:#1a1a25;color:#fbbf24;border:1px solid #92400e;border-radius:10px;font-size:10px;font-weight:700;padding:3px 10px">C19 / ReLU</span>
+          </div>
+          <div style="display:flex;gap:10px;flex-wrap:wrap">
+            <a href="./vraxion-connectome-explorer.html" style="display:inline-flex;align-items:center;gap:6px;background:var(--bg-3);border:1px solid var(--border-2);border-radius:6px;padding:8px 14px;font-size:13px;color:var(--ink-2);transition:border-color .15s,color .15s" onmouseover="this.style.color='var(--ink)';this.style.borderColor='var(--border-2)'" onmouseout="this.style.color='var(--ink-2)'">
+              <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="6"/><path d="M5 8h6M8 5v6"/></svg>
+              Open Explorer
             </a>
           </div>
         </div>
