@@ -1,0 +1,22 @@
+{
+  "champion": "binary + C19 + H=16",
+  "architecture": "8 -> 16 -> 16, tied mirror",
+  "codebook": [
+    -1.0,
+    1.0
+  ],
+  "hidden": 16,
+  "activation": "c19",
+  "training_lossless": "100.00%",
+  "reload_lossless": true,
+  "lut_based_bytes_decoded": "256/256",
+  "alpha1": 0.12015329301357269,
+  "alpha2": 0.48273634910583496,
+  "artifact_sizes": {
+    "byte_unit_winner_binary.json": 6481,
+    "byte_embedder_lut_int8.json": 50183,
+    "byte_embedder_lut.h": 29554
+  },
+  "source_confirm_run": "output/byte_unit_binary_c19_h16_confirm/summary.json",
+  "frozen_at": "2026-04-19 15:54:49"
+}

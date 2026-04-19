@@ -134,6 +134,8 @@ output/*
 !output/merger_single_w_huffman_pack/**
 !output/word_tokenizer_champion/
 !output/word_tokenizer_champion/**
+!output/byte_unit_champion_binary_c19_h16/
+!output/byte_unit_champion_binary_c19_h16/**
 
 # Grower / lab scratch that should never leak into the public mainline
 instnct-core/*_log.txt
