@@ -6,7 +6,7 @@ from pathlib import Path
 import numpy as np
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
-from Python.byte_encoder import ByteEncoder
+from Python.block_a_byte_unit import ByteEncoder
 
 
 def test_default_load_and_self_verify():

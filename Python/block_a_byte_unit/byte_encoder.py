@@ -23,11 +23,11 @@ from typing import Union
 import numpy as np
 
 DEFAULT_LUT_PATH = (
-    Path(__file__).resolve().parent.parent
+    Path(__file__).resolve().parent.parent.parent
     / "output" / "byte_unit_champion_binary_c19_h16" / "byte_embedder_lut_int8.json"
 )
 DEFAULT_WEIGHTS_PATH = (
-    Path(__file__).resolve().parent.parent
+    Path(__file__).resolve().parent.parent.parent
     / "output" / "byte_unit_champion_binary_c19_h16" / "byte_unit_winner_binary.json"
 )
 
