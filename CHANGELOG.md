@@ -20,7 +20,7 @@ GPT's exhaustive activation-precision sweep tested all (precision, activation) p
 
 This is an **alternative** champion — the int4 C19 H=24 model remains the proven production artifact (committed LUT at `tools/byte_embedder_lut.h`). The binary + C19 + H=16 result is a validated alternative for constrained-width deployments.
 
-Reproduce: `python tools/diag_byte_unit_champion_binary_freeze.py`
+Reproduce: `python tools/build_byte_unit.py`
 
 ### Changed
 

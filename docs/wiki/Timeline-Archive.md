@@ -523,7 +523,7 @@ Files: `tools/diag_word_tokenizer_adversarial.py`, `tools/diag_word_tokenizer_ad
 - **Status:** Tokenizer V2 = validated champion (frozen at `output/word_tokenizer_champion/`, JSON vocab committed for public reproducibility). Embedder V1 and Nano Brain V1 = scaffolds (random init, forward-pass verified, awaiting training loop as the open next step).
 
 **Cluster 17 — Low-bit byte-unit activation-precision sweep (2026-04-19)** (PR [#137](https://github.com/VRAXION/VRAXION/pull/137), sweep commit `9dc368e`)
-Files: `tools/diag_byte_unit_champion_binary_freeze.py` (freeze script); sweep scripts in commit `9dc368e`; champion artifacts at `output/byte_unit_champion_binary_c19_h16/`.
+Files: `tools/build_byte_unit.py` (build/freeze script, renamed from `diag_byte_unit_champion_binary_freeze.py` on 2026-04-19); sweep scripts in commit `9dc368e`; champion artifacts at `output/byte_unit_champion_binary_c19_h16/`.
 - **Idea:** The Cluster 9 L0 Byte Unit champion (int4 C19 H=24) was validated and shipped, but the question remained: is it the smallest possible hidden width for 100% lossless byte reconstruction, or just the smallest found within the int4 C19 axis? Run an exhaustive (precision × activation × H) sweep to map the full Pareto frontier of minimum hidden width for exact lossless byte encoding.
 - **Methodology — four-stage pipeline per (precision, activation, H) cell:**
   1. **Float warmup:** train the mirror autoencoder in full float32 until the loss converges — this seeds the weight space near a good attractor before any quantization pressure is applied.
@@ -550,7 +550,7 @@ Files: `tools/diag_byte_unit_champion_binary_freeze.py` (freeze script); sweep s
   - Weight JSON: `output/byte_unit_champion_binary_c19_h16/model.json` — **6.5 KB** (26% smaller than the int4 champion at 8.9 KB).
   - Baked int8 LUT: same 4 KB raw as the int4 champion — LUT size is determined by the 256-entry × 16-dim output shape, not by the internal precision.
   - Hidden dim 16 vs 24 for the int4 champion.
-- **Reproduce:** `python tools/diag_byte_unit_champion_binary_freeze.py`
+- **Reproduce:** `python tools/build_byte_unit.py`
 - **Status:** Validated (alternative champion) — retained alongside the int4 C19 H=24 champion pending downstream SDK migration. The int4 champion (`tools/byte_unit_winner_int4.json`, `tools/byte_embedder_lut.h`) remains the proven production artifact. The binary C19 H=16 champion is the candidate for the next deploy surface once the SDK migration is ready.
 
 **L2 reconstruction merger — byte-roundtrip geometry probe** (commit `ed30073`)
