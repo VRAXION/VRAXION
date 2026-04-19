@@ -1,0 +1,2257 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>VRAXION — Legacy detail view</title>
+<meta name="description" content="VRAXION is a gradient-free substrate that self-wires its own graph. Inference emerges as the fixed point of destructive interference. v5.0.0-β.2 public beta.">
+<meta property="og:title" content="VRAXION · INSTNCT — Public Beta">
+<meta property="og:description" content="A gradient-free substrate that self-wires its own graph. v5.0.0-β.2 public beta.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://vraxion.github.io/VRAXION/">
+<link rel="canonical" href="https://vraxion.github.io/VRAXION/">
+<link rel="icon" href="./assets/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+<script>
+  window.__TWEAKS__ = /*EDITMODE-BEGIN*/{
+    "accent": "fuchsia",
+    "graphAnim": true
+  }/*EDITMODE-END*/;
+</script>
+
+<style>
+  :root {
+    --bg:        #0b0d14;
+    --bg-2:      #11141e;
+    --bg-3:      #0a0c12;
+    --bg-4:      #181c2a;
+    --border:    #1f2432;
+    --border-2:  #2a3044;
+
+    --ink:       #ecedf3;
+    --ink-2:     #b3b8c9;
+    --ink-3:     #767c92;
+    --ink-4:     #4a5068;
+    --ink-5:     #2f3448;
+
+    --cyan:      #56e0e0;
+    --purple:    #a07cf0;
+    --fuchsia:   #ff5aa8;
+    --jade:      #7fd89a;
+    --amber:     #e8c858;
+
+    --accent:    var(--fuchsia);
+
+    --font:      "Geist", ui-sans-serif, system-ui, sans-serif;
+    --font-mono: "Geist Mono", ui-monospace, "SF Mono", Menlo, monospace;
+
+    --nav-w: 240px;
+    --gutter: 56px;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: var(--bg); color: var(--ink); }
+  body {
+    font-family: var(--font);
+    font-size: 15px;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+  a { color: inherit; text-decoration: none; }
+  button { font-family: inherit; font-size: inherit; cursor: pointer; border: 0; background: none; color: inherit; }
+
+  /* =========================================================
+     LAYOUT: LEFT RAIL NAV + MAIN
+  ========================================================= */
+  .layout {
+    display: grid;
+    grid-template-columns: var(--nav-w) 1fr;
+    min-height: 100vh;
+  }
+
+  .rail {
+    position: sticky; top: 0;
+    height: 100vh;
+    border-right: 1px solid var(--border);
+    background:
+      linear-gradient(180deg, var(--bg-3), var(--bg));
+    padding: 28px 20px 24px;
+    display: flex; flex-direction: column;
+    z-index: 40;
+  }
+
+  .rail-brand {
+    display: flex; align-items: center; gap: 10px;
+    margin-bottom: 36px;
+  }
+  .rail-brand .mark {
+    width: 28px; height: 28px;
+    display: inline-grid; place-items: center;
+    flex-shrink: 0;
+  }
+  .rail-brand .name {
+    font-family: var(--font);
+    font-weight: 600;
+    font-size: 15px;
+    letter-spacing: 0.14em;
+    color: var(--ink);
+  }
+  .rail-brand .sub {
+    display: block;
+    font-family: var(--font-mono);
+    font-size: 9.5px;
+    letter-spacing: 0.2em;
+    color: var(--ink-4);
+    margin-top: 2px;
+    text-transform: uppercase;
+  }
+
+  .rail-tag {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--fuchsia);
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    padding: 6px 10px;
+    border: 1px solid color-mix(in oklab, var(--fuchsia) 40%, var(--border));
+    background: color-mix(in oklab, var(--fuchsia) 8%, transparent);
+    border-radius: 3px;
+    align-self: start;
+    margin-bottom: 28px;
+    display: inline-flex; align-items: center; gap: 8px;
+  }
+  .rail-tag .dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--fuchsia);
+    box-shadow: 0 0 8px var(--fuchsia);
+  }
+
+  .rail-label {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--ink-4);
+    margin-bottom: 12px;
+  }
+
+  .rail-nav { list-style: none; padding: 0; margin: 0 0 28px; display: flex; flex-direction: column; }
+  .rail-nav li { position: relative; }
+  .rail-nav a {
+    display: flex; align-items: center; gap: 12px;
+    padding: 9px 12px 9px 16px;
+    font-size: 13.5px;
+    color: var(--ink-3);
+    border-radius: 4px;
+    transition: color .15s, background .15s;
+    font-family: var(--font);
+  }
+  .rail-nav a:hover { color: var(--ink); background: var(--bg-2); }
+  .rail-nav a.active {
+    color: var(--ink);
+    background: var(--bg-2);
+  }
+  .rail-nav a.active::before {
+    content: "";
+    position: absolute; left: 0; top: 9px; bottom: 9px;
+    width: 2px;
+    background: var(--fuchsia);
+    border-radius: 2px;
+  }
+  .rail-nav .idx {
+    font-family: var(--font-mono);
+    font-size: 10.5px;
+    color: var(--ink-5);
+    letter-spacing: 0.08em;
+    width: 20px;
+    flex-shrink: 0;
+  }
+  .rail-nav a.active .idx { color: var(--fuchsia); }
+
+  .rail-foot { margin-top: auto; font-family: var(--font-mono); font-size: 11px; color: var(--ink-4); line-height: 1.7;}
+  .rail-foot .row { display: flex; justify-content: space-between; padding: 4px 0;}
+  .rail-foot .row .k { color: var(--ink-5);}
+  .rail-foot .row .v { color: var(--ink-3);}
+  .rail-foot .row .v.ok { color: var(--jade); }
+  .rail-foot .gh {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 12px;
+    margin-top: 14px;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    color: var(--ink-2);
+    font-size: 12px;
+    transition: border-color .15s, color .15s;
+  }
+  .rail-foot .gh:hover { border-color: var(--border-2); color: var(--ink); }
+  .rail-foot .gh .stars { margin-left: auto; color: var(--ink-3); font-family: var(--font-mono); font-size: 11px;}
+
+  /* =========================================================
+     MAIN
+  ========================================================= */
+  .main {
+    min-width: 0;
+    padding: 0 var(--gutter);
+    max-width: 1180px;
+  }
+
+  .section {
+    padding: 120px 0 56px;
+    position: relative;
+    scroll-margin-top: 20px;
+  }
+  .section + .section { border-top: 1px solid var(--border); }
+
+  .s-label {
+    display: inline-flex; align-items: center; gap: 10px;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--ink-4);
+    margin-bottom: 24px;
+  }
+  .s-label .num {
+    color: var(--fuchsia);
+    font-size: 10px;
+  }
+  .s-label .dot {
+    width: 4px; height: 4px; border-radius: 50%;
+    background: var(--ink-5);
+  }
+
+  h1, h2, h3, h4 { margin: 0; font-family: var(--font); font-weight: 500; }
+
+  /* =========================================================
+     HERO
+  ========================================================= */
+  .hero {
+    padding-top: 100px;
+    padding-bottom: 80px;
+    position: relative;
+    overflow: hidden;
+  }
+  .hero::after {
+    content: "";
+    position: absolute; inset: 0;
+    background:
+      radial-gradient(ellipse 45% 50% at 80% 40%, color-mix(in oklab, var(--fuchsia) 14%, transparent), transparent 70%),
+      radial-gradient(ellipse 30% 35% at 20% 70%, color-mix(in oklab, var(--cyan) 8%, transparent), transparent 70%);
+    pointer-events: none;
+    z-index: 0;
+  }
+  .hero > * { position: relative; z-index: 1; }
+
+  .hero-grid {
+    display: grid;
+    grid-template-columns: 1.05fr 1fr;
+    gap: 40px;
+    align-items: center;
+  }
+
+  .hero-eyebrow {
+    display: inline-flex; align-items: center; gap: 10px;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+    padding: 6px 12px;
+    border: 1px solid var(--border);
+    border-radius: 99px;
+    margin-bottom: 32px;
+  }
+  .hero-eyebrow .dot {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: var(--fuchsia);
+    box-shadow: 0 0 8px var(--fuchsia);
+    animation: pulse 2.4s ease-in-out infinite;
+  }
+  @keyframes pulse { 0%,100%{opacity:1;} 50%{opacity:0.35;} }
+
+  .hero h1 {
+    font-size: clamp(48px, 6.4vw, 92px);
+    line-height: 0.98;
+    letter-spacing: -0.035em;
+    font-weight: 500;
+    color: var(--ink);
+    text-wrap: balance;
+    margin: 0 0 28px;
+  }
+  .hero h1 em {
+    font-style: italic;
+    font-weight: 500;
+    color: var(--fuchsia);
+  }
+  .hero h1 .cy { color: var(--cyan); font-style: italic; font-weight: 500; }
+
+  .hero-sub {
+    font-size: 18px;
+    color: var(--ink-2);
+    max-width: 46ch;
+    line-height: 1.55;
+    margin: 0 0 36px;
+  }
+  .hero-sub b { color: var(--ink); font-weight: 500;}
+
+  .hero-ctas { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+  .btn {
+    display: inline-flex; align-items: center; gap: 10px;
+    padding: 13px 22px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    transition: transform .08s, background .15s, border-color .15s, color .15s;
+  }
+  .btn:active { transform: translateY(1px); }
+  .btn-primary {
+    background: var(--fuchsia);
+    color: #190914;
+    border: 1px solid var(--fuchsia);
+    box-shadow: 0 10px 24px -10px color-mix(in oklab, var(--fuchsia) 60%, transparent);
+  }
+  .btn-primary:hover { background: color-mix(in oklab, var(--fuchsia) 85%, white); }
+  .btn-ghost {
+    border: 1px solid var(--border-2);
+    color: var(--ink);
+    background: var(--bg-2);
+  }
+  .btn-ghost:hover { border-color: var(--ink-3); }
+  .btn .arrow { transition: transform .15s; }
+  .btn:hover .arrow { transform: translateX(3px); }
+  .btn .kbd {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    background: rgba(0,0,0,0.18);
+    color: currentColor;
+    opacity: 0.7;
+  }
+  .btn-ghost .kbd {
+    background: var(--bg-3);
+    border: 1px solid var(--border);
+    opacity: 1;
+    color: var(--ink-3);
+  }
+
+  .hero-meta {
+    margin-top: 44px;
+    padding-top: 28px;
+    border-top: 1px solid var(--border);
+    display: flex; gap: 40px; flex-wrap: wrap;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--ink-3);
+  }
+  .hero-meta .k { color: var(--ink-5); margin-right: 8px; font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase;}
+  .hero-meta .v { color: var(--ink); font-weight: 500; }
+  .hero-meta .v.fu { color: var(--fuchsia);}
+  .hero-meta .v.cy { color: var(--cyan);}
+
+  /* Hero graphic */
+  .hero-viz {
+    aspect-ratio: 1 / 1;
+    width: 100%;
+    border-radius: 18px;
+    border: 1px solid var(--border);
+    background:
+      radial-gradient(ellipse at center, color-mix(in oklab, var(--fuchsia) 8%, transparent), transparent 70%),
+      linear-gradient(180deg, var(--bg-2), var(--bg-3));
+    position: relative;
+    overflow: hidden;
+  }
+  .hero-viz .gridbg {
+    position: absolute; inset: 0;
+    background-image:
+      linear-gradient(to right, rgba(255,255,255,0.025) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(255,255,255,0.025) 1px, transparent 1px);
+    background-size: 28px 28px;
+    mask-image: radial-gradient(ellipse at center, black 30%, transparent 75%);
+  }
+  .hero-viz svg { width: 100%; height: 100%; position: relative; z-index: 2;}
+  .hero-viz .corner {
+    position: absolute;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--ink-4);
+    z-index: 3;
+  }
+  .hero-viz .c-tl { top: 18px; left: 20px;}
+  .hero-viz .c-tr { top: 18px; right: 20px; color: var(--fuchsia);}
+  .hero-viz .c-bl { bottom: 18px; left: 20px;}
+  .hero-viz .c-br { bottom: 18px; right: 20px; color: var(--cyan);}
+
+  /* =========================================================
+     LOGO / PROOF STRIP
+  ========================================================= */
+  .strip {
+    padding: 40px 0;
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0;
+  }
+  .stat { padding: 0 24px; border-right: 1px solid var(--border);}
+  .stat:last-child { border-right: 0;}
+  .stat .v {
+    font-family: var(--font);
+    font-weight: 500;
+    font-size: 32px;
+    letter-spacing: -0.025em;
+    color: var(--ink);
+    line-height: 1;
+    margin-bottom: 8px;
+  }
+  .stat .v em { color: var(--fuchsia); font-style: italic; font-weight: 500;}
+  .stat .v .u { color: var(--ink-3); font-size: 16px; margin-left: 3px;}
+  .stat .k {
+    font-family: var(--font-mono);
+    font-size: 10.5px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--ink-4);
+  }
+
+  /* =========================================================
+     HEADLINES + VIZ BLOCKS (shared patterns)
+  ========================================================= */
+  .h2 {
+    font-size: clamp(34px, 4vw, 52px);
+    line-height: 1.05;
+    letter-spacing: -0.03em;
+    font-weight: 500;
+    color: var(--ink);
+    max-width: 22ch;
+    text-wrap: balance;
+    margin: 0 0 24px;
+  }
+  .h2 em { color: var(--fuchsia); font-style: italic; font-weight: 500;}
+  .h2 .cy { color: var(--cyan); font-style: italic; font-weight: 500;}
+
+  .sub {
+    font-size: 16.5px;
+    color: var(--ink-2);
+    max-width: 56ch;
+    line-height: 1.6;
+    margin-bottom: 48px;
+  }
+
+  /* =========================================================
+     THESIS — 4 STAGE CARDS (graphic-heavy)
+  ========================================================= */
+  .stages {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+  }
+  .stage {
+    background: var(--bg-2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 22px 22px 24px;
+    position: relative;
+    transition: border-color .2s, transform .2s;
+  }
+  .stage:hover { border-color: var(--border-2); transform: translateY(-2px); }
+  .stage-viz {
+    aspect-ratio: 1.2 / 1;
+    background: var(--bg-3);
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    margin-bottom: 20px;
+    overflow: hidden;
+    position: relative;
+  }
+  .stage-viz svg { width: 100%; height: 100%; display: block;}
+  .stage-n {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--ink-4);
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+  .stage h3 {
+    font-size: 18px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    margin: 0 0 8px;
+  }
+  .stage p {
+    margin: 0;
+    font-size: 13.5px;
+    color: var(--ink-3);
+    line-height: 1.55;
+  }
+  .stage.hi {
+    border-color: color-mix(in oklab, var(--fuchsia) 40%, var(--border));
+    background: color-mix(in oklab, var(--fuchsia) 4%, var(--bg-2));
+  }
+  .stage.hi h3 { color: var(--fuchsia);}
+
+  /* =========================================================
+     SPLIT: graphic + headline
+  ========================================================= */
+  .split {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 48px;
+    align-items: center;
+  }
+  .split.rev { grid-template-columns: 1fr 1fr;}
+  .split.rev .panel-a { order: 2;}
+
+  .viz-panel {
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    background: linear-gradient(180deg, var(--bg-2), var(--bg-3));
+    aspect-ratio: 1 / 1;
+    position: relative;
+    overflow: hidden;
+    padding: 24px;
+  }
+  .viz-panel .corner {
+    position: absolute;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--ink-4);
+    z-index: 3;
+  }
+  .viz-panel .c-tl { top: 16px; left: 18px;}
+  .viz-panel .c-tr { top: 16px; right: 18px; color: var(--cyan);}
+  .viz-panel .c-bl { bottom: 16px; left: 18px; color: var(--ink-4);}
+  .viz-panel .c-br { bottom: 16px; right: 18px; color: var(--fuchsia);}
+  .viz-panel svg { width: 100%; height: 100%; display: block; position: relative; z-index: 1;}
+
+  .bullets {
+    list-style: none; padding: 0; margin: 32px 0 0;
+    display: flex; flex-direction: column; gap: 14px;
+  }
+  .bullets li {
+    display: flex; align-items: start; gap: 14px;
+    font-size: 14px;
+    color: var(--ink-2);
+    line-height: 1.55;
+  }
+  .bullets .mk {
+    width: 22px; height: 22px;
+    flex-shrink: 0;
+    border-radius: 50%;
+    background: color-mix(in oklab, var(--fuchsia) 18%, transparent);
+    color: var(--fuchsia);
+    display: grid; place-items: center;
+    font-size: 12px;
+    font-weight: 700;
+    margin-top: 1px;
+    border: 1px solid color-mix(in oklab, var(--fuchsia) 40%, var(--border));
+  }
+  .bullets b { color: var(--ink); font-weight: 500; }
+
+  /* =========================================================
+     GROWTH TIMELINE
+  ========================================================= */
+  .growth {
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    overflow: hidden;
+    background: var(--bg-2);
+  }
+  .growth-head {
+    padding: 18px 24px;
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+    background: var(--bg-3);
+  }
+  .growth-head h4 {
+    font-size: 14px; font-weight: 500; letter-spacing: -0.01em;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .growth-head h4 .dot {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: var(--fuchsia);
+    box-shadow: 0 0 8px var(--fuchsia);
+  }
+  .growth-head .meta {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--ink-3);
+    letter-spacing: 0.1em;
+  }
+  .growth-body { padding: 32px 24px 24px; }
+  .growth-svg { width: 100%; height: 320px; display: block; }
+  .growth-foot {
+    padding: 16px 24px;
+    border-top: 1px solid var(--border);
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 24px;
+    font-family: var(--font-mono);
+    font-size: 11.5px;
+    background: var(--bg-3);
+  }
+  .growth-foot .cell .k { color: var(--ink-4); font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; display: block; margin-bottom: 4px;}
+  .growth-foot .cell .v { color: var(--ink); font-weight: 500; font-size: 14px; font-family: var(--font); letter-spacing: -0.005em; }
+  .growth-foot .cell .v.fu { color: var(--fuchsia); }
+  .growth-foot .cell .v.cy { color: var(--cyan); }
+
+  /* =========================================================
+     QUANT CHAMPION BAR
+  ========================================================= */
+  .quant {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+  }
+  .qcard {
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px 22px 22px;
+    background: var(--bg-2);
+    position: relative;
+  }
+  .qcard.champ {
+    border-color: color-mix(in oklab, var(--cyan) 40%, var(--border));
+    background: linear-gradient(180deg, color-mix(in oklab, var(--cyan) 4%, var(--bg-2)), var(--bg-2));
+  }
+  .qcard.champ::before {
+    content: "CHAMPION";
+    position: absolute; top: 0; right: 18px;
+    transform: translateY(-50%);
+    background: var(--bg);
+    color: var(--cyan);
+    border: 1px solid color-mix(in oklab, var(--cyan) 45%, var(--border));
+    font-family: var(--font-mono);
+    font-size: 9.5px;
+    letter-spacing: 0.18em;
+    padding: 2px 10px;
+    border-radius: 3px;
+  }
+  .qcard .q-tag {
+    font-family: var(--font-mono);
+    font-size: 10.5px;
+    letter-spacing: 0.14em;
+    color: var(--ink-4);
+    text-transform: uppercase;
+    margin-bottom: 12px;
+  }
+  .qcard h4 { font-size: 17px; font-weight: 600; margin: 0 0 6px;}
+  .qcard .desc { font-size: 13px; color: var(--ink-3); margin: 0 0 20px; line-height: 1.55; min-height: 42px;}
+  .qcard .big {
+    font-size: 40px;
+    font-weight: 500;
+    letter-spacing: -0.03em;
+    color: var(--ink);
+    line-height: 1;
+    margin-bottom: 4px;
+  }
+  .qcard.champ .big { color: var(--cyan);}
+  .qcard .big .u { color: var(--ink-3); font-size: 18px; margin-left: 2px;}
+  .qcard .delta {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--jade);
+    letter-spacing: 0.04em;
+    margin-bottom: 18px;
+  }
+  .qcard .delta.neg { color: var(--ink-3); }
+  .qcard .bar {
+    height: 8px;
+    background: var(--bg-3);
+    border-radius: 999px;
+    overflow: hidden;
+    margin-bottom: 14px;
+  }
+  .qcard .bar .fill {
+    height: 100%;
+    border-radius: 999px;
+    background: linear-gradient(90deg, var(--cyan), color-mix(in oklab, var(--cyan) 60%, white));
+    transform-origin: left;
+    animation: grow 1.2s cubic-bezier(.2,.7,.2,1) both;
+  }
+  .qcard:not(.champ) .bar .fill { background: var(--border-2); }
+  @keyframes grow { from { transform: scaleX(0);} }
+  .qcard .footrow {
+    display: flex; gap: 14px; flex-wrap: wrap;
+    padding-top: 14px; border-top: 1px dashed var(--border-2);
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--ink-3);
+  }
+  .qcard .footrow b { color: var(--ink); font-weight: 500;}
+
+  /* =========================================================
+     GATES (two cards)
+  ========================================================= */
+  .gates {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+  .gate {
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 28px 28px 24px;
+    background: var(--bg-2);
+    position: relative;
+  }
+  .gate-head {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 20px;
+  }
+  .gate-id {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    letter-spacing: 0.18em;
+    color: var(--ink-4);
+  }
+  .gate-pill {
+    font-family: var(--font-mono);
+    font-size: 10.5px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    padding: 5px 10px;
+    border-radius: 99px;
+    border: 1px solid var(--border);
+    color: var(--ink-3);
+    display: inline-flex; align-items: center; gap: 6px;
+  }
+  .gate-pill.pass { color: var(--jade); border-color: color-mix(in oklab, var(--jade) 40%, var(--border)); background: color-mix(in oklab, var(--jade) 6%, transparent);}
+  .gate-pill.pending { color: var(--amber); border-color: color-mix(in oklab, var(--amber) 40%, var(--border)); background: color-mix(in oklab, var(--amber) 6%, transparent);}
+  .gate-pill::before {
+    content: ""; width: 6px; height: 6px; border-radius: 50%;
+    background: currentColor; box-shadow: 0 0 6px currentColor;
+  }
+  .gate h3 {
+    font-size: 26px;
+    font-weight: 500;
+    letter-spacing: -0.025em;
+    margin: 0 0 14px;
+  }
+  .gate > p {
+    font-size: 14px; color: var(--ink-3); margin: 0 0 20px; line-height: 1.6;
+  }
+  .gate-viz {
+    aspect-ratio: 2 / 1;
+    margin-bottom: 20px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--bg-3);
+    overflow: hidden;
+  }
+  .gate-viz svg { width: 100%; height: 100%; display: block;}
+  .gate code {
+    display: inline-block;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    padding: 3px 8px;
+    background: var(--bg-3);
+    color: var(--cyan);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+  }
+
+  /* =========================================================
+     BETA CTA
+  ========================================================= */
+  .cta {
+    position: relative;
+    padding: 72px 48px 76px;
+    border-radius: 20px;
+    background:
+      radial-gradient(ellipse at 82% 20%, color-mix(in oklab, var(--fuchsia) 18%, transparent), transparent 60%),
+      linear-gradient(180deg, var(--bg-2), var(--bg-3));
+    border: 1px solid var(--border-2);
+    overflow: hidden;
+  }
+  .cta-grid {
+    display: grid; grid-template-columns: 1.3fr 1fr; gap: 48px; align-items: center;
+    position: relative; z-index: 2;
+  }
+  .cta h2 {
+    font-size: clamp(34px, 3.6vw, 48px);
+    font-weight: 500; letter-spacing: -0.03em; line-height: 1.05;
+    margin: 0 0 16px;
+    max-width: 18ch;
+    text-wrap: balance;
+  }
+  .cta h2 em { color: var(--fuchsia); font-style: italic; font-weight: 500;}
+  .cta p { font-size: 16px; color: var(--ink-2); line-height: 1.6; margin: 0 0 28px; max-width: 48ch;}
+  .cta-viz { position: relative; z-index: 1; }
+  .cta-viz svg { width: 100%; display: block; aspect-ratio: 1 / 1; }
+
+  /* =========================================================
+     FOOTER
+  ========================================================= */
+  .footer {
+    padding: 56px 0 40px;
+    margin-top: 120px;
+    border-top: 1px solid var(--border);
+    color: var(--ink-3);
+    font-family: var(--font-mono);
+    font-size: 12px;
+  }
+  .footer .row { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 16px;}
+  .footer a:hover { color: var(--ink); }
+
+  /* =========================================================
+     TWEAKS PANEL
+  ========================================================= */
+  .tweaks {
+    position: fixed; bottom: 18px; right: 18px; z-index: 100;
+    width: 260px;
+    background: var(--bg-2);
+    border: 1px solid var(--border-2);
+    border-radius: 10px;
+    font-family: var(--font-mono);
+    box-shadow: 0 18px 50px rgba(0,0,0,0.55);
+    display: none;
+  }
+  .tweaks.open { display: block; }
+  .tweaks-head {
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border);
+    display: flex; justify-content: space-between; align-items: center;
+    background: var(--bg-3);
+  }
+  .tweaks-head .t { font-size: 10.5px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--ink-2); font-weight: 600;}
+  .tweaks-body { padding: 14px; display: flex; flex-direction: column; gap: 14px; }
+  .tweak-row label {
+    display: block;
+    font-size: 9.5px; letter-spacing: 0.16em; text-transform: uppercase;
+    color: var(--ink-4); margin-bottom: 8px;
+  }
+  .tweak-swatches { display: flex; gap: 6px; }
+  .tweak-swatch {
+    width: 26px; height: 26px; border-radius: 6px; cursor: pointer;
+    border: 1px solid var(--border-2);
+    transition: transform .1s;
+  }
+  .tweak-swatch:hover { transform: scale(1.07);}
+  .tweak-swatch.active { box-shadow: 0 0 0 2px var(--ink); }
+  .tweak-toggle { display: flex; align-items: center; justify-content: space-between; color: var(--ink-2); font-size: 12px;}
+  .sw-tog {
+    width: 34px; height: 18px; background: var(--border-2); border-radius: 10px;
+    position: relative; cursor: pointer; transition: background .15s;
+  }
+  .sw-tog::after {
+    content: ""; position: absolute; top: 2px; left: 2px;
+    width: 14px; height: 14px; background: var(--ink-2); border-radius: 50%;
+    transition: left .15s, background .15s;
+  }
+  .sw-tog.on { background: var(--fuchsia); }
+  .sw-tog.on::after { left: 18px; background: #15091a; }
+
+  /* =========================================================
+     RESPONSIVE
+  ========================================================= */
+  @media (max-width: 1200px) {
+    :root { --nav-w: 210px; --gutter: 36px; }
+  }
+  @media (max-width: 980px) {
+    :root { --nav-w: 180px; --gutter: 28px; }
+    .rail { padding: 20px 14px; }
+    .rail-nav a { font-size: 12.5px; padding: 8px 10px 8px 14px;}
+    .rail-nav .idx { width: 18px; font-size: 10px;}
+    .rail-brand .name { font-size: 13px;}
+  }
+  @media (max-width: 760px) {
+    .layout { grid-template-columns: 1fr; }
+    .rail {
+      position: relative; height: auto;
+      border-right: 0; border-bottom: 1px solid var(--border);
+      padding: 18px 24px;
+    }
+    .rail-nav { flex-direction: row; flex-wrap: wrap; gap: 4px; margin-bottom: 0;}
+    .rail-nav a { padding: 7px 10px; font-size: 12px;}
+    .rail-nav a.active::before { display: none;}
+    .rail-nav .idx { display: none;}
+    .rail-foot, .rail-tag, .rail-label { display: none; }
+    .rail-brand { margin-bottom: 16px;}
+    .hero-grid, .split { grid-template-columns: 1fr; gap: 32px; }
+    .strip { grid-template-columns: 1fr 1fr; }
+    .stat:nth-child(2n) { border-right: 0;}
+    .stages { grid-template-columns: 1fr 1fr; }
+    .gates { grid-template-columns: 1fr; }
+    .quant { grid-template-columns: 1fr; }
+    .cta-grid { grid-template-columns: 1fr; }
+    .main { padding: 0 24px; }
+    .section { padding: 80px 0 48px;}
+    .hero { padding-top: 56px;}
+  }
+  @media (max-width: 540px) {
+    .stages { grid-template-columns: 1fr; }
+    .strip { grid-template-columns: 1fr; }
+    .stat { border-right: 0; border-bottom: 1px solid var(--border); padding: 16px 0;}
+    .growth-foot { grid-template-columns: 1fr 1fr; }
+    .cta { padding: 44px 24px; }
+  }
+</style>
+</head>
+<body data-screen-label="Vraxion Beta Landing">
+
+<div style="position:sticky;top:0;z-index:100;background:#0a0c12;border-bottom:1px solid #1f2432;padding:10px 24px;display:flex;align-items:center;gap:16px;font-family:'Geist Mono',monospace;font-size:12px;color:#767c92;">
+  <span style="background:color-mix(in oklab,#e8c858 12%,transparent);color:#e8c858;border:1px solid color-mix(in oklab,#e8c858 40%,#1f2432);border-radius:4px;padding:2px 10px;font-size:10px;letter-spacing:.14em;">LEGACY VIEW</span>
+  <span>This is the original detailed page. The new homepage is at:</span>
+  <a href="./" style="color:#56e0e0;text-decoration:underline;text-underline-offset:3px;">← vraxion.github.io/VRAXION/</a>
+</div>
+
+<div class="layout">
+
+  <!-- ============ LEFT RAIL ============ -->
+  <aside class="rail" id="rail">
+    <div class="rail-brand">
+      <span class="mark" aria-hidden="true">
+        <svg viewBox="0 0 28 28" width="28" height="28">
+          <path d="M3 5 L14 24 L25 5" fill="none" stroke="#ecedf3" stroke-width="2" stroke-linecap="square" stroke-linejoin="miter"/>
+          <path d="M7 5 L14 18 L21 5" fill="none" stroke="#ff5aa8" stroke-width="1.2" stroke-linecap="square" stroke-linejoin="miter" opacity="0.85"/>
+          <circle cx="14" cy="24" r="2.6" fill="#56e0e0"/>
+        </svg>
+      </span>
+      <div>
+        <span class="name">VRAXION</span>
+        <span class="sub">INSTNCT · β.1</span>
+      </div>
+    </div>
+
+    <span class="rail-tag"><span class="dot"></span>Public beta</span>
+
+    <div class="rail-label">Navigate</div>
+    <ul class="rail-nav" id="rail-nav">
+      <li><a href="#hero"      class="active"><span class="idx">00</span>Intro</a></li>
+      <li><a href="#blocks"><span class="idx">01</span>Building blocks</a></li>
+      <li><a href="#thesis"><span class="idx">02</span>Thesis</a></li>
+      <li><a href="#grower"><span class="idx">03</span>Grower</a></li>
+      <li><a href="#quant"><span class="idx">04</span>Quantization</a></li>
+      <li><a href="#findings"><span class="idx">05</span>Findings</a></li>
+      <li><a href="#playground"><span class="idx">05b</span>Playground</a></li>
+      <li><a href="#gates"><span class="idx">06</span>Beta gates</a></li>
+      <li><a href="#cta"><span class="idx">07</span>Get the beta</a></li>
+    </ul>
+
+    <div class="rail-foot">
+      <div class="row"><span class="k">version</span><span class="v">v5.0.0-β.2</span></div>
+      <div class="row"><span class="k">mainline</span><span class="v ok">● green</span></div>
+      <div class="row"><span class="k">license</span><span class="v">Apache 2.0 NC</span></div>
+
+      <a class="gh" href="https://github.com/VRAXION/VRAXION" target="_blank" rel="noopener">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.012 8.012 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+        github<span class="stars">★ 2</span>
+      </a>
+    </div>
+  </aside>
+
+  <!-- ============ MAIN ============ -->
+  <main class="main">
+
+    <!-- HERO -->
+    <section class="hero section" id="hero">
+      <div class="hero-grid">
+        <div>
+          <span class="hero-eyebrow"><span class="dot"></span>v5.0.0-β.2 · Public beta · Block A done</span>
+          <h1>The network <em>grows itself.</em></h1>
+          <p class="hero-sub">
+            VRAXION is a <b>gradient-free substrate</b> that self-wires its own graph.
+            Inference emerges as the fixed point of destructive interference.
+          </p>
+          <div class="hero-ctas">
+            <a href="https://github.com/VRAXION/VRAXION" class="btn btn-primary" target="_blank" rel="noopener">
+              Clone on GitHub <span class="arrow">→</span>
+            </a>
+            <a href="#thesis" class="btn btn-ghost">
+              See the thesis <span class="kbd">↓</span>
+            </a>
+          </div>
+          <div class="hero-meta">
+            <div><span class="k">peak</span><span class="v fu">24.6%</span></div>
+            <div><span class="k">tests</span><span class="v">175 ✓</span></div>
+            <div><span class="k">unsafe</span><span class="v cy">0</span></div>
+            <div><span class="k">shipped</span><span class="v">Apr 2026</span></div>
+          </div>
+        </div>
+
+        <!-- HERO VIZ: living HAL-eye substrate -->
+        <div class="hero-viz" id="hero-eye-wrap">
+          <div class="gridbg"></div>
+          <span class="corner c-tl">substrate ● active</span>
+          <span class="corner c-tr">vraxion.instnct</span>
+          <span class="corner c-bl">↓ signal in</span>
+          <span class="corner c-br">● read-out</span>
+          <svg id="hero-eye" viewBox="0 0 400 400" preserveAspectRatio="xMidYMid meet" style="overflow:visible">
+            <defs>
+              <radialGradient id="eyeHalo" cx="50%" cy="50%" r="50%">
+                <stop offset="50%"  stop-color="#ff5aa8" stop-opacity="0"/>
+                <stop offset="80%"  stop-color="#ff5aa8" stop-opacity="0.14"/>
+                <stop offset="100%" stop-color="#ff5aa8" stop-opacity="0"/>
+              </radialGradient>
+              <radialGradient id="eyeBody" cx="50%" cy="42%" r="58%">
+                <stop offset="0%"   stop-color="#0a0005"/>
+                <stop offset="70%"  stop-color="#050002"/>
+                <stop offset="100%" stop-color="#000000"/>
+              </radialGradient>
+              <radialGradient id="eyeIris" cx="50%" cy="50%" r="55%">
+                <stop offset="0%"   stop-color="#ff5aa8" stop-opacity="1"/>
+                <stop offset="55%"  stop-color="#ff5aa8" stop-opacity="0.55"/>
+                <stop offset="100%" stop-color="#ff5aa8" stop-opacity="0"/>
+              </radialGradient>
+              <radialGradient id="eyeRim" cx="50%" cy="50%" r="50%">
+                <stop offset="86%" stop-color="#ff5aa8" stop-opacity="0"/>
+                <stop offset="95%" stop-color="#ff5aa8" stop-opacity="0.55"/>
+                <stop offset="100%" stop-color="#ff5aa8" stop-opacity="0"/>
+              </radialGradient>
+              <clipPath id="eyeClip"><circle cx="200" cy="200" r="168"/></clipPath>
+            </defs>
+
+            <!-- external halo -->
+            <circle cx="200" cy="200" r="220" fill="url(#eyeHalo)"/>
+
+            <!-- orbiting particles in the halo (signal around the body) -->
+            <g id="eyeOrbitals" opacity="0.85"></g>
+
+            <!-- outer accent wire -->
+            <circle cx="200" cy="200" r="180" fill="none" stroke="#ff5aa8" stroke-width="1" opacity="0.28"/>
+            <circle cx="200" cy="200" r="174" fill="none" stroke="#ff5aa8" stroke-width="0.6" opacity="0.45"/>
+
+            <!-- body -->
+            <circle cx="200" cy="200" r="172" fill="url(#eyeBody)"/>
+
+            <g clip-path="url(#eyeClip)">
+              <!-- inner rim glow -->
+              <circle cx="200" cy="200" r="168" fill="url(#eyeRim)"/>
+
+              <!-- pupil/iris group (JS animates transform + morph) -->
+              <g id="eyePupilGroup">
+                <circle id="eyeIrisHalo" cx="200" cy="200" r="96" fill="url(#eyeIris)" opacity="0.55"/>
+                <circle id="eyeIrisInner" cx="200" cy="200" r="72" fill="#ff5aa8" opacity="0.22"/>
+                <path id="eyePupil" d="" fill="#ff5aa8" stroke="#ff5aa8" stroke-width="2.4" stroke-linejoin="round"/>
+              </g>
+
+              <!-- catchlight -->
+              <ellipse cx="160" cy="136" rx="26" ry="11" fill="#ffffff" opacity="0.28"/>
+              <ellipse cx="152" cy="132" rx="10" ry="5" fill="#ffffff" opacity="0.75"/>
+
+              <!-- blink lids -->
+              <rect id="eyeLidTop" x="0" y="0" width="400" height="0" fill="#000"/>
+              <rect id="eyeLidBot" x="0" y="400" width="400" height="0" fill="#000"/>
+            </g>
+
+            <!-- crisp bezel -->
+            <circle cx="200" cy="200" r="172" fill="none" stroke="#000" strokeWidth="1.2"/>
+            <circle cx="200" cy="200" r="173" fill="none" stroke="#ff5aa8" stroke-width="0.6" opacity="0.55"/>
+
+            <!-- label -->
+            <text x="200" y="386" text-anchor="middle" fill="#767c92" font-family="Geist Mono, monospace" font-size="10" letter-spacing="2">INSTNCT · LIVE SUBSTRATE</text>
+          </svg>
+        </div>
+
+        <!-- original interference viz hidden / removed -->
+        <svg viewBox="0 0 400 400" preserveAspectRatio="xMidYMid meet" style="display:none">
+            <defs>
+              <radialGradient id="ringFu" cx="50%" cy="50%" r="50%">
+                <stop offset="0%"   stop-color="#ff5aa8" stop-opacity="0"/>
+                <stop offset="55%"  stop-color="#ff5aa8" stop-opacity="0"/>
+                <stop offset="56%"  stop-color="#ff5aa8" stop-opacity="0.9"/>
+                <stop offset="60%"  stop-color="#ff5aa8" stop-opacity="0"/>
+              </radialGradient>
+              <radialGradient id="ringCy" cx="50%" cy="50%" r="50%">
+                <stop offset="0%"   stop-color="#56e0e0" stop-opacity="0"/>
+                <stop offset="55%"  stop-color="#56e0e0" stop-opacity="0"/>
+                <stop offset="56%"  stop-color="#56e0e0" stop-opacity="0.9"/>
+                <stop offset="60%"  stop-color="#56e0e0" stop-opacity="0"/>
+              </radialGradient>
+              <radialGradient id="core" cx="50%" cy="50%" r="50%">
+                <stop offset="0%"  stop-color="#ff5aa8" stop-opacity="0.9"/>
+                <stop offset="40%" stop-color="#ff5aa8" stop-opacity="0.2"/>
+                <stop offset="100%" stop-color="#ff5aa8" stop-opacity="0"/>
+              </radialGradient>
+            </defs>
+
+            <!-- expanding wave rings from source A -->
+            <g transform="translate(140 160)">
+              <circle cx="0" cy="0" r="30" fill="none" stroke="#ff5aa8" stroke-width="1.1" opacity="0.7">
+                <animate attributeName="r" values="10;130;10" dur="4.2s" repeatCount="indefinite"/>
+                <animate attributeName="opacity" values="0;0.7;0" dur="4.2s" repeatCount="indefinite"/>
+              </circle>
+              <circle cx="0" cy="0" r="50" fill="none" stroke="#ff5aa8" stroke-width="1.1" opacity="0.5">
+                <animate attributeName="r" values="10;130;10" dur="4.2s" begin="1.05s" repeatCount="indefinite"/>
+                <animate attributeName="opacity" values="0;0.5;0" dur="4.2s" begin="1.05s" repeatCount="indefinite"/>
+              </circle>
+              <circle cx="0" cy="0" r="70" fill="none" stroke="#ff5aa8" stroke-width="1.1" opacity="0.35">
+                <animate attributeName="r" values="10;130;10" dur="4.2s" begin="2.1s" repeatCount="indefinite"/>
+                <animate attributeName="opacity" values="0;0.4;0" dur="4.2s" begin="2.1s" repeatCount="indefinite"/>
+              </circle>
+            </g>
+            <!-- expanding wave rings from source B -->
+            <g transform="translate(260 240)">
+              <circle cx="0" cy="0" r="30" fill="none" stroke="#56e0e0" stroke-width="1.1" opacity="0.7">
+                <animate attributeName="r" values="10;130;10" dur="4.2s" begin="0.5s" repeatCount="indefinite"/>
+                <animate attributeName="opacity" values="0;0.7;0" dur="4.2s" begin="0.5s" repeatCount="indefinite"/>
+              </circle>
+              <circle cx="0" cy="0" r="50" fill="none" stroke="#56e0e0" stroke-width="1.1" opacity="0.5">
+                <animate attributeName="r" values="10;130;10" dur="4.2s" begin="1.55s" repeatCount="indefinite"/>
+                <animate attributeName="opacity" values="0;0.5;0" dur="4.2s" begin="1.55s" repeatCount="indefinite"/>
+              </circle>
+              <circle cx="0" cy="0" r="70" fill="none" stroke="#56e0e0" stroke-width="1.1" opacity="0.35">
+                <animate attributeName="r" values="10;130;10" dur="4.2s" begin="2.6s" repeatCount="indefinite"/>
+                <animate attributeName="opacity" values="0;0.4;0" dur="4.2s" begin="2.6s" repeatCount="indefinite"/>
+              </circle>
+            </g>
+
+            <!-- fixed-point node that pulses -->
+            <g transform="translate(200 200)">
+              <circle r="48" fill="url(#core)"/>
+              <circle r="12" fill="#ff5aa8">
+                <animate attributeName="r" values="10;14;10" dur="2s" repeatCount="indefinite"/>
+              </circle>
+              <circle r="22" fill="none" stroke="#ff5aa8" stroke-width="1" opacity="0.5">
+                <animate attributeName="r" values="16;36;16" dur="2s" repeatCount="indefinite"/>
+                <animate attributeName="opacity" values="0.7;0;0.7" dur="2s" repeatCount="indefinite"/>
+              </circle>
+            </g>
+
+            <!-- source A node -->
+            <g transform="translate(140 160)">
+              <circle r="6" fill="#ff5aa8"/>
+              <circle r="10" fill="none" stroke="#ff5aa8" stroke-width="1" opacity="0.6"/>
+            </g>
+            <!-- source B node -->
+            <g transform="translate(260 240)">
+              <circle r="6" fill="#56e0e0"/>
+              <circle r="10" fill="none" stroke="#56e0e0" stroke-width="1" opacity="0.6"/>
+            </g>
+
+            <!-- crosshair guides on fixed point -->
+            <line x1="200" y1="80" x2="200" y2="320" stroke="#ecedf3" stroke-width="0.5" stroke-dasharray="2 4" opacity="0.2"/>
+            <line x1="80" y1="200" x2="320" y2="200" stroke="#ecedf3" stroke-width="0.5" stroke-dasharray="2 4" opacity="0.2"/>
+
+            <!-- text annotation -->
+            <text x="200" y="360" text-anchor="middle" fill="#767c92" font-family="Geist Mono, monospace" font-size="10" letter-spacing="2">FIXED-POINT ATTRACTOR</text>
+          </svg>
+        </div>
+      </div>
+    </section>
+
+    <!-- PROOF STRIP -->
+    <section class="strip">
+      <div class="stat">
+        <div class="v"><em>24.6</em><span class="u">%</span></div>
+        <div class="k">peak next-char · english</div>
+      </div>
+      <div class="stat">
+        <div class="v">0<span class="u"> bp</span></div>
+        <div class="k">gradient steps in substrate</div>
+      </div>
+      <div class="stat">
+        <div class="v">83<span class="u"> edges</span></div>
+        <div class="k">empty-start · beats 3 400</div>
+      </div>
+      <div class="stat">
+        <div class="v">175<span class="u"> ✓</span></div>
+        <div class="k">tests · zero unsafe Rust</div>
+      </div>
+    </section>
+
+
+    <!-- ============ BUILDING BLOCKS — pipeline status ============ -->
+    <section class="section" id="blocks">
+      <div class="s-label"><span class="num">§ 01</span><span class="dot"></span>Building blocks</div>
+      <h2 class="h2">The model stack — <em>one block at a time.</em></h2>
+      <p class="section-sub" style="max-width: 720px; color: var(--ink-2); margin: 0 0 24px;">
+        Each layer is <b>frozen as a public artifact</b> only after 100% lossless round-trip.
+        Block A is the first fundamental building block: raw byte in, 16-dim latent out,
+        decoder reconstructs the exact byte.
+      </p>
+
+      <div class="blocks-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; margin-bottom: 24px;">
+
+        <div class="block-card" style="border: 1px solid var(--border); background: var(--bg-2); border-radius: 10px; padding: 18px;">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+            <span style="font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.12em; color: var(--ink-3);">BLOCK A</span>
+            <span style="display: inline-flex; align-items: center; gap: 6px; font-size: 11px; color: var(--jade);">
+              <span style="width: 8px; height: 8px; border-radius: 50%; background: var(--jade);"></span>FROZEN
+            </span>
+          </div>
+          <h3 style="margin: 0 0 6px; font-size: 18px;">Byte Unit (L0)</h3>
+          <p style="color: var(--ink-2); font-size: 13px; margin: 0 0 12px;">
+            1 raw byte → 16-dim latent. Tied-mirror autoencoder. 100% lossless on all 256 bytes.
+          </p>
+          <div style="font-family: var(--font-mono); font-size: 12px; color: var(--ink-3); line-height: 1.8;">
+            <div>arch · <span style="color: var(--ink)">8 → 16 → 16, C19, binary weights</span></div>
+            <div>deploy · <span style="color: var(--ink)">4 KB int8 LUT + 6.5 KB JSON</span></div>
+            <div>status · <span style="color: var(--jade)">100.00% lossless · reload-verified</span></div>
+          </div>
+        </div>
+
+        <div class="block-card" style="border: 1px solid var(--border); background: var(--bg-2); border-radius: 10px; padding: 18px;">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+            <span style="font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.12em; color: var(--ink-3);">BLOCK B</span>
+            <span style="display: inline-flex; align-items: center; gap: 6px; font-size: 11px; color: var(--jade);">
+              <span style="width: 8px; height: 8px; border-radius: 50%; background: var(--jade);"></span>FROZEN
+            </span>
+          </div>
+          <h3 style="margin: 0 0 6px; font-size: 18px;">Byte-Pair Merger (L1)</h3>
+          <p style="color: var(--ink-2); font-size: 13px; margin: 0 0 12px;">
+            2 L0 outputs (32-dim) → single 32-dim merged. 100% lossless on all 65,536 pairs.
+          </p>
+          <div style="font-family: var(--font-mono); font-size: 12px; color: var(--ink-3); line-height: 1.8;">
+            <div>arch · <span style="color: var(--ink)">32 → 81 → 32, single-W mirror</span></div>
+            <div>deploy · <span style="color: var(--ink)">3.36 KB Huffman-packed</span></div>
+            <div>status · <span style="color: var(--jade)">100.00% lossless · 5/5 verified</span></div>
+          </div>
+        </div>
+
+        <div class="block-card" style="border: 1px solid var(--border); background: var(--bg-2); border-radius: 10px; padding: 18px;">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+            <span style="font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.12em; color: var(--ink-3);">BLOCK C</span>
+            <span style="display: inline-flex; align-items: center; gap: 6px; font-size: 11px; color: var(--jade);">
+              <span style="width: 8px; height: 8px; border-radius: 50%; background: var(--jade);"></span>FROZEN
+            </span>
+          </div>
+          <h3 style="margin: 0 0 6px; font-size: 18px;">Word Tokenizer V2</h3>
+          <p style="color: var(--ink-2); font-size: 13px; margin: 0 0 12px;">
+            UTF-8 bytes → token IDs. Space-aware hybrid: whole-word + subword + byte fallback.
+          </p>
+          <div style="font-family: var(--font-mono); font-size: 12px; color: var(--ink-3); line-height: 1.8;">
+            <div>vocab · <span style="color: var(--ink)">32,294 · FineWeb-EDU trained</span></div>
+            <div>deploy · <span style="color: var(--ink)">4.24 MB JSON vocab</span></div>
+            <div>status · <span style="color: var(--jade)">30.43% Huffman on 10 MB · lossless</span></div>
+          </div>
+        </div>
+
+        <div class="block-card" style="border: 1px solid var(--border); background: var(--bg-2); border-radius: 10px; padding: 18px;">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+            <span style="font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.12em; color: var(--ink-3);">BLOCK D</span>
+            <span style="display: inline-flex; align-items: center; gap: 6px; font-size: 11px; color: var(--amber);">
+              <span style="width: 8px; height: 8px; border-radius: 50%; background: var(--amber);"></span>SCAFFOLD
+            </span>
+          </div>
+          <h3 style="margin: 0 0 6px; font-size: 18px;">Word Embedder</h3>
+          <p style="color: var(--ink-2); font-size: 13px; margin: 0 0 12px;">
+            Token IDs → 64-dim vectors. Lookup table (random-init); trained end-to-end with Brain.
+          </p>
+          <div style="font-family: var(--font-mono); font-size: 12px; color: var(--ink-3); line-height: 1.8;">
+            <div>dim · <span style="color: var(--ink)">32,294 × 64 = 2.07M params</span></div>
+            <div>memory · <span style="color: var(--ink)">8.27 MB f32 / 2.07 MB int8</span></div>
+            <div>status · <span style="color: var(--amber)">shape verified · training pending</span></div>
+          </div>
+        </div>
+
+        <div class="block-card" style="border: 1px solid var(--border); background: var(--bg-2); border-radius: 10px; padding: 18px;">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+            <span style="font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.12em; color: var(--ink-3);">BLOCK E</span>
+            <span style="display: inline-flex; align-items: center; gap: 6px; font-size: 11px; color: var(--amber);">
+              <span style="width: 8px; height: 8px; border-radius: 50%; background: var(--amber);"></span>SCAFFOLD
+            </span>
+          </div>
+          <h3 style="margin: 0 0 6px; font-size: 18px;">Nano Brain</h3>
+          <p style="color: var(--ink-2); font-size: 13px; margin: 0 0 12px;">
+            [N, 64] → [N, vocab] next-token logits. Causal transformer, tied embedder/output head.
+          </p>
+          <div style="font-family: var(--font-mono); font-size: 12px; color: var(--ink-3); line-height: 1.8;">
+            <div>arch · <span style="color: var(--ink)">2 × (MHA + FFN), 64 dim, 4 heads</span></div>
+            <div>params · <span style="color: var(--ink)">2.18M tied (8.73 MB f32)</span></div>
+            <div>status · <span style="color: var(--amber)">forward verified · training pending</span></div>
+          </div>
+        </div>
+
+      </div>
+
+      <div style="display: flex; align-items: center; gap: 24px; font-size: 12px; color: var(--ink-3); font-family: var(--font-mono);">
+        <div style="display: inline-flex; align-items: center; gap: 8px;">
+          <span style="width: 8px; height: 8px; border-radius: 50%; background: var(--jade);"></span>
+          <span>FROZEN — public artifact, 100% lossless</span>
+        </div>
+        <div style="display: inline-flex; align-items: center; gap: 8px;">
+          <span style="width: 8px; height: 8px; border-radius: 50%; background: var(--amber);"></span>
+          <span>SCAFFOLD — shape verified, training pending</span>
+        </div>
+      </div>
+    </section>
+
+
+    <!-- ============ THESIS — 4 stage cards ============ -->
+    <section class="section" id="thesis">
+      <div class="s-label"><span class="num">§ 02</span><span class="dot"></span>Thesis</div>
+      <h2 class="h2">Inference is what <em>survives</em> the interference.</h2>
+      <p class="sub">Signal enters the substrate, incompatible paths cancel, and the surviving pattern is read out. Four stages, one fixed point, zero gradients.</p>
+
+      <div class="stages">
+        <div class="stage">
+          <div class="stage-viz">
+            <svg viewBox="0 0 160 130">
+              <!-- input pulse flowing into substrate -->
+              <defs>
+                <linearGradient id="pulse-a" x1="0" x2="1">
+                  <stop offset="0%" stop-color="#56e0e0" stop-opacity="0"/>
+                  <stop offset="100%" stop-color="#56e0e0" stop-opacity="1"/>
+                </linearGradient>
+              </defs>
+              <rect x="0" y="0" width="160" height="130" fill="none"/>
+              <!-- stream of bars representing SDR -->
+              <g fill="#56e0e0">
+                <rect x="16" y="50" width="6" height="6"/><rect x="16" y="64" width="6" height="6" opacity="0.3"/><rect x="16" y="78" width="6" height="6"/>
+                <rect x="26" y="58" width="6" height="6"/><rect x="26" y="72" width="6" height="6" opacity="0.3"/>
+                <rect x="36" y="50" width="6" height="6" opacity="0.5"/><rect x="36" y="72" width="6" height="6"/><rect x="36" y="86" width="6" height="6" opacity="0.4"/>
+              </g>
+              <!-- arrow -->
+              <path d="M54 68 H76" stroke="#56e0e0" stroke-width="1.4"/>
+              <path d="M72 64 L78 68 L72 72 Z" fill="#56e0e0"/>
+              <!-- substrate grid of dots -->
+              <g fill="#767c92">
+                <circle cx="90" cy="50" r="2"/><circle cx="105" cy="50" r="2"/><circle cx="120" cy="50" r="2"/><circle cx="135" cy="50" r="2"/>
+                <circle cx="90" cy="68" r="2"/><circle cx="105" cy="68" r="2"/><circle cx="120" cy="68" r="2"/><circle cx="135" cy="68" r="2"/>
+                <circle cx="90" cy="86" r="2"/><circle cx="105" cy="86" r="2"/><circle cx="120" cy="86" r="2"/><circle cx="135" cy="86" r="2"/>
+              </g>
+              <!-- active node -->
+              <circle cx="105" cy="68" r="4" fill="#56e0e0">
+                <animate attributeName="r" values="3;5;3" dur="1.6s" repeatCount="indefinite"/>
+              </circle>
+            </svg>
+          </div>
+          <div class="stage-n">◆ STAGE 01</div>
+          <h3>Enter</h3>
+          <p>Signal projects as sparse distributed representation into the recurrent substrate.</p>
+        </div>
+
+        <div class="stage">
+          <div class="stage-viz">
+            <svg viewBox="0 0 160 130">
+              <!-- propagation: a DAG fanning out -->
+              <g stroke="#a07cf0" stroke-width="1.1" fill="none">
+                <path d="M32 66 L70 40"/>
+                <path d="M32 66 L70 66"/>
+                <path d="M32 66 L70 92"/>
+                <path d="M70 40 L110 32"/><path d="M70 40 L110 52"/>
+                <path d="M70 66 L110 52"/><path d="M70 66 L110 80"/>
+                <path d="M70 92 L110 80"/><path d="M70 92 L110 98"/>
+                <path d="M110 32 L140 40"/><path d="M110 52 L140 58"/>
+                <path d="M110 80 L140 76"/><path d="M110 98 L140 94"/>
+              </g>
+              <g fill="#a07cf0">
+                <circle cx="32"  cy="66" r="4"/>
+                <circle cx="70"  cy="40" r="3"/><circle cx="70"  cy="66" r="3"/><circle cx="70"  cy="92" r="3"/>
+                <circle cx="110" cy="32" r="3"/><circle cx="110" cy="52" r="3"/><circle cx="110" cy="80" r="3"/><circle cx="110" cy="98" r="3"/>
+                <circle cx="140" cy="40" r="3"/><circle cx="140" cy="58" r="3"/><circle cx="140" cy="76" r="3"/><circle cx="140" cy="94" r="3"/>
+              </g>
+              <!-- sliding highlight -->
+              <circle r="4" fill="#ff5aa8">
+                <animateMotion dur="2.8s" repeatCount="indefinite"
+                  path="M32 66 L70 40 L110 52 L140 58"/>
+                <animate attributeName="opacity" values="0;1;1;0" dur="2.8s" repeatCount="indefinite"/>
+              </circle>
+            </svg>
+          </div>
+          <div class="stage-n">◆ STAGE 02</div>
+          <h3>Propagate</h3>
+          <p>Spikes traverse the directed graph along scout-ranked parent shortlists.</p>
+        </div>
+
+        <div class="stage">
+          <div class="stage-viz">
+            <svg viewBox="0 0 160 130">
+              <!-- two waves colliding -->
+              <defs>
+                <linearGradient id="wfa" x1="0" x2="1"><stop offset="0" stop-color="#ff5aa8" stop-opacity="0"/><stop offset="1" stop-color="#ff5aa8" stop-opacity="1"/></linearGradient>
+                <linearGradient id="wfb" x1="1" x2="0"><stop offset="0" stop-color="#56e0e0" stop-opacity="0"/><stop offset="1" stop-color="#56e0e0" stop-opacity="1"/></linearGradient>
+              </defs>
+              <path d="M10 70 Q30 50 50 70 T90 70" stroke="url(#wfa)" stroke-width="1.6" fill="none"/>
+              <path d="M150 70 Q130 90 110 70 T70 70" stroke="url(#wfb)" stroke-width="1.6" fill="none"/>
+              <!-- null zone cross -->
+              <g stroke="#4a5068" stroke-width="1">
+                <line x1="74" y1="66" x2="86" y2="78"/>
+                <line x1="86" y1="66" x2="74" y2="78"/>
+              </g>
+              <!-- surviving dashed path center -->
+              <path d="M80 50 V92" stroke="#ff5aa8" stroke-width="1.6" stroke-dasharray="2 3"/>
+              <!-- canceled dots -->
+              <g fill="#2f3448">
+                <circle cx="50" cy="98" r="2"/><circle cx="110" cy="98" r="2"/>
+                <circle cx="50" cy="42" r="2"/><circle cx="110" cy="42" r="2"/>
+              </g>
+              <text x="80" y="118" text-anchor="middle" fill="#767c92" font-family="Geist Mono, monospace" font-size="8" letter-spacing="1.5">NULL ZONE</text>
+            </svg>
+          </div>
+          <div class="stage-n">◆ STAGE 03</div>
+          <h3>Cancel</h3>
+          <p>Incompatible modes annihilate through destructive interference.</p>
+        </div>
+
+        <div class="stage hi">
+          <div class="stage-viz">
+            <svg viewBox="0 0 160 130">
+              <!-- stable attractor -->
+              <g transform="translate(80 65)">
+                <circle r="48" fill="none" stroke="#ff5aa8" stroke-width="0.6" opacity="0.3"/>
+                <circle r="34" fill="none" stroke="#ff5aa8" stroke-width="0.6" opacity="0.5"/>
+                <circle r="20" fill="none" stroke="#ff5aa8" stroke-width="0.8" opacity="0.8"/>
+                <circle r="8" fill="#ff5aa8"/>
+                <circle r="14" fill="none" stroke="#ff5aa8" stroke-width="1" opacity="0.6">
+                  <animate attributeName="r" values="10;18;10" dur="1.8s" repeatCount="indefinite"/>
+                  <animate attributeName="opacity" values="0.8;0;0.8" dur="1.8s" repeatCount="indefinite"/>
+                </circle>
+              </g>
+              <text x="80" y="118" text-anchor="middle" fill="#ff5aa8" font-family="Geist Mono, monospace" font-size="8" letter-spacing="1.5">FIXED POINT</text>
+            </svg>
+          </div>
+          <div class="stage-n">◆ STAGE 04</div>
+          <h3>Read out</h3>
+          <p>The surviving attractor is the answer. Deterministic, reproducible, fast.</p>
+        </div>
+      </div>
+    </section>
+
+
+    <!-- ============ GROWER: split + timeline ============ -->
+    <section class="section" id="grower">
+      <div class="s-label"><span class="num">§ 03</span><span class="dot"></span>The Grower</div>
+      <div class="split">
+        <div>
+          <h2 class="h2">From empty. <em>To circuit.</em></h2>
+          <p class="sub">The grower doesn't optimize weights on a fixed topology. It changes the topology itself — neuron by neuron, threshold by threshold — using a scout oracle to rank candidates before expensive search runs.</p>
+          <ul class="bullets">
+            <li><span class="mk">✓</span><div><b>Bias-free threshold neurons.</b> Stored as <code style="font-family:var(--font-mono);font-size:13px;color:var(--cyan)">dot ≥ threshold</code>. 36 bits.</div></li>
+            <li><span class="mk">✓</span><div><b>Scout-first search.</b> Single-signal + connect-all + pair-lift rank parents before ternary.</div></li>
+            <li><span class="mk">✓</span><div><b>Append-only evidence.</b> Every run writes <code style="font-family:var(--font-mono);font-size:13px;color:var(--cyan)">metrics.json</code>, <code style="font-family:var(--font-mono);font-size:13px;color:var(--cyan)">golden_check.json</code>.</div></li>
+          </ul>
+        </div>
+
+        <!-- Graph growth visualization -->
+        <div class="viz-panel">
+          <span class="corner c-tl">graph.growth</span>
+          <span class="corner c-tr">step 128/128</span>
+          <span class="corner c-bl">83 edges</span>
+          <span class="corner c-br">80% acc</span>
+          <svg viewBox="0 0 300 300">
+            <defs>
+              <radialGradient id="nodeGlow"><stop offset="0" stop-color="#ff5aa8" stop-opacity="0.6"/><stop offset="1" stop-color="#ff5aa8" stop-opacity="0"/></radialGradient>
+            </defs>
+            <!-- inputs (left column) -->
+            <g>
+              <circle cx="40" cy="60"  r="5" fill="#56e0e0"/>
+              <circle cx="40" cy="110" r="5" fill="#56e0e0"/>
+              <circle cx="40" cy="160" r="5" fill="#56e0e0"/>
+              <circle cx="40" cy="210" r="5" fill="#56e0e0"/>
+              <circle cx="40" cy="260" r="5" fill="#56e0e0"/>
+            </g>
+            <!-- hidden neurons (mid), grown over time -->
+            <g>
+              <!-- each neuron has an appear animation -->
+              <g><circle cx="130" cy="80" r="6" fill="#a07cf0" opacity="0"><animate attributeName="opacity" values="0;1" dur="0.3s" begin="0.1s" fill="freeze"/></circle></g>
+              <g><circle cx="130" cy="140" r="6" fill="#a07cf0" opacity="0"><animate attributeName="opacity" values="0;1" dur="0.3s" begin="0.3s" fill="freeze"/></circle></g>
+              <g><circle cx="130" cy="200" r="6" fill="#a07cf0" opacity="0"><animate attributeName="opacity" values="0;1" dur="0.3s" begin="0.5s" fill="freeze"/></circle></g>
+              <g><circle cx="130" cy="250" r="6" fill="#a07cf0" opacity="0"><animate attributeName="opacity" values="0;1" dur="0.3s" begin="0.7s" fill="freeze"/></circle></g>
+
+              <g><circle cx="200" cy="110" r="6" fill="#a07cf0" opacity="0"><animate attributeName="opacity" values="0;1" dur="0.3s" begin="0.9s" fill="freeze"/></circle></g>
+              <g><circle cx="200" cy="170" r="6" fill="#a07cf0" opacity="0"><animate attributeName="opacity" values="0;1" dur="0.3s" begin="1.1s" fill="freeze"/></circle></g>
+              <g><circle cx="200" cy="230" r="6" fill="#a07cf0" opacity="0"><animate attributeName="opacity" values="0;1" dur="0.3s" begin="1.3s" fill="freeze"/></circle></g>
+            </g>
+            <!-- output (right) -->
+            <g>
+              <circle cx="260" cy="130" r="7" fill="#ff5aa8" filter="url(#none)"/>
+              <circle cx="260" cy="190" r="7" fill="#ff5aa8"/>
+              <circle cx="260" cy="130" r="14" fill="url(#nodeGlow)">
+                <animate attributeName="r" values="10;20;10" dur="2s" repeatCount="indefinite"/>
+              </circle>
+            </g>
+            <!-- edges appearing -->
+            <g stroke-width="1" stroke-linecap="round" fill="none">
+              <!-- batch 1 -->
+              <path d="M40 60 L130 80"   stroke="#a07cf0" stroke-dasharray="200" stroke-dashoffset="200"><animate attributeName="stroke-dashoffset" to="0" dur="0.5s" begin="0.2s" fill="freeze"/></path>
+              <path d="M40 110 L130 80"  stroke="#a07cf0" stroke-dasharray="200" stroke-dashoffset="200"><animate attributeName="stroke-dashoffset" to="0" dur="0.5s" begin="0.25s" fill="freeze"/></path>
+              <path d="M40 110 L130 140" stroke="#a07cf0" stroke-dasharray="200" stroke-dashoffset="200"><animate attributeName="stroke-dashoffset" to="0" dur="0.5s" begin="0.4s" fill="freeze"/></path>
+              <path d="M40 160 L130 140" stroke="#a07cf0" stroke-dasharray="200" stroke-dashoffset="200"><animate attributeName="stroke-dashoffset" to="0" dur="0.5s" begin="0.5s" fill="freeze"/></path>
+              <path d="M40 160 L130 200" stroke="#a07cf0" stroke-dasharray="200" stroke-dashoffset="200"><animate attributeName="stroke-dashoffset" to="0" dur="0.5s" begin="0.65s" fill="freeze"/></path>
+              <path d="M40 210 L130 200" stroke="#a07cf0" stroke-dasharray="200" stroke-dashoffset="200"><animate attributeName="stroke-dashoffset" to="0" dur="0.5s" begin="0.75s" fill="freeze"/></path>
+              <path d="M40 210 L130 250" stroke="#a07cf0" stroke-dasharray="200" stroke-dashoffset="200"><animate attributeName="stroke-dashoffset" to="0" dur="0.5s" begin="0.85s" fill="freeze"/></path>
+              <path d="M40 260 L130 250" stroke="#a07cf0" stroke-dasharray="200" stroke-dashoffset="200"><animate attributeName="stroke-dashoffset" to="0" dur="0.5s" begin="0.95s" fill="freeze"/></path>
+
+              <!-- batch 2 -->
+              <path d="M130 80  L200 110" stroke="#a07cf0" stroke-dasharray="200" stroke-dashoffset="200"><animate attributeName="stroke-dashoffset" to="0" dur="0.5s" begin="1.05s" fill="freeze"/></path>
+              <path d="M130 140 L200 110" stroke="#a07cf0" stroke-dasharray="200" stroke-dashoffset="200"><animate attributeName="stroke-dashoffset" to="0" dur="0.5s" begin="1.15s" fill="freeze"/></path>
+              <path d="M130 140 L200 170" stroke="#a07cf0" stroke-dasharray="200" stroke-dashoffset="200"><animate attributeName="stroke-dashoffset" to="0" dur="0.5s" begin="1.25s" fill="freeze"/></path>
+              <path d="M130 200 L200 170" stroke="#a07cf0" stroke-dasharray="200" stroke-dashoffset="200"><animate attributeName="stroke-dashoffset" to="0" dur="0.5s" begin="1.35s" fill="freeze"/></path>
+              <path d="M130 200 L200 230" stroke="#a07cf0" stroke-dasharray="200" stroke-dashoffset="200"><animate attributeName="stroke-dashoffset" to="0" dur="0.5s" begin="1.45s" fill="freeze"/></path>
+              <path d="M130 250 L200 230" stroke="#a07cf0" stroke-dasharray="200" stroke-dashoffset="200"><animate attributeName="stroke-dashoffset" to="0" dur="0.5s" begin="1.55s" fill="freeze"/></path>
+
+              <!-- final to outputs -->
+              <path d="M200 110 L260 130" stroke="#ff5aa8" stroke-dasharray="200" stroke-dashoffset="200"><animate attributeName="stroke-dashoffset" to="0" dur="0.5s" begin="1.7s" fill="freeze"/></path>
+              <path d="M200 170 L260 130" stroke="#ff5aa8" stroke-dasharray="200" stroke-dashoffset="200"><animate attributeName="stroke-dashoffset" to="0" dur="0.5s" begin="1.8s" fill="freeze"/></path>
+              <path d="M200 170 L260 190" stroke="#ff5aa8" stroke-dasharray="200" stroke-dashoffset="200"><animate attributeName="stroke-dashoffset" to="0" dur="0.5s" begin="1.9s" fill="freeze"/></path>
+              <path d="M200 230 L260 190" stroke="#ff5aa8" stroke-dasharray="200" stroke-dashoffset="200"><animate attributeName="stroke-dashoffset" to="0" dur="0.5s" begin="2.0s" fill="freeze"/></path>
+            </g>
+          </svg>
+        </div>
+      </div>
+
+      <!-- Growth curve -->
+      <div class="growth" style="margin-top: 64px;">
+        <div class="growth-head">
+          <h4><span class="dot"></span>Fitness · jackpot selection · smooth cosine-bigram</h4>
+          <span class="meta">evolve_language.rs · english · 1+9 ES</span>
+        </div>
+        <div class="growth-body">
+          <svg class="growth-svg" viewBox="0 0 800 320" preserveAspectRatio="none">
+            <defs>
+              <linearGradient id="gfill" x1="0" x2="0" y1="0" y2="1">
+                <stop offset="0" stop-color="#ff5aa8" stop-opacity="0.45"/>
+                <stop offset="1" stop-color="#ff5aa8" stop-opacity="0"/>
+              </linearGradient>
+              <linearGradient id="gfill2" x1="0" x2="0" y1="0" y2="1">
+                <stop offset="0" stop-color="#56e0e0" stop-opacity="0.25"/>
+                <stop offset="1" stop-color="#56e0e0" stop-opacity="0"/>
+              </linearGradient>
+            </defs>
+            <!-- grid -->
+            <g stroke="#1f2432" stroke-width="1">
+              <line x1="40" y1="40" x2="780" y2="40"/>
+              <line x1="40" y1="100" x2="780" y2="100"/>
+              <line x1="40" y1="160" x2="780" y2="160"/>
+              <line x1="40" y1="220" x2="780" y2="220"/>
+              <line x1="40" y1="280" x2="780" y2="280"/>
+            </g>
+            <g font-family="Geist Mono, monospace" font-size="10" fill="#4a5068">
+              <text x="30" y="44"  text-anchor="end">25%</text>
+              <text x="30" y="104" text-anchor="end">20%</text>
+              <text x="30" y="164" text-anchor="end">15%</text>
+              <text x="30" y="224" text-anchor="end">10%</text>
+              <text x="30" y="284" text-anchor="end">5%</text>
+              <text x="40"  y="300">0</text>
+              <text x="410" y="300" text-anchor="middle">100k</text>
+              <text x="780" y="300" text-anchor="end">200k steps</text>
+            </g>
+
+            <!-- 1+1 ES baseline (cyan, smoother, peaks 21.2%) -->
+            <path d="M 40 280 C 100 260, 160 230, 220 210 C 280 195, 340 170, 400 160 C 480 150, 560 140, 640 125 C 720 118, 760 114, 780 112"
+                  fill="none" stroke="#56e0e0" stroke-width="2" stroke-linecap="round"/>
+            <path d="M 40 280 C 100 260, 160 230, 220 210 C 280 195, 340 170, 400 160 C 480 150, 560 140, 640 125 C 720 118, 760 114, 780 112 L 780 280 L 40 280 Z"
+                  fill="url(#gfill2)"/>
+
+            <!-- 1+9 jackpot (fuchsia, peaks 24.6%) -->
+            <path d="M 40 280 C 90 240, 150 200, 220 180 C 290 170, 350 150, 420 130 C 500 110, 560 95, 640 80 C 700 72, 740 62, 780 52"
+                  fill="none" stroke="#ff5aa8" stroke-width="2.4" stroke-linecap="round"/>
+            <path d="M 40 280 C 90 240, 150 200, 220 180 C 290 170, 350 150, 420 130 C 500 110, 560 95, 640 80 C 700 72, 740 62, 780 52 L 780 280 L 40 280 Z"
+                  fill="url(#gfill)"/>
+
+            <!-- peak marker -->
+            <circle cx="780" cy="52" r="6" fill="#ff5aa8"/>
+            <circle cx="780" cy="52" r="12" fill="none" stroke="#ff5aa8" stroke-width="1" opacity="0.5">
+              <animate attributeName="r" values="8;18;8" dur="2s" repeatCount="indefinite"/>
+              <animate attributeName="opacity" values="0.7;0;0.7" dur="2s" repeatCount="indefinite"/>
+            </circle>
+            <text x="760" y="42" text-anchor="end" fill="#ff5aa8" font-family="Geist Mono, monospace" font-size="11" letter-spacing="1">24.6% peak</text>
+
+            <text x="710" y="120" text-anchor="end" fill="#56e0e0" font-family="Geist Mono, monospace" font-size="10" letter-spacing="1">1+1 ES · 21.2%</text>
+          </svg>
+        </div>
+        <div class="growth-foot">
+          <div class="cell"><span class="k">jackpot Δ</span><span class="v fu">+3.4pp</span></div>
+          <div class="cell"><span class="k">fitness Δ</span><span class="v cy">+2.6pp</span></div>
+          <div class="cell"><span class="k">W-mutation</span><span class="v">0% accept</span></div>
+          <div class="cell"><span class="k">parity</span><span class="v">rust ↔ python</span></div>
+        </div>
+      </div>
+    </section>
+
+
+    <!-- ============ QUANTIZATION ============ -->
+    <section class="section" id="quant">
+      <div class="s-label"><span class="num">§ 04</span><span class="dot"></span>Quantization</div>
+      <h2 class="h2">Champions at <em>every compression.</em></h2>
+      <p class="sub">FineWeb char-LM benchmark · <code style="font-family:var(--font-mono);font-size:14px;color:var(--cyan)">nf=1024</code> · matched-compute controls applied.</p>
+
+      <div class="quant">
+        <div class="qcard champ">
+          <div class="q-tag">◆ CLOUD / SERVER</div>
+          <h4>QAT int8</h4>
+          <p class="desc">Straight-through estimator. Essentially lossless, 4× compression.</p>
+          <div class="big">86.40<span class="u">%</span></div>
+          <div class="delta">+0.20pp over float · matched compute</div>
+          <div class="bar"><div class="fill" style="width: 99%;"></div></div>
+          <div class="footrow">
+            <span><b>4×</b> compression</span>
+            <span><b>int8</b> weights</span>
+          </div>
+        </div>
+
+        <div class="qcard">
+          <div class="q-tag">◆ MOBILE / EDGE</div>
+          <h4>Staged INQ int4</h4>
+          <p class="desc">Incremental network quantization, staged protocol.</p>
+          <div class="big">84.75<span class="u">%</span></div>
+          <div class="delta neg">−1.65pp · 8× compression</div>
+          <div class="bar"><div class="fill" style="width: 82%;"></div></div>
+          <div class="footrow">
+            <span><b>8×</b> compression</span>
+            <span><b>int4</b> weights</span>
+          </div>
+        </div>
+
+        <div class="qcard">
+          <div class="q-tag">◆ IOT / FPGA</div>
+          <h4>QAT binary (b1.58)</h4>
+          <p class="desc">Ternary weights. Deploys to POPCOUNT hardware natively.</p>
+          <div class="big">71.50<span class="u">%</span></div>
+          <div class="delta neg">−14.9pp · 32× compression</div>
+          <div class="bar"><div class="fill" style="width: 48%;"></div></div>
+          <div class="footrow">
+            <span><b>32×</b> compression</span>
+            <span><b>1.58</b>-bit</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+
+    <!-- ============ FINDINGS ============ -->
+    <section class="section" id="findings">
+      <div class="s-label"><span class="num">§ 05</span><span class="dot"></span>Validated findings</div>
+      <div class="split rev">
+        <div class="panel-a">
+          <div class="viz-panel">
+            <span class="corner c-tl">L0 byte interpreter</span>
+            <span class="corner c-tr">locked</span>
+            <span class="corner c-bl">36 bits</span>
+            <span class="corner c-br">100% round-trip</span>
+            <!-- L0 interpreter schematic -->
+            <svg viewBox="0 0 300 300">
+              <!-- input byte 8 bits -->
+              <g>
+                <text x="40" y="22" font-family="Geist Mono, monospace" font-size="10" fill="#767c92" letter-spacing="1">INPUT · 8 BITS</text>
+                <g fill="#56e0e0">
+                  <rect x="30" y="38" width="22" height="30" rx="2"/>
+                  <rect x="56" y="38" width="22" height="30" rx="2" opacity="0.3"/>
+                  <rect x="82" y="38" width="22" height="30" rx="2"/>
+                  <rect x="108" y="38" width="22" height="30" rx="2"/>
+                  <rect x="134" y="38" width="22" height="30" rx="2" opacity="0.3"/>
+                  <rect x="160" y="38" width="22" height="30" rx="2"/>
+                  <rect x="186" y="38" width="22" height="30" rx="2" opacity="0.3"/>
+                  <rect x="212" y="38" width="22" height="30" rx="2"/>
+                </g>
+              </g>
+              <!-- edges converging -->
+              <g stroke="#a07cf0" stroke-width="1" fill="none">
+                <path d="M41 68 L80 150"/><path d="M67 68 L80 150"/><path d="M93 68 L130 150"/>
+                <path d="M119 68 L130 150"/><path d="M145 68 L180 150"/><path d="M171 68 L180 150"/>
+                <path d="M197 68 L230 150"/><path d="M223 68 L230 150"/>
+              </g>
+              <!-- hidden 4 neurons -->
+              <g>
+                <text x="40" y="134" font-family="Geist Mono, monospace" font-size="10" fill="#767c92" letter-spacing="1">HIDDEN · 4 NEURONS</text>
+                <g fill="#a07cf0">
+                  <circle cx="80" cy="160" r="10"/>
+                  <circle cx="130" cy="160" r="10"/>
+                  <circle cx="180" cy="160" r="10"/>
+                  <circle cx="230" cy="160" r="10"/>
+                </g>
+                <g font-family="Geist Mono, monospace" font-size="9" fill="#0b0d14" text-anchor="middle" font-weight="600">
+                  <text x="80" y="163">t₁</text>
+                  <text x="130" y="163">t₂</text>
+                  <text x="180" y="163">t₃</text>
+                  <text x="230" y="163">t₄</text>
+                </g>
+              </g>
+              <!-- out edges -->
+              <g stroke="#ff5aa8" stroke-width="1" fill="none">
+                <path d="M80 170 L78 228"/><path d="M130 170 L128 228"/>
+                <path d="M180 170 L178 228"/><path d="M230 170 L228 228"/>
+              </g>
+              <!-- out byte 4 bits -->
+              <g>
+                <text x="40" y="250" font-family="Geist Mono, monospace" font-size="10" fill="#767c92" letter-spacing="1">OUTPUT · POPCOUNT</text>
+                <g fill="#ff5aa8">
+                  <rect x="65" y="262" width="24" height="26" rx="2"/>
+                  <rect x="115" y="262" width="24" height="26" rx="2" opacity="0.3"/>
+                  <rect x="165" y="262" width="24" height="26" rx="2"/>
+                  <rect x="215" y="262" width="24" height="26" rx="2"/>
+                </g>
+              </g>
+            </svg>
+          </div>
+        </div>
+        <div>
+          <h2 class="h2">Shipped. <em>Locked.</em> Reproducible.</h2>
+          <p class="sub">The public story is kept truthful with three labels: <b>current mainline</b> (code on main), <b>validated finding</b> (reproducible, not promoted), <b>experimental</b> (not yet default).</p>
+          <ul class="bullets">
+            <li><span class="mk">★</span><div><b>Smooth cosine-bigram fitness.</b> +2.6pp. Broke the 17–18% ceiling.</div></li>
+            <li><span class="mk">★</span><div><b>1+9 jackpot selection.</b> +3.4pp. 24.6% peak.</div></li>
+            <li><span class="mk">★</span><div><b>Empty-start ≫ prefilled.</b> 80% at 83 edges beats 64% at 3 400.</div></li>
+            <li><span class="mk">★</span><div><b>L0 byte interpreter · locked.</b> 8 → 4 neurons, 36 bits, 100% round-trip.</div></li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+
+    <!-- ============ PLAYGROUND ============ -->
+    <section class="section" id="playground">
+      <div class="s-label"><span class="num">§ 05b</span><span class="dot"></span>Interactive playground</div>
+      <h2 class="h2">Inspect the <em>baked models.</em></h2>
+      <p class="sub">Live visualizers for the L0 Byte Unit and L1 Byte-Pair Merger champions. Architecture diagrams, weight heatmaps, C19 neuron curves, and live roundtrip tests — all running in-browser with the actual baked weights.</p>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:20px">
+
+        <!-- L0 card -->
+        <div style="border:1px solid var(--border);border-radius:14px;padding:22px;background:var(--bg-2)">
+          <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:0.18em;color:var(--ink-4);text-transform:uppercase;margin-bottom:14px">L0 · Byte Unit</div>
+          <h3 style="font-size:20px;font-weight:500;letter-spacing:-0.02em;margin:0 0 8px">Byte Tokenizer Unit</h3>
+          <p style="font-size:13px;color:var(--ink-3);line-height:1.55;margin:0 0 16px">2-layer tied-weight mirror autoencoder. 8-bit input, 24 C19 neurons, 16D latent. 100% lossless. 288 byte int4.</p>
+          <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">
+            <span style="background:#052e16;color:#4ade80;border:1px solid #166534;border-radius:10px;font-size:10px;font-weight:700;padding:3px 10px">100% Lossless</span>
+            <span style="background:#0c1e3a;color:#38bdf8;border:1px solid #1e40af;border-radius:10px;font-size:10px;font-weight:700;padding:3px 10px">288 B int4</span>
+            <span style="background:#1e1040;color:#c084fc;border:1px solid #6b21a8;border-radius:10px;font-size:10px;font-weight:700;padding:3px 10px">24 C19</span>
+          </div>
+          <div style="display:flex;gap:10px;flex-wrap:wrap">
+            <a href="./playground/byte_unit_arch.html" style="display:inline-flex;align-items:center;gap:6px;background:var(--bg-3);border:1px solid var(--border-2);border-radius:6px;padding:8px 14px;font-size:13px;color:var(--ink-2);transition:border-color .15s,color .15s" onmouseover="this.style.color='var(--ink)';this.style.borderColor='var(--border-2)'" onmouseout="this.style.color='var(--ink-2)'">
+              <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1" y="1" width="14" height="14" rx="2"/><path d="M5 8h6M8 5v6"/></svg>
+              Architektura
+            </a>
+            <a href="./playground/byte_unit_baked.html" style="display:inline-flex;align-items:center;gap:6px;background:var(--bg-3);border:1px solid var(--border-2);border-radius:6px;padding:8px 14px;font-size:13px;color:var(--ink-2);transition:border-color .15s,color .15s" onmouseover="this.style.color='var(--ink)'" onmouseout="this.style.color='var(--ink-2)'">
+              <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="6"/><path d="M8 5v3l2 2"/></svg>
+              Baked Winner
+            </a>
+          </div>
+        </div>
+
+        <!-- L1 card -->
+        <div style="border:1px solid color-mix(in oklab,#e879f9 35%,var(--border));border-radius:14px;padding:22px;background:color-mix(in oklab,#e879f9 4%,var(--bg-2));position:relative">
+          <div style="position:absolute;top:16px;right:16px;background:#2e1065;border:1px solid #7c3aed;border-radius:8px;padding:3px 10px;font-size:9px;font-family:var(--font-mono);font-weight:700;color:#e879f9;letter-spacing:0.12em">CHAMPION</div>
+          <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:0.18em;color:var(--ink-4);text-transform:uppercase;margin-bottom:14px">L1 · Byte-Pair Merger</div>
+          <h3 style="font-size:20px;font-weight:500;letter-spacing:-0.02em;margin:0 0 8px">Byte-Pair Merger</h3>
+          <p style="font-size:13px;color:var(--ink-3);line-height:1.55;margin:0 0 16px">Single-W mirror tied autoencoder. 32-bit input (2 bytes), 81 C19 neurons, 3,36 KB Huffman-packed. 100% lossless on all 65 536 byte pairs.</p>
+          <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">
+            <span style="background:#052e16;color:#4ade80;border:1px solid #166534;border-radius:10px;font-size:10px;font-weight:700;padding:3px 10px">100% · 65 536 par</span>
+            <span style="background:#1c1200;color:#fbbf24;border:1px solid #92400e;border-radius:10px;font-size:10px;font-weight:700;padding:3px 10px">3 440 B Huffman</span>
+            <span style="background:#2e1065;color:#e879f9;border:1px solid #7c3aed;border-radius:10px;font-size:10px;font-weight:700;padding:3px 10px">2 867 param</span>
+          </div>
+          <div style="display:flex;gap:10px;flex-wrap:wrap">
+            <a href="./playground/byte_pair_merger_arch.html" style="display:inline-flex;align-items:center;gap:6px;background:color-mix(in oklab,#e879f9 8%,var(--bg-3));border:1px solid color-mix(in oklab,#e879f9 40%,var(--border));border-radius:6px;padding:8px 14px;font-size:13px;color:#e879f9;transition:background .15s">
+              <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1" y="1" width="14" height="14" rx="2"/><path d="M5 8h6M8 5v6"/></svg>
+              Architektura
+            </a>
+            <a href="./playground/byte_pair_merger_baked.html" style="display:inline-flex;align-items:center;gap:6px;background:color-mix(in oklab,#e879f9 8%,var(--bg-3));border:1px solid color-mix(in oklab,#e879f9 40%,var(--border));border-radius:6px;padding:8px 14px;font-size:13px;color:#e879f9;transition:background .15s">
+              <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="6"/><path d="M8 5v3l2 2"/></svg>
+              Baked · Huffman Artifact
+            </a>
+          </div>
+        </div>
+
+        <!-- Connectome Explorer card -->
+        <div style="border:1px solid var(--border);border-radius:14px;padding:22px;background:var(--bg-2)">
+          <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:0.18em;color:var(--ink-4);text-transform:uppercase;margin-bottom:14px">Architecture · Connectome</div>
+          <h3 style="font-size:20px;font-weight:500;letter-spacing:-0.02em;margin:0 0 8px">Connectome Explorer</h3>
+          <p style="font-size:13px;color:var(--ink-3);line-height:1.55;margin:0 0 16px">Interactive city-highway diagram. Configure city count, connectome relay width, neuron depth, and activation per city. Animated signal-flow walkthrough with live architecture stats and copyable prompt.</p>
+          <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">
+            <span style="background:#1a1a25;color:#fbbf24;border:1px solid #92400e;border-radius:10px;font-size:10px;font-weight:700;padding:3px 10px">Passive relay</span>
+            <span style="background:#1a1a25;color:#fbbf24;border:1px solid #92400e;border-radius:10px;font-size:10px;font-weight:700;padding:3px 10px">C19 / ReLU</span>
+          </div>
+          <div style="display:flex;gap:10px;flex-wrap:wrap">
+            <a href="./vraxion-connectome-explorer.html" style="display:inline-flex;align-items:center;gap:6px;background:var(--bg-3);border:1px solid var(--border-2);border-radius:6px;padding:8px 14px;font-size:13px;color:var(--ink-2);transition:border-color .15s,color .15s" onmouseover="this.style.color='var(--ink)';this.style.borderColor='var(--border-2)'" onmouseout="this.style.color='var(--ink-2)'">
+              <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="6"/><path d="M5 8h6M8 5v6"/></svg>
+              Open Explorer
+            </a>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+
+    <!-- ============ GATES ============ -->
+    <section class="section" id="gates">
+      <div class="s-label"><span class="num">§ 06</span><span class="dot"></span>Public beta contract</div>
+      <h2 class="h2">Two gates. <em>Both reproducible.</em></h2>
+      <p class="sub">Public beta isn't green on vibes. One engine-freeze gate, one computation benchmark.</p>
+
+      <div class="gates">
+        <div class="gate">
+          <div class="gate-head">
+            <span class="gate-id">B0 · ENGINE FREEZE</span>
+            <span class="gate-pill pass">Gate pass</span>
+          </div>
+          <h3>Grower regression.</h3>
+          <div class="gate-viz">
+            <svg viewBox="0 0 400 200" preserveAspectRatio="xMidYMid meet">
+              <defs>
+                <pattern id="dots1" x="0" y="0" width="12" height="12" patternUnits="userSpaceOnUse">
+                  <circle cx="1" cy="1" r="1" fill="#2a3044"/>
+                </pattern>
+              </defs>
+              <rect width="400" height="200" fill="url(#dots1)"/>
+              <!-- pipeline -->
+              <g font-family="Geist Mono, monospace" font-size="10" fill="#767c92" letter-spacing="1">
+                <rect x="20" y="76" width="70" height="48" rx="6" fill="#0a0c12" stroke="#2a3044"/>
+                <text x="55" y="97" text-anchor="middle" fill="#56e0e0">run_cmd</text>
+                <text x="55" y="111" text-anchor="middle">seed.42</text>
+
+                <rect x="120" y="56" width="70" height="88" rx="6" fill="#0a0c12" stroke="#a07cf0"/>
+                <text x="155" y="77" text-anchor="middle" fill="#a07cf0">GROWER</text>
+                <text x="155" y="95" text-anchor="middle" font-size="8">175 tests ✓</text>
+                <text x="155" y="110" text-anchor="middle" font-size="8">cargo bench</text>
+                <text x="155" y="128" text-anchor="middle" font-size="8">zero unsafe</text>
+
+                <rect x="220" y="76" width="70" height="48" rx="6" fill="#0a0c12" stroke="#2a3044"/>
+                <text x="255" y="97" text-anchor="middle" fill="#e8c858">metrics.json</text>
+                <text x="255" y="111" text-anchor="middle">24.6%</text>
+
+                <rect x="320" y="76" width="60" height="48" rx="6" fill="#0a0c12" stroke="#7fd89a"/>
+                <text x="350" y="97" text-anchor="middle" fill="#7fd89a">golden</text>
+                <text x="350" y="111" text-anchor="middle" fill="#7fd89a">PASS ✓</text>
+              </g>
+              <g stroke="#2a3044" stroke-width="1.5" fill="none">
+                <path d="M90 100 L120 100" marker-end="url(#tri)"/>
+                <path d="M190 100 L220 100" marker-end="url(#tri)"/>
+                <path d="M290 100 L320 100" marker-end="url(#tri)"/>
+              </g>
+              <defs>
+                <marker id="tri" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 Z" fill="#2a3044"/></marker>
+              </defs>
+            </svg>
+          </div>
+          <p style="font-size:13px;color:var(--ink-3);margin:0 0 10px;">
+            <code>python tools/run_grower_regression.py</code>
+          </p>
+        </div>
+
+        <div class="gate">
+          <div class="gate-head">
+            <span class="gate-id">B1 · BYTE / OPCODE v1</span>
+            <span class="gate-pill pending">Gate pending</span>
+          </div>
+          <h3>Exact translator.</h3>
+          <div class="gate-viz">
+            <svg viewBox="0 0 400 200" preserveAspectRatio="xMidYMid meet">
+              <defs>
+                <pattern id="dots2" x="0" y="0" width="12" height="12" patternUnits="userSpaceOnUse">
+                  <circle cx="1" cy="1" r="1" fill="#2a3044"/>
+                </pattern>
+              </defs>
+              <rect width="400" height="200" fill="url(#dots2)"/>
+              <!-- byte + opcode -->
+              <g font-family="Geist Mono, monospace" font-size="10" letter-spacing="1">
+                <g fill="#56e0e0">
+                  <rect x="20" y="60" width="12" height="18" rx="2"/><rect x="34" y="60" width="12" height="18" rx="2" opacity="0.3"/><rect x="48" y="60" width="12" height="18" rx="2"/><rect x="62" y="60" width="12" height="18" rx="2"/>
+                  <rect x="76" y="60" width="12" height="18" rx="2" opacity="0.3"/><rect x="90" y="60" width="12" height="18" rx="2"/><rect x="104" y="60" width="12" height="18" rx="2" opacity="0.3"/><rect x="118" y="60" width="12" height="18" rx="2"/>
+                </g>
+                <text x="75" y="96" fill="#767c92">byte · 8 bits</text>
+                <g fill="#a07cf0">
+                  <rect x="20" y="118" width="14" height="20" rx="2"/><rect x="36" y="118" width="14" height="20" rx="2" opacity="0.3"/><rect x="52" y="118" width="14" height="20" rx="2"/><rect x="68" y="118" width="14" height="20" rx="2" opacity="0.3"/>
+                </g>
+                <text x="45" y="154" fill="#767c92">opcode · 4 bits</text>
+              </g>
+              <!-- 8 frozen heads -->
+              <g fill="#e8c858" font-family="Geist Mono, monospace" font-size="8">
+                <g>
+                  <rect x="175" y="34" width="56" height="20" rx="3" fill="#0a0c12" stroke="#e8c858"/><text x="203" y="48" text-anchor="middle">head₁</text>
+                  <rect x="175" y="60" width="56" height="20" rx="3" fill="#0a0c12" stroke="#e8c858"/><text x="203" y="74" text-anchor="middle">head₂</text>
+                  <rect x="175" y="86" width="56" height="20" rx="3" fill="#0a0c12" stroke="#e8c858"/><text x="203" y="100" text-anchor="middle">head₃</text>
+                  <rect x="175" y="112" width="56" height="20" rx="3" fill="#0a0c12" stroke="#e8c858"/><text x="203" y="126" text-anchor="middle">head₄</text>
+                  <rect x="175" y="138" width="56" height="20" rx="3" fill="#0a0c12" stroke="#e8c858"/><text x="203" y="152" text-anchor="middle">head₅₋₈</text>
+                </g>
+                <text x="203" y="22" text-anchor="middle" fill="#767c92" font-size="9">8 FROZEN BIT-HEADS</text>
+              </g>
+              <!-- LUT -->
+              <g font-family="Geist Mono, monospace" font-size="10">
+                <rect x="270" y="68" width="110" height="64" rx="6" fill="#0a0c12" stroke="#ff5aa8"/>
+                <text x="325" y="88" text-anchor="middle" fill="#ff5aa8" font-size="11">LUT · exact</text>
+                <text x="325" y="104" text-anchor="middle" fill="#767c92" font-size="9">COPY / NOT / INC / DEC</text>
+                <text x="325" y="122" text-anchor="middle" fill="#7fd89a" font-size="9">100% round-trip</text>
+              </g>
+              <!-- arrows -->
+              <g stroke="#2a3044" stroke-width="1.5" fill="none">
+                <path d="M134 100 L175 100"/>
+                <path d="M231 100 L270 100"/>
+              </g>
+            </svg>
+          </div>
+          <p style="font-size:13px;color:var(--ink-3);margin:0 0 10px;">
+            <code>python tools/run_byte_opcode_acceptance.py</code>
+          </p>
+        </div>
+      </div>
+    </section>
+
+
+    <!-- ============ CTA ============ -->
+    <section class="section" id="cta" style="padding-bottom: 32px;">
+      <div class="cta">
+        <div class="cta-grid">
+          <div>
+            <h2>The beta is <em>live.</em></h2>
+            <p>Clone, run the five-minute proof, file a finding — or an honest critique. Apache 2.0 noncommercial.</p>
+            <div class="hero-ctas">
+              <a href="https://github.com/VRAXION/VRAXION" class="btn btn-primary" target="_blank" rel="noopener">Clone repo <span class="arrow">→</span></a>
+              <a href="https://github.com/VRAXION/VRAXION/releases/tag/v5.0.0-beta.2" class="btn btn-ghost" target="_blank" rel="noopener">Release notes</a>
+            </div>
+          </div>
+          <div class="cta-viz">
+            <svg viewBox="0 0 260 260">
+              <defs>
+                <radialGradient id="ctaGlow"><stop offset="0" stop-color="#ff5aa8" stop-opacity="0.8"/><stop offset="1" stop-color="#ff5aa8" stop-opacity="0"/></radialGradient>
+              </defs>
+              <g transform="translate(130 130)">
+                <circle r="110" fill="none" stroke="#ff5aa8" stroke-width="0.6" opacity="0.2"/>
+                <circle r="80"  fill="none" stroke="#ff5aa8" stroke-width="0.6" opacity="0.3"/>
+                <circle r="55"  fill="none" stroke="#ff5aa8" stroke-width="0.8" opacity="0.5"/>
+                <circle r="30"  fill="none" stroke="#ff5aa8" stroke-width="1"   opacity="0.7"/>
+
+                <!-- orbiting dots -->
+                <circle r="60" fill="url(#ctaGlow)"/>
+                <g>
+                  <circle cx="0" cy="-55" r="5" fill="#ff5aa8">
+                    <animateTransform attributeName="transform" type="rotate" from="0" to="360" dur="8s" repeatCount="indefinite"/>
+                  </circle>
+                </g>
+                <g>
+                  <circle cx="0" cy="-80" r="4" fill="#56e0e0">
+                    <animateTransform attributeName="transform" type="rotate" from="120" to="480" dur="12s" repeatCount="indefinite"/>
+                  </circle>
+                </g>
+                <g>
+                  <circle cx="0" cy="-110" r="3" fill="#a07cf0">
+                    <animateTransform attributeName="transform" type="rotate" from="240" to="600" dur="16s" repeatCount="indefinite"/>
+                  </circle>
+                </g>
+                <circle r="14" fill="#ff5aa8">
+                  <animate attributeName="r" values="12;18;12" dur="2s" repeatCount="indefinite"/>
+                </circle>
+              </g>
+            </svg>
+          </div>
+        </div>
+      </div>
+
+      <footer class="footer">
+        <div class="row">
+          <div>© 2026 VRAXION · Apache 2.0 noncommercial</div>
+          <div>
+            <a href="https://github.com/VRAXION/VRAXION" target="_blank" rel="noopener">github</a>
+            &nbsp;·&nbsp;
+            <a href="https://github.com/VRAXION/VRAXION/issues" target="_blank" rel="noopener">issues</a>
+            &nbsp;·&nbsp;
+            <a href="https://github.com/VRAXION/VRAXION/blob/main/CHANGELOG.md" target="_blank" rel="noopener">changelog</a>
+          </div>
+        </div>
+      </footer>
+    </section>
+
+  </main>
+
+</div>
+
+<!-- TWEAKS PANEL -->
+<div class="tweaks" id="tweaks">
+  <div class="tweaks-head"><span class="t">Tweaks</span><span style="color:var(--ink-4);font-size:10px;letter-spacing:.06em;">vraxion.beta</span></div>
+  <div class="tweaks-body">
+    <div class="tweak-row">
+      <label>Accent</label>
+      <div class="tweak-swatches" id="tw-accent">
+        <div class="tweak-swatch" data-val="fuchsia" style="background:#ff5aa8"></div>
+        <div class="tweak-swatch" data-val="cyan"    style="background:#56e0e0"></div>
+        <div class="tweak-swatch" data-val="purple"  style="background:#a07cf0"></div>
+        <div class="tweak-swatch" data-val="amber"   style="background:#e8c858"></div>
+        <div class="tweak-swatch" data-val="jade"    style="background:#7fd89a"></div>
+      </div>
+    </div>
+    <div class="tweak-row">
+      <div class="tweak-toggle">
+        <span>Animated visuals</span>
+        <div class="sw-tog" id="tw-anim"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   HERO EYE — living fuchsia HAL-style substrate
+   ============================================================ */
+(() => {
+  const svg      = document.getElementById('hero-eye');
+  if (!svg) return;
+  const wrap     = document.getElementById('hero-eye-wrap');
+  const pupilG   = document.getElementById('eyePupilGroup');
+  const pupil    = document.getElementById('eyePupil');
+  const irisHalo = document.getElementById('eyeIrisHalo');
+  const irisIn   = document.getElementById('eyeIrisInner');
+  const lidTop   = document.getElementById('eyeLidTop');
+  const lidBot   = document.getElementById('eyeLidBot');
+  const orbitals = document.getElementById('eyeOrbitals');
+
+  const CX = 200, CY = 200, BODY_R = 168, MAX_OFFSET = 44;
+
+  /* ------- orbiting particles ------- */
+  const ORBITS = [];
+  for (let i = 0; i < 14; i++) {
+    const c = document.createElementNS('http://www.w3.org/2000/svg','circle');
+    const r = 1.2 + Math.random()*1.4;
+    c.setAttribute('r', r);
+    c.setAttribute('fill', '#ff5aa8');
+    c.setAttribute('opacity', (0.25 + Math.random()*0.5).toFixed(2));
+    orbitals.appendChild(c);
+    ORBITS.push({
+      el: c,
+      radius: 188 + Math.random()*28,
+      theta: Math.random() * Math.PI*2,
+      speed: (0.15 + Math.random()*0.35) * (Math.random()<0.5?-1:1),
+      rBase: r,
+    });
+  }
+
+  /* ------- spring state for pupil ------- */
+  const spring = {
+    x: 0, y: 0, vx: 0, vy: 0,
+    targetX: 0, targetY: 0,
+    scale: 1, vScale: 0, targetScale: 1,
+    squashX: 1, squashY: 1,
+  };
+
+  const STIFF = 0.08;
+  const DAMP  = 0.78;
+
+  /* ------- blink scheduling ------- */
+  let blink = { phase: 'open', t: 0, dur: 0 };
+  let nextBlinkAt = performance.now() + 1500 + Math.random()*2500;
+
+  function scheduleBlink(now) {
+    // 12% double-blink, 18% half-blink, else normal
+    const roll = Math.random();
+    if (roll < 0.12)      blink.mode = 'double';
+    else if (roll < 0.30) blink.mode = 'half';
+    else                  blink.mode = 'full';
+    blink.phase = 'closing';
+    blink.t = 0;
+    blink.dur = 120 + Math.random()*80;
+  }
+
+  /* ------- mouse / idle targeting ------- */
+  const rect = () => wrap.getBoundingClientRect();
+  let mouseActive = false, mouseTimer = 0;
+  let idleTheta = Math.random()*Math.PI*2;
+  let idleR     = 0;
+  let nextIdleShift = 0;
+
+  window.addEventListener('mousemove', (e) => {
+    const r = rect();
+    const nx = (e.clientX - (r.left + r.width/2))  / (r.width/2);
+    const ny = (e.clientY - (r.top  + r.height/2)) / (r.height/2);
+    const mag = Math.hypot(nx, ny);
+    const clamp = mag > 1 ? 1/mag : 1;
+    spring.targetX = nx * clamp * MAX_OFFSET;
+    spring.targetY = ny * clamp * MAX_OFFSET;
+    mouseActive = true;
+    mouseTimer = performance.now();
+  }, { passive: true });
+
+  /* ------- pupil shape morph (rounded rect with variable radius) ------- */
+  function pupilPath(w, h, rr) {
+    const x = CX - w/2, y = CY - h/2;
+    return `M${x+rr} ${y}
+            H${x+w-rr} Q${x+w} ${y} ${x+w} ${y+rr}
+            V${y+h-rr} Q${x+w} ${y+h} ${x+w-rr} ${y+h}
+            H${x+rr} Q${x} ${y+h} ${x} ${y+h-rr}
+            V${y+rr} Q${x} ${y} ${x+rr} ${y}Z`;
+  }
+
+  /* ------- micro drift so eye never looks frozen ------- */
+  let microT = 0;
+
+  function loop(now) {
+    const dt = 1/60;
+
+    // idle drift: gentle wandering when mouse isn't active
+    if (performance.now() - mouseTimer > 900) mouseActive = false;
+    if (!mouseActive) {
+      if (now > nextIdleShift) {
+        idleTheta += (Math.random() - 0.5) * 1.6;
+        idleR     = Math.random() * MAX_OFFSET * 0.55;
+        nextIdleShift = now + 1400 + Math.random()*2600;
+      }
+      spring.targetX = Math.cos(idleTheta) * idleR;
+      spring.targetY = Math.sin(idleTheta) * idleR;
+    }
+
+    // micro drift
+    microT += dt;
+    const mx = Math.sin(microT*1.7) * 1.4;
+    const my = Math.cos(microT*2.1) * 1.1;
+
+    // spring integrate
+    const ax = (spring.targetX - spring.x) * STIFF;
+    const ay = (spring.targetY - spring.y) * STIFF;
+    spring.vx = (spring.vx + ax) * DAMP;
+    spring.vy = (spring.vy + ay) * DAMP;
+    spring.x += spring.vx;
+    spring.y += spring.vy;
+
+    // squash based on velocity
+    const vmag = Math.hypot(spring.vx, spring.vy);
+    const squash = Math.min(0.22, vmag * 0.035);
+    const dirX = vmag > 0.01 ? spring.vx / vmag : 0;
+    const dirY = vmag > 0.01 ? spring.vy / vmag : 0;
+    // stretch along movement axis
+    spring.squashX = 1 + squash * Math.abs(dirX) - squash * 0.5 * Math.abs(dirY);
+    spring.squashY = 1 + squash * Math.abs(dirY) - squash * 0.5 * Math.abs(dirX);
+
+    // breath pulse
+    const breath = 1 + Math.sin(now * 0.0017) * 0.025;
+    const baseW = 44, baseH = 56;
+    const w = baseW * breath * spring.squashX;
+    const h = baseH * breath * spring.squashY;
+    const rr = Math.min(w,h)/2 - 2;  // fully rounded → capsule
+
+    pupil.setAttribute('d', pupilPath(w, h, rr));
+
+    // transform pupil group
+    pupilG.setAttribute('transform',
+      `translate(${spring.x + mx} ${spring.y + my})`);
+
+    // iris halo pulse follows breath
+    irisHalo.setAttribute('r', 90 + Math.sin(now*0.002)*8);
+    irisIn.setAttribute('r',   66 + Math.sin(now*0.0027)*5);
+
+    // blinks
+    if (blink.phase === 'open' && now >= nextBlinkAt) {
+      scheduleBlink(now);
+    }
+    if (blink.phase !== 'open') {
+      blink.t += 16;
+      const progress = Math.min(1, blink.t / blink.dur);
+      let closeAmt = 0;
+      if (blink.phase === 'closing') {
+        closeAmt = blink.mode === 'half' ? progress * 0.55 : progress;
+        if (progress >= 1) { blink.phase = 'opening'; blink.t = 0; blink.dur = 160 + Math.random()*80; }
+      } else if (blink.phase === 'opening') {
+        const base = blink.mode === 'half' ? 0.55 : 1;
+        closeAmt = base * (1 - progress);
+        if (progress >= 1) {
+          if (blink.mode === 'double') {
+            blink.mode = 'full';
+            blink.phase = 'closing'; blink.t = 0; blink.dur = 100 + Math.random()*60;
+          } else {
+            blink.phase = 'open';
+            nextBlinkAt = now + 1800 + Math.random()*4200;
+          }
+        }
+      }
+      const lidH = 200 * closeAmt;
+      lidTop.setAttribute('height', lidH);
+      lidBot.setAttribute('y', 400 - lidH);
+      lidBot.setAttribute('height', lidH);
+    }
+
+    // orbitals
+    for (const o of ORBITS) {
+      o.theta += o.speed * dt;
+      const x = CX + Math.cos(o.theta) * o.radius;
+      const y = CY + Math.sin(o.theta) * o.radius * 0.96;
+      o.el.setAttribute('cx', x);
+      o.el.setAttribute('cy', y);
+    }
+
+    requestAnimationFrame(loop);
+  }
+  requestAnimationFrame(loop);
+})();
+</script>
+
+<script>
+(() => {
+  const T = window.__TWEAKS__;
+  const root = document.documentElement;
+
+  const ACCENTS = {
+    fuchsia: '#ff5aa8',
+    cyan:    '#56e0e0',
+    purple:  '#a07cf0',
+    amber:   '#e8c858',
+    jade:    '#7fd89a',
+  };
+
+  function applyAccent(name) {
+    const v = ACCENTS[name] || ACCENTS.fuchsia;
+    root.style.setProperty('--fuchsia', v);
+    root.style.setProperty('--accent', v);
+  }
+  function applyAnim(on) {
+    document.querySelectorAll('svg animate, svg animateTransform, svg animateMotion').forEach(el => {
+      if (on) { el.beginElement?.(); }
+      else    { el.endElement?.();   }
+    });
+    document.documentElement.style.setProperty('--anim-state', on ? 'running' : 'paused');
+    document.querySelectorAll('.qcard .bar .fill').forEach(el => {
+      el.style.animationPlayState = on ? 'running' : 'paused';
+    });
+  }
+
+  applyAccent(T.accent);
+  applyAnim(T.graphAnim);
+
+  // ---- scroll-spy ----
+  const links = Array.from(document.querySelectorAll('#rail-nav a'));
+  const sections = links.map(a => document.querySelector(a.getAttribute('href'))).filter(Boolean);
+
+  function onScroll() {
+    const y = window.scrollY + 120;
+    let current = sections[0];
+    for (const s of sections) {
+      if (s.offsetTop <= y) current = s;
+    }
+    links.forEach(a => a.classList.toggle('active', a.getAttribute('href') === '#' + current.id));
+  }
+  window.addEventListener('scroll', onScroll, { passive: true });
+  onScroll();
+
+  // smooth scroll
+  links.forEach(a => {
+    a.addEventListener('click', (e) => {
+      const id = a.getAttribute('href');
+      const t = document.querySelector(id);
+      if (!t) return;
+      e.preventDefault();
+      window.scrollTo({ top: t.offsetTop - 8, behavior: 'smooth' });
+    });
+  });
+
+  // ---- tweaks panel ----
+  const panel = document.getElementById('tweaks');
+  function bindSwatches(id, key, apply) {
+    const box = document.getElementById(id);
+    const paint = () => box.querySelectorAll('.tweak-swatch').forEach(s => s.classList.toggle('active', s.dataset.val === T[key]));
+    box.addEventListener('click', e => {
+      const s = e.target.closest('.tweak-swatch'); if (!s) return;
+      T[key] = s.dataset.val; apply(T[key]); paint(); persist({ [key]: T[key] });
+    });
+    paint();
+  }
+  function bindToggle(id, key, apply) {
+    const sw = document.getElementById(id);
+    const paint = () => sw.classList.toggle('on', !!T[key]);
+    sw.addEventListener('click', () => { T[key] = !T[key]; apply(T[key]); paint(); persist({ [key]: T[key] }); });
+    paint();
+  }
+
+  bindSwatches('tw-accent', 'accent', applyAccent);
+  bindToggle('tw-anim', 'graphAnim', applyAnim);
+
+  function persist(edits) {
+    try { window.parent.postMessage({ type: '__edit_mode_set_keys', edits }, '*'); } catch {}
+  }
+  window.addEventListener('message', e => {
+    const d = e.data || {};
+    if (d.type === '__activate_edit_mode')   panel.classList.add('open');
+    if (d.type === '__deactivate_edit_mode') panel.classList.remove('open');
+  });
+  try { window.parent.postMessage({ type: '__edit_mode_available' }, '*'); } catch {}
+})();
+</script>
+</body>
+</html>
