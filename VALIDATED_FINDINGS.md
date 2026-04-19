@@ -1,6 +1,6 @@
 # VRAXION Validated Findings
 
-_Last updated: 2026-04-18_
+_Last updated: 2026-04-19_
 
 Canonical evidence summary. Repo-tracked docs are canonical; the GitHub wiki is a mirrored secondary surface.
 
@@ -8,9 +8,10 @@ Canonical evidence summary. Repo-tracked docs are canonical; the GitHub wiki is 
 
 The repo is in a transition state:
 
-- **Released public tag:** `v5.0.0-beta.1` — Rust language-evolution beta
+- **Released public tag:** `v5.0.0-beta.2` — Rust grower public beta (`v5.0.0-beta.1` remains as prior language-evolution beta, historical reference only)
 - **Current mainline on `main`:** Rust grower (`instnct-core/examples/neuron_grower.rs`)
 - **Reference/support lane:** Python `instnct/model/graph.py`
+- **Active research line:** Byte-level lexical-to-neural pipeline (L0 + L1 frozen; Tokenizer V2 champion; Embedder + Nano Brain scaffolds awaiting training)
 
 ### Grower lane: proven on `main`
 
@@ -115,6 +116,21 @@ Comprehensive quantization sweep on FineWeb char-LM (B0 Beukers gate), RTX 4070 
 | **Big Beukers-cluster joint exhaustive = stalls** | 15 clusters x 32 sec each -> 22.40%. Same best config found 5 times (search stalls early). Exhaustive joint over Beukers-cluster space does not scale past micro-components. | **Validated finding (negative)** |
 | **Revised per-precision deploy recommendations** | **Cloud/server**: QAT int8 = 86.40%, 4x compression, essentially lossless. **Mobile/edge**: staged INQ int4 = 84.75%, 8x compression, -1.65pp. **IoT/FPGA**: QAT binary + Beukers LUT = 71.50%, 32x compression, -14.9pp, native bit-ops. **Micro-components only** (D <= 20): true ternary exhaustive — mathematical optimum guarantee, capacity-limited. | **CANONICAL / Frozen** |
 | **Meta-lesson: gradient + post-hoc quantization is Pareto-dominant** | Gradient-based dense training + post-training quantization (QAT STE for int8/int4, or staged INQ for int4) remains the Pareto-dominant approach at all scales tested. Exhaustive search is valuable only for micro-components (D <= 20) where mathematical optimality matters AND the limited capacity is acceptable. Clustered / progressive / rotated sparse approaches were dominated in every metric. The earlier project finding "MLP backprop ~18x more parameter-efficient than INSTNCT evolution" is now reconfirmed on modern quantization techniques: **gradient wins**. Final verdict visualization: `docs/playground/quant_final_verdict.html`. | **Validated finding / meta** |
+
+## Byte-level lexical-to-neural pipeline (2026-04-17/18/19)
+
+Parallel research line to the Rust grower. Builds a compact byte→text→tokens→embedding→brain stack with each layer independently validated. Frozen champion artifacts are committed; each step is reproducible from `tools/diag_*`.
+
+| Finding | Result | Status |
+|---|---|---|
+| **L0 Byte Unit — LOCKED** | C19 `8 → 24 → 16` tied-mirror autoencoder, int4 precision, 100% lossless on all 256 bytes. Deploy form: 256-entry LUT at `tools/byte_embedder_lut.h` (4.1 KB). Input: 1 byte (8 bits). Output: 16-dim embedding. | **Validated finding / Frozen** |
+| **L1 Byte-Pair Merger — CHAMPION** | Single-W mirror-tied autoencoder (one 32×81 matrix, 2,592 weight cells). 100% lossless on all 65,536 byte pairs. Huffman-packed deploy: **3,440 B (3.36 KB)** at `output/merger_single_w_huffman_pack/packed_model.bin`. Progression: fp32 11.20 KB → fp16 5.60 KB → Huffman-packed 3.36 KB. Standard compressors (lzma/bz2/gzip on raw fp16) all beaten by the custom structured encoding. Shannon floor: 2,422 B (~42% gap remains — next target). | **Validated finding / Frozen champion** |
+| **L1 research-side "73% hard ceiling" was a single-seed artifact** | Cluster 10's "tied-mirror cannot exceed 73% byte recovery" ceiling was overturned when single-W mirror tied at H=81 reached 100% lossless on the same 65,536 byte-pair set. The ceiling was a protocol/seed artifact, not fundamental. Overrides the earlier Cluster 10 finding in the archived timeline. | **Validated (revised)** |
+| **Word Tokenizer V2 hybrid champion** | Whole-word + subword + byte-fallback, `whole_ratio=0.9375`, 32,294 vocab. 10 MB FineWeb-EDU: **30.43% real Huffman compression** of raw (beats gzip-9 37.62% by 7.19pp; 0.46pp above bzip2-9 29.97%; 1.82pp above lzma-9e 28.61%). Byte-fallback only 1.26% of input bytes; LEARNED coverage 95.90%. Shannon floor 30.34% (Huffman 0.29% above — near-optimal). 100% lossless round-trip on 10 MB, 0/2000 unreachable tokens, 14/14 adversarial edge cases pass. Matches SuperBPE τ=0.9 ([arXiv:2503.13423](https://arxiv.org/abs/2503.13423)). Frozen public artifact: `output/word_tokenizer_champion/`. | **Validated finding / Frozen champion** |
+| **Research-swarm pipeline verdict** | Parallel deep-research against 2024-2026 tokenizer literature confirms our pipeline (scan → pre-segment word/punct/ws → DP per word → byte fallback) is a legitimate 2025-frontier hybrid: matches tiktoken pre-segmentation + SentencePiece Unigram DP + SentencePiece byte_fallback. SuperBPE τ=0.9 aligns with our `whole_ratio=0.9375`. Not a published "tokenize + Huffman/rANS only" pipeline — potential contribution gap identified. | **Validated (research-anchored)** |
+| **Word Embedder V1 — SCAFFOLD** | 32,294 × 64 Xavier-init lookup table, 2,066,816 params (8.27 MB f32 / 2.07 MB int8). Symmetric per-tensor int8 quant ~0.0012 mean dequant error. Dim 64 chosen to match tiny-champion philosophy (L0=16, L1=81). Forward-pass verified; training not started. | **Scaffold — untrained** |
+| **Nano Brain V1 — SCAFFOLD** | 2-layer causal transformer, 64 dim, 4 heads, FFN 64→256→64 GELU, tied embedder/output head. Total 2,182,144 params (94.7% in embedder). End-to-end forward pass `text → IDs → [N, 64] → logits [N, 32294]` verified (81 ms CPU on 10 tokens). Init cross-entropy 11.15 vs random-uniform 10.38 baseline (expected noise). | **Scaffold — untrained** |
+| **L2 reconstruction merger — DEPRIORITIZED** | Attempted to compress 16-byte windows (8 × 81-dim L1 hiddens = 648-dim) with a second mirror-tied autoencoder. Phase-0 PCA geometry probe: at D=128 only 97.6% per-dim sign-match / 2.6% exact-window. Neural tied-mirror ablation under-fit even the linear PCA baseline. Geometry of L1 hidden space is anisotropic on natural text; linear reconstruction does not scale within current capacity. Pivoted to word-tokenizer line (Cluster 16). | **Validated finding (negative) — direction closed** |
 
 ## How To Read This Page
 

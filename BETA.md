@@ -4,7 +4,7 @@ This document defines the current public-beta freeze target on `main`.
 
 The key transition is simple:
 
-- **released tag**: `v5.0.0-beta.1` remains the shipped language-evolution beta
+- **released tag**: `v5.0.0-beta.2` is the current shipped Rust public beta (grower-based); `v5.0.0-beta.1` remains the prior language-evolution beta as historical reference
 - **current mainline on `main`**: the bias-free Rust grower
 - **next public milestone**: grower-based `v5.0.0 Public Beta`
 
