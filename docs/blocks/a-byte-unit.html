@@ -3,476 +3,3731 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>VRAXION — Block A · Byte Unit</title>
-  <link rel="icon" href="../assets/favicon.svg" type="image/svg+xml" />
-  <link rel="stylesheet" href="../assets/app.css" />
+  <title>VRAXION — Block A · Byte Unit · Neural Wire Prototype</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700;800;900&family=Geist+Mono:wght@300;400;500;600&display=swap" rel="stylesheet" />
   <style>
-    /* Defensive inline tokens */
-    :root {
-      --bg:#0a0a0f;--bg-2:#111118;--bg-3:#1a1a24;--border:#2a2a3a;
-      --ink:#e8e8f0;--ink-2:#9898b0;--ink-3:#5a5a72;
-      --cyan:#00d8ff;--purple:#9b6dff;--fuchsia:#ff4fd8;
-      --jade:#00e59b;--amber:#ffaa00;--accent:#00d8ff;
-      --font:'Inter',system-ui,sans-serif;
-      --font-mono:'JetBrains Mono','Fira Code',monospace;
-      --block-accent: var(--cyan);
-    }
-    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
-    html{font-family:var(--font);background:var(--bg);color:var(--ink);scroll-behavior:smooth;}
-    body{overflow-x:hidden;}
+/* ── Design Tokens ────────────────────────────────────────── */
+:root {
+  --bg:      #0b0d14;
+  --bg-2:    #11141e;
+  --bg-3:    #0a0c12;
+  --border:  #1f2432;
+  --ink:     #ecedf3;
+  --ink-2:   #b3b8c9;
+  --ink-3:   #767c92;
+  --cyan:    #56e0e0;
+  --purple:  #a07cf0;
+  --fuchsia: #ff5aa8;
+  --jade:    #7fd89a;
+  --amber:   #e8c858;
+  --font:      "Geist", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "Geist Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  --nav-h:   56px;
+}
 
-    /* ── TOP NAV ── */
-    .top-bar{
-      position:fixed;top:0;left:0;right:0;z-index:100;height:52px;
-      display:flex;align-items:center;justify-content:space-between;
-      padding:0 20px;
-      background:rgba(10,10,15,0.94);backdrop-filter:blur(14px);
-      border-bottom:1px solid var(--border);
-      gap:12px;
-    }
-    .tb-home a{
-      color:var(--ink-2);text-decoration:none;font-size:0.82rem;
-      white-space:nowrap;transition:color .2s;
-    }
-    .tb-home a:hover{color:var(--cyan);}
-    .tb-tabs{
-      display:flex;align-items:center;gap:2px;
-      overflow-x:auto;-webkit-overflow-scrolling:touch;
-      scrollbar-width:none;
-    }
-    .tb-tabs::-webkit-scrollbar{display:none;}
-    .tb-tab{
-      color:var(--ink-3);text-decoration:none;
-      font-size:0.78rem;letter-spacing:0.04em;
-      padding:5px 11px;border-radius:6px;white-space:nowrap;
-      transition:color .2s,background .2s;
-    }
-    .tb-tab:hover{color:var(--ink);background:var(--bg-3);}
-    .tb-tab[aria-current="page"]{
-      color:var(--cyan);background:rgba(0,216,255,0.1);
-      border:1px solid rgba(0,216,255,0.25);
-    }
-    .tb-sep{color:var(--border);font-size:0.8rem;user-select:none;}
-    .tb-right{
-      display:flex;align-items:center;gap:10px;flex-shrink:0;
-    }
-    .tb-status{
-      display:flex;align-items:center;gap:5px;
-      font-size:0.72rem;letter-spacing:0.08em;text-transform:uppercase;
-      color:var(--jade);white-space:nowrap;
-    }
-    .tb-status-dot{width:7px;height:7px;border-radius:50%;background:var(--jade);}
-    .tb-gh a{color:var(--ink-3);transition:color .2s;}
-    .tb-gh a:hover{color:var(--ink);}
+/* ── Reset ────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-    /* ── SLIDE BASE ── */
-    .slide{
-      min-height:100vh;display:flex;flex-direction:column;
-      align-items:center;justify-content:center;
-      padding:80px 24px 60px;
-      position:relative;overflow:hidden;
-    }
-    .slide+.slide{border-top:1px solid var(--border);}
-    .slide-inner{width:100%;max-width:860px;}
+html {
+  font-family: var(--font);
+  background: var(--bg);
+  color: var(--ink);
+  overflow: hidden;          /* no native scroll — deck handles everything */
+  -webkit-text-size-adjust: 100%;
+}
 
-    /* Ambient glow */
-    .slide::before{
-      content:'';position:absolute;inset:0;pointer-events:none;
-      background:radial-gradient(ellipse 70% 55% at 50% 30%,
-        rgba(0,216,255,0.03) 0%, transparent 65%);
-    }
+body {
+  height: 100vh;
+  overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
 
-    /* ── HERO ── */
-    .hero-letter{
-      font-size:clamp(5rem,14vw,10rem);font-weight:900;
-      line-height:1;color:var(--cyan);
-      opacity:0.12;position:absolute;top:10%;left:50%;
-      transform:translateX(-50%);user-select:none;letter-spacing:-0.05em;
-      pointer-events:none;
-    }
-    .hero-content{
-      position:relative;z-index:1;text-align:center;
-      display:flex;flex-direction:column;align-items:center;gap:16px;
-    }
-    .hero-tag{
-      font-size:0.72rem;letter-spacing:0.2em;text-transform:uppercase;
-      color:var(--cyan);opacity:0.7;
-    }
-    .hero-name{
-      font-size:clamp(2.2rem,5vw,3.6rem);font-weight:800;
-      letter-spacing:-0.02em;line-height:1.05;
-      background:linear-gradient(135deg,var(--ink) 40%,var(--cyan) 100%);
-      -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
-    }
-    .hero-desc{
-      font-size:1.05rem;color:var(--ink-2);max-width:500px;line-height:1.6;
-    }
-    .status-badge{
-      display:inline-flex;align-items:center;gap:7px;
-      border:1px solid rgba(0,229,155,0.35);border-radius:24px;
-      padding:5px 14px;font-size:0.75rem;letter-spacing:0.1em;
-      text-transform:uppercase;color:var(--jade);
-    }
-    .status-badge-dot{width:7px;height:7px;border-radius:50%;background:var(--jade);}
-    .status-badge.amber{color:var(--amber);border-color:rgba(255,170,0,0.35);}
-    .status-badge.amber .status-badge-dot{background:var(--amber);}
-    .arrow-hint{
-      position:absolute;bottom:32px;left:50%;transform:translateX(-50%);
-      color:var(--ink-3);font-size:1.2rem;
-      animation:bounce 2s ease-in-out infinite;
-    }
-    @keyframes bounce{0%,100%{transform:translateX(-50%) translateY(0);}50%{transform:translateX(-50%) translateY(6px);}}
+/* ── TOP NAV ──────────────────────────────────────────────── */
+.topnav {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  height: var(--nav-h);
+  z-index: 300;
+  background: color-mix(in oklab, var(--bg-3) 88%, transparent);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  padding: 0 24px;
+}
 
-    /* ── SECTION HEADINGS ── */
-    .slide-heading{
-      font-size:0.72rem;letter-spacing:0.2em;text-transform:uppercase;
-      color:var(--cyan);margin-bottom:24px;opacity:0.75;
-    }
-    .slide-title{
-      font-size:clamp(1.6rem,3.5vw,2.4rem);font-weight:700;
-      letter-spacing:-0.02em;margin-bottom:28px;
-    }
+.topnav-brand {
+  font-family: var(--font);
+  font-weight: 600;
+  font-size: 14px;
+  letter-spacing: 0.14em;
+  color: var(--ink);
+  text-transform: uppercase;
+  text-decoration: none;
+  margin-right: auto;
+  transition: color 0.15s;
+}
+.topnav-brand:hover { color: var(--cyan); }
 
-    /* ── ARCH DIAGRAM ── */
-    .arch-box{
-      background:var(--bg-2);border:1px solid var(--border);
-      border-radius:14px;padding:28px;margin-bottom:28px;
-      font-family:var(--font-mono);font-size:0.82rem;
-      overflow-x:auto;
-    }
-    .arch-flow{
-      display:flex;align-items:center;gap:0;flex-wrap:nowrap;
-      justify-content:center;margin-bottom:20px;
-    }
-    .arch-node{
-      background:var(--bg-3);border:1px solid var(--border);
-      border-radius:8px;padding:10px 16px;text-align:center;
-      min-width:80px;
-    }
-    .arch-node-label{font-size:0.7rem;color:var(--ink-3);margin-bottom:4px;}
-    .arch-node-val{font-size:0.92rem;color:var(--ink);font-weight:600;}
-    .arch-arrow{
-      color:var(--cyan);font-size:1.1rem;padding:0 8px;
-      flex-shrink:0;opacity:0.6;
-    }
-    .kv-grid{
-      display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));
-      gap:12px;margin-top:20px;
-    }
-    .kv{
-      background:var(--bg-3);border:1px solid var(--border);
-      border-radius:8px;padding:12px 14px;
-    }
-    .kv-key{font-size:0.68rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--ink-3);margin-bottom:5px;}
-    .kv-val{font-size:0.88rem;color:var(--ink);font-weight:500;font-family:var(--font-mono);}
-    .kv-val.accent{color:var(--cyan);}
+.topnav-crumb {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--ink-3);
+  letter-spacing: 0.08em;
+  margin-right: auto;
+  margin-left: 20px;
+}
+.topnav-crumb span { color: var(--cyan); }
 
-    /* ── METRICS ── */
-    .metric-big{
-      text-align:center;padding:32px 0;
-    }
-    .metric-big-num{
-      font-size:clamp(3rem,8vw,5.5rem);font-weight:800;
-      color:var(--jade);line-height:1;
-      letter-spacing:-0.03em;
-    }
-    .metric-big-label{
-      font-size:0.85rem;color:var(--ink-2);margin-top:8px;
-    }
-    .metrics-row{
-      display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));
-      gap:14px;margin-top:28px;
-    }
-    .metric-card{
-      background:var(--bg-2);border:1px solid var(--border);
-      border-radius:10px;padding:18px;text-align:center;
-    }
-    .metric-card-val{
-      font-size:1.4rem;font-weight:700;color:var(--cyan);
-      font-family:var(--font-mono);
-    }
-    .metric-card-label{
-      font-size:0.72rem;text-transform:uppercase;letter-spacing:0.08em;
-      color:var(--ink-3);margin-top:4px;
-    }
-    .sweep-table{
-      width:100%;border-collapse:collapse;margin-top:20px;
-      font-size:0.82rem;
-    }
-    .sweep-table th{
-      text-align:left;padding:8px 12px;
-      color:var(--ink-3);font-weight:500;
-      border-bottom:1px solid var(--border);
-      font-size:0.72rem;text-transform:uppercase;letter-spacing:0.08em;
-    }
-    .sweep-table td{
-      padding:9px 12px;border-bottom:1px solid rgba(42,42,58,0.5);
-      color:var(--ink-2);
-    }
-    .sweep-table tr.winner td{color:var(--jade);font-weight:600;}
-    .sweep-table td:first-child{font-family:var(--font-mono);}
+.topnav-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
 
-    /* ── DEPLOY ── */
-    .artifact-block{
-      background:var(--bg-2);border:1px solid var(--border);
-      border-radius:12px;padding:22px;margin-bottom:16px;
-    }
-    .artifact-label{
-      font-size:0.7rem;text-transform:uppercase;letter-spacing:0.12em;
-      color:var(--ink-3);margin-bottom:10px;
-    }
-    .artifact-path{
-      font-family:var(--font-mono);font-size:0.83rem;color:var(--cyan);
-      word-break:break-all;
-    }
-    .artifact-size{
-      font-family:var(--font-mono);font-size:0.78rem;color:var(--ink-3);
-      margin-top:4px;
-    }
-    .code-block{
-      background:var(--bg-3);border:1px solid var(--border);
-      border-radius:8px;padding:14px 16px;
-      font-family:var(--font-mono);font-size:0.82rem;
-      color:var(--jade);overflow-x:auto;white-space:pre;
-      margin-top:12px;
-    }
+.topnav-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--jade);
+  background: color-mix(in oklab, var(--jade) 8%, transparent);
+  border: 1px solid color-mix(in oklab, var(--jade) 30%, var(--border));
+  padding: 3px 9px;
+  border-radius: 4px;
+}
+.topnav-badge-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--jade);
+  animation: blink 2.4s ease-in-out infinite;
+}
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
 
-    /* ── NEXT ── */
-    .next-items{
-      display:flex;flex-direction:column;gap:12px;margin-bottom:32px;
-    }
-    .next-item{
-      display:flex;gap:12px;align-items:flex-start;
-      background:var(--bg-2);border:1px solid var(--border);
-      border-radius:10px;padding:14px 16px;
-    }
-    .next-item-icon{font-size:1rem;flex-shrink:0;margin-top:1px;}
-    .next-item-text{font-size:0.85rem;color:var(--ink-2);line-height:1.5;}
-    .pr-chips{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:28px;}
-    .pr-chip{
-      font-size:0.75rem;font-family:var(--font-mono);
-      background:var(--bg-2);border:1px solid var(--border);
-      border-radius:6px;padding:4px 10px;color:var(--ink-2);
-    }
+.topnav-gh {
+  display: inline-flex;
+  align-items: center;
+  color: var(--ink-3);
+  transition: color 0.15s;
+  padding: 4px;
+}
+.topnav-gh:hover { color: var(--ink); }
 
-    /* ── BLOCK NAV ── */
-    .block-nav{
-      display:flex;align-items:center;justify-content:space-between;
-      gap:16px;padding-top:24px;border-top:1px solid var(--border);
-      flex-wrap:wrap;
-    }
-    .nav-btn{
-      display:flex;align-items:center;gap:6px;
-      text-decoration:none;color:var(--ink-2);
-      font-size:0.82rem;padding:8px 16px;
-      border:1px solid var(--border);border-radius:8px;
-      background:var(--bg-2);transition:all .2s;
-    }
-    .nav-btn:hover{border-color:var(--cyan);color:var(--cyan);}
-    .nav-btn.home{font-size:0.78rem;}
+/* ── DECK VIEWPORT ────────────────────────────────────────── */
+.deck-viewport {
+  position: fixed;
+  top: var(--nav-h); left: 0; right: 0;
+  bottom: 0;
+  overflow: hidden;
+}
+
+.deck-track {
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  will-change: transform;
+  transition: transform 420ms cubic-bezier(0.25, 0.1, 0.25, 1);
+}
+
+.slide {
+  width: 100%;
+  height: calc(100vh - var(--nav-h));
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+/* ── METRO SIDEBAR ────────────────────────────────────────── */
+.metro {
+  position: fixed;
+  left: 28px;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 200;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+  opacity: 0;
+  animation: metro-fadein 0.9s 0.4s ease-out forwards;
+}
+@keyframes metro-fadein { to { opacity: 1; } }
+
+.metro-track {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: var(--border);
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+.metro-item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 0;
+  cursor: pointer;
+  background: none;
+  border: none;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--ink-3);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  transition: color 0.25s;
+  z-index: 1;
+}
+.metro-item:hover { color: var(--ink-2); }
+.metro-item[aria-current="true"] { color: var(--cyan); }
+
+.metro-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: var(--ink-3);
+  flex-shrink: 0;
+  transition: width 0.25s, height 0.25s, background 0.25s, box-shadow 0.25s;
+  position: relative;
+}
+.metro-item[aria-current="true"] .metro-dot {
+  width: 13.6px; height: 13.6px;
+  background: var(--cyan);
+  box-shadow: 0 0 10px 2px color-mix(in oklab, var(--cyan) 60%, transparent);
+}
+
+.metro-label {
+  opacity: 0;
+  transition: opacity 0.2s;
+  pointer-events: none;
+}
+.metro:hover .metro-label,
+.metro-item:focus-visible .metro-label {
+  opacity: 1;
+}
+.metro-item[aria-current="true"] .metro-label {
+  opacity: 1;
+}
+
+/* ── SLIDE COUNTER ────────────────────────────────────────── */
+.slide-counter {
+  position: fixed;
+  bottom: 20px;
+  right: 28px;
+  z-index: 200;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--ink-3);
+  letter-spacing: 0.1em;
+  pointer-events: none;
+}
+
+/* ── SCROLL HINT ──────────────────────────────────────────── */
+.scroll-hint {
+  position: absolute;
+  bottom: 22px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  color: var(--ink-3);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  animation: scroll-bounce 2.2s ease-in-out infinite;
+  transition: opacity 0.4s;
+  pointer-events: none;
+  z-index: 10;
+}
+.scroll-hint.hidden { opacity: 0; }
+.scroll-hint svg { animation: scroll-bounce 2.2s ease-in-out infinite; }
+@keyframes scroll-bounce {
+  0%, 100% { transform: translateX(-50%) translateY(0); }
+  50% { transform: translateX(-50%) translateY(6px); }
+}
+
+/* ─────────────────────────────────────────────────────────── */
+/* SLIDE 1 — HERO                                             */
+/* ─────────────────────────────────────────────────────────── */
+#slide-1 {
+  background: var(--bg);
+}
+
+/* Ambient glow behind diagram */
+#slide-1::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 55% 50% at 35% 50%, color-mix(in oklab, var(--cyan) 4%, transparent), transparent 65%),
+    radial-gradient(ellipse 30% 40% at 72% 40%, color-mix(in oklab, var(--purple) 5%, transparent), transparent 65%);
+  pointer-events: none;
+}
+
+.slide1-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr);
+  align-items: stretch;
+  gap: clamp(32px, 4vw, 80px);
+  width: 100%;
+  max-width: min(1820px, 96vw);
+  padding: clamp(76px, 7vh, 108px) clamp(32px, 4vw, 88px) clamp(40px, 4vh, 72px) clamp(88px, 7vw, 132px);
+  height: 100vh;
+  position: relative;
+  z-index: 1;
+}
+
+@media (max-width: 980px) {
+  .slide1-layout {
+    grid-template-columns: 1fr;
+    gap: 28px;
+    padding: 80px 40px 40px 70px;
+    height: auto;
+    min-height: 100vh;
+    align-items: center;
+  }
+}
+
+/* SVG diagram — stretched to viewport height */
+.diagram-wrap {
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  justify-self: stretch;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(10px, 1.2vh, 18px);
+}
+
+/* System card — vertically centered in its column */
+.system-card {
+  align-self: center;
+}
+
+.diagram-sub {
+  font-family: var(--font-mono);
+  font-size: clamp(11px, 0.82vw, 13px);
+  color: var(--ink-3);
+  letter-spacing: 0.06em;
+  text-align: center;
+  opacity: 0.75;
+}
+
+#wire-svg {
+  width: auto;
+  height: 100%;
+  max-height: clamp(440px, calc(100vh - 180px), 960px);
+  max-width: 100%;
+}
+
+/* Right: system card */
+.system-card {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: clamp(18px, 1.8vh, 28px);
+  padding-right: 4px;
+}
+
+.card-tag {
+  font-family: var(--font-mono);
+  font-size: clamp(11px, 0.8vw, 13px);
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+/* Title inline mark: polished flat "II" sigil — sits OUTSIDE the text column */
+.card-title {
+  display: block;
+  position: relative;
+  white-space: nowrap;
+}
+.title-mark {
+  position: absolute;
+  right: calc(100% + clamp(16px, 1.4vw, 26px));
+  top: 50%;
+  transform: translateY(-50%);
+  width: 0.85em;
+  height: 0.85em;
+  flex-shrink: 0;
+  filter: drop-shadow(0 6px 18px color-mix(in oklab, var(--cyan) 45%, transparent));
+}
+
+/* Badge row: 3 tag chips + small 3D brick mark, no frame */
+.badge-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  row-gap: 8px;
+}
+.brick-mark {
+  width: 52px;
+  height: auto;
+  flex-shrink: 0;
+  filter: drop-shadow(0 3px 10px color-mix(in oklab, var(--cyan) 30%, transparent));
+}
+
+.card-title {
+  font-family: var(--font);
+  font-size: clamp(56px, 6.4vw, 112px);
+  font-weight: 600;
+  letter-spacing: -0.025em;
+  color: var(--ink);
+  line-height: 0.98;
+}
+
+.card-tagline {
+  font-size: clamp(17px, 1.3vw, 22px);
+  color: var(--ink-2);
+  line-height: 1.55;
+  max-width: 56ch;
+}
+
+/* Tag chips: status + properties (replace single versioned badge) */
+.tag-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  border: 1px solid var(--border);
+  background: var(--bg-2);
+  border-radius: 99px;
+  padding: 5px 13px;
+  font-family: var(--font-mono);
+  font-size: clamp(10.5px, 0.78vw, 12px);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  width: fit-content;
+  white-space: nowrap;
+}
+.tag-chip.jade {
+  color: var(--jade);
+  border-color: color-mix(in oklab, var(--jade) 38%, var(--border));
+  background: color-mix(in oklab, var(--jade) 7%, transparent);
+}
+.tag-chip.cyan {
+  color: var(--cyan);
+  border-color: color-mix(in oklab, var(--cyan) 38%, var(--border));
+  background: color-mix(in oklab, var(--cyan) 6%, transparent);
+}
+.tag-chip.purple {
+  color: var(--purple);
+  border-color: color-mix(in oklab, var(--purple) 38%, var(--border));
+  background: color-mix(in oklab, var(--purple) 6%, transparent);
+}
+.tag-chip.amber {
+  color: var(--amber);
+  border-color: color-mix(in oklab, var(--amber) 38%, var(--border));
+  background: color-mix(in oklab, var(--amber) 7%, transparent);
+}
+.tag-chip.neutral {
+  color: var(--ink-3);
+  border-color: var(--border);
+  background: transparent;
+}
+.tag-dot {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+  animation: blink 2.4s ease-in-out infinite;
+}
+
+/* ── Tag chip hover states ────────────────────────────────── */
+.tag-chip {
+  position: relative;   /* tooltip anchor */
+  cursor: default;
+  transition: border-color 0.15s, box-shadow 0.15s, transform 0.15s;
+}
+.tag-chip:hover,
+.tag-chip:focus-visible {
+  transform: translateY(-2px);
+  outline: none;
+}
+.tag-chip.jade:hover,
+.tag-chip.jade:focus-visible {
+  border-color: color-mix(in oklab, var(--jade) 70%, var(--border));
+  box-shadow: 0 4px 14px color-mix(in oklab, var(--jade) 22%, transparent);
+}
+.tag-chip.cyan:hover,
+.tag-chip.cyan:focus-visible {
+  border-color: color-mix(in oklab, var(--cyan) 70%, var(--border));
+  box-shadow: 0 4px 14px color-mix(in oklab, var(--cyan) 20%, transparent);
+}
+.tag-chip.purple:hover,
+.tag-chip.purple:focus-visible {
+  border-color: color-mix(in oklab, var(--purple) 70%, var(--border));
+  box-shadow: 0 4px 14px color-mix(in oklab, var(--purple) 22%, transparent);
+}
+.tag-chip.neutral:hover,
+.tag-chip.neutral:focus-visible {
+  border-color: color-mix(in oklab, var(--ink-3) 55%, var(--border));
+  box-shadow: 0 4px 14px color-mix(in oklab, var(--ink-3) 12%, transparent);
+}
+.tag-chip.amber:hover,
+.tag-chip.amber:focus-visible {
+  border-color: color-mix(in oklab, var(--amber) 70%, var(--border));
+  box-shadow: 0 4px 14px color-mix(in oklab, var(--amber) 22%, transparent);
+}
+
+/* ── Tooltip popup ────────────────────────────────────────── */
+.chip-tooltip {
+  /* positioning */
+  position: absolute;
+  bottom: calc(100% + 12px);
+  left: 50%;
+  transform: translateX(-50%) translateY(0px);
+  z-index: 400;
+
+  /* box */
+  background: color-mix(in oklab, var(--bg-2) 96%, black);
+  border: 1px solid color-mix(in oklab, var(--cyan) 38%, var(--border));
+  border-radius: 10px;
+  padding: 12px 14px;
+  max-width: 300px;
+  min-width: 200px;
+  width: max-content;
+  box-shadow:
+    0 8px 28px rgba(0,0,0,0.55),
+    0 2px 8px rgba(0,0,0,0.35),
+    inset 0 1px 0 rgba(255,255,255,0.04);
+  pointer-events: none;
+
+  /* typography */
+  font-family: var(--font);
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--ink-2);
+  text-align: left;
+  white-space: normal;
+
+  /* animation — hidden state */
+  opacity: 0;
+  visibility: hidden;
+  transform: translateX(-50%) translateY(6px);
+  transition:
+    opacity 0.18s ease-out,
+    transform 0.18s ease-out,
+    visibility 0s linear 0.18s;
+}
+
+/* Caret triangle pointing down at chip */
+.chip-tooltip::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 7px solid transparent;
+  border-top-color: color-mix(in oklab, var(--bg-2) 96%, black);
+  pointer-events: none;
+}
+.chip-tooltip::before {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 8px solid transparent;
+  border-top-color: color-mix(in oklab, var(--cyan) 38%, var(--border));
+  pointer-events: none;
+  margin-top: 1px; /* sits behind ::after */
+  z-index: -1;
+}
+
+/* Visible state (driven by JS adding .is-visible) */
+.chip-tooltip.is-visible {
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(-50%) translateY(0px);
+  transition:
+    opacity 0.18s ease-out,
+    transform 0.18s ease-out,
+    visibility 0s linear 0s;
+}
+
+/* Tooltip title line */
+.chip-tooltip-title {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  display: block;
+  margin-bottom: 6px;
+}
+.chip-tooltip-title.jade  { color: var(--jade); }
+.chip-tooltip-title.cyan  { color: var(--cyan); }
+.chip-tooltip-title.purple { color: var(--purple); }
+.chip-tooltip-title.neutral { color: var(--ink-3); }
+.chip-tooltip-title.amber { color: var(--amber); }
+
+/* Reduced-motion: skip translate, only fade */
+@media (prefers-reduced-motion: reduce) {
+  .chip-tooltip,
+  .chip-tooltip.is-visible {
+    transform: translateX(-50%) translateY(0px) !important;
+    transition: opacity 0.18s ease-out, visibility 0s linear 0.18s;
+  }
+  .chip-tooltip.is-visible {
+    transition: opacity 0.18s ease-out, visibility 0s linear 0s;
+  }
+}
+
+/* Stats grid */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+.stat-card {
+  /* multi-layer bg: top-right cyan halo + diagonal gradient */
+  background:
+    radial-gradient(ellipse 70% 55% at 88% -10%,
+      color-mix(in oklab, var(--cyan) 14%, transparent) 0%,
+      transparent 62%),
+    linear-gradient(168deg,
+      color-mix(in oklab, var(--bg-2) 90%, var(--cyan)) 0%,
+      var(--bg-2) 45%,
+      color-mix(in oklab, var(--bg-2) 94%, black) 100%);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: clamp(14px, 1.1vw, 20px) clamp(16px, 1.2vw, 22px);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  position: relative;
+  cursor: default;
+  outline: none;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.04),
+    0 1px 2px rgba(0,0,0,0.25);
+  transition:
+    border-color .2s,
+    box-shadow .2s,
+    transform .15s,
+    background .2s;
+}
+.stat-card:hover,
+.stat-card:focus-visible {
+  border-color: color-mix(in oklab, var(--cyan) 60%, var(--border));
+  background:
+    radial-gradient(ellipse 80% 65% at 88% -10%,
+      color-mix(in oklab, var(--cyan) 26%, transparent) 0%,
+      transparent 68%),
+    linear-gradient(168deg,
+      color-mix(in oklab, var(--bg-2) 82%, var(--cyan)) 0%,
+      color-mix(in oklab, var(--bg-2) 96%, var(--cyan)) 45%,
+      color-mix(in oklab, var(--bg-2) 94%, black) 100%);
+  box-shadow:
+    0 6px 22px color-mix(in oklab, var(--cyan) 20%, transparent),
+    inset 0 1px 0 rgba(255,255,255,0.08);
+  transform: translateY(-2px);
+}
+.stat-val {
+  font-family: var(--font-mono);
+  font-size: clamp(18px, 1.4vw, 26px);
+  font-weight: 600;
+  color: var(--cyan);
+  letter-spacing: -0.01em;
+  text-shadow: 0 0 20px color-mix(in oklab, var(--cyan) 35%, transparent);
+}
+.stat-key {
+  font-family: var(--font-mono);
+  font-size: clamp(10px, 0.72vw, 11.5px);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+/* ─────────────────────────────────────────────────────────── */
+/* SLIDE 2 — EXHAUSTIVE BYTE DICTIONARY                       */
+/* ─────────────────────────────────────────────────────────── */
+.dict-layout {
+  width: 100%;
+  max-width: min(1760px, 94vw);
+  height: 100vh;
+  padding: clamp(72px, 6vh, 100px) clamp(32px, 4vw, 80px) clamp(32px, 3vh, 52px) clamp(88px, 7vw, 132px);
+  display: flex;
+  flex-direction: column;
+  gap: clamp(18px, 2vh, 30px);
+  position: relative;
+  z-index: 1;
+}
+.slide2-eye {
+  font-family: var(--font-mono);
+  font-size: clamp(11px, 0.82vw, 13px);
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--cyan);
+  opacity: 0.85;
+}
+.slide2-title {
+  font-family: var(--font);
+  font-size: clamp(32px, 3.4vw, 54px);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  margin-top: 8px;
+  line-height: 1.05;
+}
+.slide2-lead {
+  color: var(--ink-2);
+  font-size: clamp(14px, 1vw, 17px);
+  line-height: 1.55;
+  max-width: 68ch;
+  margin-top: 10px;
+}
+
+.dict-search-wrap {
+  margin-top: 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 14px;
+  max-width: 520px;
+  transition: border-color .15s;
+}
+.dict-search-wrap:focus-within {
+  border-color: color-mix(in oklab, var(--cyan) 55%, var(--border));
+}
+.dict-search-icon { color: var(--ink-3); flex-shrink: 0; }
+#dict-search {
+  flex: 1;
+  background: transparent;
+  border: 0;
+  color: var(--ink);
+  font-family: var(--font);
+  font-size: 14px;
+  outline: none;
+}
+#dict-search::placeholder { color: var(--ink-3); }
+.dict-count {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--ink-3);
+  flex-shrink: 0;
+}
+
+.dict-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+  gap: clamp(24px, 2.5vw, 44px);
+  flex: 1;
+  min-height: 0;
+  align-items: start;
+}
+
+.dict-grid-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+.dict-legend {
+  display: flex;
+  gap: 18px;
+  flex-wrap: wrap;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  align-items: center;
+}
+.dict-legend .ll {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  margin-right: 7px;
+  vertical-align: -1.5px;
+}
+.ll-ctrl { background: color-mix(in oklab, var(--amber) 70%, transparent); }
+.ll-print { background: color-mix(in oklab, var(--cyan) 70%, transparent); }
+.ll-ext { background: color-mix(in oklab, var(--purple) 70%, transparent); }
+
+.dict-grid {
+  display: grid;
+  grid-template-columns: repeat(16, 1fr);
+  gap: 3px;
+  background: var(--bg-3);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 6px;
+}
+
+.byte-cell {
+  aspect-ratio: 1;
+  background: var(--bg-2);
+  border: 1px solid transparent;
+  border-radius: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-mono);
+  font-size: clamp(10px, 0.82vw, 14px);
+  color: var(--ink-2);
+  user-select: none;
+  transition: background .12s, border-color .12s, color .12s, transform .08s, opacity .2s;
+  overflow: hidden;
+  padding: 0;
+  outline: none;
+}
+.byte-cell:hover {
+  background: color-mix(in oklab, var(--cyan) 10%, var(--bg-2));
+  border-color: color-mix(in oklab, var(--cyan) 40%, var(--border));
+  transform: translateY(-1px);
+}
+.byte-cell:focus-visible {
+  border-color: var(--cyan);
+  box-shadow: 0 0 0 1px color-mix(in oklab, var(--cyan) 50%, transparent);
+}
+.byte-cell.selected {
+  background: color-mix(in oklab, var(--cyan) 78%, white);
+  color: #05090e;
+  border-color: var(--cyan);
+  box-shadow: 0 0 14px color-mix(in oklab, var(--cyan) 45%, transparent);
+}
+.byte-cell.cat-ctrl { color: var(--amber); font-size: clamp(7px, 0.54vw, 9px); }
+.byte-cell.cat-print { color: var(--cyan); }
+.byte-cell.cat-ext { color: var(--purple); font-size: clamp(9px, 0.7vw, 12px); }
+.byte-cell.dimmed { opacity: 0.12; }
+
+/* Detail panel */
+.dict-detail {
+  background:
+    radial-gradient(ellipse 70% 50% at 90% -10%,
+      color-mix(in oklab, var(--cyan) 12%, transparent) 0%, transparent 65%),
+    linear-gradient(168deg,
+      color-mix(in oklab, var(--bg-2) 92%, var(--cyan)) 0%,
+      var(--bg-2) 42%,
+      color-mix(in oklab, var(--bg-2) 94%, black) 100%);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: clamp(20px, 1.8vw, 28px);
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.04),
+    0 2px 10px rgba(0,0,0,0.3);
+}
+.dd-head { display: flex; align-items: center; gap: 22px; }
+.dd-glyph {
+  width: clamp(80px, 8vw, 116px);
+  height: clamp(80px, 8vw, 116px);
+  background: var(--bg-3);
+  border: 1px solid color-mix(in oklab, var(--cyan) 35%, var(--border));
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-mono);
+  font-weight: 600;
+  color: var(--cyan);
+  text-align: center;
+  line-height: 1;
+  flex-shrink: 0;
+  text-shadow: 0 0 24px color-mix(in oklab, var(--cyan) 40%, transparent);
+  font-size: clamp(36px, 4.2vw, 60px);
+  padding: 6px;
+  overflow: hidden;
+}
+.dd-glyph.short { font-size: clamp(18px, 1.7vw, 26px); }
+.dd-meta { display: flex; flex-direction: column; gap: 8px; flex: 1; min-width: 0; }
+.dd-name {
+  font-size: clamp(20px, 1.9vw, 30px);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+}
+.dd-codes {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  color: var(--ink-3);
+}
+.dd-codes span strong {
+  color: var(--ink);
+  font-weight: 500;
+  margin-left: 6px;
+}
+.dd-cat-chip {
+  align-self: flex-start;
+  padding: 4px 12px;
+  border-radius: 99px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  border: 1px solid;
+}
+.dd-cat-chip.ctrl { color: var(--amber); border-color: color-mix(in oklab, var(--amber) 38%, var(--border)); background: color-mix(in oklab, var(--amber) 8%, transparent); }
+.dd-cat-chip.print { color: var(--cyan); border-color: color-mix(in oklab, var(--cyan) 38%, var(--border)); background: color-mix(in oklab, var(--cyan) 7%, transparent); }
+.dd-cat-chip.ext { color: var(--purple); border-color: color-mix(in oklab, var(--purple) 38%, var(--border)); background: color-mix(in oklab, var(--purple) 7%, transparent); }
+
+.dd-section-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  margin-bottom: 10px;
+}
+
+.latent-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 5px;
+}
+.latent-cell {
+  aspect-ratio: 1;
+  background: var(--bg-3);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-mono);
+  position: relative;
+  overflow: hidden;
+}
+.latent-cell::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--fill, transparent);
+  opacity: 0.6;
+}
+.latent-cell .lc-i {
+  font-size: 9px;
+  color: var(--ink-3);
+  opacity: 0.75;
+  position: relative;
+  z-index: 1;
+}
+.latent-cell .lc-v {
+  font-size: clamp(13px, 1.1vw, 17px);
+  font-weight: 600;
+  position: relative;
+  z-index: 1;
+  margin-top: 1px;
+}
+.lc-v.pos { color: var(--cyan); }
+.lc-v.neg { color: var(--fuchsia); }
+
+.dd-reconstruct {
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  color: var(--jade);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.dd-reconstruct::before {
+  content: '✓';
+  color: var(--jade);
+  font-weight: 600;
+}
+
+/* ─────────────────────────────────────────────────────────── */
+/* SLIDE 3 — WHY THIS SETUP WON (sweep summary)               */
+/* ─────────────────────────────────────────────────────────── */
+.sweep-layout {
+  width: 100%;
+  max-width: min(1760px, 94vw);
+  height: 100vh;
+  padding: clamp(72px, 6vh, 100px) clamp(32px, 4vw, 80px) clamp(32px, 3vh, 52px) clamp(88px, 7vw, 132px);
+  display: flex;
+  flex-direction: column;
+  gap: clamp(20px, 2vh, 34px);
+  position: relative;
+  z-index: 1;
+}
+.slide3-eye {
+  font-family: var(--font-mono);
+  font-size: clamp(11px, 0.82vw, 13px);
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--cyan);
+  opacity: 0.85;
+}
+.slide3-title {
+  font-family: var(--font);
+  font-size: clamp(32px, 3.4vw, 54px);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  margin-top: 8px;
+  line-height: 1.05;
+}
+.slide3-lead {
+  color: var(--ink-2);
+  font-size: clamp(14px, 1vw, 17px);
+  line-height: 1.55;
+  max-width: 78ch;
+  margin-top: 10px;
+}
+.slide3-lead em { font-style: normal; color: var(--cyan); }
+.slide3-lead strong { color: var(--ink); font-weight: 500; }
+
+.sweep-grid {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(12px, 1.4vh, 20px);
+  flex: 1;
+  justify-content: space-around;
+  min-height: 0;
+}
+.sweep-row {
+  display: grid;
+  grid-template-columns: clamp(180px, 16vw, 260px) minmax(0, 1fr);
+  gap: clamp(18px, 2vw, 36px);
+  align-items: center;
+}
+.srl-title {
+  font-family: var(--font-mono);
+  font-size: clamp(11px, 0.82vw, 13px);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+  margin-bottom: 5px;
+}
+.srl-sub {
+  font-family: var(--font);
+  font-size: 12.5px;
+  color: var(--ink-3);
+  line-height: 1.4;
+}
+.srl-sub em { font-style: italic; color: var(--ink-2); }
+
+.sweep-tiles {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.tile {
+  flex: 1 1 140px;
+  min-width: 140px;
+  padding: 16px 18px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--bg-2);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  position: relative;
+  overflow: hidden;
+  transition: transform .15s, border-color .15s, box-shadow .2s;
+}
+.tile:hover { transform: translateY(-2px); }
+
+.tile-name {
+  font-family: var(--font-mono);
+  font-size: clamp(14px, 1.05vw, 17px);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+}
+.tile-state {
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  color: var(--ink-3);
+}
+
+/* tile states */
+.tile.ok {
+  border-color: color-mix(in oklab, var(--jade) 32%, var(--border));
+  background:
+    radial-gradient(ellipse 80% 60% at 85% -10%,
+      color-mix(in oklab, var(--jade) 10%, transparent) 0%, transparent 70%),
+    var(--bg-2);
+}
+.tile.ok .tile-state { color: var(--jade); }
+
+.tile.partial {
+  border-color: color-mix(in oklab, var(--amber) 35%, var(--border));
+  background:
+    radial-gradient(ellipse 80% 60% at 85% -10%,
+      color-mix(in oklab, var(--amber) 10%, transparent) 0%, transparent 70%),
+    var(--bg-2);
+}
+.tile.partial .tile-state { color: var(--amber); }
+
+.tile.fail {
+  border-color: color-mix(in oklab, var(--fuchsia) 30%, var(--border));
+  background:
+    radial-gradient(ellipse 80% 60% at 85% -10%,
+      color-mix(in oklab, var(--fuchsia) 8%, transparent) 0%, transparent 70%),
+    var(--bg-2);
+  opacity: 0.88;
+}
+.tile.fail .tile-state { color: var(--fuchsia); }
+.tile.fail .tile-name { color: var(--ink-2); }
+
+.tile.neutral {
+  border-color: var(--border);
+  background: var(--bg-2);
+  opacity: 0.6;
+}
+.tile.neutral .tile-name { color: var(--ink-3); font-weight: 500; }
+.tile.neutral .tile-state { color: var(--ink-3); opacity: 0.75; }
+
+.tile.winner {
+  border-color: var(--cyan);
+  background:
+    radial-gradient(ellipse 80% 70% at 50% -10%,
+      color-mix(in oklab, var(--cyan) 35%, transparent) 0%, transparent 70%),
+    linear-gradient(168deg,
+      color-mix(in oklab, var(--bg-2) 65%, var(--cyan)) 0%,
+      var(--bg-2) 70%);
+  box-shadow:
+    0 0 24px color-mix(in oklab, var(--cyan) 28%, transparent),
+    inset 0 1px 0 rgba(255,255,255,0.08);
+}
+.tile.winner .tile-name {
+  color: var(--cyan);
+  text-shadow: 0 0 18px color-mix(in oklab, var(--cyan) 45%, transparent);
+}
+.tile.winner .tile-state {
+  color: var(--cyan);
+  font-weight: 600;
+}
+
+/* Champion callout card */
+.champion-card {
+  margin-top: clamp(8px, 1vh, 18px);
+  padding: clamp(20px, 2vh, 28px) clamp(24px, 2vw, 36px);
+  border-radius: 14px;
+  border: 1px solid color-mix(in oklab, var(--cyan) 50%, var(--border));
+  background:
+    radial-gradient(ellipse 60% 80% at 50% 15%,
+      color-mix(in oklab, var(--cyan) 18%, transparent) 0%, transparent 70%),
+    linear-gradient(168deg,
+      color-mix(in oklab, var(--bg-2) 70%, var(--cyan)) 0%,
+      var(--bg-2) 60%,
+      var(--bg-3) 100%);
+  display: flex;
+  align-items: center;
+  gap: clamp(16px, 2vw, 32px);
+  flex-wrap: wrap;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.06),
+    0 8px 28px color-mix(in oklab, var(--cyan) 16%, transparent);
+}
+.champ-label {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.26em;
+  color: var(--cyan);
+  text-transform: uppercase;
+  flex-shrink: 0;
+}
+.champ-formula {
+  flex: 1;
+  min-width: 260px;
+  font-family: var(--font-mono);
+  font-size: clamp(16px, 1.3vw, 22px);
+  font-weight: 600;
+  color: var(--ink);
+  letter-spacing: -0.01em;
+  text-shadow: 0 0 16px color-mix(in oklab, var(--cyan) 22%, transparent);
+}
+.champ-stats {
+  display: flex;
+  gap: 10px;
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  flex-wrap: wrap;
+}
+.champ-stats span {
+  padding: 5px 12px;
+  border: 1px solid color-mix(in oklab, var(--cyan) 32%, var(--border));
+  border-radius: 99px;
+  background: color-mix(in oklab, var(--cyan) 7%, transparent);
+  color: var(--cyan);
+}
+
+/* Body copy sections */
+.card-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.card-section-label {
+  font-family: var(--font-mono);
+  font-size: clamp(10px, 0.75vw, 12px);
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.card-section-body {
+  font-size: clamp(14px, 1.02vw, 17px);
+  color: var(--ink-2);
+  line-height: 1.62;
+}
+.card-tagline strong,
+.card-section-body strong {
+  color: var(--ink);
+  font-weight: 600;
+}
+.card-tagline strong.hl,
+.card-section-body strong.hl {
+  color: var(--cyan);
+  font-weight: 600;
+  letter-spacing: -0.005em;
+}
+.card-tagline em,
+.card-section-body em {
+  font-style: normal;
+  color: var(--cyan);
+  font-weight: 500;
+}
+
+.code-pill {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  background: var(--bg-3);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  padding: 10px 14px;
+  font-family: var(--font-mono);
+  font-size: clamp(12px, 0.9vw, 14px);
+  line-height: 1.55;
+  color: var(--jade);
+  word-break: break-all;
+  overflow-wrap: anywhere;
+}
+.code-pill-icon {
+  color: var(--ink-3);
+  flex-shrink: 0;
+  font-size: clamp(11px, 0.8vw, 13px);
+  line-height: 1.55;
+}
+
+.card-arrow-hint {
+  font-family: var(--font-mono);
+  font-size: clamp(10.5px, 0.78vw, 12.5px);
+  color: var(--ink-3);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* ─────────────────────────────────────────────────────────── */
+/* SLIDE 4 — LIVE TEXT PLAYGROUND                            */
+/* ─────────────────────────────────────────────────────────── */
+#slide-4 {
+  background: var(--bg);
+}
+#slide-4::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 50% 60% at 20% 50%, color-mix(in oklab, var(--jade) 4%, transparent), transparent 65%),
+    radial-gradient(ellipse 40% 40% at 80% 30%, color-mix(in oklab, var(--cyan) 4%, transparent), transparent 65%);
+  pointer-events: none;
+}
+
+.playground-layout {
+  width: 100%;
+  max-width: min(1760px, 94vw);
+  height: 100vh;
+  padding: clamp(72px, 6vh, 100px) clamp(32px, 4vw, 80px) clamp(32px, 3vh, 52px) clamp(88px, 7vw, 132px);
+  display: flex;
+  flex-direction: column;
+  gap: clamp(14px, 1.5vh, 22px);
+  position: relative;
+  z-index: 1;
+}
+
+.playground-eye {
+  font-family: var(--font-mono);
+  font-size: clamp(11px, 0.82vw, 13px);
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--jade);
+  opacity: 0.85;
+}
+
+.playground-title {
+  font-family: var(--font);
+  font-size: clamp(28px, 3vw, 48px);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 1.05;
+  margin-top: 6px;
+}
+
+.playground-lead {
+  color: var(--ink-2);
+  font-size: clamp(13px, 0.95vw, 16px);
+  line-height: 1.55;
+  max-width: 72ch;
+  margin-top: 4px;
+}
+.playground-lead em { font-style: normal; color: var(--jade); }
+
+.playground-input-wrap {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 16px;
+  transition: border-color 0.15s;
+  flex-shrink: 0;
+}
+.playground-input-wrap:focus-within {
+  border-color: color-mix(in oklab, var(--jade) 55%, var(--border));
+  box-shadow: 0 0 0 1px color-mix(in oklab, var(--jade) 18%, transparent);
+}
+.playground-input-icon {
+  color: var(--ink-3);
+  flex-shrink: 0;
+}
+.playground-input {
+  flex: 1;
+  background: transparent;
+  border: 0;
+  color: var(--ink);
+  font-family: var(--font-mono);
+  font-size: clamp(13px, 1vw, 15px);
+  outline: none;
+  min-width: 0;
+}
+.playground-input::placeholder { color: var(--ink-3); }
+.playground-byte-count {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--ink-3);
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.playground-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr);
+  gap: clamp(20px, 2.5vw, 40px);
+  flex: 1;
+  min-height: 0;
+}
+
+.playground-cards-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+  min-height: 0;
+}
+
+.playground-cards-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  flex-shrink: 0;
+}
+
+.playground-cards-scroll {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-content: flex-start;
+  overflow-y: auto;
+  flex: 1;
+  min-height: 0;
+  padding-right: 4px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+.playground-cards-scroll::-webkit-scrollbar { width: 4px; }
+.playground-cards-scroll::-webkit-scrollbar-track { background: transparent; }
+.playground-cards-scroll::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 2px;
+}
+
+.playground-empty {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--ink-3);
+  opacity: 0.6;
+  align-self: center;
+  width: 100%;
+  text-align: center;
+  padding: 20px 0;
+}
+
+.playground-byte-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 8px 10px 7px;
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  cursor: pointer;
+  font-family: var(--font-mono);
+  user-select: none;
+  transition: border-color 0.12s, background 0.12s, transform 0.1s, box-shadow 0.15s;
+  outline: none;
+  min-width: 46px;
+  position: relative;
+}
+.playground-byte-card:hover {
+  background: color-mix(in oklab, var(--jade) 7%, var(--bg-2));
+  border-color: color-mix(in oklab, var(--jade) 40%, var(--border));
+  transform: translateY(-1px);
+}
+.playground-byte-card:focus-visible {
+  border-color: var(--jade);
+  box-shadow: 0 0 0 2px color-mix(in oklab, var(--jade) 30%, transparent);
+}
+.playground-byte-card.active {
+  background: color-mix(in oklab, var(--jade) 10%, var(--bg-2));
+  border-color: var(--jade);
+  box-shadow: 0 0 12px color-mix(in oklab, var(--jade) 28%, transparent);
+}
+.playground-byte-card.cat-ctrl .playground-card-glyph { color: var(--amber); }
+.playground-byte-card.cat-print .playground-card-glyph { color: var(--cyan); }
+.playground-byte-card.cat-ext .playground-card-glyph { color: var(--purple); }
+
+.playground-byte-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 8px; right: 8px;
+  height: 2px;
+  border-radius: 0 0 2px 2px;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+.playground-byte-card.cat-ctrl::before { background: var(--amber); }
+.playground-byte-card.cat-print::before { background: var(--cyan); }
+.playground-byte-card.cat-ext::before { background: var(--purple); }
+.playground-byte-card:hover::before,
+.playground-byte-card.active::before { opacity: 1; }
+
+.playground-card-hex {
+  font-size: 9px;
+  color: var(--ink-3);
+  letter-spacing: 0.08em;
+  line-height: 1;
+}
+.playground-card-glyph {
+  font-size: clamp(13px, 1.1vw, 17px);
+  font-weight: 600;
+  line-height: 1.1;
+  color: var(--ink);
+}
+.playground-card-idx {
+  font-size: 8px;
+  color: var(--ink-3);
+  opacity: 0.55;
+  line-height: 1;
+}
+
+.playground-latent-panel {
+  background:
+    radial-gradient(ellipse 70% 50% at 88% -8%,
+      color-mix(in oklab, var(--jade) 10%, transparent) 0%, transparent 65%),
+    linear-gradient(168deg,
+      color-mix(in oklab, var(--bg-2) 92%, var(--jade)) 0%,
+      var(--bg-2) 44%,
+      color-mix(in oklab, var(--bg-2) 94%, black) 100%);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: clamp(16px, 1.6vw, 24px);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.04),
+    0 2px 10px rgba(0,0,0,0.3);
+  min-height: 0;
+  overflow: hidden;
+}
+
+.playground-latent-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  flex-wrap: wrap;
+  flex-shrink: 0;
+}
+.playground-latent-glyph {
+  width: clamp(48px, 4.5vw, 66px);
+  height: clamp(48px, 4.5vw, 66px);
+  background: var(--bg-3);
+  border: 1px solid color-mix(in oklab, var(--jade) 30%, var(--border));
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-mono);
+  font-weight: 600;
+  font-size: clamp(20px, 1.9vw, 30px);
+  color: var(--jade);
+  flex-shrink: 0;
+  text-shadow: 0 0 18px color-mix(in oklab, var(--jade) 40%, transparent);
+  overflow: hidden;
+  line-height: 1;
+  padding: 4px;
+}
+.playground-latent-glyph.short { font-size: clamp(12px, 1.1vw, 16px); }
+.playground-latent-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+  min-width: 0;
+}
+.playground-latent-name {
+  font-size: clamp(13px, 1.1vw, 17px);
+  font-weight: 600;
+  color: var(--ink);
+  letter-spacing: -0.01em;
+}
+.playground-latent-codes {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--ink-3);
+}
+.playground-latent-codes span strong {
+  color: var(--ink);
+  font-weight: 500;
+  margin-left: 4px;
+}
+.playground-latent-cat {
+  display: inline-flex;
+  align-self: flex-start;
+  padding: 3px 9px;
+  border-radius: 99px;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  border: 1px solid;
+}
+.playground-latent-cat.ctrl  { color: var(--amber);  border-color: color-mix(in oklab, var(--amber)  38%, var(--border)); background: color-mix(in oklab, var(--amber)  8%, transparent); }
+.playground-latent-cat.print { color: var(--cyan);   border-color: color-mix(in oklab, var(--cyan)   38%, var(--border)); background: color-mix(in oklab, var(--cyan)   7%, transparent); }
+.playground-latent-cat.ext   { color: var(--purple); border-color: color-mix(in oklab, var(--purple) 38%, var(--border)); background: color-mix(in oklab, var(--purple) 7%, transparent); }
+
+.playground-bars-label {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  flex-shrink: 0;
+}
+
+.playground-bar-chart {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  flex: 1;
+  min-height: 0;
+  justify-content: space-evenly;
+}
+
+.playground-bar-row {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.playground-bar-dim {
+  font-family: var(--font-mono);
+  font-size: 8.5px;
+  color: var(--ink-3);
+  width: 24px;
+  flex-shrink: 0;
+  text-align: right;
+}
+
+.playground-bar-track {
+  flex: 1;
+  height: 11px;
+  position: relative;
+  background: var(--bg-3);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.playground-bar-track::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: color-mix(in oklab, var(--border) 90%, transparent);
+  pointer-events: none;
+  z-index: 1;
+}
+
+.playground-bar-fill {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  border-radius: 2px;
+  transition: left 0.22s ease-out, width 0.22s ease-out, background 0.22s;
+}
+
+.playground-bar-val {
+  font-family: var(--font-mono);
+  font-size: 8.5px;
+  color: var(--ink-3);
+  width: 40px;
+  flex-shrink: 0;
+  text-align: left;
+}
+.playground-bar-val.pos { color: var(--cyan); }
+.playground-bar-val.neg { color: var(--fuchsia); }
+
+.playground-stats {
+  display: flex;
+  gap: 7px;
+  flex-wrap: wrap;
+  flex-shrink: 0;
+}
+
+.playground-stat-pill {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 11px;
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: 99px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--ink-3);
+  white-space: nowrap;
+}
+.playground-stat-pill strong {
+  color: var(--ink);
+  font-weight: 600;
+}
+.playground-stat-pill.cat-ctrl  strong { color: var(--amber); }
+.playground-stat-pill.cat-print strong { color: var(--cyan); }
+.playground-stat-pill.cat-ext   strong { color: var(--purple); }
+
+.playground-key-hint {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: var(--ink-3);
+  opacity: 0.6;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  flex-shrink: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .playground-bar-fill  { transition: none; }
+  .playground-byte-card { transition: none; }
+}
+
+/* ─────────────────────────────────────────────────────────── */
+/* SLIDES 2–5 — PLACEHOLDER FRAMES                           */
+/* ─────────────────────────────────────────────────────────── */
+.slide-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 16px;
+  padding: 80px 60px;
+  height: 100%;
+  position: relative;
+  z-index: 1;
+}
+
+.ph-slide-num {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  opacity: 0.6;
+}
+
+.ph-title {
+  font-family: var(--font);
+  font-size: clamp(32px, 4vw, 52px);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+  line-height: 1.1;
+}
+
+.ph-title span {
+  color: var(--cyan);
+}
+
+.ph-desc {
+  font-size: 15px;
+  color: var(--ink-3);
+  max-width: 440px;
+  line-height: 1.6;
+}
+
+.ph-coming {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--amber);
+  border: 1px solid color-mix(in oklab, var(--amber) 28%, var(--border));
+  border-radius: 4px;
+  padding: 4px 10px;
+}
+
+/* Placeholder large background glyph */
+.ph-glyph {
+  position: absolute;
+  font-family: var(--font);
+  font-weight: 900;
+  font-size: clamp(220px, 28vw, 340px);
+  color: var(--border);
+  opacity: 0.35;
+  letter-spacing: -0.05em;
+  user-select: none;
+  pointer-events: none;
+  line-height: 1;
+  z-index: 0;
+}
+
+/* ── WIRE SVG internals ───────────────────────────────────── */
+.wire-pos { pointer-events: none; }
+.wire-neg { pointer-events: none; }
+
+.node-group circle.node-bg {
+  transition: r 0.15s, filter 0.15s;
+}
+.node-group:hover circle.node-bg {
+  filter: brightness(1.4);
+}
+
+/* Focus ring for accessibility */
+:focus-visible {
+  outline: 2px solid var(--fuchsia);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
+/* Skip link */
+.skip-link {
+  position: fixed;
+  top: -60px;
+  left: 8px;
+  background: var(--bg-2);
+  color: var(--ink);
+  padding: 8px 14px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 13px;
+  z-index: 9999;
+  transition: top 0.2s;
+  text-decoration: none;
+}
+.skip-link:focus { top: 8px; }
+
+/* ─────────────────────────────────────────────────────────── */
+/* SLIDE 5 — ROADMAP / WHAT'S NEXT                            */
+/* ─────────────────────────────────────────────────────────── */
+#slide-5 {
+  background: var(--bg);
+}
+
+#slide-5::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 50% 45% at 15% 55%, color-mix(in oklab, var(--jade) 4%, transparent), transparent 65%),
+    radial-gradient(ellipse 35% 40% at 80% 30%, color-mix(in oklab, var(--cyan) 3%, transparent), transparent 65%),
+    radial-gradient(ellipse 25% 35% at 60% 80%, color-mix(in oklab, var(--amber) 3%, transparent), transparent 60%);
+  pointer-events: none;
+}
+
+.roadmap-layout {
+  width: 100%;
+  max-width: min(1760px, 94vw);
+  height: calc(100vh - var(--nav-h));
+  padding: clamp(56px, 5.5vh, 80px) clamp(32px, 4vw, 80px) clamp(24px, 2.5vh, 44px) clamp(88px, 7vw, 132px);
+  display: flex;
+  flex-direction: column;
+  gap: clamp(14px, 1.6vh, 24px);
+  position: relative;
+  z-index: 1;
+}
+
+.roadmap-eye {
+  font-family: var(--font-mono);
+  font-size: clamp(10px, 0.78vw, 12px);
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--jade);
+  opacity: 0.85;
+}
+
+.roadmap-title {
+  font-family: var(--font);
+  font-size: clamp(28px, 3vw, 48px);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 1.05;
+  color: var(--ink);
+}
+
+.roadmap-lead {
+  color: var(--ink-2);
+  font-size: clamp(13px, 0.95vw, 16px);
+  line-height: 1.55;
+  max-width: 70ch;
+}
+
+/* ── Three forward-direction cards ─────────────────────────── */
+.roadmap-cards {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: clamp(10px, 1.2vw, 18px);
+  flex-shrink: 0;
+}
+
+@media (max-width: 900px) {
+  .roadmap-cards {
+    grid-template-columns: 1fr;
+  }
+}
+
+.roadmap-card {
+  background:
+    radial-gradient(ellipse 70% 55% at 88% -12%,
+      color-mix(in oklab, var(--card-hue, var(--jade)) 10%, transparent) 0%,
+      transparent 65%),
+    linear-gradient(168deg,
+      color-mix(in oklab, var(--bg-2) 90%, var(--card-hue, var(--jade))) 0%,
+      var(--bg-2) 45%,
+      color-mix(in oklab, var(--bg-2) 94%, black) 100%);
+  border: 1px solid color-mix(in oklab, var(--card-hue, var(--jade)) 22%, var(--border));
+  border-radius: 14px;
+  padding: clamp(16px, 1.5vw, 24px) clamp(18px, 1.6vw, 26px);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  position: relative;
+  overflow: hidden;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.04),
+    0 2px 10px rgba(0,0,0,0.28);
+  transition: border-color .2s, box-shadow .2s, transform .15s;
+}
+
+.roadmap-card:hover,
+.roadmap-card:focus-within {
+  transform: translateY(-2px);
+  border-color: color-mix(in oklab, var(--card-hue, var(--jade)) 55%, var(--border));
+  box-shadow:
+    0 6px 22px color-mix(in oklab, var(--card-hue, var(--jade)) 16%, transparent),
+    inset 0 1px 0 rgba(255,255,255,0.06);
+}
+
+.roadmap-card.frontier { --card-hue: var(--jade); }
+.roadmap-card.exploration { --card-hue: var(--cyan); }
+.roadmap-card.experimental { --card-hue: var(--amber); }
+
+.roadmap-status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  border: 1px solid;
+  border-radius: 4px;
+  padding: 3px 9px;
+  width: fit-content;
+  flex-shrink: 0;
+}
+.roadmap-status-badge.jade {
+  color: var(--jade);
+  border-color: color-mix(in oklab, var(--jade) 35%, var(--border));
+  background: color-mix(in oklab, var(--jade) 8%, transparent);
+}
+.roadmap-status-badge.cyan {
+  color: var(--cyan);
+  border-color: color-mix(in oklab, var(--cyan) 35%, var(--border));
+  background: color-mix(in oklab, var(--cyan) 7%, transparent);
+}
+.roadmap-status-badge.amber {
+  color: var(--amber);
+  border-color: color-mix(in oklab, var(--amber) 35%, var(--border));
+  background: color-mix(in oklab, var(--amber) 8%, transparent);
+}
+.roadmap-status-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+.roadmap-status-badge.jade .roadmap-status-dot {
+  animation: blink 2.4s ease-in-out infinite;
+}
+
+.roadmap-card-title {
+  font-family: var(--font);
+  font-size: clamp(14px, 1.1vw, 18px);
+  font-weight: 600;
+  color: var(--ink);
+  letter-spacing: -0.01em;
+  line-height: 1.2;
+}
+
+.roadmap-card-title .roadmap-card-sub {
+  display: block;
+  font-size: clamp(11px, 0.82vw, 13px);
+  font-weight: 400;
+  color: var(--ink-3);
+  letter-spacing: 0;
+  margin-top: 1px;
+}
+
+.roadmap-card-body {
+  font-size: clamp(12px, 0.88vw, 14px);
+  color: var(--ink-2);
+  line-height: 1.58;
+  flex: 1;
+}
+
+.roadmap-card-body strong {
+  color: var(--ink);
+  font-weight: 500;
+}
+
+.roadmap-card-path {
+  font-family: var(--font-mono);
+  font-size: clamp(10px, 0.72vw, 12px);
+  color: var(--ink-3);
+  background: var(--bg-3);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  padding: 5px 10px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-top: 2px;
+}
+
+/* ── Open questions ─────────────────────────────────────────── */
+.roadmap-questions {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  flex-shrink: 0;
+}
+
+.roadmap-questions-label {
+  font-family: var(--font-mono);
+  font-size: clamp(9.5px, 0.72vw, 11px);
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  margin-bottom: 8px;
+}
+
+.roadmap-question-row {
+  display: grid;
+  grid-template-columns: 28px 1fr;
+  gap: 10px;
+  align-items: start;
+  padding: clamp(7px, 0.7vh, 10px) 0;
+  border-top: 1px solid var(--border);
+}
+.roadmap-question-row:last-child {
+  border-bottom: 1px solid var(--border);
+}
+
+.roadmap-q-mark {
+  font-family: var(--font-mono);
+  font-size: clamp(14px, 1.1vw, 18px);
+  font-weight: 700;
+  color: color-mix(in oklab, var(--cyan) 45%, var(--border));
+  line-height: 1.4;
+  text-align: center;
+  user-select: none;
+}
+
+.roadmap-q-text {
+  font-size: clamp(12px, 0.88vw, 14px);
+  color: var(--ink-2);
+  line-height: 1.55;
+}
+
+.roadmap-q-text strong {
+  color: var(--ink);
+  font-weight: 500;
+}
+
+/* ── Repo pointers strip ────────────────────────────────────── */
+.roadmap-pointers {
+  display: flex;
+  flex-wrap: wrap;
+  gap: clamp(6px, 0.7vw, 10px);
+  align-items: center;
+  flex-shrink: 0;
+  padding-top: clamp(8px, 0.8vh, 14px);
+  border-top: 1px solid var(--border);
+}
+
+.roadmap-pointer-card {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  padding: clamp(7px, 0.6vw, 10px) clamp(10px, 0.9vw, 14px);
+  min-width: 0;
+}
+
+.roadmap-pointer-label {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+.roadmap-pointer-value {
+  font-family: var(--font-mono);
+  font-size: clamp(10px, 0.74vw, 12px);
+  color: var(--jade);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: clamp(180px, 18vw, 320px);
+}
+
+.roadmap-pointer-card.license .roadmap-pointer-value {
+  color: var(--ink-2);
+}
   </style>
 </head>
 <body>
 
-  <!-- ── TOP NAV ── -->
-  <header class="top-bar">
-    <div class="tb-home"><a href="/">← VRAXION</a></div>
-    <nav class="tb-tabs" aria-label="Block navigation">
-      <a href="a-byte-unit.html" class="tb-tab" aria-current="page">A Byte Unit</a>
-      <span class="tb-sep">|</span>
-      <a href="b-merger.html" class="tb-tab">B Merger</a>
-      <span class="tb-sep">|</span>
-      <a href="c-tokenizer.html" class="tb-tab">C Tokenizer</a>
-      <span class="tb-sep">|</span>
-      <a href="d-embedder.html" class="tb-tab">D Embedder</a>
-      <span class="tb-sep">|</span>
-      <a href="e-brain.html" class="tb-tab">E Brain</a>
-    </nav>
-    <div class="tb-right">
-      <div class="tb-status"><span class="tb-status-dot"></span>FROZEN</div>
-      <div class="tb-gh">
-        <a href="https://github.com/VRAXION/VRAXION" target="_blank" rel="noopener" aria-label="GitHub">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0 1 12 6.844a9.59 9.59 0 0 1 2.504.337c1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.02 10.02 0 0 0 22 12.017C22 6.484 17.522 2 12 2z"/>
+<a href="#slide-content-1" class="skip-link">Skip to main content</a>
+
+<!-- ── TOP NAV ── -->
+<header class="topnav" role="banner">
+  <a href="../index.html" class="topnav-brand" aria-label="VRAXION home">VRAXION</a>
+  <span class="topnav-crumb" aria-label="breadcrumb">Block A · <span>Byte Unit</span></span>
+  <div class="topnav-right">
+    <div class="topnav-badge">
+      <span class="topnav-badge-dot" aria-hidden="true"></span>
+      FROZEN · v5.0.0-β.2
+    </div>
+    <a href="https://github.com/VRAXION/VRAXION" target="_blank" rel="noopener" class="topnav-gh" aria-label="GitHub repository">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+        <path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0 1 12 6.844a9.59 9.59 0 0 1 2.504.337c1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.02 10.02 0 0 0 22 12.017C22 6.484 17.522 2 12 2z"/>
+      </svg>
+    </a>
+  </div>
+</header>
+
+<!-- ── METRO SIDEBAR ── -->
+<nav class="metro" aria-label="Slide navigation">
+  <div class="metro-track" aria-hidden="true"></div>
+  <button class="metro-item" data-slide="0" aria-current="true" tabindex="0">
+    <span class="metro-dot" aria-hidden="true"></span>
+    <span class="metro-label">01 · Hero</span>
+  </button>
+  <button class="metro-item" data-slide="1" aria-current="false" tabindex="0">
+    <span class="metro-dot" aria-hidden="true"></span>
+    <span class="metro-label">02 · Architecture</span>
+  </button>
+  <button class="metro-item" data-slide="2" aria-current="false" tabindex="0">
+    <span class="metro-dot" aria-hidden="true"></span>
+    <span class="metro-label">03 · Metrics</span>
+  </button>
+  <button class="metro-item" data-slide="3" aria-current="false" tabindex="0">
+    <span class="metro-dot" aria-hidden="true"></span>
+    <span class="metro-label">04 · Deploy</span>
+  </button>
+  <button class="metro-item" data-slide="4" aria-current="false" tabindex="0">
+    <span class="metro-dot" aria-hidden="true"></span>
+    <span class="metro-label">05 · Roadmap</span>
+  </button>
+</nav>
+
+<!-- ── DECK ── -->
+<div class="deck-viewport" role="main">
+  <div class="deck-track" id="deck-track" aria-live="polite" aria-atomic="true">
+
+    <!-- ────────────── SLIDE 1: HERO ────────────── -->
+    <div class="slide" id="slide-1" role="region" aria-label="Slide 1 of 5: Hero">
+      <div class="slide1-layout" id="slide-content-1">
+
+        <!-- LEFT: system card (headline-first) -->
+        <aside class="system-card" aria-label="Block A system card">
+
+          <p class="card-tag">Block A · L0 Encoder</p>
+
+          <h1 class="card-title">
+            <svg class="title-mark" viewBox="0 0 5 5" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+              <defs>
+                <linearGradient id="pillarGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="#8ef0f0"/>
+                  <stop offset="55%" stop-color="#56e0e0"/>
+                  <stop offset="100%" stop-color="#2b9b9d"/>
+                </linearGradient>
+                <radialGradient id="dotGrad" cx="0.4" cy="0.4" r="0.6">
+                  <stop offset="0%" stop-color="#e8ffff"/>
+                  <stop offset="60%" stop-color="#7eedef"/>
+                  <stop offset="100%" stop-color="#2b9b9d"/>
+                </radialGradient>
+                <filter id="markSoft"><feGaussianBlur stdDeviation="0.015"/></filter>
+              </defs>
+              <g filter="url(#markSoft)">
+                <rect x="0" y="0" width="1" height="5" rx="0.28" ry="0.28" fill="url(#pillarGrad)"/>
+                <rect x="4" y="0" width="1" height="5" rx="0.28" ry="0.28" fill="url(#pillarGrad)"/>
+                <circle cx="2.5" cy="1.5" r="0.55" fill="url(#dotGrad)"/>
+                <circle cx="2.5" cy="3.5" r="0.55" fill="url(#dotGrad)"/>
+              </g>
+              <rect x="0.08" y="0.08" width="0.2" height="4.84" rx="0.12" fill="#e8ffff" opacity="0.28"/>
+              <rect x="4.08" y="0.08" width="0.2" height="4.84" rx="0.12" fill="#e8ffff" opacity="0.28"/>
+            </svg>
+            Byte Block
+          </h1>
+
+          <p class="card-tagline">
+            Any byte in, any byte out — bit-exact.
+            <strong>One tiny circuit that encodes <em>and</em> decodes.</strong>
+          </p>
+
+          <div class="badge-row" role="group" aria-label="Block A properties">
+            <span class="tag-chip jade" role="status" aria-label="Weights are frozen" tabindex="0" aria-describedby="tip-frozen">
+              <span class="tag-dot" aria-hidden="true"></span>
+              FROZEN
+              <span class="chip-tooltip" id="tip-frozen" role="tooltip">
+                <span class="chip-tooltip-title jade">Frozen</span>
+                Trained weights are locked and will never change. Every build of the repo produces bit-identical output — a frozen component is a deploy artifact, not a live experiment.
+              </span>
+            </span>
+            <span class="tag-chip cyan" tabindex="0" aria-describedby="tip-lossless">
+              LOSSLESS
+              <span class="chip-tooltip" id="tip-lossless" role="tooltip">
+                <span class="chip-tooltip-title cyan">Lossless</span>
+                All 256 possible byte values round-trip through encode → decode and return identical. Verified by exhaustive enumeration, not by statistical sampling.
+              </span>
+            </span>
+            <span class="tag-chip purple" tabindex="0" aria-describedby="tip-binary">
+              ±1 BINARY
+              <span class="chip-tooltip" id="tip-binary" role="tooltip">
+                <span class="chip-tooltip-title purple">±1 Binary</span>
+                Every weight is exactly −1 or +1, never a fractional value. The encoder runs on pure sign arithmetic — no multiplications, only add/subtract.
+              </span>
+            </span>
+            <span class="tag-chip neutral" tabindex="0" aria-describedby="tip-version">
+              v5.0
+              <span class="chip-tooltip" id="tip-version" role="tooltip">
+                <span class="chip-tooltip-title neutral">v5.0</span>
+                The fifth major iteration of the VRAXION pipeline. Major versions bump when the architectural contract changes, e.g. latent dimensionality or block shape.
+              </span>
+            </span>
+            <span class="tag-chip amber" tabindex="0" aria-describedby="tip-beta">
+              BETA
+              <span class="chip-tooltip" id="tip-beta" role="tooltip">
+                <span class="chip-tooltip-title amber">Beta</span>
+                Pre-release. The interface is stable, but tooling and downstream block integrations are still settling. Breaking changes possible before 1.0.
+              </span>
+            </span>
+            <svg class="brick-mark" viewBox="0 0 6 3.8" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><polygon points="3.000,0.350 3.500,0.100 3.500,1.120 3.000,1.370" fill="#1d5a5c"/><polygon points="2.500,0.100 3.000,0.350 3.000,1.370 2.500,1.120" fill="#2b9b9d"/><polygon points="3.000,-0.150 3.500,0.100 3.000,0.350 2.500,0.100" fill="#56e0e0"/><polygon points="2.500,0.600 3.000,0.350 3.000,1.370 2.500,1.620" fill="#1d5a5c"/><polygon points="2.000,0.350 2.500,0.600 2.500,1.620 2.000,1.370" fill="#2b9b9d"/><polygon points="2.500,0.100 3.000,0.350 2.500,0.600 2.000,0.350" fill="#56e0e0"/><polygon points="2.000,0.850 2.500,0.600 2.500,1.620 2.000,1.870" fill="#1d5a5c"/><polygon points="1.500,0.600 2.000,0.850 2.000,1.870 1.500,1.620" fill="#2b9b9d"/><polygon points="2.000,0.350 2.500,0.600 2.000,0.850 1.500,0.600" fill="#56e0e0"/><polygon points="3.500,1.100 4.000,0.850 4.000,1.870 3.500,2.120" fill="#1d5a5c"/><polygon points="3.000,0.850 3.500,1.100 3.500,2.120 3.000,1.870" fill="#2b9b9d"/><polygon points="3.500,0.600 4.000,0.850 3.500,1.100 3.000,0.850" fill="#56e0e0"/><polygon points="1.500,1.100 2.000,0.850 2.000,1.870 1.500,2.120" fill="#1d5a5c"/><polygon points="1.000,0.850 1.500,1.100 1.500,2.120 1.000,1.870" fill="#2b9b9d"/><polygon points="1.500,0.600 2.000,0.850 1.500,1.100 1.000,0.850" fill="#56e0e0"/><polygon points="5.000,1.350 5.500,1.100 5.500,2.120 5.000,2.370" fill="#1d5a5c"/><polygon points="4.500,1.100 5.000,1.350 5.000,2.370 4.500,2.120" fill="#2b9b9d"/><polygon points="5.000,0.850 5.500,1.100 5.000,1.350 4.500,1.100" fill="#56e0e0"/><polygon points="1.000,1.350 1.500,1.100 1.500,2.120 1.000,2.370" fill="#1d5a5c"/><polygon points="0.500,1.100 1.000,1.350 1.000,2.370 0.500,2.120" fill="#2b9b9d"/><polygon points="1.000,0.850 1.500,1.100 1.000,1.350 0.500,1.100" fill="#56e0e0"/><polygon points="4.500,1.600 5.000,1.350 5.000,2.370 4.500,2.620" fill="#1d5a5c"/><polygon points="4.000,1.350 4.500,1.600 4.500,2.620 4.000,2.370" fill="#2b9b9d"/><polygon points="4.500,1.100 5.000,1.350 4.500,1.600 4.000,1.350" fill="#56e0e0"/><polygon points="2.500,1.600 3.000,1.350 3.000,2.370 2.500,2.620" fill="#1d5a5c"/><polygon points="2.000,1.350 2.500,1.600 2.500,2.620 2.000,2.370" fill="#2b9b9d"/><polygon points="2.500,1.100 3.000,1.350 2.500,1.600 2.000,1.350" fill="#56e0e0"/><polygon points="4.000,1.850 4.500,1.600 4.500,2.620 4.000,2.870" fill="#1d5a5c"/><polygon points="3.500,1.600 4.000,1.850 4.000,2.870 3.500,2.620" fill="#2b9b9d"/><polygon points="4.000,1.350 4.500,1.600 4.000,1.850 3.500,1.600" fill="#56e0e0"/><polygon points="3.500,2.100 4.000,1.850 4.000,2.870 3.500,3.120" fill="#1d5a5c"/><polygon points="3.000,1.850 3.500,2.100 3.500,3.120 3.000,2.870" fill="#2b9b9d"/><polygon points="3.500,1.600 4.000,1.850 3.500,2.100 3.000,1.850" fill="#56e0e0"/><polygon points="3.000,2.350 3.500,2.100 3.500,3.120 3.000,3.370" fill="#1d5a5c"/><polygon points="2.500,2.100 3.000,2.350 3.000,3.370 2.500,3.120" fill="#2b9b9d"/><polygon points="3.000,1.850 3.500,2.100 3.000,2.350 2.500,2.100" fill="#56e0e0"/></svg>
+          </div>
+
+          <div class="stats-grid" role="list" aria-label="Key statistics">
+            <div class="stat-card" role="listitem" tabindex="0" aria-describedby="tip-input">
+              <span class="stat-val">8 bits</span>
+              <span class="stat-key">input</span>
+              <span class="chip-tooltip" id="tip-input" role="tooltip">
+                <span class="chip-tooltip-title cyan">Input</span>
+                One byte — 8 bits of integer data (values 0–255). Every possible byte is a valid input; there is no vocabulary, no tokenizer, no out-of-range case.
+              </span>
+            </div>
+            <div class="stat-card" role="listitem" tabindex="0" aria-describedby="tip-output">
+              <span class="stat-val">16-d</span>
+              <span class="stat-key">output</span>
+              <span class="chip-tooltip" id="tip-output" role="tooltip">
+                <span class="chip-tooltip-title cyan">Output</span>
+                The encoder emits a 16-dimensional vector for every byte. This is the handoff to Block B in the pipeline — and the deploy-time output of Block A.
+              </span>
+            </div>
+            <div class="stat-card" role="listitem" tabindex="0" aria-describedby="tip-activation">
+              <span class="stat-val">C19</span>
+              <span class="stat-key">activation</span>
+              <span class="chip-tooltip" id="tip-activation" role="tooltip">
+                <span class="chip-tooltip-title cyan">Activation</span>
+                A custom non-linearity applied to the hidden layer. C19 is the winning activation from an exhaustive sweep; it outperforms ReLU and tanh on byte-level reconstruction.
+              </span>
+            </div>
+            <div class="stat-card" role="listitem" tabindex="0" aria-describedby="tip-weights">
+              <span class="stat-val">±1</span>
+              <span class="stat-key">weights only</span>
+              <span class="chip-tooltip" id="tip-weights" role="tooltip">
+                <span class="chip-tooltip-title cyan">Binary weights</span>
+                Every weight in both W1 and W2 is exactly +1 or −1, trained via straight-through estimator quantization. No floating-point weights anywhere in the block.
+              </span>
+            </div>
+            <div class="stat-card" role="listitem" tabindex="0" aria-describedby="tip-lossless256">
+              <span class="stat-val">256 / 256</span>
+              <span class="stat-key">lossless</span>
+              <span class="chip-tooltip" id="tip-lossless256" role="tooltip">
+                <span class="chip-tooltip-title cyan">Lossless</span>
+                Every possible byte value (all 256) round-trips through encode → decode and returns bit-identical. Exhaustively verified, not statistically sampled.
+              </span>
+            </div>
+            <div class="stat-card" role="listitem" tabindex="0" aria-describedby="tip-footprint">
+              <span class="stat-val">3 KB</span>
+              <span class="stat-key">footprint</span>
+              <span class="chip-tooltip" id="tip-footprint" role="tooltip">
+                <span class="chip-tooltip-title cyan">Footprint</span>
+                The full deployed block is about 3 KB total — weight JSON plus the 256-entry int8 lookup table. Smaller than a typical favicon.
+              </span>
+            </div>
+          </div>
+
+          <div class="card-section">
+            <p class="card-section-label">What it does</p>
+            <p class="card-section-body">
+              The encoder stamps each of the 256 possible byte values into a 16-number fingerprint.
+              The <em>same</em> circuit — same weights, run backwards — recovers the original byte.
+              <strong class="hl">Once trained, you ship the lookup table, not the network.</strong>
+            </p>
+          </div>
+
+          <div class="card-section">
+            <p class="card-section-label">Why it matters</p>
+            <p class="card-section-body">
+              Every wire is just −1 or +1. <strong class="hl">No multiplications anywhere</strong> —
+              the whole encoder is a sign-counting machine: adds and subtracts of ±1 signals.
+            </p>
+          </div>
+
+          <div>
+            <p class="card-section-label" style="margin-bottom:7px;">Reproduce</p>
+            <div class="code-pill">
+              <span class="code-pill-icon">$</span>
+              python tools/build_byte_unit.py
+            </div>
+          </div>
+
+          <p class="card-arrow-hint" aria-hidden="true">
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path d="M6 1v10M2 7l4 4 4-4"/>
+            </svg>
+            Press ↓ for architecture
+          </p>
+        </aside>
+
+        <!-- RIGHT: neural wire diagram -->
+        <div class="diagram-wrap">
+          <svg id="wire-svg" viewBox="0 0 640 420" xmlns="http://www.w3.org/2000/svg"
+               role="img" aria-label="Neural wire diagram: 8 input bits connect through 16 hidden C19 neurons to a 16-dimensional latent output. The same circuit runs backwards to decode. Real W1 and W2 weights from the frozen champion.">
+            <defs>
+              <!-- Node glow filters -->
+              <filter id="glow-input" x="-60%" y="-60%" width="220%" height="220%">
+                <feGaussianBlur stdDeviation="2.5" result="blur"/>
+                <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+              </filter>
+              <filter id="glow-hidden" x="-80%" y="-80%" width="260%" height="260%">
+                <feGaussianBlur stdDeviation="3.5" result="blur"/>
+                <feColorMatrix in="blur" type="matrix"
+                  values="0 0 0 0 0.337
+                          0 0 0 0 0.878
+                          0 0 0 0 0.878
+                          0 0 0 0 0.9  0" result="colored"/>
+                <feMerge><feMergeNode in="colored"/><feMergeNode in="SourceGraphic"/></feMerge>
+              </filter>
+              <filter id="glow-latent" x="-80%" y="-80%" width="260%" height="260%">
+                <feGaussianBlur stdDeviation="4.5" result="blur"/>
+                <feColorMatrix in="blur" type="matrix"
+                  values="0 0 0 0 0.337
+                          0 0 0 0 0.878
+                          0 0 0 0 0.878
+                          0 0 0 0 1.1  0" result="colored"/>
+                <feMerge><feMergeNode in="colored"/><feMergeNode in="SourceGraphic"/></feMerge>
+              </filter>
+              <filter id="glow-pulse" x="-200%" y="-200%" width="500%" height="500%">
+                <feGaussianBlur stdDeviation="3" result="blur"/>
+                <feColorMatrix in="blur" type="matrix"
+                  values="0 0 0 0 0.337
+                          0 0 0 0 0.878
+                          0 0 0 0 0.878
+                          0 0 0 0 1.5  0" result="colored"/>
+                <feMerge><feMergeNode in="colored"/><feMergeNode in="SourceGraphic"/></feMerge>
+              </filter>
+
+              <!-- Dot background grid pattern -->
+              <pattern id="dot-grid" x="0" y="0" width="40" height="40" patternUnits="userSpaceOnUse">
+                <circle cx="20" cy="20" r="0.9" fill="#767c92" opacity="0.08"/>
+              </pattern>
+            </defs>
+
+            <!-- Grid background -->
+            <rect width="640" height="420" fill="url(#dot-grid)"/>
+
+            <!-- Wire layers rendered by JS -->
+            <g id="wires-neg"></g>
+            <g id="wires-pos"></g>
+
+            <!-- Pulse group (animated dots travel along wires) -->
+            <g id="pulse-layer"></g>
+
+            <!-- Node groups rendered by JS -->
+            <g id="nodes-layer"></g>
+
+            <!-- Reflection burst layer (radial pings on output nodes) -->
+            <g id="reflection-layer"></g>
+
+            <!-- Column labels -->
+            <text x="100" y="22" text-anchor="middle" font-family="'Geist Mono',monospace" font-size="9.5" fill="#767c92" letter-spacing="0.08em">INPUT · 8 BITS</text>
+            <text x="320" y="22" text-anchor="middle" font-family="'Geist Mono',monospace" font-size="9.5" fill="#767c92" letter-spacing="0.08em">HIDDEN · 16 · C19</text>
+            <text x="540" y="22" text-anchor="middle" font-family="'Geist Mono',monospace" font-size="9.5" fill="#56e0e0" letter-spacing="0.08em">OUTPUT · 16-D</text>
+
+            <!-- Direction markers: encode (top) + decode (bottom) -->
+            <text x="210" y="11" text-anchor="middle" font-family="'Geist Mono',monospace" font-size="7.5" fill="#56e0e0" letter-spacing="0.25em" opacity="0.75">ENCODE ━━▶</text>
+            <text x="430" y="11" text-anchor="middle" font-family="'Geist Mono',monospace" font-size="7.5" fill="#56e0e0" letter-spacing="0.25em" opacity="0.75">ENCODE ━━▶</text>
+            <text x="210" y="413" text-anchor="middle" font-family="'Geist Mono',monospace" font-size="7.5" fill="#a07cf0" letter-spacing="0.25em" opacity="0.75">◀━━ DECODE</text>
+            <text x="430" y="413" text-anchor="middle" font-family="'Geist Mono',monospace" font-size="7.5" fill="#a07cf0" letter-spacing="0.25em" opacity="0.75">◀━━ DECODE</text>
+
           </svg>
-        </a>
+          <p class="diagram-sub">Same weights, reversed. One circuit — encode turns a byte into a 16-d latent, decode runs it backwards to recover the byte. Like a speaker that also works as a microphone.</p>
+        </div>
+      </div>
+
+      <!-- Scroll hint -->
+      <div class="scroll-hint" id="scroll-hint" aria-hidden="true">
+        <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path d="M9 3v12M3 11l6 6 6-6"/>
+        </svg>
+        ↓ scroll
       </div>
     </div>
-  </header>
 
-  <!-- ── SLIDE 1: HERO ── -->
-  <section class="slide" id="hero">
-    <div class="hero-letter">A</div>
-    <div class="hero-content">
-      <p class="hero-tag">Block A · L0 Encoder</p>
-      <h1 class="hero-name">Byte Unit</h1>
-      <p class="hero-desc">A tied-mirror autoencoder that maps any raw byte to a 16-dimensional binary-weight latent. Every byte in, every byte out — 100% lossless.</p>
-      <div class="status-badge"><span class="status-badge-dot"></span>FROZEN · v5.0.0-β.2</div>
-    </div>
-    <span class="arrow-hint">↓</span>
-  </section>
-
-  <!-- ── SLIDE 2: ARCHITECTURE ── -->
-  <section class="slide" id="arch">
-    <div class="slide-inner">
-      <p class="slide-heading">Block A · Architecture</p>
-      <h2 class="slide-title">How the Byte Unit works</h2>
-
-      <div class="arch-box">
-        <div class="arch-flow">
-          <div class="arch-node">
-            <div class="arch-node-label">Input</div>
-            <div class="arch-node-val">8</div>
+    <!-- ────────────── SLIDE 2: BYTE DICTIONARY ────────────── -->
+    <div class="slide" id="slide-2" role="region" aria-label="Slide 2 of 5: Byte Dictionary">
+      <div class="dict-layout">
+        <header class="dict-head">
+          <p class="slide2-eye">02 · Exhaustive Dictionary</p>
+          <h2 class="slide2-title">Every byte, precomputed</h2>
+          <p class="slide2-lead">
+            All 256 possible bytes with their 16-dimensional latents. Click any cell to inspect the
+            fingerprint the encoder emits for that byte — or search by character, name, or hex code.
+          </p>
+          <div class="dict-search-wrap">
+            <svg class="dict-search-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+              <circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>
+            </svg>
+            <input type="search" id="dict-search" placeholder="Find byte — 'space', 'A', '0x41', 'ctrl'…" aria-label="Filter bytes"/>
+            <span class="dict-count" id="dict-count">256 / 256</span>
           </div>
-          <span class="arch-arrow">→</span>
-          <div class="arch-node">
-            <div class="arch-node-label">Hidden</div>
-            <div class="arch-node-val">16</div>
+        </header>
+
+        <div class="dict-body">
+          <div class="dict-grid-wrap">
+            <div class="dict-legend">
+              <span class="ll ll-ctrl"></span>Control
+              <span class="ll ll-print"></span>Printable
+              <span class="ll ll-ext"></span>Extended
+            </div>
+            <div class="dict-grid" id="dict-grid" role="listbox" aria-label="Byte grid"></div>
           </div>
-          <span class="arch-arrow">→</span>
-          <div class="arch-node" style="border-color:rgba(0,216,255,0.4);">
-            <div class="arch-node-label">Latent out</div>
-            <div class="arch-node-val" style="color:var(--cyan);">16</div>
+          <aside class="dict-detail" id="dict-detail" aria-live="polite">
+            <!-- populated by JS -->
+          </aside>
+        </div>
+      </div>
+    </div>
+
+    <!-- ────────────── SLIDE 3: WHY THIS SETUP WON ────────────── -->
+    <div class="slide" id="slide-3" role="region" aria-label="Slide 3 of 5: Why this setup won">
+      <div class="sweep-layout">
+        <header class="sweep-head">
+          <p class="slide3-eye">03 · Why this setup won</p>
+          <h2 class="slide3-title">The sweep that picked the champion</h2>
+          <p class="slide3-lead">
+            Four axes of search — <em>activation · weight precision · hidden dim · LUT readout</em>.
+            Each tile below is a configuration that was actually run. Only one point lands at
+            <strong>100% lossless with the smallest footprint</strong>.
+          </p>
+        </header>
+
+        <div class="sweep-grid">
+
+          <!-- ROW 1: Activation × weight precision (confirmed runs, min H) -->
+          <section class="sweep-row">
+            <div class="sweep-row-label">
+              <p class="srl-title">Activation × weight precision</p>
+              <p class="srl-sub">min hidden-dim that holds 100% lossless</p>
+            </div>
+            <div class="sweep-tiles">
+              <div class="tile ok">
+                <span class="tile-name">tanh · 2-bit</span>
+                <span class="tile-state">H = 12</span>
+              </div>
+              <div class="tile ok">
+                <span class="tile-name">tanh · ternary</span>
+                <span class="tile-state">H = 32</span>
+              </div>
+              <div class="tile winner">
+                <span class="tile-name">C19 · binary</span>
+                <span class="tile-state">★ H = 16 · champion</span>
+              </div>
+              <div class="tile partial">
+                <span class="tile-name">ReLU · binary</span>
+                <span class="tile-state">93.4% @ H=16 · 17 bad</span>
+              </div>
+            </div>
+          </section>
+
+          <!-- ROW 2: Weight precision ladder (C19 · H=16) -->
+          <section class="sweep-row">
+            <div class="sweep-row-label">
+              <p class="srl-title">Weight precision (C19 · H=16)</p>
+              <p class="srl-sub">stepping down from full precision</p>
+            </div>
+            <div class="sweep-tiles">
+              <div class="tile neutral">
+                <span class="tile-name">fp32</span>
+                <span class="tile-state">baseline · not a candidate</span>
+              </div>
+              <div class="tile ok">
+                <span class="tile-name">int4</span>
+                <span class="tile-state">✓ 100% lossless</span>
+              </div>
+              <div class="tile ok">
+                <span class="tile-name">3-bit {±1,2,4,8}</span>
+                <span class="tile-state">✓ 100% · 1.4s</span>
+              </div>
+              <div class="tile partial">
+                <span class="tile-name">ternary {−1,0,+1}</span>
+                <span class="tile-state">96.9% · 8 bad</span>
+              </div>
+              <div class="tile partial">
+                <span class="tile-name">2-bit {±1,±3}</span>
+                <span class="tile-state">91.4% · 22 bad</span>
+              </div>
+              <div class="tile winner">
+                <span class="tile-name">binary (±1)</span>
+                <span class="tile-state">★ 100% · smallest</span>
+              </div>
+            </div>
+          </section>
+
+          <!-- ROW 3: Hidden dim for the champion combo (C19 · binary, best-of-4 seeds) -->
+          <section class="sweep-row">
+            <div class="sweep-row-label">
+              <p class="srl-title">Hidden dim (C19 · binary)</p>
+              <p class="srl-sub">narrowing toward the smallest lossless · best-of-4 seeds</p>
+            </div>
+            <div class="sweep-tiles">
+              <div class="tile fail">
+                <span class="tile-name">H = 8</span>
+                <span class="tile-state">25.0% · too small</span>
+              </div>
+              <div class="tile partial">
+                <span class="tile-name">H = 12</span>
+                <span class="tile-state">91.4% · 22 bad</span>
+              </div>
+              <div class="tile winner">
+                <span class="tile-name">H = 16</span>
+                <span class="tile-state">★ 100% · champion · min</span>
+              </div>
+              <div class="tile ok">
+                <span class="tile-name">H = 20</span>
+                <span class="tile-state">✓ 100% · slack</span>
+              </div>
+            </div>
+          </section>
+
+          <!-- ROW 4: LUT readout precision -->
+          <section class="sweep-row">
+            <div class="sweep-row-label">
+              <p class="srl-title">LUT readout precision</p>
+              <p class="srl-sub">champion weights baked into a table</p>
+            </div>
+            <div class="sweep-tiles">
+              <div class="tile winner">
+                <span class="tile-name">int8</span>
+                <span class="tile-state">★ 256/256</span>
+              </div>
+              <div class="tile partial">
+                <span class="tile-name">int4</span>
+                <span class="tile-state">247 / 256 (96%)</span>
+              </div>
+              <div class="tile fail">
+                <span class="tile-name">1-bit sign</span>
+                <span class="tile-state">179 / 256</span>
+              </div>
+              <div class="tile fail">
+                <span class="tile-name">int2 / int1</span>
+                <span class="tile-state">~ 41 / 256</span>
+              </div>
+            </div>
+          </section>
+
+          <!-- FINDING 3: Full-binary attempt (negative) -->
+          <section class="sweep-row">
+            <div class="sweep-row-label">
+              <p class="srl-title">Full-binary attempt</p>
+              <p class="srl-sub">binary weights <em>and</em> binary activations</p>
+            </div>
+            <div class="sweep-tiles">
+              <div class="tile fail">
+                <span class="tile-name">H = 24</span>
+                <span class="tile-state">32 / 256 · diverges</span>
+              </div>
+              <div class="tile fail">
+                <span class="tile-name">H = 64</span>
+                <span class="tile-state">worse · ~16 / 256</span>
+              </div>
+              <div class="tile fail">
+                <span class="tile-name">H = 256</span>
+                <span class="tile-state">2 / 256 · collapses</span>
+              </div>
+            </div>
+          </section>
+        </div>
+
+        <!-- CHAMPION callout -->
+        <div class="champion-card" role="status" aria-label="Champion configuration">
+          <div class="champ-label">Champion</div>
+          <div class="champ-formula">C19 &nbsp;·&nbsp; binary (±1) &nbsp;·&nbsp; H = 16 &nbsp;·&nbsp; int8 LUT</div>
+          <div class="champ-stats">
+            <span>256 / 256 lossless</span>
+            <span>≈ 3 KB</span>
+            <span>one-script reproduce</span>
           </div>
-          <span class="arch-arrow">→</span>
-          <div class="arch-node">
-            <div class="arch-node-label">Mirror back</div>
-            <div class="arch-node-val">8</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ────────────── SLIDE 4: TRY IT LIVE ────────────── -->
+    <div class="slide" id="slide-4" role="region" aria-label="Slide 4 of 5: Try it live">
+      <div class="playground-layout" id="slide-content-4">
+
+        <header>
+          <p class="playground-eye">04 &middot; Try it live</p>
+          <h2 class="playground-title">Type anything &mdash; watch it become 16 numbers</h2>
+          <p class="playground-lead">
+            The only operation the Byte Block does at inference time is a <em>256-entry table lookup</em>.
+            Every byte maps to a fixed 16-dimensional latent. Type below to see each byte resolved in real time.
+          </p>
+        </header>
+
+        <!-- Input row -->
+        <div class="playground-input-wrap">
+          <svg class="playground-input-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/>
+          </svg>
+          <input
+            type="text"
+            id="playground-text-input"
+            class="playground-input"
+            placeholder="Type here or paste a line..."
+            aria-label="Text input for byte encoding"
+            autocomplete="off"
+            spellcheck="false"
+          />
+          <span class="playground-byte-count" id="playground-byte-count" aria-live="polite">0 bytes</span>
+        </div>
+
+        <!-- Main body -->
+        <div class="playground-body">
+
+          <!-- Left: byte cards -->
+          <div class="playground-cards-wrap">
+            <p class="playground-cards-label" id="playground-cards-label">Byte sequence</p>
+            <div
+              class="playground-cards-scroll"
+              id="playground-cards-scroll"
+              role="listbox"
+              aria-label="Byte cards"
+              aria-labelledby="playground-cards-label"
+              tabindex="0"
+            >
+              <span class="playground-empty" id="playground-empty-msg">Start typing to see bytes</span>
+            </div>
+          </div>
+
+          <!-- Right: latent panel -->
+          <aside
+            class="playground-latent-panel"
+            id="playground-latent-panel"
+            aria-label="Latent vector for selected byte"
+            aria-live="polite"
+          >
+            <!-- populated by JS -->
+          </aside>
+
+        </div>
+
+        <!-- Stats strip -->
+        <div class="playground-stats" id="playground-stats" aria-live="polite" role="status">
+          <span class="playground-stat-pill"><strong id="pg-stat-bytes">0</strong>&nbsp;bytes</span>
+          <span class="playground-stat-pill"><strong id="pg-stat-unique">0</strong>&nbsp;unique</span>
+          <span class="playground-stat-pill" id="pg-stat-dom-pill">dominant:&nbsp;<strong id="pg-stat-dom">&mdash;</strong></span>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ────────────── SLIDE 5: ROADMAP ────────────── -->
+    <div class="slide" id="slide-5" role="region" aria-label="Slide 5 of 5: Roadmap">
+      <div class="roadmap-layout" id="slide-content-5">
+
+        <!-- Header -->
+        <header>
+          <p class="roadmap-eye">05 &middot; What&rsquo;s next</p>
+          <h2 class="roadmap-title">Beyond the Byte Block</h2>
+          <p class="roadmap-lead">
+            Block A is frozen and lossless. The frontier is now the merger layers above it and
+            open architectural questions that the sweep left unanswered.
+          </p>
+        </header>
+
+        <!-- Three forward-direction cards -->
+        <section aria-label="Forward directions">
+          <div class="roadmap-cards">
+
+            <!-- Card A: L1 Merger -->
+            <article class="roadmap-card frontier" aria-label="L1 merger direction">
+              <span class="roadmap-status-badge jade">
+                <span class="roadmap-status-dot" aria-hidden="true"></span>
+                Active frontier
+              </span>
+              <h3 class="roadmap-card-title">
+                L1 Merger
+                <span class="roadmap-card-sub">byte pairs &rarr; one latent</span>
+              </h3>
+              <p class="roadmap-card-body">
+                The layer above Block A. Two adjacent byte latents are compressed into a single
+                merged latent. <strong>2026-04-19 breakthrough:</strong> single-W mirror tied at
+                H=81 reaches 100% lossless on all 2592 cells at half the footprint of the old
+                recipe, overturning the &ldquo;73% hard ceiling&rdquo; as a single-seed artifact.
+              </p>
+              <div class="roadmap-card-path" title="tools/diag_byte_single_w_huffman_pack.py">tools/diag_byte_single_w_huffman_pack.py</div>
+            </article>
+
+            <!-- Card B: L2 Merger -->
+            <article class="roadmap-card exploration" aria-label="L2 merger direction">
+              <span class="roadmap-status-badge cyan">
+                <span class="roadmap-status-dot" aria-hidden="true"></span>
+                Exploration phase
+              </span>
+              <h3 class="roadmap-card-title">
+                L2 Merger
+                <span class="roadmap-card-sub">pairs of pairs &rarr; one latent</span>
+              </h3>
+              <p class="roadmap-card-body">
+                A second merger layer stacked on top of L1 pairs. Currently at the
+                geometry-probe phase. Early signal shows the L1 merged latents carry enough
+                structure to compress further, but the winning recipe is still being searched.
+              </p>
+              <div class="roadmap-card-path" title="tools/diag_byte_l2_phase0_geometry_probe.py">tools/diag_byte_l2_phase0_geometry_probe.py</div>
+            </article>
+
+            <!-- Card C: Word tokenizer -->
+            <article class="roadmap-card experimental" aria-label="Word tokenizer direction">
+              <span class="roadmap-status-badge amber">
+                <span class="roadmap-status-dot" aria-hidden="true"></span>
+                Experimental &middot; active
+              </span>
+              <h3 class="roadmap-card-title">
+                Word / Subword Tokenizer V1
+                <span class="roadmap-card-sub">skip the byte level entirely</span>
+              </h3>
+              <p class="roadmap-card-body">
+                A parallel direction: tokenize directly into whole words or subword pieces,
+                the standard LLM approach. V1 on FineWeb-EDU shows 52% raw word coverage;
+                34.6% of the corpus falls back to byte encoding.
+              </p>
+              <div class="roadmap-card-path" title="tools/diag_word_unit_sweep.py">tools/diag_word_unit_sweep.py</div>
+            </article>
+
+          </div>
+        </section>
+
+        <!-- Open questions -->
+        <section class="roadmap-questions" aria-label="Open questions">
+          <p class="roadmap-questions-label">Open questions</p>
+
+          <div class="roadmap-question-row">
+            <span class="roadmap-q-mark" aria-hidden="true">?</span>
+            <p class="roadmap-q-text">
+              <strong>Full-binary weights AND activations.</strong>
+              The champion uses binary (±1) weights with a C19 float activation. True
+              full-binary collapses reconstruction (see Slide 3). Is there a hidden-width
+              or architecture tweak that unlocks it?
+            </p>
+          </div>
+
+          <div class="roadmap-question-row">
+            <span class="roadmap-q-mark" aria-hidden="true">?</span>
+            <p class="roadmap-q-text">
+              <strong>Integer-only inference path.</strong>
+              The LUT readout is already int8, but the C19 activation still needs float.
+              Can the whole forward pass become integer arithmetic for microcontroller deploy?
+            </p>
+          </div>
+
+          <div class="roadmap-question-row">
+            <span class="roadmap-q-mark" aria-hidden="true">?</span>
+            <p class="roadmap-q-text">
+              <strong>Cross-modal bytes.</strong>
+              Block A was trained on text byte distributions. Does the same recipe work on
+              audio bytes, image bytes, or arbitrary binary streams without retraining?
+            </p>
+          </div>
+        </section>
+
+        <!-- Repository pointers -->
+        <footer class="roadmap-pointers" aria-label="Repository pointers">
+          <div class="roadmap-pointer-card">
+            <span class="roadmap-pointer-label">Champion script</span>
+            <span class="roadmap-pointer-value" title="tools/diag_byte_single_w_huffman_pack.py">tools/diag_byte_single_w_huffman_pack.py</span>
+          </div>
+          <div class="roadmap-pointer-card">
+            <span class="roadmap-pointer-label">Champion artifact</span>
+            <span class="roadmap-pointer-value" title="output/merger_single_w_huffman_pack/packed_model.bin (3.36 KB)">output/merger_single_w_huffman_pack/packed_model.bin &mdash; 3.36 KB</span>
+          </div>
+          <div class="roadmap-pointer-card">
+            <span class="roadmap-pointer-label">Findings register</span>
+            <span class="roadmap-pointer-value">VALIDATED_FINDINGS.md</span>
+          </div>
+          <div class="roadmap-pointer-card">
+            <span class="roadmap-pointer-label">Wiki timeline</span>
+            <span class="roadmap-pointer-value">docs/wiki/Timeline-Archive.md</span>
+          </div>
+          <div class="roadmap-pointer-card license">
+            <span class="roadmap-pointer-label">License</span>
+            <span class="roadmap-pointer-value">PolyForm Noncommercial 1.0.0 &mdash; dual-license commercial path available</span>
+          </div>
+        </footer>
+
+      </div><!-- /roadmap-layout -->
+    </div>
+
+  </div><!-- /deck-track -->
+</div><!-- /deck-viewport -->
+
+<!-- ── SLIDE COUNTER ── -->
+<div class="slide-counter" id="slide-counter" aria-live="polite" aria-label="Current slide">01 / 05</div>
+
+<!-- ════════════════════════════════════════════════════════ -->
+<script src="byte_dict.js"></script>
+<script>
+(function() {
+  'use strict';
+
+  /* ─────────────────────────────────────── */
+  /* REAL champion weights — binary C19 H=16 */
+  /* Extracted from output/byte_unit_champion_binary_c19_h16/byte_unit_winner_binary.json */
+  /* W1: 8×16 · W2: 16×16 · sign pattern = actual deployed model (NOT random) */
+  /* W1 sign dist: +53.9% / −46.1%   W2 sign dist: +44.1% / −55.9% */
+  /* ─────────────────────────────────────── */
+  const CHAMPION_W1 = [
+    [1,-1,-1,-1, 1,-1,-1, 1, 1, 1,-1, 1, 1,-1,-1,-1],
+    [1,-1,-1,-1, 1, 1, 1,-1,-1,-1,-1, 1,-1, 1,-1, 1],
+    [1, 1,-1,-1, 1, 1,-1, 1, 1,-1,-1, 1,-1, 1, 1,-1],
+    [1,-1, 1,-1,-1,-1, 1, 1,-1, 1, 1,-1,-1, 1, 1,-1],
+    [-1, 1,-1,-1,-1,-1, 1,-1, 1, 1,-1,-1,-1, 1, 1, 1],
+    [1, 1,-1,-1,-1, 1, 1, 1,-1,-1,-1, 1, 1, 1, 1, 1],
+    [1, 1, 1,-1, 1, 1, 1,-1, 1, 1, 1, 1, 1,-1, 1, 1],
+    [-1, 1,-1,-1, 1,-1,-1,-1, 1,-1, 1, 1, 1, 1, 1,-1]
+  ];
+  const CHAMPION_W2 = [
+    [1, 1,-1, 1, 1,-1, 1, 1, 1,-1, 1,-1,-1, 1, 1, 1],
+    [-1,-1,-1,-1, 1, 1, 1, 1,-1, 1,-1,-1, 1,-1, 1,-1],
+    [-1,-1,-1,-1,-1, 1,-1,-1,-1, 1,-1,-1, 1,-1,-1, 1],
+    [1,-1,-1,-1,-1, 1,-1, 1, 1,-1, 1, 1, 1, 1, 1, 1],
+    [-1,-1, 1,-1, 1,-1,-1,-1,-1,-1, 1, 1, 1,-1, 1, 1],
+    [-1,-1,-1,-1, 1,-1,-1, 1,-1,-1, 1,-1,-1,-1, 1, 1],
+    [-1, 1, 1,-1,-1,-1, 1,-1, 1,-1,-1, 1,-1, 1, 1, 1],
+    [-1,-1,-1,-1, 1, 1,-1,-1, 1,-1, 1,-1,-1, 1,-1, 1],
+    [-1, 1,-1, 1, 1,-1, 1, 1, 1,-1, 1, 1, 1, 1, 1,-1],
+    [-1, 1,-1,-1, 1,-1, 1,-1,-1, 1, 1,-1,-1,-1,-1,-1],
+    [1,-1,-1, 1,-1,-1,-1,-1,-1, 1,-1, 1,-1,-1, 1, 1],
+    [1,-1, 1,-1, 1, 1, 1,-1,-1, 1,-1,-1,-1,-1,-1, 1],
+    [1, 1, 1,-1, 1, 1, 1, 1,-1, 1,-1,-1, 1, 1,-1, 1],
+    [-1,-1, 1, 1, 1, 1,-1,-1,-1,-1,-1, 1,-1,-1,-1,-1],
+    [1,-1,-1,-1, 1, 1,-1,-1, 1, 1,-1,-1,-1,-1,-1,-1],
+    [1,-1, 1,-1,-1,-1, 1,-1, 1,-1,-1,-1,-1, 1,-1,-1]
+  ];
+
+  /* ─────────────────────────────────────── */
+  /* SVG Wire Diagram builder               */
+  /* ─────────────────────────────────────── */
+
+  const SVG_NS = 'http://www.w3.org/2000/svg';
+  const VB_W = 640, VB_H = 420;
+  const TOP_PAD = 34, BOT_PAD = 16;
+
+  // Column x-centres — 3 layers: INPUT (8) · HIDDEN (16, C19) · OUTPUT (16, latent)
+  const COL_X = [100, 320, 540];
+
+  // Node counts per column
+  const COL_N = [8, 16, 16];
+
+  // Node visual radii
+  const NODE_R = [5.5, 7, 9];
+
+  // Node colours
+  const NODE_FILL   = ['#1a1e2e', '#141a28', '#0a1420'];
+  const NODE_STROKE = ['#767c92', '#56e0e0', '#56e0e0'];
+  const NODE_SW     = [1, 1.2, 2.1];
+  const NODE_FILTER = ['glow-input', 'glow-hidden', 'glow-latent'];
+  const NODE_GLOW   = ['rgba(86,224,224,0.08)', 'rgba(86,224,224,0.20)', 'rgba(86,224,224,0.38)'];
+
+  // Compute vertical positions for each column
+  function colPositions(n) {
+    const usable = VB_H - TOP_PAD - BOT_PAD;
+    const step = usable / (n - 1 || 1);
+    const positions = [];
+    for (let i = 0; i < n; i++) {
+      positions.push(TOP_PAD + i * step);
+    }
+    return positions;
+  }
+
+  const allPositions = COL_N.map(n => colPositions(n));
+
+  // Store wire data for hover and pulse
+  const wireData = []; // { x1,y1,x2,y2, sign, fromCol, fromIdx, toCol, toIdx }
+
+  // Build wire elements
+  function buildWires() {
+    const wiresNeg = document.getElementById('wires-neg');
+    const wiresPos = document.getElementById('wires-pos');
+
+    // 2 wire segments: col0→col1 (W1, 8×16) and col1→col2 (W2, 16×16)
+    for (let col = 0; col < 2; col++) {
+      const fromPositions = allPositions[col];
+      const toPositions   = allPositions[col + 1];
+      const x1 = COL_X[col];
+      const x2 = COL_X[col + 1];
+      const weightMatrix = col === 0 ? CHAMPION_W1 : CHAMPION_W2;
+
+      for (let i = 0; i < fromPositions.length; i++) {
+        for (let j = 0; j < toPositions.length; j++) {
+          // 1:1 with the frozen champion: sign comes from real W1/W2 weights
+          const sign = weightMatrix[i][j] > 0 ? 1 : -1;
+          const y1 = fromPositions[i];
+          const y2 = toPositions[j];
+
+          const line = document.createElementNS(SVG_NS, 'line');
+          line.setAttribute('x1', x1);
+          line.setAttribute('y1', y1);
+          line.setAttribute('x2', x2);
+          line.setAttribute('y2', y2);
+          line.setAttribute('stroke-linecap', 'round');
+
+          if (sign === 1) {
+            line.setAttribute('stroke', '#56e0e0');
+            line.setAttribute('stroke-width', '0.55');
+            line.setAttribute('stroke-opacity', '0.45');
+            wiresPos.appendChild(line);
+          } else {
+            line.setAttribute('stroke', '#ff5aa8');
+            line.setAttribute('stroke-width', '0.4');
+            line.setAttribute('stroke-opacity', '0.3');
+            line.setAttribute('stroke-dasharray', '3,3');
+            wiresNeg.appendChild(line);
+          }
+
+          wireData.push({
+            el: line, x1, y1, x2, y2,
+            sign,
+            fromCol: col, fromIdx: i,
+            toCol: col + 1, toIdx: j
+          });
+        }
+      }
+    }
+  }
+
+  // Build node elements
+  const nodeElements = []; // [col][idx] = { circle, group }
+
+  function buildNodes() {
+    const nodesLayer = document.getElementById('nodes-layer');
+
+    for (let col = 0; col < 3; col++) {
+      nodeElements[col] = [];
+      const positions = allPositions[col];
+      const r  = NODE_R[col];
+      const fill   = NODE_FILL[col];
+      const stroke = NODE_STROKE[col];
+      const sw     = NODE_SW[col];
+      const filterId = NODE_FILTER[col];
+
+      for (let i = 0; i < positions.length; i++) {
+        const x = COL_X[col];
+        const y = positions[i];
+
+        const g = document.createElementNS(SVG_NS, 'g');
+        g.setAttribute('class', 'node-group');
+
+        // Outer glow halo
+        const halo = document.createElementNS(SVG_NS, 'circle');
+        halo.setAttribute('cx', x);
+        halo.setAttribute('cy', y);
+        halo.setAttribute('r', r + 3);
+        halo.setAttribute('fill', NODE_GLOW[col]);
+        halo.setAttribute('stroke', 'none');
+        halo.setAttribute('pointer-events', 'none');
+        g.appendChild(halo);
+
+        // Main circle
+        const circ = document.createElementNS(SVG_NS, 'circle');
+        circ.setAttribute('cx', x);
+        circ.setAttribute('cy', y);
+        circ.setAttribute('r', r);
+        circ.setAttribute('fill', fill);
+        circ.setAttribute('stroke', stroke);
+        circ.setAttribute('stroke-width', sw);
+        circ.setAttribute('class', 'node-bg');
+        if (filterId) circ.setAttribute('filter', `url(#${filterId})`);
+        g.appendChild(circ);
+
+        // Latent column: inner highlight dot
+        if (col === 2) {
+          const inner = document.createElementNS(SVG_NS, 'circle');
+          inner.setAttribute('cx', x);
+          inner.setAttribute('cy', y);
+          inner.setAttribute('r', 2.2);
+          inner.setAttribute('fill', '#56e0e0');
+          inner.setAttribute('opacity', '0.7');
+          g.appendChild(inner);
+        }
+
+        // Invisible hit target for hover
+        const hit = document.createElementNS(SVG_NS, 'circle');
+        hit.setAttribute('cx', x);
+        hit.setAttribute('cy', y);
+        hit.setAttribute('r', r + 6);
+        hit.setAttribute('fill', 'transparent');
+        hit.setAttribute('stroke', 'none');
+        hit.setAttribute('cursor', 'default');
+        g.appendChild(hit);
+
+        nodesLayer.appendChild(g);
+        nodeElements[col][i] = { g, circ, halo };
+
+        // Hover: highlight connected wires
+        hit.addEventListener('mouseenter', () => highlightNode(col, i));
+        hit.addEventListener('mouseleave', clearHighlight);
+      }
+    }
+  }
+
+  // Highlight wires connected to a specific node
+  function highlightNode(col, idx) {
+    wireData.forEach(w => {
+      const connected = (w.fromCol === col && w.fromIdx === idx) ||
+                        (w.toCol   === col && w.toIdx   === idx);
+      if (connected) {
+        w.el.setAttribute('stroke-opacity', w.sign === 1 ? '0.9' : '0.75');
+        w.el.setAttribute('stroke-width', w.sign === 1 ? '1.2' : '0.9');
+      } else {
+        w.el.setAttribute('stroke-opacity', '0.08');
+      }
+    });
+  }
+
+  function clearHighlight() {
+    wireData.forEach(w => {
+      if (w.sign === 1) {
+        w.el.setAttribute('stroke-opacity', '0.45');
+        w.el.setAttribute('stroke-width', '0.55');
+      } else {
+        w.el.setAttribute('stroke-opacity', '0.3');
+        w.el.setAttribute('stroke-width', '0.4');
+      }
+    });
+  }
+
+  /* ── Pulse animation ── */
+  // We track active pulses in JS and draw them with requestAnimationFrame.
+  // Each pulse is a dot travelling along one wire over ~600ms.
+  const pulseLayer = document.getElementById('pulse-layer');
+  const activePulses = []; // { circle, wire, startTime, duration, reverse }
+  let lastPulseWave = 0;
+  const PULSE_INTERVAL = 3800; // ms between full encode→reflect→decode cycles
+  const WAVE_SIZE = 15;        // wires per wave
+  const PULSE_DURATION = 640;  // ms per pulse dot
+
+  // Build reusable pool of pulse circles
+  const POOL_SIZE = 40;
+  const pulsePool = [];
+  for (let i = 0; i < POOL_SIZE; i++) {
+    const c = document.createElementNS(SVG_NS, 'circle');
+    c.setAttribute('r', '2.8');
+    c.setAttribute('fill', '#56e0e0');
+    c.setAttribute('stroke', '#fff');
+    c.setAttribute('stroke-width', '0.6');
+    c.setAttribute('filter', 'url(#glow-pulse)');
+    c.setAttribute('visibility', 'hidden');
+    pulseLayer.appendChild(c);
+    pulsePool.push({ el: c, inUse: false });
+  }
+
+  function getFreePoolItem() {
+    for (const item of pulsePool) {
+      if (!item.inUse) return item;
+    }
+    return null;
+  }
+
+  function fireOnWires(wirePool, reverse, startDelay) {
+    const indices = wirePool.map((_, i) => i);
+    for (let i = indices.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [indices[i], indices[j]] = [indices[j], indices[i]];
+    }
+    const selected = indices.slice(0, Math.min(WAVE_SIZE, wirePool.length));
+
+    selected.forEach((wi, delay_i) => {
+      const wire = wirePool[wi];
+      setTimeout(() => {
+        const poolItem = getFreePoolItem();
+        if (!poolItem) return;
+        poolItem.inUse = true;
+        poolItem.el.setAttribute('fill', reverse ? '#a07cf0' : '#56e0e0');
+        activePulses.push({
+          poolItem,
+          wire,
+          startTime: performance.now(),
+          duration: PULSE_DURATION,
+          reverse
+        });
+        poolItem.el.setAttribute('visibility', 'visible');
+      }, startDelay + delay_i * 18);
+    });
+  }
+
+  const seg1Len = COL_N[0] * COL_N[1];    // col 0 → col 1 (W1: 8×16 = 128)
+  const seg1 = () => wireData.slice(0, seg1Len);
+  const seg2 = () => wireData.slice(seg1Len); // col 1 → col 2 (W2: 16×16 = 256)
+
+  // Radial "reflection" burst at the output-column nodes
+  const reflectionLayer = document.getElementById('reflection-layer');
+  function fireReflection() {
+    // Pick a handful of output (col 2) nodes
+    const picks = [];
+    const used = new Set();
+    const total = COL_N[2];
+    const k = 5;
+    while (picks.length < k) {
+      const idx = Math.floor(Math.random() * total);
+      if (used.has(idx)) continue;
+      used.add(idx); picks.push(idx);
+    }
+    picks.forEach((idx, i) => {
+      setTimeout(() => {
+        const pos = allPositions[2][idx];
+        const x = COL_X[2], y = pos;
+        const ring = document.createElementNS(SVG_NS, 'circle');
+        ring.setAttribute('cx', x);
+        ring.setAttribute('cy', y);
+        ring.setAttribute('r', 4);
+        ring.setAttribute('fill', 'none');
+        ring.setAttribute('stroke', '#56e0e0');
+        ring.setAttribute('stroke-width', '1.2');
+        ring.setAttribute('opacity', '0.95');
+        reflectionLayer.appendChild(ring);
+        const start = performance.now();
+        function anim(now) {
+          const t = Math.min((now - start) / 700, 1);
+          ring.setAttribute('r', (4 + t * 22).toFixed(2));
+          ring.setAttribute('opacity', (0.95 * (1 - t)).toFixed(3));
+          if (t < 1) requestAnimationFrame(anim);
+          else ring.remove();
+        }
+        requestAnimationFrame(anim);
+      }, i * 60);
+    });
+  }
+
+  function fireEncodeDecodeCycle() {
+    // Phase 1: ENCODE — pulses travel left→right through W1, then W2
+    fireOnWires(seg1(), false, 0);
+    fireOnWires(seg2(), false, 300);
+
+    // Phase 2: REFLECTION — expanding rings bloom off the output nodes
+    setTimeout(fireReflection, 900);
+
+    // Phase 3: DECODE — purple pulses travel right→left through W2, then W1 (same wires, reversed direction)
+    fireOnWires(seg2(), true, 1200);
+    fireOnWires(seg1(), true, 1500);
+  }
+
+  function updatePulses(now) {
+    for (let i = activePulses.length - 1; i >= 0; i--) {
+      const p = activePulses[i];
+      const t = Math.min((now - p.startTime) / p.duration, 1);
+
+      if (t >= 1) {
+        p.poolItem.el.setAttribute('visibility', 'hidden');
+        p.poolItem.inUse = false;
+        activePulses.splice(i, 1);
+        continue;
+      }
+
+      // Ease in-out
+      const ease = t < 0.5 ? 2*t*t : -1 + (4 - 2*t)*t;
+      const prog = p.reverse ? 1 - ease : ease;
+
+      const x = p.wire.x1 + (p.wire.x2 - p.wire.x1) * prog;
+      const y = p.wire.y1 + (p.wire.y2 - p.wire.y1) * prog;
+
+      p.poolItem.el.setAttribute('cx', x);
+      p.poolItem.el.setAttribute('cy', y);
+
+      // Fade in/out
+      const alpha = Math.sin(t * Math.PI);
+      p.poolItem.el.setAttribute('opacity', alpha.toFixed(3));
+    }
+  }
+
+  let rafId = null;
+
+  function animLoop(now) {
+    if (now - lastPulseWave > PULSE_INTERVAL) {
+      fireEncodeDecodeCycle();
+      lastPulseWave = now;
+    }
+    updatePulses(now);
+    rafId = requestAnimationFrame(animLoop);
+  }
+
+  /* ─────────────────────────────────────── */
+  /* Deck navigation                        */
+  /* ─────────────────────────────────────── */
+  const TOTAL_SLIDES = 5;
+  let currentSlide = 0;
+  let isAnimating  = false;
+  let scrollHintHidden = false;
+
+  const track   = document.getElementById('deck-track');
+  const counter = document.getElementById('slide-counter');
+  const metroItems = document.querySelectorAll('.metro-item');
+  const scrollHint = document.getElementById('scroll-hint');
+
+  function slideHeight() {
+    return window.innerHeight - parseInt(getComputedStyle(document.documentElement)
+      .getPropertyValue('--nav-h'), 10);
+  }
+
+  function goTo(index, skipAnim) {
+    if (index < 0 || index >= TOTAL_SLIDES) return;
+    if (isAnimating && !skipAnim) return;
+
+    currentSlide = index;
+    isAnimating = true;
+
+    const h = slideHeight();
+    const offset = -index * h;
+
+    if (skipAnim) {
+      track.style.transition = 'none';
+    } else {
+      track.style.transition = 'transform 420ms cubic-bezier(0.25, 0.1, 0.25, 1)';
+    }
+    track.style.transform = `translateY(${offset}px)`;
+
+    // Update counter
+    const n = String(index + 1).padStart(2, '0');
+    const t = String(TOTAL_SLIDES).padStart(2, '0');
+    counter.textContent = `${n} / ${t}`;
+    counter.setAttribute('aria-label', `Slide ${index + 1} of ${TOTAL_SLIDES}`);
+
+    // Update metro
+    metroItems.forEach((item, i) => {
+      const active = i === index;
+      item.setAttribute('aria-current', active ? 'true' : 'false');
+    });
+
+    // Hide scroll hint after first navigation
+    if (!scrollHintHidden && index > 0) {
+      scrollHintHidden = true;
+      scrollHint.classList.add('hidden');
+    }
+
+    // Announce for screen readers
+    track.setAttribute('aria-label', `Slide ${index + 1} of ${TOTAL_SLIDES}`);
+
+    // Start/stop animation based on visible slide
+    if (index === 0) {
+      if (!rafId) rafId = requestAnimationFrame(animLoop);
+    } else {
+      if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
+    }
+
+    setTimeout(() => { isAnimating = false; }, skipAnim ? 0 : 430);
+  }
+
+  function next() { goTo(currentSlide + 1); }
+  function prev() { goTo(currentSlide - 1); }
+
+  // Keyboard navigation
+  document.addEventListener('keydown', (e) => {
+    if (isAnimating) return;
+    switch (e.key) {
+      case 'ArrowDown':
+      case 'PageDown':
+      case ' ':
+        e.preventDefault(); next(); break;
+      case 'ArrowUp':
+      case 'PageUp':
+        e.preventDefault(); prev(); break;
+      case 'Home':
+        e.preventDefault(); goTo(0); break;
+      case 'End':
+        e.preventDefault(); goTo(TOTAL_SLIDES - 1); break;
+    }
+  });
+
+  // Wheel navigation (debounced)
+  let wheelTimeout = null;
+  let wheelLocked  = false;
+  document.addEventListener('wheel', (e) => {
+    e.preventDefault();
+    if (wheelLocked) return;
+    wheelLocked = true;
+    if (e.deltaY > 0) next();
+    else if (e.deltaY < 0) prev();
+    clearTimeout(wheelTimeout);
+    wheelTimeout = setTimeout(() => { wheelLocked = false; }, 550);
+  }, { passive: false });
+
+  // Metro dot clicks
+  metroItems.forEach((item, i) => {
+    item.addEventListener('click', () => goTo(i));
+    item.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        goTo(i);
+      }
+    });
+  });
+
+  // Handle resize
+  let resizeDebounce = null;
+  window.addEventListener('resize', () => {
+    clearTimeout(resizeDebounce);
+    resizeDebounce = setTimeout(() => goTo(currentSlide, true), 100);
+  });
+
+  /* ─────────────────────────────────────── */
+  /* Init                                   */
+  /* ─────────────────────────────────────── */
+  buildWires();
+  buildNodes();
+
+  // Initial state
+  goTo(0, true);
+
+  // Kick off animation loop for slide 1
+  rafId = requestAnimationFrame(animLoop);
+
+  /* ─────────────────────────────────────── */
+  /* Chip tooltip system                    */
+  /* ─────────────────────────────────────── */
+  (function initTooltips() {
+    // All elements that carry a tooltip (tag chips + stat cards)
+    const chips = Array.from(document.querySelectorAll(
+      '.badge-row .tag-chip[aria-describedby], .stats-grid .stat-card[aria-describedby]'
+    ));
+    let activeChip = null; // currently shown chip, or null
+
+    // Show the tooltip for a given chip
+    function showTip(chip) {
+      if (activeChip === chip) return;
+      hideTip(); // close any currently open one first
+      activeChip = chip;
+      const tip = chip.querySelector('.chip-tooltip');
+      if (tip) tip.classList.add('is-visible');
+    }
+
+    // Hide whatever is currently visible
+    function hideTip() {
+      if (!activeChip) return;
+      const tip = activeChip.querySelector('.chip-tooltip');
+      if (tip) tip.classList.remove('is-visible');
+      activeChip = null;
+    }
+
+    chips.forEach(chip => {
+      // ── Desktop: hover ──────────────────
+      chip.addEventListener('mouseenter', () => showTip(chip));
+      chip.addEventListener('mouseleave', () => {
+        // Small delay so moving between tooltip and chip edge doesn't flash
+        setTimeout(() => {
+          if (activeChip === chip) hideTip();
+        }, 80);
+      });
+
+      // ── Keyboard / focus ────────────────
+      chip.addEventListener('focus', () => showTip(chip));
+      chip.addEventListener('blur',  () => {
+        if (activeChip === chip) hideTip();
+      });
+
+      // ── Touch / click (toggle) ──────────
+      chip.addEventListener('click', (e) => {
+        if (activeChip === chip) {
+          hideTip();
+        } else {
+          showTip(chip);
+          e.stopPropagation(); // don't immediately trigger doc listener below
+        }
+      });
+    });
+
+    // Tap outside closes open tooltip
+    document.addEventListener('click', () => {
+      if (activeChip) hideTip();
+    });
+
+    // Escape key closes open tooltip
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && activeChip) {
+        hideTip();
+      }
+    });
+  }());
+
+  /* ─────────────────────────────────────── */
+  /* SLIDE 2 — Exhaustive Byte Dictionary   */
+  /* ─────────────────────────────────────── */
+  (function initByteDict() {
+    if (typeof BYTE_DICT === 'undefined') return;
+
+    const grid = document.getElementById('dict-grid');
+    const detail = document.getElementById('dict-detail');
+    const searchEl = document.getElementById('dict-search');
+    const countEl = document.getElementById('dict-count');
+    if (!grid || !detail) return;
+
+    let selectedByte = 32; // default: SPACE
+
+    function renderGrid() {
+      const frag = document.createDocumentFragment();
+      BYTE_DICT.forEach(item => {
+        const cell = document.createElement('button');
+        cell.type = 'button';
+        cell.className = 'byte-cell cat-' + item.cat;
+        cell.textContent = item.disp;
+        cell.title = `0x${item.hex} · ${item.name} · dec ${item.b}`;
+        cell.dataset.b = item.b;
+        cell.setAttribute('role', 'option');
+        cell.setAttribute('aria-label', `byte ${item.b} ${item.name}`);
+        cell.addEventListener('click', () => selectByte(item.b));
+        frag.appendChild(cell);
+      });
+      grid.appendChild(frag);
+    }
+
+    function selectByte(b) {
+      selectedByte = b;
+      const cells = grid.querySelectorAll('.byte-cell');
+      cells.forEach(c => c.classList.toggle('selected', +c.dataset.b === b));
+      renderDetail(BYTE_DICT[b]);
+    }
+
+    const CAT_LABEL = { ctrl: 'Control', print: 'Printable', ext: 'Extended' };
+    const CAT_HINT = {
+      ctrl: 'Non-printable control code. Historically used for terminal / protocol signalling.',
+      print: 'Printable ASCII — appears directly in text.',
+      ext: 'Extended byte (0x80–0xFF). In UTF-8 text this is usually a continuation byte of a multi-byte character.'
+    };
+
+    function renderDetail(item) {
+      // glyph sizing: short text if >1 char
+      const glyph = item.disp;
+      const short = glyph.length > 1;
+
+      // Latent cells
+      const latCells = item.lat.map((v, i) => {
+        const magn = Math.min(Math.abs(v) / 128, 1);
+        const hueVar = v >= 0 ? 'var(--cyan)' : 'var(--fuchsia)';
+        const fill = `color-mix(in oklab, ${hueVar} ${Math.round(magn * 55)}%, transparent)`;
+        return `<div class="latent-cell" style="--fill:${fill}">` +
+               `<span class="lc-i">d${String(i).padStart(2,'0')}</span>` +
+               `<span class="lc-v ${v >= 0 ? 'pos' : 'neg'}">${v}</span>` +
+               `</div>`;
+      }).join('');
+
+      // Dec/Hex/Bin codes
+      detail.innerHTML = `
+        <div class="dd-head">
+          <div class="dd-glyph ${short ? 'short' : ''}">${escapeHtml(glyph)}</div>
+          <div class="dd-meta">
+            <div class="dd-name">${escapeHtml(item.name)}</div>
+            <div class="dd-codes">
+              <span>dec<strong>${item.b}</strong></span>
+              <span>hex<strong>0x${item.hex}</strong></span>
+              <span>bin<strong>${item.bin}</strong></span>
+            </div>
+            <span class="dd-cat-chip ${item.cat}" title="${escapeHtml(CAT_HINT[item.cat])}">${CAT_LABEL[item.cat]}</span>
           </div>
         </div>
-        <p style="color:var(--ink-3);font-size:0.78rem;text-align:center;">Encoder and decoder share the same weight matrix (transpose-tied). Weights are binary: every value is −1 or +1.</p>
-      </div>
-
-      <p style="font-size:0.85rem;color:var(--ink-2);margin-bottom:20px;line-height:1.6;">
-        The Byte Unit is a symmetric bottle-neck. One raw byte (8 bits of unsigned integer 0–255) enters the left side. It passes through a hidden layer of 16 neurons with C19 activation, producing a 16-dimensional latent vector. During training the mirror path reconstructs the original byte, proving the latent is lossless. At inference only the encoder half is used downstream.
-      </p>
-
-      <div class="kv-grid">
-        <div class="kv"><div class="kv-key">Shape</div><div class="kv-val accent">8 → 16 → 16</div></div>
-        <div class="kv"><div class="kv-key">Activation</div><div class="kv-val">C19</div></div>
-        <div class="kv"><div class="kv-key">Weight type</div><div class="kv-val">binary {−1, +1}</div></div>
-        <div class="kv"><div class="kv-key">Input</div><div class="kv-val">1 raw byte (8-bit)</div></div>
-        <div class="kv"><div class="kv-key">Output</div><div class="kv-val">16-dim latent</div></div>
-        <div class="kv"><div class="kv-key">Mirror</div><div class="kv-val">Transpose-tied W</div></div>
-      </div>
-    </div>
-  </section>
-
-  <!-- ── SLIDE 3: METRICS ── -->
-  <section class="slide" id="metrics">
-    <div class="slide-inner">
-      <p class="slide-heading">Block A · Results</p>
-      <h2 class="slide-title">Metrics &amp; sweep findings</h2>
-
-      <div class="metric-big">
-        <div class="metric-big-num">100%</div>
-        <div class="metric-big-label">Lossless reconstruction on all 256 byte values · reload-verified</div>
-      </div>
-
-      <div class="metrics-row">
-        <div class="metric-card">
-          <div class="metric-card-val">256</div>
-          <div class="metric-card-label">Bytes tested</div>
+        <div>
+          <p class="dd-section-label">Latent vector · 16-d (int8 · scale ${BYTE_DICT_SCALE.toFixed(5)})</p>
+          <div class="latent-grid">${latCells}</div>
         </div>
-        <div class="metric-card">
-          <div class="metric-card-val">H=16</div>
-          <div class="metric-card-label">Smallest overall champion</div>
+        <div>
+          <p class="dd-section-label">Round-trip</p>
+          <div class="dd-reconstruct">encode → 16-d → decode → byte ${item.b} (${escapeHtml(item.name)})</div>
         </div>
-        <div class="metric-card">
-          <div class="metric-card-val">C19</div>
-          <div class="metric-card-label">Winning activation</div>
-        </div>
-        <div class="metric-card">
-          <div class="metric-card-val">binary</div>
-          <div class="metric-card-label">Weight precision</div>
-        </div>
-      </div>
+      `;
+    }
 
-      <h3 style="font-size:1rem;font-weight:600;color:var(--ink-2);margin:32px 0 8px;">Sweep matrix — minimum hidden dim for lossless</h3>
-      <table class="sweep-table">
-        <thead>
-          <tr><th>Activation</th><th>Weight type</th><th>Min H for lossless</th><th>Notes</th></tr>
-        </thead>
-        <tbody>
-          <tr><td>tanh</td><td>2-bit</td><td>H = 12</td><td></td></tr>
-          <tr><td>tanh</td><td>ternary</td><td>H = 32</td><td></td></tr>
-          <tr class="winner"><td>C19</td><td>binary</td><td>H = 16</td><td>Champion — smallest overall</td></tr>
-        </tbody>
-      </table>
-    </div>
-  </section>
+    function escapeHtml(s) {
+      return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
 
-  <!-- ── SLIDE 4: DEPLOY ── -->
-  <section class="slide" id="deploy">
-    <div class="slide-inner">
-      <p class="slide-heading">Block A · Artifacts</p>
-      <h2 class="slide-title">Deploy &amp; reproduce</h2>
+    function filterBytes(q) {
+      q = (q || '').trim().toLowerCase();
+      let visible = 0;
+      grid.querySelectorAll('.byte-cell').forEach(c => {
+        const b = +c.dataset.b;
+        const item = BYTE_DICT[b];
+        let match = !q;
+        if (!match) {
+          match = item.name.toLowerCase().includes(q)
+               || item.disp.toLowerCase() === q
+               || item.hex.toLowerCase().includes(q)
+               || ('0x' + item.hex.toLowerCase()) === q
+               || String(b) === q
+               || item.cat === q
+               || (q === 'space' && b === 32);
+        }
+        c.classList.toggle('dimmed', !match);
+        if (match) visible++;
+      });
+      countEl.textContent = `${visible} / 256`;
+    }
 
-      <div class="artifact-block">
-        <div class="artifact-label">Primary deploy folder</div>
-        <div class="artifact-path"><a href="https://github.com/VRAXION/VRAXION/tree/main/output/byte_unit_champion_binary_c19_h16" target="_blank" rel="noopener">output/byte_unit_champion_binary_c19_h16/</a></div>
-        <div class="artifact-size">
-          <a href="https://github.com/VRAXION/VRAXION/blob/main/output/byte_unit_champion_binary_c19_h16/byte_unit_winner_binary.json" target="_blank" rel="noopener">6.5 KB weights JSON</a>
-          &nbsp;·&nbsp;
-          <a href="https://github.com/VRAXION/VRAXION/blob/main/output/byte_unit_champion_binary_c19_h16/byte_embedder_lut_int8.json" target="_blank" rel="noopener">4 KB int8 LUT</a>
-          &nbsp;·&nbsp;
-          <a href="https://github.com/VRAXION/VRAXION/blob/main/output/byte_unit_champion_binary_c19_h16/byte_embedder_lut.h" target="_blank" rel="noopener">30 KB C header</a>
-        </div>
-      </div>
+    renderGrid();
+    selectByte(32); // default = SPACE
+    if (searchEl) {
+      searchEl.addEventListener('input', (e) => filterBytes(e.target.value));
+    }
 
-      <div class="artifact-block">
-        <div class="artifact-label">Production alternative (int4 variant)</div>
-        <div class="artifact-path"><a href="https://github.com/VRAXION/VRAXION/blob/main/tools/byte_unit_winner_int4.json" target="_blank" rel="noopener">tools/byte_unit_winner_int4.json</a></div>
-        <div class="artifact-size">int4 C19 H=24 · proven production artifact</div>
-      </div>
+  })();
 
-      <h3 style="font-size:0.85rem;font-weight:600;color:var(--ink-2);margin-top:28px;margin-bottom:8px;">Reproduce in one command</h3>
-      <div class="code-block"><a href="https://github.com/VRAXION/VRAXION/blob/main/tools/build_byte_unit.py" target="_blank" rel="noopener" style="color:inherit;">python tools/build_byte_unit.py</a></div>
 
-      <div class="kv-grid" style="margin-top:24px;">
-        <div class="kv"><div class="kv-key">Weights JSON</div><div class="kv-val">6.5 KB</div></div>
-        <div class="kv"><div class="kv-key">int8 LUT</div><div class="kv-val">4 KB</div></div>
-        <div class="kv"><div class="kv-key">C header</div><div class="kv-val">30 KB</div></div>
-        <div class="kv"><div class="kv-key">Version</div><div class="kv-val accent">v5.0.0-β.2</div></div>
-      </div>
-    </div>
-  </section>
+  /* ─────────────────────────────────────── */
+  /* SLIDE 4 — Live Text Playground                       */
+  /* ─────────────────────────────────────── */
+  (function initPlayground() {
+    if (typeof BYTE_DICT === 'undefined') return;
 
-  <!-- ── SLIDE 5: NEXT ── -->
-  <section class="slide" id="next">
-    <div class="slide-inner">
-      <p class="slide-heading">Block A · Roadmap</p>
-      <h2 class="slide-title">What comes next</h2>
+    const textInput   = document.getElementById('playground-text-input');
+    const byteCountEl = document.getElementById('playground-byte-count');
+    const cardsScroll = document.getElementById('playground-cards-scroll');
+    const emptyMsg    = document.getElementById('playground-empty-msg');
+    const latentPanel = document.getElementById('playground-latent-panel');
+    const statBytes   = document.getElementById('pg-stat-bytes');
+    const statUnique  = document.getElementById('pg-stat-unique');
+    const statDom     = document.getElementById('pg-stat-dom');
+    const statDomPill = document.getElementById('pg-stat-dom-pill');
+    if (!textInput || !cardsScroll || !latentPanel) return;
 
-      <div class="next-items">
-        <div class="next-item">
-          <span class="next-item-icon">→</span>
-          <div class="next-item-text">L0 outputs feed into Block B (Byte-Pair Merger) as two concatenated 16-dim vectors forming a 32-dim input.</div>
-        </div>
-        <div class="next-item">
-          <span class="next-item-icon">→</span>
-          <div class="next-item-text">Potential integer-only inference path: the int8 LUT already provides a direct 256-entry lookup, no multiply needed.</div>
-        </div>
-        <div class="next-item">
-          <span class="next-item-icon">→</span>
-          <div class="next-item-text">Open question: can 1-bit (pure sign) weights at H=16 also reach 100% lossless? Sweep showed binary requires H≥16; ternary requires H≥32.</div>
-        </div>
-      </div>
+    const SCALE = typeof BYTE_DICT_SCALE !== 'undefined' ? BYTE_DICT_SCALE : 0.015625;
+    const CAT_LABEL = { ctrl: 'Control', print: 'Printable', ext: 'Extended' };
 
-      <p style="font-size:0.8rem;color:var(--ink-3);margin-bottom:12px;text-transform:uppercase;letter-spacing:0.1em;">Related PRs</p>
-      <div class="pr-chips">
-        <span class="pr-chip">#137</span>
-        <span class="pr-chip">#138</span>
-        <span class="pr-chip">#139</span>
-      </div>
+    // Reduced-motion preference
+    const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-      <div class="block-nav">
-        <a href="e-brain.html" class="nav-btn">← E Brain</a>
-        <a href="index.html" class="nav-btn home">All Blocks</a>
-        <a href="b-merger.html" class="nav-btn">B Merger →</a>
-      </div>
-    </div>
-  </section>
+    // State
+    let currentBytes   = [];   // Uint8Array-like flat array
+    let activeIndex    = 0;    // which card is highlighted
+    let cycleTimer     = null;
+    let debounceTimer  = null;
+    let cardElements   = [];   // DOM refs to .playground-byte-card
 
+    // ── Helpers ──────────────────────────────────────────────────────
+    function escHtml(s) {
+      return String(s)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+    }
+
+    // Bipolar bar: value is a float in [-1, +1].
+    // Bar fills from center (50%) outward.
+    function buildBar(floatVal, dimIdx) {
+      const pct = floatVal * 100;                     // -100..+100
+      const isPos = floatVal >= 0;
+      const halfWidth = Math.abs(pct) / 2;            // 0..50 of full track width
+      const left  = isPos ? 50 : (50 - halfWidth);    // start % of track
+      const width = halfWidth;                         // width % of track
+      const color = isPos
+        ? 'color-mix(in oklab, var(--cyan) 70%, transparent)'
+        : 'color-mix(in oklab, var(--fuchsia) 65%, transparent)';
+      const dispVal = floatVal.toFixed(2);
+      const valClass = isPos ? 'pos' : 'neg';
+
+      return (
+        '<div class="playground-bar-row">' +
+          '<span class="playground-bar-dim">d' + String(dimIdx).padStart(2, '0') + '</span>' +
+          '<div class="playground-bar-track">' +
+            '<div class="playground-bar-fill" style="' +
+              'left:' + left.toFixed(2) + '%;' +
+              'width:' + width.toFixed(2) + '%;' +
+              'background:' + color + ';' +
+            '"></div>' +
+          '</div>' +
+          '<span class="playground-bar-val ' + valClass + '">' + dispVal + '</span>' +
+        '</div>'
+      );
+    }
+
+    function renderLatent(byteVal) {
+      const item = BYTE_DICT[byteVal];
+      if (!item) {
+        latentPanel.innerHTML = '<span class="playground-empty">No data</span>';
+        return;
+      }
+      const floats = item.lat.map(v => v * SCALE);
+      const glyphShort = item.disp.length > 1;
+
+      const bars = floats.map((v, i) => buildBar(v, i)).join('');
+
+      latentPanel.innerHTML =
+        '<div class="playground-latent-header">' +
+          '<div class="playground-latent-glyph' + (glyphShort ? ' short' : '') + '">' +
+            escHtml(item.disp) +
+          '</div>' +
+          '<div class="playground-latent-meta">' +
+            '<div class="playground-latent-name">' + escHtml(item.name) + '</div>' +
+            '<div class="playground-latent-codes">' +
+              '<span>dec<strong>' + item.b + '</strong></span>' +
+              '<span>hex<strong>0x' + item.hex + '</strong></span>' +
+              '<span>bin<strong>' + item.bin + '</strong></span>' +
+            '</div>' +
+            '<span class="playground-latent-cat ' + item.cat + '">' + CAT_LABEL[item.cat] + '</span>' +
+          '</div>' +
+        '</div>' +
+        '<p class="playground-bars-label">Latent vector &middot; 16-d (int8 &times; ' + SCALE.toFixed(5) + ')</p>' +
+        '<div class="playground-bar-chart" aria-label="16-dimensional latent bar chart">' +
+          bars +
+        '</div>' +
+        '<p class="playground-key-hint">arrow keys to step through bytes</p>';
+    }
+
+    function setActiveIndex(idx) {
+      if (currentBytes.length === 0) return;
+      idx = Math.max(0, Math.min(currentBytes.length - 1, idx));
+      activeIndex = idx;
+
+      // Update card highlights
+      cardElements.forEach((el, i) => {
+        el.classList.toggle('active', i === activeIndex);
+        if (i === activeIndex) {
+          el.setAttribute('aria-selected', 'true');
+          // Scroll into view if needed
+          el.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+        } else {
+          el.setAttribute('aria-selected', 'false');
+        }
+      });
+
+      renderLatent(currentBytes[activeIndex]);
+    }
+
+    // ── Auto-cycle ────────────────────────────────────────────────────
+    function startCycle() {
+      if (prefersReduced) return;
+      stopCycle();
+      if (currentBytes.length <= 1) return;
+      cycleTimer = setInterval(() => {
+        const next = (activeIndex + 1) % currentBytes.length;
+        setActiveIndex(next);
+      }, 1000);
+    }
+
+    function stopCycle() {
+      if (cycleTimer) { clearInterval(cycleTimer); cycleTimer = null; }
+    }
+
+    // ── Build byte cards ──────────────────────────────────────────────
+    function buildCards(bytes) {
+      cardsScroll.innerHTML = '';
+      cardElements = [];
+
+      if (bytes.length === 0) {
+        const msg = document.createElement('span');
+        msg.className = 'playground-empty';
+        msg.id = 'playground-empty-msg';
+        msg.textContent = 'Start typing to see bytes';
+        cardsScroll.appendChild(msg);
+        return;
+      }
+
+      const frag = document.createDocumentFragment();
+      bytes.forEach((b, idx) => {
+        const item = BYTE_DICT[b];
+        const card = document.createElement('button');
+        card.type = 'button';
+        card.className = 'playground-byte-card cat-' + item.cat;
+        card.dataset.idx = idx;
+        card.setAttribute('role', 'option');
+        card.setAttribute('aria-selected', idx === activeIndex ? 'true' : 'false');
+        card.setAttribute('aria-label', 'byte ' + idx + ': 0x' + item.hex + ' ' + item.name);
+        card.tabIndex = -1;   // container is the keyboard target
+
+        card.innerHTML =
+          '<span class="playground-card-hex">0x' + item.hex + '</span>' +
+          '<span class="playground-card-glyph">' + escHtml(item.disp) + '</span>' +
+          '<span class="playground-card-idx">#' + idx + '</span>';
+
+        card.addEventListener('mouseenter', () => {
+          stopCycle();
+          setActiveIndex(idx);
+        });
+        card.addEventListener('mouseleave', () => {
+          startCycle();
+        });
+        card.addEventListener('click', () => {
+          stopCycle();
+          setActiveIndex(idx);
+        });
+        card.addEventListener('focus', () => {
+          stopCycle();
+          setActiveIndex(idx);
+        });
+
+        frag.appendChild(card);
+        cardElements.push(card);
+      });
+
+      cardsScroll.appendChild(frag);
+    }
+
+    // ── Stats strip ───────────────────────────────────────────────────
+    function updateStats(bytes) {
+      const total = bytes.length;
+      const unique = new Set(bytes).size;
+
+      // Dominant category
+      const cats = { ctrl: 0, print: 0, ext: 0 };
+      bytes.forEach(b => cats[BYTE_DICT[b].cat]++);
+      const domCat = Object.keys(cats).reduce((a, c) => cats[c] > cats[a] ? c : a, 'print');
+      const domLabel = CAT_LABEL[domCat];
+
+      statBytes.textContent  = total;
+      statUnique.textContent = unique;
+      statDom.textContent    = domLabel;
+
+      // Color the dominant pill
+      statDomPill.className = 'playground-stat-pill cat-' + domCat;
+    }
+
+    // ── Main encode + render ──────────────────────────────────────────
+    function encode(str) {
+      const encoded = new TextEncoder().encode(str);
+      currentBytes = Array.from(encoded);
+
+      // Update byte counter label
+      const n = currentBytes.length;
+      byteCountEl.textContent = n + (n === 1 ? ' byte' : ' bytes');
+
+      // Reset active index if out of range
+      if (activeIndex >= currentBytes.length) activeIndex = 0;
+
+      buildCards(currentBytes);
+      updateStats(currentBytes);
+
+      if (currentBytes.length > 0) {
+        setActiveIndex(activeIndex);
+        startCycle();
+      } else {
+        stopCycle();
+        latentPanel.innerHTML =
+          '<span class="playground-empty" style="margin:auto;display:block;text-align:center;">' +
+          'Type something to see its latent' +
+          '</span>';
+      }
+    }
+
+    // ── Keyboard navigation on the cards container ────────────────────
+    cardsScroll.addEventListener('keydown', (e) => {
+      if (currentBytes.length === 0) return;
+      if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+        e.preventDefault();
+        e.stopPropagation();   // don't let deck navigation steal this
+        stopCycle();
+        setActiveIndex(activeIndex + 1);
+      } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+        e.preventDefault();
+        e.stopPropagation();
+        stopCycle();
+        setActiveIndex(activeIndex - 1);
+      }
+    });
+
+    // ── Input debounce ────────────────────────────────────────────────
+    textInput.addEventListener('input', () => {
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => encode(textInput.value), 120);
+    });
+
+    // Initial empty state
+    encode('');
+  }());
+
+})();
+</script>
 </body>
 </html>
