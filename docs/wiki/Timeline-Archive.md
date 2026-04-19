@@ -522,6 +522,37 @@ Files: `tools/diag_word_tokenizer_adversarial.py`, `tools/diag_word_tokenizer_ad
   - `python tools/diag_nano_brain_v1.py` — forward-pass the full stack end-to-end.
 - **Status:** Tokenizer V2 = validated champion (frozen at `output/word_tokenizer_champion/`, JSON vocab committed for public reproducibility). Embedder V1 and Nano Brain V1 = scaffolds (random init, forward-pass verified, awaiting training loop as the open next step).
 
+**Cluster 17 — Low-bit byte-unit activation-precision sweep (2026-04-19)** (PR [#137](https://github.com/VRAXION/VRAXION/pull/137), sweep commit `9dc368e`)
+Files: `tools/diag_byte_unit_champion_binary_freeze.py` (freeze script); sweep scripts in commit `9dc368e`; champion artifacts at `output/byte_unit_champion_binary_c19_h16/`.
+- **Idea:** The Cluster 9 L0 Byte Unit champion (int4 C19 H=24) was validated and shipped, but the question remained: is it the smallest possible hidden width for 100% lossless byte reconstruction, or just the smallest found within the int4 C19 axis? Run an exhaustive (precision × activation × H) sweep to map the full Pareto frontier of minimum hidden width for exact lossless byte encoding.
+- **Methodology — four-stage pipeline per (precision, activation, H) cell:**
+  1. **Float warmup:** train the mirror autoencoder in full float32 until the loss converges — this seeds the weight space near a good attractor before any quantization pressure is applied.
+  2. **Static alpha search:** freeze the float weights; scan over a grid of per-layer scale factors (alpha) to find the alpha pair that maximises the count of exactly-reconstructed bytes when the weights are rounded to the target bit-width.
+  3. **Fixed-alpha QAT:** resume training with the best-found alphas held constant, letting the weights move inside the quantization grid rather than just rounding a frozen float solution.
+  4. **256-byte exact check:** after each run, verify reconstruction of every integer 0–255 in one forward pass; a cell is marked "lossless" only if all 256 checks pass simultaneously.
+- **Activation-precision pairing matrix (H_min = smallest H that reaches 100% exact across all 256 bytes):**
+
+  | Precision | Activation | H_min | Notes |
+  |-----------|------------|-------|-------|
+  | int4 | C19 | 24 | Cluster 9 champion — baseline reference |
+  | int4 | tanh | 12 | Counterintuitive: tanh wins 2-bit, not C19 |
+  | binary | C19 | **16** | **New overall champion** |
+  | binary | Leaky ReLU | 32 | — |
+  | binary | SiLU | 32 | — |
+  | binary | softplus | 128 | Needs 8× more width than C19 |
+  | binary | tanh | >128 | Did not reach lossless within H≤128 |
+  | binary | identity | >128 | Did not reach lossless within H≤128 |
+
+  Activation-precision pairings are counterintuitive: tanh beats C19 for 2-bit precision (H=12 vs H=24), but C19 beats all other activations for binary precision (H=16 vs H≥32). The relative ranking of activations inverts between precision levels.
+- **New champion — binary + C19 + H=16:**
+  - Architecture: `8 → 16 → 8` tied mirror autoencoder, C19 activation, binary {−1, +1} weights.
+  - 100% lossless on all 256 bytes (verified exact check).
+  - Weight JSON: `output/byte_unit_champion_binary_c19_h16/model.json` — **6.5 KB** (26% smaller than the int4 champion at 8.9 KB).
+  - Baked int8 LUT: same 4 KB raw as the int4 champion — LUT size is determined by the 256-entry × 16-dim output shape, not by the internal precision.
+  - Hidden dim 16 vs 24 for the int4 champion.
+- **Reproduce:** `python tools/diag_byte_unit_champion_binary_freeze.py`
+- **Status:** Validated (alternative champion) — retained alongside the int4 C19 H=24 champion pending downstream SDK migration. The int4 champion (`tools/byte_unit_winner_int4.json`, `tools/byte_embedder_lut.h`) remains the proven production artifact. The binary C19 H=16 champion is the candidate for the next deploy surface once the SDK migration is ready.
+
 **L2 reconstruction merger — byte-roundtrip geometry probe** (commit `ed30073`)
 Scripts: `tools/diag_byte_l2_merger.py`, `tools/diag_byte_l2_phase0_geometry_probe.py`
 Investigation into an L2 reconstruction layer above the L1 Huffman-packed champion: can 16-byte windows (eight L1-merger outputs = 648-dim) be further compressed with a second mirror-tied autoencoder? Phase-0 PCA geometry probe showed that even at D=128 the linear baseline only reached 97.6% per-dim sign-match and 2.6% exact-16-byte-window — meaning linear geometry is anisotropic on natural text. A tied-mirror neural ablation under-fit the linear PCA baseline (1.5% exact-window at D=384), confirming the reconstruction direction does not scale within current capacity. The L2 line was deprioritized in favor of the word-tokenizer pivot (Cluster 16) after the geometry probe surfaced. No champion, no deploy artifact.
