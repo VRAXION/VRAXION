@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  self-wiring-ci:
+  python-deploy-sdk-ci:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -26,11 +26,11 @@ jobs:
 
       - name: Compile sanity
         run: |
-          python -m compileall instnct tools
+          python -m compileall Python tools
 
-      - name: Reference stress test
+      - name: Python deploy SDK tests (Block A + B)
         run: |
-          python instnct/tests/test_model.py
+          python -m pytest Python/ -q
 
       - name: Public surface consistency
         run: |
@@ -39,41 +39,3 @@ jobs:
       - name: Wiki mirror dry-run
         run: |
           python tools/sync_wiki_from_repo.py --dry-run
-
-      - name: Tiny cyclic smoke
-        run: |
-          python - <<'PY'
-          import sys
-          sys.path.insert(0, "instnct")
-          import numpy as np
-          from model.graph import SelfWiringGraph
-          from lib.utils import score_batch, train_cyclic
-
-          V = 16
-          np.random.seed(42)
-          targets = np.random.randint(0, V, size=V)
-          net = SelfWiringGraph(V)
-          best_sc, best_acc, kept, cycles = train_cyclic(
-              net,
-              targets,
-              V,
-              score_fn=score_batch,
-              ticks=8,
-              max_att=1500,
-              stale_limit=400,
-              add_every=100,
-              frontload_until=200,
-              frontload_every=10,
-              crystal_budget=400,
-              crystal_window=100,
-              crystal_min_rate=0.002,
-              verbose=False,
-          )
-          print({
-              "best_score": round(float(best_sc), 4),
-              "best_acc": round(float(best_acc), 4),
-              "kept": int(kept),
-              "cycles": int(cycles),
-              "conns": int(net.count_connections()),
-          })
-          PY

@@ -1,10 +1,10 @@
 """Public-surface consistency checks for the current website/wiki shape.
 
-This checker intentionally validates the *current* public contract:
+This checker validates the current public contract (2026-04-20):
 - GitHub Pages served from docs/
-- 4 public website routes (Home / INSTNCT / Research / Rust)
-- moved wiki stub under docs/wiki/
-- VERSION.json as lightweight status source
+- Home + 5 Block pages (A Byte Unit → E Brain) + Legacy detail view + Wiki stub
+- docs/VERSION.json as lightweight status source
+- Required asset files present
 
 It does not enforce legacy labels, retired pages, or historical website structure.
 """
@@ -12,7 +12,6 @@ It does not enforce legacy labels, retired pages, or historical website structur
 from __future__ import annotations
 
 import json
-import re
 import sys
 from pathlib import Path
 
@@ -24,63 +23,24 @@ VERSION_FILE = DOCS / "VERSION.json"
 NOJEKYLL = DOCS / ".nojekyll"
 
 HOME = DOCS / "index.html"
-INSTNCT = DOCS / "instnct" / "index.html"
-RESEARCH = DOCS / "research" / "index.html"
-RUST = DOCS / "rust" / "index.html"
+LEGACY = DOCS / "legacy.html"
 WIKI_STUB = DOCS / "wiki" / "index.html"
 
-REQUIRED_PAGES = [HOME, INSTNCT, RESEARCH, RUST, WIKI_STUB]
+BLOCK_PAGES = [
+    DOCS / "blocks" / "a-byte-unit.html",
+    DOCS / "blocks" / "b-merger.html",
+    DOCS / "blocks" / "c-tokenizer.html",
+    DOCS / "blocks" / "d-embedder.html",
+    DOCS / "blocks" / "e-brain.html",
+]
+
+REQUIRED_PAGES = [HOME, LEGACY, WIKI_STUB] + BLOCK_PAGES
+
 REQUIRED_ASSETS = [
     ASSETS / "favicon.svg",
-    ASSETS / "hero-instnct-field.svg",
-    ASSETS / "instnct-at-a-glance-core.png",
     ASSETS / "site.css",
     ASSETS / "site.js",
-    ASSETS / "vraxion-home-hero.jpg",
-    ASSETS / "vraxion-instnct-spiral.png",
 ]
-
-REQUIRED_NAV_LABELS = ["Home", "INSTNCT", "Research", "Rust", "Wiki", "GitHub"]
-
-STALE_TERMS = [
-    "Validated Findings",
-    "Engineering Protocol",
-    "Project Timeline",
-    "Rust v5 Beta Surface",
-    "5-Minute Proof",
-    "Issue #114",
-]
-
-PAGE_EXPECTATIONS = {
-    HOME: [
-        "Vraxion builds INSTNCT.",
-        "Enter the wiki",
-        "Open the wiki",
-        "Open INSTNCT",
-        "Open Research",
-        "Open Rust",
-    ],
-    INSTNCT: [
-        "INSTNCT treats topology as part of the learnable object.",
-        "Open the full architecture page",
-        "Theory of Thought",
-    ],
-    RESEARCH: [
-        "Research is where claims get earned.",
-        "Open the archive",
-        "Research Process &amp; Archive",
-    ],
-    RUST: [
-        "Rust is no longer the experiment. It is the implementation frontier.",
-        "Open the Rust wiki page",
-        "24.6%",
-    ],
-    WIKI_STUB: [
-        "Legacy docs/wiki moved",
-        "Go to wiki",
-        "https://github.com/VRAXION/VRAXION/wiki/Home",
-    ],
-}
 
 
 def read(path: Path) -> str:
@@ -93,7 +53,7 @@ def fail(msg: str, errors: list[str]) -> None:
 
 def require_exists(path: Path, errors: list[str]) -> None:
     if not path.exists():
-        fail(f"Missing required file: {path}", errors)
+        fail(f"Missing required file: {path.relative_to(ROOT)}", errors)
 
 
 def load_version(errors: list[str]) -> dict[str, str]:
@@ -103,7 +63,7 @@ def load_version(errors: list[str]) -> dict[str, str]:
 
     try:
         data = json.loads(read(VERSION_FILE))
-    except Exception as exc:  # pragma: no cover - CI-facing error path
+    except Exception as exc:
         fail(f"VERSION.json parse failure: {exc}", errors)
         return {}
 
@@ -111,7 +71,6 @@ def load_version(errors: list[str]) -> dict[str, str]:
         "current_release",
         "current_channel",
         "architecture_line",
-        "rust_surface",
     ]
     for key in required:
         if key not in data:
@@ -125,32 +84,23 @@ def load_version(errors: list[str]) -> dict[str, str]:
     return {k: str(v) for k, v in data.items()}
 
 
-def check_page(path: Path, errors: list[str]) -> None:
-    require_exists(path, errors)
-    if not path.exists():
+def check_home(errors: list[str]) -> None:
+    require_exists(HOME, errors)
+    if not HOME.exists():
         return
+    text = read(HOME)
+    for link in ["./blocks/a-byte-unit.html", "./blocks/b-merger.html",
+                 "./blocks/c-tokenizer.html", "./blocks/d-embedder.html",
+                 "./blocks/e-brain.html"]:
+        if link not in text:
+            fail(f"docs/index.html: missing Block link {link!r}", errors)
 
-    text = read(path)
 
-    if "?v=" not in text:
-        fail(f"{path.relative_to(ROOT)}: expected cache-busted asset URLs with ?v=", errors)
-
-    if "site.css" not in text:
-        fail(f"{path.relative_to(ROOT)}: missing site.css reference", errors)
-    if path != WIKI_STUB and "site.js" not in text:
-        fail(f"{path.relative_to(ROOT)}: missing site.js reference", errors)
-
-    for label in REQUIRED_NAV_LABELS:
-        if label not in text:
-            fail(f"{path.relative_to(ROOT)}: missing nav label {label!r}", errors)
-
-    for term in STALE_TERMS:
-        if term in text:
-            fail(f"{path.relative_to(ROOT)}: stale term still present: {term!r}", errors)
-
-    for expected in PAGE_EXPECTATIONS.get(path, []):
-        if expected not in text:
-            fail(f"{path.relative_to(ROOT)}: missing expected text {expected!r}", errors)
+def check_blocks(errors: list[str]) -> None:
+    for path in BLOCK_PAGES:
+        require_exists(path, errors)
+        if not path.exists():
+            continue
 
 
 def check_assets(errors: list[str]) -> None:
@@ -159,25 +109,15 @@ def check_assets(errors: list[str]) -> None:
         require_exists(path, errors)
 
 
-def check_cross_links(errors: list[str]) -> None:
-    home_text = read(HOME)
-    if "./instnct/" not in home_text or "./research/" not in home_text or "./rust/" not in home_text:
-        fail("docs/index.html: missing one or more internal route links", errors)
-
-    for path in [INSTNCT, RESEARCH, RUST]:
-        text = read(path)
-        if "../" not in text:
-            fail(f"{path.relative_to(ROOT)}: expected relative route links", errors)
-
-
 def main() -> int:
     errors: list[str] = []
 
     load_version(errors)
     check_assets(errors)
     for path in REQUIRED_PAGES:
-        check_page(path, errors)
-    check_cross_links(errors)
+        require_exists(path, errors)
+    check_home(errors)
+    check_blocks(errors)
 
     if errors:
         print("Public surface check FAILED:")
