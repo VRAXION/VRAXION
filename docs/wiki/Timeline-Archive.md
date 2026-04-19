@@ -260,6 +260,29 @@ The timeline is ordered latest-first. Each day is a self-contained H3 section wi
 
 ---
 
+### 2026-04-20 — Tools/ trim: 50 legacy diag scripts archived, 29 canonical scripts kept
+
+**Theme:** The `tools/` directory accumulated ~79 Python scripts across the iterative Cluster 9-18 research arc (absorb-float → codebook-aware → exhaustive → single-W mirror → fp16 → Huffman-packed → per-channel bake → native 7-bit identity), plus word-tokenizer builds and early C19/brain-replay probes. Many scripts were checkpoint iterations whose findings are already folded into `VALIDATED_FINDINGS.md`, `docs/wiki/COMPRESSION_LOOP_DRAFT.md`, or earlier timeline entries. The 50 non-canonical scripts were removed from `main`; the full pre-trim tree is preserved on branch `archive/tools-legacy-diag-2026-04-20`.
+
+**Kept on `main` (29 scripts):**
+
+| Role | Scripts |
+|---|---|
+| Champion build + verify + acceptance | `build_byte_unit.py`, `diag_byte_single_w_huffman_pack.py`, `diag_byte_single_w_hybrid_k.py`, `diag_byte_huffman_independent_verify.py`, `diag_byte_shannon_floor.py`, `diag_byte_standard_compression.py`, `check_public_surface.py`, `run_grower_regression.py`, `run_byte_opcode_acceptance.py`, `sync_wiki_from_repo.py` |
+| Canonical sweep + methodology | `diag_byte_pair_merger_widen_sweep.py`, `_bake_probe.py`, `_perchannel_bake.py`, `_minimize.py`, `_alpha_ablation.py`, `_aux_quant_probe.py`, `_float_aux_quant_probe.py` |
+| Active frontier (L2 merger + word tokenizer + byte unit sweep) | `diag_byte_l2_merger.py`, `diag_byte_l2_phase0_geometry_probe.py`, `diag_word_tokenizer.py`, `_champion_freeze.py`, `_adversarial.py`, `_adversarial_v2.py`, `_parquet.py`, `diag_subword_tokenizer_exact.py`, `diag_word_embedding_v1.py`, `diag_byte_unit_widen_sweep.py`, `diag_byte_unit_activation_min_sweep.py` |
+| Block E scaffold (referenced from `docs/blocks/e-brain.html`) | `diag_nano_brain_v1.py` |
+
+**Archived to `archive/tools-legacy-diag-2026-04-20` (50 scripts):** single-W iteration series (`_analyze`, `_continue`, `_deep_dive`, `_dictionary_fast`, `_dictionary_proto`, `_exhaustive_fix`, `_final_push`, `_fp16_ceiling`, `_fp16_exhaust`, `_generator_*`, `_hybrid_escape`, `_int8_pipeline`, `_mirror`, `_optimized_pipeline`, `_planck_scale`, `_qat_int8`, `_quant_pipeline`, `_slack_map`, `_structure_hunt`, `_variable_precision`), byte-pair merger predecessors (`_absorb_float`, `_exact_h81_float`, `_exact_pipeline`, `_exact_utils`, `_free_int8`, `_lookup_codebook[_exact]`, `_strict_staged_int8`), byte-unit early probes (`_binary_variants_sweep`, `_full_binary_sweep`, `_lut_precision_sweep`, `_qat_2bit_probe`, `_qat_int4_probe`, `_qat_ternary`), C19 / grid3 / brain-replay tooling (`c19_manual_explorer`, `c19_parity_sweep`, `run_grid3_curriculum`, `export_manual_grow_to_viewer`, `manual_grow_explorer`), byte exhaustive probes (`diag_byte_exhaustive_int_single_cell`, `_greedy_exhaustive_int8`, `_pure_int_roundtrip`, `_single_alpha_int8_bake`), and miscellaneous (`diag_float_extended_control`, `diag_qat_ste`, `diag_quant_sweep_gpu[_mid]`, `overnight_build_step`).
+
+**Effect:** `tools/` is now 28 scripts — all canonical build, regression, active-frontier, or public-acceptance code. Nothing referenced from `README.md`, `docs/blocks/`, or `VALIDATED_FINDINGS.md` was removed. Full 79-script history remains reachable via:
+- `git show archive/tools-legacy-diag-2026-04-20:tools/<name>.py`
+- `git checkout archive/tools-legacy-diag-2026-04-20 -- tools/<name>.py` (to restore on main)
+
+Follows the same pattern as the `instnct/` archival (commit `56575ab`) and the `docs/` legacy Pages cleanup (commit `92f313b`): active surfaces narrowed on `main`, full history preserved on a dedicated archive branch.
+
+---
+
 ### 2026-04-20 — Output scratch tree cleanup: 45 MB of run-dumps pruned, 3 champions preserved
 
 **Theme:** The `output/` directory accumulated ~160 experimental run-dumps and ~60 log/txt files across Clusters 9–18 (merger architectures, bake probes, QAT sweeps, multiseed confirms, overnight loops, word tokenizer intermediates). All non-champion content was gitignored from the start (`output/*` with whitelist entries for the three champion folders), so nothing was ever exposed publicly. The physical tree was removed from the local disk as part of the 2026-04-20 public-release cleanup pass. Since the pruned content was gitignored in full, it is **not** recoverable from git history — only the 3 champion folders survive.
