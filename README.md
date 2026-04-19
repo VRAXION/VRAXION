@@ -18,7 +18,7 @@ This repository is meant to be a credible front door for technical buyers and en
 
 ## Release Snapshot
 
-- **Current public release tag:** [`v5.0.0-beta.1`](https://github.com/VRAXION/VRAXION/releases/tag/v5.0.0-beta.1) (released Rust language-evolution beta, 24.6% peak)
+- **Current public release tag:** [`v5.0.0-beta.2`](https://github.com/VRAXION/VRAXION/releases/tag/v5.0.0-beta.2) (released Rust language-evolution beta, 24.6% peak)
 - **Next public milestone:** grower-based `v5.0.0 Public Beta`
 - **Current mainline code path on `main`:** [`instnct-core/examples/neuron_grower.rs`](instnct-core/examples/neuron_grower.rs)
 - **Reference/support lane:** [`instnct/model/graph.py`](instnct/model/graph.py)
