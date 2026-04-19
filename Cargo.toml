@@ -1,5 +1,6 @@
 [workspace]
 members = ["instnct-core"]
+exclude = ["Rust"]
 resolver = "2"
 
 [workspace.package]

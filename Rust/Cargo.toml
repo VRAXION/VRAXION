@@ -1,0 +1,19 @@
+[workspace]
+# Standalone workspace — excluded from the parent instnct-core workspace.
+
+[package]
+name = "vraxion"
+version = "0.1.0"
+edition = "2021"
+description = "VRAXION Rust deploy SDK — byte-level pipeline (Block A frozen)"
+license = "LicenseRef-PolyForm-Noncommercial-1.0.0"
+repository = "https://github.com/VRAXION/VRAXION"
+readme = "README.md"
+
+[dependencies]
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+[lib]
+name = "vraxion"
+path = "src/lib.rs"

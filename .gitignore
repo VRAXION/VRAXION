@@ -123,6 +123,7 @@ instnct/data/*.npy
 
 # Rust build artifacts
 /target
+/Rust/target
 instnct-core/checkpoints/
 instnct-core/results/
 /results/
