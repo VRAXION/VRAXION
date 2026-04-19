@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>VRAXION — Block E · Brain</title>
+  <link rel="icon" href="../assets/favicon.svg" type="image/svg+xml" />
+  <link rel="stylesheet" href="../assets/app.css" />
+  <style>
+    :root {
+      --bg:#0a0a0f;--bg-2:#111118;--bg-3:#1a1a24;--border:#2a2a3a;
+      --ink:#e8e8f0;--ink-2:#9898b0;--ink-3:#5a5a72;
+      --cyan:#00d8ff;--purple:#9b6dff;--fuchsia:#ff4fd8;
+      --jade:#00e59b;--amber:#ffaa00;--accent:#00e59b;
+      --font:'Inter',system-ui,sans-serif;
+      --font-mono:'JetBrains Mono','Fira Code',monospace;
+      --block-accent: var(--jade);
+    }
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+    html{font-family:var(--font);background:var(--bg);color:var(--ink);scroll-behavior:smooth;}
+    body{overflow-x:hidden;}
+
+    .top-bar{position:fixed;top:0;left:0;right:0;z-index:100;height:52px;display:flex;align-items:center;justify-content:space-between;padding:0 20px;background:rgba(10,10,15,0.94);backdrop-filter:blur(14px);border-bottom:1px solid var(--border);gap:12px;}
+    .tb-home a{color:var(--ink-2);text-decoration:none;font-size:0.82rem;white-space:nowrap;transition:color .2s;}
+    .tb-home a:hover{color:var(--cyan);}
+    .tb-tabs{display:flex;align-items:center;gap:2px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;}
+    .tb-tabs::-webkit-scrollbar{display:none;}
+    .tb-tab{color:var(--ink-3);text-decoration:none;font-size:0.78rem;letter-spacing:0.04em;padding:5px 11px;border-radius:6px;white-space:nowrap;transition:color .2s,background .2s;}
+    .tb-tab:hover{color:var(--ink);background:var(--bg-3);}
+    .tb-tab[aria-current="page"]{color:var(--jade);background:rgba(0,229,155,0.1);border:1px solid rgba(0,229,155,0.25);}
+    .tb-sep{color:var(--border);font-size:0.8rem;user-select:none;}
+    .tb-right{display:flex;align-items:center;gap:10px;flex-shrink:0;}
+    .tb-status{display:flex;align-items:center;gap:5px;font-size:0.72rem;letter-spacing:0.08em;text-transform:uppercase;color:var(--amber);white-space:nowrap;}
+    .tb-status-dot{width:7px;height:7px;border-radius:50%;background:var(--amber);}
+    .tb-gh a{color:var(--ink-3);transition:color .2s;}
+    .tb-gh a:hover{color:var(--ink);}
+
+    .slide{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:80px 24px 60px;position:relative;overflow:hidden;}
+    .slide+.slide{border-top:1px solid var(--border);}
+    .slide-inner{width:100%;max-width:860px;}
+    .slide::before{content:'';position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse 70% 55% at 50% 30%,rgba(0,229,155,0.03) 0%,transparent 65%);}
+
+    .hero-letter{font-size:clamp(5rem,14vw,10rem);font-weight:900;line-height:1;color:var(--jade);opacity:0.12;position:absolute;top:10%;left:50%;transform:translateX(-50%);user-select:none;letter-spacing:-0.05em;pointer-events:none;}
+    .hero-content{position:relative;z-index:1;text-align:center;display:flex;flex-direction:column;align-items:center;gap:16px;}
+    .hero-tag{font-size:0.72rem;letter-spacing:0.2em;text-transform:uppercase;color:var(--jade);opacity:0.7;}
+    .hero-name{font-size:clamp(2.2rem,5vw,3.6rem);font-weight:800;letter-spacing:-0.02em;line-height:1.05;background:linear-gradient(135deg,var(--ink) 40%,var(--jade) 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+    .hero-desc{font-size:1.05rem;color:var(--ink-2);max-width:520px;line-height:1.6;}
+    .status-badge{display:inline-flex;align-items:center;gap:7px;border:1px solid rgba(255,170,0,0.35);border-radius:24px;padding:5px 14px;font-size:0.75rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--amber);}
+    .status-badge-dot{width:7px;height:7px;border-radius:50%;background:var(--amber);}
+    .arrow-hint{position:absolute;bottom:32px;left:50%;transform:translateX(-50%);color:var(--ink-3);font-size:1.2rem;animation:bounce 2s ease-in-out infinite;}
+    @keyframes bounce{0%,100%{transform:translateX(-50%) translateY(0);}50%{transform:translateX(-50%) translateY(6px);}}
+
+    .slide-heading{font-size:0.72rem;letter-spacing:0.2em;text-transform:uppercase;color:var(--jade);margin-bottom:24px;opacity:0.75;}
+    .slide-title{font-size:clamp(1.6rem,3.5vw,2.4rem);font-weight:700;letter-spacing:-0.02em;margin-bottom:28px;}
+
+    .arch-box{background:var(--bg-2);border:1px solid var(--border);border-radius:14px;padding:28px;margin-bottom:28px;overflow-x:auto;}
+    .arch-layers{display:flex;flex-direction:column;gap:6px;align-items:center;}
+    .arch-layer{width:100%;max-width:480px;background:var(--bg-3);border:1px solid var(--border);border-radius:8px;padding:10px 16px;display:flex;justify-content:space-between;align-items:center;}
+    .arch-layer.highlight{border-color:rgba(0,229,155,0.35);}
+    .arch-layer-name{font-size:0.84rem;color:var(--ink);font-weight:500;}
+    .arch-layer-detail{font-family:var(--font-mono);font-size:0.75rem;color:var(--ink-3);}
+    .arch-connector{width:1px;height:16px;background:var(--border);margin:0 auto;}
+
+    .kv-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-top:20px;}
+    .kv{background:var(--bg-3);border:1px solid var(--border);border-radius:8px;padding:12px 14px;}
+    .kv-key{font-size:0.68rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--ink-3);margin-bottom:5px;}
+    .kv-val{font-size:0.88rem;color:var(--ink);font-weight:500;font-family:var(--font-mono);}
+    .kv-val.accent{color:var(--jade);}
+
+    .metrics-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px;margin-top:28px;}
+    .metric-card{background:var(--bg-2);border:1px solid var(--border);border-radius:10px;padding:18px;text-align:center;}
+    .metric-card-val{font-size:1.4rem;font-weight:700;color:var(--jade);font-family:var(--font-mono);}
+    .metric-card-label{font-size:0.72rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--ink-3);margin-top:4px;}
+
+    .notice-box{background:rgba(255,170,0,0.05);border:1px solid rgba(255,170,0,0.25);border-radius:10px;padding:18px 20px;margin:24px 0;display:flex;gap:12px;}
+    .notice-icon{font-size:1.1rem;flex-shrink:0;}
+    .notice-text{font-size:0.85rem;color:var(--ink-2);line-height:1.5;}
+
+    .fwd-demo{background:var(--bg-2);border:1px solid var(--border);border-radius:12px;padding:20px;margin-top:20px;}
+    .fwd-label{font-size:0.7rem;text-transform:uppercase;letter-spacing:0.12em;color:var(--ink-3);margin-bottom:10px;}
+    .fwd-text{font-family:var(--font-mono);font-size:0.85rem;color:var(--ink-2);margin-bottom:10px;}
+    .fwd-output{font-family:var(--font-mono);font-size:0.82rem;color:var(--jade);}
+
+    .artifact-block{background:var(--bg-2);border:1px solid var(--border);border-radius:12px;padding:22px;margin-bottom:16px;}
+    .artifact-label{font-size:0.7rem;text-transform:uppercase;letter-spacing:0.12em;color:var(--ink-3);margin-bottom:10px;}
+    .artifact-path{font-family:var(--font-mono);font-size:0.83rem;color:var(--jade);word-break:break-all;}
+    .artifact-size{font-family:var(--font-mono);font-size:0.78rem;color:var(--ink-3);margin-top:4px;}
+    .code-block{background:var(--bg-3);border:1px solid var(--border);border-radius:8px;padding:14px 16px;font-family:var(--font-mono);font-size:0.82rem;color:var(--jade);overflow-x:auto;white-space:pre;margin-top:12px;}
+
+    .next-items{display:flex;flex-direction:column;gap:12px;margin-bottom:32px;}
+    .next-item{display:flex;gap:12px;align-items:flex-start;background:var(--bg-2);border:1px solid var(--border);border-radius:10px;padding:14px 16px;}
+    .next-item-icon{font-size:1rem;flex-shrink:0;margin-top:1px;}
+    .next-item-text{font-size:0.85rem;color:var(--ink-2);line-height:1.5;}
+    .pr-chips{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:28px;}
+    .pr-chip{font-size:0.75rem;font-family:var(--font-mono);background:var(--bg-2);border:1px solid var(--border);border-radius:6px;padding:4px 10px;color:var(--ink-2);}
+
+    .block-nav{display:flex;align-items:center;justify-content:space-between;gap:16px;padding-top:24px;border-top:1px solid var(--border);flex-wrap:wrap;}
+    .nav-btn{display:flex;align-items:center;gap:6px;text-decoration:none;color:var(--ink-2);font-size:0.82rem;padding:8px 16px;border:1px solid var(--border);border-radius:8px;background:var(--bg-2);transition:all .2s;}
+    .nav-btn:hover{border-color:var(--jade);color:var(--jade);}
+    .nav-btn.home{font-size:0.78rem;}
+  </style>
+</head>
+<body>
+
+  <header class="top-bar">
+    <div class="tb-home"><a href="/">← VRAXION</a></div>
+    <nav class="tb-tabs" aria-label="Block navigation">
+      <a href="a-byte-unit.html" class="tb-tab">A Byte Unit</a>
+      <span class="tb-sep">|</span>
+      <a href="b-merger.html" class="tb-tab">B Merger</a>
+      <span class="tb-sep">|</span>
+      <a href="c-tokenizer.html" class="tb-tab">C Tokenizer</a>
+      <span class="tb-sep">|</span>
+      <a href="d-embedder.html" class="tb-tab">D Embedder</a>
+      <span class="tb-sep">|</span>
+      <a href="e-brain.html" class="tb-tab" aria-current="page">E Brain</a>
+    </nav>
+    <div class="tb-right">
+      <div class="tb-status"><span class="tb-status-dot"></span>SCAFFOLD</div>
+      <div class="tb-gh">
+        <a href="https://github.com/VRAXION/VRAXION" target="_blank" rel="noopener" aria-label="GitHub">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0 1 12 6.844a9.59 9.59 0 0 1 2.504.337c1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.02 10.02 0 0 0 22 12.017C22 6.484 17.522 2 12 2z"/>
+          </svg>
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- HERO -->
+  <section class="slide" id="hero">
+    <div class="hero-letter">E</div>
+    <div class="hero-content">
+      <p class="hero-tag">Block E · Language Model</p>
+      <h1 class="hero-name">Nano Brain V1</h1>
+      <p class="hero-desc">A 2-block causal Transformer with 64-dim embeddings and 4 attention heads. Forward-pass verified at 81 ms on CPU. Awaiting its first training run.</p>
+      <div class="status-badge"><span class="status-badge-dot"></span>SCAFFOLD · v5.0.0-β.2</div>
+    </div>
+    <span class="arrow-hint">↓</span>
+  </section>
+
+  <!-- ARCHITECTURE -->
+  <section class="slide" id="arch">
+    <div class="slide-inner">
+      <p class="slide-heading">Block E · Architecture</p>
+      <h2 class="slide-title">Causal Transformer stack</h2>
+
+      <div class="arch-box">
+        <div class="arch-layers">
+          <div class="arch-layer">
+            <span class="arch-layer-name">Token embedder (Block D)</span>
+            <span class="arch-layer-detail">32,294 × 64 lookup</span>
+          </div>
+          <div class="arch-connector"></div>
+          <div class="arch-layer">
+            <span class="arch-layer-name">Positional encoding</span>
+            <span class="arch-layer-detail">learned, max_seq=256</span>
+          </div>
+          <div class="arch-connector"></div>
+          <div class="arch-layer highlight">
+            <span class="arch-layer-name">TransformerBlock ×1</span>
+            <span class="arch-layer-detail">64-dim · 4 heads · GELU FFN 64→256→64</span>
+          </div>
+          <div class="arch-connector"></div>
+          <div class="arch-layer highlight">
+            <span class="arch-layer-name">TransformerBlock ×2</span>
+            <span class="arch-layer-detail">64-dim · 4 heads · GELU FFN 64→256→64</span>
+          </div>
+          <div class="arch-connector"></div>
+          <div class="arch-layer">
+            <span class="arch-layer-name">Output head (tied weights)</span>
+            <span class="arch-layer-detail">64 → 32,294 logits</span>
+          </div>
+        </div>
+        <p style="color:var(--ink-3);font-size:0.78rem;text-align:center;margin-top:16px;">Causal (left-to-right) attention mask. Output head shares weights with the token embedder.</p>
+      </div>
+
+      <div class="kv-grid">
+        <div class="kv"><div class="kv-key">Model dim</div><div class="kv-val accent">64</div></div>
+        <div class="kv"><div class="kv-key">Attn heads</div><div class="kv-val">4</div></div>
+        <div class="kv"><div class="kv-key">FFN hidden</div><div class="kv-val">256</div></div>
+        <div class="kv"><div class="kv-key">Depth</div><div class="kv-val">2 blocks</div></div>
+        <div class="kv"><div class="kv-key">Max sequence</div><div class="kv-val">256 tokens</div></div>
+        <div class="kv"><div class="kv-key">Attention</div><div class="kv-val">Causal</div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- METRICS -->
+  <section class="slide" id="metrics">
+    <div class="slide-inner">
+      <p class="slide-heading">Block E · Scaffold baseline</p>
+      <h2 class="slide-title">Forward-pass verification</h2>
+
+      <div class="fwd-demo">
+        <div class="fwd-label">Verified forward pass</div>
+        <div class="fwd-text">"The cat sleeps peacefully on the warm mat." → 10 tokens</div>
+        <div class="fwd-output">Output: [1, 10, 32294] logits · 81 ms on CPU</div>
+      </div>
+
+      <div class="metrics-row">
+        <div class="metric-card">
+          <div class="metric-card-val">2,182,144</div>
+          <div class="metric-card-label">Total parameters</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-card-val">94.7%</div>
+          <div class="metric-card-label">Params in embedder</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-card-val">~100k</div>
+          <div class="metric-card-label">Params in 2 blocks</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-card-val">81 ms</div>
+          <div class="metric-card-label">Forward pass (CPU)</div>
+        </div>
+      </div>
+
+      <div class="kv-grid" style="margin-top:24px;">
+        <div class="kv"><div class="kv-key">f32 memory</div><div class="kv-val">8.73 MB</div></div>
+        <div class="kv"><div class="kv-key">int8 memory</div><div class="kv-val">2.18 MB</div></div>
+        <div class="kv"><div class="kv-key">Init loss</div><div class="kv-val">11.15</div></div>
+        <div class="kv"><div class="kv-key">Uniform baseline</div><div class="kv-val">10.38</div></div>
+      </div>
+
+      <div class="notice-box" style="margin-top:24px;">
+        <span class="notice-icon">ℹ</span>
+        <div class="notice-text">Init loss 11.15 vs uniform baseline 10.38 — expected behaviour for random-init weights. Loss will drop sharply once real text training begins. The ~0.77 excess is within normal random-init range.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- DEPLOY -->
+  <section class="slide" id="deploy">
+    <div class="slide-inner">
+      <p class="slide-heading">Block E · Artifacts</p>
+      <h2 class="slide-title">Deploy &amp; reproduce</h2>
+
+      <div class="notice-box">
+        <span class="notice-icon">⚠</span>
+        <div class="notice-text">Scaffold artifact. Weights are random init. The scaffold is only useful for shape-checking the full pipeline end-to-end before training.</div>
+      </div>
+
+      <h3 style="font-size:0.85rem;font-weight:600;color:var(--ink-2);margin-top:28px;margin-bottom:8px;">Reproduce in one command</h3>
+      <div class="code-block">python tools/diag_nano_brain_v1.py</div>
+
+      <div class="kv-grid" style="margin-top:24px;">
+        <div class="kv"><div class="kv-key">f32 size</div><div class="kv-val">8.73 MB</div></div>
+        <div class="kv"><div class="kv-key">int8 size</div><div class="kv-val">2.18 MB</div></div>
+        <div class="kv"><div class="kv-key">Fwd pass CPU</div><div class="kv-val">81 ms</div></div>
+        <div class="kv"><div class="kv-key">Version</div><div class="kv-val accent">v5.0.0-β.2</div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- NEXT -->
+  <section class="slide" id="next">
+    <div class="slide-inner">
+      <p class="slide-heading">Block E · Roadmap</p>
+      <h2 class="slide-title">What comes next</h2>
+
+      <div class="next-items">
+        <div class="next-item">
+          <span class="next-item-icon">→</span>
+          <div class="next-item-text">First training run: connect Block C → D → E on FineWeb-EDU, target perplexity below uniform baseline within 1,000 gradient steps.</div>
+        </div>
+        <div class="next-item">
+          <span class="next-item-icon">→</span>
+          <div class="next-item-text">After training converges: evaluate generation quality on held-out FineWeb-EDU slice; measure token-level perplexity vs GPT-2 small (124 M params) as a scaling reference.</div>
+        </div>
+        <div class="next-item">
+          <span class="next-item-icon">→</span>
+          <div class="next-item-text">Architecture search: 2-block depth is a starting point. Run ablations on depth (1 / 2 / 4 blocks) and FFN width (128 / 256 / 512) to find the Pareto front for perplexity vs size.</div>
+        </div>
+        <div class="next-item">
+          <span class="next-item-icon">→</span>
+          <div class="next-item-text">Once frozen: re-quantize to int8 and benchmark CPU throughput. Target &lt; 50 ms for a 64-token forward pass.</div>
+        </div>
+      </div>
+
+      <p style="font-size:0.8rem;color:var(--ink-3);margin-bottom:12px;text-transform:uppercase;letter-spacing:0.1em;">Related PRs</p>
+      <div class="pr-chips">
+        <span class="pr-chip">#132</span>
+      </div>
+
+      <div class="block-nav">
+        <a href="d-embedder.html" class="nav-btn">← D Embedder</a>
+        <a href="index.html" class="nav-btn home">All Blocks</a>
+        <a href="a-byte-unit.html" class="nav-btn">A Byte Unit →</a>
+      </div>
+    </div>
+  </section>
+
+</body>
+</html>

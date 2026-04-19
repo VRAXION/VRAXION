@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>VRAXION — Block C · Tokenizer</title>
+  <link rel="icon" href="../assets/favicon.svg" type="image/svg+xml" />
+  <link rel="stylesheet" href="../assets/app.css" />
+  <style>
+    :root {
+      --bg:#0a0a0f;--bg-2:#111118;--bg-3:#1a1a24;--border:#2a2a3a;
+      --ink:#e8e8f0;--ink-2:#9898b0;--ink-3:#5a5a72;
+      --cyan:#00d8ff;--purple:#9b6dff;--fuchsia:#ff4fd8;
+      --jade:#00e59b;--amber:#ffaa00;--accent:#ff4fd8;
+      --font:'Inter',system-ui,sans-serif;
+      --font-mono:'JetBrains Mono','Fira Code',monospace;
+      --block-accent: var(--fuchsia);
+    }
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+    html{font-family:var(--font);background:var(--bg);color:var(--ink);scroll-behavior:smooth;}
+    body{overflow-x:hidden;}
+
+    .top-bar{position:fixed;top:0;left:0;right:0;z-index:100;height:52px;display:flex;align-items:center;justify-content:space-between;padding:0 20px;background:rgba(10,10,15,0.94);backdrop-filter:blur(14px);border-bottom:1px solid var(--border);gap:12px;}
+    .tb-home a{color:var(--ink-2);text-decoration:none;font-size:0.82rem;white-space:nowrap;transition:color .2s;}
+    .tb-home a:hover{color:var(--cyan);}
+    .tb-tabs{display:flex;align-items:center;gap:2px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;}
+    .tb-tabs::-webkit-scrollbar{display:none;}
+    .tb-tab{color:var(--ink-3);text-decoration:none;font-size:0.78rem;letter-spacing:0.04em;padding:5px 11px;border-radius:6px;white-space:nowrap;transition:color .2s,background .2s;}
+    .tb-tab:hover{color:var(--ink);background:var(--bg-3);}
+    .tb-tab[aria-current="page"]{color:var(--fuchsia);background:rgba(255,79,216,0.1);border:1px solid rgba(255,79,216,0.25);}
+    .tb-sep{color:var(--border);font-size:0.8rem;user-select:none;}
+    .tb-right{display:flex;align-items:center;gap:10px;flex-shrink:0;}
+    .tb-status{display:flex;align-items:center;gap:5px;font-size:0.72rem;letter-spacing:0.08em;text-transform:uppercase;color:var(--jade);white-space:nowrap;}
+    .tb-status-dot{width:7px;height:7px;border-radius:50%;background:var(--jade);}
+    .tb-gh a{color:var(--ink-3);transition:color .2s;}
+    .tb-gh a:hover{color:var(--ink);}
+
+    .slide{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:80px 24px 60px;position:relative;overflow:hidden;}
+    .slide+.slide{border-top:1px solid var(--border);}
+    .slide-inner{width:100%;max-width:860px;}
+    .slide::before{content:'';position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse 70% 55% at 50% 30%,rgba(255,79,216,0.03) 0%,transparent 65%);}
+
+    .hero-letter{font-size:clamp(5rem,14vw,10rem);font-weight:900;line-height:1;color:var(--fuchsia);opacity:0.12;position:absolute;top:10%;left:50%;transform:translateX(-50%);user-select:none;letter-spacing:-0.05em;pointer-events:none;}
+    .hero-content{position:relative;z-index:1;text-align:center;display:flex;flex-direction:column;align-items:center;gap:16px;}
+    .hero-tag{font-size:0.72rem;letter-spacing:0.2em;text-transform:uppercase;color:var(--fuchsia);opacity:0.7;}
+    .hero-name{font-size:clamp(2.2rem,5vw,3.6rem);font-weight:800;letter-spacing:-0.02em;line-height:1.05;background:linear-gradient(135deg,var(--ink) 40%,var(--fuchsia) 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+    .hero-desc{font-size:1.05rem;color:var(--ink-2);max-width:520px;line-height:1.6;}
+    .status-badge{display:inline-flex;align-items:center;gap:7px;border:1px solid rgba(0,229,155,0.35);border-radius:24px;padding:5px 14px;font-size:0.75rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--jade);}
+    .status-badge-dot{width:7px;height:7px;border-radius:50%;background:var(--jade);}
+    .arrow-hint{position:absolute;bottom:32px;left:50%;transform:translateX(-50%);color:var(--ink-3);font-size:1.2rem;animation:bounce 2s ease-in-out infinite;}
+    @keyframes bounce{0%,100%{transform:translateX(-50%) translateY(0);}50%{transform:translateX(-50%) translateY(6px);}}
+
+    .slide-heading{font-size:0.72rem;letter-spacing:0.2em;text-transform:uppercase;color:var(--fuchsia);margin-bottom:24px;opacity:0.75;}
+    .slide-title{font-size:clamp(1.6rem,3.5vw,2.4rem);font-weight:700;letter-spacing:-0.02em;margin-bottom:28px;}
+
+    .arch-box{background:var(--bg-2);border:1px solid var(--border);border-radius:14px;padding:28px;margin-bottom:28px;overflow-x:auto;}
+    .pipeline-steps{display:flex;flex-direction:column;gap:8px;}
+    .ps-row{display:flex;align-items:center;gap:10px;}
+    .ps-badge{font-size:0.72rem;font-family:var(--font-mono);background:var(--bg-3);border:1px solid var(--border);border-radius:6px;padding:3px 9px;color:var(--fuchsia);min-width:100px;text-align:center;flex-shrink:0;}
+    .ps-desc{font-size:0.83rem;color:var(--ink-2);}
+    .ps-arrow{color:var(--fuchsia);opacity:0.4;margin-left:55px;font-size:0.9rem;}
+
+    .kv-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-top:20px;}
+    .kv{background:var(--bg-3);border:1px solid var(--border);border-radius:8px;padding:12px 14px;}
+    .kv-key{font-size:0.68rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--ink-3);margin-bottom:5px;}
+    .kv-val{font-size:0.88rem;color:var(--ink);font-weight:500;font-family:var(--font-mono);}
+    .kv-val.accent{color:var(--fuchsia);}
+
+    .metric-big{text-align:center;padding:32px 0;}
+    .metric-big-num{font-size:clamp(3rem,8vw,5.5rem);font-weight:800;color:var(--jade);line-height:1;letter-spacing:-0.03em;}
+    .metric-big-label{font-size:0.85rem;color:var(--ink-2);margin-top:8px;}
+    .metrics-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px;margin-top:28px;}
+    .metric-card{background:var(--bg-2);border:1px solid var(--border);border-radius:10px;padding:18px;text-align:center;}
+    .metric-card-val{font-size:1.4rem;font-weight:700;color:var(--fuchsia);font-family:var(--font-mono);}
+    .metric-card-label{font-size:0.72rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--ink-3);margin-top:4px;}
+
+    .compare-table{width:100%;border-collapse:collapse;margin-top:20px;font-size:0.83rem;}
+    .compare-table th{text-align:left;padding:8px 12px;color:var(--ink-3);font-weight:500;border-bottom:1px solid var(--border);font-size:0.72rem;text-transform:uppercase;letter-spacing:0.08em;}
+    .compare-table td{padding:9px 12px;border-bottom:1px solid rgba(42,42,58,0.5);color:var(--ink-2);}
+    .compare-table tr.winner td{color:var(--jade);font-weight:600;}
+    .compare-table td:first-child{font-family:var(--font-mono);}
+
+    .artifact-block{background:var(--bg-2);border:1px solid var(--border);border-radius:12px;padding:22px;margin-bottom:16px;}
+    .artifact-label{font-size:0.7rem;text-transform:uppercase;letter-spacing:0.12em;color:var(--ink-3);margin-bottom:10px;}
+    .artifact-path{font-family:var(--font-mono);font-size:0.83rem;color:var(--fuchsia);word-break:break-all;}
+    .artifact-size{font-family:var(--font-mono);font-size:0.78rem;color:var(--ink-3);margin-top:4px;}
+    .code-block{background:var(--bg-3);border:1px solid var(--border);border-radius:8px;padding:14px 16px;font-family:var(--font-mono);font-size:0.82rem;color:var(--jade);overflow-x:auto;white-space:pre;margin-top:12px;}
+
+    .next-items{display:flex;flex-direction:column;gap:12px;margin-bottom:32px;}
+    .next-item{display:flex;gap:12px;align-items:flex-start;background:var(--bg-2);border:1px solid var(--border);border-radius:10px;padding:14px 16px;}
+    .next-item-icon{font-size:1rem;flex-shrink:0;margin-top:1px;}
+    .next-item-text{font-size:0.85rem;color:var(--ink-2);line-height:1.5;}
+    .pr-chips{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:28px;}
+    .pr-chip{font-size:0.75rem;font-family:var(--font-mono);background:var(--bg-2);border:1px solid var(--border);border-radius:6px;padding:4px 10px;color:var(--ink-2);}
+
+    .block-nav{display:flex;align-items:center;justify-content:space-between;gap:16px;padding-top:24px;border-top:1px solid var(--border);flex-wrap:wrap;}
+    .nav-btn{display:flex;align-items:center;gap:6px;text-decoration:none;color:var(--ink-2);font-size:0.82rem;padding:8px 16px;border:1px solid var(--border);border-radius:8px;background:var(--bg-2);transition:all .2s;}
+    .nav-btn:hover{border-color:var(--fuchsia);color:var(--fuchsia);}
+    .nav-btn.home{font-size:0.78rem;}
+  </style>
+</head>
+<body>
+
+  <header class="top-bar">
+    <div class="tb-home"><a href="/">← VRAXION</a></div>
+    <nav class="tb-tabs" aria-label="Block navigation">
+      <a href="a-byte-unit.html" class="tb-tab">A Byte Unit</a>
+      <span class="tb-sep">|</span>
+      <a href="b-merger.html" class="tb-tab">B Merger</a>
+      <span class="tb-sep">|</span>
+      <a href="c-tokenizer.html" class="tb-tab" aria-current="page">C Tokenizer</a>
+      <span class="tb-sep">|</span>
+      <a href="d-embedder.html" class="tb-tab">D Embedder</a>
+      <span class="tb-sep">|</span>
+      <a href="e-brain.html" class="tb-tab">E Brain</a>
+    </nav>
+    <div class="tb-right">
+      <div class="tb-status"><span class="tb-status-dot"></span>FROZEN</div>
+      <div class="tb-gh">
+        <a href="https://github.com/VRAXION/VRAXION" target="_blank" rel="noopener" aria-label="GitHub">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0 1 12 6.844a9.59 9.59 0 0 1 2.504.337c1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.02 10.02 0 0 0 22 12.017C22 6.484 17.522 2 12 2z"/>
+          </svg>
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- HERO -->
+  <section class="slide" id="hero">
+    <div class="hero-letter">C</div>
+    <div class="hero-content">
+      <p class="hero-tag">Block C · Tokenizer</p>
+      <h1 class="hero-name">Word Tokenizer V2</h1>
+      <p class="hero-desc">A space-aware hybrid tokenizer — whole-word, subword, and byte fallback — that beats gzip-9 by 7.19 percentage points on real FineWeb-EDU text.</p>
+      <div class="status-badge"><span class="status-badge-dot"></span>FROZEN · v5.0.0-β.2</div>
+    </div>
+    <span class="arrow-hint">↓</span>
+  </section>
+
+  <!-- ARCHITECTURE -->
+  <section class="slide" id="arch">
+    <div class="slide-inner">
+      <p class="slide-heading">Block C · Architecture</p>
+      <h2 class="slide-title">Hybrid segmentation pipeline</h2>
+
+      <div class="arch-box">
+        <div class="pipeline-steps">
+          <div class="ps-row">
+            <span class="ps-badge">raw text</span>
+            <span class="ps-desc">Input UTF-8 string, split on whitespace boundaries</span>
+          </div>
+          <div class="ps-arrow">↓</div>
+          <div class="ps-row">
+            <span class="ps-badge">whole-word</span>
+            <span class="ps-desc">If the full word exists in vocab → emit single token (95.9% learned coverage)</span>
+          </div>
+          <div class="ps-arrow">↓</div>
+          <div class="ps-row">
+            <span class="ps-badge">subword DP</span>
+            <span class="ps-desc">DP segmentation across known subword entries — whole_ratio=0.9375</span>
+          </div>
+          <div class="ps-arrow">↓</div>
+          <div class="ps-row">
+            <span class="ps-badge">byte fallback</span>
+            <span class="ps-desc">Unknown characters → individual byte tokens (1.26% of input bytes)</span>
+          </div>
+          <div class="ps-arrow">↓</div>
+          <div class="ps-row">
+            <span class="ps-badge">token IDs</span>
+            <span class="ps-desc">Integer sequence, vocab size 32,294</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="kv-grid">
+        <div class="kv"><div class="kv-key">Vocab slots</div><div class="kv-val accent">32,294</div></div>
+        <div class="kv"><div class="kv-key">whole_ratio</div><div class="kv-val">0.9375</div></div>
+        <div class="kv"><div class="kv-key">SuperBPE τ</div><div class="kv-val">0.9 (arXiv:2503.13423)</div></div>
+        <div class="kv"><div class="kv-key">Training corpus</div><div class="kv-val">FineWeb-EDU 100 MB</div></div>
+        <div class="kv"><div class="kv-key">Segmentation</div><div class="kv-val">DP per word</div></div>
+        <div class="kv"><div class="kv-key">Unreachable tokens</div><div class="kv-val">0 / 2,000</div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- METRICS -->
+  <section class="slide" id="metrics">
+    <div class="slide-inner">
+      <p class="slide-heading">Block C · Results</p>
+      <h2 class="slide-title">Compression benchmarks</h2>
+
+      <div class="metric-big">
+        <div class="metric-big-num">30.43%</div>
+        <div class="metric-big-label">Real Huffman compression on 10 MB FineWeb-EDU (lower = better compression)</div>
+      </div>
+
+      <table class="compare-table">
+        <thead>
+          <tr><th>Method</th><th>Compression ratio</th><th>vs VRAXION</th></tr>
+        </thead>
+        <tbody>
+          <tr class="winner"><td>VRAXION C (Huffman)</td><td>30.43%</td><td>—</td></tr>
+          <tr><td>bzip2-9</td><td>29.97%</td><td>+0.46 pp worse</td></tr>
+          <tr><td>lzma-9e</td><td>28.61%</td><td>+1.82 pp worse</td></tr>
+          <tr><td>gzip-9</td><td>37.62%</td><td>+7.19 pp worse</td></tr>
+        </tbody>
+      </table>
+
+      <div class="metrics-row" style="margin-top:24px;">
+        <div class="metric-card">
+          <div class="metric-card-val">95.90%</div>
+          <div class="metric-card-label">Learned coverage</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-card-val">1.26%</div>
+          <div class="metric-card-label">Byte fallback rate</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-card-val">14/14</div>
+          <div class="metric-card-label">Adversarial edge cases</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-card-val">0</div>
+          <div class="metric-card-label">Unreachable tokens</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- DEPLOY -->
+  <section class="slide" id="deploy">
+    <div class="slide-inner">
+      <p class="slide-heading">Block C · Artifacts</p>
+      <h2 class="slide-title">Deploy &amp; reproduce</h2>
+
+      <div class="artifact-block">
+        <div class="artifact-label">Champion vocab file</div>
+        <div class="artifact-path">output/word_tokenizer_champion/champion_vocab.json</div>
+        <div class="artifact-size">4.24 MB · 32,294 entries</div>
+      </div>
+
+      <h3 style="font-size:0.85rem;font-weight:600;color:var(--ink-2);margin-top:28px;margin-bottom:8px;">Reproduce in one command</h3>
+      <div class="code-block">python tools/diag_word_tokenizer_champion_freeze.py</div>
+
+      <div class="kv-grid" style="margin-top:24px;">
+        <div class="kv"><div class="kv-key">Vocab JSON</div><div class="kv-val">4.24 MB</div></div>
+        <div class="kv"><div class="kv-key">Vocab slots</div><div class="kv-val">32,294</div></div>
+        <div class="kv"><div class="kv-key">Edge cases pass</div><div class="kv-val">14/14</div></div>
+        <div class="kv"><div class="kv-key">Version</div><div class="kv-val accent">v5.0.0-β.2</div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- NEXT -->
+  <section class="slide" id="next">
+    <div class="slide-inner">
+      <p class="slide-heading">Block C · Roadmap</p>
+      <h2 class="slide-title">What comes next</h2>
+
+      <div class="next-items">
+        <div class="next-item">
+          <span class="next-item-icon">→</span>
+          <div class="next-item-text">The tokenizer feeds Block D (Word Embedder). Token IDs from vocab 0–32,293 index into the 32,294×64 embedding table.</div>
+        </div>
+        <div class="next-item">
+          <span class="next-item-icon">→</span>
+          <div class="next-item-text">Close the 0.46 pp gap behind bzip2-9: explore higher whole_ratio values and joint BPE/whole-word scheduling.</div>
+        </div>
+        <div class="next-item">
+          <span class="next-item-icon">→</span>
+          <div class="next-item-text">Multilingual extension: current vocab trained on English FineWeb-EDU only — byte fallback handles unknowns but subword coverage degrades for non-Latin scripts.</div>
+        </div>
+      </div>
+
+      <p style="font-size:0.8rem;color:var(--ink-3);margin-bottom:12px;text-transform:uppercase;letter-spacing:0.1em;">Related PRs &amp; clusters</p>
+      <div class="pr-chips">
+        <span class="pr-chip">#130</span>
+        <span class="pr-chip">Cluster 16</span>
+      </div>
+
+      <div class="block-nav">
+        <a href="b-merger.html" class="nav-btn">← B Merger</a>
+        <a href="index.html" class="nav-btn home">All Blocks</a>
+        <a href="d-embedder.html" class="nav-btn">D Embedder →</a>
+      </div>
+    </div>
+  </section>
+
+</body>
+</html>
