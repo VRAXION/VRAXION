@@ -455,6 +455,23 @@
         <div class="kv"><div class="kv-key">Seeds replicated</div><div class="kv-val">7, 42</div></div>
         <div class="kv"><div class="kv-key">Cluster</div><div class="kv-val accent">Cluster 18</div></div>
       </div>
+
+      <h3 style="font-size:0.78rem;font-weight:600;color:var(--ink-2);margin:32px 0 12px;text-transform:uppercase;letter-spacing:0.1em;">Speculative decode cost</h3>
+      <div style="background:var(--bg-2);border:1px solid var(--border);border-radius:12px;padding:18px 22px;">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+          <div>
+            <p style="font-size:0.72rem;color:var(--purple);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:6px;">Champion · Huffman</p>
+            <p style="font-size:0.8rem;color:var(--ink-2);line-height:1.55;font-family:var(--font-mono);">canonical Huffman walk → fp16 bit-unpack → fp16 → fp32 cast → MAC</p>
+            <p style="font-size:0.72rem;color:var(--ink-3);margin-top:6px;">~O(N) table-driven decode cycles per weight load, then standard MAC</p>
+          </div>
+          <div>
+            <p style="font-size:0.72rem;color:var(--amber);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:6px;">Variant · Native int7</p>
+            <p style="font-size:0.8rem;color:var(--ink-2);line-height:1.55;font-family:var(--font-mono);">read byte → int7 sign-extend → MAC against int32 accumulator → α·fp32 at the end</p>
+            <p style="font-size:0.72rem;color:var(--ink-3);margin-top:6px;">zero decode cycles; hot-path is pure load-and-MAC</p>
+          </div>
+        </div>
+        <p style="font-size:0.72rem;color:var(--ink-3);margin-top:14px;line-height:1.5;font-style:italic;">Hypothesis only — no benchmark yet. The advantage compounds when weights churn out of cache; for hot weights kept in L1, the MAC dominates and the gap collapses. One of the first things to measure after the native packer port lands.</p>
+      </div>
     </div>
   </section>
 
