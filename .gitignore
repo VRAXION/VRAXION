@@ -92,21 +92,6 @@ v4/data_test/
 *.drawio.bkp
 *.o
 
-# instnct local live/lab scratch artifacts
-instnct/*_live.txt
-instnct/*_live_data.json
-instnct/*_chart_data.json
-instnct/*_probe_results.json
-instnct/tests/results/
-instnct/tests/viz/
-instnct/tests/viz_interference/
-instnct/network_viz_data.json
-instnct/network_*.html
-instnct/training_live.html
-instnct/overnight_log.json
-instnct/english_1024n_gpu.py
-instnct/test_thresh0.py
-
 # Local telemetry credentials
 **/.influx_token
 
@@ -114,12 +99,6 @@ instnct/test_thresh0.py
 Diamond Code/
 proofread_connections_783.feather
 proofread_root_ids_783.npy
-instnct/checkpoints/*.npz
-instnct/checkpoints/*.npz.json
-
-# Training data
-instnct/data/*.txt
-instnct/data/*.npy
 
 # Rust build artifacts
 /target
