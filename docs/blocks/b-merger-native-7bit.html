@@ -519,8 +519,41 @@
       <div class="code-block"><a href="https://github.com/VRAXION/VRAXION/blob/main/tools/diag_byte_pair_merger_float_aux_quant_probe.py" target="_blank" rel="noopener">python tools/diag_byte_pair_merger_float_aux_quant_probe.py</a></div>
       <div class="code-block"><a href="https://github.com/VRAXION/VRAXION/blob/main/tools/diag_byte_pair_merger_alpha_ablation.py" target="_blank" rel="noopener">python tools/diag_byte_pair_merger_alpha_ablation.py</a></div>
 
-      <div class="kv-grid" style="margin-top:24px;">
-        <div class="kv"><div class="kv-key">Recipe</div><div class="kv-val">Adam → LBFGS → α-search → QAT Adam → QAT LBFGS</div></div>
+      <h3 style="font-size:0.78rem;font-weight:600;color:var(--ink-2);margin:28px 0 10px;text-transform:uppercase;letter-spacing:0.1em;">Training recipe</h3>
+      <div style="display:flex;align-items:stretch;gap:0;flex-wrap:nowrap;overflow-x:auto;background:var(--bg-2);border:1px solid var(--border);border-radius:12px;padding:16px;">
+        <div style="flex:1;min-width:110px;text-align:center;padding:10px 8px;background:var(--bg-3);border-radius:8px;border:1px solid rgba(155,109,255,0.35);">
+          <div style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--purple);margin-bottom:6px;">Phase 1</div>
+          <div style="font-size:0.88rem;color:var(--ink);font-weight:600;font-family:var(--font-mono);">Adam</div>
+          <div style="font-size:0.68rem;color:var(--ink-3);margin-top:4px;">float warmup</div>
+        </div>
+        <div style="display:flex;align-items:center;padding:0 8px;color:var(--ink-3);font-size:1.1rem;flex-shrink:0;">→</div>
+        <div style="flex:1;min-width:110px;text-align:center;padding:10px 8px;background:var(--bg-3);border-radius:8px;border:1px solid rgba(155,109,255,0.35);">
+          <div style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--purple);margin-bottom:6px;">Phase 2</div>
+          <div style="font-size:0.88rem;color:var(--ink);font-weight:600;font-family:var(--font-mono);">LBFGS</div>
+          <div style="font-size:0.68rem;color:var(--ink-3);margin-top:4px;">float finish, strong-wolfe</div>
+        </div>
+        <div style="display:flex;align-items:center;padding:0 8px;color:var(--ink-3);font-size:1.1rem;flex-shrink:0;">→</div>
+        <div style="flex:1;min-width:110px;text-align:center;padding:10px 8px;background:var(--bg-3);border-radius:8px;border:1px solid rgba(0,216,255,0.35);">
+          <div style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--cyan);margin-bottom:6px;">Phase 3</div>
+          <div style="font-size:0.88rem;color:var(--ink);font-weight:600;font-family:var(--font-mono);">α-search</div>
+          <div style="font-size:0.68rem;color:var(--ink-3);margin-top:4px;">static scan, frozen W</div>
+        </div>
+        <div style="display:flex;align-items:center;padding:0 8px;color:var(--ink-3);font-size:1.1rem;flex-shrink:0;">→</div>
+        <div style="flex:1;min-width:110px;text-align:center;padding:10px 8px;background:var(--bg-3);border-radius:8px;border:1px solid rgba(255,170,0,0.4);">
+          <div style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--amber);margin-bottom:6px;">Phase 4</div>
+          <div style="font-size:0.88rem;color:var(--ink);font-weight:600;font-family:var(--font-mono);">QAT Adam</div>
+          <div style="font-size:0.68rem;color:var(--ink-3);margin-top:4px;">STE 7-bit W</div>
+        </div>
+        <div style="display:flex;align-items:center;padding:0 8px;color:var(--ink-3);font-size:1.1rem;flex-shrink:0;">→</div>
+        <div style="flex:1;min-width:110px;text-align:center;padding:10px 8px;background:var(--bg-3);border-radius:8px;border:1px solid rgba(255,170,0,0.55);">
+          <div style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--amber);margin-bottom:6px;">Phase 5</div>
+          <div style="font-size:0.88rem;color:var(--ink);font-weight:600;font-family:var(--font-mono);">QAT LBFGS</div>
+          <div style="font-size:0.68rem;color:var(--ink-3);margin-top:4px;">STE close to 100%</div>
+        </div>
+      </div>
+      <p style="font-size:0.72rem;color:var(--ink-3);margin-top:10px;line-height:1.5;font-style:italic;">Purple = float regime, cyan = scan/pin, amber = quantized regime. Each phase carries the previous phase's weights forward; no restarts.</p>
+
+      <div class="kv-grid" style="margin-top:22px;">
         <div class="kv"><div class="kv-key">Quantizer</div><div class="kv-val">STE (straight-through)</div></div>
         <div class="kv"><div class="kv-key">Seeds replicated</div><div class="kv-val">7, 42</div></div>
         <div class="kv"><div class="kv-key">Cluster</div><div class="kv-val accent">Cluster 18</div></div>
