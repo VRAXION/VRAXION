@@ -325,9 +325,17 @@
           <div class="metric-card-val">seeds 7, 42</div>
           <div class="metric-card-label">Replicated lossless</div>
         </div>
+        <div class="metric-card">
+          <div class="metric-card-val" style="color:var(--ink-3);">2,422 B</div>
+          <div class="metric-card-label">Shannon floor</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-card-val" style="color:var(--ink-2);">~41%</div>
+          <div class="metric-card-label">Gap to floor</div>
+        </div>
       </div>
 
-      <p style="font-size:0.8rem;color:var(--ink-3);margin-top:24px;line-height:1.55;">The champion path (Block B proper) reaches 3,440 B by Huffman-coding an fp16 mirror model; the reader has to walk a canonical Huffman table to reconstruct weights before inference. This variant skips the decode entirely — the bytes on disk <em>are</em> the quantized weights. Smaller and simpler, at the cost of a different architecture (identity vs C19) and a larger hidden width (H=120 vs H=81).</p>
+      <p style="font-size:0.8rem;color:var(--ink-3);margin-top:24px;line-height:1.55;">The champion path (Block B proper) reaches 3,440 B by Huffman-coding an fp16 mirror model; the reader has to walk a canonical Huffman table to reconstruct weights before inference. This variant skips the decode entirely — the bytes on disk <em>are</em> the quantized weights. Smaller and simpler, at the cost of a different architecture (identity vs C19) and a larger hidden width (H=120 vs H=81). Both sit ~41% above the theoretical 2,422 B Shannon floor — the gap that arithmetic / range coding on the int7 stream could close next.</p>
 
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:28px;">
         <div style="background:var(--bg-2);border:1px solid var(--border);border-radius:12px;padding:18px 20px;border-left:3px solid var(--purple);">
