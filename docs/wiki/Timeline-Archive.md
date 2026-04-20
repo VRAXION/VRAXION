@@ -260,6 +260,37 @@ The timeline is ordered latest-first. Each day is a self-contained H3 section wi
 
 ---
 
+### 2026-04-20 — Fázis 7: `instnct-core/examples/` trim — 228 files archived, 6 canonical kept
+
+**Theme:** After the `tools/` Fázis 6 trim (commit `c7dace4`) and the 4-agent public-readiness audit (commits `7f55846`), the remaining disk-level residue on `main` was the `instnct-core/examples/` directory (230 `.rs` files + 5 freeform `.md` notes) and one truly-orphan asset (`docs/assets/site.js`). Most examples are one-off research probes from Clusters 0-15 + pre-Rust-mainline experiments, not part of the compatibility promise. Moved the non-canonical residue to tag `archives/public-readiness-residue-20260420`; branch `archive/public-readiness-residue-2026-04-20` was used as the working surface and removed after the tag was cut.
+
+**Kept on `main` (6 files in `instnct-core/examples/`):**
+
+| File | Role |
+|---|---|
+| `neuron_grower.rs` | Canonical grower mainline (current self-wiring frontier) |
+| `evolve_language.rs` | CI beta-smoke + released `v5.0.0-beta.1` language lane (referenced by `.github/workflows/rust-beta.yml`) |
+| `neuron_infer.rs` | Public CLI (referenced by `BETA.md`) |
+| `extract_fineweb_txt.rs` | Required by `instnct-core/Cargo.toml` `[[example]]` stanza (feature-gated on `parquet`) |
+| `diag_5way_fineweb.rs` | Same — `[[example]]` stanza target |
+| `README.md` | Examples listing / notes |
+
+**Archived to tag `archives/public-readiness-residue-20260420` (228 files):**
+
+- 223 `instnct-core/examples/*.rs` research scripts — includes all `char_embed_*`, `ab_relu_vs_c19_autoenc`, `bottleneck_sweep`, `min_params_sweep`, `sparse_grower_autoenc`, `binary_mirror_grow`, `binary_no_c19`, `canonical_byte_encoder`, `weight_bitwidth_sweep`, `backprop_2bit_encoder`, `emergent_byte_encoder`, `verify_roundtrip`, `verify_brain_on_top`, `c19_grower` (and many more). These are referenced in earlier timeline entries as the concrete script for a given finding; those references remain valid (the file is reachable via `git show archives/public-readiness-residue-20260420:<path>`).
+- 4 freeform lab-session markdown files (`overnight_log.md`, `overnight_report.md`, `overnight_research.md`, `session_summary.md`).
+- 1 truly-orphan asset: `docs/assets/site.js` (no inbound reference from any HTML or CSS on main after the legacy Pages cleanup).
+
+**Effect:** `instnct-core/examples/` is now 6 files (down from 235). The Rust mainline, CI smoke, public CLI, and Cargo `[[example]]` stanzas all still resolve. Earlier timeline entries reference many of the archived examples by name — those references remain valid, just resolve through the tag instead of `main`.
+
+Restore any file via:
+- `git show archives/public-readiness-residue-20260420:instnct-core/examples/<name>.rs`
+- `git checkout archives/public-readiness-residue-20260420 -- instnct-core/examples/<name>.rs`
+
+Follows the same pattern as the `instnct/` archival (tag `archives/python-research-20260420`) and the `tools/` Fázis 6 trim (tag `archives/tools-legacy-diag-20260420`).
+
+---
+
 ### 2026-04-20 — Tools/ trim: 50 legacy diag scripts archived, 29 canonical scripts kept
 
 **Theme:** The `tools/` directory accumulated ~79 Python scripts across the iterative Cluster 9-18 research arc (absorb-float → codebook-aware → exhaustive → single-W mirror → fp16 → Huffman-packed → per-channel bake → native 7-bit identity), plus word-tokenizer builds and early C19/brain-replay probes. Many scripts were checkpoint iterations whose findings are already folded into `VALIDATED_FINDINGS.md`, `docs/wiki/COMPRESSION_LOOP_DRAFT.md`, or earlier timeline entries. The 50 non-canonical scripts were removed from `main`; the full pre-trim tree is preserved at annotated tag `archives/tools-legacy-diag-20260420`.
