@@ -274,4 +274,25 @@ mod tests {
         let back = enc.decode_bytes(&latents);
         assert_eq!(back, text);
     }
+
+    #[test]
+    fn encode_is_deterministic() {
+        // Pure LUT lookup — same byte must yield a bit-identical [f32; 16] on repeat calls.
+        let enc = load_for_test();
+        for b in [0u8, 65, 128, 200, 255] {
+            let v1 = enc.encode(b);
+            let v2 = enc.encode(b);
+            assert_eq!(v1, v2, "encode({}) was not deterministic", b);
+        }
+    }
+
+    #[test]
+    fn empty_bytes_round_trip() {
+        // Empty input round-trips to empty — no spurious latent rows, no decode drift.
+        let enc = load_for_test();
+        let latents = enc.encode_bytes(&[]);
+        assert!(latents.is_empty());
+        let back = enc.decode_bytes(&latents);
+        assert!(back.is_empty());
+    }
 }
