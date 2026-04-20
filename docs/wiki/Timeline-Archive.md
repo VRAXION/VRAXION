@@ -293,7 +293,7 @@ Follows the same pattern as the `instnct/` archival (tag `archives/python-resear
 
 ### 2026-04-20 — Tools/ trim: 50 legacy diag scripts archived, 29 canonical scripts kept
 
-**Theme:** The `tools/` directory accumulated ~79 Python scripts across the iterative Cluster 9-18 research arc (absorb-float → codebook-aware → exhaustive → single-W mirror → fp16 → Huffman-packed → per-channel bake → native 7-bit identity), plus word-tokenizer builds and early C19/brain-replay probes. Many scripts were checkpoint iterations whose findings are already folded into `VALIDATED_FINDINGS.md`, `docs/wiki/COMPRESSION_LOOP_DRAFT.md`, or earlier timeline entries. The 50 non-canonical scripts were removed from `main`; the full pre-trim tree is preserved at annotated tag `archives/tools-legacy-diag-20260420`.
+**Theme:** The `tools/` directory accumulated ~79 Python scripts across the iterative Cluster 9-18 research arc (absorb-float → codebook-aware → exhaustive → single-W mirror → fp16 → Huffman-packed → per-channel bake → native 7-bit identity), plus word-tokenizer builds and early C19/brain-replay probes. Many scripts were checkpoint iterations whose findings are already folded into `VALIDATED_FINDINGS.md`, `docs/wiki/COMPRESSION_LOOP.md`, or earlier timeline entries. The 50 non-canonical scripts were removed from `main`; the full pre-trim tree is preserved at annotated tag `archives/tools-legacy-diag-20260420`.
 
 **Kept on `main` (29 scripts):**
 
@@ -337,7 +337,7 @@ Follows the same pattern as the `instnct/` archival (commit `56575ab`, tag `arch
 | Cluster 13 Huffman-packed | `merger_single_w_huffman_pack/` — **KEPT** | 2026-04-19 evening timeline entry |
 | Cluster 14 H81 exact pipeline | `merger_exact_*`, `merger_exhaustive_*`, `merger_strict_staged_int8_*` | superseded by Cluster 12 fp16 |
 | Cluster 15 word/subword tokenizer | `word_tokenizer_*`, `word_embedding_v1/` (9.9 MB), `subword_tokenizer_exact/` | champion preserved; `word_tokenizer_champion/` tracked |
-| Cluster 16-17 bake probe + per-channel + overnight loop | `loop_iter1` to `loop_iter35/` (35 iters), `merger_minimize_*/`, `merger_aux_quant_probe*/` | `docs/wiki/COMPRESSION_LOOP_DRAFT.md` + 2026-04-19 entries |
+| Cluster 16-17 bake probe + per-channel + overnight loop | `loop_iter1` to `loop_iter35/` (35 iters), `merger_minimize_*/`, `merger_aux_quant_probe*/` | `docs/wiki/COMPRESSION_LOOP.md` + 2026-04-19 entries |
 | Cluster 18 native 7-bit identity | `verify_7bit_identity_h120_s*/` | `VALIDATED_FINDINGS.md` Block B row |
 | Slide prototypes | `slide_a_designs/` (proto_neural, proto_lego, proto_blueprint, proto_orbs HTML + rationale MDs) | Final design lives at `docs/blocks/a-byte-unit.html` |
 | Other | `browser-check/` (playwright), `nano_brain_v1/`, `merger_l2_phase0/`, `merger_l2_v1/` | L2 merger frontier deferred; scripts still in `tools/` |
@@ -354,7 +354,7 @@ Follows the same pattern as the `instnct/` archival (commit `56575ab`, tag `arch
 |---|---|---|---|
 | 1 | `docs/instnct/` | `a059922` | INSTNCT architecture explainer, Apr 6 site rebuild. Superseded by the wiki `INSTNCT-Architecture` surface. |
 | 2 | `docs/byte-embedder/` | `deb218e` | Block A v1 predecessor landing page, Apr 18. Superseded by `docs/blocks/a-byte-unit.html`. |
-| 3 | `docs/research/` | `a059922` + `ef3e43d` | Research landing page + L1 merger overnight report snapshot. Key numbers already folded into this timeline + `docs/wiki/COMPRESSION_LOOP_DRAFT.md`. |
+| 3 | `docs/research/` | `a059922` + `ef3e43d` | Research landing page + L1 merger overnight report snapshot. Key numbers already folded into this timeline + `docs/wiki/COMPRESSION_LOOP.md`. |
 | 4 | `docs/rust/` | `a059922` | Rust implementation surface page. Superseded by `Rust/` deploy SDK + repo `README.md`. |
 | 5 | `docs/pages/brain_replay/` | `64a215c` / `12399fb` | C19 grower multi-head replay viewer + trace dumps. No wiki inbound link; retained only in git history. |
 | 6 | `docs/vraxion-connectome-explorer.html` | `4e0998b` | C19 two-pool connectome visualizer, linked only from `docs/legacy.html`. Superseded by the Blocks nav. |
@@ -662,7 +662,7 @@ Investigation into an L2 reconstruction layer above the L1 Huffman-packed champi
 **Status: Deprioritized — geometry doesn't support linear reconstruction at the capacity we can afford; pivoted to lexical-layer pipeline (Cluster 16).**
 
 **Cluster 18 — L1 merger autonomous compression loop (2026-04-19 PM)** (commits `d13cb3b` research tooling + `891b1d7` GPT probes)
-Files: `tools/diag_byte_pair_merger_widen_sweep.py`, `tools/diag_byte_pair_merger_bake_probe.py`, `tools/diag_byte_pair_merger_perchannel_bake.py`, `tools/diag_byte_pair_merger_minimize.py`, `tools/diag_byte_pair_merger_aux_quant_probe.py`, `tools/diag_byte_pair_merger_float_aux_quant_probe.py`, `tools/diag_byte_pair_merger_alpha_ablation.py`. Full findings draft: `docs/wiki/COMPRESSION_LOOP_DRAFT.md`.
+Files: `tools/diag_byte_pair_merger_widen_sweep.py`, `tools/diag_byte_pair_merger_bake_probe.py`, `tools/diag_byte_pair_merger_perchannel_bake.py`, `tools/diag_byte_pair_merger_minimize.py`, `tools/diag_byte_pair_merger_aux_quant_probe.py`, `tools/diag_byte_pair_merger_float_aux_quant_probe.py`, `tools/diag_byte_pair_merger_alpha_ablation.py`. Full findings draft: `docs/wiki/COMPRESSION_LOOP.md`.
 - **Idea:** The Cluster 13 champion is 3,440 B Huffman-packed. Can a native (non-packed) weight representation reach the same or smaller footprint while staying 100% lossless? And what is the structural reason binary weights fail on the merger when they work on the byte unit (Cluster 17)?
 - **Methodology — 34 sweep iterations across five axes:**
   1. Architecture: single-W mirror-tied vs dual-W (two independent matrices).
