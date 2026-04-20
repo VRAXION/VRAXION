@@ -85,6 +85,24 @@ def test_multibyte_bytes_input_rejected():
         pass
 
 
+def test_encode_is_deterministic():
+    """Block A encode must be a pure LUT lookup — same byte → same vector, every time.
+
+    Guards against accidental RNG / mutation creeping into the deploy path.
+    """
+    enc = ByteEncoder.load_default()
+    for b in (0, 65, 128, 200, 255):
+        v1 = enc.encode(b)
+        v2 = enc.encode(b)
+        np.testing.assert_array_equal(v1, v2)
+
+
+def test_empty_bytes_round_trip():
+    """Empty text round-trips to empty text (no latent rows, no decode drift)."""
+    enc = ByteEncoder.load_default()
+    assert enc.decode_bytes(enc.encode_bytes(b"")) == b""
+
+
 if __name__ == "__main__":
     # Minimal runner
     tests = [v for k, v in sorted(globals().items()) if k.startswith("test_") and callable(v)]
