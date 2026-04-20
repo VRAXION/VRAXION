@@ -21,11 +21,34 @@ This page explains how retired surfaces leave `main` without losing their contex
 - An **Experimental branch** is where risky or bulky work can live before it earns promotion.
 - If a line is not part of the current self-wiring mainline doctrine, archive it.
 
-## Archive Branches
+## Archive Branches and Tags
 
-- Historical Diamond Code extraction branch: `archive/diamond-code-era-20260322`
-- Surface-freeze preservation branch: `archive/instnct-surface-freeze-20260322`
-- `v4/`, `v4.2/`, `legacy/` removed from `main` in v5.0.0-beta.1 (preserved in git history)
-- `RESEARCH_NOTICE_V5_MISMATCH.md` removed (issue resolved 2026-03-27)
+Historical surfaces are preserved in two forms:
 
-The rule is simple: if code or docs do not belong to the current self-wiring mainline, they should move to archive branches or local-only run artifacts instead of bloating `main`.
+**Branches** (long-lived, pre-2026-04-20):
+
+- `archive/diamond-code-era-20260322` — Diamond Code / LCX era snapshot
+- `archive/instnct-surface-freeze-20260322` — pre-beta research surface freeze
+
+**Tags** (2026-04-20 public-release cleanup; immutable snapshots):
+
+- `archives/python-research-20260420` — Python research lane (was `instnct/`); migrated to Rust `instnct-core/` mainline on 2026-04-13, archived to tag on 2026-04-20.
+- `archives/tools-legacy-diag-20260420` — pre-Fázis-6 `tools/` tree (79 scripts); trimmed to 29 canonical scripts on 2026-04-20.
+
+Restore any file from a tag via:
+
+```bash
+git show archives/<name>:path/to/file
+git checkout archives/<name> -- path/to/file
+```
+
+## Removed from `main` (preserved only in git history)
+
+- `v4/`, `v4.2/`, `legacy/` — removed in `v5.0.0-beta.1` (preserved in git history)
+- `RESEARCH_NOTICE_V5_MISMATCH.md` — removed on 2026-03-27 (issue resolved)
+- `docs/instnct/`, `docs/byte-embedder/`, `docs/research/`, `docs/rust/`, `docs/pages/brain_replay/`, `docs/vraxion-connectome-explorer.html` — removed on 2026-04-20 as orphan legacy Pages under the pre-Blocks nav (commit `92f313b`). Content reachable via `git show 92f313b^:<path>`.
+- `output/` scratch tree (~160 non-champion run-dumps, 45 MB) — physically removed on 2026-04-20; scratch was gitignored so not reconstructable, but source scripts in `tools/` can regenerate any run.
+
+The rule is simple: if code or docs do not belong to the current self-wiring mainline, they should move to archive branches/tags or local-only run artifacts instead of bloating `main`.
+
+For a chronological record of what changed when, see the [Timeline Archive wiki](https://github.com/VRAXION/VRAXION/wiki/Timeline-Archive).

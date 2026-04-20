@@ -5,6 +5,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Changed — 2026-04-20: public-release cleanup
+
+Four-phase main-branch cleanup to prepare the repo for public release. All phases follow the same pattern: content preserved (archive branch/tag or git history), main narrowed to live surfaces.
+
+- **Python research lane archived**: `instnct/` (pre-Rust migration lane) moved to tag `archives/python-research-20260420`. Mainline Python surface is now `Python/` (deploy SDK, Block A + B, pure numpy, zero ML deps). README, VALIDATED_FINDINGS, VERSION.json, CONTRIBUTING all updated.
+- **Docs legacy Pages archived**: 62 orphan files under the pre-Blocks site nav (`docs/instnct/`, `docs/byte-embedder/`, `docs/research/`, `docs/rust/`, `docs/pages/brain_replay/`, `docs/vraxion-connectome-explorer.html`) removed. Current `docs/` surface is Home + Blocks A-E + Legacy detail view + Wiki mirror.
+- **Output scratch tree pruned**: `output/` went from 49 MB / ~160 run-dumps to 4.1 MB / 3 champion folders (`byte_unit_champion_binary_c19_h16/`, `merger_single_w_huffman_pack/`, `word_tokenizer_champion/`). Scratch was gitignored so not recoverable; source scripts in `tools/` can regenerate any run.
+- **Tools/ Fázis 6 trim**: 79 scripts → 29 canonical (champion build/verify/acceptance, canonical sweep/methodology, active frontier L2 + word tokenizer). The 50 archived scripts preserved at tag `archives/tools-legacy-diag-20260420`.
+- **CI modernized**: `.github/workflows/ci.yml` rewritten for `Python/` deploy SDK + `pytest`; `tools/check_public_surface.py` rewritten for the Blocks A-E nav; `.github/pull_request_template.md` scope checklist updated.
+
+Commits: `56575ab` (instnct/ archival), `92f313b` (docs Pages), `7571356` (output/), `c7dace4` (tools/ trim), `5b006a5` (CI modernization), `a85dde5` (branch → tag conversion), `831e971` (pytest install fix).
+
 ### Added — Cluster 16: lexical-to-neural bridge (2026-04-19)
 
 - **Word Tokenizer V2 hybrid champion** (PR #130): whole-word + subword + byte-fallback, `whole_ratio=0.9375`, 32,294 vocab. Real Huffman compression **30.43%** on 10 MB FineWeb-EDU (0.46pp above bzip2, 7.19pp below gzip). 1.26% byte-fallback, 95.90% LEARNED coverage, 0/2000 unreachable tokens, 14/14 adversarial edge cases pass. Parameter choice matches SuperBPE τ=0.9 ([arXiv:2503.13423](https://arxiv.org/abs/2503.13423)). Frozen public artifact at `output/word_tokenizer_champion/`.

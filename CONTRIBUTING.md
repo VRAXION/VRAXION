@@ -14,31 +14,52 @@ If a setting or training recipe is not in the canonical code path, do **not** de
 
 ## Repo Map
 
-### Rust (primary surface — `instnct-core/`)
+### Rust mainline (`instnct-core/`)
 
 - `instnct-core/src/`: library crate — network, propagation, evolution, fitness, eval, corpus
-- `instnct-core/examples/evolve_language.rs`: canonical beta runner
+- `instnct-core/examples/neuron_grower.rs`: canonical grower mainline (current self-wiring frontier)
+- `instnct-core/examples/evolve_language.rs`: beta language-evolution runner (published `v5.0.0-beta.2`)
 - `instnct-core/examples/`: experimental research examples (not part of compatibility promise)
 - `instnct-core/tests/fixtures/`: test corpora and fixtures
 
-### Python (reference surface — `instnct/`)
+### Python deploy SDK (`Python/`)
 
-- `instnct/model/`: self-wiring graph reference implementation
-- `instnct/lib/`: shared scoring, data, and logging helpers
-- `instnct/tests/`: stress tests, sweeps, probes, and benchmark scripts
-- `instnct/recipes/`: training recipes and A/B experiments
+Pure numpy, zero ML framework dependency. Reads champion artifacts from the repo's `output/` directory.
+
+- `Python/block_a_byte_unit/`: Block A — byte unit, L0, 8 → 16 → 8 tied-mirror autoencoder
+- `Python/block_b_merger/`: Block B — byte-pair merger, L1, 32 → 81 → 32 single-W mirror
+- `Python/__init__.py`: top-level exports (`ByteEncoder`, `L1Merger`)
+
+### Rust deploy SDK (`Rust/`)
+
+Parallel to `Python/`: same champion artifacts, pure std + serde, zero ML deps.
+
+- `Rust/src/block_a_byte_unit/`: Block A
+- `Rust/src/block_b_merger/`: Block B
 
 ### Shared
 
-- `docs/`: GitHub Pages website
+- `docs/`: GitHub Pages website (Home + Blocks A-E + Legacy + Wiki mirror)
+- `tools/`: build scripts, sweep probes, regression runners, acceptance checks
 - `VALIDATED_FINDINGS.md`: canonical evidence summary
 - `docs/VERSION.json`: public release identity source of truth
 
+### Archives
+
+Historical research lanes live on tags, not `main`:
+
+- `archives/python-research-20260420`: frozen `instnct/` lane (pre-Rust migration)
+- `archives/tools-legacy-diag-20260420`: pre-Fázis-6 `tools/` tree (79 scripts)
+
+Restore any file via `git show archives/<name>:path/to/file` or `git checkout archives/<name> -- path/to/file`.
+
 ## Where To Put Things
 
-- **Rust core changes**: `instnct-core/src/` (run `cargo test --lib` and `cargo clippy`)
+- **Rust core changes**: `instnct-core/src/` (run `cargo test -p instnct-core` and `cargo clippy`)
 - **Rust experiments**: `instnct-core/examples/` (not part of API contract)
-- **Python model changes**: `instnct/model/`
+- **Python deploy SDK changes**: `Python/block_a_byte_unit/` or `Python/block_b_merger/` (run `python -m pytest Python/ -q`)
+- **Rust deploy SDK changes**: `Rust/src/block_a_byte_unit/` or `Rust/src/block_b_merger/`
+- **Build / sweep tooling**: `tools/` (Python only)
 - **Public-facing docs**: root docs plus `docs/`
 - **Local corpora**: `.traindat` files stay local-only and gitignored
 
@@ -72,14 +93,14 @@ Guardrails:
 Recommended verification commands:
 
 ```bash
-# Rust (primary surface)
+# Rust mainline
 cargo test -p instnct-core
 cargo clippy --all-targets -- -D warnings
 cargo doc --no-deps
 
-# Python (reference surface)
-python -m compileall instnct tools
-python instnct/tests/test_model.py
+# Python deploy SDK
+python -m compileall Python tools
+python -m pytest Python/ -q
 
 # Public surface consistency
 python tools/check_public_surface.py
@@ -102,13 +123,14 @@ If you report a metric, include at minimum: commit hash, exact command line, see
 ## Local Setup
 
 ```bash
-# Rust (primary surface)
+# Rust mainline
 cargo build --workspace
 
-# Python (reference surface)
+# Python deploy SDK
 python -m venv .venv
 # Windows: .venv\Scripts\activate   |   macOS/Linux: source .venv/bin/activate
 pip install -r requirements.txt
+pip install pytest  # dev-only, not a runtime dep
 ```
 
 ## Testing
@@ -119,8 +141,8 @@ cargo test -p instnct-core
 cargo clippy --all-targets -- -D warnings
 
 # Python
-python -m compileall instnct tools
-python instnct/tests/test_model.py
+python -m compileall Python tools
+python -m pytest Python/ -q
 python tools/run_grower_regression.py
 python tools/run_byte_opcode_acceptance.py
 
