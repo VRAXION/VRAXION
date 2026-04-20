@@ -45,6 +45,17 @@ REQUIRED_ASSETS = [
     ASSETS / "site.css",
 ]
 
+# Champion deploy artifacts — protects public-facing claims from silent regressions.
+# (path, expected_size_bytes). Set expected size to None to skip the size check
+# and only require existence.
+CHAMPION_ARTIFACTS = [
+    (ROOT / "output" / "merger_single_w_huffman_pack" / "packed_model.bin", 3440),
+    (ROOT / "output" / "merger_single_w_huffman_pack" / "summary.json", None),
+    (ROOT / "output" / "byte_unit_champion_binary_c19_h16" / "byte_embedder_lut_int8.json", None),
+    (ROOT / "tools" / "byte_embedder_lut.h", None),
+    (ROOT / "tools" / "byte_embedder_lut_int8.json", None),
+]
+
 
 def read(path: Path) -> str:
     return path.read_text(encoding="utf-8")
@@ -106,6 +117,20 @@ def check_blocks(errors: list[str]) -> None:
             continue
 
 
+def check_champion_artifacts(errors: list[str]) -> None:
+    for path, expected_size in CHAMPION_ARTIFACTS:
+        require_exists(path, errors)
+        if not path.exists():
+            continue
+        if expected_size is not None:
+            actual = path.stat().st_size
+            if actual != expected_size:
+                fail(
+                    f"{path.relative_to(ROOT)}: champion size regression — expected {expected_size} B, got {actual} B",
+                    errors,
+                )
+
+
 def check_assets(errors: list[str]) -> None:
     require_exists(NOJEKYLL, errors)
     for path in REQUIRED_ASSETS:
@@ -121,6 +146,7 @@ def main() -> int:
         require_exists(path, errors)
     check_home(errors)
     check_blocks(errors)
+    check_champion_artifacts(errors)
 
     if errors:
         print("Public surface check FAILED:")
