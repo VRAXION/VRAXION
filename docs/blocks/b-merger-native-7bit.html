@@ -209,6 +209,76 @@
     </div>
   </section>
 
+  <!-- PIPELINE POSITION -->
+  <section class="slide" id="pipeline">
+    <div class="slide-inner">
+      <p class="slide-heading">Variant · Pipeline position</p>
+      <h2 class="slide-title">Where this sits in the byte-level stack</h2>
+
+      <p style="font-size:0.85rem;color:var(--ink-2);margin-bottom:24px;line-height:1.6;">
+        This variant is not a separate layer — it is an alternative artifact for the same slot as the Block B champion. L0 reads one byte at a time; L1 (either champion or variant) takes two consecutive L0 outputs and returns one merged 32-dim latent. Downstream layers (Tokenizer → Embedder → Brain) are identical across both L1 artifacts.
+      </p>
+
+      <div style="overflow-x:auto;">
+        <table style="width:100%;border-collapse:collapse;background:var(--bg-2);border:1px solid var(--border);border-radius:12px;overflow:hidden;font-family:var(--font-mono);font-size:0.78rem;">
+          <thead>
+            <tr style="background:var(--bg-3);">
+              <th style="padding:12px 14px;text-align:left;color:var(--ink-3);font-size:0.68rem;text-transform:uppercase;letter-spacing:0.1em;font-weight:600;">Layer</th>
+              <th style="padding:12px 14px;text-align:left;color:var(--cyan);font-size:0.68rem;text-transform:uppercase;letter-spacing:0.1em;font-weight:600;">Block A · L0</th>
+              <th style="padding:12px 14px;text-align:left;color:var(--purple);font-size:0.68rem;text-transform:uppercase;letter-spacing:0.1em;font-weight:600;">Block B · champion</th>
+              <th style="padding:12px 14px;text-align:left;color:var(--amber);font-size:0.68rem;text-transform:uppercase;letter-spacing:0.1em;font-weight:600;">Block B · variant</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td style="padding:10px 14px;color:var(--ink-2);border-top:1px solid var(--border);">Input / output</td>
+              <td style="padding:10px 14px;color:var(--ink);border-top:1px solid var(--border);">1 byte → 16-dim</td>
+              <td style="padding:10px 14px;color:var(--ink);border-top:1px solid var(--border);">2×16 → 32-dim</td>
+              <td style="padding:10px 14px;color:var(--ink);border-top:1px solid var(--border);">2×16 → 32-dim</td>
+            </tr>
+            <tr>
+              <td style="padding:10px 14px;color:var(--ink-2);border-top:1px solid var(--border);">Hidden</td>
+              <td style="padding:10px 14px;color:var(--ink);border-top:1px solid var(--border);">H = 16</td>
+              <td style="padding:10px 14px;color:var(--ink);border-top:1px solid var(--border);">H = 81</td>
+              <td style="padding:10px 14px;color:var(--amber);border-top:1px solid var(--border);">H = 120</td>
+            </tr>
+            <tr>
+              <td style="padding:10px 14px;color:var(--ink-2);border-top:1px solid var(--border);">Activation</td>
+              <td style="padding:10px 14px;color:var(--ink);border-top:1px solid var(--border);">C19</td>
+              <td style="padding:10px 14px;color:var(--ink);border-top:1px solid var(--border);">C19</td>
+              <td style="padding:10px 14px;color:var(--amber);border-top:1px solid var(--border);">identity</td>
+            </tr>
+            <tr>
+              <td style="padding:10px 14px;color:var(--ink-2);border-top:1px solid var(--border);">Weights</td>
+              <td style="padding:10px 14px;color:var(--ink);border-top:1px solid var(--border);">binary ±1</td>
+              <td style="padding:10px 14px;color:var(--ink);border-top:1px solid var(--border);">fp16 + Huffman pack</td>
+              <td style="padding:10px 14px;color:var(--amber);border-top:1px solid var(--border);">int7 native</td>
+            </tr>
+            <tr>
+              <td style="padding:10px 14px;color:var(--ink-2);border-top:1px solid var(--border);">Deploy size</td>
+              <td style="padding:10px 14px;color:var(--jade);border-top:1px solid var(--border);">4.0 KB · int8 LUT</td>
+              <td style="padding:10px 14px;color:var(--jade);border-top:1px solid var(--border);">3,440 B</td>
+              <td style="padding:10px 14px;color:var(--jade);border-top:1px solid var(--border);">3,421 B</td>
+            </tr>
+            <tr>
+              <td style="padding:10px 14px;color:var(--ink-2);border-top:1px solid var(--border);">Decode step</td>
+              <td style="padding:10px 14px;color:var(--jade);border-top:1px solid var(--border);">none (LUT)</td>
+              <td style="padding:10px 14px;color:var(--fuchsia);border-top:1px solid var(--border);">canonical Huffman walk</td>
+              <td style="padding:10px 14px;color:var(--jade);border-top:1px solid var(--border);">none (native)</td>
+            </tr>
+            <tr>
+              <td style="padding:10px 14px;color:var(--ink-2);border-top:1px solid var(--border);">Lossless</td>
+              <td style="padding:10px 14px;color:var(--jade);border-top:1px solid var(--border);">256 / 256</td>
+              <td style="padding:10px 14px;color:var(--jade);border-top:1px solid var(--border);">65,536 / 65,536</td>
+              <td style="padding:10px 14px;color:var(--jade);border-top:1px solid var(--border);">65,536 / 65,536</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p style="font-size:0.72rem;color:var(--ink-3);margin-top:12px;line-height:1.5;font-style:italic;text-align:center;">Both L1 artifacts plug into the same pipeline slot. Downstream Tokenizer / Embedder / Brain do not know which one fed them.</p>
+    </div>
+  </section>
+
   <!-- BIT BUDGET -->
   <section class="slide" id="budget">
     <div class="slide-inner">
