@@ -18,7 +18,7 @@ Vraxion is building **INSTNCT**: a gradient-free self-wiring architecture that l
 
 Vraxion exists to advance machine consciousness as an engineering reality. In public technical terms, that means building systems that can be instrumented, checked, refined, and argued about without collapsing theory, implementation, and evidence into one blur.
 
-This page is the mission-first technical front door. Use [Pages](https://vraxion.github.io/VRAXION/) for the polished front door, including the public [INSTNCT](https://vraxion.github.io/VRAXION/instnct/), [Research](https://vraxion.github.io/VRAXION/research/), and [Rust](https://vraxion.github.io/VRAXION/rust/) surfaces; use the repo [README.md](https://github.com/VRAXION/VRAXION/blob/main/README.md) for the code-facing entry, and [Research Process & Archive](Timeline-Archive) for protocol, chronology, and proof trail.
+This page is the mission-first technical front door. Use [Pages](https://vraxion.github.io/VRAXION/) for the polished front door — the Blocks ladder ([A Byte Unit](https://vraxion.github.io/VRAXION/blocks/a-byte-unit.html) → [E Brain](https://vraxion.github.io/VRAXION/blocks/e-brain.html)) plus a Legacy detail view. Use the repo [README.md](https://github.com/VRAXION/VRAXION/blob/main/README.md) for the code-facing entry, and [Research Process & Archive](Timeline-Archive) for protocol, chronology, and proof trail.
 
 ## At a Glance
 

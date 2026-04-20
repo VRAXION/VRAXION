@@ -80,13 +80,7 @@ VRAXION.wiki/
 # Log files
 *.log
 
-# v4 binary data & large artifacts (not source)
-v4/training_data/
-v4/training_output/
-v4/eval_data/
-v4/ARCHIVE/
-v4/data_adversarial/
-v4/data_test/
+# Misc legacy / build byproducts
 *.traindat
 *.mask
 *.drawio.bkp

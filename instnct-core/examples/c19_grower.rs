@@ -906,7 +906,7 @@ fn bake_lut(weights: &[i8], c: f32, rho: f32) -> (Vec<f32>, i32) {
 // ══════════════════════════════════════════════════════
 //
 // Per-neuron symmetric absmax int8 quant of a baked float LUT.
-// Mirrors `tools/c19_i8_quant_analyze.py::quantize_symmetric_absmax` exactly:
+// Symmetric-absmax quantization recipe:
 //   qmax = 127, qmin = -127 (NOT -128 — symmetric around zero)
 //   scale = max(|lut|) / 127
 //   lut_i8[i] = clip(round(lut[i] / scale), -127, 127)
@@ -944,7 +944,7 @@ fn bake_lut_i8(lut_f32: &[f32]) -> (Vec<i8>, f32) {
 
 /// Per-network int16 alpha quantization (shared scale across all neurons).
 ///
-/// Mirrors `tools/c19_i8_quant_analyze.py::quantize_alpha` with `nbits=16`.
+/// Per-network symmetric int16 alpha quantization with shared scale (nbits=16):
 /// `scale = max(|alpha|) / 32767`, with `alpha_i16[i] = clip(round(alpha[i]/scale), -32767, 32767)`.
 ///
 /// The scale is **shared across the whole net**, so it must be recomputed any

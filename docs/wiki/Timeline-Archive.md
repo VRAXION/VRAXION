@@ -17,7 +17,7 @@ One list of live public surfaces for the project. Everywhere else in this record
 
 ## Current Frame
 
-- The stable public release is still `v4.2.0`; the active architecture line is [INSTNCT Architecture](INSTNCT-Architecture). See [Core Surfaces](#core-surfaces) for the release list.
+- The current public release is `v5.0.0-beta.2` (Rust grower-based beta); the active architecture line is [INSTNCT Architecture](INSTNCT-Architecture). See [Core Surfaces](#core-surfaces) for the release list.
 - The Rust `v5.0.0-beta` lane (`instnct-core`) is substantial enough to deserve rich chronology, but remains a beta implementation surface rather than the shipped default.
 - The biggest unresolved pressure is no longer basic trainability. It is whether language evaluation, seed variance, and context-dependent task learning survive repeated adversarial reruns, and whether the byte-level L0+L1 pipeline generalizes beyond the current task suite.
 - **Active pipeline (byte-level, as of 2026-04-18):** L0 Byte Unit LOCKED (C19 8→24→16 int4, 256-entry LUT, `tools/byte_embedder_lut.h`) + L1 Byte-Pair Merger CHAMPION (single-W mirror 3.36 KB Huffman-packed, `output/merger_single_w_huffman_pack/packed_model.bin`). Brain/higher layers are the active research frontier on top of frozen L0+L1 features.

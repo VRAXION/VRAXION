@@ -2,7 +2,7 @@
 // Architecture: SingleWMirror  y = C19(x @ W + b1) @ W.T + b2
 // Dimensions:   in_dim=32, H=81
 // Cells:        W 2592 + b1 81 + b2 32 + c19_c 81 + c19_rho 81 = 2867 total
-// Source:       output/merger_single_w_fp16_all/final_fp16.json
+// Source:       output/merger_single_w_huffman_pack/packed_model.bin (generator: tools/diag_byte_single_w_huffman_pack.py)
 // Packed:       output/merger_single_w_huffman_pack/packed_model.bin (3440 B Huffman)
 
 // --- fp16 uint16 → float32 conversion ---

@@ -22,24 +22,6 @@
   --page-wash: rgba(210, 106, 63, 0.18);
 }
 
-body[data-page="instnct"] {
-  --page-accent: #5d90c8;
-  --page-accent-2: #d26a3f;
-  --page-wash: rgba(93, 144, 200, 0.18);
-}
-
-body[data-page="research"] {
-  --page-accent: #d28b44;
-  --page-accent-2: #5a8f96;
-  --page-wash: rgba(210, 139, 68, 0.16);
-}
-
-body[data-page="rust"] {
-  --page-accent: #4f98a8;
-  --page-accent-2: #d26a3f;
-  --page-wash: rgba(79, 152, 168, 0.16);
-}
-
 * {
   box-sizing: border-box;
 }

@@ -185,7 +185,7 @@ Lint policy remains `#![forbid(unsafe_code)]` plus `#![deny(missing_docs, unreac
 | Python (`graph.py`) | ~400,000 | - | Reference implementation, not a systems target |
 | Rust (`instnct-core`, before topology cleanup) | ~27,000 | ~820,000 | Early port baseline |
 | Rust (`instnct-core`, current) | ~27,000 | ~237,000 | H=1024 magnitude is directionally real but still measurement-sensitive |
-| C (`instnct/edge/`) | ~14,000 | - | Best small-size throughput baseline |
+| C (`instnct/edge/` — archived at tag `archives/python-research-20260420`) | ~14,000 | - | Best small-size throughput baseline, pre-Rust lane |
 
 The important systems result is no longer "Rust can be made fast in theory." It is that the Rust lane now has a deterministic benchmark policy, a real sparse-runtime advantage through CSR skip-inactive, and a stable set of accepted hot-path decisions.
 
