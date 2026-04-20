@@ -341,6 +341,30 @@
           So there is no regime where you "just quantize the C19 meta and stay exact." That was the gate that decided this variant: if the aux won't quantize, drop the activation entirely and widen the hidden until the identity map fits.
         </div>
       </div>
+
+      <h3 style="font-size:0.78rem;font-weight:600;color:var(--ink-2);margin:28px 0 12px;text-transform:uppercase;letter-spacing:0.1em;">Per-seed detail</h3>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:0;background:var(--bg-2);border:1px solid var(--border);border-radius:12px;overflow:hidden;font-family:var(--font-mono);font-size:0.8rem;">
+        <div style="padding:10px 14px;background:var(--bg-3);color:var(--ink-3);font-size:0.7rem;text-transform:uppercase;letter-spacing:0.1em;">metric</div>
+        <div style="padding:10px 14px;background:var(--bg-3);color:var(--amber);font-size:0.72rem;text-transform:uppercase;letter-spacing:0.1em;font-weight:600;">seed 7</div>
+        <div style="padding:10px 14px;background:var(--bg-3);color:var(--amber);font-size:0.72rem;text-transform:uppercase;letter-spacing:0.1em;font-weight:600;">seed 42</div>
+
+        <div style="padding:10px 14px;color:var(--ink-2);border-top:1px solid var(--border);">lossless @ 7-bit W</div>
+        <div style="padding:10px 14px;color:var(--jade);border-top:1px solid var(--border);">100% · 65,536 / 65,536</div>
+        <div style="padding:10px 14px;color:var(--jade);border-top:1px solid var(--border);">100% · 65,536 / 65,536</div>
+
+        <div style="padding:10px 14px;color:var(--ink-2);border-top:1px solid var(--border);">b1 + b2 floor</div>
+        <div style="padding:10px 14px;color:var(--jade);border-top:1px solid var(--border);">1-bit exact</div>
+        <div style="padding:10px 14px;color:var(--jade);border-top:1px solid var(--border);">3-bit exact · 2-bit → 1 bad</div>
+
+        <div style="padding:10px 14px;color:var(--ink-2);border-top:1px solid var(--border);">α-free rollback</div>
+        <div style="padding:10px 14px;color:var(--fuchsia);border-top:1px solid var(--border);">0.069% · 65,491 bad</div>
+        <div style="padding:10px 14px;color:var(--fuchsia);border-top:1px solid var(--border);">0.085% · 65,480 bad</div>
+
+        <div style="padding:10px 14px;color:var(--ink-2);border-top:1px solid var(--border);">α-fp16 post-hoc</div>
+        <div style="padding:10px 14px;color:var(--fuchsia);border-top:1px solid var(--border);">561 bad</div>
+        <div style="padding:10px 14px;color:var(--fuchsia);border-top:1px solid var(--border);">314 bad</div>
+      </div>
+      <p style="font-size:0.72rem;color:var(--ink-3);margin-top:10px;line-height:1.5;font-style:italic;">Seed 7 is strictly the easier seed on the bias floor — it tolerates 1-bit biases. The 3-bit budget above is the multi-seed-safe floor; seed 42 is the tighter constraint.</p>
     </div>
   </section>
 
