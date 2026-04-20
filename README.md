@@ -22,7 +22,7 @@ This repository is meant to be a credible front door for technical buyers and en
 - **Next public milestone:** grower-based `v5.0.0 Public Beta`
 - **Current mainline code path on `main`:** [`instnct-core/examples/neuron_grower.rs`](instnct-core/examples/neuron_grower.rs)
 - **Python deploy SDK:** [`Python/`](Python/) — Block A + B, pure numpy, no ML framework dependency
-- **Historical Python research lane:** frozen at branch [`archive/python-research-2026-04-20`](https://github.com/VRAXION/VRAXION/tree/archive/python-research-2026-04-20) (was `instnct/` — archived 2026-04-20 after migration to Rust `instnct-core/`)
+- **Historical Python research lane:** frozen at tag [`archives/python-research-20260420`](https://github.com/VRAXION/VRAXION/tree/archives/python-research-20260420) (was `instnct/` — archived 2026-04-20 after migration to Rust `instnct-core/`)
 
 ## Why This Architecture Is Different
 
