@@ -39,7 +39,6 @@ REQUIRED_PAGES = [HOME, LEGACY, WIKI_STUB] + BLOCK_PAGES
 REQUIRED_ASSETS = [
     ASSETS / "favicon.svg",
     ASSETS / "site.css",
-    ASSETS / "site.js",
 ]
 
 
