@@ -99,6 +99,30 @@ def test_sign_match_spot_check_last_pair():
     assert sign_match.all(), f"sign mismatch on pair (255,255): {np.where(~sign_match)}"
 
 
+def test_sign_match_spot_check_middle_pair():
+    """Pair (byte 127, byte 128) — cross-boundary check in the middle of byte range."""
+    lut = _load_nozero_lut()
+    m = L1Merger.load_default()
+    x = np.concatenate([lut[127], lut[128]])
+    y = m.forward(x)
+    sign_match = np.sign(y) == np.sign(x)
+    assert sign_match.all(), f"sign mismatch on pair (127,128): {np.where(~sign_match)}"
+
+
+def test_forward_is_deterministic():
+    """Merger forward must be a pure function — same input → bit-identical output, every time.
+
+    Guards against accidental RNG / mutation creeping into the deploy hot path.
+    """
+    lut = _load_nozero_lut()
+    m = L1Merger.load_default()
+    for (a, b) in [(0, 0), (65, 66), (127, 128), (200, 200), (255, 255)]:
+        x = np.concatenate([lut[a], lut[b]])
+        y1 = m.forward(x)
+        y2 = m.forward(x)
+        np.testing.assert_array_equal(y1, y2)
+
+
 # ---------------------------------------------------------------------------
 # Minimal standalone runner
 
