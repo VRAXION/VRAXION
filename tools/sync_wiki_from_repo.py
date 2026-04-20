@@ -16,6 +16,7 @@ FILES = [
     "Home.md",
     "INSTNCT-Architecture.md",
     "Timeline-Archive.md",
+    "COMPRESSION_LOOP.md",
     "Theory-of-Thought.md",
     "v5-Rust-Port-Benchmarks.md",
     "_Sidebar.md",
