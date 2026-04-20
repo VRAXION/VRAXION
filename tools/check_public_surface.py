@@ -34,7 +34,11 @@ BLOCK_PAGES = [
     DOCS / "blocks" / "e-brain.html",
 ]
 
-REQUIRED_PAGES = [HOME, LEGACY, WIKI_STUB] + BLOCK_PAGES
+BLOCK_VARIANT_PAGES = [
+    DOCS / "blocks" / "b-merger-native-7bit.html",
+]
+
+REQUIRED_PAGES = [HOME, LEGACY, WIKI_STUB] + BLOCK_PAGES + BLOCK_VARIANT_PAGES
 
 REQUIRED_ASSETS = [
     ASSETS / "favicon.svg",
