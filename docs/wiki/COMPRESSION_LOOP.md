@@ -1,6 +1,6 @@
-# L1 Merger Compression Loop — Draft (2026-04-19, review pass done)
+# L1 Merger Compression Loop — Cluster 18 (2026-04-19)
 
-**Status**: committed to main; integrated into `VALIDATED_FINDINGS.md` + `docs/wiki/Timeline-Archive.md` (Cluster 18) + `CHANGELOG.md`.
+**Status**: finalized; integrated into `VALIDATED_FINDINGS.md` + `docs/wiki/Timeline-Archive.md` (Cluster 18) + `CHANGELOG.md` + `docs/blocks/b-merger-native-7bit.html`. Renamed from `COMPRESSION_LOOP_DRAFT.md` on 2026-04-20 after the Cluster 18 integration pass.
 **Goal**: compress the L1 merger to the smallest footprint while holding lossless roundtrip on all 65,536 byte pairs.
 
 ## TL;DR — what came out of the loop
