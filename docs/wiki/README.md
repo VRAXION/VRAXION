@@ -2,7 +2,7 @@
 
 This directory is a **mirror** of the canonical GitHub wiki. The live source of truth is:
 
-- **Canonical:** https://github.com/VRAXION/VRAXION/wiki (cloned locally at `S:/Git/VRAXION.wiki/`)
+- **Canonical:** https://github.com/VRAXION/VRAXION/wiki (cloned locally as a sibling `VRAXION.wiki/` to this repo)
 
 Keep the two surfaces in sync periodically so that repo-side tooling, website references, and diff reviews can work against a checked-in snapshot without requiring a live clone of the wiki repo.
 
@@ -26,8 +26,8 @@ The repo has `tools/sync_wiki_from_repo.py` which pushes from `docs/wiki/` into 
 
 ```bash
 # 1. Make sure the wiki clone exists sibling to the repo:
-#    S:/Git/VRAXION/     ← main repo
-#    S:/Git/VRAXION.wiki/  ← wiki clone
+#    <parent>/VRAXION/       ← main repo
+#    <parent>/VRAXION.wiki/  ← wiki clone
 #    If missing: git clone https://github.com/VRAXION/VRAXION.wiki.git
 
 # 2. Dry-run: validate sources exist and preview changes
