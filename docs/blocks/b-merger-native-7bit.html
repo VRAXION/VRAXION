@@ -344,6 +344,62 @@
     </div>
   </section>
 
+  <!-- LADDER -->
+  <section class="slide" id="ladder">
+    <div class="slide-inner">
+      <p class="slide-heading">Variant · Why 7-bit</p>
+      <h2 class="slide-title">Codebook expressivity ladder</h2>
+
+      <p style="font-size:0.85rem;color:var(--ink-2);margin-bottom:24px;line-height:1.6;">
+        Before touching the optimizer, the bake probe measures the representation ceiling of each codebook: train the merger in float to 100%, snap the weights to the target codebook at every α in a grid, take the best snap. No polish, no QAT — just "can this codebook hold the solution at all?" Below 4 bit / weight the answer is <strong>no</strong>, and QAT cannot rescue what the codebook does not contain.
+      </p>
+
+      <div style="background:var(--bg-2);border:1px solid var(--border);border-radius:12px;padding:20px 24px;">
+        <div style="display:grid;grid-template-columns:90px 1fr 64px;gap:8px 14px;align-items:center;font-family:var(--font-mono);font-size:0.82rem;">
+          <span style="color:var(--ink-3);">binary (1b)</span>
+          <div style="background:var(--bg-3);border-radius:4px;height:10px;overflow:hidden;"><div style="width:0.25%;height:100%;background:var(--fuchsia);opacity:0.5;"></div></div>
+          <span style="color:var(--fuchsia);text-align:right;">0.25%</span>
+
+          <span style="color:var(--ink-3);">ternary (2b)</span>
+          <div style="background:var(--bg-3);border-radius:4px;height:10px;overflow:hidden;"><div style="width:1.82%;height:100%;background:var(--fuchsia);opacity:0.55;"></div></div>
+          <span style="color:var(--fuchsia);text-align:right;">1.82%</span>
+
+          <span style="color:var(--ink-3);">3-bit int</span>
+          <div style="background:var(--bg-3);border-radius:4px;height:10px;overflow:hidden;"><div style="width:17.47%;height:100%;background:var(--fuchsia);opacity:0.6;"></div></div>
+          <span style="color:var(--fuchsia);text-align:right;">17.47%</span>
+
+          <span style="color:var(--ink-3);">4-bit int</span>
+          <div style="background:var(--bg-3);border-radius:4px;height:10px;overflow:hidden;"><div style="width:29.28%;height:100%;background:var(--fuchsia);opacity:0.65;"></div></div>
+          <span style="color:var(--fuchsia);text-align:right;">29.28%</span>
+
+          <span style="color:var(--ink-3);">5-bit int</span>
+          <div style="background:var(--bg-3);border-radius:4px;height:10px;overflow:hidden;"><div style="width:50.19%;height:100%;background:var(--amber);opacity:0.7;"></div></div>
+          <span style="color:var(--amber);text-align:right;">50.19%</span>
+
+          <span style="color:var(--ink-3);">6-bit int</span>
+          <div style="background:var(--bg-3);border-radius:4px;height:10px;overflow:hidden;"><div style="width:74.08%;height:100%;background:var(--amber);opacity:0.85;"></div></div>
+          <span style="color:var(--amber);text-align:right;">74.08%</span>
+
+          <span style="color:var(--ink);font-weight:600;">7-bit int</span>
+          <div style="background:var(--bg-3);border-radius:4px;height:10px;overflow:hidden;"><div style="width:89.17%;height:100%;background:var(--jade);"></div></div>
+          <span style="color:var(--jade);text-align:right;font-weight:600;">89.17%</span>
+        </div>
+        <p style="font-size:0.72rem;color:var(--ink-3);margin-top:14px;text-align:center;font-style:italic;">Single-W H=81 bake probe, no polish. The last 10.83pp from 7-bit to 100% is what QAT + LBFGS close.</p>
+      </div>
+
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-top:24px;">
+        <div style="background:var(--bg-2);border:1px solid var(--border);border-radius:10px;padding:14px 16px;border-left:3px solid var(--fuchsia);">
+          <p style="font-size:0.7rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--fuchsia);margin-bottom:6px;">Not representable</p>
+          <p style="font-size:0.78rem;color:var(--ink-2);line-height:1.55;">Below <strong>4 bit/weight</strong> the codebook cannot hold the merger solution. Bake ceiling ≤ 29% regardless of seed, architecture, or optimizer. A pure representation-space limit.</p>
+        </div>
+        <div style="background:var(--bg-2);border:1px solid var(--border);border-radius:10px;padding:14px 16px;border-left:3px solid var(--jade);">
+          <p style="font-size:0.7rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--jade);margin-bottom:6px;">First viable width</p>
+          <p style="font-size:0.78rem;color:var(--ink-2);line-height:1.55;"><strong>7-bit</strong> is where the bake clears 89% without polish — enough slack for QAT to close to 100%. Smaller widths leave too much representational debt.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
   <!-- DEPLOY + REPRODUCE -->
   <section class="slide" id="deploy">
     <div class="slide-inner">
