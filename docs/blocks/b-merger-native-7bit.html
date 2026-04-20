@@ -258,6 +258,28 @@
       </div>
 
       <p style="font-size:0.8rem;color:var(--ink-3);margin-top:24px;line-height:1.55;">The champion path (Block B proper) reaches 3,440 B by Huffman-coding an fp16 mirror model; the reader has to walk a canonical Huffman table to reconstruct weights before inference. This variant skips the decode entirely — the bytes on disk <em>are</em> the quantized weights. Smaller and simpler, at the cost of a different architecture (identity vs C19) and a larger hidden width (H=120 vs H=81).</p>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:28px;">
+        <div style="background:var(--bg-2);border:1px solid var(--border);border-radius:12px;padding:18px 20px;border-left:3px solid var(--purple);">
+          <p style="font-size:0.68rem;letter-spacing:0.14em;text-transform:uppercase;color:var(--purple);opacity:0.85;margin-bottom:10px;">Block B champion (Huffman)</p>
+          <ul style="list-style:none;font-size:0.8rem;color:var(--ink-2);line-height:1.7;font-family:var(--font-mono);">
+            <li>3,440 B packed · needs decode</li>
+            <li>H = 81 · cells = 2,592</li>
+            <li>fp16 W · C19 activation</li>
+            <li>canonical Huffman tree on disk</li>
+          </ul>
+        </div>
+        <div style="background:var(--bg-2);border:1px solid var(--border);border-radius:12px;padding:18px 20px;border-left:3px solid var(--amber);">
+          <p style="font-size:0.68rem;letter-spacing:0.14em;text-transform:uppercase;color:var(--amber);opacity:0.85;margin-bottom:10px;">Native 7-bit variant</p>
+          <ul style="list-style:none;font-size:0.8rem;color:var(--ink-2);line-height:1.7;font-family:var(--font-mono);">
+            <li>3,421 B raw · zero decode</li>
+            <li>H = 120 · cells = 3,840</li>
+            <li>int7 W · identity (no act.)</li>
+            <li>bytes on disk <em>are</em> weights</li>
+          </ul>
+        </div>
+      </div>
+      <p style="font-size:0.78rem;color:var(--ink-3);margin-top:14px;line-height:1.55;text-align:center;">Same lossless guarantee · same deploy slot · opposite compression strategy.</p>
     </div>
   </section>
 
