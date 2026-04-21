@@ -1,0 +1,16 @@
+{
+  "magic": "VCBP",
+  "version": 1,
+  "scheme": "shared",
+  "vocab_size": 65536,
+  "E": 32,
+  "n_hot": 3386,
+  "alpha": 0.5,
+  "freq_min": 5,
+  "corpus": "output/data/fineweb_edu_1gb.txt",
+  "corpus_bytes": 10000000,
+  "source_emb": "output/bytepair_ft_pull/seed1/seed_1/emb_E32_epoch10.npy",
+  "packed_bytes": 62528,
+  "compression_vs_float32": 134.16,
+  "sha256_prefix": "32c03f6e8e533b37"
+}

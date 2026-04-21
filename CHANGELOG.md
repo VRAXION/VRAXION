@@ -5,6 +5,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added — 2026-04-21: Block C byte-pair embedder champion + deploy SDK
+
+Canonical ABC-pipeline-ready Block C embedder trained, quantized, and packed. Full bytes-in / embeddings-out path now available as pure numpy.
+
+- **Training** (Modal L4 GPU, ~$9 total): full-softmax next-pair CE on 100 MB FineWeb-EDU, E=32 / H=128 / context=16, 3 seeds (1, 3, 7). Two-phase:
+  - v1: LR=0.1 from scratch — diverged after ep3 (peak acc@1 31%), but revealed strong syntactic clusters.
+  - v2 (champion): warm-start emb from v1 ep3 + LR=0.03 + cosine decay, 10 epochs — **acc@1 34.06 ± 0.82%**, no divergence, clusters tightened and extended.
+- **Intelligent quantization** (`tools/diag_bytepair_mixed_quant.py`): hot-vs-cold split by corpus frequency. 3,386 pairs w/ freq ≥ 5 quantized to per-channel int4 α=0.5; 62,150 cold pairs collapse to one shared OOV vector. Cluster overlap with float reference: 74.4% on hot-restricted top-5.
+- **Baked artifact**: `output/block_c_bytepair_champion/packed.bin` (62,528 B / 61 KB, **134× compression** vs float32 8.39 MB). Format: `VCBP` v1, per-channel scales fp16, shared OOV fp16, 65,536-bit hot bitmap, int4-packed hot rows. Bake script: `tools/bake_block_c_bytepair.py`.
+- **Python deploy SDK**: `Python/block_c_embedder/embedder.py` — `L2Embedder.load_default()`, `embed_id`, `embed_ids`, `encode_bytes`. Zero ML deps.
+- **Chain A+B+C stress test** (10 invariants, all pass): A round-trip lossless, B sign-match lossless, C header + scheme, C determinism, OOV sharing across 100+ cold pairs, hot uniqueness > 99.5%, semantic cluster preservation (`. ` → `! `/`? `/`.\n`, `, ` → `; `/`: `, `' t'` → `'\nt'`/`'(t'`/`'-t'`), 100 KB corpus encode, edge cases (empty/single/odd/binary). Script: `Python/block_c_embedder/tests/test_chain_a_b_c.py`.
+- **Learned clusters** (emergent from data, no hand-crafted labels): word-start equivalence (`' t'` = `'\nt'` = `'(t'` = `'-t'`), case-invariance (`th`↔`Th`, `he`↔`He`, `in`↔`In`, `on`↔`On`, `an`↔`An`), sentence-terminator group, clause-punct group, function-word group (`in`/`by`/`on`).
+- **Infrastructure**: Modal app wrapper `tools/modal_block_c.py` with L4/T4/A10G tier functions, volume commit-hook for mid-run progress polling, `tools/monitor_sweep.py` live-status tool, chunked tokenizer `tools/pretokenize_chunked.py`.
+
 ### Changed — 2026-04-20: public-release cleanup
 
 Four-phase main-branch cleanup to prepare the repo for public release. All phases follow the same pattern: content preserved (archive branch/tag or git history), main narrowed to live surfaces.

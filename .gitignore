@@ -10,6 +10,7 @@ __pycache__/
 *.dll
 *.bin
 !output/merger_single_w_huffman_pack/packed_model.bin
+!output/block_c_bytepair_champion/packed.bin
 _probe_bins/
 
 # Compiled C binaries
@@ -110,6 +111,8 @@ output/*
 !output/word_tokenizer_champion/**
 !output/byte_unit_champion_binary_c19_h16/
 !output/byte_unit_champion_binary_c19_h16/**
+!output/block_c_bytepair_champion/
+!output/block_c_bytepair_champion/**
 
 # Grower / lab scratch that should never leak into the public mainline
 instnct-core/*_log.txt
