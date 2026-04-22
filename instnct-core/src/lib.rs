@@ -19,6 +19,7 @@
 mod checkpoint;
 mod corpus;
 mod eval;
+mod eval_bytepair;
 mod evolution;
 mod fitness;
 mod init;
@@ -28,6 +29,7 @@ mod projection;
 mod propagation;
 mod sdr;
 mod topology;
+mod vcbp_io;
 
 #[cfg(feature = "parquet")]
 mod parquet_fineweb;
@@ -46,6 +48,15 @@ pub use corpus::{build_bigram_table, load_corpus};
 
 #[doc(inline)]
 pub use eval::{eval_accuracy, eval_smooth};
+
+#[doc(inline)]
+pub use eval_bytepair::{
+    build_bytepair_bigram, eval_bytepair_accuracy, eval_bytepair_smooth,
+    eval_bytepair_smooth_bigram,
+};
+
+#[doc(inline)]
+pub use vcbp_io::{VcbpError, VcbpTable};
 
 #[doc(inline)]
 pub use fitness::{cosine_similarity, cosine_to_onehot, softmax};

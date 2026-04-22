@@ -55,6 +55,7 @@ pub struct ConnectionGraph {
     neuron_count: usize,
     sources: Vec<u16>, // hot path cache (2 bytes/edge, compact for scatter-add)
     targets: Vec<u16>, // hot path cache (2 bytes/edge, compact for scatter-add)
+    weights: Vec<u8>,  // per-edge weight [1, MAX_EDGE_WEIGHT], default 1 (binary compat)
 }
 
 impl ConnectionGraph {
@@ -65,6 +66,7 @@ impl ConnectionGraph {
             neuron_count,
             sources: Vec::new(),
             targets: Vec::new(),
+            weights: Vec::new(),
         }
     }
 
@@ -75,6 +77,7 @@ impl ConnectionGraph {
             neuron_count,
             sources: Vec::with_capacity(expected_edges),
             targets: Vec::with_capacity(expected_edges),
+            weights: Vec::with_capacity(expected_edges),
         }
     }
 
@@ -112,18 +115,18 @@ impl ConnectionGraph {
         &self.targets
     }
 
-    /// Paired source/target slices used by the propagation core.
+    /// Paired source/target/weight slices used by the propagation core.
     #[inline]
-    pub(crate) fn edge_endpoints(&self) -> (&[u16], &[u16]) {
-        (&self.sources, &self.targets)
+    pub(crate) fn edge_endpoints(&self) -> (&[u16], &[u16], &[u8]) {
+        (&self.sources, &self.targets, &self.weights)
     }
 
     /// Public edge endpoints for benchmarks. Same as `edge_endpoints`.
     #[cfg(feature = "benchmarks")]
     #[doc(hidden)]
     #[inline]
-    pub fn edge_endpoints_pub(&self) -> (&[u16], &[u16]) {
-        (&self.sources, &self.targets)
+    pub fn edge_endpoints_pub(&self) -> (&[u16], &[u16], &[u8]) {
+        (&self.sources, &self.targets, &self.weights)
     }
 
     /// Iterate over directed edges without allocating.
@@ -158,7 +161,8 @@ impl ConnectionGraph {
     pub fn memory_bytes(&self) -> usize {
         let hash_set = self.edge_set.capacity() * 16; // HashSet: coarse reserved-bytes heuristic
         let endpoint_cache =
-            (self.sources.capacity() + self.targets.capacity()) * size_of::<u16>();
+            (self.sources.capacity() + self.targets.capacity()) * size_of::<u16>()
+            + self.weights.capacity();
         hash_set + endpoint_cache
     }
 
@@ -176,6 +180,7 @@ impl ConnectionGraph {
         if self.edge_set.insert((source, target)) {
             self.sources.push(source);
             self.targets.push(target);
+            self.weights.push(1); // default weight = 1 (binary compat)
             self.debug_assert_invariants();
             true
         } else {
@@ -199,12 +204,27 @@ impl ConnectionGraph {
             if let Some(pos) = pos {
                 self.sources.swap_remove(pos);
                 self.targets.swap_remove(pos);
+                self.weights.swap_remove(pos);
             }
             self.debug_assert_invariants();
             true
         } else {
             false
         }
+    }
+
+    /// Edge weight at given index.
+    #[inline]
+    pub fn weight_at(&self, index: usize) -> u8 {
+        self.weights[index]
+    }
+
+    /// Mutate weight at given index. Returns old weight.
+    #[inline]
+    pub fn set_weight_at(&mut self, index: usize, weight: u8) -> u8 {
+        let old = self.weights[index];
+        self.weights[index] = weight;
+        old
     }
 
     /// Remove an edge by its index in the edge list. O(1) via swap-remove.
@@ -218,6 +238,7 @@ impl ConnectionGraph {
         };
         self.sources.swap_remove(index);
         self.targets.swap_remove(index);
+        self.weights.swap_remove(index);
         self.edge_set.remove(&(edge.source, edge.target));
         self.debug_assert_invariants();
         Some(edge)
@@ -277,11 +298,13 @@ impl ConnectionGraph {
         for (&s, &t) in sources.iter().zip(&targets) {
             edge_set.insert((s, t));
         }
+        let weights = vec![1u8; sources.len()];
         Self {
             edge_set,
             neuron_count,
             sources,
             targets,
+            weights,
         }
     }
 

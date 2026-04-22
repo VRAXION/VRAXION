@@ -316,9 +316,9 @@ where
         57..63 => net.mutate_mirror_undo(mutation_rng),
         63..70 => net.mutate_enhance_undo(mutation_rng),
         70..75 => net.mutate_theta_undo(mutation_rng),
-        75..85 => net.mutate_channel_undo(mutation_rng),
-        85..90 => net.mutate_add_loop_undo(mutation_rng, 2),
-        90..95 => net.mutate_add_loop_undo(mutation_rng, 3),
+        75..85 => net.mutate_channel_undo(mutation_rng),     // 10% (ORIGINAL)
+        85..90 => net.mutate_add_loop_undo(mutation_rng, 2), // 5%
+        90..95 => net.mutate_add_loop_undo(mutation_rng, 3), // 5%
         _ => {
             weight_backup = Some(projection.mutate_one(mutation_rng));
             (true, MutationUndo::Noop)

@@ -272,7 +272,7 @@ fn validate_propagation_inputs(
     workspace: &PropagationWorkspace,
 ) -> Result<(), PropagationError> {
     let n = graph.neuron_count();
-    let (edge_src, edge_tgt) = graph.edge_endpoints();
+    let (edge_src, edge_tgt, _edge_wt) = graph.edge_endpoints();
 
     // Slice length checks
     if state.activation.len() != n {
@@ -397,7 +397,7 @@ pub(crate) fn propagate_token_unchecked(
     workspace: &mut PropagationWorkspace,
 ) {
     let neuron_count = graph.neuron_count();
-    let (edge_sources, edge_targets) = graph.edge_endpoints();
+    let (edge_sources, edge_targets, edge_weights) = graph.edge_endpoints();
 
     debug_assert_eq!(state.activation.len(), neuron_count);
     debug_assert_eq!(state.charge.len(), neuron_count);
@@ -424,21 +424,22 @@ pub(crate) fn propagate_token_unchecked(
             }
         }
 
-        // Scatter-add: accumulate incoming signals per neuron
+        // Scatter-add: accumulate incoming signals per neuron (weighted)
         let incoming = &mut workspace.incoming_scratch[..neuron_count];
         incoming.fill(0i16);
-        for (source_chunk, target_chunk) in edge_sources
+        for ((source_chunk, target_chunk), weight_chunk) in edge_sources
             .chunks_exact(4)
             .zip(edge_targets.chunks_exact(4))
+            .zip(edge_weights.chunks_exact(4))
         {
-            incoming[target_chunk[0] as usize] += state.activation[source_chunk[0] as usize] as i16; // unrolled — LLVM drops bounds checks
-            incoming[target_chunk[1] as usize] += state.activation[source_chunk[1] as usize] as i16; // because chunks_exact guarantees len==4
-            incoming[target_chunk[2] as usize] += state.activation[source_chunk[2] as usize] as i16;
-            incoming[target_chunk[3] as usize] += state.activation[source_chunk[3] as usize] as i16;
+            incoming[target_chunk[0] as usize] += state.activation[source_chunk[0] as usize] as i16 * weight_chunk[0] as i16;
+            incoming[target_chunk[1] as usize] += state.activation[source_chunk[1] as usize] as i16 * weight_chunk[1] as i16;
+            incoming[target_chunk[2] as usize] += state.activation[source_chunk[2] as usize] as i16 * weight_chunk[2] as i16;
+            incoming[target_chunk[3] as usize] += state.activation[source_chunk[3] as usize] as i16 * weight_chunk[3] as i16;
         }
         let rem_start = edge_sources.len() / 4 * 4; // remainder (0-3 edges)
         for i in rem_start..edge_sources.len() {
-            incoming[edge_targets[i] as usize] += state.activation[edge_sources[i] as usize] as i16;
+            incoming[edge_targets[i] as usize] += state.activation[edge_sources[i] as usize] as i16 * edge_weights[i] as i16;
         }
 
         // Charge accumulation: clamp to [0, MAX_CHARGE]

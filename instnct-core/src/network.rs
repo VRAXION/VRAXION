@@ -221,6 +221,13 @@ pub enum MutationUndo {
         /// Neuron index whose polarity was flipped.
         index: usize,
     },
+    /// An edge weight was changed.
+    EdgeWeight {
+        /// Edge index in the edge list.
+        edge_index: usize,
+        /// Weight value before the mutation.
+        old_weight: u8,
+    },
     /// No mutation was applied (mutation returned false).
     Noop,
 }
@@ -768,6 +775,10 @@ impl Network {
             MutationUndo::Polarity { index } => {
                 self.polarity[*index] = -self.polarity[*index];
             }
+            MutationUndo::EdgeWeight { edge_index, old_weight } => {
+                self.graph.set_weight_at(*edge_index, *old_weight);
+                self.csr_dirty = true;
+            }
             MutationUndo::Noop => {}
         }
     }
@@ -995,6 +1006,23 @@ impl Network {
         (true, MutationUndo::Channel { index, old_value })
     }
 
+    /// Mutate edge weight, returning an undo token.
+    /// Weight range: [1, max_weight]. Default max_weight = 3 (2-bit).
+    pub fn mutate_edge_weight_undo(&mut self, rng: &mut impl Rng, max_weight: u8) -> (bool, MutationUndo) {
+        let edge_count = self.graph.edge_count();
+        if edge_count == 0 {
+            return (false, MutationUndo::Noop);
+        }
+        let edge_index = rng.gen_range(0..edge_count);
+        let new_weight = rng.gen_range(1..=max_weight);
+        let old_weight = self.graph.set_weight_at(edge_index, new_weight);
+        if old_weight == new_weight {
+            return (false, MutationUndo::Noop);
+        }
+        self.csr_dirty = true;
+        (true, MutationUndo::EdgeWeight { edge_index, old_weight })
+    }
+
     /// Flip polarity, returning an undo token.
     pub fn mutate_polarity_undo(&mut self, rng: &mut impl Rng) -> (bool, MutationUndo) {
         let neuron_count = self.graph.neuron_count();
@@ -1013,7 +1041,7 @@ impl Network {
     /// Ephemeral state (activation, charge, refractory) is **not** included.
     /// Use [`genome_from_bytes`](Self::genome_from_bytes) to reconstruct.
     pub fn genome_to_bytes(&self) -> Vec<u8> {
-        let (sources, targets) = self.graph.edge_endpoints();
+        let (sources, targets, weights) = self.graph.edge_endpoints();
         let dto = disk::NetworkDiskV1 {
             version: disk::CURRENT_VERSION,
             graph: disk::ConnectionGraphDiskV1 {

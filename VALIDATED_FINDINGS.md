@@ -1,6 +1,6 @@
 # VRAXION Validated Findings
 
-_Last updated: 2026-04-19_
+_Last updated: 2026-04-21_
 
 Canonical evidence summary. Repo-tracked docs are canonical; the GitHub wiki is a mirrored secondary surface.
 
