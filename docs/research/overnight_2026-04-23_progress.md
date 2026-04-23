@@ -103,3 +103,67 @@ If seeds 456 and 789 produce very different best-cell/worst-cell results from th
 Kick off 2 additional sweeps in background (`--seed 456` and `--seed 789`, same 80/80 epoch budget), writing to `docs/research/data/latent_sweep_seed{456,789}/`. Wall time estimate: 4-8 min sequential. Scheduled wakeup ~8 min out to analyze the 3-seed comparison.
 
 ---
+
+## Iteration 3 — 3-seed adversarial verdict on the byte-unit sweep
+
+**Timestamp**: 2026-04-24 ~01:58 CEDT
+**Type**: Adversarial probe (of iteration 1's architecture claim)
+
+### What was run
+
+Both background sweeps completed (exit 0). Loaded 3 summary.json files (seeds 123, 456, 789) covering the same 60 configurations. For each cell computed mean + stdev of `final_lossless` across 3 seeds, plus Kendall rank stability across each seed-pair.
+
+### What was observed (concrete numbers)
+
+**Cross-seed stdev distribution (n=60 cells):**
+- min 0.81pp, median **10.63pp**, mean **11.00pp**, max 29.75pp
+- stdev ≤ 5pp: 8/60 (architecture-signal tier)
+- stdev 5-15pp: 39/60 (mixed)
+- stdev > 15pp: 13/60 (seed-noise dominates)
+
+**Top-5 by 3-seed mean:**
+| Config | mean | seeds | stdev |
+|---|---|---|---|
+| H=16 LD=24 c19 | **80.86** | [78.91, 71.88, 91.80] | 10.10 |
+| H=16 LD=12 c19 | 73.31 | [76.95, 66.41, 76.56] | 5.98 |
+| H=12 LD=24 c19 | 68.88 | [60.55, 73.05, 73.05] | 7.22 |
+| H=16 LD=24 tanh | 66.67 | [71.09, 65.23, 63.67] | 3.91 |
+| H=12 LD=24 tanh | 62.37 | [65.62, 44.92, 76.56] | 16.07 |
+
+**Bottom-5 by 3-seed mean:**
+| Config | mean | stdev |
+|---|---|---|
+| H=8 LD=8 identity | 15.89 | 7.90 |
+| H=8 LD=8 tanh | 16.80 | 12.15 |
+| H=8 LD=8 relu | 17.32 | 2.39 |
+| H=8 LD=8 c19 | 18.23 | 11.79 |
+| H=12 LD=10 identity | 18.75 | 11.30 |
+
+**Iteration-1 specific claims, tested:**
+- **BEST** H=16/LD=24/c19: **HELD** as rank #1 (mean 80.86, stdev 10.10) — even worst seed of this cell (71.88) beats most other configs' means.
+- **WORST** H=8/LD=10/identity: **BROKE**. 3-seed values [9.38, 26.95, 22.66], mean 19.66, ranks **#7 from bottom**. The original 9.38 was seed noise — the true worst family is H=8/LD=8 across all 4 activations.
+
+**Kendall rank tau across seed pairs:** 0.251 / 0.319 / 0.471. Mildly positive correlation — individual cell rankings are NOT stable across seeds even though axis-level trends are.
+
+**Axis-level effects (3-seed means):**
+- Activation: identity 30.40, tanh 33.03, relu 33.44, **c19 48.52** (+15-18pp)
+- Hidden: H=8 → 26.56, H=12 → 36.76, H=16 → 45.72 (monotonic, +10pp/step)
+- Latent-dim: LD=8 → 26.02, LD=10 → 29.59, LD=12 → 36.08, LD=16 → 40.65, **LD=24 → 49.40** (monotonic across 5 values — iteration 1's "LD=16 anomaly" dissolved under averaging)
+
+### Implication for SCT
+
+- **L ∝ 1/D (naive form): REFUTED.** Both H and LD monotonically HELP across all tested values. For raw parameter count D = 8·H·LD, the H=8/LD=8 config (D=512) gets mean 26.56 while H=16/LD=24 (D=3072, 6× larger D) gets mean 66.90 — opposite of SCT's prediction. The formula's denominator interpretation doesn't survive this data.
+- **Architectural constraint matters (Ψ-ish): SUPPORTED at axis level.** c19 dominates across all (H, LD). But NOT via a lower floor — c19's min (18.23) ≈ others' mins. c19 wins through **higher ceilings**, not tighter distributions. That's a different narrative than "c19 is structurally safer".
+- **Individual cell claims should carry ±15pp uncertainty** until proven stable with ≥5 seeds.
+
+### Adversarial question
+
+Is c19's advantage actually "access to higher maxima" (reaching lucky basins the other activations can't) or "better mean performance" (structurally better)? The range data (identity 36pp range, c19 63pp range) suggests c19 has HIGHER variance, not lower — which would mean c19's mean lead could partially be selection bias from its wider ceiling. **A formula that treats Ψ as monotonic "always helps" is too simple — c19 is better in expectation but risks bigger variance.**
+
+### Next iteration — pivot to different data source
+
+Enough drilling on the byte-unit sweep. Iteration 4 switches threads: load the 3 `target/grower-regression/20260412T*/metrics.json` files. These measure a DIFFERENT system (the grower on symbolic tasks: parity, XOR, digit-recognition), which is the lane SCT was originally written for. Key question: are there per-seed or per-step timeseries there that give a candidate LHS observable (accept_rate, positive_delta, stall)? If yes, compute stdev across seeds — does it collapse to one curve or scatter?
+
+If the grower bundles aren't actually multi-seed (all 3 from same seed at different times), pivot to iteration 5 (alternative LHS probe: operationalize "expandability" as accept-rate from existing logs).
+
+---
