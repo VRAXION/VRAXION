@@ -1,10 +1,13 @@
 # Structured Chaos Theory
 
-> A theoretical framework establishing three necessary and sufficient conditions for learning in gradient-free, mutation-driven neural architectures.
+> **Status: Experimental hypothesis under active validation.**
+> This document presents a conjectured theoretical framework, not a proven result. The three laws and the learning equation are derived from preliminary observations on a single architecture (INSTNCT), a single task (byte-pair prediction), and a limited seed/corpus range. Multi-seed validation, multi-task generalization, cross-architecture replication, and formal ablation of all law combinations remain open work. Treat the claims below as directional hypotheses guiding ongoing research, not as established findings. See §6 (Open Questions) for a full accounting of what remains unproven.
+
+> A theoretical framework conjecturing three necessary and sufficient conditions for learning in gradient-free, mutation-driven neural architectures.
 
 ## Abstract
 
-We present **Structured Chaos Theory**, a framework characterizing the minimal conditions under which gradient-free neural networks acquire non-trivial predictive behavior through mutation and selection alone. We derive a proportionality relation governing learning rate as a function of architectural constraint efficiency, mutation sensitivity, and search space dimensionality. We then identify three laws — smoothness of the fitness signal, structural prevention of attractor collapse, and competitive coevolution — and demonstrate empirically that each is individually necessary and jointly sufficient. The framework is validated on a 397-class byte-pair prediction task using the INSTNCT self-wiring spiking architecture, with systematic comparison across ten fitness formulations, ablation of structural constraints, and adversarial diversity analysis.
+We present **Structured Chaos Theory**, a framework characterizing the minimal conditions under which gradient-free neural networks acquire non-trivial predictive behavior through mutation and selection alone. We propose a proportionality relation governing learning rate as a function of architectural constraint efficiency, mutation sensitivity, and search space dimensionality. We then conjecture three laws — smoothness of the fitness signal, structural prevention of attractor collapse, and competitive coevolution — and present preliminary empirical evidence that each is individually necessary and jointly sufficient. Initial validation is conducted on a 397-class byte-pair prediction task using the INSTNCT self-wiring spiking architecture, with comparison across ten fitness formulations, ablation of structural constraints, and adversarial diversity analysis. These results are suggestive but not yet statistically rigorous; independent replication is required before any claim of generality.
 
 ---
 
@@ -139,13 +142,15 @@ Structured Chaos Theory synthesizes ideas from several established research prog
 
 **Evolution as learning.** Valiant (2009) formalized evolvability as a restricted form of PAC learning; Watson & Szathmary (2016) drew formal equivalences between evolutionary dynamics and connectionist learning. Our learning equation (L = Ψ · σ_μ / D) offers a complementary characterization specific to neuroevolutionary systems, directly linking architectural choices to expected learning rate.
 
-### Novel Contributions
+### Conjectured Novel Contributions
 
-1. **The learning equation** L = Ψ · σ_μ / D, relating architectural constraint efficiency, mutation sensitivity, and search dimensionality in a single proportionality
-2. **The smoothness inversion**: the demonstration that cross-entropy and logarithmic fitness functions, optimal for gradient-based training, are actively deleterious in gradient-free search
-3. **Activity-regularized fitness**: the alive fraction bonus (λ-weighted) as a neuroevolutionary fitness term preventing dead-neuron collapse
+The following appear novel based on a literature survey conducted April 2026. Independent verification is pending.
+
+1. **The learning equation** L = Ψ · σ_μ / D, proposing a proportionality between architectural constraint efficiency, mutation sensitivity, and search dimensionality
+2. **The smoothness inversion**: preliminary evidence that cross-entropy and logarithmic fitness functions, optimal for gradient-based training, are deleterious in gradient-free search
+3. **Activity-regularized fitness**: the alive fraction bonus (λ-weighted) as a neuroevolutionary fitness term to counteract dead-neuron collapse
 4. **Mutual inhibition as evolutionary constraint**: adaptation of a neuroscientific mechanism (lateral inhibition) as a structural prior in neuroevolutionary training
-5. **The necessity triple**: formal identification of fitness smoothness, anti-monopoly constraint, and competitive coevolution as individually necessary and jointly sufficient conditions
+5. **The necessity triple**: the conjecture that fitness smoothness, anti-monopoly constraint, and competitive coevolution are individually necessary and jointly sufficient conditions for gradient-free learning
 
 ---
 
@@ -177,4 +182,23 @@ All results reported in this document were obtained on the INSTNCT architecture 
 
 ---
 
-*Structured Chaos Theory v1.0 — K. Vraxion & Claude, April 2026*
+## 6. Open Questions and Validation Gaps
+
+The following limitations must be addressed before any claim of generality:
+
+| # | Gap | Required validation | Status |
+|---|-----|-------------------|--------|
+| 1 | **Single-seed champion** | The 7.50% peak was obtained with seed=42. Multi-seed validation (n ≥ 10) with mean ± std is required to rule out seed-specific artifacts. | Open |
+| 2 | **Single task** | All results are from byte-pair prediction. Generalization to at least two additional tasks (e.g., classification, sequence-to-sequence) is needed. | Open |
+| 3 | **Single architecture** | Only INSTNCT has been tested. Replication on at least one independent gradient-free system (e.g., CGP, standard neuroevolution, genetic programming) is required. | Open |
+| 4 | **Ψ is not operationalized** | The architectural constraint efficiency Ψ currently has no independent measurement procedure. Without one, the learning equation is qualitative, not quantitative. Candidate operationalization: Ψ = viable_mutations / total_mutations, measured empirically. | Open |
+| 5 | **Law III not used in champion** | The 7.50% peak was achieved with Laws I + II only (no competitive coevolution). Law III's necessity claim requires a demonstration where Laws I + II plateau and breed breaks through. | Open |
+| 6 | **Below frequency baseline** | 7.50% accuracy does not exceed the bigram frequency baseline (~8–10%). Until the system surpasses the baseline, the theory describes conditions for *approaching* a solution, not for *achieving* one. | Open |
+| 7 | **λ sweep insufficient** | Only three values tested (0, 0.1, 0.3). A proper sweep (n ≥ 10 values, multiple seeds each) is needed to characterize the optimum and its sensitivity. | Open |
+| 8 | **No factorial ablation** | The 2³ = 8 combinations of ±smooth fitness, ±anti-monopoly, ±breed have not been exhaustively tested. Full factorial design with multiple seeds per cell is required to establish necessity of each law. | Open |
+| 9 | **Fitness comparison not controlled** | The ten fitness variants were tested sequentially under varying conditions, not in a controlled multi-seed factorial experiment. | Open |
+| 10 | **Smoothness inversion may be trivial** | The claim that CE/log hurts gradient-free search could be seen as a tautology (CE was designed for gradient-based optimization). A stronger test would show that smooth fitness helps even when the gradient-free system has access to population-level statistics. | Open |
+
+---
+
+*Structured Chaos Theory v1.0 (experimental) — K. Vraxion & Claude, April 2026*
