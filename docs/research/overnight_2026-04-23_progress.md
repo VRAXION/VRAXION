@@ -71,3 +71,35 @@ Since I cannot launch GPU training loops without the original script + approval 
 4. If no → pivot to iteration type 1 (more mining) on a DIFFERENT data source — specifically the 3 grower-regression bundles, whose `metrics.json` may have per-seed per-step data I haven't looked at yet
 
 ---
+
+## Iteration 2 — script located, multi-seed feasibility confirmed
+
+**Timestamp**: 2026-04-24 01:49 CEDT
+**Type**: Tooling scout (precondition for adversarial probe)
+
+### What was run
+
+- Located source: `tools/diag_byte_unit_latent_dim_sweep.py` (358 lines)
+- Read argparse + seeding logic (lines 258-298, 193-195)
+- Checked torch+CUDA availability: `torch 2.5.1+cu121, cuda_available=True, device_count=1`
+
+### What was observed (concrete)
+
+- Script accepts `--seed N` (singular). No `--seeds` multi-seed flag.
+- Seeding is deterministic and config-offset: `torch.manual_seed(args.seed + hidden*17 + latent_dim*31 + seed_offset)` where `seed_offset = sum(ord(ch) for ch in (activation + "|" + codebook_name))`.
+- Consequence: re-running with the same `--seed` value produces bit-identical results. **Multi-seed replication = run N times with N different `--seed` values** and aggregate across output dirs.
+- Original `output/byte_unit_latent_dim_sweep_gpu_probe/summary.json` used `float_epochs=80, qat_epochs=80` (below the 150/150 default), implying a "quick probe" run. Same recipe for replication.
+- Per-config wall time from iteration 1 data: 0.96-4.67s on CUDA. 60 configs ≈ 2-4 min per full sweep.
+- Python interpreter on this machine: **`python` (Windows), not `python3`**. `python3` lacks torch.
+
+### Implication for SCT — NEUTRAL (tooling step, no new empirical signal yet)
+
+### Adversarial question
+
+If seeds 456 and 789 produce very different best-cell/worst-cell results from the seed=123 baseline, the "architecture scales learning" narrative collapses. Even if means roughly agree, individual cell rankings may reshuffle dramatically — that would still matter for claims like "H=16/LD=24/c19 is the architecture".
+
+### Iteration 3 plan — launching now
+
+Kick off 2 additional sweeps in background (`--seed 456` and `--seed 789`, same 80/80 epoch budget), writing to `docs/research/data/latent_sweep_seed{456,789}/`. Wall time estimate: 4-8 min sequential. Scheduled wakeup ~8 min out to analyze the 3-seed comparison.
+
+---
