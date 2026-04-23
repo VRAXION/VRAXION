@@ -92,6 +92,7 @@ Era-level summary of the research arc. Per-day detail lives in the timeline belo
 | **Track transition: character-level → byte-level pipeline** | 2026-04-18 | The character-level abstract-core track (Beukers Conv, 83.6%) is archived as a validated prior exploration. The byte-level pipeline (L0 Byte Unit + L1 Byte-Pair Merger) becomes the active project line. L0 already locked; L1 championship in progress. | [Timeline Archive](Timeline-Archive) |
 | Single-W mirror fp16 champion **(byte-level L1, current track)** | 2026-04-19 | Cluster 10's "73% ceiling" disproved: single-W mirror-tied architecture (one matrix, 2592 cells) reaches 100.0000% lossless via 5-seed restarts + LBFGS + exhaustive 1-cell rescue. Float champion (11.20 KB) compressed to **pure fp16 with a single 1-ulp grid search** — zero retraining required. Deploy champion: **5.60 KB, −22% vs Cluster 11, −50% vs fp32**. | [Timeline Archive](Timeline-Archive) |
 | Huffman-packed champion **(byte-level L1, current track)** | 2026-04-19 eve | Generator-based encoding (K=16/4 K-means atoms per component) + canonical Huffman on coef and gen-index streams separately. Beats fixed-width by ~14%. Standard compressors all WORSE at this data size. **New champion: 3440 B (3.36 KB), 100% lossless, 65536/65536 pairs.** Shannon floor: 2422 B (~42% gap remains). | [Timeline Archive](Timeline-Archive) |
+| ABC-Brain integration + ablation + Structured Chaos Theory | 2026-04-21/22 | Block C byte-pair champion (62 KB) deployed, ABC-Brain first wired (~25%), byte-pair 397-class 7.1% peak, 10-variant fitness sweep (smooth linear cosine champion), edge weights [1-3] FAIL, multi-channel FAIL, crystallize ported to Rust, **ablation reveals single-attractor collapse** (7 dominant neurons). Structured Chaos Theory v1.0 formulated (three laws). | [Timeline Archive](Timeline-Archive) |
 
 ```mermaid
 timeline
@@ -172,6 +173,16 @@ timeline
                          : Standard compressors LOSE vs custom encoding
                          : Shannon floor 2422 B current 3440 B 42% above
                          : NEW CHAMPION 3440 B 3.36 KB 100% lossless
+    section ABC-Brain integration + ablation
+        2026-04-21/22    : Block C byte-pair champion 62KB deployed
+                         : ABC-Brain first wired 25% multi-seed
+                         : Byte-pair 397-class 7.1% peak
+                         : 10-variant fitness sweep smooth cosine champion
+                         : Edge weights 1-3 FAIL vs binary
+                         : Multi-channel dual input FAIL
+                         : Crystallize ported Python to Rust
+                         : Single-attractor collapse 7 dominant neurons
+                         : Structured Chaos Theory v1.0 three laws
 ```
 
 ## Active Research Gates
@@ -223,6 +234,7 @@ The timeline is ordered latest-first. Each day is a self-contained H3 section wi
 <details>
 <summary>Jump to date</summary>
 
+- [2026-04-21/22 — Block C byte-pair champion deployed, ABC-Brain integration, fitness sweep, crystallize, ablation](#2026-04-2122--block-c-byte-pair-champion-deployed-abc-brain-integration-fitness-sweep-crystallize-ablation)
 - [2026-04-19 evening — L1 merger Huffman-packed champion: 3.36 KB / 100% lossless](#2026-04-19-evening--l1-merger-huffman-packed-champion-336-kb--100-lossless)
 - [2026-04-19 — L1 merger fp16 champion: single-W mirror-tied, 5.60 KB, 100% lossless](#2026-04-19--l1-merger-fp16-champion-single-w-mirror-tied-560-kb-100-lossless)
 - [2026-04-17/18 — Quantization championship + branch consolidation](#2026-04-1718--quantization-championship--branch-consolidation)
@@ -257,6 +269,39 @@ The timeline is ordered latest-first. Each day is a self-contained H3 section wi
 - [Early 2026 — Diamond Code Era](#early-2026--diamond-code-era)
 
 </details>
+
+---
+
+### 2026-04-21/22 — Block C byte-pair champion deployed, ABC-Brain integration, fitness sweep, crystallize, ablation
+
+**Theme:** First end-to-end wiring of the frozen ABC pipeline into the INSTNCT brain. Intensive experimentation session covering fitness function optimization, structural experiments (edge weights, multi-channel), crystallize port from Python to Rust, and a systematic ablation study that revealed a fundamental topology pathology. Structured Chaos Theory v1.0 formulated from the accumulated experimental evidence.
+
+**What changed:**
+
+- Block C byte-pair champion deployed (62 KB packed) — the frozen A+B+C feature pipeline is now the active input surface for the brain
+- ABC-to-Brain integration first wired: C-embedding matches SdrTable at ~25% (multi-seed validated), confirming embedding quality is not the current bottleneck
+- Byte-pair prediction on 397 classes: 7.1% peak with smooth cosine (frequency baseline 4.2%) — real signal but brain topology limits further progress
+- 10-variant fitness function sweep: smooth linear cosine champion, dominates stepwise/argmax/pure-accuracy variants
+- Edge weight experiment [1-3]: worse than binary — signal-to-noise degrades, reconfirms topology > edge precision
+- Multi-channel / dual input experiments: all worse than single — dimension curse under mutation-selection
+- Crystallize ported from Python to Rust: grow-prune-regrow cycles validated, converges to compact circuits
+- Ablation study: single-attractor topology collapse confirmed — 7 dominant neurons form a bottleneck, brain converges to one attractor basin instead of developing competing pathways
+
+**Why it mattered:**
+
+- The ablation result is the most important finding: it names the core pathology (single-attractor collapse) and explains why accuracy plateaus. The brain is not failing to learn — it is learning one dominant pathway and starving all competitors.
+- Structured Chaos Theory v1.0 emerges from this session: three laws (Single Constraint, Anti-Monopoly, Opponent) formalize the conditions under which mutation-selection can avoid single-attractor collapse. See [Theory of Thought](Theory-of-Thought).
+
+| Finding | Status | Evidence |
+|---|---|---|
+| ABC-Brain char-level integration ~25% | **Validated finding** | Multi-seed runs, C-embedding vs SdrTable comparison |
+| Byte-pair 397-class 7.1% peak (freq baseline 4.2%) | **Validated finding** | Smooth cosine fitness, convergence curves |
+| Smooth linear cosine fitness champion (10 variants) | **Validated finding** | Sweep across stepwise, argmax, accuracy, cosine, linear cosine variants |
+| Edge weights [1-3] worse than binary | **Validated finding (negative)** | A/B comparison, SNR analysis |
+| Multi-channel input worse than single | **Validated finding (negative)** | Dual-input and multi-channel injection tests |
+| Crystallize grow-prune cycles (Rust port) | **Validated finding** | Python-to-Rust port, convergence to compact circuits |
+| Single-attractor collapse: 7 dominant neurons | **Validated finding** | Systematic ablation, attractor basin analysis |
+| Structured Chaos Theory v1.0 (three laws) | **Theoretical formulation** | Derived from accumulated experimental evidence across sessions |
 
 ---
 

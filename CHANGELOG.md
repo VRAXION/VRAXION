@@ -5,6 +5,22 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added — 2026-04-21/22: ABC-Brain integration, fitness sweep, crystallize, ablation
+
+First end-to-end wiring of the frozen ABC feature pipeline into the INSTNCT brain. Intensive experimentation covering fitness function optimization, structural experiments, crystallize port, and ablation study revealing single-attractor topology collapse.
+
+- **ABC-to-Brain char-level integration**: C-embedding matches SdrTable at ~25% (multi-seed validated). First end-to-end wiring confirms embedding quality is not the bottleneck — brain topology is.
+- **Byte-pair prediction (397 class)**: 7.1% peak with smooth cosine fitness (frequency baseline 4.2%). Real signal on a much harder task, but brain topology limits further progress.
+- **Fitness function sweep (10 variants)**: smooth linear cosine champion. Dominates stepwise, argmax, pure-accuracy, and other cosine variants. The fitness signal shape remains the single biggest lever for mutation-selection.
+- **Crystallize ported from Python to Rust**: grow-prune-regrow cycles validated. Converges to compact circuits that retain functional accuracy.
+- **Ablation study**: systematic ablation reveals single-attractor topology collapse — 7 dominant neurons form a bottleneck. The brain converges to one attractor basin instead of developing competing pathways. This is the core pathology limiting current accuracy.
+- **Structured Chaos Theory v1.0**: three laws (Single Constraint, Anti-Monopoly, Opponent) formulated from accumulated experimental evidence. Learning formula: `S x sensitivity / dimensions`. Added to `docs/wiki/Theory-of-Thought.md`.
+
+### Added (negative results) — 2026-04-21/22
+
+- **Edge weights [1-3]: worse than binary** — weighted edges degrade performance vs binary {0,1} masks. Signal-to-noise ratio degrades when edge precision increases. Reconfirms topology > edge precision.
+- **Multi-channel input: worse than single** — dual-input and multi-channel injection schemes all worse. Dimension curse: extra channels increase search space faster than they add useful signal.
+
 ### Added — 2026-04-21: Block C byte-pair embedder champion + deploy SDK
 
 Canonical ABC-pipeline-ready Block C embedder trained, quantized, and packed. Full bytes-in / embeddings-out path now available as pure numpy.

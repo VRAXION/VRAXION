@@ -69,5 +69,6 @@ In practice, that means the project is run across four distinct surfaces:
 
 - [INSTNCT Architecture](INSTNCT-Architecture) — the current implementation line, including what is shipped, validated, and still experimental
 - [Theory of Thought](Theory-of-Thought) — the theoretical framing behind destructive interference and fixed-point inference
+- [Structured Chaos Theory](Structured-Chaos-Theory) — three laws and the learning formula for gradient-free mutation-based systems
 - [Research Process & Archive](Timeline-Archive) — the run contract, chronology, reversals, and retained proof trail
 - [Rust Implementation Surface](v5-Rust-Port-Benchmarks) — the Rust implementation lane, including validation checkpoints, design notes, and archived experiments

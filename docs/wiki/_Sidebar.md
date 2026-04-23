@@ -9,6 +9,7 @@
 ## Theoretical Framework
 
 - [Theory of Thought](Theory-of-Thought)
+- [Structured Chaos Theory](Structured-Chaos-Theory)
 
 ## Implementation
 

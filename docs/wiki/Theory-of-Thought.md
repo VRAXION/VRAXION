@@ -116,6 +116,54 @@ What the current public line productively borrows from the resonator framing is 
 
 The resonator framing is therefore an explanatory lens under the main thesis, not a rival doctrine and not a separate evidence surface. If the metaphor and the promoted evidence diverge, implementation and chronology win.
 
+## Structured Chaos Theory v1.0
+
+Formulated 2026-04-21 from the accumulated experimental evidence across the INSTNCT research arc. Three laws that describe the conditions under which mutation-selection can avoid degenerate convergence and produce functional topology.
+
+### The Three Laws
+
+**Law 1 — Single Constraint.** A learning system should face exactly one binding constraint at a time. When multiple constraints compete simultaneously, the mutation-selection loop cannot attribute fitness changes to specific structural changes, and search degrades to random walk. The experimental evidence: fitness function sweeps consistently show that simpler, smoother objectives outperform compound metrics. The smooth linear cosine champion (10-variant sweep, 2026-04-21) dominates precisely because it presents one clean gradient signal instead of a committee of conflicting objectives.
+
+**Law 2 — Anti-Monopoly.** No single neuron, pathway, or attractor basin should be allowed to dominate the network's computational capacity. When monopoly occurs, the system converges to a single-attractor topology and loses the ability to represent competing hypotheses. The experimental evidence: the ablation study (2026-04-21) revealed that 7 dominant neurons form a bottleneck, collapsing the brain into one attractor basin. This is not a failure to learn — it is a failure of diversity. The network learns one dominant pathway and starves all competitors. Edge weight experiments (weighted [1-3] worse than binary) confirm the same principle: richer edge representations create monopoly-prone signal concentration rather than useful differentiation.
+
+**Law 3 — Opponent.** Productive learning requires opponent dynamics — excitatory and inhibitory forces that keep each other in check. Without opponents, the system either explodes (runaway excitation) or collapses (universal inhibition). The destructive-interference thesis already implies this at the signal level; the Opponent Law extends it to the structural level. The experimental evidence: crystallize grow-prune cycles (validated 2026-04-21) work because pruning acts as a structural opponent to growth. Multi-channel input experiments fail because they add capacity without adding structural opposition — the dimension curse is an opponent-free expansion.
+
+### The Learning Formula
+
+The three laws suggest a compact expression for effective learning under mutation-selection:
+
+```
+Learning = S x sensitivity / dimensions
+```
+
+Where:
+- **S** is the structural signal — how much a single mutation changes the fitness landscape (governed by Law 1: single constraint keeps S clean)
+- **sensitivity** is the network's responsiveness to structural change (governed by Law 2: anti-monopoly keeps sensitivity distributed rather than concentrated)
+- **dimensions** is the effective search-space size (governed by Law 3: opponent dynamics keep dimensions bounded by pruning excess capacity)
+
+When S is clean, sensitivity is distributed, and dimensions are bounded, mutation-selection can make progress. When any factor degrades — noisy objectives, monopoly neurons, or unchecked dimensional expansion — learning stalls.
+
+### Experimental Evidence Summary
+
+| Law | Supporting experiment | Counter-experiment (what breaks it) |
+|---|---|---|
+| Single Constraint | Smooth linear cosine fitness champion (10 variants, 2026-04-21) | Compound fitness metrics degrade search |
+| Anti-Monopoly | Ablation: 7 dominant neurons, single-attractor collapse (2026-04-21) | Edge weights [1-3] create monopoly-prone concentration |
+| Opponent | Crystallize grow-prune cycles converge to compact circuits (2026-04-21) | Multi-channel input: opponent-free expansion causes dimension curse |
+| All three | Binary masks sufficient, topology > edge precision (cross-lane finding) | Dense prefill, continuous controls, wide search spaces (all dominated in mutation-selection regimes) |
+
+### Connection to Biology and Consciousness Emergence
+
+The three laws are not biological claims, but they align with known biological organizing principles:
+
+- **Single Constraint** maps to the observation that biological neural circuits develop under one dominant selection pressure at a time (sensory specialization before cross-modal integration, motor primitives before compound actions).
+- **Anti-Monopoly** maps to the biological principle of lateral inhibition — no single neuron or circuit is allowed to dominate without pushback from neighbors. The hub-inhibitor architecture validated in INSTNCT (10% inhibitory neurons with 2x fan-out, matching FlyWire biological data) is a structural implementation of this law.
+- **Opponent** maps to the excitatory-inhibitory balance that neuroscience identifies as fundamental to healthy brain function. Epilepsy (runaway excitation) and coma (universal inhibition) are the pathological endpoints when opponent dynamics break down.
+
+The connection to consciousness emergence is speculative but directional: if consciousness requires the maintenance of multiple competing representations (the "global workspace" or "integrated information" intuitions), then the Anti-Monopoly law describes a necessary structural condition. A system that collapses to a single attractor cannot sustain the competing-pathway dynamics that those theories require. The ablation result (single-attractor collapse with 7 dominant neurons) may be showing the structural failure mode that prevents richer cognitive emergence.
+
+This remains a theoretical observation, not a validated claim. It is included here because the structural evidence motivates the connection, not because the connection has been experimentally tested.
+
 ## Boundaries of Claim
 
 - This page does **not** claim that every part of the theory is already shipped in the current mainline.
