@@ -18,6 +18,7 @@ FILES = [
     "Timeline-Archive.md",
     "COMPRESSION_LOOP.md",
     "Theory-of-Thought.md",
+    "Structured-Chaos-Theory.md",
     "v5-Rust-Port-Benchmarks.md",
     "_Sidebar.md",
     "_Footer.md",
