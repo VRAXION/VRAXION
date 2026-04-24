@@ -1,23 +1,8 @@
-"""Multi-seed H (neuron count) sweep for SCT dimensionality validation.
+"""Multi-seed H sweep and Phase B microprobe driver.
 
-Runs the two byte-pair prediction fixtures across a grid of H values and seeds,
-parses the `SUMMARY {...}` JSON line each Rust run emits, and aggregates per-cell
-mean +- std.
-
-Fixtures:
-  * mutual_inhibition  -> evolve_mutual_inhibition (Law I + II, flat 20k steps)
-  * bytepair_proj      -> evolve_bytepair_proj     (Law I only, grow-prune cycle)
-
-Both binaries were patched to accept `--seed <u64>` and `--H <usize>` and to
-print a single machine-readable `SUMMARY {..}` JSON line at the end of each run.
-
-Run (background-friendly):
-    python3 tools/diag_dimensionality_sweep.py \\
-        --seeds 10 --H-values 128,192,256,384 \\
-        --out output/dimensionality_sweep/$(date +%s)
-
-Resume a partial run (skips already-completed (fixture, H, seed) cells):
-    python3 tools/diag_dimensionality_sweep.py --out <existing-dir> --resume
+Default mode preserves the original H-dimensionality sweep. `--phase-b` runs
+the preregistered H=384 confound-vs-intrinsic arms for `evolve_mutual_inhibition`
+and writes candidate logs, checkpoints, run metadata, and panel summaries.
 """
 from __future__ import annotations
 
@@ -25,7 +10,6 @@ import argparse
 import csv
 import json
 import math
-import os
 import subprocess
 import sys
 import time
@@ -39,17 +23,20 @@ DEFAULT_PACKED = REPO_ROOT / "output" / "block_c_bytepair_champion" / "packed.bi
 def parse_args() -> argparse.Namespace:
     p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     p.add_argument("--fixtures", default="mutual_inhibition,bytepair_proj",
-                   help="comma-separated list of example binaries to run")
+                   help="comma-separated list of fixtures to run")
     p.add_argument("--H-values", default="128,192,256,384",
-                   help="comma-separated list of H (neuron count) values to sweep")
-    p.add_argument("--seeds", type=int, default=10, help="number of seeds per (fixture, H) cell")
-    p.add_argument("--steps", type=int, default=20000, help="mutation steps per run")
+                   help="comma-separated list of H values to sweep")
+    p.add_argument("--seeds", type=int, default=10, help="number of seeds per cell")
+    p.add_argument("--steps", type=int, default=20000, help="base mutation steps per run")
     p.add_argument("--corpus", default=str(DEFAULT_CORPUS), help="corpus text file")
     p.add_argument("--packed", default=str(DEFAULT_PACKED), help="VCBP packed embedding table")
-    p.add_argument("--out", required=True, help="output directory (created if missing)")
-    p.add_argument("--resume", action="store_true",
-                   help="skip (fixture, H, seed) cells already present in results.json")
-    p.add_argument("--dry-run", action="store_true", help="print cells but don't execute")
+    p.add_argument("--out", required=True, help="output directory")
+    p.add_argument("--resume", action="store_true", help="skip cells already in results.json")
+    p.add_argument("--dry-run", action="store_true", help="print cells but do not execute")
+    p.add_argument("--phase-b", action="store_true",
+                   help="run preregistered Phase B arms for evolve_mutual_inhibition")
+    p.add_argument("--arms", default="B0,B1,B2,B3,B4",
+                   help="comma-separated Phase B arms to run")
     return p.parse_args()
 
 
@@ -58,29 +45,37 @@ def seed_from_idx(idx: int) -> int:
 
 
 def parse_summary_line(stdout: str) -> dict | None:
+    summaries = []
     for line in stdout.splitlines():
         if line.startswith("SUMMARY "):
-            try:
-                return json.loads(line[len("SUMMARY "):])
-            except json.JSONDecodeError as e:
-                print(f"  !! failed to decode SUMMARY line: {e}", file=sys.stderr)
-                print(f"     line: {line!r}", file=sys.stderr)
-                return None
-    return None
+            summaries.append(line[len("SUMMARY "):])
+    if len(summaries) != 1:
+        print(f"  !! expected exactly one SUMMARY line, got {len(summaries)}", file=sys.stderr)
+        return None
+    try:
+        return json.loads(summaries[0])
+    except json.JSONDecodeError as e:
+        print(f"  !! failed to decode SUMMARY line: {e}", file=sys.stderr)
+        print(f"     line: {summaries[0]!r}", file=sys.stderr)
+        return None
+
+
+def cargo_example_cmd(example: str, corpus: str, packed: str) -> list[str]:
+    return [
+        "cargo", "run", "--release", "--example", example,
+        "--manifest-path", str(REPO_ROOT / "instnct-core" / "Cargo.toml"),
+        "--", corpus, packed,
+    ]
 
 
 def run_cell(fixture: str, h: int, seed: int, steps: int, corpus: str, packed: str) -> tuple[dict | None, int, float]:
-    """Invoke cargo for one (fixture, H, seed) cell. Returns (summary, exit_code, wall_clock_s)."""
-    cmd = [
-        "cargo", "run", "--release", "--example", f"evolve_{fixture}",
-        "--manifest-path", str(REPO_ROOT / "instnct-core" / "Cargo.toml"),
-        "--", corpus, packed,
+    cmd = cargo_example_cmd(f"evolve_{fixture}", corpus, packed) + [
         "--steps", str(steps),
         "--seed", str(seed),
         "--H", str(h),
     ]
     t0 = time.time()
-    proc = subprocess.run(cmd, capture_output=True, text=True)
+    proc = subprocess.run(cmd, cwd=REPO_ROOT, capture_output=True, text=True)
     wall = time.time() - t0
     if proc.returncode != 0:
         print(f"  !! cargo exited {proc.returncode}", file=sys.stderr)
@@ -90,11 +85,109 @@ def run_cell(fixture: str, h: int, seed: int, steps: int, corpus: str, packed: s
     return summary, 0, wall
 
 
+def phase_b_arm_config(arm: str, base_steps: int) -> dict:
+    configs = {
+        "B0": {"steps": base_steps, "jackpot": 9, "ticks": None, "input_scatter": False},
+        "B1": {"steps": base_steps * 2, "jackpot": 9, "ticks": None, "input_scatter": False},
+        "B2": {"steps": base_steps, "jackpot": 18, "ticks": None, "input_scatter": False},
+        "B3": {"steps": base_steps, "jackpot": 9, "ticks": 12, "input_scatter": False},
+        "B4": {"steps": base_steps, "jackpot": 9, "ticks": None, "input_scatter": True},
+    }
+    if arm not in configs:
+        raise ValueError(f"unknown Phase B arm: {arm}")
+    return configs[arm]
+
+
+def run_panel_analyzer(run_dir: Path) -> int:
+    cmd = [
+        "cargo", "run", "--release", "--example", "diag_phase_b_panel",
+        "--manifest-path", str(REPO_ROOT / "instnct-core" / "Cargo.toml"),
+        "--", str(run_dir),
+    ]
+    proc = subprocess.run(cmd, cwd=REPO_ROOT, capture_output=True, text=True)
+    (run_dir / "panel_stdout.txt").write_text(proc.stdout)
+    (run_dir / "panel_stderr.txt").write_text(proc.stderr)
+    if proc.returncode != 0:
+        print(f"  !! panel analyzer exited {proc.returncode}", file=sys.stderr)
+        print(proc.stderr[-2000:], file=sys.stderr)
+    return proc.returncode
+
+
+def run_phase_b_cell(
+    fixture: str,
+    arm: str,
+    h: int,
+    seed: int,
+    base_steps: int,
+    corpus: str,
+    packed: str,
+    out_dir: Path,
+) -> tuple[dict | None, int, float]:
+    cfg = phase_b_arm_config(arm, base_steps)
+    run_id = f"phase_b_{fixture}_{arm}_H{h}_seed{seed}"
+    run_dir = out_dir / arm / f"seed_{seed}"
+    run_dir.mkdir(parents=True, exist_ok=True)
+    stdout_path = run_dir / "stdout.txt"
+    stderr_path = run_dir / "stderr.txt"
+    candidate_log = run_dir / "candidates.csv"
+    checkpoint = run_dir / "final.ckpt"
+
+    cmd = cargo_example_cmd(f"evolve_{fixture}", corpus, packed) + [
+        "--steps", str(cfg["steps"]),
+        "--seed", str(seed),
+        "--H", str(h),
+        "--jackpot", str(cfg["jackpot"]),
+        "--arm", arm,
+        "--run-id", run_id,
+        "--candidate-log", str(candidate_log),
+        "--checkpoint-at-end", str(checkpoint),
+    ]
+    if cfg["ticks"] is not None:
+        cmd += ["--ticks", str(cfg["ticks"])]
+    if cfg["input_scatter"]:
+        cmd += ["--input-scatter"]
+
+    (run_dir / "run_cmd.json").write_text(json.dumps({"cmd": cmd}, indent=2))
+    t0 = time.time()
+    proc = subprocess.run(cmd, cwd=REPO_ROOT, capture_output=True, text=True)
+    wall = time.time() - t0
+    stdout_path.write_text(proc.stdout)
+    stderr_path.write_text(proc.stderr)
+    if proc.returncode != 0:
+        print(f"  !! cargo exited {proc.returncode}", file=sys.stderr)
+        print(proc.stderr[-2000:], file=sys.stderr)
+        return None, proc.returncode, wall
+    summary = parse_summary_line(proc.stdout)
+    if summary is None:
+        return None, 2, wall
+    if not checkpoint.exists() or not (run_dir / "run_meta.json").exists():
+        print("  !! missing checkpoint or run_meta.json", file=sys.stderr)
+        return None, 3, wall
+    panel_rc = run_panel_analyzer(run_dir)
+    if panel_rc != 0 or not (run_dir / "panel_summary.json").exists():
+        return None, panel_rc or 4, wall
+
+    summary.update({
+        "arm": arm,
+        "run_id": run_id,
+        "configured_steps": cfg["steps"],
+        "jackpot": cfg["jackpot"],
+        "ticks": cfg["ticks"] or 6,
+        "input_scatter": cfg["input_scatter"],
+        "run_dir": str(run_dir),
+        "candidate_log": str(candidate_log),
+        "checkpoint": str(checkpoint),
+        "panel_summary": str(run_dir / "panel_summary.json"),
+        "expected_candidate_rows": cfg["steps"] * cfg["jackpot"],
+    })
+    return summary, 0, wall
+
+
 def write_artifacts(out_dir: Path, results: list[dict]) -> None:
     (out_dir / "results.json").write_text(json.dumps({"results": results}, indent=2))
-    csv_path = out_dir / "results.csv"
     if not results:
         return
+    csv_path = out_dir / "results.csv"
     fieldnames = sorted({k for r in results for k in r.keys()})
     with csv_path.open("w", newline="") as f:
         w = csv.DictWriter(f, fieldnames=fieldnames)
@@ -114,84 +207,170 @@ def mean_std(xs: list[float]) -> tuple[float, float]:
 
 
 def print_aggregate(results: list[dict]) -> None:
-    by_cell: dict[tuple[str, int], list[dict]] = {}
+    by_cell: dict[tuple[str, int, str], list[dict]] = {}
     for r in results:
-        by_cell.setdefault((r["fixture"], int(r["H"])), []).append(r)
-    fixtures = sorted({k[0] for k in by_cell.keys()})
+        by_cell.setdefault((r["fixture"], int(r["H"]), r.get("arm", "")), []).append(r)
     print("\n" + "=" * 80)
     print("AGGREGATE (mean +- std, n = # seeds)")
     print("=" * 80)
-    for fx in fixtures:
-        print(f"\nfixture={fx}:")
-        hs = sorted({k[1] for k in by_cell.keys() if k[0] == fx})
-        print(f"  {'H':>4} {'peak_acc%':>18} {'final_acc%':>18} {'accept%':>14} {'alive_frac':>14} {'edges':>10} {'wall/s':>9} {'n':>3}")
-        for h in hs:
-            rows = by_cell[(fx, h)]
-            peak = [r["peak_acc"] * 100 for r in rows]
-            final = [r["final_acc"] * 100 for r in rows]
-            acc = [r["accept_rate_pct"] for r in rows]
-            alive = [r["alive_frac_mean"] for r in rows]
-            edges = [r["edges"] for r in rows]
-            wall = [r["wall_clock_s"] for r in rows]
-            pm, ps = mean_std(peak)
-            fm, fs = mean_std(final)
-            am, as_ = mean_std(acc)
-            lm, ls = mean_std(alive)
-            em, _ = mean_std(edges)
-            wm, _ = mean_std(wall)
-            print(f"  {h:>4} {pm:>8.2f} +- {ps:>5.2f}  {fm:>8.2f} +- {fs:>5.2f}  {am:>6.2f} +- {as_:>4.2f}  {lm:>5.3f} +- {ls:>5.3f}  {em:>10.0f}  {wm:>8.1f}  {len(rows):>3}")
+    for fixture, h, arm in sorted(by_cell):
+        rows = by_cell[(fixture, h, arm)]
+        peak = [r["peak_acc"] * 100 for r in rows]
+        final = [r["final_acc"] * 100 for r in rows]
+        acc = [r["accept_rate_pct"] for r in rows]
+        alive = [r["alive_frac_mean"] for r in rows]
+        wall = [r["wall_clock_s"] for r in rows]
+        pm, ps = mean_std(peak)
+        fm, fs = mean_std(final)
+        am, as_ = mean_std(acc)
+        lm, ls = mean_std(alive)
+        wm, _ = mean_std(wall)
+        label = f"{fixture} H={h}" + (f" arm={arm}" if arm else "")
+        print(f"  {label:<36} peak={pm:>6.2f} +- {ps:>5.2f}  final={fm:>6.2f} +- {fs:>5.2f}  "
+              f"accept={am:>6.2f} +- {as_:>4.2f}  alive={lm:>5.3f} +- {ls:>5.3f}  "
+              f"wall={wm:>7.1f}s  n={len(rows)}")
 
 
-def main() -> int:
-    args = parse_args()
+def run_constructability_analysis(out_dir: Path) -> int:
+    script = REPO_ROOT / "tools" / "diag_constructability_analysis.py"
+    cmd = [sys.executable, str(script), "--root", str(out_dir)]
+    proc = subprocess.run(cmd, cwd=REPO_ROOT, capture_output=True, text=True)
+    (out_dir / "constructability_stdout.txt").write_text(proc.stdout)
+    (out_dir / "constructability_stderr.txt").write_text(proc.stderr)
+    if proc.returncode != 0:
+        print(f"  !! constructability analysis exited {proc.returncode}", file=sys.stderr)
+        print(proc.stderr[-2000:], file=sys.stderr)
+    else:
+        print(proc.stdout)
+    return proc.returncode
+
+
+def load_resume(out_dir: Path, phase_b: bool) -> tuple[list[dict], set[tuple]]:
+    rj = out_dir / "results.json"
+    if not rj.exists():
+        return [], set()
+    results = json.loads(rj.read_text()).get("results", [])
+    if phase_b:
+        done = {(r["fixture"], r["arm"], int(r["H"]), int(r["seed"])) for r in results}
+    else:
+        done = {(r["fixture"], int(r["H"]), int(r["seed"])) for r in results}
+    return results, done
+
+
+def main_phase_b(args: argparse.Namespace) -> int:
     fixtures = [f.strip() for f in args.fixtures.split(",") if f.strip()]
+    if fixtures != ["mutual_inhibition"]:
+        raise SystemExit("--phase-b currently supports only --fixtures mutual_inhibition")
     h_values = [int(x) for x in args.H_values.split(",")]
-
+    arms = [a.strip() for a in args.arms.split(",") if a.strip()]
     out_dir = Path(args.out)
     out_dir.mkdir(parents=True, exist_ok=True)
 
     results: list[dict] = []
-    done_cells: set[tuple[str, int, int]] = set()
-    rj = out_dir / "results.json"
-    if args.resume and rj.exists():
-        results = json.loads(rj.read_text()).get("results", [])
-        done_cells = {(r["fixture"], int(r["H"]), int(r["seed"])) for r in results}
-        print(f"  resume: loaded {len(results)} previous results, skipping {len(done_cells)} cells")
+    done: set[tuple] = set()
+    if args.resume:
+        results, done = load_resume(out_dir, phase_b=True)
+        print(f"  resume: loaded {len(results)} previous results, skipping {len(done)} cells")
+
+    cells = [
+        (fx, arm, h, seed_from_idx(i))
+        for fx in fixtures
+        for arm in arms
+        for h in h_values
+        for i in range(args.seeds)
+    ]
+    todo = [cell for cell in cells if cell not in done]
+    print(f"  Phase B plan: {len(cells)} total cells, {len(todo)} to run")
+    print(f"  fixtures: {fixtures}")
+    print(f"  arms:     {arms}")
+    print(f"  H values: {h_values}")
+    print(f"  seeds:    {args.seeds} per arm -> seed pattern 42 + i*1000")
+    print(f"  base steps: {args.steps}")
+    print(f"  out:      {out_dir}")
+
+    if args.dry_run:
+        for fx, arm, h, seed in todo:
+            cfg = phase_b_arm_config(arm, args.steps)
+            print(f"  DRY-RUN fixture={fx} arm={arm} H={h} seed={seed} "
+                  f"steps={cfg['steps']} jackpot={cfg['jackpot']} ticks={cfg['ticks'] or 6} "
+                  f"input_scatter={cfg['input_scatter']}")
+        return 0
+
+    t_sweep = time.time()
+    for idx, (fx, arm, h, seed) in enumerate(todo, 1):
+        elapsed = time.time() - t_sweep
+        print(f"\n[{idx}/{len(todo)}] elapsed={elapsed/60:.1f}m fixture={fx} arm={arm} H={h} seed={seed}", flush=True)
+        summary, rc, wall = run_phase_b_cell(fx, arm, h, seed, args.steps, args.corpus, args.packed, out_dir)
+        if summary is None:
+            print(f"  FAILED (rc={rc}, wall={wall:.1f}s)", file=sys.stderr)
+            write_artifacts(out_dir, results)
+            return rc or 1
+        summary.setdefault("wall_clock_s", wall)
+        results.append(summary)
+        write_artifacts(out_dir, results)
+        print(f"  done: peak={summary['peak_acc']*100:.2f}% final={summary['final_acc']*100:.2f}% "
+              f"accept={summary['accept_rate_pct']:.2f}% rows={summary['expected_candidate_rows']} "
+              f"wall={summary['wall_clock_s']:.1f}s", flush=True)
+
+    print_aggregate(results)
+    analysis_rc = run_constructability_analysis(out_dir)
+    print(f"\nSweep total wall clock: {(time.time() - t_sweep) / 60:.1f} min")
+    print(f"Artifacts: {out_dir / 'results.json'}  {out_dir / 'results.csv'}")
+    return analysis_rc
+
+
+def main_default(args: argparse.Namespace) -> int:
+    fixtures = [f.strip() for f in args.fixtures.split(",") if f.strip()]
+    h_values = [int(x) for x in args.H_values.split(",")]
+    out_dir = Path(args.out)
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    results: list[dict] = []
+    done: set[tuple] = set()
+    if args.resume:
+        results, done = load_resume(out_dir, phase_b=False)
+        print(f"  resume: loaded {len(results)} previous results, skipping {len(done)} cells")
 
     cells = [(fx, h, seed_from_idx(i)) for fx in fixtures for h in h_values for i in range(args.seeds)]
-    todo = [c for c in cells if c not in done_cells]
-    print(f"  plan: {len(cells)} total cells, {len(todo)} to run, {len(done_cells)} already done")
+    todo = [c for c in cells if c not in done]
+    print(f"  plan: {len(cells)} total cells, {len(todo)} to run, {len(done)} already done")
     print(f"  fixtures: {fixtures}")
     print(f"  H values: {h_values}")
-    print(f"  seeds:    {args.seeds} per (fixture, H) cell  -> seed pattern 42 + i*1000")
+    print(f"  seeds:    {args.seeds} per cell -> seed pattern 42 + i*1000")
     print(f"  steps:    {args.steps}")
     print(f"  out:      {out_dir}")
 
     if args.dry_run:
         for c in todo:
-            print(f"  DRY-RUN  fixture={c[0]:22s} H={c[1]:>4} seed={c[2]}")
+            print(f"  DRY-RUN fixture={c[0]:22s} H={c[1]:>4} seed={c[2]}")
         return 0
 
     t_sweep = time.time()
     for idx, (fx, h, seed) in enumerate(todo, 1):
         elapsed = time.time() - t_sweep
-        print(f"\n[{idx}/{len(todo)}] (elapsed {elapsed/60:.1f}m) fixture={fx} H={h} seed={seed}", flush=True)
+        print(f"\n[{idx}/{len(todo)}] elapsed={elapsed/60:.1f}m fixture={fx} H={h} seed={seed}", flush=True)
         summary, rc, wall = run_cell(fx, h, seed, args.steps, args.corpus, args.packed)
         if summary is None:
             print(f"  skipped (rc={rc}, wall={wall:.1f}s)", file=sys.stderr)
             continue
-        # Overwrite wall with driver-measured elapsed if Rust's value is missing
         summary.setdefault("wall_clock_s", wall)
         results.append(summary)
         write_artifacts(out_dir, results)
-        print(f"  done: peak={summary['peak_acc']*100:.2f}%  final={summary['final_acc']*100:.2f}%  "
-              f"accept={summary['accept_rate_pct']:.2f}%  alive={summary['alive_frac_mean']:.3f}  "
-              f"edges={summary['edges']}  wall={summary['wall_clock_s']:.1f}s", flush=True)
+        print(f"  done: peak={summary['peak_acc']*100:.2f}% final={summary['final_acc']*100:.2f}% "
+              f"accept={summary['accept_rate_pct']:.2f}% alive={summary['alive_frac_mean']:.3f} "
+              f"edges={summary['edges']} wall={summary['wall_clock_s']:.1f}s", flush=True)
 
     print_aggregate(results)
     print(f"\nSweep total wall clock: {(time.time() - t_sweep) / 60:.1f} min")
-    print(f"Artifacts: {out_dir}/results.json  {out_dir}/results.csv")
+    print(f"Artifacts: {out_dir / 'results.json'}  {out_dir / 'results.csv'}")
     return 0
+
+
+def main() -> int:
+    args = parse_args()
+    if args.phase_b:
+        return main_phase_b(args)
+    return main_default(args)
 
 
 if __name__ == "__main__":

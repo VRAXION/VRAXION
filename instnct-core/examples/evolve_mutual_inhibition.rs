@@ -12,14 +12,16 @@
 
 use instnct_core::{
     build_network, cosine_similarity, evolution_step_jackpot, evolution_step_jackpot_traced,
-    softmax, CandidateTraceRecord, InitConfig, Int8Projection, Network, StepOutcome, VcbpTable,
+    save_checkpoint, softmax, CandidateTraceRecord, CheckpointMeta, InitConfig, Int8Projection,
+    Network, StepOutcome, VcbpTable,
 };
 use rand::rngs::StdRng;
 use rand::Rng;
 use rand::SeedableRng;
+use serde::Serialize;
 use std::collections::VecDeque;
 use std::env;
-use std::fs::{create_dir_all, File};
+use std::fs::{create_dir_all, write, File};
 use std::io::{BufWriter, Write};
 use std::path::{Path, PathBuf};
 use std::time::Instant;
@@ -31,6 +33,24 @@ const DEFAULT_FULL_LEN: usize = 1_000;
 const PROGRESS_INTERVAL: usize = 2_000;
 
 // ── Reuse helpers from evolve_bytepair_proj ──
+
+#[derive(Serialize)]
+struct RunMeta {
+    fixture: &'static str,
+    arm: String,
+    run_id: String,
+    seed: u64,
+    #[serde(rename = "H")]
+    h: usize,
+    steps: usize,
+    jackpot: usize,
+    ticks: usize,
+    input_scatter: bool,
+    corpus: String,
+    packed: String,
+    checkpoint: String,
+    candidate_log: Option<String>,
+}
 
 struct CandidateLogWriter {
     writer: BufWriter<File>,
@@ -433,6 +453,7 @@ fn main() {
     let mut cli_ticks: Option<usize> = None;
     let mut input_scatter = false;
     let mut candidate_log_path: Option<PathBuf> = None;
+    let mut checkpoint_at_end: Option<PathBuf> = None;
     let mut arm = String::from("default");
     let mut run_id = String::from("default");
     let mut i = 2;
@@ -464,6 +485,10 @@ fn main() {
             "--candidate-log" => {
                 i += 1;
                 candidate_log_path = Some(PathBuf::from(&args[i]));
+            }
+            "--checkpoint-at-end" => {
+                i += 1;
+                checkpoint_at_end = Some(PathBuf::from(&args[i]));
             }
             "--arm" => {
                 i += 1;
@@ -662,6 +687,44 @@ fn main() {
         net.edge_count(),
         final_accept_rate_pct
     );
+
+    if let Some(checkpoint_path) = checkpoint_at_end.as_deref() {
+        save_checkpoint(
+            checkpoint_path,
+            &net,
+            &proj,
+            CheckpointMeta {
+                step: steps,
+                accuracy: final_acc,
+                label: format!("phase_b fixture=mutual_inhibition arm={arm} run_id={run_id}"),
+            },
+        )
+        .expect("failed to save final checkpoint");
+
+        let meta = RunMeta {
+            fixture: "mutual_inhibition",
+            arm: arm.clone(),
+            run_id: run_id.clone(),
+            seed,
+            h,
+            steps,
+            jackpot,
+            ticks: init.propagation.ticks_per_token,
+            input_scatter,
+            corpus: corpus_path.to_string(),
+            packed: packed_path.to_string(),
+            checkpoint: checkpoint_path.display().to_string(),
+            candidate_log: candidate_log_path.as_ref().map(|p| p.display().to_string()),
+        };
+        let meta_json = serde_json::to_string_pretty(&meta).expect("failed to serialize run meta");
+        let meta_path = checkpoint_path
+            .parent()
+            .unwrap_or_else(|| Path::new("."))
+            .join("run_meta.json");
+        write(&meta_path, meta_json).expect("failed to write run_meta.json");
+        println!("  Checkpoint: {}", checkpoint_path.display());
+        println!("  Run meta:   {}", meta_path.display());
+    }
 
     // Alive-frac mean over 20 deterministically-spaced corpus pairs (for SUMMARY)
     let alive_samples = 20usize.min(pair_ids.len().max(1));
