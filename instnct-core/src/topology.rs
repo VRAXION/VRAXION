@@ -329,11 +329,13 @@ impl ConnectionGraph {
             .zip(targets.iter())
             .map(|(&s, &t)| (s, t))
             .collect();
+        let weights = vec![1u8; sources.len()]; // default weight = 1 (binary compat)
         Self {
             edge_set,
             neuron_count,
             sources,
             targets,
+            weights,
         }
     }
 
