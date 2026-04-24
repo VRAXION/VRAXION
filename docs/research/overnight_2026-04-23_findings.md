@@ -110,7 +110,12 @@ Per-task wall-clock stdev: 0-5s on runs of 0.2-33s. The search budget (stall lim
 - Requires: code modification to `neuron_grower.rs` (add flag + behavior switch).
 
 **Q3**: Can Ψ be operationalized from already-available data?
-- Partial attempt planned for iteration 8 (if time): define Ψ per activation class as "fraction of cells (across H/LD grid) reaching ≥70% final_lossless". Preview, not validated.
+- **Preview attempted in iteration 8** (see progress.md §8). Defined two candidate Ψ values per activation using existing 3-seed byte-unit sweep data:
+  - Ψ_ratio@70 (fraction of cells reaching ≥70% final_lossless): identity 0.036, tanh 0.091, relu 0.055, c19 0.291
+  - Ψ_mean (mean final_lossless / 100): identity 0.337, tanh 0.366, relu 0.394, c19 0.530
+- **Finding**: the two definitions produce DIFFERENT orderings — Ψ_ratio says `tanh > relu`, Ψ_mean says `relu > tanh`. This is a failure mode: an acceptable Ψ should be stable across reasonable measurement choices.
+- **Conclusion**: Ψ operationalization remains unresolved. The preview demonstrates the problem — without a pre-registered measurement procedure, Ψ is definition-sensitive.
+- **Note**: this preview is on the byte-unit (gradient-trained) lane, which is outside SCT's stated scope. A Ψ-analog for the grower lane (accept-fraction per step, scout pair-lift rate) was NOT tested tonight and is the real open question.
 
 ---
 

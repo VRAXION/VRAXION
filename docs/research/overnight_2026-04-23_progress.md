@@ -338,3 +338,69 @@ This iteration was synthesis, not new data. No new numbers. The findings.md comp
 Iteration 8 will attempt a concrete Ψ measurement from already-available byte-unit sweep data. Definition: `Ψ(activation) = fraction of (H, LD) cells where final_lossless ≥ 70` across 3 seeds. This gives 4 concrete values (one per activation class). Not a validated operationalization, but a first concrete proposal to replace "Ψ = architectural constraint efficiency" as a measurable quantity from existing data. Will be clearly labelled as PREVIEW in findings.md §5 Q3.
 
 ---
+
+## Iteration 8 — Ψ operationalization preview (TERMINATING iteration)
+
+**Timestamp**: 2026-04-24 ~02:19 CEDT
+**Type**: Ψ operationalization (preview only — outside SCT's stated scope)
+
+### What was run
+
+Parsed all 3 byte-unit sweep summary.json files (seed 123: 60 configs, seeds 456/789: 80 configs each — seed 456/789 used the script's default 4-value hiddens including H=24 which seed 123 omitted). For each activation class, computed two candidate Ψ definitions:
+
+1. **Ψ_ratio@70**: P(final_lossless ≥ 70%) — fraction of cell-seed data points hitting the 70pp threshold
+2. **Ψ_mean**: mean(final_lossless) / 100 — mean success, normalized to [0, 1]
+
+### What was observed (concrete numbers)
+
+```
+activation  n_total  n_≥70pp  Ψ_ratio  Ψ_mean  stdev_of_final
+identity        55        2    0.036   0.337   14.67
+tanh            55        5    0.091   0.366   18.54
+relu            55        3    0.055   0.394   19.40
+c19             55       16    0.291   0.530   21.88
+
+Threshold sensitivity:           Ψ@50   Ψ@70
+identity                        0.145   0.036
+tanh                            0.182   0.091
+relu                            0.382   0.055
+c19                             0.545   0.291
+```
+
+**Ranking disagrees across definitions:**
+- By Ψ_ratio@70: `c19 > tanh > relu > identity`
+- By Ψ_mean: `c19 > relu > tanh > identity`
+- By Ψ_ratio@50: `c19 > relu > tanh > identity`
+
+tanh and relu swap depending on threshold choice.
+
+### Implication for SCT — CONTRADICT (preview-level)
+
+An acceptable Ψ should give the **same ordering** across reasonable definitions — that's the minimum test for "this is the architectural-constraint-efficiency axis". Here, the ordering flips between two sensible choices. **Ψ is definition-sensitive.** Either:
+
+1. Ψ as SCT defines it is not a well-posed quantity (what we're seeing), OR
+2. The byte-unit sweep regime (gradient training) is too far from SCT's domain to yield interpretable Ψ values
+
+Both options push toward: Ψ needs a measurement procedure chosen BEFORE observing data, and validated on multiple independent systems, before being used as a formula coefficient. The current SCT doc gives no such procedure.
+
+### Adversarial question raised
+
+If I ran this same Ψ analysis on the GROWER lane (where SCT properly applies), would the rankings be more stable across definitions? The grower doesn't have "activation" as a meaningful knob — the activation is binary-threshold. A Ψ-analog for the grower might be "accept fraction per step" or "scout pair-lift rate", neither of which is tested tonight.
+
+### Loop termination
+
+**This is the final planned iteration.** 8 researcher-shifts completed. findings.md (consolidated deliverable) is committed as `aa901f2`; amending it now with the concrete Ψ preview numbers from this iteration, then pushing and stopping the loop.
+
+**Session summary:**
+- 8 iterations over ~35 min wall-clock (01:42 → 02:19 CEDT)
+- 2 background training bursts (byte-unit sweep 2 seeds, grower regression 2 seeds)
+- 1 retraction made explicit (iter 1-3 scope mismatch)
+- 1 strongest standing claim (task-level val_acc seed-stability 5/6)
+- 1 Ψ preview producing a concrete "Ψ is definition-sensitive" finding
+- 0 new pip/cargo dependencies
+- 0 commits to main
+- Branch + findings + progress ready for morning review
+
+**LOOP COMPLETE — 8 iterations.**
+
+---
