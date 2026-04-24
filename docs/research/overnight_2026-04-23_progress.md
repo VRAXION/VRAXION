@@ -273,3 +273,47 @@ The tight val_acc collapse (5 of 6 tasks) might be an artifact of tasks hitting 
 Four iterations since the first data pull (iter 1→5 is 4 deltas). Time for iteration 6 meta block: "what do we believe NOW vs at iter 1, what's the strongest standing claim, what's the cleanest question to hand off in morning findings.md". After that, iteration 7-8 should either run one targeted follow-up or compile the findings.md digest.
 
 ---
+
+## Iteration 6 — meta-reflection (honest self-correction)
+
+**Timestamp**: 2026-04-24 ~02:14 CEDT
+**Type**: Meta-reflection
+
+### Where we are (belief diff: iter 1 → now)
+
+**At iteration 1 I believed:** the SCT formula `L = Ψ · σ_μ / D` was tentatively contradicted by empirical data. Bigger D (H × LD) wins in the byte-unit sweep. Strong directional claim with one-seed evidence.
+
+**After iterations 2-5 I believe, more carefully:**
+1. The SCT doc is **explicitly scoped to "gradient-free, mutation-driven" learning** (abstract: "minimal conditions under which gradient-free neural networks acquire non-trivial predictive behavior through mutation and selection alone"). L is defined as "expected fitness improvement per mutation step".
+2. **The byte-unit sweep uses Adam + LBFGS (gradient-based). Iterations 1-3 are therefore a category mismatch — SCT never claimed to apply there.** My original "naive-D refuted" framing was applying the formula outside its stated domain. I should retract that framing.
+3. The **grower-regression lane IS in SCT's domain** (scout-oracle neuron-by-neuron growth, explicit accept/reject = mutation-style). Findings from iterations 4-5 are the real SCT tests.
+
+### Strongest standing claim (survives adversarial probing)
+
+**Task-level final val_acc is seed-stable for ~5 of 6 tasks** (stdev ≤ 3.5pp across 3 seeds). This is the only observable I've confirmed that collapses across seeds in SCT's proper domain. It suggests that **if SCT's "learning rate" is reinterpreted as "final fitness achievable by the system on the task"**, it IS a well-defined seed-stable quantity.
+
+But it's observable **per (system × task) pair, not per system alone** — the per-step delta (σ_μ-like quantity) varied 53× across the 6 tasks at the same seed (38.5pp/step for diagonal_xor vs 0.71pp/step for digit_parity). The formula's one-scalar-per-system framing cannot express this.
+
+### Weakest overreach (if I had to retract one thing)
+
+The iteration 1-3 conclusion **"SCT naive `L ∝ 1/D` is REFUTED"** is too strong. Correct version:
+> "In gradient-trained autoencoder settings (outside SCT's stated scope), bigger parameter count monotonically helps. This does not test SCT. SCT's D claim remains untested on mutation-based systems in this overnight run."
+
+The byte-unit data IS valuable independently — it shows c19 > identity/relu/tanh in gradient training with +15-18pp mean advantage, reproducible across 3 seeds. But that's an INSTNCT activation finding, not an SCT validation.
+
+### Cleanest remaining question (for morning hand-off)
+
+Among SCT's three laws, the most testable one overnight WOULD have been **Law II (anti-monopoly)** — the grower has an explicit "non-strict accept gate" that prevents degenerate collapse by accepting compositional stepping stones. A 2×2 factorial (strict-gate on/off × breed on/off) on full_parity_4 would directly probe Law II. But modifying the grower binary for the ablation is too much code lift overnight. **Flag for morning**: is there a way to toggle `--no-strict-gate` via existing flags, or would this require a new example?
+
+The full_parity_4 stepping-stones divergence (seed 777 found 5-neuron 98% where others stopped at 1-neuron 80%) **IS indirect evidence for Law II's spirit**: a mechanism that preserves exploration diversity (here: stall tolerance + scout breadth) enables basin discovery. Without it, same architecture converges prematurely. This aligns with SCT's anti-monopoly claim — not because mutual inhibition specifically, but because exploration preservation matters.
+
+### Recommendation for iteration 7-8
+
+**Iteration 7 → findings.md draft.** Rationale:
+- Remaining adversarial probes (Law II ablation, harder tasks, Ψ operationalization from scratch) are all code-lift-heavy and would not finish cleanly overnight.
+- The scope correction on iterations 1-3 is the most important take-away the user needs, and it deserves a careful write-up.
+- Morning deliverable matters more than one more half-done probe.
+
+**Iteration 8 (if time) → Ψ operationalization PREVIEW.** Use existing sweep data to define Ψ as "fraction of cells (per activation class) reaching ≥70% final_lossless" — gives 4 concrete Ψ values from already-generated data without running new training. Explicit preview, not validated.
+
+---
