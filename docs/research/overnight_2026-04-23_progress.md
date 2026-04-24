@@ -167,3 +167,56 @@ Enough drilling on the byte-unit sweep. Iteration 4 switches threads: load the 3
 If the grower bundles aren't actually multi-seed (all 3 from same seed at different times), pivot to iteration 5 (alternative LHS probe: operationalize "expandability" as accept-rate from existing logs).
 
 ---
+
+## Iteration 4 — grower-regression lane: structure + trajectory shape
+
+**Timestamp**: 2026-04-24 ~02:03 CEDT
+**Type**: Data mining (new thread — symbolic task lane)
+
+### What was run
+
+Read `target/grower-regression/20260412T{131312,131653,151618}Z/` bundle layout, inspected metrics.json + summary.md + run_cmd.txt + one full per-task run (four_parity/state.tsv + final.json + stdout). Ran `diff` to check reproducibility across the 3 timestamps. Parsed state.tsv per-step val_acc across all 6 tasks for one bundle. Launched 2 additional grower-regression runs in background (seeds 123, 777) to get genuine multi-seed data.
+
+### What was observed (concrete)
+
+**Bundle structure:**
+- All 3 bundles used `--data-seed 42 --search-seed 42` (SAME SEED). These are reproducibility confirmations, NOT multi-seed runs.
+- `diff` on 20260412T131312Z vs 20260412T131653Z `four_parity/state.tsv`: **zero output** → bit-identical. Grower is fully deterministic at given seed.
+- Each bundle: 6 symbolic tasks (four_parity, four_popcount_2, is_digit_gt_4, diagonal_xor, full_parity_4, digit_parity) with `state.tsv` per-step logs + `runs/<task>/final.json` + task stdout with scout-top + scout-pairs + candidate list per step.
+- stdout header says "20 proposals/step" — so 20 candidates proposed per step, exactly 1 accepted (the selected winner). Structural accept rate = 5%.
+
+**Per-step val_acc trajectory (seed=42, 1 bundle):**
+
+```
+task               steps traj                                       mean_Δ  n_zero  n_neg
+four_parity            6 68.8→68.8→87.5→75.0→93.8→100.0              8.33     1      1
+four_popcount_2        7 62.5→50.0→68.8→75.0→75.0→87.5→100.0         7.14     1      1
+is_digit_gt_4          7 58.5→56.5→61.5→51.0→63.5→54.0→68.5          2.64     0      3
+diagonal_xor           1 88.5 (stopped at 1 neuron)                  38.50    0      0
+full_parity_4          1 80.5 (stopped at 1 neuron)                  30.50    0      0
+digit_parity          12 57.0→71.5→64.0→81.5→70.0→62.0→85.0→71.0→… 0.71     0      6
+```
+
+- n_zero = steps where val_acc did not change (stepping stones)
+- n_neg = steps where val_acc DROPPED (accepted as compositional bet — this is the "non-strict accept gate" feature at work)
+- `digit_parity` is the clearest case: 12 neurons accepted, 6 of them (50%) had NEGATIVE val_acc delta. Mean delta 0.71pp per step.
+- `four_parity` + `four_popcount_2`: both reached 100% in 6-7 steps, each with exactly 1 stepping-stone and 1 regression step on the way up.
+- `diagonal_xor` + `full_parity_4`: one-shot neuron, stopped before stall threshold — asymptoted without actually solving.
+
+### Implication for SCT — ORTHOGONAL, with a direct insight
+
+The per-step learning delta is NOT a single clean scalar. It's task-dependent and non-monotonic. The SCT formula `L = Ψ·σ_μ/D` implicitly assumes "learning rate is one number per system-config". The grower shows the opposite: the same system (seed 42) traces VERY different delta patterns on different tasks — 38.5pp/step mean for diagonal_xor (trivial) vs 0.71pp/step for digit_parity (compositional). **"Learning rate" is a property of (system × task), not of system alone.** That's a significant claim against the formula's one-size-fits-all framing.
+
+The stepping-stone + negative-delta pattern also confirms σ_μ's weakness as an observable: in 50% of digit_parity's accepted neurons, the raw fitness delta was zero or negative. Selection was accepting them for LATER compositional use, not immediate gain. σ_μ (raw delta magnitude) misreads this as "noisy learning" when it's actually structured exploration.
+
+### Adversarial question
+
+Is the task-shape variance (easy flat-trajectory vs hard oscillating-trajectory) just different *task difficulty*, or does it reveal that the grower uses DIFFERENT dynamics for different tasks? If I plot "steps to plateau" against "task complexity" — is there a predictable relationship? Or is each task idiosyncratic?
+
+### Iteration 5 — multi-seed grower now in background
+
+Launched (run_in_background) `python tools/run_grower_regression.py --data-seed {123,777} --search-seed {123,777} --report-dir target/grower-regression-multiseed/seed{123,777} --golden /tmp/no_golden_file_here` sequentially. Each bundle ~90s wall-clock per prior timing. Total ~3 min. Golden check bypassed by pointing at non-existent file (still writes bundle + metrics; just sets `golden_errors=[]`).
+
+Iteration 5 will compute: across seeds {42, 123, 777}, for each of the 6 tasks, does (final val_acc, neuron count, stepping-stone ratio) collapse to a narrow band or scatter widely? If tight collapse → task-level observables are a CLEANER LHS candidate than per-step deltas.
+
+---
