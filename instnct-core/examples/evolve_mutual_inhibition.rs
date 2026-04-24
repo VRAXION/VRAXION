@@ -19,7 +19,7 @@ use rand::rngs::StdRng;
 use rand::Rng;
 use rand::SeedableRng;
 use serde::Serialize;
-use std::collections::VecDeque;
+use std::collections::{HashSet, VecDeque};
 use std::env;
 use std::fs::{create_dir_all, write, File};
 use std::io::{BufWriter, Write};
@@ -31,6 +31,7 @@ const DEFAULT_STEPS: usize = 20_000;
 const DEFAULT_EVAL_LEN: usize = 100;
 const DEFAULT_FULL_LEN: usize = 1_000;
 const PROGRESS_INTERVAL: usize = 2_000;
+const PANEL_PROBE_COUNT: usize = 32;
 
 // ── Reuse helpers from evolve_bytepair_proj ──
 
@@ -50,6 +51,98 @@ struct RunMeta {
     packed: String,
     checkpoint: String,
     candidate_log: Option<String>,
+    panel_window_size: Option<usize>,
+    panel_timeseries: Option<String>,
+}
+
+struct PanelMetrics {
+    panel_probe_acc: f64,
+    unique_predictions: usize,
+    collision_rate: f64,
+    f_active: f64,
+    h_output_mean: f64,
+    h_output_var: f64,
+    stable_rank: f64,
+    kernel_rank: usize,
+    separation_sp: f64,
+}
+
+struct PanelTimeseriesWriter {
+    writer: BufWriter<File>,
+    path: PathBuf,
+    window_size: usize,
+    last_step: usize,
+    last_accepted: u32,
+    last_rejected: u32,
+}
+
+impl PanelTimeseriesWriter {
+    fn new(path: PathBuf, window_size: usize) -> Self {
+        if let Some(parent) = path.parent() {
+            if !parent.as_os_str().is_empty() {
+                create_dir_all(parent).expect("failed to create panel timeseries directory");
+            }
+        }
+        let mut writer =
+            BufWriter::new(File::create(&path).expect("failed to create panel timeseries"));
+        writeln!(
+            writer,
+            "step,panel_probe_acc,main_peak_acc,accept_rate_window,accepted_window,rejected_window,edges,unique_predictions,collision_rate,f_active,h_output_mean,h_output_var,stable_rank,kernel_rank,separation_sp"
+        )
+        .expect("failed to write panel timeseries header");
+        Self {
+            writer,
+            path,
+            window_size,
+            last_step: 0,
+            last_accepted: 0,
+            last_rejected: 0,
+        }
+    }
+
+    fn write_row(
+        &mut self,
+        step: usize,
+        accepted: u32,
+        rejected: u32,
+        edges: usize,
+        main_peak_acc: f64,
+        metrics: &PanelMetrics,
+    ) {
+        let accepted_window = accepted.saturating_sub(self.last_accepted);
+        let rejected_window = rejected.saturating_sub(self.last_rejected);
+        let candidate_steps = (accepted_window + rejected_window).max(1);
+        let accept_rate_window = accepted_window as f64 / candidate_steps as f64;
+        writeln!(
+            self.writer,
+            "{},{:.17},{:.17},{:.17},{},{},{},{},{:.17},{:.17},{:.17},{:.17},{:.17},{},{:.17}",
+            step,
+            metrics.panel_probe_acc,
+            main_peak_acc,
+            accept_rate_window,
+            accepted_window,
+            rejected_window,
+            edges,
+            metrics.unique_predictions,
+            metrics.collision_rate,
+            metrics.f_active,
+            metrics.h_output_mean,
+            metrics.h_output_var,
+            metrics.stable_rank,
+            metrics.kernel_rank,
+            metrics.separation_sp
+        )
+        .expect("failed to write panel timeseries row");
+        self.last_step = step;
+        self.last_accepted = accepted;
+        self.last_rejected = rejected;
+    }
+
+    fn flush(&mut self) {
+        self.writer
+            .flush()
+            .expect("failed to flush panel timeseries");
+    }
 }
 
 struct CandidateLogWriter {
@@ -269,6 +362,252 @@ fn eval_smooth_proj(
     }
 }
 
+fn squared_distance(a: &[f64], b: &[f64]) -> f64 {
+    a.iter()
+        .zip(b)
+        .map(|(x, y)| {
+            let d = x - y;
+            d * d
+        })
+        .sum()
+}
+
+fn euclidean_distance(a: &[f64], b: &[f64]) -> f64 {
+    squared_distance(a, b).sqrt()
+}
+
+fn f_active(matrix: &[Vec<f64>]) -> f64 {
+    if matrix.is_empty() || matrix[0].is_empty() {
+        return 0.0;
+    }
+    let rows = matrix.len();
+    let cols = matrix[0].len();
+    let active = (0..cols)
+        .filter(|&col| {
+            let first = matrix[0][col];
+            (1..rows).any(|row| matrix[row][col] != first)
+        })
+        .count();
+    active as f64 / cols as f64
+}
+
+fn output_entropy_stats(entropies: &[f64]) -> (f64, f64) {
+    if entropies.is_empty() {
+        return (0.0, 0.0);
+    }
+    let mean = entropies.iter().sum::<f64>() / entropies.len() as f64;
+    let var = entropies
+        .iter()
+        .map(|value| {
+            let d = value - mean;
+            d * d
+        })
+        .sum::<f64>()
+        / entropies.len() as f64;
+    (mean, var)
+}
+
+fn stable_rank(matrix: &[Vec<f64>]) -> f64 {
+    if matrix.is_empty() || matrix[0].is_empty() {
+        return 0.0;
+    }
+    let rows = matrix.len();
+    let cols = matrix[0].len();
+    let fro2 = matrix.iter().flatten().map(|v| v * v).sum::<f64>();
+    if fro2 <= 0.0 {
+        return 0.0;
+    }
+
+    let mut v = vec![1.0 / (cols as f64).sqrt(); cols];
+    for _ in 0..50 {
+        let mut yv = vec![0.0; rows];
+        for (row_idx, row) in matrix.iter().enumerate() {
+            yv[row_idx] = row.iter().zip(&v).map(|(a, b)| a * b).sum();
+        }
+        let mut z = vec![0.0; cols];
+        for (row, y) in matrix.iter().zip(&yv) {
+            for col in 0..cols {
+                z[col] += row[col] * y;
+            }
+        }
+        let norm = z.iter().map(|x| x * x).sum::<f64>().sqrt();
+        if norm <= 1e-12 {
+            return 0.0;
+        }
+        for col in 0..cols {
+            v[col] = z[col] / norm;
+        }
+    }
+
+    let lambda = matrix
+        .iter()
+        .map(|row| row.iter().zip(&v).map(|(a, b)| a * b).sum::<f64>())
+        .map(|y| y * y)
+        .sum::<f64>();
+    if lambda <= 1e-12 {
+        0.0
+    } else {
+        fro2 / lambda
+    }
+}
+
+fn numerical_rank(matrix: &[Vec<f64>], tol: f64) -> usize {
+    if matrix.is_empty() || matrix[0].is_empty() {
+        return 0;
+    }
+    let mut mat = matrix.to_vec();
+    let rows = mat.len();
+    let cols = mat[0].len();
+    let mut rank = 0usize;
+    for col in 0..cols {
+        let mut pivot = rank;
+        for row in rank..rows {
+            if mat[row][col].abs() > mat[pivot][col].abs() {
+                pivot = row;
+            }
+        }
+        if mat[pivot][col].abs() <= tol {
+            continue;
+        }
+        mat.swap(rank, pivot);
+        let pivot_val = mat[rank][col];
+        for c in col..cols {
+            mat[rank][c] /= pivot_val;
+        }
+        for row in 0..rows {
+            if row == rank {
+                continue;
+            }
+            let factor = mat[row][col];
+            if factor.abs() <= tol {
+                continue;
+            }
+            for c in col..cols {
+                mat[row][c] -= factor * mat[rank][c];
+            }
+        }
+        rank += 1;
+        if rank == rows {
+            break;
+        }
+    }
+    rank
+}
+
+fn separation_sp(inputs: &[Vec<f64>], outputs: &[Vec<f64>]) -> f64 {
+    let n = inputs.len().min(outputs.len());
+    if n < 2 {
+        return 0.0;
+    }
+    let mut total = 0.0;
+    let mut count = 0usize;
+    for i in 0..n {
+        for j in (i + 1)..n {
+            let in_dist = euclidean_distance(&inputs[i], &inputs[j]);
+            let out_dist = euclidean_distance(&outputs[i], &outputs[j]);
+            total += out_dist / (in_dist + 1e-12);
+            count += 1;
+        }
+    }
+    total / count as f64
+}
+
+fn entropy(probs: &[f64]) -> f64 {
+    probs
+        .iter()
+        .filter(|&&p| p > 0.0)
+        .map(|&p| -p * p.ln())
+        .sum()
+}
+
+fn compute_panel_metrics(
+    net: &mut Network,
+    proj: &Int8Projection,
+    table: &VcbpTable,
+    pair_ids: &[u16],
+    hot_to_idx: &[usize],
+    propagation: &instnct_core::PropagationConfig,
+    output_start: usize,
+    neuron_count: usize,
+    input_end: usize,
+    input_scatter: bool,
+) -> PanelMetrics {
+    let snapshot = net.save_state();
+    let usable_pairs = pair_ids.len().saturating_sub(1);
+    let probe_count = PANEL_PROBE_COUNT.min(usable_pairs.max(1));
+    let mut input_matrix = Vec::with_capacity(probe_count);
+    let mut output_matrix = Vec::with_capacity(probe_count);
+    let mut predictions = Vec::with_capacity(probe_count);
+    let mut entropy_values = Vec::with_capacity(probe_count);
+    let mut unique_inputs = HashSet::new();
+    let mut correct = 0usize;
+
+    if usable_pairs == 0 {
+        net.restore_state(&snapshot);
+        return PanelMetrics {
+            panel_probe_acc: 0.0,
+            unique_predictions: 0,
+            collision_rate: 0.0,
+            f_active: 0.0,
+            h_output_mean: 0.0,
+            h_output_var: 0.0,
+            stable_rank: 0.0,
+            kernel_rank: 0,
+            separation_sp: 0.0,
+        };
+    }
+
+    for k in 0..probe_count {
+        let idx = (k * usable_pairs) / probe_count;
+        let cur_id = pair_ids[idx];
+        let tgt_id = pair_ids[idx + 1];
+        let tgt_idx = hot_to_idx[tgt_id as usize];
+        unique_inputs.insert(cur_id);
+
+        net.reset();
+        let emb = table.embed_id(cur_id);
+        let mut input = vec![0i32; neuron_count];
+        quantize_embedding_to_input(table, emb, &mut input, input_end, input_scatter);
+        net.propagate(&input, propagation).unwrap();
+
+        let charges_u8 = net.charge_vec(output_start..neuron_count);
+        let charges: Vec<f64> = charges_u8.iter().map(|&v| v as f64).collect();
+        let scores = proj.raw_scores(&charges_u8);
+        let probs = softmax(&scores);
+        let pred = proj.predict(&charges_u8);
+        if tgt_idx != usize::MAX && pred == tgt_idx {
+            correct += 1;
+        }
+
+        entropy_values.push(entropy(&probs));
+        predictions.push(pred);
+        input_matrix.push(emb.iter().map(|&v| v as f64).collect::<Vec<_>>());
+        output_matrix.push(charges);
+    }
+
+    net.restore_state(&snapshot);
+
+    let unique_predictions = predictions.iter().copied().collect::<HashSet<_>>().len();
+    let collision_rate = if unique_inputs.is_empty() {
+        0.0
+    } else {
+        unique_predictions as f64 / unique_inputs.len() as f64
+    };
+    let (h_output_mean, h_output_var) = output_entropy_stats(&entropy_values);
+
+    PanelMetrics {
+        panel_probe_acc: correct as f64 / probe_count as f64,
+        unique_predictions,
+        collision_rate,
+        f_active: f_active(&output_matrix),
+        h_output_mean,
+        h_output_var,
+        stable_rank: stable_rank(&output_matrix),
+        kernel_rank: numerical_rank(&output_matrix, 1e-6),
+        separation_sp: separation_sp(&input_matrix, &output_matrix),
+    }
+}
+
 /// Seed mutual inhibition: two clusters in the output zone that suppress each other.
 fn seed_mutual_inhibition(net: &mut Network, output_start: usize, h: usize, rng: &mut impl Rng) {
     let mid = output_start + (h - output_start) / 2;
@@ -454,6 +793,8 @@ fn main() {
     let mut input_scatter = false;
     let mut candidate_log_path: Option<PathBuf> = None;
     let mut checkpoint_at_end: Option<PathBuf> = None;
+    let mut panel_interval: Option<usize> = None;
+    let mut panel_log_path: Option<PathBuf> = None;
     let mut arm = String::from("default");
     let mut run_id = String::from("default");
     let mut i = 2;
@@ -489,6 +830,16 @@ fn main() {
             "--checkpoint-at-end" => {
                 i += 1;
                 checkpoint_at_end = Some(PathBuf::from(&args[i]));
+            }
+            "--panel-interval" => {
+                i += 1;
+                let interval: usize = args[i].parse().unwrap();
+                assert!(interval > 0, "--panel-interval must be > 0");
+                panel_interval = Some(interval);
+            }
+            "--panel-log" => {
+                i += 1;
+                panel_log_path = Some(PathBuf::from(&args[i]));
             }
             "--arm" => {
                 i += 1;
@@ -563,6 +914,31 @@ fn main() {
     let mut candidate_log = candidate_log_path
         .as_deref()
         .map(|path| CandidateLogWriter::new(path, &run_id, &arm, seed, h));
+    let inferred_panel_log_path = panel_log_path.clone().or_else(|| {
+        checkpoint_at_end.as_ref().map(|path| {
+            path.parent()
+                .unwrap_or_else(|| Path::new("."))
+                .join("panel_timeseries.csv")
+        })
+    });
+    let fallback_panel_log_path =
+        PathBuf::from("output").join("phase_b_panels").join(&run_id).join("panel_timeseries.csv");
+    let resolved_panel_log_path = panel_interval.map(|_| {
+        inferred_panel_log_path
+            .clone()
+            .unwrap_or_else(|| fallback_panel_log_path.clone())
+    });
+    let mut panel_writer = match (panel_interval, resolved_panel_log_path.clone()) {
+        (Some(interval), Some(path)) => Some(PanelTimeseriesWriter::new(path, interval)),
+        _ => None,
+    };
+    if let Some(panel) = panel_writer.as_ref() {
+        println!(
+            "  Panel timeseries: {} (interval={} steps)",
+            panel.path.display(),
+            panel.window_size
+        );
+    }
 
     // Evolve with smooth cosine (champion fitness)
     for step in 0..steps {
@@ -662,6 +1038,23 @@ fn main() {
                 net.edge_count()
             );
         }
+        if let Some(panel) = panel_writer.as_mut() {
+            if (step + 1) % panel.window_size == 0 {
+                let metrics = compute_panel_metrics(
+                    &mut net,
+                    &proj,
+                    &table,
+                    &pair_ids,
+                    &hot_to_idx,
+                    &init.propagation,
+                    init.output_start(),
+                    h,
+                    init.input_end(),
+                    input_scatter,
+                );
+                panel.write_row(step + 1, accepted, rejected, net.edge_count(), peak, &metrics);
+            }
+        }
     }
 
     let final_acc = eval_accuracy_proj(
@@ -715,6 +1108,10 @@ fn main() {
             packed: packed_path.to_string(),
             checkpoint: checkpoint_path.display().to_string(),
             candidate_log: candidate_log_path.as_ref().map(|p| p.display().to_string()),
+            panel_window_size: panel_interval,
+            panel_timeseries: resolved_panel_log_path
+                .as_ref()
+                .map(|p| p.display().to_string()),
         };
         let meta_json = serde_json::to_string_pretty(&meta).expect("failed to serialize run meta");
         let meta_path = checkpoint_path
@@ -801,6 +1198,9 @@ fn main() {
 
     if let Some(log) = candidate_log.as_mut() {
         log.flush();
+    }
+    if let Some(panel) = panel_writer.as_mut() {
+        panel.flush();
     }
 
     let wall_clock_s = t_start.elapsed().as_secs_f64();

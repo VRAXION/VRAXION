@@ -37,6 +37,8 @@ def parse_args() -> argparse.Namespace:
                    help="run preregistered Phase B arms for evolve_mutual_inhibition")
     p.add_argument("--arms", default="B0,B1,B2,B3,B4",
                    help="comma-separated Phase B arms to run")
+    p.add_argument("--panel-interval", type=int, default=None,
+                   help="write Phase B panel_timeseries.csv every N steps")
     return p.parse_args()
 
 
@@ -122,6 +124,7 @@ def run_phase_b_cell(
     corpus: str,
     packed: str,
     out_dir: Path,
+    panel_interval: int | None,
 ) -> tuple[dict | None, int, float]:
     cfg = phase_b_arm_config(arm, base_steps)
     run_id = f"phase_b_{fixture}_{arm}_H{h}_seed{seed}"
@@ -131,6 +134,7 @@ def run_phase_b_cell(
     stderr_path = run_dir / "stderr.txt"
     candidate_log = run_dir / "candidates.csv"
     checkpoint = run_dir / "final.ckpt"
+    panel_timeseries = run_dir / "panel_timeseries.csv"
 
     cmd = cargo_example_cmd(f"evolve_{fixture}", corpus, packed) + [
         "--steps", str(cfg["steps"]),
@@ -142,6 +146,11 @@ def run_phase_b_cell(
         "--candidate-log", str(candidate_log),
         "--checkpoint-at-end", str(checkpoint),
     ]
+    if panel_interval is not None:
+        cmd += [
+            "--panel-interval", str(panel_interval),
+            "--panel-log", str(panel_timeseries),
+        ]
     if cfg["ticks"] is not None:
         cmd += ["--ticks", str(cfg["ticks"])]
     if cfg["input_scatter"]:
@@ -166,6 +175,9 @@ def run_phase_b_cell(
     panel_rc = run_panel_analyzer(run_dir)
     if panel_rc != 0 or not (run_dir / "panel_summary.json").exists():
         return None, panel_rc or 4, wall
+    if panel_interval is not None and not panel_timeseries.exists():
+        print("  !! missing panel_timeseries.csv", file=sys.stderr)
+        return None, 5, wall
 
     summary.update({
         "arm": arm,
@@ -178,6 +190,8 @@ def run_phase_b_cell(
         "candidate_log": str(candidate_log),
         "checkpoint": str(checkpoint),
         "panel_summary": str(run_dir / "panel_summary.json"),
+        "panel_timeseries": str(panel_timeseries) if panel_interval is not None else "",
+        "panel_window_size": panel_interval or "",
         "expected_candidate_rows": cfg["steps"] * cfg["jackpot"],
     })
     return summary, 0, wall
@@ -286,6 +300,8 @@ def main_phase_b(args: argparse.Namespace) -> int:
     print(f"  H values: {h_values}")
     print(f"  seeds:    {args.seeds} per arm -> seed pattern 42 + i*1000")
     print(f"  base steps: {args.steps}")
+    if args.panel_interval is not None:
+        print(f"  panel interval: {args.panel_interval}")
     print(f"  out:      {out_dir}")
 
     if args.dry_run:
@@ -293,14 +309,24 @@ def main_phase_b(args: argparse.Namespace) -> int:
             cfg = phase_b_arm_config(arm, args.steps)
             print(f"  DRY-RUN fixture={fx} arm={arm} H={h} seed={seed} "
                   f"steps={cfg['steps']} jackpot={cfg['jackpot']} ticks={cfg['ticks'] or 6} "
-                  f"input_scatter={cfg['input_scatter']}")
+                  f"input_scatter={cfg['input_scatter']} panel_interval={args.panel_interval}")
         return 0
 
     t_sweep = time.time()
     for idx, (fx, arm, h, seed) in enumerate(todo, 1):
         elapsed = time.time() - t_sweep
         print(f"\n[{idx}/{len(todo)}] elapsed={elapsed/60:.1f}m fixture={fx} arm={arm} H={h} seed={seed}", flush=True)
-        summary, rc, wall = run_phase_b_cell(fx, arm, h, seed, args.steps, args.corpus, args.packed, out_dir)
+        summary, rc, wall = run_phase_b_cell(
+            fx,
+            arm,
+            h,
+            seed,
+            args.steps,
+            args.corpus,
+            args.packed,
+            out_dir,
+            args.panel_interval,
+        )
         if summary is None:
             print(f"  FAILED (rc={rc}, wall={wall:.1f}s)", file=sys.stderr)
             write_artifacts(out_dir, results)
