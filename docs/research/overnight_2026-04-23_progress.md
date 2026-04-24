@@ -220,3 +220,56 @@ Launched (run_in_background) `python tools/run_grower_regression.py --data-seed 
 Iteration 5 will compute: across seeds {42, 123, 777}, for each of the 6 tasks, does (final val_acc, neuron count, stepping-stone ratio) collapse to a narrow band or scatter widely? If tight collapse → task-level observables are a CLEANER LHS candidate than per-step deltas.
 
 ---
+
+## Iteration 5 — 3-seed grower: val_acc collapses, structure does not
+
+**Timestamp**: 2026-04-24 ~02:08 CEDT
+**Type**: Adversarial probe (of iteration 4's "learning is task-idiosyncratic" claim) + data mining
+
+### What was run
+
+Both background grower-regression bundles finished (seed 123 + seed 777, exit 0). Loaded `metrics.json` from the original 20260412 bundle (seed 42) + the 2 new bundles. Computed per-task cross-seed statistics for val_acc, neurons, depth, stall, wall-clock.
+
+### What was observed (concrete)
+
+**Per-task val_acc across 3 seeds:**
+
+| task | s42 | s123 | s777 | mean | stdev |
+|---|---:|---:|---:|---:|---:|
+| four_parity | 100.0 | 100.0 | 100.0 | 100.00 | **0.00** |
+| four_popcount_2 | 100.0 | 100.0 | 100.0 | 100.00 | **0.00** |
+| is_digit_gt_4 | 71.5 | 70.0 | 67.0 | 69.50 | **2.29** |
+| diagonal_xor | 88.5 | 88.5 | 82.5 | 86.50 | **3.46** |
+| digit_parity | 90.0 | 85.5 | 87.5 | 87.67 | **2.25** |
+| full_parity_4 | 80.5 | 78.0 | 98.0 | 85.50 | **10.90** (wide) |
+
+**Per-task neuron count across 3 seeds:**
+
+| task | s42 | s123 | s777 | mean | stdev |
+|---|---:|---:|---:|---:|---:|
+| four_parity | 6 | 7 | 6 | 6.33 | 0.58 |
+| four_popcount_2 | 7 | 6 | 7 | 6.67 | 0.58 |
+| is_digit_gt_4 | 7 | **3** | **1** | 3.67 | **3.06** (wide) |
+| diagonal_xor | 1 | 1 | 1 | 1.00 | 0.00 |
+| full_parity_4 | 1 | 1 | **5** | 2.33 | **2.31** (wide) |
+| digit_parity | 12 | 8 | 12 | 10.67 | 2.31 |
+
+Wall-clock per task is very stable (stdev 0-2s, max 4.9s on full_parity_4) — search budget is seed-invariant.
+
+### Implication for SCT — MIXED support
+
+**Positive for a LHS candidate:** 5 of 6 tasks show val_acc stdev ≤ 3.5pp across seeds. Task-level final accuracy COLLAPSES. This is the cleanest multi-seed signal I've seen all night. If we define the LHS as "expected final val_acc on task T with architecture A", it IS a well-defined observable with narrow error bars. That rescues the idea of a "learning law" at the task level — just not at the per-step level.
+
+**Negative for structural claims:** neuron count stdev is wide (is_digit_gt_4: seeds used 7/3/1 neurons to hit ~70% val; full_parity_4: 1/1/5 neurons). **The same task outcome can emerge from VERY different internal structures.** There is no unique "solution complexity" for a task — the grower finds multiple equivalent-accuracy solutions of different sizes.
+
+**The paradox on full_parity_4**: seed 777 found a 5-neuron 98% solution where seeds 42 and 123 stopped at 1-neuron 80/78%. That single seed discovered a qualitatively better trajectory. This is exactly what the "stepping stones matter" literature predicts — one mutation path led into a much better basin. Where seeds 42 and 123 got stuck at a local optimum with 1 neuron, seed 777 happened to take the composition-bet path that the grower is designed to allow (the non-strict accept gate), and got there. **This cell is evidence FOR Law III-style claims about exploration diversity mattering**, not against them.
+
+### Adversarial question
+
+The tight val_acc collapse (5 of 6 tasks) might be an artifact of tasks hitting obvious ceilings (two at 100%, two at clean plateaus). Is this "architecture-matters" signal, or just "easy tasks hit the obvious ceiling regardless of seed"? To distinguish, I'd need HARDER tasks where no seed reaches ceiling. The existing grower task list may not include any — that's an overnight-blocked question, flagged for morning.
+
+### Next iteration — meta-reflection
+
+Four iterations since the first data pull (iter 1→5 is 4 deltas). Time for iteration 6 meta block: "what do we believe NOW vs at iter 1, what's the strongest standing claim, what's the cleanest question to hand off in morning findings.md". After that, iteration 7-8 should either run one targeted follow-up or compile the findings.md digest.
+
+---
