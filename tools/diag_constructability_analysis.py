@@ -15,12 +15,19 @@ from pathlib import Path
 
 
 EPS_DEFAULT = 1e-4
+ACCEPT_TOL_DEFAULT = 1e-9
 
 
 def parse_args() -> argparse.Namespace:
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument("--root", required=True, help="Phase B output root")
     p.add_argument("--eps", type=float, default=EPS_DEFAULT, help="positive-delta threshold")
+    p.add_argument(
+        "--accept-tol",
+        type=float,
+        default=ACCEPT_TOL_DEFAULT,
+        help="allowed negative tolerance for accepted candidates when accept_ties is enabled",
+    )
     return p.parse_args()
 
 
@@ -43,7 +50,7 @@ def positive_mean(values: list[float]) -> float:
     return sum(values) / len(values) if values else 0.0
 
 
-def analyze_candidate_log(csv_path: Path, eps: float) -> tuple[dict, list[dict]]:
+def analyze_candidate_log(csv_path: Path, eps: float, accept_tol: float) -> tuple[dict, list[dict]]:
     rows = list(csv.DictReader(csv_path.open(newline="")))
     if not rows:
         raise ValueError(f"{csv_path}: no candidate rows")
@@ -94,12 +101,27 @@ def analyze_candidate_log(csv_path: Path, eps: float) -> tuple[dict, list[dict]]
     useful_sum = 0.0
     selected_positive_steps = 0
     accepted_steps = 0
+    accepted_positive_steps = 0
+    accepted_nonpositive_steps = 0
     for step, step_rows in by_step.items():
-        if len([r for r in step_rows if as_bool(r["accepted"])]) > 1:
+        accepted_rows = [r for r in step_rows if as_bool(r["accepted"])]
+        if len(accepted_rows) > 1:
             raise ValueError(f"{csv_path}: step={step} has multiple accepted candidates")
-        if all(float(r["delta_U"]) <= 0.0 for r in step_rows):
-            if any(as_bool(r["accepted"]) for r in step_rows):
-                raise ValueError(f"{csv_path}: step={step} accepted despite all delta<=0")
+        if accepted_rows:
+            accepted = accepted_rows[0]
+            accepted_delta = float(accepted["delta_U"])
+            if not as_bool(accepted["selected"]):
+                raise ValueError(f"{csv_path}: step={step} accepted candidate was not selected")
+            if not as_bool(accepted["within_cap"]):
+                raise ValueError(f"{csv_path}: step={step} accepted candidate was outside edge cap")
+            if accepted_delta < -accept_tol:
+                raise ValueError(
+                    f"{csv_path}: step={step} accepted negative delta={accepted_delta}"
+                )
+            if accepted_delta > eps:
+                accepted_positive_steps += 1
+            else:
+                accepted_nonpositive_steps += 1
 
         eligible = [float(r["delta_U"]) for r in step_rows if as_bool(r["within_cap"])]
         best_delta = max(eligible) if eligible else 0.0
@@ -124,6 +146,8 @@ def analyze_candidate_log(csv_path: Path, eps: float) -> tuple[dict, list[dict]]
         "steps": len(by_step),
         "evaluated_rows": evaluated_count,
         "accepted_steps": accepted_steps,
+        "accepted_positive_steps": accepted_positive_steps,
+        "accepted_nonpositive_steps": accepted_nonpositive_steps,
         "positive_delta_rows": positive_row_count,
         "V_raw": positive_row_count / len(rows),
         "V_sel": selected_positive_steps / len(by_step),
@@ -189,6 +213,7 @@ def aggregate_runs(runs: list[dict]) -> list[dict]:
             "mean_R_neg": sum(r["R_neg"] for r in arm_runs) / len(arm_runs),
             "mean_cost_eval_ms": sum(r["cost_eval_ms"] for r in arm_runs) / len(arm_runs),
             "mean_C_K_window_ratio": sum(r["C_K_window_ratio"] for r in arm_runs) / len(arm_runs),
+            "mean_accepted_nonpositive_steps": sum(r["accepted_nonpositive_steps"] for r in arm_runs) / len(arm_runs),
         })
     return out
 
@@ -203,7 +228,7 @@ def main() -> int:
     runs: list[dict] = []
     operators: list[dict] = []
     for csv_path in csv_paths:
-        run, op = analyze_candidate_log(csv_path, args.eps)
+        run, op = analyze_candidate_log(csv_path, args.eps, args.accept_tol)
         runs.append(run)
         operators.extend(op)
 
@@ -211,6 +236,7 @@ def main() -> int:
     payload = {
         "root": str(root),
         "eps": args.eps,
+        "accept_tol": args.accept_tol,
         "runs": runs,
         "aggregate_by_arm": aggregate,
         "operator_breakdown": operators,
