@@ -317,3 +317,24 @@ The full_parity_4 stepping-stones divergence (seed 777 found 5-neuron 98% where 
 **Iteration 8 (if time) → Ψ operationalization PREVIEW.** Use existing sweep data to define Ψ as "fraction of cells (per activation class) reaching ≥70% final_lossless" — gives 4 concrete Ψ values from already-generated data without running new training. Explicit preview, not validated.
 
 ---
+
+## Iteration 7 — findings.md consolidated draft
+
+**Timestamp**: 2026-04-24 ~02:17 CEDT
+**Type**: Synthesis write (morning deliverable)
+
+### What was run
+
+Wrote `docs/research/overnight_2026-04-23_findings.md` as the consolidated overnight deliverable. 8 sections: executive summary, belief diff, standing claims with evidence, retractions, orthogonal insights, open adversarial questions, ranked next-steps, methodology suggestions. Total ~200 lines. Includes reproducibility command block.
+
+### What was observed
+
+This iteration was synthesis, not new data. No new numbers. The findings.md compiles iter 1-6 into a single user-facing document with the scope retraction up front in the executive summary (so it's not missed).
+
+### Implication for SCT — NEUTRAL (synthesis step)
+
+### Next iteration — Ψ preview
+
+Iteration 8 will attempt a concrete Ψ measurement from already-available byte-unit sweep data. Definition: `Ψ(activation) = fraction of (H, LD) cells where final_lossless ≥ 70` across 3 seeds. This gives 4 concrete values (one per activation class). Not a validated operationalization, but a first concrete proposal to replace "Ψ = architectural constraint efficiency" as a measurable quantity from existing data. Will be clearly labelled as PREVIEW in findings.md §5 Q3.
+
+---
