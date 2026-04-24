@@ -564,15 +564,23 @@ fn main() {
     let packed_path = &args[1];
     let mut steps = DEFAULT_STEPS;
     let mut seed_count = DEFAULT_SEEDS;
+    let mut cli_h: usize = 256;
+    let mut cli_seed: Option<u64> = None;
 
     let mut i = 2;
     while i < args.len() {
         match args[i].as_str() {
             "--steps" => { i += 1; steps = args[i].parse().unwrap(); }
             "--seeds" => { i += 1; seed_count = args[i].parse().unwrap(); }
+            "--seed" => { i += 1; cli_seed = Some(args[i].parse().unwrap()); }
+            "--H" => { i += 1; cli_h = args[i].parse().unwrap(); }
             other => panic!("unknown flag: {other}"),
         }
         i += 1;
+    }
+    // --seed overrides the multi-seed loop: single run with the given seed.
+    if cli_seed.is_some() {
+        seed_count = 1;
     }
 
     // Load
@@ -608,7 +616,7 @@ fn main() {
         freq_baseline * 100.0);
 
     // Brain config — scaled up
-    let h = 256usize;
+    let h = cli_h;
     let init = InitConfig::phi(h); // proven phi-overlap + chain-50
     let evo_config = init.evolution_config();
 
@@ -618,7 +626,8 @@ fn main() {
     let t_start = Instant::now();
 
     for seed_idx in 0..seed_count {
-        let seed = 42 + seed_idx as u64 * 1000;
+        let seed = cli_seed.unwrap_or(42 + seed_idx as u64 * 1000);
+        let seed_start = Instant::now();
         let mut rng = StdRng::seed_from_u64(seed);
         let mut net = build_network(&init, &mut rng);
 
@@ -799,6 +808,31 @@ fn main() {
         let from_input = bfs_forward(&net, &(0..input_end).collect::<Vec<_>>(), 6);
         let reachable_output = (output_start..h).filter(|&n| from_input[n]).count();
         println!("  Output reachable from input (6 hops): {reachable_output}/{}", h - output_start);
+
+        // Alive-frac mean over 20 deterministically-spaced corpus pairs (for SUMMARY)
+        let alive_samples = 20usize.min(pair_ids.len().max(1));
+        let mut alive_frac_sum = 0.0f64;
+        let out_zone = h - init.output_start();
+        for k in 0..alive_samples {
+            let pid = pair_ids[(k * pair_ids.len()) / alive_samples];
+            net.reset();
+            let emb = table.embed_id(pid);
+            let mut input_buf = vec![0i32; h];
+            table.quantize_to_input(emb, &mut input_buf[..table.e], MAX_CHARGE);
+            net.propagate(&input_buf, &init.propagation).unwrap();
+            let charges = net.charge_vec(init.output_start()..h);
+            let alive = charges.iter().filter(|&&c| c > 0).count();
+            alive_frac_sum += alive as f64 / out_zone.max(1) as f64;
+        }
+        let alive_frac_mean = alive_frac_sum / alive_samples as f64;
+        let seed_wall_clock_s = seed_start.elapsed().as_secs_f64();
+
+        // Machine-readable summary line for multi-seed drivers.
+        println!(
+            "SUMMARY {{\"fixture\":\"bytepair_proj\",\"seed\":{},\"H\":{},\"phi_dim\":{},\"peak_acc\":{:.6},\"final_acc\":{:.6},\"accept_rate_pct\":{:.4},\"alive_frac_mean\":{:.6},\"edges\":{},\"wall_clock_s\":{:.3}}}",
+            seed, h, init.phi_dim, peak, final_acc, rate, alive_frac_mean,
+            net.edge_count(), seed_wall_clock_s
+        );
     }
 
     println!("\nRuntime: {:.1}s", t_start.elapsed().as_secs_f64());

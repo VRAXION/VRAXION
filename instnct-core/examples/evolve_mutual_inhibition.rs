@@ -249,10 +249,14 @@ fn main() {
     let corpus_path = &args[0];
     let packed_path = &args[1];
     let mut steps = DEFAULT_STEPS;
+    let mut cli_seed: u64 = 42;
+    let mut cli_h: usize = 256;
     let mut i = 2;
     while i < args.len() {
         match args[i].as_str() {
             "--steps" => { i += 1; steps = args[i].parse().unwrap(); }
+            "--seed" => { i += 1; cli_seed = args[i].parse().unwrap(); }
+            "--H" => { i += 1; cli_h = args[i].parse().unwrap(); }
             other => panic!("unknown flag: {other}"),
         }
         i += 1;
@@ -265,15 +269,15 @@ fn main() {
     let (pair_ids, hot_to_idx, hot_ids, n_classes) = build_corpus_pairs(&corpus, &table, max_classes);
     let bigram = build_pair_bigram(&pair_ids, &hot_to_idx, n_classes);
 
-    let h = 256usize;
+    let h = cli_h;
     let init = InitConfig::phi(h);
     let evo_config = init.evolution_config();
 
     println!("\n=== MUTUAL INHIBITION EXPERIMENT ===");
-    println!("  H={}, {} steps, {} classes\n", h, steps, n_classes);
+    println!("  H={}, {} steps, {} classes, seed={}\n", h, steps, n_classes, cli_seed);
 
     let t_start = Instant::now();
-    let seed = 42u64;
+    let seed = cli_seed;
     let mut rng = StdRng::seed_from_u64(seed);
     let mut net = build_network(&init, &mut rng);
 
@@ -324,9 +328,26 @@ fn main() {
     let final_acc = eval_accuracy_proj(&mut net, &proj, &table, &pair_ids, &hot_to_idx,
         DEFAULT_FULL_LEN.min(pair_ids.len() / 2), &mut eval_rng, &init.propagation, init.output_start(), h);
     peak = peak.max(final_acc);
+    let final_accept_rate_pct = accepted as f64 / (accepted + rejected).max(1) as f64 * 100.0;
     println!("\n  FINAL: {:.2}%  peak={:.2}%  edges={}  accept={:.0}%",
-        final_acc * 100.0, peak * 100.0, net.edge_count(),
-        accepted as f64 / (accepted + rejected).max(1) as f64 * 100.0);
+        final_acc * 100.0, peak * 100.0, net.edge_count(), final_accept_rate_pct);
+
+    // Alive-frac mean over 20 deterministically-spaced corpus pairs (for SUMMARY)
+    let alive_samples = 20usize.min(pair_ids.len().max(1));
+    let mut alive_frac_sum = 0.0f64;
+    let out_zone = h - init.output_start();
+    for k in 0..alive_samples {
+        let pid = pair_ids[(k * pair_ids.len()) / alive_samples];
+        net.reset();
+        let emb = table.embed_id(pid);
+        let mut input_buf = vec![0i32; h];
+        table.quantize_to_input(emb, &mut input_buf[..table.e], MAX_CHARGE);
+        net.propagate(&input_buf, &init.propagation).unwrap();
+        let charges = net.charge_vec(init.output_start()..h);
+        let alive = charges.iter().filter(|&&c| c > 0).count();
+        alive_frac_sum += alive as f64 / out_zone.max(1) as f64;
+    }
+    let alive_frac_mean = alive_frac_sum / alive_samples as f64;
 
     // Quick adversarial check: do different inputs produce different outputs?
     println!("\n  --- ADVERSARIAL DIVERSITY CHECK ---");
@@ -371,5 +392,13 @@ fn main() {
         println!("    ⚠ Still constant — mutual inhibition not enough alone");
     }
 
-    println!("\nRuntime: {:.1}s", t_start.elapsed().as_secs_f64());
+    let wall_clock_s = t_start.elapsed().as_secs_f64();
+    println!("\nRuntime: {:.1}s", wall_clock_s);
+
+    // Machine-readable summary line for multi-seed drivers.
+    println!(
+        "SUMMARY {{\"fixture\":\"mutual_inhibition\",\"seed\":{},\"H\":{},\"phi_dim\":{},\"peak_acc\":{:.6},\"final_acc\":{:.6},\"accept_rate_pct\":{:.4},\"alive_frac_mean\":{:.6},\"edges\":{},\"unique_preds\":{},\"wall_clock_s\":{:.3}}}",
+        seed, h, init.phi_dim, peak, final_acc, final_accept_rate_pct, alive_frac_mean,
+        net.edge_count(), unique.len(), wall_clock_s
+    );
 }
