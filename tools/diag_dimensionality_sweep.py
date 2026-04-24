@@ -7,6 +7,7 @@ and writes candidate logs, checkpoints, run metadata, and panel summaries.
 from __future__ import annotations
 
 import argparse
+from concurrent.futures import ThreadPoolExecutor, as_completed
 import csv
 import json
 import math
@@ -39,6 +40,8 @@ def parse_args() -> argparse.Namespace:
                    help="comma-separated Phase B arms to run")
     p.add_argument("--panel-interval", type=int, default=None,
                    help="write Phase B panel_timeseries.csv every N steps")
+    p.add_argument("--jobs", type=int, default=1,
+                   help="parallel Phase B cells to run at once")
     return p.parse_args()
 
 
@@ -198,6 +201,15 @@ def run_phase_b_cell(
 
 
 def write_artifacts(out_dir: Path, results: list[dict]) -> None:
+    results = sorted(
+        results,
+        key=lambda r: (
+            r.get("fixture", ""),
+            r.get("arm", ""),
+            int(r.get("H", 0)),
+            int(r.get("seed", 0)),
+        ),
+    )
     (out_dir / "results.json").write_text(json.dumps({"results": results}, indent=2))
     if not results:
         return
@@ -302,6 +314,7 @@ def main_phase_b(args: argparse.Namespace) -> int:
     print(f"  base steps: {args.steps}")
     if args.panel_interval is not None:
         print(f"  panel interval: {args.panel_interval}")
+    print(f"  jobs:     {args.jobs}")
     print(f"  out:      {out_dir}")
 
     if args.dry_run:
@@ -313,30 +326,90 @@ def main_phase_b(args: argparse.Namespace) -> int:
         return 0
 
     t_sweep = time.time()
-    for idx, (fx, arm, h, seed) in enumerate(todo, 1):
-        elapsed = time.time() - t_sweep
-        print(f"\n[{idx}/{len(todo)}] elapsed={elapsed/60:.1f}m fixture={fx} arm={arm} H={h} seed={seed}", flush=True)
-        summary, rc, wall = run_phase_b_cell(
-            fx,
-            arm,
-            h,
-            seed,
-            args.steps,
-            args.corpus,
-            args.packed,
-            out_dir,
-            args.panel_interval,
-        )
-        if summary is None:
-            print(f"  FAILED (rc={rc}, wall={wall:.1f}s)", file=sys.stderr)
+    jobs = max(1, args.jobs)
+    if jobs == 1:
+        for idx, (fx, arm, h, seed) in enumerate(todo, 1):
+            elapsed = time.time() - t_sweep
+            print(f"\n[{idx}/{len(todo)}] elapsed={elapsed/60:.1f}m fixture={fx} arm={arm} H={h} seed={seed}", flush=True)
+            summary, rc, wall = run_phase_b_cell(
+                fx,
+                arm,
+                h,
+                seed,
+                args.steps,
+                args.corpus,
+                args.packed,
+                out_dir,
+                args.panel_interval,
+            )
+            if summary is None:
+                print(f"  FAILED (rc={rc}, wall={wall:.1f}s)", file=sys.stderr)
+                write_artifacts(out_dir, results)
+                return rc or 1
+            summary.setdefault("wall_clock_s", wall)
+            results.append(summary)
             write_artifacts(out_dir, results)
-            return rc or 1
-        summary.setdefault("wall_clock_s", wall)
-        results.append(summary)
-        write_artifacts(out_dir, results)
-        print(f"  done: peak={summary['peak_acc']*100:.2f}% final={summary['final_acc']*100:.2f}% "
-              f"accept={summary['accept_rate_pct']:.2f}% rows={summary['expected_candidate_rows']} "
-              f"wall={summary['wall_clock_s']:.1f}s", flush=True)
+            print(f"  done: peak={summary['peak_acc']*100:.2f}% final={summary['final_acc']*100:.2f}% "
+                  f"accept={summary['accept_rate_pct']:.2f}% rows={summary['expected_candidate_rows']} "
+                  f"wall={summary['wall_clock_s']:.1f}s", flush=True)
+    else:
+        print(f"\nRunning Phase B with {jobs} parallel jobs", flush=True)
+        with ThreadPoolExecutor(max_workers=jobs) as executor:
+            futures = {}
+            for idx, (fx, arm, h, seed) in enumerate(todo, 1):
+                print(f"  queue [{idx}/{len(todo)}] fixture={fx} arm={arm} H={h} seed={seed}", flush=True)
+                future = executor.submit(
+                    run_phase_b_cell,
+                    fx,
+                    arm,
+                    h,
+                    seed,
+                    args.steps,
+                    args.corpus,
+                    args.packed,
+                    out_dir,
+                    args.panel_interval,
+                )
+                futures[future] = (idx, fx, arm, h, seed)
+
+            first_failure = 0
+            for future in as_completed(futures):
+                idx, fx, arm, h, seed = futures[future]
+                elapsed = time.time() - t_sweep
+                try:
+                    summary, rc, wall = future.result()
+                except Exception as exc:
+                    summary, rc, wall = None, 1, 0.0
+                    print(
+                        f"  FAILED [{idx}/{len(todo)}] elapsed={elapsed/60:.1f}m "
+                        f"fixture={fx} arm={arm} H={h} seed={seed}: {exc}",
+                        file=sys.stderr,
+                        flush=True,
+                    )
+                if summary is None:
+                    first_failure = first_failure or (rc or 1)
+                    print(
+                        f"  FAILED [{idx}/{len(todo)}] elapsed={elapsed/60:.1f}m "
+                        f"fixture={fx} arm={arm} H={h} seed={seed} rc={rc} wall={wall:.1f}s",
+                        file=sys.stderr,
+                        flush=True,
+                    )
+                    write_artifacts(out_dir, results)
+                    continue
+
+                summary.setdefault("wall_clock_s", wall)
+                results.append(summary)
+                write_artifacts(out_dir, results)
+                print(
+                    f"  done [{idx}/{len(todo)}] elapsed={elapsed/60:.1f}m "
+                    f"fixture={fx} arm={arm} H={h} seed={seed}: "
+                    f"peak={summary['peak_acc']*100:.2f}% final={summary['final_acc']*100:.2f}% "
+                    f"accept={summary['accept_rate_pct']:.2f}% rows={summary['expected_candidate_rows']} "
+                    f"wall={summary['wall_clock_s']:.1f}s",
+                    flush=True,
+                )
+            if first_failure:
+                return first_failure
 
     print_aggregate(results)
     analysis_rc = run_constructability_analysis(out_dir)
