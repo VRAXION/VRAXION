@@ -132,57 +132,32 @@ def phase_b1_arm_config(arm: str, base_steps: int) -> dict:
 
 
 def phase_d1_arm_config(arm: str, base_steps: int) -> dict:
-    configs = {
-        "D1_STRICT": {
+    def cfg(jackpot: int, accept_policy: str, neutral_p: float | None = None) -> dict:
+        return {
             "steps": base_steps,
-            "jackpot": 9,
+            "jackpot": jackpot,
             "ticks": None,
             "input_scatter": False,
             "accept_ties": False,
-            "accept_policy": "strict",
-            "neutral_p": None,
+            "accept_policy": accept_policy,
+            "neutral_p": neutral_p,
             "accept_epsilon": None,
-        },
-        "D1_ZERO_P01": {
-            "steps": base_steps,
-            "jackpot": 9,
-            "ticks": None,
-            "input_scatter": False,
-            "accept_ties": False,
-            "accept_policy": "zero-p",
-            "neutral_p": 0.1,
-            "accept_epsilon": None,
-        },
-        "D1_ZERO_P03": {
-            "steps": base_steps,
-            "jackpot": 9,
-            "ticks": None,
-            "input_scatter": False,
-            "accept_ties": False,
-            "accept_policy": "zero-p",
-            "neutral_p": 0.3,
-            "accept_epsilon": None,
-        },
-        "D1_ZERO_P06": {
-            "steps": base_steps,
-            "jackpot": 9,
-            "ticks": None,
-            "input_scatter": False,
-            "accept_ties": False,
-            "accept_policy": "zero-p",
-            "neutral_p": 0.6,
-            "accept_epsilon": None,
-        },
-        "D1_ZERO_P10": {
-            "steps": base_steps,
-            "jackpot": 9,
-            "ticks": None,
-            "input_scatter": False,
-            "accept_ties": False,
-            "accept_policy": "zero-p",
-            "neutral_p": 1.0,
-            "accept_epsilon": None,
-        },
+        }
+
+    configs = {}
+    for jackpot in [1, 3, 9]:
+        configs[f"D1_K{jackpot}_STRICT"] = cfg(jackpot, "strict")
+        configs[f"D1_K{jackpot}_ZERO_P03"] = cfg(jackpot, "zero-p", 0.3)
+        configs[f"D1_K{jackpot}_ZERO_P10"] = cfg(jackpot, "zero-p", 1.0)
+
+    # Backward-compatible aliases for older Phase D1 probes. New default D1
+    # runs use the explicit K-qualified arms above.
+    configs.update({
+        "D1_STRICT": configs["D1_K9_STRICT"],
+        "D1_ZERO_P01": cfg(9, "zero-p", 0.1),
+        "D1_ZERO_P03": configs["D1_K9_ZERO_P03"],
+        "D1_ZERO_P06": cfg(9, "zero-p", 0.6),
+        "D1_ZERO_P10": configs["D1_K9_ZERO_P10"],
         "D1_TIES_LEGACY": {
             "steps": base_steps,
             "jackpot": 9,
@@ -193,7 +168,7 @@ def phase_d1_arm_config(arm: str, base_steps: int) -> dict:
             "neutral_p": None,
             "accept_epsilon": None,
         },
-    }
+    })
     if arm not in configs:
         raise ValueError(f"unknown Phase D1 arm: {arm}")
     return configs[arm]
@@ -438,7 +413,8 @@ def main_phase_b_like(args: argparse.Namespace, phase: str, config_fn, default_a
             cfg = config_fn(arm, args.steps)
             print(f"  DRY-RUN fixture={fx} arm={arm} H={h} seed={seed} "
                   f"steps={cfg['steps']} jackpot={cfg['jackpot']} ticks={cfg['ticks'] or 6} "
-                  f"accept_ties={cfg['accept_ties']} input_scatter={cfg['input_scatter']} "
+                  f"accept_ties={cfg['accept_ties']} accept_policy={cfg.get('accept_policy')} "
+                  f"neutral_p={cfg.get('neutral_p')} input_scatter={cfg['input_scatter']} "
                   f"panel_interval={args.panel_interval}")
         return 0
 
@@ -565,12 +541,15 @@ def main_phase_d1(args: argparse.Namespace) -> int:
         "D1",
         phase_d1_arm_config,
         [
-            "D1_STRICT",
-            "D1_ZERO_P01",
-            "D1_ZERO_P03",
-            "D1_ZERO_P06",
-            "D1_ZERO_P10",
-            "D1_TIES_LEGACY",
+            "D1_K1_STRICT",
+            "D1_K1_ZERO_P03",
+            "D1_K1_ZERO_P10",
+            "D1_K3_STRICT",
+            "D1_K3_ZERO_P03",
+            "D1_K3_ZERO_P10",
+            "D1_K9_STRICT",
+            "D1_K9_ZERO_P03",
+            "D1_K9_ZERO_P10",
         ],
     )
 

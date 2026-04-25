@@ -166,6 +166,9 @@ def analyze_candidate_log(csv_path: Path, eps: float, accept_tol: float) -> tupl
             "jackpot": int(meta["jackpot"]),
             "ticks": int(meta["ticks"]),
             "accept_ties": bool(meta.get("accept_ties", False)),
+            "accept_policy": meta.get("accept_policy", ""),
+            "neutral_p": meta.get("neutral_p", ""),
+            "accept_epsilon": meta.get("accept_epsilon", ""),
             "input_scatter": bool(meta["input_scatter"]),
         })
 
@@ -182,7 +185,11 @@ def analyze_candidate_log(csv_path: Path, eps: float, accept_tol: float) -> tupl
             "H": run["H"],
             "phase": run.get("phase", ""),
             "horizon_steps": run.get("horizon_steps", run.get("steps", "")),
+            "jackpot": run.get("jackpot", ""),
             "accept_ties": run.get("accept_ties", ""),
+            "accept_policy": run.get("accept_policy", ""),
+            "neutral_p": run.get("neutral_p", ""),
+            "accept_epsilon": run.get("accept_epsilon", ""),
             "operator_id": op,
             "candidate_rows": len(op_data),
             "evaluated_rows": len(evaluated),
