@@ -12,6 +12,65 @@ use crate::projection::{Int8Projection, WeightBackup};
 use crate::Network;
 use rand::rngs::StdRng;
 use rand::Rng;
+use std::time::Instant;
+
+/// Acceptance policy for best-of-K evolution steps.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum AcceptancePolicy {
+    /// Accept only strict improvements (`delta > 0`).
+    Strict,
+    /// Accept strict improvements and exact ties (`delta >= 0`).
+    Ties,
+    /// Accept improvements and accept near-zero deltas with probability `probability`.
+    ZeroP {
+        /// Probability used when `abs(delta) <= zero_tol`.
+        probability: f64,
+        /// Absolute tolerance used to classify numerical zero deltas.
+        zero_tol: f64,
+    },
+    /// Accept moves whose loss in utility is no worse than `epsilon`.
+    Epsilon {
+        /// Utility tolerance, accepting `delta >= -epsilon`.
+        epsilon: f64,
+    },
+}
+
+impl AcceptancePolicy {
+    /// Build the legacy policy represented by `EvolutionConfig::accept_ties`.
+    pub fn from_accept_ties(accept_ties: bool) -> Self {
+        if accept_ties {
+            Self::Ties
+        } else {
+            Self::Strict
+        }
+    }
+
+    fn accepts(self, delta: f64, rng: &mut impl Rng) -> bool {
+        match self {
+            Self::Strict => delta > 0.0,
+            Self::Ties => delta >= 0.0,
+            Self::ZeroP {
+                probability,
+                zero_tol,
+            } => {
+                if delta > zero_tol {
+                    true
+                } else if delta >= -zero_tol {
+                    if probability <= 0.0 {
+                        false
+                    } else if probability >= 1.0 {
+                        true
+                    } else {
+                        rng.gen_bool(probability)
+                    }
+                } else {
+                    false
+                }
+            }
+            Self::Epsilon { epsilon } => delta >= -epsilon.max(0.0),
+        }
+    }
+}
 
 /// Configuration for the evolution step.
 pub struct EvolutionConfig {
@@ -35,6 +94,37 @@ pub enum StepOutcome {
     /// Mutation attempt failed (e.g. self-loop, duplicate edge) — fitness_fn still
     /// runs once for eval_rng parity, but state is unchanged.
     Skipped,
+}
+
+/// Per-candidate diagnostics emitted by the traced jackpot evolution step.
+#[derive(Clone, Debug)]
+pub struct CandidateTraceRecord {
+    /// Zero-based evolution step index from the caller.
+    pub step: usize,
+    /// Zero-based candidate index within this jackpot step.
+    pub candidate_id: usize,
+    /// Stable mutation operator identifier.
+    pub operator_id: &'static str,
+    /// Whether the sampled mutation changed the network or projection.
+    pub mutated: bool,
+    /// Whether the candidate fitness was evaluated.
+    pub evaluated: bool,
+    /// Parent fitness before evaluating this jackpot batch.
+    pub before_u: f64,
+    /// Candidate fitness after mutation, or `before_u` if not evaluated.
+    pub after_u: f64,
+    /// Candidate fitness delta, `after_u - before_u`.
+    pub delta_u: f64,
+    /// Whether the candidate respected the edge cap.
+    pub within_cap: bool,
+    /// Whether this candidate was the best eligible candidate.
+    pub selected: bool,
+    /// Whether this candidate was finally accepted.
+    pub accepted: bool,
+    /// Wall-clock time spent evaluating this candidate fitness.
+    pub candidate_eval_ms: f64,
+    /// Total wall-clock time spent in the jackpot step.
+    pub step_wall_ms: f64,
 }
 
 /// Run one evolution step with paired evaluation, edge cap, and quality gate.
@@ -99,17 +189,18 @@ where
     let roll = mutation_rng.gen_range(0..100u32);
     let mut weight_backup: Option<WeightBackup> = None;
     let mutated = match roll {
-        0..22 => net.mutate_add_edge(mutation_rng),     // 22% topology growth
-        22..35 => net.mutate_remove_edge(mutation_rng),  // 13% topology pruning
-        35..44 => net.mutate_rewire(mutation_rng),       // 9% rewire existing edge
-        44..57 => net.mutate_reverse(mutation_rng),      // 13% flip edge direction
-        57..63 => net.mutate_mirror(mutation_rng),       // 6% add reverse of existing
-        63..70 => net.mutate_enhance(mutation_rng),      // 7% connect to high-degree neuron
-        70..75 => net.mutate_theta(mutation_rng),        // 5% threshold perturbation
-        75..85 => net.mutate_channel(mutation_rng),      // 10% phase channel perturbation
-        85..90 => net.mutate_add_loop(mutation_rng, 2),  // 5% loop-2 (bidirectional pair)
-        90..95 => net.mutate_add_loop(mutation_rng, 3),  // 5% loop-3 (triangle circuit)
-        _ => {                                           // 5% projection weight perturbation
+        0..22 => net.mutate_add_edge(mutation_rng), // 22% topology growth
+        22..35 => net.mutate_remove_edge(mutation_rng), // 13% topology pruning
+        35..44 => net.mutate_rewire(mutation_rng),  // 9% rewire existing edge
+        44..57 => net.mutate_reverse(mutation_rng), // 13% flip edge direction
+        57..63 => net.mutate_mirror(mutation_rng),  // 6% add reverse of existing
+        63..70 => net.mutate_enhance(mutation_rng), // 7% connect to high-degree neuron
+        70..75 => net.mutate_theta(mutation_rng),   // 5% threshold perturbation
+        75..85 => net.mutate_channel(mutation_rng), // 10% phase channel perturbation
+        85..90 => net.mutate_add_loop(mutation_rng, 2), // 5% loop-2 (bidirectional pair)
+        90..95 => net.mutate_add_loop(mutation_rng, 3), // 5% loop-3 (triangle circuit)
+        _ => {
+            // 5% projection weight perturbation
             weight_backup = Some(projection.mutate_one(mutation_rng));
             true
         }
@@ -275,6 +366,196 @@ where
     StepOutcome::Rejected
 }
 
+/// Run a jackpot evolution step and emit one trace record per candidate.
+///
+/// This is intentionally separate from [`evolution_step_jackpot`] so the
+/// canonical no-log hot path remains unchanged. The mutation schedule, paired
+/// evaluation, best-of-K selection, edge-cap gate, and final eval-RNG advance
+/// mirror [`evolution_step_jackpot`].
+pub fn evolution_step_jackpot_traced<F, T>(
+    net: &mut Network,
+    projection: &mut Int8Projection,
+    mutation_rng: &mut impl Rng,
+    eval_rng: &mut StdRng,
+    fitness_fn: F,
+    config: &EvolutionConfig,
+    candidates: usize,
+    step: usize,
+    trace: T,
+) -> StepOutcome
+where
+    F: FnMut(&mut Network, &Int8Projection, &mut StdRng) -> f64,
+    T: FnMut(&CandidateTraceRecord),
+{
+    evolution_step_jackpot_traced_with_policy(
+        net,
+        projection,
+        mutation_rng,
+        eval_rng,
+        fitness_fn,
+        config,
+        AcceptancePolicy::from_accept_ties(config.accept_ties),
+        candidates,
+        step,
+        trace,
+    )
+}
+
+/// Run a traced jackpot evolution step with an explicit acceptance policy.
+pub fn evolution_step_jackpot_traced_with_policy<F, T>(
+    net: &mut Network,
+    projection: &mut Int8Projection,
+    mutation_rng: &mut impl Rng,
+    eval_rng: &mut StdRng,
+    mut fitness_fn: F,
+    config: &EvolutionConfig,
+    acceptance_policy: AcceptancePolicy,
+    candidates: usize,
+    step: usize,
+    mut trace: T,
+) -> StepOutcome
+where
+    F: FnMut(&mut Network, &Int8Projection, &mut StdRng) -> f64,
+    T: FnMut(&CandidateTraceRecord),
+{
+    let step_started = Instant::now();
+    let candidates = candidates.max(1);
+
+    let eval_rng_snapshot = eval_rng.clone();
+    let before = fitness_fn(net, projection, eval_rng);
+    *eval_rng = eval_rng_snapshot.clone();
+
+    let parent_snapshot = net.save_state();
+    let parent_projection = projection.clone();
+    let edges_before = net.edge_count();
+
+    let mut best_delta = f64::NEG_INFINITY;
+    let mut best_index: Option<usize> = None;
+    let mut best_net_snapshot = None;
+    let mut best_projection = None;
+    let mut any_mutated = false;
+    let mut records = Vec::with_capacity(candidates);
+
+    for candidate_id in 0..candidates {
+        net.restore_state(&parent_snapshot);
+        *projection = parent_projection.clone();
+
+        let roll = mutation_rng.gen_range(0..100u32);
+        let mut _weight_backup: Option<WeightBackup> = None;
+        let (operator_id, mutated) = match roll {
+            0..22 => ("add_edge", net.mutate_add_edge(mutation_rng)),
+            22..35 => ("remove_edge", net.mutate_remove_edge(mutation_rng)),
+            35..44 => ("rewire", net.mutate_rewire(mutation_rng)),
+            44..57 => ("reverse", net.mutate_reverse(mutation_rng)),
+            57..63 => ("mirror", net.mutate_mirror(mutation_rng)),
+            63..70 => ("enhance", net.mutate_enhance(mutation_rng)),
+            70..75 => ("theta", net.mutate_theta(mutation_rng)),
+            75..85 => ("channel", net.mutate_channel(mutation_rng)),
+            85..90 => ("loop2", net.mutate_add_loop(mutation_rng, 2)),
+            90..95 => ("loop3", net.mutate_add_loop(mutation_rng, 3)),
+            _ => {
+                _weight_backup = Some(projection.mutate_one(mutation_rng));
+                ("projection_weight", true)
+            }
+        };
+
+        if !mutated {
+            records.push(CandidateTraceRecord {
+                step,
+                candidate_id,
+                operator_id,
+                mutated: false,
+                evaluated: false,
+                before_u: before,
+                after_u: before,
+                delta_u: 0.0,
+                within_cap: true,
+                selected: false,
+                accepted: false,
+                candidate_eval_ms: 0.0,
+                step_wall_ms: 0.0,
+            });
+            continue;
+        }
+        any_mutated = true;
+
+        let cand_eval_rng = eval_rng_snapshot.clone();
+        let eval_started = Instant::now();
+        let after = fitness_fn(net, projection, &mut cand_eval_rng.clone());
+        let candidate_eval_ms = eval_started.elapsed().as_secs_f64() * 1000.0;
+
+        let edge_grew = net.edge_count() > edges_before;
+        let within_cap = !edge_grew || net.edge_count() <= config.edge_cap;
+        let delta = after - before;
+
+        if delta > best_delta && within_cap {
+            best_delta = delta;
+            best_index = Some(candidate_id);
+            best_net_snapshot = Some(net.save_state());
+            best_projection = Some(projection.clone());
+        }
+
+        records.push(CandidateTraceRecord {
+            step,
+            candidate_id,
+            operator_id,
+            mutated: true,
+            evaluated: true,
+            before_u: before,
+            after_u: after,
+            delta_u: delta,
+            within_cap,
+            selected: false,
+            accepted: false,
+            candidate_eval_ms,
+            step_wall_ms: 0.0,
+        });
+    }
+
+    net.restore_state(&parent_snapshot);
+    *projection = parent_projection.clone();
+    let _ = fitness_fn(net, projection, eval_rng);
+
+    let outcome = if !any_mutated {
+        net.restore_state(&parent_snapshot);
+        *projection = parent_projection;
+        StepOutcome::Skipped
+    } else {
+        let dominated = acceptance_policy.accepts(best_delta, mutation_rng);
+
+        if dominated {
+            if let (Some(net_s), Some(proj_s)) = (best_net_snapshot, best_projection) {
+                net.restore_state(&net_s);
+                *projection = proj_s;
+                StepOutcome::Accepted
+            } else {
+                net.restore_state(&parent_snapshot);
+                *projection = parent_projection;
+                StepOutcome::Rejected
+            }
+        } else {
+            net.restore_state(&parent_snapshot);
+            *projection = parent_projection;
+            StepOutcome::Rejected
+        }
+    };
+
+    let accepted_index = if outcome == StepOutcome::Accepted {
+        best_index
+    } else {
+        None
+    };
+    let step_wall_ms = step_started.elapsed().as_secs_f64() * 1000.0;
+    for record in &mut records {
+        record.selected = Some(record.candidate_id) == best_index;
+        record.accepted = Some(record.candidate_id) == accepted_index;
+        record.step_wall_ms = step_wall_ms;
+        trace(record);
+    }
+
+    outcome
+}
+
 /// Copy-on-write evolution step: O(1) save/restore instead of O(H+E) cloning.
 ///
 /// Identical semantics to [`evolution_step`], but uses [`MutationUndo`] tokens
@@ -316,7 +597,7 @@ where
         57..63 => net.mutate_mirror_undo(mutation_rng),
         63..70 => net.mutate_enhance_undo(mutation_rng),
         70..75 => net.mutate_theta_undo(mutation_rng),
-        75..85 => net.mutate_channel_undo(mutation_rng),     // 10% (ORIGINAL)
+        75..85 => net.mutate_channel_undo(mutation_rng), // 10% (ORIGINAL)
         85..90 => net.mutate_add_loop_undo(mutation_rng, 2), // 5%
         90..95 => net.mutate_add_loop_undo(mutation_rng, 3), // 5%
         _ => {
@@ -385,7 +666,10 @@ mod tests {
         let mut net = make_test_network(&mut rng);
         let mut proj = Int8Projection::new(10, 5, &mut rng);
         let mut eval_rng = StdRng::seed_from_u64(99);
-        let config = EvolutionConfig { edge_cap: 1000, accept_ties: true };
+        let config = EvolutionConfig {
+            edge_cap: 1000,
+            accept_ties: true,
+        };
 
         let edges_before = net.edge_count();
         let spike_before: Vec<SpikeData> = net.spike_data().to_vec();
@@ -401,7 +685,11 @@ mod tests {
             |_net, _proj, eval_rng| {
                 call_count += 1;
                 let _ = eval_rng.gen_range(0..100u32); // consume eval_rng
-                if call_count <= 1 { 1.0 } else { 0.0 } // before=1.0, after=0.0 → reject
+                if call_count <= 1 {
+                    1.0
+                } else {
+                    0.0
+                } // before=1.0, after=0.0 → reject
             },
             &config,
         );
@@ -409,7 +697,11 @@ mod tests {
         // Could be Rejected or Skipped (if mutation failed)
         if outcome == StepOutcome::Rejected {
             assert_eq!(net.edge_count(), edges_before, "edge count should restore");
-            assert_eq!(net.spike_data(), spike_before.as_slice(), "spike data should restore");
+            assert_eq!(
+                net.spike_data(),
+                spike_before.as_slice(),
+                "spike data should restore"
+            );
         }
         assert_eq!(proj.weight_count(), proj_before);
     }
@@ -420,7 +712,10 @@ mod tests {
         let mut net = make_test_network(&mut rng);
         let mut proj = Int8Projection::new(10, 5, &mut rng);
         let mut eval_rng = StdRng::seed_from_u64(99);
-        let config = EvolutionConfig { edge_cap: 1000, accept_ties: true };
+        let config = EvolutionConfig {
+            edge_cap: 1000,
+            accept_ties: true,
+        };
 
         // Run many steps with fitness that always improves → always accept
         let mut accepted_any = false;
@@ -434,7 +729,11 @@ mod tests {
                 |_net, _proj, eval_rng| {
                     call_count += 1;
                     let _ = eval_rng.gen_range(0..100u32);
-                    if call_count <= 1 { 0.0 } else { 1.0 } // before=0.0, after=1.0 → accept
+                    if call_count <= 1 {
+                        0.0
+                    } else {
+                        1.0
+                    } // before=0.0, after=1.0 → accept
                 },
                 &config,
             );
@@ -442,7 +741,10 @@ mod tests {
                 accepted_any = true;
             }
         }
-        assert!(accepted_any, "should accept at least one step in 50 attempts");
+        assert!(
+            accepted_any,
+            "should accept at least one step in 50 attempts"
+        );
     }
 
     #[test]
@@ -453,7 +755,10 @@ mod tests {
         let mut rng = StdRng::seed_from_u64(42);
         let proj = Int8Projection::new(1, 2, &mut rng);
         let mut eval_rng = StdRng::seed_from_u64(99);
-        let config = EvolutionConfig { edge_cap: 1000, accept_ties: true };
+        let config = EvolutionConfig {
+            edge_cap: 1000,
+            accept_ties: true,
+        };
 
         let mut skipped = 0u32;
         for _ in 0..200 {
@@ -473,11 +778,18 @@ mod tests {
             );
             if outcome == StepOutcome::Skipped {
                 skipped += 1;
-                assert_eq!(test_net.edge_count(), edges_before, "skip should not change edges");
+                assert_eq!(
+                    test_net.edge_count(),
+                    edges_before,
+                    "skip should not change edges"
+                );
             }
         }
         // 90% of rolls are topology mutations, all fail on 1-neuron network → many skips
-        assert!(skipped > 50, "expected many skipped steps on 1-neuron network, got {skipped}");
+        assert!(
+            skipped > 50,
+            "expected many skipped steps on 1-neuron network, got {skipped}"
+        );
     }
 
     #[test]
@@ -486,7 +798,10 @@ mod tests {
         let mut net = make_test_network(&mut rng);
         let mut proj = Int8Projection::new(10, 5, &mut rng);
         let mut eval_rng = StdRng::seed_from_u64(99);
-        let config = EvolutionConfig { edge_cap: 1000, accept_ties: true };
+        let config = EvolutionConfig {
+            edge_cap: 1000,
+            accept_ties: true,
+        };
 
         // Track the eval_rng value at start of each fitness_fn call
         let mut rng_values = Vec::new();
@@ -514,15 +829,107 @@ mod tests {
     }
 
     #[test]
+    fn jackpot_traced_emits_candidate_rows_and_accept_invariants() {
+        let mut rng = StdRng::seed_from_u64(123);
+        let mut net = make_test_network(&mut rng);
+        let mut proj = Int8Projection::new(10, 5, &mut rng);
+        let mut eval_rng = StdRng::seed_from_u64(456);
+        let config = EvolutionConfig {
+            edge_cap: 1000,
+            accept_ties: false,
+        };
+
+        let mut records = Vec::new();
+        let mut calls = 0u32;
+        let outcome = evolution_step_jackpot_traced(
+            &mut net,
+            &mut proj,
+            &mut rng,
+            &mut eval_rng,
+            |_net, _proj, eval_rng| {
+                calls += 1;
+                let _ = eval_rng.gen_range(0..100u32);
+                if calls == 1 {
+                    0.0
+                } else {
+                    1.0
+                }
+            },
+            &config,
+            20,
+            123,
+            |record| records.push(record.clone()),
+        );
+
+        assert_eq!(records.len(), 20);
+        assert!(records.iter().all(|record| record.step == 123));
+        assert!(records.iter().any(|record| record.evaluated));
+
+        let selected_count = records.iter().filter(|record| record.selected).count();
+        let accepted_count = records.iter().filter(|record| record.accepted).count();
+        assert!(selected_count <= 1);
+        assert_eq!(
+            accepted_count,
+            if outcome == StepOutcome::Accepted {
+                1
+            } else {
+                0
+            }
+        );
+
+        for record in &records {
+            if record.evaluated {
+                assert!((record.delta_u - (record.after_u - record.before_u)).abs() <= 1e-12);
+            }
+            if record.accepted {
+                assert!(record.selected);
+            }
+        }
+    }
+
+    #[test]
+    fn acceptance_policy_zero_p_bounds_zero_delta() {
+        let mut rng = StdRng::seed_from_u64(7);
+        let reject_zero = AcceptancePolicy::ZeroP {
+            probability: 0.0,
+            zero_tol: 1e-12,
+        };
+        let accept_zero = AcceptancePolicy::ZeroP {
+            probability: 1.0,
+            zero_tol: 1e-12,
+        };
+        assert!(reject_zero.accepts(0.001, &mut rng));
+        assert!(!reject_zero.accepts(0.0, &mut rng));
+        assert!(accept_zero.accepts(0.0, &mut rng));
+        assert!(!accept_zero.accepts(-1e-6, &mut rng));
+    }
+
+    #[test]
+    fn acceptance_policy_epsilon_accepts_bounded_negative_delta() {
+        let mut rng = StdRng::seed_from_u64(9);
+        let policy = AcceptancePolicy::Epsilon { epsilon: 1e-4 };
+        assert!(policy.accepts(0.0, &mut rng));
+        assert!(policy.accepts(-5e-5, &mut rng));
+        assert!(!policy.accepts(-2e-4, &mut rng));
+    }
+
+    #[test]
     fn cow_rejected_step_restores_state() {
         let mut rng = StdRng::seed_from_u64(42);
         let mut net = make_test_network(&mut rng);
         let mut proj = Int8Projection::new(10, 5, &mut rng);
         let mut eval_rng = StdRng::seed_from_u64(99);
-        let config = EvolutionConfig { edge_cap: 1000, accept_ties: true };
+        let config = EvolutionConfig {
+            edge_cap: 1000,
+            accept_ties: true,
+        };
 
         // Save the learned parameters (not ephemeral state)
-        let edges_before: Vec<_> = net.graph().iter_edges().map(|e| (e.source, e.target)).collect();
+        let edges_before: Vec<_> = net
+            .graph()
+            .iter_edges()
+            .map(|e| (e.source, e.target))
+            .collect();
         let thresholds_before: Vec<u8> = net.spike_data().iter().map(|s| s.threshold).collect();
         let channels_before: Vec<u8> = net.spike_data().iter().map(|s| s.channel).collect();
         let polarity_before: Vec<i8> = net.polarity().to_vec();
@@ -537,14 +944,22 @@ mod tests {
             |_net, _proj, eval_rng| {
                 call_count += 1;
                 let _ = eval_rng.gen_range(0..100u32);
-                if call_count <= 1 { 1.0 } else { 0.0 }
+                if call_count <= 1 {
+                    1.0
+                } else {
+                    0.0
+                }
             },
             &config,
         );
 
         if outcome == StepOutcome::Rejected {
             // Verify topology restored
-            let mut edges_after: Vec<_> = net.graph().iter_edges().map(|e| (e.source, e.target)).collect();
+            let mut edges_after: Vec<_> = net
+                .graph()
+                .iter_edges()
+                .map(|e| (e.source, e.target))
+                .collect();
             let mut edges_sorted = edges_before.clone();
             edges_sorted.sort();
             edges_after.sort();
@@ -553,9 +968,19 @@ mod tests {
             // Verify parameters restored
             let thresholds_after: Vec<u8> = net.spike_data().iter().map(|s| s.threshold).collect();
             let channels_after: Vec<u8> = net.spike_data().iter().map(|s| s.channel).collect();
-            assert_eq!(thresholds_before, thresholds_after, "CoW: thresholds should restore");
-            assert_eq!(channels_before, channels_after, "CoW: channels should restore");
-            assert_eq!(polarity_before, net.polarity(), "CoW: polarity should restore");
+            assert_eq!(
+                thresholds_before, thresholds_after,
+                "CoW: thresholds should restore"
+            );
+            assert_eq!(
+                channels_before, channels_after,
+                "CoW: channels should restore"
+            );
+            assert_eq!(
+                polarity_before,
+                net.polarity(),
+                "CoW: polarity should restore"
+            );
         }
     }
 
@@ -565,7 +990,10 @@ mod tests {
         let mut net = make_test_network(&mut rng);
         let mut proj = Int8Projection::new(10, 5, &mut rng);
         let mut eval_rng = StdRng::seed_from_u64(99);
-        let config = EvolutionConfig { edge_cap: 1000, accept_ties: true };
+        let config = EvolutionConfig {
+            edge_cap: 1000,
+            accept_ties: true,
+        };
 
         let mut accepted_any = false;
         for _ in 0..50 {
@@ -578,7 +1006,11 @@ mod tests {
                 |_net, _proj, eval_rng| {
                     call_count += 1;
                     let _ = eval_rng.gen_range(0..100u32);
-                    if call_count <= 1 { 0.0 } else { 1.0 }
+                    if call_count <= 1 {
+                        0.0
+                    } else {
+                        1.0
+                    }
                 },
                 &config,
             );
@@ -586,7 +1018,10 @@ mod tests {
                 accepted_any = true;
             }
         }
-        assert!(accepted_any, "CoW: should accept at least one step in 50 attempts");
+        assert!(
+            accepted_any,
+            "CoW: should accept at least one step in 50 attempts"
+        );
     }
 
     #[test]
@@ -596,10 +1031,17 @@ mod tests {
         let mut net = make_test_network(&mut rng);
         let mut proj = Int8Projection::new(10, 5, &mut rng);
         let mut eval_rng = StdRng::seed_from_u64(99);
-        let config = EvolutionConfig { edge_cap: 1000, accept_ties: false };
+        let config = EvolutionConfig {
+            edge_cap: 1000,
+            accept_ties: false,
+        };
 
         // Record initial state
-        let mut initial_edges: Vec<_> = net.graph().iter_edges().map(|e| (e.source, e.target)).collect();
+        let mut initial_edges: Vec<_> = net
+            .graph()
+            .iter_edges()
+            .map(|e| (e.source, e.target))
+            .collect();
         initial_edges.sort();
         let initial_thresholds: Vec<u8> = net.spike_data().iter().map(|s| s.threshold).collect();
         let initial_channels: Vec<u8> = net.spike_data().iter().map(|s| s.channel).collect();
@@ -617,7 +1059,11 @@ mod tests {
                     call_count += 1;
                     let _ = eval_rng.gen_range(0..100u32);
                     // Always reject: before > after
-                    if call_count <= 1 { 100.0 } else { 0.0 }
+                    if call_count <= 1 {
+                        100.0
+                    } else {
+                        0.0
+                    }
                 },
                 &config,
             );
@@ -627,20 +1073,37 @@ mod tests {
         }
 
         // After all rejections, state should be unchanged
-        let mut final_edges: Vec<_> = net.graph().iter_edges().map(|e| (e.source, e.target)).collect();
+        let mut final_edges: Vec<_> = net
+            .graph()
+            .iter_edges()
+            .map(|e| (e.source, e.target))
+            .collect();
         final_edges.sort();
-        assert_eq!(initial_edges, final_edges, "200 rejects: edge set should be unchanged");
+        assert_eq!(
+            initial_edges, final_edges,
+            "200 rejects: edge set should be unchanged"
+        );
         assert_eq!(
             initial_thresholds,
-            net.spike_data().iter().map(|s| s.threshold).collect::<Vec<_>>(),
+            net.spike_data()
+                .iter()
+                .map(|s| s.threshold)
+                .collect::<Vec<_>>(),
             "200 rejects: thresholds should be unchanged"
         );
         assert_eq!(
             initial_channels,
-            net.spike_data().iter().map(|s| s.channel).collect::<Vec<_>>(),
+            net.spike_data()
+                .iter()
+                .map(|s| s.channel)
+                .collect::<Vec<_>>(),
             "200 rejects: channels should be unchanged"
         );
-        assert_eq!(initial_polarity, net.polarity(), "200 rejects: polarity should be unchanged");
+        assert_eq!(
+            initial_polarity,
+            net.polarity(),
+            "200 rejects: polarity should be unchanged"
+        );
         assert!(rejected > 100, "expected many rejections, got {rejected}");
     }
 }

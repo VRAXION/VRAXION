@@ -11,15 +11,19 @@
 //! This is winner-take-all dynamics — the "domb a völgyek közt" (hill between valleys).
 
 use instnct_core::{
-    build_network, cosine_similarity, evolution_step_jackpot, save_checkpoint, softmax,
-    InitConfig, Int8Projection, Network, StepOutcome, VcbpTable,
+    build_network, cosine_similarity, evolution_step_jackpot,
+    evolution_step_jackpot_traced_with_policy, save_checkpoint, softmax, AcceptancePolicy,
+    CandidateTraceRecord, CheckpointMeta, InitConfig, Int8Projection, Network, StepOutcome, VcbpTable,
 };
 use rand::rngs::StdRng;
 use rand::Rng;
 use rand::SeedableRng;
-use std::collections::VecDeque;
+use serde::Serialize;
+use std::collections::{HashSet, VecDeque};
 use std::env;
-use std::path::Path;
+use std::fs::{create_dir_all, write, File};
+use std::io::{BufWriter, Write};
+use std::path::{Path, PathBuf};
 use std::time::Instant;
 
 const MAX_CHARGE: i32 = 7;
@@ -27,10 +31,214 @@ const DEFAULT_STEPS: usize = 20_000;
 const DEFAULT_EVAL_LEN: usize = 100;
 const DEFAULT_FULL_LEN: usize = 1_000;
 const PROGRESS_INTERVAL: usize = 2_000;
+const PANEL_PROBE_COUNT: usize = 32;
 
 // ── Reuse helpers from evolve_bytepair_proj ──
 
-fn build_corpus_pairs(corpus: &[u8], table: &VcbpTable, max_classes: usize) -> (Vec<u16>, Vec<usize>, Vec<u16>, usize) {
+#[derive(Serialize)]
+struct RunMeta {
+    fixture: &'static str,
+    phase: String,
+    arm: String,
+    run_id: String,
+    seed: u64,
+    #[serde(rename = "H")]
+    h: usize,
+    steps: usize,
+    horizon_steps: usize,
+    jackpot: usize,
+    ticks: usize,
+    accept_ties: bool,
+    accept_policy: String,
+    neutral_p: Option<f64>,
+    accept_epsilon: Option<f64>,
+    input_scatter: bool,
+    corpus: String,
+    packed: String,
+    checkpoint: String,
+    candidate_log: Option<String>,
+    panel_window_size: Option<usize>,
+    panel_timeseries: Option<String>,
+}
+
+struct PanelMetrics {
+    panel_probe_acc: f64,
+    unique_predictions: usize,
+    collision_rate: f64,
+    f_active: f64,
+    h_output_mean: f64,
+    h_output_var: f64,
+    stable_rank: f64,
+    kernel_rank: usize,
+    separation_sp: f64,
+}
+
+struct PanelTimeseriesWriter {
+    writer: BufWriter<File>,
+    path: PathBuf,
+    window_size: usize,
+    last_step: usize,
+    last_accepted: u32,
+    last_rejected: u32,
+}
+
+impl PanelTimeseriesWriter {
+    fn new(path: PathBuf, window_size: usize) -> Self {
+        if let Some(parent) = path.parent() {
+            if !parent.as_os_str().is_empty() {
+                create_dir_all(parent).expect("failed to create panel timeseries directory");
+            }
+        }
+        let mut writer =
+            BufWriter::new(File::create(&path).expect("failed to create panel timeseries"));
+        writeln!(
+            writer,
+            "step,panel_probe_acc,main_peak_acc,accept_rate_window,accepted_window,rejected_window,edges,unique_predictions,collision_rate,f_active,h_output_mean,h_output_var,stable_rank,kernel_rank,separation_sp"
+        )
+        .expect("failed to write panel timeseries header");
+        Self {
+            writer,
+            path,
+            window_size,
+            last_step: 0,
+            last_accepted: 0,
+            last_rejected: 0,
+        }
+    }
+
+    fn write_row(
+        &mut self,
+        step: usize,
+        accepted: u32,
+        rejected: u32,
+        edges: usize,
+        main_peak_acc: f64,
+        metrics: &PanelMetrics,
+    ) {
+        let accepted_window = accepted.saturating_sub(self.last_accepted);
+        let rejected_window = rejected.saturating_sub(self.last_rejected);
+        let candidate_steps = (accepted_window + rejected_window).max(1);
+        let accept_rate_window = accepted_window as f64 / candidate_steps as f64;
+        writeln!(
+            self.writer,
+            "{},{:.17},{:.17},{:.17},{},{},{},{},{:.17},{:.17},{:.17},{:.17},{:.17},{},{:.17}",
+            step,
+            metrics.panel_probe_acc,
+            main_peak_acc,
+            accept_rate_window,
+            accepted_window,
+            rejected_window,
+            edges,
+            metrics.unique_predictions,
+            metrics.collision_rate,
+            metrics.f_active,
+            metrics.h_output_mean,
+            metrics.h_output_var,
+            metrics.stable_rank,
+            metrics.kernel_rank,
+            metrics.separation_sp
+        )
+        .expect("failed to write panel timeseries row");
+        self.last_step = step;
+        self.last_accepted = accepted;
+        self.last_rejected = rejected;
+    }
+
+    fn flush(&mut self) {
+        self.writer
+            .flush()
+            .expect("failed to flush panel timeseries");
+    }
+}
+
+struct CandidateLogWriter {
+    writer: BufWriter<File>,
+    run_id: String,
+    arm: String,
+    seed: u64,
+    h: usize,
+}
+
+impl CandidateLogWriter {
+    fn new(path: &Path, run_id: &str, arm: &str, seed: u64, h: usize) -> Self {
+        if let Some(parent) = path.parent() {
+            if !parent.as_os_str().is_empty() {
+                create_dir_all(parent).expect("failed to create candidate log directory");
+            }
+        }
+        let mut writer =
+            BufWriter::new(File::create(path).expect("failed to create candidate log"));
+        writeln!(
+            writer,
+            "run_id,arm,seed,H,step,candidate_id,operator_id,mutated,evaluated,before_U,after_U,delta_U,within_cap,selected,accepted,candidate_eval_ms,step_wall_ms"
+        )
+        .expect("failed to write candidate log header");
+        Self {
+            writer,
+            run_id: run_id.to_string(),
+            arm: arm.to_string(),
+            seed,
+            h,
+        }
+    }
+
+    fn write_record(&mut self, record: &CandidateTraceRecord) {
+        writeln!(
+            self.writer,
+            "{},{},{},{},{},{},{},{},{},{:.17},{:.17},{:.17},{},{},{},{:.6},{:.6}",
+            self.run_id,
+            self.arm,
+            self.seed,
+            self.h,
+            record.step,
+            record.candidate_id,
+            record.operator_id,
+            record.mutated,
+            record.evaluated,
+            record.before_u,
+            record.after_u,
+            record.delta_u,
+            record.within_cap,
+            record.selected,
+            record.accepted,
+            record.candidate_eval_ms,
+            record.step_wall_ms
+        )
+        .expect("failed to write candidate log record");
+    }
+
+    fn flush(&mut self) {
+        self.writer.flush().expect("failed to flush candidate log");
+    }
+}
+
+fn quantize_embedding_to_input(
+    table: &VcbpTable,
+    embedding: &[f32],
+    input: &mut [i32],
+    input_end: usize,
+    input_scatter: bool,
+) {
+    if !input_scatter {
+        table.quantize_to_input(embedding, &mut input[..table.e], MAX_CHARGE);
+        return;
+    }
+
+    let mut base = vec![0i32; table.e];
+    table.quantize_to_input(embedding, &mut base, MAX_CHARGE);
+    for dst in input.iter_mut().take(input_end) {
+        *dst = 0;
+    }
+    for idx in 0..input_end.min(input.len()) {
+        input[idx] = base[idx % table.e];
+    }
+}
+
+fn build_corpus_pairs(
+    corpus: &[u8],
+    table: &VcbpTable,
+    max_classes: usize,
+) -> (Vec<u16>, Vec<usize>, Vec<u16>, usize) {
     let n_pairs = corpus.len() / 2;
     let mut pair_ids = Vec::with_capacity(n_pairs);
     let mut freq = vec![0u32; 65536];
@@ -63,51 +271,78 @@ fn build_pair_bigram(pair_ids: &[u16], hot_to_idx: &[usize], n_hot: usize) -> Ve
             counts[ci][ni] += 1;
         }
     }
-    counts.iter().map(|row| {
-        let total: f64 = row.iter().map(|&c| c as f64).sum();
-        if total < 1.0 { vec![1.0 / n_hot as f64; n_hot] }
-        else { row.iter().map(|&c| c as f64 / total).collect() }
-    }).collect()
+    counts
+        .iter()
+        .map(|row| {
+            let total: f64 = row.iter().map(|&c| c as f64).sum();
+            if total < 1.0 {
+                vec![1.0 / n_hot as f64; n_hot]
+            } else {
+                row.iter().map(|&c| c as f64 / total).collect()
+            }
+        })
+        .collect()
 }
 
 fn eval_accuracy_proj(
-    net: &mut Network, proj: &Int8Projection, table: &VcbpTable,
-    pair_ids: &[u16], hot_to_idx: &[usize],
-    len: usize, rng: &mut StdRng,
-    propagation: &instnct_core::PropagationConfig, output_start: usize, neuron_count: usize,
+    net: &mut Network,
+    proj: &Int8Projection,
+    table: &VcbpTable,
+    pair_ids: &[u16],
+    hot_to_idx: &[usize],
+    len: usize,
+    rng: &mut StdRng,
+    propagation: &instnct_core::PropagationConfig,
+    output_start: usize,
+    neuron_count: usize,
+    input_end: usize,
+    input_scatter: bool,
 ) -> f64 {
     let n = pair_ids.len();
-    if n <= len + 1 { return 0.0; }
+    if n <= len + 1 {
+        return 0.0;
+    }
     let off = rng.gen_range(1..=n - len - 1);
     net.reset();
-    let e = table.e;
     let mut correct = 0u32;
     for i in 0..len {
         let cur_id = pair_ids[off + i];
-        let prev_id = if i > 0 { pair_ids[off + i - 1] } else { cur_id };
+        let _prev_id = if i > 0 { pair_ids[off + i - 1] } else { cur_id };
         let tgt_id = pair_ids[off + i + 1];
         let tgt_idx = hot_to_idx[tgt_id as usize];
         let emb = table.embed_id(cur_id);
         let mut input = vec![0i32; neuron_count];
-        table.quantize_to_input(emb, &mut input[..e], MAX_CHARGE);
+        quantize_embedding_to_input(table, emb, &mut input, input_end, input_scatter);
         net.propagate(&input, propagation).unwrap();
         let predicted_idx = proj.predict(&net.charge_vec(output_start..neuron_count));
-        if tgt_idx != usize::MAX && predicted_idx == tgt_idx { correct += 1; }
+        if tgt_idx != usize::MAX && predicted_idx == tgt_idx {
+            correct += 1;
+        }
     }
     correct as f64 / len as f64
 }
 
 fn eval_smooth_proj(
-    net: &mut Network, proj: &Int8Projection, table: &VcbpTable,
-    pair_ids: &[u16], hot_to_idx: &[usize], bigram: &[Vec<f64>],
-    len: usize, rng: &mut StdRng,
-    propagation: &instnct_core::PropagationConfig, output_start: usize, neuron_count: usize,
+    net: &mut Network,
+    proj: &Int8Projection,
+    table: &VcbpTable,
+    pair_ids: &[u16],
+    hot_to_idx: &[usize],
+    bigram: &[Vec<f64>],
+    len: usize,
+    rng: &mut StdRng,
+    propagation: &instnct_core::PropagationConfig,
+    output_start: usize,
+    neuron_count: usize,
+    input_end: usize,
+    input_scatter: bool,
 ) -> f64 {
     let n = pair_ids.len();
-    if n <= len + 1 { return 0.0; }
+    if n <= len + 1 {
+        return 0.0;
+    }
     let off = rng.gen_range(1..=n - len - 1);
     net.reset();
-    let e = table.e;
     let mut total_cos = 0.0f64;
     let mut counted = 0usize;
     for i in 0..len {
@@ -115,16 +350,268 @@ fn eval_smooth_proj(
         let cur_idx = hot_to_idx[cur_id as usize];
         let emb = table.embed_id(cur_id);
         let mut input = vec![0i32; neuron_count];
-        table.quantize_to_input(emb, &mut input[..e], MAX_CHARGE);
+        quantize_embedding_to_input(table, emb, &mut input, input_end, input_scatter);
         net.propagate(&input, propagation).unwrap();
-        if cur_idx == usize::MAX { continue; }
+        if cur_idx == usize::MAX {
+            continue;
+        }
         let scores = proj.raw_scores(&net.charge_vec(output_start..neuron_count));
         let probs = softmax(&scores);
         let target = &bigram[cur_idx];
         total_cos += cosine_similarity(&probs, target);
         counted += 1;
     }
-    if counted == 0 { 0.0 } else { total_cos / counted as f64 }
+    if counted == 0 {
+        0.0
+    } else {
+        total_cos / counted as f64
+    }
+}
+
+fn squared_distance(a: &[f64], b: &[f64]) -> f64 {
+    a.iter()
+        .zip(b)
+        .map(|(x, y)| {
+            let d = x - y;
+            d * d
+        })
+        .sum()
+}
+
+fn euclidean_distance(a: &[f64], b: &[f64]) -> f64 {
+    squared_distance(a, b).sqrt()
+}
+
+fn f_active(matrix: &[Vec<f64>]) -> f64 {
+    if matrix.is_empty() || matrix[0].is_empty() {
+        return 0.0;
+    }
+    let rows = matrix.len();
+    let cols = matrix[0].len();
+    let active = (0..cols)
+        .filter(|&col| {
+            let first = matrix[0][col];
+            (1..rows).any(|row| matrix[row][col] != first)
+        })
+        .count();
+    active as f64 / cols as f64
+}
+
+fn output_entropy_stats(entropies: &[f64]) -> (f64, f64) {
+    if entropies.is_empty() {
+        return (0.0, 0.0);
+    }
+    let mean = entropies.iter().sum::<f64>() / entropies.len() as f64;
+    let var = entropies
+        .iter()
+        .map(|value| {
+            let d = value - mean;
+            d * d
+        })
+        .sum::<f64>()
+        / entropies.len() as f64;
+    (mean, var)
+}
+
+fn stable_rank(matrix: &[Vec<f64>]) -> f64 {
+    if matrix.is_empty() || matrix[0].is_empty() {
+        return 0.0;
+    }
+    let rows = matrix.len();
+    let cols = matrix[0].len();
+    let fro2 = matrix.iter().flatten().map(|v| v * v).sum::<f64>();
+    if fro2 <= 0.0 {
+        return 0.0;
+    }
+
+    let mut v = vec![1.0 / (cols as f64).sqrt(); cols];
+    for _ in 0..50 {
+        let mut yv = vec![0.0; rows];
+        for (row_idx, row) in matrix.iter().enumerate() {
+            yv[row_idx] = row.iter().zip(&v).map(|(a, b)| a * b).sum();
+        }
+        let mut z = vec![0.0; cols];
+        for (row, y) in matrix.iter().zip(&yv) {
+            for col in 0..cols {
+                z[col] += row[col] * y;
+            }
+        }
+        let norm = z.iter().map(|x| x * x).sum::<f64>().sqrt();
+        if norm <= 1e-12 {
+            return 0.0;
+        }
+        for col in 0..cols {
+            v[col] = z[col] / norm;
+        }
+    }
+
+    let lambda = matrix
+        .iter()
+        .map(|row| row.iter().zip(&v).map(|(a, b)| a * b).sum::<f64>())
+        .map(|y| y * y)
+        .sum::<f64>();
+    if lambda <= 1e-12 {
+        0.0
+    } else {
+        fro2 / lambda
+    }
+}
+
+fn numerical_rank(matrix: &[Vec<f64>], tol: f64) -> usize {
+    if matrix.is_empty() || matrix[0].is_empty() {
+        return 0;
+    }
+    let mut mat = matrix.to_vec();
+    let rows = mat.len();
+    let cols = mat[0].len();
+    let mut rank = 0usize;
+    for col in 0..cols {
+        let mut pivot = rank;
+        for row in rank..rows {
+            if mat[row][col].abs() > mat[pivot][col].abs() {
+                pivot = row;
+            }
+        }
+        if mat[pivot][col].abs() <= tol {
+            continue;
+        }
+        mat.swap(rank, pivot);
+        let pivot_val = mat[rank][col];
+        for c in col..cols {
+            mat[rank][c] /= pivot_val;
+        }
+        for row in 0..rows {
+            if row == rank {
+                continue;
+            }
+            let factor = mat[row][col];
+            if factor.abs() <= tol {
+                continue;
+            }
+            for c in col..cols {
+                mat[row][c] -= factor * mat[rank][c];
+            }
+        }
+        rank += 1;
+        if rank == rows {
+            break;
+        }
+    }
+    rank
+}
+
+fn separation_sp(inputs: &[Vec<f64>], outputs: &[Vec<f64>]) -> f64 {
+    let n = inputs.len().min(outputs.len());
+    if n < 2 {
+        return 0.0;
+    }
+    let mut total = 0.0;
+    let mut count = 0usize;
+    for i in 0..n {
+        for j in (i + 1)..n {
+            let in_dist = euclidean_distance(&inputs[i], &inputs[j]);
+            let out_dist = euclidean_distance(&outputs[i], &outputs[j]);
+            total += out_dist / (in_dist + 1e-12);
+            count += 1;
+        }
+    }
+    total / count as f64
+}
+
+fn entropy(probs: &[f64]) -> f64 {
+    probs
+        .iter()
+        .filter(|&&p| p > 0.0)
+        .map(|&p| -p * p.ln())
+        .sum()
+}
+
+fn compute_panel_metrics(
+    net: &mut Network,
+    proj: &Int8Projection,
+    table: &VcbpTable,
+    pair_ids: &[u16],
+    hot_to_idx: &[usize],
+    propagation: &instnct_core::PropagationConfig,
+    output_start: usize,
+    neuron_count: usize,
+    input_end: usize,
+    input_scatter: bool,
+) -> PanelMetrics {
+    let snapshot = net.save_state();
+    let usable_pairs = pair_ids.len().saturating_sub(1);
+    let probe_count = PANEL_PROBE_COUNT.min(usable_pairs.max(1));
+    let mut input_matrix = Vec::with_capacity(probe_count);
+    let mut output_matrix = Vec::with_capacity(probe_count);
+    let mut predictions = Vec::with_capacity(probe_count);
+    let mut entropy_values = Vec::with_capacity(probe_count);
+    let mut unique_inputs = HashSet::new();
+    let mut correct = 0usize;
+
+    if usable_pairs == 0 {
+        net.restore_state(&snapshot);
+        return PanelMetrics {
+            panel_probe_acc: 0.0,
+            unique_predictions: 0,
+            collision_rate: 0.0,
+            f_active: 0.0,
+            h_output_mean: 0.0,
+            h_output_var: 0.0,
+            stable_rank: 0.0,
+            kernel_rank: 0,
+            separation_sp: 0.0,
+        };
+    }
+
+    for k in 0..probe_count {
+        let idx = (k * usable_pairs) / probe_count;
+        let cur_id = pair_ids[idx];
+        let tgt_id = pair_ids[idx + 1];
+        let tgt_idx = hot_to_idx[tgt_id as usize];
+        unique_inputs.insert(cur_id);
+
+        net.reset();
+        let emb = table.embed_id(cur_id);
+        let mut input = vec![0i32; neuron_count];
+        quantize_embedding_to_input(table, emb, &mut input, input_end, input_scatter);
+        net.propagate(&input, propagation).unwrap();
+
+        let charges_u8 = net.charge_vec(output_start..neuron_count);
+        let charges: Vec<f64> = charges_u8.iter().map(|&v| v as f64).collect();
+        let scores = proj.raw_scores(&charges_u8);
+        let probs = softmax(&scores);
+        let pred = proj.predict(&charges_u8);
+        if tgt_idx != usize::MAX && pred == tgt_idx {
+            correct += 1;
+        }
+
+        entropy_values.push(entropy(&probs));
+        predictions.push(pred);
+        input_matrix.push(emb.iter().map(|&v| v as f64).collect::<Vec<_>>());
+        output_matrix.push(charges);
+    }
+
+    net.restore_state(&snapshot);
+
+    let unique_predictions = predictions.iter().copied().collect::<HashSet<_>>().len();
+    let collision_rate = if unique_inputs.is_empty() {
+        0.0
+    } else {
+        unique_predictions as f64 / unique_inputs.len() as f64
+    };
+    let (h_output_mean, h_output_var) = output_entropy_stats(&entropy_values);
+
+    PanelMetrics {
+        panel_probe_acc: correct as f64 / probe_count as f64,
+        unique_predictions,
+        collision_rate,
+        f_active: f_active(&output_matrix),
+        h_output_mean,
+        h_output_var,
+        stable_rank: stable_rank(&output_matrix),
+        kernel_rank: numerical_rank(&output_matrix, 1e-6),
+        separation_sp: separation_sp(&input_matrix, &output_matrix),
+    }
 }
 
 /// Seed mutual inhibition: two clusters in the output zone that suppress each other.
@@ -171,8 +658,10 @@ fn seed_mutual_inhibition(net: &mut Network, output_start: usize, h: usize, rng:
         net.spike_data_mut()[n].threshold = 1;
     }
 
-    println!("  Mutual inhibition: {} cross-edges per direction, boundary neurons inhibitory",
-        n_cross);
+    println!(
+        "  Mutual inhibition: {} cross-edges per direction, boundary neurons inhibitory",
+        n_cross
+    );
     println!("  Cluster A: neurons {}..{}", output_start, mid);
     println!("  Cluster B: neurons {}..{}", mid, h);
 }
@@ -182,13 +671,23 @@ fn bfs_forward(net: &Network, starts: &[usize], max_hops: usize) -> Vec<bool> {
     let h = net.neuron_count();
     let mut reached = vec![false; h];
     let mut queue = VecDeque::new();
-    for &s in starts { reached[s] = true; queue.push_back((s, 0usize)); }
+    for &s in starts {
+        reached[s] = true;
+        queue.push_back((s, 0usize));
+    }
     let mut adj: Vec<Vec<u16>> = vec![Vec::new(); h];
-    for edge in net.graph().iter_edges() { adj[edge.source as usize].push(edge.target); }
+    for edge in net.graph().iter_edges() {
+        adj[edge.source as usize].push(edge.target);
+    }
     while let Some((node, depth)) = queue.pop_front() {
-        if depth >= max_hops { continue; }
+        if depth >= max_hops {
+            continue;
+        }
         for &tgt in &adj[node] {
-            if !reached[tgt as usize] { reached[tgt as usize] = true; queue.push_back((tgt as usize, depth + 1)); }
+            if !reached[tgt as usize] {
+                reached[tgt as usize] = true;
+                queue.push_back((tgt as usize, depth + 1));
+            }
         }
     }
     reached
@@ -198,26 +697,49 @@ fn bfs_reverse(net: &Network, ends: &[usize], max_hops: usize) -> Vec<bool> {
     let h = net.neuron_count();
     let mut reached = vec![false; h];
     let mut queue = VecDeque::new();
-    for &e in ends { reached[e] = true; queue.push_back((e, 0usize)); }
+    for &e in ends {
+        reached[e] = true;
+        queue.push_back((e, 0usize));
+    }
     let mut rev_adj: Vec<Vec<u16>> = vec![Vec::new(); h];
-    for edge in net.graph().iter_edges() { rev_adj[edge.target as usize].push(edge.source); }
+    for edge in net.graph().iter_edges() {
+        rev_adj[edge.target as usize].push(edge.source);
+    }
     while let Some((node, depth)) = queue.pop_front() {
-        if depth >= max_hops { continue; }
+        if depth >= max_hops {
+            continue;
+        }
         for &src in &rev_adj[node] {
-            if !reached[src as usize] { reached[src as usize] = true; queue.push_back((src as usize, depth + 1)); }
+            if !reached[src as usize] {
+                reached[src as usize] = true;
+                queue.push_back((src as usize, depth + 1));
+            }
         }
     }
     reached
 }
 
-fn seed_rooted_pathways(net: &mut Network, input_end: usize, output_start: usize, n_pathways: usize, rng: &mut impl Rng) -> usize {
+fn seed_rooted_pathways(
+    net: &mut Network,
+    input_end: usize,
+    output_start: usize,
+    n_pathways: usize,
+    rng: &mut impl Rng,
+) -> usize {
     let h = net.neuron_count();
     let from_input = bfs_forward(net, &(0..input_end).collect::<Vec<_>>(), 4);
     let to_output = bfs_reverse(net, &(output_start..h).collect::<Vec<_>>(), 4);
-    let input_anchors: Vec<usize> = (0..h).filter(|&n| from_input[n] && n < output_start).collect();
+    let input_anchors: Vec<usize> = (0..h)
+        .filter(|&n| from_input[n] && n < output_start)
+        .collect();
     let output_anchors: Vec<usize> = (0..h).filter(|&n| to_output[n] && n >= input_end).collect();
     if input_anchors.is_empty() || output_anchors.is_empty() {
-        for _ in 0..n_pathways.min(5) { net.graph_mut().add_edge(rng.gen_range(0..input_end) as u16, rng.gen_range(output_start..h) as u16); }
+        for _ in 0..n_pathways.min(5) {
+            net.graph_mut().add_edge(
+                rng.gen_range(0..input_end) as u16,
+                rng.gen_range(output_start..h) as u16,
+            );
+        }
         return 0;
     }
     let mut built = 0;
@@ -225,16 +747,37 @@ fn seed_rooted_pathways(net: &mut Network, input_end: usize, output_start: usize
         let ai = input_anchors[rng.gen_range(0..input_anchors.len())];
         let ao = output_anchors[rng.gen_range(0..output_anchors.len())];
         let avail: Vec<usize> = (0..h).filter(|n| *n != ai && *n != ao).collect();
-        if avail.len() < 2 { continue; }
+        if avail.len() < 2 {
+            continue;
+        }
         let nm = rng.gen_range(2..=3.min(avail.len()));
         let mut mids = Vec::new();
         let mut pool = avail;
-        for _ in 0..nm { let idx = rng.gen_range(0..pool.len()); mids.push(pool.swap_remove(idx)); }
-        let mut chain = vec![ai]; chain.extend(&mids); chain.push(ao);
+        for _ in 0..nm {
+            let idx = rng.gen_range(0..pool.len());
+            mids.push(pool.swap_remove(idx));
+        }
+        let mut chain = vec![ai];
+        chain.extend(&mids);
+        chain.push(ao);
         let mut added = false;
-        for w in chain.windows(2) { if net.graph_mut().add_edge(w[0] as u16, w[1] as u16) { added = true; } }
-        if net.graph_mut().add_edge(ao as u16, ai as u16) { added = true; }
-        if added { for &n in &chain { let sd = &mut net.spike_data_mut()[n]; if sd.threshold > 1 { sd.threshold -= 1; } } built += 1; }
+        for w in chain.windows(2) {
+            if net.graph_mut().add_edge(w[0] as u16, w[1] as u16) {
+                added = true;
+            }
+        }
+        if net.graph_mut().add_edge(ao as u16, ai as u16) {
+            added = true;
+        }
+        if added {
+            for &n in &chain {
+                let sd = &mut net.spike_data_mut()[n];
+                if sd.threshold > 1 {
+                    sd.threshold -= 1;
+                }
+            }
+            built += 1;
+        }
     }
     built
 }
@@ -251,12 +794,101 @@ fn main() {
     let mut steps = DEFAULT_STEPS;
     let mut cli_seed: u64 = 42;
     let mut cli_h: usize = 256;
+    let mut jackpot: usize = 9;
+    let mut cli_ticks: Option<usize> = None;
+    let mut cli_accept_ties: Option<bool> = None;
+    let mut cli_accept_policy: Option<String> = None;
+    let mut cli_neutral_p: f64 = 1.0;
+    let mut cli_accept_epsilon: f64 = 0.0;
+    let mut input_scatter = false;
+    let mut candidate_log_path: Option<PathBuf> = None;
+    let mut checkpoint_at_end: Option<PathBuf> = None;
+    let mut panel_interval: Option<usize> = None;
+    let mut panel_log_path: Option<PathBuf> = None;
+    let mut phase = String::from("default");
+    let mut arm = String::from("default");
+    let mut run_id = String::from("default");
     let mut i = 2;
     while i < args.len() {
         match args[i].as_str() {
-            "--steps" => { i += 1; steps = args[i].parse().unwrap(); }
-            "--seed" => { i += 1; cli_seed = args[i].parse().unwrap(); }
-            "--H" => { i += 1; cli_h = args[i].parse().unwrap(); }
+            "--steps" => {
+                i += 1;
+                steps = args[i].parse().unwrap();
+            }
+            "--seed" => {
+                i += 1;
+                cli_seed = args[i].parse().unwrap();
+            }
+            "--H" => {
+                i += 1;
+                cli_h = args[i].parse().unwrap();
+            }
+            "--jackpot" => {
+                i += 1;
+                jackpot = args[i].parse().unwrap();
+            }
+            "--ticks" => {
+                i += 1;
+                cli_ticks = Some(args[i].parse().unwrap());
+            }
+            "--accept-ties" => {
+                i += 1;
+                cli_accept_ties = Some(match args[i].as_str() {
+                    "true" | "1" | "yes" | "on" => true,
+                    "false" | "0" | "no" | "off" => false,
+                    value => panic!("--accept-ties expects true|false, got {value}"),
+                });
+            }
+            "--accept-policy" => {
+                i += 1;
+                cli_accept_policy = Some(args[i].clone());
+            }
+            "--neutral-p" => {
+                i += 1;
+                cli_neutral_p = args[i].parse().unwrap();
+                assert!(
+                    (0.0..=1.0).contains(&cli_neutral_p),
+                    "--neutral-p must be in [0, 1]"
+                );
+            }
+            "--accept-epsilon" => {
+                i += 1;
+                cli_accept_epsilon = args[i].parse().unwrap();
+                assert!(cli_accept_epsilon >= 0.0, "--accept-epsilon must be >= 0");
+            }
+            "--input-scatter" => {
+                input_scatter = true;
+            }
+            "--candidate-log" => {
+                i += 1;
+                candidate_log_path = Some(PathBuf::from(&args[i]));
+            }
+            "--checkpoint-at-end" => {
+                i += 1;
+                checkpoint_at_end = Some(PathBuf::from(&args[i]));
+            }
+            "--panel-interval" => {
+                i += 1;
+                let interval: usize = args[i].parse().unwrap();
+                assert!(interval > 0, "--panel-interval must be > 0");
+                panel_interval = Some(interval);
+            }
+            "--panel-log" => {
+                i += 1;
+                panel_log_path = Some(PathBuf::from(&args[i]));
+            }
+            "--phase" => {
+                i += 1;
+                phase = args[i].clone();
+            }
+            "--arm" => {
+                i += 1;
+                arm = args[i].clone();
+            }
+            "--run-id" => {
+                i += 1;
+                run_id = args[i].clone();
+            }
             other => panic!("unknown flag: {other}"),
         }
         i += 1;
@@ -266,15 +898,58 @@ fn main() {
     let table = VcbpTable::from_packed(Path::new(packed_path)).unwrap();
     let corpus = std::fs::read(corpus_path).unwrap();
     let max_classes = 397;
-    let (pair_ids, hot_to_idx, hot_ids, n_classes) = build_corpus_pairs(&corpus, &table, max_classes);
+    let (pair_ids, hot_to_idx, _hot_ids, n_classes) =
+        build_corpus_pairs(&corpus, &table, max_classes);
     let bigram = build_pair_bigram(&pair_ids, &hot_to_idx, n_classes);
 
     let h = cli_h;
-    let init = InitConfig::phi(h);
+    let mut init = InitConfig::phi(h);
+    if let Some(ticks) = cli_ticks {
+        init.propagation.ticks_per_token = ticks;
+    }
+    if let Some(accept_ties) = cli_accept_ties {
+        init.accept_ties = accept_ties;
+    }
+    let accept_policy_name = cli_accept_policy.unwrap_or_else(|| {
+        if init.accept_ties {
+            String::from("ties")
+        } else {
+            String::from("strict")
+        }
+    });
+    let acceptance_policy = match accept_policy_name.as_str() {
+        "strict" => AcceptancePolicy::Strict,
+        "ties" => AcceptancePolicy::Ties,
+        "zero-p" | "zero_p" => AcceptancePolicy::ZeroP {
+            probability: cli_neutral_p,
+            zero_tol: 1e-12,
+        },
+        "epsilon" => AcceptancePolicy::Epsilon {
+            epsilon: cli_accept_epsilon,
+        },
+        other => panic!("--accept-policy expects strict|ties|zero-p|epsilon, got {other}"),
+    };
+    init.accept_ties = matches!(acceptance_policy, AcceptancePolicy::Ties);
     let evo_config = init.evolution_config();
 
     println!("\n=== MUTUAL INHIBITION EXPERIMENT ===");
-    println!("  H={}, {} steps, {} classes, seed={}\n", h, steps, n_classes, cli_seed);
+    println!(
+        "  H={}, {} steps, {} classes, seed={}, jackpot={}, ticks={}, accept_ties={}, accept_policy={}, neutral_p={:.3}, accept_epsilon={:.6}, input_scatter={}, phase={}, arm={}, run_id={}\n",
+        h,
+        steps,
+        n_classes,
+        cli_seed,
+        jackpot,
+        init.propagation.ticks_per_token,
+        init.accept_ties,
+        accept_policy_name,
+        cli_neutral_p,
+        cli_accept_epsilon,
+        input_scatter,
+        phase,
+        arm,
+        run_id
+    );
 
     let t_start = Instant::now();
     let seed = cli_seed;
@@ -282,55 +957,281 @@ fn main() {
     let mut net = build_network(&init, &mut rng);
 
     // Seed rooted pathways
-    let n_paths = seed_rooted_pathways(&mut net, init.input_end(), init.output_start(), 30, &mut rng);
+    let n_paths = seed_rooted_pathways(
+        &mut net,
+        init.input_end(),
+        init.output_start(),
+        30,
+        &mut rng,
+    );
     println!("  Rooted pathways: {n_paths}, edges={}", net.edge_count());
 
     // *** THE KEY: seed mutual inhibition ***
     seed_mutual_inhibition(&mut net, init.output_start(), h, &mut rng);
     println!("  After mutual inhibition: edges={}", net.edge_count());
 
-    let mut proj = Int8Projection::new(init.phi_dim, n_classes, &mut StdRng::seed_from_u64(seed + 200));
+    let mut proj = Int8Projection::new(
+        init.phi_dim,
+        n_classes,
+        &mut StdRng::seed_from_u64(seed + 200),
+    );
     let mut eval_rng = StdRng::seed_from_u64(seed + 1000);
     let mut accepted = 0u32;
     let mut rejected = 0u32;
     let mut peak = 0.0f64;
+    let mut candidate_log = candidate_log_path
+        .as_deref()
+        .map(|path| CandidateLogWriter::new(path, &run_id, &arm, seed, h));
+    let inferred_panel_log_path = panel_log_path.clone().or_else(|| {
+        checkpoint_at_end.as_ref().map(|path| {
+            path.parent()
+                .unwrap_or_else(|| Path::new("."))
+                .join("panel_timeseries.csv")
+        })
+    });
+    let fallback_panel_log_path =
+        PathBuf::from("output").join("phase_b_panels").join(&run_id).join("panel_timeseries.csv");
+    let resolved_panel_log_path = panel_interval.map(|_| {
+        inferred_panel_log_path
+            .clone()
+            .unwrap_or_else(|| fallback_panel_log_path.clone())
+    });
+    let mut panel_writer = match (panel_interval, resolved_panel_log_path.clone()) {
+        (Some(interval), Some(path)) => Some(PanelTimeseriesWriter::new(path, interval)),
+        _ => None,
+    };
+    if let Some(panel) = panel_writer.as_ref() {
+        println!(
+            "  Panel timeseries: {} (interval={} steps)",
+            panel.path.display(),
+            panel.window_size
+        );
+    }
 
     // Evolve with smooth cosine (champion fitness)
     for step in 0..steps {
-        let outcome = evolution_step_jackpot(
-            &mut net, &mut proj, &mut rng, &mut eval_rng,
-            |n, p, er| {
-                let cos = eval_smooth_proj(n, p, &table, &pair_ids, &hot_to_idx, &bigram,
-                    DEFAULT_EVAL_LEN, er, &init.propagation, init.output_start(), h);
-                // Anti-monopoly: reward more alive output neurons
-                let charges = n.charge_vec(init.output_start()..h);
-                let alive = charges.iter().filter(|&&c| c > 0).count();
-                let alive_frac = alive as f64 / (h - init.output_start()) as f64;
-                cos * (1.0 + 0.1 * alive_frac) // very gentle diversity pressure (λ=0.1)
-            },
-            &evo_config, 9,
-        );
+        let outcome = if let Some(log) = candidate_log.as_mut() {
+            evolution_step_jackpot_traced_with_policy(
+                &mut net,
+                &mut proj,
+                &mut rng,
+                &mut eval_rng,
+                |n, p, er| {
+                    let cos = eval_smooth_proj(
+                        n,
+                        p,
+                        &table,
+                        &pair_ids,
+                        &hot_to_idx,
+                        &bigram,
+                        DEFAULT_EVAL_LEN,
+                        er,
+                        &init.propagation,
+                        init.output_start(),
+                        h,
+                        init.input_end(),
+                        input_scatter,
+                    );
+                    // Anti-monopoly: reward more alive output neurons
+                    let charges = n.charge_vec(init.output_start()..h);
+                    let alive = charges.iter().filter(|&&c| c > 0).count();
+                    let alive_frac = alive as f64 / (h - init.output_start()) as f64;
+                    cos * (1.0 + 0.1 * alive_frac) // very gentle diversity pressure (λ=0.1)
+                },
+                &evo_config,
+                acceptance_policy,
+                jackpot,
+                step,
+                |record| log.write_record(record),
+            )
+        } else if !matches!(acceptance_policy, AcceptancePolicy::Strict | AcceptancePolicy::Ties) {
+            evolution_step_jackpot_traced_with_policy(
+                &mut net,
+                &mut proj,
+                &mut rng,
+                &mut eval_rng,
+                |n, p, er| {
+                    let cos = eval_smooth_proj(
+                        n,
+                        p,
+                        &table,
+                        &pair_ids,
+                        &hot_to_idx,
+                        &bigram,
+                        DEFAULT_EVAL_LEN,
+                        er,
+                        &init.propagation,
+                        init.output_start(),
+                        h,
+                        init.input_end(),
+                        input_scatter,
+                    );
+                    let charges = n.charge_vec(init.output_start()..h);
+                    let alive = charges.iter().filter(|&&c| c > 0).count();
+                    let alive_frac = alive as f64 / (h - init.output_start()) as f64;
+                    cos * (1.0 + 0.1 * alive_frac)
+                },
+                &evo_config,
+                acceptance_policy,
+                jackpot,
+                step,
+                |_| {},
+            )
+        } else {
+            evolution_step_jackpot(
+                &mut net,
+                &mut proj,
+                &mut rng,
+                &mut eval_rng,
+                |n, p, er| {
+                    let cos = eval_smooth_proj(
+                        n,
+                        p,
+                        &table,
+                        &pair_ids,
+                        &hot_to_idx,
+                        &bigram,
+                        DEFAULT_EVAL_LEN,
+                        er,
+                        &init.propagation,
+                        init.output_start(),
+                        h,
+                        init.input_end(),
+                        input_scatter,
+                    );
+                    // Anti-monopoly: reward more alive output neurons
+                    let charges = n.charge_vec(init.output_start()..h);
+                    let alive = charges.iter().filter(|&&c| c > 0).count();
+                    let alive_frac = alive as f64 / (h - init.output_start()) as f64;
+                    cos * (1.0 + 0.1 * alive_frac) // very gentle diversity pressure (λ=0.1)
+                },
+                &evo_config,
+                jackpot,
+            )
+        };
         match outcome {
             StepOutcome::Accepted => accepted += 1,
             StepOutcome::Rejected => rejected += 1,
             StepOutcome::Skipped => {}
         }
         if (step + 1) % PROGRESS_INTERVAL == 0 {
-            let acc = eval_accuracy_proj(&mut net, &proj, &table, &pair_ids, &hot_to_idx,
-                DEFAULT_FULL_LEN, &mut eval_rng, &init.propagation, init.output_start(), h);
+            let acc = eval_accuracy_proj(
+                &mut net,
+                &proj,
+                &table,
+                &pair_ids,
+                &hot_to_idx,
+                DEFAULT_FULL_LEN,
+                &mut eval_rng,
+                &init.propagation,
+                init.output_start(),
+                h,
+                init.input_end(),
+                input_scatter,
+            );
             peak = peak.max(acc);
             let rate = accepted as f64 / (accepted + rejected).max(1) as f64 * 100.0;
-            println!("  step {:>5}: acc={:.2}%  peak={:.2}%  accept={:.0}%  edges={}",
-                step + 1, acc * 100.0, peak * 100.0, rate, net.edge_count());
+            println!(
+                "  step {:>5}: acc={:.2}%  peak={:.2}%  accept={:.0}%  edges={}",
+                step + 1,
+                acc * 100.0,
+                peak * 100.0,
+                rate,
+                net.edge_count()
+            );
+        }
+        if let Some(panel) = panel_writer.as_mut() {
+            if (step + 1) % panel.window_size == 0 {
+                let metrics = compute_panel_metrics(
+                    &mut net,
+                    &proj,
+                    &table,
+                    &pair_ids,
+                    &hot_to_idx,
+                    &init.propagation,
+                    init.output_start(),
+                    h,
+                    init.input_end(),
+                    input_scatter,
+                );
+                panel.write_row(step + 1, accepted, rejected, net.edge_count(), peak, &metrics);
+            }
         }
     }
 
-    let final_acc = eval_accuracy_proj(&mut net, &proj, &table, &pair_ids, &hot_to_idx,
-        DEFAULT_FULL_LEN.min(pair_ids.len() / 2), &mut eval_rng, &init.propagation, init.output_start(), h);
+    let final_acc = eval_accuracy_proj(
+        &mut net,
+        &proj,
+        &table,
+        &pair_ids,
+        &hot_to_idx,
+        DEFAULT_FULL_LEN.min(pair_ids.len() / 2),
+        &mut eval_rng,
+        &init.propagation,
+        init.output_start(),
+        h,
+        init.input_end(),
+        input_scatter,
+    );
     peak = peak.max(final_acc);
     let final_accept_rate_pct = accepted as f64 / (accepted + rejected).max(1) as f64 * 100.0;
-    println!("\n  FINAL: {:.2}%  peak={:.2}%  edges={}  accept={:.0}%",
-        final_acc * 100.0, peak * 100.0, net.edge_count(), final_accept_rate_pct);
+    println!(
+        "\n  FINAL: {:.2}%  peak={:.2}%  edges={}  accept={:.0}%",
+        final_acc * 100.0,
+        peak * 100.0,
+        net.edge_count(),
+        final_accept_rate_pct
+    );
+
+    if let Some(checkpoint_path) = checkpoint_at_end.as_deref() {
+        save_checkpoint(
+            checkpoint_path,
+            &net,
+            &proj,
+            CheckpointMeta {
+                step: steps,
+                accuracy: final_acc,
+                label: format!("phase_b fixture=mutual_inhibition arm={arm} run_id={run_id}"),
+            },
+        )
+        .expect("failed to save final checkpoint");
+
+        let meta = RunMeta {
+            fixture: "mutual_inhibition",
+            phase: phase.clone(),
+            arm: arm.clone(),
+            run_id: run_id.clone(),
+            seed,
+            h,
+            steps,
+            horizon_steps: steps,
+            jackpot,
+            ticks: init.propagation.ticks_per_token,
+            accept_ties: init.accept_ties,
+            accept_policy: accept_policy_name.clone(),
+            neutral_p: matches!(acceptance_policy, AcceptancePolicy::ZeroP { .. })
+                .then_some(cli_neutral_p),
+            accept_epsilon: matches!(acceptance_policy, AcceptancePolicy::Epsilon { .. })
+                .then_some(cli_accept_epsilon),
+            input_scatter,
+            corpus: corpus_path.to_string(),
+            packed: packed_path.to_string(),
+            checkpoint: checkpoint_path.display().to_string(),
+            candidate_log: candidate_log_path.as_ref().map(|p| p.display().to_string()),
+            panel_window_size: panel_interval,
+            panel_timeseries: resolved_panel_log_path
+                .as_ref()
+                .map(|p| p.display().to_string()),
+        };
+        let meta_json = serde_json::to_string_pretty(&meta).expect("failed to serialize run meta");
+        let meta_path = checkpoint_path
+            .parent()
+            .unwrap_or_else(|| Path::new("."))
+            .join("run_meta.json");
+        write(&meta_path, meta_json).expect("failed to write run_meta.json");
+        println!("  Checkpoint: {}", checkpoint_path.display());
+        println!("  Run meta:   {}", meta_path.display());
+    }
 
     // Alive-frac mean over 20 deterministically-spaced corpus pairs (for SUMMARY)
     let alive_samples = 20usize.min(pair_ids.len().max(1));
@@ -341,7 +1242,7 @@ fn main() {
         net.reset();
         let emb = table.embed_id(pid);
         let mut input_buf = vec![0i32; h];
-        table.quantize_to_input(emb, &mut input_buf[..table.e], MAX_CHARGE);
+        quantize_embedding_to_input(&table, emb, &mut input_buf, init.input_end(), input_scatter);
         net.propagate(&input_buf, &init.propagation).unwrap();
         let charges = net.charge_vec(init.output_start()..h);
         let alive = charges.iter().filter(|&&c| c > 0).count();
@@ -363,7 +1264,7 @@ fn main() {
         net.reset();
         let emb = table.embed_id(pid);
         let mut input = vec![0i32; h];
-        table.quantize_to_input(emb, &mut input[..table.e], MAX_CHARGE);
+        quantize_embedding_to_input(&table, emb, &mut input, init.input_end(), input_scatter);
         net.propagate(&input, &init.propagation).unwrap();
         let charges = net.charge_vec(init.output_start()..h);
         let alive = charges.iter().filter(|&&c| c > 0).count();
@@ -371,25 +1272,45 @@ fn main() {
         preds.push(pred);
         charges_list.push(charges);
         let (hi, lo) = VcbpTable::pair_bytes(pid);
-        println!("    '{}{}' → pred={}, alive={}/158",
-            hi as char, lo as char, pred, alive);
+        println!(
+            "    '{}{}' → pred={}, alive={}/158",
+            hi as char, lo as char, pred, alive
+        );
     }
     let unique: std::collections::HashSet<usize> = preds.iter().cloned().collect();
     let mut diffs = 0usize;
     let mut pairs = 0usize;
     for i in 0..charges_list.len() {
-        for j in (i+1)..charges_list.len() {
-            diffs += charges_list[i].iter().zip(charges_list[j].iter()).filter(|(a,b)| a != b).count();
+        for j in (i + 1)..charges_list.len() {
+            diffs += charges_list[i]
+                .iter()
+                .zip(charges_list[j].iter())
+                .filter(|(a, b)| a != b)
+                .count();
             pairs += 1;
         }
     }
-    println!("    Unique predictions: {}/{}", unique.len(), test_pairs.len());
-    println!("    Avg charge diff: {:.1}/158 ({:.1}%)",
-        diffs as f64 / pairs as f64, diffs as f64 / pairs as f64 / 158.0 * 100.0);
+    println!(
+        "    Unique predictions: {}/{}",
+        unique.len(),
+        test_pairs.len()
+    );
+    println!(
+        "    Avg charge diff: {:.1}/158 ({:.1}%)",
+        diffs as f64 / pairs as f64,
+        diffs as f64 / pairs as f64 / 158.0 * 100.0
+    );
     if unique.len() > 1 {
         println!("    ✓ DIVERSE OUTPUT — mutual inhibition creating multi-attractor!");
     } else {
         println!("    ⚠ Still constant — mutual inhibition not enough alone");
+    }
+
+    if let Some(log) = candidate_log.as_mut() {
+        log.flush();
+    }
+    if let Some(panel) = panel_writer.as_mut() {
+        panel.flush();
     }
 
     let wall_clock_s = t_start.elapsed().as_secs_f64();
@@ -397,8 +1318,8 @@ fn main() {
 
     // Machine-readable summary line for multi-seed drivers.
     println!(
-        "SUMMARY {{\"fixture\":\"mutual_inhibition\",\"seed\":{},\"H\":{},\"phi_dim\":{},\"peak_acc\":{:.6},\"final_acc\":{:.6},\"accept_rate_pct\":{:.4},\"alive_frac_mean\":{:.6},\"edges\":{},\"unique_preds\":{},\"wall_clock_s\":{:.3}}}",
-        seed, h, init.phi_dim, peak, final_acc, final_accept_rate_pct, alive_frac_mean,
+        "SUMMARY {{\"fixture\":\"mutual_inhibition\",\"phase\":\"{}\",\"arm\":\"{}\",\"run_id\":\"{}\",\"seed\":{},\"H\":{},\"phi_dim\":{},\"horizon_steps\":{},\"accept_ties\":{},\"accept_policy\":\"{}\",\"neutral_p\":{:.6},\"accept_epsilon\":{:.12},\"peak_acc\":{:.6},\"final_acc\":{:.6},\"accept_rate_pct\":{:.4},\"alive_frac_mean\":{:.6},\"edges\":{},\"unique_preds\":{},\"wall_clock_s\":{:.3}}}",
+        phase, arm, run_id, seed, h, init.phi_dim, steps, init.accept_ties, accept_policy_name, cli_neutral_p, cli_accept_epsilon, peak, final_acc, final_accept_rate_pct, alive_frac_mean,
         net.edge_count(), unique.len(), wall_clock_s
     );
 }

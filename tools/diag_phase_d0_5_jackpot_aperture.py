@@ -1,321 +1,334 @@
-"""Phase D0.5: Offline K-resampling on Phase B.1 candidate logs.
+"""Offline jackpot-aperture resampling for Phase D0.5.
 
-Insight (per GPT/user discussion 2026-04-25):
-  The "Acceptance Aperture" is two-tier:
-    K (jackpot size) = sampling aperture (upstream)
-    acceptance policy = valve  (downstream)
-  D0 showed best_negative_rate ≈ 0.06% under K=9 — but this is K-induced
-  zero-saturation, not substrate property. With K small, the picture
-  changes substantially.
-
-This analyzer simulates what would have happened with K ∈ {1, 2, 3, 5, 9}
-by taking the first k candidates per step (the existing logs have all 9
-candidates per step, sequentially generated).
-
-Reports per arm × K:
-  - best_negative_rate(K), best_exact_zero_rate(K), best_positive_rate(K)
-  - strict_accept_rate(K), ties_accept_rate(K)
-  - C_K_window_ratio(K) — per-step useful improvement / per-step cost
-  - selection_pressure(K) — E[positive | best > 0]
-
-Proposes D1 K choice based on which K still leaves selection pressure
-meaningful (zero_best_rate < 0.5, say) AND maintains discovery
-(positive_best_rate > 0.05).
-
-Run (GPT local):
-  python tools/diag_phase_d0_5_jackpot_aperture.py \\
-      --root output/phase_b1_horizon_ties_20260425 \\
-      --out  output/phase_d0_5_jackpot_aperture
+Reads existing K=9 candidate logs and estimates what the best-of-K aperture
+would have looked like for smaller prefix K values.
 """
 from __future__ import annotations
 
 import argparse
 import csv
 import json
-import sys
+import math
 from collections import defaultdict
 from pathlib import Path
 
+import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
 
 
-K_GRID = [1, 2, 3, 5, 9]
-EPS_DETECT = 1e-9
+DEFAULT_ROOT = Path("output/phase_b1_horizon_ties_20260425")
+DEFAULT_OUT = Path("output/phase_d0_5_jackpot_aperture")
+K_VALUES = (1, 2, 3, 5, 9)
 
 
-def load_candidate_logs(root: Path) -> dict[tuple[str, int], list[dict]]:
-    bundles: dict[tuple[str, int], list[dict]] = {}
-    for arm_dir in sorted(p for p in root.iterdir() if p.is_dir()):
-        arm = arm_dir.name
-        for seed_dir in sorted(p for p in arm_dir.iterdir() if p.is_dir() and p.name.startswith("seed_")):
-            seed = int(seed_dir.name.split("_", 1)[1])
-            csv_path = seed_dir / "candidates.csv"
-            if not csv_path.exists():
-                continue
-            rows = []
-            with csv_path.open() as f:
-                reader = csv.DictReader(f)
-                for r in reader:
-                    rows.append(r)
-            bundles[(arm, seed)] = rows
-            print(f"  loaded {arm}/seed={seed}: {len(rows)} rows", file=sys.stderr)
-    return bundles
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--root", type=Path, default=DEFAULT_ROOT)
+    parser.add_argument("--out", type=Path, default=DEFAULT_OUT)
+    parser.add_argument("--expected-runs", type=int, default=30)
+    parser.add_argument("--expected-rows", type=int, default=12_600_000)
+    return parser.parse_args()
 
 
-def group_by_step(rows: list[dict]) -> list[list[dict]]:
-    """Group rows by (run_id, step). Returns list of step-groups, each containing
-    K candidates in order."""
-    grouped = defaultdict(list)
-    for r in rows:
-        try:
-            step = int(r["step"])
-        except (KeyError, ValueError):
+def load_meta(run_dir: Path) -> dict:
+    meta_path = run_dir / "run_meta.json"
+    if not meta_path.exists():
+        return {}
+    return json.loads(meta_path.read_text())
+
+
+def finish_step(rows: list[tuple[float, bool, float]], per_k: dict[int, dict], step_wall_ms: float) -> None:
+    if not rows:
+        return
+    for k in K_VALUES:
+        subset = rows[:k]
+        eligible = [delta for delta, within_cap, _ in subset if within_cap]
+        best = max(eligible) if eligible else float("nan")
+        stats = per_k[k]
+        stats["steps"] += 1
+        stats["step_cost_ms_sum"] += step_wall_ms * min(k, len(rows)) / max(1, len(rows))
+        if math.isnan(best):
+            stats["ineligible"] += 1
             continue
-        grouped[step].append(r)
-    return [grouped[k] for k in sorted(grouped.keys())]
-
-
-def k_resample_arm(rows: list[dict], k_grid: list[int]) -> dict[int, dict]:
-    """For each K in k_grid, simulate the first-K-candidates jackpot and
-    compute best-of-K statistics."""
-    step_groups = group_by_step(rows)
-    out = {}
-    for k in k_grid:
-        bests = []
-        all_evals_per_step = []
-        for group in step_groups:
-            if len(group) < k:
-                # Not enough candidates for this step, skip
-                continue
-            deltas = []
-            costs = []
-            for cand in group[:k]:
-                try:
-                    d = float(cand.get("delta_U", "nan"))
-                    c = float(cand.get("eval_ms", "nan"))
-                except (TypeError, ValueError):
-                    continue
-                if np.isfinite(d):
-                    deltas.append(d)
-                if np.isfinite(c):
-                    costs.append(c)
-            if not deltas:
-                continue
-            bests.append(max(deltas))
-            all_evals_per_step.append(sum(costs))
-        if not bests:
-            out[k] = {"n_steps": 0}
-            continue
-        bests = np.array(bests, dtype=float)
-        eval_costs = np.array(all_evals_per_step, dtype=float)
-        useful = np.where(bests > EPS_DETECT, bests, 0.0)
-        # C_K = E[max(0, best - eps)] / E[cost_K]
-        if np.mean(eval_costs) > 0:
-            ck_window_ratio = float(np.mean(useful) / np.mean(eval_costs))
+        stats["useful_delta_sum"] += max(0.0, best)
+        if best > 0.0:
+            stats["best_positive"] += 1
+        elif best == 0.0:
+            stats["best_zero"] += 1
         else:
-            ck_window_ratio = float("nan")
-        out[k] = {
-            "n_steps": int(len(bests)),
-            "best_negative_rate": float(np.mean(bests < -EPS_DETECT)),
-            "best_exact_zero_rate": float(np.mean(np.abs(bests) <= EPS_DETECT)),
-            "best_positive_rate": float(np.mean(bests > EPS_DETECT)),
-            "strict_accept_rate": float(np.mean(bests > EPS_DETECT)),
-            "ties_accept_rate": float(np.mean(bests >= -EPS_DETECT)),
-            "selection_pressure_pos": float(np.mean(bests[bests > EPS_DETECT])) if np.any(bests > EPS_DETECT) else 0.0,
-            "C_K_window_ratio": ck_window_ratio,
-            "mean_cost_K": float(np.mean(eval_costs)),
-        }
-    return out
+            stats["best_negative"] += 1
+        for eps in (0.0, 1e-6, 1e-4, 1e-3):
+            if best >= -eps:
+                stats[f"accept_eps_{eps:g}"] += 1
 
 
-def fit_geometric_model(per_arm_per_K: dict[str, dict[int, dict]]) -> dict:
-    """From the K-grid resampling, estimate p_pos, p_zero, p_neg per arm
-    using K=1 statistics. Then validate the geometric prediction at K=3, 5, 9."""
-    fits = {}
-    for arm, by_k in per_arm_per_K.items():
-        if 1 not in by_k or by_k[1].get("n_steps", 0) == 0:
-            fits[arm] = {"valid": False, "reason": "no_K=1_data"}
-            continue
-        k1 = by_k[1]
-        p_pos = k1.get("best_positive_rate", float("nan"))
-        p_zero = k1.get("best_exact_zero_rate", float("nan"))
-        p_neg = k1.get("best_negative_rate", float("nan"))
-        # geometric prediction at each K
-        predictions = {}
-        for k in K_GRID:
-            if k not in by_k:
-                continue
-            pred_strict = 1 - (1 - p_pos) ** k if not np.isnan(p_pos) else float("nan")
-            pred_ties = 1 - p_neg ** k if not np.isnan(p_neg) else float("nan")
-            obs = by_k[k]
-            predictions[k] = {
-                "K": k,
-                "predicted_strict_accept": pred_strict,
-                "observed_strict_accept": obs.get("strict_accept_rate", float("nan")),
-                "predicted_ties_accept": pred_ties,
-                "observed_ties_accept": obs.get("ties_accept_rate", float("nan")),
-            }
-        fits[arm] = {
-            "valid": True,
-            "p_pos_K1": p_pos,
-            "p_zero_K1": p_zero,
-            "p_neg_K1": p_neg,
-            "predictions_vs_observations": predictions,
-        }
-    return fits
+def new_k_stats() -> dict:
+    return {
+        "steps": 0,
+        "ineligible": 0,
+        "best_positive": 0,
+        "best_zero": 0,
+        "best_negative": 0,
+        "useful_delta_sum": 0.0,
+        "step_cost_ms_sum": 0.0,
+        "accept_eps_0": 0,
+        "accept_eps_1e-06": 0,
+        "accept_eps_0.0001": 0,
+        "accept_eps_0.001": 0,
+    }
 
 
-def recommend_k(per_arm_per_K: dict[str, dict[int, dict]]) -> dict:
-    """Recommend K* per arm: largest K where ties_accept_rate < 0.95 AND
-    positive_best_rate > 0.05.
+def analyze_run(csv_path: Path) -> tuple[list[dict], int]:
+    meta = load_meta(csv_path.parent)
+    arm = csv_path.parent.parent.name
+    seed = int(csv_path.parent.name.split("_", 1)[1])
+    horizon_steps = int(meta.get("horizon_steps", meta.get("steps", 0)))
+    accept_ties = bool(meta.get("accept_ties", False))
+    jackpot = int(meta.get("jackpot", 9))
+    if jackpot < max(K_VALUES):
+        raise ValueError(f"{csv_path}: jackpot={jackpot}, cannot resample K={max(K_VALUES)}")
 
-    Rationale: this is the K-range where the policy axis (strict / zero_p)
-    can still differentiate — i.e., where ties does NOT autosaturate."""
-    suggestions = {}
-    for arm, by_k in per_arm_per_K.items():
-        candidates = []
-        for k in sorted(by_k.keys()):
-            row = by_k[k]
-            if row.get("n_steps", 0) == 0:
-                continue
-            ties_rate = row.get("ties_accept_rate", float("nan"))
-            pos_rate = row.get("best_positive_rate", float("nan"))
-            if not np.isnan(ties_rate) and ties_rate < 0.95 and pos_rate > 0.05:
-                candidates.append(k)
-        suggestions[arm] = {
-            "k_grid_useful": candidates,
-            "k_max_useful": max(candidates) if candidates else None,
-            "k_recommended_for_D1": max(candidates) if candidates else min(by_k.keys()),
-            "rationale": "largest K where ties_accept < 0.95 (selection pressure preserved) AND positive_best > 0.05 (discovery preserved)",
-        }
-    return suggestions
+    per_k = {k: new_k_stats() for k in K_VALUES}
+    raw_rows = 0
+    raw_positive = 0
+    raw_zero = 0
+    raw_negative = 0
+    current_step: int | None = None
+    step_rows: list[tuple[float, bool, float]] = []
+    step_wall_ms = 0.0
+
+    with csv_path.open(newline="") as f:
+        reader = csv.DictReader(f)
+        for row in reader:
+            raw_rows += 1
+            step = int(row["step"])
+            if current_step is None:
+                current_step = step
+            if step != current_step:
+                finish_step(step_rows, per_k, step_wall_ms)
+                current_step = step
+                step_rows = []
+                step_wall_ms = 0.0
+
+            before = float(row["before_U"])
+            after = float(row["after_U"])
+            delta = float(row["delta_U"])
+            if abs(delta - (after - before)) > 1e-12:
+                raise ValueError(f"{csv_path}: delta mismatch at row {raw_rows}")
+            if delta > 0.0:
+                raw_positive += 1
+            elif delta == 0.0:
+                raw_zero += 1
+            else:
+                raw_negative += 1
+            step_wall_ms = max(step_wall_ms, float(row["step_wall_ms"]))
+            step_rows.append((delta, row["within_cap"].lower() == "true", float(row["candidate_eval_ms"])))
+
+    finish_step(step_rows, per_k, step_wall_ms)
+    raw_total = max(1, raw_rows)
+    p_pos = raw_positive / raw_total
+    p_zero = raw_zero / raw_total
+    p_neg = raw_negative / raw_total
+    out = []
+    for k, stats in per_k.items():
+        steps = max(1, stats["steps"])
+        strict_pred = 1.0 - (1.0 - p_pos) ** k
+        ties_pred = 1.0 - p_neg**k
+        strict_emp = stats["best_positive"] / steps
+        ties_emp = (stats["best_positive"] + stats["best_zero"]) / steps
+        out.append({
+            "arm": arm,
+            "seed": seed,
+            "horizon_steps": horizon_steps,
+            "accept_ties": accept_ties,
+            "K": k,
+            "steps": stats["steps"],
+            "raw_rows": raw_rows,
+            "raw_p_pos": p_pos,
+            "raw_p_zero": p_zero,
+            "raw_p_neg": p_neg,
+            "best_positive_rate": strict_emp,
+            "best_zero_rate": stats["best_zero"] / steps,
+            "best_negative_rate": stats["best_negative"] / steps,
+            "ties_accept_rate": ties_emp,
+            "strict_accept_rate": strict_emp,
+            "strict_accept_pred_independent": strict_pred,
+            "ties_accept_pred_independent": ties_pred,
+            "strict_pred_error": strict_emp - strict_pred,
+            "ties_pred_error": ties_emp - ties_pred,
+            "C_K_window_ratio": stats["useful_delta_sum"] / max(stats["step_cost_ms_sum"], 1e-12),
+            "ineligible_steps": stats["ineligible"],
+        })
+    return out, raw_rows
+
+
+def aggregate(rows: list[dict]) -> pd.DataFrame:
+    df = pd.DataFrame(rows)
+    metrics = [
+        "best_positive_rate",
+        "best_zero_rate",
+        "best_negative_rate",
+        "ties_accept_rate",
+        "strict_accept_rate",
+        "strict_accept_pred_independent",
+        "ties_accept_pred_independent",
+        "strict_pred_error",
+        "ties_pred_error",
+        "C_K_window_ratio",
+        "raw_p_pos",
+        "raw_p_zero",
+        "raw_p_neg",
+    ]
+    grouped = []
+    for key, group in df.groupby(["horizon_steps", "accept_ties", "arm", "K"], dropna=False):
+        row = {col: value for col, value in zip(["horizon_steps", "accept_ties", "arm", "K"], key)}
+        row["n"] = int(len(group))
+        for metric in metrics:
+            values = group[metric].to_numpy(dtype=float)
+            row[f"{metric}_mean"] = float(np.mean(values))
+            row[f"{metric}_std"] = float(np.std(values, ddof=1)) if len(values) > 1 else 0.0
+        grouped.append(row)
+    return pd.DataFrame(grouped).sort_values(["horizon_steps", "accept_ties", "arm", "K"])
+
+
+def recommend(agg: pd.DataFrame) -> dict:
+    # Focus on the B.1 40k strict operating point because D1's planned horizon is 40k.
+    subset = agg[(agg["horizon_steps"] == 40_000) & (agg["accept_ties"] == False)]
+    if subset.empty:
+        subset = agg[agg["accept_ties"] == False]
+    candidates = subset[
+        (subset["ties_accept_rate_mean"] < 0.95)
+        & (subset["best_positive_rate_mean"] >= 0.05)
+    ]
+    if candidates.empty:
+        chosen = subset.sort_values("K").iloc[-1]
+        reason = "No K preserved ties_accept<0.95 and positive_best>=0.05; using largest observed K."
+    else:
+        chosen = candidates.sort_values("K").iloc[-1]
+        reason = "Largest K preserving neutral saturation below 95% while keeping positive discovery >=5%."
+    return {
+        "recommended_K": int(chosen["K"]),
+        "basis_arm": str(chosen["arm"]),
+        "basis_horizon_steps": int(chosen["horizon_steps"]),
+        "ties_accept_rate": float(chosen["ties_accept_rate_mean"]),
+        "strict_accept_rate": float(chosen["strict_accept_rate_mean"]),
+        "best_zero_rate": float(chosen["best_zero_rate_mean"]),
+        "reason": reason,
+    }
+
+
+def make_plots(out_dir: Path, agg: pd.DataFrame) -> None:
+    fig_dir = out_dir / "figures"
+    fig_dir.mkdir(parents=True, exist_ok=True)
+    focus = agg[(agg["horizon_steps"] == 40_000) & (agg["accept_ties"] == False)]
+    if focus.empty:
+        focus = agg[agg["accept_ties"] == False]
+    fig, ax = plt.subplots(figsize=(8, 5))
+    for metric, label in [
+        ("best_positive_rate_mean", "positive best"),
+        ("best_zero_rate_mean", "zero best"),
+        ("ties_accept_rate_mean", "ties accept"),
+    ]:
+        ax.plot(focus["K"], focus[metric], marker="o", label=label)
+    ax.axhline(0.95, color="tab:red", linestyle="--", linewidth=1, label="95% saturation")
+    ax.set_title("D0.5 jackpot aperture at 40k strict reference")
+    ax.set_xlabel("prefix K")
+    ax.set_ylabel("rate")
+    ax.set_ylim(0.0, 1.02)
+    ax.legend()
+    fig.tight_layout()
+    fig.savefig(fig_dir / "d0_5_k_aperture_40k_strict.png", dpi=160)
+    plt.close(fig)
+
+
+def render_report(out_dir: Path, agg: pd.DataFrame, rec: dict, total_rows: int) -> None:
+    def md(df: pd.DataFrame) -> str:
+        cols = list(df.columns)
+        lines = [
+            "| " + " | ".join(cols) + " |",
+            "| " + " | ".join("---" for _ in cols) + " |",
+        ]
+        for _, row in df.iterrows():
+            values = []
+            for col in cols:
+                value = row[col]
+                values.append(f"{value:.6g}" if isinstance(value, float) else str(value))
+            lines.append("| " + " | ".join(values) + " |")
+        return "\n".join(lines)
+
+    focus_cols = [
+        "horizon_steps",
+        "accept_ties",
+        "arm",
+        "K",
+        "best_positive_rate_mean",
+        "best_zero_rate_mean",
+        "best_negative_rate_mean",
+        "ties_accept_rate_mean",
+        "strict_accept_rate_mean",
+        "strict_accept_pred_independent_mean",
+        "C_K_window_ratio_mean",
+    ]
+    focus = agg[(agg["horizon_steps"] == 40_000) & (agg["accept_ties"] == False)]
+    report = [
+        "# Phase D0.5 Jackpot Aperture",
+        "",
+        "## Verdict",
+        "",
+        f"- Candidate rows analyzed: `{total_rows:,}`.",
+        f"- Recommended K for D1: `{rec['recommended_K']}`.",
+        f"- Reason: {rec['reason']}",
+        f"- Reference rates: ties_accept `{rec['ties_accept_rate']:.3f}`, strict_accept `{rec['strict_accept_rate']:.3f}`, zero_best `{rec['best_zero_rate']:.3f}`.",
+        "",
+        "## 40k Strict Reference",
+        "",
+        md(focus[focus_cols]),
+        "",
+        "## Interpretation",
+        "",
+        "- Jackpot K is the sampling funnel before acceptance policy; zero-p is the valve after best-of-K selection.",
+        "- If K saturates ties acceptance near 1.0, a fixed-K zero-p sweep measures valve behavior in an already saturated funnel.",
+        "- The independent-binomial prediction is a diagnostic only; candidate effects are not assumed iid.",
+    ]
+    (out_dir / "PHASE_D0_5_JACKPOT_APERTURE.md").write_text("\n".join(report) + "\n")
 
 
 def main() -> int:
-    p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    p.add_argument("--root", required=True, help="Phase B.1 output root")
-    p.add_argument("--out", required=True, help="output dir")
-    args = p.parse_args()
-
-    root = Path(args.root)
-    out_dir = Path(args.out)
-    out_dir.mkdir(parents=True, exist_ok=True)
-    if not root.exists():
-        print(f"ERROR: root does not exist: {root}", file=sys.stderr)
-        return 2
-
-    print(f"Loading candidate logs from {root} ...", file=sys.stderr)
-    bundles = load_candidate_logs(root)
-    if not bundles:
-        print(f"ERROR: no candidate.csv files found", file=sys.stderr)
-        return 2
-    print(f"Loaded {len(bundles)} (arm, seed) bundles", file=sys.stderr)
-
-    # Group by arm (pool seeds), then K-resample
-    print("\nK-resampling per arm × K ∈ {1, 2, 3, 5, 9} ...", file=sys.stderr)
-    per_arm_per_K: dict[str, dict[int, dict]] = {}
-    arm_groups: dict[str, list[dict]] = defaultdict(list)
-    for (arm, _seed), rows in bundles.items():
-        arm_groups[arm].extend(rows)
-    for arm, rows in sorted(arm_groups.items()):
-        print(f"  resampling {arm} ({len(rows)} candidate-rows) ...", file=sys.stderr)
-        per_arm_per_K[arm] = k_resample_arm(rows, K_GRID)
-
-    geom_fit = fit_geometric_model(per_arm_per_K)
-    suggestions = recommend_k(per_arm_per_K)
-
-    summary = {
-        "n_arms": len(per_arm_per_K),
-        "k_grid": K_GRID,
-        "per_arm_per_K": per_arm_per_K,
-        "geometric_fit_validation": geom_fit,
-        "k_recommendations": suggestions,
+    args = parse_args()
+    args.out.mkdir(parents=True, exist_ok=True)
+    csv_paths = sorted(args.root.glob("B1_*/seed_*/candidates.csv"))
+    if len(csv_paths) != args.expected_runs:
+        raise SystemExit(f"expected {args.expected_runs} candidate logs, found {len(csv_paths)}")
+    rows = []
+    total_rows = 0
+    for path in csv_paths:
+        run_rows, raw_rows = analyze_run(path)
+        rows.extend(run_rows)
+        total_rows += raw_rows
+    if total_rows != args.expected_rows:
+        raise SystemExit(f"expected {args.expected_rows} rows, found {total_rows}")
+    run_df = pd.DataFrame(rows)
+    agg = aggregate(rows)
+    rec = recommend(agg)
+    run_df.to_csv(args.out / "jackpot_aperture_run_summary.csv", index=False)
+    agg.to_csv(args.out / "jackpot_aperture_summary.csv", index=False)
+    payload = {
+        "status": "PASS",
+        "root": str(args.root),
+        "candidate_rows": total_rows,
+        "recommendation": rec,
+        "rows": agg.to_dict(orient="records"),
     }
-    (out_dir / "d0_5_summary.json").write_text(json.dumps(summary, indent=2))
-
-    # CSV: per-arm-per-K table
-    with (out_dir / "d0_5_per_arm_per_K.csv").open("w", newline="") as f:
-        cols = ["arm", "K", "n_steps", "best_negative_rate", "best_exact_zero_rate",
-                "best_positive_rate", "strict_accept_rate", "ties_accept_rate",
-                "selection_pressure_pos", "C_K_window_ratio", "mean_cost_K"]
-        w = csv.DictWriter(f, fieldnames=cols)
-        w.writeheader()
-        for arm, by_k in sorted(per_arm_per_K.items()):
-            for k, row in sorted(by_k.items()):
-                if row.get("n_steps", 0) == 0:
-                    continue
-                w.writerow({"arm": arm, "K": k, **{c: row.get(c) for c in cols if c not in ("arm", "K")}})
-
-    # Markdown report
-    lines = [
-        "# Phase D0.5 Jackpot-Aperture Resampling Report",
-        "",
-        f"K-resampling on {len(bundles)} (arm, seed) bundles from `{root}`.",
-        "",
-        "## Per-arm K-resampled accept rates",
-        "",
-        "| arm | K | best_neg | best_zero | best_pos | strict_accept | ties_accept | C_K |",
-        "|---|---|---|---|---|---|---|---|",
-    ]
-    for arm, by_k in sorted(per_arm_per_K.items()):
-        for k, row in sorted(by_k.items()):
-            if row.get("n_steps", 0) == 0:
-                continue
-            lines.append(
-                f"| {arm} | {k} | {row['best_negative_rate']:.4f} | {row['best_exact_zero_rate']:.4f} | "
-                f"{row['best_positive_rate']:.4f} | {row['strict_accept_rate']:.4f} | "
-                f"{row['ties_accept_rate']:.4f} | {row['C_K_window_ratio']:.3e} |"
-            )
-    lines.extend([
-        "",
-        "## Geometric prediction validation",
-        "",
-        "If the per-candidate p_pos / p_zero / p_neg are stable, the prediction",
-        "P(strict accepts at K) = 1 - (1 - p_pos)^K  and  P(ties accepts at K) = 1 - p_neg^K",
-        "should match observation across K.",
-        "",
-        "| arm | p_pos (K=1) | p_zero (K=1) | p_neg (K=1) | observed strict @ K=9 | predicted strict @ K=9 |",
-        "|---|---|---|---|---|---|",
-    ])
-    for arm, fit in sorted(geom_fit.items()):
-        if not fit.get("valid"):
-            continue
-        pred9 = fit.get("predictions_vs_observations", {}).get(9, {})
-        lines.append(
-            f"| {arm} | {fit['p_pos_K1']:.4f} | {fit['p_zero_K1']:.4f} | {fit['p_neg_K1']:.4f} | "
-            f"{pred9.get('observed_strict_accept', float('nan')):.4f} | "
-            f"{pred9.get('predicted_strict_accept', float('nan')):.4f} |"
-        )
-    lines.extend([
-        "",
-        "## D1 K* recommendation",
-        "",
-        "Recommended K for D1 is the largest K where ties_accept < 0.95 (selection pressure preserved) AND positive_best > 0.05 (discovery preserved). This is the regime where the zero_p axis still has meaningful range to test.",
-        "",
-        "| arm | K_max_useful | K_recommended_for_D1 |",
-        "|---|---|---|",
-    ])
-    for arm, s in sorted(suggestions.items()):
-        lines.append(
-            f"| {arm} | {s['k_max_useful']} | {s['k_recommended_for_D1']} |"
-        )
-    lines.extend([
-        "",
-        "## Implications for D1",
-        "",
-        "If the recommended K* is significantly lower than the current K=9 used in B.1,",
-        "the D1 design should either:",
-        "  (a) reduce K to K* (e.g. K=3) and sweep zero_p as planned, OR",
-        "  (b) factorial K × zero_p sweep — e.g. K ∈ {3, 5, 9} × zero_p ∈ {strict, 0.3, 1.0}",
-        "      = 9 cells × 5 seeds = 45 cells, only modestly larger than the planned 30-cell D1.",
-        "",
-        "If K* ≈ K=9 (no change), the original D1 design stands.",
-    ])
-    (out_dir / "d0_5_recommendation.md").write_text("\n".join(lines))
-
-    print(f"\nWrote: {out_dir}/d0_5_summary.json", file=sys.stderr)
-    print(f"Wrote: {out_dir}/d0_5_per_arm_per_K.csv", file=sys.stderr)
-    print(f"Wrote: {out_dir}/d0_5_recommendation.md", file=sys.stderr)
+    (args.out / "jackpot_aperture_summary.json").write_text(json.dumps(payload, indent=2))
+    make_plots(args.out, agg)
+    render_report(args.out, agg, rec, total_rows)
+    print(json.dumps({
+        "status": "PASS",
+        "candidate_rows": total_rows,
+        "recommended_K": rec["recommended_K"],
+        "report": str(args.out / "PHASE_D0_5_JACKPOT_APERTURE.md"),
+    }, indent=2))
     return 0
 
 
