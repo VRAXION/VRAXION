@@ -2,7 +2,7 @@
 
 > *Structure-level mechanism inside the [Local Constructability Framework](Local-Constructability-Framework). Carries forward and refines the prior "Structured Chaos Theory" content under stricter empirical bounds.*
 
-**Status: Empirically anchored.** Two preregistered experimental phases (Phase A baseline and Phase B confound test) and a 12.6M-row per-candidate log substantiate the structure-level claims under stated boundaries.
+**Status: Empirically anchored for Laws I + II; Law III is a structural hypothesis pending direct test.** Two preregistered experimental phases (Phase A baseline and Phase B confound test) and a 12.6M-row per-candidate log substantiate Laws I and II at H=384 specifically. Per-operator findings reflect H=384 distributions; cross-H operator productivity is extrapolated, not measured (Phase A had no per-candidate logging). Law III is named for completeness and structural symmetry but is not separately validated by Phase A or Phase B.
 
 ---
 
@@ -92,7 +92,15 @@ fixture=bytepair_proj (Law I + grow-prune cycle):
   H=384 (n=5)   3.16 ± 2.33 %          accept 0.6%  alive 0.05  ← bimodal, knife-edge
 ```
 
-Crossover finding: `bytepair_proj > mutual_inhibition` at H=128 (Δ=+1.48 pp, p≈0.05); `mutual_inhibition > bytepair_proj` at H=256 (Δ=+1.66 pp). The "champion recipe" is H-specific.
+Crossover finding (Welch t-tests, n=5 per cell, df ≈ 8, *uncorrected for multiple comparisons*; interpret cautiously):
+
+| H | Δ (bytepair − MI) pp | t | p (two-tailed) |
+|---|---|---|---|
+| 128 | +1.48 | 2.36 | 0.046 |
+| 256 | −1.66 | 1.89 | 0.111 |
+| 384 | −0.36 | 0.31 | 0.764 |
+
+At α=0.05 uncorrected, only H=128 reaches nominal significance; with Bonferroni-correction over 3 comparisons (α/3 ≈ 0.017), no comparison passes. The "champion recipe" is H-specific *directionally*; we do not claim it formally significant at strict thresholds.
 
 ### Phase B — 25-cell confound test at H=384
 
@@ -100,11 +108,20 @@ Crossover finding: `bytepair_proj > mutual_inhibition` at H=128 (Δ=+1.48 pp, p�
 B0 baseline                3.52 ± 1.14 %   ↳ replicates Phase A H=384 MI
 B1 2× horizon (40 k step)  5.50 ± 1.47 %   ← recovers H=256 reference
 B2 2× jackpot (K=18)       3.26 ± 2.93 %   heavy-tailed, outlier-driven
-B3 2× ticks (12)           3.16 ± 2.07 %   higher destructive risk (R_neg ↑ ~2.7×)
+B3 2× ticks (12)           3.16 ± 2.07 %   accept rate ↓ to 8% (8 vs B0 17%)
 B4 input scatter           2.00 ± 1.71 %   collapses signal coherence
 ```
 
-Welch B1 vs B0: t = 2.37, df ≈ 8, p = 0.047. **Directional support for the training-horizon-confound interpretation; not formally Bonferroni-significant** at α/4 = 0.0125. Replication at n ≥ 10 required for strict significance.
+Welch tests (n=5 per arm, df ≈ 8, vs B0):
+
+| Arm | Δ peak pp | t | p | verdict |
+|---|---|---|---|---|
+| B1 (2× horizon) | +1.98 | 2.37 | 0.047 | directional, not Bonferroni-significant at α/4 = 0.0125 |
+| B2 (2× jackpot) | −0.26 | −0.18 | 0.86 | inconclusive; high variance σ=2.93 (outlier-driven) |
+| B3 (2× ticks)   | −0.36 | −0.34 | 0.74 | inconclusive |
+| B4 (input scatter) | −1.52 | −1.65 | 0.14 | inconclusive (directionally negative) |
+
+**B1 is the only arm with directional support** for the training-horizon-confound interpretation. Replication at n ≥ 10 required for strict significance. **Per-arm separability**: B3's mean R_neg(accepted) is ~2.7× B0's at the arm level (range 1.46–3.25× across operators); this is reported as a *correlate* of the B3 outcome, not the *cause* — disambiguation requires direct perturbation testing (Phase D / future work).
 
 ### Per-operator findings (operator schedule misalignment)
 
@@ -122,11 +139,48 @@ The schedule is plausibly misaligned. A theta- and channel-heavy schedule with `
 
 ---
 
+## Acceptance Aperture and the Gaussian Null Model
+
+The acceptance rule is not a tuning convenience — it defines the topology of the directed reachability graph over network states. We name three regimes:
+
+- **Strict (ε < 0):** accept ΔU > 0 only.
+- **Neutral / Zero-Drive Search (ε = 0):** accept ΔU ≥ 0. Established under "neutral drift on neutral networks" (van Nimwegen, Crutchfield, Huynen 1999; Wagner 2005).
+- **Tolerant / Threshold-Drive Search (ε > 0):** accept ΔU ≥ −ε. Established as "Threshold Accepting" (Dueck & Scheuer 1990).
+
+The acceptance rule alters the topology of the reachable graph. The *magnitude* of that alteration is empirical and substrate-specific; theoretical upper bounds (e.g. permutation-equivalent configurations under neutral) characterise the reachable *phenotype-equivalence class*, not the *operator-reachable subset*.
+
+**Primary measured quantity** (unchanged): C_K = E[max(0, max_{i≤K} ΔU_i − η)] / E[cost_K], where η is a small detection threshold (≈ 1e-4) distinct from the acceptance tolerance ε.
+
+**Gaussian / isotropic null model** for the acceptance-volume function:
+
+$$A_\pi(\varepsilon) \;=\; P(\Delta U \ge -\varepsilon) \;=\; \Phi\!\Big(\tfrac{\mu+\varepsilon}{\sigma}\Big) \;=\; \tfrac{1}{2}\operatorname{erfc}\!\Big(-\tfrac{\mu+\varepsilon}{\sigma\sqrt 2}\Big)$$
+
+This is the closed form *if* ΔU is approximately Gaussian(μ, σ²) at the local state. **π appears here as the standard Gaussian normaliser, not as a forced geometric ornament**: it is the natural consequence of assuming locally isotropic mutation effects. The model is testable by a Kolmogorov–Smirnov test on the empirical per-arm ΔU histogram.
+
+**Predicted regime split**:
+- *Easy regime* (e.g. mutual_inhibition H=128, possibly H=256): ΔU empirical histogram fits Gaussian; A_π(ε) tracks empirical accept_rate(ε); π-formula applies.
+- *Rugged regime* (e.g. bytepair_proj H=384 knife-edge bimodality, replica-symmetry-breaking-like landscapes per Urbani et al. 2024): ΔU heavy-tailed or multimodal; A_π(ε) breaks; π-formula does not apply; empirical CDF used instead.
+
+The break of the Gaussian null is itself a positive empirical signature of a CSP-clustering / RSB landscape topology (Mézard, Montanari, Zecchina 2002; Mannelli, Zdeborová et al. 2022; Urbani et al. 2024).
+
+**Recent theoretical anchors**:
+- **Li, Wang, Dou, Rosenthal (2024), arXiv:2408.06894** — the asymptotic 0.234 acceptance rate for random-walk Metropolis is robust under Gaussian-like proposal kernels and across many landscape geometries. This gives a testable null calibration: under the Gaussian null, the optimal ε* should give an acceptance rate near 23.4%.
+- **Chen, Mikulincer, Reichman, Wein (2023), arXiv:2312.13554** — time lower bounds for SA establish that on certain hard instances *no* ε schedule (including adaptive) can reach within ratio Ω(1/n^{1−ε}). Acceptance-aperture tuning has theoretical limits.
+- **Ma et al. (2024), GECCO 2024, arXiv:2404.08239 (GLEET)** — meta-learned adaptive ε schedules (Transformer-based) deliver 30–50% improvements over static ε in evolutionary algorithms; the empirical frontier is landscape-adaptive ε, not a single fixed value.
+- **Ren et al. (2023), AISTATS 2024, arXiv:2311.13159** — Wasserstein–Fisher–Rao gradient flows decompose mutation-selection into Wasserstein transport + Fisher–Rao birth/death; ε plays the role of the Fisher–Rao reweighting temperature.
+- **Discrete NES (2024), arXiv:2404.00208** — extends the natural-gradient view of evolution strategies to discrete binary domains, the closest existing match to our binary-spike substrate.
+
+We claim *not* that any of these results have been validated on our substrate; we claim that the framework they jointly form is the right reading-list for Phase D analysis.
+
+---
+
 ## Open hypotheses
 
-- **Phase B.1** — `accept_ties × horizon × seed` ablation (2 × 3 × 5 = 30 cells) on `mutual_inhibition` only. Tests whether the B1 horizon effect survives strict Bonferroni at n ≥ 10, whether 80 k steps lets H=384 surpass H=256, and whether neutral-accept policy substantively affects peak. Pre-registration to be filed before launch.
-- **Phase C** — operator schedule retuning (theta-heavy, channel-heavy, drop `projection_weight`). Pre-registered as a predictive improvement test, not a post-hoc narrative.
-- **`bytepair_proj` collapse ablation.** Separate from Phase B.1, because the failure mode at H=384 is grow-prune-aggressiveness, not horizon. Candidate knobs: prune rate, keep-best restore, minimum-alive constraint.
+- **Phase B.1** — `accept_ties × horizon × seed` ablation (2 × 3 × 5 = 30 cells) on `mutual_inhibition` only. Tests whether the B1 horizon effect survives strict Bonferroni at n ≥ 10, whether 80k steps lets H=384 surpass H=256, and whether neutral-accept policy substantively affects peak.
+- **Phase D** — continuous ε-sweep over acceptance tolerance (e.g. ε ∈ {strict, 0, 1e-5, 1e-4, 1e-3, 5e-3, 1e-2}) × horizon × 5 seeds × `mutual_inhibition` H=384. Pre-registered hypotheses include: (H1) existence of ε* with peak gain > 1.5pp; (H2) Li 2024 calibration: at ε*, acceptance rate ≈ 0.234 (testable null); (H3) Bouchaud-style trap rescue: seed=1042 H=384 bytepair_proj 0.0% trap escapes for ε ≥ ε_trap; (H4) Gaussian null fit (KS test) per arm; (H5) Chen 2023 impossibility class detection. Plus post-hoc analyses on the *existing* candidate logs (no new compute): avalanche size distribution + branching ratio σ (Beggs–Plenz 2003 criticality test) and two-time fitness correlation (Bouchaud aging signature). Pre-registration to be filed before launch.
+- **Phase E** — operator schedule retuning (theta-heavy, channel-heavy, drop `projection_weight`). Pre-registered as a predictive improvement test, not a post-hoc narrative.
+- **`bytepair_proj` collapse ablation.** Separate from Phase B.1 / D, because the failure mode at H=384 is grow-prune-aggressiveness, not horizon or acceptance tolerance. Candidate knobs: prune rate, keep-best restore, minimum-alive constraint.
+- **External baseline comparisons** — random topology, gradient-trained networks of comparable parameter count, NEAT — are not currently run. They are needed before any architectural claim of the form "X% on this task is meaningful in absolute terms" can be made. Future work.
 
 ---
 

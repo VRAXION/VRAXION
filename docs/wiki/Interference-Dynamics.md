@@ -75,8 +75,8 @@ These are diagnostics for the signal level. They do not, individually, prove the
 
 ## Empirical evidence
 
-- Phase B's B3 arm (2× ticks) inflates arm-mean `R_neg` to ~2.7× baseline and triggers worst-seed catastrophe (R_neg ≈ 0.16). The signal level becomes destructively oversensitive when propagation depth grows without compensating tuning.
-- Phase B's B4 arm (input scatter) collapses `alive_frac` to ~0.05 and `accept_rate` to ~1%. Signal coherence depends on a focused input channel, not breadth.
+- Phase B's B3 arm (2× ticks) is *correlated* with arm-mean `R_neg` ~2.7× baseline and a worst-seed event with R_neg ≈ 0.16. We report this as co-occurrence; the causal claim that "deeper propagation produces destructive oversensitivity" remains a hypothesis (see § Open questions). Phase D's per-arm KS-test on ΔU histograms will provide the first direct evidence.
+- Phase B's B4 arm (input scatter) is *correlated* with `alive_frac` ~0.05 and `accept_rate` ~1%. The simplest reading — "signal coherence depends on a focused input channel" — is consistent with the data but not *proved* by it; alternative explanations (including operator-schedule interaction at the scattered embedding, or a bottleneck in the readout) have not been ruled out.
 - Per-input `unique_predictions` and the four-pair adversarial check distinguish multi-attractor from single-attractor regimes; the original mutual-inhibition seeding produces multi-attractor outputs in trained nets.
 
 These do not prove the destructive-interference thesis as a general claim. They are consistent with it.

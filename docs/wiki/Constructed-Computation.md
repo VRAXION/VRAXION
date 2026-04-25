@@ -42,13 +42,13 @@ Three of the proposed measures (`D_eff_sensitivity`, `motif_z3`, `branching_σ`)
 
 The signature emergence finding is that **the H-profile is recipe-specific**. This is the cleanest cross-fixture observation in the dataset.
 
-```
-                              peak_acc%
-H        mutual_inhibition    bytepair_proj   verdict
-128       3.76 ± 0.91          5.24 ± 1.07     bytepair_proj wins (Δ +1.48, p≈0.05)
-256       5.28 ± 1.79          3.62 ± 0.81     mutual_inhibition wins (Δ +1.66)
-384       3.52 ± 1.14          3.16 ± 2.33     comparable means; bytepair_proj bimodal (range 0.0–6.0 %)
-```
+| H | mutual_inhibition (n=5) | bytepair_proj (n=5) | Δ (bp − MI) pp | Welch t | p (two-tail, df ≈ 8) |
+|---|---|---|---|---|---|
+| 128 | 3.76 ± 0.91 | 5.24 ± 1.07 | +1.48 | 2.36 | 0.046 |
+| 256 | 5.28 ± 1.79 | 3.62 ± 0.81 | −1.66 | 1.89 | 0.111 |
+| 384 | 3.52 ± 1.14 | 3.16 ± 2.33 | −0.36 | 0.31 | 0.764 |
+
+`bytepair_proj` H=384 is bimodal: peaks `[6.00, 0.00, 2.30, 2.70, 4.80]`, std 2.33pp. p-values are uncorrected; with Bonferroni correction over 3 cross-fixture tests (α/3 ≈ 0.017), no comparison reaches strict significance. The directional crossover (bytepair_proj > MI at H=128, MI > bytepair_proj at H≥256) is suggestive but underpowered at n=5.
 
 The "champion recipe" at one H is not the champion at another. At fixed-H sweeps with one fixture, this looks like an architectural verdict; across fixtures, it does not.
 
@@ -59,6 +59,22 @@ In the 25-cell Phase B, capacity proxies (`kernel_rank`, `separation_SP`, `parti
 ### Bimodality at the edge of regime
 
 `bytepair_proj` H=384 produces five seeds with peaks of `[6.00, 0.00, 2.30, 2.70, 4.80]`. One seed reaches a working substrate, one collapses entirely, three sit in between. The grow-prune cycle is in a knife-edge regime at this H: the same recipe with the same input produces qualitatively different outcomes depending on initial conditions. This is itself a finding about the emergence boundary.
+
+### CSP-clustering interpretation (analogy, not proof)
+
+This bimodal seed-outcome pattern is *structurally analogous* to the **dynamic-threshold transition in random constraint-satisfaction problems** (Mézard, Montanari, Zecchina, *Science* 2002; Mertens, Mézard, Zecchina 2006), where the solution space fragments into exponentially many isolated clusters near the SAT/UNSAT boundary. In that regime:
+
+- Backbone fraction (variables fixed across all solutions) jumps discontinuously near the threshold (Parkes, Selman, Levesque 1996), producing a **bimodal solver-outcome distribution**: either find a cluster or fail.
+- "Frozen variables" cause solvers to either succeed or get stuck — the same shape as our `[6.0, 0.0, 2.3, 2.7, 4.8]`.
+- Bouchaud's trap model (1992) predicts trapping time ∼ exp(barrier/T), so deep-trap seeds (e.g. our seed=1042 0.0% case) are essentially unreachable on a fixed budget — exactly what we observe.
+- The **training-horizon recovery** (Phase B, B1: 5.50% at 40k steps vs 3.52% at 20k) is consistent with the CSP picture: longer search time allows escape from isolated clusters.
+
+This is a structural analogy, not a proof. Two falsifiable post-hoc tests on existing data would tighten the connection (no new compute required):
+
+1. **Avalanche size distribution** from the Phase B candidate logs. If P(s) ~ s^{−3/2} with branching ratio σ ≈ 1 specifically at H=256 (where variance peaks), this is the Beggs–Plenz (2003) self-organised-criticality signature.
+2. **Two-time fitness correlation** C(t_w, t) from training logs. If the correlation depends on the ratio t/t_w (aging), the system is glassy in the Bouchaud sense; if it depends only on t (stationary), it is not.
+
+Until these are run, the framework states the analogy as a guiding interpretation, not a validated mechanism. We do not currently use the language of "phase transition" or "edge of chaos" in primary claims.
 
 ---
 

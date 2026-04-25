@@ -70,13 +70,25 @@ Per-run artifacts: `output/dimensionality_sweep/20260424_091217/` (Phase A) and 
 
 ---
 
+## Empirical control axes
+
+Phase A and Phase B together identified three empirical control axes that *jointly* determine outcomes; treating any one as the sole architectural verdict produces misleading conclusions.
+
+| Axis | Range tested | Key empirical finding |
+|---|---|---|
+| H (substrate width) | {128, 256, 384} | Inverted-U for `mutual_inhibition` peaking at H=256; monotone decline for `bytepair_proj`. Recipe-dependent. |
+| Training horizon | {20k, 40k} | Doubling horizon at H=384 recovers H=256-band peak (B1: 5.50%, was 3.52%). Phase A's inverted-U is partly a horizon artefact. |
+| Acceptance tolerance ε | {strict, neutral} so far; Phase D extends to a continuous sweep | Strict vs neutral comparison directional in Phase B.1 (preliminary 20/30 cells). |
+
+The framework therefore characterises a `(H, horizon, ε)` empirical control plane, not an isolated H-axis. Phase D will populate the ε-axis explicitly.
+
 ## Read next
 
-- [Interference Dynamics](Interference-Dynamics) — signal-level mechanism, residual computation, destructive cancellation, R_neg readings.
-- [Mutation-Selection Dynamics](Mutation-Selection-Dynamics) — structure-level mechanism, three laws, C_K measure, per-operator findings.
-- [Constructed Computation](Constructed-Computation) — what emerges when both mechanisms operate within regime, empirical capacity findings.
+- [Interference Dynamics](Interference-Dynamics) — signal-level mechanism, residual computation, destructive cancellation, co-occurrence readings.
+- [Mutation-Selection Dynamics](Mutation-Selection-Dynamics) — structure-level mechanism, three laws, C_K measure, Acceptance Aperture, per-operator findings.
+- [Constructed Computation](Constructed-Computation) — what emerges when both mechanisms operate within regime; CSP-clustering interpretation as guiding analogy.
 - [Speculative Extension — Cognitive Emergence](Cognitive-Emergence-Speculative) — research-direction notes; not paper claims.
-- [INSTNCT Architecture](INSTNCT-Architecture) — the substrate the framework is studied on.
+- [INSTNCT Architecture](INSTNCT-Architecture) — the substrate the framework is studied on. Note: parts of that page predate this framework's empirical anchoring; treat its theoretical claims as preliminary unless cross-referenced here.
 - [Research Process & Archive](Timeline-Archive) — full chronology and prior-name history (Theory of Thought, Structured Chaos Theory).
 
 ---
