@@ -163,14 +163,21 @@ This is the closed form *if* ΔU is approximately Gaussian(μ, σ²) at the loca
 
 The break of the Gaussian null is itself a positive empirical signature of a CSP-clustering / RSB landscape topology (Mézard, Montanari, Zecchina 2002; Mannelli, Zdeborová et al. 2022; Urbani et al. 2024).
 
-**Recent theoretical anchors**:
-- **Li, Wang, Dou, Rosenthal (2024), arXiv:2408.06894** — the asymptotic 0.234 acceptance rate for random-walk Metropolis is robust under Gaussian-like proposal kernels and across many landscape geometries. This gives a testable null calibration: under the Gaussian null, the optimal ε* should give an acceptance rate near 23.4%.
-- **Chen, Mikulincer, Reichman, Wein (2023), arXiv:2312.13554** — time lower bounds for SA establish that on certain hard instances *no* ε schedule (including adaptive) can reach within ratio Ω(1/n^{1−ε}). Acceptance-aperture tuning has theoretical limits.
-- **Ma et al. (2024), GECCO 2024, arXiv:2404.08239 (GLEET)** — meta-learned adaptive ε schedules (Transformer-based) deliver 30–50% improvements over static ε in evolutionary algorithms; the empirical frontier is landscape-adaptive ε, not a single fixed value.
-- **Ren et al. (2023), AISTATS 2024, arXiv:2311.13159** — Wasserstein–Fisher–Rao gradient flows decompose mutation-selection into Wasserstein transport + Fisher–Rao birth/death; ε plays the role of the Fisher–Rao reweighting temperature.
+**Recent theoretical anchors** (literature context for the acceptance-aperture framing; none is a direct prediction for our deterministic threshold-accepting grower):
+
+- **Li, Wang, Dou, Rosenthal (2024), arXiv:2408.06894** — the asymptotic 0.234 acceptance-rate result for *random-walk Metropolis* / parallel tempering kernels (with ESJD optimization, probabilistic acceptance) is robust under Gaussian-like proposal kernels. This is a *literature anchor* for the probabilistic class; our deterministic threshold-accepting search may have a different optimum, and the 0.234 figure is not a predicted target for our system.
+- **Chen, Mikulincer, Reichman, Wein (2023), arXiv:2312.13554** — time lower bounds for SA establish that on certain hard instances no ε schedule (including adaptive) can reach within ratio Ω(1/n^{1−δ}). Acceptance-aperture tuning has theoretical limits in worst-case regimes.
+- **Ma et al. (2024), GECCO 2024, arXiv:2404.08239 (GLEET)** — meta-learned adaptive ε schedules deliver substantial improvements over static ε in evolutionary algorithms; the empirical frontier is landscape-adaptive ε, not a single fixed value.
+- **Ren et al. (2023), AISTATS 2024, arXiv:2311.13159** — Wasserstein–Fisher–Rao gradient flows decompose mutation-selection into Wasserstein transport + Fisher–Rao birth/death; ε plays the role of the Fisher–Rao reweighting temperature in this framing.
 - **Discrete NES (2024), arXiv:2404.00208** — extends the natural-gradient view of evolution strategies to discrete binary domains, the closest existing match to our binary-spike substrate.
+- **Liao et al. (2024), arXiv:2407.20724** — spin-glass / replica-symmetry-breaking analogy for DNN loss landscapes; provides background for the rugged-landscape interpretation of our H=384 bimodality but does not prove it for our system.
+- **Angelini & Ricci-Tersenghi (2022), arXiv:2206.04760** — limits of simulated annealing on sparse hard inference problems (e.g. planted CSPs) where SA is trapped by glassy states. Background for "hard landscape + annealing limits"; we do not claim a closed-form ε* from this work.
 
 We claim *not* that any of these results have been validated on our substrate; we claim that the framework they jointly form is the right reading-list for Phase D analysis.
+
+**Phrasing of the null model** (per GPT review):
+
+> *"We use A_π(ε) as a Gaussian acceptance-volume null model, not as an assumed law. The model is accepted only if empirical ΔU distributions and accept-rate curves fit it. If not, we replace A_π with the empirical CDF A_emp(ε)."*
 
 ---
 

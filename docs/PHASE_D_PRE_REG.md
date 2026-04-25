@@ -24,11 +24,19 @@ Phase D measures the *continuous* ε spectrum, including the tolerant regime (ε
 
 **H1 (existence)**: There exists ε* in (0, 0.005] for which mean peak_acc exceeds the B0 baseline (3.52% at H=384, 20k steps) by ≥ 1.5pp, *while* arm-mean R_neg(accepted) remains ≤ 1.5× B0 baseline.
 
-**H2 (Li 2024 calibration)**: Under the Gaussian acceptance-aperture null model A_π(ε) = Φ((μ+ε)/σ), the optimal ε* should produce an acceptance rate near 0.234 (Li, Wang, Dou, Rosenthal 2024, arXiv:2408.06894). This is a testable null: if our empirical ε* gives an accept rate near 0.234, the Gaussian-isotropic null is consistent with our landscape; if not, the Gaussian null is falsified.
+**H2 (Li 2024 literature anchor — NOT a direct prediction)**: Li, Wang, Dou, Rosenthal (2024, arXiv:2408.06894) report that for *random-walk Metropolis* and parallel-tempering kernels (probabilistic acceptance, ESJD-optimized), the asymptotic optimal acceptance rate is robustly near 0.234. Our acceptance rule is **deterministic threshold accepting**, not Metropolis, so we expect a different optimum. We report the empirical ε* and the corresponding accept_rate(ε*) and *contrast* it against the 0.234 anchor only as a literature reference point. We do NOT pre-register 0.234 as a target or as a falsifying threshold for our system.
 
 **H3 (Bouchaud trap rescue)**: The H=384 `bytepair_proj` seed=1042 0.0% trap (Phase A) escapes for ε ≥ ε_trap. If observed, ε_trap gives a lower bound on the local barrier height (Bouchaud 1992 trap model). If no ε ≤ 0.01 escapes, the trap is too deep for tolerance-only rescue. This is a single-seed test; not part of the Bonferroni family below.
 
-**H4 (Gaussian null fit per arm)**: Per-arm KS-test of empirical ΔU histogram against fitted Normal(μ, σ²). Predicted regime split: Gaussian fit holds in `mutual_inhibition` H=128 / H=256 (easy regime) and breaks in H=384 / `bytepair_proj` rugged regimes. The break itself is a positive signature of the CSP-clustering / RSB landscape interpretation (Mézard et al. 2002; Urbani et al. 2024, arXiv:2407.20724).
+**H4 (Gaussian null fit per arm and per operator)**: Per-arm AND per-operator goodness-of-fit test of empirical ΔU histogram against fitted Normal(μ, σ²).
+
+Methodological note: a naïve KS-test against a Normal(μ, σ²) where μ and σ are estimated from the same sample produces an inflated p-value. We use:
+1. **Lilliefors-corrected KS** (or equivalent: parametric bootstrap calibration) for the parameter-fitted-from-data case;
+2. **QQ plot inspection** as a non-test sanity diagnostic (visual tail behaviour);
+3. **Tail-deviation metric** (e.g. Anderson–Darling A² with simulated p-value) emphasising tail behaviour, where the heavy-tail signature of a rugged landscape is most visible;
+4. **Per-operator decomposition** — the mixed-operator marginal can appear non-Gaussian even when each operator's ΔU is approximately Gaussian (and vice-versa). We report goodness-of-fit per operator AND for the marginal.
+
+Predicted regime split (after methodological adjustments): Gaussian fit holds in `mutual_inhibition` H=128 / H=256 cells (easy regime) and breaks in H=384 / `bytepair_proj` cells (rugged regime). The break itself is a positive signature of the CSP-clustering / RSB landscape interpretation (Mézard, Parisi, Zecchina 2002; Liao et al. 2024 arXiv:2407.20724 for DNN landscape RSB analogy).
 
 **H5 (Chen 2023 impossibility class)**: If no ε in the tested range produces peak_acc improvement and accept_rate(ε) does not track the Gaussian null, the landscape is consistent with Chen, Mikulincer, Reichman, Wein (2023, arXiv:2312.13554) impossibility-class regimes (no ε schedule rescues). This is a falsifying-the-existence-of-ε* outcome and is itself a defensible finding.
 
@@ -108,7 +116,7 @@ These two analyses do not require Phase D launch and can be performed concurrent
 
 - **H1 confirmed**: ≥ 1 ε > 0 cell with peak gain ≥ 1.5pp at p < 0.0045, and R_neg(accepted) ≤ 1.5× baseline. → ε* established for this substrate.
 - **H1 falsified**: no ε > 0 cell satisfies both criteria. → strict / neutral remain optimal in tested range; document as null result.
-- **H2 supported**: ε* accept_rate in [0.15, 0.30]. → Gaussian acceptance-aperture null consistent with substrate; cite Li 2024.
+- **H2 (literature anchor only)**: report empirical ε* accept_rate alongside the 0.234 Li et al. 2024 reference point. We do not "support" or "falsify" Li 2024 with this comparison, since their result is for a different acceptance class (probabilistic Metropolis, not deterministic threshold).
 - **H4 split (predicted)**: Gaussian KS fit in MI H=128 / 256, fails in H=384 cells. → CSP-clustering interpretation of bytepair-style failures gains structural support.
 - **H5 (impossibility class)**: H1 falsified *and* H4 fails everywhere. → escalate to Chen 2023 framing in `Constructed Computation` / future-work.
 

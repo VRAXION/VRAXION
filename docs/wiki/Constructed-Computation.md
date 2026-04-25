@@ -62,12 +62,12 @@ In the 25-cell Phase B, capacity proxies (`kernel_rank`, `separation_SP`, `parti
 
 ### CSP-clustering interpretation (analogy, not proof)
 
-This bimodal seed-outcome pattern is *structurally analogous* to the **dynamic-threshold transition in random constraint-satisfaction problems** (Mézard, Montanari, Zecchina, *Science* 2002; Mertens, Mézard, Zecchina 2006), where the solution space fragments into exponentially many isolated clusters near the SAT/UNSAT boundary. In that regime:
+This bimodal seed-outcome pattern is *structurally analogous* to the **dynamic-threshold transition in random constraint-satisfaction problems** (Mézard, Parisi, Zecchina, *Science* 2002; Mertens, Mézard, Zecchina 2006; Liao et al. 2024 [arXiv:2407.20724] for DNN-loss-landscape RSB analogy), where the solution space fragments into exponentially many isolated clusters near the SAT/UNSAT boundary. In that regime:
 
 - Backbone fraction (variables fixed across all solutions) jumps discontinuously near the threshold (Parkes, Selman, Levesque 1996), producing a **bimodal solver-outcome distribution**: either find a cluster or fail.
 - "Frozen variables" cause solvers to either succeed or get stuck — the same shape as our `[6.0, 0.0, 2.3, 2.7, 4.8]`.
 - Bouchaud's trap model (1992) predicts trapping time ∼ exp(barrier/T), so deep-trap seeds (e.g. our seed=1042 0.0% case) are essentially unreachable on a fixed budget — exactly what we observe.
-- The **training-horizon recovery** (Phase B, B1: 5.50% at 40k steps vs 3.52% at 20k) is consistent with the CSP picture: longer search time allows escape from isolated clusters.
+- The **training-horizon recovery** (Phase B, B1: 5.50% at 40k steps vs 3.52% at 20k) is consistent with the CSP picture: longer search time allows escape from isolated clusters. Background on annealing limits in glassy regimes: Angelini & Ricci-Tersenghi 2022 (arXiv:2206.04760).
 
 This is a structural analogy, not a proof. Two falsifiable post-hoc tests on existing data would tighten the connection (no new compute required):
 
