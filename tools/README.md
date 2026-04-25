@@ -46,6 +46,7 @@ Invoked by `.github/workflows/ci.yml`:
 | [`byte_embedder_lut_int8_nozero.json`](byte_embedder_lut_int8_nozero.json) | int8 LUT with the zero quantization level dropped (constrained-width deploy variant). |
 | [`byte_unit_winner_int4.json`](byte_unit_winner_int4.json) | int4 weights of the byte-unit champion, paired with `byte_embedder_lut.h`. |
 | [`build_byte_unit.py`](build_byte_unit.py) | Reproduce the byte-unit champion bake from the source corpus (referenced from `CHANGELOG.md`). |
+| [`diag_byte_unit_widen_sweep.py`](diag_byte_unit_widen_sweep.py) | Internal dependency of `build_byte_unit.py` — the float training + activation/quant search loop the bake script imports. Not invoked directly. |
 
 ## Phase A → B → D research line (active)
 
