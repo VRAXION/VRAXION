@@ -207,6 +207,10 @@ We claim *not* that any of these results have been validated on our substrate; w
 
 > *"We use A_π(ε) as a Gaussian acceptance-volume null model, not as an assumed law. The model is accepted only if empirical ΔU distributions and accept-rate curves fit it. If not, we replace A_π with the empirical CDF A_emp(ε)."*
 
+**Empirical status (Phase D0, 2026-04-25)**: the Gaussian A_π null is **rejected** for this substrate. Lilliefors-corrected KS tests on the per-arm ΔU distributions from the 12.6M-row B.1 candidate logs gave KS statistics ≈ 0.49 (substantial deviation from Gaussian), driven by a **zero-dominated point-mass regime**: 82–92% of best-of-K candidates have ΔU = 0 exactly, 0.06% are negative, and 8–18% are positive. The substrate is therefore *non-isotropic locally*; the empirical A_emp(ε) curve is used in further analyses, and the π-formula has no empirical legitimacy in this regime.
+
+A second, related D0 finding: under the best-of-K jackpot selector, **moving from ε = 0 to ε > 0 does not open new selectable moves** — the only changed cases are the 0.06% all-negative best-of-K instances. The full discontinuity in acceptance behaviour is concentrated at the strict → neutral boundary, parameterised by the probability p of accepting ΔU = 0 (`zero_p`). Phase D1 therefore tests a `zero_p` axis (probabilistic neutral) rather than a `ε > 0` axis (tolerant). See `docs/PHASE_D_PRE_REG.md` v2.1 and `docs/research/PHASE_D0_ACCEPTANCE_APERTURE.md`.
+
 ---
 
 ## Open hypotheses

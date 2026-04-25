@@ -60,7 +60,7 @@ Phase D measures the *continuous* ε spectrum, including the tolerant regime (ε
 
 | Factor | Value | Total |
 |---|---|---|
-| Acceptance policy | {strict, neutral_p=0.1, neutral_p=0.3, neutral_p=1.0, ε_small, ε_large} | 6 |
+| Acceptance policy | {strict, zero_p=0.1, zero_p=0.3, zero_p=0.6, zero_p=1.0, legacy_ties} | 6 |
 | Training horizon | 40k (single horizon for D1; 80k confirmation reserved for D1 winner) | 1 |
 | Seed | {42, 1042, 2042, 3042, 4042} | 5 |
 | Fixture | `mutual_inhibition` only | 1 |
@@ -68,11 +68,23 @@ Phase D measures the *continuous* ε spectrum, including the tolerant regime (ε
 
 Total: **30 cells.**
 
-### 3.2 Why these arms
+### 3.2 D0 finding that changes the design (v2.1)
 
-- **strict**: baseline reproducer (matches Phase B.1 40k strict = 5.50 ± 1.47).
-- **neutral_p=0.1, p=0.3, p=1.0**: three points along the *probabilistic neutral* axis — accept Δ_U > 0 always, accept Δ_U = 0 with probability p. p=1.0 reproduces the existing `accept_ties=true` policy (Phase B.1 40k ties = 5.88 ± 1.72). Probabilistic interpolation tests whether the Zero-Drive effect is monotone in tie-acceptance frequency or saturates.
-- **ε_small, ε_large**: two tolerant points selected by D0 from the empirical ΔU distribution (not from theory). Tests whether tolerant ε > 0 adds any value beyond neutral acceptance.
+D0 (offline analysis on the existing 12.6M-row B.1 candidate logs, see `tools/analyze_acceptance_aperture.py` and `docs/research/PHASE_D0_ACCEPTANCE_APERTURE.md`) revealed that the **best-of-K jackpot selector saturates the acceptance aperture at ε = 0**:
+
+- `best_negative_rate ≈ 0.0006` (only ~0.06% of best-of-9 candidates have ΔU < 0)
+- `best_exact_zero_rate ≈ 0.82–0.92` (the best-of-9 candidate is exactly 0 in 82–92% of steps — *zero-dominated regime*)
+- `best_positive_rate ≈ 0.08–0.18`
+
+Therefore, **moving from ε = 0 to ε > 0 does not open new selectable moves** under this selector — it only changes which of the ~0.06% all-negative cases are accepted, which is negligible. The full discontinuity is concentrated at the strict → neutral boundary, parameterised by the **probabilistic zero-acceptance probability `zero_p`** (accept ΔU = 0 with probability p, otherwise reject).
+
+D1 v2.1 therefore tests the `zero_p` axis only, abandoning the explicit ε > 0 sweep:
+
+- **strict** (zero_p = 0): accept iff ΔU > 0
+- **zero_p = 0.1, 0.3, 0.6, 1.0**: accept iff ΔU > 0; otherwise iff ΔU = 0 with probability p
+- **legacy_ties**: existing `accept_ties=true` policy, included as exact reproducer of B.1 80k ties cell
+
+A Gaussian null A_π(ε) was Lilliefors-corrected-KS-tested per arm and per operator in D0; the test rejects Gaussianity (KS stat ≈ 0.49 across arms; H4 status: **Gaussian null rejected — substrate is non-isotropic locally, dominated by zero point-mass**). The π-formula does not apply for this substrate; the empirical CDF A_emp(ε) is used in any further analyses where an aperture model is needed.
 
 ### 3.3 Required Rust patch
 
@@ -80,21 +92,27 @@ A new acceptance-rule abstraction on `evolve_mutual_inhibition.rs`:
 
 ```
 strict:        accept iff ΔU > 0
-neutral_p:     accept iff ΔU > 0; OR (ΔU == 0 AND uniform(0,1) < p)
-tolerant_eps:  accept iff ΔU >= -ε
+zero_p:        accept iff ΔU > 0; OR (ΔU == 0 AND uniform(0,1) < p)
+epsilon:       accept iff ΔU >= -ε         (kept in CLI for future use, not in D1)
 ```
 
-Implemented as `--acceptance-policy <kind>` with appropriate sub-arguments (e.g. `--acceptance-policy neutral_p --p 0.3` and `--acceptance-policy tolerant --epsilon 1e-4`). A parity smoke test must show:
-- `--acceptance-policy strict` ≡ no-flag (current strict default).
-- `--acceptance-policy neutral_p --p 1.0` ≡ `--accept-tolerance 0` ≡ `--accept-ties true`.
+Implemented in `--accept-policy {strict,ties,zero-p,epsilon}` with `--neutral-p` and `--accept-epsilon` sub-arguments. A parity smoke test must show:
+- `--accept-policy strict` ≡ no-flag (current strict default).
+- `--accept-policy zero-p --neutral-p 1.0` ≡ `--accept-ties true`.
 
-### 3.4 Hypotheses (pre-registered)
+GPT confirmed PASS on smoke (commit 383d9f6 on `codex/phase-b-logging-smoke`): strict accept rate 10%, zero-p=0.1 accept rate 22%, zero-p=1.0 accept rate 100%.
 
-**H1 (existence of a tolerant winner)**: There exists at least one ε ∈ {ε_small, ε_large} for which mean peak_acc exceeds neutral_p=1.0 (= existing ties baseline) by ≥ 1.0pp at p < 0.0083 (Bonferroni over 6 arm comparisons).
+### 3.4 Hypotheses (pre-registered, v2.1)
 
-**H2 (probabilistic neutral monotonicity)**: peak_acc is monotone in p across {0.1, 0.3, 1.0}. Falsifying outcome: a mid-p value outperforms p=1.0 (suggests Zero-Drive can be too aggressive).
+**H1 (existence of an intermediate zero_p winner)**: There exists at least one zero_p ∈ {0.1, 0.3, 0.6} for which mean peak_acc exceeds both `strict` and `zero_p=1.0` (= legacy ties) by ≥ 0.5pp. If true, this means probabilistic zero-acceptance is a tunable knob, not a binary on/off.
 
-**H3 (Gaussian null adequacy, conditional on D0)**: If D0 reports Anderson–Darling fits Gaussian for the strict arm, the empirical accept_rate(ε_small) should match A_π(ε_small) within ±20%. If not, the Gaussian null is rejected for this substrate.
+**H2 (Li 2024 literature anchor — NOT a direct prediction)**: as v2.0 — report empirical accept_rate(p) alongside the 0.234 anchor as a literature reference point only.
+
+**H3 (Bouchaud-style trap rescue)**: deep-trap seeds (e.g. analogues of the seed=1042 H=384 0.0% trap in Phase A bytepair_proj) escape under intermediate zero_p more than under strict and equally well as under zero_p=1.0. If higher trap-escape rates are observed at intermediate p, probabilistic neutral search has structural value beyond binary acceptance.
+
+**H4 (Gaussian null status, REJECTED in D0)**: per-arm and per-operator Lilliefors-corrected KS tests on B.1 ΔU distributions reject Gaussianity (KS ≈ 0.49). The A_π(ε) formula does not apply; the framework's π-paragraph is downgraded from "candidate null" to "rejected null in this substrate".
+
+**H5 (Chen 2023 impossibility class)**: as v2.0 — if no zero_p produces peak gain over strict, the substrate may sit in the Chen impossibility regime within the tested compute budget.
 
 ### 3.5 Statistical plan
 
@@ -125,11 +143,13 @@ Welch t-test of each non-baseline arm vs the strict baseline (n=5, df ≈ 8). Bo
 
 Total: **15 cells.**
 
-### 4.2 D2 hypothesis (high-D concentration of measure — exploratory)
+### 4.2 D2 hypothesis (high-D concentration of measure — exploratory, v2.1)
 
-**H4 (geometric)**: ε* shrinks with H. Concretely: peak_acc(D1-winner-policy, H=128) < peak_acc(D1-winner-policy, H=384), reflecting that higher-H substrates concentrate the "useful direction" density and require tighter aperture. The high-D unit-ball volume formula V_n = π^(n/2)/Γ(n/2+1) is invoked here as a *geometric hypothesis*, not as a deduction — H is not directly an Euclidean dimension; permutation symmetry (H!) potentially compensates for measure shrinkage.
+**H6 (geometric, reformulated for `zero_p` not ε)**: optimal `zero_p*` shrinks with H. Concretely: at higher H the substrate has more zero-plateau states (per-step `best_exact_zero_rate` increases), and the optimal probability of accepting them might decrease — preserving the rare positive moves more strictly. Or it might INCREASE — rewarding plateau exploration to find the rare positive-direction stepping stones.
 
-Falsifying outcome: peak_acc is flat or non-monotone across H — supports the "permutation symmetry compensates" interpretation, a separate mathematical regime worth investigating.
+The high-D unit-ball volume formula V_n = π^(n/2)/Γ(n/2+1) (peak n=5, decay to 0 thereafter) is invoked as a *geometric analogy*, not a deduction — H is not directly an Euclidean dimension. The reformulation from ε* to p* reflects the D0 finding that ε > 0 is empirically irrelevant under this selector.
+
+Falsifying outcome: `zero_p*(H)` is flat across {128, 256, 384} — supports the "permutation symmetry compensates for measure shrinkage" interpretation.
 
 This hypothesis is *exploratory* and not Bonferroni-corrected; it is a guidance for paper interpretation, not a strict-significance claim.
 
