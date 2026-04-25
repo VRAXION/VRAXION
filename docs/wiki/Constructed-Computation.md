@@ -72,6 +72,34 @@ Two caveats limit the strength of this claim:
 - **Statistical power**: n=5 per cell. The 80k+ties vs 20k+ties contrast has Welch p ≈ 0.076 (not Bonferroni-significant). Replication at n ≥ 10 is needed for strict claims.
 - **Tested-plateau bound**: strict acceptance plateaus *within the 80k tested range* (40k strict 5.50%, 80k strict 5.60%, p=0.92), but we cannot rule out further gains beyond 80k.
 
+### H-dependence of the (K, s) interaction (cross-H replication, sandbox + GPT)
+
+A complementary 18-cell H=128 sweep (mutual_inhibition, 20k steps, 3 seeds, --jobs 4 parallel on a separate machine, output `output/d1_h128_quick_20260425_194650/`) extended the Phase D1 K × policy factorial to a second H value, allowing direct cross-H comparison of the activation-function interaction.
+
+```
+                    H=128 (sandbox, 20k, n=3)         H=384 (GPT D1 / B.1, 40k, n=5)
+                    mean ± std    accept              mean    accept
+K=1 strict          4.33 ± 1.03   23%                 1.92    ~17%
+K=1 ties            3.70 ± 1.28   44%                 4.02    ~84%
+K=3 strict          3.53 ± 1.12   48%                 4.24    ~18%
+K=3 ties            4.90 ± 0.35 ★ 73%                 3.78    ~99%
+K=9 strict          4.20 ± 0.96   78%                 5.50    ~17% (B.1 reference)
+K=9 ties            4.70 ± 0.53   96%                 5.88    ~99% (B.1 reference)
+```
+
+★ marks the per-H peak.
+
+The cross-H comparison shows the (K, s) interaction is **not H-invariant**:
+
+- **K=1 strict reversal**: H=128 = 4.33% (works); H=384 = 1.92% (starvation). Smaller substrates expose more positive-direction mutations per single sample, so a 1-candidate jackpot can find improvements at H=128 that K=1 cannot find at H=384.
+- **K=3 best policy reverses across H**: H=128 ties beats strict (4.90 vs 3.53, +1.37pp); H=384 strict beats ties (4.24 vs 3.78, +0.46pp). The same (K=3) point of the activation-function family produces opposite winners at the two substrate widths.
+- **K=9 ties consistently wins** at both H (H=128: +0.50pp over strict; H=384: +0.38pp from B.1 reference). At saturated K, neutral acceptance helps regardless of H.
+- **Per-H optimal (K, s) shifts upward with H**: K=3+ties at H=128 (4.90), K=9+ties at H=384 (5.88).
+
+Mechanistic reading (tentative): per-candidate `p_pos` is higher at H=128 (smaller substrate, denser positives), so K=3 strict already accepts ~48% of best-of-K (vs ~18% at H=384). Adding ties on top of an already-permissive strict regime contributes drift over a smaller iso-fitness manifold (~128! configurations), which is more thoroughly traversable. At H=384, K=3 strict's tighter ~18% accept rate is already filtering noise effectively; adding ties dilutes the rare positive signal across a vastly larger 384! manifold. The (K, s) U-shape from D1 v2.2 is a section of a larger 3D surface whose shape depends on the substrate width.
+
+This is **not yet a Bonferroni-significant finding** at n=3 (sandbox) / n=5 (GPT). It is directional, replicates across two independent machines and operating systems, and is consistent within both H values. Replication at n ≥ 10 per cell is required for strict claims. The directional pattern is published as a candidate hypothesis for cross-H Phase E / F follow-up.
+
 ### Bimodality at the edge of regime
 
 `bytepair_proj` H=384 produces five seeds with peaks of `[6.00, 0.00, 2.30, 2.70, 4.80]`. One seed reaches a working substrate, one collapses entirely, three sit in between. The grow-prune cycle is in a knife-edge regime at this H: the same recipe with the same input produces qualitatively different outcomes depending on initial conditions. This is itself a finding about the emergence boundary.

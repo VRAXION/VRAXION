@@ -253,6 +253,8 @@ Three empirical consequences for the framework:
 
 The "Acceptance Aperture" is therefore not a single substrate-specific parameter but a **3D parameterised search activation function** A(K, τ, s). The optimal `(K*, τ*, s*)` for a given substrate is the activation that the substrate's gradient-free training requires — analogous to learning-rate × momentum × weight-decay tuning in gradient-based methods.
 
+**Cross-H extension to A(K, τ, s; H) (sandbox H=128 + GPT H=384, 2026-04-25)**: a complementary 18-cell parallel sweep at H=128 (mutual_inhibition, 20k steps, 3 seeds; output `output/d1_h128_quick_20260425_194650/`) showed that **`(K*, τ*, s*)` is itself H-dependent**. At H=128 the per-substrate optimum is (K=3, τ=0, s=1.0) at 4.90% mean peak; at H=384 the per-substrate optimum is (K=9, τ=0, s=1.0) at 5.88% mean peak (B.1 reference). The K=3 ties-vs-strict ranking is *opposite* at the two H values (H=128: ties 4.90 > strict 3.53; H=384: strict 4.24 > ties 3.78). The activation function family therefore acts as a 4-parameter object A(K, τ, s; H) where the substrate width modulates the optimal (K, τ, s) — the (K, s) cross-section is not separable from H. See [Constructed Computation § H-dependence of the (K, s) interaction](Constructed-Computation) for the cross-H table and the mechanistic reading.
+
 ---
 
 ## Open hypotheses

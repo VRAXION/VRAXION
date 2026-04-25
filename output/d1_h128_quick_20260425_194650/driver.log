@@ -1,0 +1,75 @@
+  Phase D1 plan: 18 total cells, 18 to run
+  fixtures: ['mutual_inhibition']
+  arms:     ['D1_K1_STRICT', 'D1_K1_ZERO_P10', 'D1_K3_STRICT', 'D1_K3_ZERO_P10', 'D1_K9_STRICT', 'D1_K9_ZERO_P10']
+  H values: [128]
+  seeds:    3 per arm -> seed pattern 42 + i*1000
+  base steps: 20000
+  panel interval: 2000
+  jobs:     4
+  out:      /home/user/VRAXION/output/d1_h128_quick_20260425_194650
+
+Running Phase D1 with 4 parallel jobs
+  queue [1/18] fixture=mutual_inhibition arm=D1_K1_STRICT H=128 seed=42
+  queue [2/18] fixture=mutual_inhibition arm=D1_K1_STRICT H=128 seed=1042
+  queue [3/18] fixture=mutual_inhibition arm=D1_K1_STRICT H=128 seed=2042
+  queue [4/18] fixture=mutual_inhibition arm=D1_K1_ZERO_P10 H=128 seed=42
+  queue [5/18] fixture=mutual_inhibition arm=D1_K1_ZERO_P10 H=128 seed=1042
+  queue [6/18] fixture=mutual_inhibition arm=D1_K1_ZERO_P10 H=128 seed=2042
+  queue [7/18] fixture=mutual_inhibition arm=D1_K3_STRICT H=128 seed=42
+  queue [8/18] fixture=mutual_inhibition arm=D1_K3_STRICT H=128 seed=1042
+  queue [9/18] fixture=mutual_inhibition arm=D1_K3_STRICT H=128 seed=2042
+  queue [10/18] fixture=mutual_inhibition arm=D1_K3_ZERO_P10 H=128 seed=42
+  queue [11/18] fixture=mutual_inhibition arm=D1_K3_ZERO_P10 H=128 seed=1042
+  queue [12/18] fixture=mutual_inhibition arm=D1_K3_ZERO_P10 H=128 seed=2042
+  queue [13/18] fixture=mutual_inhibition arm=D1_K9_STRICT H=128 seed=42
+  queue [14/18] fixture=mutual_inhibition arm=D1_K9_STRICT H=128 seed=1042
+  queue [15/18] fixture=mutual_inhibition arm=D1_K9_STRICT H=128 seed=2042
+  queue [16/18] fixture=mutual_inhibition arm=D1_K9_ZERO_P10 H=128 seed=42
+  queue [17/18] fixture=mutual_inhibition arm=D1_K9_ZERO_P10 H=128 seed=1042
+  queue [18/18] fixture=mutual_inhibition arm=D1_K9_ZERO_P10 H=128 seed=2042
+  done [4/18] elapsed=2.6m fixture=mutual_inhibition arm=D1_K1_ZERO_P10 H=128 seed=42: peak=2.60% final=1.40% accept=44.81% rows=20000 wall=156.4s
+  done [1/18] elapsed=2.8m fixture=mutual_inhibition arm=D1_K1_STRICT H=128 seed=42: peak=4.60% final=3.20% accept=22.24% rows=20000 wall=169.8s
+  done [3/18] elapsed=3.0m fixture=mutual_inhibition arm=D1_K1_STRICT H=128 seed=2042: peak=5.20% final=4.20% accept=23.21% rows=20000 wall=179.8s
+  done [2/18] elapsed=3.1m fixture=mutual_inhibition arm=D1_K1_STRICT H=128 seed=1042: peak=3.20% final=2.90% accept=24.15% rows=20000 wall=183.4s
+  done [5/18] elapsed=5.6m fixture=mutual_inhibition arm=D1_K1_ZERO_P10 H=128 seed=1042: peak=3.40% final=2.60% accept=41.97% rows=20000 wall=175.2s
+  done [6/18] elapsed=5.8m fixture=mutual_inhibition arm=D1_K1_ZERO_P10 H=128 seed=2042: peak=5.10% final=4.20% accept=43.69% rows=20000 wall=179.8s
+  done [7/18] elapsed=7.9m fixture=mutual_inhibition arm=D1_K3_STRICT H=128 seed=42: peak=2.70% final=1.50% accept=48.22% rows=60000 wall=291.7s
+  done [8/18] elapsed=8.0m fixture=mutual_inhibition arm=D1_K3_STRICT H=128 seed=1042: peak=3.10% final=2.30% accept=47.43% rows=60000 wall=293.8s
+  done [9/18] elapsed=10.5m fixture=mutual_inhibition arm=D1_K3_STRICT H=128 seed=2042: peak=4.80% final=4.20% accept=48.65% rows=60000 wall=296.1s
+  done [10/18] elapsed=10.6m fixture=mutual_inhibition arm=D1_K3_ZERO_P10 H=128 seed=42: peak=4.50% final=4.50% accept=74.12% rows=60000 wall=283.8s
+  done [11/18] elapsed=12.2m fixture=mutual_inhibition arm=D1_K3_ZERO_P10 H=128 seed=1042: peak=5.10% final=3.60% accept=71.76% rows=60000 wall=258.6s
+  done [12/18] elapsed=12.8m fixture=mutual_inhibition arm=D1_K3_ZERO_P10 H=128 seed=2042: peak=5.10% final=4.10% accept=74.38% rows=60000 wall=290.6s
+  done [13/18] elapsed=21.0m fixture=mutual_inhibition arm=D1_K9_STRICT H=128 seed=42: peak=4.60% final=2.00% accept=78.12% rows=180000 wall=633.2s
+  done [14/18] elapsed=21.1m fixture=mutual_inhibition arm=D1_K9_STRICT H=128 seed=1042: peak=3.10% final=2.40% accept=77.50% rows=180000 wall=628.9s
+  done [15/18] elapsed=22.6m fixture=mutual_inhibition arm=D1_K9_STRICT H=128 seed=2042: peak=4.90% final=4.30% accept=77.19% rows=180000 wall=622.9s
+  done [16/18] elapsed=23.3m fixture=mutual_inhibition arm=D1_K9_ZERO_P10 H=128 seed=42: peak=4.90% final=4.70% accept=96.60% rows=180000 wall=627.1s
+  done [18/18] elapsed=31.5m fixture=mutual_inhibition arm=D1_K9_ZERO_P10 H=128 seed=2042: peak=5.10% final=3.90% accept=96.44% rows=180000 wall=626.2s
+  done [17/18] elapsed=31.6m fixture=mutual_inhibition arm=D1_K9_ZERO_P10 H=128 seed=1042: peak=4.10% final=2.90% accept=95.03% rows=180000 wall=632.9s
+
+================================================================================
+AGGREGATE (mean +- std, n = # seeds)
+================================================================================
+  mutual_inhibition H=128 arm=D1_K1_STRICT peak=  4.33 +-  1.03  final=  3.43 +-  0.68  accept= 23.20 +- 0.95  alive=0.689 +- 0.034  wall=  177.7s  n=3
+  mutual_inhibition H=128 arm=D1_K1_ZERO_P10 peak=  3.70 +-  1.28  final=  2.73 +-  1.40  accept= 43.49 +- 1.43  alive=0.620 +- 0.035  wall=  170.5s  n=3
+  mutual_inhibition H=128 arm=D1_K3_STRICT peak=  3.53 +-  1.12  final=  2.67 +-  1.39  accept= 48.10 +- 0.62  alive=0.722 +- 0.015  wall=  293.8s  n=3
+  mutual_inhibition H=128 arm=D1_K3_ZERO_P10 peak=  4.90 +-  0.35  final=  4.07 +-  0.45  accept= 73.42 +- 1.44  alive=0.703 +- 0.068  wall=  277.6s  n=3
+  mutual_inhibition H=128 arm=D1_K9_STRICT peak=  4.20 +-  0.96  final=  2.90 +-  1.23  accept= 77.61 +- 0.48  alive=0.724 +- 0.014  wall=  628.4s  n=3
+  mutual_inhibition H=128 arm=D1_K9_ZERO_P10 peak=  4.70 +-  0.53  final=  3.83 +-  0.90  accept= 96.02 +- 0.86  alive=0.748 +- 0.083  wall=  628.7s  n=3
+{
+  "status": "PASS",
+  "runs": 18,
+  "candidate_rows": 1560000,
+  "arms": [
+    "D1_K1_STRICT",
+    "D1_K1_ZERO_P10",
+    "D1_K3_STRICT",
+    "D1_K3_ZERO_P10",
+    "D1_K9_STRICT",
+    "D1_K9_ZERO_P10"
+  ],
+  "constructability_summary": "/home/user/VRAXION/output/d1_h128_quick_20260425_194650/constructability_summary.json"
+}
+
+
+Sweep total wall clock: 31.8 min
+Artifacts: /home/user/VRAXION/output/d1_h128_quick_20260425_194650/results.json  /home/user/VRAXION/output/d1_h128_quick_20260425_194650/results.csv
