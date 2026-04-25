@@ -163,6 +163,32 @@ This hypothesis is *exploratory* and not Bonferroni-corrected; it is a guidance 
 
 ---
 
+## 4.5 Phase E — minimum-useful threshold (+δ) sweep (placeholder)
+
+**Status: pre-reg placeholder, not yet active.** Design follows once D1 winner is known.
+
+The third axis of the search activation function A(K, τ, s) — the utility cutoff τ — has been tested only at τ = 0 (B.1, D1 plan) and at τ < 0 (D0; rejected as empirically irrelevant under K=9 jackpot). The τ > 0 direction (`minimum-useful δ`, `accept iff ΔU > δ`) is unvested.
+
+D0.6 (`tools/diag_phase_d0_6_minimum_useful.py`) provides offline **calibration-only** quantiles of the positive best-of-K ΔU distribution. These quantiles inform δ_small / δ_med / δ_large grid placement for Phase E. **D0.6 explicitly does not predict outcomes** (peak_acc, final_acc): once a move is rejected, the trajectory diverges, and the existing logs do not preserve counter-factual trajectories.
+
+Phase E sketch (to be pre-registered before launch, after D1 winner is known):
+
+| Factor | Range |
+|---|---|
+| τ (minimum-useful) | {0 (strict baseline), δ_small, δ_med, δ_large} |
+| K | D1 winner |
+| s | D1 winner |
+| Seed | 5 |
+| Fixture, H, horizon | mutual_inhibition, H=384, 40k |
+
+Total: ~20 cells if 4 τ points × 5 seeds.
+
+Phase E hypothesis (placeholder):
+
+**H7 (minimum-useful trade-off)**: there exists δ* > 0 such that the substrate trained with `accept iff ΔU > δ*` reaches better peak_acc than strict (δ = 0). Mechanism candidate: filtering trivially-small positive ΔU prevents drift on noise. Falsifying outcome: every δ > 0 produces lower or equal peak_acc — substrate benefits from accumulating small positive moves; small-step accumulation is real.
+
+---
+
 ## 5. Cross-phase post-hoc analyses (zero new compute on B.1 data)
 
 These run on the Phase B.1 candidate logs alongside D0 and report independently:

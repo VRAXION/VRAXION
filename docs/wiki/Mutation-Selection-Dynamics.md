@@ -211,14 +211,24 @@ We claim *not* that any of these results have been validated on our substrate; w
 
 A second, related D0 finding: under the best-of-K jackpot selector, **moving from ε = 0 to ε > 0 does not open new selectable moves** — the only changed cases are the 0.06% all-negative best-of-K instances. The full discontinuity in acceptance behaviour is concentrated at the strict → neutral boundary, parameterised by the probability p of accepting ΔU = 0 (`zero_p`). Phase D1 therefore tests a `zero_p` axis (probabilistic neutral) rather than a `ε > 0` axis (tolerant). See `docs/PHASE_D_PRE_REG.md` v2.1 and `docs/research/PHASE_D0_ACCEPTANCE_APERTURE.md`.
 
-### Acceptance Aperture as a Two-Tier Search Activation Function
+### Acceptance Aperture as a Three-Parameter Search Activation Function
 
-Phase D0.5 (offline K-resampling on the same B.1 candidate logs, see `tools/diag_phase_d0_5_jackpot_aperture.py` and `docs/research/PHASE_D0_5_JACKPOT_APERTURE.md`) revealed that the acceptance aperture is structurally a **two-tier parameterised activation function** with K (jackpot size) upstream and the policy valve downstream:
+Phase D0.5 (offline K-resampling on the same B.1 candidate logs, see `tools/diag_phase_d0_5_jackpot_aperture.py` and `docs/research/PHASE_D0_5_JACKPOT_APERTURE.md`) revealed that the acceptance aperture is structurally a **three-parameter parameterised activation function**: a sampling pool, a utility cutoff, and a boundary softness.
+
+$$A(K,\tau,s)$$
+
+| Parameter | Meaning | Range so far |
+|---|---|---|
+| **K** | jackpot pool size — how many candidates per step | tested K ∈ {1, 2, 3, 5, 9} (D0.5 offline; B.1 ran K=9) |
+| **τ** | utility cutoff: τ < 0 tolerant, τ = 0 neutral/strict boundary, τ > 0 minimum-useful | only τ = 0 tested (B.1, D1 plan); τ > 0 is the open `+δ` axis |
+| **s** | boundary softness at τ — hard step (s = 0) vs probabilistic / smooth (s ∈ (0, 1]) | tested s = 0 (strict) and s = 1 (full ties) on B.1; D1 plan covers s ∈ {0, 0.3, 1.0} at τ = 0 |
+
+The pipeline:
 
 ```
 1. K candidates sampled from parent       — sampling aperture (upstream)
 2. best-of-K ΔU selected                  — max-pool operation
-3. acceptance policy decides              — soft-threshold valve (downstream)
+3. acceptance criterion at τ with softness s — soft-threshold valve (downstream)
 ```
 
 This is mathematically the same shape as a CNN max-pool followed by an activation function. The mapping:
@@ -227,18 +237,21 @@ This is mathematically the same shape as a CNN max-pool followed by an activatio
 |---|---|
 | K (jackpot pool size) | max-pool kernel size (Boureau, Ponce, LeCun 2010) |
 | best-of-K operation | max-pool over the candidate set |
-| `strict` (accept ΔU > 0) | ReLU `max(0, x)` |
-| `zero_p` (accept ΔU = 0 with probability p) | Leaky-ReLU-like soft slope at zero (Maas et al. 2013; PReLU, He et al. 2015; ELU, Clevert et al. 2015) |
-| `tolerant ε` | activation with shifted threshold |
+| τ (utility cutoff) | activation **bias** term |
+| `strict` (τ = 0, s = 0) | ReLU `max(0, x)` |
+| `zero_p = p` (τ = 0, s = p) | Leaky-ReLU-like soft slope at zero (Maas et al. 2013; PReLU, He et al. 2015; ELU, Clevert et al. 2015) |
+| `tolerant ε` (τ = −ε, s = 0) | activation with shifted threshold left |
+| `minimum-useful δ` (τ = +δ, s = 0) | activation with shifted threshold right |
 
 K-dependence is governed by extreme-value statistics on the candidate ΔU distribution (Fisher–Tippett–Gnedenko 1928): if the per-candidate positive-rate is p_pos, then under independent sampling the strict accept rate at jackpot K is `1 − (1 − p_pos)^K`. Empirically this prediction tracks observed strict accept across `K ∈ {1, 2, 3, 5, 9}` to within ~10–15% (slight deviation indicating per-step candidate correlation, likely from shared parent state).
 
-Two empirical consequences for the framework:
+Three empirical consequences for the framework:
 
-1. **Ties acceptance saturates at small K** — by K=2, ties accept rate ≈ 96%; by K=3, ≈ 99%. The K=9 setting in our experiments has been operating in the **fully saturated ties regime**. Anything we previously interpreted as "ties is universally good" is instead "K=9 + ties is essentially a free-walk on the iso-fitness manifold". The `zero_p` axis only differentiates outcomes in the strict-to-saturated range.
-2. **Strict discovery scales monotonically with K** but **C_K per-cost declines mildly**. The optimal (K, p) pair is therefore a **2D trade-off**, not a 1D tuning of either axis. Phase D1 v2.2 expands to a small `K × policy` factorial design.
+1. **Ties acceptance saturates at small K** — by K=2, ties accept rate ≈ 96%; by K=3, ≈ 99%. The K=9 setting in our experiments has been operating in the **fully saturated ties regime**. Anything we previously interpreted as "ties is universally good" is instead "K=9 + ties is essentially a free-walk on the iso-fitness manifold". The `s` axis (zero_p) only differentiates outcomes in the strict-to-saturated range.
+2. **Strict discovery scales monotonically with K** but **C_K per-cost declines mildly**. The optimal (K, s) pair is therefore a **2D trade-off** — at fixed τ = 0.
+3. **The τ-axis (utility cutoff) is the third independent parameter**, and is **not yet empirically tested**. The `tolerant ε` (τ < 0) was rejected as empirically irrelevant under K=9 jackpot (D0). The `minimum-useful δ` (τ > 0) is the open direction — accepting only mutations with margin above zero, filtering out trivially-small positive ΔU. Phase D0.6 (offline calibration only) and Phase E (live test) address it.
 
-The "Acceptance Aperture" is therefore not a single substrate-specific parameter but a **2D parameterised search activation function**. The optimal `(K*, p*)` for a given substrate is the activation that the substrate's gradient-free training requires — analogous to learning-rate × momentum tuning in gradient-based methods.
+The "Acceptance Aperture" is therefore not a single substrate-specific parameter but a **3D parameterised search activation function** A(K, τ, s). The optimal `(K*, τ*, s*)` for a given substrate is the activation that the substrate's gradient-free training requires — analogous to learning-rate × momentum × weight-decay tuning in gradient-based methods.
 
 ---
 
