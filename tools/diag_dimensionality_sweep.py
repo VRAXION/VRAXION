@@ -5,6 +5,7 @@ the preregistered H=384 confound-vs-intrinsic arms for `evolve_mutual_inhibition
 and writes candidate logs, checkpoints, run metadata, and panel summaries.
 `--phase-b1` runs the horizon x accept_ties follow-up on the same fixture.
 `--phase-d1` runs the acceptance-aperture zero-p policy follow-up.
+`--phase-d2` runs the cross-H validation for the D1 activation winner.
 """
 from __future__ import annotations
 
@@ -42,6 +43,8 @@ def parse_args() -> argparse.Namespace:
                    help="run Phase B.1 horizon x accept_ties arms for evolve_mutual_inhibition")
     p.add_argument("--phase-d1", action="store_true",
                    help="run Phase D1 acceptance-aperture zero-p arms for evolve_mutual_inhibition")
+    p.add_argument("--phase-d2", action="store_true",
+                   help="run Phase D2 cross-H activation validation arms for evolve_mutual_inhibition")
     p.add_argument("--arms", default="B0,B1,B2,B3,B4",
                    help="comma-separated Phase B arms to run")
     p.add_argument("--panel-interval", type=int, default=None,
@@ -205,6 +208,20 @@ def phase_d1_arm_config(arm: str, base_steps: int) -> dict:
     return configs[arm]
 
 
+def phase_d2_arm_config(arm: str, base_steps: int) -> dict:
+    configs = {
+        "D2_K1_STRICT": phase_d1_arm_config("D1_K1_STRICT", base_steps),
+        "D2_K1_ZERO_P10": phase_d1_arm_config("D1_K1_ZERO_P10", base_steps),
+        "D2_K3_STRICT": phase_d1_arm_config("D1_K3_STRICT", base_steps),
+        "D2_K3_ZERO_P10": phase_d1_arm_config("D1_K3_ZERO_P10", base_steps),
+        "D2_K9_STRICT": phase_d1_arm_config("D1_K9_STRICT", base_steps),
+        "D2_K9_ZERO_P10": phase_d1_arm_config("D1_K9_ZERO_P10", base_steps),
+    }
+    if arm not in configs:
+        raise ValueError(f"unknown Phase D2 arm: {arm}")
+    return configs[arm]
+
+
 def run_panel_analyzer(run_dir: Path) -> int:
     exe = example_binary_path("diag_phase_b_panel")
     if exe.exists():
@@ -239,7 +256,10 @@ def run_phase_b_cell(
 ) -> tuple[dict | None, int, float]:
     cfg = cfg or phase_b_arm_config(arm, base_steps)
     run_id = f"phase_{phase.lower()}_{fixture}_{arm}_H{h}_seed{seed}"
-    run_dir = out_dir / arm / f"seed_{seed}"
+    if phase == "D2":
+        run_dir = out_dir / f"H_{h}" / arm / f"seed_{seed}"
+    else:
+        run_dir = out_dir / arm / f"seed_{seed}"
     run_dir.mkdir(parents=True, exist_ok=True)
     stdout_path = run_dir / "stdout.txt"
     stderr_path = run_dir / "stderr.txt"
@@ -411,7 +431,7 @@ def main_phase_b_like(args: argparse.Namespace, phase: str, config_fn, default_a
     if fixtures != ["mutual_inhibition"]:
         raise SystemExit(f"--phase-{phase.lower()} currently supports only --fixtures mutual_inhibition")
     h_values = [int(x) for x in args.H_values.split(",")]
-    if phase in {"B1", "D1"} and args.arms == "B0,B1,B2,B3,B4":
+    if phase in {"B1", "D1", "D2"} and args.arms == "B0,B1,B2,B3,B4":
         arms = default_arms
     else:
         arms = [a.strip() for a in args.arms.split(",") if a.strip()]
@@ -593,6 +613,22 @@ def main_phase_d1(args: argparse.Namespace) -> int:
     )
 
 
+def main_phase_d2(args: argparse.Namespace) -> int:
+    return main_phase_b_like(
+        args,
+        "D2",
+        phase_d2_arm_config,
+        [
+            "D2_K1_STRICT",
+            "D2_K1_ZERO_P10",
+            "D2_K3_STRICT",
+            "D2_K3_ZERO_P10",
+            "D2_K9_STRICT",
+            "D2_K9_ZERO_P10",
+        ],
+    )
+
+
 def main_default(args: argparse.Namespace) -> int:
     fixtures = [f.strip() for f in args.fixtures.split(",") if f.strip()]
     h_values = [int(x) for x in args.H_values.split(",")]
@@ -642,14 +678,16 @@ def main_default(args: argparse.Namespace) -> int:
 
 def main() -> int:
     args = parse_args()
-    if sum([args.phase_b, args.phase_b1, args.phase_d1]) > 1:
-        raise SystemExit("--phase-b, --phase-b1, and --phase-d1 are mutually exclusive")
+    if sum([args.phase_b, args.phase_b1, args.phase_d1, args.phase_d2]) > 1:
+        raise SystemExit("--phase-b, --phase-b1, --phase-d1, and --phase-d2 are mutually exclusive")
     if args.phase_b:
         return main_phase_b(args)
     if args.phase_b1:
         return main_phase_b1(args)
     if args.phase_d1:
         return main_phase_d1(args)
+    if args.phase_d2:
+        return main_phase_d2(args)
     return main_default(args)
 
 
