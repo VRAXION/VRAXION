@@ -101,6 +101,7 @@ proofread_root_ids_783.npy
 # Rust build artifacts
 /target
 /Rust/target
+instnct-core/target/
 instnct-core/checkpoints/
 instnct-core/results/
 /results/
