@@ -71,7 +71,38 @@ def parse_summary_line(stdout: str) -> dict | None:
         return None
 
 
-def cargo_example_cmd(example: str, corpus: str, packed: str) -> list[str]:
+def example_binary_path(example: str) -> Path:
+    suffix = ".exe" if sys.platform.startswith("win") else ""
+    return REPO_ROOT / "target" / "release" / "examples" / f"{example}{suffix}"
+
+
+def build_release_example(example: str) -> int:
+    cmd = [
+        "cargo", "build", "--release", "--example", example,
+        "--manifest-path", str(REPO_ROOT / "instnct-core" / "Cargo.toml"),
+    ]
+    proc = subprocess.run(cmd, cwd=REPO_ROOT, capture_output=True, text=True)
+    if proc.returncode != 0:
+        print(f"  !! cargo build --example {example} exited {proc.returncode}", file=sys.stderr)
+        print(proc.stderr[-4000:], file=sys.stderr)
+    return proc.returncode
+
+
+def prebuild_phase_examples(fixtures: list[str]) -> int:
+    examples = [f"evolve_{fixture}" for fixture in fixtures] + ["diag_phase_b_panel"]
+    for example in dict.fromkeys(examples):
+        rc = build_release_example(example)
+        if rc != 0:
+            return rc
+    return 0
+
+
+def cargo_example_cmd(example: str, corpus: str, packed: str, *, prebuilt: bool = False) -> list[str]:
+    if prebuilt:
+        exe = example_binary_path(example)
+        if not exe.exists():
+            raise FileNotFoundError(f"prebuilt example missing: {exe}")
+        return [str(exe), corpus, packed]
     return [
         "cargo", "run", "--release", "--example", example,
         "--manifest-path", str(REPO_ROOT / "instnct-core" / "Cargo.toml"),
@@ -175,11 +206,15 @@ def phase_d1_arm_config(arm: str, base_steps: int) -> dict:
 
 
 def run_panel_analyzer(run_dir: Path) -> int:
-    cmd = [
-        "cargo", "run", "--release", "--example", "diag_phase_b_panel",
-        "--manifest-path", str(REPO_ROOT / "instnct-core" / "Cargo.toml"),
-        "--", str(run_dir),
-    ]
+    exe = example_binary_path("diag_phase_b_panel")
+    if exe.exists():
+        cmd = [str(exe), str(run_dir)]
+    else:
+        cmd = [
+            "cargo", "run", "--release", "--example", "diag_phase_b_panel",
+            "--manifest-path", str(REPO_ROOT / "instnct-core" / "Cargo.toml"),
+            "--", str(run_dir),
+        ]
     proc = subprocess.run(cmd, cwd=REPO_ROOT, capture_output=True, text=True)
     (run_dir / "panel_stdout.txt").write_text(proc.stdout)
     (run_dir / "panel_stderr.txt").write_text(proc.stderr)
@@ -212,7 +247,7 @@ def run_phase_b_cell(
     checkpoint = run_dir / "final.ckpt"
     panel_timeseries = run_dir / "panel_timeseries.csv"
 
-    cmd = cargo_example_cmd(f"evolve_{fixture}", corpus, packed) + [
+    cmd = cargo_example_cmd(f"evolve_{fixture}", corpus, packed, prebuilt=True) + [
         "--steps", str(cfg["steps"]),
         "--seed", str(seed),
         "--H", str(h),
@@ -417,6 +452,10 @@ def main_phase_b_like(args: argparse.Namespace, phase: str, config_fn, default_a
                   f"neutral_p={cfg.get('neutral_p')} input_scatter={cfg['input_scatter']} "
                   f"panel_interval={args.panel_interval}")
         return 0
+
+    prebuild_rc = prebuild_phase_examples(fixtures)
+    if prebuild_rc != 0:
+        return prebuild_rc
 
     t_sweep = time.time()
     jobs = max(1, args.jobs)

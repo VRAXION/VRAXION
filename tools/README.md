@@ -1,133 +1,109 @@
-# Quantization research diagnostics (2026-04-17/18)
+# `tools/`
 
-These scripts ran the 2026-04-17/18 quantization championship research. See
-`VALIDATED_FINDINGS.md` and `docs/playground/quant_final_verdict.html` for
-results.
+Helper scripts and deploy artifacts that live alongside the Rust workspace
+in `instnct-core/` and the Python deploy SDK in `Python/`. The directory was
+trimmed to its current shape on 2026-04-25 as part of the v5.0.0-beta.3
+cleanup pass; 53 legacy scripts from the 2026-04-17 → 2026-04-19 byte-pair
+merger / Block C quantization research lines were archived to tag
+[`archives/tools-cleanup-20260425`](https://github.com/VRAXION/VRAXION/releases/tag/archives%2Ftools-cleanup-20260425).
 
-All scripts share the same Beukers-gate char-LM task (mask-center, 27-class
-alphabet, FineWeb + code corpora) so results are directly comparable.
+Restore any archived script via:
 
-**Note (2026-04-18 cleanup):** the full set of alternatives tested during the
-championship (progressive growing, generational stacking, cluster stacking,
-sparse / true exhaustive) lived here as `tools/diag_*.py` scripts. They were
-removed from this directory during mainline cleanup; each experiment is
-preserved as a blueprint entry on the [Timeline-Archive wiki
-page](https://github.com/VRAXION/VRAXION/wiki/Timeline-Archive#archived-scripts-2026-04-18)
-under "Archived scripts (2026-04-18)". Git history retains the code itself.
+```bash
+git show archives/tools-cleanup-20260425:tools/<filename>
+git checkout archives/tools-cleanup-20260425 -- tools/<filename>
+```
 
-**Note (2026-04-18 byte-embedder batch):** a second archival batch ran the
-same day — 25 `diag_byte_*.py` / `diag_merger_telemetry.py` / `diag_word_unit_sweep.py`
-scripts from the L0 byte embedder training + L1 byte-pair merger ceiling
-sprint were removed from `tools/` after their findings were consolidated
-into the walkthrough deck at `docs/index.html` and the report at
-`docs/research/L1_MERGER_OVERNIGHT_REPORT.md`. Blueprint entries (Clusters 9
-and 10) are under the same Timeline-Archive wiki page. The 4 LUT data
-artifacts (`byte_embedder_lut.h`, `byte_embedder_lut_int8.json`,
-`byte_embedder_lut_int8_nozero.json`, `byte_unit_winner_int4.json`) remain
-in `tools/` for now; they'll relocate together with the walkthrough deck in
-a follow-up cleanup pass.
+For the timeline of the research lines those scripts produced, see the
+[Timeline-Archive wiki page](https://github.com/VRAXION/VRAXION/wiki/Timeline-Archive)
+(blueprints recorded as Clusters 9, 10, 11, 12).
 
-**Note (2026-04-18 PM, L1 merger compression championship):** a third batch
-broke the Cluster 10 73% lossless ceiling by switching from single-representation
-quantization to a **3-tier hybrid weight storage** (lookup codebook + per-matrix
-int8 + float residual, with per-cell lossless-check + rollback). Champion
-pipeline at H=81 / 100.00% lossless / **7.14 KB deploy**. Three canonical
-scripts are kept in this directory as the reproducible pipeline:
+## Public-beta contract scripts
 
-- `diag_byte_pair_merger_lookup_codebook.py` — gravity-driven codebook expansion
-- `diag_byte_pair_merger_free_int8.py` — per-cell int8 snap on still-float cells
-- `diag_byte_pair_merger_absorb_float.py` — champion (absorb remaining floats
-  into existing codebook/int8 categories)
+Both are referenced from `README.md` as the 5-minute proof. They must stay
+green on `main`.
 
-Seven exploratory variants (per-cell aggressive, grow-hidden, pure-int8-bake,
-plastic selective snap, density bucket snap, 2-layer baseline, residual
-density diagnostic) were removed after consolidating their findings as
-blueprint Cluster 11 on the Timeline-Archive wiki page. Git history retains
-neither — these scripts were never committed to `main`; the wiki entry is
-the only record.
+| Script | Purpose |
+| --- | --- |
+| [`run_grower_regression.py`](run_grower_regression.py) | Canonical grower regression bundle (`docs/GROWER_RUN_CONTRACT.md`); produces append-only evidence under `target/grower-regression/<timestamp>/`. The B0 engine-freeze gate. |
+| [`run_byte_opcode_acceptance.py`](run_byte_opcode_acceptance.py) | Byte/opcode v1 exact-translator acceptance harness (B1 promotion gate; see [`docs/BYTE_OPCODE_V1_CONTRACT.md`](../docs/BYTE_OPCODE_V1_CONTRACT.md)). |
 
-**Note (2026-04-19, Single-W + fp16 follow-up):** the Cluster 10 "73% hard
-ceiling" was overturned — it was a single-seed artifact. A Single-W mirror
-tied autoencoder (`forward(x) = C19(x @ W + b1) @ W.T + b2`, H=81) trained
-with multi-seed restarts + Adam warmup + L-BFGS finish + sign-aware hinge
-loss reaches 100.0000% lossless at **2592 weight cells** (half of Cluster 11's
-5184-cell asymmetric champion). The float model was then compressed to a
-**5.60 KB pure fp16 deploy — 100.0000% lossless, zero escapes, zero
-retraining** — via fp16 cast + 1-ulp grid exhaustive search. One weight
-adjustment (`W[0,24]: 0.3672 → 0.3652`, 1 fp16 ulp) closed the last 2 bad
-pairs. Previous attempts (K=64 Lloyd-Max codebook at 53%, int8 linear at
-91.9%, int8+escape hybrid at 99.97%) all failed to reach 100%; SVD/GCD/sparse
-structure hunts were negative (W is full-rank, max-entropy). fp16 works
-because its magnitude-dependent resolution matches the razor-edge weight
-distribution; int8's fixed step size is too coarse in the tight-slack region.
+## CI utilities
 
-The following canonical scripts are kept in `tools/` as the reproducible
-Single-W pipeline:
+Invoked by `.github/workflows/ci.yml`:
 
-- `diag_byte_pair_merger_single_w_mirror.py` — SingleWMirror class definition
-  + 5-restart training loop (Adam warmup + L-BFGS finish); produces float
-  baseline checkpoint
-- `diag_byte_pair_merger_single_w_continue.py` — long L-BFGS continue from a
-  saved checkpoint (stall=20, history_size=100)
-- `diag_byte_pair_merger_single_w_final_push.py` — heavy hinge L-BFGS push
-  for bridging the 99.99% → 100% gap
-- `diag_byte_pair_merger_single_w_exhaustive_fix.py` — exhaustive single-cell
-  perturbation rescue (closes the last 1-2 bad pairs in float space)
-- `diag_byte_single_w_fp16_exhaust.py` — **CHAMPION**: fp16 cast + 1-ulp grid
-  exhaustive search → **5.60 KB deploy, 100% lossless**
+| Script | Purpose |
+| --- | --- |
+| [`check_public_surface.py`](check_public_surface.py) | Verifies the public-facing docs (README, BETA, blocks/) agree with the canonical code path on `main`. |
+| [`sync_wiki_from_repo.py`](sync_wiki_from_repo.py) | Mirrors `docs/wiki/` into the `VRAXION.wiki.git` submodule. CI runs `--dry-run`; commit-side mirrors push. |
 
-Supporting analysis / exploration scripts also kept (findings consolidated into
-Cluster 12 on the Timeline-Archive wiki):
-`diag_byte_single_w_analyze.py`, `_planck_scale.py`, `_structure_hunt.py`,
-`_slack_map.py`, `_fp16_ceiling.py`, `_quant_pipeline.py`,
-`_int8_pipeline.py`, `_hybrid_escape.py`.
+## Block A (byte unit) deploy artifacts and reproduction
 
-Champion artifact: `output/merger_single_w_fp16_all/final_fp16.json` (H=81,
-2592 cells fp16, 5734 bytes). Pipeline blueprint is recorded as Cluster 12 on
-the [Timeline-Archive wiki
-page](https://github.com/VRAXION/VRAXION/wiki/Timeline-Archive).
+| File | Description |
+| --- | --- |
+| [`byte_embedder_lut.h`](byte_embedder_lut.h) | C/Rust-importable production LUT for the int4 C19 H=24 byte-unit champion. |
+| [`byte_embedder_lut_int8.json`](byte_embedder_lut_int8.json) | int8 variant of the byte-unit LUT (alternative deploy). |
+| [`byte_embedder_lut_int8_nozero.json`](byte_embedder_lut_int8_nozero.json) | int8 LUT with the zero quantization level dropped (constrained-width deploy variant). |
+| [`byte_unit_winner_int4.json`](byte_unit_winner_int4.json) | int4 weights of the byte-unit champion, paired with `byte_embedder_lut.h`. |
+| [`build_byte_unit.py`](build_byte_unit.py) | Reproduce the byte-unit champion bake from the source corpus (referenced from `CHANGELOG.md`). |
 
-## Quick summary
+## Phase A → B → D research line (active)
 
-| Script | Category | Status | Headline |
-| --- | --- | --- | --- |
-| `diag_qat_ste.py` | Core sweep | Winner | QAT int8 = absolute winner, 86.40% FineWeb |
-| `diag_quant_sweep_gpu.py` | Core sweep | Baseline | Main 4-mode staged INQ reference |
-| `diag_quant_sweep_gpu_mid.py` | Core sweep | Baseline | int8 matches float; int5/fp16 redundant |
-| `diag_float_extended_control.py` | Control | Proved artifact | Long float beats all "quant wins" |
+The 2026-04-23 → 2026-04-25 mutation/selection/dimensionality study runs on
+[`instnct-core/examples/evolve_mutual_inhibition.rs`](../instnct-core/examples/evolve_mutual_inhibition.rs)
+(and `evolve_bytepair_proj.rs` for the grow-prune fixture). The driver and
+analyzers below produce the artifacts under
+[`docs/research/`](../docs/research/) and `output/dimensionality_sweep/<timestamp>/`.
 
-## Core sweeps (baselines + main results)
+### Driver
 
-| Script | Research question | One-sentence finding | Status |
-| --- | --- | --- | --- |
-| `diag_quant_sweep_gpu.py` | How do float / int4 / ternary / binary compare at nf=1024 under staged INQ? | Reference 4-mode sweep; staged INQ pushed int4 slightly above float baseline, but see the control. | Baseline |
-| `diag_quant_sweep_gpu_mid.py` | Do int5 / int8 / fp16 fill the precision gap between int4 and float? | int8 matches float; int5 and fp16 are redundant at this model size. | Baseline |
-| `diag_qat_ste.py` | Does Quantization-Aware Training with Straight-Through Estimator beat staged INQ? | QAT int8 wins the championship at 86.40% FineWeb; QAT int4 close second. | Winner |
+| Script | Purpose |
+| --- | --- |
+| [`diag_dimensionality_sweep.py`](diag_dimensionality_sweep.py) | Multi-mode driver: default H-sweep + `--phase-b` confound-vs-intrinsic + `--phase-b1` horizon × accept-ties + `--phase-d1` zero-p acceptance-aperture. ThreadPoolExecutor for parallel cells via `--jobs N`. |
 
-## Control experiments (protocol revisions)
+### Phase A / B / B.1 analyzers
 
-| Script | Research question | One-sentence finding | Status |
-| --- | --- | --- | --- |
-| `diag_float_extended_control.py` | Was the "+1.4pp int4 win" a real quant effect or just extra training epochs? | Float with 400 epochs or staged-matched training beats every quant variant — the "win" was a protocol artifact. | Negative result (revised prior finding) |
+| Script | Phase | Purpose |
+| --- | --- | --- |
+| [`analyze_phase_a_baseline.py`](analyze_phase_a_baseline.py) | A | Aggregates the H ∈ {128, 192, 256, 384} × 5-seed baseline; emits the inverted-U plot. |
+| [`analyze_phase_b_verdict.py`](analyze_phase_b_verdict.py) | B | Confound-vs-intrinsic statistical readout: B0 vs B1..B4 Welch t-tests, decomposition regression. |
+| [`analyze_phase_b1_verdict.py`](analyze_phase_b1_verdict.py) | B.1 | Horizon × accept-ties tie-policy verdict; reads the `panel_timeseries.csv` candidate logs. |
+
+### Phase D / acceptance-aperture analyzers
+
+| Script | Phase | Purpose |
+| --- | --- | --- |
+| [`diag_phase_d0_aperture.py`](diag_phase_d0_aperture.py) | D0 | Operationalizes the acceptance-aperture metric on B.1 candidate logs. |
+| [`analyze_acceptance_aperture.py`](analyze_acceptance_aperture.py) | D0 | Companion analyzer for the D0 acceptance-aperture verdict. |
+| [`diag_phase_d0_5_jackpot_aperture.py`](diag_phase_d0_5_jackpot_aperture.py) | D0.5 | Offline K-resampling on B.1 logs (K ∈ {1, 2, 3, 5, 9}); separates the jackpot/sampling aperture from the acceptance valve. |
+| [`diag_phase_d0_6_minimum_useful.py`](diag_phase_d0_6_minimum_useful.py) | D0.6 | Minimum-useful-improvement threshold sweep. |
+| [`analyze_phase_d1_verdict.py`](analyze_phase_d1_verdict.py) | D1 | Zero-drive policy K × zero_p factorial verdict. |
+| [`diag_constructability_analysis.py`](diag_constructability_analysis.py) | post-D | C_K decomposition regression across all arms (V_raw, M_pos, A, I_proxy, D_eff, cost_eval, R_neg). |
+| [`diag_byte_unit_latent_dim_sweep.py`](diag_byte_unit_latent_dim_sweep.py) | A↔Block A | Latent-dim sweep for byte-unit-fixture cross-check. |
 
 ## How to run
 
-Most scripts share the same argv pattern:
+Most analyzers use the same default I/O layout, mirroring
+`output/dimensionality_sweep/<timestamp>/` produced by the driver:
 
+```bash
+python tools/diag_dimensionality_sweep.py --phase-b \
+    --H-values 384 --seeds 5 --steps 20000 \
+    --out output/phase_b_$(date +%s)
+
+python tools/analyze_phase_b_verdict.py \
+    --root output/phase_b_<timestamp>
 ```
-python tools/<script>.py <fineweb_path> <code_path>
-```
 
-Defaults (if args omitted):
+Each analyzer accepts `--root` (input run dir) and `--out` (output report
+dir, defaults to a sibling under `output/`); use `--help` per script for
+flags.
 
-- FineWeb: `S:/AI/MESSY TRAINING DATA - INPUT ONLY/Fineweb edu 10B/fineweb_edu_30m.txt`
-- Code: `instnct-core/tests/fixtures/code_corpus.txt`
+## Hardware
 
-## Hardware requirements
-
-- **Recommended:** CUDA GPU. Developed on RTX 4070 Ti Super (16 GB VRAM);
-  nf=1024 with batch 4096 fits easily.
-- **CPU fallback:** all scripts detect `cuda` / `cpu` automatically, but the
-  nf=1024 sweeps are impractically slow on CPU. For CPU work, use the Rust
-  equivalents under `instnct-core/examples/` (e.g. the `diag_*` examples),
-  which run the same architecture via rayon.
+The current Phase A/B/D line runs on a single CPU core via `cargo run
+--release` invoked from the Python driver. Multi-core scaling is a
+per-cell parallelism (`--jobs N` in `diag_dimensionality_sweep.py`); each
+worker forks one cargo invocation. No GPU dependency on `main` — the
+legacy GPU sweeps (CUDA / `torch`) lived in the now-archived `diag_qat_*`
+and `diag_quant_sweep_gpu*` scripts.

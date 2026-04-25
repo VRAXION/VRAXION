@@ -1,6 +1,7 @@
 """VRAXION Block C byte-pair embedder, Python deploy SDK.
 
-Consumes the packed champion produced by tools/bake_block_c_bytepair.py.
+Consumes the packed champion at output/block_c_bytepair_champion/packed.bin
+(bake script archived to tag archives/tools-cleanup-20260425).
 Layout (little-endian, v1):
 
   Header (32 bytes):

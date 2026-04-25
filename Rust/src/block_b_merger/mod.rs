@@ -13,7 +13,8 @@
 //! # Load format
 //!
 //! Reads `output/merger_single_w_huffman_pack/packed_model.bin` — a 3,440 B
-//! Huffman-packed binary produced by `tools/diag_byte_single_w_huffman_pack.py`.
+//! Huffman-packed binary produced by `diag_byte_single_w_huffman_pack.py`
+//! (archived to tag `archives/tools-cleanup-20260425`).
 //!
 //! Format: magic `VGH1` + 5 components in order: W, b1, b2, c19_c, c19_rho.
 //! Each non-raw component uses: G fp16 generators, mode bitmap (1=encoded),
@@ -24,7 +25,8 @@
 //! `b2` is raw fp16 only (no Huffman layer).
 //!
 //! This is a direct Rust port of `unpack_component` from
-//! `tools/diag_byte_single_w_huffman_pack.py`. No JSON fallback needed;
+//! `diag_byte_single_w_huffman_pack.py` (see archive tag noted above).
+//! No JSON fallback needed;
 //! the binary unpacks cleanly in ~50 lines.
 
 pub mod merger;

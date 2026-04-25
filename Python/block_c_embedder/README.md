@@ -8,8 +8,9 @@ Given a byte-pair ID in `[0, 65535]` (or a raw byte stream which it splits
 into byte pairs), returns a 32-dim float32 semantic embedding vector.
 
 The emb table was trained on 100 MB FineWeb-EDU via full-softmax next-pair
-cross-entropy (see `tools/diag_block_c_bytepair_poc.py` + Modal wrapper
-`tools/modal_block_c.py`). Mean acc@1 across 3 seeds: 34.06 ± 0.82%.
+cross-entropy (training scripts archived to tag
+`archives/tools-cleanup-20260425`: `diag_block_c_bytepair_poc.py` +
+Modal wrapper `modal_block_c.py`). Mean acc@1 across 3 seeds: 34.06 ± 0.82%.
 
 ## Deploy artifact
 
@@ -18,7 +19,8 @@ Packed champion lives at `output/block_c_bytepair_champion/packed.bin`:
 - **Size**: 62,528 B (61 KB) — **134× compression** vs fp32 (8.39 MB)
 - **Format**: `VCBP` v1. Per-channel int4 for the hot 3,386 pairs
   (`freq ≥ 5` in training corpus), shared OOV vector for the 62,150 cold
-  pairs. Bake script: `tools/bake_block_c_bytepair.py`.
+  pairs. Bake script `bake_block_c_bytepair.py` archived to tag
+  `archives/tools-cleanup-20260425`.
 
 ## Usage
 

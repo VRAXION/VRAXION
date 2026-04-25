@@ -57,7 +57,8 @@ _COMPONENTS: list[tuple[str, int, bool]] = [
 _MAGIC = b"VGH1"
 
 # ---------------------------------------------------------------------------
-# Bitstream helpers (ported from diag_byte_single_w_huffman_pack.py)
+# Bitstream helpers (ported from diag_byte_single_w_huffman_pack.py;
+# original script archived to tag archives/tools-cleanup-20260425)
 
 
 class _BitReader:
