@@ -68,7 +68,6 @@ In practice, that means the project is run across four distinct surfaces:
 ## Read the Project
 
 - [INSTNCT Architecture](INSTNCT-Architecture) — the current implementation line, including what is shipped, validated, and still experimental
-- [Theory of Thought](Theory-of-Thought) — the theoretical framing behind destructive interference and fixed-point inference
-- [Structured Chaos Theory](Structured-Chaos-Theory) — three laws and the learning formula for gradient-free mutation-based systems
+- [Local Constructability Framework](Local-Constructability-Framework) — the current theoretical umbrella; supersedes the older Theory-of-Thought and Structured-Chaos pages. Three sub-documents: [Interference Dynamics](Interference-Dynamics) (signal level), [Mutation-Selection Dynamics](Mutation-Selection-Dynamics) (structure level, the Three Laws and *C_K*), [Constructed Computation](Constructed-Computation) (emergence level), plus [Speculative Cognitive Emergence](Cognitive-Emergence-Speculative)
 - [Research Process & Archive](Timeline-Archive) — the run contract, chronology, reversals, and retained proof trail
 - [Rust Implementation Surface](v5-Rust-Port-Benchmarks) — the Rust implementation lane, including validation checkpoints, design notes, and archived experiments

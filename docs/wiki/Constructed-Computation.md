@@ -56,6 +56,22 @@ The "champion recipe" at one H is not the champion at another. At fixed-H sweeps
 
 In the 25-cell Phase B, capacity proxies (`kernel_rank`, `separation_SP`, `participation_ratio`) are highest in B1 (the arm that also reaches highest `peak_acc`) and collapse in B3/B4 (arms that fail). The capacity panel and the task panel are not independent.
 
+### Architecture rehabilitation under combined conditions (Phase B.1, H=384)
+
+The Phase B.1 30-cell horizon × tie-policy ablation found that the H=384 substrate **can exceed the Phase A H=256 reference (5.28%)** under the combined conditions of long horizon (80k steps) AND Zero-Drive acceptance (`accept_ties=true`):
+
+```
+H=384 + 80k + ties:  6.78 ± 1.52% peak (max-seed 8.50%)   ← beats H=256
+H=384 + 80k + strict: 5.60 ± 1.58%                        ← matches H=256
+H=384 + 20k + ties:   4.50 ± 1.96%                        ← below H=256
+```
+
+This is **architecture rehabilitation under combined conditions** — neither horizon alone nor neutral acceptance alone reaches the rehabilitated peak. The implication for the framework is *not* that H=384 is intrinsically a better architecture, but that the H-profile previously interpreted as an architectural ceiling reflected the joint constraint of the (H, horizon, acceptance-policy) operating point.
+
+Two caveats limit the strength of this claim:
+- **Statistical power**: n=5 per cell. The 80k+ties vs 20k+ties contrast has Welch p ≈ 0.076 (not Bonferroni-significant). Replication at n ≥ 10 is needed for strict claims.
+- **Tested-plateau bound**: strict acceptance plateaus *within the 80k tested range* (40k strict 5.50%, 80k strict 5.60%, p=0.92), but we cannot rule out further gains beyond 80k.
+
 ### Bimodality at the edge of regime
 
 `bytepair_proj` H=384 produces five seeds with peaks of `[6.00, 0.00, 2.30, 2.70, 4.80]`. One seed reaches a working substrate, one collapses entirely, three sit in between. The grow-prune cycle is in a knife-edge regime at this H: the same recipe with the same input produces qualitatively different outcomes depending on initial conditions. This is itself a finding about the emergence boundary.
@@ -64,7 +80,7 @@ In the 25-cell Phase B, capacity proxies (`kernel_rank`, `separation_SP`, `parti
 
 This bimodal seed-outcome pattern is *structurally analogous* to the **dynamic-threshold transition in random constraint-satisfaction problems** (Mézard, Parisi, Zecchina, *Science* 2002; Mertens, Mézard, Zecchina 2006; Liao et al. 2024 [arXiv:2407.20724] for DNN-loss-landscape RSB analogy), where the solution space fragments into exponentially many isolated clusters near the SAT/UNSAT boundary. In that regime:
 
-- Backbone fraction (variables fixed across all solutions) jumps discontinuously near the threshold (Parkes, Selman, Levesque 1996), producing a **bimodal solver-outcome distribution**: either find a cluster or fail.
+- Backbone fraction (variables fixed across all solutions) becomes large near the SAT/UNSAT threshold (Monasson, Zecchina, Kirkpatrick, Selman, Troyansky, *Nature* 1999, "Determining computational complexity from characteristic 'phase transitions'"), and bimodal solver-outcome distributions are observed near that boundary.
 - "Frozen variables" cause solvers to either succeed or get stuck — the same shape as our `[6.0, 0.0, 2.3, 2.7, 4.8]`.
 - Bouchaud's trap model (1992) predicts trapping time ∼ exp(barrier/T), so deep-trap seeds (e.g. our seed=1042 0.0% case) are essentially unreachable on a fixed budget — exactly what we observe.
 - The **training-horizon recovery** (Phase B, B1: 5.50% at 40k steps vs 3.52% at 20k) is consistent with the CSP picture: longer search time allows escape from isolated clusters. Background on annealing limits in glassy regimes: Angelini & Ricci-Tersenghi 2022 (arXiv:2206.04760).

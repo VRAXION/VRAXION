@@ -123,6 +123,34 @@ Welch tests (n=5 per arm, df ≈ 8, vs B0):
 
 **B1 is the only arm with directional support** for the training-horizon-confound interpretation. Replication at n ≥ 10 required for strict significance. **Per-arm separability**: B3's mean R_neg(accepted) is ~2.7× B0's at the arm level (range 1.46–3.25× across operators); this is reported as a *correlate* of the B3 outcome, not the *cause* — disambiguation requires direct perturbation testing (Phase D / future work).
 
+### Phase B.1 — 30-cell horizon × tie-policy ablation at H=384
+
+```
+                       peak_acc%        accept%      verdict
+20k strict             3.52 ± 1.14      17%          Phase A baseline reproduction
+20k ties               4.50 ± 1.96      99.8%        +0.98 pp directional
+40k strict             5.50 ± 1.47      18%          horizon recovery
+40k ties               5.88 ± 1.72      99.6%        +0.38 pp directional
+80k strict             5.60 ± 1.58      17%          tested strict plateau within 80k
+80k ties               6.78 ± 1.52      99.6%        +1.18 pp directional ← BEST
+```
+
+Welch tests (n=5 per cell, df ≈ 8, *uncorrected*; Bonferroni at α/9 ≈ 0.0056):
+
+| comparison | Δ pp | t | p (two-tail) | verdict |
+|---|---|---|---|---|
+| 80k vs 40k strict | +0.10 | 0.10 | 0.92 | tested plateau within 80k — strict does not recover further |
+| 80k vs 20k ties | +2.28 | 2.06 | 0.076 | directional, not Bonferroni-significant |
+| 80k ties vs strict | +1.18 | 1.20 | 0.26 | directional, not Bonferroni-significant |
+
+**Three findings, all directional** (n=5 underpowered for strict significance):
+
+1. **Tested strict plateau within 80k**: 40k vs 80k strict differ by 0.10pp (p=0.92). We cannot rule out further gains beyond 80k; the claim is bounded to the tested range.
+2. **80k + ties (6.78 ± 1.52%) exceeds the Phase A H=256 reference (5.28 ± 1.79%)**: the H=384 substrate is *not* inherently inferior; under longer horizon AND Zero-Drive acceptance, it surpasses the H=256 baseline. This is **architecture rehabilitation under combined conditions** — neither horizon alone (strict 80k = 5.60% only matches H=256) nor neutral alone (20k ties = 4.50%) achieves it.
+3. **`alive_frac` candidate signature**: under strict acceptance, alive_frac grows with horizon (44.7% → 46.2% → 63.2%); under ties it shrinks (61.4% → 51.3% → 44.2%). The Zero-Drive regime appears to *specialise* output activity over time, not diversify. This is a **candidate microscopic signature** consistent with the topology-gate framing; we do not yet claim it causally.
+
+The direction of the tie-policy effect is consistent across horizons (+0.98, +0.38, +1.18 pp) but with non-monotone magnitude. Replication at n ≥ 10 is required for strict-significance claims; the 80k+ties regime warrants targeted re-test.
+
 ### Per-operator findings (operator schedule misalignment)
 
 Across 12.6M candidate rows, operator productivity (V_raw × M_pos) is markedly non-uniform:
@@ -144,7 +172,7 @@ The schedule is plausibly misaligned. A theta- and channel-heavy schedule with `
 The acceptance rule is not a tuning convenience — it defines the topology of the directed reachability graph over network states. We name three regimes:
 
 - **Strict (ε < 0):** accept ΔU > 0 only.
-- **Neutral / Zero-Drive Search (ε = 0):** accept ΔU ≥ 0. Established under "neutral drift on neutral networks" (van Nimwegen, Crutchfield, Huynen 1999; Wagner 2005).
+- **Neutral / Zero-Drive Search (ε = 0):** accept ΔU ≥ 0. Established under "neutral drift on neutral networks" (van Nimwegen, Crutchfield, Huynen 1999, *PNAS*; Wagner 2005, *Robustness and Evolvability in Living Systems*, Princeton UP).
 - **Tolerant / Threshold-Drive Search (ε > 0):** accept ΔU ≥ −ε. Established as "Threshold Accepting" (Dueck & Scheuer 1990).
 
 The acceptance rule alters the topology of the reachable graph. The *magnitude* of that alteration is empirical and substrate-specific; theoretical upper bounds (e.g. permutation-equivalent configurations under neutral) characterise the reachable *phenotype-equivalence class*, not the *operator-reachable subset*.
@@ -167,7 +195,7 @@ The break of the Gaussian null is itself a positive empirical signature of a CSP
 
 - **Li, Wang, Dou, Rosenthal (2024), arXiv:2408.06894** — the asymptotic 0.234 acceptance-rate result for *random-walk Metropolis* / parallel tempering kernels (with ESJD optimization, probabilistic acceptance) is robust under Gaussian-like proposal kernels. This is a *literature anchor* for the probabilistic class; our deterministic threshold-accepting search may have a different optimum, and the 0.234 figure is not a predicted target for our system.
 - **Chen, Mikulincer, Reichman, Wein (2023), arXiv:2312.13554** — time lower bounds for SA establish that on certain hard instances no ε schedule (including adaptive) can reach within ratio Ω(1/n^{1−δ}). Acceptance-aperture tuning has theoretical limits in worst-case regimes.
-- **Ma et al. (2024), GECCO 2024, arXiv:2404.08239 (GLEET)** — meta-learned adaptive ε schedules deliver substantial improvements over static ε in evolutionary algorithms; the empirical frontier is landscape-adaptive ε, not a single fixed value.
+- **Ma et al. (2024), GECCO 2024, arXiv:2404.08239 (GLEET)** — deep-RL meta-learned exploration-exploitation policy for evolutionary computation. Cited as evidence that **landscape-adaptive policy** (a generalization of static ε) is an active frontier; the GLEET paper does not directly study threshold-accepting or static ε per se, so its quantitative improvement figures should not be transferred to our setting without dedicated re-test.
 - **Ren et al. (2023), AISTATS 2024, arXiv:2311.13159** — Wasserstein–Fisher–Rao gradient flows decompose mutation-selection into Wasserstein transport + Fisher–Rao birth/death; ε plays the role of the Fisher–Rao reweighting temperature in this framing.
 - **Discrete NES (2024), arXiv:2404.00208** — extends the natural-gradient view of evolution strategies to discrete binary domains, the closest existing match to our binary-spike substrate.
 - **Liao et al. (2024), arXiv:2407.20724** — spin-glass / replica-symmetry-breaking analogy for DNN loss landscapes; provides background for the rugged-landscape interpretation of our H=384 bimodality but does not prove it for our system.

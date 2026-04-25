@@ -17,6 +17,13 @@ FILES = [
     "INSTNCT-Architecture.md",
     "Timeline-Archive.md",
     "COMPRESSION_LOOP.md",
+    # Local Constructability Framework (current; supersedes the next two pages).
+    "Local-Constructability-Framework.md",
+    "Interference-Dynamics.md",
+    "Mutation-Selection-Dynamics.md",
+    "Constructed-Computation.md",
+    "Cognitive-Emergence-Speculative.md",
+    # Predecessor pages — kept as redirect stubs so existing links don't break.
     "Theory-of-Thought.md",
     "Structured-Chaos-Theory.md",
     "v5-Rust-Port-Benchmarks.md",

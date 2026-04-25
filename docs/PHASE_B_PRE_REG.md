@@ -108,8 +108,8 @@ Computed on a fixed probe set of 32 corpus pairs drawn deterministically at star
 | `H_output_mean` | `mean_i H[P(class | x_i)]` in nats | Standard output entropy |
 | `H_output_var` | `Var_i H[P(class | x_i)]` | Derived disambiguator |
 | `stable_rank` | `‖Y‖_F² / ‖Y‖₂²` on charge matrix `Y ∈ ℝ^{32×phi_dim}` | Dong et al. 2021; Gao et al. 2017 |
-| `kernel_rank` | `numerical_rank(Y, tol=1e-6)` | Maass 2002 LSM |
-| `separation_SP` | `mean_{u,v} ‖x_u−x_v‖ / (‖u−v‖+ε)` on probe pairs | Maass 2002 separation property |
+| `kernel_rank` | `numerical_rank(Y, tol=1e-6)` | Maass, Natschläger & Markram 2002, LSM |
+| `separation_SP` | `mean_{u,v} ‖x_u−x_v‖ / (‖u−v‖+ε)` on probe pairs | Maass, Natschläger & Markram 2002, separation property |
 | `D_eff_sensitivity` | `E[‖Δoutput‖₂ : 1 random candidate mutation]` over 64 samples | Derrida & Pomeau 1986 |
 
 ### 3.3 Run-end panel
@@ -119,7 +119,7 @@ Final single-pair metrics computed on full evaluation set (1000 pairs):
 | Metric | Formula | Anchor |
 |---|---|---|
 | `peak_acc`, `final_acc` | as Phase A | — |
-| `dCor_io` | `dCor(input_embed, output_charge)` over probe set | Székely & Rizzo 2007 |
+| `dCor_io` | `dCor(input_embed, output_charge)` over probe set | Székely, Rizzo & Bakirov 2007 |
 | `collision_rate` | `|unique(argmax(Y))| / |unique(X)|` | (internal) |
 | `CKA_linear` | `‖Y^T X‖_F² / (‖X^T X‖_F · ‖Y^T Y‖_F)` after centering | Kornblith et al. 2019 |
 | `motif_z3` | Z-score of signed feed-forward triangle count vs degree-preserving null, 200 permutations | Milo et al. 2002, 2004 |
