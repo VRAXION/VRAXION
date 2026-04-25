@@ -56,17 +56,25 @@ Phase D measures the *continuous* ε spectrum, including the tolerant regime (ε
 
 **Launches only after D0 reports a coherent ε recommendation.**
 
-### 3.1 Design
+### 3.1 Design (v2.2 — adds K axis)
+
+D0.5 (`tools/diag_phase_d0_5_jackpot_aperture.py` + `docs/research/PHASE_D0_5_JACKPOT_APERTURE.md`) showed that the K=9 jackpot **already saturates the ties acceptance regime** (ties accept ≈ 96% at K=2, ≈99% at K=3). Therefore, sweeping `zero_p` at fixed K=9 only differentiates outcomes within the saturated range. K is upstream and equally informative; D1 v2.2 adds a small K axis.
 
 | Factor | Value | Total |
 |---|---|---|
-| Acceptance policy | {strict, zero_p=0.1, zero_p=0.3, zero_p=0.6, zero_p=1.0, legacy_ties} | 6 |
-| Training horizon | 40k (single horizon for D1; 80k confirmation reserved for D1 winner) | 1 |
+| Jackpot size K | {1, 3, 9} | 3 |
+| Acceptance policy | {strict, zero_p=0.3, zero_p=1.0} | 3 |
+| Training horizon | 40k | 1 |
 | Seed | {42, 1042, 2042, 3042, 4042} | 5 |
 | Fixture | `mutual_inhibition` only | 1 |
 | H | 384 only | 1 |
 
-Total: **30 cells.**
+Total: **45 cells.** The factorial structure tests whether the best result comes from:
+- high discovery with saturated neutral aperture (K=9, zero_p=1.0 — the existing "ties at K=9" baseline),
+- lower-cost partial aperture (K=3, various zero_p),
+- minimal pooling with high selection pressure (K=1, various zero_p) — also informative as the "no max-pool" reference (analogous to activation function with no spatial pooling in CNN literature).
+
+Lean alternative if compute budget is tight: K ∈ {3, 9} × policy ∈ {strict, zero_p=0.1, zero_p=0.3, zero_p=1.0} = 40 cells. Slightly more zero_p resolution, drops K=1.
 
 ### 3.2 D0 finding that changes the design (v2.1)
 
