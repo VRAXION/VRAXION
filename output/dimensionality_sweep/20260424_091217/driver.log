@@ -1,0 +1,131 @@
+  resume: loaded 1 previous results, skipping 1 cells
+  plan: 30 total cells, 29 to run, 1 already done
+  fixtures: ['mutual_inhibition', 'bytepair_proj']
+  H values: [128, 256, 384]
+  seeds:    5 per (fixture, H) cell  -> seed pattern 42 + i*1000
+  steps:    20000
+  out:      /home/user/VRAXION/output/dimensionality_sweep/20260424_091217
+
+[1/29] (elapsed 0.0m) fixture=mutual_inhibition H=128 seed=1042
+  done: peak=3.10%  final=2.40%  accept=77.50%  alive=0.719  edges=1145  wall=691.2s
+
+[2/29] (elapsed 11.6m) fixture=mutual_inhibition H=128 seed=2042
+  done: peak=4.90%  final=4.30%  accept=77.19%  alive=0.741  edges=1146  wall=687.0s
+
+[3/29] (elapsed 23.0m) fixture=mutual_inhibition H=128 seed=3042
+  done: peak=3.00%  final=1.80%  accept=76.09%  alive=0.770  edges=1145  wall=707.3s
+
+[4/29] (elapsed 34.8m) fixture=mutual_inhibition H=128 seed=4042
+  done: peak=3.20%  final=2.90%  accept=80.72%  alive=0.663  edges=1145  wall=722.9s
+
+[5/29] (elapsed 46.9m) fixture=mutual_inhibition H=256 seed=42
+  done: peak=7.50%  final=6.70%  accept=28.78%  alive=0.331  edges=4587  wall=1031.4s
+
+[6/29] (elapsed 64.0m) fixture=mutual_inhibition H=256 seed=1042
+  done: peak=4.40%  final=3.30%  accept=31.39%  alive=0.524  edges=4587  wall=1064.0s
+
+[7/29] (elapsed 81.8m) fixture=mutual_inhibition H=256 seed=2042
+  done: peak=4.70%  final=3.80%  accept=60.66%  alive=0.550  edges=4586  wall=1327.5s
+
+[8/29] (elapsed 103.9m) fixture=mutual_inhibition H=256 seed=3042
+  done: peak=3.10%  final=1.80%  accept=46.26%  alive=0.371  edges=4587  wall=1139.9s
+
+[9/29] (elapsed 122.9m) fixture=mutual_inhibition H=256 seed=4042
+  done: peak=6.70%  final=5.10%  accept=39.08%  alive=0.408  edges=4587  wall=1087.1s
+
+[10/29] (elapsed 141.0m) fixture=mutual_inhibition H=384 seed=42
+  done: peak=3.80%  final=3.50%  accept=17.48%  alive=0.405  edges=9145  wall=1890.3s
+
+[11/29] (elapsed 172.5m) fixture=mutual_inhibition H=384 seed=1042
+  done: peak=2.70%  final=1.70%  accept=12.16%  alive=0.393  edges=8511  wall=1799.3s
+
+[12/29] (elapsed 202.5m) fixture=mutual_inhibition H=384 seed=2042
+  done: peak=4.40%  final=4.30%  accept=9.32%  alive=0.634  edges=8280  wall=1823.9s
+
+[13/29] (elapsed 232.9m) fixture=mutual_inhibition H=384 seed=3042
+  resume: loaded 13 previous results, skipping 13 cells
+  plan: 30 total cells, 17 to run, 13 already done
+  fixtures: ['mutual_inhibition', 'bytepair_proj']
+  H values: [128, 256, 384]
+  seeds:    5 per (fixture, H) cell  -> seed pattern 42 + i*1000
+  steps:    20000
+  out:      /home/user/VRAXION/output/dimensionality_sweep/20260424_091217
+
+[1/17] (elapsed 0.0m) fixture=mutual_inhibition H=384 seed=3042
+  done: peak=2.00%  final=1.40%  accept=20.45%  alive=0.420  edges=9201  wall=1988.2s
+
+[2/17] (elapsed 33.2m) fixture=mutual_inhibition H=384 seed=4042
+  done: peak=4.70%  final=4.30%  accept=26.55%  alive=0.385  edges=9676  wall=2119.3s
+
+[3/17] (elapsed 68.5m) fixture=bytepair_proj H=128 seed=42
+  done: peak=6.00%  final=3.40%  accept=19.49%  alive=0.511  edges=1145  wall=482.3s
+
+[4/17] (elapsed 76.7m) fixture=bytepair_proj H=128 seed=1042
+  done: peak=6.40%  final=6.00%  accept=30.54%  alive=0.648  edges=1145  wall=552.3s
+
+[5/17] (elapsed 85.9m) fixture=bytepair_proj H=128 seed=2042
+  done: peak=5.40%  final=5.00%  accept=34.31%  alive=0.720  edges=1146  wall=560.3s
+
+[6/17] (elapsed 95.2m) fixture=bytepair_proj H=128 seed=3042
+  done: peak=3.70%  final=2.60%  accept=23.65%  alive=0.712  edges=1146  wall=504.8s
+
+[7/17] (elapsed 103.6m) fixture=bytepair_proj H=128 seed=4042
+  done: peak=4.70%  final=3.70%  accept=21.52%  alive=0.719  edges=1146  wall=505.8s
+
+[8/17] (elapsed 112.0m) fixture=bytepair_proj H=256 seed=42
+  done: peak=3.40%  final=2.90%  accept=5.19%  alive=0.147  edges=3460  wall=876.8s
+
+[9/17] (elapsed 126.7m) fixture=bytepair_proj H=256 seed=1042
+  done: peak=4.10%  final=1.80%  accept=7.60%  alive=0.168  edges=3971  wall=1699.1s
+
+[10/17] (elapsed 155.0m) fixture=bytepair_proj H=256 seed=2042
+  done: peak=4.00%  final=2.60%  accept=4.20%  alive=0.223  edges=3482  wall=871.4s
+
+[11/17] (elapsed 169.5m) fixture=bytepair_proj H=256 seed=3042
+  done: peak=2.30%  final=1.20%  accept=9.74%  alive=0.204  edges=4083  wall=888.2s
+
+[12/17] (elapsed 184.3m) fixture=bytepair_proj H=256 seed=4042
+  done: peak=4.30%  final=3.30%  accept=11.71%  alive=0.205  edges=4220  wall=899.2s
+
+[13/17] (elapsed 199.3m) fixture=bytepair_proj H=384 seed=42
+  resume: loaded 25 previous results, skipping 25 cells
+  plan: 30 total cells, 5 to run, 25 already done
+  fixtures: ['mutual_inhibition', 'bytepair_proj']
+  H values: [128, 256, 384]
+  seeds:    5 per (fixture, H) cell  -> seed pattern 42 + i*1000
+  steps:    20000
+  out:      /home/user/VRAXION/output/dimensionality_sweep/20260424_091217
+
+[1/5] (elapsed 0.0m) fixture=bytepair_proj H=384 seed=42
+  done: peak=6.00%  final=3.60%  accept=1.05%  alive=0.076  edges=7232  wall=1504.4s
+
+[2/5] (elapsed 25.1m) fixture=bytepair_proj H=384 seed=1042
+  done: peak=0.00%  final=0.00%  accept=0.05%  alive=0.000  edges=7209  wall=1409.4s
+
+[3/5] (elapsed 48.6m) fixture=bytepair_proj H=384 seed=2042
+  done: peak=2.30%  final=0.70%  accept=0.50%  alive=0.051  edges=7171  wall=1415.2s
+
+[4/5] (elapsed 72.2m) fixture=bytepair_proj H=384 seed=3042
+  done: peak=2.70%  final=2.60%  accept=0.56%  alive=0.048  edges=7270  wall=1423.2s
+
+[5/5] (elapsed 95.9m) fixture=bytepair_proj H=384 seed=4042
+  done: peak=4.80%  final=4.80%  accept=0.91%  alive=0.073  edges=7339  wall=1458.6s
+
+================================================================================
+AGGREGATE (mean +- std, n = # seeds)
+================================================================================
+
+fixture=bytepair_proj:
+     H          peak_acc%         final_acc%        accept%     alive_frac      edges    wall/s   n
+   128     5.24 +-  1.07      4.14 +-  1.35   25.90 +- 6.28  0.662 +- 0.089        1146     521.1    5
+   256     3.62 +-  0.81      2.36 +-  0.85    7.69 +- 3.12  0.189 +- 0.031        3843    1046.9    5
+   384     3.16 +-  2.33      2.34 +-  1.99    0.61 +- 0.39  0.050 +- 0.031        7244    1442.2    5
+
+fixture=mutual_inhibition:
+     H          peak_acc%         final_acc%        accept%     alive_frac      edges    wall/s   n
+   128     3.76 +-  0.91      2.68 +-  1.00   77.93 +- 1.73  0.721 +- 0.039        1145     700.4    5
+   256     5.28 +-  1.79      4.14 +-  1.86   41.23 +- 12.84  0.437 +- 0.096        4587    1130.0    5
+   384     3.52 +-  1.14      3.04 +-  1.40   17.20 +- 6.81  0.448 +- 0.105        8963    1924.2    5
+
+Sweep total wall clock: 120.2 min
+Artifacts: /home/user/VRAXION/output/dimensionality_sweep/20260424_091217/results.json  /home/user/VRAXION/output/dimensionality_sweep/20260424_091217/results.csv
