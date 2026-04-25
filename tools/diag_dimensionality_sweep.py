@@ -4,6 +4,7 @@ Default mode preserves the original H-dimensionality sweep. `--phase-b` runs
 the preregistered H=384 confound-vs-intrinsic arms for `evolve_mutual_inhibition`
 and writes candidate logs, checkpoints, run metadata, and panel summaries.
 `--phase-b1` runs the horizon x accept_ties follow-up on the same fixture.
+`--phase-d1` runs the acceptance-aperture zero-p policy follow-up.
 """
 from __future__ import annotations
 
@@ -39,6 +40,8 @@ def parse_args() -> argparse.Namespace:
                    help="run preregistered Phase B arms for evolve_mutual_inhibition")
     p.add_argument("--phase-b1", action="store_true",
                    help="run Phase B.1 horizon x accept_ties arms for evolve_mutual_inhibition")
+    p.add_argument("--phase-d1", action="store_true",
+                   help="run Phase D1 acceptance-aperture zero-p arms for evolve_mutual_inhibition")
     p.add_argument("--arms", default="B0,B1,B2,B3,B4",
                    help="comma-separated Phase B arms to run")
     p.add_argument("--panel-interval", type=int, default=None,
@@ -128,6 +131,74 @@ def phase_b1_arm_config(arm: str, base_steps: int) -> dict:
     return configs[arm]
 
 
+def phase_d1_arm_config(arm: str, base_steps: int) -> dict:
+    configs = {
+        "D1_STRICT": {
+            "steps": base_steps,
+            "jackpot": 9,
+            "ticks": None,
+            "input_scatter": False,
+            "accept_ties": False,
+            "accept_policy": "strict",
+            "neutral_p": None,
+            "accept_epsilon": None,
+        },
+        "D1_ZERO_P01": {
+            "steps": base_steps,
+            "jackpot": 9,
+            "ticks": None,
+            "input_scatter": False,
+            "accept_ties": False,
+            "accept_policy": "zero-p",
+            "neutral_p": 0.1,
+            "accept_epsilon": None,
+        },
+        "D1_ZERO_P03": {
+            "steps": base_steps,
+            "jackpot": 9,
+            "ticks": None,
+            "input_scatter": False,
+            "accept_ties": False,
+            "accept_policy": "zero-p",
+            "neutral_p": 0.3,
+            "accept_epsilon": None,
+        },
+        "D1_ZERO_P06": {
+            "steps": base_steps,
+            "jackpot": 9,
+            "ticks": None,
+            "input_scatter": False,
+            "accept_ties": False,
+            "accept_policy": "zero-p",
+            "neutral_p": 0.6,
+            "accept_epsilon": None,
+        },
+        "D1_ZERO_P10": {
+            "steps": base_steps,
+            "jackpot": 9,
+            "ticks": None,
+            "input_scatter": False,
+            "accept_ties": False,
+            "accept_policy": "zero-p",
+            "neutral_p": 1.0,
+            "accept_epsilon": None,
+        },
+        "D1_TIES_LEGACY": {
+            "steps": base_steps,
+            "jackpot": 9,
+            "ticks": None,
+            "input_scatter": False,
+            "accept_ties": True,
+            "accept_policy": None,
+            "neutral_p": None,
+            "accept_epsilon": None,
+        },
+    }
+    if arm not in configs:
+        raise ValueError(f"unknown Phase D1 arm: {arm}")
+    return configs[arm]
+
+
 def run_panel_analyzer(run_dir: Path) -> int:
     cmd = [
         "cargo", "run", "--release", "--example", "diag_phase_b_panel",
@@ -186,6 +257,12 @@ def run_phase_b_cell(
         cmd += ["--ticks", str(cfg["ticks"])]
     if cfg["accept_ties"] is not None:
         cmd += ["--accept-ties", "true" if cfg["accept_ties"] else "false"]
+    if cfg.get("accept_policy") is not None:
+        cmd += ["--accept-policy", str(cfg["accept_policy"])]
+    if cfg.get("neutral_p") is not None:
+        cmd += ["--neutral-p", str(cfg["neutral_p"])]
+    if cfg.get("accept_epsilon") is not None:
+        cmd += ["--accept-epsilon", str(cfg["accept_epsilon"])]
     if cfg["input_scatter"]:
         cmd += ["--input-scatter"]
 
@@ -221,6 +298,9 @@ def run_phase_b_cell(
         "jackpot": cfg["jackpot"],
         "ticks": cfg["ticks"] or 6,
         "accept_ties": cfg["accept_ties"] if cfg["accept_ties"] is not None else summary.get("accept_ties", ""),
+        "accept_policy": cfg.get("accept_policy") or summary.get("accept_policy", ""),
+        "neutral_p": cfg.get("neutral_p") if cfg.get("neutral_p") is not None else summary.get("neutral_p", ""),
+        "accept_epsilon": cfg.get("accept_epsilon") if cfg.get("accept_epsilon") is not None else summary.get("accept_epsilon", ""),
         "input_scatter": cfg["input_scatter"],
         "run_dir": str(run_dir),
         "candidate_log": str(candidate_log),
@@ -321,7 +401,7 @@ def main_phase_b_like(args: argparse.Namespace, phase: str, config_fn, default_a
     if fixtures != ["mutual_inhibition"]:
         raise SystemExit(f"--phase-{phase.lower()} currently supports only --fixtures mutual_inhibition")
     h_values = [int(x) for x in args.H_values.split(",")]
-    if phase == "B1" and args.arms == "B0,B1,B2,B3,B4":
+    if phase in {"B1", "D1"} and args.arms == "B0,B1,B2,B3,B4":
         arms = default_arms
     else:
         arms = [a.strip() for a in args.arms.split(",") if a.strip()]
@@ -479,6 +559,22 @@ def main_phase_b1(args: argparse.Namespace) -> int:
     )
 
 
+def main_phase_d1(args: argparse.Namespace) -> int:
+    return main_phase_b_like(
+        args,
+        "D1",
+        phase_d1_arm_config,
+        [
+            "D1_STRICT",
+            "D1_ZERO_P01",
+            "D1_ZERO_P03",
+            "D1_ZERO_P06",
+            "D1_ZERO_P10",
+            "D1_TIES_LEGACY",
+        ],
+    )
+
+
 def main_default(args: argparse.Namespace) -> int:
     fixtures = [f.strip() for f in args.fixtures.split(",") if f.strip()]
     h_values = [int(x) for x in args.H_values.split(",")]
@@ -528,12 +624,14 @@ def main_default(args: argparse.Namespace) -> int:
 
 def main() -> int:
     args = parse_args()
-    if args.phase_b and args.phase_b1:
-        raise SystemExit("--phase-b and --phase-b1 are mutually exclusive")
+    if sum([args.phase_b, args.phase_b1, args.phase_d1]) > 1:
+        raise SystemExit("--phase-b, --phase-b1, and --phase-d1 are mutually exclusive")
     if args.phase_b:
         return main_phase_b(args)
     if args.phase_b1:
         return main_phase_b1(args)
+    if args.phase_d1:
+        return main_phase_d1(args)
     return main_default(args)
 
 

@@ -14,6 +14,64 @@ use rand::rngs::StdRng;
 use rand::Rng;
 use std::time::Instant;
 
+/// Acceptance policy for best-of-K evolution steps.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum AcceptancePolicy {
+    /// Accept only strict improvements (`delta > 0`).
+    Strict,
+    /// Accept strict improvements and exact ties (`delta >= 0`).
+    Ties,
+    /// Accept improvements and accept near-zero deltas with probability `probability`.
+    ZeroP {
+        /// Probability used when `abs(delta) <= zero_tol`.
+        probability: f64,
+        /// Absolute tolerance used to classify numerical zero deltas.
+        zero_tol: f64,
+    },
+    /// Accept moves whose loss in utility is no worse than `epsilon`.
+    Epsilon {
+        /// Utility tolerance, accepting `delta >= -epsilon`.
+        epsilon: f64,
+    },
+}
+
+impl AcceptancePolicy {
+    /// Build the legacy policy represented by `EvolutionConfig::accept_ties`.
+    pub fn from_accept_ties(accept_ties: bool) -> Self {
+        if accept_ties {
+            Self::Ties
+        } else {
+            Self::Strict
+        }
+    }
+
+    fn accepts(self, delta: f64, rng: &mut impl Rng) -> bool {
+        match self {
+            Self::Strict => delta > 0.0,
+            Self::Ties => delta >= 0.0,
+            Self::ZeroP {
+                probability,
+                zero_tol,
+            } => {
+                if delta > zero_tol {
+                    true
+                } else if delta >= -zero_tol {
+                    if probability <= 0.0 {
+                        false
+                    } else if probability >= 1.0 {
+                        true
+                    } else {
+                        rng.gen_bool(probability)
+                    }
+                } else {
+                    false
+                }
+            }
+            Self::Epsilon { epsilon } => delta >= -epsilon.max(0.0),
+        }
+    }
+}
+
 /// Configuration for the evolution step.
 pub struct EvolutionConfig {
     /// Hard edge count limit. Mutations that INCREASE edge count above
@@ -319,8 +377,39 @@ pub fn evolution_step_jackpot_traced<F, T>(
     projection: &mut Int8Projection,
     mutation_rng: &mut impl Rng,
     eval_rng: &mut StdRng,
+    fitness_fn: F,
+    config: &EvolutionConfig,
+    candidates: usize,
+    step: usize,
+    trace: T,
+) -> StepOutcome
+where
+    F: FnMut(&mut Network, &Int8Projection, &mut StdRng) -> f64,
+    T: FnMut(&CandidateTraceRecord),
+{
+    evolution_step_jackpot_traced_with_policy(
+        net,
+        projection,
+        mutation_rng,
+        eval_rng,
+        fitness_fn,
+        config,
+        AcceptancePolicy::from_accept_ties(config.accept_ties),
+        candidates,
+        step,
+        trace,
+    )
+}
+
+/// Run a traced jackpot evolution step with an explicit acceptance policy.
+pub fn evolution_step_jackpot_traced_with_policy<F, T>(
+    net: &mut Network,
+    projection: &mut Int8Projection,
+    mutation_rng: &mut impl Rng,
+    eval_rng: &mut StdRng,
     mut fitness_fn: F,
     config: &EvolutionConfig,
+    acceptance_policy: AcceptancePolicy,
     candidates: usize,
     step: usize,
     mut trace: T,
@@ -432,11 +521,7 @@ where
         *projection = parent_projection;
         StepOutcome::Skipped
     } else {
-        let dominated = if config.accept_ties {
-            best_delta >= 0.0
-        } else {
-            best_delta > 0.0
-        };
+        let dominated = acceptance_policy.accepts(best_delta, mutation_rng);
 
         if dominated {
             if let (Some(net_s), Some(proj_s)) = (best_net_snapshot, best_projection) {
@@ -800,6 +885,32 @@ mod tests {
                 assert!(record.selected);
             }
         }
+    }
+
+    #[test]
+    fn acceptance_policy_zero_p_bounds_zero_delta() {
+        let mut rng = StdRng::seed_from_u64(7);
+        let reject_zero = AcceptancePolicy::ZeroP {
+            probability: 0.0,
+            zero_tol: 1e-12,
+        };
+        let accept_zero = AcceptancePolicy::ZeroP {
+            probability: 1.0,
+            zero_tol: 1e-12,
+        };
+        assert!(reject_zero.accepts(0.001, &mut rng));
+        assert!(!reject_zero.accepts(0.0, &mut rng));
+        assert!(accept_zero.accepts(0.0, &mut rng));
+        assert!(!accept_zero.accepts(-1e-6, &mut rng));
+    }
+
+    #[test]
+    fn acceptance_policy_epsilon_accepts_bounded_negative_delta() {
+        let mut rng = StdRng::seed_from_u64(9);
+        let policy = AcceptancePolicy::Epsilon { epsilon: 1e-4 };
+        assert!(policy.accepts(0.0, &mut rng));
+        assert!(policy.accepts(-5e-5, &mut rng));
+        assert!(!policy.accepts(-2e-4, &mut rng));
     }
 
     #[test]

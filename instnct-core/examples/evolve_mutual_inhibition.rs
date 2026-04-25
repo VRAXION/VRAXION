@@ -11,9 +11,9 @@
 //! This is winner-take-all dynamics — the "domb a völgyek közt" (hill between valleys).
 
 use instnct_core::{
-    build_network, cosine_similarity, evolution_step_jackpot, evolution_step_jackpot_traced,
-    save_checkpoint, softmax, CandidateTraceRecord, CheckpointMeta, InitConfig, Int8Projection,
-    Network, StepOutcome, VcbpTable,
+    build_network, cosine_similarity, evolution_step_jackpot,
+    evolution_step_jackpot_traced_with_policy, save_checkpoint, softmax, AcceptancePolicy,
+    CandidateTraceRecord, CheckpointMeta, InitConfig, Int8Projection, Network, StepOutcome, VcbpTable,
 };
 use rand::rngs::StdRng;
 use rand::Rng;
@@ -49,6 +49,9 @@ struct RunMeta {
     jackpot: usize,
     ticks: usize,
     accept_ties: bool,
+    accept_policy: String,
+    neutral_p: Option<f64>,
+    accept_epsilon: Option<f64>,
     input_scatter: bool,
     corpus: String,
     packed: String,
@@ -794,6 +797,9 @@ fn main() {
     let mut jackpot: usize = 9;
     let mut cli_ticks: Option<usize> = None;
     let mut cli_accept_ties: Option<bool> = None;
+    let mut cli_accept_policy: Option<String> = None;
+    let mut cli_neutral_p: f64 = 1.0;
+    let mut cli_accept_epsilon: f64 = 0.0;
     let mut input_scatter = false;
     let mut candidate_log_path: Option<PathBuf> = None;
     let mut checkpoint_at_end: Option<PathBuf> = None;
@@ -832,6 +838,23 @@ fn main() {
                     "false" | "0" | "no" | "off" => false,
                     value => panic!("--accept-ties expects true|false, got {value}"),
                 });
+            }
+            "--accept-policy" => {
+                i += 1;
+                cli_accept_policy = Some(args[i].clone());
+            }
+            "--neutral-p" => {
+                i += 1;
+                cli_neutral_p = args[i].parse().unwrap();
+                assert!(
+                    (0.0..=1.0).contains(&cli_neutral_p),
+                    "--neutral-p must be in [0, 1]"
+                );
+            }
+            "--accept-epsilon" => {
+                i += 1;
+                cli_accept_epsilon = args[i].parse().unwrap();
+                assert!(cli_accept_epsilon >= 0.0, "--accept-epsilon must be >= 0");
             }
             "--input-scatter" => {
                 input_scatter = true;
@@ -887,11 +910,31 @@ fn main() {
     if let Some(accept_ties) = cli_accept_ties {
         init.accept_ties = accept_ties;
     }
+    let accept_policy_name = cli_accept_policy.unwrap_or_else(|| {
+        if init.accept_ties {
+            String::from("ties")
+        } else {
+            String::from("strict")
+        }
+    });
+    let acceptance_policy = match accept_policy_name.as_str() {
+        "strict" => AcceptancePolicy::Strict,
+        "ties" => AcceptancePolicy::Ties,
+        "zero-p" | "zero_p" => AcceptancePolicy::ZeroP {
+            probability: cli_neutral_p,
+            zero_tol: 1e-12,
+        },
+        "epsilon" => AcceptancePolicy::Epsilon {
+            epsilon: cli_accept_epsilon,
+        },
+        other => panic!("--accept-policy expects strict|ties|zero-p|epsilon, got {other}"),
+    };
+    init.accept_ties = matches!(acceptance_policy, AcceptancePolicy::Ties);
     let evo_config = init.evolution_config();
 
     println!("\n=== MUTUAL INHIBITION EXPERIMENT ===");
     println!(
-        "  H={}, {} steps, {} classes, seed={}, jackpot={}, ticks={}, accept_ties={}, input_scatter={}, phase={}, arm={}, run_id={}\n",
+        "  H={}, {} steps, {} classes, seed={}, jackpot={}, ticks={}, accept_ties={}, accept_policy={}, neutral_p={:.3}, accept_epsilon={:.6}, input_scatter={}, phase={}, arm={}, run_id={}\n",
         h,
         steps,
         n_classes,
@@ -899,6 +942,9 @@ fn main() {
         jackpot,
         init.propagation.ticks_per_token,
         init.accept_ties,
+        accept_policy_name,
+        cli_neutral_p,
+        cli_accept_epsilon,
         input_scatter,
         phase,
         arm,
@@ -965,7 +1011,7 @@ fn main() {
     // Evolve with smooth cosine (champion fitness)
     for step in 0..steps {
         let outcome = if let Some(log) = candidate_log.as_mut() {
-            evolution_step_jackpot_traced(
+            evolution_step_jackpot_traced_with_policy(
                 &mut net,
                 &mut proj,
                 &mut rng,
@@ -993,9 +1039,43 @@ fn main() {
                     cos * (1.0 + 0.1 * alive_frac) // very gentle diversity pressure (λ=0.1)
                 },
                 &evo_config,
+                acceptance_policy,
                 jackpot,
                 step,
                 |record| log.write_record(record),
+            )
+        } else if !matches!(acceptance_policy, AcceptancePolicy::Strict | AcceptancePolicy::Ties) {
+            evolution_step_jackpot_traced_with_policy(
+                &mut net,
+                &mut proj,
+                &mut rng,
+                &mut eval_rng,
+                |n, p, er| {
+                    let cos = eval_smooth_proj(
+                        n,
+                        p,
+                        &table,
+                        &pair_ids,
+                        &hot_to_idx,
+                        &bigram,
+                        DEFAULT_EVAL_LEN,
+                        er,
+                        &init.propagation,
+                        init.output_start(),
+                        h,
+                        init.input_end(),
+                        input_scatter,
+                    );
+                    let charges = n.charge_vec(init.output_start()..h);
+                    let alive = charges.iter().filter(|&&c| c > 0).count();
+                    let alive_frac = alive as f64 / (h - init.output_start()) as f64;
+                    cos * (1.0 + 0.1 * alive_frac)
+                },
+                &evo_config,
+                acceptance_policy,
+                jackpot,
+                step,
+                |_| {},
             )
         } else {
             evolution_step_jackpot(
@@ -1128,6 +1208,11 @@ fn main() {
             jackpot,
             ticks: init.propagation.ticks_per_token,
             accept_ties: init.accept_ties,
+            accept_policy: accept_policy_name.clone(),
+            neutral_p: matches!(acceptance_policy, AcceptancePolicy::ZeroP { .. })
+                .then_some(cli_neutral_p),
+            accept_epsilon: matches!(acceptance_policy, AcceptancePolicy::Epsilon { .. })
+                .then_some(cli_accept_epsilon),
             input_scatter,
             corpus: corpus_path.to_string(),
             packed: packed_path.to_string(),
@@ -1233,8 +1318,8 @@ fn main() {
 
     // Machine-readable summary line for multi-seed drivers.
     println!(
-        "SUMMARY {{\"fixture\":\"mutual_inhibition\",\"phase\":\"{}\",\"arm\":\"{}\",\"run_id\":\"{}\",\"seed\":{},\"H\":{},\"phi_dim\":{},\"horizon_steps\":{},\"accept_ties\":{},\"peak_acc\":{:.6},\"final_acc\":{:.6},\"accept_rate_pct\":{:.4},\"alive_frac_mean\":{:.6},\"edges\":{},\"unique_preds\":{},\"wall_clock_s\":{:.3}}}",
-        phase, arm, run_id, seed, h, init.phi_dim, steps, init.accept_ties, peak, final_acc, final_accept_rate_pct, alive_frac_mean,
+        "SUMMARY {{\"fixture\":\"mutual_inhibition\",\"phase\":\"{}\",\"arm\":\"{}\",\"run_id\":\"{}\",\"seed\":{},\"H\":{},\"phi_dim\":{},\"horizon_steps\":{},\"accept_ties\":{},\"accept_policy\":\"{}\",\"neutral_p\":{:.6},\"accept_epsilon\":{:.12},\"peak_acc\":{:.6},\"final_acc\":{:.6},\"accept_rate_pct\":{:.4},\"alive_frac_mean\":{:.6},\"edges\":{},\"unique_preds\":{},\"wall_clock_s\":{:.3}}}",
+        phase, arm, run_id, seed, h, init.phi_dim, steps, init.accept_ties, accept_policy_name, cli_neutral_p, cli_accept_epsilon, peak, final_acc, final_accept_rate_pct, alive_frac_mean,
         net.edge_count(), unique.len(), wall_clock_s
     );
 }

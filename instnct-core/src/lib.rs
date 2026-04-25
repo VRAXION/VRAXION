@@ -64,7 +64,8 @@ pub use fitness::{cosine_similarity, cosine_to_onehot, softmax};
 #[doc(inline)]
 pub use evolution::{
     evolution_step, evolution_step_cow, evolution_step_jackpot, evolution_step_jackpot_traced,
-    CandidateTraceRecord, EvolutionConfig, StepOutcome,
+    evolution_step_jackpot_traced_with_policy, AcceptancePolicy, CandidateTraceRecord,
+    EvolutionConfig, StepOutcome,
 };
 
 #[doc(inline)]
