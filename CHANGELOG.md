@@ -5,6 +5,33 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [5.0.0-beta.3] - 2026-04-25
+
+### Changed — 2026-04-25: branch consolidation + tools cleanup pass
+
+Repo-wide cleanup that merges the parallel research tracks back into a single `main` and prunes 53 legacy scripts from the previous research arc. Per the ARCHIVE.md protocol, every removed surface is preserved at a uniquely-named tag.
+
+- **Branch consolidation**: 6 branches collapsed into single `main`. The `codex/phase-b-logging-smoke` Phase A→B sweep tooling (11 commits) was merged via 3-way merge with theirs/codex resolution on 4 add/add or content conflicts in `evolve_mutual_inhibition.rs`, `diag_dimensionality_sweep.py`, `diag_phase_d0_5_jackpot_aperture.py`, and `docs/PHASE_B_PRE_REG.md` (citation-precision fix on the last). The `claude/review-repo-access-Ug8Si` branch was verified fully redundant (codeql.yml blob hash identical, 7 LCF docs commits already in PR #146). The `research/overnight-sct-empirical-20260423` 8-iteration LOOP-COMPLETE branch and the two `saved/*` historical branches were archive-tagged and removed.
+- **Archive tags created**: `archive/main-pre-cleanup-20260425`, `archive/codex-phase-b-logging-smoke-20260425`, `archive/research-overnight-sct-empirical-20260425`, `archive/saved-neuron-one-wip-20260425`, `archive/saved-pre-connectome-research-20260425`, `archive/claude-review-repo-access-20260425` — six branch heads preserved as immutable snapshots.
+- **Tools/ trim**: 73 entries → 21. Removed 53 scripts from the 2026-04-17 → 2026-04-19 byte-pair merger / Block C quantization / word-tokenizer research lines (Block C activation/quantization 14, byte-pair merger 10, byte Huffman/L2 8, word tokenizer 6, MLP baselines 4, probe-weight 2, modal/sweep 2, pretokenize 2, misc 5). Preserved at tag `archives/tools-cleanup-20260425`. Net diff: −14,027 lines.
+- **`tools/README.md` rewrite**: previous version listed canonical scripts (`diag_qat_ste`, `diag_byte_pair_merger_lookup_codebook`, `diag_byte_single_w_*` series) that had been archived in the 2026-04-18/20 cleanup passes; the file was stale relative to the actual tree. Rewritten to reflect the current 21-entry layout: public-beta contract scripts, CI utilities, Block A deploy artifacts, and the active Phase A/B/D research line.
+- **SDK comment updates**: `Python/block_c_embedder/embedder.py` docstring + `README.md`, `Python/block_b_merger/merger.py`, and `Rust/src/block_b_merger/mod.rs` comments updated to reference the archive tag instead of dangling `tools/<script>.py` paths. Runtime is unchanged; only documentation strings move.
+- **`.gitignore` fix**: `instnct-core/target/` added to the rust-build-artifacts gate (the workspace-member `target/` directory was previously untracked-but-not-ignored).
+- **Wiki sync**: 5 LCF sub-pages created on the GitHub wiki (`Local-Constructability-Framework.md`, `Interference-Dynamics.md`, `Mutation-Selection-Dynamics.md`, `Constructed-Computation.md`, `Cognitive-Emergence-Speculative.md`); 4 existing pages updated (`Home.md`, `Theory-of-Thought.md` and `Structured-Chaos-Theory.md` as redirect stubs, `_Sidebar.md` for nav).
+
+### Added — 2026-04-23/25: Phase A → B → D mutation-selection research line
+
+Multi-seed dimensionality / mutation-selection / acceptance-aperture study built on `evolve_mutual_inhibition` and `evolve_bytepair_proj` fixtures, replacing the single-seed observations from the late beta.2 era.
+
+- **Phase A baseline (`docs/research/PHASE_A_BASELINE.md`)**: H ∈ {128, 192, 256, 384} × 5-seed sweep on the byte-pair prediction fixture. Measured peak_acc, accept-rate, alive_frac, edges; revealed an inverted-U with peak at H=256 (mean 5.28% ± 1.79pp) and a monotonic accept-rate collapse 78→42→13% as H grows.
+- **Phase B confound-vs-intrinsic test (`docs/research/PHASE_B_VERDICT.md`, `docs/PHASE_B_PRE_REG.md`)**: pre-registered 5-arm × 5-seed protocol at fixed H=384 testing whether the H=384 decline is intrinsic or driven by step budget / jackpot size / propagation depth / input-channel saturation. Drives the C_K constructability metric on per-candidate logs.
+- **Phase B.1 horizon × accept-ties follow-up (`docs/research/PHASE_B1_PRE_REG.md`, `docs/research/PHASE_B1_VERDICT.md`)**: 3-tier horizon scan (S20 / S40 / S80) crossed with strict / ties acceptance; identifies the binding constraint as the acceptance valve at H=384.
+- **Phase D0/D0.5/D1 acceptance-aperture series**: D0 acceptance-aperture metric on candidate logs (`docs/research/PHASE_D0_ACCEPTANCE_APERTURE.md`); D0.5 offline K-resampling (`docs/research/PHASE_D0_5_JACKPOT_APERTURE.md`) separates the jackpot/sampling aperture from the acceptance valve; D1 zero-drive policy K × zero_p factorial sweep.
+- **Driver consolidation in `tools/diag_dimensionality_sweep.py`**: single multi-mode driver covering default H-sweep + `--phase-b` + `--phase-b1` + `--phase-d1` arms, with `ThreadPoolExecutor`-based per-cell parallelism (`--jobs N`).
+- **Phase B CLI on `evolve_mutual_inhibition.rs`**: 14 new flags (`--jackpot`, `--ticks`, `--accept-ties`, `--accept-policy`, `--neutral-p`, `--accept-epsilon`, `--input-scatter`, `--candidate-log`, `--checkpoint-at-end`, `--panel-interval`, `--panel-log`, `--phase`, `--arm`, `--run-id`); `AcceptancePolicy` enum (Strict / Ties / ZeroP / Epsilon) plumbed through `instnct-core/src/evolution.rs` (+543 lines); `RunMeta` JSON serialization for reproducible artifact provenance; extended `SUMMARY` JSON with phase / arm / run_id / horizon_steps / accept_ties / accept_policy / neutral_p / accept_epsilon fields.
+- **Five new analyzers**: `analyze_phase_a_baseline.py`, `analyze_phase_b_verdict.py`, `analyze_phase_b1_verdict.py`, `analyze_phase_d1_verdict.py`, `analyze_acceptance_aperture.py`; one new diagnostic `diag_constructability_analysis.py` (C_K decomposition regression across V_raw / M_pos / A / I_proxy / D_eff / cost_eval / R_neg).
+- **CodeQL workflow** (`.github/workflows/codeql.yml`): pinned to `{python, rust, actions}` to drop the failing default `c-cpp` matrix job that was producing constant red CI.
+
 ### Added — 2026-04-21/22: ABC-Brain integration, fitness sweep, crystallize, ablation
 
 First end-to-end wiring of the frozen ABC feature pipeline into the INSTNCT brain. Intensive experimentation covering fitness function optimization, structural experiments, crystallize port, and ablation study revealing single-attractor topology collapse.
