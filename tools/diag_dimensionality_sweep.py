@@ -3,6 +3,7 @@
 Default mode preserves the original H-dimensionality sweep. `--phase-b` runs
 the preregistered H=384 confound-vs-intrinsic arms for `evolve_mutual_inhibition`
 and writes candidate logs, checkpoints, run metadata, and panel summaries.
+`--phase-b1` runs the horizon x accept_ties follow-up on the same fixture.
 """
 from __future__ import annotations
 
@@ -36,6 +37,8 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--dry-run", action="store_true", help="print cells but do not execute")
     p.add_argument("--phase-b", action="store_true",
                    help="run preregistered Phase B arms for evolve_mutual_inhibition")
+    p.add_argument("--phase-b1", action="store_true",
+                   help="run Phase B.1 horizon x accept_ties arms for evolve_mutual_inhibition")
     p.add_argument("--arms", default="B0,B1,B2,B3,B4",
                    help="comma-separated Phase B arms to run")
     p.add_argument("--panel-interval", type=int, default=None,
@@ -92,14 +95,36 @@ def run_cell(fixture: str, h: int, seed: int, steps: int, corpus: str, packed: s
 
 def phase_b_arm_config(arm: str, base_steps: int) -> dict:
     configs = {
-        "B0": {"steps": base_steps, "jackpot": 9, "ticks": None, "input_scatter": False},
-        "B1": {"steps": base_steps * 2, "jackpot": 9, "ticks": None, "input_scatter": False},
-        "B2": {"steps": base_steps, "jackpot": 18, "ticks": None, "input_scatter": False},
-        "B3": {"steps": base_steps, "jackpot": 9, "ticks": 12, "input_scatter": False},
-        "B4": {"steps": base_steps, "jackpot": 9, "ticks": None, "input_scatter": True},
+        "B0": {"steps": base_steps, "jackpot": 9, "ticks": None, "input_scatter": False, "accept_ties": None},
+        "B1": {"steps": base_steps * 2, "jackpot": 9, "ticks": None, "input_scatter": False, "accept_ties": None},
+        "B2": {"steps": base_steps, "jackpot": 18, "ticks": None, "input_scatter": False, "accept_ties": None},
+        "B3": {"steps": base_steps, "jackpot": 9, "ticks": 12, "input_scatter": False, "accept_ties": None},
+        "B4": {"steps": base_steps, "jackpot": 9, "ticks": None, "input_scatter": True, "accept_ties": None},
     }
     if arm not in configs:
         raise ValueError(f"unknown Phase B arm: {arm}")
+    return configs[arm]
+
+
+def phase_b1_arm_config(arm: str, base_steps: int) -> dict:
+    configs = {}
+    for label, multiplier in [("S20", 1), ("S40", 2), ("S80", 4)]:
+        configs[f"B1_{label}_STRICT"] = {
+            "steps": base_steps * multiplier,
+            "jackpot": 9,
+            "ticks": None,
+            "input_scatter": False,
+            "accept_ties": False,
+        }
+        configs[f"B1_{label}_TIES"] = {
+            "steps": base_steps * multiplier,
+            "jackpot": 9,
+            "ticks": None,
+            "input_scatter": False,
+            "accept_ties": True,
+        }
+    if arm not in configs:
+        raise ValueError(f"unknown Phase B.1 arm: {arm}")
     return configs[arm]
 
 
@@ -120,6 +145,7 @@ def run_panel_analyzer(run_dir: Path) -> int:
 
 def run_phase_b_cell(
     fixture: str,
+    phase: str,
     arm: str,
     h: int,
     seed: int,
@@ -128,9 +154,10 @@ def run_phase_b_cell(
     packed: str,
     out_dir: Path,
     panel_interval: int | None,
+    cfg: dict | None = None,
 ) -> tuple[dict | None, int, float]:
-    cfg = phase_b_arm_config(arm, base_steps)
-    run_id = f"phase_b_{fixture}_{arm}_H{h}_seed{seed}"
+    cfg = cfg or phase_b_arm_config(arm, base_steps)
+    run_id = f"phase_{phase.lower()}_{fixture}_{arm}_H{h}_seed{seed}"
     run_dir = out_dir / arm / f"seed_{seed}"
     run_dir.mkdir(parents=True, exist_ok=True)
     stdout_path = run_dir / "stdout.txt"
@@ -144,6 +171,7 @@ def run_phase_b_cell(
         "--seed", str(seed),
         "--H", str(h),
         "--jackpot", str(cfg["jackpot"]),
+        "--phase", phase,
         "--arm", arm,
         "--run-id", run_id,
         "--candidate-log", str(candidate_log),
@@ -156,6 +184,8 @@ def run_phase_b_cell(
         ]
     if cfg["ticks"] is not None:
         cmd += ["--ticks", str(cfg["ticks"])]
+    if cfg["accept_ties"] is not None:
+        cmd += ["--accept-ties", "true" if cfg["accept_ties"] else "false"]
     if cfg["input_scatter"]:
         cmd += ["--input-scatter"]
 
@@ -183,11 +213,14 @@ def run_phase_b_cell(
         return None, 5, wall
 
     summary.update({
+        "phase": phase,
         "arm": arm,
         "run_id": run_id,
         "configured_steps": cfg["steps"],
+        "horizon_steps": cfg["steps"],
         "jackpot": cfg["jackpot"],
         "ticks": cfg["ticks"] or 6,
+        "accept_ties": cfg["accept_ties"] if cfg["accept_ties"] is not None else summary.get("accept_ties", ""),
         "input_scatter": cfg["input_scatter"],
         "run_dir": str(run_dir),
         "candidate_log": str(candidate_log),
@@ -283,12 +316,15 @@ def load_resume(out_dir: Path, phase_b: bool) -> tuple[list[dict], set[tuple]]:
     return results, done
 
 
-def main_phase_b(args: argparse.Namespace) -> int:
+def main_phase_b_like(args: argparse.Namespace, phase: str, config_fn, default_arms: list[str]) -> int:
     fixtures = [f.strip() for f in args.fixtures.split(",") if f.strip()]
     if fixtures != ["mutual_inhibition"]:
-        raise SystemExit("--phase-b currently supports only --fixtures mutual_inhibition")
+        raise SystemExit(f"--phase-{phase.lower()} currently supports only --fixtures mutual_inhibition")
     h_values = [int(x) for x in args.H_values.split(",")]
-    arms = [a.strip() for a in args.arms.split(",") if a.strip()]
+    if phase == "B1" and args.arms == "B0,B1,B2,B3,B4":
+        arms = default_arms
+    else:
+        arms = [a.strip() for a in args.arms.split(",") if a.strip()]
     out_dir = Path(args.out)
     out_dir.mkdir(parents=True, exist_ok=True)
 
@@ -306,7 +342,7 @@ def main_phase_b(args: argparse.Namespace) -> int:
         for i in range(args.seeds)
     ]
     todo = [cell for cell in cells if cell not in done]
-    print(f"  Phase B plan: {len(cells)} total cells, {len(todo)} to run")
+    print(f"  Phase {phase} plan: {len(cells)} total cells, {len(todo)} to run")
     print(f"  fixtures: {fixtures}")
     print(f"  arms:     {arms}")
     print(f"  H values: {h_values}")
@@ -319,10 +355,11 @@ def main_phase_b(args: argparse.Namespace) -> int:
 
     if args.dry_run:
         for fx, arm, h, seed in todo:
-            cfg = phase_b_arm_config(arm, args.steps)
+            cfg = config_fn(arm, args.steps)
             print(f"  DRY-RUN fixture={fx} arm={arm} H={h} seed={seed} "
                   f"steps={cfg['steps']} jackpot={cfg['jackpot']} ticks={cfg['ticks'] or 6} "
-                  f"input_scatter={cfg['input_scatter']} panel_interval={args.panel_interval}")
+                  f"accept_ties={cfg['accept_ties']} input_scatter={cfg['input_scatter']} "
+                  f"panel_interval={args.panel_interval}")
         return 0
 
     t_sweep = time.time()
@@ -333,6 +370,7 @@ def main_phase_b(args: argparse.Namespace) -> int:
             print(f"\n[{idx}/{len(todo)}] elapsed={elapsed/60:.1f}m fixture={fx} arm={arm} H={h} seed={seed}", flush=True)
             summary, rc, wall = run_phase_b_cell(
                 fx,
+                phase,
                 arm,
                 h,
                 seed,
@@ -341,6 +379,7 @@ def main_phase_b(args: argparse.Namespace) -> int:
                 args.packed,
                 out_dir,
                 args.panel_interval,
+                config_fn(arm, args.steps),
             )
             if summary is None:
                 print(f"  FAILED (rc={rc}, wall={wall:.1f}s)", file=sys.stderr)
@@ -353,7 +392,7 @@ def main_phase_b(args: argparse.Namespace) -> int:
                   f"accept={summary['accept_rate_pct']:.2f}% rows={summary['expected_candidate_rows']} "
                   f"wall={summary['wall_clock_s']:.1f}s", flush=True)
     else:
-        print(f"\nRunning Phase B with {jobs} parallel jobs", flush=True)
+        print(f"\nRunning Phase {phase} with {jobs} parallel jobs", flush=True)
         with ThreadPoolExecutor(max_workers=jobs) as executor:
             futures = {}
             for idx, (fx, arm, h, seed) in enumerate(todo, 1):
@@ -361,6 +400,7 @@ def main_phase_b(args: argparse.Namespace) -> int:
                 future = executor.submit(
                     run_phase_b_cell,
                     fx,
+                    phase,
                     arm,
                     h,
                     seed,
@@ -369,6 +409,7 @@ def main_phase_b(args: argparse.Namespace) -> int:
                     args.packed,
                     out_dir,
                     args.panel_interval,
+                    config_fn(arm, args.steps),
                 )
                 futures[future] = (idx, fx, arm, h, seed)
 
@@ -416,6 +457,26 @@ def main_phase_b(args: argparse.Namespace) -> int:
     print(f"\nSweep total wall clock: {(time.time() - t_sweep) / 60:.1f} min")
     print(f"Artifacts: {out_dir / 'results.json'}  {out_dir / 'results.csv'}")
     return analysis_rc
+
+
+def main_phase_b(args: argparse.Namespace) -> int:
+    return main_phase_b_like(args, "B", phase_b_arm_config, ["B0", "B1", "B2", "B3", "B4"])
+
+
+def main_phase_b1(args: argparse.Namespace) -> int:
+    return main_phase_b_like(
+        args,
+        "B1",
+        phase_b1_arm_config,
+        [
+            "B1_S20_STRICT",
+            "B1_S20_TIES",
+            "B1_S40_STRICT",
+            "B1_S40_TIES",
+            "B1_S80_STRICT",
+            "B1_S80_TIES",
+        ],
+    )
 
 
 def main_default(args: argparse.Namespace) -> int:
@@ -467,8 +528,12 @@ def main_default(args: argparse.Namespace) -> int:
 
 def main() -> int:
     args = parse_args()
+    if args.phase_b and args.phase_b1:
+        raise SystemExit("--phase-b and --phase-b1 are mutually exclusive")
     if args.phase_b:
         return main_phase_b(args)
+    if args.phase_b1:
+        return main_phase_b1(args)
     return main_default(args)
 
 

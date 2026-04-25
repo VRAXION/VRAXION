@@ -38,14 +38,17 @@ const PANEL_PROBE_COUNT: usize = 32;
 #[derive(Serialize)]
 struct RunMeta {
     fixture: &'static str,
+    phase: String,
     arm: String,
     run_id: String,
     seed: u64,
     #[serde(rename = "H")]
     h: usize,
     steps: usize,
+    horizon_steps: usize,
     jackpot: usize,
     ticks: usize,
+    accept_ties: bool,
     input_scatter: bool,
     corpus: String,
     packed: String,
@@ -790,11 +793,13 @@ fn main() {
     let mut cli_h: usize = 256;
     let mut jackpot: usize = 9;
     let mut cli_ticks: Option<usize> = None;
+    let mut cli_accept_ties: Option<bool> = None;
     let mut input_scatter = false;
     let mut candidate_log_path: Option<PathBuf> = None;
     let mut checkpoint_at_end: Option<PathBuf> = None;
     let mut panel_interval: Option<usize> = None;
     let mut panel_log_path: Option<PathBuf> = None;
+    let mut phase = String::from("default");
     let mut arm = String::from("default");
     let mut run_id = String::from("default");
     let mut i = 2;
@@ -820,6 +825,14 @@ fn main() {
                 i += 1;
                 cli_ticks = Some(args[i].parse().unwrap());
             }
+            "--accept-ties" => {
+                i += 1;
+                cli_accept_ties = Some(match args[i].as_str() {
+                    "true" | "1" | "yes" | "on" => true,
+                    "false" | "0" | "no" | "off" => false,
+                    value => panic!("--accept-ties expects true|false, got {value}"),
+                });
+            }
             "--input-scatter" => {
                 input_scatter = true;
             }
@@ -840,6 +853,10 @@ fn main() {
             "--panel-log" => {
                 i += 1;
                 panel_log_path = Some(PathBuf::from(&args[i]));
+            }
+            "--phase" => {
+                i += 1;
+                phase = args[i].clone();
             }
             "--arm" => {
                 i += 1;
@@ -867,18 +884,23 @@ fn main() {
     if let Some(ticks) = cli_ticks {
         init.propagation.ticks_per_token = ticks;
     }
+    if let Some(accept_ties) = cli_accept_ties {
+        init.accept_ties = accept_ties;
+    }
     let evo_config = init.evolution_config();
 
     println!("\n=== MUTUAL INHIBITION EXPERIMENT ===");
     println!(
-        "  H={}, {} steps, {} classes, seed={}, jackpot={}, ticks={}, input_scatter={}, arm={}, run_id={}\n",
+        "  H={}, {} steps, {} classes, seed={}, jackpot={}, ticks={}, accept_ties={}, input_scatter={}, phase={}, arm={}, run_id={}\n",
         h,
         steps,
         n_classes,
         cli_seed,
         jackpot,
         init.propagation.ticks_per_token,
+        init.accept_ties,
         input_scatter,
+        phase,
         arm,
         run_id
     );
@@ -1096,13 +1118,16 @@ fn main() {
 
         let meta = RunMeta {
             fixture: "mutual_inhibition",
+            phase: phase.clone(),
             arm: arm.clone(),
             run_id: run_id.clone(),
             seed,
             h,
             steps,
+            horizon_steps: steps,
             jackpot,
             ticks: init.propagation.ticks_per_token,
+            accept_ties: init.accept_ties,
             input_scatter,
             corpus: corpus_path.to_string(),
             packed: packed_path.to_string(),
@@ -1208,8 +1233,8 @@ fn main() {
 
     // Machine-readable summary line for multi-seed drivers.
     println!(
-        "SUMMARY {{\"fixture\":\"mutual_inhibition\",\"seed\":{},\"H\":{},\"phi_dim\":{},\"peak_acc\":{:.6},\"final_acc\":{:.6},\"accept_rate_pct\":{:.4},\"alive_frac_mean\":{:.6},\"edges\":{},\"unique_preds\":{},\"wall_clock_s\":{:.3}}}",
-        seed, h, init.phi_dim, peak, final_acc, final_accept_rate_pct, alive_frac_mean,
+        "SUMMARY {{\"fixture\":\"mutual_inhibition\",\"phase\":\"{}\",\"arm\":\"{}\",\"run_id\":\"{}\",\"seed\":{},\"H\":{},\"phi_dim\":{},\"horizon_steps\":{},\"accept_ties\":{},\"peak_acc\":{:.6},\"final_acc\":{:.6},\"accept_rate_pct\":{:.4},\"alive_frac_mean\":{:.6},\"edges\":{},\"unique_preds\":{},\"wall_clock_s\":{:.3}}}",
+        phase, arm, run_id, seed, h, init.phi_dim, steps, init.accept_ties, peak, final_acc, final_accept_rate_pct, alive_frac_mean,
         net.edge_count(), unique.len(), wall_clock_s
     );
 }

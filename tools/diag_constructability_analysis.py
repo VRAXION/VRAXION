@@ -160,9 +160,12 @@ def analyze_candidate_log(csv_path: Path, eps: float, accept_tol: float) -> tupl
     }
     if meta is not None:
         run.update({
+            "phase": meta.get("phase", ""),
             "configured_steps": int(meta["steps"]),
+            "horizon_steps": int(meta.get("horizon_steps", meta["steps"])),
             "jackpot": int(meta["jackpot"]),
             "ticks": int(meta["ticks"]),
+            "accept_ties": bool(meta.get("accept_ties", False)),
             "input_scatter": bool(meta["input_scatter"]),
         })
 
@@ -177,6 +180,9 @@ def analyze_candidate_log(csv_path: Path, eps: float, accept_tol: float) -> tupl
             "arm": run["arm"],
             "seed": run["seed"],
             "H": run["H"],
+            "phase": run.get("phase", ""),
+            "horizon_steps": run.get("horizon_steps", run.get("steps", "")),
+            "accept_ties": run.get("accept_ties", ""),
             "operator_id": op,
             "candidate_rows": len(op_data),
             "evaluated_rows": len(evaluated),
