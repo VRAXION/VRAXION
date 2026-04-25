@@ -72,33 +72,36 @@ Two caveats limit the strength of this claim:
 - **Statistical power**: n=5 per cell. The 80k+ties vs 20k+ties contrast has Welch p ≈ 0.076 (not Bonferroni-significant). Replication at n ≥ 10 is needed for strict claims.
 - **Tested-plateau bound**: strict acceptance plateaus *within the 80k tested range* (40k strict 5.50%, 80k strict 5.60%, p=0.92), but we cannot rule out further gains beyond 80k.
 
-### H-dependence of the (K, s) interaction (cross-H replication, sandbox + GPT)
+### H-dependence of the (K, s) interaction (D1b sandbox H=128 pilot, 2026-04-25)
 
-A complementary 18-cell H=128 sweep (mutual_inhibition, 20k steps, 3 seeds, --jobs 4 parallel on a separate machine, output `output/d1_h128_quick_20260425_194650/`) extended the Phase D1 K × policy factorial to a second H value, allowing direct cross-H comparison of the activation-function interaction.
+**Status: pilot evidence, not a cross-H replication.** A complementary 18-cell sandbox sweep at H=128 (mutual_inhibition, 20k steps, 3 seeds, --jobs 4 parallel; output `output/d1_h128_quick_20260425_194650/`) was run in parallel with GPT's H=384 D1 v2.2. **The two sweeps are not directly comparable**: H=384 D1 v2.2 uses 40k horizon and 5 seeds, the H=128 pilot uses 20k horizon and 3 seeds. The sandbox sweep is *D1b*, a hypothesis generator, not a verdict-equal companion to D1.
 
 ```
-                    H=128 (sandbox, 20k, n=3)         H=384 (GPT D1 / B.1, 40k, n=5)
-                    mean ± std    accept              mean    accept
-K=1 strict          4.33 ± 1.03   23%                 1.92    ~17%
-K=1 ties            3.70 ± 1.28   44%                 4.02    ~84%
-K=3 strict          3.53 ± 1.12   48%                 4.24    ~18%
-K=3 ties            4.90 ± 0.35 ★ 73%                 3.78    ~99%
-K=9 strict          4.20 ± 0.96   78%                 5.50    ~17% (B.1 reference)
-K=9 ties            4.70 ± 0.53   96%                 5.88    ~99% (B.1 reference)
+                    H=128 (D1b sandbox, 20k, n=3)     H=384 (D1 v2.2 partial / B.1 ref)
+                    mean ± std    accept              mean    accept   source
+K=1 strict          4.33 ± 1.03   23%                 1.92    ~17%     D1 v2.2 (n=5)
+K=1 ties (zero_p=1) 3.70 ± 1.28   44%                 4.02    ~84%     D1 v2.2 (n=5)
+K=3 strict          3.53 ± 1.12   48%                 4.24    ~18%     D1 v2.2 (n=5)
+K=3 ties (zero_p=1) 4.90 ± 0.35   73%                 3.78    ~99%     D1 v2.2 (n=5)
+K=9 strict          4.20 ± 0.96   78%                 ≥6.60   ~17%     D1 v2.2 first seed; B.1 5-seed ref 5.50
+K=9 ties (zero_p=1) 4.70 ± 0.53   96%                 5.88    ~99%     B.1 reference (D1 v2.2 K=9 ties not yet done)
 ```
 
-★ marks the per-H peak.
+The H=384 K=9 strict number is from a single in-progress D1 v2.2 seed (6.60%); the H=384 K=9 ties number is the B.1 5-seed reference and may shift once D1 v2.2 completes its K=9 ties cells. **Do not draw a "K=9 ties wins at H=384" conclusion from this table** until D1 v2.2 K=9 finalises with its full 5-seed picture.
 
-The cross-H comparison shows the (K, s) interaction is **not H-invariant**:
+Two patterns are robust enough to flag, even at the pilot scale:
 
-- **K=1 strict reversal**: H=128 = 4.33% (works); H=384 = 1.92% (starvation). Smaller substrates expose more positive-direction mutations per single sample, so a 1-candidate jackpot can find improvements at H=128 that K=1 cannot find at H=384.
-- **K=3 best policy reverses across H**: H=128 ties beats strict (4.90 vs 3.53, +1.37pp); H=384 strict beats ties (4.24 vs 3.78, +0.46pp). The same (K=3) point of the activation-function family produces opposite winners at the two substrate widths.
-- **K=9 ties consistently wins** at both H (H=128: +0.50pp over strict; H=384: +0.38pp from B.1 reference). At saturated K, neutral acceptance helps regardless of H.
-- **Per-H optimal (K, s) shifts upward with H**: K=3+ties at H=128 (4.90), K=9+ties at H=384 (5.88).
+- **K=1 strict reversal**: H=128 4.33% vs H=384 1.92%. At smaller substrate width per-candidate `p_pos` is higher, so a 1-candidate jackpot is sometimes useful at H=128 and uniformly useless at H=384. The crossover is large (≈ 2.4pp) relative to the seed noise on either side, so this is the strongest single cross-H signal.
+- **K=3 best policy ranking flips**: H=128 ties beats strict (4.90 vs 3.53, +1.37pp); H=384 strict beats ties (4.24 vs 3.78, +0.46pp). The two H values give *opposite* answers to "is ties helpful at K=3?" — but both deltas are within the seed-std band, so this is directional, not Bonferroni-significant at either n.
 
-Mechanistic reading (tentative): per-candidate `p_pos` is higher at H=128 (smaller substrate, denser positives), so K=3 strict already accepts ~48% of best-of-K (vs ~18% at H=384). Adding ties on top of an already-permissive strict regime contributes drift over a smaller iso-fitness manifold (~128! configurations), which is more thoroughly traversable. At H=384, K=3 strict's tighter ~18% accept rate is already filtering noise effectively; adding ties dilutes the rare positive signal across a vastly larger 384! manifold. The (K, s) U-shape from D1 v2.2 is a section of a larger 3D surface whose shape depends on the substrate width.
+What this **does not yet justify** as a paper claim:
 
-This is **not yet a Bonferroni-significant finding** at n=3 (sandbox) / n=5 (GPT). It is directional, replicates across two independent machines and operating systems, and is consistent within both H values. Replication at n ≥ 10 per cell is required for strict claims. The directional pattern is published as a candidate hypothesis for cross-H Phase E / F follow-up.
+- That `(K*, τ*, s*)` is a smooth function of H. We have only two H values in the comparison, the K=9 corner of H=384 is incomplete, and n=3/n=5 are both underpowered.
+- That the activation function family is *necessarily* H-dependent. The directional finding generates this hypothesis; a clean cross-H replication at matched (horizon, n) is what would establish it.
+
+Mechanistic candidate (tentative): per-candidate `p_pos` is higher at H=128 (smaller substrate, denser positives), so K=3 strict already accepts ~48% of best-of-K (vs ~18% at H=384). Adding ties on top of an already-permissive strict regime contributes drift over a smaller iso-fitness manifold (~128! configurations). At H=384, K=3 strict's tighter ~18% accept rate filters noise; adding ties dilutes the rare positive signal across the much larger 384! manifold. This is a candidate explanation for the K=3 ranking flip; it does not predict the K=1 crossover, which has a separate mechanism (per-candidate positive density).
+
+Proper next step is **not** to deepen the H=128 pilot but to wait for D1 v2.2 K=9 completion, then run a tight matched-(horizon, n) cross-H replication (D2). The D1b H=128 pilot is preserved as a hypothesis seed, not as evidence in the strict-Bonferroni sense.
 
 ### Bimodality at the edge of regime
 
