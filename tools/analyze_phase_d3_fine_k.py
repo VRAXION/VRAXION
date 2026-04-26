@@ -26,6 +26,7 @@ import pandas as pd
 DEFAULT_D3F_ROOT = Path("output/phase_d3_fine_k_20260426")
 DEFAULT_D3_ROOT = Path("output/phase_d3_klock_coarse_20260426")
 DEFAULT_D2_ROOT = Path("output/phase_d2_cross_h_activation_20260426")
+DEFAULT_D1_ROOT = Path("output/phase_d1_activation_20260425")
 DEFAULT_FINE_REPORT = Path("docs/research/PHASE_D3_FINE_K_VERDICT.md")
 DEFAULT_FORMULA_REPORT = Path("docs/research/SAF_K_FORMULA_LOCK.md")
 EXPECTED_D3F_ARMS = ["D3F_K15_STRICT", "D3F_K18_STRICT", "D3F_K21_STRICT", "D3F_K24_STRICT"]
@@ -36,6 +37,7 @@ class Paths:
     d3f_root: Path
     d3_root: Path
     d2_root: Path
+    d1_root: Path
     analysis_dir: Path
     figures_dir: Path
     fine_report: Path
@@ -47,6 +49,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--d3f-root", type=Path, default=DEFAULT_D3F_ROOT)
     parser.add_argument("--d3-root", type=Path, default=DEFAULT_D3_ROOT)
     parser.add_argument("--d2-root", type=Path, default=DEFAULT_D2_ROOT)
+    parser.add_argument("--d1-root", type=Path, default=DEFAULT_D1_ROOT)
     parser.add_argument("--fine-report", type=Path, default=DEFAULT_FINE_REPORT)
     parser.add_argument("--formula-report", type=Path, default=DEFAULT_FORMULA_REPORT)
     parser.add_argument("--expected-H", type=int, default=256)
@@ -65,7 +68,7 @@ def ensure_dirs(args: argparse.Namespace) -> Paths:
     figures_dir.mkdir(parents=True, exist_ok=True)
     args.fine_report.parent.mkdir(parents=True, exist_ok=True)
     args.formula_report.parent.mkdir(parents=True, exist_ok=True)
-    return Paths(args.d3f_root, args.d3_root, args.d2_root, analysis_dir, figures_dir, args.fine_report, args.formula_report)
+    return Paths(args.d3f_root, args.d3_root, args.d2_root, args.d1_root, analysis_dir, figures_dir, args.fine_report, args.formula_report)
 
 
 def read_csv_required(path: Path) -> pd.DataFrame:
@@ -330,19 +333,22 @@ def write_fine_report(paths: Paths, validation: dict, fine_stats: pd.DataFrame, 
     paths.fine_report.write_text("\n".join(lines))
 
 
-def write_formula_report(paths: Paths, formula_stats: pd.DataFrame, fine_verdict: str) -> None:
+def write_formula_report(paths: Paths, formula_stats: pd.DataFrame, fine_verdict: str, d3_winners: dict[int, int]) -> None:
     lock_rows = []
     for h, group in formula_stats.groupby("H"):
-        group = group.sort_values("jackpot")
-        near = group[group["near_best_0_5pp"]].copy()
-        if near.empty:
-            lock = int(group.sort_values("peak_acc_pct_mean", ascending=False).iloc[0]["jackpot"])
-        else:
-            # Prefer the smallest near-best K unless H=256 still has an unresolved fine verdict.
-            lock = int(near.iloc[0]["jackpot"])
         if int(h) == 256 and fine_verdict in {"H256_FINE_HIGH_REQUIRED", "H256_FINE_LOW_REQUIRED", "H256_UNSTABLE_NO_LOCK"}:
+            lock = 18
             status = "unresolved"
+        elif int(h) == 256 and fine_verdict == "H256_K18_LOCK":
+            lock = 18
+            status = "locked"
+        elif int(h) in d3_winners:
+            lock = d3_winners[int(h)]
+            status = "provisional_lock"
         else:
+            group = group.sort_values("jackpot")
+            near = group[group["near_best_0_5pp"]].copy()
+            lock = int(near.iloc[0]["jackpot"]) if not near.empty else int(group.sort_values("peak_acc_pct_mean", ascending=False).iloc[0]["jackpot"])
             status = "provisional_lock"
         lock_rows.append((int(h), lock, status))
 
@@ -367,6 +373,8 @@ def write_formula_report(paths: Paths, formula_stats: pd.DataFrame, fine_verdict
     for h, lock, status in lock_rows:
         lines.append(f"| {h} | {lock} | {status} |")
     lines.extend([
+        "",
+        "The lock table uses the seed-matched D3 verdict for H=128/H=384 and the D3.1 fine verdict for H=256. The diagnostics table below merges broader context and is not used by itself as a winner table.",
         "",
         "## Formula Diagnostics",
         "",
@@ -401,6 +409,7 @@ def main() -> int:
     d3f_results, d3f_construct = load_run_pair(paths.d3f_root, "D3.1")
     d3_results, d3_construct = load_run_pair(paths.d3_root, "D3")
     d2_results, d2_construct = load_run_pair(paths.d2_root, "D2")
+    d1_results, d1_construct = load_run_pair(paths.d1_root, "D1")
     validation = validate_d3f(paths, d3f_results, d3f_construct, args.expected_H, args.expected_d3f_seeds)
 
     d3f_results = d3f_results[d3f_results["H"] == args.expected_H].copy()
@@ -437,16 +446,23 @@ def main() -> int:
     d3_formula_results = d3_results[~((d3_results["H"] == 256) & (d3_results["jackpot"] == 18))]
     d3_formula_construct = d3_construct[~((d3_construct["H"] == 256) & (d3_construct["jackpot"] == 18))]
     formula_results = pd.concat([
+        d1_results[d1_results["jackpot"].isin([1, 3, 9])],
         d2_results[d2_results["jackpot"].isin([1, 3, 9])],
         d3_formula_results[d3_formula_results["jackpot"].isin([5, 13, 18])],
         d3f_results,
     ], ignore_index=True)
     formula_construct = pd.concat([
+        d1_construct[d1_construct["jackpot"].isin([1, 3, 9])],
         d2_construct[d2_construct["jackpot"].isin([1, 3, 9])],
         d3_formula_construct[d3_formula_construct["jackpot"].isin([5, 13, 18])],
         d3f_construct,
     ], ignore_index=True)
     formula_stats = build_formula_table(formula_construct, formula_results, args.collapse_threshold_pp)
+    d3_winners = {}
+    d3_verdict_path = paths.d3_root / "analysis" / "phase_d3_klock_verdict.json"
+    if d3_verdict_path.exists():
+        d3_payload = json.loads(d3_verdict_path.read_text())
+        d3_winners = {int(row["H"]): int(row["best_K"]) for row in d3_payload.get("winners", [])}
 
     plot_h256_curve(fine_stats, paths.figures_dir)
     fine_stats.to_csv(paths.analysis_dir / "phase_d3_fine_k_stats.csv", index=False)
@@ -468,7 +484,7 @@ def main() -> int:
     }
     (paths.analysis_dir / "phase_d3_fine_k_verdict.json").write_text(json.dumps(payload, indent=2))
     write_fine_report(paths, validation, fine_stats, context_stats, verdict, notes, args.lock_margin_pp, args.expected_d3f_steps)
-    write_formula_report(paths, formula_stats, verdict)
+    write_formula_report(paths, formula_stats, verdict, d3_winners)
 
     print(json.dumps({
         "status": "PASS",
