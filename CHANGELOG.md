@@ -13,13 +13,17 @@ Patch-level release that consolidates the GPT-side `research/sandbox-h128-d1-cro
 
 - **Branch consolidation (continued)**: 1 → 0 non-main branches on `origin`. The `research/sandbox-h128-d1-cross-h-finding` branch (3 commits, GPT-side D1b H=128 cross-H pilot at n=3) was preserved at `archive/research-sandbox-h128-d1-20260426`, then its core insight (flag the H-dependence of the search activation `(K, policy)` pairing) was synthesized with main's authoritative D1 (H=384, n=5) and D2 (H={128,256}, n=5) data into a new wiki section. The branch was deleted from origin after the archive tag was confirmed online. Remote now has only `origin/main`.
 - **Wiki — Phase D2 cross-H verdict integrated**: `docs/wiki/Constructed-Computation.md` gains a new "H-dependence of (K, policy) — Phase D2 cross-H verdict (2026-04-26)" section. Per-H winners (n=5): H=128 K=9 strict 4.62%, H=256 K=9 strict 5.28%, H=384 K=9 strict 5.50%. K=9 strict generalizes; K=1 ranking flips between H=128 and H≥256; K=3 has a softer H-gradient. The pilot's K=9 ties-wins reading at n=3 was a small-n artefact not reproduced at n=5. `docs/wiki/Mutation-Selection-Dynamics.md` gains a one-paragraph cross-reference. The `VRAXION.wiki` GitHub wiki was synced via `tools/sync_wiki_from_repo.py`.
-- **Doc consistency — dangling archive refs purged**: `archive/diamond-code-era-20260322` and `archive/instnct-surface-freeze-20260322` were referenced in `README.md` and `ARCHIVE.md` but exist nowhere — not on remote (`git ls-remote origin`), not in `.git/packed-refs`, not in any local `.git/refs/`. README now points to `ARCHIVE.md` for the canonical archive list. ARCHIVE.md re-enumerated against the actually-existing 12+ archive tags spanning the 2026-03-18 → 2026-04-26 cleanup eras.
+- **Doc consistency — dangling archive refs purged**: `archive/diamond-code-era-20260322` and `archive/instnct-surface-freeze-20260322` (two distinct branch identifiers, occurring at five line-positions across `README.md` and `ARCHIVE.md`) exist nowhere — not on remote (`git ls-remote origin`), not in `.git/packed-refs`, not in any local `.git/refs/`. README now points to `ARCHIVE.md` for the canonical archive list. ARCHIVE.md re-enumerated against the actually-existing 12+ archive tags spanning the 2026-03-18 → 2026-04-26 cleanup eras.
 - **Pre-cleanup snapshots**: `archive/main-pre-cleanup-20260426` (main HEAD `aca3b91` before this pass) and `archive/research-sandbox-h128-d1-20260426` (research HEAD `a9dc92f` before deletion) — both pushed to origin before any change, in line with the ARCHIVE.md preserve-then-delete protocol.
 - **Version metadata sync**: `docs/VERSION.json` (`current_release`) and `CITATION.cff` (`version`, `date-released`) had drifted to `v5.0.0-beta.2` despite the beta.3 release on 2026-04-25. All version-declaring files (`Cargo.toml`, `CITATION.cff`, `docs/VERSION.json`, `README.md`, `BETA.md`, `CHANGELOG.md`) updated to `v5.0.0-beta.4` / `2026-04-26`.
 
 ### Verification
 
-- `cargo test -p instnct-core --release` — all tests pass (exit 0).
+The full README "5-Minute Proof" canonical battery was run before tagging:
+
+- `cargo test -p instnct-core --release` — all unit, integration, and doc tests pass (exit 0).
+- `python tools/run_grower_regression.py` — B0 engine-freeze contract: regression matrix completes, evidence bundle written, Golden Check **PASS**.
+- `python tools/run_byte_opcode_acceptance.py` — B1 promotion gate: byte/opcode v1 LUT-translator path correct on all probe entries; direct-path negative control behaves as expected (selective MISSes).
 - `python tools/check_public_surface.py` — public-surface drift check passes.
 - Wiki cross-link audit on the two modified wiki pages — all internal links resolve.
 
