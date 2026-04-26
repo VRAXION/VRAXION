@@ -253,6 +253,8 @@ Three empirical consequences for the framework:
 
 The "Acceptance Aperture" is therefore not a single substrate-specific parameter but a **3D parameterised search activation function** A(K, τ, s). The optimal `(K*, τ*, s*)` for a given substrate is the activation that the substrate's gradient-free training requires — analogous to learning-rate × momentum × weight-decay tuning in gradient-based methods.
 
+**Cross-H verdict (Phase D2, 2026-04-26).** `(K=9, strict)` is the optimal aperture at all three tested H values (peak means: H=128 4.62%, H=256 5.28%, H=384 5.50%; n=5 per cell; `docs/research/PHASE_D2_CROSS_H_VERDICT.md`). At sub-saturated K the policy ranking is H-dependent: K=1 strict wins at H=128 and ties wins at H≥256; K=3 ties wins at H=128 and strict wins at H=384. K=9 saturates — strict beats ties at every tested H. See [Constructed Computation § H-dependence of (K, policy)](Constructed-Computation) for the full cross-H table and the K=1 mechanistic interpretation.
+
 ---
 
 ## Open hypotheses

@@ -72,6 +72,30 @@ Two caveats limit the strength of this claim:
 - **Statistical power**: n=5 per cell. The 80k+ties vs 20k+ties contrast has Welch p ≈ 0.076 (not Bonferroni-significant). Replication at n ≥ 10 is needed for strict claims.
 - **Tested-plateau bound**: strict acceptance plateaus *within the 80k tested range* (40k strict 5.50%, 80k strict 5.60%, p=0.92), but we cannot rule out further gains beyond 80k.
 
+### H-dependence of (K, policy) — Phase D2 cross-H verdict (2026-04-26)
+
+The Phase D1 result (K=9 strict is the optimal aperture at H=384, n=5, peak mean 5.50%) was tested for H-generalization in Phase D2 by re-running the full (K, policy) grid at H=128 and H=256 with n=5 per cell (see `docs/research/PHASE_D2_CROSS_H_VERDICT.md`).
+
+**Per-H winners (n=5):**
+
+| H | winner K | winner policy | peak mean (%) | peak std |
+|---:|---:|---|---:|---:|
+| 128 | 9 | strict | 4.62 | 0.98 |
+| 256 | 9 | strict | 5.28 | 1.79 |
+| 384 | 9 | strict | 5.50 | 1.47 |
+
+**K=9 strict generalizes.** The same `(K=9, strict)` aperture point wins at every tested H. Peak accuracy increases monotonically with H under this aperture, in contrast to the Phase A inverted-U with peak at H=256 — i.e. the H=256 peak was a recipe artefact of the default `(K, policy)`, not an architectural ceiling.
+
+**Sub-saturated K shows H-dependent ranking.** At K=1 and K=3 the policy winner shifts across H:
+
+- **K=1 ranking flips between H=128 and H≥256.** H=128 strict wins (4.00 vs 3.74 ties, +0.26pp); H=256 ties wins (3.72 vs 3.48 strict, +0.24pp); H=384 ties wins decisively (4.02 vs 1.92 strict, +2.10pp). Mechanistic candidate: per-candidate `p_pos` is higher at smaller H (denser positives), so a single-candidate jackpot occasionally lands a useful mutation at H=128 and uniformly starves at H=384.
+- **K=3 has a softer gradient.** H=128 ties wins (+0.32pp), H=256 essentially tied (+0.02pp strict), H=384 strict wins (+0.46pp). Same activation-function point, opposite winners at the H extremes.
+- **K=9 saturates.** Strict wins at all three H (+0.18 / +0.74 / +0.20pp). At the saturated jackpot, the ties valve provides ~99% accept-rate drift on top of an already permissive (17–78%) strict accept regime — it substitutes plateau wandering for useful selection.
+
+**Framework consequence.** The "Acceptance Aperture" `A(K, τ, s)` is K-independent only in the saturated regime; in the sub-saturated K range it is a function of H as well, i.e. effectively `A(K, τ, s; H)` for K ≲ 3. None of these comparisons reach Bonferroni-corrected significance at n=5; the directional claim is robust across both the D1 H=384 and D2 H={128,256} sweeps.
+
+A precursor n=3 H=128 sandbox pilot motivated the formal D2 design and is preserved at tag `archive/research-sandbox-h128-d1-20260426`. The pilot's K=9 ties-wins reading at n=3 was not reproduced at n=5 (D2 finds K=9 strict wins at H=128 too); it appears to have been a small-n artefact.
+
 ### Bimodality at the edge of regime
 
 `bytepair_proj` H=384 produces five seeds with peaks of `[6.00, 0.00, 2.30, 2.70, 4.80]`. One seed reaches a working substrate, one collapses entirely, three sit in between. The grow-prune cycle is in a knife-edge regime at this H: the same recipe with the same input produces qualitatively different outcomes depending on initial conditions. This is itself a finding about the emergence boundary.

@@ -23,23 +23,33 @@ This page explains how retired surfaces leave `main` without losing their contex
 
 ## Archive Branches and Tags
 
-Historical surfaces are preserved in two forms:
+Historical surfaces are preserved as **immutable archive tags** (no long-lived archive branches remain). Tag prefixes:
 
-**Branches** (long-lived, pre-2026-04-20):
+- `archives/<topic>-<YYYYMMDD>` — content surfaces (script trees, doc surfaces, residue dumps)
+- `archive/<branch>-<YYYYMMDD>` — previously-live branch heads (frozen on the cleanup date)
 
-- `archive/diamond-code-era-20260322` — Diamond Code / LCX era snapshot
-- `archive/instnct-surface-freeze-20260322` — pre-beta research surface freeze
+**Content snapshots (2026-04-20 → 2026-04-26):**
 
-**Tags** (2026-04-20 public-release cleanup; immutable snapshots):
+- `archives/python-research-20260420` — Python research lane (was `instnct/`); migrated to Rust `instnct-core/` on 2026-04-13, archived 2026-04-20.
+- `archives/tools-legacy-diag-20260420` — pre-Fázis-6 `tools/` tree (79 scripts); trimmed to 29 on 2026-04-20.
+- `archives/public-readiness-residue-20260420` — public-release cleanup residue.
+- `archives/tools-cleanup-20260425` — `tools/` 74→22 cleanup pass (53 archived scripts).
 
-- `archives/python-research-20260420` — Python research lane (was `instnct/`); migrated to Rust `instnct-core/` mainline on 2026-04-13, archived to tag on 2026-04-20.
-- `archives/tools-legacy-diag-20260420` — pre-Fázis-6 `tools/` tree (79 scripts); trimmed to 29 canonical scripts on 2026-04-20.
+**Branch-head snapshots (2026-04-25 → 2026-04-26):**
+
+- `archive/main-pre-cleanup-20260425`, `archive/main-pre-cleanup-20260426` — main HEAD before each successive cleanup pass.
+- `archive/codex-phase-b-logging-smoke-20260425` — codex/phase-b-logging-smoke branch (merged into main 2026-04-25).
+- `archive/research-overnight-sct-empirical-20260425` — overnight SCT research branch.
+- `archive/research-sandbox-h128-d1-20260426` — H=128 D1b cross-H pilot (n=3) sandbox; superseded by formal Phase D2 (n=5) on main.
+- `archive/saved-neuron-one-wip-20260425`, `archive/saved-pre-connectome-research-20260425` — historical saved branches.
+- `archive/claude-review-repo-access-20260425` — claude review branch (verified redundant before retirement).
+- `archive/v4.1-20260318`, `archive/v4.2-20260318`, `archive/nightly-20260318`, plus various `archive/claude/<topic>-<short>/<sha>` snapshots — older 2026-03-18 cleanup era.
 
 Restore any file from a tag via:
 
 ```bash
-git show archives/<name>:path/to/file
-git checkout archives/<name> -- path/to/file
+git show <tag>:path/to/file
+git checkout <tag> -- path/to/file
 ```
 
 ## Removed from `main` (preserved only in git history)

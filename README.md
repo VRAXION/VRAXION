@@ -48,12 +48,9 @@ If code and docs disagree, **code wins for “Current mainline.”**
 
 The repo-tracked docs are the canonical public source. The GitHub wiki is a secondary mirror, not an independent source of truth.
 
-Historical archive branch:
+Historical archives are preserved as immutable tags (no long-lived archive branches remain). See [`ARCHIVE.md`](ARCHIVE.md) for the full list, including the previous-era surface freezes and per-cleanup branch-head snapshots.
 
-- The Diamond Code era is preserved on `archive/diamond-code-era-20260322`; it is not part of active `main`.
-- The pre-beta research surface freeze is preserved on `archive/instnct-surface-freeze-20260322`; bulky raw experiment dumps and retired exploratory surfaces no longer live on `main`.
-
-Retired line names and older local folders belong in [Project Timeline](https://github.com/VRAXION/VRAXION/wiki/Release-Notes), not in the current front-door stack.
+Retired line names and older local folders belong in [Project Timeline](https://github.com/VRAXION/VRAXION/wiki/Timeline-Archive), not in the current front-door stack.
 
 ## Current State
 
@@ -72,7 +69,7 @@ Retired line names and older local folders belong in [Project Timeline](https://
 - **Non-strict accept gate** unlocked compositional stepping-stones; `four_parity` now reaches 100% instead of stalling on equal-val intermediates.
 - **Released beta.1 language-evolution result** (`24.6%` next-character prediction) remains a shipped public result, but it is now a released reference lane rather than the active mainline path on `main`.
 
-Raw run dumps, archived sweeps, and older exploratory surfaces now live on `archive/instnct-surface-freeze-20260322`, not on active `main`.
+Raw run dumps, archived sweeps, and older exploratory surfaces are preserved at archive tags listed in [`ARCHIVE.md`](ARCHIVE.md), not on active `main`.
 
 The canonical evidence summary lives in [`VALIDATED_FINDINGS.md`](VALIDATED_FINDINGS.md).
 
