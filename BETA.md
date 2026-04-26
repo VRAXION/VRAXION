@@ -4,7 +4,7 @@ This document defines the current public-beta freeze target on `main`.
 
 The key transition is simple:
 
-- **released tag**: `v5.0.0-beta.3` is the current shipped Rust public beta (consolidated mainline + Phase A→B→D research line); `v5.0.0-beta.2` is the prior grower-based beta and `v5.0.0-beta.1` the original language-evolution beta as historical references
+- **released tag**: `v5.0.0-beta.4` is the current shipped Rust public beta (Phase D2 cross-H verdict + repo consolidation pass); `v5.0.0-beta.3` is the prior consolidated mainline + Phase A→B→D research line release; `v5.0.0-beta.2` is the prior grower-based beta and `v5.0.0-beta.1` the original language-evolution beta as historical references
 - **current mainline on `main`**: the bias-free Rust grower (`neuron_grower.rs` builder + `run_grower_regression.py` B0 regression bundle), with the Phase A→B→D mutation-selection research line on `evolve_mutual_inhibition.rs`/`evolve_bytepair_proj.rs` running as the active research-and-development surface alongside it
 - **next public milestone**: grower-based `v5.0.0 Public Beta`
 
