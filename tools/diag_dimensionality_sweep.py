@@ -8,11 +8,12 @@ and writes candidate logs, checkpoints, run metadata, and panel summaries.
 `--phase-d2` runs the cross-H validation for the D1 activation winner.
 `--phase-d3-klock` runs the coarse K-lock sweep for the Search Aperture Function.
 `--phase-d3-fine-k` runs the H=256 fine K-lock sweep.
+`--phase-d4-softness` runs the locked-K softness sweep.
 """
 from __future__ import annotations
 
 import argparse
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from concurrent.futures import FIRST_COMPLETED, ThreadPoolExecutor, as_completed, wait
 import csv
 import json
 import math
@@ -51,10 +52,14 @@ def parse_args() -> argparse.Namespace:
                    help="run Phase D3 coarse K-lock strict arms for evolve_mutual_inhibition")
     p.add_argument("--phase-d3-fine-k", action="store_true",
                    help="run Phase D3.1 fine K-lock strict arms for evolve_mutual_inhibition")
+    p.add_argument("--phase-d4-softness", action="store_true",
+                   help="run Phase D4 locked-K softness arms for evolve_mutual_inhibition")
     p.add_argument("--arms", default="B0,B1,B2,B3,B4",
                    help="comma-separated Phase B arms to run")
     p.add_argument("--panel-interval", type=int, default=None,
                    help="write Phase B panel_timeseries.csv every N steps")
+    p.add_argument("--heartbeat-interval", type=int, default=None,
+                   help="write heartbeat.json/log under --out every N seconds for long phase sweeps")
     p.add_argument("--jobs", type=int, default=1,
                    help="parallel Phase B cells to run at once")
     return p.parse_args()
@@ -260,6 +265,44 @@ def phase_d3_fine_k_arm_config(arm: str, base_steps: int) -> dict:
     return configs[arm]
 
 
+D4_SOFTNESS_ARMS = [
+    "D4_H128_K9_STRICT",
+    "D4_H128_K9_ZERO_P03",
+    "D4_H128_K9_ZERO_P10",
+    "D4_H256_K18_STRICT",
+    "D4_H256_K18_ZERO_P03",
+    "D4_H256_K18_ZERO_P10",
+    "D4_H384_K9_STRICT",
+    "D4_H384_K9_ZERO_P03",
+    "D4_H384_K9_ZERO_P10",
+]
+
+
+def phase_d4_softness_arm_config(arm: str, base_steps: int) -> dict:
+    """Locked-K softness arms. Each arm owns exactly one H/K pair."""
+    configs = {}
+    for h, jackpot in [(128, 9), (256, 18), (384, 9)]:
+        prefix = f"D4_H{h}_K{jackpot}"
+        configs[f"{prefix}_STRICT"] = {
+            **phase_d1_arm_config("D1_K1_STRICT", base_steps),
+            "H": h,
+            "jackpot": jackpot,
+        }
+        configs[f"{prefix}_ZERO_P03"] = {
+            **phase_d1_arm_config("D1_K1_ZERO_P03", base_steps),
+            "H": h,
+            "jackpot": jackpot,
+        }
+        configs[f"{prefix}_ZERO_P10"] = {
+            **phase_d1_arm_config("D1_K1_ZERO_P10", base_steps),
+            "H": h,
+            "jackpot": jackpot,
+        }
+    if arm not in configs:
+        raise ValueError(f"unknown Phase D4 softness arm: {arm}")
+    return configs[arm]
+
+
 def run_panel_analyzer(run_dir: Path) -> int:
     exe = example_binary_path("diag_phase_b_panel")
     if exe.exists():
@@ -294,7 +337,7 @@ def run_phase_b_cell(
 ) -> tuple[dict | None, int, float]:
     cfg = cfg or phase_b_arm_config(arm, base_steps)
     run_id = f"phase_{phase.lower()}_{fixture}_{arm}_H{h}_seed{seed}"
-    if phase in {"D2", "D3", "D3F"}:
+    if phase in {"D2", "D3", "D3F", "D4"}:
         run_dir = out_dir / f"H_{h}" / arm / f"seed_{seed}"
     else:
         run_dir = out_dir / arm / f"seed_{seed}"
@@ -450,6 +493,94 @@ def run_constructability_analysis(out_dir: Path) -> int:
     else:
         print(proc.stdout)
     return proc.returncode
+
+
+def active_process_cpu_range() -> dict:
+    """Best-effort cumulative CPU-second range for active Rust example workers."""
+    if not sys.platform.startswith("win"):
+        return {"available": False, "reason": "implemented for Windows process names only"}
+    cmd = [
+        "powershell",
+        "-NoProfile",
+        "-Command",
+        "Get-Process evolve_mutual_inhibition -ErrorAction SilentlyContinue | ForEach-Object { $_.CPU }",
+    ]
+    try:
+        proc = subprocess.run(cmd, cwd=REPO_ROOT, capture_output=True, text=True, timeout=5)
+    except Exception as exc:
+        return {"available": False, "reason": str(exc)}
+    vals = []
+    for line in proc.stdout.splitlines():
+        try:
+            vals.append(float(line.strip()))
+        except ValueError:
+            pass
+    if not vals:
+        return {"available": True, "process_count": 0, "cpu_seconds_min": None, "cpu_seconds_max": None}
+    return {
+        "available": True,
+        "process_count": len(vals),
+        "cpu_seconds_min": min(vals),
+        "cpu_seconds_max": max(vals),
+    }
+
+
+def partial_arm_means(results: list[dict]) -> list[dict]:
+    grouped: dict[tuple[int, str], list[dict]] = {}
+    for row in results:
+        grouped.setdefault((int(row.get("H", 0)), str(row.get("arm", ""))), []).append(row)
+    out = []
+    for (h, arm), rows in sorted(grouped.items()):
+        peak = [float(r["peak_acc"]) * 100.0 for r in rows if "peak_acc" in r]
+        final = [float(r["final_acc"]) * 100.0 for r in rows if "final_acc" in r]
+        accept = [float(r["accept_rate_pct"]) for r in rows if "accept_rate_pct" in r]
+        pm, ps = mean_std(peak)
+        fm, _ = mean_std(final)
+        am, _ = mean_std(accept)
+        out.append({
+            "H": h,
+            "arm": arm,
+            "n": len(rows),
+            "peak_mean_pct": pm,
+            "peak_std_pct": ps,
+            "final_mean_pct": fm,
+            "accept_mean_pct": am,
+        })
+    return out
+
+
+def write_heartbeat(
+    out_dir: Path,
+    *,
+    phase: str,
+    total: int,
+    results: list[dict],
+    pending_meta: list[dict],
+    latest_completed: dict | None,
+    t_sweep: float,
+    status: str,
+) -> None:
+    elapsed = time.time() - t_sweep
+    completed = len(results)
+    eta_s = (elapsed / completed) * (total - completed) if completed else None
+    payload = {
+        "timestamp": time.strftime("%Y-%m-%dT%H:%M:%S%z"),
+        "phase": phase,
+        "status": status,
+        "elapsed_s": elapsed,
+        "completed": completed,
+        "total": total,
+        "running_count": len(pending_meta),
+        "eta_s": eta_s,
+        "latest_completed": latest_completed,
+        "partial_means": partial_arm_means(results),
+        "active_cells": pending_meta,
+        "active_process_cpu_range": active_process_cpu_range(),
+    }
+    out_dir.mkdir(parents=True, exist_ok=True)
+    (out_dir / "heartbeat.json").write_text(json.dumps(payload, indent=2))
+    with (out_dir / "heartbeat.log").open("a", encoding="utf-8") as f:
+        f.write(json.dumps(payload, sort_keys=True) + "\n")
 
 
 def load_resume(out_dir: Path, phase_b: bool) -> tuple[list[dict], set[tuple]]:
@@ -694,6 +825,215 @@ def main_phase_d3_fine_k(args: argparse.Namespace) -> int:
     )
 
 
+def main_phase_d4_softness(args: argparse.Namespace) -> int:
+    fixtures = [f.strip() for f in args.fixtures.split(",") if f.strip()]
+    if fixtures != ["mutual_inhibition"]:
+        raise SystemExit("--phase-d4-softness currently supports only --fixtures mutual_inhibition")
+    requested_h = {int(x) for x in args.H_values.split(",") if x.strip()}
+    valid_h = {128, 256, 384}
+    invalid_h = sorted(requested_h - valid_h)
+    if invalid_h:
+        raise SystemExit(f"--phase-d4-softness supports only H in {sorted(valid_h)}, got {invalid_h}")
+
+    if args.arms == "B0,B1,B2,B3,B4":
+        arms = [arm for arm in D4_SOFTNESS_ARMS if phase_d4_softness_arm_config(arm, args.steps)["H"] in requested_h]
+    else:
+        arms = [a.strip() for a in args.arms.split(",") if a.strip()]
+        for arm in arms:
+            cfg_h = phase_d4_softness_arm_config(arm, args.steps)["H"]
+            if cfg_h not in requested_h:
+                raise SystemExit(f"arm {arm} is fixed to H={cfg_h}, which is not in --H-values")
+
+    out_dir = Path(args.out)
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    results: list[dict] = []
+    done: set[tuple] = set()
+    if args.resume:
+        results, done = load_resume(out_dir, phase_b=True)
+        print(f"  resume: loaded {len(results)} previous results, skipping {len(done)} cells")
+
+    cells = []
+    for fx in fixtures:
+        for arm in arms:
+            cfg = phase_d4_softness_arm_config(arm, args.steps)
+            h = int(cfg["H"])
+            for i in range(args.seeds):
+                cells.append((fx, arm, h, seed_from_idx(i)))
+    todo = [cell for cell in cells if cell not in done]
+    print(f"  Phase D4 plan: {len(cells)} total cells, {len(todo)} to run")
+    print(f"  fixtures: {fixtures}")
+    print(f"  H/K arms: {arms}")
+    print(f"  H values: {sorted(requested_h)}")
+    print(f"  seeds:    {args.seeds} per arm -> seed pattern 42 + i*1000")
+    print(f"  steps:    {args.steps}")
+    print(f"  panel interval: {args.panel_interval}")
+    print(f"  heartbeat interval: {args.heartbeat_interval}")
+    print(f"  jobs:     {args.jobs}")
+    print(f"  out:      {out_dir}")
+
+    if args.dry_run:
+        for fx, arm, h, seed in todo:
+            cfg = phase_d4_softness_arm_config(arm, args.steps)
+            print(f"  DRY-RUN fixture={fx} arm={arm} H={h} seed={seed} "
+                  f"steps={cfg['steps']} jackpot={cfg['jackpot']} accept_policy={cfg.get('accept_policy')} "
+                  f"neutral_p={cfg.get('neutral_p')} expected_rows={cfg['steps'] * cfg['jackpot']}")
+        return 0
+
+    prebuild_rc = prebuild_phase_examples(fixtures)
+    if prebuild_rc != 0:
+        return prebuild_rc
+
+    t_sweep = time.time()
+    jobs = max(1, args.jobs)
+    latest_completed: dict | None = None
+    first_failure = 0
+    print(f"\nRunning Phase D4 with {jobs} parallel jobs", flush=True)
+    with ThreadPoolExecutor(max_workers=jobs) as executor:
+        pending = {}
+        for idx, (fx, arm, h, seed) in enumerate(todo, 1):
+            cfg = phase_d4_softness_arm_config(arm, args.steps)
+            print(f"  queue [{idx}/{len(todo)}] fixture={fx} arm={arm} H={h} K={cfg['jackpot']} seed={seed}", flush=True)
+            future = executor.submit(
+                run_phase_b_cell,
+                fx,
+                "D4",
+                arm,
+                h,
+                seed,
+                args.steps,
+                args.corpus,
+                args.packed,
+                out_dir,
+                args.panel_interval,
+                cfg,
+            )
+            pending[future] = {"idx": idx, "fixture": fx, "arm": arm, "H": h, "seed": seed, "jackpot": cfg["jackpot"]}
+
+        if args.heartbeat_interval:
+            write_heartbeat(
+                out_dir,
+                phase="D4",
+                total=len(cells),
+                results=results,
+                pending_meta=list(pending.values()),
+                latest_completed=latest_completed,
+                t_sweep=t_sweep,
+                status="running",
+            )
+
+        while pending:
+            timeout = args.heartbeat_interval if args.heartbeat_interval else None
+            done_futures, _ = wait(set(pending.keys()), timeout=timeout, return_when=FIRST_COMPLETED)
+            if not done_futures:
+                write_heartbeat(
+                    out_dir,
+                    phase="D4",
+                    total=len(cells),
+                    results=results,
+                    pending_meta=list(pending.values()),
+                    latest_completed=latest_completed,
+                    t_sweep=t_sweep,
+                    status="running",
+                )
+                print(
+                    f"  heartbeat: elapsed={(time.time() - t_sweep)/60:.1f}m "
+                    f"completed={len(results)}/{len(cells)} running={len(pending)}",
+                    flush=True,
+                )
+                continue
+
+            for future in done_futures:
+                meta = pending.pop(future)
+                elapsed = time.time() - t_sweep
+                try:
+                    summary, rc, wall = future.result()
+                except Exception as exc:
+                    summary, rc, wall = None, 1, 0.0
+                    print(
+                        f"  FAILED [{meta['idx']}/{len(todo)}] elapsed={elapsed/60:.1f}m "
+                        f"fixture={meta['fixture']} arm={meta['arm']} H={meta['H']} seed={meta['seed']}: {exc}",
+                        file=sys.stderr,
+                        flush=True,
+                    )
+                if summary is None:
+                    first_failure = first_failure or (rc or 1)
+                    print(
+                        f"  FAILED [{meta['idx']}/{len(todo)}] elapsed={elapsed/60:.1f}m "
+                        f"fixture={meta['fixture']} arm={meta['arm']} H={meta['H']} seed={meta['seed']} "
+                        f"rc={rc} wall={wall:.1f}s",
+                        file=sys.stderr,
+                        flush=True,
+                    )
+                    write_artifacts(out_dir, results)
+                    continue
+
+                summary.setdefault("wall_clock_s", wall)
+                results.append(summary)
+                write_artifacts(out_dir, results)
+                latest_completed = {
+                    "idx": meta["idx"],
+                    "fixture": meta["fixture"],
+                    "arm": meta["arm"],
+                    "H": meta["H"],
+                    "seed": meta["seed"],
+                    "peak_acc_pct": summary["peak_acc"] * 100.0,
+                    "final_acc_pct": summary["final_acc"] * 100.0,
+                    "accept_rate_pct": summary["accept_rate_pct"],
+                    "wall_clock_s": summary["wall_clock_s"],
+                }
+                print(
+                    f"  done [{meta['idx']}/{len(todo)}] elapsed={elapsed/60:.1f}m "
+                    f"fixture={meta['fixture']} arm={meta['arm']} H={meta['H']} seed={meta['seed']}: "
+                    f"peak={summary['peak_acc']*100:.2f}% final={summary['final_acc']*100:.2f}% "
+                    f"accept={summary['accept_rate_pct']:.2f}% rows={summary['expected_candidate_rows']} "
+                    f"wall={summary['wall_clock_s']:.1f}s",
+                    flush=True,
+                )
+            if args.heartbeat_interval:
+                write_heartbeat(
+                    out_dir,
+                    phase="D4",
+                    total=len(cells),
+                    results=results,
+                    pending_meta=list(pending.values()),
+                    latest_completed=latest_completed,
+                    t_sweep=t_sweep,
+                    status="running",
+                )
+
+    if first_failure:
+        if args.heartbeat_interval:
+            write_heartbeat(
+                out_dir,
+                phase="D4",
+                total=len(cells),
+                results=results,
+                pending_meta=[],
+                latest_completed=latest_completed,
+                t_sweep=t_sweep,
+                status="failed",
+            )
+        return first_failure
+
+    print_aggregate(results)
+    analysis_rc = run_constructability_analysis(out_dir)
+    if args.heartbeat_interval:
+        write_heartbeat(
+            out_dir,
+            phase="D4",
+            total=len(cells),
+            results=results,
+            pending_meta=[],
+            latest_completed=latest_completed,
+            t_sweep=t_sweep,
+            status="complete" if analysis_rc == 0 else "analysis_failed",
+        )
+    print(f"\nSweep total wall clock: {(time.time() - t_sweep) / 60:.1f} min")
+    print(f"Artifacts: {out_dir / 'results.json'}  {out_dir / 'results.csv'}")
+    return analysis_rc
+
+
 def main_default(args: argparse.Namespace) -> int:
     fixtures = [f.strip() for f in args.fixtures.split(",") if f.strip()]
     h_values = [int(x) for x in args.H_values.split(",")]
@@ -743,8 +1083,8 @@ def main_default(args: argparse.Namespace) -> int:
 
 def main() -> int:
     args = parse_args()
-    if sum([args.phase_b, args.phase_b1, args.phase_d1, args.phase_d2, args.phase_d3_klock, args.phase_d3_fine_k]) > 1:
-        raise SystemExit("--phase-b, --phase-b1, --phase-d1, --phase-d2, --phase-d3-klock, and --phase-d3-fine-k are mutually exclusive")
+    if sum([args.phase_b, args.phase_b1, args.phase_d1, args.phase_d2, args.phase_d3_klock, args.phase_d3_fine_k, args.phase_d4_softness]) > 1:
+        raise SystemExit("--phase-b, --phase-b1, --phase-d1, --phase-d2, --phase-d3-klock, --phase-d3-fine-k, and --phase-d4-softness are mutually exclusive")
     if args.phase_b:
         return main_phase_b(args)
     if args.phase_b1:
@@ -757,6 +1097,8 @@ def main() -> int:
         return main_phase_d3_klock(args)
     if args.phase_d3_fine_k:
         return main_phase_d3_fine_k(args)
+    if args.phase_d4_softness:
+        return main_phase_d4_softness(args)
     return main_default(args)
 
 
