@@ -6,6 +6,7 @@ and writes candidate logs, checkpoints, run metadata, and panel summaries.
 `--phase-b1` runs the horizon x accept_ties follow-up on the same fixture.
 `--phase-d1` runs the acceptance-aperture zero-p policy follow-up.
 `--phase-d2` runs the cross-H validation for the D1 activation winner.
+`--phase-d3-klock` runs the coarse K-lock sweep for the Search Aperture Function.
 """
 from __future__ import annotations
 
@@ -45,6 +46,8 @@ def parse_args() -> argparse.Namespace:
                    help="run Phase D1 acceptance-aperture zero-p arms for evolve_mutual_inhibition")
     p.add_argument("--phase-d2", action="store_true",
                    help="run Phase D2 cross-H activation validation arms for evolve_mutual_inhibition")
+    p.add_argument("--phase-d3-klock", action="store_true",
+                   help="run Phase D3 coarse K-lock strict arms for evolve_mutual_inhibition")
     p.add_argument("--arms", default="B0,B1,B2,B3,B4",
                    help="comma-separated Phase B arms to run")
     p.add_argument("--panel-interval", type=int, default=None,
@@ -222,6 +225,26 @@ def phase_d2_arm_config(arm: str, base_steps: int) -> dict:
     return configs[arm]
 
 
+def phase_d3_klock_arm_config(arm: str, base_steps: int) -> dict:
+    configs = {
+        "D3_K5_STRICT": {
+            **phase_d1_arm_config("D1_K1_STRICT", base_steps),
+            "jackpot": 5,
+        },
+        "D3_K13_STRICT": {
+            **phase_d1_arm_config("D1_K1_STRICT", base_steps),
+            "jackpot": 13,
+        },
+        "D3_K18_STRICT": {
+            **phase_d1_arm_config("D1_K1_STRICT", base_steps),
+            "jackpot": 18,
+        },
+    }
+    if arm not in configs:
+        raise ValueError(f"unknown Phase D3 K-lock arm: {arm}")
+    return configs[arm]
+
+
 def run_panel_analyzer(run_dir: Path) -> int:
     exe = example_binary_path("diag_phase_b_panel")
     if exe.exists():
@@ -256,7 +279,7 @@ def run_phase_b_cell(
 ) -> tuple[dict | None, int, float]:
     cfg = cfg or phase_b_arm_config(arm, base_steps)
     run_id = f"phase_{phase.lower()}_{fixture}_{arm}_H{h}_seed{seed}"
-    if phase == "D2":
+    if phase in {"D2", "D3"}:
         run_dir = out_dir / f"H_{h}" / arm / f"seed_{seed}"
     else:
         run_dir = out_dir / arm / f"seed_{seed}"
@@ -431,7 +454,7 @@ def main_phase_b_like(args: argparse.Namespace, phase: str, config_fn, default_a
     if fixtures != ["mutual_inhibition"]:
         raise SystemExit(f"--phase-{phase.lower()} currently supports only --fixtures mutual_inhibition")
     h_values = [int(x) for x in args.H_values.split(",")]
-    if phase in {"B1", "D1", "D2"} and args.arms == "B0,B1,B2,B3,B4":
+    if phase in {"B1", "D1", "D2", "D3"} and args.arms == "B0,B1,B2,B3,B4":
         arms = default_arms
     else:
         arms = [a.strip() for a in args.arms.split(",") if a.strip()]
@@ -629,6 +652,19 @@ def main_phase_d2(args: argparse.Namespace) -> int:
     )
 
 
+def main_phase_d3_klock(args: argparse.Namespace) -> int:
+    return main_phase_b_like(
+        args,
+        "D3",
+        phase_d3_klock_arm_config,
+        [
+            "D3_K5_STRICT",
+            "D3_K13_STRICT",
+            "D3_K18_STRICT",
+        ],
+    )
+
+
 def main_default(args: argparse.Namespace) -> int:
     fixtures = [f.strip() for f in args.fixtures.split(",") if f.strip()]
     h_values = [int(x) for x in args.H_values.split(",")]
@@ -678,8 +714,8 @@ def main_default(args: argparse.Namespace) -> int:
 
 def main() -> int:
     args = parse_args()
-    if sum([args.phase_b, args.phase_b1, args.phase_d1, args.phase_d2]) > 1:
-        raise SystemExit("--phase-b, --phase-b1, --phase-d1, and --phase-d2 are mutually exclusive")
+    if sum([args.phase_b, args.phase_b1, args.phase_d1, args.phase_d2, args.phase_d3_klock]) > 1:
+        raise SystemExit("--phase-b, --phase-b1, --phase-d1, --phase-d2, and --phase-d3-klock are mutually exclusive")
     if args.phase_b:
         return main_phase_b(args)
     if args.phase_b1:
@@ -688,6 +724,8 @@ def main() -> int:
         return main_phase_d1(args)
     if args.phase_d2:
         return main_phase_d2(args)
+    if args.phase_d3_klock:
+        return main_phase_d3_klock(args)
     return main_default(args)
 
 
