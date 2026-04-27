@@ -69,6 +69,8 @@ struct RunMeta {
     operator_ewma_alpha: f64,
     operator_ewma_reward: String,
     operator_policy_log: Option<String>,
+    instrumentation_schema_version: Option<String>,
+    d8_state_log: Option<String>,
 }
 
 struct PanelMetrics {
@@ -219,6 +221,114 @@ impl CandidateLogWriter {
 
     fn flush(&mut self) {
         self.writer.flush().expect("failed to flush candidate log");
+    }
+}
+
+struct D8StateLogWriter {
+    writer: BufWriter<File>,
+    path: PathBuf,
+    run_id: String,
+    phase: String,
+    arm: String,
+    seed: u64,
+    h: usize,
+    checkpoint_ref: String,
+}
+
+impl D8StateLogWriter {
+    const SCHEMA_VERSION: &'static str = "d8_state_log_v1";
+
+    fn new(
+        path: PathBuf,
+        run_id: &str,
+        phase: &str,
+        arm: &str,
+        seed: u64,
+        h: usize,
+        checkpoint_ref: String,
+    ) -> Self {
+        if let Some(parent) = path.parent() {
+            if !parent.as_os_str().is_empty() {
+                create_dir_all(parent).expect("failed to create D8 state log directory");
+            }
+        }
+        let mut writer = BufWriter::new(File::create(&path).expect("failed to create D8 state log"));
+        writeln!(
+            writer,
+            "schema_version,state_id,parent_id,family_id,root_family_id,run_id,phase,arm,seed,H,panel_index,step,time_pct,accepted_total,rejected_total,current_peak,panel_probe_acc,accept_rate_window,accepted_window,rejected_window,edges,unique_predictions,collision_rate,f_active,stable_rank,kernel_rank,separation_sp,checkpoint_ref,archive_cell_id,psi_pred,cell_confidence"
+        )
+        .expect("failed to write D8 state log header");
+        Self {
+            writer,
+            path,
+            run_id: run_id.to_string(),
+            phase: phase.to_string(),
+            arm: arm.to_string(),
+            seed,
+            h,
+            checkpoint_ref,
+        }
+    }
+
+    fn write_panel_state(
+        &mut self,
+        panel_index: usize,
+        step: usize,
+        total_steps: usize,
+        accepted_total: u32,
+        rejected_total: u32,
+        accepted_window: u32,
+        rejected_window: u32,
+        edges: usize,
+        current_peak: f64,
+        metrics: &PanelMetrics,
+    ) {
+        let state_id = format!("{}::{}", self.run_id, panel_index);
+        let parent_id = if panel_index > 0 {
+            format!("{}::{}", self.run_id, panel_index - 1)
+        } else {
+            String::new()
+        };
+        let candidate_steps = (accepted_window + rejected_window).max(1);
+        let accept_rate_window = accepted_window as f64 / candidate_steps as f64;
+        let time_pct = step as f64 / total_steps.max(1) as f64;
+        writeln!(
+            self.writer,
+            "{},{},{},{},{},{},{},{},{},{},{},{},{:.17},{},{},{:.17},{:.17},{:.17},{},{},{},{},{:.17},{:.17},{:.17},{},{:.17},{},,,",
+            Self::SCHEMA_VERSION,
+            state_id,
+            parent_id,
+            self.run_id,
+            self.run_id,
+            self.run_id,
+            self.phase,
+            self.arm,
+            self.seed,
+            self.h,
+            panel_index,
+            step,
+            time_pct,
+            accepted_total,
+            rejected_total,
+            current_peak,
+            metrics.panel_probe_acc,
+            accept_rate_window,
+            accepted_window,
+            rejected_window,
+            edges,
+            metrics.unique_predictions,
+            metrics.collision_rate,
+            metrics.f_active,
+            metrics.stable_rank,
+            metrics.kernel_rank,
+            metrics.separation_sp,
+            self.checkpoint_ref
+        )
+        .expect("failed to write D8 state log row");
+    }
+
+    fn flush(&mut self) {
+        self.writer.flush().expect("failed to flush D8 state log");
     }
 }
 
@@ -1125,6 +1235,7 @@ fn main() {
     let mut operator_weight_cap = 4.0f64;
     let mut operator_ewma_alpha = 0.05f64;
     let mut operator_policy_log_path: Option<PathBuf> = None;
+    let mut d8_state_log_path: Option<PathBuf> = None;
     let mut phase = String::from("default");
     let mut arm = String::from("default");
     let mut run_id = String::from("default");
@@ -1238,6 +1349,10 @@ fn main() {
             "--operator-policy-log" => {
                 i += 1;
                 operator_policy_log_path = Some(PathBuf::from(&args[i]));
+            }
+            "--d8-state-log" => {
+                i += 1;
+                d8_state_log_path = Some(PathBuf::from(&args[i]));
             }
             "--phase" => {
                 i += 1;
@@ -1368,6 +1483,9 @@ fn main() {
         (Some(interval), Some(path)) => Some(PanelTimeseriesWriter::new(path, interval)),
         _ => None,
     };
+    if d8_state_log_path.is_some() && panel_writer.is_none() {
+        panic!("--d8-state-log requires --panel-interval so panel states are well-defined");
+    }
     if let Some(panel) = panel_writer.as_ref() {
         println!(
             "  Panel timeseries: {} (interval={} steps)",
@@ -1396,6 +1514,29 @@ fn main() {
         println!("  Operator policy log: {}", writer.path.display());
     }
     let operator_policy_window = panel_interval.unwrap_or(PROGRESS_INTERVAL);
+    let checkpoint_ref = checkpoint_at_end
+        .as_ref()
+        .map(|p| p.display().to_string())
+        .unwrap_or_default();
+    let mut d8_state_log = d8_state_log_path.clone().map(|path| {
+        D8StateLogWriter::new(
+            path,
+            &run_id,
+            &phase,
+            &arm,
+            seed,
+            h,
+            checkpoint_ref.clone(),
+        )
+    });
+    if let Some(writer) = d8_state_log.as_ref() {
+        println!(
+            "  D8 state log: {} (schema={})",
+            writer.path.display(),
+            D8StateLogWriter::SCHEMA_VERSION
+        );
+    }
+    let mut d8_panel_index = 0usize;
 
     // Evolve with smooth cosine (champion fitness)
     for step in 0..steps {
@@ -1510,6 +1651,8 @@ fn main() {
         }
         if let Some(panel) = panel_writer.as_mut() {
             if (step + 1) % panel.window_size == 0 {
+                let accepted_window = accepted.saturating_sub(panel.last_accepted);
+                let rejected_window = rejected.saturating_sub(panel.last_rejected);
                 let metrics = compute_panel_metrics(
                     &mut net,
                     &proj,
@@ -1522,6 +1665,21 @@ fn main() {
                     init.input_end(),
                     input_scatter,
                 );
+                if let Some(log) = d8_state_log.as_mut() {
+                    log.write_panel_state(
+                        d8_panel_index,
+                        step + 1,
+                        steps,
+                        accepted,
+                        rejected,
+                        accepted_window,
+                        rejected_window,
+                        net.edge_count(),
+                        peak,
+                        &metrics,
+                    );
+                    d8_panel_index += 1;
+                }
                 panel.write_row(step + 1, accepted, rejected, net.edge_count(), peak, &metrics);
             }
         }
@@ -1604,6 +1762,10 @@ fn main() {
             operator_policy_log: inferred_operator_policy_log_path
                 .as_ref()
                 .map(|p| p.display().to_string()),
+            instrumentation_schema_version: d8_state_log_path
+                .as_ref()
+                .map(|_| D8StateLogWriter::SCHEMA_VERSION.to_string()),
+            d8_state_log: d8_state_log_path.as_ref().map(|p| p.display().to_string()),
         };
         let meta_json = serde_json::to_string_pretty(&meta).expect("failed to serialize run meta");
         let meta_path = checkpoint_path
@@ -1693,6 +1855,9 @@ fn main() {
     }
     if let Some(panel) = panel_writer.as_mut() {
         panel.flush();
+    }
+    if let Some(log) = d8_state_log.as_mut() {
+        log.flush();
     }
     operator_policy.flush();
 
