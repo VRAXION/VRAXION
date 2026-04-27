@@ -497,356 +497,1633 @@ def html_template(cell_rows: list[dict], edge_rows: list[dict], sample_rows: lis
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Phase D8.6 Cell Atlas / Basin Map</title>
+<title>Phase D8.6 Cell Atlas / Basin Pokedex</title>
 <style>
 :root {{
-  --bg: #101417;
-  --panel: #172026;
-  --panel2: #1d2930;
-  --ink: #e8f0ee;
-  --muted: #9eb0ad;
-  --line: #33454d;
-  --hot: #f6c85f;
-  --cold: #325d88;
-  --good: #52d273;
-  --bad: #ff5c7a;
-  --focus: #ffffff;
+  --bg-deep: #0a1018;
+  --bg-mid: #0f1722;
+  --bg-soft: #15202e;
+  --panel: #18243380;
+  --panel-solid: #182433;
+  --panel-edge: #243349;
+  --panel-edge-strong: #324663;
+  --ink: #e8eef7;
+  --ink-soft: #c4cfdf;
+  --muted: #8896aa;
+  --muted-dim: #5e6b80;
+  --gold: #f4c95d;
+  --gold-soft: #f4c95d33;
+  --mint: #4ee6c8;
+  --mint-soft: #4ee6c822;
+  --teal: #38b6c2;
+  --rose: #ff6b8a;
+  --rose-soft: #ff6b8a22;
+  --amber: #ffb547;
+  --amber-soft: #ffb54722;
+  --gray-pill: #6f7a8b;
+  --bar-track: #0d1622;
+  --bar-track-edge: #1d2a3d;
+  --h128: #6aa9ff;
+  --h128-soft: #6aa9ff22;
+  --h128-deep: #2c5fb8;
+  --h256: #ffb547;
+  --h256-soft: #ffb54722;
+  --h256-deep: #c08020;
+  --h384: #c69bff;
+  --h384-soft: #c69bff22;
+  --h384-deep: #7a4cc4;
+  --good-1: #16a37a;
+  --good-2: #4ee6c8;
+  --warn-1: #f4c95d;
+  --warn-2: #ffa64a;
+  --bad-1: #ff6b8a;
+  --bad-2: #ff4870;
+  --shadow: 0 18px 42px rgba(0,0,0,.42);
+  --shadow-soft: 0 6px 18px rgba(0,0,0,.28);
 }}
 * {{ box-sizing: border-box; }}
+html, body {{ height: 100%; }}
 body {{
   margin: 0;
-  font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, sans-serif;
-  background: radial-gradient(circle at 15% 0%, #25343a, #101417 42%, #0a0d0f);
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", "Inter", sans-serif;
+  background:
+    radial-gradient(1200px 600px at 0% 0%, #1a2a44 0%, transparent 60%),
+    radial-gradient(900px 500px at 100% 0%, #2a1c3a 0%, transparent 55%),
+    linear-gradient(180deg, var(--bg-mid), var(--bg-deep) 70%);
   color: var(--ink);
+  font-size: 13px;
+  line-height: 1.45;
+  min-height: 100vh;
 }}
-header {{
-  padding: 18px 22px 12px;
-  border-bottom: 1px solid var(--line);
-  display: grid;
-  grid-template-columns: 1fr auto;
-  gap: 12px;
-  align-items: end;
+button, input, select {{ font-family: inherit; }}
+::-webkit-scrollbar {{ width: 10px; height: 10px; }}
+::-webkit-scrollbar-track {{ background: transparent; }}
+::-webkit-scrollbar-thumb {{ background: #283549; border-radius: 999px; border: 2px solid transparent; background-clip: padding-box; }}
+::-webkit-scrollbar-thumb:hover {{ background: #3a4a66; background-clip: padding-box; border: 2px solid transparent; }}
+
+/* ---------- Header ---------- */
+header.app-header {{
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  padding: 14px 22px 10px;
+  border-bottom: 1px solid var(--panel-edge);
+  background: linear-gradient(180deg, rgba(10,16,24,.96), rgba(10,16,24,.84));
+  backdrop-filter: blur(8px);
 }}
-h1 {{ margin: 0; font-size: 22px; letter-spacing: 0.02em; }}
-.subtitle {{ color: var(--muted); font-size: 13px; margin-top: 5px; }}
-.controls {{
+.header-row {{
   display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
   align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}}
+.brand {{
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}}
+.brand-mark {{
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, var(--gold), #b8870b);
+  display: grid;
+  place-items: center;
+  color: #1b1305;
+  font-weight: 800;
+  font-size: 16px;
+  letter-spacing: 0.04em;
+  box-shadow: 0 6px 18px rgba(244,201,93,.35), inset 0 1px 0 rgba(255,255,255,.4);
+}}
+.brand h1 {{
+  margin: 0;
+  font-size: 17px;
+  letter-spacing: 0.02em;
+  font-weight: 700;
+}}
+.brand .tagline {{
+  color: var(--muted);
+  font-size: 11.5px;
+  margin-top: 2px;
+}}
+.verdict-pill {{
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  background: var(--mint-soft);
+  color: var(--mint);
+  border: 1px solid #4ee6c855;
+}}
+.verdict-pill.bad {{ background: var(--rose-soft); color: var(--rose); border-color: #ff6b8a55; }}
+.verdict-pill.warn {{ background: var(--amber-soft); color: var(--amber); border-color: #ffb54755; }}
+
+.summary-strip {{
+  margin-top: 10px;
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}}
+.summary-chip {{
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 11px;
+  border-radius: 10px;
+  background: rgba(24,36,51,.85);
+  border: 1px solid var(--panel-edge);
+  font-size: 11.5px;
+  color: var(--ink-soft);
+}}
+.summary-chip .h-dot {{
+  width: 10px;
+  height: 10px;
+  border-radius: 4px;
+}}
+.summary-chip .label {{ color: var(--muted); margin-right: 2px; }}
+.summary-chip .num {{ color: var(--ink); font-weight: 700; font-feature-settings: "tnum" 1; }}
+.summary-chip .sub {{ color: var(--muted-dim); font-size: 10.5px; }}
+
+/* ---------- Toolbar ---------- */
+.toolbar {{
+  position: sticky;
+  top: 64px;
+  z-index: 25;
+  background: linear-gradient(180deg, rgba(15,23,34,.95), rgba(15,23,34,.85));
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--panel-edge);
+  padding: 10px 22px;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 14px 18px;
+  align-items: center;
+}}
+.toolbar .group {{
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}}
+.toolbar .group-label {{
+  text-transform: uppercase;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  color: var(--muted);
+  margin-right: 4px;
+  font-weight: 700;
+}}
+.chip {{
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 11px;
+  border-radius: 999px;
+  background: rgba(20,30,44,.85);
+  color: var(--ink-soft);
+  border: 1px solid var(--panel-edge);
+  cursor: pointer;
+  font-size: 11.5px;
+  font-weight: 600;
+  user-select: none;
+  transition: background .12s ease, border-color .12s ease, color .12s ease, transform .08s ease;
+}}
+.chip:hover {{ border-color: var(--panel-edge-strong); }}
+.chip:active {{ transform: translateY(1px); }}
+.chip.active {{
+  background: var(--gold-soft);
+  color: var(--gold);
+  border-color: #f4c95d99;
+  box-shadow: 0 0 0 1px rgba(244,201,93,.2) inset;
+}}
+.chip .ico {{
+  font-size: 12px;
+  line-height: 1;
+}}
+.chip.h-128.active {{ background: var(--h128-soft); color: var(--h128); border-color: #6aa9ff99; }}
+.chip.h-256.active {{ background: var(--h256-soft); color: var(--h256); border-color: #ffb54799; }}
+.chip.h-384.active {{ background: var(--h384-soft); color: var(--h384); border-color: #c69bff99; }}
+.chip.cand-split.active {{ background: var(--rose-soft); color: var(--rose); border-color: #ff6b8a99; }}
+.chip.cand-sample.active {{ background: var(--amber-soft); color: var(--amber); border-color: #ffb54799; }}
+.chip.cand-retire.active {{ background: rgba(150,160,180,.18); color: #a9b4c4; border-color: #6f7a8baa; }}
+.chip.cand-branch.active {{ background: rgba(56,182,194,.18); color: var(--teal); border-color: #38b6c2aa; }}
+.chip.sort-chip .arrow {{
+  display: inline-block;
+  width: 8px;
+  text-align: center;
+  font-size: 10px;
+  color: currentColor;
+  opacity: .8;
+}}
+.chip.sort-chip.active .arrow {{ font-weight: 800; }}
+
+.slider-wrap {{
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 11px;
+  border-radius: 999px;
+  background: rgba(20,30,44,.85);
+  border: 1px solid var(--panel-edge);
+  font-size: 11.5px;
+  color: var(--muted);
+}}
+.slider-wrap input[type="range"] {{
+  width: 110px;
+  accent-color: var(--gold);
+}}
+.slider-wrap .val {{ color: var(--ink); font-weight: 700; min-width: 26px; text-align: right; font-feature-settings: "tnum" 1; }}
+
+.search-wrap {{
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(20,30,44,.85);
+  border: 1px solid var(--panel-edge);
+  font-size: 11.5px;
+}}
+.search-wrap input {{
+  background: transparent;
+  border: none;
+  color: var(--ink);
+  outline: none;
+  width: 130px;
+  font-size: 11.5px;
+}}
+.search-wrap .ico {{ color: var(--muted); }}
+
+.toolbar-right {{
+  display: flex;
+  gap: 18px;
+  align-items: center;
+  flex-wrap: wrap;
   justify-content: flex-end;
 }}
-select, input, button {{
-  background: #0d1215;
+.action-btn {{
+  background: rgba(20,30,44,.85);
   color: var(--ink);
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  padding: 7px 9px;
-  font-size: 12px;
+  border: 1px solid var(--panel-edge);
+  padding: 6px 12px;
+  border-radius: 999px;
+  cursor: pointer;
+  font-size: 11.5px;
+  font-weight: 600;
 }}
-button {{ cursor: pointer; }}
+.action-btn:hover {{ border-color: var(--panel-edge-strong); }}
+.action-btn.primary {{
+  background: var(--gold);
+  color: #1c1305;
+  border-color: var(--gold);
+}}
+.action-btn.primary:hover {{ filter: brightness(1.05); }}
+
+/* ---------- Main layout ---------- */
 main {{
+  padding: 16px 22px 28px;
   display: grid;
   grid-template-columns: minmax(0, 1fr) 360px;
-  gap: 14px;
-  padding: 14px;
+  gap: 18px;
+  align-items: start;
 }}
-.views {{
-  display: grid;
-  grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
-  grid-auto-rows: minmax(360px, auto);
-  gap: 14px;
+.cards-region {{
+  min-width: 0;
 }}
-.card {{
-  background: linear-gradient(180deg, rgba(29,41,48,.96), rgba(17,23,27,.96));
-  border: 1px solid var(--line);
-  border-radius: 16px;
-  overflow: hidden;
-  box-shadow: 0 20px 55px rgba(0,0,0,.24);
-}}
-.card h2 {{
-  margin: 0;
-  padding: 12px 14px;
-  font-size: 14px;
-  color: #cde0dc;
-  border-bottom: 1px solid var(--line);
+.cards-meta {{
   display: flex;
   justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+  color: var(--muted);
+  font-size: 11.5px;
+}}
+.cards-meta .count strong {{ color: var(--ink); }}
+.empty-state {{
+  padding: 60px 20px;
+  text-align: center;
+  color: var(--muted);
+  border: 1px dashed var(--panel-edge);
+  border-radius: 16px;
+  background: rgba(20,30,44,.4);
+}}
+.empty-state .big {{
+  font-size: 24px;
+  margin-bottom: 6px;
+  color: var(--ink);
+}}
+
+.card-grid {{
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(310px, 1fr));
   gap: 12px;
 }}
-.hint {{ color: var(--muted); font-size: 11px; font-weight: 400; }}
-svg {{ display: block; width: 100%; height: 360px; background: rgba(8,12,14,.45); }}
-.grid {{
-  grid-column: 1 / -1;
-  padding: 10px;
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(116px, 1fr));
-  gap: 8px;
-  max-height: 420px;
-  overflow: auto;
-}}
-.tile {{
-  border: 1px solid #2f444b;
-  border-radius: 10px;
-  padding: 8px;
-  min-height: 84px;
-  background: #132027;
-  color: white;
+.cell-card {{
+  position: relative;
+  background:
+    linear-gradient(168deg, rgba(28,40,58,.96), rgba(18,26,38,.96) 70%);
+  border: 1px solid var(--panel-edge);
+  border-radius: 14px;
+  padding: 12px 12px 10px;
   cursor: pointer;
-  transition: transform .08s ease, border-color .08s ease;
+  transition: transform .12s ease, box-shadow .12s ease, border-color .12s ease;
+  box-shadow: var(--shadow-soft);
+  overflow: hidden;
 }}
-.tile:hover, .tile.selected {{ transform: translateY(-1px); border-color: var(--focus); }}
-.tile .id {{ font-weight: 700; font-size: 12px; }}
-.tile .metric {{ font-size: 11px; color: rgba(255,255,255,.86); margin-top: 3px; }}
-.node {{ cursor: pointer; stroke-width: 1.5; }}
-.node.selected {{ stroke: var(--focus); stroke-width: 4; }}
-.edge {{ stroke: rgba(180,210,210,.18); stroke-width: 1; }}
-.label {{ fill: #eaf5f2; font-size: 9px; pointer-events: none; paint-order: stroke; stroke: #071012; stroke-width: 3px; }}
-aside {{
+.cell-card::before {{
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(120% 60% at 0% 0%, rgba(255,255,255,.04), transparent 55%),
+    linear-gradient(180deg, transparent 70%, rgba(0,0,0,.18));
+  border-radius: inherit;
+}}
+.cell-card:hover {{
+  transform: translateY(-2px);
+  box-shadow: 0 24px 48px rgba(0,0,0,.45);
+  border-color: var(--panel-edge-strong);
+}}
+.cell-card.h-128 {{ box-shadow: 0 0 0 1px rgba(106,169,255,.06) inset, var(--shadow-soft); }}
+.cell-card.h-256 {{ box-shadow: 0 0 0 1px rgba(255,181,71,.06) inset, var(--shadow-soft); }}
+.cell-card.h-384 {{ box-shadow: 0 0 0 1px rgba(198,155,255,.06) inset, var(--shadow-soft); }}
+.cell-card.selected {{
+  border-width: 2px;
+  padding: 11px 11px 9px;
+  transform: translateY(-2px);
+  box-shadow: 0 24px 48px rgba(0,0,0,.55);
+}}
+.cell-card.selected.h-128 {{ border-color: var(--h128); }}
+.cell-card.selected.h-256 {{ border-color: var(--h256); }}
+.cell-card.selected.h-384 {{ border-color: var(--h384); }}
+.cell-card .h-bar {{
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+}}
+.cell-card.h-128 .h-bar {{ background: linear-gradient(180deg, var(--h128), var(--h128-deep)); }}
+.cell-card.h-256 .h-bar {{ background: linear-gradient(180deg, var(--h256), var(--h256-deep)); }}
+.cell-card.h-384 .h-bar {{ background: linear-gradient(180deg, var(--h384), var(--h384-deep)); }}
+
+.card-head {{
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+  position: relative;
+}}
+.h-badge {{
+  display: grid;
+  place-items: center;
+  width: 50px;
+  height: 50px;
+  border-radius: 12px;
+  font-weight: 800;
+  font-size: 16px;
+  letter-spacing: 0.04em;
+  color: #0a1018;
+  box-shadow: 0 4px 12px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.35);
+  position: relative;
+}}
+.h-badge .h-num {{ font-size: 17px; line-height: 1; font-weight: 800; }}
+.h-badge .h-tag {{ font-size: 8.5px; line-height: 1; opacity: 0.78; margin-top: 3px; letter-spacing: 0.12em; font-weight: 700; }}
+.h-badge.h-128 {{ background: linear-gradient(160deg, #84baff, var(--h128) 50%, var(--h128-deep)); }}
+.h-badge.h-256 {{ background: linear-gradient(160deg, #ffc875, var(--h256) 50%, var(--h256-deep)); }}
+.h-badge.h-384 {{ background: linear-gradient(160deg, #d8b8ff, var(--h384) 50%, var(--h384-deep)); }}
+
+.card-id {{
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}}
+.card-id .cell-key {{
+  font-size: 17px;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+  color: var(--ink);
+  font-feature-settings: "tnum" 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}}
+.card-id .cell-key .dim {{ color: var(--muted); font-weight: 600; }}
+.card-id .sub {{
+  font-size: 10.5px;
+  color: var(--muted);
+  margin-top: 2px;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}}
+.card-id .sub .rank {{
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 1px 6px;
+  border-radius: 6px;
+  background: rgba(244,201,93,.12);
+  color: var(--gold);
+  font-weight: 700;
+  font-size: 10px;
+}}
+
+.flag-cluster {{
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  align-items: flex-end;
+}}
+.flag {{
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 7px;
+  border-radius: 999px;
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  border: 1px solid transparent;
+}}
+.flag .dot {{
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: currentColor;
+}}
+.flag.split {{ background: var(--rose-soft); color: var(--rose); border-color: #ff6b8a55; }}
+.flag.sample {{ background: var(--amber-soft); color: var(--amber); border-color: #ffb54755; }}
+.flag.retire {{ background: rgba(150,160,180,.18); color: #a9b4c4; border-color: #6f7a8b66; }}
+.flag.branch {{ background: rgba(56,182,194,.18); color: var(--teal); border-color: #38b6c266; }}
+
+.bars {{
+  display: grid;
+  gap: 6px;
+  margin-bottom: 8px;
+}}
+.bar-row {{
+  display: grid;
+  grid-template-columns: 88px 1fr 56px;
+  gap: 8px;
+  align-items: center;
+  font-size: 10.5px;
+}}
+.bar-row .label {{
+  color: var(--muted);
+  font-weight: 600;
+  font-size: 10.5px;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}}
+.bar-row .label .icon {{
+  display: inline-block;
+  width: 10px;
+  margin-right: 3px;
+  text-align: center;
+  color: var(--muted-dim);
+}}
+.bar-track {{
+  position: relative;
+  height: 9px;
+  border-radius: 999px;
+  background: var(--bar-track);
+  border: 1px solid var(--bar-track-edge);
+  overflow: hidden;
+}}
+.bar-fill {{
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 0%;
+  border-radius: inherit;
+  transition: width .25s ease;
+  background: linear-gradient(90deg, var(--good-1), var(--good-2));
+}}
+.bar-fill.warm {{ background: linear-gradient(90deg, var(--warn-1), var(--warn-2)); }}
+.bar-fill.bad {{ background: linear-gradient(90deg, var(--bad-1), var(--bad-2)); }}
+.bar-fill.cool {{ background: linear-gradient(90deg, #2a6fd1, #6aa9ff); }}
+.bar-fill.gold {{ background: linear-gradient(90deg, #b88210, var(--gold)); }}
+.bar-fill.violet {{ background: linear-gradient(90deg, #6b3fb1, var(--h384)); }}
+.bar-fill.flip-warn {{ background: linear-gradient(90deg, var(--good-2), var(--warn-2), var(--bad-2)); }}
+.bar-fill::after {{
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(255,255,255,.18), transparent 60%);
+}}
+.bar-track .midline {{
+  position: absolute;
+  top: -1px;
+  bottom: -1px;
+  width: 1px;
+  background: rgba(255,255,255,.2);
+  pointer-events: none;
+}}
+.bar-row .val {{
+  color: var(--ink);
+  text-align: right;
+  font-weight: 700;
+  font-feature-settings: "tnum" 1;
+  font-size: 10.5px;
+  white-space: nowrap;
+}}
+.bar-row .val.neg {{ color: var(--rose); }}
+.bar-row .val.pos {{ color: var(--mint); }}
+
+.card-foot {{
+  margin-top: 6px;
+  padding-top: 7px;
+  border-top: 1px dashed var(--panel-edge);
+  display: flex;
+  justify-content: space-between;
+  font-size: 10px;
+  color: var(--muted);
+  letter-spacing: 0.02em;
+}}
+.card-foot .stat {{ display: inline-flex; gap: 4px; align-items: baseline; }}
+.card-foot .stat .v {{ color: var(--ink-soft); font-weight: 700; font-feature-settings: "tnum" 1; }}
+.card-foot .pri {{
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: rgba(244,201,93,.1);
+  color: var(--gold);
+  font-weight: 700;
+  font-size: 10px;
+}}
+
+/* ---------- Sidebar ---------- */
+aside.side {{
   display: flex;
   flex-direction: column;
   gap: 14px;
+  position: sticky;
+  top: 132px;
 }}
-.sidebox {{
-  background: rgba(23,32,38,.97);
-  border: 1px solid var(--line);
-  border-radius: 16px;
-  padding: 14px;
+.side-card {{
+  background: linear-gradient(180deg, rgba(24,36,51,.96), rgba(18,28,40,.96));
+  border: 1px solid var(--panel-edge);
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: var(--shadow-soft);
 }}
-.sidebox h3 {{ margin: 0 0 10px; font-size: 14px; }}
-.kv {{
-  display: grid;
-  grid-template-columns: 1fr auto;
-  gap: 6px 12px;
+.side-card h3 {{
+  margin: 0;
+  padding: 10px 12px;
   font-size: 12px;
+  font-weight: 700;
+  color: var(--ink-soft);
+  border-bottom: 1px solid var(--panel-edge);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
 }}
-.kv div:nth-child(odd) {{ color: var(--muted); }}
-table {{ width: 100%; border-collapse: collapse; font-size: 11px; }}
-th, td {{ border-bottom: 1px solid rgba(255,255,255,.08); padding: 5px 4px; text-align: left; }}
-th {{ color: var(--muted); font-weight: 600; }}
-.samples {{ max-height: 280px; overflow: auto; }}
-.pill {{
-  display: inline-block;
-  border: 1px solid var(--line);
-  border-radius: 999px;
-  padding: 2px 7px;
-  color: var(--muted);
-  margin-left: 6px;
+.side-card h3 .hint {{
+  color: var(--muted-dim);
+  font-size: 10px;
+  font-weight: 500;
+  text-transform: none;
+  letter-spacing: 0;
+}}
+.svg-wrap {{
+  position: relative;
+  background:
+    radial-gradient(60% 60% at 50% 50%, rgba(106,169,255,.05), transparent 70%),
+    #0c1320;
+}}
+.svg-wrap svg {{
+  display: block;
+  width: 100%;
+  height: 240px;
+}}
+.svg-wrap.atlas svg {{ height: 220px; }}
+.tip {{
+  position: absolute;
+  pointer-events: none;
+  background: rgba(8,14,22,.97);
+  border: 1px solid var(--panel-edge-strong);
+  border-radius: 6px;
+  padding: 6px 8px;
+  font-size: 10.5px;
+  color: var(--ink);
+  z-index: 8;
+  white-space: nowrap;
+  box-shadow: 0 6px 16px rgba(0,0,0,.5);
+  display: none;
+  font-feature-settings: "tnum" 1;
+}}
+.tip .name {{ font-weight: 800; margin-bottom: 1px; }}
+.tip .row {{ color: var(--muted); }}
+.tip .row b {{ color: var(--ink); font-weight: 700; }}
+.svg-edge {{ stroke: rgba(170,200,220,.16); stroke-width: 1; }}
+.svg-edge.hot {{ stroke: rgba(244,201,93,.55); stroke-width: 1.4; }}
+.svg-node {{ stroke-width: 1.4; cursor: pointer; transition: r .12s ease, stroke-width .12s ease; }}
+.svg-node.h-128 {{ stroke: rgba(106,169,255,.7); }}
+.svg-node.h-256 {{ stroke: rgba(255,181,71,.7); }}
+.svg-node.h-384 {{ stroke: rgba(198,155,255,.7); }}
+.svg-node.flag-split {{ stroke: var(--rose); stroke-width: 2.4; }}
+.svg-node.flag-sample {{ stroke: var(--amber); stroke-width: 2; }}
+.svg-node.flag-retire {{ stroke: #a9b4c4; stroke-width: 2; }}
+.svg-node.dim {{ opacity: .25; }}
+.svg-node.selected {{ stroke: #ffffff; stroke-width: 3.2; filter: drop-shadow(0 0 6px rgba(255,255,255,.6)); }}
+.svg-node.match-card {{ stroke: var(--gold); stroke-width: 2.6; filter: drop-shadow(0 0 6px rgba(244,201,93,.6)); }}
+.svg-label {{
+  font-size: 8.5px;
+  fill: #d6e0f0;
+  paint-order: stroke;
+  stroke: #0a1018;
+  stroke-width: 2.5px;
+  pointer-events: none;
+  font-weight: 600;
+}}
+
+.detail-card {{
+  padding: 0;
+}}
+.detail-head {{
+  padding: 12px 12px 10px;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 10px;
+  align-items: center;
+  border-bottom: 1px solid var(--panel-edge);
+}}
+.detail-head .h-badge {{ width: 44px; height: 44px; }}
+.detail-head .h-badge .h-num {{ font-size: 14px; }}
+.detail-head .h-badge .h-tag {{ font-size: 7.5px; }}
+.detail-head .title {{
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}}
+.detail-head .title .key {{ font-size: 15px; font-weight: 800; color: var(--ink); }}
+.detail-head .title .key .dim {{ color: var(--muted); font-weight: 600; }}
+.detail-head .title .flags {{ display: flex; gap: 4px; flex-wrap: wrap; }}
+.detail-body {{
+  padding: 10px 12px 12px;
+  display: grid;
+  gap: 8px;
+}}
+.kv-grid {{
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px 10px;
   font-size: 11px;
 }}
-.legend {{ display:flex; align-items:center; gap:8px; color:var(--muted); font-size:11px; }}
-.bar {{ width: 130px; height: 9px; border-radius: 999px; background: linear-gradient(90deg, #325d88, #d4db6a, #ff6b66); }}
-.warn {{ color: #f7c56b; }}
-@media (max-width: 1100px) {{
-  main, .views {{ grid-template-columns: 1fr; }}
+.kv-grid .kv-cell {{
+  padding: 5px 7px;
+  background: rgba(13,22,34,.6);
+  border: 1px solid var(--bar-track-edge);
+  border-radius: 6px;
+}}
+.kv-grid .kv-cell .label {{ color: var(--muted); font-size: 9.5px; text-transform: uppercase; letter-spacing: 0.04em; }}
+.kv-grid .kv-cell .val {{ color: var(--ink); font-weight: 700; font-feature-settings: "tnum" 1; font-size: 12px; }}
+.kv-grid .kv-cell .val.pos {{ color: var(--mint); }}
+.kv-grid .kv-cell .val.neg {{ color: var(--rose); }}
+.kv-grid .kv-cell.full {{ grid-column: 1 / -1; }}
+.kv-grid .kv-cell.action {{
+  background: rgba(244,201,93,.08);
+  border-color: rgba(244,201,93,.3);
+}}
+
+/* ---------- Bottom panel ---------- */
+.collapsible {{
+  margin: 22px 22px 0;
+  background: linear-gradient(180deg, rgba(24,36,51,.92), rgba(18,28,40,.92));
+  border: 1px solid var(--panel-edge);
+  border-radius: 14px;
+  overflow: hidden;
+}}
+.collapsible-head {{
+  padding: 10px 14px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+  user-select: none;
+  border-bottom: 1px solid var(--panel-edge);
+  background: rgba(15,23,34,.4);
+}}
+.collapsible-head h3 {{
+  margin: 0;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}}
+.collapsible-head .right {{
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--muted);
+  font-size: 11px;
+}}
+.collapsible-head .twirl {{
+  display: inline-block;
+  transition: transform .18s ease;
+  font-size: 10px;
+  color: var(--muted);
+}}
+.collapsible.collapsed .twirl {{ transform: rotate(-90deg); }}
+.collapsible-body {{
+  max-height: 360px;
+  overflow: auto;
+  transition: max-height .25s ease;
+}}
+.collapsible.collapsed .collapsible-body {{ max-height: 0; }}
+.sample-table {{
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 11px;
+}}
+.sample-table thead {{
+  position: sticky;
+  top: 0;
+  background: rgba(20,30,44,.96);
+  backdrop-filter: blur(6px);
+}}
+.sample-table th {{
+  text-align: left;
+  font-weight: 700;
+  color: var(--muted);
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--panel-edge);
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}}
+.sample-table td {{
+  padding: 6px 10px;
+  border-bottom: 1px solid rgba(255,255,255,.04);
+  color: var(--ink-soft);
+  font-feature-settings: "tnum" 1;
+}}
+.sample-table tr:hover td {{ background: rgba(244,201,93,.05); }}
+.sample-table .basin-y {{ color: var(--mint); font-weight: 700; }}
+.sample-table .basin-n {{ color: var(--muted-dim); }}
+.sample-table .h-tag {{
+  display: inline-block;
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-weight: 700;
+  font-size: 10px;
+  letter-spacing: 0.04em;
+}}
+.sample-table .h-tag.h-128 {{ background: var(--h128-soft); color: var(--h128); }}
+.sample-table .h-tag.h-256 {{ background: var(--h256-soft); color: var(--h256); }}
+.sample-table .h-tag.h-384 {{ background: var(--h384-soft); color: var(--h384); }}
+
+/* ---------- Responsive ---------- */
+@media (max-width: 1180px) {{
+  main {{ grid-template-columns: 1fr; }}
+  aside.side {{ position: static; flex-direction: row; flex-wrap: wrap; }}
+  aside.side > .side-card {{ flex: 1 1 320px; min-width: 280px; }}
+}}
+@media (max-width: 720px) {{
+  .toolbar {{ grid-template-columns: 1fr; }}
+  .toolbar-right {{ justify-content: flex-start; }}
+  .card-grid {{ grid-template-columns: 1fr; }}
 }}
 </style>
 </head>
 <body>
-<header>
-  <div>
-    <h1>Phase D8.6 Cell Atlas / Basin Map <span class="pill" id="verdictPill"></span></h1>
-    <div class="subtitle">Constellation graph is the closest behavior-space map. PCA is a projection. Command grid is a decision dashboard, not geometry.</div>
+<header class="app-header">
+  <div class="header-row">
+    <div class="brand">
+      <div class="brand-mark">D8</div>
+      <div>
+        <h1>Cell Atlas / Basin Pokedex</h1>
+        <div class="tagline">Phase D8.6 — behavior-sphere archive cells, sortable + filterable</div>
+      </div>
+    </div>
+    <div style="display:flex; gap:10px; align-items:center;">
+      <span class="verdict-pill" id="verdictPill">--</span>
+      <span class="summary-chip" id="rowsChip">
+        <span class="label">cells</span><span class="num" id="totalCells">0</span>
+        <span class="sub">/ <span id="filteredCount">0</span> shown</span>
+      </span>
+    </div>
   </div>
-  <div class="controls">
-    <label>H <select id="hSelect"></select></label>
-    <label>Color <select id="colorSelect"></select></label>
-    <label>Size <select id="sizeSelect"></select></label>
-    <label>Grid <select id="gridSort"></select></label>
-    <label>Min conf <input id="confFilter" type="number" min="0" max="1" step="0.05" value="0"></label>
-    <label><input id="labelsToggle" type="checkbox"> labels</label>
-    <button id="exportBtn">Export selected</button>
-  </div>
+  <div class="summary-strip" id="summaryStrip"></div>
 </header>
+
+<div class="toolbar">
+  <div class="group">
+    <span class="group-label">H</span>
+    <span class="chip h-128 active" data-h="128" data-toggle="h"><span class="ico">&#9679;</span>H128</span>
+    <span class="chip h-256 active" data-h="256" data-toggle="h"><span class="ico">&#9679;</span>H256</span>
+    <span class="chip h-384 active" data-h="384" data-toggle="h"><span class="ico">&#9679;</span>H384</span>
+    <span style="width:8px;"></span>
+    <span class="group-label">flags</span>
+    <span class="chip cand-split" data-flag="split_candidate" data-toggle="flag">split</span>
+    <span class="chip cand-sample" data-flag="sample_more_candidate" data-toggle="flag">sample more</span>
+    <span class="chip cand-retire" data-flag="retire_candidate" data-toggle="flag">retire</span>
+    <span class="chip cand-branch" data-flag="branch_trial_candidate" data-toggle="flag">branch trial</span>
+    <span style="width:8px;"></span>
+    <span class="slider-wrap">
+      <span>min conf</span>
+      <input type="range" id="confFilter" min="0" max="1" step="0.05" value="0">
+      <span class="val" id="confVal">0.00</span>
+    </span>
+    <span class="search-wrap">
+      <span class="ico">&#x1F50D;</span>
+      <input type="text" id="searchBox" placeholder="cell id...">
+    </span>
+  </div>
+  <div class="toolbar-right">
+    <div class="group">
+      <span class="group-label">sort</span>
+      <span class="chip sort-chip active" data-sort="scan_priority">scan_priority<span class="arrow">&#x25BC;</span></span>
+      <span class="chip sort-chip" data-sort="branch_trial_score">branch<span class="arrow"></span></span>
+      <span class="chip sort-chip" data-sort="split_score">split<span class="arrow"></span></span>
+      <span class="chip sort-chip" data-sort="mean_psi">mean_psi<span class="arrow"></span></span>
+      <span class="chip sort-chip" data-sort="mean_future_gain">gain<span class="arrow"></span></span>
+      <span class="chip sort-chip" data-sort="confidence">conf<span class="arrow"></span></span>
+      <span class="chip sort-chip" data-sort="std_future_gain">std<span class="arrow"></span></span>
+      <span class="chip sort-chip" data-sort="n_samples">n<span class="arrow"></span></span>
+    </div>
+    <button class="action-btn" id="resetBtn">reset</button>
+    <button class="action-btn primary" id="exportBtn">export</button>
+  </div>
+</div>
+
 <main>
-  <section class="views">
-    <div class="card">
-      <h2>Constellation Graph <span class="hint">kNN edges from high-D cosine neighbors</span></h2>
-      <svg id="graphView" viewBox="0 0 720 360" role="img"></svg>
+  <section class="cards-region">
+    <div class="cards-meta">
+      <div class="count">Showing <strong id="metaShown">0</strong> of <strong id="metaTotal">0</strong> cells &middot; sorted by <strong id="metaSort">--</strong></div>
+      <div id="metaTopHint" class="hint" style="color:var(--muted-dim); font-size:11px;"></div>
     </div>
-    <div class="card">
-      <h2>PCA/SVD Atlas <span class="hint">2D projection, not exact map</span></h2>
-      <svg id="pcaView" viewBox="0 0 560 360" role="img"></svg>
-    </div>
-    <div class="card">
-      <h2>Command Grid <span class="hint">priority dashboard, not spatial map</span></h2>
-      <div id="gridView" class="grid"></div>
+    <div id="cardGrid" class="card-grid"></div>
+    <div id="emptyState" class="empty-state" style="display:none;">
+      <div class="big">No cells match the filter</div>
+      <div>Try toggling more H slices, lowering min-confidence, or clearing flag filters.</div>
     </div>
   </section>
-  <aside>
-    <div class="sidebox">
-      <h3>Selected Cell</h3>
-      <div id="cellDetails" class="kv"></div>
+
+  <aside class="side">
+    <div class="side-card">
+      <h3>Constellation Graph <span class="hint">kNN, hi-D cosine</span></h3>
+      <div class="svg-wrap">
+        <svg id="graphView" viewBox="0 0 360 240" role="img" aria-label="kNN constellation"></svg>
+        <div class="tip" id="graphTip"></div>
+      </div>
     </div>
-    <div class="sidebox">
-      <h3>Color Scale</h3>
-      <div class="legend"><span id="scaleMin"></span><span class="bar"></span><span id="scaleMax"></span></div>
+    <div class="side-card">
+      <h3>PCA Atlas <span class="hint">2D projection</span></h3>
+      <div class="svg-wrap atlas">
+        <svg id="pcaView" viewBox="0 0 360 220" role="img" aria-label="PCA atlas"></svg>
+        <div class="tip" id="pcaTip"></div>
+      </div>
     </div>
-    <div class="sidebox samples">
-      <h3>Sample States</h3>
-      <table>
-        <thead><tr><th>state</th><th>t</th><th>peak</th><th>gain</th><th>Ψ</th></tr></thead>
-        <tbody id="sampleRows"></tbody>
-      </table>
+    <div class="side-card detail-card">
+      <h3>Selected Cell <span class="hint" id="selCellHint">--</span></h3>
+      <div id="detailHead" class="detail-head" style="display:none;"></div>
+      <div id="detailBody" class="detail-body"></div>
     </div>
   </aside>
 </main>
+
+<div id="samplesPanel" class="collapsible">
+  <div class="collapsible-head" id="samplesToggle">
+    <h3>Sample States <span class="hint" style="color:var(--muted-dim); font-weight:500; text-transform:none; letter-spacing:0; margin-left:6px;" id="samplesHint">--</span></h3>
+    <div class="right">
+      <span id="sampleCount">0 rows</span>
+      <span class="twirl">&#x25BC;</span>
+    </div>
+  </div>
+  <div class="collapsible-body">
+    <table class="sample-table">
+      <thead><tr>
+        <th>H</th><th>cell</th><th>state_id</th><th>t%</th><th>peak</th><th>gain</th><th>&Psi;</th><th>basin</th>
+      </tr></thead>
+      <tbody id="sampleRows"></tbody>
+    </table>
+  </div>
+</div>
+
 <script>
 const DATA = {data_json};
-const METRICS = [
-  "mean_future_gain","mean_psi","confidence","std_future_gain",
-  "basin_precision","scan_priority","split_score","branch_trial_score",
-  "n_samples","mean_current_peak"
-];
-const GRID_SORTS = ["scan_priority","branch_trial_score","split_score","mean_psi","mean_future_gain","confidence","n_samples"];
-let selectedKey = null;
 
-function byH() {{
-  const h = document.getElementById("hSelect").value;
-  const minConf = parseFloat(document.getElementById("confFilter").value || "0");
-  return DATA.cells.filter(c => String(c.H) === String(h) && Number(c.confidence || 0) >= minConf);
-}}
-function cellKey(c) {{ return `H${{c.H}}_C${{c.cell_id}}`; }}
-function fmt(v, digits=4) {{
-  if (v === null || v === undefined || Number.isNaN(Number(v))) return "NA";
+// ---------------- State ----------------
+const STATE = {{
+  hSet: new Set([128, 256, 384]),
+  flags: new Set(),
+  minConf: 0,
+  sortKey: "scan_priority",
+  sortDir: -1,
+  search: "",
+  selectedKey: null,
+  hoveredKey: null,
+}};
+
+const H_COLORS = {{
+  128: {{ main: "#6aa9ff", deep: "#2c5fb8", soft: "rgba(106,169,255,.18)" }},
+  256: {{ main: "#ffb547", deep: "#c08020", soft: "rgba(255,181,71,.18)" }},
+  384: {{ main: "#c69bff", deep: "#7a4cc4", soft: "rgba(198,155,255,.18)" }},
+}};
+
+const BARS = [
+  {{ key: "confidence", label: "confidence", icon: "&#9679;", mode: "raw01", color: "good", domain: "self" }},
+  {{ key: "basin_precision", label: "basin", icon: "&#9670;", mode: "raw01", color: "cool", domain: "self" }},
+  {{ key: "scan_priority", label: "scan_pri", icon: "&#9650;", mode: "norm_signed", color: "gold", domain: "h" }},
+  {{ key: "mean_psi", label: "mean &Psi;", icon: "&#9678;", mode: "norm", color: "violet", domain: "h" }},
+  {{ key: "mean_future_gain", label: "fut_gain", icon: "&#8593;", mode: "norm", color: "good", domain: "h" }},
+  {{ key: "std_future_gain", label: "std_gain", icon: "&#9633;", mode: "norm", color: "flip-warn", domain: "h", reverse: true }},
+  {{ key: "_n_ratio", label: "n / knee", icon: "&#9881;", mode: "raw01_clamped", color: "warm", domain: "self" }},
+];
+
+const SORT_LABELS = {{
+  scan_priority: "scan priority",
+  branch_trial_score: "branch trial",
+  split_score: "split score",
+  mean_psi: "mean Ψ",
+  mean_future_gain: "mean future gain",
+  confidence: "confidence",
+  std_future_gain: "std future gain",
+  n_samples: "samples",
+}};
+
+// ---------------- Helpers ----------------
+function fmt(v, digits) {{
+  if (v === null || v === undefined || v === "" || (typeof v === "number" && !Number.isFinite(v))) return "--";
+  const d = (digits === undefined) ? 3 : digits;
   const n = Number(v);
+  if (!Number.isFinite(n)) return String(v);
   if (Math.abs(n) >= 100) return n.toFixed(0);
-  return n.toFixed(digits);
+  if (Math.abs(n) >= 10) return n.toFixed(Math.max(1, d - 1));
+  return n.toFixed(d);
 }}
-function scale(metric, cells) {{
-  const vals = cells.map(c => Number(c[metric])).filter(Number.isFinite);
-  if (!vals.length) return [0,1];
-  let lo = Math.min(...vals), hi = Math.max(...vals);
-  if (Math.abs(hi-lo) < 1e-12) hi = lo + 1;
-  return [lo, hi];
+function fmtSigned(v, digits) {{
+  const n = Number(v);
+  if (!Number.isFinite(n)) return "--";
+  const s = fmt(Math.abs(n), digits);
+  return (n >= 0 ? "+" : "-") + s;
 }}
-function colorFor(v, lo, hi) {{
-  if (!Number.isFinite(v)) return "#67757b";
-  const t = Math.max(0, Math.min(1, (v-lo)/(hi-lo)));
-  const r = Math.round(50 + 220*t);
-  const g = Math.round(93 + 120*Math.sin(t*Math.PI));
-  const b = Math.round(136 - 80*t);
-  return `rgb(${{r}},${{g}},${{b}})`;
+function clamp(v, lo, hi) {{ return Math.max(lo, Math.min(hi, v)); }}
+function cellKey(c) {{ return "H" + c.H + "_C" + c.cell_id; }}
+function safeNum(v) {{
+  const n = Number(v);
+  return Number.isFinite(n) ? n : null;
 }}
-function sizeFor(c, metric) {{
-  const v = Number(c[metric] || 0);
-  if (metric === "n_samples") return 5 + Math.min(18, Math.sqrt(Math.max(0, v)) * 1.6);
-  if (metric === "confidence") return 6 + 16 * Math.max(0, Math.min(1, v));
-  return 6 + 13 * Math.max(0, Math.min(1, Number(c.confidence || 0)));
+function uniqueHs() {{
+  const set = new Set();
+  for (const c of DATA.cells) set.add(Number(c.H));
+  return [...set].sort((a, b) => a - b);
 }}
-function mapPoint(c, w, h) {{
-  return [40 + Number(c.pca_x || 0.5) * (w - 80), 28 + Number(c.pca_y || 0.5) * (h - 56)];
-}}
-function renderSvg(id, withEdges) {{
-  const svg = document.getElementById(id);
-  const cells = byH();
-  const hVal = document.getElementById("hSelect").value;
-  const colorMetric = document.getElementById("colorSelect").value;
-  const sizeMetric = document.getElementById("sizeSelect").value;
-  const labels = document.getElementById("labelsToggle").checked;
-  const [lo, hi] = scale(colorMetric, cells);
-  document.getElementById("scaleMin").textContent = fmt(lo);
-  document.getElementById("scaleMax").textContent = fmt(hi);
-  const w = Number(svg.viewBox.baseVal.width || 720), h = Number(svg.viewBox.baseVal.height || 360);
-  const byCell = new Map(cells.map(c => [Number(c.cell_id), c]));
-  let out = "";
-  if (withEdges) {{
-    const seen = new Set();
-    for (const e of DATA.edges.filter(e => String(e.H) === String(hVal))) {{
-      const a = byCell.get(Number(e.source_cell_id)), b = byCell.get(Number(e.target_cell_id));
-      if (!a || !b) continue;
-      const key = [a.cell_id,b.cell_id].sort((x,y)=>x-y).join("-");
-      if (seen.has(key)) continue;
-      seen.add(key);
-      const [x1,y1] = mapPoint(a,w,h), [x2,y2] = mapPoint(b,w,h);
-      out += `<line class="edge" x1="${{x1.toFixed(2)}}" y1="${{y1.toFixed(2)}}" x2="${{x2.toFixed(2)}}" y2="${{y2.toFixed(2)}}"></line>`;
+
+// Pre-compute auxiliary fields and per-H min/max for normalization.
+function preprocess() {{
+  const hStats = {{}};
+  for (const c of DATA.cells) {{
+    const h = Number(c.H);
+    c._H = h;
+    c._key = cellKey(c);
+    c._n_ratio = c.knee_H && c.knee_H > 0 ? Math.min(1, Number(c.n_samples || 0) / Number(c.knee_H)) : 0;
+    if (!hStats[h]) hStats[h] = {{}};
+  }}
+  for (const bar of BARS) {{
+    if (bar.domain !== "h") continue;
+    for (const h of uniqueHs()) {{
+      const vals = DATA.cells.filter(c => c._H === h).map(c => safeNum(c[bar.key])).filter(v => v !== null);
+      if (vals.length === 0) {{ hStats[h][bar.key] = [0, 1]; continue; }}
+      let lo = Math.min(...vals), hi = Math.max(...vals);
+      if (Math.abs(hi - lo) < 1e-12) hi = lo + 1;
+      hStats[h][bar.key] = [lo, hi];
     }}
   }}
-  for (const c of cells) {{
-    const [x,y] = mapPoint(c,w,h);
-    const key = cellKey(c);
-    const cls = key === selectedKey ? "node selected" : "node";
-    const stroke = c.split_candidate ? "#ff5c7a" : (c.sample_more_candidate ? "#f6c85f" : "#11191d");
-    out += `<circle class="${{cls}}" data-key="${{key}}" cx="${{x.toFixed(2)}}" cy="${{y.toFixed(2)}}" r="${{sizeFor(c,sizeMetric).toFixed(2)}}" fill="${{colorFor(Number(c[colorMetric]),lo,hi)}}" fill-opacity="${{Math.max(.25, Number(c.confidence || 0)).toFixed(2)}}" stroke="${{stroke}}"></circle>`;
-    if (labels) out += `<text class="label" x="${{(x+8).toFixed(2)}}" y="${{(y-7).toFixed(2)}}">${{c.cell_id}}</text>`;
+  return hStats;
+}}
+let H_STATS = preprocess();
+
+function normalizedBar(c, bar) {{
+  const v = safeNum(c[bar.key]);
+  if (v === null) return {{ pct: 0, raw: null }};
+  if (bar.mode === "raw01") return {{ pct: clamp(v, 0, 1) * 100, raw: v }};
+  if (bar.mode === "raw01_clamped") return {{ pct: clamp(v, 0, 1) * 100, raw: v }};
+  const stats = H_STATS[c._H] && H_STATS[c._H][bar.key];
+  if (!stats) return {{ pct: 0, raw: v }};
+  const [lo, hi] = stats;
+  let t = (v - lo) / (hi - lo);
+  t = clamp(t, 0, 1);
+  if (bar.reverse) t = 1 - t;
+  return {{ pct: t * 100, raw: v, lo, hi }};
+}}
+
+function classForFlag(c) {{
+  const out = [];
+  if (c.split_candidate) out.push("split");
+  if (c.sample_more_candidate) out.push("sample");
+  if (c.retire_candidate) out.push("retire");
+  // We don't have an explicit branch_trial flag in cell row; treat top branch_trial_score as "branch"
+  return out;
+}}
+function isBranchTopForH(c, threshold) {{
+  return Number(c.branch_trial_score || 0) >= threshold;
+}}
+let BRANCH_THRESH = {{ 128: -1e9, 256: -1e9, 384: -1e9 }};
+function recomputeBranchThresh() {{
+  for (const h of uniqueHs()) {{
+    const sorted = DATA.cells.filter(c => c._H === h).map(c => Number(c.branch_trial_score || 0)).sort((a, b) => b - a);
+    const cut = Math.min(20, sorted.length - 1);
+    BRANCH_THRESH[h] = sorted.length ? sorted[cut] : -1e9;
   }}
-  svg.innerHTML = out;
-  svg.querySelectorAll(".node").forEach(n => {{
-    n.addEventListener("mouseenter", () => selectCell(n.dataset.key, false));
+}}
+recomputeBranchThresh();
+
+function flagsOf(c) {{
+  const f = [];
+  if (c.split_candidate) f.push({{ name: "split", cls: "split" }});
+  if (c.sample_more_candidate) f.push({{ name: "sample+", cls: "sample" }});
+  if (c.retire_candidate) f.push({{ name: "retire", cls: "retire" }});
+  if (isBranchTopForH(c, BRANCH_THRESH[c._H])) f.push({{ name: "branch", cls: "branch" }});
+  return f;
+}}
+function hasFlag(c, key) {{
+  if (key === "branch_trial_candidate") return isBranchTopForH(c, BRANCH_THRESH[c._H]);
+  return Boolean(c[key]);
+}}
+
+// ---------------- Filtering / Sorting ----------------
+function applyFilters() {{
+  let out = DATA.cells.filter(c => STATE.hSet.has(c._H));
+  if (STATE.flags.size > 0) {{
+    out = out.filter(c => {{
+      for (const f of STATE.flags) {{
+        if (!hasFlag(c, f)) return false;
+      }}
+      return true;
+    }});
+  }}
+  if (STATE.minConf > 0) {{
+    out = out.filter(c => Number(c.confidence || 0) >= STATE.minConf);
+  }}
+  if (STATE.search) {{
+    const q = STATE.search.toLowerCase();
+    out = out.filter(c => String(c._key).toLowerCase().includes(q) || String(c.cell_id).includes(q));
+  }}
+  return out;
+}}
+function sortCells(cells) {{
+  const k = STATE.sortKey;
+  const dir = STATE.sortDir;
+  return cells.slice().sort((a, b) => {{
+    const va = Number(a[k]); const vb = Number(b[k]);
+    const aOk = Number.isFinite(va), bOk = Number.isFinite(vb);
+    if (!aOk && !bOk) return Number(a.cell_id) - Number(b.cell_id);
+    if (!aOk) return 1;
+    if (!bOk) return -1;
+    if (va === vb) return Number(a.cell_id) - Number(b.cell_id);
+    return (va < vb ? 1 : -1) * (dir === -1 ? 1 : -1);
+  }});
+}}
+
+// ---------------- Rendering: cards ----------------
+function renderCards() {{
+  const filtered = applyFilters();
+  const sorted = sortCells(filtered);
+  const grid = document.getElementById("cardGrid");
+  const empty = document.getElementById("emptyState");
+  document.getElementById("metaShown").textContent = String(sorted.length);
+  document.getElementById("metaTotal").textContent = String(DATA.cells.length);
+  document.getElementById("filteredCount").textContent = String(sorted.length);
+  document.getElementById("metaSort").textContent = (SORT_LABELS[STATE.sortKey] || STATE.sortKey) + " " + (STATE.sortDir === -1 ? "high to low" : "low to high");
+  if (sorted.length === 0) {{
+    grid.innerHTML = "";
+    empty.style.display = "block";
+    return;
+  }} else {{
+    empty.style.display = "none";
+  }}
+  const html = sorted.map((c, idx) => renderCard(c, idx + 1)).join("");
+  grid.innerHTML = html;
+  attachCardEvents();
+  // Scroll selected into view if needed
+  if (STATE.selectedKey) {{
+    const el = grid.querySelector('.cell-card[data-key="' + STATE.selectedKey + '"]');
+    if (el && idx0(el) > 24) {{ /* skip auto-scroll for far items */ }}
+  }}
+}}
+function idx0(el) {{
+  let i = 0; let n = el;
+  while ((n = n.previousElementSibling)) i++;
+  return i;
+}}
+
+function renderCard(c, rank) {{
+  const flags = flagsOf(c);
+  const hClass = "h-" + c._H;
+  const sel = c._key === STATE.selectedKey ? " selected" : "";
+  const flagHtml = flags.map(f => '<span class="flag ' + f.cls + '"><span class="dot"></span>' + f.name + '</span>').join("");
+  const barsHtml = BARS.map(bar => {{
+    const norm = normalizedBar(c, bar);
+    const colorCls = bar.color || "good";
+    const valStr = bar.key === "_n_ratio"
+      ? (Number(c.n_samples || 0) + " / " + Number(c.knee_H || 0))
+      : (bar.mode === "norm_signed" ? fmtSigned(norm.raw, 2) : fmt(norm.raw, bar.key === "n_samples" ? 0 : 3));
+    const valCls = (bar.mode === "norm_signed" && Number(norm.raw) < 0) ? "neg" : (bar.mode === "norm_signed" && Number(norm.raw) > 0 ? "pos" : "");
+    const midline = bar.mode === "norm_signed" ? '<span class="midline" style="left:50%"></span>' : "";
+    return '<div class="bar-row">'
+      + '<div class="label"><span class="icon">' + bar.icon + '</span>' + bar.label + '</div>'
+      + '<div class="bar-track">' + midline + '<div class="bar-fill ' + colorCls + '" style="width:' + norm.pct.toFixed(1) + '%"></div></div>'
+      + '<div class="val ' + valCls + '">' + valStr + '</div>'
+      + '</div>';
+  }}).join("");
+  const tagText = c._H === 128 ? "SHORT" : (c._H === 256 ? "MID" : "LONG");
+  return ''
+    + '<div class="cell-card ' + hClass + sel + '" data-key="' + c._key + '">'
+    + '<div class="h-bar"></div>'
+    + '<div class="card-head">'
+    + '<div class="h-badge ' + hClass + '"><div class="h-num">' + c._H + '</div><div class="h-tag">' + tagText + '</div></div>'
+    + '<div class="card-id">'
+    + '<div class="cell-key">C' + c.cell_id + ' <span class="dim">/ H' + c._H + '</span></div>'
+    + '<div class="sub"><span class="rank">#' + rank + '</span><span>' + (SORT_LABELS[STATE.sortKey] || STATE.sortKey) + ': <b style="color:var(--ink-soft)">' + fmt(c[STATE.sortKey], 3) + '</b></span></div>'
+    + '</div>'
+    + '<div class="flag-cluster">' + (flagHtml || '<span class="flag" style="background:rgba(120,135,160,.1);color:var(--muted-dim);border-color:#324663aa">stable</span>') + '</div>'
+    + '</div>'
+    + '<div class="bars">' + barsHtml + '</div>'
+    + '<div class="card-foot">'
+    + '<span class="stat">src&middot;<span class="v">' + (c.source_diversity || 0) + '</span></span>'
+    + '<span class="stat">runs&middot;<span class="v">' + (c.run_diversity || 0) + '</span></span>'
+    + '<span class="stat">t&middot;<span class="v">' + fmt(c.mean_time_pct, 2) + '</span></span>'
+    + '<span class="stat">pk&middot;<span class="v">' + fmt(c.mean_current_peak, 3) + '</span></span>'
+    + '</div>'
+    + '</div>';
+}}
+
+function attachCardEvents() {{
+  document.querySelectorAll(".cell-card").forEach(el => {{
+    el.addEventListener("click", () => {{
+      selectCell(el.dataset.key, true);
+    }});
+    el.addEventListener("mouseenter", () => {{
+      STATE.hoveredKey = el.dataset.key;
+      highlightSvgMatch(el.dataset.key);
+    }});
+    el.addEventListener("mouseleave", () => {{
+      STATE.hoveredKey = null;
+      highlightSvgMatch(null);
+    }});
+  }});
+}}
+
+// ---------------- Rendering: SVG views ----------------
+function projectPoint(c, w, h, padding) {{
+  const px = padding + Number(c.pca_x || 0.5) * (w - 2 * padding);
+  const py = padding + Number(c.pca_y || 0.5) * (h - 2 * padding);
+  return [px, py];
+}}
+function projectGraph(cells, w, h, padding) {{
+  // For graph view, lay out per H in horizontal bands
+  const hs = uniqueHs().filter(hh => STATE.hSet.has(hh));
+  if (hs.length === 0) return new Map();
+  const points = new Map();
+  const bandHeight = (h - 2 * padding) / Math.max(1, hs.length);
+  hs.forEach((hh, i) => {{
+    const slice = cells.filter(c => c._H === hh);
+    if (!slice.length) return;
+    // position by pca_x within band, pca_y modulates within slice
+    slice.forEach(c => {{
+      const px = padding + Number(c.pca_x || 0.5) * (w - 2 * padding);
+      const py = padding + i * bandHeight + (0.15 + 0.7 * Number(c.pca_y || 0.5)) * bandHeight;
+      points.set(c._key, [px, py, c]);
+    }});
+  }});
+  return points;
+}}
+
+function renderGraph() {{
+  const svg = document.getElementById("graphView");
+  const w = 360, h = 240, pad = 18;
+  const filtered = applyFilters();
+  const filteredKeys = new Set(filtered.map(c => c._key));
+  // We still want to draw all cells in visible H slices, just dim those filtered out
+  const visibleCells = DATA.cells.filter(c => STATE.hSet.has(c._H));
+  const positions = projectGraph(visibleCells, w, h, pad);
+  // edges
+  const seen = new Set();
+  let edgeHtml = "";
+  for (const e of DATA.edges) {{
+    if (!STATE.hSet.has(Number(e.H))) continue;
+    const a = positions.get("H" + e.H + "_C" + e.source_cell_id);
+    const b = positions.get("H" + e.H + "_C" + e.target_cell_id);
+    if (!a || !b) continue;
+    const k = [e.source_cell_id, e.target_cell_id].sort((x, y) => x - y).join("-") + "_" + e.H;
+    if (seen.has(k)) continue;
+    seen.add(k);
+    const isSel = STATE.selectedKey && (a[2]._key === STATE.selectedKey || b[2]._key === STATE.selectedKey);
+    const cls = isSel ? "svg-edge hot" : "svg-edge";
+    edgeHtml += '<line class="' + cls + '" x1="' + a[0].toFixed(1) + '" y1="' + a[1].toFixed(1) + '" x2="' + b[0].toFixed(1) + '" y2="' + b[1].toFixed(1) + '"></line>';
+  }}
+  // band labels
+  const hs = uniqueHs().filter(hh => STATE.hSet.has(hh));
+  const bandHeight = (h - 2 * pad) / Math.max(1, hs.length);
+  let bandHtml = "";
+  hs.forEach((hh, i) => {{
+    const y = pad + i * bandHeight + bandHeight / 2;
+    const col = H_COLORS[hh] ? H_COLORS[hh].main : "#888";
+    bandHtml += '<text x="6" y="' + (pad + i * bandHeight + 12).toFixed(1) + '" class="svg-label" fill="' + col + '" style="font-weight:800;font-size:9px">H' + hh + '</text>';
+    bandHtml += '<line x1="0" y1="' + (pad + (i + 1) * bandHeight).toFixed(1) + '" x2="' + w + '" y2="' + (pad + (i + 1) * bandHeight).toFixed(1) + '" stroke="rgba(255,255,255,.04)" stroke-width="1"></line>';
+  }});
+  // nodes
+  let nodeHtml = "";
+  for (const c of visibleCells) {{
+    const p = positions.get(c._key);
+    if (!p) continue;
+    const dim = !filteredKeys.has(c._key) ? " dim" : "";
+    const col = H_COLORS[c._H] ? H_COLORS[c._H].main : "#888";
+    const r = 3 + 4 * Math.max(0, Math.min(1, Number(c.confidence || 0)));
+    let extraCls = "";
+    if (c.split_candidate) extraCls = " flag-split";
+    else if (c.sample_more_candidate) extraCls = " flag-sample";
+    else if (c.retire_candidate) extraCls = " flag-retire";
+    if (c._key === STATE.selectedKey) extraCls = " selected";
+    nodeHtml += '<circle class="svg-node h-' + c._H + extraCls + dim + '" data-key="' + c._key + '" cx="' + p[0].toFixed(1) + '" cy="' + p[1].toFixed(1) + '" r="' + r.toFixed(1) + '" fill="' + col + '" fill-opacity="0.62"></circle>';
+  }}
+  svg.innerHTML = bandHtml + edgeHtml + nodeHtml;
+  attachSvgEvents("graphView", "graphTip");
+}}
+
+function renderPca() {{
+  const svg = document.getElementById("pcaView");
+  const w = 360, h = 220, pad = 14;
+  const filtered = applyFilters();
+  const filteredKeys = new Set(filtered.map(c => c._key));
+  const visibleCells = DATA.cells.filter(c => STATE.hSet.has(c._H));
+  // background grid
+  let bg = "";
+  for (let i = 1; i < 4; i++) {{
+    const x = pad + (i / 4) * (w - 2 * pad);
+    const y = pad + (i / 4) * (h - 2 * pad);
+    bg += '<line x1="' + x.toFixed(1) + '" y1="' + pad + '" x2="' + x.toFixed(1) + '" y2="' + (h - pad) + '" stroke="rgba(255,255,255,.04)" stroke-width="1"></line>';
+    bg += '<line x1="' + pad + '" y1="' + y.toFixed(1) + '" x2="' + (w - pad) + '" y2="' + y.toFixed(1) + '" stroke="rgba(255,255,255,.04)" stroke-width="1"></line>';
+  }}
+  let nodes = "";
+  for (const c of visibleCells) {{
+    const [x, y] = projectPoint(c, w, h, pad);
+    const dim = !filteredKeys.has(c._key) ? " dim" : "";
+    const col = H_COLORS[c._H] ? H_COLORS[c._H].main : "#888";
+    const r = 3.5 + 3.5 * Math.max(0, Math.min(1, Number(c.confidence || 0)));
+    let extraCls = "";
+    if (c.split_candidate) extraCls = " flag-split";
+    else if (c.sample_more_candidate) extraCls = " flag-sample";
+    else if (c.retire_candidate) extraCls = " flag-retire";
+    if (c._key === STATE.selectedKey) extraCls = " selected";
+    nodes += '<circle class="svg-node h-' + c._H + extraCls + dim + '" data-key="' + c._key + '" cx="' + x.toFixed(1) + '" cy="' + y.toFixed(1) + '" r="' + r.toFixed(1) + '" fill="' + col + '" fill-opacity="0.66"></circle>';
+  }}
+  // legend
+  let legend = "";
+  const hs = uniqueHs();
+  hs.forEach((hh, i) => {{
+    const col = H_COLORS[hh] ? H_COLORS[hh].main : "#888";
+    const x = pad + i * 50;
+    legend += '<circle cx="' + (x + 6) + '" cy="' + (h - 6) + '" r="3.5" fill="' + col + '"></circle>';
+    legend += '<text class="svg-label" x="' + (x + 13) + '" y="' + (h - 3) + '">H' + hh + '</text>';
+  }});
+  svg.innerHTML = bg + nodes + legend;
+  attachSvgEvents("pcaView", "pcaTip");
+}}
+
+function attachSvgEvents(svgId, tipId) {{
+  const svg = document.getElementById(svgId);
+  const tip = document.getElementById(tipId);
+  svg.querySelectorAll(".svg-node").forEach(n => {{
+    n.addEventListener("mouseenter", e => {{
+      const key = n.dataset.key;
+      const c = DATA.cells.find(x => x._key === key);
+      if (!c) return;
+      tip.style.display = "block";
+      tip.innerHTML = '<div class="name" style="color:' + (H_COLORS[c._H] ? H_COLORS[c._H].main : "#fff") + '">H' + c._H + ' / C' + c.cell_id + '</div>'
+        + '<div class="row">conf <b>' + fmt(c.confidence, 2) + '</b> &nbsp; basin <b>' + fmt(c.basin_precision, 2) + '</b></div>'
+        + '<div class="row">&Psi; <b>' + fmt(c.mean_psi, 3) + '</b> &nbsp; gain <b>' + fmt(c.mean_future_gain, 3) + '</b></div>'
+        + '<div class="row">scan_pri <b>' + fmtSigned(c.scan_priority, 2) + '</b> &nbsp; n <b>' + c.n_samples + '/' + c.knee_H + '</b></div>';
+      highlightSvgMatch(key);
+      const card = document.querySelector('.cell-card[data-key="' + key + '"]');
+      if (card) card.classList.add("hover-from-svg");
+    }});
+    n.addEventListener("mousemove", e => {{
+      const rect = svg.getBoundingClientRect();
+      const wrapRect = svg.parentElement.getBoundingClientRect();
+      const x = e.clientX - wrapRect.left + 12;
+      const y = e.clientY - wrapRect.top + 12;
+      tip.style.left = Math.min(x, wrapRect.width - 180) + "px";
+      tip.style.top = Math.min(y, wrapRect.height - 80) + "px";
+    }});
+    n.addEventListener("mouseleave", () => {{
+      tip.style.display = "none";
+      highlightSvgMatch(null);
+      document.querySelectorAll(".cell-card.hover-from-svg").forEach(el => el.classList.remove("hover-from-svg"));
+    }});
     n.addEventListener("click", () => selectCell(n.dataset.key, true));
   }});
 }}
-function renderGrid() {{
-  const grid = document.getElementById("gridView");
-  const sort = document.getElementById("gridSort").value;
-  const colorMetric = document.getElementById("colorSelect").value;
-  const cells = byH().slice().sort((a,b) => Number(b[sort] || 0) - Number(a[sort] || 0) || Number(a.cell_id)-Number(b.cell_id));
-  const [lo, hi] = scale(colorMetric, cells);
-  grid.innerHTML = cells.map(c => {{
-    const key = cellKey(c);
-    const bg = colorFor(Number(c[colorMetric]), lo, hi);
-    const border = c.split_candidate ? "#ff5c7a" : (c.sample_more_candidate ? "#f6c85f" : "#2f444b");
-    return `<div class="tile ${{key === selectedKey ? "selected" : ""}}" data-key="${{key}}" style="background:linear-gradient(135deg, ${{bg}}, #142027 80%); border-color:${{border}}; opacity:${{Math.max(.42, Number(c.confidence || 0)).toFixed(2)}}"><div class="id">H${{c.H}} / C${{c.cell_id}}</div><div class="metric">n ${{c.n_samples}}/${{c.knee_H}} conf ${{fmt(c.confidence,2)}}</div><div class="metric">gain ${{fmt(c.mean_future_gain)}} std ${{fmt(c.std_future_gain)}}</div><div class="metric">Ψ ${{fmt(c.mean_psi)}} basin ${{fmt(c.basin_precision,2)}}</div></div>`;
-  }}).join("");
-  grid.querySelectorAll(".tile").forEach(t => {{
-    t.addEventListener("mouseenter", () => selectCell(t.dataset.key, false));
-    t.addEventListener("click", () => selectCell(t.dataset.key, true));
+
+function highlightSvgMatch(key) {{
+  document.querySelectorAll(".svg-node").forEach(n => {{
+    n.classList.remove("match-card");
+  }});
+  if (!key) return;
+  document.querySelectorAll('.svg-node[data-key="' + key + '"]').forEach(n => {{
+    n.classList.add("match-card");
   }});
 }}
-function renderDetails() {{
-  const cells = DATA.cells;
-  const c = cells.find(x => cellKey(x) === selectedKey) || byH()[0];
-  if (!c) return;
-  selectedKey = cellKey(c);
-  const detailKeys = [
-    "H","cell_id","n_samples","knee_H","confidence","mean_future_gain",
-    "median_future_gain","std_future_gain","iqr_future_gain","mean_psi",
-    "median_psi","basin_precision","mean_current_peak","mean_time_pct",
-    "source_diversity","run_diversity","scan_priority","split_score",
-    "branch_trial_score","retire_score","sample_more_candidate",
-    "split_candidate","retire_candidate"
-  ];
-  document.getElementById("cellDetails").innerHTML = detailKeys.map(k => `<div>${{k}}</div><div>${{typeof c[k] === "number" ? fmt(c[k]) : c[k]}}</div>`).join("");
-  const samples = DATA.samples.filter(s => String(s.H) === String(c.H) && String(s.cell_id) === String(c.cell_id)).slice(0, 20);
-  document.getElementById("sampleRows").innerHTML = samples.map(s => `<tr><td title="${{s.state_id || ""}}">${{String(s.state_id || "").slice(-18)}}</td><td>${{fmt(s.time_pct,2)}}</td><td>${{fmt(s.current_peak)}}</td><td>${{fmt(s.future_gain_final)}}</td><td>${{fmt(s.psi_pred)}}</td></tr>`).join("");
-}}
+
+// ---------------- Selection / details ----------------
 function selectCell(key, sticky) {{
-  selectedKey = key;
+  STATE.selectedKey = key;
+  renderCards();
+  renderGraph();
+  renderPca();
   renderDetails();
-  renderSvg("graphView", true);
-  renderSvg("pcaView", false);
-  renderGrid();
-}}
-function renderAll() {{
-  if (!selectedKey || !byH().some(c => cellKey(c) === selectedKey)) {{
-    const first = byH().sort((a,b)=>Number(b.scan_priority||0)-Number(a.scan_priority||0))[0];
-    selectedKey = first ? cellKey(first) : null;
+  renderSamples();
+  if (sticky) {{
+    const card = document.querySelector('.cell-card[data-key="' + key + '"]');
+    if (card) card.scrollIntoView({{ block: "nearest", behavior: "smooth" }});
   }}
-  renderDetails();
-  renderSvg("graphView", true);
-  renderSvg("pcaView", false);
-  renderGrid();
 }}
-function init() {{
-  document.getElementById("verdictPill").textContent = DATA.summary.verdict;
-  const hs = [...new Set(DATA.cells.map(c => c.H))].sort((a,b)=>a-b);
-  document.getElementById("hSelect").innerHTML = hs.map(h => `<option value="${{h}}">${{h}}</option>`).join("");
-  document.getElementById("colorSelect").innerHTML = METRICS.map(m => `<option value="${{m}}">${{m}}</option>`).join("");
-  document.getElementById("sizeSelect").innerHTML = ["n_samples","confidence"].map(m => `<option value="${{m}}">${{m}}</option>`).join("");
-  document.getElementById("gridSort").innerHTML = GRID_SORTS.map(m => `<option value="${{m}}">${{m}}</option>`).join("");
-  for (const id of ["hSelect","colorSelect","sizeSelect","gridSort","confFilter","labelsToggle"]) {{
-    document.getElementById(id).addEventListener("change", renderAll);
-    document.getElementById(id).addEventListener("input", renderAll);
+
+function renderDetails() {{
+  const head = document.getElementById("detailHead");
+  const body = document.getElementById("detailBody");
+  const hint = document.getElementById("selCellHint");
+  const c = DATA.cells.find(x => x._key === STATE.selectedKey);
+  if (!c) {{
+    head.style.display = "none";
+    body.innerHTML = '<div style="color:var(--muted-dim); padding:14px 0; text-align:center;">click a card to inspect</div>';
+    hint.textContent = "--";
+    return;
   }}
+  hint.textContent = c._key;
+  const flags = flagsOf(c);
+  const flagHtml = flags.map(f => '<span class="flag ' + f.cls + '"><span class="dot"></span>' + f.name + '</span>').join("");
+  const tagText = c._H === 128 ? "SHORT" : (c._H === 256 ? "MID" : "LONG");
+  head.style.display = "grid";
+  head.innerHTML = ''
+    + '<div class="h-badge h-' + c._H + '"><div class="h-num">' + c._H + '</div><div class="h-tag">' + tagText + '</div></div>'
+    + '<div class="title">'
+    + '<div class="key">C' + c.cell_id + ' <span class="dim">/ H' + c._H + '</span></div>'
+    + '<div class="flags">' + (flagHtml || '<span class="flag" style="background:rgba(120,135,160,.1);color:var(--muted-dim);border-color:#324663aa">stable</span>') + '</div>'
+    + '</div>';
+  const cells = [
+    {{ label: "n / knee", val: (c.n_samples + " / " + c.knee_H), cls: "" }},
+    {{ label: "confidence", val: fmt(c.confidence, 3), cls: "" }},
+    {{ label: "scan_priority", val: fmtSigned(c.scan_priority, 3), cls: Number(c.scan_priority) >= 0 ? "pos" : "neg" }},
+    {{ label: "split_score", val: fmtSigned(c.split_score, 3), cls: "" }},
+    {{ label: "branch_score", val: fmtSigned(c.branch_trial_score, 3), cls: "" }},
+    {{ label: "retire_score", val: fmtSigned(c.retire_score, 3), cls: "" }},
+    {{ label: "mean Ψ", val: fmt(c.mean_psi, 4), cls: "" }},
+    {{ label: "median Ψ", val: fmt(c.median_psi, 4), cls: "" }},
+    {{ label: "mean future gain", val: fmt(c.mean_future_gain, 4), cls: "" }},
+    {{ label: "median gain", val: fmt(c.median_future_gain, 4), cls: "" }},
+    {{ label: "std gain", val: fmt(c.std_future_gain, 4), cls: "" }},
+    {{ label: "iqr gain", val: fmt(c.iqr_future_gain, 4), cls: "" }},
+    {{ label: "basin precision", val: fmt(c.basin_precision, 3), cls: "" }},
+    {{ label: "mean peak", val: fmt(c.mean_current_peak, 3), cls: "" }},
+    {{ label: "mean t%", val: fmt(c.mean_time_pct, 2), cls: "" }},
+    {{ label: "n_samples", val: String(c.n_samples), cls: "" }},
+    {{ label: "src diversity", val: String(c.source_diversity || 0), cls: "" }},
+    {{ label: "run diversity", val: String(c.run_diversity || 0), cls: "" }},
+  ];
+  let html = cells.map(cell => ''
+    + '<div class="kv-cell">'
+    + '<div class="label">' + cell.label + '</div>'
+    + '<div class="val ' + cell.cls + '">' + cell.val + '</div>'
+    + '</div>').join("");
+  // Action recommendation
+  let action = "no action — stable";
+  let actionCls = "";
+  if (c.split_candidate) {{ action = "SPLIT — variance is high, refine cell partition"; actionCls = "neg"; }}
+  else if (c.sample_more_candidate) {{ action = "SAMPLE MORE — promising but undersampled"; actionCls = "pos"; }}
+  else if (c.retire_candidate) {{ action = "RETIRE — saturated and low yield"; actionCls = ""; }}
+  else if (isBranchTopForH(c, BRANCH_THRESH[c._H])) {{ action = "BRANCH TRIAL — strong, well-confident"; actionCls = "pos"; }}
+  html += '<div class="kv-cell action full"><div class="label">recommended</div><div class="val ' + actionCls + '">' + action + '</div></div>';
+  body.innerHTML = '<div class="kv-grid">' + html + '</div>';
+}}
+
+function renderSamples() {{
+  const tbody = document.getElementById("sampleRows");
+  const c = DATA.cells.find(x => x._key === STATE.selectedKey);
+  const hint = document.getElementById("samplesHint");
+  let rows = [];
+  if (c) {{
+    rows = DATA.samples.filter(s => Number(s.H) === c._H && Number(s.cell_id) === Number(c.cell_id));
+    hint.textContent = "for " + c._key;
+  }} else {{
+    rows = DATA.samples.slice(0, 50);
+    hint.textContent = "first 50 (no cell selected)";
+  }}
+  document.getElementById("sampleCount").textContent = rows.length + " rows";
+  if (rows.length === 0) {{
+    tbody.innerHTML = '<tr><td colspan="8" style="color:var(--muted-dim); padding: 16px; text-align:center;">no samples for this cell</td></tr>';
+    return;
+  }}
+  tbody.innerHTML = rows.map(s => {{
+    const sid = String(s.state_id || "");
+    const sidShort = sid.length > 22 ? sid.slice(0, 10) + "..." + sid.slice(-8) : sid;
+    const basin = Number(s.basin_hit || 0) > 0;
+    return '<tr>'
+      + '<td><span class="h-tag h-' + s.H + '">' + s.H + '</span></td>'
+      + '<td>C' + s.cell_id + '</td>'
+      + '<td title="' + sid + '" style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:10.5px;">' + sidShort + '</td>'
+      + '<td>' + fmt(s.time_pct, 2) + '</td>'
+      + '<td>' + fmt(s.current_peak, 3) + '</td>'
+      + '<td>' + fmt(s.future_gain_final, 4) + '</td>'
+      + '<td>' + fmt(s.psi_pred, 4) + '</td>'
+      + '<td class="' + (basin ? "basin-y" : "basin-n") + '">' + (basin ? "&#x2714;" : "&#xb7;") + '</td>'
+      + '</tr>';
+  }}).join("");
+}}
+
+// ---------------- Header / summary strip ----------------
+function renderSummaryStrip() {{
+  const strip = document.getElementById("summaryStrip");
+  const verdict = (DATA.summary && DATA.summary.verdict) || "--";
+  const pill = document.getElementById("verdictPill");
+  pill.textContent = verdict;
+  if (verdict.includes("READY")) pill.classList.remove("bad", "warn");
+  else if (verdict.includes("GAP")) {{ pill.classList.remove("bad"); pill.classList.add("warn"); }}
+  else if (verdict.includes("FAIL")) {{ pill.classList.remove("warn"); pill.classList.add("bad"); }}
+
+  const cov = (DATA.summary && DATA.summary.coverage) || {{}};
+  const cands = (DATA.summary && DATA.summary.candidate_counts) || {{}};
+  const knees = cov.knee_by_H || {{}};
+  const hs = uniqueHs();
+  let chips = "";
+  hs.forEach(h => {{
+    const cnt = DATA.cells.filter(c => c._H === h).length;
+    const knee = knees[String(h)] || knees[h] || "?";
+    const col = H_COLORS[h] ? H_COLORS[h].main : "#888";
+    chips += '<span class="summary-chip">'
+      + '<span class="h-dot" style="background:' + col + '"></span>'
+      + '<span class="label">H' + h + '</span>'
+      + '<span class="num">' + cnt + '</span>'
+      + '<span class="sub">cells &middot; knee ' + knee + '</span>'
+      + '</span>';
+  }});
+  const candKeys = [
+    ["sample_more_candidates", "sample+", "var(--amber)"],
+    ["split_candidates", "split", "var(--rose)"],
+    ["branch_trial_candidates", "branch", "var(--teal)"],
+    ["retire_candidates", "retire", "var(--gray-pill)"],
+  ];
+  candKeys.forEach(([k, label, col]) => {{
+    const c = cands[k] || {{ rows: 0 }};
+    chips += '<span class="summary-chip">'
+      + '<span class="h-dot" style="background:' + col + '"></span>'
+      + '<span class="label">' + label + '</span>'
+      + '<span class="num">' + (c.rows || 0) + '</span>'
+      + '</span>';
+  }});
+  document.getElementById("totalCells").textContent = String(DATA.cells.length);
+  strip.innerHTML = chips;
+}}
+
+// ---------------- Wiring ----------------
+function bindToolbar() {{
+  document.querySelectorAll('.chip[data-toggle="h"]').forEach(el => {{
+    el.addEventListener("click", () => {{
+      const h = Number(el.dataset.h);
+      if (STATE.hSet.has(h)) STATE.hSet.delete(h); else STATE.hSet.add(h);
+      el.classList.toggle("active");
+      renderAll();
+    }});
+  }});
+  document.querySelectorAll('.chip[data-toggle="flag"]').forEach(el => {{
+    el.addEventListener("click", () => {{
+      const f = el.dataset.flag;
+      if (STATE.flags.has(f)) STATE.flags.delete(f); else STATE.flags.add(f);
+      el.classList.toggle("active");
+      renderAll();
+    }});
+  }});
+  document.querySelectorAll('.chip.sort-chip').forEach(el => {{
+    el.addEventListener("click", () => {{
+      const k = el.dataset.sort;
+      if (STATE.sortKey === k) {{
+        STATE.sortDir = -STATE.sortDir;
+      }} else {{
+        STATE.sortKey = k;
+        STATE.sortDir = -1;
+      }}
+      // update arrows + active
+      document.querySelectorAll(".chip.sort-chip").forEach(c2 => {{
+        c2.classList.remove("active");
+        const arr = c2.querySelector(".arrow");
+        if (arr) arr.innerHTML = "";
+      }});
+      el.classList.add("active");
+      const arr = el.querySelector(".arrow");
+      if (arr) arr.innerHTML = STATE.sortDir === -1 ? "&#x25BC;" : "&#x25B2;";
+      renderCards();
+    }});
+  }});
+  const conf = document.getElementById("confFilter");
+  const confVal = document.getElementById("confVal");
+  conf.addEventListener("input", () => {{
+    STATE.minConf = Number(conf.value);
+    confVal.textContent = STATE.minConf.toFixed(2);
+    renderAll();
+  }});
+  const search = document.getElementById("searchBox");
+  search.addEventListener("input", () => {{
+    STATE.search = search.value.trim();
+    renderCards();
+  }});
+  document.getElementById("resetBtn").addEventListener("click", () => {{
+    STATE.hSet = new Set([128, 256, 384]);
+    STATE.flags.clear();
+    STATE.minConf = 0;
+    STATE.search = "";
+    STATE.sortKey = "scan_priority";
+    STATE.sortDir = -1;
+    document.querySelectorAll('.chip[data-toggle="h"]').forEach(c => c.classList.add("active"));
+    document.querySelectorAll('.chip[data-toggle="flag"]').forEach(c => c.classList.remove("active"));
+    document.querySelectorAll(".chip.sort-chip").forEach(c => {{
+      c.classList.remove("active");
+      const arr = c.querySelector(".arrow");
+      if (arr) arr.innerHTML = "";
+    }});
+    const def = document.querySelector('.chip.sort-chip[data-sort="scan_priority"]');
+    if (def) {{ def.classList.add("active"); const arr = def.querySelector(".arrow"); if (arr) arr.innerHTML = "&#x25BC;"; }}
+    conf.value = "0"; confVal.textContent = "0.00";
+    search.value = "";
+    renderAll();
+  }});
   document.getElementById("exportBtn").addEventListener("click", () => {{
-    const payload = JSON.stringify({{selected_cell: selectedKey}}, null, 2);
-    const blob = new Blob([payload], {{type:"application/json"}});
+    const filtered = sortCells(applyFilters());
+    const payload = {{
+      generated_at: new Date().toISOString(),
+      filter: {{
+        H: [...STATE.hSet],
+        flags: [...STATE.flags],
+        min_confidence: STATE.minConf,
+        search: STATE.search,
+        sort_key: STATE.sortKey,
+        sort_dir: STATE.sortDir,
+      }},
+      selected: STATE.selectedKey,
+      cells: filtered.map(c => ({{
+        H: c.H, cell_id: c.cell_id, atlas_cell_key: c._key,
+        n_samples: c.n_samples, knee_H: c.knee_H, confidence: c.confidence,
+        scan_priority: c.scan_priority, split_score: c.split_score,
+        branch_trial_score: c.branch_trial_score, retire_score: c.retire_score,
+        mean_psi: c.mean_psi, mean_future_gain: c.mean_future_gain,
+        std_future_gain: c.std_future_gain, basin_precision: c.basin_precision,
+        sample_more_candidate: !!c.sample_more_candidate,
+        split_candidate: !!c.split_candidate,
+        retire_candidate: !!c.retire_candidate,
+      }})),
+    }};
+    const blob = new Blob([JSON.stringify(payload, null, 2)], {{ type: "application/json" }});
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
-    a.download = "selected_cell.json";
+    a.download = "cell_atlas_view.json";
+    document.body.appendChild(a);
     a.click();
+    a.remove();
     URL.revokeObjectURL(a.href);
   }});
+  // Samples collapsible
+  document.getElementById("samplesToggle").addEventListener("click", () => {{
+    document.getElementById("samplesPanel").classList.toggle("collapsed");
+  }});
+}}
+
+function renderAll() {{
+  // ensure selected cell is still in filtered set; otherwise pick top
+  const filtered = sortCells(applyFilters());
+  if (!STATE.selectedKey || !filtered.some(c => c._key === STATE.selectedKey)) {{
+    STATE.selectedKey = filtered.length ? filtered[0]._key : null;
+  }}
+  renderCards();
+  renderGraph();
+  renderPca();
+  renderDetails();
+  renderSamples();
+}}
+
+function init() {{
+  renderSummaryStrip();
+  bindToolbar();
+  // initial sort indicator
+  const def = document.querySelector('.chip.sort-chip[data-sort="scan_priority"]');
+  if (def) {{ const arr = def.querySelector(".arrow"); if (arr) arr.innerHTML = "&#x25BC;"; }}
+  // initial selection: top scan_priority
+  const sorted = sortCells(applyFilters());
+  STATE.selectedKey = sorted.length ? sorted[0]._key : null;
   renderAll();
 }}
 init();
@@ -854,7 +2131,6 @@ init();
 </body>
 </html>
 """
-
 
 def write_report(path: Path, summary: dict, output_root: Path, candidates: dict[str, pd.DataFrame]) -> None:
     lines = [
