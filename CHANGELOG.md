@@ -5,6 +5,48 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [5.0.0-beta.5] - 2026-04-27
+
+### Changed — 2026-04-27: Phase D3/D3.1/D4 Search Aperture Function lock + 56-example archive cleanup
+
+Patch-level beta release that closes the Phase D K-axis sweep arc, locks the Search Aperture Function K(H) table under strict acceptance, freezes the SAF v1 form as `SAF(K(H), tau=0, s=0)` (no softness needed), and consolidates the `instnct-core/examples/` tree by moving the 2026-04-17-era archive subdir off `main` per the ARCHIVE.md "only mainline belongs on `main`" rule.
+
+- **Repo cleanup — 56 retired examples archived**: The `instnct-core/examples/archive/2026-04/` subdir (56 retired research `.rs` files + README; addition_*, pocket_*, chip_*, circuit_*, conv_*, breed_*, connectome_*, flybrain*, mirror_*, abstract_core_v1..v4, byte_*/byte_opcode_v1, grid3_*, all_binary_mirror) was preserved at the immutable content-snapshot tag `archives/instnct-examples-2026-04-archive-20260427` (pushed to origin before deletion), then physically removed from `main`. Net diff: −21,036 lines / +85 lines. Per-file restore: `git show archives/instnct-examples-2026-04-archive-20260427:instnct-core/examples/archive/2026-04/<file>.rs`.
+- **`instnct-core/examples/README.md` rewrite**: previous version named `evolve_language.rs` as the canonical public-beta runner, but `BETA.md`/`README.md` have promoted `neuron_grower.rs` to current mainline since beta.2. New layout reflects reality: current-mainline runners (`neuron_grower`, `neuron_infer`, `byte_opcode_grower`) → active research runners (Phase A/B/D fixtures: `evolve_mutual_inhibition`, `evolve_bytepair_proj`, `diag_phase_b_panel`) → reference/historical runners (`evolve_language` as the released beta.1 lane) → archive pointer.
+- **`tools/README.md` Phase D analyzer table extended**: 4 new rows for the post-D1 analyzers — `analyze_phase_d2_cross_h.py` (D2 cross-H), `analyze_phase_d3_klock.py` (D3), `analyze_phase_d3_fine_k.py` (D3.1 + SAF formula), `analyze_phase_d4_softness.py` (D4) — each linked to its verdict report under `docs/research/`.
+- **`ARCHIVE.md` re-enumerated**: new content snapshot `archives/instnct-examples-2026-04-archive-20260427` listed; new branch-head snapshot `archive/main-pre-cleanup-20260427` (HEAD `0a6852e`) listed alongside the existing 2026-04-25 → 2026-04-26 entries.
+- **Version metadata sync**: `Cargo.toml` (`5.0.0-beta.4` → `5.0.0-beta.5`), `Cargo.lock` (workspace package row), `CITATION.cff` (`version`, `date-released: 2026-04-27`), `docs/VERSION.json` (`current_release`), `README.md` (Release Snapshot block), `BETA.md` (released-tag line) all bumped.
+
+### Added — 2026-04-26: Phase D3 K-axis lock under strict acceptance
+
+The Search Aperture Function K-axis was tested under strict acceptance (`tau=0`, `s=0`) and the lock margin (0.50pp mean peak over K=9) reveals an H-dependent winner table.
+
+- **D3 coarse K verdict** (`docs/research/PHASE_D3_K_LOCK_VERDICT.md`): 27 runs × 12.96M candidate rows. Result: **K(H) TABLE** — best K is H-dependent. Seed-matched (seeds 42/1042/2042) verdict at H=128/256/384 over K ∈ {1,3,5,9,13,18}. H=256 K=18 beats K=9 by 1.07pp; H=128 and H=384 stay at K=9.
+- **D3.1 fine K verdict at H=256** (`docs/research/PHASE_D3_FINE_K_VERDICT.md`): 20 runs × 15.6M candidate rows over K ∈ {15,18,21,24} resolves the H=256 K-axis region. Result: **H256_K18_LOCK** — K=18 wins by ≥0.50pp lock margin (peak 6.10% mean, 0.73 std) over the fine grid.
+- **SAF K formula readout** (`docs/research/SAF_K_FORMULA_LOCK.md`): provisional K(H) table — `H=128 → K=9 (provisional)`, `H=256 → K=18 (locked)`, `H=384 → K=9 (provisional)`. The null model `P_hit(K,H) = 1 - (1 - p_pos(H))^K` is diagnostic only; the practical lock rule is "smallest near-best K after penalizing instability and cost."
+- **New tooling**: `tools/analyze_phase_d3_klock.py`, `tools/analyze_phase_d3_fine_k.py`. Driver `tools/diag_dimensionality_sweep.py` extended (+85 lines) with `--phase-d3` and `--phase-d3-fine` modes feeding the existing `evolve_mutual_inhibition.rs` Phase B CLI surface.
+
+### Added — 2026-04-26 → 2026-04-27: Phase D4 softness arm verdict — SAF v1 stays strict
+
+D4 tested whether replacing the strict acceptance valve (`tau=0`, `s=0`) with a softness arm (`zero_p` ∈ {0.3, 1.0}) under the locked K(H) recovers any of the H=384 accept-rate collapse without sacrificing peak.
+
+- **D4 verdict** (`docs/research/PHASE_D4_SOFTNESS_VERDICT.md`): 45 runs × 21.6M candidate rows (3 H × 3 policies × 5 seeds). Result: **SAF_STRICT_LOCK** — no `zero_p` arm beats strict by ≥0.50pp on any H. SAF v1 can remain `SAF(K(H), tau=0, s=0)` for this substrate.
+- Per-H winners (n=5, K(H) locked): H=128 K=9 strict 4.62%, H=256 K=18 strict 6.10%, H=384 K=9 strict 5.50%. The `zero_p_1.0` arm at H=384 hits 99.67% accept-rate but does not improve peak; the `zero_p_0.3` arm at H=384 also has 1 collapse vs 0 collapses for strict.
+- **New tooling**: `tools/analyze_phase_d4_softness.py`. Driver `tools/diag_dimensionality_sweep.py` extended (+346 lines) with `--phase-d4` softness mode.
+
+### Verification
+
+The full README "5-Minute Proof" canonical battery was run before tagging:
+
+- `cargo test -p instnct-core --release` — all unit, integration, and doc tests pass (exit 0; 197 + 1 + 2 + 14 = 214 tests).
+- `python tools/run_grower_regression.py` — B0 engine-freeze contract: 6-task regression matrix completes (mean_val 88.4%, max_val 100.0%, mean_neurons 5.67, 0 stalls), evidence bundle written, **Golden Check PASS**.
+- `python tools/run_byte_opcode_acceptance.py` — B1 promotion gate: byte/opcode v1 LUT-translator path correct on all probe entries; direct-path negative control behaves as expected (selective MISSes).
+- `python tools/check_public_surface.py` — public-surface drift check passes (re-run after each doc edit, not just at the end).
+- `python -m compileall Python tools` — all Python sources compile cleanly.
+- `python -m pytest Python/ -q` — 31 passed, 1 skipped.
+
+Pre-cleanup HEAD: `0a6852e` (preserved at `archive/main-pre-cleanup-20260427`, pushed to origin). Cleanup commit: `041c4f7`.
+
 ## [5.0.0-beta.4] - 2026-04-26
 
 ### Changed — 2026-04-26: D2 cross-H verdict + repo consolidation pass
