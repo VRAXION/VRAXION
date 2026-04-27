@@ -96,6 +96,67 @@ The Phase D1 result (K=9 strict is the optimal aperture at H=384, n=5, peak mean
 
 A precursor n=3 H=128 sandbox pilot motivated the formal D2 design and is preserved at tag `archive/research-sandbox-h128-d1-20260426`. The pilot's K=9 ties-wins reading at n=3 was not reproduced at n=5 (D2 finds K=9 strict wins at H=128 too); it appears to have been a small-n artefact.
 
+### Search Aperture Function K(H) lock — Phase D3/D3.1/D4 verdict (2026-04-26 → 2026-04-27)
+
+The D2 K=9 strict winner used a fixed K=9 anchor inherited from D1. Phase D3 then opened the K axis itself under strict acceptance (`tau=0`, `s=0`) over K ∈ {1, 3, 5, 9, 13, 18} (see `docs/research/PHASE_D3_K_LOCK_VERDICT.md`). The result refines the D2 reading.
+
+**Coarse K verdict (D3, n=3 seed-matched):** **K(H) TABLE** — best K is H-dependent under the 0.50pp lock margin.
+
+| H | best K | best peak mean (%) | K=9 peak mean (%) | Δ vs K=9 (pp) |
+|---:|---:|---:|---:|---:|
+| 128 | 9 | 5.27 | 5.27 | 0.00 |
+| 256 | 18 | 6.60 | 5.53 | +1.07 |
+| 384 | 9 | 5.93 | 5.93 | 0.00 |
+
+H=256 wants K=18, not K=9 — overturning the surface reading from D2 that "K=9 generalizes." The result generalizes the *shape* (best K is in the saturated band), but not the specific K value. H=128 and H=384 still settle at K=9 within the lock margin.
+
+**Fine K-grid at H=256 (D3.1, n=5 seed-matched):** **H256_K18_LOCK** — K=18 wins the fine grid (`docs/research/PHASE_D3_FINE_K_VERDICT.md`).
+
+| K | n | peak mean (%) | peak std |
+|---:|---:|---:|---:|
+| 15 | 5 | 5.40 | 0.94 |
+| 18 | 5 | 6.10 | 0.73 |
+| 21 | 5 | 5.98 | 1.23 |
+| 24 | 5 | 5.78 | 0.90 |
+
+No K beats K=18 by ≥0.50pp on the fine grid. K=18 also has the lowest variance.
+
+**SAF v1 formula lock (`docs/research/SAF_K_FORMULA_LOCK.md`):** the operational rule is
+
+```text
+SAF v1 := SAF(K(H), tau = 0, s = 0)
+```
+
+with the provisional K(H) table
+
+| H | K_lock | status |
+|---:|---:|---|
+| 128 | 9 | provisional_lock |
+| 256 | 18 | locked |
+| 384 | 9 | provisional_lock |
+
+The diagnostic null model `P_hit(K, H) = 1 − (1 − p_pos(H))^K` qualitatively matches the saturation profile but is not used as a winner table by itself: H=384 shows that growing K past saturation can increase variance and collapse risk (1 collapse at K=5 and at K=13/18 each in the n=3 grid).
+
+**Softness verdict (D4, n=5 per cell):** **SAF_STRICT_LOCK** — softness does not buy peak (`docs/research/PHASE_D4_SOFTNESS_VERDICT.md`).
+
+D4 holds K(H) at the lock and varies the policy across {strict, zero_p_0.3, zero_p_1.0}. No `zero_p` arm beats strict by ≥0.50pp on any H:
+
+| H | K(H) | strict peak (%) | zero_p_0.3 peak (%) | zero_p_1.0 peak (%) | best |
+|---:|---:|---:|---:|---:|---|
+| 128 | 9 | 4.62 | 4.02 | 4.44 | strict |
+| 256 | 18 | 6.10 | 5.76 | 5.46 | strict |
+| 384 | 9 | 5.50 | 4.00 | 5.30 | strict |
+
+`zero_p_1.0` does drive accept-rate from 17.85% → 99.67% at H=384, but the peak does not improve — the softer valve substitutes plateau drift for selective acceptance, exactly the same pattern D2 saw with the saturated-K ties valve. SAF v1 therefore stays strict.
+
+**Framework consequence.** The "Acceptance Aperture" is now factorised cleanly:
+
+- The **K axis** sets the *sampling* aperture and is H-dependent (table above).
+- The **policy axis** at the locked K is fixed by the strict valve — softness adds variance, not selection.
+- The post-D1/D2 surface claim "K=9 strict generalizes" is upgraded to "K(H) strict generalizes" — same form, H-indexed K.
+
+This is the current SAF v1 lock. Phase E (post-saturation refinement, larger H, new fixtures) starts from this baseline.
+
 ### Bimodality at the edge of regime
 
 `bytepair_proj` H=384 produces five seeds with peaks of `[6.00, 0.00, 2.30, 2.70, 4.80]`. One seed reaches a working substrate, one collapses entirely, three sit in between. The grow-prune cycle is in a knife-edge regime at this H: the same recipe with the same input produces qualitatively different outcomes depending on initial conditions. This is itself a finding about the emergence boundary.
