@@ -28,16 +28,17 @@ Historical surfaces are preserved as **immutable archive tags** (no long-lived a
 - `archives/<topic>-<YYYYMMDD>` — content surfaces (script trees, doc surfaces, residue dumps)
 - `archive/<branch>-<YYYYMMDD>` — previously-live branch heads (frozen on the cleanup date)
 
-**Content snapshots (2026-04-20 → 2026-04-26):**
+**Content snapshots (2026-04-20 → 2026-04-27):**
 
 - `archives/python-research-20260420` — Python research lane (was `instnct/`); migrated to Rust `instnct-core/` on 2026-04-13, archived 2026-04-20.
 - `archives/tools-legacy-diag-20260420` — pre-Fázis-6 `tools/` tree (79 scripts); trimmed to 29 on 2026-04-20.
 - `archives/public-readiness-residue-20260420` — public-release cleanup residue.
 - `archives/tools-cleanup-20260425` — `tools/` 74→22 cleanup pass (53 archived scripts).
+- `archives/instnct-examples-2026-04-archive-20260427` — `instnct-core/examples/archive/2026-04/` tree (56 retired research examples + README) physically removed from `main` on 2026-04-27 per the "only mainline belongs on `main`" rule. Covers the 2026-04-17 era exploration paths: `addition_*`, `pocket_*`, `chip_*`, `circuit_*`, `conv_*`, `breed_*`, `connectome_*`, `flybrain*`, `mirror_*`, `abstract_core_v1..v4`, `byte_*`/`byte_opcode_v1`, `grid3_*`, `all_binary_mirror`.
 
-**Branch-head snapshots (2026-04-25 → 2026-04-26):**
+**Branch-head snapshots (2026-04-25 → 2026-04-27):**
 
-- `archive/main-pre-cleanup-20260425`, `archive/main-pre-cleanup-20260426` — main HEAD before each successive cleanup pass.
+- `archive/main-pre-cleanup-20260425`, `archive/main-pre-cleanup-20260426`, `archive/main-pre-cleanup-20260427` — main HEAD before each successive cleanup pass.
 - `archive/codex-phase-b-logging-smoke-20260425` — codex/phase-b-logging-smoke branch (merged into main 2026-04-25).
 - `archive/research-overnight-sct-empirical-20260425` — overnight SCT research branch.
 - `archive/research-sandbox-h128-d1-20260426` — H=128 D1b cross-H pilot (n=3) sandbox; superseded by formal Phase D2 (n=5) on main.

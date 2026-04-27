@@ -70,7 +70,7 @@ analyzers below produce the artifacts under
 | [`analyze_phase_b_verdict.py`](analyze_phase_b_verdict.py) | B | Confound-vs-intrinsic statistical readout: B0 vs B1..B4 Welch t-tests, decomposition regression. |
 | [`analyze_phase_b1_verdict.py`](analyze_phase_b1_verdict.py) | B.1 | Horizon × accept-ties tie-policy verdict; reads the `panel_timeseries.csv` candidate logs. |
 
-### Phase D / acceptance-aperture analyzers
+### Phase D / acceptance-aperture / SAF K-lock analyzers
 
 | Script | Phase | Purpose |
 | --- | --- | --- |
@@ -79,6 +79,10 @@ analyzers below produce the artifacts under
 | [`diag_phase_d0_5_jackpot_aperture.py`](diag_phase_d0_5_jackpot_aperture.py) | D0.5 | Offline K-resampling on B.1 logs (K ∈ {1, 2, 3, 5, 9}); separates the jackpot/sampling aperture from the acceptance valve. |
 | [`diag_phase_d0_6_minimum_useful.py`](diag_phase_d0_6_minimum_useful.py) | D0.6 | Minimum-useful-improvement threshold sweep. |
 | [`analyze_phase_d1_verdict.py`](analyze_phase_d1_verdict.py) | D1 | Zero-drive policy K × zero_p factorial verdict. |
+| [`analyze_phase_d2_cross_h.py`](analyze_phase_d2_cross_h.py) | D2 | Cross-H replication (H ∈ {128, 256, 384}) of the D1 (K, policy) winner; produces [`docs/research/PHASE_D2_CROSS_H_VERDICT.md`](../docs/research/PHASE_D2_CROSS_H_VERDICT.md). |
+| [`analyze_phase_d3_klock.py`](analyze_phase_d3_klock.py) | D3 | Coarse K-axis lock under strict acceptance (`tau=0`, `s=0`); produces [`docs/research/PHASE_D3_K_LOCK_VERDICT.md`](../docs/research/PHASE_D3_K_LOCK_VERDICT.md). |
+| [`analyze_phase_d3_fine_k.py`](analyze_phase_d3_fine_k.py) | D3.1 | Fine K-grid (K ∈ {15, 18, 21, 24}) at H=256 + SAF K formula readout; produces [`docs/research/PHASE_D3_FINE_K_VERDICT.md`](../docs/research/PHASE_D3_FINE_K_VERDICT.md) and [`docs/research/SAF_K_FORMULA_LOCK.md`](../docs/research/SAF_K_FORMULA_LOCK.md). |
+| [`analyze_phase_d4_softness.py`](analyze_phase_d4_softness.py) | D4 | Softness arm (`zero_p`) lock under the SAF K(H) lock; produces [`docs/research/PHASE_D4_SOFTNESS_VERDICT.md`](../docs/research/PHASE_D4_SOFTNESS_VERDICT.md). |
 | [`diag_constructability_analysis.py`](diag_constructability_analysis.py) | post-D | C_K decomposition regression across all arms (V_raw, M_pos, A, I_proxy, D_eff, cost_eval, R_neg). |
 | [`diag_byte_unit_latent_dim_sweep.py`](diag_byte_unit_latent_dim_sweep.py) | A↔Block A | Latent-dim sweep for byte-unit-fixture cross-check. |
 
