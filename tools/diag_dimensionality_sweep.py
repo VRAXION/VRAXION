@@ -13,6 +13,7 @@ and writes candidate logs, checkpoints, run metadata, and panel summaries.
 `--phase-d8-instrumentation` runs D8.3 instrumentation-only over locked SAF v1.
 `--phase-d8-archive-microprobe` runs D8.4a live archive-parent switching microprobe.
 `--phase-d8-p2-microprobe` runs D8.4b live P2_PSI_CONF archive-parent microprobe.
+`--phase-d8-cell-scan` runs D8.7 observer-only cell-distribution spin.
 """
 from __future__ import annotations
 
@@ -84,6 +85,8 @@ def parse_args() -> argparse.Namespace:
                    help="run Phase D8.4a archive-parent switching microprobe for evolve_mutual_inhibition")
     p.add_argument("--phase-d8-p2-microprobe", action="store_true",
                    help="run Phase D8.4b P2_PSI_CONF archive-parent microprobe for evolve_mutual_inhibition")
+    p.add_argument("--phase-d8-cell-scan", action="store_true",
+                   help="run Phase D8.7 observer-only cell-distribution spin for evolve_mutual_inhibition")
     p.add_argument("--arms", default="B0,B1,B2,B3,B4",
                    help="comma-separated Phase B arms to run")
     p.add_argument("--panel-interval", type=int, default=None,
@@ -423,6 +426,12 @@ D8_P2_MICROPROBE_ARMS = [
     "D8B_P2_PSI_CONF_MED_DUTY",
 ]
 
+D8_CELL_SCAN_ARMS = [
+    "D8C_H128_CELL_SCAN_OBSERVER",
+    "D8C_H256_CELL_SCAN_OBSERVER",
+    "D8C_H384_CELL_SCAN_OBSERVER",
+]
+
 
 def phase_d8_archive_microprobe_arm_config(arm: str, base_steps: int, h: int | None = None) -> dict:
     """D8.4a live archive-parent switching over locked SAF v1.
@@ -513,6 +522,43 @@ def phase_d8_p2_microprobe_arm_config(arm: str, base_steps: int, h: int | None =
             "archive_p2_model": str(model_path),
         }
     raise ValueError(f"unknown Phase D8 P2 microprobe arm: {arm}")
+
+
+def phase_d8_cell_scan_arm_config(arm: str, base_steps: int, h: int | None = None, model_path: Path | None = None) -> dict:
+    """D8.7 observer-only cell-distribution spin.
+
+    This keeps SAF v1 fully unchanged and does not restore archive parents.
+    The P2 model is loaded only to log archive_cell_id, psi_pred, and
+    cell_confidence for every panel, so the cell atlas can show how the live
+    trajectory populates basins.
+    """
+    if h is None:
+        raise ValueError("Phase D8 cell scan config requires H")
+    k_by_h = {128: 9, 256: 18, 384: 9}
+    if h not in k_by_h:
+        raise ValueError(f"Phase D8 cell scan supports only H in {sorted(k_by_h)}, got {h}")
+    expected_arm = f"D8C_H{h}_CELL_SCAN_OBSERVER"
+    if arm != expected_arm:
+        raise ValueError(f"unknown Phase D8 cell scan arm: {arm}")
+    return {
+        **phase_d1_arm_config("D1_K1_STRICT", base_steps),
+        "H": h,
+        "jackpot": k_by_h[h],
+        "operator_policy": None,
+        "operator_prior": None,
+        "operator_epsilon_random": None,
+        "operator_weight_floor": None,
+        "operator_weight_cap": None,
+        "operator_ewma_alpha": None,
+        "d8_state_log": True,
+        "instrumentation_schema_version": "d8_state_log_v1",
+        "archive_parent_policy": "current-best",
+        "archive_parent_log": True,
+        "archive_max_size": 64,
+        "archive_switch_interval_panels": 1,
+        "archive_min_cell_confidence": 0.0,
+        "archive_p2_model": str(model_path),
+    }
 
 
 def generate_d8_p2_model(out_dir: Path) -> Path:
@@ -1725,6 +1771,8 @@ def main_phase_d8_archive_microprobe(args: argparse.Namespace) -> int:
     for fx in fixtures:
         for arm in arms:
             for h in sorted(requested_h):
+                if f"H{h}_" not in arm:
+                    continue
                 for i in range(args.seeds):
                     cells.append((fx, arm, h, seed_from_idx(i)))
     todo = [cell for cell in cells if cell not in done]
@@ -1928,6 +1976,124 @@ def main_phase_d8_p2_microprobe(args: argparse.Namespace) -> int:
     return rc
 
 
+def main_phase_d8_cell_scan(args: argparse.Namespace) -> int:
+    fixtures = [f.strip() for f in args.fixtures.split(",") if f.strip()]
+    if fixtures != ["mutual_inhibition"]:
+        raise SystemExit("--phase-d8-cell-scan currently supports only --fixtures mutual_inhibition")
+    requested_h = {int(x) for x in args.H_values.split(",") if x.strip()}
+    valid_h = {128, 256, 384}
+    invalid_h = sorted(requested_h - valid_h)
+    if invalid_h:
+        raise SystemExit(f"--phase-d8-cell-scan supports only H in {sorted(valid_h)}, got {invalid_h}")
+    arms = D8_CELL_SCAN_ARMS if args.arms == "B0,B1,B2,B3,B4" else [a.strip() for a in args.arms.split(",") if a.strip()]
+    for arm in arms:
+        if arm not in D8_CELL_SCAN_ARMS:
+            raise SystemExit(f"unknown Phase D8 cell scan arm: {arm}")
+
+    out_dir = Path(args.out)
+    out_dir.mkdir(parents=True, exist_ok=True)
+    model_path = generate_d8_p2_model(out_dir)
+    results: list[dict] = []
+    done: set[tuple] = set()
+    if args.resume:
+        results, done = load_resume(out_dir, phase_b=True)
+        print(f"  resume: loaded {len(results)} previous results, skipping {len(done)} cells")
+
+    cells = []
+    for fx in fixtures:
+        for arm in arms:
+            for h in sorted(requested_h):
+                if f"H{h}_" not in arm:
+                    continue
+                for i in range(args.seeds):
+                    cells.append((fx, arm, h, seed_from_idx(i)))
+    todo = [cell for cell in cells if cell not in done]
+    print(f"  Phase D8.7 cell scan plan: {len(cells)} total cells, {len(todo)} to run")
+    print(f"  fixtures: {fixtures}")
+    print(f"  arms:     {arms}")
+    print(f"  H values: {sorted(requested_h)}")
+    print(f"  seeds:    {args.seeds} per arm -> seed pattern 42 + i*1000")
+    print(f"  steps:    {args.steps}")
+    print(f"  panel interval: {args.panel_interval}")
+    print(f"  p2 model: {model_path}")
+    print(f"  jobs:     {args.jobs}")
+    print(f"  out:      {out_dir}")
+    if args.panel_interval is None:
+        raise SystemExit("--phase-d8-cell-scan requires --panel-interval")
+
+    if args.dry_run:
+        for fx, arm, h, seed in todo:
+            cfg = phase_d8_cell_scan_arm_config(arm, args.steps, h, model_path)
+            print(f"  DRY-RUN fixture={fx} arm={arm} H={h} seed={seed} "
+                  f"steps={cfg['steps']} jackpot={cfg['jackpot']} "
+                  f"archive_policy={cfg['archive_parent_policy']} p2_log=on "
+                  f"expected_rows={cfg['steps'] * cfg['jackpot']}")
+        return 0
+
+    prebuild_rc = prebuild_phase_examples(fixtures)
+    if prebuild_rc != 0:
+        return prebuild_rc
+
+    t_sweep = time.time()
+    jobs = max(1, args.jobs)
+    first_failure = 0
+    print(f"\nRunning Phase D8.7 cell scan with {jobs} parallel jobs", flush=True)
+    with ThreadPoolExecutor(max_workers=jobs) as executor:
+        futures = {}
+        for idx, (fx, arm, h, seed) in enumerate(todo, 1):
+            cfg = phase_d8_cell_scan_arm_config(arm, args.steps, h, model_path)
+            print(f"  queue [{idx}/{len(todo)}] fixture={fx} arm={arm} H={h} K={cfg['jackpot']} seed={seed}", flush=True)
+            future = executor.submit(
+                run_phase_b_cell,
+                fx,
+                "D8C",
+                arm,
+                h,
+                seed,
+                args.steps,
+                args.corpus,
+                args.packed,
+                out_dir,
+                args.panel_interval,
+                cfg,
+            )
+            futures[future] = (idx, fx, arm, h, seed)
+        for future in as_completed(futures):
+            idx, fx, arm, h, seed = futures[future]
+            elapsed = time.time() - t_sweep
+            try:
+                summary, rc, wall = future.result()
+            except Exception as exc:
+                summary, rc, wall = None, 1, 0.0
+                print(f"  FAILED [{idx}/{len(todo)}] elapsed={elapsed/60:.1f}m fixture={fx} arm={arm} H={h} seed={seed}: {exc}", file=sys.stderr, flush=True)
+            if summary is None:
+                first_failure = first_failure or (rc or 1)
+                print(f"  FAILED [{idx}/{len(todo)}] elapsed={elapsed/60:.1f}m fixture={fx} arm={arm} H={h} seed={seed} rc={rc} wall={wall:.1f}s", file=sys.stderr, flush=True)
+                write_artifacts(out_dir, results)
+                continue
+            summary.setdefault("wall_clock_s", wall)
+            results.append(summary)
+            write_artifacts(out_dir, results)
+            print(f"  done [{idx}/{len(todo)}] elapsed={elapsed/60:.1f}m fixture={fx} arm={arm} H={h} seed={seed}: "
+                  f"peak={summary['peak_acc']*100:.2f}% final={summary['final_acc']*100:.2f}% "
+                  f"accept={summary['accept_rate_pct']:.2f}% rows={summary['expected_candidate_rows']} "
+                  f"wall={summary['wall_clock_s']:.1f}s", flush=True)
+    if first_failure:
+        return first_failure
+    print_aggregate(results)
+    rc = run_constructability_analysis(out_dir)
+    analyzer = REPO_ROOT / "tools" / "analyze_phase_d8_cell_scan_delta.py"
+    if rc == 0 and analyzer.exists():
+        proc = subprocess.run([sys.executable, str(analyzer), "--root", str(out_dir)], cwd=REPO_ROOT, capture_output=True, text=True)
+        (out_dir / "d8_cell_scan_delta_stdout.txt").write_text(proc.stdout)
+        (out_dir / "d8_cell_scan_delta_stderr.txt").write_text(proc.stderr)
+        print(proc.stdout)
+        rc = proc.returncode
+    print(f"\nSweep total wall clock: {(time.time() - t_sweep) / 60:.1f} min")
+    print(f"Artifacts: {out_dir / 'results.json'}  {out_dir / 'results.csv'}")
+    return rc
+
+
 def main_default(args: argparse.Namespace) -> int:
     fixtures = [f.strip() for f in args.fixtures.split(",") if f.strip()]
     h_values = [int(x) for x in args.H_values.split(",")]
@@ -1977,8 +2143,8 @@ def main_default(args: argparse.Namespace) -> int:
 
 def main() -> int:
     args = parse_args()
-    if sum([args.phase_b, args.phase_b1, args.phase_d1, args.phase_d2, args.phase_d3_klock, args.phase_d3_fine_k, args.phase_d4_softness, args.phase_d7_bandit, args.phase_d8_instrumentation, args.phase_d8_archive_microprobe, args.phase_d8_p2_microprobe]) > 1:
-        raise SystemExit("--phase-b, --phase-b1, --phase-d1, --phase-d2, --phase-d3-klock, --phase-d3-fine-k, --phase-d4-softness, --phase-d7-bandit, --phase-d8-instrumentation, --phase-d8-archive-microprobe, and --phase-d8-p2-microprobe are mutually exclusive")
+    if sum([args.phase_b, args.phase_b1, args.phase_d1, args.phase_d2, args.phase_d3_klock, args.phase_d3_fine_k, args.phase_d4_softness, args.phase_d7_bandit, args.phase_d8_instrumentation, args.phase_d8_archive_microprobe, args.phase_d8_p2_microprobe, args.phase_d8_cell_scan]) > 1:
+        raise SystemExit("--phase-b, --phase-b1, --phase-d1, --phase-d2, --phase-d3-klock, --phase-d3-fine-k, --phase-d4-softness, --phase-d7-bandit, --phase-d8-instrumentation, --phase-d8-archive-microprobe, --phase-d8-p2-microprobe, and --phase-d8-cell-scan are mutually exclusive")
     if args.phase_b:
         return main_phase_b(args)
     if args.phase_b1:
@@ -2001,6 +2167,8 @@ def main() -> int:
         return main_phase_d8_archive_microprobe(args)
     if args.phase_d8_p2_microprobe:
         return main_phase_d8_p2_microprobe(args)
+    if args.phase_d8_cell_scan:
+        return main_phase_d8_cell_scan(args)
     return main_default(args)
 
 
