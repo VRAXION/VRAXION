@@ -64,8 +64,10 @@ pub use fitness::{cosine_similarity, cosine_to_onehot, softmax};
 #[doc(inline)]
 pub use evolution::{
     evolution_step, evolution_step_cow, evolution_step_jackpot, evolution_step_jackpot_traced,
-    evolution_step_jackpot_traced_with_policy, AcceptancePolicy, CandidateTraceRecord,
-    EvolutionConfig, StepOutcome,
+    evolution_step_jackpot_traced_with_policy,
+    evolution_step_jackpot_traced_with_policy_and_operator_weights, mutation_operator_baseline_probability,
+    mutation_operator_ids, mutation_operator_index, AcceptancePolicy, CandidateTraceRecord,
+    EvolutionConfig, MutationOperatorSpec, StepOutcome, MUTATION_OPERATORS,
 };
 
 #[doc(inline)]

@@ -14,6 +14,149 @@ use rand::rngs::StdRng;
 use rand::Rng;
 use std::time::Instant;
 
+/// Canonical mutation operator definition used by baseline, traced, and
+/// weighted-sampling evolution paths.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct MutationOperatorSpec {
+    /// Stable identifier written into candidate logs.
+    pub id: &'static str,
+    /// Baseline schedule weight out of 100.
+    pub baseline_weight: u32,
+}
+
+/// Baseline operator schedule. The order and weights are part of the
+/// experiment contract; keep this table in sync with historical logs.
+pub const MUTATION_OPERATORS: [MutationOperatorSpec; 11] = [
+    MutationOperatorSpec {
+        id: "add_edge",
+        baseline_weight: 22,
+    },
+    MutationOperatorSpec {
+        id: "remove_edge",
+        baseline_weight: 13,
+    },
+    MutationOperatorSpec {
+        id: "rewire",
+        baseline_weight: 9,
+    },
+    MutationOperatorSpec {
+        id: "reverse",
+        baseline_weight: 13,
+    },
+    MutationOperatorSpec {
+        id: "mirror",
+        baseline_weight: 6,
+    },
+    MutationOperatorSpec {
+        id: "enhance",
+        baseline_weight: 7,
+    },
+    MutationOperatorSpec {
+        id: "theta",
+        baseline_weight: 5,
+    },
+    MutationOperatorSpec {
+        id: "channel",
+        baseline_weight: 10,
+    },
+    MutationOperatorSpec {
+        id: "loop2",
+        baseline_weight: 5,
+    },
+    MutationOperatorSpec {
+        id: "loop3",
+        baseline_weight: 5,
+    },
+    MutationOperatorSpec {
+        id: "projection_weight",
+        baseline_weight: 5,
+    },
+];
+
+/// Stable operator identifiers in canonical schedule order.
+pub fn mutation_operator_ids() -> impl Iterator<Item = &'static str> {
+    MUTATION_OPERATORS.iter().map(|op| op.id)
+}
+
+/// Return the canonical index for an operator id.
+pub fn mutation_operator_index(operator_id: &str) -> Option<usize> {
+    MUTATION_OPERATORS
+        .iter()
+        .position(|op| op.id == operator_id)
+}
+
+/// Baseline probability for a canonical operator index.
+pub fn mutation_operator_baseline_probability(index: usize) -> f64 {
+    MUTATION_OPERATORS[index].baseline_weight as f64 / 100.0
+}
+
+fn sample_baseline_operator(rng: &mut impl Rng) -> usize {
+    let roll = rng.gen_range(0..100u32);
+    let mut upper = 0u32;
+    for (idx, spec) in MUTATION_OPERATORS.iter().enumerate() {
+        upper += spec.baseline_weight;
+        if roll < upper {
+            return idx;
+        }
+    }
+    MUTATION_OPERATORS.len() - 1
+}
+
+fn sample_weighted_operator(weights: &[f64], rng: &mut impl Rng) -> usize {
+    assert_eq!(
+        weights.len(),
+        MUTATION_OPERATORS.len(),
+        "operator weights must match canonical operator count"
+    );
+    let total: f64 = weights.iter().copied().filter(|w| *w > 0.0).sum();
+    assert!(total.is_finite() && total > 0.0, "operator weights must have positive finite sum");
+
+    let mut roll = rng.gen_range(0.0..total);
+    for (idx, weight) in weights.iter().copied().enumerate() {
+        if weight <= 0.0 {
+            continue;
+        }
+        if roll < weight {
+            return idx;
+        }
+        roll -= weight;
+    }
+    weights
+        .iter()
+        .rposition(|w| *w > 0.0)
+        .unwrap_or(MUTATION_OPERATORS.len() - 1)
+}
+
+fn apply_mutation_operator(
+    operator_index: usize,
+    net: &mut Network,
+    projection: &mut Int8Projection,
+    mutation_rng: &mut impl Rng,
+    weight_backup: Option<&mut Option<WeightBackup>>,
+) -> bool {
+    match MUTATION_OPERATORS[operator_index].id {
+        "add_edge" => net.mutate_add_edge(mutation_rng),
+        "remove_edge" => net.mutate_remove_edge(mutation_rng),
+        "rewire" => net.mutate_rewire(mutation_rng),
+        "reverse" => net.mutate_reverse(mutation_rng),
+        "mirror" => net.mutate_mirror(mutation_rng),
+        "enhance" => net.mutate_enhance(mutation_rng),
+        "theta" => net.mutate_theta(mutation_rng),
+        "channel" => net.mutate_channel(mutation_rng),
+        "loop2" => net.mutate_add_loop(mutation_rng, 2),
+        "loop3" => net.mutate_add_loop(mutation_rng, 3),
+        "projection_weight" => {
+            if let Some(slot) = weight_backup {
+                *slot = Some(projection.mutate_one(mutation_rng));
+            } else {
+                let _ = projection.mutate_one(mutation_rng);
+            }
+            true
+        }
+        other => panic!("unknown canonical mutation operator: {other}"),
+    }
+}
+
 /// Acceptance policy for best-of-K evolution steps.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum AcceptancePolicy {
@@ -138,9 +281,8 @@ pub struct CandidateTraceRecord {
 ///
 /// **Quality gate:** `accept_ties` controls whether equal fitness (ties) are accepted.
 ///
-/// Mutation schedule (hardcoded, matching proven overnight config):
-/// - 25% add_edge, 15% remove_edge, 10% rewire, 15% reverse
-/// - 7% mirror, 8% enhance, 5% theta, 5% channel, 10% projection weight
+/// Mutation schedule uses [`MUTATION_OPERATORS`], preserving the historical
+/// baseline weights exactly.
 ///
 /// # Example
 ///
@@ -184,27 +326,16 @@ where
     let edges_before_mutation = net.edge_count();
     let net_snapshot = net.save_state();
 
-    // Mutate: topology (90%) + loop (5%) + projection weight (5%)
-    // Loop mutations create recurrent circuits atomically — critical for sparse networks.
-    let roll = mutation_rng.gen_range(0..100u32);
+    // Mutate with the canonical baseline schedule.
     let mut weight_backup: Option<WeightBackup> = None;
-    let mutated = match roll {
-        0..22 => net.mutate_add_edge(mutation_rng), // 22% topology growth
-        22..35 => net.mutate_remove_edge(mutation_rng), // 13% topology pruning
-        35..44 => net.mutate_rewire(mutation_rng),  // 9% rewire existing edge
-        44..57 => net.mutate_reverse(mutation_rng), // 13% flip edge direction
-        57..63 => net.mutate_mirror(mutation_rng),  // 6% add reverse of existing
-        63..70 => net.mutate_enhance(mutation_rng), // 7% connect to high-degree neuron
-        70..75 => net.mutate_theta(mutation_rng),   // 5% threshold perturbation
-        75..85 => net.mutate_channel(mutation_rng), // 10% phase channel perturbation
-        85..90 => net.mutate_add_loop(mutation_rng, 2), // 5% loop-2 (bidirectional pair)
-        90..95 => net.mutate_add_loop(mutation_rng, 3), // 5% loop-3 (triangle circuit)
-        _ => {
-            // 5% projection weight perturbation
-            weight_backup = Some(projection.mutate_one(mutation_rng));
-            true
-        }
-    };
+    let operator_index = sample_baseline_operator(mutation_rng);
+    let mutated = apply_mutation_operator(
+        operator_index,
+        net,
+        projection,
+        mutation_rng,
+        Some(&mut weight_backup),
+    );
 
     if !mutated {
         // RNG sync: run the "after" eval to advance eval_rng by the same amount
@@ -293,25 +424,9 @@ where
         net.restore_state(&parent_snapshot);
         *projection = parent_projection.clone();
 
-        // Mutate (same 90/5/5 schedule as evolution_step)
-        let roll = mutation_rng.gen_range(0..100u32);
-        let mut _weight_backup: Option<WeightBackup> = None;
-        let mutated = match roll {
-            0..22 => net.mutate_add_edge(mutation_rng),
-            22..35 => net.mutate_remove_edge(mutation_rng),
-            35..44 => net.mutate_rewire(mutation_rng),
-            44..57 => net.mutate_reverse(mutation_rng),
-            57..63 => net.mutate_mirror(mutation_rng),
-            63..70 => net.mutate_enhance(mutation_rng),
-            70..75 => net.mutate_theta(mutation_rng),
-            75..85 => net.mutate_channel(mutation_rng),
-            85..90 => net.mutate_add_loop(mutation_rng, 2),
-            90..95 => net.mutate_add_loop(mutation_rng, 3),
-            _ => {
-                _weight_backup = Some(projection.mutate_one(mutation_rng));
-                true
-            }
-        };
+        let operator_index = sample_baseline_operator(mutation_rng);
+        let mutated =
+            apply_mutation_operator(operator_index, net, projection, mutation_rng, None);
 
         if !mutated {
             continue;
@@ -407,11 +522,45 @@ pub fn evolution_step_jackpot_traced_with_policy<F, T>(
     projection: &mut Int8Projection,
     mutation_rng: &mut impl Rng,
     eval_rng: &mut StdRng,
+    fitness_fn: F,
+    config: &EvolutionConfig,
+    acceptance_policy: AcceptancePolicy,
+    candidates: usize,
+    step: usize,
+    trace: T,
+) -> StepOutcome
+where
+    F: FnMut(&mut Network, &Int8Projection, &mut StdRng) -> f64,
+    T: FnMut(&CandidateTraceRecord),
+{
+    evolution_step_jackpot_traced_with_policy_and_operator_weights(
+        net,
+        projection,
+        mutation_rng,
+        eval_rng,
+        fitness_fn,
+        config,
+        acceptance_policy,
+        candidates,
+        step,
+        None,
+        trace,
+    )
+}
+
+/// Run a traced jackpot evolution step with explicit acceptance policy and
+/// optional weighted operator sampling.
+pub fn evolution_step_jackpot_traced_with_policy_and_operator_weights<F, T>(
+    net: &mut Network,
+    projection: &mut Int8Projection,
+    mutation_rng: &mut impl Rng,
+    eval_rng: &mut StdRng,
     mut fitness_fn: F,
     config: &EvolutionConfig,
     acceptance_policy: AcceptancePolicy,
     candidates: usize,
     step: usize,
+    operator_weights: Option<&[f64]>,
     mut trace: T,
 ) -> StepOutcome
 where
@@ -440,24 +589,14 @@ where
         net.restore_state(&parent_snapshot);
         *projection = parent_projection.clone();
 
-        let roll = mutation_rng.gen_range(0..100u32);
-        let mut _weight_backup: Option<WeightBackup> = None;
-        let (operator_id, mutated) = match roll {
-            0..22 => ("add_edge", net.mutate_add_edge(mutation_rng)),
-            22..35 => ("remove_edge", net.mutate_remove_edge(mutation_rng)),
-            35..44 => ("rewire", net.mutate_rewire(mutation_rng)),
-            44..57 => ("reverse", net.mutate_reverse(mutation_rng)),
-            57..63 => ("mirror", net.mutate_mirror(mutation_rng)),
-            63..70 => ("enhance", net.mutate_enhance(mutation_rng)),
-            70..75 => ("theta", net.mutate_theta(mutation_rng)),
-            75..85 => ("channel", net.mutate_channel(mutation_rng)),
-            85..90 => ("loop2", net.mutate_add_loop(mutation_rng, 2)),
-            90..95 => ("loop3", net.mutate_add_loop(mutation_rng, 3)),
-            _ => {
-                _weight_backup = Some(projection.mutate_one(mutation_rng));
-                ("projection_weight", true)
-            }
+        let operator_index = if let Some(weights) = operator_weights {
+            sample_weighted_operator(weights, mutation_rng)
+        } else {
+            sample_baseline_operator(mutation_rng)
         };
+        let operator_id = MUTATION_OPERATORS[operator_index].id;
+        let mutated =
+            apply_mutation_operator(operator_index, net, projection, mutation_rng, None);
 
         if !mutated {
             records.push(CandidateTraceRecord {

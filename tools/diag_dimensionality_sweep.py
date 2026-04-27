@@ -9,6 +9,7 @@ and writes candidate logs, checkpoints, run metadata, and panel summaries.
 `--phase-d3-klock` runs the coarse K-lock sweep for the Search Aperture Function.
 `--phase-d3-fine-k` runs the H=256 fine K-lock sweep.
 `--phase-d4-softness` runs the locked-K softness sweep.
+`--phase-d7-bandit` runs the Safe Operator Bandit over locked SAF v1.
 """
 from __future__ import annotations
 
@@ -25,6 +26,23 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_CORPUS = REPO_ROOT / "instnct-core" / "tests" / "fixtures" / "alice_corpus.txt"
 DEFAULT_PACKED = REPO_ROOT / "output" / "block_c_bytepair_champion" / "packed.bin"
+DEFAULT_D6_OPERATOR_SUMMARY = (
+    REPO_ROOT / "output" / "phase_d6_trajectory_field_20260427" / "analysis" / "operator_field_summary.csv"
+)
+
+CANONICAL_OPERATORS = [
+    ("add_edge", 0.22),
+    ("remove_edge", 0.13),
+    ("rewire", 0.09),
+    ("reverse", 0.13),
+    ("mirror", 0.06),
+    ("enhance", 0.07),
+    ("theta", 0.05),
+    ("channel", 0.10),
+    ("loop2", 0.05),
+    ("loop3", 0.05),
+    ("projection_weight", 0.05),
+]
 
 
 def parse_args() -> argparse.Namespace:
@@ -54,6 +72,8 @@ def parse_args() -> argparse.Namespace:
                    help="run Phase D3.1 fine K-lock strict arms for evolve_mutual_inhibition")
     p.add_argument("--phase-d4-softness", action="store_true",
                    help="run Phase D4 locked-K softness arms for evolve_mutual_inhibition")
+    p.add_argument("--phase-d7-bandit", action="store_true",
+                   help="run Phase D7.1 safe operator-bandit arms for evolve_mutual_inhibition")
     p.add_argument("--arms", default="B0,B1,B2,B3,B4",
                    help="comma-separated Phase B arms to run")
     p.add_argument("--panel-interval", type=int, default=None,
@@ -303,6 +323,116 @@ def phase_d4_softness_arm_config(arm: str, base_steps: int) -> dict:
     return configs[arm]
 
 
+D7_BANDIT_ARMS = [
+    "D7_BASELINE",
+    "D7_STATIC_PRIOR",
+    "D7_PRIOR_EWMA",
+]
+
+
+def phase_d7_bandit_arm_config(arm: str, base_steps: int, h: int | None = None, prior_path: Path | None = None) -> dict:
+    if h is None:
+        raise ValueError("Phase D7 arm config requires H")
+    k_by_h = {128: 9, 256: 18, 384: 9}
+    if h not in k_by_h:
+        raise ValueError(f"Phase D7 supports only H in {sorted(k_by_h)}, got {h}")
+    cfg = {
+        **phase_d1_arm_config("D1_K1_STRICT", base_steps),
+        "H": h,
+        "jackpot": k_by_h[h],
+        "operator_policy": "baseline",
+        "operator_prior": None,
+        "operator_epsilon_random": 0.15,
+        "operator_weight_floor": 0.25,
+        "operator_weight_cap": 4.0,
+        "operator_ewma_alpha": 0.05,
+    }
+    if arm == "D7_BASELINE":
+        return cfg
+    if arm == "D7_STATIC_PRIOR":
+        cfg.update({"operator_policy": "static-prior", "operator_prior": str(prior_path)})
+        return cfg
+    if arm == "D7_PRIOR_EWMA":
+        cfg.update({"operator_policy": "prior-ewma", "operator_prior": str(prior_path)})
+        return cfg
+    raise ValueError(f"unknown Phase D7 bandit arm: {arm}")
+
+
+def generate_operator_prior(out_dir: Path) -> Path:
+    """Generate D7 operator prior from the D6.1 operator summary."""
+    if not DEFAULT_D6_OPERATOR_SUMMARY.exists():
+        raise FileNotFoundError(f"missing D6.1 operator summary: {DEFAULT_D6_OPERATOR_SUMMARY}")
+    out_dir.mkdir(parents=True, exist_ok=True)
+    prior_path = out_dir / "operator_prior_by_H.csv"
+    table_path = out_dir / "canonical_operator_table.csv"
+
+    with table_path.open("w", newline="") as f:
+        w = csv.DictWriter(f, fieldnames=["operator_id", "baseline_probability"])
+        w.writeheader()
+        for operator_id, baseline in CANONICAL_OPERATORS:
+            w.writerow({"operator_id": operator_id, "baseline_probability": baseline})
+
+    usefulness: dict[tuple[int, str], float] = {}
+    with DEFAULT_D6_OPERATOR_SUMMARY.open(newline="") as f:
+        for row in csv.DictReader(f):
+            h = int(float(row["H"]))
+            operator_id = row["operator_id"]
+            usefulness[(h, operator_id)] = float(row["usefulness_weighted"])
+
+    fields = [
+        "H",
+        "operator_id",
+        "usefulness_weighted",
+        "baseline_probability",
+        "raw_multiplier",
+        "clipped_multiplier",
+        "final_probability",
+    ]
+    with prior_path.open("w", newline="") as f:
+        w = csv.DictWriter(f, fieldnames=fields)
+        w.writeheader()
+        for h in [128, 256, 384]:
+            missing = [op for op, _ in CANONICAL_OPERATORS if (h, op) not in usefulness]
+            if missing:
+                raise ValueError(f"D6.1 summary missing H={h} operators: {missing}")
+            raw_rows = []
+            # Use weighted usefulness relative to H-local baseline-weighted mean.
+            weighted_mean = sum(usefulness[(h, op)] * base for op, base in CANONICAL_OPERATORS)
+            if weighted_mean <= 0:
+                raise ValueError(f"non-positive usefulness mean for H={h}")
+            for op, base in CANONICAL_OPERATORS:
+                raw_multiplier = usefulness[(h, op)] / weighted_mean
+                clipped = min(4.0, max(0.25, raw_multiplier))
+                raw_rows.append((op, usefulness[(h, op)], base, raw_multiplier, clipped, base * clipped))
+            norm = sum(r[-1] for r in raw_rows)
+            final_rows = []
+            for op, u, base, raw_multiplier, clipped, weighted in raw_rows:
+                weighted_prob = weighted / norm
+                final_probability = 0.85 * weighted_prob + 0.15 * base
+                final_rows.append((op, u, base, raw_multiplier, clipped, final_probability))
+            total = sum(r[-1] for r in final_rows)
+            if abs(total - 1.0) > 1e-9:
+                raise ValueError(f"H={h} probabilities do not sum to 1: {total}")
+            for op, u, base, raw_multiplier, clipped, final_probability in final_rows:
+                if final_probability <= 0:
+                    raise ValueError(f"H={h} operator={op} has non-positive final probability")
+                final_multiplier = final_probability / base
+                if final_multiplier < 0.25 - 1e-9 or final_multiplier > 4.0 + 1e-9:
+                    raise ValueError(
+                        f"H={h} operator={op} final multiplier violates floor/cap: {final_multiplier}"
+                    )
+                w.writerow({
+                    "H": h,
+                    "operator_id": op,
+                    "usefulness_weighted": f"{u:.17g}",
+                    "baseline_probability": f"{base:.17g}",
+                    "raw_multiplier": f"{raw_multiplier:.17g}",
+                    "clipped_multiplier": f"{clipped:.17g}",
+                    "final_probability": f"{final_probability:.17g}",
+                })
+    return prior_path
+
+
 def run_panel_analyzer(run_dir: Path) -> int:
     exe = example_binary_path("diag_phase_b_panel")
     if exe.exists():
@@ -337,7 +467,7 @@ def run_phase_b_cell(
 ) -> tuple[dict | None, int, float]:
     cfg = cfg or phase_b_arm_config(arm, base_steps)
     run_id = f"phase_{phase.lower()}_{fixture}_{arm}_H{h}_seed{seed}"
-    if phase in {"D2", "D3", "D3F", "D4"}:
+    if phase in {"D2", "D3", "D3F", "D4", "D7"}:
         run_dir = out_dir / f"H_{h}" / arm / f"seed_{seed}"
     else:
         run_dir = out_dir / arm / f"seed_{seed}"
@@ -347,6 +477,7 @@ def run_phase_b_cell(
     candidate_log = run_dir / "candidates.csv"
     checkpoint = run_dir / "final.ckpt"
     panel_timeseries = run_dir / "panel_timeseries.csv"
+    operator_policy_timeseries = run_dir / "operator_policy_timeseries.csv"
 
     cmd = cargo_example_cmd(f"evolve_{fixture}", corpus, packed, prebuilt=True) + [
         "--steps", str(cfg["steps"]),
@@ -356,6 +487,7 @@ def run_phase_b_cell(
         "--phase", phase,
         "--arm", arm,
         "--run-id", run_id,
+        "--seed-list", cfg.get("seed_list", str(seed)),
         "--candidate-log", str(candidate_log),
         "--checkpoint-at-end", str(checkpoint),
     ]
@@ -374,6 +506,20 @@ def run_phase_b_cell(
         cmd += ["--neutral-p", str(cfg["neutral_p"])]
     if cfg.get("accept_epsilon") is not None:
         cmd += ["--accept-epsilon", str(cfg["accept_epsilon"])]
+    if cfg.get("operator_policy") is not None:
+        cmd += ["--operator-policy", str(cfg["operator_policy"])]
+    if cfg.get("operator_prior") is not None:
+        cmd += ["--operator-prior", str(cfg["operator_prior"])]
+    if cfg.get("operator_epsilon_random") is not None:
+        cmd += ["--operator-epsilon-random", str(cfg["operator_epsilon_random"])]
+    if cfg.get("operator_weight_floor") is not None:
+        cmd += ["--operator-weight-floor", str(cfg["operator_weight_floor"])]
+    if cfg.get("operator_weight_cap") is not None:
+        cmd += ["--operator-weight-cap", str(cfg["operator_weight_cap"])]
+    if cfg.get("operator_ewma_alpha") is not None:
+        cmd += ["--operator-ewma-alpha", str(cfg["operator_ewma_alpha"])]
+    if cfg.get("operator_policy") is not None:
+        cmd += ["--operator-policy-log", str(operator_policy_timeseries)]
     if cfg["input_scatter"]:
         cmd += ["--input-scatter"]
 
@@ -399,11 +545,15 @@ def run_phase_b_cell(
     if panel_interval is not None and not panel_timeseries.exists():
         print("  !! missing panel_timeseries.csv", file=sys.stderr)
         return None, 5, wall
+    if cfg.get("operator_policy") is not None and not operator_policy_timeseries.exists():
+        print("  !! missing operator_policy_timeseries.csv", file=sys.stderr)
+        return None, 6, wall
 
     summary.update({
         "phase": phase,
         "arm": arm,
         "run_id": run_id,
+        "seed_list": cfg.get("seed_list", str(seed)),
         "configured_steps": cfg["steps"],
         "horizon_steps": cfg["steps"],
         "jackpot": cfg["jackpot"],
@@ -412,12 +562,19 @@ def run_phase_b_cell(
         "accept_policy": cfg.get("accept_policy") or summary.get("accept_policy", ""),
         "neutral_p": cfg.get("neutral_p") if cfg.get("neutral_p") is not None else summary.get("neutral_p", ""),
         "accept_epsilon": cfg.get("accept_epsilon") if cfg.get("accept_epsilon") is not None else summary.get("accept_epsilon", ""),
+        "operator_policy": cfg.get("operator_policy") or summary.get("operator_policy", ""),
+        "operator_prior": cfg.get("operator_prior") or "",
+        "operator_epsilon_random": cfg.get("operator_epsilon_random", ""),
+        "operator_weight_floor": cfg.get("operator_weight_floor", ""),
+        "operator_weight_cap": cfg.get("operator_weight_cap", ""),
+        "operator_ewma_alpha": cfg.get("operator_ewma_alpha", ""),
         "input_scatter": cfg["input_scatter"],
         "run_dir": str(run_dir),
         "candidate_log": str(candidate_log),
         "checkpoint": str(checkpoint),
         "panel_summary": str(run_dir / "panel_summary.json"),
         "panel_timeseries": str(panel_timeseries) if panel_interval is not None else "",
+        "operator_policy_timeseries": str(operator_policy_timeseries) if cfg.get("operator_policy") is not None else "",
         "panel_window_size": panel_interval or "",
         "expected_candidate_rows": cfg["steps"] * cfg["jackpot"],
     })
@@ -1034,6 +1191,191 @@ def main_phase_d4_softness(args: argparse.Namespace) -> int:
     return analysis_rc
 
 
+def main_phase_d7_bandit(args: argparse.Namespace) -> int:
+    fixtures = [f.strip() for f in args.fixtures.split(",") if f.strip()]
+    if fixtures != ["mutual_inhibition"]:
+        raise SystemExit("--phase-d7-bandit currently supports only --fixtures mutual_inhibition")
+    requested_h = {int(x) for x in args.H_values.split(",") if x.strip()}
+    valid_h = {128, 256, 384}
+    invalid_h = sorted(requested_h - valid_h)
+    if invalid_h:
+        raise SystemExit(f"--phase-d7-bandit supports only H in {sorted(valid_h)}, got {invalid_h}")
+
+    arms = D7_BANDIT_ARMS if args.arms == "B0,B1,B2,B3,B4" else [a.strip() for a in args.arms.split(",") if a.strip()]
+    for arm in arms:
+        if arm not in D7_BANDIT_ARMS:
+            raise SystemExit(f"unknown D7 arm: {arm}")
+
+    out_dir = Path(args.out)
+    out_dir.mkdir(parents=True, exist_ok=True)
+    prior_path = generate_operator_prior(out_dir)
+    seed_list = [seed_from_idx(i) for i in range(args.seeds)]
+    git_commit = subprocess.run(
+        ["git", "rev-parse", "HEAD"], cwd=REPO_ROOT, capture_output=True, text=True
+    ).stdout.strip()
+    (out_dir / "d7_run_manifest.json").write_text(json.dumps({
+        "phase": "D7",
+        "git_commit": git_commit,
+        "fixtures": fixtures,
+        "H_values": sorted(requested_h),
+        "seeds": seed_list,
+        "K_lock": {"128": 9, "256": 18, "384": 9},
+        "arms": arms,
+        "operator_prior": str(prior_path),
+        "operator_policy": {
+            "epsilon_random": 0.15,
+            "epsilon_definition": "final_probs = (1 - epsilon) * weighted_policy_probs + epsilon * baseline_probs",
+            "weight_floor": 0.25,
+            "weight_cap": 4.0,
+            "ewma_alpha": 0.05,
+            "ewma_reward": "per-candidate max(delta_U, 0), updated from live local candidate outcomes only",
+            "ewma_update_granularity": "per candidate",
+            "entropy_collapse_threshold": 0.60,
+        },
+    }, indent=2))
+
+    results: list[dict] = []
+    done: set[tuple] = set()
+    if args.resume:
+        results, done = load_resume(out_dir, phase_b=True)
+        print(f"  resume: loaded {len(results)} previous results, skipping {len(done)} cells")
+
+    cells = []
+    for fx in fixtures:
+        for h in sorted(requested_h):
+            for arm in arms:
+                for seed in seed_list:
+                    cells.append((fx, arm, h, seed))
+    todo = [cell for cell in cells if cell not in done]
+    print(f"  Phase D7 plan: {len(cells)} total cells, {len(todo)} to run")
+    print(f"  fixtures: {fixtures}")
+    print(f"  arms:     {arms}")
+    print(f"  H values: {sorted(requested_h)}")
+    print(f"  seeds:    {seed_list}")
+    print(f"  steps:    {args.steps}")
+    print(f"  panel interval: {args.panel_interval}")
+    print(f"  jobs:     {args.jobs}")
+    print(f"  prior:    {prior_path}")
+    print(f"  out:      {out_dir}")
+
+    if args.dry_run:
+        for fx, arm, h, seed in todo:
+            cfg = phase_d7_bandit_arm_config(arm, args.steps, h, prior_path)
+            cfg["seed_list"] = ",".join(str(s) for s in seed_list)
+            print(f"  DRY-RUN fixture={fx} arm={arm} H={h} seed={seed} "
+                  f"steps={cfg['steps']} jackpot={cfg['jackpot']} operator_policy={cfg['operator_policy']} "
+                  f"expected_rows={cfg['steps'] * cfg['jackpot']}")
+        return 0
+
+    prebuild_rc = prebuild_phase_examples(fixtures)
+    if prebuild_rc != 0:
+        return prebuild_rc
+
+    t_sweep = time.time()
+    jobs = max(1, args.jobs)
+    first_failure = 0
+    latest_completed: dict | None = None
+    print(f"\nRunning Phase D7 with {jobs} parallel jobs", flush=True)
+    with ThreadPoolExecutor(max_workers=jobs) as executor:
+        pending = {}
+        for idx, (fx, arm, h, seed) in enumerate(todo, 1):
+            cfg = phase_d7_bandit_arm_config(arm, args.steps, h, prior_path)
+            cfg["seed_list"] = ",".join(str(s) for s in seed_list)
+            print(f"  queue [{idx}/{len(todo)}] fixture={fx} arm={arm} H={h} K={cfg['jackpot']} seed={seed}", flush=True)
+            future = executor.submit(
+                run_phase_b_cell,
+                fx,
+                "D7",
+                arm,
+                h,
+                seed,
+                args.steps,
+                args.corpus,
+                args.packed,
+                out_dir,
+                args.panel_interval,
+                cfg,
+            )
+            pending[future] = {"idx": idx, "fixture": fx, "arm": arm, "H": h, "seed": seed, "jackpot": cfg["jackpot"]}
+
+        if args.heartbeat_interval:
+            write_heartbeat(out_dir, phase="D7", total=len(cells), results=results,
+                            pending_meta=list(pending.values()), latest_completed=latest_completed,
+                            t_sweep=t_sweep, status="running")
+
+        while pending:
+            timeout = args.heartbeat_interval if args.heartbeat_interval else None
+            done_futures, _ = wait(set(pending.keys()), timeout=timeout, return_when=FIRST_COMPLETED)
+            if not done_futures:
+                write_heartbeat(out_dir, phase="D7", total=len(cells), results=results,
+                                pending_meta=list(pending.values()), latest_completed=latest_completed,
+                                t_sweep=t_sweep, status="running")
+                print(f"  heartbeat: elapsed={(time.time() - t_sweep)/60:.1f}m completed={len(results)}/{len(cells)} running={len(pending)}", flush=True)
+                continue
+            for future in done_futures:
+                meta = pending.pop(future)
+                elapsed = time.time() - t_sweep
+                try:
+                    summary, rc, wall = future.result()
+                except Exception as exc:
+                    summary, rc, wall = None, 1, 0.0
+                    print(f"  FAILED [{meta['idx']}/{len(todo)}] elapsed={elapsed/60:.1f}m {meta}: {exc}", file=sys.stderr, flush=True)
+                if summary is None:
+                    first_failure = first_failure or (rc or 1)
+                    print(f"  FAILED [{meta['idx']}/{len(todo)}] elapsed={elapsed/60:.1f}m "
+                          f"fixture={meta['fixture']} arm={meta['arm']} H={meta['H']} seed={meta['seed']} "
+                          f"rc={rc} wall={wall:.1f}s", file=sys.stderr, flush=True)
+                    write_artifacts(out_dir, results)
+                    continue
+                summary.setdefault("wall_clock_s", wall)
+                results.append(summary)
+                write_artifacts(out_dir, results)
+                latest_completed = {
+                    "idx": meta["idx"],
+                    "fixture": meta["fixture"],
+                    "arm": meta["arm"],
+                    "H": meta["H"],
+                    "seed": meta["seed"],
+                    "peak_acc_pct": summary["peak_acc"] * 100.0,
+                    "final_acc_pct": summary["final_acc"] * 100.0,
+                    "accept_rate_pct": summary["accept_rate_pct"],
+                    "wall_clock_s": summary["wall_clock_s"],
+                }
+                print(f"  done [{meta['idx']}/{len(todo)}] elapsed={elapsed/60:.1f}m "
+                      f"fixture={meta['fixture']} arm={meta['arm']} H={meta['H']} seed={meta['seed']}: "
+                      f"peak={summary['peak_acc']*100:.2f}% final={summary['final_acc']*100:.2f}% "
+                      f"accept={summary['accept_rate_pct']:.2f}% rows={summary['expected_candidate_rows']} "
+                      f"wall={summary['wall_clock_s']:.1f}s", flush=True)
+            if args.heartbeat_interval:
+                write_heartbeat(out_dir, phase="D7", total=len(cells), results=results,
+                                pending_meta=list(pending.values()), latest_completed=latest_completed,
+                                t_sweep=t_sweep, status="running")
+
+    if first_failure:
+        if args.heartbeat_interval:
+            write_heartbeat(out_dir, phase="D7", total=len(cells), results=results,
+                            pending_meta=[], latest_completed=latest_completed,
+                            t_sweep=t_sweep, status="failed")
+        return first_failure
+
+    print_aggregate(results)
+    rc = run_constructability_analysis(out_dir)
+    analyzer = REPO_ROOT / "tools" / "analyze_phase_d7_operator_bandit.py"
+    if rc == 0 and analyzer.exists():
+        proc = subprocess.run([sys.executable, str(analyzer), "--root", str(out_dir)], cwd=REPO_ROOT, capture_output=True, text=True)
+        (out_dir / "d7_analysis_stdout.txt").write_text(proc.stdout)
+        (out_dir / "d7_analysis_stderr.txt").write_text(proc.stderr)
+        print(proc.stdout)
+        rc = proc.returncode
+    if args.heartbeat_interval:
+        write_heartbeat(out_dir, phase="D7", total=len(cells), results=results,
+                        pending_meta=[], latest_completed=latest_completed, t_sweep=t_sweep,
+                        status="complete" if rc == 0 else "analysis_failed")
+    print(f"\nSweep total wall clock: {(time.time() - t_sweep) / 60:.1f} min")
+    print(f"Artifacts: {out_dir / 'results.json'}  {out_dir / 'results.csv'}")
+    return rc
+
+
 def main_default(args: argparse.Namespace) -> int:
     fixtures = [f.strip() for f in args.fixtures.split(",") if f.strip()]
     h_values = [int(x) for x in args.H_values.split(",")]
@@ -1083,8 +1425,8 @@ def main_default(args: argparse.Namespace) -> int:
 
 def main() -> int:
     args = parse_args()
-    if sum([args.phase_b, args.phase_b1, args.phase_d1, args.phase_d2, args.phase_d3_klock, args.phase_d3_fine_k, args.phase_d4_softness]) > 1:
-        raise SystemExit("--phase-b, --phase-b1, --phase-d1, --phase-d2, --phase-d3-klock, --phase-d3-fine-k, and --phase-d4-softness are mutually exclusive")
+    if sum([args.phase_b, args.phase_b1, args.phase_d1, args.phase_d2, args.phase_d3_klock, args.phase_d3_fine_k, args.phase_d4_softness, args.phase_d7_bandit]) > 1:
+        raise SystemExit("--phase-b, --phase-b1, --phase-d1, --phase-d2, --phase-d3-klock, --phase-d3-fine-k, --phase-d4-softness, and --phase-d7-bandit are mutually exclusive")
     if args.phase_b:
         return main_phase_b(args)
     if args.phase_b1:
@@ -1099,6 +1441,8 @@ def main() -> int:
         return main_phase_d3_fine_k(args)
     if args.phase_d4_softness:
         return main_phase_d4_softness(args)
+    if args.phase_d7_bandit:
+        return main_phase_d7_bandit(args)
     return main_default(args)
 
 

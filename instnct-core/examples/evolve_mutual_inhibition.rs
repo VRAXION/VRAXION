@@ -12,8 +12,9 @@
 
 use instnct_core::{
     build_network, cosine_similarity, evolution_step_jackpot,
-    evolution_step_jackpot_traced_with_policy, save_checkpoint, softmax, AcceptancePolicy,
-    CandidateTraceRecord, CheckpointMeta, InitConfig, Int8Projection, Network, StepOutcome, VcbpTable,
+    evolution_step_jackpot_traced_with_policy_and_operator_weights, mutation_operator_baseline_probability,
+    mutation_operator_index, save_checkpoint, softmax, AcceptancePolicy, CandidateTraceRecord,
+    CheckpointMeta, InitConfig, Int8Projection, Network, StepOutcome, VcbpTable, MUTATION_OPERATORS,
 };
 use rand::rngs::StdRng;
 use rand::Rng;
@@ -42,6 +43,7 @@ struct RunMeta {
     arm: String,
     run_id: String,
     seed: u64,
+    seed_list: Option<String>,
     #[serde(rename = "H")]
     h: usize,
     steps: usize,
@@ -59,6 +61,14 @@ struct RunMeta {
     candidate_log: Option<String>,
     panel_window_size: Option<usize>,
     panel_timeseries: Option<String>,
+    operator_policy: String,
+    operator_prior: Option<String>,
+    operator_epsilon_random: f64,
+    operator_weight_floor: f64,
+    operator_weight_cap: f64,
+    operator_ewma_alpha: f64,
+    operator_ewma_reward: String,
+    operator_policy_log: Option<String>,
 }
 
 struct PanelMetrics {
@@ -210,6 +220,309 @@ impl CandidateLogWriter {
     fn flush(&mut self) {
         self.writer.flush().expect("failed to flush candidate log");
     }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum OperatorPolicyMode {
+    Baseline,
+    StaticPrior,
+    PriorEwma,
+}
+
+impl OperatorPolicyMode {
+    fn parse(value: &str) -> Self {
+        match value {
+            "baseline" => Self::Baseline,
+            "static-prior" | "static_prior" => Self::StaticPrior,
+            "prior-ewma" | "prior_ewma" => Self::PriorEwma,
+            other => panic!(
+                "--operator-policy expects baseline|static-prior|prior-ewma, got {other}"
+            ),
+        }
+    }
+
+    fn as_str(self) -> &'static str {
+        match self {
+            Self::Baseline => "baseline",
+            Self::StaticPrior => "static-prior",
+            Self::PriorEwma => "prior-ewma",
+        }
+    }
+
+    fn uses_weights(self) -> bool {
+        !matches!(self, Self::Baseline)
+    }
+}
+
+#[derive(Clone, Default)]
+struct OperatorWindowStats {
+    attempts: u64,
+    selected: u64,
+    accepted: u64,
+    positive_delta: u64,
+}
+
+struct OperatorPolicyLogWriter {
+    writer: BufWriter<File>,
+    path: PathBuf,
+}
+
+impl OperatorPolicyLogWriter {
+    fn new(path: PathBuf) -> Self {
+        if let Some(parent) = path.parent() {
+            if !parent.as_os_str().is_empty() {
+                create_dir_all(parent).expect("failed to create operator policy log directory");
+            }
+        }
+        let mut writer =
+            BufWriter::new(File::create(&path).expect("failed to create operator policy log"));
+        writeln!(
+            writer,
+            "step,operator_id,probability,normalized_entropy,attempts_window,selected_window,accepted_window,positive_delta_window,positive_delta_rate_window,accepted_rate_window"
+        )
+        .expect("failed to write operator policy log header");
+        Self { writer, path }
+    }
+
+    fn flush(&mut self) {
+        self.writer
+            .flush()
+            .expect("failed to flush operator policy log");
+    }
+}
+
+struct OperatorPolicyController {
+    mode: OperatorPolicyMode,
+    static_probabilities: Vec<f64>,
+    probabilities: Vec<f64>,
+    ewma_usefulness: Vec<f64>,
+    epsilon_random: f64,
+    weight_floor: f64,
+    weight_cap: f64,
+    ewma_alpha: f64,
+    window_stats: Vec<OperatorWindowStats>,
+    log_writer: Option<OperatorPolicyLogWriter>,
+}
+
+impl OperatorPolicyController {
+    fn new(
+        mode: OperatorPolicyMode,
+        prior_path: Option<&Path>,
+        h: usize,
+        epsilon_random: f64,
+        weight_floor: f64,
+        weight_cap: f64,
+        ewma_alpha: f64,
+        log_path: Option<PathBuf>,
+    ) -> Self {
+        let baseline = baseline_probabilities();
+        let static_probabilities = if mode.uses_weights() {
+            let path = prior_path.expect("--operator-prior is required for weighted policies");
+            load_operator_prior(path, h)
+        } else {
+            baseline.clone()
+        };
+        let probabilities = static_probabilities.clone();
+        let log_writer = log_path.map(OperatorPolicyLogWriter::new);
+        Self {
+            mode,
+            static_probabilities,
+            probabilities,
+            ewma_usefulness: vec![0.0; MUTATION_OPERATORS.len()],
+            epsilon_random,
+            weight_floor,
+            weight_cap,
+            ewma_alpha,
+            window_stats: vec![OperatorWindowStats::default(); MUTATION_OPERATORS.len()],
+            log_writer,
+        }
+    }
+
+    fn weights_for_step(&self) -> Option<Vec<f64>> {
+        if self.mode.uses_weights() {
+            Some(self.probabilities.clone())
+        } else {
+            None
+        }
+    }
+
+    fn observe(&mut self, record: &CandidateTraceRecord) {
+        let idx = mutation_operator_index(record.operator_id)
+            .unwrap_or_else(|| panic!("unknown candidate operator_id: {}", record.operator_id));
+        let stats = &mut self.window_stats[idx];
+        stats.attempts += 1;
+        if record.selected {
+            stats.selected += 1;
+        }
+        if record.accepted {
+            stats.accepted += 1;
+        }
+        if record.evaluated && record.delta_u > 0.0 {
+            stats.positive_delta += 1;
+        }
+        if matches!(self.mode, OperatorPolicyMode::PriorEwma) && record.evaluated {
+            let usefulness = record.delta_u.max(0.0);
+            self.ewma_usefulness[idx] =
+                (1.0 - self.ewma_alpha) * self.ewma_usefulness[idx]
+                    + self.ewma_alpha * usefulness;
+        }
+    }
+
+    fn end_step(&mut self) {
+        if !matches!(self.mode, OperatorPolicyMode::PriorEwma) {
+            return;
+        }
+        let online = normalize_or_baseline(&self.ewma_usefulness);
+        let mixed: Vec<f64> = self
+            .static_probabilities
+            .iter()
+            .zip(online.iter())
+            .map(|(prior, live)| 0.70 * prior + 0.30 * live)
+            .collect();
+        self.probabilities = cap_floor_and_explore(
+            &mixed,
+            self.epsilon_random,
+            self.weight_floor,
+            self.weight_cap,
+        );
+    }
+
+    fn write_window(&mut self, step: usize) {
+        let Some(writer) = self.log_writer.as_mut() else {
+            self.window_stats = vec![OperatorWindowStats::default(); MUTATION_OPERATORS.len()];
+            return;
+        };
+        let entropy = normalized_entropy(&self.probabilities);
+        for (idx, op) in MUTATION_OPERATORS.iter().enumerate() {
+            let stats = &self.window_stats[idx];
+            let positive_rate = if stats.attempts > 0 {
+                stats.positive_delta as f64 / stats.attempts as f64
+            } else {
+                0.0
+            };
+            let accepted_rate = if stats.attempts > 0 {
+                stats.accepted as f64 / stats.attempts as f64
+            } else {
+                0.0
+            };
+            writeln!(
+                writer.writer,
+                "{},{},{:.17},{:.17},{},{},{},{},{:.17},{:.17}",
+                step,
+                op.id,
+                self.probabilities[idx],
+                entropy,
+                stats.attempts,
+                stats.selected,
+                stats.accepted,
+                stats.positive_delta,
+                positive_rate,
+                accepted_rate
+            )
+            .expect("failed to write operator policy log row");
+        }
+        self.window_stats = vec![OperatorWindowStats::default(); MUTATION_OPERATORS.len()];
+    }
+
+    fn flush(&mut self) {
+        if let Some(writer) = self.log_writer.as_mut() {
+            writer.flush();
+        }
+    }
+}
+
+fn baseline_probabilities() -> Vec<f64> {
+    (0..MUTATION_OPERATORS.len())
+        .map(mutation_operator_baseline_probability)
+        .collect()
+}
+
+fn normalize_or_baseline(values: &[f64]) -> Vec<f64> {
+    let sum: f64 = values.iter().copied().filter(|v| *v > 0.0).sum();
+    if sum.is_finite() && sum > 0.0 {
+        values.iter().map(|v| v.max(0.0) / sum).collect()
+    } else {
+        baseline_probabilities()
+    }
+}
+
+fn cap_floor_and_explore(raw: &[f64], epsilon_random: f64, floor: f64, cap: f64) -> Vec<f64> {
+    let baseline = baseline_probabilities();
+    let mut weighted = Vec::with_capacity(raw.len());
+    for (idx, raw_p) in raw.iter().copied().enumerate() {
+        let base = baseline[idx].max(1e-12);
+        let multiplier = (raw_p.max(0.0) / base).clamp(floor, cap);
+        weighted.push(base * multiplier);
+    }
+    let sum: f64 = weighted.iter().sum();
+    let normalized: Vec<f64> = weighted.iter().map(|v| v / sum).collect();
+    normalized
+        .iter()
+        .zip(baseline.iter())
+        .map(|(p, b)| (1.0 - epsilon_random) * p + epsilon_random * b)
+        .collect()
+}
+
+fn normalized_entropy(probabilities: &[f64]) -> f64 {
+    let entropy: f64 = probabilities
+        .iter()
+        .copied()
+        .filter(|p| *p > 0.0)
+        .map(|p| -p * p.ln())
+        .sum();
+    entropy / (probabilities.len() as f64).ln()
+}
+
+fn load_operator_prior(path: &Path, h: usize) -> Vec<f64> {
+    let text = std::fs::read_to_string(path).expect("failed to read --operator-prior");
+    let mut probabilities = vec![None; MUTATION_OPERATORS.len()];
+    let mut header: Vec<&str> = Vec::new();
+    for (line_idx, line) in text.lines().enumerate() {
+        if line.trim().is_empty() {
+            continue;
+        }
+        let cols: Vec<&str> = line.split(',').collect();
+        if line_idx == 0 {
+            header = cols;
+            continue;
+        }
+        let col = |name: &str| -> &str {
+            let idx = header
+                .iter()
+                .position(|h| *h == name)
+                .unwrap_or_else(|| panic!("operator prior missing column {name}"));
+            cols.get(idx)
+                .copied()
+                .unwrap_or_else(|| panic!("operator prior row missing column {name}"))
+        };
+        let row_h: usize = col("H").parse().expect("invalid H in operator prior");
+        if row_h != h {
+            continue;
+        }
+        let operator_id = col("operator_id");
+        let idx = mutation_operator_index(operator_id)
+            .unwrap_or_else(|| panic!("unknown operator_id in prior: {operator_id}"));
+        let probability: f64 = col("final_probability")
+            .parse()
+            .expect("invalid final_probability in operator prior");
+        assert!(probability > 0.0, "operator prior probabilities must be positive");
+        probabilities[idx] = Some(probability);
+    }
+    let out: Vec<f64> = probabilities
+        .into_iter()
+        .enumerate()
+        .map(|(idx, value)| {
+            value.unwrap_or_else(|| {
+                panic!(
+                    "operator prior missing H={} operator={}",
+                    h, MUTATION_OPERATORS[idx].id
+                )
+            })
+        })
+        .collect();
+    let sum: f64 = out.iter().sum();
+    assert!((sum - 1.0).abs() < 1e-6, "operator prior probabilities must sum to 1");
+    out
 }
 
 fn quantize_embedding_to_input(
@@ -805,9 +1118,17 @@ fn main() {
     let mut checkpoint_at_end: Option<PathBuf> = None;
     let mut panel_interval: Option<usize> = None;
     let mut panel_log_path: Option<PathBuf> = None;
+    let mut operator_policy_name = String::from("baseline");
+    let mut operator_prior_path: Option<PathBuf> = None;
+    let mut operator_epsilon_random = 0.15f64;
+    let mut operator_weight_floor = 0.25f64;
+    let mut operator_weight_cap = 4.0f64;
+    let mut operator_ewma_alpha = 0.05f64;
+    let mut operator_policy_log_path: Option<PathBuf> = None;
     let mut phase = String::from("default");
     let mut arm = String::from("default");
     let mut run_id = String::from("default");
+    let mut seed_list: Option<String> = None;
     let mut i = 2;
     while i < args.len() {
         match args[i].as_str() {
@@ -877,6 +1198,47 @@ fn main() {
                 i += 1;
                 panel_log_path = Some(PathBuf::from(&args[i]));
             }
+            "--operator-policy" => {
+                i += 1;
+                operator_policy_name = args[i].clone();
+            }
+            "--operator-prior" => {
+                i += 1;
+                operator_prior_path = Some(PathBuf::from(&args[i]));
+            }
+            "--operator-epsilon-random" => {
+                i += 1;
+                operator_epsilon_random = args[i].parse().unwrap();
+                assert!(
+                    (0.0..=1.0).contains(&operator_epsilon_random),
+                    "--operator-epsilon-random must be in [0, 1]"
+                );
+            }
+            "--operator-weight-floor" => {
+                i += 1;
+                operator_weight_floor = args[i].parse().unwrap();
+                assert!(operator_weight_floor > 0.0, "--operator-weight-floor must be > 0");
+            }
+            "--operator-weight-cap" => {
+                i += 1;
+                operator_weight_cap = args[i].parse().unwrap();
+                assert!(
+                    operator_weight_cap >= operator_weight_floor,
+                    "--operator-weight-cap must be >= --operator-weight-floor"
+                );
+            }
+            "--operator-ewma-alpha" => {
+                i += 1;
+                operator_ewma_alpha = args[i].parse().unwrap();
+                assert!(
+                    (0.0..=1.0).contains(&operator_ewma_alpha),
+                    "--operator-ewma-alpha must be in [0, 1]"
+                );
+            }
+            "--operator-policy-log" => {
+                i += 1;
+                operator_policy_log_path = Some(PathBuf::from(&args[i]));
+            }
             "--phase" => {
                 i += 1;
                 phase = args[i].clone();
@@ -888,6 +1250,10 @@ fn main() {
             "--run-id" => {
                 i += 1;
                 run_id = args[i].clone();
+            }
+            "--seed-list" => {
+                i += 1;
+                seed_list = Some(args[i].clone());
             }
             other => panic!("unknown flag: {other}"),
         }
@@ -929,12 +1295,13 @@ fn main() {
         },
         other => panic!("--accept-policy expects strict|ties|zero-p|epsilon, got {other}"),
     };
+    let operator_policy_mode = OperatorPolicyMode::parse(&operator_policy_name);
     init.accept_ties = matches!(acceptance_policy, AcceptancePolicy::Ties);
     let evo_config = init.evolution_config();
 
     println!("\n=== MUTUAL INHIBITION EXPERIMENT ===");
     println!(
-        "  H={}, {} steps, {} classes, seed={}, jackpot={}, ticks={}, accept_ties={}, accept_policy={}, neutral_p={:.3}, accept_epsilon={:.6}, input_scatter={}, phase={}, arm={}, run_id={}\n",
+        "  H={}, {} steps, {} classes, seed={}, jackpot={}, ticks={}, accept_ties={}, accept_policy={}, neutral_p={:.3}, accept_epsilon={:.6}, input_scatter={}, operator_policy={}, phase={}, arm={}, run_id={}\n",
         h,
         steps,
         n_classes,
@@ -946,6 +1313,7 @@ fn main() {
         cli_neutral_p,
         cli_accept_epsilon,
         input_scatter,
+        operator_policy_mode.as_str(),
         phase,
         arm,
         run_id
@@ -1007,11 +1375,37 @@ fn main() {
             panel.window_size
         );
     }
+    let inferred_operator_policy_log_path = operator_policy_log_path.clone().or_else(|| {
+        checkpoint_at_end.as_ref().map(|path| {
+            path.parent()
+                .unwrap_or_else(|| Path::new("."))
+                .join("operator_policy_timeseries.csv")
+        })
+    });
+    let mut operator_policy = OperatorPolicyController::new(
+        operator_policy_mode,
+        operator_prior_path.as_deref(),
+        h,
+        operator_epsilon_random,
+        operator_weight_floor,
+        operator_weight_cap,
+        operator_ewma_alpha,
+        inferred_operator_policy_log_path.clone(),
+    );
+    if let Some(writer) = operator_policy.log_writer.as_ref() {
+        println!("  Operator policy log: {}", writer.path.display());
+    }
+    let operator_policy_window = panel_interval.unwrap_or(PROGRESS_INTERVAL);
 
     // Evolve with smooth cosine (champion fitness)
     for step in 0..steps {
-        let outcome = if let Some(log) = candidate_log.as_mut() {
-            evolution_step_jackpot_traced_with_policy(
+        let use_traced = candidate_log.is_some()
+            || !matches!(acceptance_policy, AcceptancePolicy::Strict | AcceptancePolicy::Ties)
+            || operator_policy_mode.uses_weights()
+            || operator_policy.log_writer.is_some();
+        let step_operator_weights = operator_policy.weights_for_step();
+        let outcome = if use_traced {
+            evolution_step_jackpot_traced_with_policy_and_operator_weights(
                 &mut net,
                 &mut proj,
                 &mut rng,
@@ -1042,40 +1436,13 @@ fn main() {
                 acceptance_policy,
                 jackpot,
                 step,
-                |record| log.write_record(record),
-            )
-        } else if !matches!(acceptance_policy, AcceptancePolicy::Strict | AcceptancePolicy::Ties) {
-            evolution_step_jackpot_traced_with_policy(
-                &mut net,
-                &mut proj,
-                &mut rng,
-                &mut eval_rng,
-                |n, p, er| {
-                    let cos = eval_smooth_proj(
-                        n,
-                        p,
-                        &table,
-                        &pair_ids,
-                        &hot_to_idx,
-                        &bigram,
-                        DEFAULT_EVAL_LEN,
-                        er,
-                        &init.propagation,
-                        init.output_start(),
-                        h,
-                        init.input_end(),
-                        input_scatter,
-                    );
-                    let charges = n.charge_vec(init.output_start()..h);
-                    let alive = charges.iter().filter(|&&c| c > 0).count();
-                    let alive_frac = alive as f64 / (h - init.output_start()) as f64;
-                    cos * (1.0 + 0.1 * alive_frac)
+                step_operator_weights.as_deref(),
+                |record| {
+                    if let Some(log) = candidate_log.as_mut() {
+                        log.write_record(record);
+                    }
+                    operator_policy.observe(record);
                 },
-                &evo_config,
-                acceptance_policy,
-                jackpot,
-                step,
-                |_| {},
             )
         } else {
             evolution_step_jackpot(
@@ -1114,6 +1481,7 @@ fn main() {
             StepOutcome::Rejected => rejected += 1,
             StepOutcome::Skipped => {}
         }
+        operator_policy.end_step();
         if (step + 1) % PROGRESS_INTERVAL == 0 {
             let acc = eval_accuracy_proj(
                 &mut net,
@@ -1156,6 +1524,9 @@ fn main() {
                 );
                 panel.write_row(step + 1, accepted, rejected, net.edge_count(), peak, &metrics);
             }
+        }
+        if (step + 1) % operator_policy_window == 0 {
+            operator_policy.write_window(step + 1);
         }
     }
 
@@ -1202,6 +1573,7 @@ fn main() {
             arm: arm.clone(),
             run_id: run_id.clone(),
             seed,
+            seed_list: seed_list.clone(),
             h,
             steps,
             horizon_steps: steps,
@@ -1220,6 +1592,16 @@ fn main() {
             candidate_log: candidate_log_path.as_ref().map(|p| p.display().to_string()),
             panel_window_size: panel_interval,
             panel_timeseries: resolved_panel_log_path
+                .as_ref()
+                .map(|p| p.display().to_string()),
+            operator_policy: operator_policy_mode.as_str().to_string(),
+            operator_prior: operator_prior_path.as_ref().map(|p| p.display().to_string()),
+            operator_epsilon_random,
+            operator_weight_floor,
+            operator_weight_cap,
+            operator_ewma_alpha,
+            operator_ewma_reward: String::from("per-candidate max(delta_U, 0) from live local candidate outcomes only"),
+            operator_policy_log: inferred_operator_policy_log_path
                 .as_ref()
                 .map(|p| p.display().to_string()),
         };
@@ -1312,14 +1694,15 @@ fn main() {
     if let Some(panel) = panel_writer.as_mut() {
         panel.flush();
     }
+    operator_policy.flush();
 
     let wall_clock_s = t_start.elapsed().as_secs_f64();
     println!("\nRuntime: {:.1}s", wall_clock_s);
 
     // Machine-readable summary line for multi-seed drivers.
     println!(
-        "SUMMARY {{\"fixture\":\"mutual_inhibition\",\"phase\":\"{}\",\"arm\":\"{}\",\"run_id\":\"{}\",\"seed\":{},\"H\":{},\"phi_dim\":{},\"horizon_steps\":{},\"accept_ties\":{},\"accept_policy\":\"{}\",\"neutral_p\":{:.6},\"accept_epsilon\":{:.12},\"peak_acc\":{:.6},\"final_acc\":{:.6},\"accept_rate_pct\":{:.4},\"alive_frac_mean\":{:.6},\"edges\":{},\"unique_preds\":{},\"wall_clock_s\":{:.3}}}",
-        phase, arm, run_id, seed, h, init.phi_dim, steps, init.accept_ties, accept_policy_name, cli_neutral_p, cli_accept_epsilon, peak, final_acc, final_accept_rate_pct, alive_frac_mean,
+        "SUMMARY {{\"fixture\":\"mutual_inhibition\",\"phase\":\"{}\",\"arm\":\"{}\",\"run_id\":\"{}\",\"seed\":{},\"H\":{},\"phi_dim\":{},\"horizon_steps\":{},\"accept_ties\":{},\"accept_policy\":\"{}\",\"neutral_p\":{:.6},\"accept_epsilon\":{:.12},\"operator_policy\":\"{}\",\"peak_acc\":{:.6},\"final_acc\":{:.6},\"accept_rate_pct\":{:.4},\"alive_frac_mean\":{:.6},\"edges\":{},\"unique_preds\":{},\"wall_clock_s\":{:.3}}}",
+        phase, arm, run_id, seed, h, init.phi_dim, steps, init.accept_ties, accept_policy_name, cli_neutral_p, cli_accept_epsilon, operator_policy_mode.as_str(), peak, final_acc, final_accept_rate_pct, alive_frac_mean,
         net.edge_count(), unique.len(), wall_clock_s
     );
 }
