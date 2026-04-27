@@ -12,9 +12,10 @@
 
 use instnct_core::{
     build_network, cosine_similarity, evolution_step_jackpot,
-    evolution_step_jackpot_traced_with_policy_and_operator_weights, mutation_operator_baseline_probability,
-    mutation_operator_index, save_checkpoint, softmax, AcceptancePolicy, CandidateTraceRecord,
-    CheckpointMeta, InitConfig, Int8Projection, Network, StepOutcome, VcbpTable, MUTATION_OPERATORS,
+    evolution_step_jackpot_traced_with_policy_and_operator_weights,
+    mutation_operator_baseline_probability, mutation_operator_index, save_checkpoint, softmax,
+    AcceptancePolicy, CandidateTraceRecord, CheckpointMeta, InitConfig, Int8Projection, Network,
+    StepOutcome, VcbpTable, MUTATION_OPERATORS,
 };
 use rand::rngs::StdRng;
 use rand::Rng;
@@ -71,6 +72,10 @@ struct RunMeta {
     operator_policy_log: Option<String>,
     instrumentation_schema_version: Option<String>,
     d8_state_log: Option<String>,
+    archive_parent_policy: String,
+    archive_parent_log: Option<String>,
+    archive_max_size: usize,
+    archive_switch_interval_panels: usize,
 }
 
 struct PanelMetrics {
@@ -252,7 +257,8 @@ impl D8StateLogWriter {
                 create_dir_all(parent).expect("failed to create D8 state log directory");
             }
         }
-        let mut writer = BufWriter::new(File::create(&path).expect("failed to create D8 state log"));
+        let mut writer =
+            BufWriter::new(File::create(&path).expect("failed to create D8 state log"));
         writeln!(
             writer,
             "schema_version,state_id,parent_id,family_id,root_family_id,run_id,phase,arm,seed,H,panel_index,step,time_pct,accepted_total,rejected_total,current_peak,panel_probe_acc,accept_rate_window,accepted_window,rejected_window,edges,unique_predictions,collision_rate,f_active,stable_rank,kernel_rank,separation_sp,checkpoint_ref,archive_cell_id,psi_pred,cell_confidence"
@@ -275,6 +281,7 @@ impl D8StateLogWriter {
         panel_index: usize,
         step: usize,
         total_steps: usize,
+        parent_override: Option<&str>,
         accepted_total: u32,
         rejected_total: u32,
         accepted_window: u32,
@@ -284,7 +291,9 @@ impl D8StateLogWriter {
         metrics: &PanelMetrics,
     ) {
         let state_id = format!("{}::{}", self.run_id, panel_index);
-        let parent_id = if panel_index > 0 {
+        let parent_id = if let Some(parent_id) = parent_override {
+            parent_id.to_string()
+        } else if panel_index > 0 {
             format!("{}::{}", self.run_id, panel_index - 1)
         } else {
             String::new()
@@ -333,6 +342,115 @@ impl D8StateLogWriter {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum ArchiveParentPolicyMode {
+    CurrentBest,
+    RandomArchive,
+    ScoreArchive,
+}
+
+impl ArchiveParentPolicyMode {
+    fn parse(value: &str) -> Self {
+        match value {
+            "current-best" | "current_best" => Self::CurrentBest,
+            "random-archive" | "random_archive" => Self::RandomArchive,
+            "score-archive" | "score_archive" => Self::ScoreArchive,
+            other => panic!(
+                "--archive-parent-policy expects current-best|random-archive|score-archive, got {other}"
+            ),
+        }
+    }
+
+    fn as_str(self) -> &'static str {
+        match self {
+            Self::CurrentBest => "current-best",
+            Self::RandomArchive => "random-archive",
+            Self::ScoreArchive => "score-archive",
+        }
+    }
+}
+
+#[derive(Clone)]
+struct ArchiveEntry {
+    state_id: String,
+    family_id: String,
+    panel_index: usize,
+    step: usize,
+    current_peak: f64,
+    panel_probe_acc: f64,
+    net: Network,
+    proj: Int8Projection,
+}
+
+struct ArchiveParentLogWriter {
+    writer: BufWriter<File>,
+    path: PathBuf,
+}
+
+impl ArchiveParentLogWriter {
+    fn new(path: PathBuf) -> Self {
+        if let Some(parent) = path.parent() {
+            if !parent.as_os_str().is_empty() {
+                create_dir_all(parent).expect("failed to create archive parent log directory");
+            }
+        }
+        let mut writer =
+            BufWriter::new(File::create(&path).expect("failed to create archive parent log"));
+        writeln!(
+            writer,
+            "step,panel_index,policy,archive_size,selected_parent_state_id,selected_parent_family_id,selected_archive_cell_id,selected_parent_panel_index,selected_parent_step,selected_parent_score,selected_parent_current_peak,selected_parent_cell_confidence,restored"
+        )
+        .expect("failed to write archive parent log header");
+        Self { writer, path }
+    }
+
+    fn write_choice(
+        &mut self,
+        step: usize,
+        panel_index: usize,
+        policy: ArchiveParentPolicyMode,
+        archive_size: usize,
+        selected: Option<&ArchiveEntry>,
+        restored: bool,
+    ) {
+        if let Some(entry) = selected {
+            writeln!(
+                self.writer,
+                "{},{},{},{},{},{},,{},{},{:.17},{:.17},,{}",
+                step,
+                panel_index,
+                policy.as_str(),
+                archive_size,
+                entry.state_id,
+                entry.family_id,
+                entry.panel_index,
+                entry.step,
+                entry.panel_probe_acc,
+                entry.current_peak,
+                restored
+            )
+            .expect("failed to write archive parent log row");
+        } else {
+            writeln!(
+                self.writer,
+                "{},{},{},{},,,,,,,,,{}",
+                step,
+                panel_index,
+                policy.as_str(),
+                archive_size,
+                restored
+            )
+            .expect("failed to write archive parent log row");
+        }
+    }
+
+    fn flush(&mut self) {
+        self.writer
+            .flush()
+            .expect("failed to flush archive parent log");
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 enum OperatorPolicyMode {
     Baseline,
     StaticPrior,
@@ -345,9 +463,9 @@ impl OperatorPolicyMode {
             "baseline" => Self::Baseline,
             "static-prior" | "static_prior" => Self::StaticPrior,
             "prior-ewma" | "prior_ewma" => Self::PriorEwma,
-            other => panic!(
-                "--operator-policy expects baseline|static-prior|prior-ewma, got {other}"
-            ),
+            other => {
+                panic!("--operator-policy expects baseline|static-prior|prior-ewma, got {other}")
+            }
         }
     }
 
@@ -473,8 +591,7 @@ impl OperatorPolicyController {
         if matches!(self.mode, OperatorPolicyMode::PriorEwma) && record.evaluated {
             let usefulness = record.delta_u.max(0.0);
             self.ewma_usefulness[idx] =
-                (1.0 - self.ewma_alpha) * self.ewma_usefulness[idx]
-                    + self.ewma_alpha * usefulness;
+                (1.0 - self.ewma_alpha) * self.ewma_usefulness[idx] + self.ewma_alpha * usefulness;
         }
     }
 
@@ -615,7 +732,10 @@ fn load_operator_prior(path: &Path, h: usize) -> Vec<f64> {
         let probability: f64 = col("final_probability")
             .parse()
             .expect("invalid final_probability in operator prior");
-        assert!(probability > 0.0, "operator prior probabilities must be positive");
+        assert!(
+            probability > 0.0,
+            "operator prior probabilities must be positive"
+        );
         probabilities[idx] = Some(probability);
     }
     let out: Vec<f64> = probabilities
@@ -631,7 +751,10 @@ fn load_operator_prior(path: &Path, h: usize) -> Vec<f64> {
         })
         .collect();
     let sum: f64 = out.iter().sum();
-    assert!((sum - 1.0).abs() < 1e-6, "operator prior probabilities must sum to 1");
+    assert!(
+        (sum - 1.0).abs() < 1e-6,
+        "operator prior probabilities must sum to 1"
+    );
     out
 }
 
@@ -1236,6 +1359,10 @@ fn main() {
     let mut operator_ewma_alpha = 0.05f64;
     let mut operator_policy_log_path: Option<PathBuf> = None;
     let mut d8_state_log_path: Option<PathBuf> = None;
+    let mut archive_parent_policy_name = String::from("current-best");
+    let mut archive_parent_log_path: Option<PathBuf> = None;
+    let mut archive_max_size: usize = 64;
+    let mut archive_switch_interval_panels: usize = 1;
     let mut phase = String::from("default");
     let mut arm = String::from("default");
     let mut run_id = String::from("default");
@@ -1328,7 +1455,10 @@ fn main() {
             "--operator-weight-floor" => {
                 i += 1;
                 operator_weight_floor = args[i].parse().unwrap();
-                assert!(operator_weight_floor > 0.0, "--operator-weight-floor must be > 0");
+                assert!(
+                    operator_weight_floor > 0.0,
+                    "--operator-weight-floor must be > 0"
+                );
             }
             "--operator-weight-cap" => {
                 i += 1;
@@ -1353,6 +1483,27 @@ fn main() {
             "--d8-state-log" => {
                 i += 1;
                 d8_state_log_path = Some(PathBuf::from(&args[i]));
+            }
+            "--archive-parent-policy" => {
+                i += 1;
+                archive_parent_policy_name = args[i].clone();
+            }
+            "--archive-parent-log" => {
+                i += 1;
+                archive_parent_log_path = Some(PathBuf::from(&args[i]));
+            }
+            "--archive-max-size" => {
+                i += 1;
+                archive_max_size = args[i].parse().unwrap();
+                assert!(archive_max_size > 0, "--archive-max-size must be > 0");
+            }
+            "--archive-switch-interval-panels" => {
+                i += 1;
+                archive_switch_interval_panels = args[i].parse().unwrap();
+                assert!(
+                    archive_switch_interval_panels > 0,
+                    "--archive-switch-interval-panels must be > 0"
+                );
             }
             "--phase" => {
                 i += 1;
@@ -1411,12 +1562,13 @@ fn main() {
         other => panic!("--accept-policy expects strict|ties|zero-p|epsilon, got {other}"),
     };
     let operator_policy_mode = OperatorPolicyMode::parse(&operator_policy_name);
+    let archive_parent_policy_mode = ArchiveParentPolicyMode::parse(&archive_parent_policy_name);
     init.accept_ties = matches!(acceptance_policy, AcceptancePolicy::Ties);
     let evo_config = init.evolution_config();
 
     println!("\n=== MUTUAL INHIBITION EXPERIMENT ===");
     println!(
-        "  H={}, {} steps, {} classes, seed={}, jackpot={}, ticks={}, accept_ties={}, accept_policy={}, neutral_p={:.3}, accept_epsilon={:.6}, input_scatter={}, operator_policy={}, phase={}, arm={}, run_id={}\n",
+        "  H={}, {} steps, {} classes, seed={}, jackpot={}, ticks={}, accept_ties={}, accept_policy={}, neutral_p={:.3}, accept_epsilon={:.6}, input_scatter={}, operator_policy={}, archive_parent_policy={}, phase={}, arm={}, run_id={}\n",
         h,
         steps,
         n_classes,
@@ -1429,6 +1581,7 @@ fn main() {
         cli_accept_epsilon,
         input_scatter,
         operator_policy_mode.as_str(),
+        archive_parent_policy_mode.as_str(),
         phase,
         arm,
         run_id
@@ -1472,8 +1625,10 @@ fn main() {
                 .join("panel_timeseries.csv")
         })
     });
-    let fallback_panel_log_path =
-        PathBuf::from("output").join("phase_b_panels").join(&run_id).join("panel_timeseries.csv");
+    let fallback_panel_log_path = PathBuf::from("output")
+        .join("phase_b_panels")
+        .join(&run_id)
+        .join("panel_timeseries.csv");
     let resolved_panel_log_path = panel_interval.map(|_| {
         inferred_panel_log_path
             .clone()
@@ -1485,6 +1640,11 @@ fn main() {
     };
     if d8_state_log_path.is_some() && panel_writer.is_none() {
         panic!("--d8-state-log requires --panel-interval so panel states are well-defined");
+    }
+    if archive_parent_log_path.is_some() && panel_writer.is_none() {
+        panic!(
+            "--archive-parent-log requires --panel-interval so parent choices are panel-defined"
+        );
     }
     if let Some(panel) = panel_writer.as_ref() {
         println!(
@@ -1519,15 +1679,7 @@ fn main() {
         .map(|p| p.display().to_string())
         .unwrap_or_default();
     let mut d8_state_log = d8_state_log_path.clone().map(|path| {
-        D8StateLogWriter::new(
-            path,
-            &run_id,
-            &phase,
-            &arm,
-            seed,
-            h,
-            checkpoint_ref.clone(),
-        )
+        D8StateLogWriter::new(path, &run_id, &phase, &arm, seed, h, checkpoint_ref.clone())
     });
     if let Some(writer) = d8_state_log.as_ref() {
         println!(
@@ -1536,12 +1688,30 @@ fn main() {
             D8StateLogWriter::SCHEMA_VERSION
         );
     }
+    let mut archive_parent_log = archive_parent_log_path
+        .clone()
+        .map(ArchiveParentLogWriter::new);
+    if let Some(writer) = archive_parent_log.as_ref() {
+        println!(
+            "  Archive parent log: {} (policy={}, max_size={}, switch_interval_panels={})",
+            writer.path.display(),
+            archive_parent_policy_mode.as_str(),
+            archive_max_size,
+            archive_switch_interval_panels
+        );
+    }
+    let mut archive_entries: VecDeque<ArchiveEntry> = VecDeque::new();
+    let mut archive_rng = StdRng::seed_from_u64(seed + 8128);
+    let mut d8_next_parent_override: Option<String> = None;
     let mut d8_panel_index = 0usize;
 
     // Evolve with smooth cosine (champion fitness)
     for step in 0..steps {
         let use_traced = candidate_log.is_some()
-            || !matches!(acceptance_policy, AcceptancePolicy::Strict | AcceptancePolicy::Ties)
+            || !matches!(
+                acceptance_policy,
+                AcceptancePolicy::Strict | AcceptancePolicy::Ties
+            )
             || operator_policy_mode.uses_weights()
             || operator_policy.log_writer.is_some();
         let step_operator_weights = operator_policy.weights_for_step();
@@ -1651,6 +1821,7 @@ fn main() {
         }
         if let Some(panel) = panel_writer.as_mut() {
             if (step + 1) % panel.window_size == 0 {
+                let current_panel_index = d8_panel_index;
                 let accepted_window = accepted.saturating_sub(panel.last_accepted);
                 let rejected_window = rejected.saturating_sub(panel.last_rejected);
                 let metrics = compute_panel_metrics(
@@ -1665,11 +1836,14 @@ fn main() {
                     init.input_end(),
                     input_scatter,
                 );
+                let state_id = format!("{}::{}", run_id, current_panel_index);
+                let parent_override = d8_next_parent_override.take();
                 if let Some(log) = d8_state_log.as_mut() {
                     log.write_panel_state(
-                        d8_panel_index,
+                        current_panel_index,
                         step + 1,
                         steps,
+                        parent_override.as_deref(),
                         accepted,
                         rejected,
                         accepted_window,
@@ -1678,9 +1852,80 @@ fn main() {
                         peak,
                         &metrics,
                     );
-                    d8_panel_index += 1;
                 }
-                panel.write_row(step + 1, accepted, rejected, net.edge_count(), peak, &metrics);
+                panel.write_row(
+                    step + 1,
+                    accepted,
+                    rejected,
+                    net.edge_count(),
+                    peak,
+                    &metrics,
+                );
+                archive_entries.push_back(ArchiveEntry {
+                    state_id: state_id.clone(),
+                    family_id: run_id.clone(),
+                    panel_index: current_panel_index,
+                    step: step + 1,
+                    current_peak: peak,
+                    panel_probe_acc: metrics.panel_probe_acc,
+                    net: net.clone(),
+                    proj: proj.clone(),
+                });
+                while archive_entries.len() > archive_max_size {
+                    archive_entries.pop_front();
+                }
+
+                let mut selected_entry: Option<ArchiveEntry> = None;
+                let mut restored_archive_parent = false;
+                let should_switch =
+                    !matches!(
+                        archive_parent_policy_mode,
+                        ArchiveParentPolicyMode::CurrentBest
+                    ) && ((current_panel_index + 1) % archive_switch_interval_panels == 0);
+                if should_switch && archive_entries.len() > 1 {
+                    let eligible_len = archive_entries.len() - 1; // Exclude the just-written current state.
+                    let selected_idx = match archive_parent_policy_mode {
+                        ArchiveParentPolicyMode::CurrentBest => None,
+                        ArchiveParentPolicyMode::RandomArchive => {
+                            Some(archive_rng.gen_range(0..eligible_len))
+                        }
+                        ArchiveParentPolicyMode::ScoreArchive => {
+                            let mut best_idx = 0usize;
+                            for idx in 1..eligible_len {
+                                let candidate = archive_entries.get(idx).expect("archive index");
+                                let best = archive_entries.get(best_idx).expect("archive index");
+                                let ordering =
+                                    candidate.panel_probe_acc.total_cmp(&best.panel_probe_acc);
+                                if ordering.is_gt()
+                                    || (ordering.is_eq()
+                                        && candidate.panel_index < best.panel_index)
+                                {
+                                    best_idx = idx;
+                                }
+                            }
+                            Some(best_idx)
+                        }
+                    };
+                    if let Some(idx) = selected_idx {
+                        let entry = archive_entries.get(idx).expect("archive index").clone();
+                        net = entry.net.clone();
+                        proj = entry.proj.clone();
+                        d8_next_parent_override = Some(entry.state_id.clone());
+                        restored_archive_parent = true;
+                        selected_entry = Some(entry);
+                    }
+                }
+                if let Some(log) = archive_parent_log.as_mut() {
+                    log.write_choice(
+                        step + 1,
+                        current_panel_index,
+                        archive_parent_policy_mode,
+                        archive_entries.len(),
+                        selected_entry.as_ref(),
+                        restored_archive_parent,
+                    );
+                }
+                d8_panel_index += 1;
             }
         }
         if (step + 1) % operator_policy_window == 0 {
@@ -1753,12 +1998,16 @@ fn main() {
                 .as_ref()
                 .map(|p| p.display().to_string()),
             operator_policy: operator_policy_mode.as_str().to_string(),
-            operator_prior: operator_prior_path.as_ref().map(|p| p.display().to_string()),
+            operator_prior: operator_prior_path
+                .as_ref()
+                .map(|p| p.display().to_string()),
             operator_epsilon_random,
             operator_weight_floor,
             operator_weight_cap,
             operator_ewma_alpha,
-            operator_ewma_reward: String::from("per-candidate max(delta_U, 0) from live local candidate outcomes only"),
+            operator_ewma_reward: String::from(
+                "per-candidate max(delta_U, 0) from live local candidate outcomes only",
+            ),
             operator_policy_log: inferred_operator_policy_log_path
                 .as_ref()
                 .map(|p| p.display().to_string()),
@@ -1766,6 +2015,12 @@ fn main() {
                 .as_ref()
                 .map(|_| D8StateLogWriter::SCHEMA_VERSION.to_string()),
             d8_state_log: d8_state_log_path.as_ref().map(|p| p.display().to_string()),
+            archive_parent_policy: archive_parent_policy_mode.as_str().to_string(),
+            archive_parent_log: archive_parent_log_path
+                .as_ref()
+                .map(|p| p.display().to_string()),
+            archive_max_size,
+            archive_switch_interval_panels,
         };
         let meta_json = serde_json::to_string_pretty(&meta).expect("failed to serialize run meta");
         let meta_path = checkpoint_path
@@ -1857,6 +2112,9 @@ fn main() {
         panel.flush();
     }
     if let Some(log) = d8_state_log.as_mut() {
+        log.flush();
+    }
+    if let Some(log) = archive_parent_log.as_mut() {
         log.flush();
     }
     operator_policy.flush();
