@@ -1,4 +1,4 @@
-# Phase D8.4a Archive-Parent Microprobe
+# Phase D8.4 Archive-Parent Microprobe
 
 Verdict: **D8_ARCHIVE_PARENT_REGRESSION**
 
@@ -6,26 +6,27 @@ Verdict: **D8_ARCHIVE_PARENT_REGRESSION**
 
 - Live search microprobe over SAF v1.
 - K(H), strict gate, operator schedule, horizon, and fixture are unchanged.
-- Only the parent source changes: current-best, random archive parent, or score archive parent.
-- This is not the full Ψ live controller; P2_PSI_CONF remains offline until model export/import is instrumented.
+- Only the parent source changes; acceptance and mutation semantics remain fixed.
+- This run tests live `P2_PSI_CONF = psi_pred * scan_depth_confidence` parent selection.
+- The P2 model is exported from historical D8 panel-state data and used only for parent selection, not acceptance.
 
 ## Decision
 
 ```json
 {
-  "root": "output\\phase_d8_archive_parent_microprobe",
+  "root": "output\\phase_d8_p2_microprobe2",
   "arm_stats": [
     {
-      "arm": "D8A_RANDOM_ARCHIVE_PARENT",
-      "overall_median_peak_delta_pp": -0.5000000000000001,
-      "positive_h_count": 1,
+      "arm": "D8B_P2_PSI_CONF_LOW_DUTY",
+      "overall_median_peak_delta_pp": 0.0,
+      "positive_h_count": 0,
       "worst_h_peak_delta_pp": -1.4
     },
     {
-      "arm": "D8A_SCORE_ARCHIVE_PARENT",
-      "overall_median_peak_delta_pp": -0.10000000000000009,
-      "positive_h_count": 0,
-      "worst_h_peak_delta_pp": -1.4
+      "arm": "D8B_P2_PSI_CONF_MED_DUTY",
+      "overall_median_peak_delta_pp": 0.0,
+      "positive_h_count": 1,
+      "worst_h_peak_delta_pp": -0.7999999999999998
     }
   ]
 }
@@ -34,43 +35,43 @@ Verdict: **D8_ARCHIVE_PARENT_REGRESSION**
 ## Per-H Arm Summary
 
 ```text
-  H                       arm  n  peak_mean_pct  peak_median_pct  final_mean_pct  accept_mean_pct  wall_mean_s
-128          D8A_CURRENT_BEST  1            1.6              1.6             1.6             69.2       39.811
-128 D8A_RANDOM_ARCHIVE_PARENT  1            1.1              1.1             1.1             66.0       34.858
-128  D8A_SCORE_ARCHIVE_PARENT  1            1.5              1.5             1.5             68.0       38.830
-256          D8A_CURRENT_BEST  1            2.0              2.0             2.0             25.9      127.939
-256 D8A_RANDOM_ARCHIVE_PARENT  1            5.4              5.4             5.4             22.0      126.319
-256  D8A_SCORE_ARCHIVE_PARENT  1            2.0              2.0             2.0             21.0      117.423
-384          D8A_CURRENT_BEST  1            1.8              1.8             1.8              6.0      117.561
-384 D8A_RANDOM_ARCHIVE_PARENT  1            0.4              0.4             0.4              6.2      104.994
-384  D8A_SCORE_ARCHIVE_PARENT  1            0.4              0.4             0.4              7.0      103.997
+  H                      arm  n  peak_mean_pct  peak_median_pct  final_mean_pct  accept_mean_pct  wall_mean_s
+128         D8B_CURRENT_BEST  1            1.6              1.6             1.6             69.2       35.686
+128 D8B_P2_PSI_CONF_LOW_DUTY  1            1.6              1.6             1.6             69.2       36.081
+128 D8B_P2_PSI_CONF_MED_DUTY  1            2.4              2.4             2.4             69.7       34.593
+256         D8B_CURRENT_BEST  1            2.0              2.0             2.0             25.9      106.489
+256 D8B_P2_PSI_CONF_LOW_DUTY  1            2.0              2.0             2.0             25.9      122.468
+256 D8B_P2_PSI_CONF_MED_DUTY  1            2.0              2.0             2.0             24.3      114.518
+384         D8B_CURRENT_BEST  1            1.8              1.8             1.8              6.0      109.851
+384 D8B_P2_PSI_CONF_LOW_DUTY  1            0.4              0.4             0.4              6.9      112.664
+384 D8B_P2_PSI_CONF_MED_DUTY  1            1.0              1.0             1.0              5.3      109.194
 ```
 
 ## Paired Peak Deltas vs Current-Best
 
 ```text
-  H  seed                       arm  peak_delta_pp  final_delta_pp  accept_delta_pp
-128    42 D8A_RANDOM_ARCHIVE_PARENT           -0.5            -0.5             -3.2
-256    42 D8A_RANDOM_ARCHIVE_PARENT            3.4             3.4             -3.9
-384    42 D8A_RANDOM_ARCHIVE_PARENT           -1.4            -1.4              0.2
-128    42  D8A_SCORE_ARCHIVE_PARENT           -0.1            -0.1             -1.2
-256    42  D8A_SCORE_ARCHIVE_PARENT            0.0             0.0             -4.9
-384    42  D8A_SCORE_ARCHIVE_PARENT           -1.4            -1.4              1.0
+  H  seed                      arm  peak_delta_pp  final_delta_pp  accept_delta_pp
+128    42 D8B_P2_PSI_CONF_LOW_DUTY            0.0             0.0              0.0
+256    42 D8B_P2_PSI_CONF_LOW_DUTY            0.0             0.0              0.0
+384    42 D8B_P2_PSI_CONF_LOW_DUTY           -1.4            -1.4              0.9
+128    42 D8B_P2_PSI_CONF_MED_DUTY            0.8             0.8              0.5
+256    42 D8B_P2_PSI_CONF_MED_DUTY            0.0             0.0             -1.6
+384    42 D8B_P2_PSI_CONF_MED_DUTY           -0.8            -0.8             -0.7
 ```
 
 ## Infrastructure Audit
 
 ```text
-                                                                          run_dir                       arm   H  seed archive_parent_policy  candidate_rows  expected_candidate_rows  state_log_exists  archive_parent_log_exists  panel_exists  state_rows  parent_rows  panel_rows  restored_count  selected_ids_valid  parent_links_valid  pass
-         output\phase_d8_archive_parent_microprobe\H_128\D8A_CURRENT_BEST\seed_42          D8A_CURRENT_BEST 128    42          current-best            9000                     9000              True                       True          True          10           10          10               0                True                True  True
-         output\phase_d8_archive_parent_microprobe\H_256\D8A_CURRENT_BEST\seed_42          D8A_CURRENT_BEST 256    42          current-best           18000                    18000              True                       True          True          10           10          10               0                True                True  True
-         output\phase_d8_archive_parent_microprobe\H_384\D8A_CURRENT_BEST\seed_42          D8A_CURRENT_BEST 384    42          current-best            9000                     9000              True                       True          True          10           10          10               0                True                True  True
-output\phase_d8_archive_parent_microprobe\H_128\D8A_RANDOM_ARCHIVE_PARENT\seed_42 D8A_RANDOM_ARCHIVE_PARENT 128    42        random-archive            9000                     9000              True                       True          True          10           10          10               9                True                True  True
-output\phase_d8_archive_parent_microprobe\H_256\D8A_RANDOM_ARCHIVE_PARENT\seed_42 D8A_RANDOM_ARCHIVE_PARENT 256    42        random-archive           18000                    18000              True                       True          True          10           10          10               9                True                True  True
-output\phase_d8_archive_parent_microprobe\H_384\D8A_RANDOM_ARCHIVE_PARENT\seed_42 D8A_RANDOM_ARCHIVE_PARENT 384    42        random-archive            9000                     9000              True                       True          True          10           10          10               9                True                True  True
- output\phase_d8_archive_parent_microprobe\H_128\D8A_SCORE_ARCHIVE_PARENT\seed_42  D8A_SCORE_ARCHIVE_PARENT 128    42         score-archive            9000                     9000              True                       True          True          10           10          10               9                True                True  True
- output\phase_d8_archive_parent_microprobe\H_256\D8A_SCORE_ARCHIVE_PARENT\seed_42  D8A_SCORE_ARCHIVE_PARENT 256    42         score-archive           18000                    18000              True                       True          True          10           10          10               9                True                True  True
- output\phase_d8_archive_parent_microprobe\H_384\D8A_SCORE_ARCHIVE_PARENT\seed_42  D8A_SCORE_ARCHIVE_PARENT 384    42         score-archive            9000                     9000              True                       True          True          10           10          10               9                True                True  True
+                                                              run_dir                      arm   H  seed archive_parent_policy  candidate_rows  expected_candidate_rows  state_log_exists  archive_parent_log_exists  panel_exists  state_rows  parent_rows  panel_rows  restored_count  selected_ids_valid  parent_links_valid  pass
+        output\phase_d8_p2_microprobe2\H_128\D8B_CURRENT_BEST\seed_42         D8B_CURRENT_BEST 128    42          current-best            9000                     9000              True                       True          True          10           10          10               0                True                True  True
+        output\phase_d8_p2_microprobe2\H_256\D8B_CURRENT_BEST\seed_42         D8B_CURRENT_BEST 256    42          current-best           18000                    18000              True                       True          True          10           10          10               0                True                True  True
+        output\phase_d8_p2_microprobe2\H_384\D8B_CURRENT_BEST\seed_42         D8B_CURRENT_BEST 384    42          current-best            9000                     9000              True                       True          True          10           10          10               0                True                True  True
+output\phase_d8_p2_microprobe2\H_128\D8B_P2_PSI_CONF_LOW_DUTY\seed_42 D8B_P2_PSI_CONF_LOW_DUTY 128    42           p2-psi-conf            9000                     9000              True                       True          True          10           10          10               0                True                True  True
+output\phase_d8_p2_microprobe2\H_256\D8B_P2_PSI_CONF_LOW_DUTY\seed_42 D8B_P2_PSI_CONF_LOW_DUTY 256    42           p2-psi-conf           18000                    18000              True                       True          True          10           10          10               0                True                True  True
+output\phase_d8_p2_microprobe2\H_384\D8B_P2_PSI_CONF_LOW_DUTY\seed_42 D8B_P2_PSI_CONF_LOW_DUTY 384    42           p2-psi-conf            9000                     9000              True                       True          True          10           10          10               2                True                True  True
+output\phase_d8_p2_microprobe2\H_128\D8B_P2_PSI_CONF_MED_DUTY\seed_42 D8B_P2_PSI_CONF_MED_DUTY 128    42           p2-psi-conf            9000                     9000              True                       True          True          10           10          10               1                True                True  True
+output\phase_d8_p2_microprobe2\H_256\D8B_P2_PSI_CONF_MED_DUTY\seed_42 D8B_P2_PSI_CONF_MED_DUTY 256    42           p2-psi-conf           18000                    18000              True                       True          True          10           10          10               1                True                True  True
+output\phase_d8_p2_microprobe2\H_384\D8B_P2_PSI_CONF_MED_DUTY\seed_42 D8B_P2_PSI_CONF_MED_DUTY 384    42           p2-psi-conf            9000                     9000              True                       True          True          10           10          10               3                True                True  True
 ```
 
 ## Interpretation

@@ -14,8 +14,13 @@ import pandas as pd
 
 
 DEFAULT_REPORT = Path("docs/research/PHASE_D8_ARCHIVE_PARENT_MICROPROBE.md")
-BASELINE_ARM = "D8A_CURRENT_BEST"
-TREATMENT_ARMS = ["D8A_RANDOM_ARCHIVE_PARENT", "D8A_SCORE_ARCHIVE_PARENT"]
+BASELINE_ARMS = ["D8A_CURRENT_BEST", "D8B_CURRENT_BEST"]
+TREATMENT_ARMS = [
+    "D8A_RANDOM_ARCHIVE_PARENT",
+    "D8A_SCORE_ARCHIVE_PARENT",
+    "D8B_P2_PSI_CONF_LOW_DUTY",
+    "D8B_P2_PSI_CONF_MED_DUTY",
+]
 
 
 def parse_args() -> argparse.Namespace:
@@ -85,14 +90,16 @@ def audit_run(row: pd.Series) -> dict:
     out["selected_ids_valid"] = bool(selected_ids.map(lambda x: x in state_ids).all())
 
     parent_values = states["parent_id"].fillna("").astype(str).tolist()
-    if out["arm"] == BASELINE_ARM:
+    if out["arm"] in BASELINE_ARMS:
         expected_parent = [""] + [f"{states['run_id'].iloc[0]}::{i}" for i in range(len(states) - 1)]
         out["parent_links_valid"] = parent_values == expected_parent and out["restored_count"] == 0
     else:
         # First panel starts from initial current-best lineage; later panels should
-        # have either sequential or restored archive-parent links.
+        # have either sequential or restored archive-parent links. Conservative
+        # P2 policies may legitimately fall back to current-best for many panels,
+        # so restored_count is diagnostic, not an infrastructure requirement.
         valid_parent_refs = all((p == "" and i == 0) or p in state_ids for i, p in enumerate(parent_values))
-        out["parent_links_valid"] = bool(valid_parent_refs and out["restored_count"] >= max(0, len(states) - 1))
+        out["parent_links_valid"] = bool(valid_parent_refs)
 
     out["pass"] = bool(
         out["candidate_rows"] == expected_candidates
@@ -121,7 +128,8 @@ def summarize_results(results: pd.DataFrame) -> pd.DataFrame:
 
 def paired_deltas(results: pd.DataFrame) -> pd.DataFrame:
     rows = []
-    baseline = results[results["arm"] == BASELINE_ARM].set_index(["H", "seed"])
+    baseline_rows = results[results["arm"].isin(BASELINE_ARMS)].copy()
+    baseline = baseline_rows.set_index(["H", "seed"])
     for _, row in results[results["arm"].isin(TREATMENT_ARMS)].iterrows():
         key = (row["H"], row["seed"])
         if key not in baseline.index:
@@ -175,8 +183,9 @@ def decide(run_audit: pd.DataFrame, deltas: pd.DataFrame) -> tuple[str, dict]:
 
 def write_report(path: Path, verdict: str, decision: dict, summary: pd.DataFrame, deltas: pd.DataFrame, audit: pd.DataFrame, root: Path) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
+    has_p2 = bool(summary["arm"].astype(str).str.startswith("D8B_").any()) if not summary.empty else False
     lines = [
-        "# Phase D8.4a Archive-Parent Microprobe",
+        "# Phase D8.4 Archive-Parent Microprobe",
         "",
         f"Verdict: **{verdict}**",
         "",
@@ -184,8 +193,19 @@ def write_report(path: Path, verdict: str, decision: dict, summary: pd.DataFrame
         "",
         "- Live search microprobe over SAF v1.",
         "- K(H), strict gate, operator schedule, horizon, and fixture are unchanged.",
-        "- Only the parent source changes: current-best, random archive parent, or score archive parent.",
-        "- This is not the full Ψ live controller; P2_PSI_CONF remains offline until model export/import is instrumented.",
+        "- Only the parent source changes; acceptance and mutation semantics remain fixed.",
+    ]
+    if has_p2:
+        lines.extend([
+            "- This run tests live `P2_PSI_CONF = psi_pred * scan_depth_confidence` parent selection.",
+            "- The P2 model is exported from historical D8 panel-state data and used only for parent selection, not acceptance.",
+        ])
+    else:
+        lines.extend([
+            "- This run tests naive current-best, random archive parent, and score archive parent selection.",
+            "- `P2_PSI_CONF` remains out of scope for this D8.4a report.",
+        ])
+    lines.extend([
         "",
         "## Decision",
         "",
@@ -213,7 +233,7 @@ def write_report(path: Path, verdict: str, decision: dict, summary: pd.DataFrame
         "",
         "## Interpretation",
         "",
-    ]
+    ])
     if verdict == "D8_LIVE_ARCHIVE_PARENT_MICROPROBE_PASS":
         lines.append("- Archive parent switching produced a positive paired live signal; run a wider D8.4 with more seeds before promotion.")
     elif verdict == "D8_ARCHIVE_PARENT_WEAK_SIGNAL":

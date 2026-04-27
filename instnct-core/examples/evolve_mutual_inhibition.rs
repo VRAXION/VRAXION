@@ -20,7 +20,7 @@ use instnct_core::{
 use rand::rngs::StdRng;
 use rand::Rng;
 use rand::SeedableRng;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use std::collections::{HashSet, VecDeque};
 use std::env;
 use std::fs::{create_dir_all, write, File};
@@ -76,6 +76,8 @@ struct RunMeta {
     archive_parent_log: Option<String>,
     archive_max_size: usize,
     archive_switch_interval_panels: usize,
+    archive_min_cell_confidence: f64,
+    archive_p2_model: Option<String>,
 }
 
 struct PanelMetrics {
@@ -289,6 +291,9 @@ impl D8StateLogWriter {
         edges: usize,
         current_peak: f64,
         metrics: &PanelMetrics,
+        archive_cell_id: Option<usize>,
+        psi_pred: Option<f64>,
+        cell_confidence: Option<f64>,
     ) {
         let state_id = format!("{}::{}", self.run_id, panel_index);
         let parent_id = if let Some(parent_id) = parent_override {
@@ -301,9 +306,14 @@ impl D8StateLogWriter {
         let candidate_steps = (accepted_window + rejected_window).max(1);
         let accept_rate_window = accepted_window as f64 / candidate_steps as f64;
         let time_pct = step as f64 / total_steps.max(1) as f64;
+        let archive_cell_id_s = archive_cell_id.map(|v| v.to_string()).unwrap_or_default();
+        let psi_pred_s = psi_pred.map(|v| format!("{v:.17}")).unwrap_or_default();
+        let cell_confidence_s = cell_confidence
+            .map(|v| format!("{v:.17}"))
+            .unwrap_or_default();
         writeln!(
             self.writer,
-            "{},{},{},{},{},{},{},{},{},{},{},{},{:.17},{},{},{:.17},{:.17},{:.17},{},{},{},{},{:.17},{:.17},{:.17},{},{:.17},{},,,",
+            "{},{},{},{},{},{},{},{},{},{},{},{},{:.17},{},{},{:.17},{:.17},{:.17},{},{},{},{},{:.17},{:.17},{:.17},{},{:.17},{},{},{},{}",
             Self::SCHEMA_VERSION,
             state_id,
             parent_id,
@@ -331,7 +341,10 @@ impl D8StateLogWriter {
             metrics.stable_rank,
             metrics.kernel_rank,
             metrics.separation_sp,
-            self.checkpoint_ref
+            self.checkpoint_ref,
+            archive_cell_id_s,
+            psi_pred_s,
+            cell_confidence_s
         )
         .expect("failed to write D8 state log row");
     }
@@ -346,6 +359,7 @@ enum ArchiveParentPolicyMode {
     CurrentBest,
     RandomArchive,
     ScoreArchive,
+    P2PsiConf,
 }
 
 impl ArchiveParentPolicyMode {
@@ -354,8 +368,9 @@ impl ArchiveParentPolicyMode {
             "current-best" | "current_best" => Self::CurrentBest,
             "random-archive" | "random_archive" => Self::RandomArchive,
             "score-archive" | "score_archive" => Self::ScoreArchive,
+            "p2-psi-conf" | "p2_psi_conf" => Self::P2PsiConf,
             other => panic!(
-                "--archive-parent-policy expects current-best|random-archive|score-archive, got {other}"
+                "--archive-parent-policy expects current-best|random-archive|score-archive|p2-psi-conf, got {other}"
             ),
         }
     }
@@ -365,7 +380,202 @@ impl ArchiveParentPolicyMode {
             Self::CurrentBest => "current-best",
             Self::RandomArchive => "random-archive",
             Self::ScoreArchive => "score-archive",
+            Self::P2PsiConf => "p2-psi-conf",
         }
+    }
+}
+
+#[derive(Deserialize)]
+struct D8P2ExportModel {
+    schema_version: String,
+    psi_features: Vec<String>,
+    sphere_features: Vec<String>,
+    per_h: std::collections::BTreeMap<String, D8P2HModel>,
+}
+
+#[derive(Deserialize)]
+struct D8P2HModel {
+    knee_n: usize,
+    psi: D8P2PsiModel,
+    sphere: D8P2SphereModel,
+}
+
+#[derive(Deserialize)]
+struct D8P2PsiModel {
+    intercept: f64,
+    beta: Vec<f64>,
+    median: Vec<f64>,
+    mean: Vec<f64>,
+    std: Vec<f64>,
+}
+
+#[derive(Deserialize)]
+struct D8P2SphereModel {
+    median: Vec<f64>,
+    iqr: Vec<f64>,
+    anchors: Vec<Vec<f64>>,
+}
+
+impl D8P2ExportModel {
+    fn load(path: &Path) -> Self {
+        let text = std::fs::read_to_string(path).expect("failed to read D8 P2 model");
+        let model: Self = serde_json::from_str(&text).expect("failed to parse D8 P2 model");
+        assert_eq!(
+            model.schema_version, "d8_p2_model_v1",
+            "unsupported D8 P2 model schema"
+        );
+        model
+    }
+
+    fn h_model(&self, h: usize) -> Option<&D8P2HModel> {
+        self.per_h.get(&h.to_string())
+    }
+
+    fn score_state(
+        &self,
+        h: usize,
+        jackpot: usize,
+        step: usize,
+        total_steps: usize,
+        current_peak: f64,
+        accepted_window: u32,
+        rejected_window: u32,
+        edges: usize,
+        metrics: &PanelMetrics,
+    ) -> Option<(f64, usize)> {
+        let h_model = self.h_model(h)?;
+        let psi_values: Vec<f64> = self
+            .psi_features
+            .iter()
+            .map(|name| {
+                d8_feature_value(
+                    name,
+                    h,
+                    jackpot,
+                    step,
+                    total_steps,
+                    current_peak,
+                    accepted_window,
+                    rejected_window,
+                    edges,
+                    metrics,
+                )
+            })
+            .collect();
+        let psi = h_model.psi.predict(&psi_values);
+        let sphere_values: Vec<f64> = self
+            .sphere_features
+            .iter()
+            .map(|name| {
+                d8_feature_value(
+                    name,
+                    h,
+                    jackpot,
+                    step,
+                    total_steps,
+                    current_peak,
+                    accepted_window,
+                    rejected_window,
+                    edges,
+                    metrics,
+                )
+            })
+            .collect();
+        let cell_id = h_model.sphere.assign_cell(&sphere_values);
+        Some((psi, cell_id))
+    }
+
+    fn confidence(&self, h: usize, cell_count: usize) -> f64 {
+        let knee = self.h_model(h).map(|m| m.knee_n).unwrap_or(1).max(1);
+        (cell_count as f64 / knee as f64).min(1.0)
+    }
+}
+
+impl D8P2PsiModel {
+    fn predict(&self, values: &[f64]) -> f64 {
+        let mut out = self.intercept;
+        for i in 0..self.beta.len().min(values.len()) {
+            let raw = if values[i].is_finite() {
+                values[i]
+            } else {
+                self.median[i]
+            };
+            let std = self.std[i].abs().max(1e-12);
+            out += self.beta[i] * ((raw - self.mean[i]) / std);
+        }
+        out
+    }
+}
+
+impl D8P2SphereModel {
+    fn assign_cell(&self, values: &[f64]) -> usize {
+        if self.anchors.is_empty() {
+            return 0;
+        }
+        let dim = self.median.len().min(values.len());
+        if dim == 0 {
+            return 0;
+        }
+        let mut coord = vec![0.0; dim];
+        for i in 0..dim {
+            let raw = if values[i].is_finite() {
+                values[i]
+            } else {
+                self.median[i]
+            };
+            coord[i] = (raw - self.median[i]) / self.iqr[i].abs().max(1e-12);
+        }
+        let norm = coord.iter().map(|v| v * v).sum::<f64>().sqrt().max(1e-12);
+        for v in &mut coord {
+            *v /= norm;
+        }
+        let mut best_idx = 0usize;
+        let mut best_dot = f64::NEG_INFINITY;
+        for (idx, anchor) in self.anchors.iter().enumerate() {
+            let dot = coord
+                .iter()
+                .zip(anchor.iter())
+                .map(|(a, b)| a * b)
+                .sum::<f64>();
+            if dot > best_dot {
+                best_dot = dot;
+                best_idx = idx;
+            }
+        }
+        best_idx
+    }
+}
+
+fn d8_feature_value(
+    name: &str,
+    h: usize,
+    jackpot: usize,
+    step: usize,
+    total_steps: usize,
+    current_peak: f64,
+    accepted_window: u32,
+    rejected_window: u32,
+    edges: usize,
+    metrics: &PanelMetrics,
+) -> f64 {
+    match name {
+        "edges" => edges as f64,
+        "unique_predictions" => metrics.unique_predictions as f64,
+        "collision_rate" => metrics.collision_rate,
+        "f_active" => metrics.f_active,
+        "stable_rank" => metrics.stable_rank,
+        "kernel_rank" => metrics.kernel_rank as f64,
+        "separation_sp" => metrics.separation_sp,
+        "accept_rate_window" => {
+            let total = (accepted_window + rejected_window).max(1);
+            accepted_window as f64 / total as f64
+        }
+        "main_peak_acc" | "current_peak" => current_peak,
+        "panel_probe_acc" => metrics.panel_probe_acc,
+        "H" => h as f64,
+        "jackpot" => jackpot as f64,
+        "time_pct" => step as f64 / total_steps.max(1) as f64,
+        _ => 0.0,
     }
 }
 
@@ -373,10 +583,12 @@ impl ArchiveParentPolicyMode {
 struct ArchiveEntry {
     state_id: String,
     family_id: String,
+    archive_cell_id: Option<usize>,
     panel_index: usize,
     step: usize,
     current_peak: f64,
     panel_probe_acc: f64,
+    psi_pred: f64,
     net: Network,
     proj: Int8Projection,
 }
@@ -410,22 +622,30 @@ impl ArchiveParentLogWriter {
         policy: ArchiveParentPolicyMode,
         archive_size: usize,
         selected: Option<&ArchiveEntry>,
+        selected_score: f64,
+        selected_confidence: f64,
         restored: bool,
     ) {
         if let Some(entry) = selected {
+            let cell_id = entry
+                .archive_cell_id
+                .map(|v| v.to_string())
+                .unwrap_or_default();
             writeln!(
                 self.writer,
-                "{},{},{},{},{},{},,{},{},{:.17},{:.17},,{}",
+                "{},{},{},{},{},{},{},{},{},{:.17},{:.17},{:.17},{}",
                 step,
                 panel_index,
                 policy.as_str(),
                 archive_size,
                 entry.state_id,
                 entry.family_id,
+                cell_id,
                 entry.panel_index,
                 entry.step,
-                entry.panel_probe_acc,
+                selected_score,
                 entry.current_peak,
+                selected_confidence,
                 restored
             )
             .expect("failed to write archive parent log row");
@@ -1363,6 +1583,8 @@ fn main() {
     let mut archive_parent_log_path: Option<PathBuf> = None;
     let mut archive_max_size: usize = 64;
     let mut archive_switch_interval_panels: usize = 1;
+    let mut archive_min_cell_confidence = 0.0f64;
+    let mut archive_p2_model_path: Option<PathBuf> = None;
     let mut phase = String::from("default");
     let mut arm = String::from("default");
     let mut run_id = String::from("default");
@@ -1505,6 +1727,18 @@ fn main() {
                     "--archive-switch-interval-panels must be > 0"
                 );
             }
+            "--archive-min-cell-confidence" => {
+                i += 1;
+                archive_min_cell_confidence = args[i].parse().unwrap();
+                assert!(
+                    (0.0..=1.0).contains(&archive_min_cell_confidence),
+                    "--archive-min-cell-confidence must be in [0, 1]"
+                );
+            }
+            "--archive-p2-model" => {
+                i += 1;
+                archive_p2_model_path = Some(PathBuf::from(&args[i]));
+            }
             "--phase" => {
                 i += 1;
                 phase = args[i].clone();
@@ -1563,6 +1797,11 @@ fn main() {
     };
     let operator_policy_mode = OperatorPolicyMode::parse(&operator_policy_name);
     let archive_parent_policy_mode = ArchiveParentPolicyMode::parse(&archive_parent_policy_name);
+    if matches!(archive_parent_policy_mode, ArchiveParentPolicyMode::P2PsiConf)
+        && archive_p2_model_path.is_none()
+    {
+        panic!("--archive-parent-policy p2-psi-conf requires --archive-p2-model");
+    }
     init.accept_ties = matches!(acceptance_policy, AcceptancePolicy::Ties);
     let evo_config = init.evolution_config();
 
@@ -1702,6 +1941,9 @@ fn main() {
     }
     let mut archive_entries: VecDeque<ArchiveEntry> = VecDeque::new();
     let mut archive_rng = StdRng::seed_from_u64(seed + 8128);
+    let d8_p2_model = archive_p2_model_path
+        .as_deref()
+        .map(D8P2ExportModel::load);
     let mut d8_next_parent_override: Option<String> = None;
     let mut d8_panel_index = 0usize;
 
@@ -1837,6 +2079,34 @@ fn main() {
                     input_scatter,
                 );
                 let state_id = format!("{}::{}", run_id, current_panel_index);
+                let (psi_pred, archive_cell_id) = d8_p2_model
+                    .as_ref()
+                    .and_then(|model| {
+                        model.score_state(
+                            h,
+                            jackpot,
+                            step + 1,
+                            steps,
+                            peak,
+                            accepted_window,
+                            rejected_window,
+                            net.edge_count(),
+                            &metrics,
+                        )
+                    })
+                    .map(|(psi, cell)| (psi, Some(cell)))
+                    .unwrap_or((0.0, None));
+                let archive_cell_confidence = d8_p2_model
+                    .as_ref()
+                    .and_then(|model| {
+                        archive_cell_id.map(|cell_id| {
+                            let prior_count = archive_entries
+                                .iter()
+                                .filter(|entry| entry.archive_cell_id == Some(cell_id))
+                                .count();
+                            model.confidence(h, prior_count + 1)
+                        })
+                    });
                 let parent_override = d8_next_parent_override.take();
                 if let Some(log) = d8_state_log.as_mut() {
                     log.write_panel_state(
@@ -1851,6 +2121,9 @@ fn main() {
                         net.edge_count(),
                         peak,
                         &metrics,
+                        archive_cell_id,
+                        d8_p2_model.as_ref().map(|_| psi_pred),
+                        archive_cell_confidence,
                     );
                 }
                 panel.write_row(
@@ -1864,10 +2137,12 @@ fn main() {
                 archive_entries.push_back(ArchiveEntry {
                     state_id: state_id.clone(),
                     family_id: run_id.clone(),
+                    archive_cell_id,
                     panel_index: current_panel_index,
                     step: step + 1,
                     current_peak: peak,
                     panel_probe_acc: metrics.panel_probe_acc,
+                    psi_pred,
                     net: net.clone(),
                     proj: proj.clone(),
                 });
@@ -1877,6 +2152,8 @@ fn main() {
 
                 let mut selected_entry: Option<ArchiveEntry> = None;
                 let mut restored_archive_parent = false;
+                let mut selected_score = 0.0f64;
+                let mut selected_confidence = 0.0f64;
                 let should_switch =
                     !matches!(
                         archive_parent_policy_mode,
@@ -1905,9 +2182,57 @@ fn main() {
                             }
                             Some(best_idx)
                         }
+                        ArchiveParentPolicyMode::P2PsiConf => {
+                            let model = d8_p2_model
+                                .as_ref()
+                                .expect("P2 archive policy requires D8 P2 model");
+                            let mut counts = std::collections::BTreeMap::<usize, usize>::new();
+                            for entry in archive_entries.iter() {
+                                if let Some(cell_id) = entry.archive_cell_id {
+                                    *counts.entry(cell_id).or_insert(0) += 1;
+                                }
+                            }
+                            let mut best: Option<(usize, f64, f64)> = None;
+                            for idx in 0..eligible_len {
+                                let entry = archive_entries.get(idx).expect("archive index");
+                                let Some(cell_id) = entry.archive_cell_id else {
+                                    continue;
+                                };
+                                let confidence =
+                                    model.confidence(h, *counts.get(&cell_id).unwrap_or(&0));
+                                if confidence < archive_min_cell_confidence {
+                                    continue;
+                                }
+                                let score = entry.psi_pred * confidence;
+                                match best {
+                                    None => best = Some((idx, score, confidence)),
+                                    Some((best_idx, best_score, _)) => {
+                                        let best_entry =
+                                            archive_entries.get(best_idx).expect("archive index");
+                                        if score > best_score
+                                            || ((score - best_score).abs() <= 1e-12
+                                                && entry.panel_index < best_entry.panel_index)
+                                        {
+                                            best = Some((idx, score, confidence));
+                                        }
+                                    }
+                                }
+                            }
+                            if let Some((idx, score, confidence)) = best {
+                                selected_score = score;
+                                selected_confidence = confidence;
+                                Some(idx)
+                            } else {
+                                None
+                            }
+                        }
                     };
                     if let Some(idx) = selected_idx {
                         let entry = archive_entries.get(idx).expect("archive index").clone();
+                        if !matches!(archive_parent_policy_mode, ArchiveParentPolicyMode::P2PsiConf)
+                        {
+                            selected_score = entry.panel_probe_acc;
+                        }
                         net = entry.net.clone();
                         proj = entry.proj.clone();
                         d8_next_parent_override = Some(entry.state_id.clone());
@@ -1922,6 +2247,8 @@ fn main() {
                         archive_parent_policy_mode,
                         archive_entries.len(),
                         selected_entry.as_ref(),
+                        selected_score,
+                        selected_confidence,
                         restored_archive_parent,
                     );
                 }
@@ -2021,6 +2348,10 @@ fn main() {
                 .map(|p| p.display().to_string()),
             archive_max_size,
             archive_switch_interval_panels,
+            archive_min_cell_confidence,
+            archive_p2_model: archive_p2_model_path
+                .as_ref()
+                .map(|p| p.display().to_string()),
         };
         let meta_json = serde_json::to_string_pretty(&meta).expect("failed to serialize run meta");
         let meta_path = checkpoint_path

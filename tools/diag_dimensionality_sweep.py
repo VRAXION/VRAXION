@@ -12,6 +12,7 @@ and writes candidate logs, checkpoints, run metadata, and panel summaries.
 `--phase-d7-bandit` runs the Safe Operator Bandit over locked SAF v1.
 `--phase-d8-instrumentation` runs D8.3 instrumentation-only over locked SAF v1.
 `--phase-d8-archive-microprobe` runs D8.4a live archive-parent switching microprobe.
+`--phase-d8-p2-microprobe` runs D8.4b live P2_PSI_CONF archive-parent microprobe.
 """
 from __future__ import annotations
 
@@ -20,6 +21,7 @@ from concurrent.futures import FIRST_COMPLETED, ThreadPoolExecutor, as_completed
 import csv
 import json
 import math
+import os
 import subprocess
 import sys
 import time
@@ -80,6 +82,8 @@ def parse_args() -> argparse.Namespace:
                    help="run Phase D8.3 instrumentation-only locked SAF v1 arms for evolve_mutual_inhibition")
     p.add_argument("--phase-d8-archive-microprobe", action="store_true",
                    help="run Phase D8.4a archive-parent switching microprobe for evolve_mutual_inhibition")
+    p.add_argument("--phase-d8-p2-microprobe", action="store_true",
+                   help="run Phase D8.4b P2_PSI_CONF archive-parent microprobe for evolve_mutual_inhibition")
     p.add_argument("--arms", default="B0,B1,B2,B3,B4",
                    help="comma-separated Phase B arms to run")
     p.add_argument("--panel-interval", type=int, default=None,
@@ -113,7 +117,10 @@ def parse_summary_line(stdout: str) -> dict | None:
 
 def example_binary_path(example: str) -> Path:
     suffix = ".exe" if sys.platform.startswith("win") else ""
-    return REPO_ROOT / "target" / "release" / "examples" / f"{example}{suffix}"
+    target_dir = Path(os.environ.get("VRAXION_TARGET_DIR", str(REPO_ROOT / "target")))
+    if not target_dir.is_absolute():
+        target_dir = REPO_ROOT / target_dir
+    return target_dir / "release" / "examples" / f"{example}{suffix}"
 
 
 def build_release_example(example: str) -> int:
@@ -121,7 +128,13 @@ def build_release_example(example: str) -> int:
         "cargo", "build", "--release", "--example", example,
         "--manifest-path", str(REPO_ROOT / "instnct-core" / "Cargo.toml"),
     ]
-    proc = subprocess.run(cmd, cwd=REPO_ROOT, capture_output=True, text=True)
+    env = os.environ.copy()
+    if "VRAXION_TARGET_DIR" in env:
+        target_dir = Path(env["VRAXION_TARGET_DIR"])
+        if not target_dir.is_absolute():
+            target_dir = REPO_ROOT / target_dir
+        env["CARGO_TARGET_DIR"] = str(target_dir)
+    proc = subprocess.run(cmd, cwd=REPO_ROOT, capture_output=True, text=True, env=env)
     if proc.returncode != 0:
         print(f"  !! cargo build --example {example} exited {proc.returncode}", file=sys.stderr)
         print(proc.stderr[-4000:], file=sys.stderr)
@@ -404,6 +417,12 @@ D8_ARCHIVE_MICROPROBE_ARMS = [
     "D8A_SCORE_ARCHIVE_PARENT",
 ]
 
+D8_P2_MICROPROBE_ARMS = [
+    "D8B_CURRENT_BEST",
+    "D8B_P2_PSI_CONF_LOW_DUTY",
+    "D8B_P2_PSI_CONF_MED_DUTY",
+]
+
 
 def phase_d8_archive_microprobe_arm_config(arm: str, base_steps: int, h: int | None = None) -> dict:
     """D8.4a live archive-parent switching over locked SAF v1.
@@ -440,6 +459,80 @@ def phase_d8_archive_microprobe_arm_config(arm: str, base_steps: int, h: int | N
         "archive_max_size": 64,
         "archive_switch_interval_panels": 1,
     }
+
+
+def phase_d8_p2_microprobe_arm_config(arm: str, base_steps: int, h: int | None = None, model_path: Path | None = None) -> dict:
+    """D8.4b live P2_PSI_CONF archive-parent switching.
+
+    P2 score is psi_pred * cell_confidence. Switching is deliberately
+    conservative versus D8.4a: low duty every 5 panels with confidence >= 0.8,
+    medium duty every 3 panels with confidence >= 0.5.
+    """
+    if h is None:
+        raise ValueError("Phase D8 P2 microprobe config requires H")
+    k_by_h = {128: 9, 256: 18, 384: 9}
+    if h not in k_by_h:
+        raise ValueError(f"Phase D8 P2 microprobe supports only H in {sorted(k_by_h)}, got {h}")
+    base = {
+        **phase_d1_arm_config("D1_K1_STRICT", base_steps),
+        "H": h,
+        "jackpot": k_by_h[h],
+        "operator_policy": None,
+        "operator_prior": None,
+        "operator_epsilon_random": None,
+        "operator_weight_floor": None,
+        "operator_weight_cap": None,
+        "operator_ewma_alpha": None,
+        "d8_state_log": True,
+        "instrumentation_schema_version": "d8_state_log_v1",
+        "archive_parent_log": True,
+        "archive_max_size": 64,
+    }
+    if arm == "D8B_CURRENT_BEST":
+        return {
+            **base,
+            "archive_parent_policy": "current-best",
+            "archive_switch_interval_panels": 1,
+            "archive_min_cell_confidence": 0.0,
+            "archive_p2_model": None,
+        }
+    if arm == "D8B_P2_PSI_CONF_LOW_DUTY":
+        return {
+            **base,
+            "archive_parent_policy": "p2-psi-conf",
+            "archive_switch_interval_panels": 5,
+            "archive_min_cell_confidence": 0.8,
+            "archive_p2_model": str(model_path),
+        }
+    if arm == "D8B_P2_PSI_CONF_MED_DUTY":
+        return {
+            **base,
+            "archive_parent_policy": "p2-psi-conf",
+            "archive_switch_interval_panels": 3,
+            "archive_min_cell_confidence": 0.5,
+            "archive_p2_model": str(model_path),
+        }
+    raise ValueError(f"unknown Phase D8 P2 microprobe arm: {arm}")
+
+
+def generate_d8_p2_model(out_dir: Path) -> Path:
+    model_path = out_dir / "d8_p2_model.json"
+    if model_path.exists():
+        return model_path
+    script = REPO_ROOT / "tools" / "export_phase_d8_p2_model.py"
+    proc = subprocess.run(
+        [sys.executable, str(script), "--out", str(model_path)],
+        cwd=REPO_ROOT,
+        capture_output=True,
+        text=True,
+    )
+    (out_dir / "d8_p2_model_stdout.txt").write_text(proc.stdout)
+    (out_dir / "d8_p2_model_stderr.txt").write_text(proc.stderr)
+    if proc.returncode != 0:
+        print(proc.stdout, file=sys.stderr)
+        print(proc.stderr, file=sys.stderr)
+        raise RuntimeError(f"D8 P2 model export failed with rc={proc.returncode}")
+    return model_path
 
 
 def generate_operator_prior(out_dir: Path) -> Path:
@@ -551,7 +644,7 @@ def run_phase_b_cell(
 ) -> tuple[dict | None, int, float]:
     cfg = cfg or phase_b_arm_config(arm, base_steps)
     run_id = f"phase_{phase.lower()}_{fixture}_{arm}_H{h}_seed{seed}"
-    if phase in {"D2", "D3", "D3F", "D4", "D7", "D8", "D8A"}:
+    if phase in {"D2", "D3", "D3F", "D4", "D7", "D8", "D8A", "D8B"}:
         run_dir = out_dir / f"H_{h}" / arm / f"seed_{seed}"
     else:
         run_dir = out_dir / arm / f"seed_{seed}"
@@ -619,6 +712,10 @@ def run_phase_b_cell(
             "--archive-max-size", str(cfg.get("archive_max_size", 64)),
             "--archive-switch-interval-panels", str(cfg.get("archive_switch_interval_panels", 1)),
         ]
+        if cfg.get("archive_min_cell_confidence") is not None:
+            cmd += ["--archive-min-cell-confidence", str(cfg["archive_min_cell_confidence"])]
+        if cfg.get("archive_p2_model"):
+            cmd += ["--archive-p2-model", str(cfg["archive_p2_model"])]
     if cfg["input_scatter"]:
         cmd += ["--input-scatter"]
 
@@ -686,6 +783,8 @@ def run_phase_b_cell(
         "archive_parent_log": str(archive_parent_log) if cfg.get("archive_parent_log") else "",
         "archive_max_size": cfg.get("archive_max_size", ""),
         "archive_switch_interval_panels": cfg.get("archive_switch_interval_panels", ""),
+        "archive_min_cell_confidence": cfg.get("archive_min_cell_confidence", ""),
+        "archive_p2_model": cfg.get("archive_p2_model", ""),
         "panel_window_size": panel_interval or "",
         "expected_candidate_rows": cfg["steps"] * cfg["jackpot"],
     })
@@ -1713,6 +1812,122 @@ def main_phase_d8_archive_microprobe(args: argparse.Namespace) -> int:
     return rc
 
 
+def main_phase_d8_p2_microprobe(args: argparse.Namespace) -> int:
+    fixtures = [f.strip() for f in args.fixtures.split(",") if f.strip()]
+    if fixtures != ["mutual_inhibition"]:
+        raise SystemExit("--phase-d8-p2-microprobe currently supports only --fixtures mutual_inhibition")
+    requested_h = {int(x) for x in args.H_values.split(",") if x.strip()}
+    valid_h = {128, 256, 384}
+    invalid_h = sorted(requested_h - valid_h)
+    if invalid_h:
+        raise SystemExit(f"--phase-d8-p2-microprobe supports only H in {sorted(valid_h)}, got {invalid_h}")
+    arms = D8_P2_MICROPROBE_ARMS if args.arms == "B0,B1,B2,B3,B4" else [a.strip() for a in args.arms.split(",") if a.strip()]
+    for arm in arms:
+        if arm not in D8_P2_MICROPROBE_ARMS:
+            raise SystemExit(f"unknown Phase D8 P2 microprobe arm: {arm}")
+
+    out_dir = Path(args.out)
+    out_dir.mkdir(parents=True, exist_ok=True)
+    model_path = generate_d8_p2_model(out_dir)
+    results: list[dict] = []
+    done: set[tuple] = set()
+    if args.resume:
+        results, done = load_resume(out_dir, phase_b=True)
+        print(f"  resume: loaded {len(results)} previous results, skipping {len(done)} cells")
+
+    cells = []
+    for fx in fixtures:
+        for arm in arms:
+            for h in sorted(requested_h):
+                for i in range(args.seeds):
+                    cells.append((fx, arm, h, seed_from_idx(i)))
+    todo = [cell for cell in cells if cell not in done]
+    print(f"  Phase D8.4b P2_PSI_CONF microprobe plan: {len(cells)} total cells, {len(todo)} to run")
+    print(f"  fixtures: {fixtures}")
+    print(f"  arms:     {arms}")
+    print(f"  H values: {sorted(requested_h)}")
+    print(f"  seeds:    {args.seeds} per arm -> seed pattern 42 + i*1000")
+    print(f"  steps:    {args.steps}")
+    print(f"  panel interval: {args.panel_interval}")
+    print(f"  p2 model: {model_path}")
+    print(f"  jobs:     {args.jobs}")
+    print(f"  out:      {out_dir}")
+    if args.panel_interval is None:
+        raise SystemExit("--phase-d8-p2-microprobe requires --panel-interval")
+
+    if args.dry_run:
+        for fx, arm, h, seed in todo:
+            cfg = phase_d8_p2_microprobe_arm_config(arm, args.steps, h, model_path)
+            print(f"  DRY-RUN fixture={fx} arm={arm} H={h} seed={seed} "
+                  f"steps={cfg['steps']} jackpot={cfg['jackpot']} "
+                  f"archive_policy={cfg['archive_parent_policy']} interval={cfg['archive_switch_interval_panels']} "
+                  f"min_conf={cfg['archive_min_cell_confidence']} expected_rows={cfg['steps'] * cfg['jackpot']}")
+        return 0
+
+    prebuild_rc = prebuild_phase_examples(fixtures)
+    if prebuild_rc != 0:
+        return prebuild_rc
+
+    t_sweep = time.time()
+    jobs = max(1, args.jobs)
+    first_failure = 0
+    print(f"\nRunning Phase D8.4b P2 microprobe with {jobs} parallel jobs", flush=True)
+    with ThreadPoolExecutor(max_workers=jobs) as executor:
+        futures = {}
+        for idx, (fx, arm, h, seed) in enumerate(todo, 1):
+            cfg = phase_d8_p2_microprobe_arm_config(arm, args.steps, h, model_path)
+            print(f"  queue [{idx}/{len(todo)}] fixture={fx} arm={arm} H={h} K={cfg['jackpot']} policy={cfg['archive_parent_policy']} seed={seed}", flush=True)
+            future = executor.submit(
+                run_phase_b_cell,
+                fx,
+                "D8B",
+                arm,
+                h,
+                seed,
+                args.steps,
+                args.corpus,
+                args.packed,
+                out_dir,
+                args.panel_interval,
+                cfg,
+            )
+            futures[future] = (idx, fx, arm, h, seed)
+        for future in as_completed(futures):
+            idx, fx, arm, h, seed = futures[future]
+            elapsed = time.time() - t_sweep
+            try:
+                summary, rc, wall = future.result()
+            except Exception as exc:
+                summary, rc, wall = None, 1, 0.0
+                print(f"  FAILED [{idx}/{len(todo)}] elapsed={elapsed/60:.1f}m fixture={fx} arm={arm} H={h} seed={seed}: {exc}", file=sys.stderr, flush=True)
+            if summary is None:
+                first_failure = first_failure or (rc or 1)
+                print(f"  FAILED [{idx}/{len(todo)}] elapsed={elapsed/60:.1f}m fixture={fx} arm={arm} H={h} seed={seed} rc={rc} wall={wall:.1f}s", file=sys.stderr, flush=True)
+                write_artifacts(out_dir, results)
+                continue
+            summary.setdefault("wall_clock_s", wall)
+            results.append(summary)
+            write_artifacts(out_dir, results)
+            print(f"  done [{idx}/{len(todo)}] elapsed={elapsed/60:.1f}m fixture={fx} arm={arm} H={h} seed={seed}: "
+                  f"peak={summary['peak_acc']*100:.2f}% final={summary['final_acc']*100:.2f}% "
+                  f"accept={summary['accept_rate_pct']:.2f}% rows={summary['expected_candidate_rows']} "
+                  f"wall={summary['wall_clock_s']:.1f}s", flush=True)
+    if first_failure:
+        return first_failure
+    print_aggregate(results)
+    rc = run_constructability_analysis(out_dir)
+    analyzer = REPO_ROOT / "tools" / "analyze_phase_d8_archive_parent.py"
+    if rc == 0 and analyzer.exists():
+        proc = subprocess.run([sys.executable, str(analyzer), "--root", str(out_dir)], cwd=REPO_ROOT, capture_output=True, text=True)
+        (out_dir / "d8_p2_archive_parent_stdout.txt").write_text(proc.stdout)
+        (out_dir / "d8_p2_archive_parent_stderr.txt").write_text(proc.stderr)
+        print(proc.stdout)
+        rc = proc.returncode
+    print(f"\nSweep total wall clock: {(time.time() - t_sweep) / 60:.1f} min")
+    print(f"Artifacts: {out_dir / 'results.json'}  {out_dir / 'results.csv'}")
+    return rc
+
+
 def main_default(args: argparse.Namespace) -> int:
     fixtures = [f.strip() for f in args.fixtures.split(",") if f.strip()]
     h_values = [int(x) for x in args.H_values.split(",")]
@@ -1762,8 +1977,8 @@ def main_default(args: argparse.Namespace) -> int:
 
 def main() -> int:
     args = parse_args()
-    if sum([args.phase_b, args.phase_b1, args.phase_d1, args.phase_d2, args.phase_d3_klock, args.phase_d3_fine_k, args.phase_d4_softness, args.phase_d7_bandit, args.phase_d8_instrumentation, args.phase_d8_archive_microprobe]) > 1:
-        raise SystemExit("--phase-b, --phase-b1, --phase-d1, --phase-d2, --phase-d3-klock, --phase-d3-fine-k, --phase-d4-softness, --phase-d7-bandit, --phase-d8-instrumentation, and --phase-d8-archive-microprobe are mutually exclusive")
+    if sum([args.phase_b, args.phase_b1, args.phase_d1, args.phase_d2, args.phase_d3_klock, args.phase_d3_fine_k, args.phase_d4_softness, args.phase_d7_bandit, args.phase_d8_instrumentation, args.phase_d8_archive_microprobe, args.phase_d8_p2_microprobe]) > 1:
+        raise SystemExit("--phase-b, --phase-b1, --phase-d1, --phase-d2, --phase-d3-klock, --phase-d3-fine-k, --phase-d4-softness, --phase-d7-bandit, --phase-d8-instrumentation, --phase-d8-archive-microprobe, and --phase-d8-p2-microprobe are mutually exclusive")
     if args.phase_b:
         return main_phase_b(args)
     if args.phase_b1:
@@ -1784,6 +1999,8 @@ def main() -> int:
         return main_phase_d8_instrumentation(args)
     if args.phase_d8_archive_microprobe:
         return main_phase_d8_archive_microprobe(args)
+    if args.phase_d8_p2_microprobe:
+        return main_phase_d8_p2_microprobe(args)
     return main_default(args)
 
 
