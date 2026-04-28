@@ -1041,7 +1041,7 @@ impl Network {
     /// Ephemeral state (activation, charge, refractory) is **not** included.
     /// Use [`genome_from_bytes`](Self::genome_from_bytes) to reconstruct.
     pub fn genome_to_bytes(&self) -> Vec<u8> {
-        let (sources, targets, weights) = self.graph.edge_endpoints();
+        let (sources, targets, _weights) = self.graph.edge_endpoints();
         let dto = disk::NetworkDiskV1 {
             version: disk::CURRENT_VERSION,
             graph: disk::ConnectionGraphDiskV1 {
