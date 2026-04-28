@@ -193,8 +193,11 @@ fn parse_args() -> Cli {
             "--score-mode" => {
                 score_mode = args.next().expect("--score-mode value");
                 assert!(
-                    matches!(score_mode.as_str(), "accuracy" | "smooth"),
-                    "--score-mode expects accuracy|smooth"
+                    matches!(
+                        score_mode.as_str(),
+                        "accuracy" | "smooth" | "echo" | "unigram"
+                    ),
+                    "--score-mode expects accuracy|smooth|echo|unigram"
                 );
             }
             "--radii" => radii = Some(parse_csv_usize(&args.next().expect("--radii csv"))),
@@ -619,6 +622,22 @@ fn build_pair_bigram(pair_ids: &[u16], hot_to_idx: &[usize], n_hot: usize) -> Ve
         .collect()
 }
 
+fn build_pair_unigram(pair_ids: &[u16], hot_to_idx: &[usize], n_hot: usize) -> Vec<f64> {
+    let mut counts = vec![0u32; n_hot];
+    for &pid in pair_ids {
+        let idx = hot_to_idx[pid as usize];
+        if idx != usize::MAX {
+            counts[idx] += 1;
+        }
+    }
+    let total: f64 = counts.iter().map(|&c| c as f64).sum();
+    if total < 1.0 {
+        vec![1.0 / n_hot as f64; n_hot]
+    } else {
+        counts.iter().map(|&c| c as f64 / total).collect()
+    }
+}
+
 fn cosine_similarity(a: &[f64], b: &[f64]) -> f64 {
     let mut dot = 0.0;
     let mut na = 0.0;
@@ -672,6 +691,59 @@ fn eval_accuracy_proj(
     correct as f64 / len as f64
 }
 
+fn one_hot_cosine(probs: &[f64], target_idx: usize) -> f64 {
+    let norm = probs.iter().map(|v| v * v).sum::<f64>().sqrt();
+    if norm <= 1e-12 {
+        0.0
+    } else {
+        probs[target_idx] / norm
+    }
+}
+
+fn eval_echo_proj(
+    net: &mut Network,
+    proj: &Int8Projection,
+    table: &VcbpTable,
+    pair_ids: &[u16],
+    hot_to_idx: &[usize],
+    len: usize,
+    rng: &mut StdRng,
+    propagation: &instnct_core::PropagationConfig,
+    output_start: usize,
+    neuron_count: usize,
+    input_end: usize,
+    input_scatter: bool,
+) -> f64 {
+    let n = pair_ids.len();
+    if n <= len + 1 {
+        return 0.0;
+    }
+    let off = rng.gen_range(1..=n - len - 1);
+    net.reset();
+    let mut total_cos = 0.0f64;
+    let mut counted = 0usize;
+    for i in 0..len {
+        let cur_id = pair_ids[off + i];
+        let cur_idx = hot_to_idx[cur_id as usize];
+        if cur_idx == usize::MAX {
+            continue;
+        }
+        let emb = table.embed_id(cur_id);
+        let mut input = vec![0i32; neuron_count];
+        quantize_embedding_to_input(table, emb, &mut input, input_end, input_scatter);
+        net.propagate(&input, propagation).unwrap();
+        let scores = proj.raw_scores(&net.charge_vec(output_start..neuron_count));
+        let probs = softmax(&scores);
+        total_cos += one_hot_cosine(&probs, cur_idx);
+        counted += 1;
+    }
+    if counted == 0 {
+        0.0
+    } else {
+        total_cos / counted as f64
+    }
+}
+
 fn eval_smooth_proj(
     net: &mut Network,
     proj: &Int8Projection,
@@ -717,6 +789,40 @@ fn eval_smooth_proj(
     }
 }
 
+fn eval_unigram_proj(
+    net: &mut Network,
+    proj: &Int8Projection,
+    table: &VcbpTable,
+    pair_ids: &[u16],
+    unigram: &[f64],
+    len: usize,
+    rng: &mut StdRng,
+    propagation: &instnct_core::PropagationConfig,
+    output_start: usize,
+    neuron_count: usize,
+    input_end: usize,
+    input_scatter: bool,
+) -> f64 {
+    let n = pair_ids.len();
+    if n <= len + 1 {
+        return 0.0;
+    }
+    let off = rng.gen_range(1..=n - len - 1);
+    net.reset();
+    let mut total_cos = 0.0f64;
+    for i in 0..len {
+        let cur_id = pair_ids[off + i];
+        let emb = table.embed_id(cur_id);
+        let mut input = vec![0i32; neuron_count];
+        quantize_embedding_to_input(table, emb, &mut input, input_end, input_scatter);
+        net.propagate(&input, propagation).unwrap();
+        let scores = proj.raw_scores(&net.charge_vec(output_start..neuron_count));
+        let probs = softmax(&scores);
+        total_cos += cosine_similarity(&probs, unigram);
+    }
+    total_cos / len as f64
+}
+
 fn eval_score(
     score_mode: &str,
     net: &mut Network,
@@ -725,6 +831,7 @@ fn eval_score(
     pair_ids: &[u16],
     hot_to_idx: &[usize],
     bigram: &[Vec<f64>],
+    unigram: &[f64],
     len: usize,
     rng: &mut StdRng,
     propagation: &instnct_core::PropagationConfig,
@@ -748,6 +855,20 @@ fn eval_score(
             input_end,
             input_scatter,
         ),
+        "echo" => eval_echo_proj(
+            net,
+            proj,
+            table,
+            pair_ids,
+            hot_to_idx,
+            len,
+            rng,
+            propagation,
+            output_start,
+            neuron_count,
+            input_end,
+            input_scatter,
+        ),
         "smooth" => eval_smooth_proj(
             net,
             proj,
@@ -755,6 +876,20 @@ fn eval_score(
             pair_ids,
             hot_to_idx,
             bigram,
+            len,
+            rng,
+            propagation,
+            output_start,
+            neuron_count,
+            input_end,
+            input_scatter,
+        ),
+        "unigram" => eval_unigram_proj(
+            net,
+            proj,
+            table,
+            pair_ids,
+            unigram,
             len,
             rng,
             propagation,
@@ -1044,6 +1179,7 @@ fn main() {
     let corpus = std::fs::read(&cli.corpus).expect("failed to read corpus");
     let (pair_ids, hot_to_idx, n_classes) = build_corpus_pairs(&corpus, &table, 397);
     let bigram = build_pair_bigram(&pair_ids, &hot_to_idx, n_classes);
+    let unigram = build_pair_unigram(&pair_ids, &hot_to_idx, n_classes);
     let init = InitConfig::phi(cli.h);
     let samples_path = cli.out.join("samples.csv");
     let roundtrip_path = cli.out.join("roundtrip.json");
@@ -1143,6 +1279,7 @@ fn main() {
                         &pair_ids,
                         &hot_to_idx,
                         &bigram,
+                        &unigram,
                         cli.eval_len,
                         &mut StdRng::seed_from_u64(eval_seed),
                         &init.propagation,
@@ -1177,6 +1314,7 @@ fn main() {
                             &pair_ids,
                             &hot_to_idx,
                             &bigram,
+                            &unigram,
                             cli.eval_len,
                             &mut StdRng::seed_from_u64(eval_seed),
                             &init.propagation,
@@ -1326,6 +1464,7 @@ fn main() {
                                 &pair_ids,
                                 &hot_to_idx,
                                 &bigram,
+                                &unigram,
                                 cli.eval_len,
                                 &mut StdRng::seed_from_u64(eval_seed),
                                 &init.propagation,
@@ -1342,6 +1481,7 @@ fn main() {
                                 &pair_ids,
                                 &hot_to_idx,
                                 &bigram,
+                                &unigram,
                                 cli.eval_len,
                                 &mut StdRng::seed_from_u64(eval_seed),
                                 &init.propagation,
@@ -1454,6 +1594,7 @@ fn main() {
                             &pair_ids,
                             &hot_to_idx,
                             &bigram,
+                            &unigram,
                             cli.eval_len,
                             &mut StdRng::seed_from_u64(eval_seed),
                             &init.propagation,
@@ -1470,6 +1611,7 @@ fn main() {
                             &pair_ids,
                             &hot_to_idx,
                             &bigram,
+                            &unigram,
                             cli.eval_len,
                             &mut StdRng::seed_from_u64(eval_seed),
                             &init.propagation,
