@@ -18,7 +18,7 @@ If a setting or training recipe is not in the canonical code path, do **not** de
 
 - `instnct-core/src/`: library crate — network, propagation, evolution, fitness, eval, corpus
 - `instnct-core/examples/neuron_grower.rs`: canonical grower mainline (current self-wiring frontier)
-- `instnct-core/examples/evolve_language.rs`: beta language-evolution runner (published `v5.0.0-beta.2`)
+- `instnct-core/examples/evolve_language.rs`: beta language-evolution runner (first published in `v5.0.0-beta.1`; retained as a released reference lane through current beta)
 - `instnct-core/examples/`: experimental research examples (not part of compatibility promise)
 - `instnct-core/tests/fixtures/`: test corpora and fixtures
 

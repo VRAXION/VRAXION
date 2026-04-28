@@ -1,6 +1,6 @@
 # VRAXION Validated Findings
 
-_Last updated: 2026-04-21_
+_Last updated: 2026-04-28_
 
 Canonical evidence summary. Repo-tracked docs are canonical; the GitHub wiki is a mirrored secondary surface.
 
@@ -8,7 +8,7 @@ Canonical evidence summary. Repo-tracked docs are canonical; the GitHub wiki is 
 
 The repo is in a transition state:
 
-- **Released public tag:** `v5.0.0-beta.2` — Rust grower public beta (`v5.0.0-beta.1` remains as prior language-evolution beta, historical reference only)
+- **Released public tag:** `v5.0.0-beta.6` — Rust grower public beta + Phase A→B→D research-line checkpoint (`v5.0.0-beta.5` is the prior Phase D3/D3.1/D4 SAF lock + 56-example archive cleanup release; `v5.0.0-beta.1` remains as the original language-evolution beta, historical reference only)
 - **Current mainline on `main`:** Rust grower (`instnct-core/examples/neuron_grower.rs`)
 - **Python deploy SDK:** `Python/` — Block A + B, pure numpy (256/256 + 65536/65536 lossless)
 - **Historical Python research lane:** frozen at tag `archives/python-research-20260420` (was `instnct/`, migrated to Rust `instnct-core/` on 2026-04-13)

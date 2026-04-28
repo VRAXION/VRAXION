@@ -36,9 +36,9 @@ Historical surfaces are preserved as **immutable archive tags** (no long-lived a
 - `archives/tools-cleanup-20260425` — `tools/` 74→22 cleanup pass (53 archived scripts).
 - `archives/instnct-examples-2026-04-archive-20260427` — `instnct-core/examples/archive/2026-04/` tree (56 retired research examples + README) physically removed from `main` on 2026-04-27 per the "only mainline belongs on `main`" rule. Covers the 2026-04-17 era exploration paths: `addition_*`, `pocket_*`, `chip_*`, `circuit_*`, `conv_*`, `breed_*`, `connectome_*`, `flybrain*`, `mirror_*`, `abstract_core_v1..v4`, `byte_*`/`byte_opcode_v1`, `grid3_*`, `all_binary_mirror`.
 
-**Branch-head snapshots (2026-04-25 → 2026-04-27):**
+**Branch-head snapshots (2026-04-25 → 2026-04-28):**
 
-- `archive/main-pre-cleanup-20260425`, `archive/main-pre-cleanup-20260426`, `archive/main-pre-cleanup-20260427` — main HEAD before each successive cleanup pass.
+- `archive/main-pre-cleanup-20260425`, `archive/main-pre-cleanup-20260426`, `archive/main-pre-cleanup-20260427`, `archive/main-pre-cleanup-20260428` — main HEAD before each successive cleanup pass (the 2026-04-28 snapshot at HEAD `88f9421` is the pre-`v5.0.0-beta.6` Phase D6/D7/D8 checkpoint + doc-drift correction baseline).
 - `archive/codex-phase-b-logging-smoke-20260425` — codex/phase-b-logging-smoke branch (merged into main 2026-04-25).
 - `archive/research-overnight-sct-empirical-20260425` — overnight SCT research branch.
 - `archive/research-sandbox-h128-d1-20260426` — H=128 D1b cross-H pilot (n=3) sandbox; superseded by formal Phase D2 (n=5) on main.

@@ -2,7 +2,7 @@
 
 > Másold be ezt a fájlt egy friss Claude Code session első promptjába (vagy csak: `cat docs/wiki/RESUME_PRIMER.md` → paste). Célja: nulláról is tudjam, miben dolgozunk, hol áll a repo, mik a frissen megoldott dolgok, és hogy a user hogyan szereti a munkamenetet.
 >
-> Naprakész: **2026-04-20**, INSTNCT `v5.0.0-beta.2`. Ha ez a primer >1 hete készült, nézd meg a `git log --oneline -30`-at mielőtt terveket írnál.
+> Naprakész: **2026-04-28**, INSTNCT `v5.0.0-beta.6`. Ha ez a primer >1 hete készült, nézd meg a `git log --oneline -30`-at mielőtt terveket írnál.
 
 ---
 
@@ -61,7 +61,7 @@ Champions (NE töröld, CI is őrzi):
      - `archives/tools-legacy-diag-20260420`
      - `archives/public-readiness-residue-20260420`
    - tag = immutable, mindig visszaállítható `git checkout <tag>`-al
-   - Version bump: `v5.0.0-beta.1` → `v5.0.0-beta.2` (README, VERSION.json, Cargo.toml)
+   - Version bump: `v5.0.0-beta.1` → `v5.0.0-beta.2` → … → `v5.0.0-beta.6` (README, VERSION.json, Cargo.toml, CITATION, BETA)
    - `instnct-core/results/` untrack-elve (36 run-artifact state.json)
    - `.gitignore` frissítve (OS cruft, IDE, ML weights, Python caches)
 

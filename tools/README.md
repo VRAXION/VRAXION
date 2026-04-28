@@ -60,7 +60,7 @@ analyzers below produce the artifacts under
 
 | Script | Purpose |
 | --- | --- |
-| [`diag_dimensionality_sweep.py`](diag_dimensionality_sweep.py) | Multi-mode driver: default H-sweep + `--phase-b` confound-vs-intrinsic + `--phase-b1` horizon × accept-ties + `--phase-d1` zero-p acceptance-aperture. ThreadPoolExecutor for parallel cells via `--jobs N`. |
+| [`diag_dimensionality_sweep.py`](diag_dimensionality_sweep.py) | Multi-mode driver: default H-sweep + `--phase-b` + `--phase-b1` + `--phase-d1` + `--phase-d2` cross-H + `--phase-d3` / `--phase-d3-fine` SAF K-lock + `--phase-d4` softness + `--phase-d6` trajectory-field + `--phase-d7` operator-bandit + `--phase-d8` archive/scan/cell sub-arms. ThreadPoolExecutor for parallel cells via `--jobs N`. |
 
 ### Phase A / B / B.1 analyzers
 
@@ -83,6 +83,16 @@ analyzers below produce the artifacts under
 | [`analyze_phase_d3_klock.py`](analyze_phase_d3_klock.py) | D3 | Coarse K-axis lock under strict acceptance (`tau=0`, `s=0`); produces [`docs/research/PHASE_D3_K_LOCK_VERDICT.md`](../docs/research/PHASE_D3_K_LOCK_VERDICT.md). |
 | [`analyze_phase_d3_fine_k.py`](analyze_phase_d3_fine_k.py) | D3.1 | Fine K-grid (K ∈ {15, 18, 21, 24}) at H=256 + SAF K formula readout; produces [`docs/research/PHASE_D3_FINE_K_VERDICT.md`](../docs/research/PHASE_D3_FINE_K_VERDICT.md) and [`docs/research/SAF_K_FORMULA_LOCK.md`](../docs/research/SAF_K_FORMULA_LOCK.md). |
 | [`analyze_phase_d4_softness.py`](analyze_phase_d4_softness.py) | D4 | Softness arm (`zero_p`) lock under the SAF K(H) lock; produces [`docs/research/PHASE_D4_SOFTNESS_VERDICT.md`](../docs/research/PHASE_D4_SOFTNESS_VERDICT.md). |
+| [`analyze_phase_d6_trajectory_field.py`](analyze_phase_d6_trajectory_field.py) | D6 / D6.1 | Trajectory-field audit + falsification audit (early feature model + group-CV + trajectory alignment); produces [`docs/research/PHASE_D6_TRAJECTORY_FIELD_AUDIT.md`](../docs/research/PHASE_D6_TRAJECTORY_FIELD_AUDIT.md). |
+| [`analyze_phase_d7_operator_bandit.py`](analyze_phase_d7_operator_bandit.py) | D7 / D7.1 | Operator-sampling-weight bandit (D7_BASELINE vs D7_PRIOR_EWMA vs D7_STATIC_PRIOR) under locked SAF v1; produces [`docs/research/PHASE_D7_OPERATOR_BANDIT_AUDIT.md`](../docs/research/PHASE_D7_OPERATOR_BANDIT_AUDIT.md). |
+| [`analyze_phase_d8_archive_psi_replay.py`](analyze_phase_d8_archive_psi_replay.py) | D8.1 | Archive-Psi replay audit; produces [`docs/research/PHASE_D8_ARCHIVE_PSI_REPLAY_AUDIT.md`](../docs/research/PHASE_D8_ARCHIVE_PSI_REPLAY_AUDIT.md). |
+| [`analyze_phase_d8_scan_depth_knee.py`](analyze_phase_d8_scan_depth_knee.py) | D8.2 | Scan-depth knee audit; produces [`docs/research/PHASE_D8_SCAN_DEPTH_KNEE_AUDIT.md`](../docs/research/PHASE_D8_SCAN_DEPTH_KNEE_AUDIT.md). |
+| [`analyze_phase_d8_cell_coherence.py`](analyze_phase_d8_cell_coherence.py) | D8.3 | Cell-coherence audit (cluster cohesion across H/seed); produces [`docs/research/PHASE_D8_CELL_COHERENCE_AUDIT.md`](../docs/research/PHASE_D8_CELL_COHERENCE_AUDIT.md). |
+| [`analyze_phase_d8_frontier_pointer_replay.py`](analyze_phase_d8_frontier_pointer_replay.py) | D8.4 | Frontier-pointer replay audit; produces [`docs/research/PHASE_D8_FRONTIER_POINTER_REPLAY_AUDIT.md`](../docs/research/PHASE_D8_FRONTIER_POINTER_REPLAY_AUDIT.md). |
+| [`analyze_phase_d8_instrumentation.py`](analyze_phase_d8_instrumentation.py) | D8.5 | Instrumentation logging audit; produces [`docs/research/PHASE_D8_INSTRUMENTATION_AUDIT.md`](../docs/research/PHASE_D8_INSTRUMENTATION_AUDIT.md). |
+| [`analyze_phase_d8_archive_parent.py`](analyze_phase_d8_archive_parent.py) | D8.6 / D8.6.P2 | Archive-parent microprobe (P1 + P2 model export); produces [`docs/research/PHASE_D8_ARCHIVE_PARENT_MICROPROBE.md`](../docs/research/PHASE_D8_ARCHIVE_PARENT_MICROPROBE.md). Pairs with [`export_phase_d8_p2_model.py`](export_phase_d8_p2_model.py) (P2 model export shim). |
+| [`build_phase_d8_cell_atlas.py`](build_phase_d8_cell_atlas.py) | D8.7 | Cell-atlas dashboard builder (Pokédex card grid HTML + cell/neighbor/candidate CSV bundle); produces [`docs/research/PHASE_D8_CELL_ATLAS.md`](../docs/research/PHASE_D8_CELL_ATLAS.md). Imported by `analyze_phase_d8_cell_scan_delta.py`. |
+| [`analyze_phase_d8_cell_scan_delta.py`](analyze_phase_d8_cell_scan_delta.py) | D8.7 | Cell-scan-delta observer (atlas re-scan after-spin diff); produces [`docs/research/PHASE_D8_CELL_SCAN_DELTA.md`](../docs/research/PHASE_D8_CELL_SCAN_DELTA.md). |
 | [`diag_constructability_analysis.py`](diag_constructability_analysis.py) | post-D | C_K decomposition regression across all arms (V_raw, M_pos, A, I_proxy, D_eff, cost_eval, R_neg). |
 | [`diag_byte_unit_latent_dim_sweep.py`](diag_byte_unit_latent_dim_sweep.py) | A↔Block A | Latent-dim sweep for byte-unit-fixture cross-check. |
 

@@ -5,6 +5,59 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [5.0.0-beta.6] - 2026-04-28
+
+### Changed — 2026-04-28: Phase D6/D7/D8 research-line checkpoint + wiki/HTML doc-drift correction
+
+Maintenance beta release that documents the Phase D6 (trajectory field) → D6.1 (falsification) → D7 (operator bandit) → D8 (archive/scan/cell instrumentation arc) research line accumulated on `main` since `v5.0.0-beta.5`, purges multi-release-stale `v5.0.0-beta.2` references from the wiki and Pages HTML, and brings `tools/README.md` up to date with the D2/D6/D7/D8 analyzers. No public-API changes; the Rust core gains an additive `MutationOperatorSpec` + `MUTATION_OPERATORS` baseline schedule constant.
+
+- **Doc-drift correction (beta.2 → beta.6)**: `docs/wiki/Home.md` (At-a-Glance "Stable public release"), `docs/wiki/Timeline-Archive.md` ("Latest release" Core Surfaces row + "Current Frame" first bullet), `docs/wiki/RESUME_PRIMER.md` (header date + version-bump trace), `VALIDATED_FINDINGS.md` ("Last updated" + "Released public tag"), `CONTRIBUTING.md` (`evolve_language.rs` published-version line), `docs/index.html` (Release-notes CTA on the Pages homepage), `docs/legacy.html` (Release-notes CTA on the legacy detail page). All seven files had drifted to `v5.0.0-beta.2` despite three intervening releases (beta.3 → beta.4 → beta.5).
+- **`tools/README.md` Phase D analyzer table extended**: 9 new rows for the post-D4 analyzers — `analyze_phase_d6_trajectory_field.py` (D6 / D6.1), `analyze_phase_d7_operator_bandit.py` (D7 / D7.1), `analyze_phase_d8_archive_psi_replay.py` (D8.1), `analyze_phase_d8_scan_depth_knee.py` (D8.2), `analyze_phase_d8_cell_coherence.py` (D8.3), `analyze_phase_d8_frontier_pointer_replay.py` (D8.4), `analyze_phase_d8_instrumentation.py` (D8.5), `analyze_phase_d8_archive_parent.py` (D8.6 / D8.6.P2; pairs with `export_phase_d8_p2_model.py`), `build_phase_d8_cell_atlas.py` + `analyze_phase_d8_cell_scan_delta.py` (D8.7 cell-atlas dashboard + after-spin delta observer). Driver row (`diag_dimensionality_sweep.py`) updated to enumerate all `--phase-d*` modes.
+- **`ARCHIVE.md` re-enumerated**: new branch-head snapshot `archive/main-pre-cleanup-20260428` (HEAD `88f9421`) listed alongside the existing 2026-04-25 → 2026-04-27 entries, with the explicit framing that this snapshot is the pre-beta.6 baseline.
+- **Version metadata sync**: `Cargo.toml` (`5.0.0-beta.5` → `5.0.0-beta.6`), `Cargo.lock` (workspace package row), `CITATION.cff` (`version`, `date-released: 2026-04-28`), `docs/VERSION.json` (`current_release`), `README.md` (Release Snapshot block), `BETA.md` (released-tag line) all bumped.
+
+### Added — 2026-04-27: Phase D6 trajectory-field audit + D6.1 falsification audit
+
+Multi-source aggregation across 7 prior phase roots (252 runs / 87.26M candidate rows represented by constructability summaries) testing whether an early-feature model + group-CV + trajectory alignment can predict downstream success without leakage.
+
+- **D6 verdict** (`docs/research/PHASE_D6_TRAJECTORY_FIELD_AUDIT.md`): trajectory-field model + per-source/per-H/per-phase/per-arm group-CV + null-control battery. Verdict path: D6 → D6.1.
+- **D6.1 falsification verdict** (same document, expanded +294 lines): early feature model seed-held-out R²=0.355 / Spearman=0.467; no-score R²=0.293 / Spearman=0.366; no-score-no-accept R²=0.290 / Spearman=0.351; residual no-score Spearman=0.145; negative-control max |Spearman|=0.287. Feature-policy gate FAIL (no_score=True, no_score_no_accept=True, controls_clean=False). Verdict: **D7_OPERATOR_BANDIT** (proceed to operator-sampling-weight bandit before any feature-policy promotion).
+- **New tooling**: `tools/analyze_phase_d6_trajectory_field.py` (746 lines).
+
+### Added — 2026-04-27: Phase D7 operator bandit audit (D7.1)
+
+Operator-sampling-weight bandit testing D7_BASELINE vs D7_PRIOR_EWMA vs D7_STATIC_PRIOR over locked SAF v1 (mutual_inhibition fixture, strict gate, K(H), seeds 5).
+
+- **D7.1 verdict** (`docs/research/PHASE_D7_OPERATOR_BANDIT_AUDIT.md`): paired H/seed deltas show D7_PRIOR_EWMA at H=128 +0.18pp peak mean (within noise), but at H=256 −0.66pp peak mean (regression) and at H=384 −1.24pp peak mean (regression). D7_STATIC_PRIOR similar pattern. Verdict: **D7_NEEDS_ARCHIVE_OR_FEATURE_POLICY** — operator-sampling-weight bandit does not generalize across H; recommendation is to archive D7 OR pivot to feature-policy (D8 lane).
+- **Rust core API addition**: `instnct-core/src/evolution.rs` gains the `MutationOperatorSpec` struct + `pub const MUTATION_OPERATORS: [MutationOperatorSpec; 11]` baseline schedule (additive; existing call-sites unchanged, +257 lines).
+- **New tooling**: `tools/analyze_phase_d7_operator_bandit.py` (320 lines).
+
+### Added — 2026-04-27/28: Phase D8 archive/scan/cell instrumentation arc
+
+Iterative observer-only audit arc that turned the Phase B candidate logs into a queryable cell atlas. Observer-only: SAF v1 / K(H) / strict acceptance / operator schedule unchanged.
+
+- **D8.1 archive Psi replay** (`docs/research/PHASE_D8_ARCHIVE_PSI_REPLAY_AUDIT.md`): `tools/analyze_phase_d8_archive_psi_replay.py` (672 lines).
+- **D8.2 scan-depth knee** (`docs/research/PHASE_D8_SCAN_DEPTH_KNEE_AUDIT.md`): `tools/analyze_phase_d8_scan_depth_knee.py` (490 lines).
+- **D8.3 cell coherence** (`docs/research/PHASE_D8_CELL_COHERENCE_AUDIT.md`): cluster cohesion across H/seed; `tools/analyze_phase_d8_cell_coherence.py` (494 lines).
+- **D8.4 frontier-pointer replay** (`docs/research/PHASE_D8_FRONTIER_POINTER_REPLAY_AUDIT.md`): `tools/analyze_phase_d8_frontier_pointer_replay.py` (770 lines).
+- **D8.5 instrumentation logging** (`docs/research/PHASE_D8_INSTRUMENTATION_AUDIT.md`): `tools/analyze_phase_d8_instrumentation.py` (218 lines). Driver `tools/diag_dimensionality_sweep.py` extended (+1080 lines aggregate across the D6 → D8 arc) with `--phase-d6` / `--phase-d7` / `--phase-d8` modes feeding the existing `evolve_mutual_inhibition.rs` Phase B CLI surface.
+- **D8.6 / D8.6.P2 archive-parent microprobe** (`docs/research/PHASE_D8_ARCHIVE_PARENT_MICROPROBE.md`): `tools/analyze_phase_d8_archive_parent.py` (278 lines), paired with `tools/export_phase_d8_p2_model.py` (159-line P2 model export shim invoked from the driver).
+- **D8.7 cell atlas dashboard + scan delta** (`docs/research/PHASE_D8_CELL_ATLAS.md`, `docs/research/PHASE_D8_CELL_SCAN_DELTA.md`): `tools/build_phase_d8_cell_atlas.py` (2277-line Pokédex card-grid HTML + cell/neighbor/sample-more/split/branch-trial/retire CSV bundle builder); `tools/analyze_phase_d8_cell_scan_delta.py` (359 lines, after-spin atlas re-scan diff observer; imports `build_phase_d8_cell_atlas.py`). D8.7 verdict: **D8_CELL_SCAN_DELTA_READY** — the cell-scan-delta tooling is ready for split/sample/branch decision making; no live branch improvement claim is asserted.
+- **`evolve_mutual_inhibition.rs` extended** (+1225 lines): Phase D6/D7/D8 CLI surface for the trajectory-field / operator-bandit / archive-scan-cell arc.
+
+### Verification
+
+The full README "5-Minute Proof" canonical battery was run before tagging:
+
+- `cargo test -p instnct-core --release` — all unit, integration, and doc tests pass.
+- `python tools/run_grower_regression.py` — B0 engine-freeze contract: regression matrix completes, evidence bundle written, **Golden Check PASS**.
+- `python tools/run_byte_opcode_acceptance.py` — B1 promotion gate: byte/opcode v1 LUT-translator path correct on all probe entries; direct-path negative control behaves as expected (selective MISSes).
+- `python tools/check_public_surface.py` — public-surface drift check passes (re-run after each doc edit, not just at the end).
+- `python -m compileall Python tools` — all Python sources compile cleanly.
+- `python -m pytest Python/ -q` — full Python deploy SDK suite green.
+
+Pre-cleanup HEAD: `88f9421` (preserved at `archive/main-pre-cleanup-20260428`, pushed to origin before any change).
+
 ## [5.0.0-beta.5] - 2026-04-27
 
 ### Changed — 2026-04-27: Phase D3/D3.1/D4 Search Aperture Function lock + 56-example archive cleanup
