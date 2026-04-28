@@ -302,6 +302,27 @@ def build_sphere_tiles(df: pd.DataFrame, out: Path, lat_bins: int = 16, lon_bins
             }
         )
     tiles = pd.DataFrame(rows).sort_values(["lat_bin", "lon_bin"])
+    if not tiles.empty:
+        def zscore(series: pd.Series) -> pd.Series:
+            std = float(series.std(ddof=0))
+            if std <= 1e-12 or not math.isfinite(std):
+                return pd.Series(np.zeros(len(series)), index=series.index)
+            return (series - float(series.mean())) / std
+
+        confidence = np.minimum(1.0, tiles["n"].astype(float) / 8.0)
+        tiles["confidence"] = confidence
+        tiles["scan_priority"] = (
+            0.40 * zscore(tiles["best_delta_score"])
+            + 0.25 * zscore(tiles["std_delta_score"])
+            + 0.20 * (1.0 - confidence)
+            + 0.15 * zscore(tiles["positive_delta_rate"])
+            - 0.25 * zscore(tiles["cliff_rate"])
+        )
+        tiles["split_priority"] = (
+            zscore(tiles["std_delta_score"])
+            + zscore(tiles["mean_behavior_distance"])
+            + 0.5 * zscore(tiles["cliff_rate"])
+        )
     tiles.to_csv(out / "sphere_tiles.csv", index=False)
     return tiles
 
@@ -434,48 +455,75 @@ def write_sphere_html(tiles: pd.DataFrame, overall: dict[str, Any], out: Path) -
     if tiles.empty:
         return
     records = json_ready(tiles.to_dict(orient="records"))
-    vmin = float(tiles["mean_delta_score"].min())
-    vmax = float(tiles["mean_delta_score"].max())
+    metrics = [
+        {"key": "mean_delta_score", "label": "Fitness mean", "good": "high", "palette": "fitness"},
+        {"key": "best_delta_score", "label": "Best discovered", "good": "high", "palette": "fitness"},
+        {"key": "std_delta_score", "label": "Variance / STD", "good": "high", "palette": "uncertainty"},
+        {"key": "cliff_rate", "label": "Cliff risk", "good": "low", "palette": "risk"},
+        {"key": "confidence", "label": "Sample confidence", "good": "high", "palette": "confidence"},
+        {"key": "scan_priority", "label": "Scan priority", "good": "high", "palette": "priority"},
+        {"key": "split_priority", "label": "Split priority", "good": "high", "palette": "uncertainty"},
+    ]
     html = f"""<!doctype html>
 <meta charset="utf-8">
-<title>D9.0b 3D Searchable Genome Sphere</title>
+<title>D9.0b Pixel Planet Atlas</title>
 <style>
 body {{ margin:0; overflow:hidden; background:#090d12; color:#e7edf7; font-family:ui-sans-serif,Segoe UI,Arial; }}
-#hud {{ position:fixed; left:18px; top:18px; width:340px; background:rgba(13,20,29,.86); border:1px solid #26384b; border-radius:14px; padding:14px; backdrop-filter:blur(8px); }}
+#hud {{ position:fixed; left:18px; top:18px; width:380px; background:rgba(13,20,29,.88); border:1px solid #26384b; border-radius:14px; padding:14px; backdrop-filter:blur(8px); }}
 #hud h1 {{ margin:0 0 8px; font-size:18px; }}
 #hud .verdict {{ color:#9be58e; font-weight:800; }}
 #hud code {{ color:#ffd27d; }}
 #detail {{ position:fixed; right:18px; top:18px; width:320px; background:rgba(13,20,29,.86); border:1px solid #26384b; border-radius:14px; padding:14px; min-height:120px; }}
 canvas {{ display:block; }}
 .small {{ color:#a8b7ca; font-size:12px; line-height:1.35; }}
+button {{ background:#1d2a38; color:#dce8f8; border:1px solid #37506a; border-radius:999px; padding:6px 10px; margin:3px 3px 0 0; cursor:pointer; }}
+button.active {{ background:#ffd27d; color:#111820; border-color:#ffd27d; font-weight:700; }}
 </style>
 <canvas id="c"></canvas>
 <section id="hud">
-  <h1>D9.0b Genome Sphere</h1>
+  <h1>D9.0b Pixel Planet Atlas</h1>
   <div>Verdict: <span class="verdict">{overall["verdict"]}</span></div>
-  <div class="small">Tiles: <code>{len(records)}</code> | rows: <code>{overall["rows"]}</code> | color/height = mean delta_score</div>
-  <div class="small">Drag to rotate. Wheel to zoom. This is a PCA/SVD sphere projection, not exact geometry.</div>
-  <div class="small">Green/high = better local zone. Red/low = cliff/regression. Bigger tile = more samples.</div>
+  <div class="small">Tiles: <code>{len(records)}</code> | rows: <code>{overall["rows"]}</code> | surface height + color = selected metric</div>
+  <div id="buttons"></div>
+  <div class="small">Drag to rotate. Wheel to zoom. Tessellated lat/lon shadow planet from PCA/SVD 3D projection, not exact high-D geometry.</div>
+  <div class="small">Unknown pixels are flat dark. Hover any tile for n, mean, std, cliff, confidence and action hint.</div>
 </section>
 <section id="detail"><b>Hover a tile</b><p class="small">Tile metrics will appear here.</p></section>
 <script>
 const TILES = {json.dumps(records)};
-const VMIN = {vmin};
-const VMAX = {vmax};
+const METRICS = {json.dumps(metrics)};
+const LAT_BINS = 16, LON_BINS = 32;
 const canvas = document.getElementById('c');
 const ctx = canvas.getContext('2d');
 const detail = document.getElementById('detail');
-let W=0,H=0, rx=-0.35, ry=0.65, zoom=1.0, dragging=false, lx=0, ly=0, hover=null;
+const buttons = document.getElementById('buttons');
+let W=0,H=0, rx=-0.35, ry=0.65, zoom=1.0, dragging=false, lx=0, ly=0, hover=null, metric=METRICS[0];
 
 function resize() {{ W=canvas.width=innerWidth; H=canvas.height=innerHeight; }}
 addEventListener('resize', resize); resize();
 
 function clamp(x,a,b) {{ return Math.max(a, Math.min(b, x)); }}
-function color(v) {{
-  const t = clamp((v - VMIN) / ((VMAX - VMIN) || 1), 0, 1);
-  const r = Math.round(200*(1-t) + 20*t);
-  const g = Math.round(55*(1-t) + 190*t);
-  const b = Math.round(70*(1-t) + 95*t);
+function statsFor(key) {{
+  const vals = TILES.map(t => +t[key]).filter(Number.isFinite);
+  return {{min: Math.min(...vals), max: Math.max(...vals)}};
+}}
+function normalized(t, key) {{
+  const s = statsFor(key), v = +t[key];
+  return clamp((v - s.min) / ((s.max - s.min) || 1), 0, 1);
+}}
+function color(t) {{
+  let q = normalized(t, metric.key);
+  if (metric.good === 'low') q = 1 - q;
+  let r,g,b;
+  if (metric.palette === 'uncertainty') {{
+    r = Math.round(35*(1-q) + 255*q); g = Math.round(110*(1-q) + 165*q); b = Math.round(220*(1-q) + 35*q);
+  }} else if (metric.palette === 'risk') {{
+    r = Math.round(35*(q) + 215*(1-q)); g = Math.round(190*q + 45*(1-q)); b = Math.round(95*q + 80*(1-q));
+  }} else if (metric.palette === 'confidence') {{
+    r = Math.round(55*(1-q) + 130*q); g = Math.round(65*(1-q) + 210*q); b = Math.round(80*(1-q) + 255*q);
+  }} else {{
+    r = Math.round(200*(1-q) + 20*q); g = Math.round(55*(1-q) + 190*q); b = Math.round(70*(1-q) + 95*q);
+  }}
   return `rgb(${{r}},${{g}},${{b}})`;
 }}
 function rot(p) {{
@@ -485,19 +533,22 @@ function rot(p) {{
   let y1=y*cx-z1*sx, z2=y*sx+z1*cx;
   return {{x:x1,y:y1,z:z2}};
 }}
-function project(p, value) {{
-  const height = 1 + 0.24 * clamp((value - VMIN) / ((VMAX - VMIN) || 1), 0, 1);
+function project(p, t) {{
+  let q = t ? normalized(t, metric.key) : 0;
+  if (metric.good === 'low') q = 1 - q;
+  const height = 1 + 0.34 * q;
   const rp = rot({{x:p.x*height,y:p.y*height,z:p.z*height}});
   const scale = 310 * zoom / (2.4 - rp.z);
   return {{x: W/2 + rp.x*scale, y: H/2 - rp.y*scale, z: rp.z, scale}};
 }}
+function sph(lat, lon) {{ return {{x:Math.cos(lat)*Math.cos(lon), y:Math.cos(lat)*Math.sin(lon), z:Math.sin(lat)}}; }}
 function drawGrid() {{
   ctx.strokeStyle='rgba(115,145,180,.15)'; ctx.lineWidth=1;
   for (let lat=-60; lat<=60; lat+=30) {{
     ctx.beginPath();
     for (let i=0;i<=160;i++) {{
       const lon=-Math.PI + i/160*2*Math.PI, la=lat*Math.PI/180;
-      const p=project({{x:Math.cos(la)*Math.cos(lon),y:Math.cos(la)*Math.sin(lon),z:Math.sin(la)}}, VMIN);
+      const p=project(sph(la, lon), null);
       if (i===0) ctx.moveTo(p.x,p.y); else ctx.lineTo(p.x,p.y);
     }}
     ctx.stroke();
@@ -506,11 +557,23 @@ function drawGrid() {{
     ctx.beginPath();
     for (let i=0;i<=120;i++) {{
       const la=-Math.PI/2 + i/120*Math.PI, lon=lonDeg*Math.PI/180;
-      const p=project({{x:Math.cos(la)*Math.cos(lon),y:Math.cos(la)*Math.sin(lon),z:Math.sin(la)}}, VMIN);
+      const p=project(sph(la, lon), null);
       if (i===0) ctx.moveTo(p.x,p.y); else ctx.lineTo(p.x,p.y);
     }}
     ctx.stroke();
   }}
+}}
+function tileCorners(t) {{
+  const lat0=-Math.PI/2 + t.lat_bin*Math.PI/LAT_BINS, lat1=-Math.PI/2 + (t.lat_bin+1)*Math.PI/LAT_BINS;
+  const lon0=-Math.PI + t.lon_bin*2*Math.PI/LON_BINS, lon1=-Math.PI + (t.lon_bin+1)*2*Math.PI/LON_BINS;
+  return [sph(lat0,lon0), sph(lat0,lon1), sph(lat1,lon1), sph(lat1,lon0)];
+}}
+function action(t) {{
+  if (t.confidence < .5) return 'sample_more';
+  if (t.cliff_rate > .65) return 'avoid/cliff';
+  if (t.std_delta_score > .02 && t.best_delta_score >= 0) return 'split';
+  if (t.mean_delta_score >= -0.002 && t.positive_delta_rate > .1) return 'branch_candidate';
+  return 'observe';
 }}
 function render() {{
   ctx.clearRect(0,0,W,H);
@@ -518,33 +581,51 @@ function render() {{
   grad.addColorStop(0,'#132033'); grad.addColorStop(1,'#070a0f');
   ctx.fillStyle=grad; ctx.fillRect(0,0,W,H);
   drawGrid();
-  const pts = TILES.map(t => ({{t, p: project(t, t.mean_delta_score)}})).sort((a,b)=>a.p.z-b.p.z);
+  const pts = TILES.map(t => ({{t, p: project(t, t)}})).sort((a,b)=>a.p.z-b.p.z);
   hover=null;
   for (const o of pts) {{
     const t=o.t, p=o.p;
     if (p.z < -1.12) continue;
-    const size = 4 + Math.sqrt(t.n)*3.2;
+    const corners = tileCorners(t).map(c => project(c, t));
     ctx.beginPath();
-    ctx.arc(p.x,p.y,size,0,Math.PI*2);
-    ctx.fillStyle=color(t.mean_delta_score);
-    ctx.globalAlpha=0.42 + Math.min(0.5, t.n/20);
+    ctx.moveTo(corners[0].x, corners[0].y);
+    for (let i=1;i<corners.length;i++) ctx.lineTo(corners[i].x, corners[i].y);
+    ctx.closePath();
+    ctx.fillStyle=color(t);
+    ctx.globalAlpha=0.30 + Math.min(0.62, t.n/12);
     ctx.fill();
     ctx.globalAlpha=1;
-    ctx.strokeStyle = t.cliff_rate > 0.5 ? '#ff7a9a' : 'rgba(255,255,255,.32)';
-    ctx.lineWidth = t.cliff_rate > 0.5 ? 2 : 1;
+    ctx.strokeStyle = t.cliff_rate > 0.5 ? 'rgba(255,122,154,.8)' : 'rgba(255,255,255,.18)';
+    ctx.lineWidth = t.cliff_rate > 0.5 ? 1.6 : .7;
     ctx.stroke();
+    const size = 2 + Math.sqrt(t.n)*1.8;
+    ctx.beginPath();
+    ctx.arc(p.x,p.y,size,0,Math.PI*2);
+    ctx.fillStyle=color(t);
+    ctx.globalAlpha=0.45 + Math.min(0.45, t.n/20);
+    ctx.fill();
+    ctx.globalAlpha=1;
     if (Math.hypot(mouse.x-p.x, mouse.y-p.y) < size+4) hover = t;
   }}
   if (hover) {{
     detail.innerHTML = `<b>Tile ${{hover.tile_id}}</b>
-      <p class="small">n=${{hover.n}} | mean=${{hover.mean_delta_score.toFixed(4)}} | best=${{hover.best_delta_score.toFixed(4)}}<br>
-      cliff=${{hover.cliff_rate.toFixed(2)}} | positive=${{hover.positive_delta_rate.toFixed(2)}}<br>
-      dominant=${{hover.dominant_mutation_type}} r=${{hover.dominant_radius}}<br>
-      behavior_dist=${{hover.mean_behavior_distance.toFixed(4)}}</p>`;
+      <p class="small">view=${{metric.label}} | value=${{(+hover[metric.key]).toFixed(4)}}<br>
+      n=${{hover.n}} confidence=${{hover.confidence.toFixed(2)}}<br>
+      mean=${{hover.mean_delta_score.toFixed(4)}} best=${{hover.best_delta_score.toFixed(4)}} std=${{hover.std_delta_score.toFixed(4)}}<br>
+      cliff=${{hover.cliff_rate.toFixed(2)}} positive=${{hover.positive_delta_rate.toFixed(2)}}<br>
+      scan=${{hover.scan_priority.toFixed(2)}} split=${{hover.split_priority.toFixed(2)}} action=<b>${{action(hover)}}</b><br>
+      dominant=${{hover.dominant_mutation_type}} r=${{hover.dominant_radius}}</p>`;
   }}
   requestAnimationFrame(render);
 }}
 const mouse={{x:-9999,y:-9999}};
+for (const m of METRICS) {{
+  const b=document.createElement('button');
+  b.textContent=m.label;
+  b.onclick=()=>{{ metric=m; document.querySelectorAll('button').forEach(x=>x.classList.remove('active')); b.classList.add('active'); }};
+  buttons.appendChild(b);
+  if (m.key===metric.key) b.classList.add('active');
+}}
 canvas.addEventListener('mousemove', e => {{
   mouse.x=e.clientX; mouse.y=e.clientY;
   if (dragging) {{ ry += (e.clientX-lx)*0.006; rx += (e.clientY-ly)*0.006; lx=e.clientX; ly=e.clientY; }}
