@@ -18,6 +18,17 @@ A swarm 4 hullámban futott. Minden raw output külön fájlban van — ez a szi
 | 2 | F — falszifikáció-tervező | `docs/research/inbox/d9_claude_wave2_F_falsification.md` |
 | 3 | G — vörös csapat | `docs/research/inbox/d9_claude_wave3_G_red_team.md` |
 | 4 | Fő szál — magyar szintézis | ez a fájl |
+| Utólag | GPT D9 nyilvánosság-audit | `docs/research/PHASE_D9_OPEN_THREADS_CITATION_AUDIT.md` |
+
+**GPT audit hatása erre a dokumentumra:** a swarm minden lényegi találatát megerősíti, de a publikus framingre figyelmeztet. Néhány kifejezést szigorítottunk a fenti audit szerint:
+
+- PIC Lipschitz "garancia" → **"tervezési szándék, amelyet D9.0 empirikusan tesztel"** (audit §A)
+- 0.20 / 0.10 küszöbök → explicit **"engineering audit threshold"** címke (audit §B)
+- "Minden QD rendszer occupant-ot használ" → **"a kanonikus MAP-Elites loopban"** (audit §C)
+- "Grammar VAE cáfolja a determinisztikust" → **"nem cáfolja, csak finomítja"** (audit §D)
+- **`D_advr` és `IDENTITY_AUGMENTED_KILLER` BELSŐ red-team protokoll**, NEM publikált benchmark (audit §Internal-Only). Külső kommunikációban így prezentálandó: "saját adversarial kontroll, amit a vörös csapat épített".
+- **Entropy non-trivialitás kapu PROVISIONAL** — ne egyetlen scalar entrópián álljon meg, hanem kombináció (gráf strukturális entrópia, fokszámeloszlás-entrópia, él-mintázat-entrópia, rule_trace diverzitás, D_advr szétválasztás) (audit §Open Threads 2)
+- **Output path konvenció:** `output/phase_d9_latent_genome_toy_<YYYYMMDD>/` (NEM `outputs/d9_toy_run_<timestamp>/`) — repo konvenció `output/phase_*` (audit §Open Threads 4)
 
 ---
 
@@ -47,11 +58,11 @@ A swarm csak olyan irodalmat enged a tervbe, amelynek implementálható D9.0-ra 
 
 **A regime-függés elvi figyelmeztetése — Clune, Stanley, Pennock, Ofria (IEEE TEC 2011).** HyperNEAT regularis problémákon nyer (közel optimális), irreguláris problémákon ROMLIK és átkerül a direkt kódolás alá. Idézve: *"As the regularity of the problem decreases, the performance of the generative representation degrades to, and then underperforms, the direct encoding."* `[direct empirical]` Következmény D9.0-ra: a benchmark suite-ban **kötelezően szerepelnie kell egy irreguláris (deceptive) tájképnek**. Egy csupa-sima tájkép-eredmény nem perdöntő.
 
-**Egy fontos finomítás Gemini felé — Grammar VAE (Kusner, Paige, Hernandez-Lobato, ICML 2017).** Egy nyelvtan-megszorított TANULT dekóder magasabb latens-tér-koherenciát és érvényességet ér el, mint vagy a tisztán determinisztikus, vagy a tisztán neurális dekóder. `[direct empirical]` Az irodalmi tanulság tehát **nem** "determinisztikus jobb mint tanult", hanem **"a nyelvtani szerkezet a teherbíró elem, függetlenül attól, hogy statikus vagy tanult dekóder hordozza"**. A D9.0 statikus választása EGY érvényes saroka egy nagyobb tervezési térnek, NEM egyértelmű győztes. Tanult dekóderek explicit Deferred-bin-be kerülnek, nem mert rosszak, hanem mert D9.0 hatókörén kívül.
+**Egy fontos finomítás Gemini felé — Grammar VAE (Kusner, Paige, Hernandez-Lobato, ICML 2017).** Egy nyelvtan-megszorított TANULT dekóder magasabb latens-tér-koherenciát és érvényességet ér el, mint a vanilla VAE. `[direct empirical]` (GPT D9 audit §D figyelmeztetése: ez **nem cáfolja** a determinisztikus dekódert; csak azt mutatja, hogy a tanult dekóderek IS profitálhatnak nyelvtan-megszorításból.) A helyes olvasat tehát: **"a nyelvtani/érvényességi megszorítás a teherbíró elem, függetlenül attól, hogy statikus vagy tanult dekóder hordozza"**. A D9.0 statikus választása **azért megy elsőre**, mert könnyebb auditálni és falszifikálni, NEM mert egyedüli helyes lenne. Tanult dekóderek explicit Deferred-bin-be kerülnek, nem mert rosszak, hanem mert D9.0 hatókörén kívül.
 
 **A QD-irodalom megfigyelése a "behavior-cellához-genotípus" inverzről — Pugh, Soros, Stanley (Frontiers Robotics 2016).** A QD-irodalom EGY paper sem próbálja meg behavior characterization-ből visszaszámolni a genotípust; mindenki előrefelé halad. `[theoretical]` Ezért a Gemini digest figyelmeztetése jogos: **D9 inverz csak az általunk generált genomokra pontos** (mert eltároltuk a z-t és a rule_trace-t); régi/külső hálózatokra csak közelítő keresés engedélyezett.
 
-**A MAP-Elites-szerű új elköteleződés a D9-ben — Mouret & Clune (arXiv:1504.04909) + Fontaine et al (AAAI 2021).** Az összes vizsgált QD-rendszer az archive **lakó-genomját** használja generatív szülőként, sosem a cella-koordinátát. A D9 azon választása, hogy z-koordinátát közvetlenül használjuk, **architekturálisan eltérő minden tesztelt rendszertől** — nincs sem cáfolva, sem igazolva az irodalom által. `[direct empirical]` Ez NEM hiba, csak kockázat: új, untested commitment. A toy benchmark-jainknak ezt explicit fel kell deríteniük.
+**A MAP-Elites-szerű új elköteleződés a D9-ben — Mouret & Clune (arXiv:1504.04909) + Fontaine et al (AAAI 2021).** **A kanonikus MAP-Elites hurokban** (a hivatkozott pszeudokód és LSI leírások) az archive **lakó-genomja** a generatív szülő, NEM a cella-koordináta. (GPT D9 audit §C: ez túl univerzális mint "minden QD"; helyes a "kanonikus MAP-Elites loopban" megfogalmazás.) A D9 azon választása, hogy z-koordinátát közvetlenül használjuk, **új tervezési döntés**, nem MAP-Elites által validált. `[direct empirical]` Ez NEM hiba, csak kockázat: új, untested commitment. A toy benchmark-jainknak ezt explicit fel kell deríteniük.
 
 **Lokalitás-mérés módszertan — Quilodrán et al (Mol Ecol Resources, 2025).** A Mantel-teszt I. típusú hibája megnő, ha a z mintavétel térben autokorrelált (pl. rács). N = 50–200 tartományban a hiba k > 0.2 autokorrelációnál nyilvánul meg. `[direct empirical]` Következmény: D9.0 toy lokalitás-tesztben **véletlen z mintavétel kötelező, NEM rács**.
 
@@ -71,7 +82,7 @@ A swarm 3 alternatív D(z) tervet vizsgált; egyet javasol primary-ként, kettő
 
 **A mag (root_seed) szerepe szigorúan tie-breaker.** Például a sűrűség-tárcsa pontosan beállítja az élek **számát** (zárt képlettel a hálózat-méret arányában); a mag csak azt dönti el, hogy a sok azonos pontszámú jelölt él közül melyik kapja meg a helyet. Soha nem fordul elő, hogy a mag dönti el, hány él lesz, vagy milyen szabály fut. Ez a **strukturális mező > mag** dominancia-elv az anti-hash garancia magja.
 
-**Anti-hash érvelés és ahol ez REPED.** Az E-féle eredeti érvelés szerint kis perturbáció (Δz = ε) csak kis számú élt változtat, függetlenül a magtól. Ez ÁTLAGOSAN igaz. A vörös csapat (G §1.1, A2) talált egy **réskiességet**: ha az élek pontszáma majdnem azonos (közel azonos pontok), akkor egyetlen pici z-elmozdulás az EGÉSZ rangsort átrendezheti, és a top-K új permutációt kap — gyakorlatilag random átállást. Az "average-case" határ áll, a "worst-case" határ NEM áll. **Ez a leggyengébb pont az E architektúrában, és G azonosította.** A keményítés: a pontszám-függvénybe egy folytonos, nem-magtól-függő perturbációs tag (pl. egy nagyon kis tag, ami az indexpárból deriválódik) — így a tie-eket nem a mag, hanem egy folytonos struktúra törje meg.
+**Anti-hash érvelés és ahol ez REPED.** A PIC nem **bizonyított** lokalitási garancia, hanem **tervezési szándék, amelyet a D9.0 empirikusan tesztel** (GPT D9 audit §A megfogalmazása). Az E-féle eredeti érvelés szerint kis perturbáció (Δz = ε) csak kis számú élt változtat, függetlenül a magtól. Ez ÁTLAGOSAN igaz. A vörös csapat (G §1.1, A2) talált egy **réskiességet**: ha az élek pontszáma majdnem azonos (közel azonos pontok), akkor egyetlen pici z-elmozdulás az EGÉSZ rangsort átrendezheti, és a top-K új permutációt kap — gyakorlatilag random átállást. Az "average-case" határ áll, a "worst-case" határ NEM áll. **Ez a leggyengébb pont az E architektúrában, és G azonosította.** A keményítés: a pontszám-függvénybe egy folytonos, nem-magtól-függő perturbációs tag (pl. egy nagyon kis tag, ami az indexpárból deriválódik) — így a tie-eket nem a mag, hanem egy folytonos struktúra törje meg.
 
 **Ezt a hibát a §8 listán Accepted-keményítésként kell beépíteni a kódolás előtt.**
 
@@ -156,13 +167,13 @@ A Gemini digest 6 DNP-kapuját (Do-Not-Proceed) átvesszük, számokkal csontozz
 | DNP-kapu | Küszöb-tárcsa | Indoklás |
 |----------|---------------|----------|
 | `DNP_VALIDITY_COLLAPSE` | érvényes-háló-arány alatta 0.99 | Gemini digest L158 + Recipe 2 §1 |
-| `DNP_LOCALITY_COLLAPSE` | z↔genom Mantel-érték nem ér el a hash-küszöb + 0.20-at, 95% bootstrap CI nem-átfedéssel | Recipe 3 §4: a 0.20 hézag az a szint amit a hash-baseline NEM tud lefedni; CI követelmény véd a véletlen permutáció ellen |
-| `DNP_BEHAVIOR_HASHLIKE` | z↔viselkedés Mantel-érték nem ér el a hash-küszöb + 0.10-et | Lazább küszöb, mert a viselkedés nem-zéró zajos |
+| `DNP_LOCALITY_COLLAPSE` | z↔genom Mantel-érték nem ér el a hash-küszöb + 0.20-at, 95% bootstrap CI nem-átfedéssel | **Engineering audit threshold** (NEM literature konstans — GPT D9 audit §B). 0.20 hézag a hash-baseline kalibrált p95 fölött; CI követelmény véd a véletlen permutáció ellen |
+| `DNP_BEHAVIOR_HASHLIKE` | z↔viselkedés Mantel-érték nem ér el a hash-küszöb + 0.10-et | **Engineering audit threshold.** Lazább küszöb, mert a viselkedés downstream és zajos |
 | `DNP_SCAN_NO_GAIN` | progresszív szkennelés / véletlen szkennelés arány nem éri el az 1.5-szörösét 300 értékelés után | Recipe 5 §4 |
 | `DNP_CONTROL_PARITY` | **kettéosztva** dekóder-oldali (hash, nonlocal, shuffled-rules) és értékelés-oldali (shuffled-fitness, shuffled-labels, random-cells) parityra | G §2.4 D10: az eredeti egységes definíció logikailag rossz volt — shuffled-fitness értékelés-oldali, nem dekóder-oldali |
 | `DNP_TOO_HEAVY` | torch / tensorflow / jax / sklearn.neural_network import D9.0-ban tilos; futási idő > 30 min | Gemini L172 |
 
-**Fontos vörös csapat finomítás:** **minden hash-küszöb a jelenlegi futás SAJÁT hash-baseline mérésére kalibrált, NEM előre rögzített.** A 0.20-as hézag például nem dogma; a futtatás közben mérjük a hash-baseline tényleges Mantel-eloszlását, és a 95-edik percentil + 0.20 a tényleges kapu. Ezt G §2.3 D8 explicit követelte.
+**Fontos vörös csapat finomítás:** **minden hash-küszöb a jelenlegi futás SAJÁT hash-baseline mérésére kalibrált, NEM előre rögzített.** A 0.20-as hézag például nem dogma, hanem **engineering audit threshold**; a futtatás közben mérjük a hash-baseline tényleges Mantel-eloszlását, és a 95-edik percentil + 0.20 a tényleges kapu. Ezt G §2.3 D8 explicit követelte, és GPT D9 audit §B megerősíti: ezek a számok **nem irodalmi konstansok**, hanem belső audit-tárcsák.
 
 **Az FDC (fitness-distance correlation) nem önálló kapu, csak diagnosztika.** Altenberg 1997 számos ellenpéldát adott, amikor az FDC félreklasszifikál — ezért az FDC csak Mantel mellett, sose helyette.
 
@@ -300,9 +311,13 @@ KILLER MICROTEST (canonical first test, ≤90 s):
 2. Decode with three decoders: real (PIC), NCI_RANDOM_HASH_DECODER, D_advr.
 3. Compute Mantel test using GRAPH EDIT DISTANCE on edge multisets (NOT byte Hamming) with 499 permutations.
 4. Compute Spearman r_real, r_hash, r_advr.
-5. Compute genome entropy for each decoder.
+5. Compute MULTI-COMPONENT non-triviality score for each decoder (GPT audit Open Threads §2: do NOT rely on a single entropy scalar):
+   - graph structural entropy (over edge multiset)
+   - degree-distribution entropy
+   - rule_trace diversity (number of distinct rule_ids invoked, normalized)
+   - D_advr structural separation: graph-edit and descriptor-distance separation between g_real and D_advr(z) under the same z (do NOT treat a raw absolute entropy difference as sufficient)
 6. Verdict logic:
-   - if entropy(g_real) <= entropy(z_logged) + log2(H_factorial)/8 -> D9_DECODER_VALIDITY_FAIL
+   - if any of the four non-triviality components fails its component-specific gate -> D9_DECODER_VALIDITY_FAIL (record which component failed)
    - if r_real < 0.30 or p_real >= 0.05 -> D9_DECODER_NO_LOCALITY
    - if r_real < r_hash + 0.20 (with non-overlapping 95% bootstrap CI) -> D9_DECODER_HASHLIKE_BEHAVIOR
    - if D_advr passes all of the above -> the test ITSELF is broken; report KILLER_TEST_DEGENERATE and stop
@@ -330,9 +345,9 @@ D9_TILE_SCAN_NO_SIGNAL
 D9_CONTROL_PARITY_FAIL
 
 OUTPUT FILES:
-- outputs/d9_toy_run_<timestamp>/landscape_results.csv (N=500 rows × 5 landscapes)
-- outputs/d9_toy_run_<timestamp>/genome_provenance.jsonl (one line per generated genome with full schema)
-- outputs/d9_toy_run_<timestamp>/control_baselines.json (all 4+ negative-control metric values)
+- output/phase_d9_latent_genome_toy_<YYYYMMDD>/landscape_results.csv (N=500 rows × 5 landscapes) — repo convention `output/phase_*` per GPT D9 audit §4
+- output/phase_d9_latent_genome_toy_<YYYYMMDD>/genome_provenance.jsonl (one line per generated genome with full schema)
+- output/phase_d9_latent_genome_toy_<YYYYMMDD>/control_baselines.json (all 4+ negative-control metric values)
 - docs/research/PHASE_D9_0_LATENT_DECODER_TOY_AUDIT.md (final audit report with single explicit verdict)
 
 AUDIT REPORT MUST INCLUDE:
