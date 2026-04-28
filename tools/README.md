@@ -60,7 +60,7 @@ analyzers below produce the artifacts under
 
 | Script | Purpose |
 | --- | --- |
-| [`diag_dimensionality_sweep.py`](diag_dimensionality_sweep.py) | Multi-mode driver: default H-sweep + `--phase-b` + `--phase-b1` + `--phase-d1` + `--phase-d2` cross-H + `--phase-d3` / `--phase-d3-fine` SAF K-lock + `--phase-d4` softness + `--phase-d6` trajectory-field + `--phase-d7` operator-bandit + `--phase-d8` archive/scan/cell sub-arms. ThreadPoolExecutor for parallel cells via `--jobs N`. |
+| [`diag_dimensionality_sweep.py`](diag_dimensionality_sweep.py) | Multi-mode driver: default H-sweep + `--phase-b` + `--phase-b1` + `--phase-d1` + `--phase-d2` cross-H + `--phase-d3` / `--phase-d3-fine` SAF K-lock + `--phase-d4` softness + `--phase-d7-bandit` operator-bandit + `--phase-d8-instrumentation` / `--phase-d8-archive-microprobe` / `--phase-d8-p2-microprobe` / `--phase-d8-cell-scan` D8 sub-arms. (D6/D6.1 is analysis-only over the existing D2-D4 roots — no new driver flag.) ThreadPoolExecutor for parallel cells via `--jobs N`. |
 
 ### Phase A / B / B.1 analyzers
 
