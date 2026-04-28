@@ -82,8 +82,12 @@
     Splits <span id="p-splits">?</span></div>
 
   <h2>Top 5 peaks (priority)</h2>
-  <div class="small" style="font-size:10px;color:#7d8da0;margin:-2px 0 4px">heuristic score, not statistical probability</div>
+  <div class="small" style="font-size:10px;color:#7d8da0;margin:-2px 0 4px">best_delta + safety + positive + confidence — may be spiky, NOT confirmed</div>
   <div id="top-peaks"></div>
+
+  <h2>Top 5 plateaus (confirm-friendly)</h2>
+  <div class="small" style="font-size:10px;color:#7d8da0;margin:-2px 0 4px">mean + safety + positive — survives confirm pass better</div>
+  <div id="top-plateaus"></div>
 
   <h2>Top 3 basins (connected good zones)</h2>
   <div class="small" style="font-size:10px;color:#7d8da0;margin:-2px 0 4px">flood-filled vitality &ge; 0.50, 4-connected with lon wrap</div>
@@ -131,6 +135,7 @@
 
   const METRICS = [
     { key: "vitality",     label: "Peak priority",    good: "high", palette: "fitness", computed: true },
+    { key: "plateau",      label: "Plateau score",    good: "high", palette: "fitness", computed: true },
     { key: "basin_size",   label: "Basin size",       good: "high", palette: "fitness", computed: true },
     { key: "basin_avg",    label: "Basin avg vitality", good: "high", palette: "fitness", computed: true },
     { key: "mean_delta",   label: "Fitness mean",     good: "high", palette: "fitness" },
@@ -262,6 +267,23 @@
     return map.get(t.tile_id) || null;
   }
 
+  function plateauScore(t, typeKey) {
+    // Confirm-friendly score: AVOID best_delta to not be lured by a single
+    // lucky sample. GPT D9 confirm-pass showed best-delta-led tiles collapse
+    // to negative mean at +20 samples. Plateau-score uses mean + safety
+    // + positive_rate — i.e. "is this REALLY stable, not just spiky?".
+    // weights: mean_delta (50%) + safety (30%) + positive_rate (20%)
+    const useAll = !typeKey || typeKey === "all";
+    const src = useAll ? t : (t.per_type && t.per_type[typeKey]);
+    if (!src) return 0;
+    const meanRaw = (src.mean_delta != null && Number.isFinite(src.mean_delta)) ? src.mean_delta : 0;
+    const mean = Math.max(0, Math.min(1, (meanRaw + 0.02) / 0.04));
+    const safety = 1 - (src.cliff_rate != null ? src.cliff_rate : 1);
+    const consistency = (src.positive_rate != null ? src.positive_rate : 0);
+    const score = 0.50 * mean + 0.30 * safety + 0.20 * consistency;
+    return Math.max(0, Math.min(1, score));
+  }
+
   function vitalityScore(t, typeKey) {
     // 0..1 heuristic priority score (NOT a calibrated posterior probability).
     // weights: best_delta (40%) + safety (30%) + positive_rate (20%) + confidence (10%)
@@ -283,6 +305,9 @@
   function tileMetricValue(t) {
     if (state.metric && state.metric.computed && state.metric.key === "vitality") {
       return vitalityScore(t, state.type.key);
+    }
+    if (state.metric && state.metric.computed && state.metric.key === "plateau") {
+      return plateauScore(t, state.type.key);
     }
     if (state.metric && state.metric.computed && state.metric.key === "basin_size") {
       const info = tileBasinInfo(t);
@@ -631,6 +656,27 @@
     }).join("");
   }
 
+  function fillTopPlateaus() {
+    const tk = state.type.key;
+    const ranked = (data.tiles || [])
+      .filter(t => t.state && t.state !== "UNKNOWN")
+      .filter(t => tk === "all" || (t.per_type && t.per_type[tk] && t.per_type[tk].n > 0))
+      .map(t => ({ t: t, v: plateauScore(t, tk) }))
+      .sort((a, b) => b.v - a.v)
+      .slice(0, 5);
+    const c = $("top-plateaus");
+    if (!ranked.length) { c.innerHTML = "<div class='small'>no candidates yet</div>"; return; }
+    c.innerHTML = ranked.map(x => {
+      const ty = x.t.dominant_mutation_type || "all";
+      const pct = Math.round(x.v * 100);
+      return "<div class='qrow'>"+
+        "<span class='tag "+ty+"'>"+ty+"</span>"+
+        "<span style='flex:1'><b>"+x.t.tile_id+"</b> <span class='small'>"+
+        (x.t.state || "").toLowerCase()+"</span></span>"+
+        "<span class='small' style='color:#9be58e;font-weight:700'>"+pct+"%</span></div>";
+    }).join("");
+  }
+
   function fillTopBasins() {
     const map = computeBasins(state.type.key);
     const seen = new Set();
@@ -689,7 +735,7 @@
   }
 
   function setMetric(m) { state.metric = m; rebuildButtons(); requestRender(); }
-  function setType(t)   { state.type = t;   rebuildButtons(); fillTopPeaks(); fillTopBasins(); requestRender(); }
+  function setType(t)   { state.type = t;   rebuildButtons(); fillTopPeaks(); fillTopPlateaus(); fillTopBasins(); requestRender(); }
   function setLayer(l)  { state.layer = l;  rebuildButtons(); requestRender(); }
 
   function rebuildButtons() {
@@ -735,6 +781,7 @@
   fillMeta();
   fillProgress();
   fillTopPeaks();
+  fillTopPlateaus();
   fillTopBasins();
   fillQueue();
   requestRender();
