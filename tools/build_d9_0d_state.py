@@ -198,10 +198,10 @@ def classify_tile(stats: dict[str, Any], confidence: float, target_n: int) -> st
 
     if n <= 0:
         return "UNKNOWN"
-    if n >= 5 and std_delta is not None and std_delta > 0.02:
-        return "SPLIT_CANDIDATE"
     if n >= 3 and cliff_rate is not None and cliff_rate > 0.65:
         return "CLIFFY"
+    if n >= 5 and std_delta is not None and std_delta > 0.02:
+        return "SPLIT_CANDIDATE"
     if n >= 3 and mean_delta is not None and std_delta is not None and mean_delta <= -0.005 and std_delta < 0.005:
         return "DESERT"
     if n >= 5 and std_delta is not None and std_delta > 0.015:
@@ -390,6 +390,12 @@ def build_state(args: argparse.Namespace) -> dict[str, Any]:
     promising = sum(1 for tile in tiles if tile["state"] in {"PROMISING", "CONFIRMED_GOOD"})
     retired = sum(1 for tile in tiles if tile["state"] in {"DESERT", "CLIFFY", "RETIRED"})
     split = sum(1 for tile in tiles if tile["state"] == "SPLIT_CANDIDATE")
+    if "scout_layer" in df.columns:
+        samples_scout = int((df["scout_layer"].astype(str) == "scout").sum())
+        samples_confirmed = int((df["scout_layer"].astype(str) == "confirmed").sum())
+    else:
+        samples_scout = int(len(df))
+        samples_confirmed = 0
     scout_eval_len = args.scout_eval_len if args.scout_eval_len is not None else int(run_meta.get("eval_len", 100))
     run_id = args.run_id or f"d9_0d_state_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
 
@@ -427,8 +433,8 @@ def build_state(args: argparse.Namespace) -> dict[str, Any]:
             "retired_count": retired,
             "split_candidate_count": split,
             "samples_total": int(len(df)),
-            "samples_scout": int(len(df)),
-            "samples_confirmed": 0,
+            "samples_scout": samples_scout,
+            "samples_confirmed": samples_confirmed,
         },
         "acquisition_weights": {
             "best": 0.35,
