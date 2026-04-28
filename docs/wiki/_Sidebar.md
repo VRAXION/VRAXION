@@ -19,6 +19,7 @@
 ## Implementation
 
 - [Rust Implementation Surface](v5-Rust-Port-Benchmarks)
+- [D9 Latent Genome Compiler](D9-Latent-Genome-Compiler)
 
 ## Public Links
 
