@@ -4,30 +4,33 @@ Verdict: `D8_CELL_SCAN_DELTA_READY`
 
 D8.7 is an observer-only spin: SAF v1, K(H), strict acceptance, and operator schedule stay unchanged. The P2 model is used only to log archive cell IDs and Psi values.
 
+This report reflects the targeted H128 follow-up scan used to fill the previously under-sampled `H=128`, frozen runtime `archive_cell_id=2` region. See `PHASE_D8_TARGET_CELL_H128_C2.md` for the exact before/after target-cell detail.
+
 ## Coverage
 
-- Runs: `3`
-- Live panel states: `24`
-- Visited cells: `11`
-- Opened new cells: `4`
-- Reinforced cells: `5`
+- Runs: `5`
+- Live panel states: `80`
+- Visited cells: `28`
+- Opened new cells: `8`
+- Reinforced cells: `10`
 - Cooled cells: `0`
 
 ## Top Reinforced / Opened Cells
 
 | H | cell | new_n | base_n | conf_after | new_psi | new_gain | opened | reinforced | cooled |
 |---|---:|---:|---:|---:|---:|---:|---|---|---|
-| 128 | 51 | 2 | 56 | 1.000 | 0.0232 | 0.0270 | False | True | False |
-| 128 | 45 | 1 | 1 | 0.250 | 0.0200 | 0.0270 | False | True | False |
-| 256 | 8 | 8 | 36 | 1.000 | 0.0209 | 0.0124 | False | True | False |
-| 128 | 18 | 1 | 11 | 1.000 | 0.0114 | 0.0060 | False | True | False |
-| 128 | 12 | 1 | 1 | 0.250 | 0.0098 | 0.0060 | False | True | False |
-| 128 | 8 | 1 | 0 | 0.125 | 0.0071 | 0.0060 | True | False | False |
-| 384 | 2 | 6 | 0 | 1.000 | 0.0181 | 0.0055 | True | False | False |
-| 384 | 29 | 1 | 0 | 0.200 | 0.0162 | 0.0030 | True | False | False |
-| 128 | 0 | 1 | 0 | 0.125 | 0.0037 | 0.0000 | True | False | False |
-| 128 | 2 | 1 | 3 | 0.500 | 0.0081 | 0.0060 | False | False | False |
-| 384 | 20 | 1 | 230 | 1.000 | 0.0178 | 0.0030 | False | False | False |
+| 128 | 45 | 1 | 1 | 0.250 | 0.0221 | 0.0410 | False | True | False |
+| 128 | 51 | 12 | 56 | 1.000 | 0.0216 | 0.0309 | False | True | False |
+| 128 | 18 | 1 | 11 | 1.000 | 0.0142 | 0.0200 | False | True | False |
+| 128 | 22 | 3 | 72 | 1.000 | 0.0195 | 0.0177 | False | True | False |
+| 128 | 38 | 3 | 15 | 1.000 | 0.0118 | 0.0147 | False | True | False |
+| 128 | 5 | 1 | 36 | 1.000 | 0.0073 | 0.0140 | False | True | False |
+| 128 | 6 | 2 | 21 | 1.000 | 0.0181 | 0.0105 | False | True | False |
+| 128 | 20 | 2 | 80 | 1.000 | 0.0132 | 0.0100 | False | True | False |
+| 128 | 12 | 4 | 1 | 0.625 | 0.0099 | 0.0083 | False | True | False |
+| 128 | 39 | 4 | 4 | 1.000 | 0.0097 | 0.0078 | False | True | False |
+| 128 | 46 | 1 | 0 | 0.125 | 0.0178 | 0.0160 | True | False | False |
+| 128 | 11 | 2 | 0 | 0.250 | 0.0169 | 0.0130 | True | False | False |
 
 ## Interpretation
 
