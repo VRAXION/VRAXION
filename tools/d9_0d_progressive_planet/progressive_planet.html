@@ -85,6 +85,10 @@
   <div class="small" style="font-size:10px;color:#7d8da0;margin:-2px 0 4px">heuristic score, not statistical probability</div>
   <div id="top-peaks"></div>
 
+  <h2>Top 3 basins (connected good zones)</h2>
+  <div class="small" style="font-size:10px;color:#7d8da0;margin:-2px 0 4px">flood-filled vitality &ge; 0.50, 4-connected with lon wrap</div>
+  <div id="top-basins"></div>
+
   <h2>Acquisition queue (top 12)</h2>
   <div id="queue"></div>
 
@@ -127,6 +131,8 @@
 
   const METRICS = [
     { key: "vitality",     label: "Peak priority",    good: "high", palette: "fitness", computed: true },
+    { key: "basin_size",   label: "Basin size",       good: "high", palette: "fitness", computed: true },
+    { key: "basin_avg",    label: "Basin avg vitality", good: "high", palette: "fitness", computed: true },
     { key: "mean_delta",   label: "Fitness mean",     good: "high", palette: "fitness" },
     { key: "best_delta",   label: "Best discovered",  good: "high", palette: "fitness" },
     { key: "std_delta",    label: "Variance / STD",   good: "high", palette: "uncertainty" },
@@ -192,6 +198,70 @@
   $("detail").style.display = "block";
   $("footer").style.display = "block";
 
+  // Basin detection: flood-fill connected components of high-vitality tiles.
+  // A basin = neighbor-connected group of tiles whose vitality >= BASIN_THRESHOLD.
+  // Neighbors: 4-connected on lat_bin/lon_bin, with longitude wrap-around (sphere).
+  const BASIN_THRESHOLD = 0.50;
+  const basinCache = new Map(); // typeKey -> Map(tile_id -> {basinId, size, avgVitality})
+
+  function computeBasins(typeKey) {
+    if (basinCache.has(typeKey)) return basinCache.get(typeKey);
+    const LB = (data.config && data.config.lat_bins) || 16;
+    const LN = (data.config && data.config.lon_bins) || 32;
+    const tilesByPos = new Map();
+    const vitByTile = new Map();
+    for (const t of data.tiles) {
+      if (t.state === "UNKNOWN") continue;
+      if (typeKey !== "all" && !(t.per_type && t.per_type[typeKey] && t.per_type[typeKey].n > 0)) continue;
+      tilesByPos.set(t.lat_bin + "_" + t.lon_bin, t);
+      vitByTile.set(t.tile_id, vitalityScore(t, typeKey));
+    }
+    const visited = new Set();
+    const result = new Map();
+    let basinId = 0;
+    for (const [posKey, startT] of tilesByPos) {
+      if (visited.has(startT.tile_id)) continue;
+      const startV = vitByTile.get(startT.tile_id) || 0;
+      if (startV < BASIN_THRESHOLD) continue;
+      // BFS flood-fill
+      const queue = [startT];
+      const members = [];
+      visited.add(startT.tile_id);
+      while (queue.length) {
+        const cur = queue.shift();
+        members.push(cur);
+        const lat = cur.lat_bin, lon = cur.lon_bin;
+        const neighbors = [
+          [lat - 1, lon], [lat + 1, lon],
+          [lat, (lon - 1 + LN) % LN], [lat, (lon + 1) % LN],
+        ];
+        for (const [nlat, nlon] of neighbors) {
+          if (nlat < 0 || nlat >= LB) continue;
+          const nKey = nlat + "_" + nlon;
+          const n = tilesByPos.get(nKey);
+          if (!n || visited.has(n.tile_id)) continue;
+          const nv = vitByTile.get(n.tile_id) || 0;
+          if (nv < BASIN_THRESHOLD) continue;
+          visited.add(n.tile_id);
+          queue.push(n);
+        }
+      }
+      basinId += 1;
+      const sumV = members.reduce((s, m) => s + (vitByTile.get(m.tile_id) || 0), 0);
+      const avgV = members.length ? sumV / members.length : 0;
+      for (const m of members) {
+        result.set(m.tile_id, { basinId: basinId, size: members.length, avgVitality: avgV });
+      }
+    }
+    basinCache.set(typeKey, result);
+    return result;
+  }
+
+  function tileBasinInfo(t) {
+    const map = computeBasins(state.type.key);
+    return map.get(t.tile_id) || null;
+  }
+
   function vitalityScore(t, typeKey) {
     // 0..1 heuristic priority score (NOT a calibrated posterior probability).
     // weights: best_delta (40%) + safety (30%) + positive_rate (20%) + confidence (10%)
@@ -213,6 +283,17 @@
   function tileMetricValue(t) {
     if (state.metric && state.metric.computed && state.metric.key === "vitality") {
       return vitalityScore(t, state.type.key);
+    }
+    if (state.metric && state.metric.computed && state.metric.key === "basin_size") {
+      const info = tileBasinInfo(t);
+      if (!info) return 0;
+      // Normalize by total visible tiles so a 50-tile basin on a 512-tile planet maps near 1.
+      const total = data.tiles.filter(x => x.state !== "UNKNOWN").length || 1;
+      return Math.min(1, info.size / Math.max(20, total * 0.10));
+    }
+    if (state.metric && state.metric.computed && state.metric.key === "basin_avg") {
+      const info = tileBasinInfo(t);
+      return info ? info.avgVitality : 0;
     }
     if (state.type.key === "all") {
       if (state.metric.key === "scan_priority")   return t.scan_priority;
@@ -550,6 +631,38 @@
     }).join("");
   }
 
+  function fillTopBasins() {
+    const map = computeBasins(state.type.key);
+    const seen = new Set();
+    const basins = [];
+    for (const [tile_id, info] of map) {
+      if (seen.has(info.basinId)) continue;
+      seen.add(info.basinId);
+      // Find a representative tile for naming.
+      let repTileId = tile_id;
+      for (const [tid, info2] of map) {
+        if (info2.basinId === info.basinId && (tid < repTileId || repTileId === tile_id)) {
+          if (info2.avgVitality === info.avgVitality) repTileId = tid;
+        }
+      }
+      basins.push({ basinId: info.basinId, size: info.size, avg: info.avgVitality, sample: tile_id });
+    }
+    basins.sort((a, b) => b.size - a.size || b.avg - a.avg);
+    const top = basins.slice(0, 3);
+    const c = $("top-basins");
+    if (!top.length) {
+      c.innerHTML = "<div class='small'>no basins above threshold yet</div>";
+      return;
+    }
+    c.innerHTML = top.map(b => {
+      const pct = Math.round(b.avg * 100);
+      return "<div class='qrow'>"+
+        "<span class='tag all'>#" + b.basinId + "</span>"+
+        "<span style='flex:1'><b>" + b.size + " tiles</b> <span class='small'>around " + b.sample + "</span></span>"+
+        "<span class='small' style='color:#9be58e;font-weight:700'>"+pct+"%</span></div>";
+    }).join("");
+  }
+
   function fillMeta() {
     $("schema-badge").textContent = data.schema_version;
     $("phase-status").textContent = data.phase_status || "?";
@@ -576,7 +689,7 @@
   }
 
   function setMetric(m) { state.metric = m; rebuildButtons(); requestRender(); }
-  function setType(t)   { state.type = t;   rebuildButtons(); fillTopPeaks(); requestRender(); }
+  function setType(t)   { state.type = t;   rebuildButtons(); fillTopPeaks(); fillTopBasins(); requestRender(); }
   function setLayer(l)  { state.layer = l;  rebuildButtons(); requestRender(); }
 
   function rebuildButtons() {
@@ -622,6 +735,7 @@
   fillMeta();
   fillProgress();
   fillTopPeaks();
+  fillTopBasins();
   fillQueue();
   requestRender();
 })();
