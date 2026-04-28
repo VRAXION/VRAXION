@@ -217,6 +217,95 @@ def make_pca_projection(df: pd.DataFrame) -> np.ndarray:
     return x @ vt[:2].T
 
 
+def make_pca_projection_3d(df: pd.DataFrame) -> np.ndarray:
+    cols = [
+        "direct_genome_distance",
+        "edge_edits",
+        "threshold_edits",
+        "channel_edits",
+        "polarity_edits",
+        "behavior_distance",
+        "edges",
+        "panel_probe_acc",
+        "unique_predictions",
+        "collision_rate",
+        "f_active",
+        "stable_rank",
+        "kernel_rank",
+        "separation_sp",
+    ]
+    existing = [c for c in cols if c in df.columns]
+    x = df[existing].astype(float).replace([np.inf, -np.inf], np.nan)
+    x = x.fillna(x.median(numeric_only=True)).to_numpy(dtype=float)
+    x = (x - x.mean(axis=0, keepdims=True)) / (x.std(axis=0, keepdims=True) + 1e-12)
+    _, _, vt = np.linalg.svd(x, full_matrices=False)
+    coords = x @ vt[:3].T
+    if coords.shape[1] < 3:
+        coords = np.pad(coords, ((0, 0), (0, 3 - coords.shape[1])), constant_values=0.0)
+    norm = np.linalg.norm(coords, axis=1, keepdims=True)
+    norm[norm <= 1e-12] = 1.0
+    return coords / norm
+
+
+def build_sphere_tiles(df: pd.DataFrame, out: Path, lat_bins: int = 16, lon_bins: int = 32) -> pd.DataFrame:
+    sphere = make_pca_projection_3d(df)
+    work = df.copy()
+    work["sx"] = sphere[:, 0]
+    work["sy"] = sphere[:, 1]
+    work["sz"] = sphere[:, 2]
+    work["lat"] = np.arcsin(np.clip(work["sz"], -1.0, 1.0))
+    work["lon"] = np.arctan2(work["sy"], work["sx"])
+    work["lat_bin"] = np.clip(((work["lat"] + np.pi / 2) / np.pi * lat_bins).astype(int), 0, lat_bins - 1)
+    work["lon_bin"] = np.clip(((work["lon"] + np.pi) / (2 * np.pi) * lon_bins).astype(int), 0, lon_bins - 1)
+    work["tile_id"] = work["lat_bin"].astype(str) + "_" + work["lon_bin"].astype(str)
+    work[
+        [
+            "sample_id",
+            "tile_id",
+            "lat_bin",
+            "lon_bin",
+            "sx",
+            "sy",
+            "sz",
+            "lat",
+            "lon",
+            "delta_score",
+            "mutation_type",
+            "requested_radius",
+        ]
+    ].to_csv(out / "sphere_sample_projection.csv", index=False)
+
+    rows: list[dict[str, Any]] = []
+    for (lat_bin, lon_bin), group in work.groupby(["lat_bin", "lon_bin"], dropna=False):
+        lat_center = -np.pi / 2 + (lat_bin + 0.5) * np.pi / lat_bins
+        lon_center = -np.pi + (lon_bin + 0.5) * 2 * np.pi / lon_bins
+        rows.append(
+            {
+                "tile_id": f"{int(lat_bin)}_{int(lon_bin)}",
+                "lat_bin": int(lat_bin),
+                "lon_bin": int(lon_bin),
+                "lat_center": float(lat_center),
+                "lon_center": float(lon_center),
+                "x": float(np.cos(lat_center) * np.cos(lon_center)),
+                "y": float(np.cos(lat_center) * np.sin(lon_center)),
+                "z": float(np.sin(lat_center)),
+                "n": int(len(group)),
+                "mean_delta_score": float(group["delta_score"].mean()),
+                "median_delta_score": float(group["delta_score"].median()),
+                "best_delta_score": float(group["delta_score"].max()),
+                "std_delta_score": float(group["delta_score"].std(ddof=0)),
+                "cliff_rate": float((group["delta_score"] <= CLIFF_DELTA).mean()),
+                "positive_delta_rate": float((group["delta_score"] > 0.0).mean()),
+                "mean_behavior_distance": float(group["behavior_distance"].mean()),
+                "dominant_mutation_type": str(group["mutation_type"].mode().iloc[0]),
+                "dominant_radius": int(group["requested_radius"].mode().iloc[0]),
+            }
+        )
+    tiles = pd.DataFrame(rows).sort_values(["lat_bin", "lon_bin"])
+    tiles.to_csv(out / "sphere_tiles.csv", index=False)
+    return tiles
+
+
 def save_figures(df: pd.DataFrame, per_group: pd.DataFrame, out: Path) -> None:
     if len(df) == 0:
         return
@@ -341,6 +430,133 @@ code {{ color: #ffc66d; }}
     (out / "direct_landscape_atlas.html").write_text(html, encoding="utf-8")
 
 
+def write_sphere_html(tiles: pd.DataFrame, overall: dict[str, Any], out: Path) -> None:
+    if tiles.empty:
+        return
+    records = json_ready(tiles.to_dict(orient="records"))
+    vmin = float(tiles["mean_delta_score"].min())
+    vmax = float(tiles["mean_delta_score"].max())
+    html = f"""<!doctype html>
+<meta charset="utf-8">
+<title>D9.0b 3D Searchable Genome Sphere</title>
+<style>
+body {{ margin:0; overflow:hidden; background:#090d12; color:#e7edf7; font-family:ui-sans-serif,Segoe UI,Arial; }}
+#hud {{ position:fixed; left:18px; top:18px; width:340px; background:rgba(13,20,29,.86); border:1px solid #26384b; border-radius:14px; padding:14px; backdrop-filter:blur(8px); }}
+#hud h1 {{ margin:0 0 8px; font-size:18px; }}
+#hud .verdict {{ color:#9be58e; font-weight:800; }}
+#hud code {{ color:#ffd27d; }}
+#detail {{ position:fixed; right:18px; top:18px; width:320px; background:rgba(13,20,29,.86); border:1px solid #26384b; border-radius:14px; padding:14px; min-height:120px; }}
+canvas {{ display:block; }}
+.small {{ color:#a8b7ca; font-size:12px; line-height:1.35; }}
+</style>
+<canvas id="c"></canvas>
+<section id="hud">
+  <h1>D9.0b Genome Sphere</h1>
+  <div>Verdict: <span class="verdict">{overall["verdict"]}</span></div>
+  <div class="small">Tiles: <code>{len(records)}</code> | rows: <code>{overall["rows"]}</code> | color/height = mean delta_score</div>
+  <div class="small">Drag to rotate. Wheel to zoom. This is a PCA/SVD sphere projection, not exact geometry.</div>
+  <div class="small">Green/high = better local zone. Red/low = cliff/regression. Bigger tile = more samples.</div>
+</section>
+<section id="detail"><b>Hover a tile</b><p class="small">Tile metrics will appear here.</p></section>
+<script>
+const TILES = {json.dumps(records)};
+const VMIN = {vmin};
+const VMAX = {vmax};
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+const detail = document.getElementById('detail');
+let W=0,H=0, rx=-0.35, ry=0.65, zoom=1.0, dragging=false, lx=0, ly=0, hover=null;
+
+function resize() {{ W=canvas.width=innerWidth; H=canvas.height=innerHeight; }}
+addEventListener('resize', resize); resize();
+
+function clamp(x,a,b) {{ return Math.max(a, Math.min(b, x)); }}
+function color(v) {{
+  const t = clamp((v - VMIN) / ((VMAX - VMIN) || 1), 0, 1);
+  const r = Math.round(200*(1-t) + 20*t);
+  const g = Math.round(55*(1-t) + 190*t);
+  const b = Math.round(70*(1-t) + 95*t);
+  return `rgb(${{r}},${{g}},${{b}})`;
+}}
+function rot(p) {{
+  let x=p.x, y=p.y, z=p.z;
+  const cy=Math.cos(ry), sy=Math.sin(ry), cx=Math.cos(rx), sx=Math.sin(rx);
+  let x1=x*cy+z*sy, z1=-x*sy+z*cy;
+  let y1=y*cx-z1*sx, z2=y*sx+z1*cx;
+  return {{x:x1,y:y1,z:z2}};
+}}
+function project(p, value) {{
+  const height = 1 + 0.24 * clamp((value - VMIN) / ((VMAX - VMIN) || 1), 0, 1);
+  const rp = rot({{x:p.x*height,y:p.y*height,z:p.z*height}});
+  const scale = 310 * zoom / (2.4 - rp.z);
+  return {{x: W/2 + rp.x*scale, y: H/2 - rp.y*scale, z: rp.z, scale}};
+}}
+function drawGrid() {{
+  ctx.strokeStyle='rgba(115,145,180,.15)'; ctx.lineWidth=1;
+  for (let lat=-60; lat<=60; lat+=30) {{
+    ctx.beginPath();
+    for (let i=0;i<=160;i++) {{
+      const lon=-Math.PI + i/160*2*Math.PI, la=lat*Math.PI/180;
+      const p=project({{x:Math.cos(la)*Math.cos(lon),y:Math.cos(la)*Math.sin(lon),z:Math.sin(la)}}, VMIN);
+      if (i===0) ctx.moveTo(p.x,p.y); else ctx.lineTo(p.x,p.y);
+    }}
+    ctx.stroke();
+  }}
+  for (let lonDeg=0; lonDeg<360; lonDeg+=30) {{
+    ctx.beginPath();
+    for (let i=0;i<=120;i++) {{
+      const la=-Math.PI/2 + i/120*Math.PI, lon=lonDeg*Math.PI/180;
+      const p=project({{x:Math.cos(la)*Math.cos(lon),y:Math.cos(la)*Math.sin(lon),z:Math.sin(la)}}, VMIN);
+      if (i===0) ctx.moveTo(p.x,p.y); else ctx.lineTo(p.x,p.y);
+    }}
+    ctx.stroke();
+  }}
+}}
+function render() {{
+  ctx.clearRect(0,0,W,H);
+  const grad=ctx.createRadialGradient(W/2,H/2,80,W/2,H/2,Math.max(W,H)*.7);
+  grad.addColorStop(0,'#132033'); grad.addColorStop(1,'#070a0f');
+  ctx.fillStyle=grad; ctx.fillRect(0,0,W,H);
+  drawGrid();
+  const pts = TILES.map(t => ({{t, p: project(t, t.mean_delta_score)}})).sort((a,b)=>a.p.z-b.p.z);
+  hover=null;
+  for (const o of pts) {{
+    const t=o.t, p=o.p;
+    if (p.z < -1.12) continue;
+    const size = 4 + Math.sqrt(t.n)*3.2;
+    ctx.beginPath();
+    ctx.arc(p.x,p.y,size,0,Math.PI*2);
+    ctx.fillStyle=color(t.mean_delta_score);
+    ctx.globalAlpha=0.42 + Math.min(0.5, t.n/20);
+    ctx.fill();
+    ctx.globalAlpha=1;
+    ctx.strokeStyle = t.cliff_rate > 0.5 ? '#ff7a9a' : 'rgba(255,255,255,.32)';
+    ctx.lineWidth = t.cliff_rate > 0.5 ? 2 : 1;
+    ctx.stroke();
+    if (Math.hypot(mouse.x-p.x, mouse.y-p.y) < size+4) hover = t;
+  }}
+  if (hover) {{
+    detail.innerHTML = `<b>Tile ${{hover.tile_id}}</b>
+      <p class="small">n=${{hover.n}} | mean=${{hover.mean_delta_score.toFixed(4)}} | best=${{hover.best_delta_score.toFixed(4)}}<br>
+      cliff=${{hover.cliff_rate.toFixed(2)}} | positive=${{hover.positive_delta_rate.toFixed(2)}}<br>
+      dominant=${{hover.dominant_mutation_type}} r=${{hover.dominant_radius}}<br>
+      behavior_dist=${{hover.mean_behavior_distance.toFixed(4)}}</p>`;
+  }}
+  requestAnimationFrame(render);
+}}
+const mouse={{x:-9999,y:-9999}};
+canvas.addEventListener('mousemove', e => {{
+  mouse.x=e.clientX; mouse.y=e.clientY;
+  if (dragging) {{ ry += (e.clientX-lx)*0.006; rx += (e.clientY-ly)*0.006; lx=e.clientX; ly=e.clientY; }}
+}});
+canvas.addEventListener('mousedown', e => {{ dragging=true; lx=e.clientX; ly=e.clientY; }});
+addEventListener('mouseup', () => dragging=false);
+canvas.addEventListener('wheel', e => {{ e.preventDefault(); zoom=clamp(zoom*(e.deltaY>0?0.92:1.08),0.45,2.8); }}, {{passive:false}});
+render();
+</script>"""
+    (out / "sphere_landscape.html").write_text(html, encoding="utf-8")
+
+
 def write_report(
     overall: dict[str, Any],
     per_type: pd.DataFrame,
@@ -384,6 +600,8 @@ def write_report(
         "## Visual Artifacts",
         "",
         f"- `{out / 'direct_landscape_atlas.html'}`",
+        f"- `{out / 'sphere_landscape.html'}`",
+        f"- `{out / 'sphere_tiles.csv'}`",
         f"- `{out / 'local_zone_heatmap.png'}`",
         f"- `{out / 'radius_score_delta_heatmap.png'}`",
         f"- `{out / 'cliff_rate_by_radius.png'}`",
@@ -445,11 +663,14 @@ def main() -> None:
     per_type.to_csv(args.out / "per_type_summary.csv", index=False)
     best = df.sort_values("delta_score", ascending=False).head(100)
     best.to_csv(args.out / "best_neighbor_zones.csv", index=False)
+    sphere_tiles = build_sphere_tiles(df, args.out)
     save_figures(df, per_group, args.out)
     if not args.skip_html:
         write_html(df, per_group, per_type, overall, args.out)
+        write_sphere_html(sphere_tiles, overall, args.out)
     summary = {
         **overall,
+        "sphere_tiles": int(len(sphere_tiles)),
         "run_meta": run_meta,
         "input": str(args.input),
         "analysis_out": str(args.out),

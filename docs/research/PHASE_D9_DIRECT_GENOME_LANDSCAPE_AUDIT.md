@@ -27,6 +27,8 @@ Verdict: **D9_DIRECT_LANDSCAPE_TYPE_SPLIT**
 ## Visual Artifacts
 
 - `output\phase_d9_direct_genome_landscape_20260428\analysis\direct_landscape_atlas.html`
+- `output\phase_d9_direct_genome_landscape_20260428\analysis\sphere_landscape.html`
+- `output\phase_d9_direct_genome_landscape_20260428\analysis\sphere_tiles.csv`
 - `output\phase_d9_direct_genome_landscape_20260428\analysis\local_zone_heatmap.png`
 - `output\phase_d9_direct_genome_landscape_20260428\analysis\radius_score_delta_heatmap.png`
 - `output\phase_d9_direct_genome_landscape_20260428\analysis\cliff_rate_by_radius.png`
