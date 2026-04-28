@@ -34,6 +34,7 @@ enum MutationType {
     Threshold,
     Channel,
     Polarity,
+    Projection,
     Mixed,
 }
 
@@ -44,6 +45,7 @@ impl MutationType {
             "threshold" | "theta" => Self::Threshold,
             "channel" => Self::Channel,
             "polarity" => Self::Polarity,
+            "projection" | "proj" | "readout" => Self::Projection,
             "mixed" => Self::Mixed,
             other => panic!("unknown mutation type: {other}"),
         }
@@ -55,6 +57,7 @@ impl MutationType {
             Self::Threshold => "threshold",
             Self::Channel => "channel",
             Self::Polarity => "polarity",
+            Self::Projection => "projection",
             Self::Mixed => "mixed",
         }
     }
@@ -66,6 +69,7 @@ struct MutationCounts {
     threshold: usize,
     channel: usize,
     polarity: usize,
+    projection: usize,
 }
 
 #[derive(Clone, Debug)]
@@ -545,9 +549,25 @@ fn apply_radius_mutation(
                 }
                 ok
             }
+            MutationType::Projection => {
+                panic!("projection mutation is supported only by paratrooper-climb")
+            }
             MutationType::Mixed => unreachable!(),
         };
         assert!(ok, "direct mutation should be valid for H>=2");
+    }
+    counts
+}
+
+fn apply_radius_projection_mutation(
+    proj: &mut Int8Projection,
+    radius: usize,
+    rng: &mut StdRng,
+) -> MutationCounts {
+    let mut counts = MutationCounts::default();
+    for _ in 0..radius {
+        let _ = proj.mutate_one(rng);
+        counts.projection += 1;
     }
     counts
 }
@@ -1166,7 +1186,7 @@ fn write_header(writer: &mut BufWriter<File>) {
 fn write_climb_header(writer: &mut BufWriter<File>) {
     writeln!(
         writer,
-        "base_index,base_checkpoint,base_step,base_accuracy,climber_id,tile_id,lat_bin,lon_bin,step_index,proposal_seed,mutation_type,accepted,accept_reason,current_score_before,candidate_score,accepted_score,best_score,delta_from_start,best_delta_from_start,step_delta,base_score,requested_radius,direct_genome_distance,edge_edits,threshold_edits,channel_edits,polarity_edits,current_edges,candidate_edges,behavior_distance,eval_ms,score_mode,accept_epsilon"
+        "base_index,base_checkpoint,base_step,base_accuracy,climber_id,tile_id,lat_bin,lon_bin,step_index,proposal_seed,mutation_type,accepted,accept_reason,current_score_before,candidate_score,accepted_score,best_score,delta_from_start,best_delta_from_start,step_delta,base_score,requested_radius,direct_genome_distance,edge_edits,threshold_edits,channel_edits,polarity_edits,projection_edits,current_edges,candidate_edges,behavior_distance,eval_ms,score_mode,accept_epsilon"
     )
     .expect("failed to write paratrooper_paths header");
 }
@@ -1270,11 +1290,12 @@ fn main() {
                     let eval_seed = climber_seed.wrapping_add(1_000_000);
                     let mut proposal_rng = StdRng::seed_from_u64(climber_seed);
                     let mut current = base_net.clone();
+                    let mut current_proj = proj.clone();
                     let mut current_eval_net = current.clone();
                     let start_score = eval_score(
                         &cli.score_mode,
                         &mut current_eval_net,
-                        &proj,
+                        &current_proj,
                         &table,
                         &pair_ids,
                         &hot_to_idx,
@@ -1296,12 +1317,21 @@ fn main() {
                         let proposal_seed = proposal_rng.gen::<u64>();
                         let mut mutation_rng = StdRng::seed_from_u64(proposal_seed);
                         let mut candidate = current.clone();
-                        let counts = apply_radius_mutation(
-                            &mut candidate,
-                            radius,
-                            mutation_type,
-                            &mut mutation_rng,
-                        );
+                        let mut candidate_proj = current_proj.clone();
+                        let counts = if mutation_type == MutationType::Projection {
+                            apply_radius_projection_mutation(
+                                &mut candidate_proj,
+                                radius,
+                                &mut mutation_rng,
+                            )
+                        } else {
+                            apply_radius_mutation(
+                                &mut candidate,
+                                radius,
+                                mutation_type,
+                                &mut mutation_rng,
+                            )
+                        };
                         let candidate_coord = encode_coord(&candidate);
                         let direct_distance = coord_distance(&base_coord, &candidate_coord);
                         let eval_start = Instant::now();
@@ -1309,7 +1339,7 @@ fn main() {
                         let candidate_score = eval_score(
                             &cli.score_mode,
                             &mut cand_eval_net,
-                            &proj,
+                            &candidate_proj,
                             &table,
                             &pair_ids,
                             &hot_to_idx,
@@ -1336,7 +1366,7 @@ fn main() {
                         let mut cand_metrics_net = candidate.clone();
                         let metrics = compute_panel_metrics(
                             &mut cand_metrics_net,
-                            &proj,
+                            &candidate_proj,
                             &table,
                             &pair_ids,
                             &hot_to_idx,
@@ -1354,6 +1384,7 @@ fn main() {
                         let candidate_edges = candidate.edge_count();
                         let accepted_score = if accepted {
                             current = candidate;
+                            current_proj = candidate_proj;
                             current_score = candidate_score;
                             current_score
                         } else {
@@ -1363,7 +1394,7 @@ fn main() {
 
                         writeln!(
                             climb_writer,
-                            "{},{},{},{:.17},{},{},{},{},{},{},{},{},{},{:.17},{:.17},{:.17},{:.17},{:.17},{:.17},{:.17},{:.17},{},{},{},{},{},{},{},{},{:.17},{:.6},{},{:.17}",
+                            "{},{},{},{:.17},{},{},{},{},{},{},{},{},{},{:.17},{:.17},{:.17},{:.17},{:.17},{:.17},{:.17},{:.17},{},{},{},{},{},{},{},{},{},{:.17},{:.6},{},{:.17}",
                             base_index,
                             checkpoint.display(),
                             meta.step,
@@ -1391,6 +1422,7 @@ fn main() {
                             counts.threshold,
                             counts.channel,
                             counts.polarity,
+                            counts.projection,
                             current_edges,
                             candidate_edges,
                             bdist,
