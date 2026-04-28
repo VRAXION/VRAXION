@@ -95,6 +95,9 @@ struct Cli {
     lon_bins: usize,
     target_tiles: Option<Vec<(usize, usize)>>,
     sample_layer: String,
+    climbers_per_tile: usize,
+    climb_steps: usize,
+    accept_epsilon: f64,
     out: PathBuf,
     seed: u64,
     eval_len: usize,
@@ -118,6 +121,9 @@ struct RunMeta {
     lon_bins: Option<usize>,
     target_tiles: Option<Vec<String>>,
     sample_layer: String,
+    climbers_per_tile: Option<usize>,
+    climb_steps: Option<usize>,
+    accept_epsilon: Option<f64>,
     radii: Vec<usize>,
     mutation_types: Vec<String>,
     checkpoints: Vec<String>,
@@ -157,6 +163,9 @@ fn parse_args() -> Cli {
     let mut lon_bins = 32usize;
     let mut target_tiles: Option<Vec<(usize, usize)>> = None;
     let mut sample_layer = String::from("scout");
+    let mut climbers_per_tile = 16usize;
+    let mut climb_steps = 50usize;
+    let mut accept_epsilon = 0.001f64;
     let mut out = PathBuf::from("output/phase_d9_direct_genome_landscape_20260428");
     let mut seed = 90210u64;
     let mut eval_len = DEFAULT_EVAL_LEN;
@@ -242,6 +251,27 @@ fn parse_args() -> Cli {
                     "--sample-layer expects scout|confirmed"
                 );
             }
+            "--climbers-per-tile" => {
+                climbers_per_tile = args
+                    .next()
+                    .expect("--climbers-per-tile value")
+                    .parse()
+                    .expect("climbers-per-tile")
+            }
+            "--climb-steps" => {
+                climb_steps = args
+                    .next()
+                    .expect("--climb-steps value")
+                    .parse()
+                    .expect("climb-steps")
+            }
+            "--accept-epsilon" => {
+                accept_epsilon = args
+                    .next()
+                    .expect("--accept-epsilon value")
+                    .parse()
+                    .expect("accept-epsilon")
+            }
             "--out" => out = PathBuf::from(args.next().expect("--out path")),
             "--seed" => seed = args.next().expect("--seed value").parse().expect("seed"),
             "--eval-len" => {
@@ -257,7 +287,7 @@ fn parse_args() -> Cli {
             "--help" | "-h" => {
                 println!(
                     "Usage: cargo run -p instnct-core --example d9_direct_landscape -- \
-                     --checkpoint PATH --H 256 --mode fail-fast|medium|full|staged|planet-scout \
+                     --checkpoint PATH --H 256 --mode fail-fast|medium|full|staged|planet-scout|paratrooper-climb \
                      --score-mode accuracy|smooth --samples-per-type N --out PATH"
                 );
                 std::process::exit(0);
@@ -276,10 +306,13 @@ fn parse_args() -> Cli {
         "fail-fast" => vec![1],
         "medium" => vec![1, 4, 16],
         "full" | "staged" => vec![1, 2, 4, 8, 16, 32, 64, 128],
-        "planet-scout" | "homogeneous" => vec![1],
+        "planet-scout" | "homogeneous" | "paratrooper-climb" => vec![1],
         other => panic!("--mode expects fail-fast|medium|full|staged|planet-scout, got {other}"),
     };
-    let default_mutation_types = if matches!(mode.as_str(), "planet-scout" | "homogeneous") {
+    let default_mutation_types = if matches!(
+        mode.as_str(),
+        "planet-scout" | "homogeneous" | "paratrooper-climb"
+    ) {
         vec![MutationType::Edge, MutationType::Threshold]
     } else {
         vec![
@@ -303,6 +336,9 @@ fn parse_args() -> Cli {
         lon_bins,
         target_tiles,
         sample_layer,
+        climbers_per_tile,
+        climb_steps,
+        accept_epsilon,
         out,
         seed,
         eval_len,
@@ -992,6 +1028,14 @@ fn write_header(writer: &mut BufWriter<File>) {
     .expect("failed to write samples header");
 }
 
+fn write_climb_header(writer: &mut BufWriter<File>) {
+    writeln!(
+        writer,
+        "base_index,base_checkpoint,base_step,base_accuracy,climber_id,tile_id,lat_bin,lon_bin,step_index,proposal_seed,mutation_type,accepted,accept_reason,current_score_before,candidate_score,accepted_score,best_score,delta_from_start,best_delta_from_start,step_delta,base_score,requested_radius,direct_genome_distance,edge_edits,threshold_edits,channel_edits,polarity_edits,current_edges,candidate_edges,behavior_distance,eval_ms,score_mode,accept_epsilon"
+    )
+    .expect("failed to write paratrooper_paths header");
+}
+
 fn main() {
     let cli = parse_args();
     create_dir_all(&cli.out).expect("failed to create output directory");
@@ -1061,7 +1105,179 @@ fn main() {
             cli.input_scatter,
         );
 
-        if matches!(cli.mode.as_str(), "planet-scout" | "homogeneous") {
+        if cli.mode == "paratrooper-climb" {
+            let climb_path = cli.out.join("paratrooper_paths.csv");
+            let mut climb_writer = BufWriter::new(
+                File::create(&climb_path).expect("failed to create paratrooper_paths.csv"),
+            );
+            write_climb_header(&mut climb_writer);
+            let tile_list: Vec<(usize, usize)> = cli.target_tiles.clone().unwrap_or_else(|| {
+                let mut tiles = Vec::with_capacity(cli.lat_bins * cli.lon_bins);
+                for lat_bin in 0..cli.lat_bins {
+                    for lon_bin in 0..cli.lon_bins {
+                        tiles.push((lat_bin, lon_bin));
+                    }
+                }
+                tiles
+            });
+            let radius = cli.radii.first().copied().unwrap_or(1);
+            let mut global_climber_id = 0usize;
+            for (tile_idx, &(lat_bin, lon_bin)) in tile_list.iter().enumerate() {
+                let tile_id = format!("{}_{}", lat_bin, lon_bin);
+                for climber_idx in 0..cli.climbers_per_tile {
+                    let climber_seed = cli.seed
+                        ^ ((base_index as u64) << 56)
+                        ^ ((lat_bin as u64) << 44)
+                        ^ ((lon_bin as u64) << 32)
+                        ^ ((climber_idx as u64) << 16)
+                        ^ 0xD90D_0001u64;
+                    let eval_seed = climber_seed.wrapping_add(1_000_000);
+                    let mut proposal_rng = StdRng::seed_from_u64(climber_seed);
+                    let mut current = base_net.clone();
+                    let mut current_eval_net = current.clone();
+                    let start_score = eval_score(
+                        &cli.score_mode,
+                        &mut current_eval_net,
+                        &proj,
+                        &table,
+                        &pair_ids,
+                        &hot_to_idx,
+                        &bigram,
+                        cli.eval_len,
+                        &mut StdRng::seed_from_u64(eval_seed),
+                        &init.propagation,
+                        init.output_start(),
+                        cli.h,
+                        init.input_end(),
+                        cli.input_scatter,
+                    );
+                    let mut current_score = start_score;
+                    let mut best_score = start_score;
+                    for step_idx in 0..cli.climb_steps {
+                        let mutation_type =
+                            cli.mutation_types[proposal_rng.gen_range(0..cli.mutation_types.len())];
+                        let proposal_seed = proposal_rng.gen::<u64>();
+                        let mut mutation_rng = StdRng::seed_from_u64(proposal_seed);
+                        let mut candidate = current.clone();
+                        let counts = apply_radius_mutation(
+                            &mut candidate,
+                            radius,
+                            mutation_type,
+                            &mut mutation_rng,
+                        );
+                        let candidate_coord = encode_coord(&candidate);
+                        let direct_distance = coord_distance(&base_coord, &candidate_coord);
+                        let eval_start = Instant::now();
+                        let mut cand_eval_net = candidate.clone();
+                        let candidate_score = eval_score(
+                            &cli.score_mode,
+                            &mut cand_eval_net,
+                            &proj,
+                            &table,
+                            &pair_ids,
+                            &hot_to_idx,
+                            &bigram,
+                            cli.eval_len,
+                            &mut StdRng::seed_from_u64(eval_seed),
+                            &init.propagation,
+                            init.output_start(),
+                            cli.h,
+                            init.input_end(),
+                            cli.input_scatter,
+                        );
+                        let current_score_before = current_score;
+                        let step_delta = candidate_score - current_score;
+                        let accepted = step_delta >= -cli.accept_epsilon;
+                        let accept_reason = if accepted && step_delta > 0.0 {
+                            "improve"
+                        } else if accepted {
+                            "neutral"
+                        } else {
+                            "reject"
+                        };
+                        let mut cand_metrics_net = candidate.clone();
+                        let metrics = compute_panel_metrics(
+                            &mut cand_metrics_net,
+                            &proj,
+                            &table,
+                            &pair_ids,
+                            &hot_to_idx,
+                            &init.propagation,
+                            init.output_start(),
+                            cli.h,
+                            init.input_end(),
+                            cli.input_scatter,
+                        );
+                        let eval_ms = eval_start.elapsed().as_secs_f64() * 1000.0;
+                        let bdist = behavior_distance(&base_metrics, &metrics, cli.h);
+                        if candidate_score > best_score {
+                            best_score = candidate_score;
+                        }
+                        let candidate_edges = candidate.edge_count();
+                        let accepted_score = if accepted {
+                            current = candidate;
+                            current_score = candidate_score;
+                            current_score
+                        } else {
+                            current_score
+                        };
+                        let current_edges = current.edge_count();
+
+                        writeln!(
+                            climb_writer,
+                            "{},{},{},{:.17},{},{},{},{},{},{},{},{},{},{:.17},{:.17},{:.17},{:.17},{:.17},{:.17},{:.17},{:.17},{},{},{},{},{},{},{},{},{:.17},{:.6},{},{:.17}",
+                            base_index,
+                            checkpoint.display(),
+                            meta.step,
+                            meta.accuracy,
+                            global_climber_id,
+                            tile_id,
+                            lat_bin,
+                            lon_bin,
+                            step_idx,
+                            proposal_seed,
+                            mutation_type.as_str(),
+                            accepted,
+                            accept_reason,
+                            current_score_before,
+                            candidate_score,
+                            accepted_score,
+                            best_score,
+                            accepted_score - start_score,
+                            best_score - start_score,
+                            step_delta,
+                            start_score,
+                            radius,
+                            direct_distance,
+                            counts.edge,
+                            counts.threshold,
+                            counts.channel,
+                            counts.polarity,
+                            current_edges,
+                            candidate_edges,
+                            bdist,
+                            eval_ms,
+                            cli.score_mode,
+                            cli.accept_epsilon,
+                        )
+                        .expect("failed to write climb row");
+                        global_sample_id += 1;
+                    }
+                    global_climber_id += 1;
+                }
+                climb_writer
+                    .flush()
+                    .expect("failed to flush paratrooper_paths.csv");
+                println!(
+                    "  base={} paratrooper tile={}/{} climbers={} total_rows={}",
+                    base_index,
+                    tile_idx + 1,
+                    tile_list.len(),
+                    cli.climbers_per_tile,
+                    global_sample_id
+                );
+            }
+        } else if matches!(cli.mode.as_str(), "planet-scout" | "homogeneous") {
             let tile_list: Vec<(usize, usize)> = cli.target_tiles.clone().unwrap_or_else(|| {
                 let mut tiles = Vec::with_capacity(cli.lat_bins * cli.lon_bins);
                 for lat_bin in 0..cli.lat_bins {
@@ -1072,85 +1288,85 @@ fn main() {
                 tiles
             });
             for (tile_idx, &(lat_bin, lon_bin)) in tile_list.iter().enumerate() {
-                    let tile_id = format!("{}_{}", lat_bin, lon_bin);
-                    for &radius in &cli.radii {
-                        for &mutation_type in &cli.mutation_types {
-                            for sample_idx in 0..cli.samples_per_tile {
-                                let sample_seed = cli.seed
-                                    ^ ((base_index as u64) << 56)
-                                    ^ ((lat_bin as u64) << 44)
-                                    ^ ((lon_bin as u64) << 32)
-                                    ^ ((radius as u64) << 20)
-                                    ^ ((sample_idx as u64) << 8)
-                                    ^ (mutation_type.as_str().as_bytes()[0] as u64)
-                                    ^ ((cli.sample_layer.as_bytes()[0] as u64) << 4);
-                                let mut mutation_rng = StdRng::seed_from_u64(sample_seed);
-                                let mut candidate = base_net.clone();
-                                let counts = apply_radius_mutation(
-                                    &mut candidate,
-                                    radius,
-                                    mutation_type,
-                                    &mut mutation_rng,
-                                );
-                                let candidate_coord = encode_coord(&candidate);
-                                let direct_distance = coord_distance(&base_coord, &candidate_coord);
+                let tile_id = format!("{}_{}", lat_bin, lon_bin);
+                for &radius in &cli.radii {
+                    for &mutation_type in &cli.mutation_types {
+                        for sample_idx in 0..cli.samples_per_tile {
+                            let sample_seed = cli.seed
+                                ^ ((base_index as u64) << 56)
+                                ^ ((lat_bin as u64) << 44)
+                                ^ ((lon_bin as u64) << 32)
+                                ^ ((radius as u64) << 20)
+                                ^ ((sample_idx as u64) << 8)
+                                ^ (mutation_type.as_str().as_bytes()[0] as u64)
+                                ^ ((cli.sample_layer.as_bytes()[0] as u64) << 4);
+                            let mut mutation_rng = StdRng::seed_from_u64(sample_seed);
+                            let mut candidate = base_net.clone();
+                            let counts = apply_radius_mutation(
+                                &mut candidate,
+                                radius,
+                                mutation_type,
+                                &mut mutation_rng,
+                            );
+                            let candidate_coord = encode_coord(&candidate);
+                            let direct_distance = coord_distance(&base_coord, &candidate_coord);
 
-                                let eval_seed = cli
-                                    .seed
-                                    .wrapping_add(1_000_000)
-                                    .wrapping_add(global_sample_id as u64);
-                                let mut base_eval_net = base_net.clone();
-                                let mut cand_eval_net = candidate.clone();
-                                let eval_start = Instant::now();
-                                let base_score = eval_score(
-                                    &cli.score_mode,
-                                    &mut base_eval_net,
-                                    &proj,
-                                    &table,
-                                    &pair_ids,
-                                    &hot_to_idx,
-                                    &bigram,
-                                    cli.eval_len,
-                                    &mut StdRng::seed_from_u64(eval_seed),
-                                    &init.propagation,
-                                    init.output_start(),
-                                    cli.h,
-                                    init.input_end(),
-                                    cli.input_scatter,
-                                );
-                                let score = eval_score(
-                                    &cli.score_mode,
-                                    &mut cand_eval_net,
-                                    &proj,
-                                    &table,
-                                    &pair_ids,
-                                    &hot_to_idx,
-                                    &bigram,
-                                    cli.eval_len,
-                                    &mut StdRng::seed_from_u64(eval_seed),
-                                    &init.propagation,
-                                    init.output_start(),
-                                    cli.h,
-                                    init.input_end(),
-                                    cli.input_scatter,
-                                );
-                                let mut cand_metrics_net = candidate.clone();
-                                let metrics = compute_panel_metrics(
-                                    &mut cand_metrics_net,
-                                    &proj,
-                                    &table,
-                                    &pair_ids,
-                                    &hot_to_idx,
-                                    &init.propagation,
-                                    init.output_start(),
-                                    cli.h,
-                                    init.input_end(),
-                                    cli.input_scatter,
-                                );
-                                let eval_ms = eval_start.elapsed().as_secs_f64() * 1000.0;
-                                let bdist = behavior_distance(&base_metrics, &metrics, cli.h);
+                            let eval_seed = cli
+                                .seed
+                                .wrapping_add(1_000_000)
+                                .wrapping_add(global_sample_id as u64);
+                            let mut base_eval_net = base_net.clone();
+                            let mut cand_eval_net = candidate.clone();
+                            let eval_start = Instant::now();
+                            let base_score = eval_score(
+                                &cli.score_mode,
+                                &mut base_eval_net,
+                                &proj,
+                                &table,
+                                &pair_ids,
+                                &hot_to_idx,
+                                &bigram,
+                                cli.eval_len,
+                                &mut StdRng::seed_from_u64(eval_seed),
+                                &init.propagation,
+                                init.output_start(),
+                                cli.h,
+                                init.input_end(),
+                                cli.input_scatter,
+                            );
+                            let score = eval_score(
+                                &cli.score_mode,
+                                &mut cand_eval_net,
+                                &proj,
+                                &table,
+                                &pair_ids,
+                                &hot_to_idx,
+                                &bigram,
+                                cli.eval_len,
+                                &mut StdRng::seed_from_u64(eval_seed),
+                                &init.propagation,
+                                init.output_start(),
+                                cli.h,
+                                init.input_end(),
+                                cli.input_scatter,
+                            );
+                            let mut cand_metrics_net = candidate.clone();
+                            let metrics = compute_panel_metrics(
+                                &mut cand_metrics_net,
+                                &proj,
+                                &table,
+                                &pair_ids,
+                                &hot_to_idx,
+                                &init.propagation,
+                                init.output_start(),
+                                cli.h,
+                                init.input_end(),
+                                cli.input_scatter,
+                            );
+                            let eval_ms = eval_start.elapsed().as_secs_f64() * 1000.0;
+                            let bdist = behavior_distance(&base_metrics, &metrics, cli.h);
 
-                                writeln!(
+                            writeln!(
                                     writer,
                                     "{},{},{},{:.17},{},{},{},{},{},{},{},{},{},{},{},{:.17},{:.17},{:.17},{:.17},{},{:.17},{},{:.17},{:.17},{:.17},{:.17},{:.17},{},{:.17},{:.6},{},{},{},{},{}",
                                     base_index,
@@ -1190,11 +1406,11 @@ fn main() {
                                     cli.sample_layer
                                 )
                                 .expect("failed to write planet scout sample row");
-                                global_sample_id += 1;
-                            }
+                            global_sample_id += 1;
                         }
                     }
-                    writer.flush().expect("failed to flush samples.csv");
+                }
+                writer.flush().expect("failed to flush samples.csv");
                 println!(
                     "  base={} planet_scout tile={}/{} total_rows={}",
                     base_index,
@@ -1205,80 +1421,80 @@ fn main() {
             }
         } else {
             for &radius in &cli.radii {
-            for &mutation_type in &cli.mutation_types {
-                for sample_idx in 0..cli.samples_per_type {
-                    let sample_seed = cli.seed
-                        ^ ((base_index as u64) << 48)
-                        ^ ((radius as u64) << 32)
-                        ^ ((sample_idx as u64) << 8)
-                        ^ (mutation_type.as_str().as_bytes()[0] as u64);
-                    let mut mutation_rng = StdRng::seed_from_u64(sample_seed);
-                    let mut candidate = base_net.clone();
-                    let counts = apply_radius_mutation(
-                        &mut candidate,
-                        radius,
-                        mutation_type,
-                        &mut mutation_rng,
-                    );
-                    let candidate_coord = encode_coord(&candidate);
-                    let direct_distance = coord_distance(&base_coord, &candidate_coord);
+                for &mutation_type in &cli.mutation_types {
+                    for sample_idx in 0..cli.samples_per_type {
+                        let sample_seed = cli.seed
+                            ^ ((base_index as u64) << 48)
+                            ^ ((radius as u64) << 32)
+                            ^ ((sample_idx as u64) << 8)
+                            ^ (mutation_type.as_str().as_bytes()[0] as u64);
+                        let mut mutation_rng = StdRng::seed_from_u64(sample_seed);
+                        let mut candidate = base_net.clone();
+                        let counts = apply_radius_mutation(
+                            &mut candidate,
+                            radius,
+                            mutation_type,
+                            &mut mutation_rng,
+                        );
+                        let candidate_coord = encode_coord(&candidate);
+                        let direct_distance = coord_distance(&base_coord, &candidate_coord);
 
-                    let eval_seed = cli
-                        .seed
-                        .wrapping_add(1_000_000)
-                        .wrapping_add(global_sample_id as u64);
-                    let mut base_eval_net = base_net.clone();
-                    let mut cand_eval_net = candidate.clone();
-                    let eval_start = Instant::now();
-                    let base_score = eval_score(
-                        &cli.score_mode,
-                        &mut base_eval_net,
-                        &proj,
-                        &table,
-                        &pair_ids,
-                        &hot_to_idx,
-                        &bigram,
-                        cli.eval_len,
-                        &mut StdRng::seed_from_u64(eval_seed),
-                        &init.propagation,
-                        init.output_start(),
-                        cli.h,
-                        init.input_end(),
-                        cli.input_scatter,
-                    );
-                    let score = eval_score(
-                        &cli.score_mode,
-                        &mut cand_eval_net,
-                        &proj,
-                        &table,
-                        &pair_ids,
-                        &hot_to_idx,
-                        &bigram,
-                        cli.eval_len,
-                        &mut StdRng::seed_from_u64(eval_seed),
-                        &init.propagation,
-                        init.output_start(),
-                        cli.h,
-                        init.input_end(),
-                        cli.input_scatter,
-                    );
-                    let mut cand_metrics_net = candidate.clone();
-                    let metrics = compute_panel_metrics(
-                        &mut cand_metrics_net,
-                        &proj,
-                        &table,
-                        &pair_ids,
-                        &hot_to_idx,
-                        &init.propagation,
-                        init.output_start(),
-                        cli.h,
-                        init.input_end(),
-                        cli.input_scatter,
-                    );
-                    let eval_ms = eval_start.elapsed().as_secs_f64() * 1000.0;
-                    let bdist = behavior_distance(&base_metrics, &metrics, cli.h);
+                        let eval_seed = cli
+                            .seed
+                            .wrapping_add(1_000_000)
+                            .wrapping_add(global_sample_id as u64);
+                        let mut base_eval_net = base_net.clone();
+                        let mut cand_eval_net = candidate.clone();
+                        let eval_start = Instant::now();
+                        let base_score = eval_score(
+                            &cli.score_mode,
+                            &mut base_eval_net,
+                            &proj,
+                            &table,
+                            &pair_ids,
+                            &hot_to_idx,
+                            &bigram,
+                            cli.eval_len,
+                            &mut StdRng::seed_from_u64(eval_seed),
+                            &init.propagation,
+                            init.output_start(),
+                            cli.h,
+                            init.input_end(),
+                            cli.input_scatter,
+                        );
+                        let score = eval_score(
+                            &cli.score_mode,
+                            &mut cand_eval_net,
+                            &proj,
+                            &table,
+                            &pair_ids,
+                            &hot_to_idx,
+                            &bigram,
+                            cli.eval_len,
+                            &mut StdRng::seed_from_u64(eval_seed),
+                            &init.propagation,
+                            init.output_start(),
+                            cli.h,
+                            init.input_end(),
+                            cli.input_scatter,
+                        );
+                        let mut cand_metrics_net = candidate.clone();
+                        let metrics = compute_panel_metrics(
+                            &mut cand_metrics_net,
+                            &proj,
+                            &table,
+                            &pair_ids,
+                            &hot_to_idx,
+                            &init.propagation,
+                            init.output_start(),
+                            cli.h,
+                            init.input_end(),
+                            cli.input_scatter,
+                        );
+                        let eval_ms = eval_start.elapsed().as_secs_f64() * 1000.0;
+                        let bdist = behavior_distance(&base_metrics, &metrics, cli.h);
 
-                    writeln!(
+                        writeln!(
                         writer,
                         "{},{},{},{:.17},{},{},{},{},{},{},{},{},{},{},{},{:.17},{:.17},{:.17},{:.17},{},{:.17},{},{:.17},{:.17},{:.17},{:.17},{:.17},{},{:.17},{:.6},{},,,,direct_random",
                         base_index,
@@ -1314,19 +1530,19 @@ fn main() {
                         cli.score_mode
                     )
                     .expect("failed to write sample row");
-                    global_sample_id += 1;
+                        global_sample_id += 1;
+                    }
+                    writer.flush().expect("failed to flush samples.csv");
+                    println!(
+                        "  base={} radius={} type={} samples={} total_rows={}",
+                        base_index,
+                        radius,
+                        mutation_type.as_str(),
+                        cli.samples_per_type,
+                        global_sample_id
+                    );
                 }
-                writer.flush().expect("failed to flush samples.csv");
-                println!(
-                    "  base={} radius={} type={} samples={} total_rows={}",
-                    base_index,
-                    radius,
-                    mutation_type.as_str(),
-                    cli.samples_per_type,
-                    global_sample_id
-                );
             }
-        }
         }
     }
 
@@ -1338,7 +1554,9 @@ fn main() {
     .expect("failed to write roundtrip.json");
 
     let meta = RunMeta {
-        phase: if matches!(cli.mode.as_str(), "planet-scout" | "homogeneous") {
+        phase: if cli.mode == "paratrooper-climb" {
+            "D9.0i"
+        } else if matches!(cli.mode.as_str(), "planet-scout" | "homogeneous") {
             "D9.0e"
         } else {
             "D9.0b"
@@ -1351,8 +1569,16 @@ fn main() {
         eval_len: cli.eval_len,
         samples_per_type: cli.samples_per_type,
         samples_per_tile: cli.samples_per_tile,
-        lat_bins: matches!(cli.mode.as_str(), "planet-scout" | "homogeneous").then_some(cli.lat_bins),
-        lon_bins: matches!(cli.mode.as_str(), "planet-scout" | "homogeneous").then_some(cli.lon_bins),
+        lat_bins: matches!(
+            cli.mode.as_str(),
+            "planet-scout" | "homogeneous" | "paratrooper-climb"
+        )
+        .then_some(cli.lat_bins),
+        lon_bins: matches!(
+            cli.mode.as_str(),
+            "planet-scout" | "homogeneous" | "paratrooper-climb"
+        )
+        .then_some(cli.lon_bins),
         target_tiles: cli.target_tiles.as_ref().map(|tiles| {
             tiles
                 .iter()
@@ -1360,6 +1586,9 @@ fn main() {
                 .collect()
         }),
         sample_layer: cli.sample_layer.clone(),
+        climbers_per_tile: (cli.mode == "paratrooper-climb").then_some(cli.climbers_per_tile),
+        climb_steps: (cli.mode == "paratrooper-climb").then_some(cli.climb_steps),
+        accept_epsilon: (cli.mode == "paratrooper-climb").then_some(cli.accept_epsilon),
         radii: cli.radii.clone(),
         mutation_types: cli
             .mutation_types
