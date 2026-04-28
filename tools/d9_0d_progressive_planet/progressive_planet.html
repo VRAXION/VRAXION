@@ -81,6 +81,10 @@
   <div class="small">Promising <span id="p-promising">?</span> &middot; Retired <span id="p-retired">?</span> &middot;
     Splits <span id="p-splits">?</span></div>
 
+  <h2>Top 5 peaks (priority)</h2>
+  <div class="small" style="font-size:10px;color:#7d8da0;margin:-2px 0 4px">heuristic score, not statistical probability</div>
+  <div id="top-peaks"></div>
+
   <h2>Acquisition queue (top 12)</h2>
   <div id="queue"></div>
 
@@ -122,6 +126,7 @@
   };
 
   const METRICS = [
+    { key: "vitality",     label: "Peak priority",    good: "high", palette: "fitness", computed: true },
     { key: "mean_delta",   label: "Fitness mean",     good: "high", palette: "fitness" },
     { key: "best_delta",   label: "Best discovered",  good: "high", palette: "fitness" },
     { key: "std_delta",    label: "Variance / STD",   good: "high", palette: "uncertainty" },
@@ -187,7 +192,28 @@
   $("detail").style.display = "block";
   $("footer").style.display = "block";
 
+  function vitalityScore(t, typeKey) {
+    // 0..1 heuristic priority score (NOT a calibrated posterior probability).
+    // weights: best_delta (40%) + safety (30%) + positive_rate (20%) + confidence (10%)
+    // typeKey "all" or null -> use aggregate tile fields; otherwise use per_type[typeKey].
+    const useAll = !typeKey || typeKey === "all";
+    const src = useAll ? t : (t.per_type && t.per_type[typeKey]);
+    if (!src) return 0;
+    const bestRaw = (src.best_delta != null && Number.isFinite(src.best_delta)) ? src.best_delta : 0;
+    const best = Math.max(0, Math.min(1, (bestRaw + 0.02) / 0.04));
+    const safety = 1 - (src.cliff_rate != null ? src.cliff_rate : 1);
+    const consistency = (src.positive_rate != null ? src.positive_rate : 0);
+    const conf = useAll
+      ? (t.confidence != null ? t.confidence : 0)
+      : Math.min(1, (src.n || 0) / 8.0);
+    const score = 0.40 * best + 0.30 * safety + 0.20 * consistency + 0.10 * conf;
+    return Math.max(0, Math.min(1, score));
+  }
+
   function tileMetricValue(t) {
+    if (state.metric && state.metric.computed && state.metric.key === "vitality") {
+      return vitalityScore(t, state.type.key);
+    }
     if (state.type.key === "all") {
       if (state.metric.key === "scan_priority")   return t.scan_priority;
       if (state.metric.key === "split_priority")  return t.split_priority;
@@ -494,10 +520,33 @@
     if (!q.length) { c.innerHTML = "<div class='small'>queue empty</div>"; return; }
     c.innerHTML = q.map(item => {
       const tag = "<span class='tag "+(item.type||"all")+"'>"+(item.type||"?")+"</span>";
+      const pri = +(item.priority || 0);
+      const sign = pri >= 0 ? "+" : "";
       return "<div class='qrow'>"+tag+
         "<span style='flex:1'><b>"+item.tile_id+"</b> <span class='small'>"+
         (item.next_action||"?")+"</span></span>"+
-        "<span class='small'>+"+(item.priority||0).toFixed(2)+"</span></div>";
+        "<span class='small'>"+sign+pri.toFixed(2)+"</span></div>";
+    }).join("");
+  }
+
+  function fillTopPeaks() {
+    const tk = state.type.key;
+    const ranked = (data.tiles || [])
+      .filter(t => t.state && t.state !== "UNKNOWN")
+      .filter(t => tk === "all" || (t.per_type && t.per_type[tk] && t.per_type[tk].n > 0))
+      .map(t => ({ t: t, v: vitalityScore(t, tk) }))
+      .sort((a, b) => b.v - a.v)
+      .slice(0, 5);
+    const c = $("top-peaks");
+    if (!ranked.length) { c.innerHTML = "<div class='small'>no candidates yet</div>"; return; }
+    c.innerHTML = ranked.map(x => {
+      const ty = x.t.dominant_mutation_type || "all";
+      const pct = Math.round(x.v * 100);
+      return "<div class='qrow'>"+
+        "<span class='tag "+ty+"'>"+ty+"</span>"+
+        "<span style='flex:1'><b>"+x.t.tile_id+"</b> <span class='small'>"+
+        (x.t.state || "").toLowerCase()+"</span></span>"+
+        "<span class='small' style='color:#9be58e;font-weight:700'>"+pct+"%</span></div>";
     }).join("");
   }
 
@@ -527,7 +576,7 @@
   }
 
   function setMetric(m) { state.metric = m; rebuildButtons(); requestRender(); }
-  function setType(t)   { state.type = t;   rebuildButtons(); requestRender(); }
+  function setType(t)   { state.type = t;   rebuildButtons(); fillTopPeaks(); requestRender(); }
   function setLayer(l)  { state.layer = l;  rebuildButtons(); requestRender(); }
 
   function rebuildButtons() {
@@ -572,6 +621,7 @@
   rebuildButtons();
   fillMeta();
   fillProgress();
+  fillTopPeaks();
   fillQueue();
   requestRender();
 })();
