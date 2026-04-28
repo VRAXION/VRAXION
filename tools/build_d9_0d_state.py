@@ -198,8 +198,6 @@ def classify_tile(stats: dict[str, Any], confidence: float, target_n: int) -> st
 
     if n <= 0:
         return "UNKNOWN"
-    if n >= target_n and mean_delta is not None and mean_delta >= 0.0:
-        return "CONFIRMED_GOOD"
     if n >= 5 and std_delta is not None and std_delta > 0.02:
         return "SPLIT_CANDIDATE"
     if n >= 3 and cliff_rate is not None and cliff_rate > 0.65:
@@ -210,7 +208,7 @@ def classify_tile(stats: dict[str, Any], confidence: float, target_n: int) -> st
         return "NOISY"
     if n >= 3 and mean_delta is not None and positive_rate is not None and mean_delta >= 0.0 and positive_rate > 0.10:
         return "PROMISING"
-    if confidence >= 1.0 and mean_delta is not None and mean_delta < 0.0 and positive_rate == 0.0:
+    if n >= 5 and confidence >= 1.0 and mean_delta is not None and mean_delta < 0.0 and positive_rate == 0.0:
         return "RETIRED"
     return "SCOUT"
 
@@ -350,8 +348,15 @@ def build_state(args: argparse.Namespace) -> dict[str, Any]:
     if "mutation_type" not in df.columns or "delta_score" not in df.columns:
         raise ValueError("samples.csv must include mutation_type and delta_score")
 
-    projected = assign_tiles(df, args.lat_bins, args.lon_bins)
-    target_n = args.confirmed_target_per_tile
+    has_direct_tiles = {"lat_bin", "lon_bin"}.issubset(df.columns) and df["lat_bin"].notna().any()
+    if has_direct_tiles:
+        projected = df.copy()
+        projected["lat_bin"] = projected["lat_bin"].astype(int)
+        projected["lon_bin"] = projected["lon_bin"].astype(int)
+        projected["tile_id"] = projected["lat_bin"].astype(str) + "_" + projected["lon_bin"].astype(str)
+    else:
+        projected = assign_tiles(df, args.lat_bins, args.lon_bins)
+    target_n = args.scout_target_per_tile
     tiles = build_tiles(projected, args.lat_bins, args.lon_bins, target_n, args.cliff_delta)
     queue = build_queue(tiles)
     now = datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
@@ -392,6 +397,8 @@ def build_state(args: argparse.Namespace) -> dict[str, Any]:
             "scout_target_per_tile": args.scout_target_per_tile,
             "confirmed_target_per_tile": args.confirmed_target_per_tile,
             "checkpoint": checkpoint,
+            "score_mode": str(run_meta.get("score_mode", df["score_mode"].iloc[0] if "score_mode" in df.columns and len(df) else "unknown")),
+            "tile_assignment": "direct_csv" if has_direct_tiles else "pca_shadow_projection",
         },
         "tiles": tiles,
         "queue": queue,

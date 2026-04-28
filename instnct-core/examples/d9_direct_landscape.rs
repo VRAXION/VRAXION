@@ -86,9 +86,13 @@ struct Cli {
     checkpoints: Vec<PathBuf>,
     h: usize,
     mode: String,
+    score_mode: String,
     radii: Vec<usize>,
     mutation_types: Vec<MutationType>,
     samples_per_type: usize,
+    samples_per_tile: usize,
+    lat_bins: usize,
+    lon_bins: usize,
     out: PathBuf,
     seed: u64,
     eval_len: usize,
@@ -103,9 +107,13 @@ struct RunMeta {
     tool: &'static str,
     h: usize,
     mode: String,
+    score_mode: String,
     seed: u64,
     eval_len: usize,
     samples_per_type: usize,
+    samples_per_tile: usize,
+    lat_bins: Option<usize>,
+    lon_bins: Option<usize>,
     radii: Vec<usize>,
     mutation_types: Vec<String>,
     checkpoints: Vec<String>,
@@ -136,9 +144,13 @@ fn parse_args() -> Cli {
     let mut checkpoints: Vec<PathBuf> = Vec::new();
     let mut h = 256usize;
     let mut mode = String::from("fail-fast");
+    let mut score_mode = String::from("accuracy");
     let mut radii: Option<Vec<usize>> = None;
     let mut mutation_types: Option<Vec<MutationType>> = None;
     let mut samples_per_type = 200usize;
+    let mut samples_per_tile = 1usize;
+    let mut lat_bins = 16usize;
+    let mut lon_bins = 32usize;
     let mut out = PathBuf::from("output/phase_d9_direct_genome_landscape_20260428");
     let mut seed = 90210u64;
     let mut eval_len = DEFAULT_EVAL_LEN;
@@ -163,6 +175,13 @@ fn parse_args() -> Cli {
             }
             "--H" | "--h" => h = args.next().expect("--H value").parse().expect("H"),
             "--mode" => mode = args.next().expect("--mode value"),
+            "--score-mode" => {
+                score_mode = args.next().expect("--score-mode value");
+                assert!(
+                    matches!(score_mode.as_str(), "accuracy" | "smooth"),
+                    "--score-mode expects accuracy|smooth"
+                );
+            }
             "--radii" => radii = Some(parse_csv_usize(&args.next().expect("--radii csv"))),
             "--mutation-types" => {
                 mutation_types = Some(parse_csv_types(&args.next().expect("--mutation-types csv")))
@@ -173,6 +192,27 @@ fn parse_args() -> Cli {
                     .expect("--samples-per-type value")
                     .parse()
                     .expect("samples-per-type")
+            }
+            "--samples-per-tile" => {
+                samples_per_tile = args
+                    .next()
+                    .expect("--samples-per-tile value")
+                    .parse()
+                    .expect("samples-per-tile")
+            }
+            "--lat-bins" => {
+                lat_bins = args
+                    .next()
+                    .expect("--lat-bins value")
+                    .parse()
+                    .expect("lat-bins")
+            }
+            "--lon-bins" => {
+                lon_bins = args
+                    .next()
+                    .expect("--lon-bins value")
+                    .parse()
+                    .expect("lon-bins")
             }
             "--out" => out = PathBuf::from(args.next().expect("--out path")),
             "--seed" => seed = args.next().expect("--seed value").parse().expect("seed"),
@@ -189,8 +229,8 @@ fn parse_args() -> Cli {
             "--help" | "-h" => {
                 println!(
                     "Usage: cargo run -p instnct-core --example d9_direct_landscape -- \
-                     --checkpoint PATH --H 256 --mode fail-fast|medium|full|staged \
-                     --samples-per-type N --out PATH"
+                     --checkpoint PATH --H 256 --mode fail-fast|medium|full|staged|planet-scout \
+                     --score-mode accuracy|smooth --samples-per-type N --out PATH"
                 );
                 std::process::exit(0);
             }
@@ -208,23 +248,31 @@ fn parse_args() -> Cli {
         "fail-fast" => vec![1],
         "medium" => vec![1, 4, 16],
         "full" | "staged" => vec![1, 2, 4, 8, 16, 32, 64, 128],
-        other => panic!("--mode expects fail-fast|medium|full|staged, got {other}"),
+        "planet-scout" | "homogeneous" => vec![1],
+        other => panic!("--mode expects fail-fast|medium|full|staged|planet-scout, got {other}"),
+    };
+    let default_mutation_types = if matches!(mode.as_str(), "planet-scout" | "homogeneous") {
+        vec![MutationType::Edge, MutationType::Threshold]
+    } else {
+        vec![
+            MutationType::Edge,
+            MutationType::Threshold,
+            MutationType::Channel,
+            MutationType::Polarity,
+        ]
     };
 
     Cli {
         checkpoints,
         h,
         mode,
+        score_mode,
         radii: radii.unwrap_or(default_radii),
-        mutation_types: mutation_types.unwrap_or_else(|| {
-            vec![
-                MutationType::Edge,
-                MutationType::Threshold,
-                MutationType::Channel,
-                MutationType::Polarity,
-            ]
-        }),
+        mutation_types: mutation_types.unwrap_or(default_mutation_types),
         samples_per_type,
+        samples_per_tile,
+        lat_bins,
+        lon_bins,
         out,
         seed,
         eval_len,
@@ -483,6 +531,44 @@ fn build_corpus_pairs(
     (pair_ids, top_to_idx, n_classes)
 }
 
+fn build_pair_bigram(pair_ids: &[u16], hot_to_idx: &[usize], n_hot: usize) -> Vec<Vec<f64>> {
+    let mut counts = vec![vec![0u32; n_hot]; n_hot];
+    for i in 0..pair_ids.len().saturating_sub(1) {
+        let cur_idx = hot_to_idx[pair_ids[i] as usize];
+        let next_idx = hot_to_idx[pair_ids[i + 1] as usize];
+        if cur_idx != usize::MAX && next_idx != usize::MAX {
+            counts[cur_idx][next_idx] += 1;
+        }
+    }
+    counts
+        .iter()
+        .map(|row| {
+            let total: f64 = row.iter().map(|&c| c as f64).sum();
+            if total < 1.0 {
+                vec![1.0 / n_hot as f64; n_hot]
+            } else {
+                row.iter().map(|&c| c as f64 / total).collect()
+            }
+        })
+        .collect()
+}
+
+fn cosine_similarity(a: &[f64], b: &[f64]) -> f64 {
+    let mut dot = 0.0;
+    let mut na = 0.0;
+    let mut nb = 0.0;
+    for (&x, &y) in a.iter().zip(b.iter()) {
+        dot += x * y;
+        na += x * x;
+        nb += y * y;
+    }
+    if na <= 1e-12 || nb <= 1e-12 {
+        0.0
+    } else {
+        dot / (na.sqrt() * nb.sqrt())
+    }
+}
+
 fn eval_accuracy_proj(
     net: &mut Network,
     proj: &Int8Projection,
@@ -518,6 +604,101 @@ fn eval_accuracy_proj(
         }
     }
     correct as f64 / len as f64
+}
+
+fn eval_smooth_proj(
+    net: &mut Network,
+    proj: &Int8Projection,
+    table: &VcbpTable,
+    pair_ids: &[u16],
+    hot_to_idx: &[usize],
+    bigram: &[Vec<f64>],
+    len: usize,
+    rng: &mut StdRng,
+    propagation: &instnct_core::PropagationConfig,
+    output_start: usize,
+    neuron_count: usize,
+    input_end: usize,
+    input_scatter: bool,
+) -> f64 {
+    let n = pair_ids.len();
+    if n <= len + 1 {
+        return 0.0;
+    }
+    let off = rng.gen_range(1..=n - len - 1);
+    net.reset();
+    let mut total_cos = 0.0f64;
+    let mut counted = 0usize;
+    for i in 0..len {
+        let cur_id = pair_ids[off + i];
+        let cur_idx = hot_to_idx[cur_id as usize];
+        let emb = table.embed_id(cur_id);
+        let mut input = vec![0i32; neuron_count];
+        quantize_embedding_to_input(table, emb, &mut input, input_end, input_scatter);
+        net.propagate(&input, propagation).unwrap();
+        if cur_idx == usize::MAX {
+            continue;
+        }
+        let scores = proj.raw_scores(&net.charge_vec(output_start..neuron_count));
+        let probs = softmax(&scores);
+        total_cos += cosine_similarity(&probs, &bigram[cur_idx]);
+        counted += 1;
+    }
+    if counted == 0 {
+        0.0
+    } else {
+        total_cos / counted as f64
+    }
+}
+
+fn eval_score(
+    score_mode: &str,
+    net: &mut Network,
+    proj: &Int8Projection,
+    table: &VcbpTable,
+    pair_ids: &[u16],
+    hot_to_idx: &[usize],
+    bigram: &[Vec<f64>],
+    len: usize,
+    rng: &mut StdRng,
+    propagation: &instnct_core::PropagationConfig,
+    output_start: usize,
+    neuron_count: usize,
+    input_end: usize,
+    input_scatter: bool,
+) -> f64 {
+    match score_mode {
+        "accuracy" => eval_accuracy_proj(
+            net,
+            proj,
+            table,
+            pair_ids,
+            hot_to_idx,
+            len,
+            rng,
+            propagation,
+            output_start,
+            neuron_count,
+            input_end,
+            input_scatter,
+        ),
+        "smooth" => eval_smooth_proj(
+            net,
+            proj,
+            table,
+            pair_ids,
+            hot_to_idx,
+            bigram,
+            len,
+            rng,
+            propagation,
+            output_start,
+            neuron_count,
+            input_end,
+            input_scatter,
+        ),
+        other => panic!("unknown score_mode: {other}"),
+    }
 }
 
 fn squared_distance(a: &[f64], b: &[f64]) -> f64 {
@@ -776,7 +957,7 @@ fn behavior_distance(base: &PanelMetrics, sample: &PanelMetrics, h: usize) -> f6
 fn write_header(writer: &mut BufWriter<File>) {
     writeln!(
         writer,
-        "base_index,base_checkpoint,base_step,base_accuracy,sample_id,seed,H,mode,mutation_type,requested_radius,direct_genome_distance,edge_edits,threshold_edits,channel_edits,polarity_edits,base_score,score,delta_score,behavior_distance,edges,panel_probe_acc,unique_predictions,collision_rate,f_active,h_output_mean,h_output_var,stable_rank,kernel_rank,separation_sp,eval_ms"
+        "base_index,base_checkpoint,base_step,base_accuracy,sample_id,seed,H,mode,mutation_type,requested_radius,direct_genome_distance,edge_edits,threshold_edits,channel_edits,polarity_edits,base_score,score,delta_score,behavior_distance,edges,panel_probe_acc,unique_predictions,collision_rate,f_active,h_output_mean,h_output_var,stable_rank,kernel_rank,separation_sp,eval_ms,score_mode,tile_id,lat_bin,lon_bin,scout_layer"
     )
     .expect("failed to write samples header");
 }
@@ -788,6 +969,7 @@ fn main() {
     let table = VcbpTable::from_packed(&cli.packed).expect("failed to load packed VCBP table");
     let corpus = std::fs::read(&cli.corpus).expect("failed to read corpus");
     let (pair_ids, hot_to_idx, n_classes) = build_corpus_pairs(&corpus, &table, 397);
+    let bigram = build_pair_bigram(&pair_ids, &hot_to_idx, n_classes);
     let init = InitConfig::phi(cli.h);
     let samples_path = cli.out.join("samples.csv");
     let roundtrip_path = cli.out.join("roundtrip.json");
@@ -849,7 +1031,141 @@ fn main() {
             cli.input_scatter,
         );
 
-        for &radius in &cli.radii {
+        if matches!(cli.mode.as_str(), "planet-scout" | "homogeneous") {
+            for lat_bin in 0..cli.lat_bins {
+                for lon_bin in 0..cli.lon_bins {
+                    let tile_id = format!("{}_{}", lat_bin, lon_bin);
+                    for &radius in &cli.radii {
+                        for &mutation_type in &cli.mutation_types {
+                            for sample_idx in 0..cli.samples_per_tile {
+                                let sample_seed = cli.seed
+                                    ^ ((base_index as u64) << 56)
+                                    ^ ((lat_bin as u64) << 44)
+                                    ^ ((lon_bin as u64) << 32)
+                                    ^ ((radius as u64) << 20)
+                                    ^ ((sample_idx as u64) << 8)
+                                    ^ (mutation_type.as_str().as_bytes()[0] as u64);
+                                let mut mutation_rng = StdRng::seed_from_u64(sample_seed);
+                                let mut candidate = base_net.clone();
+                                let counts = apply_radius_mutation(
+                                    &mut candidate,
+                                    radius,
+                                    mutation_type,
+                                    &mut mutation_rng,
+                                );
+                                let candidate_coord = encode_coord(&candidate);
+                                let direct_distance = coord_distance(&base_coord, &candidate_coord);
+
+                                let eval_seed = cli
+                                    .seed
+                                    .wrapping_add(1_000_000)
+                                    .wrapping_add(global_sample_id as u64);
+                                let mut base_eval_net = base_net.clone();
+                                let mut cand_eval_net = candidate.clone();
+                                let eval_start = Instant::now();
+                                let base_score = eval_score(
+                                    &cli.score_mode,
+                                    &mut base_eval_net,
+                                    &proj,
+                                    &table,
+                                    &pair_ids,
+                                    &hot_to_idx,
+                                    &bigram,
+                                    cli.eval_len,
+                                    &mut StdRng::seed_from_u64(eval_seed),
+                                    &init.propagation,
+                                    init.output_start(),
+                                    cli.h,
+                                    init.input_end(),
+                                    cli.input_scatter,
+                                );
+                                let score = eval_score(
+                                    &cli.score_mode,
+                                    &mut cand_eval_net,
+                                    &proj,
+                                    &table,
+                                    &pair_ids,
+                                    &hot_to_idx,
+                                    &bigram,
+                                    cli.eval_len,
+                                    &mut StdRng::seed_from_u64(eval_seed),
+                                    &init.propagation,
+                                    init.output_start(),
+                                    cli.h,
+                                    init.input_end(),
+                                    cli.input_scatter,
+                                );
+                                let mut cand_metrics_net = candidate.clone();
+                                let metrics = compute_panel_metrics(
+                                    &mut cand_metrics_net,
+                                    &proj,
+                                    &table,
+                                    &pair_ids,
+                                    &hot_to_idx,
+                                    &init.propagation,
+                                    init.output_start(),
+                                    cli.h,
+                                    init.input_end(),
+                                    cli.input_scatter,
+                                );
+                                let eval_ms = eval_start.elapsed().as_secs_f64() * 1000.0;
+                                let bdist = behavior_distance(&base_metrics, &metrics, cli.h);
+
+                                writeln!(
+                                    writer,
+                                    "{},{},{},{:.17},{},{},{},{},{},{},{},{},{},{},{},{:.17},{:.17},{:.17},{:.17},{},{:.17},{},{:.17},{:.17},{:.17},{:.17},{:.17},{},{:.17},{:.6},{},{},{},{},scout",
+                                    base_index,
+                                    checkpoint.display(),
+                                    meta.step,
+                                    meta.accuracy,
+                                    global_sample_id,
+                                    sample_seed,
+                                    cli.h,
+                                    cli.mode,
+                                    mutation_type.as_str(),
+                                    radius,
+                                    direct_distance,
+                                    counts.edge,
+                                    counts.threshold,
+                                    counts.channel,
+                                    counts.polarity,
+                                    base_score,
+                                    score,
+                                    score - base_score,
+                                    bdist,
+                                    candidate.edge_count(),
+                                    metrics.panel_probe_acc,
+                                    metrics.unique_predictions,
+                                    metrics.collision_rate,
+                                    metrics.f_active,
+                                    metrics.h_output_mean,
+                                    metrics.h_output_var,
+                                    metrics.stable_rank,
+                                    metrics.kernel_rank,
+                                    metrics.separation_sp,
+                                    eval_ms,
+                                    cli.score_mode,
+                                    tile_id,
+                                    lat_bin,
+                                    lon_bin
+                                )
+                                .expect("failed to write planet scout sample row");
+                                global_sample_id += 1;
+                            }
+                        }
+                    }
+                    writer.flush().expect("failed to flush samples.csv");
+                }
+                println!(
+                    "  base={} planet_scout lat_bin={}/{} total_rows={}",
+                    base_index,
+                    lat_bin + 1,
+                    cli.lat_bins,
+                    global_sample_id
+                );
+            }
+        } else {
+            for &radius in &cli.radii {
             for &mutation_type in &cli.mutation_types {
                 for sample_idx in 0..cli.samples_per_type {
                     let sample_seed = cli.seed
@@ -875,12 +1191,14 @@ fn main() {
                     let mut base_eval_net = base_net.clone();
                     let mut cand_eval_net = candidate.clone();
                     let eval_start = Instant::now();
-                    let base_score = eval_accuracy_proj(
+                    let base_score = eval_score(
+                        &cli.score_mode,
                         &mut base_eval_net,
                         &proj,
                         &table,
                         &pair_ids,
                         &hot_to_idx,
+                        &bigram,
                         cli.eval_len,
                         &mut StdRng::seed_from_u64(eval_seed),
                         &init.propagation,
@@ -889,12 +1207,14 @@ fn main() {
                         init.input_end(),
                         cli.input_scatter,
                     );
-                    let score = eval_accuracy_proj(
+                    let score = eval_score(
+                        &cli.score_mode,
                         &mut cand_eval_net,
                         &proj,
                         &table,
                         &pair_ids,
                         &hot_to_idx,
+                        &bigram,
                         cli.eval_len,
                         &mut StdRng::seed_from_u64(eval_seed),
                         &init.propagation,
@@ -921,7 +1241,7 @@ fn main() {
 
                     writeln!(
                         writer,
-                        "{},{},{},{:.17},{},{},{},{},{},{},{},{},{},{},{},{:.17},{:.17},{:.17},{:.17},{},{:.17},{},{:.17},{:.17},{:.17},{:.17},{:.17},{},{:.17},{:.6}",
+                        "{},{},{},{:.17},{},{},{},{},{},{},{},{},{},{},{},{:.17},{:.17},{:.17},{:.17},{},{:.17},{},{:.17},{:.17},{:.17},{:.17},{:.17},{},{:.17},{:.6},{},,,,direct_random",
                         base_index,
                         checkpoint.display(),
                         meta.step,
@@ -951,7 +1271,8 @@ fn main() {
                         metrics.stable_rank,
                         metrics.kernel_rank,
                         metrics.separation_sp,
-                        eval_ms
+                        eval_ms,
+                        cli.score_mode
                     )
                     .expect("failed to write sample row");
                     global_sample_id += 1;
@@ -967,6 +1288,7 @@ fn main() {
                 );
             }
         }
+        }
     }
 
     writer.flush().expect("failed to flush samples.csv");
@@ -977,13 +1299,21 @@ fn main() {
     .expect("failed to write roundtrip.json");
 
     let meta = RunMeta {
-        phase: "D9.0b",
+        phase: if matches!(cli.mode.as_str(), "planet-scout" | "homogeneous") {
+            "D9.0e"
+        } else {
+            "D9.0b"
+        },
         tool: "d9_direct_landscape",
         h: cli.h,
         mode: cli.mode.clone(),
+        score_mode: cli.score_mode.clone(),
         seed: cli.seed,
         eval_len: cli.eval_len,
         samples_per_type: cli.samples_per_type,
+        samples_per_tile: cli.samples_per_tile,
+        lat_bins: matches!(cli.mode.as_str(), "planet-scout" | "homogeneous").then_some(cli.lat_bins),
+        lon_bins: matches!(cli.mode.as_str(), "planet-scout" | "homogeneous").then_some(cli.lon_bins),
         radii: cli.radii.clone(),
         mutation_types: cli
             .mutation_types
