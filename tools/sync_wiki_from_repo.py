@@ -27,6 +27,7 @@ FILES = [
     "Theory-of-Thought.md",
     "Structured-Chaos-Theory.md",
     "v5-Rust-Port-Benchmarks.md",
+    "D9-Latent-Genome-Compiler.md",
     "_Sidebar.md",
     "_Footer.md",
     "pipeline-architecture.svg",
