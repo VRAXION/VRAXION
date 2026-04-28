@@ -1,0 +1,580 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>D9.0d Progressive Planet Renderer</title>
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; background: #090d12; color: #e7edf7;
+    font-family: ui-sans-serif, "Segoe UI", Arial, sans-serif; font-size: 13px; }
+  canvas { display: block; position: absolute; inset: 0; }
+  .panel { position: fixed; background: rgba(13,20,29,.88); border: 1px solid #26384b; border-radius: 14px;
+    padding: 12px 14px; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
+  #hud { left: 14px; top: 14px; width: 360px; max-height: calc(100vh - 28px); overflow-y: auto; }
+  #detail { right: 14px; top: 14px; width: 320px; min-height: 120px; max-height: calc(100vh - 28px); overflow-y: auto; }
+  #footer { left: 14px; bottom: 14px; width: 360px; padding: 8px 12px; font-size: 11px; color: #8da0bc; }
+  h1 { margin: 0 0 6px; font-size: 16px; }
+  h2 { margin: 12px 0 6px; font-size: 12px; color: #ffd27d; text-transform: uppercase; letter-spacing: .04em; }
+  .row { display: flex; flex-wrap: wrap; gap: 4px; margin: 4px 0; }
+  button { background: #1d2a38; color: #dce8f8; border: 1px solid #37506a; border-radius: 999px;
+    padding: 4px 10px; cursor: pointer; font-size: 12px; }
+  button:hover { background: #25374b; }
+  button.active { background: #ffd27d; color: #111820; border-color: #ffd27d; font-weight: 700; }
+  .verdict { font-weight: 800; color: #9be58e; }
+  .warn { color: #ff9b6a; font-weight: 700; }
+  .err { color: #ff6a8a; font-weight: 700; }
+  code { color: #ffd27d; font-size: 11px; }
+  .small { color: #a8b7ca; font-size: 11px; line-height: 1.4; }
+  .bar { height: 6px; background: #1d2a38; border-radius: 3px; overflow: hidden; margin: 2px 0 6px; }
+  .bar > span { display: block; height: 100%; background: #5fa8d6; }
+  .bar.good > span { background: #6dd380; }
+  .bar.warn > span { background: #ffb05a; }
+  .bar.bad > span { background: #ff7a9a; }
+  .qrow { display: flex; gap: 6px; padding: 2px 0; font-size: 11px; align-items: center; }
+  .qrow .tag { padding: 1px 6px; border-radius: 4px; font-size: 10px; font-weight: 700; }
+  .tag.edge { background: #345a8a; color: #d1e3ff; }
+  .tag.threshold { background: #6b4694; color: #eadaff; }
+  .tag.channel { background: #8a5a2a; color: #ffe1c2; }
+  .tag.polarity { background: #8a3050; color: #ffd0dd; }
+  .tag.all { background: #455a6e; color: #d8e2ee; }
+  label.cb { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; cursor: pointer; }
+  hr { border: 0; border-top: 1px solid #26384b; margin: 8px 0; }
+  .badge { display: inline-block; padding: 1px 6px; border-radius: 4px; background: #1d2a38; color: #a8b7ca;
+    font-size: 10px; }
+  #waiting { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center;
+    flex-direction: column; gap: 12px; padding: 32px; text-align: center; background: #090d12; z-index: 99; }
+  #waiting.hidden { display: none; }
+</style>
+</head>
+<body>
+
+<canvas id="planet"></canvas>
+
+<div id="waiting">
+  <h1>D9.0d Progressive Planet Renderer</h1>
+  <div class="small">No <code>state.js</code> found in this directory.</div>
+  <div class="small">Run <code>tools/build_d9_0d_state.py</code> to generate one,<br>
+    or copy <code>state_mock.js</code> &rarr; <code>state.js</code> for a demo view.</div>
+  <div class="small badge">Schema expected: <code>d9.0d-1</code></div>
+</div>
+
+<section id="hud" class="panel" style="display:none">
+  <h1>D9.0d Progressive Planet</h1>
+  <div class="small">Verdict: <span id="phase-status" class="verdict">running</span> &middot;
+    <span class="badge" id="schema-badge">d9.0d-?</span></div>
+  <div class="small" id="run-meta">run: ?</div>
+
+  <h2>Metric</h2>
+  <div class="row" id="metric-buttons"></div>
+
+  <h2>Mutation type</h2>
+  <div class="row" id="type-buttons"></div>
+
+  <h2>Eval layer</h2>
+  <div class="row" id="layer-buttons"></div>
+
+  <h2>Progress</h2>
+  <div class="small">Coverage <span id="p-coverage">?</span></div>
+  <div class="bar"><span id="b-coverage" style="width:0%"></span></div>
+  <div class="small">Confident tiles <span id="p-confident">?</span></div>
+  <div class="bar good"><span id="b-confident" style="width:0%"></span></div>
+  <div class="small">Promising <span id="p-promising">?</span> &middot; Retired <span id="p-retired">?</span> &middot;
+    Splits <span id="p-splits">?</span></div>
+
+  <h2>Acquisition queue (top 12)</h2>
+  <div id="queue"></div>
+
+  <h2>Controls</h2>
+  <div class="row">
+    <button id="reload-btn" title="Force fresh load">&#x21bb; Reload data</button>
+    <label class="cb"><input type="checkbox" id="auto-reload"> auto-reload 60s</label>
+  </div>
+</section>
+
+<section id="detail" class="panel" style="display:none">
+  <h1>Tile detail</h1>
+  <div class="small">Hover any tile on the planet.</div>
+  <div id="detail-body"></div>
+</section>
+
+<section id="footer" class="panel" style="display:none">
+  <div class="small">PCA shadow projection. Geometry approximate. Tile statistics exact for samples assigned.</div>
+  <div class="small">Drag = rotate &middot; wheel = zoom</div>
+</section>
+
+<script src="state.js"></script>
+<script>
+(function(){
+  "use strict";
+  const REQUIRED_SCHEMA = "d9.0d-1";
+  const REQUIRED_FIELDS = ["schema_version","tiles","queue","progress","config"];
+
+  const TILE_STATE_STYLE = {
+    UNKNOWN:         { fill: "#1a2230", border: "rgba(120,140,170,.18)", borderW: .5, alpha: .15, label: "unknown" },
+    SCOUT:           { fill: null,       border: "rgba(255,255,255,.20)",  borderW: .7, alpha: .50, label: "scout" },
+    DESERT:          { fill: "#4a3a2a", border: "rgba(180,150,110,.45)", borderW: .8, alpha: .55, label: "desert" },
+    CLIFFY:          { fill: "#6a1f33", border: "rgba(255,122,154,.85)", borderW: 1.6, alpha: .75, label: "cliffy" },
+    NOISY:           { fill: "#8a4a18", border: "rgba(255,176,90,.80)",  borderW: 1.4, alpha: .70, label: "noisy" },
+    PROMISING:       { fill: null,       border: "rgba(120,220,140,.75)", borderW: 1.0, alpha: .85, label: "promising" },
+    CONFIRMED_GOOD:  { fill: null,       border: "rgba(255,210,125,1.0)", borderW: 1.8, alpha: 1.00, label: "confirmed_good" },
+    RETIRED:         { fill: "#1f2530", border: "rgba(120,140,170,.20)", borderW: .5, alpha: .25, label: "retired" },
+    SPLIT_CANDIDATE: { fill: null,       border: "rgba(186,140,255,.85)", borderW: 1.4, alpha: .85, label: "split_candidate" },
+  };
+
+  const METRICS = [
+    { key: "mean_delta",   label: "Fitness mean",     good: "high", palette: "fitness" },
+    { key: "best_delta",   label: "Best discovered",  good: "high", palette: "fitness" },
+    { key: "std_delta",    label: "Variance / STD",   good: "high", palette: "uncertainty" },
+    { key: "cliff_rate",   label: "Cliff risk",       good: "low",  palette: "risk" },
+    { key: "confidence",   label: "Sample confidence",good: "high", palette: "confidence" },
+    { key: "scan_priority",label: "Scan priority",    good: "high", palette: "priority" },
+    { key: "split_priority",label: "Split priority",  good: "high", palette: "uncertainty" },
+  ];
+  const TYPES = [
+    { key: "all",       label: "All" },
+    { key: "edge",      label: "edge" },
+    { key: "threshold", label: "threshold" },
+    { key: "channel",   label: "channel" },
+    { key: "polarity",  label: "polarity" },
+  ];
+  const LAYERS = [
+    { key: "combined",  label: "combined" },
+    { key: "scout",     label: "scout" },
+    { key: "confirmed", label: "confirmed" },
+  ];
+
+  const state = {
+    metric: METRICS[0],
+    type: TYPES[0],
+    layer: LAYERS[0],
+    rx: -0.35, ry: 0.65, zoom: 1.0,
+    dragging: false, lx: 0, ly: 0,
+    mouse: { x: -9999, y: -9999 },
+    hover: null,
+  };
+
+  function $(id) { return document.getElementById(id); }
+  function clamp(x, a, b) { return Math.max(a, Math.min(b, x)); }
+
+  if (!window.ATLAS_STATE) { return; }
+  const data = window.ATLAS_STATE;
+
+  function validateSchema() {
+    const errs = [];
+    if (!data || typeof data !== "object") return ["state is not an object"];
+    if (data.schema_version !== REQUIRED_SCHEMA) {
+      errs.push("schema_version mismatch: got "+data.schema_version+", expected "+REQUIRED_SCHEMA);
+    }
+    REQUIRED_FIELDS.forEach(f => { if (!(f in data)) errs.push("missing field: "+f); });
+    if (Array.isArray(data.tiles) && data.tiles.length > 0) {
+      const t = data.tiles[0];
+      ["tile_id","lat_bin","lon_bin","x","y","z","state","per_type"].forEach(f => {
+        if (!(f in t)) errs.push("tile missing field: "+f);
+      });
+    }
+    return errs;
+  }
+  const schemaErrs = validateSchema();
+  if (schemaErrs.length) {
+    $("waiting").innerHTML = "<h1>Schema validation failed</h1>" +
+      "<div class='err'>" + schemaErrs.map(e => "&bull; "+e).join("<br>") + "</div>" +
+      "<div class='small'>Update tools/build_d9_0d_state.py or the renderer to schema "+REQUIRED_SCHEMA+".</div>";
+    return;
+  }
+
+  $("waiting").classList.add("hidden");
+  $("hud").style.display = "block";
+  $("detail").style.display = "block";
+  $("footer").style.display = "block";
+
+  function tileMetricValue(t) {
+    if (state.type.key === "all") {
+      if (state.metric.key === "scan_priority")   return t.scan_priority;
+      if (state.metric.key === "split_priority")  return t.split_priority;
+      if (state.metric.key === "confidence")      return t.confidence;
+      return t[state.metric.key];
+    }
+    const pt = t.per_type && t.per_type[state.type.key];
+    if (!pt) return null;
+    if (state.metric.key === "scan_priority" || state.metric.key === "split_priority") {
+      return t[state.metric.key];
+    }
+    if (state.metric.key === "confidence") {
+      return pt.n != null ? Math.min(1, pt.n / 8.0) : null;
+    }
+    return pt[state.metric.key];
+  }
+
+  function metricStats() {
+    const vals = data.tiles.map(tileMetricValue).filter(v => v != null && Number.isFinite(v));
+    if (!vals.length) return { min: 0, max: 1 };
+    return { min: Math.min.apply(null, vals), max: Math.max.apply(null, vals) };
+  }
+
+  function normalize(t, stats) {
+    const v = tileMetricValue(t);
+    if (v == null || !Number.isFinite(v)) return null;
+    let q = (v - stats.min) / ((stats.max - stats.min) || 1);
+    q = clamp(q, 0, 1);
+    if (state.metric.good === "low") q = 1 - q;
+    return q;
+  }
+
+  function paletteColor(q) {
+    let r, g, b;
+    if (state.metric.palette === "uncertainty") {
+      r = 35 + (255 - 35) * q;  g = 110 + (165 - 110) * q;  b = 220 + (35 - 220) * q;
+    } else if (state.metric.palette === "risk") {
+      r = 35 * q + 215 * (1 - q);  g = 190 * q + 45 * (1 - q);  b = 95 * q + 80 * (1 - q);
+    } else if (state.metric.palette === "confidence") {
+      r = 55 + (130 - 55) * q;  g = 65 + (210 - 65) * q;  b = 80 + (255 - 80) * q;
+    } else if (state.metric.palette === "priority") {
+      r = 80 + (255 - 80) * q;  g = 60 + (210 - 60) * q;  b = 200 + (90 - 200) * q;
+    } else {
+      r = 200 + (20 - 200) * q;  g = 55 + (190 - 55) * q;  b = 70 + (95 - 70) * q;
+    }
+    return "rgb(" + Math.round(r) + "," + Math.round(g) + "," + Math.round(b) + ")";
+  }
+
+  function rot(p) {
+    const cy = Math.cos(state.ry), sy = Math.sin(state.ry);
+    const cx = Math.cos(state.rx), sx = Math.sin(state.rx);
+    const x1 = p.x * cy + p.z * sy, z1 = -p.x * sy + p.z * cy;
+    const y1 = p.y * cx - z1 * sx, z2 = p.y * sx + z1 * cx;
+    return { x: x1, y: y1, z: z2 };
+  }
+
+  function project(p, q) {
+    const h = q == null ? 1 : (1 + 0.32 * q);
+    const rp = rot({ x: p.x * h, y: p.y * h, z: p.z * h });
+    const sc = 320 * state.zoom / (2.4 - rp.z);
+    return { x: W / 2 + rp.x * sc, y: H / 2 - rp.y * sc, z: rp.z, scale: sc };
+  }
+
+  function sph(lat, lon) {
+    return { x: Math.cos(lat) * Math.cos(lon), y: Math.cos(lat) * Math.sin(lon), z: Math.sin(lat) };
+  }
+
+  function tileCorners(t) {
+    const LB = data.config.lat_bins || 16;
+    const LN = data.config.lon_bins || 32;
+    const lat0 = -Math.PI / 2 + t.lat_bin * Math.PI / LB;
+    const lat1 = -Math.PI / 2 + (t.lat_bin + 1) * Math.PI / LB;
+    const lon0 = -Math.PI + t.lon_bin * 2 * Math.PI / LN;
+    const lon1 = -Math.PI + (t.lon_bin + 1) * 2 * Math.PI / LN;
+    return [sph(lat0, lon0), sph(lat0, lon1), sph(lat1, lon1), sph(lat1, lon0)];
+  }
+
+  function actionFor(t) {
+    if ((t.confidence || 0) < 0.5) return "sample_more";
+    if ((t.cliff_rate || 0) > 0.65) return "avoid/cliff";
+    if ((t.std_delta || 0) > 0.02 && (t.best_delta || 0) >= 0) return "split";
+    if ((t.mean_delta || 0) >= -0.002 && (t.positive_rate || 0) > 0.10) return "branch_candidate";
+    return "observe";
+  }
+
+  function tileVisible(t) {
+    if (state.type.key === "all") return t.state !== "UNKNOWN";
+    return t.per_type && t.per_type[state.type.key] && t.per_type[state.type.key].n > 0;
+  }
+
+  let rafScheduled = false;
+  function requestRender() {
+    if (rafScheduled) return;
+    rafScheduled = true;
+    requestAnimationFrame(() => { rafScheduled = false; render(); });
+  }
+
+  let canvas, ctx, W = 0, H = 0;
+  function resize() {
+    W = canvas.width = window.innerWidth;
+    H = canvas.height = window.innerHeight;
+  }
+
+  function drawGrid() {
+    ctx.strokeStyle = "rgba(115,145,180,.13)";
+    ctx.lineWidth = 1;
+    for (let lat = -60; lat <= 60; lat += 30) {
+      ctx.beginPath();
+      for (let i = 0; i <= 160; i++) {
+        const lon = -Math.PI + i / 160 * 2 * Math.PI;
+        const la = lat * Math.PI / 180;
+        const p = project(sph(la, lon), null);
+        if (i === 0) ctx.moveTo(p.x, p.y); else ctx.lineTo(p.x, p.y);
+      }
+      ctx.stroke();
+    }
+    for (let lonDeg = 0; lonDeg < 360; lonDeg += 30) {
+      ctx.beginPath();
+      for (let i = 0; i <= 120; i++) {
+        const la = -Math.PI / 2 + i / 120 * Math.PI;
+        const lon = lonDeg * Math.PI / 180;
+        const p = project(sph(la, lon), null);
+        if (i === 0) ctx.moveTo(p.x, p.y); else ctx.lineTo(p.x, p.y);
+      }
+      ctx.stroke();
+    }
+  }
+
+  function render() {
+    if (!ctx) return;
+    ctx.clearRect(0, 0, W, H);
+    const grad = ctx.createRadialGradient(W / 2, H / 2, 80, W / 2, H / 2, Math.max(W, H) * 0.7);
+    grad.addColorStop(0, "#132033");
+    grad.addColorStop(1, "#070a0f");
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, W, H);
+
+    // Opaque grey planet base (3D-shaded sphere) — physical body the tiles sit on.
+    const sphereR = 320 * state.zoom / 2.4;
+    const baseGrad = ctx.createRadialGradient(
+      W / 2 - sphereR * 0.35, H / 2 - sphereR * 0.35, sphereR * 0.05,
+      W / 2, H / 2, sphereR
+    );
+    baseGrad.addColorStop(0.00, "#4a5868");
+    baseGrad.addColorStop(0.55, "#2a3540");
+    baseGrad.addColorStop(0.95, "#161e28");
+    baseGrad.addColorStop(1.00, "#0d141c");
+    ctx.fillStyle = baseGrad;
+    ctx.beginPath();
+    ctx.arc(W / 2, H / 2, sphereR, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Outer rim shadow for depth (terminator).
+    const rimGrad = ctx.createRadialGradient(W / 2, H / 2, sphereR * 0.7, W / 2, H / 2, sphereR);
+    rimGrad.addColorStop(0, "rgba(0,0,0,0)");
+    rimGrad.addColorStop(1, "rgba(0,0,0,0.55)");
+    ctx.fillStyle = rimGrad;
+    ctx.beginPath();
+    ctx.arc(W / 2, H / 2, sphereR, 0, Math.PI * 2);
+    ctx.fill();
+
+    drawGrid();
+
+    const stats = metricStats();
+    const visTiles = data.tiles.filter(tileVisible);
+    const drawList = visTiles.map(t => {
+      const q = normalize(t, stats);
+      const center = { x: t.x, y: t.y, z: t.z };
+      return { t: t, q: q, p: project(center, q) };
+    });
+    drawList.sort((a, b) => a.p.z - b.p.z);
+
+    state.hover = null;
+    let hoverDist = Infinity;
+
+    for (const o of drawList) {
+      const t = o.t, p = o.p;
+      if (p.z < -1.15) continue;
+      const styleKey = (t.state in TILE_STATE_STYLE) ? t.state : "UNKNOWN";
+      const style = TILE_STATE_STYLE[styleKey];
+
+      // Bottom corners sit on the base sphere (radius 1.0).
+      // Top corners rise to the metric-driven height.
+      const tcCorners = tileCorners(t);
+      const bottom = tcCorners.map(c => project(c, null));
+      const top    = tcCorners.map(c => project(c, o.q));
+
+      let fill;
+      if (style.fill) {
+        fill = style.fill;
+      } else if (o.q != null) {
+        fill = paletteColor(o.q);
+      } else {
+        fill = "#1a2230";
+      }
+      const conf = (t.confidence != null) ? t.confidence : 0;
+      const tileAlpha = style.alpha * (0.45 + 0.55 * Math.min(1, conf));
+
+      // Side walls: 4 trapezoids connecting each bottom edge to the corresponding top edge.
+      // Walls inherit tile color but darker, giving an extruded-block look.
+      ctx.lineWidth = 0.4;
+      ctx.strokeStyle = "rgba(0,0,0,0.35)";
+      for (let i = 0; i < 4; i++) {
+        const j = (i + 1) % 4;
+        // Backface cull: skip walls whose midpoint normal points away from viewer.
+        const midZ = (top[i].z + top[j].z + bottom[i].z + bottom[j].z) * 0.25;
+        if (midZ < -0.6) continue;
+        ctx.beginPath();
+        ctx.moveTo(bottom[i].x, bottom[i].y);
+        ctx.lineTo(bottom[j].x, bottom[j].y);
+        ctx.lineTo(top[j].x, top[j].y);
+        ctx.lineTo(top[i].x, top[i].y);
+        ctx.closePath();
+        ctx.fillStyle = fill;
+        ctx.globalAlpha = tileAlpha * 0.55;
+        ctx.fill();
+        ctx.globalAlpha = 1;
+        ctx.stroke();
+      }
+
+      // Top face: the tile itself.
+      ctx.beginPath();
+      ctx.moveTo(top[0].x, top[0].y);
+      for (let i = 1; i < top.length; i++) ctx.lineTo(top[i].x, top[i].y);
+      ctx.closePath();
+      ctx.fillStyle = fill;
+      ctx.globalAlpha = tileAlpha;
+      ctx.fill();
+      ctx.globalAlpha = 1;
+      ctx.strokeStyle = style.border;
+      ctx.lineWidth = style.borderW;
+      ctx.stroke();
+
+      const cx = (top[0].x + top[2].x) / 2;
+      const cy = (top[0].y + top[2].y) / 2;
+      const d = Math.hypot(state.mouse.x - cx, state.mouse.y - cy);
+      if (d < 22 && d < hoverDist) {
+        state.hover = t;
+        hoverDist = d;
+      }
+    }
+
+    updateDetail();
+  }
+
+  function fmt(v, digits) {
+    if (v == null || !Number.isFinite(v)) return "&mdash;";
+    return (+v).toFixed(digits == null ? 4 : digits);
+  }
+
+  function updateDetail() {
+    const body = $("detail-body");
+    if (!state.hover) {
+      body.innerHTML = "<div class='small'>Hover a tile.</div>";
+      return;
+    }
+    const t = state.hover;
+    const pt = t.per_type || {};
+    let perTypeRows = "";
+    if (state.type.key === "all") {
+      ["edge","threshold","channel","polarity"].forEach(k => {
+        const e = pt[k] || {};
+        perTypeRows += "<div class='small'><span class='tag "+k+"'>"+k+"</span> n="+(e.n||0)+
+          " mean="+fmt(e.mean_delta,3)+" cliff="+fmt(e.cliff_rate,2)+"</div>";
+      });
+    } else {
+      const e = pt[state.type.key] || {};
+      perTypeRows = "<div class='small'><span class='tag "+state.type.key+"'>"+state.type.key+"</span> n="+(e.n||0)+
+        " mean="+fmt(e.mean_delta,3)+" best="+fmt(e.best_delta,3)+" std="+fmt(e.std_delta,3)+
+        " cliff="+fmt(e.cliff_rate,2)+" pos="+fmt(e.positive_rate,2)+"</div>";
+    }
+    const styleLabel = (t.state in TILE_STATE_STYLE) ? TILE_STATE_STYLE[t.state].label : t.state;
+    body.innerHTML =
+      "<div><b>Tile "+t.tile_id+"</b> &middot; <span class='badge'>"+styleLabel+"</span></div>" +
+      "<div class='small'>view: "+state.metric.label+" / type: "+state.type.label+"</div>" +
+      "<hr>" +
+      "<div class='small'>n_scout="+(t.n_scout||0)+" n_confirmed="+(t.n_confirmed||0)+
+        " target="+(t.target_n||0)+"</div>" +
+      "<div class='small'>mean="+fmt(t.mean_delta)+" best="+fmt(t.best_delta)+" std="+fmt(t.std_delta)+"</div>" +
+      "<div class='small'>cliff="+fmt(t.cliff_rate,3)+" positive="+fmt(t.positive_rate,3)+
+        " confidence="+fmt(t.confidence,2)+"</div>" +
+      "<div class='small'>scan_prio="+fmt(t.scan_priority,2)+" split_prio="+fmt(t.split_priority,2)+"</div>" +
+      "<div class='small'>action: <b>"+(t.recommended_action || actionFor(t))+"</b></div>" +
+      "<hr>" +
+      "<div class='small' style='color:#8da0bc'>per-type:</div>" +
+      perTypeRows;
+  }
+
+  function fillProgress() {
+    const p = data.progress || {};
+    const fmtPct = v => (v == null ? "?" : Math.round(v * 100) + "%");
+    $("p-coverage").textContent = fmtPct(p.coverage);
+    $("b-coverage").style.width = (Math.round((p.coverage || 0) * 100)) + "%";
+    $("p-confident").textContent = fmtPct(p.confident_fraction);
+    $("b-confident").style.width = (Math.round((p.confident_fraction || 0) * 100)) + "%";
+    $("p-promising").textContent = p.promising_count != null ? p.promising_count : "?";
+    $("p-retired").textContent = p.retired_count != null ? p.retired_count : "?";
+    $("p-splits").textContent = p.split_candidate_count != null ? p.split_candidate_count : "?";
+  }
+
+  function fillQueue() {
+    const q = (data.queue || []).slice(0, 12);
+    const c = $("queue");
+    if (!q.length) { c.innerHTML = "<div class='small'>queue empty</div>"; return; }
+    c.innerHTML = q.map(item => {
+      const tag = "<span class='tag "+(item.type||"all")+"'>"+(item.type||"?")+"</span>";
+      return "<div class='qrow'>"+tag+
+        "<span style='flex:1'><b>"+item.tile_id+"</b> <span class='small'>"+
+        (item.next_action||"?")+"</span></span>"+
+        "<span class='small'>+"+(item.priority||0).toFixed(2)+"</span></div>";
+    }).join("");
+  }
+
+  function fillMeta() {
+    $("schema-badge").textContent = data.schema_version;
+    $("phase-status").textContent = data.phase_status || "?";
+    if (data.phase_status === "finished") $("phase-status").style.color = "#ffd27d";
+    if (data.phase_status === "stopped")  $("phase-status").style.color = "#ff9b6a";
+    const meta = "run: " + (data.run_id || "?") +
+      "<br>updated: " + (data.last_updated || "?") +
+      "<br>H=" + ((data.config && data.config.H) || "?") +
+      " &middot; resolution=" + ((data.config && data.config.resolution) || "?") +
+      "<br>tiles: " + (data.tiles ? data.tiles.length : 0) +
+      " / possible " + ((data.progress && data.progress.total_tiles_possible) || "?");
+    $("run-meta").innerHTML = meta;
+  }
+
+  function buildButtons(containerId, list, currentKey, onClick) {
+    const c = $(containerId); c.innerHTML = "";
+    list.forEach(item => {
+      const b = document.createElement("button");
+      b.textContent = item.label;
+      if (item.key === currentKey) b.classList.add("active");
+      b.onclick = () => onClick(item, b);
+      c.appendChild(b);
+    });
+  }
+
+  function setMetric(m) { state.metric = m; rebuildButtons(); requestRender(); }
+  function setType(t)   { state.type = t;   rebuildButtons(); requestRender(); }
+  function setLayer(l)  { state.layer = l;  rebuildButtons(); requestRender(); }
+
+  function rebuildButtons() {
+    buildButtons("metric-buttons", METRICS, state.metric.key, setMetric);
+    buildButtons("type-buttons",   TYPES,   state.type.key,   setType);
+    buildButtons("layer-buttons",  LAYERS,  state.layer.key,  setLayer);
+  }
+
+  function forceReload() {
+    const u = new URL(window.location.href);
+    u.searchParams.set("_", Date.now().toString());
+    window.location.href = u.toString();
+  }
+
+  canvas = $("planet"); ctx = canvas.getContext("2d");
+  window.addEventListener("resize", () => { resize(); requestRender(); }); resize();
+
+  canvas.addEventListener("mousemove", e => {
+    state.mouse.x = e.clientX; state.mouse.y = e.clientY;
+    if (state.dragging) {
+      state.ry += (e.clientX - state.lx) * 0.006;
+      state.rx += (e.clientY - state.ly) * 0.006;
+      state.lx = e.clientX; state.ly = e.clientY;
+    }
+    requestRender();
+  });
+  canvas.addEventListener("mousedown", e => { state.dragging = true; state.lx = e.clientX; state.ly = e.clientY; });
+  window.addEventListener("mouseup", () => { state.dragging = false; });
+  canvas.addEventListener("wheel", e => {
+    e.preventDefault();
+    state.zoom = clamp(state.zoom * (e.deltaY > 0 ? 0.92 : 1.08), 0.4, 3.0);
+    requestRender();
+  }, { passive: false });
+
+  $("reload-btn").onclick = forceReload;
+  let autoTimer = null;
+  $("auto-reload").onchange = e => {
+    if (autoTimer) { clearInterval(autoTimer); autoTimer = null; }
+    if (e.target.checked) { autoTimer = setInterval(forceReload, 60000); }
+  };
+
+  rebuildButtons();
+  fillMeta();
+  fillProgress();
+  fillQueue();
+  requestRender();
+})();
+</script>
+</body>
+</html>
