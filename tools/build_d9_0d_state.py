@@ -243,7 +243,8 @@ def build_tiles(
     samples: pd.DataFrame,
     lat_bins: int,
     lon_bins: int,
-    target_n: int,
+    scout_target_n: int,
+    confirmed_target_n: int,
     cliff_delta: float,
 ) -> list[dict[str, Any]]:
     grouped = {str(k): v.copy() for k, v in samples.groupby("tile_id", dropna=False)}
@@ -256,9 +257,18 @@ def build_tiles(
             tile_id = f"{lat_bin}_{lon_bin}"
             group = grouped.get(tile_id, samples.iloc[0:0])
             stats = metric_stats(group, cliff_delta)
-            n = int(stats["n"])
-            confidence = min(1.0, n / max(1, target_n))
+            if "scout_layer" in group.columns:
+                n_scout = int((group["scout_layer"].astype(str) == "scout").sum())
+                n_confirmed = int((group["scout_layer"].astype(str) == "confirmed").sum())
+            else:
+                n_scout = int(stats["n"])
+                n_confirmed = 0
+            target_n = confirmed_target_n if n_confirmed > 0 else scout_target_n
+            n_total = n_scout + n_confirmed
+            confidence = min(1.0, n_total / max(1, target_n))
             state = classify_tile(stats, confidence, target_n)
+            if n_confirmed >= confirmed_target_n and stats["mean_delta"] is not None and stats["mean_delta"] >= 0.0:
+                state = "CONFIRMED_GOOD"
             assert state in TILE_STATES
 
             tile = {
@@ -270,8 +280,8 @@ def build_tiles(
                 "x": float(np.cos(lat_center) * np.cos(lon_center)),
                 "y": float(np.cos(lat_center) * np.sin(lon_center)),
                 "z": float(np.sin(lat_center)),
-                "n_scout": n,
-                "n_confirmed": 0,
+                "n_scout": n_scout,
+                "n_confirmed": n_confirmed,
                 "target_n": target_n,
                 "mean_delta": stats["mean_delta"],
                 "best_delta": stats["best_delta"],
@@ -356,8 +366,14 @@ def build_state(args: argparse.Namespace) -> dict[str, Any]:
         projected["tile_id"] = projected["lat_bin"].astype(str) + "_" + projected["lon_bin"].astype(str)
     else:
         projected = assign_tiles(df, args.lat_bins, args.lon_bins)
-    target_n = args.scout_target_per_tile
-    tiles = build_tiles(projected, args.lat_bins, args.lon_bins, target_n, args.cliff_delta)
+    tiles = build_tiles(
+        projected,
+        args.lat_bins,
+        args.lon_bins,
+        args.scout_target_per_tile,
+        args.confirmed_target_per_tile,
+        args.cliff_delta,
+    )
     queue = build_queue(tiles)
     now = datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
 

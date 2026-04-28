@@ -93,6 +93,8 @@ struct Cli {
     samples_per_tile: usize,
     lat_bins: usize,
     lon_bins: usize,
+    target_tiles: Option<Vec<(usize, usize)>>,
+    sample_layer: String,
     out: PathBuf,
     seed: u64,
     eval_len: usize,
@@ -114,6 +116,8 @@ struct RunMeta {
     samples_per_tile: usize,
     lat_bins: Option<usize>,
     lon_bins: Option<usize>,
+    target_tiles: Option<Vec<String>>,
+    sample_layer: String,
     radii: Vec<usize>,
     mutation_types: Vec<String>,
     checkpoints: Vec<String>,
@@ -151,6 +155,8 @@ fn parse_args() -> Cli {
     let mut samples_per_tile = 1usize;
     let mut lat_bins = 16usize;
     let mut lon_bins = 32usize;
+    let mut target_tiles: Option<Vec<(usize, usize)>> = None;
+    let mut sample_layer = String::from("scout");
     let mut out = PathBuf::from("output/phase_d9_direct_genome_landscape_20260428");
     let mut seed = 90210u64;
     let mut eval_len = DEFAULT_EVAL_LEN;
@@ -214,6 +220,28 @@ fn parse_args() -> Cli {
                     .parse()
                     .expect("lon-bins")
             }
+            "--tiles" => {
+                let value = args.next().expect("--tiles csv");
+                let mut parsed = Vec::new();
+                for part in value.split(',').filter(|part| !part.trim().is_empty()) {
+                    let (lat, lon) = part
+                        .trim()
+                        .split_once('_')
+                        .unwrap_or_else(|| panic!("tile id must be lat_lon, got {part}"));
+                    parsed.push((
+                        lat.parse::<usize>().expect("tile lat"),
+                        lon.parse::<usize>().expect("tile lon"),
+                    ));
+                }
+                target_tiles = Some(parsed);
+            }
+            "--sample-layer" => {
+                sample_layer = args.next().expect("--sample-layer value");
+                assert!(
+                    matches!(sample_layer.as_str(), "scout" | "confirmed"),
+                    "--sample-layer expects scout|confirmed"
+                );
+            }
             "--out" => out = PathBuf::from(args.next().expect("--out path")),
             "--seed" => seed = args.next().expect("--seed value").parse().expect("seed"),
             "--eval-len" => {
@@ -273,6 +301,8 @@ fn parse_args() -> Cli {
         samples_per_tile,
         lat_bins,
         lon_bins,
+        target_tiles,
+        sample_layer,
         out,
         seed,
         eval_len,
@@ -1032,8 +1062,16 @@ fn main() {
         );
 
         if matches!(cli.mode.as_str(), "planet-scout" | "homogeneous") {
-            for lat_bin in 0..cli.lat_bins {
-                for lon_bin in 0..cli.lon_bins {
+            let tile_list: Vec<(usize, usize)> = cli.target_tiles.clone().unwrap_or_else(|| {
+                let mut tiles = Vec::with_capacity(cli.lat_bins * cli.lon_bins);
+                for lat_bin in 0..cli.lat_bins {
+                    for lon_bin in 0..cli.lon_bins {
+                        tiles.push((lat_bin, lon_bin));
+                    }
+                }
+                tiles
+            });
+            for (tile_idx, &(lat_bin, lon_bin)) in tile_list.iter().enumerate() {
                     let tile_id = format!("{}_{}", lat_bin, lon_bin);
                     for &radius in &cli.radii {
                         for &mutation_type in &cli.mutation_types {
@@ -1044,7 +1082,8 @@ fn main() {
                                     ^ ((lon_bin as u64) << 32)
                                     ^ ((radius as u64) << 20)
                                     ^ ((sample_idx as u64) << 8)
-                                    ^ (mutation_type.as_str().as_bytes()[0] as u64);
+                                    ^ (mutation_type.as_str().as_bytes()[0] as u64)
+                                    ^ ((cli.sample_layer.as_bytes()[0] as u64) << 4);
                                 let mut mutation_rng = StdRng::seed_from_u64(sample_seed);
                                 let mut candidate = base_net.clone();
                                 let counts = apply_radius_mutation(
@@ -1113,7 +1152,7 @@ fn main() {
 
                                 writeln!(
                                     writer,
-                                    "{},{},{},{:.17},{},{},{},{},{},{},{},{},{},{},{},{:.17},{:.17},{:.17},{:.17},{},{:.17},{},{:.17},{:.17},{:.17},{:.17},{:.17},{},{:.17},{:.6},{},{},{},{},scout",
+                                    "{},{},{},{:.17},{},{},{},{},{},{},{},{},{},{},{},{:.17},{:.17},{:.17},{:.17},{},{:.17},{},{:.17},{:.17},{:.17},{:.17},{:.17},{},{:.17},{:.6},{},{},{},{},{}",
                                     base_index,
                                     checkpoint.display(),
                                     meta.step,
@@ -1147,7 +1186,8 @@ fn main() {
                                     cli.score_mode,
                                     tile_id,
                                     lat_bin,
-                                    lon_bin
+                                    lon_bin,
+                                    cli.sample_layer
                                 )
                                 .expect("failed to write planet scout sample row");
                                 global_sample_id += 1;
@@ -1155,12 +1195,11 @@ fn main() {
                         }
                     }
                     writer.flush().expect("failed to flush samples.csv");
-                }
                 println!(
-                    "  base={} planet_scout lat_bin={}/{} total_rows={}",
+                    "  base={} planet_scout tile={}/{} total_rows={}",
                     base_index,
-                    lat_bin + 1,
-                    cli.lat_bins,
+                    tile_idx + 1,
+                    tile_list.len(),
                     global_sample_id
                 );
             }
@@ -1314,6 +1353,13 @@ fn main() {
         samples_per_tile: cli.samples_per_tile,
         lat_bins: matches!(cli.mode.as_str(), "planet-scout" | "homogeneous").then_some(cli.lat_bins),
         lon_bins: matches!(cli.mode.as_str(), "planet-scout" | "homogeneous").then_some(cli.lon_bins),
+        target_tiles: cli.target_tiles.as_ref().map(|tiles| {
+            tiles
+                .iter()
+                .map(|(lat, lon)| format!("{}_{}", lat, lon))
+                .collect()
+        }),
+        sample_layer: cli.sample_layer.clone(),
         radii: cli.radii.clone(),
         mutation_types: cli
             .mutation_types
