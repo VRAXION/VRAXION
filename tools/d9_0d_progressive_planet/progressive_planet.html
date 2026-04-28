@@ -90,7 +90,7 @@
   <div id="top-plateaus"></div>
 
   <h2>Top 3 basins (connected good zones)</h2>
-  <div class="small" style="font-size:10px;color:#7d8da0;margin:-2px 0 4px">flood-filled vitality &ge; 0.50, 4-connected with lon wrap</div>
+  <div class="small" style="font-size:10px;color:#7d8da0;margin:-2px 0 4px">adaptive top-25% vitality, 4-connected with lon wrap</div>
   <div id="top-basins"></div>
 
   <h2>Acquisition queue (top 12)</h2>
@@ -204,10 +204,13 @@
   $("footer").style.display = "block";
 
   // Basin detection: flood-fill connected components of high-vitality tiles.
-  // A basin = neighbor-connected group of tiles whose vitality >= BASIN_THRESHOLD.
+  // Adaptive threshold: top-25% of the vitality distribution (75th percentile).
+  // This avoids "everything is a basin" when the dataset is densely above any
+  // fixed cutoff like 0.50.
   // Neighbors: 4-connected on lat_bin/lon_bin, with longitude wrap-around (sphere).
-  const BASIN_THRESHOLD = 0.50;
-  const basinCache = new Map(); // typeKey -> Map(tile_id -> {basinId, size, avgVitality})
+  const BASIN_PERCENTILE = 0.75;
+  const BASIN_FLOOR = 0.50; // never go below this even if percentile is lower
+  const basinCache = new Map(); // typeKey -> Map(tile_id -> {basinId, size, avgVitality, threshold})
 
   function computeBasins(typeKey) {
     if (basinCache.has(typeKey)) return basinCache.get(typeKey);
@@ -221,13 +224,18 @@
       tilesByPos.set(t.lat_bin + "_" + t.lon_bin, t);
       vitByTile.set(t.tile_id, vitalityScore(t, typeKey));
     }
+    // Adaptive threshold from vitality distribution.
+    const sortedVit = [...vitByTile.values()].sort((a, b) => a - b);
+    const idx = Math.floor(sortedVit.length * BASIN_PERCENTILE);
+    const adaptive = sortedVit[idx] != null ? sortedVit[idx] : BASIN_FLOOR;
+    const threshold = Math.max(BASIN_FLOOR, adaptive);
     const visited = new Set();
     const result = new Map();
     let basinId = 0;
     for (const [posKey, startT] of tilesByPos) {
       if (visited.has(startT.tile_id)) continue;
       const startV = vitByTile.get(startT.tile_id) || 0;
-      if (startV < BASIN_THRESHOLD) continue;
+      if (startV < threshold) continue;
       // BFS flood-fill
       const queue = [startT];
       const members = [];
@@ -246,7 +254,7 @@
           const n = tilesByPos.get(nKey);
           if (!n || visited.has(n.tile_id)) continue;
           const nv = vitByTile.get(n.tile_id) || 0;
-          if (nv < BASIN_THRESHOLD) continue;
+          if (nv < threshold) continue;
           visited.add(n.tile_id);
           queue.push(n);
         }
