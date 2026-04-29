@@ -320,6 +320,26 @@ enum CausalAtom {
     Threshold(ThresholdChange),
 }
 
+#[derive(Clone, Serialize)]
+struct LongHorizonRow {
+    mode: String,
+    checkpoint: String,
+    start_checkpoint: String,
+    task: String,
+    climber_id: usize,
+    step_index: usize,
+    proposal_seed: u64,
+    radius: usize,
+    mutation_type: String,
+    accepted: bool,
+    smooth_delta: f64,
+    accuracy_delta: f64,
+    echo_delta: f64,
+    unigram_delta: f64,
+    mo_score: f64,
+    mo_class: String,
+}
+
 fn parse_csv_usize(value: &str) -> Vec<usize> {
     value
         .split(',')
@@ -644,7 +664,12 @@ fn parse_args() -> Cli {
         | "multi-objective-climb" => vec![1],
         | "quadtree-scout" => vec![4, 8, 16],
         | "causal-diff" => vec![1],
-        other => panic!("--mode expects fail-fast|medium|full|staged|planet-scout|paratrooper-climb|endpoint-bridge|endpoint-overlap|endpoint-robustness|repair-scan|multi-objective-climb|quadtree-scout|causal-diff, got {other}"),
+        | "edge-lock-threshold-sweep"
+        | "threshold-lock-edge-sweep"
+        | "edge-threshold-continued-climb"
+        | "scaling-universality-scout"
+        | "task-universality-scout" => vec![4, 8, 16],
+        other => panic!("--mode expects fail-fast|medium|full|staged|planet-scout|paratrooper-climb|endpoint-bridge|endpoint-overlap|endpoint-robustness|repair-scan|multi-objective-climb|quadtree-scout|causal-diff|edge-lock-threshold-sweep|threshold-lock-edge-sweep|edge-threshold-continued-climb|scaling-universality-scout|task-universality-scout, got {other}"),
     };
     let default_mutation_types = if matches!(
         mode.as_str(),
@@ -658,6 +683,11 @@ fn parse_args() -> Cli {
             | "multi-objective-climb"
             | "quadtree-scout"
             | "causal-diff"
+            | "edge-lock-threshold-sweep"
+            | "threshold-lock-edge-sweep"
+            | "edge-threshold-continued-climb"
+            | "scaling-universality-scout"
+            | "task-universality-scout"
     ) {
         vec![MutationType::Edge, MutationType::Threshold]
     } else {
@@ -3350,7 +3380,9 @@ fn select_micro_atoms(
 
 fn atom_name(atom: &CausalAtom) -> String {
     match atom {
-        CausalAtom::AddedEdge(source, target) => format!("micro_revert_added_edge_{}_{}", source, target),
+        CausalAtom::AddedEdge(source, target) => {
+            format!("micro_revert_added_edge_{}_{}", source, target)
+        }
         CausalAtom::RemovedEdge(source, target) => {
             format!("micro_restore_removed_edge_{}_{}", source, target)
         }
@@ -3397,7 +3429,10 @@ fn run_causal_diff(
     unigram: &[f64],
     init: &InitConfig,
 ) {
-    let baseline_path = cli.checkpoints.first().expect("baseline checkpoint required");
+    let baseline_path = cli
+        .checkpoints
+        .first()
+        .expect("baseline checkpoint required");
     let target_path = cli
         .repair_start
         .as_ref()
@@ -3415,7 +3450,8 @@ fn run_causal_diff(
 
     let baseline_edges = checkpoint_edge_set(&baseline_net);
     let target_edges = checkpoint_edge_set(&target_net);
-    let mut added_edges: Vec<(u16, u16)> = target_edges.difference(&baseline_edges).copied().collect();
+    let mut added_edges: Vec<(u16, u16)> =
+        target_edges.difference(&baseline_edges).copied().collect();
     let mut removed_edges: Vec<(u16, u16)> =
         baseline_edges.difference(&target_edges).copied().collect();
     added_edges.sort_unstable();
@@ -3423,7 +3459,8 @@ fn run_causal_diff(
     let threshold_changes = threshold_diff(&baseline_net, &target_net);
     let channel_changes = count_channels_changed(&baseline_net, &target_net);
     let polarity_changes = count_polarities_changed(&baseline_net, &target_net);
-    let projection_bytes_equal = bincode::serialize(&baseline_proj).expect("baseline proj serialize")
+    let projection_bytes_equal = bincode::serialize(&baseline_proj)
+        .expect("baseline proj serialize")
         == bincode::serialize(&target_proj).expect("target proj serialize");
 
     let mut edge_writer = BufWriter::new(
@@ -3891,6 +3928,524 @@ See `causal_ablation_results.csv` for every group and micro-ablation row.\n",
         .expect("failed to write D9_4A_CAUSAL_DIFF_REPORT.md");
 }
 
+fn long_horizon_types_for_mode(mode: &str) -> Vec<MutationType> {
+    match mode {
+        "edge-lock-threshold-sweep" => vec![MutationType::Threshold],
+        "threshold-lock-edge-sweep" => vec![MutationType::Edge],
+        "edge-threshold-continued-climb"
+        | "scaling-universality-scout"
+        | "task-universality-scout" => vec![MutationType::Edge, MutationType::Threshold],
+        other => panic!("unsupported long-horizon mode: {other}"),
+    }
+}
+
+fn write_long_horizon_rows(out: &PathBuf, rows: &[LongHorizonRow]) {
+    let mut writer = BufWriter::new(
+        File::create(out.join("candidate_summary.csv"))
+            .expect("failed to create candidate_summary.csv"),
+    );
+    writeln!(
+        writer,
+        "mode,checkpoint,start_checkpoint,task,climber_id,step_index,proposal_seed,radius,mutation_type,accepted,smooth_delta,accuracy_delta,echo_delta,unigram_delta,mo_score,mo_class"
+    )
+    .expect("candidate_summary header");
+    for row in rows {
+        writeln!(
+            writer,
+            "{},{},{},{},{},{},{},{},{},{},{:.12},{:.12},{:.12},{:.12},{:.12},{}",
+            row.mode,
+            row.checkpoint,
+            row.start_checkpoint,
+            row.task,
+            row.climber_id,
+            row.step_index,
+            row.proposal_seed,
+            row.radius,
+            row.mutation_type,
+            row.accepted,
+            row.smooth_delta,
+            row.accuracy_delta,
+            row.echo_delta,
+            row.unigram_delta,
+            row.mo_score,
+            row.mo_class,
+        )
+        .expect("candidate_summary row");
+    }
+    writer.flush().expect("candidate_summary flush");
+}
+
+fn write_universality_matrix(out: &PathBuf, rows: &[LongHorizonRow]) {
+    let mut groups: BTreeMap<(String, String), Vec<&LongHorizonRow>> = BTreeMap::new();
+    for row in rows {
+        groups
+            .entry((row.checkpoint.clone(), row.task.clone()))
+            .or_default()
+            .push(row);
+    }
+    let mut writer = BufWriter::new(
+        File::create(out.join("universality_matrix.csv"))
+            .expect("failed to create universality_matrix.csv"),
+    );
+    writeln!(
+        writer,
+        "checkpoint,task,n,strict_pass_count,positive_unigram_count,best_mo_score,best_mo_class,best_smooth_delta,best_accuracy_delta,best_echo_delta,best_unigram_delta"
+    )
+    .expect("universality_matrix header");
+    for ((checkpoint, task), group) in groups {
+        let mut best = group[0];
+        for row in &group {
+            if row.mo_score > best.mo_score {
+                best = row;
+            }
+        }
+        let strict_count = group
+            .iter()
+            .filter(|row| {
+                row.mo_class == "FULL_GENERALIST" || row.mo_class == "MULTI_OBJECTIVE_SUCCESS"
+            })
+            .count();
+        let positive_unigram = group.iter().filter(|row| row.unigram_delta >= 0.0).count();
+        writeln!(
+            writer,
+            "{},{},{},{},{},{:.12},{},{:.12},{:.12},{:.12},{:.12}",
+            checkpoint,
+            task,
+            group.len(),
+            strict_count,
+            positive_unigram,
+            best.mo_score,
+            best.mo_class,
+            best.smooth_delta,
+            best.accuracy_delta,
+            best.echo_delta,
+            best.unigram_delta,
+        )
+        .expect("universality_matrix row");
+    }
+    writer.flush().expect("universality_matrix flush");
+}
+
+fn evaluate_candidate_deltas(
+    net: &Network,
+    proj: &Int8Projection,
+    baseline_scores: MultiMetricScores,
+    cli: &Cli,
+    table: &VcbpTable,
+    pair_ids: &[u16],
+    hot_to_idx: &[usize],
+    bigram: &[Vec<f64>],
+    unigram: &[f64],
+    init: &InitConfig,
+) -> (MultiMetricScores, MultiMetricScores, f64, &'static str) {
+    let scores = evaluate_multi_metrics(
+        net,
+        proj,
+        table,
+        pair_ids,
+        hot_to_idx,
+        bigram,
+        unigram,
+        cli.eval_len,
+        &cli.mo_eval_seeds,
+        init,
+        cli.h,
+        cli.input_scatter,
+    );
+    let deltas = metric_deltas(scores, baseline_scores);
+    let score = mo_score(deltas);
+    let class_name = mo_class(deltas);
+    (scores, deltas, score, class_name)
+}
+
+fn run_edge_threshold_geometry_sweep(
+    cli: &Cli,
+    table: &VcbpTable,
+    pair_ids: &[u16],
+    hot_to_idx: &[usize],
+    bigram: &[Vec<f64>],
+    unigram: &[f64],
+    init: &InitConfig,
+) {
+    let baseline_path = cli
+        .checkpoints
+        .first()
+        .expect("baseline checkpoint required");
+    let (baseline_net, baseline_proj, _) =
+        load_checkpoint(baseline_path).expect("failed to load baseline checkpoint");
+    let (start_net, start_proj, start_path) = if let Some(path) = &cli.repair_start {
+        let (net, proj, _) = load_checkpoint(path).expect("failed to load repair-start checkpoint");
+        (net, proj, path.display().to_string())
+    } else {
+        (
+            baseline_net.clone(),
+            baseline_proj.clone(),
+            baseline_path.display().to_string(),
+        )
+    };
+    let mutation_types = long_horizon_types_for_mode(&cli.mode);
+    let baseline_scores = evaluate_multi_metrics(
+        &baseline_net,
+        &baseline_proj,
+        table,
+        pair_ids,
+        hot_to_idx,
+        bigram,
+        unigram,
+        cli.eval_len,
+        &cli.mo_eval_seeds,
+        init,
+        cli.h,
+        cli.input_scatter,
+    );
+    let mut rows = Vec::new();
+    let mut best_class = String::from("FAIL_RETAIN");
+    let mut best_score = f64::NEG_INFINITY;
+    for climber_id in 0..cli.mo_climbers {
+        let mut current = start_net.clone();
+        let current_proj = start_proj.clone();
+        let (_, mut current_deltas, mut current_score, _) = evaluate_candidate_deltas(
+            &current,
+            &current_proj,
+            baseline_scores,
+            cli,
+            table,
+            pair_ids,
+            hot_to_idx,
+            bigram,
+            unigram,
+            init,
+        );
+        for step_index in 0..cli.mo_steps {
+            let radius = cli.radii[(climber_id + step_index) % cli.radii.len()];
+            let mutation_type = mutation_types[(climber_id + step_index) % mutation_types.len()];
+            let proposal_seed = cli.seed
+                ^ ((climber_id as u64) << 32)
+                ^ ((step_index as u64) << 16)
+                ^ ((radius as u64) << 8)
+                ^ 0xD910_0001u64;
+            let mut rng = StdRng::seed_from_u64(proposal_seed);
+            let mut candidate = current.clone();
+            apply_radius_mutation(&mut candidate, radius, mutation_type, &mut rng);
+            let (_, deltas, score, class_name) = evaluate_candidate_deltas(
+                &candidate,
+                &current_proj,
+                baseline_scores,
+                cli,
+                table,
+                pair_ids,
+                hot_to_idx,
+                bigram,
+                unigram,
+                init,
+            );
+            let accepted = mo_constraints_pass(deltas)
+                && score >= current_score - cli.accept_epsilon
+                && score >= mo_score(current_deltas) - cli.accept_epsilon;
+            if accepted {
+                current = candidate;
+                current_deltas = deltas;
+                current_score = score;
+            }
+            if score > best_score {
+                best_score = score;
+                best_class = class_name.to_string();
+            }
+            rows.push(LongHorizonRow {
+                mode: cli.mode.clone(),
+                checkpoint: baseline_path.display().to_string(),
+                start_checkpoint: start_path.clone(),
+                task: String::from("multi-objective"),
+                climber_id,
+                step_index,
+                proposal_seed,
+                radius,
+                mutation_type: mutation_type.as_str().to_string(),
+                accepted,
+                smooth_delta: deltas.smooth,
+                accuracy_delta: deltas.accuracy,
+                echo_delta: deltas.echo,
+                unigram_delta: deltas.unigram,
+                mo_score: score,
+                mo_class: class_name.to_string(),
+            });
+        }
+    }
+    write_long_horizon_rows(&cli.out, &rows);
+    write_universality_matrix(&cli.out, &rows);
+    let strict_count = rows
+        .iter()
+        .filter(|row| {
+            row.mo_class == "FULL_GENERALIST" || row.mo_class == "MULTI_OBJECTIVE_SUCCESS"
+        })
+        .count();
+    let summary = serde_json::json!({
+        "mode": cli.mode,
+        "verdict": if strict_count > 0 { "GEOMETRY_SIGNAL_FOUND" } else { "NO_LOCAL_HEADROOM" },
+        "baseline_checkpoint": baseline_path.display().to_string(),
+        "start_checkpoint": start_path,
+        "rows": rows.len(),
+        "strict_pass_count": strict_count,
+        "best_mo_score": best_score,
+        "best_mo_class": best_class,
+        "mutation_types": mutation_types.iter().map(|t| t.as_str()).collect::<Vec<_>>(),
+    });
+    std::fs::write(
+        cli.out.join("run_summary.json"),
+        serde_json::to_string_pretty(&summary).expect("long horizon summary json"),
+    )
+    .expect("failed to write run_summary.json");
+    std::fs::write(
+        cli.out.join("causal_summary.json"),
+        serde_json::json!({
+            "causal_diff_required": true,
+            "note": "Run causal-diff on any promoted winner before claiming a driver."
+        })
+        .to_string(),
+    )
+    .expect("failed to write causal_summary.json");
+}
+
+fn run_scaling_universality_scout(
+    cli: &Cli,
+    table: &VcbpTable,
+    pair_ids: &[u16],
+    hot_to_idx: &[usize],
+    bigram: &[Vec<f64>],
+    unigram: &[f64],
+    init: &InitConfig,
+) {
+    let mutation_types = long_horizon_types_for_mode(&cli.mode);
+    let mut rows = Vec::new();
+    for (checkpoint_idx, checkpoint) in cli.checkpoints.iter().enumerate() {
+        let (baseline_net, baseline_proj, _) =
+            load_checkpoint(checkpoint).expect("failed to load universality checkpoint");
+        assert_eq!(baseline_net.neuron_count(), cli.h, "checkpoint H mismatch");
+        let baseline_scores = evaluate_multi_metrics(
+            &baseline_net,
+            &baseline_proj,
+            table,
+            pair_ids,
+            hot_to_idx,
+            bigram,
+            unigram,
+            cli.eval_len,
+            &cli.mo_eval_seeds,
+            init,
+            cli.h,
+            cli.input_scatter,
+        );
+        for proposal_idx in 0..(cli.mo_climbers * cli.mo_steps) {
+            let radius = cli.radii[proposal_idx % cli.radii.len()];
+            let mutation_type = mutation_types[proposal_idx % mutation_types.len()];
+            let proposal_seed = cli.seed
+                ^ ((checkpoint_idx as u64) << 48)
+                ^ ((proposal_idx as u64) << 16)
+                ^ 0xD910_5100u64;
+            let mut rng = StdRng::seed_from_u64(proposal_seed);
+            let mut candidate = baseline_net.clone();
+            apply_radius_mutation(&mut candidate, radius, mutation_type, &mut rng);
+            let (_, deltas, score, class_name) = evaluate_candidate_deltas(
+                &candidate,
+                &baseline_proj,
+                baseline_scores,
+                cli,
+                table,
+                pair_ids,
+                hot_to_idx,
+                bigram,
+                unigram,
+                init,
+            );
+            rows.push(LongHorizonRow {
+                mode: cli.mode.clone(),
+                checkpoint: checkpoint.display().to_string(),
+                start_checkpoint: checkpoint.display().to_string(),
+                task: String::from("multi-objective"),
+                climber_id: checkpoint_idx,
+                step_index: proposal_idx,
+                proposal_seed,
+                radius,
+                mutation_type: mutation_type.as_str().to_string(),
+                accepted: mo_constraints_pass(deltas),
+                smooth_delta: deltas.smooth,
+                accuracy_delta: deltas.accuracy,
+                echo_delta: deltas.echo,
+                unigram_delta: deltas.unigram,
+                mo_score: score,
+                mo_class: class_name.to_string(),
+            });
+        }
+    }
+    write_long_horizon_rows(&cli.out, &rows);
+    write_universality_matrix(&cli.out, &rows);
+    let strict_checkpoints = rows
+        .iter()
+        .filter(|row| {
+            row.mo_class == "FULL_GENERALIST" || row.mo_class == "MULTI_OBJECTIVE_SUCCESS"
+        })
+        .map(|row| row.checkpoint.clone())
+        .collect::<HashSet<_>>()
+        .len();
+    let verdict = if strict_checkpoints >= 3 {
+        "UNIVERSAL_BASIN_CONFIRMED"
+    } else if strict_checkpoints >= 1 {
+        "SCALING_PROMISING_BUT_INFRA_LIMITED"
+    } else {
+        "NO_GENERAL_BASIN"
+    };
+    let summary = serde_json::json!({
+        "mode": cli.mode,
+        "verdict": verdict,
+        "checkpoints": cli.checkpoints.iter().map(|p| p.display().to_string()).collect::<Vec<_>>(),
+        "rows": rows.len(),
+        "strict_checkpoint_count": strict_checkpoints,
+    });
+    std::fs::write(
+        cli.out.join("run_summary.json"),
+        serde_json::to_string_pretty(&summary).expect("scaling summary json"),
+    )
+    .expect("failed to write run_summary.json");
+    std::fs::write(
+        cli.out.join("causal_summary.json"),
+        serde_json::json!({
+            "causal_diff_required": true,
+            "note": "Run causal-diff confirm for each strict-pass checkpoint."
+        })
+        .to_string(),
+    )
+    .expect("failed to write causal_summary.json");
+}
+
+fn run_task_universality_scout(
+    cli: &Cli,
+    table: &VcbpTable,
+    pair_ids: &[u16],
+    hot_to_idx: &[usize],
+    bigram: &[Vec<f64>],
+    unigram: &[f64],
+    init: &InitConfig,
+) {
+    let checkpoint = cli.checkpoints.first().expect("checkpoint required");
+    let (baseline_net, baseline_proj, _) =
+        load_checkpoint(checkpoint).expect("failed to load task checkpoint");
+    let (start_net, start_proj, start_path) = if let Some(path) = &cli.repair_start {
+        let (net, proj, _) = load_checkpoint(path).expect("failed to load repair-start checkpoint");
+        (net, proj, path.display().to_string())
+    } else {
+        (
+            baseline_net.clone(),
+            baseline_proj.clone(),
+            checkpoint.display().to_string(),
+        )
+    };
+    let mutation_types = long_horizon_types_for_mode(&cli.mode);
+    let baseline_scores = evaluate_multi_metrics(
+        &baseline_net,
+        &baseline_proj,
+        table,
+        pair_ids,
+        hot_to_idx,
+        bigram,
+        unigram,
+        cli.eval_len,
+        &cli.mo_eval_seeds,
+        init,
+        cli.h,
+        cli.input_scatter,
+    );
+    let tasks = ["echo", "unigram", "smooth", "accuracy", "multi-objective"];
+    let mut rows = Vec::new();
+    for (task_idx, task) in tasks.iter().enumerate() {
+        for proposal_idx in 0..(cli.mo_climbers * cli.mo_steps) {
+            let radius = cli.radii[proposal_idx % cli.radii.len()];
+            let mutation_type = mutation_types[proposal_idx % mutation_types.len()];
+            let proposal_seed = cli.seed
+                ^ ((task_idx as u64) << 48)
+                ^ ((proposal_idx as u64) << 16)
+                ^ 0xD910_7A5Cu64;
+            let mut rng = StdRng::seed_from_u64(proposal_seed);
+            let mut candidate = start_net.clone();
+            apply_radius_mutation(&mut candidate, radius, mutation_type, &mut rng);
+            let (_, deltas, score, class_name) = evaluate_candidate_deltas(
+                &candidate,
+                &start_proj,
+                baseline_scores,
+                cli,
+                table,
+                pair_ids,
+                hot_to_idx,
+                bigram,
+                unigram,
+                init,
+            );
+            let task_positive = match *task {
+                "echo" => deltas.echo > 0.0,
+                "unigram" => deltas.unigram > 0.0,
+                "smooth" => deltas.smooth > 0.0,
+                "accuracy" => deltas.accuracy > 0.0,
+                "multi-objective" => mo_constraints_pass(deltas) && deltas.unigram >= 0.0,
+                _ => false,
+            };
+            rows.push(LongHorizonRow {
+                mode: cli.mode.clone(),
+                checkpoint: checkpoint.display().to_string(),
+                start_checkpoint: start_path.clone(),
+                task: task.to_string(),
+                climber_id: task_idx,
+                step_index: proposal_idx,
+                proposal_seed,
+                radius,
+                mutation_type: mutation_type.as_str().to_string(),
+                accepted: task_positive,
+                smooth_delta: deltas.smooth,
+                accuracy_delta: deltas.accuracy,
+                echo_delta: deltas.echo,
+                unigram_delta: deltas.unigram,
+                mo_score: score,
+                mo_class: class_name.to_string(),
+            });
+        }
+    }
+    write_long_horizon_rows(&cli.out, &rows);
+    write_universality_matrix(&cli.out, &rows);
+    let task_success_count = rows
+        .iter()
+        .filter(|row| row.accepted)
+        .map(|row| row.task.clone())
+        .collect::<HashSet<_>>()
+        .len();
+    let verdict = if task_success_count >= 3 {
+        "TASK_GENERAL_MECHANISM"
+    } else if task_success_count > 0 {
+        "TASK_SPECIFIC_RESONANCE"
+    } else {
+        "NO_GENERAL_BASIN"
+    };
+    let summary = serde_json::json!({
+        "mode": cli.mode,
+        "verdict": verdict,
+        "checkpoint": checkpoint.display().to_string(),
+        "start_checkpoint": start_path,
+        "rows": rows.len(),
+        "task_success_count": task_success_count,
+    });
+    std::fs::write(
+        cli.out.join("run_summary.json"),
+        serde_json::to_string_pretty(&summary).expect("task summary json"),
+    )
+    .expect("failed to write run_summary.json");
+    std::fs::write(
+        cli.out.join("causal_summary.json"),
+        serde_json::json!({
+            "causal_diff_required": true,
+            "note": "Task universality is only a scout; confirm winners with endpoint-robustness and causal-diff."
+        })
+        .to_string(),
+    )
+    .expect("failed to write causal_summary.json");
+}
+
 fn main() {
     let cli = parse_args();
     create_dir_all(&cli.out).expect("failed to create output directory");
@@ -4041,6 +4596,50 @@ fn main() {
 
         if cli.mode == "causal-diff" {
             run_causal_diff(
+                &cli,
+                &table,
+                &pair_ids,
+                &hot_to_idx,
+                &bigram,
+                &unigram,
+                &init,
+            );
+            break;
+        }
+
+        if matches!(
+            cli.mode.as_str(),
+            "edge-lock-threshold-sweep"
+                | "threshold-lock-edge-sweep"
+                | "edge-threshold-continued-climb"
+        ) {
+            run_edge_threshold_geometry_sweep(
+                &cli,
+                &table,
+                &pair_ids,
+                &hot_to_idx,
+                &bigram,
+                &unigram,
+                &init,
+            );
+            break;
+        }
+
+        if cli.mode == "scaling-universality-scout" {
+            run_scaling_universality_scout(
+                &cli,
+                &table,
+                &pair_ids,
+                &hot_to_idx,
+                &bigram,
+                &unigram,
+                &init,
+            );
+            break;
+        }
+
+        if cli.mode == "task-universality-scout" {
+            run_task_universality_scout(
                 &cli,
                 &table,
                 &pair_ids,
@@ -4589,6 +5188,17 @@ fn main() {
             "D9.2a"
         } else if cli.mode == "quadtree-scout" {
             "D9.3a"
+        } else if cli.mode == "causal-diff" {
+            "D9.4a"
+        } else if matches!(
+            cli.mode.as_str(),
+            "edge-lock-threshold-sweep"
+                | "threshold-lock-edge-sweep"
+                | "edge-threshold-continued-climb"
+                | "scaling-universality-scout"
+                | "task-universality-scout"
+        ) {
+            "D10"
         } else if matches!(cli.mode.as_str(), "planet-scout" | "homogeneous") {
             "D9.0e"
         } else {
@@ -4636,7 +5246,17 @@ fn main() {
         overlap_samples: (cli.mode == "endpoint-overlap").then_some(cli.overlap_samples),
         robustness_eval_lens: (cli.mode == "endpoint-robustness")
             .then_some(cli.robustness_eval_lens.clone()),
-        repair_start: matches!(cli.mode.as_str(), "repair-scan" | "quadtree-scout").then(|| {
+        repair_start: matches!(
+            cli.mode.as_str(),
+            "repair-scan"
+                | "quadtree-scout"
+                | "causal-diff"
+                | "edge-lock-threshold-sweep"
+                | "threshold-lock-edge-sweep"
+                | "edge-threshold-continued-climb"
+                | "task-universality-scout"
+        )
+        .then(|| {
             cli.repair_start
                 .as_ref()
                 .map(|path| path.display().to_string())
@@ -4650,7 +5270,14 @@ fn main() {
         mo_steps: (cli.mode == "multi-objective-climb").then_some(cli.mo_steps),
         mo_eval_seeds: matches!(
             cli.mode.as_str(),
-            "multi-objective-climb" | "quadtree-scout"
+            "multi-objective-climb"
+                | "quadtree-scout"
+                | "causal-diff"
+                | "edge-lock-threshold-sweep"
+                | "threshold-lock-edge-sweep"
+                | "edge-threshold-continued-climb"
+                | "scaling-universality-scout"
+                | "task-universality-scout"
         )
         .then_some(cli.mo_eval_seeds.clone()),
         mo_export_top: matches!(
