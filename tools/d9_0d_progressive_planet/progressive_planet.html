@@ -131,9 +131,15 @@
     CONFIRMED_GOOD:  { fill: null,       border: "rgba(255,210,125,1.0)", borderW: 1.8, alpha: 1.00, label: "confirmed_good" },
     RETIRED:         { fill: "#1f2530", border: "rgba(120,140,170,.20)", borderW: .5, alpha: .25, label: "retired" },
     SPLIT_CANDIDATE: { fill: null,       border: "rgba(186,140,255,.85)", borderW: 1.4, alpha: .85, label: "split_candidate" },
+    BASIN_CONFIRMED: { fill: null,       border: "rgba(80,255,200,1.0)",  borderW: 2.4, alpha: 1.00, label: "basin_confirmed" },
+    DEEP_BASIN_CONFIRMED: { fill: null,  border: "rgba(255,120,255,1.0)", borderW: 3.2, alpha: 1.00, label: "deep_basin_confirmed" },
+    MOUNTAIN_CONFIRMED:   { fill: null,  border: "rgba(255,215,80,1.0)",  borderW: 4.0, alpha: 1.00, label: "mountain_confirmed" },
   };
 
   const METRICS = [
+    { key: "long_ascent_rate",     label: "Long ascent %",     good: "high", palette: "fitness" },
+    { key: "material_success_rate",label: "Material success %",good: "high", palette: "fitness" },
+    { key: "late_best_rate",       label: "Late peak %",       good: "high", palette: "fitness" },
     { key: "vitality",     label: "Peak priority",    good: "high", palette: "fitness", computed: true },
     { key: "plateau",      label: "Plateau score",    good: "high", palette: "fitness", computed: true },
     { key: "basin_size",   label: "Basin size",       good: "high", palette: "fitness", computed: true },
@@ -327,6 +333,12 @@
     if (state.metric && state.metric.computed && state.metric.key === "basin_avg") {
       const info = tileBasinInfo(t);
       return info ? info.avgVitality : 0;
+    }
+    if (state.metric.key === "long_ascent_rate" ||
+        state.metric.key === "material_success_rate" ||
+        state.metric.key === "late_best_rate") {
+      const v = t[state.metric.key];
+      return (v != null && Number.isFinite(v)) ? v : null;
     }
     if (state.type.key === "all") {
       if (state.metric.key === "scan_priority")   return t.scan_priority;
