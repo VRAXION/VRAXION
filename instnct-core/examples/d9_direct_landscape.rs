@@ -112,6 +112,10 @@ struct Cli {
     bridge_steps: usize,
     overlap_samples: usize,
     robustness_eval_lens: Vec<usize>,
+    repair_start: Option<PathBuf>,
+    repair_samples_per_bucket: usize,
+    repair_eval_seeds: Vec<u64>,
+    repair_export_top: usize,
     out: PathBuf,
     seed: u64,
     eval_len: usize,
@@ -145,6 +149,10 @@ struct RunMeta {
     bridge_steps: Option<usize>,
     overlap_samples: Option<usize>,
     robustness_eval_lens: Option<Vec<usize>>,
+    repair_start: Option<String>,
+    repair_samples_per_bucket: Option<usize>,
+    repair_eval_seeds: Option<Vec<u64>>,
+    repair_export_top: Option<usize>,
     radii: Vec<usize>,
     mutation_types: Vec<String>,
     checkpoints: Vec<String>,
@@ -209,6 +217,32 @@ struct EndpointSidecar<'a> {
     pass_positive_delta: bool,
 }
 
+#[derive(Clone)]
+struct RepairCandidate {
+    proposal_id: usize,
+    proposal_seed: u64,
+    radius: usize,
+    mutation_type: MutationType,
+    counts: MutationCounts,
+    direct_distance: usize,
+    edges: usize,
+    smooth_score: f64,
+    smooth_delta: f64,
+    accuracy_score: f64,
+    accuracy_delta: f64,
+    echo_score: f64,
+    echo_delta: f64,
+    unigram_score: f64,
+    unigram_delta: f64,
+    smooth_retain: bool,
+    accuracy_retain: bool,
+    echo_safe: bool,
+    repair_class: &'static str,
+    rank_score: f64,
+    net: Network,
+    proj: Int8Projection,
+}
+
 fn parse_csv_usize(value: &str) -> Vec<usize> {
     value
         .split(',')
@@ -248,6 +282,12 @@ fn parse_args() -> Cli {
     let mut bridge_steps = 10usize;
     let mut overlap_samples = 64usize;
     let mut robustness_eval_lens = vec![1_000usize, 4_000, 16_000];
+    let mut repair_start: Option<PathBuf> = None;
+    let mut repair_samples_per_bucket = 20usize;
+    let mut repair_eval_seeds = vec![
+        940_001u64, 940_002, 940_003, 940_004, 940_005, 940_006, 940_007, 940_008,
+    ];
+    let mut repair_export_top = 8usize;
     let mut out = PathBuf::from("output/phase_d9_direct_genome_landscape_20260428");
     let mut seed = 90210u64;
     let mut eval_len = DEFAULT_EVAL_LEN;
@@ -415,6 +455,36 @@ fn parse_args() -> Cli {
                     "--robustness-eval-lens must not be empty"
                 );
             }
+            "--repair-start" => {
+                repair_start = Some(PathBuf::from(args.next().expect("--repair-start path")));
+            }
+            "--repair-samples-per-bucket" => {
+                repair_samples_per_bucket = args
+                    .next()
+                    .expect("--repair-samples-per-bucket value")
+                    .parse()
+                    .expect("repair-samples-per-bucket")
+            }
+            "--repair-eval-seeds" => {
+                repair_eval_seeds = args
+                    .next()
+                    .expect("--repair-eval-seeds csv")
+                    .split(',')
+                    .filter(|part| !part.trim().is_empty())
+                    .map(|part| part.trim().parse::<u64>().expect("repair eval seed"))
+                    .collect();
+                assert!(
+                    !repair_eval_seeds.is_empty(),
+                    "--repair-eval-seeds must not be empty"
+                );
+            }
+            "--repair-export-top" => {
+                repair_export_top = args
+                    .next()
+                    .expect("--repair-export-top value")
+                    .parse()
+                    .expect("repair-export-top")
+            }
             "--out" => out = PathBuf::from(args.next().expect("--out path")),
             "--seed" => seed = args.next().expect("--seed value").parse().expect("seed"),
             "--eval-len" => {
@@ -454,8 +524,9 @@ fn parse_args() -> Cli {
         | "paratrooper-climb"
         | "endpoint-bridge"
         | "endpoint-overlap"
-        | "endpoint-robustness" => vec![1],
-        other => panic!("--mode expects fail-fast|medium|full|staged|planet-scout|paratrooper-climb|endpoint-bridge|endpoint-overlap|endpoint-robustness, got {other}"),
+        | "endpoint-robustness"
+        | "repair-scan" => vec![1],
+        other => panic!("--mode expects fail-fast|medium|full|staged|planet-scout|paratrooper-climb|endpoint-bridge|endpoint-overlap|endpoint-robustness|repair-scan, got {other}"),
     };
     let default_mutation_types = if matches!(
         mode.as_str(),
@@ -465,6 +536,7 @@ fn parse_args() -> Cli {
         | "endpoint-bridge"
         | "endpoint-overlap"
         | "endpoint-robustness"
+        | "repair-scan"
     ) {
         vec![MutationType::Edge, MutationType::Threshold]
     } else {
@@ -499,6 +571,10 @@ fn parse_args() -> Cli {
         bridge_steps,
         overlap_samples,
         robustness_eval_lens,
+        repair_start,
+        repair_samples_per_bucket,
+        repair_eval_seeds,
+        repair_export_top,
         out,
         seed,
         eval_len,
@@ -1868,6 +1944,304 @@ fn run_endpoint_robustness(
     writer.flush().expect("failed to flush robustness csv");
 }
 
+fn mean_score_for_mode(
+    score_mode: &str,
+    net: &Network,
+    proj: &Int8Projection,
+    table: &VcbpTable,
+    pair_ids: &[u16],
+    hot_to_idx: &[usize],
+    bigram: &[Vec<f64>],
+    unigram: &[f64],
+    eval_len: usize,
+    eval_seeds: &[u64],
+    init: &InitConfig,
+    h: usize,
+    input_scatter: bool,
+) -> f64 {
+    let mut total = 0.0;
+    for &seed in eval_seeds {
+        let mut eval_net = net.clone();
+        total += eval_score(
+            score_mode,
+            &mut eval_net,
+            proj,
+            table,
+            pair_ids,
+            hot_to_idx,
+            bigram,
+            unigram,
+            eval_len,
+            &mut StdRng::seed_from_u64(seed),
+            &init.propagation,
+            init.output_start(),
+            h,
+            init.input_end(),
+            input_scatter,
+        );
+    }
+    total / eval_seeds.len() as f64
+}
+
+fn repair_class_rank(class_name: &str) -> i32 {
+    match class_name {
+        "FULL_REPAIR" => 4,
+        "STRONG_REPAIR" => 3,
+        "WEAK_REPAIR" => 2,
+        "NO_REPAIR" => 1,
+        _ => 0,
+    }
+}
+
+fn run_repair_scan(
+    cli: &Cli,
+    table: &VcbpTable,
+    pair_ids: &[u16],
+    hot_to_idx: &[usize],
+    bigram: &[Vec<f64>],
+    unigram: &[f64],
+    init: &InitConfig,
+) {
+    let repair_start = cli
+        .repair_start
+        .as_ref()
+        .expect("--mode repair-scan requires --repair-start");
+    let baseline_path = cli.checkpoints.first().expect("baseline checkpoint required");
+    let (baseline_net, baseline_proj, _) =
+        load_checkpoint(baseline_path).expect("failed to load baseline checkpoint");
+    let (repair_net, repair_proj, _) =
+        load_checkpoint(repair_start).expect("failed to load repair start checkpoint");
+    assert_eq!(baseline_net.neuron_count(), cli.h, "baseline H mismatch");
+    assert_eq!(repair_net.neuron_count(), cli.h, "repair-start H mismatch");
+
+    let repair_coord = encode_coord(&repair_net);
+    let samples_path = cli.out.join("repair_samples.csv");
+    let mut writer =
+        BufWriter::new(File::create(&samples_path).expect("failed to create repair_samples.csv"));
+    writeln!(
+        writer,
+        "proposal_id,proposal_seed,radius,mutation_type,edge_edits,threshold_edits,channel_edits,polarity_edits,direct_genome_distance,edges,smooth_baseline,smooth_score,smooth_delta,accuracy_baseline,accuracy_score,accuracy_delta,echo_baseline,echo_score,echo_delta,unigram_baseline,unigram_score,unigram_delta,smooth_retain,accuracy_retain,echo_safe,repair_class,rank_score"
+    )
+    .expect("failed to write repair_samples header");
+
+    let metric_names = ["smooth", "accuracy", "echo", "unigram"];
+    let mut baseline_scores = Vec::new();
+    for metric in metric_names {
+        baseline_scores.push(mean_score_for_mode(
+            metric,
+            &baseline_net,
+            &baseline_proj,
+            table,
+            pair_ids,
+            hot_to_idx,
+            bigram,
+            unigram,
+            cli.eval_len,
+            &cli.repair_eval_seeds,
+            init,
+            cli.h,
+            cli.input_scatter,
+        ));
+    }
+
+    let mut candidates = Vec::new();
+    let mut proposal_id = 0usize;
+    for &radius in &cli.radii {
+        for &mutation_type in &cli.mutation_types {
+            assert!(
+                matches!(mutation_type, MutationType::Edge | MutationType::Threshold),
+                "repair-scan supports only edge,threshold mutation types"
+            );
+            for sample_id in 0..cli.repair_samples_per_bucket {
+                proposal_id += 1;
+                let proposal_seed = cli.seed
+                    ^ ((radius as u64) << 40)
+                    ^ ((sample_id as u64) << 16)
+                    ^ match mutation_type {
+                        MutationType::Edge => 0xD91A_E000u64,
+                        MutationType::Threshold => 0xD91A_7000u64,
+                        _ => unreachable!(),
+                    };
+                let mut candidate_net = repair_net.clone();
+                let candidate_proj = repair_proj.clone();
+                let mut rng = StdRng::seed_from_u64(proposal_seed);
+                let counts =
+                    apply_radius_mutation(&mut candidate_net, radius, mutation_type, &mut rng);
+                let candidate_coord = encode_coord(&candidate_net);
+                let direct_distance = coord_distance(&repair_coord, &candidate_coord);
+
+                let mut scores = Vec::new();
+                for metric in metric_names {
+                    scores.push(mean_score_for_mode(
+                        metric,
+                        &candidate_net,
+                        &candidate_proj,
+                        table,
+                        pair_ids,
+                        hot_to_idx,
+                        bigram,
+                        unigram,
+                        cli.eval_len,
+                        &cli.repair_eval_seeds,
+                        init,
+                        cli.h,
+                        cli.input_scatter,
+                    ));
+                }
+                let smooth_delta = scores[0] - baseline_scores[0];
+                let accuracy_delta = scores[1] - baseline_scores[1];
+                let echo_delta = scores[2] - baseline_scores[2];
+                let unigram_delta = scores[3] - baseline_scores[3];
+                let smooth_retain = smooth_delta >= 0.0120;
+                let accuracy_retain = accuracy_delta >= 0.0020;
+                let echo_safe = echo_delta.abs() <= 0.0010;
+                let repair_class = if smooth_retain && accuracy_retain && echo_safe {
+                    if unigram_delta >= 0.0 {
+                        "FULL_REPAIR"
+                    } else if unigram_delta >= -0.0044 {
+                        "STRONG_REPAIR"
+                    } else if unigram_delta > -0.008823296 {
+                        "WEAK_REPAIR"
+                    } else {
+                        "NO_REPAIR"
+                    }
+                } else {
+                    "FAIL_RETAIN"
+                };
+                let rank_score = repair_class_rank(repair_class) as f64 * 1_000.0
+                    + unigram_delta * 100.0
+                    + smooth_delta * 10.0
+                    + accuracy_delta;
+                writeln!(
+                    writer,
+                    "{},{},{},{},{},{},{},{},{},{},{:.12},{:.12},{:.12},{:.12},{:.12},{:.12},{:.12},{:.12},{:.12},{:.12},{:.12},{:.12},{},{},{},{},{:.12}",
+                    proposal_id,
+                    proposal_seed,
+                    radius,
+                    mutation_type.as_str(),
+                    counts.edge,
+                    counts.threshold,
+                    counts.channel,
+                    counts.polarity,
+                    direct_distance,
+                    candidate_net.edge_count(),
+                    baseline_scores[0],
+                    scores[0],
+                    smooth_delta,
+                    baseline_scores[1],
+                    scores[1],
+                    accuracy_delta,
+                    baseline_scores[2],
+                    scores[2],
+                    echo_delta,
+                    baseline_scores[3],
+                    scores[3],
+                    unigram_delta,
+                    smooth_retain,
+                    accuracy_retain,
+                    echo_safe,
+                    repair_class,
+                    rank_score
+                )
+                .expect("failed to write repair row");
+                candidates.push(RepairCandidate {
+                    proposal_id,
+                    proposal_seed,
+                    radius,
+                    mutation_type,
+                    counts,
+                    direct_distance,
+                    edges: candidate_net.edge_count(),
+                    smooth_score: scores[0],
+                    smooth_delta,
+                    accuracy_score: scores[1],
+                    accuracy_delta,
+                    echo_score: scores[2],
+                    echo_delta,
+                    unigram_score: scores[3],
+                    unigram_delta,
+                    smooth_retain,
+                    accuracy_retain,
+                    echo_safe,
+                    repair_class,
+                    rank_score,
+                    net: candidate_net,
+                    proj: candidate_proj,
+                });
+            }
+        }
+    }
+    writer.flush().expect("failed to flush repair_samples");
+
+    candidates.sort_by(|a, b| {
+        b.rank_score
+            .partial_cmp(&a.rank_score)
+            .unwrap_or(std::cmp::Ordering::Equal)
+            .then_with(|| b.unigram_delta.partial_cmp(&a.unigram_delta).unwrap())
+            .then_with(|| b.smooth_delta.partial_cmp(&a.smooth_delta).unwrap())
+    });
+    let candidates_dir = cli.out.join("candidates");
+    create_dir_all(&candidates_dir).expect("failed to create repair candidates dir");
+    let mut cand_writer = BufWriter::new(
+        File::create(cli.out.join("repair_candidates.csv"))
+            .expect("failed to create repair_candidates.csv"),
+    );
+    writeln!(
+        cand_writer,
+        "rank,checkpoint,proposal_id,proposal_seed,radius,mutation_type,edge_edits,threshold_edits,direct_genome_distance,edges,smooth_score,smooth_delta,accuracy_score,accuracy_delta,echo_score,echo_delta,unigram_score,unigram_delta,smooth_retain,accuracy_retain,echo_safe,repair_class,rank_score"
+    )
+    .expect("failed to write repair_candidates header");
+    for (rank_idx, candidate) in candidates.iter().take(cli.repair_export_top).enumerate() {
+        let rank = rank_idx + 1;
+        let ckpt_path = candidates_dir.join(format!("top_{rank:02}.ckpt"));
+        save_checkpoint(
+            &ckpt_path,
+            &candidate.net,
+            &candidate.proj,
+            CheckpointMeta {
+                step: rank,
+                accuracy: candidate.accuracy_score,
+                label: format!(
+                    "D9.1a repair rank={} class={} smooth_delta={:.6} unigram_delta={:.6}",
+                    rank, candidate.repair_class, candidate.smooth_delta, candidate.unigram_delta
+                ),
+            },
+        )
+        .expect("failed to save repair candidate checkpoint");
+        writeln!(
+            cand_writer,
+            "{},{},{},{},{},{},{},{},{},{},{:.12},{:.12},{:.12},{:.12},{:.12},{:.12},{:.12},{:.12},{},{},{},{},{:.12}",
+            rank,
+            ckpt_path.display(),
+            candidate.proposal_id,
+            candidate.proposal_seed,
+            candidate.radius,
+            candidate.mutation_type.as_str(),
+            candidate.counts.edge,
+            candidate.counts.threshold,
+            candidate.direct_distance,
+            candidate.edges,
+            candidate.smooth_score,
+            candidate.smooth_delta,
+            candidate.accuracy_score,
+            candidate.accuracy_delta,
+            candidate.echo_score,
+            candidate.echo_delta,
+            candidate.unigram_score,
+            candidate.unigram_delta,
+            candidate.smooth_retain,
+            candidate.accuracy_retain,
+            candidate.echo_safe,
+            candidate.repair_class,
+            candidate.rank_score,
+        )
+        .expect("failed to write repair candidate row");
+    }
+    cand_writer
+        .flush()
+        .expect("failed to flush repair_candidates");
+}
+
 fn main() {
     let cli = parse_args();
     create_dir_all(&cli.out).expect("failed to create output directory");
@@ -1966,6 +2340,19 @@ fn main() {
 
         if cli.mode == "endpoint-robustness" {
             run_endpoint_robustness(
+                &cli,
+                &table,
+                &pair_ids,
+                &hot_to_idx,
+                &bigram,
+                &unigram,
+                &init,
+            );
+            break;
+        }
+
+        if cli.mode == "repair-scan" {
+            run_repair_scan(
                 &cli,
                 &table,
                 &pair_ids,
@@ -2508,6 +2895,8 @@ fn main() {
             "D9.0w"
         } else if cli.mode == "endpoint-robustness" {
             "D9.0x"
+        } else if cli.mode == "repair-scan" {
+            "D9.1a"
         } else if matches!(cli.mode.as_str(), "planet-scout" | "homogeneous") {
             "D9.0e"
         } else {
@@ -2555,6 +2944,16 @@ fn main() {
         overlap_samples: (cli.mode == "endpoint-overlap").then_some(cli.overlap_samples),
         robustness_eval_lens: (cli.mode == "endpoint-robustness")
             .then_some(cli.robustness_eval_lens.clone()),
+        repair_start: (cli.mode == "repair-scan").then(|| {
+            cli.repair_start
+                .as_ref()
+                .map(|path| path.display().to_string())
+                .unwrap_or_default()
+        }),
+        repair_samples_per_bucket: (cli.mode == "repair-scan")
+            .then_some(cli.repair_samples_per_bucket),
+        repair_eval_seeds: (cli.mode == "repair-scan").then_some(cli.repair_eval_seeds.clone()),
+        repair_export_top: (cli.mode == "repair-scan").then_some(cli.repair_export_top),
         radii: cli.radii.clone(),
         mutation_types: cli
             .mutation_types
