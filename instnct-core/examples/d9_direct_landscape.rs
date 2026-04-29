@@ -111,6 +111,7 @@ struct Cli {
     bridge_endpoints: Vec<PathBuf>,
     bridge_steps: usize,
     overlap_samples: usize,
+    robustness_eval_lens: Vec<usize>,
     out: PathBuf,
     seed: u64,
     eval_len: usize,
@@ -143,6 +144,7 @@ struct RunMeta {
     bridge_endpoints: Option<Vec<String>>,
     bridge_steps: Option<usize>,
     overlap_samples: Option<usize>,
+    robustness_eval_lens: Option<Vec<usize>>,
     radii: Vec<usize>,
     mutation_types: Vec<String>,
     checkpoints: Vec<String>,
@@ -245,6 +247,7 @@ fn parse_args() -> Cli {
     let mut bridge_endpoints: Vec<PathBuf> = Vec::new();
     let mut bridge_steps = 10usize;
     let mut overlap_samples = 64usize;
+    let mut robustness_eval_lens = vec![1_000usize, 4_000, 16_000];
     let mut out = PathBuf::from("output/phase_d9_direct_genome_landscape_20260428");
     let mut seed = 90210u64;
     let mut eval_len = DEFAULT_EVAL_LEN;
@@ -404,6 +407,14 @@ fn parse_args() -> Cli {
                     .parse()
                     .expect("overlap-samples")
             }
+            "--robustness-eval-lens" => {
+                robustness_eval_lens =
+                    parse_csv_usize(&args.next().expect("--robustness-eval-lens csv"));
+                assert!(
+                    !robustness_eval_lens.is_empty(),
+                    "--robustness-eval-lens must not be empty"
+                );
+            }
             "--out" => out = PathBuf::from(args.next().expect("--out path")),
             "--seed" => seed = args.next().expect("--seed value").parse().expect("seed"),
             "--eval-len" => {
@@ -438,12 +449,22 @@ fn parse_args() -> Cli {
         "fail-fast" => vec![1],
         "medium" => vec![1, 4, 16],
         "full" | "staged" => vec![1, 2, 4, 8, 16, 32, 64, 128],
-        "planet-scout" | "homogeneous" | "paratrooper-climb" | "endpoint-bridge" | "endpoint-overlap" => vec![1],
-        other => panic!("--mode expects fail-fast|medium|full|staged|planet-scout|paratrooper-climb|endpoint-bridge|endpoint-overlap, got {other}"),
+        "planet-scout"
+        | "homogeneous"
+        | "paratrooper-climb"
+        | "endpoint-bridge"
+        | "endpoint-overlap"
+        | "endpoint-robustness" => vec![1],
+        other => panic!("--mode expects fail-fast|medium|full|staged|planet-scout|paratrooper-climb|endpoint-bridge|endpoint-overlap|endpoint-robustness, got {other}"),
     };
     let default_mutation_types = if matches!(
         mode.as_str(),
-        "planet-scout" | "homogeneous" | "paratrooper-climb" | "endpoint-bridge" | "endpoint-overlap"
+        "planet-scout"
+        | "homogeneous"
+        | "paratrooper-climb"
+        | "endpoint-bridge"
+        | "endpoint-overlap"
+        | "endpoint-robustness"
     ) {
         vec![MutationType::Edge, MutationType::Threshold]
     } else {
@@ -477,6 +498,7 @@ fn parse_args() -> Cli {
         bridge_endpoints,
         bridge_steps,
         overlap_samples,
+        robustness_eval_lens,
         out,
         seed,
         eval_len,
@@ -1753,6 +1775,99 @@ fn run_endpoint_overlap(
     writer.flush().expect("failed to flush overlap csv");
 }
 
+fn run_endpoint_robustness(
+    cli: &Cli,
+    table: &VcbpTable,
+    pair_ids: &[u16],
+    hot_to_idx: &[usize],
+    bigram: &[Vec<f64>],
+    unigram: &[f64],
+    init: &InitConfig,
+) {
+    assert!(
+        !cli.bridge_endpoints.is_empty(),
+        "--mode endpoint-robustness requires --bridge-endpoints"
+    );
+    let baseline_path = cli.checkpoints.first().expect("baseline checkpoint required");
+    let (baseline_net, baseline_proj, _) =
+        load_checkpoint(baseline_path).expect("failed to load baseline checkpoint");
+
+    let mut endpoints = Vec::new();
+    for path in &cli.bridge_endpoints {
+        let (net, proj, _meta) = load_checkpoint(path).expect("failed to load robustness endpoint");
+        assert_eq!(net.neuron_count(), cli.h, "robustness endpoint H mismatch");
+        endpoints.push((path.display().to_string(), net, proj));
+    }
+
+    let path = cli.out.join("robustness_samples.csv");
+    let mut writer =
+        BufWriter::new(File::create(&path).expect("failed to create robustness csv"));
+    writeln!(
+        writer,
+        "endpoint_index,endpoint_path,eval_len,eval_seed,baseline_score,endpoint_score,delta_vs_baseline,positive"
+    )
+    .expect("failed to write robustness header");
+
+    for (endpoint_idx, (endpoint_path, endpoint_net, endpoint_proj)) in endpoints.iter().enumerate()
+    {
+        for &eval_len in &cli.robustness_eval_lens {
+            for &seed in &cli.endpoint_eval_seeds {
+                let mut base_eval_net = baseline_net.clone();
+                let baseline_score = eval_score(
+                    &cli.score_mode,
+                    &mut base_eval_net,
+                    &baseline_proj,
+                    table,
+                    pair_ids,
+                    hot_to_idx,
+                    bigram,
+                    unigram,
+                    eval_len,
+                    &mut StdRng::seed_from_u64(seed),
+                    &init.propagation,
+                    init.output_start(),
+                    cli.h,
+                    init.input_end(),
+                    cli.input_scatter,
+                );
+                let mut endpoint_eval_net = endpoint_net.clone();
+                let endpoint_score = eval_score(
+                    &cli.score_mode,
+                    &mut endpoint_eval_net,
+                    endpoint_proj,
+                    table,
+                    pair_ids,
+                    hot_to_idx,
+                    bigram,
+                    unigram,
+                    eval_len,
+                    &mut StdRng::seed_from_u64(seed),
+                    &init.propagation,
+                    init.output_start(),
+                    cli.h,
+                    init.input_end(),
+                    cli.input_scatter,
+                );
+                let delta = endpoint_score - baseline_score;
+                writeln!(
+                    writer,
+                    "{},\"{}\",{},{},{:.12},{:.12},{:.12},{}",
+                    endpoint_idx + 1,
+                    endpoint_path,
+                    eval_len,
+                    seed,
+                    baseline_score,
+                    endpoint_score,
+                    delta,
+                    delta > 0.0
+                )
+                .expect("failed to write robustness row");
+            }
+        }
+    }
+    writer.flush().expect("failed to flush robustness csv");
+}
+
 fn main() {
     let cli = parse_args();
     create_dir_all(&cli.out).expect("failed to create output directory");
@@ -1838,6 +1953,19 @@ fn main() {
 
         if cli.mode == "endpoint-overlap" {
             run_endpoint_overlap(
+                &cli,
+                &table,
+                &pair_ids,
+                &hot_to_idx,
+                &bigram,
+                &unigram,
+                &init,
+            );
+            break;
+        }
+
+        if cli.mode == "endpoint-robustness" {
+            run_endpoint_robustness(
                 &cli,
                 &table,
                 &pair_ids,
@@ -2378,6 +2506,8 @@ fn main() {
             "D9.0v"
         } else if cli.mode == "endpoint-overlap" {
             "D9.0w"
+        } else if cli.mode == "endpoint-robustness" {
+            "D9.0x"
         } else if matches!(cli.mode.as_str(), "planet-scout" | "homogeneous") {
             "D9.0e"
         } else {
@@ -2423,6 +2553,8 @@ fn main() {
         ),
         bridge_steps: (cli.mode == "endpoint-bridge").then_some(cli.bridge_steps),
         overlap_samples: (cli.mode == "endpoint-overlap").then_some(cli.overlap_samples),
+        robustness_eval_lens: (cli.mode == "endpoint-robustness")
+            .then_some(cli.robustness_eval_lens.clone()),
         radii: cli.radii.clone(),
         mutation_types: cli
             .mutation_types
