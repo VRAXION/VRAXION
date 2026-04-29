@@ -1,6 +1,6 @@
 # VRAXION Validated Findings
 
-_Last updated: 2026-04-28_
+_Last updated: 2026-04-29_
 
 Canonical evidence summary. Repo-tracked docs are canonical; the GitHub wiki is a mirrored secondary surface.
 
@@ -8,7 +8,7 @@ Canonical evidence summary. Repo-tracked docs are canonical; the GitHub wiki is 
 
 The repo is in a transition state:
 
-- **Released public tag:** `v5.0.0-beta.6` — Rust grower public beta + Phase A→B→D research-line checkpoint (`v5.0.0-beta.5` is the prior Phase D3/D3.1/D4 SAF lock + 56-example archive cleanup release; `v5.0.0-beta.1` remains as the original language-evolution beta, historical reference only)
+- **Released public tag:** `v5.0.0-beta.7` — Phase D9 direct-genome landscape audit + `seed2042_improved_v1` smooth+accuracy specialist checkpoint (`v5.0.0-beta.6` is the prior Phase D6/D7/D8 research-line checkpoint + wiki/HTML doc-drift correction patch; `v5.0.0-beta.5` is the prior Phase D3/D3.1/D4 SAF lock + 56-example archive cleanup release; `v5.0.0-beta.1` remains as the original language-evolution beta, historical reference only)
 - **Current mainline on `main`:** Rust grower (`instnct-core/examples/neuron_grower.rs`)
 - **Python deploy SDK:** `Python/` — Block A + B, pure numpy (256/256 + 65536/65536 lossless)
 - **Historical Python research lane:** frozen at tag `archives/python-research-20260420` (was `instnct/`, migrated to Rust `instnct-core/` on 2026-04-13)
@@ -149,6 +149,26 @@ Block C byte-pair champion wired into the INSTNCT brain for the first time. Fitn
 | **Multi-channel input: worse than single** | Dual-input and multi-channel injection schemes tested. All worse than single-channel input. Dimension curse: extra input channels increase the search space faster than they add useful signal for mutation-selection. | **Validated finding (negative)** |
 | **Crystallize grow-prune cycles: validated** | Crystallize (iterative grow-prune-regrow cycles to find minimal topology) ported from Python to Rust and validated. Prune-regrow cycles converge to compact circuits. | **Validated finding** |
 | **Ablation study: single-attractor collapse** | Systematic ablation reveals 7 dominant neurons form a bottleneck — single-attractor topology collapse. The brain converges to one dominant attractor basin instead of developing multiple competing pathways. This is the core pathology limiting current accuracy. | **Validated finding** |
+
+## Phase D9 direct-genome landscape + smooth+accuracy specialist (2026-04-28/29)
+
+Eight-run audit (D9.0n → D9.0o → D9.0q → D9.0r → D9.0s → D9.0v → D9.0w → D9.0x → D9.0y → D9.0z → D9.1) of the direct-genome landscape around H=384 seed2042 on the `evolve_mutual_inhibition` substrate, using paratrooper deepening, endpoint export+replay, basin-topology audit, linear-bridge falsification, perturbation-overlap probing, and a 30-seed × 3-eval-length robustness suite.
+
+**No-overclaim scope.** The D9 saga produces one validated specialist checkpoint, `seed2042_improved_v1`, that improves the smooth metric and paired direct accuracy at H=384 seed2042 but **regresses unigram** behavior. It is NOT a general-purpose mainline replacement and does NOT supersede the current `neuron_grower.rs` mainline path on `main`.
+
+| Finding | Result | Status |
+|---|---|---|
+| **D9 direct-genome landscape audit framework** | 600 rows × 1 base × radii {1, 4, 16} × {channel, edge, polarity, threshold} × 50 samples/cell. Type-split verdict: `channel`/`polarity` cliffy, `edge`/`threshold` rugged. Visual atlas (`direct_landscape_atlas.html`, `sphere_landscape.html`, `sphere_tiles.csv`) + per-radius heatmaps. D9.0b freezes projection and mutates only the persisted core genome. Doc: `docs/research/PHASE_D9_DIRECT_GENOME_LANDSCAPE_AUDIT.md`. | **Validated finding** |
+| **D9.0n/o/q paratrooper climb at H=384 seed2042** | D9.0n 100-step `BASIN_CONFIRMED` → D9.0o 200-step `MOUNTAIN_CONFIRMED` → D9.0q 300-step still climbing past 200 steps. Mountain-renderer states (`BASIN_CONFIRMED`, `DEEP_BASIN_CONFIRMED`, `MOUNTAIN_CONFIRMED`) drive the progressive planet visualization. | **Validated finding** |
+| **D9.0r endpoint export + replay** | 8 endpoints exported across 4 source tiles. **7/8** retain ≥70% of the climb-time gain on fresh evaluation; **8/8** are positive vs the seed2042 baseline. Endpoints `11_16_endpoint_01`, `12_29_endpoint_04`, `9_26_endpoint_03` carried into D9.0x. | **Validated finding** |
+| **D9.0s basin topology** | Pairwise genome-distance ratio between the three positive-island tiles measured at **1.019** — essentially equidistant in genome space, not nested. | **Validated finding** |
+| **D9.0v linear-bridge falsification** | 100 interior-point evaluations along the straight genome-space line between two positive endpoints: **0/100** interior points positive. The basin is **not** a connected ridge; the straight-bridge hypothesis is falsified. | **Validated finding (negative)** |
+| **D9.0w 3 independent islands at H=384 seed2042** | Per-tile perturbation clouds do not touch in genome space. Three independent local optima are confirmed; they are separated islands, not a connected basin. | **Validated finding** |
+| **D9.0x endpoint robustness suite** | 30 fresh seeds × 3 eval lengths (1000/4000/16000), paired vs seed2042 baseline. Verdict: `D9_ENDPOINT_ROBUSTNESS_STRICT_PASS`. Top endpoint `11_16_endpoint_01` overall lower95 = **+0.01666** (n=90, mean +0.01699, positive_rate 100.0%, min_lower95_across_eval_lens +0.01581). | **Validated finding** |
+| **`seed2042_improved_v1` smooth specialist (D9.0y)** | Exported H=384 candidate from `11_16_endpoint_01`, re-evaluates +0.01733 mean (lower95 +0.01714) over n=60 fresh-seed paired runs vs the seed2042 baseline. Doc: `docs/research/PHASE_D9_PRODUCTION_CANDIDATE.md`. Smooth-metric scope only at this verdict. | **Validated finding (specialist — smooth)** |
+| **Multi-task limit (D9.0z generalization gate)** | Verdict `D9_SMOOTH_ONLY_WIN`. Per-metric paired deltas (n=60 each): smooth +0.01733, accuracy +0.00455 (positive_rate 95.0%), echo −0.00009 (neutral), unigram **−0.00882** (positive_rate 0.0%, regression). Decision: keep as smooth/accuracy specialist; do NOT promote as broad generalization checkpoint. Doc: `docs/research/PHASE_D9_GENERALIZATION_GATE.md`. | **Validated finding (scope-limit)** |
+| **Local repair limit (D9.1)** | Local repair microprobe + confirm produce only **weak** repair and cannot bridge the unigram task gap from this candidate. The smooth+accuracy gain does not generalize to unigram by local search. Docs: `docs/research/PHASE_D9_1_REPAIR_MICROPROBE.md`, `docs/research/PHASE_D9_1_REPAIR_CONFIRM.md`. | **Validated finding (negative)** |
+| **D9.0d progressive planet renderer (5-tier basin hierarchy)** | Visualization tooling under `tools/d9_0d_progressive_planet/` with a 5-tier basin/mountain hierarchy and the mountain-renderer state machine used by D9.0n/o/q. Renderer is owned by a parallel research line; the artifact landed at the same release boundary as the D9.0r-D9.0z verdicts. | **Validated finding (tooling)** |
 
 ## How To Read This Page
 

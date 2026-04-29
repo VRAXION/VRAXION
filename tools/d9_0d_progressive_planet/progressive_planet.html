@@ -80,6 +80,8 @@
   <div class="bar good"><span id="b-confident" style="width:0%"></span></div>
   <div class="small">Promising <span id="p-promising">?</span> &middot; Retired <span id="p-retired">?</span> &middot;
     Splits <span id="p-splits">?</span></div>
+  <div class="small" id="task-scope-line" style="display:none;color:#ff9b6a;font-weight:700;margin-top:6px"></div>
+  <div class="small" id="task-scope-sub" style="display:none;color:#ff6a8a;font-weight:600"></div>
 
   <h2>Top 5 peaks (priority)</h2>
   <div class="small" style="font-size:10px;color:#7d8da0;margin:-2px 0 4px">best_delta + safety + positive + confidence — may be spiky, NOT confirmed</div>
@@ -576,6 +578,30 @@
 
       const cx = (top[0].x + top[2].x) / 2;
       const cy = (top[0].y + top[2].y) / 2;
+
+      // Specialist "S" badge: rendered on NETWORK_VALIDATED tiles whose
+      // task_breadth flag marks them as a smooth+accuracy specialist.
+      // Cool-orange so it visually announces "specialist" and is NOT
+      // confused with the cool-white validated border.
+      if (t.state === "NETWORK_VALIDATED" && t.task_breadth === "specialist") {
+        const sc = (top[0].scale + top[2].scale) * 0.5;
+        const r = Math.max(7, Math.min(18, sc * 0.06));
+        // Orange disk with darker rim.
+        ctx.beginPath();
+        ctx.arc(cx, cy, r, 0, Math.PI * 2);
+        ctx.fillStyle = "rgba(255,140,60,0.92)";
+        ctx.fill();
+        ctx.lineWidth = 1.4;
+        ctx.strokeStyle = "rgba(120,55,15,0.95)";
+        ctx.stroke();
+        // "S" letter on top.
+        ctx.fillStyle = "#15110a";
+        ctx.font = "700 " + Math.round(r * 1.35) + "px ui-sans-serif, Segoe UI, Arial, sans-serif";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText("S", cx, cy + 1);
+      }
+
       const d = Math.hypot(state.mouse.x - cx, state.mouse.y - cy);
       if (d < 22 && d < hoverDist) {
         state.hover = t;
@@ -613,6 +639,23 @@
         " cliff="+fmt(e.cliff_rate,2)+" pos="+fmt(e.positive_rate,2)+"</div>";
     }
     const styleLabel = (t.state in TILE_STATE_STYLE) ? TILE_STATE_STYLE[t.state].label : t.state;
+
+    // Specialist warning block: only for NETWORK_VALIDATED tiles. Surfaces
+    // the validated robustness stats AND the post-saga D9.0z finding that
+    // these endpoints DEGRADE on unigram task. Honest UI: don't let the
+    // cool-white border imply "globally better".
+    let specialistBlock = "";
+    if (t.state === "NETWORK_VALIDATED") {
+      const meanD = fmt(t.validated_mean_delta, 5);
+      const lower = fmt(t.validated_lower95, 5);
+      specialistBlock =
+        "<hr>" +
+        "<div class='small' style='color:#9be58e;font-weight:700'>Validated: mean&Delta;="+meanD+
+          " lower95="+lower+"</div>" +
+        "<div class='small' style='color:#ff9b6a;font-weight:700'>Task scope: SPECIALIST (smooth+accuracy)</div>" +
+        "<div class='small' style='color:#ff6a8a;font-weight:700'>Limit: degrades on unigram task</div>";
+    }
+
     body.innerHTML =
       "<div><b>Tile "+t.tile_id+"</b> &middot; <span class='badge'>"+styleLabel+"</span></div>" +
       "<div class='small'>view: "+state.metric.label+" / type: "+state.type.label+"</div>" +
@@ -624,6 +667,7 @@
         " confidence="+fmt(t.confidence,2)+"</div>" +
       "<div class='small'>scan_prio="+fmt(t.scan_priority,2)+" split_prio="+fmt(t.split_priority,2)+"</div>" +
       "<div class='small'>action: <b>"+(t.recommended_action || actionFor(t))+"</b></div>" +
+      specialistBlock +
       "<hr>" +
       "<div class='small' style='color:#8da0bc'>per-type:</div>" +
       perTypeRows;
@@ -639,6 +683,25 @@
     $("p-promising").textContent = p.promising_count != null ? p.promising_count : "?";
     $("p-retired").textContent = p.retired_count != null ? p.retired_count : "?";
     $("p-splits").textContent = p.split_candidate_count != null ? p.split_candidate_count : "?";
+
+    // Task scope warning: only when at least one NETWORK_VALIDATED tile is
+    // a smooth+accuracy specialist. Honest UI: makes the specialist nature
+    // visible at a glance even before hovering.
+    const specialistCount = (data.tiles || []).filter(
+      t => t.state === "NETWORK_VALIDATED" && t.task_breadth === "specialist"
+    ).length;
+    const scopeLine = $("task-scope-line");
+    const scopeSub = $("task-scope-sub");
+    if (specialistCount > 0) {
+      scopeLine.textContent = "Task scope: SPECIALIST (smooth+accuracy)";
+      scopeLine.style.display = "block";
+      scopeSub.textContent = specialistCount + " validated tile" +
+        (specialistCount === 1 ? "" : "s") + " — degrades on unigram (D9.0z)";
+      scopeSub.style.display = "block";
+    } else {
+      scopeLine.style.display = "none";
+      scopeSub.style.display = "none";
+    }
   }
 
   function fillQueue() {

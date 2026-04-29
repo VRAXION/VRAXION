@@ -2,8 +2,8 @@ window.ATLAS_STATE = {
   "schema_version": "d9.0d-1",
   "run_id": "d9_0x_seed2042_robustness_strict_pass",
   "source_run_id": "output/phase_d9_0x_endpoint_robustness_20260429",
-  "generated_at_utc": "2026-04-29T02:15:58Z",
-  "last_updated": "2026-04-29T02:15:58Z",
+  "generated_at_utc": "2026-04-29T05:15:32Z",
+  "last_updated": "2026-04-29T05:15:32Z",
   "phase_status": "finished",
   "stop_clock_active": false,
   "source_samples_csv": "output/phase_d9_0q_seed2042_long_climb_20260429/paratrooper_paths.csv",
@@ -25,7 +25,8 @@ window.ATLAS_STATE = {
     "verdict": "D9_ENDPOINT_ROBUSTNESS_STRICT_PASS",
     "topology": "3_INDEPENDENT_ISLANDS_NO_TOUCH",
     "production_candidate": "11_16_endpoint_01",
-    "production_candidate_name": "seed2042_improved_v1"
+    "production_candidate_name": "seed2042_improved_v1",
+    "task_breadth_warning": "validated tiles are smooth+accuracy specialist endpoints; not general-purpose"
   },
   "tiles": [
     {
@@ -104,7 +105,9 @@ window.ATLAS_STATE = {
       "validated_positive_rate": 1.0,
       "validated_pass_strict": true,
       "validated_endpoint_id": "11_16_endpoint_01",
-      "validated_n_seeds": 30
+      "validated_n_seeds": 30,
+      "task_breadth": "specialist",
+      "task_breadth_note": "smooth+accuracy specialist; degrades on unigram (D9.0z)"
     },
     {
       "tile_id": "9_26",
@@ -182,7 +185,9 @@ window.ATLAS_STATE = {
       "validated_positive_rate": 0.9666666666666667,
       "validated_pass_strict": true,
       "validated_endpoint_id": "9_26_endpoint_03",
-      "validated_n_seeds": 30
+      "validated_n_seeds": 30,
+      "task_breadth": "specialist",
+      "task_breadth_note": "smooth+accuracy specialist; degrades on unigram (D9.0z)"
     },
     {
       "tile_id": "12_29",
@@ -260,7 +265,9 @@ window.ATLAS_STATE = {
       "validated_positive_rate": 1.0,
       "validated_pass_strict": true,
       "validated_endpoint_id": "12_29_endpoint_04",
-      "validated_n_seeds": 30
+      "validated_n_seeds": 30,
+      "task_breadth": "specialist",
+      "task_breadth_note": "smooth+accuracy specialist; degrades on unigram (D9.0z)"
     },
     {
       "tile_id": "7_16",
@@ -338,7 +345,9 @@ window.ATLAS_STATE = {
       "validated_positive_rate": null,
       "validated_pass_strict": false,
       "validated_endpoint_id": null,
-      "validated_n_seeds": null
+      "validated_n_seeds": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "9_17",
@@ -416,7 +425,9 @@ window.ATLAS_STATE = {
       "validated_positive_rate": null,
       "validated_pass_strict": false,
       "validated_endpoint_id": null,
-      "validated_n_seeds": null
+      "validated_n_seeds": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "3_7",
@@ -494,7 +505,9 @@ window.ATLAS_STATE = {
       "validated_positive_rate": null,
       "validated_pass_strict": false,
       "validated_endpoint_id": null,
-      "validated_n_seeds": null
+      "validated_n_seeds": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "9_31",
@@ -572,7 +585,9 @@ window.ATLAS_STATE = {
       "validated_positive_rate": null,
       "validated_pass_strict": false,
       "validated_endpoint_id": null,
-      "validated_n_seeds": null
+      "validated_n_seeds": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "12_15",
@@ -650,7 +665,9 @@ window.ATLAS_STATE = {
       "validated_positive_rate": null,
       "validated_pass_strict": false,
       "validated_endpoint_id": null,
-      "validated_n_seeds": null
+      "validated_n_seeds": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "12_22",
@@ -728,7 +745,9 @@ window.ATLAS_STATE = {
       "validated_positive_rate": null,
       "validated_pass_strict": false,
       "validated_endpoint_id": null,
-      "validated_n_seeds": null
+      "validated_n_seeds": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "8_7",
@@ -806,7 +825,9 @@ window.ATLAS_STATE = {
       "validated_positive_rate": null,
       "validated_pass_strict": false,
       "validated_endpoint_id": null,
-      "validated_n_seeds": null
+      "validated_n_seeds": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "10_29",
@@ -884,7 +905,9 @@ window.ATLAS_STATE = {
       "validated_positive_rate": null,
       "validated_pass_strict": false,
       "validated_endpoint_id": null,
-      "validated_n_seeds": null
+      "validated_n_seeds": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "8_10",
@@ -962,7 +985,9 @@ window.ATLAS_STATE = {
       "validated_positive_rate": null,
       "validated_pass_strict": false,
       "validated_endpoint_id": null,
-      "validated_n_seeds": null
+      "validated_n_seeds": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "4_17",
@@ -1040,7 +1065,9 @@ window.ATLAS_STATE = {
       "validated_positive_rate": null,
       "validated_pass_strict": false,
       "validated_endpoint_id": null,
-      "validated_n_seeds": null
+      "validated_n_seeds": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "15_5",
@@ -1118,7 +1145,9 @@ window.ATLAS_STATE = {
       "validated_positive_rate": null,
       "validated_pass_strict": false,
       "validated_endpoint_id": null,
-      "validated_n_seeds": null
+      "validated_n_seeds": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "13_10",
@@ -1196,7 +1225,9 @@ window.ATLAS_STATE = {
       "validated_positive_rate": null,
       "validated_pass_strict": false,
       "validated_endpoint_id": null,
-      "validated_n_seeds": null
+      "validated_n_seeds": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "11_1",
@@ -1274,7 +1305,9 @@ window.ATLAS_STATE = {
       "validated_positive_rate": null,
       "validated_pass_strict": false,
       "validated_endpoint_id": null,
-      "validated_n_seeds": null
+      "validated_n_seeds": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "8_8",
@@ -1352,7 +1385,9 @@ window.ATLAS_STATE = {
       "validated_positive_rate": null,
       "validated_pass_strict": false,
       "validated_endpoint_id": null,
-      "validated_n_seeds": null
+      "validated_n_seeds": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "7_1",
@@ -1430,7 +1465,9 @@ window.ATLAS_STATE = {
       "validated_positive_rate": null,
       "validated_pass_strict": false,
       "validated_endpoint_id": null,
-      "validated_n_seeds": null
+      "validated_n_seeds": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "12_19",
@@ -1508,7 +1545,9 @@ window.ATLAS_STATE = {
       "validated_positive_rate": null,
       "validated_pass_strict": false,
       "validated_endpoint_id": null,
-      "validated_n_seeds": null
+      "validated_n_seeds": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "9_16",
@@ -1586,7 +1625,9 @@ window.ATLAS_STATE = {
       "validated_positive_rate": null,
       "validated_pass_strict": false,
       "validated_endpoint_id": null,
-      "validated_n_seeds": null
+      "validated_n_seeds": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "0_0",
@@ -1656,7 +1697,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "0_1",
@@ -1726,7 +1769,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "0_2",
@@ -1796,7 +1841,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "0_3",
@@ -1866,7 +1913,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "0_4",
@@ -1936,7 +1985,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "0_5",
@@ -2006,7 +2057,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "0_6",
@@ -2076,7 +2129,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "0_7",
@@ -2146,7 +2201,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "0_8",
@@ -2216,7 +2273,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "0_9",
@@ -2286,7 +2345,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "0_10",
@@ -2356,7 +2417,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "0_11",
@@ -2426,7 +2489,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "0_12",
@@ -2496,7 +2561,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "0_13",
@@ -2566,7 +2633,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "0_14",
@@ -2636,7 +2705,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "0_15",
@@ -2706,7 +2777,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "0_16",
@@ -2776,7 +2849,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "0_17",
@@ -2846,7 +2921,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "0_18",
@@ -2916,7 +2993,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "0_19",
@@ -2986,7 +3065,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "0_20",
@@ -3056,7 +3137,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "0_21",
@@ -3126,7 +3209,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "0_22",
@@ -3196,7 +3281,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "0_23",
@@ -3266,7 +3353,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "0_24",
@@ -3336,7 +3425,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "0_25",
@@ -3406,7 +3497,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "0_26",
@@ -3476,7 +3569,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "0_27",
@@ -3546,7 +3641,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "0_28",
@@ -3616,7 +3713,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "0_29",
@@ -3686,7 +3785,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "0_30",
@@ -3756,7 +3857,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "0_31",
@@ -3826,7 +3929,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "1_0",
@@ -3896,7 +4001,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "1_1",
@@ -3966,7 +4073,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "1_2",
@@ -4036,7 +4145,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "1_3",
@@ -4106,7 +4217,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "1_4",
@@ -4176,7 +4289,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "1_5",
@@ -4246,7 +4361,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "1_6",
@@ -4316,7 +4433,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "1_7",
@@ -4386,7 +4505,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "1_8",
@@ -4456,7 +4577,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "1_9",
@@ -4526,7 +4649,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "1_10",
@@ -4596,7 +4721,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "1_11",
@@ -4666,7 +4793,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "1_12",
@@ -4736,7 +4865,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "1_13",
@@ -4806,7 +4937,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "1_14",
@@ -4876,7 +5009,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "1_15",
@@ -4946,7 +5081,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "1_16",
@@ -5016,7 +5153,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "1_17",
@@ -5086,7 +5225,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "1_18",
@@ -5156,7 +5297,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "1_19",
@@ -5226,7 +5369,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "1_20",
@@ -5296,7 +5441,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "1_21",
@@ -5366,7 +5513,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "1_22",
@@ -5436,7 +5585,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "1_23",
@@ -5506,7 +5657,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "1_24",
@@ -5576,7 +5729,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "1_25",
@@ -5646,7 +5801,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "1_26",
@@ -5716,7 +5873,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "1_27",
@@ -5786,7 +5945,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "1_28",
@@ -5856,7 +6017,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "1_29",
@@ -5926,7 +6089,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "1_30",
@@ -5996,7 +6161,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "1_31",
@@ -6066,7 +6233,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "2_0",
@@ -6136,7 +6305,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "2_1",
@@ -6206,7 +6377,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "2_2",
@@ -6276,7 +6449,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "2_3",
@@ -6346,7 +6521,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "2_4",
@@ -6416,7 +6593,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "2_5",
@@ -6486,7 +6665,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "2_6",
@@ -6556,7 +6737,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "2_7",
@@ -6626,7 +6809,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "2_8",
@@ -6696,7 +6881,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "2_9",
@@ -6766,7 +6953,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "2_10",
@@ -6836,7 +7025,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "2_11",
@@ -6906,7 +7097,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "2_12",
@@ -6976,7 +7169,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "2_13",
@@ -7046,7 +7241,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "2_14",
@@ -7116,7 +7313,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "2_15",
@@ -7186,7 +7385,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "2_16",
@@ -7256,7 +7457,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "2_17",
@@ -7326,7 +7529,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "2_18",
@@ -7396,7 +7601,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "2_19",
@@ -7466,7 +7673,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "2_20",
@@ -7536,7 +7745,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "2_21",
@@ -7606,7 +7817,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "2_22",
@@ -7676,7 +7889,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "2_23",
@@ -7746,7 +7961,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "2_24",
@@ -7816,7 +8033,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "2_25",
@@ -7886,7 +8105,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "2_26",
@@ -7956,7 +8177,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "2_27",
@@ -8026,7 +8249,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "2_28",
@@ -8096,7 +8321,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "2_29",
@@ -8166,7 +8393,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "2_30",
@@ -8236,7 +8465,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "2_31",
@@ -8306,7 +8537,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "3_0",
@@ -8376,7 +8609,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "3_1",
@@ -8446,7 +8681,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "3_2",
@@ -8516,7 +8753,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "3_3",
@@ -8586,7 +8825,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "3_4",
@@ -8656,7 +8897,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "3_5",
@@ -8726,7 +8969,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "3_6",
@@ -8796,7 +9041,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "3_8",
@@ -8866,7 +9113,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "3_9",
@@ -8936,7 +9185,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "3_10",
@@ -9006,7 +9257,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "3_11",
@@ -9076,7 +9329,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "3_12",
@@ -9146,7 +9401,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "3_13",
@@ -9216,7 +9473,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "3_14",
@@ -9286,7 +9545,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "3_15",
@@ -9356,7 +9617,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "3_16",
@@ -9426,7 +9689,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "3_17",
@@ -9496,7 +9761,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "3_18",
@@ -9566,7 +9833,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "3_19",
@@ -9636,7 +9905,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "3_20",
@@ -9706,7 +9977,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "3_21",
@@ -9776,7 +10049,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "3_22",
@@ -9846,7 +10121,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "3_23",
@@ -9916,7 +10193,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "3_24",
@@ -9986,7 +10265,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "3_25",
@@ -10056,7 +10337,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "3_26",
@@ -10126,7 +10409,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "3_27",
@@ -10196,7 +10481,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "3_28",
@@ -10266,7 +10553,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "3_29",
@@ -10336,7 +10625,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "3_30",
@@ -10406,7 +10697,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "3_31",
@@ -10476,7 +10769,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "4_0",
@@ -10546,7 +10841,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "4_1",
@@ -10616,7 +10913,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "4_2",
@@ -10686,7 +10985,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "4_3",
@@ -10756,7 +11057,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "4_4",
@@ -10826,7 +11129,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "4_5",
@@ -10896,7 +11201,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "4_6",
@@ -10966,7 +11273,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "4_7",
@@ -11036,7 +11345,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "4_8",
@@ -11106,7 +11417,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "4_9",
@@ -11176,7 +11489,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "4_10",
@@ -11246,7 +11561,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "4_11",
@@ -11316,7 +11633,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "4_12",
@@ -11386,7 +11705,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "4_13",
@@ -11456,7 +11777,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "4_14",
@@ -11526,7 +11849,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "4_15",
@@ -11596,7 +11921,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "4_16",
@@ -11666,7 +11993,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "4_18",
@@ -11736,7 +12065,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "4_19",
@@ -11806,7 +12137,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "4_20",
@@ -11876,7 +12209,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "4_21",
@@ -11946,7 +12281,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "4_22",
@@ -12016,7 +12353,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "4_23",
@@ -12086,7 +12425,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "4_24",
@@ -12156,7 +12497,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "4_25",
@@ -12226,7 +12569,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "4_26",
@@ -12296,7 +12641,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "4_27",
@@ -12366,7 +12713,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "4_28",
@@ -12436,7 +12785,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "4_29",
@@ -12506,7 +12857,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "4_30",
@@ -12576,7 +12929,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "4_31",
@@ -12646,7 +13001,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "5_0",
@@ -12716,7 +13073,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "5_1",
@@ -12786,7 +13145,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "5_2",
@@ -12856,7 +13217,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "5_3",
@@ -12926,7 +13289,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "5_4",
@@ -12996,7 +13361,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "5_5",
@@ -13066,7 +13433,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "5_6",
@@ -13136,7 +13505,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "5_7",
@@ -13206,7 +13577,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "5_8",
@@ -13276,7 +13649,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "5_9",
@@ -13346,7 +13721,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "5_10",
@@ -13416,7 +13793,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "5_11",
@@ -13486,7 +13865,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "5_12",
@@ -13556,7 +13937,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "5_13",
@@ -13626,7 +14009,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "5_14",
@@ -13696,7 +14081,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "5_15",
@@ -13766,7 +14153,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "5_16",
@@ -13836,7 +14225,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "5_17",
@@ -13906,7 +14297,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "5_18",
@@ -13976,7 +14369,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "5_19",
@@ -14046,7 +14441,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "5_20",
@@ -14116,7 +14513,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "5_21",
@@ -14186,7 +14585,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "5_22",
@@ -14256,7 +14657,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "5_23",
@@ -14326,7 +14729,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "5_24",
@@ -14396,7 +14801,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "5_25",
@@ -14466,7 +14873,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "5_26",
@@ -14536,7 +14945,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "5_27",
@@ -14606,7 +15017,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "5_28",
@@ -14676,7 +15089,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "5_29",
@@ -14746,7 +15161,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "5_30",
@@ -14816,7 +15233,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "5_31",
@@ -14886,7 +15305,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "6_0",
@@ -14956,7 +15377,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "6_1",
@@ -15026,7 +15449,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "6_2",
@@ -15096,7 +15521,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "6_3",
@@ -15166,7 +15593,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "6_4",
@@ -15236,7 +15665,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "6_5",
@@ -15306,7 +15737,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "6_6",
@@ -15376,7 +15809,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "6_7",
@@ -15446,7 +15881,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "6_8",
@@ -15516,7 +15953,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "6_9",
@@ -15586,7 +16025,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "6_10",
@@ -15656,7 +16097,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "6_11",
@@ -15726,7 +16169,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "6_12",
@@ -15796,7 +16241,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "6_13",
@@ -15866,7 +16313,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "6_14",
@@ -15936,7 +16385,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "6_15",
@@ -16006,7 +16457,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "6_16",
@@ -16076,7 +16529,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "6_17",
@@ -16146,7 +16601,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "6_18",
@@ -16216,7 +16673,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "6_19",
@@ -16286,7 +16745,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "6_20",
@@ -16356,7 +16817,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "6_21",
@@ -16426,7 +16889,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "6_22",
@@ -16496,7 +16961,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "6_23",
@@ -16566,7 +17033,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "6_24",
@@ -16636,7 +17105,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "6_25",
@@ -16706,7 +17177,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "6_26",
@@ -16776,7 +17249,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "6_27",
@@ -16846,7 +17321,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "6_28",
@@ -16916,7 +17393,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "6_29",
@@ -16986,7 +17465,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "6_30",
@@ -17056,7 +17537,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "6_31",
@@ -17126,7 +17609,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "7_0",
@@ -17196,7 +17681,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "7_2",
@@ -17266,7 +17753,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "7_3",
@@ -17336,7 +17825,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "7_4",
@@ -17406,7 +17897,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "7_5",
@@ -17476,7 +17969,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "7_6",
@@ -17546,7 +18041,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "7_7",
@@ -17616,7 +18113,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "7_8",
@@ -17686,7 +18185,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "7_9",
@@ -17756,7 +18257,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "7_10",
@@ -17826,7 +18329,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "7_11",
@@ -17896,7 +18401,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "7_12",
@@ -17966,7 +18473,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "7_13",
@@ -18036,7 +18545,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "7_14",
@@ -18106,7 +18617,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "7_15",
@@ -18176,7 +18689,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "7_17",
@@ -18246,7 +18761,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "7_18",
@@ -18316,7 +18833,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "7_19",
@@ -18386,7 +18905,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "7_20",
@@ -18456,7 +18977,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "7_21",
@@ -18526,7 +19049,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "7_22",
@@ -18596,7 +19121,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "7_23",
@@ -18666,7 +19193,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "7_24",
@@ -18736,7 +19265,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "7_25",
@@ -18806,7 +19337,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "7_26",
@@ -18876,7 +19409,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "7_27",
@@ -18946,7 +19481,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "7_28",
@@ -19016,7 +19553,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "7_29",
@@ -19086,7 +19625,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "7_30",
@@ -19156,7 +19697,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "7_31",
@@ -19226,7 +19769,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "8_0",
@@ -19296,7 +19841,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "8_1",
@@ -19366,7 +19913,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "8_2",
@@ -19436,7 +19985,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "8_3",
@@ -19506,7 +20057,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "8_4",
@@ -19576,7 +20129,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "8_5",
@@ -19646,7 +20201,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "8_6",
@@ -19716,7 +20273,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "8_9",
@@ -19786,7 +20345,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "8_11",
@@ -19856,7 +20417,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "8_12",
@@ -19926,7 +20489,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "8_13",
@@ -19996,7 +20561,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "8_14",
@@ -20066,7 +20633,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "8_15",
@@ -20136,7 +20705,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "8_16",
@@ -20206,7 +20777,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "8_17",
@@ -20276,7 +20849,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "8_18",
@@ -20346,7 +20921,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "8_19",
@@ -20416,7 +20993,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "8_20",
@@ -20486,7 +21065,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "8_21",
@@ -20556,7 +21137,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "8_22",
@@ -20626,7 +21209,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "8_23",
@@ -20696,7 +21281,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "8_24",
@@ -20766,7 +21353,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "8_25",
@@ -20836,7 +21425,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "8_26",
@@ -20906,7 +21497,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "8_27",
@@ -20976,7 +21569,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "8_28",
@@ -21046,7 +21641,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "8_29",
@@ -21116,7 +21713,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "8_30",
@@ -21186,7 +21785,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "8_31",
@@ -21256,7 +21857,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "9_0",
@@ -21326,7 +21929,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "9_1",
@@ -21396,7 +22001,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "9_2",
@@ -21466,7 +22073,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "9_3",
@@ -21536,7 +22145,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "9_4",
@@ -21606,7 +22217,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "9_5",
@@ -21676,7 +22289,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "9_6",
@@ -21746,7 +22361,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "9_7",
@@ -21816,7 +22433,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "9_8",
@@ -21886,7 +22505,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "9_9",
@@ -21956,7 +22577,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "9_10",
@@ -22026,7 +22649,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "9_11",
@@ -22096,7 +22721,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "9_12",
@@ -22166,7 +22793,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "9_13",
@@ -22236,7 +22865,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "9_14",
@@ -22306,7 +22937,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "9_15",
@@ -22376,7 +23009,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "9_18",
@@ -22446,7 +23081,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "9_19",
@@ -22516,7 +23153,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "9_20",
@@ -22586,7 +23225,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "9_21",
@@ -22656,7 +23297,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "9_22",
@@ -22726,7 +23369,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "9_23",
@@ -22796,7 +23441,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "9_24",
@@ -22866,7 +23513,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "9_25",
@@ -22936,7 +23585,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "9_27",
@@ -23006,7 +23657,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "9_28",
@@ -23076,7 +23729,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "9_29",
@@ -23146,7 +23801,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "9_30",
@@ -23216,7 +23873,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "10_0",
@@ -23286,7 +23945,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "10_1",
@@ -23356,7 +24017,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "10_2",
@@ -23426,7 +24089,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "10_3",
@@ -23496,7 +24161,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "10_4",
@@ -23566,7 +24233,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "10_5",
@@ -23636,7 +24305,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "10_6",
@@ -23706,7 +24377,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "10_7",
@@ -23776,7 +24449,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "10_8",
@@ -23846,7 +24521,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "10_9",
@@ -23916,7 +24593,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "10_10",
@@ -23986,7 +24665,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "10_11",
@@ -24056,7 +24737,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "10_12",
@@ -24126,7 +24809,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "10_13",
@@ -24196,7 +24881,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "10_14",
@@ -24266,7 +24953,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "10_15",
@@ -24336,7 +25025,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "10_16",
@@ -24406,7 +25097,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "10_17",
@@ -24476,7 +25169,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "10_18",
@@ -24546,7 +25241,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "10_19",
@@ -24616,7 +25313,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "10_20",
@@ -24686,7 +25385,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "10_21",
@@ -24756,7 +25457,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "10_22",
@@ -24826,7 +25529,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "10_23",
@@ -24896,7 +25601,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "10_24",
@@ -24966,7 +25673,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "10_25",
@@ -25036,7 +25745,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "10_26",
@@ -25106,7 +25817,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "10_27",
@@ -25176,7 +25889,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "10_28",
@@ -25246,7 +25961,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "10_30",
@@ -25316,7 +26033,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "10_31",
@@ -25386,7 +26105,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "11_0",
@@ -25456,7 +26177,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "11_2",
@@ -25526,7 +26249,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "11_3",
@@ -25596,7 +26321,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "11_4",
@@ -25666,7 +26393,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "11_5",
@@ -25736,7 +26465,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "11_6",
@@ -25806,7 +26537,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "11_7",
@@ -25876,7 +26609,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "11_8",
@@ -25946,7 +26681,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "11_9",
@@ -26016,7 +26753,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "11_10",
@@ -26086,7 +26825,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "11_11",
@@ -26156,7 +26897,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "11_12",
@@ -26226,7 +26969,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "11_13",
@@ -26296,7 +27041,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "11_14",
@@ -26366,7 +27113,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "11_15",
@@ -26436,7 +27185,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "11_17",
@@ -26506,7 +27257,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "11_18",
@@ -26576,7 +27329,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "11_19",
@@ -26646,7 +27401,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "11_20",
@@ -26716,7 +27473,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "11_21",
@@ -26786,7 +27545,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "11_22",
@@ -26856,7 +27617,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "11_23",
@@ -26926,7 +27689,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "11_24",
@@ -26996,7 +27761,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "11_25",
@@ -27066,7 +27833,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "11_26",
@@ -27136,7 +27905,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "11_27",
@@ -27206,7 +27977,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "11_28",
@@ -27276,7 +28049,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "11_29",
@@ -27346,7 +28121,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "11_30",
@@ -27416,7 +28193,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "11_31",
@@ -27486,7 +28265,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "12_0",
@@ -27556,7 +28337,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "12_1",
@@ -27626,7 +28409,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "12_2",
@@ -27696,7 +28481,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "12_3",
@@ -27766,7 +28553,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "12_4",
@@ -27836,7 +28625,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "12_5",
@@ -27906,7 +28697,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "12_6",
@@ -27976,7 +28769,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "12_7",
@@ -28046,7 +28841,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "12_8",
@@ -28116,7 +28913,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "12_9",
@@ -28186,7 +28985,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "12_10",
@@ -28256,7 +29057,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "12_11",
@@ -28326,7 +29129,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "12_12",
@@ -28396,7 +29201,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "12_13",
@@ -28466,7 +29273,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "12_14",
@@ -28536,7 +29345,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "12_16",
@@ -28606,7 +29417,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "12_17",
@@ -28676,7 +29489,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "12_18",
@@ -28746,7 +29561,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "12_20",
@@ -28816,7 +29633,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "12_21",
@@ -28886,7 +29705,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "12_23",
@@ -28956,7 +29777,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "12_24",
@@ -29026,7 +29849,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "12_25",
@@ -29096,7 +29921,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "12_26",
@@ -29166,7 +29993,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "12_27",
@@ -29236,7 +30065,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "12_28",
@@ -29306,7 +30137,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "12_30",
@@ -29376,7 +30209,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "12_31",
@@ -29446,7 +30281,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "13_0",
@@ -29516,7 +30353,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "13_1",
@@ -29586,7 +30425,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "13_2",
@@ -29656,7 +30497,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "13_3",
@@ -29726,7 +30569,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "13_4",
@@ -29796,7 +30641,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "13_5",
@@ -29866,7 +30713,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "13_6",
@@ -29936,7 +30785,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "13_7",
@@ -30006,7 +30857,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "13_8",
@@ -30076,7 +30929,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "13_9",
@@ -30146,7 +31001,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "13_11",
@@ -30216,7 +31073,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "13_12",
@@ -30286,7 +31145,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "13_13",
@@ -30356,7 +31217,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "13_14",
@@ -30426,7 +31289,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "13_15",
@@ -30496,7 +31361,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "13_16",
@@ -30566,7 +31433,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "13_17",
@@ -30636,7 +31505,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "13_18",
@@ -30706,7 +31577,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "13_19",
@@ -30776,7 +31649,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "13_20",
@@ -30846,7 +31721,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "13_21",
@@ -30916,7 +31793,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "13_22",
@@ -30986,7 +31865,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "13_23",
@@ -31056,7 +31937,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "13_24",
@@ -31126,7 +32009,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "13_25",
@@ -31196,7 +32081,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "13_26",
@@ -31266,7 +32153,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "13_27",
@@ -31336,7 +32225,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "13_28",
@@ -31406,7 +32297,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "13_29",
@@ -31476,7 +32369,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "13_30",
@@ -31546,7 +32441,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "13_31",
@@ -31616,7 +32513,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "14_0",
@@ -31686,7 +32585,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "14_1",
@@ -31756,7 +32657,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "14_2",
@@ -31826,7 +32729,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "14_3",
@@ -31896,7 +32801,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "14_4",
@@ -31966,7 +32873,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "14_5",
@@ -32036,7 +32945,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "14_6",
@@ -32106,7 +33017,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "14_7",
@@ -32176,7 +33089,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "14_8",
@@ -32246,7 +33161,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "14_9",
@@ -32316,7 +33233,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "14_10",
@@ -32386,7 +33305,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "14_11",
@@ -32456,7 +33377,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "14_12",
@@ -32526,7 +33449,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "14_13",
@@ -32596,7 +33521,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "14_14",
@@ -32666,7 +33593,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "14_15",
@@ -32736,7 +33665,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "14_16",
@@ -32806,7 +33737,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "14_17",
@@ -32876,7 +33809,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "14_18",
@@ -32946,7 +33881,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "14_19",
@@ -33016,7 +33953,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "14_20",
@@ -33086,7 +34025,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "14_21",
@@ -33156,7 +34097,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "14_22",
@@ -33226,7 +34169,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "14_23",
@@ -33296,7 +34241,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "14_24",
@@ -33366,7 +34313,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "14_25",
@@ -33436,7 +34385,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "14_26",
@@ -33506,7 +34457,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "14_27",
@@ -33576,7 +34529,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "14_28",
@@ -33646,7 +34601,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "14_29",
@@ -33716,7 +34673,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "14_30",
@@ -33786,7 +34745,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "14_31",
@@ -33856,7 +34817,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "15_0",
@@ -33926,7 +34889,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "15_1",
@@ -33996,7 +34961,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "15_2",
@@ -34066,7 +35033,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "15_3",
@@ -34136,7 +35105,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "15_4",
@@ -34206,7 +35177,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "15_6",
@@ -34276,7 +35249,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "15_7",
@@ -34346,7 +35321,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "15_8",
@@ -34416,7 +35393,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "15_9",
@@ -34486,7 +35465,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "15_10",
@@ -34556,7 +35537,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "15_11",
@@ -34626,7 +35609,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "15_12",
@@ -34696,7 +35681,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "15_13",
@@ -34766,7 +35753,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "15_14",
@@ -34836,7 +35825,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "15_15",
@@ -34906,7 +35897,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "15_16",
@@ -34976,7 +35969,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "15_17",
@@ -35046,7 +36041,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "15_18",
@@ -35116,7 +36113,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "15_19",
@@ -35186,7 +36185,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "15_20",
@@ -35256,7 +36257,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "15_21",
@@ -35326,7 +36329,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "15_22",
@@ -35396,7 +36401,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "15_23",
@@ -35466,7 +36473,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "15_24",
@@ -35536,7 +36545,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "15_25",
@@ -35606,7 +36617,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "15_26",
@@ -35676,7 +36689,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "15_27",
@@ -35746,7 +36761,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "15_28",
@@ -35816,7 +36833,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "15_29",
@@ -35886,7 +36905,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "15_30",
@@ -35956,7 +36977,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     },
     {
       "tile_id": "15_31",
@@ -36026,7 +37049,9 @@ window.ATLAS_STATE = {
       "mean_final_delta": null,
       "flat_rate": null,
       "early_plateau_rate": null,
-      "late_plateau_rate": null
+      "late_plateau_rate": null,
+      "task_breadth": null,
+      "task_breadth_note": null
     }
   ],
   "queue": [

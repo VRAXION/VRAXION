@@ -5,6 +5,39 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [5.0.0-beta.7] - 2026-04-29
+
+### Added — 2026-04-28/29: Phase D9 direct-genome landscape audit + `seed2042_improved_v1` smooth+accuracy specialist checkpoint
+
+Eight-run Phase D9 saga (D9.0n → D9.0o → D9.0q → D9.0r → D9.0s → D9.0v → D9.0w → D9.0x) audited the direct-genome landscape around H=384 seed2042 by paratrooper deepening, endpoint export+replay, basin-topology audit, linear-bridge falsification, perturbation-overlap probing, and a 30-seed × 3-eval-length robustness suite. The arc produces one validated specialist checkpoint, `seed2042_improved_v1`, that is **not** a general-purpose mainline replacement.
+
+**No-overclaim framing.** The candidate is a robust H=384 smooth-metric improvement (paired vs the seed2042 baseline) that also lifts paired direct accuracy, but it **regresses unigram behavior** and is **echo-neutral**. Per the D9.0z generalization gate, the correct claim is: "specialist on smooth+accuracy, not a finished general-purpose production checkpoint." Local repair (D9.1) gives only weak repair and cannot bridge the unigram gap.
+
+- **D9 direct-genome landscape audit framework** (`docs/research/PHASE_D9_DIRECT_GENOME_LANDSCAPE_AUDIT.md`): 600 rows × 1 base × radii {1, 4, 16} × probe modes {channel, edge, polarity, threshold} × 50 samples/cell. Type-split verdict (`D9_DIRECT_LANDSCAPE_TYPE_SPLIT`): channel + polarity classified `cliffy`; edge + threshold classified `rugged`. Visual atlas: `direct_landscape_atlas.html`, `sphere_landscape.html`, `sphere_tiles.csv`, plus `local_zone_heatmap.png`, `radius_score_delta_heatmap.png`, `cliff_rate_by_radius.png`, `per_type_radius_profiles.png`. D9.0b freezes projection and mutates only the persisted core genome.
+- **D9.0n → D9.0o → D9.0q paratrooper climb sequence**: D9.0n 100-step paratrooper at H=384 seed2042 confirmed a basin (`BASIN_CONFIRMED`); D9.0o 200-step deepening confirmed a mountain (`MOUNTAIN_CONFIRMED`); D9.0q 300-step long climb still climbing past 200 steps. New mountain-renderer states (`BASIN_CONFIRMED`, `DEEP_BASIN_CONFIRMED`, `MOUNTAIN_CONFIRMED`) added to the progressive-planet visualization state.
+- **D9.0r endpoint export + replay validation pipeline**: 8 endpoints exported across 4 source tiles. 7/8 retain ≥70% of the climb-time gain on fresh evaluation; 8/8 are positive vs the seed2042 baseline. Endpoint `11_16_endpoint_01` (the seed2042_improved_v1 source) and the next two best endpoints (`12_29_endpoint_04`, `9_26_endpoint_03`) all carried into the D9.0x robustness suite.
+- **D9.0s basin topology audit**: pairwise genome-distance ratio between the three positive-island tiles measured at 1.019 (essentially equidistant in genome space, not nested).
+- **D9.0v linear-bridge falsification**: 100 interior-point evaluations along a straight genome-space line between two positive endpoints. **0/100** interior points were positive — the basin is **not** a connected ridge; the straight-bridge hypothesis is falsified.
+- **D9.0w perturbation-overlap probe**: per-tile perturbation clouds do not touch in genome space. **3 independent local optima** are confirmed at H=384 seed2042; they are separated islands, not a connected basin.
+- **D9.0x endpoint robustness suite** (`output/phase_d9_0x_endpoint_robustness_20260429/D9_0X_ENDPOINT_ROBUSTNESS_REPORT.md`): 30 fresh seeds (910001..910030) × 3 eval lengths (1000, 4000, 16000), paired vs the seed2042 baseline. All 3 candidate endpoints pass the strict gate (`D9_ENDPOINT_ROBUSTNESS_STRICT_PASS`); top endpoint `11_16_endpoint_01` overall lower95 = **+0.01666** (n=90, mean +0.01699, positive_rate 100.0%, min_lower95_across_eval_lens +0.01581).
+- **D9.0y production-candidate confirmation** (`docs/research/PHASE_D9_PRODUCTION_CANDIDATE.md`): the exported candidate `seed2042_improved_v1` re-evaluates above the seed2042 baseline on independent fresh seeds (n=60 across eval_len ∈ {4000, 16000}, mean_delta +0.01733, lower95 +0.01714, positive_rate 100.0%). Verdict scoped to the smooth metric only; full multi-task gate deferred to D9.0z.
+- **D9.0z generalization gate** (`docs/research/PHASE_D9_GENERALIZATION_GATE.md`): verdict **`D9_SMOOTH_ONLY_WIN`**. Per-metric paired deltas (n=60 each): smooth +0.01733 (lower95 +0.01714, positive_rate 100.0%), accuracy +0.00455 (lower95 +0.00405, positive_rate 95.0%), echo −0.00009 (positive_rate 1.7%, neutral), unigram **−0.00882** (lower95 −0.00931, positive_rate 0.0%, regression). Decision: keep `seed2042_improved_v1` as the current best smooth/accuracy candidate; **do not** promote it as a broad generalization checkpoint.
+- **D9.1 local repair microprobe + confirm** (`docs/research/PHASE_D9_1_REPAIR_MICROPROBE.md`, `docs/research/PHASE_D9_1_REPAIR_CONFIRM.md`): local repair attempt produces only **weak** repair and cannot bridge the unigram task gap. The smooth+accuracy gain does not generalize to unigram by local search from this candidate.
+- **D9.0d progressive planet renderer with 5-tier basin hierarchy** (`tools/d9_0d_progressive_planet/`): 5-tier basin/mountain hierarchy and the new mountain-renderer state machine (`BASIN_CONFIRMED`, `DEEP_BASIN_CONFIRMED`, `MOUNTAIN_CONFIRMED`) used to visualize the D9.0n/o/q paratrooper climb. Renderer is owned by a parallel research line; landed at the same release boundary as the D9.0r-D9.0z verdicts.
+- **D9 open-threads citation audit** (`docs/research/PHASE_D9_OPEN_THREADS_CITATION_AUDIT.md`) + **D9.0 latent-decoder toy audit** (`docs/research/PHASE_D9_0_LATENT_DECODER_TOY_AUDIT.md`): supporting documents for the multi-task limit framing and the citation trail behind the D9 saga.
+
+### Changed — 2026-04-29: VALIDATED_FINDINGS Phase D9 entry + version metadata sync
+
+- **`VALIDATED_FINDINGS.md` Phase D9 section added**: new "Phase D9 direct-genome landscape + smooth+accuracy specialist (2026-04-28/29)" finding table covering the D9.0r-D9.0z arc, with each candidate row labeled `Validated finding (specialist)` and the D9.0v / D9.0w / D9.0z / D9.1 rows labeled `Validated finding (negative)` or `Validated finding (scope-limit)`. Explicit "no overclaim" framing in the section header. `_Last updated: 2026-04-29_` line bumped; "Released public tag" updated to `v5.0.0-beta.7`.
+- **Version metadata sync**: `Cargo.toml` (`5.0.0-beta.6` → `5.0.0-beta.7`), `Cargo.lock` (workspace package row regenerated by `cargo check -p instnct-core`), `CITATION.cff` (`version`, `date-released: 2026-04-29`), `docs/VERSION.json` (`current_release`), `README.md` (Release Snapshot block), `BETA.md` (released-tag cascade) all bumped.
+
+### Verification
+
+- `cargo test -p instnct-core --lib` — 197/197 unit tests pass on the workspace crate, no regressions vs the beta.6 baseline.
+- `cargo check -p instnct-core` — workspace compiles cleanly at the new version; `Cargo.lock` regenerated.
+
+This release is a research-line checkpoint. The current mainline code path on `main` remains the bias-free Rust grower (`neuron_grower.rs` + `run_grower_regression.py`); `seed2042_improved_v1` is published as a validated specialist finding, not as a replacement for the mainline grower or for the released beta.1 language runner.
+
 ## [5.0.0-beta.6] - 2026-04-28
 
 ### Changed — 2026-04-28: Phase D6/D7/D8 research-line checkpoint + wiki/HTML doc-drift correction

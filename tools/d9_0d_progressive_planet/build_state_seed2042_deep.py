@@ -140,14 +140,24 @@ def build_climbed_tile(row: dict, deep_row: dict | None = None, mountain_row: di
 
     if tile_id in TOP3_VALIDATED:
         state = "NETWORK_VALIDATED"
+        task_breadth = "specialist"
+        task_breadth_note = "smooth+accuracy specialist; degrades on unigram (D9.0z)"
     elif tile_id in TOP2_MOUNTAIN:
         state = "MOUNTAIN_CONFIRMED"
+        task_breadth = None
+        task_breadth_note = None
     elif tile_id in TOP3_DEEP:
         state = "DEEP_BASIN_CONFIRMED"
+        task_breadth = None
+        task_breadth_note = None
     elif tile_id in TOP4:
         state = "BASIN_CONFIRMED"
+        task_breadth = None
+        task_breadth_note = None
     else:
         state = "PROMISING"
+        task_breadth = None
+        task_breadth_note = None
 
     # cliff_rate as proxy: flat tiles are not cliffy, so risk-low.
     # confidence = saturation of climb sample count (cap 64).
@@ -230,6 +240,8 @@ def build_climbed_tile(row: dict, deep_row: dict | None = None, mountain_row: di
         "validated_pass_strict": robustness.get("validated_pass_strict") if robustness else False,
         "validated_endpoint_id": robustness.get("endpoint_id") if robustness else None,
         "validated_n_seeds": robustness.get("validated_n_seeds") if robustness else None,
+        "task_breadth": task_breadth,
+        "task_breadth_note": task_breadth_note,
     }
 
 
@@ -271,6 +283,8 @@ def build_unknown_tile(lat_bin: int, lon_bin: int) -> dict:
         "flat_rate": None,
         "early_plateau_rate": None,
         "late_plateau_rate": None,
+        "task_breadth": None,
+        "task_breadth_note": None,
     }
 
 
@@ -370,6 +384,7 @@ def main() -> int:
             "topology": "3_INDEPENDENT_ISLANDS_NO_TOUCH",
             "production_candidate": "11_16_endpoint_01",
             "production_candidate_name": "seed2042_improved_v1",
+            "task_breadth_warning": "validated tiles are smooth+accuracy specialist endpoints; not general-purpose",
         },
         "tiles": tiles,
         "queue": deepen_queue,
