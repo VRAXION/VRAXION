@@ -2,8 +2,8 @@ window.ATLAS_STATE = {
   "schema_version": "d9.0d-1",
   "run_id": "d9_2b_seed2042_full_generalist_confirmed",
   "source_run_id": "output/phase_d9_2b_multi_objective_confirm_20260429",
-  "generated_at_utc": "2026-04-29T17:16:10Z",
-  "last_updated": "2026-04-29T17:16:10Z",
+  "generated_at_utc": "2026-04-29T19:24:04Z",
+  "last_updated": "2026-04-29T19:24:04Z",
   "phase_status": "finished",
   "stop_clock_active": false,
   "source_samples_csv": "output/phase_d9_0q_seed2042_long_climb_20260429/paratrooper_paths.csv",
@@ -220,6 +220,14 @@ window.ATLAS_STATE = {
       "baseline_4cycles": 102440,
       "target_4cycles": 121138,
       "interpretation": "Edge wiring and threshold timing are co-adapted; ablating either group drops below baseline. Together they form a single integrated package."
+    },
+    "universality": {
+      "verdict": "NO_GENERAL_BASIN",
+      "level": "scout",
+      "checkpoints_tested": 5,
+      "strict_checkpoint_count": 0,
+      "rows": 100,
+      "interpretation": "D10a scout: edge+threshold recipe is seed2042-local \u2014 no other H=384 baseline produced strict generalist signal."
     }
   },
   "tiles": [

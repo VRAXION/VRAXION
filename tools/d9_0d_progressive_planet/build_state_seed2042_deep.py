@@ -29,6 +29,8 @@ SRC_2B = REPO / "output" / "phase_d9_2b_multi_objective_confirm_20260429"
 SRC_4A = REPO / "output" / "phase_d9_4a_causal_diff_smoke_20260429"
 SRC_4B_4000 = REPO / "output" / "phase_d9_4b_causal_diff_confirm_20260429" / "eval_len_4000"
 SRC_4B_16000 = REPO / "output" / "phase_d9_4b_causal_diff_confirm_20260429" / "eval_len_16000_sharded"
+SRC_10A = REPO / "output" / "phase_d10a_h384_seed_universality_20260429" / "scout"
+SRC_10B = REPO / "output" / "phase_d10b_h384_seed_replication_ladder_20260429" / "main"
 SUMMARY_CSV_N = SRC_N / "tile_deep_trajectory_summary.csv"
 SUMMARY_CSV_O = SRC_O / "tile_top3_deepening_summary.csv"
 SUMMARY_CSV_Q = SRC_Q / "tile_long_climb_summary.csv"
@@ -40,6 +42,8 @@ GENERALIST_CONFIRM_JSON = SRC_2B / "d9_2b_summary.json"
 CAUSAL_DIFF_JSON_16K = SRC_4B_16000 / "AGGREGATED_D9_4B_16K_SUMMARY.json"
 CAUSAL_DIFF_JSON_4K = SRC_4B_4000 / "genome_diff_summary.json"
 CAUSAL_DIFF_JSON_SMOKE = SRC_4A / "genome_diff_summary.json"
+UNIVERSALITY_SCOUT_JSON = SRC_10A / "run_summary.json"
+UNIVERSALITY_LADDER_JSON = SRC_10B / "run_summary.json"
 OUT_JS = REPO / "tools" / "d9_0d_progressive_planet" / "state.js"
 
 LAT_BINS = 16
@@ -117,6 +121,38 @@ def load_robustness() -> dict[str, dict]:
             "validated_eval_lens": [1000, 4000, 16000],
         }
     return by_tile
+
+
+def load_universality() -> dict | None:
+    """Load D10 universality verdict (D10a scout, optionally D10b ladder).
+
+    The scout verdict is `NO_GENERAL_BASIN` / `LOCAL_H384_BASIN_ONLY`,
+    meaning the edge+threshold recipe was found seed2042-local. D10b
+    ladder is a deeper falsification gate; it overrides scout when present.
+    """
+    path = None
+    level = None
+    if UNIVERSALITY_LADDER_JSON.exists():
+        path = UNIVERSALITY_LADDER_JSON
+        level = "ladder"
+    elif UNIVERSALITY_SCOUT_JSON.exists():
+        path = UNIVERSALITY_SCOUT_JSON
+        level = "scout"
+    else:
+        return None
+    blob = json.loads(path.read_text(encoding="utf-8"))
+    return {
+        "verdict": blob.get("verdict", "D10_UNIVERSALITY_UNKNOWN"),
+        "level": level,
+        "checkpoints_tested": len(blob.get("checkpoints", []) or []),
+        "strict_checkpoint_count": blob.get("strict_checkpoint_count", 0),
+        "rows": blob.get("rows", 0),
+        "interpretation": (
+            "D10a scout: edge+threshold recipe is seed2042-local — no other H=384 baseline produced strict generalist signal."
+            if level == "scout" else
+            "D10b deeper ladder result."
+        ),
+    }
 
 
 def load_causal_diff() -> dict | None:
@@ -488,6 +524,7 @@ def main() -> int:
     multi_objective = load_multi_objective()
     generalist_confirm = load_generalist_confirm()
     causal_diff = load_causal_diff()
+    universality = load_universality()
     climbed_tile_ids = {r["tile_id"] for r in rows}
 
     tiles = []
@@ -576,6 +613,7 @@ def main() -> int:
             "multi_objective_microprobe": multi_objective,
             "generalist_confirm": generalist_confirm,
             "causal_diff": causal_diff,
+            "universality": universality,
         },
         "tiles": tiles,
         "queue": deepen_queue,

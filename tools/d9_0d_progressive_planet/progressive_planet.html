@@ -97,6 +97,13 @@
     <div class="small" id="gen-tasks" style="color:#cfe6cf;font-size:10px;margin-top:2px"></div>
   </div>
 
+  <div id="universality-block" style="display:none;margin-top:8px;padding:7px 10px;border-radius:6px;background:rgba(255,176,90,.10);border:1px solid rgba(255,176,90,.40)">
+    <div class="small" id="univ-title" style="color:#ffb05a;font-weight:700">D10 Universality Test</div>
+    <div class="small" id="univ-verdict" style="color:#ffd9a8;margin-top:2px;font-weight:700"></div>
+    <div class="small" id="univ-stats" style="color:#e8caa3;margin-top:2px;font-size:11px"></div>
+    <div class="small" id="univ-interp" style="color:#a8b7ca;margin-top:3px;font-size:10px;font-style:italic"></div>
+  </div>
+
   <div id="causal-block" style="display:none;margin-top:8px;padding:7px 10px;border-radius:6px;background:rgba(186,140,255,.12);border:1px solid rgba(186,140,255,.45)">
     <div class="small" id="causal-title" style="color:#d4baff;font-weight:700">D9.4 Causal Diff</div>
     <div class="small" id="causal-verdict" style="color:#e8d6ff;margin-top:2px;font-weight:700"></div>
@@ -876,6 +883,25 @@ window.__INIT_RENDERER__ = function(){
       genBlock.style.display = "block";
     } else if (genBlock) {
       genBlock.style.display = "none";
+    }
+
+    // D10 Universality panel — does the recipe replicate on other H=384 seeds?
+    const univBlock = $("universality-block");
+    const univ = data.config && data.config.universality;
+    if (univBlock && univ) {
+      const levelLabel = univ.level === "ladder" ? "ladder (deep)" : "scout (preliminary)";
+      $("univ-title").textContent = "D10 Universality Test — " + levelLabel;
+      const isPositive = univ.verdict && univ.verdict.includes("REPLICABLE");
+      $("univ-verdict").style.color = isPositive ? "#9be58e" : "#ffb05a";
+      $("univ-verdict").textContent = "Verdict: " + univ.verdict;
+      $("univ-stats").textContent =
+        univ.checkpoints_tested + " checkpoints tested · " +
+        univ.strict_checkpoint_count + " produced strict generalist signal · " +
+        univ.rows + " rows scanned";
+      $("univ-interp").textContent = univ.interpretation || "";
+      univBlock.style.display = "block";
+    } else if (univBlock) {
+      univBlock.style.display = "none";
     }
 
     // D9.4a Causal Diff panel — explains WHY the generalist works.
