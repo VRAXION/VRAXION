@@ -98,8 +98,9 @@
   </div>
 
   <div id="causal-block" style="display:none;margin-top:8px;padding:7px 10px;border-radius:6px;background:rgba(186,140,255,.12);border:1px solid rgba(186,140,255,.45)">
-    <div class="small" style="color:#d4baff;font-weight:700">D9.4a Causal Diff (smoke)</div>
+    <div class="small" id="causal-title" style="color:#d4baff;font-weight:700">D9.4 Causal Diff</div>
     <div class="small" id="causal-verdict" style="color:#e8d6ff;margin-top:2px;font-weight:700"></div>
+    <div class="small" id="causal-target" style="color:#caffcb;margin-top:2px;font-size:11px;font-weight:600"></div>
     <div class="small" id="causal-diff-stats" style="color:#cfb8e8;margin-top:2px;font-size:11px"></div>
     <div class="small" id="causal-cycle-stats" style="color:#b8a3d4;margin-top:2px;font-size:10px"></div>
     <div class="small" id="causal-interp" style="color:#a8b7ca;margin-top:3px;font-size:10px;font-style:italic"></div>
@@ -885,9 +886,27 @@ window.__INIT_RENDERER__ = function(){
         : causal.verdict === "THRESHOLD_TIMING_DRIVER" ? "#ffd27d"
         : causal.verdict === "EDGE_WIRING_DRIVER" ? "#7ec8ff"
         : "#cfd6dc";
+      // Title shows the confirm-level so the user sees the upgrade path:
+      // smoke (1k, 2 seed) → 4k confirm (30 seed) → 16k confirm (30 seed).
+      const levelLabel = causal.level === "16k_confirm" ? "16k confirm — full"
+        : causal.level === "4k_confirm" ? "4k confirm — strong (16k pending)"
+        : "smoke — preliminary";
+      $("causal-title").textContent = "D9.4 Causal Diff — " + levelLabel;
       $("causal-verdict").style.color = verdictColor;
-      $("causal-verdict").textContent = "Verdict: " + causal.verdict +
-        (causal.level === "smoke" ? "  (smoke)" : "");
+      $("causal-verdict").textContent = "Verdict: " + causal.verdict;
+      // Show the target generalist deltas at this confirm level.
+      const fmt = (x) => (x == null ? "?" : (x >= 0 ? "+" : "") + Number(x).toFixed(5));
+      if (causal.target_smooth != null) {
+        $("causal-target").innerHTML =
+          "target: smooth " + fmt(causal.target_smooth) +
+          " · acc " + fmt(causal.target_accuracy) +
+          " · unigram " + fmt(causal.target_unigram) +
+          " · echo " + fmt(causal.target_echo) +
+          (causal.eval_len ? "  (eval_len=" + causal.eval_len +
+            ", " + (causal.n_eval_seeds || "?") + " seeds)" : "");
+      } else {
+        $("causal-target").textContent = "";
+      }
       const ea = causal.edges_added || 0, er = causal.edges_removed || 0,
         en = causal.edges_net || 0, tc = causal.thresholds_changed || 0;
       $("causal-diff-stats").textContent =

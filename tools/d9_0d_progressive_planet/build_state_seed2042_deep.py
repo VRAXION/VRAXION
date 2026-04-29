@@ -27,13 +27,19 @@ SRC_X = REPO / "output" / "phase_d9_0x_endpoint_robustness_20260429"
 SRC_2A = REPO / "output" / "phase_d9_2a_multi_objective_microprobe_20260429"
 SRC_2B = REPO / "output" / "phase_d9_2b_multi_objective_confirm_20260429"
 SRC_4A = REPO / "output" / "phase_d9_4a_causal_diff_smoke_20260429"
+SRC_4B_4000 = REPO / "output" / "phase_d9_4b_causal_diff_confirm_20260429" / "eval_len_4000"
+SRC_4B_16000 = REPO / "output" / "phase_d9_4b_causal_diff_confirm_20260429" / "eval_len_16000"
 SUMMARY_CSV_N = SRC_N / "tile_deep_trajectory_summary.csv"
 SUMMARY_CSV_O = SRC_O / "tile_top3_deepening_summary.csv"
 SUMMARY_CSV_Q = SRC_Q / "tile_long_climb_summary.csv"
 ROBUSTNESS_JSON = SRC_X / "d9_0x_robustness_summary.json"
 MULTI_OBJ_JSON = SRC_2A / "d9_2a_multi_objective_summary.json"
 GENERALIST_CONFIRM_JSON = SRC_2B / "d9_2b_summary.json"
-CAUSAL_DIFF_JSON = SRC_4A / "genome_diff_summary.json"
+# Priority: 16k confirm > 4k confirm > 1k smoke. Use the highest-quality
+# verdict that has been computed at the time of build.
+CAUSAL_DIFF_JSON_16K = SRC_4B_16000 / "genome_diff_summary.json"
+CAUSAL_DIFF_JSON_4K = SRC_4B_4000 / "genome_diff_summary.json"
+CAUSAL_DIFF_JSON_SMOKE = SRC_4A / "genome_diff_summary.json"
 OUT_JS = REPO / "tools" / "d9_0d_progressive_planet" / "state.js"
 
 LAT_BINS = 16
@@ -114,17 +120,37 @@ def load_robustness() -> dict[str, dict]:
 
 
 def load_causal_diff() -> dict | None:
-    """Load D9.4a causal-diff smoke summary (EDGE_THRESHOLD_COADAPTATION)."""
-    if not CAUSAL_DIFF_JSON.exists():
+    """Load D9.4 causal-diff summary at the highest-confirmed level available.
+
+    Priority: 16k confirm > 4k confirm > 1k smoke. Each level uses the same
+    JSON schema; only the eval_len, n_seeds, and verdict-confidence change.
+    """
+    if CAUSAL_DIFF_JSON_16K.exists():
+        path = CAUSAL_DIFF_JSON_16K
+        level = "16k_confirm"
+    elif CAUSAL_DIFF_JSON_4K.exists():
+        path = CAUSAL_DIFF_JSON_4K
+        level = "4k_confirm"
+    elif CAUSAL_DIFF_JSON_SMOKE.exists():
+        path = CAUSAL_DIFF_JSON_SMOKE
+        level = "smoke"
+    else:
         return None
-    blob = json.loads(CAUSAL_DIFF_JSON.read_text(encoding="utf-8"))
+    blob = json.loads(path.read_text(encoding="utf-8"))
     diff = blob.get("diff", {})
     cycles = blob.get("cycle_stats", {})
     base = cycles.get("baseline", {}) or {}
     targ = cycles.get("target", {}) or {}
+    target_scores = blob.get("target_scores", {}) or {}
     return {
         "verdict": blob.get("verdict", "D9_4_CAUSAL_UNKNOWN"),
-        "level": "smoke",
+        "level": level,
+        "eval_len": blob.get("eval_len"),
+        "n_eval_seeds": len(blob.get("eval_seeds", []) or []),
+        "target_smooth": target_scores.get("smooth_delta"),
+        "target_accuracy": target_scores.get("accuracy_delta"),
+        "target_unigram": target_scores.get("unigram_delta"),
+        "target_echo": target_scores.get("echo_delta"),
         "edges_added": diff.get("added_edges"),
         "edges_removed": diff.get("removed_edges"),
         "edges_net": diff.get("net_edge_delta"),
