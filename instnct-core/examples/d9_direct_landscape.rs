@@ -110,6 +110,7 @@ struct Cli {
     endpoint_eval_seeds: Vec<u64>,
     bridge_endpoints: Vec<PathBuf>,
     bridge_steps: usize,
+    overlap_samples: usize,
     out: PathBuf,
     seed: u64,
     eval_len: usize,
@@ -141,6 +142,7 @@ struct RunMeta {
     endpoint_eval_seeds: Option<Vec<u64>>,
     bridge_endpoints: Option<Vec<String>>,
     bridge_steps: Option<usize>,
+    overlap_samples: Option<usize>,
     radii: Vec<usize>,
     mutation_types: Vec<String>,
     checkpoints: Vec<String>,
@@ -242,6 +244,7 @@ fn parse_args() -> Cli {
     let mut endpoint_eval_seeds = vec![730_001u64, 730_002, 730_003, 730_004];
     let mut bridge_endpoints: Vec<PathBuf> = Vec::new();
     let mut bridge_steps = 10usize;
+    let mut overlap_samples = 64usize;
     let mut out = PathBuf::from("output/phase_d9_direct_genome_landscape_20260428");
     let mut seed = 90210u64;
     let mut eval_len = DEFAULT_EVAL_LEN;
@@ -394,6 +397,13 @@ fn parse_args() -> Cli {
                     .parse()
                     .expect("bridge-steps")
             }
+            "--overlap-samples" => {
+                overlap_samples = args
+                    .next()
+                    .expect("--overlap-samples value")
+                    .parse()
+                    .expect("overlap-samples")
+            }
             "--out" => out = PathBuf::from(args.next().expect("--out path")),
             "--seed" => seed = args.next().expect("--seed value").parse().expect("seed"),
             "--eval-len" => {
@@ -428,12 +438,12 @@ fn parse_args() -> Cli {
         "fail-fast" => vec![1],
         "medium" => vec![1, 4, 16],
         "full" | "staged" => vec![1, 2, 4, 8, 16, 32, 64, 128],
-        "planet-scout" | "homogeneous" | "paratrooper-climb" | "endpoint-bridge" => vec![1],
-        other => panic!("--mode expects fail-fast|medium|full|staged|planet-scout|paratrooper-climb|endpoint-bridge, got {other}"),
+        "planet-scout" | "homogeneous" | "paratrooper-climb" | "endpoint-bridge" | "endpoint-overlap" => vec![1],
+        other => panic!("--mode expects fail-fast|medium|full|staged|planet-scout|paratrooper-climb|endpoint-bridge|endpoint-overlap, got {other}"),
     };
     let default_mutation_types = if matches!(
         mode.as_str(),
-        "planet-scout" | "homogeneous" | "paratrooper-climb" | "endpoint-bridge"
+        "planet-scout" | "homogeneous" | "paratrooper-climb" | "endpoint-bridge" | "endpoint-overlap"
     ) {
         vec![MutationType::Edge, MutationType::Threshold]
     } else {
@@ -466,6 +476,7 @@ fn parse_args() -> Cli {
         endpoint_eval_seeds,
         bridge_endpoints,
         bridge_steps,
+        overlap_samples,
         out,
         seed,
         eval_len,
@@ -1635,6 +1646,113 @@ fn run_endpoint_bridge(
     writer.flush().expect("failed to flush bridge csv");
 }
 
+fn run_endpoint_overlap(
+    cli: &Cli,
+    table: &VcbpTable,
+    pair_ids: &[u16],
+    hot_to_idx: &[usize],
+    bigram: &[Vec<f64>],
+    unigram: &[f64],
+    init: &InitConfig,
+) {
+    assert!(
+        !cli.bridge_endpoints.is_empty(),
+        "--mode endpoint-overlap requires --bridge-endpoints"
+    );
+    let baseline_path = cli.checkpoints.first().expect("baseline checkpoint required");
+    let (baseline_net, baseline_proj, _) =
+        load_checkpoint(baseline_path).expect("failed to load baseline checkpoint");
+    let baseline_score = mean_endpoint_score(
+        cli,
+        &baseline_net,
+        &baseline_proj,
+        table,
+        pair_ids,
+        hot_to_idx,
+        bigram,
+        unigram,
+        init,
+    );
+
+    let mut endpoints = Vec::new();
+    for path in &cli.bridge_endpoints {
+        let (net, proj, _meta) = load_checkpoint(path).expect("failed to load overlap endpoint");
+        endpoints.push((path.display().to_string(), net, proj));
+    }
+    let endpoint_coords: Vec<_> = endpoints.iter().map(|(_, net, _)| encode_coord(net)).collect();
+
+    let path = cli.out.join("overlap_samples.csv");
+    let mut writer = BufWriter::new(File::create(&path).expect("failed to create overlap csv"));
+    writeln!(
+        writer,
+        "endpoint_index,endpoint_path,radius,sample_id,mutation_type,score,delta_vs_baseline,baseline_score,dist_to_source,nearest_other_endpoint,dist_to_nearest_other,positive"
+    )
+    .expect("failed to write overlap header");
+
+    for (endpoint_idx, (endpoint_path, endpoint_net, endpoint_proj)) in endpoints.iter().enumerate()
+    {
+        let source_coord = &endpoint_coords[endpoint_idx];
+        for &radius in &cli.radii {
+            for sample_id in 0..cli.overlap_samples {
+                let mutation_type =
+                    cli.mutation_types[sample_id % cli.mutation_types.len()];
+                let seed = cli.seed
+                    ^ ((endpoint_idx as u64) << 48)
+                    ^ ((radius as u64) << 32)
+                    ^ ((sample_id as u64) << 8)
+                    ^ 0xD90D_0AAAu64;
+                let mut sample_net = endpoint_net.clone();
+                let mut rng = StdRng::seed_from_u64(seed);
+                let _counts = apply_radius_mutation(&mut sample_net, radius, mutation_type, &mut rng);
+                let sample_coord = encode_coord(&sample_net);
+                let dist_to_source = coord_distance(source_coord, &sample_coord);
+                let mut nearest_other_endpoint = String::from("none");
+                let mut dist_to_nearest_other = usize::MAX;
+                for (other_idx, other_coord) in endpoint_coords.iter().enumerate() {
+                    if other_idx == endpoint_idx {
+                        continue;
+                    }
+                    let dist = coord_distance(&sample_coord, other_coord);
+                    if dist < dist_to_nearest_other {
+                        dist_to_nearest_other = dist;
+                        nearest_other_endpoint = (other_idx + 1).to_string();
+                    }
+                }
+                let score = mean_endpoint_score(
+                    cli,
+                    &sample_net,
+                    endpoint_proj,
+                    table,
+                    pair_ids,
+                    hot_to_idx,
+                    bigram,
+                    unigram,
+                    init,
+                );
+                let delta = score - baseline_score;
+                writeln!(
+                    writer,
+                    "{},\"{}\",{},{},{},{:.12},{:.12},{:.12},{},{},{},{}",
+                    endpoint_idx + 1,
+                    endpoint_path,
+                    radius,
+                    sample_id,
+                    mutation_type.as_str(),
+                    score,
+                    delta,
+                    baseline_score,
+                    dist_to_source,
+                    nearest_other_endpoint,
+                    dist_to_nearest_other,
+                    delta > 0.0
+                )
+                .expect("failed to write overlap row");
+            }
+        }
+    }
+    writer.flush().expect("failed to flush overlap csv");
+}
+
 fn main() {
     let cli = parse_args();
     create_dir_all(&cli.out).expect("failed to create output directory");
@@ -1707,6 +1825,19 @@ fn main() {
 
         if cli.mode == "endpoint-bridge" {
             run_endpoint_bridge(
+                &cli,
+                &table,
+                &pair_ids,
+                &hot_to_idx,
+                &bigram,
+                &unigram,
+                &init,
+            );
+            break;
+        }
+
+        if cli.mode == "endpoint-overlap" {
+            run_endpoint_overlap(
                 &cli,
                 &table,
                 &pair_ids,
@@ -2245,6 +2376,8 @@ fn main() {
             "D9.0i"
         } else if cli.mode == "endpoint-bridge" {
             "D9.0v"
+        } else if cli.mode == "endpoint-overlap" {
+            "D9.0w"
         } else if matches!(cli.mode.as_str(), "planet-scout" | "homogeneous") {
             "D9.0e"
         } else {
@@ -2289,6 +2422,7 @@ fn main() {
                 .collect(),
         ),
         bridge_steps: (cli.mode == "endpoint-bridge").then_some(cli.bridge_steps),
+        overlap_samples: (cli.mode == "endpoint-overlap").then_some(cli.overlap_samples),
         radii: cli.radii.clone(),
         mutation_types: cli
             .mutation_types
