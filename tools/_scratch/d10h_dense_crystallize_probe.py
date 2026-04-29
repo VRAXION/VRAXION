@@ -298,6 +298,15 @@ def classify_delta(d: EvalResult, args) -> str:
     return "WEAK_OR_BAD"
 
 
+def nearly_zero_delta(d: EvalResult, eps: float = 1e-9) -> bool:
+    return (
+        abs(d.smooth) <= eps
+        and abs(d.accuracy) <= eps
+        and abs(d.echo) <= eps
+        and abs(d.unigram) <= eps
+    )
+
+
 def write_csv(path: Path, fieldnames: list[str], rows: list[dict]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("w", newline="", encoding="utf-8") as f:
@@ -457,7 +466,7 @@ def run_density(
         f"edges={len(dense_net.sources)} d=[{start_delta.smooth:.5f},{start_delta.accuracy:.5f},{start_delta.echo:.5f},{start_delta.unigram:.5f}]",
         flush=True,
     )
-    if start_class == "CLIFF":
+    if start_class == "CLIFF" and not args.continue_after_cliff_start:
         return {
             "density": density,
             "verdict": "DENSE_START_CLIFF",
@@ -516,12 +525,21 @@ def run_density(
         selected = []
         selected_edges = 0
         for row in ranked:
-            acceptable = (
-                row["class"] in ("RETAINED", "NEAR_RETAINED")
-                and row["delta"].smooth >= current_delta.smooth - args.max_smooth_backtrack
-                and row["delta"].accuracy >= current_delta.accuracy - 0.0010
-                and row["delta"].unigram >= current_delta.unigram - 0.0025
-            )
+            if args.accept_relative_current:
+                acceptable = (
+                    row["delta_mo_vs_current"] >= args.min_current_mo_improve
+                    and row["delta"].smooth >= current_delta.smooth - args.max_smooth_backtrack
+                    and row["delta"].accuracy >= current_delta.accuracy - args.max_accuracy_backtrack
+                    and row["delta"].unigram >= current_delta.unigram - args.max_unigram_backtrack
+                    and abs(row["delta"].echo) <= max(args.echo_cliff, abs(current_delta.echo) + args.max_echo_backtrack)
+                )
+            else:
+                acceptable = (
+                    row["class"] in ("RETAINED", "NEAR_RETAINED")
+                    and row["delta"].smooth >= current_delta.smooth - args.max_smooth_backtrack
+                    and row["delta"].accuracy >= current_delta.accuracy - 0.0010
+                    and row["delta"].unigram >= current_delta.unigram - 0.0025
+                )
             if acceptable:
                 selected.append(row)
                 selected_edges += len(row["bucket"])
@@ -641,7 +659,10 @@ def run_density(
     if candidates:
         write_csv(out / "crystallize_candidates.csv", candidate_fields, candidates)
     edge_reduction = 1.0 - (len(best["net"].sources) / max(1, len(dense_net.sources)))
-    if best["class"] == "RETAINED" and best["delta"].smooth >= 0 and best["delta"].unigram >= -0.0025:
+    returned_to_reference = len(best["net"].sources) <= len(reference.network.sources) and nearly_zero_delta(best["delta"])
+    if returned_to_reference:
+        verdict = "D10H_RETURNED_TO_REFERENCE_ONLY"
+    elif best["class"] == "RETAINED" and best["delta"].smooth > args.min_claim_smooth_gain and best["delta"].unigram >= -0.0025:
         verdict = "D10H_CRYSTALLIZE_SIGNAL"
     elif edge_reduction >= 0.30 and best["class"] in ("RETAINED", "NEAR_RETAINED"):
         verdict = "D10H_EDGE_EFFICIENCY_WIN"
@@ -732,6 +753,8 @@ def choose_verdict(results: list[dict]) -> str:
         return "D10H_CRYSTALLIZE_SIGNAL"
     if "D10H_EDGE_EFFICIENCY_WIN" in verdicts:
         return "D10H_EDGE_EFFICIENCY_WIN"
+    if "D10H_RETURNED_TO_REFERENCE_ONLY" in verdicts:
+        return "D10H_RETURNED_TO_REFERENCE_ONLY"
     if verdicts == {"DENSE_START_CLIFF"}:
         return "D10H_DENSE_START_TOO_CLIFFY"
     if "D10H_PRUNE_NOISE_DOMINATED" in verdicts:
@@ -762,6 +785,13 @@ def build_arg_parser() -> argparse.ArgumentParser:
     p.add_argument("--echo-cliff", type=float, default=0.010)
     p.add_argument("--echo-safe", type=float, default=0.0015)
     p.add_argument("--max-smooth-backtrack", type=float, default=0.0010)
+    p.add_argument("--continue-after-cliff-start", action=argparse.BooleanOptionalAction, default=False)
+    p.add_argument("--accept-relative-current", action=argparse.BooleanOptionalAction, default=False)
+    p.add_argument("--min-current-mo-improve", type=float, default=0.00005)
+    p.add_argument("--min-claim-smooth-gain", type=float, default=0.00025)
+    p.add_argument("--max-accuracy-backtrack", type=float, default=0.0010)
+    p.add_argument("--max-unigram-backtrack", type=float, default=0.0025)
+    p.add_argument("--max-echo-backtrack", type=float, default=0.0025)
     return p
 
 

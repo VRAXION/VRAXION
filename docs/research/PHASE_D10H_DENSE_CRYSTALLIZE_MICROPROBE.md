@@ -83,6 +83,30 @@ or should start from a model trained under dense/overfilled conditions from the
 beginning, rather than injecting many random edges into an already tuned sparse
 checkpoint.
 
+## Follow-up: Carving Sanity
+
+After the first report, the probe was corrected to test the real crystallize
+question: continue after the dense cliff and accept a prune bucket if it
+improves the current dense state, not only if it already matches beta.8.
+
+Short sanity results:
+
+- Removing 1/8 of added 10% fill: no measurable recovery.
+- Removing 87.5% of added 10% fill across bulk rounds: still no measurable
+  recovery.
+- Removing 100% of added edges: returns exactly to beta.8 (`delta=0`), proving
+  the remove/eval path is valid.
+
+This changes the interpretation slightly:
+
+```text
+global random overfill does not show a useful carve path;
+it behaves like poison until essentially all added edges are removed.
+```
+
+The script now labels the all-added-edges-removed case as
+`D10H_RETURNED_TO_REFERENCE_ONLY`, not as a real crystallize improvement.
+
 ## Progress Map
 
 ```text
