@@ -116,6 +116,10 @@ struct Cli {
     repair_samples_per_bucket: usize,
     repair_eval_seeds: Vec<u64>,
     repair_export_top: usize,
+    mo_climbers: usize,
+    mo_steps: usize,
+    mo_eval_seeds: Vec<u64>,
+    mo_export_top: usize,
     out: PathBuf,
     seed: u64,
     eval_len: usize,
@@ -153,6 +157,10 @@ struct RunMeta {
     repair_samples_per_bucket: Option<usize>,
     repair_eval_seeds: Option<Vec<u64>>,
     repair_export_top: Option<usize>,
+    mo_climbers: Option<usize>,
+    mo_steps: Option<usize>,
+    mo_eval_seeds: Option<Vec<u64>>,
+    mo_export_top: Option<usize>,
     radii: Vec<usize>,
     mutation_types: Vec<String>,
     checkpoints: Vec<String>,
@@ -243,6 +251,33 @@ struct RepairCandidate {
     proj: Int8Projection,
 }
 
+#[derive(Clone, Copy, Debug)]
+struct MultiMetricScores {
+    smooth: f64,
+    accuracy: f64,
+    echo: f64,
+    unigram: f64,
+}
+
+#[derive(Clone)]
+struct MultiObjectiveCandidate {
+    climber_id: usize,
+    step_index: usize,
+    proposal_seed: u64,
+    radius: usize,
+    mutation_type: MutationType,
+    counts: MutationCounts,
+    direct_distance: usize,
+    edges: usize,
+    scores: MultiMetricScores,
+    deltas: MultiMetricScores,
+    mo_score: f64,
+    mo_class: &'static str,
+    accepted: bool,
+    net: Network,
+    proj: Int8Projection,
+}
+
 fn parse_csv_usize(value: &str) -> Vec<usize> {
     value
         .split(',')
@@ -288,6 +323,10 @@ fn parse_args() -> Cli {
         940_001u64, 940_002, 940_003, 940_004, 940_005, 940_006, 940_007, 940_008,
     ];
     let mut repair_export_top = 8usize;
+    let mut mo_climbers = 12usize;
+    let mut mo_steps = 40usize;
+    let mut mo_eval_seeds = vec![960_001u64, 960_002, 960_003, 960_004];
+    let mut mo_export_top = 8usize;
     let mut out = PathBuf::from("output/phase_d9_direct_genome_landscape_20260428");
     let mut seed = 90210u64;
     let mut eval_len = DEFAULT_EVAL_LEN;
@@ -485,6 +524,40 @@ fn parse_args() -> Cli {
                     .parse()
                     .expect("repair-export-top")
             }
+            "--mo-climbers" => {
+                mo_climbers = args
+                    .next()
+                    .expect("--mo-climbers value")
+                    .parse()
+                    .expect("mo-climbers")
+            }
+            "--mo-steps" => {
+                mo_steps = args
+                    .next()
+                    .expect("--mo-steps value")
+                    .parse()
+                    .expect("mo-steps")
+            }
+            "--mo-eval-seeds" => {
+                mo_eval_seeds = args
+                    .next()
+                    .expect("--mo-eval-seeds csv")
+                    .split(',')
+                    .filter(|part| !part.trim().is_empty())
+                    .map(|part| part.trim().parse::<u64>().expect("mo eval seed"))
+                    .collect();
+                assert!(
+                    !mo_eval_seeds.is_empty(),
+                    "--mo-eval-seeds must not be empty"
+                );
+            }
+            "--mo-export-top" => {
+                mo_export_top = args
+                    .next()
+                    .expect("--mo-export-top value")
+                    .parse()
+                    .expect("mo-export-top")
+            }
             "--out" => out = PathBuf::from(args.next().expect("--out path")),
             "--seed" => seed = args.next().expect("--seed value").parse().expect("seed"),
             "--eval-len" => {
@@ -525,18 +598,20 @@ fn parse_args() -> Cli {
         | "endpoint-bridge"
         | "endpoint-overlap"
         | "endpoint-robustness"
-        | "repair-scan" => vec![1],
-        other => panic!("--mode expects fail-fast|medium|full|staged|planet-scout|paratrooper-climb|endpoint-bridge|endpoint-overlap|endpoint-robustness|repair-scan, got {other}"),
+        | "repair-scan"
+        | "multi-objective-climb" => vec![1],
+        other => panic!("--mode expects fail-fast|medium|full|staged|planet-scout|paratrooper-climb|endpoint-bridge|endpoint-overlap|endpoint-robustness|repair-scan|multi-objective-climb, got {other}"),
     };
     let default_mutation_types = if matches!(
         mode.as_str(),
         "planet-scout"
-        | "homogeneous"
-        | "paratrooper-climb"
-        | "endpoint-bridge"
-        | "endpoint-overlap"
-        | "endpoint-robustness"
-        | "repair-scan"
+            | "homogeneous"
+            | "paratrooper-climb"
+            | "endpoint-bridge"
+            | "endpoint-overlap"
+            | "endpoint-robustness"
+            | "repair-scan"
+            | "multi-objective-climb"
     ) {
         vec![MutationType::Edge, MutationType::Threshold]
     } else {
@@ -575,6 +650,10 @@ fn parse_args() -> Cli {
         repair_samples_per_bucket,
         repair_eval_seeds,
         repair_export_top,
+        mo_climbers,
+        mo_steps,
+        mo_eval_seeds,
+        mo_export_top,
         out,
         seed,
         eval_len,
@@ -667,7 +746,12 @@ fn compare_core(a: &Network, b: &Network) -> bool {
     encode_coord(a) == encode_coord(b)
 }
 
-fn interpolate_coord(a: &DirectGenomeCoord, b: &DirectGenomeCoord, step: usize, steps: usize) -> DirectGenomeCoord {
+fn interpolate_coord(
+    a: &DirectGenomeCoord,
+    b: &DirectGenomeCoord,
+    step: usize,
+    steps: usize,
+) -> DirectGenomeCoord {
     assert_eq!(a.h, b.h);
     let steps = steps.max(1);
     if step == 0 {
@@ -693,16 +777,16 @@ fn interpolate_coord(a: &DirectGenomeCoord, b: &DirectGenomeCoord, step: usize, 
     for (idx, value) in threshold.iter_mut().enumerate() {
         let av = a.threshold[idx] as i32;
         let bv = b.threshold[idx] as i32;
-        *value = (av + ((bv - av) * step as i32 + (steps / 2) as i32) / steps as i32)
-            .clamp(0, 15) as u8;
+        *value =
+            (av + ((bv - av) * step as i32 + (steps / 2) as i32) / steps as i32).clamp(0, 15) as u8;
     }
 
     let mut channel = a.channel.clone();
     for (idx, value) in channel.iter_mut().enumerate() {
         let av = a.channel[idx] as i32;
         let bv = b.channel[idx] as i32;
-        *value = (av + ((bv - av) * step as i32 + (steps / 2) as i32) / steps as i32)
-            .clamp(1, 8) as u8;
+        *value =
+            (av + ((bv - av) * step as i32 + (steps / 2) as i32) / steps as i32).clamp(1, 8) as u8;
     }
 
     let mut polarity = a.polarity.clone();
@@ -1668,7 +1752,10 @@ fn run_endpoint_bridge(
         "--mode endpoint-bridge requires at least two --bridge-endpoints"
     );
 
-    let baseline_path = cli.checkpoints.first().expect("baseline checkpoint required");
+    let baseline_path = cli
+        .checkpoints
+        .first()
+        .expect("baseline checkpoint required");
     let (baseline_net, baseline_proj, _) =
         load_checkpoint(baseline_path).expect("failed to load baseline checkpoint");
     let baseline_score = mean_endpoint_score(
@@ -1708,15 +1795,7 @@ fn run_endpoint_bridge(
                 let coord = interpolate_coord(&coord_a, &coord_b, step, cli.bridge_steps);
                 let waypoint = decode_coord(&coord);
                 let score = mean_endpoint_score(
-                    cli,
-                    &waypoint,
-                    proj_a,
-                    table,
-                    pair_ids,
-                    hot_to_idx,
-                    bigram,
-                    unigram,
-                    init,
+                    cli, &waypoint, proj_a, table, pair_ids, hot_to_idx, bigram, unigram, init,
                 );
                 let dist_a = coord_distance(&coord_a, &coord);
                 let dist_b = coord_distance(&coord, &coord_b);
@@ -1757,7 +1836,10 @@ fn run_endpoint_overlap(
         !cli.bridge_endpoints.is_empty(),
         "--mode endpoint-overlap requires --bridge-endpoints"
     );
-    let baseline_path = cli.checkpoints.first().expect("baseline checkpoint required");
+    let baseline_path = cli
+        .checkpoints
+        .first()
+        .expect("baseline checkpoint required");
     let (baseline_net, baseline_proj, _) =
         load_checkpoint(baseline_path).expect("failed to load baseline checkpoint");
     let baseline_score = mean_endpoint_score(
@@ -1777,7 +1859,10 @@ fn run_endpoint_overlap(
         let (net, proj, _meta) = load_checkpoint(path).expect("failed to load overlap endpoint");
         endpoints.push((path.display().to_string(), net, proj));
     }
-    let endpoint_coords: Vec<_> = endpoints.iter().map(|(_, net, _)| encode_coord(net)).collect();
+    let endpoint_coords: Vec<_> = endpoints
+        .iter()
+        .map(|(_, net, _)| encode_coord(net))
+        .collect();
 
     let path = cli.out.join("overlap_samples.csv");
     let mut writer = BufWriter::new(File::create(&path).expect("failed to create overlap csv"));
@@ -1792,8 +1877,7 @@ fn run_endpoint_overlap(
         let source_coord = &endpoint_coords[endpoint_idx];
         for &radius in &cli.radii {
             for sample_id in 0..cli.overlap_samples {
-                let mutation_type =
-                    cli.mutation_types[sample_id % cli.mutation_types.len()];
+                let mutation_type = cli.mutation_types[sample_id % cli.mutation_types.len()];
                 let seed = cli.seed
                     ^ ((endpoint_idx as u64) << 48)
                     ^ ((radius as u64) << 32)
@@ -1801,7 +1885,8 @@ fn run_endpoint_overlap(
                     ^ 0xD90D_0AAAu64;
                 let mut sample_net = endpoint_net.clone();
                 let mut rng = StdRng::seed_from_u64(seed);
-                let _counts = apply_radius_mutation(&mut sample_net, radius, mutation_type, &mut rng);
+                let _counts =
+                    apply_radius_mutation(&mut sample_net, radius, mutation_type, &mut rng);
                 let sample_coord = encode_coord(&sample_net);
                 let dist_to_source = coord_distance(source_coord, &sample_coord);
                 let mut nearest_other_endpoint = String::from("none");
@@ -1864,7 +1949,10 @@ fn run_endpoint_robustness(
         !cli.bridge_endpoints.is_empty(),
         "--mode endpoint-robustness requires --bridge-endpoints"
     );
-    let baseline_path = cli.checkpoints.first().expect("baseline checkpoint required");
+    let baseline_path = cli
+        .checkpoints
+        .first()
+        .expect("baseline checkpoint required");
     let (baseline_net, baseline_proj, _) =
         load_checkpoint(baseline_path).expect("failed to load baseline checkpoint");
 
@@ -1876,8 +1964,7 @@ fn run_endpoint_robustness(
     }
 
     let path = cli.out.join("robustness_samples.csv");
-    let mut writer =
-        BufWriter::new(File::create(&path).expect("failed to create robustness csv"));
+    let mut writer = BufWriter::new(File::create(&path).expect("failed to create robustness csv"));
     writeln!(
         writer,
         "endpoint_index,endpoint_path,eval_len,eval_seed,baseline_score,endpoint_score,delta_vs_baseline,positive"
@@ -2006,7 +2093,10 @@ fn run_repair_scan(
         .repair_start
         .as_ref()
         .expect("--mode repair-scan requires --repair-start");
-    let baseline_path = cli.checkpoints.first().expect("baseline checkpoint required");
+    let baseline_path = cli
+        .checkpoints
+        .first()
+        .expect("baseline checkpoint required");
     let (baseline_net, baseline_proj, _) =
         load_checkpoint(baseline_path).expect("failed to load baseline checkpoint");
     let (repair_net, repair_proj, _) =
@@ -2242,6 +2332,405 @@ fn run_repair_scan(
         .expect("failed to flush repair_candidates");
 }
 
+fn evaluate_multi_metrics(
+    net: &Network,
+    proj: &Int8Projection,
+    table: &VcbpTable,
+    pair_ids: &[u16],
+    hot_to_idx: &[usize],
+    bigram: &[Vec<f64>],
+    unigram: &[f64],
+    eval_len: usize,
+    eval_seeds: &[u64],
+    init: &InitConfig,
+    h: usize,
+    input_scatter: bool,
+) -> MultiMetricScores {
+    MultiMetricScores {
+        smooth: mean_score_for_mode(
+            "smooth",
+            net,
+            proj,
+            table,
+            pair_ids,
+            hot_to_idx,
+            bigram,
+            unigram,
+            eval_len,
+            eval_seeds,
+            init,
+            h,
+            input_scatter,
+        ),
+        accuracy: mean_score_for_mode(
+            "accuracy",
+            net,
+            proj,
+            table,
+            pair_ids,
+            hot_to_idx,
+            bigram,
+            unigram,
+            eval_len,
+            eval_seeds,
+            init,
+            h,
+            input_scatter,
+        ),
+        echo: mean_score_for_mode(
+            "echo",
+            net,
+            proj,
+            table,
+            pair_ids,
+            hot_to_idx,
+            bigram,
+            unigram,
+            eval_len,
+            eval_seeds,
+            init,
+            h,
+            input_scatter,
+        ),
+        unigram: mean_score_for_mode(
+            "unigram",
+            net,
+            proj,
+            table,
+            pair_ids,
+            hot_to_idx,
+            bigram,
+            unigram,
+            eval_len,
+            eval_seeds,
+            init,
+            h,
+            input_scatter,
+        ),
+    }
+}
+
+fn metric_deltas(candidate: MultiMetricScores, baseline: MultiMetricScores) -> MultiMetricScores {
+    MultiMetricScores {
+        smooth: candidate.smooth - baseline.smooth,
+        accuracy: candidate.accuracy - baseline.accuracy,
+        echo: candidate.echo - baseline.echo,
+        unigram: candidate.unigram - baseline.unigram,
+    }
+}
+
+fn mo_constraints_pass(deltas: MultiMetricScores) -> bool {
+    deltas.smooth >= 0.0120 && deltas.accuracy >= 0.0020 && deltas.echo.abs() <= 0.0010
+}
+
+fn mo_score(deltas: MultiMetricScores) -> f64 {
+    deltas.smooth + 0.50 * deltas.accuracy + 1.50 * deltas.unigram.max(-0.0120)
+        - 0.25 * deltas.echo.abs()
+}
+
+fn mo_class(deltas: MultiMetricScores) -> &'static str {
+    if !mo_constraints_pass(deltas) {
+        "FAIL_RETAIN"
+    } else if deltas.unigram >= 0.0 {
+        "FULL_GENERALIST"
+    } else if deltas.unigram >= -0.0044 {
+        "MULTI_OBJECTIVE_SUCCESS"
+    } else if deltas.unigram > -0.008735006 {
+        "WEAK_SIGNAL"
+    } else {
+        "RETAINED_SPECIALIST"
+    }
+}
+
+fn mo_class_rank(class_name: &str) -> i32 {
+    match class_name {
+        "FULL_GENERALIST" => 5,
+        "MULTI_OBJECTIVE_SUCCESS" => 4,
+        "WEAK_SIGNAL" => 3,
+        "RETAINED_SPECIALIST" => 2,
+        "FAIL_RETAIN" => 1,
+        _ => 0,
+    }
+}
+
+fn run_multi_objective_climb(
+    cli: &Cli,
+    table: &VcbpTable,
+    pair_ids: &[u16],
+    hot_to_idx: &[usize],
+    bigram: &[Vec<f64>],
+    unigram: &[f64],
+    init: &InitConfig,
+) {
+    let repair_start = cli
+        .repair_start
+        .as_ref()
+        .expect("--mode multi-objective-climb requires --repair-start");
+    let baseline_path = cli
+        .checkpoints
+        .first()
+        .expect("baseline checkpoint required");
+    let (baseline_net, baseline_proj, _) =
+        load_checkpoint(baseline_path).expect("failed to load baseline checkpoint");
+    let (start_net, start_proj, _) =
+        load_checkpoint(repair_start).expect("failed to load repair-start checkpoint");
+    assert_eq!(baseline_net.neuron_count(), cli.h, "baseline H mismatch");
+    assert_eq!(start_net.neuron_count(), cli.h, "repair-start H mismatch");
+    assert!(
+        cli.mutation_types
+            .iter()
+            .all(|t| matches!(t, MutationType::Edge | MutationType::Threshold)),
+        "D9.2a multi-objective-climb only supports edge,threshold mutation types"
+    );
+    assert!(
+        !cli.mo_eval_seeds.is_empty(),
+        "--mo-eval-seeds must not be empty"
+    );
+
+    println!(
+        "D9.2a multi-objective climb: baseline={} start={} climbers={} steps={} eval_len={} seeds={} radii={:?}",
+        baseline_path.display(),
+        repair_start.display(),
+        cli.mo_climbers,
+        cli.mo_steps,
+        cli.eval_len,
+        cli.mo_eval_seeds.len(),
+        cli.radii
+    );
+
+    let start_coord = encode_coord(&start_net);
+    let baseline_scores = evaluate_multi_metrics(
+        &baseline_net,
+        &baseline_proj,
+        table,
+        pair_ids,
+        hot_to_idx,
+        bigram,
+        unigram,
+        cli.eval_len,
+        &cli.mo_eval_seeds,
+        init,
+        cli.h,
+        cli.input_scatter,
+    );
+    let start_scores = evaluate_multi_metrics(
+        &start_net,
+        &start_proj,
+        table,
+        pair_ids,
+        hot_to_idx,
+        bigram,
+        unigram,
+        cli.eval_len,
+        &cli.mo_eval_seeds,
+        init,
+        cli.h,
+        cli.input_scatter,
+    );
+    let start_deltas = metric_deltas(start_scores, baseline_scores);
+    let start_mo = mo_score(start_deltas);
+    println!(
+        "  start deltas: smooth={:.6} accuracy={:.6} echo={:.6} unigram={:.6} mo={:.6} class={}",
+        start_deltas.smooth,
+        start_deltas.accuracy,
+        start_deltas.echo,
+        start_deltas.unigram,
+        start_mo,
+        mo_class(start_deltas)
+    );
+
+    let path = cli.out.join("multi_objective_paths.csv");
+    let mut writer =
+        BufWriter::new(File::create(&path).expect("failed to create multi_objective_paths.csv"));
+    writeln!(
+        writer,
+        "climber_id,step_index,proposal_seed,radius,mutation_type,edge_edits,threshold_edits,direct_genome_distance,edges,smooth_score,smooth_delta,accuracy_score,accuracy_delta,echo_score,echo_delta,unigram_score,unigram_delta,mo_score,mo_class,constraints_pass,accepted,accept_reason"
+    )
+    .expect("failed to write multi_objective_paths header");
+
+    let mut candidates: Vec<MultiObjectiveCandidate> = Vec::new();
+    for climber_id in 0..cli.mo_climbers {
+        let climber_seed = cli.seed ^ ((climber_id as u64) << 32) ^ 0xD92A_0001u64;
+        let mut proposal_rng = StdRng::seed_from_u64(climber_seed);
+        let mut current = start_net.clone();
+        let current_proj = start_proj.clone();
+        let mut current_mo = start_mo;
+        for step_index in 0..cli.mo_steps {
+            let mutation_type =
+                cli.mutation_types[proposal_rng.gen_range(0..cli.mutation_types.len())];
+            let radius = cli.radii[proposal_rng.gen_range(0..cli.radii.len())];
+            let proposal_seed = proposal_rng.gen::<u64>();
+            let mut mutation_rng = StdRng::seed_from_u64(proposal_seed);
+            let mut candidate_net = current.clone();
+            let candidate_proj = current_proj.clone();
+            let counts =
+                apply_radius_mutation(&mut candidate_net, radius, mutation_type, &mut mutation_rng);
+            let candidate_coord = encode_coord(&candidate_net);
+            let direct_distance = coord_distance(&start_coord, &candidate_coord);
+            let eval_start = Instant::now();
+            let scores = evaluate_multi_metrics(
+                &candidate_net,
+                &candidate_proj,
+                table,
+                pair_ids,
+                hot_to_idx,
+                bigram,
+                unigram,
+                cli.eval_len,
+                &cli.mo_eval_seeds,
+                init,
+                cli.h,
+                cli.input_scatter,
+            );
+            let deltas = metric_deltas(scores, baseline_scores);
+            let score = mo_score(deltas);
+            let constraints_pass = mo_constraints_pass(deltas);
+            let accepted = constraints_pass && score >= current_mo - 0.00025;
+            let accept_reason = if !constraints_pass {
+                "constraint_fail"
+            } else if score > current_mo {
+                "improve"
+            } else if accepted {
+                "epsilon_keep"
+            } else {
+                "score_drop"
+            };
+            let class_name = mo_class(deltas);
+            if accepted {
+                current = candidate_net.clone();
+                current_mo = score;
+            }
+            writeln!(
+                writer,
+                "{},{},{},{},{},{},{},{},{},{:.12},{:.12},{:.12},{:.12},{:.12},{:.12},{:.12},{:.12},{:.12},{},{},{},{}",
+                climber_id,
+                step_index,
+                proposal_seed,
+                radius,
+                mutation_type.as_str(),
+                counts.edge,
+                counts.threshold,
+                direct_distance,
+                candidate_net.edge_count(),
+                scores.smooth,
+                deltas.smooth,
+                scores.accuracy,
+                deltas.accuracy,
+                scores.echo,
+                deltas.echo,
+                scores.unigram,
+                deltas.unigram,
+                score,
+                class_name,
+                constraints_pass,
+                accepted,
+                accept_reason
+            )
+            .expect("failed to write multi-objective path row");
+            candidates.push(MultiObjectiveCandidate {
+                climber_id,
+                step_index,
+                proposal_seed,
+                radius,
+                mutation_type,
+                counts,
+                direct_distance,
+                edges: candidate_net.edge_count(),
+                scores,
+                deltas,
+                mo_score: score,
+                mo_class: class_name,
+                accepted,
+                net: candidate_net,
+                proj: candidate_proj,
+            });
+            println!(
+                "  climber={} step={} class={} accepted={} mo={:.6} d=[{:.5},{:.5},{:.5},{:.5}] eval_ms={:.1}",
+                climber_id,
+                step_index,
+                class_name,
+                accepted,
+                score,
+                deltas.smooth,
+                deltas.accuracy,
+                deltas.echo,
+                deltas.unigram,
+                eval_start.elapsed().as_secs_f64() * 1000.0
+            );
+        }
+    }
+    writer
+        .flush()
+        .expect("failed to flush multi_objective_paths");
+
+    candidates.sort_by(|a, b| {
+        mo_class_rank(b.mo_class)
+            .cmp(&mo_class_rank(a.mo_class))
+            .then_with(|| b.deltas.unigram.partial_cmp(&a.deltas.unigram).unwrap())
+            .then_with(|| b.mo_score.partial_cmp(&a.mo_score).unwrap())
+            .then_with(|| b.deltas.smooth.partial_cmp(&a.deltas.smooth).unwrap())
+    });
+    let candidates_dir = cli.out.join("candidates");
+    create_dir_all(&candidates_dir).expect("failed to create multi-objective candidates dir");
+    let mut cand_writer = BufWriter::new(
+        File::create(cli.out.join("multi_objective_candidates.csv"))
+            .expect("failed to create multi_objective_candidates.csv"),
+    );
+    writeln!(
+        cand_writer,
+        "rank,checkpoint,climber_id,step_index,proposal_seed,radius,mutation_type,edge_edits,threshold_edits,direct_genome_distance,edges,smooth_score,smooth_delta,accuracy_score,accuracy_delta,echo_score,echo_delta,unigram_score,unigram_delta,mo_score,mo_class,accepted"
+    )
+    .expect("failed to write multi_objective_candidates header");
+    for (rank_idx, candidate) in candidates.iter().take(cli.mo_export_top).enumerate() {
+        let rank = rank_idx + 1;
+        let ckpt_path = candidates_dir.join(format!("top_{rank:02}.ckpt"));
+        save_checkpoint(
+            &ckpt_path,
+            &candidate.net,
+            &candidate.proj,
+            CheckpointMeta {
+                step: candidate.step_index,
+                accuracy: candidate.scores.accuracy,
+                label: format!(
+                    "D9.2a mo rank={} class={} smooth_delta={:.6} unigram_delta={:.6}",
+                    rank, candidate.mo_class, candidate.deltas.smooth, candidate.deltas.unigram
+                ),
+            },
+        )
+        .expect("failed to save multi-objective candidate checkpoint");
+        writeln!(
+            cand_writer,
+            "{},{},{},{},{},{},{},{},{},{},{},{:.12},{:.12},{:.12},{:.12},{:.12},{:.12},{:.12},{:.12},{:.12},{},{}",
+            rank,
+            ckpt_path.display(),
+            candidate.climber_id,
+            candidate.step_index,
+            candidate.proposal_seed,
+            candidate.radius,
+            candidate.mutation_type.as_str(),
+            candidate.counts.edge,
+            candidate.counts.threshold,
+            candidate.direct_distance,
+            candidate.edges,
+            candidate.scores.smooth,
+            candidate.deltas.smooth,
+            candidate.scores.accuracy,
+            candidate.deltas.accuracy,
+            candidate.scores.echo,
+            candidate.deltas.echo,
+            candidate.scores.unigram,
+            candidate.deltas.unigram,
+            candidate.mo_score,
+            candidate.mo_class,
+            candidate.accepted
+        )
+        .expect("failed to write multi-objective candidate row");
+    }
+    cand_writer
+        .flush()
+        .expect("failed to flush multi_objective_candidates");
+}
+
 fn main() {
     let cli = parse_args();
     create_dir_all(&cli.out).expect("failed to create output directory");
@@ -2353,6 +2842,19 @@ fn main() {
 
         if cli.mode == "repair-scan" {
             run_repair_scan(
+                &cli,
+                &table,
+                &pair_ids,
+                &hot_to_idx,
+                &bigram,
+                &unigram,
+                &init,
+            );
+            break;
+        }
+
+        if cli.mode == "multi-objective-climb" {
+            run_multi_objective_climb(
                 &cli,
                 &table,
                 &pair_ids,
@@ -2897,6 +3399,8 @@ fn main() {
             "D9.0x"
         } else if cli.mode == "repair-scan" {
             "D9.1a"
+        } else if cli.mode == "multi-objective-climb" {
+            "D9.2a"
         } else if matches!(cli.mode.as_str(), "planet-scout" | "homogeneous") {
             "D9.0e"
         } else {
@@ -2954,6 +3458,10 @@ fn main() {
             .then_some(cli.repair_samples_per_bucket),
         repair_eval_seeds: (cli.mode == "repair-scan").then_some(cli.repair_eval_seeds.clone()),
         repair_export_top: (cli.mode == "repair-scan").then_some(cli.repair_export_top),
+        mo_climbers: (cli.mode == "multi-objective-climb").then_some(cli.mo_climbers),
+        mo_steps: (cli.mode == "multi-objective-climb").then_some(cli.mo_steps),
+        mo_eval_seeds: (cli.mode == "multi-objective-climb").then_some(cli.mo_eval_seeds.clone()),
+        mo_export_top: (cli.mode == "multi-objective-climb").then_some(cli.mo_export_top),
         radii: cli.radii.clone(),
         mutation_types: cli
             .mutation_types
