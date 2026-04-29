@@ -108,6 +108,8 @@ struct Cli {
     export_top_endpoints: usize,
     endpoint_eval_len: usize,
     endpoint_eval_seeds: Vec<u64>,
+    bridge_endpoints: Vec<PathBuf>,
+    bridge_steps: usize,
     out: PathBuf,
     seed: u64,
     eval_len: usize,
@@ -137,6 +139,8 @@ struct RunMeta {
     export_top_endpoints: Option<usize>,
     endpoint_eval_len: Option<usize>,
     endpoint_eval_seeds: Option<Vec<u64>>,
+    bridge_endpoints: Option<Vec<String>>,
+    bridge_steps: Option<usize>,
     radii: Vec<usize>,
     mutation_types: Vec<String>,
     checkpoints: Vec<String>,
@@ -236,6 +240,8 @@ fn parse_args() -> Cli {
     let mut export_top_endpoints = 0usize;
     let mut endpoint_eval_len = 4_000usize;
     let mut endpoint_eval_seeds = vec![730_001u64, 730_002, 730_003, 730_004];
+    let mut bridge_endpoints: Vec<PathBuf> = Vec::new();
+    let mut bridge_steps = 10usize;
     let mut out = PathBuf::from("output/phase_d9_direct_genome_landscape_20260428");
     let mut seed = 90210u64;
     let mut eval_len = DEFAULT_EVAL_LEN;
@@ -372,6 +378,22 @@ fn parse_args() -> Cli {
                     "--endpoint-eval-seeds must not be empty"
                 );
             }
+            "--bridge-endpoints" => {
+                let value = args.next().expect("--bridge-endpoints csv");
+                bridge_endpoints.extend(
+                    value
+                        .split(',')
+                        .filter(|part| !part.trim().is_empty())
+                        .map(|part| PathBuf::from(part.trim())),
+                );
+            }
+            "--bridge-steps" => {
+                bridge_steps = args
+                    .next()
+                    .expect("--bridge-steps value")
+                    .parse()
+                    .expect("bridge-steps")
+            }
             "--out" => out = PathBuf::from(args.next().expect("--out path")),
             "--seed" => seed = args.next().expect("--seed value").parse().expect("seed"),
             "--eval-len" => {
@@ -387,7 +409,7 @@ fn parse_args() -> Cli {
             "--help" | "-h" => {
                 println!(
                     "Usage: cargo run -p instnct-core --example d9_direct_landscape -- \
-                     --checkpoint PATH --H 256 --mode fail-fast|medium|full|staged|planet-scout|paratrooper-climb \
+                     --checkpoint PATH --H 256 --mode fail-fast|medium|full|staged|planet-scout|paratrooper-climb|endpoint-bridge \
                      --score-mode accuracy|smooth --samples-per-type N --out PATH"
                 );
                 std::process::exit(0);
@@ -406,12 +428,12 @@ fn parse_args() -> Cli {
         "fail-fast" => vec![1],
         "medium" => vec![1, 4, 16],
         "full" | "staged" => vec![1, 2, 4, 8, 16, 32, 64, 128],
-        "planet-scout" | "homogeneous" | "paratrooper-climb" => vec![1],
-        other => panic!("--mode expects fail-fast|medium|full|staged|planet-scout, got {other}"),
+        "planet-scout" | "homogeneous" | "paratrooper-climb" | "endpoint-bridge" => vec![1],
+        other => panic!("--mode expects fail-fast|medium|full|staged|planet-scout|paratrooper-climb|endpoint-bridge, got {other}"),
     };
     let default_mutation_types = if matches!(
         mode.as_str(),
-        "planet-scout" | "homogeneous" | "paratrooper-climb"
+        "planet-scout" | "homogeneous" | "paratrooper-climb" | "endpoint-bridge"
     ) {
         vec![MutationType::Edge, MutationType::Threshold]
     } else {
@@ -442,6 +464,8 @@ fn parse_args() -> Cli {
         export_top_endpoints,
         endpoint_eval_len,
         endpoint_eval_seeds,
+        bridge_endpoints,
+        bridge_steps,
         out,
         seed,
         eval_len,
@@ -532,6 +556,66 @@ fn coord_distance(a: &DirectGenomeCoord, b: &DirectGenomeCoord) -> usize {
 
 fn compare_core(a: &Network, b: &Network) -> bool {
     encode_coord(a) == encode_coord(b)
+}
+
+fn interpolate_coord(a: &DirectGenomeCoord, b: &DirectGenomeCoord, step: usize, steps: usize) -> DirectGenomeCoord {
+    assert_eq!(a.h, b.h);
+    let steps = steps.max(1);
+    if step == 0 {
+        return a.clone();
+    }
+    if step >= steps {
+        return b.clone();
+    }
+    let mut edge_bits = a.edge_bits.clone();
+    let edge_diffs: Vec<usize> = a
+        .edge_bits
+        .iter()
+        .zip(&b.edge_bits)
+        .enumerate()
+        .filter_map(|(idx, (&x, &y))| (x != y).then_some(idx))
+        .collect();
+    let edge_take = (edge_diffs.len() * step + steps / 2) / steps;
+    for &idx in edge_diffs.iter().take(edge_take) {
+        edge_bits[idx] = b.edge_bits[idx];
+    }
+
+    let mut threshold = a.threshold.clone();
+    for (idx, value) in threshold.iter_mut().enumerate() {
+        let av = a.threshold[idx] as i32;
+        let bv = b.threshold[idx] as i32;
+        *value = (av + ((bv - av) * step as i32 + (steps / 2) as i32) / steps as i32)
+            .clamp(0, 15) as u8;
+    }
+
+    let mut channel = a.channel.clone();
+    for (idx, value) in channel.iter_mut().enumerate() {
+        let av = a.channel[idx] as i32;
+        let bv = b.channel[idx] as i32;
+        *value = (av + ((bv - av) * step as i32 + (steps / 2) as i32) / steps as i32)
+            .clamp(1, 8) as u8;
+    }
+
+    let mut polarity = a.polarity.clone();
+    let polarity_diffs: Vec<usize> = a
+        .polarity
+        .iter()
+        .zip(&b.polarity)
+        .enumerate()
+        .filter_map(|(idx, (&x, &y))| (x != y).then_some(idx))
+        .collect();
+    let polarity_take = (polarity_diffs.len() * step + steps / 2) / steps;
+    for &idx in polarity_diffs.iter().take(polarity_take) {
+        polarity[idx] = b.polarity[idx];
+    }
+
+    DirectGenomeCoord {
+        h: a.h,
+        edge_bits,
+        threshold,
+        channel,
+        polarity,
+    }
 }
 
 fn apply_one_edge_flip(net: &mut Network, rng: &mut StdRng) -> bool {
@@ -1461,6 +1545,96 @@ fn export_endpoint_candidates(
     writer.flush().expect("failed to flush endpoint summary");
 }
 
+fn run_endpoint_bridge(
+    cli: &Cli,
+    table: &VcbpTable,
+    pair_ids: &[u16],
+    hot_to_idx: &[usize],
+    bigram: &[Vec<f64>],
+    unigram: &[f64],
+    init: &InitConfig,
+) {
+    assert!(
+        cli.bridge_endpoints.len() >= 2,
+        "--mode endpoint-bridge requires at least two --bridge-endpoints"
+    );
+
+    let baseline_path = cli.checkpoints.first().expect("baseline checkpoint required");
+    let (baseline_net, baseline_proj, _) =
+        load_checkpoint(baseline_path).expect("failed to load baseline checkpoint");
+    let baseline_score = mean_endpoint_score(
+        cli,
+        &baseline_net,
+        &baseline_proj,
+        table,
+        pair_ids,
+        hot_to_idx,
+        bigram,
+        unigram,
+        init,
+    );
+
+    let mut endpoints = Vec::new();
+    for path in &cli.bridge_endpoints {
+        let (net, proj, _meta) = load_checkpoint(path).expect("failed to load bridge endpoint");
+        assert_eq!(net.neuron_count(), cli.h, "bridge endpoint H mismatch");
+        endpoints.push((path.display().to_string(), net, proj));
+    }
+
+    let path = cli.out.join("bridge_samples.csv");
+    let mut writer = BufWriter::new(File::create(&path).expect("failed to create bridge csv"));
+    writeln!(
+        writer,
+        "pair_id,endpoint_a,endpoint_b,step,steps,fraction,score,delta_vs_baseline,baseline_score,coord_distance_from_a,coord_distance_to_b,pass_positive"
+    )
+    .expect("failed to write bridge header");
+
+    for i in 0..endpoints.len() {
+        for j in (i + 1)..endpoints.len() {
+            let (name_a, net_a, proj_a) = &endpoints[i];
+            let (name_b, net_b, _proj_b) = &endpoints[j];
+            let coord_a = encode_coord(net_a);
+            let coord_b = encode_coord(net_b);
+            for step in 0..=cli.bridge_steps {
+                let coord = interpolate_coord(&coord_a, &coord_b, step, cli.bridge_steps);
+                let waypoint = decode_coord(&coord);
+                let score = mean_endpoint_score(
+                    cli,
+                    &waypoint,
+                    proj_a,
+                    table,
+                    pair_ids,
+                    hot_to_idx,
+                    bigram,
+                    unigram,
+                    init,
+                );
+                let dist_a = coord_distance(&coord_a, &coord);
+                let dist_b = coord_distance(&coord, &coord_b);
+                let delta = score - baseline_score;
+                writeln!(
+                    writer,
+                    "{},\"{}\",\"{}\",{},{},{:.6},{:.12},{:.12},{:.12},{},{},{}",
+                    format!("{}__{}", i + 1, j + 1),
+                    name_a,
+                    name_b,
+                    step,
+                    cli.bridge_steps,
+                    step as f64 / cli.bridge_steps.max(1) as f64,
+                    score,
+                    delta,
+                    baseline_score,
+                    dist_a,
+                    dist_b,
+                    delta > 0.0
+                )
+                .expect("failed to write bridge row");
+            }
+        }
+    }
+    writer.flush().expect("failed to flush bridge csv");
+}
+
 fn main() {
     let cli = parse_args();
     create_dir_all(&cli.out).expect("failed to create output directory");
@@ -1530,6 +1704,19 @@ fn main() {
             init.input_end(),
             cli.input_scatter,
         );
+
+        if cli.mode == "endpoint-bridge" {
+            run_endpoint_bridge(
+                &cli,
+                &table,
+                &pair_ids,
+                &hot_to_idx,
+                &bigram,
+                &unigram,
+                &init,
+            );
+            break;
+        }
 
         if cli.mode == "paratrooper-climb" {
             let climb_path = cli.out.join("paratrooper_paths.csv");
@@ -2056,6 +2243,8 @@ fn main() {
     let meta = RunMeta {
         phase: if cli.mode == "paratrooper-climb" {
             "D9.0i"
+        } else if cli.mode == "endpoint-bridge" {
+            "D9.0v"
         } else if matches!(cli.mode.as_str(), "planet-scout" | "homogeneous") {
             "D9.0e"
         } else {
@@ -2093,6 +2282,13 @@ fn main() {
         endpoint_eval_len: (cli.mode == "paratrooper-climb").then_some(cli.endpoint_eval_len),
         endpoint_eval_seeds: (cli.mode == "paratrooper-climb")
             .then_some(cli.endpoint_eval_seeds.clone()),
+        bridge_endpoints: (cli.mode == "endpoint-bridge").then_some(
+            cli.bridge_endpoints
+                .iter()
+                .map(|path| path.display().to_string())
+                .collect(),
+        ),
+        bridge_steps: (cli.mode == "endpoint-bridge").then_some(cli.bridge_steps),
         radii: cli.radii.clone(),
         mutation_types: cli
             .mutation_types
