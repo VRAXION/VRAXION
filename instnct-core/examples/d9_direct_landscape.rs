@@ -278,6 +278,34 @@ struct MultiObjectiveCandidate {
     proj: Int8Projection,
 }
 
+#[derive(Clone)]
+struct QuadtreeTarget {
+    parent_tile_id: String,
+    quadrant: usize,
+    child_tile_id: String,
+    child_lat_bin: usize,
+    child_lon_bin: usize,
+    is_control: bool,
+}
+
+#[derive(Clone)]
+struct QuadtreeCandidate {
+    target: QuadtreeTarget,
+    sample_idx: usize,
+    sample_seed: u64,
+    radius: usize,
+    mutation_type: MutationType,
+    counts: MutationCounts,
+    direct_distance: usize,
+    edges: usize,
+    scores: MultiMetricScores,
+    deltas: MultiMetricScores,
+    mo_score: f64,
+    mo_class: &'static str,
+    net: Network,
+    proj: Int8Projection,
+}
+
 fn parse_csv_usize(value: &str) -> Vec<usize> {
     value
         .split(',')
@@ -600,7 +628,8 @@ fn parse_args() -> Cli {
         | "endpoint-robustness"
         | "repair-scan"
         | "multi-objective-climb" => vec![1],
-        other => panic!("--mode expects fail-fast|medium|full|staged|planet-scout|paratrooper-climb|endpoint-bridge|endpoint-overlap|endpoint-robustness|repair-scan|multi-objective-climb, got {other}"),
+        | "quadtree-scout" => vec![4, 8, 16],
+        other => panic!("--mode expects fail-fast|medium|full|staged|planet-scout|paratrooper-climb|endpoint-bridge|endpoint-overlap|endpoint-robustness|repair-scan|multi-objective-climb|quadtree-scout, got {other}"),
     };
     let default_mutation_types = if matches!(
         mode.as_str(),
@@ -612,6 +641,7 @@ fn parse_args() -> Cli {
             | "endpoint-robustness"
             | "repair-scan"
             | "multi-objective-climb"
+            | "quadtree-scout"
     ) {
         vec![MutationType::Edge, MutationType::Threshold]
     } else {
@@ -2731,6 +2761,307 @@ fn run_multi_objective_climb(
         .expect("failed to flush multi_objective_candidates");
 }
 
+fn default_d9_parent_tiles() -> Vec<(usize, usize)> {
+    vec![(11, 16), (12, 29), (9, 26)]
+}
+
+fn build_quadtree_targets(cli: &Cli) -> Vec<QuadtreeTarget> {
+    let parents = cli
+        .target_tiles
+        .clone()
+        .unwrap_or_else(default_d9_parent_tiles);
+    let child_lat_bins = cli.lat_bins * 2;
+    let child_lon_bins = cli.lon_bins * 2;
+    let mut targets = Vec::new();
+    let mut child_set: HashSet<(usize, usize)> = HashSet::new();
+    for &(parent_lat, parent_lon) in &parents {
+        let parent_tile_id = format!("{}_{}", parent_lat, parent_lon);
+        for quadrant in 1..=4 {
+            let row = (quadrant - 1) / 2;
+            let col = (quadrant - 1) % 2;
+            let child_lat_bin = parent_lat * 2 + row;
+            let child_lon_bin = parent_lon * 2 + col;
+            let child_tile_id = format!("{}_{}", child_lat_bin, child_lon_bin);
+            child_set.insert((child_lat_bin, child_lon_bin));
+            targets.push(QuadtreeTarget {
+                parent_tile_id: parent_tile_id.clone(),
+                quadrant,
+                child_tile_id,
+                child_lat_bin,
+                child_lon_bin,
+                is_control: false,
+            });
+        }
+    }
+
+    let mut control_set: HashSet<(usize, usize)> = HashSet::new();
+    for &(parent_lat, parent_lon) in &parents {
+        let base_lat = parent_lat * 2;
+        let base_lon = parent_lon * 2;
+        let candidates = [
+            (base_lat.wrapping_sub(1), base_lon),
+            (base_lat + 2, base_lon),
+            (base_lat, base_lon.wrapping_sub(1)),
+            (base_lat, base_lon + 2),
+        ];
+        for (lat, lon) in candidates {
+            if lat < child_lat_bins
+                && lon < child_lon_bins
+                && !child_set.contains(&(lat, lon))
+                && control_set.insert((lat, lon))
+            {
+                targets.push(QuadtreeTarget {
+                    parent_tile_id: String::from("CONTROL"),
+                    quadrant: 0,
+                    child_tile_id: format!("{}_{}", lat, lon),
+                    child_lat_bin: lat,
+                    child_lon_bin: lon,
+                    is_control: true,
+                });
+            }
+        }
+    }
+    targets
+}
+
+fn run_quadtree_scout(
+    cli: &Cli,
+    table: &VcbpTable,
+    pair_ids: &[u16],
+    hot_to_idx: &[usize],
+    bigram: &[Vec<f64>],
+    unigram: &[f64],
+    init: &InitConfig,
+) {
+    assert!(
+        cli.mutation_types
+            .iter()
+            .all(|t| matches!(t, MutationType::Edge | MutationType::Threshold)),
+        "D9.3a quadtree-scout only supports edge,threshold mutation types"
+    );
+    assert!(
+        !cli.mo_eval_seeds.is_empty(),
+        "--mo-eval-seeds must not be empty"
+    );
+    let baseline_path = cli
+        .checkpoints
+        .first()
+        .expect("baseline checkpoint required");
+    let (baseline_net, baseline_proj, _) =
+        load_checkpoint(baseline_path).expect("failed to load baseline checkpoint");
+    assert_eq!(baseline_net.neuron_count(), cli.h, "baseline H mismatch");
+    let (start_net, start_proj) = if let Some(repair_start) = &cli.repair_start {
+        let (net, proj, _) =
+            load_checkpoint(repair_start).expect("failed to load quadtree repair-start checkpoint");
+        assert_eq!(net.neuron_count(), cli.h, "repair-start H mismatch");
+        (net, proj)
+    } else {
+        (baseline_net.clone(), baseline_proj.clone())
+    };
+
+    let targets = build_quadtree_targets(cli);
+    let start_coord = encode_coord(&start_net);
+    let baseline_scores = evaluate_multi_metrics(
+        &baseline_net,
+        &baseline_proj,
+        table,
+        pair_ids,
+        hot_to_idx,
+        bigram,
+        unigram,
+        cli.eval_len,
+        &cli.mo_eval_seeds,
+        init,
+        cli.h,
+        cli.input_scatter,
+    );
+
+    let root_resolution = format!("{}x{}", cli.lat_bins, cli.lon_bins);
+    let child_resolution = format!("{}x{}", cli.lat_bins * 2, cli.lon_bins * 2);
+    let mut writer = BufWriter::new(
+        File::create(cli.out.join("child_tiles.csv")).expect("failed to create child_tiles.csv"),
+    );
+    writeln!(
+        writer,
+        "parent_tile_id,quadrant,child_tile_id,child_lat_bin,child_lon_bin,root_resolution,child_resolution,is_control,sample_idx,sample_seed,radius,mutation_type,edge_edits,threshold_edits,direct_genome_distance,edges,smooth_score,smooth_delta,accuracy_score,accuracy_delta,echo_score,echo_delta,unigram_score,unigram_delta,mo_score,mo_class,constraints_pass"
+    )
+    .expect("failed to write child_tiles header");
+
+    let mut candidates: Vec<QuadtreeCandidate> = Vec::new();
+    for target in &targets {
+        for &radius in &cli.radii {
+            for &mutation_type in &cli.mutation_types {
+                for sample_idx in 0..cli.samples_per_tile {
+                    let sample_seed = cli.seed
+                        ^ ((target.child_lat_bin as u64) << 44)
+                        ^ ((target.child_lon_bin as u64) << 32)
+                        ^ ((radius as u64) << 20)
+                        ^ ((sample_idx as u64) << 8)
+                        ^ (mutation_type.as_str().as_bytes()[0] as u64)
+                        ^ 0xD93A_0001u64;
+                    let mut mutation_rng = StdRng::seed_from_u64(sample_seed);
+                    let mut candidate_net = start_net.clone();
+                    let candidate_proj = start_proj.clone();
+                    let counts = apply_radius_mutation(
+                        &mut candidate_net,
+                        radius,
+                        mutation_type,
+                        &mut mutation_rng,
+                    );
+                    let candidate_coord = encode_coord(&candidate_net);
+                    let direct_distance = coord_distance(&start_coord, &candidate_coord);
+                    let scores = evaluate_multi_metrics(
+                        &candidate_net,
+                        &candidate_proj,
+                        table,
+                        pair_ids,
+                        hot_to_idx,
+                        bigram,
+                        unigram,
+                        cli.eval_len,
+                        &cli.mo_eval_seeds,
+                        init,
+                        cli.h,
+                        cli.input_scatter,
+                    );
+                    let deltas = metric_deltas(scores, baseline_scores);
+                    let score = mo_score(deltas);
+                    let class_name = mo_class(deltas);
+                    writeln!(
+                        writer,
+                        "{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{:.12},{:.12},{:.12},{:.12},{:.12},{:.12},{:.12},{:.12},{:.12},{},{}",
+                        target.parent_tile_id,
+                        target.quadrant,
+                        target.child_tile_id,
+                        target.child_lat_bin,
+                        target.child_lon_bin,
+                        root_resolution,
+                        child_resolution,
+                        target.is_control,
+                        sample_idx,
+                        sample_seed,
+                        radius,
+                        mutation_type.as_str(),
+                        counts.edge,
+                        counts.threshold,
+                        direct_distance,
+                        candidate_net.edge_count(),
+                        scores.smooth,
+                        deltas.smooth,
+                        scores.accuracy,
+                        deltas.accuracy,
+                        scores.echo,
+                        deltas.echo,
+                        scores.unigram,
+                        deltas.unigram,
+                        score,
+                        class_name,
+                        mo_constraints_pass(deltas)
+                    )
+                    .expect("failed to write child tile row");
+                    candidates.push(QuadtreeCandidate {
+                        target: target.clone(),
+                        sample_idx,
+                        sample_seed,
+                        radius,
+                        mutation_type,
+                        counts,
+                        direct_distance,
+                        edges: candidate_net.edge_count(),
+                        scores,
+                        deltas,
+                        mo_score: score,
+                        mo_class: class_name,
+                        net: candidate_net,
+                        proj: candidate_proj,
+                    });
+                }
+            }
+        }
+        writer.flush().expect("failed to flush child_tiles");
+        println!(
+            "  quadtree target={} parent={} control={} rows={}",
+            target.child_tile_id,
+            target.parent_tile_id,
+            target.is_control,
+            candidates.len()
+        );
+    }
+
+    candidates.sort_by(|a, b| {
+        mo_class_rank(b.mo_class)
+            .cmp(&mo_class_rank(a.mo_class))
+            .then_with(|| b.deltas.unigram.partial_cmp(&a.deltas.unigram).unwrap())
+            .then_with(|| b.mo_score.partial_cmp(&a.mo_score).unwrap())
+            .then_with(|| b.deltas.smooth.partial_cmp(&a.deltas.smooth).unwrap())
+    });
+    let candidates_dir = cli.out.join("candidates");
+    create_dir_all(&candidates_dir).expect("failed to create quadtree candidates dir");
+    let mut cand_writer = BufWriter::new(
+        File::create(cli.out.join("child_candidates.csv"))
+            .expect("failed to create child_candidates.csv"),
+    );
+    writeln!(
+        cand_writer,
+        "rank,checkpoint,parent_tile_id,quadrant,child_tile_id,is_control,sample_idx,sample_seed,radius,mutation_type,edge_edits,threshold_edits,direct_genome_distance,edges,smooth_score,smooth_delta,accuracy_score,accuracy_delta,echo_score,echo_delta,unigram_score,unigram_delta,mo_score,mo_class"
+    )
+    .expect("failed to write child_candidates header");
+    for (rank_idx, candidate) in candidates.iter().take(cli.mo_export_top).enumerate() {
+        let rank = rank_idx + 1;
+        let ckpt_path = candidates_dir.join(format!("top_{rank:02}.ckpt"));
+        save_checkpoint(
+            &ckpt_path,
+            &candidate.net,
+            &candidate.proj,
+            CheckpointMeta {
+                step: candidate.sample_idx,
+                accuracy: candidate.scores.accuracy,
+                label: format!(
+                    "D9.3a quadtree rank={} child={} class={} smooth_delta={:.6} unigram_delta={:.6}",
+                    rank,
+                    candidate.target.child_tile_id,
+                    candidate.mo_class,
+                    candidate.deltas.smooth,
+                    candidate.deltas.unigram
+                ),
+            },
+        )
+        .expect("failed to save quadtree candidate checkpoint");
+        writeln!(
+            cand_writer,
+            "{},{},{},{},{},{},{},{},{},{},{},{},{},{},{:.12},{:.12},{:.12},{:.12},{:.12},{:.12},{:.12},{:.12},{:.12},{}",
+            rank,
+            ckpt_path.display(),
+            candidate.target.parent_tile_id,
+            candidate.target.quadrant,
+            candidate.target.child_tile_id,
+            candidate.target.is_control,
+            candidate.sample_idx,
+            candidate.sample_seed,
+            candidate.radius,
+            candidate.mutation_type.as_str(),
+            candidate.counts.edge,
+            candidate.counts.threshold,
+            candidate.direct_distance,
+            candidate.edges,
+            candidate.scores.smooth,
+            candidate.deltas.smooth,
+            candidate.scores.accuracy,
+            candidate.deltas.accuracy,
+            candidate.scores.echo,
+            candidate.deltas.echo,
+            candidate.scores.unigram,
+            candidate.deltas.unigram,
+            candidate.mo_score,
+            candidate.mo_class
+        )
+        .expect("failed to write child candidate row");
+    }
+    cand_writer
+        .flush()
+        .expect("failed to flush child_candidates");
+}
+
 fn main() {
     let cli = parse_args();
     create_dir_all(&cli.out).expect("failed to create output directory");
@@ -2855,6 +3186,19 @@ fn main() {
 
         if cli.mode == "multi-objective-climb" {
             run_multi_objective_climb(
+                &cli,
+                &table,
+                &pair_ids,
+                &hot_to_idx,
+                &bigram,
+                &unigram,
+                &init,
+            );
+            break;
+        }
+
+        if cli.mode == "quadtree-scout" {
+            run_quadtree_scout(
                 &cli,
                 &table,
                 &pair_ids,
@@ -3401,6 +3745,8 @@ fn main() {
             "D9.1a"
         } else if cli.mode == "multi-objective-climb" {
             "D9.2a"
+        } else if cli.mode == "quadtree-scout" {
+            "D9.3a"
         } else if matches!(cli.mode.as_str(), "planet-scout" | "homogeneous") {
             "D9.0e"
         } else {
@@ -3416,12 +3762,12 @@ fn main() {
         samples_per_tile: cli.samples_per_tile,
         lat_bins: matches!(
             cli.mode.as_str(),
-            "planet-scout" | "homogeneous" | "paratrooper-climb"
+            "planet-scout" | "homogeneous" | "paratrooper-climb" | "quadtree-scout"
         )
         .then_some(cli.lat_bins),
         lon_bins: matches!(
             cli.mode.as_str(),
-            "planet-scout" | "homogeneous" | "paratrooper-climb"
+            "planet-scout" | "homogeneous" | "paratrooper-climb" | "quadtree-scout"
         )
         .then_some(cli.lon_bins),
         target_tiles: cli.target_tiles.as_ref().map(|tiles| {
@@ -3448,7 +3794,7 @@ fn main() {
         overlap_samples: (cli.mode == "endpoint-overlap").then_some(cli.overlap_samples),
         robustness_eval_lens: (cli.mode == "endpoint-robustness")
             .then_some(cli.robustness_eval_lens.clone()),
-        repair_start: (cli.mode == "repair-scan").then(|| {
+        repair_start: matches!(cli.mode.as_str(), "repair-scan" | "quadtree-scout").then(|| {
             cli.repair_start
                 .as_ref()
                 .map(|path| path.display().to_string())
@@ -3460,8 +3806,16 @@ fn main() {
         repair_export_top: (cli.mode == "repair-scan").then_some(cli.repair_export_top),
         mo_climbers: (cli.mode == "multi-objective-climb").then_some(cli.mo_climbers),
         mo_steps: (cli.mode == "multi-objective-climb").then_some(cli.mo_steps),
-        mo_eval_seeds: (cli.mode == "multi-objective-climb").then_some(cli.mo_eval_seeds.clone()),
-        mo_export_top: (cli.mode == "multi-objective-climb").then_some(cli.mo_export_top),
+        mo_eval_seeds: matches!(
+            cli.mode.as_str(),
+            "multi-objective-climb" | "quadtree-scout"
+        )
+        .then_some(cli.mo_eval_seeds.clone()),
+        mo_export_top: matches!(
+            cli.mode.as_str(),
+            "multi-objective-climb" | "quadtree-scout"
+        )
+        .then_some(cli.mo_export_top),
         radii: cli.radii.clone(),
         mutation_types: cli
             .mutation_types

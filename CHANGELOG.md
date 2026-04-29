@@ -5,6 +5,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added — 2026-04-29: Phase D9.3a quadtree tessellation scan
+
+- Added `d9_direct_landscape --mode quadtree-scout` for local quadtree refinement over the D9 island tiles. The mode emits child-tile fields (`parent_tile_id`, `quadrant`, `child_tile_id`, child bin indices, root/child resolution, control flag), evaluates candidates with the D9.2 multi-objective gate, and exports top child candidate checkpoints.
+- D9.3a first pass (`docs/research/PHASE_D9_3A_QUADTREE_REPORT.md`) scanned 12 child tiles plus controls around `11_16`, `12_29`, and `9_26`, starting from `seed2042_improved_generalist_v1` and measuring deltas against the H=384 seed2042 baseline. Verdict: `D9_3A_CONFIRMED_CHILD_CANDIDATES` with topology readout `D9_3A_MIXED_CHILD_AND_CONTROL_SIGNAL`.
+- Adversarial result: 15 child rows and 9 control rows reached `FULL_GENERALIST`, so the result is not an isolated pinpoint-child claim. The current readout is a wider mixed child/control signal in the local perturbation space.
+
 ## [5.0.0-beta.8] - 2026-04-29
 
 ### Added — 2026-04-29: Phase D9.2 multi-objective generalist confirmation
