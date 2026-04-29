@@ -11,6 +11,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - The D10 modes reuse the D9 multi-objective metric stack (`smooth`, `accuracy`, `echo`, `unigram`) and emit a common output schema: `candidate_summary.csv`, `universality_matrix.csv`, `run_summary.json`, and `causal_summary.json`.
 - Added `docs/research/PHASE_D10_BASIN_UNIVERSALITY_DOSSIER.md` as the conservative long-horizon evidence gate for deciding whether the beta.8 basin is local, task-specific, scaling-promising, or universal. No generated `output/` data is committed.
 
+### Added — 2026-04-29: Phase D9.4b causal confirm
+
+- Confirmed the beta.8 H=384 generalist checkpoint's causal explanation at `eval_len=4000` and `eval_len=16000` over 30 fresh seeds. Verdict: `D9_4B_CAUSAL_CONFIRM_PASS`; both eval lengths preserve `EDGE_THRESHOLD_COADAPTATION`, with positive smooth/accuracy/unigram deltas and unchanged projection/channel/polarity.
+
 ### Added — 2026-04-29: Phase D9.4a causal basin diff
 
 - Added `d9_direct_landscape --mode causal-diff` to compare a baseline checkpoint against a target checkpoint and emit structural diff files (`genome_diff_summary.json`, edge/threshold CSVs), group ablation/graft results, and a causal diff report.
