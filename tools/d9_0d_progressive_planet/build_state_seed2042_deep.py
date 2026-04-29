@@ -25,19 +25,26 @@ SRC_O = REPO / "output" / "phase_d9_0o_seed2042_top3_deepening_20260428"
 SRC_Q = REPO / "output" / "phase_d9_0q_seed2042_long_climb_20260429"
 SRC_X = REPO / "output" / "phase_d9_0x_endpoint_robustness_20260429"
 SRC_2A = REPO / "output" / "phase_d9_2a_multi_objective_microprobe_20260429"
+SRC_2B = REPO / "output" / "phase_d9_2b_multi_objective_confirm_20260429"
 SUMMARY_CSV_N = SRC_N / "tile_deep_trajectory_summary.csv"
 SUMMARY_CSV_O = SRC_O / "tile_top3_deepening_summary.csv"
 SUMMARY_CSV_Q = SRC_Q / "tile_long_climb_summary.csv"
 ROBUSTNESS_JSON = SRC_X / "d9_0x_robustness_summary.json"
 MULTI_OBJ_JSON = SRC_2A / "d9_2a_multi_objective_summary.json"
+GENERALIST_CONFIRM_JSON = SRC_2B / "d9_2b_summary.json"
 OUT_JS = REPO / "tools" / "d9_0d_progressive_planet" / "state.js"
 
 LAT_BINS = 16
 LON_BINS = 32
 
+# D9.2b CONFIRM (FULL_GENERALIST_CONFIRMED): the top_01 microprobe checkpoint
+# is rooted in the 11_16 tile (the strongest specialist). After D9.2b, the
+# 11_16 tile is promoted from NETWORK_VALIDATED (specialist) to
+# GENERALIST_VALIDATED — the first endpoint that passes ALL FOUR tasks.
+TOP1_GENERALIST = {"11_16"}
 # D9.0x STRICT_PASS: 3 tiles produced production-grade endpoints -> NETWORK_VALIDATED
-# (Each entry: tile -> recommended endpoint id with robustness stats)
-TOP3_VALIDATED = {"11_16", "12_29", "9_26"}
+# (12_29 and 9_26 stay specialist; only 11_16 was multi-objective-tested)
+TOP3_VALIDATED = {"12_29", "9_26"}
 # Mountain core: D9.0q 300-step run kept these climbing > basin (pre-validation)
 TOP2_MOUNTAIN = {"12_29", "11_16"}
 # Top 3 from D9.0o 200-step deepening
@@ -102,6 +109,40 @@ def load_robustness() -> dict[str, dict]:
             "validated_eval_lens": [1000, 4000, 16000],
         }
     return by_tile
+
+
+def load_generalist_confirm() -> dict | None:
+    """Load D9.2b multi-objective confirm summary (FULL_GENERALIST_CONFIRMED).
+
+    Returns per-endpoint pass/fail flags + the per-eval-len mean/lower95
+    on each of the 4 tasks (smooth/accuracy/echo/unigram).
+    """
+    if not GENERALIST_CONFIRM_JSON.exists():
+        return None
+    blob = json.loads(GENERALIST_CONFIRM_JSON.read_text(encoding="utf-8"))
+    endpoints = []
+    for ep in blob.get("endpoints", []):
+        ep_summary = {
+            "endpoint": ep.get("endpoint"),
+            "checkpoint": ep.get("checkpoint"),
+            "pass_strict_all": ep.get("pass_strict_all", False),
+            "pass_moderate_all": ep.get("pass_moderate_all", False),
+            "evals": ep.get("evals", []),
+        }
+        endpoints.append(ep_summary)
+    n_strict = sum(1 for ep in endpoints if ep["pass_strict_all"])
+    return {
+        "verdict": blob.get("verdict", "D9_2_GENERALIST_UNKNOWN"),
+        "status": "CONFIRMED" if blob.get("verdict") == "D9_2_FULL_GENERALIST_CONFIRMED" else "PARTIAL",
+        "n_endpoints": len(endpoints),
+        "n_strict_pass": n_strict,
+        "endpoints": endpoints,
+        "promotion_candidate": "top_01.ckpt",
+        "checkpoint_path": "output/phase_d9_2a_multi_objective_microprobe_20260429/candidates/top_01.ckpt",
+        "candidate_name": "seed2042_improved_generalist_v1",
+        "eval_lens": [4000, 16000],
+        "n_seeds": 30,
+    }
 
 
 def load_multi_objective() -> dict | None:
@@ -190,7 +231,11 @@ def build_climbed_tile(row: dict, deep_row: dict | None = None, mountain_row: di
     late_plateau = f(src, "late_plateau_rate") or 0.0
     deep_long_ascent = f(src, "deep_long_ascent_rate")
 
-    if tile_id in TOP3_VALIDATED:
+    if tile_id in TOP1_GENERALIST:
+        state = "GENERALIST_VALIDATED"
+        task_breadth = "generalist"
+        task_breadth_note = "smooth+accuracy+echo+unigram all positive (D9.2b strict pass)"
+    elif tile_id in TOP3_VALIDATED:
         state = "NETWORK_VALIDATED"
         task_breadth = "specialist"
         task_breadth_note = "smooth+accuracy specialist; degrades on unigram (D9.0z)"
@@ -236,8 +281,10 @@ def build_climbed_tile(row: dict, deep_row: dict | None = None, mountain_row: di
             "positive_rate": material,
         }
 
-    if state == "NETWORK_VALIDATED":
-        action = "production_trial"
+    if state == "GENERALIST_VALIDATED":
+        action = "promote_to_mainline"
+    elif state == "NETWORK_VALIDATED":
+        action = "multi_objective_climb"
     elif state == "MOUNTAIN_CONFIRMED":
         action = "endpoint_export"
     elif state == "DEEP_BASIN_CONFIRMED":
@@ -355,6 +402,7 @@ def main() -> int:
     mountain_by_tile = {r["tile_id"]: r for r in mountain_rows}
     robustness_by_tile = load_robustness()
     multi_objective = load_multi_objective()
+    generalist_confirm = load_generalist_confirm()
     climbed_tile_ids = {r["tile_id"] for r in rows}
 
     tiles = []
@@ -404,6 +452,7 @@ def main() -> int:
 
     n_total = len(tiles)
     n_climbed = len(rows)
+    n_generalist = sum(1 for t in tiles if t["state"] == "GENERALIST_VALIDATED")
     n_validated = sum(1 for t in tiles if t["state"] == "NETWORK_VALIDATED")
     n_mountain = sum(1 for t in tiles if t["state"] == "MOUNTAIN_CONFIRMED")
     n_deep_basin = sum(1 for t in tiles if t["state"] == "DEEP_BASIN_CONFIRMED")
@@ -411,8 +460,8 @@ def main() -> int:
 
     state_obj = {
         "schema_version": "d9.0d-1",
-        "run_id": "d9_0x_seed2042_robustness_strict_pass",
-        "source_run_id": "output/phase_d9_0x_endpoint_robustness_20260429",
+        "run_id": "d9_2b_seed2042_full_generalist_confirmed",
+        "source_run_id": "output/phase_d9_2b_multi_objective_confirm_20260429",
         "generated_at_utc": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
         "last_updated": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
         "phase_status": "finished",
@@ -433,23 +482,26 @@ def main() -> int:
             "tile_assignment": "d9_0q_long_climb_300",
             "climb_steps_per_climber": 300,
             "climbers_per_tile": 64,
-            "verdict": "D9_ENDPOINT_ROBUSTNESS_STRICT_PASS",
+            "verdict": "D9_2_FULL_GENERALIST_CONFIRMED",
             "topology": "3_INDEPENDENT_ISLANDS_NO_TOUCH",
-            "production_candidate": "11_16_endpoint_01",
-            "production_candidate_name": "seed2042_improved_v1",
-            "task_breadth_warning": "validated tiles are smooth+accuracy specialist endpoints; not general-purpose",
+            "production_candidate": "top_01.ckpt",
+            "production_candidate_name": "seed2042_improved_generalist_v1",
+            "production_candidate_path": "output/phase_d9_2a_multi_objective_microprobe_20260429/candidates/top_01.ckpt",
+            "task_breadth_warning": "specialist tiles (12_29, 9_26) gain on smooth+accuracy only; the 11_16 generalist tile passes all 4 tasks",
             "multi_objective_microprobe": multi_objective,
+            "generalist_confirm": generalist_confirm,
         },
         "tiles": tiles,
         "queue": deepen_queue,
         "progress": {
             "n_total_tiles": n_total,
             "n_climbed": n_climbed,
+            "n_generalist_validated": n_generalist,
             "n_network_validated": n_validated,
             "n_mountain_confirmed": n_mountain,
             "n_deep_basin": n_deep_basin,
             "n_basin_confirmed": n_confirmed_basin,
-            "n_promising": n_climbed - n_validated - n_mountain - n_deep_basin - n_confirmed_basin,
+            "n_promising": n_climbed - n_generalist - n_validated - n_mountain - n_deep_basin - n_confirmed_basin,
             "n_unknown": n_total - n_climbed,
             "coverage_pct": n_climbed / n_total * 100.0,
             "global_validated_endpoints": 3,
@@ -476,13 +528,14 @@ def main() -> int:
     print(f"wrote: {OUT_JS}")
     print(f"  total tiles:           {n_total}")
     print(f"  climbed:               {n_climbed}")
+    print(f"  GENERALIST_VALIDATED:  {n_generalist}")
     print(f"  NETWORK_VALIDATED:     {n_validated}")
     print(f"  MOUNTAIN_CONFIRMED:    {n_mountain}")
     print(f"  DEEP_BASIN_CONFIRMED:  {n_deep_basin}")
     print(f"  BASIN_CONFIRMED:       {n_confirmed_basin}")
-    print(f"  PROMISING:             {n_climbed - n_validated - n_mountain - n_deep_basin - n_confirmed_basin}")
+    print(f"  PROMISING:             {n_climbed - n_generalist - n_validated - n_mountain - n_deep_basin - n_confirmed_basin}")
     print(f"  UNKNOWN:               {n_total - n_climbed}")
-    print(f"  production candidate:  11_16_endpoint_01 (lower95=+0.01666)")
+    print(f"  promotion candidate:   top_01.ckpt = seed2042_improved_generalist_v1")
     return 0
 
 

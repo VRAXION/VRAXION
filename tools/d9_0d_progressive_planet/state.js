@@ -1,9 +1,9 @@
 window.ATLAS_STATE = {
   "schema_version": "d9.0d-1",
-  "run_id": "d9_0x_seed2042_robustness_strict_pass",
-  "source_run_id": "output/phase_d9_0x_endpoint_robustness_20260429",
-  "generated_at_utc": "2026-04-29T10:54:53Z",
-  "last_updated": "2026-04-29T10:54:53Z",
+  "run_id": "d9_2b_seed2042_full_generalist_confirmed",
+  "source_run_id": "output/phase_d9_2b_multi_objective_confirm_20260429",
+  "generated_at_utc": "2026-04-29T11:27:24Z",
+  "last_updated": "2026-04-29T11:27:24Z",
   "phase_status": "finished",
   "stop_clock_active": false,
   "source_samples_csv": "output/phase_d9_0q_seed2042_long_climb_20260429/paratrooper_paths.csv",
@@ -22,11 +22,12 @@ window.ATLAS_STATE = {
     "tile_assignment": "d9_0q_long_climb_300",
     "climb_steps_per_climber": 300,
     "climbers_per_tile": 64,
-    "verdict": "D9_ENDPOINT_ROBUSTNESS_STRICT_PASS",
+    "verdict": "D9_2_FULL_GENERALIST_CONFIRMED",
     "topology": "3_INDEPENDENT_ISLANDS_NO_TOUCH",
-    "production_candidate": "11_16_endpoint_01",
-    "production_candidate_name": "seed2042_improved_v1",
-    "task_breadth_warning": "validated tiles are smooth+accuracy specialist endpoints; not general-purpose",
+    "production_candidate": "top_01.ckpt",
+    "production_candidate_name": "seed2042_improved_generalist_v1",
+    "production_candidate_path": "output/phase_d9_2a_multi_objective_microprobe_20260429/candidates/top_01.ckpt",
+    "task_breadth_warning": "specialist tiles (12_29, 9_26) gain on smooth+accuracy only; the 11_16 generalist tile passes all 4 tasks",
     "multi_objective_microprobe": {
       "verdict": "D9_2_MULTI_OBJECTIVE_SUCCESS",
       "status": "MICROPROBE_PENDING_CONFIRM",
@@ -89,6 +90,106 @@ window.ATLAS_STATE = {
         }
       ],
       "next_step": "D9.2b confirm with fresh seeds and longer eval_len"
+    },
+    "generalist_confirm": {
+      "verdict": "D9_2_FULL_GENERALIST_CONFIRMED",
+      "status": "CONFIRMED",
+      "n_endpoints": 3,
+      "n_strict_pass": 3,
+      "endpoints": [
+        {
+          "endpoint": 1,
+          "checkpoint": "top_01.ckpt",
+          "pass_strict_all": true,
+          "pass_moderate_all": true,
+          "evals": [
+            {
+              "eval_len": 4000,
+              "smooth_pass": true,
+              "accuracy_pass": true,
+              "echo_pass": true,
+              "unigram_strict": true,
+              "unigram_mean": true,
+              "pass_strict": true,
+              "pass_moderate": true
+            },
+            {
+              "eval_len": 16000,
+              "smooth_pass": true,
+              "accuracy_pass": true,
+              "echo_pass": true,
+              "unigram_strict": true,
+              "unigram_mean": true,
+              "pass_strict": true,
+              "pass_moderate": true
+            }
+          ]
+        },
+        {
+          "endpoint": 2,
+          "checkpoint": "top_02.ckpt",
+          "pass_strict_all": true,
+          "pass_moderate_all": true,
+          "evals": [
+            {
+              "eval_len": 4000,
+              "smooth_pass": true,
+              "accuracy_pass": true,
+              "echo_pass": true,
+              "unigram_strict": true,
+              "unigram_mean": true,
+              "pass_strict": true,
+              "pass_moderate": true
+            },
+            {
+              "eval_len": 16000,
+              "smooth_pass": true,
+              "accuracy_pass": true,
+              "echo_pass": true,
+              "unigram_strict": true,
+              "unigram_mean": true,
+              "pass_strict": true,
+              "pass_moderate": true
+            }
+          ]
+        },
+        {
+          "endpoint": 3,
+          "checkpoint": "top_03.ckpt",
+          "pass_strict_all": true,
+          "pass_moderate_all": true,
+          "evals": [
+            {
+              "eval_len": 4000,
+              "smooth_pass": true,
+              "accuracy_pass": true,
+              "echo_pass": true,
+              "unigram_strict": true,
+              "unigram_mean": true,
+              "pass_strict": true,
+              "pass_moderate": true
+            },
+            {
+              "eval_len": 16000,
+              "smooth_pass": true,
+              "accuracy_pass": true,
+              "echo_pass": true,
+              "unigram_strict": true,
+              "unigram_mean": true,
+              "pass_strict": true,
+              "pass_moderate": true
+            }
+          ]
+        }
+      ],
+      "promotion_candidate": "top_01.ckpt",
+      "checkpoint_path": "output/phase_d9_2a_multi_objective_microprobe_20260429/candidates/top_01.ckpt",
+      "candidate_name": "seed2042_improved_generalist_v1",
+      "eval_lens": [
+        4000,
+        16000
+      ],
+      "n_seeds": 30
     }
   },
   "tiles": [
@@ -112,8 +213,8 @@ window.ATLAS_STATE = {
       "positive_rate": 0.765625,
       "mean_behavior_distance": null,
       "confidence": 1.0,
-      "state": "NETWORK_VALIDATED",
-      "recommended_action": "production_trial",
+      "state": "GENERALIST_VALIDATED",
+      "recommended_action": "promote_to_mainline",
       "dominant_mutation_type": "edge",
       "dominant_radius": 8,
       "per_type": {
@@ -169,8 +270,8 @@ window.ATLAS_STATE = {
       "validated_pass_strict": true,
       "validated_endpoint_id": "11_16_endpoint_01",
       "validated_n_seeds": 30,
-      "task_breadth": "specialist",
-      "task_breadth_note": "smooth+accuracy specialist; degrades on unigram (D9.0z)"
+      "task_breadth": "generalist",
+      "task_breadth_note": "smooth+accuracy+echo+unigram all positive (D9.2b strict pass)"
     },
     {
       "tile_id": "9_26",
@@ -193,7 +294,7 @@ window.ATLAS_STATE = {
       "mean_behavior_distance": null,
       "confidence": 1.0,
       "state": "NETWORK_VALIDATED",
-      "recommended_action": "production_trial",
+      "recommended_action": "multi_objective_climb",
       "dominant_mutation_type": "edge",
       "dominant_radius": 8,
       "per_type": {
@@ -273,7 +374,7 @@ window.ATLAS_STATE = {
       "mean_behavior_distance": null,
       "confidence": 1.0,
       "state": "NETWORK_VALIDATED",
-      "recommended_action": "production_trial",
+      "recommended_action": "multi_objective_climb",
       "dominant_mutation_type": "edge",
       "dominant_radius": 8,
       "per_type": {
@@ -37119,12 +37220,6 @@ window.ATLAS_STATE = {
   ],
   "queue": [
     {
-      "tile_id": "11_16",
-      "type": "edge",
-      "next_action": "production_trial",
-      "priority": 116.66296941050177
-    },
-    {
       "tile_id": "12_29",
       "type": "edge",
       "next_action": "production_trial",
@@ -37135,6 +37230,12 @@ window.ATLAS_STATE = {
       "type": "edge",
       "next_action": "production_trial",
       "priority": 107.66366997087293
+    },
+    {
+      "tile_id": "11_16",
+      "type": "edge",
+      "next_action": "subdivide",
+      "priority": 2.890625
     },
     {
       "tile_id": "7_16",
@@ -37170,7 +37271,8 @@ window.ATLAS_STATE = {
   "progress": {
     "n_total_tiles": 512,
     "n_climbed": 20,
-    "n_network_validated": 3,
+    "n_generalist_validated": 1,
+    "n_network_validated": 2,
     "n_mountain_confirmed": 0,
     "n_deep_basin": 0,
     "n_basin_confirmed": 1,

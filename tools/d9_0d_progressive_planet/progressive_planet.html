@@ -84,10 +84,17 @@
   <div class="small" id="task-scope-sub" style="display:none;color:#ff6a8a;font-weight:600"></div>
 
   <div id="multi-obj-block" style="display:none;margin-top:8px;padding:6px 8px;border-radius:6px;background:rgba(120,180,120,.10);border:1px solid rgba(120,200,120,.35)">
-    <div class="small" style="color:#9be58e;font-weight:700">D9.2a multi-objective microprobe (PENDING confirm)</div>
+    <div class="small" id="multi-obj-title" style="color:#9be58e;font-weight:700">D9.2a multi-objective microprobe (PENDING confirm)</div>
     <div class="small" id="multi-obj-stats" style="color:#cfe6cf;margin-top:2px"></div>
     <div class="small" id="multi-obj-top" style="color:#cfe6cf;margin-top:2px"></div>
     <div class="small" id="multi-obj-next" style="color:#a8b7ca;font-size:10px;margin-top:3px;font-style:italic"></div>
+  </div>
+
+  <div id="generalist-block" style="display:none;margin-top:8px;padding:8px 10px;border-radius:6px;background:rgba(150,255,150,.16);border:2px solid rgba(150,255,150,.55);box-shadow:0 0 12px rgba(150,255,150,.25)">
+    <div class="small" style="color:#caffcb;font-weight:800;letter-spacing:.05em">★ D9.2b GENERALIST CONFIRMED ★</div>
+    <div class="small" id="gen-summary" style="color:#e6ffe6;margin-top:3px;font-weight:600"></div>
+    <div class="small" id="gen-candidate" style="color:#caffcb;margin-top:2px"></div>
+    <div class="small" id="gen-tasks" style="color:#cfe6cf;font-size:10px;margin-top:2px"></div>
   </div>
 
   <h2>Top 5 peaks (priority)</h2>
@@ -123,9 +130,27 @@
   <div class="small">Drag = rotate &middot; wheel = zoom</div>
 </section>
 
-<script src="state.js"></script>
 <script>
-(function(){
+// Dynamic state.js loader with cache-bust query. Written inline (not as
+// <script src="state.js">) so the browser's HTTP cache does not serve a
+// stale snapshot when the underlying state.js file changes between page
+// loads. This is essential for the live-update workflow.
+(function loadState(){
+  const s = document.createElement("script");
+  s.src = "state.js?nc=" + Date.now() + "_" + Math.floor(Math.random() * 1e9);
+  s.onload = function() {
+    if (window.__INIT_RENDERER__) window.__INIT_RENDERER__();
+  };
+  s.onerror = function() {
+    const w = document.getElementById("waiting");
+    if (w) w.innerHTML = "<h1>Failed to load state.js</h1>" +
+      "<div class='small'>Place a state.js next to progressive_planet.html.</div>";
+  };
+  document.head.appendChild(s);
+})();
+</script>
+<script>
+window.__INIT_RENDERER__ = function(){
   "use strict";
   const REQUIRED_SCHEMA = "d9.0d-1";
   const REQUIRED_FIELDS = ["schema_version","tiles","queue","progress","config"];
@@ -144,6 +169,7 @@
     DEEP_BASIN_CONFIRMED: { fill: null,  border: "rgba(255,120,255,1.0)", borderW: 3.2, alpha: 1.00, label: "deep_basin_confirmed" },
     MOUNTAIN_CONFIRMED:   { fill: null,  border: "rgba(255,215,80,1.0)",  borderW: 4.0, alpha: 1.00, label: "mountain_confirmed" },
     NETWORK_VALIDATED:    { fill: null,  border: "rgba(230,240,255,1.0)", borderW: 5.0, alpha: 1.00, label: "network_validated" },
+    GENERALIST_VALIDATED: { fill: null,  border: "rgba(150,255,150,1.0)", borderW: 6.0, alpha: 1.00, label: "generalist_validated" },
   };
 
   const METRICS = [
@@ -586,14 +612,29 @@
       const cx = (top[0].x + top[2].x) / 2;
       const cy = (top[0].y + top[2].y) / 2;
 
-      // Specialist "S" badge: rendered on NETWORK_VALIDATED tiles whose
-      // task_breadth flag marks them as a smooth+accuracy specialist.
-      // Cool-orange so it visually announces "specialist" and is NOT
-      // confused with the cool-white validated border.
-      if (t.state === "NETWORK_VALIDATED" && t.task_breadth === "specialist") {
+      // Tile badge for validated tiles:
+      //   GENERALIST_VALIDATED -> bright green disk + bold "G" (all 4 tasks pass)
+      //   NETWORK_VALIDATED specialist -> cool-orange disk + bold "S" (smooth+acc only)
+      // The colors are intentionally distinct so a glance at the planet tells
+      // you which tile is the generalist promotion candidate vs the specialists.
+      if (t.state === "GENERALIST_VALIDATED") {
+        const sc = (top[0].scale + top[2].scale) * 0.5;
+        const r = Math.max(8, Math.min(20, sc * 0.07));
+        ctx.beginPath();
+        ctx.arc(cx, cy, r, 0, Math.PI * 2);
+        ctx.fillStyle = "rgba(120,235,120,0.96)";
+        ctx.fill();
+        ctx.lineWidth = 1.6;
+        ctx.strokeStyle = "rgba(40,120,40,0.98)";
+        ctx.stroke();
+        ctx.fillStyle = "#082010";
+        ctx.font = "800 " + Math.round(r * 1.4) + "px ui-sans-serif, Segoe UI, Arial, sans-serif";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText("G", cx, cy + 1);
+      } else if (t.state === "NETWORK_VALIDATED" && t.task_breadth === "specialist") {
         const sc = (top[0].scale + top[2].scale) * 0.5;
         const r = Math.max(7, Math.min(18, sc * 0.06));
-        // Orange disk with darker rim.
         ctx.beginPath();
         ctx.arc(cx, cy, r, 0, Math.PI * 2);
         ctx.fillStyle = "rgba(255,140,60,0.92)";
@@ -601,7 +642,6 @@
         ctx.lineWidth = 1.4;
         ctx.strokeStyle = "rgba(120,55,15,0.95)";
         ctx.stroke();
-        // "S" letter on top.
         ctx.fillStyle = "#15110a";
         ctx.font = "700 " + Math.round(r * 1.35) + "px ui-sans-serif, Segoe UI, Arial, sans-serif";
         ctx.textAlign = "center";
@@ -645,14 +685,62 @@
         " mean="+fmt(e.mean_delta,3)+" best="+fmt(e.best_delta,3)+" std="+fmt(e.std_delta,3)+
         " cliff="+fmt(e.cliff_rate,2)+" pos="+fmt(e.positive_rate,2)+"</div>";
     }
+
+    // Mini per-type heatmap (Mode-C): 4 horizontal cells, one per mutation type.
+    // Color encodes mean_delta (green = positive, red = negative, grey = no data).
+    // Value shown as small white text. Helps see at a glance which mutation type
+    // is the engine of the tile's signal — vs. the all-aggregate which can hide
+    // a type-split signature.
+    function ptCell(typeKey) {
+      const e = pt[typeKey] || {};
+      const m = e.mean_delta;
+      let bg = "#1a2230", txt = "—", borderC = "rgba(120,140,170,.30)";
+      if (m != null && Number.isFinite(m)) {
+        // Map mean_delta from [-0.02, +0.02] to a red→grey→green palette.
+        const q = Math.max(-1, Math.min(1, m / 0.02));
+        if (q >= 0) {
+          const g = Math.round(50 + 150 * q);
+          const r = Math.round(40 + 30 * (1 - q));
+          bg = "rgb(" + r + "," + g + ",70)";
+        } else {
+          const r = Math.round(50 + 150 * (-q));
+          const g = Math.round(40 + 30 * (1 + q));
+          bg = "rgb(" + r + "," + g + ",70)";
+        }
+        txt = (m >= 0 ? "+" : "") + m.toFixed(3);
+        borderC = "rgba(255,255,255,.20)";
+      }
+      const n = (e.n || 0);
+      const lbl = typeKey.charAt(0).toUpperCase();
+      return "<div style='flex:1;background:"+bg+";border:1px solid "+borderC+
+        ";border-radius:4px;padding:4px 2px;text-align:center;font-size:10px;line-height:1.2'>"+
+        "<div style='font-weight:700;color:#fff'>"+lbl+"</div>"+
+        "<div style='color:#fff;font-size:9px'>"+txt+"</div>"+
+        "<div style='color:rgba(255,255,255,.55);font-size:8px'>n="+n+"</div>"+
+        "</div>";
+    }
+    const heatmap =
+      "<div style='display:flex;gap:3px;margin-top:6px'>" +
+      ptCell("edge") + ptCell("threshold") + ptCell("channel") + ptCell("polarity") +
+      "</div>" +
+      "<div class='small' style='font-size:10px;color:#7d8da0;margin-top:2px'>mean&Delta; per type — green positive, red negative, grey no data</div>";
     const styleLabel = (t.state in TILE_STATE_STYLE) ? TILE_STATE_STYLE[t.state].label : t.state;
 
-    // Specialist warning block: only for NETWORK_VALIDATED tiles. Surfaces
-    // the validated robustness stats AND the post-saga D9.0z finding that
-    // these endpoints DEGRADE on unigram task. Honest UI: don't let the
-    // cool-white border imply "globally better".
+    // Specialist warning block / Generalist promotion block.
+    // For NETWORK_VALIDATED: warn that scope is smooth+accuracy only.
+    // For GENERALIST_VALIDATED: celebrate that all 4 tasks pass.
     let specialistBlock = "";
-    if (t.state === "NETWORK_VALIDATED") {
+    if (t.state === "GENERALIST_VALIDATED") {
+      const meanD = fmt(t.validated_mean_delta, 5);
+      const lower = fmt(t.validated_lower95, 5);
+      specialistBlock =
+        "<hr>" +
+        "<div class='small' style='color:#caffcb;font-weight:800'>★ GENERALIST ✓ all 4 tasks ★</div>" +
+        "<div class='small' style='color:#9be58e;font-weight:700'>Validated: mean&Delta;="+meanD+
+          " lower95="+lower+"</div>" +
+        "<div class='small' style='color:#caffcb;font-weight:700'>Task scope: smooth ✓ acc ✓ echo ✓ unigram ✓</div>" +
+        "<div class='small' style='color:#cfe6cf;font-size:10px;font-style:italic'>Promotion candidate: seed2042_improved_generalist_v1 (top_01.ckpt)</div>";
+    } else if (t.state === "NETWORK_VALIDATED") {
       const meanD = fmt(t.validated_mean_delta, 5);
       const lower = fmt(t.validated_lower95, 5);
       specialistBlock =
@@ -675,6 +763,7 @@
       "<div class='small'>scan_prio="+fmt(t.scan_priority,2)+" split_prio="+fmt(t.split_priority,2)+"</div>" +
       "<div class='small'>action: <b>"+(t.recommended_action || actionFor(t))+"</b></div>" +
       specialistBlock +
+      heatmap +
       "<hr>" +
       "<div class='small' style='color:#8da0bc'>per-type:</div>" +
       perTypeRows;
@@ -691,17 +780,35 @@
     $("p-retired").textContent = p.retired_count != null ? p.retired_count : "?";
     $("p-splits").textContent = p.split_candidate_count != null ? p.split_candidate_count : "?";
 
-    // Task scope warning: only when at least one NETWORK_VALIDATED tile is
-    // a smooth+accuracy specialist. Honest UI: makes the specialist nature
-    // visible at a glance even before hovering.
+    // Task scope: now MIXED if both specialist and generalist tiles exist.
     const specialistCount = (data.tiles || []).filter(
       t => t.state === "NETWORK_VALIDATED" && t.task_breadth === "specialist"
     ).length;
+    const generalistCount = (data.tiles || []).filter(
+      t => t.state === "GENERALIST_VALIDATED"
+    ).length;
     const scopeLine = $("task-scope-line");
     const scopeSub = $("task-scope-sub");
-    if (specialistCount > 0) {
+    if (generalistCount > 0 && specialistCount > 0) {
+      scopeLine.style.color = "#9be58e";
+      scopeLine.textContent = "Task scope: MIXED — " + generalistCount + " generalist + " +
+        specialistCount + " specialist tile" + (specialistCount === 1 ? "" : "s");
+      scopeLine.style.display = "block";
+      scopeSub.style.color = "#caffcb";
+      scopeSub.textContent = "Generalist (11_16) passes all 4 tasks; specialists fail on unigram";
+      scopeSub.style.display = "block";
+    } else if (generalistCount > 0) {
+      scopeLine.style.color = "#9be58e";
+      scopeLine.textContent = "Task scope: GENERALIST (all 4 tasks)";
+      scopeLine.style.display = "block";
+      scopeSub.style.color = "#caffcb";
+      scopeSub.textContent = generalistCount + " tile passes smooth+accuracy+echo+unigram";
+      scopeSub.style.display = "block";
+    } else if (specialistCount > 0) {
+      scopeLine.style.color = "#ff9b6a";
       scopeLine.textContent = "Task scope: SPECIALIST (smooth+accuracy)";
       scopeLine.style.display = "block";
+      scopeSub.style.color = "#ff6a8a";
       scopeSub.textContent = specialistCount + " validated tile" +
         (specialistCount === 1 ? "" : "s") + " — degrades on unigram (D9.0z)";
       scopeSub.style.display = "block";
@@ -711,10 +818,11 @@
     }
 
     // D9.2a multi-objective microprobe panel (only if data present).
-    // The microprobe found generalist candidates that fix the unigram regression
-    // — but it is NOT yet confirmed. The panel must say PENDING explicitly.
+    // If D9.2b generalist confirm is also present, this becomes the PROMOTED
+    // history block (CONFIRMED) instead of PENDING.
     const moBlock = $("multi-obj-block");
     const mo = data.config && data.config.multi_objective_microprobe;
+    const gconfirm = data.config && data.config.generalist_confirm;
     if (moBlock && mo && mo.top_generalist) {
       const tg = mo.top_generalist;
       const fmt = (x) => (x == null ? "?" : (x >= 0 ? "+" : "") + Number(x).toFixed(5));
@@ -727,10 +835,38 @@
         " &middot; acc " + fmt(tg.accuracy_delta) +
         " &middot; echo " + fmt(tg.echo_delta) +
         " &middot; <b>unigram " + fmt(tg.unigram_delta) + "</b>";
-      $("multi-obj-next").textContent = mo.next_step || "";
+      // If D9.2b passed, retitle and update next-step to reflect the promotion.
+      if (gconfirm && gconfirm.status === "CONFIRMED") {
+        $("multi-obj-title").textContent = "D9.2a microprobe (CONFIRMED by D9.2b)";
+        $("multi-obj-next").textContent = "Confirmed strict-pass on " +
+          (gconfirm.n_strict_pass || 0) + "/" + (gconfirm.n_endpoints || 0) +
+          " endpoints; see GENERALIST CONFIRMED block below";
+      } else {
+        $("multi-obj-next").textContent = mo.next_step || "";
+      }
       moBlock.style.display = "block";
     } else if (moBlock) {
       moBlock.style.display = "none";
+    }
+
+    // D9.2b GENERALIST CONFIRMED panel — the headline result of the saga.
+    const genBlock = $("generalist-block");
+    if (genBlock && gconfirm && gconfirm.status === "CONFIRMED") {
+      const np = gconfirm.n_strict_pass || 0;
+      const ne = gconfirm.n_endpoints || 0;
+      const evalLens = (gconfirm.eval_lens || []).join(", ");
+      $("gen-summary").textContent =
+        np + "/" + ne + " endpoints strict-pass on all 4 tasks " +
+        "(seeds=" + (gconfirm.n_seeds || "?") + ", eval_lens=" + evalLens + ")";
+      $("gen-candidate").innerHTML =
+        "Promotion candidate: <b>" + (gconfirm.candidate_name || "?") + "</b><br>" +
+        "<span style='font-size:10px;color:#a8b7ca;font-style:italic'>" +
+          (gconfirm.checkpoint_path || "") + "</span>";
+      $("gen-tasks").textContent =
+        "tasks: smooth ✓  accuracy ✓  echo (safe) ✓  unigram ✓";
+      genBlock.style.display = "block";
+    } else if (genBlock) {
+      genBlock.style.display = "none";
     }
   }
 
@@ -859,6 +995,9 @@
   }
 
   function forceReload() {
+    // Hard reload + cache-bust query on the HTML.
+    // The state.js cache-bust is handled by the dynamic <script> injector
+    // at the top of the body (see the inline-loader script tag).
     const u = new URL(window.location.href);
     u.searchParams.set("_", Date.now().toString());
     window.location.href = u.toString();
@@ -899,7 +1038,9 @@
   fillTopBasins();
   fillQueue();
   requestRender();
-})();
+};
+// If state.js already loaded before this point (browser race), kick off init now.
+if (window.ATLAS_STATE) { window.__INIT_RENDERER__(); }
 </script>
 </body>
 </html>
