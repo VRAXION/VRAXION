@@ -650,7 +650,7 @@ def run_density(
             flat_or_bad += 1
         if not removed:
             flat_or_bad += 1
-        if flat_or_bad >= args.early_stop_rounds:
+        if (not args.accept_relative_current) and flat_or_bad >= args.early_stop_rounds:
             break
 
     candidates.sort(key=lambda r: (r["class"] == "RETAINED", r["mo_score"]), reverse=True)

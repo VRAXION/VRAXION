@@ -107,6 +107,44 @@ it behaves like poison until essentially all added edges are removed.
 The script now labels the all-added-edges-removed case as
 `D10H_RETURNED_TO_REFERENCE_ONLY`, not as a real crystallize improvement.
 
+## Follow-up: Iterative Carving Run
+
+A bounded 10-20 minute carving run was then executed with real iterative prune
+behavior:
+
+```text
+densities: 0.075, 0.10
+eval_len: 128
+eval_seeds: 981001,981002
+rounds: 20
+buckets: 8
+acceptance: non-worsening vs current dense state
+```
+
+This run evaluated `288` bucket-prune proposals and selected `70` bucket cuts.
+It did recover part of the dense flood damage, but it did not produce a valid
+generalist checkpoint.
+
+Summary:
+
+| density | added edges | proposals | selected cuts | best edges | best class | best smooth | best accuracy | best echo | best unigram |
+|---:|---:|---:|---:|---:|---|---:|---:|---:|---:|
+| 0.075 | 890 | 128 | 31 | 10,147 | `CLIFF` | -0.015748 | 0.000000 | +0.046875 | +0.042920 |
+| 0.10 | 4,567 | 160 | 39 | 10,154 | `CLIFF` | -0.013271 | 0.000000 | +0.046875 | +0.045721 |
+
+Interpretation:
+
+```text
+carving can climb out of part of the global dense damage,
+but the recovered state becomes echo-cliffy before it becomes valid.
+```
+
+This is not a full failure of crystallization. It is a useful adversarial
+result: global random overfill creates a broad bad basin, and pruning can find
+a less-bad route, but the route discovered here is not the beta.8 generalist
+mechanism. The next useful variant is local causal-zone overfill with echo-safe
+acceptance, not more global random fill.
+
 ## Progress Map
 
 ```text
