@@ -887,13 +887,18 @@ window.__INIT_RENDERER__ = function(){
         : causal.verdict === "EDGE_WIRING_DRIVER" ? "#7ec8ff"
         : "#cfd6dc";
       // Title shows the confirm-level so the user sees the upgrade path:
-      // smoke (1k, 2 seed) → 4k confirm (30 seed) → 16k confirm (30 seed).
-      const levelLabel = causal.level === "16k_confirm" ? "16k confirm — full"
+      // smoke (1k, 2 seed) → 4k confirm (30 seed) → 16k confirm (30 seed × 20 shards).
+      const levelLabel = causal.level === "16k_confirm" ? "16k confirm — FULL ✓"
         : causal.level === "4k_confirm" ? "4k confirm — strong (16k pending)"
         : "smoke — preliminary";
       $("causal-title").textContent = "D9.4 Causal Diff — " + levelLabel;
       $("causal-verdict").style.color = verdictColor;
-      $("causal-verdict").textContent = "Verdict: " + causal.verdict;
+      // For 16k, surface the per-shard consensus next to the aggregate verdict.
+      const shardLine = (causal.level === "16k_confirm" && causal.shard_consensus)
+        ? "  · " + (causal.shard_count || "?") + "/" + (causal.shard_count || "?") +
+          " shards: " + causal.shard_consensus
+        : "";
+      $("causal-verdict").textContent = "Verdict: " + causal.verdict + shardLine;
       // Show the target generalist deltas at this confirm level.
       const fmt = (x) => (x == null ? "?" : (x >= 0 ? "+" : "") + Number(x).toFixed(5));
       if (causal.target_smooth != null) {

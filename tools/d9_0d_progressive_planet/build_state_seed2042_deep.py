@@ -28,7 +28,7 @@ SRC_2A = REPO / "output" / "phase_d9_2a_multi_objective_microprobe_20260429"
 SRC_2B = REPO / "output" / "phase_d9_2b_multi_objective_confirm_20260429"
 SRC_4A = REPO / "output" / "phase_d9_4a_causal_diff_smoke_20260429"
 SRC_4B_4000 = REPO / "output" / "phase_d9_4b_causal_diff_confirm_20260429" / "eval_len_4000"
-SRC_4B_16000 = REPO / "output" / "phase_d9_4b_causal_diff_confirm_20260429" / "eval_len_16000"
+SRC_4B_16000 = REPO / "output" / "phase_d9_4b_causal_diff_confirm_20260429" / "eval_len_16000_sharded"
 SUMMARY_CSV_N = SRC_N / "tile_deep_trajectory_summary.csv"
 SUMMARY_CSV_O = SRC_O / "tile_top3_deepening_summary.csv"
 SUMMARY_CSV_Q = SRC_Q / "tile_long_climb_summary.csv"
@@ -37,7 +37,7 @@ MULTI_OBJ_JSON = SRC_2A / "d9_2a_multi_objective_summary.json"
 GENERALIST_CONFIRM_JSON = SRC_2B / "d9_2b_summary.json"
 # Priority: 16k confirm > 4k confirm > 1k smoke. Use the highest-quality
 # verdict that has been computed at the time of build.
-CAUSAL_DIFF_JSON_16K = SRC_4B_16000 / "genome_diff_summary.json"
+CAUSAL_DIFF_JSON_16K = SRC_4B_16000 / "AGGREGATED_D9_4B_16K_SUMMARY.json"
 CAUSAL_DIFF_JSON_4K = SRC_4B_4000 / "genome_diff_summary.json"
 CAUSAL_DIFF_JSON_SMOKE = SRC_4A / "genome_diff_summary.json"
 OUT_JS = REPO / "tools" / "d9_0d_progressive_planet" / "state.js"
@@ -122,8 +122,9 @@ def load_robustness() -> dict[str, dict]:
 def load_causal_diff() -> dict | None:
     """Load D9.4 causal-diff summary at the highest-confirmed level available.
 
-    Priority: 16k confirm > 4k confirm > 1k smoke. Each level uses the same
-    JSON schema; only the eval_len, n_seeds, and verdict-confidence change.
+    Priority: 16k confirm > 4k confirm > 1k smoke. The 16k level is sharded
+    (no cycle_stats in the aggregate); we merge cycle_stats from the 4k or
+    smoke run when needed because the baseline/target ckpts are identical.
     """
     if CAUSAL_DIFF_JSON_16K.exists():
         path = CAUSAL_DIFF_JSON_16K
@@ -139,14 +140,36 @@ def load_causal_diff() -> dict | None:
     blob = json.loads(path.read_text(encoding="utf-8"))
     diff = blob.get("diff", {})
     cycles = blob.get("cycle_stats", {})
+    # 16k aggregate has no cycle_stats — borrow from a lower level.
+    if not cycles and CAUSAL_DIFF_JSON_4K.exists():
+        try:
+            lower = json.loads(CAUSAL_DIFF_JSON_4K.read_text(encoding="utf-8"))
+            cycles = lower.get("cycle_stats", {}) or {}
+        except Exception:
+            cycles = {}
+    if not cycles and CAUSAL_DIFF_JSON_SMOKE.exists():
+        try:
+            lower = json.loads(CAUSAL_DIFF_JSON_SMOKE.read_text(encoding="utf-8"))
+            cycles = lower.get("cycle_stats", {}) or {}
+        except Exception:
+            cycles = {}
     base = cycles.get("baseline", {}) or {}
     targ = cycles.get("target", {}) or {}
     target_scores = blob.get("target_scores", {}) or {}
+    # 16k aggregate uses verdict "D9_4B_16K_CAUSAL_CONFIRM_PASS" at the
+    # global level; the per-shard verdict is EDGE_THRESHOLD_COADAPTATION.
+    # Surface both: the aggregate verdict as "verdict" and a shard-consensus
+    # field so the renderer can show both.
+    shard_verdicts = blob.get("shard_verdicts", []) or []
+    shard_unique = sorted(set(shard_verdicts))
     return {
         "verdict": blob.get("verdict", "D9_4_CAUSAL_UNKNOWN"),
+        "shard_consensus": shard_unique[0] if len(shard_unique) == 1 else None,
+        "shard_count": blob.get("shard_count"),
         "level": level,
         "eval_len": blob.get("eval_len"),
-        "n_eval_seeds": len(blob.get("eval_seeds", []) or []),
+        "n_eval_seeds": blob.get("seed_count")
+            or len(blob.get("eval_seeds", []) or []),
         "target_smooth": target_scores.get("smooth_delta"),
         "target_accuracy": target_scores.get("accuracy_delta"),
         "target_unigram": target_scores.get("unigram_delta"),
