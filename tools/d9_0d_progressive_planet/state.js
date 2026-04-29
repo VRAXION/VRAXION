@@ -2,8 +2,8 @@ window.ATLAS_STATE = {
   "schema_version": "d9.0d-1",
   "run_id": "d9_0x_seed2042_robustness_strict_pass",
   "source_run_id": "output/phase_d9_0x_endpoint_robustness_20260429",
-  "generated_at_utc": "2026-04-29T05:15:32Z",
-  "last_updated": "2026-04-29T05:15:32Z",
+  "generated_at_utc": "2026-04-29T10:54:53Z",
+  "last_updated": "2026-04-29T10:54:53Z",
   "phase_status": "finished",
   "stop_clock_active": false,
   "source_samples_csv": "output/phase_d9_0q_seed2042_long_climb_20260429/paratrooper_paths.csv",
@@ -26,7 +26,70 @@ window.ATLAS_STATE = {
     "topology": "3_INDEPENDENT_ISLANDS_NO_TOUCH",
     "production_candidate": "11_16_endpoint_01",
     "production_candidate_name": "seed2042_improved_v1",
-    "task_breadth_warning": "validated tiles are smooth+accuracy specialist endpoints; not general-purpose"
+    "task_breadth_warning": "validated tiles are smooth+accuracy specialist endpoints; not general-purpose",
+    "multi_objective_microprobe": {
+      "verdict": "D9_2_MULTI_OBJECTIVE_SUCCESS",
+      "status": "MICROPROBE_PENDING_CONFIRM",
+      "n_proposals": 200,
+      "n_exported_candidates": 8,
+      "n_full_generalist": 3,
+      "n_retained_specialist": 6,
+      "n_weak_signal": 36,
+      "n_fail_retain": 155,
+      "valid_generalist_count": 3,
+      "best_valid_unigram_delta": 0.004899665966,
+      "top_generalist": {
+        "rank": 1,
+        "class": "FULL_GENERALIST",
+        "accepted": true,
+        "smooth_delta": 0.016598691338,
+        "accuracy_delta": 0.0066875,
+        "echo_delta": 0.0,
+        "unigram_delta": 0.004899665966,
+        "mo_score": 0.027291940287,
+        "mutation_type": "threshold",
+        "radius": 4
+      },
+      "all_generalists": [
+        {
+          "rank": 1,
+          "class": "FULL_GENERALIST",
+          "accepted": true,
+          "smooth_delta": 0.016598691338,
+          "accuracy_delta": 0.0066875,
+          "echo_delta": 0.0,
+          "unigram_delta": 0.004899665966,
+          "mo_score": 0.027291940287,
+          "mutation_type": "threshold",
+          "radius": 4
+        },
+        {
+          "rank": 2,
+          "class": "FULL_GENERALIST",
+          "accepted": true,
+          "smooth_delta": 0.016625693981,
+          "accuracy_delta": 0.0066875,
+          "echo_delta": 0.0,
+          "unigram_delta": 0.003632769544,
+          "mo_score": 0.025418598296,
+          "mutation_type": "edge",
+          "radius": 4
+        },
+        {
+          "rank": 3,
+          "class": "FULL_GENERALIST",
+          "accepted": true,
+          "smooth_delta": 0.016830735483,
+          "accuracy_delta": 0.0066875,
+          "echo_delta": 0.0,
+          "unigram_delta": 0.003134392289,
+          "mo_score": 0.024876073917,
+          "mutation_type": "threshold",
+          "radius": 8
+        }
+      ],
+      "next_step": "D9.2b confirm with fresh seeds and longer eval_len"
+    }
   },
   "tiles": [
     {

@@ -24,10 +24,12 @@ SRC_N = REPO / "output" / "phase_d9_0n_seed2042_deep_trajectory_20260428"
 SRC_O = REPO / "output" / "phase_d9_0o_seed2042_top3_deepening_20260428"
 SRC_Q = REPO / "output" / "phase_d9_0q_seed2042_long_climb_20260429"
 SRC_X = REPO / "output" / "phase_d9_0x_endpoint_robustness_20260429"
+SRC_2A = REPO / "output" / "phase_d9_2a_multi_objective_microprobe_20260429"
 SUMMARY_CSV_N = SRC_N / "tile_deep_trajectory_summary.csv"
 SUMMARY_CSV_O = SRC_O / "tile_top3_deepening_summary.csv"
 SUMMARY_CSV_Q = SRC_Q / "tile_long_climb_summary.csv"
 ROBUSTNESS_JSON = SRC_X / "d9_0x_robustness_summary.json"
+MULTI_OBJ_JSON = SRC_2A / "d9_2a_multi_objective_summary.json"
 OUT_JS = REPO / "tools" / "d9_0d_progressive_planet" / "state.js"
 
 LAT_BINS = 16
@@ -100,6 +102,56 @@ def load_robustness() -> dict[str, dict]:
             "validated_eval_lens": [1000, 4000, 16000],
         }
     return by_tile
+
+
+def load_multi_objective() -> dict | None:
+    """Load D9.2a multi-objective microprobe summary (PENDING D9.2b confirm).
+
+    Reads two files: the summary.json for global stats, and the
+    multi_objective_candidates.csv for the actual top-N rows.
+    """
+    if not MULTI_OBJ_JSON.exists():
+        return None
+    blob = json.loads(MULTI_OBJ_JSON.read_text(encoding="utf-8"))
+
+    # Load candidates CSV separately — the JSON only has a count.
+    candidates_csv = SRC_2A / "multi_objective_candidates.csv"
+    candidate_rows: list[dict] = []
+    if candidates_csv.exists():
+        with candidates_csv.open("r", encoding="utf-8") as fh:
+            reader = csv.DictReader(fh)
+            for row in reader:
+                candidate_rows.append(
+                    {
+                        "rank": int(row.get("rank", 0) or 0),
+                        "class": row.get("mo_class", ""),
+                        "accepted": row.get("accepted", "").lower() == "true",
+                        "smooth_delta": float(row.get("smooth_delta", 0) or 0),
+                        "accuracy_delta": float(row.get("accuracy_delta", 0) or 0),
+                        "echo_delta": float(row.get("echo_delta", 0) or 0),
+                        "unigram_delta": float(row.get("unigram_delta", 0) or 0),
+                        "mo_score": float(row.get("mo_score", 0) or 0),
+                        "mutation_type": row.get("mutation_type", ""),
+                        "radius": int(row.get("radius", 0) or 0),
+                    }
+                )
+
+    full_generalists = [c for c in candidate_rows if c["class"] == "FULL_GENERALIST"]
+    return {
+        "verdict": blob.get("verdict", "D9_2_MULTI_OBJECTIVE_UNKNOWN"),
+        "status": "MICROPROBE_PENDING_CONFIRM",
+        "n_proposals": blob.get("rows"),
+        "n_exported_candidates": blob.get("candidates"),
+        "n_full_generalist": blob.get("class_counts", {}).get("FULL_GENERALIST", 0),
+        "n_retained_specialist": blob.get("class_counts", {}).get("RETAINED_SPECIALIST", 0),
+        "n_weak_signal": blob.get("class_counts", {}).get("WEAK_SIGNAL", 0),
+        "n_fail_retain": blob.get("class_counts", {}).get("FAIL_RETAIN", 0),
+        "valid_generalist_count": blob.get("valid_generalist_count", 0),
+        "best_valid_unigram_delta": blob.get("best_valid_unigram_delta"),
+        "top_generalist": full_generalists[0] if full_generalists else None,
+        "all_generalists": full_generalists[:3],
+        "next_step": "D9.2b confirm with fresh seeds and longer eval_len",
+    }
 
 
 def f(row: dict, k: str) -> float | None:
@@ -302,6 +354,7 @@ def main() -> int:
     deep_by_tile = {r["tile_id"]: r for r in deep_rows}
     mountain_by_tile = {r["tile_id"]: r for r in mountain_rows}
     robustness_by_tile = load_robustness()
+    multi_objective = load_multi_objective()
     climbed_tile_ids = {r["tile_id"] for r in rows}
 
     tiles = []
@@ -385,6 +438,7 @@ def main() -> int:
             "production_candidate": "11_16_endpoint_01",
             "production_candidate_name": "seed2042_improved_v1",
             "task_breadth_warning": "validated tiles are smooth+accuracy specialist endpoints; not general-purpose",
+            "multi_objective_microprobe": multi_objective,
         },
         "tiles": tiles,
         "queue": deepen_queue,
