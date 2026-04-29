@@ -1,9 +1,9 @@
 window.ATLAS_STATE = {
   "schema_version": "d9.0d-1",
-  "run_id": "d9_0q_seed2042_mountain_dossier",
-  "source_run_id": "output/phase_d9_seed2042_mountain_dossier_20260429",
-  "generated_at_utc": "2026-04-28T23:54:29Z",
-  "last_updated": "2026-04-28T23:54:29Z",
+  "run_id": "d9_0x_seed2042_robustness_strict_pass",
+  "source_run_id": "output/phase_d9_0x_endpoint_robustness_20260429",
+  "generated_at_utc": "2026-04-29T02:15:58Z",
+  "last_updated": "2026-04-29T02:15:58Z",
   "phase_status": "finished",
   "stop_clock_active": false,
   "source_samples_csv": "output/phase_d9_0q_seed2042_long_climb_20260429/paratrooper_paths.csv",
@@ -22,7 +22,10 @@ window.ATLAS_STATE = {
     "tile_assignment": "d9_0q_long_climb_300",
     "climb_steps_per_climber": 300,
     "climbers_per_tile": 64,
-    "verdict": "D9_SEED2042_MOUNTAIN_CONFIRMED_AND_STILL_CLIMBING"
+    "verdict": "D9_ENDPOINT_ROBUSTNESS_STRICT_PASS",
+    "topology": "3_INDEPENDENT_ISLANDS_NO_TOUCH",
+    "production_candidate": "11_16_endpoint_01",
+    "production_candidate_name": "seed2042_improved_v1"
   },
   "tiles": [
     {
@@ -45,8 +48,8 @@ window.ATLAS_STATE = {
       "positive_rate": 0.765625,
       "mean_behavior_distance": null,
       "confidence": 1.0,
-      "state": "MOUNTAIN_CONFIRMED",
-      "recommended_action": "endpoint_export",
+      "state": "NETWORK_VALIDATED",
+      "recommended_action": "production_trial",
       "dominant_mutation_type": "edge",
       "dominant_radius": 8,
       "per_type": {
@@ -95,7 +98,13 @@ window.ATLAS_STATE = {
       "early_plateau_rate": 0.15625,
       "late_plateau_rate": 0.03125,
       "deep_long_ascent_rate": 0.265625,
-      "deepening_climb_steps": 300
+      "deepening_climb_steps": 300,
+      "validated_mean_delta": 0.01699127675378889,
+      "validated_lower95": 0.016662969410501775,
+      "validated_positive_rate": 1.0,
+      "validated_pass_strict": true,
+      "validated_endpoint_id": "11_16_endpoint_01",
+      "validated_n_seeds": 30
     },
     {
       "tile_id": "9_26",
@@ -117,8 +126,8 @@ window.ATLAS_STATE = {
       "positive_rate": 0.78125,
       "mean_behavior_distance": null,
       "confidence": 1.0,
-      "state": "DEEP_BASIN_CONFIRMED",
-      "recommended_action": "long_climb_300",
+      "state": "NETWORK_VALIDATED",
+      "recommended_action": "production_trial",
       "dominant_mutation_type": "edge",
       "dominant_radius": 8,
       "per_type": {
@@ -167,7 +176,13 @@ window.ATLAS_STATE = {
       "early_plateau_rate": 0.234375,
       "late_plateau_rate": 0.125,
       "deep_long_ascent_rate": null,
-      "deepening_climb_steps": 200
+      "deepening_climb_steps": 200,
+      "validated_mean_delta": 0.008266548200211112,
+      "validated_lower95": 0.007663669970872937,
+      "validated_positive_rate": 0.9666666666666667,
+      "validated_pass_strict": true,
+      "validated_endpoint_id": "9_26_endpoint_03",
+      "validated_n_seeds": 30
     },
     {
       "tile_id": "12_29",
@@ -189,8 +204,8 @@ window.ATLAS_STATE = {
       "positive_rate": 0.828125,
       "mean_behavior_distance": null,
       "confidence": 1.0,
-      "state": "MOUNTAIN_CONFIRMED",
-      "recommended_action": "endpoint_export",
+      "state": "NETWORK_VALIDATED",
+      "recommended_action": "production_trial",
       "dominant_mutation_type": "edge",
       "dominant_radius": 8,
       "per_type": {
@@ -239,7 +254,13 @@ window.ATLAS_STATE = {
       "early_plateau_rate": 0.25,
       "late_plateau_rate": 0.03125,
       "deep_long_ascent_rate": 0.296875,
-      "deepening_climb_steps": 300
+      "deepening_climb_steps": 300,
+      "validated_mean_delta": 0.008381154334188888,
+      "validated_lower95": 0.008274634600481175,
+      "validated_positive_rate": 1.0,
+      "validated_pass_strict": true,
+      "validated_endpoint_id": "12_29_endpoint_04",
+      "validated_n_seeds": 30
     },
     {
       "tile_id": "7_16",
@@ -311,7 +332,13 @@ window.ATLAS_STATE = {
       "early_plateau_rate": 0.21875,
       "late_plateau_rate": 0.125,
       "deep_long_ascent_rate": null,
-      "deepening_climb_steps": 100
+      "deepening_climb_steps": 100,
+      "validated_mean_delta": null,
+      "validated_lower95": null,
+      "validated_positive_rate": null,
+      "validated_pass_strict": false,
+      "validated_endpoint_id": null,
+      "validated_n_seeds": null
     },
     {
       "tile_id": "9_17",
@@ -383,7 +410,13 @@ window.ATLAS_STATE = {
       "early_plateau_rate": 0.140625,
       "late_plateau_rate": 0.140625,
       "deep_long_ascent_rate": null,
-      "deepening_climb_steps": 100
+      "deepening_climb_steps": 100,
+      "validated_mean_delta": null,
+      "validated_lower95": null,
+      "validated_positive_rate": null,
+      "validated_pass_strict": false,
+      "validated_endpoint_id": null,
+      "validated_n_seeds": null
     },
     {
       "tile_id": "3_7",
@@ -455,7 +488,13 @@ window.ATLAS_STATE = {
       "early_plateau_rate": 0.109375,
       "late_plateau_rate": 0.15625,
       "deep_long_ascent_rate": null,
-      "deepening_climb_steps": 100
+      "deepening_climb_steps": 100,
+      "validated_mean_delta": null,
+      "validated_lower95": null,
+      "validated_positive_rate": null,
+      "validated_pass_strict": false,
+      "validated_endpoint_id": null,
+      "validated_n_seeds": null
     },
     {
       "tile_id": "9_31",
@@ -527,7 +566,13 @@ window.ATLAS_STATE = {
       "early_plateau_rate": 0.09375,
       "late_plateau_rate": 0.21875,
       "deep_long_ascent_rate": null,
-      "deepening_climb_steps": 100
+      "deepening_climb_steps": 100,
+      "validated_mean_delta": null,
+      "validated_lower95": null,
+      "validated_positive_rate": null,
+      "validated_pass_strict": false,
+      "validated_endpoint_id": null,
+      "validated_n_seeds": null
     },
     {
       "tile_id": "12_15",
@@ -599,7 +644,13 @@ window.ATLAS_STATE = {
       "early_plateau_rate": 0.25,
       "late_plateau_rate": 0.109375,
       "deep_long_ascent_rate": null,
-      "deepening_climb_steps": 100
+      "deepening_climb_steps": 100,
+      "validated_mean_delta": null,
+      "validated_lower95": null,
+      "validated_positive_rate": null,
+      "validated_pass_strict": false,
+      "validated_endpoint_id": null,
+      "validated_n_seeds": null
     },
     {
       "tile_id": "12_22",
@@ -671,7 +722,13 @@ window.ATLAS_STATE = {
       "early_plateau_rate": 0.09375,
       "late_plateau_rate": 0.1875,
       "deep_long_ascent_rate": null,
-      "deepening_climb_steps": 100
+      "deepening_climb_steps": 100,
+      "validated_mean_delta": null,
+      "validated_lower95": null,
+      "validated_positive_rate": null,
+      "validated_pass_strict": false,
+      "validated_endpoint_id": null,
+      "validated_n_seeds": null
     },
     {
       "tile_id": "8_7",
@@ -743,7 +800,13 @@ window.ATLAS_STATE = {
       "early_plateau_rate": 0.15625,
       "late_plateau_rate": 0.125,
       "deep_long_ascent_rate": null,
-      "deepening_climb_steps": 100
+      "deepening_climb_steps": 100,
+      "validated_mean_delta": null,
+      "validated_lower95": null,
+      "validated_positive_rate": null,
+      "validated_pass_strict": false,
+      "validated_endpoint_id": null,
+      "validated_n_seeds": null
     },
     {
       "tile_id": "10_29",
@@ -815,7 +878,13 @@ window.ATLAS_STATE = {
       "early_plateau_rate": 0.140625,
       "late_plateau_rate": 0.1875,
       "deep_long_ascent_rate": null,
-      "deepening_climb_steps": 100
+      "deepening_climb_steps": 100,
+      "validated_mean_delta": null,
+      "validated_lower95": null,
+      "validated_positive_rate": null,
+      "validated_pass_strict": false,
+      "validated_endpoint_id": null,
+      "validated_n_seeds": null
     },
     {
       "tile_id": "8_10",
@@ -887,7 +956,13 @@ window.ATLAS_STATE = {
       "early_plateau_rate": 0.15625,
       "late_plateau_rate": 0.125,
       "deep_long_ascent_rate": null,
-      "deepening_climb_steps": 100
+      "deepening_climb_steps": 100,
+      "validated_mean_delta": null,
+      "validated_lower95": null,
+      "validated_positive_rate": null,
+      "validated_pass_strict": false,
+      "validated_endpoint_id": null,
+      "validated_n_seeds": null
     },
     {
       "tile_id": "4_17",
@@ -959,7 +1034,13 @@ window.ATLAS_STATE = {
       "early_plateau_rate": 0.078125,
       "late_plateau_rate": 0.15625,
       "deep_long_ascent_rate": null,
-      "deepening_climb_steps": 100
+      "deepening_climb_steps": 100,
+      "validated_mean_delta": null,
+      "validated_lower95": null,
+      "validated_positive_rate": null,
+      "validated_pass_strict": false,
+      "validated_endpoint_id": null,
+      "validated_n_seeds": null
     },
     {
       "tile_id": "15_5",
@@ -1031,7 +1112,13 @@ window.ATLAS_STATE = {
       "early_plateau_rate": 0.109375,
       "late_plateau_rate": 0.15625,
       "deep_long_ascent_rate": null,
-      "deepening_climb_steps": 100
+      "deepening_climb_steps": 100,
+      "validated_mean_delta": null,
+      "validated_lower95": null,
+      "validated_positive_rate": null,
+      "validated_pass_strict": false,
+      "validated_endpoint_id": null,
+      "validated_n_seeds": null
     },
     {
       "tile_id": "13_10",
@@ -1103,7 +1190,13 @@ window.ATLAS_STATE = {
       "early_plateau_rate": 0.140625,
       "late_plateau_rate": 0.0625,
       "deep_long_ascent_rate": null,
-      "deepening_climb_steps": 100
+      "deepening_climb_steps": 100,
+      "validated_mean_delta": null,
+      "validated_lower95": null,
+      "validated_positive_rate": null,
+      "validated_pass_strict": false,
+      "validated_endpoint_id": null,
+      "validated_n_seeds": null
     },
     {
       "tile_id": "11_1",
@@ -1175,7 +1268,13 @@ window.ATLAS_STATE = {
       "early_plateau_rate": 0.109375,
       "late_plateau_rate": 0.078125,
       "deep_long_ascent_rate": null,
-      "deepening_climb_steps": 100
+      "deepening_climb_steps": 100,
+      "validated_mean_delta": null,
+      "validated_lower95": null,
+      "validated_positive_rate": null,
+      "validated_pass_strict": false,
+      "validated_endpoint_id": null,
+      "validated_n_seeds": null
     },
     {
       "tile_id": "8_8",
@@ -1247,7 +1346,13 @@ window.ATLAS_STATE = {
       "early_plateau_rate": 0.25,
       "late_plateau_rate": 0.109375,
       "deep_long_ascent_rate": null,
-      "deepening_climb_steps": 100
+      "deepening_climb_steps": 100,
+      "validated_mean_delta": null,
+      "validated_lower95": null,
+      "validated_positive_rate": null,
+      "validated_pass_strict": false,
+      "validated_endpoint_id": null,
+      "validated_n_seeds": null
     },
     {
       "tile_id": "7_1",
@@ -1319,7 +1424,13 @@ window.ATLAS_STATE = {
       "early_plateau_rate": 0.171875,
       "late_plateau_rate": 0.140625,
       "deep_long_ascent_rate": null,
-      "deepening_climb_steps": 100
+      "deepening_climb_steps": 100,
+      "validated_mean_delta": null,
+      "validated_lower95": null,
+      "validated_positive_rate": null,
+      "validated_pass_strict": false,
+      "validated_endpoint_id": null,
+      "validated_n_seeds": null
     },
     {
       "tile_id": "12_19",
@@ -1391,7 +1502,13 @@ window.ATLAS_STATE = {
       "early_plateau_rate": 0.15625,
       "late_plateau_rate": 0.15625,
       "deep_long_ascent_rate": null,
-      "deepening_climb_steps": 100
+      "deepening_climb_steps": 100,
+      "validated_mean_delta": null,
+      "validated_lower95": null,
+      "validated_positive_rate": null,
+      "validated_pass_strict": false,
+      "validated_endpoint_id": null,
+      "validated_n_seeds": null
     },
     {
       "tile_id": "9_16",
@@ -1463,7 +1580,13 @@ window.ATLAS_STATE = {
       "early_plateau_rate": 0.078125,
       "late_plateau_rate": 0.234375,
       "deep_long_ascent_rate": null,
-      "deepening_climb_steps": 100
+      "deepening_climb_steps": 100,
+      "validated_mean_delta": null,
+      "validated_lower95": null,
+      "validated_positive_rate": null,
+      "validated_pass_strict": false,
+      "validated_endpoint_id": null,
+      "validated_n_seeds": null
     },
     {
       "tile_id": "0_0",
@@ -35910,20 +36033,20 @@ window.ATLAS_STATE = {
     {
       "tile_id": "11_16",
       "type": "edge",
-      "next_action": "endpoint_export",
-      "priority": 2.890625
+      "next_action": "production_trial",
+      "priority": 116.66296941050177
     },
     {
       "tile_id": "12_29",
       "type": "edge",
-      "next_action": "endpoint_export",
-      "priority": 2.734375
+      "next_action": "production_trial",
+      "priority": 108.27463460048118
     },
     {
       "tile_id": "9_26",
       "type": "edge",
-      "next_action": "long_climb_300",
-      "priority": 2.109375
+      "next_action": "production_trial",
+      "priority": 107.66366997087293
     },
     {
       "tile_id": "7_16",
@@ -35959,12 +36082,16 @@ window.ATLAS_STATE = {
   "progress": {
     "n_total_tiles": 512,
     "n_climbed": 20,
-    "n_mountain_confirmed": 2,
-    "n_deep_basin": 1,
+    "n_network_validated": 3,
+    "n_mountain_confirmed": 0,
+    "n_deep_basin": 0,
     "n_basin_confirmed": 1,
     "n_promising": 16,
     "n_unknown": 492,
     "coverage_pct": 3.90625,
+    "global_validated_endpoints": 3,
+    "global_validated_top_lower95": 0.01666,
+    "global_validated_top_mean_delta": 0.01699,
     "global_long_ascent_rate_q300": 0.5625,
     "global_material_success_rate_q300": 0.797,
     "global_mean_best_delta_q300": 0.007404,

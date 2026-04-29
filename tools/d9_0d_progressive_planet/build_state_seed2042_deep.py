@@ -23,17 +23,22 @@ REPO = Path(__file__).resolve().parents[2]
 SRC_N = REPO / "output" / "phase_d9_0n_seed2042_deep_trajectory_20260428"
 SRC_O = REPO / "output" / "phase_d9_0o_seed2042_top3_deepening_20260428"
 SRC_Q = REPO / "output" / "phase_d9_0q_seed2042_long_climb_20260429"
+SRC_X = REPO / "output" / "phase_d9_0x_endpoint_robustness_20260429"
 SUMMARY_CSV_N = SRC_N / "tile_deep_trajectory_summary.csv"
 SUMMARY_CSV_O = SRC_O / "tile_top3_deepening_summary.csv"
 SUMMARY_CSV_Q = SRC_Q / "tile_long_climb_summary.csv"
+ROBUSTNESS_JSON = SRC_X / "d9_0x_robustness_summary.json"
 OUT_JS = REPO / "tools" / "d9_0d_progressive_planet" / "state.js"
 
 LAT_BINS = 16
 LON_BINS = 32
 
-# Mountain core: D9.0q 300-step run kept these climbing > basin -> MOUNTAIN_CONFIRMED
+# D9.0x STRICT_PASS: 3 tiles produced production-grade endpoints -> NETWORK_VALIDATED
+# (Each entry: tile -> recommended endpoint id with robustness stats)
+TOP3_VALIDATED = {"11_16", "12_29", "9_26"}
+# Mountain core: D9.0q 300-step run kept these climbing > basin (pre-validation)
 TOP2_MOUNTAIN = {"12_29", "11_16"}
-# Top 3 from D9.0o 200-step deepening; 9_26 did NOT get the 300-step pass
+# Top 3 from D9.0o 200-step deepening
 TOP3_DEEP = {"9_26", "12_29", "11_16"}
 # Top 4 from D9.0n 100-step run; 7_16 not deepened -> stays BASIN_CONFIRMED
 TOP4 = {"11_16", "9_26", "12_29", "7_16"}
@@ -72,6 +77,31 @@ def load_summary(path: Path) -> list[dict]:
     return rows
 
 
+def load_robustness() -> dict[str, dict]:
+    if not ROBUSTNESS_JSON.exists():
+        return {}
+    blob = json.loads(ROBUSTNESS_JSON.read_text(encoding="utf-8"))
+    by_tile = {}
+    for ep in blob.get("endpoint_summary", []):
+        endpoint_id = ep.get("endpoint", "")
+        if "_" not in endpoint_id:
+            continue
+        tile_id = "_".join(endpoint_id.split("_")[:2])
+        overall = ep.get("overall", {})
+        by_tile[tile_id] = {
+            "endpoint_id": endpoint_id,
+            "validated_mean_delta": overall.get("mean"),
+            "validated_lower95": overall.get("lower95"),
+            "validated_positive_rate": overall.get("positive_rate"),
+            "validated_std_over_mean": overall.get("std_over_abs_mean"),
+            "validated_pass_strict": ep.get("pass_strict_all_eval_lens", False),
+            "validated_pass_moderate": ep.get("pass_moderate_all_eval_lens", False),
+            "validated_n_seeds": 30,
+            "validated_eval_lens": [1000, 4000, 16000],
+        }
+    return by_tile
+
+
 def f(row: dict, k: str) -> float | None:
     v = row.get(k, "")
     if v == "" or v is None:
@@ -79,7 +109,7 @@ def f(row: dict, k: str) -> float | None:
     return float(v)
 
 
-def build_climbed_tile(row: dict, deep_row: dict | None = None, mountain_row: dict | None = None) -> dict:
+def build_climbed_tile(row: dict, deep_row: dict | None = None, mountain_row: dict | None = None, robustness: dict | None = None) -> dict:
     tile_id = row["tile_id"]
     lat_bin, lon_bin = (int(p) for p in tile_id.split("_"))
     x, y, z = lat_lon_to_xyz(lat_bin, lon_bin)
@@ -108,7 +138,9 @@ def build_climbed_tile(row: dict, deep_row: dict | None = None, mountain_row: di
     late_plateau = f(src, "late_plateau_rate") or 0.0
     deep_long_ascent = f(src, "deep_long_ascent_rate")
 
-    if tile_id in TOP2_MOUNTAIN:
+    if tile_id in TOP3_VALIDATED:
+        state = "NETWORK_VALIDATED"
+    elif tile_id in TOP2_MOUNTAIN:
         state = "MOUNTAIN_CONFIRMED"
     elif tile_id in TOP3_DEEP:
         state = "DEEP_BASIN_CONFIRMED"
@@ -142,7 +174,9 @@ def build_climbed_tile(row: dict, deep_row: dict | None = None, mountain_row: di
             "positive_rate": material,
         }
 
-    if state == "MOUNTAIN_CONFIRMED":
+    if state == "NETWORK_VALIDATED":
+        action = "production_trial"
+    elif state == "MOUNTAIN_CONFIRMED":
         action = "endpoint_export"
     elif state == "DEEP_BASIN_CONFIRMED":
         action = "long_climb_300"
@@ -190,6 +224,12 @@ def build_climbed_tile(row: dict, deep_row: dict | None = None, mountain_row: di
         "late_plateau_rate": late_plateau,
         "deep_long_ascent_rate": deep_long_ascent,
         "deepening_climb_steps": climb_steps,
+        "validated_mean_delta": robustness.get("validated_mean_delta") if robustness else None,
+        "validated_lower95": robustness.get("validated_lower95") if robustness else None,
+        "validated_positive_rate": robustness.get("validated_positive_rate") if robustness else None,
+        "validated_pass_strict": robustness.get("validated_pass_strict") if robustness else False,
+        "validated_endpoint_id": robustness.get("endpoint_id") if robustness else None,
+        "validated_n_seeds": robustness.get("validated_n_seeds") if robustness else None,
     }
 
 
@@ -247,13 +287,15 @@ def main() -> int:
     mountain_rows = load_summary(SUMMARY_CSV_Q) if SUMMARY_CSV_Q.exists() else []
     deep_by_tile = {r["tile_id"]: r for r in deep_rows}
     mountain_by_tile = {r["tile_id"]: r for r in mountain_rows}
+    robustness_by_tile = load_robustness()
     climbed_tile_ids = {r["tile_id"] for r in rows}
 
     tiles = []
     for r in rows:
         deep = deep_by_tile.get(r["tile_id"])
         mountain = mountain_by_tile.get(r["tile_id"])
-        tiles.append(build_climbed_tile(r, deep, mountain))
+        robustness = robustness_by_tile.get(r["tile_id"])
+        tiles.append(build_climbed_tile(r, deep, mountain, robustness))
     for la in range(LAT_BINS):
         for lo in range(LON_BINS):
             tid = f"{la}_{lo}"
@@ -261,14 +303,22 @@ def main() -> int:
                 continue
             tiles.append(build_unknown_tile(la, lo))
 
-    # Queue: top 8 by long_ascent — MOUNTAIN tiles get endpoint_export, basin gets long_climb, etc.
+    # Queue: NETWORK_VALIDATED top, then mountain, then basin, then promising
     deepen_queue = []
+
+    def queue_priority(t):
+        if t["state"] == "NETWORK_VALIDATED":
+            return 100 + (t.get("validated_lower95") or 0) * 1000
+        return (t.get("long_ascent_rate") or 0.0) * 5.0
+
     sorted_climbed = sorted(
         [t for t in tiles if t["state"] != "UNKNOWN"],
-        key=lambda t: -(t["long_ascent_rate"] or 0.0),
+        key=lambda t: -queue_priority(t),
     )
     for t in sorted_climbed[:8]:
-        if t["state"] == "MOUNTAIN_CONFIRMED":
+        if t["state"] == "NETWORK_VALIDATED":
+            action = "production_trial"
+        elif t["state"] == "MOUNTAIN_CONFIRMED":
             action = "endpoint_export"
         elif t["state"] == "DEEP_BASIN_CONFIRMED":
             action = "long_climb_300"
@@ -281,20 +331,21 @@ def main() -> int:
                 "tile_id": t["tile_id"],
                 "type": "edge",
                 "next_action": action,
-                "priority": (t["long_ascent_rate"] or 0.0) * 5.0,
+                "priority": queue_priority(t),
             }
         )
 
     n_total = len(tiles)
     n_climbed = len(rows)
+    n_validated = sum(1 for t in tiles if t["state"] == "NETWORK_VALIDATED")
     n_mountain = sum(1 for t in tiles if t["state"] == "MOUNTAIN_CONFIRMED")
     n_deep_basin = sum(1 for t in tiles if t["state"] == "DEEP_BASIN_CONFIRMED")
     n_confirmed_basin = sum(1 for t in tiles if t["state"] == "BASIN_CONFIRMED")
 
     state_obj = {
         "schema_version": "d9.0d-1",
-        "run_id": "d9_0q_seed2042_mountain_dossier",
-        "source_run_id": "output/phase_d9_seed2042_mountain_dossier_20260429",
+        "run_id": "d9_0x_seed2042_robustness_strict_pass",
+        "source_run_id": "output/phase_d9_0x_endpoint_robustness_20260429",
         "generated_at_utc": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
         "last_updated": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
         "phase_status": "finished",
@@ -315,19 +366,26 @@ def main() -> int:
             "tile_assignment": "d9_0q_long_climb_300",
             "climb_steps_per_climber": 300,
             "climbers_per_tile": 64,
-            "verdict": "D9_SEED2042_MOUNTAIN_CONFIRMED_AND_STILL_CLIMBING",
+            "verdict": "D9_ENDPOINT_ROBUSTNESS_STRICT_PASS",
+            "topology": "3_INDEPENDENT_ISLANDS_NO_TOUCH",
+            "production_candidate": "11_16_endpoint_01",
+            "production_candidate_name": "seed2042_improved_v1",
         },
         "tiles": tiles,
         "queue": deepen_queue,
         "progress": {
             "n_total_tiles": n_total,
             "n_climbed": n_climbed,
+            "n_network_validated": n_validated,
             "n_mountain_confirmed": n_mountain,
             "n_deep_basin": n_deep_basin,
             "n_basin_confirmed": n_confirmed_basin,
-            "n_promising": n_climbed - n_mountain - n_deep_basin - n_confirmed_basin,
+            "n_promising": n_climbed - n_validated - n_mountain - n_deep_basin - n_confirmed_basin,
             "n_unknown": n_total - n_climbed,
             "coverage_pct": n_climbed / n_total * 100.0,
+            "global_validated_endpoints": 3,
+            "global_validated_top_lower95": 0.01666,
+            "global_validated_top_mean_delta": 0.01699,
             "global_long_ascent_rate_q300": 0.5625,
             "global_material_success_rate_q300": 0.797,
             "global_mean_best_delta_q300": 0.007404,
@@ -349,12 +407,13 @@ def main() -> int:
     print(f"wrote: {OUT_JS}")
     print(f"  total tiles:           {n_total}")
     print(f"  climbed:               {n_climbed}")
+    print(f"  NETWORK_VALIDATED:     {n_validated}")
     print(f"  MOUNTAIN_CONFIRMED:    {n_mountain}")
     print(f"  DEEP_BASIN_CONFIRMED:  {n_deep_basin}")
     print(f"  BASIN_CONFIRMED:       {n_confirmed_basin}")
-    print(f"  PROMISING:             {n_climbed - n_mountain - n_deep_basin - n_confirmed_basin}")
+    print(f"  PROMISING:             {n_climbed - n_validated - n_mountain - n_deep_basin - n_confirmed_basin}")
     print(f"  UNKNOWN:               {n_total - n_climbed}")
-    print(f"  global long_ascent (top2, 300-step): 56.25%")
+    print(f"  production candidate:  11_16_endpoint_01 (lower95=+0.01666)")
     return 0
 
 
