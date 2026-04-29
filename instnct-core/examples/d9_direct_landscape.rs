@@ -4,7 +4,10 @@
 //! mutates only the persisted core genome (edges, threshold, channel, polarity),
 //! and evaluates local neighborhoods around the base genome.
 
-use instnct_core::{load_checkpoint, softmax, InitConfig, Int8Projection, Network, VcbpTable};
+use instnct_core::{
+    load_checkpoint, save_checkpoint, softmax, CheckpointMeta, InitConfig, Int8Projection, Network,
+    VcbpTable,
+};
 use rand::rngs::StdRng;
 use rand::{Rng, SeedableRng};
 use serde::Serialize;
@@ -102,6 +105,9 @@ struct Cli {
     climbers_per_tile: usize,
     climb_steps: usize,
     accept_epsilon: f64,
+    export_top_endpoints: usize,
+    endpoint_eval_len: usize,
+    endpoint_eval_seeds: Vec<u64>,
     out: PathBuf,
     seed: u64,
     eval_len: usize,
@@ -128,6 +134,9 @@ struct RunMeta {
     climbers_per_tile: Option<usize>,
     climb_steps: Option<usize>,
     accept_epsilon: Option<f64>,
+    export_top_endpoints: Option<usize>,
+    endpoint_eval_len: Option<usize>,
+    endpoint_eval_seeds: Option<Vec<u64>>,
     radii: Vec<usize>,
     mutation_types: Vec<String>,
     checkpoints: Vec<String>,
@@ -136,6 +145,60 @@ struct RunMeta {
     packed: String,
     corpus: String,
     input_scatter: bool,
+}
+
+#[derive(Clone)]
+struct EndpointCandidate {
+    base_index: usize,
+    base_checkpoint: String,
+    base_step: usize,
+    base_accuracy: f64,
+    tile_id: String,
+    lat_bin: usize,
+    lon_bin: usize,
+    climber_id: usize,
+    climber_seed: u64,
+    eval_seed: u64,
+    best_step: usize,
+    best_score: f64,
+    start_score: f64,
+    final_score: f64,
+    mutation_type_at_best: String,
+    accepted_seed_chain: Vec<u64>,
+    net: Network,
+    proj: Int8Projection,
+}
+
+#[derive(Serialize)]
+struct EndpointSidecar<'a> {
+    endpoint_rank: usize,
+    endpoint_checkpoint: &'a str,
+    base_index: usize,
+    base_checkpoint: &'a str,
+    base_step: usize,
+    base_accuracy: f64,
+    tile_id: &'a str,
+    lat_bin: usize,
+    lon_bin: usize,
+    climber_id: usize,
+    climber_seed: u64,
+    eval_seed: u64,
+    best_step: usize,
+    best_score: f64,
+    start_score: f64,
+    climb_best_delta: f64,
+    final_delta: f64,
+    mutation_type_at_best: &'a str,
+    accepted_seed_chain: &'a [u64],
+    endpoint_eval_len: usize,
+    endpoint_eval_seeds: &'a [u64],
+    baseline_reeval_mean: f64,
+    endpoint_reeval_mean: f64,
+    reeval_delta_4000: f64,
+    retention_pct: f64,
+    delta_vs_baseline: f64,
+    pass_retention_70: bool,
+    pass_positive_delta: bool,
 }
 
 fn parse_csv_usize(value: &str) -> Vec<usize> {
@@ -170,6 +233,9 @@ fn parse_args() -> Cli {
     let mut climbers_per_tile = 16usize;
     let mut climb_steps = 50usize;
     let mut accept_epsilon = 0.001f64;
+    let mut export_top_endpoints = 0usize;
+    let mut endpoint_eval_len = 4_000usize;
+    let mut endpoint_eval_seeds = vec![730_001u64, 730_002, 730_003, 730_004];
     let mut out = PathBuf::from("output/phase_d9_direct_genome_landscape_20260428");
     let mut seed = 90210u64;
     let mut eval_len = DEFAULT_EVAL_LEN;
@@ -279,6 +345,33 @@ fn parse_args() -> Cli {
                     .parse()
                     .expect("accept-epsilon")
             }
+            "--export-top-endpoints" => {
+                export_top_endpoints = args
+                    .next()
+                    .expect("--export-top-endpoints value")
+                    .parse()
+                    .expect("export-top-endpoints")
+            }
+            "--endpoint-eval-len" => {
+                endpoint_eval_len = args
+                    .next()
+                    .expect("--endpoint-eval-len value")
+                    .parse()
+                    .expect("endpoint-eval-len")
+            }
+            "--endpoint-eval-seeds" => {
+                endpoint_eval_seeds = args
+                    .next()
+                    .expect("--endpoint-eval-seeds csv")
+                    .split(',')
+                    .filter(|part| !part.trim().is_empty())
+                    .map(|part| part.trim().parse::<u64>().expect("endpoint eval seed"))
+                    .collect();
+                assert!(
+                    !endpoint_eval_seeds.is_empty(),
+                    "--endpoint-eval-seeds must not be empty"
+                );
+            }
             "--out" => out = PathBuf::from(args.next().expect("--out path")),
             "--seed" => seed = args.next().expect("--seed value").parse().expect("seed"),
             "--eval-len" => {
@@ -346,6 +439,9 @@ fn parse_args() -> Cli {
         climbers_per_tile,
         climb_steps,
         accept_epsilon,
+        export_top_endpoints,
+        endpoint_eval_len,
+        endpoint_eval_seeds,
         out,
         seed,
         eval_len,
@@ -1191,6 +1287,180 @@ fn write_climb_header(writer: &mut BufWriter<File>) {
     .expect("failed to write paratrooper_paths header");
 }
 
+fn mean_endpoint_score(
+    cli: &Cli,
+    net: &Network,
+    proj: &Int8Projection,
+    table: &VcbpTable,
+    pair_ids: &[u16],
+    hot_to_idx: &[usize],
+    bigram: &[Vec<f64>],
+    unigram: &[f64],
+    init: &InitConfig,
+) -> f64 {
+    let mut total = 0.0;
+    for &seed in &cli.endpoint_eval_seeds {
+        let mut eval_net = net.clone();
+        total += eval_score(
+            &cli.score_mode,
+            &mut eval_net,
+            proj,
+            table,
+            pair_ids,
+            hot_to_idx,
+            bigram,
+            unigram,
+            cli.endpoint_eval_len,
+            &mut StdRng::seed_from_u64(seed),
+            &init.propagation,
+            init.output_start(),
+            cli.h,
+            init.input_end(),
+            cli.input_scatter,
+        );
+    }
+    total / cli.endpoint_eval_seeds.len() as f64
+}
+
+fn export_endpoint_candidates(
+    cli: &Cli,
+    endpoint_candidates: &[EndpointCandidate],
+    base_net: &Network,
+    base_proj: &Int8Projection,
+    table: &VcbpTable,
+    pair_ids: &[u16],
+    hot_to_idx: &[usize],
+    bigram: &[Vec<f64>],
+    unigram: &[f64],
+    init: &InitConfig,
+) {
+    if endpoint_candidates.is_empty() {
+        return;
+    }
+    let endpoints_dir = cli.out.join("endpoints");
+    create_dir_all(&endpoints_dir).expect("failed to create endpoints directory");
+    let baseline_reeval_mean = mean_endpoint_score(
+        cli, base_net, base_proj, table, pair_ids, hot_to_idx, bigram, unigram, init,
+    );
+    let summary_path = endpoints_dir.join("endpoint_reeval_summary.csv");
+    let mut writer =
+        BufWriter::new(File::create(&summary_path).expect("failed to create endpoint summary"));
+    writeln!(
+        writer,
+        "endpoint_rank,endpoint_checkpoint,sidecar_json,base_index,base_checkpoint,tile_id,climber_id,best_step,climb_best_delta,final_delta,mutation_type_at_best,accepted_seed_count,baseline_reeval_mean,endpoint_reeval_mean,reeval_delta_4000,retention_pct,delta_vs_baseline,pass_retention_70,pass_positive_delta,endpoint_eval_len,endpoint_eval_seeds"
+    )
+    .expect("failed to write endpoint summary header");
+
+    for (rank_idx, endpoint) in endpoint_candidates.iter().enumerate() {
+        let endpoint_rank = rank_idx + 1;
+        let endpoint_reeval_mean = mean_endpoint_score(
+            cli,
+            &endpoint.net,
+            &endpoint.proj,
+            table,
+            pair_ids,
+            hot_to_idx,
+            bigram,
+            unigram,
+            init,
+        );
+        let climb_best_delta = endpoint.best_score - endpoint.start_score;
+        let final_delta = endpoint.final_score - endpoint.start_score;
+        let reeval_delta = endpoint_reeval_mean - baseline_reeval_mean;
+        let retention_pct = if climb_best_delta.abs() > 1e-12 {
+            reeval_delta / climb_best_delta
+        } else {
+            0.0
+        };
+        let pass_retention_70 = retention_pct >= 0.70;
+        let pass_positive_delta = reeval_delta > 0.0;
+        let ckpt_path = endpoints_dir.join(format!("endpoint_{endpoint_rank:02}.ckpt"));
+        let sidecar_path = endpoints_dir.join(format!("endpoint_{endpoint_rank:02}.json"));
+        save_checkpoint(
+            &ckpt_path,
+            &endpoint.net,
+            &endpoint.proj,
+            CheckpointMeta {
+                step: endpoint.base_step + endpoint.best_step,
+                accuracy: endpoint_reeval_mean,
+                label: format!(
+                    "D9.0r endpoint rank={} tile={} delta={:.6}",
+                    endpoint_rank, endpoint.tile_id, reeval_delta
+                ),
+            },
+        )
+        .expect("failed to save endpoint checkpoint");
+
+        let ckpt_str = ckpt_path.display().to_string();
+        let sidecar = EndpointSidecar {
+            endpoint_rank,
+            endpoint_checkpoint: &ckpt_str,
+            base_index: endpoint.base_index,
+            base_checkpoint: &endpoint.base_checkpoint,
+            base_step: endpoint.base_step,
+            base_accuracy: endpoint.base_accuracy,
+            tile_id: &endpoint.tile_id,
+            lat_bin: endpoint.lat_bin,
+            lon_bin: endpoint.lon_bin,
+            climber_id: endpoint.climber_id,
+            climber_seed: endpoint.climber_seed,
+            eval_seed: endpoint.eval_seed,
+            best_step: endpoint.best_step,
+            best_score: endpoint.best_score,
+            start_score: endpoint.start_score,
+            climb_best_delta,
+            final_delta,
+            mutation_type_at_best: &endpoint.mutation_type_at_best,
+            accepted_seed_chain: &endpoint.accepted_seed_chain,
+            endpoint_eval_len: cli.endpoint_eval_len,
+            endpoint_eval_seeds: &cli.endpoint_eval_seeds,
+            baseline_reeval_mean,
+            endpoint_reeval_mean,
+            reeval_delta_4000: reeval_delta,
+            retention_pct,
+            delta_vs_baseline: reeval_delta,
+            pass_retention_70,
+            pass_positive_delta,
+        };
+        std::fs::write(
+            &sidecar_path,
+            serde_json::to_string_pretty(&sidecar).expect("endpoint sidecar serialize"),
+        )
+        .expect("failed to write endpoint sidecar");
+        writeln!(
+            writer,
+            "{},{},{},{},{},{},{},{},{:.17},{:.17},{},{},{:.17},{:.17},{:.17},{:.17},{:.17},{},{},{},{}",
+            endpoint_rank,
+            ckpt_path.display(),
+            sidecar_path.display(),
+            endpoint.base_index,
+            endpoint.base_checkpoint,
+            endpoint.tile_id,
+            endpoint.climber_id,
+            endpoint.best_step,
+            climb_best_delta,
+            final_delta,
+            endpoint.mutation_type_at_best,
+            endpoint.accepted_seed_chain.len(),
+            baseline_reeval_mean,
+            endpoint_reeval_mean,
+            reeval_delta,
+            retention_pct,
+            reeval_delta,
+            pass_retention_70,
+            pass_positive_delta,
+            cli.endpoint_eval_len,
+            cli.endpoint_eval_seeds
+                .iter()
+                .map(|seed| seed.to_string())
+                .collect::<Vec<_>>()
+                .join("|"),
+        )
+        .expect("failed to write endpoint summary row");
+    }
+    writer.flush().expect("failed to flush endpoint summary");
+}
+
 fn main() {
     let cli = parse_args();
     create_dir_all(&cli.out).expect("failed to create output directory");
@@ -1267,6 +1537,7 @@ fn main() {
                 File::create(&climb_path).expect("failed to create paratrooper_paths.csv"),
             );
             write_climb_header(&mut climb_writer);
+            let mut endpoint_candidates: Vec<EndpointCandidate> = Vec::new();
             let tile_list: Vec<(usize, usize)> = cli.target_tiles.clone().unwrap_or_else(|| {
                 let mut tiles = Vec::with_capacity(cli.lat_bins * cli.lon_bins);
                 for lat_bin in 0..cli.lat_bins {
@@ -1311,6 +1582,12 @@ fn main() {
                     );
                     let mut current_score = start_score;
                     let mut best_score = start_score;
+                    let mut best_net = current.clone();
+                    let mut best_proj = current_proj.clone();
+                    let mut best_step = 0usize;
+                    let mut best_mutation_type_at_best = String::from("start");
+                    let mut accepted_seed_chain: Vec<u64> = Vec::new();
+                    let mut best_seed_chain: Vec<u64> = Vec::new();
                     for step_idx in 0..cli.climb_steps {
                         let mutation_type =
                             cli.mutation_types[proposal_rng.gen_range(0..cli.mutation_types.len())];
@@ -1363,6 +1640,24 @@ fn main() {
                         } else {
                             "reject"
                         };
+                        let mut accepted_score = current_score;
+                        if accepted {
+                            let mut next_seed_chain = accepted_seed_chain.clone();
+                            next_seed_chain.push(proposal_seed);
+                            if candidate_score > best_score {
+                                best_score = candidate_score;
+                                best_net = candidate.clone();
+                                best_proj = candidate_proj.clone();
+                                best_step = step_idx;
+                                best_mutation_type_at_best = mutation_type.as_str().to_string();
+                                best_seed_chain = next_seed_chain.clone();
+                            }
+                            current = candidate.clone();
+                            current_proj = candidate_proj.clone();
+                            current_score = candidate_score;
+                            accepted_seed_chain = next_seed_chain;
+                            accepted_score = current_score;
+                        }
                         let mut cand_metrics_net = candidate.clone();
                         let metrics = compute_panel_metrics(
                             &mut cand_metrics_net,
@@ -1378,18 +1673,7 @@ fn main() {
                         );
                         let eval_ms = eval_start.elapsed().as_secs_f64() * 1000.0;
                         let bdist = behavior_distance(&base_metrics, &metrics, cli.h);
-                        if candidate_score > best_score {
-                            best_score = candidate_score;
-                        }
                         let candidate_edges = candidate.edge_count();
-                        let accepted_score = if accepted {
-                            current = candidate;
-                            current_proj = candidate_proj;
-                            current_score = candidate_score;
-                            current_score
-                        } else {
-                            current_score
-                        };
                         let current_edges = current.edge_count();
 
                         writeln!(
@@ -1433,6 +1717,34 @@ fn main() {
                         .expect("failed to write climb row");
                         global_sample_id += 1;
                     }
+                    if cli.export_top_endpoints > 0 && best_score > start_score {
+                        endpoint_candidates.push(EndpointCandidate {
+                            base_index,
+                            base_checkpoint: checkpoint.display().to_string(),
+                            base_step: meta.step,
+                            base_accuracy: meta.accuracy,
+                            tile_id: tile_id.clone(),
+                            lat_bin,
+                            lon_bin,
+                            climber_id: global_climber_id,
+                            climber_seed,
+                            eval_seed,
+                            best_step,
+                            best_score,
+                            start_score,
+                            final_score: current_score,
+                            mutation_type_at_best: best_mutation_type_at_best.clone(),
+                            accepted_seed_chain: best_seed_chain.clone(),
+                            net: best_net,
+                            proj: best_proj,
+                        });
+                        endpoint_candidates.sort_by(|a, b| {
+                            (b.best_score - b.start_score)
+                                .partial_cmp(&(a.best_score - a.start_score))
+                                .unwrap_or(std::cmp::Ordering::Equal)
+                        });
+                        endpoint_candidates.truncate(cli.export_top_endpoints);
+                    }
                     global_climber_id += 1;
                 }
                 climb_writer
@@ -1445,6 +1757,20 @@ fn main() {
                     tile_list.len(),
                     cli.climbers_per_tile,
                     global_sample_id
+                );
+            }
+            if cli.export_top_endpoints > 0 {
+                export_endpoint_candidates(
+                    &cli,
+                    &endpoint_candidates,
+                    &base_net,
+                    &proj,
+                    &table,
+                    &pair_ids,
+                    &hot_to_idx,
+                    &bigram,
+                    &unigram,
+                    &init,
                 );
             }
         } else if matches!(cli.mode.as_str(), "planet-scout" | "homogeneous") {
@@ -1763,6 +2089,10 @@ fn main() {
         climbers_per_tile: (cli.mode == "paratrooper-climb").then_some(cli.climbers_per_tile),
         climb_steps: (cli.mode == "paratrooper-climb").then_some(cli.climb_steps),
         accept_epsilon: (cli.mode == "paratrooper-climb").then_some(cli.accept_epsilon),
+        export_top_endpoints: (cli.mode == "paratrooper-climb").then_some(cli.export_top_endpoints),
+        endpoint_eval_len: (cli.mode == "paratrooper-climb").then_some(cli.endpoint_eval_len),
+        endpoint_eval_seeds: (cli.mode == "paratrooper-climb")
+            .then_some(cli.endpoint_eval_seeds.clone()),
         radii: cli.radii.clone(),
         mutation_types: cli
             .mutation_types
