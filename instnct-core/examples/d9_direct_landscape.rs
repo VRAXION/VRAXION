@@ -11,7 +11,7 @@ use instnct_core::{
 use rand::rngs::StdRng;
 use rand::{Rng, SeedableRng};
 use serde::Serialize;
-use std::collections::HashSet;
+use std::collections::{BTreeMap, HashSet};
 use std::env;
 use std::fs::{create_dir_all, File};
 use std::io::{BufWriter, Write};
@@ -304,6 +304,20 @@ struct QuadtreeCandidate {
     mo_class: &'static str,
     net: Network,
     proj: Int8Projection,
+}
+
+#[derive(Clone, Debug)]
+struct ThresholdChange {
+    index: usize,
+    baseline: u8,
+    target: u8,
+}
+
+#[derive(Clone, Debug)]
+enum CausalAtom {
+    AddedEdge(u16, u16),
+    RemovedEdge(u16, u16),
+    Threshold(ThresholdChange),
 }
 
 fn parse_csv_usize(value: &str) -> Vec<usize> {
@@ -629,7 +643,8 @@ fn parse_args() -> Cli {
         | "repair-scan"
         | "multi-objective-climb" => vec![1],
         | "quadtree-scout" => vec![4, 8, 16],
-        other => panic!("--mode expects fail-fast|medium|full|staged|planet-scout|paratrooper-climb|endpoint-bridge|endpoint-overlap|endpoint-robustness|repair-scan|multi-objective-climb|quadtree-scout, got {other}"),
+        | "causal-diff" => vec![1],
+        other => panic!("--mode expects fail-fast|medium|full|staged|planet-scout|paratrooper-climb|endpoint-bridge|endpoint-overlap|endpoint-robustness|repair-scan|multi-objective-climb|quadtree-scout|causal-diff, got {other}"),
     };
     let default_mutation_types = if matches!(
         mode.as_str(),
@@ -642,6 +657,7 @@ fn parse_args() -> Cli {
             | "repair-scan"
             | "multi-objective-climb"
             | "quadtree-scout"
+            | "causal-diff"
     ) {
         vec![MutationType::Edge, MutationType::Threshold]
     } else {
@@ -3062,6 +3078,819 @@ fn run_quadtree_scout(
         .expect("failed to flush child_candidates");
 }
 
+fn zone_name(init: &InitConfig, idx: usize) -> &'static str {
+    if idx < init.output_start() {
+        "input-only"
+    } else if idx < init.input_end() {
+        "overlap"
+    } else {
+        "output-only"
+    }
+}
+
+fn edge_zone(init: &InitConfig, source: usize, target: usize) -> String {
+    format!("{}->{}", zone_name(init, source), zone_name(init, target))
+}
+
+fn checkpoint_edge_set(net: &Network) -> HashSet<(u16, u16)> {
+    net.graph()
+        .iter_edges()
+        .map(|edge| (edge.source, edge.target))
+        .collect()
+}
+
+fn threshold_diff(baseline: &Network, target: &Network) -> Vec<ThresholdChange> {
+    (0..baseline.neuron_count())
+        .filter_map(|idx| {
+            let baseline_value = baseline.threshold_at(idx);
+            let target_value = target.threshold_at(idx);
+            (baseline_value != target_value).then_some(ThresholdChange {
+                index: idx,
+                baseline: baseline_value,
+                target: target_value,
+            })
+        })
+        .collect()
+}
+
+fn count_channels_changed(baseline: &Network, target: &Network) -> usize {
+    (0..baseline.neuron_count())
+        .filter(|&idx| baseline.channel_at(idx) != target.channel_at(idx))
+        .count()
+}
+
+fn count_polarities_changed(baseline: &Network, target: &Network) -> usize {
+    baseline
+        .polarity()
+        .iter()
+        .zip(target.polarity())
+        .filter(|(a, b)| a != b)
+        .count()
+}
+
+fn zone_counts_for_edges(init: &InitConfig, edges: &[(u16, u16)]) -> BTreeMap<String, usize> {
+    let mut counts = BTreeMap::new();
+    for &(source, target) in edges {
+        *counts
+            .entry(edge_zone(init, source as usize, target as usize))
+            .or_default() += 1;
+    }
+    counts
+}
+
+fn zone_counts_for_thresholds(
+    init: &InitConfig,
+    changes: &[ThresholdChange],
+) -> BTreeMap<String, usize> {
+    let mut counts = BTreeMap::new();
+    for change in changes {
+        *counts
+            .entry(zone_name(init, change.index).to_string())
+            .or_default() += 1;
+    }
+    counts
+}
+
+fn graph_cycle_stats(net: &Network) -> (usize, usize, usize) {
+    let h = net.neuron_count();
+    let edge_set = checkpoint_edge_set(net);
+    let mut outgoing: Vec<Vec<u16>> = vec![Vec::new(); h];
+    for edge in net.graph().iter_edges() {
+        outgoing[edge.source as usize].push(edge.target);
+    }
+
+    let bidirectional = net.graph().bidirectional_pair_count();
+    let mut triangles = 0usize;
+    for &(a, b) in &edge_set {
+        for &c in &outgoing[b as usize] {
+            if edge_set.contains(&(c, a)) {
+                triangles += 1;
+            }
+        }
+    }
+    triangles /= 3;
+
+    let mut sampled_four_cycles = 0usize;
+    for a in 0..h.min(100) {
+        for &b in &outgoing[a] {
+            for &c in &outgoing[b as usize] {
+                if c as usize == a {
+                    continue;
+                }
+                for &d in &outgoing[c as usize] {
+                    if d as usize == a || d == b {
+                        continue;
+                    }
+                    if edge_set.contains(&(d, a as u16)) {
+                        sampled_four_cycles += 1;
+                    }
+                }
+            }
+        }
+    }
+    (bidirectional, triangles, sampled_four_cycles)
+}
+
+fn degree_map(net: &Network) -> Vec<usize> {
+    let mut degree = vec![0usize; net.neuron_count()];
+    for edge in net.graph().iter_edges() {
+        degree[edge.source as usize] += 1;
+        degree[edge.target as usize] += 1;
+    }
+    degree
+}
+
+fn apply_edge_diff_to_target(
+    net: &mut Network,
+    added_edges: &[(u16, u16)],
+    removed_edges: &[(u16, u16)],
+) -> (usize, usize) {
+    let mut added_reverted = 0usize;
+    let mut removed_restored = 0usize;
+    for &(source, target) in added_edges {
+        if net.graph_mut().remove_edge(source, target) {
+            added_reverted += 1;
+        }
+    }
+    for &(source, target) in removed_edges {
+        if net.graph_mut().add_edge(source, target) {
+            removed_restored += 1;
+        }
+    }
+    (added_reverted, removed_restored)
+}
+
+fn apply_edge_diff_to_baseline(
+    net: &mut Network,
+    added_edges: &[(u16, u16)],
+    removed_edges: &[(u16, u16)],
+) -> (usize, usize) {
+    let mut added_applied = 0usize;
+    let mut removed_applied = 0usize;
+    for &(source, target) in added_edges {
+        if net.graph_mut().add_edge(source, target) {
+            added_applied += 1;
+        }
+    }
+    for &(source, target) in removed_edges {
+        if net.graph_mut().remove_edge(source, target) {
+            removed_applied += 1;
+        }
+    }
+    (added_applied, removed_applied)
+}
+
+fn revert_thresholds(net: &mut Network, changes: &[ThresholdChange]) -> usize {
+    for change in changes {
+        net.set_threshold(change.index, change.baseline);
+    }
+    changes.len()
+}
+
+fn graft_thresholds(net: &mut Network, changes: &[ThresholdChange]) -> usize {
+    for change in changes {
+        net.set_threshold(change.index, change.target);
+    }
+    changes.len()
+}
+
+fn score_causal_candidate(
+    name: &str,
+    kind: &str,
+    net: &Network,
+    proj: &Int8Projection,
+    baseline_scores: MultiMetricScores,
+    target_mo_score: f64,
+    cli: &Cli,
+    table: &VcbpTable,
+    pair_ids: &[u16],
+    hot_to_idx: &[usize],
+    bigram: &[Vec<f64>],
+    unigram: &[f64],
+    init: &InitConfig,
+    edge_added_reverted: usize,
+    edge_removed_restored: usize,
+    threshold_reverted: usize,
+    writer: &mut BufWriter<File>,
+) -> (MultiMetricScores, MultiMetricScores, f64, &'static str, f64) {
+    let scores = evaluate_multi_metrics(
+        net,
+        proj,
+        table,
+        pair_ids,
+        hot_to_idx,
+        bigram,
+        unigram,
+        cli.eval_len,
+        &cli.mo_eval_seeds,
+        init,
+        cli.h,
+        cli.input_scatter,
+    );
+    let deltas = metric_deltas(scores, baseline_scores);
+    let score = mo_score(deltas);
+    let class_name = mo_class(deltas);
+    let loss_fraction = if target_mo_score.abs() > 1e-12 {
+        ((target_mo_score - score) / target_mo_score).max(0.0)
+    } else {
+        0.0
+    };
+    writeln!(
+        writer,
+        "{},{},{},{},{},{:.12},{:.12},{:.12},{:.12},{:.12},{},{:.6}",
+        name,
+        kind,
+        edge_added_reverted,
+        edge_removed_restored,
+        threshold_reverted,
+        deltas.smooth,
+        deltas.accuracy,
+        deltas.echo,
+        deltas.unigram,
+        score,
+        class_name,
+        loss_fraction,
+    )
+    .expect("failed to write causal result");
+    (scores, deltas, score, class_name, loss_fraction)
+}
+
+fn select_micro_atoms(
+    baseline: &Network,
+    target: &Network,
+    added_edges: &[(u16, u16)],
+    removed_edges: &[(u16, u16)],
+    threshold_changes: &[ThresholdChange],
+    limit: usize,
+) -> Vec<CausalAtom> {
+    let target_degree = degree_map(target);
+    let baseline_degree = degree_map(baseline);
+    let mut ranked: Vec<(usize, CausalAtom)> = Vec::new();
+    for &(source, target_idx) in added_edges {
+        let score = target_degree[source as usize] + target_degree[target_idx as usize] + 10;
+        ranked.push((score, CausalAtom::AddedEdge(source, target_idx)));
+    }
+    for &(source, target_idx) in removed_edges {
+        let score = baseline_degree[source as usize] + baseline_degree[target_idx as usize] + 5;
+        ranked.push((score, CausalAtom::RemovedEdge(source, target_idx)));
+    }
+    for change in threshold_changes {
+        let score = target_degree[change.index]
+            + baseline_degree[change.index]
+            + (change.target.abs_diff(change.baseline) as usize * 8);
+        ranked.push((score, CausalAtom::Threshold(change.clone())));
+    }
+    ranked.sort_by(|a, b| b.0.cmp(&a.0));
+    ranked
+        .into_iter()
+        .take(limit)
+        .map(|(_, atom)| atom)
+        .collect()
+}
+
+fn atom_name(atom: &CausalAtom) -> String {
+    match atom {
+        CausalAtom::AddedEdge(source, target) => format!("micro_revert_added_edge_{}_{}", source, target),
+        CausalAtom::RemovedEdge(source, target) => {
+            format!("micro_restore_removed_edge_{}_{}", source, target)
+        }
+        CausalAtom::Threshold(change) => {
+            format!(
+                "micro_revert_threshold_{}_{}_to_{}",
+                change.index, change.target, change.baseline
+            )
+        }
+    }
+}
+
+fn apply_atom_to_target(net: &mut Network, atom: &CausalAtom) -> (usize, usize, usize) {
+    match atom {
+        CausalAtom::AddedEdge(source, target) => {
+            let changed = net.graph_mut().remove_edge(*source, *target) as usize;
+            (changed, 0, 0)
+        }
+        CausalAtom::RemovedEdge(source, target) => {
+            let changed = net.graph_mut().add_edge(*source, *target) as usize;
+            (0, changed, 0)
+        }
+        CausalAtom::Threshold(change) => {
+            net.set_threshold(change.index, change.baseline);
+            (0, 0, 1)
+        }
+    }
+}
+
+fn default_d9_child_top_paths() -> Vec<PathBuf> {
+    vec![
+        PathBuf::from("output/phase_d9_3a_quadtree_scan_20260429/candidates/top_01.ckpt"),
+        PathBuf::from("output/phase_d9_3a_quadtree_scan_20260429/candidates/top_02.ckpt"),
+        PathBuf::from("output/phase_d9_3a_quadtree_scan_20260429/candidates/top_03.ckpt"),
+    ]
+}
+
+fn run_causal_diff(
+    cli: &Cli,
+    table: &VcbpTable,
+    pair_ids: &[u16],
+    hot_to_idx: &[usize],
+    bigram: &[Vec<f64>],
+    unigram: &[f64],
+    init: &InitConfig,
+) {
+    let baseline_path = cli.checkpoints.first().expect("baseline checkpoint required");
+    let target_path = cli
+        .repair_start
+        .as_ref()
+        .expect("--repair-start target checkpoint required for causal-diff");
+    let (baseline_net, baseline_proj, baseline_meta) =
+        load_checkpoint(baseline_path).expect("failed to load baseline checkpoint");
+    let (target_net, target_proj, target_meta) =
+        load_checkpoint(target_path).expect("failed to load target checkpoint");
+    assert_eq!(baseline_net.neuron_count(), cli.h, "baseline H mismatch");
+    assert_eq!(target_net.neuron_count(), cli.h, "target H mismatch");
+    assert!(
+        !cli.mo_eval_seeds.is_empty(),
+        "--mo-eval-seeds must not be empty"
+    );
+
+    let baseline_edges = checkpoint_edge_set(&baseline_net);
+    let target_edges = checkpoint_edge_set(&target_net);
+    let mut added_edges: Vec<(u16, u16)> = target_edges.difference(&baseline_edges).copied().collect();
+    let mut removed_edges: Vec<(u16, u16)> =
+        baseline_edges.difference(&target_edges).copied().collect();
+    added_edges.sort_unstable();
+    removed_edges.sort_unstable();
+    let threshold_changes = threshold_diff(&baseline_net, &target_net);
+    let channel_changes = count_channels_changed(&baseline_net, &target_net);
+    let polarity_changes = count_polarities_changed(&baseline_net, &target_net);
+    let projection_bytes_equal = bincode::serialize(&baseline_proj).expect("baseline proj serialize")
+        == bincode::serialize(&target_proj).expect("target proj serialize");
+
+    let mut edge_writer = BufWriter::new(
+        File::create(cli.out.join("genome_diff_edges.csv"))
+            .expect("failed to create genome_diff_edges.csv"),
+    );
+    writeln!(edge_writer, "kind,source,target,zone").expect("edge header");
+    for &(source, target) in &added_edges {
+        writeln!(
+            edge_writer,
+            "added,{},{},{}",
+            source,
+            target,
+            edge_zone(init, source as usize, target as usize)
+        )
+        .expect("edge row");
+    }
+    for &(source, target) in &removed_edges {
+        writeln!(
+            edge_writer,
+            "removed,{},{},{}",
+            source,
+            target,
+            edge_zone(init, source as usize, target as usize)
+        )
+        .expect("edge row");
+    }
+    edge_writer.flush().expect("edge flush");
+
+    let mut threshold_writer = BufWriter::new(
+        File::create(cli.out.join("genome_diff_thresholds.csv"))
+            .expect("failed to create genome_diff_thresholds.csv"),
+    );
+    writeln!(threshold_writer, "index,baseline,target,delta,zone").expect("threshold header");
+    for change in &threshold_changes {
+        writeln!(
+            threshold_writer,
+            "{},{},{},{},{}",
+            change.index,
+            change.baseline,
+            change.target,
+            change.target as i16 - change.baseline as i16,
+            zone_name(init, change.index)
+        )
+        .expect("threshold row");
+    }
+    threshold_writer.flush().expect("threshold flush");
+
+    let baseline_scores = evaluate_multi_metrics(
+        &baseline_net,
+        &baseline_proj,
+        table,
+        pair_ids,
+        hot_to_idx,
+        bigram,
+        unigram,
+        cli.eval_len,
+        &cli.mo_eval_seeds,
+        init,
+        cli.h,
+        cli.input_scatter,
+    );
+    let target_scores = evaluate_multi_metrics(
+        &target_net,
+        &target_proj,
+        table,
+        pair_ids,
+        hot_to_idx,
+        bigram,
+        unigram,
+        cli.eval_len,
+        &cli.mo_eval_seeds,
+        init,
+        cli.h,
+        cli.input_scatter,
+    );
+    let target_deltas = metric_deltas(target_scores, baseline_scores);
+    let target_mo_score = mo_score(target_deltas);
+
+    let mut result_writer = BufWriter::new(
+        File::create(cli.out.join("causal_ablation_results.csv"))
+            .expect("failed to create causal_ablation_results.csv"),
+    );
+    writeln!(
+        result_writer,
+        "test_name,test_kind,edge_added_reverted,edge_removed_restored,threshold_reverted,smooth_delta,accuracy_delta,echo_delta,unigram_delta,mo_score,mo_class,mo_loss_fraction_vs_target"
+    )
+    .expect("causal header");
+
+    let mut result_json = Vec::new();
+    let mut record_result = |name: &str,
+                             kind: &str,
+                             net: &Network,
+                             proj: &Int8Projection,
+                             edge_added_reverted: usize,
+                             edge_removed_restored: usize,
+                             threshold_reverted: usize,
+                             writer: &mut BufWriter<File>| {
+        let (_scores, deltas, score, class_name, loss_fraction) = score_causal_candidate(
+            name,
+            kind,
+            net,
+            proj,
+            baseline_scores,
+            target_mo_score,
+            cli,
+            table,
+            pair_ids,
+            hot_to_idx,
+            bigram,
+            unigram,
+            init,
+            edge_added_reverted,
+            edge_removed_restored,
+            threshold_reverted,
+            writer,
+        );
+        result_json.push(serde_json::json!({
+            "test_name": name,
+            "test_kind": kind,
+            "smooth_delta": deltas.smooth,
+            "accuracy_delta": deltas.accuracy,
+            "echo_delta": deltas.echo,
+            "unigram_delta": deltas.unigram,
+            "mo_score": score,
+            "mo_class": class_name,
+            "mo_loss_fraction_vs_target": loss_fraction,
+        }));
+        (deltas, score, loss_fraction)
+    };
+
+    let (_, _, _) = record_result(
+        "baseline",
+        "reference",
+        &baseline_net,
+        &baseline_proj,
+        0,
+        0,
+        0,
+        &mut result_writer,
+    );
+    let (_, _, _) = record_result(
+        "target_generalist",
+        "reference",
+        &target_net,
+        &target_proj,
+        0,
+        0,
+        0,
+        &mut result_writer,
+    );
+
+    let mut ablate_added = target_net.clone();
+    let added_reverted = added_edges
+        .iter()
+        .filter(|&&(source, target)| ablate_added.graph_mut().remove_edge(source, target))
+        .count();
+    let (_, _, edge_added_loss) = record_result(
+        "ablate_added_edges",
+        "group_ablation",
+        &ablate_added,
+        &target_proj,
+        added_reverted,
+        0,
+        0,
+        &mut result_writer,
+    );
+
+    let mut ablate_removed = target_net.clone();
+    let removed_restored = removed_edges
+        .iter()
+        .filter(|&&(source, target)| ablate_removed.graph_mut().add_edge(source, target))
+        .count();
+    let _ = record_result(
+        "ablate_restore_removed_edges",
+        "group_ablation",
+        &ablate_removed,
+        &target_proj,
+        0,
+        removed_restored,
+        0,
+        &mut result_writer,
+    );
+
+    let mut ablate_all_edges = target_net.clone();
+    let (added_reverted_all, removed_restored_all) =
+        apply_edge_diff_to_target(&mut ablate_all_edges, &added_edges, &removed_edges);
+    let (_, _, edge_all_loss) = record_result(
+        "ablate_all_edges",
+        "group_ablation",
+        &ablate_all_edges,
+        &target_proj,
+        added_reverted_all,
+        removed_restored_all,
+        0,
+        &mut result_writer,
+    );
+
+    let mut ablate_thresholds = target_net.clone();
+    let threshold_reverted = revert_thresholds(&mut ablate_thresholds, &threshold_changes);
+    let (_, _, threshold_loss) = record_result(
+        "ablate_thresholds",
+        "group_ablation",
+        &ablate_thresholds,
+        &target_proj,
+        0,
+        0,
+        threshold_reverted,
+        &mut result_writer,
+    );
+
+    let mut ablate_all = target_net.clone();
+    let (added_reverted_all2, removed_restored_all2) =
+        apply_edge_diff_to_target(&mut ablate_all, &added_edges, &removed_edges);
+    let threshold_reverted_all = revert_thresholds(&mut ablate_all, &threshold_changes);
+    let (_, _, combined_loss) = record_result(
+        "ablate_all_edges_thresholds",
+        "group_ablation",
+        &ablate_all,
+        &target_proj,
+        added_reverted_all2,
+        removed_restored_all2,
+        threshold_reverted_all,
+        &mut result_writer,
+    );
+
+    let mut graft_added = baseline_net.clone();
+    let added_applied = added_edges
+        .iter()
+        .filter(|&&(source, target)| graft_added.graph_mut().add_edge(source, target))
+        .count();
+    let _ = record_result(
+        "graft_added_edges",
+        "forward_graft",
+        &graft_added,
+        &baseline_proj,
+        added_applied,
+        0,
+        0,
+        &mut result_writer,
+    );
+
+    let mut graft_all_edges = baseline_net.clone();
+    let (added_applied_all, removed_applied_all) =
+        apply_edge_diff_to_baseline(&mut graft_all_edges, &added_edges, &removed_edges);
+    let _ = record_result(
+        "graft_all_edges",
+        "forward_graft",
+        &graft_all_edges,
+        &baseline_proj,
+        added_applied_all,
+        removed_applied_all,
+        0,
+        &mut result_writer,
+    );
+
+    let mut graft_thresholds_net = baseline_net.clone();
+    let threshold_applied = graft_thresholds(&mut graft_thresholds_net, &threshold_changes);
+    let _ = record_result(
+        "graft_thresholds",
+        "forward_graft",
+        &graft_thresholds_net,
+        &baseline_proj,
+        0,
+        0,
+        threshold_applied,
+        &mut result_writer,
+    );
+
+    let mut graft_all = baseline_net.clone();
+    let (added_applied_all2, removed_applied_all2) =
+        apply_edge_diff_to_baseline(&mut graft_all, &added_edges, &removed_edges);
+    let threshold_applied_all = graft_thresholds(&mut graft_all, &threshold_changes);
+    let _ = record_result(
+        "graft_all_edges_thresholds",
+        "forward_graft",
+        &graft_all,
+        &baseline_proj,
+        added_applied_all2,
+        removed_applied_all2,
+        threshold_applied_all,
+        &mut result_writer,
+    );
+
+    let micro_limit = cli.overlap_samples.min(20);
+    let micro_atoms = select_micro_atoms(
+        &baseline_net,
+        &target_net,
+        &added_edges,
+        &removed_edges,
+        &threshold_changes,
+        micro_limit,
+    );
+    for atom in &micro_atoms {
+        let mut micro = target_net.clone();
+        let (edge_added_reverted, edge_removed_restored, threshold_reverted) =
+            apply_atom_to_target(&mut micro, atom);
+        let name = atom_name(atom);
+        let _ = record_result(
+            &name,
+            "micro_ablation",
+            &micro,
+            &target_proj,
+            edge_added_reverted,
+            edge_removed_restored,
+            threshold_reverted,
+            &mut result_writer,
+        );
+    }
+    result_writer.flush().expect("causal result flush");
+
+    let (baseline_bidir, baseline_triangles, baseline_four) = graph_cycle_stats(&baseline_net);
+    let (target_bidir, target_triangles, target_four) = graph_cycle_stats(&target_net);
+
+    let child_paths = if cli.bridge_endpoints.is_empty() {
+        default_d9_child_top_paths()
+    } else {
+        cli.bridge_endpoints.clone()
+    };
+    let mut child_diffs = Vec::new();
+    for path in &child_paths {
+        if !path.exists() {
+            continue;
+        }
+        let (child_net, child_proj, child_meta) =
+            load_checkpoint(path).expect("failed to load child checkpoint");
+        let child_edges = checkpoint_edge_set(&child_net);
+        let target_edges_now = checkpoint_edge_set(&target_net);
+        let child_added: Vec<_> = child_edges.difference(&target_edges_now).copied().collect();
+        let child_removed: Vec<_> = target_edges_now.difference(&child_edges).copied().collect();
+        let child_thresholds = threshold_diff(&target_net, &child_net);
+        child_diffs.push(serde_json::json!({
+            "path": path.display().to_string(),
+            "meta_label": child_meta.label,
+            "edges_added_vs_generalist": child_added.len(),
+            "edges_removed_vs_generalist": child_removed.len(),
+            "threshold_changes_vs_generalist": child_thresholds.len(),
+            "channel_changes_vs_generalist": count_channels_changed(&target_net, &child_net),
+            "polarity_changes_vs_generalist": count_polarities_changed(&target_net, &child_net),
+            "projection_equal_vs_generalist": bincode::serialize(&target_proj).expect("target proj serialize child")
+                == bincode::serialize(&child_proj).expect("child proj serialize"),
+        }));
+    }
+
+    let verdict = if threshold_loss >= 0.5 && edge_all_loss < 0.5 {
+        "THRESHOLD_TIMING_DRIVER"
+    } else if edge_all_loss >= 0.5 && threshold_loss < 0.5 {
+        "EDGE_WIRING_DRIVER"
+    } else if threshold_loss >= 0.5 && edge_all_loss >= 0.5 {
+        "EDGE_THRESHOLD_COADAPTATION"
+    } else if combined_loss >= 0.5 {
+        "EDGE_THRESHOLD_COADAPTATION"
+    } else {
+        "DIFF_NOT_LOCALIZED"
+    };
+
+    let summary = serde_json::json!({
+        "verdict": verdict,
+        "baseline_checkpoint": baseline_path.display().to_string(),
+        "target_checkpoint": target_path.display().to_string(),
+        "baseline_meta": {"step": baseline_meta.step, "accuracy": baseline_meta.accuracy, "label": baseline_meta.label},
+        "target_meta": {"step": target_meta.step, "accuracy": target_meta.accuracy, "label": target_meta.label},
+        "eval_len": cli.eval_len,
+        "eval_seeds": cli.mo_eval_seeds,
+        "diff": {
+            "baseline_edges": baseline_net.edge_count(),
+            "target_edges": target_net.edge_count(),
+            "added_edges": added_edges.len(),
+            "removed_edges": removed_edges.len(),
+            "net_edge_delta": target_net.edge_count() as isize - baseline_net.edge_count() as isize,
+            "threshold_changes": threshold_changes.len(),
+            "channel_changes": channel_changes,
+            "polarity_changes": polarity_changes,
+            "projection_bytes_equal": projection_bytes_equal,
+            "added_edge_zones": zone_counts_for_edges(init, &added_edges),
+            "removed_edge_zones": zone_counts_for_edges(init, &removed_edges),
+            "threshold_zones": zone_counts_for_thresholds(init, &threshold_changes),
+        },
+        "cycle_stats": {
+            "baseline": {"bidirectional_pairs": baseline_bidir, "triangles": baseline_triangles, "sampled_four_cycles": baseline_four},
+            "target": {"bidirectional_pairs": target_bidir, "triangles": target_triangles, "sampled_four_cycles": target_four},
+        },
+        "target_scores": {
+            "smooth_delta": target_deltas.smooth,
+            "accuracy_delta": target_deltas.accuracy,
+            "echo_delta": target_deltas.echo,
+            "unigram_delta": target_deltas.unigram,
+            "mo_score": target_mo_score,
+            "mo_class": mo_class(target_deltas),
+        },
+        "loss_fractions": {
+            "edge_added_loss": edge_added_loss,
+            "edge_all_loss": edge_all_loss,
+            "threshold_loss": threshold_loss,
+            "combined_loss": combined_loss,
+        },
+        "child_top_diffs": child_diffs,
+        "results": result_json,
+    });
+    std::fs::write(
+        cli.out.join("genome_diff_summary.json"),
+        serde_json::to_string_pretty(&summary).expect("summary json"),
+    )
+    .expect("failed to write genome_diff_summary.json");
+
+    let report = format!(
+        "# D9.4a Causal Diff Report\n\n\
+Verdict: `{verdict}`\n\n\
+This is a causal ablation/graft analysis of the beta.8 H=384 generalist checkpoint. \
+It explains the already-validated network; it does not search for a new checkpoint.\n\n\
+## Structural Diff\n\n\
+- Edges: {} -> {} (added {}, removed {}, net {:+})\n\
+- Threshold changes: {}\n\
+- Channel changes: {}\n\
+- Polarity changes: {}\n\
+- Projection bytes equal: {}\n\n\
+## Cycle / Mixer Readout\n\n\
+- Bidirectional pairs: {} -> {}\n\
+- Triangles: {} -> {}\n\
+- Sampled 4-cycles: {} -> {}\n\n\
+## Target Multi-Objective Delta\n\n\
+- smooth_delta: {:.12}\n\
+- accuracy_delta: {:.12}\n\
+- echo_delta: {:.12}\n\
+- unigram_delta: {:.12}\n\
+- mo_score: {:.12}\n\
+- mo_class: `{}`\n\n\
+## Causal Loss Fractions\n\n\
+- ablate_added_edges loss: {:.3}\n\
+- ablate_all_edges loss: {:.3}\n\
+- ablate_thresholds loss: {:.3}\n\
+- ablate_all_edges_thresholds loss: {:.3}\n\n\
+## Interpretation\n\n\
+If one group loses >50% of the target multi-objective score, it is a primary driver. \
+If both edge and threshold groups collapse the score, the driver is co-adaptation. \
+Loss fractions above 1.0 mean the ablated network falls below the original baseline. \
+See `causal_ablation_results.csv` for every group and micro-ablation row.\n",
+        baseline_net.edge_count(),
+        target_net.edge_count(),
+        added_edges.len(),
+        removed_edges.len(),
+        target_net.edge_count() as isize - baseline_net.edge_count() as isize,
+        threshold_changes.len(),
+        channel_changes,
+        polarity_changes,
+        projection_bytes_equal,
+        baseline_bidir,
+        target_bidir,
+        baseline_triangles,
+        target_triangles,
+        baseline_four,
+        target_four,
+        target_deltas.smooth,
+        target_deltas.accuracy,
+        target_deltas.echo,
+        target_deltas.unigram,
+        target_mo_score,
+        mo_class(target_deltas),
+        edge_added_loss,
+        edge_all_loss,
+        threshold_loss,
+        combined_loss,
+    );
+    std::fs::write(cli.out.join("D9_4A_CAUSAL_DIFF_REPORT.md"), report)
+        .expect("failed to write D9_4A_CAUSAL_DIFF_REPORT.md");
+}
+
 fn main() {
     let cli = parse_args();
     create_dir_all(&cli.out).expect("failed to create output directory");
@@ -3199,6 +4028,19 @@ fn main() {
 
         if cli.mode == "quadtree-scout" {
             run_quadtree_scout(
+                &cli,
+                &table,
+                &pair_ids,
+                &hot_to_idx,
+                &bigram,
+                &unigram,
+                &init,
+            );
+            break;
+        }
+
+        if cli.mode == "causal-diff" {
+            run_causal_diff(
                 &cli,
                 &table,
                 &pair_ids,

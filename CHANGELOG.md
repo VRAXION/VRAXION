@@ -5,6 +5,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added — 2026-04-29: Phase D9.4a causal basin diff
+
+- Added `d9_direct_landscape --mode causal-diff` to compare a baseline checkpoint against a target checkpoint and emit structural diff files (`genome_diff_summary.json`, edge/threshold CSVs), group ablation/graft results, and a causal diff report.
+- D9.4a smoke (`output/phase_d9_4a_causal_diff_smoke_20260429`) explains the beta.8 generalist checkpoint as `EDGE_THRESHOLD_COADAPTATION`: projection, channel, and polarity are unchanged; the improvement comes from a co-adapted edge-wiring plus threshold-timing package.
+
 ### Added — 2026-04-29: Phase D9.3a quadtree tessellation scan
 
 - Added `d9_direct_landscape --mode quadtree-scout` for local quadtree refinement over the D9 island tiles. The mode emits child-tile fields (`parent_tile_id`, `quadrant`, `child_tile_id`, child bin indices, root/child resolution, control flag), evaluates candidates with the D9.2 multi-objective gate, and exports top child candidate checkpoints.
