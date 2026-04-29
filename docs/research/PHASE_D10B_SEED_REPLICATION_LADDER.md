@@ -2,7 +2,7 @@
 
 Date: 2026-04-29
 
-Status: scaffolded and smoke-tested; main ladder not run in this commit.
+Status: scaffolded, smoke-tested, and timing-probed; main ladder requires an unattended run.
 
 ## Goal
 
@@ -83,7 +83,34 @@ The smoke is not scientific evidence. It only proves that the D10b mode, output 
 
 ## Main Run Command
 
-The planned main ladder is intentionally not run in this commit because smoke timing implies a multi-hour run at the full requested budget.
+The planned main ladder is intentionally not run interactively because timing-probe runtime implies a multi-hour run at the full requested budget.
+
+Timing probe command shape:
+
+```text
+5 checkpoints x 2 climbers x 10 steps x eval_len 4000 x 4 eval seeds
+```
+
+Timing probe result:
+
+- Output: `output/phase_d10b_h384_seed_replication_ladder_20260429/timing_probe`
+- Rows: 100
+- Runtime: 824.0s
+- Observed rate: about 8.24s/proposal
+- Probe verdict: `D10B_NO_REPLICATION_SIGNAL`
+- Strict candidates: 0
+- Near-strict candidates: 0
+- Best probe seed: `seed_42`
+- Best probe row: `WEAK_LADDER`, smooth `+0.0017995`, accuracy `+0.00025`, echo `0`, unigram `+0.0011831`
+
+The probe is not scientific evidence. It is only a runtime and schema sanity check. It says the full D10b main should be run unattended, not foregrounded in an interactive turn.
+
+Projected runtimes from the timing probe:
+
+| run | proposals | projected runtime |
+|---|---:|---:|
+| full main: 5 seeds x 12 climbers x 80 steps | 4800 | about 11.0h |
+| bounded main: 5 seeds x 8 climbers x 50 steps | 2000 | about 4.6h |
 
 ```powershell
 target\release\examples\d9_direct_landscape.exe --checkpoints output\phase_d7_operator_bandit_20260427\H_384\D7_BASELINE\seed_42\final.ckpt,output\phase_d7_operator_bandit_20260427\H_384\D7_BASELINE\seed_1042\final.ckpt,output\phase_d7_operator_bandit_20260427\H_384\D7_BASELINE\seed_2042\final.ckpt,output\phase_d7_operator_bandit_20260427\H_384\D7_BASELINE\seed_3042\final.ckpt,output\phase_d7_operator_bandit_20260427\H_384\D7_BASELINE\seed_4042\final.ckpt --H 384 --mode seed-replication-ladder --eval-len 4000 --mo-eval-seeds 990001,990002,990003,990004 --mo-climbers 12 --mo-steps 80 --radii 4,8,16,32 --mutation-types edge,threshold --mo-export-top 8 --out output\phase_d10b_h384_seed_replication_ladder_20260429\main
@@ -105,6 +132,52 @@ Passed:
 - `python -m compileall tools`
 - D10b smoke generated all required CSV/JSON outputs.
 - Exported smoke candidate checkpoint reloaded through `d9_direct_landscape`.
+- D10b timing probe generated `replication_paths.csv`, `replication_candidates.csv`, `universality_matrix.csv`, `run_summary.json`, and a report.
+- Exported timing-probe candidate checkpoint reloaded through `endpoint-robustness`.
+
+## Progress Map
+
+```text
+GLOBAL AI PLAN MAP
+
+[0] D7 H=384 baseline checkpoint bank
+        |
+        v
+[1] Find real improvement
+    status: DONE
+    evidence: beta.8 seed2042_improved_generalist_v1
+        |
+        v
+[2] Explain why it works
+    status: DONE
+    evidence: D9.4b 16k causal confirm
+    mechanism: edge + threshold co-adaptation
+        |
+        v
+[3] Does the mechanism replicate across H=384 seeds?
+    status: CURRENT
+    D10a scout: shallow negative / LOCAL_H384_BASIN_ONLY
+    D10b smoke: code path works
+    D10b timing probe: full main ~= 11h, bounded ~= 4.6h
+        |
+        |-- if D10b main positive ----------------.
+        |                                        v
+        |                         [4] 16k confirm + causal-diff
+        |                                        |
+        |                                        v
+        |                         [5] H512 / GPU scaling
+        |
+        '-- if D10b main negative ----------------.
+                                                 v
+                                  [4B] Local finding only
+                                      shift strategy:
+                                      checkpoint quality /
+                                      decoder-projection /
+                                      task design
+
+WE ARE HERE:
+[3] D10b timing probe complete; unattended main is the next evidence run.
+```
 
 ## Next Gate
 
