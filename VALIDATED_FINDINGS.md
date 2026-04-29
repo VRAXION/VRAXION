@@ -8,7 +8,7 @@ Canonical evidence summary. Repo-tracked docs are canonical; the GitHub wiki is 
 
 The repo is in a transition state:
 
-- **Released public tag:** `v5.0.0-beta.7` — Phase D9 direct-genome landscape audit + `seed2042_improved_v1` smooth+accuracy specialist checkpoint (`v5.0.0-beta.6` is the prior Phase D6/D7/D8 research-line checkpoint + wiki/HTML doc-drift correction patch; `v5.0.0-beta.5` is the prior Phase D3/D3.1/D4 SAF lock + 56-example archive cleanup release; `v5.0.0-beta.1` remains as the original language-evolution beta, historical reference only)
+- **Released public tag:** `v5.0.0-beta.8` — Phase D9.2 multi-objective confirmation + `seed2042_improved_generalist_v1` validated H=384 research checkpoint (`v5.0.0-beta.7` is the prior Phase D9 smooth+accuracy specialist checkpoint; `v5.0.0-beta.6` is the prior Phase D6/D7/D8 research-line checkpoint + wiki/HTML doc-drift correction patch; `v5.0.0-beta.5` is the prior Phase D3/D3.1/D4 SAF lock + 56-example archive cleanup release; `v5.0.0-beta.1` remains as the original language-evolution beta, historical reference only)
 - **Current mainline on `main`:** Rust grower (`instnct-core/examples/neuron_grower.rs`)
 - **Python deploy SDK:** `Python/` — Block A + B, pure numpy (256/256 + 65536/65536 lossless)
 - **Historical Python research lane:** frozen at tag `archives/python-research-20260420` (was `instnct/`, migrated to Rust `instnct-core/` on 2026-04-13)
@@ -24,6 +24,13 @@ The repo is in a transition state:
 | **Persistent grower state** | Authoritative resume file is bias-free `state.tsv` with per-step JSON checkpoints. | **Current mainline** |
 | **4-bit curriculum entry** | Small exhaustive four-bit pattern tasks solve quickly and act as a compositional smoke floor for the grower. | **Validated finding** |
 | **Exact byte readout via latent LUT** | On `1 byte + 4 opcode -> 1 byte`, direct bitbank stalls at `75%`, but the frozen hidden binary latent supports a collision-free LUT translator at `100%` exact over the full `1024`-sample domain. | **Validated finding** |
+
+### Phase D9.2 direct-genome H=384 research checkpoint (2026-04-29)
+
+| Finding | Result | Status |
+|---|---|---|
+| **D9.2 multi-objective generalist confirmation** | `seed2042_improved_generalist_v1` retains the D9 smooth/accuracy gains, remains echo-safe, and flips unigram from a regression into a positive baseline-relative delta on fresh seeds. D9.2b top_01 gates at eval_len 16000: smooth lower95 +0.016916652, accuracy lower95 +0.003755206, echo lower95/upper95 near zero, unigram lower95 +0.005150928. | **Validated finding (H=384 research checkpoint)** |
+| **D9.2 no-overclaim boundary** | The checkpoint is a validated direct-genome H=384 research artifact, not a replacement for the current public mainline grower. Stable local artifact path: `output/releases/v5.0.0-beta.8/seed2042_improved_generalist_v1.ckpt`; SHA256 `D63200504C5B4A6EA2134FD26E3E3D7CB75FF05884236DE2CC6E206BB4BA8D54`. | **Validated finding (scope boundary)** |
 
 ### Released beta.1 Rust lane: historical peak results
 

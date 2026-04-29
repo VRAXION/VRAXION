@@ -5,6 +5,23 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [5.0.0-beta.8] - 2026-04-29
+
+### Added — 2026-04-29: Phase D9.2 multi-objective generalist confirmation
+
+Phase D9.2 converts the D9 smooth+accuracy specialist into a confirmed multi-objective H=384 research checkpoint. The D9.2a microprobe added `multi-objective-climb` to `d9_direct_landscape`, evaluating each proposal against smooth, accuracy, echo, and unigram inside the acceptance loop instead of repairing unigram after the fact. D9.2b then confirmed the top three endpoints on 30 fresh seeds across eval_len {4000, 16000}.
+
+- **D9.2a microprobe** (`docs/research/PHASE_D9_2_MULTI_OBJECTIVE_MICROPROBE.md`): 200 proposals, 36 accepted steps, 45 retention-pass rows, and 3 valid generalist candidates. Best valid candidate: smooth +0.016598691, accuracy +0.006687500, echo +0.000000000, unigram +0.004899666.
+- **D9.2b confirm** (`docs/research/PHASE_D9_2_MULTI_OBJECTIVE_CONFIRM.md`): verdict **`D9_2_FULL_GENERALIST_CONFIRMED`**. `top_01.ckpt`, `top_02.ckpt`, and `top_03.ckpt` all pass strict gates at eval_len 4000 and 16000: smooth lower95 >= +0.0120, accuracy lower95 >= +0.0020, echo near zero, unigram lower95 >= 0.0.
+- **Promoted checkpoint artifact**: `top_01.ckpt` is promoted locally as `output/releases/v5.0.0-beta.8/seed2042_improved_generalist_v1.ckpt` with SHA256 `D63200504C5B4A6EA2134FD26E3E3D7CB75FF05884236DE2CC6E206BB4BA8D54`. The checkpoint binary remains ignored by Git; the checksum and release-asset manifest are documented in `docs/releases/v5.0.0-beta.8-artifacts.md`.
+- **No-overclaim framing**: `seed2042_improved_generalist_v1` is a validated H=384 research checkpoint. It is not a replacement for the current public mainline grower path.
+
+### Verification
+
+- SHA256 source/copy parity was checked for `seed2042_improved_generalist_v1.ckpt`.
+- Copied checkpoint reload smoke passed via `d9_direct_landscape --mode endpoint-robustness`.
+- D9.2b top_01 gates were recomputed from `d9_2b_summary.json` before release documentation.
+
 ## [5.0.0-beta.7] - 2026-04-29
 
 ### Added — 2026-04-28/29: Phase D9 direct-genome landscape audit + `seed2042_improved_v1` smooth+accuracy specialist checkpoint
