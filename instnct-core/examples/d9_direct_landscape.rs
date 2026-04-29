@@ -279,6 +279,31 @@ struct MultiObjectiveCandidate {
 }
 
 #[derive(Clone)]
+struct ReplicationCandidate {
+    seed_label: String,
+    checkpoint: String,
+    climber_id: usize,
+    step_index: usize,
+    proposal_seed: u64,
+    radius: usize,
+    mutation_type: MutationType,
+    counts: MutationCounts,
+    direct_distance: usize,
+    edges: usize,
+    scores: MultiMetricScores,
+    deltas: MultiMetricScores,
+    mo_score: f64,
+    ladder_score: f64,
+    gate_distance: f64,
+    gate_misses: usize,
+    replication_class: &'static str,
+    accepted: bool,
+    accept_reason: &'static str,
+    net: Network,
+    proj: Int8Projection,
+}
+
+#[derive(Clone)]
 struct QuadtreeTarget {
     parent_tile_id: String,
     quadrant: usize,
@@ -669,7 +694,8 @@ fn parse_args() -> Cli {
         | "edge-threshold-continued-climb"
         | "scaling-universality-scout"
         | "task-universality-scout" => vec![4, 8, 16],
-        other => panic!("--mode expects fail-fast|medium|full|staged|planet-scout|paratrooper-climb|endpoint-bridge|endpoint-overlap|endpoint-robustness|repair-scan|multi-objective-climb|quadtree-scout|causal-diff|edge-lock-threshold-sweep|threshold-lock-edge-sweep|edge-threshold-continued-climb|scaling-universality-scout|task-universality-scout, got {other}"),
+        "seed-replication-ladder" => vec![4, 8, 16, 32],
+        other => panic!("--mode expects fail-fast|medium|full|staged|planet-scout|paratrooper-climb|endpoint-bridge|endpoint-overlap|endpoint-robustness|repair-scan|multi-objective-climb|quadtree-scout|causal-diff|edge-lock-threshold-sweep|threshold-lock-edge-sweep|edge-threshold-continued-climb|scaling-universality-scout|task-universality-scout|seed-replication-ladder, got {other}"),
     };
     let default_mutation_types = if matches!(
         mode.as_str(),
@@ -688,6 +714,7 @@ fn parse_args() -> Cli {
             | "edge-threshold-continued-climb"
             | "scaling-universality-scout"
             | "task-universality-scout"
+            | "seed-replication-ladder"
     ) {
         vec![MutationType::Edge, MutationType::Threshold]
     } else {
@@ -2807,6 +2834,525 @@ fn run_multi_objective_climb(
         .expect("failed to flush multi_objective_candidates");
 }
 
+fn checkpoint_seed_label(path: &PathBuf) -> String {
+    path.parent()
+        .and_then(|parent| parent.file_name())
+        .map(|name| name.to_string_lossy().replace(',', "_"))
+        .unwrap_or_else(|| String::from("checkpoint"))
+}
+
+fn gate_distance(deltas: MultiMetricScores) -> (f64, usize) {
+    let smooth_deficit = ((0.0120 - deltas.smooth).max(0.0)) / 0.0120;
+    let accuracy_deficit = ((0.0020 - deltas.accuracy).max(0.0)) / 0.0020;
+    let echo_deficit = ((deltas.echo.abs() - 0.0010).max(0.0)) / 0.0010;
+    let unigram_deficit = (-deltas.unigram).max(0.0) / 0.0010;
+    let deficits = [
+        smooth_deficit,
+        accuracy_deficit,
+        echo_deficit,
+        unigram_deficit,
+    ];
+    let misses = deficits.iter().filter(|value| **value > 0.0).count();
+    (deficits.iter().sum(), misses)
+}
+
+fn near_strict_pass(deltas: MultiMetricScores) -> bool {
+    let smooth_pass = deltas.smooth >= 0.0120;
+    let accuracy_pass = deltas.accuracy >= 0.0020;
+    let echo_pass = deltas.echo.abs() <= 0.0010;
+    let unigram_pass = deltas.unigram >= 0.0;
+    let near_smooth = deltas.smooth >= 0.0090;
+    let near_accuracy = deltas.accuracy >= 0.0015;
+    let near_echo = deltas.echo.abs() <= 0.00125;
+    let near_unigram = deltas.unigram >= -0.0010;
+    let pass_count = [smooth_pass, accuracy_pass, echo_pass, unigram_pass]
+        .iter()
+        .filter(|flag| **flag)
+        .count();
+    if pass_count != 3 {
+        return false;
+    }
+    (!smooth_pass && near_smooth)
+        || (!accuracy_pass && near_accuracy)
+        || (!echo_pass && near_echo)
+        || (!unigram_pass && near_unigram)
+}
+
+fn ladder_score(deltas: MultiMetricScores) -> f64 {
+    let (distance, _) = gate_distance(deltas);
+    mo_score(deltas) - distance
+}
+
+fn ladder_not_cliff(deltas: MultiMetricScores) -> bool {
+    deltas.smooth >= -0.0500
+        && deltas.accuracy >= -0.0200
+        && deltas.echo.abs() <= 0.0500
+        && deltas.unigram >= -0.0200
+}
+
+fn replication_class(deltas: MultiMetricScores) -> &'static str {
+    let class_name = mo_class(deltas);
+    if matches!(class_name, "FULL_GENERALIST" | "MULTI_OBJECTIVE_SUCCESS") {
+        class_name
+    } else if near_strict_pass(deltas) {
+        "NEAR_STRICT"
+    } else if ladder_not_cliff(deltas) {
+        "WEAK_LADDER"
+    } else {
+        "FAIL_RETAIN"
+    }
+}
+
+fn replication_class_rank(class_name: &str) -> i32 {
+    match class_name {
+        "FULL_GENERALIST" => 5,
+        "MULTI_OBJECTIVE_SUCCESS" => 4,
+        "NEAR_STRICT" => 3,
+        "WEAK_LADDER" => 2,
+        "FAIL_RETAIN" => 1,
+        _ => 0,
+    }
+}
+
+fn run_seed_replication_ladder(
+    cli: &Cli,
+    table: &VcbpTable,
+    pair_ids: &[u16],
+    hot_to_idx: &[usize],
+    bigram: &[Vec<f64>],
+    unigram: &[f64],
+    init: &InitConfig,
+) {
+    assert!(
+        cli.mutation_types
+            .iter()
+            .all(|t| matches!(t, MutationType::Edge | MutationType::Threshold)),
+        "D10b seed-replication-ladder only supports edge,threshold mutation types"
+    );
+    assert!(
+        !cli.mo_eval_seeds.is_empty(),
+        "--mo-eval-seeds must not be empty"
+    );
+
+    let path = cli.out.join("replication_paths.csv");
+    let mut writer =
+        BufWriter::new(File::create(&path).expect("failed to create replication_paths.csv"));
+    writeln!(
+        writer,
+        "seed_label,checkpoint,climber_id,step_index,proposal_seed,radius,mutation_type,edge_edits,threshold_edits,direct_genome_distance,edges,smooth_score,smooth_delta,accuracy_score,accuracy_delta,echo_score,echo_delta,unigram_score,unigram_delta,mo_score,ladder_score,gate_distance,gate_misses,replication_class,accepted,accept_reason"
+    )
+    .expect("failed to write replication_paths header");
+
+    let mut candidates: Vec<ReplicationCandidate> = Vec::new();
+    for (checkpoint_idx, checkpoint) in cli.checkpoints.iter().enumerate() {
+        let seed_label = checkpoint_seed_label(checkpoint);
+        let (baseline_net, baseline_proj, _) =
+            load_checkpoint(checkpoint).expect("failed to load seed checkpoint");
+        assert_eq!(baseline_net.neuron_count(), cli.h, "checkpoint H mismatch");
+        let baseline_scores = evaluate_multi_metrics(
+            &baseline_net,
+            &baseline_proj,
+            table,
+            pair_ids,
+            hot_to_idx,
+            bigram,
+            unigram,
+            cli.eval_len,
+            &cli.mo_eval_seeds,
+            init,
+            cli.h,
+            cli.input_scatter,
+        );
+        let start_coord = encode_coord(&baseline_net);
+        let zero_deltas = MultiMetricScores {
+            smooth: 0.0,
+            accuracy: 0.0,
+            echo: 0.0,
+            unigram: 0.0,
+        };
+        let start_ladder = ladder_score(zero_deltas);
+        println!(
+            "D10b seed replication: checkpoint={} seed={} climbers={} steps={} eval_len={} seeds={}",
+            checkpoint.display(),
+            seed_label,
+            cli.mo_climbers,
+            cli.mo_steps,
+            cli.eval_len,
+            cli.mo_eval_seeds.len()
+        );
+
+        for climber_id in 0..cli.mo_climbers {
+            let climber_seed = cli.seed
+                ^ ((checkpoint_idx as u64) << 48)
+                ^ ((climber_id as u64) << 32)
+                ^ 0xD10B_0001u64;
+            let mut proposal_rng = StdRng::seed_from_u64(climber_seed);
+            let mut current = baseline_net.clone();
+            let current_proj = baseline_proj.clone();
+            let mut current_ladder = start_ladder;
+            for step_index in 0..cli.mo_steps {
+                let mutation_type =
+                    cli.mutation_types[proposal_rng.gen_range(0..cli.mutation_types.len())];
+                let radius = cli.radii[proposal_rng.gen_range(0..cli.radii.len())];
+                let proposal_seed = proposal_rng.gen::<u64>();
+                let mut mutation_rng = StdRng::seed_from_u64(proposal_seed);
+                let mut candidate_net = current.clone();
+                let candidate_proj = current_proj.clone();
+                let counts = apply_radius_mutation(
+                    &mut candidate_net,
+                    radius,
+                    mutation_type,
+                    &mut mutation_rng,
+                );
+                let candidate_coord = encode_coord(&candidate_net);
+                let direct_distance = coord_distance(&start_coord, &candidate_coord);
+                let eval_start = Instant::now();
+                let scores = evaluate_multi_metrics(
+                    &candidate_net,
+                    &candidate_proj,
+                    table,
+                    pair_ids,
+                    hot_to_idx,
+                    bigram,
+                    unigram,
+                    cli.eval_len,
+                    &cli.mo_eval_seeds,
+                    init,
+                    cli.h,
+                    cli.input_scatter,
+                );
+                let deltas = metric_deltas(scores, baseline_scores);
+                let score = mo_score(deltas);
+                let ladder = ladder_score(deltas);
+                let (distance, misses) = gate_distance(deltas);
+                let class_name = replication_class(deltas);
+                let accepted = ladder_not_cliff(deltas) && ladder > current_ladder;
+                let accept_reason = if !ladder_not_cliff(deltas) {
+                    "cliff_guard"
+                } else if accepted {
+                    "ladder_improve"
+                } else {
+                    "no_ladder_improve"
+                };
+                if accepted {
+                    current = candidate_net.clone();
+                    current_ladder = ladder;
+                }
+                writeln!(
+                    writer,
+                    "{},{},{},{},{},{},{},{},{},{},{},{:.12},{:.12},{:.12},{:.12},{:.12},{:.12},{:.12},{:.12},{:.12},{:.12},{:.12},{},{},{},{}",
+                    seed_label,
+                    checkpoint.display(),
+                    climber_id,
+                    step_index,
+                    proposal_seed,
+                    radius,
+                    mutation_type.as_str(),
+                    counts.edge,
+                    counts.threshold,
+                    direct_distance,
+                    candidate_net.edge_count(),
+                    scores.smooth,
+                    deltas.smooth,
+                    scores.accuracy,
+                    deltas.accuracy,
+                    scores.echo,
+                    deltas.echo,
+                    scores.unigram,
+                    deltas.unigram,
+                    score,
+                    ladder,
+                    distance,
+                    misses,
+                    class_name,
+                    accepted,
+                    accept_reason
+                )
+                .expect("failed to write replication path row");
+                candidates.push(ReplicationCandidate {
+                    seed_label: seed_label.clone(),
+                    checkpoint: checkpoint.display().to_string(),
+                    climber_id,
+                    step_index,
+                    proposal_seed,
+                    radius,
+                    mutation_type,
+                    counts,
+                    direct_distance,
+                    edges: candidate_net.edge_count(),
+                    scores,
+                    deltas,
+                    mo_score: score,
+                    ladder_score: ladder,
+                    gate_distance: distance,
+                    gate_misses: misses,
+                    replication_class: class_name,
+                    accepted,
+                    accept_reason,
+                    net: candidate_net,
+                    proj: candidate_proj,
+                });
+                println!(
+                    "  seed={} climber={} step={} class={} accepted={} ladder={:.6} gate_distance={:.3} d=[{:.5},{:.5},{:.5},{:.5}] eval_ms={:.1}",
+                    seed_label,
+                    climber_id,
+                    step_index,
+                    class_name,
+                    accepted,
+                    ladder,
+                    distance,
+                    deltas.smooth,
+                    deltas.accuracy,
+                    deltas.echo,
+                    deltas.unigram,
+                    eval_start.elapsed().as_secs_f64() * 1000.0
+                );
+            }
+        }
+    }
+    writer.flush().expect("failed to flush replication_paths");
+
+    candidates.sort_by(|a, b| {
+        replication_class_rank(b.replication_class)
+            .cmp(&replication_class_rank(a.replication_class))
+            .then_with(|| a.gate_distance.partial_cmp(&b.gate_distance).unwrap())
+            .then_with(|| b.mo_score.partial_cmp(&a.mo_score).unwrap())
+    });
+
+    let candidates_dir = cli.out.join("candidates");
+    create_dir_all(&candidates_dir).expect("failed to create replication candidates dir");
+    let mut cand_writer = BufWriter::new(
+        File::create(cli.out.join("replication_candidates.csv"))
+            .expect("failed to create replication_candidates.csv"),
+    );
+    writeln!(
+        cand_writer,
+        "rank,checkpoint_path,seed_label,source_checkpoint,climber_id,step_index,proposal_seed,radius,mutation_type,edge_edits,threshold_edits,direct_genome_distance,edges,smooth_delta,accuracy_delta,echo_delta,unigram_delta,mo_score,ladder_score,gate_distance,gate_misses,replication_class,accepted,accept_reason"
+    )
+    .expect("failed to write replication_candidates header");
+
+    let mut per_seed_exported: BTreeMap<String, usize> = BTreeMap::new();
+    let mut global_rank = 0usize;
+    for candidate in &candidates {
+        let count = per_seed_exported
+            .entry(candidate.seed_label.clone())
+            .or_insert(0);
+        if *count >= cli.mo_export_top {
+            continue;
+        }
+        *count += 1;
+        global_rank += 1;
+        let seed_dir = candidates_dir.join(&candidate.seed_label);
+        create_dir_all(&seed_dir).expect("failed to create seed candidate dir");
+        let ckpt_path = seed_dir.join(format!("top_{:02}.ckpt", *count));
+        save_checkpoint(
+            &ckpt_path,
+            &candidate.net,
+            &candidate.proj,
+            CheckpointMeta {
+                step: candidate.step_index,
+                accuracy: candidate.scores.accuracy,
+                label: format!(
+                    "D10b seed={} rank={} class={} smooth_delta={:.6} gate_distance={:.3}",
+                    candidate.seed_label,
+                    *count,
+                    candidate.replication_class,
+                    candidate.deltas.smooth,
+                    candidate.gate_distance
+                ),
+            },
+        )
+        .expect("failed to save replication candidate checkpoint");
+        writeln!(
+            cand_writer,
+            "{},{},{},{},{},{},{},{},{},{},{},{},{},{:.12},{:.12},{:.12},{:.12},{:.12},{:.12},{:.12},{},{},{},{}",
+            global_rank,
+            ckpt_path.display(),
+            candidate.seed_label,
+            candidate.checkpoint,
+            candidate.climber_id,
+            candidate.step_index,
+            candidate.proposal_seed,
+            candidate.radius,
+            candidate.mutation_type.as_str(),
+            candidate.counts.edge,
+            candidate.counts.threshold,
+            candidate.direct_distance,
+            candidate.edges,
+            candidate.deltas.smooth,
+            candidate.deltas.accuracy,
+            candidate.deltas.echo,
+            candidate.deltas.unigram,
+            candidate.mo_score,
+            candidate.ladder_score,
+            candidate.gate_distance,
+            candidate.gate_misses,
+            candidate.replication_class,
+            candidate.accepted,
+            candidate.accept_reason
+        )
+        .expect("failed to write replication candidate row");
+    }
+    cand_writer
+        .flush()
+        .expect("failed to flush replication_candidates");
+
+    let mut matrix_writer = BufWriter::new(
+        File::create(cli.out.join("universality_matrix.csv"))
+            .expect("failed to create universality_matrix.csv"),
+    );
+    writeln!(
+        matrix_writer,
+        "seed_label,checkpoint,n,accepted_count,strict_count,near_strict_count,best_class,best_gate_distance,best_mo_score,best_smooth_delta,best_accuracy_delta,best_echo_delta,best_unigram_delta"
+    )
+    .expect("failed to write universality_matrix header");
+    let mut groups: BTreeMap<String, Vec<&ReplicationCandidate>> = BTreeMap::new();
+    for candidate in &candidates {
+        groups
+            .entry(candidate.seed_label.clone())
+            .or_default()
+            .push(candidate);
+    }
+    let mut strict_non_seed2042 = 0usize;
+    let mut signal_non_seed2042 = 0usize;
+    let mut seed2042_signal = false;
+    let mut any_signal = false;
+    let mut matrix_json = Vec::new();
+    for (seed_label, group) in &groups {
+        let mut best = group[0];
+        for candidate in group {
+            let best_tuple = (
+                replication_class_rank(best.replication_class),
+                -best.gate_distance,
+                best.mo_score,
+            );
+            let candidate_tuple = (
+                replication_class_rank(candidate.replication_class),
+                -candidate.gate_distance,
+                candidate.mo_score,
+            );
+            if candidate_tuple > best_tuple {
+                best = candidate;
+            }
+        }
+        let accepted_count = group.iter().filter(|candidate| candidate.accepted).count();
+        let strict_count = group
+            .iter()
+            .filter(|candidate| {
+                matches!(
+                    candidate.replication_class,
+                    "FULL_GENERALIST" | "MULTI_OBJECTIVE_SUCCESS"
+                )
+            })
+            .count();
+        let near_count = group
+            .iter()
+            .filter(|candidate| candidate.replication_class == "NEAR_STRICT")
+            .count();
+        let has_signal = strict_count > 0 || near_count > 0;
+        any_signal |= has_signal;
+        if seed_label.contains("2042") {
+            seed2042_signal = has_signal;
+        } else {
+            if strict_count > 0 {
+                strict_non_seed2042 += 1;
+            }
+            if has_signal {
+                signal_non_seed2042 += 1;
+            }
+        }
+        writeln!(
+            matrix_writer,
+            "{},{},{},{},{},{},{},{:.12},{:.12},{:.12},{:.12},{:.12},{:.12}",
+            seed_label,
+            best.checkpoint,
+            group.len(),
+            accepted_count,
+            strict_count,
+            near_count,
+            best.replication_class,
+            best.gate_distance,
+            best.mo_score,
+            best.deltas.smooth,
+            best.deltas.accuracy,
+            best.deltas.echo,
+            best.deltas.unigram
+        )
+        .expect("failed to write universality_matrix row");
+        matrix_json.push(serde_json::json!({
+            "seed_label": seed_label,
+            "checkpoint": best.checkpoint,
+            "n": group.len(),
+            "accepted_count": accepted_count,
+            "strict_count": strict_count,
+            "near_strict_count": near_count,
+            "best_class": best.replication_class,
+            "best_gate_distance": best.gate_distance,
+            "best_mo_score": best.mo_score,
+            "best_smooth_delta": best.deltas.smooth,
+            "best_accuracy_delta": best.deltas.accuracy,
+            "best_echo_delta": best.deltas.echo,
+            "best_unigram_delta": best.deltas.unigram,
+        }));
+    }
+    matrix_writer
+        .flush()
+        .expect("failed to flush universality_matrix");
+
+    let verdict = if strict_non_seed2042 >= 2 {
+        "D10B_REPLICABLE_GENERALIST_BASIN"
+    } else if seed2042_signal && signal_non_seed2042 >= 1 {
+        "D10B_SEED_SENSITIVE_BUT_NOT_UNIQUE"
+    } else if seed2042_signal {
+        "D10B_SEED2042_ONLY"
+    } else if any_signal {
+        "D10B_CONTROL_ONLY_SIGNAL"
+    } else {
+        "D10B_NO_REPLICATION_SIGNAL"
+    };
+    let summary = serde_json::json!({
+        "mode": cli.mode,
+        "verdict": verdict,
+        "checkpoint_count": cli.checkpoints.len(),
+        "rows": candidates.len(),
+        "mo_climbers": cli.mo_climbers,
+        "mo_steps": cli.mo_steps,
+        "eval_len": cli.eval_len,
+        "eval_seeds": cli.mo_eval_seeds,
+        "radii": cli.radii,
+        "strict_non_seed2042": strict_non_seed2042,
+        "signal_non_seed2042": signal_non_seed2042,
+        "seed2042_signal": seed2042_signal,
+        "matrix": matrix_json,
+    });
+    std::fs::write(
+        cli.out.join("run_summary.json"),
+        serde_json::to_string_pretty(&summary).expect("summary json"),
+    )
+    .expect("failed to write run_summary.json");
+
+    let report = format!(
+        "# D10b Seed Replication Ladder Report\n\n\
+Verdict: `{verdict}`\n\n\
+Rows: {}\n\n\
+Settings: H={}, eval_len={}, eval_seeds={}, climbers={}, steps={}, radii={:?}\n\n\
+This mode is a replication/falsification ladder. It accepts local steps that improve distance to the strict multi-objective gate while guarding against echo/unigram cliffs. Strict promotion still requires `FULL_GENERALIST` or `MULTI_OBJECTIVE_SUCCESS` candidates and later 16k confirmation.\n\n\
+See `replication_paths.csv`, `replication_candidates.csv`, and `universality_matrix.csv` for seed-level details.\n",
+        candidates.len(),
+        cli.h,
+        cli.eval_len,
+        cli.mo_eval_seeds.len(),
+        cli.mo_climbers,
+        cli.mo_steps,
+        cli.radii,
+    );
+    std::fs::write(
+        cli.out.join("D10B_SEED_REPLICATION_LADDER_REPORT.md"),
+        report,
+    )
+    .expect("failed to write D10B report");
+}
+
 fn default_d9_parent_tiles() -> Vec<(usize, usize)> {
     vec![(11, 16), (12, 29), (9, 26)]
 }
@@ -4651,6 +5197,19 @@ fn main() {
             break;
         }
 
+        if cli.mode == "seed-replication-ladder" {
+            run_seed_replication_ladder(
+                &cli,
+                &table,
+                &pair_ids,
+                &hot_to_idx,
+                &bigram,
+                &unigram,
+                &init,
+            );
+            break;
+        }
+
         if cli.mode == "paratrooper-climb" {
             let climb_path = cli.out.join("paratrooper_paths.csv");
             let mut climb_writer = BufWriter::new(
@@ -5197,6 +5756,7 @@ fn main() {
                 | "edge-threshold-continued-climb"
                 | "scaling-universality-scout"
                 | "task-universality-scout"
+                | "seed-replication-ladder"
         ) {
             "D10"
         } else if matches!(cli.mode.as_str(), "planet-scout" | "homogeneous") {
@@ -5266,8 +5826,16 @@ fn main() {
             .then_some(cli.repair_samples_per_bucket),
         repair_eval_seeds: (cli.mode == "repair-scan").then_some(cli.repair_eval_seeds.clone()),
         repair_export_top: (cli.mode == "repair-scan").then_some(cli.repair_export_top),
-        mo_climbers: (cli.mode == "multi-objective-climb").then_some(cli.mo_climbers),
-        mo_steps: (cli.mode == "multi-objective-climb").then_some(cli.mo_steps),
+        mo_climbers: matches!(
+            cli.mode.as_str(),
+            "multi-objective-climb" | "seed-replication-ladder"
+        )
+        .then_some(cli.mo_climbers),
+        mo_steps: matches!(
+            cli.mode.as_str(),
+            "multi-objective-climb" | "seed-replication-ladder"
+        )
+        .then_some(cli.mo_steps),
         mo_eval_seeds: matches!(
             cli.mode.as_str(),
             "multi-objective-climb"
@@ -5278,11 +5846,12 @@ fn main() {
                 | "edge-threshold-continued-climb"
                 | "scaling-universality-scout"
                 | "task-universality-scout"
+                | "seed-replication-ladder"
         )
         .then_some(cli.mo_eval_seeds.clone()),
         mo_export_top: matches!(
             cli.mode.as_str(),
-            "multi-objective-climb" | "quadtree-scout"
+            "multi-objective-climb" | "quadtree-scout" | "seed-replication-ladder"
         )
         .then_some(cli.mo_export_top),
         radii: cli.radii.clone(),

@@ -10,6 +10,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Added long-horizon D10 scout modes to `d9_direct_landscape`: `edge-lock-threshold-sweep`, `threshold-lock-edge-sweep`, `edge-threshold-continued-climb`, `scaling-universality-scout`, and `task-universality-scout`.
 - The D10 modes reuse the D9 multi-objective metric stack (`smooth`, `accuracy`, `echo`, `unigram`) and emit a common output schema: `candidate_summary.csv`, `universality_matrix.csv`, `run_summary.json`, and `causal_summary.json`.
 - Added `docs/research/PHASE_D10_BASIN_UNIVERSALITY_DOSSIER.md` as the conservative long-horizon evidence gate for deciding whether the beta.8 basin is local, task-specific, scaling-promising, or universal. No generated `output/` data is committed.
+- Added D10a H=384 seed-universality scout report (`LOCAL_H384_BASIN_ONLY` at scout budget) and D10b `seed-replication-ladder` mode for deeper seed-level replication/falsification before any H=512/GPU promotion.
 
 ### Added — 2026-04-29: Phase D9.4b causal confirm
 
