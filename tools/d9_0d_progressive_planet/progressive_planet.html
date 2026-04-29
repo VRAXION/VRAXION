@@ -97,6 +97,14 @@
     <div class="small" id="gen-tasks" style="color:#cfe6cf;font-size:10px;margin-top:2px"></div>
   </div>
 
+  <div id="causal-block" style="display:none;margin-top:8px;padding:7px 10px;border-radius:6px;background:rgba(186,140,255,.12);border:1px solid rgba(186,140,255,.45)">
+    <div class="small" style="color:#d4baff;font-weight:700">D9.4a Causal Diff (smoke)</div>
+    <div class="small" id="causal-verdict" style="color:#e8d6ff;margin-top:2px;font-weight:700"></div>
+    <div class="small" id="causal-diff-stats" style="color:#cfb8e8;margin-top:2px;font-size:11px"></div>
+    <div class="small" id="causal-cycle-stats" style="color:#b8a3d4;margin-top:2px;font-size:10px"></div>
+    <div class="small" id="causal-interp" style="color:#a8b7ca;margin-top:3px;font-size:10px;font-style:italic"></div>
+  </div>
+
   <h2>Top 5 peaks (priority)</h2>
   <div class="small" style="font-size:10px;color:#7d8da0;margin:-2px 0 4px">best_delta + safety + positive + confidence — may be spiky, NOT confirmed</div>
   <div id="top-peaks"></div>
@@ -867,6 +875,37 @@ window.__INIT_RENDERER__ = function(){
       genBlock.style.display = "block";
     } else if (genBlock) {
       genBlock.style.display = "none";
+    }
+
+    // D9.4a Causal Diff panel — explains WHY the generalist works.
+    const causalBlock = $("causal-block");
+    const causal = data.config && data.config.causal_diff;
+    if (causalBlock && causal) {
+      const verdictColor = causal.verdict === "EDGE_THRESHOLD_COADAPTATION" ? "#e8d6ff"
+        : causal.verdict === "THRESHOLD_TIMING_DRIVER" ? "#ffd27d"
+        : causal.verdict === "EDGE_WIRING_DRIVER" ? "#7ec8ff"
+        : "#cfd6dc";
+      $("causal-verdict").style.color = verdictColor;
+      $("causal-verdict").textContent = "Verdict: " + causal.verdict +
+        (causal.level === "smoke" ? "  (smoke)" : "");
+      const ea = causal.edges_added || 0, er = causal.edges_removed || 0,
+        en = causal.edges_net || 0, tc = causal.thresholds_changed || 0;
+      $("causal-diff-stats").textContent =
+        "diff: +" + ea + " edges, -" + er + " edges (net +" + en + "), " +
+        tc + " thresholds tweaked. Channel/polarity/projection: 0";
+      const bt = causal.baseline_triangles, tt = causal.target_triangles,
+        bc = causal.baseline_2cycles, tc = causal.target_2cycles;
+      if (bt != null && tt != null) {
+        $("causal-cycle-stats").textContent =
+          "triangles " + bt + " → " + tt + " (+" + (tt - bt) + "), " +
+          "bidir-pairs " + bc + " → " + tc + " (+" + (tc - bc) + ")";
+      } else {
+        $("causal-cycle-stats").textContent = "";
+      }
+      $("causal-interp").textContent = causal.interpretation || "";
+      causalBlock.style.display = "block";
+    } else if (causalBlock) {
+      causalBlock.style.display = "none";
     }
   }
 

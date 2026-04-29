@@ -26,12 +26,14 @@ SRC_Q = REPO / "output" / "phase_d9_0q_seed2042_long_climb_20260429"
 SRC_X = REPO / "output" / "phase_d9_0x_endpoint_robustness_20260429"
 SRC_2A = REPO / "output" / "phase_d9_2a_multi_objective_microprobe_20260429"
 SRC_2B = REPO / "output" / "phase_d9_2b_multi_objective_confirm_20260429"
+SRC_4A = REPO / "output" / "phase_d9_4a_causal_diff_smoke_20260429"
 SUMMARY_CSV_N = SRC_N / "tile_deep_trajectory_summary.csv"
 SUMMARY_CSV_O = SRC_O / "tile_top3_deepening_summary.csv"
 SUMMARY_CSV_Q = SRC_Q / "tile_long_climb_summary.csv"
 ROBUSTNESS_JSON = SRC_X / "d9_0x_robustness_summary.json"
 MULTI_OBJ_JSON = SRC_2A / "d9_2a_multi_objective_summary.json"
 GENERALIST_CONFIRM_JSON = SRC_2B / "d9_2b_summary.json"
+CAUSAL_DIFF_JSON = SRC_4A / "genome_diff_summary.json"
 OUT_JS = REPO / "tools" / "d9_0d_progressive_planet" / "state.js"
 
 LAT_BINS = 16
@@ -109,6 +111,39 @@ def load_robustness() -> dict[str, dict]:
             "validated_eval_lens": [1000, 4000, 16000],
         }
     return by_tile
+
+
+def load_causal_diff() -> dict | None:
+    """Load D9.4a causal-diff smoke summary (EDGE_THRESHOLD_COADAPTATION)."""
+    if not CAUSAL_DIFF_JSON.exists():
+        return None
+    blob = json.loads(CAUSAL_DIFF_JSON.read_text(encoding="utf-8"))
+    diff = blob.get("diff", {})
+    cycles = blob.get("cycle_stats", {})
+    base = cycles.get("baseline", {}) or {}
+    targ = cycles.get("target", {}) or {}
+    return {
+        "verdict": blob.get("verdict", "D9_4_CAUSAL_UNKNOWN"),
+        "level": "smoke",
+        "edges_added": diff.get("added_edges"),
+        "edges_removed": diff.get("removed_edges"),
+        "edges_net": diff.get("net_edge_delta"),
+        "thresholds_changed": diff.get("threshold_changes"),
+        "channel_changed": diff.get("channel_changes", 0),
+        "polarity_changed": diff.get("polarity_changes", 0),
+        "projection_unchanged": diff.get("projection_bytes_equal", True),
+        "baseline_edges": diff.get("baseline_edges"),
+        "target_edges": diff.get("target_edges"),
+        "baseline_density": None,
+        "target_density": None,
+        "baseline_triangles": base.get("triangles"),
+        "target_triangles": targ.get("triangles"),
+        "baseline_2cycles": base.get("bidirectional_pairs"),
+        "target_2cycles": targ.get("bidirectional_pairs"),
+        "baseline_4cycles": base.get("sampled_four_cycles"),
+        "target_4cycles": targ.get("sampled_four_cycles"),
+        "interpretation": "Edge wiring and threshold timing are co-adapted; ablating either group drops below baseline. Together they form a single integrated package.",
+    }
 
 
 def load_generalist_confirm() -> dict | None:
@@ -403,6 +438,7 @@ def main() -> int:
     robustness_by_tile = load_robustness()
     multi_objective = load_multi_objective()
     generalist_confirm = load_generalist_confirm()
+    causal_diff = load_causal_diff()
     climbed_tile_ids = {r["tile_id"] for r in rows}
 
     tiles = []
@@ -490,6 +526,7 @@ def main() -> int:
             "task_breadth_warning": "specialist tiles (12_29, 9_26) gain on smooth+accuracy only; the 11_16 generalist tile passes all 4 tasks",
             "multi_objective_microprobe": multi_objective,
             "generalist_confirm": generalist_confirm,
+            "causal_diff": causal_diff,
         },
         "tiles": tiles,
         "queue": deepen_queue,

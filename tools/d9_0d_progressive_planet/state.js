@@ -2,8 +2,8 @@ window.ATLAS_STATE = {
   "schema_version": "d9.0d-1",
   "run_id": "d9_2b_seed2042_full_generalist_confirmed",
   "source_run_id": "output/phase_d9_2b_multi_objective_confirm_20260429",
-  "generated_at_utc": "2026-04-29T11:27:24Z",
-  "last_updated": "2026-04-29T11:27:24Z",
+  "generated_at_utc": "2026-04-29T14:49:49Z",
+  "last_updated": "2026-04-29T14:49:49Z",
   "phase_status": "finished",
   "stop_clock_active": false,
   "source_samples_csv": "output/phase_d9_0q_seed2042_long_climb_20260429/paratrooper_paths.csv",
@@ -190,6 +190,28 @@ window.ATLAS_STATE = {
         16000
       ],
       "n_seeds": 30
+    },
+    "causal_diff": {
+      "verdict": "EDGE_THRESHOLD_COADAPTATION",
+      "level": "smoke",
+      "edges_added": 457,
+      "edges_removed": 35,
+      "edges_net": 422,
+      "thresholds_changed": 143,
+      "channel_changed": 0,
+      "polarity_changed": 0,
+      "projection_unchanged": true,
+      "baseline_edges": 9718,
+      "target_edges": 10140,
+      "baseline_density": null,
+      "target_density": null,
+      "baseline_triangles": 5674,
+      "target_triangles": 6425,
+      "baseline_2cycles": 694,
+      "target_2cycles": 715,
+      "baseline_4cycles": 102440,
+      "target_4cycles": 121138,
+      "interpretation": "Edge wiring and threshold timing are co-adapted; ablating either group drops below baseline. Together they form a single integrated package."
     }
   },
   "tiles": [
