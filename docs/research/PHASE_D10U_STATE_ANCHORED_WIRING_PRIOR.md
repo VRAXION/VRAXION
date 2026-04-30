@@ -158,13 +158,73 @@ Interpretation:
 - This is not release evidence because `eval_len=128` is still scout-level.
 - The next gate is a longer D10r-v8 confirm on the exported top candidate.
 
-The next useful run is a focused D10u ladder:
+## Bounded D10r-v8 Confirm
 
-- seed targets: seed2042 and seed4042
-- arms: edge_threshold_coadapted first, random_sparse_baseline as control
-- acceptance: state-anchor pass is mandatory
-- objective: raise smooth and accuracy without losing unigram/echo safety
-- confirm: any near/strict candidate must pass D10r-v8 with longer eval
+Output root:
+
+```text
+output/phase_d10u_top01_d10r_confirm_20260430/bounded_1000
+```
+
+Run shape:
+
+```text
+target: top_01_seed_2042_edge_threshold_coadapted.ckpt
+baseline: seed_2042 D7 H=384 baseline
+eval_len: 1000
+eval_seeds: 970021,970022,970023,970024
+control_repeats: 2
+controls: random_projection_null, state_shuffle_shared,
+          state_shuffle_projection_consistent, no_network_random_state
+elapsed: 426.61s
+```
+
+Verdict:
+
+```text
+D10R_V8_STATE_IDENTITY_PASS
+```
+
+Confirm metrics:
+
+| metric | value |
+|---|---:|
+| real MO delta mean | +0.212136 |
+| real MO delta CI low | +0.184054 |
+| trusted MO mean | +0.196925 |
+| trusted MO CI low | +0.170111 |
+| median selectivity CI low | +0.185850 |
+| state_shuffle_shared bound CI low | +0.184446 |
+| random_projection_null bound CI low | +0.170111 |
+| no_network_random_state bound CI low | +0.181960 |
+
+State-identity diagnostics:
+
+| diagnostic | result |
+|---|---|
+| projection-consistent shuffle | exactly zero drift |
+| duplicate projection rows | 0 rows |
+| similar projection rows | 0 rows |
+| active-row shuffle bound | pass |
+| high-norm row shuffle bound | pass |
+| low-norm row shuffle bound | pass |
+
+Interpretation:
+
+- The top_01 candidate passes the same D10r-v8 state-identity gate that blocked
+  beta.8.
+- The result is not explained by random projection, no-network random state, or
+  projection-consistent shuffle artifacts.
+- This reopens the release-candidate path, but does not finish it. The confirm
+  is still bounded: 4 eval seeds at `eval_len=1000`.
+
+Next gates:
+
+- run a longer D10r-v8 confirm on top_01 at `eval_len=4000` with more fresh
+  seeds
+- if that passes, run final promotion-grade confirmation at `eval_len=16000`
+  with 30 fresh seeds
+- only after those pass should this become a release-candidate checkpoint
 
 ## Progress Map
 
@@ -182,17 +242,18 @@ GLOBAL RELEASE-READY AI MAP
     DONE
     result: D10u smoke/scout works
 
-[4] weak non-seed signal
-    CURRENT
-    seed4042 has weak state-anchored signal
+[4] state-anchored strict scout candidate
+    DONE
+    result: seed2042 top_01 STRICT_TRUSTED at eval_len=128
 
-[5] focused D10u ladder
+[5] bounded D10r-v8 confirm
+    DONE
+    result: top_01 passes state identity at eval_len=1000
+
+[6] promotion-grade confirm
     NEXT
-    goal: convert weak state-anchored signal into near/strict trusted candidate
-
-[6] D10r-v8 confirm
-    BLOCKED until near/strict candidate exists
+    goal: eval_len=4000/16000, more fresh seeds
 
 [7] H512/H8192
-    BLOCKED until D10r-v8 confirm passes
+    BLOCKED until promotion-grade confirm passes
 ```
