@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import argparse
 import csv
+import hashlib
 import json
 import math
 import random
@@ -48,10 +49,23 @@ STATE_SHUFFLE_CONTROLS = {
     "state_shuffle",
     "state_shuffle_shared",
     "state_shuffle_projection_consistent",
+    "state_shuffle_active_rows_shared",
+    "state_shuffle_high_norm_shared",
+    "state_shuffle_low_norm_shared",
+    "state_shuffle_duplicate_projection_shared",
+    "state_shuffle_similar_projection_shared",
+}
+STATE_ZONE_CONTROLS = {
+    "state_shuffle_active_rows_shared",
+    "state_shuffle_high_norm_shared",
+    "state_shuffle_low_norm_shared",
+    "state_shuffle_duplicate_projection_shared",
+    "state_shuffle_similar_projection_shared",
 }
 DIAGNOSTIC_CONTROLS = {
     "state_shuffle_projection_consistent",
     "random_projection_null_independent",
+    *STATE_ZONE_CONTROLS,
 }
 REPEATED_CONTROLS = {
     *STATE_SHUFFLE_CONTROLS,
@@ -59,6 +73,15 @@ REPEATED_CONTROLS = {
     "random_projection_null",
     "random_projection_null_independent",
 }
+STATE_ZONE_DIAGNOSTIC_CONTROLS = [
+    "state_shuffle_active_rows_shared",
+    "state_shuffle_high_norm_shared",
+    "state_shuffle_low_norm_shared",
+    "state_shuffle_duplicate_projection_shared",
+    "state_shuffle_similar_projection_shared",
+]
+SIMILAR_PROJECTION_COSINE = 0.995
+STATE_ZONE_INDEX_CACHE: dict[tuple[str, str], np.ndarray | None] = {}
 
 
 def control_base_name(control: str) -> str:
@@ -88,6 +111,15 @@ def expand_controls(controls: list[str], control_repeats: int) -> list[dict]:
             label = f"{control}_{repeat:02d}" if repeat_count > 1 else control
             expanded.append({"label": label, "base": control, "repeat": repeat})
     return expanded
+
+
+def augment_artifact_controls(controls: list[str], state_zone_diagnostics: bool) -> list[str]:
+    out = list(controls)
+    if state_zone_diagnostics and "state_shuffle_shared" in out:
+        for control in STATE_ZONE_DIAGNOSTIC_CONTROLS:
+            if control not in out:
+                out.append(control)
+    return out
 
 
 def write_csv(path: Path, rows: list[dict], fieldnames: list[str]) -> None:
@@ -154,6 +186,11 @@ def control_targets(
         "state_shuffle",
         "state_shuffle_shared",
         "state_shuffle_projection_consistent",
+        "state_shuffle_active_rows_shared",
+        "state_shuffle_high_norm_shared",
+        "state_shuffle_low_norm_shared",
+        "state_shuffle_duplicate_projection_shared",
+        "state_shuffle_similar_projection_shared",
         "no_network_random_state",
         "time_shuffle",
     }:
@@ -235,6 +272,149 @@ def mo_score_from_delta(delta: dict[str, float]) -> float:
     )
 
 
+def projection_row_groups(weights: np.ndarray) -> tuple[list[dict], dict[str, list[int]]]:
+    rows = np.asarray(weights, dtype=np.int16)
+    hashes = [hashlib.sha1(np.ascontiguousarray(row).tobytes()).hexdigest()[:16] for row in rows]
+    by_hash: dict[str, list[int]] = {}
+    for idx, digest in enumerate(hashes):
+        by_hash.setdefault(digest, []).append(idx)
+    duplicate_group_ids: dict[str, str] = {}
+    for group_idx, digest in enumerate(sorted(by_hash)):
+        duplicate_group_ids[digest] = f"dup_{group_idx:04d}" if len(by_hash[digest]) > 1 else ""
+    rows_f = rows.astype(np.float32)
+    norms = np.linalg.norm(rows_f, axis=1)
+    active = np.flatnonzero(norms > 0.0).astype(int).tolist()
+    high_norm: list[int] = []
+    low_norm: list[int] = []
+    if active:
+        active_norms = norms[active]
+        lo = float(np.quantile(active_norms, 0.25))
+        hi = float(np.quantile(active_norms, 0.75))
+        high_norm = [idx for idx in active if norms[idx] >= hi]
+        low_norm = [idx for idx in active if norms[idx] <= lo]
+    duplicate_projection = [idx for idx, digest in enumerate(hashes) if len(by_hash[digest]) > 1]
+    nearest_rows = [-1] * len(rows)
+    nearest_cosines = [0.0] * len(rows)
+    similar_projection: list[int] = []
+    if len(rows) > 1:
+        denom = np.maximum(norms, 1e-12)
+        normalized = rows_f / denom[:, None]
+        cosine = normalized @ normalized.T
+        np.fill_diagonal(cosine, -2.0)
+        nearest = np.argmax(cosine, axis=1)
+        nearest_vals = cosine[np.arange(len(rows)), nearest]
+        nearest_rows = nearest.astype(int).tolist()
+        nearest_cosines = nearest_vals.astype(float).tolist()
+        similar_projection = [
+            int(idx)
+            for idx, value in enumerate(nearest_vals)
+            if norms[idx] > 0.0 and float(value) >= SIMILAR_PROJECTION_COSINE
+        ]
+    high_norm_set = set(high_norm)
+    low_norm_set = set(low_norm)
+    duplicate_projection_set = set(duplicate_projection)
+    similar_projection_set = set(similar_projection)
+    row_info = []
+    for idx, row in enumerate(rows):
+        digest = hashes[idx]
+        row_info.append(
+            {
+                "row_idx": idx,
+                "row_hash": digest,
+                "row_l1": int(np.abs(row.astype(np.int32)).sum()),
+                "row_l2": float(norms[idx]),
+                "row_nonzero": int(np.count_nonzero(row)),
+                "duplicate_group": duplicate_group_ids[digest],
+                "duplicate_count": len(by_hash[digest]),
+                "nearest_row": nearest_rows[idx],
+                "nearest_cosine": float(nearest_cosines[idx]),
+                "is_active": bool(norms[idx] > 0.0),
+                "is_high_norm": idx in high_norm_set,
+                "is_low_norm": idx in low_norm_set,
+                "is_duplicate_projection": idx in duplicate_projection_set,
+                "is_similar_projection": idx in similar_projection_set,
+            }
+        )
+    zones = {
+        "all_rows": list(range(len(rows))),
+        "active_rows": active,
+        "high_norm": high_norm,
+        "low_norm": low_norm,
+        "duplicate_projection": duplicate_projection,
+        "similar_projection": similar_projection,
+    }
+    return row_info, zones
+
+
+def projection_row_uniqueness_rows(label: str, ckpt: gpu_eval.CheckpointArrays) -> tuple[list[dict], dict[str, list[int]]]:
+    row_info, zones = projection_row_groups(ckpt.projection.weights)
+    rows = []
+    total_rows = max(1, len(row_info))
+    for row in row_info:
+        rows.append(
+            {
+                "checkpoint_label": label,
+                "projection_input_dim": ckpt.projection.input_dim,
+                "projection_output_classes": ckpt.projection.output_classes,
+                **row,
+                "active_fraction": len(zones["active_rows"]) / total_rows,
+                "duplicate_fraction": len(zones["duplicate_projection"]) / total_rows,
+                "similar_fraction": len(zones["similar_projection"]) / total_rows,
+            }
+        )
+    return rows, zones
+
+
+def state_shuffle_zone_name(control_type: str) -> str:
+    mapping = {
+        "state_shuffle_shared": "all_rows",
+        "state_shuffle_projection_consistent": "all_rows_projection_consistent",
+        "state_shuffle_active_rows_shared": "active_rows",
+        "state_shuffle_high_norm_shared": "high_norm",
+        "state_shuffle_low_norm_shared": "low_norm",
+        "state_shuffle_duplicate_projection_shared": "duplicate_projection",
+        "state_shuffle_similar_projection_shared": "similar_projection",
+    }
+    return mapping.get(control_base_name(control_type), control_base_name(control_type))
+
+
+def state_shuffle_zone_indices(control_type: str, reference_weights: np.ndarray) -> np.ndarray | None:
+    digest = hashlib.sha1(np.ascontiguousarray(reference_weights).tobytes()).hexdigest()[:16]
+    key = (control_type, digest)
+    if key in STATE_ZONE_INDEX_CACHE:
+        return STATE_ZONE_INDEX_CACHE[key]
+    _, zones = projection_row_groups(reference_weights)
+    base = control_base_name(control_type)
+    if base in {"state_shuffle", "state_shuffle_shared", "state_shuffle_projection_consistent"}:
+        STATE_ZONE_INDEX_CACHE[key] = None
+        return None
+    zone = state_shuffle_zone_name(base)
+    indices = np.asarray(zones.get(zone, []), dtype=np.int64)
+    STATE_ZONE_INDEX_CACHE[key] = indices
+    return indices
+
+
+def permute_outputs_in_zone(
+    outputs: torch.Tensor,
+    control_type: str,
+    rng: np.random.Generator,
+    reference_weights: np.ndarray,
+) -> tuple[torch.Tensor, torch.Tensor | None]:
+    zone_indices = state_shuffle_zone_indices(control_type, reference_weights)
+    if zone_indices is not None and len(zone_indices) < 2:
+        return outputs, None
+    shuffled = outputs.clone()
+    if zone_indices is None:
+        perm_np = rng.permutation(outputs.shape[-1])
+        perm = torch.as_tensor(perm_np, dtype=torch.long, device=outputs.device)
+        shuffled = outputs[:, :, perm]
+        return shuffled, perm
+    zone = torch.as_tensor(zone_indices, dtype=torch.long, device=outputs.device)
+    permuted_zone = torch.as_tensor(rng.permutation(zone_indices), dtype=torch.long, device=outputs.device)
+    shuffled[:, :, zone] = outputs[:, :, permuted_zone]
+    return shuffled, None
+
+
 def evaluate_seed_control(
     checkpoints: list[gpu_eval.CheckpointArrays],
     table: gpu_eval.VcbpTablePy,
@@ -277,19 +457,19 @@ def evaluate_seed_control(
     score_weights = state.weights
     if control_type in STATE_SHUFFLE_CONTROLS:
         rng = np.random.default_rng(control_seed + eval_seed)
-        shuffled = torch.empty_like(outputs)
         adjusted_weights = state.weights.clone() if control_type == "state_shuffle_projection_consistent" else state.weights
-        shared_perm = None
-        if control_type == "state_shuffle_shared":
-            shared_perm = torch.as_tensor(rng.permutation(outputs.shape[-1]), dtype=torch.long, device=device)
-        for idx in range(outputs.shape[0]):
-            perm = shared_perm
-            if perm is None:
+        if control_type in {"state_shuffle", "state_shuffle_projection_consistent"}:
+            shuffled = torch.empty_like(outputs)
+            for idx in range(outputs.shape[0]):
                 perm = torch.as_tensor(rng.permutation(outputs.shape[-1]), dtype=torch.long, device=device)
-            shuffled[idx] = outputs[idx, :, perm]
-            if control_type == "state_shuffle_projection_consistent":
-                adjusted_weights[idx] = state.weights[idx, perm, :]
-        outputs = shuffled
+                shuffled[idx] = outputs[idx, :, perm]
+                if control_type == "state_shuffle_projection_consistent":
+                    adjusted_weights[idx] = state.weights[idx, perm, :]
+            outputs = shuffled
+        else:
+            reference_idx = 1 if outputs.shape[0] > 1 else 0
+            reference_weights = state.weights[reference_idx].detach().cpu().numpy()
+            outputs, _ = permute_outputs_in_zone(outputs, control_type, rng, reference_weights)
         score_weights = adjusted_weights
     scores = gpu_eval.projection_scores(outputs, score_weights)
     probs = torch.softmax(scores, dim=-1)
@@ -629,6 +809,158 @@ def summarize_control_family_bounds(
     return out
 
 
+def summarize_state_shuffle_zone_bounds(
+    label: str,
+    rows: list[dict],
+    controls: list[str],
+    zone_counts: dict[str, int],
+    total_rows: int,
+    bootstrap_samples: int,
+    alpha: float,
+    seed: int,
+    min_trusted_mo: float,
+) -> list[dict]:
+    real_by_seed = {
+        int(r["eval_seed"]): float(r["mo_delta"])
+        for r in rows
+        if r["checkpoint_label"] == label and r["control_type"] == "real"
+    }
+    controls_by_base: dict[str, list[str]] = {}
+    for control in controls:
+        base = control_base_name(control)
+        if base.startswith("state_shuffle"):
+            controls_by_base.setdefault(base, []).append(control)
+    out: list[dict] = []
+    for base, names in sorted(controls_by_base.items()):
+        margins = []
+        worst_control_by_seed: dict[int, str] = {}
+        for eval_seed in sorted(real_by_seed):
+            vals = [
+                (
+                    control,
+                    float(r["mo_delta"]),
+                )
+                for control in names
+                for r in rows
+                if (
+                    r["checkpoint_label"] == label
+                    and r["control_type"] == control
+                    and int(r["eval_seed"]) == eval_seed
+                )
+            ]
+            if not vals:
+                continue
+            worst_control, worst_value = max(vals, key=lambda item: item[1])
+            worst_control_by_seed[eval_seed] = worst_control
+            margins.append(real_by_seed[eval_seed] - worst_value)
+        if margins:
+            seed_order = [s for s in sorted(real_by_seed) if s in worst_control_by_seed]
+            worst_idx = int(np.argmin(np.asarray(margins, dtype=np.float64)))
+            worst_seed = seed_order[worst_idx]
+            worst_margin = float(margins[worst_idx])
+            worst_control = worst_control_by_seed[worst_seed]
+            mean = float(np.mean(margins))
+        else:
+            worst_seed = 0
+            worst_margin = 0.0
+            worst_control = ""
+            mean = 0.0
+        ci_lo, ci_hi = bootstrap_ci(
+            margins,
+            bootstrap_samples,
+            alpha,
+            seed + d10o.stable_arm_seed(label + base + "zone_bound"),
+        )
+        zone_name = state_shuffle_zone_name(base)
+        row_count = int(zone_counts.get(zone_name, total_rows if zone_name.startswith("all_rows") else 0))
+        out.append(
+            {
+                "checkpoint_label": label,
+                "control_type": ",".join(names),
+                "control_base": base,
+                "control_count": len(names),
+                "zone_name": zone_name,
+                "row_count": row_count,
+                "row_fraction": row_count / max(1, total_rows),
+                "n": len(margins),
+                "bound_mean": mean,
+                "bound_ci_low": ci_lo,
+                "bound_ci_high": ci_hi,
+                "worst_seed": worst_seed,
+                "worst_control": worst_control,
+                "worst_margin": worst_margin,
+                "diagnostic": is_diagnostic_control(base),
+                "pass": ci_lo > min_trusted_mo,
+            }
+        )
+    return out
+
+
+def summarize_state_shuffle_score_drift(label: str, rows: list[dict], controls: list[str]) -> list[dict]:
+    out: list[dict] = []
+    for control in controls:
+        base = control_base_name(control)
+        if not base.startswith("state_shuffle"):
+            continue
+        real_rows = {
+            int(r["eval_seed"]): r
+            for r in rows
+            if r["checkpoint_label"] == label and r["control_type"] == "real"
+        }
+        control_rows = {
+            int(r["eval_seed"]): r
+            for r in rows
+            if r["checkpoint_label"] == label and r["control_type"] == control
+        }
+        for eval_seed in sorted(real_rows):
+            if eval_seed not in control_rows:
+                continue
+            real_row = real_rows[eval_seed]
+            control_row = control_rows[eval_seed]
+            row = {
+                "checkpoint_label": label,
+                "control_type": control,
+                "control_base": base,
+                "zone_name": state_shuffle_zone_name(base),
+                "eval_seed": eval_seed,
+                "real_mo_delta": float(real_row["mo_delta"]),
+                "control_mo_delta": float(control_row["mo_delta"]),
+                "mo_margin": float(real_row["mo_delta"]) - float(control_row["mo_delta"]),
+            }
+            for metric in METRICS:
+                real_value = float(real_row[f"{metric}_delta"])
+                control_value = float(control_row[f"{metric}_delta"])
+                row[f"real_{metric}_delta"] = real_value
+                row[f"control_{metric}_delta"] = control_value
+                row[f"{metric}_margin"] = real_value - control_value
+            out.append(row)
+    return out
+
+
+def v8_projection_symmetry_supported(zone_bound_rows: list[dict], positive_label: str) -> bool:
+    by_base = {
+        row["control_base"]: row
+        for row in zone_bound_rows
+        if row["checkpoint_label"] == positive_label
+    }
+    identity_bases = {
+        "state_shuffle_active_rows_shared",
+        "state_shuffle_high_norm_shared",
+        "state_shuffle_low_norm_shared",
+    }
+    symmetry_bases = {
+        "state_shuffle_duplicate_projection_shared",
+        "state_shuffle_similar_projection_shared",
+    }
+    if not all(bool(by_base.get(base, {}).get("pass")) for base in identity_bases if base in by_base):
+        return False
+    for base in symmetry_bases:
+        row = by_base.get(base)
+        if row and int(row.get("row_count", 0)) >= 2 and not bool(row.get("pass")):
+            return True
+    return False
+
+
 def write_report(
     out: Path,
     run_summary: dict,
@@ -636,6 +968,7 @@ def write_report(
     margin_rows: list[dict],
     metric_margin_rows: list[dict],
     family_bound_rows: list[dict],
+    zone_bound_rows: list[dict],
 ) -> None:
     roles = run_summary["roles"]
     positive_label = run_summary["setup"]["positive_label"]
@@ -643,6 +976,7 @@ def write_report(
     positive_margins = [row for row in margin_rows if row["checkpoint_label"] == positive_label]
     positive_metric_margins = [row for row in metric_margin_rows if row["checkpoint_label"] == positive_label]
     positive_family_bounds = [row for row in family_bound_rows if row["checkpoint_label"] == positive_label]
+    positive_zone_bounds = [row for row in zone_bound_rows if row["checkpoint_label"] == positive_label]
     alternate_summaries = [row for row in checkpoint_summaries if roles.get(row["checkpoint_label"]) == "alternate_baseline"]
     lines = [
         "# D10r Hardened Eval / Projection Report",
@@ -657,6 +991,7 @@ def write_report(
         f"- eval_len: `{run_summary['setup']['eval_len']}`",
         f"- eval_seeds: `{','.join(str(s) for s in run_summary['setup']['eval_seeds'])}`",
         f"- artifact_controls: `{','.join(run_summary['setup']['artifact_controls'])}`",
+        f"- state_zone_diagnostics: `{run_summary['setup']['state_zone_diagnostics']}`",
         f"- alternate_baseline_mode: `{run_summary['setup']['alternate_baseline_mode']}`",
         f"- max_charge: `{run_summary['setup']['max_charge']}`",
         "",
@@ -685,6 +1020,22 @@ def write_report(
             f"[{row['bound_ci_low']:.6f},{row['bound_ci_high']:.6f}] | {row['worst_seed']} | "
             f"{row['worst_control']} | {row['pass']} |"
         )
+    if positive_zone_bounds:
+        lines.extend(
+            [
+                "",
+                "## State Shuffle Zone Bounds",
+                "",
+                "| control family | repeats | zone | rows | bound mean | bound CI | worst seed | worst control | pass | diagnostic |",
+                "|---|---:|---|---:|---:|---:|---:|---|---|---|",
+            ]
+        )
+        for row in positive_zone_bounds:
+            lines.append(
+                f"| {row['control_base']} | {row['control_count']} | {row['zone_name']} | {row['row_count']} | "
+                f"{row['bound_mean']:.6f} | [{row['bound_ci_low']:.6f},{row['bound_ci_high']:.6f}] | "
+                f"{row['worst_seed']} | {row['worst_control']} | {row['pass']} | {row['diagnostic']} |"
+            )
     state_metric_rows = [
         row
         for row in positive_metric_margins
@@ -762,6 +1113,10 @@ def write_report(
             "- `D10R_V5_ARTIFACT_GATE_PASS` means the known positive beats artifact/null controls by CI.",
             "- `D10R_V5_ARTIFACT_READOUT_BLOCKED` means raw real signal remains positive but artifact-adjusted trusted MO does not.",
             "- `D10R_V7_STATE_SHUFFLE_BOUND_BLOCKED` means the only remaining artifact-family blocker is shared state shuffling.",
+            "- `D10R_V8_STATE_IDENTITY_PASS` means beta.8 beats the state-shuffle family bound.",
+            "- `D10R_V8_PROJECTION_SYMMETRY_CONFIRMED` means the blocker is localized to projection-similar rows.",
+            "- `D10R_V8_WEAK_STATE_IDENTITY_FAIL` means active or high-norm state shuffles still beat the real signal.",
+            "- `D10R_V8_UNDERPOWERED` means the state-identity gate is ambiguous under this eval budget.",
             "- `D10R_V6_STATE_SHUFFLE_BLOCKED` means fair projection null passed but shared state shuffling can still match or beat the positive.",
             "- `D10R_V6_RANDOM_STATE_BLOCKED` means no-network random-state controls can still match or beat the positive.",
             "- `D10R_V6_STATE_RANDOM_CONTROL_BLOCKED` means state/no-network controls remain the only artifact blockers.",
@@ -808,6 +1163,7 @@ def run_d10r(args) -> dict:
     table, pair_ids, hot_to_idx, bigram, unigram, _ = d10j.load_real_inputs(args)
     eval_seeds = parse_int_csv(args.eval_seeds)
     artifact_controls = parse_csv(args.artifact_controls) or parse_csv(args.controls)
+    artifact_controls = augment_artifact_controls(artifact_controls, args.state_zone_diagnostics)
     expanded_controls = expand_controls(artifact_controls, args.control_repeats)
     all_eval_checkpoints = [baseline] + [ckpt for _, _, ckpt in checkpoints]
     labels = ["baseline"] + [label for _, label, _ in checkpoints]
@@ -858,8 +1214,16 @@ def run_d10r(args) -> dict:
     margin_rows: list[dict] = []
     metric_margin_rows: list[dict] = []
     family_bound_rows: list[dict] = []
+    zone_bound_rows: list[dict] = []
+    score_drift_rows: list[dict] = []
     checkpoint_summaries: list[dict] = []
     expanded_control_labels = [c["label"] for c in expanded_controls]
+    projection_rows: list[dict] = []
+    projection_zones: dict[str, dict[str, list[int]]] = {}
+    for label, ckpt in zip(labels, all_eval_checkpoints):
+        p_rows, zones = projection_row_uniqueness_rows(label, ckpt)
+        projection_rows.extend(p_rows)
+        projection_zones[label] = zones
     for _, label, _ in checkpoints:
         m_rows, summary = summarize_checkpoint(
             label,
@@ -894,6 +1258,21 @@ def run_d10r(args) -> dict:
                 args.min_trusted_mo,
             )
         )
+        zone_counts = {name: len(indices) for name, indices in projection_zones[label].items()}
+        zone_bound_rows.extend(
+            summarize_state_shuffle_zone_bounds(
+                label,
+                rows,
+                expanded_control_labels,
+                zone_counts,
+                len(projection_zones[label].get("all_rows", [])),
+                args.bootstrap_samples,
+                args.alpha,
+                args.seed,
+                args.min_trusted_mo,
+            )
+        )
+        score_drift_rows.extend(summarize_state_shuffle_score_drift(label, rows, expanded_control_labels))
         checkpoint_summaries.append(summary)
     positive_summary = next(row for row in checkpoint_summaries if row["checkpoint_label"] == args.positive_label)
     positive_family_bounds = [row for row in family_bound_rows if row["checkpoint_label"] == args.positive_label]
@@ -908,12 +1287,25 @@ def run_d10r(args) -> dict:
         if roles.get(row["checkpoint_label"]) == "alternate_baseline" and row["trusted_mo_pass"]
     ]
     artifact_gate_pass = bool(positive_summary["trusted_mo_pass"])
+    state_bound = next(
+        (
+            row
+            for row in positive_family_bounds
+            if row["control_base"] == "state_shuffle_shared"
+        ),
+        None,
+    )
     if artifact_gate_pass:
-        verdict = "D10R_V5_ARTIFACT_GATE_PASS"
+        verdict = "D10R_V8_STATE_IDENTITY_PASS"
     elif positive_summary["real_mo_delta_ci_low"] > args.min_real_mo:
         blocking_bases = set(blocking_control_families)
         if blocking_bases == {"state_shuffle_shared"}:
-            verdict = "D10R_V7_STATE_SHUFFLE_BOUND_BLOCKED"
+            if v8_projection_symmetry_supported(zone_bound_rows, args.positive_label):
+                verdict = "D10R_V8_PROJECTION_SYMMETRY_CONFIRMED"
+            elif state_bound and float(state_bound["bound_mean"]) > args.min_trusted_mo and float(state_bound["bound_ci_high"]) > args.min_trusted_mo:
+                verdict = "D10R_V8_UNDERPOWERED"
+            else:
+                verdict = "D10R_V8_WEAK_STATE_IDENTITY_FAIL"
         elif blocking_bases == {"no_network_random_state"}:
             verdict = "D10R_V6_RANDOM_STATE_BLOCKED"
         elif blocking_bases and blocking_bases <= {"state_shuffle_shared", "no_network_random_state"}:
@@ -960,6 +1352,7 @@ def run_d10r(args) -> dict:
             "controls": artifact_controls,
             "expanded_controls": [c["label"] for c in expanded_controls],
             "control_repeats": args.control_repeats,
+            "state_zone_diagnostics": args.state_zone_diagnostics,
             "max_charge": args.max_charge,
             "bootstrap_samples": args.bootstrap_samples,
             "permutation_samples": args.permutation_samples,
@@ -969,6 +1362,7 @@ def run_d10r(args) -> dict:
         "roles": roles,
         "checkpoint_summaries": checkpoint_summaries,
         "blocking_control_families": blocking_control_families,
+        "state_zone_diagnostics": args.state_zone_diagnostics,
         "artifact_gate_pass": artifact_gate_pass,
         "d10s_unlocked": artifact_gate_pass,
         "alternate_baseline_verdict": alternate_baseline_verdict,
@@ -1050,8 +1444,82 @@ def run_d10r(args) -> dict:
             "pass",
         ],
     )
+    write_csv(
+        out / "projection_row_uniqueness.csv",
+        projection_rows,
+        [
+            "checkpoint_label",
+            "projection_input_dim",
+            "projection_output_classes",
+            "row_idx",
+            "row_hash",
+            "row_l1",
+            "row_l2",
+            "row_nonzero",
+            "duplicate_group",
+            "duplicate_count",
+            "nearest_row",
+            "nearest_cosine",
+            "is_active",
+            "is_high_norm",
+            "is_low_norm",
+            "is_duplicate_projection",
+            "is_similar_projection",
+            "active_fraction",
+            "duplicate_fraction",
+            "similar_fraction",
+        ],
+    )
+    write_csv(
+        out / "state_shuffle_zone_bounds.csv",
+        zone_bound_rows,
+        [
+            "checkpoint_label",
+            "control_type",
+            "control_base",
+            "control_count",
+            "zone_name",
+            "row_count",
+            "row_fraction",
+            "n",
+            "bound_mean",
+            "bound_ci_low",
+            "bound_ci_high",
+            "worst_seed",
+            "worst_control",
+            "worst_margin",
+            "diagnostic",
+            "pass",
+        ],
+    )
+    write_csv(
+        out / "state_shuffle_score_drift.csv",
+        score_drift_rows,
+        [
+            "checkpoint_label",
+            "control_type",
+            "control_base",
+            "zone_name",
+            "eval_seed",
+            "real_smooth_delta",
+            "control_smooth_delta",
+            "smooth_margin",
+            "real_accuracy_delta",
+            "control_accuracy_delta",
+            "accuracy_margin",
+            "real_echo_delta",
+            "control_echo_delta",
+            "echo_margin",
+            "real_unigram_delta",
+            "control_unigram_delta",
+            "unigram_margin",
+            "real_mo_delta",
+            "control_mo_delta",
+            "mo_margin",
+        ],
+    )
     (out / "d10r_run_summary.json").write_text(json.dumps(run_summary, indent=2), encoding="utf-8")
-    write_report(out, run_summary, checkpoint_summaries, margin_rows, metric_margin_rows, family_bound_rows)
+    write_report(out, run_summary, checkpoint_summaries, margin_rows, metric_margin_rows, family_bound_rows, zone_bound_rows)
     return run_summary
 
 
@@ -1078,6 +1546,8 @@ def build_arg_parser() -> argparse.ArgumentParser:
     # --artifact-controls when provided.
     parser.add_argument("--controls", default=",".join(PRIMARY_CONTROLS))
     parser.add_argument("--control-repeats", type=int, default=1)
+    parser.add_argument("--state-zone-diagnostics", dest="state_zone_diagnostics", action="store_true", default=True)
+    parser.add_argument("--no-state-zone-diagnostics", dest="state_zone_diagnostics", action="store_false")
     parser.add_argument("--max-charge", type=int, default=7)
     parser.add_argument("--bootstrap-samples", type=int, default=2000)
     parser.add_argument("--permutation-samples", type=int, default=5000)
