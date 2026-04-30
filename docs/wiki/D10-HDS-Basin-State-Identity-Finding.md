@@ -39,7 +39,7 @@ not a release candidate.
     state_shuffle_shared can beat the real signal.
 
 [6] The path is not dead
-    D10u found weak state-anchored signal on seed4042.
+    D10u top_01 passed a bounded state-identity confirm.
 ```
 
 ## Key Evidence
@@ -79,15 +79,26 @@ can beat the real checkpoint. That blocks a release-ready claim.
 D10u moved the lesson into the search loop. Candidates are now ranked against
 the same artifact controls instead of being checked only after the fact.
 
-Short scout result:
+D10u focused ladder result:
 
 ```text
-seed2042: weak state-anchored signal
+seed2042 top_01: strict trusted scout candidate
 seed4042: weak state-anchored signal
-strict/near trusted candidate: none yet
 ```
 
-This keeps the state-anchored path alive, but does not unlock H512/H8192.
+Bounded D10r-v8 confirm on `top_01`:
+
+```text
+verdict: D10R_V8_STATE_IDENTITY_PASS
+eval_len: 1000
+eval_seeds: 970021..970024
+trusted_mo_ci_low: +0.170111
+state_shuffle_shared bound CI low: +0.184446
+```
+
+This reopens the release-candidate path, but does not unlock H512/H8192 yet.
+The next gate is promotion-grade confirmation at longer eval budgets and more
+fresh seeds.
 
 ## What This Means
 
@@ -128,10 +139,10 @@ while passing the D10r-v8 artifact gate?
     DONE: local islands, not universal mountain
 
 [5] state-anchored search
-    CURRENT: weak seed4042 signal exists
+    DONE: top_01 bounded state-identity pass
 
 [6] release-ready AI
-    BLOCKED until D10u produces near/strict trusted candidate
+    BLOCKED until top_01 passes promotion-grade confirm
 ```
 
 ## Canonical Repo References
