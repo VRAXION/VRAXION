@@ -490,16 +490,159 @@ def summarize_checkpoint(
     return margin_rows, summary
 
 
+def summarize_metric_margins(
+    label: str,
+    rows: list[dict],
+    controls: list[str],
+    bootstrap_samples: int,
+    alpha: float,
+    seed: int,
+) -> list[dict]:
+    out: list[dict] = []
+    metric_fields = [(metric, f"{metric}_delta") for metric in METRICS]
+    metric_fields.append(("mo", "mo_delta"))
+    for control in controls:
+        for metric, field in metric_fields:
+            real_by_seed = {
+                int(r["eval_seed"]): float(r[field])
+                for r in rows
+                if r["checkpoint_label"] == label and r["control_type"] == "real"
+            }
+            control_by_seed = {
+                int(r["eval_seed"]): float(r[field])
+                for r in rows
+                if r["checkpoint_label"] == label and r["control_type"] == control
+            }
+            margins = [
+                real_by_seed[s] - control_by_seed[s]
+                for s in sorted(real_by_seed)
+                if s in control_by_seed
+            ]
+            if margins:
+                seed_order = [s for s in sorted(real_by_seed) if s in control_by_seed]
+                worst_idx = int(np.argmin(np.asarray(margins, dtype=np.float64)))
+                worst_seed = seed_order[worst_idx]
+                worst_margin = float(margins[worst_idx])
+                mean = float(np.mean(margins))
+            else:
+                worst_seed = 0
+                worst_margin = 0.0
+                mean = 0.0
+            ci_lo, ci_hi = bootstrap_ci(
+                margins,
+                bootstrap_samples,
+                alpha,
+                seed + d10o.stable_arm_seed(label + control + metric + "metric_margin"),
+            )
+            out.append(
+                {
+                    "checkpoint_label": label,
+                    "control_type": control,
+                    "control_base": control_base_name(control),
+                    "metric": metric,
+                    "n": len(margins),
+                    "margin_mean": mean,
+                    "margin_ci_low": ci_lo,
+                    "margin_ci_high": ci_hi,
+                    "worst_seed": worst_seed,
+                    "worst_margin": worst_margin,
+                }
+            )
+    return out
+
+
+def summarize_control_family_bounds(
+    label: str,
+    rows: list[dict],
+    controls: list[str],
+    bootstrap_samples: int,
+    alpha: float,
+    seed: int,
+    min_trusted_mo: float,
+) -> list[dict]:
+    real_by_seed = {
+        int(r["eval_seed"]): float(r["mo_delta"])
+        for r in rows
+        if r["checkpoint_label"] == label and r["control_type"] == "real"
+    }
+    controls_by_base: dict[str, list[str]] = {}
+    for control in controls:
+        if is_diagnostic_control(control):
+            continue
+        controls_by_base.setdefault(control_base_name(control), []).append(control)
+    out: list[dict] = []
+    for base, names in sorted(controls_by_base.items()):
+        margins = []
+        worst_control_by_seed: dict[int, str] = {}
+        for eval_seed in sorted(real_by_seed):
+            vals = [
+                (
+                    control,
+                    float(r["mo_delta"]),
+                )
+                for control in names
+                for r in rows
+                if (
+                    r["checkpoint_label"] == label
+                    and r["control_type"] == control
+                    and int(r["eval_seed"]) == eval_seed
+                )
+            ]
+            if not vals:
+                continue
+            worst_control, worst_value = max(vals, key=lambda item: item[1])
+            worst_control_by_seed[eval_seed] = worst_control
+            margins.append(real_by_seed[eval_seed] - worst_value)
+        if margins:
+            seed_order = [s for s in sorted(real_by_seed) if s in worst_control_by_seed]
+            worst_idx = int(np.argmin(np.asarray(margins, dtype=np.float64)))
+            worst_seed = seed_order[worst_idx]
+            worst_margin = float(margins[worst_idx])
+            worst_control = worst_control_by_seed[worst_seed]
+            mean = float(np.mean(margins))
+        else:
+            worst_seed = 0
+            worst_margin = 0.0
+            worst_control = ""
+            mean = 0.0
+        ci_lo, ci_hi = bootstrap_ci(
+            margins,
+            bootstrap_samples,
+            alpha,
+            seed + d10o.stable_arm_seed(label + base + "family_bound"),
+        )
+        out.append(
+            {
+                "checkpoint_label": label,
+                "control_base": base,
+                "control_count": len(names),
+                "n": len(margins),
+                "bound_mean": mean,
+                "bound_ci_low": ci_lo,
+                "bound_ci_high": ci_hi,
+                "worst_seed": worst_seed,
+                "worst_control": worst_control,
+                "worst_margin": worst_margin,
+                "pass": ci_lo > min_trusted_mo,
+            }
+        )
+    return out
+
+
 def write_report(
     out: Path,
     run_summary: dict,
     checkpoint_summaries: list[dict],
     margin_rows: list[dict],
+    metric_margin_rows: list[dict],
+    family_bound_rows: list[dict],
 ) -> None:
     roles = run_summary["roles"]
     positive_label = run_summary["setup"]["positive_label"]
     positive_summary = next(row for row in checkpoint_summaries if row["checkpoint_label"] == positive_label)
     positive_margins = [row for row in margin_rows if row["checkpoint_label"] == positive_label]
+    positive_metric_margins = [row for row in metric_margin_rows if row["checkpoint_label"] == positive_label]
+    positive_family_bounds = [row for row in family_bound_rows if row["checkpoint_label"] == positive_label]
     alternate_summaries = [row for row in checkpoint_summaries if roles.get(row["checkpoint_label"]) == "alternate_baseline"]
     lines = [
         "# D10r Hardened Eval / Projection Report",
@@ -530,6 +673,42 @@ def write_report(
     lines.extend(
         [
             "",
+            "## Artifact Family Bounds",
+            "",
+            "| control family | repeats | bound mean | bound CI | worst seed | worst control | pass |",
+            "|---|---:|---:|---:|---:|---|---|",
+        ]
+    )
+    for row in positive_family_bounds:
+        lines.append(
+            f"| {row['control_base']} | {row['control_count']} | {row['bound_mean']:.6f} | "
+            f"[{row['bound_ci_low']:.6f},{row['bound_ci_high']:.6f}] | {row['worst_seed']} | "
+            f"{row['worst_control']} | {row['pass']} |"
+        )
+    state_metric_rows = [
+        row
+        for row in positive_metric_margins
+        if row["control_base"] in {"state_shuffle_shared", "state_shuffle_projection_consistent"}
+    ]
+    if state_metric_rows:
+        lines.extend(
+            [
+                "",
+                "## State Shuffle Metric Diagnostics",
+                "",
+                "| control | metric | margin mean | margin CI | worst seed | worst margin |",
+                "|---|---|---:|---:|---:|---:|",
+            ]
+        )
+        for row in state_metric_rows:
+            lines.append(
+                f"| {row['control_type']} | {row['metric']} | {row['margin_mean']:.6f} | "
+                f"[{row['margin_ci_low']:.6f},{row['margin_ci_high']:.6f}] | "
+                f"{row['worst_seed']} | {row['worst_margin']:.6f} |"
+            )
+    lines.extend(
+        [
+            "",
             "## Alternate Baseline Trusted Scores",
             "",
             "| checkpoint | real MO delta | trusted MO | trusted pass |",
@@ -556,6 +735,7 @@ def write_report(
             f"| alternate baseline verdict | `{run_summary['alternate_baseline_verdict']}` |",
             f"| alternate baseline signals | `{','.join(run_summary['alternate_baseline_signals'])}` |",
             f"| blocking controls | `{','.join(positive_summary['blocking_controls'])}` |",
+            f"| blocking control families | `{','.join(run_summary['blocking_control_families'])}` |",
             "",
             "## Checkpoint Summary",
             "",
@@ -581,6 +761,7 @@ def write_report(
             "",
             "- `D10R_V5_ARTIFACT_GATE_PASS` means the known positive beats artifact/null controls by CI.",
             "- `D10R_V5_ARTIFACT_READOUT_BLOCKED` means raw real signal remains positive but artifact-adjusted trusted MO does not.",
+            "- `D10R_V7_STATE_SHUFFLE_BOUND_BLOCKED` means the only remaining artifact-family blocker is shared state shuffling.",
             "- `D10R_V6_STATE_SHUFFLE_BLOCKED` means fair projection null passed but shared state shuffling can still match or beat the positive.",
             "- `D10R_V6_RANDOM_STATE_BLOCKED` means no-network random-state controls can still match or beat the positive.",
             "- `D10R_V6_STATE_RANDOM_CONTROL_BLOCKED` means state/no-network controls remain the only artifact blockers.",
@@ -675,12 +856,15 @@ def run_d10r(args) -> dict:
                 rows.append(row)
             print(f"D10r control={control_type} seed={eval_seed} done", flush=True)
     margin_rows: list[dict] = []
+    metric_margin_rows: list[dict] = []
+    family_bound_rows: list[dict] = []
     checkpoint_summaries: list[dict] = []
+    expanded_control_labels = [c["label"] for c in expanded_controls]
     for _, label, _ in checkpoints:
         m_rows, summary = summarize_checkpoint(
             label,
             rows,
-            [c["label"] for c in expanded_controls],
+            expanded_control_labels,
             args.bootstrap_samples,
             args.permutation_samples,
             args.alpha,
@@ -689,8 +873,35 @@ def run_d10r(args) -> dict:
             args.min_trusted_mo,
         )
         margin_rows.extend(m_rows)
+        metric_margin_rows.extend(
+            summarize_metric_margins(
+                label,
+                rows,
+                expanded_control_labels,
+                args.bootstrap_samples,
+                args.alpha,
+                args.seed,
+            )
+        )
+        family_bound_rows.extend(
+            summarize_control_family_bounds(
+                label,
+                rows,
+                expanded_control_labels,
+                args.bootstrap_samples,
+                args.alpha,
+                args.seed,
+                args.min_trusted_mo,
+            )
+        )
         checkpoint_summaries.append(summary)
     positive_summary = next(row for row in checkpoint_summaries if row["checkpoint_label"] == args.positive_label)
+    positive_family_bounds = [row for row in family_bound_rows if row["checkpoint_label"] == args.positive_label]
+    blocking_control_families = [
+        row["control_base"]
+        for row in positive_family_bounds
+        if float(row["bound_ci_low"]) <= args.min_trusted_mo
+    ]
     alternate_baseline_signals = [
         row["checkpoint_label"]
         for row in checkpoint_summaries
@@ -700,9 +911,9 @@ def run_d10r(args) -> dict:
     if artifact_gate_pass:
         verdict = "D10R_V5_ARTIFACT_GATE_PASS"
     elif positive_summary["real_mo_delta_ci_low"] > args.min_real_mo:
-        blocking_bases = {control_base_name(name) for name in positive_summary["blocking_controls"]}
+        blocking_bases = set(blocking_control_families)
         if blocking_bases == {"state_shuffle_shared"}:
-            verdict = "D10R_V6_STATE_SHUFFLE_BLOCKED"
+            verdict = "D10R_V7_STATE_SHUFFLE_BOUND_BLOCKED"
         elif blocking_bases == {"no_network_random_state"}:
             verdict = "D10R_V6_RANDOM_STATE_BLOCKED"
         elif blocking_bases and blocking_bases <= {"state_shuffle_shared", "no_network_random_state"}:
@@ -710,7 +921,19 @@ def run_d10r(args) -> dict:
         elif blocking_bases:
             verdict = "D10R_V5_ARTIFACT_READOUT_BLOCKED"
         else:
-            verdict = "D10R_UNDERPOWERED_NEEDS_LONGER_EVAL"
+            # Keep the pre-v7 per-control diagnosis as a fallback when family
+            # bounds pass but an individual Holm/per-control row remains weak.
+            blocking_bases = {control_base_name(name) for name in positive_summary["blocking_controls"]}
+            if blocking_bases == {"state_shuffle_shared"}:
+                verdict = "D10R_V6_STATE_SHUFFLE_BLOCKED"
+            elif blocking_bases == {"no_network_random_state"}:
+                verdict = "D10R_V6_RANDOM_STATE_BLOCKED"
+            elif blocking_bases and blocking_bases <= {"state_shuffle_shared", "no_network_random_state"}:
+                verdict = "D10R_V6_STATE_RANDOM_CONTROL_BLOCKED"
+            elif blocking_bases:
+                verdict = "D10R_V5_ARTIFACT_READOUT_BLOCKED"
+            else:
+                verdict = "D10R_UNDERPOWERED_NEEDS_LONGER_EVAL"
     elif positive_summary["trusted_mo_mean"] > args.min_trusted_mo:
         verdict = "D10R_UNDERPOWERED_NEEDS_LONGER_EVAL"
     else:
@@ -745,6 +968,7 @@ def run_d10r(args) -> dict:
         },
         "roles": roles,
         "checkpoint_summaries": checkpoint_summaries,
+        "blocking_control_families": blocking_control_families,
         "artifact_gate_pass": artifact_gate_pass,
         "d10s_unlocked": artifact_gate_pass,
         "alternate_baseline_verdict": alternate_baseline_verdict,
@@ -793,8 +1017,41 @@ def run_d10r(args) -> dict:
             "pass",
         ],
     )
+    write_csv(
+        out / "d10r_metric_margins.csv",
+        metric_margin_rows,
+        [
+            "checkpoint_label",
+            "control_type",
+            "control_base",
+            "metric",
+            "n",
+            "margin_mean",
+            "margin_ci_low",
+            "margin_ci_high",
+            "worst_seed",
+            "worst_margin",
+        ],
+    )
+    write_csv(
+        out / "d10r_control_family_bounds.csv",
+        family_bound_rows,
+        [
+            "checkpoint_label",
+            "control_base",
+            "control_count",
+            "n",
+            "bound_mean",
+            "bound_ci_low",
+            "bound_ci_high",
+            "worst_seed",
+            "worst_control",
+            "worst_margin",
+            "pass",
+        ],
+    )
     (out / "d10r_run_summary.json").write_text(json.dumps(run_summary, indent=2), encoding="utf-8")
-    write_report(out, run_summary, checkpoint_summaries, margin_rows)
+    write_report(out, run_summary, checkpoint_summaries, margin_rows, metric_margin_rows, family_bound_rows)
     return run_summary
 
 
