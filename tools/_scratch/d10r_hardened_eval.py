@@ -33,7 +33,8 @@ PRIMARY_CONTROLS = [
     "unigram_decoy",
     "projection_shuffle",
     "projection_reinit",
-    "state_shuffle",
+    "random_projection_null",
+    "state_shuffle_shared",
     "no_network_random_state",
     "time_shuffle",
 ]
@@ -43,7 +44,7 @@ STATE_SHUFFLE_CONTROLS = {
     "state_shuffle_projection_consistent",
 }
 DIAGNOSTIC_CONTROLS = {"state_shuffle_projection_consistent"}
-REPEATED_CONTROLS = {*STATE_SHUFFLE_CONTROLS, "no_network_random_state"}
+REPEATED_CONTROLS = {*STATE_SHUFFLE_CONTROLS, "no_network_random_state", "random_projection_null"}
 
 
 def control_base_name(control: str) -> str:
@@ -134,6 +135,7 @@ def control_targets(
         "real",
         "projection_shuffle",
         "projection_reinit",
+        "random_projection_null",
         "state_shuffle",
         "state_shuffle_shared",
         "state_shuffle_projection_consistent",
@@ -176,6 +178,19 @@ def transform_checkpoints(
                 weights = ckpt.projection.weights.copy()
             else:
                 weights = rng.choice(flat, size=ckpt.projection.weights.shape, replace=True).astype(np.int16)
+            projection = gpu_eval.ProjectionArrays(weights, ckpt.projection.input_dim, ckpt.projection.output_classes)
+            out.append(clone_with_projection(ckpt, ckpt.path, projection))
+        return out
+    if control_type == "random_projection_null":
+        rng = np.random.default_rng(seed)
+        out = []
+        for ckpt in checkpoints:
+            weights = rng.integers(
+                -3,
+                4,
+                size=ckpt.projection.weights.shape,
+                dtype=np.int16,
+            )
             projection = gpu_eval.ProjectionArrays(weights, ckpt.projection.input_dim, ckpt.projection.output_classes)
             out.append(clone_with_projection(ckpt, ckpt.path, projection))
         return out
@@ -249,6 +264,8 @@ def evaluate_seed_control(
         score_weights = adjusted_weights
     scores = gpu_eval.projection_scores(outputs, score_weights)
     probs = torch.softmax(scores, dim=-1)
+    entropy = -(probs * torch.log(probs.clamp_min(1e-12))).sum(dim=-1) / math.log(probs.shape[-1])
+    max_prob = probs.max(dim=-1).values
     target_idx = torch.as_tensor(eval_hot[next_ids], dtype=torch.long, device=device)
     cur_idx = torch.as_tensor(eval_hot[cur_ids], dtype=torch.long, device=device)
     preds = scores.argmax(dim=-1)
@@ -270,6 +287,8 @@ def evaluate_seed_control(
         "echo": echo.detach().cpu().tolist(),
         "smooth": smooth.detach().cpu().tolist(),
         "unigram": unigram_score.detach().cpu().tolist(),
+        "entropy": entropy.mean(dim=1).detach().cpu().tolist(),
+        "max_prob": max_prob.mean(dim=1).detach().cpu().tolist(),
     }
 
 
@@ -335,6 +354,8 @@ def summarize_checkpoint(
     permutation_samples: int,
     alpha: float,
     seed: int,
+    min_real_mo: float,
+    min_trusted_mo: float,
 ) -> tuple[list[dict], dict]:
     real_by_seed = {int(r["eval_seed"]): float(r["mo_delta"]) for r in rows if r["checkpoint_label"] == label and r["control_type"] == "real"}
     margin_rows: list[dict] = []
@@ -414,6 +435,9 @@ def summarize_checkpoint(
         "real_mo_delta_mean": real_mean,
         "real_mo_delta_ci_low": real_ci[0],
         "real_mo_delta_ci_high": real_ci[1],
+        "trusted_mo_mean": selectivity_mean,
+        "trusted_mo_ci_low": selectivity_ci[0],
+        "trusted_mo_ci_high": selectivity_ci[1],
         "selectivity_mean": selectivity_mean,
         "selectivity_ci_low": selectivity_ci[0],
         "selectivity_ci_high": selectivity_ci[1],
@@ -424,6 +448,10 @@ def summarize_checkpoint(
         "failed_controls": [r["control_type"] for r in trust_margin_rows if not bool(r["pass"])],
         "diagnostic_controls": [r["control_type"] for r in diagnostic_margin_rows],
     }
+    summary["trusted_mo_pass"] = (
+        summary["real_mo_delta_ci_low"] > min_real_mo
+        and summary["trusted_mo_ci_low"] > min_trusted_mo
+    )
     return margin_rows, summary
 
 
@@ -443,7 +471,7 @@ def write_report(out: Path, run_summary: dict, checkpoint_summaries: list[dict])
         "",
         "## Checkpoint Summary",
         "",
-        "| checkpoint | role | real MO delta | worst selectivity | median selectivity | controls pass | failed controls |",
+        "| checkpoint | role | real MO delta | trusted MO | median selectivity | trusted pass | failed controls |",
         "|---|---|---:|---:|---:|---|---|",
     ]
     roles = run_summary["roles"]
@@ -454,16 +482,18 @@ def write_report(out: Path, run_summary: dict, checkpoint_summaries: list[dict])
         lines.append(
             f"| {label} | {role} | {row['real_mo_delta_mean']:.6f} "
             f"[{row['real_mo_delta_ci_low']:.6f},{row['real_mo_delta_ci_high']:.6f}] | "
-            f"{row['selectivity_mean']:.6f} [{row['selectivity_ci_low']:.6f},{row['selectivity_ci_high']:.6f}] | "
+            f"{row['trusted_mo_mean']:.6f} [{row['trusted_mo_ci_low']:.6f},{row['trusted_mo_ci_high']:.6f}] | "
             f"{row['median_selectivity_mean']:.6f} [{row['median_selectivity_ci_low']:.6f},{row['median_selectivity_ci_high']:.6f}] | "
-            f"{row['all_controls_pass']} | {failed} |"
+            f"{row['trusted_mo_pass']} | {failed} |"
         )
     lines.extend(
         [
             "",
             "## Interpretation",
             "",
-            "- `D10R_TRUST_PASS` means the known positive separates from every control and negatives do not.",
+            "- `D10R_V4_TRUSTED_SCORE_PASS` means the known positive has real signal and beats the worst control by CI, while negatives do not.",
+            "- `D10R_V4_READOUT_BLOCKED` means raw real signal remains positive but control-adjusted trusted MO does not.",
+            "- `D10R_TRUST_PASS` is the older per-control gate name kept for backward compatibility.",
             "- `D10R_V2_PROJECTION_READOUT_BLOCKED` means repeated state/no-network controls can still beat the known positive.",
             "- `D10R_STATE_SHUFFLE_BLOCKER` means the known positive is real but not robust to state-shuffle readout artifacts.",
             "- `D10R_POSITIVE_CONTROL_FAIL` means beta.8/seed2042 does not survive the hardened controls; D10s/H-scaling remain blocked.",
@@ -543,6 +573,8 @@ def run_d10r(args) -> dict:
                     "control_base": control_base,
                     "control_repeat": control["repeat"],
                     "eval_seed": eval_seed,
+                    "entropy_score": float(metrics["entropy"][idx]),
+                    "max_prob_score": float(metrics["max_prob"][idx]),
                     "mo_delta": mo_score_from_delta(delta),
                 }
                 for metric in METRICS:
@@ -561,6 +593,8 @@ def run_d10r(args) -> dict:
             args.permutation_samples,
             args.alpha,
             args.seed,
+            args.min_real_mo,
+            args.min_trusted_mo,
         )
         margin_rows.extend(m_rows)
         checkpoint_summaries.append(summary)
@@ -568,24 +602,18 @@ def run_d10r(args) -> dict:
     negative_passes = [
         row["checkpoint_label"]
         for row in checkpoint_summaries
-        if roles.get(row["checkpoint_label"]) == "negative" and row["all_controls_pass"]
+        if roles.get(row["checkpoint_label"]) == "negative" and row["trusted_mo_pass"]
     ]
-    failed = set(positive_summary["failed_controls"])
-    failed_bases = {control.rsplit("_", 1)[0] if control.rsplit("_", 1)[-1].isdigit() else control for control in failed}
-    if not positive_summary["all_controls_pass"]:
-        failed = set(positive_summary["failed_controls"])
-        if positive_summary["real_mo_delta_mean"] > 0.0 and failed_bases & REPEATED_CONTROLS:
-            verdict = "D10R_V2_PROJECTION_READOUT_BLOCKED"
-        elif positive_summary["real_mo_delta_mean"] > 0.0 and failed == {"state_shuffle"}:
-            verdict = "D10R_STATE_SHUFFLE_BLOCKER"
-        elif positive_summary["selectivity_mean"] > 0:
-            verdict = "D10R_UNDERPOWERED_NEEDS_LONGER_EVAL"
-        else:
-            verdict = "D10R_POSITIVE_CONTROL_FAIL"
-    elif negative_passes:
+    if negative_passes:
         verdict = "D10R_CONTROL_LEAK_FAIL"
+    elif positive_summary["trusted_mo_pass"]:
+        verdict = "D10R_V4_TRUSTED_SCORE_PASS"
+    elif positive_summary["real_mo_delta_ci_low"] > args.min_real_mo:
+        verdict = "D10R_V4_READOUT_BLOCKED"
+    elif positive_summary["trusted_mo_mean"] > args.min_trusted_mo:
+        verdict = "D10R_UNDERPOWERED_NEEDS_LONGER_EVAL"
     else:
-        verdict = "D10R_TRUST_PASS"
+        verdict = "D10R_POSITIVE_CONTROL_FAIL"
     elapsed_s = time.perf_counter() - started
     peak_mb = torch.cuda.max_memory_allocated() / (1024 * 1024) if device.type == "cuda" else 0.0
     run_summary = {
@@ -621,6 +649,8 @@ def run_d10r(args) -> dict:
             "control_base",
             "control_repeat",
             "eval_seed",
+            "entropy_score",
+            "max_prob_score",
             "smooth_score",
             "smooth_delta",
             "accuracy_score",
@@ -682,6 +712,8 @@ def build_arg_parser() -> argparse.ArgumentParser:
     parser.add_argument("--bootstrap-samples", type=int, default=2000)
     parser.add_argument("--permutation-samples", type=int, default=5000)
     parser.add_argument("--alpha", type=float, default=0.05)
+    parser.add_argument("--min-real-mo", type=float, default=0.0)
+    parser.add_argument("--min-trusted-mo", type=float, default=0.0)
     parser.add_argument("--seed", type=int, default=20260430)
     return parser
 
