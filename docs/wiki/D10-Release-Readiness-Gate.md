@@ -17,9 +17,9 @@ Meaning:
 - It is not a release-candidate checkpoint.
 - The beta.8 branch was blocked by state identity.
 - D10u produced a new top_01 state-anchored candidate that passes the same
-  D10r-v8 state-identity gate at bounded confirm budget.
+  D10r-v8 state-identity gate at bounded and 4k confirm budgets.
 - This reopens the release-candidate path, but does not finish it. The current
-  pass is `eval_len=1000` with 4 fresh eval seeds, not a promotion-grade
+  pass is `eval_len=4000` with 4 fresh eval seeds, not a promotion-grade
   16k/30-seed confirm.
 
 ## Evidence Snapshot: beta.8 Blocker
@@ -59,7 +59,7 @@ State-zone diagnostics:
 | similar_projection | 0 | 0.0000000000 | no explanation |
 | projection_consistent | 237 | 0.0000000000 | sanity pass |
 
-## Evidence Snapshot: D10u top_01 Bounded Confirm
+## Evidence Snapshot: D10u top_01 Confirm
 
 D10u focused ladder exported:
 
@@ -67,11 +67,11 @@ D10u focused ladder exported:
 top_01_seed_2042_edge_threshold_coadapted.ckpt
 ```
 
-D10r-v8 bounded confirm:
+D10r-v8 4k confirm:
 
 ```text
-eval_len:        1000
-eval_seeds:      970021..970024
+eval_len:        4000
+eval_seeds:      970031..970034
 control_repeats: 2
 device:          cuda
 verdict:         D10R_V8_STATE_IDENTITY_PASS
@@ -81,13 +81,13 @@ Top_01 margins:
 
 | Metric | Value |
 |---|---:|
-| real MO delta mean | +0.212136 |
-| real MO delta CI low | +0.184054 |
-| trusted MO mean | +0.196925 |
-| trusted MO CI low | +0.170111 |
-| state_shuffle_shared bound CI low | +0.184446 |
-| random_projection_null bound CI low | +0.170111 |
-| no_network_random_state bound CI low | +0.181960 |
+| real MO delta mean | +0.185918 |
+| real MO delta CI low | +0.185742 |
+| trusted MO mean | +0.159960 |
+| trusted MO CI low | +0.131453 |
+| state_shuffle_shared bound CI low | +0.134342 |
+| random_projection_null bound CI low | +0.174151 |
+| no_network_random_state bound CI low | +0.185484 |
 
 Sanity diagnostics:
 
@@ -95,7 +95,8 @@ Sanity diagnostics:
 projection-consistent shuffle: zero drift
 duplicate projection rows:     0
 similar projection rows:       0
-active/high/low row shuffles:  pass
+active/high row shuffles:      pass
+low row shuffle:               weak diagnostic, non-blocking
 ```
 
 ## What Is Blocked
@@ -128,8 +129,7 @@ and more fresh eval seeds.
 Minimum next gates:
 
 ```text
-eval_len=4000 confirm with more fresh seeds
-then eval_len=16000 / 30-seed confirm if 4000 passes
+eval_len=16000 / 30-seed confirm
 ```
 
 ## Global Plan Map
@@ -148,10 +148,10 @@ then eval_len=16000 / 30-seed confirm if 4000 passes
     DONE: top_01 strict scout candidate
 
 [5] D10r-v8 confirm
-    DONE: top_01 bounded state-identity pass
+    DONE: top_01 4k state-identity pass
 
 [6] promotion-grade confirm
-    CURRENT: eval_len=4000/16000, more fresh seeds
+    CURRENT: eval_len=16000, 30 fresh seeds
 
 [7] H512/H8192
     BLOCKED until promotion-grade confirm passes

@@ -39,7 +39,7 @@ not a release candidate.
     state_shuffle_shared can beat the real signal.
 
 [6] The path is not dead
-    D10u top_01 passed a bounded state-identity confirm.
+    D10u top_01 passed bounded and 4k state-identity confirms.
 ```
 
 ## Key Evidence
@@ -86,14 +86,14 @@ seed2042 top_01: strict trusted scout candidate
 seed4042: weak state-anchored signal
 ```
 
-Bounded D10r-v8 confirm on `top_01`:
+D10r-v8 confirm on `top_01`:
 
 ```text
 verdict: D10R_V8_STATE_IDENTITY_PASS
-eval_len: 1000
-eval_seeds: 970021..970024
-trusted_mo_ci_low: +0.170111
-state_shuffle_shared bound CI low: +0.184446
+eval_len: 4000
+eval_seeds: 970031..970034
+trusted_mo_ci_low: +0.131453
+state_shuffle_shared bound CI low: +0.134342
 ```
 
 This reopens the release-candidate path, but does not unlock H512/H8192 yet.
@@ -139,7 +139,7 @@ while passing the D10r-v8 artifact gate?
     DONE: local islands, not universal mountain
 
 [5] state-anchored search
-    DONE: top_01 bounded state-identity pass
+    DONE: top_01 4k state-identity pass
 
 [6] release-ready AI
     BLOCKED until top_01 passes promotion-grade confirm

@@ -220,11 +220,67 @@ Interpretation:
 
 Next gates:
 
-- run a longer D10r-v8 confirm on top_01 at `eval_len=4000` with more fresh
+- run final promotion-grade confirmation at `eval_len=16000` with 30 fresh
   seeds
-- if that passes, run final promotion-grade confirmation at `eval_len=16000`
-  with 30 fresh seeds
 - only after those pass should this become a release-candidate checkpoint
+
+## Longer 4k D10r-v8 Confirm
+
+Output root:
+
+```text
+output/phase_d10u_top01_d10r_confirm_20260430/confirm_4000_4seed
+```
+
+Run shape:
+
+```text
+target: top_01_seed_2042_edge_threshold_coadapted.ckpt
+baseline: seed_2042 D7 H=384 baseline
+eval_len: 4000
+eval_seeds: 970031,970032,970033,970034
+control_repeats: 2
+elapsed: 2456.36s
+```
+
+Verdict:
+
+```text
+D10R_V8_STATE_IDENTITY_PASS
+```
+
+Confirm metrics:
+
+| metric | value |
+|---|---:|
+| real MO delta mean | +0.185918 |
+| real MO delta CI low | +0.185742 |
+| trusted MO mean | +0.159960 |
+| trusted MO CI low | +0.131453 |
+| median selectivity CI low | +0.186294 |
+| state_shuffle_shared bound CI low | +0.134342 |
+| random_projection_null bound CI low | +0.174151 |
+| no_network_random_state bound CI low | +0.185484 |
+
+State-identity diagnostics:
+
+| diagnostic | result |
+|---|---|
+| projection-consistent shuffle | exactly zero drift |
+| duplicate projection rows | 0 rows |
+| similar projection rows | 0 rows |
+| active-row shuffle bound | pass |
+| high-norm row shuffle bound | pass |
+| low-norm row shuffle bound | diagnostic weak / non-blocking |
+
+Interpretation:
+
+- The top_01 candidate survived the longer `eval_len=4000` gate with a large
+  positive artifact-adjusted margin.
+- The main beta.8 blocker, `state_shuffle_shared`, is no longer blocking for
+  this candidate.
+- This is the strongest D10u result so far, but it still has only 4 fresh eval
+  seeds. The release-candidate gate remains a 30-fresh-seed, long-eval confirm.
 
 ## Progress Map
 
@@ -250,10 +306,14 @@ GLOBAL RELEASE-READY AI MAP
     DONE
     result: top_01 passes state identity at eval_len=1000
 
-[6] promotion-grade confirm
-    NEXT
-    goal: eval_len=4000/16000, more fresh seeds
+[6] longer D10r-v8 confirm
+    DONE
+    result: top_01 passes state identity at eval_len=4000
 
-[7] H512/H8192
+[7] promotion-grade confirm
+    NEXT
+    goal: eval_len=16000, 30 fresh seeds
+
+[8] H512/H8192
     BLOCKED until promotion-grade confirm passes
 ```
