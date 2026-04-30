@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
-"""D10s H384 wiring-prior smoke/confirm.
+"""D10s/D10u H384 state-anchored wiring-prior smoke/confirm.
 
-Scratch/prototype only. This tests whether simple edge+threshold priors make
-the beta.8-style signal less seed-lottery dependent. It does not promote or
-release checkpoints.
+Scratch/prototype only. This tests whether simple edge+threshold priors can
+produce candidates that improve the real task while beating D10r-v8 artifact
+controls, especially state_shuffle_shared. It does not promote or release
+checkpoints.
 """
 
 from __future__ import annotations
@@ -40,6 +41,12 @@ STRICT_GATES = {
     "echo_abs": 0.0010,
     "unigram": 0.0,
 }
+DEFAULT_STATE_ANCHOR_CONTROLS = [
+    "random_projection_null",
+    "state_shuffle_shared",
+    "state_shuffle_projection_consistent",
+    "no_network_random_state",
+]
 
 
 def parse_csv(value: str) -> list[str]:
@@ -241,7 +248,7 @@ def make_candidate(
     return candidate
 
 
-def classify_candidate(row: dict) -> tuple[str, int]:
+def classify_candidate(row: dict, selectivity_gate: str) -> tuple[str, int]:
     misses = 0
     near = 0
     if row["smooth_delta"] < STRICT_GATES["smooth"]:
@@ -256,14 +263,23 @@ def classify_candidate(row: dict) -> tuple[str, int]:
     if row["unigram_delta"] < STRICT_GATES["unigram"]:
         misses += 1
         near += int(row["unigram_delta"] >= -0.001)
-    if row["hardened_selectivity"] <= 0:
+    if selectivity_gate == "ci":
+        selectivity_pass = row["hardened_selectivity_ci_low"] > 0.0
+        selectivity_near = row["hardened_selectivity"] > 0.0
+    else:
+        selectivity_pass = row["hardened_selectivity"] > 0.0
+        selectivity_near = selectivity_pass
+    if not selectivity_pass:
         misses += 1
+        near += int(selectivity_near)
     if misses == 0:
         return "STRICT_TRUSTED", misses
-    if misses == 1 and near == 1 and row["hardened_selectivity"] > 0:
+    if misses == 1 and near >= 1 and row["hardened_selectivity"] > 0:
         return "NEAR_TRUSTED", misses
+    if row["mo_delta"] > 0 and selectivity_pass:
+        return "WEAK_STATE_ANCHORED", misses
     if row["mo_delta"] > 0 and row["hardened_selectivity"] > 0:
-        return "WEAK_TRUSTED", misses
+        return "WEAK_SIGNAL", misses
     return "REJECT", misses
 
 
@@ -309,7 +325,14 @@ def evaluate_candidates(seed_label: str, baseline, candidates, args, table, pair
     return rows
 
 
-def summarize_candidates(eval_rows: list[dict], candidate_specs: dict[str, dict], bootstrap_samples: int, alpha: float, seed: int) -> list[dict]:
+def summarize_candidates(
+    eval_rows: list[dict],
+    candidate_specs: dict[str, dict],
+    bootstrap_samples: int,
+    alpha: float,
+    seed: int,
+    selectivity_gate: str,
+) -> list[dict]:
     out = []
     labels = sorted({row["candidate_label"] for row in eval_rows})
     for label in labels:
@@ -317,17 +340,32 @@ def summarize_candidates(eval_rows: list[dict], candidate_specs: dict[str, dict]
         real_rows = [row for row in rows if row["control_type"] == "real"]
         if not real_rows:
             continue
-        controls_by_seed: dict[int, list[float]] = {}
+        controls_by_seed: dict[int, list[tuple[float, str]]] = {}
+        diagnostic_control_count = 0
         for row in rows:
             if row["control_type"] == "real":
                 continue
-            controls_by_seed.setdefault(int(row["eval_seed"]), []).append(float(row["mo_delta"]))
+            if d10r.is_diagnostic_control(str(row["control_type"])):
+                diagnostic_control_count += 1
+                continue
+            controls_by_seed.setdefault(int(row["eval_seed"]), []).append(
+                (float(row["mo_delta"]), str(row["control_type"]))
+            )
         real_by_seed = {int(row["eval_seed"]): float(row["mo_delta"]) for row in real_rows}
-        worst_margins = [
-            real_by_seed[s] - max(vals)
-            for s, vals in controls_by_seed.items()
-            if s in real_by_seed and vals
-        ]
+        worst_records = []
+        for eval_seed, vals in controls_by_seed.items():
+            if eval_seed not in real_by_seed or not vals:
+                continue
+            worst_control_value, worst_control_type = max(vals, key=lambda item: item[0])
+            worst_records.append(
+                {
+                    "eval_seed": eval_seed,
+                    "control_type": worst_control_type,
+                    "margin": real_by_seed[eval_seed] - worst_control_value,
+                }
+            )
+        worst_margins = [float(record["margin"]) for record in worst_records]
+        worst_record = min(worst_records, key=lambda record: float(record["margin"])) if worst_records else None
         summary = {
             **candidate_specs[label],
             "smooth_delta": float(np.mean([float(r["smooth_delta"]) for r in real_rows])),
@@ -336,6 +374,11 @@ def summarize_candidates(eval_rows: list[dict], candidate_specs: dict[str, dict]
             "unigram_delta": float(np.mean([float(r["unigram_delta"]) for r in real_rows])),
             "mo_delta": float(np.mean([float(r["mo_delta"]) for r in real_rows])),
             "hardened_selectivity": float(np.mean(worst_margins)) if worst_margins else 0.0,
+            "artifact_control_count": sum(len(vals) for vals in controls_by_seed.values()),
+            "diagnostic_control_count": diagnostic_control_count,
+            "worst_artifact_control": str(worst_record["control_type"]) if worst_record else "",
+            "worst_artifact_eval_seed": int(worst_record["eval_seed"]) if worst_record else 0,
+            "worst_artifact_margin": float(worst_record["margin"]) if worst_record else 0.0,
         }
         ci = d10r.bootstrap_ci(
             worst_margins,
@@ -345,13 +388,25 @@ def summarize_candidates(eval_rows: list[dict], candidate_specs: dict[str, dict]
         )
         summary["hardened_selectivity_ci_low"] = ci[0]
         summary["hardened_selectivity_ci_high"] = ci[1]
-        candidate_class, misses = classify_candidate(summary)
+        summary["selectivity_gate"] = selectivity_gate
+        summary["state_anchor_pass"] = bool(
+            summary["hardened_selectivity_ci_low"] > 0.0
+            if selectivity_gate == "ci"
+            else summary["hardened_selectivity"] > 0.0
+        )
+        candidate_class, misses = classify_candidate(summary, selectivity_gate)
         summary["candidate_class"] = candidate_class
         summary["gate_misses"] = misses
         out.append(summary)
     out.sort(
         key=lambda row: (
-            {"STRICT_TRUSTED": 0, "NEAR_TRUSTED": 1, "WEAK_TRUSTED": 2, "REJECT": 3}[row["candidate_class"]],
+            {
+                "STRICT_TRUSTED": 0,
+                "NEAR_TRUSTED": 1,
+                "WEAK_STATE_ANCHORED": 2,
+                "WEAK_SIGNAL": 3,
+                "REJECT": 4,
+            }[row["candidate_class"]],
             -row["hardened_selectivity"],
             -row["mo_delta"],
         )
@@ -388,7 +443,14 @@ def run_sweep(args) -> dict:
                 }
             eval_rows.extend(evaluate_candidates(seed_label, baseline, proposals, args, table, pair_ids, hot_to_idx, bigram, unigram, device))
             print(f"D10s seed={seed_label} arm={arm} proposals={len(proposals)} done", flush=True)
-    candidate_rows = summarize_candidates(eval_rows, candidate_specs, args.bootstrap_samples, args.alpha, args.seed)
+    candidate_rows = summarize_candidates(
+        eval_rows,
+        candidate_specs,
+        args.bootstrap_samples,
+        args.alpha,
+        args.seed,
+        args.selectivity_gate,
+    )
     arm_rows = []
     for arm in arms:
         arm_candidates = [row for row in candidate_rows if row["arm"] == arm]
@@ -429,12 +491,40 @@ def run_sweep(args) -> dict:
             "arms": arms,
             "checkpoints": checkpoint_paths,
             "max_charge": args.max_charge,
+            "controls": parse_csv(args.controls),
+            "selectivity_gate": args.selectivity_gate,
         },
         "top_candidates": candidate_rows[:10],
         "arm_summary": arm_rows,
     }
     write_csv(out / "d10s_eval_rows.csv", eval_rows, ["seed_label", "candidate_label", "control_type", "eval_seed", "smooth_delta", "accuracy_delta", "echo_delta", "unigram_delta", "mo_delta"])
-    write_csv(out / "candidate_summary.csv", candidate_rows, ["seed_label", "arm", "proposal_idx", "candidate_label", "candidate_class", "gate_misses", "smooth_delta", "accuracy_delta", "echo_delta", "unigram_delta", "mo_delta", "hardened_selectivity", "hardened_selectivity_ci_low", "hardened_selectivity_ci_high"])
+    write_csv(
+        out / "candidate_summary.csv",
+        candidate_rows,
+        [
+            "seed_label",
+            "arm",
+            "proposal_idx",
+            "candidate_label",
+            "candidate_class",
+            "gate_misses",
+            "state_anchor_pass",
+            "selectivity_gate",
+            "smooth_delta",
+            "accuracy_delta",
+            "echo_delta",
+            "unigram_delta",
+            "mo_delta",
+            "hardened_selectivity",
+            "hardened_selectivity_ci_low",
+            "hardened_selectivity_ci_high",
+            "worst_artifact_control",
+            "worst_artifact_eval_seed",
+            "worst_artifact_margin",
+            "artifact_control_count",
+            "diagnostic_control_count",
+        ],
+    )
     write_csv(out / "arm_summary.csv", arm_rows, ["arm", "count", "strict_count", "near_count", "best_class", "best_selectivity", "best_mo_delta"])
     (out / "run_summary.json").write_text(json.dumps(run_summary, indent=2), encoding="utf-8")
     write_report(out, run_summary)
@@ -443,19 +533,25 @@ def run_sweep(args) -> dict:
 
 def write_report(out: Path, summary: dict) -> None:
     lines = [
-        "# D10s Wiring Prior Sweep Report",
+        "# D10s/D10u State-Anchored Wiring Prior Report",
         "",
         f"Verdict: `{summary['verdict']}`",
         "",
+        "This run treats D10r-v8 artifact controls as part of candidate quality.",
+        "A candidate is not trusted unless it beats the worst non-diagnostic",
+        "artifact control, including `state_shuffle_shared`.",
+        "",
         "## Top Candidates",
         "",
-        "| seed | arm | proposal | class | selectivity | mo_delta |",
-        "|---|---|---:|---|---:|---:|",
+        "| seed | arm | proposal | class | anchor_pass | selectivity | ci_low | worst_control | mo_delta |",
+        "|---|---|---:|---|---|---:|---:|---|---:|",
     ]
     for row in summary["top_candidates"][:10]:
         lines.append(
             f"| {row['seed_label']} | {row['arm']} | {row['proposal_idx']} | {row['candidate_class']} | "
-            f"{row['hardened_selectivity']:.6f} | {row['mo_delta']:.6f} |"
+            f"{row['state_anchor_pass']} | {row['hardened_selectivity']:.6f} | "
+            f"{row['hardened_selectivity_ci_low']:.6f} | {row['worst_artifact_control']} | "
+            f"{row['mo_delta']:.6f} |"
         )
     lines.extend(
         [
@@ -463,10 +559,10 @@ def write_report(out: Path, summary: dict) -> None:
             "## Progress Map",
             "",
             "```text",
-            "[4] D10r-v2 evaluator trust: required before D10s evidence is actionable",
-            "[5] D10s wiring-prior sweep: CURRENT",
-            "    |-- non-seed2042 trusted signal -> H512 pilot can be planned",
-            "    '-- no trusted signal -> redesign wiring priors, no H512 yet",
+            "[4] D10r-v8 state identity gate: beta.8 failed",
+            "[5] State-anchored wiring-prior search: CURRENT",
+            "    |-- trusted non-seed2042 signal -> D10r confirm, then H512 can be planned",
+            "    '-- no trusted signal -> redesign projection/readout or training objective",
             "```",
         ]
     )
@@ -496,8 +592,9 @@ def build_arg_parser() -> argparse.ArgumentParser:
     parser.add_argument("--arms", default=",".join(ARMS))
     parser.add_argument("--eval-len", type=int, default=1000)
     parser.add_argument("--eval-seeds", default="970001,970002,970003,970004,970005,970006,970007,970008")
-    parser.add_argument("--controls", default="random_label,unigram_decoy,state_shuffle,no_network_random_state")
+    parser.add_argument("--controls", default=",".join(DEFAULT_STATE_ANCHOR_CONTROLS))
     parser.add_argument("--control-repeats", type=int, default=2)
+    parser.add_argument("--selectivity-gate", choices=["mean", "ci"], default="ci")
     parser.add_argument("--proposals-per-arm", type=int, default=32)
     parser.add_argument("--edge-swaps", type=int, default=24)
     parser.add_argument("--threshold-mutations", type=int, default=24)
