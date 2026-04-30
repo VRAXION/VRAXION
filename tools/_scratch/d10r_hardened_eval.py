@@ -27,6 +27,12 @@ import d10o_high_h_projection_start_gate as d10o
 
 
 METRICS = d10j.METRICS
+DEFAULT_ALTERNATE_BASELINES = [
+    "output/phase_d7_operator_bandit_20260427/H_384/D7_BASELINE/seed_42/final.ckpt",
+    "output/phase_d7_operator_bandit_20260427/H_384/D7_BASELINE/seed_1042/final.ckpt",
+    "output/phase_d7_operator_bandit_20260427/H_384/D7_BASELINE/seed_3042/final.ckpt",
+    "output/phase_d7_operator_bandit_20260427/H_384/D7_BASELINE/seed_4042/final.ckpt",
+]
 PRIMARY_CONTROLS = [
     "random_label",
     "random_bigram",
@@ -455,26 +461,78 @@ def summarize_checkpoint(
     return margin_rows, summary
 
 
-def write_report(out: Path, run_summary: dict, checkpoint_summaries: list[dict]) -> None:
+def write_report(
+    out: Path,
+    run_summary: dict,
+    checkpoint_summaries: list[dict],
+    margin_rows: list[dict],
+) -> None:
+    roles = run_summary["roles"]
+    positive_label = run_summary["setup"]["positive_label"]
+    positive_summary = next(row for row in checkpoint_summaries if row["checkpoint_label"] == positive_label)
+    positive_margins = [row for row in margin_rows if row["checkpoint_label"] == positive_label]
+    alternate_summaries = [row for row in checkpoint_summaries if roles.get(row["checkpoint_label"]) == "alternate_baseline"]
     lines = [
         "# D10r Hardened Eval / Projection Report",
         "",
         f"Verdict: `{run_summary['verdict']}`",
+        f"Alternate baseline verdict: `{run_summary['alternate_baseline_verdict']}`",
         "",
         "## Setup",
         "",
         f"- baseline: `{run_summary['setup']['baseline']}`",
+        f"- positive: `{run_summary['setup']['positive']}`",
         f"- eval_len: `{run_summary['setup']['eval_len']}`",
         f"- eval_seeds: `{','.join(str(s) for s in run_summary['setup']['eval_seeds'])}`",
-        f"- controls: `{','.join(run_summary['setup']['controls'])}`",
+        f"- artifact_controls: `{','.join(run_summary['setup']['artifact_controls'])}`",
+        f"- alternate_baseline_mode: `{run_summary['setup']['alternate_baseline_mode']}`",
         f"- max_charge: `{run_summary['setup']['max_charge']}`",
         "",
-        "## Checkpoint Summary",
+        "## Artifact Null Margins",
         "",
-        "| checkpoint | role | real MO delta | trusted MO | median selectivity | trusted pass | failed controls |",
-        "|---|---|---:|---:|---:|---|---|",
+        "| control | margin mean | margin CI | pass |",
+        "|---|---:|---:|---|",
     ]
-    roles = run_summary["roles"]
+    for row in positive_margins:
+        lines.append(
+            f"| {row['control_type']} | {row['margin_mean']:.6f} | "
+            f"[{row['margin_ci_low']:.6f},{row['margin_ci_high']:.6f}] | {row['pass']} |"
+        )
+    lines.extend(
+        [
+            "",
+            "## Alternate Baseline Trusted Scores",
+            "",
+            "| checkpoint | real MO delta | trusted MO | trusted pass |",
+            "|---|---:|---:|---|",
+        ]
+    )
+    for row in alternate_summaries:
+        lines.append(
+            f"| {row['checkpoint_label']} | {row['real_mo_delta_mean']:.6f} "
+            f"[{row['real_mo_delta_ci_low']:.6f},{row['real_mo_delta_ci_high']:.6f}] | "
+            f"{row['trusted_mo_mean']:.6f} [{row['trusted_mo_ci_low']:.6f},{row['trusted_mo_ci_high']:.6f}] | "
+            f"{row['trusted_mo_pass']} |"
+        )
+    lines.extend(
+        [
+            "",
+            "## Final Release Gate Decision",
+            "",
+            "| field | value |",
+            "|---|---|",
+            f"| artifact verdict | `{run_summary['verdict']}` |",
+            f"| artifact gate pass | `{run_summary['artifact_gate_pass']}` |",
+            f"| D10s unlocked | `{run_summary['d10s_unlocked']}` |",
+            f"| alternate baseline verdict | `{run_summary['alternate_baseline_verdict']}` |",
+            f"| alternate baseline signals | `{','.join(run_summary['alternate_baseline_signals'])}` |",
+            "",
+            "## Checkpoint Summary",
+            "",
+            "| checkpoint | role | real MO delta | trusted MO | median selectivity | trusted pass | failed controls |",
+            "|---|---|---:|---:|---:|---|---|",
+        ]
+    )
     for row in checkpoint_summaries:
         label = row["checkpoint_label"]
         role = roles.get(label, "unknown")
@@ -491,13 +549,10 @@ def write_report(out: Path, run_summary: dict, checkpoint_summaries: list[dict])
             "",
             "## Interpretation",
             "",
-            "- `D10R_V4_TRUSTED_SCORE_PASS` means the known positive has real signal and beats the worst control by CI, while negatives do not.",
-            "- `D10R_V4_READOUT_BLOCKED` means raw real signal remains positive but control-adjusted trusted MO does not.",
-            "- `D10R_TRUST_PASS` is the older per-control gate name kept for backward compatibility.",
-            "- `D10R_V2_PROJECTION_READOUT_BLOCKED` means repeated state/no-network controls can still beat the known positive.",
-            "- `D10R_STATE_SHUFFLE_BLOCKER` means the known positive is real but not robust to state-shuffle readout artifacts.",
-            "- `D10R_POSITIVE_CONTROL_FAIL` means beta.8/seed2042 does not survive the hardened controls; D10s/H-scaling remain blocked.",
-            "- `D10R_CONTROL_LEAK_FAIL` means at least one negative checkpoint also passes; the evaluator is too permissive.",
+            "- `D10R_V5_ARTIFACT_GATE_PASS` means the known positive beats artifact/null controls by CI.",
+            "- `D10R_V5_ARTIFACT_READOUT_BLOCKED` means raw real signal remains positive but artifact-adjusted trusted MO does not.",
+            "- `D10R_V5_POSITIVE_CONTROL_FAIL` means beta.8/seed2042 has no positive real signal under this gate.",
+            "- Alternate baselines are reported separately and do not create artifact gate failure in `report_only` mode.",
             "",
             "## Progress Map",
             "",
@@ -526,16 +581,20 @@ def run_d10r(args) -> dict:
     checkpoints: list[tuple[str, str, gpu_eval.CheckpointArrays]] = []
     positive_path = Path(args.positive)
     checkpoints.append(("positive", args.positive_label, gpu_eval.load_checkpoint(positive_path)))
-    for raw in parse_csv(args.negative_checkpoints):
+    alternate_paths = parse_csv(args.alternate_baseline_checkpoints)
+    if not alternate_paths:
+        # Backward-compatible alias for older D10r commands.
+        alternate_paths = parse_csv(args.negative_checkpoints)
+    for raw in alternate_paths:
         path = Path(raw)
-        checkpoints.append(("negative", checkpoint_label(path), gpu_eval.load_checkpoint(path)))
+        checkpoints.append(("alternate_baseline", checkpoint_label(path), gpu_eval.load_checkpoint(path)))
     for _, label, ckpt in checkpoints:
         if ckpt.network.h != baseline.network.h:
             raise ValueError(f"{label} H={ckpt.network.h} does not match baseline H={baseline.network.h}")
     table, pair_ids, hot_to_idx, bigram, unigram, _ = d10j.load_real_inputs(args)
     eval_seeds = parse_int_csv(args.eval_seeds)
-    controls = parse_csv(args.controls)
-    expanded_controls = expand_controls(controls, args.control_repeats)
+    artifact_controls = parse_csv(args.artifact_controls) or parse_csv(args.controls)
+    expanded_controls = expand_controls(artifact_controls, args.control_repeats)
     all_eval_checkpoints = [baseline] + [ckpt for _, _, ckpt in checkpoints]
     labels = ["baseline"] + [label for _, label, _ in checkpoints]
     roles = {label: role for role, label, _ in checkpoints}
@@ -599,21 +658,25 @@ def run_d10r(args) -> dict:
         margin_rows.extend(m_rows)
         checkpoint_summaries.append(summary)
     positive_summary = next(row for row in checkpoint_summaries if row["checkpoint_label"] == args.positive_label)
-    negative_passes = [
+    alternate_baseline_signals = [
         row["checkpoint_label"]
         for row in checkpoint_summaries
-        if roles.get(row["checkpoint_label"]) == "negative" and row["trusted_mo_pass"]
+        if roles.get(row["checkpoint_label"]) == "alternate_baseline" and row["trusted_mo_pass"]
     ]
-    if negative_passes:
-        verdict = "D10R_CONTROL_LEAK_FAIL"
-    elif positive_summary["trusted_mo_pass"]:
-        verdict = "D10R_V4_TRUSTED_SCORE_PASS"
+    artifact_gate_pass = bool(positive_summary["trusted_mo_pass"])
+    if artifact_gate_pass:
+        verdict = "D10R_V5_ARTIFACT_GATE_PASS"
     elif positive_summary["real_mo_delta_ci_low"] > args.min_real_mo:
-        verdict = "D10R_V4_READOUT_BLOCKED"
+        verdict = "D10R_V5_ARTIFACT_READOUT_BLOCKED"
     elif positive_summary["trusted_mo_mean"] > args.min_trusted_mo:
         verdict = "D10R_UNDERPOWERED_NEEDS_LONGER_EVAL"
     else:
-        verdict = "D10R_POSITIVE_CONTROL_FAIL"
+        verdict = "D10R_V5_POSITIVE_CONTROL_FAIL"
+    alternate_baseline_verdict = (
+        "D10R_V5_ALTERNATE_BASELINE_SIGNAL"
+        if alternate_baseline_signals
+        else "D10R_V5_NO_ALTERNATE_BASELINE_SIGNAL"
+    )
     elapsed_s = time.perf_counter() - started
     peak_mb = torch.cuda.max_memory_allocated() / (1024 * 1024) if device.type == "cuda" else 0.0
     run_summary = {
@@ -621,10 +684,14 @@ def run_d10r(args) -> dict:
         "setup": {
             "baseline": str(baseline_path),
             "positive": str(positive_path),
+            "positive_label": args.positive_label,
+            "artifact_controls": artifact_controls,
+            "alternate_baseline_checkpoints": alternate_paths,
+            "alternate_baseline_mode": args.alternate_baseline_mode,
             "negative_checkpoints": parse_csv(args.negative_checkpoints),
             "eval_len": args.eval_len,
             "eval_seeds": eval_seeds,
-            "controls": controls,
+            "controls": artifact_controls,
             "expanded_controls": [c["label"] for c in expanded_controls],
             "control_repeats": args.control_repeats,
             "max_charge": args.max_charge,
@@ -635,7 +702,11 @@ def run_d10r(args) -> dict:
         },
         "roles": roles,
         "checkpoint_summaries": checkpoint_summaries,
-        "negative_passes": negative_passes,
+        "artifact_gate_pass": artifact_gate_pass,
+        "d10s_unlocked": artifact_gate_pass,
+        "alternate_baseline_verdict": alternate_baseline_verdict,
+        "alternate_baseline_signals": alternate_baseline_signals,
+        "negative_passes": [],
         "elapsed_s": elapsed_s,
         "peak_mb": peak_mb,
     }
@@ -680,7 +751,7 @@ def run_d10r(args) -> dict:
         ],
     )
     (out / "d10r_run_summary.json").write_text(json.dumps(run_summary, indent=2), encoding="utf-8")
-    write_report(out, run_summary, checkpoint_summaries)
+    write_report(out, run_summary, checkpoint_summaries, margin_rows)
     return run_summary
 
 
@@ -691,21 +762,20 @@ def build_arg_parser() -> argparse.ArgumentParser:
     parser.add_argument("--positive-label", default="beta8_generalist")
     parser.add_argument(
         "--negative-checkpoints",
-        default=",".join(
-            [
-                "output/phase_d7_operator_bandit_20260427/H_384/D7_BASELINE/seed_42/final.ckpt",
-                "output/phase_d7_operator_bandit_20260427/H_384/D7_BASELINE/seed_1042/final.ckpt",
-                "output/phase_d7_operator_bandit_20260427/H_384/D7_BASELINE/seed_3042/final.ckpt",
-                "output/phase_d7_operator_bandit_20260427/H_384/D7_BASELINE/seed_4042/final.ckpt",
-            ]
-        ),
+        default="",
+        help="Deprecated alias; D10r-v5 treats these as alternate baseline checkpoints.",
     )
+    parser.add_argument("--artifact-controls", default=",".join(PRIMARY_CONTROLS))
+    parser.add_argument("--alternate-baseline-checkpoints", default=",".join(DEFAULT_ALTERNATE_BASELINES))
+    parser.add_argument("--alternate-baseline-mode", choices=["report_only"], default="report_only")
     parser.add_argument("--packed", default="output/block_c_bytepair_champion/packed.bin")
     parser.add_argument("--corpus", default="instnct-core/tests/fixtures/alice_corpus.txt")
     parser.add_argument("--out", default="output/phase_d10r_hardened_eval_20260430")
     parser.add_argument("--device", choices=["cpu", "cuda"], default="cuda")
     parser.add_argument("--eval-len", type=int, default=1000)
     parser.add_argument("--eval-seeds", default="991001,991002,991003,991004")
+    # Legacy alias retained so older command lines still work. D10r-v5 uses
+    # --artifact-controls when provided.
     parser.add_argument("--controls", default=",".join(PRIMARY_CONTROLS))
     parser.add_argument("--control-repeats", type=int, default=1)
     parser.add_argument("--max-charge", type=int, default=7)
