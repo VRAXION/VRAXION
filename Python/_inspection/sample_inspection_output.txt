@@ -1,0 +1,81 @@
+======================================================================
+VRAXION beta.8 checkpoint inspection
+======================================================================
+
+File      : S:\Git\VRAXION\output\releases\v5.0.0-beta.8\seed2042_improved_generalist_v1.ckpt
+File size : 259,981 bytes (253.9 KB)
+
+First 256 bytes (hex):
+  0000: 01 71 87 02 00 00 00 00 00 01 80 01 00 00 00 00  .q..............
+  0010: 00 00 9c 27 00 00 00 00 00 00 6b 00 00 00 00 00  ...'......k.....
+  0020: 00 00 99 00 00 00 00 00 00 00 3b 01 00 00 00 00  ..........;.....
+  0030: 00 00 23 00 00 00 00 00 00 00 bb 00 00 00 00 00  ..#.............
+  0040: 00 00 ea 00 00 00 00 00 00 00 42 00 00 00 00 00  ..........B.....
+  0050: 00 00 bf 00 00 00 00 00 00 00 e2 00 00 00 00 00  ................
+  0060: 00 00 a1 00 00 00 00 00 00 00 a1 00 00 00 00 00  ................
+  0070: 00 00 e5 00 00 00 00 00 00 00 45 00 00 00 00 00  ..........E.....
+  0080: 00 00 a5 00 00 00 00 00 00 00 d9 00 00 00 00 00  ................
+  0090: 00 00 11 00 00 00 00 00 00 00 94 00 00 00 00 00  ................
+  00a0: 00 00 d5 00 00 00 00 00 00 00 43 00 00 00 00 00  ..........C.....
+  00b0: 00 00 99 00 00 00 00 00 00 00 72 01 00 00 00 00  ..........r.....
+  00c0: 00 00 6a 00 00 00 00 00 00 00 b9 00 00 00 00 00  ..j.............
+  00d0: 00 00 c1 00 00 00 00 00 00 00 0a 00 00 00 00 00  ................
+  00e0: 00 00 ad 00 00 00 00 00 00 00 e8 00 00 00 00 00  ................
+  00f0: 00 00 15 00 00 00 00 00 00 00 bc 00 00 00 00 00  ................
+
+SHA256 sidecar: S:\Git\VRAXION\output\releases\v5.0.0-beta.8\seed2042_improved_generalist_v1.sha256
+  Expected  : d63200504c5b4a6ea2134fd26e3e3d7cb75ff05884236de2cc6e206bb4ba8d54
+  Computed  : d63200504c5b4a6ea2134fd26e3e3d7cb75ff05884236de2cc6e206bb4ba8d54
+  Result    : MATCH
+
+Format identification:
+  No magic number -- format starts directly with bincode payload
+  First byte (outer CheckpointDisk.version) : 1
+  Serializer : bincode 1.3 (little-endian, u64 length prefixes)
+
+Parsing outer CheckpointDisk ...
+  outer version              : 1
+  network_bytes blob offset  : 1 (size: 165,745 B)
+  projection_bytes blob off  : 165754 (size: 94,113 B)
+  unconsumed outer bytes     : 0
+
+CheckpointMeta:
+  step     : 24
+  accuracy : 0.048875  (4.888%)
+  label    : 'D9.2a mo rank=1 class=FULL_GENERALIST smooth_delta=0.016599 unigram_delta=0.004900'
+
+Parsing inner NetworkDiskV1 (network_bytes) ...
+  inner version    : 1
+  neuron_count     : 384
+  edge_count       : 10,140
+  sources (first 5): [107, 153, 315, 35, 187]
+  targets (first 5): [153, 206, 206, 187, 234]
+  threshold range  : (0, 15)  (valid 0..=15)
+  channel set      : [1, 2, 3, 4, 5, 6, 7, 8]  (valid 1..=8)
+  polarity set     : [-1, 1]  (valid +/-1)
+  threshold_len ok : True
+  channel_len ok   : True
+  polarity_len ok  : True
+  edges equal len  : True
+  unconsumed bytes : 0
+
+Parsing inner ProjectionDisk (projection_bytes) ...
+  input_dim         : 237
+  output_classes    : 397
+  weight_count      : 94,089
+  expected_weights  : 94,089
+  weight_count_ok   : True
+  weight range      : [-127, 127]  (valid -127..=127)
+  nonzero weights   : 93,742 / 94,089  (99.6%)
+  unconsumed bytes  : 0
+
+Section map (byte offsets in .ckpt):
+  [0x000000]         outer.version (1 byte)
+  [0x000001 - 0x028779]  network_bytes blob (8-byte len prefix + 165,745 B payload)
+  [0x02877a - 0x03f722]  projection_bytes blob (8-byte len prefix + 94,113 B payload)
+  [0x03f723 - EOF]   CheckpointMeta (step + accuracy + label)
+
+Parse integrity : PASS
+SHA256 integrity: PASS
+
+Done.
