@@ -20,6 +20,8 @@
 
 - [Rust Implementation Surface](v5-Rust-Port-Benchmarks)
 - [D9 Latent Genome Compiler](D9-Latent-Genome-Compiler)
+- [D10 HDS Basin & State Identity Finding](D10-HDS-Basin-State-Identity-Finding)
+- [D10 Release Readiness Gate](D10-Release-Readiness-Gate)
 
 ## Public Links
 

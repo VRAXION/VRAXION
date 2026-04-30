@@ -20,6 +20,22 @@ Vraxion exists to advance machine consciousness as an engineering reality. In pu
 
 This page is the mission-first technical front door. Use [Pages](https://vraxion.github.io/VRAXION/) for the polished front door — the Blocks ladder ([A Byte Unit](https://vraxion.github.io/VRAXION/blocks/a-byte-unit.html) → [E Brain](https://vraxion.github.io/VRAXION/blocks/e-brain.html)) plus a Legacy detail view. Use the repo [README.md](https://github.com/VRAXION/VRAXION/blob/main/README.md) for the code-facing entry, and [Research Process & Archive](Timeline-Archive) for protocol, chronology, and proof trail.
 
+## Current D10 Finding
+
+As of 2026-04-30, the HDS basin mapping side quest is closed. The H384 D9/D10
+landscape contains real local signal, but not a broad universal release-ready
+basin. The beta.8 `seed2042_improved_generalist_v1` checkpoint remains a real
+research finding explained by edge + threshold co-adaptation, but D10r-v8
+blocked its release path because `state_shuffle_shared` can beat the real
+signal.
+
+The current path is **D10u state-anchored candidate search**: keep the useful
+edge+threshold signal, but require candidates to beat artifact controls during
+search. A short D10u scout found weak state-anchored signal on seed4042, but no
+near/strict trusted release candidate yet. See [D10 HDS Basin & State Identity
+Finding](D10-HDS-Basin-State-Identity-Finding) and [D10 Release Readiness
+Gate](D10-Release-Readiness-Gate).
+
 ## At a Glance
 
 - **Architecture line:** `INSTNCT`

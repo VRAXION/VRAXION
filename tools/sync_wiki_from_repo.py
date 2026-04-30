@@ -28,6 +28,8 @@ FILES = [
     "Structured-Chaos-Theory.md",
     "v5-Rust-Port-Benchmarks.md",
     "D9-Latent-Genome-Compiler.md",
+    "D10-HDS-Basin-State-Identity-Finding.md",
+    "D10-Release-Readiness-Gate.md",
     "_Sidebar.md",
     "_Footer.md",
     "pipeline-architecture.svg",
