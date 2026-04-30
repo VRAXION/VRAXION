@@ -16,7 +16,7 @@ use std::env;
 use std::fs::{create_dir_all, File};
 use std::io::{BufWriter, Write};
 use std::path::PathBuf;
-use std::time::Instant;
+use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
 const MAX_CHARGE: i32 = 7;
 const DEFAULT_EVAL_LEN: usize = 1_000;
@@ -126,6 +126,159 @@ struct Cli {
     packed: PathBuf,
     corpus: PathBuf,
     input_scatter: bool,
+}
+
+struct RunHeartbeat {
+    status_path: PathBuf,
+    events_path: PathBuf,
+    started: Instant,
+    last_write: Instant,
+    interval: Duration,
+    mode: String,
+    h: usize,
+    pid: u32,
+}
+
+impl RunHeartbeat {
+    fn new(cli: &Cli) -> Self {
+        let interval_s = env::var("VRX_HEARTBEAT_SECONDS")
+            .ok()
+            .and_then(|value| value.parse::<u64>().ok())
+            .filter(|value| *value > 0)
+            .unwrap_or(60);
+        let mut heartbeat = Self {
+            status_path: cli.out.join("run_status.json"),
+            events_path: cli.out.join("run_events.jsonl"),
+            started: Instant::now(),
+            last_write: Instant::now() - Duration::from_secs(interval_s),
+            interval: Duration::from_secs(interval_s),
+            mode: cli.mode.clone(),
+            h: cli.h,
+            pid: std::process::id(),
+        };
+        heartbeat.force_tick("RUNNING", "startup", 0, None, "run initialized");
+        heartbeat
+    }
+
+    fn maybe_tick(
+        &mut self,
+        state: &str,
+        stage: &str,
+        completed_units: usize,
+        total_units: Option<usize>,
+        message: &str,
+    ) {
+        if self.last_write.elapsed() >= self.interval {
+            self.force_tick(state, stage, completed_units, total_units, message);
+        }
+    }
+
+    fn force_tick(
+        &mut self,
+        state: &str,
+        stage: &str,
+        completed_units: usize,
+        total_units: Option<usize>,
+        message: &str,
+    ) {
+        self.last_write = Instant::now();
+        let elapsed_s = self.started.elapsed().as_secs_f64();
+        let progress_pct = total_units
+            .filter(|total| *total > 0)
+            .map(|total| completed_units as f64 * 100.0 / total as f64);
+        let eta_s = total_units.and_then(|total| {
+            if completed_units == 0 || total == 0 || completed_units >= total {
+                None
+            } else {
+                let rate = completed_units as f64 / elapsed_s.max(0.001);
+                Some((total - completed_units) as f64 / rate.max(0.000_001))
+            }
+        });
+        let payload = serde_json::json!({
+            "tool": "d9_direct_landscape",
+            "pid": self.pid,
+            "state": state,
+            "mode": self.mode,
+            "h": self.h,
+            "stage": stage,
+            "message": message,
+            "elapsed_s": elapsed_s,
+            "heartbeat_interval_s": self.interval.as_secs(),
+            "last_update_epoch_s": unix_seconds(),
+            "progress": {
+                "completed_units": completed_units,
+                "total_units": total_units,
+                "progress_pct": progress_pct,
+                "eta_s": eta_s,
+            },
+        });
+        std::fs::write(
+            &self.status_path,
+            serde_json::to_string_pretty(&payload).expect("heartbeat json"),
+        )
+        .expect("failed to write run_status.json");
+        let mut events = std::fs::OpenOptions::new()
+            .create(true)
+            .append(true)
+            .open(&self.events_path)
+            .expect("failed to open run_events.jsonl");
+        writeln!(
+            events,
+            "{}",
+            serde_json::to_string(&payload).expect("heartbeat event json")
+        )
+        .expect("failed to append run_events.jsonl");
+        println!(
+            "[heartbeat] state={} mode={} stage={} progress={}/{} pct={} eta_s={} elapsed_s={:.1} msg={}",
+            state,
+            self.mode,
+            stage,
+            completed_units,
+            total_units
+                .map(|total| total.to_string())
+                .unwrap_or_else(|| "?".to_string()),
+            progress_pct
+                .map(|pct| format!("{pct:.1}"))
+                .unwrap_or_else(|| "?".to_string()),
+            eta_s
+                .map(|eta| format!("{eta:.0}"))
+                .unwrap_or_else(|| "?".to_string()),
+            elapsed_s,
+            message
+        );
+    }
+
+    fn finish(&mut self, stage: &str, completed_units: usize, total_units: Option<usize>) {
+        self.force_tick("COMPLETED", stage, completed_units, total_units, "run completed");
+    }
+}
+
+fn unix_seconds() -> u64 {
+    SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .expect("system time before unix epoch")
+        .as_secs()
+}
+
+fn estimated_total_units(cli: &Cli) -> Option<usize> {
+    match cli.mode.as_str() {
+        "seed-replication-ladder" => Some(cli.checkpoints.len() * cli.mo_climbers * cli.mo_steps),
+        "multi-objective-climb" => Some(cli.mo_climbers * cli.mo_steps),
+        "repair-scan" => Some(cli.radii.len() * cli.mutation_types.len() * cli.repair_samples_per_bucket),
+        "paratrooper-climb" => {
+            let tile_count = cli
+                .target_tiles
+                .as_ref()
+                .map(|tiles| tiles.len())
+                .unwrap_or(cli.lat_bins * cli.lon_bins);
+            Some(tile_count * cli.climbers_per_tile * cli.climb_steps)
+        }
+        "planet-scout" | "homogeneous" => Some(cli.lat_bins * cli.lon_bins * cli.samples_per_tile),
+        "fail-fast" | "medium" | "full" | "staged" => {
+            Some(cli.checkpoints.len() * cli.radii.len() * cli.mutation_types.len() * cli.samples_per_type)
+        }
+        _ => None,
+    }
 }
 
 #[derive(Serialize)]
@@ -2922,6 +3075,7 @@ fn run_seed_replication_ladder(
     bigram: &[Vec<f64>],
     unigram: &[f64],
     init: &InitConfig,
+    heartbeat: &mut RunHeartbeat,
 ) {
     assert!(
         cli.mutation_types
@@ -2942,6 +3096,16 @@ fn run_seed_replication_ladder(
         "seed_label,checkpoint,climber_id,step_index,proposal_seed,radius,mutation_type,edge_edits,threshold_edits,direct_genome_distance,edges,smooth_score,smooth_delta,accuracy_score,accuracy_delta,echo_score,echo_delta,unigram_score,unigram_delta,mo_score,ladder_score,gate_distance,gate_misses,replication_class,accepted,accept_reason"
     )
     .expect("failed to write replication_paths header");
+
+    let total_units = estimated_total_units(cli).unwrap_or(0);
+    let mut completed_units = 0usize;
+    heartbeat.force_tick(
+        "RUNNING",
+        "seed-replication-ladder",
+        completed_units,
+        Some(total_units),
+        "starting D10b seed replication ladder",
+    );
 
     let mut candidates: Vec<ReplicationCandidate> = Vec::new();
     for (checkpoint_idx, checkpoint) in cli.checkpoints.iter().enumerate() {
@@ -2979,6 +3143,13 @@ fn run_seed_replication_ladder(
             cli.mo_steps,
             cli.eval_len,
             cli.mo_eval_seeds.len()
+        );
+        heartbeat.force_tick(
+            "RUNNING",
+            "seed-replication-ladder",
+            completed_units,
+            Some(total_units),
+            &format!("started seed={seed_label} checkpoint={}", checkpoint.display()),
         );
 
         for climber_id in 0..cli.mo_climbers {
@@ -3107,10 +3278,33 @@ fn run_seed_replication_ladder(
                     deltas.unigram,
                     eval_start.elapsed().as_secs_f64() * 1000.0
                 );
+                completed_units += 1;
+                heartbeat.maybe_tick(
+                    "RUNNING",
+                    "seed-replication-ladder",
+                    completed_units,
+                    Some(total_units),
+                    &format!(
+                        "seed={seed_label} climber={} step={}/{} class={} accepted={} gate_distance={:.3}",
+                        climber_id,
+                        step_index + 1,
+                        cli.mo_steps,
+                        class_name,
+                        accepted,
+                        distance
+                    ),
+                );
             }
         }
     }
     writer.flush().expect("failed to flush replication_paths");
+    heartbeat.force_tick(
+        "RUNNING",
+        "seed-replication-ladder-finalize",
+        completed_units,
+        Some(total_units),
+        "writing replication candidates and summary",
+    );
 
     candidates.sort_by(|a, b| {
         replication_class_rank(b.replication_class)
@@ -3351,6 +3545,11 @@ See `replication_paths.csv`, `replication_candidates.csv`, and `universality_mat
         report,
     )
     .expect("failed to write D10B report");
+    heartbeat.finish(
+        "seed-replication-ladder",
+        completed_units,
+        Some(total_units),
+    );
 }
 
 fn default_d9_parent_tiles() -> Vec<(usize, usize)> {
@@ -4995,6 +5194,8 @@ fn run_task_universality_scout(
 fn main() {
     let cli = parse_args();
     create_dir_all(&cli.out).expect("failed to create output directory");
+    let mut heartbeat = RunHeartbeat::new(&cli);
+    let heartbeat_total = estimated_total_units(&cli);
 
     let table = VcbpTable::from_packed(&cli.packed).expect("failed to load packed VCBP table");
     let corpus = std::fs::read(&cli.corpus).expect("failed to read corpus");
@@ -5206,6 +5407,7 @@ fn main() {
                 &bigram,
                 &unigram,
                 &init,
+                &mut heartbeat,
             );
             break;
         }
@@ -5720,6 +5922,19 @@ fn main() {
                         cli.samples_per_type,
                         global_sample_id
                     );
+                    heartbeat.maybe_tick(
+                        "RUNNING",
+                        "direct-landscape-sampling",
+                        global_sample_id,
+                        heartbeat_total,
+                        &format!(
+                            "base={} radius={} mutation_type={} rows={}",
+                            base_index,
+                            radius,
+                            mutation_type.as_str(),
+                            global_sample_id
+                        ),
+                    );
                 }
             }
         }
@@ -5884,4 +6099,6 @@ fn main() {
         total_start.elapsed().as_secs_f64(),
         n_classes
     );
+    let completed_units = heartbeat_total.unwrap_or(global_sample_id);
+    heartbeat.finish("finalize", completed_units, heartbeat_total);
 }

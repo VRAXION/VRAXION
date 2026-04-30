@@ -117,10 +117,99 @@ def command_for_phase(phase: Phase, output_root: Path, device: str) -> list[str]
     ]
 
 
-def run_command(cmd: list[str], events_path: Path, timeout_s: int) -> dict:
+def write_autopilot_heartbeat(
+    status_path: Path,
+    events_path: Path,
+    status: dict,
+    phase_name: str,
+    pid: int,
+    started: float,
+    timeout_s: int,
+) -> None:
+    elapsed_s = time.perf_counter() - started
+    payload = {
+        "event": "heartbeat",
+        "phase": phase_name,
+        "pid": pid,
+        "elapsed_s": elapsed_s,
+        "timeout_s": timeout_s,
+        "d10b_summary_available": D10B_SUMMARY.exists(),
+    }
+    status["verdict"] = "RUNNING"
+    status["active_phase"] = phase_name
+    status["active_pid"] = pid
+    status["active_elapsed_s"] = elapsed_s
+    status["active_timeout_s"] = timeout_s
+    status["last_heartbeat_at"] = now_iso()
+    status["d10b_summary_available"] = D10B_SUMMARY.exists()
+    if D10B_SUMMARY.exists():
+        status["d10b_summary_path"] = str(D10B_SUMMARY)
+    write_json(status_path, status)
+    append_event(events_path, payload)
+    print(
+        f"[heartbeat] autopilot phase={phase_name} pid={pid} "
+        f"elapsed_s={elapsed_s:.1f} timeout_s={timeout_s} "
+        f"d10b_summary={D10B_SUMMARY.exists()}",
+        flush=True,
+    )
+
+
+def run_command(
+    cmd: list[str],
+    events_path: Path,
+    timeout_s: int,
+    status_path: Path,
+    status: dict,
+    phase_name: str,
+    heartbeat_s: int,
+) -> dict:
     append_event(events_path, {"event": "command_start", "cmd": cmd})
     started = time.perf_counter()
-    proc = subprocess.run(cmd, text=True, capture_output=True, timeout=timeout_s)
+    proc = subprocess.Popen(cmd, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    append_event(events_path, {"event": "command_spawned", "phase": phase_name, "pid": proc.pid})
+    write_autopilot_heartbeat(status_path, events_path, status, phase_name, proc.pid, started, timeout_s)
+    stdout = ""
+    stderr = ""
+    while True:
+        remaining_s = timeout_s - (time.perf_counter() - started)
+        if remaining_s <= 0:
+            proc.kill()
+            out, err = proc.communicate()
+            stdout += out or ""
+            stderr += err or ""
+            elapsed = time.perf_counter() - started
+            append_event(
+                events_path,
+                {
+                    "event": "command_timeout",
+                    "phase": phase_name,
+                    "pid": proc.pid,
+                    "elapsed_s": elapsed,
+                    "timeout_s": timeout_s,
+                },
+            )
+            return {
+                "returncode": -9,
+                "elapsed_s": elapsed,
+                "stdout": stdout,
+                "stderr": stderr + f"\nTIMEOUT after {timeout_s}s",
+            }
+        try:
+            out, err = proc.communicate(timeout=min(max(1, heartbeat_s), remaining_s))
+            stdout += out or ""
+            stderr += err or ""
+            break
+        except subprocess.TimeoutExpired:
+            write_autopilot_heartbeat(
+                status_path,
+                events_path,
+                status,
+                phase_name,
+                proc.pid,
+                started,
+                timeout_s,
+            )
+            continue
     elapsed = time.perf_counter() - started
     append_event(
         events_path,
@@ -128,11 +217,11 @@ def run_command(cmd: list[str], events_path: Path, timeout_s: int) -> dict:
             "event": "command_end",
             "returncode": proc.returncode,
             "elapsed_s": elapsed,
-            "stdout_tail": proc.stdout[-2000:],
-            "stderr_tail": proc.stderr[-2000:],
+            "stdout_tail": stdout[-2000:],
+            "stderr_tail": stderr[-2000:],
         },
     )
-    return {"returncode": proc.returncode, "elapsed_s": elapsed, "stdout": proc.stdout, "stderr": proc.stderr}
+    return {"returncode": proc.returncode, "elapsed_s": elapsed, "stdout": stdout, "stderr": stderr}
 
 
 def phase_passes_for_confirm(summary: dict) -> bool:
@@ -174,7 +263,15 @@ def run_autopilot(args) -> dict:
             break
         if phase.name in status["completed_phases"]:
             continue
-        result = run_command(command_for_phase(phase, output_root, args.device), events_path, args.phase_timeout_s)
+        result = run_command(
+            command_for_phase(phase, output_root, args.device),
+            events_path,
+            args.phase_timeout_s,
+            status_path,
+            status,
+            phase.name,
+            args.heartbeat_s,
+        )
         summary_path = output_root / phase.name / "run_summary.json"
         summary = load_json(summary_path)
         if result["returncode"] != 0 or summary is None:
@@ -194,13 +291,25 @@ def run_autopilot(args) -> dict:
         status["d10b_summary_available"] = D10B_SUMMARY.exists()
         if D10B_SUMMARY.exists():
             status["d10b_summary_path"] = str(D10B_SUMMARY)
+        status.pop("active_phase", None)
+        status.pop("active_pid", None)
+        status.pop("active_elapsed_s", None)
+        status.pop("active_timeout_s", None)
         write_json(status_path, status)
         (output_root / "progress_map.md").write_text(progress_map(status), encoding="utf-8")
         append_event(events_path, {"event": "phase_complete", "phase": phase.name, "verdict": summary.get("verdict")})
         executed += 1
         if phase.kind == "scout" and phase_passes_for_confirm(summary) and executed < max_phases:
             confirm = make_confirm_phase(phase)
-            result = run_command(command_for_phase(confirm, output_root, args.device), events_path, args.phase_timeout_s)
+            result = run_command(
+                command_for_phase(confirm, output_root, args.device),
+                events_path,
+                args.phase_timeout_s,
+                status_path,
+                status,
+                confirm.name,
+                args.heartbeat_s,
+            )
             confirm_summary_path = output_root / confirm.name / "run_summary.json"
             confirm_summary = load_json(confirm_summary_path)
             if result["returncode"] != 0 or confirm_summary is None:
@@ -215,6 +324,10 @@ def run_autopilot(args) -> dict:
                 "elapsed_s": result["elapsed_s"],
             }
             status["last_phase"] = confirm.name
+            status.pop("active_phase", None)
+            status.pop("active_pid", None)
+            status.pop("active_elapsed_s", None)
+            status.pop("active_timeout_s", None)
             write_json(status_path, status)
             executed += 1
     status["d10b_summary_available"] = D10B_SUMMARY.exists()
@@ -239,6 +352,7 @@ def build_arg_parser() -> argparse.ArgumentParser:
     parser.add_argument("--eval-len", type=int, default=128)
     parser.add_argument("--proposals-per-arm", type=int, default=4)
     parser.add_argument("--phase-timeout-s", type=int, default=1800)
+    parser.add_argument("--heartbeat-s", type=int, default=60)
     parser.add_argument("--arms", default="beta8_lifted_v2,motif_no_echo,projection_tiled,threshold_mid,threshold_high,block_local_projection,frozen_beta8_rows")
     return parser
 
