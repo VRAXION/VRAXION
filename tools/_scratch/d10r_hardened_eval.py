@@ -37,7 +37,24 @@ PRIMARY_CONTROLS = [
     "no_network_random_state",
     "time_shuffle",
 ]
-REPEATED_CONTROLS = {"state_shuffle", "no_network_random_state"}
+STATE_SHUFFLE_CONTROLS = {
+    "state_shuffle",
+    "state_shuffle_shared",
+    "state_shuffle_projection_consistent",
+}
+DIAGNOSTIC_CONTROLS = {"state_shuffle_projection_consistent"}
+REPEATED_CONTROLS = {*STATE_SHUFFLE_CONTROLS, "no_network_random_state"}
+
+
+def control_base_name(control: str) -> str:
+    parts = control.rsplit("_", 1)
+    if len(parts) == 2 and parts[1].isdigit():
+        return parts[0]
+    return control
+
+
+def is_diagnostic_control(control: str) -> bool:
+    return control_base_name(control) in DIAGNOSTIC_CONTROLS
 
 
 def parse_csv(value: str) -> list[str]:
@@ -118,6 +135,8 @@ def control_targets(
         "projection_shuffle",
         "projection_reinit",
         "state_shuffle",
+        "state_shuffle_shared",
+        "state_shuffle_projection_consistent",
         "no_network_random_state",
         "time_shuffle",
     }:
@@ -211,14 +230,24 @@ def evaluate_seed_control(
             dtype=np.int16,
         )
         outputs = torch.as_tensor(random_outputs, dtype=torch.int16, device=device)
-    if control_type == "state_shuffle":
+    score_weights = state.weights
+    if control_type in STATE_SHUFFLE_CONTROLS:
         rng = np.random.default_rng(control_seed + eval_seed)
         shuffled = torch.empty_like(outputs)
+        adjusted_weights = state.weights.clone() if control_type == "state_shuffle_projection_consistent" else state.weights
+        shared_perm = None
+        if control_type == "state_shuffle_shared":
+            shared_perm = torch.as_tensor(rng.permutation(outputs.shape[-1]), dtype=torch.long, device=device)
         for idx in range(outputs.shape[0]):
-            perm = torch.as_tensor(rng.permutation(outputs.shape[-1]), dtype=torch.long, device=device)
+            perm = shared_perm
+            if perm is None:
+                perm = torch.as_tensor(rng.permutation(outputs.shape[-1]), dtype=torch.long, device=device)
             shuffled[idx] = outputs[idx, :, perm]
+            if control_type == "state_shuffle_projection_consistent":
+                adjusted_weights[idx] = state.weights[idx, perm, :]
         outputs = shuffled
-    scores = gpu_eval.projection_scores(outputs, state.weights)
+        score_weights = adjusted_weights
+    scores = gpu_eval.projection_scores(outputs, score_weights)
     probs = torch.softmax(scores, dim=-1)
     target_idx = torch.as_tensor(eval_hot[next_ids], dtype=torch.long, device=device)
     cur_idx = torch.as_tensor(eval_hot[cur_ids], dtype=torch.long, device=device)
@@ -324,7 +353,8 @@ def summarize_checkpoint(
         mean = float(np.mean(margins)) if margins else 0.0
         ci_lo, ci_hi = bootstrap_ci(margins, bootstrap_samples, alpha, seed + d10o.stable_arm_seed(label + control))
         p_value = paired_sign_flip_pvalue(margins, permutation_samples, seed + 31 + d10o.stable_arm_seed(label + control))
-        p_pairs.append((control, p_value))
+        if not is_diagnostic_control(control):
+            p_pairs.append((control, p_value))
         margin_rows.append(
             {
                 "checkpoint_label": label,
@@ -341,6 +371,9 @@ def summarize_checkpoint(
         )
     holm = holm_bonferroni(p_pairs, alpha)
     for row in margin_rows:
+        if is_diagnostic_control(row["control_type"]):
+            row["holm_threshold"] = 0.0
+            continue
         info = holm[row["control_type"]]
         row["holm_p_value"] = info["p_value"]
         row["holm_threshold"] = info["holm_threshold"]
@@ -352,7 +385,12 @@ def summarize_checkpoint(
         vals = [
             float(r["mo_delta"])
             for r in rows
-            if r["checkpoint_label"] == label and int(r["eval_seed"]) == eval_seed and r["control_type"] in controls
+            if (
+                r["checkpoint_label"] == label
+                and int(r["eval_seed"]) == eval_seed
+                and r["control_type"] in controls
+                and not is_diagnostic_control(r["control_type"])
+            )
         ]
         if vals:
             max_controls.append(real_by_seed[eval_seed] - max(vals))
@@ -369,6 +407,8 @@ def summarize_checkpoint(
     real_values = list(real_by_seed.values())
     real_mean = float(np.mean(real_values)) if real_values else 0.0
     real_ci = bootstrap_ci(real_values, bootstrap_samples, alpha, seed + d10o.stable_arm_seed(label + "real"))
+    trust_margin_rows = [row for row in margin_rows if not is_diagnostic_control(row["control_type"])]
+    diagnostic_margin_rows = [row for row in margin_rows if is_diagnostic_control(row["control_type"])]
     summary = {
         "checkpoint_label": label,
         "real_mo_delta_mean": real_mean,
@@ -380,8 +420,9 @@ def summarize_checkpoint(
         "median_selectivity_mean": median_selectivity_mean,
         "median_selectivity_ci_low": median_selectivity_ci[0],
         "median_selectivity_ci_high": median_selectivity_ci[1],
-        "all_controls_pass": all(bool(r["pass"]) for r in margin_rows),
-        "failed_controls": [r["control_type"] for r in margin_rows if not bool(r["pass"])],
+        "all_controls_pass": all(bool(r["pass"]) for r in trust_margin_rows),
+        "failed_controls": [r["control_type"] for r in trust_margin_rows if not bool(r["pass"])],
+        "diagnostic_controls": [r["control_type"] for r in diagnostic_margin_rows],
     }
     return margin_rows, summary
 
