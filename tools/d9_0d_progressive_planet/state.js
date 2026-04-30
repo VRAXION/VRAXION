@@ -2,8 +2,8 @@ window.ATLAS_STATE = {
   "schema_version": "d9.0d-1",
   "run_id": "d9_2b_seed2042_full_generalist_confirmed",
   "source_run_id": "output/phase_d9_2b_multi_objective_confirm_20260429",
-  "generated_at_utc": "2026-04-29T19:24:04Z",
-  "last_updated": "2026-04-29T19:24:04Z",
+  "generated_at_utc": "2026-04-30T05:43:09Z",
+  "last_updated": "2026-04-30T05:43:09Z",
   "phase_status": "finished",
   "stop_clock_active": false,
   "source_samples_csv": "output/phase_d9_0q_seed2042_long_climb_20260429/paratrooper_paths.csv",
@@ -222,12 +222,17 @@ window.ATLAS_STATE = {
       "interpretation": "Edge wiring and threshold timing are co-adapted; ablating either group drops below baseline. Together they form a single integrated package."
     },
     "universality": {
-      "verdict": "NO_GENERAL_BASIN",
-      "level": "scout",
+      "verdict": "D10B_NO_REPLICATION_SIGNAL",
+      "level": "ladder",
       "checkpoints_tested": 5,
       "strict_checkpoint_count": 0,
-      "rows": 100,
-      "interpretation": "D10a scout: edge+threshold recipe is seed2042-local \u2014 no other H=384 baseline produced strict generalist signal."
+      "signal_non_seed2042": 0,
+      "seed2042_signal": false,
+      "rows": 4800,
+      "eval_len": 4000,
+      "mo_climbers": 12,
+      "mo_steps": 80,
+      "interpretation": "D10b deeper ladder (12 climbers \u00d7 80 steps \u00d7 5 seeds): NO seed produced strict/near-strict pass \u2014 even seed2042 stayed WEAK_LADDER. The beta.8 v1 finding is real but not a reproducible recipe across seeds."
     }
   },
   "tiles": [

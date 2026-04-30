@@ -141,17 +141,30 @@ def load_universality() -> dict | None:
     else:
         return None
     blob = json.loads(path.read_text(encoding="utf-8"))
+    # D10a uses 'checkpoints' (list); D10b uses 'checkpoint_count' (int)
+    n_ckpt = blob.get("checkpoint_count")
+    if n_ckpt is None:
+        n_ckpt = len(blob.get("checkpoints", []) or [])
+    n_strict = blob.get("strict_checkpoint_count")
+    if n_strict is None:
+        n_strict = blob.get("strict_non_seed2042", 0) or 0
+    interpretation = (
+        "D10a scout: edge+threshold recipe is seed2042-local — no other H=384 baseline produced strict generalist signal."
+        if level == "scout" else
+        "D10b deeper ladder (12 climbers × 80 steps × 5 seeds): NO seed produced strict/near-strict pass — even seed2042 stayed WEAK_LADDER. The beta.8 v1 finding is real but not a reproducible recipe across seeds."
+    )
     return {
         "verdict": blob.get("verdict", "D10_UNIVERSALITY_UNKNOWN"),
         "level": level,
-        "checkpoints_tested": len(blob.get("checkpoints", []) or []),
-        "strict_checkpoint_count": blob.get("strict_checkpoint_count", 0),
+        "checkpoints_tested": n_ckpt,
+        "strict_checkpoint_count": n_strict,
+        "signal_non_seed2042": blob.get("signal_non_seed2042", 0),
+        "seed2042_signal": blob.get("seed2042_signal", False),
         "rows": blob.get("rows", 0),
-        "interpretation": (
-            "D10a scout: edge+threshold recipe is seed2042-local — no other H=384 baseline produced strict generalist signal."
-            if level == "scout" else
-            "D10b deeper ladder result."
-        ),
+        "eval_len": blob.get("eval_len"),
+        "mo_climbers": blob.get("mo_climbers"),
+        "mo_steps": blob.get("mo_steps"),
+        "interpretation": interpretation,
     }
 
 

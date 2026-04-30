@@ -889,15 +889,18 @@ window.__INIT_RENDERER__ = function(){
     const univBlock = $("universality-block");
     const univ = data.config && data.config.universality;
     if (univBlock && univ) {
-      const levelLabel = univ.level === "ladder" ? "ladder (deep)" : "scout (preliminary)";
+      const levelLabel = univ.level === "ladder" ? "ladder — DEEP ✓" : "scout (preliminary)";
       $("univ-title").textContent = "D10 Universality Test — " + levelLabel;
       const isPositive = univ.verdict && univ.verdict.includes("REPLICABLE");
-      $("univ-verdict").style.color = isPositive ? "#9be58e" : "#ffb05a";
+      $("univ-verdict").style.color = isPositive ? "#9be58e" : "#ff7a9a";
       $("univ-verdict").textContent = "Verdict: " + univ.verdict;
+      const climbStr = univ.mo_climbers && univ.mo_steps
+        ? " (" + univ.mo_climbers + " climbers × " + univ.mo_steps + " steps × eval_len=" + univ.eval_len + ")"
+        : "";
       $("univ-stats").textContent =
-        univ.checkpoints_tested + " checkpoints tested · " +
-        univ.strict_checkpoint_count + " produced strict generalist signal · " +
-        univ.rows + " rows scanned";
+        univ.checkpoints_tested + " checkpoints · " +
+        univ.strict_checkpoint_count + " strict-pass · " +
+        univ.rows + " rows" + climbStr;
       $("univ-interp").textContent = univ.interpretation || "";
       univBlock.style.display = "block";
     } else if (univBlock) {
