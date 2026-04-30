@@ -20,6 +20,7 @@ import numpy as np
 import torch
 
 import d10g_gpu_eval_probe as gpu_eval
+import d10h_dense_crystallize_probe as d10h
 import d10j_sparse_high_h_gpu_probe as d10j
 import d10o_high_h_projection_start_gate as d10o
 import d10r_hardened_eval as d10r
@@ -283,6 +284,34 @@ def classify_candidate(row: dict, selectivity_gate: str) -> tuple[str, int]:
     return "REJECT", misses
 
 
+def candidate_class_rank(candidate_class: str) -> int:
+    return {
+        "STRICT_TRUSTED": 0,
+        "NEAR_TRUSTED": 1,
+        "WEAK_STATE_ANCHORED": 2,
+        "WEAK_SIGNAL": 3,
+        "REJECT": 4,
+    }[candidate_class]
+
+
+def gate_progress_score(row: dict) -> float:
+    smooth = max(0.0, min(1.0, float(row["smooth_delta"]) / STRICT_GATES["smooth"]))
+    accuracy = max(0.0, min(1.0, float(row["accuracy_delta"]) / STRICT_GATES["accuracy"]))
+    echo = max(0.0, 1.0 - abs(float(row["echo_delta"])) / STRICT_GATES["echo_abs"])
+    unigram = max(0.0, min(1.0, (float(row["unigram_delta"]) + 0.001) / 0.001))
+    selectivity = max(0.0, min(1.0, float(row.get("hardened_selectivity_ci_low", 0.0)) / 0.002))
+    return smooth + accuracy + echo + unigram + selectivity + float(row["mo_delta"])
+
+
+def candidate_sort_key(row: dict) -> tuple[int, float, float, float]:
+    return (
+        candidate_class_rank(row["candidate_class"]),
+        -float(row.get("ladder_score", gate_progress_score(row))),
+        -float(row["hardened_selectivity"]),
+        -float(row["mo_delta"]),
+    )
+
+
 def evaluate_candidates(seed_label: str, baseline, candidates, args, table, pair_ids, hot_to_idx, bigram, unigram, device):
     controls = parse_csv(args.controls)
     expanded_controls = d10r.expand_controls(controls, args.control_repeats)
@@ -397,21 +426,45 @@ def summarize_candidates(
         candidate_class, misses = classify_candidate(summary, selectivity_gate)
         summary["candidate_class"] = candidate_class
         summary["gate_misses"] = misses
+        summary["ladder_score"] = gate_progress_score(summary)
         out.append(summary)
-    out.sort(
-        key=lambda row: (
-            {
-                "STRICT_TRUSTED": 0,
-                "NEAR_TRUSTED": 1,
-                "WEAK_STATE_ANCHORED": 2,
-                "WEAK_SIGNAL": 3,
-                "REJECT": 4,
-            }[row["candidate_class"]],
-            -row["hardened_selectivity"],
-            -row["mo_delta"],
-        )
-    )
+    out.sort(key=candidate_sort_key)
     return out
+
+
+def write_candidate_summary(path: Path, candidate_rows: list[dict]) -> None:
+    write_csv(
+        path,
+        candidate_rows,
+        [
+            "seed_label",
+            "arm",
+            "ladder_round",
+            "proposal_idx",
+            "candidate_label",
+            "checkpoint_path",
+            "candidate_class",
+            "gate_misses",
+            "accepted",
+            "accept_reason",
+            "state_anchor_pass",
+            "selectivity_gate",
+            "ladder_score",
+            "smooth_delta",
+            "accuracy_delta",
+            "echo_delta",
+            "unigram_delta",
+            "mo_delta",
+            "hardened_selectivity",
+            "hardened_selectivity_ci_low",
+            "hardened_selectivity_ci_high",
+            "worst_artifact_control",
+            "worst_artifact_eval_seed",
+            "worst_artifact_margin",
+            "artifact_control_count",
+            "diagnostic_control_count",
+        ],
+    )
 
 
 def run_sweep(args) -> dict:
@@ -498,36 +551,185 @@ def run_sweep(args) -> dict:
         "arm_summary": arm_rows,
     }
     write_csv(out / "d10s_eval_rows.csv", eval_rows, ["seed_label", "candidate_label", "control_type", "eval_seed", "smooth_delta", "accuracy_delta", "echo_delta", "unigram_delta", "mo_delta"])
-    write_csv(
-        out / "candidate_summary.csv",
-        candidate_rows,
-        [
-            "seed_label",
-            "arm",
-            "proposal_idx",
-            "candidate_label",
-            "candidate_class",
-            "gate_misses",
-            "state_anchor_pass",
-            "selectivity_gate",
-            "smooth_delta",
-            "accuracy_delta",
-            "echo_delta",
-            "unigram_delta",
-            "mo_delta",
-            "hardened_selectivity",
-            "hardened_selectivity_ci_low",
-            "hardened_selectivity_ci_high",
-            "worst_artifact_control",
-            "worst_artifact_eval_seed",
-            "worst_artifact_margin",
-            "artifact_control_count",
-            "diagnostic_control_count",
-        ],
-    )
+    write_candidate_summary(out / "candidate_summary.csv", candidate_rows)
     write_csv(out / "arm_summary.csv", arm_rows, ["arm", "count", "strict_count", "near_count", "best_class", "best_selectivity", "best_mo_delta"])
     (out / "run_summary.json").write_text(json.dumps(run_summary, indent=2), encoding="utf-8")
     write_report(out, run_summary)
+    return run_summary
+
+
+def run_ladder(args) -> dict:
+    out = Path(args.out)
+    out.mkdir(parents=True, exist_ok=True)
+    (out / "candidates").mkdir(parents=True, exist_ok=True)
+    device = torch.device(args.device)
+    gpu_eval.MAX_CHARGE = args.max_charge
+    table, pair_ids, hot_to_idx, bigram, unigram, _ = d10j.load_real_inputs(args)
+    reference = gpu_eval.load_checkpoint(Path(args.reference))
+    checkpoint_paths = parse_csv(args.checkpoints)
+    arms = parse_csv(args.arms)
+    started = time.perf_counter()
+    all_eval_rows: list[dict] = []
+    all_candidate_rows: list[dict] = []
+    ladder_rows: list[dict] = []
+    candidate_by_label: dict[str, gpu_eval.CheckpointArrays] = {}
+
+    for checkpoint_path in checkpoint_paths:
+        baseline = gpu_eval.load_checkpoint(Path(checkpoint_path))
+        seed_label = d10r.checkpoint_label(Path(checkpoint_path))
+        for arm in arms:
+            current = clone_checkpoint(baseline, f"{seed_label}_{arm}_start")
+            current_score = -1e9
+            no_accept_rounds = 0
+            for round_idx in range(1, args.ladder_rounds + 1):
+                candidate_specs = {}
+                proposals = []
+                for prop_idx in range(1, args.proposals_per_arm + 1):
+                    proposal_key = round_idx * 10000 + prop_idx
+                    candidate = make_candidate(current, reference, seed_label, arm, proposal_key, args)
+                    candidate.path = f"{seed_label}_{arm}_r{round_idx:02d}_p{prop_idx:04d}"
+                    candidate.meta["label"] = candidate.path
+                    proposals.append(candidate)
+                    candidate_by_label[candidate.path] = candidate
+                    candidate_specs[candidate.path] = {
+                        "seed_label": seed_label,
+                        "arm": arm,
+                        "ladder_round": round_idx,
+                        "proposal_idx": prop_idx,
+                        "candidate_label": candidate.path,
+                    }
+                eval_rows = evaluate_candidates(seed_label, baseline, proposals, args, table, pair_ids, hot_to_idx, bigram, unigram, device)
+                all_eval_rows.extend(eval_rows)
+                round_rows = summarize_candidates(
+                    eval_rows,
+                    candidate_specs,
+                    args.bootstrap_samples,
+                    args.alpha,
+                    args.seed + d10o.stable_arm_seed(f"{seed_label}{arm}{round_idx}"),
+                    args.selectivity_gate,
+                )
+                if not round_rows:
+                    continue
+                best = round_rows[0]
+                best_score = float(best["ladder_score"])
+                acceptable_class = best["candidate_class"] in {"STRICT_TRUSTED", "NEAR_TRUSTED", "WEAK_STATE_ANCHORED"}
+                improves = best_score >= current_score + args.ladder_min_improvement
+                accepted = acceptable_class and improves
+                if accepted:
+                    current = candidate_by_label[best["candidate_label"]]
+                    current_score = best_score
+                    no_accept_rounds = 0
+                    accept_reason = "state_anchor_and_ladder_score_improved"
+                else:
+                    no_accept_rounds += 1
+                    accept_reason = "reject_no_state_anchor_or_no_score_gain"
+                for row in round_rows:
+                    row["accepted"] = bool(row["candidate_label"] == best["candidate_label"] and accepted)
+                    row["accept_reason"] = accept_reason if row["candidate_label"] == best["candidate_label"] else ""
+                all_candidate_rows.extend(round_rows)
+                ladder_rows.append(
+                    {
+                        "seed_label": seed_label,
+                        "arm": arm,
+                        "ladder_round": round_idx,
+                        "best_candidate": best["candidate_label"],
+                        "best_class": best["candidate_class"],
+                        "best_ladder_score": best_score,
+                        "best_mo_delta": best["mo_delta"],
+                        "best_selectivity_ci_low": best["hardened_selectivity_ci_low"],
+                        "best_smooth_delta": best["smooth_delta"],
+                        "best_accuracy_delta": best["accuracy_delta"],
+                        "best_unigram_delta": best["unigram_delta"],
+                        "best_worst_artifact_control": best["worst_artifact_control"],
+                        "accepted": accepted,
+                        "accept_reason": accept_reason,
+                    }
+                )
+                print(
+                    f"D10u seed={seed_label} arm={arm} round={round_idx} "
+                    f"best={best['candidate_class']} score={best_score:.6f} accepted={accepted}",
+                    flush=True,
+                )
+                if no_accept_rounds >= args.ladder_patience:
+                    break
+
+    all_candidate_rows.sort(key=candidate_sort_key)
+    for rank, row in enumerate(all_candidate_rows[: args.export_top], start=1):
+        ckpt = candidate_by_label.get(row["candidate_label"])
+        if ckpt is None:
+            continue
+        ckpt_path = out / "candidates" / f"top_{rank:02d}_{row['seed_label']}_{row['arm']}.ckpt"
+        d10h.write_checkpoint(ckpt_path, ckpt, row["candidate_label"])
+        row["checkpoint_path"] = str(ckpt_path)
+
+    non_seed_near_or_strict = [
+        row for row in all_candidate_rows
+        if row["seed_label"] != "seed_2042" and row["candidate_class"] in {"STRICT_TRUSTED", "NEAR_TRUSTED"}
+    ]
+    seed_near_or_strict = [
+        row for row in all_candidate_rows
+        if row["seed_label"] == "seed_2042" and row["candidate_class"] in {"STRICT_TRUSTED", "NEAR_TRUSTED"}
+    ]
+    non_seed_weak = [
+        row for row in all_candidate_rows
+        if row["seed_label"] != "seed_2042" and row["candidate_class"] == "WEAK_STATE_ANCHORED"
+    ]
+    seed_weak = [
+        row for row in all_candidate_rows
+        if row["seed_label"] == "seed_2042" and row["candidate_class"] == "WEAK_STATE_ANCHORED"
+    ]
+    if non_seed_near_or_strict:
+        verdict = "D10U_NON_SEED_NEAR_OR_STRICT_SIGNAL"
+    elif seed_near_or_strict:
+        verdict = "D10U_SEED2042_NEAR_OR_STRICT_SIGNAL"
+    elif non_seed_weak:
+        verdict = "D10U_WEAK_NON_SEED_STATE_ANCHORED"
+    elif seed_weak:
+        verdict = "D10U_WEAK_SEED2042_ONLY"
+    else:
+        verdict = "D10U_NO_STATE_ANCHORED_SIGNAL"
+
+    run_summary = {
+        "verdict": verdict,
+        "elapsed_s": time.perf_counter() - started,
+        "setup": {
+            "mode": args.mode,
+            "eval_len": args.eval_len,
+            "eval_seeds": parse_int_csv(args.eval_seeds),
+            "control_repeats": args.control_repeats,
+            "proposals_per_round": args.proposals_per_arm,
+            "ladder_rounds": args.ladder_rounds,
+            "arms": arms,
+            "checkpoints": checkpoint_paths,
+            "controls": parse_csv(args.controls),
+            "selectivity_gate": args.selectivity_gate,
+        },
+        "top_candidates": all_candidate_rows[:10],
+    }
+    write_csv(out / "d10u_eval_rows.csv", all_eval_rows, ["seed_label", "candidate_label", "control_type", "eval_seed", "smooth_delta", "accuracy_delta", "echo_delta", "unigram_delta", "mo_delta"])
+    write_candidate_summary(out / "candidate_summary.csv", all_candidate_rows)
+    write_csv(
+        out / "ladder_paths.csv",
+        ladder_rows,
+        [
+            "seed_label",
+            "arm",
+            "ladder_round",
+            "best_candidate",
+            "best_class",
+            "best_ladder_score",
+            "best_mo_delta",
+            "best_selectivity_ci_low",
+            "best_smooth_delta",
+            "best_accuracy_delta",
+            "best_unigram_delta",
+            "best_worst_artifact_control",
+            "accepted",
+            "accept_reason",
+        ],
+    )
+    (out / "run_summary.json").write_text(json.dumps(run_summary, indent=2), encoding="utf-8")
+    write_ladder_report(out, run_summary)
     return run_summary
 
 
@@ -569,9 +771,47 @@ def write_report(out: Path, summary: dict) -> None:
     (out / "D10S_WIRING_PRIOR_REPORT.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
 
 
+def write_ladder_report(out: Path, summary: dict) -> None:
+    lines = [
+        "# D10u Focused State-Anchored Ladder Report",
+        "",
+        f"Verdict: `{summary['verdict']}`",
+        "",
+        "The ladder accepts only candidates that pass the state-anchor selectivity gate.",
+        "Near/strict candidates are required before any D10r-v8 confirm or H512 planning.",
+        "",
+        "## Top Candidates",
+        "",
+        "| seed | arm | round | class | anchor_pass | ladder_score | smooth | accuracy | unigram | ci_low | worst_control |",
+        "|---|---|---:|---|---|---:|---:|---:|---:|---:|---|",
+    ]
+    for row in summary["top_candidates"][:10]:
+        lines.append(
+            f"| {row['seed_label']} | {row['arm']} | {row.get('ladder_round', '')} | "
+            f"{row['candidate_class']} | {row['state_anchor_pass']} | {row['ladder_score']:.6f} | "
+            f"{row['smooth_delta']:.6f} | {row['accuracy_delta']:.6f} | {row['unigram_delta']:.6f} | "
+            f"{row['hardened_selectivity_ci_low']:.6f} | {row['worst_artifact_control']} |"
+        )
+    lines.extend(
+        [
+            "",
+            "## Progress Map",
+            "",
+            "```text",
+            "[1] HDS basin map: DONE",
+            "[2] beta.8 release path: BLOCKED by state identity",
+            "[3] D10u state-anchored ladder: CURRENT",
+            "    |-- near/strict signal -> D10r-v8 longer confirm",
+            "    '-- weak/no signal -> redesign objective or proposal policy",
+            "```",
+        ]
+    )
+    (out / "D10U_FOCUSED_LADDER_REPORT.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+
 def build_arg_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--mode", choices=["smoke", "confirm"], default="smoke")
+    parser.add_argument("--mode", choices=["smoke", "confirm", "ladder"], default="smoke")
     parser.add_argument("--reference", default="output/releases/v5.0.0-beta.8/seed2042_improved_generalist_v1.ckpt")
     parser.add_argument(
         "--checkpoints",
@@ -596,6 +836,10 @@ def build_arg_parser() -> argparse.ArgumentParser:
     parser.add_argument("--control-repeats", type=int, default=2)
     parser.add_argument("--selectivity-gate", choices=["mean", "ci"], default="ci")
     parser.add_argument("--proposals-per-arm", type=int, default=32)
+    parser.add_argument("--ladder-rounds", type=int, default=4)
+    parser.add_argument("--ladder-patience", type=int, default=2)
+    parser.add_argument("--ladder-min-improvement", type=float, default=0.0001)
+    parser.add_argument("--export-top", type=int, default=8)
     parser.add_argument("--edge-swaps", type=int, default=24)
     parser.add_argument("--threshold-mutations", type=int, default=24)
     parser.add_argument("--bootstrap-samples", type=int, default=1000)
@@ -609,7 +853,7 @@ def main() -> int:
     args = build_arg_parser().parse_args()
     if args.device == "cuda" and not torch.cuda.is_available():
         raise SystemExit("CUDA requested but torch.cuda.is_available() is false")
-    summary = run_sweep(args)
+    summary = run_ladder(args) if args.mode == "ladder" else run_sweep(args)
     print(json.dumps({"verdict": summary["verdict"], "elapsed_s": summary["elapsed_s"]}, indent=2), flush=True)
     return 0
 

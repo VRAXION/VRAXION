@@ -105,6 +105,59 @@ No H512 unlock.
 State-anchored search path remains alive.
 ```
 
+## Focused Ladder Update
+
+Output root:
+
+```text
+output/phase_d10u_focused_ladder_20260430/bounded
+```
+
+Run shape:
+
+```text
+mode: ladder
+eval_len: 128
+eval_seeds: 970001,970002,970003
+control_repeats: 1
+checkpoints: seed_2042, seed_4042
+arms: edge_threshold_coadapted, random_sparse_baseline
+ladder_rounds: 3
+proposals_per_round: 6
+elapsed: 129.70s
+```
+
+Verdict:
+
+```text
+D10U_SEED2042_NEAR_OR_STRICT_SIGNAL
+```
+
+Best exported scout candidate:
+
+| seed | arm | class | smooth | accuracy | echo | unigram | selectivity CI low |
+|---|---|---|---:|---:|---:|---:|---:|
+| seed_2042 | edge_threshold_coadapted | STRICT_TRUSTED | +0.025639 | +0.007813 | +0.000000 | +0.081762 | +0.143935 |
+
+Additional ladder signal:
+
+| seed | arm | class | smooth | accuracy | unigram | note |
+|---|---|---|---:|---:|---:|---|
+| seed_4042 | edge_threshold_coadapted | WEAK_STATE_ANCHORED | +0.020501 | +0.015625 | +0.035454 | non-seed state-anchor signal, still not strict |
+
+Export sanity:
+
+```text
+RELOAD_OK 8
+```
+
+Interpretation:
+
+- D10u ladder machinery works and exports reloadable checkpoints.
+- A seed2042 `STRICT_TRUSTED` scout candidate exists under short eval.
+- This is not release evidence because `eval_len=128` is still scout-level.
+- The next gate is a longer D10r-v8 confirm on the exported top candidate.
+
 The next useful run is a focused D10u ladder:
 
 - seed targets: seed2042 and seed4042
