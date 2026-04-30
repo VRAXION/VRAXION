@@ -49,8 +49,16 @@ STATE_SHUFFLE_CONTROLS = {
     "state_shuffle_shared",
     "state_shuffle_projection_consistent",
 }
-DIAGNOSTIC_CONTROLS = {"state_shuffle_projection_consistent"}
-REPEATED_CONTROLS = {*STATE_SHUFFLE_CONTROLS, "no_network_random_state", "random_projection_null"}
+DIAGNOSTIC_CONTROLS = {
+    "state_shuffle_projection_consistent",
+    "random_projection_null_independent",
+}
+REPEATED_CONTROLS = {
+    *STATE_SHUFFLE_CONTROLS,
+    "no_network_random_state",
+    "random_projection_null",
+    "random_projection_null_independent",
+}
 
 
 def control_base_name(control: str) -> str:
@@ -142,6 +150,7 @@ def control_targets(
         "projection_shuffle",
         "projection_reinit",
         "random_projection_null",
+        "random_projection_null_independent",
         "state_shuffle",
         "state_shuffle_shared",
         "state_shuffle_projection_consistent",
@@ -188,6 +197,20 @@ def transform_checkpoints(
             out.append(clone_with_projection(ckpt, ckpt.path, projection))
         return out
     if control_type == "random_projection_null":
+        rng = np.random.default_rng(seed)
+        weights = rng.integers(
+            -3,
+            4,
+            size=checkpoints[0].projection.weights.shape,
+            dtype=np.int16,
+        )
+        projection = gpu_eval.ProjectionArrays(
+            weights,
+            checkpoints[0].projection.input_dim,
+            checkpoints[0].projection.output_classes,
+        )
+        return [clone_with_projection(ckpt, ckpt.path, projection) for ckpt in checkpoints]
+    if control_type == "random_projection_null_independent":
         rng = np.random.default_rng(seed)
         out = []
         for ckpt in checkpoints:
@@ -436,6 +459,11 @@ def summarize_checkpoint(
     real_ci = bootstrap_ci(real_values, bootstrap_samples, alpha, seed + d10o.stable_arm_seed(label + "real"))
     trust_margin_rows = [row for row in margin_rows if not is_diagnostic_control(row["control_type"])]
     diagnostic_margin_rows = [row for row in margin_rows if is_diagnostic_control(row["control_type"])]
+    blocking_controls = [
+        row["control_type"]
+        for row in trust_margin_rows
+        if float(row["margin_ci_low"]) <= min_trusted_mo
+    ]
     summary = {
         "checkpoint_label": label,
         "real_mo_delta_mean": real_mean,
@@ -452,6 +480,7 @@ def summarize_checkpoint(
         "median_selectivity_ci_high": median_selectivity_ci[1],
         "all_controls_pass": all(bool(r["pass"]) for r in trust_margin_rows),
         "failed_controls": [r["control_type"] for r in trust_margin_rows if not bool(r["pass"])],
+        "blocking_controls": blocking_controls,
         "diagnostic_controls": [r["control_type"] for r in diagnostic_margin_rows],
     }
     summary["trusted_mo_pass"] = (
@@ -526,6 +555,7 @@ def write_report(
             f"| D10s unlocked | `{run_summary['d10s_unlocked']}` |",
             f"| alternate baseline verdict | `{run_summary['alternate_baseline_verdict']}` |",
             f"| alternate baseline signals | `{','.join(run_summary['alternate_baseline_signals'])}` |",
+            f"| blocking controls | `{','.join(positive_summary['blocking_controls'])}` |",
             "",
             "## Checkpoint Summary",
             "",
@@ -551,6 +581,9 @@ def write_report(
             "",
             "- `D10R_V5_ARTIFACT_GATE_PASS` means the known positive beats artifact/null controls by CI.",
             "- `D10R_V5_ARTIFACT_READOUT_BLOCKED` means raw real signal remains positive but artifact-adjusted trusted MO does not.",
+            "- `D10R_V6_STATE_SHUFFLE_BLOCKED` means fair projection null passed but shared state shuffling can still match or beat the positive.",
+            "- `D10R_V6_RANDOM_STATE_BLOCKED` means no-network random-state controls can still match or beat the positive.",
+            "- `D10R_V6_STATE_RANDOM_CONTROL_BLOCKED` means state/no-network controls remain the only artifact blockers.",
             "- `D10R_V5_POSITIVE_CONTROL_FAIL` means beta.8/seed2042 has no positive real signal under this gate.",
             "- Alternate baselines are reported separately and do not create artifact gate failure in `report_only` mode.",
             "",
@@ -667,7 +700,17 @@ def run_d10r(args) -> dict:
     if artifact_gate_pass:
         verdict = "D10R_V5_ARTIFACT_GATE_PASS"
     elif positive_summary["real_mo_delta_ci_low"] > args.min_real_mo:
-        verdict = "D10R_V5_ARTIFACT_READOUT_BLOCKED"
+        blocking_bases = {control_base_name(name) for name in positive_summary["blocking_controls"]}
+        if blocking_bases == {"state_shuffle_shared"}:
+            verdict = "D10R_V6_STATE_SHUFFLE_BLOCKED"
+        elif blocking_bases == {"no_network_random_state"}:
+            verdict = "D10R_V6_RANDOM_STATE_BLOCKED"
+        elif blocking_bases and blocking_bases <= {"state_shuffle_shared", "no_network_random_state"}:
+            verdict = "D10R_V6_STATE_RANDOM_CONTROL_BLOCKED"
+        elif blocking_bases:
+            verdict = "D10R_V5_ARTIFACT_READOUT_BLOCKED"
+        else:
+            verdict = "D10R_UNDERPOWERED_NEEDS_LONGER_EVAL"
     elif positive_summary["trusted_mo_mean"] > args.min_trusted_mo:
         verdict = "D10R_UNDERPOWERED_NEEDS_LONGER_EVAL"
     else:
