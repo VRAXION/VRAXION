@@ -1,12 +1,8 @@
 """Lossless round-trip tests for Block A Python SDK."""
 from __future__ import annotations
-import sys
-from pathlib import Path
-
 import numpy as np
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
-from Python.block_a_byte_unit import ByteEncoder
+from block_a_byte_unit import ByteEncoder
 
 
 def test_default_load_and_self_verify():
@@ -67,12 +63,12 @@ def test_byte_out_of_range_rejected():
     try:
         enc.encode(256)
         assert False, "should have raised for byte=256"
-    except AssertionError:
+    except ValueError:
         pass
     try:
         enc.encode(-1)
         assert False, "should have raised for byte=-1"
-    except AssertionError:
+    except ValueError:
         pass
 
 
@@ -81,7 +77,7 @@ def test_multibyte_bytes_input_rejected():
     try:
         enc.encode(b"AB")
         assert False, "should have raised for 2-byte input"
-    except AssertionError:
+    except ValueError:
         pass
 
 

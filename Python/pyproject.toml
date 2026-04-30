@@ -1,0 +1,22 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.backends.legacy:build"
+
+[project]
+name = "vraxion-deploy"
+version = "5.0.0b8"
+description = "VRAXION deploy SDK — frozen byte-level pipeline (Blocks A, B, C)"
+requires-python = ">=3.10"
+dependencies = ["numpy"]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["block_a_byte_unit*", "block_b_merger*", "block_c_embedder*"]
+
+[tool.pytest.ini_options]
+testpaths = [
+    "block_a_byte_unit/tests",
+    "block_b_merger/tests",
+    "block_c_embedder/tests",
+]
+pythonpath = ["."]

@@ -2,7 +2,7 @@
 
 Reads the frozen binary+C19+H=16 champion LUT and provides a minimal API:
 
-  from Python.byte_encoder import ByteEncoder
+  from block_a_byte_unit import ByteEncoder
   enc = ByteEncoder.load_default()
   vec = enc.encode(0x41)          # 16-dim float vector
   bytes_back = enc.decode(vec)    # recover byte
@@ -48,10 +48,14 @@ class ByteEncoder:
 
     def __init__(self, lut_int8: np.ndarray, lut_scale: float,
                  W1: np.ndarray, W2: np.ndarray):
-        assert lut_int8.shape == (256, self.LUT_DIM), f"LUT shape mismatch: {lut_int8.shape}"
-        assert lut_int8.dtype == np.int8
-        assert W1.shape == (self.INPUT_BITS, self.HIDDEN)
-        assert W2.shape == (self.HIDDEN, self.LUT_DIM)
+        if lut_int8.shape != (256, self.LUT_DIM):
+            raise ValueError(f"LUT shape mismatch: expected (256, {self.LUT_DIM}), got {lut_int8.shape}")
+        if lut_int8.dtype != np.int8:
+            raise TypeError(f"LUT must be int8, got {lut_int8.dtype}")
+        if W1.shape != (self.INPUT_BITS, self.HIDDEN):
+            raise ValueError(f"W1 shape mismatch: expected ({self.INPUT_BITS}, {self.HIDDEN}), got {W1.shape}")
+        if W2.shape != (self.HIDDEN, self.LUT_DIM):
+            raise ValueError(f"W2 shape mismatch: expected ({self.HIDDEN}, {self.LUT_DIM}), got {W2.shape}")
         self._lut_int8 = lut_int8
         self._lut_scale = float(lut_scale)
         self._lut_f32 = lut_int8.astype(np.float32) * self._lut_scale
@@ -68,12 +72,14 @@ class ByteEncoder:
     @classmethod
     def from_paths(cls, lut_path: Path, weights_path: Path) -> "ByteEncoder":
         lut_blob = json.loads(Path(lut_path).read_text(encoding="utf-8"))
-        assert lut_blob.get("format") == "int8_lut", f"unexpected LUT format: {lut_blob.get('format')}"
+        if lut_blob.get("format") != "int8_lut":
+            raise ValueError(f"unexpected LUT format: {lut_blob.get('format')!r} (expected 'int8_lut')")
         lut_int8 = np.array(lut_blob["lut"], dtype=np.int8)
         lut_scale = float(lut_blob["scale"])
 
         w_blob = json.loads(Path(weights_path).read_text(encoding="utf-8"))
-        assert w_blob.get("precision") == "binary_scaled", f"unexpected weights precision: {w_blob.get('precision')}"
+        if w_blob.get("precision") != "binary_scaled":
+            raise ValueError(f"unexpected weights precision: {w_blob.get('precision')!r} (expected 'binary_scaled')")
 
         # Reconstruct float weights from binary indices + levels (levels already contain alpha scaling).
         W1_idx = np.array(w_blob["W1_binary_idx"], dtype=np.int64)
@@ -95,11 +101,13 @@ class ByteEncoder:
         O(1) LUT lookup.
         """
         if isinstance(byte, (bytes, bytearray)):
-            assert len(byte) == 1, f"expected 1-byte input, got {len(byte)}"
+            if len(byte) != 1:
+                raise ValueError(f"expected 1-byte input, got {len(byte)} bytes")
             b = byte[0]
         else:
             b = int(byte)
-        assert 0 <= b < 256, f"byte out of range: {b}"
+        if not (0 <= b < 256):
+            raise ValueError(f"byte out of range: {b} (must be 0..255)")
         return self._lut_f32[b].copy()
 
     def encode_bytes(self, data: bytes) -> np.ndarray:
@@ -116,7 +124,8 @@ class ByteEncoder:
         Runs the tied-mirror decoder: latent @ W2.T @ W1.T -> 8-dim, sign -> bits.
         """
         latent = np.asarray(latent, dtype=np.float32).reshape(-1)
-        assert latent.shape == (self.LUT_DIM,), f"latent shape mismatch: {latent.shape}"
+        if latent.shape != (self.LUT_DIM,):
+            raise ValueError(f"latent shape mismatch: expected ({self.LUT_DIM},), got {latent.shape}")
         # Decoder: project 16 -> 8 via tied mirror (W2.T then W1.T)
         h = latent @ self._W2.T       # (16,) -> (16,)
         x_hat = h @ self._W1.T        # (16,) -> (8,)
@@ -131,7 +140,11 @@ class ByteEncoder:
     def decode_bytes(self, latents: np.ndarray) -> bytes:
         """Vectorized: (N, 16) -> N-byte sequence."""
         latents = np.asarray(latents, dtype=np.float32)
-        assert latents.ndim == 2 and latents.shape[1] == self.LUT_DIM
+        if latents.ndim != 2 or latents.shape[1] != self.LUT_DIM:
+            raise ValueError(
+                f"latents must be a 2-D array with shape (N, {self.LUT_DIM}), "
+                f"got shape {latents.shape}"
+            )
         h = latents @ self._W2.T      # (N, 16)
         x_hat = h @ self._W1.T        # (N, 8)
         bits = (x_hat > 0).astype(np.uint8)
