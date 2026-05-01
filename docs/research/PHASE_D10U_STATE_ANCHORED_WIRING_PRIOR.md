@@ -282,6 +282,75 @@ Interpretation:
 - This is the strongest D10u result so far, but it still has only 4 fresh eval
   seeds. The release-candidate gate remains a 30-fresh-seed, long-eval confirm.
 
+## Promotion-Grade 16k / 30-Seed Confirm
+
+Output root:
+
+```text
+output/phase_d10u_top01_d10r_confirm_20260430/confirm_16000_30seed_sharded_v2
+```
+
+Run shape:
+
+```text
+target: top_01_seed_2042_edge_threshold_coadapted.ckpt
+baseline: seed_2042 D7 H=384 baseline
+eval_len: 16000
+eval_seeds: 970101..970130
+control_repeats: 2
+controls: random_projection_null, state_shuffle_shared,
+          state_shuffle_projection_consistent, no_network_random_state
+runner: one shard / one eval seed at a time, fail-stop
+```
+
+Verdict:
+
+```text
+D10U_TOP01_16K_SHARDED_PASS
+```
+
+Aggregate result:
+
+| Metric | Value |
+|---|---:|
+| completed shards | 30 / 30 |
+| failed shards | 0 / 30 |
+| per-shard verdict | 30 x `D10R_V8_STATE_IDENTITY_PASS` |
+| blocking control families | none |
+| minimum trusted MO CI low | +0.084493 |
+| minimum real MO delta CI low | +0.178087 |
+
+Weakest shard:
+
+```text
+shard_24 / seed 970125
+trusted_mo_ci_low: +0.084493
+real_mo_delta_ci_low: +0.178160
+blocking_control_families: []
+```
+
+Decision:
+
+```text
+D10U_TOP01_RELEASE_CANDIDATE_RESEARCH_CHECKPOINT
+```
+
+Interpretation:
+
+- `top_01` passed the promotion-grade D10r-v8 artifact gate.
+- The result survived long evaluation (`eval_len=16000`) and 30 fresh seeds.
+- The state-identity blocker that rejected beta.8 does not reject this
+  candidate.
+- This promotes `top_01` to a release-candidate research checkpoint.
+- This does not make it the public mainline grower replacement and does not
+  by itself prove H512/H8192 universality.
+
+Next packaging gate:
+
+```text
+artifact copy + checksum + reload smoke + compact release-candidate docs
+```
+
 ## Progress Map
 
 ```text
@@ -311,9 +380,14 @@ GLOBAL RELEASE-READY AI MAP
     result: top_01 passes state identity at eval_len=4000
 
 [7] promotion-grade confirm
-    NEXT
-    goal: eval_len=16000, 30 fresh seeds
+    DONE
+    result: top_01 passes eval_len=16000, 30 fresh seeds
 
-[8] H512/H8192
-    BLOCKED until promotion-grade confirm passes
+[8] release-candidate package
+    NEXT
+    goal: stable artifact path, checksum, reload smoke, public docs
+
+[9] H512/H8192
+    UNBLOCKED FOR PILOT PLANNING
+    still blocked for release claims until scaling evidence exists
 ```
