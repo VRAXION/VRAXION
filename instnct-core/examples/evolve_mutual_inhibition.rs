@@ -51,6 +51,7 @@ struct RunMeta {
     horizon_steps: usize,
     jackpot: usize,
     ticks: usize,
+    chain_count: usize,
     accept_ties: bool,
     accept_policy: String,
     neutral_p: Option<f64>,
@@ -1562,6 +1563,7 @@ fn main() {
     let mut cli_h: usize = 256;
     let mut jackpot: usize = 9;
     let mut cli_ticks: Option<usize> = None;
+    let mut cli_chain_count: Option<usize> = None;
     let mut cli_accept_ties: Option<bool> = None;
     let mut cli_accept_policy: Option<String> = None;
     let mut cli_neutral_p: f64 = 1.0;
@@ -1611,6 +1613,10 @@ fn main() {
             "--ticks" => {
                 i += 1;
                 cli_ticks = Some(args[i].parse().unwrap());
+            }
+            "--chain-count" => {
+                i += 1;
+                cli_chain_count = Some(args[i].parse().unwrap());
             }
             "--accept-ties" => {
                 i += 1;
@@ -1773,6 +1779,9 @@ fn main() {
     if let Some(ticks) = cli_ticks {
         init.propagation.ticks_per_token = ticks;
     }
+    if let Some(chain_count) = cli_chain_count {
+        init.chain_count = chain_count;
+    }
     if let Some(accept_ties) = cli_accept_ties {
         init.accept_ties = accept_ties;
     }
@@ -1807,13 +1816,14 @@ fn main() {
 
     println!("\n=== MUTUAL INHIBITION EXPERIMENT ===");
     println!(
-        "  H={}, {} steps, {} classes, seed={}, jackpot={}, ticks={}, accept_ties={}, accept_policy={}, neutral_p={:.3}, accept_epsilon={:.6}, input_scatter={}, operator_policy={}, archive_parent_policy={}, phase={}, arm={}, run_id={}\n",
+        "  H={}, {} steps, {} classes, seed={}, jackpot={}, ticks={}, chain_count={}, accept_ties={}, accept_policy={}, neutral_p={:.3}, accept_epsilon={:.6}, input_scatter={}, operator_policy={}, archive_parent_policy={}, phase={}, arm={}, run_id={}\n",
         h,
         steps,
         n_classes,
         cli_seed,
         jackpot,
         init.propagation.ticks_per_token,
+        init.chain_count,
         init.accept_ties,
         accept_policy_name,
         cli_neutral_p,
@@ -2309,6 +2319,7 @@ fn main() {
             horizon_steps: steps,
             jackpot,
             ticks: init.propagation.ticks_per_token,
+            chain_count: init.chain_count,
             accept_ties: init.accept_ties,
             accept_policy: accept_policy_name.clone(),
             neutral_p: matches!(acceptance_policy, AcceptancePolicy::ZeroP { .. })
