@@ -81,6 +81,7 @@ struct RunMeta {
     archive_p2_model: Option<String>,
     embedding_anchored_highways: usize,
     diversity_guard_lambda: f64,
+    accuracy_guard_lambda: f64,
 }
 
 struct PanelMetrics {
@@ -1709,6 +1710,7 @@ fn main() {
     let mut cli_chain_count: Option<usize> = None;
     let mut embedding_anchored_highways: usize = 0;
     let mut diversity_guard_lambda: f64 = 0.0;
+    let mut accuracy_guard_lambda: f64 = 0.0;
     let mut cli_accept_ties: Option<bool> = None;
     let mut cli_accept_policy: Option<String> = None;
     let mut cli_neutral_p: f64 = 1.0;
@@ -1773,6 +1775,14 @@ fn main() {
                 assert!(
                     diversity_guard_lambda >= 0.0,
                     "--diversity-guard-lambda must be >= 0"
+                );
+            }
+            "--accuracy-guard-lambda" => {
+                i += 1;
+                accuracy_guard_lambda = args[i].parse().unwrap();
+                assert!(
+                    accuracy_guard_lambda >= 0.0,
+                    "--accuracy-guard-lambda must be >= 0"
                 );
             }
             "--accept-ties" => {
@@ -1973,7 +1983,7 @@ fn main() {
 
     println!("\n=== MUTUAL INHIBITION EXPERIMENT ===");
     println!(
-        "  H={}, {} steps, {} classes, seed={}, jackpot={}, ticks={}, chain_count={}, embedding_anchored_highways={}, diversity_guard_lambda={:.3}, accept_ties={}, accept_policy={}, neutral_p={:.3}, accept_epsilon={:.6}, input_scatter={}, operator_policy={}, archive_parent_policy={}, phase={}, arm={}, run_id={}\n",
+        "  H={}, {} steps, {} classes, seed={}, jackpot={}, ticks={}, chain_count={}, embedding_anchored_highways={}, diversity_guard_lambda={:.3}, accuracy_guard_lambda={:.3}, accept_ties={}, accept_policy={}, neutral_p={:.3}, accept_epsilon={:.6}, input_scatter={}, operator_policy={}, archive_parent_policy={}, phase={}, arm={}, run_id={}\n",
         h,
         steps,
         n_classes,
@@ -1983,6 +1993,7 @@ fn main() {
         init.chain_count,
         embedding_anchored_highways,
         diversity_guard_lambda,
+        accuracy_guard_lambda,
         init.accept_ties,
         accept_policy_name,
         cli_neutral_p,
@@ -2181,7 +2192,27 @@ fn main() {
                     } else {
                         0.0
                     };
-                    cos * (1.0 + 0.1 * alive_frac) + diversity_guard_lambda * diversity
+                    let accuracy = if accuracy_guard_lambda > 0.0 {
+                        eval_accuracy_proj(
+                            n,
+                            p,
+                            &table,
+                            &pair_ids,
+                            &hot_to_idx,
+                            DEFAULT_EVAL_LEN,
+                            er,
+                            &init.propagation,
+                            init.output_start(),
+                            h,
+                            init.input_end(),
+                            input_scatter,
+                        )
+                    } else {
+                        0.0
+                    };
+                    cos * (1.0 + 0.1 * alive_frac)
+                        + diversity_guard_lambda * diversity
+                        + accuracy_guard_lambda * accuracy
                 },
                 &evo_config,
                 acceptance_policy,
@@ -2236,7 +2267,27 @@ fn main() {
                     } else {
                         0.0
                     };
-                    cos * (1.0 + 0.1 * alive_frac) + diversity_guard_lambda * diversity
+                    let accuracy = if accuracy_guard_lambda > 0.0 {
+                        eval_accuracy_proj(
+                            n,
+                            p,
+                            &table,
+                            &pair_ids,
+                            &hot_to_idx,
+                            DEFAULT_EVAL_LEN,
+                            er,
+                            &init.propagation,
+                            init.output_start(),
+                            h,
+                            init.input_end(),
+                            input_scatter,
+                        )
+                    } else {
+                        0.0
+                    };
+                    cos * (1.0 + 0.1 * alive_frac)
+                        + diversity_guard_lambda * diversity
+                        + accuracy_guard_lambda * accuracy
                 },
                 &evo_config,
                 jackpot,
@@ -2568,6 +2619,7 @@ fn main() {
                 .map(|p| p.display().to_string()),
             embedding_anchored_highways,
             diversity_guard_lambda,
+            accuracy_guard_lambda,
         };
         let meta_json = serde_json::to_string_pretty(&meta).expect("failed to serialize run meta");
         let meta_path = checkpoint_path
