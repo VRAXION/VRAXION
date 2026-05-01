@@ -79,6 +79,8 @@ struct RunMeta {
     archive_switch_interval_panels: usize,
     archive_min_cell_confidence: f64,
     archive_p2_model: Option<String>,
+    embedding_anchored_highways: usize,
+    diversity_guard_lambda: f64,
 }
 
 struct PanelMetrics {
@@ -1381,6 +1383,69 @@ fn compute_panel_metrics(
     }
 }
 
+fn quick_output_diversity_score(
+    net: &mut Network,
+    proj: &Int8Projection,
+    table: &VcbpTable,
+    pair_ids: &[u16],
+    propagation: &instnct_core::PropagationConfig,
+    output_start: usize,
+    neuron_count: usize,
+    input_end: usize,
+    input_scatter: bool,
+) -> f64 {
+    let snapshot = net.save_state();
+    let mut probes = vec![
+        VcbpTable::pair_id(b't', b'h'),
+        VcbpTable::pair_id(b'e', b' '),
+        VcbpTable::pair_id(b' ', b't'),
+        VcbpTable::pair_id(b'a', b'l'),
+    ];
+    if !pair_ids.is_empty() {
+        let count = 4usize.min(pair_ids.len());
+        for k in 0..count {
+            probes.push(pair_ids[(k * pair_ids.len()) / count]);
+        }
+    }
+    probes.sort_unstable();
+    probes.dedup();
+
+    let mut charges_list: Vec<Vec<u8>> = Vec::with_capacity(probes.len());
+    let mut predictions = Vec::with_capacity(probes.len());
+    for pair_id in probes.iter().copied() {
+        net.reset();
+        let emb = table.embed_id(pair_id);
+        let mut input = vec![0i32; neuron_count];
+        quantize_embedding_to_input(table, emb, &mut input, input_end, input_scatter);
+        net.propagate(&input, propagation).unwrap();
+        let charges = net.charge_vec(output_start..neuron_count);
+        predictions.push(proj.predict(&charges));
+        charges_list.push(charges);
+    }
+    net.restore_state(&snapshot);
+
+    if charges_list.len() < 2 {
+        return 0.0;
+    }
+    let output_len = neuron_count.saturating_sub(output_start).max(1);
+    let mut diff_dims = 0usize;
+    let mut pair_count = 0usize;
+    for i in 0..charges_list.len() {
+        for j in (i + 1)..charges_list.len() {
+            diff_dims += charges_list[i]
+                .iter()
+                .zip(charges_list[j].iter())
+                .filter(|(a, b)| a != b)
+                .count();
+            pair_count += 1;
+        }
+    }
+    let charge_diversity = diff_dims as f64 / (pair_count.max(1) * output_len) as f64;
+    let unique_predictions = predictions.iter().copied().collect::<HashSet<_>>().len();
+    let prediction_diversity = unique_predictions as f64 / charges_list.len() as f64;
+    0.5 * charge_diversity + 0.5 * prediction_diversity
+}
+
 /// Seed mutual inhibition: two clusters in the output zone that suppress each other.
 fn seed_mutual_inhibition(net: &mut Network, output_start: usize, h: usize, rng: &mut impl Rng) {
     let mid = output_start + (h - output_start) / 2;
@@ -1549,6 +1614,84 @@ fn seed_rooted_pathways(
     built
 }
 
+fn prime_highway_neuron(net: &mut Network, idx: usize) {
+    let sd = &mut net.spike_data_mut()[idx];
+    sd.threshold = 0;
+    sd.channel = 1;
+    net.polarity_mut()[idx] = 1;
+}
+
+fn prime_readout_neuron(net: &mut Network, idx: usize) {
+    let sd = &mut net.spike_data_mut()[idx];
+    sd.threshold = 15;
+    // Channel 8 keeps max-threshold readout anchors from firing during a 6-tick
+    // token, so direct input charge is preserved instead of reset to a binary spike.
+    sd.channel = 8;
+    net.polarity_mut()[idx] = 1;
+}
+
+fn seed_embedding_anchored_highways(
+    net: &mut Network,
+    embedding_dim: usize,
+    input_end: usize,
+    output_start: usize,
+    per_dim: usize,
+    rng: &mut impl Rng,
+) -> usize {
+    let h = net.neuron_count();
+    if per_dim == 0 || output_start >= input_end || input_end >= h {
+        return 0;
+    }
+    let mut built = 0usize;
+    let output_only_len = h - input_end;
+    let mut direct_edges: Vec<(u16, u16)> = Vec::new();
+    for src in 0..embedding_dim.min(input_end).min(h) {
+        for path_idx in 0..per_dim {
+            let hub_low = rng.gen_range(output_start..input_end);
+            let hub_high = rng.gen_range(output_start..input_end);
+            let out = rng.gen_range(input_end..h);
+            let direct_out = input_end + ((src * per_dim + path_idx) % output_only_len);
+            direct_edges.push((src as u16, direct_out as u16));
+            let mut added = false;
+            if net.graph_mut().add_edge(src as u16, direct_out as u16) {
+                added = true;
+            }
+            if net.graph_mut().add_edge(src as u16, hub_low as u16) {
+                added = true;
+            }
+            if net.graph_mut().add_edge(hub_low as u16, hub_high as u16) {
+                added = true;
+            }
+            if net.graph_mut().add_edge(hub_high as u16, out as u16) {
+                added = true;
+            }
+            prime_highway_neuron(net, src);
+            prime_highway_neuron(net, hub_low);
+            prime_highway_neuron(net, hub_high);
+            prime_readout_neuron(net, direct_out);
+            prime_readout_neuron(net, out);
+            if added {
+                built += 1;
+            }
+        }
+    }
+    let direct_targets: HashSet<u16> = direct_edges.iter().map(|&(_, target)| target).collect();
+    let allowed_direct_edges: HashSet<(u16, u16)> = direct_edges.iter().copied().collect();
+    let spurious_incoming: Vec<(u16, u16)> = net
+        .graph()
+        .iter_edges()
+        .filter(|edge| {
+            direct_targets.contains(&edge.target)
+                && !allowed_direct_edges.contains(&(edge.source, edge.target))
+        })
+        .map(|edge| (edge.source, edge.target))
+        .collect();
+    for (source, target) in spurious_incoming {
+        net.graph_mut().remove_edge(source, target);
+    }
+    built
+}
+
 fn main() {
     let args: Vec<String> = env::args().skip(1).collect();
     if args.len() < 2 {
@@ -1564,6 +1707,8 @@ fn main() {
     let mut jackpot: usize = 9;
     let mut cli_ticks: Option<usize> = None;
     let mut cli_chain_count: Option<usize> = None;
+    let mut embedding_anchored_highways: usize = 0;
+    let mut diversity_guard_lambda: f64 = 0.0;
     let mut cli_accept_ties: Option<bool> = None;
     let mut cli_accept_policy: Option<String> = None;
     let mut cli_neutral_p: f64 = 1.0;
@@ -1617,6 +1762,18 @@ fn main() {
             "--chain-count" => {
                 i += 1;
                 cli_chain_count = Some(args[i].parse().unwrap());
+            }
+            "--embedding-anchored-highways" => {
+                i += 1;
+                embedding_anchored_highways = args[i].parse().unwrap();
+            }
+            "--diversity-guard-lambda" => {
+                i += 1;
+                diversity_guard_lambda = args[i].parse().unwrap();
+                assert!(
+                    diversity_guard_lambda >= 0.0,
+                    "--diversity-guard-lambda must be >= 0"
+                );
             }
             "--accept-ties" => {
                 i += 1;
@@ -1816,7 +1973,7 @@ fn main() {
 
     println!("\n=== MUTUAL INHIBITION EXPERIMENT ===");
     println!(
-        "  H={}, {} steps, {} classes, seed={}, jackpot={}, ticks={}, chain_count={}, accept_ties={}, accept_policy={}, neutral_p={:.3}, accept_epsilon={:.6}, input_scatter={}, operator_policy={}, archive_parent_policy={}, phase={}, arm={}, run_id={}\n",
+        "  H={}, {} steps, {} classes, seed={}, jackpot={}, ticks={}, chain_count={}, embedding_anchored_highways={}, diversity_guard_lambda={:.3}, accept_ties={}, accept_policy={}, neutral_p={:.3}, accept_epsilon={:.6}, input_scatter={}, operator_policy={}, archive_parent_policy={}, phase={}, arm={}, run_id={}\n",
         h,
         steps,
         n_classes,
@@ -1824,6 +1981,8 @@ fn main() {
         jackpot,
         init.propagation.ticks_per_token,
         init.chain_count,
+        embedding_anchored_highways,
+        diversity_guard_lambda,
         init.accept_ties,
         accept_policy_name,
         cli_neutral_p,
@@ -1850,6 +2009,20 @@ fn main() {
         &mut rng,
     );
     println!("  Rooted pathways: {n_paths}, edges={}", net.edge_count());
+    let anchored_paths = seed_embedding_anchored_highways(
+        &mut net,
+        table.e,
+        init.input_end(),
+        init.output_start(),
+        embedding_anchored_highways,
+        &mut rng,
+    );
+    if embedding_anchored_highways > 0 {
+        println!(
+            "  Embedding-anchored highways: {anchored_paths} (per_dim={embedding_anchored_highways}), edges={}",
+            net.edge_count()
+        );
+    }
 
     // *** THE KEY: seed mutual inhibition ***
     seed_mutual_inhibition(&mut net, init.output_start(), h, &mut rng);
@@ -1993,7 +2166,22 @@ fn main() {
                     let charges = n.charge_vec(init.output_start()..h);
                     let alive = charges.iter().filter(|&&c| c > 0).count();
                     let alive_frac = alive as f64 / (h - init.output_start()) as f64;
-                    cos * (1.0 + 0.1 * alive_frac) // very gentle diversity pressure (λ=0.1)
+                    let diversity = if diversity_guard_lambda > 0.0 {
+                        quick_output_diversity_score(
+                            n,
+                            p,
+                            &table,
+                            &pair_ids,
+                            &init.propagation,
+                            init.output_start(),
+                            h,
+                            init.input_end(),
+                            input_scatter,
+                        )
+                    } else {
+                        0.0
+                    };
+                    cos * (1.0 + 0.1 * alive_frac) + diversity_guard_lambda * diversity
                 },
                 &evo_config,
                 acceptance_policy,
@@ -2033,7 +2221,22 @@ fn main() {
                     let charges = n.charge_vec(init.output_start()..h);
                     let alive = charges.iter().filter(|&&c| c > 0).count();
                     let alive_frac = alive as f64 / (h - init.output_start()) as f64;
-                    cos * (1.0 + 0.1 * alive_frac) // very gentle diversity pressure (λ=0.1)
+                    let diversity = if diversity_guard_lambda > 0.0 {
+                        quick_output_diversity_score(
+                            n,
+                            p,
+                            &table,
+                            &pair_ids,
+                            &init.propagation,
+                            init.output_start(),
+                            h,
+                            init.input_end(),
+                            input_scatter,
+                        )
+                    } else {
+                        0.0
+                    };
+                    cos * (1.0 + 0.1 * alive_frac) + diversity_guard_lambda * diversity
                 },
                 &evo_config,
                 jackpot,
@@ -2363,6 +2566,8 @@ fn main() {
             archive_p2_model: archive_p2_model_path
                 .as_ref()
                 .map(|p| p.display().to_string()),
+            embedding_anchored_highways,
+            diversity_guard_lambda,
         };
         let meta_json = serde_json::to_string_pretty(&meta).expect("failed to serialize run meta");
         let meta_path = checkpoint_path
