@@ -124,11 +124,12 @@ Chain diagnosis on the final checkpoint:
 - unique predictions: `7/8`
 - context-dependent predictions: `3/4`
 
-Verdict: `D11H_FINEWEB_H512_SCALING_SIGNAL_UNSTABLE`
+Verdict: `D11H_FINEWEB_H512_SCALING_SIGNAL_NEEDS_CONFIRM`
 
-The 10k run proves a stronger H512 FineWeb state is reachable, but the current
-example only saved the end-of-run checkpoint. The best observed state was the
-10k peak at `3.90%`, while the saved final checkpoint ended at `1.60%`.
+The 10k run proves a stronger H512 FineWeb state is reachable, but the
+progress-sample score and final-sample score disagree. Both scores are from the
+same end-of-run network state, so this should be treated as eval-sample variance
+until a paired multi-seed confirm proves otherwise.
 
 ## Interpretation
 
@@ -149,25 +150,27 @@ This is not a dead-H512 or Alice-only artifact. FineWeb-Edu H512 now has:
 - accepted strict mutations;
 - a best observed state more than 5x above the D11g 0.70% short signal.
 
-The remaining blocker is stability/checkpoint capture, not basic H512 viability.
+The remaining blocker is stability under paired evaluation, not basic H512
+viability.
 
 ## Next Gate
 
 Recommended next step:
 
 ```text
-D11i best-checkpoint capture + confirm
+D11i H512 FineWeb paired confirm
 ```
 
-Required changes:
+Required run shape:
 
-- add best-observed checkpoint saving to `evolve_mutual_inhibition`;
-- rerun the anchor4/lambda0.20 H512 FineWeb arm with periodic best capture;
-- confirm the best checkpoint at `eval_len=4000` with fresh seeds;
-- only then decide whether to run a longer H512 baseline or move toward H1024.
+- create a same-seed H512 anchor4/lambda0.20 init checkpoint as baseline;
+- compare the D11h 10k checkpoint against that baseline on paired eval seeds;
+- include artifact controls where the H512 evaluator supports them;
+- confirm first at short budget, then at `eval_len=4000` if the short gate passes.
 
-Do not promote the 10k final checkpoint directly. It is useful evidence, but the
-best state was transient and must be captured explicitly.
+Do not promote the 10k checkpoint directly. It is useful evidence, but the
+`3.90%` versus `1.60%` split means it must be checked with paired seeds before
+it can become a scaling proof.
 
 ## Progress Map
 
@@ -190,15 +193,14 @@ GLOBAL RELEASE-READY AI MAP
     DONE: D11g weak signal
 
 [6] H512 FineWeb variant sweep
-    CURRENT RESULT: PASS-UNSTABLE
-    D11h finds a strong reachable H512 state, peak 3.90%, but final checkpoint
-    falls to 1.60%
+    CURRENT RESULT: PASS-NEEDS-CONFIRM
+    D11h finds a strong H512 signal, peak sample 3.90%, final sample 1.60%
 
-[7] Best-checkpoint capture + confirm
+[7] H512 paired confirm
     NEXT: D11i
 
 [8] H512 long confirm / H1024 decision
-    BLOCKED until D11i captures and confirms a stable best checkpoint
+    BLOCKED until D11i confirms the saved D11h checkpoint against an H512 init baseline
 
 [9] release-ready AI candidate package
     BLOCKED until H512 confirm or independent H384 reproduction passes
