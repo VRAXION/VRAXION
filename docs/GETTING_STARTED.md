@@ -1,6 +1,6 @@
 # Getting Started with VRAXION
 
-_Last updated: 2026-04-30 — against release `v5.0.0-beta.8`_
+_Last updated: 2026-05-01 — against release `v5.0.0-beta.9`_
 
 ---
 
@@ -22,47 +22,57 @@ For the full architecture thesis and status taxonomy, start with
 
 ## Where to find the latest release
 
-**Current public release tag:** `v5.0.0-beta.8`
+**Current public release tag:** `v5.0.0-beta.9`
 
-- GitHub release page: https://github.com/VRAXION/VRAXION/releases/tag/v5.0.0-beta.8
-- Release artifact manifest: [`docs/releases/v5.0.0-beta.8-artifacts.md`](releases/v5.0.0-beta.8-artifacts.md)
-- Checkpoint name: `seed2042_improved_generalist_v1.ckpt`
+- GitHub release page: https://github.com/VRAXION/VRAXION/releases/tag/v5.0.0-beta.9
+- Checkpoint name: `seed2042_improved_generalist_top01_v2.ckpt`
 - Stable local path (not tracked by Git — see note below):
-  `output/releases/v5.0.0-beta.8/seed2042_improved_generalist_v1.ckpt`
-- SHA256: `D63200504C5B4A6EA2134FD26E3E3D7CB75FF05884236DE2CC6E206BB4BA8D54`
+  `output/releases/v5.0.0-beta.9/seed2042_improved_generalist_top01_v2.ckpt`
+- SHA256: `b76789c42f4349ee28c18ce97bc5f0811a89c9b138e6ecdb86fa55626f019ddb`
+- Scope doc (also in the release folder): `output/releases/v5.0.0-beta.9/CLAIM_SCOPE.md`
 
 > **Note on the checkpoint binary.** `.ckpt` files are listed in `.gitignore` and are
 > not committed. If a GitHub release is attached for this tag, the `.ckpt` and
 > `.sha256` files will be available as release assets there. Verify the checksum
 > against the value above before use.
 
-The prior release is `v5.0.0-beta.7` (Phase D9 smooth+accuracy specialist,
-`seed2042_improved_v1`). The full release history is in [`CHANGELOG.md`](../CHANGELOG.md).
+The prior release is `v5.0.0-beta.8` (D9 smooth+accuracy specialist after artifact
+hardening, `seed2042_improved_generalist_v1`). The release before that is
+`v5.0.0-beta.7`. The full release history is in [`CHANGELOG.md`](../CHANGELOG.md).
 
 ---
 
-## What is in beta.8 — and what it is not
+## What is in beta.9 — and what it is not
 
 ### What it is
 
-`v5.0.0-beta.8` adds **Phase D9.2 multi-objective generalist confirmation** on top of
-the beta.7 specialist checkpoint.
+`v5.0.0-beta.9` adds **Phase D10u state-anchored generalist confirmation** on top of
+the beta.8 generalist baseline.
 
-The D9.2 arc produced a validated H=384 research checkpoint,
-`seed2042_improved_generalist_v1`, that improves all four tracked metrics (smooth,
-accuracy, echo, unigram) relative to the seed2042 baseline. The D9.2b confirmation
-ran 30 fresh seeds at two eval lengths (4000 and 16000) and passed all strict gates.
+The D10u arc produced a release-candidate research checkpoint,
+`seed2042_improved_generalist_top01_v2`, that passed the full D10r-v8 adversarial
+gate (state identity, projection-null, and shared-shuffle controls) at
+`eval_len=16000` across 30 fresh evaluation seeds, sharded into 6 independent runs:
+30/30 pass, 0/30 fail, no blocker. Min trusted_mo_ci_low: +0.084493. Min
+real_mo_ci_low: +0.178087.
 
 ### What it is not — explicit scope boundary
 
-- `seed2042_improved_generalist_v1` is a **validated H=384 research checkpoint**. It is
-  not a replacement for the current public mainline grower (`neuron_grower.rs`).
+- `seed2042_improved_generalist_top01_v2` is a **release-candidate research
+  checkpoint**. It is not a replacement for the current public mainline grower
+  (`neuron_grower.rs`).
 - This checkpoint lives in the **direct-genome research lane** (`evolve_mutual_inhibition`
   substrate, H=384, seed2042). It does not invalidate or supersede the grower mainline.
-- The **Python deploy SDK** (`Python/`) is currently scaffolding. `block_a_byte_unit`
-  and `block_b_merger` have working code and tests; the higher blocks (Embedder V1,
-  Nano Brain V1) are untrained scaffolds awaiting training artifacts. The Python
-  `README.md` in that folder says "under construction" — that is the accurate description.
+- **Cross-seed and cross-H generalization is not yet established.** D10b showed
+  the recipe is seed-sensitive (seed_2042 found a basin; seeds 42, 1042, 3042, 4042
+  did not under shallow scout). H=512 / H=8192 scaling remain blocked.
+- **CPU/Rust cross-check is the next gate.** The 16k confirm ran on the
+  Python/GPU eval lane. A second-runtime cross-check is recommended before any
+  final ship decision.
+- The **Python deploy SDK** (`Python/`) is partial. `block_a_byte_unit`,
+  `block_b_merger`, and `block_c_embedder` have working code and tests; the
+  higher blocks (Embedder V1, Nano Brain V1) are untrained scaffolds awaiting
+  training artifacts.
 - The **Rust deploy SDK** (`Rust/`) is also a placeholder with no ported code yet.
   `instnct-core/` is the Rust research mainline; `Rust/` is a future deploy target.
 - The **canonical Rust code path on `main`** remains

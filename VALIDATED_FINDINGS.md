@@ -1,6 +1,6 @@
 # VRAXION Validated Findings
 
-_Last updated: 2026-04-29_
+_Last updated: 2026-04-30_
 
 Canonical evidence summary. Repo-tracked docs are canonical; the GitHub wiki is a mirrored secondary surface.
 
@@ -8,7 +8,7 @@ Canonical evidence summary. Repo-tracked docs are canonical; the GitHub wiki is 
 
 The repo is in a transition state:
 
-- **Released public tag:** `v5.0.0-beta.8` — Phase D9.2 multi-objective confirmation + `seed2042_improved_generalist_v1` validated H=384 research checkpoint (`v5.0.0-beta.7` is the prior Phase D9 smooth+accuracy specialist checkpoint; `v5.0.0-beta.6` is the prior Phase D6/D7/D8 research-line checkpoint + wiki/HTML doc-drift correction patch; `v5.0.0-beta.5` is the prior Phase D3/D3.1/D4 SAF lock + 56-example archive cleanup release; `v5.0.0-beta.1` remains as the original language-evolution beta, historical reference only)
+- **Released public tag:** `v5.0.0-beta.9` — Phase D10u state-anchored wiring search, `top_01` release-candidate research checkpoint, 30/30 pass adversarial 16k gate (`v5.0.0-beta.8` is the prior Phase D9.2 multi-objective confirmation + `seed2042_improved_generalist_v1` validated H=384 research checkpoint; `v5.0.0-beta.7` is the prior Phase D9 smooth+accuracy specialist checkpoint; `v5.0.0-beta.6` is the prior Phase D6/D7/D8 research-line checkpoint + wiki/HTML doc-drift correction patch; `v5.0.0-beta.5` is the prior Phase D3/D3.1/D4 SAF lock + 56-example archive cleanup release; `v5.0.0-beta.1` remains as the original language-evolution beta, historical reference only)
 - **Current mainline on `main`:** Rust grower (`instnct-core/examples/neuron_grower.rs`)
 - **Python deploy SDK:** `Python/` — Block A + B, pure numpy (256/256 + 65536/65536 lossless)
 - **Historical Python research lane:** frozen at tag `archives/python-research-20260420` (was `instnct/`, migrated to Rust `instnct-core/` on 2026-04-13)
@@ -176,6 +176,22 @@ Eight-run audit (D9.0n → D9.0o → D9.0q → D9.0r → D9.0s → D9.0v → D9.
 | **Multi-task limit (D9.0z generalization gate)** | Verdict `D9_SMOOTH_ONLY_WIN`. Per-metric paired deltas (n=60 each): smooth +0.01733, accuracy +0.00455 (positive_rate 95.0%), echo −0.00009 (neutral), unigram **−0.00882** (positive_rate 0.0%, regression). Decision: keep as smooth/accuracy specialist; do NOT promote as broad generalization checkpoint. Doc: `docs/research/PHASE_D9_GENERALIZATION_GATE.md`. | **Validated finding (scope-limit)** |
 | **Local repair limit (D9.1)** | Local repair microprobe + confirm produce only **weak** repair and cannot bridge the unigram task gap from this candidate. The smooth+accuracy gain does not generalize to unigram by local search. Docs: `docs/research/PHASE_D9_1_REPAIR_MICROPROBE.md`, `docs/research/PHASE_D9_1_REPAIR_CONFIRM.md`. | **Validated finding (negative)** |
 | **D9.0d progressive planet renderer (5-tier basin hierarchy)** | Visualization tooling under `tools/d9_0d_progressive_planet/` with a 5-tier basin/mountain hierarchy and the mountain-renderer state machine used by D9.0n/o/q. Renderer is owned by a parallel research line; the artifact landed at the same release boundary as the D9.0r-D9.0z verdicts. | **Validated finding (tooling)** |
+
+## Phase D10u state-anchored wiring search — release-candidate research checkpoint (2026-04-30)
+
+D10u pivots from "can we promote beta.8?" to "search for candidates that pass the D10r-v8 state-identity artifact gate from the start." The causal mechanism is `edge_threshold_coadaptation`, first confirmed at D9.4b. The top_01 candidate from `seed_2042` under the `edge_threshold_coadapted` arm is the first checkpoint to pass all artifact controls at promotion-grade eval.
+
+**No-overclaim scope.** `top_01` is a release-candidate research checkpoint at H=384 only, on the `seed_2042` baseline only. It is NOT a public mainline grower replacement, does NOT constitute cross-architecture or cross-seed replication, and does NOT unlock H512 or universality claims. CPU/Rust cross-check is the recommended next gate before final ship.
+
+| Finding | Result | Status |
+|---|---|---|
+| **D10u state-anchored search machinery** | Short scout (eval_len=128, 3 seeds, 3 checkpoints × 3 arms): verdict `D10S_NO_TRUSTED_SIGNAL` at scout budget. Seed2042 `edge_threshold_coadapted` arm produced the best weak-state-anchored signal. Ladder follow-up (eval_len=128, 3 rounds, 6 proposals/round) promotes a `STRICT_TRUSTED` scout candidate from seed_2042. Doc: `docs/research/PHASE_D10U_STATE_ANCHORED_WIRING_PRIOR.md`. | **Validated finding (tooling + scout)** |
+| **D10u bounded D10r-v8 confirm (eval_len=1000)** | `top_01_seed_2042_edge_threshold_coadapted.ckpt` vs seed_2042 D7 H=384 baseline, 4 eval seeds, verdict `D10R_V8_STATE_IDENTITY_PASS`. real MO delta CI low +0.184054; trusted MO CI low +0.170111. All state-identity diagnostics clean (zero projection-consistent drift, 0 duplicate/similar rows, all shuffle bounds pass). Reopens the release-candidate path. | **Validated finding** |
+| **D10u longer D10r-v8 confirm (eval_len=4000)** | 4 eval seeds, verdict `D10R_V8_STATE_IDENTITY_PASS`. real MO delta CI low +0.185742; trusted MO CI low +0.131453. `state_shuffle_shared` — the main beta.8 blocker — does not block this candidate. | **Validated finding** |
+| **D10u promotion-grade 16k / 30-seed confirm** | `top_01` vs seed_2042 baseline, eval_len=16000, eval seeds 970101..970130, sharded fail-stop runner. Verdict: `D10U_TOP01_16K_SHARDED_PASS`. 30/30 shards complete, 0 fail, no blocking control families. Minimum trusted MO CI low: **+0.084493**. Minimum real MO delta CI low: **+0.178087**. Weakest shard: shard_24 / seed 970125 (trusted_mo_ci_low +0.084493). Decision: `D10U_TOP01_RELEASE_CANDIDATE_RESEARCH_CHECKPOINT`. | **Validated finding (release-candidate research checkpoint)** |
+| **D10u all 4 tasks pass** | At promotion-grade eval, all four task gates pass: smooth, accuracy, echo, unigram. The unigram regression that scoped beta.7 to "specialist" is resolved in `top_01`. | **Validated finding** |
+| **D10u causal mechanism** | Causal explanation is `edge_threshold_coadaptation`, same mechanism confirmed at D9.4b on the beta.8 generalist. Projection, channel, and polarity are unchanged; the improvement is a co-adapted edge-wiring plus threshold-timing package. | **Validated finding** |
+| **D10u no-overclaim boundary** | `top_01` is a validated H=384 research checkpoint on `seed_2042` only. Limitations: H=384 only, seed_2042 baseline only, replication across seeds/H not yet established. Pending next gate: CPU/Rust cross-check before any final ship decision. | **Validated finding (scope boundary)** |
 
 ## How To Read This Page
 

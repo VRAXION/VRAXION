@@ -5,6 +5,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [5.0.0-beta.9] - 2026-05-01
+
+### Added — 2026-04-30: Phase D10u state-anchored wiring search + `top_01` release-candidate research checkpoint
+
+Phase D10u pivots from "promote beta.8" to a wiring search that uses the D10r-v8 artifact controls (random_projection_null, state_shuffle_shared, state_shuffle_projection_consistent, no_network_random_state) inside the acceptance loop instead of only after the fact. The search objective is: candidate real multi-objective improvement > artifact-null controls, including state_shuffle_shared — the control that blocked beta.8 as a release candidate. The causal mechanism traced back to `EDGE_THRESHOLD_COADAPTATION`, first confirmed at D9.4b.
+
+- **D10u short scout** (`docs/research/PHASE_D10U_STATE_ANCHORED_WIRING_PRIOR.md`): eval_len=128, 3 seeds, 3 checkpoints × 3 arms (random_sparse_baseline, edge_threshold_coadapted, motif_biased). Verdict: `D10S_NO_TRUSTED_SIGNAL` at scout budget. Seed_2042 `edge_threshold_coadapted` produces the best weak-state-anchored row.
+- **D10u focused ladder**: 3 rounds × 6 proposals/round, seed_2042 + seed_4042. A `STRICT_TRUSTED` scout candidate emerges from seed_2042 `edge_threshold_coadapted`. Scout checkpoint is exported and reload-verified (RELOAD_OK 8).
+- **D10u bounded D10r-v8 confirm (eval_len=1000)**: target `top_01_seed_2042_edge_threshold_coadapted.ckpt` vs seed_2042 D7 H=384 baseline, 4 eval seeds, 2 control repeats. Verdict: `D10R_V8_STATE_IDENTITY_PASS`. Real MO delta CI low +0.184054; trusted MO CI low +0.170111. All state-identity diagnostics clean: zero projection-consistent drift, 0 duplicate/similar projection rows, all active-row/high-norm/low-norm shuffle bounds pass. This reopens the release-candidate path that beta.8 could not satisfy.
+- **D10u longer D10r-v8 confirm (eval_len=4000)**: 4 eval seeds, verdict `D10R_V8_STATE_IDENTITY_PASS`. Real MO delta CI low +0.185742; trusted MO CI low +0.131453. The `state_shuffle_shared` control — the main beta.8 blocker — does not block `top_01`.
+- **Promotion-grade 16k / 30-seed confirm** (`output/phase_d10u_top01_d10r_confirm_20260430/confirm_16000_30seed_sharded_v2`): sharded fail-stop runner, eval_len=16000, eval seeds 970101..970130, 2 control repeats. Verdict: **`D10U_TOP01_16K_SHARDED_PASS`**. 30/30 shards complete, 0 fail, no blocking control families. Minimum trusted MO CI low: **+0.084493**. Minimum real MO delta CI low: **+0.178087**. Weakest shard: shard_24 / seed 970125. Decision: **`D10U_TOP01_RELEASE_CANDIDATE_RESEARCH_CHECKPOINT`**.
+- **All 4 task gates pass**: smooth, accuracy, echo, and unigram all pass at promotion-grade eval. The unigram regression that scoped beta.7 as "specialist" and which D9.2 resolved at generalist level is preserved in `top_01`.
+- **No-overclaim framing**: `top_01` (`seed_2042 edge_threshold_coadapted` endpoint from the D10u state-anchored search) is a release-candidate research checkpoint at H=384, `seed_2042` baseline only. It is NOT a public mainline grower replacement. Limitations: H=384 only, seed_2042 baseline only, cross-seed / cross-H replication not yet established. Pending next gate before any final ship decision: CPU/Rust cross-check.
+
 ### Added — 2026-04-29: Phase D10 basin universality scaffold
 
 - Added long-horizon D10 scout modes to `d9_direct_landscape`: `edge-lock-threshold-sweep`, `threshold-lock-edge-sweep`, `edge-threshold-continued-climb`, `scaling-universality-scout`, and `task-universality-scout`.
@@ -26,6 +40,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Added `d9_direct_landscape --mode quadtree-scout` for local quadtree refinement over the D9 island tiles. The mode emits child-tile fields (`parent_tile_id`, `quadrant`, `child_tile_id`, child bin indices, root/child resolution, control flag), evaluates candidates with the D9.2 multi-objective gate, and exports top child candidate checkpoints.
 - D9.3a first pass (`docs/research/PHASE_D9_3A_QUADTREE_REPORT.md`) scanned 12 child tiles plus controls around `11_16`, `12_29`, and `9_26`, starting from `seed2042_improved_generalist_v1` and measuring deltas against the H=384 seed2042 baseline. Verdict: `D9_3A_CONFIRMED_CHILD_CANDIDATES` with topology readout `D9_3A_MIXED_CHILD_AND_CONTROL_SIGNAL`.
 - Adversarial result: 15 child rows and 9 control rows reached `FULL_GENERALIST`, so the result is not an isolated pinpoint-child claim. The current readout is a wider mixed child/control signal in the local perturbation space.
+
+### Changed — 2026-04-30: VALIDATED_FINDINGS Phase D10u section + version metadata sync
+
+- **`VALIDATED_FINDINGS.md` Phase D10u section added**: new "Phase D10u state-anchored wiring search — release-candidate research checkpoint (2026-04-30)" finding table. Explicit no-overclaim framing: H=384 only, seed_2042 baseline only, pending CPU/Rust cross-check. `_Last updated: 2026-04-30_` line bumped; "Released public tag" updated to `v5.0.0-beta.9`.
+- **Version metadata sync**: `Cargo.toml` (`5.0.0-beta.8` → `5.0.0-beta.9`), `CITATION.cff` (`version`, `date-released: 2026-05-01`), `docs/VERSION.json` (`current_release`), `README.md` (Release Snapshot block), `BETA.md` (released-tag cascade) all bumped. `Cargo.lock` workspace package row requires `cargo check -p instnct-core` by GPT or the user to regenerate.
+
+### Verification
+
+- Pending: `cargo check -p instnct-core` — Cargo.lock regeneration required (not run to spare CPU after 16k confirm).
+- Pending: CPU/Rust cross-check of `top_01` checkpoint — recommended next gate before final ship.
 
 ## [5.0.0-beta.8] - 2026-04-29
 

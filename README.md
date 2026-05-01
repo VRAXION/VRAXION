@@ -18,8 +18,8 @@ This repository is meant to be a credible front door for technical buyers and en
 
 ## Release Snapshot
 
-- **Current public release tag:** [`v5.0.0-beta.8`](https://github.com/VRAXION/VRAXION/releases/tag/v5.0.0-beta.8) (Phase D9.2 multi-objective confirmation + `seed2042_improved_generalist_v1` validated H=384 research checkpoint)
-- **Prior release:** [`v5.0.0-beta.7`](https://github.com/VRAXION/VRAXION/releases/tag/v5.0.0-beta.7) — Phase D9 direct-genome landscape audit + `seed2042_improved_v1` smooth+accuracy specialist checkpoint
+- **Current public release tag:** [`v5.0.0-beta.9`](https://github.com/VRAXION/VRAXION/releases/tag/v5.0.0-beta.9) (Phase D10u state-anchored wiring search + `top_01` release-candidate research checkpoint — 30/30 seeds pass adversarial 16k gate, H=384 only, not a mainline replacement)
+- **Prior release:** [`v5.0.0-beta.8`](https://github.com/VRAXION/VRAXION/releases/tag/v5.0.0-beta.8) — Phase D9.2 multi-objective confirmation + `seed2042_improved_generalist_v1` validated H=384 research checkpoint
 - **Next public milestone:** grower-based `v5.0.0 Public Beta`
 - **Current mainline code path on `main`:** [`instnct-core/examples/neuron_grower.rs`](instnct-core/examples/neuron_grower.rs)
 - **Python deploy SDK:** [`Python/`](Python/) — Block A + B, pure numpy, no ML framework dependency
