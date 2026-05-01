@@ -71,12 +71,10 @@ def frozen_beta8_rows_start(source: gpu_eval.CheckpointArrays, h: int, edge_coun
     return ckpt
 
 
-def block_local_projection_start(source: gpu_eval.CheckpointArrays, h: int, edge_count: int, seed: int) -> gpu_eval.CheckpointArrays:
-    ckpt = d10o.build_start(source, "beta8_lifted_v2", h, edge_count, seed)
-    ckpt.path = "block_local_projection_base"
+def block_local_projection(source: gpu_eval.ProjectionArrays, h: int) -> gpu_eval.ProjectionArrays:
     output_dim = gpu_eval.phi_dim(h)
-    src = source.projection.weights.astype(np.int16)
-    weights = np.zeros((output_dim, source.projection.output_classes), dtype=np.int16)
+    src = source.weights.astype(np.int16)
+    weights = np.zeros((output_dim, source.output_classes), dtype=np.int16)
     block = src.shape[0]
     # Copy beta.8 rows into separated local blocks with zero gaps. This avoids
     # full tiling while still allowing high-H output bands to participate.
@@ -85,7 +83,34 @@ def block_local_projection_start(source: gpu_eval.CheckpointArrays, h: int, edge
         if rows <= 0:
             break
         weights[offset : offset + rows, : src.shape[1]] = src[:rows]
-    ckpt.projection = gpu_eval.ProjectionArrays(weights, output_dim, source.projection.output_classes)
+    return gpu_eval.ProjectionArrays(weights, output_dim, source.output_classes)
+
+
+def block_local_projection_start(source: gpu_eval.CheckpointArrays, h: int, edge_count: int, seed: int) -> gpu_eval.CheckpointArrays:
+    ckpt = d10o.build_start(source, "beta8_lifted_v2", h, edge_count, seed)
+    ckpt.path = "block_local_projection_base"
+    ckpt.projection = block_local_projection(source.projection, h)
+    return ckpt
+
+
+def copy_zero_threshold_mid_start(source: gpu_eval.CheckpointArrays, h: int, edge_count: int, seed: int) -> gpu_eval.CheckpointArrays:
+    ckpt = d10o.build_start(source, "threshold_mid", h, edge_count, seed)
+    ckpt.path = "copy_zero_threshold_mid_base"
+    ckpt.projection = d10o.tiled_projection(source.projection, h, source.projection.output_classes, "copy_zero", seed + 807)
+    return ckpt
+
+
+def block_local_threshold_mid_start(source: gpu_eval.CheckpointArrays, h: int, edge_count: int, seed: int) -> gpu_eval.CheckpointArrays:
+    ckpt = d10o.build_start(source, "threshold_mid", h, edge_count, seed)
+    ckpt.path = "block_local_threshold_mid_base"
+    ckpt.projection = block_local_projection(source.projection, h)
+    return ckpt
+
+
+def signed_threshold_mid_start(source: gpu_eval.CheckpointArrays, h: int, edge_count: int, seed: int) -> gpu_eval.CheckpointArrays:
+    ckpt = d10o.build_start(source, "threshold_mid", h, edge_count, seed)
+    ckpt.path = "signed_threshold_mid_base"
+    ckpt.projection = d10o.tiled_projection(source.projection, h, source.projection.output_classes, "tiled_signed", seed + 907)
     return ckpt
 
 
@@ -94,6 +119,12 @@ def build_start(source: gpu_eval.CheckpointArrays, arm: str, h: int, edge_count:
         return frozen_beta8_rows_start(source, h, edge_count, seed)
     if arm == "block_local_projection":
         return block_local_projection_start(source, h, edge_count, seed)
+    if arm == "copy_zero_threshold_mid":
+        return copy_zero_threshold_mid_start(source, h, edge_count, seed)
+    if arm == "block_local_threshold_mid":
+        return block_local_threshold_mid_start(source, h, edge_count, seed)
+    if arm == "signed_threshold_mid":
+        return signed_threshold_mid_start(source, h, edge_count, seed)
     return d10o.build_start(source, arm, h, edge_count, seed)
 
 
@@ -107,6 +138,9 @@ def proposal_style(arm: str) -> str:
         "threshold_high",
         "block_local_projection",
         "frozen_beta8_rows",
+        "copy_zero_threshold_mid",
+        "block_local_threshold_mid",
+        "signed_threshold_mid",
     }:
         return "beta8_lifted"
     return "random_label_control"
