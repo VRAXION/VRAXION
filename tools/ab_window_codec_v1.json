@@ -1,0 +1,344 @@
+{
+  "version": "ab_window_codec_v1",
+  "window_bytes": 8,
+  "byte_bits": 8,
+  "a_dims_per_byte": 16,
+  "b_dims_per_byte": 8,
+  "a_window_dims": 128,
+  "b_window_dims": 64,
+  "a_byte_encoder": "bits_little_endian_duplicated_2x",
+  "b_encoder": "select_first_8_visible_lanes_per_byte",
+  "b_decoder": "transpose_of_b_encoder",
+  "latent_values": [
+    -1,
+    1
+  ],
+  "b_encoder_entries": [
+    {
+      "b_idx": 0,
+      "a_idx": 0,
+      "value": 1.0
+    },
+    {
+      "b_idx": 1,
+      "a_idx": 1,
+      "value": 1.0
+    },
+    {
+      "b_idx": 2,
+      "a_idx": 2,
+      "value": 1.0
+    },
+    {
+      "b_idx": 3,
+      "a_idx": 3,
+      "value": 1.0
+    },
+    {
+      "b_idx": 4,
+      "a_idx": 4,
+      "value": 1.0
+    },
+    {
+      "b_idx": 5,
+      "a_idx": 5,
+      "value": 1.0
+    },
+    {
+      "b_idx": 6,
+      "a_idx": 6,
+      "value": 1.0
+    },
+    {
+      "b_idx": 7,
+      "a_idx": 7,
+      "value": 1.0
+    },
+    {
+      "b_idx": 8,
+      "a_idx": 16,
+      "value": 1.0
+    },
+    {
+      "b_idx": 9,
+      "a_idx": 17,
+      "value": 1.0
+    },
+    {
+      "b_idx": 10,
+      "a_idx": 18,
+      "value": 1.0
+    },
+    {
+      "b_idx": 11,
+      "a_idx": 19,
+      "value": 1.0
+    },
+    {
+      "b_idx": 12,
+      "a_idx": 20,
+      "value": 1.0
+    },
+    {
+      "b_idx": 13,
+      "a_idx": 21,
+      "value": 1.0
+    },
+    {
+      "b_idx": 14,
+      "a_idx": 22,
+      "value": 1.0
+    },
+    {
+      "b_idx": 15,
+      "a_idx": 23,
+      "value": 1.0
+    },
+    {
+      "b_idx": 16,
+      "a_idx": 32,
+      "value": 1.0
+    },
+    {
+      "b_idx": 17,
+      "a_idx": 33,
+      "value": 1.0
+    },
+    {
+      "b_idx": 18,
+      "a_idx": 34,
+      "value": 1.0
+    },
+    {
+      "b_idx": 19,
+      "a_idx": 35,
+      "value": 1.0
+    },
+    {
+      "b_idx": 20,
+      "a_idx": 36,
+      "value": 1.0
+    },
+    {
+      "b_idx": 21,
+      "a_idx": 37,
+      "value": 1.0
+    },
+    {
+      "b_idx": 22,
+      "a_idx": 38,
+      "value": 1.0
+    },
+    {
+      "b_idx": 23,
+      "a_idx": 39,
+      "value": 1.0
+    },
+    {
+      "b_idx": 24,
+      "a_idx": 48,
+      "value": 1.0
+    },
+    {
+      "b_idx": 25,
+      "a_idx": 49,
+      "value": 1.0
+    },
+    {
+      "b_idx": 26,
+      "a_idx": 50,
+      "value": 1.0
+    },
+    {
+      "b_idx": 27,
+      "a_idx": 51,
+      "value": 1.0
+    },
+    {
+      "b_idx": 28,
+      "a_idx": 52,
+      "value": 1.0
+    },
+    {
+      "b_idx": 29,
+      "a_idx": 53,
+      "value": 1.0
+    },
+    {
+      "b_idx": 30,
+      "a_idx": 54,
+      "value": 1.0
+    },
+    {
+      "b_idx": 31,
+      "a_idx": 55,
+      "value": 1.0
+    },
+    {
+      "b_idx": 32,
+      "a_idx": 64,
+      "value": 1.0
+    },
+    {
+      "b_idx": 33,
+      "a_idx": 65,
+      "value": 1.0
+    },
+    {
+      "b_idx": 34,
+      "a_idx": 66,
+      "value": 1.0
+    },
+    {
+      "b_idx": 35,
+      "a_idx": 67,
+      "value": 1.0
+    },
+    {
+      "b_idx": 36,
+      "a_idx": 68,
+      "value": 1.0
+    },
+    {
+      "b_idx": 37,
+      "a_idx": 69,
+      "value": 1.0
+    },
+    {
+      "b_idx": 38,
+      "a_idx": 70,
+      "value": 1.0
+    },
+    {
+      "b_idx": 39,
+      "a_idx": 71,
+      "value": 1.0
+    },
+    {
+      "b_idx": 40,
+      "a_idx": 80,
+      "value": 1.0
+    },
+    {
+      "b_idx": 41,
+      "a_idx": 81,
+      "value": 1.0
+    },
+    {
+      "b_idx": 42,
+      "a_idx": 82,
+      "value": 1.0
+    },
+    {
+      "b_idx": 43,
+      "a_idx": 83,
+      "value": 1.0
+    },
+    {
+      "b_idx": 44,
+      "a_idx": 84,
+      "value": 1.0
+    },
+    {
+      "b_idx": 45,
+      "a_idx": 85,
+      "value": 1.0
+    },
+    {
+      "b_idx": 46,
+      "a_idx": 86,
+      "value": 1.0
+    },
+    {
+      "b_idx": 47,
+      "a_idx": 87,
+      "value": 1.0
+    },
+    {
+      "b_idx": 48,
+      "a_idx": 96,
+      "value": 1.0
+    },
+    {
+      "b_idx": 49,
+      "a_idx": 97,
+      "value": 1.0
+    },
+    {
+      "b_idx": 50,
+      "a_idx": 98,
+      "value": 1.0
+    },
+    {
+      "b_idx": 51,
+      "a_idx": 99,
+      "value": 1.0
+    },
+    {
+      "b_idx": 52,
+      "a_idx": 100,
+      "value": 1.0
+    },
+    {
+      "b_idx": 53,
+      "a_idx": 101,
+      "value": 1.0
+    },
+    {
+      "b_idx": 54,
+      "a_idx": 102,
+      "value": 1.0
+    },
+    {
+      "b_idx": 55,
+      "a_idx": 103,
+      "value": 1.0
+    },
+    {
+      "b_idx": 56,
+      "a_idx": 112,
+      "value": 1.0
+    },
+    {
+      "b_idx": 57,
+      "a_idx": 113,
+      "value": 1.0
+    },
+    {
+      "b_idx": 58,
+      "a_idx": 114,
+      "value": 1.0
+    },
+    {
+      "b_idx": 59,
+      "a_idx": 115,
+      "value": 1.0
+    },
+    {
+      "b_idx": 60,
+      "a_idx": 116,
+      "value": 1.0
+    },
+    {
+      "b_idx": 61,
+      "a_idx": 117,
+      "value": 1.0
+    },
+    {
+      "b_idx": 62,
+      "a_idx": 118,
+      "value": 1.0
+    },
+    {
+      "b_idx": 63,
+      "a_idx": 119,
+      "value": 1.0
+    }
+  ],
+  "notes": [
+    "B inverse restores an A-decodable 128D surface.",
+    "Redundant D22 lanes are intentionally zero after B inverse.",
+    "All byte bit order is little-endian: bit0 first."
+  ],
+  "sha256": "537ccf8b58e817b6bf7cf4e703d86f3dadc98317888715ed8d292de38a0bd926"
+}

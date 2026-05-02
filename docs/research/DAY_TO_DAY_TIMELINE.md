@@ -556,3 +556,46 @@ D23:     128D A-window abstract <-> 64D B-window abstract
 Updated source doc:
 
 - `docs/research/PHASE_D23_BBLOCK_WORD_ABSTRACTION.md`
+
+### 2026-05-02 - AB Window Codec V1 prepared
+
+- The D21-D23 A+B result was moved from scratch-only research shape into a
+  stable deployment-facing codec:
+
+```text
+8 bytes -> A128 -> B64 -> A128 -> 8 bytes
+```
+
+- Tracked implementation and artifact:
+
+```text
+tools/ab_window_codec.py
+tools/ab_window_codec_v1.json
+```
+
+- Acceptance result:
+
+```text
+AB_WINDOW_CODEC_V1_PASS
+eval_windows: 65536
+window_exact_acc: 100%
+byte_exact_acc: 100%
+bit_acc: 100%
+byte_margin_min: +2.0
+b_collision_count: 0
+a_window_dims: 128
+b_window_dims: 64
+b_encoder_weight_count: 64
+artifact_sha256: 537ccf8b58e817b6bf7cf4e703d86f3dadc98317888715ed8d292de38a0bd926
+```
+
+Important detail:
+
+```text
+B inverse restores an A-decodable 128D surface.
+It does not restore the redundant D22 copy lanes; those are zero by design.
+```
+
+Updated source doc:
+
+- `docs/AB_WINDOW_CODEC_V1_CONTRACT.md`

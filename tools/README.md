@@ -41,6 +41,8 @@ Invoked by `.github/workflows/ci.yml`:
 
 | File | Description |
 | --- | --- |
+| [`ab_window_codec.py`](ab_window_codec.py) | AB Window Codec V1 acceptance/export script: `8 bytes -> A128 -> B64 -> A128 -> 8 bytes`. |
+| [`ab_window_codec_v1.json`](ab_window_codec_v1.json) | Frozen AB Window Codec V1 artifact with sparse reciprocal B encoder entries and checksum. |
 | [`byte_embedder_lut.h`](byte_embedder_lut.h) | C/Rust-importable production LUT for the int4 C19 H=24 byte-unit champion. |
 | [`byte_embedder_lut_int8.json`](byte_embedder_lut_int8.json) | int8 variant of the byte-unit LUT (alternative deploy). |
 | [`byte_embedder_lut_int8_nozero.json`](byte_embedder_lut_int8_nozero.json) | int8 LUT with the zero quantization level dropped (constrained-width deploy variant). |
