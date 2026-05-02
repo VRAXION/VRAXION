@@ -263,7 +263,7 @@ fn unix_seconds() -> u64 {
 fn estimated_total_units(cli: &Cli) -> Option<usize> {
     match cli.mode.as_str() {
         "seed-replication-ladder" => Some(cli.checkpoints.len() * cli.mo_climbers * cli.mo_steps),
-        "multi-objective-climb" => Some(cli.mo_climbers * cli.mo_steps),
+        "multi-objective-climb" | "context-climb" => Some(cli.mo_climbers * cli.mo_steps),
         "repair-scan" => Some(cli.radii.len() * cli.mutation_types.len() * cli.repair_samples_per_bucket),
         "paratrooper-climb" => {
             let tile_count = cli
@@ -427,6 +427,36 @@ struct MultiObjectiveCandidate {
     mo_score: f64,
     mo_class: &'static str,
     accepted: bool,
+    net: Network,
+    proj: Int8Projection,
+}
+
+#[derive(Clone, Copy, Debug)]
+struct ContextScores {
+    prediction_diff_rate: f64,
+    charge_delta: f64,
+    target_gain: f64,
+    time_shuffle_target_gain: f64,
+}
+
+#[derive(Clone)]
+struct ContextCandidate {
+    climber_id: usize,
+    step_index: usize,
+    proposal_seed: u64,
+    radius: usize,
+    mutation_type: MutationType,
+    counts: MutationCounts,
+    direct_distance: usize,
+    edges: usize,
+    safety_scores: MultiMetricScores,
+    safety_deltas: MultiMetricScores,
+    mo_score: f64,
+    context_scores: ContextScores,
+    context_score: f64,
+    context_class: &'static str,
+    accepted: bool,
+    accept_reason: &'static str,
     net: Network,
     proj: Int8Projection,
 }
@@ -813,7 +843,7 @@ fn parse_args() -> Cli {
             "--help" | "-h" => {
                 println!(
                     "Usage: cargo run -p instnct-core --example d9_direct_landscape -- \
-                     --checkpoint PATH --H 256 --mode fail-fast|medium|full|staged|planet-scout|paratrooper-climb|endpoint-bridge \
+                     --checkpoint PATH --H 256 --mode fail-fast|medium|full|staged|planet-scout|paratrooper-climb|endpoint-bridge|context-climb \
                      --score-mode accuracy|smooth --samples-per-type N --out PATH"
                 );
                 std::process::exit(0);
@@ -840,6 +870,7 @@ fn parse_args() -> Cli {
         | "endpoint-robustness"
         | "repair-scan"
         | "multi-objective-climb" => vec![1],
+        | "context-climb" => vec![4, 8, 16, 32],
         | "quadtree-scout" => vec![4, 8, 16],
         | "causal-diff" => vec![1],
         | "edge-lock-threshold-sweep"
@@ -848,7 +879,7 @@ fn parse_args() -> Cli {
         | "scaling-universality-scout"
         | "task-universality-scout" => vec![4, 8, 16],
         "seed-replication-ladder" => vec![4, 8, 16, 32],
-        other => panic!("--mode expects fail-fast|medium|full|staged|planet-scout|paratrooper-climb|endpoint-bridge|endpoint-overlap|endpoint-robustness|repair-scan|multi-objective-climb|quadtree-scout|causal-diff|edge-lock-threshold-sweep|threshold-lock-edge-sweep|edge-threshold-continued-climb|scaling-universality-scout|task-universality-scout|seed-replication-ladder, got {other}"),
+        other => panic!("--mode expects fail-fast|medium|full|staged|planet-scout|paratrooper-climb|endpoint-bridge|endpoint-overlap|endpoint-robustness|repair-scan|multi-objective-climb|context-climb|quadtree-scout|causal-diff|edge-lock-threshold-sweep|threshold-lock-edge-sweep|edge-threshold-continued-climb|scaling-universality-scout|task-universality-scout|seed-replication-ladder, got {other}"),
     };
     let default_mutation_types = if matches!(
         mode.as_str(),
@@ -860,6 +891,7 @@ fn parse_args() -> Cli {
             | "endpoint-robustness"
             | "repair-scan"
             | "multi-objective-climb"
+            | "context-climb"
             | "quadtree-scout"
             | "causal-diff"
             | "edge-lock-threshold-sweep"
@@ -1470,6 +1502,171 @@ fn eval_unigram_proj(
         total_cos += cosine_similarity(&probs, unigram);
     }
     total_cos / len as f64
+}
+
+fn mean_abs_charge_delta(a: &[u8], b: &[u8]) -> f64 {
+    if a.is_empty() {
+        return 0.0;
+    }
+    let total: f64 = a
+        .iter()
+        .zip(b)
+        .map(|(&x, &y)| (x as f64 - y as f64).abs())
+        .sum();
+    total / (a.len() as f64 * MAX_CHARGE as f64)
+}
+
+fn propagate_pair_token(
+    net: &mut Network,
+    table: &VcbpTable,
+    pair_id: u16,
+    init: &InitConfig,
+    neuron_count: usize,
+    input_scatter: bool,
+) {
+    let emb = table.embed_id(pair_id);
+    let mut input = vec![0i32; neuron_count];
+    quantize_embedding_to_input(
+        table,
+        emb,
+        &mut input,
+        init.input_end(),
+        input_scatter,
+    );
+    net.propagate(&input, &init.propagation)
+        .expect("context propagate failed");
+}
+
+fn evaluate_context_metrics(
+    net: &Network,
+    proj: &Int8Projection,
+    table: &VcbpTable,
+    pair_ids: &[u16],
+    hot_to_idx: &[usize],
+    eval_len: usize,
+    eval_seeds: &[u64],
+    init: &InitConfig,
+    neuron_count: usize,
+    input_scatter: bool,
+) -> ContextScores {
+    let n = pair_ids.len();
+    if n <= eval_len + 3 || eval_seeds.is_empty() {
+        return ContextScores {
+            prediction_diff_rate: 0.0,
+            charge_delta: 0.0,
+            target_gain: 0.0,
+            time_shuffle_target_gain: 0.0,
+        };
+    }
+
+    let mut pred_diff_count = 0usize;
+    let mut total_charge_delta = 0.0f64;
+    let mut total_target_gain = 0.0f64;
+    let mut total_time_shuffle_gain = 0.0f64;
+    let mut counted = 0usize;
+    let output_start = init.output_start();
+    let mut seq_net = net.clone();
+    let mut iso_net = net.clone();
+    let mut time_net = net.clone();
+
+    for &seed in eval_seeds {
+        let mut rng = StdRng::seed_from_u64(seed ^ 0xD16B_C071_EC7Fu64);
+        let off = rng.gen_range(1..=n - eval_len - 2);
+        let time_control_off = rng.gen_range(1..=n - eval_len - 2);
+        for i in 0..eval_len {
+            let prev_id = pair_ids[off + i - 1];
+            let cur_id = pair_ids[off + i];
+            let tgt_id = pair_ids[off + i + 1];
+            let target_idx = hot_to_idx[tgt_id as usize];
+            if target_idx == usize::MAX {
+                continue;
+            }
+
+            seq_net.reset();
+            propagate_pair_token(
+                &mut seq_net,
+                table,
+                prev_id,
+                init,
+                neuron_count,
+                input_scatter,
+            );
+            propagate_pair_token(
+                &mut seq_net,
+                table,
+                cur_id,
+                init,
+                neuron_count,
+                input_scatter,
+            );
+            let seq_charges = seq_net.charge_vec(output_start..neuron_count);
+            let seq_scores = proj.raw_scores(&seq_charges);
+            let seq_probs = softmax(&seq_scores);
+            let seq_pred = proj.predict(&seq_charges);
+
+            iso_net.reset();
+            propagate_pair_token(
+                &mut iso_net,
+                table,
+                cur_id,
+                init,
+                neuron_count,
+                input_scatter,
+            );
+            let iso_charges = iso_net.charge_vec(output_start..neuron_count);
+            let iso_scores = proj.raw_scores(&iso_charges);
+            let iso_probs = softmax(&iso_scores);
+            let iso_pred = proj.predict(&iso_charges);
+
+            let time_prev_id = pair_ids[time_control_off + i - 1];
+            time_net.reset();
+            propagate_pair_token(
+                &mut time_net,
+                table,
+                time_prev_id,
+                init,
+                neuron_count,
+                input_scatter,
+            );
+            propagate_pair_token(
+                &mut time_net,
+                table,
+                cur_id,
+                init,
+                neuron_count,
+                input_scatter,
+            );
+            let time_charges = time_net.charge_vec(output_start..neuron_count);
+            let time_scores = proj.raw_scores(&time_charges);
+            let time_probs = softmax(&time_scores);
+
+            if seq_pred != iso_pred {
+                pred_diff_count += 1;
+            }
+            total_charge_delta += mean_abs_charge_delta(&seq_charges, &iso_charges);
+            total_target_gain += one_hot_cosine(&seq_probs, target_idx)
+                - one_hot_cosine(&iso_probs, target_idx);
+            total_time_shuffle_gain += one_hot_cosine(&time_probs, target_idx)
+                - one_hot_cosine(&iso_probs, target_idx);
+            counted += 1;
+        }
+    }
+
+    if counted == 0 {
+        ContextScores {
+            prediction_diff_rate: 0.0,
+            charge_delta: 0.0,
+            target_gain: 0.0,
+            time_shuffle_target_gain: 0.0,
+        }
+    } else {
+        ContextScores {
+            prediction_diff_rate: pred_diff_count as f64 / counted as f64,
+            charge_delta: total_charge_delta / counted as f64,
+            target_gain: total_target_gain / counted as f64,
+            time_shuffle_target_gain: total_time_shuffle_gain / counted as f64,
+        }
+    }
 }
 
 fn eval_score(
@@ -2709,6 +2906,46 @@ fn mo_class_rank(class_name: &str) -> i32 {
     }
 }
 
+fn context_score(scores: ContextScores) -> f64 {
+    scores.target_gain
+        + 0.25 * scores.prediction_diff_rate
+        + 0.10 * scores.charge_delta
+        - 0.50 * scores.time_shuffle_target_gain.max(0.0)
+}
+
+fn context_safety_pass(deltas_vs_start: MultiMetricScores) -> bool {
+    deltas_vs_start.smooth >= -0.0020
+        && deltas_vs_start.accuracy >= -0.0010
+        && deltas_vs_start.echo.abs() <= 0.0015
+        && deltas_vs_start.unigram >= -0.0020
+}
+
+fn context_class(
+    context: ContextScores,
+    safety_pass: bool,
+    context_score: f64,
+) -> &'static str {
+    if !safety_pass {
+        "D16B_CONTEXT_TRADEOFF"
+    } else if context.time_shuffle_target_gain >= context.target_gain && context.target_gain > 0.0 {
+        "D16B_CONTEXT_ARTIFACT"
+    } else if context.prediction_diff_rate > 0.0 && context.target_gain > 0.0 && context_score > 0.0 {
+        "D16B_CONTEXT_SIGNAL_FOUND"
+    } else {
+        "D16B_NO_LOCAL_CONTEXT_SIGNAL"
+    }
+}
+
+fn context_class_rank(class_name: &str) -> i32 {
+    match class_name {
+        "D16B_CONTEXT_SIGNAL_FOUND" => 4,
+        "D16B_CONTEXT_TRADEOFF" => 3,
+        "D16B_CONTEXT_ARTIFACT" => 2,
+        "D16B_NO_LOCAL_CONTEXT_SIGNAL" => 1,
+        _ => 0,
+    }
+}
+
 fn run_multi_objective_climb(
     cli: &Cli,
     table: &VcbpTable,
@@ -2985,6 +3222,430 @@ fn run_multi_objective_climb(
     cand_writer
         .flush()
         .expect("failed to flush multi_objective_candidates");
+}
+
+fn run_context_climb(
+    cli: &Cli,
+    table: &VcbpTable,
+    pair_ids: &[u16],
+    hot_to_idx: &[usize],
+    bigram: &[Vec<f64>],
+    unigram: &[f64],
+    init: &InitConfig,
+) {
+    let start_path = cli
+        .repair_start
+        .as_ref()
+        .expect("--mode context-climb requires --repair-start");
+    let (start_net, start_proj, _) =
+        load_checkpoint(start_path).expect("failed to load context start checkpoint");
+    assert_eq!(start_net.neuron_count(), cli.h, "context start H mismatch");
+    assert!(
+        cli.mutation_types
+            .iter()
+            .all(|t| matches!(t, MutationType::Edge | MutationType::Threshold)),
+        "D16b context-climb only supports edge,threshold mutation types"
+    );
+    assert!(
+        !cli.mo_eval_seeds.is_empty(),
+        "--mo-eval-seeds must not be empty"
+    );
+
+    println!(
+        "D16b context climb: start={} climbers={} steps={} eval_len={} seeds={} radii={:?}",
+        start_path.display(),
+        cli.mo_climbers,
+        cli.mo_steps,
+        cli.eval_len,
+        cli.mo_eval_seeds.len(),
+        cli.radii
+    );
+
+    let start_coord = encode_coord(&start_net);
+    let start_safety = evaluate_multi_metrics(
+        &start_net,
+        &start_proj,
+        table,
+        pair_ids,
+        hot_to_idx,
+        bigram,
+        unigram,
+        cli.eval_len,
+        &cli.mo_eval_seeds,
+        init,
+        cli.h,
+        cli.input_scatter,
+    );
+    let start_context = evaluate_context_metrics(
+        &start_net,
+        &start_proj,
+        table,
+        pair_ids,
+        hot_to_idx,
+        cli.eval_len,
+        &cli.mo_eval_seeds,
+        init,
+        cli.h,
+        cli.input_scatter,
+    );
+    let start_context_score = context_score(start_context);
+    println!(
+        "  start context: pred_diff={:.6} charge_delta={:.6} target_gain={:.6} time_shuffle_gain={:.6} score={:.6}",
+        start_context.prediction_diff_rate,
+        start_context.charge_delta,
+        start_context.target_gain,
+        start_context.time_shuffle_target_gain,
+        start_context_score
+    );
+
+    let mut path_writer = BufWriter::new(
+        File::create(cli.out.join("context_paths.csv"))
+            .expect("failed to create context_paths.csv"),
+    );
+    writeln!(
+        path_writer,
+        "climber_id,step_index,proposal_seed,radius,mutation_type,edge_edits,threshold_edits,direct_genome_distance,edges,smooth_delta_vs_start,accuracy_delta_vs_start,echo_delta_vs_start,unigram_delta_vs_start,mo_score_vs_start,context_prediction_diff_rate,context_charge_delta,context_target_gain,context_time_shuffle_target_gain,context_score,context_class,safety_pass,accepted,accept_reason"
+    )
+    .expect("failed to write context_paths header");
+
+    let mut candidates: Vec<ContextCandidate> = Vec::new();
+    let mut no_positive_context_steps = 0usize;
+    'outer: for climber_id in 0..cli.mo_climbers {
+        let climber_seed = cli.seed ^ ((climber_id as u64) << 32) ^ 0xD16B_0001u64;
+        let mut proposal_rng = StdRng::seed_from_u64(climber_seed);
+        let mut current = start_net.clone();
+        let current_proj = start_proj.clone();
+        let mut current_context = start_context;
+        let mut current_context_score = start_context_score;
+
+        for step_index in 0..cli.mo_steps {
+            let mutation_type =
+                cli.mutation_types[proposal_rng.gen_range(0..cli.mutation_types.len())];
+            let radius = cli.radii[proposal_rng.gen_range(0..cli.radii.len())];
+            let proposal_seed = proposal_rng.gen::<u64>();
+            let mut mutation_rng = StdRng::seed_from_u64(proposal_seed);
+            let mut candidate_net = current.clone();
+            let candidate_proj = current_proj.clone();
+            let counts =
+                apply_radius_mutation(&mut candidate_net, radius, mutation_type, &mut mutation_rng);
+            let candidate_coord = encode_coord(&candidate_net);
+            let direct_distance = coord_distance(&start_coord, &candidate_coord);
+            let eval_start = Instant::now();
+            let safety_scores = evaluate_multi_metrics(
+                &candidate_net,
+                &candidate_proj,
+                table,
+                pair_ids,
+                hot_to_idx,
+                bigram,
+                unigram,
+                cli.eval_len,
+                &cli.mo_eval_seeds,
+                init,
+                cli.h,
+                cli.input_scatter,
+            );
+            let safety_deltas = metric_deltas(safety_scores, start_safety);
+            let mo = mo_score(safety_deltas);
+            let safety_pass = context_safety_pass(safety_deltas);
+            let context = evaluate_context_metrics(
+                &candidate_net,
+                &candidate_proj,
+                table,
+                pair_ids,
+                hot_to_idx,
+                cli.eval_len,
+                &cli.mo_eval_seeds,
+                init,
+                cli.h,
+                cli.input_scatter,
+            );
+            let score = context_score(context);
+            let class_name = context_class(context, safety_pass, score);
+            let accepted = safety_pass
+                && context.prediction_diff_rate > 0.0
+                && context.target_gain > current_context.target_gain + cli.accept_epsilon
+                && context.time_shuffle_target_gain < context.target_gain
+                && score > current_context_score;
+            let accept_reason = if !safety_pass {
+                "safety_fail"
+            } else if context.prediction_diff_rate <= 0.0 {
+                "no_prediction_context"
+            } else if context.time_shuffle_target_gain >= context.target_gain {
+                "time_shuffle_artifact"
+            } else if context.target_gain <= current_context.target_gain + cli.accept_epsilon {
+                "target_gain_not_enough"
+            } else if score <= current_context_score {
+                "score_not_improved"
+            } else {
+                "context_improve"
+            };
+
+            if context.target_gain > 0.0 {
+                no_positive_context_steps = 0;
+            } else {
+                no_positive_context_steps += 1;
+            }
+            if accepted {
+                current = candidate_net.clone();
+                current_context = context;
+                current_context_score = score;
+            }
+
+            writeln!(
+                path_writer,
+                "{},{},{},{},{},{},{},{},{},{:.12},{:.12},{:.12},{:.12},{:.12},{:.12},{:.12},{:.12},{:.12},{:.12},{},{},{},{}",
+                climber_id,
+                step_index,
+                proposal_seed,
+                radius,
+                mutation_type.as_str(),
+                counts.edge,
+                counts.threshold,
+                direct_distance,
+                candidate_net.edge_count(),
+                safety_deltas.smooth,
+                safety_deltas.accuracy,
+                safety_deltas.echo,
+                safety_deltas.unigram,
+                mo,
+                context.prediction_diff_rate,
+                context.charge_delta,
+                context.target_gain,
+                context.time_shuffle_target_gain,
+                score,
+                class_name,
+                safety_pass,
+                accepted,
+                accept_reason
+            )
+            .expect("failed to write context path row");
+
+            candidates.push(ContextCandidate {
+                climber_id,
+                step_index,
+                proposal_seed,
+                radius,
+                mutation_type,
+                counts,
+                direct_distance,
+                edges: candidate_net.edge_count(),
+                safety_scores,
+                safety_deltas,
+                mo_score: mo,
+                context_scores: context,
+                context_score: score,
+                context_class: class_name,
+                accepted,
+                accept_reason,
+                net: candidate_net,
+                proj: candidate_proj,
+            });
+
+            println!(
+                "  climber={} step={} class={} accepted={} ctx_score={:.6} pred_diff={:.4} target_gain={:.6} safety=[{:.5},{:.5},{:.5},{:.5}] eval_ms={:.1}",
+                climber_id,
+                step_index,
+                class_name,
+                accepted,
+                score,
+                context.prediction_diff_rate,
+                context.target_gain,
+                safety_deltas.smooth,
+                safety_deltas.accuracy,
+                safety_deltas.echo,
+                safety_deltas.unigram,
+                eval_start.elapsed().as_secs_f64() * 1000.0
+            );
+
+            if no_positive_context_steps >= 300 {
+                println!(
+                    "  early stop: {} consecutive proposals without positive context_target_gain",
+                    no_positive_context_steps
+                );
+                break 'outer;
+            }
+        }
+    }
+    path_writer
+        .flush()
+        .expect("failed to flush context_paths.csv");
+
+    candidates.sort_by(|a, b| {
+        context_class_rank(b.context_class)
+            .cmp(&context_class_rank(a.context_class))
+            .then_with(|| b.accepted.cmp(&a.accepted))
+            .then_with(|| b.context_score.partial_cmp(&a.context_score).unwrap())
+            .then_with(|| {
+                b.context_scores
+                    .target_gain
+                    .partial_cmp(&a.context_scores.target_gain)
+                    .unwrap()
+            })
+    });
+
+    let candidates_dir = cli.out.join("candidates");
+    create_dir_all(&candidates_dir).expect("failed to create context candidates dir");
+    let mut cand_writer = BufWriter::new(
+        File::create(cli.out.join("context_candidates.csv"))
+            .expect("failed to create context_candidates.csv"),
+    );
+    writeln!(
+        cand_writer,
+        "rank,checkpoint,climber_id,step_index,proposal_seed,radius,mutation_type,edge_edits,threshold_edits,direct_genome_distance,edges,smooth_score,accuracy_score,echo_score,unigram_score,smooth_delta_vs_start,accuracy_delta_vs_start,echo_delta_vs_start,unigram_delta_vs_start,mo_score_vs_start,context_prediction_diff_rate,context_charge_delta,context_target_gain,context_time_shuffle_target_gain,context_score,context_class,accepted,accept_reason"
+    )
+    .expect("failed to write context_candidates header");
+    for (rank_idx, candidate) in candidates.iter().take(cli.mo_export_top).enumerate() {
+        let rank = rank_idx + 1;
+        let ckpt_path = candidates_dir.join(format!("top_{rank:02}.ckpt"));
+        save_checkpoint(
+            &ckpt_path,
+            &candidate.net,
+            &candidate.proj,
+            CheckpointMeta {
+                step: candidate.step_index,
+                accuracy: candidate.safety_scores.accuracy,
+                label: format!(
+                    "D16b context rank={} class={} target_gain={:.6} pred_diff={:.6}",
+                    rank,
+                    candidate.context_class,
+                    candidate.context_scores.target_gain,
+                    candidate.context_scores.prediction_diff_rate
+                ),
+            },
+        )
+        .expect("failed to save context candidate checkpoint");
+        writeln!(
+            cand_writer,
+            "{},{},{},{},{},{},{},{},{},{},{},{:.12},{:.12},{:.12},{:.12},{:.12},{:.12},{:.12},{:.12},{:.12},{:.12},{:.12},{:.12},{:.12},{:.12},{},{},{}",
+            rank,
+            ckpt_path.display(),
+            candidate.climber_id,
+            candidate.step_index,
+            candidate.proposal_seed,
+            candidate.radius,
+            candidate.mutation_type.as_str(),
+            candidate.counts.edge,
+            candidate.counts.threshold,
+            candidate.direct_distance,
+            candidate.edges,
+            candidate.safety_scores.smooth,
+            candidate.safety_scores.accuracy,
+            candidate.safety_scores.echo,
+            candidate.safety_scores.unigram,
+            candidate.safety_deltas.smooth,
+            candidate.safety_deltas.accuracy,
+            candidate.safety_deltas.echo,
+            candidate.safety_deltas.unigram,
+            candidate.mo_score,
+            candidate.context_scores.prediction_diff_rate,
+            candidate.context_scores.charge_delta,
+            candidate.context_scores.target_gain,
+            candidate.context_scores.time_shuffle_target_gain,
+            candidate.context_score,
+            candidate.context_class,
+            candidate.accepted,
+            candidate.accept_reason
+        )
+        .expect("failed to write context candidate row");
+    }
+    cand_writer
+        .flush()
+        .expect("failed to flush context_candidates.csv");
+
+    let accepted_count = candidates.iter().filter(|candidate| candidate.accepted).count();
+    let signal_count = candidates
+        .iter()
+        .filter(|candidate| candidate.context_class == "D16B_CONTEXT_SIGNAL_FOUND")
+        .count();
+    let tradeoff_count = candidates
+        .iter()
+        .filter(|candidate| candidate.context_class == "D16B_CONTEXT_TRADEOFF")
+        .count();
+    let artifact_count = candidates
+        .iter()
+        .filter(|candidate| candidate.context_class == "D16B_CONTEXT_ARTIFACT")
+        .count();
+    let verdict = if accepted_count > 0 {
+        "D16B_CONTEXT_SIGNAL_FOUND"
+    } else if signal_count > 0 {
+        "D16B_CONTEXT_TRADEOFF"
+    } else if artifact_count > 0 {
+        "D16B_CONTEXT_ARTIFACT"
+    } else {
+        "D16B_NO_LOCAL_CONTEXT_SIGNAL"
+    };
+
+    let mut control_writer = BufWriter::new(
+        File::create(cli.out.join("context_control_summary.csv"))
+            .expect("failed to create context_control_summary.csv"),
+    );
+    writeln!(
+        control_writer,
+        "verdict,start_prediction_diff_rate,start_charge_delta,start_target_gain,start_time_shuffle_target_gain,start_context_score,total_candidates,accepted_count,signal_count,tradeoff_count,artifact_count"
+    )
+    .expect("failed to write context_control_summary header");
+    writeln!(
+        control_writer,
+        "{},{:.12},{:.12},{:.12},{:.12},{:.12},{},{},{},{},{}",
+        verdict,
+        start_context.prediction_diff_rate,
+        start_context.charge_delta,
+        start_context.target_gain,
+        start_context.time_shuffle_target_gain,
+        start_context_score,
+        candidates.len(),
+        accepted_count,
+        signal_count,
+        tradeoff_count,
+        artifact_count
+    )
+    .expect("failed to write context_control_summary row");
+    control_writer
+        .flush()
+        .expect("failed to flush context_control_summary.csv");
+
+    let mut report = BufWriter::new(
+        File::create(cli.out.join("D16B_CONTEXT_CLIMB_REPORT.md"))
+            .expect("failed to create D16B_CONTEXT_CLIMB_REPORT.md"),
+    );
+    writeln!(report, "# D16B Context Climb Report\n").expect("report write");
+    writeln!(report, "- verdict: `{}`", verdict).expect("report write");
+    writeln!(report, "- start_checkpoint: `{}`", start_path.display()).expect("report write");
+    writeln!(report, "- candidates: `{}`", candidates.len()).expect("report write");
+    writeln!(report, "- accepted_count: `{}`", accepted_count).expect("report write");
+    writeln!(report, "- signal_count: `{}`", signal_count).expect("report write");
+    writeln!(report, "- tradeoff_count: `{}`", tradeoff_count).expect("report write");
+    writeln!(report, "- artifact_count: `{}`", artifact_count).expect("report write");
+    writeln!(
+        report,
+        "\nStart context: pred_diff={:.6}, charge_delta={:.6}, target_gain={:.6}, time_shuffle_gain={:.6}, score={:.6}",
+        start_context.prediction_diff_rate,
+        start_context.charge_delta,
+        start_context.target_gain,
+        start_context.time_shuffle_target_gain,
+        start_context_score
+    )
+    .expect("report write");
+    if let Some(best) = candidates.first() {
+        writeln!(
+            report,
+            "\nBest candidate: class=`{}`, accepted=`{}`, context_score={:.6}, pred_diff={:.6}, target_gain={:.6}, time_shuffle_gain={:.6}",
+            best.context_class,
+            best.accepted,
+            best.context_score,
+            best.context_scores.prediction_diff_rate,
+            best.context_scores.target_gain,
+            best.context_scores.time_shuffle_target_gain
+        )
+        .expect("report write");
+    }
+    writeln!(
+        report,
+        "\nGenerated checkpoints are scout artifacts and require D16 context gate plus D10r-v8 confirm before promotion."
+    )
+    .expect("report write");
+    report.flush().expect("failed to flush context report");
 }
 
 fn checkpoint_seed_label(path: &PathBuf) -> String {
@@ -5328,6 +5989,19 @@ fn main() {
             break;
         }
 
+        if cli.mode == "context-climb" {
+            run_context_climb(
+                &cli,
+                &table,
+                &pair_ids,
+                &hot_to_idx,
+                &bigram,
+                &unigram,
+                &init,
+            );
+            break;
+        }
+
         if cli.mode == "quadtree-scout" {
             run_quadtree_scout(
                 &cli,
@@ -5960,6 +6634,8 @@ fn main() {
             "D9.1a"
         } else if cli.mode == "multi-objective-climb" {
             "D9.2a"
+        } else if cli.mode == "context-climb" {
+            "D16b"
         } else if cli.mode == "quadtree-scout" {
             "D9.3a"
         } else if cli.mode == "causal-diff" {
@@ -6029,6 +6705,7 @@ fn main() {
                 | "edge-lock-threshold-sweep"
                 | "threshold-lock-edge-sweep"
                 | "edge-threshold-continued-climb"
+                | "context-climb"
                 | "task-universality-scout"
         )
         .then(|| {
@@ -6043,17 +6720,18 @@ fn main() {
         repair_export_top: (cli.mode == "repair-scan").then_some(cli.repair_export_top),
         mo_climbers: matches!(
             cli.mode.as_str(),
-            "multi-objective-climb" | "seed-replication-ladder"
+            "multi-objective-climb" | "context-climb" | "seed-replication-ladder"
         )
         .then_some(cli.mo_climbers),
         mo_steps: matches!(
             cli.mode.as_str(),
-            "multi-objective-climb" | "seed-replication-ladder"
+            "multi-objective-climb" | "context-climb" | "seed-replication-ladder"
         )
         .then_some(cli.mo_steps),
         mo_eval_seeds: matches!(
             cli.mode.as_str(),
             "multi-objective-climb"
+                | "context-climb"
                 | "quadtree-scout"
                 | "causal-diff"
                 | "edge-lock-threshold-sweep"
@@ -6066,7 +6744,7 @@ fn main() {
         .then_some(cli.mo_eval_seeds.clone()),
         mo_export_top: matches!(
             cli.mode.as_str(),
-            "multi-objective-climb" | "quadtree-scout" | "seed-replication-ladder"
+            "multi-objective-climb" | "context-climb" | "quadtree-scout" | "seed-replication-ladder"
         )
         .then_some(cli.mo_export_top),
         radii: cli.radii.clone(),
