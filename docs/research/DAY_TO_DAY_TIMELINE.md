@@ -641,3 +641,51 @@ component-level progress, not a release model.
 Updated source doc:
 
 - `docs/research/PHASE_D24_BLATENT_TRANSFORM.md`
+
+### 2026-05-03 - D25 B-latent marker memory
+
+- D25 moved from D24 stateless B64 transforms to addressed B64 memory:
+
+```text
+STORE_SLOT_A, PAYLOAD_WINDOW_A
+STORE_SLOT_B, PAYLOAD_WINDOW_B
+distractor windows...
+QUERY_SLOT_B
+  -> PAYLOAD_WINDOW_B
+```
+
+- D25 result:
+
+```text
+D25_BLATENT_MEMORY_PASS
+confirm eval_sequences: 32768
+slot_counts: 2,4
+distractor_lengths: 1,2,4,8,16,32
+
+2-slot:
+  query_window_exact_acc: 100%
+  state_dim: 128
+  memory_edge_count: 128
+  wrong_slot_recall_rate: 0%
+
+4-slot:
+  query_window_exact_acc: 100%
+  state_dim: 256
+  memory_edge_count: 256
+  wrong_slot_recall_rate: 0%
+
+controls:
+  reset/time/random/marker/query shuffle exact: 0%
+```
+
+Interpretation:
+
+```text
+AB codec: 8-byte window <-> B64
+D24:      B64 exact stateless transforms
+D25:      B64 addressed key-value memory
+```
+
+Updated source doc:
+
+- `docs/research/PHASE_D25_BLATENT_MARKER_MEMORY.md`
