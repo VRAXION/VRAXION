@@ -599,3 +599,45 @@ It does not restore the redundant D22 copy lanes; those are zero by design.
 Updated source doc:
 
 - `docs/AB_WINDOW_CODEC_V1_CONTRACT.md`
+
+### 2026-05-03 - D24 B-latent transform probe
+
+- D24 tested whether the AB codec's `64D` B latent can do work, not just
+  reconstruct:
+
+```text
+B64 input -> sparse transform core -> B64 output -> decoded 8-byte window
+```
+
+- D24 result:
+
+```text
+D24_BLATENT_TRANSFORM_PASS
+eval_windows: 65536
+control_repeats: 8
+
+copy:         exact 100%, random control 0%
+reverse:      exact 100%, random control 0%
+rotate_left:  exact 100%, random control 0%
+rotate_right: exact 100%, random control 0%
+bit_not:      exact 100%, random control 0%
+
+byte_margin_min: +2.0
+b_output_collision_count: 0
+transform_edge_count: 64
+position_shuffle_control_acc: 0.0001220703125
+```
+
+Interpretation:
+
+```text
+AB codec: 8-byte window <-> B64
+D24:      B64 -> exact sparse transform -> B64
+```
+
+The B layer is now a usable exact stateless transform surface. It is still
+component-level progress, not a release model.
+
+Updated source doc:
+
+- `docs/research/PHASE_D24_BLATENT_TRANSFORM.md`
