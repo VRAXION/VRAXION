@@ -120,6 +120,8 @@ struct Cli {
     mo_steps: usize,
     mo_eval_seeds: Vec<u64>,
     mo_export_top: usize,
+    candidate_checkpoints: Vec<PathBuf>,
+    context_control_repeats: usize,
     out: PathBuf,
     seed: u64,
     eval_len: usize,
@@ -264,6 +266,9 @@ fn estimated_total_units(cli: &Cli) -> Option<usize> {
     match cli.mode.as_str() {
         "seed-replication-ladder" => Some(cli.checkpoints.len() * cli.mo_climbers * cli.mo_steps),
         "multi-objective-climb" | "context-climb" => Some(cli.mo_climbers * cli.mo_steps),
+        "context-margin-confirm" => {
+            Some(cli.candidate_checkpoints.len() * cli.mo_eval_seeds.len() * cli.context_control_repeats)
+        }
         "repair-scan" => Some(cli.radii.len() * cli.mutation_types.len() * cli.repair_samples_per_bucket),
         "paratrooper-climb" => {
             let tile_count = cli
@@ -314,6 +319,8 @@ struct RunMeta {
     mo_steps: Option<usize>,
     mo_eval_seeds: Option<Vec<u64>>,
     mo_export_top: Option<usize>,
+    candidate_checkpoints: Option<Vec<String>>,
+    context_control_repeats: Option<usize>,
     radii: Vec<usize>,
     mutation_types: Vec<String>,
     checkpoints: Vec<String>,
@@ -437,6 +444,20 @@ struct ContextScores {
     charge_delta: f64,
     target_gain: f64,
     time_shuffle_target_gain: f64,
+}
+
+#[derive(Clone, Copy, Debug)]
+struct ContextMarginRecord {
+    prediction_diff_rate: f64,
+    charge_delta: f64,
+    real_context_gain: f64,
+    time_shuffle_gain: f64,
+    state_shuffle_gain: f64,
+    random_context_gain: f64,
+    no_network_gain: f64,
+    strongest_fake_gain: f64,
+    context_margin: f64,
+    strongest_fake_control: &'static str,
 }
 
 #[derive(Clone)]
@@ -597,6 +618,8 @@ fn parse_args() -> Cli {
     let mut mo_steps = 40usize;
     let mut mo_eval_seeds = vec![960_001u64, 960_002, 960_003, 960_004];
     let mut mo_export_top = 8usize;
+    let mut candidate_checkpoints: Vec<PathBuf> = Vec::new();
+    let mut context_control_repeats = 1usize;
     let mut out = PathBuf::from("output/phase_d9_direct_genome_landscape_20260428");
     let mut seed = 90210u64;
     let mut eval_len = DEFAULT_EVAL_LEN;
@@ -828,6 +851,26 @@ fn parse_args() -> Cli {
                     .parse()
                     .expect("mo-export-top")
             }
+            "--candidate-checkpoints" => {
+                let value = args.next().expect("--candidate-checkpoints list");
+                candidate_checkpoints.extend(
+                    value
+                        .split(',')
+                        .filter(|part| !part.trim().is_empty())
+                        .map(|part| PathBuf::from(part.trim())),
+                );
+            }
+            "--context-control-repeats" => {
+                context_control_repeats = args
+                    .next()
+                    .expect("--context-control-repeats value")
+                    .parse()
+                    .expect("context-control-repeats");
+                assert!(
+                    context_control_repeats > 0,
+                    "--context-control-repeats must be > 0"
+                );
+            }
             "--out" => out = PathBuf::from(args.next().expect("--out path")),
             "--seed" => seed = args.next().expect("--seed value").parse().expect("seed"),
             "--eval-len" => {
@@ -843,7 +886,7 @@ fn parse_args() -> Cli {
             "--help" | "-h" => {
                 println!(
                     "Usage: cargo run -p instnct-core --example d9_direct_landscape -- \
-                     --checkpoint PATH --H 256 --mode fail-fast|medium|full|staged|planet-scout|paratrooper-climb|endpoint-bridge|context-climb \
+                     --checkpoint PATH --H 256 --mode fail-fast|medium|full|staged|planet-scout|paratrooper-climb|endpoint-bridge|context-climb|context-margin-confirm \
                      --score-mode accuracy|smooth --samples-per-type N --out PATH"
                 );
                 std::process::exit(0);
@@ -871,6 +914,7 @@ fn parse_args() -> Cli {
         | "repair-scan"
         | "multi-objective-climb" => vec![1],
         | "context-climb" => vec![4, 8, 16, 32],
+        | "context-margin-confirm" => vec![1],
         | "quadtree-scout" => vec![4, 8, 16],
         | "causal-diff" => vec![1],
         | "edge-lock-threshold-sweep"
@@ -879,7 +923,7 @@ fn parse_args() -> Cli {
         | "scaling-universality-scout"
         | "task-universality-scout" => vec![4, 8, 16],
         "seed-replication-ladder" => vec![4, 8, 16, 32],
-        other => panic!("--mode expects fail-fast|medium|full|staged|planet-scout|paratrooper-climb|endpoint-bridge|endpoint-overlap|endpoint-robustness|repair-scan|multi-objective-climb|context-climb|quadtree-scout|causal-diff|edge-lock-threshold-sweep|threshold-lock-edge-sweep|edge-threshold-continued-climb|scaling-universality-scout|task-universality-scout|seed-replication-ladder, got {other}"),
+        other => panic!("--mode expects fail-fast|medium|full|staged|planet-scout|paratrooper-climb|endpoint-bridge|endpoint-overlap|endpoint-robustness|repair-scan|multi-objective-climb|context-climb|context-margin-confirm|quadtree-scout|causal-diff|edge-lock-threshold-sweep|threshold-lock-edge-sweep|edge-threshold-continued-climb|scaling-universality-scout|task-universality-scout|seed-replication-ladder, got {other}"),
     };
     let default_mutation_types = if matches!(
         mode.as_str(),
@@ -892,6 +936,7 @@ fn parse_args() -> Cli {
             | "repair-scan"
             | "multi-objective-climb"
             | "context-climb"
+            | "context-margin-confirm"
             | "quadtree-scout"
             | "causal-diff"
             | "edge-lock-threshold-sweep"
@@ -942,6 +987,8 @@ fn parse_args() -> Cli {
         mo_steps,
         mo_eval_seeds,
         mo_export_top,
+        candidate_checkpoints,
+        context_control_repeats,
         out,
         seed,
         eval_len,
@@ -1666,6 +1713,238 @@ fn evaluate_context_metrics(
             target_gain: total_target_gain / counted as f64,
             time_shuffle_target_gain: total_time_shuffle_gain / counted as f64,
         }
+    }
+}
+
+fn evaluate_context_margin_record(
+    net: &Network,
+    proj: &Int8Projection,
+    table: &VcbpTable,
+    pair_ids: &[u16],
+    hot_to_idx: &[usize],
+    eval_len: usize,
+    eval_seed: u64,
+    repeat_idx: usize,
+    init: &InitConfig,
+    neuron_count: usize,
+    input_scatter: bool,
+) -> ContextMarginRecord {
+    let n = pair_ids.len();
+    if n <= eval_len + 3 {
+        return ContextMarginRecord {
+            prediction_diff_rate: 0.0,
+            charge_delta: 0.0,
+            real_context_gain: 0.0,
+            time_shuffle_gain: 0.0,
+            state_shuffle_gain: 0.0,
+            random_context_gain: 0.0,
+            no_network_gain: 0.0,
+            strongest_fake_gain: 0.0,
+            context_margin: 0.0,
+            strongest_fake_control: "none",
+        };
+    }
+
+    let mut rng = StdRng::seed_from_u64(
+        eval_seed ^ 0xD16C_C0A7_3A51u64 ^ ((repeat_idx as u64) << 32),
+    );
+    let off = rng.gen_range(1..=n - eval_len - 2);
+    let time_control_off = rng.gen_range(1..=n - eval_len - 2);
+    let state_shuffle_indices: Vec<usize> =
+        (0..eval_len).map(|_| rng.gen_range(0..eval_len)).collect();
+
+    let output_start = init.output_start();
+    let output_len = neuron_count - output_start;
+    let mut seq_net = net.clone();
+    let mut iso_net = net.clone();
+    let mut time_net = net.clone();
+    let mut state_net = net.clone();
+    let mut random_net = net.clone();
+
+    let mut pred_diff_count = 0usize;
+    let mut total_charge_delta = 0.0f64;
+    let mut total_real_gain = 0.0f64;
+    let mut total_time_gain = 0.0f64;
+    let mut total_state_gain = 0.0f64;
+    let mut total_random_gain = 0.0f64;
+    let mut total_no_network_gain = 0.0f64;
+    let mut counted = 0usize;
+
+    for i in 0..eval_len {
+        let prev_id = pair_ids[off + i - 1];
+        let cur_id = pair_ids[off + i];
+        let tgt_id = pair_ids[off + i + 1];
+        let target_idx = hot_to_idx[tgt_id as usize];
+        if target_idx == usize::MAX {
+            continue;
+        }
+
+        iso_net.reset();
+        propagate_pair_token(
+            &mut iso_net,
+            table,
+            cur_id,
+            init,
+            neuron_count,
+            input_scatter,
+        );
+        let iso_charges = iso_net.charge_vec(output_start..neuron_count);
+        let iso_scores = proj.raw_scores(&iso_charges);
+        let iso_probs = softmax(&iso_scores);
+        let iso_pred = proj.predict(&iso_charges);
+        let iso_target = one_hot_cosine(&iso_probs, target_idx);
+
+        seq_net.reset();
+        propagate_pair_token(
+            &mut seq_net,
+            table,
+            prev_id,
+            init,
+            neuron_count,
+            input_scatter,
+        );
+        propagate_pair_token(
+            &mut seq_net,
+            table,
+            cur_id,
+            init,
+            neuron_count,
+            input_scatter,
+        );
+        let seq_charges = seq_net.charge_vec(output_start..neuron_count);
+        let seq_scores = proj.raw_scores(&seq_charges);
+        let seq_probs = softmax(&seq_scores);
+        let seq_pred = proj.predict(&seq_charges);
+
+        let time_prev_id = pair_ids[time_control_off + i - 1];
+        time_net.reset();
+        propagate_pair_token(
+            &mut time_net,
+            table,
+            time_prev_id,
+            init,
+            neuron_count,
+            input_scatter,
+        );
+        propagate_pair_token(
+            &mut time_net,
+            table,
+            cur_id,
+            init,
+            neuron_count,
+            input_scatter,
+        );
+        let time_charges = time_net.charge_vec(output_start..neuron_count);
+        let time_scores = proj.raw_scores(&time_charges);
+        let time_probs = softmax(&time_scores);
+
+        let state_prev_id = pair_ids[off + state_shuffle_indices[i]];
+        state_net.reset();
+        propagate_pair_token(
+            &mut state_net,
+            table,
+            state_prev_id,
+            init,
+            neuron_count,
+            input_scatter,
+        );
+        propagate_pair_token(
+            &mut state_net,
+            table,
+            cur_id,
+            init,
+            neuron_count,
+            input_scatter,
+        );
+        let state_charges = state_net.charge_vec(output_start..neuron_count);
+        let state_scores = proj.raw_scores(&state_charges);
+        let state_probs = softmax(&state_scores);
+
+        let random_prev_id = pair_ids[rng.gen_range(0..n)];
+        random_net.reset();
+        propagate_pair_token(
+            &mut random_net,
+            table,
+            random_prev_id,
+            init,
+            neuron_count,
+            input_scatter,
+        );
+        propagate_pair_token(
+            &mut random_net,
+            table,
+            cur_id,
+            init,
+            neuron_count,
+            input_scatter,
+        );
+        let random_charges = random_net.charge_vec(output_start..neuron_count);
+        let random_scores = proj.raw_scores(&random_charges);
+        let random_probs = softmax(&random_scores);
+
+        let no_network_charges: Vec<u8> = (0..output_len)
+            .map(|_| rng.gen_range(0..=MAX_CHARGE as u8))
+            .collect();
+        let no_network_scores = proj.raw_scores(&no_network_charges);
+        let no_network_probs = softmax(&no_network_scores);
+
+        if seq_pred != iso_pred {
+            pred_diff_count += 1;
+        }
+        total_charge_delta += mean_abs_charge_delta(&seq_charges, &iso_charges);
+        total_real_gain += one_hot_cosine(&seq_probs, target_idx) - iso_target;
+        total_time_gain += one_hot_cosine(&time_probs, target_idx) - iso_target;
+        total_state_gain += one_hot_cosine(&state_probs, target_idx) - iso_target;
+        total_random_gain += one_hot_cosine(&random_probs, target_idx) - iso_target;
+        total_no_network_gain += one_hot_cosine(&no_network_probs, target_idx) - iso_target;
+        counted += 1;
+    }
+
+    if counted == 0 {
+        return ContextMarginRecord {
+            prediction_diff_rate: 0.0,
+            charge_delta: 0.0,
+            real_context_gain: 0.0,
+            time_shuffle_gain: 0.0,
+            state_shuffle_gain: 0.0,
+            random_context_gain: 0.0,
+            no_network_gain: 0.0,
+            strongest_fake_gain: 0.0,
+            context_margin: 0.0,
+            strongest_fake_control: "none",
+        };
+    }
+
+    let denom = counted as f64;
+    let real = total_real_gain / denom;
+    let time = total_time_gain / denom;
+    let state = total_state_gain / denom;
+    let random = total_random_gain / denom;
+    let no_network = total_no_network_gain / denom;
+    let mut strongest_fake_control = "time_shuffle";
+    let mut strongest_fake_gain = time;
+    for (name, gain) in [
+        ("state_shuffle", state),
+        ("random_context", random),
+        ("no_network", no_network),
+    ] {
+        if gain > strongest_fake_gain {
+            strongest_fake_gain = gain;
+            strongest_fake_control = name;
+        }
+    }
+
+    ContextMarginRecord {
+        prediction_diff_rate: pred_diff_count as f64 / denom,
+        charge_delta: total_charge_delta / denom,
+        real_context_gain: real,
+        time_shuffle_gain: time,
+        state_shuffle_gain: state,
+        random_context_gain: random,
+        no_network_gain: no_network,
+        strongest_fake_gain,
+        context_margin: real - strongest_fake_gain,
+        strongest_fake_control,
     }
 }
 
@@ -2946,6 +3225,63 @@ fn context_class_rank(class_name: &str) -> i32 {
     }
 }
 
+fn mean(values: &[f64]) -> f64 {
+    if values.is_empty() {
+        0.0
+    } else {
+        values.iter().sum::<f64>() / values.len() as f64
+    }
+}
+
+fn lower95(values: &[f64]) -> f64 {
+    if values.is_empty() {
+        return 0.0;
+    }
+    if values.len() == 1 {
+        return values[0];
+    }
+    let m = mean(values);
+    let variance = values
+        .iter()
+        .map(|value| {
+            let delta = *value - m;
+            delta * delta
+        })
+        .sum::<f64>()
+        / (values.len() - 1) as f64;
+    m - 1.96 * variance.sqrt() / (values.len() as f64).sqrt()
+}
+
+fn context_margin_verdict(
+    margin_mean: f64,
+    margin_lower95: f64,
+    safety_pass: bool,
+    fake_beat_rate: f64,
+) -> &'static str {
+    if !safety_pass {
+        "D16C_SAFETY_TRADEOFF"
+    } else if margin_lower95 >= 0.0010 {
+        "D16C_CONTEXT_MARGIN_PASS"
+    } else if margin_mean > 0.0 && margin_lower95 >= -0.0005 && fake_beat_rate <= 0.25 {
+        "D16C_CONTEXT_MARGIN_WEAK_PASS"
+    } else if margin_mean <= 0.0 {
+        "D16C_NO_CONTEXT_MARGIN"
+    } else {
+        "D16C_CONTEXT_ARTIFACT_FAIL"
+    }
+}
+
+fn context_margin_verdict_rank(verdict: &str) -> i32 {
+    match verdict {
+        "D16C_CONTEXT_MARGIN_PASS" => 5,
+        "D16C_CONTEXT_MARGIN_WEAK_PASS" => 4,
+        "D16C_SAFETY_TRADEOFF" => 3,
+        "D16C_CONTEXT_ARTIFACT_FAIL" => 2,
+        "D16C_NO_CONTEXT_MARGIN" => 1,
+        _ => 0,
+    }
+}
+
 fn run_multi_objective_climb(
     cli: &Cli,
     table: &VcbpTable,
@@ -3222,6 +3558,391 @@ fn run_multi_objective_climb(
     cand_writer
         .flush()
         .expect("failed to flush multi_objective_candidates");
+}
+
+fn run_context_margin_confirm(
+    cli: &Cli,
+    table: &VcbpTable,
+    pair_ids: &[u16],
+    hot_to_idx: &[usize],
+    bigram: &[Vec<f64>],
+    unigram: &[f64],
+    init: &InitConfig,
+) {
+    let reference_path = cli
+        .repair_start
+        .as_ref()
+        .expect("--mode context-margin-confirm requires --repair-start");
+    assert!(
+        !cli.candidate_checkpoints.is_empty(),
+        "--mode context-margin-confirm requires --candidate-checkpoints"
+    );
+    assert!(
+        !cli.mo_eval_seeds.is_empty(),
+        "--mo-eval-seeds must not be empty"
+    );
+
+    let (reference_net, reference_proj, _) =
+        load_checkpoint(reference_path).expect("failed to load context reference checkpoint");
+    assert_eq!(
+        reference_net.neuron_count(),
+        cli.h,
+        "context reference H mismatch"
+    );
+    let reference_scores = evaluate_multi_metrics(
+        &reference_net,
+        &reference_proj,
+        table,
+        pair_ids,
+        hot_to_idx,
+        bigram,
+        unigram,
+        cli.eval_len,
+        &cli.mo_eval_seeds,
+        init,
+        cli.h,
+        cli.input_scatter,
+    );
+
+    println!(
+        "D16c context-margin confirm: reference={} candidates={} eval_len={} seeds={} repeats={}",
+        reference_path.display(),
+        cli.candidate_checkpoints.len(),
+        cli.eval_len,
+        cli.mo_eval_seeds.len(),
+        cli.context_control_repeats
+    );
+
+    let mut result_writer = BufWriter::new(
+        File::create(cli.out.join("context_margin_results.csv"))
+            .expect("failed to create context_margin_results.csv"),
+    );
+    writeln!(
+        result_writer,
+        "candidate_rank,checkpoint,eval_seed,control_repeat,prediction_diff_rate,charge_delta,real_context_gain,time_shuffle_gain,state_shuffle_gain,random_context_gain,no_network_gain,strongest_fake_control,strongest_fake_gain,context_margin,smooth_delta,accuracy_delta,echo_delta,unigram_delta,safety_pass"
+    )
+    .expect("failed to write context_margin_results header");
+
+    let mut breakdown_writer = BufWriter::new(
+        File::create(cli.out.join("context_control_breakdown.csv"))
+            .expect("failed to create context_control_breakdown.csv"),
+    );
+    writeln!(
+        breakdown_writer,
+        "candidate_rank,checkpoint,control,mean_gain"
+    )
+    .expect("failed to write context_control_breakdown header");
+
+    struct SummaryRow {
+        candidate_rank: usize,
+        checkpoint: String,
+        smooth_delta: f64,
+        accuracy_delta: f64,
+        echo_delta: f64,
+        unigram_delta: f64,
+        safety_pass: bool,
+        prediction_diff_mean: f64,
+        charge_delta_mean: f64,
+        real_gain_mean: f64,
+        time_gain_mean: f64,
+        state_gain_mean: f64,
+        random_gain_mean: f64,
+        no_network_gain_mean: f64,
+        strongest_fake_control: &'static str,
+        strongest_fake_gain_mean: f64,
+        context_margin_mean: f64,
+        margin_lower95: f64,
+        fake_beat_rate: f64,
+        artifact_pass: bool,
+        verdict: &'static str,
+    }
+
+    let mut summary_rows = Vec::new();
+    let total_units =
+        cli.candidate_checkpoints.len() * cli.mo_eval_seeds.len() * cli.context_control_repeats;
+    let mut completed_units = 0usize;
+
+    for (candidate_idx, checkpoint) in cli.candidate_checkpoints.iter().enumerate() {
+        let rank = candidate_idx + 1;
+        let (candidate_net, candidate_proj, _) =
+            load_checkpoint(checkpoint).expect("failed to load context candidate checkpoint");
+        assert_eq!(
+            candidate_net.neuron_count(),
+            cli.h,
+            "context candidate H mismatch"
+        );
+
+        let candidate_scores = evaluate_multi_metrics(
+            &candidate_net,
+            &candidate_proj,
+            table,
+            pair_ids,
+            hot_to_idx,
+            bigram,
+            unigram,
+            cli.eval_len,
+            &cli.mo_eval_seeds,
+            init,
+            cli.h,
+            cli.input_scatter,
+        );
+        let safety_deltas = metric_deltas(candidate_scores, reference_scores);
+        let safety_pass = context_safety_pass(safety_deltas);
+        let mut records = Vec::new();
+
+        for &eval_seed in &cli.mo_eval_seeds {
+            for repeat_idx in 0..cli.context_control_repeats {
+                let record = evaluate_context_margin_record(
+                    &candidate_net,
+                    &candidate_proj,
+                    table,
+                    pair_ids,
+                    hot_to_idx,
+                    cli.eval_len,
+                    eval_seed,
+                    repeat_idx,
+                    init,
+                    cli.h,
+                    cli.input_scatter,
+                );
+                completed_units += 1;
+                writeln!(
+                    result_writer,
+                    "{},{},{},{},{:.12},{:.12},{:.12},{:.12},{:.12},{:.12},{:.12},{},{:.12},{:.12},{:.12},{:.12},{:.12},{:.12},{}",
+                    rank,
+                    checkpoint.display(),
+                    eval_seed,
+                    repeat_idx,
+                    record.prediction_diff_rate,
+                    record.charge_delta,
+                    record.real_context_gain,
+                    record.time_shuffle_gain,
+                    record.state_shuffle_gain,
+                    record.random_context_gain,
+                    record.no_network_gain,
+                    record.strongest_fake_control,
+                    record.strongest_fake_gain,
+                    record.context_margin,
+                    safety_deltas.smooth,
+                    safety_deltas.accuracy,
+                    safety_deltas.echo,
+                    safety_deltas.unigram,
+                    safety_pass
+                )
+                .expect("failed to write context_margin_results row");
+                records.push(record);
+            }
+        }
+
+        let margins: Vec<f64> = records.iter().map(|record| record.context_margin).collect();
+        let prediction_diffs: Vec<f64> = records
+            .iter()
+            .map(|record| record.prediction_diff_rate)
+            .collect();
+        let charge_deltas: Vec<f64> = records.iter().map(|record| record.charge_delta).collect();
+        let real_gains: Vec<f64> = records.iter().map(|record| record.real_context_gain).collect();
+        let time_gains: Vec<f64> = records.iter().map(|record| record.time_shuffle_gain).collect();
+        let state_gains: Vec<f64> = records.iter().map(|record| record.state_shuffle_gain).collect();
+        let random_gains: Vec<f64> = records
+            .iter()
+            .map(|record| record.random_context_gain)
+            .collect();
+        let no_network_gains: Vec<f64> = records
+            .iter()
+            .map(|record| record.no_network_gain)
+            .collect();
+        let fake_beat_count = records
+            .iter()
+            .filter(|record| record.strongest_fake_gain >= record.real_context_gain)
+            .count();
+        let fake_beat_rate = if records.is_empty() {
+            0.0
+        } else {
+            fake_beat_count as f64 / records.len() as f64
+        };
+        let mut strongest_fake_control = "time_shuffle";
+        let mut strongest_fake_gain_mean = mean(&time_gains);
+        for (name, gain) in [
+            ("state_shuffle", mean(&state_gains)),
+            ("random_context", mean(&random_gains)),
+            ("no_network", mean(&no_network_gains)),
+        ] {
+            if gain > strongest_fake_gain_mean {
+                strongest_fake_gain_mean = gain;
+                strongest_fake_control = name;
+            }
+        }
+
+        for (control, gain) in [
+            ("real_context", mean(&real_gains)),
+            ("time_shuffle", mean(&time_gains)),
+            ("state_shuffle", mean(&state_gains)),
+            ("random_context", mean(&random_gains)),
+            ("no_network", mean(&no_network_gains)),
+        ] {
+            writeln!(
+                breakdown_writer,
+                "{},{},{},{:.12}",
+                rank,
+                checkpoint.display(),
+                control,
+                gain
+            )
+            .expect("failed to write context_control_breakdown row");
+        }
+
+        let margin_mean = mean(&margins);
+        let margin_lower95 = lower95(&margins);
+        let verdict =
+            context_margin_verdict(margin_mean, margin_lower95, safety_pass, fake_beat_rate);
+        let artifact_pass = matches!(
+            verdict,
+            "D16C_CONTEXT_MARGIN_PASS" | "D16C_CONTEXT_MARGIN_WEAK_PASS"
+        );
+
+        println!(
+            "  candidate={} verdict={} margin_mean={:.6} lower95={:.6} real={:.6} fake={}:{:.6} safety={} progress={}/{}",
+            rank,
+            verdict,
+            margin_mean,
+            margin_lower95,
+            mean(&real_gains),
+            strongest_fake_control,
+            strongest_fake_gain_mean,
+            safety_pass,
+            completed_units,
+            total_units
+        );
+
+        summary_rows.push(SummaryRow {
+            candidate_rank: rank,
+            checkpoint: checkpoint.display().to_string(),
+            smooth_delta: safety_deltas.smooth,
+            accuracy_delta: safety_deltas.accuracy,
+            echo_delta: safety_deltas.echo,
+            unigram_delta: safety_deltas.unigram,
+            safety_pass,
+            prediction_diff_mean: mean(&prediction_diffs),
+            charge_delta_mean: mean(&charge_deltas),
+            real_gain_mean: mean(&real_gains),
+            time_gain_mean: mean(&time_gains),
+            state_gain_mean: mean(&state_gains),
+            random_gain_mean: mean(&random_gains),
+            no_network_gain_mean: mean(&no_network_gains),
+            strongest_fake_control,
+            strongest_fake_gain_mean,
+            context_margin_mean: margin_mean,
+            margin_lower95,
+            fake_beat_rate,
+            artifact_pass,
+            verdict,
+        });
+    }
+
+    result_writer
+        .flush()
+        .expect("failed to flush context_margin_results.csv");
+    breakdown_writer
+        .flush()
+        .expect("failed to flush context_control_breakdown.csv");
+
+    summary_rows.sort_by(|a, b| {
+        context_margin_verdict_rank(b.verdict)
+            .cmp(&context_margin_verdict_rank(a.verdict))
+            .then_with(|| b.margin_lower95.partial_cmp(&a.margin_lower95).unwrap())
+            .then_with(|| b.context_margin_mean.partial_cmp(&a.context_margin_mean).unwrap())
+            .then_with(|| b.real_gain_mean.partial_cmp(&a.real_gain_mean).unwrap())
+    });
+
+    let mut summary_writer = BufWriter::new(
+        File::create(cli.out.join("context_margin_summary.csv"))
+            .expect("failed to create context_margin_summary.csv"),
+    );
+    writeln!(
+        summary_writer,
+        "rank,candidate_rank,checkpoint,verdict,safety_pass,artifact_pass,context_margin_mean,margin_lower95,fake_beat_rate,prediction_diff_mean,charge_delta_mean,real_context_gain,time_shuffle_gain,state_shuffle_gain,random_context_gain,no_network_gain,strongest_fake_control,strongest_fake_gain,smooth_delta,accuracy_delta,echo_delta,unigram_delta"
+    )
+    .expect("failed to write context_margin_summary header");
+    for (rank_idx, row) in summary_rows.iter().enumerate() {
+        writeln!(
+            summary_writer,
+            "{},{},{},{},{},{},{:.12},{:.12},{:.12},{:.12},{:.12},{:.12},{:.12},{:.12},{:.12},{:.12},{},{:.12},{:.12},{:.12},{:.12},{:.12}",
+            rank_idx + 1,
+            row.candidate_rank,
+            row.checkpoint,
+            row.verdict,
+            row.safety_pass,
+            row.artifact_pass,
+            row.context_margin_mean,
+            row.margin_lower95,
+            row.fake_beat_rate,
+            row.prediction_diff_mean,
+            row.charge_delta_mean,
+            row.real_gain_mean,
+            row.time_gain_mean,
+            row.state_gain_mean,
+            row.random_gain_mean,
+            row.no_network_gain_mean,
+            row.strongest_fake_control,
+            row.strongest_fake_gain_mean,
+            row.smooth_delta,
+            row.accuracy_delta,
+            row.echo_delta,
+            row.unigram_delta
+        )
+        .expect("failed to write context_margin_summary row");
+    }
+    summary_writer
+        .flush()
+        .expect("failed to flush context_margin_summary.csv");
+
+    let final_verdict = summary_rows
+        .first()
+        .map(|row| row.verdict)
+        .unwrap_or("D16C_NO_CONTEXT_MARGIN");
+    let pass_count = summary_rows
+        .iter()
+        .filter(|row| row.verdict == "D16C_CONTEXT_MARGIN_PASS")
+        .count();
+    let weak_count = summary_rows
+        .iter()
+        .filter(|row| row.verdict == "D16C_CONTEXT_MARGIN_WEAK_PASS")
+        .count();
+    let mut report = BufWriter::new(
+        File::create(cli.out.join("D16C_CONTEXT_MARGIN_CONFIRM_REPORT.md"))
+            .expect("failed to create D16C_CONTEXT_MARGIN_CONFIRM_REPORT.md"),
+    );
+    writeln!(report, "# D16C Context Margin Confirm Report\n").expect("report write");
+    writeln!(report, "- verdict: `{}`", final_verdict).expect("report write");
+    writeln!(report, "- reference_checkpoint: `{}`", reference_path.display()).expect("report write");
+    writeln!(report, "- candidates: `{}`", summary_rows.len()).expect("report write");
+    writeln!(report, "- eval_len: `{}`", cli.eval_len).expect("report write");
+    writeln!(report, "- eval_seeds: `{}`", cli.mo_eval_seeds.len()).expect("report write");
+    writeln!(report, "- control_repeats: `{}`", cli.context_control_repeats).expect("report write");
+    writeln!(report, "- pass_count: `{}`", pass_count).expect("report write");
+    writeln!(report, "- weak_count: `{}`", weak_count).expect("report write");
+    if let Some(best) = summary_rows.first() {
+        writeln!(
+            report,
+            "\nBest candidate: rank=`{}`, source_candidate=`{}`, verdict=`{}`, margin_mean={:.6}, lower95={:.6}, real_gain={:.6}, strongest_fake=`{}`:{:.6}, safety_pass=`{}`",
+            1,
+            best.candidate_rank,
+            best.verdict,
+            best.context_margin_mean,
+            best.margin_lower95,
+            best.real_gain_mean,
+            best.strongest_fake_control,
+            best.strongest_fake_gain_mean,
+            best.safety_pass
+        )
+        .expect("report write");
+    }
+    writeln!(
+        report,
+        "\nPromotion remains blocked until a survivor also passes reload context gate, D10r-v8 artifact/state gate, and long confirm."
+    )
+    .expect("report write");
+    report.flush().expect("failed to flush D16C report");
 }
 
 fn run_context_climb(
@@ -6002,6 +6723,19 @@ fn main() {
             break;
         }
 
+        if cli.mode == "context-margin-confirm" {
+            run_context_margin_confirm(
+                &cli,
+                &table,
+                &pair_ids,
+                &hot_to_idx,
+                &bigram,
+                &unigram,
+                &init,
+            );
+            break;
+        }
+
         if cli.mode == "quadtree-scout" {
             run_quadtree_scout(
                 &cli,
@@ -6636,6 +7370,8 @@ fn main() {
             "D9.2a"
         } else if cli.mode == "context-climb" {
             "D16b"
+        } else if cli.mode == "context-margin-confirm" {
+            "D16c"
         } else if cli.mode == "quadtree-scout" {
             "D9.3a"
         } else if cli.mode == "causal-diff" {
@@ -6706,6 +7442,7 @@ fn main() {
                 | "threshold-lock-edge-sweep"
                 | "edge-threshold-continued-climb"
                 | "context-climb"
+                | "context-margin-confirm"
                 | "task-universality-scout"
         )
         .then(|| {
@@ -6732,6 +7469,7 @@ fn main() {
             cli.mode.as_str(),
             "multi-objective-climb"
                 | "context-climb"
+                | "context-margin-confirm"
                 | "quadtree-scout"
                 | "causal-diff"
                 | "edge-lock-threshold-sweep"
@@ -6747,6 +7485,14 @@ fn main() {
             "multi-objective-climb" | "context-climb" | "quadtree-scout" | "seed-replication-ladder"
         )
         .then_some(cli.mo_export_top),
+        candidate_checkpoints: (cli.mode == "context-margin-confirm").then_some(
+            cli.candidate_checkpoints
+                .iter()
+                .map(|path| path.display().to_string())
+                .collect(),
+        ),
+        context_control_repeats: (cli.mode == "context-margin-confirm")
+            .then_some(cli.context_control_repeats),
         radii: cli.radii.clone(),
         mutation_types: cli
             .mutation_types
