@@ -11,20 +11,21 @@ untracked.
 
 ```text
 Release-ready AI path:
-[========__] ~78%
+[========__] ~80%
 
 [1] H384 trusted research checkpoint
     DONE: D10u/D13 top_01 packaged, SHA256 recorded, 16k/30-seed gate passed
 
-[2] High-H brute force
+[2] Component substrate
+    DONE: D21A-D21E A-block byte IO, context lane, recurrent and multi-slot memory
+    DONE: D22 8-byte A-window surface
+    DONE: D23 64D reciprocal B-window abstraction
+
+[3] High-H brute force
     BLOCKED: D15B projection selectivity controls rejected H16384 raw signals
 
-[3] Context-carrying capability
-    CURRENT: D16b main context-climb running
-    status: multiple accepted context-signal candidates observed, not yet confirmed
-
 [4] Next release unlock
-    D16 context gate + artifact/state gate on top D16b candidates
+    D24 tiny transformations over the 64D B latent, then integrate with state/memory
 ```
 
 ## Day-by-Day Timeline
@@ -498,3 +499,60 @@ exact deployment candidate.
 Updated source doc:
 
 - `docs/research/PHASE_D22_BYTE_WORD_EMBEDDER.md`
+
+### 2026-05-02 - D23 reciprocal B-block word/window abstraction
+
+- D23 added the first B-block probe above the D22 A-window surface:
+
+```text
+8 bytes
+  -> D22 128D A-window code
+  -> reciprocal B-block latent
+  -> 128D A-window code
+  -> 8 bytes
+```
+
+- D23 result:
+
+```text
+D23_BBLOCK_64D_PASS
+eval_windows: 65536
+geometry_pairs: 200000
+
+best candidate:
+  family: B0_block_average
+  latent_width: 64
+  window_exact_acc: 100%
+  byte_exact_acc: 100%
+  bit_acc: 100%
+  byte_margin_min: +2.0
+  collision_count: 0
+  encoder_weight_count: 64
+  reciprocity_error: 0
+
+geometry:
+  one_byte_neighbor_closer_rate: 99.9845%
+  prefix_neighbor_closer_rate: 99.9845%
+  random_far_margin: +0.872942
+```
+
+- Width conclusion:
+
+```text
+32D / 48D: too compressed, reconstruction fails
+64D: primary pass, exact and controls clean
+96D: reconstructs, but random_projection_control is too high (~9.8%)
+128D: full-width reference pass
+```
+
+Interpretation:
+
+```text
+A-block: byte <-> byte abstract
+D22:     8 bytes <-> 128D A-window abstract
+D23:     128D A-window abstract <-> 64D B-window abstract
+```
+
+Updated source doc:
+
+- `docs/research/PHASE_D23_BBLOCK_WORD_ABSTRACTION.md`
