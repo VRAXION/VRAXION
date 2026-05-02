@@ -451,3 +451,50 @@ and recall the value belonging to the queried name.
 Updated source doc:
 
 - `docs/research/PHASE_D21E_MULTISLOT_MEMORY_ABLOCK_CORE.md`
+
+### 2026-05-02 - D22 byte-to-word embedder
+
+- D22 composed 8 parallel D21A A-blocks into a fixed 8-byte window surface:
+
+```text
+8 bytes -> 8 parallel A-block codes -> 128D word-ish code -> 8 bytes
+```
+
+- D22 result:
+
+```text
+D22_COMPACT_WORD_EMBEDDER_PASS
+eval_windows: 65536
+
+128D robust reference:
+  window_exact_acc: 100%
+  byte_margin_min: +4.0
+  single_dim_drop_mean_window_exact: 100%
+  int8 window vector: 128 bytes
+  byte LUT: 4096 bytes
+
+64D compact candidate:
+  window_exact_acc: 100%
+  byte_margin_min: +2.0
+  single_dim_drop_mean_bit: 99.1972%
+  int8 window vector: 64 bytes
+  byte LUT: 2048 bytes
+
+32D control:
+  window_exact_acc: 0.2%
+  verdict: fail
+```
+
+Interpretation:
+
+```text
+A-block = one byte IO/memory cell
+D22     = 8-byte window embedder
+```
+
+Recommendation: use `128D` as the safer research width and `64D` as the compact
+exact deployment candidate.
+
+Updated source doc:
+
+- `docs/research/PHASE_D22_BYTE_WORD_EMBEDDER.md`
