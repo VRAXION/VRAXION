@@ -388,3 +388,66 @@ and recall it only on query.
 Updated source doc:
 
 - `docs/research/PHASE_D21D_MARKER_MEMORY_ABLOCK_CORE.md`
+
+### 2026-05-02 - D21E multi-slot memory A-block core
+
+- D21E moved D21D from one delayed memory slot to slot-addressed key-value
+  memory:
+
+```text
+MARKER_A -> PAYLOAD_A
+MARKER_B -> PAYLOAD_B
+MARKER_C -> PAYLOAD_C
+MARKER_D -> PAYLOAD_D
+distractor...
+QUERY_B -> PAYLOAD_B
+```
+
+- D21E result:
+
+```text
+D21E_MULTISLOT_MEMORY_PASS
+oracle:
+  slot_counts: 2,4
+  distractor_lengths: 1,2,4,8,16
+  eval_sequences: 65536
+  query_payload_exact_acc: 100%
+  query_shuffle_acc: 0%
+  wrong_slot_recall_rate: 0%
+
+bounded confirm:
+  eval_sequences: 32768
+  distractor_lengths: 1,2,4,8,16,32
+  pass_count: 10 / 16
+  best high-margin core: state_dim=64, slot_count=4, memory_edges=64
+  query_payload_exact_acc: 100%
+  query_payload_margin_min: +12.0
+  reset/time/marker/query shuffle controls: 0%
+  random_state_acc: ~0.19%
+  wrong_slot_recall_rate: 0%
+```
+
+- Crystallize result:
+
+```text
+64-edge high-margin reference -> 32-edge compact confirmed core
+compact query_payload_exact_acc: 100%
+compact query_payload_margin_min: +4.0
+verdict: D21E_MULTISLOT_MEMORY_PASS
+```
+
+- Rescope note: full `samples=256` atlas and `131072` confirm were too slow, so
+  the run was intentionally bounded to `samples=8` and `32768` confirm. This is
+  component-level evidence, not a release model or high-H unlock.
+
+Interpretation:
+
+```text
+The A-block core can remember several named byte values,
+ignore distractors,
+and recall the value belonging to the queried name.
+```
+
+Updated source doc:
+
+- `docs/research/PHASE_D21E_MULTISLOT_MEMORY_ABLOCK_CORE.md`
