@@ -280,3 +280,52 @@ A-block byte IO + context lane + tiny recurrent/core block
 Updated source doc:
 
 - `docs/research/PHASE_D21B_CONTEXT_ABLOCK.md`
+
+### 2026-05-02 - D21C tiny recurrent A-block core
+
+- D21C attached a tiny recurrent/state core behind the D21A/D21B A-block shell.
+  The first task was previous-byte recall:
+
+```text
+input sequence: [A, B]
+target output:  A when B arrives
+```
+
+- D21C result:
+
+```text
+D21C_PREV_BYTE_CORE_PASS
+best high-margin core: state_dim=16, core_edges=16
+prev_byte_exact_acc: 100%
+long_sequence_exact_acc: 100%
+prev_byte_margin_min: +12.0
+reset_each_token_acc: 0.3906%
+time_shuffle_state_acc: 0.4105%
+random_state_acc: 0.3967%
+current_byte_cheat_rate: 0%
+zero_context_byte_reconstruction_acc: 100%
+```
+
+- D21C crystallize also found a compact full-pass core:
+
+```text
+state_dim=16
+core_edges=8
+prev_byte_exact_acc: 100%
+long_sequence_exact_acc: 100%
+prev_byte_margin_min: +4.0
+```
+
+Interpretation: the A-block path now has a complete validated micro-loop:
+
+```text
+byte input -> fixed byte lane -> tiny recurrent state -> context lane -> output byte
+```
+
+This is not a release model. It is the first clean proof that the A-block shell
+can be driven by a state-carrying core rather than only by externally supplied
+context.
+
+Updated source doc:
+
+- `docs/research/PHASE_D21C_TINY_RECURRENT_ABLOCK_CORE.md`
