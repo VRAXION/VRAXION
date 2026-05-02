@@ -179,3 +179,56 @@ Run D16 context gate on top candidates
 - `docs/research/PHASE_D15B_PROJECTION_SELECTIVITY_GATE.md`
 - `docs/research/PHASE_D16_TOP01_CONTEXT_GATE.md`
 - `docs/research/PHASE_D16B_CONTEXT_CLIMB_SMOKE.md`
+
+### 2026-05-02 - D20 output-anchor synthesis and D21A A-block
+
+- D20 deep research intake concluded that the D19 blocker is not raw context
+  capacity. D18/D19 already showed context is reachable. The blocker is adding
+  context while preserving `top_01` behavior.
+
+```text
+recommended D20 objective:
+real_context_margin
+- max(fake_context_gains)
+- output_anchor_divergence_vs_top01
+- smooth/accuracy/unigram/echo safety penalties
+```
+
+- D21A implemented a scratch reciprocal byte A-block:
+
+```text
+byte -> 8 visible bits -> 16D abstract code -> 8 bit logits -> byte logits
+decoder = encoder.T
+```
+
+- D21A result:
+
+```text
+D21A_RECIPROCAL_ABLOCK_PASS
+main candidates scanned: 29,718
+gate-pass candidates: 1,618
+best: 16D redundant_copy_2x, 16 reciprocal edges
+exact_byte_acc: 100%
+bit_acc: 100%
+byte_margin_min: +4.0
+single_edge_drop_mean_bit: 100%
+```
+
+- D21A crystallize:
+
+```text
+compact gate-pass candidate: 14 reciprocal edges
+exact_byte_acc: 100%
+bit_acc: 100%
+byte_margin_min: +2.0
+single_edge_drop_mean_bit: 0.991071
+```
+
+Interpretation: D21A solves the base byte round-trip gate cleanly. The next
+quality step is not more reconstruction accuracy, but error-correcting byte-code
+geometry and then a context lane that does not break reconstruction.
+
+Updated source docs:
+
+- `docs/research/PHASE_D20_OUTPUT_ANCHOR_RESEARCH_SYNTHESIS.md`
+- `docs/research/PHASE_D21A_RECIPROCAL_ABLOCK_BYTE_ENCODER.md`
