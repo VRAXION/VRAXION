@@ -329,3 +329,62 @@ context.
 Updated source doc:
 
 - `docs/research/PHASE_D21C_TINY_RECURRENT_ABLOCK_CORE.md`
+
+### 2026-05-02 - D21D marker-memory A-block core
+
+- D21D moved the A-block core from one-step previous-byte memory to delayed
+  marker memory:
+
+```text
+input:  MARKER, PAYLOAD, distractor..., QUERY
+target: PAYLOAD at QUERY
+```
+
+- D21D result:
+
+```text
+D21D_MARKER_MEMORY_PASS
+fresh oracle:
+  eval_sequences: 65536
+  distractor_lengths: 1,2,4,8,16
+  query_payload_exact_acc: 100%
+  query_payload_margin_min: +12.0
+  payload_state_collision_count: 0
+
+bounded confirm:
+  eval_sequences: 32768
+  distractor_lengths: 1,2,4,8,16,32
+  pass_count: 12 / 16
+  best high-margin core: state_dim=32, memory_edges=16
+  query_payload_exact_acc: 100%
+  long_sequence_payload_acc: 100%
+  non_query_byte_reconstruction_acc: 100%
+  reset/time-shuffle/marker-shuffle controls: 0%
+  random_state_acc: ~0.31%
+  current_byte_cheat_rate: 0%
+```
+
+- Compact confirmed family:
+
+```text
+identity_memory, 8 edges
+query_payload_exact_acc: 100%
+query_payload_margin_min: +4.0
+random-state control: ~0.34-0.41%
+```
+
+- Rescope note: the original full atlas/crystallize shape was too slow, so the
+  evidence run was bounded. This is component-level proof, not a release model
+  or H512/H8192 unlock.
+
+Interpretation:
+
+```text
+The A-block core can store a marked payload,
+carry it through distractors,
+and recall it only on query.
+```
+
+Updated source doc:
+
+- `docs/research/PHASE_D21D_MARKER_MEMORY_ABLOCK_CORE.md`
