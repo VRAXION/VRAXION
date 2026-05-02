@@ -269,6 +269,9 @@ fn estimated_total_units(cli: &Cli) -> Option<usize> {
         "multi-objective-climb" | "context-climb" | "context-margin-climb" => {
             Some(cli.mo_climbers * cli.mo_steps)
         }
+        "loss-landscape-compass" => {
+            Some(cli.radii.len() * cli.mutation_types.len() * cli.samples_per_type)
+        }
         "context-margin-confirm" => {
             Some(cli.candidate_checkpoints.len() * cli.mo_eval_seeds.len() * cli.context_control_repeats)
         }
@@ -517,6 +520,23 @@ struct ContextMarginEvalSummary {
 }
 
 #[derive(Clone)]
+struct LossLandscapeSample {
+    sample_id: usize,
+    mutation_type: MutationType,
+    radius: usize,
+    ray_id: usize,
+    proposal_seed: u64,
+    counts: MutationCounts,
+    direct_distance: usize,
+    edges: usize,
+    summary: ContextMarginEvalSummary,
+    artifact_pass: bool,
+    safe_navigation_score: f64,
+    navigation_delta_vs_start: f64,
+    d17_class: &'static str,
+}
+
+#[derive(Clone)]
 struct ContextCandidate {
     climber_id: usize,
     step_index: usize,
@@ -721,6 +741,13 @@ fn parse_args() -> Cli {
                     .expect("--samples-per-type value")
                     .parse()
                     .expect("samples-per-type")
+            }
+            "--samples-per-radius" => {
+                samples_per_type = args
+                    .next()
+                    .expect("--samples-per-radius value")
+                    .parse()
+                    .expect("samples-per-radius")
             }
             "--samples-per-tile" => {
                 samples_per_tile = args
@@ -947,7 +974,7 @@ fn parse_args() -> Cli {
             "--help" | "-h" => {
                 println!(
                     "Usage: cargo run -p instnct-core --example d9_direct_landscape -- \
-                     --checkpoint PATH --H 256 --mode fail-fast|medium|full|staged|planet-scout|paratrooper-climb|endpoint-bridge|context-climb|context-margin-confirm|context-margin-climb \
+                     --checkpoint PATH --H 256 --mode fail-fast|medium|full|staged|planet-scout|paratrooper-climb|endpoint-bridge|context-climb|context-margin-confirm|context-margin-climb|loss-landscape-compass \
                      --score-mode accuracy|smooth --samples-per-type N --out PATH"
                 );
                 std::process::exit(0);
@@ -977,6 +1004,7 @@ fn parse_args() -> Cli {
         | "context-climb" => vec![4, 8, 16, 32],
         | "context-margin-climb" => vec![1, 2, 4],
         | "context-margin-confirm" => vec![1],
+        | "loss-landscape-compass" => vec![1, 2, 4, 8],
         | "quadtree-scout" => vec![4, 8, 16],
         | "causal-diff" => vec![1],
         | "edge-lock-threshold-sweep"
@@ -985,7 +1013,7 @@ fn parse_args() -> Cli {
         | "scaling-universality-scout"
         | "task-universality-scout" => vec![4, 8, 16],
         "seed-replication-ladder" => vec![4, 8, 16, 32],
-        other => panic!("--mode expects fail-fast|medium|full|staged|planet-scout|paratrooper-climb|endpoint-bridge|endpoint-overlap|endpoint-robustness|repair-scan|multi-objective-climb|context-climb|context-margin-confirm|context-margin-climb|quadtree-scout|causal-diff|edge-lock-threshold-sweep|threshold-lock-edge-sweep|edge-threshold-continued-climb|scaling-universality-scout|task-universality-scout|seed-replication-ladder, got {other}"),
+        other => panic!("--mode expects fail-fast|medium|full|staged|planet-scout|paratrooper-climb|endpoint-bridge|endpoint-overlap|endpoint-robustness|repair-scan|multi-objective-climb|context-climb|context-margin-confirm|context-margin-climb|loss-landscape-compass|quadtree-scout|causal-diff|edge-lock-threshold-sweep|threshold-lock-edge-sweep|edge-threshold-continued-climb|scaling-universality-scout|task-universality-scout|seed-replication-ladder, got {other}"),
     };
     let default_mutation_types = if matches!(
         mode.as_str(),
@@ -1000,6 +1028,7 @@ fn parse_args() -> Cli {
             | "context-climb"
             | "context-margin-confirm"
             | "context-margin-climb"
+            | "loss-landscape-compass"
             | "quadtree-scout"
             | "causal-diff"
             | "edge-lock-threshold-sweep"
@@ -3263,6 +3292,50 @@ fn context_safety_pass(deltas_vs_start: MultiMetricScores) -> bool {
         && deltas_vs_start.unigram >= -0.0020
 }
 
+fn context_safety_penalty(deltas_vs_start: MultiMetricScores) -> f64 {
+    let smooth_penalty = (-0.0020 - deltas_vs_start.smooth).max(0.0);
+    let accuracy_penalty = (-0.0010 - deltas_vs_start.accuracy).max(0.0);
+    let echo_penalty = (deltas_vs_start.echo.abs() - 0.0015).max(0.0);
+    let unigram_penalty = (-0.0020 - deltas_vs_start.unigram).max(0.0);
+    smooth_penalty + accuracy_penalty + echo_penalty + unigram_penalty
+}
+
+fn safe_navigation_score(summary: &ContextMarginEvalSummary) -> f64 {
+    let fake_penalty = (summary.fake_beat_rate - 0.25).max(0.0) * 0.0050;
+    summary.safety_deltas.smooth
+        + summary.context_margin_mean
+        + 0.0005 * summary.prediction_diff_mean
+        + 0.00025 * summary.charge_delta_mean
+        - context_safety_penalty(summary.safety_deltas)
+        - fake_penalty
+}
+
+fn d17_artifact_pass(summary: &ContextMarginEvalSummary) -> bool {
+    matches!(
+        summary.verdict,
+        "D16C_CONTEXT_MARGIN_PASS" | "D16C_CONTEXT_MARGIN_WEAK_PASS"
+    )
+}
+
+fn d17_sample_class(
+    summary: &ContextMarginEvalSummary,
+    start_summary: &ContextMarginEvalSummary,
+) -> &'static str {
+    let artifact_pass = d17_artifact_pass(summary);
+    if summary.safety_pass && artifact_pass && summary.margin_lower95 >= 0.0010 {
+        "D17_READY_FOR_TARGETED_CLIMB"
+    } else if summary.safety_pass
+        && artifact_pass
+        && summary.context_margin_mean > start_summary.context_margin_mean
+    {
+        "D17_USABLE_COMPASS"
+    } else if summary.safety_deltas.smooth > 0.0 && (!summary.safety_pass || !artifact_pass) {
+        "D17_OUTPUT_ONLY_TRAP"
+    } else {
+        "D17_NO_LOCAL_COMPASS_SIGNAL"
+    }
+}
+
 fn context_class(
     context: ContextScores,
     safety_pass: bool,
@@ -4127,6 +4200,542 @@ fn run_context_margin_confirm(
     )
     .expect("report write");
     report.flush().expect("failed to flush D16C report");
+}
+
+fn evaluate_loss_landscape_sample(
+    cli: &Cli,
+    sample_id: usize,
+    mutation_type: MutationType,
+    mutation_ord: usize,
+    radius: usize,
+    ray_id: usize,
+    start_net: &Network,
+    start_proj: &Int8Projection,
+    start_coord: &DirectGenomeCoord,
+    start_summary: &ContextMarginEvalSummary,
+    start_navigation_score: f64,
+    reference_scores: MultiMetricScores,
+    table: &VcbpTable,
+    pair_ids: &[u16],
+    hot_to_idx: &[usize],
+    bigram: &[Vec<f64>],
+    unigram: &[f64],
+    init: &InitConfig,
+) -> LossLandscapeSample {
+    let proposal_seed = cli.seed
+        ^ 0xD170_C0A5_CA11u64
+        ^ ((mutation_ord as u64) << 48)
+        ^ ((radius as u64) << 32)
+        ^ (ray_id as u64);
+    let mut mutation_rng = StdRng::seed_from_u64(proposal_seed);
+    let mut candidate_net = start_net.clone();
+    let counts = apply_radius_mutation(&mut candidate_net, radius, mutation_type, &mut mutation_rng);
+    let candidate_coord = encode_coord(&candidate_net);
+    let direct_distance = coord_distance(start_coord, &candidate_coord);
+    let summary = evaluate_context_margin_summary_for_net(
+        &candidate_net,
+        start_proj,
+        reference_scores,
+        table,
+        pair_ids,
+        hot_to_idx,
+        bigram,
+        unigram,
+        cli.eval_len,
+        &cli.mo_eval_seeds,
+        cli.context_control_repeats,
+        init,
+        cli.h,
+        cli.input_scatter,
+    );
+    let artifact_pass = d17_artifact_pass(&summary);
+    let safe_navigation_score = safe_navigation_score(&summary);
+    let navigation_delta_vs_start = safe_navigation_score - start_navigation_score;
+    let d17_class = d17_sample_class(&summary, start_summary);
+
+    LossLandscapeSample {
+        sample_id,
+        mutation_type,
+        radius,
+        ray_id,
+        proposal_seed,
+        counts,
+        direct_distance,
+        edges: candidate_net.edge_count(),
+        summary,
+        artifact_pass,
+        safe_navigation_score,
+        navigation_delta_vs_start,
+        d17_class,
+    }
+}
+
+fn write_loss_landscape_sample_row<W: Write>(writer: &mut W, row: &LossLandscapeSample) {
+    writeln!(
+        writer,
+        "{},{},{},{},{},{},{},{},{},{:.12},{:.12},{:.12},{:.12},{:.12},{:.12},{:.12},{:.12},{:.12},{},{:.12},{:.12},{:.12},{:.12},{:.12},{:.12},{},{},{:.12},{:.12},{}",
+        row.sample_id,
+        row.mutation_type.as_str(),
+        row.radius,
+        row.ray_id,
+        row.proposal_seed,
+        row.counts.edge,
+        row.counts.threshold,
+        row.direct_distance,
+        row.edges,
+        row.summary.safety_deltas.smooth,
+        row.summary.safety_deltas.accuracy,
+        row.summary.safety_deltas.echo,
+        row.summary.safety_deltas.unigram,
+        row.summary.real_gain_mean,
+        row.summary.time_gain_mean,
+        row.summary.state_gain_mean,
+        row.summary.random_gain_mean,
+        row.summary.no_network_gain_mean,
+        row.summary.strongest_fake_control,
+        row.summary.strongest_fake_gain_mean,
+        row.summary.context_margin_mean,
+        row.summary.margin_lower95,
+        row.summary.fake_beat_rate,
+        row.summary.prediction_diff_mean,
+        row.summary.charge_delta_mean,
+        row.summary.safety_pass,
+        row.artifact_pass,
+        row.safe_navigation_score,
+        row.navigation_delta_vs_start,
+        row.d17_class
+    )
+    .expect("failed to write landscape_samples row");
+}
+
+fn run_loss_landscape_compass(
+    cli: &Cli,
+    table: &VcbpTable,
+    pair_ids: &[u16],
+    hot_to_idx: &[usize],
+    bigram: &[Vec<f64>],
+    unigram: &[f64],
+    init: &InitConfig,
+) {
+    let start_path = cli
+        .repair_start
+        .as_ref()
+        .expect("--mode loss-landscape-compass requires --repair-start");
+    let reference_path = cli
+        .context_reference_checkpoint
+        .as_ref()
+        .expect("--mode loss-landscape-compass requires --context-reference-checkpoint");
+    assert!(
+        !cli.mo_eval_seeds.is_empty(),
+        "--mo-eval-seeds must not be empty"
+    );
+    assert!(
+        cli.context_control_repeats > 0,
+        "--context-control-repeats must be > 0"
+    );
+    assert!(
+        cli.mutation_types
+            .iter()
+            .all(|t| matches!(t, MutationType::Edge | MutationType::Threshold)),
+        "D17 loss-landscape-compass only supports edge,threshold mutation types"
+    );
+
+    let (start_net, start_proj, _) =
+        load_checkpoint(start_path).expect("failed to load D17 start checkpoint");
+    let (reference_net, reference_proj, _) =
+        load_checkpoint(reference_path).expect("failed to load D17 reference checkpoint");
+    assert_eq!(start_net.neuron_count(), cli.h, "D17 start H mismatch");
+    assert_eq!(
+        reference_net.neuron_count(),
+        cli.h,
+        "D17 reference H mismatch"
+    );
+
+    println!(
+        "D17 loss-landscape compass: start={} reference={} radii={:?} mutations={:?} samples_per_radius={} eval_len={} seeds={} repeats={}",
+        start_path.display(),
+        reference_path.display(),
+        cli.radii,
+        cli.mutation_types
+            .iter()
+            .map(|mutation| mutation.as_str())
+            .collect::<Vec<_>>(),
+        cli.samples_per_type,
+        cli.eval_len,
+        cli.mo_eval_seeds.len(),
+        cli.context_control_repeats
+    );
+
+    let reference_scores = evaluate_multi_metrics(
+        &reference_net,
+        &reference_proj,
+        table,
+        pair_ids,
+        hot_to_idx,
+        bigram,
+        unigram,
+        cli.eval_len,
+        &cli.mo_eval_seeds,
+        init,
+        cli.h,
+        cli.input_scatter,
+    );
+    let start_summary = evaluate_context_margin_summary_for_net(
+        &start_net,
+        &start_proj,
+        reference_scores,
+        table,
+        pair_ids,
+        hot_to_idx,
+        bigram,
+        unigram,
+        cli.eval_len,
+        &cli.mo_eval_seeds,
+        cli.context_control_repeats,
+        init,
+        cli.h,
+        cli.input_scatter,
+    );
+    let start_navigation_score = safe_navigation_score(&start_summary);
+    println!(
+        "  start compass anchor: verdict={} nav={:.6} margin={:.6} lower95={:.6} smooth_delta={:.6} fake_rate={:.3}",
+        start_summary.verdict,
+        start_navigation_score,
+        start_summary.context_margin_mean,
+        start_summary.margin_lower95,
+        start_summary.safety_deltas.smooth,
+        start_summary.fake_beat_rate
+    );
+
+    let start_coord = encode_coord(&start_net);
+    let total_start = Instant::now();
+    let mut rows: Vec<LossLandscapeSample> = Vec::new();
+    let mut sample_writer = BufWriter::new(
+        File::create(cli.out.join("landscape_samples.csv"))
+            .expect("failed to create landscape_samples.csv"),
+    );
+    writeln!(
+        sample_writer,
+        "sample_id,mutation_type,radius,ray_id,proposal_seed,edge_edits,threshold_edits,direct_genome_distance,edges,smooth_delta,accuracy_delta,echo_delta,unigram_delta,real_context_gain,time_shuffle_gain,state_shuffle_gain,random_context_gain,no_network_gain,strongest_fake_control,strongest_fake_gain,context_margin_mean,margin_lower95,fake_beat_rate,prediction_diff_mean,charge_delta_mean,safety_pass,artifact_pass,safe_navigation_score,navigation_delta_vs_start,d17_class"
+    )
+    .expect("failed to write landscape_samples header");
+
+    let mut sample_id = 0usize;
+    let initial_total = cli.radii.len() * cli.mutation_types.len() * cli.samples_per_type;
+    for (mutation_ord, &mutation_type) in cli.mutation_types.iter().enumerate() {
+        for &radius in &cli.radii {
+            for ray_id in 0..cli.samples_per_type {
+                let eval_start = Instant::now();
+                let row = evaluate_loss_landscape_sample(
+                    cli,
+                    sample_id,
+                    mutation_type,
+                    mutation_ord,
+                    radius,
+                    ray_id,
+                    &start_net,
+                    &start_proj,
+                    &start_coord,
+                    &start_summary,
+                    start_navigation_score,
+                    reference_scores,
+                    table,
+                    pair_ids,
+                    hot_to_idx,
+                    bigram,
+                    unigram,
+                    init,
+                );
+                write_loss_landscape_sample_row(&mut sample_writer, &row);
+                println!(
+                    "  sample={}/{} type={} radius={} ray={} class={} nav={:.6} margin={:.6} lower95={:.6} smooth={:.6} fake_rate={:.3} eval_ms={:.1}",
+                    sample_id + 1,
+                    initial_total,
+                    row.mutation_type.as_str(),
+                    row.radius,
+                    row.ray_id,
+                    row.d17_class,
+                    row.safe_navigation_score,
+                    row.summary.context_margin_mean,
+                    row.summary.margin_lower95,
+                    row.summary.safety_deltas.smooth,
+                    row.summary.fake_beat_rate,
+                    eval_start.elapsed().as_secs_f64() * 1000.0
+                );
+                rows.push(row);
+                sample_id += 1;
+            }
+        }
+    }
+
+    let best_initial = rows
+        .iter()
+        .filter(|row| {
+            matches!(
+                row.d17_class,
+                "D17_READY_FOR_TARGETED_CLIMB" | "D17_USABLE_COMPASS"
+            )
+        })
+        .max_by(|a, b| {
+            a.safe_navigation_score
+                .partial_cmp(&b.safe_navigation_score)
+                .unwrap()
+        })
+        .map(|row| (row.mutation_type, row.radius));
+
+    if cli.samples_per_type >= 8
+        && total_start.elapsed() < Duration::from_secs(30 * 60)
+        && best_initial.is_some()
+    {
+        let (best_mutation, best_radius) = best_initial.unwrap();
+        let mutation_ord = cli
+            .mutation_types
+            .iter()
+            .position(|value| *value == best_mutation)
+            .unwrap_or(0);
+        println!(
+            "  auto-extend: best region type={} radius={} extra_samples=32",
+            best_mutation.as_str(),
+            best_radius
+        );
+        for extra_idx in 0..32usize {
+            let ray_id = cli.samples_per_type + extra_idx;
+            let eval_start = Instant::now();
+            let row = evaluate_loss_landscape_sample(
+                cli,
+                sample_id,
+                best_mutation,
+                mutation_ord,
+                best_radius,
+                ray_id,
+                &start_net,
+                &start_proj,
+                &start_coord,
+                &start_summary,
+                start_navigation_score,
+                reference_scores,
+                table,
+                pair_ids,
+                hot_to_idx,
+                bigram,
+                unigram,
+                init,
+            );
+            write_loss_landscape_sample_row(&mut sample_writer, &row);
+            println!(
+                "  extend_sample={} type={} radius={} ray={} class={} nav={:.6} margin={:.6} lower95={:.6} smooth={:.6} fake_rate={:.3} eval_ms={:.1}",
+                sample_id,
+                row.mutation_type.as_str(),
+                row.radius,
+                row.ray_id,
+                row.d17_class,
+                row.safe_navigation_score,
+                row.summary.context_margin_mean,
+                row.summary.margin_lower95,
+                row.summary.safety_deltas.smooth,
+                row.summary.fake_beat_rate,
+                eval_start.elapsed().as_secs_f64() * 1000.0
+            );
+            rows.push(row);
+            sample_id += 1;
+        }
+    }
+    sample_writer
+        .flush()
+        .expect("failed to flush landscape_samples.csv");
+
+    let mut cells_writer = BufWriter::new(
+        File::create(cli.out.join("landscape_cells.csv"))
+            .expect("failed to create landscape_cells.csv"),
+    );
+    writeln!(
+        cells_writer,
+        "mutation_type,radius,count,usable_count,ready_count,trap_count,safety_pass_count,artifact_pass_count,mean_smooth_delta,mean_context_margin,mean_margin_lower95,mean_safe_navigation_score,best_safe_navigation_score,best_ray_id,best_sample_id,best_d17_class"
+    )
+    .expect("failed to write landscape_cells header");
+    for &mutation_type in &cli.mutation_types {
+        for &radius in &cli.radii {
+            let cell_rows: Vec<&LossLandscapeSample> = rows
+                .iter()
+                .filter(|row| row.mutation_type == mutation_type && row.radius == radius)
+                .collect();
+            if cell_rows.is_empty() {
+                continue;
+            }
+            let count = cell_rows.len();
+            let usable_count = cell_rows
+                .iter()
+                .filter(|row| row.d17_class == "D17_USABLE_COMPASS")
+                .count();
+            let ready_count = cell_rows
+                .iter()
+                .filter(|row| row.d17_class == "D17_READY_FOR_TARGETED_CLIMB")
+                .count();
+            let trap_count = cell_rows
+                .iter()
+                .filter(|row| row.d17_class == "D17_OUTPUT_ONLY_TRAP")
+                .count();
+            let safety_pass_count = cell_rows
+                .iter()
+                .filter(|row| row.summary.safety_pass)
+                .count();
+            let artifact_pass_count = cell_rows.iter().filter(|row| row.artifact_pass).count();
+            let mean_smooth = cell_rows
+                .iter()
+                .map(|row| row.summary.safety_deltas.smooth)
+                .sum::<f64>()
+                / count as f64;
+            let mean_margin = cell_rows
+                .iter()
+                .map(|row| row.summary.context_margin_mean)
+                .sum::<f64>()
+                / count as f64;
+            let mean_lower95 = cell_rows
+                .iter()
+                .map(|row| row.summary.margin_lower95)
+                .sum::<f64>()
+                / count as f64;
+            let mean_navigation = cell_rows
+                .iter()
+                .map(|row| row.safe_navigation_score)
+                .sum::<f64>()
+                / count as f64;
+            let best = cell_rows
+                .iter()
+                .max_by(|a, b| {
+                    a.safe_navigation_score
+                        .partial_cmp(&b.safe_navigation_score)
+                        .unwrap()
+                })
+                .expect("non-empty cell");
+            writeln!(
+                cells_writer,
+                "{},{},{},{},{},{},{},{},{:.12},{:.12},{:.12},{:.12},{:.12},{},{},{}",
+                mutation_type.as_str(),
+                radius,
+                count,
+                usable_count,
+                ready_count,
+                trap_count,
+                safety_pass_count,
+                artifact_pass_count,
+                mean_smooth,
+                mean_margin,
+                mean_lower95,
+                mean_navigation,
+                best.safe_navigation_score,
+                best.ray_id,
+                best.sample_id,
+                best.d17_class
+            )
+            .expect("failed to write landscape_cells row");
+        }
+    }
+    cells_writer
+        .flush()
+        .expect("failed to flush landscape_cells.csv");
+
+    let max_ray = rows.iter().map(|row| row.ray_id).max().unwrap_or(0);
+    let mut matrix_writer = BufWriter::new(
+        File::create(cli.out.join("landscape_heatmap_matrix.csv"))
+            .expect("failed to create landscape_heatmap_matrix.csv"),
+    );
+    write!(matrix_writer, "mutation_type,radius").expect("failed to write matrix header");
+    for ray_id in 0..=max_ray {
+        write!(matrix_writer, ",ray_{ray_id:02}").expect("failed to write matrix header");
+    }
+    writeln!(matrix_writer).expect("failed to write matrix newline");
+    for &mutation_type in &cli.mutation_types {
+        for &radius in &cli.radii {
+            write!(matrix_writer, "{},{}", mutation_type.as_str(), radius)
+                .expect("failed to write matrix row key");
+            for ray_id in 0..=max_ray {
+                if let Some(row) = rows.iter().find(|row| {
+                    row.mutation_type == mutation_type && row.radius == radius && row.ray_id == ray_id
+                }) {
+                    write!(matrix_writer, ",{:.12}", row.safe_navigation_score)
+                        .expect("failed to write matrix score");
+                } else {
+                    write!(matrix_writer, ",").expect("failed to write matrix empty cell");
+                }
+            }
+            writeln!(matrix_writer).expect("failed to write matrix newline");
+        }
+    }
+    matrix_writer
+        .flush()
+        .expect("failed to flush landscape_heatmap_matrix.csv");
+
+    let ready_count = rows
+        .iter()
+        .filter(|row| row.d17_class == "D17_READY_FOR_TARGETED_CLIMB")
+        .count();
+    let usable_count = rows
+        .iter()
+        .filter(|row| row.d17_class == "D17_USABLE_COMPASS")
+        .count();
+    let trap_count = rows
+        .iter()
+        .filter(|row| row.d17_class == "D17_OUTPUT_ONLY_TRAP")
+        .count();
+    let final_verdict = if ready_count > 0 {
+        "D17_READY_FOR_TARGETED_CLIMB"
+    } else if usable_count > 0 {
+        "D17_USABLE_COMPASS"
+    } else if trap_count > 0 {
+        "D17_OUTPUT_ONLY_TRAP"
+    } else {
+        "D17_NO_LOCAL_COMPASS_SIGNAL"
+    };
+    let best = rows.iter().max_by(|a, b| {
+        a.safe_navigation_score
+            .partial_cmp(&b.safe_navigation_score)
+            .unwrap()
+    });
+    let mut report = BufWriter::new(
+        File::create(cli.out.join("D17_LOSS_LANDSCAPE_COMPASS_REPORT.md"))
+            .expect("failed to create D17_LOSS_LANDSCAPE_COMPASS_REPORT.md"),
+    );
+    writeln!(report, "# D17 Loss-Landscape Compass Report\n").expect("report write");
+    writeln!(report, "- verdict: `{}`", final_verdict).expect("report write");
+    writeln!(report, "- start_checkpoint: `{}`", start_path.display()).expect("report write");
+    writeln!(report, "- reference_checkpoint: `{}`", reference_path.display()).expect("report write");
+    writeln!(report, "- eval_len: `{}`", cli.eval_len).expect("report write");
+    writeln!(report, "- eval_seeds: `{}`", cli.mo_eval_seeds.len()).expect("report write");
+    writeln!(report, "- context_control_repeats: `{}`", cli.context_control_repeats).expect("report write");
+    writeln!(report, "- samples: `{}`", rows.len()).expect("report write");
+    writeln!(report, "- ready_count: `{}`", ready_count).expect("report write");
+    writeln!(report, "- usable_count: `{}`", usable_count).expect("report write");
+    writeln!(report, "- output_only_trap_count: `{}`", trap_count).expect("report write");
+    writeln!(
+        report,
+        "- start_navigation_score: `{:.12}`",
+        start_navigation_score
+    )
+    .expect("report write");
+    if let Some(best) = best {
+        writeln!(
+            report,
+            "\nBest cell: mutation_type=`{}`, radius=`{}`, ray=`{}`, class=`{}`, nav={:.6}, nav_delta={:.6}, smooth_delta={:.6}, margin={:.6}, lower95={:.6}, fake_rate={:.3}",
+            best.mutation_type.as_str(),
+            best.radius,
+            best.ray_id,
+            best.d17_class,
+            best.safe_navigation_score,
+            best.navigation_delta_vs_start,
+            best.summary.safety_deltas.smooth,
+            best.summary.context_margin_mean,
+            best.summary.margin_lower95,
+            best.summary.fake_beat_rate
+        )
+        .expect("report write");
+    }
+    writeln!(
+        report,
+        "\nThis is heatmap/navigation evidence only. Promotion remains blocked until targeted climb, D16/D10r artifact gates, and long confirm pass."
+    )
+    .expect("report write");
+    report.flush().expect("failed to flush D17 report");
 }
 
 fn run_context_margin_climb(
@@ -7419,6 +8028,19 @@ fn main() {
             break;
         }
 
+        if cli.mode == "loss-landscape-compass" {
+            run_loss_landscape_compass(
+                &cli,
+                &table,
+                &pair_ids,
+                &hot_to_idx,
+                &bigram,
+                &unigram,
+                &init,
+            );
+            break;
+        }
+
         if cli.mode == "quadtree-scout" {
             run_quadtree_scout(
                 &cli,
@@ -8057,6 +8679,8 @@ fn main() {
             "D16c"
         } else if cli.mode == "context-margin-climb" {
             "D16d"
+        } else if cli.mode == "loss-landscape-compass" {
+            "D17"
         } else if cli.mode == "quadtree-scout" {
             "D9.3a"
         } else if cli.mode == "causal-diff" {
@@ -8129,6 +8753,7 @@ fn main() {
                 | "context-climb"
                 | "context-margin-confirm"
                 | "context-margin-climb"
+                | "loss-landscape-compass"
                 | "task-universality-scout"
         )
         .then(|| {
@@ -8163,6 +8788,7 @@ fn main() {
                 | "context-climb"
                 | "context-margin-confirm"
                 | "context-margin-climb"
+                | "loss-landscape-compass"
                 | "quadtree-scout"
                 | "causal-diff"
                 | "edge-lock-threshold-sweep"
@@ -8190,10 +8816,14 @@ fn main() {
         ),
         context_control_repeats: matches!(
             cli.mode.as_str(),
-            "context-margin-confirm" | "context-margin-climb"
+            "context-margin-confirm" | "context-margin-climb" | "loss-landscape-compass"
         )
             .then_some(cli.context_control_repeats),
-        context_reference_checkpoint: (cli.mode == "context-margin-climb").then_some(
+        context_reference_checkpoint: matches!(
+            cli.mode.as_str(),
+            "context-margin-climb" | "loss-landscape-compass"
+        )
+        .then_some(
             cli.context_reference_checkpoint
                 .as_ref()
                 .map(|path| path.display().to_string())
