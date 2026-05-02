@@ -122,6 +122,7 @@ struct Cli {
     mo_export_top: usize,
     candidate_checkpoints: Vec<PathBuf>,
     context_control_repeats: usize,
+    context_reference_checkpoint: Option<PathBuf>,
     out: PathBuf,
     seed: u64,
     eval_len: usize,
@@ -265,7 +266,9 @@ fn unix_seconds() -> u64 {
 fn estimated_total_units(cli: &Cli) -> Option<usize> {
     match cli.mode.as_str() {
         "seed-replication-ladder" => Some(cli.checkpoints.len() * cli.mo_climbers * cli.mo_steps),
-        "multi-objective-climb" | "context-climb" => Some(cli.mo_climbers * cli.mo_steps),
+        "multi-objective-climb" | "context-climb" | "context-margin-climb" => {
+            Some(cli.mo_climbers * cli.mo_steps)
+        }
         "context-margin-confirm" => {
             Some(cli.candidate_checkpoints.len() * cli.mo_eval_seeds.len() * cli.context_control_repeats)
         }
@@ -321,6 +324,7 @@ struct RunMeta {
     mo_export_top: Option<usize>,
     candidate_checkpoints: Option<Vec<String>>,
     context_control_repeats: Option<usize>,
+    context_reference_checkpoint: Option<String>,
     radii: Vec<usize>,
     mutation_types: Vec<String>,
     checkpoints: Vec<String>,
@@ -458,6 +462,58 @@ struct ContextMarginRecord {
     strongest_fake_gain: f64,
     context_margin: f64,
     strongest_fake_control: &'static str,
+}
+
+#[derive(Clone)]
+struct ContextMarginCandidate {
+    climber_id: usize,
+    step_index: usize,
+    proposal_seed: u64,
+    radius: usize,
+    mutation_type: MutationType,
+    counts: MutationCounts,
+    direct_distance: usize,
+    edges: usize,
+    safety_scores: MultiMetricScores,
+    safety_deltas: MultiMetricScores,
+    prediction_diff_mean: f64,
+    charge_delta_mean: f64,
+    real_gain_mean: f64,
+    time_gain_mean: f64,
+    state_gain_mean: f64,
+    random_gain_mean: f64,
+    no_network_gain_mean: f64,
+    strongest_fake_control: &'static str,
+    strongest_fake_gain_mean: f64,
+    context_margin_mean: f64,
+    margin_lower95: f64,
+    fake_beat_rate: f64,
+    verdict: &'static str,
+    safety_pass: bool,
+    accepted: bool,
+    accept_reason: &'static str,
+    net: Network,
+    proj: Int8Projection,
+}
+
+#[derive(Clone)]
+struct ContextMarginEvalSummary {
+    safety_scores: MultiMetricScores,
+    safety_deltas: MultiMetricScores,
+    safety_pass: bool,
+    prediction_diff_mean: f64,
+    charge_delta_mean: f64,
+    real_gain_mean: f64,
+    time_gain_mean: f64,
+    state_gain_mean: f64,
+    random_gain_mean: f64,
+    no_network_gain_mean: f64,
+    strongest_fake_control: &'static str,
+    strongest_fake_gain_mean: f64,
+    context_margin_mean: f64,
+    margin_lower95: f64,
+    fake_beat_rate: f64,
+    verdict: &'static str,
 }
 
 #[derive(Clone)]
@@ -620,6 +676,7 @@ fn parse_args() -> Cli {
     let mut mo_export_top = 8usize;
     let mut candidate_checkpoints: Vec<PathBuf> = Vec::new();
     let mut context_control_repeats = 1usize;
+    let mut context_reference_checkpoint: Option<PathBuf> = None;
     let mut out = PathBuf::from("output/phase_d9_direct_genome_landscape_20260428");
     let mut seed = 90210u64;
     let mut eval_len = DEFAULT_EVAL_LEN;
@@ -871,6 +928,10 @@ fn parse_args() -> Cli {
                     "--context-control-repeats must be > 0"
                 );
             }
+            "--context-reference-checkpoint" => {
+                context_reference_checkpoint =
+                    Some(PathBuf::from(args.next().expect("--context-reference-checkpoint path")));
+            }
             "--out" => out = PathBuf::from(args.next().expect("--out path")),
             "--seed" => seed = args.next().expect("--seed value").parse().expect("seed"),
             "--eval-len" => {
@@ -886,7 +947,7 @@ fn parse_args() -> Cli {
             "--help" | "-h" => {
                 println!(
                     "Usage: cargo run -p instnct-core --example d9_direct_landscape -- \
-                     --checkpoint PATH --H 256 --mode fail-fast|medium|full|staged|planet-scout|paratrooper-climb|endpoint-bridge|context-climb|context-margin-confirm \
+                     --checkpoint PATH --H 256 --mode fail-fast|medium|full|staged|planet-scout|paratrooper-climb|endpoint-bridge|context-climb|context-margin-confirm|context-margin-climb \
                      --score-mode accuracy|smooth --samples-per-type N --out PATH"
                 );
                 std::process::exit(0);
@@ -914,6 +975,7 @@ fn parse_args() -> Cli {
         | "repair-scan"
         | "multi-objective-climb" => vec![1],
         | "context-climb" => vec![4, 8, 16, 32],
+        | "context-margin-climb" => vec![1, 2, 4],
         | "context-margin-confirm" => vec![1],
         | "quadtree-scout" => vec![4, 8, 16],
         | "causal-diff" => vec![1],
@@ -923,7 +985,7 @@ fn parse_args() -> Cli {
         | "scaling-universality-scout"
         | "task-universality-scout" => vec![4, 8, 16],
         "seed-replication-ladder" => vec![4, 8, 16, 32],
-        other => panic!("--mode expects fail-fast|medium|full|staged|planet-scout|paratrooper-climb|endpoint-bridge|endpoint-overlap|endpoint-robustness|repair-scan|multi-objective-climb|context-climb|context-margin-confirm|quadtree-scout|causal-diff|edge-lock-threshold-sweep|threshold-lock-edge-sweep|edge-threshold-continued-climb|scaling-universality-scout|task-universality-scout|seed-replication-ladder, got {other}"),
+        other => panic!("--mode expects fail-fast|medium|full|staged|planet-scout|paratrooper-climb|endpoint-bridge|endpoint-overlap|endpoint-robustness|repair-scan|multi-objective-climb|context-climb|context-margin-confirm|context-margin-climb|quadtree-scout|causal-diff|edge-lock-threshold-sweep|threshold-lock-edge-sweep|edge-threshold-continued-climb|scaling-universality-scout|task-universality-scout|seed-replication-ladder, got {other}"),
     };
     let default_mutation_types = if matches!(
         mode.as_str(),
@@ -937,6 +999,7 @@ fn parse_args() -> Cli {
             | "multi-objective-climb"
             | "context-climb"
             | "context-margin-confirm"
+            | "context-margin-climb"
             | "quadtree-scout"
             | "causal-diff"
             | "edge-lock-threshold-sweep"
@@ -989,6 +1052,7 @@ fn parse_args() -> Cli {
         mo_export_top,
         candidate_checkpoints,
         context_control_repeats,
+        context_reference_checkpoint,
         out,
         seed,
         eval_len,
@@ -3282,6 +3346,126 @@ fn context_margin_verdict_rank(verdict: &str) -> i32 {
     }
 }
 
+fn evaluate_context_margin_summary_for_net(
+    net: &Network,
+    proj: &Int8Projection,
+    reference_scores: MultiMetricScores,
+    table: &VcbpTable,
+    pair_ids: &[u16],
+    hot_to_idx: &[usize],
+    bigram: &[Vec<f64>],
+    unigram: &[f64],
+    eval_len: usize,
+    eval_seeds: &[u64],
+    control_repeats: usize,
+    init: &InitConfig,
+    neuron_count: usize,
+    input_scatter: bool,
+) -> ContextMarginEvalSummary {
+    let safety_scores = evaluate_multi_metrics(
+        net,
+        proj,
+        table,
+        pair_ids,
+        hot_to_idx,
+        bigram,
+        unigram,
+        eval_len,
+        eval_seeds,
+        init,
+        neuron_count,
+        input_scatter,
+    );
+    let safety_deltas = metric_deltas(safety_scores, reference_scores);
+    let safety_pass = context_safety_pass(safety_deltas);
+    let mut records = Vec::new();
+    for &eval_seed in eval_seeds {
+        for repeat_idx in 0..control_repeats {
+            records.push(evaluate_context_margin_record(
+                net,
+                proj,
+                table,
+                pair_ids,
+                hot_to_idx,
+                eval_len,
+                eval_seed,
+                repeat_idx,
+                init,
+                neuron_count,
+                input_scatter,
+            ));
+        }
+    }
+
+    let margins: Vec<f64> = records.iter().map(|record| record.context_margin).collect();
+    let prediction_diffs: Vec<f64> = records
+        .iter()
+        .map(|record| record.prediction_diff_rate)
+        .collect();
+    let charge_deltas: Vec<f64> = records.iter().map(|record| record.charge_delta).collect();
+    let real_gains: Vec<f64> = records.iter().map(|record| record.real_context_gain).collect();
+    let time_gains: Vec<f64> = records.iter().map(|record| record.time_shuffle_gain).collect();
+    let state_gains: Vec<f64> = records.iter().map(|record| record.state_shuffle_gain).collect();
+    let random_gains: Vec<f64> = records
+        .iter()
+        .map(|record| record.random_context_gain)
+        .collect();
+    let no_network_gains: Vec<f64> = records
+        .iter()
+        .map(|record| record.no_network_gain)
+        .collect();
+    let fake_beat_count = records
+        .iter()
+        .filter(|record| record.strongest_fake_gain >= record.real_context_gain)
+        .count();
+    let fake_beat_rate = if records.is_empty() {
+        0.0
+    } else {
+        fake_beat_count as f64 / records.len() as f64
+    };
+
+    let mut strongest_fake_control = "time_shuffle";
+    let mut strongest_fake_gain_mean = mean(&time_gains);
+    for (name, gain) in [
+        ("state_shuffle", mean(&state_gains)),
+        ("random_context", mean(&random_gains)),
+        ("no_network", mean(&no_network_gains)),
+    ] {
+        if gain > strongest_fake_gain_mean {
+            strongest_fake_gain_mean = gain;
+            strongest_fake_control = name;
+        }
+    }
+
+    let context_margin_mean = mean(&margins);
+    let margin_lower95 = lower95(&margins);
+    let verdict = context_margin_verdict(
+        context_margin_mean,
+        margin_lower95,
+        safety_pass,
+        fake_beat_rate,
+    );
+
+    ContextMarginEvalSummary {
+        safety_scores,
+        safety_deltas,
+        safety_pass,
+        prediction_diff_mean: mean(&prediction_diffs),
+        charge_delta_mean: mean(&charge_deltas),
+        real_gain_mean: mean(&real_gains),
+        time_gain_mean: mean(&time_gains),
+        state_gain_mean: mean(&state_gains),
+        random_gain_mean: mean(&random_gains),
+        no_network_gain_mean: mean(&no_network_gains),
+        strongest_fake_control,
+        strongest_fake_gain_mean,
+        context_margin_mean,
+        margin_lower95,
+        fake_beat_rate,
+        verdict,
+    }
+}
+
 fn run_multi_objective_climb(
     cli: &Cli,
     table: &VcbpTable,
@@ -3943,6 +4127,492 @@ fn run_context_margin_confirm(
     )
     .expect("report write");
     report.flush().expect("failed to flush D16C report");
+}
+
+fn run_context_margin_climb(
+    cli: &Cli,
+    table: &VcbpTable,
+    pair_ids: &[u16],
+    hot_to_idx: &[usize],
+    bigram: &[Vec<f64>],
+    unigram: &[f64],
+    init: &InitConfig,
+) {
+    let start_path = cli
+        .repair_start
+        .as_ref()
+        .expect("--mode context-margin-climb requires --repair-start");
+    let reference_path = cli
+        .context_reference_checkpoint
+        .as_ref()
+        .expect("--mode context-margin-climb requires --context-reference-checkpoint");
+    assert!(
+        !cli.mo_eval_seeds.is_empty(),
+        "--mo-eval-seeds must not be empty"
+    );
+    assert!(
+        cli.context_control_repeats > 0,
+        "--context-control-repeats must be > 0"
+    );
+    assert!(
+        cli.mutation_types
+            .iter()
+            .all(|t| matches!(t, MutationType::Edge | MutationType::Threshold)),
+        "D16d context-margin-climb only supports edge,threshold mutation types"
+    );
+
+    let (start_net, start_proj, _) =
+        load_checkpoint(start_path).expect("failed to load D16d start checkpoint");
+    let (reference_net, reference_proj, _) =
+        load_checkpoint(reference_path).expect("failed to load D16d reference checkpoint");
+    assert_eq!(start_net.neuron_count(), cli.h, "D16d start H mismatch");
+    assert_eq!(
+        reference_net.neuron_count(),
+        cli.h,
+        "D16d reference H mismatch"
+    );
+
+    println!(
+        "D16d context-margin climb: start={} reference={} climbers={} steps={} eval_len={} seeds={} repeats={} mutations={:?} radii={:?}",
+        start_path.display(),
+        reference_path.display(),
+        cli.mo_climbers,
+        cli.mo_steps,
+        cli.eval_len,
+        cli.mo_eval_seeds.len(),
+        cli.context_control_repeats,
+        cli.mutation_types
+            .iter()
+            .map(|mutation| mutation.as_str())
+            .collect::<Vec<_>>(),
+        cli.radii
+    );
+
+    let reference_scores = evaluate_multi_metrics(
+        &reference_net,
+        &reference_proj,
+        table,
+        pair_ids,
+        hot_to_idx,
+        bigram,
+        unigram,
+        cli.eval_len,
+        &cli.mo_eval_seeds,
+        init,
+        cli.h,
+        cli.input_scatter,
+    );
+    let start_summary = evaluate_context_margin_summary_for_net(
+        &start_net,
+        &start_proj,
+        reference_scores,
+        table,
+        pair_ids,
+        hot_to_idx,
+        bigram,
+        unigram,
+        cli.eval_len,
+        &cli.mo_eval_seeds,
+        cli.context_control_repeats,
+        init,
+        cli.h,
+        cli.input_scatter,
+    );
+    println!(
+        "  start margin: verdict={} mean={:.6} lower95={:.6} fake_rate={:.3} real={:.6} fake={}:{:.6} safety={}",
+        start_summary.verdict,
+        start_summary.context_margin_mean,
+        start_summary.margin_lower95,
+        start_summary.fake_beat_rate,
+        start_summary.real_gain_mean,
+        start_summary.strongest_fake_control,
+        start_summary.strongest_fake_gain_mean,
+        start_summary.safety_pass
+    );
+
+    let start_coord = encode_coord(&start_net);
+    let mut path_writer = BufWriter::new(
+        File::create(cli.out.join("margin_paths.csv"))
+            .expect("failed to create margin_paths.csv"),
+    );
+    writeln!(
+        path_writer,
+        "climber_id,step_index,proposal_seed,radius,mutation_type,edge_edits,threshold_edits,direct_genome_distance,edges,smooth_delta_vs_reference,accuracy_delta_vs_reference,echo_delta_vs_reference,unigram_delta_vs_reference,context_margin_mean,margin_lower95,fake_beat_rate,real_context_gain,strongest_fake_control,strongest_fake_gain,verdict,safety_pass,accepted,accept_reason"
+    )
+    .expect("failed to write margin_paths header");
+
+    let mut candidates = Vec::new();
+    let mut no_margin_gain_steps = 0usize;
+    'outer: for climber_id in 0..cli.mo_climbers {
+        let climber_seed = cli.seed ^ ((climber_id as u64) << 32) ^ 0xD16D_0001u64;
+        let mut proposal_rng = StdRng::seed_from_u64(climber_seed);
+        let mut current = start_net.clone();
+        let current_proj = start_proj.clone();
+        let mut current_summary = start_summary.clone();
+
+        for step_index in 0..cli.mo_steps {
+            let mutation_type =
+                cli.mutation_types[proposal_rng.gen_range(0..cli.mutation_types.len())];
+            let radius = cli.radii[proposal_rng.gen_range(0..cli.radii.len())];
+            let proposal_seed = proposal_rng.gen::<u64>();
+            let mut mutation_rng = StdRng::seed_from_u64(proposal_seed);
+            let mut candidate_net = current.clone();
+            let candidate_proj = current_proj.clone();
+            let counts =
+                apply_radius_mutation(&mut candidate_net, radius, mutation_type, &mut mutation_rng);
+            let candidate_coord = encode_coord(&candidate_net);
+            let direct_distance = coord_distance(&start_coord, &candidate_coord);
+            let eval_start = Instant::now();
+            let summary = evaluate_context_margin_summary_for_net(
+                &candidate_net,
+                &candidate_proj,
+                reference_scores,
+                table,
+                pair_ids,
+                hot_to_idx,
+                bigram,
+                unigram,
+                cli.eval_len,
+                &cli.mo_eval_seeds,
+                cli.context_control_repeats,
+                init,
+                cli.h,
+                cli.input_scatter,
+            );
+            let lower95_improved =
+                summary.margin_lower95 > current_summary.margin_lower95 + 0.00010;
+            let mean_improved =
+                summary.context_margin_mean > current_summary.context_margin_mean + 0.00020;
+            let accepted = summary.safety_pass
+                && summary.context_margin_mean > 0.0
+                && summary.fake_beat_rate <= 0.25
+                && (lower95_improved || mean_improved);
+            let accept_reason = if !summary.safety_pass {
+                "safety_fail"
+            } else if summary.context_margin_mean <= 0.0 {
+                "margin_not_positive"
+            } else if summary.fake_beat_rate > 0.25 {
+                "fake_beat_rate_high"
+            } else if lower95_improved {
+                "lower95_improved"
+            } else if mean_improved {
+                "mean_improved"
+            } else {
+                "margin_not_improved"
+            };
+
+            if summary.margin_lower95 > current_summary.margin_lower95
+                || summary.context_margin_mean > current_summary.context_margin_mean
+            {
+                no_margin_gain_steps = 0;
+            } else {
+                no_margin_gain_steps += 1;
+            }
+            if accepted {
+                current = candidate_net.clone();
+                current_summary = summary.clone();
+            }
+
+            writeln!(
+                path_writer,
+                "{},{},{},{},{},{},{},{},{},{:.12},{:.12},{:.12},{:.12},{:.12},{:.12},{:.12},{:.12},{},{:.12},{},{},{},{}",
+                climber_id,
+                step_index,
+                proposal_seed,
+                radius,
+                mutation_type.as_str(),
+                counts.edge,
+                counts.threshold,
+                direct_distance,
+                candidate_net.edge_count(),
+                summary.safety_deltas.smooth,
+                summary.safety_deltas.accuracy,
+                summary.safety_deltas.echo,
+                summary.safety_deltas.unigram,
+                summary.context_margin_mean,
+                summary.margin_lower95,
+                summary.fake_beat_rate,
+                summary.real_gain_mean,
+                summary.strongest_fake_control,
+                summary.strongest_fake_gain_mean,
+                summary.verdict,
+                summary.safety_pass,
+                accepted,
+                accept_reason
+            )
+            .expect("failed to write margin path row");
+
+            candidates.push(ContextMarginCandidate {
+                climber_id,
+                step_index,
+                proposal_seed,
+                radius,
+                mutation_type,
+                counts,
+                direct_distance,
+                edges: candidate_net.edge_count(),
+                safety_scores: summary.safety_scores,
+                safety_deltas: summary.safety_deltas,
+                prediction_diff_mean: summary.prediction_diff_mean,
+                charge_delta_mean: summary.charge_delta_mean,
+                real_gain_mean: summary.real_gain_mean,
+                time_gain_mean: summary.time_gain_mean,
+                state_gain_mean: summary.state_gain_mean,
+                random_gain_mean: summary.random_gain_mean,
+                no_network_gain_mean: summary.no_network_gain_mean,
+                strongest_fake_control: summary.strongest_fake_control,
+                strongest_fake_gain_mean: summary.strongest_fake_gain_mean,
+                context_margin_mean: summary.context_margin_mean,
+                margin_lower95: summary.margin_lower95,
+                fake_beat_rate: summary.fake_beat_rate,
+                verdict: summary.verdict,
+                safety_pass: summary.safety_pass,
+                accepted,
+                accept_reason,
+                net: candidate_net,
+                proj: candidate_proj,
+            });
+
+            println!(
+                "  climber={} step={} verdict={} accepted={} margin={:.6} lower95={:.6} fake_rate={:.3} safety=[{:.5},{:.5},{:.5},{:.5}] eval_ms={:.1}",
+                climber_id,
+                step_index,
+                summary.verdict,
+                accepted,
+                summary.context_margin_mean,
+                summary.margin_lower95,
+                summary.fake_beat_rate,
+                summary.safety_deltas.smooth,
+                summary.safety_deltas.accuracy,
+                summary.safety_deltas.echo,
+                summary.safety_deltas.unigram,
+                eval_start.elapsed().as_secs_f64() * 1000.0
+            );
+
+            if no_margin_gain_steps >= 300 {
+                println!(
+                    "  early stop: {} consecutive proposals without margin gain",
+                    no_margin_gain_steps
+                );
+                break 'outer;
+            }
+        }
+    }
+    path_writer
+        .flush()
+        .expect("failed to flush margin_paths.csv");
+
+    candidates.sort_by(|a, b| {
+        context_margin_verdict_rank(b.verdict)
+            .cmp(&context_margin_verdict_rank(a.verdict))
+            .then_with(|| b.accepted.cmp(&a.accepted))
+            .then_with(|| b.margin_lower95.partial_cmp(&a.margin_lower95).unwrap())
+            .then_with(|| {
+                b.context_margin_mean
+                    .partial_cmp(&a.context_margin_mean)
+                    .unwrap()
+            })
+            .then_with(|| a.fake_beat_rate.partial_cmp(&b.fake_beat_rate).unwrap())
+    });
+
+    let candidates_dir = cli.out.join("candidates");
+    create_dir_all(&candidates_dir).expect("failed to create D16d candidates dir");
+    let mut cand_writer = BufWriter::new(
+        File::create(cli.out.join("margin_candidates.csv"))
+            .expect("failed to create margin_candidates.csv"),
+    );
+    writeln!(
+        cand_writer,
+        "rank,checkpoint,climber_id,step_index,proposal_seed,radius,mutation_type,edge_edits,threshold_edits,direct_genome_distance,edges,smooth_score,accuracy_score,echo_score,unigram_score,smooth_delta_vs_reference,accuracy_delta_vs_reference,echo_delta_vs_reference,unigram_delta_vs_reference,prediction_diff_mean,charge_delta_mean,real_context_gain,time_shuffle_gain,state_shuffle_gain,random_context_gain,no_network_gain,strongest_fake_control,strongest_fake_gain,context_margin_mean,margin_lower95,fake_beat_rate,verdict,safety_pass,accepted,accept_reason"
+    )
+    .expect("failed to write margin_candidates header");
+
+    let exportable: Vec<&ContextMarginCandidate> = candidates
+        .iter()
+        .filter(|candidate| candidate.safety_pass && candidate.context_margin_mean > 0.0)
+        .take(cli.mo_export_top)
+        .collect();
+    for (rank_idx, candidate) in exportable.iter().enumerate() {
+        let rank = rank_idx + 1;
+        let ckpt_path = candidates_dir.join(format!("top_{rank:02}.ckpt"));
+        save_checkpoint(
+            &ckpt_path,
+            &candidate.net,
+            &candidate.proj,
+            CheckpointMeta {
+                step: candidate.step_index,
+                accuracy: candidate.safety_scores.accuracy,
+                label: format!(
+                    "D16d margin rank={} verdict={} margin_lower95={:.6} margin_mean={:.6}",
+                    rank,
+                    candidate.verdict,
+                    candidate.margin_lower95,
+                    candidate.context_margin_mean
+                ),
+            },
+        )
+        .expect("failed to save D16d candidate checkpoint");
+        writeln!(
+            cand_writer,
+            "{},{},{},{},{},{},{},{},{},{},{},{:.12},{:.12},{:.12},{:.12},{:.12},{:.12},{:.12},{:.12},{:.12},{:.12},{:.12},{:.12},{:.12},{:.12},{:.12},{},{:.12},{:.12},{:.12},{:.12},{},{},{},{}",
+            rank,
+            ckpt_path.display(),
+            candidate.climber_id,
+            candidate.step_index,
+            candidate.proposal_seed,
+            candidate.radius,
+            candidate.mutation_type.as_str(),
+            candidate.counts.edge,
+            candidate.counts.threshold,
+            candidate.direct_distance,
+            candidate.edges,
+            candidate.safety_scores.smooth,
+            candidate.safety_scores.accuracy,
+            candidate.safety_scores.echo,
+            candidate.safety_scores.unigram,
+            candidate.safety_deltas.smooth,
+            candidate.safety_deltas.accuracy,
+            candidate.safety_deltas.echo,
+            candidate.safety_deltas.unigram,
+            candidate.prediction_diff_mean,
+            candidate.charge_delta_mean,
+            candidate.real_gain_mean,
+            candidate.time_gain_mean,
+            candidate.state_gain_mean,
+            candidate.random_gain_mean,
+            candidate.no_network_gain_mean,
+            candidate.strongest_fake_control,
+            candidate.strongest_fake_gain_mean,
+            candidate.context_margin_mean,
+            candidate.margin_lower95,
+            candidate.fake_beat_rate,
+            candidate.verdict,
+            candidate.safety_pass,
+            candidate.accepted,
+            candidate.accept_reason
+        )
+        .expect("failed to write margin candidate row");
+    }
+    cand_writer
+        .flush()
+        .expect("failed to flush margin_candidates.csv");
+
+    let full_pass_count = candidates
+        .iter()
+        .filter(|candidate| candidate.verdict == "D16C_CONTEXT_MARGIN_PASS")
+        .count();
+    let weak_pass_count = candidates
+        .iter()
+        .filter(|candidate| candidate.verdict == "D16C_CONTEXT_MARGIN_WEAK_PASS")
+        .count();
+    let improved_count = candidates
+        .iter()
+        .filter(|candidate| {
+            candidate.safety_pass
+                && candidate.fake_beat_rate <= 0.25
+                && (candidate.margin_lower95 > start_summary.margin_lower95
+                    || candidate.context_margin_mean > start_summary.context_margin_mean)
+        })
+        .count();
+    let accepted_count = candidates.iter().filter(|candidate| candidate.accepted).count();
+    let safety_tradeoff_count = candidates
+        .iter()
+        .filter(|candidate| !candidate.safety_pass)
+        .count();
+    let artifact_count = candidates
+        .iter()
+        .filter(|candidate| candidate.verdict == "D16C_CONTEXT_ARTIFACT_FAIL")
+        .count();
+    let verdict = if full_pass_count > 0 {
+        "D16D_CONTEXT_MARGIN_FULL_PASS"
+    } else if accepted_count > 0 || weak_pass_count > 0 {
+        "D16D_CONTEXT_MARGIN_IMPROVED_WEAK"
+    } else if artifact_count > 0 {
+        "D16D_CONTEXT_ARTIFACT"
+    } else if safety_tradeoff_count > 0 {
+        "D16D_CONTEXT_SAFETY_TRADEOFF"
+    } else {
+        "D16D_NO_LOCAL_MARGIN_GAIN"
+    };
+
+    let mut control_writer = BufWriter::new(
+        File::create(cli.out.join("context_control_summary.csv"))
+            .expect("failed to create D16d context_control_summary.csv"),
+    );
+    writeln!(
+        control_writer,
+        "verdict,start_margin_mean,start_margin_lower95,start_fake_beat_rate,total_candidates,exported_candidates,accepted_count,full_pass_count,weak_pass_count,improved_count,safety_tradeoff_count,artifact_count"
+    )
+    .expect("failed to write D16d control summary header");
+    writeln!(
+        control_writer,
+        "{},{:.12},{:.12},{:.12},{},{},{},{},{},{},{},{}",
+        verdict,
+        start_summary.context_margin_mean,
+        start_summary.margin_lower95,
+        start_summary.fake_beat_rate,
+        candidates.len(),
+        exportable.len(),
+        accepted_count,
+        full_pass_count,
+        weak_pass_count,
+        improved_count,
+        safety_tradeoff_count,
+        artifact_count
+    )
+    .expect("failed to write D16d control summary row");
+    control_writer
+        .flush()
+        .expect("failed to flush D16d control summary");
+
+    let mut report = BufWriter::new(
+        File::create(cli.out.join("D16D_CONTEXT_MARGIN_POLISH_REPORT.md"))
+            .expect("failed to create D16D_CONTEXT_MARGIN_POLISH_REPORT.md"),
+    );
+    writeln!(report, "# D16D Context Margin Polish Report\n").expect("report write");
+    writeln!(report, "- verdict: `{}`", verdict).expect("report write");
+    writeln!(report, "- start_checkpoint: `{}`", start_path.display()).expect("report write");
+    writeln!(
+        report,
+        "- reference_checkpoint: `{}`",
+        reference_path.display()
+    )
+    .expect("report write");
+    writeln!(report, "- candidates: `{}`", candidates.len()).expect("report write");
+    writeln!(report, "- exported_candidates: `{}`", exportable.len()).expect("report write");
+    writeln!(report, "- accepted_count: `{}`", accepted_count).expect("report write");
+    writeln!(report, "- full_pass_count: `{}`", full_pass_count).expect("report write");
+    writeln!(report, "- weak_pass_count: `{}`", weak_pass_count).expect("report write");
+    writeln!(
+        report,
+        "\nStart margin: verdict=`{}`, mean={:.6}, lower95={:.6}, fake_rate={:.3}",
+        start_summary.verdict,
+        start_summary.context_margin_mean,
+        start_summary.margin_lower95,
+        start_summary.fake_beat_rate
+    )
+    .expect("report write");
+    if let Some(best) = exportable.first() {
+        writeln!(
+            report,
+            "\nBest export: verdict=`{}`, accepted=`{}`, margin_mean={:.6}, lower95={:.6}, fake_rate={:.3}, real_gain={:.6}, strongest_fake=`{}`:{:.6}",
+            best.verdict,
+            best.accepted,
+            best.context_margin_mean,
+            best.margin_lower95,
+            best.fake_beat_rate,
+            best.real_gain_mean,
+            best.strongest_fake_control,
+            best.strongest_fake_gain_mean
+        )
+        .expect("report write");
+    }
+    writeln!(
+        report,
+        "\nGenerated checkpoints require D16c confirm, reload context gate, D10r-v8 artifact/state gate, and long confirm before promotion."
+    )
+    .expect("report write");
+    report.flush().expect("failed to flush D16d report");
 }
 
 fn run_context_climb(
@@ -6736,6 +7406,19 @@ fn main() {
             break;
         }
 
+        if cli.mode == "context-margin-climb" {
+            run_context_margin_climb(
+                &cli,
+                &table,
+                &pair_ids,
+                &hot_to_idx,
+                &bigram,
+                &unigram,
+                &init,
+            );
+            break;
+        }
+
         if cli.mode == "quadtree-scout" {
             run_quadtree_scout(
                 &cli,
@@ -7372,6 +8055,8 @@ fn main() {
             "D16b"
         } else if cli.mode == "context-margin-confirm" {
             "D16c"
+        } else if cli.mode == "context-margin-climb" {
+            "D16d"
         } else if cli.mode == "quadtree-scout" {
             "D9.3a"
         } else if cli.mode == "causal-diff" {
@@ -7443,6 +8128,7 @@ fn main() {
                 | "edge-threshold-continued-climb"
                 | "context-climb"
                 | "context-margin-confirm"
+                | "context-margin-climb"
                 | "task-universality-scout"
         )
         .then(|| {
@@ -7457,12 +8143,18 @@ fn main() {
         repair_export_top: (cli.mode == "repair-scan").then_some(cli.repair_export_top),
         mo_climbers: matches!(
             cli.mode.as_str(),
-            "multi-objective-climb" | "context-climb" | "seed-replication-ladder"
+            "multi-objective-climb"
+                | "context-climb"
+                | "context-margin-climb"
+                | "seed-replication-ladder"
         )
         .then_some(cli.mo_climbers),
         mo_steps: matches!(
             cli.mode.as_str(),
-            "multi-objective-climb" | "context-climb" | "seed-replication-ladder"
+            "multi-objective-climb"
+                | "context-climb"
+                | "context-margin-climb"
+                | "seed-replication-ladder"
         )
         .then_some(cli.mo_steps),
         mo_eval_seeds: matches!(
@@ -7470,6 +8162,7 @@ fn main() {
             "multi-objective-climb"
                 | "context-climb"
                 | "context-margin-confirm"
+                | "context-margin-climb"
                 | "quadtree-scout"
                 | "causal-diff"
                 | "edge-lock-threshold-sweep"
@@ -7482,7 +8175,11 @@ fn main() {
         .then_some(cli.mo_eval_seeds.clone()),
         mo_export_top: matches!(
             cli.mode.as_str(),
-            "multi-objective-climb" | "context-climb" | "quadtree-scout" | "seed-replication-ladder"
+            "multi-objective-climb"
+                | "context-climb"
+                | "context-margin-climb"
+                | "quadtree-scout"
+                | "seed-replication-ladder"
         )
         .then_some(cli.mo_export_top),
         candidate_checkpoints: (cli.mode == "context-margin-confirm").then_some(
@@ -7491,8 +8188,17 @@ fn main() {
                 .map(|path| path.display().to_string())
                 .collect(),
         ),
-        context_control_repeats: (cli.mode == "context-margin-confirm")
+        context_control_repeats: matches!(
+            cli.mode.as_str(),
+            "context-margin-confirm" | "context-margin-climb"
+        )
             .then_some(cli.context_control_repeats),
+        context_reference_checkpoint: (cli.mode == "context-margin-climb").then_some(
+            cli.context_reference_checkpoint
+                .as_ref()
+                .map(|path| path.display().to_string())
+                .unwrap_or_default(),
+        ),
         radii: cli.radii.clone(),
         mutation_types: cli
             .mutation_types
