@@ -232,3 +232,51 @@ Updated source docs:
 
 - `docs/research/PHASE_D20_OUTPUT_ANCHOR_RESEARCH_SYNTHESIS.md`
 - `docs/research/PHASE_D21A_RECIPROCAL_ABLOCK_BYTE_ENCODER.md`
+
+### 2026-05-02 - D21B context-extended A-block
+
+- D21B added a sparse context lane on top of the fixed D21A reciprocal byte
+  lane. The invariant was:
+
+```text
+zero context => D21A behavior remains exact
+real context => can steer output byte
+fake/shuffled/random context => should not match real context
+```
+
+- D21B result:
+
+```text
+D21B_CONTEXT_PASS
+best confirmed context_dim: 16
+context_edges: 16
+context_target_count: 256
+context_capacity_bits: 8.0
+zero_exact_byte_acc: 100%
+zero_bit_acc: 100%
+real_context_success: 100%
+fake_context_success: 0.4718%
+context_selectivity: 0.995282
+real_context_margin_min: +12.0
+```
+
+- Atlas result:
+
+```text
+4D context: insufficient for full byte steering
+8D context: full pass
+16D context: full pass, best high-margin confirmed lane
+```
+
+Interpretation: D21A solved the byte adapter; D21B shows a clean context write
+channel can control the byte output without breaking zero-context
+reconstruction. This does not make a release model yet, but it gives D21C a
+clean shell:
+
+```text
+A-block byte IO + context lane + tiny recurrent/core block
+```
+
+Updated source doc:
+
+- `docs/research/PHASE_D21B_CONTEXT_ABLOCK.md`
