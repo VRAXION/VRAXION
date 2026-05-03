@@ -740,3 +740,64 @@ query rule-select(copy/reverse/rotate)
 Updated source doc:
 
 - `docs/research/PHASE_D26_AB_UTILITY_BENCHMARK.md`
+
+### 2026-05-03 - D27 B-latent ALU/router
+
+- D27 checked the old ALU/router idea against the current AB/B64 bus.
+
+- Old ALU artifacts found:
+
+```text
+docs/BYTE_OPCODE_V1_CONTRACT.md
+instnct-core/examples/byte_opcode_grower.rs
+instnct-core/alu_integer_log.txt
+instnct-core/holo_alu_log.txt
+```
+
+- Old results were real but not directly B64-wired:
+
+```text
+integer gate library:
+  4-bit adder/subtractor/comparator: 256/256
+  8-bit adder: 1000/1000 sampled
+
+holographic ALU selector:
+  ADD/SUB/AND/OR/XOR/CMP>: 1536/1536
+  selector accuracy: 100%
+```
+
+- New D27 result:
+
+```text
+D27_B64_ALU_ROUTER_PASS
+eval_windows: 65,536
+control_repeats: 2
+
+ops:
+  copy_a, not_a, and, or, xor, add_mod, sub_mod, gt_mask, eq_mask
+
+all primary ops:
+  window_exact_acc: 100%
+  byte_exact_acc: 100%
+  bit_acc: 100%
+  byte_margin_min: +2.0
+
+random_output_controls:
+  window_exact_acc: 0%
+```
+
+Interpretation:
+
+```text
+A = byte codec
+B = B64 data bus
+C = router/controller candidate
+D = worker blocks: transform, memory, ALU
+```
+
+D27 proves B64 can feed an opcode-selected ALU worker. It is still an exact
+reference/probe, not a learned router.
+
+Updated source doc:
+
+- `docs/research/PHASE_D27_BLATENT_ALU_ROUTER.md`
