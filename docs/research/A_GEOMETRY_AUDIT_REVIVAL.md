@@ -13,10 +13,10 @@ Is the byte embedding only a reversible identity code,
 or do related bytes land close to each other?
 ```
 
-For the current A-block candidates, the answer is:
+For the current A-block candidates, after margin polish, the answer is:
 
 ```text
-A-HiddenNatural16 has the best natural byte geometry.
+A-HiddenNaturalMarginPolish has the best natural byte geometry.
 A-StableCopy16 remains the safer shipped/default A-block because its decode margin is higher.
 ```
 
@@ -25,7 +25,7 @@ A-StableCopy16 remains the safer shipped/default A-block because its decode marg
 ```text
 name                exact margin geom  rank pca95 avgCos copy audit
 ------------------- ----- ------ ----- ---- ----- ------ ---- ------
-A-HiddenNatural16   1.000  2.500 0.777  7.8     8  0.309 0.00  29.04
+A-HiddenNatural16   1.000  3.516 0.770  7.8     8  0.310 0.00  29.15
 A-NaturalSparse16   1.000  2.500 0.764  7.8     8  0.305 0.00  28.85
 A-HiddenBitGain16   1.000  4.000 0.731  7.9     8  0.313 0.94  27.17
 A-StableCopy16      1.000  4.000 0.669  8.0     8  0.270 1.00  26.49
@@ -34,11 +34,11 @@ A-StableCopy16      1.000  4.000 0.669  8.0     8  0.270 1.00  26.49
 Interpretation:
 
 ```text
-A-HiddenNatural16:
+A-HiddenNaturalMarginPolish:
   best near/far byte geometry
   zero copy penalty
   still exact roundtrip
-  weaker margin than A-StableCopy16
+  stronger margin than the earlier A-HiddenNatural16 lead
 
 A-StableCopy16:
   strongest simple safety/margin
@@ -79,11 +79,11 @@ A-StableCopy16:
   A -> 0x01, Q, a, E, C, @ ...
   This is mostly Hamming-bit identity behavior.
 
-A-HiddenNatural16:
-  A -> C, E, @, 0xC1, a, G ...
-  a -> c, e, `, 0xE1, A, g ...
-  0 -> 2, 4, 1, ...
-  , -> (, ., -, ...
+A-HiddenNaturalMarginPolish:
+  A -> @, E, C, 0x01, a, ...
+  a -> `, c, e, !, A, ...
+  0 -> 1, 2, 4, ...
+  , -> -, (, ., ...
   This is closer to the intended natural ASCII geometry.
 ```
 
@@ -112,16 +112,16 @@ Ship/default:
   A-StableCopy16
 
 A_v2 research lead:
-  A-HiddenNatural16
+  A-HiddenNaturalMarginPolish
 
 Next A-block work:
-  margin polish on A-HiddenNatural16, not more blind hidden-neuron adding.
+  AB compatibility testing with A-HiddenNaturalMarginPolish.
 ```
 
 The important result is not “more hidden neurons are always better.” The result
 is narrower:
 
 ```text
-Hidden link locations can create better byte geometry,
-but the candidate still needs margin polish before replacing the stable copy block.
+Hidden link locations can create better byte geometry and now a much stronger
+margin, but the shipped AB artifact still needs compatibility testing before replacement.
 ```

@@ -11,6 +11,7 @@ aliases.
 | `A-NaturalSparse16` | D21G | Natural sparse A candidate: better ASCII geometry, lower margin, research-only. |
 | `A-HiddenBitGain16` | D21I | Hidden-only A candidate that mainly amplifies one ASCII-relevant bit. |
 | `A-HiddenNatural16` | D21J | Hidden-only non-copy A candidate: best natural A_v2 lead. |
+| `A-HiddenNaturalMarginPolish` | A_v2 polish | Polished hidden-natural A candidate: higher margin while preserving non-copy geometry. |
 | `A-SpaceUtilization` | D21K | Diagnostic report for lane energy, PCA, rank, and class separation. |
 | `A-GeometryAuditRevival` | old byte-embed-dim / geometry_sweep | Revived near/far byte embedding audit: cosine/distance matrix, clusters, nearest neighbors. |
 | `AB-WindowCodec64` | D23 / AB V1 | 8 bytes -> A128 -> B64 -> A128 -> 8 bytes. |
