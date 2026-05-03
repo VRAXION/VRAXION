@@ -12,6 +12,7 @@ aliases.
 | `A-HiddenBitGain16` | D21I | Hidden-only A candidate that mainly amplifies one ASCII-relevant bit. |
 | `A-HiddenNatural16` | D21J | Hidden-only non-copy A candidate: best natural A_v2 lead. |
 | `A-SpaceUtilization` | D21K | Diagnostic report for lane energy, PCA, rank, and class separation. |
+| `A-GeometryAuditRevival` | old byte-embed-dim / geometry_sweep | Revived near/far byte embedding audit: cosine/distance matrix, clusters, nearest neighbors. |
 | `AB-WindowCodec64` | D23 / AB V1 | 8 bytes -> A128 -> B64 -> A128 -> 8 bytes. |
 | `B-LatentTransform` | D24 | Exact transforms over B64: copy, reverse, rotate, bit_not. |
 | `B-SlotMemory` | D25 | Addressed B64 key-value memory. |

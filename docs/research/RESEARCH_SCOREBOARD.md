@@ -63,6 +63,29 @@ independent information dimensions. Extra A lanes are used for redundancy,
 weighting, and geometry.
 ```
 
+## A-GeometryAuditRevival
+
+This revives the old byte-embedding similarity audit:
+
+```text
+Does A16 only roundtrip bytes, or do related bytes land close together?
+```
+
+| Name | Exact | Margin | Geometry | Effective Rank | Copy Penalty | Audit Score | Interpretation |
+|---|---:|---:|---:|---:|---:|---:|---|
+| `A-HiddenNatural16` | 100% | +2.5 | 0.777 | 7.8 | 0.00 | 29.04 | best natural byte geometry |
+| `A-NaturalSparse16` | 100% | +2.5 | 0.764 | 7.8 | 0.00 | 28.85 | strong direct natural reference |
+| `A-HiddenBitGain16` | 100% | +4.0 | 0.731 | 7.9 | 0.94 | 27.17 | robust but still copy-like |
+| `A-StableCopy16` | 100% | +4.0 | 0.669 | 8.0 | 1.00 | 26.49 | shipped/default, Hamming-like |
+
+Decision:
+
+```text
+A-HiddenNatural16 wins the revived near/far geometry audit.
+A-StableCopy16 remains shipped/default because its decode margin is safer.
+Next A work is A-HiddenNatural16 margin polish.
+```
+
 ## AB / B Surface
 
 | Name | Old Alias | What It Proves | Main Result | Status |
