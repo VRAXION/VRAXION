@@ -209,6 +209,8 @@
         <div class="stat"><span>Copy penalty</span><span id="copyPenalty">0.00</span></div>
         <div class="stat"><span>Hin edges</span><span id="hinEdges">8</span></div>
         <div class="stat"><span>Hout edges</span><span id="houtEdges">30</span></div>
+        <div class="stat"><span>Edge storage</span><span class="mono">int4 Q2</span></div>
+        <div class="stat"><span>Edge value</span><span class="mono">q / 4</span></div>
       </div>
 
       <div class="card">
@@ -221,6 +223,7 @@
       <div class="tabs">
         <span class="tab active">Encode: bits -> H -> A16</span>
         <span class="tab active">Mirror: A16 -> H' -> output</span>
+        <span class="tab active">Weights: int4 Q2</span>
         <span class="tab">No separate decoder weights</span>
       </div>
       <div class="diagram-wrap">
@@ -232,7 +235,7 @@
         <div class="table-wrap">
           <table>
             <thead>
-              <tr><th>Layer</th><th>From</th><th>To</th><th>Weight</th><th>Current contribution</th></tr>
+              <tr><th>Layer</th><th>From</th><th>To</th><th>Stored int4</th><th>Current contribution</th></tr>
             </thead>
             <tbody id="edgeTable"></tbody>
           </table>
@@ -251,7 +254,14 @@ The mirror side is not learned separately.
 It is the exact transpose chain:
   effective encoder = Hout x Hin
   decoder           = effective encoder.T
-                    = Hin.T x Hout.T</div>
+                    = Hin.T x Hout.T
+
+Weights are shown as fixed-point integers, not free floats:
+  int4 Q2 weight q = round(weight * 4)
+  runtime value    = q / 4
+
+If we need finer resolution later:
+  int8 Q6 or Q7, same idea, more integer slots</div>
       </div>
     </main>
   </div>
@@ -278,6 +288,7 @@ const copyPenalty = document.getElementById('copyPenalty');
 const hinEdges = document.getElementById('hinEdges');
 const houtEdges = document.getElementById('houtEdges');
 const mentalModel = document.getElementById('mentalModel');
+const EDGE_SCALE_Q = 4;
 
 const CANDIDATES = {
   polished: {
@@ -370,6 +381,19 @@ function fmt(value) {
   return `${value >= 0 ? '+' : ''}${Number(rounded)}`;
 }
 
+function qWeight(weight) {
+  return Math.round(weight * EDGE_SCALE_Q);
+}
+
+function qLabel(weight) {
+  const q = qWeight(weight);
+  return `q${q >= 0 ? '+' : ''}${q}`;
+}
+
+function qDetail(weight) {
+  return `${qLabel(weight)} /4=${fmt(weight)}`;
+}
+
 function chipClass(value) {
   if (Math.abs(value) < 1e-9) return 'zero';
   return value > 0 ? 'on' : 'neg';
@@ -443,7 +467,12 @@ Decoded:
 Why this view matters:
   the latest candidate is not direct copy wiring.
   it has a real IO-hidden layer and a separate H->A layer.
-  the right side is the exact transpose mirror.`;
+  the right side is the exact transpose mirror.
+
+Weight format:
+  stored as int4 Q2 q values
+  displayed value = q / 4
+  this is not arbitrary float precision.`;
 
   renderDiagram(s);
   renderEdgeTable(s);
@@ -490,16 +519,16 @@ function renderDiagram(s) {
   `;
 
   for (const [h, bit, weight] of s.c.hiddenIn) {
-    html += edge(xBits + 22, bitY0 + bit * bitGap, xH - 22, hY0 + h * hGap, weight, '#14b8a6', fmt(weight));
+    html += edge(xBits + 22, bitY0 + bit * bitGap, xH - 22, hY0 + h * hGap, weight, '#14b8a6', qLabel(weight));
   }
   for (const [a, h, weight] of s.c.hiddenOut) {
-    html += edge(xH + 22, hY0 + h * hGap, xA - 22, aY0 + a * aGap, weight, '#38bdf8', fmt(weight));
+    html += edge(xH + 22, hY0 + h * hGap, xA - 22, aY0 + a * aGap, weight, '#38bdf8', qLabel(weight));
   }
   for (const [a, h, weight] of s.c.hiddenOut) {
-    html += edge(xA + 22, aY0 + a * aGap, xHM - 22, hY0 + h * hGap, weight, '#f59e0b', fmt(weight));
+    html += edge(xA + 22, aY0 + a * aGap, xHM - 22, hY0 + h * hGap, weight, '#f59e0b', qLabel(weight));
   }
   for (const [h, bit, weight] of s.c.hiddenIn) {
-    html += edge(xHM + 22, hY0 + h * hGap, xOut - 22, bitY0 + bit * bitGap, weight, '#ef4444', fmt(weight));
+    html += edge(xHM + 22, hY0 + h * hGap, xOut - 22, bitY0 + bit * bitGap, weight, '#ef4444', qLabel(weight));
   }
 
   for (let i = 0; i < 8; i++) {
@@ -532,7 +561,7 @@ function renderEdgeTable(s) {
     <td>${layer}</td>
     <td class="mono">${from}</td>
     <td class="mono">${to}</td>
-    <td class="mono">${fmt(weight)}</td>
+    <td class="mono">${qDetail(weight)}</td>
     <td class="mono">${fmt(contribution)}</td>
   </tr>`).join('');
 }
