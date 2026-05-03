@@ -9,6 +9,9 @@ A_V2_INT8_MARGIN_STRONG_GEOMETRY_NEAR_MISS
 margin reached 4.000, but geometry 0.758 is below the 0.760 strong gate
 ```
 
+Update: this near-miss was superseded by `A-v2-H12-GeometryPolish`, which
+keeps `margin +4.000` and raises geometry to `0.828519`.
+
 ## What Ran
 
 Implemented `tools/_scratch/a_v2_native_int8_seed_sweep.py`, a hidden-only

@@ -12,6 +12,7 @@ aliases.
 | `A-HiddenBitGain16` | D21I | Hidden-only A candidate that mainly amplifies one ASCII-relevant bit. |
 | `A-HiddenNatural16` | D21J | Hidden-only non-copy A candidate: best natural A_v2 lead. |
 | `A-HiddenNaturalMarginPolish` | A_v2 polish | Polished hidden-natural A candidate: higher margin while preserving non-copy geometry. |
+| `A-v2-H12-GeometryPolish` | A_v2 H12 polish | Latest native int8 A_v2 candidate: H12 hidden-only, margin +4.0, geometry 0.829, copy penalty 0. |
 | `A-SpaceUtilization` | D21K | Diagnostic report for lane energy, PCA, rank, and class separation. |
 | `A-GeometryAuditRevival` | old byte-embed-dim / geometry_sweep | Revived near/far byte embedding audit: cosine/distance matrix, clusters, nearest neighbors. |
 | `AB-WindowCodec64` | D23 / AB V1 | 8 bytes -> A128 -> B64 -> A128 -> 8 bytes. |

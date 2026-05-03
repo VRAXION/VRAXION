@@ -142,10 +142,10 @@
   <header>
     <div>
       <h1>A-Block Circuit Playground</h1>
-      <p class="subtitle">Most mar factorized nezetet mutat: <span class="mono">input bits -> hidden H -> A16</span>, majd a tukorkepet: <span class="mono">A16 -> H' -> output bits</span>. A latest mutalt jelolt az <strong>A-HiddenNaturalMarginPolish</strong>.</p>
+      <p class="subtitle">Most mar factorized nezetet mutat: <span class="mono">input bits -> hidden H -> A16</span>, majd a tukorkepet: <span class="mono">A16 -> H' -> output bits</span>. A latest mutalt jelolt az <strong>A-v2-H12-GeometryPolish</strong>.</p>
       <div class="badge-row">
         <span class="badge good">A_v2 strong candidate</span>
-        <span class="badge blue">1 byte -> H8 -> A16</span>
+        <span class="badge blue">1 byte -> H12 -> A16</span>
         <span class="badge">decoder = effective encoder.T</span>
         <span class="badge warn">default shipped A meg nem cserelve</span>
       </div>
@@ -204,8 +204,8 @@
         <h2>Stats</h2>
         <div class="stat"><span>Roundtrip</span><span id="roundtrip">PASS</span></div>
         <div class="stat"><span>Decoded byte</span><span id="decodedByte" class="mono">65</span></div>
-        <div class="stat"><span>Margin min</span><span id="byteMargin">+3.516</span></div>
-        <div class="stat"><span>Geometry</span><span id="geometryScore">0.770</span></div>
+        <div class="stat"><span>Margin min</span><span id="byteMargin">+4.000</span></div>
+        <div class="stat"><span>Geometry</span><span id="geometryScore">0.829</span></div>
         <div class="stat"><span>Copy penalty</span><span id="copyPenalty">0.00</span></div>
         <div class="stat"><span>Hin edges</span><span id="hinEdges">8</span></div>
         <div class="stat"><span>Hout edges</span><span id="houtEdges">30</span></div>
@@ -292,29 +292,45 @@ const EDGE_SCALE_Q = 64;
 
 const CANDIDATES = {
   polished: {
-    label: 'LATEST: A-HiddenNaturalMarginPolish',
-    verdict: 'Strong pass: exact 100%, margin +3.516, geometry 0.770, copy penalty 0.00.',
-    note: 'Actual hidden-only factorized candidate. No direct visible->A highway.',
-    margin: 3.516,
-    geometry: 0.770,
+    label: 'LATEST: A-v2-H12-GeometryPolish',
+    verdict: 'Strong pass: exact 100%, margin +4.000, geometry 0.829, copy penalty 0.00.',
+    note: 'Latest hidden-only native int8 candidate. No direct visible->A highway.',
+    margin: 4.000,
+    geometry: 0.828519,
     copy: 0.00,
+    hiddenDim: 12,
     hiddenIn: [
-      [0,0,-0.75],[1,1,1],[2,2,1],[3,3,-1],[4,4,1],[5,5,1],[6,6,1],[7,7,-1]
+      [0,0,1],[1,1,-1],[2,2,1],[3,3,-1],[3,4,0.625],[4,4,1],
+      [5,4,0.375],[5,5,1],[6,4,0.25],[6,6,1],[7,7,-1],[8,2,-0.25],
+      [9,0,-0.375],[9,5,-1],[10,5,1],[11,4,-1]
     ],
     hiddenOut: [
-      [0,3,-1],[0,7,1],[1,0,-1],[1,4,1],[2,3,-1],[2,4,0.75],[2,5,0.25],[2,7,-0.5],
-      [3,4,1],[3,5,-1],[4,2,1],[5,2,-1],[6,0,-1],[6,4,-1],[6,6,0.75],[7,3,-1],
-      [7,5,-1],[8,1,1],[9,3,-0.75],[9,7,-1],[10,6,-1],[11,4,1],[11,7,1],[12,1,1],
-      [13,0,0.75],[14,3,-1],[14,4,1],[14,5,1],[15,0,0.75],[15,6,1]
+      [0,3,-1],[0,4,-0.25],[0,7,1],[0,9,0.125],[0,11,1],
+      [1,0,-0.75],[1,4,1],
+      [2,3,-0.875],[2,4,0.875],[2,5,-0.125],
+      [3,0,0.125],[3,3,0.125],[3,4,1],[3,5,-1],[3,6,-0.125],[3,9,1],[3,10,-1],
+      [4,2,-0.875],[4,8,0.75],
+      [5,2,-1],[5,8,-0.25],
+      [6,0,-1],[6,4,-0.875],[6,6,0.75],[6,9,-0.125],
+      [7,3,-1],[7,5,-1],[7,10,-1],
+      [8,1,1],
+      [9,3,-1],[9,7,-1],
+      [10,6,-1],[10,10,0.375],
+      [11,4,0.875],[11,7,1],[11,9,-0.125],[11,10,0.375],[11,11,-0.25],
+      [12,1,1],
+      [13,0,-0.5],[13,4,0.125],[13,5,1],[13,9,-1],[13,10,1],
+      [14,3,-1],[14,4,0.875],[14,5,1],[14,10,0.875],
+      [15,0,0.75],[15,6,1],[15,10,-0.375]
     ]
   },
   naturalBefore: {
-    label: 'Before polish: A-HiddenNatural16',
-    verdict: 'Old A_v2 lead: exact 100%, margin +2.5, geometry 0.777.',
-    note: 'Useful for comparing what the margin polish changed.',
-    margin: 2.5,
-    geometry: 0.777,
+    label: 'Previous: A-HiddenNaturalMarginPolish-H8',
+    verdict: 'Previous A_v2 lead: exact 100%, margin +3.516, geometry 0.770.',
+    note: 'Useful for comparing what H12 geometry polish changed.',
+    margin: 3.516,
+    geometry: 0.770,
     copy: 0.00,
+    hiddenDim: 8,
     hiddenIn: [
       [0,0,-0.75],[1,1,1],[2,2,1],[3,3,1],[4,4,1],[5,5,1],[6,6,1],[7,7,1]
     ],
@@ -333,6 +349,7 @@ const CANDIDATES = {
     margin: 4.0,
     geometry: 0.669,
     copy: 1.00,
+    hiddenDim: 8,
     hiddenIn: [
       [0,0,1],[1,1,1],[2,2,1],[3,3,1],[4,4,1],[5,5,1],[6,6,1],[7,7,1]
     ],
@@ -420,11 +437,16 @@ function updateFromText() {
 
 function currentState() {
   const c = candidate();
+  const hiddenDim = c.hiddenDim || Math.max(
+    1,
+    ...c.hiddenIn.map(e => e[0] + 1),
+    ...c.hiddenOut.map(e => e[1] + 1)
+  );
   const byte = clampByte(byteInput.value);
   const bits = byteToBits(byte);
-  const h = matVec(c.hiddenIn, 8, bits);
+  const h = matVec(c.hiddenIn, hiddenDim, bits);
   const a = matVec(c.hiddenOut, 16, h);
-  const mirrorH = transposeMatVec(c.hiddenOut, 8, a);
+  const mirrorH = transposeMatVec(c.hiddenOut, hiddenDim, a);
   const logits = transposeMatVec(c.hiddenIn, 8, mirrorH);
   const decodedBits = logits.map(v => v >= 0 ? 1 : -1);
   return { c, byte, bits, h, a, mirrorH, logits, decodedBits, decoded: bitsToByte(decodedBits) };
@@ -504,7 +526,8 @@ function edge(x1, y1, x2, y2, weight, color, label) {
 function renderDiagram(s) {
   const xBits = 80, xH = 310, xA = 610, xHM = 910, xOut = 1160;
   const bitY0 = 105, bitGap = 67;
-  const hY0 = 105, hGap = 67;
+  const hY0 = s.h.length > 8 ? 82 : 105;
+  const hGap = s.h.length > 8 ? 47 : 67;
   const aY0 = 62, aGap = 36;
 
   let html = `
@@ -533,9 +556,11 @@ function renderDiagram(s) {
 
   for (let i = 0; i < 8; i++) {
     html += node(xBits, bitY0 + i * bitGap, `b${i}`, s.bits[i], '#052e16', '#22c55e', '#111827', '#475569');
+    html += node(xOut, bitY0 + i * bitGap, `o${i}`, s.logits[i], '#3b0a0a', '#ef4444', '#111827', '#475569');
+  }
+  for (let i = 0; i < s.h.length; i++) {
     html += node(xH, hY0 + i * hGap, `H${i}`, s.h[i], '#042f2e', '#14b8a6', '#111827', '#475569');
     html += node(xHM, hY0 + i * hGap, `H'${i}`, s.mirrorH[i], '#451a03', '#f59e0b', '#111827', '#475569');
-    html += node(xOut, bitY0 + i * bitGap, `o${i}`, s.logits[i], '#3b0a0a', '#ef4444', '#111827', '#475569');
   }
   for (let i = 0; i < 16; i++) {
     html += node(xA, aY0 + i * aGap, `A${i}`, s.a[i], '#082f49', '#38bdf8', '#111827', '#475569');

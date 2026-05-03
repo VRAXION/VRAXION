@@ -22,7 +22,7 @@ Current default:
 
 ```text
 A-StableCopy16 is still the shipped A-block.
-A-HiddenNaturalMarginPolish is the A_v2 strong candidate, not yet the shipped A-block.
+A-v2-H12-GeometryPolish is the A_v2 strong candidate, not yet the shipped A-block.
 ```
 
 ## A-Block Candidates
@@ -32,7 +32,8 @@ A-HiddenNaturalMarginPolish is the A_v2 strong candidate, not yet the shipped A-
 | `A-StableCopy16` | D21A | Direct redundant byte-to-A16 codec | 100% | +4.0 | 0.669 | 16 direct | **Current shipped/default** |
 | `A-HiddenBitGain16` | D21I | Hidden-only A, mostly one-bit gain | 100% | +4.0 | 0.731 | 26 hidden | Useful hidden lead, still copy-like |
 | `A-HiddenNatural16` | D21J | Hidden-only non-copy natural A | 100% | +2.5 | 0.777 | 37 hidden / 29 effective | superseded by polished candidate |
-| `A-HiddenNaturalMarginPolish` | A_v2 polish | Hidden-only non-copy A with stronger margin | 100% | +3.516 | 0.770 | 38 hidden / 30 effective | **A_v2 strong candidate** |
+| `A-HiddenNaturalMarginPolish` | A_v2 polish | H8 hidden-only non-copy A with stronger margin | 100% | +3.516 | 0.770 | 38 hidden / 30 effective | superseded by H12 polish |
+| `A-v2-H12-GeometryPolish` | A_v2 H12 polish | H12 native int8 non-copy A with stable margin and strong geometry | 100% | +4.0 | 0.829 | 67 structural / 46 effective | **A_v2 strong candidate** |
 | `A-NaturalSparse16` | D21G | Direct natural sparse A | 100% | +2.5 | 0.764 | 28 effective | Research-only baseline for A_v2 |
 | `Legacy-C19-H24` | old L0 byte unit | Extra-hidden C19 byte codec | 100% | +10.537 | 0.905 | 416 | Strong reference, not current reciprocal A |
 | `Binary-C19-H16` | old binary C19 | Smaller C19 byte codec | 100% | +0.002 | 0.905 | 384 | Reference only |
@@ -44,7 +45,7 @@ Use now:
   A-StableCopy16
 
 Improve next:
-  A-v2 AB compatibility check using A-HiddenNaturalMarginPolish
+  A-v2 AB compatibility check using A-v2-H12-GeometryPolish
 ```
 
 ## A-Space Utilization
@@ -74,6 +75,7 @@ Does A16 only roundtrip bytes, or do related bytes land close together?
 
 | Name | Exact | Margin | Geometry | Effective Rank | Copy Penalty | Audit Score | Interpretation |
 |---|---:|---:|---:|---:|---:|---:|---|
+| `A-v2-H12-GeometryPolish` | 100% | +4.0 | 0.829 | 7.0 | 0.00 | TBD | best current A_v2 candidate; AB compatibility not tested yet |
 | `A-HiddenNaturalMarginPolish` | 100% | +3.516 | 0.770 | 7.8 | 0.00 | 29.15 | best natural byte geometry after polish |
 | `A-NaturalSparse16` | 100% | +2.5 | 0.764 | 7.8 | 0.00 | 28.85 | strong direct natural reference |
 | `A-HiddenBitGain16` | 100% | +4.0 | 0.731 | 7.9 | 0.94 | 27.17 | robust but still copy-like |
@@ -82,9 +84,11 @@ Does A16 only roundtrip bytes, or do related bytes land close together?
 Decision:
 
 ```text
-A-HiddenNaturalMarginPolish wins the revived near/far geometry audit.
-A-StableCopy16 remains shipped/default because its decode margin is safer.
-Next A work is AB compatibility testing before replacement.
+A-v2-H12-GeometryPolish now wins the practical A_v2 gate: copy penalty 0,
+margin +4.0, geometry 0.829.
+A-StableCopy16 remains shipped/default because AB compatibility has not yet
+been re-run with the H12 A-v2 candidate. Next A work is AB compatibility
+testing before replacement.
 ```
 
 ## AB / B Surface
@@ -160,7 +164,7 @@ Best current A:
   A-StableCopy16
 
 Best A_v2 research lead:
-  A-HiddenNaturalMarginPolish
+  A-v2-H12-GeometryPolish
 
 Best B bus:
   AB-WindowCodec64 / B64
