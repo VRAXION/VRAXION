@@ -916,3 +916,59 @@ is D30 composed command episodes.
 Updated source doc:
 
 - `docs/research/PHASE_D29_ROUTE_SELECTED_EXECUTION.md`
+
+### 2026-05-03 - D30A pruned op-lane ALU sandwich
+
+- D30A split the D29 monolithic `ALU` lane into independently removable op-lanes.
+
+```text
+1+2    -> ALU_ADD -> 3
+99-4   -> ALU_SUB -> 95
+7*8    -> ALU_MUL -> 56
+5&3    -> ALU_AND -> 1
+5|3    -> ALU_OR  -> 7
+5^3    -> ALU_XOR -> 6
+```
+
+- Confirm result:
+
+```text
+D30A_PRUNED_OP_LANE_ALU_PASS
+
+eval_pairs:              65,536
+ADD/SUB/MUL/AND/OR/XOR:  100%
+byte_margin_min:         +2.0
+inactive ALU lanes:      100% empty
+wrong-op max exact:      13.35%
+random-route controls:   ~19.47% to ~19.73%
+```
+
+- Integration examples:
+
+```text
+1+2    -> route_family ALU -> ALU_ADD -> 3
+99-4   -> route_family ALU -> ALU_SUB -> 95
+7*8    -> route_family ALU -> ALU_MUL -> 56
+27*852 -> route_family ALU -> ALU_MUL -> 220
+5&3    -> route_family ALU -> ALU_AND -> 1
+5|3    -> route_family ALU -> ALU_OR  -> 7
+5^3    -> route_family ALU -> ALU_XOR -> 6
+```
+
+Interpretation:
+
+```text
+ALU is now a pruned sandwich:
+  fixed op-lanes can be kept or removed independently.
+```
+
+Caveat:
+
+```text
+MUL is exact but table/reference based in D30A.
+Compact multiplier or decimal output is D30B.
+```
+
+Updated source doc:
+
+- `docs/research/PHASE_D30A_PRUNED_OP_LANE_ALU.md`
