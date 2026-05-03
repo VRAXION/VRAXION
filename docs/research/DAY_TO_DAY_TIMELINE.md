@@ -1221,3 +1221,48 @@ D21F no_prefill geometry lead
 Updated source doc:
 
 - `docs/research/PHASE_D21F_ABLOCK_NATURAL_GEOMETRY.md`
+
+### 2026-05-03 - D21G A-block margin-aware polish
+
+- D21G directly addressed the weak point in D21F `no_prefill`: the margin was
+  too thin.
+
+```text
+D21F no_prefill:
+  exact byte roundtrip: 100%
+  byte_margin_min: +0.125
+  ascii_class_geometry: 0.802174
+  identity_copy_penalty: 0.0
+```
+
+- Main verdict:
+
+```text
+D21G_MARGIN_NATURAL_PASS
+```
+
+- Best natural candidate:
+
+```text
+arm: balanced_energy_2
+exact_byte_acc: 100%
+byte_margin_min: +2.5
+ascii_class_geometry: 0.764149
+identity_copy_penalty: 0.0
+ordered_copy_penalty: 0.0
+edge_count: 28
+single_edge_drop_mean_bit: 0.997768
+single_edge_drop_mean_exact: 0.982143
+```
+
+Interpretation:
+
+```text
+Natural A path is improvable.
+Margin rose from +0.125 to +2.5 without returning to ordered copy.
+Deploy A_v1 still remains locked, but D21G is now the latest mutated A research candidate.
+```
+
+Updated source doc:
+
+- `docs/research/PHASE_D21G_ABLOCK_MARGIN_AWARE_POLISH.md`

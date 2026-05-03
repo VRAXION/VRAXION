@@ -289,7 +289,7 @@ const edgeCount = document.getElementById('edgeCount');
 const byteMargin = document.getElementById('byteMargin');
 const geometryScore = document.getElementById('geometryScore');
 const mentalModel = document.getElementById('mentalModel');
-const DEFAULT_CANDIDATE = 'noPrefill';
+const DEFAULT_CANDIDATE = 'd21gMargin';
 
 const CANDIDATES = {
   baseline16: {
@@ -319,7 +319,7 @@ const CANDIDATES = {
     ]
   },
   noPrefill: {
-    label: 'LATEST mutated: D21F no_prefill geometry lead',
+    label: 'D21F no_prefill geometry lead',
     family: 'hidden-only / no-prefill sparse',
     verdict: 'Geometry lead: exact roundtrip and non-copy, but very low byte margin.',
     margin: 0.125,
@@ -328,6 +328,21 @@ const CANDIDATES = {
     entries: [
       [4,6,1],[5,2,0.5],[6,4,-1],[6,6,0.75],[8,5,-0.25],[9,3,-0.75],
       [10,1,0.25],[11,7,0.25],[15,0,0.5]
+    ]
+  },
+  d21gMargin: {
+    label: 'LATEST mutated: D21G margin-natural pass',
+    family: 'margin-polished non-copy sparse',
+    verdict: 'Pass: exact roundtrip, non-copy layout, margin raised from +0.125 to +2.5.',
+    margin: 2.5,
+    geometry: 0.7641,
+    note: 'Started from D21F no_prefill and added balanced non-copy energy. Better margin, still not the ordered copy baseline.',
+    entries: [
+      [0,3,-1],[0,7,0.5],[1,0,-1],[1,4,1],[1,6,0.25],[2,3,-0.5],[2,7,-0.5],
+      [3,4,1],[3,5,-1],[4,2,1],[5,2,0.5],[6,0,-1],[6,4,-1],[6,6,0.75],
+      [7,3,-1],[7,5,-0.5],[8,1,0.5],[9,3,-0.75],[9,7,-1],[10,6,-1],
+      [11,4,0.25],[11,7,0.75],[12,1,1],[14,4,1],[14,5,1],[15,0,0.75],
+      [15,5,-0.25],[15,6,1]
     ]
   }
 };
@@ -377,6 +392,7 @@ function edgeRole(code, visible, weight, candidate) {
   if (candidate === CANDIDATES.overlayLocked && code < 8 && code === visible && Math.abs(weight) === 1) return 'locked highway';
   if (candidate === CANDIDATES.overlayLocked && code >= 8) return 'geometry overlay';
   if (candidate === CANDIDATES.noPrefill) return 'hidden-only sparse';
+  if (candidate === CANDIDATES.d21gMargin) return 'margin-polished sparse';
   return 'sparse edge';
 }
 

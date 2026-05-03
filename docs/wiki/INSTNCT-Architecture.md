@@ -161,6 +161,22 @@ D21F overlay/no-prefill leads:
 So the deploy AB codec remains locked to A_v1 for now. The D21F candidates are
 research leads for a future margin-aware A search, not a shipped replacement.
 
+D21G then ran that margin-aware search. It improved the best natural path:
+
+```text
+D21G_MARGIN_NATURAL_PASS
+
+D21F no_prefill:
+  margin +0.125, geometry 0.802, copy penalty 0.0
+
+D21G balanced_energy_2:
+  margin +2.5, geometry 0.764, copy penalty 0.0
+```
+
+This makes D21G the latest mutated A-block research candidate. It still does
+not replace deploy A_v1 automatically; it is a stronger A_v2 lead for further
+output-curve and robustness visualization.
+
 D28 proved a **C0 route-head**:
 
 ```text
