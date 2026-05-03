@@ -174,6 +174,39 @@ that turns overlapping B64 windows into spans:
 Until that C-block exists, the system can route and execute short command-shaped
 windows, but it does not yet parse arbitrary real text streams.
 
+D31A added the first C-block tokenizer probe:
+
+```text
+B64 window stream -> TokenEvent stream + C64 token embeddings + route hints
+```
+
+It passed on generated word, punctuation, number, operator, and boundary-stress
+examples:
+
+```text
+token stream exact:   100%
+boundary exact:       100%
+kind exact:           100%
+normalized exact:     100%
+ALU call exact:       100%
+```
+
+Example:
+
+```text
+"Give me exactly 25 times 7."
+  -> WORD:GIVE
+  -> WORD:ME
+  -> WORD:EXACTLY
+  -> NUMBER:25
+  -> OP:OP_MUL
+  -> NUMBER:7
+  -> PUNCT:.
+  -> ALU output 175
+```
+
+This is still a tokenizer/controller probe, not a language worker.
+
 ## Read Next
 
 - [Vraxion Home](Home) — public front door and mission-level summary

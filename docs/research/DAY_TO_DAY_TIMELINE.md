@@ -1091,3 +1091,73 @@ C is the first stream-understanding layer.
 Updated source doc:
 
 - `docs/research/PHASE_D31_CBLOCK_TOKENIZER_EMBEDDER.md`
+
+### 2026-05-03 - D31A C-block stream tokenizer / embedder probe
+
+- D31A implemented the first C-block tokenizer probe over the frozen AB/B64
+  surface.
+
+```text
+raw bytes
+  -> sliding 8-byte AB/B64 windows
+  -> C tokenizer
+  -> TokenEvent stream + C64 embeddings + route hints
+```
+
+- Main verdict:
+
+```text
+D31A_CBLOCK_TOKENIZER_PASS
+
+samples:                  12,288
+boundary_cases:            4,097
+token_stream_exact_acc:   100%
+token_boundary_acc:       100%
+token_kind_acc:           100%
+normalized_acc:           100%
+alu_call_exact_acc:       100%
+boundary_case_exact_acc:  100%
+```
+
+- Controls:
+
+```text
+max_control_token_exact:         14.26%
+max_control_alu_positive_exact:   8.76%
+
+window_shuffle:
+  token exact: ~0.05% to 0.10%
+
+random_b64_projection:
+  token exact: 0.00%
+
+label_shuffle:
+  token exact: ~13.79% to 14.26%
+```
+
+- Integration smoke:
+
+```text
+25 times 7
+  -> NUMBER:25 | OP:OP_MUL | NUMBER:7
+  -> 175
+
+25*7
+  -> NUMBER:25 | OP:OP_MUL | NUMBER:7
+  -> 175
+
+Give me exactly 25 times 7.
+  -> WORD:GIVE | WORD:ME | WORD:EXACTLY | NUMBER:25 | OP:OP_MUL | NUMBER:7 | PUNCT:.
+  -> 175
+```
+
+Interpretation:
+
+```text
+C-block can now turn B64 window streams into explicit token events.
+This is the first stream-capable layer above AB.
+```
+
+Updated source doc:
+
+- `docs/research/PHASE_D31A_CBLOCK_STREAM_TOKENIZER.md`
