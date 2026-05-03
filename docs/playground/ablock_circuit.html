@@ -68,6 +68,15 @@
     padding: 10px 12px;
     font-size: 15px;
   }
+  select {
+    width: 100%;
+    background: #020617;
+    border: 1px solid #334155;
+    color: #e2e8f0;
+    border-radius: 10px;
+    padding: 10px 12px;
+    font-size: 14px;
+  }
   .quick { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-top: 8px; }
   button {
     border: 1px solid rgba(56, 189, 248, 0.35);
@@ -128,17 +137,17 @@
   <header>
     <div>
       <h1>A-Block Circuit Playground</h1>
-      <p class="subtitle">A lockolt AB codec A-block kapcsolási rajza: egy byte 8 bitje két 8-lane-es A-felületre másolódik. Minden kapcsolat determinisztikus, sparse, értéke <span class="mono">+1</span>.</p>
+      <p class="subtitle">A lockolt AB codec A-block baseline-ja copy-szerű. A D21F keresés talált naturalabb, exact roundtrip jelölteket is, de csak weak-pass szinten: egyiket sem promótáljuk automatikusan deploy A_v2-re.</p>
       <div class="badge-row">
         <span class="badge good">AB codec v1</span>
         <span class="badge blue">1 byte → A16</span>
-        <span class="badge">16 edges encode</span>
-        <span class="badge">8 canonical decode edges</span>
+        <span class="badge">reciprocal decoder = encoder.T</span>
+        <span class="badge">D21F weak natural signal</span>
       </div>
     </div>
     <div class="panel card">
-      <div class="stat"><span>Formula</span><span class="mono">A16 = bits + bits</span></div>
-      <div class="stat"><span>Decode</span><span class="mono">byte = sign(A0..A7)</span></div>
+      <div class="stat"><span>Formula</span><span class="mono">A = E × bits</span></div>
+      <div class="stat"><span>Decode</span><span class="mono">bits = sign(E.T × A)</span></div>
     </div>
   </header>
 
@@ -160,6 +169,13 @@
       </div>
 
       <div class="card">
+        <h2>Candidate</h2>
+        <label for="candidateSelect">A-block wiring</label>
+        <select id="candidateSelect"></select>
+        <p id="candidateNote" class="note" style="margin-top:10px"></p>
+      </div>
+
+      <div class="card">
         <h2>Input bits little-endian</h2>
         <div id="bits" class="bit-row"></div>
       </div>
@@ -167,13 +183,14 @@
       <div class="card">
         <h2>A16 lanes</h2>
         <div id="lanes" class="lane-row"></div>
-        <p class="note" style="margin-top:10px">A0..A7 = kanonikus visible lanes. A8..A15 = redundáns mirror copy. A B-block jelenlegi deploy útja A0..A7-et választja ki B64-be.</p>
+        <p class="note" style="margin-top:10px">A-lane értékek az aktuális jelölt encoder mátrixából jönnek. A dekóder mindig ugyanennek a transzponáltja, tehát minden edge oda-vissza értelmezett.</p>
       </div>
 
       <div class="card">
         <h2>Stats</h2>
-        <div class="stat"><span>Encode edges</span><span>16 × +1</span></div>
-        <div class="stat"><span>Canonical decode edges</span><span>8 × +1</span></div>
+        <div class="stat"><span>Encode edges</span><span id="edgeCount">16</span></div>
+        <div class="stat"><span>Byte margin min</span><span id="byteMargin">+4.0</span></div>
+        <div class="stat"><span>Geometry score</span><span id="geometryScore">0.669</span></div>
         <div class="stat"><span>Reciprocity error</span><span>0</span></div>
         <div class="stat"><span>Roundtrip</span><span id="roundtrip">PASS</span></div>
         <div class="stat"><span>Decoded byte</span><span id="decodedByte" class="mono">65</span></div>
@@ -181,13 +198,7 @@
 
       <div class="card">
         <h2>ASCII mental model</h2>
-        <div class="ascii">bit_i
-  ├─(+1)→ A_i      visible
-  └─(+1)→ A_i+8    mirror
-
-decode:
-A_i ─(+1)→ output bit_i
-for i = 0..7</div>
+        <div class="ascii" id="mentalModel"></div>
       </div>
     </aside>
 
@@ -216,6 +227,8 @@ const BYTE_BITS = 8;
 const byteSlider = document.getElementById('byteSlider');
 const byteInput = document.getElementById('byteInput');
 const textInput = document.getElementById('textInput');
+const candidateSelect = document.getElementById('candidateSelect');
+const candidateNote = document.getElementById('candidateNote');
 const byteLabel = document.getElementById('byteLabel');
 const bitsEl = document.getElementById('bits');
 const lanesEl = document.getElementById('lanes');
@@ -223,6 +236,48 @@ const edgeTable = document.getElementById('edgeTable');
 const decodedByte = document.getElementById('decodedByte');
 const roundtrip = document.getElementById('roundtrip');
 const diagram = document.getElementById('diagram');
+const edgeCount = document.getElementById('edgeCount');
+const byteMargin = document.getElementById('byteMargin');
+const geometryScore = document.getElementById('geometryScore');
+const mentalModel = document.getElementById('mentalModel');
+
+const CANDIDATES = {
+  baseline16: {
+    label: 'A_v1 redundant copy baseline',
+    verdict: 'Deploy baseline: exact + robust, but copy-like.',
+    margin: 4.0,
+    geometry: 0.6686,
+    note: 'bit_i -> A_i and A_i+8. This is the locked AB codec v1 A-block.',
+    entries: [
+      [0,0,1],[1,1,1],[2,2,1],[3,3,1],[4,4,1],[5,5,1],[6,6,1],[7,7,1],
+      [8,0,1],[9,1,1],[10,2,1],[11,3,1],[12,4,1],[13,5,1],[14,6,1],[15,7,1]
+    ]
+  },
+  overlayLocked: {
+    label: 'D21F overlay_locked weak candidate',
+    verdict: 'Weak-pass: exact roundtrip, less copy-like, but lower margin/edge robustness.',
+    margin: 2.0,
+    geometry: 0.7010,
+    note: 'Keeps canonical A0..A7 highway, overlays small geometry rows A8..A15.',
+    entries: [
+      [0,0,1],[1,1,1],[2,2,1],[3,3,1],[4,4,1],[5,5,1],[6,6,1],[7,7,1],
+      [8,5,0.25],[8,6,-0.25],[9,4,0.25],[9,5,0.25],[10,6,0.25],[10,7,-0.25],
+      [11,1,-0.25],[11,4,0.25],[12,1,0.25],[12,2,-0.25],[13,2,0.25],[13,3,-0.25],
+      [14,3,0.25],[14,4,-0.25],[15,0,0.25],[15,7,-0.25]
+    ]
+  },
+  noPrefill: {
+    label: 'D21F no_prefill geometry lead',
+    verdict: 'Geometry lead: exact roundtrip and non-copy, but very low byte margin.',
+    margin: 0.125,
+    geometry: 0.8022,
+    note: 'Sparse from scratch. Interesting geometry, not deploy-safe because the byte margin is thin.',
+    entries: [
+      [4,6,1],[5,2,0.5],[6,4,-1],[6,6,0.75],[8,5,-0.25],[9,3,-0.75],
+      [10,1,0.25],[11,7,0.25],[15,0,0.5]
+    ]
+  }
+};
 
 function clampByte(v) {
   const n = Number.parseInt(v, 10);
@@ -236,6 +291,31 @@ function byteToBits(byte) {
 
 function bitsToByte(bits) {
   return bits.reduce((acc, bit, i) => bit >= 0 ? acc | (1 << i) : acc, 0);
+}
+
+function currentCandidate() {
+  return CANDIDATES[candidateSelect.value] || CANDIDATES.baseline16;
+}
+
+function encodeA16(bits, candidate) {
+  const lanes = Array.from({ length: 16 }, () => 0);
+  for (const [code, visible, weight] of candidate.entries) {
+    lanes[code] += weight * bits[visible];
+  }
+  return lanes;
+}
+
+function decodeBits(a16, candidate) {
+  const logits = Array.from({ length: BYTE_BITS }, () => 0);
+  for (const [code, visible, weight] of candidate.entries) {
+    logits[visible] += weight * a16[code];
+  }
+  return logits.map(v => v >= 0 ? 1 : -1);
+}
+
+function fmtValue(value) {
+  if (Math.abs(value) < 1e-9) return '0';
+  return `${value >= 0 ? '+' : ''}${Number(value.toFixed(3))}`;
 }
 
 function printable(byte) {
@@ -258,26 +338,43 @@ function updateFromText() {
 }
 
 function update() {
+  const candidate = currentCandidate();
   const byte = clampByte(byteInput.value);
   byteSlider.value = String(byte);
   byteInput.value = String(byte);
   byteLabel.textContent = `${byte} (${printable(byte)})`;
 
   const bits = byteToBits(byte);
-  const a16 = bits.concat(bits);
-  const decoded = bitsToByte(a16.slice(0, 8));
+  const a16 = encodeA16(bits, candidate);
+  const decodedBits = decodeBits(a16, candidate);
+  const decoded = bitsToByte(decodedBits);
   decodedByte.textContent = String(decoded);
   roundtrip.textContent = decoded === byte ? 'PASS' : 'FAIL';
   roundtrip.style.color = decoded === byte ? '#86efac' : '#fca5a5';
+  edgeCount.textContent = String(candidate.entries.length);
+  byteMargin.textContent = `+${candidate.margin}`;
+  geometryScore.textContent = candidate.geometry.toFixed(3);
+  candidateNote.textContent = `${candidate.verdict} ${candidate.note}`;
 
   bitsEl.innerHTML = bits.map((v, i) =>
     `<div class="chip ${v > 0 ? 'on' : 'off'}"><div>b${i}</div><div class="mono">${v > 0 ? '+1' : '-1'}</div></div>`
   ).join('');
   lanesEl.innerHTML = a16.map((v, i) =>
-    `<div class="chip ${v > 0 ? 'on' : 'off'}"><div>A${i}</div><div class="mono">${v > 0 ? '+1' : '-1'}</div></div>`
+    `<div class="chip ${v > 0 ? 'on' : 'off'}"><div>A${i}</div><div class="mono">${fmtValue(v)}</div></div>`
   ).join('');
-  renderDiagram(bits, a16);
-  renderEdges(bits, a16);
+  mentalModel.textContent = `${candidate.label}
+
+encode:
+  A = E x signed_bits
+
+decode:
+  signed_bits = sign(E.T x A)
+
+D21F verdict:
+  weak natural signal only
+  deploy A_v1 unchanged`;
+  renderDiagram(bits, a16, decodedBits, candidate);
+  renderEdges(bits, a16, candidate);
 }
 
 function node(cx, cy, label, value, color, sub) {
@@ -298,7 +395,7 @@ function node(cx, cy, label, value, color, sub) {
 function line(x1, y1, x2, y2, value, klass, label) {
   const on = value >= 0;
   const stroke = klass === 'decode' ? '#fbbf24' : klass === 'mirror' ? '#4ade80' : '#38bdf8';
-  const opacity = on ? 0.78 : 0.24;
+  const opacity = Math.min(0.88, Math.max(0.20, Math.abs(value) * 0.85));
   const midX = (x1 + x2) / 2;
   const midY = (y1 + y2) / 2;
   return `
@@ -307,17 +404,17 @@ function line(x1, y1, x2, y2, value, klass, label) {
   `;
 }
 
-function renderDiagram(bits, a16) {
+function renderDiagram(bits, a16, decodedBits, candidate) {
   const inputX = 130;
-  const visibleX = 470;
-  const mirrorX = 690;
+  const codeX = 540;
   const outputX = 930;
-  const y0 = 80;
-  const gap = 62;
+  const bitY0 = 92;
+  const bitGap = 62;
+  const codeY0 = 72;
+  const codeGap = 33;
   const colors = {
     bit: { fillOn: '#052e16', fillOff: '#111827', strokeOn: '#22c55e', strokeOff: '#475569', textOn: '#86efac', textOff: '#94a3b8' },
     a: { fillOn: '#082f49', fillOff: '#111827', strokeOn: '#38bdf8', strokeOff: '#475569', textOn: '#7dd3fc', textOff: '#94a3b8' },
-    mirror: { fillOn: '#14320d', fillOff: '#111827', strokeOn: '#84cc16', strokeOff: '#475569', textOn: '#bef264', textOff: '#94a3b8' },
     out: { fillOn: '#451a03', fillOff: '#111827', strokeOn: '#f59e0b', strokeOff: '#475569', textOn: '#fcd34d', textOff: '#94a3b8' }
   };
 
@@ -330,41 +427,42 @@ function renderDiagram(bits, a16) {
     </defs>
     <rect x="20" y="20" width="1000" height="600" rx="24" fill="url(#panelGrad)" stroke="#1e293b"/>
     <text x="${inputX}" y="45" fill="#86efac" font-size="16" font-weight="900" text-anchor="middle">Input bits</text>
-    <text x="${visibleX}" y="45" fill="#7dd3fc" font-size="16" font-weight="900" text-anchor="middle">A0..A7 visible</text>
-    <text x="${mirrorX}" y="45" fill="#bef264" font-size="16" font-weight="900" text-anchor="middle">A8..A15 mirror</text>
+    <text x="${codeX}" y="45" fill="#7dd3fc" font-size="16" font-weight="900" text-anchor="middle">A16 code lanes</text>
     <text x="${outputX}" y="45" fill="#fcd34d" font-size="16" font-weight="900" text-anchor="middle">Decoded bits</text>
   `;
 
-  for (let i = 0; i < 8; i++) {
-    const y = y0 + i * gap;
-    html += line(inputX + 24, y, visibleX - 24, y, bits[i], 'visible', '+1');
-    html += line(inputX + 24, y, mirrorX - 24, y, bits[i], 'mirror', '+1');
-    html += line(visibleX + 24, y, outputX - 24, y, bits[i], 'decode', '+1');
+  for (const [code, visible, weight] of candidate.entries) {
+    const by = bitY0 + visible * bitGap;
+    const cy = codeY0 + code * codeGap;
+    const oy = bitY0 + visible * bitGap;
+    html += line(inputX + 24, by, codeX - 24, cy, weight, 'visible', fmtValue(weight));
+    html += line(codeX + 24, cy, outputX - 24, oy, weight, 'decode', fmtValue(weight));
   }
 
   for (let i = 0; i < 8; i++) {
-    const y = y0 + i * gap;
+    const y = bitY0 + i * bitGap;
     html += node(inputX, y, `b${i}`, bits[i], colors.bit, `2^${i}`);
-    html += node(visibleX, y, `A${i}`, a16[i], colors.a, 'canonical');
-    html += node(mirrorX, y, `A${i + 8}`, a16[i + 8], colors.mirror, 'copy');
-    html += node(outputX, y, `o${i}`, a16[i], colors.out, 'read');
+    html += node(outputX, y, `o${i}`, decodedBits[i], colors.out, 'read');
+  }
+  for (let i = 0; i < 16; i++) {
+    const y = codeY0 + i * codeGap;
+    html += node(codeX, y, `A${i}`, a16[i], colors.a, 'code');
   }
 
   html += `
     <text x="520" y="590" text-anchor="middle" fill="#94a3b8" font-size="13">
-      Current deploy rule: encode = duplicate signed bits; decode = sign(A0..A7). Mirror lanes are retained as redundant/debug surface.
+      ${candidate.label}: reciprocal sparse encoder. D21F natural candidates are weak-pass only; deploy codec remains A_v1 until a stronger pass.
     </text>
   `;
   diagram.innerHTML = html;
 }
 
-function renderEdges(bits, a16) {
+function renderEdges(bits, a16, candidate) {
   const rows = [];
-  for (let i = 0; i < 8; i++) {
-    rows.push({ edge: `E${rows.length}`, from: `bit_${i}`, to: `A_${i}`, weight: '+1', role: 'visible encode', value: bits[i] });
-    rows.push({ edge: `E${rows.length}`, from: `bit_${i}`, to: `A_${i + 8}`, weight: '+1', role: 'mirror encode', value: bits[i] });
-    rows.push({ edge: `D${i}`, from: `A_${i}`, to: `out_bit_${i}`, weight: '+1', role: 'canonical decode', value: a16[i] });
-  }
+  candidate.entries.forEach(([code, visible, weight], idx) => {
+    rows.push({ edge: `E${idx}`, from: `bit_${visible}`, to: `A_${code}`, weight: fmtValue(weight), role: 'encode', value: weight * bits[visible] });
+    rows.push({ edge: `D${idx}`, from: `A_${code}`, to: `out_bit_${visible}`, weight: fmtValue(weight), role: 'reciprocal decode', value: weight * a16[code] });
+  });
   edgeTable.innerHTML = rows.map(row => `
     <tr>
       <td class="mono">${row.edge}</td>
@@ -372,7 +470,7 @@ function renderEdges(bits, a16) {
       <td class="mono">${row.to}</td>
       <td class="mono">${row.weight}</td>
       <td>${row.role}</td>
-      <td class="mono">${row.value > 0 ? '+1' : '-1'}</td>
+      <td class="mono">${fmtValue(row.value)}</td>
     </tr>
   `).join('');
 }
@@ -380,7 +478,11 @@ function renderEdges(bits, a16) {
 byteSlider.addEventListener('input', () => setByte(byteSlider.value));
 byteInput.addEventListener('input', () => setByte(byteInput.value));
 textInput.addEventListener('input', updateFromText);
+candidateSelect.addEventListener('change', update);
 document.querySelectorAll('button[data-byte]').forEach(btn => btn.addEventListener('click', () => setByte(btn.dataset.byte)));
+candidateSelect.innerHTML = Object.entries(CANDIDATES).map(([key, candidate]) =>
+  `<option value="${key}">${candidate.label}</option>`
+).join('');
 update();
 </script>
 </body>

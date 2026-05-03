@@ -144,6 +144,23 @@ The cleaned AB artifact is:
 8 bytes <-> A128 <-> B64 <-> A128 <-> 8 bytes
 ```
 
+D21F checked whether the A-block should become a natural character geometry
+instead of a copy-like codec. The result is deliberately conservative:
+
+```text
+D21F_A_NATURAL_WEAK_PASS
+
+A_v1 redundant copy:
+  exact roundtrip, margin +4.0, strongest deploy safety
+
+D21F overlay/no-prefill leads:
+  natural geometry improves, copy penalty drops,
+  but margin/robustness is weaker
+```
+
+So the deploy AB codec remains locked to A_v1 for now. The D21F candidates are
+research leads for a future margin-aware A search, not a shipped replacement.
+
 D28 proved a **C0 route-head**:
 
 ```text

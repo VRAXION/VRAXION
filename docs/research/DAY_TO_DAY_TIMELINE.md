@@ -1161,3 +1161,63 @@ This is the first stream-capable layer above AB.
 Updated source doc:
 
 - `docs/research/PHASE_D31A_CBLOCK_STREAM_TOKENIZER.md`
+
+### 2026-05-03 - D21F A-block natural geometry search
+
+- D21F tested whether the A-block can be more than a copy-like byte codec:
+
+```text
+byte -> A16 -> byte exact
++
+ASCII neighbor / case / digit / punctuation geometry
++
+lower copy/duplicate penalty
+```
+
+- Main verdict:
+
+```text
+D21F_A_NATURAL_WEAK_PASS
+```
+
+- Key comparison:
+
+```text
+baseline16:
+  exact_byte_acc:        100%
+  byte_margin_min:       +4.0
+  ascii_class_geometry:   0.668637
+  identity_copy_penalty:  1.000000
+
+overlay_locked:
+  exact_byte_acc:        100%
+  byte_margin_min:       +2.0
+  ascii_class_geometry:   0.700994
+  identity_copy_penalty:  0.391667
+
+no_prefill:
+  exact_byte_acc:        100%
+  byte_margin_min:       +0.125
+  ascii_class_geometry:   0.802174
+  identity_copy_penalty:  0.000000
+```
+
+Interpretation:
+
+```text
+Natural A geometry exists, but not strong enough to replace deploy A_v1.
+AB codec remains locked to the robust redundant-copy A-block.
+D21F candidates are research leads for a future margin-aware D21G search.
+```
+
+- The A-block playground now lets viewers switch between:
+
+```text
+A_v1 redundant copy baseline
+D21F overlay_locked weak candidate
+D21F no_prefill geometry lead
+```
+
+Updated source doc:
+
+- `docs/research/PHASE_D21F_ABLOCK_NATURAL_GEOMETRY.md`
