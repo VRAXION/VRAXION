@@ -689,3 +689,54 @@ D25:      B64 addressed key-value memory
 Updated source doc:
 
 - `docs/research/PHASE_D25_BLATENT_MARKER_MEMORY.md`
+
+### 2026-05-03 - D26 AB utility benchmark
+
+- D26 tested whether the A/B stack is useful to a core, or only a roundtrip
+  codec.
+
+Compared surfaces:
+
+```text
+raw64        direct 8-byte signed bit lanes
+a128         D21/D22 A-window lanes
+b64          AB codec latent
+b64_composed D24 transform + D25 memory composed over B64
+```
+
+- D26 result:
+
+```text
+D26_AB_HAS_COMPONENT_UTILITY
+eval_windows: 65,536
+slot_counts: 2,4
+distractor_lengths: 1,2,4,8,16,32
+control_repeats: 2
+
+memory_transform:
+  raw64:        exact 100%, controls 0%, edges 192-320, state 256
+  a128:         exact 100%, controls 0%, edges 384-640, state 512
+  b64:          exact 100%, controls 0%, edges 192-320, state 256
+  b64_composed: exact 100%, controls 0%, edges 192-320, state 256
+```
+
+Interpretation:
+
+```text
+B64 does not beat RAW64 on pure bit-level tasks.
+B64 does beat A128 on width/state/edge count.
+B64_composed cleanly connects D24 transform + D25 memory.
+```
+
+This is interface/component utility, not yet semantic-compression proof. The
+next meaningful step is stronger B64 composition, for example:
+
+```text
+store X
+query reverse(X)
+query rule-select(copy/reverse/rotate)
+```
+
+Updated source doc:
+
+- `docs/research/PHASE_D26_AB_UTILITY_BENCHMARK.md`
