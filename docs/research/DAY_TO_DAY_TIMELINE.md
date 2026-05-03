@@ -801,3 +801,61 @@ reference/probe, not a learned router.
 Updated source doc:
 
 - `docs/research/PHASE_D27_BLATENT_ALU_ROUTER.md`
+
+### 2026-05-03 - D28 content-based C-router
+
+- D28 added the first content-based router over the frozen AB/B64 surface.
+
+```text
+bytes -> A/B codec -> B64 -> C-router -> route label
+```
+
+- Route labels:
+
+```text
+LANG       THE CAT, HELLO
+ALU        27*852, 1+888, 99-4
+MEM        STORE X, QUERY A
+TRANSFORM  REV ABC, ROT XYZ
+UNKNOWN    ambiguous/noisy/unsupported input
+```
+
+- Confirm result:
+
+```text
+D28_CONTENT_ROUTER_PASS
+
+train route accuracy:       100%
+heldout route accuracy:     100%
+adversarial route accuracy: 100%
+all primary classes:        100%
+
+shuffled/random controls:   ~19.4% to ~20.3%
+```
+
+- Integration smoke:
+
+```text
+1+888    -> ALU
+REV ABC  -> TRANSFORM
+STORE X  -> MEM
+THE CAT  -> LANG
+THE+CAT  -> UNKNOWN
+```
+
+Interpretation:
+
+```text
+A = byte codec
+B = B64 data bus
+C = content router/controller
+D = worker blocks: transform, memory, ALU
+```
+
+D28 proves route separability on the B64 bus. It is still router-only: it does
+not execute the selected worker. The next step is D29 route-selected execution
+over D24/D25/D27.
+
+Updated source doc:
+
+- `docs/research/PHASE_D28_CONTENT_ROUTER.md`
