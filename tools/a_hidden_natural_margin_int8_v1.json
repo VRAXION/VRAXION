@@ -1,0 +1,224 @@
+{
+  "version": "a_hidden_natural_margin_int8_v1",
+  "name": "A-HiddenNaturalMarginPolish-int8",
+  "storage": "int8_q6",
+  "scale": 64,
+  "value_formula": "weight = q / 64",
+  "visible_dim": 8,
+  "hidden_dim": 8,
+  "code_dim": 16,
+  "decoder": "transpose_chain",
+  "source": "output\\phase_a_hidden_natural_margin_polish_20260503\\confirm\\hidden_natural_margin_top.json",
+  "source_verdict": "A_HIDDEN_NATURAL_MARGIN_STRONG_PASS",
+  "source_metrics": {
+    "exact_byte_acc": 1.0,
+    "bit_acc": 1.0,
+    "byte_margin_min": 3.515625,
+    "ascii_class_geometry": 0.7698667749432967,
+    "effective_copy_penalty": 0.0
+  },
+  "hidden_in_q": [
+    [
+      0,
+      0,
+      -48
+    ],
+    [
+      1,
+      1,
+      64
+    ],
+    [
+      2,
+      2,
+      64
+    ],
+    [
+      3,
+      3,
+      -64
+    ],
+    [
+      4,
+      4,
+      64
+    ],
+    [
+      5,
+      5,
+      64
+    ],
+    [
+      6,
+      6,
+      64
+    ],
+    [
+      7,
+      7,
+      -64
+    ]
+  ],
+  "hidden_out_q": [
+    [
+      0,
+      3,
+      -64
+    ],
+    [
+      0,
+      7,
+      64
+    ],
+    [
+      1,
+      0,
+      -64
+    ],
+    [
+      1,
+      4,
+      64
+    ],
+    [
+      2,
+      3,
+      -64
+    ],
+    [
+      2,
+      4,
+      48
+    ],
+    [
+      2,
+      5,
+      16
+    ],
+    [
+      2,
+      7,
+      -32
+    ],
+    [
+      3,
+      4,
+      64
+    ],
+    [
+      3,
+      5,
+      -64
+    ],
+    [
+      4,
+      2,
+      64
+    ],
+    [
+      5,
+      2,
+      -64
+    ],
+    [
+      6,
+      0,
+      -64
+    ],
+    [
+      6,
+      4,
+      -64
+    ],
+    [
+      6,
+      6,
+      48
+    ],
+    [
+      7,
+      3,
+      -64
+    ],
+    [
+      7,
+      5,
+      -64
+    ],
+    [
+      8,
+      1,
+      64
+    ],
+    [
+      9,
+      3,
+      -48
+    ],
+    [
+      9,
+      7,
+      -64
+    ],
+    [
+      10,
+      6,
+      -64
+    ],
+    [
+      11,
+      4,
+      64
+    ],
+    [
+      11,
+      7,
+      64
+    ],
+    [
+      12,
+      1,
+      64
+    ],
+    [
+      13,
+      0,
+      48
+    ],
+    [
+      14,
+      3,
+      -64
+    ],
+    [
+      14,
+      4,
+      64
+    ],
+    [
+      14,
+      5,
+      64
+    ],
+    [
+      15,
+      0,
+      48
+    ],
+    [
+      15,
+      6,
+      64
+    ]
+  ],
+  "verification": {
+    "verdict": "A_HIDDEN_NATURAL_INT8_ARTIFACT_PASS",
+    "exact_byte_acc": 1.0,
+    "bit_acc": 1.0,
+    "byte_margin_min": 3.515625,
+    "hidden_collisions": 0,
+    "hidden_in_edge_count": 8,
+    "hidden_out_edge_count": 30,
+    "scale_power_for_logits": 4
+  }
+}

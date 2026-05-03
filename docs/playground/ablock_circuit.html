@@ -209,8 +209,8 @@
         <div class="stat"><span>Copy penalty</span><span id="copyPenalty">0.00</span></div>
         <div class="stat"><span>Hin edges</span><span id="hinEdges">8</span></div>
         <div class="stat"><span>Hout edges</span><span id="houtEdges">30</span></div>
-        <div class="stat"><span>Edge storage</span><span class="mono">int4 Q2</span></div>
-        <div class="stat"><span>Edge value</span><span class="mono">q / 4</span></div>
+        <div class="stat"><span>Edge storage</span><span class="mono">int8 Q6</span></div>
+        <div class="stat"><span>Edge value</span><span class="mono">q / 64</span></div>
       </div>
 
       <div class="card">
@@ -223,7 +223,7 @@
       <div class="tabs">
         <span class="tab active">Encode: bits -> H -> A16</span>
         <span class="tab active">Mirror: A16 -> H' -> output</span>
-        <span class="tab active">Weights: int4 Q2</span>
+        <span class="tab active">Weights: int8 Q6</span>
         <span class="tab">No separate decoder weights</span>
       </div>
       <div class="diagram-wrap">
@@ -235,7 +235,7 @@
         <div class="table-wrap">
           <table>
             <thead>
-              <tr><th>Layer</th><th>From</th><th>To</th><th>Stored int4</th><th>Current contribution</th></tr>
+              <tr><th>Layer</th><th>From</th><th>To</th><th>Stored int8</th><th>Current contribution</th></tr>
             </thead>
             <tbody id="edgeTable"></tbody>
           </table>
@@ -257,11 +257,11 @@ It is the exact transpose chain:
                     = Hin.T x Hout.T
 
 Weights are shown as fixed-point integers, not free floats:
-  int4 Q2 weight q = round(weight * 4)
-  runtime value    = q / 4
+  int8 Q6 weight q = round(weight * 64)
+  runtime value    = q / 64
 
-If we need finer resolution later:
-  int8 Q6 or Q7, same idea, more integer slots</div>
+Current native artifact:
+  tools/a_hidden_natural_margin_int8_v1.json</div>
       </div>
     </main>
   </div>
@@ -288,7 +288,7 @@ const copyPenalty = document.getElementById('copyPenalty');
 const hinEdges = document.getElementById('hinEdges');
 const houtEdges = document.getElementById('houtEdges');
 const mentalModel = document.getElementById('mentalModel');
-const EDGE_SCALE_Q = 4;
+const EDGE_SCALE_Q = 64;
 
 const CANDIDATES = {
   polished: {
@@ -391,7 +391,7 @@ function qLabel(weight) {
 }
 
 function qDetail(weight) {
-  return `${qLabel(weight)} /4=${fmt(weight)}`;
+  return `${qLabel(weight)} /64=${fmt(weight)}`;
 }
 
 function chipClass(value) {
@@ -470,8 +470,8 @@ Why this view matters:
   the right side is the exact transpose mirror.
 
 Weight format:
-  stored as int4 Q2 q values
-  displayed value = q / 4
+  stored as int8 Q6 q values
+  displayed value = q / 64
   this is not arbitrary float precision.`;
 
   renderDiagram(s);
