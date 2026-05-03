@@ -972,3 +972,66 @@ Compact multiplier or decimal output is D30B.
 Updated source doc:
 
 - `docs/research/PHASE_D30A_PRUNED_OP_LANE_ALU.md`
+
+### 2026-05-03 - D30B compact MUL lane
+
+- D30B replaced the D30A `ALU_MUL` table/reference lane with an exact compact
+  partial-product multiplier.
+
+```text
+D30B_COMPACT_MUL_PASS
+
+D30A MUL:
+  table_entries: 65,536
+  estimated units: 65,552
+
+D30B MUL:
+  table_entries: 0
+  estimated compact units: 256
+  compression_vs_d30a_table: 256.06x
+```
+
+- Confirm result:
+
+```text
+eval_pairs: 65,536
+compact_partial_product_mul exact_acc: 100%
+byte_margin_min: +2.0
+partial_product_count: 36
+column_count: 8
+max_column_width: 8
+```
+
+- Integration examples:
+
+```text
+7*8    -> ALU_MUL -> 56
+27*852 -> ALU_MUL -> 220
+```
+
+Controls:
+
+```text
+carryless_xor_mul_control:
+  exact_acc: 28.86%, margin -12.0
+
+shifted_partial_shuffle_control:
+  exact_acc: 1.95%, margin -16.0
+
+random_output_controls:
+  exact_acc: ~0.36% to ~0.46%
+```
+
+Interpretation:
+
+```text
+ALU_MUL no longer needs a 65,536-entry table.
+```
+
+The carryless control has natural algebraic overlap with normal multiplication,
+so it is not a chance-level control; it still fails because it is far from exact
+and has negative margin.
+
+Updated source doc:
+
+- `docs/research/PHASE_D30B_COMPACT_MUL_LANE.md`
