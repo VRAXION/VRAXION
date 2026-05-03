@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>A-Block Circuit Playground</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    min-height: 100vh;
+    background:
+      radial-gradient(circle at 18% 12%, rgba(56, 189, 248, 0.15), transparent 28%),
+      radial-gradient(circle at 83% 72%, rgba(74, 222, 128, 0.12), transparent 30%),
+      #070b14;
+    color: #e2e8f0;
+    font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  }
+  .mono { font-family: "JetBrains Mono", "Cascadia Code", Consolas, monospace; }
+  .wrap { max-width: 1360px; margin: 0 auto; padding: 22px; }
+  header {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 16px;
+    align-items: end;
+    margin-bottom: 18px;
+  }
+  h1 {
+    font-size: clamp(24px, 3.2vw, 42px);
+    line-height: 1;
+    letter-spacing: -0.04em;
+    color: #f8fafc;
+  }
+  .subtitle { color: #94a3b8; margin-top: 8px; max-width: 860px; }
+  .badge-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+  .badge {
+    border: 1px solid rgba(148, 163, 184, 0.22);
+    background: rgba(15, 23, 42, 0.78);
+    border-radius: 999px;
+    padding: 6px 10px;
+    color: #cbd5e1;
+    font-size: 12px;
+    font-weight: 700;
+  }
+  .badge.good { color: #86efac; border-color: rgba(34, 197, 94, 0.35); }
+  .badge.blue { color: #7dd3fc; border-color: rgba(56, 189, 248, 0.35); }
+  .panel {
+    background: rgba(15, 23, 42, 0.78);
+    border: 1px solid rgba(148, 163, 184, 0.18);
+    border-radius: 18px;
+    box-shadow: 0 22px 80px rgba(0, 0, 0, 0.28);
+  }
+  .grid {
+    display: grid;
+    grid-template-columns: minmax(280px, 360px) 1fr;
+    gap: 16px;
+  }
+  .side { padding: 16px; display: flex; flex-direction: column; gap: 14px; }
+  .card { background: rgba(2, 6, 23, 0.56); border: 1px solid rgba(71, 85, 105, 0.38); border-radius: 14px; padding: 14px; }
+  h2 { color: #93c5fd; font-size: 12px; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 10px; }
+  label { display: block; color: #cbd5e1; font-size: 13px; margin-bottom: 6px; }
+  input[type="range"] { width: 100%; accent-color: #38bdf8; }
+  input[type="number"], input[type="text"] {
+    width: 100%;
+    background: #020617;
+    border: 1px solid #334155;
+    color: #e2e8f0;
+    border-radius: 10px;
+    padding: 10px 12px;
+    font-size: 15px;
+  }
+  .quick { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-top: 8px; }
+  button {
+    border: 1px solid rgba(56, 189, 248, 0.35);
+    background: rgba(14, 165, 233, 0.12);
+    color: #bae6fd;
+    border-radius: 9px;
+    padding: 8px 6px;
+    font-weight: 800;
+    cursor: pointer;
+  }
+  button:hover { background: rgba(14, 165, 233, 0.22); }
+  .stat { display: flex; justify-content: space-between; gap: 12px; border-bottom: 1px solid rgba(71, 85, 105, 0.36); padding: 7px 0; font-size: 13px; }
+  .stat:last-child { border-bottom: 0; }
+  .stat span:first-child { color: #94a3b8; }
+  .stat span:last-child { color: #f8fafc; font-weight: 800; }
+  .bit-row, .lane-row { display: flex; flex-wrap: wrap; gap: 5px; }
+  .chip {
+    min-width: 32px;
+    border-radius: 8px;
+    border: 1px solid #334155;
+    background: #0f172a;
+    padding: 5px 6px;
+    text-align: center;
+    font-size: 11px;
+    font-weight: 800;
+  }
+  .chip.on { background: #052e16; border-color: #22c55e; color: #86efac; }
+  .chip.off { background: #111827; border-color: #475569; color: #94a3b8; }
+  .main { padding: 16px; min-height: 720px; }
+  .diagram-wrap { position: relative; min-height: 650px; overflow: auto; }
+  svg { width: 100%; min-width: 760px; height: 640px; display: block; }
+  svg text { font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+  .table-wrap { overflow: auto; max-height: 340px; }
+  table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  th, td { border-bottom: 1px solid rgba(71, 85, 105, 0.36); padding: 7px 8px; text-align: left; }
+  th { color: #93c5fd; position: sticky; top: 0; background: #020617; }
+  td { color: #cbd5e1; }
+  .note { color: #94a3b8; font-size: 12px; line-height: 1.45; }
+  .ascii {
+    white-space: pre;
+    color: #cbd5e1;
+    background: rgba(2, 6, 23, 0.72);
+    border: 1px solid rgba(71, 85, 105, 0.44);
+    border-radius: 12px;
+    padding: 12px;
+    overflow: auto;
+    font-size: 12px;
+    line-height: 1.32;
+  }
+  @media (max-width: 920px) {
+    header { grid-template-columns: 1fr; }
+    .grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>A-Block Circuit Playground</h1>
+      <p class="subtitle">A lockolt AB codec A-block kapcsolási rajza: egy byte 8 bitje két 8-lane-es A-felületre másolódik. Minden kapcsolat determinisztikus, sparse, értéke <span class="mono">+1</span>.</p>
+      <div class="badge-row">
+        <span class="badge good">AB codec v1</span>
+        <span class="badge blue">1 byte → A16</span>
+        <span class="badge">16 edges encode</span>
+        <span class="badge">8 canonical decode edges</span>
+      </div>
+    </div>
+    <div class="panel card">
+      <div class="stat"><span>Formula</span><span class="mono">A16 = bits + bits</span></div>
+      <div class="stat"><span>Decode</span><span class="mono">byte = sign(A0..A7)</span></div>
+    </div>
+  </header>
+
+  <div class="grid">
+    <aside class="panel side">
+      <div class="card">
+        <h2>Input byte</h2>
+        <label for="byteInput">Decimal byte: <span id="byteLabel" class="mono">65</span></label>
+        <input id="byteSlider" type="range" min="0" max="255" step="1" value="65">
+        <input id="byteInput" type="number" min="0" max="255" step="1" value="65" style="margin-top:8px">
+        <label for="textInput" style="margin-top:10px">Text char</label>
+        <input id="textInput" type="text" maxlength="1" value="A">
+        <div class="quick">
+          <button data-byte="0">NUL</button>
+          <button data-byte="32">SP</button>
+          <button data-byte="65">A</button>
+          <button data-byte="255">255</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Input bits little-endian</h2>
+        <div id="bits" class="bit-row"></div>
+      </div>
+
+      <div class="card">
+        <h2>A16 lanes</h2>
+        <div id="lanes" class="lane-row"></div>
+        <p class="note" style="margin-top:10px">A0..A7 = kanonikus visible lanes. A8..A15 = redundáns mirror copy. A B-block jelenlegi deploy útja A0..A7-et választja ki B64-be.</p>
+      </div>
+
+      <div class="card">
+        <h2>Stats</h2>
+        <div class="stat"><span>Encode edges</span><span>16 × +1</span></div>
+        <div class="stat"><span>Canonical decode edges</span><span>8 × +1</span></div>
+        <div class="stat"><span>Reciprocity error</span><span>0</span></div>
+        <div class="stat"><span>Roundtrip</span><span id="roundtrip">PASS</span></div>
+        <div class="stat"><span>Decoded byte</span><span id="decodedByte" class="mono">65</span></div>
+      </div>
+
+      <div class="card">
+        <h2>ASCII mental model</h2>
+        <div class="ascii">bit_i
+  ├─(+1)→ A_i      visible
+  └─(+1)→ A_i+8    mirror
+
+decode:
+A_i ─(+1)→ output bit_i
+for i = 0..7</div>
+      </div>
+    </aside>
+
+    <main class="panel main">
+      <div class="diagram-wrap">
+        <svg id="diagram" viewBox="0 0 1040 640" aria-label="A-block circuit diagram"></svg>
+      </div>
+
+      <div class="card" style="margin-top:16px">
+        <h2>Edge table</h2>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>Edge</th><th>From</th><th>To</th><th>Weight</th><th>Role</th><th>Current value</th></tr>
+            </thead>
+            <tbody id="edgeTable"></tbody>
+          </table>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<script>
+const BYTE_BITS = 8;
+const byteSlider = document.getElementById('byteSlider');
+const byteInput = document.getElementById('byteInput');
+const textInput = document.getElementById('textInput');
+const byteLabel = document.getElementById('byteLabel');
+const bitsEl = document.getElementById('bits');
+const lanesEl = document.getElementById('lanes');
+const edgeTable = document.getElementById('edgeTable');
+const decodedByte = document.getElementById('decodedByte');
+const roundtrip = document.getElementById('roundtrip');
+const diagram = document.getElementById('diagram');
+
+function clampByte(v) {
+  const n = Number.parseInt(v, 10);
+  if (Number.isNaN(n)) return 0;
+  return Math.max(0, Math.min(255, n));
+}
+
+function byteToBits(byte) {
+  return Array.from({ length: BYTE_BITS }, (_, i) => ((byte >> i) & 1) ? 1 : -1);
+}
+
+function bitsToByte(bits) {
+  return bits.reduce((acc, bit, i) => bit >= 0 ? acc | (1 << i) : acc, 0);
+}
+
+function printable(byte) {
+  if (byte === 32) return 'space';
+  if (byte < 32 || byte === 127) return 'control';
+  return String.fromCharCode(byte);
+}
+
+function setByte(byte) {
+  byte = clampByte(byte);
+  byteSlider.value = String(byte);
+  byteInput.value = String(byte);
+  if (byte >= 32 && byte < 127) textInput.value = String.fromCharCode(byte);
+  update();
+}
+
+function updateFromText() {
+  const ch = textInput.value || ' ';
+  setByte(ch.charCodeAt(0) & 0xff);
+}
+
+function update() {
+  const byte = clampByte(byteInput.value);
+  byteSlider.value = String(byte);
+  byteInput.value = String(byte);
+  byteLabel.textContent = `${byte} (${printable(byte)})`;
+
+  const bits = byteToBits(byte);
+  const a16 = bits.concat(bits);
+  const decoded = bitsToByte(a16.slice(0, 8));
+  decodedByte.textContent = String(decoded);
+  roundtrip.textContent = decoded === byte ? 'PASS' : 'FAIL';
+  roundtrip.style.color = decoded === byte ? '#86efac' : '#fca5a5';
+
+  bitsEl.innerHTML = bits.map((v, i) =>
+    `<div class="chip ${v > 0 ? 'on' : 'off'}"><div>b${i}</div><div class="mono">${v > 0 ? '+1' : '-1'}</div></div>`
+  ).join('');
+  lanesEl.innerHTML = a16.map((v, i) =>
+    `<div class="chip ${v > 0 ? 'on' : 'off'}"><div>A${i}</div><div class="mono">${v > 0 ? '+1' : '-1'}</div></div>`
+  ).join('');
+  renderDiagram(bits, a16);
+  renderEdges(bits, a16);
+}
+
+function node(cx, cy, label, value, color, sub) {
+  const on = value >= 0;
+  const fill = on ? color.fillOn : color.fillOff;
+  const stroke = on ? color.strokeOn : color.strokeOff;
+  const text = on ? color.textOn : color.textOff;
+  return `
+    <g>
+      <circle cx="${cx}" cy="${cy}" r="24" fill="${fill}" stroke="${stroke}" stroke-width="2"/>
+      <text x="${cx}" y="${cy - 2}" text-anchor="middle" fill="${text}" font-size="13" font-weight="900">${label}</text>
+      <text x="${cx}" y="${cy + 14}" text-anchor="middle" fill="${text}" font-size="10" class="mono">${value >= 0 ? '+1' : '-1'}</text>
+      ${sub ? `<text x="${cx}" y="${cy + 40}" text-anchor="middle" fill="#64748b" font-size="10">${sub}</text>` : ''}
+    </g>
+  `;
+}
+
+function line(x1, y1, x2, y2, value, klass, label) {
+  const on = value >= 0;
+  const stroke = klass === 'decode' ? '#fbbf24' : klass === 'mirror' ? '#4ade80' : '#38bdf8';
+  const opacity = on ? 0.78 : 0.24;
+  const midX = (x1 + x2) / 2;
+  const midY = (y1 + y2) / 2;
+  return `
+    <line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${stroke}" stroke-width="${on ? 2 : 1}" opacity="${opacity}"/>
+    <text x="${midX}" y="${midY - 4}" fill="${stroke}" font-size="10" class="mono" text-anchor="middle" opacity="${opacity}">${label}</text>
+  `;
+}
+
+function renderDiagram(bits, a16) {
+  const inputX = 130;
+  const visibleX = 470;
+  const mirrorX = 690;
+  const outputX = 930;
+  const y0 = 80;
+  const gap = 62;
+  const colors = {
+    bit: { fillOn: '#052e16', fillOff: '#111827', strokeOn: '#22c55e', strokeOff: '#475569', textOn: '#86efac', textOff: '#94a3b8' },
+    a: { fillOn: '#082f49', fillOff: '#111827', strokeOn: '#38bdf8', strokeOff: '#475569', textOn: '#7dd3fc', textOff: '#94a3b8' },
+    mirror: { fillOn: '#14320d', fillOff: '#111827', strokeOn: '#84cc16', strokeOff: '#475569', textOn: '#bef264', textOff: '#94a3b8' },
+    out: { fillOn: '#451a03', fillOff: '#111827', strokeOn: '#f59e0b', strokeOff: '#475569', textOn: '#fcd34d', textOff: '#94a3b8' }
+  };
+
+  let html = `
+    <defs>
+      <linearGradient id="panelGrad" x1="0" x2="1" y1="0" y2="1">
+        <stop offset="0%" stop-color="#0f172a"/>
+        <stop offset="100%" stop-color="#020617"/>
+      </linearGradient>
+    </defs>
+    <rect x="20" y="20" width="1000" height="600" rx="24" fill="url(#panelGrad)" stroke="#1e293b"/>
+    <text x="${inputX}" y="45" fill="#86efac" font-size="16" font-weight="900" text-anchor="middle">Input bits</text>
+    <text x="${visibleX}" y="45" fill="#7dd3fc" font-size="16" font-weight="900" text-anchor="middle">A0..A7 visible</text>
+    <text x="${mirrorX}" y="45" fill="#bef264" font-size="16" font-weight="900" text-anchor="middle">A8..A15 mirror</text>
+    <text x="${outputX}" y="45" fill="#fcd34d" font-size="16" font-weight="900" text-anchor="middle">Decoded bits</text>
+  `;
+
+  for (let i = 0; i < 8; i++) {
+    const y = y0 + i * gap;
+    html += line(inputX + 24, y, visibleX - 24, y, bits[i], 'visible', '+1');
+    html += line(inputX + 24, y, mirrorX - 24, y, bits[i], 'mirror', '+1');
+    html += line(visibleX + 24, y, outputX - 24, y, bits[i], 'decode', '+1');
+  }
+
+  for (let i = 0; i < 8; i++) {
+    const y = y0 + i * gap;
+    html += node(inputX, y, `b${i}`, bits[i], colors.bit, `2^${i}`);
+    html += node(visibleX, y, `A${i}`, a16[i], colors.a, 'canonical');
+    html += node(mirrorX, y, `A${i + 8}`, a16[i + 8], colors.mirror, 'copy');
+    html += node(outputX, y, `o${i}`, a16[i], colors.out, 'read');
+  }
+
+  html += `
+    <text x="520" y="590" text-anchor="middle" fill="#94a3b8" font-size="13">
+      Current deploy rule: encode = duplicate signed bits; decode = sign(A0..A7). Mirror lanes are retained as redundant/debug surface.
+    </text>
+  `;
+  diagram.innerHTML = html;
+}
+
+function renderEdges(bits, a16) {
+  const rows = [];
+  for (let i = 0; i < 8; i++) {
+    rows.push({ edge: `E${rows.length}`, from: `bit_${i}`, to: `A_${i}`, weight: '+1', role: 'visible encode', value: bits[i] });
+    rows.push({ edge: `E${rows.length}`, from: `bit_${i}`, to: `A_${i + 8}`, weight: '+1', role: 'mirror encode', value: bits[i] });
+    rows.push({ edge: `D${i}`, from: `A_${i}`, to: `out_bit_${i}`, weight: '+1', role: 'canonical decode', value: a16[i] });
+  }
+  edgeTable.innerHTML = rows.map(row => `
+    <tr>
+      <td class="mono">${row.edge}</td>
+      <td class="mono">${row.from}</td>
+      <td class="mono">${row.to}</td>
+      <td class="mono">${row.weight}</td>
+      <td>${row.role}</td>
+      <td class="mono">${row.value > 0 ? '+1' : '-1'}</td>
+    </tr>
+  `).join('');
+}
+
+byteSlider.addEventListener('input', () => setByte(byteSlider.value));
+byteInput.addEventListener('input', () => setByte(byteInput.value));
+textInput.addEventListener('input', updateFromText);
+document.querySelectorAll('button[data-byte]').forEach(btn => btn.addEventListener('click', () => setByte(btn.dataset.byte)));
+update();
+</script>
+</body>
+</html>
