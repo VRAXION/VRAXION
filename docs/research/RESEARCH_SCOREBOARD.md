@@ -22,7 +22,8 @@ Current default:
 
 ```text
 A-StableCopy16 is still the shipped A-block.
-A-v2-H12-GeometryPolish is the A_v2 strong candidate, not yet the shipped A-block.
+A-v2-H12-GeometryPolish is the A_v2 strong candidate.
+AB-v2-H12-BitBridge is the compatible AB candidate, not yet the shipped AB codec.
 ```
 
 ## A-Block Candidates
@@ -33,7 +34,7 @@ A-v2-H12-GeometryPolish is the A_v2 strong candidate, not yet the shipped A-bloc
 | `A-HiddenBitGain16` | D21I | Hidden-only A, mostly one-bit gain | 100% | +4.0 | 0.731 | 26 hidden | Useful hidden lead, still copy-like |
 | `A-HiddenNatural16` | D21J | Hidden-only non-copy natural A | 100% | +2.5 | 0.777 | 37 hidden / 29 effective | superseded by polished candidate |
 | `A-HiddenNaturalMarginPolish` | A_v2 polish | H8 hidden-only non-copy A with stronger margin | 100% | +3.516 | 0.770 | 38 hidden / 30 effective | superseded by H12 polish |
-| `A-v2-H12-GeometryPolish` | A_v2 H12 polish | H12 native int8 non-copy A with stable margin and strong geometry | 100% | +4.0 | 0.829 | 67 structural / 46 effective | **A_v2 strong candidate** |
+| `A-v2-H12-GeometryPolish` | A_v2 H12 polish | H12 native int8 non-copy A with stable margin and strong geometry | 100% | +4.0 | 0.829 | 67 structural / 46 effective | **A_v2 strong candidate; AB compatibility pass** |
 | `A-NaturalSparse16` | D21G | Direct natural sparse A | 100% | +2.5 | 0.764 | 28 effective | Research-only baseline for A_v2 |
 | `Legacy-C19-H24` | old L0 byte unit | Extra-hidden C19 byte codec | 100% | +10.537 | 0.905 | 416 | Strong reference, not current reciprocal A |
 | `Binary-C19-H16` | old binary C19 | Smaller C19 byte codec | 100% | +0.002 | 0.905 | 384 | Reference only |
@@ -45,7 +46,7 @@ Use now:
   A-StableCopy16
 
 Improve next:
-  A-v2 AB compatibility check using A-v2-H12-GeometryPolish
+  AB-v2 worker regression using AB-v2-H12-BitBridge
 ```
 
 ## A-Space Utilization
@@ -75,7 +76,7 @@ Does A16 only roundtrip bytes, or do related bytes land close together?
 
 | Name | Exact | Margin | Geometry | Effective Rank | Copy Penalty | Audit Score | Interpretation |
 |---|---:|---:|---:|---:|---:|---:|---|
-| `A-v2-H12-GeometryPolish` | 100% | +4.0 | 0.829 | 7.0 | 0.00 | TBD | best current A_v2 candidate; AB compatibility not tested yet |
+| `A-v2-H12-GeometryPolish` | 100% | +4.0 | 0.829 | 7.0 | 0.00 | TBD | best current A_v2 candidate; AB compatibility pass |
 | `A-HiddenNaturalMarginPolish` | 100% | +3.516 | 0.770 | 7.8 | 0.00 | 29.15 | best natural byte geometry after polish |
 | `A-NaturalSparse16` | 100% | +2.5 | 0.764 | 7.8 | 0.00 | 28.85 | strong direct natural reference |
 | `A-HiddenBitGain16` | 100% | +4.0 | 0.731 | 7.9 | 0.94 | 27.17 | robust but still copy-like |
@@ -86,9 +87,8 @@ Decision:
 ```text
 A-v2-H12-GeometryPolish now wins the practical A_v2 gate: copy penalty 0,
 margin +4.0, geometry 0.829.
-A-StableCopy16 remains shipped/default because AB compatibility has not yet
-been re-run with the H12 A-v2 candidate. Next A work is AB compatibility
-testing before replacement.
+A-StableCopy16 remains shipped/default until downstream worker regression is
+re-run with the H12 A-v2 AB bridge.
 ```
 
 ## AB / B Surface
@@ -96,6 +96,7 @@ testing before replacement.
 | Name | Old Alias | What It Proves | Main Result | Status |
 |---|---:|---|---|---|
 | `AB-WindowCodec64` | AB V1 / D23 | 8-byte window <-> B64 | 65,536 windows exact, margin +2.0, B collisions 0 | **Stable interface** |
+| `AB-v2-H12-BitBridge` | A-v2 AB gate | A-v2-H12 A16 <-> canonical B64 byte-bit bus | 65,536 windows exact, B64 semantic 100%, random control fails | **Compatibility pass; not default yet** |
 | `B-LatentTransform` | D24 | B64 can do exact transforms | copy/reverse/rotate/bit_not exact, random control 0% | **Worker-ready** |
 | `B-SlotMemory` | D25 | B64 addressed memory | 2-slot and 4-slot exact, wrong-slot 0% | **Worker-ready** |
 | `AB-UtilityBenchmark` | D26 | Does AB/B help vs RAW/A? | `AB_HAS_COMPONENT_UTILITY` | Useful as composable interface, not magic compression |
@@ -167,7 +168,8 @@ Best A_v2 research lead:
   A-v2-H12-GeometryPolish
 
 Best B bus:
-  AB-WindowCodec64 / B64
+  AB-WindowCodec64 / B64 current default
+  AB-v2-H12-BitBridge current A_v2-compatible candidate
 
 Best transform worker:
   B-LatentTransform
@@ -188,8 +190,9 @@ Best ALU MUL:
 ## Next Sensible Improvements
 
 ```text
-1. A-v2 AB compatibility check
-   Goal: rebuild/test AB-WindowCodec64 using A-HiddenNaturalMarginPolish.
+1. AB-v2 worker regression
+   Goal: prove B-LatentTransform, B-SlotMemory, ALU, C-router, and Switchboard
+   still pass when input/output A surface is A-v2-H12.
 
 2. C-StreamTokenizer -> Switchboard integration
    Goal: text stream creates worker calls, not only single 8-byte examples.

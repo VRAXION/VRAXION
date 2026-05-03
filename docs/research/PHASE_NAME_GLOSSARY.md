@@ -16,6 +16,7 @@ aliases.
 | `A-SpaceUtilization` | D21K | Diagnostic report for lane energy, PCA, rank, and class separation. |
 | `A-GeometryAuditRevival` | old byte-embed-dim / geometry_sweep | Revived near/far byte embedding audit: cosine/distance matrix, clusters, nearest neighbors. |
 | `AB-WindowCodec64` | D23 / AB V1 | 8 bytes -> A128 -> B64 -> A128 -> 8 bytes. |
+| `AB-v2-H12-BitBridge` | A-v2 AB gate | A-v2-H12 A16 <-> canonical byte-bit B64 using a reciprocal pseudoinverse bridge. |
 | `B-LatentTransform` | D24 | Exact transforms over B64: copy, reverse, rotate, bit_not. |
 | `B-SlotMemory` | D25 | Addressed B64 key-value memory. |
 | `AB-UtilityBenchmark` | D26 | RAW/A/B surface utility comparison. |

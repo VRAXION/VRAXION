@@ -81,18 +81,19 @@ new A-v2-H12-GeometryPolish:
   safe margin + strong natural geometry
 ```
 
-It is now the best A-v2 candidate. It is not automatically shipped into the
-AB codec yet.
+It is now the best A-v2 candidate.
+
+Follow-up result: `A_V2_AB_COMPATIBILITY_PASS` showed it can sit under an
+AB-style reciprocal B64 bridge while keeping canonical byte-bit B64 semantics.
 
 ## Next Gate
 
-Run an AB compatibility gate:
+AB compatibility is now done. Next gate is downstream worker regression:
 
 ```text
-Can AB-WindowCodec64 still reconstruct 8-byte windows exactly
-when A-StableCopy16 is replaced by A-v2-H12-GeometryPolish?
+B-LatentTransform
+B-SlotMemory
+ALU-CompactMul / ALU-OpLaneSandwich
+C-StreamTokenizer / C-ContentRouter
+SwitchboardExecution
 ```
-
-If yes, the A-v2 candidate can become the new AB research surface. If no,
-`A-StableCopy16` remains the shipped/default A-block while A-v2 stays a
-standalone byte-geometry candidate.

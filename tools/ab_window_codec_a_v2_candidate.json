@@ -1,0 +1,582 @@
+{
+  "version": "ab_window_codec_a_v2_candidate_v1",
+  "name": "AB-v2-H12-bit-bridge-candidate",
+  "source_verdict": "A_V2_AB_COMPATIBILITY_PASS",
+  "a_artifact": "tools\\a_v2_hidden_natural_int8_candidate.json",
+  "a_name": "A-v2-H12-int8-geometry-polish-top-01",
+  "a_source_metrics": {
+    "exact_byte_acc": 1.0,
+    "bit_acc": 1.0,
+    "byte_margin_min": 4.0,
+    "ascii_class_geometry": 0.8285187664748236,
+    "effective_copy_penalty": 0.0
+  },
+  "window_bytes": 8,
+  "byte_bits": 8,
+  "a_dims_per_byte": 16,
+  "b_dims_per_byte": 8,
+  "a_window_dims": 128,
+  "b_window_dims": 64,
+  "a_byte_encoder": "tools/a_v2_hidden_natural_int8_candidate.json",
+  "b_bridge_family": "pinv_bit_bridge",
+  "b_encoder": "pseudoinverse(A_encoder) recovers byte-bit B8 from A16",
+  "b_decoder": "transpose_of_b_encoder",
+  "b64_semantics": "little_endian_signed_byte_bits",
+  "b_encoder_scale_for_q": 4096,
+  "b_encoder_entries_per_byte": [
+    {
+      "row": 0,
+      "col": 0,
+      "value": -0.020947567800889594,
+      "q": -86
+    },
+    {
+      "row": 0,
+      "col": 1,
+      "value": -0.35441051613782426,
+      "q": -1452
+    },
+    {
+      "row": 0,
+      "col": 2,
+      "value": 0.0016788648389703393,
+      "q": 7
+    },
+    {
+      "row": 0,
+      "col": 3,
+      "value": -0.1159864291671467,
+      "q": -475
+    },
+    {
+      "row": 0,
+      "col": 6,
+      "value": -0.4602381712658969,
+      "q": -1885
+    },
+    {
+      "row": 0,
+      "col": 7,
+      "value": 0.0019305089130000415,
+      "q": 8
+    },
+    {
+      "row": 0,
+      "col": 9,
+      "value": 0.0015226626565897174,
+      "q": 6
+    },
+    {
+      "row": 0,
+      "col": 10,
+      "value": 0.012032373987145985,
+      "q": 49
+    },
+    {
+      "row": 0,
+      "col": 11,
+      "value": 0.022470230457479298,
+      "q": 92
+    },
+    {
+      "row": 0,
+      "col": 13,
+      "value": -0.05969012184535353,
+      "q": -244
+    },
+    {
+      "row": 0,
+      "col": 14,
+      "value": 0.0015270858513075935,
+      "q": 6
+    },
+    {
+      "row": 0,
+      "col": 15,
+      "value": 0.34271269879067545,
+      "q": 1404
+    },
+    {
+      "row": 1,
+      "col": 8,
+      "value": -0.4999999999999998,
+      "q": -2048
+    },
+    {
+      "row": 1,
+      "col": 12,
+      "value": -0.4999999999999998,
+      "q": -2048
+    },
+    {
+      "row": 2,
+      "col": 4,
+      "value": -0.5291828793774318,
+      "q": -2168
+    },
+    {
+      "row": 2,
+      "col": 5,
+      "value": -0.4669260700389104,
+      "q": -1913
+    },
+    {
+      "row": 3,
+      "col": 0,
+      "value": 0.10906148616475533,
+      "q": 447
+    },
+    {
+      "row": 3,
+      "col": 1,
+      "value": 0.07966460564470129,
+      "q": 326
+    },
+    {
+      "row": 3,
+      "col": 2,
+      "value": 0.24727915982291032,
+      "q": 1013
+    },
+    {
+      "row": 3,
+      "col": 3,
+      "value": 0.051952801893451105,
+      "q": 213
+    },
+    {
+      "row": 3,
+      "col": 6,
+      "value": -0.05828839161568966,
+      "q": -239
+    },
+    {
+      "row": 3,
+      "col": 7,
+      "value": 0.19409914712688234,
+      "q": 795
+    },
+    {
+      "row": 3,
+      "col": 9,
+      "value": 0.19990020688332244,
+      "q": 819
+    },
+    {
+      "row": 3,
+      "col": 10,
+      "value": -0.024439102734112487,
+      "q": -100
+    },
+    {
+      "row": 3,
+      "col": 11,
+      "value": 0.09083872071856722,
+      "q": 372
+    },
+    {
+      "row": 3,
+      "col": 13,
+      "value": 0.01034995865821913,
+      "q": 42
+    },
+    {
+      "row": 3,
+      "col": 14,
+      "value": 0.2870639952166746,
+      "q": 1176
+    },
+    {
+      "row": 3,
+      "col": 15,
+      "value": 0.025771291214336065,
+      "q": 106
+    },
+    {
+      "row": 4,
+      "col": 0,
+      "value": -0.17624325388514891,
+      "q": -722
+    },
+    {
+      "row": 4,
+      "col": 1,
+      "value": 0.1424156519294547,
+      "q": 583
+    },
+    {
+      "row": 4,
+      "col": 2,
+      "value": 0.11316267329726218,
+      "q": 464
+    },
+    {
+      "row": 4,
+      "col": 3,
+      "value": 0.13722766258573568,
+      "q": 562
+    },
+    {
+      "row": 4,
+      "col": 6,
+      "value": -0.09822561071186789,
+      "q": -402
+    },
+    {
+      "row": 4,
+      "col": 7,
+      "value": -0.027021682619814448,
+      "q": -111
+    },
+    {
+      "row": 4,
+      "col": 9,
+      "value": -0.016279757939588267,
+      "q": -67
+    },
+    {
+      "row": 4,
+      "col": 10,
+      "value": -0.04528587418856014,
+      "q": -185
+    },
+    {
+      "row": 4,
+      "col": 11,
+      "value": 0.15996349594556075,
+      "q": 655
+    },
+    {
+      "row": 4,
+      "col": 13,
+      "value": 0.019319326127656623,
+      "q": 79
+    },
+    {
+      "row": 4,
+      "col": 14,
+      "value": 0.13768081313266373,
+      "q": 564
+    },
+    {
+      "row": 4,
+      "col": 15,
+      "value": 0.04553679166855789,
+      "q": 187
+    },
+    {
+      "row": 5,
+      "col": 0,
+      "value": 0.011661378209855607,
+      "q": 48
+    },
+    {
+      "row": 5,
+      "col": 1,
+      "value": -0.017140740990094466,
+      "q": -70
+    },
+    {
+      "row": 5,
+      "col": 2,
+      "value": -0.018668603896512512,
+      "q": -76
+    },
+    {
+      "row": 5,
+      "col": 3,
+      "value": -0.13243340475408516,
+      "q": -542
+    },
+    {
+      "row": 5,
+      "col": 6,
+      "value": 0.020076001044554412,
+      "q": 82
+    },
+    {
+      "row": 5,
+      "col": 7,
+      "value": -0.07373431055579045,
+      "q": -302
+    },
+    {
+      "row": 5,
+      "col": 9,
+      "value": 0.006641575717812877,
+      "q": 27
+    },
+    {
+      "row": 5,
+      "col": 10,
+      "value": 0.0157139355177071,
+      "q": 64
+    },
+    {
+      "row": 5,
+      "col": 11,
+      "value": -0.005019802492042766,
+      "q": -21
+    },
+    {
+      "row": 5,
+      "col": 13,
+      "value": 0.11299285956098296,
+      "q": 463
+    },
+    {
+      "row": 5,
+      "col": 14,
+      "value": 0.05521220944330969,
+      "q": 226
+    },
+    {
+      "row": 5,
+      "col": 15,
+      "value": -0.015897240859969252,
+      "q": -65
+    },
+    {
+      "row": 6,
+      "col": 0,
+      "value": -0.005658668234856913,
+      "q": -23
+    },
+    {
+      "row": 6,
+      "col": 1,
+      "value": 0.01227846382527047,
+      "q": 50
+    },
+    {
+      "row": 6,
+      "col": 2,
+      "value": 0.0007937141620865732,
+      "q": 3
+    },
+    {
+      "row": 6,
+      "col": 3,
+      "value": -0.054957487360742685,
+      "q": -225
+    },
+    {
+      "row": 6,
+      "col": 6,
+      "value": 0.30151200224248237,
+      "q": 1235
+    },
+    {
+      "row": 6,
+      "col": 7,
+      "value": -0.010313846222501052,
+      "q": -42
+    },
+    {
+      "row": 6,
+      "col": 9,
+      "value": -0.0011551916188974228,
+      "q": -5
+    },
+    {
+      "row": 6,
+      "col": 10,
+      "value": -0.38807603088087655,
+      "q": -1590
+    },
+    {
+      "row": 6,
+      "col": 11,
+      "value": 0.004503476615959545,
+      "q": 18
+    },
+    {
+      "row": 6,
+      "col": 13,
+      "value": 0.014547668093006259,
+      "q": 60
+    },
+    {
+      "row": 6,
+      "col": 14,
+      "value": 0.009563520264336779,
+      "q": 39
+    },
+    {
+      "row": 6,
+      "col": 15,
+      "value": 0.3789202815171691,
+      "q": 1552
+    },
+    {
+      "row": 7,
+      "col": 0,
+      "value": -0.32453219214522055,
+      "q": -1329
+    },
+    {
+      "row": 7,
+      "col": 1,
+      "value": -0.008076578120822502,
+      "q": -33
+    },
+    {
+      "row": 7,
+      "col": 2,
+      "value": -0.007048686874450068,
+      "q": -29
+    },
+    {
+      "row": 7,
+      "col": 3,
+      "value": -0.02227199486866634,
+      "q": -91
+    },
+    {
+      "row": 7,
+      "col": 6,
+      "value": 0.006602233910230444,
+      "q": 27
+    },
+    {
+      "row": 7,
+      "col": 7,
+      "value": -0.008090885376981539,
+      "q": -33
+    },
+    {
+      "row": 7,
+      "col": 9,
+      "value": 0.334841853545543,
+      "q": 1372
+    },
+    {
+      "row": 7,
+      "col": 10,
+      "value": 0.003851153364236778,
+      "q": 16
+    },
+    {
+      "row": 7,
+      "col": 11,
+      "value": -0.3406259543092376,
+      "q": -1395
+    },
+    {
+      "row": 7,
+      "col": 13,
+      "value": 0.013319135523137232,
+      "q": 55
+    },
+    {
+      "row": 7,
+      "col": 14,
+      "value": 0.001164825633219334,
+      "q": 5
+    },
+    {
+      "row": 7,
+      "col": 15,
+      "value": -0.0038845214270194135,
+      "q": -16
+    }
+  ],
+  "acceptance_rows": [
+    {
+      "a_candidate": "A-v2-H12-int8-geometry-polish-top-01",
+      "bridge_family": "select_first8_current_b",
+      "is_control": false,
+      "eval_windows": 65536,
+      "window_exact_acc": 0.0,
+      "byte_exact_acc": 0.18216705322265625,
+      "bit_acc": 0.8263816833496094,
+      "b_bit_semantic_acc": 0.5161614418029785,
+      "byte_margin_min": -6.0234375,
+      "b_collision_count": 1031,
+      "b_encoder_weight_count_per_byte": 8,
+      "b_encoder_weight_count_window": 64,
+      "b_decoder_is_transpose": true,
+      "reciprocity_error": 0.0,
+      "bit_recovery_identity_max_error": 3.0,
+      "verdict": "BRIDGE_FAIL"
+    },
+    {
+      "a_candidate": "A-v2-H12-int8-geometry-polish-top-01",
+      "bridge_family": "pinv_bit_bridge",
+      "is_control": false,
+      "eval_windows": 65536,
+      "window_exact_acc": 1.0,
+      "byte_exact_acc": 1.0,
+      "bit_acc": 1.0,
+      "b_bit_semantic_acc": 1.0,
+      "byte_margin_min": 1.9999999999999947,
+      "b_collision_count": 0,
+      "b_encoder_weight_count_per_byte": 76,
+      "b_encoder_weight_count_window": 608,
+      "b_decoder_is_transpose": true,
+      "reciprocity_error": 0.0,
+      "bit_recovery_identity_max_error": 1.1102230246251565e-15,
+      "verdict": "BRIDGE_EXACT_B64_SEMANTIC_PASS"
+    },
+    {
+      "a_candidate": "A-v2-H12-int8-geometry-polish-top-01",
+      "bridge_family": "a_transpose_gram_bridge",
+      "is_control": false,
+      "eval_windows": 65536,
+      "window_exact_acc": 0.0,
+      "byte_exact_acc": 0.18265533447265625,
+      "bit_acc": 0.8301291465759277,
+      "b_bit_semantic_acc": 1.0,
+      "byte_margin_min": -107.93254745006561,
+      "b_collision_count": 0,
+      "b_encoder_weight_count_per_byte": 46,
+      "b_encoder_weight_count_window": 368,
+      "b_decoder_is_transpose": true,
+      "reciprocity_error": 0.0,
+      "bit_recovery_identity_max_error": 25.09375,
+      "verdict": "BRIDGE_FAIL"
+    },
+    {
+      "a_candidate": "A-v2-H12-int8-geometry-polish-top-01",
+      "bridge_family": "b_basis_permutation_gauge",
+      "is_control": false,
+      "eval_windows": 65536,
+      "window_exact_acc": 1.0,
+      "byte_exact_acc": 1.0,
+      "bit_acc": 1.0,
+      "b_bit_semantic_acc": 0.5132761001586914,
+      "byte_margin_min": 1.9999999999999947,
+      "b_collision_count": 0,
+      "b_encoder_weight_count_per_byte": 76,
+      "b_encoder_weight_count_window": 608,
+      "b_decoder_is_transpose": true,
+      "reciprocity_error": 0.0,
+      "bit_recovery_identity_max_error": 1.000000000000001,
+      "verdict": "BRIDGE_CODEC_ONLY_PASS"
+    },
+    {
+      "a_candidate": "A-v2-H12-int8-geometry-polish-top-01",
+      "bridge_family": "random_projection_control",
+      "is_control": true,
+      "eval_windows": 65536,
+      "window_exact_acc": 0.0,
+      "byte_exact_acc": 0.19768524169921875,
+      "bit_acc": 0.8326127529144287,
+      "b_bit_semantic_acc": 0.42792439460754395,
+      "byte_margin_min": -7.51397705078125,
+      "b_collision_count": 0,
+      "b_encoder_weight_count_per_byte": 128,
+      "b_encoder_weight_count_window": 1024,
+      "b_decoder_is_transpose": true,
+      "reciprocity_error": 0.0,
+      "bit_recovery_identity_max_error": 2.5625,
+      "verdict": "CONTROL_FAILS"
+    }
+  ],
+  "notes": [
+    "This is an AB-v2 compatibility artifact, not a replacement for ab_window_codec_v1.",
+    "B64 remains byte-bit semantic under the pinv bridge.",
+    "Generated output data remains untracked; this compact artifact is the tracked candidate."
+  ],
+  "sha256": "d93361a9003a8659f006504949be7a57307bb53aa2f4a9ac1aa1347b3a8bca76"
+}
