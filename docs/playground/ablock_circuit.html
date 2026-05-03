@@ -9,14 +9,15 @@
   body {
     min-height: 100vh;
     background:
-      radial-gradient(circle at 18% 12%, rgba(56, 189, 248, 0.15), transparent 28%),
-      radial-gradient(circle at 83% 72%, rgba(74, 222, 128, 0.12), transparent 30%),
+      radial-gradient(circle at 14% 12%, rgba(20, 184, 166, 0.16), transparent 28%),
+      radial-gradient(circle at 84% 18%, rgba(245, 158, 11, 0.12), transparent 26%),
+      radial-gradient(circle at 80% 86%, rgba(56, 189, 248, 0.11), transparent 32%),
       #070b14;
     color: #e2e8f0;
     font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   }
   .mono { font-family: "JetBrains Mono", "Cascadia Code", Consolas, monospace; }
-  .wrap { max-width: 1360px; margin: 0 auto; padding: 22px; }
+  .wrap { max-width: 1600px; margin: 0 auto; padding: 22px; }
   header {
     display: grid;
     grid-template-columns: 1fr auto;
@@ -25,50 +26,42 @@
     margin-bottom: 18px;
   }
   h1 {
-    font-size: clamp(24px, 3.2vw, 42px);
+    font-size: clamp(25px, 3.2vw, 44px);
     line-height: 1;
     letter-spacing: -0.04em;
     color: #f8fafc;
   }
-  .subtitle { color: #94a3b8; margin-top: 8px; max-width: 860px; }
+  .subtitle { color: #94a3b8; margin-top: 8px; max-width: 980px; line-height: 1.45; }
   .badge-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
   .badge {
-    border: 1px solid rgba(148, 163, 184, 0.22);
+    border: 1px solid rgba(148, 163, 184, 0.24);
     background: rgba(15, 23, 42, 0.78);
     border-radius: 999px;
     padding: 6px 10px;
     color: #cbd5e1;
     font-size: 12px;
-    font-weight: 700;
+    font-weight: 800;
   }
-  .badge.good { color: #86efac; border-color: rgba(34, 197, 94, 0.35); }
-  .badge.blue { color: #7dd3fc; border-color: rgba(56, 189, 248, 0.35); }
+  .badge.good { color: #86efac; border-color: rgba(34, 197, 94, 0.38); }
+  .badge.blue { color: #7dd3fc; border-color: rgba(56, 189, 248, 0.38); }
+  .badge.warn { color: #fcd34d; border-color: rgba(245, 158, 11, 0.42); }
   .panel {
-    background: rgba(15, 23, 42, 0.78);
+    background: rgba(15, 23, 42, 0.80);
     border: 1px solid rgba(148, 163, 184, 0.18);
     border-radius: 18px;
     box-shadow: 0 22px 80px rgba(0, 0, 0, 0.28);
   }
   .grid {
     display: grid;
-    grid-template-columns: minmax(280px, 360px) 1fr;
+    grid-template-columns: minmax(300px, 382px) 1fr;
     gap: 16px;
   }
   .side { padding: 16px; display: flex; flex-direction: column; gap: 14px; }
-  .card { background: rgba(2, 6, 23, 0.56); border: 1px solid rgba(71, 85, 105, 0.38); border-radius: 14px; padding: 14px; }
+  .card { background: rgba(2, 6, 23, 0.58); border: 1px solid rgba(71, 85, 105, 0.38); border-radius: 14px; padding: 14px; }
   h2 { color: #93c5fd; font-size: 12px; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 10px; }
   label { display: block; color: #cbd5e1; font-size: 13px; margin-bottom: 6px; }
-  input[type="range"] { width: 100%; accent-color: #38bdf8; }
-  input[type="number"], input[type="text"] {
-    width: 100%;
-    background: #020617;
-    border: 1px solid #334155;
-    color: #e2e8f0;
-    border-radius: 10px;
-    padding: 10px 12px;
-    font-size: 15px;
-  }
-  select {
+  input[type="range"] { width: 100%; accent-color: #14b8a6; }
+  input[type="number"], input[type="text"], select {
     width: 100%;
     background: #020617;
     border: 1px solid #334155;
@@ -79,53 +72,54 @@
   }
   .quick { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-top: 8px; }
   button {
-    border: 1px solid rgba(56, 189, 248, 0.35);
-    background: rgba(14, 165, 233, 0.12);
-    color: #bae6fd;
+    border: 1px solid rgba(20, 184, 166, 0.38);
+    background: rgba(20, 184, 166, 0.11);
+    color: #99f6e4;
     border-radius: 9px;
     padding: 8px 6px;
-    font-weight: 800;
+    font-weight: 850;
     cursor: pointer;
   }
-  button:hover { background: rgba(14, 165, 233, 0.22); }
+  button:hover { background: rgba(20, 184, 166, 0.20); }
   .stat { display: flex; justify-content: space-between; gap: 12px; border-bottom: 1px solid rgba(71, 85, 105, 0.36); padding: 7px 0; font-size: 13px; }
   .stat:last-child { border-bottom: 0; }
   .stat span:first-child { color: #94a3b8; }
-  .stat span:last-child { color: #f8fafc; font-weight: 800; }
-  .bit-row, .lane-row { display: flex; flex-wrap: wrap; gap: 5px; }
+  .stat span:last-child { color: #f8fafc; font-weight: 850; }
+  .chip-row { display: flex; flex-wrap: wrap; gap: 5px; }
   .chip {
-    min-width: 32px;
+    min-width: 35px;
     border-radius: 8px;
     border: 1px solid #334155;
     background: #0f172a;
     padding: 5px 6px;
     text-align: center;
     font-size: 11px;
-    font-weight: 800;
+    font-weight: 850;
   }
   .chip.on { background: #052e16; border-color: #22c55e; color: #86efac; }
-  .chip.off { background: #111827; border-color: #475569; color: #94a3b8; }
-  .main { padding: 16px; min-height: 720px; }
-  .diagram-wrap { position: relative; min-height: 650px; overflow: auto; }
-  svg { width: 100%; min-width: 760px; height: 640px; display: block; }
+  .chip.neg { background: #3b0a0a; border-color: #ef4444; color: #fca5a5; }
+  .chip.zero { background: #111827; border-color: #475569; color: #94a3b8; }
+  .main { padding: 16px; min-height: 760px; }
+  .diagram-wrap { position: relative; min-height: 720px; overflow: auto; }
+  svg { width: 100%; min-width: 1120px; height: 700px; display: block; }
   svg text { font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
-  .table-wrap { overflow: auto; max-height: 340px; }
+  .tabs { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+  .tab {
+    border: 1px solid rgba(148, 163, 184, 0.24);
+    background: rgba(15, 23, 42, 0.60);
+    color: #cbd5e1;
+    border-radius: 999px;
+    padding: 7px 10px;
+    font-size: 12px;
+    font-weight: 850;
+  }
+  .tab.active { border-color: rgba(20, 184, 166, 0.60); color: #99f6e4; background: rgba(20, 184, 166, 0.12); }
+  .table-wrap { overflow: auto; max-height: 360px; }
   table { width: 100%; border-collapse: collapse; font-size: 12px; }
   th, td { border-bottom: 1px solid rgba(71, 85, 105, 0.36); padding: 7px 8px; text-align: left; }
   th { color: #93c5fd; position: sticky; top: 0; background: #020617; }
   td { color: #cbd5e1; }
   .note { color: #94a3b8; font-size: 12px; line-height: 1.45; }
-  .legend-grid { display: grid; grid-template-columns: 1fr; gap: 8px; }
-  .legend-item {
-    border: 1px solid rgba(71, 85, 105, 0.38);
-    background: rgba(15, 23, 42, 0.55);
-    border-radius: 10px;
-    padding: 9px 10px;
-    font-size: 12px;
-    line-height: 1.35;
-  }
-  .legend-item strong { color: #e2e8f0; display: block; margin-bottom: 3px; }
-  .legend-item span { color: #94a3b8; }
   .ascii {
     white-space: pre;
     color: #cbd5e1;
@@ -135,9 +129,9 @@
     padding: 12px;
     overflow: auto;
     font-size: 12px;
-    line-height: 1.32;
+    line-height: 1.34;
   }
-  @media (max-width: 920px) {
+  @media (max-width: 980px) {
     header { grid-template-columns: 1fr; }
     .grid { grid-template-columns: 1fr; }
   }
@@ -148,17 +142,17 @@
   <header>
     <div>
       <h1>A-Block Circuit Playground</h1>
-      <p class="subtitle">A lockolt AB codec A-block baseline-ja copy-szerű. A D21F keresés talált naturalabb, exact roundtrip jelölteket is, de csak weak-pass szinten: egyiket sem promótáljuk automatikusan deploy A_v2-re.</p>
+      <p class="subtitle">Most mar factorized nezetet mutat: <span class="mono">input bits -> hidden H -> A16</span>, majd a tukorkepet: <span class="mono">A16 -> H' -> output bits</span>. A latest mutalt jelolt az <strong>A-HiddenNaturalMarginPolish</strong>.</p>
       <div class="badge-row">
-        <span class="badge good">AB codec v1</span>
-        <span class="badge blue">1 byte → A16</span>
-        <span class="badge">reciprocal decoder = encoder.T</span>
-        <span class="badge">D21F weak natural signal</span>
+        <span class="badge good">A_v2 strong candidate</span>
+        <span class="badge blue">1 byte -> H8 -> A16</span>
+        <span class="badge">decoder = effective encoder.T</span>
+        <span class="badge warn">default shipped A meg nem cserelve</span>
       </div>
     </div>
     <div class="panel card">
-      <div class="stat"><span>Formula</span><span class="mono">A = E × bits</span></div>
-      <div class="stat"><span>Decode</span><span class="mono">bits = sign(E.T × A)</span></div>
+      <div class="stat"><span>Encode</span><span class="mono">A = Hout x Hin x bits</span></div>
+      <div class="stat"><span>Mirror decode</span><span class="mono">bits = sign(Hin.T x Hout.T x A)</span></div>
     </div>
   </header>
 
@@ -172,10 +166,10 @@
         <label for="textInput" style="margin-top:10px">Text char</label>
         <input id="textInput" type="text" maxlength="1" value="A">
         <div class="quick">
-          <button data-byte="0">NUL</button>
           <button data-byte="32">SP</button>
           <button data-byte="65">A</button>
-          <button data-byte="255">255</button>
+          <button data-byte="97">a</button>
+          <button data-byte="48">0</button>
         </div>
       </div>
 
@@ -188,91 +182,82 @@
 
       <div class="card">
         <h2>Input bits little-endian</h2>
-        <div id="bits" class="bit-row"></div>
+        <div id="bits" class="chip-row"></div>
       </div>
 
       <div class="card">
-        <h2>Shape / precision</h2>
-        <div class="stat"><span>Input</span><span class="mono">8 signed bits</span></div>
-        <div class="stat"><span>A surface</span><span class="mono">16 code lanes</span></div>
-        <div class="stat"><span>Output</span><span class="mono">8 bit logits</span></div>
-        <div class="stat"><span>D21F weights</span><span class="mono">float sparse</span></div>
-        <div class="stat"><span>Deploy A_v1</span><span class="mono">+1 / sign-safe</span></div>
-        <p class="note" style="margin-top:10px">Ez nem az int4 C19 byte-unit. Ez az AB A-block playground: D21F-ben float/sparse edge-eket keresünk; int4/int8 pack csak későbbi deploy-pass lenne, ha egy jelölt full-pass.</p>
+        <h2>Hidden H values</h2>
+        <div id="hiddenValues" class="chip-row"></div>
       </div>
 
       <div class="card">
         <h2>A16 lanes</h2>
-        <div id="lanes" class="lane-row"></div>
-        <p class="note" style="margin-top:10px">A-lane értékek az aktuális jelölt encoder mátrixából jönnek. A dekóder mindig ugyanennek a transzponáltja, tehát minden edge oda-vissza értelmezett.</p>
+        <div id="aValues" class="chip-row"></div>
+      </div>
+
+      <div class="card">
+        <h2>Mirror hidden H'</h2>
+        <div id="mirrorHiddenValues" class="chip-row"></div>
       </div>
 
       <div class="card">
         <h2>Stats</h2>
-        <div class="stat"><span>Encode edges</span><span id="edgeCount">16</span></div>
-        <div class="stat"><span>Byte margin min</span><span id="byteMargin">+4.0</span></div>
-        <div class="stat"><span>Geometry score</span><span id="geometryScore">0.669</span></div>
-        <div class="stat"><span>Reciprocity error</span><span>0</span></div>
         <div class="stat"><span>Roundtrip</span><span id="roundtrip">PASS</span></div>
         <div class="stat"><span>Decoded byte</span><span id="decodedByte" class="mono">65</span></div>
+        <div class="stat"><span>Margin min</span><span id="byteMargin">+3.516</span></div>
+        <div class="stat"><span>Geometry</span><span id="geometryScore">0.770</span></div>
+        <div class="stat"><span>Copy penalty</span><span id="copyPenalty">0.00</span></div>
+        <div class="stat"><span>Hin edges</span><span id="hinEdges">8</span></div>
+        <div class="stat"><span>Hout edges</span><span id="houtEdges">30</span></div>
       </div>
 
       <div class="card">
-        <h2>ASCII mental model</h2>
+        <h2>What changed</h2>
         <div class="ascii" id="mentalModel"></div>
-      </div>
-
-      <div class="card">
-        <h2>Lane glossary</h2>
-        <div class="legend-grid">
-          <div class="legend-item"><strong>Highway / overlap lane</strong><span>Input bit közvetlenül rá van kötve egy A-lane-re, és ugyanaz az edge visszafelé is dekódol. Ez stabil, de copy-szerű.</span></div>
-          <div class="legend-item"><strong>Mirror / redundant lane</strong><span>Ugyanaz a bit második A-lane-en is megjelenik. Ez adja a baseline robustságot és edge-drop túlélést.</span></div>
-          <div class="legend-item"><strong>Geometry overlay</strong><span>Kis súlyú extra edge-ek, amelyek az A16 távolságokat formálják. Ezek javíthatják az ASCII-geometriát, de vékonyíthatják a margint.</span></div>
-          <div class="legend-item"><strong>Hidden-only / no-prefill lane</strong><span>Nincs előre bekötött highway. A keresés maga talál edge-eket. Naturalabb lehet, de jelenleg gyenge marginú.</span></div>
-        </div>
       </div>
     </aside>
 
     <main class="panel main">
+      <div class="tabs">
+        <span class="tab active">Encode: bits -> H -> A16</span>
+        <span class="tab active">Mirror: A16 -> H' -> output</span>
+        <span class="tab">No separate decoder weights</span>
+      </div>
       <div class="diagram-wrap">
-        <svg id="diagram" viewBox="0 0 1040 640" aria-label="A-block circuit diagram"></svg>
+        <svg id="diagram" viewBox="0 0 1260 700" aria-label="A-block factorized circuit diagram"></svg>
       </div>
 
       <div class="card" style="margin-top:16px">
-        <h2>Mutation model in this playground</h2>
-        <div class="ascii">D21F search mutates the encoder E:
-
-  add edge       bit_j -> A_i
-  remove edge    delete bit_j -> A_i
-  flip edge      move endpoint to another bit/lane
-  reweight edge  change weight in {-1, -0.75, -0.5, -0.25, +0.25, +0.5, +0.75, +1}
-
-Decoder is not separately mutated:
-
-  decode uses E.T
-
-So every visible line is reciprocal:
-
-  bit_j <-> A_i with same weight</div>
-      </div>
-
-      <div class="card" style="margin-top:16px">
-        <h2>Edge table</h2>
+        <h2>Layer table</h2>
         <div class="table-wrap">
           <table>
             <thead>
-              <tr><th>Edge</th><th>From</th><th>To</th><th>Weight</th><th>Role</th><th>Current value</th></tr>
+              <tr><th>Layer</th><th>From</th><th>To</th><th>Weight</th><th>Current contribution</th></tr>
             </thead>
             <tbody id="edgeTable"></tbody>
           </table>
         </div>
+      </div>
+
+      <div class="card" style="margin-top:16px">
+        <h2>How to read this</h2>
+        <div class="ascii">Encode path:
+  signed byte bits -> hidden H -> A16
+
+Mirror path:
+  A16 -> mirrored hidden H' -> output bit logits
+
+The mirror side is not learned separately.
+It is the exact transpose chain:
+  effective encoder = Hout x Hin
+  decoder           = effective encoder.T
+                    = Hin.T x Hout.T</div>
       </div>
     </main>
   </div>
 </div>
 
 <script>
-const BYTE_BITS = 8;
 const byteSlider = document.getElementById('byteSlider');
 const byteInput = document.getElementById('byteInput');
 const textInput = document.getElementById('textInput');
@@ -280,72 +265,74 @@ const candidateSelect = document.getElementById('candidateSelect');
 const candidateNote = document.getElementById('candidateNote');
 const byteLabel = document.getElementById('byteLabel');
 const bitsEl = document.getElementById('bits');
-const lanesEl = document.getElementById('lanes');
+const hiddenValuesEl = document.getElementById('hiddenValues');
+const aValuesEl = document.getElementById('aValues');
+const mirrorHiddenValuesEl = document.getElementById('mirrorHiddenValues');
 const edgeTable = document.getElementById('edgeTable');
 const decodedByte = document.getElementById('decodedByte');
 const roundtrip = document.getElementById('roundtrip');
 const diagram = document.getElementById('diagram');
-const edgeCount = document.getElementById('edgeCount');
 const byteMargin = document.getElementById('byteMargin');
 const geometryScore = document.getElementById('geometryScore');
+const copyPenalty = document.getElementById('copyPenalty');
+const hinEdges = document.getElementById('hinEdges');
+const houtEdges = document.getElementById('houtEdges');
 const mentalModel = document.getElementById('mentalModel');
-const DEFAULT_CANDIDATE = 'd21gMargin';
 
 const CANDIDATES = {
-  baseline16: {
-    label: 'A_v1 redundant copy baseline',
-    family: 'overlap + mirror',
-    verdict: 'Deploy baseline: exact + robust, but copy-like.',
-    margin: 4.0,
-    geometry: 0.6686,
-    note: 'bit_i -> A_i and A_i+8. This is the locked AB codec v1 A-block.',
-    entries: [
-      [0,0,1],[1,1,1],[2,2,1],[3,3,1],[4,4,1],[5,5,1],[6,6,1],[7,7,1],
-      [8,0,1],[9,1,1],[10,2,1],[11,3,1],[12,4,1],[13,5,1],[14,6,1],[15,7,1]
+  polished: {
+    label: 'LATEST: A-HiddenNaturalMarginPolish',
+    verdict: 'Strong pass: exact 100%, margin +3.516, geometry 0.770, copy penalty 0.00.',
+    note: 'Actual hidden-only factorized candidate. No direct visible->A highway.',
+    margin: 3.516,
+    geometry: 0.770,
+    copy: 0.00,
+    hiddenIn: [
+      [0,0,-0.75],[1,1,1],[2,2,1],[3,3,-1],[4,4,1],[5,5,1],[6,6,1],[7,7,-1]
+    ],
+    hiddenOut: [
+      [0,3,-1],[0,7,1],[1,0,-1],[1,4,1],[2,3,-1],[2,4,0.75],[2,5,0.25],[2,7,-0.5],
+      [3,4,1],[3,5,-1],[4,2,1],[5,2,-1],[6,0,-1],[6,4,-1],[6,6,0.75],[7,3,-1],
+      [7,5,-1],[8,1,1],[9,3,-0.75],[9,7,-1],[10,6,-1],[11,4,1],[11,7,1],[12,1,1],
+      [13,0,0.75],[14,3,-1],[14,4,1],[14,5,1],[15,0,0.75],[15,6,1]
     ]
   },
-  overlayLocked: {
-    label: 'D21F overlay_locked weak candidate',
-    family: 'locked highway + geometry overlay',
-    verdict: 'Weak-pass: exact roundtrip, less copy-like, but lower margin/edge robustness.',
-    margin: 2.0,
-    geometry: 0.7010,
-    note: 'Keeps canonical A0..A7 highway, overlays small geometry rows A8..A15.',
-    entries: [
-      [0,0,1],[1,1,1],[2,2,1],[3,3,1],[4,4,1],[5,5,1],[6,6,1],[7,7,1],
-      [8,5,0.25],[8,6,-0.25],[9,4,0.25],[9,5,0.25],[10,6,0.25],[10,7,-0.25],
-      [11,1,-0.25],[11,4,0.25],[12,1,0.25],[12,2,-0.25],[13,2,0.25],[13,3,-0.25],
-      [14,3,0.25],[14,4,-0.25],[15,0,0.25],[15,7,-0.25]
-    ]
-  },
-  noPrefill: {
-    label: 'D21F no_prefill geometry lead',
-    family: 'hidden-only / no-prefill sparse',
-    verdict: 'Geometry lead: exact roundtrip and non-copy, but very low byte margin.',
-    margin: 0.125,
-    geometry: 0.8022,
-    note: 'Sparse from scratch. Interesting geometry, not deploy-safe because the byte margin is thin.',
-    entries: [
-      [4,6,1],[5,2,0.5],[6,4,-1],[6,6,0.75],[8,5,-0.25],[9,3,-0.75],
-      [10,1,0.25],[11,7,0.25],[15,0,0.5]
-    ]
-  },
-  d21gMargin: {
-    label: 'LATEST mutated: D21G margin-natural pass',
-    family: 'margin-polished non-copy sparse',
-    verdict: 'Pass: exact roundtrip, non-copy layout, margin raised from +0.125 to +2.5.',
+  naturalBefore: {
+    label: 'Before polish: A-HiddenNatural16',
+    verdict: 'Old A_v2 lead: exact 100%, margin +2.5, geometry 0.777.',
+    note: 'Useful for comparing what the margin polish changed.',
     margin: 2.5,
-    geometry: 0.7641,
-    note: 'Started from D21F no_prefill and added balanced non-copy energy. Better margin, still not the ordered copy baseline.',
-    entries: [
+    geometry: 0.777,
+    copy: 0.00,
+    hiddenIn: [
+      [0,0,-0.75],[1,1,1],[2,2,1],[3,3,1],[4,4,1],[5,5,1],[6,6,1],[7,7,1]
+    ],
+    hiddenOut: [
       [0,3,-1],[0,7,0.5],[1,0,-1],[1,4,1],[1,6,0.25],[2,3,-0.5],[2,7,-0.5],
       [3,4,1],[3,5,-1],[4,2,1],[5,2,0.5],[6,0,-1],[6,4,-1],[6,6,0.75],
       [7,3,-1],[7,5,-0.5],[8,1,0.5],[9,3,-0.75],[9,7,-1],[10,6,-1],
-      [11,4,0.25],[11,7,0.75],[12,1,1],[14,4,1],[14,5,1],[15,0,0.75],
-      [15,5,-0.25],[15,6,1]
+      [11,4,0.25],[11,7,0.75],[12,1,1],[13,0,0.5],[14,4,1],[14,5,1],
+      [15,0,0.75],[15,5,-0.25],[15,6,1]
+    ]
+  },
+  stableCopyFactorized: {
+    label: 'Current shipped: A-StableCopy16 factorized view',
+    verdict: 'Default/shipped: exact 100%, margin +4.0, geometry 0.669, copy-like.',
+    note: 'Shown through pass-through H only so the layer split is comparable.',
+    margin: 4.0,
+    geometry: 0.669,
+    copy: 1.00,
+    hiddenIn: [
+      [0,0,1],[1,1,1],[2,2,1],[3,3,1],[4,4,1],[5,5,1],[6,6,1],[7,7,1]
+    ],
+    hiddenOut: [
+      [0,0,1],[1,1,1],[2,2,1],[3,3,1],[4,4,1],[5,5,1],[6,6,1],[7,7,1],
+      [8,0,1],[9,1,1],[10,2,1],[11,3,1],[12,4,1],[13,5,1],[14,6,1],[15,7,1]
     ]
   }
 };
+
+const DEFAULT_CANDIDATE = 'polished';
 
 function clampByte(v) {
   const n = Number.parseInt(v, 10);
@@ -354,46 +341,38 @@ function clampByte(v) {
 }
 
 function byteToBits(byte) {
-  return Array.from({ length: BYTE_BITS }, (_, i) => ((byte >> i) & 1) ? 1 : -1);
+  return Array.from({ length: 8 }, (_, i) => ((byte >> i) & 1) ? 1 : -1);
 }
 
 function bitsToByte(bits) {
   return bits.reduce((acc, bit, i) => bit >= 0 ? acc | (1 << i) : acc, 0);
 }
 
-function currentCandidate() {
-  return CANDIDATES[candidateSelect.value] || CANDIDATES.baseline16;
+function candidate() {
+  return CANDIDATES[candidateSelect.value] || CANDIDATES[DEFAULT_CANDIDATE];
 }
 
-function encodeA16(bits, candidate) {
-  const lanes = Array.from({ length: 16 }, () => 0);
-  for (const [code, visible, weight] of candidate.entries) {
-    lanes[code] += weight * bits[visible];
-  }
-  return lanes;
+function matVec(edges, rows, input) {
+  const out = Array.from({ length: rows }, () => 0);
+  for (const [to, from, weight] of edges) out[to] += weight * input[from];
+  return out;
 }
 
-function decodeBits(a16, candidate) {
-  const logits = Array.from({ length: BYTE_BITS }, () => 0);
-  for (const [code, visible, weight] of candidate.entries) {
-    logits[visible] += weight * a16[code];
-  }
-  return logits.map(v => v >= 0 ? 1 : -1);
+function transposeMatVec(edges, rows, input) {
+  const out = Array.from({ length: rows }, () => 0);
+  for (const [to, from, weight] of edges) out[from] += weight * input[to];
+  return out;
 }
 
-function fmtValue(value) {
+function fmt(value) {
   if (Math.abs(value) < 1e-9) return '0';
-  return `${value >= 0 ? '+' : ''}${Number(value.toFixed(3))}`;
+  const rounded = Math.abs(value) >= 10 ? value.toFixed(1) : value.toFixed(3);
+  return `${value >= 0 ? '+' : ''}${Number(rounded)}`;
 }
 
-function edgeRole(code, visible, weight, candidate) {
-  if (candidate === CANDIDATES.baseline16 && code < 8 && code === visible) return 'highway overlap';
-  if (candidate === CANDIDATES.baseline16 && code >= 8 && code - 8 === visible) return 'mirror redundant';
-  if (candidate === CANDIDATES.overlayLocked && code < 8 && code === visible && Math.abs(weight) === 1) return 'locked highway';
-  if (candidate === CANDIDATES.overlayLocked && code >= 8) return 'geometry overlay';
-  if (candidate === CANDIDATES.noPrefill) return 'hidden-only sparse';
-  if (candidate === CANDIDATES.d21gMargin) return 'margin-polished sparse';
-  return 'sparse edge';
+function chipClass(value) {
+  if (Math.abs(value) < 1e-9) return 'zero';
+  return value > 0 ? 'on' : 'neg';
 }
 
 function printable(byte) {
@@ -415,149 +394,147 @@ function updateFromText() {
   setByte(ch.charCodeAt(0) & 0xff);
 }
 
-function update() {
-  const candidate = currentCandidate();
+function currentState() {
+  const c = candidate();
   const byte = clampByte(byteInput.value);
-  byteSlider.value = String(byte);
-  byteInput.value = String(byte);
-  byteLabel.textContent = `${byte} (${printable(byte)})`;
-
   const bits = byteToBits(byte);
-  const a16 = encodeA16(bits, candidate);
-  const decodedBits = decodeBits(a16, candidate);
-  const decoded = bitsToByte(decodedBits);
-  decodedByte.textContent = String(decoded);
-  roundtrip.textContent = decoded === byte ? 'PASS' : 'FAIL';
-  roundtrip.style.color = decoded === byte ? '#86efac' : '#fca5a5';
-  edgeCount.textContent = String(candidate.entries.length);
-  byteMargin.textContent = `+${candidate.margin}`;
-  geometryScore.textContent = candidate.geometry.toFixed(3);
-  candidateNote.textContent = `${candidate.verdict} ${candidate.note}`;
-
-  bitsEl.innerHTML = bits.map((v, i) =>
-    `<div class="chip ${v > 0 ? 'on' : 'off'}"><div>b${i}</div><div class="mono">${v > 0 ? '+1' : '-1'}</div></div>`
-  ).join('');
-  lanesEl.innerHTML = a16.map((v, i) =>
-    `<div class="chip ${v > 0 ? 'on' : 'off'}"><div>A${i}</div><div class="mono">${fmtValue(v)}</div></div>`
-  ).join('');
-  mentalModel.textContent = `${candidate.label}
-
-encode:
-  A = E x signed_bits
-
-decode:
-  signed_bits = sign(E.T x A)
-
-D21F verdict:
-  weak natural signal only
-  deploy A_v1 unchanged
-
-family:
-  ${candidate.family}
-
-mutation target:
-  encoder E only; decoder = E.T`;
-  renderDiagram(bits, a16, decodedBits, candidate);
-  renderEdges(bits, a16, candidate);
+  const h = matVec(c.hiddenIn, 8, bits);
+  const a = matVec(c.hiddenOut, 16, h);
+  const mirrorH = transposeMatVec(c.hiddenOut, 8, a);
+  const logits = transposeMatVec(c.hiddenIn, 8, mirrorH);
+  const decodedBits = logits.map(v => v >= 0 ? 1 : -1);
+  return { c, byte, bits, h, a, mirrorH, logits, decodedBits, decoded: bitsToByte(decodedBits) };
 }
 
-function node(cx, cy, label, value, color, sub) {
-  const on = value >= 0;
-  const fill = on ? color.fillOn : color.fillOff;
-  const stroke = on ? color.strokeOn : color.strokeOff;
-  const text = on ? color.textOn : color.textOff;
-  return `
-    <g>
-      <circle cx="${cx}" cy="${cy}" r="24" fill="${fill}" stroke="${stroke}" stroke-width="2"/>
-      <text x="${cx}" y="${cy - 2}" text-anchor="middle" fill="${text}" font-size="13" font-weight="900">${label}</text>
-      <text x="${cx}" y="${cy + 14}" text-anchor="middle" fill="${text}" font-size="10" class="mono">${value >= 0 ? '+1' : '-1'}</text>
-      ${sub ? `<text x="${cx}" y="${cy + 40}" text-anchor="middle" fill="#64748b" font-size="10">${sub}</text>` : ''}
-    </g>
-  `;
+function update() {
+  const s = currentState();
+  byteSlider.value = String(s.byte);
+  byteInput.value = String(s.byte);
+  byteLabel.textContent = `${s.byte} (${printable(s.byte)})`;
+  candidateNote.textContent = `${s.c.verdict} ${s.c.note}`;
+  decodedByte.textContent = String(s.decoded);
+  roundtrip.textContent = s.decoded === s.byte ? 'PASS' : 'FAIL';
+  roundtrip.style.color = s.decoded === s.byte ? '#86efac' : '#fca5a5';
+  byteMargin.textContent = `+${s.c.margin}`;
+  geometryScore.textContent = s.c.geometry.toFixed(3);
+  copyPenalty.textContent = s.c.copy.toFixed(2);
+  hinEdges.textContent = String(s.c.hiddenIn.length);
+  houtEdges.textContent = String(s.c.hiddenOut.length);
+
+  bitsEl.innerHTML = s.bits.map((v, i) => `<div class="chip ${chipClass(v)}"><div>b${i}</div><div class="mono">${fmt(v)}</div></div>`).join('');
+  hiddenValuesEl.innerHTML = s.h.map((v, i) => `<div class="chip ${chipClass(v)}"><div>H${i}</div><div class="mono">${fmt(v)}</div></div>`).join('');
+  aValuesEl.innerHTML = s.a.map((v, i) => `<div class="chip ${chipClass(v)}"><div>A${i}</div><div class="mono">${fmt(v)}</div></div>`).join('');
+  mirrorHiddenValuesEl.innerHTML = s.mirrorH.map((v, i) => `<div class="chip ${chipClass(v)}"><div>H'${i}</div><div class="mono">${fmt(v)}</div></div>`).join('');
+
+  mentalModel.textContent = `${s.c.label}
+
+Encode:
+  bits -> H -> A16
+
+Mirror:
+  A16 -> H' -> output logits
+
+Current byte:
+  ${s.byte} (${printable(s.byte)})
+
+Decoded:
+  ${s.decoded} (${printable(s.decoded)})
+
+Why this view matters:
+  the latest candidate is not direct copy wiring.
+  it has a real IO-hidden layer and a separate H->A layer.
+  the right side is the exact transpose mirror.`;
+
+  renderDiagram(s);
+  renderEdgeTable(s);
 }
 
-function line(x1, y1, x2, y2, value, klass, label) {
-  const on = value >= 0;
-  const stroke = klass === 'decode' ? '#fbbf24' : klass === 'mirror' ? '#4ade80' : '#38bdf8';
-  const opacity = Math.min(0.88, Math.max(0.20, Math.abs(value) * 0.85));
+function node(x, y, label, value, fillOn, strokeOn, fillOff, strokeOff) {
+  const active = Math.abs(value) > 1e-9;
+  const fill = active ? fillOn : fillOff;
+  const stroke = active ? strokeOn : strokeOff;
+  const text = active ? '#f8fafc' : '#94a3b8';
+  return `<g>
+    <circle cx="${x}" cy="${y}" r="22" fill="${fill}" stroke="${stroke}" stroke-width="2"/>
+    <text x="${x}" y="${y - 3}" text-anchor="middle" fill="${text}" font-size="12" font-weight="900">${label}</text>
+    <text x="${x}" y="${y + 13}" text-anchor="middle" fill="${text}" font-size="9" class="mono">${fmt(value)}</text>
+  </g>`;
+}
+
+function edge(x1, y1, x2, y2, weight, color, label) {
+  const opacity = Math.min(0.92, Math.max(0.16, Math.abs(weight) * 0.82));
+  const width = Math.max(1.0, Math.min(3.0, Math.abs(weight) * 2.1));
   const midX = (x1 + x2) / 2;
   const midY = (y1 + y2) / 2;
-  return `
-    <line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${stroke}" stroke-width="${on ? 2 : 1}" opacity="${opacity}"/>
-    <text x="${midX}" y="${midY - 4}" fill="${stroke}" font-size="10" class="mono" text-anchor="middle" opacity="${opacity}">${label}</text>
-  `;
+  return `<g>
+    <line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${color}" stroke-width="${width}" opacity="${opacity}"/>
+    <text x="${midX}" y="${midY - 3}" text-anchor="middle" fill="${color}" font-size="9" class="mono" opacity="${opacity}">${label}</text>
+  </g>`;
 }
 
-function renderDiagram(bits, a16, decodedBits, candidate) {
-  const inputX = 130;
-  const codeX = 540;
-  const outputX = 930;
-  const bitY0 = 92;
-  const bitGap = 62;
-  const codeY0 = 72;
-  const codeGap = 33;
-  const colors = {
-    bit: { fillOn: '#052e16', fillOff: '#111827', strokeOn: '#22c55e', strokeOff: '#475569', textOn: '#86efac', textOff: '#94a3b8' },
-    a: { fillOn: '#082f49', fillOff: '#111827', strokeOn: '#38bdf8', strokeOff: '#475569', textOn: '#7dd3fc', textOff: '#94a3b8' },
-    out: { fillOn: '#451a03', fillOff: '#111827', strokeOn: '#f59e0b', strokeOff: '#475569', textOn: '#fcd34d', textOff: '#94a3b8' }
-  };
+function renderDiagram(s) {
+  const xBits = 80, xH = 310, xA = 610, xHM = 910, xOut = 1160;
+  const bitY0 = 105, bitGap = 67;
+  const hY0 = 105, hGap = 67;
+  const aY0 = 62, aGap = 36;
 
   let html = `
-    <defs>
-      <linearGradient id="panelGrad" x1="0" x2="1" y1="0" y2="1">
-        <stop offset="0%" stop-color="#0f172a"/>
-        <stop offset="100%" stop-color="#020617"/>
-      </linearGradient>
-    </defs>
-    <rect x="20" y="20" width="1000" height="600" rx="24" fill="url(#panelGrad)" stroke="#1e293b"/>
-    <text x="${inputX}" y="45" fill="#86efac" font-size="16" font-weight="900" text-anchor="middle">Input bits</text>
-    <text x="${codeX}" y="45" fill="#7dd3fc" font-size="16" font-weight="900" text-anchor="middle">A16 code lanes</text>
-    <text x="${outputX}" y="45" fill="#fcd34d" font-size="16" font-weight="900" text-anchor="middle">Decoded bits</text>
+    <rect x="20" y="20" width="1220" height="650" rx="24" fill="rgba(2,6,23,0.62)" stroke="#1e293b"/>
+    <text x="${xBits}" y="48" fill="#86efac" font-size="15" font-weight="900" text-anchor="middle">input bits</text>
+    <text x="${xH}" y="48" fill="#5eead4" font-size="15" font-weight="900" text-anchor="middle">IO-hidden H</text>
+    <text x="${xA}" y="48" fill="#7dd3fc" font-size="15" font-weight="900" text-anchor="middle">A16 abstract lanes</text>
+    <text x="${xHM}" y="48" fill="#fcd34d" font-size="15" font-weight="900" text-anchor="middle">mirror H'</text>
+    <text x="${xOut}" y="48" fill="#fca5a5" font-size="15" font-weight="900" text-anchor="middle">output logits</text>
+    <text x="460" y="642" fill="#94a3b8" font-size="13" text-anchor="middle">encode: Hin then Hout</text>
+    <text x="930" y="642" fill="#94a3b8" font-size="13" text-anchor="middle">mirror decode: Hout.T then Hin.T</text>
   `;
 
-  for (const [code, visible, weight] of candidate.entries) {
-    const by = bitY0 + visible * bitGap;
-    const cy = codeY0 + code * codeGap;
-    const oy = bitY0 + visible * bitGap;
-    html += line(inputX + 24, by, codeX - 24, cy, weight, 'visible', fmtValue(weight));
-    html += line(codeX + 24, cy, outputX - 24, oy, weight, 'decode', fmtValue(weight));
+  for (const [h, bit, weight] of s.c.hiddenIn) {
+    html += edge(xBits + 22, bitY0 + bit * bitGap, xH - 22, hY0 + h * hGap, weight, '#14b8a6', fmt(weight));
+  }
+  for (const [a, h, weight] of s.c.hiddenOut) {
+    html += edge(xH + 22, hY0 + h * hGap, xA - 22, aY0 + a * aGap, weight, '#38bdf8', fmt(weight));
+  }
+  for (const [a, h, weight] of s.c.hiddenOut) {
+    html += edge(xA + 22, aY0 + a * aGap, xHM - 22, hY0 + h * hGap, weight, '#f59e0b', fmt(weight));
+  }
+  for (const [h, bit, weight] of s.c.hiddenIn) {
+    html += edge(xHM + 22, hY0 + h * hGap, xOut - 22, bitY0 + bit * bitGap, weight, '#ef4444', fmt(weight));
   }
 
   for (let i = 0; i < 8; i++) {
-    const y = bitY0 + i * bitGap;
-    html += node(inputX, y, `b${i}`, bits[i], colors.bit, `2^${i}`);
-    html += node(outputX, y, `o${i}`, decodedBits[i], colors.out, 'read');
+    html += node(xBits, bitY0 + i * bitGap, `b${i}`, s.bits[i], '#052e16', '#22c55e', '#111827', '#475569');
+    html += node(xH, hY0 + i * hGap, `H${i}`, s.h[i], '#042f2e', '#14b8a6', '#111827', '#475569');
+    html += node(xHM, hY0 + i * hGap, `H'${i}`, s.mirrorH[i], '#451a03', '#f59e0b', '#111827', '#475569');
+    html += node(xOut, bitY0 + i * bitGap, `o${i}`, s.logits[i], '#3b0a0a', '#ef4444', '#111827', '#475569');
   }
   for (let i = 0; i < 16; i++) {
-    const y = codeY0 + i * codeGap;
-    html += node(codeX, y, `A${i}`, a16[i], colors.a, 'code');
+    html += node(xA, aY0 + i * aGap, `A${i}`, s.a[i], '#082f49', '#38bdf8', '#111827', '#475569');
   }
-
-  html += `
-    <text x="520" y="590" text-anchor="middle" fill="#94a3b8" font-size="13">
-      ${candidate.label}: reciprocal sparse encoder. D21F natural candidates are weak-pass only; deploy codec remains A_v1 until a stronger pass.
-    </text>
-  `;
   diagram.innerHTML = html;
 }
 
-function renderEdges(bits, a16, candidate) {
+function renderEdgeTable(s) {
   const rows = [];
-  candidate.entries.forEach(([code, visible, weight], idx) => {
-    const role = edgeRole(code, visible, weight, candidate);
-    rows.push({ edge: `E${idx}`, from: `bit_${visible}`, to: `A_${code}`, weight: fmtValue(weight), role: `encode / ${role}`, value: weight * bits[visible] });
-    rows.push({ edge: `D${idx}`, from: `A_${code}`, to: `out_bit_${visible}`, weight: fmtValue(weight), role: `decode / ${role}`, value: weight * a16[code] });
-  });
-  edgeTable.innerHTML = rows.map(row => `
-    <tr>
-      <td class="mono">${row.edge}</td>
-      <td class="mono">${row.from}</td>
-      <td class="mono">${row.to}</td>
-      <td class="mono">${row.weight}</td>
-      <td>${row.role}</td>
-      <td class="mono">${fmtValue(row.value)}</td>
-    </tr>
-  `).join('');
+  for (const [h, bit, weight] of s.c.hiddenIn) {
+    rows.push(['encode Hin', `b${bit}`, `H${h}`, weight, weight * s.bits[bit]]);
+  }
+  for (const [a, h, weight] of s.c.hiddenOut) {
+    rows.push(['encode Hout', `H${h}`, `A${a}`, weight, weight * s.h[h]]);
+  }
+  for (const [a, h, weight] of s.c.hiddenOut) {
+    rows.push(['mirror Hout.T', `A${a}`, `H'${h}`, weight, weight * s.a[a]]);
+  }
+  for (const [h, bit, weight] of s.c.hiddenIn) {
+    rows.push(['mirror Hin.T', `H'${h}`, `out${bit}`, weight, weight * s.mirrorH[h]]);
+  }
+  edgeTable.innerHTML = rows.map(([layer, from, to, weight, contribution]) => `<tr>
+    <td>${layer}</td>
+    <td class="mono">${from}</td>
+    <td class="mono">${to}</td>
+    <td class="mono">${fmt(weight)}</td>
+    <td class="mono">${fmt(contribution)}</td>
+  </tr>`).join('');
 }
 
 byteSlider.addEventListener('input', () => setByte(byteSlider.value));
@@ -565,9 +542,7 @@ byteInput.addEventListener('input', () => setByte(byteInput.value));
 textInput.addEventListener('input', updateFromText);
 candidateSelect.addEventListener('change', update);
 document.querySelectorAll('button[data-byte]').forEach(btn => btn.addEventListener('click', () => setByte(btn.dataset.byte)));
-candidateSelect.innerHTML = Object.entries(CANDIDATES).map(([key, candidate]) =>
-  `<option value="${key}">${candidate.label}</option>`
-).join('');
+candidateSelect.innerHTML = Object.entries(CANDIDATES).map(([key, c]) => `<option value="${key}">${c.label}</option>`).join('');
 candidateSelect.value = DEFAULT_CANDIDATE;
 update();
 </script>
