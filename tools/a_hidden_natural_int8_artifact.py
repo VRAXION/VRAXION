@@ -16,7 +16,7 @@ from typing import Iterable, Sequence
 
 
 VISIBLE_DIM = 8
-HIDDEN_DIM = 8
+DEFAULT_HIDDEN_DIM = 8
 CODE_DIM = 16
 SCALE = 64
 VERSION = "a_hidden_natural_margin_int8_v1"
@@ -43,8 +43,8 @@ def quantize_entries(entries: Iterable[tuple[int, int, float]]) -> list[list[int
     return [[int(row), int(col), quantize_weight(value)] for row, col, value in entries]
 
 
-def signed_bits(byte: int) -> list[int]:
-    return [1 if ((byte >> bit) & 1) else -1 for bit in range(VISIBLE_DIM)]
+def signed_bits(byte: int, *, visible_dim: int = VISIBLE_DIM) -> list[int]:
+    return [1 if ((byte >> bit) & 1) else -1 for bit in range(visible_dim)]
 
 
 def bits_to_byte(bits: Sequence[int]) -> int:
@@ -92,53 +92,65 @@ def forward_int(bits: Sequence[int], hidden_in: Sequence[Sequence[int]], hidden_
     }
 
 
-def byte_margin_from_logits(logits: Sequence[int], target: int) -> float:
-    target_bits = signed_bits(target)
+def byte_margin_from_logits(logits: Sequence[int], target: int, *, scale: int = SCALE, visible_dim: int = VISIBLE_DIM) -> float:
+    target_bits = signed_bits(target, visible_dim=visible_dim)
     target_score = sum(logit * bit for logit, bit in zip(logits, target_bits))
     best_other = None
-    for candidate in range(256):
+    for candidate in range(1 << visible_dim):
         if candidate == target:
             continue
-        score = sum(logit * bit for logit, bit in zip(logits, signed_bits(candidate)))
+        score = sum(logit * bit for logit, bit in zip(logits, signed_bits(candidate, visible_dim=visible_dim)))
         if best_other is None or score > best_other:
             best_other = score
     assert best_other is not None
-    return float(target_score - best_other) / float(SCALE**4)
+    return float(target_score - best_other) / float(scale**4)
 
 
 def verify_payload(payload: dict[str, object]) -> dict[str, object]:
     if payload.get("version") != VERSION:
         raise ValueError(f"unexpected artifact version: {payload.get('version')!r}")
-    if int(payload.get("scale", 0)) != SCALE:
+    scale = int(payload.get("scale", 0))
+    visible_dim = int(payload.get("visible_dim", VISIBLE_DIM))
+    hidden_dim = int(payload.get("hidden_dim", DEFAULT_HIDDEN_DIM))
+    code_dim = int(payload.get("code_dim", CODE_DIM))
+    if scale != SCALE:
         raise ValueError(f"unexpected scale: {payload.get('scale')!r}")
     if payload.get("storage") != "int8_q6":
         raise ValueError(f"unexpected storage: {payload.get('storage')!r}")
+    if visible_dim != VISIBLE_DIM:
+        raise ValueError(f"unexpected visible_dim: {visible_dim!r}")
+    if code_dim != CODE_DIM:
+        raise ValueError(f"unexpected code_dim: {code_dim!r}")
 
-    hidden_in = dense_q(payload["hidden_in_q"], HIDDEN_DIM, VISIBLE_DIM)  # type: ignore[index]
-    hidden_out = dense_q(payload["hidden_out_q"], CODE_DIM, HIDDEN_DIM)  # type: ignore[index]
+    hidden_in = dense_q(payload["hidden_in_q"], hidden_dim, visible_dim)  # type: ignore[index]
+    hidden_out = dense_q(payload["hidden_out_q"], code_dim, hidden_dim)  # type: ignore[index]
     exact = 0
     bit_correct = 0
     margin_min = float("inf")
     code_rows: set[tuple[int, ...]] = set()
-    for byte in range(256):
-        bits = signed_bits(byte)
+    pattern_count = 1 << visible_dim
+    for byte in range(pattern_count):
+        bits = signed_bits(byte, visible_dim=visible_dim)
         result = forward_int(bits, hidden_in, hidden_out)
         decoded_bits = result["decoded_bits"]
         decoded = bits_to_byte(decoded_bits)
         if decoded == byte:
             exact += 1
         bit_correct += sum(1 for expected, got in zip(bits, decoded_bits) if expected == got)
-        margin_min = min(margin_min, byte_margin_from_logits(result["logits_acc"], byte))
+        margin_min = min(margin_min, byte_margin_from_logits(result["logits_acc"], byte, scale=scale, visible_dim=visible_dim))
         code_rows.add(tuple(result["code_acc"]))
 
     return {
-        "verdict": "A_HIDDEN_NATURAL_INT8_ARTIFACT_PASS" if exact == 256 and bit_correct == 2048 and margin_min > 0 else "A_HIDDEN_NATURAL_INT8_ARTIFACT_FAIL",
-        "exact_byte_acc": exact / 256.0,
-        "bit_acc": bit_correct / 2048.0,
+        "verdict": "A_HIDDEN_NATURAL_INT8_ARTIFACT_PASS" if exact == pattern_count and bit_correct == pattern_count * visible_dim and margin_min > 0 else "A_HIDDEN_NATURAL_INT8_ARTIFACT_FAIL",
+        "exact_byte_acc": exact / float(pattern_count),
+        "bit_acc": bit_correct / float(pattern_count * visible_dim),
         "byte_margin_min": margin_min,
-        "hidden_collisions": 256 - len(code_rows),
+        "hidden_collisions": pattern_count - len(code_rows),
         "hidden_in_edge_count": len(payload["hidden_in_q"]),  # type: ignore[arg-type]
         "hidden_out_edge_count": len(payload["hidden_out_q"]),  # type: ignore[arg-type]
+        "visible_dim": visible_dim,
+        "hidden_dim": hidden_dim,
+        "code_dim": code_dim,
         "scale_power_for_logits": 4,
     }
 
@@ -157,7 +169,7 @@ def export_payload(source: Path) -> dict[str, object]:
         "scale": SCALE,
         "value_formula": "weight = q / 64",
         "visible_dim": VISIBLE_DIM,
-        "hidden_dim": HIDDEN_DIM,
+        "hidden_dim": DEFAULT_HIDDEN_DIM,
         "code_dim": CODE_DIM,
         "decoder": "transpose_chain",
         "source": str(source),
