@@ -115,6 +115,17 @@
   th { color: #93c5fd; position: sticky; top: 0; background: #020617; }
   td { color: #cbd5e1; }
   .note { color: #94a3b8; font-size: 12px; line-height: 1.45; }
+  .legend-grid { display: grid; grid-template-columns: 1fr; gap: 8px; }
+  .legend-item {
+    border: 1px solid rgba(71, 85, 105, 0.38);
+    background: rgba(15, 23, 42, 0.55);
+    border-radius: 10px;
+    padding: 9px 10px;
+    font-size: 12px;
+    line-height: 1.35;
+  }
+  .legend-item strong { color: #e2e8f0; display: block; margin-bottom: 3px; }
+  .legend-item span { color: #94a3b8; }
   .ascii {
     white-space: pre;
     color: #cbd5e1;
@@ -181,6 +192,16 @@
       </div>
 
       <div class="card">
+        <h2>Shape / precision</h2>
+        <div class="stat"><span>Input</span><span class="mono">8 signed bits</span></div>
+        <div class="stat"><span>A surface</span><span class="mono">16 code lanes</span></div>
+        <div class="stat"><span>Output</span><span class="mono">8 bit logits</span></div>
+        <div class="stat"><span>D21F weights</span><span class="mono">float sparse</span></div>
+        <div class="stat"><span>Deploy A_v1</span><span class="mono">+1 / sign-safe</span></div>
+        <p class="note" style="margin-top:10px">Ez nem az int4 C19 byte-unit. Ez az AB A-block playground: D21F-ben float/sparse edge-eket keresünk; int4/int8 pack csak későbbi deploy-pass lenne, ha egy jelölt full-pass.</p>
+      </div>
+
+      <div class="card">
         <h2>A16 lanes</h2>
         <div id="lanes" class="lane-row"></div>
         <p class="note" style="margin-top:10px">A-lane értékek az aktuális jelölt encoder mátrixából jönnek. A dekóder mindig ugyanennek a transzponáltja, tehát minden edge oda-vissza értelmezett.</p>
@@ -200,11 +221,39 @@
         <h2>ASCII mental model</h2>
         <div class="ascii" id="mentalModel"></div>
       </div>
+
+      <div class="card">
+        <h2>Lane glossary</h2>
+        <div class="legend-grid">
+          <div class="legend-item"><strong>Highway / overlap lane</strong><span>Input bit közvetlenül rá van kötve egy A-lane-re, és ugyanaz az edge visszafelé is dekódol. Ez stabil, de copy-szerű.</span></div>
+          <div class="legend-item"><strong>Mirror / redundant lane</strong><span>Ugyanaz a bit második A-lane-en is megjelenik. Ez adja a baseline robustságot és edge-drop túlélést.</span></div>
+          <div class="legend-item"><strong>Geometry overlay</strong><span>Kis súlyú extra edge-ek, amelyek az A16 távolságokat formálják. Ezek javíthatják az ASCII-geometriát, de vékonyíthatják a margint.</span></div>
+          <div class="legend-item"><strong>Hidden-only / no-prefill lane</strong><span>Nincs előre bekötött highway. A keresés maga talál edge-eket. Naturalabb lehet, de jelenleg gyenge marginú.</span></div>
+        </div>
+      </div>
     </aside>
 
     <main class="panel main">
       <div class="diagram-wrap">
         <svg id="diagram" viewBox="0 0 1040 640" aria-label="A-block circuit diagram"></svg>
+      </div>
+
+      <div class="card" style="margin-top:16px">
+        <h2>Mutation model in this playground</h2>
+        <div class="ascii">D21F search mutates the encoder E:
+
+  add edge       bit_j -> A_i
+  remove edge    delete bit_j -> A_i
+  flip edge      move endpoint to another bit/lane
+  reweight edge  change weight in {-1, -0.75, -0.5, -0.25, +0.25, +0.5, +0.75, +1}
+
+Decoder is not separately mutated:
+
+  decode uses E.T
+
+So every visible line is reciprocal:
+
+  bit_j <-> A_i with same weight</div>
       </div>
 
       <div class="card" style="margin-top:16px">
@@ -244,6 +293,7 @@ const mentalModel = document.getElementById('mentalModel');
 const CANDIDATES = {
   baseline16: {
     label: 'A_v1 redundant copy baseline',
+    family: 'overlap + mirror',
     verdict: 'Deploy baseline: exact + robust, but copy-like.',
     margin: 4.0,
     geometry: 0.6686,
@@ -255,6 +305,7 @@ const CANDIDATES = {
   },
   overlayLocked: {
     label: 'D21F overlay_locked weak candidate',
+    family: 'locked highway + geometry overlay',
     verdict: 'Weak-pass: exact roundtrip, less copy-like, but lower margin/edge robustness.',
     margin: 2.0,
     geometry: 0.7010,
@@ -268,6 +319,7 @@ const CANDIDATES = {
   },
   noPrefill: {
     label: 'D21F no_prefill geometry lead',
+    family: 'hidden-only / no-prefill sparse',
     verdict: 'Geometry lead: exact roundtrip and non-copy, but very low byte margin.',
     margin: 0.125,
     geometry: 0.8022,
@@ -316,6 +368,15 @@ function decodeBits(a16, candidate) {
 function fmtValue(value) {
   if (Math.abs(value) < 1e-9) return '0';
   return `${value >= 0 ? '+' : ''}${Number(value.toFixed(3))}`;
+}
+
+function edgeRole(code, visible, weight, candidate) {
+  if (candidate === CANDIDATES.baseline16 && code < 8 && code === visible) return 'highway overlap';
+  if (candidate === CANDIDATES.baseline16 && code >= 8 && code - 8 === visible) return 'mirror redundant';
+  if (candidate === CANDIDATES.overlayLocked && code < 8 && code === visible && Math.abs(weight) === 1) return 'locked highway';
+  if (candidate === CANDIDATES.overlayLocked && code >= 8) return 'geometry overlay';
+  if (candidate === CANDIDATES.noPrefill) return 'hidden-only sparse';
+  return 'sparse edge';
 }
 
 function printable(byte) {
@@ -372,7 +433,13 @@ decode:
 
 D21F verdict:
   weak natural signal only
-  deploy A_v1 unchanged`;
+  deploy A_v1 unchanged
+
+family:
+  ${candidate.family}
+
+mutation target:
+  encoder E only; decoder = E.T`;
   renderDiagram(bits, a16, decodedBits, candidate);
   renderEdges(bits, a16, candidate);
 }
@@ -460,8 +527,9 @@ function renderDiagram(bits, a16, decodedBits, candidate) {
 function renderEdges(bits, a16, candidate) {
   const rows = [];
   candidate.entries.forEach(([code, visible, weight], idx) => {
-    rows.push({ edge: `E${idx}`, from: `bit_${visible}`, to: `A_${code}`, weight: fmtValue(weight), role: 'encode', value: weight * bits[visible] });
-    rows.push({ edge: `D${idx}`, from: `A_${code}`, to: `out_bit_${visible}`, weight: fmtValue(weight), role: 'reciprocal decode', value: weight * a16[code] });
+    const role = edgeRole(code, visible, weight, candidate);
+    rows.push({ edge: `E${idx}`, from: `bit_${visible}`, to: `A_${code}`, weight: fmtValue(weight), role: `encode / ${role}`, value: weight * bits[visible] });
+    rows.push({ edge: `D${idx}`, from: `A_${code}`, to: `out_bit_${visible}`, weight: fmtValue(weight), role: `decode / ${role}`, value: weight * a16[code] });
   });
   edgeTable.innerHTML = rows.map(row => `
     <tr>
