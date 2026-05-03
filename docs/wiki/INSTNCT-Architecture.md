@@ -114,6 +114,66 @@ Two L0 embeddings (32-dim total) pass through a single-W mirror-tied autoencoder
 
 The prior active track used a 16-dim character LUT as L0 and a Beukers-gate Conv1D (`xy/(1+|xy|)`, k=7, nf=128) as L1, reaching **83.6% masked character prediction**. This is a validated, positive result and is preserved in the [Timeline Archive](Timeline-Archive) (2026-04-15/16 section). It is not the current pipeline; the byte-level track superseded it as of the 2026-04-18 track transition.
 
+## Experimental AB-C-D Component Stack
+
+The current component-level research stack is intentionally simpler than a full
+language model. The names are now:
+
+```text
+A-block:
+  byte codec
+  1 byte <-> 16D byte abstract
+
+B-block:
+  window codec / common bus
+  N x A outputs <-> B latent
+  current default: 8 x 16D = 128D <-> B64
+
+C-block:
+  stream tokenizer / span embedder / controller
+  B64 window stream -> token events + route hints
+
+D-block:
+  selected workers
+  ALU / memory / transform / language / reject policy
+```
+
+The cleaned AB artifact is:
+
+```text
+8 bytes <-> A128 <-> B64 <-> A128 <-> 8 bytes
+```
+
+D28 proved a **C0 route-head**:
+
+```text
+B64 -> LANG / ALU / MEM / TRANSFORM / UNKNOWN
+```
+
+D29 proved route-selected execution and empty inactive lanes. D30A/D30B split
+ALU into compact removable op-lanes:
+
+```text
+ADD / SUB / MUL / AND / OR / XOR
+```
+
+with `MUL` now implemented as a compact low-8-bit partial-product lane instead
+of a 65,536-entry table.
+
+The next real C-block is not another compression layer. It is the stream layer
+that turns overlapping B64 windows into spans:
+
+```text
+"Give me apples, i need EXACTLY 25 times 7..."
+  -> NUMBER(25)
+  -> OP_MUL
+  -> NUMBER(7)
+  -> ROUTE(ALU)
+```
+
+Until that C-block exists, the system can route and execute short command-shaped
+windows, but it does not yet parse arbitrary real text streams.
+
 ## Read Next
 
 - [Vraxion Home](Home) — public front door and mission-level summary

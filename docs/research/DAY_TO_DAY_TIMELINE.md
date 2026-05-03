@@ -1035,3 +1035,59 @@ and has negative margin.
 Updated source doc:
 
 - `docs/research/PHASE_D30B_COMPACT_MUL_LANE.md`
+
+### 2026-05-03 - D31 C-block tokenizer/embedder architecture lock
+
+- D31 names the real C-block and separates it from the earlier D28 C-router.
+
+```text
+D28:
+  C0 route-head probe
+  single B64 window -> route label
+
+D31:
+  C-block tokenizer / embedder / controller
+  stream of B64 windows -> tokens, spans, route hints
+```
+
+- Canonical stack:
+
+```text
+raw bytes
+  -> A-block: 1 byte <-> 16D
+  -> B-block: N x A outputs <-> B latent
+       default 8 x 16D = 128D <-> B64
+  -> C-block: stream tokenizer / span state / route hints
+  -> D-block: selected workers
+       ALU / MEM / TRANSFORM / LANG / UNKNOWN policy
+```
+
+- The C-block exists because real text can split useful commands across B64
+  window boundaries.
+
+Example:
+
+```text
+Give me apples, i need EXACTLY 25 times 7...
+```
+
+Expected C output:
+
+```text
+TEXT_SPAN("Give me apples, i need EXACTLY")
+NUMBER(25)
+OP_MUL
+NUMBER(7)
+ROUTE(ALU)
+```
+
+Interpretation:
+
+```text
+B64 is the common window bus.
+C is the first stream-understanding layer.
+```
+
+Updated source doc:
+
+- `docs/research/PHASE_D31_CBLOCK_TOKENIZER_EMBEDDER.md`
