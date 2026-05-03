@@ -859,3 +859,60 @@ over D24/D25/D27.
 Updated source doc:
 
 - `docs/research/PHASE_D28_CONTENT_ROUTER.md`
+
+### 2026-05-03 - D29 route-selected execution
+
+- D29 connected the D28 C-router to the existing D worker probes and verified
+  that inactive lanes stay empty.
+
+```text
+bytes -> A/B codec -> B64 -> C-router -> selected D worker -> output
+                              |
+                              '-- inactive lanes empty
+```
+
+- Confirm result:
+
+```text
+D29_ROUTE_EXECUTION_PASS
+
+sample_count:              57,353
+route_acc:                 100%
+selected_output_acc:       100%
+inactive_lanes_empty_acc:  100%
+executable_worker_acc:     100%
+policy_acc:                100%
+unsupported_alu_ok:        true
+
+wrong_route_control:       0%
+random_route_controls:     ~19.8% to ~20.4%
+```
+
+- Integration smoke:
+
+```text
+REV ABC  -> TRANSFORM -> CBA
+ROT XYZ  -> TRANSFORM -> YZX
+1+2      -> ALU       -> 3
+99-4     -> ALU       -> 95
+STORE X  -> MEM       -> STORED:X
+QUERY X  -> MEM       -> X
+THE CAT  -> LANG      -> NO_LANG_WORKER
+THE+CAT  -> UNKNOWN   -> REJECT
+27*852   -> ALU       -> UNSUPPORTED_ALU_OP
+```
+
+Interpretation:
+
+```text
+D28 = route selection
+D29 = route-selected execution
+```
+
+D29 is the first complete ABCD switchboard proof over the current AB/B64 bus.
+It is still a probe/reference system, not a learned general AI. The next step
+is D30 composed command episodes.
+
+Updated source doc:
+
+- `docs/research/PHASE_D29_ROUTE_SELECTED_EXECUTION.md`
