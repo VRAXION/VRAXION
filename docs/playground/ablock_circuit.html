@@ -289,6 +289,7 @@ const edgeCount = document.getElementById('edgeCount');
 const byteMargin = document.getElementById('byteMargin');
 const geometryScore = document.getElementById('geometryScore');
 const mentalModel = document.getElementById('mentalModel');
+const DEFAULT_CANDIDATE = 'noPrefill';
 
 const CANDIDATES = {
   baseline16: {
@@ -318,7 +319,7 @@ const CANDIDATES = {
     ]
   },
   noPrefill: {
-    label: 'D21F no_prefill geometry lead',
+    label: 'LATEST mutated: D21F no_prefill geometry lead',
     family: 'hidden-only / no-prefill sparse',
     verdict: 'Geometry lead: exact roundtrip and non-copy, but very low byte margin.',
     margin: 0.125,
@@ -551,6 +552,7 @@ document.querySelectorAll('button[data-byte]').forEach(btn => btn.addEventListen
 candidateSelect.innerHTML = Object.entries(CANDIDATES).map(([key, candidate]) =>
   `<option value="${key}">${candidate.label}</option>`
 ).join('');
+candidateSelect.value = DEFAULT_CANDIDATE;
 update();
 </script>
 </body>
