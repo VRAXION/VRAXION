@@ -93,6 +93,7 @@ Era-level summary of the research arc. Per-day detail lives in the timeline belo
 | Single-W mirror fp16 champion **(byte-level L1, current track)** | 2026-04-19 | Cluster 10's "73% ceiling" disproved: single-W mirror-tied architecture (one matrix, 2592 cells) reaches 100.0000% lossless via 5-seed restarts + LBFGS + exhaustive 1-cell rescue. Float champion (11.20 KB) compressed to **pure fp16 with a single 1-ulp grid search** — zero retraining required. Deploy champion: **5.60 KB, −22% vs Cluster 11, −50% vs fp32**. | [Timeline Archive](Timeline-Archive) |
 | Huffman-packed champion **(byte-level L1, current track)** | 2026-04-19 eve | Generator-based encoding (K=16/4 K-means atoms per component) + canonical Huffman on coef and gen-index streams separately. Beats fixed-width by ~14%. Standard compressors all WORSE at this data size. **New champion: 3440 B (3.36 KB), 100% lossless, 65536/65536 pairs.** Shannon floor: 2422 B (~42% gap remains). | [Timeline Archive](Timeline-Archive) |
 | ABC-Brain integration + ablation + Structured Chaos Theory | 2026-04-21/22 | Block C byte-pair champion (62 KB) deployed, ABC-Brain first wired (~25%), byte-pair 397-class 7.1% peak, 10-variant fitness sweep (smooth linear cosine champion), edge weights [1-3] FAIL, multi-channel FAIL, crystallize ported to Rust, **ablation reveals single-attractor collapse** (7 dominant neurons). Structured Chaos Theory v1.0 formulated (three laws). | [Timeline Archive](Timeline-Archive) |
+| Recurrent core recovery toy probe | 2026-05-04 | Label-only entangled sparse recurrent probe reaches 99.975% accuracy vs 63.95% zero-recurrent. Core probe rises +18.85pp, core-to-nuisance ratio rises 0.4608 -> 1.5534, and nuisance influence nearly vanishes under same-core nuisance swaps. **Context cancellation stays false; recurrent core recovery is the validated toy finding.** | [Timeline Archive](Timeline-Archive), [Finding report](https://github.com/VRAXION/VRAXION/blob/main/docs/runs/recurrent_core_recovery_2026-05-04.md) |
 
 ```mermaid
 timeline
@@ -183,6 +184,13 @@ timeline
                          : Crystallize ported Python to Rust
                          : Single-attractor collapse 7 dominant neurons
                          : Structured Chaos Theory v1.0 three laws
+    section Recurrent core recovery toy probe
+        2026-05-04       : Label-only entangled recurrent model 99.975%
+                         : Zero-recurrent baseline 63.95%
+                         : Core probe +18.85pp
+                         : Core-to-nuisance ratio 0.4608 to 1.5534
+                         : Same-core nuisance swap changes output 0.125%
+                         : Context cancellation false; core recovery true as toy finding
 ```
 
 ## Active Research Gates
@@ -234,6 +242,7 @@ The timeline is ordered latest-first. Each day is a self-contained H3 section wi
 <details>
 <summary>Jump to date</summary>
 
+- [2026-05-04 — Recurrent core recovery under entangled interference (toy)](#2026-05-04--recurrent-core-recovery-under-entangled-interference-toy)
 - [2026-04-21/22 — Block C byte-pair champion deployed, ABC-Brain integration, fitness sweep, crystallize, ablation](#2026-04-2122--block-c-byte-pair-champion-deployed-abc-brain-integration-fitness-sweep-crystallize-ablation)
 - [2026-04-19 evening — L1 merger Huffman-packed champion: 3.36 KB / 100% lossless](#2026-04-19-evening--l1-merger-huffman-packed-champion-336-kb--100-lossless)
 - [2026-04-19 — L1 merger fp16 champion: single-W mirror-tied, 5.60 KB, 100% lossless](#2026-04-19--l1-merger-fp16-champion-single-w-mirror-tied-560-kb-100-lossless)
@@ -269,6 +278,31 @@ The timeline is ordered latest-first. Each day is a self-contained H3 section wi
 - [Early 2026 — Diamond Code Era](#early-2026--diamond-code-era)
 
 </details>
+
+---
+
+### 2026-05-04 — Recurrent core recovery under entangled interference (toy)
+
+**Theme:** A toy recurrent probe started as a "Recurrent Context Cancellation" test, but the strongest supported mechanism shifted to recurrent core recovery: under entangled core+nuisance input, label-only recurrence recovers a core-dominant decision state instead of strongly erasing nuisance.
+
+**What changed:**
+
+- Added `scripts/run_context_cancellation_probe.py`, a CPU-friendly sparse recurrent probe with separable, entangled, and opponent-entangled inputs, post-hoc core/nuisance probes, recurrence ablations, and counterfactual influence interventions.
+- Label-only entangled run reached `0.99975` accuracy vs `0.6395` zero-recurrent; core probe rose `0.8105 -> 0.9990`, core-to-nuisance ratio rose `0.4608 -> 1.5534`, entropy fell `0.3278 -> 0.0038`, and logit margin rose `2.8643 -> 12.9283`.
+- Influence intervention found same-core nuisance swaps changed output only `0.00125`, while same-nuisance core swaps changed output `0.4925` with `0.99825` target accuracy.
+
+**Why it mattered:**
+
+- The original context-cancellation framing is too strong: nuisance remains weakly decodable (`0.5990 -> 0.5570`), so this is not clean erasure.
+- The validated toy finding is recurrent core recovery / core dominance under entangled interference: nuisance can remain decodable while losing practical decision authority.
+
+| Finding | Status | Evidence |
+|---|---|---|
+| Label-only recurrence is necessary on entangled input: 99.975% recurrent vs 63.95% zero-recurrent | **Validated finding (toy mechanism probe)** | `scripts/run_context_cancellation_probe.py`; local run `target/context-cancellation-probe/20260504T185308Z/context_cancellation_report.json`; [finding report](https://github.com/VRAXION/VRAXION/blob/main/docs/runs/recurrent_core_recovery_2026-05-04.md) |
+| Strong core recovery, weak nuisance erasure: core probe +18.85pp, nuisance probe -4.2pp, ratio 0.4608 -> 1.5534 | **Validated finding (toy mechanism probe)** | Post-hoc ridge probes and template/energy telemetry from the same run |
+| Nuisance loses decision authority: same-core nuisance swaps change output 0.125%, while core swaps change output 49.25% | **Validated finding (toy intervention)** | Local run `target/context-cancellation-probe/20260504T191155Z/context_cancellation_report.json`; [finding report](https://github.com/VRAXION/VRAXION/blob/main/docs/runs/recurrent_core_recovery_2026-05-04.md) |
+| Stronger bottleneck pressure (`hidden=16`, `update_rate=0.1`) weakens the pattern | **Unclear / pressure-control result** | Local run `target/context-cancellation-probe/20260504T191339Z/context_cancellation_report.json` |
+| Claim boundary | **Experimental, not current mainline** | Toy evidence only: does not prove consciousness, full VRAXION behavior, biological equivalence, or clean nuisance cancellation |
 
 ---
 
