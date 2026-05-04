@@ -5,6 +5,14 @@
 - [Vraxion Home](Home)
 - [INSTNCT Architecture](INSTNCT-Architecture)
 - [Research Process & Archive](Timeline-Archive)
+- [Research Name Glossary](Research-Name-Glossary)
+- [Research Scoreboard](Research-Scoreboard)
+- [A Geometry Audit Revival](A-GeometryAuditRevival)
+- [A Hidden Natural Margin Polish](A-HiddenNaturalMarginPolish)
+- [A Hidden Natural Int8 Artifact](A-HiddenNatural-Int8-Artifact)
+- [A-v2 Native Int8 Seed Sweep](A-v2-Native-Int8-Seed-Sweep)
+- [A-v2 H12 Int8 Geometry Polish](A-v2-H12-Int8-Geometry-Polish)
+- [A-v2 AB Compatibility Gate](A-v2-AB-Compatibility-Gate)
 
 ## Theoretical Framework
 
@@ -19,6 +27,7 @@
 ## Implementation
 
 - [Rust Implementation Surface](v5-Rust-Port-Benchmarks)
+- [Inventions & Candidate Primitives](VRAXION-Inventions)
 - [D9 Latent Genome Compiler](D9-Latent-Genome-Compiler)
 - [D10 HDS Basin & State Identity Finding](D10-HDS-Basin-State-Identity-Finding)
 - [D10 Release Readiness Gate](D10-Release-Readiness-Gate)
