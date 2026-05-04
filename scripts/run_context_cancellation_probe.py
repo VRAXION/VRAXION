@@ -47,6 +47,17 @@ RISKY_PLACES = {"street", "lab"}
 RISKY_NOISES = {"traffic", "static"}
 
 INPUT_MODES = ("separable", "entangled", "opponent_entangled")
+EXPERIMENTS = ("core_recovery", "latent_refraction")
+
+TASK_FRAMES = ("danger_frame", "environment_frame", "visibility_frame")
+FEATURE_GROUPS = ("actor_action", "place_noise", "light", "object")
+FRAME_ACTIVE_GROUP = {
+    "danger_frame": "actor_action",
+    "environment_frame": "place_noise",
+    "visibility_frame": "light",
+}
+LOW_VISIBILITY_LIGHTS = {"shadow", "dusk"}
+OBJECT_ALERT_ITEMS = {"stick", "wire"}
 
 
 @dataclass(frozen=True)
@@ -95,6 +106,19 @@ class DataBundle:
 
 
 @dataclass
+class RefractionDataBundle:
+    x: np.ndarray
+    y: np.ndarray
+    frame: np.ndarray
+    base_id: np.ndarray
+    observation_component: np.ndarray
+    frame_component: np.ndarray
+    group_components: dict[str, np.ndarray]
+    group_labels: dict[str, np.ndarray]
+    frame_names: list[str]
+
+
+@dataclass
 class FeatureEmbeddings:
     input_mode: str
     vectors: dict[tuple[str, str], np.ndarray]
@@ -103,11 +127,11 @@ class FeatureEmbeddings:
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description=(
-            "Tiny recurrent core-recovery v4 probe. The main claim path is label-only; "
-            "entangled inputs make core and nuisance share representation channels, and cleanup is "
-            "measured post-hoc with probes and interventions."
+            "Tiny recurrent mechanism probes. The default path is the v4 core-recovery probe; "
+            "--experiment latent_refraction runs the v6 task-frame/prism probe."
         )
     )
+    parser.add_argument("--experiment", choices=EXPERIMENTS, default="core_recovery")
     parser.add_argument(
         "--input-mode",
         default="all",
@@ -126,6 +150,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--active-value", type=float, default=1.0)
     parser.add_argument("--embed-scale", type=float, default=0.80)
     parser.add_argument("--nuisance-scale", type=float, default=1.05)
+    parser.add_argument("--frame-scale", type=float, default=1.10)
     parser.add_argument("--opponent-strength", type=float, default=0.80)
     parser.add_argument(
         "--update-rate",
@@ -343,6 +368,162 @@ def make_dataset(
         nuisance_y=nuisance_y[order],
         core_component=core_component[order],
         nuisance_component=nuisance_component[order],
+    )
+
+
+def visibility_label(light: str) -> int:
+    return int(light in LOW_VISIBILITY_LIGHTS)
+
+
+def object_alert_label(obj: str) -> int:
+    return int(obj in OBJECT_ALERT_ITEMS)
+
+
+def frame_label(frame: str, *, actor: str, action: str, place: str, light: str, noise: str, obj: str) -> int:
+    if frame == "danger_frame":
+        return relation_label(actor, action)
+    if frame == "environment_frame":
+        return nuisance_causal_label(place, noise)
+    if frame == "visibility_frame":
+        return visibility_label(light)
+    raise ValueError(f"unknown task frame: {frame}")
+
+
+def choose_combo_for_refraction_targets(
+    rng: np.random.Generator,
+    combos: list[tuple[str, str, str, str]],
+    *,
+    environment_positive: bool,
+    visibility_positive: bool,
+) -> tuple[str, str, str, str]:
+    candidates = [
+        combo
+        for combo in combos
+        if nuisance_causal_label(combo[0], combo[2]) == int(environment_positive)
+        and visibility_label(combo[1]) == int(visibility_positive)
+    ]
+    if not candidates:
+        candidates = combos
+    return candidates[rng.integers(len(candidates))]
+
+
+def build_frame_embeddings(hidden: int, seed: int, frame_scale: float) -> dict[str, np.ndarray]:
+    rng = np.random.default_rng(seed)
+    return {
+        frame: unit_vector(rng, hidden, frame_scale).astype(np.float32)
+        for frame in TASK_FRAMES
+    }
+
+
+def selected_refraction_input_modes(input_mode: str) -> list[str]:
+    if input_mode == "all":
+        return ["entangled", "separable"]
+    return [input_mode]
+
+
+def refraction_x_from_components(
+    *,
+    observation_component: np.ndarray,
+    frame_component: np.ndarray,
+    no_frame_token: bool,
+) -> np.ndarray:
+    if no_frame_token:
+        return observation_component.copy()
+    return observation_component + frame_component
+
+
+def make_refraction_dataset(
+    *,
+    n: int,
+    combos: list[tuple[str, str, str, str]],
+    seed: int,
+    embeddings: FeatureEmbeddings,
+    frame_embeddings: dict[str, np.ndarray],
+    active_value: float,
+    no_frame_token: bool = False,
+    random_labels: bool = False,
+) -> RefractionDataBundle:
+    rng = np.random.default_rng(seed)
+    hidden = len(next(iter(embeddings.vectors.values())))
+    base_count = max(1, n // len(TASK_FRAMES))
+    total = base_count * len(TASK_FRAMES)
+
+    y = np.zeros(total, dtype=np.int64)
+    frame = np.zeros(total, dtype=np.int64)
+    base_id = np.zeros(total, dtype=np.int64)
+    observation_component = np.zeros((total, hidden), dtype=np.float32)
+    frame_component = np.zeros((total, hidden), dtype=np.float32)
+    group_components = {
+        group: np.zeros((total, hidden), dtype=np.float32)
+        for group in FEATURE_GROUPS
+    }
+    group_labels = {
+        group: np.zeros(total, dtype=np.int64)
+        for group in FEATURE_GROUPS
+    }
+
+    row = 0
+    for base in range(base_count):
+        danger_positive = bool(rng.integers(0, 2))
+        environment_positive = bool(rng.integers(0, 2))
+        visibility_positive = bool(rng.integers(0, 2))
+        actor, action = choose_relation_pair(rng, danger_positive)
+        place, light, noise, obj = choose_combo_for_refraction_targets(
+            rng,
+            combos,
+            environment_positive=environment_positive,
+            visibility_positive=visibility_positive,
+        )
+
+        actor_action_component = active_value * (
+            embeddings.vectors[("actor", actor)] + embeddings.vectors[("action", action)]
+        )
+        place_noise_component = active_value * (
+            embeddings.vectors[("place", place)] + embeddings.vectors[("noise", noise)]
+        )
+        light_component = active_value * embeddings.vectors[("light", light)]
+        object_component = active_value * embeddings.vectors[("object", obj)]
+        observation = actor_action_component + place_noise_component + light_component + object_component
+        labels = {
+            "actor_action": relation_label(actor, action),
+            "place_noise": nuisance_causal_label(place, noise),
+            "light": visibility_label(light),
+            "object": object_alert_label(obj),
+        }
+
+        for frame_index, frame_name in enumerate(TASK_FRAMES):
+            frame[row] = frame_index
+            base_id[row] = base
+            observation_component[row] = observation
+            frame_component[row] = active_value * frame_embeddings[frame_name]
+            group_components["actor_action"][row] = actor_action_component
+            group_components["place_noise"][row] = place_noise_component
+            group_components["light"][row] = light_component
+            group_components["object"][row] = object_component
+            for group, value in labels.items():
+                group_labels[group][row] = value
+            if random_labels:
+                y[row] = rng.integers(0, 2)
+            else:
+                y[row] = labels[FRAME_ACTIVE_GROUP[frame_name]]
+            row += 1
+
+    x = refraction_x_from_components(
+        observation_component=observation_component,
+        frame_component=frame_component,
+        no_frame_token=no_frame_token,
+    )
+    order = rng.permutation(total)
+    return RefractionDataBundle(
+        x=x[order],
+        y=y[order],
+        frame=frame[order],
+        base_id=base_id[order],
+        observation_component=observation_component[order],
+        frame_component=frame_component[order],
+        group_components={group: values[order] for group, values in group_components.items()},
+        group_labels={group: values[order] for group, values in group_labels.items()},
+        frame_names=list(TASK_FRAMES),
     )
 
 
@@ -687,6 +868,7 @@ def counterfactual_influence_summary(
     original_label_retention_by_step: list[float] = []
     mean_abs_label_probability_delta_by_step: list[float] = []
     mean_kl_divergence_by_step: list[float] = []
+    mean_abs_margin_delta_by_step: list[float] = []
 
     for ref_logits, cf_logits in zip(reference_logits, counterfactual_logits):
         ref_probs = softmax_np(ref_logits)
@@ -701,6 +883,9 @@ def counterfactual_influence_summary(
         mean_abs_label_probability_delta_by_step.append(float(np.mean(np.abs(ref_label_prob - cf_label_prob))))
         kl = np.sum(ref_probs * (np.log(np.maximum(ref_probs, 1.0e-9)) - np.log(np.maximum(cf_probs, 1.0e-9))), axis=1)
         mean_kl_divergence_by_step.append(float(np.mean(kl)))
+        ref_margin = np.sort(ref_logits, axis=1)[:, -1] - np.sort(ref_logits, axis=1)[:, -2]
+        cf_margin = np.sort(cf_logits, axis=1)[:, -1] - np.sort(cf_logits, axis=1)[:, -2]
+        mean_abs_margin_delta_by_step.append(float(np.mean(np.abs(ref_margin - cf_margin))))
 
     return {
         "label_change_rate": float(np.mean(reference_y != counterfactual_y)),
@@ -709,11 +894,13 @@ def counterfactual_influence_summary(
         "original_label_retention": original_label_retention_by_step[-1],
         "mean_abs_label_probability_delta": mean_abs_label_probability_delta_by_step[-1],
         "mean_kl_divergence": mean_kl_divergence_by_step[-1],
+        "mean_abs_margin_delta": mean_abs_margin_delta_by_step[-1],
         "output_change_rate_by_step": output_change_rate_by_step,
         "target_accuracy_by_step": target_accuracy_by_step,
         "original_label_retention_by_step": original_label_retention_by_step,
         "mean_abs_label_probability_delta_by_step": mean_abs_label_probability_delta_by_step,
         "mean_kl_divergence_by_step": mean_kl_divergence_by_step,
+        "mean_abs_margin_delta_by_step": mean_abs_margin_delta_by_step,
     }
 
 
@@ -824,6 +1011,355 @@ def run_interventions(
     return interventions
 
 
+def frame_indices(bundle: RefractionDataBundle, frame_name: str) -> np.ndarray:
+    frame_id = bundle.frame_names.index(frame_name)
+    return np.flatnonzero(bundle.frame == frame_id)
+
+
+def label_diversity_by_observation(bundle: RefractionDataBundle) -> float:
+    diverse = 0
+    total = 0
+    for base in np.unique(bundle.base_id):
+        labels = bundle.y[bundle.base_id == base]
+        if len(labels) <= 1:
+            continue
+        total += 1
+        diverse += int(len(set(labels.tolist())) > 1)
+    return float(diverse / max(total, 1))
+
+
+def refraction_prediction_summary(
+    *,
+    model: RecurrentClassifier,
+    bundle: RefractionDataBundle,
+    args: argparse.Namespace,
+    x_override: np.ndarray | None = None,
+    ablation: str | None = None,
+) -> dict[str, Any]:
+    x = bundle.x if x_override is None else x_override
+    _states, logits = rollout_arrays(model, x, args.device, ablation=ablation)
+    pred = np.argmax(logits[-1], axis=1)
+    per_step_accuracy = [
+        float(np.mean(np.argmax(step_logits, axis=1) == bundle.y))
+        for step_logits in logits
+    ]
+    accuracy_by_frame: dict[str, float] = {}
+    accuracy_by_frame_by_step: dict[str, list[float]] = {}
+    for frame_name in bundle.frame_names:
+        idx = frame_indices(bundle, frame_name)
+        accuracy_by_frame[frame_name] = float(np.mean(pred[idx] == bundle.y[idx]))
+        accuracy_by_frame_by_step[frame_name] = [
+            float(np.mean(np.argmax(step_logits[idx], axis=1) == bundle.y[idx]))
+            for step_logits in logits
+        ]
+
+    return {
+        "accuracy": float(np.mean(pred == bundle.y)),
+        "accuracy_by_frame": accuracy_by_frame,
+        "accuracy_by_frame_by_step": accuracy_by_frame_by_step,
+        "per_step_accuracy": per_step_accuracy,
+        "output_entropy_by_step": output_entropy_by_step(logits),
+        "logit_margin_by_step": logit_margin_by_step(logits),
+        "label_logit_confidence_by_step": [
+            float(np.mean(softmax_np(step_logits)[np.arange(len(bundle.y)), bundle.y]))
+            for step_logits in logits
+        ],
+    }
+
+
+def evaluate_refraction_model(
+    *,
+    model: RecurrentClassifier,
+    train: RefractionDataBundle,
+    test: RefractionDataBundle,
+    args: argparse.Namespace,
+    ablation: str | None = None,
+) -> dict[str, Any]:
+    train_states, _train_logits = rollout_arrays(model, train.x, args.device, ablation=ablation)
+    test_states, test_logits = rollout_arrays(model, test.x, args.device, ablation=ablation)
+    base = refraction_prediction_summary(model=model, bundle=test, args=args, ablation=ablation)
+
+    group_probe_accuracy_by_step: dict[str, list[float]] = {}
+    group_probe_accuracy_by_frame_by_step: dict[str, dict[str, list[float]]] = {}
+    for group in FEATURE_GROUPS:
+        group_probe_accuracy_by_step[group] = [
+            ridge_probe_accuracy(
+                train_states[step],
+                train.group_labels[group],
+                test_states[step],
+                test.group_labels[group],
+                args.ridge,
+            )
+            for step in range(len(test_states))
+        ]
+        group_probe_accuracy_by_frame_by_step[group] = {}
+        for frame_name in test.frame_names:
+            train_idx = frame_indices(train, frame_name)
+            test_idx = frame_indices(test, frame_name)
+            group_probe_accuracy_by_frame_by_step[group][frame_name] = [
+                ridge_probe_accuracy(
+                    train_states[step][train_idx],
+                    train.group_labels[group][train_idx],
+                    test_states[step][test_idx],
+                    test.group_labels[group][test_idx],
+                    args.ridge,
+                )
+                for step in range(len(test_states))
+            ]
+
+    base.update(
+        {
+            "feature_group_probe_accuracy_by_step": group_probe_accuracy_by_step,
+            "feature_group_probe_accuracy_by_frame_by_step": group_probe_accuracy_by_frame_by_step,
+            "same_observation_label_diversity": label_diversity_by_observation(test),
+        }
+    )
+    return base
+
+
+def refraction_group_swap_x(
+    *,
+    bundle: RefractionDataBundle,
+    group: str,
+    row_idx: np.ndarray,
+    permuted_row_idx: np.ndarray,
+) -> np.ndarray:
+    observation = bundle.observation_component[row_idx].copy()
+    observation -= bundle.group_components[group][row_idx]
+    observation += bundle.group_components[group][permuted_row_idx]
+    return observation + bundle.frame_component[row_idx]
+
+
+def run_refraction_influence(
+    *,
+    model: RecurrentClassifier,
+    test: RefractionDataBundle,
+    args: argparse.Namespace,
+    seed: int,
+) -> dict[str, Any]:
+    rng = np.random.default_rng(seed)
+    influence_by_frame: dict[str, dict[str, Any]] = {}
+    active_core_influence_by_step: dict[str, list[float]] = {}
+    inactive_group_influence_by_step: dict[str, list[float]] = {}
+    refraction_index_by_step: dict[str, list[float]] = {}
+
+    for frame_name in test.frame_names:
+        idx = frame_indices(test, frame_name)
+        active_group = FRAME_ACTIVE_GROUP[frame_name]
+        influence_by_frame[frame_name] = {}
+        for group in FEATURE_GROUPS:
+            perm_local = rng.permutation(len(idx))
+            permuted_idx = idx[perm_local]
+            counterfactual_x = refraction_group_swap_x(
+                bundle=test,
+                group=group,
+                row_idx=idx,
+                permuted_row_idx=permuted_idx,
+            )
+            counterfactual_y = (
+                test.group_labels[group][permuted_idx]
+                if group == active_group
+                else test.y[idx]
+            )
+            influence_by_frame[frame_name][group] = counterfactual_influence_summary(
+                model=model,
+                reference_x=test.x[idx],
+                counterfactual_x=counterfactual_x,
+                reference_y=test.y[idx],
+                counterfactual_y=counterfactual_y,
+                args=args,
+            )
+
+        active_curve = influence_by_frame[frame_name][active_group]["output_change_rate_by_step"]
+        inactive_curves = [
+            influence_by_frame[frame_name][group]["output_change_rate_by_step"]
+            for group in FEATURE_GROUPS
+            if group != active_group
+        ]
+        inactive_max = [
+            float(max(curve[step] for curve in inactive_curves))
+            for step in range(len(active_curve))
+        ]
+        active_core_influence_by_step[frame_name] = active_curve
+        inactive_group_influence_by_step[frame_name] = inactive_max
+        refraction_index_by_step[frame_name] = [
+            float(active - inactive)
+            for active, inactive in zip(active_curve, inactive_max)
+        ]
+
+    mean_refraction_index = mean_list(list(refraction_index_by_step.values()))
+    authority_by_group: dict[str, float | None] = {}
+    for group in FEATURE_GROUPS:
+        causal_frames = [
+            frame_name
+            for frame_name, active_group in FRAME_ACTIVE_GROUP.items()
+            if active_group == group
+        ]
+        if not causal_frames:
+            authority_by_group[group] = None
+            continue
+        causal = max(
+            influence_by_frame[frame_name][group]["output_change_rate"]
+            for frame_name in causal_frames
+        )
+        nuisance = max(
+            influence_by_frame[frame_name][group]["output_change_rate"]
+            for frame_name in test.frame_names
+            if frame_name not in causal_frames
+        )
+        authority_by_group[group] = float(causal - nuisance)
+
+    numeric_authority = [value for value in authority_by_group.values() if value is not None]
+    return {
+        "feature_group_influence_by_frame": influence_by_frame,
+        "active_core_influence_by_step": active_core_influence_by_step,
+        "inactive_group_influence_by_step": inactive_group_influence_by_step,
+        "refraction_index_by_step": refraction_index_by_step,
+        "mean_refraction_index_by_step": mean_refraction_index,
+        "authority_switch_score_by_group": authority_by_group,
+        "authority_switch_score": float(np.mean(numeric_authority)) if numeric_authority else None,
+    }
+
+
+def shuffled_frame_x(bundle: RefractionDataBundle, seed: int) -> np.ndarray:
+    rng = np.random.default_rng(seed)
+    perm = rng.permutation(len(bundle.x))
+    return bundle.observation_component + bundle.frame_component[perm]
+
+
+def run_refraction_seed(
+    *,
+    name: str,
+    input_mode: str,
+    seed: int,
+    schema: Schema,
+    args: argparse.Namespace,
+    full_controls: bool,
+) -> dict[str, Any]:
+    train_combos, heldout_combos = split_nuisance_combos(seed, args.holdout_fraction)
+    embeddings = build_embeddings(
+        schema=schema,
+        input_mode=input_mode,
+        seed=seed + 500_003,
+        embed_scale=args.embed_scale,
+        opponent_strength=args.opponent_strength,
+    )
+    frame_embeddings = build_frame_embeddings(schema.hidden, seed + 600_007, args.frame_scale)
+    train = make_refraction_dataset(
+        n=args.train_size,
+        combos=train_combos,
+        seed=seed + 2_001,
+        embeddings=embeddings,
+        frame_embeddings=frame_embeddings,
+        active_value=args.active_value,
+    )
+    test = make_refraction_dataset(
+        n=args.test_size,
+        combos=heldout_combos,
+        seed=seed + 2_002,
+        embeddings=embeddings,
+        frame_embeddings=frame_embeddings,
+        active_value=args.active_value,
+    )
+    model = train_model(train=train, hidden=schema.hidden, args=args, seed=seed + 41)
+    main = evaluate_refraction_model(model=model, train=train, test=test, args=args)
+    zero = refraction_prediction_summary(model=model, bundle=test, args=args, ablation="zero_recurrent_update")
+    threshold_only = refraction_prediction_summary(model=model, bundle=test, args=args, ablation="zero_matrix_keep_threshold")
+    controls: dict[str, Any] = {
+        "zero_recurrent_update": zero,
+        "threshold_only": threshold_only,
+    }
+    influence: dict[str, Any] = {}
+
+    if full_controls:
+        influence = run_refraction_influence(model=model, test=test, args=args, seed=seed + 910_001)
+        controls["freeze_after_1"] = refraction_prediction_summary(model=model, bundle=test, args=args, ablation="freeze_after_1")
+        controls["freeze_after_2"] = refraction_prediction_summary(model=model, bundle=test, args=args, ablation="freeze_after_2")
+        controls["freeze_after_3"] = refraction_prediction_summary(model=model, bundle=test, args=args, ablation="freeze_after_3")
+        controls["shuffled_task_frame_token"] = refraction_prediction_summary(
+            model=model,
+            bundle=test,
+            args=args,
+            x_override=shuffled_frame_x(test, seed + 920_001),
+        )
+
+        no_frame_train = make_refraction_dataset(
+            n=args.train_size,
+            combos=train_combos,
+            seed=seed + 2_001,
+            embeddings=embeddings,
+            frame_embeddings=frame_embeddings,
+            active_value=args.active_value,
+            no_frame_token=True,
+        )
+        no_frame_test = make_refraction_dataset(
+            n=args.test_size,
+            combos=heldout_combos,
+            seed=seed + 2_002,
+            embeddings=embeddings,
+            frame_embeddings=frame_embeddings,
+            active_value=args.active_value,
+            no_frame_token=True,
+        )
+        no_frame_model = train_model(train=no_frame_train, hidden=schema.hidden, args=args, seed=seed + 42)
+        controls["no_task_frame_token"] = refraction_prediction_summary(
+            model=no_frame_model,
+            bundle=no_frame_test,
+            args=args,
+        )
+
+        random_model = recurrent_matrix_control(model, "randomize", seed + 930_001)
+        controls["randomize_recurrent_matrix"] = refraction_prediction_summary(
+            model=random_model,
+            bundle=test,
+            args=args,
+        )
+
+        if args.random_label_control:
+            random_train = make_refraction_dataset(
+                n=args.train_size,
+                combos=train_combos,
+                seed=seed + 3_001,
+                embeddings=embeddings,
+                frame_embeddings=frame_embeddings,
+                active_value=args.active_value,
+                random_labels=True,
+            )
+            random_test = make_refraction_dataset(
+                n=args.test_size,
+                combos=heldout_combos,
+                seed=seed + 3_002,
+                embeddings=embeddings,
+                frame_embeddings=frame_embeddings,
+                active_value=args.active_value,
+                random_labels=True,
+            )
+            random_label_model = train_model(train=random_train, hidden=schema.hidden, args=args, seed=seed + 43)
+            controls["random_label_control"] = refraction_prediction_summary(
+                model=random_label_model,
+                bundle=random_test,
+                args=args,
+            )
+
+    return {
+        "name": name,
+        "input_mode": input_mode,
+        "seed": seed,
+        "task_frames": list(TASK_FRAMES),
+        "feature_groups": list(FEATURE_GROUPS),
+        "frame_active_group": dict(FRAME_ACTIVE_GROUP),
+        "train_rows": int(len(train.x)),
+        "test_rows": int(len(test.x)),
+        "nuisance_split": {
+            "train_combo_count": len(train_combos),
+            "heldout_combo_count": len(heldout_combos),
+        },
+        "main": main,
+        "controls": controls,
+        "influence": influence,
+    }
+
+
 def mean_list(rows: list[list[float]]) -> list[float]:
     max_len = max(len(row) for row in rows)
     return [
@@ -893,6 +1429,7 @@ def aggregate_counterfactual_summaries(metrics: list[dict[str, Any]]) -> dict[st
         "original_label_retention",
         "mean_abs_label_probability_delta",
         "mean_kl_divergence",
+        "mean_abs_margin_delta",
     ]
     list_keys = [
         "output_change_rate_by_step",
@@ -900,6 +1437,7 @@ def aggregate_counterfactual_summaries(metrics: list[dict[str, Any]]) -> dict[st
         "original_label_retention_by_step",
         "mean_abs_label_probability_delta_by_step",
         "mean_kl_divergence_by_step",
+        "mean_abs_margin_delta_by_step",
     ]
     out: dict[str, Any] = {}
     for key in scalar_keys:
@@ -995,6 +1533,59 @@ def aggregate_experiment_runs(name: str, runs: list[dict[str, Any]]) -> dict[str
         "main": main,
         "controls": controls,
         "interventions": interventions,
+        "runs": runs,
+    }
+
+
+def aggregate_nested(values: list[Any]) -> Any:
+    if not values:
+        return None
+    first = values[0]
+    if first is None:
+        return None
+    if isinstance(first, (float, int, np.floating, np.integer)) and not isinstance(first, bool):
+        return float(np.mean([float(value) for value in values]))
+    if isinstance(first, list):
+        if not first:
+            return []
+        if all(isinstance(item, (float, int, np.floating, np.integer)) for row in values for item in row):
+            return mean_list([[float(item) for item in row] for row in values])
+        return first
+    if isinstance(first, dict):
+        out: dict[str, Any] = {}
+        for key in first:
+            if all(isinstance(value, dict) and key in value for value in values):
+                out[key] = aggregate_nested([value[key] for value in values])
+        return out
+    return first
+
+
+def aggregate_refraction_runs(name: str, runs: list[dict[str, Any]]) -> dict[str, Any]:
+    main = aggregate_nested([run["main"] for run in runs])
+    controls = aggregate_nested([run["controls"] for run in runs])
+    influence = aggregate_nested([run["influence"] for run in runs])
+    recurrence_gain = main["accuracy"] - controls["zero_recurrent_update"]["accuracy"]
+    return {
+        "name": name,
+        "input_mode": runs[0]["input_mode"],
+        "task_frames": runs[0]["task_frames"],
+        "feature_groups": runs[0]["feature_groups"],
+        "frame_active_group": runs[0]["frame_active_group"],
+        "train_rows": int(np.mean([run["train_rows"] for run in runs])),
+        "test_rows": int(np.mean([run["test_rows"] for run in runs])),
+        "accuracy": main["accuracy"],
+        "accuracy_by_frame": main["accuracy_by_frame"],
+        "per_step_accuracy": main["per_step_accuracy"],
+        "feature_group_probe_accuracy_by_step": main["feature_group_probe_accuracy_by_step"],
+        "feature_group_probe_accuracy_by_frame_by_step": main["feature_group_probe_accuracy_by_frame_by_step"],
+        "same_observation_label_diversity": main["same_observation_label_diversity"],
+        "output_entropy_by_step": main["output_entropy_by_step"],
+        "logit_margin_by_step": main["logit_margin_by_step"],
+        "label_logit_confidence_by_step": main["label_logit_confidence_by_step"],
+        "recurrence_gain": recurrence_gain,
+        "main": main,
+        "controls": controls,
+        "influence": influence,
         "runs": runs,
     }
 
@@ -1155,6 +1746,71 @@ def interpret_report(experiments: dict[str, Any], specificity: float | None, ran
     }
 
 
+def interpret_refraction_report(summary: dict[str, Any]) -> dict[str, str]:
+    main = summary["main"]
+    controls = summary["controls"]
+    influence = summary.get("influence", {})
+    accuracy = summary["accuracy"]
+    recurrence_gain = summary["recurrence_gain"]
+    zero_accuracy = controls["zero_recurrent_update"]["accuracy"]
+    no_frame_accuracy = controls.get("no_task_frame_token", {}).get("accuracy")
+    shuffled_accuracy = controls.get("shuffled_task_frame_token", {}).get("accuracy")
+    randomized_accuracy = controls.get("randomize_recurrent_matrix", {}).get("accuracy")
+    random_label_accuracy = controls.get("random_label_control", {}).get("accuracy")
+    mean_refraction_index = influence.get("mean_refraction_index_by_step", [])
+    authority_switch = influence.get("authority_switch_score")
+    frame_accuracies = main["accuracy_by_frame"].values()
+
+    high_accuracy = accuracy >= 0.85 and min(frame_accuracies) >= 0.80
+    recurrence_matters = recurrence_gain >= 0.05
+    frame_token_matters = no_frame_accuracy is not None and no_frame_accuracy <= accuracy - 0.10
+    shuffled_hurts = shuffled_accuracy is not None and shuffled_accuracy <= accuracy - 0.10
+    randomized_hurts = randomized_accuracy is not None and randomized_accuracy <= accuracy - 0.20
+    random_fails = random_label_accuracy is None or random_label_accuracy < 0.65
+    refraction_rises = (
+        len(mean_refraction_index) >= 2
+        and mean_refraction_index[-1] >= 0.15
+        and mean_refraction_index[-1] >= mean_refraction_index[0] + 0.05
+    )
+    authority_switches = authority_switch is not None and authority_switch >= 0.15
+
+    supports = (
+        high_accuracy
+        and recurrence_matters
+        and frame_token_matters
+        and shuffled_hurts
+        and randomized_hurts
+        and random_fails
+        and refraction_rises
+        and authority_switches
+    )
+
+    if supports:
+        return {
+            "supports_recurrent_latent_refraction": "true",
+            "supports_task_frame_conditional_core_dominance": "true",
+            "reason": (
+                "The same entangled observations are solved under multiple task frames, recurrence beats the "
+                "zero-recurrent baseline, removing or shuffling the frame token hurts, randomizing recurrence "
+                "destroys the gain, active-group influence separates from inactive-group influence over steps, "
+                "and feature groups show higher authority when causal than when nuisance."
+            ),
+        }
+
+    return {
+        "supports_recurrent_latent_refraction": "unclear",
+        "supports_task_frame_conditional_core_dominance": "unclear",
+        "reason": (
+            f"accuracy={accuracy:.3f}, zero_accuracy={zero_accuracy:.3f}, recurrence_gain={recurrence_gain:.3f}, "
+            f"no_frame_accuracy={no_frame_accuracy if no_frame_accuracy is not None else 'n/a'}, "
+            f"shuffled_frame_accuracy={shuffled_accuracy if shuffled_accuracy is not None else 'n/a'}, "
+            f"randomized_recurrent_accuracy={randomized_accuracy if randomized_accuracy is not None else 'n/a'}, "
+            f"authority_switch_score={authority_switch if authority_switch is not None else 'n/a'}, "
+            f"mean_refraction_index_final={mean_refraction_index[-1] if mean_refraction_index else 'n/a'}."
+        ),
+    }
+
+
 def round_floats(obj: Any, digits: int = 6) -> Any:
     if isinstance(obj, float):
         return round(obj, digits)
@@ -1212,6 +1868,259 @@ def compact_intervention_summary(interventions: dict[str, Any]) -> dict[str, Any
     }
 
 
+def final_step(value: dict[str, Any], key: str) -> float:
+    by_step = value.get(f"{key}_by_step")
+    if by_step:
+        return float(by_step[-1])
+    return float(value.get(key, 0.0))
+
+
+def markdown_refraction_table(summary: dict[str, Any]) -> str:
+    influence = summary.get("influence", {}).get("feature_group_influence_by_frame", {})
+    lines = [
+        "| Frame | Active group | actor_action | place_noise | light | object |",
+        "|---|---|---:|---:|---:|---:|",
+    ]
+    for frame_name in TASK_FRAMES:
+        row = [frame_name, FRAME_ACTIVE_GROUP[frame_name]]
+        frame_influence = influence.get(frame_name, {})
+        for group in FEATURE_GROUPS:
+            item = frame_influence.get(group, {})
+            row.append(f"{item.get('output_change_rate', 0.0):.4f}")
+        lines.append(f"| {row[0]} | {row[1]} | {row[2]} | {row[3]} | {row[4]} | {row[5]} |")
+    return "\n".join(lines)
+
+
+def write_latent_refraction_finding(
+    *,
+    report: dict[str, Any],
+    out_root: Path,
+    run_dir: Path,
+    report_path: Path,
+) -> Path:
+    main_summary = report["experiments"].get("latent_refraction_entangled")
+    if main_summary is None:
+        main_summary = next(iter(report["experiments"].values()))
+    controls = main_summary["controls"]
+    influence = main_summary.get("influence", {})
+    refraction_curve = influence.get("mean_refraction_index_by_step", [])
+    authority = influence.get("authority_switch_score")
+    try:
+        display_report_path = str(report_path.resolve().relative_to(ROOT))
+    except ValueError:
+        display_report_path = str(report_path)
+    finding = f"""# Latent Refraction Finding
+
+Source run:
+
+- `{display_report_path}`
+
+## Old Finding Summary
+
+The previous toy finding supported **Recurrent Core Recovery under Entangled Interference**:
+
+- recurrence can recover a task-causal core from entangled core+nuisance input,
+- nuisance can remain decodable,
+- decision authority can still shift toward the recovered core.
+
+That result did not fully test the prism idea, because each feature group kept the same role across the task.
+
+## New Hypothesis
+
+**Recurrent Latent Refraction / Task-Frame Conditional Core Dominance**
+
+The same observed feature bundle should be reinterpreted depending on a task-frame token. A feature group that is nuisance in one frame should become causal core in another frame. The recurrent loop should reorient the hidden state so the active task-core gains decision authority while inactive groups remain decodable but output-inert.
+
+## Frame Task Setup
+
+Every base observation is evaluated under three frames:
+
+- `danger_frame`: label depends on `actor_action`.
+- `environment_frame`: label depends on `place_noise`.
+- `visibility_frame`: label depends on `light`.
+
+Object features are included as an always-inactive distractor in this v6 version. This keeps the first prism test small and falsifiable.
+
+## Accuracy Results
+
+- input mode: `{main_summary["input_mode"]}`
+- overall accuracy: `{main_summary["accuracy"]:.6f}`
+- zero-recurrent accuracy: `{controls["zero_recurrent_update"]["accuracy"]:.6f}`
+- recurrence gain: `{main_summary["recurrence_gain"]:.6f}`
+- no-frame-token accuracy: `{controls.get("no_task_frame_token", {}).get("accuracy", "n/a")}`
+- shuffled-frame-token accuracy: `{controls.get("shuffled_task_frame_token", {}).get("accuracy", "n/a")}`
+- randomized-recurrent accuracy: `{controls.get("randomize_recurrent_matrix", {}).get("accuracy", "n/a")}`
+- random-label accuracy: `{controls.get("random_label_control", {}).get("accuracy", "n/a")}`
+- same-observation label diversity: `{main_summary["same_observation_label_diversity"]:.6f}`
+
+Accuracy by frame:
+
+```json
+{json.dumps(round_floats(main_summary["accuracy_by_frame"]), indent=2)}
+```
+
+## Influence Table
+
+Final-step output-change rate when swapping each feature group while holding the rest fixed:
+
+{markdown_refraction_table(main_summary)}
+
+## Refraction Index
+
+Definition:
+
+```text
+refraction_index_by_step = active_core_output_change_rate - max(inactive_group_output_change_rate)
+```
+
+Mean refraction index by step:
+
+```json
+{json.dumps(round_floats(refraction_curve), indent=2)}
+```
+
+Authority switch score:
+
+```json
+{json.dumps(round_floats(influence.get("authority_switch_score_by_group", {})), indent=2)}
+```
+
+Mean authority switch score: `{authority if authority is not None else "n/a"}`
+
+## Controls
+
+- `zero_recurrent_update`: tests whether recurrence is carrying the frame-conditioned computation.
+- `no_task_frame_token`: tests whether identical observations with different frame labels are unsolvable without the frame.
+- `shuffled_task_frame_token`: tests whether the trained model actually uses the frame token.
+- `freeze_after_1/2/3`: tests whether recurrent depth matters.
+- `randomize_recurrent_matrix`: tests whether the learned recurrent matrix carries the useful dynamic.
+- `random_label_control`: sanity check against memorizing arbitrary frame labels.
+
+## Interpretation
+
+```json
+{json.dumps(report["interpretation"], indent=2)}
+```
+
+## Claim Boundary
+
+Toy evidence only. Do not claim consciousness, full VRAXION behavior, production architecture validation, clean nuisance erasure, or biological equivalence.
+
+Safe claim if positive:
+
+> In a controlled toy setting, the recurrent loop can reorient an entangled representation according to a task frame, giving decision authority to different feature groups without necessarily erasing the others.
+"""
+    out_root.mkdir(parents=True, exist_ok=True)
+    finding_path = out_root / "LATENT_REFRACTION_FINDING.md"
+    run_finding_path = run_dir / "LATENT_REFRACTION_FINDING.md"
+    finding_path.write_text(finding, encoding="utf-8")
+    run_finding_path.write_text(finding, encoding="utf-8")
+    return finding_path
+
+
+def run_latent_refraction(args: argparse.Namespace, run_dir: Path, out_root: Path) -> int:
+    schema = build_schema(args.hidden)
+    experiments: dict[str, Any] = {}
+    modes = selected_refraction_input_modes(args.input_mode)
+    for input_mode in modes:
+        name = f"latent_refraction_{input_mode}"
+        full_controls = input_mode == "entangled"
+        runs = [
+            run_refraction_seed(
+                name=name,
+                input_mode=input_mode,
+                seed=seed,
+                schema=schema,
+                args=args,
+                full_controls=full_controls,
+            )
+            for seed in range(args.seeds)
+        ]
+        experiments[name] = aggregate_refraction_runs(name, runs)
+
+    main_summary = experiments.get("latent_refraction_entangled") or next(iter(experiments.values()))
+    interpretation = interpret_refraction_report(main_summary)
+    report = {
+        "config": {
+            "experiment": args.experiment,
+            "input_mode": args.input_mode,
+            "seeds": args.seeds,
+            "hidden": args.hidden,
+            "steps": args.steps,
+            "epochs": args.epochs,
+            "train_size": args.train_size,
+            "test_size": args.test_size,
+            "batch_size": args.batch_size,
+            "lr": args.lr,
+            "sparse_density": args.sparse_density,
+            "holdout_fraction": args.holdout_fraction,
+            "active_value": args.active_value,
+            "embed_scale": args.embed_scale,
+            "frame_scale": args.frame_scale,
+            "opponent_strength": args.opponent_strength,
+            "update_rate": args.update_rate,
+            "delta_scale": args.delta_scale,
+            "ridge": args.ridge,
+            "random_label_control": args.random_label_control,
+            "device": args.device,
+            "out_dir": str(run_dir),
+        },
+        "schema": asdict(schema),
+        "seed": 0 if args.seeds == 1 else None,
+        "seeds": list(range(args.seeds)),
+        "mode": "recurrent_latent_refraction_v6",
+        "hypothesis": "Recurrent Latent Refraction / Task-Frame Conditional Core Dominance",
+        "experiments": experiments,
+        "interpretation": interpretation,
+        "notes": [
+            "This is a toy mechanism probe only. It does not prove consciousness.",
+            "The exact same observation is duplicated under multiple task-frame tokens with different labels.",
+            "The key metric is decision authority, not feature deletion.",
+            "Inactive feature groups may remain decodable; positive evidence requires low inactive influence.",
+        ],
+        "environment": {
+            "python": sys.version,
+            "torch": torch.__version__,
+            "numpy": np.__version__,
+            "platform": platform.platform(),
+        },
+    }
+    report = round_floats(report)
+    report_path = run_dir / "latent_refraction_report.json"
+    report_path.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
+    finding_path = write_latent_refraction_finding(
+        report=report,
+        out_root=out_root,
+        run_dir=run_dir,
+        report_path=report_path,
+    )
+
+    printable = {
+        "mode": report["mode"],
+        "interpretation": report["interpretation"],
+        "main": {
+            "accuracy": round_floats(main_summary["accuracy"]),
+            "accuracy_by_frame": round_floats(main_summary["accuracy_by_frame"]),
+            "recurrence_gain": round_floats(main_summary["recurrence_gain"]),
+            "mean_refraction_index_by_step": round_floats(
+                main_summary.get("influence", {}).get("mean_refraction_index_by_step", [])
+            ),
+            "authority_switch_score": round_floats(
+                main_summary.get("influence", {}).get("authority_switch_score")
+            ),
+            "controls": {
+                key: round_floats(value["accuracy"])
+                for key, value in main_summary["controls"].items()
+                if isinstance(value, dict) and "accuracy" in value
+            },
+        },
+    }
+    print(json.dumps(printable, indent=2))
+    print(f"\nWrote JSON report: {report_path}")
+    print(f"Wrote finding: {finding_path}")
+    return 0
+
+
 def main() -> int:
     args = parse_args()
     if args.device != "cpu" and not torch.cuda.is_available():
@@ -1221,6 +2130,9 @@ def main() -> int:
     timestamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
     run_dir = out_root / timestamp
     run_dir.mkdir(parents=True, exist_ok=True)
+
+    if args.experiment == "latent_refraction":
+        return run_latent_refraction(args, run_dir, out_root)
 
     schema = build_schema(args.hidden)
     config = ProbeConfig(
