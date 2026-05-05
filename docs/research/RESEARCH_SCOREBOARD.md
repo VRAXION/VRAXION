@@ -233,6 +233,14 @@ Temporal disambiguation refraction:
 - Bag/static shortcuts are present: bag-of-tokens and full-sentence-static baselines both reach `1.000`, so final-label success is not streaming-specific yet.
 - Current read: delayed suffix frame resolution is visible, but the stronger claim that streaming recurrence maintains a clean multi-frame ambiguous prefix is not yet supported.
 
+Temporal order-contrast refraction:
+
+- `temporal_order_contrast_refraction` fixes the bag/static shortcut by using same-token-set pairs with different labels, such as `dog bit me` vs `me bit dog`.
+- First run: streaming recurrent accuracy is `1.000`, bag-of-tokens is `0.500`, static-no-position is `0.500`, shuffled order is `0.492`, zero recurrent carry is `0.320`, randomized recurrent is `0.480`, and random-label control is `0.100`.
+- Role resolution is very clean in this toy: same-token-set pair accuracy is `1.000` for streaming vs `0.500` for bag, and the final role-authority gap is `0.9996`.
+- The position-aware static baseline also reaches `1.000`, so the supported claim is "order/role encoding beats bag baselines," not "streaming is uniquely necessary if explicit positional binding is available."
+- Current read: this is the cleanest temporal/order finding so far. Order carries meaning; bag-of-token representations fail; trained streaming recurrence solves the contrast pairs.
+
 ## Who Won?
 
 ```text

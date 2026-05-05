@@ -80,6 +80,7 @@ EXPERIMENTS = (
     "query_cued_frame_pointer",
     "query_cued_pointer_bottleneck",
     "temporal_disambiguation_refraction",
+    "temporal_order_contrast_refraction",
 )
 
 TASK_FRAMES = ("danger_frame", "environment_frame", "visibility_frame")
@@ -201,6 +202,30 @@ TEMPORAL_SEQUENCE_SPECS = (
     ("dog_followed_a_scent", ("dog", "followed", "a_scent"), "animal_behavior"),
     ("dog_followed_the_owner", ("dog", "followed", "the_owner"), "social_friendship"),
 )
+TEMPORAL_ORDER_FRAMES = (
+    "user_injury",
+    "user_attacks_animal",
+    "dog_agent",
+    "cat_agent",
+    "companion_follow",
+    "owner_tracking_dog",
+    "dog_injured",
+    "dog_attacks_snake",
+    "dog_target",
+    "child_target",
+)
+TEMPORAL_ORDER_SEQUENCE_SPECS = (
+    ("dog_bit_me", ("dog", "bit", "me"), "user_injury", "dog_me_bit"),
+    ("me_bit_dog", ("me", "bit", "dog"), "user_attacks_animal", "dog_me_bit"),
+    ("dog_chased_cat", ("dog", "chased", "cat"), "dog_agent", "dog_cat_chased"),
+    ("cat_chased_dog", ("cat", "chased", "dog"), "cat_agent", "dog_cat_chased"),
+    ("dog_followed_owner", ("dog", "followed", "owner"), "companion_follow", "dog_owner_followed"),
+    ("owner_followed_dog", ("owner", "followed", "dog"), "owner_tracking_dog", "dog_owner_followed"),
+    ("snake_bit_dog", ("snake", "bit", "dog"), "dog_injured", "dog_snake_bit"),
+    ("dog_bit_snake", ("dog", "bit", "snake"), "dog_attacks_snake", "dog_snake_bit"),
+    ("child_scared_dog", ("child", "scared", "dog"), "dog_target", "child_dog_scared"),
+    ("dog_scared_child", ("dog", "scared", "child"), "child_target", "child_dog_scared"),
+)
 
 
 @dataclass(frozen=True)
@@ -280,6 +305,8 @@ class TemporalDataBundle:
     token_names: list[list[str]]
     spec_names: list[str]
     frame_names: list[str]
+    pair_id: np.ndarray | None = None
+    pair_names: list[str] | None = None
 
 
 @dataclass
@@ -873,9 +900,14 @@ def build_query_embeddings(hidden: int, seed: int, query_scale: float) -> dict[s
     return build_named_frame_embeddings(QUERY_CUES, hidden, seed, query_scale)
 
 
-def build_temporal_embeddings(hidden: int, seed: int, scale: float) -> tuple[dict[str, np.ndarray], np.ndarray]:
+def build_temporal_embeddings(
+    hidden: int,
+    seed: int,
+    scale: float,
+    specs: tuple[Any, ...] = TEMPORAL_SEQUENCE_SPECS,
+) -> tuple[dict[str, np.ndarray], np.ndarray]:
     rng = np.random.default_rng(seed)
-    tokens = sorted({token for _name, sequence, _frame in TEMPORAL_SEQUENCE_SPECS for token in sequence})
+    tokens = sorted({token for spec in specs for token in spec[1]})
     token_embeddings = {
         token: unit_vector(rng, hidden, scale).astype(np.float32)
         for token in tokens
@@ -1616,7 +1648,7 @@ def make_temporal_disambiguation_dataset(
         token_vectors = np.stack([token_embeddings[token] for token in tokens], axis=0).astype(np.float32)
         sequences[row] = token_vectors
         bag_x[row] = np.sum(token_vectors, axis=0)
-        static_x[row] = np.sum(token_vectors + position_embeddings[: len(tokens)], axis=0)
+        static_x[row] = np.sum(token_vectors * (1.0 + position_embeddings[: len(tokens)]), axis=0)
         y[row] = int(rng.integers(0, len(TEMPORAL_FRAMES))) if random_labels else TEMPORAL_FRAMES.index(frame_name)
         spec_id[row] = spec_index
         token_names.append(list(tokens))
@@ -1632,6 +1664,58 @@ def make_temporal_disambiguation_dataset(
         token_names=[token_names[int(idx)] for idx in order],
         spec_names=[spec_names[int(idx)] for idx in order],
         frame_names=list(TEMPORAL_FRAMES),
+    )
+
+
+def make_temporal_order_contrast_dataset(
+    *,
+    n: int,
+    seed: int,
+    token_embeddings: dict[str, np.ndarray],
+    position_embeddings: np.ndarray,
+    random_labels: bool = False,
+) -> TemporalDataBundle:
+    rng = np.random.default_rng(seed)
+    hidden = len(next(iter(token_embeddings.values())))
+    spec_count = len(TEMPORAL_ORDER_SEQUENCE_SPECS)
+    total = max(spec_count, n)
+    sequences = np.zeros((total, 3, hidden), dtype=np.float32)
+    bag_x = np.zeros((total, hidden), dtype=np.float32)
+    static_x = np.zeros((total, hidden), dtype=np.float32)
+    y = np.zeros(total, dtype=np.int64)
+    spec_id = np.zeros(total, dtype=np.int64)
+    pair_id = np.zeros(total, dtype=np.int64)
+    token_names: list[list[str]] = []
+    spec_names: list[str] = []
+    pair_names: list[str] = []
+    pair_name_table = sorted({spec[3] for spec in TEMPORAL_ORDER_SEQUENCE_SPECS})
+
+    for row in range(total):
+        spec_index = row % spec_count
+        name, tokens, frame_name, pair_name = TEMPORAL_ORDER_SEQUENCE_SPECS[spec_index]
+        token_vectors = np.stack([token_embeddings[token] for token in tokens], axis=0).astype(np.float32)
+        sequences[row] = token_vectors
+        bag_x[row] = np.sum(token_vectors, axis=0)
+        static_x[row] = np.sum(token_vectors * (1.0 + position_embeddings[: len(tokens)]), axis=0)
+        y[row] = int(rng.integers(0, len(TEMPORAL_ORDER_FRAMES))) if random_labels else TEMPORAL_ORDER_FRAMES.index(frame_name)
+        spec_id[row] = spec_index
+        pair_id[row] = pair_name_table.index(pair_name)
+        token_names.append(list(tokens))
+        spec_names.append(name)
+        pair_names.append(pair_name)
+
+    order = rng.permutation(total)
+    return TemporalDataBundle(
+        sequences=sequences[order],
+        bag_x=bag_x[order],
+        static_x=static_x[order],
+        y=y[order],
+        spec_id=spec_id[order],
+        token_names=[token_names[int(idx)] for idx in order],
+        spec_names=[spec_names[int(idx)] for idx in order],
+        frame_names=list(TEMPORAL_ORDER_FRAMES),
+        pair_id=pair_id[order],
+        pair_names=[pair_names[int(idx)] for idx in order],
     )
 
 
@@ -3334,6 +3418,43 @@ def shuffled_temporal_sequences(bundle: TemporalDataBundle, seed: int) -> np.nda
     return shuffled
 
 
+def temporal_order_contrast_accuracy(pred: np.ndarray, bundle: TemporalDataBundle) -> dict[str, Any]:
+    if bundle.pair_id is None or bundle.pair_names is None:
+        return {"same_token_set_pair_accuracy": None, "pair_accuracy_by_token_set": {}}
+    pair_out: dict[str, float] = {}
+    for pair_name in sorted(set(bundle.pair_names)):
+        idx = np.array([row for row, name in enumerate(bundle.pair_names or []) if name == pair_name], dtype=np.int64)
+        pair_out[pair_name] = float(np.mean(pred[idx] == bundle.y[idx])) if len(idx) else 0.0
+    return {
+        "same_token_set_pair_accuracy": float(np.mean(list(pair_out.values()))) if pair_out else None,
+        "pair_accuracy_by_token_set": pair_out,
+    }
+
+
+def temporal_streaming_predictions(
+    *,
+    model: TemporalStreamingClassifier,
+    bundle: TemporalDataBundle,
+    args: argparse.Namespace,
+    sequences_override: np.ndarray | None = None,
+    ablation: str | None = None,
+) -> np.ndarray:
+    sequences = bundle.sequences if sequences_override is None else sequences_override
+    _states, logits = temporal_rollout_arrays(model, sequences, args.device, ablation=ablation)
+    return np.argmax(logits[-1], axis=1)
+
+
+def temporal_static_predictions(
+    *,
+    model: StaticMultiClassRecurrentClassifier,
+    x: np.ndarray,
+    args: argparse.Namespace,
+    ablation: str | None = None,
+) -> np.ndarray:
+    _states, logits = static_multiclass_rollout_arrays(model, x, args.device, ablation=ablation)
+    return np.argmax(logits[-1], axis=1)
+
+
 def prefix_key(tokens: list[str], step: int) -> str:
     return " ".join(tokens[: step + 1])
 
@@ -3485,6 +3606,127 @@ def temporal_delayed_evidence_divergence(
         "early_shared_distance": hidden_distance[1] if len(hidden_distance) > 1 else None,
         "final_divergence": hidden_distance[-1],
     }
+
+
+def temporal_order_role_authority_by_step(
+    *,
+    model: TemporalStreamingClassifier,
+    bundle: TemporalDataBundle,
+    args: argparse.Namespace,
+) -> dict[str, Any]:
+    _states, logits = temporal_rollout_arrays(model, bundle.sequences, args.device)
+    probs = [softmax_np(step_logits) for step_logits in logits]
+    by_pair: dict[str, Any] = {}
+    if bundle.pair_names is None:
+        return by_pair
+    for pair_name in sorted(set(bundle.pair_names)):
+        idx = [row for row, name in enumerate(bundle.pair_names) if name == pair_name]
+        if len(idx) < 2:
+            continue
+        rows_by_label: dict[int, list[int]] = {}
+        for row in idx:
+            rows_by_label.setdefault(int(bundle.y[row]), []).append(row)
+        if len(rows_by_label) < 2:
+            continue
+        labels = sorted(rows_by_label)
+        first_label, second_label = labels[:2]
+        first_rows = rows_by_label[first_label]
+        second_rows = rows_by_label[second_label]
+        count = min(len(first_rows), len(second_rows))
+        first_rows = first_rows[:count]
+        second_rows = second_rows[:count]
+        correct_gap_by_step: list[float] = []
+        role_probability_l1_by_step: list[float] = []
+        for step_probs in probs:
+            first_correct = step_probs[first_rows, first_label]
+            first_other = step_probs[first_rows, second_label]
+            second_correct = step_probs[second_rows, second_label]
+            second_other = step_probs[second_rows, first_label]
+            correct_gap_by_step.append(float(np.mean(np.concatenate([first_correct - first_other, second_correct - second_other]))))
+            role_probability_l1_by_step.append(float(np.mean(np.sum(np.abs(step_probs[first_rows] - step_probs[second_rows]), axis=1))))
+        by_pair[pair_name] = {
+            "labels": [bundle.frame_names[first_label], bundle.frame_names[second_label]],
+            "correct_role_gap_by_step": correct_gap_by_step,
+            "role_probability_l1_by_step": role_probability_l1_by_step,
+        }
+    final_gaps = [
+        item["correct_role_gap_by_step"][-1]
+        for item in by_pair.values()
+        if item.get("correct_role_gap_by_step")
+    ]
+    return {
+        "by_token_set_pair": by_pair,
+        "mean_final_correct_role_gap": float(np.mean(final_gaps)) if final_gaps else None,
+    }
+
+
+def temporal_order_suffix_resolution(
+    *,
+    model: TemporalStreamingClassifier,
+    bundle: TemporalDataBundle,
+    args: argparse.Namespace,
+) -> dict[str, Any]:
+    _states, logits = temporal_rollout_arrays(model, bundle.sequences, args.device)
+    probs = [softmax_np(step_logits) for step_logits in logits]
+    prefix_probs = probs[1]
+    final_probs = probs[-1]
+    correct_rise = final_probs[np.arange(len(bundle.y)), bundle.y] - prefix_probs[np.arange(len(bundle.y)), bundle.y]
+    by_spec: dict[str, Any] = {}
+    for spec_name in sorted(set(bundle.spec_names)):
+        idx = np.array([row for row, name in enumerate(bundle.spec_names) if name == spec_name], dtype=np.int64)
+        by_spec[spec_name] = {
+            "target_frame": bundle.frame_names[int(bundle.y[idx[0]])] if len(idx) else None,
+            "prefix_correct_probability": float(np.mean(prefix_probs[idx, bundle.y[idx]])) if len(idx) else None,
+            "final_correct_probability": float(np.mean(final_probs[idx, bundle.y[idx]])) if len(idx) else None,
+            "correct_probability_rise": float(np.mean(correct_rise[idx])) if len(idx) else None,
+        }
+    return {
+        "mean_correct_frame_probability_rise": float(np.mean(correct_rise)),
+        "by_sequence": by_spec,
+    }
+
+
+def temporal_order_prefix_similarity(
+    *,
+    model: TemporalStreamingClassifier,
+    bundle: TemporalDataBundle,
+    args: argparse.Namespace,
+) -> dict[str, Any]:
+    states, logits = temporal_rollout_arrays(model, bundle.sequences, args.device)
+    probs = [softmax_np(step_logits) for step_logits in logits]
+
+    def spec_rows(spec_name: str) -> np.ndarray:
+        return np.array([row for row, name in enumerate(bundle.spec_names) if name == spec_name], dtype=np.int64)
+
+    pairs = (
+        ("dog_bit_me", "dog_bit_snake", "shared_prefix_dog_bit"),
+        ("dog_chased_cat", "dog_followed_owner", "shared_initial_dog"),
+    )
+    out: dict[str, Any] = {}
+    for left_spec, right_spec, label in pairs:
+        left_idx = spec_rows(left_spec)
+        right_idx = spec_rows(right_spec)
+        if len(left_idx) == 0 or len(right_idx) == 0:
+            continue
+        left_take = left_idx[: min(len(left_idx), len(right_idx))]
+        right_take = right_idx[: min(len(left_idx), len(right_idx))]
+        hidden_distance: list[float] = []
+        probability_l1: list[float] = []
+        for step, state in enumerate(states):
+            left = state[left_take]
+            right = state[right_take]
+            left_norm = left / np.maximum(np.linalg.norm(left, axis=1, keepdims=True), 1.0e-9)
+            right_norm = right / np.maximum(np.linalg.norm(right, axis=1, keepdims=True), 1.0e-9)
+            hidden_distance.append(float(1.0 - np.mean(np.sum(left_norm * right_norm, axis=1))))
+            probability_l1.append(float(np.mean(np.sum(np.abs(probs[step][left_take] - probs[step][right_take]), axis=1))))
+        out[label] = {
+            "pair": f"{left_spec} vs {right_spec}",
+            "hidden_cosine_distance_by_step": hidden_distance,
+            "output_probability_l1_by_step": probability_l1,
+            "early_shared_distance": hidden_distance[0] if hidden_distance else None,
+            "final_divergence": hidden_distance[-1] if hidden_distance else None,
+        }
+    return out
 
 
 def evaluate_model(
@@ -7619,6 +7861,203 @@ def run_temporal_disambiguation_seed(
     }
 
 
+def run_temporal_order_contrast_seed(
+    *,
+    name: str,
+    seed: int,
+    schema: Schema,
+    args: argparse.Namespace,
+) -> dict[str, Any]:
+    token_embeddings, position_embeddings = build_temporal_embeddings(
+        schema.hidden,
+        seed + 720_003,
+        args.embed_scale,
+        specs=TEMPORAL_ORDER_SEQUENCE_SPECS,
+    )
+    train = make_temporal_order_contrast_dataset(
+        n=args.train_size,
+        seed=seed + 12_001,
+        token_embeddings=token_embeddings,
+        position_embeddings=position_embeddings,
+    )
+    test = make_temporal_order_contrast_dataset(
+        n=args.test_size,
+        seed=seed + 12_002,
+        token_embeddings=token_embeddings,
+        position_embeddings=position_embeddings,
+    )
+
+    streaming_model = train_temporal_streaming_model(
+        train=train,
+        hidden=schema.hidden,
+        args=args,
+        seed=seed + 141,
+    )
+    bag_model = train_static_multiclass_model(
+        x=train.bag_x,
+        y=train.y,
+        classes=len(train.frame_names),
+        hidden=schema.hidden,
+        args=args,
+        seed=seed + 142,
+    )
+    static_with_position_model = train_static_multiclass_model(
+        x=train.static_x,
+        y=train.y,
+        classes=len(train.frame_names),
+        hidden=schema.hidden,
+        args=args,
+        seed=seed + 143,
+    )
+    static_no_position_model = train_static_multiclass_model(
+        x=train.bag_x,
+        y=train.y,
+        classes=len(train.frame_names),
+        hidden=schema.hidden,
+        args=args,
+        seed=seed + 144,
+    )
+
+    streaming = temporal_prediction_summary(model=streaming_model, bundle=test, args=args)
+    bag = static_multiclass_prediction_summary(
+        model=bag_model,
+        x=test.bag_x,
+        y=test.y,
+        frame_names=test.frame_names,
+        args=args,
+    )
+    static_with_position = static_multiclass_prediction_summary(
+        model=static_with_position_model,
+        x=test.static_x,
+        y=test.y,
+        frame_names=test.frame_names,
+        args=args,
+    )
+    static_no_position = static_multiclass_prediction_summary(
+        model=static_no_position_model,
+        x=test.bag_x,
+        y=test.y,
+        frame_names=test.frame_names,
+        args=args,
+    )
+    zero_recurrent = temporal_prediction_summary(
+        model=streaming_model,
+        bundle=test,
+        args=args,
+        ablation="reset_each_token",
+    )
+    shuffled_sequences = shuffled_temporal_sequences(test, seed + 940_001)
+    shuffled_order = temporal_prediction_summary(
+        model=streaming_model,
+        bundle=test,
+        args=args,
+        sequences_override=shuffled_sequences,
+    )
+    randomized_model = recurrent_matrix_control(streaming_model, "randomize", seed + 950_001)
+    randomized_recurrent = temporal_prediction_summary(
+        model=randomized_model,
+        bundle=test,
+        args=args,
+    )
+
+    streaming_pred = temporal_streaming_predictions(model=streaming_model, bundle=test, args=args)
+    bag_pred = temporal_static_predictions(model=bag_model, x=test.bag_x, args=args)
+    static_with_position_pred = temporal_static_predictions(model=static_with_position_model, x=test.static_x, args=args)
+    static_no_position_pred = temporal_static_predictions(model=static_no_position_model, x=test.bag_x, args=args)
+    zero_pred = temporal_streaming_predictions(model=streaming_model, bundle=test, args=args, ablation="reset_each_token")
+    shuffled_pred = temporal_streaming_predictions(
+        model=streaming_model,
+        bundle=test,
+        args=args,
+        sequences_override=shuffled_sequences,
+    )
+    randomized_pred = temporal_streaming_predictions(model=randomized_model, bundle=test, args=args)
+
+    role_authority = temporal_order_role_authority_by_step(
+        model=streaming_model,
+        bundle=test,
+        args=args,
+    )
+    suffix_resolution = temporal_order_suffix_resolution(
+        model=streaming_model,
+        bundle=test,
+        args=args,
+    )
+    prefix_similarity = temporal_order_prefix_similarity(
+        model=streaming_model,
+        bundle=test,
+        args=args,
+    )
+
+    random_label_control: dict[str, Any] | None = None
+    if args.random_label_control:
+        random_train = make_temporal_order_contrast_dataset(
+            n=args.train_size,
+            seed=seed + 13_001,
+            token_embeddings=token_embeddings,
+            position_embeddings=position_embeddings,
+            random_labels=True,
+        )
+        random_test = make_temporal_order_contrast_dataset(
+            n=args.test_size,
+            seed=seed + 13_002,
+            token_embeddings=token_embeddings,
+            position_embeddings=position_embeddings,
+            random_labels=True,
+        )
+        random_model = train_temporal_streaming_model(
+            train=random_train,
+            hidden=schema.hidden,
+            args=args,
+            seed=seed + 145,
+        )
+        random_label_control = temporal_prediction_summary(
+            model=random_model,
+            bundle=random_test,
+            args=args,
+        )
+
+    return {
+        "name": name,
+        "input_mode": "streaming_order_contrast",
+        "seed": seed,
+        "frames": list(TEMPORAL_ORDER_FRAMES),
+        "sequence_specs": [
+            {"name": spec_name, "tokens": list(tokens), "frame": frame, "pair": pair_name}
+            for spec_name, tokens, frame, pair_name in TEMPORAL_ORDER_SEQUENCE_SPECS
+        ],
+        "train_rows": int(len(train.y)),
+        "test_rows": int(len(test.y)),
+        "topology": getattr(streaming_model, "topology_stats", {}),
+        "streaming_recurrent": streaming,
+        "bag_of_tokens_baseline": bag,
+        "full_sentence_static_with_position": static_with_position,
+        "full_sentence_static_no_position": static_no_position,
+        "zero_recurrent": zero_recurrent,
+        "shuffled_order": shuffled_order,
+        "randomized_recurrent": randomized_recurrent,
+        "random_label_control": random_label_control,
+        "same_token_set_pair_metrics": {
+            "streaming_recurrent": temporal_order_contrast_accuracy(streaming_pred, test),
+            "bag_of_tokens_baseline": temporal_order_contrast_accuracy(bag_pred, test),
+            "full_sentence_static_with_position": temporal_order_contrast_accuracy(static_with_position_pred, test),
+            "full_sentence_static_no_position": temporal_order_contrast_accuracy(static_no_position_pred, test),
+            "zero_recurrent": temporal_order_contrast_accuracy(zero_pred, test),
+            "shuffled_order": temporal_order_contrast_accuracy(shuffled_pred, test),
+            "randomized_recurrent": temporal_order_contrast_accuracy(randomized_pred, test),
+        },
+        "role_authority_by_step": role_authority,
+        "suffix_resolution": suffix_resolution,
+        "prefix_trajectory_similarity": prefix_similarity,
+        "bag_failure_gap": streaming["accuracy"] - bag["accuracy"],
+        "position_baseline_gap": streaming["accuracy"] - static_with_position["accuracy"],
+        "static_no_position_gap": streaming["accuracy"] - static_no_position["accuracy"],
+        "order_sensitivity_drop": streaming["accuracy"] - shuffled_order["accuracy"],
+        "zero_recurrent_drop": streaming["accuracy"] - zero_recurrent["accuracy"],
+        "randomized_recurrent_drop": streaming["accuracy"] - randomized_recurrent["accuracy"],
+    }
+
+
 def run_frame_switch_seed(
     *,
     name: str,
@@ -8513,6 +8952,69 @@ def aggregate_temporal_disambiguation_runs(name: str, runs: list[dict[str, Any]]
         "prefix_ambiguity": prefix_ambiguity,
         "suffix_resolution": suffix_resolution,
         "delayed_evidence_divergence": delayed_divergence,
+        "runs": runs,
+    }
+
+
+def aggregate_temporal_order_contrast_runs(name: str, runs: list[dict[str, Any]]) -> dict[str, Any]:
+    streaming = aggregate_nested([run["streaming_recurrent"] for run in runs])
+    bag = aggregate_nested([run["bag_of_tokens_baseline"] for run in runs])
+    static_with_position = aggregate_nested([run["full_sentence_static_with_position"] for run in runs])
+    static_no_position = aggregate_nested([run["full_sentence_static_no_position"] for run in runs])
+    zero = aggregate_nested([run["zero_recurrent"] for run in runs])
+    shuffled = aggregate_nested([run["shuffled_order"] for run in runs])
+    randomized = aggregate_nested([run["randomized_recurrent"] for run in runs])
+    pair_metrics = aggregate_nested([run["same_token_set_pair_metrics"] for run in runs])
+    role_authority = aggregate_nested([run["role_authority_by_step"] for run in runs])
+    suffix_resolution = aggregate_nested([run["suffix_resolution"] for run in runs])
+    prefix_similarity = aggregate_nested([run["prefix_trajectory_similarity"] for run in runs])
+    random_label_runs = [run["random_label_control"] for run in runs if run.get("random_label_control") is not None]
+    random_label = aggregate_nested(random_label_runs) if random_label_runs else None
+    topology = aggregate_nested([run.get("topology", {}) for run in runs])
+    return {
+        "name": name,
+        "input_mode": runs[0]["input_mode"],
+        "frames": runs[0]["frames"],
+        "sequence_specs": runs[0]["sequence_specs"],
+        "train_rows": int(np.mean([run["train_rows"] for run in runs])),
+        "test_rows": int(np.mean([run["test_rows"] for run in runs])),
+        "topology": topology,
+        "streaming_final_accuracy": streaming["accuracy"],
+        "bag_of_tokens_accuracy": bag["accuracy"],
+        "full_sentence_static_with_position_accuracy": static_with_position["accuracy"],
+        "full_sentence_static_no_position_accuracy": static_no_position["accuracy"],
+        "zero_recurrent_accuracy": zero["accuracy"],
+        "shuffled_order_accuracy": shuffled["accuracy"],
+        "randomized_recurrent_accuracy": randomized["accuracy"],
+        "random_label_accuracy": random_label.get("accuracy") if isinstance(random_label, dict) else None,
+        "order_contrast_accuracy": pair_metrics["streaming_recurrent"]["same_token_set_pair_accuracy"],
+        "same_token_set_pair_accuracy": pair_metrics["streaming_recurrent"]["same_token_set_pair_accuracy"],
+        "bag_same_token_set_pair_accuracy": pair_metrics["bag_of_tokens_baseline"]["same_token_set_pair_accuracy"],
+        "static_no_position_same_token_set_pair_accuracy": pair_metrics["full_sentence_static_no_position"]["same_token_set_pair_accuracy"],
+        "static_with_position_same_token_set_pair_accuracy": pair_metrics["full_sentence_static_with_position"]["same_token_set_pair_accuracy"],
+        "zero_recurrent_same_token_set_pair_accuracy": pair_metrics["zero_recurrent"]["same_token_set_pair_accuracy"],
+        "shuffled_order_same_token_set_pair_accuracy": pair_metrics["shuffled_order"]["same_token_set_pair_accuracy"],
+        "randomized_recurrent_same_token_set_pair_accuracy": pair_metrics["randomized_recurrent"]["same_token_set_pair_accuracy"],
+        "bag_failure_gap": float(np.mean([run["bag_failure_gap"] for run in runs])),
+        "position_baseline_gap": float(np.mean([run["position_baseline_gap"] for run in runs])),
+        "static_no_position_gap": float(np.mean([run["static_no_position_gap"] for run in runs])),
+        "order_sensitivity_drop": float(np.mean([run["order_sensitivity_drop"] for run in runs])),
+        "zero_recurrent_drop": float(np.mean([run["zero_recurrent_drop"] for run in runs])),
+        "randomized_recurrent_drop": float(np.mean([run["randomized_recurrent_drop"] for run in runs])),
+        "suffix_resolution_score": suffix_resolution.get("mean_correct_frame_probability_rise"),
+        "role_authority_score": role_authority.get("mean_final_correct_role_gap"),
+        "streaming_recurrent": streaming,
+        "bag_of_tokens_baseline": bag,
+        "full_sentence_static_with_position": static_with_position,
+        "full_sentence_static_no_position": static_no_position,
+        "zero_recurrent": zero,
+        "shuffled_order": shuffled,
+        "randomized_recurrent": randomized,
+        "random_label_control": random_label,
+        "same_token_set_pair_metrics": pair_metrics,
+        "role_authority_by_step": role_authority,
+        "suffix_resolution": suffix_resolution,
+        "prefix_trajectory_similarity": prefix_similarity,
         "runs": runs,
     }
 
@@ -11288,6 +11790,284 @@ def run_temporal_disambiguation_refraction(args: argparse.Namespace, run_dir: Pa
     return 0
 
 
+def interpret_temporal_order_contrast_report(main_summary: dict[str, Any]) -> dict[str, Any]:
+    streaming = float(main_summary["streaming_final_accuracy"])
+    bag = float(main_summary["bag_of_tokens_accuracy"])
+    static_pos = float(main_summary["full_sentence_static_with_position_accuracy"])
+    static_no_pos = float(main_summary["full_sentence_static_no_position_accuracy"])
+    zero = float(main_summary["zero_recurrent_accuracy"])
+    shuffled = float(main_summary["shuffled_order_accuracy"])
+    randomized = float(main_summary["randomized_recurrent_accuracy"])
+    random_label = main_summary.get("random_label_accuracy")
+    bag_gap = float(main_summary["bag_failure_gap"])
+    static_no_pos_gap = float(main_summary["static_no_position_gap"])
+    order_drop = float(main_summary["order_sensitivity_drop"])
+    zero_drop = float(main_summary["zero_recurrent_drop"])
+    randomized_drop = float(main_summary["randomized_recurrent_drop"])
+    role_score = main_summary.get("role_authority_score")
+    suffix_score = main_summary.get("suffix_resolution_score")
+    random_fails = random_label is None or float(random_label) < 0.25
+    streaming_high = streaming >= 0.90
+    bag_fails = bag_gap >= 0.25 and static_no_pos_gap >= 0.25
+    order_sensitive = order_drop >= 0.20
+    recurrence_sensitive = zero_drop >= 0.10 and randomized_drop >= 0.10
+    role_positive = role_score is not None and float(role_score) >= 0.40
+    suffix_positive = suffix_score is not None and float(suffix_score) >= 0.25
+    supports = streaming_high and bag_fails and order_sensitive and random_fails and role_positive
+    if supports and recurrence_sensitive:
+        order_recurrence = "true"
+    elif supports:
+        order_recurrence = "unclear"
+    else:
+        order_recurrence = "false" if not order_sensitive else "unclear"
+    if supports:
+        read = "streaming order/role encoding beats bag and no-position baselines on identical-token-set contrasts"
+    elif static_pos >= streaming - 0.02 and bag_fails:
+        read = "order information is necessary, but positional full-sentence encoding matches streaming on this toy"
+    elif not bag_fails:
+        read = "bag/no-position shortcuts remain too strong for a clean order-contrast claim"
+    else:
+        read = "order-contrast evidence is inconclusive"
+    return {
+        "supports_temporal_order_contrast": bool(supports),
+        "supports_order_sensitive_recurrence": order_recurrence,
+        "supports_bag_of_tokens_failure": bool(bag_fails),
+        "supports_role_authority_resolution": bool(role_positive),
+        "supports_suffix_resolution": bool(suffix_positive),
+        "position_static_shortcut_present": bool(static_pos >= streaming - 0.02),
+        "geometry_read": read,
+        "reason": (
+            f"streaming={streaming:.3f}, bag={bag:.3f}, static_pos={static_pos:.3f}, "
+            f"static_no_pos={static_no_pos:.3f}, zero={zero:.3f}, shuffled={shuffled:.3f}, "
+            f"randomized={randomized:.3f}, random_label={random_label if random_label is not None else 'n/a'}, "
+            f"bag_gap={bag_gap:.3f}, static_no_pos_gap={static_no_pos_gap:.3f}, order_drop={order_drop:.3f}, "
+            f"zero_drop={zero_drop:.3f}, randomized_drop={randomized_drop:.3f}, "
+            f"role_score={role_score}, suffix_score={suffix_score}."
+        ),
+    }
+
+
+def temporal_order_accuracy_table(main_summary: dict[str, Any]) -> str:
+    rows = [
+        "| Path | Accuracy | Same-Token-Set Pair Accuracy |",
+        "|---|---:|---:|",
+        f"| streaming recurrent | `{main_summary['streaming_final_accuracy']:.6f}` | `{main_summary['same_token_set_pair_accuracy']:.6f}` |",
+        f"| bag of tokens baseline | `{main_summary['bag_of_tokens_accuracy']:.6f}` | `{main_summary['bag_same_token_set_pair_accuracy']:.6f}` |",
+        f"| full sentence static with position | `{main_summary['full_sentence_static_with_position_accuracy']:.6f}` | `{main_summary['static_with_position_same_token_set_pair_accuracy']:.6f}` |",
+        f"| full sentence static no position | `{main_summary['full_sentence_static_no_position_accuracy']:.6f}` | `{main_summary['static_no_position_same_token_set_pair_accuracy']:.6f}` |",
+        f"| zero recurrent carry | `{main_summary['zero_recurrent_accuracy']:.6f}` | `{main_summary['zero_recurrent_same_token_set_pair_accuracy']:.6f}` |",
+        f"| shuffled order | `{main_summary['shuffled_order_accuracy']:.6f}` | `{main_summary['shuffled_order_same_token_set_pair_accuracy']:.6f}` |",
+        f"| randomized recurrent | `{main_summary['randomized_recurrent_accuracy']:.6f}` | `{main_summary['randomized_recurrent_same_token_set_pair_accuracy']:.6f}` |",
+        f"| random label | `{main_summary.get('random_label_accuracy')}` | `n/a` |",
+    ]
+    return "\n".join(rows)
+
+
+def temporal_order_pair_table(main_summary: dict[str, Any]) -> str:
+    pair_acc = main_summary.get("same_token_set_pair_metrics", {}).get("streaming_recurrent", {}).get("pair_accuracy_by_token_set", {})
+    bag_acc = main_summary.get("same_token_set_pair_metrics", {}).get("bag_of_tokens_baseline", {}).get("pair_accuracy_by_token_set", {})
+    role_pairs = main_summary.get("role_authority_by_step", {}).get("by_token_set_pair", {})
+    rows = [
+        "| Token-Set Pair | Streaming Pair Acc | Bag Pair Acc | Final Role Gap |",
+        "|---|---:|---:|---:|",
+    ]
+    for pair_name in sorted(pair_acc):
+        role_gap = None
+        role_item = role_pairs.get(pair_name)
+        if isinstance(role_item, dict) and role_item.get("correct_role_gap_by_step"):
+            role_gap = role_item["correct_role_gap_by_step"][-1]
+        rows.append(
+            f"| `{pair_name}` | `{pair_acc.get(pair_name)}` | `{bag_acc.get(pair_name)}` | `{role_gap}` |"
+        )
+    return "\n".join(rows)
+
+
+def write_temporal_order_contrast_finding(
+    *,
+    report: dict[str, Any],
+    out_root: Path,
+    run_dir: Path,
+    report_path: Path,
+) -> Path:
+    main_summary = report["experiments"].get("temporal_order_contrast_refraction")
+    if main_summary is None:
+        main_summary = next(iter(report["experiments"].values()))
+    try:
+        display_report_path = str(report_path.resolve().relative_to(ROOT))
+    except ValueError:
+        display_report_path = str(report_path)
+    finding = f"""# Temporal Order-Contrast Refraction Finding
+
+Source run:
+
+- `{display_report_path}`
+
+## Hypothesis
+
+Order should carry role/frame meaning when the same token set appears in different sequences. A bag-of-token baseline should fail because `dog bit me` and `me bit dog` contain the same tokens but require different labels.
+
+## Contrastive Dataset
+
+```json
+{json.dumps(main_summary["sequence_specs"], indent=2)}
+```
+
+## Accuracy And Controls
+
+{temporal_order_accuracy_table(main_summary)}
+
+Gaps:
+
+```json
+{json.dumps(round_floats({
+    "bag_failure_gap": main_summary["bag_failure_gap"],
+    "static_no_position_gap": main_summary["static_no_position_gap"],
+    "position_baseline_gap": main_summary["position_baseline_gap"],
+    "order_sensitivity_drop": main_summary["order_sensitivity_drop"],
+    "zero_recurrent_drop": main_summary["zero_recurrent_drop"],
+    "randomized_recurrent_drop": main_summary["randomized_recurrent_drop"],
+}), indent=2)}
+```
+
+## Same-Token-Set Pair Results
+
+{temporal_order_pair_table(main_summary)}
+
+## Role Authority By Step
+
+```json
+{json.dumps(round_floats(main_summary.get("role_authority_by_step", {})), indent=2)}
+```
+
+## Prefix Trajectory Similarity
+
+```json
+{json.dumps(round_floats(main_summary.get("prefix_trajectory_similarity", {})), indent=2)}
+```
+
+## Suffix Resolution
+
+```json
+{json.dumps(round_floats(main_summary.get("suffix_resolution", {})), indent=2)}
+```
+
+## Verdict
+
+```json
+{json.dumps(report["interpretation"], indent=2)}
+```
+
+## Claim Boundary
+
+Toy evidence only. Do not claim consciousness, biology, full VRAXION behavior, production validation, or natural-language understanding.
+"""
+    out_root.mkdir(parents=True, exist_ok=True)
+    finding_path = out_root / "TEMPORAL_ORDER_CONTRAST_REFRACTION_FINDING.md"
+    run_finding_path = run_dir / "TEMPORAL_ORDER_CONTRAST_REFRACTION_FINDING.md"
+    finding_path.write_text(finding, encoding="utf-8")
+    run_finding_path.write_text(finding, encoding="utf-8")
+    return finding_path
+
+
+def run_temporal_order_contrast_refraction(args: argparse.Namespace, run_dir: Path, out_root: Path) -> int:
+    schema = build_schema(args.hidden)
+    runs = [
+        run_temporal_order_contrast_seed(
+            name="temporal_order_contrast_refraction",
+            seed=seed,
+            schema=schema,
+            args=args,
+        )
+        for seed in range(args.seeds)
+    ]
+    experiments = {
+        "temporal_order_contrast_refraction": aggregate_temporal_order_contrast_runs(
+            "temporal_order_contrast_refraction",
+            runs,
+        )
+    }
+    main_summary = experiments["temporal_order_contrast_refraction"]
+    interpretation = interpret_temporal_order_contrast_report(main_summary)
+    report = {
+        "config": {
+            "experiment": args.experiment,
+            "input_mode": args.input_mode,
+            "seeds": args.seeds,
+            "hidden": args.hidden,
+            "steps": args.steps,
+            "epochs": args.epochs,
+            "train_size": args.train_size,
+            "test_size": args.test_size,
+            "batch_size": args.batch_size,
+            "lr": args.lr,
+            "sparse_density": args.sparse_density,
+            "topology_mode": args.topology_mode,
+            "flywire_graphml": str(args.flywire_graphml),
+            "embed_scale": args.embed_scale,
+            "update_rate": args.update_rate,
+            "delta_scale": args.delta_scale,
+            "random_label_control": args.random_label_control,
+            "device": args.device,
+            "out_dir": str(run_dir),
+        },
+        "schema": asdict(schema),
+        "seed": 0 if args.seeds == 1 else None,
+        "seeds": list(range(args.seeds)),
+        "mode": "temporal_order_contrast_refraction_v1",
+        "hypothesis": "Streaming recurrence encodes order/role information that bag-of-token baselines cannot",
+        "experiments": experiments,
+        "interpretation": interpretation,
+        "notes": [
+            "This is a toy mechanism probe only. It does not prove consciousness.",
+            "Named tokens are toy sequence tokens, not natural-language understanding.",
+            "Same-token-set contrast pairs are designed so orderless bag encodings cannot solve both directions.",
+            "Static-with-position is a strong order-aware baseline, not a bag shortcut.",
+        ],
+        "environment": {
+            "python": sys.version,
+            "torch": torch.__version__,
+            "numpy": np.__version__,
+            "platform": platform.platform(),
+        },
+    }
+    report = round_floats(report)
+    report_path = run_dir / "temporal_order_contrast_refraction_report.json"
+    report_path.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
+    finding_path = write_temporal_order_contrast_finding(
+        report=report,
+        out_root=ROOT / "docs" / "research",
+        run_dir=run_dir,
+        report_path=report_path,
+    )
+    printable = {
+        "mode": report["mode"],
+        "interpretation": report["interpretation"],
+        "main": {
+            "streaming_final_accuracy": round_floats(main_summary["streaming_final_accuracy"]),
+            "bag_of_tokens_accuracy": round_floats(main_summary["bag_of_tokens_accuracy"]),
+            "full_sentence_static_with_position_accuracy": round_floats(
+                main_summary["full_sentence_static_with_position_accuracy"]
+            ),
+            "full_sentence_static_no_position_accuracy": round_floats(
+                main_summary["full_sentence_static_no_position_accuracy"]
+            ),
+            "zero_recurrent_accuracy": round_floats(main_summary["zero_recurrent_accuracy"]),
+            "shuffled_order_accuracy": round_floats(main_summary["shuffled_order_accuracy"]),
+            "randomized_recurrent_accuracy": round_floats(main_summary["randomized_recurrent_accuracy"]),
+            "random_label_accuracy": round_floats(main_summary.get("random_label_accuracy")),
+            "bag_failure_gap": round_floats(main_summary["bag_failure_gap"]),
+            "static_no_position_gap": round_floats(main_summary["static_no_position_gap"]),
+            "order_sensitivity_drop": round_floats(main_summary["order_sensitivity_drop"]),
+            "role_authority_score": round_floats(main_summary.get("role_authority_score")),
+            "suffix_resolution_score": round_floats(main_summary.get("suffix_resolution_score")),
+        },
+    }
+    print(json.dumps(printable, indent=2))
+    print(f"\nWrote JSON report: {report_path}")
+    print(f"Wrote finding: {finding_path}")
+    return 0
+
+
 def main() -> int:
     args = parse_args()
     if args.device != "cpu" and not torch.cuda.is_available():
@@ -11314,6 +12094,8 @@ def main() -> int:
         return run_query_cued_pointer_bottleneck(args, run_dir, out_root)
     if args.experiment == "temporal_disambiguation_refraction":
         return run_temporal_disambiguation_refraction(args, run_dir, out_root)
+    if args.experiment == "temporal_order_contrast_refraction":
+        return run_temporal_order_contrast_refraction(args, run_dir, out_root)
 
     schema = build_schema(args.hidden)
     config = ProbeConfig(
