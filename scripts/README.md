@@ -62,6 +62,14 @@ Run with:
 
 `query_cued_frame_pointer` uses the same multi-aspect observations under multiple toy query cues. Query cues are separate from frame embeddings and are not natural language. The probe compares oracle-frame, predicted-pointer, query-head-only, no-pointer-query, no-query, wrong-forced-frame, query ablation, query shuffle, zero-recurrent, randomized-recurrent, random-label, and pointer-vs-direct authority/refraction metrics. The first result supports query frame prediction and query dependence, but not pointer-specific necessity: query conditioning alone remains sufficient in this toy.
 
+Run with:
+
+```bash
+.venv/bin/python scripts/run_context_cancellation_probe.py --experiment query_cued_pointer_bottleneck --input-mode entangled
+```
+
+`query_cued_pointer_bottleneck` keeps the same query-cued multi-aspect setup, but routes pointer modes through a stricter control channel: the frame head can see observation plus query, while the recurrent decision path sees queryless observation plus the predicted/oracle frame pointer. It compares that compact pointer route against a full direct query path and direct query bottlenecks of size 2, 4, 8, and 16. The intended read is narrow: whether a frame pointer is useful as a compact control variable under bottleneck, not whether query cues are natural language.
+
 Embedding ablations:
 
 ```bash
@@ -95,6 +103,7 @@ Topology-prior ablations:
 - Reframe diagnostics: a toy diagnostic can test whether wrong early frame commitment can be reopened by an explicit reset/reframe event.
 - Inferred frame pointer: a toy diagnostic can test whether the frame can be predicted from the input bundle and then used internally as a recurrent pointer.
 - Query-cued frame pointer: a toy diagnostic can test whether a query-like goal cue can imply the frame while the same observation is reused under multiple labels.
+- Query-cued pointer bottleneck: a toy diagnostic can test whether the inferred frame pointer is useful as a compact control channel compared with equally bottlenecked direct query conditioning.
 - Frequency embedding ablation: fixed sin/cos token vectors can be compared against the existing random-vector baseline without changing the recurrent mechanism.
 - Raw wave resonance ablation: explicit pointer/neuron resonance can be tested against the simpler token-wave and recurrent baselines without making it the default mechanism.
 - Topology-prior ablation: recurrent masks can be compared at matched edge budget, including synthetic motif/hub priors and a small local FlyWire-derived GraphML sample.

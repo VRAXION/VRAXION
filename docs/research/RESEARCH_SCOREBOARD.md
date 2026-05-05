@@ -216,6 +216,14 @@ Query-cued frame pointer:
 - The no-pointer query baseline is close on accuracy (`0.669`) and only slightly weaker on authority/refraction (`0.022`/`0.0115`) than the pointer path (`0.050`/`0.0325`).
 - Current read: query-cued frame selection works and recurrence/query dependence are real, but pointer-specific necessity is not supported; query conditioning alone is sufficient in this toy.
 
+Query-cued pointer bottleneck:
+
+- `query_cued_pointer_bottleneck` tests whether the query cue is more useful as a compact internal frame pointer than as a direct query-conditioned path under bottleneck pressure.
+- First run: frame prediction is perfect (`1.0`), predicted-pointer accuracy is `0.641`, oracle-pointer accuracy is `0.635`, and full-query direct accuracy is `0.673`.
+- Query and recurrence controls still work: wrong-forced frame drops to `0.516`, query ablation/shuffle drop to `0.556`/`0.552`, randomized recurrent is `0.505`, and random-label control is `0.506`.
+- The bottleneck direct baselines beat the pointer path: bottleneck size `2` reaches `0.781` accuracy with authority/refraction `0.0935`/`0.0713`, while the predicted pointer has authority/refraction `0.0213`/`0.0028`.
+- Current read: query frame prediction is real, but pointer-as-compact-control is not supported in this toy. Direct query conditioning remains sufficient, even under the tested bottlenecks.
+
 ## Who Won?
 
 ```text

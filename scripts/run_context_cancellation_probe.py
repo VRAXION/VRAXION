@@ -77,6 +77,7 @@ EXPERIMENTS = (
     "reframe_diagnostics",
     "inferred_frame_pointer",
     "query_cued_frame_pointer",
+    "query_cued_pointer_bottleneck",
 )
 
 TASK_FRAMES = ("danger_frame", "environment_frame", "visibility_frame")
@@ -148,6 +149,7 @@ QUERY_TO_FRAME = {
     "sound_query": "sound_frame",
     "environment_query": "environment_frame",
 }
+QUERY_BOTTLENECK_SIZES = (2, 4, 8, 16)
 TOKEN_FRAME_INVENTORY_SPECS = (
     ("dog", "actor", "dog"),
     ("cat", "actor", "cat"),
@@ -2158,6 +2160,136 @@ class InferredFramePointerClassifier(nn.Module):
         return states, logits, frame_logits
 
 
+class QueryCuedPointerClassifier(nn.Module):
+    def __init__(
+        self,
+        *,
+        hidden: int,
+        steps: int,
+        mask: np.ndarray,
+        update_rate: float,
+        delta_scale: float,
+        frame_embeddings: dict[str, np.ndarray],
+    ):
+        super().__init__()
+        self.steps = steps
+        self.update_rate = update_rate
+        self.delta_scale = delta_scale
+        self.register_buffer("mask", torch.tensor(mask, dtype=torch.float32))
+        frame_table = np.stack([frame_embeddings[frame] for frame in MULTI_ASPECT_FRAMES], axis=0)
+        self.register_buffer("frame_table", torch.tensor(frame_table, dtype=torch.float32))
+        self.recurrent = nn.Parameter(torch.empty(hidden, hidden))
+        self.threshold = nn.Parameter(torch.zeros(hidden))
+        self.frame_head = nn.Linear(hidden, len(MULTI_ASPECT_FRAMES))
+        self.head = nn.Linear(hidden, 2)
+        nn.init.normal_(self.recurrent, mean=0.0, std=0.025)
+        nn.init.zeros_(self.frame_head.bias)
+        nn.init.normal_(self.frame_head.weight, mean=0.0, std=0.025)
+        nn.init.zeros_(self.head.bias)
+        nn.init.normal_(self.head.weight, mean=0.0, std=0.025)
+
+    def rollout_inputs(
+        self,
+        frame_input: torch.Tensor,
+        decision_input: torch.Tensor,
+        *,
+        frame_override: torch.Tensor | None = None,
+        use_pointer: bool = True,
+        hard_frame: bool = False,
+        ablation: str | None = None,
+    ) -> tuple[list[torch.Tensor], list[torch.Tensor], torch.Tensor]:
+        frame_logits = self.frame_head(torch.tanh(frame_input))
+        if not use_pointer:
+            pointer = torch.zeros_like(decision_input)
+        elif frame_override is not None:
+            pointer = self.frame_table.index_select(dim=0, index=frame_override.long())
+        elif hard_frame:
+            pointer = self.frame_table.index_select(dim=0, index=torch.argmax(frame_logits, dim=1))
+        else:
+            pointer = F.softmax(frame_logits, dim=1) @ self.frame_table
+
+        h = torch.tanh(decision_input)
+        states = [h]
+        masked_recurrent = self.recurrent * self.mask
+        for _step in range(1, self.steps + 1):
+            if ablation == "zero_recurrent_update":
+                proposal = h
+            else:
+                if ablation == "zero_matrix_keep_threshold":
+                    delta = self.threshold.unsqueeze(0).expand_as(h)
+                elif ablation is None:
+                    delta = h @ masked_recurrent.t() + self.threshold
+                else:
+                    raise ValueError(f"unknown ablation: {ablation}")
+                if use_pointer:
+                    delta = delta + pointer
+                proposal = torch.tanh(h + self.delta_scale * delta)
+            h = (1.0 - self.update_rate) * h + self.update_rate * proposal
+            states.append(h)
+
+        logits = [self.head(state) for state in states]
+        return states, logits, frame_logits
+
+
+class QueryBottleneckDirectClassifier(nn.Module):
+    def __init__(
+        self,
+        *,
+        hidden: int,
+        bottleneck: int,
+        steps: int,
+        mask: np.ndarray,
+        update_rate: float,
+        delta_scale: float,
+    ):
+        super().__init__()
+        self.steps = steps
+        self.bottleneck = bottleneck
+        self.update_rate = update_rate
+        self.delta_scale = delta_scale
+        self.register_buffer("mask", torch.tensor(mask, dtype=torch.float32))
+        self.query_encoder = nn.Linear(hidden, bottleneck)
+        self.query_decoder = nn.Linear(bottleneck, hidden)
+        self.recurrent = nn.Parameter(torch.empty(hidden, hidden))
+        self.threshold = nn.Parameter(torch.zeros(hidden))
+        self.head = nn.Linear(hidden, 2)
+        nn.init.normal_(self.query_encoder.weight, mean=0.0, std=0.025)
+        nn.init.zeros_(self.query_encoder.bias)
+        nn.init.normal_(self.query_decoder.weight, mean=0.0, std=0.025)
+        nn.init.zeros_(self.query_decoder.bias)
+        nn.init.normal_(self.recurrent, mean=0.0, std=0.025)
+        nn.init.zeros_(self.head.bias)
+        nn.init.normal_(self.head.weight, mean=0.0, std=0.025)
+
+    def rollout_inputs(
+        self,
+        observation: torch.Tensor,
+        query: torch.Tensor,
+        *,
+        ablation: str | None = None,
+    ) -> tuple[list[torch.Tensor], list[torch.Tensor]]:
+        query_control = self.query_decoder(torch.tanh(self.query_encoder(query)))
+        h = torch.tanh(observation + query_control)
+        states = [h]
+        masked_recurrent = self.recurrent * self.mask
+        for _step in range(1, self.steps + 1):
+            if ablation == "zero_recurrent_update":
+                proposal = h
+            else:
+                if ablation == "zero_matrix_keep_threshold":
+                    delta = self.threshold.unsqueeze(0).expand_as(h)
+                elif ablation is None:
+                    delta = h @ masked_recurrent.t() + self.threshold
+                else:
+                    raise ValueError(f"unknown ablation: {ablation}")
+                proposal = torch.tanh(h + self.delta_scale * delta)
+            h = (1.0 - self.update_rate) * h + self.update_rate * proposal
+            states.append(h)
+
+        logits = [self.head(state) for state in states]
+        return states, logits
+
+
 class ReframeRecurrentClassifier(nn.Module):
     def __init__(
         self,
@@ -2395,6 +2527,114 @@ def train_inferred_frame_pointer_model(
     return model
 
 
+def train_query_cued_pointer_model(
+    *,
+    train: RefractionDataBundle,
+    frame_embeddings: dict[str, np.ndarray],
+    hidden: int,
+    args: argparse.Namespace,
+    seed: int,
+    use_pointer: bool,
+) -> QueryCuedPointerClassifier:
+    torch.manual_seed(seed)
+    mask, topology_stats = make_topology_mask(
+        hidden=hidden,
+        density=args.sparse_density,
+        seed=seed + 200_003,
+        topology_mode=args.topology_mode,
+        flywire_graphml=args.flywire_graphml,
+    )
+    model = QueryCuedPointerClassifier(
+        hidden=hidden,
+        steps=args.steps,
+        mask=mask,
+        update_rate=args.update_rate,
+        delta_scale=args.delta_scale,
+        frame_embeddings=frame_embeddings,
+    ).to(args.device)
+    model.topology_stats = topology_stats
+    optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
+    frame_input = to_tensor(train.observation_component, args.device)
+    decision_input = to_tensor(query_removed_observation(train), args.device)
+    y = to_tensor(train.y, args.device, torch.long)
+    frame = to_tensor(train.frame, args.device, torch.long)
+    n = len(train.y)
+    generator = torch.Generator(device="cpu")
+    generator.manual_seed(seed + 300_001)
+
+    for _epoch in range(args.epochs):
+        order = torch.randperm(n, generator=generator)
+        for start in range(0, n, args.batch_size):
+            batch_idx = order[start : start + args.batch_size].to(args.device)
+            frame_xb = frame_input.index_select(dim=0, index=batch_idx)
+            decision_xb = decision_input.index_select(dim=0, index=batch_idx)
+            yb = y.index_select(dim=0, index=batch_idx)
+            fb = frame.index_select(dim=0, index=batch_idx)
+            _states, logits, frame_logits = model.rollout_inputs(
+                frame_xb,
+                decision_xb,
+                use_pointer=use_pointer,
+                hard_frame=False,
+            )
+            loss = F.cross_entropy(logits[-1], yb) + INFERRED_FRAME_LOSS_WEIGHT * F.cross_entropy(frame_logits, fb)
+            optimizer.zero_grad(set_to_none=True)
+            loss.backward()
+            optimizer.step()
+
+    return model
+
+
+def train_query_bottleneck_direct_model(
+    *,
+    train: RefractionDataBundle,
+    hidden: int,
+    bottleneck: int,
+    args: argparse.Namespace,
+    seed: int,
+) -> QueryBottleneckDirectClassifier:
+    if train.query_component is None:
+        raise ValueError("query bottleneck direct model requires query_component")
+    torch.manual_seed(seed)
+    mask, topology_stats = make_topology_mask(
+        hidden=hidden,
+        density=args.sparse_density,
+        seed=seed + 200_003,
+        topology_mode=args.topology_mode,
+        flywire_graphml=args.flywire_graphml,
+    )
+    model = QueryBottleneckDirectClassifier(
+        hidden=hidden,
+        bottleneck=bottleneck,
+        steps=args.steps,
+        mask=mask,
+        update_rate=args.update_rate,
+        delta_scale=args.delta_scale,
+    ).to(args.device)
+    model.topology_stats = topology_stats
+    optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
+    observation = to_tensor(query_removed_observation(train), args.device)
+    query = to_tensor(train.query_component, args.device)
+    y = to_tensor(train.y, args.device, torch.long)
+    n = len(train.y)
+    generator = torch.Generator(device="cpu")
+    generator.manual_seed(seed + 300_001)
+
+    for _epoch in range(args.epochs):
+        order = torch.randperm(n, generator=generator)
+        for start in range(0, n, args.batch_size):
+            batch_idx = order[start : start + args.batch_size].to(args.device)
+            xb = observation.index_select(dim=0, index=batch_idx)
+            qb = query.index_select(dim=0, index=batch_idx)
+            yb = y.index_select(dim=0, index=batch_idx)
+            _states, logits = model.rollout_inputs(xb, qb)
+            loss = F.cross_entropy(logits[-1], yb)
+            optimizer.zero_grad(set_to_none=True)
+            loss.backward()
+            optimizer.step()
+
+    return model
+
+
 def train_reframe_model(
     *,
     train: RefractionDataBundle,
@@ -2592,6 +2832,56 @@ def inferred_rollout_arrays(
         logits = [logit.detach().cpu().numpy() for logit in logits_t]
         frame_logits = frame_logits_t.detach().cpu().numpy()
     return states, logits, frame_logits
+
+
+def query_pointer_rollout_arrays(
+    model: QueryCuedPointerClassifier,
+    frame_input: np.ndarray,
+    decision_input: np.ndarray,
+    device: str,
+    *,
+    frame_override: np.ndarray | None = None,
+    use_pointer: bool = True,
+    hard_frame: bool = True,
+    ablation: str | None = None,
+) -> tuple[list[np.ndarray], list[np.ndarray], np.ndarray]:
+    model.eval()
+    with torch.no_grad():
+        frame_input_t = to_tensor(frame_input, device)
+        decision_input_t = to_tensor(decision_input, device)
+        frame_override_t = None
+        if frame_override is not None:
+            frame_override_t = to_tensor(frame_override, device, torch.long)
+        states_t, logits_t, frame_logits_t = model.rollout_inputs(
+            frame_input_t,
+            decision_input_t,
+            frame_override=frame_override_t,
+            use_pointer=use_pointer,
+            hard_frame=hard_frame,
+            ablation=ablation,
+        )
+        states = [state.detach().cpu().numpy() for state in states_t]
+        logits = [logit.detach().cpu().numpy() for logit in logits_t]
+        frame_logits = frame_logits_t.detach().cpu().numpy()
+    return states, logits, frame_logits
+
+
+def query_bottleneck_rollout_arrays(
+    model: QueryBottleneckDirectClassifier,
+    observation: np.ndarray,
+    query: np.ndarray,
+    device: str,
+    *,
+    ablation: str | None = None,
+) -> tuple[list[np.ndarray], list[np.ndarray]]:
+    model.eval()
+    with torch.no_grad():
+        observation_t = to_tensor(observation, device)
+        query_t = to_tensor(query, device)
+        states_t, logits_t = model.rollout_inputs(observation_t, query_t, ablation=ablation)
+        states = [state.detach().cpu().numpy() for state in states_t]
+        logits = [logit.detach().cpu().numpy() for logit in logits_t]
+    return states, logits
 
 
 def reframe_rollout_arrays(
@@ -2928,6 +3218,127 @@ def inferred_prediction_summary(
     }
 
 
+def query_pointer_prediction_summary(
+    *,
+    model: QueryCuedPointerClassifier,
+    bundle: RefractionDataBundle,
+    args: argparse.Namespace,
+    frame_input_override: np.ndarray | None = None,
+    decision_input_override: np.ndarray | None = None,
+    frame_override: np.ndarray | None = None,
+    use_pointer: bool = True,
+    hard_frame: bool = True,
+    ablation: str | None = None,
+) -> dict[str, Any]:
+    frame_input = bundle.observation_component if frame_input_override is None else frame_input_override
+    decision_input = query_removed_observation(bundle) if decision_input_override is None else decision_input_override
+    _states, logits, frame_logits = query_pointer_rollout_arrays(
+        model,
+        frame_input,
+        decision_input,
+        args.device,
+        frame_override=frame_override,
+        use_pointer=use_pointer,
+        hard_frame=hard_frame,
+        ablation=ablation,
+    )
+    pred = np.argmax(logits[-1], axis=1)
+    frame_pred = np.argmax(frame_logits, axis=1)
+    per_step_accuracy = [
+        float(np.mean(np.argmax(step_logits, axis=1) == bundle.y))
+        for step_logits in logits
+    ]
+    accuracy_by_frame: dict[str, float] = {}
+    accuracy_by_frame_by_step: dict[str, list[float]] = {}
+    frame_prediction_accuracy_by_frame: dict[str, float] = {}
+    confusion = np.zeros((len(bundle.frame_names), len(bundle.frame_names)), dtype=np.int64)
+    for target, predicted_frame in zip(bundle.frame, frame_pred):
+        confusion[int(target), int(predicted_frame)] += 1
+    for frame_name in bundle.frame_names:
+        idx = frame_indices(bundle, frame_name)
+        accuracy_by_frame[frame_name] = float(np.mean(pred[idx] == bundle.y[idx]))
+        accuracy_by_frame_by_step[frame_name] = [
+            float(np.mean(np.argmax(step_logits[idx], axis=1) == bundle.y[idx]))
+            for step_logits in logits
+        ]
+        frame_prediction_accuracy_by_frame[frame_name] = float(np.mean(frame_pred[idx] == bundle.frame[idx]))
+
+    return {
+        "accuracy": float(np.mean(pred == bundle.y)),
+        "accuracy_by_frame": accuracy_by_frame,
+        "accuracy_by_frame_by_step": accuracy_by_frame_by_step,
+        "per_step_accuracy": per_step_accuracy,
+        "frame_prediction_accuracy": float(np.mean(frame_pred == bundle.frame)),
+        "frame_prediction_accuracy_by_frame": frame_prediction_accuracy_by_frame,
+        "predicted_frame_confusion_matrix": {
+            target_frame: {
+                predicted_frame: int(confusion[target_index, predicted_index])
+                for predicted_index, predicted_frame in enumerate(bundle.frame_names)
+            }
+            for target_index, target_frame in enumerate(bundle.frame_names)
+        },
+        "predicted_frame_distribution": {
+            frame_name: float(np.mean(frame_pred == frame_index))
+            for frame_index, frame_name in enumerate(bundle.frame_names)
+        },
+        "output_entropy_by_step": output_entropy_by_step(logits),
+        "logit_margin_by_step": logit_margin_by_step(logits),
+        "label_logit_confidence_by_step": [
+            float(np.mean(softmax_np(step_logits)[np.arange(len(bundle.y)), bundle.y]))
+            for step_logits in logits
+        ],
+    }
+
+
+def query_bottleneck_prediction_summary(
+    *,
+    model: QueryBottleneckDirectClassifier,
+    bundle: RefractionDataBundle,
+    args: argparse.Namespace,
+    observation_override: np.ndarray | None = None,
+    query_override: np.ndarray | None = None,
+    ablation: str | None = None,
+) -> dict[str, Any]:
+    if bundle.query_component is None:
+        raise ValueError("query bottleneck prediction requires query_component")
+    observation = query_removed_observation(bundle) if observation_override is None else observation_override
+    query = bundle.query_component if query_override is None else query_override
+    _states, logits = query_bottleneck_rollout_arrays(
+        model,
+        observation,
+        query,
+        args.device,
+        ablation=ablation,
+    )
+    pred = np.argmax(logits[-1], axis=1)
+    per_step_accuracy = [
+        float(np.mean(np.argmax(step_logits, axis=1) == bundle.y))
+        for step_logits in logits
+    ]
+    accuracy_by_frame: dict[str, float] = {}
+    accuracy_by_frame_by_step: dict[str, list[float]] = {}
+    for frame_name in bundle.frame_names:
+        idx = frame_indices(bundle, frame_name)
+        accuracy_by_frame[frame_name] = float(np.mean(pred[idx] == bundle.y[idx]))
+        accuracy_by_frame_by_step[frame_name] = [
+            float(np.mean(np.argmax(step_logits[idx], axis=1) == bundle.y[idx]))
+            for step_logits in logits
+        ]
+
+    return {
+        "accuracy": float(np.mean(pred == bundle.y)),
+        "accuracy_by_frame": accuracy_by_frame,
+        "accuracy_by_frame_by_step": accuracy_by_frame_by_step,
+        "per_step_accuracy": per_step_accuracy,
+        "output_entropy_by_step": output_entropy_by_step(logits),
+        "logit_margin_by_step": logit_margin_by_step(logits),
+        "label_logit_confidence_by_step": [
+            float(np.mean(softmax_np(step_logits)[np.arange(len(bundle.y)), bundle.y]))
+            for step_logits in logits
+        ],
+    }
+
+
 def inferred_counterfactual_influence_summary(
     *,
     model: InferredFramePointerClassifier,
@@ -3106,6 +3517,14 @@ def query_removed_observation(bundle: RefractionDataBundle) -> np.ndarray:
     return bundle.observation_component - bundle.query_component
 
 
+def query_removed_bundle(bundle: RefractionDataBundle) -> RefractionDataBundle:
+    stripped = copy.copy(bundle)
+    stripped_observation = query_removed_observation(bundle)
+    stripped.x = stripped_observation
+    stripped.observation_component = stripped_observation
+    return stripped
+
+
 def query_shuffled_observation(bundle: RefractionDataBundle, seed: int) -> np.ndarray:
     if bundle.query_component is None:
         raise ValueError("query shuffle requires query_component")
@@ -3148,6 +3567,311 @@ def run_direct_refraction_influence(
                 model=model,
                 reference_x=test.observation_component[idx],
                 counterfactual_x=counterfactual_x,
+                reference_y=test.y[idx],
+                counterfactual_y=counterfactual_y,
+                args=args,
+            )
+
+        active_curve = influence_by_frame[frame_name][active_group]["output_change_rate_by_step"]
+        inactive_curves = [
+            influence_by_frame[frame_name][group]["output_change_rate_by_step"]
+            for group in bundle_feature_groups(test)
+            if group != active_group
+        ]
+        inactive_max = [
+            float(max(curve[step] for curve in inactive_curves))
+            for step in range(len(active_curve))
+        ]
+        active_core_influence_by_step[frame_name] = active_curve
+        inactive_group_influence_by_step[frame_name] = inactive_max
+        refraction_index_by_step[frame_name] = [
+            float(active - inactive)
+            for active, inactive in zip(active_curve, inactive_max)
+        ]
+
+    mean_refraction_index = mean_list(list(refraction_index_by_step.values()))
+    authority_by_group: dict[str, float | None] = {}
+    for group in bundle_feature_groups(test):
+        causal_frames = [
+            frame_name
+            for frame_name, active_group in (test.active_group_by_frame or MULTI_ASPECT_FRAME_ACTIVE_GROUP).items()
+            if active_group == group
+        ]
+        if not causal_frames:
+            authority_by_group[group] = None
+            continue
+        causal = max(
+            influence_by_frame[frame_name][group]["output_change_rate"]
+            for frame_name in causal_frames
+        )
+        nuisance = max(
+            influence_by_frame[frame_name][group]["output_change_rate"]
+            for frame_name in test.frame_names
+            if frame_name not in causal_frames
+        )
+        authority_by_group[group] = float(causal - nuisance)
+
+    numeric_authority = [value for value in authority_by_group.values() if value is not None]
+    return {
+        "feature_group_influence_by_frame": influence_by_frame,
+        "active_core_influence_by_step": active_core_influence_by_step,
+        "inactive_group_influence_by_step": inactive_group_influence_by_step,
+        "refraction_index_by_step": refraction_index_by_step,
+        "mean_refraction_index_by_step": mean_refraction_index,
+        "authority_switch_score_by_group": authority_by_group,
+        "authority_switch_score": float(np.mean(numeric_authority)) if numeric_authority else None,
+    }
+
+
+def query_pointer_counterfactual_influence_summary(
+    *,
+    model: QueryCuedPointerClassifier,
+    reference_frame_input: np.ndarray,
+    reference_decision_input: np.ndarray,
+    counterfactual_frame_input: np.ndarray,
+    counterfactual_decision_input: np.ndarray,
+    reference_y: np.ndarray,
+    counterfactual_y: np.ndarray,
+    args: argparse.Namespace,
+    use_pointer: bool = True,
+    hard_frame: bool = True,
+) -> dict[str, Any]:
+    _reference_states, reference_logits, _reference_frame_logits = query_pointer_rollout_arrays(
+        model,
+        reference_frame_input,
+        reference_decision_input,
+        args.device,
+        use_pointer=use_pointer,
+        hard_frame=hard_frame,
+    )
+    _counterfactual_states, counterfactual_logits, _counterfactual_frame_logits = query_pointer_rollout_arrays(
+        model,
+        counterfactual_frame_input,
+        counterfactual_decision_input,
+        args.device,
+        use_pointer=use_pointer,
+        hard_frame=hard_frame,
+    )
+    return logits_counterfactual_summary(
+        reference_logits=reference_logits,
+        counterfactual_logits=counterfactual_logits,
+        reference_y=reference_y,
+        counterfactual_y=counterfactual_y,
+    )
+
+
+def query_bottleneck_counterfactual_influence_summary(
+    *,
+    model: QueryBottleneckDirectClassifier,
+    reference_observation: np.ndarray,
+    counterfactual_observation: np.ndarray,
+    query: np.ndarray,
+    reference_y: np.ndarray,
+    counterfactual_y: np.ndarray,
+    args: argparse.Namespace,
+) -> dict[str, Any]:
+    _reference_states, reference_logits = query_bottleneck_rollout_arrays(
+        model,
+        reference_observation,
+        query,
+        args.device,
+    )
+    _counterfactual_states, counterfactual_logits = query_bottleneck_rollout_arrays(
+        model,
+        counterfactual_observation,
+        query,
+        args.device,
+    )
+    return logits_counterfactual_summary(
+        reference_logits=reference_logits,
+        counterfactual_logits=counterfactual_logits,
+        reference_y=reference_y,
+        counterfactual_y=counterfactual_y,
+    )
+
+
+def logits_counterfactual_summary(
+    *,
+    reference_logits: list[np.ndarray],
+    counterfactual_logits: list[np.ndarray],
+    reference_y: np.ndarray,
+    counterfactual_y: np.ndarray,
+) -> dict[str, Any]:
+    output_change_rate_by_step: list[float] = []
+    target_accuracy_by_step: list[float] = []
+    original_label_retention_by_step: list[float] = []
+    mean_abs_label_probability_delta_by_step: list[float] = []
+    mean_kl_divergence_by_step: list[float] = []
+    mean_abs_margin_delta_by_step: list[float] = []
+
+    for ref_logits, cf_logits in zip(reference_logits, counterfactual_logits):
+        ref_probs = softmax_np(ref_logits)
+        cf_probs = softmax_np(cf_logits)
+        ref_pred = np.argmax(ref_probs, axis=1)
+        cf_pred = np.argmax(cf_probs, axis=1)
+        output_change_rate_by_step.append(float(np.mean(ref_pred != cf_pred)))
+        target_accuracy_by_step.append(float(np.mean(cf_pred == counterfactual_y)))
+        original_label_retention_by_step.append(float(np.mean(cf_pred == reference_y)))
+        ref_label_prob = ref_probs[np.arange(len(reference_y)), reference_y]
+        cf_label_prob = cf_probs[np.arange(len(reference_y)), reference_y]
+        mean_abs_label_probability_delta_by_step.append(float(np.mean(np.abs(ref_label_prob - cf_label_prob))))
+        kl = np.sum(ref_probs * (np.log(np.maximum(ref_probs, 1.0e-9)) - np.log(np.maximum(cf_probs, 1.0e-9))), axis=1)
+        mean_kl_divergence_by_step.append(float(np.mean(kl)))
+        ref_margin = np.sort(ref_logits, axis=1)[:, -1] - np.sort(ref_logits, axis=1)[:, -2]
+        cf_margin = np.sort(cf_logits, axis=1)[:, -1] - np.sort(cf_logits, axis=1)[:, -2]
+        mean_abs_margin_delta_by_step.append(float(np.mean(np.abs(ref_margin - cf_margin))))
+
+    return {
+        "label_change_rate": float(np.mean(reference_y != counterfactual_y)),
+        "output_change_rate": output_change_rate_by_step[-1],
+        "target_accuracy": target_accuracy_by_step[-1],
+        "original_label_retention": original_label_retention_by_step[-1],
+        "mean_abs_label_probability_delta": mean_abs_label_probability_delta_by_step[-1],
+        "mean_kl_divergence": mean_kl_divergence_by_step[-1],
+        "mean_abs_margin_delta": mean_abs_margin_delta_by_step[-1],
+        "output_change_rate_by_step": output_change_rate_by_step,
+        "target_accuracy_by_step": target_accuracy_by_step,
+        "original_label_retention_by_step": original_label_retention_by_step,
+        "mean_abs_label_probability_delta_by_step": mean_abs_label_probability_delta_by_step,
+        "mean_kl_divergence_by_step": mean_kl_divergence_by_step,
+        "mean_abs_margin_delta_by_step": mean_abs_margin_delta_by_step,
+    }
+
+
+def run_query_pointer_refraction_influence(
+    *,
+    model: QueryCuedPointerClassifier,
+    test: RefractionDataBundle,
+    args: argparse.Namespace,
+    seed: int,
+    use_pointer: bool = True,
+) -> dict[str, Any]:
+    if test.query_component is None:
+        raise ValueError("query pointer influence requires query_component")
+    rng = np.random.default_rng(seed)
+    influence_by_frame: dict[str, dict[str, Any]] = {}
+    active_core_influence_by_step: dict[str, list[float]] = {}
+    inactive_group_influence_by_step: dict[str, list[float]] = {}
+    refraction_index_by_step: dict[str, list[float]] = {}
+
+    for frame_name in test.frame_names:
+        idx = frame_indices(test, frame_name)
+        active_group = bundle_active_group(test, frame_name)
+        influence_by_frame[frame_name] = {}
+        for group in bundle_feature_groups(test):
+            permuted_idx = idx[rng.permutation(len(idx))]
+            counterfactual_frame_input = inferred_group_swap_x(
+                bundle=test,
+                group=group,
+                row_idx=idx,
+                permuted_row_idx=permuted_idx,
+            )
+            counterfactual_decision_input = counterfactual_frame_input - test.query_component[idx]
+            counterfactual_y = (
+                test.group_labels[group][permuted_idx]
+                if group == active_group
+                else test.y[idx]
+            )
+            influence_by_frame[frame_name][group] = query_pointer_counterfactual_influence_summary(
+                model=model,
+                reference_frame_input=test.observation_component[idx],
+                reference_decision_input=test.observation_component[idx] - test.query_component[idx],
+                counterfactual_frame_input=counterfactual_frame_input,
+                counterfactual_decision_input=counterfactual_decision_input,
+                reference_y=test.y[idx],
+                counterfactual_y=counterfactual_y,
+                args=args,
+                use_pointer=use_pointer,
+            )
+
+        active_curve = influence_by_frame[frame_name][active_group]["output_change_rate_by_step"]
+        inactive_curves = [
+            influence_by_frame[frame_name][group]["output_change_rate_by_step"]
+            for group in bundle_feature_groups(test)
+            if group != active_group
+        ]
+        inactive_max = [
+            float(max(curve[step] for curve in inactive_curves))
+            for step in range(len(active_curve))
+        ]
+        active_core_influence_by_step[frame_name] = active_curve
+        inactive_group_influence_by_step[frame_name] = inactive_max
+        refraction_index_by_step[frame_name] = [
+            float(active - inactive)
+            for active, inactive in zip(active_curve, inactive_max)
+        ]
+
+    mean_refraction_index = mean_list(list(refraction_index_by_step.values()))
+    authority_by_group: dict[str, float | None] = {}
+    for group in bundle_feature_groups(test):
+        causal_frames = [
+            frame_name
+            for frame_name, active_group in (test.active_group_by_frame or MULTI_ASPECT_FRAME_ACTIVE_GROUP).items()
+            if active_group == group
+        ]
+        if not causal_frames:
+            authority_by_group[group] = None
+            continue
+        causal = max(
+            influence_by_frame[frame_name][group]["output_change_rate"]
+            for frame_name in causal_frames
+        )
+        nuisance = max(
+            influence_by_frame[frame_name][group]["output_change_rate"]
+            for frame_name in test.frame_names
+            if frame_name not in causal_frames
+        )
+        authority_by_group[group] = float(causal - nuisance)
+
+    numeric_authority = [value for value in authority_by_group.values() if value is not None]
+    return {
+        "feature_group_influence_by_frame": influence_by_frame,
+        "active_core_influence_by_step": active_core_influence_by_step,
+        "inactive_group_influence_by_step": inactive_group_influence_by_step,
+        "refraction_index_by_step": refraction_index_by_step,
+        "mean_refraction_index_by_step": mean_refraction_index,
+        "authority_switch_score_by_group": authority_by_group,
+        "authority_switch_score": float(np.mean(numeric_authority)) if numeric_authority else None,
+    }
+
+
+def run_query_bottleneck_refraction_influence(
+    *,
+    model: QueryBottleneckDirectClassifier,
+    test: RefractionDataBundle,
+    args: argparse.Namespace,
+    seed: int,
+) -> dict[str, Any]:
+    if test.query_component is None:
+        raise ValueError("query bottleneck influence requires query_component")
+    rng = np.random.default_rng(seed)
+    influence_by_frame: dict[str, dict[str, Any]] = {}
+    active_core_influence_by_step: dict[str, list[float]] = {}
+    inactive_group_influence_by_step: dict[str, list[float]] = {}
+    refraction_index_by_step: dict[str, list[float]] = {}
+
+    for frame_name in test.frame_names:
+        idx = frame_indices(test, frame_name)
+        active_group = bundle_active_group(test, frame_name)
+        influence_by_frame[frame_name] = {}
+        for group in bundle_feature_groups(test):
+            permuted_idx = idx[rng.permutation(len(idx))]
+            counterfactual_full = inferred_group_swap_x(
+                bundle=test,
+                group=group,
+                row_idx=idx,
+                permuted_row_idx=permuted_idx,
+            )
+            counterfactual_y = (
+                test.group_labels[group][permuted_idx]
+                if group == active_group
+                else test.y[idx]
+            )
+            influence_by_frame[frame_name][group] = query_bottleneck_counterfactual_influence_summary(
+                model=model,
+                reference_observation=test.observation_component[idx] - test.query_component[idx],
+                counterfactual_observation=counterfactual_full - test.query_component[idx],
+                query=test.query_component[idx],
                 reference_y=test.y[idx],
                 counterfactual_y=counterfactual_y,
                 args=args,
@@ -4156,6 +4880,70 @@ def run_inferred_token_frame_inventory(
     return {
         "token_frame_inventory": inventory,
         "dog_influence_by_inferred_frame": inventory.get("dog", {}).get("influence_by_frame", {}),
+    }
+
+
+def run_query_pointer_token_frame_inventory(
+    *,
+    model: QueryCuedPointerClassifier,
+    test: RefractionDataBundle,
+    args: argparse.Namespace,
+    seed: int,
+) -> dict[str, Any]:
+    if test.tokens is None or test.query_component is None:
+        raise ValueError("query pointer token inventory requires token and query metadata")
+    rng = np.random.default_rng(seed)
+    inventory: dict[str, Any] = {}
+    for token_name, field, value in TOKEN_FRAME_INVENTORY_SPECS:
+        by_frame: dict[str, Any] = {}
+        for frame_name in test.frame_names:
+            frame_idx = frame_indices(test, frame_name)
+            token_idx = frame_idx[test.tokens[field][frame_idx] == value]
+            contrast_pool = frame_idx[test.tokens[field][frame_idx] != value]
+            if len(token_idx) == 0 or len(contrast_pool) == 0:
+                by_frame[frame_name] = None
+                continue
+            contrast_idx = rng.choice(contrast_pool, size=len(token_idx), replace=True)
+            counterfactual_frame_input = inferred_token_swap_x(
+                bundle=test,
+                field=field,
+                row_idx=token_idx,
+                contrast_idx=contrast_idx,
+            )
+            counterfactual_y = inferred_token_counterfactual_y(
+                bundle=test,
+                frame_name=frame_name,
+                field=field,
+                row_idx=token_idx,
+                contrast_idx=contrast_idx,
+            )
+            by_frame[frame_name] = query_pointer_counterfactual_influence_summary(
+                model=model,
+                reference_frame_input=test.observation_component[token_idx],
+                reference_decision_input=test.observation_component[token_idx] - test.query_component[token_idx],
+                counterfactual_frame_input=counterfactual_frame_input,
+                counterfactual_decision_input=counterfactual_frame_input - test.query_component[token_idx],
+                reference_y=test.y[token_idx],
+                counterfactual_y=counterfactual_y,
+                args=args,
+            )
+        output_rates = {
+            frame_name: (None if value_by_frame is None else value_by_frame["output_change_rate"])
+            for frame_name, value_by_frame in by_frame.items()
+        }
+        numeric = [value for value in output_rates.values() if value is not None]
+        inventory[token_name] = {
+            "field": field,
+            "value": value,
+            "influence_by_frame": by_frame,
+            "output_change_rate_by_frame": output_rates,
+            "max_output_change_rate": float(max(numeric)) if numeric else None,
+            "min_output_change_rate": float(min(numeric)) if numeric else None,
+            "authority_span": float(max(numeric) - min(numeric)) if numeric else None,
+        }
+    return {
+        "token_frame_inventory": inventory,
+        "dog_influence_by_query_implied_frame": inventory.get("dog", {}).get("influence_by_frame", {}),
     }
 
 
@@ -5858,6 +6646,281 @@ def run_query_cued_frame_seed(
     }
 
 
+def run_query_cued_pointer_bottleneck_seed(
+    *,
+    name: str,
+    input_mode: str,
+    seed: int,
+    schema: Schema,
+    args: argparse.Namespace,
+) -> dict[str, Any]:
+    train_combos, heldout_combos = split_nuisance_combos(seed, args.holdout_fraction)
+    embeddings = build_embeddings(
+        schema=schema,
+        input_mode=input_mode,
+        seed=seed + 500_003,
+        embed_scale=args.embed_scale,
+        opponent_strength=args.opponent_strength,
+        embedding_mode=args.embedding_mode,
+        resonance_mode=args.resonance_mode,
+    )
+    frame_embeddings = build_named_frame_embeddings(
+        MULTI_ASPECT_FRAMES,
+        schema.hidden,
+        seed + 620_011,
+        args.frame_scale,
+    )
+    query_embeddings = build_query_embeddings(schema.hidden, seed + 625_019, args.frame_scale)
+    train = make_query_cued_frame_dataset(
+        n=args.train_size,
+        combos=train_combos,
+        seed=seed + 8_001,
+        embeddings=embeddings,
+        frame_embeddings=frame_embeddings,
+        query_embeddings=query_embeddings,
+        active_value=args.active_value,
+    )
+    test = make_query_cued_frame_dataset(
+        n=args.test_size,
+        combos=heldout_combos,
+        seed=seed + 8_002,
+        embeddings=embeddings,
+        frame_embeddings=frame_embeddings,
+        query_embeddings=query_embeddings,
+        active_value=args.active_value,
+    )
+    queryless_train = query_removed_bundle(train)
+    queryless_test = query_removed_bundle(test)
+
+    oracle_model = train_frame_placement_model(
+        train=queryless_train,
+        hidden=schema.hidden,
+        args=args,
+        seed=seed + 111,
+        frame_placement="frame_in_recurrence_only",
+    )
+    pointer_model = train_query_cued_pointer_model(
+        train=train,
+        frame_embeddings=frame_embeddings,
+        hidden=schema.hidden,
+        args=args,
+        seed=seed + 112,
+        use_pointer=True,
+    )
+    frame_head_only_model = train_inferred_frame_pointer_model(
+        train=train,
+        frame_embeddings=frame_embeddings,
+        hidden=schema.hidden,
+        args=args,
+        seed=seed + 113,
+        use_pointer=False,
+    )
+    full_query_direct_model = train_model(train=train, hidden=schema.hidden, args=args, seed=seed + 114)
+    no_query_model = train_model(train=queryless_train, hidden=schema.hidden, args=args, seed=seed + 115)
+
+    bottleneck_models: dict[int, QueryBottleneckDirectClassifier] = {}
+    for size in QUERY_BOTTLENECK_SIZES:
+        bottleneck_models[size] = train_query_bottleneck_direct_model(
+            train=train,
+            hidden=schema.hidden,
+            bottleneck=size,
+            args=args,
+            seed=seed + 120 + size,
+        )
+
+    oracle = frame_placement_prediction_summary(
+        model=oracle_model,
+        bundle=queryless_test,
+        args=args,
+    )
+    predicted = query_pointer_prediction_summary(
+        model=pointer_model,
+        bundle=test,
+        args=args,
+        use_pointer=True,
+        hard_frame=True,
+    )
+    predicted_soft = query_pointer_prediction_summary(
+        model=pointer_model,
+        bundle=test,
+        args=args,
+        use_pointer=True,
+        hard_frame=False,
+    )
+    hard_discrete = predicted
+    frame_head_only = inferred_prediction_summary(
+        model=frame_head_only_model,
+        bundle=test,
+        args=args,
+        use_pointer=False,
+    )
+    full_query_direct = prediction_summary(
+        model=full_query_direct_model,
+        x=test.x,
+        y=test.y,
+        args=args,
+    )
+    no_query = prediction_summary(
+        model=no_query_model,
+        x=queryless_test.x,
+        y=test.y,
+        args=args,
+    )
+    wrong_frame = ((test.frame + 1) % len(MULTI_ASPECT_FRAMES)).astype(np.int64)
+    wrong_forced = query_pointer_prediction_summary(
+        model=pointer_model,
+        bundle=test,
+        args=args,
+        frame_override=wrong_frame,
+        use_pointer=True,
+        hard_frame=True,
+    )
+    query_ablation = query_pointer_prediction_summary(
+        model=pointer_model,
+        bundle=test,
+        args=args,
+        frame_input_override=query_removed_observation(test),
+        use_pointer=True,
+        hard_frame=True,
+    )
+    query_shuffle = query_pointer_prediction_summary(
+        model=pointer_model,
+        bundle=test,
+        args=args,
+        frame_input_override=query_shuffled_observation(test, seed + 951_001),
+        use_pointer=True,
+        hard_frame=True,
+    )
+    zero_recurrent = query_pointer_prediction_summary(
+        model=pointer_model,
+        bundle=test,
+        args=args,
+        use_pointer=True,
+        hard_frame=True,
+        ablation="zero_recurrent_update",
+    )
+    randomized_model = recurrent_matrix_control(pointer_model, "randomize", seed + 955_001)
+    randomized_recurrent = query_pointer_prediction_summary(
+        model=randomized_model,
+        bundle=test,
+        args=args,
+        use_pointer=True,
+        hard_frame=True,
+    )
+
+    bottleneck_query_direct: dict[str, Any] = {}
+    bottleneck_influence: dict[str, Any] = {}
+    for size, model in bottleneck_models.items():
+        key = str(size)
+        bottleneck_query_direct[key] = query_bottleneck_prediction_summary(
+            model=model,
+            bundle=test,
+            args=args,
+        )
+        bottleneck_influence[key] = run_query_bottleneck_refraction_influence(
+            model=model,
+            test=test,
+            args=args,
+            seed=seed + 965_000 + size,
+        )
+
+    pointer_influence = run_query_pointer_refraction_influence(
+        model=pointer_model,
+        test=test,
+        args=args,
+        seed=seed + 960_001,
+        use_pointer=True,
+    )
+    full_query_direct_influence = run_direct_refraction_influence(
+        model=full_query_direct_model,
+        test=test,
+        args=args,
+        seed=seed + 962_001,
+    )
+    token_inventory = run_query_pointer_token_frame_inventory(
+        model=pointer_model,
+        test=test,
+        args=args,
+        seed=seed + 970_001,
+    )
+
+    random_label_control: dict[str, Any] | None = None
+    if args.random_label_control:
+        random_train = make_query_cued_frame_dataset(
+            n=args.train_size,
+            combos=train_combos,
+            seed=seed + 9_001,
+            embeddings=embeddings,
+            frame_embeddings=frame_embeddings,
+            query_embeddings=query_embeddings,
+            active_value=args.active_value,
+            random_labels=True,
+        )
+        random_test = make_query_cued_frame_dataset(
+            n=args.test_size,
+            combos=heldout_combos,
+            seed=seed + 9_002,
+            embeddings=embeddings,
+            frame_embeddings=frame_embeddings,
+            query_embeddings=query_embeddings,
+            active_value=args.active_value,
+            random_labels=True,
+        )
+        random_model = train_query_cued_pointer_model(
+            train=random_train,
+            frame_embeddings=frame_embeddings,
+            hidden=schema.hidden,
+            args=args,
+            seed=seed + 116,
+            use_pointer=True,
+        )
+        random_label_control = query_pointer_prediction_summary(
+            model=random_model,
+            bundle=random_test,
+            args=args,
+            use_pointer=True,
+            hard_frame=True,
+        )
+
+    return {
+        "name": name,
+        "input_mode": input_mode,
+        "seed": seed,
+        "task_frames": list(MULTI_ASPECT_FRAMES),
+        "query_cues": list(QUERY_CUES),
+        "query_to_frame": dict(QUERY_TO_FRAME),
+        "query_bottleneck_sizes": list(QUERY_BOTTLENECK_SIZES),
+        "feature_groups": list(INFERRED_FRAME_FEATURE_GROUPS),
+        "frame_active_group": dict(MULTI_ASPECT_FRAME_ACTIVE_GROUP),
+        "train_rows": int(len(train.y)),
+        "test_rows": int(len(test.y)),
+        "topology": getattr(pointer_model, "topology_stats", {}),
+        "nuisance_split": {
+            "train_combo_count": len(train_combos),
+            "heldout_combo_count": len(heldout_combos),
+        },
+        "same_observation_label_diversity": label_diversity_by_observation(test),
+        "oracle_frame_pointer": oracle,
+        "predicted_frame_pointer": predicted,
+        "predicted_soft_frame_pointer": predicted_soft,
+        "hard_discrete_predicted_pointer": hard_discrete,
+        "full_query_direct": full_query_direct,
+        "bottleneck_query_direct": bottleneck_query_direct,
+        "frame_head_only": frame_head_only,
+        "no_query_baseline": no_query,
+        "wrong_forced_frame": wrong_forced,
+        "query_ablation": query_ablation,
+        "query_shuffle": query_shuffle,
+        "zero_recurrent": zero_recurrent,
+        "randomized_recurrent": randomized_recurrent,
+        "pointer_influence": pointer_influence,
+        "full_query_direct_influence": full_query_direct_influence,
+        "bottleneck_query_direct_influence": bottleneck_influence,
+        "token_frame_inventory": token_inventory,
+        "random_label_control": random_label_control,
+    }
+
+
 def run_frame_switch_seed(
     *,
     name: str,
@@ -6563,6 +7626,130 @@ def aggregate_query_cued_frame_runs(name: str, runs: list[dict[str, Any]]) -> di
         "randomized_recurrent": randomized,
         "pointer_influence": pointer_influence,
         "no_pointer_influence": no_pointer_influence,
+        "token_frame_inventory": token_inventory,
+        "random_label_control": random_label,
+        "runs": runs,
+    }
+
+
+def final_mean_influence(influence: dict[str, Any], key: str) -> float | None:
+    curves = influence.get(key, {}) if isinstance(influence, dict) else {}
+    if not isinstance(curves, dict):
+        return None
+    values = [float(curve[-1]) for curve in curves.values() if isinstance(curve, list) and curve]
+    return float(np.mean(values)) if values else None
+
+
+def final_refraction_index(influence: dict[str, Any]) -> float | None:
+    curve = influence.get("mean_refraction_index_by_step", []) if isinstance(influence, dict) else []
+    return float(curve[-1]) if curve else None
+
+
+def aggregate_query_cued_pointer_bottleneck_runs(name: str, runs: list[dict[str, Any]]) -> dict[str, Any]:
+    oracle = aggregate_nested([run["oracle_frame_pointer"] for run in runs])
+    predicted = aggregate_nested([run["predicted_frame_pointer"] for run in runs])
+    predicted_soft = aggregate_nested([run["predicted_soft_frame_pointer"] for run in runs])
+    hard_discrete = aggregate_nested([run["hard_discrete_predicted_pointer"] for run in runs])
+    full_query_direct = aggregate_nested([run["full_query_direct"] for run in runs])
+    bottleneck_query_direct = aggregate_nested([run["bottleneck_query_direct"] for run in runs])
+    frame_head_only = aggregate_nested([run["frame_head_only"] for run in runs])
+    no_query = aggregate_nested([run["no_query_baseline"] for run in runs])
+    wrong = aggregate_nested([run["wrong_forced_frame"] for run in runs])
+    query_ablation = aggregate_nested([run["query_ablation"] for run in runs])
+    query_shuffle = aggregate_nested([run["query_shuffle"] for run in runs])
+    zero = aggregate_nested([run["zero_recurrent"] for run in runs])
+    randomized = aggregate_nested([run["randomized_recurrent"] for run in runs])
+    pointer_influence = aggregate_nested([run["pointer_influence"] for run in runs])
+    full_query_direct_influence = aggregate_nested([run["full_query_direct_influence"] for run in runs])
+    bottleneck_influence = aggregate_nested([run["bottleneck_query_direct_influence"] for run in runs])
+    token_inventory = aggregate_nested([run["token_frame_inventory"] for run in runs])
+    random_label_runs = [run["random_label_control"] for run in runs if run.get("random_label_control") is not None]
+    random_label = aggregate_nested(random_label_runs) if random_label_runs else None
+    topology = aggregate_nested([run.get("topology", {}) for run in runs])
+
+    accuracy_vs_bottleneck = {
+        size: value["accuracy"]
+        for size, value in bottleneck_query_direct.items()
+    }
+    authority_vs_bottleneck = {
+        size: value.get("authority_switch_score")
+        for size, value in bottleneck_influence.items()
+    }
+    refraction_vs_bottleneck = {
+        size: final_refraction_index(value)
+        for size, value in bottleneck_influence.items()
+    }
+    active_vs_bottleneck = {
+        size: final_mean_influence(value, "active_core_influence_by_step")
+        for size, value in bottleneck_influence.items()
+    }
+    inactive_vs_bottleneck = {
+        size: final_mean_influence(value, "inactive_group_influence_by_step")
+        for size, value in bottleneck_influence.items()
+    }
+
+    return {
+        "name": name,
+        "input_mode": runs[0]["input_mode"],
+        "task_frames": runs[0]["task_frames"],
+        "query_cues": runs[0]["query_cues"],
+        "query_to_frame": runs[0]["query_to_frame"],
+        "query_bottleneck_sizes": runs[0]["query_bottleneck_sizes"],
+        "feature_groups": runs[0]["feature_groups"],
+        "frame_active_group": runs[0]["frame_active_group"],
+        "train_rows": int(np.mean([run["train_rows"] for run in runs])),
+        "test_rows": int(np.mean([run["test_rows"] for run in runs])),
+        "topology": topology,
+        "same_observation_label_diversity": float(np.mean([run["same_observation_label_diversity"] for run in runs])),
+        "frame_prediction_accuracy": predicted["frame_prediction_accuracy"],
+        "oracle_frame_pointer_accuracy": oracle["accuracy"],
+        "predicted_frame_pointer_accuracy": predicted["accuracy"],
+        "predicted_soft_frame_pointer_accuracy": predicted_soft["accuracy"],
+        "hard_discrete_predicted_pointer_accuracy": hard_discrete["accuracy"],
+        "full_query_direct_accuracy": full_query_direct["accuracy"],
+        "bottleneck_query_direct_accuracy_by_size": accuracy_vs_bottleneck,
+        "frame_head_only_accuracy": frame_head_only["accuracy"],
+        "no_query_baseline_accuracy": no_query["accuracy"],
+        "wrong_forced_frame_accuracy": wrong["accuracy"],
+        "query_ablation_accuracy": query_ablation["accuracy"],
+        "query_shuffle_accuracy": query_shuffle["accuracy"],
+        "zero_recurrent_accuracy": zero["accuracy"],
+        "randomized_recurrent_accuracy": randomized["accuracy"],
+        "random_label_accuracy": random_label.get("accuracy") if isinstance(random_label, dict) else None,
+        "authority_switch_score": pointer_influence.get("authority_switch_score"),
+        "refraction_index_final": final_refraction_index(pointer_influence),
+        "active_group_influence": final_mean_influence(pointer_influence, "active_core_influence_by_step"),
+        "inactive_group_influence": final_mean_influence(pointer_influence, "inactive_group_influence_by_step"),
+        "full_query_direct_authority_switch_score": full_query_direct_influence.get("authority_switch_score"),
+        "full_query_direct_refraction_index_final": final_refraction_index(full_query_direct_influence),
+        "full_query_direct_active_group_influence": final_mean_influence(
+            full_query_direct_influence,
+            "active_core_influence_by_step",
+        ),
+        "full_query_direct_inactive_group_influence": final_mean_influence(
+            full_query_direct_influence,
+            "inactive_group_influence_by_step",
+        ),
+        "authority_vs_bottleneck_size": authority_vs_bottleneck,
+        "refraction_vs_bottleneck_size": refraction_vs_bottleneck,
+        "active_influence_vs_bottleneck_size": active_vs_bottleneck,
+        "inactive_influence_vs_bottleneck_size": inactive_vs_bottleneck,
+        "oracle_frame_pointer": oracle,
+        "predicted_frame_pointer": predicted,
+        "predicted_soft_frame_pointer": predicted_soft,
+        "hard_discrete_predicted_pointer": hard_discrete,
+        "full_query_direct": full_query_direct,
+        "bottleneck_query_direct": bottleneck_query_direct,
+        "frame_head_only": frame_head_only,
+        "no_query_baseline": no_query,
+        "wrong_forced_frame": wrong,
+        "query_ablation": query_ablation,
+        "query_shuffle": query_shuffle,
+        "zero_recurrent": zero,
+        "randomized_recurrent": randomized,
+        "pointer_influence": pointer_influence,
+        "full_query_direct_influence": full_query_direct_influence,
+        "bottleneck_query_direct_influence": bottleneck_influence,
         "token_frame_inventory": token_inventory,
         "random_label_control": random_label,
         "runs": runs,
@@ -8695,6 +9882,365 @@ def run_reframe_diagnostics(args: argparse.Namespace, run_dir: Path, out_root: P
     return 0
 
 
+def interpret_query_cued_pointer_bottleneck_report(main_summary: dict[str, Any]) -> dict[str, Any]:
+    frame_acc = float(main_summary["frame_prediction_accuracy"])
+    oracle = float(main_summary["oracle_frame_pointer_accuracy"])
+    predicted = float(main_summary["predicted_frame_pointer_accuracy"])
+    full_direct = float(main_summary["full_query_direct_accuracy"])
+    no_query = float(main_summary["no_query_baseline_accuracy"])
+    wrong = float(main_summary["wrong_forced_frame_accuracy"])
+    query_ablation = float(main_summary["query_ablation_accuracy"])
+    query_shuffle = float(main_summary["query_shuffle_accuracy"])
+    randomized = float(main_summary["randomized_recurrent_accuracy"])
+    random_label = main_summary.get("random_label_accuracy")
+    bottleneck_acc = {
+        int(size): float(value)
+        for size, value in main_summary["bottleneck_query_direct_accuracy_by_size"].items()
+    }
+    bottleneck_authority = {
+        int(size): None if value is None else float(value)
+        for size, value in main_summary["authority_vs_bottleneck_size"].items()
+    }
+    bottleneck_refraction = {
+        int(size): None if value is None else float(value)
+        for size, value in main_summary["refraction_vs_bottleneck_size"].items()
+    }
+    small_sizes = [size for size in (2, 4) if size in bottleneck_acc]
+    small_best_acc = max((bottleneck_acc[size] for size in small_sizes), default=max(bottleneck_acc.values()))
+    small_best_authority = max(
+        (bottleneck_authority[size] for size in small_sizes if bottleneck_authority[size] is not None),
+        default=None,
+    )
+    small_best_refraction = max(
+        (bottleneck_refraction[size] for size in small_sizes if bottleneck_refraction[size] is not None),
+        default=None,
+    )
+    best_bottleneck_acc = max(bottleneck_acc.values())
+    pointer_authority = main_summary.get("authority_switch_score")
+    pointer_refraction = main_summary.get("refraction_index_final")
+    close_to_oracle = oracle - predicted <= 0.08
+    direct_shortcut_present = full_direct >= predicted - 0.03
+    no_query_weak = no_query <= predicted - 0.10
+    wrong_hurts = wrong <= predicted - 0.10
+    query_matters = query_ablation <= predicted - 0.10 and query_shuffle <= predicted - 0.10
+    random_fails = random_label is None or random_label < 0.65
+    recurrence_matters = randomized <= predicted - 0.15
+    pointer_beats_small_bottleneck_accuracy = predicted >= small_best_acc + 0.03
+    pointer_beats_small_bottleneck_authority = (
+        pointer_authority is not None
+        and small_best_authority is not None
+        and pointer_authority >= small_best_authority + 0.03
+    )
+    pointer_beats_small_bottleneck_refraction = (
+        pointer_refraction is not None
+        and small_best_refraction is not None
+        and pointer_refraction >= small_best_refraction + 0.03
+    )
+    best_bottleneck_matches_pointer = best_bottleneck_acc >= predicted - 0.02
+    compact_control = (
+        frame_acc >= 0.85
+        and close_to_oracle
+        and recurrence_matters
+        and random_fails
+        and (pointer_beats_small_bottleneck_accuracy or pointer_beats_small_bottleneck_authority or pointer_beats_small_bottleneck_refraction)
+    )
+    strict_positive = (
+        compact_control
+        and no_query_weak
+        and wrong_hurts
+        and query_matters
+        and predicted >= best_bottleneck_acc - 0.02
+    )
+    if strict_positive:
+        pointer_necessity = "true"
+    elif best_bottleneck_matches_pointer and not (
+        pointer_beats_small_bottleneck_authority or pointer_beats_small_bottleneck_refraction
+    ):
+        pointer_necessity = "false"
+    else:
+        pointer_necessity = "unclear"
+    if compact_control and direct_shortcut_present:
+        read = "full direct query conditioning can shortcut the task, but the pointer acts as a more compact control channel than small direct-query bottlenecks"
+    elif compact_control:
+        read = "query pointer looks useful as a compact control channel under bottleneck"
+    elif best_bottleneck_matches_pointer:
+        read = "direct query conditioning remains sufficient under this bottleneck setting"
+    else:
+        read = "bottleneck comparison is inconclusive"
+    return {
+        "supports_query_frame_prediction": bool(frame_acc >= 0.85),
+        "supports_pointer_as_compact_control": bool(compact_control),
+        "supports_pointer_specific_necessity": pointer_necessity,
+        "direct_query_shortcut_present": bool(direct_shortcut_present),
+        "strict_positive": bool(strict_positive),
+        "geometry_read": read,
+        "reason": (
+            f"frame_acc={frame_acc:.3f}, oracle={oracle:.3f}, predicted={predicted:.3f}, "
+            f"full_direct={full_direct:.3f}, no_query={no_query:.3f}, wrong_forced={wrong:.3f}, "
+            f"query_ablation={query_ablation:.3f}, query_shuffle={query_shuffle:.3f}, "
+            f"randomized={randomized:.3f}, random_label={random_label if random_label is not None else 'n/a'}, "
+            f"small_best_bottleneck={small_best_acc:.3f}, best_bottleneck={best_bottleneck_acc:.3f}, "
+            f"pointer_authority={pointer_authority}, small_best_authority={small_best_authority}, "
+            f"pointer_refraction={pointer_refraction}, small_best_refraction={small_best_refraction}."
+        ),
+    }
+
+
+def bottleneck_sweep_table(main_summary: dict[str, Any]) -> str:
+    rows = [
+        "| Bottleneck | Accuracy | Authority Switch | Refraction Final | Active Influence | Inactive Influence |",
+        "|---:|---:|---:|---:|---:|---:|",
+    ]
+    for size in main_summary["query_bottleneck_sizes"]:
+        key = str(size)
+        rows.append(
+            f"| `{size}` | `{main_summary['bottleneck_query_direct_accuracy_by_size'].get(key)}` "
+            f"| `{main_summary['authority_vs_bottleneck_size'].get(key)}` "
+            f"| `{main_summary['refraction_vs_bottleneck_size'].get(key)}` "
+            f"| `{main_summary['active_influence_vs_bottleneck_size'].get(key)}` "
+            f"| `{main_summary['inactive_influence_vs_bottleneck_size'].get(key)}` |"
+        )
+    return "\n".join(rows)
+
+
+def pointer_bottleneck_authority_table(main_summary: dict[str, Any]) -> str:
+    rows = [
+        "| Path | Accuracy | Authority Switch | Refraction Final | Active Influence | Inactive Influence |",
+        "|---|---:|---:|---:|---:|---:|",
+        (
+            f"| predicted frame pointer | `{main_summary['predicted_frame_pointer_accuracy']}` "
+            f"| `{main_summary['authority_switch_score']}` "
+            f"| `{main_summary['refraction_index_final']}` "
+            f"| `{main_summary['active_group_influence']}` "
+            f"| `{main_summary['inactive_group_influence']}` |"
+        ),
+        (
+            f"| full query direct | `{main_summary['full_query_direct_accuracy']}` "
+            f"| `{main_summary['full_query_direct_authority_switch_score']}` "
+            f"| `{main_summary['full_query_direct_refraction_index_final']}` "
+            f"| `{main_summary['full_query_direct_active_group_influence']}` "
+            f"| `{main_summary['full_query_direct_inactive_group_influence']}` |"
+        ),
+    ]
+    return "\n".join(rows)
+
+
+def write_query_cued_pointer_bottleneck_finding(
+    *,
+    report: dict[str, Any],
+    out_root: Path,
+    run_dir: Path,
+    report_path: Path,
+) -> Path:
+    main_summary = report["experiments"].get("query_cued_pointer_bottleneck_entangled")
+    if main_summary is None:
+        main_summary = next(iter(report["experiments"].values()))
+    try:
+        display_report_path = str(report_path.resolve().relative_to(ROOT))
+    except ValueError:
+        display_report_path = str(report_path)
+    token_inventory = main_summary.get("token_frame_inventory", {}).get("token_frame_inventory", {})
+    token_rates = {key: value.get("output_change_rate_by_frame", {}) for key, value in token_inventory.items()}
+    finding = f"""# Query-Cued Pointer Bottleneck Finding
+
+Source run:
+
+- `{display_report_path}`
+
+## Question
+
+The previous query-cued probe showed perfect frame prediction and real query dependence, but pointer-specific necessity stayed unclear because direct query-conditioned baselines were close.
+
+This bottleneck probe asks whether the query cue can be compressed into a small internal frame pointer that controls decision authority more efficiently than a direct query path under the same kind of pressure.
+
+## Setup
+
+The same base observation is duplicated under all four toy query cues:
+
+```json
+{json.dumps(main_summary["query_to_frame"], indent=2)}
+```
+
+Query cues are separate toy vectors, not natural language and not reused frame embeddings.
+
+Same-observation label diversity: `{main_summary["same_observation_label_diversity"]:.6f}`
+
+## Accuracy And Controls
+
+| Path | Accuracy |
+|---|---:|
+| oracle frame pointer | `{main_summary["oracle_frame_pointer_accuracy"]:.6f}` |
+| predicted frame pointer | `{main_summary["predicted_frame_pointer_accuracy"]:.6f}` |
+| predicted soft frame pointer | `{main_summary["predicted_soft_frame_pointer_accuracy"]:.6f}` |
+| hard discrete predicted pointer | `{main_summary["hard_discrete_predicted_pointer_accuracy"]:.6f}` |
+| full query direct | `{main_summary["full_query_direct_accuracy"]:.6f}` |
+| frame head only | `{main_summary["frame_head_only_accuracy"]:.6f}` |
+| no query baseline | `{main_summary["no_query_baseline_accuracy"]:.6f}` |
+| wrong forced frame | `{main_summary["wrong_forced_frame_accuracy"]:.6f}` |
+| query ablation | `{main_summary["query_ablation_accuracy"]:.6f}` |
+| query shuffle | `{main_summary["query_shuffle_accuracy"]:.6f}` |
+| zero recurrent | `{main_summary["zero_recurrent_accuracy"]:.6f}` |
+| randomized recurrent | `{main_summary["randomized_recurrent_accuracy"]:.6f}` |
+| random label | `{main_summary.get("random_label_accuracy")}` |
+
+Frame prediction accuracy: `{main_summary["frame_prediction_accuracy"]:.6f}`
+
+Predicted-frame confusion matrix:
+
+```json
+{json.dumps(round_floats(main_summary["predicted_frame_pointer"]["predicted_frame_confusion_matrix"]), indent=2)}
+```
+
+## Bottleneck Sweep
+
+{bottleneck_sweep_table(main_summary)}
+
+## Authority And Refraction
+
+{pointer_bottleneck_authority_table(main_summary)}
+
+## Token-Frame Inventory
+
+Selected token output-change rates by query-implied frame:
+
+```json
+{json.dumps(round_floats(token_rates), indent=2)}
+```
+
+## Verdict
+
+```json
+{json.dumps(report["interpretation"], indent=2)}
+```
+
+## Claim Boundary
+
+Toy evidence only. Do not claim consciousness, biology, full VRAXION behavior, production validation, or natural-language understanding.
+"""
+    out_root.mkdir(parents=True, exist_ok=True)
+    finding_path = out_root / "QUERY_CUED_POINTER_BOTTLENECK_FINDING.md"
+    run_finding_path = run_dir / "QUERY_CUED_POINTER_BOTTLENECK_FINDING.md"
+    finding_path.write_text(finding, encoding="utf-8")
+    run_finding_path.write_text(finding, encoding="utf-8")
+    return finding_path
+
+
+def run_query_cued_pointer_bottleneck(args: argparse.Namespace, run_dir: Path, out_root: Path) -> int:
+    schema = build_schema(args.hidden)
+    modes = ["entangled"] if args.input_mode == "all" else selected_refraction_input_modes(args.input_mode)
+    experiments: dict[str, Any] = {}
+    for input_mode in modes:
+        name = f"query_cued_pointer_bottleneck_{input_mode}"
+        runs = [
+            run_query_cued_pointer_bottleneck_seed(
+                name=name,
+                input_mode=input_mode,
+                seed=seed,
+                schema=schema,
+                args=args,
+            )
+            for seed in range(args.seeds)
+        ]
+        experiments[name] = aggregate_query_cued_pointer_bottleneck_runs(name, runs)
+
+    main_summary = experiments.get("query_cued_pointer_bottleneck_entangled") or next(iter(experiments.values()))
+    interpretation = interpret_query_cued_pointer_bottleneck_report(main_summary)
+    report = {
+        "config": {
+            "experiment": args.experiment,
+            "input_mode": args.input_mode,
+            "seeds": args.seeds,
+            "hidden": args.hidden,
+            "steps": args.steps,
+            "epochs": args.epochs,
+            "train_size": args.train_size,
+            "test_size": args.test_size,
+            "batch_size": args.batch_size,
+            "lr": args.lr,
+            "sparse_density": args.sparse_density,
+            "topology_mode": args.topology_mode,
+            "flywire_graphml": str(args.flywire_graphml),
+            "holdout_fraction": args.holdout_fraction,
+            "active_value": args.active_value,
+            "embed_scale": args.embed_scale,
+            "embedding_mode": args.embedding_mode,
+            "resonance_mode": args.resonance_mode,
+            "frame_scale": args.frame_scale,
+            "opponent_strength": args.opponent_strength,
+            "update_rate": args.update_rate,
+            "delta_scale": args.delta_scale,
+            "ridge": args.ridge,
+            "random_label_control": args.random_label_control,
+            "device": args.device,
+            "out_dir": str(run_dir),
+        },
+        "schema": asdict(schema),
+        "seed": 0 if args.seeds == 1 else None,
+        "seeds": list(range(args.seeds)),
+        "mode": "query_cued_pointer_bottleneck_v1",
+        "hypothesis": "Query-like cue compressed into a compact internal frame pointer under direct-query bottleneck pressure",
+        "experiments": experiments,
+        "interpretation": interpretation,
+        "notes": [
+            "This is a toy mechanism probe only. It does not prove consciousness.",
+            "Query cues are toy goal vectors, not natural language understanding.",
+            "Pointer modes route raw query only through the frame head; the recurrent decision path receives queryless observation plus frame pointer.",
+            "Accuracy alone is not decisive; compactness and authority/refraction geometry are the main diagnostics.",
+        ],
+        "environment": {
+            "python": sys.version,
+            "torch": torch.__version__,
+            "numpy": np.__version__,
+            "platform": platform.platform(),
+        },
+    }
+    report = round_floats(report)
+    report_path = run_dir / "query_cued_pointer_bottleneck_report.json"
+    report_path.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
+    finding_path = write_query_cued_pointer_bottleneck_finding(
+        report=report,
+        out_root=ROOT / "docs" / "research",
+        run_dir=run_dir,
+        report_path=report_path,
+    )
+
+    printable = {
+        "mode": report["mode"],
+        "interpretation": report["interpretation"],
+        "main": {
+            "frame_prediction_accuracy": round_floats(main_summary["frame_prediction_accuracy"]),
+            "oracle_frame_pointer_accuracy": round_floats(main_summary["oracle_frame_pointer_accuracy"]),
+            "predicted_frame_pointer_accuracy": round_floats(main_summary["predicted_frame_pointer_accuracy"]),
+            "predicted_soft_frame_pointer_accuracy": round_floats(main_summary["predicted_soft_frame_pointer_accuracy"]),
+            "hard_discrete_predicted_pointer_accuracy": round_floats(
+                main_summary["hard_discrete_predicted_pointer_accuracy"]
+            ),
+            "full_query_direct_accuracy": round_floats(main_summary["full_query_direct_accuracy"]),
+            "bottleneck_query_direct_accuracy_by_size": round_floats(
+                main_summary["bottleneck_query_direct_accuracy_by_size"]
+            ),
+            "frame_head_only_accuracy": round_floats(main_summary["frame_head_only_accuracy"]),
+            "no_query_baseline_accuracy": round_floats(main_summary["no_query_baseline_accuracy"]),
+            "wrong_forced_frame_accuracy": round_floats(main_summary["wrong_forced_frame_accuracy"]),
+            "query_ablation_accuracy": round_floats(main_summary["query_ablation_accuracy"]),
+            "query_shuffle_accuracy": round_floats(main_summary["query_shuffle_accuracy"]),
+            "authority_switch_score": round_floats(main_summary["authority_switch_score"]),
+            "refraction_index_final": round_floats(main_summary["refraction_index_final"]),
+            "authority_vs_bottleneck_size": round_floats(main_summary["authority_vs_bottleneck_size"]),
+            "refraction_vs_bottleneck_size": round_floats(main_summary["refraction_vs_bottleneck_size"]),
+            "controls": {
+                "zero_recurrent": round_floats(main_summary["zero_recurrent_accuracy"]),
+                "randomized_recurrent": round_floats(main_summary["randomized_recurrent_accuracy"]),
+                "random_label": round_floats(main_summary.get("random_label_accuracy")),
+            },
+        },
+    }
+    print(json.dumps(printable, indent=2))
+    print(f"\nWrote JSON report: {report_path}")
+    print(f"Wrote finding: {finding_path}")
+    return 0
+
+
 def main() -> int:
     args = parse_args()
     if args.device != "cpu" and not torch.cuda.is_available():
@@ -8717,6 +10263,8 @@ def main() -> int:
         return run_inferred_frame_pointer(args, run_dir, out_root)
     if args.experiment == "query_cued_frame_pointer":
         return run_query_cued_frame_pointer(args, run_dir, out_root)
+    if args.experiment == "query_cued_pointer_bottleneck":
+        return run_query_cued_pointer_bottleneck(args, run_dir, out_root)
 
     schema = build_schema(args.hidden)
     config = ProbeConfig(
