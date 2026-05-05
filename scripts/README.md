@@ -46,6 +46,14 @@ Run with:
 
 `reframe_diagnostics` tests early frame commitment plus an explicit reframe/reset pulse. It starts trajectories under the wrong frame, switches to the correct frame with or without a reset signal, and compares normal mid-run rotation against trained reset-triggered recovery.
 
+Run with:
+
+```bash
+.venv/bin/python scripts/run_context_cancellation_probe.py --experiment inferred_frame_pointer --input-mode entangled
+```
+
+`inferred_frame_pointer` moves from explicit frame-token control to automatic frame selection. It uses the multi-aspect setup without adding new semantic concepts: the intended frame is made inferable from feature-group salience in the input bundle, then a predicted internal frame pointer is used for the recurrent decision pass. It reports oracle-frame, predicted-frame, frame-head-only, no-frame, wrong-forced-frame, zero-recurrent, randomized-recurrent, random-label, influence, and token-frame inventory metrics. The first result supports frame inference but leaves pointer-specific necessity unclear because no-frame and frame-head-only baselines remain fairly strong.
+
 Embedding ablations:
 
 ```bash
@@ -77,6 +85,7 @@ Topology-prior ablations:
 - Multi-aspect refraction: a reused token can carry multiple possible aspects while the frame controls which relation gets decision authority.
 - Frame-switch diagnostics: a toy diagnostic can test whether frame-conditioned authority switching is better explained by recurrent reorientation or static output routing.
 - Reframe diagnostics: a toy diagnostic can test whether wrong early frame commitment can be reopened by an explicit reset/reframe event.
+- Inferred frame pointer: a toy diagnostic can test whether the frame can be predicted from the input bundle and then used internally as a recurrent pointer.
 - Frequency embedding ablation: fixed sin/cos token vectors can be compared against the existing random-vector baseline without changing the recurrent mechanism.
 - Raw wave resonance ablation: explicit pointer/neuron resonance can be tested against the simpler token-wave and recurrent baselines without making it the default mechanism.
 - Topology-prior ablation: recurrent masks can be compared at matched edge budget, including synthetic motif/hub priors and a small local FlyWire-derived GraphML sample.

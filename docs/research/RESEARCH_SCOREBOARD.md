@@ -201,6 +201,14 @@ Hub degree-preserving control:
 - FlyWire degree-preserving random masks generally beat raw FlyWire-sampled masks, weakening exact-FlyWire-wiring claims in this toy setup.
 - Current refined topology read: degree concentration is often the useful part, exact sampled wiring is task/regime dependent, and no biology/FlyWire claim is supported.
 
+Inferred frame pointer:
+
+- `inferred_frame_pointer` tests the next step after explicit frame tokens: predict the frame from the input bundle, then use that predicted frame as the recurrent pointer.
+- First run: frame prediction is clean (`1.0`) and predicted-frame task accuracy (`0.881`) is close to oracle-frame accuracy (`0.893`).
+- Recurrence remains load-bearing: zero-recurrent accuracy is `0.587`, randomized-recurrent accuracy is `0.525`, and random-label control is `0.503`.
+- Pointer-specific necessity is still unclear because frame-head-only (`0.853`) and no-frame (`0.868`) baselines remain fairly strong; wrong-forced-frame drops to `0.826`, a real but not decisive hit.
+- Current read: inferred frame selection works in the toy, but a stricter bottleneck/cue test is needed before claiming the predicted pointer is the dominant authority-switch path.
+
 ## Who Won?
 
 ```text
