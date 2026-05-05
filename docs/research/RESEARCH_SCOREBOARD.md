@@ -224,6 +224,15 @@ Query-cued pointer bottleneck:
 - The bottleneck direct baselines beat the pointer path: bottleneck size `2` reaches `0.781` accuracy with authority/refraction `0.0935`/`0.0713`, while the predicted pointer has authority/refraction `0.0213`/`0.0028`.
 - Current read: query frame prediction is real, but pointer-as-compact-control is not supported in this toy. Direct query conditioning remains sufficient, even under the tested bottlenecks.
 
+Temporal disambiguation refraction:
+
+- `temporal_disambiguation_refraction` tests the delay/streaming-token idea with ambiguous prefixes such as `dog bit ...`.
+- First run: streaming final accuracy is `1.000`, suffix resolution is strong (`+0.725` correct-frame probability rise), and non-danger completions suppress the initial danger candidate (`0.473` mean drop).
+- Order and recurrence controls are meaningful but not decisive: shuffled order drops to `0.693`, zero recurrent carry is still high at `0.934`, randomized recurrent is `0.801`, and random-label control is `0.159`.
+- The `dog bit` prefix is only partly ambiguous, not cleanly balanced: normalized entropy is `0.540`, with danger and animal-behavior carrying most mass.
+- Bag/static shortcuts are present: bag-of-tokens and full-sentence-static baselines both reach `1.000`, so final-label success is not streaming-specific yet.
+- Current read: delayed suffix frame resolution is visible, but the stronger claim that streaming recurrence maintains a clean multi-frame ambiguous prefix is not yet supported.
+
 ## Who Won?
 
 ```text

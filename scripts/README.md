@@ -70,6 +70,14 @@ Run with:
 
 `query_cued_pointer_bottleneck` keeps the same query-cued multi-aspect setup, but routes pointer modes through a stricter control channel: the frame head can see observation plus query, while the recurrent decision path sees queryless observation plus the predicted/oracle frame pointer. It compares that compact pointer route against a full direct query path and direct query bottlenecks of size 2, 4, 8, and 16. The intended read is narrow: whether a frame pointer is useful as a compact control variable under bottleneck, not whether query cues are natural language.
 
+Run with:
+
+```bash
+.venv/bin/python scripts/run_context_cancellation_probe.py --experiment temporal_disambiguation_refraction
+```
+
+`temporal_disambiguation_refraction` moves the refraction probe from static feature bundles to short streaming token sequences such as `dog bit me` and `dog bit his_tail`. It records hidden/logit state after each arriving token, compares ambiguous prefix behavior against final suffix resolution, and reports bag-of-tokens, full-sentence-static, zero-carry, shuffled-order, randomized-recurrent, and random-label controls. The first result supports suffix-driven frame resolution and order sensitivity, but prefix ambiguity is not clean and complete-token static shortcuts remain strong.
+
 Embedding ablations:
 
 ```bash
@@ -104,6 +112,7 @@ Topology-prior ablations:
 - Inferred frame pointer: a toy diagnostic can test whether the frame can be predicted from the input bundle and then used internally as a recurrent pointer.
 - Query-cued frame pointer: a toy diagnostic can test whether a query-like goal cue can imply the frame while the same observation is reused under multiple labels.
 - Query-cued pointer bottleneck: a toy diagnostic can test whether the inferred frame pointer is useful as a compact control channel compared with equally bottlenecked direct query conditioning.
+- Temporal disambiguation refraction: a toy diagnostic can test whether streaming recurrence keeps prefix trajectories and resolves them when delayed suffix tokens arrive.
 - Frequency embedding ablation: fixed sin/cos token vectors can be compared against the existing random-vector baseline without changing the recurrent mechanism.
 - Raw wave resonance ablation: explicit pointer/neuron resonance can be tested against the simpler token-wave and recurrent baselines without making it the default mechanism.
 - Topology-prior ablation: recurrent masks can be compared at matched edge budget, including synthetic motif/hub priors and a small local FlyWire-derived GraphML sample.

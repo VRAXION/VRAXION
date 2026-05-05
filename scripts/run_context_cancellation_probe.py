@@ -4,6 +4,7 @@ from __future__ import annotations
 import argparse
 import copy
 import json
+import math
 import platform
 import sys
 from dataclasses import asdict, dataclass
@@ -78,6 +79,7 @@ EXPERIMENTS = (
     "inferred_frame_pointer",
     "query_cued_frame_pointer",
     "query_cued_pointer_bottleneck",
+    "temporal_disambiguation_refraction",
 )
 
 TASK_FRAMES = ("danger_frame", "environment_frame", "visibility_frame")
@@ -177,6 +179,28 @@ FRAME_SWITCH_PAIRS = (
 SOFT_FRAME_INTERPOLATION_PAIR = ("danger_frame", "environment_frame")
 SOFT_FRAME_MIXES = (1.0, 0.75, 0.50, 0.25, 0.0)
 REFRAME_RESET_SCALE = 1.0
+TEMPORAL_FRAMES = (
+    "user_injury_danger",
+    "animal_behavior",
+    "play_object",
+    "combat_threat",
+    "social_friendship",
+    "environment_alert",
+)
+TEMPORAL_SEQUENCE_SPECS = (
+    ("dog_bit_me", ("dog", "bit", "me"), "user_injury_danger"),
+    ("dog_bit_his_tail", ("dog", "bit", "his_tail"), "animal_behavior"),
+    ("dog_bit_the_toy", ("dog", "bit", "the_toy"), "play_object"),
+    ("dog_bit_the_enemy", ("dog", "bit", "the_enemy"), "combat_threat"),
+    ("dog_bit_a_child", ("dog", "bit", "a_child"), "user_injury_danger"),
+    ("dog_barked_at_me", ("dog", "barked", "at_me"), "user_injury_danger"),
+    ("dog_barked_at_nothing", ("dog", "barked", "at_nothing"), "animal_behavior"),
+    ("dog_barked_at_the_door", ("dog", "barked", "at_the_door"), "environment_alert"),
+    ("dog_barked_happily", ("dog", "barked", "happily"), "social_friendship"),
+    ("dog_followed_me_home", ("dog", "followed", "me_home"), "social_friendship"),
+    ("dog_followed_a_scent", ("dog", "followed", "a_scent"), "animal_behavior"),
+    ("dog_followed_the_owner", ("dog", "followed", "the_owner"), "social_friendship"),
+)
 
 
 @dataclass(frozen=True)
@@ -244,6 +268,18 @@ class RefractionDataBundle:
     query_component: np.ndarray | None = None
     query: np.ndarray | None = None
     query_names: list[str] | None = None
+
+
+@dataclass
+class TemporalDataBundle:
+    sequences: np.ndarray
+    bag_x: np.ndarray
+    static_x: np.ndarray
+    y: np.ndarray
+    spec_id: np.ndarray
+    token_names: list[list[str]]
+    spec_names: list[str]
+    frame_names: list[str]
 
 
 @dataclass
@@ -835,6 +871,20 @@ def build_frame_embeddings(hidden: int, seed: int, frame_scale: float) -> dict[s
 
 def build_query_embeddings(hidden: int, seed: int, query_scale: float) -> dict[str, np.ndarray]:
     return build_named_frame_embeddings(QUERY_CUES, hidden, seed, query_scale)
+
+
+def build_temporal_embeddings(hidden: int, seed: int, scale: float) -> tuple[dict[str, np.ndarray], np.ndarray]:
+    rng = np.random.default_rng(seed)
+    tokens = sorted({token for _name, sequence, _frame in TEMPORAL_SEQUENCE_SPECS for token in sequence})
+    token_embeddings = {
+        token: unit_vector(rng, hidden, scale).astype(np.float32)
+        for token in tokens
+    }
+    position_embeddings = np.stack(
+        [unit_vector(rng, hidden, 0.35 * scale).astype(np.float32) for _ in range(3)],
+        axis=0,
+    )
+    return token_embeddings, position_embeddings
 
 
 def build_named_frame_embeddings(
@@ -1537,6 +1587,51 @@ def make_query_cued_frame_dataset(
         query_component=query_component[order],
         query=query[order],
         query_names=list(QUERY_CUES),
+    )
+
+
+def make_temporal_disambiguation_dataset(
+    *,
+    n: int,
+    seed: int,
+    token_embeddings: dict[str, np.ndarray],
+    position_embeddings: np.ndarray,
+    random_labels: bool = False,
+) -> TemporalDataBundle:
+    rng = np.random.default_rng(seed)
+    hidden = len(next(iter(token_embeddings.values())))
+    spec_count = len(TEMPORAL_SEQUENCE_SPECS)
+    total = max(spec_count, n)
+    sequences = np.zeros((total, 3, hidden), dtype=np.float32)
+    bag_x = np.zeros((total, hidden), dtype=np.float32)
+    static_x = np.zeros((total, hidden), dtype=np.float32)
+    y = np.zeros(total, dtype=np.int64)
+    spec_id = np.zeros(total, dtype=np.int64)
+    token_names: list[list[str]] = []
+    spec_names: list[str] = []
+
+    for row in range(total):
+        spec_index = row % spec_count
+        name, tokens, frame_name = TEMPORAL_SEQUENCE_SPECS[spec_index]
+        token_vectors = np.stack([token_embeddings[token] for token in tokens], axis=0).astype(np.float32)
+        sequences[row] = token_vectors
+        bag_x[row] = np.sum(token_vectors, axis=0)
+        static_x[row] = np.sum(token_vectors + position_embeddings[: len(tokens)], axis=0)
+        y[row] = int(rng.integers(0, len(TEMPORAL_FRAMES))) if random_labels else TEMPORAL_FRAMES.index(frame_name)
+        spec_id[row] = spec_index
+        token_names.append(list(tokens))
+        spec_names.append(name)
+
+    order = rng.permutation(total)
+    return TemporalDataBundle(
+        sequences=sequences[order],
+        bag_x=bag_x[order],
+        static_x=static_x[order],
+        y=y[order],
+        spec_id=spec_id[order],
+        token_names=[token_names[int(idx)] for idx in order],
+        spec_names=[spec_names[int(idx)] for idx in order],
+        frame_names=list(TEMPORAL_FRAMES),
     )
 
 
@@ -2290,6 +2385,104 @@ class QueryBottleneckDirectClassifier(nn.Module):
         return states, logits
 
 
+class TemporalStreamingClassifier(nn.Module):
+    def __init__(
+        self,
+        *,
+        hidden: int,
+        classes: int,
+        mask: np.ndarray,
+        update_rate: float,
+        delta_scale: float,
+    ):
+        super().__init__()
+        self.update_rate = update_rate
+        self.delta_scale = delta_scale
+        self.register_buffer("mask", torch.tensor(mask, dtype=torch.float32))
+        self.recurrent = nn.Parameter(torch.empty(hidden, hidden))
+        self.threshold = nn.Parameter(torch.zeros(hidden))
+        self.head = nn.Linear(hidden, classes)
+        nn.init.normal_(self.recurrent, mean=0.0, std=0.025)
+        nn.init.zeros_(self.head.bias)
+        nn.init.normal_(self.head.weight, mean=0.0, std=0.025)
+
+    def rollout_sequence(
+        self,
+        sequence: torch.Tensor,
+        *,
+        ablation: str | None = None,
+    ) -> tuple[list[torch.Tensor], list[torch.Tensor]]:
+        h = torch.zeros(
+            (sequence.shape[0], sequence.shape[2]),
+            dtype=sequence.dtype,
+            device=sequence.device,
+        )
+        states: list[torch.Tensor] = []
+        logits: list[torch.Tensor] = []
+        masked_recurrent = self.recurrent * self.mask
+
+        for step in range(sequence.shape[1]):
+            token = sequence[:, step, :]
+            if ablation == "reset_each_token":
+                h = torch.zeros_like(h)
+            if ablation == "zero_recurrent_update":
+                delta = token + self.threshold
+            elif ablation is None or ablation == "reset_each_token":
+                delta = token + h @ masked_recurrent.t() + self.threshold
+            else:
+                raise ValueError(f"unknown temporal ablation: {ablation}")
+            proposal = torch.tanh(h + self.delta_scale * delta)
+            h = (1.0 - self.update_rate) * h + self.update_rate * proposal
+            states.append(h)
+            logits.append(self.head(h))
+        return states, logits
+
+
+class StaticMultiClassRecurrentClassifier(nn.Module):
+    def __init__(
+        self,
+        *,
+        hidden: int,
+        classes: int,
+        steps: int,
+        mask: np.ndarray,
+        update_rate: float,
+        delta_scale: float,
+    ):
+        super().__init__()
+        self.steps = steps
+        self.update_rate = update_rate
+        self.delta_scale = delta_scale
+        self.register_buffer("mask", torch.tensor(mask, dtype=torch.float32))
+        self.recurrent = nn.Parameter(torch.empty(hidden, hidden))
+        self.threshold = nn.Parameter(torch.zeros(hidden))
+        self.head = nn.Linear(hidden, classes)
+        nn.init.normal_(self.recurrent, mean=0.0, std=0.025)
+        nn.init.zeros_(self.head.bias)
+        nn.init.normal_(self.head.weight, mean=0.0, std=0.025)
+
+    def rollout(self, x: torch.Tensor, *, ablation: str | None = None) -> tuple[list[torch.Tensor], list[torch.Tensor]]:
+        h = torch.tanh(x)
+        states = [h]
+        logits = [self.head(h)]
+        masked_recurrent = self.recurrent * self.mask
+        for _step in range(1, self.steps + 1):
+            if ablation == "zero_recurrent_update":
+                proposal = h
+            else:
+                if ablation is None:
+                    delta = h @ masked_recurrent.t() + self.threshold
+                elif ablation == "zero_matrix_keep_threshold":
+                    delta = self.threshold.unsqueeze(0).expand_as(h)
+                else:
+                    raise ValueError(f"unknown ablation: {ablation}")
+                proposal = torch.tanh(h + self.delta_scale * delta)
+            h = (1.0 - self.update_rate) * h + self.update_rate * proposal
+            states.append(h)
+            logits.append(self.head(h))
+        return states, logits
+
+
 class ReframeRecurrentClassifier(nn.Module):
     def __init__(
         self,
@@ -2635,6 +2828,99 @@ def train_query_bottleneck_direct_model(
     return model
 
 
+def train_temporal_streaming_model(
+    *,
+    train: TemporalDataBundle,
+    hidden: int,
+    args: argparse.Namespace,
+    seed: int,
+) -> TemporalStreamingClassifier:
+    torch.manual_seed(seed)
+    mask, topology_stats = make_topology_mask(
+        hidden=hidden,
+        density=args.sparse_density,
+        seed=seed + 200_003,
+        topology_mode=args.topology_mode,
+        flywire_graphml=args.flywire_graphml,
+    )
+    model = TemporalStreamingClassifier(
+        hidden=hidden,
+        classes=len(train.frame_names),
+        mask=mask,
+        update_rate=args.update_rate,
+        delta_scale=args.delta_scale,
+    ).to(args.device)
+    model.topology_stats = topology_stats
+    optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
+    sequences = to_tensor(train.sequences, args.device)
+    y = to_tensor(train.y, args.device, torch.long)
+    n = len(train.y)
+    generator = torch.Generator(device="cpu")
+    generator.manual_seed(seed + 300_001)
+
+    for _epoch in range(args.epochs):
+        order = torch.randperm(n, generator=generator)
+        for start in range(0, n, args.batch_size):
+            batch_idx = order[start : start + args.batch_size].to(args.device)
+            xb = sequences.index_select(dim=0, index=batch_idx)
+            yb = y.index_select(dim=0, index=batch_idx)
+            _states, logits = model.rollout_sequence(xb)
+            loss = F.cross_entropy(logits[-1], yb)
+            optimizer.zero_grad(set_to_none=True)
+            loss.backward()
+            optimizer.step()
+
+    return model
+
+
+def train_static_multiclass_model(
+    *,
+    x: np.ndarray,
+    y: np.ndarray,
+    classes: int,
+    hidden: int,
+    args: argparse.Namespace,
+    seed: int,
+) -> StaticMultiClassRecurrentClassifier:
+    torch.manual_seed(seed)
+    mask, topology_stats = make_topology_mask(
+        hidden=hidden,
+        density=args.sparse_density,
+        seed=seed + 200_003,
+        topology_mode=args.topology_mode,
+        flywire_graphml=args.flywire_graphml,
+    )
+    model = StaticMultiClassRecurrentClassifier(
+        hidden=hidden,
+        classes=classes,
+        steps=args.steps,
+        mask=mask,
+        update_rate=args.update_rate,
+        delta_scale=args.delta_scale,
+    ).to(args.device)
+    model.topology_stats = topology_stats
+    optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
+    tx = to_tensor(x, args.device)
+    ty = to_tensor(y, args.device, torch.long)
+    n = len(y)
+    generator = torch.Generator(device="cpu")
+    generator.manual_seed(seed + 300_001)
+
+    for _epoch in range(args.epochs):
+        order = torch.randperm(n, generator=generator)
+        for start in range(0, n, args.batch_size):
+            batch_idx = order[start : start + args.batch_size].to(args.device)
+            xb = tx.index_select(dim=0, index=batch_idx)
+            yb = ty.index_select(dim=0, index=batch_idx)
+            _states, logits = model.rollout(xb)
+            loss = F.cross_entropy(logits[-1], yb)
+            optimizer.zero_grad(set_to_none=True)
+            loss.backward()
+            optimizer.step()
+
+    return model
+
+
 def train_reframe_model(
     *,
     train: RefractionDataBundle,
@@ -2884,6 +3170,38 @@ def query_bottleneck_rollout_arrays(
     return states, logits
 
 
+def temporal_rollout_arrays(
+    model: TemporalStreamingClassifier,
+    sequences: np.ndarray,
+    device: str,
+    *,
+    ablation: str | None = None,
+) -> tuple[list[np.ndarray], list[np.ndarray]]:
+    model.eval()
+    with torch.no_grad():
+        sequences_t = to_tensor(sequences, device)
+        states_t, logits_t = model.rollout_sequence(sequences_t, ablation=ablation)
+        states = [state.detach().cpu().numpy() for state in states_t]
+        logits = [logit.detach().cpu().numpy() for logit in logits_t]
+    return states, logits
+
+
+def static_multiclass_rollout_arrays(
+    model: StaticMultiClassRecurrentClassifier,
+    x: np.ndarray,
+    device: str,
+    *,
+    ablation: str | None = None,
+) -> tuple[list[np.ndarray], list[np.ndarray]]:
+    model.eval()
+    with torch.no_grad():
+        x_t = to_tensor(x, device)
+        states_t, logits_t = model.rollout(x_t, ablation=ablation)
+        states = [state.detach().cpu().numpy() for state in states_t]
+        logits = [logit.detach().cpu().numpy() for logit in logits_t]
+    return states, logits
+
+
 def reframe_rollout_arrays(
     model: ReframeRecurrentClassifier,
     observation: np.ndarray,
@@ -2942,6 +3260,231 @@ def logit_margin_by_step(logits_by_step: list[np.ndarray]) -> list[float]:
         float(np.mean(np.sort(logits, axis=1)[:, -1] - np.sort(logits, axis=1)[:, -2]))
         for logits in logits_by_step
     ]
+
+
+def temporal_prediction_summary(
+    *,
+    model: TemporalStreamingClassifier,
+    bundle: TemporalDataBundle,
+    args: argparse.Namespace,
+    sequences_override: np.ndarray | None = None,
+    ablation: str | None = None,
+) -> dict[str, Any]:
+    sequences = bundle.sequences if sequences_override is None else sequences_override
+    _states, logits = temporal_rollout_arrays(model, sequences, args.device, ablation=ablation)
+    pred = np.argmax(logits[-1], axis=1)
+    probs_by_step = [softmax_np(step_logits) for step_logits in logits]
+    accuracy_by_frame: dict[str, float] = {}
+    for frame_index, frame_name in enumerate(bundle.frame_names):
+        idx = np.flatnonzero(bundle.y == frame_index)
+        accuracy_by_frame[frame_name] = float(np.mean(pred[idx] == bundle.y[idx])) if len(idx) else 0.0
+    return {
+        "accuracy": float(np.mean(pred == bundle.y)),
+        "accuracy_by_frame": accuracy_by_frame,
+        "per_step_accuracy": [
+            float(np.mean(np.argmax(step_logits, axis=1) == bundle.y))
+            for step_logits in logits
+        ],
+        "output_entropy_by_step": output_entropy_by_step(logits),
+        "logit_margin_by_step": logit_margin_by_step(logits),
+        "label_logit_confidence_by_step": [
+            float(np.mean(probs[np.arange(len(bundle.y)), bundle.y]))
+            for probs in probs_by_step
+        ],
+    }
+
+
+def static_multiclass_prediction_summary(
+    *,
+    model: StaticMultiClassRecurrentClassifier,
+    x: np.ndarray,
+    y: np.ndarray,
+    frame_names: list[str],
+    args: argparse.Namespace,
+    ablation: str | None = None,
+) -> dict[str, Any]:
+    _states, logits = static_multiclass_rollout_arrays(model, x, args.device, ablation=ablation)
+    pred = np.argmax(logits[-1], axis=1)
+    probs_by_step = [softmax_np(step_logits) for step_logits in logits]
+    accuracy_by_frame: dict[str, float] = {}
+    for frame_index, frame_name in enumerate(frame_names):
+        idx = np.flatnonzero(y == frame_index)
+        accuracy_by_frame[frame_name] = float(np.mean(pred[idx] == y[idx])) if len(idx) else 0.0
+    return {
+        "accuracy": float(np.mean(pred == y)),
+        "accuracy_by_frame": accuracy_by_frame,
+        "per_step_accuracy": [
+            float(np.mean(np.argmax(step_logits, axis=1) == y))
+            for step_logits in logits
+        ],
+        "output_entropy_by_step": output_entropy_by_step(logits),
+        "logit_margin_by_step": logit_margin_by_step(logits),
+        "label_logit_confidence_by_step": [
+            float(np.mean(probs[np.arange(len(y)), y]))
+            for probs in probs_by_step
+        ],
+    }
+
+
+def shuffled_temporal_sequences(bundle: TemporalDataBundle, seed: int) -> np.ndarray:
+    rng = np.random.default_rng(seed)
+    shuffled = bundle.sequences.copy()
+    for row in range(len(shuffled)):
+        shuffled[row] = shuffled[row, rng.permutation(shuffled.shape[1]), :]
+    return shuffled
+
+
+def prefix_key(tokens: list[str], step: int) -> str:
+    return " ".join(tokens[: step + 1])
+
+
+def temporal_prefix_distributions(
+    *,
+    model: TemporalStreamingClassifier,
+    bundle: TemporalDataBundle,
+    args: argparse.Namespace,
+) -> dict[str, Any]:
+    _states, logits = temporal_rollout_arrays(model, bundle.sequences, args.device)
+    probs_by_step = [softmax_np(step_logits) for step_logits in logits]
+    out: dict[str, Any] = {}
+    for step, probs in enumerate(probs_by_step):
+        prefixes = sorted({prefix_key(tokens, step) for tokens in bundle.token_names})
+        step_out: dict[str, Any] = {}
+        for prefix in prefixes:
+            idx = [row for row, tokens in enumerate(bundle.token_names) if prefix_key(tokens, step) == prefix]
+            if not idx:
+                continue
+            avg = np.mean(probs[idx], axis=0)
+            entropy = -float(np.sum(avg * np.log(np.maximum(avg, 1.0e-9))))
+            step_out[prefix] = {
+                "count": len(idx),
+                "entropy": entropy,
+                "normalized_entropy": entropy / max(math.log(len(bundle.frame_names)), 1.0e-9),
+                "frame_probabilities": {
+                    frame_name: float(avg[frame_index])
+                    for frame_index, frame_name in enumerate(bundle.frame_names)
+                },
+                "top_frame": bundle.frame_names[int(np.argmax(avg))],
+                "top_probability": float(np.max(avg)),
+            }
+        out[f"step_{step}"] = step_out
+    return out
+
+
+def prefix_ambiguity_metrics(prefix_distributions: dict[str, Any], frame_names: list[str]) -> dict[str, Any]:
+    dog_bit = prefix_distributions.get("step_1", {}).get("dog bit")
+    if not dog_bit:
+        return {}
+    probs = list(dog_bit["frame_probabilities"].values())
+    candidate_count = sum(1 for value in probs if value >= 0.15)
+    return {
+        "prefix": "dog bit",
+        "entropy": dog_bit["entropy"],
+        "normalized_entropy": dog_bit["normalized_entropy"],
+        "top_frame": dog_bit["top_frame"],
+        "top_probability": dog_bit["top_probability"],
+        "candidate_count_prob_ge_0_15": int(candidate_count),
+        "uniform_normalized_entropy_reference": 1.0,
+        "frame_probabilities": dog_bit["frame_probabilities"],
+    }
+
+
+def dog_bit_suffix_resolution_metrics(
+    *,
+    model: TemporalStreamingClassifier,
+    bundle: TemporalDataBundle,
+    args: argparse.Namespace,
+) -> dict[str, Any]:
+    _states, logits = temporal_rollout_arrays(model, bundle.sequences, args.device)
+    prefix_probs = softmax_np(logits[1])
+    final_probs = softmax_np(logits[-1])
+    danger_index = bundle.frame_names.index("user_injury_danger")
+    rows = [
+        row
+        for row, tokens in enumerate(bundle.token_names)
+        if tokens[0] == "dog" and tokens[1] == "bit"
+    ]
+    by_completion: dict[str, Any] = {}
+    correct_rise: list[float] = []
+    non_danger_drop: list[float] = []
+    for row in rows:
+        completion = bundle.token_names[row][2]
+        target = int(bundle.y[row])
+        target_name = bundle.frame_names[target]
+        rise = float(final_probs[row, target] - prefix_probs[row, target])
+        correct_rise.append(rise)
+        danger_drop = float(prefix_probs[row, danger_index] - final_probs[row, danger_index])
+        if target != danger_index:
+            non_danger_drop.append(danger_drop)
+        by_completion[completion] = {
+            "target_frame": target_name,
+            "correct_frame_probability_at_prefix": float(prefix_probs[row, target]),
+            "correct_frame_probability_final": float(final_probs[row, target]),
+            "correct_frame_probability_rise": rise,
+            "danger_probability_at_prefix": float(prefix_probs[row, danger_index]),
+            "danger_probability_final": float(final_probs[row, danger_index]),
+            "danger_probability_drop": danger_drop,
+            "final_distribution": {
+                frame_name: float(final_probs[row, frame_index])
+                for frame_index, frame_name in enumerate(bundle.frame_names)
+            },
+        }
+    prefix_mean = np.mean(prefix_probs[rows], axis=0) if rows else np.zeros(len(bundle.frame_names))
+    prefix_dominant = int(np.argmax(prefix_mean)) if rows else danger_index
+    inertia_rows = [row for row in rows if int(bundle.y[row]) != prefix_dominant]
+    inertia = (
+        float(np.mean(final_probs[inertia_rows, prefix_dominant]))
+        if inertia_rows
+        else None
+    )
+    return {
+        "prefix": "dog bit",
+        "prefix_mean_distribution": {
+            frame_name: float(prefix_mean[frame_index])
+            for frame_index, frame_name in enumerate(bundle.frame_names)
+        },
+        "prefix_dominant_frame": bundle.frame_names[prefix_dominant],
+        "mean_correct_frame_probability_rise": float(np.mean(correct_rise)) if correct_rise else None,
+        "mean_non_danger_completion_danger_drop": float(np.mean(non_danger_drop)) if non_danger_drop else None,
+        "frame_inertia_prefix_dominant_probability_after_nonmatching_suffix": inertia,
+        "by_completion": by_completion,
+    }
+
+
+def temporal_delayed_evidence_divergence(
+    *,
+    model: TemporalStreamingClassifier,
+    bundle: TemporalDataBundle,
+    args: argparse.Namespace,
+) -> dict[str, Any]:
+    states, logits = temporal_rollout_arrays(model, bundle.sequences, args.device)
+    probs = [softmax_np(step_logits) for step_logits in logits]
+
+    def spec_rows(spec_name: str) -> np.ndarray:
+        return np.array([row for row, name in enumerate(bundle.spec_names) if name == spec_name], dtype=np.int64)
+
+    left_idx = spec_rows("dog_bit_me")
+    right_idx = spec_rows("dog_bit_his_tail")
+    if len(left_idx) == 0 or len(right_idx) == 0:
+        return {}
+    left_take = left_idx[: min(len(left_idx), len(right_idx))]
+    right_take = right_idx[: min(len(left_idx), len(right_idx))]
+    hidden_distance: list[float] = []
+    probability_l1: list[float] = []
+    for step, state in enumerate(states):
+        left = state[left_take]
+        right = state[right_take]
+        left_norm = left / np.maximum(np.linalg.norm(left, axis=1, keepdims=True), 1.0e-9)
+        right_norm = right / np.maximum(np.linalg.norm(right, axis=1, keepdims=True), 1.0e-9)
+        hidden_distance.append(float(1.0 - np.mean(np.sum(left_norm * right_norm, axis=1))))
+        probability_l1.append(float(np.mean(np.sum(np.abs(probs[step][left_take] - probs[step][right_take]), axis=1))))
+    return {
+        "pair": "dog bit me vs dog bit his_tail",
+        "hidden_cosine_distance_by_step": hidden_distance,
+        "output_probability_l1_by_step": probability_l1,
+        "early_shared_distance": hidden_distance[1] if len(hidden_distance) > 1 else None,
+        "final_divergence": hidden_distance[-1],
+    }
 
 
 def evaluate_model(
@@ -6921,6 +7464,161 @@ def run_query_cued_pointer_bottleneck_seed(
     }
 
 
+def run_temporal_disambiguation_seed(
+    *,
+    name: str,
+    seed: int,
+    schema: Schema,
+    args: argparse.Namespace,
+) -> dict[str, Any]:
+    token_embeddings, position_embeddings = build_temporal_embeddings(
+        schema.hidden,
+        seed + 700_003,
+        args.embed_scale,
+    )
+    train = make_temporal_disambiguation_dataset(
+        n=args.train_size,
+        seed=seed + 10_001,
+        token_embeddings=token_embeddings,
+        position_embeddings=position_embeddings,
+    )
+    test = make_temporal_disambiguation_dataset(
+        n=args.test_size,
+        seed=seed + 10_002,
+        token_embeddings=token_embeddings,
+        position_embeddings=position_embeddings,
+    )
+
+    streaming_model = train_temporal_streaming_model(
+        train=train,
+        hidden=schema.hidden,
+        args=args,
+        seed=seed + 131,
+    )
+    bag_model = train_static_multiclass_model(
+        x=train.bag_x,
+        y=train.y,
+        classes=len(train.frame_names),
+        hidden=schema.hidden,
+        args=args,
+        seed=seed + 132,
+    )
+    static_model = train_static_multiclass_model(
+        x=train.static_x,
+        y=train.y,
+        classes=len(train.frame_names),
+        hidden=schema.hidden,
+        args=args,
+        seed=seed + 133,
+    )
+
+    streaming = temporal_prediction_summary(model=streaming_model, bundle=test, args=args)
+    bag = static_multiclass_prediction_summary(
+        model=bag_model,
+        x=test.bag_x,
+        y=test.y,
+        frame_names=test.frame_names,
+        args=args,
+    )
+    full_static = static_multiclass_prediction_summary(
+        model=static_model,
+        x=test.static_x,
+        y=test.y,
+        frame_names=test.frame_names,
+        args=args,
+    )
+    zero_recurrent = temporal_prediction_summary(
+        model=streaming_model,
+        bundle=test,
+        args=args,
+        ablation="reset_each_token",
+    )
+    shuffled_order = temporal_prediction_summary(
+        model=streaming_model,
+        bundle=test,
+        args=args,
+        sequences_override=shuffled_temporal_sequences(test, seed + 940_001),
+    )
+    randomized_model = recurrent_matrix_control(streaming_model, "randomize", seed + 950_001)
+    randomized_recurrent = temporal_prediction_summary(
+        model=randomized_model,
+        bundle=test,
+        args=args,
+    )
+
+    prefix_distributions = temporal_prefix_distributions(
+        model=streaming_model,
+        bundle=test,
+        args=args,
+    )
+    prefix_ambiguity = prefix_ambiguity_metrics(prefix_distributions, test.frame_names)
+    suffix_resolution = dog_bit_suffix_resolution_metrics(
+        model=streaming_model,
+        bundle=test,
+        args=args,
+    )
+    delayed_divergence = temporal_delayed_evidence_divergence(
+        model=streaming_model,
+        bundle=test,
+        args=args,
+    )
+
+    random_label_control: dict[str, Any] | None = None
+    if args.random_label_control:
+        random_train = make_temporal_disambiguation_dataset(
+            n=args.train_size,
+            seed=seed + 11_001,
+            token_embeddings=token_embeddings,
+            position_embeddings=position_embeddings,
+            random_labels=True,
+        )
+        random_test = make_temporal_disambiguation_dataset(
+            n=args.test_size,
+            seed=seed + 11_002,
+            token_embeddings=token_embeddings,
+            position_embeddings=position_embeddings,
+            random_labels=True,
+        )
+        random_model = train_temporal_streaming_model(
+            train=random_train,
+            hidden=schema.hidden,
+            args=args,
+            seed=seed + 134,
+        )
+        random_label_control = temporal_prediction_summary(
+            model=random_model,
+            bundle=random_test,
+            args=args,
+        )
+
+    return {
+        "name": name,
+        "input_mode": "streaming_sequence",
+        "seed": seed,
+        "frames": list(TEMPORAL_FRAMES),
+        "sequence_specs": [
+            {"name": spec_name, "tokens": list(tokens), "frame": frame}
+            for spec_name, tokens, frame in TEMPORAL_SEQUENCE_SPECS
+        ],
+        "train_rows": int(len(train.y)),
+        "test_rows": int(len(test.y)),
+        "topology": getattr(streaming_model, "topology_stats", {}),
+        "streaming_recurrent": streaming,
+        "bag_of_tokens_baseline": bag,
+        "full_sentence_static": full_static,
+        "zero_recurrent": zero_recurrent,
+        "shuffled_order": shuffled_order,
+        "randomized_recurrent": randomized_recurrent,
+        "random_label_control": random_label_control,
+        "prefix_frame_distribution": prefix_distributions,
+        "prefix_ambiguity": prefix_ambiguity,
+        "suffix_resolution": suffix_resolution,
+        "delayed_evidence_divergence": delayed_divergence,
+        "order_sensitivity_drop": streaming["accuracy"] - shuffled_order["accuracy"],
+        "zero_recurrent_drop": streaming["accuracy"] - zero_recurrent["accuracy"],
+    }
+
+
 def run_frame_switch_seed(
     *,
     name: str,
@@ -7752,6 +8450,69 @@ def aggregate_query_cued_pointer_bottleneck_runs(name: str, runs: list[dict[str,
         "bottleneck_query_direct_influence": bottleneck_influence,
         "token_frame_inventory": token_inventory,
         "random_label_control": random_label,
+        "runs": runs,
+    }
+
+
+def aggregate_temporal_disambiguation_runs(name: str, runs: list[dict[str, Any]]) -> dict[str, Any]:
+    streaming = aggregate_nested([run["streaming_recurrent"] for run in runs])
+    bag = aggregate_nested([run["bag_of_tokens_baseline"] for run in runs])
+    static = aggregate_nested([run["full_sentence_static"] for run in runs])
+    zero = aggregate_nested([run["zero_recurrent"] for run in runs])
+    shuffled = aggregate_nested([run["shuffled_order"] for run in runs])
+    randomized = aggregate_nested([run["randomized_recurrent"] for run in runs])
+    prefix_distributions = aggregate_nested([run["prefix_frame_distribution"] for run in runs])
+    prefix_ambiguity = aggregate_nested([run["prefix_ambiguity"] for run in runs])
+    suffix_resolution = aggregate_nested([run["suffix_resolution"] for run in runs])
+    delayed_divergence = aggregate_nested([run["delayed_evidence_divergence"] for run in runs])
+    random_label_runs = [run["random_label_control"] for run in runs if run.get("random_label_control") is not None]
+    random_label = aggregate_nested(random_label_runs) if random_label_runs else None
+    topology = aggregate_nested([run.get("topology", {}) for run in runs])
+    return {
+        "name": name,
+        "input_mode": runs[0]["input_mode"],
+        "frames": runs[0]["frames"],
+        "sequence_specs": runs[0]["sequence_specs"],
+        "train_rows": int(np.mean([run["train_rows"] for run in runs])),
+        "test_rows": int(np.mean([run["test_rows"] for run in runs])),
+        "topology": topology,
+        "streaming_final_accuracy": streaming["accuracy"],
+        "bag_of_tokens_accuracy": bag["accuracy"],
+        "full_sentence_static_accuracy": static["accuracy"],
+        "zero_recurrent_accuracy": zero["accuracy"],
+        "shuffled_order_accuracy": shuffled["accuracy"],
+        "randomized_recurrent_accuracy": randomized["accuracy"],
+        "random_label_accuracy": random_label.get("accuracy") if isinstance(random_label, dict) else None,
+        "order_sensitivity_drop": float(np.mean([run["order_sensitivity_drop"] for run in runs])),
+        "zero_recurrent_drop": float(np.mean([run["zero_recurrent_drop"] for run in runs])),
+        "prefix_ambiguity_score": prefix_ambiguity.get("normalized_entropy") if isinstance(prefix_ambiguity, dict) else None,
+        "prefix_candidate_count": prefix_ambiguity.get("candidate_count_prob_ge_0_15") if isinstance(prefix_ambiguity, dict) else None,
+        "suffix_resolution_score": (
+            suffix_resolution.get("mean_correct_frame_probability_rise")
+            if isinstance(suffix_resolution, dict)
+            else None
+        ),
+        "suffix_wrong_prefix_drop": (
+            suffix_resolution.get("mean_non_danger_completion_danger_drop")
+            if isinstance(suffix_resolution, dict)
+            else None
+        ),
+        "frame_inertia": (
+            suffix_resolution.get("frame_inertia_prefix_dominant_probability_after_nonmatching_suffix")
+            if isinstance(suffix_resolution, dict)
+            else None
+        ),
+        "streaming_recurrent": streaming,
+        "bag_of_tokens_baseline": bag,
+        "full_sentence_static": static,
+        "zero_recurrent": zero,
+        "shuffled_order": shuffled,
+        "randomized_recurrent": randomized,
+        "random_label_control": random_label,
+        "prefix_frame_distribution": prefix_distributions,
+        "prefix_ambiguity": prefix_ambiguity,
+        "suffix_resolution": suffix_resolution,
+        "delayed_evidence_divergence": delayed_divergence,
         "runs": runs,
     }
 
@@ -10241,6 +11002,292 @@ def run_query_cued_pointer_bottleneck(args: argparse.Namespace, run_dir: Path, o
     return 0
 
 
+def interpret_temporal_disambiguation_report(main_summary: dict[str, Any]) -> dict[str, Any]:
+    streaming = float(main_summary["streaming_final_accuracy"])
+    bag = float(main_summary["bag_of_tokens_accuracy"])
+    static = float(main_summary["full_sentence_static_accuracy"])
+    zero = float(main_summary["zero_recurrent_accuracy"])
+    shuffled = float(main_summary["shuffled_order_accuracy"])
+    randomized = float(main_summary["randomized_recurrent_accuracy"])
+    random_label = main_summary.get("random_label_accuracy")
+    prefix_entropy = main_summary.get("prefix_ambiguity_score")
+    prefix_candidates = main_summary.get("prefix_candidate_count")
+    suffix_rise = main_summary.get("suffix_resolution_score")
+    suffix_drop = main_summary.get("suffix_wrong_prefix_drop")
+    divergence = main_summary.get("delayed_evidence_divergence", {})
+    early_distance = divergence.get("early_shared_distance") if isinstance(divergence, dict) else None
+    final_divergence = divergence.get("final_divergence") if isinstance(divergence, dict) else None
+    random_fails = random_label is None or float(random_label) < 0.35
+    streaming_high = streaming >= 0.85
+    prefix_ambiguous = (
+        prefix_entropy is not None
+        and float(prefix_entropy) >= 0.65
+        and prefix_candidates is not None
+        and float(prefix_candidates) >= 2
+    )
+    suffix_resolves = (
+        suffix_rise is not None
+        and float(suffix_rise) >= 0.10
+        and suffix_drop is not None
+        and float(suffix_drop) >= 0.03
+    )
+    order_sensitive = shuffled <= streaming - 0.10 or zero <= streaming - 0.10
+    recurrence_sensitive = randomized <= streaming - 0.15
+    delayed_diverges = (
+        early_distance is not None
+        and final_divergence is not None
+        and float(early_distance) <= 0.05
+        and float(final_divergence) >= float(early_distance) + 0.10
+    )
+    supports_temporal = streaming_high and suffix_resolves and random_fails
+    if prefix_ambiguous:
+        prefix_verdict = "true"
+    elif prefix_entropy is None:
+        prefix_verdict = "unclear"
+    else:
+        prefix_verdict = "false"
+    if suffix_resolves:
+        suffix_verdict = "true"
+    elif suffix_rise is None:
+        suffix_verdict = "unclear"
+    else:
+        suffix_verdict = "false"
+    if order_sensitive and recurrence_sensitive:
+        order_verdict = "true"
+    elif not order_sensitive and bag >= streaming - 0.02 and static >= streaming - 0.02:
+        order_verdict = "false"
+    else:
+        order_verdict = "unclear"
+    if supports_temporal and prefix_ambiguous and suffix_resolves and delayed_diverges:
+        read = "streaming recurrence maintains an ambiguous prefix state and resolves it after delayed suffix evidence"
+    elif supports_temporal and suffix_resolves:
+        read = "suffix resolution is visible, but the order/trajectory evidence is incomplete"
+    elif bag >= streaming - 0.02 or static >= streaming - 0.02:
+        read = "final labels are solvable from complete token content; streaming-specific trajectory support is weak"
+    else:
+        read = "temporal disambiguation evidence is inconclusive"
+    return {
+        "supports_temporal_disambiguation": bool(supports_temporal),
+        "supports_prefix_frame_ambiguity": prefix_verdict,
+        "supports_suffix_frame_resolution": suffix_verdict,
+        "supports_order_sensitive_recurrence": order_verdict,
+        "supports_delayed_trajectory_divergence": bool(delayed_diverges),
+        "bag_or_static_shortcut_present": bool(bag >= streaming - 0.02 or static >= streaming - 0.02),
+        "geometry_read": read,
+        "reason": (
+            f"streaming={streaming:.3f}, bag={bag:.3f}, static={static:.3f}, zero={zero:.3f}, "
+            f"shuffled={shuffled:.3f}, randomized={randomized:.3f}, random_label={random_label if random_label is not None else 'n/a'}, "
+            f"prefix_entropy={prefix_entropy}, prefix_candidates={prefix_candidates}, suffix_rise={suffix_rise}, "
+            f"suffix_drop={suffix_drop}, early_distance={early_distance}, final_divergence={final_divergence}."
+        ),
+    }
+
+
+def temporal_accuracy_table(main_summary: dict[str, Any]) -> str:
+    rows = [
+        "| Path | Accuracy |",
+        "|---|---:|",
+        f"| streaming recurrent | `{main_summary['streaming_final_accuracy']:.6f}` |",
+        f"| bag of tokens baseline | `{main_summary['bag_of_tokens_accuracy']:.6f}` |",
+        f"| full sentence static | `{main_summary['full_sentence_static_accuracy']:.6f}` |",
+        f"| zero recurrent carry | `{main_summary['zero_recurrent_accuracy']:.6f}` |",
+        f"| shuffled order | `{main_summary['shuffled_order_accuracy']:.6f}` |",
+        f"| randomized recurrent | `{main_summary['randomized_recurrent_accuracy']:.6f}` |",
+        f"| random label | `{main_summary.get('random_label_accuracy')}` |",
+    ]
+    return "\n".join(rows)
+
+
+def temporal_dog_bit_case_table(main_summary: dict[str, Any]) -> str:
+    completions = main_summary.get("suffix_resolution", {}).get("by_completion", {})
+    rows = [
+        "| Completion | Target Frame | Prefix Correct Prob | Final Correct Prob | Correct Rise | Danger Prefix | Danger Final | Danger Drop |",
+        "|---|---|---:|---:|---:|---:|---:|---:|",
+    ]
+    for completion, item in completions.items():
+        rows.append(
+            f"| `{completion}` | `{item['target_frame']}` "
+            f"| `{item['correct_frame_probability_at_prefix']}` "
+            f"| `{item['correct_frame_probability_final']}` "
+            f"| `{item['correct_frame_probability_rise']}` "
+            f"| `{item['danger_probability_at_prefix']}` "
+            f"| `{item['danger_probability_final']}` "
+            f"| `{item['danger_probability_drop']}` |"
+        )
+    return "\n".join(rows)
+
+
+def write_temporal_disambiguation_finding(
+    *,
+    report: dict[str, Any],
+    out_root: Path,
+    run_dir: Path,
+    report_path: Path,
+) -> Path:
+    main_summary = report["experiments"].get("temporal_disambiguation_refraction")
+    if main_summary is None:
+        main_summary = next(iter(report["experiments"].values()))
+    try:
+        display_report_path = str(report_path.resolve().relative_to(ROOT))
+    except ValueError:
+        display_report_path = str(report_path)
+    dog_prefix = main_summary.get("prefix_frame_distribution", {}).get("step_1", {}).get("dog bit", {})
+    finding = f"""# Temporal Disambiguation Refraction Finding
+
+Source run:
+
+- `{display_report_path}`
+
+## Hypothesis
+
+Streaming recurrence should not treat a short sentence as only a static bag of tokens. Earlier tokens can start partial frame trajectories, and delayed suffix tokens can confirm, redirect, or suppress those trajectories.
+
+## Dataset Examples
+
+```json
+{json.dumps(main_summary["sequence_specs"], indent=2)}
+```
+
+## Accuracy And Controls
+
+{temporal_accuracy_table(main_summary)}
+
+## Prefix Ambiguity
+
+`dog bit` prefix metrics:
+
+```json
+{json.dumps(round_floats(main_summary.get("prefix_ambiguity", {})), indent=2)}
+```
+
+Average `dog bit` frame distribution:
+
+```json
+{json.dumps(round_floats(dog_prefix), indent=2)}
+```
+
+## Dog-Bit Suffix Case Study
+
+{temporal_dog_bit_case_table(main_summary)}
+
+## Delayed Evidence Divergence
+
+```json
+{json.dumps(round_floats(main_summary.get("delayed_evidence_divergence", {})), indent=2)}
+```
+
+## Verdict
+
+```json
+{json.dumps(report["interpretation"], indent=2)}
+```
+
+## Claim Boundary
+
+Toy evidence only. Do not claim consciousness, biology, full VRAXION behavior, production validation, or natural-language understanding.
+"""
+    out_root.mkdir(parents=True, exist_ok=True)
+    finding_path = out_root / "TEMPORAL_DISAMBIGUATION_REFRACTION_FINDING.md"
+    run_finding_path = run_dir / "TEMPORAL_DISAMBIGUATION_REFRACTION_FINDING.md"
+    finding_path.write_text(finding, encoding="utf-8")
+    run_finding_path.write_text(finding, encoding="utf-8")
+    return finding_path
+
+
+def run_temporal_disambiguation_refraction(args: argparse.Namespace, run_dir: Path, out_root: Path) -> int:
+    schema = build_schema(args.hidden)
+    runs = [
+        run_temporal_disambiguation_seed(
+            name="temporal_disambiguation_refraction",
+            seed=seed,
+            schema=schema,
+            args=args,
+        )
+        for seed in range(args.seeds)
+    ]
+    experiments = {
+        "temporal_disambiguation_refraction": aggregate_temporal_disambiguation_runs(
+            "temporal_disambiguation_refraction",
+            runs,
+        )
+    }
+    main_summary = experiments["temporal_disambiguation_refraction"]
+    interpretation = interpret_temporal_disambiguation_report(main_summary)
+    report = {
+        "config": {
+            "experiment": args.experiment,
+            "input_mode": args.input_mode,
+            "seeds": args.seeds,
+            "hidden": args.hidden,
+            "steps": args.steps,
+            "epochs": args.epochs,
+            "train_size": args.train_size,
+            "test_size": args.test_size,
+            "batch_size": args.batch_size,
+            "lr": args.lr,
+            "sparse_density": args.sparse_density,
+            "topology_mode": args.topology_mode,
+            "flywire_graphml": str(args.flywire_graphml),
+            "active_value": args.active_value,
+            "embed_scale": args.embed_scale,
+            "update_rate": args.update_rate,
+            "delta_scale": args.delta_scale,
+            "random_label_control": args.random_label_control,
+            "device": args.device,
+            "out_dir": str(run_dir),
+        },
+        "schema": asdict(schema),
+        "seed": 0 if args.seeds == 1 else None,
+        "seeds": list(range(args.seeds)),
+        "mode": "temporal_disambiguation_refraction_v1",
+        "hypothesis": "Streaming recurrence maintains ambiguous prefix-frame candidates and resolves them after delayed suffix evidence",
+        "experiments": experiments,
+        "interpretation": interpretation,
+        "notes": [
+            "This is a toy mechanism probe only. It does not prove consciousness.",
+            "Named tokens are toy sequence tokens, not natural-language understanding.",
+            "The streaming path records hidden/logit state after each arriving token.",
+            "Bag/static baselines test whether complete token content alone solves final labels.",
+        ],
+        "environment": {
+            "python": sys.version,
+            "torch": torch.__version__,
+            "numpy": np.__version__,
+            "platform": platform.platform(),
+        },
+    }
+    report = round_floats(report)
+    report_path = run_dir / "temporal_disambiguation_refraction_report.json"
+    report_path.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
+    finding_path = write_temporal_disambiguation_finding(
+        report=report,
+        out_root=ROOT / "docs" / "research",
+        run_dir=run_dir,
+        report_path=report_path,
+    )
+    printable = {
+        "mode": report["mode"],
+        "interpretation": report["interpretation"],
+        "main": {
+            "streaming_final_accuracy": round_floats(main_summary["streaming_final_accuracy"]),
+            "bag_of_tokens_accuracy": round_floats(main_summary["bag_of_tokens_accuracy"]),
+            "full_sentence_static_accuracy": round_floats(main_summary["full_sentence_static_accuracy"]),
+            "zero_recurrent_accuracy": round_floats(main_summary["zero_recurrent_accuracy"]),
+            "shuffled_order_accuracy": round_floats(main_summary["shuffled_order_accuracy"]),
+            "randomized_recurrent_accuracy": round_floats(main_summary["randomized_recurrent_accuracy"]),
+            "random_label_accuracy": round_floats(main_summary.get("random_label_accuracy")),
+            "prefix_ambiguity_score": round_floats(main_summary.get("prefix_ambiguity_score")),
+            "suffix_resolution_score": round_floats(main_summary.get("suffix_resolution_score")),
+            "suffix_wrong_prefix_drop": round_floats(main_summary.get("suffix_wrong_prefix_drop")),
+            "order_sensitivity_drop": round_floats(main_summary.get("order_sensitivity_drop")),
+        },
+    }
+    print(json.dumps(printable, indent=2))
+    print(f"\nWrote JSON report: {report_path}")
+    print(f"Wrote finding: {finding_path}")
+    return 0
+
+
 def main() -> int:
     args = parse_args()
     if args.device != "cpu" and not torch.cuda.is_available():
@@ -10265,6 +11312,8 @@ def main() -> int:
         return run_query_cued_frame_pointer(args, run_dir, out_root)
     if args.experiment == "query_cued_pointer_bottleneck":
         return run_query_cued_pointer_bottleneck(args, run_dir, out_root)
+    if args.experiment == "temporal_disambiguation_refraction":
+        return run_temporal_disambiguation_refraction(args, run_dir, out_root)
 
     schema = build_schema(args.hidden)
     config = ProbeConfig(
