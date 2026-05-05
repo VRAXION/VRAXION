@@ -11,6 +11,7 @@ from datetime import datetime, timezone
 from itertools import product
 from pathlib import Path
 from typing import Any
+import xml.etree.ElementTree as ET
 
 import numpy as np
 
@@ -47,7 +48,34 @@ RISKY_PLACES = {"street", "lab"}
 RISKY_NOISES = {"traffic", "static"}
 
 INPUT_MODES = ("separable", "entangled", "opponent_entangled")
-EXPERIMENTS = ("core_recovery", "latent_refraction")
+EMBEDDING_MODES = ("learned", "fixed_sincos", "trainable_phase", "multi_band_phase")
+RESONANCE_MODES = (
+    "none",
+    "token_wave",
+    "neuron_resonance",
+    "pointer_resonance",
+    "pointer_resonance_signed",
+)
+TOPOLOGY_MODES = (
+    "random_sparse",
+    "ring_sparse",
+    "reciprocal_motif",
+    "hub_rich",
+    "hub_degree_preserving_random",
+    "flywire_sampled",
+    "flywire_class_sampled",
+    "flywire_degree_preserving_random",
+)
+DEFAULT_FLYWIRE_GRAPHML = Path("/home/deck/work/flywire/mushroom_body.graphml")
+_FLYWIRE_GRAPH_CACHE: dict[Path, dict[str, Any]] = {}
+EXPERIMENTS = (
+    "core_recovery",
+    "latent_refraction",
+    "multi_aspect_refraction",
+    "multi_aspect_token_refraction",
+    "frame_switch_diagnostics",
+    "reframe_diagnostics",
+)
 
 TASK_FRAMES = ("danger_frame", "environment_frame", "visibility_frame")
 FEATURE_GROUPS = ("actor_action", "place_noise", "light", "object")
@@ -58,6 +86,60 @@ FRAME_ACTIVE_GROUP = {
 }
 LOW_VISIBILITY_LIGHTS = {"shadow", "dusk"}
 OBJECT_ALERT_ITEMS = {"stick", "wire"}
+
+RELATIONS = ("owner", "stranger", "play", "ignore", "vet", "food")
+SOUNDS = ("bark", "meow", "chirp", "laugh", "hiss", "beep", "silence")
+FRIENDLY_RELATIONS_BY_ACTOR = {
+    "dog": {"owner", "play"},
+    "cat": {"owner", "play"},
+    "bird": {"owner"},
+    "child": {"owner", "play"},
+    "robot": {"owner"},
+    "snake": {"food"},
+}
+SOUND_BY_ACTOR = {
+    "dog": "bark",
+    "cat": "meow",
+    "bird": "chirp",
+    "child": "laugh",
+    "robot": "beep",
+    "snake": "hiss",
+}
+
+MULTI_ASPECT_FRAMES = ("danger_frame", "friendship_frame", "sound_frame", "environment_frame")
+MULTI_ASPECT_FEATURE_GROUPS = (
+    "actor",
+    "danger_action",
+    "friendship_relation",
+    "sound",
+    "place_noise",
+    "object",
+    "actor_action",
+    "actor_relation",
+    "actor_sound",
+)
+MULTI_ASPECT_FRAME_ACTIVE_GROUP = {
+    "danger_frame": "actor_action",
+    "friendship_frame": "actor_relation",
+    "sound_frame": "actor_sound",
+    "environment_frame": "place_noise",
+}
+FRAME_PLACEMENTS = (
+    "frame_in_recurrence_only",
+    "frame_initial_only",
+    "frame_at_output_only",
+    "no_frame",
+)
+FRAME_SWITCH_PAIRS = (
+    ("danger_frame", "environment_frame"),
+    ("environment_frame", "danger_frame"),
+    ("danger_frame", "sound_frame"),
+    ("sound_frame", "danger_frame"),
+    ("friendship_frame", "environment_frame"),
+)
+SOFT_FRAME_INTERPOLATION_PAIR = ("danger_frame", "environment_frame")
+SOFT_FRAME_MIXES = (1.0, 0.75, 0.50, 0.25, 0.0)
+REFRAME_RESET_SCALE = 1.0
 
 
 @dataclass(frozen=True)
@@ -72,9 +154,13 @@ class ProbeConfig:
     batch_size: int
     lr: float
     sparse_density: float
+    topology_mode: str
+    flywire_graphml: str
     holdout_fraction: float
     active_value: float
     embed_scale: float
+    embedding_mode: str
+    resonance_mode: str
     nuisance_scale: float
     opponent_strength: float
     update_rate: float
@@ -116,12 +202,19 @@ class RefractionDataBundle:
     group_components: dict[str, np.ndarray]
     group_labels: dict[str, np.ndarray]
     frame_names: list[str]
+    active_group_by_frame: dict[str, str] | None = None
+    tokens: dict[str, np.ndarray] | None = None
 
 
 @dataclass
 class FeatureEmbeddings:
     input_mode: str
+    embedding_mode: str
+    resonance_mode: str
     vectors: dict[tuple[str, str], np.ndarray]
+    token_phases: dict[tuple[str, str], np.ndarray] | None = None
+    neuron_phases: np.ndarray | None = None
+    pointer_phases: dict[str, np.ndarray] | None = None
 
 
 def parse_args() -> argparse.Namespace:
@@ -146,9 +239,36 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--batch-size", type=int, default=256)
     parser.add_argument("--lr", type=float, default=0.03)
     parser.add_argument("--sparse-density", type=float, default=0.12)
+    parser.add_argument(
+        "--topology-mode",
+        choices=TOPOLOGY_MODES,
+        default="random_sparse",
+        help="Recurrent mask topology prior. All non-random modes are edge-budget matched to random_sparse.",
+    )
+    parser.add_argument(
+        "--flywire-graphml",
+        type=Path,
+        default=DEFAULT_FLYWIRE_GRAPHML,
+        help="Local GraphML sample used only by flywire_* topology modes.",
+    )
     parser.add_argument("--holdout-fraction", type=float, default=0.25)
     parser.add_argument("--active-value", type=float, default=1.0)
     parser.add_argument("--embed-scale", type=float, default=0.80)
+    parser.add_argument(
+        "--embedding-mode",
+        choices=EMBEDDING_MODES,
+        default="learned",
+        help=(
+            "Token vector construction for small ablations. 'learned' is the existing random-vector baseline; "
+            "phase modes are fixed phase-parameterized vectors in this precomputed-input probe."
+        ),
+    )
+    parser.add_argument(
+        "--resonance-mode",
+        choices=RESONANCE_MODES,
+        default="none",
+        help="Small wave/resonance ablation layered onto existing refraction tasks.",
+    )
     parser.add_argument("--nuisance-scale", type=float, default=1.05)
     parser.add_argument("--frame-scale", type=float, default=1.10)
     parser.add_argument("--opponent-strength", type=float, default=0.80)
@@ -171,6 +291,8 @@ def parse_args() -> argparse.Namespace:
         raise SystemExit("--hidden must be at least 8")
     if not 0.0 < args.update_rate <= 1.0:
         raise SystemExit("--update-rate must be in (0, 1]")
+    if args.topology_mode.startswith("flywire") and not args.flywire_graphml.is_file():
+        raise SystemExit(f"--flywire-graphml not found: {args.flywire_graphml}")
     return args
 
 
@@ -183,6 +305,8 @@ def feature_keys() -> list[tuple[str, str]]:
     for group, values in (
         ("actor", ACTORS),
         ("action", ACTIONS),
+        ("relation", RELATIONS),
+        ("sound", SOUNDS),
         ("place", PLACES),
         ("light", LIGHTS),
         ("noise", NOISES),
@@ -210,6 +334,161 @@ def unit_vector(rng: np.random.Generator, dim: int, scale: float) -> np.ndarray:
     return vec * scale
 
 
+def normalized(vec: np.ndarray, scale: float) -> np.ndarray:
+    vec = vec.astype(np.float32)
+    vec /= max(float(np.linalg.norm(vec)), 1.0e-9)
+    return vec * scale
+
+
+def token_index(key: tuple[str, str]) -> int:
+    return feature_keys().index(key) + 1
+
+
+def group_index(group: str) -> int:
+    groups = ["actor", "action", "relation", "sound", "place", "light", "noise", "object"]
+    return groups.index(group) + 1
+
+
+def sincos_from_phase(phase: np.ndarray, hidden: int, scale: float) -> np.ndarray:
+    half = hidden // 2
+    vec = np.concatenate([np.sin(phase[:half]), np.cos(phase[:half])], axis=0)
+    if hidden % 2:
+        vec = np.concatenate([vec, np.array([np.sin(float(np.sum(phase)))], dtype=np.float32)], axis=0)
+    return normalized(vec[:hidden], scale)
+
+
+def phase_embedding_vector(
+    *,
+    key: tuple[str, str],
+    hidden: int,
+    scale: float,
+    seed: int,
+    embedding_mode: str,
+) -> np.ndarray:
+    if embedding_mode == "learned":
+        rng = np.random.default_rng(seed + 17_003 * token_index(key))
+        return unit_vector(rng, hidden, scale)
+
+    token = token_index(key)
+    group = group_index(key[0])
+    half = max(1, hidden // 2)
+    positions = np.arange(1, half + 1, dtype=np.float32)
+
+    if embedding_mode == "fixed_sincos":
+        base = 0.071 * token + 0.193 * group
+        phase = base * positions + 0.37 * group
+        return sincos_from_phase(phase, hidden, scale)
+
+    if embedding_mode == "trainable_phase":
+        rng = np.random.default_rng(seed + 29_011 * token + 311 * group)
+        phase = rng.uniform(0.0, 2.0 * np.pi, size=half).astype(np.float32)
+        frequency = rng.uniform(0.35, 2.75, size=half).astype(np.float32)
+        return sincos_from_phase(phase + frequency * positions, hidden, scale)
+
+    if embedding_mode == "multi_band_phase":
+        bands = 4
+        chunks: list[np.ndarray] = []
+        remaining = hidden
+        for band in range(bands):
+            width = remaining // (bands - band)
+            remaining -= width
+            band_half = max(1, width // 2)
+            band_pos = np.arange(1, band_half + 1, dtype=np.float32)
+            phase = (
+                (0.047 * token * (band + 1) + 0.113 * group)
+                * band_pos
+                + 0.41 * band
+                + 0.07 * token
+            )
+            chunk = np.concatenate([np.sin(phase), np.cos(phase)], axis=0)
+            if width % 2:
+                chunk = np.concatenate([chunk, np.array([np.cos(float(np.sum(phase)))], dtype=np.float32)], axis=0)
+            chunks.append(chunk[:width])
+        return normalized(np.concatenate(chunks, axis=0), scale)
+
+    raise ValueError(f"unknown embedding mode: {embedding_mode}")
+
+
+def build_wave_phase_tables(
+    *,
+    hidden: int,
+    seed: int,
+) -> tuple[dict[tuple[str, str], np.ndarray], np.ndarray, dict[str, np.ndarray]]:
+    token_phases: dict[tuple[str, str], np.ndarray] = {}
+    positions = np.arange(1, hidden + 1, dtype=np.float32)
+    for key in feature_keys():
+        token = token_index(key)
+        group = group_index(key[0])
+        token_phases[key] = (
+            0.031 * token * positions
+            + 0.071 * group * np.sqrt(positions)
+            + 0.17 * token
+        ).astype(np.float32)
+
+    neuron_positions = np.arange(1, hidden + 1, dtype=np.float32)
+    neuron_phases = (0.097 * neuron_positions + 0.013 * neuron_positions**1.3).astype(np.float32)
+    pointer_phases: dict[str, np.ndarray] = {}
+    all_frames = tuple(dict.fromkeys((*TASK_FRAMES, *MULTI_ASPECT_FRAMES)))
+    for frame_index, frame_name in enumerate(all_frames, start=1):
+        pointer_phases[frame_name] = (
+            0.043 * frame_index * neuron_positions
+            + 0.29 * frame_index
+            + 0.019 * np.sin(neuron_positions * frame_index)
+        ).astype(np.float32)
+    return token_phases, neuron_phases, pointer_phases
+
+
+def resonance_token_vector(
+    *,
+    embeddings: FeatureEmbeddings,
+    key: tuple[str, str],
+    frame_name: str | None,
+    neuron_phases_override: np.ndarray | None = None,
+    pointer_frame_name: str | None = None,
+) -> np.ndarray:
+    if embeddings.resonance_mode in {"none", "token_wave"}:
+        return embeddings.vectors[key]
+    if embeddings.token_phases is None or embeddings.neuron_phases is None:
+        return embeddings.vectors[key]
+
+    neuron_phases = embeddings.neuron_phases if neuron_phases_override is None else neuron_phases_override
+    pointer = np.zeros_like(neuron_phases)
+    if embeddings.resonance_mode in {"pointer_resonance", "pointer_resonance_signed"}:
+        pointer_key = pointer_frame_name if pointer_frame_name is not None else frame_name
+        if pointer_key is not None and embeddings.pointer_phases is not None:
+            pointer = embeddings.pointer_phases[pointer_key]
+
+    phase = embeddings.token_phases[key] + pointer - neuron_phases
+    vec = np.cos(phase)
+    if embeddings.resonance_mode == "pointer_resonance_signed":
+        carrier = np.sign(np.sin(neuron_phases * (group_index(key[0]) + 1) + 0.17 * token_index(key)))
+        carrier[carrier == 0.0] = 1.0
+        vec = vec * carrier
+    return normalized(vec, 1.0)
+
+
+def resonance_component(
+    *,
+    embeddings: FeatureEmbeddings,
+    keys: list[tuple[str, str]],
+    frame_name: str | None,
+    scale: float,
+    neuron_phases_override: np.ndarray | None = None,
+    pointer_frame_name: str | None = None,
+) -> np.ndarray:
+    values = [
+        resonance_token_vector(
+            embeddings=embeddings,
+            key=key,
+            frame_name=frame_name,
+            neuron_phases_override=neuron_phases_override,
+            pointer_frame_name=pointer_frame_name,
+        )
+        for key in keys
+    ]
+    return scale * np.sum(values, axis=0).astype(np.float32)
+
+
 def build_embeddings(
     *,
     schema: Schema,
@@ -217,9 +496,12 @@ def build_embeddings(
     seed: int,
     embed_scale: float,
     opponent_strength: float,
+    embedding_mode: str = "learned",
+    resonance_mode: str = "none",
 ) -> FeatureEmbeddings:
     rng = np.random.default_rng(seed)
     hidden = schema.hidden
+    effective_embedding_mode = "fixed_sincos" if resonance_mode == "token_wave" else embedding_mode
     core_dim = max(4, hidden // 2)
     nuisance_dim = hidden - core_dim
     core_keys = [(group, value) for group, value in feature_keys() if group in {"actor", "action"}]
@@ -229,29 +511,88 @@ def build_embeddings(
     if input_mode == "separable":
         for key in core_keys:
             vec = np.zeros(hidden, dtype=np.float32)
-            vec[:core_dim] = unit_vector(rng, core_dim, embed_scale)
+            if effective_embedding_mode == "learned":
+                vec[:core_dim] = unit_vector(rng, core_dim, embed_scale)
+            else:
+                vec[:core_dim] = phase_embedding_vector(
+                    key=key,
+                    hidden=core_dim,
+                    scale=embed_scale,
+                    seed=seed,
+                    embedding_mode=effective_embedding_mode,
+                )
             vectors[key] = vec
         for key in nuisance_keys:
             vec = np.zeros(hidden, dtype=np.float32)
-            vec[core_dim:] = unit_vector(rng, nuisance_dim, embed_scale)
+            if effective_embedding_mode == "learned":
+                vec[core_dim:] = unit_vector(rng, nuisance_dim, embed_scale)
+            else:
+                vec[core_dim:] = phase_embedding_vector(
+                    key=key,
+                    hidden=nuisance_dim,
+                    scale=embed_scale,
+                    seed=seed,
+                    embedding_mode=effective_embedding_mode,
+                )
             vectors[key] = vec
     elif input_mode == "entangled":
         for key in core_keys + nuisance_keys:
-            vectors[key] = unit_vector(rng, hidden, embed_scale)
+            if effective_embedding_mode == "learned":
+                vectors[key] = unit_vector(rng, hidden, embed_scale)
+            else:
+                vectors[key] = phase_embedding_vector(
+                    key=key,
+                    hidden=hidden,
+                    scale=embed_scale,
+                    seed=seed,
+                    embedding_mode=effective_embedding_mode,
+                )
     elif input_mode == "opponent_entangled":
-        core_bank = [unit_vector(rng, hidden, embed_scale) for _ in core_keys]
+        core_bank = [
+            unit_vector(rng, hidden, embed_scale)
+            if effective_embedding_mode == "learned"
+            else phase_embedding_vector(
+                key=key,
+                hidden=hidden,
+                scale=embed_scale,
+                seed=seed,
+                embedding_mode=effective_embedding_mode,
+            )
+            for key in core_keys
+        ]
         for key, vec in zip(core_keys, core_bank):
             vectors[key] = vec
         for idx, key in enumerate(nuisance_keys):
             opponent = -opponent_strength * core_bank[idx % len(core_bank)]
-            noise = unit_vector(rng, hidden, embed_scale * (1.0 - min(opponent_strength, 0.95) * 0.45))
+            if effective_embedding_mode == "learned":
+                noise = unit_vector(rng, hidden, embed_scale * (1.0 - min(opponent_strength, 0.95) * 0.45))
+            else:
+                noise = phase_embedding_vector(
+                    key=key,
+                    hidden=hidden,
+                    scale=embed_scale * (1.0 - min(opponent_strength, 0.95) * 0.45),
+                    seed=seed,
+                    embedding_mode=effective_embedding_mode,
+                )
             vec = opponent + noise
             vec /= max(float(np.linalg.norm(vec)), 1.0e-9)
             vectors[key] = vec.astype(np.float32) * embed_scale
     else:
         raise ValueError(f"unknown input mode: {input_mode}")
 
-    return FeatureEmbeddings(input_mode=input_mode, vectors=vectors)
+    token_phases = neuron_phases = pointer_phases = None
+    if resonance_mode in {"neuron_resonance", "pointer_resonance", "pointer_resonance_signed"}:
+        token_phases, neuron_phases, pointer_phases = build_wave_phase_tables(hidden=hidden, seed=seed)
+
+    return FeatureEmbeddings(
+        input_mode=input_mode,
+        embedding_mode=effective_embedding_mode,
+        resonance_mode=resonance_mode,
+        vectors=vectors,
+        token_phases=token_phases,
+        neuron_phases=neuron_phases,
+        pointer_phases=pointer_phases,
+    )
 
 
 def relation_label(actor: str, action: str) -> int:
@@ -389,6 +730,47 @@ def frame_label(frame: str, *, actor: str, action: str, place: str, light: str, 
     raise ValueError(f"unknown task frame: {frame}")
 
 
+def friendship_label(actor: str, relation: str) -> int:
+    return int(relation in FRIENDLY_RELATIONS_BY_ACTOR[actor])
+
+
+def sound_label(actor: str, sound: str) -> int:
+    return int(SOUND_BY_ACTOR[actor] == sound)
+
+
+def multi_aspect_label(
+    frame: str,
+    *,
+    actor: str,
+    action: str,
+    relation: str,
+    sound: str,
+    place: str,
+    noise: str,
+) -> int:
+    if frame == "danger_frame":
+        return relation_label(actor, action)
+    if frame == "friendship_frame":
+        return friendship_label(actor, relation)
+    if frame == "sound_frame":
+        return sound_label(actor, sound)
+    if frame == "environment_frame":
+        return nuisance_causal_label(place, noise)
+    raise ValueError(f"unknown multi-aspect frame: {frame}")
+
+
+def choose_value_for_binary_label(
+    rng: np.random.Generator,
+    values: tuple[str, ...],
+    label_fn: Any,
+    positive: bool,
+) -> str:
+    candidates = [value for value in values if label_fn(value) == int(positive)]
+    if not candidates:
+        candidates = list(values)
+    return candidates[rng.integers(len(candidates))]
+
+
 def choose_combo_for_refraction_targets(
     rng: np.random.Generator,
     combos: list[tuple[str, str, str, str]],
@@ -408,10 +790,19 @@ def choose_combo_for_refraction_targets(
 
 
 def build_frame_embeddings(hidden: int, seed: int, frame_scale: float) -> dict[str, np.ndarray]:
+    return build_named_frame_embeddings(TASK_FRAMES, hidden, seed, frame_scale)
+
+
+def build_named_frame_embeddings(
+    frame_names: tuple[str, ...],
+    hidden: int,
+    seed: int,
+    frame_scale: float,
+) -> dict[str, np.ndarray]:
     rng = np.random.default_rng(seed)
     return {
         frame: unit_vector(rng, hidden, frame_scale).astype(np.float32)
-        for frame in TASK_FRAMES
+        for frame in frame_names
     }
 
 
@@ -419,6 +810,15 @@ def selected_refraction_input_modes(input_mode: str) -> list[str]:
     if input_mode == "all":
         return ["entangled", "separable"]
     return [input_mode]
+
+
+def bundle_feature_groups(bundle: RefractionDataBundle) -> list[str]:
+    return list(bundle.group_components.keys())
+
+
+def bundle_active_group(bundle: RefractionDataBundle, frame_name: str) -> str:
+    active = bundle.active_group_by_frame or FRAME_ACTIVE_GROUP
+    return active[frame_name]
 
 
 def refraction_x_from_components(
@@ -524,6 +924,185 @@ def make_refraction_dataset(
         group_components={group: values[order] for group, values in group_components.items()},
         group_labels={group: values[order] for group, values in group_labels.items()},
         frame_names=list(TASK_FRAMES),
+        active_group_by_frame=dict(FRAME_ACTIVE_GROUP),
+    )
+
+
+def make_multi_aspect_dataset(
+    *,
+    n: int,
+    combos: list[tuple[str, str, str, str]],
+    seed: int,
+    embeddings: FeatureEmbeddings,
+    frame_embeddings: dict[str, np.ndarray],
+    active_value: float,
+    no_frame_token: bool = False,
+    random_labels: bool = False,
+) -> RefractionDataBundle:
+    rng = np.random.default_rng(seed)
+    hidden = len(next(iter(embeddings.vectors.values())))
+    base_count = max(1, n // len(MULTI_ASPECT_FRAMES))
+    total = base_count * len(MULTI_ASPECT_FRAMES)
+
+    y = np.zeros(total, dtype=np.int64)
+    frame = np.zeros(total, dtype=np.int64)
+    base_id = np.zeros(total, dtype=np.int64)
+    observation_component = np.zeros((total, hidden), dtype=np.float32)
+    frame_component = np.zeros((total, hidden), dtype=np.float32)
+    group_components = {
+        group: np.zeros((total, hidden), dtype=np.float32)
+        for group in MULTI_ASPECT_FEATURE_GROUPS
+    }
+    group_labels = {
+        group: np.zeros(total, dtype=np.int64)
+        for group in MULTI_ASPECT_FEATURE_GROUPS
+    }
+    tokens = {
+        key: np.empty(total, dtype=object)
+        for key in ("actor", "action", "relation", "sound", "place", "light", "noise", "object")
+    }
+
+    row = 0
+    for base in range(base_count):
+        actor = ACTORS[base % len(ACTORS)]
+        danger_positive = bool(rng.integers(0, 2))
+        friendship_positive = bool(rng.integers(0, 2))
+        sound_positive = bool(rng.integers(0, 2))
+        environment_positive = bool(rng.integers(0, 2))
+        visibility_positive = bool(rng.integers(0, 2))
+        action = choose_value_for_binary_label(
+            rng,
+            ACTIONS,
+            lambda value, actor=actor: relation_label(actor, value),
+            danger_positive,
+        )
+        relation = choose_value_for_binary_label(
+            rng,
+            RELATIONS,
+            lambda value, actor=actor: friendship_label(actor, value),
+            friendship_positive,
+        )
+        sound = choose_value_for_binary_label(
+            rng,
+            SOUNDS,
+            lambda value, actor=actor: sound_label(actor, value),
+            sound_positive,
+        )
+        place, light, noise, obj = choose_combo_for_refraction_targets(
+            rng,
+            combos,
+            environment_positive=environment_positive,
+            visibility_positive=visibility_positive,
+        )
+
+        labels = {
+            "actor": int(actor == "dog"),
+            "danger_action": relation_label(actor, action),
+            "friendship_relation": friendship_label(actor, relation),
+            "sound": sound_label(actor, sound),
+            "place_noise": nuisance_causal_label(place, noise),
+            "object": object_alert_label(obj),
+            "actor_action": relation_label(actor, action),
+            "actor_relation": friendship_label(actor, relation),
+            "actor_sound": sound_label(actor, sound),
+        }
+
+        for frame_index, frame_name in enumerate(MULTI_ASPECT_FRAMES):
+            resonance_frame = None if no_frame_token else frame_name
+            actor_component = resonance_component(
+                embeddings=embeddings,
+                keys=[("actor", actor)],
+                frame_name=resonance_frame,
+                scale=active_value,
+            )
+            action_component = resonance_component(
+                embeddings=embeddings,
+                keys=[("action", action)],
+                frame_name=resonance_frame,
+                scale=active_value,
+            )
+            relation_component = resonance_component(
+                embeddings=embeddings,
+                keys=[("relation", relation)],
+                frame_name=resonance_frame,
+                scale=active_value,
+            )
+            sound_component = resonance_component(
+                embeddings=embeddings,
+                keys=[("sound", sound)],
+                frame_name=resonance_frame,
+                scale=active_value,
+            )
+            place_noise_component = resonance_component(
+                embeddings=embeddings,
+                keys=[("place", place), ("noise", noise)],
+                frame_name=resonance_frame,
+                scale=active_value,
+            )
+            object_component = resonance_component(
+                embeddings=embeddings,
+                keys=[("object", obj)],
+                frame_name=resonance_frame,
+                scale=active_value,
+            )
+            observation = (
+                actor_component
+                + action_component
+                + relation_component
+                + sound_component
+                + place_noise_component
+                + object_component
+            )
+            frame[row] = frame_index
+            base_id[row] = base
+            observation_component[row] = observation
+            frame_component[row] = active_value * frame_embeddings[frame_name]
+            group_components["actor"][row] = actor_component
+            group_components["danger_action"][row] = action_component
+            group_components["friendship_relation"][row] = relation_component
+            group_components["sound"][row] = sound_component
+            group_components["place_noise"][row] = place_noise_component
+            group_components["object"][row] = object_component
+            group_components["actor_action"][row] = actor_component + action_component
+            group_components["actor_relation"][row] = actor_component + relation_component
+            group_components["actor_sound"][row] = actor_component + sound_component
+            for group, value in labels.items():
+                group_labels[group][row] = value
+            for key, value in (
+                ("actor", actor),
+                ("action", action),
+                ("relation", relation),
+                ("sound", sound),
+                ("place", place),
+                ("light", light),
+                ("noise", noise),
+                ("object", obj),
+            ):
+                tokens[key][row] = value
+            if random_labels:
+                y[row] = rng.integers(0, 2)
+            else:
+                y[row] = labels[MULTI_ASPECT_FRAME_ACTIVE_GROUP[frame_name]]
+            row += 1
+
+    x = refraction_x_from_components(
+        observation_component=observation_component,
+        frame_component=frame_component,
+        no_frame_token=no_frame_token,
+    )
+    order = rng.permutation(total)
+    return RefractionDataBundle(
+        x=x[order],
+        y=y[order],
+        frame=frame[order],
+        base_id=base_id[order],
+        observation_component=observation_component[order],
+        frame_component=frame_component[order],
+        group_components={group: values[order] for group, values in group_components.items()},
+        group_labels={group: values[order] for group, values in group_labels.items()},
+        frame_names=list(MULTI_ASPECT_FRAMES),
+        active_group_by_frame=dict(MULTI_ASPECT_FRAME_ACTIVE_GROUP),
+        tokens={key: values[order] for key, values in tokens.items()},
     )
 
 
@@ -534,6 +1113,409 @@ def make_sparse_mask(hidden: int, density: float, seed: int) -> np.ndarray:
     mask = (rng.random((hidden, hidden)) < density).astype(np.float32)
     np.fill_diagonal(mask, 1.0)
     return mask
+
+
+def mask_edge_stats(mask: np.ndarray, *, topology_mode: str, target_edge_count: int) -> dict[str, Any]:
+    mask_i = (mask > 0).astype(np.int8)
+    hidden = int(mask_i.shape[0])
+    offdiag = mask_i.copy()
+    np.fill_diagonal(offdiag, 0)
+    actual_edge_count = int(mask_i.sum())
+    self_loop_count = int(np.trace(mask_i))
+    offdiag_edge_count = int(offdiag.sum())
+    reciprocal_pair_count = int(np.triu(offdiag * offdiag.T, k=1).sum())
+    in_degree = offdiag.sum(axis=0).astype(np.float32)
+    out_degree = offdiag.sum(axis=1).astype(np.float32)
+    total_degree = in_degree + out_degree
+    hub_concentration: dict[str, float] = {}
+    for fraction in (0.05, 0.10, 0.20):
+        count = max(1, int(round(hidden * fraction)))
+        hubs = set(int(idx) for idx in np.argsort(-total_degree, kind="stable")[:count])
+        incident_edges = 0
+        for source, target in np.argwhere(offdiag > 0):
+            if int(source) in hubs or int(target) in hubs:
+                incident_edges += 1
+        label = f"top_{int(fraction * 100)}pct_hub_incident_edge_fraction"
+        hub_concentration[label] = float(incident_edges / max(offdiag_edge_count, 1))
+    return {
+        "topology_mode": topology_mode,
+        "target_edge_count": int(target_edge_count),
+        "actual_edge_count": actual_edge_count,
+        "self_loop_count": self_loop_count,
+        "offdiag_edge_count": offdiag_edge_count,
+        "density": float(actual_edge_count / max(hidden * hidden, 1)),
+        "offdiag_density": float(offdiag_edge_count / max(hidden * (hidden - 1), 1)),
+        "reciprocal_pair_count": reciprocal_pair_count,
+        "reciprocal_pair_fraction": float((2.0 * reciprocal_pair_count) / max(offdiag_edge_count, 1)),
+        "in_degree_mean": float(np.mean(in_degree)),
+        "in_degree_std": float(np.std(in_degree)),
+        "in_degree_max": float(np.max(in_degree)) if len(in_degree) else 0.0,
+        "out_degree_mean": float(np.mean(out_degree)),
+        "out_degree_std": float(np.std(out_degree)),
+        "out_degree_max": float(np.max(out_degree)) if len(out_degree) else 0.0,
+        "total_degree_std": float(np.std(total_degree)),
+        "total_degree_max": float(np.max(total_degree)) if len(total_degree) else 0.0,
+        **hub_concentration,
+    }
+
+
+def matched_edge_budget(hidden: int, density: float, seed: int) -> int:
+    return int(make_sparse_mask(hidden, density, seed).sum())
+
+
+def add_edge_if_room(mask: np.ndarray, source: int, target: int, target_edge_count: int) -> bool:
+    if source == target or mask[source, target] > 0 or int(mask.sum()) >= target_edge_count:
+        return False
+    mask[source, target] = 1.0
+    return True
+
+
+def fill_random_edges(mask: np.ndarray, target_edge_count: int, rng: np.random.Generator) -> None:
+    hidden = int(mask.shape[0])
+    if int(mask.sum()) >= target_edge_count:
+        return
+    candidates = [(i, j) for i in range(hidden) for j in range(hidden) if i != j and mask[i, j] == 0]
+    rng.shuffle(candidates)
+    for source, target in candidates:
+        if int(mask.sum()) >= target_edge_count:
+            break
+        mask[source, target] = 1.0
+
+
+def sample_weighted_edges(
+    *,
+    hidden: int,
+    candidates: list[tuple[int, int, float]],
+    target_offdiag_edges: int,
+    seed: int,
+) -> np.ndarray:
+    rng = np.random.default_rng(seed)
+    mask = np.eye(hidden, dtype=np.float32)
+    unique: dict[tuple[int, int], float] = {}
+    for source, target, weight in candidates:
+        if source == target:
+            continue
+        key = (int(source), int(target))
+        unique[key] = max(float(weight), unique.get(key, 0.0))
+    edges = list(unique)
+    if not edges:
+        fill_random_edges(mask, hidden + target_offdiag_edges, rng)
+        return mask
+
+    weights = np.array([np.log1p(max(unique[edge], 0.0)) for edge in edges], dtype=np.float64)
+    if not np.isfinite(weights).all() or float(weights.sum()) <= 0.0:
+        weights = np.ones(len(edges), dtype=np.float64)
+    probs = weights / weights.sum()
+    take = min(target_offdiag_edges, len(edges))
+    chosen = rng.choice(len(edges), size=take, replace=False, p=probs)
+    for idx in chosen:
+        source, target = edges[int(idx)]
+        mask[source, target] = 1.0
+    fill_random_edges(mask, hidden + target_offdiag_edges, rng)
+    return mask
+
+
+def ring_sparse_mask(hidden: int, target_edge_count: int, seed: int) -> np.ndarray:
+    rng = np.random.default_rng(seed)
+    mask = np.eye(hidden, dtype=np.float32)
+    offsets: list[int] = []
+    for base in (1, -1, 2, -2, 4, -4, 8, -8, 16, -16):
+        if abs(base) < hidden:
+            offsets.append(base)
+    start = int(rng.integers(0, hidden))
+    for offset in offsets:
+        for step in range(hidden):
+            source = (start + step) % hidden
+            target = (source + offset) % hidden
+            add_edge_if_room(mask, source, target, target_edge_count)
+            if int(mask.sum()) >= target_edge_count:
+                return mask
+    fill_random_edges(mask, target_edge_count, rng)
+    return mask
+
+
+def reciprocal_motif_mask(hidden: int, target_edge_count: int, seed: int) -> np.ndarray:
+    rng = np.random.default_rng(seed)
+    mask = np.eye(hidden, dtype=np.float32)
+    pairs = [(i, j) for i in range(hidden) for j in range(i + 1, hidden)]
+    rng.shuffle(pairs)
+    for source, target in pairs:
+        add_edge_if_room(mask, source, target, target_edge_count)
+        add_edge_if_room(mask, target, source, target_edge_count)
+        if int(mask.sum()) >= target_edge_count:
+            return mask
+    fill_random_edges(mask, target_edge_count, rng)
+    return mask
+
+
+def hub_rich_mask(hidden: int, target_edge_count: int, seed: int) -> np.ndarray:
+    rng = np.random.default_rng(seed)
+    mask = np.eye(hidden, dtype=np.float32)
+    ranks = np.arange(1, hidden + 1, dtype=np.float64)
+    probs = 1.0 / np.power(ranks, 1.35)
+    probs /= probs.sum()
+    permutation = rng.permutation(hidden)
+    attempts = 0
+    max_attempts = max(10_000, target_edge_count * 80)
+    while int(mask.sum()) < target_edge_count and attempts < max_attempts:
+        attempts += 1
+        source = int(permutation[rng.choice(hidden, p=probs)])
+        if rng.random() < 0.65:
+            target = int(permutation[rng.choice(hidden, p=probs)])
+        else:
+            target = int(rng.integers(0, hidden))
+        add_edge_if_room(mask, source, target, target_edge_count)
+    fill_random_edges(mask, target_edge_count, rng)
+    return mask
+
+
+def load_flywire_graph(path: Path) -> dict[str, Any]:
+    path = path.expanduser().resolve()
+    cached = _FLYWIRE_GRAPH_CACHE.get(path)
+    if cached is not None:
+        return cached
+
+    ns = {"g": "http://graphml.graphdrawing.org/xmlns"}
+    root = ET.parse(path).getroot()
+    key_names = {key.attrib["id"]: key.attrib.get("attr.name", key.attrib["id"]) for key in root.findall("g:key", ns)}
+    graph = root.find("g:graph", ns)
+    if graph is None:
+        raise ValueError(f"GraphML has no graph element: {path}")
+
+    nodes: list[dict[str, str]] = []
+    node_index: dict[str, int] = {}
+    for node in graph.findall("g:node", ns):
+        data = {
+            key_names.get(item.attrib.get("key", ""), item.attrib.get("key", "")): item.text or ""
+            for item in node.findall("g:data", ns)
+        }
+        node_id = node.attrib["id"]
+        node_index[node_id] = len(nodes)
+        nodes.append(
+            {
+                "id": node_id,
+                "class": data.get("Class", ""),
+                "pair": data.get("Pair", ""),
+                "hemisphere": data.get("Hemisphere", ""),
+            }
+        )
+
+    raw_edges: list[tuple[int, int, float]] = []
+    degree = np.zeros(len(nodes), dtype=np.float64)
+    for edge in graph.findall("g:edge", ns):
+        source_id = edge.attrib["source"]
+        target_id = edge.attrib["target"]
+        if source_id not in node_index or target_id not in node_index:
+            continue
+        data = {
+            key_names.get(item.attrib.get("key", ""), item.attrib.get("key", "")): item.text or ""
+            for item in edge.findall("g:data", ns)
+        }
+        weight = float(data.get("weight", "1") or 1.0)
+        source = node_index[source_id]
+        target = node_index[target_id]
+        raw_edges.append((source, target, weight))
+        if source != target:
+            degree[source] += 1.0
+            degree[target] += 1.0
+
+    out = {
+        "path": str(path),
+        "nodes": nodes,
+        "edges": raw_edges,
+        "degree": degree,
+    }
+    _FLYWIRE_GRAPH_CACHE[path] = out
+    return out
+
+
+def weighted_node_sample(
+    *,
+    candidates: list[int],
+    degree: np.ndarray,
+    count: int,
+    rng: np.random.Generator,
+    already: set[int],
+) -> list[int]:
+    available = [node for node in candidates if node not in already]
+    if count <= 0 or not available:
+        return []
+    take = min(count, len(available))
+    weights = np.array([degree[node] + 1.0 for node in available], dtype=np.float64)
+    weights /= weights.sum()
+    chosen = rng.choice(len(available), size=take, replace=False, p=weights)
+    return [available[int(idx)] for idx in chosen]
+
+
+def flywire_nodes_for_sample(
+    *,
+    graph: dict[str, Any],
+    hidden: int,
+    seed: int,
+    class_balanced: bool,
+) -> list[int]:
+    rng = np.random.default_rng(seed)
+    nodes = graph["nodes"]
+    degree = graph["degree"]
+    all_nodes = list(range(len(nodes)))
+    if hidden > len(all_nodes):
+        raise ValueError(f"hidden={hidden} exceeds local FlyWire graph nodes={len(all_nodes)}")
+
+    if not class_balanced:
+        weights = degree + 1.0
+        weights /= weights.sum()
+        chosen = rng.choice(len(all_nodes), size=hidden, replace=False, p=weights)
+        return [int(idx) for idx in chosen]
+
+    buckets = {
+        "KC": [idx for idx, node in enumerate(nodes) if "KC" in node["class"]],
+        "MBON": [idx for idx, node in enumerate(nodes) if "MBON" in node["class"]],
+        "MBIN": [idx for idx, node in enumerate(nodes) if "MBIN" in node["class"]],
+        "ORN_PN": [
+            idx
+            for idx, node in enumerate(nodes)
+            if "ORN" in node["class"] or "PN" in node["class"] or "Gust" in node["class"]
+        ],
+    }
+    quotas = {
+        "KC": int(round(hidden * 0.45)),
+        "MBON": int(round(hidden * 0.20)),
+        "MBIN": int(round(hidden * 0.15)),
+    }
+    quotas["ORN_PN"] = max(0, hidden - sum(quotas.values()))
+
+    selected: list[int] = []
+    selected_set: set[int] = set()
+    for bucket_name in ("KC", "MBON", "MBIN", "ORN_PN"):
+        picked = weighted_node_sample(
+            candidates=buckets[bucket_name],
+            degree=degree,
+            count=quotas[bucket_name],
+            rng=rng,
+            already=selected_set,
+        )
+        selected.extend(picked)
+        selected_set.update(picked)
+
+    if len(selected) < hidden:
+        picked = weighted_node_sample(
+            candidates=all_nodes,
+            degree=degree,
+            count=hidden - len(selected),
+            rng=rng,
+            already=selected_set,
+        )
+        selected.extend(picked)
+    rng.shuffle(selected)
+    return selected[:hidden]
+
+
+def flywire_sampled_mask(
+    *,
+    hidden: int,
+    target_edge_count: int,
+    seed: int,
+    graphml: Path,
+    class_balanced: bool,
+) -> tuple[np.ndarray, dict[str, Any]]:
+    graph = load_flywire_graph(graphml)
+    sampled_nodes = flywire_nodes_for_sample(
+        graph=graph,
+        hidden=hidden,
+        seed=seed,
+        class_balanced=class_balanced,
+    )
+    local_index = {node: idx for idx, node in enumerate(sampled_nodes)}
+    candidates: list[tuple[int, int, float]] = []
+    for source, target, weight in graph["edges"]:
+        if source in local_index and target in local_index and source != target:
+            candidates.append((local_index[source], local_index[target], weight))
+    target_offdiag_edges = max(0, target_edge_count - hidden)
+    mask = sample_weighted_edges(
+        hidden=hidden,
+        candidates=candidates,
+        target_offdiag_edges=target_offdiag_edges,
+        seed=seed + 17_771,
+    )
+
+    class_counts: dict[str, int] = {}
+    for node in sampled_nodes:
+        node_class = graph["nodes"][node]["class"] or "unknown"
+        class_counts[node_class] = class_counts.get(node_class, 0) + 1
+    extra = {
+        "flywire_graphml": graph["path"],
+        "flywire_class_balanced": class_balanced,
+        "flywire_sampled_node_count": len(sampled_nodes),
+        "flywire_induced_edge_candidates": len(candidates),
+        "flywire_sampled_class_counts": class_counts,
+    }
+    return mask, extra
+
+
+def make_topology_mask(
+    *,
+    hidden: int,
+    density: float,
+    seed: int,
+    topology_mode: str,
+    flywire_graphml: Path,
+) -> tuple[np.ndarray, dict[str, Any]]:
+    target_edge_count = matched_edge_budget(hidden, density, seed)
+    extra: dict[str, Any] = {}
+
+    if topology_mode == "random_sparse":
+        mask = make_sparse_mask(hidden, density, seed)
+    elif topology_mode == "ring_sparse":
+        mask = ring_sparse_mask(hidden, target_edge_count, seed + 1_001)
+    elif topology_mode == "reciprocal_motif":
+        mask = reciprocal_motif_mask(hidden, target_edge_count, seed + 2_001)
+    elif topology_mode == "hub_rich":
+        mask = hub_rich_mask(hidden, target_edge_count, seed + 3_001)
+    elif topology_mode == "hub_degree_preserving_random":
+        base_mask = hub_rich_mask(hidden, target_edge_count, seed + 3_001)
+        shuffle_seed = seed + 33_001
+        mask = degree_preserving_shuffle_mask(base_mask, shuffle_seed)
+        extra = {
+            "degree_preserving_source_topology": "hub_rich",
+            "degree_preserving_shuffle_seed": shuffle_seed,
+        }
+    elif topology_mode == "flywire_sampled":
+        mask, extra = flywire_sampled_mask(
+            hidden=hidden,
+            target_edge_count=target_edge_count,
+            seed=seed + 4_001,
+            graphml=flywire_graphml,
+            class_balanced=False,
+        )
+    elif topology_mode == "flywire_class_sampled":
+        mask, extra = flywire_sampled_mask(
+            hidden=hidden,
+            target_edge_count=target_edge_count,
+            seed=seed + 5_001,
+            graphml=flywire_graphml,
+            class_balanced=True,
+        )
+    elif topology_mode == "flywire_degree_preserving_random":
+        base_mask, base_extra = flywire_sampled_mask(
+            hidden=hidden,
+            target_edge_count=target_edge_count,
+            seed=seed + 4_001,
+            graphml=flywire_graphml,
+            class_balanced=False,
+        )
+        shuffle_seed = seed + 44_001
+        mask = degree_preserving_shuffle_mask(base_mask, shuffle_seed)
+        extra = {
+            **base_extra,
+            "degree_preserving_source_topology": "flywire_sampled",
+            "degree_preserving_shuffle_seed": shuffle_seed,
+        }
+    else:
+        raise ValueError(f"unknown topology mode: {topology_mode}")
+
+    stats = mask_edge_stats(mask, topology_mode=topology_mode, target_edge_count=target_edge_count)
+    stats.update(extra)
+    return mask.astype(np.float32), stats
 
 
 class RecurrentClassifier(nn.Module):
@@ -587,6 +1569,171 @@ class RecurrentClassifier(nn.Module):
         return states, logits
 
 
+class FramePlacementRecurrentClassifier(nn.Module):
+    def __init__(
+        self,
+        *,
+        hidden: int,
+        steps: int,
+        mask: np.ndarray,
+        update_rate: float,
+        delta_scale: float,
+        frame_placement: str,
+    ):
+        super().__init__()
+        if frame_placement not in FRAME_PLACEMENTS:
+            raise ValueError(f"unknown frame placement: {frame_placement}")
+        self.steps = steps
+        self.update_rate = update_rate
+        self.delta_scale = delta_scale
+        self.frame_placement = frame_placement
+        self.register_buffer("mask", torch.tensor(mask, dtype=torch.float32))
+        self.recurrent = nn.Parameter(torch.empty(hidden, hidden))
+        self.threshold = nn.Parameter(torch.zeros(hidden))
+        head_width = hidden * 2 if frame_placement == "frame_at_output_only" else hidden
+        self.head = nn.Linear(head_width, 2)
+        nn.init.normal_(self.recurrent, mean=0.0, std=0.025)
+        nn.init.zeros_(self.head.bias)
+        nn.init.normal_(self.head.weight, mean=0.0, std=0.025)
+
+    def rollout_components(
+        self,
+        observation: torch.Tensor,
+        frame: torch.Tensor,
+        *,
+        ablation: str | None = None,
+        frame_schedule: list[torch.Tensor] | None = None,
+    ) -> tuple[list[torch.Tensor], list[torch.Tensor]]:
+        def frame_at(step: int) -> torch.Tensor:
+            if frame_schedule is None:
+                return frame
+            return frame_schedule[min(step, len(frame_schedule) - 1)]
+
+        if self.frame_placement == "frame_initial_only":
+            h = torch.tanh(observation + frame_at(0))
+        else:
+            h = torch.tanh(observation)
+
+        states = [h]
+        masked_recurrent = self.recurrent * self.mask
+        freeze_after = None
+        if ablation and ablation.startswith("freeze_after_"):
+            freeze_after = int(ablation.rsplit("_", maxsplit=1)[1])
+            ablation = None
+
+        for step in range(1, self.steps + 1):
+            if freeze_after is not None and step > freeze_after:
+                states.append(h)
+                continue
+            if ablation == "zero_recurrent_update":
+                proposal = h
+            else:
+                if ablation == "zero_matrix_keep_threshold":
+                    delta = self.threshold.unsqueeze(0).expand_as(h)
+                elif ablation is None:
+                    delta = h @ masked_recurrent.t() + self.threshold
+                else:
+                    raise ValueError(f"unknown ablation: {ablation}")
+                if self.frame_placement == "frame_in_recurrence_only":
+                    delta = delta + frame_at(step)
+                proposal = torch.tanh(h + self.delta_scale * delta)
+            h = (1.0 - self.update_rate) * h + self.update_rate * proposal
+            states.append(h)
+
+        logits: list[torch.Tensor] = []
+        for step, state in enumerate(states):
+            if self.frame_placement == "frame_at_output_only":
+                logits.append(self.head(torch.cat([state, frame_at(step)], dim=1)))
+            else:
+                logits.append(self.head(state))
+        return states, logits
+
+
+class ReframeRecurrentClassifier(nn.Module):
+    def __init__(
+        self,
+        *,
+        hidden: int,
+        steps: int,
+        mask: np.ndarray,
+        update_rate: float,
+        delta_scale: float,
+    ):
+        super().__init__()
+        self.steps = steps
+        self.update_rate = update_rate
+        self.delta_scale = delta_scale
+        self.register_buffer("mask", torch.tensor(mask, dtype=torch.float32))
+        self.recurrent = nn.Parameter(torch.empty(hidden, hidden))
+        self.threshold = nn.Parameter(torch.zeros(hidden))
+        self.reset_vector = nn.Parameter(torch.zeros(hidden))
+        self.head = nn.Linear(hidden, 2)
+        nn.init.normal_(self.recurrent, mean=0.0, std=0.025)
+        nn.init.normal_(self.reset_vector, mean=0.0, std=0.025)
+        nn.init.zeros_(self.head.bias)
+        nn.init.normal_(self.head.weight, mean=0.0, std=0.025)
+
+    def rollout_components(
+        self,
+        observation: torch.Tensor,
+        frame: torch.Tensor,
+        *,
+        ablation: str | None = None,
+        frame_schedule: list[torch.Tensor] | None = None,
+        reset_schedule: list[torch.Tensor] | None = None,
+    ) -> tuple[list[torch.Tensor], list[torch.Tensor]]:
+        def frame_at(step: int) -> torch.Tensor:
+            if frame_schedule is None:
+                return frame
+            return frame_schedule[min(step, len(frame_schedule) - 1)]
+
+        def reset_at(step: int) -> torch.Tensor:
+            if reset_schedule is None:
+                return torch.zeros((observation.shape[0], 1), dtype=observation.dtype, device=observation.device)
+            return reset_schedule[min(step, len(reset_schedule) - 1)]
+
+        h = torch.tanh(observation)
+        states = [h]
+        masked_recurrent = self.recurrent * self.mask
+        freeze_after = None
+        disable_reset = False
+        if ablation == "disable_reset_pulse":
+            disable_reset = True
+            ablation = None
+        if ablation and ablation.startswith("freeze_after_"):
+            freeze_after = int(ablation.rsplit("_", maxsplit=1)[1])
+            ablation = None
+
+        for step in range(1, self.steps + 1):
+            if freeze_after is not None and step > freeze_after:
+                states.append(h)
+                continue
+            frame_step = frame_at(step)
+            reset_step = reset_at(step)
+            if disable_reset:
+                reset_step = torch.zeros_like(reset_step)
+            if ablation == "zero_recurrent_update":
+                proposal = h
+            else:
+                if ablation == "zero_matrix_keep_threshold":
+                    delta = self.threshold.unsqueeze(0).expand_as(h)
+                elif ablation is None:
+                    reset_anchor = torch.tanh(observation + frame_step + self.reset_vector)
+                    h_for_update = (1.0 - reset_step) * h + reset_step * reset_anchor
+                    delta = h_for_update @ masked_recurrent.t() + self.threshold + frame_step
+                    delta = delta + reset_step * self.reset_vector
+                    proposal = torch.tanh(h_for_update + self.delta_scale * delta)
+                else:
+                    raise ValueError(f"unknown ablation: {ablation}")
+                if ablation == "zero_matrix_keep_threshold":
+                    proposal = torch.tanh(h + self.delta_scale * (delta + frame_step))
+            h = (1.0 - self.update_rate) * h + self.update_rate * proposal
+            states.append(h)
+
+        logits = [self.head(state) for state in states]
+        return states, logits
+
+
 def to_tensor(x: np.ndarray, device: str, dtype: torch.dtype = torch.float32) -> torch.Tensor:
     return torch.tensor(x, dtype=dtype, device=device)
 
@@ -599,7 +1746,13 @@ def train_model(
     seed: int,
 ) -> RecurrentClassifier:
     torch.manual_seed(seed)
-    mask = make_sparse_mask(hidden, args.sparse_density, seed + 200_003)
+    mask, topology_stats = make_topology_mask(
+        hidden=hidden,
+        density=args.sparse_density,
+        seed=seed + 200_003,
+        topology_mode=args.topology_mode,
+        flywire_graphml=args.flywire_graphml,
+    )
     model = RecurrentClassifier(
         hidden=hidden,
         steps=args.steps,
@@ -607,6 +1760,7 @@ def train_model(
         update_rate=args.update_rate,
         delta_scale=args.delta_scale,
     ).to(args.device)
+    model.topology_stats = topology_stats
     optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
     x = to_tensor(train.x, args.device)
     y = to_tensor(train.y, args.device, torch.long)
@@ -621,6 +1775,148 @@ def train_model(
             xb = x.index_select(dim=0, index=batch_idx)
             yb = y.index_select(dim=0, index=batch_idx)
             _states, logits = model.rollout(xb)
+            loss = F.cross_entropy(logits[-1], yb)
+            optimizer.zero_grad(set_to_none=True)
+            loss.backward()
+            optimizer.step()
+
+    return model
+
+
+def train_frame_placement_model(
+    *,
+    train: RefractionDataBundle,
+    hidden: int,
+    args: argparse.Namespace,
+    seed: int,
+    frame_placement: str,
+) -> FramePlacementRecurrentClassifier:
+    torch.manual_seed(seed)
+    mask, topology_stats = make_topology_mask(
+        hidden=hidden,
+        density=args.sparse_density,
+        seed=seed + 200_003,
+        topology_mode=args.topology_mode,
+        flywire_graphml=args.flywire_graphml,
+    )
+    model = FramePlacementRecurrentClassifier(
+        hidden=hidden,
+        steps=args.steps,
+        mask=mask,
+        update_rate=args.update_rate,
+        delta_scale=args.delta_scale,
+        frame_placement=frame_placement,
+    ).to(args.device)
+    model.topology_stats = topology_stats
+    optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
+    observation = to_tensor(train.observation_component, args.device)
+    frame = to_tensor(train.frame_component, args.device)
+    y = to_tensor(train.y, args.device, torch.long)
+    n = len(train.y)
+    generator = torch.Generator(device="cpu")
+    generator.manual_seed(seed + 300_001)
+
+    for _epoch in range(args.epochs):
+        order = torch.randperm(n, generator=generator)
+        for start in range(0, n, args.batch_size):
+            batch_idx = order[start : start + args.batch_size].to(args.device)
+            xb = observation.index_select(dim=0, index=batch_idx)
+            fb = frame.index_select(dim=0, index=batch_idx)
+            yb = y.index_select(dim=0, index=batch_idx)
+            _states, logits = model.rollout_components(xb, fb)
+            loss = F.cross_entropy(logits[-1], yb)
+            optimizer.zero_grad(set_to_none=True)
+            loss.backward()
+            optimizer.step()
+
+    return model
+
+
+def train_reframe_model(
+    *,
+    train: RefractionDataBundle,
+    frame_embeddings: dict[str, np.ndarray],
+    hidden: int,
+    args: argparse.Namespace,
+    seed: int,
+    train_reframes: bool,
+) -> ReframeRecurrentClassifier:
+    torch.manual_seed(seed)
+    mask, topology_stats = make_topology_mask(
+        hidden=hidden,
+        density=args.sparse_density,
+        seed=seed + 200_003,
+        topology_mode=args.topology_mode,
+        flywire_graphml=args.flywire_graphml,
+    )
+    model = ReframeRecurrentClassifier(
+        hidden=hidden,
+        steps=args.steps,
+        mask=mask,
+        update_rate=args.update_rate,
+        delta_scale=args.delta_scale,
+    ).to(args.device)
+    model.topology_stats = topology_stats
+    optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
+    observation = to_tensor(train.observation_component, args.device)
+    frame = to_tensor(train.frame_component, args.device)
+    y = to_tensor(train.y, args.device, torch.long)
+    frame_ids = to_tensor(train.frame, args.device, torch.long)
+    frame_matrix = to_tensor(
+        np.stack([frame_embeddings[name] for name in train.frame_names], axis=0),
+        args.device,
+    )
+    n = len(train.y)
+    order_generator = torch.Generator(device="cpu")
+    order_generator.manual_seed(seed + 300_001)
+    rng = np.random.default_rng(seed + 310_001)
+    switch_points = [point for point in (1, 2, 3, 4) if point < args.steps]
+
+    for _epoch in range(args.epochs):
+        order = torch.randperm(n, generator=order_generator)
+        for start in range(0, n, args.batch_size):
+            batch_idx = order[start : start + args.batch_size].to(args.device)
+            xb = observation.index_select(dim=0, index=batch_idx)
+            fb = frame.index_select(dim=0, index=batch_idx)
+            yb = y.index_select(dim=0, index=batch_idx)
+            frame_id_b = frame_ids.index_select(dim=0, index=batch_idx)
+            frame_schedule = None
+            reset_schedule = None
+
+            if train_reframes and switch_points:
+                schedule_mode = rng.choice(("fixed", "wrong_no_reset", "wrong_with_reset"), p=(0.40, 0.30, 0.30))
+                if schedule_mode != "fixed":
+                    switch_after = int(rng.choice(switch_points))
+                    wrong_offset = to_tensor(
+                        rng.integers(1, len(train.frame_names), size=len(batch_idx)),
+                        args.device,
+                        torch.long,
+                    )
+                    wrong_ids = (frame_id_b + wrong_offset) % len(train.frame_names)
+                    wrong_frame = frame_matrix.index_select(dim=0, index=wrong_ids)
+                    frame_schedule = [
+                        wrong_frame if step <= switch_after else fb
+                        for step in range(args.steps + 1)
+                    ]
+                    reset_schedule = [
+                        torch.zeros((len(batch_idx), 1), dtype=xb.dtype, device=xb.device)
+                        for _step in range(args.steps + 1)
+                    ]
+                    if schedule_mode == "wrong_with_reset":
+                        reset_step = min(switch_after + 1, args.steps)
+                        reset_schedule[reset_step] = torch.full(
+                            (len(batch_idx), 1),
+                            REFRAME_RESET_SCALE,
+                            dtype=xb.dtype,
+                            device=xb.device,
+                        )
+
+            _states, logits = model.rollout_components(
+                xb,
+                fb,
+                frame_schedule=frame_schedule,
+                reset_schedule=reset_schedule,
+            )
             loss = F.cross_entropy(logits[-1], yb)
             optimizer.zero_grad(set_to_none=True)
             loss.backward()
@@ -677,6 +1973,71 @@ def rollout_arrays(
         states = [state.detach().cpu().numpy() for state in states_t]
         logits = [logit.detach().cpu().numpy() for logit in logits_t]
     return states, logits
+
+
+def frame_placement_rollout_arrays(
+    model: FramePlacementRecurrentClassifier,
+    observation: np.ndarray,
+    frame: np.ndarray,
+    device: str,
+    *,
+    ablation: str | None = None,
+    frame_schedule: list[np.ndarray] | None = None,
+) -> tuple[list[np.ndarray], list[np.ndarray]]:
+    model.eval()
+    with torch.no_grad():
+        observation_t = to_tensor(observation, device)
+        frame_t = to_tensor(frame, device)
+        schedule_t = None
+        if frame_schedule is not None:
+            schedule_t = [to_tensor(step_frame, device) for step_frame in frame_schedule]
+        states_t, logits_t = model.rollout_components(
+            observation_t,
+            frame_t,
+            ablation=ablation,
+            frame_schedule=schedule_t,
+        )
+        states = [state.detach().cpu().numpy() for state in states_t]
+        logits = [logit.detach().cpu().numpy() for logit in logits_t]
+    return states, logits
+
+
+def reframe_rollout_arrays(
+    model: ReframeRecurrentClassifier,
+    observation: np.ndarray,
+    frame: np.ndarray,
+    device: str,
+    *,
+    ablation: str | None = None,
+    frame_schedule: list[np.ndarray] | None = None,
+    reset_schedule: list[np.ndarray] | None = None,
+) -> tuple[list[np.ndarray], list[np.ndarray]]:
+    model.eval()
+    with torch.no_grad():
+        observation_t = to_tensor(observation, device)
+        frame_t = to_tensor(frame, device)
+        frame_schedule_t = None
+        reset_schedule_t = None
+        if frame_schedule is not None:
+            frame_schedule_t = [to_tensor(step_frame, device) for step_frame in frame_schedule]
+        if reset_schedule is not None:
+            reset_schedule_t = [to_tensor(step_reset, device) for step_reset in reset_schedule]
+        states_t, logits_t = model.rollout_components(
+            observation_t,
+            frame_t,
+            ablation=ablation,
+            frame_schedule=frame_schedule_t,
+            reset_schedule=reset_schedule_t,
+        )
+        states = [state.detach().cpu().numpy() for state in states_t]
+        logits = [logit.detach().cpu().numpy() for logit in logits_t]
+    return states, logits
+
+
+def cosine_distance_mean(a: np.ndarray, b: np.ndarray) -> float:
+    a_norm = a / np.maximum(np.linalg.norm(a, axis=1, keepdims=True), 1.0e-9)
+    b_norm = b / np.maximum(np.linalg.norm(b, axis=1, keepdims=True), 1.0e-9)
+    return float(1.0 - np.mean(np.sum(a_norm * b_norm, axis=1)))
 
 
 def softmax_np(logits: np.ndarray) -> np.ndarray:
@@ -779,6 +2140,8 @@ def run_experiment_seed(
         seed=seed + 500_003,
         embed_scale=args.embed_scale,
         opponent_strength=args.opponent_strength,
+        embedding_mode=args.embedding_mode,
+        resonance_mode=args.resonance_mode,
     )
     train = make_dataset(
         n=args.train_size,
@@ -925,6 +2288,184 @@ def recurrent_matrix_control(model: RecurrentClassifier, control: str, seed: int
     return clone
 
 
+def clone_with_mask(model: RecurrentClassifier, mask: np.ndarray, topology_label: str) -> RecurrentClassifier:
+    clone = copy.deepcopy(model)
+    mask = mask.astype(np.float32)
+    with torch.no_grad():
+        clone.mask.copy_(torch.tensor(mask, dtype=clone.mask.dtype, device=clone.mask.device))
+    base_stats = getattr(model, "topology_stats", {})
+    target_edge_count = int(base_stats.get("target_edge_count", int(mask.sum())))
+    clone.topology_stats = mask_edge_stats(mask, topology_mode=topology_label, target_edge_count=target_edge_count)
+    return clone
+
+
+def degree_preserving_shuffle_mask(mask: np.ndarray, seed: int, swap_multiplier: int = 30) -> np.ndarray:
+    rng = np.random.default_rng(seed)
+    shuffled = (mask > 0).astype(np.float32).copy()
+    np.fill_diagonal(shuffled, 1.0)
+    edges = [(int(source), int(target)) for source, target in np.argwhere(shuffled > 0.0) if source != target]
+    edge_set = set(edges)
+    if len(edges) < 2:
+        return shuffled
+
+    attempts = max(1_000, len(edges) * swap_multiplier)
+    for _attempt in range(attempts):
+        idx_a, idx_b = rng.choice(len(edges), size=2, replace=False)
+        a, b = edges[int(idx_a)]
+        c, d = edges[int(idx_b)]
+        if len({a, b, c, d}) < 4:
+            continue
+        new_1 = (a, d)
+        new_2 = (c, b)
+        if new_1[0] == new_1[1] or new_2[0] == new_2[1]:
+            continue
+        if new_1 in edge_set or new_2 in edge_set:
+            continue
+        edge_set.remove((a, b))
+        edge_set.remove((c, d))
+        edge_set.add(new_1)
+        edge_set.add(new_2)
+        edges[int(idx_a)] = new_1
+        edges[int(idx_b)] = new_2
+
+    shuffled = np.eye(mask.shape[0], dtype=np.float32)
+    for source, target in edge_set:
+        shuffled[source, target] = 1.0
+    return shuffled
+
+
+def hub_nodes_from_mask(mask: np.ndarray, fraction: float) -> list[int]:
+    offdiag = (mask > 0).astype(np.float32).copy()
+    np.fill_diagonal(offdiag, 0.0)
+    degree = offdiag.sum(axis=0) + offdiag.sum(axis=1)
+    count = max(1, int(round(len(degree) * fraction)))
+    order = np.argsort(-degree, kind="stable")
+    return [int(idx) for idx in order[:count]]
+
+
+def random_nodes_for_ablation(mask: np.ndarray, count: int, seed: int) -> list[int]:
+    rng = np.random.default_rng(seed)
+    return [int(idx) for idx in rng.choice(mask.shape[0], size=count, replace=False)]
+
+
+def ablate_nodes_in_mask(mask: np.ndarray, nodes: list[int], *, outgoing_only: bool = False) -> np.ndarray:
+    ablated = (mask > 0).astype(np.float32).copy()
+    for node in nodes:
+        if outgoing_only:
+            ablated[node, :] = 0.0
+        else:
+            ablated[node, :] = 0.0
+            ablated[:, node] = 0.0
+    return ablated
+
+
+def refraction_authority_metrics(
+    *,
+    model: RecurrentClassifier,
+    test: RefractionDataBundle,
+    args: argparse.Namespace,
+    seed: int,
+) -> dict[str, Any]:
+    main = refraction_prediction_summary(model=model, bundle=test, args=args)
+    zero = refraction_prediction_summary(model=model, bundle=test, args=args, ablation="zero_recurrent_update")
+    influence = run_refraction_influence(model=model, test=test, args=args, seed=seed)
+    refraction_by_step = influence.get("mean_refraction_index_by_step", [])
+    return {
+        "accuracy": main["accuracy"],
+        "zero_recurrent": zero["accuracy"],
+        "recurrence_gain": main["accuracy"] - zero["accuracy"],
+        "refraction_index_final": refraction_by_step[-1] if refraction_by_step else None,
+        "authority_switch_score": influence.get("authority_switch_score"),
+        "topology": getattr(model, "topology_stats", {}),
+    }
+
+
+def metric_drop(base: dict[str, Any], perturbed: dict[str, Any], key: str) -> float | None:
+    if base.get(key) is None or perturbed.get(key) is None:
+        return None
+    return float(base[key] - perturbed[key])
+
+
+def attach_drops(base: dict[str, Any], perturbed: dict[str, Any]) -> dict[str, Any]:
+    out = dict(perturbed)
+    for key in ("accuracy", "recurrence_gain", "refraction_index_final", "authority_switch_score"):
+        out[f"{key}_drop"] = metric_drop(base, perturbed, key)
+    return out
+
+
+def run_hub_topology_diagnostics(
+    *,
+    model: RecurrentClassifier,
+    test: RefractionDataBundle,
+    args: argparse.Namespace,
+    seed: int,
+    base_metrics: dict[str, Any],
+) -> dict[str, Any]:
+    mask = model.mask.detach().cpu().numpy()
+    diagnostics: dict[str, Any] = {
+        "enabled": args.topology_mode == "hub_rich",
+    }
+    if args.topology_mode != "hub_rich":
+        return diagnostics
+
+    shuffled_mask = degree_preserving_shuffle_mask(mask, seed + 11)
+    shuffled_model = clone_with_mask(model, shuffled_mask, "hub_rich_degree_preserving_shuffle")
+    shuffled_metrics = refraction_authority_metrics(
+        model=shuffled_model,
+        test=test,
+        args=args,
+        seed=seed + 101,
+    )
+    diagnostics["degree_preserving_shuffle"] = attach_drops(base_metrics, shuffled_metrics)
+
+    diagnostics["hub_node_ablation"] = {}
+    diagnostics["random_node_ablation"] = {}
+    diagnostics["hub_outgoing_edge_ablation"] = {}
+    for percent in (0.05, 0.10, 0.20):
+        label = f"top_{int(percent * 100)}pct"
+        hub_nodes = hub_nodes_from_mask(mask, percent)
+        random_nodes = random_nodes_for_ablation(mask, len(hub_nodes), seed + int(percent * 10_000) + 17)
+
+        hub_model = clone_with_mask(
+            model,
+            ablate_nodes_in_mask(mask, hub_nodes),
+            f"hub_rich_ablate_{label}",
+        )
+        random_model = clone_with_mask(
+            model,
+            ablate_nodes_in_mask(mask, random_nodes),
+            f"hub_rich_random_ablate_{label}",
+        )
+        outgoing_model = clone_with_mask(
+            model,
+            ablate_nodes_in_mask(mask, hub_nodes, outgoing_only=True),
+            f"hub_rich_outgoing_ablate_{label}",
+        )
+
+        hub_metrics = refraction_authority_metrics(model=hub_model, test=test, args=args, seed=seed + 201)
+        random_metrics = refraction_authority_metrics(model=random_model, test=test, args=args, seed=seed + 301)
+        outgoing_metrics = refraction_authority_metrics(model=outgoing_model, test=test, args=args, seed=seed + 401)
+
+        hub_out = attach_drops(base_metrics, hub_metrics)
+        random_out = attach_drops(base_metrics, random_metrics)
+        outgoing_out = attach_drops(base_metrics, outgoing_metrics)
+        hub_out["ablated_node_count"] = len(hub_nodes)
+        hub_out["ablated_nodes"] = hub_nodes
+        random_out["ablated_node_count"] = len(random_nodes)
+        random_out["ablated_nodes"] = random_nodes
+        outgoing_out["ablated_node_count"] = len(hub_nodes)
+        outgoing_out["ablated_nodes"] = hub_nodes
+        hub_out["accuracy_drop_minus_random"] = hub_out.get("accuracy_drop") - random_out.get("accuracy_drop")
+        hub_out["authority_drop_minus_random"] = hub_out.get("authority_switch_score_drop") - random_out.get(
+            "authority_switch_score_drop"
+        )
+        diagnostics["hub_node_ablation"][label] = hub_out
+        diagnostics["random_node_ablation"][label] = random_out
+        diagnostics["hub_outgoing_edge_ablation"][label] = outgoing_out
+
+    return diagnostics
+
+
 def run_interventions(
     *,
     model: RecurrentClassifier,
@@ -1067,6 +2608,238 @@ def refraction_prediction_summary(
     }
 
 
+def frame_placement_prediction_summary(
+    *,
+    model: FramePlacementRecurrentClassifier,
+    bundle: RefractionDataBundle,
+    args: argparse.Namespace,
+    frame_override: np.ndarray | None = None,
+    ablation: str | None = None,
+) -> dict[str, Any]:
+    frame = bundle.frame_component if frame_override is None else frame_override
+    _states, logits = frame_placement_rollout_arrays(
+        model,
+        bundle.observation_component,
+        frame,
+        args.device,
+        ablation=ablation,
+    )
+    pred = np.argmax(logits[-1], axis=1)
+    per_step_accuracy = [
+        float(np.mean(np.argmax(step_logits, axis=1) == bundle.y))
+        for step_logits in logits
+    ]
+    accuracy_by_frame: dict[str, float] = {}
+    accuracy_by_frame_by_step: dict[str, list[float]] = {}
+    for frame_name in bundle.frame_names:
+        idx = frame_indices(bundle, frame_name)
+        accuracy_by_frame[frame_name] = float(np.mean(pred[idx] == bundle.y[idx]))
+        accuracy_by_frame_by_step[frame_name] = [
+            float(np.mean(np.argmax(step_logits[idx], axis=1) == bundle.y[idx]))
+            for step_logits in logits
+        ]
+
+    return {
+        "accuracy": float(np.mean(pred == bundle.y)),
+        "accuracy_by_frame": accuracy_by_frame,
+        "accuracy_by_frame_by_step": accuracy_by_frame_by_step,
+        "per_step_accuracy": per_step_accuracy,
+        "output_entropy_by_step": output_entropy_by_step(logits),
+        "logit_margin_by_step": logit_margin_by_step(logits),
+        "label_logit_confidence_by_step": [
+            float(np.mean(softmax_np(step_logits)[np.arange(len(bundle.y)), bundle.y]))
+            for step_logits in logits
+        ],
+    }
+
+
+def reframe_prediction_summary(
+    *,
+    model: ReframeRecurrentClassifier,
+    bundle: RefractionDataBundle,
+    args: argparse.Namespace,
+    frame_override: np.ndarray | None = None,
+    ablation: str | None = None,
+) -> dict[str, Any]:
+    frame = bundle.frame_component if frame_override is None else frame_override
+    _states, logits = reframe_rollout_arrays(
+        model,
+        bundle.observation_component,
+        frame,
+        args.device,
+        ablation=ablation,
+    )
+    pred = np.argmax(logits[-1], axis=1)
+    per_step_accuracy = [
+        float(np.mean(np.argmax(step_logits, axis=1) == bundle.y))
+        for step_logits in logits
+    ]
+    accuracy_by_frame: dict[str, float] = {}
+    accuracy_by_frame_by_step: dict[str, list[float]] = {}
+    for frame_name in bundle.frame_names:
+        idx = frame_indices(bundle, frame_name)
+        accuracy_by_frame[frame_name] = float(np.mean(pred[idx] == bundle.y[idx]))
+        accuracy_by_frame_by_step[frame_name] = [
+            float(np.mean(np.argmax(step_logits[idx], axis=1) == bundle.y[idx]))
+            for step_logits in logits
+        ]
+
+    return {
+        "accuracy": float(np.mean(pred == bundle.y)),
+        "accuracy_by_frame": accuracy_by_frame,
+        "accuracy_by_frame_by_step": accuracy_by_frame_by_step,
+        "per_step_accuracy": per_step_accuracy,
+        "output_entropy_by_step": output_entropy_by_step(logits),
+        "logit_margin_by_step": logit_margin_by_step(logits),
+        "label_logit_confidence_by_step": [
+            float(np.mean(softmax_np(step_logits)[np.arange(len(bundle.y)), bundle.y]))
+            for step_logits in logits
+        ],
+    }
+
+
+def frame_placement_counterfactual_influence_summary(
+    *,
+    model: FramePlacementRecurrentClassifier,
+    reference_observation: np.ndarray,
+    reference_frame: np.ndarray,
+    counterfactual_observation: np.ndarray,
+    counterfactual_frame: np.ndarray,
+    reference_y: np.ndarray,
+    counterfactual_y: np.ndarray,
+    args: argparse.Namespace,
+    reference_frame_schedule: list[np.ndarray] | None = None,
+    counterfactual_frame_schedule: list[np.ndarray] | None = None,
+) -> dict[str, Any]:
+    _reference_states, reference_logits = frame_placement_rollout_arrays(
+        model,
+        reference_observation,
+        reference_frame,
+        args.device,
+        frame_schedule=reference_frame_schedule,
+    )
+    _counterfactual_states, counterfactual_logits = frame_placement_rollout_arrays(
+        model,
+        counterfactual_observation,
+        counterfactual_frame,
+        args.device,
+        frame_schedule=counterfactual_frame_schedule,
+    )
+
+    output_change_rate_by_step: list[float] = []
+    target_accuracy_by_step: list[float] = []
+    original_label_retention_by_step: list[float] = []
+    mean_abs_label_probability_delta_by_step: list[float] = []
+    mean_kl_divergence_by_step: list[float] = []
+    mean_abs_margin_delta_by_step: list[float] = []
+
+    for ref_logits, cf_logits in zip(reference_logits, counterfactual_logits):
+        ref_probs = softmax_np(ref_logits)
+        cf_probs = softmax_np(cf_logits)
+        ref_pred = np.argmax(ref_probs, axis=1)
+        cf_pred = np.argmax(cf_probs, axis=1)
+        output_change_rate_by_step.append(float(np.mean(ref_pred != cf_pred)))
+        target_accuracy_by_step.append(float(np.mean(cf_pred == counterfactual_y)))
+        original_label_retention_by_step.append(float(np.mean(cf_pred == reference_y)))
+        ref_label_prob = ref_probs[np.arange(len(reference_y)), reference_y]
+        cf_label_prob = cf_probs[np.arange(len(reference_y)), reference_y]
+        mean_abs_label_probability_delta_by_step.append(float(np.mean(np.abs(ref_label_prob - cf_label_prob))))
+        kl = np.sum(ref_probs * (np.log(np.maximum(ref_probs, 1.0e-9)) - np.log(np.maximum(cf_probs, 1.0e-9))), axis=1)
+        mean_kl_divergence_by_step.append(float(np.mean(kl)))
+        ref_margin = np.sort(ref_logits, axis=1)[:, -1] - np.sort(ref_logits, axis=1)[:, -2]
+        cf_margin = np.sort(cf_logits, axis=1)[:, -1] - np.sort(cf_logits, axis=1)[:, -2]
+        mean_abs_margin_delta_by_step.append(float(np.mean(np.abs(ref_margin - cf_margin))))
+
+    return {
+        "label_change_rate": float(np.mean(reference_y != counterfactual_y)),
+        "output_change_rate": output_change_rate_by_step[-1],
+        "target_accuracy": target_accuracy_by_step[-1],
+        "original_label_retention": original_label_retention_by_step[-1],
+        "mean_abs_label_probability_delta": mean_abs_label_probability_delta_by_step[-1],
+        "mean_kl_divergence": mean_kl_divergence_by_step[-1],
+        "mean_abs_margin_delta": mean_abs_margin_delta_by_step[-1],
+        "output_change_rate_by_step": output_change_rate_by_step,
+        "target_accuracy_by_step": target_accuracy_by_step,
+        "original_label_retention_by_step": original_label_retention_by_step,
+        "mean_abs_label_probability_delta_by_step": mean_abs_label_probability_delta_by_step,
+        "mean_kl_divergence_by_step": mean_kl_divergence_by_step,
+        "mean_abs_margin_delta_by_step": mean_abs_margin_delta_by_step,
+    }
+
+
+def reframe_counterfactual_influence_summary(
+    *,
+    model: ReframeRecurrentClassifier,
+    reference_observation: np.ndarray,
+    reference_frame: np.ndarray,
+    counterfactual_observation: np.ndarray,
+    counterfactual_frame: np.ndarray,
+    reference_y: np.ndarray,
+    counterfactual_y: np.ndarray,
+    args: argparse.Namespace,
+    reference_frame_schedule: list[np.ndarray] | None = None,
+    counterfactual_frame_schedule: list[np.ndarray] | None = None,
+    reference_reset_schedule: list[np.ndarray] | None = None,
+    counterfactual_reset_schedule: list[np.ndarray] | None = None,
+) -> dict[str, Any]:
+    _reference_states, reference_logits = reframe_rollout_arrays(
+        model,
+        reference_observation,
+        reference_frame,
+        args.device,
+        frame_schedule=reference_frame_schedule,
+        reset_schedule=reference_reset_schedule,
+    )
+    _counterfactual_states, counterfactual_logits = reframe_rollout_arrays(
+        model,
+        counterfactual_observation,
+        counterfactual_frame,
+        args.device,
+        frame_schedule=counterfactual_frame_schedule,
+        reset_schedule=counterfactual_reset_schedule,
+    )
+
+    output_change_rate_by_step: list[float] = []
+    target_accuracy_by_step: list[float] = []
+    original_label_retention_by_step: list[float] = []
+    mean_abs_label_probability_delta_by_step: list[float] = []
+    mean_kl_divergence_by_step: list[float] = []
+    mean_abs_margin_delta_by_step: list[float] = []
+
+    for ref_logits, cf_logits in zip(reference_logits, counterfactual_logits):
+        ref_probs = softmax_np(ref_logits)
+        cf_probs = softmax_np(cf_logits)
+        ref_pred = np.argmax(ref_probs, axis=1)
+        cf_pred = np.argmax(cf_probs, axis=1)
+        output_change_rate_by_step.append(float(np.mean(ref_pred != cf_pred)))
+        target_accuracy_by_step.append(float(np.mean(cf_pred == counterfactual_y)))
+        original_label_retention_by_step.append(float(np.mean(cf_pred == reference_y)))
+        ref_label_prob = ref_probs[np.arange(len(reference_y)), reference_y]
+        cf_label_prob = cf_probs[np.arange(len(reference_y)), reference_y]
+        mean_abs_label_probability_delta_by_step.append(float(np.mean(np.abs(ref_label_prob - cf_label_prob))))
+        kl = np.sum(ref_probs * (np.log(np.maximum(ref_probs, 1.0e-9)) - np.log(np.maximum(cf_probs, 1.0e-9))), axis=1)
+        mean_kl_divergence_by_step.append(float(np.mean(kl)))
+        ref_margin = np.sort(ref_logits, axis=1)[:, -1] - np.sort(ref_logits, axis=1)[:, -2]
+        cf_margin = np.sort(cf_logits, axis=1)[:, -1] - np.sort(cf_logits, axis=1)[:, -2]
+        mean_abs_margin_delta_by_step.append(float(np.mean(np.abs(ref_margin - cf_margin))))
+
+    return {
+        "label_change_rate": float(np.mean(reference_y != counterfactual_y)),
+        "output_change_rate": output_change_rate_by_step[-1],
+        "target_accuracy": target_accuracy_by_step[-1],
+        "original_label_retention": original_label_retention_by_step[-1],
+        "mean_abs_label_probability_delta": mean_abs_label_probability_delta_by_step[-1],
+        "mean_kl_divergence": mean_kl_divergence_by_step[-1],
+        "mean_abs_margin_delta": mean_abs_margin_delta_by_step[-1],
+        "output_change_rate_by_step": output_change_rate_by_step,
+        "target_accuracy_by_step": target_accuracy_by_step,
+        "original_label_retention_by_step": original_label_retention_by_step,
+        "mean_abs_label_probability_delta_by_step": mean_abs_label_probability_delta_by_step,
+        "mean_kl_divergence_by_step": mean_kl_divergence_by_step,
+        "mean_abs_margin_delta_by_step": mean_abs_margin_delta_by_step,
+    }
+
+
 def evaluate_refraction_model(
     *,
     model: RecurrentClassifier,
@@ -1081,7 +2854,7 @@ def evaluate_refraction_model(
 
     group_probe_accuracy_by_step: dict[str, list[float]] = {}
     group_probe_accuracy_by_frame_by_step: dict[str, dict[str, list[float]]] = {}
-    for group in FEATURE_GROUPS:
+    for group in bundle_feature_groups(test):
         group_probe_accuracy_by_step[group] = [
             ridge_probe_accuracy(
                 train_states[step],
@@ -1145,9 +2918,9 @@ def run_refraction_influence(
 
     for frame_name in test.frame_names:
         idx = frame_indices(test, frame_name)
-        active_group = FRAME_ACTIVE_GROUP[frame_name]
+        active_group = bundle_active_group(test, frame_name)
         influence_by_frame[frame_name] = {}
-        for group in FEATURE_GROUPS:
+        for group in bundle_feature_groups(test):
             perm_local = rng.permutation(len(idx))
             permuted_idx = idx[perm_local]
             counterfactual_x = refraction_group_swap_x(
@@ -1173,7 +2946,7 @@ def run_refraction_influence(
         active_curve = influence_by_frame[frame_name][active_group]["output_change_rate_by_step"]
         inactive_curves = [
             influence_by_frame[frame_name][group]["output_change_rate_by_step"]
-            for group in FEATURE_GROUPS
+            for group in bundle_feature_groups(test)
             if group != active_group
         ]
         inactive_max = [
@@ -1189,10 +2962,10 @@ def run_refraction_influence(
 
     mean_refraction_index = mean_list(list(refraction_index_by_step.values()))
     authority_by_group: dict[str, float | None] = {}
-    for group in FEATURE_GROUPS:
+    for group in bundle_feature_groups(test):
         causal_frames = [
             frame_name
-            for frame_name, active_group in FRAME_ACTIVE_GROUP.items()
+            for frame_name, active_group in (test.active_group_by_frame or FRAME_ACTIVE_GROUP).items()
             if active_group == group
         ]
         if not causal_frames:
@@ -1221,6 +2994,1019 @@ def run_refraction_influence(
     }
 
 
+def multi_aspect_actor_swap_x(
+    *,
+    bundle: RefractionDataBundle,
+    row_idx: np.ndarray,
+    contrast_idx: np.ndarray,
+) -> np.ndarray:
+    observation = bundle.observation_component[row_idx].copy()
+    observation -= bundle.group_components["actor"][row_idx]
+    observation += bundle.group_components["actor"][contrast_idx]
+    return observation + bundle.frame_component[row_idx]
+
+
+def multi_aspect_actor_counterfactual_y(
+    *,
+    bundle: RefractionDataBundle,
+    frame_name: str,
+    row_idx: np.ndarray,
+    contrast_idx: np.ndarray,
+) -> np.ndarray:
+    if bundle.tokens is None:
+        raise ValueError("multi-aspect token influence requires token metadata")
+    y = np.zeros(len(row_idx), dtype=np.int64)
+    for out_idx, (row, contrast) in enumerate(zip(row_idx, contrast_idx)):
+        y[out_idx] = multi_aspect_label(
+            frame_name,
+            actor=str(bundle.tokens["actor"][contrast]),
+            action=str(bundle.tokens["action"][row]),
+            relation=str(bundle.tokens["relation"][row]),
+            sound=str(bundle.tokens["sound"][row]),
+            place=str(bundle.tokens["place"][row]),
+            noise=str(bundle.tokens["noise"][row]),
+        )
+    return y
+
+
+def run_multi_aspect_token_influence(
+    *,
+    model: RecurrentClassifier,
+    test: RefractionDataBundle,
+    args: argparse.Namespace,
+    seed: int,
+) -> dict[str, Any]:
+    if test.tokens is None:
+        raise ValueError("multi-aspect token influence requires token metadata")
+    rng = np.random.default_rng(seed)
+    actor_influence_by_frame: dict[str, dict[str, Any]] = {}
+    authority_switch_by_actor: dict[str, float | None] = {}
+
+    for frame_name in test.frame_names:
+        frame_idx = frame_indices(test, frame_name)
+        actor_influence_by_frame[frame_name] = {}
+        for actor in ACTORS:
+            actor_idx = frame_idx[test.tokens["actor"][frame_idx] == actor]
+            contrast_pool = frame_idx[test.tokens["actor"][frame_idx] != actor]
+            if len(actor_idx) == 0 or len(contrast_pool) == 0:
+                actor_influence_by_frame[frame_name][actor] = None
+                continue
+            contrast_idx = rng.choice(contrast_pool, size=len(actor_idx), replace=True)
+            counterfactual_x = multi_aspect_actor_swap_x(
+                bundle=test,
+                row_idx=actor_idx,
+                contrast_idx=contrast_idx,
+            )
+            counterfactual_y = multi_aspect_actor_counterfactual_y(
+                bundle=test,
+                frame_name=frame_name,
+                row_idx=actor_idx,
+                contrast_idx=contrast_idx,
+            )
+            actor_influence_by_frame[frame_name][actor] = counterfactual_influence_summary(
+                model=model,
+                reference_x=test.x[actor_idx],
+                counterfactual_x=counterfactual_x,
+                reference_y=test.y[actor_idx],
+                counterfactual_y=counterfactual_y,
+                args=args,
+            )
+
+    causal_frames = ("danger_frame", "friendship_frame", "sound_frame")
+    for actor in ACTORS:
+        causal_values = [
+            actor_influence_by_frame[frame][actor]["output_change_rate"]
+            for frame in causal_frames
+            if actor_influence_by_frame.get(frame, {}).get(actor) is not None
+        ]
+        environment_value = actor_influence_by_frame.get("environment_frame", {}).get(actor)
+        if not causal_values or environment_value is None:
+            authority_switch_by_actor[actor] = None
+            continue
+        authority_switch_by_actor[actor] = float(np.mean(causal_values) - environment_value["output_change_rate"])
+
+    dog_by_frame = {
+        frame_name: actor_influence_by_frame[frame_name].get("dog")
+        for frame_name in test.frame_names
+    }
+    numeric_authority = [value for value in authority_switch_by_actor.values() if value is not None]
+    return {
+        "actor_token_influence_by_frame": actor_influence_by_frame,
+        "dog_influence_by_frame": dog_by_frame,
+        "authority_switch_score_by_actor": authority_switch_by_actor,
+        "mean_actor_authority_switch_score": float(np.mean(numeric_authority)) if numeric_authority else None,
+    }
+
+
+def reconstruct_multi_aspect_x(
+    *,
+    bundle: RefractionDataBundle,
+    embeddings: FeatureEmbeddings,
+    active_value: float,
+    pointer_map: dict[str, str | None] | None = None,
+    neutral_pointer: bool = False,
+    neuron_phases_override: np.ndarray | None = None,
+) -> np.ndarray:
+    if bundle.tokens is None:
+        raise ValueError("reconstructing multi-aspect resonance inputs requires token metadata")
+    observation = np.zeros_like(bundle.observation_component)
+    for row in range(len(bundle.y)):
+        frame_name = bundle.frame_names[int(bundle.frame[row])]
+        if neutral_pointer:
+            pointer_frame_name = None
+        elif pointer_map is not None:
+            pointer_frame_name = pointer_map.get(frame_name, frame_name)
+        else:
+            pointer_frame_name = frame_name
+        keys = [
+            ("actor", str(bundle.tokens["actor"][row])),
+            ("action", str(bundle.tokens["action"][row])),
+            ("relation", str(bundle.tokens["relation"][row])),
+            ("sound", str(bundle.tokens["sound"][row])),
+            ("place", str(bundle.tokens["place"][row])),
+            ("noise", str(bundle.tokens["noise"][row])),
+            ("object", str(bundle.tokens["object"][row])),
+        ]
+        observation[row] = resonance_component(
+            embeddings=embeddings,
+            keys=keys,
+            frame_name=frame_name if not neutral_pointer else None,
+            pointer_frame_name=pointer_frame_name,
+            neuron_phases_override=neuron_phases_override,
+            scale=active_value,
+        )
+    return observation + bundle.frame_component
+
+
+def pointer_phase_summary(embeddings: FeatureEmbeddings) -> dict[str, Any]:
+    if embeddings.pointer_phases is None:
+        return {}
+    frames = [frame for frame in MULTI_ASPECT_FRAMES if frame in embeddings.pointer_phases]
+    distance: dict[str, float] = {}
+    for left_index, left_frame in enumerate(frames):
+        left = embeddings.pointer_phases[left_frame][None, :]
+        for right_frame in frames[left_index + 1 :]:
+            right = embeddings.pointer_phases[right_frame][None, :]
+            distance[f"{left_frame}_to_{right_frame}"] = cosine_distance_mean(left, right)
+    return {
+        "pointer_phase_by_frame": {
+            frame: [float(value) for value in embeddings.pointer_phases[frame][:8]]
+            for frame in frames
+        },
+        "pointer_distance_between_frames": distance,
+        "mean_pointer_distance_between_frames": float(np.mean(list(distance.values()))) if distance else None,
+    }
+
+
+def neuron_phase_specialization_score(embeddings: FeatureEmbeddings) -> float | None:
+    if embeddings.neuron_phases is None or embeddings.pointer_phases is None:
+        return None
+    responses = np.stack(
+        [
+            np.cos(embeddings.neuron_phases - embeddings.pointer_phases[frame])
+            for frame in MULTI_ASPECT_FRAMES
+        ],
+        axis=0,
+    )
+    return float(np.mean(np.std(responses, axis=0)))
+
+
+def resonance_alignment_by_frame(
+    *,
+    model: RecurrentClassifier,
+    bundle: RefractionDataBundle,
+    embeddings: FeatureEmbeddings,
+    args: argparse.Namespace,
+) -> dict[str, float]:
+    if embeddings.pointer_phases is None:
+        return {}
+    states, _logits = rollout_arrays(model, bundle.x, args.device)
+    final_state = states[-1]
+    out: dict[str, float] = {}
+    for frame_name in MULTI_ASPECT_FRAMES:
+        idx = frame_indices(bundle, frame_name)
+        pointer = np.cos(embeddings.pointer_phases[frame_name] - embeddings.neuron_phases)[None, :]
+        pointer = pointer / np.maximum(np.linalg.norm(pointer, axis=1, keepdims=True), 1.0e-9)
+        state = final_state[idx] / np.maximum(np.linalg.norm(final_state[idx], axis=1, keepdims=True), 1.0e-9)
+        out[frame_name] = float(np.mean(state @ pointer.T))
+    return out
+
+
+def run_pointer_resonance_diagnostics(
+    *,
+    model: RecurrentClassifier,
+    test: RefractionDataBundle,
+    embeddings: FeatureEmbeddings,
+    args: argparse.Namespace,
+    seed: int,
+) -> dict[str, Any]:
+    if embeddings.resonance_mode not in {"pointer_resonance", "pointer_resonance_signed"}:
+        return {}
+    rng = np.random.default_rng(seed)
+    wrong_map = {
+        "danger_frame": "environment_frame",
+        "environment_frame": "danger_frame",
+        "sound_frame": "danger_frame",
+        "friendship_frame": "environment_frame",
+    }
+    shuffled_frames = list(MULTI_ASPECT_FRAMES)
+    rng.shuffle(shuffled_frames)
+    shuffled_map = dict(zip(MULTI_ASPECT_FRAMES, shuffled_frames))
+    randomized_neuron_phases = rng.uniform(0.0, 2.0 * np.pi, size=test.x.shape[1]).astype(np.float32)
+
+    main = refraction_prediction_summary(model=model, bundle=test, args=args)
+    wrong_pointer = refraction_prediction_summary(
+        model=model,
+        bundle=test,
+        args=args,
+        x_override=reconstruct_multi_aspect_x(
+            bundle=test,
+            embeddings=embeddings,
+            active_value=args.active_value,
+            pointer_map=wrong_map,
+        ),
+    )
+    frozen_neutral = refraction_prediction_summary(
+        model=model,
+        bundle=test,
+        args=args,
+        x_override=reconstruct_multi_aspect_x(
+            bundle=test,
+            embeddings=embeddings,
+            active_value=args.active_value,
+            neutral_pointer=True,
+        ),
+    )
+    shuffled_pointer = refraction_prediction_summary(
+        model=model,
+        bundle=test,
+        args=args,
+        x_override=reconstruct_multi_aspect_x(
+            bundle=test,
+            embeddings=embeddings,
+            active_value=args.active_value,
+            pointer_map=shuffled_map,
+        ),
+    )
+    randomized_neuron = refraction_prediction_summary(
+        model=model,
+        bundle=test,
+        args=args,
+        x_override=reconstruct_multi_aspect_x(
+            bundle=test,
+            embeddings=embeddings,
+            active_value=args.active_value,
+            neuron_phases_override=randomized_neuron_phases,
+        ),
+    )
+    phase = pointer_phase_summary(embeddings)
+    return {
+        **phase,
+        "neuron_phase_specialization_score": neuron_phase_specialization_score(embeddings),
+        "resonance_alignment_by_frame": resonance_alignment_by_frame(
+            model=model,
+            bundle=test,
+            embeddings=embeddings,
+            args=args,
+        ),
+        "wrong_pointer": wrong_pointer,
+        "wrong_pointer_inference_drop": main["accuracy"] - wrong_pointer["accuracy"],
+        "frozen_neutral_pointer": frozen_neutral,
+        "frozen_neutral_pointer_drop": main["accuracy"] - frozen_neutral["accuracy"],
+        "shuffled_pointer_frame_mapping": shuffled_pointer,
+        "shuffled_pointer_frame_mapping_drop": main["accuracy"] - shuffled_pointer["accuracy"],
+        "randomized_neuron_phases": randomized_neuron,
+        "randomized_neuron_phase_drop": main["accuracy"] - randomized_neuron["accuracy"],
+        "pointer_map_used_for_wrong_pointer": wrong_map,
+        "pointer_map_used_for_shuffle": shuffled_map,
+    }
+
+
+def shuffled_frame_component(bundle: RefractionDataBundle, seed: int) -> np.ndarray:
+    rng = np.random.default_rng(seed)
+    perm = rng.permutation(len(bundle.frame_component))
+    return bundle.frame_component[perm]
+
+
+def refraction_group_swap_observation(
+    *,
+    bundle: RefractionDataBundle,
+    group: str,
+    row_idx: np.ndarray,
+    permuted_row_idx: np.ndarray,
+) -> np.ndarray:
+    observation = bundle.observation_component[row_idx].copy()
+    observation -= bundle.group_components[group][row_idx]
+    observation += bundle.group_components[group][permuted_row_idx]
+    return observation
+
+
+def multi_aspect_actor_swap_observation(
+    *,
+    bundle: RefractionDataBundle,
+    row_idx: np.ndarray,
+    contrast_idx: np.ndarray,
+) -> np.ndarray:
+    observation = bundle.observation_component[row_idx].copy()
+    observation -= bundle.group_components["actor"][row_idx]
+    observation += bundle.group_components["actor"][contrast_idx]
+    return observation
+
+
+def run_frame_placement_influence(
+    *,
+    model: FramePlacementRecurrentClassifier,
+    test: RefractionDataBundle,
+    args: argparse.Namespace,
+    seed: int,
+) -> dict[str, Any]:
+    rng = np.random.default_rng(seed)
+    influence_by_frame: dict[str, dict[str, Any]] = {}
+    active_core_influence_by_step: dict[str, list[float]] = {}
+    inactive_group_influence_by_step: dict[str, list[float]] = {}
+    refraction_index_by_step: dict[str, list[float]] = {}
+
+    for frame_name in test.frame_names:
+        idx = frame_indices(test, frame_name)
+        active_group = bundle_active_group(test, frame_name)
+        influence_by_frame[frame_name] = {}
+        for group in bundle_feature_groups(test):
+            permuted_idx = idx[rng.permutation(len(idx))]
+            counterfactual_observation = refraction_group_swap_observation(
+                bundle=test,
+                group=group,
+                row_idx=idx,
+                permuted_row_idx=permuted_idx,
+            )
+            counterfactual_y = (
+                test.group_labels[group][permuted_idx]
+                if group == active_group
+                else test.y[idx]
+            )
+            influence_by_frame[frame_name][group] = frame_placement_counterfactual_influence_summary(
+                model=model,
+                reference_observation=test.observation_component[idx],
+                reference_frame=test.frame_component[idx],
+                counterfactual_observation=counterfactual_observation,
+                counterfactual_frame=test.frame_component[idx],
+                reference_y=test.y[idx],
+                counterfactual_y=counterfactual_y,
+                args=args,
+            )
+
+        active_curve = influence_by_frame[frame_name][active_group]["output_change_rate_by_step"]
+        inactive_curves = [
+            influence_by_frame[frame_name][group]["output_change_rate_by_step"]
+            for group in bundle_feature_groups(test)
+            if group != active_group
+        ]
+        inactive_max = [
+            float(max(curve[step] for curve in inactive_curves))
+            for step in range(len(active_curve))
+        ]
+        active_core_influence_by_step[frame_name] = active_curve
+        inactive_group_influence_by_step[frame_name] = inactive_max
+        refraction_index_by_step[frame_name] = [
+            float(active - inactive)
+            for active, inactive in zip(active_curve, inactive_max)
+        ]
+
+    mean_refraction_index = mean_list(list(refraction_index_by_step.values()))
+    return {
+        "feature_group_influence_by_frame": influence_by_frame,
+        "active_core_influence_by_step": active_core_influence_by_step,
+        "inactive_group_influence_by_step": inactive_group_influence_by_step,
+        "refraction_index_by_step": refraction_index_by_step,
+        "mean_refraction_index_by_step": mean_refraction_index,
+    }
+
+
+def run_frame_placement_token_influence(
+    *,
+    model: FramePlacementRecurrentClassifier,
+    test: RefractionDataBundle,
+    args: argparse.Namespace,
+    seed: int,
+) -> dict[str, Any]:
+    if test.tokens is None:
+        raise ValueError("multi-aspect token influence requires token metadata")
+    rng = np.random.default_rng(seed)
+    dog_by_frame: dict[str, Any] = {}
+    authority_switch_by_actor: dict[str, float | None] = {}
+    actor_influence_by_frame: dict[str, dict[str, Any]] = {}
+
+    for frame_name in test.frame_names:
+        frame_idx = frame_indices(test, frame_name)
+        actor_influence_by_frame[frame_name] = {}
+        for actor in ACTORS:
+            actor_idx = frame_idx[test.tokens["actor"][frame_idx] == actor]
+            contrast_pool = frame_idx[test.tokens["actor"][frame_idx] != actor]
+            if len(actor_idx) == 0 or len(contrast_pool) == 0:
+                actor_influence_by_frame[frame_name][actor] = None
+                continue
+            contrast_idx = rng.choice(contrast_pool, size=len(actor_idx), replace=True)
+            counterfactual_observation = multi_aspect_actor_swap_observation(
+                bundle=test,
+                row_idx=actor_idx,
+                contrast_idx=contrast_idx,
+            )
+            counterfactual_y = multi_aspect_actor_counterfactual_y(
+                bundle=test,
+                frame_name=frame_name,
+                row_idx=actor_idx,
+                contrast_idx=contrast_idx,
+            )
+            actor_influence_by_frame[frame_name][actor] = frame_placement_counterfactual_influence_summary(
+                model=model,
+                reference_observation=test.observation_component[actor_idx],
+                reference_frame=test.frame_component[actor_idx],
+                counterfactual_observation=counterfactual_observation,
+                counterfactual_frame=test.frame_component[actor_idx],
+                reference_y=test.y[actor_idx],
+                counterfactual_y=counterfactual_y,
+                args=args,
+            )
+
+    for actor in ACTORS:
+        causal_values = [
+            actor_influence_by_frame[frame][actor]["output_change_rate"]
+            for frame in ("danger_frame", "friendship_frame", "sound_frame")
+            if actor_influence_by_frame.get(frame, {}).get(actor) is not None
+        ]
+        environment_value = actor_influence_by_frame.get("environment_frame", {}).get(actor)
+        authority_switch_by_actor[actor] = (
+            float(np.mean(causal_values) - environment_value["output_change_rate"])
+            if causal_values and environment_value is not None
+            else None
+        )
+    dog_by_frame = {
+        frame_name: actor_influence_by_frame[frame_name].get("dog")
+        for frame_name in test.frame_names
+    }
+    numeric_authority = [value for value in authority_switch_by_actor.values() if value is not None]
+    return {
+        "actor_token_influence_by_frame": actor_influence_by_frame,
+        "dog_influence_by_frame": dog_by_frame,
+        "authority_switch_score_by_actor": authority_switch_by_actor,
+        "mean_actor_authority_switch_score": float(np.mean(numeric_authority)) if numeric_authority else None,
+    }
+
+
+def aligned_frame_rows(bundle: RefractionDataBundle, source_frame: str, target_frame: str) -> tuple[np.ndarray, np.ndarray]:
+    source_idx = frame_indices(bundle, source_frame)
+    target_idx = frame_indices(bundle, target_frame)
+    source_by_base = {int(bundle.base_id[row]): int(row) for row in source_idx}
+    target_by_base = {int(bundle.base_id[row]): int(row) for row in target_idx}
+    bases = sorted(set(source_by_base) & set(target_by_base))
+    return (
+        np.array([source_by_base[base] for base in bases], dtype=np.int64),
+        np.array([target_by_base[base] for base in bases], dtype=np.int64),
+    )
+
+
+def frame_switch_schedule(
+    *,
+    source_frame_component: np.ndarray,
+    target_frame_component: np.ndarray,
+    switch_after: int,
+    steps: int,
+) -> list[np.ndarray]:
+    return [
+        source_frame_component if step <= switch_after else target_frame_component
+        for step in range(steps + 1)
+    ]
+
+
+def frame_switch_prediction_summary(
+    *,
+    model: FramePlacementRecurrentClassifier,
+    test: RefractionDataBundle,
+    source_frame: str,
+    target_frame: str,
+    switch_after: int,
+    args: argparse.Namespace,
+    seed: int,
+) -> dict[str, Any]:
+    rng = np.random.default_rng(seed)
+    source_rows, target_rows = aligned_frame_rows(test, source_frame, target_frame)
+    source_frame_component = test.frame_component[source_rows]
+    target_frame_component = test.frame_component[target_rows]
+    schedule = frame_switch_schedule(
+        source_frame_component=source_frame_component,
+        target_frame_component=target_frame_component,
+        switch_after=switch_after,
+        steps=args.steps,
+    )
+
+    source_states, source_logits = frame_placement_rollout_arrays(
+        model,
+        test.observation_component[source_rows],
+        source_frame_component,
+        args.device,
+    )
+    target_states, target_logits = frame_placement_rollout_arrays(
+        model,
+        test.observation_component[target_rows],
+        target_frame_component,
+        args.device,
+    )
+    switch_states, switch_logits = frame_placement_rollout_arrays(
+        model,
+        test.observation_component[source_rows],
+        source_frame_component,
+        args.device,
+        frame_schedule=schedule,
+    )
+
+    current_y_by_step = [
+        test.y[source_rows] if step <= switch_after else test.y[target_rows]
+        for step in range(args.steps + 1)
+    ]
+    current_accuracy_by_step = [
+        float(np.mean(np.argmax(logits, axis=1) == current_y_by_step[step]))
+        for step, logits in enumerate(switch_logits)
+    ]
+    target_accuracy_by_step = [
+        float(np.mean(np.argmax(logits, axis=1) == test.y[target_rows]))
+        for logits in switch_logits
+    ]
+    source_distance_by_step = [
+        cosine_distance_mean(switch_states[step], source_states[step])
+        for step in range(args.steps + 1)
+    ]
+    target_distance_by_step = [
+        cosine_distance_mean(switch_states[step], target_states[step])
+        for step in range(args.steps + 1)
+    ]
+
+    source_active_group = bundle_active_group(test, source_frame)
+    target_active_group = bundle_active_group(test, target_frame)
+    influence_after_switch: dict[str, Any] = {}
+    for group in sorted({source_active_group, target_active_group}):
+        permuted_rows = source_rows[rng.permutation(len(source_rows))]
+        counterfactual_observation = refraction_group_swap_observation(
+            bundle=test,
+            group=group,
+            row_idx=source_rows,
+            permuted_row_idx=permuted_rows,
+        )
+        counterfactual_y = (
+            test.group_labels[group][permuted_rows]
+            if group == target_active_group
+            else test.y[target_rows]
+        )
+        influence_after_switch[group] = frame_placement_counterfactual_influence_summary(
+            model=model,
+            reference_observation=test.observation_component[source_rows],
+            reference_frame=source_frame_component,
+            counterfactual_observation=counterfactual_observation,
+            counterfactual_frame=source_frame_component,
+            reference_y=test.y[target_rows],
+            counterfactual_y=counterfactual_y,
+            args=args,
+            reference_frame_schedule=schedule,
+            counterfactual_frame_schedule=schedule,
+        )
+
+    old_influence = influence_after_switch[source_active_group]["output_change_rate"]
+    new_influence = influence_after_switch[target_active_group]["output_change_rate"]
+    return {
+        "source_frame": source_frame,
+        "target_frame": target_frame,
+        "switch_after": switch_after,
+        "current_frame_accuracy_by_step": current_accuracy_by_step,
+        "target_frame_accuracy_by_step": target_accuracy_by_step,
+        "final_target_accuracy": target_accuracy_by_step[-1],
+        "output_entropy_by_step": output_entropy_by_step(switch_logits),
+        "logit_margin_by_step": logit_margin_by_step(switch_logits),
+        "hidden_cosine_distance_to_source_by_step": source_distance_by_step,
+        "hidden_cosine_distance_to_target_by_step": target_distance_by_step,
+        "target_frame_convergence_after_switch": float(target_distance_by_step[switch_after] - target_distance_by_step[-1]),
+        "source_frame_departure_after_switch": float(source_distance_by_step[-1] - source_distance_by_step[switch_after]),
+        "reorientation_score": float(source_distance_by_step[-1] - target_distance_by_step[-1]),
+        "old_active_group": source_active_group,
+        "new_active_group": target_active_group,
+        "old_active_group_output_change": old_influence,
+        "new_active_group_output_change": new_influence,
+        "authority_switch_after_frame_switch": float(new_influence - old_influence),
+        "influence_after_switch": influence_after_switch,
+        "direct_source_final_accuracy": float(np.mean(np.argmax(source_logits[-1], axis=1) == test.y[source_rows])),
+        "direct_target_final_accuracy": float(np.mean(np.argmax(target_logits[-1], axis=1) == test.y[target_rows])),
+    }
+
+
+def run_mid_run_switch_diagnostics(
+    *,
+    model: FramePlacementRecurrentClassifier,
+    test: RefractionDataBundle,
+    args: argparse.Namespace,
+    seed: int,
+) -> dict[str, Any]:
+    switch_points = [point for point in (1, 2, 3, 4) if point < args.steps]
+    by_pair: dict[str, dict[str, Any]] = {}
+    flat: list[dict[str, Any]] = []
+    for pair_index, (source_frame, target_frame) in enumerate(FRAME_SWITCH_PAIRS):
+        pair_key = f"{source_frame}_to_{target_frame}"
+        by_pair[pair_key] = {}
+        for switch_after in switch_points:
+            summary = frame_switch_prediction_summary(
+                model=model,
+                test=test,
+                source_frame=source_frame,
+                target_frame=target_frame,
+                switch_after=switch_after,
+                args=args,
+                seed=seed + 10_000 * pair_index + switch_after,
+            )
+            by_pair[pair_key][f"switch_after_{switch_after}"] = summary
+            flat.append(summary)
+
+    successes = [
+        item["final_target_accuracy"] >= 0.75
+        and item["hidden_cosine_distance_to_target_by_step"][-1]
+        <= item["hidden_cosine_distance_to_source_by_step"][-1]
+        for item in flat
+    ]
+    return {
+        "by_pair": by_pair,
+        "mid_run_switch_success_rate": float(np.mean(successes)) if successes else None,
+        "reorientation_score": float(np.mean([item["reorientation_score"] for item in flat])) if flat else None,
+        "target_frame_convergence_after_switch": float(
+            np.mean([item["target_frame_convergence_after_switch"] for item in flat])
+        ) if flat else None,
+        "authority_switch_after_frame_switch": float(
+            np.mean([item["authority_switch_after_frame_switch"] for item in flat])
+        ) if flat else None,
+    }
+
+
+def run_hidden_trajectory_geometry(
+    *,
+    model: FramePlacementRecurrentClassifier,
+    test: RefractionDataBundle,
+    args: argparse.Namespace,
+) -> dict[str, Any]:
+    states_by_frame: dict[str, list[np.ndarray]] = {}
+    for frame_name in test.frame_names:
+        idx = frame_indices(test, frame_name)
+        states, _logits = frame_placement_rollout_arrays(
+            model,
+            test.observation_component[idx],
+            test.frame_component[idx],
+            args.device,
+        )
+        states_by_frame[frame_name] = states
+
+    centroid_by_step: list[dict[str, np.ndarray]] = []
+    trajectory_divergence_by_step: list[float] = []
+    frame_clustering_accuracy_by_step: list[float] = []
+    for step in range(args.steps + 1):
+        centroids = {
+            frame_name: states_by_frame[frame_name][step].mean(axis=0)
+            for frame_name in test.frame_names
+        }
+        centroid_by_step.append(centroids)
+        distances = []
+        for left_index, left_frame in enumerate(test.frame_names):
+            for right_frame in test.frame_names[left_index + 1 :]:
+                distances.append(
+                    cosine_distance_mean(
+                        centroids[left_frame][None, :],
+                        centroids[right_frame][None, :],
+                    )
+                )
+        trajectory_divergence_by_step.append(float(np.mean(distances)))
+
+        rows = []
+        labels = []
+        for frame_id, frame_name in enumerate(test.frame_names):
+            rows.append(states_by_frame[frame_name][step])
+            labels.extend([frame_id] * len(states_by_frame[frame_name][step]))
+        data = np.concatenate(rows, axis=0)
+        labels_arr = np.array(labels, dtype=np.int64)
+        centroid_matrix = np.stack([centroids[frame_name] for frame_name in test.frame_names], axis=0)
+        data_norm = data / np.maximum(np.linalg.norm(data, axis=1, keepdims=True), 1.0e-9)
+        centroid_norm = centroid_matrix / np.maximum(np.linalg.norm(centroid_matrix, axis=1, keepdims=True), 1.0e-9)
+        pred = np.argmax(data_norm @ centroid_norm.T, axis=1)
+        frame_clustering_accuracy_by_step.append(float(np.mean(pred == labels_arr)))
+
+    return {
+        "trajectory_divergence_by_step": trajectory_divergence_by_step,
+        "final_frame_clustering_accuracy": frame_clustering_accuracy_by_step[-1],
+        "frame_clustering_accuracy_by_step": frame_clustering_accuracy_by_step,
+    }
+
+
+def run_soft_frame_interpolation(
+    *,
+    model: FramePlacementRecurrentClassifier,
+    test: RefractionDataBundle,
+    args: argparse.Namespace,
+    seed: int,
+) -> dict[str, Any]:
+    rng = np.random.default_rng(seed)
+    danger_frame, environment_frame = SOFT_FRAME_INTERPOLATION_PAIR
+    danger_rows, environment_rows = aligned_frame_rows(test, danger_frame, environment_frame)
+    danger_frame_component = test.frame_component[danger_rows]
+    environment_frame_component = test.frame_component[environment_rows]
+    danger_states, _danger_logits = frame_placement_rollout_arrays(
+        model,
+        test.observation_component[danger_rows],
+        danger_frame_component,
+        args.device,
+    )
+    environment_states, _environment_logits = frame_placement_rollout_arrays(
+        model,
+        test.observation_component[environment_rows],
+        environment_frame_component,
+        args.device,
+    )
+
+    mixes: dict[str, Any] = {}
+    balances = []
+    env_weights = []
+    for danger_weight in SOFT_FRAME_MIXES:
+        environment_weight = 1.0 - danger_weight
+        mixed_frame = danger_weight * danger_frame_component + environment_weight * environment_frame_component
+        states, logits = frame_placement_rollout_arrays(
+            model,
+            test.observation_component[danger_rows],
+            mixed_frame,
+            args.device,
+        )
+        probs = [softmax_np(step_logits) for step_logits in logits]
+        group_influence: dict[str, Any] = {}
+        for group in ("actor_action", "place_noise"):
+            permuted_rows = danger_rows[rng.permutation(len(danger_rows))]
+            counterfactual_observation = refraction_group_swap_observation(
+                bundle=test,
+                group=group,
+                row_idx=danger_rows,
+                permuted_row_idx=permuted_rows,
+            )
+            group_influence[group] = frame_placement_counterfactual_influence_summary(
+                model=model,
+                reference_observation=test.observation_component[danger_rows],
+                reference_frame=mixed_frame,
+                counterfactual_observation=counterfactual_observation,
+                counterfactual_frame=mixed_frame,
+                reference_y=test.y[danger_rows],
+                counterfactual_y=test.y[danger_rows],
+                args=args,
+            )
+        danger_distance = cosine_distance_mean(states[-1], danger_states[-1])
+        environment_distance = cosine_distance_mean(states[-1], environment_states[-1])
+        env_position = danger_distance / max(danger_distance + environment_distance, 1.0e-9)
+        balance = (
+            group_influence["place_noise"]["output_change_rate"]
+            - group_influence["actor_action"]["output_change_rate"]
+        )
+        balances.append(balance)
+        env_weights.append(environment_weight)
+        mixes[f"danger_{danger_weight:.2f}_environment_{environment_weight:.2f}"] = {
+            "danger_weight": danger_weight,
+            "environment_weight": environment_weight,
+            "mean_class_1_probability_by_step": [float(np.mean(step_probs[:, 1])) for step_probs in probs],
+            "actor_action_output_change": group_influence["actor_action"]["output_change_rate"],
+            "place_noise_output_change": group_influence["place_noise"]["output_change_rate"],
+            "influence_balance_place_noise_minus_actor_action": balance,
+            "hidden_position_between_danger_and_environment": env_position,
+            "distance_to_danger_direct_final": danger_distance,
+            "distance_to_environment_direct_final": environment_distance,
+        }
+
+    if len(set(round(value, 8) for value in balances)) <= 1:
+        smoothness = 0.0
+    else:
+        smoothness = float(np.corrcoef(np.array(env_weights), np.array(balances))[0, 1])
+    return {
+        "pair": {
+            "source": danger_frame,
+            "target": environment_frame,
+        },
+        "mixes": mixes,
+        "interpolation_smoothness_score": smoothness,
+    }
+
+
+def reframe_reset_schedule(
+    *,
+    rows: int,
+    switch_after: int,
+    steps: int,
+    enabled: bool,
+) -> list[np.ndarray]:
+    schedule = [
+        np.zeros((rows, 1), dtype=np.float32)
+        for _step in range(steps + 1)
+    ]
+    if enabled:
+        schedule[min(switch_after + 1, steps)] = np.full((rows, 1), REFRAME_RESET_SCALE, dtype=np.float32)
+    return schedule
+
+
+def reframe_switch_prediction_summary(
+    *,
+    model: ReframeRecurrentClassifier,
+    test: RefractionDataBundle,
+    source_frame: str,
+    target_frame: str,
+    switch_after: int,
+    use_reset: bool,
+    args: argparse.Namespace,
+    seed: int,
+    ablation: str | None = None,
+) -> dict[str, Any]:
+    rng = np.random.default_rng(seed)
+    source_rows, target_rows = aligned_frame_rows(test, source_frame, target_frame)
+    source_frame_component = test.frame_component[source_rows]
+    target_frame_component = test.frame_component[target_rows]
+    frame_schedule = frame_switch_schedule(
+        source_frame_component=source_frame_component,
+        target_frame_component=target_frame_component,
+        switch_after=switch_after,
+        steps=args.steps,
+    )
+    reset_schedule = reframe_reset_schedule(
+        rows=len(source_rows),
+        switch_after=switch_after,
+        steps=args.steps,
+        enabled=use_reset,
+    )
+
+    source_states, source_logits = reframe_rollout_arrays(
+        model,
+        test.observation_component[source_rows],
+        source_frame_component,
+        args.device,
+        ablation=ablation,
+    )
+    target_states, target_logits = reframe_rollout_arrays(
+        model,
+        test.observation_component[target_rows],
+        target_frame_component,
+        args.device,
+        ablation=ablation,
+    )
+    switch_states, switch_logits = reframe_rollout_arrays(
+        model,
+        test.observation_component[source_rows],
+        source_frame_component,
+        args.device,
+        ablation=ablation,
+        frame_schedule=frame_schedule,
+        reset_schedule=reset_schedule,
+    )
+
+    current_y_by_step = [
+        test.y[source_rows] if step <= switch_after else test.y[target_rows]
+        for step in range(args.steps + 1)
+    ]
+    current_accuracy_by_step = [
+        float(np.mean(np.argmax(logits, axis=1) == current_y_by_step[step]))
+        for step, logits in enumerate(switch_logits)
+    ]
+    target_accuracy_by_step = [
+        float(np.mean(np.argmax(logits, axis=1) == test.y[target_rows]))
+        for logits in switch_logits
+    ]
+    source_distance_by_step = [
+        cosine_distance_mean(switch_states[step], source_states[step])
+        for step in range(args.steps + 1)
+    ]
+    target_distance_by_step = [
+        cosine_distance_mean(switch_states[step], target_states[step])
+        for step in range(args.steps + 1)
+    ]
+
+    source_active_group = bundle_active_group(test, source_frame)
+    target_active_group = bundle_active_group(test, target_frame)
+    influence_after_switch: dict[str, Any] = {}
+    for group in sorted({source_active_group, target_active_group}):
+        permuted_rows = source_rows[rng.permutation(len(source_rows))]
+        counterfactual_observation = refraction_group_swap_observation(
+            bundle=test,
+            group=group,
+            row_idx=source_rows,
+            permuted_row_idx=permuted_rows,
+        )
+        counterfactual_y = (
+            test.group_labels[group][permuted_rows]
+            if group == target_active_group
+            else test.y[target_rows]
+        )
+        influence_after_switch[group] = reframe_counterfactual_influence_summary(
+            model=model,
+            reference_observation=test.observation_component[source_rows],
+            reference_frame=source_frame_component,
+            counterfactual_observation=counterfactual_observation,
+            counterfactual_frame=source_frame_component,
+            reference_y=test.y[target_rows],
+            counterfactual_y=counterfactual_y,
+            args=args,
+            reference_frame_schedule=frame_schedule,
+            counterfactual_frame_schedule=frame_schedule,
+            reference_reset_schedule=reset_schedule,
+            counterfactual_reset_schedule=reset_schedule,
+        )
+
+    old_curve = influence_after_switch[source_active_group]["output_change_rate_by_step"]
+    new_curve = influence_after_switch[target_active_group]["output_change_rate_by_step"]
+    reset_step = min(switch_after + 1, args.steps)
+    entropy = output_entropy_by_step(switch_logits)
+    return {
+        "source_frame": source_frame,
+        "target_frame": target_frame,
+        "switch_after": switch_after,
+        "use_reset": use_reset,
+        "current_frame_accuracy_by_step": current_accuracy_by_step,
+        "target_frame_accuracy_by_step": target_accuracy_by_step,
+        "final_target_accuracy": target_accuracy_by_step[-1],
+        "output_entropy_by_step": entropy,
+        "logit_margin_by_step": logit_margin_by_step(switch_logits),
+        "reset_entropy_spike": float(entropy[reset_step] - entropy[max(reset_step - 1, 0)]) if use_reset else None,
+        "hidden_cosine_distance_to_source_by_step": source_distance_by_step,
+        "hidden_cosine_distance_to_target_by_step": target_distance_by_step,
+        "target_frame_convergence_after_switch": float(target_distance_by_step[switch_after] - target_distance_by_step[-1]),
+        "source_frame_departure_after_switch": float(source_distance_by_step[-1] - source_distance_by_step[switch_after]),
+        "reorientation_score": float(source_distance_by_step[-1] - target_distance_by_step[-1]),
+        "old_active_group": source_active_group,
+        "new_active_group": target_active_group,
+        "old_active_group_output_change": old_curve[-1],
+        "new_active_group_output_change": new_curve[-1],
+        "old_frame_authority_decay": float(old_curve[switch_after] - old_curve[-1]),
+        "new_frame_authority_rise": float(new_curve[-1] - new_curve[switch_after]),
+        "authority_switch_after_frame_switch": float(new_curve[-1] - old_curve[-1]),
+        "old_active_group_output_change_by_step": old_curve,
+        "new_active_group_output_change_by_step": new_curve,
+        "influence_after_switch": influence_after_switch,
+        "direct_source_final_accuracy": float(np.mean(np.argmax(source_logits[-1], axis=1) == test.y[source_rows])),
+        "direct_target_final_accuracy": float(np.mean(np.argmax(target_logits[-1], axis=1) == test.y[target_rows])),
+    }
+
+
+def run_reframe_recovery_diagnostics(
+    *,
+    model: ReframeRecurrentClassifier,
+    test: RefractionDataBundle,
+    args: argparse.Namespace,
+    seed: int,
+    use_reset: bool,
+    ablation: str | None = None,
+) -> dict[str, Any]:
+    switch_points = [point for point in (1, 2, 3, 4) if point < args.steps]
+    by_pair: dict[str, dict[str, Any]] = {}
+    flat: list[dict[str, Any]] = []
+    for pair_index, (source_frame, target_frame) in enumerate(FRAME_SWITCH_PAIRS):
+        pair_key = f"{source_frame}_to_{target_frame}"
+        by_pair[pair_key] = {}
+        for switch_after in switch_points:
+            summary = reframe_switch_prediction_summary(
+                model=model,
+                test=test,
+                source_frame=source_frame,
+                target_frame=target_frame,
+                switch_after=switch_after,
+                use_reset=use_reset,
+                args=args,
+                seed=seed + 10_000 * pair_index + switch_after,
+                ablation=ablation,
+            )
+            by_pair[pair_key][f"switch_after_{switch_after}"] = summary
+            flat.append(summary)
+
+    recovery_by_switch_step: dict[str, float] = {}
+    for switch_after in switch_points:
+        matching = [item["final_target_accuracy"] for item in flat if item["switch_after"] == switch_after]
+        recovery_by_switch_step[f"switch_after_{switch_after}"] = float(np.mean(matching)) if matching else None
+
+    successes = [
+        item["final_target_accuracy"] >= 0.75
+        and item["authority_switch_after_frame_switch"] > 0.0
+        and item["hidden_cosine_distance_to_target_by_step"][-1] <= item["hidden_cosine_distance_to_source_by_step"][-1]
+        for item in flat
+    ]
+    return {
+        "use_reset": use_reset,
+        "by_pair": by_pair,
+        "final_accuracy_after_reframe": float(np.mean([item["final_target_accuracy"] for item in flat])) if flat else None,
+        "reframe_success_rate": float(np.mean(successes)) if successes else None,
+        "recovery_by_switch_step": recovery_by_switch_step,
+        "old_frame_authority_decay": float(np.mean([item["old_frame_authority_decay"] for item in flat])) if flat else None,
+        "new_frame_authority_rise": float(np.mean([item["new_frame_authority_rise"] for item in flat])) if flat else None,
+        "authority_switch_after_frame_switch": float(
+            np.mean([item["authority_switch_after_frame_switch"] for item in flat])
+        ) if flat else None,
+        "reorientation_score": float(np.mean([item["reorientation_score"] for item in flat])) if flat else None,
+        "target_frame_convergence_after_switch": float(
+            np.mean([item["target_frame_convergence_after_switch"] for item in flat])
+        ) if flat else None,
+        "reset_entropy_spike": float(
+            np.mean([item["reset_entropy_spike"] for item in flat if item["reset_entropy_spike"] is not None])
+        ) if use_reset and flat else None,
+    }
+
+
 def shuffled_frame_x(bundle: RefractionDataBundle, seed: int) -> np.ndarray:
     rng = np.random.default_rng(seed)
     perm = rng.permutation(len(bundle.x))
@@ -1243,6 +4029,8 @@ def run_refraction_seed(
         seed=seed + 500_003,
         embed_scale=args.embed_scale,
         opponent_strength=args.opponent_strength,
+        embedding_mode=args.embedding_mode,
+        resonance_mode=args.resonance_mode,
     )
     frame_embeddings = build_frame_embeddings(schema.hidden, seed + 600_007, args.frame_scale)
     train = make_refraction_dataset(
@@ -1270,9 +4058,29 @@ def run_refraction_seed(
         "threshold_only": threshold_only,
     }
     influence: dict[str, Any] = {}
+    hub_diagnostics: dict[str, Any] = {"enabled": False}
 
     if full_controls:
         influence = run_refraction_influence(model=model, test=test, args=args, seed=seed + 910_001)
+        base_metrics = {
+            "accuracy": main["accuracy"],
+            "zero_recurrent": zero["accuracy"],
+            "recurrence_gain": main["accuracy"] - zero["accuracy"],
+            "refraction_index_final": (
+                influence.get("mean_refraction_index_by_step", [None])[-1]
+                if influence.get("mean_refraction_index_by_step")
+                else None
+            ),
+            "authority_switch_score": influence.get("authority_switch_score"),
+            "topology": getattr(model, "topology_stats", {}),
+        }
+        hub_diagnostics = run_hub_topology_diagnostics(
+            model=model,
+            test=test,
+            args=args,
+            seed=seed + 915_001,
+            base_metrics=base_metrics,
+        )
         controls["freeze_after_1"] = refraction_prediction_summary(model=model, bundle=test, args=args, ablation="freeze_after_1")
         controls["freeze_after_2"] = refraction_prediction_summary(model=model, bundle=test, args=args, ablation="freeze_after_2")
         controls["freeze_after_3"] = refraction_prediction_summary(model=model, bundle=test, args=args, ablation="freeze_after_3")
@@ -1350,6 +4158,7 @@ def run_refraction_seed(
         "frame_active_group": dict(FRAME_ACTIVE_GROUP),
         "train_rows": int(len(train.x)),
         "test_rows": int(len(test.x)),
+        "topology": getattr(model, "topology_stats", {}),
         "nuisance_split": {
             "train_combo_count": len(train_combos),
             "heldout_combo_count": len(heldout_combos),
@@ -1357,6 +4166,537 @@ def run_refraction_seed(
         "main": main,
         "controls": controls,
         "influence": influence,
+        "hub_diagnostics": hub_diagnostics,
+    }
+
+
+def run_multi_aspect_seed(
+    *,
+    name: str,
+    input_mode: str,
+    seed: int,
+    schema: Schema,
+    args: argparse.Namespace,
+) -> dict[str, Any]:
+    train_combos, heldout_combos = split_nuisance_combos(seed, args.holdout_fraction)
+    embeddings = build_embeddings(
+        schema=schema,
+        input_mode=input_mode,
+        seed=seed + 500_003,
+        embed_scale=args.embed_scale,
+        opponent_strength=args.opponent_strength,
+        embedding_mode=args.embedding_mode,
+        resonance_mode=args.resonance_mode,
+    )
+    frame_embeddings = build_named_frame_embeddings(
+        MULTI_ASPECT_FRAMES,
+        schema.hidden,
+        seed + 620_011,
+        args.frame_scale,
+    )
+    train = make_multi_aspect_dataset(
+        n=args.train_size,
+        combos=train_combos,
+        seed=seed + 4_001,
+        embeddings=embeddings,
+        frame_embeddings=frame_embeddings,
+        active_value=args.active_value,
+    )
+    test = make_multi_aspect_dataset(
+        n=args.test_size,
+        combos=heldout_combos,
+        seed=seed + 4_002,
+        embeddings=embeddings,
+        frame_embeddings=frame_embeddings,
+        active_value=args.active_value,
+    )
+    model = train_model(train=train, hidden=schema.hidden, args=args, seed=seed + 51)
+    main = evaluate_refraction_model(model=model, train=train, test=test, args=args)
+    controls: dict[str, Any] = {
+        "zero_recurrent_update": refraction_prediction_summary(
+            model=model,
+            bundle=test,
+            args=args,
+            ablation="zero_recurrent_update",
+        ),
+        "threshold_only": refraction_prediction_summary(
+            model=model,
+            bundle=test,
+            args=args,
+            ablation="zero_matrix_keep_threshold",
+        ),
+        "freeze_after_1": refraction_prediction_summary(model=model, bundle=test, args=args, ablation="freeze_after_1"),
+        "freeze_after_2": refraction_prediction_summary(model=model, bundle=test, args=args, ablation="freeze_after_2"),
+        "freeze_after_3": refraction_prediction_summary(model=model, bundle=test, args=args, ablation="freeze_after_3"),
+        "shuffled_task_frame_token": refraction_prediction_summary(
+            model=model,
+            bundle=test,
+            args=args,
+            x_override=shuffled_frame_x(test, seed + 940_001),
+        ),
+    }
+
+    no_frame_train = make_multi_aspect_dataset(
+        n=args.train_size,
+        combos=train_combos,
+        seed=seed + 4_001,
+        embeddings=embeddings,
+        frame_embeddings=frame_embeddings,
+        active_value=args.active_value,
+        no_frame_token=True,
+    )
+    no_frame_test = make_multi_aspect_dataset(
+        n=args.test_size,
+        combos=heldout_combos,
+        seed=seed + 4_002,
+        embeddings=embeddings,
+        frame_embeddings=frame_embeddings,
+        active_value=args.active_value,
+        no_frame_token=True,
+    )
+    no_frame_model = train_model(train=no_frame_train, hidden=schema.hidden, args=args, seed=seed + 52)
+    controls["no_task_frame_token"] = refraction_prediction_summary(
+        model=no_frame_model,
+        bundle=no_frame_test,
+        args=args,
+    )
+
+    random_model = recurrent_matrix_control(model, "randomize", seed + 950_001)
+    controls["randomize_recurrent_matrix"] = refraction_prediction_summary(
+        model=random_model,
+        bundle=test,
+        args=args,
+    )
+
+    if args.random_label_control:
+        random_train = make_multi_aspect_dataset(
+            n=args.train_size,
+            combos=train_combos,
+            seed=seed + 5_001,
+            embeddings=embeddings,
+            frame_embeddings=frame_embeddings,
+            active_value=args.active_value,
+            random_labels=True,
+        )
+        random_test = make_multi_aspect_dataset(
+            n=args.test_size,
+            combos=heldout_combos,
+            seed=seed + 5_002,
+            embeddings=embeddings,
+            frame_embeddings=frame_embeddings,
+            active_value=args.active_value,
+            random_labels=True,
+        )
+        random_label_model = train_model(train=random_train, hidden=schema.hidden, args=args, seed=seed + 53)
+        controls["random_label_control"] = refraction_prediction_summary(
+            model=random_label_model,
+            bundle=random_test,
+            args=args,
+        )
+
+    influence = run_refraction_influence(model=model, test=test, args=args, seed=seed + 960_001)
+    base_metrics = {
+        "accuracy": main["accuracy"],
+        "zero_recurrent": controls["zero_recurrent_update"]["accuracy"],
+        "recurrence_gain": main["accuracy"] - controls["zero_recurrent_update"]["accuracy"],
+        "refraction_index_final": (
+            influence.get("mean_refraction_index_by_step", [None])[-1]
+            if influence.get("mean_refraction_index_by_step")
+            else None
+        ),
+        "authority_switch_score": influence.get("authority_switch_score"),
+        "topology": getattr(model, "topology_stats", {}),
+    }
+    hub_diagnostics = run_hub_topology_diagnostics(
+        model=model,
+        test=test,
+        args=args,
+        seed=seed + 965_001,
+        base_metrics=base_metrics,
+    )
+    token_influence = run_multi_aspect_token_influence(model=model, test=test, args=args, seed=seed + 970_001)
+    pointer_diagnostics = run_pointer_resonance_diagnostics(
+        model=model,
+        test=test,
+        embeddings=embeddings,
+        args=args,
+        seed=seed + 975_001,
+    )
+
+    return {
+        "name": name,
+        "input_mode": input_mode,
+        "seed": seed,
+        "task_frames": list(MULTI_ASPECT_FRAMES),
+        "feature_groups": list(MULTI_ASPECT_FEATURE_GROUPS),
+        "frame_active_group": dict(MULTI_ASPECT_FRAME_ACTIVE_GROUP),
+        "train_rows": int(len(train.x)),
+        "test_rows": int(len(test.x)),
+        "topology": getattr(model, "topology_stats", {}),
+        "nuisance_split": {
+            "train_combo_count": len(train_combos),
+            "heldout_combo_count": len(heldout_combos),
+        },
+        "main": main,
+        "controls": controls,
+        "influence": influence,
+        "token_influence": token_influence,
+        "pointer_diagnostics": pointer_diagnostics,
+        "hub_diagnostics": hub_diagnostics,
+    }
+
+
+def run_frame_switch_seed(
+    *,
+    name: str,
+    input_mode: str,
+    seed: int,
+    schema: Schema,
+    args: argparse.Namespace,
+) -> dict[str, Any]:
+    train_combos, heldout_combos = split_nuisance_combos(seed, args.holdout_fraction)
+    embeddings = build_embeddings(
+        schema=schema,
+        input_mode=input_mode,
+        seed=seed + 500_003,
+        embed_scale=args.embed_scale,
+        opponent_strength=args.opponent_strength,
+        embedding_mode=args.embedding_mode,
+        resonance_mode=args.resonance_mode,
+    )
+    frame_embeddings = build_named_frame_embeddings(
+        MULTI_ASPECT_FRAMES,
+        schema.hidden,
+        seed + 620_011,
+        args.frame_scale,
+    )
+    train = make_multi_aspect_dataset(
+        n=args.train_size,
+        combos=train_combos,
+        seed=seed + 4_001,
+        embeddings=embeddings,
+        frame_embeddings=frame_embeddings,
+        active_value=args.active_value,
+    )
+    test = make_multi_aspect_dataset(
+        n=args.test_size,
+        combos=heldout_combos,
+        seed=seed + 4_002,
+        embeddings=embeddings,
+        frame_embeddings=frame_embeddings,
+        active_value=args.active_value,
+    )
+
+    placement_results: dict[str, Any] = {}
+    placement_models: dict[str, FramePlacementRecurrentClassifier] = {}
+    for placement_index, placement in enumerate(FRAME_PLACEMENTS):
+        model = train_frame_placement_model(
+            train=train,
+            hidden=schema.hidden,
+            args=args,
+            seed=seed + 71 + placement_index,
+            frame_placement=placement,
+        )
+        placement_models[placement] = model
+        placement_results[placement] = {
+            "main": frame_placement_prediction_summary(
+                model=model,
+                bundle=test,
+                args=args,
+            )
+        }
+
+    main_model = placement_models["frame_in_recurrence_only"]
+    controls: dict[str, Any] = {
+        "zero_recurrent_update": frame_placement_prediction_summary(
+            model=main_model,
+            bundle=test,
+            args=args,
+            ablation="zero_recurrent_update",
+        ),
+        "threshold_only": frame_placement_prediction_summary(
+            model=main_model,
+            bundle=test,
+            args=args,
+            ablation="zero_matrix_keep_threshold",
+        ),
+        "shuffled_task_frame_token": frame_placement_prediction_summary(
+            model=main_model,
+            bundle=test,
+            args=args,
+            frame_override=shuffled_frame_component(test, seed + 940_001),
+        ),
+    }
+    random_model = recurrent_matrix_control(main_model, "randomize", seed + 950_001)
+    controls["randomize_recurrent_matrix"] = frame_placement_prediction_summary(
+        model=random_model,
+        bundle=test,
+        args=args,
+    )
+
+    if args.random_label_control:
+        random_train = make_multi_aspect_dataset(
+            n=args.train_size,
+            combos=train_combos,
+            seed=seed + 5_001,
+            embeddings=embeddings,
+            frame_embeddings=frame_embeddings,
+            active_value=args.active_value,
+            random_labels=True,
+        )
+        random_test = make_multi_aspect_dataset(
+            n=args.test_size,
+            combos=heldout_combos,
+            seed=seed + 5_002,
+            embeddings=embeddings,
+            frame_embeddings=frame_embeddings,
+            active_value=args.active_value,
+            random_labels=True,
+        )
+        random_label_model = train_frame_placement_model(
+            train=random_train,
+            hidden=schema.hidden,
+            args=args,
+            seed=seed + 73,
+            frame_placement="frame_in_recurrence_only",
+        )
+        controls["random_label_control"] = frame_placement_prediction_summary(
+            model=random_label_model,
+            bundle=random_test,
+            args=args,
+        )
+
+    direct_influence = run_frame_placement_influence(
+        model=main_model,
+        test=test,
+        args=args,
+        seed=seed + 960_001,
+    )
+    token_influence = run_frame_placement_token_influence(
+        model=main_model,
+        test=test,
+        args=args,
+        seed=seed + 970_001,
+    )
+    mid_run_switch = run_mid_run_switch_diagnostics(
+        model=main_model,
+        test=test,
+        args=args,
+        seed=seed + 980_001,
+    )
+    trajectory_geometry = run_hidden_trajectory_geometry(
+        model=main_model,
+        test=test,
+        args=args,
+    )
+    soft_interpolation = run_soft_frame_interpolation(
+        model=main_model,
+        test=test,
+        args=args,
+        seed=seed + 990_001,
+    )
+
+    return {
+        "name": name,
+        "input_mode": input_mode,
+        "seed": seed,
+        "task_frames": list(MULTI_ASPECT_FRAMES),
+        "feature_groups": list(MULTI_ASPECT_FEATURE_GROUPS),
+        "frame_active_group": dict(MULTI_ASPECT_FRAME_ACTIVE_GROUP),
+        "frame_placements": list(FRAME_PLACEMENTS),
+        "train_rows": int(len(train.y)),
+        "test_rows": int(len(test.y)),
+        "nuisance_split": {
+            "train_combo_count": len(train_combos),
+            "heldout_combo_count": len(heldout_combos),
+        },
+        "placement_results": placement_results,
+        "controls": controls,
+        "direct_influence": direct_influence,
+        "token_influence": token_influence,
+        "mid_run_switch": mid_run_switch,
+        "trajectory_geometry": trajectory_geometry,
+        "soft_frame_interpolation": soft_interpolation,
+    }
+
+
+def run_reframe_seed(
+    *,
+    name: str,
+    input_mode: str,
+    seed: int,
+    schema: Schema,
+    args: argparse.Namespace,
+) -> dict[str, Any]:
+    train_combos, heldout_combos = split_nuisance_combos(seed, args.holdout_fraction)
+    embeddings = build_embeddings(
+        schema=schema,
+        input_mode=input_mode,
+        seed=seed + 500_003,
+        embed_scale=args.embed_scale,
+        opponent_strength=args.opponent_strength,
+        embedding_mode=args.embedding_mode,
+        resonance_mode=args.resonance_mode,
+    )
+    frame_embeddings = build_named_frame_embeddings(
+        MULTI_ASPECT_FRAMES,
+        schema.hidden,
+        seed + 620_011,
+        args.frame_scale,
+    )
+    train = make_multi_aspect_dataset(
+        n=args.train_size,
+        combos=train_combos,
+        seed=seed + 4_001,
+        embeddings=embeddings,
+        frame_embeddings=frame_embeddings,
+        active_value=args.active_value,
+    )
+    test = make_multi_aspect_dataset(
+        n=args.test_size,
+        combos=heldout_combos,
+        seed=seed + 4_002,
+        embeddings=embeddings,
+        frame_embeddings=frame_embeddings,
+        active_value=args.active_value,
+    )
+
+    baseline_model = train_reframe_model(
+        train=train,
+        frame_embeddings=frame_embeddings,
+        hidden=schema.hidden,
+        args=args,
+        seed=seed + 81,
+        train_reframes=False,
+    )
+    trained_reframe_model = train_reframe_model(
+        train=train,
+        frame_embeddings=frame_embeddings,
+        hidden=schema.hidden,
+        args=args,
+        seed=seed + 82,
+        train_reframes=True,
+    )
+
+    no_reframe_baseline = {
+        "fixed_frame": reframe_prediction_summary(
+            model=baseline_model,
+            bundle=test,
+            args=args,
+        ),
+        "wrong_initial_frame_no_reset": run_reframe_recovery_diagnostics(
+            model=baseline_model,
+            test=test,
+            args=args,
+            seed=seed + 980_001,
+            use_reset=False,
+        ),
+        "wrong_initial_frame_with_reset": run_reframe_recovery_diagnostics(
+            model=baseline_model,
+            test=test,
+            args=args,
+            seed=seed + 981_001,
+            use_reset=True,
+        ),
+    }
+    trained_reframe = {
+        "fixed_frame": reframe_prediction_summary(
+            model=trained_reframe_model,
+            bundle=test,
+            args=args,
+        ),
+        "wrong_initial_frame_no_reset": run_reframe_recovery_diagnostics(
+            model=trained_reframe_model,
+            test=test,
+            args=args,
+            seed=seed + 982_001,
+            use_reset=False,
+        ),
+        "wrong_initial_frame_with_reset": run_reframe_recovery_diagnostics(
+            model=trained_reframe_model,
+            test=test,
+            args=args,
+            seed=seed + 983_001,
+            use_reset=True,
+        ),
+    }
+
+    controls: dict[str, Any] = {
+        "zero_recurrent_update": reframe_prediction_summary(
+            model=trained_reframe_model,
+            bundle=test,
+            args=args,
+            ablation="zero_recurrent_update",
+        ),
+        "threshold_only": reframe_prediction_summary(
+            model=trained_reframe_model,
+            bundle=test,
+            args=args,
+            ablation="zero_matrix_keep_threshold",
+        ),
+        "shuffled_task_frame_token": reframe_prediction_summary(
+            model=trained_reframe_model,
+            bundle=test,
+            args=args,
+            frame_override=shuffled_frame_component(test, seed + 940_001),
+        ),
+    }
+    randomized_model = recurrent_matrix_control(trained_reframe_model, "randomize", seed + 950_001)
+    controls["randomize_recurrent_matrix"] = reframe_prediction_summary(
+        model=randomized_model,
+        bundle=test,
+        args=args,
+    )
+
+    if args.random_label_control:
+        random_train = make_multi_aspect_dataset(
+            n=args.train_size,
+            combos=train_combos,
+            seed=seed + 5_001,
+            embeddings=embeddings,
+            frame_embeddings=frame_embeddings,
+            active_value=args.active_value,
+            random_labels=True,
+        )
+        random_test = make_multi_aspect_dataset(
+            n=args.test_size,
+            combos=heldout_combos,
+            seed=seed + 5_002,
+            embeddings=embeddings,
+            frame_embeddings=frame_embeddings,
+            active_value=args.active_value,
+            random_labels=True,
+        )
+        random_label_model = train_reframe_model(
+            train=random_train,
+            frame_embeddings=frame_embeddings,
+            hidden=schema.hidden,
+            args=args,
+            seed=seed + 83,
+            train_reframes=True,
+        )
+        controls["random_label_control"] = reframe_prediction_summary(
+            model=random_label_model,
+            bundle=random_test,
+            args=args,
+        )
+
+    return {
+        "name": name,
+        "input_mode": input_mode,
+        "seed": seed,
+        "task_frames": list(MULTI_ASPECT_FRAMES),
+        "feature_groups": list(MULTI_ASPECT_FEATURE_GROUPS),
+        "frame_active_group": dict(MULTI_ASPECT_FRAME_ACTIVE_GROUP),
+        "train_rows": int(len(train.y)),
+        "test_rows": int(len(test.y)),
+        "nuisance_split": {
+            "train_combo_count": len(train_combos),
+            "heldout_combo_count": len(heldout_combos),
+        },
+        "no_reframe_baseline": no_reframe_baseline,
+        "trained_reframe": trained_reframe,
+        "controls": controls,
     }
 
 
@@ -1564,6 +4904,10 @@ def aggregate_refraction_runs(name: str, runs: list[dict[str, Any]]) -> dict[str
     main = aggregate_nested([run["main"] for run in runs])
     controls = aggregate_nested([run["controls"] for run in runs])
     influence = aggregate_nested([run["influence"] for run in runs])
+    token_influence = aggregate_nested([run.get("token_influence", {}) for run in runs])
+    pointer_diagnostics = aggregate_nested([run.get("pointer_diagnostics", {}) for run in runs])
+    hub_diagnostics = aggregate_nested([run.get("hub_diagnostics", {}) for run in runs])
+    topology = aggregate_nested([run.get("topology", {}) for run in runs])
     recurrence_gain = main["accuracy"] - controls["zero_recurrent_update"]["accuracy"]
     return {
         "name": name,
@@ -1573,6 +4917,7 @@ def aggregate_refraction_runs(name: str, runs: list[dict[str, Any]]) -> dict[str
         "frame_active_group": runs[0]["frame_active_group"],
         "train_rows": int(np.mean([run["train_rows"] for run in runs])),
         "test_rows": int(np.mean([run["test_rows"] for run in runs])),
+        "topology": topology,
         "accuracy": main["accuracy"],
         "accuracy_by_frame": main["accuracy_by_frame"],
         "per_step_accuracy": main["per_step_accuracy"],
@@ -1586,6 +4931,90 @@ def aggregate_refraction_runs(name: str, runs: list[dict[str, Any]]) -> dict[str
         "main": main,
         "controls": controls,
         "influence": influence,
+        "token_influence": token_influence,
+        "pointer_diagnostics": pointer_diagnostics,
+        "hub_diagnostics": hub_diagnostics,
+        "runs": runs,
+    }
+
+
+def aggregate_frame_switch_runs(name: str, runs: list[dict[str, Any]]) -> dict[str, Any]:
+    placement_results = aggregate_nested([run["placement_results"] for run in runs])
+    controls = aggregate_nested([run["controls"] for run in runs])
+    direct_influence = aggregate_nested([run["direct_influence"] for run in runs])
+    token_influence = aggregate_nested([run["token_influence"] for run in runs])
+    mid_run_switch = aggregate_nested([run["mid_run_switch"] for run in runs])
+    trajectory_geometry = aggregate_nested([run["trajectory_geometry"] for run in runs])
+    soft_frame_interpolation = aggregate_nested([run["soft_frame_interpolation"] for run in runs])
+    frame_in_accuracy = placement_results["frame_in_recurrence_only"]["main"]["accuracy"]
+    output_only_accuracy = placement_results["frame_at_output_only"]["main"]["accuracy"]
+    zero_accuracy = controls["zero_recurrent_update"]["accuracy"]
+    randomized_accuracy = controls["randomize_recurrent_matrix"]["accuracy"]
+    return {
+        "name": name,
+        "input_mode": runs[0]["input_mode"],
+        "task_frames": runs[0]["task_frames"],
+        "feature_groups": runs[0]["feature_groups"],
+        "frame_active_group": runs[0]["frame_active_group"],
+        "frame_placements": runs[0]["frame_placements"],
+        "train_rows": int(np.mean([run["train_rows"] for run in runs])),
+        "test_rows": int(np.mean([run["test_rows"] for run in runs])),
+        "frame_in_recurrence_only_accuracy": frame_in_accuracy,
+        "frame_at_output_only_accuracy": output_only_accuracy,
+        "frame_initial_only_accuracy": placement_results["frame_initial_only"]["main"]["accuracy"],
+        "no_frame_accuracy": placement_results["no_frame"]["main"]["accuracy"],
+        "recurrent_vs_output_only_gain": frame_in_accuracy - output_only_accuracy,
+        "recurrent_vs_zero_gain": frame_in_accuracy - zero_accuracy,
+        "randomized_recurrent_accuracy": randomized_accuracy,
+        "placement_results": placement_results,
+        "controls": controls,
+        "direct_influence": direct_influence,
+        "token_influence": token_influence,
+        "mid_run_switch": mid_run_switch,
+        "trajectory_geometry": trajectory_geometry,
+        "soft_frame_interpolation": soft_frame_interpolation,
+        "runs": runs,
+    }
+
+
+def aggregate_reframe_runs(name: str, runs: list[dict[str, Any]]) -> dict[str, Any]:
+    no_reframe_baseline = aggregate_nested([run["no_reframe_baseline"] for run in runs])
+    trained_reframe = aggregate_nested([run["trained_reframe"] for run in runs])
+    controls = aggregate_nested([run["controls"] for run in runs])
+    baseline_fixed = no_reframe_baseline["fixed_frame"]["accuracy"]
+    trained_fixed = trained_reframe["fixed_frame"]["accuracy"]
+    trained_no_reset = trained_reframe["wrong_initial_frame_no_reset"]
+    trained_with_reset = trained_reframe["wrong_initial_frame_with_reset"]
+    reset_accuracy_gain = (
+        trained_with_reset["final_accuracy_after_reframe"]
+        - trained_no_reset["final_accuracy_after_reframe"]
+    )
+    reset_success_gain = (
+        trained_with_reset["reframe_success_rate"]
+        - trained_no_reset["reframe_success_rate"]
+    )
+    authority_transfer_gain = (
+        trained_with_reset["authority_switch_after_frame_switch"]
+        - trained_no_reset["authority_switch_after_frame_switch"]
+    )
+    return {
+        "name": name,
+        "input_mode": runs[0]["input_mode"],
+        "task_frames": runs[0]["task_frames"],
+        "feature_groups": runs[0]["feature_groups"],
+        "frame_active_group": runs[0]["frame_active_group"],
+        "train_rows": int(np.mean([run["train_rows"] for run in runs])),
+        "test_rows": int(np.mean([run["test_rows"] for run in runs])),
+        "no_reframe_baseline_accuracy": baseline_fixed,
+        "trained_reframe_accuracy": trained_fixed,
+        "wrong_initial_no_reset_accuracy": trained_no_reset["final_accuracy_after_reframe"],
+        "wrong_initial_with_reset_accuracy": trained_with_reset["final_accuracy_after_reframe"],
+        "reset_accuracy_gain": reset_accuracy_gain,
+        "reset_success_gain": reset_success_gain,
+        "authority_transfer_gain": authority_transfer_gain,
+        "no_reframe_baseline": no_reframe_baseline,
+        "trained_reframe": trained_reframe,
+        "controls": controls,
         "runs": runs,
     }
 
@@ -1811,6 +5240,216 @@ def interpret_refraction_report(summary: dict[str, Any]) -> dict[str, str]:
     }
 
 
+def interpret_multi_aspect_report(summary: dict[str, Any]) -> dict[str, str]:
+    controls = summary["controls"]
+    accuracy = summary["accuracy"]
+    frame_accuracies = summary["accuracy_by_frame"].values()
+    recurrence_gain = summary["recurrence_gain"]
+    no_frame_accuracy = controls.get("no_task_frame_token", {}).get("accuracy")
+    shuffled_accuracy = controls.get("shuffled_task_frame_token", {}).get("accuracy")
+    randomized_accuracy = controls.get("randomize_recurrent_matrix", {}).get("accuracy")
+    random_label_accuracy = controls.get("random_label_control", {}).get("accuracy")
+    token_influence = summary.get("token_influence", {})
+    dog = token_influence.get("dog_influence_by_frame", {})
+    dog_environment = dog.get("environment_frame") or {}
+    dog_causal = [
+        (dog.get(frame_name) or {}).get("output_change_rate")
+        for frame_name in ("danger_frame", "friendship_frame", "sound_frame")
+    ]
+    dog_causal = [value for value in dog_causal if value is not None]
+    dog_environment_rate = dog_environment.get("output_change_rate")
+    dog_switch = None
+    if dog_causal and dog_environment_rate is not None:
+        dog_switch = float(np.mean(dog_causal) - dog_environment_rate)
+    dog_probe = summary["feature_group_probe_accuracy_by_step"].get("actor", [])
+    mean_actor_switch = token_influence.get("mean_actor_authority_switch_score")
+
+    high_accuracy = accuracy >= 0.85 and min(frame_accuracies) >= 0.80
+    recurrence_matters = recurrence_gain >= 0.10
+    frame_token_matters = no_frame_accuracy is not None and no_frame_accuracy <= accuracy - 0.10
+    shuffled_hurts = shuffled_accuracy is not None and shuffled_accuracy <= accuracy - 0.10
+    randomized_hurts = randomized_accuracy is not None and randomized_accuracy <= accuracy - 0.20
+    random_fails = random_label_accuracy is None or random_label_accuracy < 0.65
+    dog_switches = dog_switch is not None and dog_switch >= 0.15
+    actors_switch = mean_actor_switch is not None and mean_actor_switch >= 0.15
+    actor_decodable = bool(dog_probe) and dog_probe[-1] >= 0.80
+
+    supports_tokens = (
+        high_accuracy
+        and recurrence_matters
+        and frame_token_matters
+        and shuffled_hurts
+        and randomized_hurts
+        and random_fails
+        and dog_switches
+        and actors_switch
+        and actor_decodable
+    )
+    if supports_tokens:
+        return {
+            "supports_multi_aspect_token_refraction": "true",
+            "supports_same_token_different_frame_authority": "true",
+            "reason": (
+                "The model solves the same actor token under danger, friendship, sound, and environment frames. "
+                "The actor token remains decodable, dog has higher decision influence in causal actor frames than "
+                "in the environment frame, frame-token controls hurt, and randomized recurrence destroys the gain."
+            ),
+        }
+
+    return {
+        "supports_multi_aspect_token_refraction": "unclear",
+        "supports_same_token_different_frame_authority": "unclear",
+        "reason": (
+            f"accuracy={accuracy:.3f}, recurrence_gain={recurrence_gain:.3f}, "
+            f"no_frame_accuracy={no_frame_accuracy if no_frame_accuracy is not None else 'n/a'}, "
+            f"shuffled_frame_accuracy={shuffled_accuracy if shuffled_accuracy is not None else 'n/a'}, "
+            f"randomized_recurrent_accuracy={randomized_accuracy if randomized_accuracy is not None else 'n/a'}, "
+            f"dog_authority_switch={dog_switch if dog_switch is not None else 'n/a'}, "
+            f"mean_actor_authority_switch={mean_actor_switch if mean_actor_switch is not None else 'n/a'}, "
+            f"actor_probe_final={dog_probe[-1] if dog_probe else 'n/a'}."
+        ),
+    }
+
+
+def interpret_frame_switch_report(summary: dict[str, Any]) -> dict[str, str]:
+    frame_in_accuracy = summary["frame_in_recurrence_only_accuracy"]
+    output_only_accuracy = summary["frame_at_output_only_accuracy"]
+    initial_only_accuracy = summary["frame_initial_only_accuracy"]
+    randomized_accuracy = summary["randomized_recurrent_accuracy"]
+    controls = summary["controls"]
+    shuffled_accuracy = controls.get("shuffled_task_frame_token", {}).get("accuracy")
+    random_label_accuracy = controls.get("random_label_control", {}).get("accuracy")
+    switch = summary["mid_run_switch"]
+    geometry = summary["trajectory_geometry"]
+    interpolation = summary["soft_frame_interpolation"]
+
+    switch_success = switch.get("mid_run_switch_success_rate")
+    reorientation = switch.get("reorientation_score")
+    convergence = switch.get("target_frame_convergence_after_switch")
+    authority_transfer = switch.get("authority_switch_after_frame_switch")
+    divergence = geometry.get("trajectory_divergence_by_step", [])
+    smoothness = interpolation.get("interpolation_smoothness_score")
+
+    recurrent_beats_output = frame_in_accuracy >= output_only_accuracy + 0.05
+    randomized_collapses = randomized_accuracy <= frame_in_accuracy - 0.20
+    shuffled_hurts = shuffled_accuracy is not None and shuffled_accuracy <= frame_in_accuracy - 0.10
+    random_fails = random_label_accuracy is None or random_label_accuracy < 0.65
+    switch_works = switch_success is not None and switch_success >= 0.60
+    hidden_reorients = (
+        reorientation is not None
+        and reorientation > 0.0
+        and convergence is not None
+        and convergence > 0.0
+    )
+    geometry_separates = (
+        len(divergence) >= 2
+        and divergence[-1] >= divergence[0] + 0.02
+    )
+    interpolation_is_graded = smoothness is not None and smoothness >= 0.50
+    authority_switches = authority_transfer is not None and authority_transfer > 0.0
+
+    real_reorientation = (
+        recurrent_beats_output
+        and randomized_collapses
+        and shuffled_hurts
+        and random_fails
+        and switch_works
+        and hidden_reorients
+        and geometry_separates
+        and interpolation_is_graded
+        and authority_switches
+    )
+    static_routing = output_only_accuracy >= frame_in_accuracy - 0.03
+    output_routing_disfavored = output_only_accuracy <= frame_in_accuracy - 0.05
+    early_frame_commitment = (
+        initial_only_accuracy >= frame_in_accuracy - 0.03
+        and (switch_success is not None and switch_success < 0.50)
+    )
+
+    if real_reorientation:
+        return {
+            "real_recurrent_reorientation": "true",
+            "static_frame_routing": "false" if not static_routing else "unclear",
+            "reason": (
+                "Frame-in-recurrence beats the output-only routing baseline, randomized recurrence collapses, "
+                "mid-run frame switches move hidden states toward the target-frame trajectory, authority transfers "
+                "toward the new active group, and soft frame interpolation gives graded influence."
+            ),
+        }
+
+    return {
+        "real_recurrent_reorientation": "unclear",
+        "static_frame_routing": "true" if static_routing else ("false" if output_routing_disfavored else "unclear"),
+        "early_frame_commitment": "true" if early_frame_commitment else "unclear",
+        "reason": (
+            f"frame_in_recurrence_only_accuracy={frame_in_accuracy:.3f}, "
+            f"frame_at_output_only_accuracy={output_only_accuracy:.3f}, "
+            f"frame_initial_only_accuracy={initial_only_accuracy:.3f}, "
+            f"randomized_recurrent_accuracy={randomized_accuracy:.3f}, "
+            f"shuffled_frame_accuracy={shuffled_accuracy if shuffled_accuracy is not None else 'n/a'}, "
+            f"mid_run_switch_success_rate={switch_success if switch_success is not None else 'n/a'}, "
+            f"reorientation_score={reorientation if reorientation is not None else 'n/a'}, "
+            f"target_frame_convergence_after_switch={convergence if convergence is not None else 'n/a'}, "
+            f"interpolation_smoothness_score={smoothness if smoothness is not None else 'n/a'}, "
+            f"authority_switch_after_frame_switch={authority_transfer if authority_transfer is not None else 'n/a'}."
+        ),
+    }
+
+
+def interpret_reframe_report(summary: dict[str, Any]) -> dict[str, str]:
+    baseline = summary["no_reframe_baseline"]
+    trained = summary["trained_reframe"]
+    controls = summary["controls"]
+    baseline_fixed = baseline["fixed_frame"]["accuracy"]
+    baseline_no_reset = baseline["wrong_initial_frame_no_reset"]["final_accuracy_after_reframe"]
+    trained_fixed = trained["fixed_frame"]["accuracy"]
+    trained_no_reset = trained["wrong_initial_frame_no_reset"]
+    trained_with_reset = trained["wrong_initial_frame_with_reset"]
+    no_reset_accuracy = trained_no_reset["final_accuracy_after_reframe"]
+    with_reset_accuracy = trained_with_reset["final_accuracy_after_reframe"]
+    reset_accuracy_gain = with_reset_accuracy - no_reset_accuracy
+    reset_success_gain = trained_with_reset["reframe_success_rate"] - trained_no_reset["reframe_success_rate"]
+    reset_authority_gain = (
+        trained_with_reset["authority_switch_after_frame_switch"]
+        - trained_no_reset["authority_switch_after_frame_switch"]
+    )
+    randomized_accuracy = controls.get("randomize_recurrent_matrix", {}).get("accuracy")
+    shuffled_accuracy = controls.get("shuffled_task_frame_token", {}).get("accuracy")
+    random_label_accuracy = controls.get("random_label_control", {}).get("accuracy")
+
+    supports_early_commitment = (
+        baseline_fixed >= 0.80
+        and baseline_no_reset <= baseline_fixed - 0.10
+    )
+    supports_reset = (
+        trained_fixed >= 0.80
+        and with_reset_accuracy >= no_reset_accuracy + 0.05
+        and trained_with_reset["reframe_success_rate"] >= trained_no_reset["reframe_success_rate"] + 0.15
+        and reset_authority_gain > 0.05
+        and randomized_accuracy is not None
+        and randomized_accuracy <= trained_fixed - 0.20
+        and shuffled_accuracy is not None
+        and shuffled_accuracy <= trained_fixed - 0.10
+        and (random_label_accuracy is None or random_label_accuracy < 0.65)
+    )
+    free_rotation = no_reset_accuracy >= trained_fixed - 0.05 and trained_no_reset["reframe_success_rate"] >= 0.60
+
+    return {
+        "supports_early_frame_commitment": "true" if supports_early_commitment else "unclear",
+        "supports_online_reframe_with_reset": "true" if supports_reset else "unclear",
+        "supports_free_midrun_rotation_without_reset": "true" if free_rotation else "false",
+        "reason": (
+            f"baseline_fixed_accuracy={baseline_fixed:.3f}, baseline_wrong_no_reset_accuracy={baseline_no_reset:.3f}, "
+            f"trained_fixed_accuracy={trained_fixed:.3f}, no_reset_reframe_accuracy={no_reset_accuracy:.3f}, "
+            f"with_reset_reframe_accuracy={with_reset_accuracy:.3f}, reset_accuracy_gain={reset_accuracy_gain:.3f}, "
+            f"reset_success_gain={reset_success_gain:.3f}, reset_authority_transfer_gain={reset_authority_gain:.3f}, "
+            f"randomized_recurrent_accuracy={randomized_accuracy if randomized_accuracy is not None else 'n/a'}, "
+            f"shuffled_frame_accuracy={shuffled_accuracy if shuffled_accuracy is not None else 'n/a'}, "
+            f"random_label_accuracy={random_label_accuracy if random_label_accuracy is not None else 'n/a'}."
+        ),
+    }
+
+
 def round_floats(obj: Any, digits: int = 6) -> Any:
     if isinstance(obj, float):
         return round(obj, digits)
@@ -1888,6 +5527,41 @@ def markdown_refraction_table(summary: dict[str, Any]) -> str:
             item = frame_influence.get(group, {})
             row.append(f"{item.get('output_change_rate', 0.0):.4f}")
         lines.append(f"| {row[0]} | {row[1]} | {row[2]} | {row[3]} | {row[4]} | {row[5]} |")
+    return "\n".join(lines)
+
+
+def markdown_multi_aspect_table(summary: dict[str, Any]) -> str:
+    influence = summary.get("influence", {}).get("feature_group_influence_by_frame", {})
+    columns = ["actor_action", "actor_relation", "actor_sound", "place_noise", "actor"]
+    lines = [
+        "| Frame | Active group | actor_action | actor_relation | actor_sound | place_noise | actor token |",
+        "|---|---|---:|---:|---:|---:|---:|",
+    ]
+    for frame_name in MULTI_ASPECT_FRAMES:
+        row = [frame_name, MULTI_ASPECT_FRAME_ACTIVE_GROUP[frame_name]]
+        frame_influence = influence.get(frame_name, {})
+        for group in columns:
+            item = frame_influence.get(group, {})
+            row.append(f"{item.get('output_change_rate', 0.0):.4f}")
+        lines.append(
+            f"| {row[0]} | {row[1]} | {row[2]} | {row[3]} | {row[4]} | {row[5]} | {row[6]} |"
+        )
+    return "\n".join(lines)
+
+
+def markdown_dog_influence_table(summary: dict[str, Any]) -> str:
+    dog = summary.get("token_influence", {}).get("dog_influence_by_frame", {})
+    lines = [
+        "| Frame | output_change_rate | label_change_rate | target_accuracy | mean_abs_label_probability_delta |",
+        "|---|---:|---:|---:|---:|",
+    ]
+    for frame_name in MULTI_ASPECT_FRAMES:
+        item = dog.get(frame_name) or {}
+        lines.append(
+            f"| {frame_name} | {item.get('output_change_rate', 0.0):.4f} | "
+            f"{item.get('label_change_rate', 0.0):.4f} | {item.get('target_accuracy', 0.0):.4f} | "
+            f"{item.get('mean_abs_label_probability_delta', 0.0):.4f} |"
+        )
     return "\n".join(lines)
 
 
@@ -2053,9 +5727,13 @@ def run_latent_refraction(args: argparse.Namespace, run_dir: Path, out_root: Pat
             "batch_size": args.batch_size,
             "lr": args.lr,
             "sparse_density": args.sparse_density,
+            "topology_mode": args.topology_mode,
+            "flywire_graphml": str(args.flywire_graphml),
             "holdout_fraction": args.holdout_fraction,
             "active_value": args.active_value,
             "embed_scale": args.embed_scale,
+            "embedding_mode": args.embedding_mode,
+            "resonance_mode": args.resonance_mode,
             "frame_scale": args.frame_scale,
             "opponent_strength": args.opponent_strength,
             "update_rate": args.update_rate,
@@ -2108,6 +5786,718 @@ def run_latent_refraction(args: argparse.Namespace, run_dir: Path, out_root: Pat
             "authority_switch_score": round_floats(
                 main_summary.get("influence", {}).get("authority_switch_score")
             ),
+            "topology": round_floats(main_summary.get("topology", {})),
+            "hub_diagnostics": round_floats(main_summary.get("hub_diagnostics", {})),
+            "controls": {
+                key: round_floats(value["accuracy"])
+                for key, value in main_summary["controls"].items()
+                if isinstance(value, dict) and "accuracy" in value
+            },
+            "pointer_diagnostics": round_floats(
+                {
+                    key: value
+                    for key, value in main_summary.get("pointer_diagnostics", {}).items()
+                    if key.endswith("_drop")
+                    or key
+                    in {
+                        "mean_pointer_distance_between_frames",
+                        "neuron_phase_specialization_score",
+                    }
+                }
+            ),
+        },
+    }
+    print(json.dumps(printable, indent=2))
+    print(f"\nWrote JSON report: {report_path}")
+    print(f"Wrote finding: {finding_path}")
+    return 0
+
+
+def write_multi_aspect_finding(
+    *,
+    report: dict[str, Any],
+    out_root: Path,
+    run_dir: Path,
+    report_path: Path,
+) -> Path:
+    main_summary = report["experiments"].get("multi_aspect_refraction_entangled")
+    if main_summary is None:
+        main_summary = next(iter(report["experiments"].values()))
+    controls = main_summary["controls"]
+    influence = main_summary.get("influence", {})
+    token_influence = main_summary.get("token_influence", {})
+    refraction_curve = influence.get("mean_refraction_index_by_step", [])
+    dog = token_influence.get("dog_influence_by_frame", {})
+    try:
+        display_report_path = str(report_path.resolve().relative_to(ROOT))
+    except ValueError:
+        display_report_path = str(report_path)
+    finding = f"""# Multi-Aspect Token Refraction Finding
+
+Source run:
+
+- `{display_report_path}`
+
+## Question
+
+This probe asks whether a token such as `dog` behaves as a fixed label or as a multi-aspect token whose decision role changes under a task frame.
+
+The intended non-contradictory mappings are:
+
+- `dog + bite + danger_frame -> danger`
+- `dog + owner/play + friendship_frame -> friend`
+- `dog + bark + sound_frame -> sound_source`
+- `dog + street/noise + environment_frame -> actor is distractor`
+
+## Setup
+
+Every base observation contains the same actor token plus action, relation, sound, place/noise, and object features. The same observation is evaluated under four frames:
+
+- `danger_frame`: `actor_action` is causal.
+- `friendship_frame`: `actor_relation` is causal.
+- `sound_frame`: `actor_sound` is causal.
+- `environment_frame`: `place_noise` is causal and actor is distractor.
+
+## Main Result
+
+- input mode: `{main_summary["input_mode"]}`
+- accuracy: `{main_summary["accuracy"]:.6f}`
+- zero-recurrent accuracy: `{controls["zero_recurrent_update"]["accuracy"]:.6f}`
+- recurrence gain: `{main_summary["recurrence_gain"]:.6f}`
+- no-frame-token accuracy: `{controls.get("no_task_frame_token", {}).get("accuracy", "n/a")}`
+- shuffled-frame-token accuracy: `{controls.get("shuffled_task_frame_token", {}).get("accuracy", "n/a")}`
+- randomized-recurrent accuracy: `{controls.get("randomize_recurrent_matrix", {}).get("accuracy", "n/a")}`
+- random-label accuracy: `{controls.get("random_label_control", {}).get("accuracy", "n/a")}`
+- same-observation label diversity: `{main_summary["same_observation_label_diversity"]:.6f}`
+
+Accuracy by frame:
+
+```json
+{json.dumps(round_floats(main_summary["accuracy_by_frame"]), indent=2)}
+```
+
+## Feature Group Influence
+
+Final-step output-change rate when swapping feature groups while holding the rest fixed:
+
+{markdown_multi_aspect_table(main_summary)}
+
+## Dog Token Influence
+
+Actor-token intervention: keep the rest of the observation fixed and replace `dog` with another actor token.
+
+{markdown_dog_influence_table(main_summary)}
+
+Actor-token authority switch scores:
+
+```json
+{json.dumps(round_floats(token_influence.get("authority_switch_score_by_actor", {})), indent=2)}
+```
+
+Mean actor authority switch score: `{token_influence.get("mean_actor_authority_switch_score")}`
+
+Actor/dog decodability by step:
+
+```json
+{json.dumps(round_floats(main_summary["feature_group_probe_accuracy_by_step"].get("actor", [])), indent=2)}
+```
+
+## Refraction Index
+
+Mean refraction index by step:
+
+```json
+{json.dumps(round_floats(refraction_curve), indent=2)}
+```
+
+Authority switch score by active feature group:
+
+```json
+{json.dumps(round_floats(influence.get("authority_switch_score_by_group", {})), indent=2)}
+```
+
+## Interpretation
+
+```json
+{json.dumps(report["interpretation"], indent=2)}
+```
+
+## Claim Boundary
+
+Toy evidence only. Do not claim consciousness, full VRAXION behavior, biological equivalence, production validation, or that the full VRAXION architecture already implements this.
+"""
+    out_root.mkdir(parents=True, exist_ok=True)
+    finding_path = out_root / "MULTI_ASPECT_REFRACTION_FINDING.md"
+    run_finding_path = run_dir / "MULTI_ASPECT_REFRACTION_FINDING.md"
+    finding_path.write_text(finding, encoding="utf-8")
+    run_finding_path.write_text(finding, encoding="utf-8")
+    return finding_path
+
+
+def run_multi_aspect_refraction(args: argparse.Namespace, run_dir: Path, out_root: Path) -> int:
+    schema = build_schema(args.hidden)
+    modes = ["entangled"] if args.input_mode == "all" else selected_refraction_input_modes(args.input_mode)
+    experiments: dict[str, Any] = {}
+    for input_mode in modes:
+        name = f"multi_aspect_refraction_{input_mode}"
+        runs = [
+            run_multi_aspect_seed(
+                name=name,
+                input_mode=input_mode,
+                seed=seed,
+                schema=schema,
+                args=args,
+            )
+            for seed in range(args.seeds)
+        ]
+        experiments[name] = aggregate_refraction_runs(name, runs)
+
+    main_summary = experiments.get("multi_aspect_refraction_entangled") or next(iter(experiments.values()))
+    interpretation = interpret_multi_aspect_report(main_summary)
+    report = {
+        "config": {
+            "experiment": args.experiment,
+            "input_mode": args.input_mode,
+            "seeds": args.seeds,
+            "hidden": args.hidden,
+            "steps": args.steps,
+            "epochs": args.epochs,
+            "train_size": args.train_size,
+            "test_size": args.test_size,
+            "batch_size": args.batch_size,
+            "lr": args.lr,
+            "sparse_density": args.sparse_density,
+            "topology_mode": args.topology_mode,
+            "flywire_graphml": str(args.flywire_graphml),
+            "holdout_fraction": args.holdout_fraction,
+            "active_value": args.active_value,
+            "embed_scale": args.embed_scale,
+            "embedding_mode": args.embedding_mode,
+            "resonance_mode": args.resonance_mode,
+            "frame_scale": args.frame_scale,
+            "opponent_strength": args.opponent_strength,
+            "update_rate": args.update_rate,
+            "delta_scale": args.delta_scale,
+            "ridge": args.ridge,
+            "random_label_control": args.random_label_control,
+            "device": args.device,
+            "out_dir": str(run_dir),
+        },
+        "schema": asdict(schema),
+        "seed": 0 if args.seeds == 1 else None,
+        "seeds": list(range(args.seeds)),
+        "mode": "multi_aspect_token_refraction_v1",
+        "hypothesis": "Same token, different frame, different decision authority",
+        "experiments": experiments,
+        "interpretation": interpretation,
+        "notes": [
+            "This is a toy mechanism probe only. It does not prove consciousness.",
+            "Actor tokens are intentionally reused across frames instead of being assigned direct contradictory labels.",
+            "The dog token is measured as decodable while its decision influence changes by frame.",
+        ],
+        "environment": {
+            "python": sys.version,
+            "torch": torch.__version__,
+            "numpy": np.__version__,
+            "platform": platform.platform(),
+        },
+    }
+    report = round_floats(report)
+    report_path = run_dir / "multi_aspect_refraction_report.json"
+    report_path.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
+    finding_path = write_multi_aspect_finding(
+        report=report,
+        out_root=out_root,
+        run_dir=run_dir,
+        report_path=report_path,
+    )
+
+    printable = {
+        "mode": report["mode"],
+        "interpretation": report["interpretation"],
+        "main": {
+            "accuracy": round_floats(main_summary["accuracy"]),
+            "accuracy_by_frame": round_floats(main_summary["accuracy_by_frame"]),
+            "recurrence_gain": round_floats(main_summary["recurrence_gain"]),
+            "mean_refraction_index_by_step": round_floats(
+                main_summary.get("influence", {}).get("mean_refraction_index_by_step", [])
+            ),
+            "authority_switch_score": round_floats(
+                main_summary.get("influence", {}).get("authority_switch_score")
+            ),
+            "topology": round_floats(main_summary.get("topology", {})),
+            "hub_diagnostics": round_floats(main_summary.get("hub_diagnostics", {})),
+            "dog_influence_by_frame": round_floats(
+                main_summary.get("token_influence", {}).get("dog_influence_by_frame", {})
+            ),
+            "actor_authority_switch": round_floats(
+                main_summary.get("token_influence", {}).get("authority_switch_score_by_actor", {})
+            ),
+            "controls": {
+                key: round_floats(value["accuracy"])
+                for key, value in main_summary["controls"].items()
+                if isinstance(value, dict) and "accuracy" in value
+            },
+        },
+    }
+    print(json.dumps(printable, indent=2))
+    print(f"\nWrote JSON report: {report_path}")
+    print(f"Wrote finding: {finding_path}")
+    return 0
+
+
+def write_frame_switch_diagnostic(
+    *,
+    report: dict[str, Any],
+    run_dir: Path,
+    report_path: Path,
+) -> Path:
+    main_summary = report["experiments"].get("frame_switch_diagnostics_entangled")
+    if main_summary is None:
+        main_summary = next(iter(report["experiments"].values()))
+    controls = main_summary["controls"]
+    switch = main_summary["mid_run_switch"]
+    geometry = main_summary["trajectory_geometry"]
+    interpolation = main_summary["soft_frame_interpolation"]
+    dog = main_summary["token_influence"].get("dog_influence_by_frame", {})
+    try:
+        display_report_path = str(report_path.resolve().relative_to(ROOT))
+    except ValueError:
+        display_report_path = str(report_path)
+    placement_rows = []
+    for placement in FRAME_PLACEMENTS:
+        accuracy = main_summary["placement_results"][placement]["main"]["accuracy"]
+        placement_rows.append(f"| `{placement}` | {accuracy:.6f} |")
+
+    finding = f"""# Frame Switch Refraction Diagnostic
+
+Source run:
+
+- `{display_report_path}`
+
+## Question
+
+This diagnostic tests whether **Multi-Aspect Token Refraction** is real recurrent reorientation or mostly static frame-token routing.
+
+The setup reuses the existing multi-aspect task:
+
+- `danger_frame`
+- `friendship_frame`
+- `sound_frame`
+- `environment_frame`
+- same actor tokens, especially `dog`
+- entangled input
+
+No new semantic concepts are added.
+
+## Architecture Diagnostic
+
+Frame placement comparison:
+
+| Frame placement mode | accuracy |
+|---|---:|
+{chr(10).join(placement_rows)}
+
+Main comparison:
+
+- frame-in-recurrence-only accuracy: `{main_summary["frame_in_recurrence_only_accuracy"]:.6f}`
+- frame-at-output-only accuracy: `{main_summary["frame_at_output_only_accuracy"]:.6f}`
+- recurrent-vs-output-only gain: `{main_summary["recurrent_vs_output_only_gain"]:.6f}`
+- no-frame accuracy: `{main_summary["no_frame_accuracy"]:.6f}`
+- zero-recurrent accuracy: `{controls["zero_recurrent_update"]["accuracy"]:.6f}`
+- randomized-recurrent accuracy: `{main_summary["randomized_recurrent_accuracy"]:.6f}`
+- shuffled-frame-token accuracy: `{controls["shuffled_task_frame_token"]["accuracy"]:.6f}`
+- random-label accuracy: `{controls.get("random_label_control", {}).get("accuracy", "n/a")}`
+
+## Mid-Run Frame Switch
+
+Switch pairs:
+
+```json
+{json.dumps([f"{left}->{right}" for left, right in FRAME_SWITCH_PAIRS], indent=2)}
+```
+
+Aggregate switch metrics:
+
+- mid-run switch success rate: `{switch.get("mid_run_switch_success_rate")}`
+- reorientation score: `{switch.get("reorientation_score")}`
+- target-frame convergence after switch: `{switch.get("target_frame_convergence_after_switch")}`
+- authority switch after frame switch: `{switch.get("authority_switch_after_frame_switch")}`
+
+Definition notes:
+
+- `reorientation_score = final_distance_to_old_source_trajectory - final_distance_to_new_target_trajectory`.
+- Positive means the switched hidden state ends closer to the direct target-frame trajectory than to the old source-frame trajectory.
+- `authority_switch_after_frame_switch` compares new-active-group influence against old-active-group influence after the switch.
+
+## Hidden Trajectory Geometry
+
+Trajectory divergence by step:
+
+```json
+{json.dumps(round_floats(geometry.get("trajectory_divergence_by_step", [])), indent=2)}
+```
+
+Frame clustering accuracy by step:
+
+```json
+{json.dumps(round_floats(geometry.get("frame_clustering_accuracy_by_step", [])), indent=2)}
+```
+
+Final frame clustering accuracy: `{geometry.get("final_frame_clustering_accuracy")}`
+
+## Soft Frame Interpolation
+
+Interpolation pair:
+
+```json
+{json.dumps(interpolation.get("pair", {}), indent=2)}
+```
+
+Interpolation smoothness score: `{interpolation.get("interpolation_smoothness_score")}`
+
+Mix summary:
+
+```json
+{json.dumps(round_floats(interpolation.get("mixes", {})), indent=2)}
+```
+
+## Dog Influence By Direct Frame
+
+```json
+{json.dumps(round_floats(dog), indent=2)}
+```
+
+## Verdict
+
+```json
+{json.dumps(report["interpretation"], indent=2)}
+```
+
+## Claim Boundary
+
+Toy diagnostic only. Do not claim consciousness, biology, full VRAXION behavior, or production architecture validation.
+"""
+    docs_dir = ROOT / "docs" / "research"
+    docs_dir.mkdir(parents=True, exist_ok=True)
+    finding_path = docs_dir / "FRAME_SWITCH_REFRACTION_DIAGNOSTIC.md"
+    run_finding_path = run_dir / "FRAME_SWITCH_REFRACTION_DIAGNOSTIC.md"
+    finding_path.write_text(finding, encoding="utf-8")
+    run_finding_path.write_text(finding, encoding="utf-8")
+    return finding_path
+
+
+def run_frame_switch_diagnostics(args: argparse.Namespace, run_dir: Path, out_root: Path) -> int:
+    schema = build_schema(args.hidden)
+    modes = ["entangled"] if args.input_mode == "all" else selected_refraction_input_modes(args.input_mode)
+    experiments: dict[str, Any] = {}
+    for input_mode in modes:
+        name = f"frame_switch_diagnostics_{input_mode}"
+        runs = [
+            run_frame_switch_seed(
+                name=name,
+                input_mode=input_mode,
+                seed=seed,
+                schema=schema,
+                args=args,
+            )
+            for seed in range(args.seeds)
+        ]
+        experiments[name] = aggregate_frame_switch_runs(name, runs)
+
+    main_summary = experiments.get("frame_switch_diagnostics_entangled") or next(iter(experiments.values()))
+    interpretation = interpret_frame_switch_report(main_summary)
+    report = {
+        "config": {
+            "experiment": args.experiment,
+            "input_mode": args.input_mode,
+            "seeds": args.seeds,
+            "hidden": args.hidden,
+            "steps": args.steps,
+            "epochs": args.epochs,
+            "train_size": args.train_size,
+            "test_size": args.test_size,
+            "batch_size": args.batch_size,
+            "lr": args.lr,
+            "sparse_density": args.sparse_density,
+            "topology_mode": args.topology_mode,
+            "flywire_graphml": str(args.flywire_graphml),
+            "holdout_fraction": args.holdout_fraction,
+            "active_value": args.active_value,
+            "embed_scale": args.embed_scale,
+            "embedding_mode": args.embedding_mode,
+            "resonance_mode": args.resonance_mode,
+            "frame_scale": args.frame_scale,
+            "opponent_strength": args.opponent_strength,
+            "update_rate": args.update_rate,
+            "delta_scale": args.delta_scale,
+            "ridge": args.ridge,
+            "random_label_control": args.random_label_control,
+            "device": args.device,
+            "out_dir": str(run_dir),
+        },
+        "schema": asdict(schema),
+        "seed": 0 if args.seeds == 1 else None,
+        "seeds": list(range(args.seeds)),
+        "mode": "frame_switch_refraction_diagnostic_v1",
+        "hypothesis": "Frame-conditioned token authority should require recurrent hidden-state reorientation, not only output routing.",
+        "experiments": experiments,
+        "interpretation": interpretation,
+        "notes": [
+            "This diagnostic reuses the multi-aspect setup and adds no new semantic concepts.",
+            "The output-only frame placement is the static routing baseline.",
+            "Mid-run frame switches test whether hidden trajectories move toward the new target frame.",
+            "This is toy evidence only. It does not prove consciousness.",
+        ],
+        "environment": {
+            "python": sys.version,
+            "torch": torch.__version__,
+            "numpy": np.__version__,
+            "platform": platform.platform(),
+        },
+    }
+    report = round_floats(report)
+    report_path = run_dir / "frame_switch_refraction_diagnostic_report.json"
+    report_path.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
+    finding_path = write_frame_switch_diagnostic(
+        report=report,
+        run_dir=run_dir,
+        report_path=report_path,
+    )
+
+    printable = {
+        "mode": report["mode"],
+        "interpretation": report["interpretation"],
+        "main": {
+            "frame_in_recurrence_only_accuracy": round_floats(main_summary["frame_in_recurrence_only_accuracy"]),
+            "frame_at_output_only_accuracy": round_floats(main_summary["frame_at_output_only_accuracy"]),
+            "frame_initial_only_accuracy": round_floats(main_summary["frame_initial_only_accuracy"]),
+            "no_frame_accuracy": round_floats(main_summary["no_frame_accuracy"]),
+            "recurrent_vs_output_only_gain": round_floats(main_summary["recurrent_vs_output_only_gain"]),
+            "recurrent_vs_zero_gain": round_floats(main_summary["recurrent_vs_zero_gain"]),
+            "randomized_recurrent_accuracy": round_floats(main_summary["randomized_recurrent_accuracy"]),
+            "mid_run_switch_success_rate": round_floats(
+                main_summary["mid_run_switch"].get("mid_run_switch_success_rate")
+            ),
+            "reorientation_score": round_floats(main_summary["mid_run_switch"].get("reorientation_score")),
+            "target_frame_convergence_after_switch": round_floats(
+                main_summary["mid_run_switch"].get("target_frame_convergence_after_switch")
+            ),
+            "authority_switch_after_frame_switch": round_floats(
+                main_summary["mid_run_switch"].get("authority_switch_after_frame_switch")
+            ),
+            "trajectory_divergence_by_step": round_floats(
+                main_summary["trajectory_geometry"].get("trajectory_divergence_by_step", [])
+            ),
+            "interpolation_smoothness_score": round_floats(
+                main_summary["soft_frame_interpolation"].get("interpolation_smoothness_score")
+            ),
+        },
+    }
+    print(json.dumps(printable, indent=2))
+    print(f"\nWrote JSON report: {report_path}")
+    print(f"Wrote finding: {finding_path}")
+    return 0
+
+
+def write_reframe_diagnostic(
+    *,
+    report: dict[str, Any],
+    run_dir: Path,
+    report_path: Path,
+) -> Path:
+    main_summary = report["experiments"].get("reframe_diagnostics_entangled")
+    if main_summary is None:
+        main_summary = next(iter(report["experiments"].values()))
+    baseline = main_summary["no_reframe_baseline"]
+    trained = main_summary["trained_reframe"]
+    controls = main_summary["controls"]
+    try:
+        display_report_path = str(report_path.resolve().relative_to(ROOT))
+    except ValueError:
+        display_report_path = str(report_path)
+
+    finding = f"""# Reframe Trigger Diagnostic
+
+Source run:
+
+- `{display_report_path}`
+
+## Question
+
+This diagnostic tests the updated hypothesis:
+
+> The toy system may commit to a frame early, then run recurrent simulation inside that frame. If the initial frame is wrong, recovery may require an explicit reframe/reset signal.
+
+The setup reuses the existing multi-aspect token task:
+
+- `danger_frame`
+- `friendship_frame`
+- `sound_frame`
+- `environment_frame`
+- same actor tokens, especially `dog`
+- entangled input
+
+No new semantic concepts are added. The reset pulse is a control signal, not a new world feature.
+
+## Main Metrics
+
+- no-reframe fixed accuracy: `{baseline["fixed_frame"]["accuracy"]:.6f}`
+- no-reframe wrong-initial/no-reset accuracy: `{baseline["wrong_initial_frame_no_reset"]["final_accuracy_after_reframe"]:.6f}`
+- no-reframe wrong-initial/with-reset accuracy: `{baseline["wrong_initial_frame_with_reset"]["final_accuracy_after_reframe"]:.6f}`
+- trained-reframe fixed accuracy: `{trained["fixed_frame"]["accuracy"]:.6f}`
+- trained-reframe wrong-initial/no-reset accuracy: `{trained["wrong_initial_frame_no_reset"]["final_accuracy_after_reframe"]:.6f}`
+- trained-reframe wrong-initial/with-reset accuracy: `{trained["wrong_initial_frame_with_reset"]["final_accuracy_after_reframe"]:.6f}`
+- reset accuracy gain: `{main_summary["reset_accuracy_gain"]:.6f}`
+- reset success gain: `{main_summary["reset_success_gain"]:.6f}`
+- authority transfer gain: `{main_summary["authority_transfer_gain"]:.6f}`
+
+## Recovery By Switch Step
+
+No reset:
+
+```json
+{json.dumps(round_floats(trained["wrong_initial_frame_no_reset"].get("recovery_by_switch_step", {})), indent=2)}
+```
+
+With reset:
+
+```json
+{json.dumps(round_floats(trained["wrong_initial_frame_with_reset"].get("recovery_by_switch_step", {})), indent=2)}
+```
+
+## Authority Transfer
+
+No reset:
+
+- old-frame authority decay: `{trained["wrong_initial_frame_no_reset"].get("old_frame_authority_decay")}`
+- new-frame authority rise: `{trained["wrong_initial_frame_no_reset"].get("new_frame_authority_rise")}`
+- authority switch after frame switch: `{trained["wrong_initial_frame_no_reset"].get("authority_switch_after_frame_switch")}`
+- target-frame convergence after switch: `{trained["wrong_initial_frame_no_reset"].get("target_frame_convergence_after_switch")}`
+
+With reset:
+
+- old-frame authority decay: `{trained["wrong_initial_frame_with_reset"].get("old_frame_authority_decay")}`
+- new-frame authority rise: `{trained["wrong_initial_frame_with_reset"].get("new_frame_authority_rise")}`
+- authority switch after frame switch: `{trained["wrong_initial_frame_with_reset"].get("authority_switch_after_frame_switch")}`
+- target-frame convergence after switch: `{trained["wrong_initial_frame_with_reset"].get("target_frame_convergence_after_switch")}`
+- reset entropy spike: `{trained["wrong_initial_frame_with_reset"].get("reset_entropy_spike")}`
+
+## Controls
+
+- zero-recurrent accuracy: `{controls["zero_recurrent_update"]["accuracy"]:.6f}`
+- threshold-only accuracy: `{controls["threshold_only"]["accuracy"]:.6f}`
+- shuffled-frame-token accuracy: `{controls["shuffled_task_frame_token"]["accuracy"]:.6f}`
+- randomized-recurrent accuracy: `{controls["randomize_recurrent_matrix"]["accuracy"]:.6f}`
+- random-label accuracy: `{controls.get("random_label_control", {}).get("accuracy", "n/a")}`
+
+## Verdict
+
+```json
+{json.dumps(report["interpretation"], indent=2)}
+```
+
+## Claim Boundary
+
+Toy diagnostic only. Do not claim consciousness, biology, full VRAXION behavior, or production architecture validation.
+"""
+    docs_dir = ROOT / "docs" / "research"
+    docs_dir.mkdir(parents=True, exist_ok=True)
+    finding_path = docs_dir / "REFRAME_TRIGGER_DIAGNOSTIC.md"
+    run_finding_path = run_dir / "REFRAME_TRIGGER_DIAGNOSTIC.md"
+    finding_path.write_text(finding, encoding="utf-8")
+    run_finding_path.write_text(finding, encoding="utf-8")
+    return finding_path
+
+
+def run_reframe_diagnostics(args: argparse.Namespace, run_dir: Path, out_root: Path) -> int:
+    schema = build_schema(args.hidden)
+    modes = ["entangled"] if args.input_mode == "all" else selected_refraction_input_modes(args.input_mode)
+    experiments: dict[str, Any] = {}
+    for input_mode in modes:
+        name = f"reframe_diagnostics_{input_mode}"
+        runs = [
+            run_reframe_seed(
+                name=name,
+                input_mode=input_mode,
+                seed=seed,
+                schema=schema,
+                args=args,
+            )
+            for seed in range(args.seeds)
+        ]
+        experiments[name] = aggregate_reframe_runs(name, runs)
+
+    main_summary = experiments.get("reframe_diagnostics_entangled") or next(iter(experiments.values()))
+    interpretation = interpret_reframe_report(main_summary)
+    report = {
+        "config": {
+            "experiment": args.experiment,
+            "input_mode": args.input_mode,
+            "seeds": args.seeds,
+            "hidden": args.hidden,
+            "steps": args.steps,
+            "epochs": args.epochs,
+            "train_size": args.train_size,
+            "test_size": args.test_size,
+            "batch_size": args.batch_size,
+            "lr": args.lr,
+            "sparse_density": args.sparse_density,
+            "topology_mode": args.topology_mode,
+            "flywire_graphml": str(args.flywire_graphml),
+            "holdout_fraction": args.holdout_fraction,
+            "active_value": args.active_value,
+            "embed_scale": args.embed_scale,
+            "embedding_mode": args.embedding_mode,
+            "resonance_mode": args.resonance_mode,
+            "frame_scale": args.frame_scale,
+            "opponent_strength": args.opponent_strength,
+            "update_rate": args.update_rate,
+            "delta_scale": args.delta_scale,
+            "ridge": args.ridge,
+            "random_label_control": args.random_label_control,
+            "device": args.device,
+            "out_dir": str(run_dir),
+        },
+        "schema": asdict(schema),
+        "seed": 0 if args.seeds == 1 else None,
+        "seeds": list(range(args.seeds)),
+        "mode": "reframe_trigger_diagnostic_v1",
+        "hypothesis": "Early frame commitment may need an explicit reset/reframe signal to recover from an initial wrong frame.",
+        "experiments": experiments,
+        "interpretation": interpretation,
+        "notes": [
+            "This diagnostic reuses the multi-aspect setup and adds no new semantic concepts.",
+            "The reset pulse is a control signal that can reopen the frame decision.",
+            "This is toy evidence only. It does not prove consciousness.",
+        ],
+        "environment": {
+            "python": sys.version,
+            "torch": torch.__version__,
+            "numpy": np.__version__,
+            "platform": platform.platform(),
+        },
+    }
+    report = round_floats(report)
+    report_path = run_dir / "reframe_trigger_diagnostic_report.json"
+    report_path.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
+    finding_path = write_reframe_diagnostic(
+        report=report,
+        run_dir=run_dir,
+        report_path=report_path,
+    )
+
+    printable = {
+        "mode": report["mode"],
+        "interpretation": report["interpretation"],
+        "main": {
+            "no_reframe_baseline_accuracy": round_floats(main_summary["no_reframe_baseline_accuracy"]),
+            "trained_reframe_accuracy": round_floats(main_summary["trained_reframe_accuracy"]),
+            "wrong_initial_no_reset_accuracy": round_floats(main_summary["wrong_initial_no_reset_accuracy"]),
+            "wrong_initial_with_reset_accuracy": round_floats(main_summary["wrong_initial_with_reset_accuracy"]),
+            "reset_accuracy_gain": round_floats(main_summary["reset_accuracy_gain"]),
+            "reset_success_gain": round_floats(main_summary["reset_success_gain"]),
+            "authority_transfer_gain": round_floats(main_summary["authority_transfer_gain"]),
             "controls": {
                 key: round_floats(value["accuracy"])
                 for key, value in main_summary["controls"].items()
@@ -2133,6 +6523,12 @@ def main() -> int:
 
     if args.experiment == "latent_refraction":
         return run_latent_refraction(args, run_dir, out_root)
+    if args.experiment in {"multi_aspect_refraction", "multi_aspect_token_refraction"}:
+        return run_multi_aspect_refraction(args, run_dir, out_root)
+    if args.experiment == "frame_switch_diagnostics":
+        return run_frame_switch_diagnostics(args, run_dir, out_root)
+    if args.experiment == "reframe_diagnostics":
+        return run_reframe_diagnostics(args, run_dir, out_root)
 
     schema = build_schema(args.hidden)
     config = ProbeConfig(
@@ -2146,9 +6542,13 @@ def main() -> int:
         batch_size=args.batch_size,
         lr=args.lr,
         sparse_density=args.sparse_density,
+        topology_mode=args.topology_mode,
+        flywire_graphml=str(args.flywire_graphml),
         holdout_fraction=args.holdout_fraction,
         active_value=args.active_value,
         embed_scale=args.embed_scale,
+        embedding_mode=args.embedding_mode,
+        resonance_mode=args.resonance_mode,
         nuisance_scale=args.nuisance_scale,
         opponent_strength=args.opponent_strength,
         update_rate=args.update_rate,

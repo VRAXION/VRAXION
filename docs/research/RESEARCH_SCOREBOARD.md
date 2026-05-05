@@ -1,6 +1,6 @@
 # VRAXION Research Scoreboard
 
-Last updated: 2026-05-03
+Last updated: 2026-05-04
 
 This page is the human-readable scoreboard. Descriptive names are primary; old
 `Dxx` phase IDs appear only as aliases.
@@ -157,6 +157,49 @@ is not implemented yet.
 |---|---:|---|---|---|
 | `VoltageKnobNeuron` | D32 | voltage/energy splitter primitive | useful proof surface | candidate primitive |
 | `AngleKnobNeuron` | D32B/D32C | angle-based routing activation | routing-only winner, not universal activation | possible router primitive |
+
+## Mechanism Toy Notes
+
+Small refraction probes remain research-only, but the current best read is:
+
+```text
+frame pointer + recurrent attractor / authority switching
+```
+
+Frequency embedding ablation:
+
+- `fixed_sincos` gives a small consistent improvement over the learned/random-vector baseline on authority-switch and dog-separation metrics.
+- More elaborate phase modes are not necessary in the current toy setup.
+- The current winner remains frame pointer plus recurrent attractor / authority switching, not explicit frequency embedding geometry.
+- Future wave/interference work should focus more on recurrent dynamics and edge/node modulation than on token embedding geometry alone.
+
+Raw wave pointer ablation:
+
+- `token_wave` is a weak positive over `none` on accuracy, refraction, authority-switch, mean actor-switch, and dog-switch metrics.
+- `pointer_resonance` and `pointer_resonance_signed` are sensitive to wrong/frozen/shuffled pointer interventions, but they do not beat the simpler `token_wave` mode on authority switching.
+- Explicit pointer/neuron resonance is not required by the current toy tasks.
+
+FlyWire / topology-prior ablation:
+
+- A local `/home/deck/work/flywire/mushroom_body.graphml` sample exists and can be used as a small recurrent-mask prior.
+- At matched edge budget on `latent_refraction`, `hub_rich` beats `random_sparse` on accuracy, recurrence gain, final refraction index, authority-switch score, and seed variance.
+- `flywire_sampled` does not beat `random_sparse` on authority/refraction in the first pass, though it reduces seed variance.
+- Current interpretation: hub/heavy-tail structure is the live topology signal; specific mushroom-body wiring is not yet supported as better than random sparse.
+
+Hub-rich validation:
+
+- `hub_rich` validates as task-specific positive on `latent_refraction` at update rates `0.2` and `0.3`.
+- `hub_rich` does not beat `random_sparse` on the stricter `multi_aspect_token_refraction` grid.
+- Hub nodes are load-bearing inside trained hub-rich models: top-10% hub ablation hurts far more than same-count random node ablation across both tasks.
+- Current topology read: hubs can help group-level latent refraction, but they are not a universal replacement for random sparse masks.
+
+Hub degree-preserving control:
+
+- Training degree-preserving shuffled hub masks from scratch recovers much of the hub benefit, and at `latent_refraction/update=0.2` beats both `random_sparse` and the sampled `hub_rich` mask.
+- At `latent_refraction/update=0.3`, the original `hub_rich` mask remains strongest on final refraction and authority-switch metrics, so specific hub wiring can still matter.
+- On `multi_aspect_token_refraction`, degree-preserving hub masks are better than the sampled `hub_rich` mask and roughly match `random_sparse`, but they do not establish a universal hub prior.
+- FlyWire degree-preserving random masks generally beat raw FlyWire-sampled masks, weakening exact-FlyWire-wiring claims in this toy setup.
+- Current refined topology read: degree concentration is often the useful part, exact sampled wiring is task/regime dependent, and no biology/FlyWire claim is supported.
 
 ## Who Won?
 
