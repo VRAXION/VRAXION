@@ -54,6 +54,14 @@ Run with:
 
 `inferred_frame_pointer` moves from explicit frame-token control to automatic frame selection. It uses the multi-aspect setup without adding new semantic concepts: the intended frame is made inferable from feature-group salience in the input bundle, then a predicted internal frame pointer is used for the recurrent decision pass. It reports oracle-frame, predicted-frame, frame-head-only, no-frame, wrong-forced-frame, zero-recurrent, randomized-recurrent, random-label, influence, and token-frame inventory metrics. The first result supports frame inference but leaves pointer-specific necessity unclear because no-frame and frame-head-only baselines remain fairly strong.
 
+Run with:
+
+```bash
+.venv/bin/python scripts/run_context_cancellation_probe.py --experiment query_cued_frame_pointer --input-mode entangled
+```
+
+`query_cued_frame_pointer` uses the same multi-aspect observations under multiple toy query cues. Query cues are separate from frame embeddings and are not natural language. The probe compares oracle-frame, predicted-pointer, query-head-only, no-pointer-query, no-query, wrong-forced-frame, query ablation, query shuffle, zero-recurrent, randomized-recurrent, random-label, and pointer-vs-direct authority/refraction metrics. The first result supports query frame prediction and query dependence, but not pointer-specific necessity: query conditioning alone remains sufficient in this toy.
+
 Embedding ablations:
 
 ```bash
@@ -86,6 +94,7 @@ Topology-prior ablations:
 - Frame-switch diagnostics: a toy diagnostic can test whether frame-conditioned authority switching is better explained by recurrent reorientation or static output routing.
 - Reframe diagnostics: a toy diagnostic can test whether wrong early frame commitment can be reopened by an explicit reset/reframe event.
 - Inferred frame pointer: a toy diagnostic can test whether the frame can be predicted from the input bundle and then used internally as a recurrent pointer.
+- Query-cued frame pointer: a toy diagnostic can test whether a query-like goal cue can imply the frame while the same observation is reused under multiple labels.
 - Frequency embedding ablation: fixed sin/cos token vectors can be compared against the existing random-vector baseline without changing the recurrent mechanism.
 - Raw wave resonance ablation: explicit pointer/neuron resonance can be tested against the simpler token-wave and recurrent baselines without making it the default mechanism.
 - Topology-prior ablation: recurrent masks can be compared at matched edge budget, including synthetic motif/hub priors and a small local FlyWire-derived GraphML sample.

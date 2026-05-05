@@ -209,6 +209,13 @@ Inferred frame pointer:
 - Pointer-specific necessity is still unclear because frame-head-only (`0.853`) and no-frame (`0.868`) baselines remain fairly strong; wrong-forced-frame drops to `0.826`, a real but not decisive hit.
 - Current read: inferred frame selection works in the toy, but a stricter bottleneck/cue test is needed before claiming the predicted pointer is the dominant authority-switch path.
 
+Query-cued frame pointer:
+
+- `query_cued_frame_pointer` reuses the same observation under multiple toy query cues, so the query rather than salience determines the target frame.
+- First run: frame prediction is perfect (`1.0`), predicted-pointer accuracy is `0.680`, no-query baseline is lower (`0.603`), query ablation/shuffle hurt (`0.571`/`0.565`), randomized recurrent is near chance (`0.513`), and random-label control is `0.513`.
+- The no-pointer query baseline is close on accuracy (`0.669`) and only slightly weaker on authority/refraction (`0.022`/`0.0115`) than the pointer path (`0.050`/`0.0325`).
+- Current read: query-cued frame selection works and recurrence/query dependence are real, but pointer-specific necessity is not supported; query conditioning alone is sufficient in this toy.
+
 ## Who Won?
 
 ```text
