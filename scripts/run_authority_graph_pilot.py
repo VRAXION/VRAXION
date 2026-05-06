@@ -106,6 +106,7 @@ class AuthorityGraph:
     suppressor_strength: float
     competition: float
     route_bias: float
+    readout_policy: str = "route_state"
 
     @property
     def idx(self) -> dict[str, int]:
@@ -409,6 +410,8 @@ def static_score(
         )
         state = graph_update(graph, state, inj)
     idx = graph.idx
+    if graph.readout_policy == "explicit_edges":
+        return float(state[idx["readout_positive"]] - state[idx["readout_negative"]])
     active = float(state[idx[FRAME_BY_ROUTE[eval_frame]]])
     inactive = max(0.0, max(float(state[idx[FRAME_BY_ROUTE[frame_name]]]) for frame_name in FRAMES if frame_name != eval_frame))
     return active - graph.competition * inactive

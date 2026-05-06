@@ -30,12 +30,14 @@ DEFAULT_ARMS = [
     "damaged_hand_seeded_50",
     "hand_seeded",
 ]
+ALL_ARMS = DEFAULT_ARMS + ["grammar_v2_graph"]
 EVOLVED_ARMS = {arm for arm in DEFAULT_ARMS if arm != "hand_seeded"}
 GRAMMAR_ARMS = {
     "route_grammar_graph",
     "route_gate_grammar_graph",
     "route_gate_recurrence_grammar",
     "route_gate_hub_grammar",
+    "grammar_v2_graph",
 }
 SUCCESS_THRESHOLDS = {
     "accuracy": 0.90,
@@ -83,7 +85,7 @@ def parse_args() -> argparse.Namespace:
     if args.fitness_mode == "ab_compare" and args.out_dir == DEFAULT_OUT:
         args.out_dir = QUICK_OUT
     args.arms = [arm.strip() for arm in args.arms.split(",") if arm.strip()]
-    unknown = sorted(set(args.arms) - set(DEFAULT_ARMS))
+    unknown = sorted(set(args.arms) - set(ALL_ARMS))
     if unknown:
         raise SystemExit(f"unknown arms: {', '.join(unknown)}")
     if args.smoke:
@@ -299,6 +301,80 @@ def add_random_hub_edges(graph: pilot.AuthorityGraph, rng: np.random.Generator) 
                 pilot.add_edge(graph, route, hub, float(rng.normal(0.0, 0.30)))
 
 
+def add_full_suppressor_matrix(graph: pilot.AuthorityGraph, rng: np.random.Generator) -> None:
+    graph.suppressor_strength = float(rng.uniform(0.65, 1.35))
+    for frame in pilot.FRAMES:
+        target = pilot.FRAME_BY_ROUTE[frame]
+        pilot.add_edge(graph, target, f"suppress_{frame}", -graph.suppressor_strength)
+        for other in pilot.FRAMES:
+            if other != frame:
+                pilot.add_edge(graph, target, f"suppress_{other}", float(rng.uniform(0.06, 0.28)))
+
+
+def add_group_coverage_edges(graph: pilot.AuthorityGraph, rng: np.random.Generator) -> None:
+    """Add coverage scaffold, not exact token-label solution wiring.
+
+    Tokens are connected by broad feature group to plausible routes. Signs and gains
+    are intentionally weak/random so evolution still has to discover usable
+    authority geometry.
+    """
+    route_sources = {
+        "danger_route": pilot.ACTORS + pilot.ACTIONS,
+        "friendship_route": pilot.ACTORS + pilot.RELATIONS + ["bite"],
+        "sound_route": pilot.ACTORS + pilot.SOUNDS,
+        "environment_route": pilot.PLACES + pilot.NOISES + pilot.SOUNDS,
+    }
+    for route, tokens in route_sources.items():
+        for token in tokens:
+            if f"tok_{token}" in graph.idx:
+                pilot.add_edge(graph, route, f"tok_{token}", float(rng.normal(0.0, 0.24)))
+    # A few cross-route low-gain candidates make the graph mutation-friendly
+    # without giving direct task-label rules.
+    for route in pilot.route_nodes():
+        for token in pilot.TOKENS:
+            if rng.random() < 0.08:
+                pilot.add_edge(graph, route, f"tok_{token}", float(rng.normal(0.0, 0.12)))
+
+
+def add_hub_bridge_coverage(graph: pilot.AuthorityGraph, rng: np.random.Generator) -> None:
+    hub_tokens = {
+        "shared_actor_hub": pilot.ACTORS,
+        "shared_action_hub": pilot.ACTIONS + pilot.RELATIONS + pilot.SOUNDS,
+        "shared_context_hub": pilot.PLACES + pilot.NOISES + pilot.SOUNDS,
+    }
+    for hub, tokens in hub_tokens.items():
+        for token in tokens:
+            pilot.add_edge(graph, hub, f"tok_{token}", float(rng.normal(0.12, 0.10)))
+    for route in pilot.route_nodes():
+        for hub in hub_tokens:
+            pilot.add_edge(graph, route, hub, float(rng.normal(0.0, 0.22)))
+
+
+def add_temporal_role_channel(graph: pilot.AuthorityGraph, rng: np.random.Generator) -> None:
+    for node in [item for item in pilot.temporal_nodes() if item != "temporal_route"]:
+        if node in graph.idx:
+            graph.w[graph.idx[node], graph.idx[node]] = float(rng.uniform(0.05, 0.24))
+            pilot.add_edge(graph, "temporal_route", node, float(rng.normal(0.0, 0.30)))
+    pilot.add_edge(graph, "temporal_route", "temporal_route", float(rng.uniform(0.08, 0.24)))
+
+
+def build_grammar_v2_graph(decay: float, seed: int) -> pilot.AuthorityGraph:
+    rng = np.random.default_rng(seed)
+    graph = pilot.build_empty_graph(decay)
+    graph.readout_policy = "route_state"
+    graph_setup(graph, rng, frame_gates=True, recurrence=True)
+    graph.frame_gate = float(rng.uniform(0.65, 1.25))
+    graph.competition = float(rng.uniform(0.30, 0.75))
+    set_route_bias(graph, float(rng.uniform(-1.65, -0.95)))
+    add_route_recurrence(graph, rng)
+    add_group_coverage_edges(graph, rng)
+    add_hub_bridge_coverage(graph, rng)
+    add_full_suppressor_matrix(graph, rng)
+    add_temporal_role_channel(graph, rng)
+    zero_direct_token_readout_edges(graph)
+    return graph
+
+
 def build_route_grammar_graph(decay: float, seed: int, *, frame_gates: bool, recurrence: bool, hubs: bool) -> pilot.AuthorityGraph:
     rng = np.random.default_rng(seed)
     graph = pilot.build_empty_graph(decay)
@@ -325,6 +401,8 @@ def build_seed_graph(arm: str, args: argparse.Namespace, seed: int, hand_edge_co
         return build_route_grammar_graph(args.decay, seed, frame_gates=True, recurrence=True, hubs=False)
     if arm == "route_gate_hub_grammar":
         return build_route_grammar_graph(args.decay, seed, frame_gates=True, recurrence=True, hubs=True)
+    if arm == "grammar_v2_graph":
+        return build_grammar_v2_graph(args.decay, seed)
     if arm == "damaged_hand_seeded_50":
         return pilot.damage_graph(pilot.build_hand_seeded_graph(args.decay), 0.50, seed)
     if arm == "hand_seeded":
@@ -439,6 +517,7 @@ def graph_to_json(graph: pilot.AuthorityGraph) -> dict[str, Any]:
             "suppressor_strength": round(float(graph.suppressor_strength), 6),
             "competition": round(float(graph.competition), 6),
             "route_bias": round(float(graph.route_bias), 6),
+            "readout_policy": graph.readout_policy,
         },
         "edge_count": graph.edge_count(),
         "node_count": len(graph.nodes),
