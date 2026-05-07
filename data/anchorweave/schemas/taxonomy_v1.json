@@ -1,0 +1,37 @@
+{
+  "taxonomy_version": "AnchorWeave-taxonomy-v1.0",
+  "grounding_judgments": [
+    "valid_anchor",
+    "weak_anchor",
+    "invalid_anchor",
+    "ambiguous_anchor"
+  ],
+  "error_tags": [
+    "SURFACE_PATTERN_SHORTCUT",
+    "WRONG_SALIENCE",
+    "NO_COUNTERFACTUAL_SUPPORT",
+    "ACTION_IRRELEVANT_SYMBOL",
+    "OVERGENERALIZATION",
+    "SYMBOL_ATTACHED_TOO_EARLY",
+    "CUE_FOLLOWING_CONFUSED_WITH_GROUNDING",
+    "ANTHROPOMORPHIC_CONFABULATION",
+    "UNSUPPORTED_INNER_STATE_CLAIM",
+    "BAD_CLAIM_BOUNDARY"
+  ],
+  "positive_tags": [
+    "GOOD_SALIENCE_MAP",
+    "GOOD_COUNTERFACTUALS",
+    "GOOD_ACTION_OUTCOME_BINDING",
+    "GOOD_SYMBOL_REJECT",
+    "GOOD_CLAIM_BOUNDARY",
+    "GOOD_MEMORY_HOOK"
+  ],
+  "abstraction_levels": [
+    "raw_episode",
+    "episodic_affordance",
+    "causal_relation",
+    "outcome_pattern",
+    "cross_domain_abstraction",
+    "symbol_binding"
+  ]
+}
