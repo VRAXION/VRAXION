@@ -1,0 +1,260 @@
+{
+  "schema_version": "AnchorWeave-v1.0",
+  "cell_id": "awc_example_navigation_0001",
+  "revision": 1,
+  "created_at": "2026-05-07T00:00:00Z",
+  "provenance": {
+    "source": "synthetic_scaffold_example",
+    "author": "VRAXION scaffold",
+    "privacy_tier": "public_synthetic",
+    "collection_method": "handwritten_example",
+    "contains_private_data": false,
+    "sanitization": "No real person, location, or private memory is represented."
+  },
+  "episode": {
+    "domain": "navigation",
+    "title": "Rainy corner route to shop",
+    "scene": "On a rainy day, the navigator reached a familiar corner, turned right, and found the shop shortly after the turn.",
+    "temporal_context": "Single short route episode.",
+    "entities": [
+      {
+        "id": "navigator",
+        "type": "agent",
+        "label": "navigator"
+      },
+      {
+        "id": "corner",
+        "type": "place",
+        "label": "familiar corner"
+      },
+      {
+        "id": "right_turn",
+        "type": "action",
+        "label": "turn right"
+      },
+      {
+        "id": "shop",
+        "type": "goal",
+        "label": "shop"
+      },
+      {
+        "id": "rain",
+        "type": "context",
+        "label": "rainy weather"
+      }
+    ],
+    "cues": [
+      {
+        "cue": "familiar corner",
+        "observed": "The corner matched the remembered route point.",
+        "role": "route landmark"
+      },
+      {
+        "cue": "rain",
+        "observed": "Rain was present during the episode.",
+        "role": "background context, not route rule"
+      }
+    ]
+  },
+  "relational_graph": {
+    "nodes": [
+      {
+        "id": "navigator",
+        "type": "agent",
+        "label": "navigator"
+      },
+      {
+        "id": "corner",
+        "type": "place",
+        "label": "familiar corner"
+      },
+      {
+        "id": "right_turn",
+        "type": "action",
+        "label": "turn right"
+      },
+      {
+        "id": "shop",
+        "type": "goal",
+        "label": "shop"
+      },
+      {
+        "id": "rain",
+        "type": "context",
+        "label": "rain"
+      }
+    ],
+    "edges": [
+      {
+        "source": "navigator",
+        "target": "corner",
+        "relation": "arrived_at",
+        "evidence": "The decision point was the familiar corner.",
+        "salience_weight": 0.9
+      },
+      {
+        "source": "corner",
+        "target": "right_turn",
+        "relation": "afforded_route_action",
+        "evidence": "Turning right from this corner led toward the shop.",
+        "salience_weight": 0.95
+      },
+      {
+        "source": "right_turn",
+        "target": "shop",
+        "relation": "led_to",
+        "evidence": "The shop was found after the right turn.",
+        "salience_weight": 0.95
+      },
+      {
+        "source": "rain",
+        "target": "right_turn",
+        "relation": "co_occurred_with",
+        "evidence": "Rain was present but did not justify the route decision.",
+        "salience_weight": 0.2
+      }
+    ]
+  },
+  "salience": {
+    "high": [
+      {
+        "item": "corner -> right turn -> shop",
+        "reason": "This relation carries the route-memory affordance.",
+        "entity_refs": [
+          "corner",
+          "right_turn",
+          "shop"
+        ]
+      }
+    ],
+    "medium": [
+      {
+        "item": "rainy context",
+        "reason": "Rain helps recall the episode but is not a route rule.",
+        "entity_refs": [
+          "rain"
+        ]
+      }
+    ],
+    "low": [
+      {
+        "item": "weather as causal instruction",
+        "reason": "The episode does not support 'rain means turn right'.",
+        "entity_refs": [
+          "rain",
+          "right_turn"
+        ]
+      }
+    ]
+  },
+  "actions": {
+    "available": [
+      {
+        "action_id": "turn_right",
+        "description": "Turn right at the familiar corner.",
+        "available_to": "navigator"
+      },
+      {
+        "action_id": "continue_straight",
+        "description": "Continue straight past the familiar corner.",
+        "available_to": "navigator"
+      }
+    ],
+    "taken": [
+      {
+        "action_id": "turn_right",
+        "description": "The navigator turned right at the familiar corner.",
+        "outcome_ref": "found_shop"
+      }
+    ]
+  },
+  "outcomes": {
+    "predicted": [
+      {
+        "outcome_id": "expected_shop_after_turn",
+        "action_id": "turn_right",
+        "summary": "Turning right at this corner should bring the navigator closer to the shop.",
+        "confidence": 0.78
+      }
+    ],
+    "actual": [
+      {
+        "outcome_id": "found_shop",
+        "action_id": "turn_right",
+        "summary": "The shop was found shortly after the right turn.",
+        "confidence": 1.0,
+        "evidence": "Observed outcome in the synthetic episode."
+      }
+    ]
+  },
+  "counterfactuals": [
+    {
+      "condition": "If the same rain occurred at a different corner",
+      "expected_change": "The right-turn action would not be justified by rain alone.",
+      "anchor_test": "Reject weather-only symbol binding."
+    },
+    {
+      "condition": "If the familiar corner appeared on a dry day",
+      "expected_change": "The route-memory affordance could still support turning right.",
+      "anchor_test": "Preserve landmark-route relation independent of weather."
+    }
+  ],
+  "memory_hooks": [
+    {
+      "hook": "rainy corner then shop",
+      "type": "episodic cue",
+      "why_it_matters": "Rain can help retrieve the episode without becoming the causal rule."
+    }
+  ],
+  "abstraction": {
+    "level": "episodic_affordance",
+    "pre_symbol_statement": "At this remembered corner, the right turn was the action that led to the shop.",
+    "claim_boundary": "This supports a situated route-memory affordance only.",
+    "not_this": [
+      "rain means turn right",
+      "all corners require a right turn",
+      "weather is the route cause"
+    ]
+  },
+  "symbol_binding": {
+    "attach": [
+      {
+        "symbol": "situated_route_memory",
+        "score": 0.9,
+        "rationale": "The anchor binds a landmark, an action, and the observed goal outcome."
+      }
+    ],
+    "reject": [
+      {
+        "symbol": "rain_means_turn_right",
+        "score": 0.98,
+        "rationale": "Rain is a retrieval cue, not the action/outcome relation."
+      }
+    ]
+  },
+  "human_annotation": {
+    "grounding_judgment": "valid_anchor",
+    "confidence": 0.92,
+    "best_summary": "The anchor is a situated route-memory affordance: at this corner, turning right led to the shop.",
+    "error_tags": [],
+    "positive_tags": [
+      "GOOD_SALIENCE_MAP",
+      "GOOD_ACTION_OUTCOME_BINDING",
+      "GOOD_SYMBOL_REJECT",
+      "GOOD_CLAIM_BOUNDARY",
+      "GOOD_MEMORY_HOOK"
+    ],
+    "claim_boundary": "Do not infer that rain causes or recommends turning right.",
+    "notes": "The important lesson is the corner-action-outcome relation, not the weather."
+  },
+  "outcome_followup": {
+    "status": "complete_for_example",
+    "required_followup": false,
+    "observations": [
+      {
+        "timestamp": "2026-05-07T00:00:00Z",
+        "observation": "Synthetic scaffold example validated as a public non-private cell."
+      }
+    ]
+  }
+}

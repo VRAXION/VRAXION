@@ -1,0 +1,257 @@
+{
+  "schema_version": "AnchorWeave-v1.0",
+  "cell_id": "awc_example_epistemic_risk_0001",
+  "revision": 1,
+  "created_at": "2026-05-07T00:00:00Z",
+  "provenance": {
+    "source": "synthetic_scaffold_example",
+    "author": "VRAXION scaffold",
+    "privacy_tier": "public_synthetic",
+    "collection_method": "handwritten_example",
+    "contains_private_data": false,
+    "sanitization": "No real benchmark, private run, or unpublished result is represented."
+  },
+  "episode": {
+    "domain": "epistemic_risk",
+    "title": "High accuracy with close shortcut baselines",
+    "scene": "An AI result showed high accuracy, but shortcut baselines were close enough that the result could be exploiting surface cues instead of the intended relation.",
+    "temporal_context": "Single research evaluation review.",
+    "entities": [
+      {
+        "id": "ai_result",
+        "type": "result",
+        "label": "high-accuracy AI result"
+      },
+      {
+        "id": "shortcut_baselines",
+        "type": "comparison",
+        "label": "shortcut baselines"
+      },
+      {
+        "id": "intended_relation",
+        "type": "hypothesis",
+        "label": "intended causal or relational signal"
+      },
+      {
+        "id": "reviewer",
+        "type": "agent",
+        "label": "reviewer"
+      }
+    ],
+    "cues": [
+      {
+        "cue": "high accuracy",
+        "observed": "The headline metric looked strong.",
+        "role": "initial positive signal"
+      },
+      {
+        "cue": "shortcut baselines close",
+        "observed": "Baseline performance was close to the main result.",
+        "role": "risk cue"
+      }
+    ]
+  },
+  "relational_graph": {
+    "nodes": [
+      {
+        "id": "ai_result",
+        "type": "result",
+        "label": "high accuracy"
+      },
+      {
+        "id": "shortcut_baselines",
+        "type": "comparison",
+        "label": "close shortcut baselines"
+      },
+      {
+        "id": "intended_relation",
+        "type": "hypothesis",
+        "label": "intended relation"
+      },
+      {
+        "id": "epistemic_danger",
+        "type": "risk",
+        "label": "shortcut-risk danger"
+      }
+    ],
+    "edges": [
+      {
+        "source": "ai_result",
+        "target": "intended_relation",
+        "relation": "claims_support_for",
+        "evidence": "High accuracy is treated as evidence for the intended relation.",
+        "salience_weight": 0.72
+      },
+      {
+        "source": "shortcut_baselines",
+        "target": "ai_result",
+        "relation": "weakens_interpretation_of",
+        "evidence": "Close baselines can explain much of the apparent performance.",
+        "salience_weight": 0.96
+      },
+      {
+        "source": "shortcut_baselines",
+        "target": "epistemic_danger",
+        "relation": "indicates",
+        "evidence": "Close shortcut baselines raise the danger of a shortcut explanation.",
+        "salience_weight": 0.95
+      },
+      {
+        "source": "epistemic_danger",
+        "target": "intended_relation",
+        "relation": "requires_additional_tests_before_binding",
+        "evidence": "The result should not be bound to grounded understanding yet.",
+        "salience_weight": 0.9
+      }
+    ]
+  },
+  "salience": {
+    "high": [
+      {
+        "item": "shortcut baselines are close to the main result",
+        "reason": "This is the core warning that the result may not support the intended relation.",
+        "entity_refs": [
+          "shortcut_baselines",
+          "ai_result"
+        ]
+      }
+    ],
+    "medium": [
+      {
+        "item": "high headline accuracy",
+        "reason": "Accuracy matters, but it is not enough to attach the target symbol.",
+        "entity_refs": [
+          "ai_result"
+        ]
+      }
+    ],
+    "low": [
+      {
+        "item": "physical danger framing",
+        "reason": "The danger is epistemic and methodological, not bodily harm.",
+        "entity_refs": [
+          "epistemic_danger"
+        ]
+      }
+    ]
+  },
+  "actions": {
+    "available": [
+      {
+        "action_id": "attach_understanding_symbol",
+        "description": "Treat the result as evidence of grounded understanding.",
+        "available_to": "reviewer"
+      },
+      {
+        "action_id": "run_shortcut_controls",
+        "description": "Run stronger counterfactual controls and shortcut diagnostics.",
+        "available_to": "reviewer"
+      },
+      {
+        "action_id": "mark_epistemic_risk",
+        "description": "Mark the result as high epistemic risk until controls separate it from shortcut baselines.",
+        "available_to": "reviewer"
+      }
+    ],
+    "taken": [
+      {
+        "action_id": "mark_epistemic_risk",
+        "description": "The reviewer withheld the grounded-understanding symbol and marked shortcut risk.",
+        "outcome_ref": "symbol_withheld"
+      }
+    ]
+  },
+  "outcomes": {
+    "predicted": [
+      {
+        "outcome_id": "need_more_controls",
+        "action_id": "mark_epistemic_risk",
+        "summary": "The result should require additional controls before symbol binding.",
+        "confidence": 0.86
+      }
+    ],
+    "actual": [
+      {
+        "outcome_id": "symbol_withheld",
+        "action_id": "mark_epistemic_risk",
+        "summary": "The reviewer rejected early symbol attachment and preserved the shortcut-risk boundary.",
+        "confidence": 1.0,
+        "evidence": "Synthetic annotation outcome."
+      }
+    ]
+  },
+  "counterfactuals": [
+    {
+      "condition": "If shortcut baselines collapsed far below the main result under matched controls",
+      "expected_change": "The epistemic danger would weaken and symbol attachment could be reconsidered.",
+      "anchor_test": "Require separation from shortcut explanations before attaching the symbol."
+    },
+    {
+      "condition": "If the headline accuracy stayed high but shortcuts remained close",
+      "expected_change": "The risk anchor remains active despite high accuracy.",
+      "anchor_test": "Do not let accuracy alone override shortcut-risk salience."
+    }
+  ],
+  "memory_hooks": [
+    {
+      "hook": "high score, close shortcut",
+      "type": "epistemic warning cue",
+      "why_it_matters": "A strong metric can still be weak evidence if a cheap shortcut nearly matches it."
+    }
+  ],
+  "abstraction": {
+    "level": "outcome_pattern",
+    "pre_symbol_statement": "When shortcut baselines are close, high accuracy is not enough evidence for the intended grounding claim.",
+    "claim_boundary": "This is an epistemic danger or shortcut-risk anchor, not a physical danger claim.",
+    "not_this": [
+      "high accuracy always means grounded understanding",
+      "danger means physical threat",
+      "baseline proximity is irrelevant"
+    ]
+  },
+  "symbol_binding": {
+    "attach": [
+      {
+        "symbol": "epistemic_shortcut_risk",
+        "score": 0.93,
+        "rationale": "The salient relation is between high accuracy, close shortcuts, and withheld symbol binding."
+      }
+    ],
+    "reject": [
+      {
+        "symbol": "physical_danger",
+        "score": 0.99,
+        "rationale": "The danger is methodological, not bodily or environmental."
+      },
+      {
+        "symbol": "grounded_understanding_confirmed",
+        "score": 0.91,
+        "rationale": "The shortcut baselines prevent confident symbol attachment."
+      }
+    ]
+  },
+  "human_annotation": {
+    "grounding_judgment": "valid_anchor",
+    "confidence": 0.9,
+    "best_summary": "The anchor is epistemic danger: close shortcut baselines make high accuracy insufficient for a grounded-understanding claim.",
+    "error_tags": [],
+    "positive_tags": [
+      "GOOD_SALIENCE_MAP",
+      "GOOD_COUNTERFACTUALS",
+      "GOOD_SYMBOL_REJECT",
+      "GOOD_CLAIM_BOUNDARY"
+    ],
+    "claim_boundary": "Do not convert this into a physical danger claim or a consciousness claim.",
+    "notes": "The important lesson is shortcut-risk discipline before late symbol binding."
+  },
+  "outcome_followup": {
+    "status": "complete_for_example",
+    "required_followup": false,
+    "observations": [
+      {
+        "timestamp": "2026-05-07T00:00:00Z",
+        "observation": "Synthetic scaffold example validated as a public non-private cell."
+      }
+    ]
+  }
+}

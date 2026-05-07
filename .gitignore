@@ -1,5 +1,13 @@
 # Large local datasets
-data/
+**/data/
+!/data/
+/data/*
+!/data/anchorweave/
+!/data/anchorweave/**
+/data/anchorweave/private/
+/data/anchorweave/cells/*.private.jsonl
+/data/anchorweave/outcomes/*.private.jsonl
+/local_data/anchorweave/
 
 __pycache__/
 *.py[cod]
