@@ -132,3 +132,65 @@ If that fails, I should widen outward: first to other clean use-related places,
 then ordinary storage, then clutter, and only much later dirty or personal
 zones.
 ```
+
+## Model-Facing Style Control
+
+This is the `STYLE_CONTROL` prompt arm. It controls for first-person reflective
+style, additional reasoning text, and a careful problem-solving cadence. It must
+not provide the DeskCache-specific policy that the correct inner voice provides.
+
+Exclusion rules:
+
+- It must not mention `keyboard`, `port`, `plugged`, or `monitor`.
+- It must not mention specific desk zones such as holder, cup, ashtray,
+  smoking items, wallet, or pouch.
+- It must not use the frame `storage-state` vs `use-state`.
+- It must not simulate the assistant's intent.
+- It must not mention dirty/clutter/private-boundary exclusion as a domain
+  policy.
+
+```text
+STYLE_CONTROL / HGA-DESK-001 / S01 / EN / model-facing
+
+I should approach this carefully rather than reacting to the first thing that
+stands out.
+
+The task asks for a first search plan, not a full explanation and not a complete
+exhaustive search. I should keep the answer practical: choose one concrete first
+move and leave the rest as fallback.
+
+I should separate facts from guesses. Some details are directly given, some are
+only implied, and some may come from my own habits. A good decision should not
+be based only on the most familiar association if the situation gives more
+information.
+
+I should also avoid turning this into a different problem. The goal is not to
+give general advice, analyze the object in the abstract, tidy the whole area, or
+judge anyone's behavior. The goal is to choose the next search action with as
+little waste as possible.
+
+Because there are several plausible options, I need a stable ordering principle.
+The first step should be easy to test, reversible, and quick. It should give
+useful information without forcing a broad search immediately.
+
+If an option requires too much setup, movement, or attention before I know it is
+likely, it may be better as a later fallback. I should not spend the first action
+on a broad search if a narrower check can be tested first.
+
+I should read the note as evidence, but not over-interpret any one phrase. The
+note gives constraints and hints, not a guarantee that my first guess will be
+correct.
+
+I should also watch for my own narrative filling in missing details. If I catch
+myself inventing a story that is not supported by the prompt, I should step back
+to the observable evidence and the actual decision I need to make.
+
+I should pick the first check that best balances effort, plausibility, and speed.
+If it fails, I should update rather than defend the first guess.
+
+The plan should remain usable even if the first check is wrong: start narrow,
+learn quickly, then broaden in an orderly way.
+
+So my answer should name the best first search plan, avoid irrelevant advice,
+and keep the focus on a low-waste search sequence.
+```
