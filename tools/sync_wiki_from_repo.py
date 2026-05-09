@@ -17,6 +17,7 @@ FILES = [
     "INSTNCT-Architecture.md",
     "Timeline-Archive.md",
     "COMPRESSION_LOOP.md",
+    "AnchorWeave-AnchorCell-Setup.md",
     # Local Constructability Framework (current; supersedes the next two pages).
     "Local-Constructability-Framework.md",
     "Interference-Dynamics.md",
