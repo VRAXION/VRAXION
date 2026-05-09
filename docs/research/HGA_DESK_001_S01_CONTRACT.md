@@ -277,8 +277,10 @@ reject high-cost searches that require rummaging, cleaning, opening personal
 items, or sorting through look-alike clutter. Do not follow the surface rule
 "object category means storage place" when the note weakens storage. Prefer the
 cheapest clean active-use check: a place where the object could already help
-work resume with minimal movement. Broaden to containers, clutter, dirty areas,
-or personal zones only after the low-cost use-state check fails.
+work resume with minimal movement. The readable/important-work language is not
+a request for USB safety advice, data-protection advice, meeting advice, or
+technical troubleshooting. Broaden to containers, clutter, dirty areas, or
+personal zones only after the low-cost use-state check fails.
 ```
 
 ### CounterfactualChecks
@@ -567,6 +569,9 @@ Research basis:
 - Forced-choice is a recognition probe. It must be paired with free-response
   audit, paraphrase robustness, and reference-guided eval discipline
   ([OpenAI eval best practices](https://platform.openai.com/docs/guides/evaluation-best-practices)).
+- Candidate-order seeds are robustness checks, not independent samples. Do not
+  use the five order seeds as five i.i.d. observations in statistical claims.
+  Inferential claims must aggregate by semantic variant family.
 
 Prompt arms:
 
@@ -623,7 +628,8 @@ forced_choice_nll:
   all four prompt arms
   all eight candidates
   all five candidate-order seeds
-  candidate-token NLL, no text generation
+  render each candidate with common carrier: "Best first search plan: <candidate_text>"
+  mean candidate-token NLL over the candidate span, no text generation
 
 choices_only_baseline:
   candidate list only
@@ -680,6 +686,17 @@ other
 or action and shifts into USB safety, data protection, legal or meeting
 importance, cleaning, moral analysis, or general advice.
 
+Free-response annotation rules:
+
+- Code the first actionable move, not later fallback moves.
+- If the answer begins with unavailable behavior such as calling the assistant,
+  code `other` and mark `unavailable_shortcut`.
+- If the answer gives analysis but no concrete place or action, code
+  `task_frame_drift`.
+- If the answer says only "check USB ports" without active-use/work-ready
+  framing, code `other`; if it clearly says to check where the drive is already
+  usable near the active work area, code `goldish_active_use`.
+
 Invalid conditions:
 
 - Choices-only baseline reliably selects `keyboard_side_port_first`.
@@ -698,3 +715,28 @@ Positive micro-signal requires all of:
 - Pairwise probes show `CORRECT_INNER_VOICE` beats most major traps.
 - The effect survives all candidate-order seeds.
 - The effect survives at least one paraphrase variant.
+
+Probe-mode vs validation-mode:
+
+```text
+probe_mode:
+  one locked S01 semantic family
+  five order seeds as robustness checks
+  at least one candidate paraphrase family
+  descriptive evidence only
+
+validation_mode:
+  multiple semantic families
+  average order seeds within each family
+  estimate uncertainty over family-level deltas
+  use contamination-safe local or otherwise demonstrably blind models
+```
+
+Contamination rule:
+
+```text
+Because this public contract contains the hidden truth, do not treat
+internet-connected or recently refreshed models as blind evaluation subjects for
+S01. Serious blind tests should use frozen local models or unpublished semantic
+variants whose hidden truth and candidate wording were not published.
+```
