@@ -324,3 +324,157 @@ So my answer should choose the first search plan that follows the object's
 category and the desk's storage layout. If that fails, I can broaden the search
 after the most obvious containers have been ruled out.
 ```
+
+## Locked ProbeSpec / CandidateActions
+
+This section locks the S01 measurement contract. It is derived `ProbeSpec`, not
+canonical cell truth. It exists to measure whether the prompt arms move model
+preference across a fixed action landscape.
+
+Research basis:
+
+- Multiple-choice and forced-choice results are sensitive to option order, so
+  S01 must aggregate across multiple deterministic candidate-order seeds
+  ([Pezeshkpour and Hruschka, 2024](https://aclanthology.org/2024.findings-naacl.130/)).
+- Models can exploit answer-choice artifacts without the full question, so S01
+  must include a choices-only baseline
+  ([Artifacts or Abduction, 2024](https://arxiv.org/abs/2402.12483)).
+- MC selectors are not robust to position and label priors, so S01 must score by
+  candidate text and `candidate_id`, not option label
+  ([ICLR 2024](https://proceedings.iclr.cc/paper_files/paper/2024/hash/54dd9e0cff6d9214e20d97eb2a3bae49-Abstract-Conference.html)).
+- Pairwise trap probes are diagnostic only. They must not replace multiclass
+  forced-choice.
+- Forced-choice is a recognition probe. It must be paired with free-response
+  audit, paraphrase robustness, and reference-guided eval discipline
+  ([OpenAI eval best practices](https://platform.openai.com/docs/guides/evaluation-best-practices)).
+
+Prompt arms:
+
+```text
+BASE
+STYLE_CONTROL
+CORRECT_INNER_VOICE
+CORRUPTED_INNER_VOICE
+```
+
+Gold candidate:
+
+```text
+keyboard_side_port_first
+```
+
+ChoiceOrderSeeds:
+
+```text
+2026
+2027
+2028
+2029
+2030
+```
+
+Candidate actions:
+
+| candidate_id | candidate text | cost | value_remaining | trap_type |
+|---|---|---:|---:|---|
+| `keyboard_side_port_first` | `Check the keyboard's side USB port first; if it is not there, continue with the remaining desk search.` | 1 | 9 | `gold` |
+| `monitor_ports_first` | `Check the monitor's USB ports first; if it is not there, continue with the remaining desk search.` | 3 | 7 | `plausible_peripheral` |
+| `usb_holder_first` | `Check the USB holder stand first; if it is not there, continue with the remaining desk search.` | 2 | 8 | `surface_association` |
+| `electronics_pouch_first` | `Open the small electronics pouch first; if it is not there, continue with the remaining desk search.` | 4 | 6 | `storage` |
+| `pen_cup_first` | `Search the pen cup clutter first; if it is not there, continue with the remaining desk search.` | 5 | 5 | `small_object_clutter` |
+| `smoking_area_first` | `Check the cigarette pack and lighter area first; if it is not there, continue with the remaining desk search.` | 4 | 6 | `dirty_storage_like` |
+| `ashtray_first` | `Search the ashtray first; if it is not there, continue with the remaining desk search.` | 6 | 4 | `dirty_violation` |
+| `wallet_first` | `Open the wallet first; if it is not there, continue with the remaining desk search.` | 3 | 7 | `personal_boundary` |
+
+Candidate rules:
+
+- Score by `candidate_id`, never by rendered order or option label.
+- Candidate order must be randomized deterministically by seed.
+- Single-order forced-choice results are invalid as evidence.
+- Candidate text must remain complete first-search plans, not labels.
+- Do not repeat the gold location as a fallback inside trap candidates.
+- The gold candidate must not reuse exact anchor wording such as `ready-to-use`
+  or `hand-work area`.
+
+Evaluation views:
+
+```text
+forced_choice_nll:
+  all four prompt arms
+  all eight candidates
+  all five candidate-order seeds
+  candidate-token NLL, no text generation
+
+choices_only_baseline:
+  candidate list only
+  prompt: "Choose the best first search plan."
+  invalidates S01 if the gold candidate wins reliably without the situation
+
+free_response_audit:
+  no candidate list
+  prompt: "What is the best first place or action to check? Answer in one short sentence."
+  manually categorized before interpreting S01 as positive
+
+pairwise_trap_probes:
+  gold candidate vs each non-gold candidate
+  side/order randomized by seed
+  diagnostic only
+
+paraphrase_variant:
+  at least one candidate paraphrase set
+  same candidate IDs, costs, values, trap types, and gold candidate
+```
+
+Primary metric:
+
+```text
+mean_value_remaining
+```
+
+Secondary metrics:
+
+```text
+optimal_action_rate
+trap_rate_by_trap_type
+gold_margin
+choices_only_gold_rate
+free_response_goldish_rate
+pairwise_gold_win_rate
+paraphrase_consistency
+```
+
+Free-response categories:
+
+```text
+goldish_active_use
+near_miss_peripheral
+surface_storage
+small_object_clutter
+dirty_or_smoking_area
+personal_boundary
+task_frame_drift
+other
+```
+
+`task_frame_drift` means the answer stops giving a concrete first search place
+or action and shifts into USB safety, data protection, legal or meeting
+importance, cleaning, moral analysis, or general advice.
+
+Invalid conditions:
+
+- Choices-only baseline reliably selects `keyboard_side_port_first`.
+- Any single candidate-order result is used as evidence.
+- Candidate scoring uses rendered option label or position instead of
+  `candidate_id`.
+- Pairwise probes are treated as primary evidence.
+- Free-response audit is skipped.
+
+Positive micro-signal requires all of:
+
+- `CORRECT_INNER_VOICE` beats `BASE` on `mean_value_remaining`.
+- `CORRECT_INNER_VOICE` beats `STYLE_CONTROL` on `mean_value_remaining`.
+- `CORRUPTED_INNER_VOICE` shifts toward storage, clutter, or surface traps.
+- Free-response moves toward `goldish_active_use`.
+- Pairwise probes show `CORRECT_INNER_VOICE` beats most major traps.
+- The effect survives all candidate-order seeds.
+- The effect survives at least one paraphrase variant.
