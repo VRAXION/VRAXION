@@ -22,6 +22,7 @@ STATUS_BLOCKED = "ANCHOR_MINI_003_RESOURCE_BLOCKED"
 CONTRACT_FILE = Path("docs/research/ANCHOR_MINI_003_CONTRACT.md")
 ARMS = ["ANSWER_ONLY", "ANCHOR_MULTI_TASK", "SHUFFLED_ANCHOR_MULTI_TASK"]
 MODELS = ["tiny_mlp"]
+ANSWER_HEAD_MODES = ["compatibility", "direct_match", "hybrid"]
 ARM_OFFSETS = {
     "ANSWER_ONLY": 101,
     "ANCHOR_MULTI_TASK": 211,
@@ -62,6 +63,12 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
     parser.add_argument("--aux-loss-weight", type=float, default=2.0)
     parser.add_argument("--train-surface-gold-prob", type=float, default=0.90)
     parser.add_argument("--eval-surface-wrong-prob", type=float, default=0.90)
+    parser.add_argument(
+        "--answer-head-mode",
+        choices=ANSWER_HEAD_MODES,
+        default="compatibility",
+        help="compatibility preserves the validated MINI-003 default; direct_match and hybrid are carrier diagnostics",
+    )
     return parser.parse_args(argv)
 
 
@@ -237,9 +244,12 @@ def tensorize(
 
 
 class MultiTaskNet:
-    def __init__(self, input_dim: int, hidden: int):
+    def __init__(self, input_dim: int, hidden: int, answer_head_mode: str):
         import torch
 
+        if answer_head_mode not in ANSWER_HEAD_MODES:
+            raise RuntimeError(f"Unknown answer head mode: {answer_head_mode}")
+        self.answer_head_mode = answer_head_mode
         self.trunk = torch.nn.Sequential(
             torch.nn.Linear(input_dim, hidden),
             torch.nn.Tanh(),
@@ -248,31 +258,53 @@ class MultiTaskNet:
         self.effect_category_heads = torch.nn.ModuleList(
             [torch.nn.Linear(hidden, CATEGORY_COUNT) for _ in range(CANDIDATE_COUNT)]
         )
+        self.direct_match_head = (
+            torch.nn.Linear(hidden, CANDIDATE_COUNT) if answer_head_mode in {"direct_match", "hybrid"} else None
+        )
 
     def parameters(self) -> Any:
-        return (
+        params = (
             list(self.trunk.parameters())
             + list(self.goal_category_head.parameters())
             + list(self.effect_category_heads.parameters())
         )
+        if self.direct_match_head is not None:
+            params += list(self.direct_match_head.parameters())
+        return params
 
     def train(self) -> None:
         self.trunk.train()
         self.goal_category_head.train()
         self.effect_category_heads.train()
+        if self.direct_match_head is not None:
+            self.direct_match_head.train()
 
     def eval(self) -> None:
         self.trunk.eval()
         self.goal_category_head.eval()
         self.effect_category_heads.eval()
+        if self.direct_match_head is not None:
+            self.direct_match_head.eval()
 
     def __call__(self, x: Any) -> dict[str, Any]:
         h = self.trunk(x)
         goal_logits = self.goal_category_head(h)
         effect_logits = [head(h) for head in self.effect_category_heads]
-        match_logits = torch_stack(
+        compatibility_logits = torch_stack(
             [(goal_logits * logits).sum(dim=1) / (CATEGORY_COUNT**0.5) for logits in effect_logits]
         )
+        if self.answer_head_mode == "compatibility":
+            match_logits = compatibility_logits
+        elif self.answer_head_mode == "direct_match":
+            if self.direct_match_head is None:
+                raise RuntimeError("direct_match_head missing")
+            match_logits = self.direct_match_head(h)
+        elif self.answer_head_mode == "hybrid":
+            if self.direct_match_head is None:
+                raise RuntimeError("direct_match_head missing")
+            match_logits = compatibility_logits + self.direct_match_head(h)
+        else:
+            raise RuntimeError(f"Unknown answer head mode: {self.answer_head_mode}")
         return {
             "answer": match_logits,
             "goal_category": goal_logits,
@@ -319,11 +351,12 @@ def train_model(
     lr: float,
     hidden: int,
     aux_weight: float,
+    answer_head_mode: str,
 ) -> tuple[MultiTaskNet, dict[str, float]]:
     import torch
 
     torch.manual_seed(seed)
-    model = MultiTaskNet(int(train_x.shape[1]), hidden)
+    model = MultiTaskNet(int(train_x.shape[1]), hidden, answer_head_mode)
     optimizer = torch.optim.AdamW(model.parameters(), lr=lr, weight_decay=0.0)
     for _ in range(epochs):
         model.train()
@@ -423,6 +456,7 @@ def run_arm_model(
     lr: float,
     hidden: int,
     aux_weight: float,
+    answer_head_mode: str,
 ) -> dict[str, Any]:
     rng = random.Random(seed + ARM_OFFSETS[arm] + MODEL_OFFSETS["tiny_mlp"])
     train_x, train_targets = tensorize(train_examples, arm=arm, rng=rng)
@@ -438,6 +472,7 @@ def run_arm_model(
         lr=lr,
         hidden=hidden,
         aux_weight=aux_weight,
+        answer_head_mode=answer_head_mode,
     )
     train_preds = predict(model, train_x)
     eval_preds = predict(model, eval_x)
@@ -449,6 +484,7 @@ def run_arm_model(
         "seed": seed,
         "arm": arm,
         "model": "tiny_mlp",
+        "answer_head_mode": answer_head_mode,
         "feature_dim": int(train_x.shape[1]),
         "answer_train_accuracy": accuracy(train_preds["answer"], train_answer_labels),
         "answer_eval_ood_accuracy": accuracy(eval_preds["answer"], eval_answer_labels),
@@ -626,6 +662,7 @@ def run_seed(args: argparse.Namespace, seed: int) -> dict[str, Any]:
                 lr=args.lr,
                 hidden=args.hidden,
                 aux_weight=args.aux_loss_weight,
+                answer_head_mode=args.answer_head_mode,
             )
         )
     conditions = seed_conditions(metrics, train_examples, eval_examples)
@@ -681,6 +718,7 @@ def run(args: argparse.Namespace) -> int:
         "lr": args.lr,
         "hidden": args.hidden,
         "aux_loss_weight": args.aux_loss_weight,
+        "answer_head_mode": args.answer_head_mode,
         "train_surface_gold_prob": args.train_surface_gold_prob,
         "eval_surface_wrong_prob": args.eval_surface_wrong_prob,
         "eval_input_identical": True,

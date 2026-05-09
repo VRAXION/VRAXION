@@ -85,6 +85,22 @@ learn the compatibility path implicitly from answer labels, while the anchor arm
 receives explicit supervision for the latent categories that the answer path
 uses.
 
+The validated default answer-head mode is:
+
+```text
+compatibility
+```
+
+Additional diagnostic modes may be used for robustness sweeps:
+
+```text
+direct_match   # independent direct candidate-match answer head
+hybrid         # compatibility path plus direct candidate-match bypass
+```
+
+These modes test whether the signal depends on routing decisions through the
+decomposed latent categories.
+
 ## Metrics
 
 ```text
