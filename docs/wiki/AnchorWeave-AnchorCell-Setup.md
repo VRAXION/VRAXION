@@ -93,15 +93,17 @@ Move to human-grounded microtests with gradient value/cost scoring:
 - forced-choice plus free-response audit,
 - mean value remaining as the primary metric.
 
-The next default probe is `HGA-DESK-001 / DeskCache S01`.
+The next default probe contract is `HGA-DESK-001 / DeskCache S01`.
 
-## Locked Next Cell: HGA-DESK-001 / DeskCache S01
+## Locked Probe Contract: HGA-DESK-001 / DeskCache S01
 
 Task:
 
 ```text
 Economical search for a USB drive on a cluttered desk.
 ```
+
+Forced-choice is the primary low-noise recognition probe. It is not sufficient evidence that the model can recall or generate the intended search policy. S01 only becomes a standard cell after it passes forced-choice, choices-only, free-response, order-robustness, and paraphrase checks.
 
 Hidden truth:
 
@@ -129,11 +131,11 @@ CORRUPTED_ANCHOR
 Required probes:
 
 ```text
-forced-choice NLL
+forced-choice NLL across multiple deterministic candidate-order seeds
 choices-only baseline
 free-response audit
-pairwise trap checks
-candidate paraphrase check
+pairwise trap checks as diagnostics only
+candidate paraphrase robustness
 ```
 
 ## S01 Lock Rules
@@ -144,13 +146,17 @@ candidate paraphrase check
 - `CORRUPTED_ANCHOR` must be fluent and plausible, but semantically wrong.
 - Candidate plans must be complete first-search plans, not single labels.
 - Candidate order must be randomized by seed and scored by `candidate_id`, never by position.
+- Single-order forced-choice results are not trusted; aggregate across multiple candidate-order seeds.
+- Pairwise trap probes are diagnostic only and must not replace multiclass forced-choice.
 - No assistant-call option. The assistant is unreachable.
 - No mounted-drive option in S01. Make that a sibling cell if needed.
+- No-valid-option reflective judgment belongs in a later sibling cell, not S01.
 - Candidate text must be length/style balanced.
 - The gold candidate must not be shorter than the traps.
 - The gold candidate must not reuse exact anchor phrases such as `ready-to-use` or `hand-work area`.
 - Do not repeat the gold fallback phrase inside every wrong candidate. Use a neutral fallback like `continue with the remaining desk search`.
 - Report a choices-only baseline. If the gold candidate wins without the scene or note, the cell is invalid as a grounding probe.
+- S01 is a locked probe contract, not a validated standard cell, until it passes the full guard stack.
 
 ## Current S01 Cell Contract
 
@@ -290,14 +296,18 @@ data/anchorweave/cells/
 Do not scale to 10-20 DeskCache cells until S01 shows a real anchor movement signal:
 
 ```text
-CORRECT_ANCHOR > BASE
-CORRECT_ANCHOR > STYLE_CONTROL
-CORRUPTED_ANCHOR moves toward storage traps
-choices-only baseline does not already solve the cell
-free-response audit moves in the same direction
+choices-only baseline does not reliably select the gold plan
+CORRECT_ANCHOR > BASE on mean_value_remaining
+CORRECT_ANCHOR > STYLE_CONTROL on mean_value_remaining
+CORRUPTED_ANCHOR moves toward storage/clutter traps
+free-response moves toward active-use / keyboard-like answers
+effect survives multiple candidate-order seeds
+effect survives at least one paraphrase variant
 ```
 
 If S01 fails, revise the cell or the human-anchor layer before collecting more cells.
+
+S02 can test monitor or mounted-drive logic. A later S0X can test no-valid-option refusal or reflective judgment. These must not be mixed into S01.
 
 ## Publication Caveat
 
