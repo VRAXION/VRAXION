@@ -7,6 +7,7 @@
 - [Research Process & Archive](Timeline-Archive)
 - [Research Name Glossary](Research-Name-Glossary)
 - [Research Scoreboard](Research-Scoreboard)
+- [AnchorWeave / AnchorCell Setup](AnchorWeave-AnchorCell-Setup)
 - [A Geometry Audit Revival](A-GeometryAuditRevival)
 - [A Hidden Natural Margin Polish](A-HiddenNaturalMarginPolish)
 - [A Hidden Natural Int8 Artifact](A-HiddenNatural-Int8-Artifact)
