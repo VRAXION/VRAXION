@@ -34,6 +34,56 @@ Store relational episodic anchors from which stable abstractions can emerge.
 Symbols attach late.
 ```
 
+## Locked AnchorCell Architecture
+
+The locked architecture is not a flat chain. A cell has a canonical core and a derived probe specification:
+
+```text
+AnchorCell
+  Core
+    Meta
+    Situation
+    ImplicitJob
+    RelationalModel
+    SalienceMap
+    HumanSourceTrace optional/private
+    DistilledPolicy
+    CounterfactualChecks
+    SymbolAttachReject
+    ClaimBoundary
+    WorldTruth private/eval-hidden
+
+  ProbeSpec derived
+    PromptArms
+    CandidateActions
+    ChoiceOrderSeeds
+    FreeResponseTaxonomy
+    PairwiseTrapProbes
+    ParaphraseVariants
+    ScoringSpec
+    PassCriteria
+```
+
+Core rules:
+
+- The explicit event, scene, task text, and any note or letter belong in `Situation`. They are not the anchor.
+- `ImplicitJob` is the latent job extracted from the explicit situation: what the situation is really asking the agent to do.
+- `RelationalModel` and `SalienceMap` preserve the episode structure, constraints, tempting distractors, and what should or should not matter.
+- `HumanSourceTrace` is raw human think-aloud source material. It is optional, private by default, and not canonical truth.
+- `DistilledPolicy` is the cleaned, reusable, leak-safe model-facing policy extracted from the source trace.
+- `CounterfactualChecks` test whether the policy rejects shortcuts and survives plausible changes.
+- `SymbolAttachReject` stays late: symbols attach after relational, salience, and policy structure, not before.
+- `ClaimBoundary` states what the cell does and does not justify.
+- `WorldTruth` stores hidden world facts for authoring or evaluation. It must not be model-facing.
+- Candidate wording, order seeds, pairwise traps, free-response categories, and scoring belong to `ProbeSpec`, not the canonical cell core.
+
+For new agents, the safest rule is:
+
+```text
+Core = what happened, what mattered, what policy was distilled, and what is true.
+ProbeSpec = how we measure whether a model learned or follows that policy.
+```
+
 ## What Was Built
 
 Stable scaffold on `main`:
@@ -126,6 +176,29 @@ BASE
 STYLE_CONTROL
 CORRECT_ANCHOR
 CORRUPTED_ANCHOR
+```
+
+S01 maps onto the locked architecture as:
+
+```text
+Situation:
+  desk layout, assistant note, task frame, assistant unreachable
+
+ImplicitJob:
+  low-cost search under assistant-intent constraints
+
+HumanSourceTrace:
+  the user's Hungarian inner-monologue source layer; private/authoring source
+
+DistilledPolicy:
+  leak-safe correct anchor policy; it must not mention keyboard, port, plugged, or monitor
+
+WorldTruth:
+  USB is plugged into the keyboard side USB port; hidden from model-facing prompts
+
+ProbeSpec:
+  prompt arms, candidate plans, choices-only baseline, free-response audit,
+  pairwise trap probes, paraphrase variants, scoring, and pass criteria
 ```
 
 Required probes:
@@ -274,8 +347,11 @@ surface_storage
 small_object_clutter
 dirty_or_smoking_area
 personal_boundary
+task_frame_drift
 other
 ```
+
+`task_frame_drift` means the answer stops giving a concrete first search place or action and shifts into USB safety, data protection, legal or meeting importance, cleaning, moral analysis, or general advice.
 
 ## Next Commands / Workflow
 
