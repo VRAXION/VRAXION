@@ -46,6 +46,9 @@ AnchorCell
     ImplicitJob
     RelationalModel
     SalienceMap
+    Actions
+    Outcomes
+    MemoryHooks
     HumanSourceTrace optional/private
     DistilledPolicy
     CounterfactualChecks
@@ -69,6 +72,7 @@ Core rules:
 - The explicit event, scene, task text, and any note or letter belong in `Situation`. They are not the anchor.
 - `ImplicitJob` is the latent job extracted from the explicit situation: what the situation is really asking the agent to do.
 - `RelationalModel` and `SalienceMap` preserve the episode structure, constraints, tempting distractors, and what should or should not matter.
+- `Actions`, `Outcomes`, and `MemoryHooks` are core fields. They tie grounding to available behavior, expected effects, observed effects, and future retrieval cues.
 - `HumanSourceTrace` is raw human think-aloud source material. It is optional, private by default, and not canonical truth.
 - `DistilledPolicy` is the cleaned, reusable, leak-safe model-facing policy extracted from the source trace.
 - `CounterfactualChecks` test whether the policy rejects shortcuts and survives plausible changes.
@@ -82,6 +86,16 @@ For new agents, the safest rule is:
 ```text
 Core = what happened, what mattered, what policy was distilled, and what is true.
 ProbeSpec = how we measure whether a model learned or follows that policy.
+```
+
+High-connectivity decision terrain is not stored in one monologue field. It spans `RelationalModel`, `SalienceMap`, `Actions`, `Outcomes`, `MemoryHooks`, and optional/private `HumanSourceTrace`.
+
+Compatibility note:
+
+```text
+AnchorWeave-v1.0 remains the current append-only storage schema.
+Core + ProbeSpec is the locked conceptual standard for HGA-DESK/S01 and future v2 work.
+S01 is a probe manifest until a v2 schema or deterministic v1 exporter exists.
 ```
 
 ## What Was Built
@@ -187,6 +201,16 @@ Situation:
 ImplicitJob:
   low-cost search under assistant-intent constraints
 
+Actions:
+  first-search plans available in the desk search space
+
+Outcomes:
+  expected search energy and value remaining for each first-search plan
+
+MemoryHooks:
+  retrieval cues such as assistant intent, storage-vs-use, private boundary,
+  clutter avoidance, dirty-area avoidance, and low-cost diagnostic action
+
 HumanSourceTrace:
   the user's Hungarian inner-monologue source layer; private/authoring source
 
@@ -201,6 +225,14 @@ ProbeSpec:
   pairwise trap probes, paraphrase variants, scoring, and pass criteria
 ```
 
+DeskCache S01 is a Search-to-Decision Anchor:
+
+```text
+physical search space -> internal decision terrain -> action/outcome
+```
+
+It tests whether a model links possible desk locations to costs, social boundaries, shortcut pressure, assistant intent, and a diagnostic first action.
+
 S01 text placement is locked as:
 
 | Existing text | Locked layer | Treatment |
@@ -211,7 +243,8 @@ S01 text placement is locked as:
 | User's Hungarian inner monologue | `HumanSourceTrace` | Preserve as private authoring source. Do not present it directly as the anchor. |
 | Human anchor policy summary | `DistilledPolicy` | Convert into the leak-safe `CORRECT_ANCHOR`. |
 | `STYLE_CONTROL` and `CORRUPTED_ANCHOR` drafts | `ProbeSpec.PromptArms` | Balance them against `CORRECT_ANCHOR` by length, style, and fluency. |
-| Candidate plans | `ProbeSpec.CandidateActions` | Use for measurement only; they are not canonical cell truth. |
+| First-search action set | `Actions` | Keep the possible first actions in the core action landscape. |
+| Candidate wording / order | `ProbeSpec.CandidateActions` | Use rendered candidate text for measurement only; it is not canonical cell truth. |
 | Costs, values, and trap labels | `ProbeSpec.ScoringSpec` | Eval-facing only. |
 | Keyboard-side USB-port truth | `WorldTruth` | Hidden truth; never leak into `BASE` or `CORRECT_ANCHOR`. |
 | Free-response categories | `ProbeSpec.FreeResponseTaxonomy` | Include `task_frame_drift`. |

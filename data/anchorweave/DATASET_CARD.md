@@ -15,7 +15,8 @@ definitions, and not a claim that symbols are grounded by text labels alone.
 
 ## Data Structure
 
-Canonical storage is rich JSONL. Each line is one AnchorCell with:
+Current canonical storage is rich `AnchorWeave-v1.0` JSONL. Each line is one
+AnchorCell with:
 
 - episode
 - relational graph
@@ -29,8 +30,37 @@ Canonical storage is rich JSONL. Each line is one AnchorCell with:
 - human grounding annotation
 - outcome follow-up
 
-Derived SFT, DPO, reward, eval, and graph views are generated from canonical
-cells.
+The locked conceptual standard for future work is:
+
+```text
+AnchorCellCore
+  Situation
+  ImplicitJob
+  RelationalModel
+  SalienceMap
+  Actions
+  Outcomes
+  MemoryHooks
+  HumanSourceTrace optional/private
+  DistilledPolicy
+  CounterfactualChecks
+  SymbolAttachReject
+  ClaimBoundary
+  WorldTruth private/eval-hidden
+
+ProbeSpec derived
+  PromptArms
+  CandidateActions
+  ChoiceOrderSeeds
+  FreeResponseTaxonomy
+  PairwiseTrapProbes
+  ParaphraseVariants
+  ScoringSpec
+  PassCriteria
+```
+
+Derived SFT, DPO, reward, eval, graph, and ProbeSpec views are generated from
+canonical cells.
 
 ## Privacy Boundary
 
@@ -64,6 +94,8 @@ symbol-grounding research via relational episodic anchors.
 - Private data leakage if raw daily annotations are committed.
 - Overgeneralization from a single episode to a broad symbol.
 - Surface-pattern shortcut learning if salience and counterfactuals are weak.
+- Measurement artifacts if ProbeSpec candidates, order seeds, or scoring are
+  mistaken for canonical cell truth.
 - Unsupported inner-state claims if the boundary field is ignored.
 - Premature symbol attachment before stable abstractions are available.
 
@@ -71,6 +103,7 @@ symbol-grounding research via relational episodic anchors.
 
 Current schema: `AnchorWeave-v1.0`
 
+`Core + ProbeSpec` is the locked conceptual standard, not a storage migration.
 Schema changes should create a new schema file, update the dataset card, and
-include migration notes. Existing JSONL cells should remain append-only unless a
-new revision is appended with explicit provenance.
+include migration or exporter notes. Existing JSONL cells should remain
+append-only unless a new revision is appended with explicit provenance.

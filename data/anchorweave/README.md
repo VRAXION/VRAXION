@@ -6,8 +6,21 @@ available actions, predicted and actual outcomes, counterfactuals, memory hooks,
 pre-symbol abstraction, symbol attach/reject decisions, human grounding
 annotation, and outcome follow-up.
 
-The canonical storage format is append-only JSONL. Derived SFT, DPO, reward,
-eval, and graph views are generated later from the canonical cells.
+The current storage format is append-only `AnchorWeave-v1.0` JSONL. The locked
+conceptual standard for new work is:
+
+```text
+AnchorCell = Core + derived ProbeSpec
+```
+
+Core contains the situation, implicit job, relational/salience structure,
+actions, outcomes, memory hooks, optional/private human source trace, distilled
+policy, counterfactual checks, late symbol attach/reject, claim boundary, and
+hidden world truth. ProbeSpec contains prompt arms, candidate actions, order
+seeds, taxonomies, pairwise probes, paraphrases, scoring, and pass criteria.
+
+Derived SFT, DPO, reward, eval, graph, and ProbeSpec views are generated later
+from canonical cells. They must not become the source of truth.
 
 ## Privacy Boundary
 

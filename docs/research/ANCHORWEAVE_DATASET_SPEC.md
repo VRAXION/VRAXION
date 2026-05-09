@@ -15,19 +15,57 @@ stable should a symbol be attached or rejected.
 ## Transformation
 
 ```text
-episode
-  -> relational graph
-  -> salience
-  -> action/outcome
-  -> counterfactuals
-  -> memory hook
-  -> pre-symbol abstraction
-  -> symbol attach/reject
+Situation
+  -> ImplicitJob
+  -> RelationalModel / SalienceMap
+  -> Actions / Outcomes / MemoryHooks
+  -> DistilledPolicy
+  -> CounterfactualChecks
+  -> SymbolAttachReject
 ```
+
+## Locked Conceptual Standard
+
+The locked conceptual standard is `AnchorCellCore + ProbeSpec`.
+
+```text
+AnchorCellCore
+  Meta
+  Situation
+  ImplicitJob
+  RelationalModel
+  SalienceMap
+  Actions
+  Outcomes
+  MemoryHooks
+  HumanSourceTrace optional/private
+  DistilledPolicy
+  CounterfactualChecks
+  SymbolAttachReject
+  ClaimBoundary
+  WorldTruth private/eval-hidden
+
+ProbeSpec derived
+  PromptArms
+  CandidateActions
+  ChoiceOrderSeeds
+  FreeResponseTaxonomy
+  PairwiseTrapProbes
+  ParaphraseVariants
+  ScoringSpec
+  PassCriteria
+```
+
+`ProbeSpec` is derived measurement infrastructure. It must not become canonical
+cell truth. High-connectivity decision terrain spans `RelationalModel`,
+`SalienceMap`, `Actions`, `Outcomes`, `MemoryHooks`, and optional/private
+`HumanSourceTrace`.
 
 ## Canonical Unit: AnchorCell
 
-An AnchorCell is one append-only JSON object. The required top-level fields are:
+Current append-only storage uses `AnchorWeave-v1.0`. The v1 schema remains valid
+until a separate v2 schema or deterministic v1 exporter is approved. The required
+v1 top-level fields are:
 
 - `schema_version`
 - `cell_id`
@@ -51,12 +89,11 @@ An AnchorCell is one append-only JSON object. The required top-level fields are:
 `provenance` records source, author, privacy tier, collection method, and whether
 the cell contains private data.
 
-`episode` records the concrete memory-like situation. It should be specific
-enough to preserve the scene but sanitized before public release.
+`episode` records the concrete memory-like situation. In the conceptual standard
+this maps to `Situation`.
 
 `relational_graph` records nodes and edges that make the episode usable as a
-grounding anchor. The graph should distinguish causal, spatial, temporal,
-affordance, comparison, and evidence relations when possible.
+grounding anchor. In the conceptual standard this maps to `RelationalModel`.
 
 `salience` marks what matters at high, medium, and low levels. Low salience is
 not useless; it often captures tempting but wrong cues.
@@ -73,13 +110,15 @@ counterfactuals should block strong symbol attachment.
 without turning incidental context into the rule.
 
 `abstraction` stores the pre-symbol statement, abstraction level, claim boundary,
-and explicit non-claims.
+and explicit non-claims. In the conceptual standard this includes
+`ImplicitJob`, `DistilledPolicy`, and `ClaimBoundary`.
 
-`symbol_binding` records late attach/reject decisions. A rejected symbol is as
-important as an attached symbol because it protects the claim boundary.
+`symbol_binding` records late attach/reject decisions. In the conceptual standard
+this maps to `SymbolAttachReject`.
 
 `human_annotation` records the grounding judgment, confidence, best summary,
-positive tags, error tags, and boundary notes.
+positive tags, error tags, and boundary notes. Optional raw human traces belong
+in private notes or future `HumanSourceTrace`, not in public model-facing text.
 
 `outcome_followup` records later observations, status, and whether follow-up is
 still needed.
@@ -105,6 +144,8 @@ Derived views are generated from canonical cells:
 - Eval: future held-out checks for salience, counterfactual, and claim-boundary
   failures.
 - Graph: flattened relational edges for graph analytics.
+- ProbeSpec: prompt arms, candidate actions, order seeds, free-response
+  taxonomies, pairwise probes, paraphrases, scoring, and pass criteria.
 
 Derived views must not become the source of truth. Regenerate them from the
 canonical append-only cells.
