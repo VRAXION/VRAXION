@@ -194,3 +194,63 @@ learn quickly, then broaden in an orderly way.
 So my answer should name the best first search plan, avoid irrelevant advice,
 and keep the focus on a low-waste search sequence.
 ```
+
+## Model-Facing Corrupted Inner Voice
+
+This is the `CORRUPTED_INNER_VOICE` prompt arm. It should be fluent and
+plausible, not cartoonishly wrong. Its job is to provide a semantically wrong
+but human-like storage-first policy, so the probe can detect whether the model
+is sensitive to anchor content rather than merely to reflective style.
+
+Leakage and control rules:
+
+- It must not mention `keyboard`, `port`, `plugged`, or `monitor`.
+- It may mention storage/container trap zones that appear in the situation.
+- It must sound like a sincere efficient-search policy, not like an admitted
+  bad answer.
+- It should prioritize object category, usual storage, and local container order
+  over assistant-intent and active-use reasoning.
+
+```text
+CORRUPTED_INNER_VOICE / HGA-DESK-001 / S01 / EN / model-facing
+
+I should not overcomplicate this. I am looking for a small object, so the first
+places to check should be the places meant for that kind of object.
+
+My first pull is still toward the obvious storage place. That is the strongest
+association: this kind of object has a holder, so the holder deserves the first
+sanity check. The note says it did not fit well, but notes can be imprecise. The
+assistant may have meant that it was awkward, not impossible, or may not have
+tried carefully.
+
+Starting with the holder is also low effort. It is close, visible, and made for
+this category of item. Even if the note weakens it, my past experience says that
+this is where these objects usually belong. I should not ignore the usual place
+too quickly.
+
+If the holder does not solve it, I should continue with nearby small-object
+storage rather than jumping around the desk. A small electronics pouch is a
+natural next place because small technical objects are normally grouped
+together. That is a more orderly search than guessing at unusual possibilities.
+
+The pen cup and loose small-item areas are also plausible. A small object could
+easily get mixed with other small things, and if the assistant wanted it kept on
+the desk, putting it with other small desk items would be understandable. It may
+take a little sorting, but it follows the object category.
+
+I should treat the note as helpful, but I should not let it override the basic
+search rule: start where the object normally belongs, then move through nearby
+containers and small-item zones.
+
+The fastest plan is not to invent a special interpretation. It is to check the
+obvious storage path in a clean sequence: usual holder, then technical pouch,
+then small-item clutter, then other containers if needed.
+
+Only after those ordinary storage checks fail should I consider more unusual
+explanations. Most searches are solved by checking the expected places first,
+not by assuming the object was left in a special working state.
+
+So my answer should choose the first search plan that follows the object's
+category and the desk's storage layout. If that fails, I can broaden the search
+after the most obvious containers have been ruled out.
+```
