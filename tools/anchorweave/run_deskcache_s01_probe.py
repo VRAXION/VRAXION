@@ -24,7 +24,20 @@ FALLBACK_MODEL = "Qwen/Qwen2.5-0.5B-Instruct"
 ORDER_SEEDS = [2026, 2027, 2028, 2029, 2030]
 GOLD_CANDIDATE_ID = "keyboard_side_port_first"
 ANSWER_CARRIER = "Best first search plan: "
+CASCADE_ANSWER_CARRIER = "Best next search action: "
 SYSTEM_PROMPT = "Choose the best first search plan. Output only the selected plan text."
+INITIAL_ENERGY = 10
+TRAP_PENALTIES = {
+    "gold": 0,
+    "plausible_peripheral": 1,
+    "storage": 2,
+    "small_object_clutter": 3,
+    "dirty_storage_like": 3,
+    "surface_association": 4,
+    "dirty_violation": 5,
+    "personal_boundary": 5,
+    "task_frame_drift": 6,
+}
 FREE_RESPONSE_QUESTION = (
     "What is the best first place or action to check? Answer in one short sentence."
 )
@@ -91,6 +104,9 @@ this kind of object has a holder, so maybe I should check the holder anyway.
 But the note weakens that path. If the assistant says the holder was a bad fit
 and they did not want to force it, then starting there may be an automatic
 habit, not the best search decision.
+
+A place explicitly described as a bad fit or visibly empty should not be the
+first check just because its name matches the object.
 
 The small clutter zones are also tempting. A small object could physically
 disappear among loose bits, cards, clips, erasers, and similar-looking things.
@@ -220,6 +236,39 @@ class Candidate:
     cost: int
     value_remaining: int
     trap_type: str
+
+
+def trap_penalty(candidate: Candidate) -> int:
+    try:
+        return TRAP_PENALTIES[candidate.trap_type]
+    except KeyError as exc:
+        raise RuntimeError(f"Missing trap penalty for {candidate.trap_type}") from exc
+
+
+def policy_utility(candidate: Candidate) -> int:
+    return candidate.value_remaining - trap_penalty(candidate)
+
+
+def candidate_payload(candidate: Candidate) -> dict[str, Any]:
+    return {
+        **asdict(candidate),
+        "physical_value": candidate.value_remaining,
+        "trap_penalty": trap_penalty(candidate),
+        "policy_utility": policy_utility(candidate),
+    }
+
+
+def feedback_place(candidate: Candidate) -> str:
+    return {
+        "keyboard_side_port_first": "the keyboard-side USB check",
+        "monitor_ports_first": "the monitor USB check",
+        "usb_holder_first": "the USB holder stand",
+        "electronics_pouch_first": "the small electronics pouch",
+        "pen_cup_first": "the pen cup clutter",
+        "smoking_area_first": "the cigarette pack and lighter area",
+        "ashtray_first": "the ashtray",
+        "wallet_first": "the wallet",
+    }[candidate.candidate_id]
 
 
 CANDIDATES = [
@@ -444,11 +493,12 @@ def score_candidate(
     device: str,
     user_prompt: str,
     candidate_text: str,
+    carrier: str = ANSWER_CARRIER,
 ) -> dict[str, Any]:
     import torch
     import torch.nn.functional as F
 
-    prefix = chat_prefix(tokenizer, user_prompt) + ANSWER_CARRIER
+    prefix = chat_prefix(tokenizer, user_prompt) + carrier
     full_text = prefix + candidate_text
     prefix_ids = tokenizer(prefix, add_special_tokens=False).input_ids
     full_ids = tokenizer(full_text, add_special_tokens=False).input_ids
@@ -478,11 +528,12 @@ def score_candidate_batch(
     device: str,
     user_prompt: str,
     candidates: list[Candidate],
+    carrier: str = ANSWER_CARRIER,
 ) -> list[dict[str, Any]]:
     import torch
     import torch.nn.functional as F
 
-    prefix = chat_prefix(tokenizer, user_prompt) + ANSWER_CARRIER
+    prefix = chat_prefix(tokenizer, user_prompt) + carrier
     prefix_ids = tokenizer(prefix, add_special_tokens=False).input_ids
     full_texts = [prefix + candidate.text for candidate in candidates]
     encoded = tokenizer(
@@ -513,7 +564,7 @@ def score_candidate_batch(
             raise RuntimeError(f"Candidate token span is empty: {candidate.candidate_id}")
         rows.append(
             {
-                **asdict(candidate),
+                **candidate_payload(candidate),
                 "mean_nll": float(candidate_losses.mean().item()),
                 "token_count": int(candidate_losses.numel()),
             }
@@ -528,6 +579,7 @@ def score_candidates_chunked(
     user_prompt: str,
     candidates: list[Candidate],
     score_batch_size: int,
+    carrier: str = ANSWER_CARRIER,
 ) -> list[dict[str, Any]]:
     if score_batch_size < 1:
         raise RuntimeError("--score-batch-size must be >= 1")
@@ -536,10 +588,10 @@ def score_candidates_chunked(
     for start in range(0, len(candidates), score_batch_size):
         chunk = candidates[start : start + score_batch_size]
         if len(chunk) == 1:
-            scored = score_candidate(tokenizer, model, device, user_prompt, chunk[0].text)
-            rows.append({**asdict(chunk[0]), **scored})
+            scored = score_candidate(tokenizer, model, device, user_prompt, chunk[0].text, carrier)
+            rows.append({**candidate_payload(chunk[0]), **scored})
         else:
-            rows.extend(score_candidate_batch(tokenizer, model, device, user_prompt, chunk))
+            rows.extend(score_candidate_batch(tokenizer, model, device, user_prompt, chunk, carrier))
     return rows
 
 
@@ -573,8 +625,137 @@ def score_multiclass(
         "scores": scores,
         "winner_candidate_id": winner["candidate_id"],
         "winner_value_remaining": winner["value_remaining"],
+        "winner_policy_utility": winner["policy_utility"],
+        "winner_trap_penalty": winner["trap_penalty"],
         "winner_trap_type": winner["trap_type"],
         "gold_margin": gold_margin,
+    }
+
+
+def render_cascade_prompt(
+    prompt: str,
+    candidates: list[Candidate],
+    observations: list[str],
+    energy: int,
+) -> str:
+    lines = [
+        prompt,
+        "",
+        "Sequential search cascade:",
+        f"Starting energy was {INITIAL_ENERGY}. Current energy: {energy}.",
+        "Choose the best next search action from the remaining candidates.",
+    ]
+    if observations:
+        lines.extend(["", "Previous search results:"])
+        lines.extend(f"- {observation}" for observation in observations)
+    lines.extend(["", render_candidate_list(candidates)])
+    return "\n".join(lines)
+
+
+def score_cascade(
+    tokenizer: Any,
+    model: Any,
+    device: str,
+    family: str,
+    arm: str,
+    prompt: str,
+    seed: int,
+    candidates: list[Candidate],
+    score_batch_size: int,
+) -> dict[str, Any]:
+    remaining = ordered_candidates(candidates, seed)
+    observations: list[str] = []
+    steps: list[dict[str, Any]] = []
+    energy = INITIAL_ENERGY
+    cumulative_trap_penalty = 0
+    found = False
+    terminated_reason = "candidates_exhausted"
+
+    while remaining and energy > 0:
+        step_number = len(steps) + 1
+        user_prompt = render_cascade_prompt(prompt, remaining, observations, energy)
+        scores = score_candidates_chunked(
+            tokenizer,
+            model,
+            device,
+            user_prompt,
+            remaining,
+            score_batch_size,
+            CASCADE_ANSWER_CARRIER,
+        )
+        ranked = sorted(scores, key=lambda item: item["mean_nll"])
+        winner = ranked[0]
+        winner_candidate = next(
+            candidate for candidate in remaining if candidate.candidate_id == winner["candidate_id"]
+        )
+        step = {
+            "step": step_number,
+            "energy_before": energy,
+            "candidate_order": [candidate.candidate_id for candidate in remaining],
+            "scores": scores,
+            "winner_candidate_id": winner_candidate.candidate_id,
+            "winner_cost": winner_candidate.cost,
+            "winner_value_remaining": winner_candidate.value_remaining,
+            "winner_policy_utility": policy_utility(winner_candidate),
+            "winner_trap_penalty": trap_penalty(winner_candidate),
+            "winner_trap_type": winner_candidate.trap_type,
+        }
+
+        energy -= winner_candidate.cost
+        if winner_candidate.candidate_id == GOLD_CANDIDATE_ID:
+            found = True
+            terminated_reason = "found_gold"
+            step["result"] = "found"
+            step["energy_after"] = energy
+            steps.append(step)
+            break
+
+        penalty = trap_penalty(winner_candidate)
+        cumulative_trap_penalty += penalty
+        remaining = [
+            candidate for candidate in remaining if candidate.candidate_id != winner_candidate.candidate_id
+        ]
+        observation = (
+            f"You checked {feedback_place(winner_candidate)}. It was not there. "
+            f"That cost {winner_candidate.cost} energy. Remaining energy: {energy}."
+        )
+        observations.append(observation)
+        step["result"] = "not_there"
+        step["energy_after"] = energy
+        step["feedback"] = observation
+        steps.append(step)
+
+        if energy <= 0:
+            terminated_reason = "energy_exhausted"
+            break
+
+    if not remaining and not found:
+        terminated_reason = "candidates_exhausted"
+
+    first_step = steps[0] if steps else None
+    terminal_energy = max(energy, 0)
+    return {
+        "family": family,
+        "seed": seed,
+        "arm": arm,
+        "found": found,
+        "terminated_reason": terminated_reason,
+        "steps": steps,
+        "steps_taken": len(steps),
+        "steps_to_found": len(steps) if found else None,
+        "found_within_2_steps": bool(found and len(steps) <= 2),
+        "first_action_candidate_id": first_step["winner_candidate_id"] if first_step else None,
+        "first_action_trap_type": first_step["winner_trap_type"] if first_step else None,
+        "first_action_is_gold": bool(
+            first_step and first_step["winner_candidate_id"] == GOLD_CANDIDATE_ID
+        ),
+        "terminal_energy_remaining": terminal_energy,
+        "energy_remaining_at_found": terminal_energy if found else None,
+        "cumulative_trap_penalty": cumulative_trap_penalty,
+        "cascade_policy_utility": terminal_energy - cumulative_trap_penalty,
+        "visited_candidate_ids": [step["winner_candidate_id"] for step in steps],
+        "visited_trap_types": [step["winner_trap_type"] for step in steps],
+        "observations": observations,
     }
 
 
@@ -687,6 +868,7 @@ def summarize_forced(rows: list[dict[str, Any]]) -> dict[str, Any]:
         total = len(arm_rows)
         summaries[arm] = {
             "mean_value_remaining": mean([float(row["winner_value_remaining"]) for row in arm_rows]),
+            "mean_policy_utility": mean([float(row["winner_policy_utility"]) for row in arm_rows]),
             "optimal_action_rate": sum(row["winner_candidate_id"] == GOLD_CANDIDATE_ID for row in arm_rows) / total,
             "mean_gold_margin": mean([float(row["gold_margin"]) for row in arm_rows]),
             "trap_rate_by_trap_type": {
@@ -719,7 +901,64 @@ def summarize_choices(rows: list[dict[str, Any]]) -> dict[str, Any]:
         "by_family": family_summary,
         "choices_only_gold_rate": sum(row["winner_candidate_id"] == GOLD_CANDIDATE_ID for row in rows) / len(rows),
         "choices_only_mean_value": mean([float(row["winner_value_remaining"]) for row in rows]),
+        "choices_only_mean_policy_utility": mean([float(row["winner_policy_utility"]) for row in rows]),
         "invalid_choices_only": invalid,
+    }
+
+
+def summarize_cascade(rows: list[dict[str, Any]]) -> dict[str, Any]:
+    by_arm: dict[str, list[dict[str, Any]]] = {}
+    for row in rows:
+        by_arm.setdefault(row["arm"], []).append(row)
+
+    summaries: dict[str, Any] = {}
+    for arm, arm_rows in sorted(by_arm.items()):
+        first_trap_counts: dict[str, int] = {}
+        visit_trap_counts: dict[str, int] = {}
+        total_visits = 0
+        for row in arm_rows:
+            first_trap = row.get("first_action_trap_type")
+            if first_trap:
+                first_trap_counts[first_trap] = first_trap_counts.get(first_trap, 0) + 1
+            for trap in row["visited_trap_types"]:
+                visit_trap_counts[trap] = visit_trap_counts.get(trap, 0) + 1
+                total_visits += 1
+
+        found_rows = [row for row in arm_rows if row["found"]]
+        total = len(arm_rows)
+        summaries[arm] = {
+            "first_action_gold_rate": sum(row["first_action_is_gold"] for row in arm_rows) / total,
+            "found_rate": len(found_rows) / total,
+            "found_within_2_steps_rate": sum(row["found_within_2_steps"] for row in arm_rows) / total,
+            "mean_steps_to_found": mean([float(row["steps_to_found"]) for row in found_rows]),
+            "mean_energy_remaining_at_found": mean(
+                [float(row["energy_remaining_at_found"]) for row in found_rows]
+            ),
+            "mean_cascade_policy_utility": mean(
+                [float(row["cascade_policy_utility"]) for row in arm_rows]
+            ),
+            "first_action_trap_rate_by_trap_type": {
+                trap: count / total for trap, count in sorted(first_trap_counts.items())
+            },
+            "trap_visit_rate_by_trap_type": {
+                trap: count / total_visits for trap, count in sorted(visit_trap_counts.items())
+            }
+            if total_visits
+            else {},
+            "winners_first_action": [row["first_action_candidate_id"] for row in arm_rows],
+            "terminated_reasons": sorted({row["terminated_reason"] for row in arm_rows}),
+        }
+    return summaries
+
+
+def summarize_choices_cascade(rows: list[dict[str, Any]]) -> dict[str, Any]:
+    summary = summarize_cascade(rows).get("CHOICES_ONLY", {})
+    first_gold = summary.get("first_action_gold_rate", 0.0)
+    mean_energy = summary.get("mean_energy_remaining_at_found")
+    invalid = bool(first_gold >= 0.80 or (mean_energy is not None and mean_energy >= 8.0))
+    return {
+        **summary,
+        "invalid_choices_only_cascade": invalid,
     }
 
 
@@ -745,85 +984,112 @@ def family_arm_values(rows: list[dict[str, Any]]) -> dict[tuple[str, int, str], 
 
 def compute_status(
     forced_summary: dict[str, Any],
+    cascade_summary: dict[str, Any],
     choices_summary: dict[str, Any],
+    choices_cascade_summary: dict[str, Any],
     pairwise_summary: dict[str, Any],
-    forced_rows: list[dict[str, Any]],
+    cascade_rows: list[dict[str, Any]],
     free_response_generated: bool,
     limit_arms: list[str] | None,
 ) -> dict[str, Any]:
-    if choices_summary["invalid_choices_only"]:
+    if choices_summary["invalid_choices_only"] or choices_cascade_summary.get(
+        "invalid_choices_only_cascade", False
+    ):
         return {
-            "status": "S01_PROBE_INVALID_CHOICES_ONLY",
+            "status": "S01_V2_PROBE_INVALID_CHOICES_ONLY",
             "automated_conditions": {},
         }
 
     required_arms = set(ARM_NAMES)
-    if set(forced_summary) != required_arms or limit_arms:
+    if set(cascade_summary) != required_arms or limit_arms:
         return {
-            "status": "S01_PROBE_FAIL",
+            "status": "S01_V2_PROBE_FAIL",
             "automated_conditions": {"all_arms_present": False},
         }
 
-    correct_value = forced_summary["CORRECT_INNER_VOICE"]["mean_value_remaining"]
-    base_value = forced_summary["BASE"]["mean_value_remaining"]
-    style_value = forced_summary["STYLE_CONTROL"]["mean_value_remaining"]
-    corrupted_rates = forced_summary["CORRUPTED_INNER_VOICE"]["trap_rate_by_trap_type"]
-    style_rates = forced_summary["STYLE_CONTROL"]["trap_rate_by_trap_type"]
+    correct = cascade_summary["CORRECT_INNER_VOICE"]
+    base = cascade_summary["BASE"]
+    style = cascade_summary["STYLE_CONTROL"]
+    corrupted = cascade_summary["CORRUPTED_INNER_VOICE"]
+    correct_pairwise = pairwise_summary.get("CORRECT_INNER_VOICE", {}).get(
+        "pairwise_gold_win_rate", 0.0
+    )
+
+    correct_policy = correct["mean_cascade_policy_utility"]
+    base_policy = base["mean_cascade_policy_utility"]
+    style_policy = style["mean_cascade_policy_utility"]
+    correct_energy = correct["mean_energy_remaining_at_found"]
+    base_energy = base["mean_energy_remaining_at_found"]
+    style_energy = style["mean_energy_remaining_at_found"]
+    corrupted_rates = corrupted["first_action_trap_rate_by_trap_type"]
+    style_rates = style["first_action_trap_rate_by_trap_type"]
+    correct_rates = correct["first_action_trap_rate_by_trap_type"]
     corrupted_storage_surface = sum(
         corrupted_rates.get(trap, 0.0) for trap in STORAGE_SURFACE_TRAPS
     )
     style_storage_surface = sum(style_rates.get(trap, 0.0) for trap in STORAGE_SURFACE_TRAPS)
+    correct_storage_surface = sum(correct_rates.get(trap, 0.0) for trap in STORAGE_SURFACE_TRAPS)
 
-    values = family_arm_values(forced_rows)
+    values = {
+        (row["family"], int(row["seed"]), row["arm"]): float(row["cascade_policy_utility"])
+        for row in cascade_rows
+    }
     directional_all_seeds = True
     for family in ["canonical", "paraphrase_b"]:
         for seed in ORDER_SEEDS:
-            correct = values.get((family, seed, "CORRECT_INNER_VOICE"))
-            base = values.get((family, seed, "BASE"))
-            style = values.get((family, seed, "STYLE_CONTROL"))
-            if correct is None or base is None or style is None:
+            correct_value = values.get((family, seed, "CORRECT_INNER_VOICE"))
+            base_value = values.get((family, seed, "BASE"))
+            style_value = values.get((family, seed, "STYLE_CONTROL"))
+            if correct_value is None or base_value is None or style_value is None:
                 directional_all_seeds = False
-            elif not (correct > base and correct > style):
+            elif not (correct_value > base_value and correct_value > style_value):
                 directional_all_seeds = False
 
     paraphrase_directional = True
     for family in ["canonical", "paraphrase_b"]:
-        family_rows = [row for row in forced_rows if row["family"] == family]
-        family_summary = summarize_forced(family_rows)
+        family_rows = [row for row in cascade_rows if row["family"] == family]
+        family_summary = summarize_cascade(family_rows)
         if not (
-            family_summary["CORRECT_INNER_VOICE"]["mean_value_remaining"]
-            > family_summary["BASE"]["mean_value_remaining"]
-            and family_summary["CORRECT_INNER_VOICE"]["mean_value_remaining"]
-            > family_summary["STYLE_CONTROL"]["mean_value_remaining"]
+            family_summary["CORRECT_INNER_VOICE"]["mean_cascade_policy_utility"]
+            > family_summary["BASE"]["mean_cascade_policy_utility"]
+            and family_summary["CORRECT_INNER_VOICE"]["mean_cascade_policy_utility"]
+            > family_summary["STYLE_CONTROL"]["mean_cascade_policy_utility"]
         ):
             paraphrase_directional = False
 
-    correct_pairwise = pairwise_summary.get("CORRECT_INNER_VOICE", {}).get(
-        "pairwise_gold_win_rate", 0.0
-    )
     automated_conditions = {
-        "correct_beats_base_mean_value": correct_value > base_value,
-        "correct_beats_style_mean_value": correct_value > style_value,
-        "corrupted_shifts_storage_surface": corrupted_storage_surface > style_storage_surface,
+        "correct_beats_base_cascade_policy_utility": correct_policy > base_policy,
+        "correct_beats_style_cascade_policy_utility": correct_policy > style_policy,
+        "correct_beats_base_energy_remaining_at_found": (
+            correct_energy is not None and base_energy is not None and correct_energy > base_energy
+        ),
+        "correct_beats_style_energy_remaining_at_found": (
+            correct_energy is not None and style_energy is not None and correct_energy > style_energy
+        ),
+        "correct_found_within_2_steps_rate_gte_0_60": correct["found_within_2_steps_rate"] >= 0.60,
         "correct_pairwise_gold_win_rate_gte_0_70": correct_pairwise >= 0.70,
+        "corrupted_shifts_storage_surface": (
+            corrupted_storage_surface > style_storage_surface
+            and corrupted_storage_surface > correct_storage_surface
+        ),
         "effect_survives_all_order_seeds_directionally": directional_all_seeds,
         "effect_survives_paraphrase_family_directionally": paraphrase_directional,
     }
 
     if not all(automated_conditions.values()):
         return {
-            "status": "S01_PROBE_FAIL",
+            "status": "S01_V2_PROBE_FAIL",
             "automated_conditions": automated_conditions,
         }
     if not free_response_generated:
         return {
-            "status": "S01_PROBE_NEEDS_MANUAL_FREE_RESPONSE",
+            "status": "S01_V2_PROBE_NEEDS_MANUAL_FREE_RESPONSE",
             "automated_conditions": automated_conditions,
         }
     return {
-        "status": "S01_PROBE_NEEDS_MANUAL_FREE_RESPONSE",
+        "status": "S01_V2_PROBE_NEEDS_MANUAL_FREE_RESPONSE",
         "automated_conditions": automated_conditions,
-        "note": "Automated checks passed, but free-response categories require manual annotation before S01_PROBE_PASS.",
+        "note": "Automated checks passed, but free-response categories require manual annotation before S01_V2_PROBE_PASS.",
     }
 
 
@@ -836,14 +1102,34 @@ def write_report_md(path: Path, report: dict[str, Any]) -> None:
         "",
         "Order seeds are robustness checks, not independent samples.",
         "",
-        "## Forced Choice Summary",
+        "## Cascade Summary",
         "",
-        "| arm | mean_value_remaining | optimal_action_rate | mean_gold_margin |",
-        "|---|---:|---:|---:|",
+        "| arm | found_rate | first_action_gold_rate | <=2 step rate | energy_at_found | cascade_policy_utility |",
+        "|---|---:|---:|---:|---:|---:|",
     ]
-    for arm, item in report["forced_choice_summary"].items():
+    for arm, item in report.get("cascade_summary", {}).items():
+        energy = item["mean_energy_remaining_at_found"]
+        energy_text = "null" if energy is None else f"{energy:.3f}"
+        lines.append(
+            f"| `{arm}` | {item['found_rate']:.3f} | "
+            f"{item['first_action_gold_rate']:.3f} | "
+            f"{item['found_within_2_steps_rate']:.3f} | "
+            f"{energy_text} | {item['mean_cascade_policy_utility']:.3f} |"
+        )
+
+    lines.extend(
+        [
+            "",
+            "## Forced Choice Summary",
+            "",
+            "| arm | mean_value_remaining | mean_policy_utility | optimal_action_rate | mean_gold_margin |",
+            "|---|---:|---:|---:|---:|",
+        ]
+    )
+    for arm, item in report.get("forced_choice_summary", {}).items():
         lines.append(
             f"| `{arm}` | {item['mean_value_remaining']:.3f} | "
+            f"{item['mean_policy_utility']:.3f} | "
             f"{item['optimal_action_rate']:.3f} | {item['mean_gold_margin']:.3f} |"
         )
 
@@ -852,9 +1138,14 @@ def write_report_md(path: Path, report: dict[str, Any]) -> None:
             "",
             "## Choices-Only Baseline",
             "",
-            f"Invalid choices-only: `{report['choices_only_summary']['invalid_choices_only']}`",
-            f"Gold rate: `{report['choices_only_summary']['choices_only_gold_rate']:.3f}`",
-            f"Mean value: `{report['choices_only_summary']['choices_only_mean_value']:.3f}`",
+            f"Invalid single-step choices-only: `{report['choices_only_summary']['invalid_choices_only']}`",
+            f"Single-step gold rate: `{report['choices_only_summary']['choices_only_gold_rate']:.3f}`",
+            f"Single-step mean value: `{report['choices_only_summary']['choices_only_mean_value']:.3f}`",
+            f"Single-step mean policy utility: `{report['choices_only_summary']['choices_only_mean_policy_utility']:.3f}`",
+            f"Invalid cascade choices-only: `{report['choices_only_cascade_summary']['invalid_choices_only_cascade']}`",
+            f"Cascade first-action gold rate: `{report['choices_only_cascade_summary']['first_action_gold_rate']:.3f}`",
+            f"Cascade found rate: `{report['choices_only_cascade_summary']['found_rate']:.3f}`",
+            f"Cascade mean policy utility: `{report['choices_only_cascade_summary']['mean_cascade_policy_utility']:.3f}`",
             "",
             "## Pairwise Summary",
             "",
@@ -862,7 +1153,7 @@ def write_report_md(path: Path, report: dict[str, Any]) -> None:
             "|---|---:|---:|",
         ]
     )
-    for arm, item in report["pairwise_summary"].items():
+    for arm, item in report.get("pairwise_summary", {}).items():
         lines.append(f"| `{arm}` | {item['pairwise_gold_win_rate']:.3f} | {item['total']} |")
 
     lines.extend(
@@ -891,21 +1182,24 @@ def write_static_outputs(out_dir: Path) -> None:
     contract = root / "docs" / "research" / "HGA_DESK_001_S01_CONTRACT.md"
     if contract.exists():
         shutil.copyfile(contract, out_dir / "contract_snapshot.md")
-    write_json(out_dir / "candidates.json", [asdict(candidate) for candidate in CANDIDATES])
+    write_json(out_dir / "candidates.json", [candidate_payload(candidate) for candidate in CANDIDATES])
     write_json(
         out_dir / "candidates_paraphrase_b.json",
-        [asdict(candidate) for candidate in CANDIDATES_PARAPHRASE_B],
+        [candidate_payload(candidate) for candidate in CANDIDATES_PARAPHRASE_B],
     )
     write_json(
         out_dir / "scoring_metadata.json",
         {
             "answer_carrier": ANSWER_CARRIER,
+            "cascade_answer_carrier": CASCADE_ANSWER_CARRIER,
             "choice_order_seeds": ORDER_SEEDS,
             "default_model": DEFAULT_MODEL,
             "fallback_model": FALLBACK_MODEL,
             "free_response_categories": FREE_RESPONSE_CATEGORIES,
             "gold_candidate_id": GOLD_CANDIDATE_ID,
+            "initial_energy": INITIAL_ENERGY,
             "system_prompt": SYSTEM_PROMPT,
+            "trap_penalties": TRAP_PENALTIES,
             "status_scope": "target_only_probe_not_training",
         },
     )
@@ -928,7 +1222,9 @@ def run_probe(args: argparse.Namespace) -> int:
     }
 
     forced_rows: list[dict[str, Any]] = []
+    cascade_rows: list[dict[str, Any]] = []
     choices_rows: list[dict[str, Any]] = []
+    choices_cascade_rows: list[dict[str, Any]] = []
     pairwise_rows: list[dict[str, Any]] = []
     free_prompts: list[dict[str, Any]] = []
     free_outputs: list[dict[str, Any]] = []
@@ -950,17 +1246,36 @@ def run_probe(args: argparse.Namespace) -> int:
                 )
             )
             choices_rows[-1]["rendered_prompt"] = choices_prompt
+            choices_cascade_rows.append(
+                score_cascade(
+                    tokenizer,
+                    model,
+                    device,
+                    family,
+                    "CHOICES_ONLY",
+                    "Choose the best first search plan.",
+                    seed,
+                    candidates,
+                    args.score_batch_size,
+                )
+            )
 
     choices_summary = summarize_choices(choices_rows)
-    if choices_summary["invalid_choices_only"] and not args.continue_after_invalid_choices_only:
+    choices_cascade_summary = summarize_choices_cascade(choices_cascade_rows)
+    invalid_choices_only = choices_summary["invalid_choices_only"] or choices_cascade_summary[
+        "invalid_choices_only_cascade"
+    ]
+    if invalid_choices_only and not args.continue_after_invalid_choices_only:
         write_jsonl(out_dir / "forced_choice_scores.jsonl", forced_rows)
+        write_jsonl(out_dir / "cascade_scores.jsonl", cascade_rows)
         write_jsonl(out_dir / "choices_only_scores.jsonl", choices_rows)
+        write_jsonl(out_dir / "choices_only_cascade_scores.jsonl", choices_cascade_rows)
         write_jsonl(out_dir / "pairwise_scores.jsonl", pairwise_rows)
         write_jsonl(out_dir / "free_response_prompts.jsonl", free_prompts)
         write_jsonl(out_dir / "free_response_outputs.jsonl", free_outputs)
         write_annotation_csv(out_dir / "annotate_free_response.csv", [])
         report = {
-            "status": "S01_PROBE_INVALID_CHOICES_ONLY",
+            "status": "S01_V2_PROBE_INVALID_CHOICES_ONLY",
             "automated_conditions": {},
             "note": "Stopped after choices-only gate. Candidate wording is not safe enough for grounding evidence.",
             "model": args.model,
@@ -974,7 +1289,9 @@ def run_probe(args: argparse.Namespace) -> int:
             "skip_pairwise": args.skip_pairwise,
             "score_batch_size": args.score_batch_size,
             "forced_choice_summary": {},
+            "cascade_summary": {},
             "choices_only_summary": choices_summary,
+            "choices_only_cascade_summary": choices_cascade_summary,
             "pairwise_summary": {},
         }
         write_json(out_dir / "report.json", report)
@@ -989,6 +1306,19 @@ def run_probe(args: argparse.Namespace) -> int:
                 prompt = arm_prompt(arm)
                 forced_rows.append(
                     score_multiclass(
+                        tokenizer,
+                        model,
+                        device,
+                        family,
+                        arm,
+                        prompt,
+                        seed,
+                        candidates,
+                        args.score_batch_size,
+                    )
+                )
+                cascade_rows.append(
+                    score_cascade(
                         tokenizer,
                         model,
                         device,
@@ -1040,19 +1370,24 @@ def run_probe(args: argparse.Namespace) -> int:
             free_prompts.append({"arm": arm, "prompt": f"{prompt}\n\n{FREE_RESPONSE_QUESTION}"})
 
     write_jsonl(out_dir / "forced_choice_scores.jsonl", forced_rows)
+    write_jsonl(out_dir / "cascade_scores.jsonl", cascade_rows)
     write_jsonl(out_dir / "choices_only_scores.jsonl", choices_rows)
+    write_jsonl(out_dir / "choices_only_cascade_scores.jsonl", choices_cascade_rows)
     write_jsonl(out_dir / "pairwise_scores.jsonl", pairwise_rows)
     write_jsonl(out_dir / "free_response_prompts.jsonl", free_prompts)
     write_jsonl(out_dir / "free_response_outputs.jsonl", free_outputs)
     write_annotation_csv(out_dir / "annotate_free_response.csv", free_outputs or free_prompts)
 
     forced_summary = summarize_forced(forced_rows)
+    cascade_summary = summarize_cascade(cascade_rows)
     pairwise_summary = summarize_pairwise(pairwise_rows) if pairwise_rows else {}
     status_info = compute_status(
         forced_summary,
+        cascade_summary,
         choices_summary,
+        choices_cascade_summary,
         pairwise_summary,
-        forced_rows,
+        cascade_rows,
         bool(free_outputs),
         args.limit_arms,
     )
@@ -1072,7 +1407,9 @@ def run_probe(args: argparse.Namespace) -> int:
         "skip_pairwise": args.skip_pairwise,
         "score_batch_size": args.score_batch_size,
         "forced_choice_summary": forced_summary,
+        "cascade_summary": cascade_summary,
         "choices_only_summary": choices_summary,
+        "choices_only_cascade_summary": choices_cascade_summary,
         "pairwise_summary": pairwise_summary,
     }
     write_json(out_dir / "report.json", report)
@@ -1090,7 +1427,28 @@ def write_resource_blocked(args: argparse.Namespace, message: str) -> int:
         "error": message,
     }
     write_json(args.out / "report.json", report)
-    write_report_md(args.out / "report.md", {**report, "forced_choice_summary": {}, "choices_only_summary": {"invalid_choices_only": False, "choices_only_gold_rate": 0.0, "choices_only_mean_value": 0.0}, "pairwise_summary": {}, "automated_conditions": {}})
+    write_report_md(
+        args.out / "report.md",
+        {
+            **report,
+            "forced_choice_summary": {},
+            "cascade_summary": {},
+            "choices_only_summary": {
+                "invalid_choices_only": False,
+                "choices_only_gold_rate": 0.0,
+                "choices_only_mean_value": 0.0,
+                "choices_only_mean_policy_utility": 0.0,
+            },
+            "choices_only_cascade_summary": {
+                "invalid_choices_only_cascade": False,
+                "first_action_gold_rate": 0.0,
+                "found_rate": 0.0,
+                "mean_cascade_policy_utility": 0.0,
+            },
+            "pairwise_summary": {},
+            "automated_conditions": {},
+        },
+    )
     print(f"resource blocked: {message}", file=sys.stderr)
     return 2
 
