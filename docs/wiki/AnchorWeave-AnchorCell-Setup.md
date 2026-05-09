@@ -98,6 +98,10 @@ Core + ProbeSpec is the locked conceptual standard for HGA-DESK/S01 and future v
 S01 is a probe manifest until a v2 schema or deterministic v1 exporter exists.
 ```
 
+The locked S01 source contract lives in the repo mirror:
+
+[HGA-DESK-001 / DeskCache S01 Contract](https://github.com/VRAXION/VRAXION/blob/main/docs/research/HGA_DESK_001_S01_CONTRACT.md)
+
 ## What Was Built
 
 Stable scaffold on `main`:
