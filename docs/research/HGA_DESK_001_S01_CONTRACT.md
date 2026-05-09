@@ -142,6 +142,226 @@ Do not call me about it today. I am away and will not have my phone with me."
 Choose the best first search plan.
 ```
 
+## Locked AnchorCellCore v0.1
+
+This is the public-safe conceptual training-cell core for S01. It is not an
+`AnchorWeave-v1.0` JSON export and not a private append-only cell. It locks the
+training semantics that can later be exported into a storage schema or derived
+training views.
+
+### Meta
+
+```text
+cell_id: HGA-DESK-001-S01
+domain: desk_search / economical_search / assistant_intent
+status: locked_core_v0_1
+public_safety: sanitized_public_contract
+storage_note: conceptual Core, not AnchorWeave-v1.0 JSON
+```
+
+### Situation
+
+Use `BASE_PROMPT / HGA-DESK-001 / S01 / EN / model-facing` above as the shared
+model-facing situation. The situation contains the visible desk layout,
+assistant note, task framing, and assistant-unreachable constraint.
+
+### ImplicitJob
+
+```text
+This is not ordinary object lookup. It is low-cost search under assistant-intent
+constraints: infer the best first search action from the note, the desk layout,
+social boundaries, handling cost, and storage-vs-active-use cues.
+```
+
+### RelationalModel
+
+```text
+assistant -> note -> constraints
+assistant -> left_object -> intended_help
+USB -> small_object -> storage temptation
+USB holder -> obvious surface association -> weakened by note
+pen cup / pouch -> small-object container temptation -> sorting cost
+ashtray / smoking area -> possible but dirty/high-handling-cost area
+wallet / personal valuables -> social boundary
+work area -> active-use possibility -> low movement / low recovery cost
+assistant unreachable -> self-search required
+```
+
+### SalienceMap
+
+High:
+
+```text
+assistant intent
+low-cost first action
+active-use vs storage-state distinction
+avoid rummaging/sorting/cleaning
+personal boundary
+assistant unreachable
+```
+
+Medium:
+
+```text
+USB object category
+visible desk layout
+holder being visible/empty
+important work context
+```
+
+Low / do not overread first:
+
+```text
+USB means holder
+search every container
+meeting importance as legal/security advice
+USB protection as technical maintenance task
+dirty area accident hypothesis
+```
+
+### Actions
+
+Core action landscape only, not rendered candidate wording:
+
+```text
+check active-use work-area first
+check nearby peripheral/use-area first
+check holder first
+check electronics pouch first
+search pen cup clutter first
+check smoking-area objects first
+search ashtray first
+open wallet first
+call assistant
+exhaustive search
+```
+
+### Outcomes
+
+```text
+active-use work-area first -> cheapest diagnostic if assistant intended immediate work resumption
+nearby peripheral/use-area first -> plausible but higher handling/access cost
+holder first -> easy surface reflex but weakened by note
+pouch/pen-cup first -> storage/category search with sorting risk
+smoking/ashtray first -> dirty/high-handling-cost failure mode
+wallet first -> personal-boundary violation
+call assistant -> would be best information source but unavailable
+exhaustive search -> fallback only after intelligent checks fail
+```
+
+### MemoryHooks
+
+```text
+assistant left object for me
+note with constraints
+not storage, active use
+small object in clutter is tempting but costly
+dirty area possible but bad first policy
+personal boundary excludes plausible container
+call unavailable forces self-diagnostic check
+cheap diagnostic first, broaden later
+```
+
+### HumanSourceTrace
+
+Use the locked Hungarian source trace above as authoring provenance only. It is
+not a model-facing training view and not canonical truth.
+
+### DistilledPolicy
+
+Leak-safe model-facing policy:
+
+```text
+Interpret the note as intent evidence, not just object-location evidence. First
+reject high-cost searches that require rummaging, cleaning, opening personal
+items, or sorting through look-alike clutter. Do not follow the surface rule
+"object category means storage place" when the note weakens storage. Prefer the
+cheapest clean active-use check: a place where the object could already help
+work resume with minimal movement. Broaden to containers, clutter, dirty areas,
+or personal zones only after the low-cost use-state check fails.
+```
+
+### CounterfactualChecks
+
+```text
+If the assistant were reachable, calling first would dominate physical search.
+If the holder were not excluded or weakened, holder-first would become more reasonable.
+If the note did not imply quick work resumption, storage-first would become more reasonable.
+If clutter/small-object containers were the only clean places, pouch or pen cup would rise.
+If personal-boundary constraints were absent, wallet would be less bad but still not first.
+If the active-use cue were removed, the cell should not force the active-use policy.
+```
+
+### SymbolAttachReject
+
+Attach:
+
+```text
+search_cost
+assistant_intent
+active_use
+storage_vs_use
+low_cost_diagnostic
+boundary_respect
+clutter_false_positive
+```
+
+Reject:
+
+```text
+USB_means_holder
+exhaustive_search_first
+dirty_area_first
+personal_boundary_first
+object_category_only_reasoning
+task_frame_drift
+```
+
+### ClaimBoundary
+
+```text
+This cell trains/evaluates economical search policy under assistant-intent
+constraints. It does not prove grounding at scale, consciousness, or general
+desk-search ability. S01 is one locked training/probe cell, not a validated
+standard cell until it passes the guard stack.
+```
+
+### WorldTruth private/eval-hidden
+
+```text
+The USB drive is plugged into the keyboard side USB port.
+```
+
+### ModelFacingTrainingView
+
+The richest leak-safe training view may include:
+
+```text
+Situation / BASE_PROMPT
+ImplicitJob
+RelationalModel
+SalienceMap
+Actions
+Outcomes
+MemoryHooks
+DistilledPolicy
+CounterfactualChecks
+SymbolAttachReject
+CORRECT_INNER_VOICE
+```
+
+It must exclude:
+
+```text
+WorldTruth
+raw HumanSourceTrace
+ProbeSpec
+CandidateActions rendered as choices
+STYLE_CONTROL
+CORRUPTED_INNER_VOICE
+cost/value scoring labels
+```
+
 ## Model-Facing Correct Inner Voice
 
 This is the sanitized inner-voice rendering for a `CORRECT_INNER_VOICE` prompt
