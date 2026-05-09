@@ -201,6 +201,21 @@ ProbeSpec:
   pairwise trap probes, paraphrase variants, scoring, and pass criteria
 ```
 
+S01 text placement is locked as:
+
+| Existing text | Locked layer | Treatment |
+|---|---|---|
+| Desk layout | `Situation` | Keep as the visible scene. |
+| Assistant note / letter | `Situation` | Use the cleaned model-facing note, not the raw brainstorm. |
+| "Find the USB with least wasted search" | `Situation` and `ImplicitJob` | The explicit task stays in `Situation`; the latent job is low-cost search under intent constraints. |
+| User's Hungarian inner monologue | `HumanSourceTrace` | Preserve as private authoring source. Do not present it directly as the anchor. |
+| Human anchor policy summary | `DistilledPolicy` | Convert into the leak-safe `CORRECT_ANCHOR`. |
+| `STYLE_CONTROL` and `CORRUPTED_ANCHOR` drafts | `ProbeSpec.PromptArms` | Balance them against `CORRECT_ANCHOR` by length, style, and fluency. |
+| Candidate plans | `ProbeSpec.CandidateActions` | Use for measurement only; they are not canonical cell truth. |
+| Costs, values, and trap labels | `ProbeSpec.ScoringSpec` | Eval-facing only. |
+| Keyboard-side USB-port truth | `WorldTruth` | Hidden truth; never leak into `BASE` or `CORRECT_ANCHOR`. |
+| Free-response categories | `ProbeSpec.FreeResponseTaxonomy` | Include `task_frame_drift`. |
+
 Required probes:
 
 ```text
@@ -258,13 +273,27 @@ The pen cup is crowded with pens, paper clips, erasers, SD cards, and small unre
 Assistant note:
 
 ```text
-I didn't really put the USB away. The little holder was not a good fit for it,
-and I did not want it mixed with the other USB-looking junk where you would
-never spot it. I also would not leave it where ash, ink, graphite, or pocket
-dirt could mess it up, and I would never go into the wallet where you keep
-your money. I left it somewhere it could be useful quickly, near the part of
-the desk your hands return to. Think less like storage, and more like
-ready-to-use.
+Hey boss,
+
+I couldn't really put your USB away properly. The little holder at the front of
+the desk was a bad fit, and I didn't want to force it.
+
+I also didn't want it mixed with loose bits, grit, metal pieces, or look-alike
+junk where it could get dirty, scratched, or disappear from view. I know there
+are important materials on it for tomorrow's work, so I didn't do anything
+technical to it; I just tried to leave it readable and easy for you to get back
+to work.
+
+And do not worry, I did not touch your private things or anything that seemed
+like a personal valuables area.
+
+I left it in a place that should let you get back to work with almost no fuss.
+You should not need to dig, clean, open personal things, or sort through junk
+first. Think less like putting it away, and more like leaving it immediately
+usable.
+
+I'm off today, my phone is away, and you are on your own. Good luck with the
+work.
 ```
 
 Task framing:
