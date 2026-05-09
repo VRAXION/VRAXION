@@ -71,3 +71,64 @@ Do not leak into `DistilledPolicy`:
 - monitor,
 - personal names,
 - concrete meeting/company details.
+
+## Model-Facing Correct Inner Voice
+
+This is the sanitized inner-voice rendering for a `CORRECT_INNER_VOICE` prompt
+arm. It preserves the decision terrain but removes the concrete answer.
+
+Leakage rules:
+
+- It must not mention `keyboard`, `port`, `plugged`, or `monitor`.
+- It must not name a person or concrete company/meeting detail.
+- It must not say the gold location directly.
+- It may describe search-cost, use-state, storage-state, clutter, dirty areas,
+  personal boundaries, assistant intent, and fallback order.
+
+```text
+CORRECT_INNER_VOICE / HGA-DESK-001 / S01 / EN / model-facing
+
+I should not treat this as a plain "where does this object usually belong?" problem.
+
+My first pull is toward the obvious storage place. That is the easy association:
+this kind of object has a holder, so maybe I should check the holder anyway.
+But the note weakens that path. If the assistant says the holder was a bad fit
+and they did not want to force it, then starting there may be an automatic
+habit, not the best search decision.
+
+The small clutter zones are also tempting. A small object could physically
+disappear among loose bits, cards, clips, erasers, and similar-looking things.
+But if the assistant was trying to help me, they probably would not choose a
+place where I have to sort through many false positives.
+
+The dirty or smoking-related areas are technically possible too. Something
+could fall there or be tucked there. But that would create mess, cleaning, and
+extra handling. It does not fit the idea of leaving the item easy to recover.
+
+The personal-items area is another boundary. It may be physically possible, but
+a careful assistant would avoid crossing that social line unless there were no
+better option.
+
+So what is left? I need to simulate the assistant's intent. They were not
+solving an abstract storage problem. They were trying to leave the item so I
+could get back to work quickly, without digging, cleaning, opening private
+things, or sorting through look-alike clutter.
+
+Calling the assistant would be the cheapest information source, but the note
+blocks that option. I have to choose a low-cost diagnostic check myself.
+
+This is the frame shift: stop thinking "where could this be stored?" and start
+thinking "where could this already be useful with minimal handling?"
+
+Some use-related places may still be awkward, fragile, expensive, or annoying
+to move. I should not begin by disturbing a large or risky object if there is a
+cleaner, cheaper first check nearby.
+
+The first action should be the lowest-cost clean use-state check: something I
+can inspect quickly, with almost no movement, no rummaging, no cleaning, and no
+boundary crossing.
+
+If that fails, I should widen outward: first to other clean use-related places,
+then ordinary storage, then clutter, and only much later dirty or personal
+zones.
+```
