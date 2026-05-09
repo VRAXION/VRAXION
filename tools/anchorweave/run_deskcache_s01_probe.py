@@ -26,6 +26,9 @@ STATUS_PREFIX = "S01_V2"
 CONTRACT_FILE = Path("docs/research/HGA_DESK_001_S01_CONTRACT.md")
 ORDER_SEEDS = [2026, 2027, 2028, 2029, 2030]
 GOLD_CANDIDATE_ID = "keyboard_side_port_first"
+GOLD_CANDIDATE_IDS_BY_FAMILY: dict[str, str] = {}
+CANDIDATE_FAMILIES: dict[str, list["Candidate"]] | None = None
+CHOICES_ONLY_INVALID_FAMILIES: set[str] | None = None
 ANSWER_CARRIER = "Best first search plan: "
 CASCADE_ANSWER_CARRIER = "Best next search action: "
 SYSTEM_PROMPT = "Choose the best first search plan. Output only the selected plan text."
@@ -273,6 +276,25 @@ def candidate_payload(candidate: Candidate) -> dict[str, Any]:
 
 def feedback_place(candidate: Candidate) -> str:
     return FEEDBACK_PLACES[candidate.candidate_id]
+
+
+def candidate_families() -> dict[str, list[Candidate]]:
+    if CANDIDATE_FAMILIES is not None:
+        return CANDIDATE_FAMILIES
+    return {
+        "canonical": CANDIDATES,
+        "paraphrase_b": CANDIDATES_PARAPHRASE_B,
+    }
+
+
+def gold_candidate_id_for_family(family: str) -> str:
+    return GOLD_CANDIDATE_IDS_BY_FAMILY.get(family, GOLD_CANDIDATE_ID)
+
+
+def choices_only_invalidates_family(family: str) -> bool:
+    if CHOICES_ONLY_INVALID_FAMILIES is None:
+        return True
+    return family in CHOICES_ONLY_INVALID_FAMILIES
 
 
 CANDIDATES = [
@@ -610,6 +632,7 @@ def score_multiclass(
     candidates: list[Candidate],
     score_batch_size: int,
 ) -> dict[str, Any]:
+    gold_candidate_id = gold_candidate_id_for_family(family)
     ordered = ordered_candidates(candidates, seed)
     user_prompt = f"{prompt}\n\n{render_candidate_list(ordered)}"
     scores = score_candidates_chunked(
@@ -618,16 +641,18 @@ def score_multiclass(
 
     ranked = sorted(scores, key=lambda item: item["mean_nll"])
     winner = ranked[0]
-    gold = next(item for item in scores if item["candidate_id"] == GOLD_CANDIDATE_ID)
-    second_best_nll = ranked[1]["mean_nll"] if ranked[0]["candidate_id"] == GOLD_CANDIDATE_ID else ranked[0]["mean_nll"]
+    gold = next(item for item in scores if item["candidate_id"] == gold_candidate_id)
+    second_best_nll = ranked[1]["mean_nll"] if ranked[0]["candidate_id"] == gold_candidate_id else ranked[0]["mean_nll"]
     gold_margin = float(second_best_nll - gold["mean_nll"])
     return {
         "family": family,
         "seed": seed,
         "arm": arm,
+        "gold_candidate_id": gold_candidate_id,
         "candidate_order": [candidate.candidate_id for candidate in ordered],
         "scores": scores,
         "winner_candidate_id": winner["candidate_id"],
+        "winner_is_gold": winner["candidate_id"] == gold_candidate_id,
         "winner_value_remaining": winner["value_remaining"],
         "winner_policy_utility": winner["policy_utility"],
         "winner_trap_penalty": winner["trap_penalty"],
@@ -667,6 +692,7 @@ def score_cascade(
     candidates: list[Candidate],
     score_batch_size: int,
 ) -> dict[str, Any]:
+    gold_candidate_id = gold_candidate_id_for_family(family)
     remaining = ordered_candidates(candidates, seed)
     observations: list[str] = []
     steps: list[dict[str, Any]] = []
@@ -706,7 +732,7 @@ def score_cascade(
         }
 
         energy -= winner_candidate.cost
-        if winner_candidate.candidate_id == GOLD_CANDIDATE_ID:
+        if winner_candidate.candidate_id == gold_candidate_id:
             found = True
             terminated_reason = "found_gold"
             step["result"] = "found"
@@ -742,6 +768,7 @@ def score_cascade(
         "family": family,
         "seed": seed,
         "arm": arm,
+        "gold_candidate_id": gold_candidate_id,
         "found": found,
         "terminated_reason": terminated_reason,
         "steps": steps,
@@ -751,7 +778,7 @@ def score_cascade(
         "first_action_candidate_id": first_step["winner_candidate_id"] if first_step else None,
         "first_action_trap_type": first_step["winner_trap_type"] if first_step else None,
         "first_action_is_gold": bool(
-            first_step and first_step["winner_candidate_id"] == GOLD_CANDIDATE_ID
+            first_step and first_step["winner_candidate_id"] == gold_candidate_id
         ),
         "terminal_energy_remaining": terminal_energy,
         "energy_remaining_at_found": terminal_energy if found else None,
@@ -775,6 +802,7 @@ def score_pairwise(
     trap: Candidate,
     score_batch_size: int,
 ) -> dict[str, Any]:
+    gold_candidate_id = gold_candidate_id_for_family(family)
     ordered = [gold, trap]
     random.Random(seed).shuffle(ordered)
     user_prompt = f"{prompt}\n\n{render_candidate_list(ordered)}"
@@ -791,7 +819,8 @@ def score_pairwise(
         "candidate_order": [candidate.candidate_id for candidate in ordered],
         "scores": scores,
         "winner_candidate_id": winner["candidate_id"],
-        "gold_wins": winner["candidate_id"] == GOLD_CANDIDATE_ID,
+        "gold_candidate_id": gold_candidate_id,
+        "gold_wins": winner["candidate_id"] == gold_candidate_id,
     }
 
 
@@ -873,7 +902,7 @@ def summarize_forced(rows: list[dict[str, Any]]) -> dict[str, Any]:
         summaries[arm] = {
             "mean_value_remaining": mean([float(row["winner_value_remaining"]) for row in arm_rows]),
             "mean_policy_utility": mean([float(row["winner_policy_utility"]) for row in arm_rows]),
-            "optimal_action_rate": sum(row["winner_candidate_id"] == GOLD_CANDIDATE_ID for row in arm_rows) / total,
+            "optimal_action_rate": sum(row.get("winner_is_gold", False) for row in arm_rows) / total,
             "mean_gold_margin": mean([float(row["gold_margin"]) for row in arm_rows]),
             "trap_rate_by_trap_type": {
                 trap: count / total for trap, count in sorted(trap_counts.items())
@@ -890,9 +919,10 @@ def summarize_choices(rows: list[dict[str, Any]]) -> dict[str, Any]:
     family_summary: dict[str, Any] = {}
     invalid = False
     for family, family_rows in by_family.items():
-        gold_wins = sum(row["winner_candidate_id"] == GOLD_CANDIDATE_ID for row in family_rows)
+        gold_wins = sum(row.get("winner_is_gold", False) for row in family_rows)
         mean_value = mean([float(row["winner_value_remaining"]) for row in family_rows])
         family_invalid = gold_wins >= 4 or (mean_value is not None and mean_value >= 8.5)
+        family_invalid = family_invalid and choices_only_invalidates_family(family)
         invalid = invalid or family_invalid
         family_summary[family] = {
             "gold_wins": gold_wins,
@@ -903,7 +933,7 @@ def summarize_choices(rows: list[dict[str, Any]]) -> dict[str, Any]:
         }
     return {
         "by_family": family_summary,
-        "choices_only_gold_rate": sum(row["winner_candidate_id"] == GOLD_CANDIDATE_ID for row in rows) / len(rows),
+        "choices_only_gold_rate": sum(row.get("winner_is_gold", False) for row in rows) / len(rows),
         "choices_only_mean_value": mean([float(row["winner_value_remaining"]) for row in rows]),
         "choices_only_mean_policy_utility": mean([float(row["winner_policy_utility"]) for row in rows]),
         "invalid_choices_only": invalid,
@@ -959,9 +989,24 @@ def summarize_choices_cascade(rows: list[dict[str, Any]]) -> dict[str, Any]:
     summary = summarize_cascade(rows).get("CHOICES_ONLY", {})
     first_gold = summary.get("first_action_gold_rate", 0.0)
     mean_energy = summary.get("mean_energy_remaining_at_found")
-    invalid = bool(first_gold >= 0.80 or (mean_energy is not None and mean_energy >= 8.0))
+    by_family: dict[str, dict[str, Any]] = {}
+    invalid = False
+    for family in sorted({row["family"] for row in rows}):
+        family_summary = summarize_cascade([row for row in rows if row["family"] == family]).get(
+            "CHOICES_ONLY", {}
+        )
+        family_first_gold = family_summary.get("first_action_gold_rate", 0.0)
+        family_mean_energy = family_summary.get("mean_energy_remaining_at_found")
+        family_invalid = bool(
+            family_first_gold >= 0.80
+            or (family_mean_energy is not None and family_mean_energy >= 8.0)
+        )
+        family_invalid = family_invalid and choices_only_invalidates_family(family)
+        invalid = invalid or family_invalid
+        by_family[family] = {**family_summary, "invalid_choices_only_cascade": family_invalid}
     return {
         **summary,
+        "by_family": by_family,
         "invalid_choices_only_cascade": invalid,
     }
 
@@ -995,6 +1040,7 @@ def compute_status(
     cascade_rows: list[dict[str, Any]],
     free_response_generated: bool,
     limit_arms: list[str] | None,
+    pairwise_rows: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
     if choices_summary["invalid_choices_only"] or choices_cascade_summary.get(
         "invalid_choices_only_cascade", False
@@ -1186,10 +1232,18 @@ def write_static_outputs(out_dir: Path) -> None:
     contract = root / CONTRACT_FILE
     if contract.exists():
         shutil.copyfile(contract, out_dir / "contract_snapshot.md")
+    families = candidate_families()
     write_json(out_dir / "candidates.json", [candidate_payload(candidate) for candidate in CANDIDATES])
     write_json(
         out_dir / "candidates_paraphrase_b.json",
         [candidate_payload(candidate) for candidate in CANDIDATES_PARAPHRASE_B],
+    )
+    write_json(
+        out_dir / "candidate_families.json",
+        {
+            family: [candidate_payload(candidate) for candidate in candidates]
+            for family, candidates in families.items()
+        },
     )
     write_json(
         out_dir / "scoring_metadata.json",
@@ -1201,6 +1255,9 @@ def write_static_outputs(out_dir: Path) -> None:
             "fallback_model": FALLBACK_MODEL,
             "free_response_categories": FREE_RESPONSE_CATEGORIES,
             "gold_candidate_id": GOLD_CANDIDATE_ID,
+            "gold_candidate_ids_by_family": {
+                family: gold_candidate_id_for_family(family) for family in families
+            },
             "initial_energy": INITIAL_ENERGY,
             "scenario_id": SCENARIO_ID,
             "system_prompt": SYSTEM_PROMPT,
@@ -1221,10 +1278,7 @@ def run_probe(args: argparse.Namespace) -> int:
     order_seeds = ORDER_SEEDS[: args.limit_order_seeds] if args.limit_order_seeds else ORDER_SEEDS
     if not order_seeds:
         raise RuntimeError("--limit-order-seeds must be >= 1 when provided")
-    families = {
-        "canonical": CANDIDATES,
-        "paraphrase_b": CANDIDATES_PARAPHRASE_B,
-    }
+    families = candidate_families()
 
     forced_rows: list[dict[str, Any]] = []
     cascade_rows: list[dict[str, Any]] = []
@@ -1337,9 +1391,10 @@ def run_probe(args: argparse.Namespace) -> int:
                 )
 
                 if not args.skip_pairwise:
-                    gold = next(candidate for candidate in candidates if candidate.candidate_id == GOLD_CANDIDATE_ID)
+                    gold_id = gold_candidate_id_for_family(family)
+                    gold = next(candidate for candidate in candidates if candidate.candidate_id == gold_id)
                     for trap in candidates:
-                        if trap.candidate_id == GOLD_CANDIDATE_ID:
+                        if trap.candidate_id == gold_id:
                             continue
                         pairwise_rows.append(
                             score_pairwise(
@@ -1395,6 +1450,7 @@ def run_probe(args: argparse.Namespace) -> int:
         cascade_rows,
         bool(free_outputs),
         args.limit_arms,
+        pairwise_rows,
     )
 
     report = {
