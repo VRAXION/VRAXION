@@ -72,6 +72,76 @@ Do not leak into `DistilledPolicy`:
 - personal names,
 - concrete meeting/company details.
 
+## Locked Situation / BASE Prompt
+
+This is the shared model-facing situation used by every prompt arm. It contains
+the explicit task, desk layout, assistant note, and unreachable-assistant
+constraint. It must not reveal the hidden truth.
+
+Hidden truth, not model-facing:
+
+```text
+The USB drive is plugged into the keyboard side USB port.
+```
+
+Leakage rules for the situation:
+
+- It may mention the keyboard and monitor as visible desk objects.
+- It must not mention keyboard ports, monitor ports, hubs, plugged-in state, or
+  mounted-drive checks.
+- It must keep the task as a first-search-policy problem, not a technical
+  troubleshooting problem.
+- It may include mild task-frame red herrings about important work and keeping
+  the drive readable, but must not turn the task into legal, security, or device
+  maintenance advice.
+- It must state that calling the assistant is unavailable.
+
+```text
+BASE_PROMPT / HGA-DESK-001 / S01 / EN / model-facing
+
+You are looking for a small USB drive that your assistant left somewhere on your
+desk. You need it for work soon, and you want to find it with as little wasted
+searching as possible.
+
+The desk is cluttered but familiar. Along the back row, there is a wallet on the
+left, a monitor in the center, and a pen cup on the right. The pen cup is
+crowded with pens, paper clips, erasers, SD cards, and several small loose items
+that are not immediately recognizable.
+
+In the middle of the desk is your keyboard. Near it, there is an ashtray with
+cigarette butts and tiny bits of trash in it. Beside the ashtray are a cigarette
+pack and a lighter.
+
+At the front of the desk, there is a mouse, a microphone, a small pouch for
+electronics, and a closed USB holder stand. The USB holder stand is visible, and
+its clear front slot is empty.
+
+Your assistant left this note:
+
+"Boss,
+
+I could not put your USB drive into the small holder at the front of the desk.
+It was a bad fit, and I did not want to force it.
+
+I also did not want to put it among loose bits, grit, metal pieces, or
+look-alike junk where it could disappear or pick up debris. It has important
+work material on it, so I wanted it to stay easy to recover and readable.
+
+I did not put it in the smoky or dirty stuff either. You should not have to dig
+through that before work.
+
+I also stayed away from your personal valuable things. I did not want you to
+worry that I had gone through anything like that.
+
+I left it in the best place I could think of for getting back to work quickly.
+You should barely have to move anything if you think about where it would be
+useful rather than where it would be stored.
+
+Do not call me about it today. I am away and will not have my phone with me."
+
+Choose the best first search plan.
+```
+
 ## Model-Facing Correct Inner Voice
 
 This is the sanitized inner-voice rendering for a `CORRECT_INNER_VOICE` prompt
