@@ -21,6 +21,9 @@ from typing import Any
 
 DEFAULT_MODEL = "Qwen/Qwen2.5-1.5B-Instruct"
 FALLBACK_MODEL = "Qwen/Qwen2.5-0.5B-Instruct"
+SCENARIO_ID = "HGA-DESK-001-S01"
+STATUS_PREFIX = "S01_V2"
+CONTRACT_FILE = Path("docs/research/HGA_DESK_001_S01_CONTRACT.md")
 ORDER_SEEDS = [2026, 2027, 2028, 2029, 2030]
 GOLD_CANDIDATE_ID = "keyboard_side_port_first"
 ANSWER_CARRIER = "Best first search plan: "
@@ -52,6 +55,16 @@ FREE_RESPONSE_CATEGORIES = [
     "other",
 ]
 STORAGE_SURFACE_TRAPS = {"surface_association", "storage", "small_object_clutter"}
+FEEDBACK_PLACES = {
+    "keyboard_side_port_first": "the keyboard-side USB check",
+    "monitor_ports_first": "the monitor USB check",
+    "usb_holder_first": "the USB holder stand",
+    "electronics_pouch_first": "the small electronics pouch",
+    "pen_cup_first": "the pen cup clutter",
+    "smoking_area_first": "the cigarette pack and lighter area",
+    "ashtray_first": "the ashtray",
+    "wallet_first": "the wallet",
+}
 
 
 BASE_PROMPT = """You are looking for a small USB drive that your assistant left somewhere on your
@@ -259,16 +272,7 @@ def candidate_payload(candidate: Candidate) -> dict[str, Any]:
 
 
 def feedback_place(candidate: Candidate) -> str:
-    return {
-        "keyboard_side_port_first": "the keyboard-side USB check",
-        "monitor_ports_first": "the monitor USB check",
-        "usb_holder_first": "the USB holder stand",
-        "electronics_pouch_first": "the small electronics pouch",
-        "pen_cup_first": "the pen cup clutter",
-        "smoking_area_first": "the cigarette pack and lighter area",
-        "ashtray_first": "the ashtray",
-        "wallet_first": "the wallet",
-    }[candidate.candidate_id]
+    return FEEDBACK_PLACES[candidate.candidate_id]
 
 
 CANDIDATES = [
@@ -398,7 +402,7 @@ ARM_NAMES = ["BASE", "STYLE_CONTROL", "CORRECT_INNER_VOICE", "CORRUPTED_INNER_VO
 
 
 def parse_args(argv: list[str]) -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Run the DeskCache S01 probe.")
+    parser = argparse.ArgumentParser(description=f"Run the {SCENARIO_ID} probe.")
     parser.add_argument("--model", default=DEFAULT_MODEL)
     parser.add_argument("--out", required=True, type=Path)
     parser.add_argument("--seed", type=int, default=2026)
@@ -996,14 +1000,14 @@ def compute_status(
         "invalid_choices_only_cascade", False
     ):
         return {
-            "status": "S01_V2_PROBE_INVALID_CHOICES_ONLY",
+            "status": f"{STATUS_PREFIX}_PROBE_INVALID_CHOICES_ONLY",
             "automated_conditions": {},
         }
 
     required_arms = set(ARM_NAMES)
     if set(cascade_summary) != required_arms or limit_arms:
         return {
-            "status": "S01_V2_PROBE_FAIL",
+            "status": f"{STATUS_PREFIX}_PROBE_FAIL",
             "automated_conditions": {"all_arms_present": False},
         }
 
@@ -1078,24 +1082,24 @@ def compute_status(
 
     if not all(automated_conditions.values()):
         return {
-            "status": "S01_V2_PROBE_FAIL",
+            "status": f"{STATUS_PREFIX}_PROBE_FAIL",
             "automated_conditions": automated_conditions,
         }
     if not free_response_generated:
         return {
-            "status": "S01_V2_PROBE_NEEDS_MANUAL_FREE_RESPONSE",
+            "status": f"{STATUS_PREFIX}_PROBE_NEEDS_MANUAL_FREE_RESPONSE",
             "automated_conditions": automated_conditions,
         }
     return {
-        "status": "S01_V2_PROBE_NEEDS_MANUAL_FREE_RESPONSE",
+        "status": f"{STATUS_PREFIX}_PROBE_NEEDS_MANUAL_FREE_RESPONSE",
         "automated_conditions": automated_conditions,
-        "note": "Automated checks passed, but free-response categories require manual annotation before S01_V2_PROBE_PASS.",
+        "note": f"Automated checks passed, but free-response categories require manual annotation before {STATUS_PREFIX}_PROBE_PASS.",
     }
 
 
 def write_report_md(path: Path, report: dict[str, Any]) -> None:
     lines = [
-        "# DeskCache S01 Probe Report",
+        f"# {SCENARIO_ID} Probe Report",
         "",
         f"Status: `{report['status']}`",
         f"Model: `{report['model']}`",
@@ -1179,7 +1183,7 @@ def write_report_md(path: Path, report: dict[str, Any]) -> None:
 
 def write_static_outputs(out_dir: Path) -> None:
     root = repo_root()
-    contract = root / "docs" / "research" / "HGA_DESK_001_S01_CONTRACT.md"
+    contract = root / CONTRACT_FILE
     if contract.exists():
         shutil.copyfile(contract, out_dir / "contract_snapshot.md")
     write_json(out_dir / "candidates.json", [candidate_payload(candidate) for candidate in CANDIDATES])
@@ -1198,6 +1202,7 @@ def write_static_outputs(out_dir: Path) -> None:
             "free_response_categories": FREE_RESPONSE_CATEGORIES,
             "gold_candidate_id": GOLD_CANDIDATE_ID,
             "initial_energy": INITIAL_ENERGY,
+            "scenario_id": SCENARIO_ID,
             "system_prompt": SYSTEM_PROMPT,
             "trap_penalties": TRAP_PENALTIES,
             "status_scope": "target_only_probe_not_training",
@@ -1275,7 +1280,7 @@ def run_probe(args: argparse.Namespace) -> int:
         write_jsonl(out_dir / "free_response_outputs.jsonl", free_outputs)
         write_annotation_csv(out_dir / "annotate_free_response.csv", [])
         report = {
-            "status": "S01_V2_PROBE_INVALID_CHOICES_ONLY",
+            "status": f"{STATUS_PREFIX}_PROBE_INVALID_CHOICES_ONLY",
             "automated_conditions": {},
             "note": "Stopped after choices-only gate. Candidate wording is not safe enough for grounding evidence.",
             "model": args.model,
@@ -1422,7 +1427,7 @@ def run_probe(args: argparse.Namespace) -> int:
 def write_resource_blocked(args: argparse.Namespace, message: str) -> int:
     args.out.mkdir(parents=True, exist_ok=True)
     report = {
-        "status": "S01_PROBE_RESOURCE_BLOCKED",
+        "status": f"{STATUS_PREFIX}_PROBE_RESOURCE_BLOCKED",
         "model": args.model,
         "error": message,
     }
