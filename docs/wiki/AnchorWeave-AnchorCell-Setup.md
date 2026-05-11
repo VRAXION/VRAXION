@@ -1,6 +1,6 @@
 # AnchorWeave / AnchorCell Setup
 
-Status snapshot: 2026-05-09.
+Status snapshot: 2026-05-11.
 
 This page is the default handoff surface for the AnchorWeave / AnchorCell line. It records what exists, what was tested, what failed, what is currently locked, and what should not be repeated.
 
@@ -9,9 +9,52 @@ This page is the default handoff surface for the AnchorWeave / AnchorCell line. 
 - AnchorWeave scaffold exists on `main`.
 - Canonical storage is rich append-only AnchorCell JSONL.
 - Real or private cells must stay private unless explicitly sanitized.
-- Current experimental status: the scaffold is valid, but the AnchorWeave format-effect is not proven.
+- Current experimental status: the scaffold is valid, but natural-language AnchorCell learning is not proven.
 - AWFT-001 synthetic navigation tests were useful as measurement infrastructure, but they did not justify scaling human AnchorCell collection.
-- Later HF/LoRA and forced-choice work has been built and tested as experimental runner work; keep it separate from the stable AnchorCell storage contract until merged and reviewed.
+- Later prompt, forced-choice, PLAN-first, sparse-carrier, byte-serialization, and text-parser work is experimental runner work; keep it separate from the stable AnchorCell storage contract until merged and reviewed.
+
+## Current Handoff: 2026-05-11
+
+Do not scale to 256 real human AnchorCells yet.
+
+The current line of evidence says:
+
+```text
+PLAN/process routing can work when the carrier is forced to use a clean process state.
+Direct answer heads and global text encoders keep finding shortcut paths.
+The current blocker is learned parsing/binding from readable text into candidate-local PLAN state.
+```
+
+Current status by layer:
+
+| Layer | Status | What it means |
+|---|---|---|
+| Conceptual `AnchorCellCore + ProbeSpec` | Locked | Keep using this as the authoring language. |
+| HumanSourceTrace as raw inner monologue | Source only | Useful for authoring, not trusted as direct model-facing prompt. |
+| DistilledPolicy / process supervision | Promising | Works in controlled toy carriers when routed through process state. |
+| Prompt-injected inner voice | Weak / negative | It often activates trap words instead of forcing the decision path. |
+| Sparse routed carrier | Positive toy signal | Process-first sparse route can beat direct and shuffled controls in toy tests. |
+| Fixed byte PLAN route | Positive but bounded | Works on fixed-layout records; does not prove format-invariant parsing. |
+| Schema-aware serialization | Positive guard | Shows the task can work when fields are parsed for the model. |
+| Learned raw/text parser | Current blocker | Held-out templates and candidate-local binding are not solved yet. |
+
+Practical conclusion:
+
+```text
+The near-term research target is not more DeskCache cells.
+The near-term target is a parser/carrier that reliably maps readable structured text
+into candidate-local PLAN fields.
+```
+
+Latest unresolved gate:
+
+```text
+MINI-014B:
+  Can a smaller block-local operation-plan parser learn:
+    candidate block -> operation sequence -> final value -> policy bit?
+```
+
+If block-local operation learning fails, redesign the carrier or representation before returning to human cells. If block-local passes but query/full-text fails, the blocker is candidate-block localization in full text.
 
 ## Claim Boundary
 
@@ -147,21 +190,55 @@ The current synthetic AnchorWeave navigation setup did not prove a format-effect
 Do not scale human AnchorCell collection from that result.
 ```
 
+## Anchor-Mini Proof Ladder
+
+This is the current compact truth table for the post-S01 AnchorCell process line.
+
+| Probe | Result | Interpretation |
+|---|---|---|
+| `MINI-003` | Strong positive toy stress | Decomposed auxiliary supervision beat answer-only and shuffled controls under shortcut flip. |
+| `MINI-004` | Sparse routed positive | The process signal transfers to a sparse/mutation-style routed carrier in the toy setup. |
+| `MINI-005` | Internalization positive | Process supervision can be learned from ordinary inputs and used at eval without visible oracle bits in the sparse audit carrier. |
+| `MINI-006` | Symbolic format signal | Compact action/outcome-style process formats were strongest in symbolic control sweeps. |
+| `MINI-007` | Contract only / no locked result doc | Literal text carrier remains an intended bridge, not a settled proof point in the repo. |
+| `MINI-008` | Process-first teaching positive | A scored PLAN-first route can close shortcuts in the sparse audit carrier. |
+| `MINI-009` | Byte PLAN bridge positive | Fixed byte records can feed PLAN-first sparse decisions better than direct/shuffled/shortcut controls. |
+| `MINI-010` | Serialization robustness positive with schema-aware parser | Not just one fixed template, but still using an external schema-aware parser. |
+| `MINI-011` | Weak positive / fixed-only boundary | Raw byte fixed layout works; template transfer fails. |
+| `MINI-012` | Negative parser diagnostic | Neural char parsers read goal fields but fail candidate-local effect/policy binding on held-out templates. |
+| `MINI-013` | Negative / partial | `QUERY=A/B/C/D` scope hint and more templates did not fix candidate-local binding. |
+| `MINI-014` | Partial diagnostic | Oracle PLAN solves operation task; answer-only/global text shortcut; block/query evidence unfinished due runtime. |
+
+High-confidence takeaways:
+
+```text
+Working:
+  process-first / PLAN-first routing
+  shortcut-flip guard design
+  shuffled and shortcut-teacher controls
+  oracle upper-bound checks
+
+Not working yet:
+  prompt monologue as carrier
+  global text encoder as parser
+  simple query label as candidate binder
+  scaling real cells before parser/carrier is solved
+```
+
 ## Current Default Direction
 
 Do not scale human AnchorCell collection yet.
 
-Do not keep expanding synthetic AWFT navigation as the main line.
+Do not keep expanding synthetic AWFT navigation or DeskCache cell count as the main line.
 
-Move to human-grounded microtests with gradient value/cost scoring:
+Use small falsification gates before any real-data expansion:
 
-- small number of carefully locked cells,
-- explicit human search judgment,
-- adversarial controls,
-- forced-choice plus free-response audit,
-- mean value remaining as the primary metric.
+- `MINI-014B` block-local operation-plan parser,
+- then full-text query/block localization if block-local passes,
+- then compact readable AnchorCell serialization,
+- only then a small human DeskCache sibling family.
 
-The next default probe contract is `HGA-DESK-001 / DeskCache S01`.
+`HGA-DESK-001 / DeskCache S01` remains a locked human probe contract, not the next scale target.
 
 ## Locked Probe Contract: HGA-DESK-001 / DeskCache S01
 
