@@ -24,6 +24,7 @@ FILES = [
     "Mutation-Selection-Dynamics.md",
     "Constructed-Computation.md",
     "Cognitive-Emergence-Speculative.md",
+    "Grounded-Modular-Self-Controller.md",
     # Predecessor pages — kept as redirect stubs so existing links don't break.
     "Theory-of-Thought.md",
     "Structured-Chaos-Theory.md",

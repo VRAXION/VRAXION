@@ -20,6 +20,30 @@ Vraxion exists to advance machine consciousness as an engineering reality. In pu
 
 This page is the mission-first technical front door. Use [Pages](https://vraxion.github.io/VRAXION/) for the polished front door — the Blocks ladder ([A Byte Unit](https://vraxion.github.io/VRAXION/blocks/a-byte-unit.html) → [E Brain](https://vraxion.github.io/VRAXION/blocks/e-brain.html)) plus a Legacy detail view. Use the repo [README.md](https://github.com/VRAXION/VRAXION/blob/main/README.md) for the code-facing entry, and [Research Process & Archive](Timeline-Archive) for protocol, chronology, and proof trail.
 
+## Current Grounded Controller Finding
+
+As of 2026-05-12, the latest toy integration result is the
+[Grounded Modular Self-Controller Finding](Grounded-Modular-Self-Controller).
+It combines three previously separate mechanisms:
+
+```text
+inferred grounding mode
++ hard committed self-state
++ frozen primitive/action modules
++ learned controller
+```
+
+The main 5-seed probe reached `1.000` hard-counterfactual action accuracy for
+the integrated recursive controller, while no-commit/static baselines stayed at
+`0.444` and shuffled committed state dropped to `0.111`. Frozen primitives had
+`0.000` drift, while the shared end-to-end no-freeze baseline drifted by
+`0.583`.
+
+Safe interpretation: in a controlled toy setting, inferred grounding can update
+a hard committed self-state, and that committed state can later drive a learned
+controller over frozen skills/actions without primitive drift. This is not a
+consciousness, biology, natural-language, full VRAXION, or production claim.
+
 ## Current D10 Finding
 
 As of 2026-04-30, the HDS basin mapping side quest is closed. The H384 D9/D10

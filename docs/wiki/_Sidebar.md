@@ -22,6 +22,7 @@
   - [Mutation-Selection Dynamics](Mutation-Selection-Dynamics)
   - [Constructed Computation](Constructed-Computation)
   - [Speculative — Cognitive Emergence](Cognitive-Emergence-Speculative)
+- [Grounded Modular Self-Controller](Grounded-Modular-Self-Controller)
 - [Theory of Thought](Theory-of-Thought) *(superseded)*
 - [Structured Chaos Theory](Structured-Chaos-Theory) *(superseded)*
 
