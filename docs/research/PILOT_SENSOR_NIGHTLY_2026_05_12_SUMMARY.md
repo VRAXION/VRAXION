@@ -32,6 +32,7 @@ The blocker is robust raw text -> scope/evidence extraction.
 | `PILOT_SENSOR_LOCKED_SKILL_INTEGRATION_001` | `74a8c81` | Structured sensor and learned systematic sensor executed frozen ADD/MUL with 1.000 result accuracy and 0 drift. |
 | `PILOT_SENSOR_LEXICON_EXTENSION_001` | `1edd11c` | Strict synonym failures were solved by explicit alias lexicon coverage. |
 | `PILOT_SENSOR_GUARD_COMPENSATION_001` | `883e019` | Threshold tuning could not fix factor-heldout sensor scope errors. |
+| `PILOT_SENSOR_V0_REGRESSION_001` | `37a13c7` | Parser-assisted v0 baseline passed the combined stress/factor/alias execution suite. |
 
 ## Key Findings
 
@@ -182,6 +183,18 @@ raw command text
 ```
 
 Do not keep trying to solve this with raw n-gram MLPs alone. The evidence says they can pass covered templates but fail factor-heldout scope composition.
+
+The parser-assisted v0 regression now passes:
+
+```text
+PILOT_SENSOR_V0_REGRESSION_001:
+  action_accuracy = 1.000
+  result_accuracy = 1.000
+  false_execution = 0.000
+  primitive_drift = 0.000
+```
+
+This should be treated as the current command-sensor baseline, not as a learned-NLU result.
 
 ## Next Actions
 
