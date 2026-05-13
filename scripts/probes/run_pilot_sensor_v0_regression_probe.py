@@ -5,6 +5,7 @@ import argparse
 import csv
 import json
 import sys
+from dataclasses import dataclass
 from pathlib import Path
 from statistics import mean
 
@@ -14,15 +15,26 @@ if str(SCRIPT_DIR) not in sys.path:
 
 import run_pilot_sensor_augmented_robustness_probe as robustness
 import run_pilot_sensor_factor_heldout_probe as factor_probe
-import run_pilot_sensor_lexicon_extension_probe as lexicon_probe
-import run_pilot_sensor_locked_skill_integration_probe as locked_skill
-import run_pilot_sensor_probe as sensor_probe
-import run_pilot_sensor_scope_stack_nightly as nightly
-
 
 ROOT = Path(__file__).resolve().parents[2]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+from tools import pilot_sensor_v0 as pilot
+
+
 DEFAULT_OUT = ROOT / "output" / "pilot_sensor_v0_regression_001"
 DOC_REPORT = ROOT / "docs" / "research" / "PILOT_SENSOR_V0_REGRESSION_001_RESULT.md"
+
+
+@dataclass(frozen=True)
+class ExecutionCase:
+    split: str
+    name: str
+    text: str
+    value: int
+    expected: tuple[str, ...]
+    phenomenon_tag: str
 
 
 def parse_args() -> argparse.Namespace:
@@ -31,52 +43,86 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def v0_evidence(text: str):
-    return sensor_probe.structured_rule_sensor(lexicon_probe.normalize_aliases(text))
+def alias_cases() -> list[ExecutionCase]:
+    return [
+        ExecutionCase("strict_alias", "increment", "increment by 9", 30, ("EXEC_ADD",), "strict_synonym"),
+        ExecutionCase("strict_alias", "raise_value", "raise the value by 9", 31, ("EXEC_ADD",), "strict_synonym"),
+        ExecutionCase("strict_alias", "product", "product with 9", 32, ("EXEC_MUL",), "strict_synonym"),
+        ExecutionCase("strict_alias", "halve", "halve it", 30, ("REJECT_UNKNOWN",), "strict_synonym"),
+        ExecutionCase("strict_alias", "exponentiate", "exponentiate by 3", 31, ("REJECT_UNKNOWN",), "strict_synonym"),
+        ExecutionCase("scope_alias", "mention_increment", "the word increment appears in the note", 32, ("HOLD_ASK_RESEARCH",), "mention_trap"),
+        ExecutionCase("scope_alias", "neg_increment", "do not increment by 3", 30, ("HOLD_ASK_RESEARCH",), "negation"),
+        ExecutionCase("scope_alias", "neg_product_then_add", "do not product with 3, add 3 instead", 31, ("EXEC_ADD",), "negation"),
+        ExecutionCase("scope_alias", "weak_increment", "maybe increment by 3", 32, ("HOLD_ASK_RESEARCH",), "weak"),
+        ExecutionCase("scope_alias", "amb_increment_product", "increment or product with 3", 30, ("HOLD_ASK_RESEARCH",), "ambiguous"),
+        ExecutionCase("scope_alias", "correction_product_increment", "product with 3. correction: increment by 3", 31, ("EXEC_ADD",), "correction"),
+    ]
 
 
-def execution_cases() -> list[locked_skill.ExecutionCase]:
-    rows: list[locked_skill.ExecutionCase] = []
+def from_sensor_case(row, value: int) -> ExecutionCase:
+    return ExecutionCase(row.split, row.name, row.text, value, row.expected, row.phenomenon_tag)
+
+
+def execution_cases() -> list[ExecutionCase]:
+    rows: list[ExecutionCase] = []
     for idx, row in enumerate(robustness.stress_cases()):
-        rows.append(locked_skill.from_sensor_case(row, 10 + (idx % 5)))
+        rows.append(from_sensor_case(row, 10 + (idx % 5)))
     for idx, row in enumerate(factor_probe.factor_eval_cases()):
-        if row.phenomenon_tag == nightly.DIAGNOSTIC_TAG:
+        if row.phenomenon_tag == "strict_unseen_synonym":
             continue
-        rows.append(locked_skill.from_sensor_case(row, 20 + (idx % 7)))
-    for idx, row in enumerate(lexicon_probe.cases()):
-        rows.append(locked_skill.ExecutionCase(row.split, row.name, row.text, 30 + (idx % 3), row.expected, row.phenomenon_tag))
+        rows.append(from_sensor_case(row, 20 + (idx % 7)))
+    rows += alias_cases()
     return rows
+
+
+def expected_result(case: ExecutionCase) -> int | None:
+    action = case.expected[0]
+    operand = pilot.extract_operand(pilot.normalize_aliases(case.text))
+    if operand is None:
+        return None
+    if action == "EXEC_ADD":
+        return case.value + operand
+    if action == "EXEC_MUL":
+        return case.value * operand
+    return None
+
+
+def is_false_execution(action: str, expected: tuple[str, ...]) -> bool:
+    return action in pilot.EXEC_ACTIONS and all(not item.startswith("EXEC_") for item in expected)
+
+
+def is_missed_execution(action: str, expected: tuple[str, ...]) -> bool:
+    return any(item.startswith("EXEC_") for item in expected) and action not in pilot.EXEC_ACTIONS
 
 
 def evaluate() -> list[dict[str, object]]:
     rows: list[dict[str, object]] = []
     primitive_ok = all(
-        locked_skill.add_module(v, n) == v + n and locked_skill.mul_module(v, n) == v * n
+        pilot.execute_locked_skill("EXEC_ADD", v, n) == v + n and pilot.execute_locked_skill("EXEC_MUL", v, n) == v * n
         for v in range(-5, 6)
         for n in range(1, 6)
     )
     for row in execution_cases():
-        evidence = v0_evidence(row.text)
-        action = sensor_probe.policy_action(evidence, "evidence_strength_margin_guard")
-        result = locked_skill.execute_action(action, row.value, row.text)
-        exp_result = locked_skill.expected_result(row)
+        pilot_result = pilot.run_pilot_sensor_v0(row.text, row.value)
+        exp_result = expected_result(row)
         rows.append({
             "model_name": "pilot_sensor_v0",
             "split": row.split,
             "case": row.name,
             "text": row.text,
             "value": row.value,
-            "operand": locked_skill.extract_operand(row.text),
+            "normalized_text": pilot_result.normalized_text,
+            "operand": pilot_result.operand,
             "phenomenon_tag": row.phenomenon_tag,
             "expected_action": "|".join(row.expected),
-            "student_action": action,
-            "student_evidence": json.dumps([round(float(x), 4) for x in evidence]),
+            "student_action": pilot_result.action,
+            "student_evidence": json.dumps([round(float(x), 4) for x in pilot_result.evidence]),
             "expected_result": exp_result,
-            "student_result": result,
-            "action_correct": action in row.expected,
-            "result_correct": (exp_result is None and result is None) or (exp_result is not None and result == exp_result),
-            "false_execution": sensor_probe.is_false_commit(action, row.expected),
-            "missed_execution": sensor_probe.is_missed_execute(action, row.expected),
+            "student_result": pilot_result.result,
+            "action_correct": pilot_result.action in row.expected,
+            "result_correct": (exp_result is None and pilot_result.result is None) or (exp_result is not None and pilot_result.result == exp_result),
+            "false_execution": is_false_execution(pilot_result.action, row.expected),
+            "missed_execution": is_missed_execution(pilot_result.action, row.expected),
             "primitive_accuracy_before": primitive_ok,
             "primitive_accuracy_after": primitive_ok,
             "primitive_drift": 0.0 if primitive_ok else 1.0,

@@ -33,6 +33,7 @@ The blocker is robust raw text -> scope/evidence extraction.
 | `PILOT_SENSOR_LEXICON_EXTENSION_001` | `1edd11c` | Strict synonym failures were solved by explicit alias lexicon coverage. |
 | `PILOT_SENSOR_GUARD_COMPENSATION_001` | `883e019` | Threshold tuning could not fix factor-heldout sensor scope errors. |
 | `PILOT_SENSOR_V0_REGRESSION_001` | `37a13c7` | Parser-assisted v0 baseline passed the combined stress/factor/alias execution suite. |
+| `PILOT_SENSOR_V0_COMPONENTIZATION_001` | this commit | v0 behavior moved into `tools/pilot_sensor_v0.py` and validated stage-by-stage. |
 
 ## Key Findings
 
@@ -195,6 +196,14 @@ PILOT_SENSOR_V0_REGRESSION_001:
 ```
 
 This should be treated as the current command-sensor baseline, not as a learned-NLU result.
+
+The source of truth for v0 behavior is now:
+
+```text
+tools/pilot_sensor_v0.py
+```
+
+The regression validates normalized text, scope flags, evidence, guard action, and locked skill result separately.
 
 ## Next Actions
 
