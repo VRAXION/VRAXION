@@ -753,3 +753,105 @@ Next test should isolate seed 2029 with longer training to distinguish:
   seed-specific instability
   genuine ABC sufficiency / Prismion fragility
 ```
+
+## Width32 Longer-Training Ablations
+
+Seed 2029 was isolated first:
+
+```text
+root: target/pilot_wave/stable_loop_wavefront_003_long_s_curve/gpu_w32_seed2029_e20_ablation
+device: cuda
+jobs: 2
+seed: 2029
+width: 32
+epochs: 20
+arms: ABC vs Prismion
+```
+
+Result:
+
+```text
+ABC:
+  truncated_accuracy_by_S:       1.0000
+  same_weights_s_curve_accuracy: 0.9901
+  unreachable_false_reach:       0.0000
+  pre_wall_pressure:             0.00350
+
+Prismion:
+  truncated_accuracy_by_S:       1.0000
+  same_weights_s_curve_accuracy: 0.9901
+  unreachable_false_reach:       0.0000
+  pre_wall_pressure:             0.00340
+```
+
+Interpretation:
+
+```text
+The seed-2029 Prismion collapse at 10 epochs was an optimization/training-horizon issue, not a hard architectural failure.
+At 20 epochs, ABC and Prismion tie on accuracy and Prismion has slightly lower pre-wall pressure.
+```
+
+Then a 3-seed e20 confirmation was run:
+
+```text
+root: target/pilot_wave/stable_loop_wavefront_003_long_s_curve/gpu_w32_3seed_e20_ablation
+device: cuda
+jobs: 4
+seeds: 2028,2029,2030
+width: 32
+epochs: 20
+arms: ABC vs Prismion
+```
+
+Runner labels:
+
+```text
+FULL_REACHABILITY_POSITIVE
+SAME_WEIGHTS_S_CURVE_POSITIVE
+```
+
+Prismion vs ABC paired deltas:
+
+```text
+truncated_accuracy_by_S:
+  seed 2028: +0.0000
+  seed 2029: +0.0000
+  seed 2030: +0.0120
+  mean:      +0.0040
+
+same_weights_s_curve_accuracy:
+  seed 2028: +0.0000
+  seed 2029: +0.0000
+  seed 2030: +0.0120
+  mean:      +0.0040
+
+unreachable_false_reach_all_S:
+  seed 2028: +0.0000
+  seed 2029: +0.0000
+  seed 2030: -0.0230
+  mean:      -0.0077
+
+pre_mask_frontier_wall_write_norm:
+  seed 2028: -0.00014
+  seed 2029: -0.00010
+  seed 2030: -0.00029
+  mean:      -0.00018
+```
+
+Longer-training verdict:
+
+```text
+SEED_2029_COLLAPSE_RESOLVED_BY_LONGER_TRAINING
+PRISMION_MATCHES_OR_BEATS_ABC_AT_WIDTH32_E20
+PRISMION_HAS_LOWER_FALSE_REACH_ON_AVERAGE
+PRISMION_HAS_LOWER_PRE_WALL_PRESSURE_ON_ALL_3_E20_SEEDS
+ABC_REMAINS_STRONG_AND_OFTEN_TIES_PRISMION_AT_CEILING
+```
+
+Updated claim boundary:
+
+```text
+The robust claim is now stable-loop wavefront positive.
+Prismion is useful-looking but not uniquely required: ABC reaches ceiling on several seeds.
+The differentiator is not raw reachability once both hit ceiling; it is stability/false-reach/wall-pressure margins.
+```
