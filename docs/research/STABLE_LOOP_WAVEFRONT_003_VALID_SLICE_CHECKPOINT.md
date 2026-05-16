@@ -322,3 +322,155 @@ PRISMION_NOT_VALIDATED_BY_PARTIAL_CPU_RUN
 FULL_156_JOB_VALID_SLICE_TOO_EXPENSIVE_FOR_CURRENT LOOP
 NEXT: GPU_MICRO_BATTERY <= 10 MIN
 ```
+
+## GPU Failure Diagnostic
+
+The GPU failure was diagnosed with target-only harnesses that import the wavefront runner without calling its `main()` path. This avoided tracked result-doc writes.
+
+GPU diagnostics:
+
+```text
+CUDA fanout sanity:
+  jobs=1 OK
+  jobs=2 OK
+  jobs=3 OK
+  jobs=4 OK
+
+runner eval-only:
+  jobs=1 OK
+  jobs=2 OK
+  jobs=3 OK
+  jobs=4 OK
+
+runner train, 1 epoch:
+  jobs=1 OK
+  jobs=2 OK
+  jobs=3 OK
+  jobs=4 OK
+
+throughput, 5 epochs:
+  jobs=1  75.57s  75.57 sec/job
+  jobs=2  86.00s  43.00 sec/job
+  jobs=3  91.32s  30.44 sec/job
+  jobs=4 102.70s  25.67 sec/job
+```
+
+Interpretation:
+
+```text
+The previous jobs=4 crash was not reproduced in isolation.
+The likely cause was resource interference / launch context:
+  CPU valid_slice was still running with 12 worker processes
+  Windows ProcessPool + CUDA context startup pressure
+  concurrent diagnostic launch pressure
+
+GPU jobs=4 is usable when no large CPU sweep is running in parallel.
+```
+
+One diagnostic false alarm was also identified:
+
+```text
+Python launched from stdin can fail under Windows multiprocessing spawn
+because child processes cannot reload the <stdin> main module.
+Diagnostics must be launched from a real .py file.
+```
+
+## GPU Micro-Battery 3-Seed Result
+
+Run:
+
+```text
+root: target/pilot_wave/stable_loop_wavefront_003_long_s_curve/gpu_micro_battery_3seed_001
+device: cuda
+jobs: 4
+seeds: 2026,2027,2028
+epochs: 10
+train_examples: 4096
+eval_examples: 4096
+```
+
+Runner labels:
+
+```text
+FULL_REACHABILITY_POSITIVE
+SAME_WEIGHTS_S_CURVE_POSITIVE
+```
+
+Matched rows:
+
+| Arm | Seed | TruncAcc | SameWeights | Unreachable false reach | Post-wall leak | Pre-wall pressure |
+|---|---:|---:|---:|---:|---:|---:|
+| `HARD_WALL_ABC_LOOP` | 2026 | 0.9954 | 0.9872 | 0.0056 | 0.0000 | 0.0031 |
+| `HARD_WALL_ABC_LOOP` | 2027 | 1.0000 | 0.9911 | 0.0000 | 0.0000 | 0.0032 |
+| `HARD_WALL_ABC_LOOP` | 2028 | 0.9717 | 0.9639 | 0.0530 | 0.0000 | 0.0039 |
+| `HARD_WALL_PRISMION_PHASE_LOOP` | 2026 | 0.9990 | 0.9903 | 0.0020 | 0.0000 | 0.0037 |
+| `HARD_WALL_PRISMION_PHASE_LOOP` | 2027 | 0.9995 | 0.9906 | 0.0010 | 0.0000 | 0.0039 |
+| `HARD_WALL_PRISMION_PHASE_LOOP` | 2028 | 0.9905 | 0.9827 | 0.0036 | 0.0000 | 0.0033 |
+| `LOCAL_MESSAGE_PASSING_GNN` S=24 | 2026 | 0.8511 | n/a | 0.3084 | n/a | n/a |
+| `LOCAL_MESSAGE_PASSING_GNN` S=24 | 2027 | 0.8621 | n/a | 0.2858 | n/a | n/a |
+| `LOCAL_MESSAGE_PASSING_GNN` S=24 | 2028 | 0.8528 | n/a | 0.3072 | n/a | n/a |
+| `UNTIED_LOCAL_CNN_TARGET_READOUT` | 2026 | 0.5574 | 0.6271 | 0.2508 | n/a | n/a |
+| `UNTIED_LOCAL_CNN_TARGET_READOUT` | 2027 | 0.8345 | 0.6841 | 0.2762 | n/a | n/a |
+| `UNTIED_LOCAL_CNN_TARGET_READOUT` | 2028 | 0.5823 | 0.6443 | 0.5313 | n/a | n/a |
+
+Paired deltas:
+
+```text
+Prismion - ABC, truncated_accuracy_by_S:
+  seed 2026: +0.0037
+  seed 2027: -0.0005
+  seed 2028: +0.0188
+  mean:      +0.0073
+
+Prismion - ABC, same_weights_s_curve_accuracy:
+  seed 2026: +0.0031
+  seed 2027: -0.0005
+  seed 2028: +0.0188
+  mean:      +0.0071
+
+Prismion - ABC, unreachable_false_reach_all_S:
+  seed 2026: -0.0035
+  seed 2027: +0.0010
+  seed 2028: -0.0494
+  mean:      -0.0173
+
+Prismion - GNN S=24, truncated_accuracy_by_S:
+  seed 2026: +0.1479
+  seed 2027: +0.1375
+  seed 2028: +0.1377
+  mean:      +0.1410
+
+Prismion - untied-local, same_weights_s_curve_accuracy:
+  seed 2026: +0.3632
+  seed 2027: +0.3065
+  seed 2028: +0.3383
+  mean:      +0.3360
+```
+
+Interpretation:
+
+```text
+GPU_JOBS4_CONFIRMED_IN_ISOLATED_RUNS
+PRISMION_HINT_SURVIVES_3SEED
+CANONICAL_GNN_NOT_SUFFICIENT_IN_THIS_MICRO_BATTERY
+UNTIED_LOCAL_CNN_NOT_SUFFICIENT_IN_THIS_MICRO_BATTERY
+ABC_IS_STRONG_BUT_PRISMION_HAS_SMALL POSITIVE_DELTA
+```
+
+Claim boundary:
+
+```text
+This is still not a full validation slice.
+It is a strong micro-battery signal.
+The Prismion edge over ABC is small but replicated in mean over 3 seeds.
+The edge over GNN and untied-local is large in this battery.
+```
+
+Reproducibility note:
+
+```text
+CUDA runs emitted PyTorch cuBLAS determinism warnings.
+Future confirmation runs should set:
+  CUBLAS_WORKSPACE_CONFIG=:4096:8
+before Python starts.
+```
