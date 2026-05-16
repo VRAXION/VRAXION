@@ -474,3 +474,98 @@ Future confirmation runs should set:
   CUBLAS_WORKSPACE_CONFIG=:4096:8
 before Python starts.
 ```
+
+## GPU Micro-Battery 5-Seed Confirmation
+
+Run:
+
+```text
+root: target/pilot_wave/stable_loop_wavefront_003_long_s_curve/gpu_micro_battery_5seed_001
+device: cuda
+jobs: 4
+seeds: 2026,2027,2028,2029,2030
+epochs: 10
+train_examples: 4096
+eval_examples: 4096
+CUBLAS_WORKSPACE_CONFIG=:4096:8
+```
+
+Runner labels:
+
+```text
+FULL_REACHABILITY_POSITIVE
+SAME_WEIGHTS_S_CURVE_POSITIVE
+```
+
+Mean truncated accuracy:
+
+```text
+HARD_WALL_PRISMION_PHASE_LOOP:   0.9974
+HARD_WALL_ABC_LOOP:              0.9897
+LOCAL_MESSAGE_PASSING_GNN:       0.8995
+UNTIED_LOCAL_CNN_TARGET_READOUT: 0.6845
+SUMMARY_DIRECT_HEAD:             0.0922
+TARGET_MARKER_ONLY:              0.0372
+```
+
+Prismion vs ABC paired deltas:
+
+```text
+truncated_accuracy_by_S:
+  seed 2026: +0.0037
+  seed 2027: -0.0005
+  seed 2028: +0.0188
+  seed 2029: -0.0010
+  seed 2030: +0.0173
+  mean:      +0.0077
+  positive:  3 / 5
+
+same_weights_s_curve_accuracy:
+  seed 2026: +0.0031
+  seed 2027: -0.0005
+  seed 2028: +0.0188
+  seed 2029: -0.0010
+  seed 2030: +0.0171
+  mean:      +0.0075
+  positive:  3 / 5
+
+unreachable_false_reach_all_S:
+  mean delta: -0.0170
+  interpretation: Prismion has fewer false reaches on average.
+
+pre_mask_frontier_wall_write_norm:
+  mean delta: +0.00035
+  interpretation: Prismion has slightly higher pre-mask wall pressure, still very low.
+```
+
+Prismion vs other baselines:
+
+```text
+Prismion - GNN S=24 truncated_accuracy_by_S:
+  mean: +0.1416
+  min:  +0.1375
+  max:  +0.1479
+
+Prismion - untied-local same_weights_s_curve_accuracy:
+  mean: +0.3336
+  min:  +0.2985
+  max:  +0.3632
+```
+
+5-seed verdict:
+
+```text
+PRISMION_HINT_SURVIVES_5SEED
+STABLE_LOOP_SIGNAL_CONFIRMED_IN_MICRO_BATTERY
+GNN_NOT_SUFFICIENT_IN_THIS_MICRO_BATTERY
+UNTIED_LOCAL_NOT_SUFFICIENT_IN_THIS_MICRO_BATTERY
+SUMMARY_AND_TARGET_CONTROLS_REMAIN_WEAK
+```
+
+Claim boundary:
+
+```text
+The Prismion edge over ABC is real but small at width16/SAME_WEIGHTS/epochs10.
+The edge is not seed-universal: ABC slightly wins on seeds 2027 and 2029.
+The next falsification is whether the edge survives width32 or longer training.
+```
