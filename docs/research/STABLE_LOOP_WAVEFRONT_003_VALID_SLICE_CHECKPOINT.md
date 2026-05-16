@@ -569,3 +569,90 @@ The Prismion edge over ABC is real but small at width16/SAME_WEIGHTS/epochs10.
 The edge is not seed-universal: ABC slightly wins on seeds 2027 and 2029.
 The next falsification is whether the edge survives width32 or longer training.
 ```
+
+## GPU Micro-Battery Width32 3-Seed Confirmation
+
+Run:
+
+```text
+root: target/pilot_wave/stable_loop_wavefront_003_long_s_curve/gpu_micro_battery_w32_3seed_001
+device: cuda
+jobs: 4
+seeds: 2026,2027,2028
+width: 32
+epochs: 10
+train_examples: 4096
+eval_examples: 4096
+CUBLAS_WORKSPACE_CONFIG=:4096:8
+```
+
+Runner labels:
+
+```text
+FULL_REACHABILITY_POSITIVE
+SAME_WEIGHTS_S_CURVE_POSITIVE
+```
+
+Mean truncated accuracy:
+
+```text
+HARD_WALL_PRISMION_PHASE_LOOP:   0.9998
+HARD_WALL_ABC_LOOP:              0.9875
+LOCAL_MESSAGE_PASSING_GNN:       0.8995
+UNTIED_LOCAL_CNN_TARGET_READOUT: 0.5476
+SUMMARY_DIRECT_HEAD:             0.2436
+TARGET_MARKER_ONLY:              0.0368
+```
+
+Prismion vs ABC paired deltas:
+
+```text
+truncated_accuracy_by_S:
+  seed 2026: +0.0132
+  seed 2027: +0.0103
+  seed 2028: +0.0137
+  mean:      +0.0124
+  positive:  3 / 3
+
+same_weights_s_curve_accuracy:
+  seed 2026: +0.0132
+  seed 2027: +0.0103
+  seed 2028: +0.0131
+  mean:      +0.0122
+  positive:  3 / 3
+
+unreachable_false_reach_all_S:
+  mean delta: -0.0243
+  interpretation: Prismion has fewer false reaches.
+
+pre_mask_frontier_wall_write_norm:
+  mean delta: -0.00027
+  interpretation: Prismion has slightly lower pre-mask wall pressure.
+```
+
+Prismion vs other baselines:
+
+```text
+Prismion - GNN S=24 truncated_accuracy_by_S:
+  mean: +0.1445
+
+Prismion - untied-local same_weights_s_curve_accuracy:
+  mean: +0.3735
+```
+
+Width32 verdict:
+
+```text
+PRISMION_HINT_STRENGTHENS_AT_WIDTH32
+PRISMION_BEATS_ABC_3_OF_3_SEEDS_AT_WIDTH32
+PRISMION_HAS_LOWER_FALSE_REACH_AND_LOWER_PRE_WALL_PRESSURE_AT_WIDTH32
+GNN_AND_UNTIED_LOCAL_REMAIN_BEHIND
+```
+
+Claim update:
+
+```text
+The width16 result showed a small average Prismion edge.
+The width32 result strengthens the signal: Prismion wins all tested seeds against ABC.
+The next confirmation is width32 with 5 seeds before any broader run.
+```
