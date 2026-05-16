@@ -656,3 +656,100 @@ The width16 result showed a small average Prismion edge.
 The width32 result strengthens the signal: Prismion wins all tested seeds against ABC.
 The next confirmation is width32 with 5 seeds before any broader run.
 ```
+
+## GPU Micro-Battery Width32 5-Seed Confirmation
+
+Run:
+
+```text
+root: target/pilot_wave/stable_loop_wavefront_003_long_s_curve/gpu_micro_battery_w32_5seed_001
+device: cuda
+jobs: 4
+seeds: 2026,2027,2028,2029,2030
+width: 32
+epochs: 10
+train_examples: 4096
+eval_examples: 4096
+CUBLAS_WORKSPACE_CONFIG=:4096:8
+```
+
+Runner labels:
+
+```text
+FULL_REACHABILITY_POSITIVE
+SAME_WEIGHTS_S_CURVE_POSITIVE
+```
+
+Mean truncated accuracy:
+
+```text
+HARD_WALL_ABC_LOOP:              0.9896
+HARD_WALL_PRISMION_PHASE_LOOP:   0.9864
+LOCAL_MESSAGE_PASSING_GNN:       0.8995
+UNTIED_LOCAL_CNN_TARGET_READOUT: 0.5442
+SUMMARY_DIRECT_HEAD:             0.3507
+TARGET_MARKER_ONLY:              0.0372
+```
+
+Prismion vs ABC paired deltas:
+
+```text
+truncated_accuracy_by_S:
+  seed 2026: +0.0132
+  seed 2027: +0.0103
+  seed 2028: +0.0137
+  seed 2029: -0.0676
+  seed 2030: +0.0142
+  mean:      -0.0033
+  positive:  4 / 5
+
+same_weights_s_curve_accuracy:
+  seed 2026: +0.0132
+  seed 2027: +0.0103
+  seed 2028: +0.0131
+  seed 2029: -0.0369
+  seed 2030: +0.0142
+  mean:      +0.0028
+  positive:  4 / 5
+
+unreachable_false_reach_all_S:
+  mean delta: -0.0205
+  interpretation: Prismion still has fewer false reaches on average.
+
+pre_mask_frontier_wall_write_norm:
+  mean delta: -0.00032
+  interpretation: Prismion has lower pre-mask wall pressure on all 5 seeds.
+```
+
+Prismion vs other baselines:
+
+```text
+Prismion - GNN S=24 truncated_accuracy_by_S:
+  mean: +0.1306
+  min:  +0.0789
+
+Prismion - untied-local same_weights_s_curve_accuracy:
+  mean: +0.3680
+  min:  +0.3457
+```
+
+Width32 5-seed verdict:
+
+```text
+STABLE_LOOP_SIGNAL_SURVIVES_WIDTH32_5SEED
+GNN_AND_UNTIED_LOCAL_REMAIN_BEHIND
+PRISMION_BEATS_ABC_ON_4_OF_5_SEEDS
+PRISMION_HAS_LOWER_FALSE_REACH_AND_LOWER_PRE_WALL_PRESSURE
+PRISMION_NOT_FULLY_CONFIRMED_DUE_SEED_2029_COLLAPSE
+```
+
+Interpretation:
+
+```text
+The Prismion signal is promising but not yet robust enough to call confirmed.
+Seed 2029 is the blocker: ABC is perfect there, while Prismion drops to 0.9324 truncacc.
+Next test should isolate seed 2029 with longer training to distinguish:
+  optimization horizon issue
+  seed-specific instability
+  genuine ABC sufficiency / Prismion fragility
+```
