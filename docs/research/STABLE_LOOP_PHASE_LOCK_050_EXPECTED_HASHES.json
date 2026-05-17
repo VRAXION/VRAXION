@@ -1,0 +1,12 @@
+{
+  "probe": "STABLE_LOOP_PHASE_LOCK_050_REPRODUCIBILITY_PACKAGE_AND_PAPER_AUDIT",
+  "hash_mode": "sha256_normalized_lf",
+  "corpus": {
+    "path": "docs/research/STABLE_LOOP_PHASE_LOCK_049_ADVERSARIAL_FROZEN_EVAL_CORPUS.jsonl",
+    "sha256_normalized_lf": "6b44848ab9483e8267103538ca58198b198a7651e9f20025168143fef4e5cd56"
+  },
+  "runner": {
+    "path": "instnct-core/examples/phase_lane_adversarial_frozen_eval_scale.rs",
+    "sha256_normalized_lf": "4777b479294bc571751582dee53b05a121eae1465a45e24870432f4828b81046"
+  }
+}
