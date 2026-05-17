@@ -20,17 +20,18 @@
 
 <style>
   .panel {
-    border: 1px solid #26384c;
+    border: 1px solid #31516b;
     padding: 16px;
-    background: #0c1724;
-    color: #e5f2ff;
+    background: rgba(15, 35, 52, 0.9);
+    color: #f2f8ff;
   }
   h2 {
     font-size: 16px;
     margin: 0 0 12px;
+    color: #f8fbff;
   }
   p {
-    color: #cbd5e1;
+    color: #d9e8f5;
   }
   div {
     display: grid;
@@ -38,7 +39,7 @@
     margin-bottom: 10px;
   }
   dt {
-    color: #9fb4cc;
+    color: #9ddcf0;
   }
   dd {
     margin: 0;

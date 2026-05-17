@@ -25,8 +25,8 @@
 <style>
   :global(body) {
     margin: 0;
-    background: #081018;
-    color: #e5f2ff;
+    background: #102033;
+    color: #f2f8ff;
     font-family:
       Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   }
@@ -35,30 +35,36 @@
   }
   .shell {
     display: grid;
-    grid-template-columns: 220px minmax(0, 1fr);
+    grid-template-columns: 210px minmax(0, 1fr);
     min-height: 100vh;
+    background:
+      radial-gradient(circle at 85% 8%, rgba(34, 211, 238, 0.14), transparent 26%),
+      linear-gradient(135deg, #12263a 0%, #091521 62%, #07111c 100%);
   }
   aside {
-    border-right: 1px solid #223244;
-    background: #0d1822;
-    padding: 20px;
+    border-right: 1px solid #31516b;
+    background: rgba(13, 28, 43, 0.94);
+    padding: 22px 18px;
   }
   h1 {
-    font-size: 18px;
+    font-size: 19px;
     margin: 0 0 24px;
+    color: #e0f7ff;
   }
   nav {
     display: grid;
     gap: 8px;
   }
   a {
-    color: #bae6fd;
+    color: #c8efff;
     text-decoration: none;
-    padding: 9px 10px;
-    border: 1px solid transparent;
+    padding: 11px 12px;
+    border: 1px solid rgba(125, 211, 252, 0.16);
+    background: rgba(15, 35, 52, 0.72);
   }
   a:hover {
-    border-color: #22d3ee;
+    border-color: #38f5ff;
+    background: rgba(34, 211, 238, 0.12);
     color: #ffffff;
   }
   main {

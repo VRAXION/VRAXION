@@ -19,19 +19,24 @@
 </script>
 
 <section class="toolbar">
-  <h2>Topology</h2>
-  <label>
-    Role filter
-    <select bind:value={roleFilter}>
-      <option value="all">all</option>
-      <option value="highway">highway</option>
-      <option value="pocket">pocket</option>
-      <option value="candidate">candidate</option>
-      <option value="source">source</option>
-      <option value="target">target</option>
-    </select>
-  </label>
-  <span>Selected edge: {selectedEdgeId ?? 'none'}</span>
+  <div>
+    <p class="eyebrow">049 real-run ingest</p>
+    <h2>Topology</h2>
+  </div>
+  <div class="controls">
+    <label>
+      Role filter
+      <select bind:value={roleFilter}>
+        <option value="all">all</option>
+        <option value="highway">highway</option>
+        <option value="pocket">pocket</option>
+        <option value="candidate">candidate</option>
+        <option value="source">source</option>
+        <option value="target">target</option>
+      </select>
+    </label>
+    <span>Selected edge: {selectedEdgeId ?? 'none'}</span>
+  </div>
 </section>
 
 <section class="grid">
@@ -52,13 +57,29 @@
   .toolbar {
     display: flex;
     align-items: center;
+    justify-content: space-between;
     gap: 18px;
     margin-bottom: 18px;
     flex-wrap: wrap;
+    padding: 16px 18px;
+    border: 1px solid #31516b;
+    background: rgba(15, 35, 52, 0.76);
+  }
+  .controls {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    flex-wrap: wrap;
+  }
+  .eyebrow {
+    margin: 0 0 4px;
+    color: #67e8f9;
+    font-size: 12px;
   }
   h2 {
     margin: 0;
-    font-size: 22px;
+    font-size: 28px;
+    color: #f8fbff;
   }
   label {
     display: flex;
@@ -67,14 +88,14 @@
     color: #cbd5e1;
   }
   select {
-    background: #0c1724;
-    color: #e5f2ff;
-    border: 1px solid #26384c;
-    padding: 7px 9px;
+    background: #10263b;
+    color: #f8fbff;
+    border: 1px solid #4f7694;
+    padding: 8px 10px;
   }
   .grid {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) 320px;
+    grid-template-columns: minmax(0, 1fr) 340px;
     gap: 18px;
   }
   aside {

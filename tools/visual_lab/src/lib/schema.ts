@@ -150,25 +150,47 @@ export function diffGraphs(before: GraphSnapshot, after: GraphSnapshot): DiffSum
 }
 
 export function roleColor(role: NodeRole | EdgeRole, active = false): string {
-  if (active) return '#f8fafc';
   switch (role) {
     case 'highway':
-      return '#22d3ee';
+      return active ? '#38f5ff' : '#0891b2';
     case 'pocket':
-      return '#f59e0b';
+      return active ? '#fbbf24' : '#d97706';
     case 'source':
     case 'target':
-      return '#a7f3d0';
+      return active ? '#34d399' : '#059669';
     case 'candidate':
-      return '#a78bfa';
+      return active ? '#c084fc' : '#8b5cf6';
     case 'pruned':
-      return '#9f4f5f';
+      return active ? '#fb7185' : '#be123c';
     case 'bridge':
-      return '#38bdf8';
+      return active ? '#7dd3fc' : '#0284c7';
     case 'relay':
-      return '#94a3b8';
+      return active ? '#e2e8f0' : '#64748b';
     default:
-      return '#94a3b8';
+      return active ? '#e2e8f0' : '#64748b';
+  }
+}
+
+export function roleLabel(role: NodeRole | EdgeRole): string {
+  switch (role) {
+    case 'highway':
+      return 'Highway backbone';
+    case 'pocket':
+      return 'Side pocket';
+    case 'source':
+      return 'Source';
+    case 'target':
+      return 'Target';
+    case 'candidate':
+      return 'Candidate / mutable';
+    case 'pruned':
+      return 'Pruned / rejected';
+    case 'bridge':
+      return 'Bridge edge';
+    case 'relay':
+      return 'Relay';
+    default:
+      return role;
   }
 }
 

@@ -52,10 +52,10 @@
 
 <style>
   .panel {
-    border: 1px solid #26384c;
+    border: 1px solid #31516b;
     padding: 16px;
-    background: #0c1724;
-    color: #e5f2ff;
+    background: rgba(15, 35, 52, 0.9);
+    color: #f2f8ff;
   }
   h2 {
     font-size: 16px;
@@ -64,7 +64,7 @@
   svg {
     width: 100%;
     height: auto;
-    background: #08111d;
+    background: #102235;
   }
   path {
     fill: none;
