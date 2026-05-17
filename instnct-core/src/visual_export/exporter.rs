@@ -14,6 +14,8 @@ pub enum VisualExportError {
     Io(std::io::Error),
     /// Serialization error.
     Serde(serde_json::Error),
+    /// Invalid or incomplete input data.
+    InvalidData(String),
 }
 
 impl fmt::Display for VisualExportError {
@@ -21,6 +23,7 @@ impl fmt::Display for VisualExportError {
         match self {
             Self::Io(err) => write!(f, "visual export IO error: {err}"),
             Self::Serde(err) => write!(f, "visual export serialization error: {err}"),
+            Self::InvalidData(message) => write!(f, "visual export invalid data: {message}"),
         }
     }
 }

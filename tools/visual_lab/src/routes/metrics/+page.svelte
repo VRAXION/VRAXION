@@ -1,6 +1,6 @@
 <script lang="ts">
   import MetricsPanel from '$lib/components/MetricsPanel.svelte';
-  import { sampleMetrics } from '$lib/sample-bundle';
+  import { activeSampleBundle } from '$lib/sample-bundle';
 </script>
 
 <section class="header">
@@ -8,7 +8,7 @@
   <p>Route order, missing successor count, entropy, and collapse state over checkpoint time.</p>
 </section>
 
-<MetricsPanel metrics={sampleMetrics} />
+<MetricsPanel metrics={activeSampleBundle.metrics} />
 
 <style>
   .header {

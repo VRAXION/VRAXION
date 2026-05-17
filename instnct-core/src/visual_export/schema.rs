@@ -227,16 +227,34 @@ pub struct MetricRow {
     pub run_id: String,
     /// Checkpoint number.
     pub checkpoint: u32,
+    /// Optional source arm for ingested run artifacts.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub source_arm: Option<String>,
     /// Heldout score.
     pub heldout_score: f64,
     /// OOD score.
     pub ood_score: f64,
+    /// Optional family-min accuracy from source metrics.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub family_min_accuracy: Option<f64>,
+    /// Optional hard-distractor accuracy from source metrics.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub hard_distractor_accuracy: Option<f64>,
+    /// Optional long-OOD accuracy from source metrics.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub long_ood_accuracy: Option<f64>,
     /// Route-order accuracy.
     pub route_order_accuracy: f64,
     /// Missing successor count.
     pub missing_successor_count: u32,
     /// Output entropy.
     pub output_entropy: f64,
+    /// Optional unique output count.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub unique_output_count: Option<usize>,
+    /// Optional expected output class count.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub expected_output_class_count: Option<usize>,
     /// Collapse flag.
     pub collapse_detected: bool,
 }
@@ -404,22 +422,34 @@ pub fn sample_visual_bundle() -> VisualBundle {
                 schema_version: VISUAL_SCHEMA_VERSION.to_string(),
                 run_id: run_id.clone(),
                 checkpoint: 0,
+                source_arm: None,
                 heldout_score: 0.62,
                 ood_score: 0.58,
+                family_min_accuracy: None,
+                hard_distractor_accuracy: None,
+                long_ood_accuracy: None,
                 route_order_accuracy: 0.71,
                 missing_successor_count: 2,
                 output_entropy: 3.1,
+                unique_output_count: None,
+                expected_output_class_count: None,
                 collapse_detected: false,
             },
             MetricRow {
                 schema_version: VISUAL_SCHEMA_VERSION.to_string(),
                 run_id: run_id.clone(),
                 checkpoint: 10,
+                source_arm: None,
                 heldout_score: 1.0,
                 ood_score: 1.0,
+                family_min_accuracy: None,
+                hard_distractor_accuracy: None,
+                long_ood_accuracy: None,
                 route_order_accuracy: 1.0,
                 missing_successor_count: 0,
                 output_entropy: 4.2,
+                unique_output_count: None,
+                expected_output_class_count: None,
                 collapse_detected: false,
             },
         ],

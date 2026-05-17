@@ -28,7 +28,23 @@
     {#each metrics as row}
       <div>
         <dt>checkpoint {row.checkpoint}</dt>
-        <dd>route {row.route_order_accuracy.toFixed(2)} / entropy {row.output_entropy.toFixed(2)}</dd>
+        <dd>
+          heldout {row.heldout_score.toFixed(2)} / OOD {row.ood_score.toFixed(2)} / route
+          {row.route_order_accuracy.toFixed(2)} / entropy {row.output_entropy.toFixed(2)}
+        </dd>
+      </div>
+      {#if row.source_arm}
+        <div class="subrow">
+          <dt>{row.source_arm}</dt>
+          <dd>
+            family {row.family_min_accuracy?.toFixed(2) ?? 'n/a'} / unique
+            {row.unique_output_count ?? 'n/a'}/{row.expected_output_class_count ?? 'n/a'}
+          </dd>
+        </div>
+      {/if}
+      <div class="subrow">
+        <dt>collapse</dt>
+        <dd>{row.collapse_detected ? 'true' : 'false'}</dd>
       </div>
     {/each}
   </dl>
@@ -65,6 +81,10 @@
     justify-content: space-between;
     gap: 12px;
     margin-top: 8px;
+  }
+  .subrow {
+    font-size: 12px;
+    color: #cbd5e1;
   }
   dt {
     color: #9fb4cc;

@@ -5,9 +5,11 @@
 //! and reviewer labs.
 
 pub mod exporter;
+pub mod ingest;
 pub mod schema;
 
 pub use exporter::{export_visual_bundle, write_json, write_jsonl, VisualExportError};
+pub use ingest::bundle_from_049_adversarial_run;
 pub use schema::{
     sample_visual_bundle, CheckpointIndexRow, EdgeRole, EventKind, GraphEdge, GraphNode,
     GraphSnapshot, MetricRow, MutationEvent, NodeRole, PocketSummary, RouteTrace, RunManifest,

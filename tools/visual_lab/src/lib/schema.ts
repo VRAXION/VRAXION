@@ -66,11 +66,17 @@ export interface MetricRow {
   schema_version: typeof VISUAL_SCHEMA_VERSION;
   run_id: string;
   checkpoint: number;
+  source_arm?: string;
   heldout_score: number;
   ood_score: number;
+  family_min_accuracy?: number;
+  hard_distractor_accuracy?: number;
+  long_ood_accuracy?: number;
   route_order_accuracy: number;
   missing_successor_count: number;
   output_entropy: number;
+  unique_output_count?: number;
+  expected_output_class_count?: number;
   collapse_detected: boolean;
 }
 

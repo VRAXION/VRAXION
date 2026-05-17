@@ -2,9 +2,9 @@
   import GraphCanvas from '$lib/components/GraphCanvas.svelte';
   import NodeInspector from '$lib/components/NodeInspector.svelte';
   import PocketInspector from '$lib/components/PocketInspector.svelte';
-  import { sampleGraphs } from '$lib/sample-bundle';
+  import { activeSampleBundle } from '$lib/sample-bundle';
 
-  let graph = sampleGraphs[0];
+  let graph = activeSampleBundle.graphs[activeSampleBundle.graphs.length - 1];
   let selectedNodeId: string | null = null;
   let selectedEdgeId: string | null = null;
   let roleFilter = 'all';

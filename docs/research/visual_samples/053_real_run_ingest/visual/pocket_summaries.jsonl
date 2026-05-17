@@ -1,0 +1,3 @@
+{"id":"p_route_diagnostics","kind":"diagnostic_label_pocket","node_ids":["n_diag"],"bridge_nodes":["n_h2"],"mutation_count":1,"prune_ratio":0.0}
+{"id":"p_failure_controls","kind":"known_failure_control_pocket","node_ids":["n_ctrl_majority","n_ctrl_static"],"bridge_nodes":["n_h1"],"mutation_count":2,"prune_ratio":1.0}
+{"id":"p_output_distribution","kind":"output_distribution_pocket","node_ids":["n_entropy"],"bridge_nodes":["n_tgt"],"mutation_count":0,"prune_ratio":0.0}

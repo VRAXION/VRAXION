@@ -2,16 +2,16 @@
   import DiffPanel from '$lib/components/DiffPanel.svelte';
   import GraphCanvas from '$lib/components/GraphCanvas.svelte';
   import { diffGraphs } from '$lib/schema';
-  import { sampleGraphs } from '$lib/sample-bundle';
+  import { activeSampleBundle } from '$lib/sample-bundle';
 
-  const before = sampleGraphs[0];
-  const after = sampleGraphs[1];
+  const before = activeSampleBundle.graphs[0];
+  const after = activeSampleBundle.graphs[activeSampleBundle.graphs.length - 1];
   const diff = diffGraphs(before, after);
 </script>
 
 <section class="header">
   <h2>Diff</h2>
-  <p>Checkpoint 000 to checkpoint 010 highlights added, retained, and pruned edges.</p>
+  <p>First to final checkpoint highlights added, retained, and pruned edges.</p>
 </section>
 
 <section class="grid">

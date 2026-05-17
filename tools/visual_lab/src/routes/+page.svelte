@@ -1,28 +1,30 @@
 <script lang="ts">
   import MetricsPanel from '$lib/components/MetricsPanel.svelte';
-  import { sampleEvents, sampleGraphs, sampleMetrics } from '$lib/sample-bundle';
+  import { activeSampleBundle, visualSampleBundles } from '$lib/sample-bundle';
 
-  const latest = sampleGraphs[1];
+  const latest = activeSampleBundle.graphs[activeSampleBundle.graphs.length - 1];
 </script>
 
 <section class="hero">
   <div>
-    <p class="eyebrow">STABLE_LOOP_PHASE_LOCK_052</p>
-    <h2>Schema-first visual analysis package</h2>
+    <p class="eyebrow">STABLE_LOOP_PHASE_LOCK_053</p>
+    <h2>Real-run visual ingest lab</h2>
     <p>
-      Deterministic sample bundle loaded locally: highway backbone, side pockets,
-      route trace, mutation event, prune event, checkpoint evolution, and diffable graph state.
+      The default bundle is a visual projection of the 049 adversarial frozen-eval
+      artifact metrics into the stable visual_snapshot_v1 schema. The 052 smoke
+      bundle remains available as a fixture.
     </p>
   </div>
   <dl>
-    <div><dt>Checkpoints</dt><dd>{sampleGraphs.length}</dd></div>
+    <div><dt>Bundles</dt><dd>{visualSampleBundles.length}</dd></div>
+    <div><dt>Checkpoints</dt><dd>{activeSampleBundle.graphs.length}</dd></div>
     <div><dt>Nodes</dt><dd>{latest.nodes.length}</dd></div>
     <div><dt>Edges</dt><dd>{latest.edges.length}</dd></div>
-    <div><dt>Events</dt><dd>{sampleEvents.length}</dd></div>
+    <div><dt>Events</dt><dd>{activeSampleBundle.events.length}</dd></div>
   </dl>
 </section>
 
-<MetricsPanel metrics={sampleMetrics} />
+<MetricsPanel metrics={activeSampleBundle.metrics} />
 
 <style>
   .hero {

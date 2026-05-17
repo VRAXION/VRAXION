@@ -1,4 +1,16 @@
 import type { GraphSnapshot, MetricRow, MutationEvent } from './schema';
+import { validateGraphSnapshot } from './schema';
+import realRunCheckpoint000 from '../../../../docs/research/visual_samples/053_real_run_ingest/visual/graph/checkpoint_000.json';
+import realRunCheckpoint050 from '../../../../docs/research/visual_samples/053_real_run_ingest/visual/graph/checkpoint_050.json';
+import realRunCheckpoint100 from '../../../../docs/research/visual_samples/053_real_run_ingest/visual/graph/checkpoint_100.json';
+
+export interface VisualSampleBundle {
+  id: string;
+  label: string;
+  graphs: GraphSnapshot[];
+  metrics: MetricRow[];
+  events: MutationEvent[];
+}
 
 export const sampleGraphs: GraphSnapshot[] = [
   {
@@ -60,3 +72,118 @@ export const sampleEvents: MutationEvent[] = [
   { id: 'ev_mut_001', schema_version: 'visual_snapshot_v1', run_id: 'stable_loop_phase_lock_052_visual_sample', checkpoint: 0, kind: 'mutation', node_ids: ['n_l2'], edge_ids: ['e_l1_l2_candidate'], label: 'candidate pocket edge added' },
   { id: 'ev_prune_001', schema_version: 'visual_snapshot_v1', run_id: 'stable_loop_phase_lock_052_visual_sample', checkpoint: 10, kind: 'prune', node_ids: ['n_r2'], edge_ids: ['e_r1_r2_pruned'], label: 'non-route pocket branch pruned' }
 ];
+
+export const smokeSampleBundle: VisualSampleBundle = {
+  id: '052_smoke_minimal',
+  label: '052 smoke minimal',
+  graphs: sampleGraphs,
+  metrics: sampleMetrics,
+  events: sampleEvents
+};
+
+export const realRunIngestGraphs: GraphSnapshot[] = [
+  validateGraphSnapshot(realRunCheckpoint000),
+  validateGraphSnapshot(realRunCheckpoint050),
+  validateGraphSnapshot(realRunCheckpoint100)
+];
+
+export const realRunIngestMetrics: MetricRow[] = [
+  {
+    schema_version: 'visual_snapshot_v1',
+    run_id: 'stable_loop_phase_lock_053_real_run_ingest',
+    checkpoint: 0,
+    source_arm: 'NO_ROUTE_GRAMMAR_ADVERSARIAL_FROZEN_BASELINE',
+    heldout_score: 0.060546875,
+    ood_score: 0.048828125,
+    family_min_accuracy: 0,
+    hard_distractor_accuracy: 0,
+    long_ood_accuracy: 0.1953125,
+    route_order_accuracy: 0,
+    missing_successor_count: 6,
+    output_entropy: 0,
+    unique_output_count: 1,
+    expected_output_class_count: 75,
+    collapse_detected: true
+  },
+  {
+    schema_version: 'visual_snapshot_v1',
+    run_id: 'stable_loop_phase_lock_053_real_run_ingest',
+    checkpoint: 50,
+    source_arm: 'FROZEN_EVAL_048_REFERENCE',
+    heldout_score: 0.166015625,
+    ood_score: 0.15625,
+    family_min_accuracy: 0,
+    hard_distractor_accuracy: 0,
+    long_ood_accuracy: 0.625,
+    route_order_accuracy: 0,
+    missing_successor_count: 6,
+    output_entropy: 0.6467100819075322,
+    unique_output_count: 4,
+    expected_output_class_count: 75,
+    collapse_detected: true
+  },
+  {
+    schema_version: 'visual_snapshot_v1',
+    run_id: 'stable_loop_phase_lock_053_real_run_ingest',
+    checkpoint: 100,
+    source_arm: 'ADVERSARIAL_FROZEN_ROUTE_GRAMMAR_TRAIN_AND_INFER',
+    heldout_score: 1,
+    ood_score: 1,
+    family_min_accuracy: 1,
+    hard_distractor_accuracy: 1,
+    long_ood_accuracy: 1,
+    route_order_accuracy: 1,
+    missing_successor_count: 0,
+    output_entropy: 5.40437231483324,
+    unique_output_count: 75,
+    expected_output_class_count: 75,
+    collapse_detected: false
+  }
+];
+
+export const realRunIngestEvents: MutationEvent[] = [
+  {
+    id: 'ev_053_mutation_from_reference',
+    schema_version: 'visual_snapshot_v1',
+    run_id: 'stable_loop_phase_lock_053_real_run_ingest',
+    checkpoint: 50,
+    tick: 0,
+    kind: 'mutation',
+    node_ids: ['n_diag'],
+    edge_ids: ['e_diag_candidate'],
+    label: 'diagnostic route candidate exposed from 049 reference metrics'
+  },
+  {
+    id: 'ev_053_prune_control_shortcut',
+    schema_version: 'visual_snapshot_v1',
+    run_id: 'stable_loop_phase_lock_053_real_run_ingest',
+    checkpoint: 100,
+    tick: 0,
+    kind: 'prune',
+    node_ids: ['n_ctrl_majority'],
+    edge_ids: ['e_majority_shortcut_pruned'],
+    label: 'majority/static shortcut control pruned in passing ingest view'
+  },
+  {
+    id: 'ev_053_repair_successor_chain',
+    schema_version: 'visual_snapshot_v1',
+    run_id: 'stable_loop_phase_lock_053_real_run_ingest',
+    checkpoint: 100,
+    tick: 1,
+    kind: 'repair',
+    node_ids: ['n_h2', 'n_h3'],
+    edge_ids: ['e_h2_h3', 'e_h3_tgt'],
+    label: 'successor chain completed by route-grammar positive arm'
+  }
+];
+
+export const realRunIngestBundle: VisualSampleBundle = {
+  id: '053_real_run_ingest',
+  label: '053 real-run ingest from 049',
+  graphs: realRunIngestGraphs,
+  metrics: realRunIngestMetrics,
+  events: realRunIngestEvents
+};
+
+export const visualSampleBundles: VisualSampleBundle[] = [realRunIngestBundle, smokeSampleBundle];
+export const activeSampleBundle = realRunIngestBundle;

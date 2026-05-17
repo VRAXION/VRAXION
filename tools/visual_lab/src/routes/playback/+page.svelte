@@ -1,11 +1,13 @@
 <script lang="ts">
   import GraphCanvas from '$lib/components/GraphCanvas.svelte';
   import TimelineScrubber from '$lib/components/TimelineScrubber.svelte';
-  import { sampleGraphs } from '$lib/sample-bundle';
+  import { activeSampleBundle } from '$lib/sample-bundle';
 
-  const checkpoints = sampleGraphs.map((graph) => graph.checkpoint);
+  const checkpoints = activeSampleBundle.graphs.map((graph) => graph.checkpoint);
   let checkpoint = checkpoints[0];
-  $: graph = sampleGraphs.find((item) => item.checkpoint === checkpoint) ?? sampleGraphs[0];
+  $: graph =
+    activeSampleBundle.graphs.find((item) => item.checkpoint === checkpoint) ??
+    activeSampleBundle.graphs[0];
 </script>
 
 <section class="toolbar">
