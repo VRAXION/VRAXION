@@ -1,0 +1,12 @@
+{"id":"sample_route_000001","split":"train","task_family":"route_answer","input":"ROUTE S>A>B>T source_phase=1 gates=[A:+2,B:+1,T:+0] answer_phase?","expected_output":"phase_0","anti_shortcut_group":"route_phase_0"}
+{"id":"sample_route_000002","split":"train","task_family":"route_answer","input":"ROUTE S>A>C>T source_phase=2 gates=[A:+1,C:+2,T:+0] answer_phase?","expected_output":"phase_1","anti_shortcut_group":"route_phase_1"}
+{"id":"sample_route_000003","split":"heldout","task_family":"route_answer","input":"ROUTE S>B>D>T source_phase=0 gates=[B:+2,D:+0,T:+0] answer_phase?","expected_output":"phase_2","anti_shortcut_group":"route_phase_2"}
+{"id":"sample_route_000004","split":"ood","task_family":"route_answer","input":"ROUTE S>A>B>C>D>T source_phase=3 gates=[A:+1,B:+2,C:+1,D:+0,T:+0] answer_phase?","expected_output":"phase_3","anti_shortcut_group":"route_phase_3"}
+{"id":"sample_context_000001","split":"train","task_family":"context_carry","input":"MEMORY: key=lamp value=blue\nQUERY: what color is lamp?","expected_output":"blue","anti_shortcut_group":"context_value_blue"}
+{"id":"sample_context_000002","split":"heldout","task_family":"context_carry","input":"MEMORY: key=coin value=green\nQUERY: what color is coin?","expected_output":"green","anti_shortcut_group":"context_value_green"}
+{"id":"sample_context_000003","split":"ood","task_family":"context_carry","input":"QUERY: what color is shell?\nMEMORY: value=amber key=shell","expected_output":"amber","anti_shortcut_group":"context_ood_reordered"}
+{"id":"sample_symbolic_000001","split":"train","task_family":"symbolic_map","input":"MAP a->red b->green c->blue\nQUERY b","expected_output":"green","anti_shortcut_group":"symbolic_green"}
+{"id":"sample_symbolic_000002","split":"heldout","task_family":"symbolic_map","input":"MAP q->silver r->black s->white\nQUERY q","expected_output":"silver","anti_shortcut_group":"symbolic_silver"}
+{"id":"sample_symbolic_000003","split":"ood","task_family":"symbolic_map","input":"QUERY z\nMAP x->cyan y->magenta z->yellow","expected_output":"yellow","anti_shortcut_group":"symbolic_ood_reordered"}
+{"id":"sample_nonroute_000001","split":"train","task_family":"non_route_control","input":"CLASSIFY parity 7","expected_output":"odd","anti_shortcut_group":"parity_odd"}
+{"id":"sample_nonroute_000002","split":"heldout","task_family":"non_route_control","input":"CLASSIFY parity 12","expected_output":"even","anti_shortcut_group":"parity_even"}
