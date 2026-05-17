@@ -1,30 +1,34 @@
 <script lang="ts">
   import MetricsPanel from '$lib/components/MetricsPanel.svelte';
-  import { activeSampleBundle, visualSampleBundles } from '$lib/sample-bundle';
+  import BundleSelector from '$lib/components/BundleSelector.svelte';
+  import { bundleById, visualSampleBundles } from '$lib/sample-bundle';
 
-  const latest = activeSampleBundle.graphs[activeSampleBundle.graphs.length - 1];
+  let selectedBundleId = visualSampleBundles[0].id;
+  $: bundle = bundleById(selectedBundleId);
+  $: latest = bundle.graphs[bundle.graphs.length - 1];
 </script>
 
 <section class="hero">
   <div>
-    <p class="eyebrow">STABLE_LOOP_PHASE_LOCK_053</p>
-    <h2>Real-run visual ingest lab</h2>
+    <p class="eyebrow">STABLE_LOOP_PHASE_LOCK_054</p>
+    <h2>Visual analysis lab</h2>
     <p>
-      The default bundle is a visual projection of the 049 adversarial frozen-eval
-      artifact metrics into the stable visual_snapshot_v1 schema. The 052 smoke
-      bundle remains available as a fixture.
+      Select a committed visual bundle and inspect topology, playback, diff, event timeline,
+      and metrics through the stable visual_snapshot_v1 schema.
     </p>
+    <BundleSelector bundles={visualSampleBundles} selectedId={selectedBundleId} onSelect={(id) => (selectedBundleId = id)} />
   </div>
   <dl>
     <div><dt>Bundles</dt><dd>{visualSampleBundles.length}</dd></div>
-    <div><dt>Checkpoints</dt><dd>{activeSampleBundle.graphs.length}</dd></div>
+    <div><dt>Checkpoints</dt><dd>{bundle.graphs.length}</dd></div>
+    <div><dt>Ticks</dt><dd>{bundle.ticks.length}</dd></div>
     <div><dt>Nodes</dt><dd>{latest.nodes.length}</dd></div>
     <div><dt>Edges</dt><dd>{latest.edges.length}</dd></div>
-    <div><dt>Events</dt><dd>{activeSampleBundle.events.length}</dd></div>
+    <div><dt>Events</dt><dd>{bundle.events.length}</dd></div>
   </dl>
 </section>
 
-<MetricsPanel metrics={activeSampleBundle.metrics} />
+<MetricsPanel metrics={bundle.metrics} />
 
 <style>
   .hero {

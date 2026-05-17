@@ -1,6 +1,7 @@
 <script lang="ts">
   export let checkpoints: number[] = [0, 10];
   export let value = 0;
+  export let label = 'Checkpoint';
   export let onChange: (checkpoint: number) => void = () => {};
 
   function update(event: Event) {
@@ -11,7 +12,7 @@
 </script>
 
 <label class="scrubber">
-  <span>Checkpoint {value}</span>
+  <span>{label} {value}</span>
   <input
     type="range"
     min="0"

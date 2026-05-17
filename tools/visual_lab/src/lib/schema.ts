@@ -99,6 +99,15 @@ export interface DiffSummary {
   retained_edges: number;
 }
 
+export interface RenderMetadata {
+  render_duration_ms: number;
+  graph_node_count: number;
+  graph_edge_count: number;
+  checkpoint_count: number;
+  tick_count: number;
+  event_count: number;
+}
+
 const nodeRoles = new Set<NodeRole>(['highway', 'pocket', 'source', 'target', 'relay', 'candidate']);
 const edgeRoles = new Set<EdgeRole>(['highway', 'pocket', 'bridge', 'candidate', 'pruned']);
 
@@ -147,6 +156,23 @@ export function diffGraphs(before: GraphSnapshot, after: GraphSnapshot): DiffSum
     if (!afterEdges.has(id)) removed_edges += 1;
   }
   return { added_edges, removed_edges, pruned_edges, retained_edges };
+}
+
+export function buildRenderMetadata(
+  graph: GraphSnapshot,
+  checkpoint_count: number,
+  tick_count: number,
+  event_count: number,
+  render_duration_ms = 0
+): RenderMetadata {
+  return {
+    render_duration_ms,
+    graph_node_count: graph.nodes.length,
+    graph_edge_count: graph.edges.length,
+    checkpoint_count,
+    tick_count,
+    event_count
+  };
 }
 
 export function roleColor(role: NodeRole | EdgeRole, active = false): string {

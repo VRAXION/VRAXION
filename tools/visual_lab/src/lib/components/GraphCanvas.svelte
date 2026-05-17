@@ -1,13 +1,17 @@
 <script lang="ts">
   import { onDestroy, onMount } from 'svelte';
-  import type { GraphSnapshot } from '../schema';
-  import { roleColor, roleLabel } from '../schema';
+  import type { GraphSnapshot, RenderMetadata } from '../schema';
+  import { buildRenderMetadata, roleColor, roleLabel } from '../schema';
 
   export let graph: GraphSnapshot;
   export let selectedNodeId: string | null = null;
   export let roleFilter = 'all';
+  export let checkpointCount = 1;
+  export let tickCount = 0;
+  export let eventCount = 0;
   export let onSelectNode: (id: string) => void = () => {};
   export let onSelectEdge: (id: string) => void = () => {};
+  export let onRenderMetadata: (metadata: RenderMetadata) => void = () => {};
 
   const legendRoles = ['highway', 'pocket', 'source', 'target', 'candidate', 'pruned', 'bridge'] as const;
 
@@ -18,10 +22,12 @@
     on(event: 'clickNode' | 'clickEdge', callback: (payload: { node?: string; edge?: string }) => void): void;
   } | null = null;
   let renderGeneration = 0;
+  let lastRenderMetadata: RenderMetadata | null = null;
 
   async function render() {
     if (!container) return;
     const generation = ++renderGeneration;
+    const started = performance.now();
     renderer?.kill();
     renderer = null;
     container.replaceChildren();
@@ -75,6 +81,14 @@
     renderer.on('clickEdge', ({ edge }) => {
       if (edge) onSelectEdge(edge);
     });
+    lastRenderMetadata = buildRenderMetadata(
+      graph,
+      checkpointCount,
+      tickCount,
+      eventCount,
+      performance.now() - started
+    );
+    onRenderMetadata(lastRenderMetadata);
   }
 
   $: if (container && graph) {
@@ -101,6 +115,7 @@
       <span>{graph.nodes.length} nodes</span>
       <span>{graph.edges.length} edges</span>
       <span>{graph.pockets.length} pockets</span>
+      {#if lastRenderMetadata}<span>{lastRenderMetadata.render_duration_ms.toFixed(1)} ms render</span>{/if}
     </div>
   </div>
   <div class="graph" bind:this={container} aria-label="Topology graph"></div>

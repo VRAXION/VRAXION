@@ -1,13 +1,32 @@
-import type { GraphSnapshot, MetricRow, MutationEvent } from './schema';
-import { validateGraphSnapshot } from './schema';
+import type { DiffSummary, GraphSnapshot, MetricRow, MutationEvent, RenderMetadata } from './schema';
+import { buildRenderMetadata, diffGraphs, validateGraphSnapshot } from './schema';
 import realRunCheckpoint000 from '../../../../docs/research/visual_samples/053_real_run_ingest/visual/graph/checkpoint_000.json';
 import realRunCheckpoint050 from '../../../../docs/research/visual_samples/053_real_run_ingest/visual/graph/checkpoint_050.json';
 import realRunCheckpoint100 from '../../../../docs/research/visual_samples/053_real_run_ingest/visual/graph/checkpoint_100.json';
+import playbackCheckpoint000 from '../../../../docs/research/visual_samples/054_larger_playback_smoke/visual/graph/checkpoint_000.json';
+import playbackCheckpoint010 from '../../../../docs/research/visual_samples/054_larger_playback_smoke/visual/graph/checkpoint_010.json';
+import playbackCheckpoint020 from '../../../../docs/research/visual_samples/054_larger_playback_smoke/visual/graph/checkpoint_020.json';
+import playbackCheckpoint030 from '../../../../docs/research/visual_samples/054_larger_playback_smoke/visual/graph/checkpoint_030.json';
+import playbackCheckpoint040 from '../../../../docs/research/visual_samples/054_larger_playback_smoke/visual/graph/checkpoint_040.json';
+import playbackCheckpoint050 from '../../../../docs/research/visual_samples/054_larger_playback_smoke/visual/graph/checkpoint_050.json';
+import playbackCheckpoint060 from '../../../../docs/research/visual_samples/054_larger_playback_smoke/visual/graph/checkpoint_060.json';
+import playbackCheckpoint070 from '../../../../docs/research/visual_samples/054_larger_playback_smoke/visual/graph/checkpoint_070.json';
+import playbackCheckpoint080 from '../../../../docs/research/visual_samples/054_larger_playback_smoke/visual/graph/checkpoint_080.json';
+import playbackCheckpoint090 from '../../../../docs/research/visual_samples/054_larger_playback_smoke/visual/graph/checkpoint_090.json';
+import playbackCheckpoint100 from '../../../../docs/research/visual_samples/054_larger_playback_smoke/visual/graph/checkpoint_100.json';
+import playbackCheckpoint110 from '../../../../docs/research/visual_samples/054_larger_playback_smoke/visual/graph/checkpoint_110.json';
+import playbackTick030000 from '../../../../docs/research/visual_samples/054_larger_playback_smoke/visual/ticks/checkpoint_030_tick_000.json';
+import playbackTick030001 from '../../../../docs/research/visual_samples/054_larger_playback_smoke/visual/ticks/checkpoint_030_tick_001.json';
+import playbackTick070000 from '../../../../docs/research/visual_samples/054_larger_playback_smoke/visual/ticks/checkpoint_070_tick_000.json';
+import playbackTick070001 from '../../../../docs/research/visual_samples/054_larger_playback_smoke/visual/ticks/checkpoint_070_tick_001.json';
+import playbackTick110000 from '../../../../docs/research/visual_samples/054_larger_playback_smoke/visual/ticks/checkpoint_110_tick_000.json';
+import playbackTick110001 from '../../../../docs/research/visual_samples/054_larger_playback_smoke/visual/ticks/checkpoint_110_tick_001.json';
 
 export interface VisualSampleBundle {
   id: string;
   label: string;
   graphs: GraphSnapshot[];
+  ticks: GraphSnapshot[];
   metrics: MetricRow[];
   events: MutationEvent[];
 }
@@ -77,6 +96,7 @@ export const smokeSampleBundle: VisualSampleBundle = {
   id: '052_smoke_minimal',
   label: '052 smoke minimal',
   graphs: sampleGraphs,
+  ticks: [],
   metrics: sampleMetrics,
   events: sampleEvents
 };
@@ -181,9 +201,160 @@ export const realRunIngestBundle: VisualSampleBundle = {
   id: '053_real_run_ingest',
   label: '053 real-run ingest from 049',
   graphs: realRunIngestGraphs,
+  ticks: [],
   metrics: realRunIngestMetrics,
   events: realRunIngestEvents
 };
 
-export const visualSampleBundles: VisualSampleBundle[] = [realRunIngestBundle, smokeSampleBundle];
-export const activeSampleBundle = realRunIngestBundle;
+export const largerPlaybackGraphs: GraphSnapshot[] = [
+  playbackCheckpoint000,
+  playbackCheckpoint010,
+  playbackCheckpoint020,
+  playbackCheckpoint030,
+  playbackCheckpoint040,
+  playbackCheckpoint050,
+  playbackCheckpoint060,
+  playbackCheckpoint070,
+  playbackCheckpoint080,
+  playbackCheckpoint090,
+  playbackCheckpoint100,
+  playbackCheckpoint110
+].map(validateGraphSnapshot);
+
+export const largerPlaybackTicks: GraphSnapshot[] = [
+  playbackTick030000,
+  playbackTick030001,
+  playbackTick070000,
+  playbackTick070001,
+  playbackTick110000,
+  playbackTick110001
+].map(validateGraphSnapshot);
+
+export const largerPlaybackMetrics: MetricRow[] = largerPlaybackGraphs.map((graph, index) => ({
+  schema_version: 'visual_snapshot_v1',
+  run_id: 'stable_loop_phase_lock_054_larger_playback_smoke',
+  checkpoint: graph.checkpoint,
+  source_arm: 'LARGER_PLAYBACK_DETERMINISTIC_VISUAL',
+  heldout_score: Math.min(0.45 + (index / 11) * 0.5, 0.98),
+  ood_score: Math.min(0.38 + (index / 11) * 0.54, 0.96),
+  family_min_accuracy: Math.min((index / 11) * 0.94, 0.94),
+  hard_distractor_accuracy: Math.min(0.2 + (index / 11) * 0.72, 0.92),
+  long_ood_accuracy: Math.min(0.25 + (index / 11) * 0.68, 0.93),
+  route_order_accuracy: Math.min(0.35 + (index / 11) * 0.62, 0.97),
+  missing_successor_count: Math.max(12 - (index + 1), 0),
+  output_entropy: 2.2 + (index / 11) * 3.0,
+  unique_output_count: 12 + index * 5,
+  expected_output_class_count: 75,
+  collapse_detected: false
+}));
+
+export const largerPlaybackEvents: MutationEvent[] = [
+  ...largerPlaybackGraphs.filter((_, index) => index % 2 === 0).map((graph, index) => ({
+    id: `ev_054_mut_${graph.checkpoint.toString().padStart(3, '0')}`,
+    schema_version: 'visual_snapshot_v1' as const,
+    run_id: 'stable_loop_phase_lock_054_larger_playback_smoke',
+    checkpoint: graph.checkpoint,
+    tick: 0,
+    kind: 'mutation' as const,
+    node_ids: [`n_p${(index % 10).toString().padStart(2, '0')}_02`],
+    edge_ids: [`e_p${(index % 10).toString().padStart(2, '0')}_02_03`],
+    label: 'candidate pocket edge introduced'
+  })),
+  ...largerPlaybackGraphs.slice(3).map((graph, index) => ({
+    id: `ev_054_prune_${graph.checkpoint.toString().padStart(3, '0')}`,
+    schema_version: 'visual_snapshot_v1' as const,
+    run_id: 'stable_loop_phase_lock_054_larger_playback_smoke',
+    checkpoint: graph.checkpoint,
+    tick: 0,
+    kind: 'prune' as const,
+    node_ids: [`n_p${((index + 5) % 10).toString().padStart(2, '0')}_05`],
+    edge_ids: [`e_pruned_shortcut_p${((index + 5) % 10).toString().padStart(2, '0')}`],
+    label: 'shortcut edge pruned'
+  })),
+  ...largerPlaybackGraphs.slice(5).map((graph, index) => ({
+    id: `ev_054_repair_${graph.checkpoint.toString().padStart(3, '0')}`,
+    schema_version: 'visual_snapshot_v1' as const,
+    run_id: 'stable_loop_phase_lock_054_larger_playback_smoke',
+    checkpoint: graph.checkpoint,
+    tick: 1,
+    kind: 'repair' as const,
+    node_ids: [`n_h${((index + 5) * 3 % 48).toString().padStart(2, '0')}`],
+    edge_ids: [`e_h${((index + 5) * 3 % 47).toString().padStart(2, '0')}_h${(((index + 5) * 3 % 47) + 1).toString().padStart(2, '0')}`],
+    label: 'successor continuity repaired'
+  })),
+  ...largerPlaybackGraphs.slice(8).map((graph, index) => ({
+    id: `ev_054_crystallize_${graph.checkpoint.toString().padStart(3, '0')}`,
+    schema_version: 'visual_snapshot_v1' as const,
+    run_id: 'stable_loop_phase_lock_054_larger_playback_smoke',
+    checkpoint: graph.checkpoint,
+    tick: 1,
+    kind: 'crystallize' as const,
+    node_ids: [`n_h${((index + 8) * 4 % 48).toString().padStart(2, '0')}`],
+    edge_ids: [`e_h${((index + 8) * 4 % 47).toString().padStart(2, '0')}_h${(((index + 8) * 4 % 47) + 1).toString().padStart(2, '0')}`],
+    label: 'route edge crystallized'
+  }))
+];
+
+export const largerPlaybackBundle: VisualSampleBundle = {
+  id: '054_larger_playback_smoke',
+  label: '054 larger playback smoke',
+  graphs: largerPlaybackGraphs,
+  ticks: largerPlaybackTicks,
+  metrics: largerPlaybackMetrics,
+  events: largerPlaybackEvents
+};
+
+export const visualSampleBundles: VisualSampleBundle[] = [
+  largerPlaybackBundle,
+  realRunIngestBundle,
+  smokeSampleBundle
+];
+
+export const activeSampleBundle = largerPlaybackBundle;
+
+export type DiffMode = 'first' | 'previous';
+
+export function bundleById(id: string): VisualSampleBundle {
+  return visualSampleBundles.find((bundle) => bundle.id === id) ?? activeSampleBundle;
+}
+
+export function checkpointsFor(bundle: VisualSampleBundle): number[] {
+  return bundle.graphs.map((graph) => graph.checkpoint);
+}
+
+export function graphForCheckpoint(bundle: VisualSampleBundle, checkpoint: number): GraphSnapshot {
+  return bundle.graphs.find((graph) => graph.checkpoint === checkpoint) ?? bundle.graphs[0];
+}
+
+export function ticksForCheckpoint(bundle: VisualSampleBundle, checkpoint: number): GraphSnapshot[] {
+  return bundle.ticks.filter((tick) => tick.checkpoint === checkpoint);
+}
+
+export function eventsForCheckpoint(
+  bundle: VisualSampleBundle,
+  checkpoint: number,
+  tick: number | 'all' = 'all'
+): MutationEvent[] {
+  return bundle.events.filter((event) => {
+    if (event.checkpoint !== checkpoint) return false;
+    return tick === 'all' || event.tick === undefined || event.tick === tick;
+  });
+}
+
+export function diffForCheckpoint(
+  bundle: VisualSampleBundle,
+  checkpoint: number,
+  mode: DiffMode
+): DiffSummary {
+  const selectedIndex = Math.max(bundle.graphs.findIndex((graph) => graph.checkpoint === checkpoint), 0);
+  const after = bundle.graphs[selectedIndex] ?? bundle.graphs[0];
+  const before =
+    mode === 'previous'
+      ? bundle.graphs[Math.max(selectedIndex - 1, 0)] ?? bundle.graphs[0]
+      : bundle.graphs[0];
+  return diffGraphs(before, after);
+}
+
+export function renderMetadataFor(bundle: VisualSampleBundle, graph: GraphSnapshot, renderMs = 0): RenderMetadata {
+  return buildRenderMetadata(graph, bundle.graphs.length, bundle.ticks.length, bundle.events.length, renderMs);
+}
