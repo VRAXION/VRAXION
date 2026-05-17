@@ -31,6 +31,9 @@ mod sdr;
 mod topology;
 mod vcbp_io;
 
+#[doc(hidden)]
+pub mod experimental_route_grammar;
+
 #[cfg(feature = "parquet")]
 mod parquet_fineweb;
 
