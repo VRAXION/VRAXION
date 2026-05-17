@@ -89,6 +89,10 @@ VRAXION.wiki/
 # Telemetry / probe output
 *.jsonl
 
+# Committed visual research sample bundles intentionally include JSONL.
+!docs/research/visual_samples/
+!docs/research/visual_samples/**
+
 # Log files
 *.log
 
@@ -114,6 +118,10 @@ instnct-core/checkpoints/
 instnct-core/results/
 /results/
 /.claude/
+
+# Local frontend dependency/build artifacts
+tools/visual_lab/node_modules/
+tools/visual_lab/.svelte-kit/
 
 # Local playwright / browser-check outputs (screenshots + test specs)
 output/*

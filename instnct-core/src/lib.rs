@@ -34,6 +34,9 @@ mod vcbp_io;
 #[doc(hidden)]
 pub mod experimental_route_grammar;
 
+#[doc(hidden)]
+pub mod visual_export;
+
 #[cfg(feature = "parquet")]
 mod parquet_fineweb;
 

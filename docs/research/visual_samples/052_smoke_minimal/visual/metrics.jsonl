@@ -1,0 +1,2 @@
+{"schema_version":"visual_snapshot_v1","run_id":"stable_loop_phase_lock_052_visual_sample","checkpoint":0,"heldout_score":0.62,"ood_score":0.58,"route_order_accuracy":0.71,"missing_successor_count":2,"output_entropy":3.1,"collapse_detected":false}
+{"schema_version":"visual_snapshot_v1","run_id":"stable_loop_phase_lock_052_visual_sample","checkpoint":10,"heldout_score":1.0,"ood_score":1.0,"route_order_accuracy":1.0,"missing_successor_count":0,"output_entropy":4.2,"collapse_detected":false}

@@ -1,0 +1,2 @@
+{"id":"ev_mut_001","schema_version":"visual_snapshot_v1","run_id":"stable_loop_phase_lock_052_visual_sample","checkpoint":0,"kind":"mutation","node_ids":["n_l2"],"edge_ids":["e_l1_l2_candidate"],"label":"candidate pocket edge added"}
+{"id":"ev_prune_001","schema_version":"visual_snapshot_v1","run_id":"stable_loop_phase_lock_052_visual_sample","checkpoint":10,"kind":"prune","node_ids":["n_r2"],"edge_ids":["e_r1_r2_pruned"],"label":"non-route pocket branch pruned"}
